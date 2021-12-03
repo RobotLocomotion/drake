@@ -80,11 +80,12 @@ void PidControlledSystem<T>::Initialize(
                         plant_->get_output_port(state_output_port_index_),
                         feedback_selector, Kp, Ki, Kd, &builder);
 
-  builder.ExportInput(input_ports.control_input_port);
-  builder.ExportInput(input_ports.state_input_port);
+  builder.ExportInput(input_ports.control_input_port, "feedforward_control");
+  builder.ExportInput(input_ports.state_input_port, "desired_state");
 
   for (int i=0; i < plant_->num_output_ports(); i++) {
-    builder.ExportOutput(plant_->get_output_port(i));
+    const auto& port = plant_->get_output_port(i);
+    builder.ExportOutput(port, port.get_name());
   }
   builder.BuildInto(this);
 }
