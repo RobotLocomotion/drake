@@ -268,6 +268,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
 
     // Clean up all allocated memories in this method.
     KSPDestroy(&solver);
+    MatDestroy(&matrix_dense);
     MatDestroy(&Dinv_B_transpose_petsc);
     MatDestroy(&B_transpose_petsc);
     MatDestroy(&D_petsc);
