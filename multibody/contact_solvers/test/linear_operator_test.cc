@@ -5,6 +5,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/multibody/contact_solvers/block_sparse_matrix.h"
 
 namespace drake {
 namespace multibody {
@@ -82,7 +83,7 @@ GTEST_TEST(LinearOperator, MultiplyByTransposeDense) {
   const TestLinearOperator<double> Aop("A");
   VectorXd y(2);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Aop.MultiplyByTranspose(VectorXd(3), &y), std::runtime_error,
+      Aop.MultiplyByTranspose(VectorXd(3), &y), std::exception,
       "DoMultiplyByTranspose().*must provide an implementation.");
 }
 
@@ -90,15 +91,23 @@ GTEST_TEST(LinearOperator, MultiplyByTransposeSparse) {
   const TestLinearOperator<double> Aop("A");
   SparseVectord y(2);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Aop.MultiplyByTranspose(SparseVectord(3), &y), std::runtime_error,
+      Aop.MultiplyByTranspose(SparseVectord(3), &y), std::exception,
       "DoMultiplyByTranspose().*must provide an implementation.");
 }
 
-GTEST_TEST(LinearOperator, AssembleMatrix) {
+GTEST_TEST(LinearOperator, AssembleMatrixSparse) {
   const TestLinearOperator<double> Aop("A");
   SparseMatrixd Asparse(3, 2);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Aop.AssembleMatrix(&Asparse), std::runtime_error,
+      Aop.AssembleMatrix(&Asparse), std::exception,
+      "DoAssembleMatrix().*must provide an implementation.");
+}
+
+GTEST_TEST(LinearOperator, AssembleMatrixBlockSparse) {
+  const TestLinearOperator<double> Aop("A");
+  BlockSparseMatrix<double> Ablock;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Aop.AssembleMatrix(&Ablock), std::exception,
       "DoAssembleMatrix().*must provide an implementation.");
 }
 

@@ -44,9 +44,9 @@ def _impl(repository_ctx):
         repository = "rdeits/meshcat-python",
         # Updating this commit requires local testing; see
         # drake/tools/workspace/meshcat/README.md for details.
-        commit = "7f03547d68976004f721c320b17c7c2204b172e9",
+        commit = "0ab600097a5103f97cbe877694b23c4a0ecb459d",
         mirrors = repository_ctx.attr.mirrors,
-        sha256 = "ed4c16265fbd437241d78a541b54ee60b0c1dfae1f4391dfe879595a43549f1a",  # noqa
+        sha256 = "4e4f71c044e095dec9c60f9f3a9ab349b557d6f3b2010823f80720d584069021",  # noqa
     )
 
     repository_ctx.symlink(

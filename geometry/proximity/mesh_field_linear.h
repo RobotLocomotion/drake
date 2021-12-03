@@ -75,6 +75,23 @@ namespace geometry {
 
  where Fᵉᵢ is the field value at the iᵗʰ vertex of element E.
 
+ <h3> Frame dependency </h3>
+
+ A %MeshFieldLinear is a frame-dependent quantity. Instances of a field should
+ be named, as with any other frame-dependent quantity, with a trailing _F
+ indicating the field's frame F. The field's frame is implicitly defined to be
+ the same as the mesh's frame on which the field is instantiated. The field's
+ frame affects two APIs:
+
+   - The gradients reported by EvaluateGradient() are expressed in the field's
+     frame.
+   - The cartesian point passed to EvaluateCartesian() must be measured and
+     expressed in the field's frame.
+
+ The field (along with its corresponding mesh) can be transformed into a new
+ frame by invoking the TransformVertices() method on the mesh and Transform()
+ on the field, passing the same math::RigidTransform to both.
+
  <h3> Gradient </h3>
 
  Consider each bᵉᵢ:ℝ³→ℝ as a linear function, its gradient ∇bᵉᵢ:ℝ³→ℝ³ is a
@@ -284,15 +301,19 @@ class MeshFieldLinear {
     return gradients_[e];
   }
 
-  /** Transforms the gradient vectors of this field from its initial frame M
-   to the new frame N.
-   @warning Use this function when the reference mesh of this field changes
-   its frame in the same way.
+  /** (Advanced) Transforms this mesh field to be measured and expressed in
+   frame N (from its original frame M). See the class documentation for further
+   details.
+
+   @warning This method should always be invoked in tandem with the
+   transformation of the underlying mesh into the same frame
+   (TransformVertices()). To be safe, the mesh should be transformed first.
    */
-  void TransformGradients(
+  void Transform(
       const math::RigidTransform<typename MeshType::ScalarType>& X_NM) {
-    for (auto& grad : gradients_) {
-      grad = X_NM.rotation() * grad;
+    for (size_t i = 0; i < gradients_.size(); ++i) {
+      gradients_[i] = X_NM.rotation() * gradients_[i];
+      values_at_Mo_[i] -= gradients_[i].dot(X_NM.translation());
     }
   }
 
