@@ -27,6 +27,14 @@ namespace controllers {
 /// implementation solves the QP in whole at every time step, discarding any
 /// information between steps.
 ///
+/// @system
+/// name: LinearModelPredictiveController
+/// input_ports:
+/// - u0
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @tparam_double_only
 /// @ingroup control_systems
 template <typename T>

@@ -27,6 +27,19 @@ namespace controllers {
  * @see Constructors for descriptions of how (and which) forces are incorporated
  *      into the inverse dynamics computation.
  *
+ * @system
+ * name: InverseDynamics
+ * input_ports:
+ * - u0
+ * - <span style="color:gray">u1</span>
+ * output_ports:
+ * - y0
+ * @endsystem
+ *
+ * Port `u0` accepts system state; port `y0` emits generalized forces. Port
+ * `u1` is only present when the `mode` at construction is not
+ * `kGravityCompensation`. When present, `u1` accepts desired accelerations.
+ *
  * @ingroup control_systems
  * @tparam_double_only
  */

@@ -31,10 +31,13 @@ namespace controllers {
  * input_ports:
  * - estimated_state
  * - desired_state
- * - desired_acceleration*
+ * - <span style="color:gray">desired_acceleration</span>
  * output_ports:
  * - force
  * @endsystem
+ *
+ * Ports show in <span style="color:gray">gray</span> may be absent, depending
+ * on how the system is constructed.
  *
  * This controller always has a BasicVector input port for estimated robot state
  * `(q, v)`, a BasicVector input port for reference robot state `(q*, v*)` and
