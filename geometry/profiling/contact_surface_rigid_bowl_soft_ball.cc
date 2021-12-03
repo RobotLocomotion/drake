@@ -270,38 +270,53 @@ class ContactResultMaker final : public LeafSystem<double> {
           msg.hydroelastic_contacts[i];
       const ContactSurface<double>& surface = contacts[i];
 
-      const auto& mesh_W = surface.tri_mesh_W();
-      const auto& e_MN_W = surface.tri_e_MN();
-
       // TODO(SeanCurtis-TRI): This currently skips the full naming and doesn't
       //  report any dynamics (e.g., force, moment, or quadrature data).
 
       surface_message.body1_name = "Id_" + to_string(surface.id_M());
       surface_message.body2_name = "Id_" + to_string(surface.id_N());
 
-      const int num_vertices = mesh_W.num_vertices();
+      const int num_vertices = surface.num_vertices();
       surface_message.num_vertices = num_vertices;
       surface_message.p_WV.resize(num_vertices);
       surface_message.pressure.resize(num_vertices);
+      if (surface.is_triangle()) {
+        const auto& mesh_W = surface.tri_mesh_W();
+        const auto& e_MN_W = surface.tri_e_MN();
 
-      // Write vertices and per vertex pressure values.
-      for (int v = 0; v < num_vertices; ++v) {
-        const Vector3d& p_WV = mesh_W.vertex(v);
-        surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
-        surface_message.pressure[v] =
-            ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
-      }
+        // Write vertices and per vertex pressure values.
+        for (int v = 0; v < num_vertices; ++v) {
+          const Vector3d& p_WV = mesh_W.vertex(v);
+          surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
+          surface_message.pressure[v] =
+              ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
+        }
 
-      // Write faces.
-      surface_message.poly_data_int_count = mesh_W.num_triangles() * 4;
-      surface_message.poly_data.resize(surface_message.poly_data_int_count);
-      int index = -1;
-      for (int t = 0; t < mesh_W.num_triangles(); ++t) {
-        const geometry::SurfaceTriangle& tri = mesh_W.element(t);
-        surface_message.poly_data[++index] = 3;
-        surface_message.poly_data[++index] = tri.vertex(0);
-        surface_message.poly_data[++index] = tri.vertex(1);
-        surface_message.poly_data[++index] = tri.vertex(2);
+        // Write faces.
+        surface_message.poly_data_int_count = mesh_W.num_triangles() * 4;
+        surface_message.poly_data.resize(surface_message.poly_data_int_count);
+        int index = -1;
+        for (int t = 0; t < mesh_W.num_triangles(); ++t) {
+          const geometry::SurfaceTriangle& tri = mesh_W.element(t);
+          surface_message.poly_data[++index] = 3;
+          surface_message.poly_data[++index] = tri.vertex(0);
+          surface_message.poly_data[++index] = tri.vertex(1);
+          surface_message.poly_data[++index] = tri.vertex(2);
+        }
+      } else {
+        const auto& mesh_W = surface.poly_mesh_W();
+        const auto& e_MN_W = surface.poly_e_MN();
+
+        // Write vertices and per vertex pressure values.
+        for (int v = 0; v < num_vertices; ++v) {
+          const Vector3d& p_WV = mesh_W.vertex(v);
+          surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
+          surface_message.pressure[v] =
+              ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
+        }
+
+        surface_message.poly_data_int_count = mesh_W.face_data().size();
+        surface_message.poly_data = mesh_W.face_data();
       }
     }
   }

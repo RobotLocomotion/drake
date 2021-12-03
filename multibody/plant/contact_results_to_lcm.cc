@@ -219,11 +219,8 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     surface_message.body2_unique = name2.body_name_is_unique;
     surface_message.collision_count2 = name2.geometry_count;
 
-    const auto& mesh_W = contact_surface.tri_mesh_W();
-    const auto& e_MN_W = contact_surface.tri_e_MN();
-
     // Resultant force quantities.
-    write_double3(mesh_W.centroid(), surface_message.centroid_W);
+    write_double3(contact_surface.centroid(), surface_message.centroid_W);
     write_double3(hydroelastic_contact_info.F_Ac_W().translational(),
                   surface_message.force_C_W);
     write_double3(hydroelastic_contact_info.F_Ac_W().rotational(),
@@ -248,29 +245,50 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     }
 
     // Now build the mesh.
-    const int num_vertices = mesh_W.num_vertices();
+    const int num_vertices = contact_surface.num_vertices();
     surface_message.num_vertices = num_vertices;
     surface_message.p_WV.resize(num_vertices);
     surface_message.pressure.resize(num_vertices);
 
-    // Write vertices and per vertex pressure values.
-    for (int v = 0; v < num_vertices; ++v) {
-      const Vector3d p_WV = ExtractDoubleOrThrow(mesh_W.vertex(v));
-      surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
-      surface_message.pressure[v] =
-          ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
-    }
+    if (contact_surface.is_triangle()) {
+      const auto& mesh_W = contact_surface.tri_mesh_W();
+      const auto& e_MN_W = contact_surface.tri_e_MN();
 
-    // Write faces.
-    surface_message.poly_data_int_count = mesh_W.num_triangles() * 4;
-    surface_message.poly_data.resize(surface_message.poly_data_int_count);
-    int index = -1;
-    for (int t = 0; t < mesh_W.num_triangles(); ++t) {
-      const geometry::SurfaceTriangle& tri = mesh_W.element(t);
-      surface_message.poly_data[++index] = 3;
-      surface_message.poly_data[++index] = tri.vertex(0);
-      surface_message.poly_data[++index] = tri.vertex(1);
-      surface_message.poly_data[++index] = tri.vertex(2);
+      // Write vertices and per vertex pressure values.
+      for (int v = 0; v < num_vertices; ++v) {
+        const Vector3d p_WV = ExtractDoubleOrThrow(mesh_W.vertex(v));
+        surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
+        surface_message.pressure[v] =
+            ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
+      }
+
+      // Write faces.
+      surface_message.poly_data_int_count = mesh_W.num_triangles() * 4;
+      surface_message.poly_data.resize(surface_message.poly_data_int_count);
+      int index = -1;
+      for (int t = 0; t < mesh_W.num_triangles(); ++t) {
+        const geometry::SurfaceTriangle& tri = mesh_W.element(t);
+        surface_message.poly_data[++index] = 3;
+        surface_message.poly_data[++index] = tri.vertex(0);
+        surface_message.poly_data[++index] = tri.vertex(1);
+        surface_message.poly_data[++index] = tri.vertex(2);
+      }
+    } else {
+      // TODO(DamrongGuoy) Make sure the unit tests cover this specific code
+      //  path. It is currently uncovered.
+      const auto& mesh_W = contact_surface.poly_mesh_W();
+      const auto& e_MN_W = contact_surface.poly_e_MN();
+
+      // Write vertices and per vertex pressure values.
+      for (int v = 0; v < num_vertices; ++v) {
+        const Vector3d p_WV = ExtractDoubleOrThrow(mesh_W.vertex(v));
+        surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
+        surface_message.pressure[v] =
+            ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
+      }
+
+      surface_message.poly_data_int_count = mesh_W.face_data().size();
+      surface_message.poly_data = mesh_W.face_data();
     }
   }
 }
