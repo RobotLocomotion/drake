@@ -47,10 +47,11 @@ void HydroelasticTractionCalculator<T>::
   // Reserve enough memory to keep from doing repeated heap allocations in the
   // quadrature process.
   traction_at_quadrature_points->clear();
-  traction_at_quadrature_points->reserve(data.surface.mesh_W().num_triangles());
+  traction_at_quadrature_points->reserve(
+      data.surface.tri_mesh_W().num_triangles());
 
   // Integrate the tractions over all triangles in the contact surface.
-  for (int i = 0; i < data.surface.mesh_W().num_triangles(); ++i) {
+  for (int i = 0; i < data.surface.tri_mesh_W().num_triangles(); ++i) {
     // Construct the function to be integrated over triangle i.
     // TODO(sherm1) Pull functor creation out of the loop (not a good idea to
     //              create a new functor for every i).
@@ -69,7 +70,7 @@ void HydroelasticTractionCalculator<T>::
     // tractions (force/area) at the Gauss points (shifted to C).
     const SpatialForce<T> Fi_Ac_W =  // Force from triangle i.
         TriangleQuadrature<SpatialForce<T>, T>::Integrate(
-            traction_Ac_W, gaussian, data.surface.mesh_W().area(i));
+            traction_Ac_W, gaussian, data.surface.area(i));
 
     // Update the spatial force at the centroid.
     (*F_Ac_W) += Fi_Ac_W;
@@ -134,15 +135,16 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
         Q_barycentric,
     double dissipation, double mu_coulomb) const {
   // Compute the point of contact in the world frame.
-  const Vector3<T> p_WQ = data.surface.mesh_W().CalcCartesianFromBarycentric(
-      face_index, Q_barycentric);
+  const Vector3<T> p_WQ =
+      data.surface.tri_mesh_W().CalcCartesianFromBarycentric(face_index,
+                                                             Q_barycentric);
 
-  const T e = data.surface.e_MN().Evaluate(face_index, Q_barycentric);
+  const T e = data.surface.tri_e_MN().Evaluate(face_index, Q_barycentric);
 
   // Contact surfaces are documented to have face normals that point *out of* N
   // and *into* M -- which is the face normal of the contact surface (as
   // documented).
-  const Vector3<T> nhat_W = data.surface.mesh_W().face_normal(face_index);
+  const Vector3<T>& nhat_W = data.surface.face_normal(face_index);
 
   return CalcTractionAtQHelper(data, face_index, e, nhat_W, dissipation,
                                mu_coulomb, p_WQ);

@@ -62,7 +62,7 @@ class HydroelasticContactInfo {
    @param[in] F_Ac_W Spatial force applied on body A, at contact surface
      centroid C, and expressed in the world frame W. The position `p_WC` of C in
      the world frame W can be obtained with
-     `ContactSurface::mesh_W().centroid()`.
+     `ContactSurface::centroid()`.
    @param[in] quadrature_point_data Hydroelastic field data at each quadrature
      point. Data must be provided in accordance to the convention that geometry
      M and N are attached to bodies A and B, respectively. Refer to
@@ -146,7 +146,7 @@ class HydroelasticContactInfo {
   /// Gets the spatial force applied on body A, at the centroid point C of the
   /// surface mesh M, and expressed in the world frame W. The position `p_WC` of
   /// the centroid point C in the world frame W can be obtained with
-  /// `contact_surface().mesh_W().centroid()`.
+  /// `contact_surface().centroid()`.
   const SpatialForce<T>& F_Ac_W() const { return F_Ac_W_; }
 
  private:

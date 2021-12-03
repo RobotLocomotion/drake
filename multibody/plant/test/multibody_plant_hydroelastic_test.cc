@@ -467,7 +467,7 @@ class ContactModelTest : public ::testing::Test {
       const FrameId fB_id = inspector.GetFrameId(B_id);
       const Body<double>& body_B = *plant_->GetBodyFromFrameId(fB_id);
 
-      const Vector3d p_WC = surface.mesh_W().centroid();
+      const Vector3d& p_WC = surface.centroid();
       const Vector3d& p_WAo =
           body_A.EvalPoseInWorld(*plant_context_).translation();
       const Vector3d p_CAo_W = p_WAo - p_WC;
