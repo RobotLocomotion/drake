@@ -200,8 +200,8 @@ drake_cc_library(
         ":fem_solver",
         ":inverse_spd_operator",
         ":matrix_utilities",
-        ":petsc_schur_complement",
         ":petsc_symmetric_block_sparse_matrix",
+        ":schur_complement",
         ":velocity_newmark_scheme",
         "//common:essential",
         "//multibody/contact_solvers:block_sparse_linear_operator",
@@ -963,20 +963,6 @@ drake_cc_googletest(
 )
 
 drake_cc_library(
-    name = "petsc_internal",
-    srcs = [
-        "petsc_internal.cc",
-    ],
-    hdrs = [
-        "petsc_internal.h",
-    ],
-    deps = [
-        "//common:essential",
-        "@petsc",
-    ],
-)
-
-drake_cc_library(
     name = "petsc_symmetric_block_sparse_matrix",
     srcs = [
         "petsc_symmetric_block_sparse_matrix.cc",
@@ -985,24 +971,7 @@ drake_cc_library(
         "petsc_symmetric_block_sparse_matrix.h",
     ],
     deps = [
-        ":petsc_internal",
-        "//common:essential",
-        "@petsc",
-    ],
-)
-
-drake_cc_library(
-    name = "petsc_schur_complement",
-    srcs = [
-        "petsc_schur_complement.cc",
-    ],
-    hdrs = [
-        "petsc_schur_complement.h",
-    ],
-    deps = [
-        ":petsc_symmetric_block_sparse_matrix",
-        "//common:copyable_unique_ptr",
-        "//common:default_scalars",
+        ":schur_complement",
         "//common:essential",
         "@petsc",
     ],
@@ -1011,17 +980,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "petsc_symmetric_block_sparse_matrix_test",
     deps = [
-        ":petsc_schur_complement",
         ":petsc_symmetric_block_sparse_matrix",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "petsc_internal_test",
-    deps = [
-        ":petsc_internal",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],

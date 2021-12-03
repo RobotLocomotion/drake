@@ -5,16 +5,18 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/fixed_fem/dev/schur_complement.h"
 
 namespace drake {
 namespace multibody {
 namespace fem {
 namespace internal {
 
-class PetscSparseMatrix;
-
-/* Wrapper around PETSc symmetric block sparse matrix.
- @tparam_nonsymbolic_scalar */
+/* A symmetric block sparse matrix data structure that uses PETSc for storage
+ and linear algebra operations. It provides supports for the inverse operator,
+ i.e. one can solve for A*x = b where A is this matrix. It also supports
+ calculating the Schur complement of the matrix. It only supports double as
+ the scalar type. */
 class PetscSymmetricBlockSparseMatrix {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PetscSymmetricBlockSparseMatrix);
@@ -37,22 +39,23 @@ class PetscSymmetricBlockSparseMatrix {
     kIncompleteCholesky,
   };
 
-  ~PetscSymmetricBlockSparseMatrix();
-
   /* Constructs a `size`-by-`size` symmetric block sparse matrix with
    `block_size`.
    @param size            The number of rows and columns of the symmetric
                           matrix.
    @param block_size      The number rows and columns within a block.
-   @param nonzero_entries The sparsity pattern of the matrix.
-                          `nonzero_entries[i]` should contain the number of
-                          nonzero entries in the i-th row.
-   @pre `size` >=  0, and `size` is a integer multiple of `block_size`.
-   @pre nonzero_entries.size() == size.
-   @pre nonzero_entries[i] <= size. */
-  PetscSymmetricBlockSparseMatrix(int size, int block_size,
-                                  const std::vector<int>& nonzero_entries);
+   @param nonzero_blocks The number of block nonzeros in the upper triangular
+                          plus diagonal portion of each block.
 
+   @pre `size` >=  0, and `size` is a integer multiple of `block_size`.
+   @pre nonzero_blocks.size() == size/block_size.
+   @pre nonzero_blocks[i] <= size/block_size. */
+  PetscSymmetricBlockSparseMatrix(int size, int block_size,
+                                  const std::vector<int>& nonzero_blocks);
+
+  ~PetscSymmetricBlockSparseMatrix();
+
+  /* Creates a deep identical copy of this matrix. */
   std::unique_ptr<PetscSymmetricBlockSparseMatrix> Clone() const;
 
   /* Accumulate values in the block matrix. The Eigen analogy of this operation
@@ -96,19 +99,32 @@ class PetscSymmetricBlockSparseMatrix {
    sets the diagonal entry of these rows and columns to `value`. */
   void ZeroRowsAndColumns(const std::vector<int>& indexes, double value);
 
-  /* Sets the relative tolerance of the linear solve A*x = b. */
+  /* Sets the relative tolerance of the linear solve A*x = b. Doesn't affect the
+   result of Solve() when the direct solver is used. */
   void SetRelativeTolerance(double tolerance);
 
-  /* (Advanced) Returns the same matrix represented in another PETSc format
-   (MATSEQAIJ). */
-  PetscSparseMatrix MakePetscSparseMatrix() const;
+  /* Calculates the Schur complement of D in the matrix
+    M = [A  B
+         Bᵀ D],
+   where `A` is formed by extracting block rows and columns with indexes
+   "non_eliminated_indexes", `D` is formed by extracting block rows and columns
+   with indexes "eliminated_indexes", and `B` is formed by extracting block
+   rows with "non_eliminated_indexes" and block columns with
+   "eliminated_indexes". */
+  SchurComplement<double> CalcSchurComplement(
+      const std::vector<int>& eliminated_indexes,
+      const std::vector<int>& non_eliminated_indexes) const;
 
   int rows() const;
+
   int cols() const;
 
  private:
-  PetscSymmetricBlockSparseMatrix();
   class Impl;
+
+  /* Default construct that facilites the Clone() method. */
+  PetscSymmetricBlockSparseMatrix();
+
   std::unique_ptr<Impl> pimpl_;
 };
 

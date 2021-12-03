@@ -15,8 +15,8 @@
 #include "drake/multibody/fixed_fem/dev/deformable_model.h"
 #include "drake/multibody/fixed_fem/dev/deformable_rigid_contact_pair.h"
 #include "drake/multibody/fixed_fem/dev/fem_solver.h"
-#include "drake/multibody/fixed_fem/dev/petsc_schur_complement.h"
 #include "drake/multibody/fixed_fem/dev/petsc_symmetric_block_sparse_matrix.h"
+#include "drake/multibody/fixed_fem/dev/schur_complement.h"
 #include "drake/multibody/fixed_fem/dev/velocity_newmark_scheme.h"
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
@@ -254,12 +254,12 @@ class DeformableRigidManager final
       internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const;
 
   /* Eval version of CalcFreeMotionTangentMatrixSchurComplement(). */
-  const internal::PetscSchurComplement&
+  const internal::SchurComplement<double>&
   EvalFreeMotionTangentMatrixSchurComplement(const systems::Context<T>& context,
                                              DeformableBodyIndex index) const {
     return this->plant()
         .get_cache_entry(tangent_matrix_schur_complement_cache_indexes_[index])
-        .template Eval<internal::PetscSchurComplement>(context);
+        .template Eval<internal::SchurComplement<double>>(context);
   }
 
   /* Calculates the Schur complement of the tangent matrix of the deformable
@@ -270,7 +270,7 @@ class DeformableRigidManager final
    M/D = A - BD⁻¹Bᵀ, which is guaranteed to be symmetric positive definite. */
   void CalcFreeMotionTangentMatrixSchurComplement(
       const systems::Context<T>& context, DeformableBodyIndex index,
-      internal::PetscSchurComplement* schur_complement) const;
+      internal::SchurComplement<double>* schur_complement) const;
 
   // TODO(xuchenhan-tri): Remove this method when SceneGraph takes control of
   //  all geometries. SceneGraph should be responsible for obtaining the most

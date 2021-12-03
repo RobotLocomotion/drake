@@ -1010,7 +1010,7 @@ class DeformableRigidDynamicsDataTest : public ::testing::Test {
   const MatrixXd& EvalFreeMotionTangentMatrixSchurComplement(
       const systems::Context<double>& context,
       DeformableBodyIndex index) const {
-    const internal::PetscSchurComplement& schur_complement =
+    const internal::SchurComplement<double>& schur_complement =
         deformable_rigid_manager_->EvalFreeMotionTangentMatrixSchurComplement(
             context, index);
     return schur_complement.get_D_complement();
@@ -1099,8 +1099,9 @@ TEST_F(DeformableRigidDynamicsDataTest,
   const auto& tangent_matrix = EvalFreeMotionTangentMatrix(plant_context, B_);
   std::vector<int> pariticipating_vertices = {0, 1, 2, 3, 4, 5};
   std::vector<int> non_pariticipating_vertices = {6};
-  const internal::PetscSchurComplement expected_schur_complement(
-      tangent_matrix, non_pariticipating_vertices, pariticipating_vertices);
+  const internal::SchurComplement expected_schur_complement =
+      tangent_matrix.CalcSchurComplement(non_pariticipating_vertices,
+                                          pariticipating_vertices);
   EXPECT_TRUE(CompareMatrices(expected_schur_complement.get_D_complement(),
                               tangent_matrix_schur_complement,
                               std::numeric_limits<double>::epsilon()));

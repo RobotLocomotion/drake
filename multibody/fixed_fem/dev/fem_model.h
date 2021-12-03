@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <memory>
 #include <string>
@@ -264,6 +265,7 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
     std::vector<std::unordered_set<int>> neighbor_nodes(this->num_nodes());
     /* Alias for readability. */
     constexpr int element_num_nodes = Element::Traits::kNumNodes;
+    constexpr int element_num_dofs = Element::Traits::kNumDofs;
     constexpr int kDim = Element::Traits::kSolutionDimension;
     /* Create a nonzero block for each pair of nodes that are connected by an
      edge in the mesh. */
@@ -272,10 +274,11 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
           elements_[e].node_indices();
       for (int a = 0; a < element_num_nodes; ++a) {
         for (int b = a; b < element_num_nodes; ++b) {
-          neighbor_nodes[element_node_indices[a]].insert(
-              element_node_indices[b]);
-          neighbor_nodes[element_node_indices[b]].insert(
-              element_node_indices[a]);
+          const int block_row =
+              std::min(element_node_indices[a], element_node_indices[b]);
+          const int block_col =
+              std::max(element_node_indices[a], element_node_indices[b]);
+          neighbor_nodes[block_row].insert(block_col);
         }
       }
     }
@@ -283,8 +286,25 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
     for (int i = 0; i < this->num_nodes(); ++i) {
       nonzero_blocks[i] = neighbor_nodes[i].size();
     }
-    return std::make_unique<internal::PetscSymmetricBlockSparseMatrix>(
-        num_dofs(), kDim, nonzero_blocks);
+    auto tangent_matrix =
+        std::make_unique<internal::PetscSymmetricBlockSparseMatrix>(
+            num_dofs(), kDim, nonzero_blocks);
+
+    /* Populate the tangent matrix with zeros at appropriate places to allocate
+     memory. */
+    Vector<int, element_num_nodes> block_indices;
+    const Eigen::Matrix<double, element_num_dofs, element_num_dofs>
+        zero_matrix =
+            Eigen::Matrix<double, element_num_dofs, element_num_dofs>::Zero();
+    for (ElementIndex e(0); e < num_elements(); ++e) {
+      const std::array<NodeIndex, element_num_nodes>& element_node_indices =
+          elements_[e].node_indices();
+      for (int a = 0; a < element_num_nodes; ++a) {
+        block_indices(a) = element_node_indices[a];
+      }
+      tangent_matrix->AddToBlock(block_indices, zero_matrix);
+    }
+    return tangent_matrix;
   }
 
   /* Implements FemModelBase::CalcResidual() by casting the FemStateBase
