@@ -166,7 +166,6 @@ make the review faster.
 * @sammy-tri (Toyota Research Institute)
 * @SeanCurtis-TRI (Toyota Research Institute)
 * @sherm1 (Toyota Research Institute)
-* @soonho-tri (Toyota Research Institute)
 * @RussTedrake (MIT / Toyota Research Institute)
 
 **Merge.** Once the PR is fully reviewed and passes CI, the assigned platform

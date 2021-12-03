@@ -45,6 +45,7 @@ class BlockSparseLinearOperator final : public LinearOperator<T> {
   void DoMultiplyByTranspose(const Eigen::Ref<const Eigen::SparseVector<T>>& x,
                              Eigen::SparseVector<T>* y) const final;
   void DoAssembleMatrix(Eigen::SparseMatrix<T>* A) const final;
+  void DoAssembleMatrix(BlockSparseMatrix<T>* A) const final;
 
   const BlockSparseMatrix<T>* const A_;
 };

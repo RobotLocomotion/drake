@@ -223,8 +223,8 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
         vertices_F, triangle.vertex(2), X_WF,
         vertices_to_newly_created_vertices, new_vertices_W);
 
-    AddPolygonToMeshData({v0_new_index, v1_new_index, v2_new_index}, nhat_W,
-                         new_faces, new_vertices_W);
+    AddPolygonToTriangleMeshData({v0_new_index, v1_new_index, v2_new_index},
+                                 nhat_W, new_faces, new_vertices_W);
     return;
   }
 
@@ -265,7 +265,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
         //        ╱________╲
         //      i1          i2
         //
-        AddPolygonToMeshData(
+        AddPolygonToTriangleMeshData(
             {i1_new_index, i2_new_index, edge_i0_i2_intersection_index,
              edge_i0_i1_intersection_index},
             nhat_W, new_faces, new_vertices_W);
@@ -302,9 +302,10 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
             v0, v2, s[i0], s[i2], vertices_F, X_WF,
             edges_to_newly_created_vertices, new_vertices_W);
 
-        AddPolygonToMeshData({i0_new_index, edge_i0_i1_intersection_index,
-                              edge_i0_i2_intersection_index},
-                             nhat_W, new_faces, new_vertices_W);
+        AddPolygonToTriangleMeshData(
+            {i0_new_index, edge_i0_i1_intersection_index,
+             edge_i0_i2_intersection_index},
+            nhat_W, new_faces, new_vertices_W);
 
         return;
       }
