@@ -342,31 +342,6 @@ class ContactSurface {
                          : HydroelasticContactRepresentation::kPolygon;
   }
 
-  /** Returns a reference to the surface mesh whose vertex positions are
-   measured and expressed in the world frame.
-
-   This method is provided for short-term legacy reasons. Once the polygonal
-   mesh representation is fully supported across the entire contact model
-   code path, this will be removed in favor of its explicitly declared
-   `tri_` or `poly_` variant.
-
-   @pre is_triangle() returns `true`. */
-  const TriangleSurfaceMesh<T>& mesh_W() const {
-    return tri_mesh_W();
-  }
-
-  /** Returns a reference to the scalar field eₘₙ.
-
-   This method is provided for short-term legacy reasons. Once the polygonal
-   mesh representation is fully supported across the entire contact model
-   code path, this will be removed in favor of its explicitly declared
-   `tri_` or `poly_` variant.
-
-   @pre is_triangle() returns `true`. */
-  const TriangleSurfaceMeshFieldLinear<T, T>& e_MN() const {
-    return tri_e_MN();
-  }
-
   /** Returns a reference to the _triangular_ surface mesh whose vertex
    positions are measured and expressed in the world frame.
    @pre `is_triangle()` returns `true`. */

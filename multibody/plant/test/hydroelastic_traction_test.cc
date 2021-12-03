@@ -688,7 +688,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   // direction of the normal to be in the +z axis, body A is situated above body
   // B. This is important to understand the sign of the resulting derivative
   // below.
-  const Vector3<AutoDiffXd>& nhat_W = surface.mesh_W().face_normal(f0);
+  const Vector3<AutoDiffXd>& nhat_W = surface.face_normal(f0);
 
   // We *emulate* an elastic foundation of modulus E and depth h.
   const double E = 1.0e5;  // in Pa.

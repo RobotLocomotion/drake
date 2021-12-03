@@ -87,7 +87,7 @@ GTEST_TEST(MeshToVtkTest, BoxContactSurfacePressure) {
   unique_ptr<ContactSurface<double>> contact = BoxContactSurface();
   auto contact_pressure =
       dynamic_cast<const TriangleSurfaceMeshFieldLinear<double, double>*>(
-          &contact->e_MN());
+          &contact->tri_e_MN());
   ASSERT_NE(contact_pressure, nullptr);
   WriteTriangleSurfaceMeshFieldLinearToVtk(
       temp_directory() + "/" + "box_rigid_soft_contact_pressure.vtk",
