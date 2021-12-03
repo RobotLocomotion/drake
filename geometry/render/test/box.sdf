@@ -22,7 +22,7 @@
       <visual name="box">
         <geometry>
           <mesh>
-            <uri>meshes/box.obj</uri>
+            <uri>package://drake/geometry/render/test/meshes/box.obj</uri>
           </mesh>
         </geometry>
       </visual>

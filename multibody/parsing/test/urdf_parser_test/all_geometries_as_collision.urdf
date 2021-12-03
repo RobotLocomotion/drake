@@ -28,7 +28,7 @@
     </collision>
     <collision name="Convex">
       <geometry>
-        <mesh filename="../tri_cube.obj">
+        <mesh filename="package://drake/multibody/parsing/test/tri_cube.obj">
           <drake:declare_convex/>
         </mesh>
       </geometry>
@@ -56,7 +56,7 @@
     -->
     <collision name="Mesh">
       <geometry>
-        <mesh filename="../tri_cube.obj"/>
+        <mesh filename="package://drake/multibody/parsing/test/tri_cube.obj"/>
       </geometry>
     </collision>
     <collision name="Sphere">
