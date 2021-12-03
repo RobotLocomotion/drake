@@ -200,7 +200,7 @@ class CompliantContactManagerTest : public ::testing::Test {
     const std::vector<geometry::ContactSurface<double>>& surfaces =
         EvalContactSurfaces(*plant_context_);
     ASSERT_EQ(surfaces.size(), 1u);
-    const int num_hydro_pairs = surfaces[0].mesh_W().num_triangles();
+    const int num_hydro_pairs = surfaces[0].num_faces();
     const std::vector<DiscreteContactPair<double>>& pairs =
         EvalDiscreteContactPairs(*plant_context_);
     EXPECT_EQ(pairs.size(), num_point_pairs + num_hydro_pairs);
@@ -401,8 +401,7 @@ TEST_F(CompliantContactManagerTest,
   const std::vector<geometry::ContactSurface<double>>& surfaces =
       EvalContactSurfaces(*plant_context_);
   ASSERT_EQ(surfaces.size(), 1u);
-  const geometry::TriangleSurfaceMesh<double>& patch = surfaces[0].mesh_W();
-  EXPECT_EQ(pairs.size(), patch.num_triangles() + num_point_pairs);
+  EXPECT_EQ(pairs.size(), surfaces[0].num_faces() + num_point_pairs);
 }
 
 // Unit test to verify the computation of the contact Jacobian.

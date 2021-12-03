@@ -647,8 +647,8 @@ TYPED_TEST(ContactResultsToLcmTest, HydroContactOnly) {
     const auto& pair_message = message_in.hydroelastic_contacts[i];
     const auto& pair_data = contacts_in.hydroelastic_contact_info(i);
     const auto& surface = pair_data.contact_surface();
-    const auto& mesh = surface.mesh_W();
-    const auto& field = surface.e_MN();
+    const auto& mesh = surface.tri_mesh_W();
+    const auto& field = surface.tri_e_MN();
 
     const auto& name1 = geo_to_body_map.at(surface.id_M());
     EXPECT_EQ(pair_message.body1_name, name1.body);
