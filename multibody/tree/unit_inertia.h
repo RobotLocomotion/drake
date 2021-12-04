@@ -91,7 +91,10 @@ class UnitInertia : public RotationalInertia<T> {
   ///       not strictly positive.
   UnitInertia<T>& SetFromRotationalInertia(
       const RotationalInertia<T>& I, const T& mass) {
-    DRAKE_ASSERT(mass > 0);
+    if (mass <= 0) {
+      throw std::runtime_error("Division by zero or negative mass in"
+          " RotationalInertia::SetFromRotationalInertia().");
+    }
     RotationalInertia<T>::operator=(I / mass);
     return *this;
   }

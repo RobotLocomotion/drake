@@ -307,26 +307,34 @@ GTEST_TEST(SpatialInertia, Shift) {
 GTEST_TEST(SpatialInertia, IsPhysicallyValidWithZeroMass) {
   // The current behavior of Drake is to allow a spatial inertia to have a mass
   // of zero, whether or not p_PBcm is a zero vector.
-  const double mass = 0.0;
+  const double mass_zero = 0.0;
   Vector3d p_PBcm(0.0, 0.0, 0.0);
   const UnitInertia<double> G = UnitInertia<double>::SolidSphere(1.0);
-  const SpatialInertia<double> M0(mass, p_PBcm, G);
+  const SpatialInertia<double> M0(mass_zero, p_PBcm, G);
   EXPECT_TRUE(M0.IsPhysicallyValid());
 
   p_PBcm = Vector3d(1.0, 2.0, 3.0);
-  const SpatialInertia<double> M1(mass, p_PBcm, G);
+  const SpatialInertia<double> M1(mass_zero, p_PBcm, G);
   EXPECT_TRUE(M1.IsPhysicallyValid());
 
-#if 0
-  // Try the previous tests with an invalid rotational inertia.
+  // Test when an attempt to form UnitInertia with a divide-by-zero problem.
   p_PBcm = Vector3d(0.0, 0.0, 0.0);
   const RotationalInertia<double> I(2, 3, 4);
-  RotationalInertia<double> Ibad = I.MultiplyByScalarSkipValidityCheck(-1);
-  const SpatialInertia<double> M3 =
-      SpatialInertia<double>::MakeFromCentralInertia(mass, p_PBcm, Ibad);
-  EXPECT_FALSE(M3.IsPhysicallyValid());
+  std::string expected_msg =
+    "Division by zero or negative mass in"
+    " RotationalInertia::SetFromRotationalInertia\\(\\).";
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::MakeFromCentralInertia(mass_zero, p_PBcm, I),
+      std::exception, expected_msg);
 
   p_PBcm = Vector3d(1.0, 2.0, 3.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::MakeFromCentralInertia(mass_zero, p_PBcm, I),
+      std::exception, expected_msg);
+
+#if 0
+  // Try some tests with an invalid rotational inertia.
+  RotationalInertia<double> Ibad = I.MultiplyByScalarSkipValidityCheck(-1);
   const SpatialInertia<double> M4 =
       SpatialInertia<double>::MakeFromCentralInertia(mass, p_PBcm, Ibad);
   EXPECT_FALSE(M4.IsPhysicallyValid());
