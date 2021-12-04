@@ -309,13 +309,28 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithZeroMass) {
   // of zero, whether or not p_PBcm is a zero vector.
   const double mass = 0.0;
   Vector3d p_PBcm(0.0, 0.0, 0.0);
-  const SpatialInertia<double> M0(mass, p_PBcm,
-                                  UnitInertia<double>::SolidSphere(1.0));
+  const UnitInertia<double> G = UnitInertia<double>::SolidSphere(1.0);
+  const SpatialInertia<double> M0(mass, p_PBcm, G);
   EXPECT_TRUE(M0.IsPhysicallyValid());
 
   p_PBcm = Vector3d(1.0, 2.0, 3.0);
-  const SpatialInertia<double> M1(mass, p_PBcm,
-                                  UnitInertia<double>::SolidSphere(1.0));
+  const SpatialInertia<double> M1(mass, p_PBcm, G);
+  EXPECT_TRUE(M1.IsPhysicallyValid());
+
+#if 0
+  // Try the previous tests with an invalid rotational inertia.
+  p_PBcm = Vector3d(0.0, 0.0, 0.0);
+  const RotationalInertia<double> I(2, 3, 4);
+  RotationalInertia<double> Ibad = I.MultiplyByScalarSkipValidityCheck(-1);
+  const SpatialInertia<double> M3 =
+      SpatialInertia<double>::MakeFromCentralInertia(mass, p_PBcm, Ibad);
+  EXPECT_FALSE(M3.IsPhysicallyValid());
+
+  p_PBcm = Vector3d(1.0, 2.0, 3.0);
+  const SpatialInertia<double> M4 =
+      SpatialInertia<double>::MakeFromCentralInertia(mass, p_PBcm, Ibad);
+  EXPECT_FALSE(M4.IsPhysicallyValid());
+#endif
 }
 
 // Tests that it is not possible to create a spatial inertia with negative mass

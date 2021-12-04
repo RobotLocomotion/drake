@@ -445,7 +445,9 @@ class RotationalInertia {
   /// (Internal use only) Multiplies a rotational inertia by a scalar.
   /// @param[in] s Scalar which multiplies `this`.
   /// @return `this` rotational inertia multiplied by `s`.
-  /// @related operator*(const T&).
+  /// @see operator*(const T&, const RotationalInertia<T>&).
+  /// @note This method works even if `s` is negative or `this` is invalid. This
+  /// method is useful for error messages associated with an invalid inertia.
   RotationalInertia<T> MultiplyByScalarSkipValidityCheck(const T& s) const {
     RotationalInertia<T> I(*this);  // Mutable copy of `this`.
     I.get_mutable_triangular_view() *= s;

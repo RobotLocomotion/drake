@@ -588,12 +588,32 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
   EXPECT_EQ(Ia.get_moments(), m);
   EXPECT_EQ(Ia.get_products(), p);
 
-  // Verify correctness of MultiplyByScalarSkipValidityCheck().
-  const RotationalInertia<double> Is =
-      Ia.MultiplyByScalarSkipValidityCheck(scalar);
+  // Verify correctness of MultiplyByScalarSkipValidityCheck() and verify it
+  // does not throw if its argument causes multiplication by negative scalar.
+  RotationalInertia<double> Is = Ia.MultiplyByScalarSkipValidityCheck(scalar);
   EXPECT_EQ(Is.get_moments(), scalar * m);
   EXPECT_EQ(Is.get_products(), scalar * p);
-  EXPECT_NO_THROW(Ia.MultiplyByScalarSkipValidityCheck(-2.2));
+
+  // Verify MultiplyByScalarSkipValidityCheck() does not throw if its argument
+  // causes multiplication by negative scalar (and returns an invalid inertia).
+  EXPECT_NO_THROW(Is = Ia.MultiplyByScalarSkipValidityCheck(-2.2));
+  EXPECT_FALSE(Is.CouldBePhysicallyValid());
+
+  // Verify MultiplyByScalarSkipValidityCheck() does not throw if `this` is an
+  // invalid RotationalInertia regardless of whether its argument is negative.
+  EXPECT_NO_THROW(Is = Is.MultiplyByScalarSkipValidityCheck(-3.3));
+  EXPECT_TRUE(Is.CouldBePhysicallyValid());
+  EXPECT_NO_THROW(Is = Is.MultiplyByScalarSkipValidityCheck(-1.0));
+  EXPECT_FALSE(Is.CouldBePhysicallyValid());
+
+  // Show that once an invalid RotationalInertia is created, it can be used in a
+  // copy constructor or assignment, etc.
+  RotationalInertia<double> IsCopy(Is);
+  EXPECT_FALSE(IsCopy.CouldBePhysicallyValid());
+  IsCopy = 3.0 * Is;
+  EXPECT_FALSE(IsCopy.CouldBePhysicallyValid());
+  IsCopy *= 0.5;
+  EXPECT_FALSE(IsCopy.CouldBePhysicallyValid());
 
   // For symbolic::Expression.
   const Variable a("a");  // A "variable" scalar.
