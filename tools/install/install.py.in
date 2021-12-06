@@ -212,8 +212,12 @@ def fix_rpaths_and_strip():
             # 'Not enough room for program headers, try linking with -N'
             if strip:
                 # TODO(svenevs): director tarballs on bionic fail on trying to
-                # strip any of the libvtk*8.2.so targets.
-                if not re.match(r".*libvtk.*-8\.2\.so", dst_full):
+                # strip any of the installed libraries.
+                if not (re.match(r".*libvtk.*-8\.2\.so", dst_full) or \
+                        dst_full.endswith("vtkDRCFiltersPython.so") or \
+                        re.match(
+                            r".*/director/thirdparty/vtkmodules/vtk.*Python.so",
+                            dst_full)):
                     check_call([strip_tool, dst_full])
             linux_fix_rpaths(dst_full)
 
