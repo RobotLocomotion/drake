@@ -24,7 +24,7 @@ class PetscSymmetricBlockSparseMatrix {
     /* For positive definite matrix. */
     kConjugateGradient,
     /* For positive definite matrix. Can only be paired with Cholesky
-                   preconditioner. */
+     preconditioner. */
     kDirect,
     /* For generic symmetric matrix. */
     kMINRES
@@ -44,19 +44,22 @@ class PetscSymmetricBlockSparseMatrix {
    @param block_size      The number rows and columns within a single non-zero
                           block. Each non-zero block in the sparse matrix is of
                           the same size.
-   @param nonzero_blocks  `nonzero_blocks[i]` contains the number of non-zero
-                          upper triangular and diagonal blocks in the i-th row
-                          block.
+   @param num_upper_triangular_blocks_per_row
+                          `num_upper_triangular_blocks_per_row[i]` contains the
+                          number of non-zero upper triangular and diagonal
+                          blocks in the i-th row block.
 
    @pre `size` >=  0, and `size` is a integer multiple of `block_size`.
-   @pre nonzero_blocks.size() == size/block_size.
-   @pre nonzero_blocks[i] <= size/block_size. */
-  PetscSymmetricBlockSparseMatrix(int size, int block_size,
-                                  const std::vector<int>& nonzero_blocks);
+   @pre num_upper_triangular_blocks_per_row.size() == size/block_size.
+   @pre num_upper_triangular_blocks_per_row[i] <= size/block_size. */
+  PetscSymmetricBlockSparseMatrix(
+      int size, int block_size,
+      const std::vector<int>& num_upper_triangular_blocks_per_row);
 
   ~PetscSymmetricBlockSparseMatrix();
 
-  /* Creates a deep identical copy of this matrix. */
+  /* Creates a deep identical copy of this matrix.
+   @pre Matrix must be assembled. See AssembleIfNecessary(). */
   std::unique_ptr<PetscSymmetricBlockSparseMatrix> Clone() const;
 
   /* Accumulate values in the block matrix. The Eigen analogy of this operation
@@ -86,15 +89,25 @@ class PetscSymmetricBlockSparseMatrix {
    @warn The compatibility of the solver and preconditioner type with the
    problem at hand is not checked. Callers need to be careful to choose the
    reasonable combination of solver and preconditioner given the type of matrix.
-   @pre b.size() == A.rows() */
+   @pre b.size() == A.rows()
+   @note The matrix/preconditioner will be refactored upon successive call to
+   this method even if the matrix hasn't changed.
+   @pre Matrix must be assembled. See AssembleIfNecessary(). */
   VectorX<double> Solve(SolverType solver_type,
                         PreconditionerType preconditioner_type,
-                        const VectorX<double>& b);
+                        const VectorX<double>& b) const;
+
+  /* Similar to Solve(), but writes the result in `b`.
+   @pre Matrix must be assembled. See AssembleIfNecessary(). */
+  void SolveInPlace(SolverType solver_type,
+                    PreconditionerType preconditioner_type,
+                    EigenPtr<VectorX<double>> b) const;
 
   /* Sets all blocks to zeros while maintaining the sparsity pattern. */
   void SetZero();
 
-  /* Makes a dense matrix representation of this block-sparse matrix. */
+  /* Makes a dense matrix representation of this block-sparse matrix.
+   @pre Matrix must be assembled. See AssembleIfNecessary(). */
   MatrixX<double> MakeDenseMatrix() const;
 
   /* Zeros out all rows and columns whose index is included in `indexes` and
@@ -119,6 +132,11 @@ class PetscSymmetricBlockSparseMatrix {
   int rows() const;
 
   int cols() const;
+
+  /* Turn the matrix into "assembled" state if it's not already "assembled".
+   This method is cheap if the matrix is already "assembled", so invoke it if
+   unsure. */
+  void AssembleIfNecessary();
 
  private:
   class Impl;

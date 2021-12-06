@@ -1,6 +1,7 @@
 #include "drake/multibody/fixed_fem/dev/petsc_symmetric_block_sparse_matrix.h"
 
 #include <numeric>
+#include <string>
 #include <utility>
 
 #include <petscksp.h>
@@ -15,15 +16,19 @@ using std::vector;
 
 namespace {
 
+/* Returns true if the given PETSc matrix is "assembled". */
+bool is_assembled(const Mat& A) {
+  PetscBool assembled = PETSC_FALSE;
+  MatAssembled(A, &assembled);
+  return assembled == PETSC_TRUE;
+}
+
 using MatrixXdRowMajor =
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
-/* Converts a PETSc matrix to an Eigen row major dense matrix. */
+/* Converts an assembled PETSc matrix to an Eigen row major dense matrix. */
 MatrixXdRowMajor MakeEigenRowMajorMatrix(const Mat& petsc_matrix) {
-  /* Ensure that the matrix has been assembled. */
-  MatAssemblyBegin(petsc_matrix, MAT_FINAL_ASSEMBLY);
-  MatAssemblyEnd(petsc_matrix, MAT_FINAL_ASSEMBLY);
-
+  DRAKE_DEMAND(is_assembled(petsc_matrix));
   int rows, cols;
   MatGetSize(petsc_matrix, &rows, &cols);
 
@@ -40,8 +45,9 @@ MatrixXdRowMajor MakeEigenRowMajorMatrix(const Mat& petsc_matrix) {
   return eigen_dense;
 }
 
-/* Converts a PETSc matrix to an Eigen column major dense matrix. */
+/* Converts an assembled PETSc matrix to an Eigen column major dense matrix. */
 MatrixX<double> MakeEigenMatrix(const Mat& petsc_matrix) {
+  DRAKE_DEMAND(is_assembled(petsc_matrix));
   return MatrixX<double>(MakeEigenRowMajorMatrix(petsc_matrix));
 }
 
@@ -56,11 +62,13 @@ class PetscSymmetricBlockSparseMatrix::Impl {
 
   Impl() = default;
 
-  Impl(int size, int block_size, const vector<int>& nonzero_blocks)
+  Impl(int size, int block_size,
+       const vector<int>& num_upper_triangular_blocks_per_row)
       : size_(size), block_size_(block_size), num_blocks_(size / block_size) {
     PetscInitialize(PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
     MatCreateSeqSBAIJ(PETSC_COMM_SELF, block_size, size, size, 0,
-                      nonzero_blocks.data(), &owned_matrix_);
+                      num_upper_triangular_blocks_per_row.data(),
+                      &owned_matrix_);
     /* Initialize solver and preconditioner. */
     KSPCreate(PETSC_COMM_SELF, &owned_solver_);
     KSPGetPC(owned_solver_, &preconditioner_);
@@ -72,13 +80,11 @@ class PetscSymmetricBlockSparseMatrix::Impl {
   }
 
   std::unique_ptr<Impl> Clone() const {
+    ThrowIfNotAssembled(__func__);
     auto clone = std::make_unique<Impl>();
     clone->size_ = this->size_;
     clone->block_size_ = this->block_size_;
     clone->num_blocks_ = this->num_blocks_;
-    /* Ensure that the matrix has been assembled. */
-    MatAssemblyBegin(this->owned_matrix_, MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(this->owned_matrix_, MAT_FINAL_ASSEMBLY);
     MatDuplicate(this->owned_matrix_, MAT_COPY_VALUES, &clone->owned_matrix_);
 
     /* Initialize solver and preconditioner. */
@@ -89,19 +95,23 @@ class PetscSymmetricBlockSparseMatrix::Impl {
   }
 
   void SetZero() {
-    /* Ensure that the matrix has been assembled. */
-    MatAssemblyBegin(owned_matrix_, MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(owned_matrix_, MAT_FINAL_ASSEMBLY);
+    ThrowIfNotAssembled(__func__);
     MatZeroEntries(owned_matrix_);
   }
 
   VectorX<double> Solve(SolverType solver_type,
                         PreconditionerType preconditioner_type,
-                        const VectorX<double>& b) {
-    /* Ensure that the matrix has been assembled. */
-    MatAssemblyBegin(owned_matrix_, MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(owned_matrix_, MAT_FINAL_ASSEMBLY);
+                        const VectorX<double>& b) const {
+    ThrowIfNotAssembled(__func__);
+    VectorX<double> x = b;
+    SolveInPlace(solver_type, preconditioner_type, &x);
+    return x;
+  }
 
+  void SolveInPlace(SolverType solver_type,
+                    PreconditionerType preconditioner_type,
+                    EigenPtr<VectorX<double>> b) const {
+    ThrowIfNotAssembled(__func__);
     switch (solver_type) {
       case SolverType::kDirect:
         KSPSetType(owned_solver_, KSPPREONLY);
@@ -145,25 +155,26 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     /* Copy right hand side data into b_petsc. */
     vector<int> vector_indexes(size_);
     std::iota(vector_indexes.begin(), vector_indexes.end(), 0);
-    VecSetValues(b_petsc, size_, vector_indexes.data(), b.data(),
+    VecSetValues(b_petsc, size_, vector_indexes.data(), b->data(),
                  INSERT_VALUES);
     VecAssemblyBegin(b_petsc);
     VecAssemblyEnd(b_petsc);
 
+    // TODO(xuchenhan-tri): Currently we don't repeated solve the same system
+    // with multiple right hand sides. Split the factorization and the solve
+    // into two distinct phases if we need that in the future.
     /* Set matrix. */
     KSPSetOperators(owned_solver_, owned_matrix_, owned_matrix_);
     /* Solve! */
     KSPSolve(owned_solver_, b_petsc, x_petsc);
 
     /* Copy solution data to eigen vector. */
-    VectorX<double> x_eigen(size_);
-    VecGetValues(x_petsc, size_, vector_indexes.data(), x_eigen.data());
+    b->setZero();
+    VecGetValues(x_petsc, size_, vector_indexes.data(), b->data());
 
     /* Clean up PETSc temporary variables. */
     VecDestroy(&b_petsc);
     VecDestroy(&x_petsc);
-
-    return x_eigen;
   }
 
   void AddToBlock(const VectorX<int>& block_indices,
@@ -179,27 +190,19 @@ class PetscSymmetricBlockSparseMatrix::Impl {
   /* Makes a dense matrix representation of this block-sparse matrix. This
    operation is expensive and is usually only used for debugging purpose. */
   MatrixX<double> MakeDenseMatrix() const {
+    ThrowIfNotAssembled(__func__);
     MatrixX<double> eigen_dense = internal::MakeEigenMatrix(owned_matrix_);
     /* Notice that we store the matrix in PETSc as upper triangular matrix
      and the lower triangular part is ignored. To restore the full
      matrix, we need to fill in these blocks by hand. */
-    for (int i = 0; i < num_blocks_; ++i) {
-      for (int j = 0; j < i; ++j) {
-        eigen_dense.block(i * block_size_, j * block_size_, block_size_,
-                          block_size_) =
-            eigen_dense
-                .block(j * block_size_, i * block_size_, block_size_,
-                       block_size_)
-                .transpose();
-      }
-    }
+    eigen_dense.triangularView<Eigen::StrictlyLower>() =
+        eigen_dense.triangularView<Eigen::StrictlyUpper>().transpose();
     return eigen_dense;
   }
 
   void ZeroRowsAndColumns(const vector<int>& indexes, double value) {
     /* Ensure that the matrix has been assembled. */
-    MatAssemblyBegin(owned_matrix_, MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(owned_matrix_, MAT_FINAL_ASSEMBLY);
+    ThrowIfNotAssembled(__func__);
     MatZeroRowsColumns(owned_matrix_, indexes.size(), indexes.data(), value,
                        PETSC_NULL, PETSC_NULL);
   }
@@ -210,6 +213,21 @@ class PetscSymmetricBlockSparseMatrix::Impl {
   }
 
   int size() const { return size_; }
+
+  void AssembleIfNecessary() {
+    if (!is_assembled(owned_matrix_)) {
+      MatAssemblyBegin(owned_matrix_, MAT_FINAL_ASSEMBLY);
+      MatAssemblyEnd(owned_matrix_, MAT_FINAL_ASSEMBLY);
+    }
+  }
+
+  void ThrowIfNotAssembled(const char* func) const {
+    if (!is_assembled(owned_matrix_)) {
+      throw std::runtime_error(
+          std::string(func) +
+          "(): matrix is not yet assembled. Call AssembleIfNecessary() first.");
+    }
+  }
 
  private:
   // The underlying PETSc matrix stored as MATSEQSBAIJ.
@@ -224,10 +242,12 @@ class PetscSymmetricBlockSparseMatrix::Impl {
 PetscSymmetricBlockSparseMatrix::PetscSymmetricBlockSparseMatrix() = default;
 
 PetscSymmetricBlockSparseMatrix::PetscSymmetricBlockSparseMatrix(
-    int size, int block_size, const vector<int>& nonzero_blocks)
-    : pimpl_(std::make_unique<Impl>(size, block_size, nonzero_blocks)) {
+    int size, int block_size,
+    const vector<int>& num_upper_triangular_blocks_per_row) {
   DRAKE_DEMAND(size >= 0 && block_size > 0);
   DRAKE_DEMAND(size % block_size == 0);
+  pimpl_ = std::make_unique<Impl>(size, block_size,
+                                  num_upper_triangular_blocks_per_row);
 }
 
 PetscSymmetricBlockSparseMatrix::~PetscSymmetricBlockSparseMatrix() = default;
@@ -247,8 +267,14 @@ void PetscSymmetricBlockSparseMatrix::AddToBlock(
 
 VectorX<double> PetscSymmetricBlockSparseMatrix::Solve(
     SolverType solver_type, PreconditionerType preconditioner_type,
-    const VectorX<double>& b) {
+    const VectorX<double>& b) const {
   return pimpl_->Solve(solver_type, preconditioner_type, b);
+}
+
+void PetscSymmetricBlockSparseMatrix::SolveInPlace(
+    SolverType solver_type, PreconditionerType preconditioner_type,
+    EigenPtr<VectorX<double>> b) const {
+  pimpl_->SolveInPlace(solver_type, preconditioner_type, b);
 }
 
 void PetscSymmetricBlockSparseMatrix::SetZero() { pimpl_->SetZero(); }
@@ -269,6 +295,10 @@ void PetscSymmetricBlockSparseMatrix::SetRelativeTolerance(double tolerance) {
 int PetscSymmetricBlockSparseMatrix::rows() const { return pimpl_->size(); }
 
 int PetscSymmetricBlockSparseMatrix::cols() const { return pimpl_->size(); }
+
+void PetscSymmetricBlockSparseMatrix::AssembleIfNecessary() {
+  pimpl_->AssembleIfNecessary();
+}
 
 }  // namespace internal
 }  // namespace fem
