@@ -202,6 +202,28 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     return do_get_num_positions();
   }
 
+  /// Returns a string suffix (e.g. to be appended to the name()) to identify
+  /// the `k`th position in this joint.  @p position_index_in_joint must be
+  /// in [0, num_positions()).
+  /// @pre the MultibodyPlant must be finalized.
+  std::string position_suffix(int position_index_in_joint) const {
+    DRAKE_DEMAND(0 <= position_index_in_joint &&
+                 position_index_in_joint < num_positions());
+    DRAKE_DEMAND(has_implementation());
+    return do_get_position_suffix(position_index_in_joint);
+  }
+
+  /// Returns a string suffix (e.g. to be appended to the name()) to identify
+  /// the `k`th velocity in this joint. @p velocity_index_in_joint must be
+  /// in [0, num_velocities()).
+  /// @pre the MultibodyPlant must be finalized.
+  std::string velocity_suffix(int velocity_index_in_joint) const {
+    DRAKE_DEMAND(0 <= velocity_index_in_joint &&
+                 velocity_index_in_joint < num_velocities());
+    DRAKE_DEMAND(has_implementation());
+    return do_get_velocity_suffix(velocity_index_in_joint);
+  }
+
   /// Returns the position coordinate for joints with a single degree of
   /// freedom.
   /// @throws std::exception if the joint does not have a single degree of
@@ -486,31 +508,41 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     // TODO(amcastro-tri): add force elements, constraints, bodies, etc.
   };
 
-  /// Implementation to the NVI velocity_start(), see velocity_start() for
+  /// Implementation of the NVI velocity_start(), see velocity_start() for
   /// details.
   /// @note Implementations must meet the styleguide requirements for snake_case
   /// accessor methods.
   virtual int do_get_velocity_start() const = 0;
 
-  /// Implementation to the NVI num_velocities(), see num_velocities() for
+  /// Implementation of the NVI num_velocities(), see num_velocities() for
   /// details.
   /// @note Implementations must meet the styleguide requirements for snake_case
   /// accessor methods.
   virtual int do_get_num_velocities() const = 0;
 
-  /// Implementation to the NVI position_start(), see position_start() for
+  /// Implementation of the NVI position_start(), see position_start() for
   /// details.
   /// @note Implementations must meet the styleguide requirements for snake_case
   /// accessor methods.
   virtual int do_get_position_start() const = 0;
 
-  /// Implementation to the NVI num_positions(), see num_positions() for
+  /// Implementation of the NVI num_positions(), see num_positions() for
   /// details.
   /// @note Implementations must meet the styleguide requirements for
   /// snake_case accessor methods.
   virtual int do_get_num_positions() const = 0;
 
-  /// Implementation to the NVI set_default_positions(), see
+  /// Implementation of the NVI position_suffix(), see position_suffix() for
+  /// details.  The suffix should contain only alphanumeric characters (e.g.
+  /// 'wx' not '_wx' or '.wx').
+  virtual std::string do_get_position_suffix(int index) const = 0;
+
+  /// Implementation of the NVI velocity_suffix(), see velocity_suffix() for
+  /// details.  The suffix should contain only alphanumeric characters (e.g.
+  /// 'wx' not '_wx' or '.wx').
+  virtual std::string do_get_velocity_suffix(int index) const = 0;
+
+  /// Implementation of the NVI set_default_positions(), see
   /// set_default_positions() for details. It is the responsibility of the
   /// subclass to ensure that their joint implementation, should they have one,
   /// is updated with @p default_positions.
@@ -519,7 +551,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   virtual void do_set_default_positions(
       const VectorX<double>& default_positions) = 0;
 
-  /// Implementation to the NVI GetOnePosition() that must only be implemented
+  /// Implementation of the NVI GetOnePosition() that must only be implemented
   /// by those joint subclasses that have a single degree of freedom.
   /// The default implementation for all other joints is to abort with an
   /// appropriate message.
@@ -530,7 +562,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
         "GetOnePosition can only be called on single-dof joints.");
   }
 
-  /// Implementation to the NVI GetOneVelocity() that must only be implemented
+  /// Implementation of the NVI GetOneVelocity() that must only be implemented
   /// by those joint subclasses that have a single degree of freedom.
   /// The default implementation for all other joints is to abort with an
   /// appropriate message.
