@@ -54,7 +54,7 @@ class Multiplexer : public LeafSystem<T> {
   /// - ...
   /// - u(input_sizes.size() - 1)
   /// output_ports:
-  /// - output
+  /// - y0
   /// @endsystem
   explicit Multiplexer(std::vector<int> input_sizes);
 
