@@ -36,6 +36,7 @@ output_ports:
 @endsystem
 
 @tparam_default_scalar
+@ingroup primitive_systems
 */
 template <typename T>
 class PortSwitch final : public LeafSystem<T> {
