@@ -218,7 +218,6 @@ def _install_cc_actions(ctx, target):
     strip_prefixes = {
         "a": ctx.attr.archive_strip_prefix,
         "so": ctx.attr.library_strip_prefix,
-        "so.1": ctx.attr.library_strip_prefix,
         None: ctx.attr.runtime_strip_prefix,
     }
     actions = _install_actions(
