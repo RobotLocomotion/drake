@@ -38,13 +38,15 @@ class PetscSymmetricBlockSparseMatrix {
     kIncompleteCholesky,
   };
 
-  /* Constructs a `size`-by-`size` symmetric block sparse matrix with
-   `block_size`.
+  /* Constructs a symmetric block sparse matrix.
    @param size            The number of rows and columns of the symmetric
                           matrix.
-   @param block_size      The number rows and columns within a block.
-   @param nonzero_blocks The number of block nonzeros in the upper triangular
-                          plus diagonal portion of each block.
+   @param block_size      The number rows and columns within a single non-zero
+                          block. Each non-zero block in the sparse matrix is of
+                          the same size.
+   @param nonzero_blocks  `nonzero_blocks[i]` contains the number of non-zero
+                          upper triangular and diagonal blocks in the i-th row
+                          block.
 
    @pre `size` >=  0, and `size` is a integer multiple of `block_size`.
    @pre nonzero_blocks.size() == size/block_size.
@@ -75,7 +77,8 @@ class PetscSymmetricBlockSparseMatrix {
    @pre 0 <= block_indices[i] * block_size < size for each i =
    0, ..., block_indices.size()-1.
    @warn None of the prerequisite is checked since this is used in inner loop.
-  */
+   @note The full matrix is expected for `block` even though the matrix is
+   symmetric. */
   void AddToBlock(const VectorX<int>& block_indices,
                   const MatrixX<double>& block);
 
@@ -95,11 +98,20 @@ class PetscSymmetricBlockSparseMatrix {
   MatrixX<double> MakeDenseMatrix() const;
 
   /* Zeros out all rows and columns whose index is included in `indexes` and
-   sets the diagonal entry of these rows and columns to `value`. */
+   sets the diagonal entry of these rows and columns to `value`. In other words,
+   if `i` is contained in `indexes`, then the i-th row and column of the matrix
+   is set to zero and i-th diagonal entry is set to `value`. This operation
+   doesn't change the sparsity pattern.
+   @pre 0 <= indexes[i] < rows() for each i = 0, 1, ..., indexes.size()-1.  */
   void ZeroRowsAndColumns(const std::vector<int>& indexes, double value);
 
   /* Sets the relative tolerance of the linear solve A*x = b. Doesn't affect the
-   result of Solve() when the direct solver is used. */
+   result of Solve() when the direct solver is used.
+   In particular, this sets the relative convergence tolerance in
+   https://petsc.org/main/docs/manualpages/KSP/KSPSetTolerances.html. All the
+   other tolerance parameters (e.g. absolute tolerance, maximum number of
+   iterations, etc) are set to the default value specified in the PETSc
+   documentaion. */
   void SetRelativeTolerance(double tolerance);
 
   // TODO(xuchenhan-tri): Support Schur complement.

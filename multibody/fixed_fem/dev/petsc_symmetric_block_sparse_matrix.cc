@@ -32,7 +32,7 @@ MatrixXdRowMajor MakeEigenRowMajorMatrix(const Mat& petsc_matrix) {
   std::iota(row_indexes.begin(), row_indexes.end(), 0);
   std::iota(col_indexes.begin(), col_indexes.end(), 0);
 
-  MatrixXdRowMajor eigen_dense(rows, cols);
+  MatrixXdRowMajor eigen_dense = MatrixXdRowMajor::Zero(rows, cols);
   // MatGetValues extracts values from `petsc_matrix` in row major fashion.
   MatGetValues(petsc_matrix, rows, row_indexes.data(), cols, col_indexes.data(),
                eigen_dense.data());
@@ -41,12 +41,11 @@ MatrixXdRowMajor MakeEigenRowMajorMatrix(const Mat& petsc_matrix) {
 }
 
 /* Converts a PETSc matrix to an Eigen column major dense matrix. */
-MatrixX<double> MakeDenseMatrix(const Mat& petsc_matrix) {
+MatrixX<double> MakeEigenMatrix(const Mat& petsc_matrix) {
   return MatrixX<double>(MakeEigenRowMajorMatrix(petsc_matrix));
 }
 
 }  // namespace
-
 
 /* The implementation class for PetscSymmetricBlockSparseMatrix. Each of these
  functions mirrors a method on the PetscSymmetricBlockSparseMatrix. See
@@ -59,19 +58,17 @@ class PetscSymmetricBlockSparseMatrix::Impl {
 
   Impl(int size, int block_size, const vector<int>& nonzero_blocks)
       : size_(size), block_size_(block_size), num_blocks_(size / block_size) {
-    DRAKE_DEMAND(size >= 0 && block_size_ > 0);
-    DRAKE_DEMAND(size_ % block_size_ == 0);
     PetscInitialize(PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
     MatCreateSeqSBAIJ(PETSC_COMM_SELF, block_size, size, size, 0,
-                      nonzero_blocks.data(), &matrix_);
+                      nonzero_blocks.data(), &owned_matrix_);
     /* Initialize solver and preconditioner. */
-    KSPCreate(PETSC_COMM_SELF, &solver_);
-    KSPGetPC(solver_, &preconditioner_);
+    KSPCreate(PETSC_COMM_SELF, &owned_solver_);
+    KSPGetPC(owned_solver_, &preconditioner_);
   }
 
   ~Impl() {
-    KSPDestroy(&solver_);
-    MatDestroy(&matrix_);
+    KSPDestroy(&owned_solver_);
+    MatDestroy(&owned_matrix_);
   }
 
   std::unique_ptr<Impl> Clone() const {
@@ -80,44 +77,44 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     clone->block_size_ = this->block_size_;
     clone->num_blocks_ = this->num_blocks_;
     /* Ensure that the matrix has been assembled. */
-    MatAssemblyBegin(this->matrix_, MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(this->matrix_, MAT_FINAL_ASSEMBLY);
-    MatDuplicate(this->matrix_, MAT_COPY_VALUES, &clone->matrix_);
+    MatAssemblyBegin(this->owned_matrix_, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(this->owned_matrix_, MAT_FINAL_ASSEMBLY);
+    MatDuplicate(this->owned_matrix_, MAT_COPY_VALUES, &clone->owned_matrix_);
 
     /* Initialize solver and preconditioner. */
-    KSPCreate(PETSC_COMM_SELF, &clone->solver_);
-    KSPGetPC(clone->solver_, &clone->preconditioner_);
+    KSPCreate(PETSC_COMM_SELF, &clone->owned_solver_);
+    KSPGetPC(clone->owned_solver_, &clone->preconditioner_);
 
     return clone;
   }
 
   void SetZero() {
     /* Ensure that the matrix has been assembled. */
-    MatAssemblyBegin(matrix_, MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(matrix_, MAT_FINAL_ASSEMBLY);
-    MatZeroEntries(matrix_);
+    MatAssemblyBegin(owned_matrix_, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(owned_matrix_, MAT_FINAL_ASSEMBLY);
+    MatZeroEntries(owned_matrix_);
   }
 
   VectorX<double> Solve(SolverType solver_type,
                         PreconditionerType preconditioner_type,
                         const VectorX<double>& b) {
     /* Ensure that the matrix has been assembled. */
-    MatAssemblyBegin(matrix_, MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(matrix_, MAT_FINAL_ASSEMBLY);
+    MatAssemblyBegin(owned_matrix_, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(owned_matrix_, MAT_FINAL_ASSEMBLY);
 
     switch (solver_type) {
       case SolverType::kDirect:
-        KSPSetType(solver_, KSPPREONLY);
+        KSPSetType(owned_solver_, KSPPREONLY);
         if (preconditioner_type != PreconditionerType::kCholesky) {
           throw std::logic_error(
               "Direct solver can only be paired with Cholesky preconditioner.");
         }
         break;
       case SolverType::kMINRES:
-        KSPSetType(solver_, KSPMINRES);
+        KSPSetType(owned_solver_, KSPMINRES);
         break;
       case SolverType::kConjugateGradient:
-        KSPSetType(solver_, KSPCG);
+        KSPSetType(owned_solver_, KSPCG);
         break;
     }
 
@@ -133,7 +130,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
         break;
     }
 
-    KSPSetFromOptions(solver_);
+    KSPSetFromOptions(owned_solver_);
 
     // TODO(xuchenhan-tri): The solve involves some dynamic allocation and
     // moving data around. Measure whether they are heavy on performance and
@@ -154,9 +151,9 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     VecAssemblyEnd(b_petsc);
 
     /* Set matrix. */
-    KSPSetOperators(solver_, matrix_, matrix_);
+    KSPSetOperators(owned_solver_, owned_matrix_, owned_matrix_);
     /* Solve! */
-    KSPSolve(solver_, b_petsc, x_petsc);
+    KSPSolve(owned_solver_, b_petsc, x_petsc);
 
     /* Copy solution data to eigen vector. */
     VectorX<double> x_eigen(size_);
@@ -174,15 +171,15 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     /* Notice that `MatSetValuesBlocked()` takes row oriented data whereas
      `block.data()` is column oriented. But since `block` is symmetric, we
      don't have to make the conversion. */
-    MatSetValuesBlocked(matrix_, block_indices.size(), block_indices.data(),
-                        block_indices.size(), block_indices.data(),
-                        block.data(), ADD_VALUES);
+    MatSetValuesBlocked(owned_matrix_, block_indices.size(),
+                        block_indices.data(), block_indices.size(),
+                        block_indices.data(), block.data(), ADD_VALUES);
   }
 
   /* Makes a dense matrix representation of this block-sparse matrix. This
    operation is expensive and is usually only used for debugging purpose. */
   MatrixX<double> MakeDenseMatrix() const {
-    MatrixX<double> eigen_dense = internal::MakeDenseMatrix(matrix_);
+    MatrixX<double> eigen_dense = internal::MakeEigenMatrix(owned_matrix_);
     /* Notice that we store the matrix in PETSc as upper triangular matrix
      and the lower triangular part is ignored. To restore the full
      matrix, we need to fill in these blocks by hand. */
@@ -201,14 +198,14 @@ class PetscSymmetricBlockSparseMatrix::Impl {
 
   void ZeroRowsAndColumns(const vector<int>& indexes, double value) {
     /* Ensure that the matrix has been assembled. */
-    MatAssemblyBegin(matrix_, MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(matrix_, MAT_FINAL_ASSEMBLY);
-    MatZeroRowsColumns(matrix_, indexes.size(), indexes.data(), value,
+    MatAssemblyBegin(owned_matrix_, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(owned_matrix_, MAT_FINAL_ASSEMBLY);
+    MatZeroRowsColumns(owned_matrix_, indexes.size(), indexes.data(), value,
                        PETSC_NULL, PETSC_NULL);
   }
 
   void SetRelativeTolerance(double tolerance) {
-    KSPSetTolerances(solver_, tolerance, PETSC_DEFAULT, PETSC_DEFAULT,
+    KSPSetTolerances(owned_solver_, tolerance, PETSC_DEFAULT, PETSC_DEFAULT,
                      PETSC_DEFAULT);
   }
 
@@ -216,11 +213,11 @@ class PetscSymmetricBlockSparseMatrix::Impl {
 
  private:
   // The underlying PETSc matrix stored as MATSEQSBAIJ.
-  Mat matrix_;
+  Mat owned_matrix_;
   int size_{0};
   int block_size_{0};
   int num_blocks_{0};
-  KSP solver_;
+  KSP owned_solver_;
   PC preconditioner_;
 };
 
@@ -228,7 +225,10 @@ PetscSymmetricBlockSparseMatrix::PetscSymmetricBlockSparseMatrix() = default;
 
 PetscSymmetricBlockSparseMatrix::PetscSymmetricBlockSparseMatrix(
     int size, int block_size, const vector<int>& nonzero_blocks)
-    : pimpl_(new Impl(size, block_size, nonzero_blocks)) {}
+    : pimpl_(std::make_unique<Impl>(size, block_size, nonzero_blocks)) {
+  DRAKE_DEMAND(size >= 0 && block_size > 0);
+  DRAKE_DEMAND(size % block_size == 0);
+}
 
 PetscSymmetricBlockSparseMatrix::~PetscSymmetricBlockSparseMatrix() = default;
 
