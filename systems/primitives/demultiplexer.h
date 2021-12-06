@@ -14,6 +14,16 @@ namespace systems {
 ///
 /// The input to this system directly feeds through to its output.
 ///
+/// @system
+/// name: Demultiplexer
+/// input_ports:
+/// - u0
+/// output_ports:
+/// - y0
+/// - ...
+/// - y(N-1)
+/// @endsystem
+///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>
@@ -25,6 +35,16 @@ class Demultiplexer final : public LeafSystem<T> {
   /// specified as the vector @p output_ports_sizes. The number of output ports
   /// is the length of this vector. The size of each output port is the value of
   /// the corresponding element of the vector @p output_ports_sizes.
+  ///
+  /// @system
+  /// name: Demultiplexer
+  /// input_ports:
+  /// - u0
+  /// output_ports:
+  /// - y0
+  /// - ...
+  /// - y(output_ports_sizes.size() - 1)
+  /// @endsystem
   ///
   /// @throws std::exception if @p output_ports_sizes is a zero length vector.
   /// @throws std::exception if any element of the @p output_ports_sizes is
@@ -38,6 +58,16 @@ class Demultiplexer final : public LeafSystem<T> {
 
   /// Constructs %Demultiplexer with one vector valued input port of size
   /// @p size and vector valued output ports of size @p output_ports_size.
+  ///
+  /// @system
+  /// name: Demultiplexer
+  /// input_ports:
+  /// - u0
+  /// output_ports:
+  /// - y0
+  /// - ...
+  /// - y((size / output_ports_size) - 1)
+  /// @endsystem
   ///
   /// @throws std::exception if output_ports_sizes can not exactly divide @p
   /// size. The number of output ports is therefore `size / output_ports_size`.

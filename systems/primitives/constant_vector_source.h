@@ -13,6 +13,12 @@ namespace systems {
 /// A source block with a constant output port at all times. The value of the
 /// output port is a parameter of the system (see Parameters).
 ///
+/// @system
+/// name: ConstantVectorSource
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>

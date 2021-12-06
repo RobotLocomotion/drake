@@ -20,6 +20,12 @@ namespace systems {
 /// void DoCalcOutput(const Context<T>&, Eigen::VectorBlock<VectorX<T>>*) const;
 /// @endcode
 ///
+/// @system
+/// name: SingleOutputVectorSource
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @tparam_default_scalar
 template <typename T>
 class SingleOutputVectorSource : public LeafSystem<T> {
