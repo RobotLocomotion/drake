@@ -331,32 +331,28 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithZeroMass) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::MakeFromCentralInertia(mass_zero, p_PBcm, I),
       std::exception, expected_msg);
-
-#if 0
-  // Try some tests with an invalid rotational inertia.
-  RotationalInertia<double> Ibad = I.MultiplyByScalarSkipValidityCheck(-1);
-  const SpatialInertia<double> M4 =
-      SpatialInertia<double>::MakeFromCentralInertia(mass, p_PBcm, Ibad);
-  EXPECT_FALSE(M4.IsPhysicallyValid());
-#endif
 }
 
-// Tests that it is not possible to create a spatial inertia with negative mass
-// since IsPhysicallyValid() will fail in the constructor.
-GTEST_TEST(SpatialInertia, IsPhysicallyValidWithNegativeMass) {
+// Test that it is not possible to create a spatial inertia with a bad
+// rotational inertia negative mass.
+GTEST_TEST(SpatialInertia, IsPhysicallyValidWithBadInertia) {
+  const double Ixy = 0.1, Ixz = 0.2, Iyz = 0.3;
+  const RotationalInertia<double> I(2, 3, 4, Ixy, Ixz, Iyz);
+  RotationalInertia<double> Ibad = I.MultiplyByScalarSkipValidityCheck(-1);
+  Vector3d p_PBcm = Vector3d(0.0, 0.0, 0.0);
+
   std::string expected_msg =
     "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
-    " mass = -1.0\n"
+    " mass = 1.0\n"
     " Center of mass = \\[0.0  0.0  0.0\\]\n"
     " Inertia about point P, I_BP =\n"
-    "\\[-0.4,   -0,   -0\\]\n"
-    "\\[  -0, -0.4,   -0\\]\n"
-    "\\[  -0,   -0, -0.4\\]\n"
+    "\\[  -2, -0.1, -0.2\\]\n"
+    "\\[-0.1,   -3, -0.3\\]\n"
+    "\\[-0.2, -0.3,   -4\\]\n"
     " Principal moments of inertia about Bcm \\(center of mass\\) =\n"
-    "\\[-0.4  -0.4  -0.4\\]\n";
+    "\\[-4.105976670111\\d+  -2.9188291125626\\d+  -1.9751942173260\\d+\\]\n";
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>(-1.0, Vector3d::Zero(),
-                             UnitInertia<double>::SolidSphere(1.0)),
+      SpatialInertia<double>::MakeFromCentralInertia(1.0, p_PBcm, Ibad),
       std::exception, expected_msg);
 }
 
