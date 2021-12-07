@@ -92,8 +92,9 @@ class UnitInertia : public RotationalInertia<T> {
   UnitInertia<T>& SetFromRotationalInertia(
       const RotationalInertia<T>& I, const T& mass) {
     if (mass <= 0) {
-      throw std::runtime_error("Division by zero or negative mass in"
-          " RotationalInertia::SetFromRotationalInertia().");
+      std::string message = fmt::format("RotationalInertia::{}():"
+        " Division by zero mass or negative mass.", __func__);
+      throw std::runtime_error(message);
     }
     RotationalInertia<T>::operator=(I / mass);
     return *this;

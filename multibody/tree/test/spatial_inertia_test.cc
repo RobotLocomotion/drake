@@ -321,8 +321,8 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithZeroMass) {
   p_PBcm = Vector3d(0.0, 0.0, 0.0);
   const RotationalInertia<double> I(2, 3, 4);
   std::string expected_msg =
-    "Division by zero or negative mass in"
-    " RotationalInertia::SetFromRotationalInertia\\(\\).";
+    "RotationalInertia::SetFromRotationalInertia\\(\\):"
+    " Division by zero mass or negative mass.";
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::MakeFromCentralInertia(mass_zero, p_PBcm, I),
       std::exception, expected_msg);
