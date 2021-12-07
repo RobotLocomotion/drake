@@ -413,6 +413,7 @@ void RenderEngineVtk::InitializePipelines() {
     SetModelTransformMatrixToVtkCamera(camera, vtk_identity);
 
     pipeline->window->AddRenderer(pipeline->renderer.GetPointer());
+    pipeline->window->AlphaBitPlanesOn();
     pipeline->filter->SetInput(pipeline->window.GetPointer());
     pipeline->filter->SetScale(1);
     // TODO(SeanCurtis-TRI): In (at least) VTK 8.2, there is an error with
