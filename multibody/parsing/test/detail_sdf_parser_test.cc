@@ -427,19 +427,21 @@ namespace {
 }  // namespace
 
 GTEST_TEST(SdfParser, ZeroMassNonZeroInertia) {
-  // Test that attempt to parse links with zero mass and non-zero inertia fails.
+  // Test that attempting to parse links with zero mass and non-zero inertia
+  // fails.
   if (!::drake::kDrakeAssertIsArmed) {
-    EXPECT_THROW(ParseZeroMassNonZeroInertia(), std::exception);
+    EXPECT_THROW(ParseZeroMassNonZeroInertia(), std::runtime_error);
   }
 }
 
 GTEST_TEST(SdfParserDeathTest, ZeroMassNonZeroInertia) {
-  // Test that attempt to parse links with zero mass and non-zero inertia fails.
-  std::string expected_msg =
-    "RotationalInertia::SetFromRotationalInertia\\(\\):"
-    " Division by zero mass or negative mass.";
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseZeroMassNonZeroInertia(), std::exception, expected_msg);
+  // Test that attempting to parse links with zero mass and non-zero inertia
+  // fails.
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  if (::drake::kDrakeAssertIsArmed) {
+    EXPECT_DEATH(ParseZeroMassNonZeroInertia(),
+                 ".*condition 'mass > 0' failed");
+  }
 }
 
 GTEST_TEST(SdfParser, FloatingBodyPose) {
