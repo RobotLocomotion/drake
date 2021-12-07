@@ -6,6 +6,8 @@
 
 #include <petscksp.h>
 
+#include "drake/common/unused.h"
+
 namespace drake {
 namespace multibody {
 namespace fem {
@@ -65,7 +67,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
   Impl(int size, int block_size,
        const vector<int>& num_upper_triangular_blocks_per_row)
       : size_(size), block_size_(block_size), num_blocks_(size / block_size) {
-    PetscInitialize(PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+    EnsurePetscIsInitialized();
     MatCreateSeqSBAIJ(PETSC_COMM_SELF, block_size, size, size, 0,
                       num_upper_triangular_blocks_per_row.data(),
                       &owned_matrix_);
@@ -95,7 +97,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
   }
 
   void SetZero() {
-    ThrowIfNotAssembled(__func__);
+    AssembleIfNecessary();
     MatZeroEntries(owned_matrix_);
   }
 
@@ -160,9 +162,10 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     VecAssemblyBegin(b_petsc);
     VecAssemblyEnd(b_petsc);
 
-    // TODO(xuchenhan-tri): Currently we don't repeated solve the same system
-    // with multiple right hand sides. Split the factorization and the solve
-    // into two distinct phases if we need that in the future.
+    // TODO(xuchenhan-tri): Currently we don't repeatedly solve the same system
+    // with multiple right hand sides, so we always reset the operators. Split
+    // the factorization and the solve into two distinct phases to reuse the
+    // factorization if we need that in the future.
     /* Set matrix. */
     KSPSetOperators(owned_solver_, owned_matrix_, owned_matrix_);
     /* Solve! */
@@ -202,7 +205,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
 
   void ZeroRowsAndColumns(const vector<int>& indexes, double value) {
     /* Ensure that the matrix has been assembled. */
-    ThrowIfNotAssembled(__func__);
+    AssembleIfNecessary();
     MatZeroRowsColumns(owned_matrix_, indexes.size(), indexes.data(), value,
                        PETSC_NULL, PETSC_NULL);
   }
@@ -221,6 +224,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     }
   }
 
+ private:
   void ThrowIfNotAssembled(const char* func) const {
     if (!is_assembled(owned_matrix_)) {
       throw std::runtime_error(
@@ -229,7 +233,16 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     }
   }
 
- private:
+  /* Invokes PetscInitialize() if it hasn't been invoked yet in the program.
+   No-op otherwise. */
+  void EnsurePetscIsInitialized() {
+    static bool done = []() {
+      PetscInitialize(PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+      return true;
+    }();
+    unused(done);
+  }
+
   // The underlying PETSc matrix stored as MATSEQSBAIJ.
   Mat owned_matrix_;
   int size_{0};

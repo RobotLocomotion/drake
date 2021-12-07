@@ -108,10 +108,7 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Construction) {
 
 /* Verifies that SetZero() can be called without any calls to AddToBlock(). */
 GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, SetZero) {
-  PetscSymmetricBlockSparseMatrix A(3, 3, {0});
-  DRAKE_EXPECT_THROWS_MESSAGE(A.SetZero(), std::exception,
-                              "SetZero.*: matrix is not yet assembled.*");
-  A.AssembleIfNecessary();
+  PetscSymmetricBlockSparseMatrix A(3, 3, {1});
   A.SetZero();
   MatrixXd A_dense = A.MakeDenseMatrix();
   EXPECT_EQ(A_dense, Matrix3d::Zero());
@@ -143,10 +140,6 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, ZeroRowsAndColumns) {
   unique_ptr<PetscSymmetricBlockSparseMatrix> A = MakeBlockSparseMatrix();
   const vector<int> indexes = {1, 2, 5};
   constexpr double kDiagnoalValue = 3;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      A->ZeroRowsAndColumns(indexes, kDiagnoalValue), std::exception,
-      "ZeroRowsAndColumns.*: matrix is not yet assembled.*");
-  A->AssembleIfNecessary();
   A->ZeroRowsAndColumns(indexes, kDiagnoalValue);
   MatrixXd A_eigen = MakeEigenDenseMatrix();
   for (int i : indexes) {

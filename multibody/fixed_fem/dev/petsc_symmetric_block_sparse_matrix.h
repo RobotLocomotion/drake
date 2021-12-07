@@ -80,6 +80,10 @@ class PetscSymmetricBlockSparseMatrix {
    @pre 0 <= block_indices[i] * block_size < size for each i =
    0, ..., block_indices.size()-1.
    @warn None of the prerequisite is checked since this is used in inner loop.
+   @warn Over the lifespan of this object, for each row block i, the number of
+   blocks accumulated in the i-th row block through `AddToBlock()` whose column
+   block index is >= i must not exceed the number of nonzero upper triangular
+   blocks in the i-th row block specified at construction.
    @note The full matrix is expected for `block` even though the matrix is
    symmetric. */
   void AddToBlock(const VectorX<int>& block_indices,
