@@ -343,8 +343,8 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithBadInertia) {
 
   std::string expected_msg =
     "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
-    " mass = 1.0\n"
-    " Center of mass = \\[0.0  0.0  0.0\\]\n"
+    " mass = 1(\\.0)?\n"
+    " Center of mass = \\[0(\\.0)?  0(\\.0)?  0(\\.0)?\\]\n"
     " Inertia about point P, I_BP =\n"
     "\\[  -2, -0.1, -0.2\\]\n"
     "\\[-0.1,   -3, -0.3\\]\n"
@@ -361,8 +361,8 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithBadInertia) {
 GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
   std::string expected_msg =
     "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
-    " mass = 1.0\n"
-    " Center of mass = \\[2.0  0.0  0.0\\]\n"
+    " mass = 1(\\.0)?\n"
+    " Center of mass = \\[2(\\.0)?  0(\\.0)?  0(\\.0)?\\]\n"
     " Inertia about point P, I_BP =\n"
     "\\[0.4,   0,   0\\]\n"
     "\\[  0, 0.4,   0\\]\n"
@@ -407,7 +407,7 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidThrowsNiceExceptionMessage) {
   std::string expected_msg = fmt::format(
     "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
     " mass = 0.634\n"
-    " Center of mass = \\[0.0  0.016  -0.02\\]\n"
+    " Center of mass = \\[0(\\.0)?  0.016  -0.02\\]\n"
     " Inertia about point P, I_BP =\n"
     "\\[  0.0023989,    0.000245,     1.3e-05\\]\n"
     "\\[   0.000245,   0.0023566,  0.00020438\\]\n"
