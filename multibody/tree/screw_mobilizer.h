@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -51,6 +52,11 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
                  double screw_pitch)
       : MobilizerBase(inboard_frame_F, outboard_frame_M)
       , screw_pitch_(screw_pitch) {}
+
+  // Overloads to define the suffix names for the position and velocity
+  // elements.
+  std::string position_suffix(int position_index_in_mobilizer) const final;
+  std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
   /* @returns the screw pitch, which is used to relate rotational
    to translational motion for `this` mobilizer as documented

@@ -16,6 +16,12 @@ namespace systems {
 /// The output is vector values, and may vary with the time (as reflected in
 /// the context) at which the output is evaluated.
 ///
+/// @system
+/// name: TrajectorySource
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @tparam_double_only
 /// @ingroup primitive_systems
 template <typename T>

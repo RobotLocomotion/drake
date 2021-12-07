@@ -212,6 +212,11 @@ TEST_F(RevoluteJointTest, SetVelocityAndAccelerationLimits) {
                std::runtime_error);
 }
 
+TEST_F(RevoluteJointTest, NameSuffix) {
+  EXPECT_EQ(joint1_->position_suffix(0), "q");
+  EXPECT_EQ(joint1_->velocity_suffix(0), "w");
+}
+
 TEST_F(RevoluteJointTest, DefaultAngle) {
   const double default_angle = 0.0;
 

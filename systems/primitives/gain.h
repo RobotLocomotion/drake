@@ -12,6 +12,14 @@ namespace systems {
 /// constant vector.  The input to this system directly feeds through to its
 /// output.
 ///
+/// @system
+/// name: Gain
+/// input_ports:
+/// - u0
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>
