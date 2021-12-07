@@ -621,11 +621,11 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, ZeroMassNonZeroInertia) {
 
 GTEST_TEST(MultibodyPlantUrdfParserDeathTest, ZeroMassNonZeroInertia) {
   // Test that attempt to parse links with zero mass and non-zero inertia fails.
-  std::string expected_msg =
-    "RotationalInertia::SetFromRotationalInertia\\(\\):"
-    " Division by zero mass or negative mass.";
+  const std::string expected_message =
+      "RotationalInertia::SetFromRotationalInertia\\(\\):"
+      " Division by zero mass or negative mass.";
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseZeroMassNonZeroInertia(), std::exception, expected_msg);
+      ParseZeroMassNonZeroInertia(), std::exception, expected_message);
 }
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {

@@ -500,14 +500,10 @@ class SpatialInertia {
   template <typename T1 = T>
   typename std::enable_if_t<scalar_predicate<T1>::is_bool> CheckInvariants()
       const {
-    if (!IsPhysicallyValid()) {
-      std::string error_msg = fmt::format(
-          "Spatial inertia fails SpatialInertia::IsPhysicallyValid()."
-          "{}", *this);
-      WriteExtraCentralInertiaProperties(&error_msg);
-      throw std::runtime_error(error_msg);
-    }
+    if (!IsPhysicallyValid())
+      ThrowNotPhysicallyValid();
   }
+  [[noreturn]] void ThrowNotPhysicallyValid() const;
 
   // SFINAE for non-numeric types. See documentation in the implementation for
   // numeric types.
@@ -527,10 +523,10 @@ class SpatialInertia {
   // Appends text to an existing string with information about a SpatialInertia.
   // If the position vector p_PBcm from about-point P to Bcm (body B's center of
   // mass) is non-zero, appends I_BBcm (body B's rotational inertia about Bcm)
-  // to `msg`. In all cases, the central principal moments of inertia are
-  // appended to `msg`, e.g., to help identify a rotational inertia that
+  // to `message`. In all cases, the central principal moments of inertia are
+  // appended to `message`, e.g., to help identify a rotational inertia that
   // violates the "triangle inequality".
-  void WriteExtraCentralInertiaProperties(std::string* msg) const;
+  void WriteExtraCentralInertiaProperties(std::string* message) const;
 };
 
 /// Writes an instance of SpatialInertia into a std::ostream.

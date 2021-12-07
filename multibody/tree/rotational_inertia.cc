@@ -7,8 +7,39 @@
 namespace drake {
 namespace multibody {
 
+template <typename T>
+void RotationalInertia<T>::ThrowNotPhysicallyValid(const char* func_name)
+    const {
+  std::string error_message = fmt::format(
+      "{}(): The rotational inertia\n"
+      "{}did not pass the test CouldBePhysicallyValid().",
+      func_name, *this);
+  // Provide additional information if a moment of inertia is non-negative
+  // or if moments of inertia do not satisfy the triangle inequality.
+  if constexpr (scalar_predicate<T>::is_bool) {
+    if (!IsNaN()) {
+      const Vector3<double> p = CalcPrincipalMomentsOfInertia();
+      if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
+              p(0), p(1), p(2), /* epsilon = */ 0.0)) {
+        error_message += fmt::format(
+            "\nThe associated principal moments of inertia:"
+            "\n{}  {}  {}", p(0), p(1), p(2));
+        if (p(0) < 0 || p(1) < 0 || p(2) < 0) {
+          error_message += "\nare invalid since at least one is negative.";
+        } else {
+          error_message += "\ndo not satisify the triangle inequality.";
+        }
+      }
+    }
+  }
+  throw std::logic_error(error_message);
+}
+
 // TODO(Mitiguy) Consider using this code (or code similar to this) to write
 //  most/all Drake matrices and consolidate other usages to use this.
+// TODO(jwnimmer-tri) Obeying the formatting choices from `out` (via `copyfmt`
+//  is a defect; we should always display full round-trip precision.  We should
+//  not re-use this pattern elsewhere.
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I) {
   int width = 0;
@@ -33,7 +64,7 @@ std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I) {
       if (width) out.width(width);
       out << I(i, j);
     }
-    out << "]" << std::endl;
+    out << "]\n";
   }
   return out;
 }

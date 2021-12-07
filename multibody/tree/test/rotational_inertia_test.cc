@@ -91,13 +91,13 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
 
     // Check for a thrown exception with proper error message when creating an
     // invalid rotational inertia (a principal moment of inertia is negative).
-    std::string expected_msg =
-      "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
+    std::string expected_message =
+        "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
         "\\[ 1, -3, -3\\]\n"
         "\\[-3, 13, -6\\]\n"
         "\\[-3, -6, 10\\]\n"
         "did not pass the test CouldBePhysicallyValid\\(\\)\\.";
-    expected_msg += fmt::format(
+    expected_message += fmt::format(
         "\nThe associated principal moments of inertia:"
         "\n-1.583957883\\d+  7.881702629\\d+  17.702255254\\d+"
         "\nare invalid since at least one is negative.");
@@ -106,17 +106,17 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
           1.0, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false),
-          std::exception, expected_msg);
+          expected_message);
 
     // Check for a thrown exception with proper error message when creating a
     // rotational inertia that violates the triangle inequality.
-    expected_msg =
+    expected_message =
       "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
         "\\[34, -3, -3\\]\n"
         "\\[-3, 13, -6\\]\n"
         "\\[-3, -6, 10\\]\n"
         "did not pass the test CouldBePhysicallyValid\\(\\)\\.";
-    expected_msg += fmt::format(
+    expected_message += fmt::format(
         "\nThe associated principal moments of inertia:"
         "\n4.70955263953\\d+  17.66953281\\d+  34.6209145475\\d+"
         "\ndo not satisify the triangle inequality.");
@@ -125,7 +125,7 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
           2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false),
-          std::exception, expected_msg);
+          expected_message);
 }
 
 // Test constructor for a principal axes rotational inertia matrix (products

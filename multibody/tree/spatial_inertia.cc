@@ -8,9 +8,18 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
+  std::string error_message = fmt::format(
+      "Spatial inertia fails SpatialInertia::IsPhysicallyValid()."
+      "{}", *this);
+  WriteExtraCentralInertiaProperties(&error_message);
+  throw std::runtime_error(error_message);
+}
+
+template <typename T>
 void SpatialInertia<T>::WriteExtraCentralInertiaProperties(
-    std::string* msg) const {
-  DRAKE_DEMAND(msg != nullptr);
+    std::string* message) const {
+  DRAKE_DEMAND(message != nullptr);
   const T& mass = get_mass();
   const Vector3<T>& p_PBcm = get_com();
 
@@ -25,14 +34,16 @@ void SpatialInertia<T>::WriteExtraCentralInertiaProperties(
 
   // If point P is not at Bcm, write B's rotational inertia about Bcm.
   const boolean<T> is_position_zero = (p_PBcm == Vector3<T>::Zero());
-  if (!is_position_zero)
-    *msg += fmt::format(" Inertia about center of mass, I_BBcm =\n{}", I_BBcm);
+  if (!is_position_zero) {
+    *message += fmt::format(
+        " Inertia about center of mass, I_BBcm =\n{}", I_BBcm);
+  }
 
   // Write B's principal moments of inertia about Bcm.
   if constexpr (scalar_predicate<T>::is_bool) {
     const Vector3<double> eig = I_BBcm.CalcPrincipalMomentsOfInertia();
     const double Imin = eig(0), Imed = eig(1), Imax = eig(2);
-    *msg += fmt::format(
+    *message += fmt::format(
         " Principal moments of inertia about Bcm (center of mass) ="
         "\n[{}  {}  {}]\n", Imin, Imed, Imax);
   }
@@ -52,13 +63,13 @@ std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M) {
   const T& z = p_PBcm.z();
 
   if constexpr (scalar_predicate<T>::is_bool) {
-    out << std::endl
-        << fmt::format(" mass = {}", mass) << std::endl
-        << fmt::format(" Center of mass = [{}  {}  {}]", x, y, z) << std::endl;
+    out << "\n"
+        << fmt::format(" mass = {}\n", mass)
+        << fmt::format(" Center of mass = [{}  {}  {}]\n", x, y, z);
   } else {
     // Print symbolic results.
-    out << " mass = " << mass << std::endl
-        << " Center of mass = [" << p_PBcm.transpose() << "]" << std::endl;
+    out << " mass = " << mass << "\n"
+        << " Center of mass = [" << p_PBcm.transpose() << "]\n";
   }
 
   // Get G_BP (unit inertia about point P) and use it to calculate I_BP
@@ -69,7 +80,7 @@ std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M) {
       G_BP.MultiplyByScalarSkipValidityCheck(mass);
 
   // Write B's rotational inertia about point P.
-  out << " Inertia about point P, I_BP =" << std::endl << I_BP;
+  out << " Inertia about point P, I_BP =\n" << I_BP;
 
   return out;
 }
