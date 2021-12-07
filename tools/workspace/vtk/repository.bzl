@@ -150,22 +150,24 @@ licenses([
     "unencumbered",  # Public-Domain
 ])
 """
+    # The following are either internal VTK libraries, or thirdparty libraries
+    # bundled into the build.  We only create library targets for
+    # enough of VTK to support those used directly or indirectly by Drake.
+    #
+    # For the most part, the linux and macOS builds of VTK have the same
+    # configuration options, with the exception of `pugixml`.  The manylinux
+    # switches are for the pip wheel builds.  Build arg locations:
+    #
+    #     Linux: Dockerfile in this directory
+    #     macOS: https://github.com/RobotLocomotion/homebrew-director
+    #     manylinux: /tools/wheel/dev/image/vtk-args
+    file_content += _vtk_cc_library(os_result, "vtkfmt")
 
-    # Note that we only create library targets for enough of VTK to support
-    # those used directly or indirectly by Drake.
+    if os_result.is_manylinux:
+        file_content += _vtk_cc_library(os_result, "vtkglew")
 
-    ###########################################################################
-    #                                                                         #
-    #                                                                         #
-    # TODO finalize / fix these                                               #
-    #                                                                         #
-    #                                                                         #
-    ###########################################################################
-    # The following libraries are thirdparty libraries VTK bundles into its
-    # build, and not all are used directly (though some appear in transitive
-    # link dependencies).
-    ###########################################################################
-    # TODO: NOTE: these were the original configurations on these libraries.
+    file_content += _vtk_cc_library(os_result, "vtkkissfft")
+
     file_content += _vtk_cc_library(
         os_result,
         "vtkkwiml",
@@ -178,12 +180,23 @@ licenses([
         header_only = True,
     )
 
-    # NOTE: currently added below without any explicit deps.
-    # file_content += _vtk_cc_library(
-    #     os_result,
-    #     "vtkmetaio",
-    #     deps = ["@zlib"],
-    # )
+    if os_result.is_manylinux:
+        file_content += _vtk_cc_library(
+            os_result,
+            "vtkloguru",
+            linkopts = ["-ldl", "-pthread"],
+        )
+    else:
+        file_content += _vtk_cc_library(os_result, "vtkloguru")
+
+    file_content += _vtk_cc_library(
+        os_result,
+        "vtkmetaio",
+        deps = ["@zlib"],
+    )
+
+    if not os_result.is_macos:
+        file_content += _vtk_cc_library(os_result, "vtkpugixml")
 
     if os_result.is_manylinux:
         file_content += _vtk_cc_library(
@@ -191,256 +204,10 @@ licenses([
             "vtksys",
             linkopts = ["-ldl"],
         )
-
-        file_content += _vtk_cc_library(os_result, "vtkglew")
-
     else:
         file_content += _vtk_cc_library(os_result, "vtksys")
 
     ###########################################################################
-    # TODO: NOTE: these were the libraries discovered in the vtk 9 tarball that
-    # are candidates, and their abbreviated ldd results below.  Beneath the ldd
-    # results are a listing of all libraries that include this library when
-    # `ldd` is executed.
-    #
-    # Of particular interest is the `os_result.is_manylinux` -ldl split.
-    file_content += _vtk_cc_library(os_result, "vtkcgns")
-    # linux-vdso.so.1
-    # libhdf5_serial.so.103
-    # libc.so.6
-    # libpthread.so.0
-    # libsz.so.2
-    # libz.so.1
-    # libdl.so.2
-    # libm.so.6
-    # /lib64/ld-linux-x86-64.so.2
-    # libaec.so.0
-    # -------------------------------------------------------------------------
-    # libvtkIOCGNSReader-9.1.so => vtkcgns           [[[ target NOT CREATED ]]]
-    # libvtkioss-9.1.so => vtkcgns                                 [[[ TODO ]]]
-
-    file_content += _vtk_cc_library(os_result, "vtkfmt")
-    # linux-vdso.so.1
-    # libstdc++.so.6
-    # libgcc_s.so.1
-    # libc.so.6
-    # libm.so.6
-    # /lib64/ld-linux-x86-64.so.2
-    # -------------------------------------------------------------------------
-    # libvtkFiltersGeneral-9.1.so => vtkfmt                       [[[ ADDED ]]]
-
-    # NOTE: currently on macOS the brew formula uses an external gl2ps.
-    # TODO: exclude this on macOS?
-    file_content += _vtk_cc_library(os_result, "vtkgl2ps")
-    # linux-vdso.so.1
-    # libm.so.6
-    # libOpenGL.so.0
-    # libpng16.so.16
-    # libz.so.1
-    # libc.so.6
-    # /lib64/ld-linux-x86-64.so.2
-    # libGLdispatch.so.0
-    # libdl.so.2
-    # -------------------------------------------------------------------------
-    # libvtkIOExportGL2PS-9.1.so => vtkgl2ps         [[[ target NOT created ]]]
-    # libvtkRenderingGL2PSOpenGL2-9.1.so => vtkgl2ps [[[ target NOT created ]]]
-
-    file_content += _vtk_cc_library(os_result, "vtkioss")
-    # linux-vdso.so.1
-    # libvtkexodusII-9.1.so.1
-    # libvtkcgns-9.1.so.1
-    # libnetcdf.so.15
-    # libpthread.so.0
-    # libstdc++.so.6
-    # libm.so.6
-    # libgcc_s.so.1
-    # libc.so.6
-    # libhdf5_serial_hl.so.100
-    # libhdf5_serial.so.103
-    # libcurl-gnutls.so.4
-    # /lib64/ld-linux-x86-64.so.2
-    # libsz.so.2
-    # libz.so.1
-    # libdl.so.2
-    # libnghttp2.so.14
-    # libidn2.so.0
-    # librtmp.so.1
-    # libssh.so.4
-    # libpsl.so.5
-    # libnettle.so.7
-    # libgnutls.so.30
-    # libgssapi_krb5.so.2
-    # libldap_r-2.4.so.2
-    # liblber-2.4.so.2
-    # libbrotlidec.so.1
-    # libaec.so.0
-    # libunistring.so.2
-    # libhogweed.so.5
-    # libgmp.so.10
-    # libcrypto.so.1.1
-    # libp11-kit.so.0
-    # libtasn1.so.6
-    # libkrb5.so.3
-    # libk5crypto.so.3
-    # libcom_err.so.2
-    # libkrb5support.so.0
-    # libresolv.so.2
-    # libsasl2.so.2
-    # libgssapi.so.3
-    # libbrotlicommon.so.1
-    # libffi.so.7
-    # libkeyutils.so.1
-    # libheimntlm.so.0
-    # libkrb5.so.26
-    # libasn1.so.8
-    # libhcrypto.so.4
-    # libroken.so.18
-    # libwind.so.0
-    # libheimbase.so.1
-    # libhx509.so.5
-    # libsqlite3.so.0
-    # libcrypt.so.1
-    # -------------------------------------------------------------------------
-    # libvtkIOIOSS-9.1.so => vtkioss                 [[[ target NOT created ]]]
-
-    file_content += _vtk_cc_library(os_result, "vtkkissfft")
-    # linux-vdso.so.1
-    # libc.so.6
-    # /lib64/ld-linux-x86-64.so.2
-    # -------------------------------------------------------------------------
-    # libvtkCommonMath-9.1.so => vtkkissfft                       [[[ ADDED ]]]
-
-    file_content += _vtk_cc_library(os_result, "vtkharu")
-    # linux-vdso.so.1
-    # libpng16.so.16
-    # libz.so.1
-    # libc.so.6
-    # libm.so.6
-    # /lib64/ld-linux-x86-64.so.2
-    # -------------------------------------------------------------------------
-    # NONE discovered...
-
-    file_content += _vtk_cc_library(os_result, "vtkproj")
-    # linux-vdso.so.1
-    # libm.so.6
-    # libpthread.so.0
-    # libc.so.6
-    # /lib64/ld-linux-x86-64.so.2
-    # -------------------------------------------------------------------------
-    # NONE discovered...
-
-    file_content += _vtk_cc_library(os_result, "vtkloguru")
-    # linux-vdso.so.1
-    # libdl.so.2
-    # libpthread.so.0
-    # libstdc++.so.6
-    # libgcc_s.so.1
-    # libc.so.6
-    # /lib64/ld-linux-x86-64.so.2
-    # libm.so.6
-    # -------------------------------------------------------------------------
-    # libvtkCommonCore-9.1.so => vtkloguru                        [[[ ADDED ]]]
-
-    file_content += _vtk_cc_library(os_result, "vtkmetaio")
-    # linux-vdso.so.1
-    # libz.so.1
-    # libstdc++.so.6
-    # libgcc_s.so.1
-    # libc.so.6
-    # libm.so.6
-    # /lib64/ld-linux-x86-64.so.2
-    # -------------------------------------------------------------------------
-    # libvtkIOImage-9.1.so => vtkmetaio                           [[[ ADDED ]]]
-
-    file_content += _vtk_cc_library(os_result, "vtkpugixml")
-    # linux-vdso.so.1
-    # libstdc++.so.6
-    # libm.so.6
-    # libgcc_s.so.1
-    # libc.so.6
-    # /lib64/ld-linux-x86-64.so.2
-    # -------------------------------------------------------------------------
-    # libvtkCommonDataModel-9.1.so => vtkpugixml       [[[ TODO macOS split ]]]
-    # libvtkIOCityGML-9.1.so => vtkpugixml           [[[ target NOT created ]]]
-    # libvtkIOImage-9.1.so => vtkpugixml               [[[ TODO macOS split ]]]
-
-    # NOTE: currently added above from the originals
-    # file_content += _vtk_cc_library(os_result, "vtksys")
-    # linux-vdso.so.1
-    # libdl.so.2
-    # libstdc++.so.6
-    # libgcc_s.so.1
-    # libc.so.6
-    # /lib64/ld-linux-x86-64.so.2
-    # libm.so.6
-    # -------------------------------------------------------------------------
-    # NOTE: just added it to vtkCommonCore...
-    # libvtkChartsCore-9.1.so => vtksys
-    # libvtkCommonCore-9.1.so => vtksys
-    # libvtkCommonDataModel-9.1.so => vtksys
-    # libvtkCommonExecutionModel-9.1.so => vtksys
-    # libvtkCommonMisc-9.1.so => vtksys
-    # libvtkCommonSystem-9.1.so => vtksys
-    # libvtkDomainsChemistry-9.1.so => vtksys
-    # libvtkFiltersGeneral-9.1.so => vtksys
-    # libvtkFiltersHybrid-9.1.so => vtksys
-    # libvtkFiltersSources-9.1.so => vtksys
-    # libvtkGUISupportQtSQL-9.1.so => vtksys
-    # libvtkIOAMR-9.1.so => vtksys
-    # libvtkIOAsynchronous-9.1.so => vtksys
-    # libvtkIOCGNSReader-9.1.so => vtksys
-    # libvtkIOCONVERGECFD-9.1.so => vtksys
-    # libvtkIOChemistry-9.1.so => vtksys
-    # libvtkIOCityGML-9.1.so => vtksys
-    # libvtkIOCore-9.1.so => vtksys
-    # libvtkIOEnSight-9.1.so => vtksys
-    # libvtkIOExodus-9.1.so => vtksys
-    # libvtkIOExport-9.1.so => vtksys
-    # libvtkIOExportGL2PS-9.1.so => vtksys
-    # libvtkIOGeometry-9.1.so => vtksys
-    # libvtkIOHDF-9.1.so => vtksys
-    # libvtkIOIOSS-9.1.so => vtksys
-    # libvtkIOImage-9.1.so => vtksys
-    # libvtkIOImport-9.1.so => vtksys
-    # libvtkIOInfovis-9.1.so => vtksys
-    # libvtkIOLSDyna-9.1.so => vtksys
-    # libvtkIOLegacy-9.1.so => vtksys
-    # libvtkIOMINC-9.1.so => vtksys
-    # libvtkIOMotionFX-9.1.so => vtksys
-    # libvtkIONetCDF-9.1.so => vtksys
-    # libvtkIOOggTheora-9.1.so => vtksys
-    # libvtkIOPLY-9.1.so => vtksys
-    # libvtkIOParallel-9.1.so => vtksys
-    # libvtkIOParallelXML-9.1.so => vtksys
-    # libvtkIOSQL-9.1.so => vtksys
-    # libvtkIOVideo-9.1.so => vtksys
-    # libvtkIOXML-9.1.so => vtksys
-    # libvtkIOXMLParser-9.1.so => vtksys
-    # libvtkImagingHybrid-9.1.so => vtksys
-    # libvtkInfovisCore-9.1.so => vtksys
-    # libvtkParallelCore-9.1.so => vtksys
-    # libvtkPythonInterpreter-9.1.so => vtksys
-    # libvtkRenderingCore-9.1.so => vtksys
-    # libvtkRenderingOpenGL2-9.1.so => vtksys
-    # libvtkRenderingUI-9.1.so => vtksys
-    # libvtkRenderingVtkJS-9.1.so => vtksys
-    # libvtkTestingRendering-9.1.so => vtksys
-
-    file_content += _vtk_cc_library(os_result, "vtkverdict")
-    # linux-vdso.so.1
-    # libm.so.6
-    # libc.so.6
-    # /lib64/ld-linux-x86-64.so.2
-    # -------------------------------------------------------------------------
-    # libvtkFiltersVerdict-9.1.so => vtkverdict      [[[ target NOT created ]]]
-    ###########################################################################
-    #                                                                         #
-    #                                                                         #
-    # TODO [[[ END finalize / fix these ]]]                                   #
-    #                                                                         #
-    #                                                                         #
-    ###########################################################################
-
     # To see what the VTK module dependencies are, you can inspect VTK's source
     # tree. For example, for vtkIOXML and vtkIOXMLParser:
     #   VTK/IO/XML/vtk.module
@@ -498,15 +265,6 @@ licenses([
         ],
     )
 
-    vtk_common_core_deps = [
-        ":vtkkwiml",
-        ":vtkfmt",
-        ":vtkkissfft",
-        ":vtkloguru",
-        ":vtksys",
-    ]
-    if not os_result.is_macos:
-        vtk_common_core_deps.append(":vtkpugixml")
     file_content += _vtk_cc_library(
         os_result,
         "vtkCommonCore",
@@ -731,9 +489,23 @@ licenses([
             "vtkWrappingHints.h",
             "vtkXMLFileOutputWindow.h",
         ],
-        deps = vtk_common_core_deps,
+        deps = [
+            ":vtkkwiml",
+            ":vtkloguru",
+            ":vtksys",
+        ],
     )
 
+    vtk_common_data_model_deps = [
+        ":vtkCommonCore",
+        ":vtkCommonMath",
+        ":vtkCommonMisc",
+        ":vtkCommonSystem",
+        ":vtkCommonTransforms",
+        ":vtksys",
+    ]
+    if not os_result.is_macos:
+        vtk_common_data_model_deps.append(":vtkpugixml")
     file_content += _vtk_cc_library(
         os_result,
         "vtkCommonDataModel",
@@ -1017,16 +789,7 @@ licenses([
             "vtkWedge.h",
             "vtkXMLDataElement.h",
         ],
-        deps = [
-            ":vtkCommonCore",
-            ":vtkCommonMath",
-            ":vtkCommonMisc",
-            ":vtkCommonSystem",
-            ":vtkCommonTransforms",
-            # TODO: on macOS this is not available (unless remove brew)
-            # ":vtkpugixml",
-            ":vtksys",
-        ],
+        deps = vtk_common_data_model_deps,
     )
 
     file_content += _vtk_cc_library(
@@ -1203,6 +966,7 @@ licenses([
         deps = [
             ":vtkCommonCore",
             ":vtkCommonMath",
+            ":vtksys",
         ],
     )
 
@@ -1340,7 +1104,6 @@ licenses([
             "vtkVoronoi2D.h",
             "vtkWindowedSincPolyDataFilter.h",
         ],
-        visibility = ["//visibility:private"],
         deps = [
             ":vtkCommonCore",
             ":vtkCommonDataModel",
@@ -1349,45 +1112,7 @@ licenses([
             ":vtkCommonMisc",
             ":vtkCommonSystem",
             ":vtkCommonTransforms",
-        ],
-    )
-
-    file_content += _vtk_cc_library(
-        os_result,
-        "vtkFiltersGeometry",
-        hdrs = [
-            "vtkAbstractGridConnectivity.h",
-            "vtkCompositeDataGeometryFilter.h",
-            "vtkDataSetGhostGenerator.h",
-            "vtkDataSetRegionSurfaceFilter.h",
-            "vtkDataSetSurfaceFilter.h",
-            "vtkExplicitStructuredGridSurfaceFilter.h",
-            "vtkFiltersGeometryModule.h",
-            "vtkGeometryFilter.h",
-            "vtkHierarchicalDataSetGeometryFilter.h",
-            "vtkImageDataGeometryFilter.h",
-            "vtkImageDataToUniformGrid.h",
-            "vtkLinearToQuadraticCellsFilter.h",
-            "vtkMarkBoundaryFilter.h",
-            "vtkProjectSphereFilter.h",
-            "vtkRectilinearGridGeometryFilter.h",
-            "vtkRectilinearGridPartitioner.h",
-            "vtkStructuredAMRGridConnectivity.h",
-            "vtkStructuredAMRNeighbor.h",
-            "vtkStructuredGridConnectivity.h",
-            "vtkStructuredGridGeometryFilter.h",
-            "vtkStructuredGridGhostDataGenerator.h",
-            "vtkStructuredGridPartitioner.h",
-            "vtkStructuredNeighbor.h",
-            "vtkStructuredPointsGeometryFilter.h",
-            "vtkUniformGridGhostDataGenerator.h",
-            "vtkUnstructuredGridGeometryFilter.h",
-        ],
-        deps = [
-            ":vtkCommonCore",
-            ":vtkCommonDataModel",
-            ":vtkCommonExecutionModel",
-            ":vtkFiltersCore",
+            ":vtksys",
         ],
     )
 
@@ -1541,6 +1266,46 @@ licenses([
 
     file_content += _vtk_cc_library(
         os_result,
+        "vtkFiltersGeometry",
+        hdrs = [
+            "vtkAbstractGridConnectivity.h",
+            "vtkCompositeDataGeometryFilter.h",
+            "vtkDataSetGhostGenerator.h",
+            "vtkDataSetRegionSurfaceFilter.h",
+            "vtkDataSetSurfaceFilter.h",
+            "vtkExplicitStructuredGridSurfaceFilter.h",
+            "vtkFiltersGeometryModule.h",
+            "vtkGeometryFilter.h",
+            "vtkHierarchicalDataSetGeometryFilter.h",
+            "vtkImageDataGeometryFilter.h",
+            "vtkImageDataToUniformGrid.h",
+            "vtkLinearToQuadraticCellsFilter.h",
+            "vtkMarkBoundaryFilter.h",
+            "vtkProjectSphereFilter.h",
+            "vtkRectilinearGridGeometryFilter.h",
+            "vtkRectilinearGridPartitioner.h",
+            "vtkStructuredAMRGridConnectivity.h",
+            "vtkStructuredAMRNeighbor.h",
+            "vtkStructuredGridConnectivity.h",
+            "vtkStructuredGridGeometryFilter.h",
+            "vtkStructuredGridGhostDataGenerator.h",
+            "vtkStructuredGridPartitioner.h",
+            "vtkStructuredNeighbor.h",
+            "vtkStructuredPointsGeometryFilter.h",
+            "vtkUniformGridGhostDataGenerator.h",
+            "vtkUnstructuredGridGeometryFilter.h",
+        ],
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkFiltersCore",
+            ":vtksys",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        os_result,
         "vtkFiltersHybrid",
         hdrs = [
             "vtkAdaptiveDataSetSurfaceFilter.h",
@@ -1648,140 +1413,6 @@ licenses([
 
     file_content += _vtk_cc_library(
         os_result,
-        "vtkIOCore",
-        hdrs = [
-            "vtkASCIITextCodec.h",
-            "vtkAbstractParticleWriter.h",
-            "vtkAbstractPolyDataReader.h",
-            "vtkArrayDataReader.h",
-            "vtkArrayDataWriter.h",
-            "vtkArrayReader.h",
-            "vtkArrayWriter.h",
-            "vtkBase64InputStream.h",
-            "vtkBase64OutputStream.h",
-            "vtkBase64Utilities.h",
-            "vtkDataCompressor.h",
-            "vtkDelimitedTextWriter.h",
-            "vtkGlobFileNames.h",
-            "vtkIOCoreModule.h",
-            "vtkInputStream.h",
-            "vtkJavaScriptDataWriter.h",
-            "vtkLZ4DataCompressor.h",
-            "vtkLZMADataCompressor.h",
-            "vtkNumberToString.h",
-            "vtkOutputStream.h",
-            "vtkSortFileNames.h",
-            "vtkTextCodec.h",
-            "vtkTextCodecFactory.h",
-            "vtkUTF16TextCodec.h",
-            "vtkUTF8TextCodec.h",
-            "vtkUpdateCellsV8toV9.h",
-            "vtkWriter.h",
-            "vtkZLibDataCompressor.h",
-        ],
-        deps = [
-            ":vtkCommonCore",
-            ":vtkCommonDataModel",
-            ":vtkCommonExecutionModel",
-            ":vtkCommonMisc",
-            ":vtksys",
-            "@double_conversion",
-            "@liblz4",
-            "@liblzma",
-            "@zlib",
-        ],
-    )
-
-    file_content += _vtk_cc_library(
-        os_result,
-        "vtkIOXMLParser",
-        hdrs = [
-            "vtkIOXMLParserModule.h",
-            "vtkXMLDataParser.h",
-            "vtkXMLParser.h",
-            "vtkXMLUtilities.h",
-        ],
-        deps = [
-            ":vtkCommonCore",
-            ":vtkCommonDataModel",
-            ":vtkIOCore",
-            ":vtksys",
-            "@expat",
-        ],
-    )
-
-    file_content += _vtk_cc_library(
-        os_result,
-        "vtkIOXML",
-        hdrs = [
-            "vtkIOXMLModule.h",
-            "vtkRTXMLPolyDataReader.h",
-            "vtkXMLCompositeDataReader.h",
-            "vtkXMLCompositeDataWriter.h",
-            "vtkXMLDataObjectWriter.h",
-            "vtkXMLDataReader.h",
-            "vtkXMLDataSetWriter.h",
-            "vtkXMLFileReadTester.h",
-            "vtkXMLGenericDataObjectReader.h",
-            "vtkXMLHierarchicalBoxDataFileConverter.h",
-            "vtkXMLHierarchicalBoxDataReader.h",
-            "vtkXMLHierarchicalBoxDataWriter.h",
-            "vtkXMLHierarchicalDataReader.h",
-            "vtkXMLHyperTreeGridReader.h",
-            "vtkXMLHyperTreeGridWriter.h",
-            "vtkXMLImageDataReader.h",
-            "vtkXMLImageDataWriter.h",
-            "vtkXMLMultiBlockDataReader.h",
-            "vtkXMLMultiBlockDataWriter.h",
-            "vtkXMLMultiGroupDataReader.h",
-            "vtkXMLPDataObjectReader.h",
-            "vtkXMLPDataReader.h",
-            "vtkXMLPHyperTreeGridReader.h",
-            "vtkXMLPImageDataReader.h",
-            "vtkXMLPPolyDataReader.h",
-            "vtkXMLPRectilinearGridReader.h",
-            "vtkXMLPStructuredDataReader.h",
-            "vtkXMLPStructuredGridReader.h",
-            "vtkXMLPTableReader.h",
-            "vtkXMLPUnstructuredDataReader.h",
-            "vtkXMLPUnstructuredGridReader.h",
-            "vtkXMLPartitionedDataSetCollectionReader.h",
-            "vtkXMLPartitionedDataSetReader.h",
-            "vtkXMLPolyDataReader.h",
-            "vtkXMLPolyDataWriter.h",
-            "vtkXMLReader.h",
-            "vtkXMLRectilinearGridReader.h",
-            "vtkXMLRectilinearGridWriter.h",
-            "vtkXMLStructuredDataReader.h",
-            "vtkXMLStructuredDataWriter.h",
-            "vtkXMLStructuredGridReader.h",
-            "vtkXMLStructuredGridWriter.h",
-            "vtkXMLTableReader.h",
-            "vtkXMLTableWriter.h",
-            "vtkXMLUniformGridAMRReader.h",
-            "vtkXMLUniformGridAMRWriter.h",
-            "vtkXMLUnstructuredDataReader.h",
-            "vtkXMLUnstructuredDataWriter.h",
-            "vtkXMLUnstructuredGridReader.h",
-            "vtkXMLUnstructuredGridWriter.h",
-            "vtkXMLWriter.h",
-            "vtkXMLWriterBase.h",
-            "vtkXMLWriterC.h",
-        ],
-        deps = [
-            ":vtkCommonCore",
-            ":vtkCommonDataModel",
-            ":vtkCommonExecutionModel",
-            ":vtkCommonMisc",
-            ":vtkCommonSystem",
-            ":vtkIOCore",
-            ":vtkIOXMLParser",
-            ":vtksys",
-        ],
-    )
-
-    file_content += _vtk_cc_library(
-        os_result,
         "vtkImagingCore",
         hdrs = [
             "vtkAbstractImageInterpolator.h",
@@ -1883,6 +1514,52 @@ licenses([
 
     file_content += _vtk_cc_library(
         os_result,
+        "vtkIOCore",
+        hdrs = [
+            "vtkASCIITextCodec.h",
+            "vtkAbstractParticleWriter.h",
+            "vtkAbstractPolyDataReader.h",
+            "vtkArrayDataReader.h",
+            "vtkArrayDataWriter.h",
+            "vtkArrayReader.h",
+            "vtkArrayWriter.h",
+            "vtkBase64InputStream.h",
+            "vtkBase64OutputStream.h",
+            "vtkBase64Utilities.h",
+            "vtkDataCompressor.h",
+            "vtkDelimitedTextWriter.h",
+            "vtkGlobFileNames.h",
+            "vtkIOCoreModule.h",
+            "vtkInputStream.h",
+            "vtkJavaScriptDataWriter.h",
+            "vtkLZ4DataCompressor.h",
+            "vtkLZMADataCompressor.h",
+            "vtkNumberToString.h",
+            "vtkOutputStream.h",
+            "vtkSortFileNames.h",
+            "vtkTextCodec.h",
+            "vtkTextCodecFactory.h",
+            "vtkUTF16TextCodec.h",
+            "vtkUTF8TextCodec.h",
+            "vtkUpdateCellsV8toV9.h",
+            "vtkWriter.h",
+            "vtkZLibDataCompressor.h",
+        ],
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkCommonMisc",
+            ":vtksys",
+            "@double_conversion",
+            "@liblz4",
+            "@liblzma",
+            "@zlib",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        os_result,
         "vtkIOExport",
         hdrs = [
             "vtkExporter.h",
@@ -1914,9 +1591,9 @@ licenses([
             ":vtkCommonMath",
             ":vtkCommonTransforms",
             ":vtkFiltersGeometry",
+            ":vtkImagingCore",
             ":vtkIOCore",
             ":vtkIOGeometry",
-            ":vtkImagingCore",
             ":vtkIOImage",
             ":vtkIOXML",
             ":vtkRenderingContext2D",
@@ -1977,6 +1654,25 @@ licenses([
         ],
     )
 
+    vtk_io_image_deps = [
+        ":vtkCommonCore",
+        ":vtkCommonDataModel",
+        ":vtkCommonExecutionModel",
+        ":vtkCommonMath",
+        ":vtkCommonMisc",
+        ":vtkCommonSystem",
+        ":vtkCommonTransforms",
+        ":vtkDICOMParser",
+        ":vtkImagingCore",
+        ":vtkmetaio",
+        ":vtksys",
+        "@libjpeg",
+        "@libpng",
+        "@libtiff",
+        "@zlib",
+    ]
+    if not os_result.is_macos:
+        vtk_io_image_deps.append(":vtkpugixml")
     file_content += _vtk_cc_library(
         os_result,
         "vtkIOImage",
@@ -2022,24 +1718,7 @@ licenses([
             "vtkVolume16Reader.h",
             "vtkVolumeReader.h",
         ],
-        deps = [
-            ":vtkCommonCore",
-            ":vtkCommonDataModel",
-            ":vtkCommonExecutionModel",
-            ":vtkCommonMath",
-            ":vtkCommonMisc",
-            ":vtkCommonSystem",
-            ":vtkCommonTransforms",
-            ":vtkDICOMParser",
-            ":vtkmetaio",
-            # TODO: on macOS this is not available (unless remove brew)
-            # ":vtkpugixml",
-            "@libtiff",
-            "@libjpeg",
-            "@libpng",
-            "@liblzma",
-            "@zlib",
-        ],
+        deps = vtk_io_image_deps,
     )
 
     file_content += _vtk_cc_library(
@@ -2063,6 +1742,8 @@ licenses([
             ":vtkCommonTransforms",
             ":vtkFiltersCore",
             ":vtkFiltersSources",
+            ":vtkImagingCore",
+            ":vtkIOGeometry",
             ":vtkIOImage",
             ":vtkRenderingCore",
             ":vtksys",
@@ -2110,6 +1791,94 @@ licenses([
             ":vtkCommonExecutionModel",
             ":vtkCommonMisc",
             ":vtkIOCore",
+            ":vtksys",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        os_result,
+        "vtkIOXMLParser",
+        hdrs = [
+            "vtkIOXMLParserModule.h",
+            "vtkXMLDataParser.h",
+            "vtkXMLParser.h",
+            "vtkXMLUtilities.h",
+        ],
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkIOCore",
+            ":vtksys",
+            "@expat",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        os_result,
+        "vtkIOXML",
+        hdrs = [
+            "vtkIOXMLModule.h",
+            "vtkRTXMLPolyDataReader.h",
+            "vtkXMLCompositeDataReader.h",
+            "vtkXMLCompositeDataWriter.h",
+            "vtkXMLDataObjectWriter.h",
+            "vtkXMLDataReader.h",
+            "vtkXMLDataSetWriter.h",
+            "vtkXMLFileReadTester.h",
+            "vtkXMLGenericDataObjectReader.h",
+            "vtkXMLHierarchicalBoxDataFileConverter.h",
+            "vtkXMLHierarchicalBoxDataReader.h",
+            "vtkXMLHierarchicalBoxDataWriter.h",
+            "vtkXMLHierarchicalDataReader.h",
+            "vtkXMLHyperTreeGridReader.h",
+            "vtkXMLHyperTreeGridWriter.h",
+            "vtkXMLImageDataReader.h",
+            "vtkXMLImageDataWriter.h",
+            "vtkXMLMultiBlockDataReader.h",
+            "vtkXMLMultiBlockDataWriter.h",
+            "vtkXMLMultiGroupDataReader.h",
+            "vtkXMLPDataObjectReader.h",
+            "vtkXMLPDataReader.h",
+            "vtkXMLPHyperTreeGridReader.h",
+            "vtkXMLPImageDataReader.h",
+            "vtkXMLPPolyDataReader.h",
+            "vtkXMLPRectilinearGridReader.h",
+            "vtkXMLPStructuredDataReader.h",
+            "vtkXMLPStructuredGridReader.h",
+            "vtkXMLPTableReader.h",
+            "vtkXMLPUnstructuredDataReader.h",
+            "vtkXMLPUnstructuredGridReader.h",
+            "vtkXMLPartitionedDataSetCollectionReader.h",
+            "vtkXMLPartitionedDataSetReader.h",
+            "vtkXMLPolyDataReader.h",
+            "vtkXMLPolyDataWriter.h",
+            "vtkXMLReader.h",
+            "vtkXMLRectilinearGridReader.h",
+            "vtkXMLRectilinearGridWriter.h",
+            "vtkXMLStructuredDataReader.h",
+            "vtkXMLStructuredDataWriter.h",
+            "vtkXMLStructuredGridReader.h",
+            "vtkXMLStructuredGridWriter.h",
+            "vtkXMLTableReader.h",
+            "vtkXMLTableWriter.h",
+            "vtkXMLUniformGridAMRReader.h",
+            "vtkXMLUniformGridAMRWriter.h",
+            "vtkXMLUnstructuredDataReader.h",
+            "vtkXMLUnstructuredDataWriter.h",
+            "vtkXMLUnstructuredGridReader.h",
+            "vtkXMLUnstructuredGridWriter.h",
+            "vtkXMLWriter.h",
+            "vtkXMLWriterBase.h",
+            "vtkXMLWriterC.h",
+        ],
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkCommonMisc",
+            ":vtkCommonSystem",
+            ":vtkIOCore",
+            ":vtkIOXMLParser",
             ":vtksys",
         ],
     )
@@ -2315,8 +2084,8 @@ licenses([
             ":vtkCommonMath",
             ":vtkCommonSystem",
             ":vtkCommonTransforms",
-            ":vtkRenderingCore",
             ":vtkFiltersGeneral",
+            ":vtkRenderingCore",
             ":vtkRenderingFreeType",
         ],
     )
@@ -2372,6 +2141,7 @@ licenses([
             ":vtkCommonExecutionModel",
             ":vtkRenderingSceneGraph",
             ":vtkRenderingCore",
+            ":vtkRenderingOpenGL2",
         ],
     )
 
@@ -2500,7 +2270,9 @@ licenses([
             ":vtkCommonMath",
             ":vtkCommonSystem",
             ":vtkCommonTransforms",
+            ":vtkFiltersGeneral",
             ":vtkRenderingCore",
+            ":vtkRenderingUI",
             ":vtksys",
             vtk_glew_library,
             "@opengl",

@@ -78,18 +78,10 @@ drake_cc_library(
         "//geometry/render/shaders:depth_shaders",
         "//systems/sensors:color_palette",
         "@eigen",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonDataModel",
-        "@vtk//:vtkCommonTransforms",
-        "@vtk//:vtkFiltersGeneral",
-        "@vtk//:vtkFiltersHybrid",
-        "@vtk//:vtkFiltersSources",
         "@vtk//:vtkIOGeometry",
         "@vtk//:vtkIOImage",
-        "@vtk//:vtkImagingCore",
         "@vtk//:vtkRenderingCore",
         "@vtk//:vtkRenderingOpenGL2",
-        "@vtk//:vtkRenderingUI",
     ],
 )
 
