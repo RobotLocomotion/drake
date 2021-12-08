@@ -55,6 +55,33 @@ drake_cc_library(
     ],
 )
 
+
+drake_cc_library(
+    name = "contact_problem_graph",
+    srcs = ["contact_problem_graph.cc"],
+    hdrs = ["contact_problem_graph.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+        "//common:sorted_pair",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_problem",
+    srcs = ["contact_problem.cc"],
+    hdrs = ["contact_problem.h"],
+    deps = [
+        ":block_sparse_matrix",
+        ":contact_problem_graph",
+        ":partial_permutation",
+        ":sap_contact_problem",
+        "//common:default_scalars",
+        "//common:essential",
+        "//common:sorted_pair",
+    ],
+)
+
 drake_cc_library(
     name = "contact_solver_results",
     srcs = ["contact_solver_results.cc"],
@@ -113,6 +140,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "partial_permutation",
+    srcs = ["partial_permutation.cc"],
+    hdrs = ["partial_permutation.h"],
+    deps = [     
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "pgs_solver",
     srcs = [
         "pgs_solver.cc",
@@ -134,6 +170,20 @@ drake_cc_library(
     deps = [
         ":linear_operator",
         "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_contact_problem",
+    srcs = ["sap_contact_problem.cc"],
+    hdrs = ["sap_contact_problem.h"],
+    deps = [
+        ":block_sparse_matrix",
+        ":contact_problem_graph",
+        ":partial_permutation",
+        "//common:default_scalars",
+        "//common:essential",
+        "//common:sorted_pair",
     ],
 )
 
@@ -227,6 +277,25 @@ drake_cc_googletest(
         ":pgs_solver",
         ":sparse_linear_operator",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_problem_test",
+    deps = [
+        ":block_sparse_matrix",
+        ":contact_problem",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "partial_permutation_test",
+    deps = [
+        ":partial_permutation",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
