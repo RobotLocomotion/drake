@@ -249,7 +249,7 @@ GTEST_TEST(SapSolver, PreProcessedData) {
     R_expected.segment<3>(3 * i) =
         Vector3d(Rt_expected(i), Rt_expected(i), Rn_expected(i));
   }
-  EXPECT_TRUE(CompareMatrices(data.R, R_expected,
+  EXPECT_TRUE(CompareMatrices(data.constraints_bundle->R(), R_expected,
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::relative));
 }

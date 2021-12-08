@@ -230,7 +230,6 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
   const VectorX<T>& dissipation = contact_data.get_dissipation();
 
   // Aliases to mutable pre-processed data.
-  VectorX<T>& R = data.R;  
   VectorX<T>& inv_sqrt_A = data.inv_sqrt_A;
 
   // Store operators as block-sparse matrices.
@@ -275,6 +274,7 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
   // [Castro et al., 2021] for details.
   const T beta_factor = beta * beta / (4.0 * M_PI * M_PI);
   VectorX<T> vhat(3 * nc);
+  VectorX<T> R(3 * nc);
   for (int ic = 0; ic < nc; ++ic) {
     const int ic3 = 3 * ic;
     const T& k = stiffness(ic);
@@ -291,15 +291,11 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
     const T vn_hat = -phi0(ic) / (time_step + taud);
     vhat.template segment<3>(ic3) = Vector3<T>(0, 0, vn_hat);
   }
-
-  data.Rinv = R.cwiseInverse();
+  
   data.v_star = dynamics_data.get_v_star();
   data.mu = mu;
   data.A.Multiply(data.v_star, &data.p_star);
 
-  // TODO: For now I'll duplicate data until all code depends on the bundle
-  // only.
-  VectorX<T> R_copy = data.R;
   // Make projections for each constraint.
   std::vector<std::unique_ptr<Projection<T>>> projections;
   projections.reserve(nc);
@@ -307,8 +303,7 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
     projections.push_back(std::make_unique<FrictionConeProjection<T>>(mu(ic)));
   }
   data.constraints_bundle = std::make_unique<SapConstraintsBundle<T>>(
-      std::move(J), std::move(vhat), std::move(R_copy),
-      std::move(projections));
+      std::move(J), std::move(vhat), std::move(R), std::move(projections));
 
   return data;
 }
@@ -437,7 +432,7 @@ template <typename T>
 T SapSolver<T>::CalcLineSearchCost(const State& state_v, const T& alpha,
                                    State* state_alpha) const {
   // Data.
-  const VectorX<T>& R = data().R;
+  const VectorX<T>& R = constraints_bundle().R();
   const VectorX<T>& v_star = data().v_star;
 
   // Cached quantities at state v.
@@ -612,7 +607,7 @@ void SapSolver<T>::UpdateImpulsesCache(const State& state, Cache* cache) const {
   UpdateVelocitiesCache(state, cache);
   auto& impulses_cache = cache->mutable_impulses_cache();
   constraints_bundle().CalcUnprojectedImpulses(cache->vc(), &impulses_cache.y);
-  constraints_bundle().ProjectImpulses(impulses_cache.y, data().R,
+  constraints_bundle().ProjectImpulses(impulses_cache.y, constraints_bundle().R(),
                                        &impulses_cache.gamma);
   ++mutable_stats().num_impulses_cache_updates;
   impulses_cache.valid = true;
@@ -636,7 +631,7 @@ void SapSolver<T>::UpdateCostCache(const State& state, Cache* cache) const {
   if (cache->valid_cost_cache()) return;
   UpdateImpulsesCache(state, cache);
   UpdateMomentumCache(state, cache);
-  const auto& R = data().R;
+  const auto& R = constraints_bundle().R();
   const auto& v_star = data().v_star;
   const auto& Adv = cache->momentum_cache().momentum_change;
   const VectorX<T>& v = state.v();
@@ -660,11 +655,11 @@ void SapSolver<T>::UpdateCostAndGradientsCache(const State& state,
   auto& impulses_cache = cache->mutable_impulses_cache();
   auto& gradients_cache = cache->mutable_gradients_cache();
   UpdateVelocitiesCache(state, cache);
-  const VectorX<T>& Rinv = data().Rinv;
+  const VectorX<T>& Rinv = constraints_bundle().Rinv();
   const VectorX<T>& vhat = constraints_bundle().vhat();
   impulses_cache.y = vhat - cache->vc();
   impulses_cache.y.array() *= Rinv.array();
-  constraints_bundle().ProjectImpulses(impulses_cache.y, data().R,
+  constraints_bundle().ProjectImpulses(impulses_cache.y, constraints_bundle().R(),
                                        &impulses_cache.gamma,
                                        &gradients_cache.dgamma_dy);
   ++mutable_stats().num_impulses_cache_updates;
@@ -685,7 +680,7 @@ void SapSolver<T>::UpdateCostAndGradientsCache(const State& state,
 
   // Update G. G = -∂γ/∂vc = dP/dy⋅R⁻¹.
   const int nc = data().nc;
-  const auto& R = data().R;
+  const auto& R = constraints_bundle().R();
   const auto& dgamma_dy = gradients_cache.dgamma_dy;
   for (int ic = 0, ic3 = 0; ic < nc; ic++, ic3 += 3) {
     const auto& R_ic = R.template segment<3>(ic3);

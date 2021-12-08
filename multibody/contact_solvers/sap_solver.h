@@ -427,9 +427,6 @@ class SapSolver final : public ContactSolver<T> {
     void Resize(int nv_in, int nc_in) {
       nv = nv_in;
       nc = nc_in;
-      const int nc3 = 3 * nc;
-      R.resize(nc3);
-      Rinv.resize(nc3);
       mu.resize(nc);
       inv_sqrt_A.resize(nv);
       v_star.resize(nv);
@@ -440,9 +437,6 @@ class SapSolver final : public ContactSolver<T> {
     T time_step{NAN};        // Discrete time step used by the solver.
     int nv{0};               // Number of generalized velocities.
     int nc{0};               // Number of constrained dofs. Number of impulses.
-    VectorX<T> R;            // (Diagonal) Regularization matrix, of size 3nc.
-    VectorX<T> Rinv;         // Inverse of regularization matrix, of size 3nc.
-    VectorX<T> vhat;         // Constraints stabilization velocity, of size 3nc.
     VectorX<T> mu;           // Friction coefficients, of size nc.
     BlockSparseMatrix<T> A;  // Momentum matrix as block-sparse matrix.
     std::vector<MatrixX<T>> At;  // Per-tree blocks of the momentum matrix.
