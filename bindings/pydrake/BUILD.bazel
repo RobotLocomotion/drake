@@ -271,6 +271,7 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:value_pybind",
     ],
     cc_srcs = ["trajectories_py.cc"],
     package_info = PACKAGE_INFO,

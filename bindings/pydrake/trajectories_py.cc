@@ -4,6 +4,7 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -88,6 +89,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("start_col"), py::arg("block_rows"), py::arg("block_cols"),
             cls_doc.CopyBlock.doc)
         .def("CopyHead", &Class::CopyHead, py::arg("n"), cls_doc.CopyHead.doc);
+    AddValueInstantiation<BsplineTrajectory<T>>(m);
   }
 
   {
@@ -297,6 +299,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("replacement"), py::arg("segment_index"),
             py::arg("row_start") = 0, py::arg("col_start") = 0,
             cls_doc.setPolynomialMatrixBlock.doc);
+    AddValueInstantiation<PiecewisePolynomial<T>>(m);
   }
 
   {
@@ -340,6 +343,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.angular_velocity.doc)
         .def("angular_acceleration", &Class::angular_acceleration,
             py::arg("time"), cls_doc.angular_acceleration.doc);
+    AddValueInstantiation<PiecewiseQuaternionSlerp<T>>(m);
   }
 
   {
@@ -371,6 +375,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.get_position_trajectory.doc)
         .def("get_orientation_trajectory", &Class::get_orientation_trajectory,
             cls_doc.get_orientation_trajectory.doc);
+    AddValueInstantiation<PiecewisePose<T>>(m);
   }
 }
 }  // namespace

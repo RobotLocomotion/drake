@@ -4,6 +4,7 @@ import unittest
 from pydrake.common import ToleranceType
 from pydrake.common.eigen_geometry import AngleAxis_, Quaternion_
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.value import AbstractValue
 from pydrake.math import BsplineBasis_, RigidTransform_, RotationMatrix_
 from pydrake.polynomial import Polynomial_
 from pydrake.trajectories import (
@@ -54,12 +55,14 @@ class TestTrajectories(unittest.TestCase):
             basis=BsplineBasis(2, [0, 1, 2, 3]),
             control_points=[np.zeros(3), np.ones(3)])
         self.assertIsInstance(bspline.CopyHead(n=2), BsplineTrajectory)
+        AbstractValue.Make(bspline)
 
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_empty_constructor(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
 
         pp = PiecewisePolynomial()
+        AbstractValue.Make(pp)
 
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_constant_constructor(self, T):
@@ -70,6 +73,7 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(pp.rows(), 2)
         self.assertEqual(pp.cols(), 1)
         numpy_compare.assert_float_equal(pp.value(11.), x)
+        AbstractValue.Make(pp)
 
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_matrix_constructor(self, T):
@@ -83,6 +87,7 @@ class TestTrajectories(unittest.TestCase):
                                    pm1)
         pm3 = np.array([[Polynomial(5), Polynomial(10)]])
         pp.setPolynomialMatrixBlock(replacement=pm3, segment_index=1)
+        AbstractValue.Make(pp)
 
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_vector_constructor(self, T):
@@ -92,6 +97,7 @@ class TestTrajectories(unittest.TestCase):
         p1 = Polynomial(1)
         p2 = Polynomial(2)
         pp = PiecewisePolynomial([p1, p2], [0, 1, 2])
+        AbstractValue.Make(pp)
 
     @numpy_compare.check_all_types
     def test_zero_order_hold_vector(self, T):
@@ -355,6 +361,7 @@ class TestTrajectories(unittest.TestCase):
         numpy_compare.assert_float_equal(
             pq.angular_acceleration(time=1), np.zeros(3)
         )
+        AbstractValue.Make(pq)
 
     @numpy_compare.check_all_types
     def test_piecewise_pose(self, T):
@@ -398,3 +405,4 @@ class TestTrajectories(unittest.TestCase):
             times=t, poses=[X, X, X], start_vel=np.zeros((3, 1)),
             end_vel=np.zeros((3, 1)))
         self.assertEqual(ppose.get_number_of_segments(), 2)
+        AbstractValue.Make(ppose)
