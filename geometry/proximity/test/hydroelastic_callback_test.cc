@@ -75,6 +75,7 @@ class TestScene {
         shape_A_type_(A_shape_type),
         shape_B_type_(B_shape_type),
         data_{&collision_filter_, &X_WGs_, &hydroelastic_geometries_,
+              HydroelasticContactRepresentation::kTriangle,
               &surfaces_} {
     X_WGs_[id_A_] = RigidTransform<T>();
     X_WGs_[id_B_] = RigidTransform<T>();
@@ -269,14 +270,27 @@ class TestScene {
 // soft mesh.
 ::testing::AssertionResult ValidateDerivatives(
     const ContactSurface<AutoDiffXd>& surface) {
-  const auto& mesh_W = surface.mesh_W();
-  if (mesh_W.vertex(0).x().derivatives().size() != 3) {
-    return ::testing::AssertionFailure() << "Vertex 0 is missing derivatives";
-  }
+  if (surface.representation() ==
+      HydroelasticContactRepresentation::kTriangle) {
+    const auto& mesh_W = surface.tri_mesh_W();
+    if (mesh_W.vertex(0).x().derivatives().size() != 3) {
+      return ::testing::AssertionFailure() << "Vertex 0 is missing derivatives";
+    }
 
-  if (surface.e_MN().EvaluateAtVertex(0).derivatives().size() != 3) {
-    return ::testing::AssertionFailure()
-           << "Pressure field at vertex 0 is missing derivatives";
+    if (surface.tri_e_MN().EvaluateAtVertex(0).derivatives().size() != 3) {
+      return ::testing::AssertionFailure()
+             << "Pressure field at vertex 0 is missing derivatives";
+    }
+  } else {
+    const auto& mesh_W = surface.poly_mesh_W();
+    if (mesh_W.vertex(0).x().derivatives().size() != 3) {
+      return ::testing::AssertionFailure() << "Vertex 0 is missing derivatives";
+    }
+
+    if (surface.poly_e_MN().EvaluateAtVertex(0).derivatives().size() != 3) {
+      return ::testing::AssertionFailure()
+             << "Pressure field at vertex 0 is missing derivatives";
+    }
   }
 
   if (surface.HasGradE_M()) {
@@ -316,17 +330,29 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidMesh) {
   const RigidTransform<T>& X_WA = scene.pose_in_world(id_A);
   scene.AddGeometry(HydroelasticType::kSoft, HydroelasticType::kRigid);
 
-  {
-    // Case 1: Intersecting spheres.
-    scene.PoseGeometry(colliding);
-    const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+  for (const auto representation :
+       {HydroelasticContactRepresentation::kTriangle,
+        HydroelasticContactRepresentation::kPolygon}) {
+    SCOPED_TRACE(fmt::format("representation = {}", representation));
+    {
+      // Case 1: Intersecting spheres.
+      scene.PoseGeometry(colliding);
+      const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
-    unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
-        geometries.soft_geometry(id_A), X_WA, id_A,
-        geometries.rigid_geometry(id_B), X_WB, id_B);
-    EXPECT_NE(surface, nullptr);
-    EXPECT_TRUE(ValidateDerivatives(*surface));
-    EXPECT_EQ(100, surface->mesh_W().num_triangles());
+      unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
+          geometries.soft_geometry(id_A), X_WA, id_A,
+          geometries.rigid_geometry(id_B), X_WB, id_B, representation);
+      EXPECT_NE(surface, nullptr);
+      EXPECT_TRUE(ValidateDerivatives(*surface));
+      switch (representation) {
+        case HydroelasticContactRepresentation::kTriangle:
+          EXPECT_EQ(100, surface->tri_mesh_W().num_triangles());
+          break;
+        case HydroelasticContactRepresentation::kPolygon:
+          EXPECT_EQ(28, surface->poly_mesh_W().num_elements());
+          break;
+      }
+    }
   }
 
   {
@@ -334,9 +360,12 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidMesh) {
     scene.PoseGeometry(!colliding);
     const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
+    // When they are not in contact, mesh representation is irrelevant; so,
+    // we'll simply pick one.
     unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
         geometries.soft_geometry(id_A), X_WA, id_A,
-        geometries.rigid_geometry(id_B), X_WB, id_B);
+        geometries.rigid_geometry(id_B), X_WB, id_B,
+        HydroelasticContactRepresentation::kTriangle);
     EXPECT_EQ(surface, nullptr);
   }
 }
@@ -354,14 +383,17 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidHalfSpace) {
   const RigidTransform<T>& X_WA = scene.pose_in_world(id_A);
   scene.AddGeometry(HydroelasticType::kSoft, HydroelasticType::kRigid);
 
-  {
+  for (const auto representation :
+       {HydroelasticContactRepresentation::kTriangle,
+        HydroelasticContactRepresentation::kPolygon}) {
+    SCOPED_TRACE(fmt::format("representation = {}", representation));
     // Case 1: Intersecting geometry.
     scene.PoseGeometry(colliding);
     const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
     unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
         geometries.soft_geometry(id_A), X_WA, id_A,
-        geometries.rigid_geometry(id_B), X_WB, id_B);
+        geometries.rigid_geometry(id_B), X_WB, id_B, representation);
     EXPECT_NE(surface, nullptr);
     EXPECT_TRUE(ValidateDerivatives(*surface));
   }
@@ -371,9 +403,12 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidHalfSpace) {
     scene.PoseGeometry(!colliding);
     const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
+    // When they are not in contact, mesh representation is irrelevant; so,
+    // we'll simply pick one.
     unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
         geometries.soft_geometry(id_A), X_WA, id_A,
-        geometries.rigid_geometry(id_B), X_WB, id_B);
+        geometries.rigid_geometry(id_B), X_WB, id_B,
+        HydroelasticContactRepresentation::kTriangle);
     EXPECT_EQ(surface, nullptr);
   }
 }
@@ -390,14 +425,17 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftHalfSpaceRigidMesh) {
   const RigidTransform<T>& X_WA = scene.pose_in_world(id_A);
   scene.AddGeometry(HydroelasticType::kRigid, HydroelasticType::kSoft);
 
-  {
+  for (const auto representation :
+       {HydroelasticContactRepresentation::kTriangle,
+        HydroelasticContactRepresentation::kPolygon}) {
+    SCOPED_TRACE(fmt::format("representation = {}", representation));
     // Case 1: Intersecting geometry.
     scene.PoseGeometry(colliding);
     const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
     unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
         geometries.soft_geometry(id_B), X_WB, id_A,
-        geometries.rigid_geometry(id_A), X_WA, id_B);
+        geometries.rigid_geometry(id_A), X_WA, id_B, representation);
     EXPECT_NE(surface, nullptr);
     EXPECT_TRUE(ValidateDerivatives(*surface));
   }
@@ -407,9 +445,12 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftHalfSpaceRigidMesh) {
     scene.PoseGeometry(!colliding);
     const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
+    // When they are not in contact, mesh representation is irrelevant; so,
+    // we'll simply pick one.
     unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
         geometries.soft_geometry(id_B), X_WB, id_A,
-        geometries.rigid_geometry(id_A), X_WA, id_B);
+        geometries.rigid_geometry(id_A), X_WA, id_B,
+        HydroelasticContactRepresentation::kTriangle);
     EXPECT_EQ(surface, nullptr);
   }
 }
