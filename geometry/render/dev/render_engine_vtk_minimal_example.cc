@@ -40,9 +40,10 @@ namespace {
  designed scene with various rendering settings. Below is a checklist
  enumerating each feature we plan to exercise in this example(s).
 
-   - Render each supported shape type (see shape_specification.h)
-     - Once with arbitrary RGBA color (unique for each object)
-     - Once with diffuse texture
+   X Render each supported shape type (see shape_specification.h)
+     X Almost resolved by AddShapes() (see below and resolve TODO).
+     X Once with arbitrary RGBA color (unique for each object)
+     X Once with diffuse texture
        - Textures should have asymmetric features so that the application of
          the texture is clearly correct -- not flipped, rotated, etc.
    - Mesh texture specified in two different ways
@@ -52,8 +53,8 @@ namespace {
    - Camera functionality
      - Exercise full intrinsic and extrinsic properties. Two separate cameras
        would be sufficient.
-   - Moving objects (showing object pose updated -- this should include
-      translation and rotation)
+   X Moving objects (showing object pose updated -- this should include
+      translation and rotation) (see mustard bottle)
    - Clipping range across all output image types
      - Make sure there are objects at the limits of the clipping range that
        will get clipped (such that the image would be different if they
@@ -74,13 +75,110 @@ using math::RigidTransformd;
 using math::RollPitchYawd;
 using multibody::MultibodyPlant;
 using multibody::Parser;
-using systems::InputPort;
 using systems::Context;
-using systems::sensors::PixelType;
-using systems::sensors::RgbdSensor;
-using systems::sensors::ImageRgba8U;
+using systems::InputPort;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
+using systems::sensors::ImageRgba8U;
+using systems::sensors::PixelType;
+using systems::sensors::RgbdSensor;
+
+struct Material {
+  // For convenience, create a handful of *implicit* conversion constructors.
+  // NOLINTNEXTLINE(runtime/explicit)
+  Material(const Rgba rgba_in) : rgba(rgba_in) {}
+  // NOLINTNEXTLINE(runtime/explicit)
+  Material(const std::string& diffuse_map_in) : diffuse_map(diffuse_map_in) {}
+
+  RenderLabel label{RenderLabel::kDontCare};
+  Rgba rgba{1, 1, 1, 1};
+  std::string diffuse_map;
+};
+
+// Make an instance of the given shape, at the given position, with the given
+// material (named as indicated).
+std::unique_ptr<GeometryInstance> MakeInstance(const Shape& shape,
+                                               const Vector3d& p_WS,
+                                               const Material& mat,
+                                               const std::string& name) {
+  auto instance = std::make_unique<GeometryInstance>(RigidTransformd(p_WS),
+                                                     shape.Clone(), name);
+
+  PerceptionProperties percep_props;
+  percep_props.AddProperty("label", "id", mat.label);
+  percep_props.AddProperty("phong", "diffuse", mat.rgba);
+  if (!mat.diffuse_map.empty()) {
+    percep_props.AddProperty("phong", "diffuse_map", mat.diffuse_map);
+  }
+  instance->set_perception_properties(percep_props);
+
+  IllustrationProperties illus_props;
+  // NOTE: DrakeVisualizer doesn't get texture information for arbitrary
+  // primitives; they will only appear textured in the renderer.
+  illus_props.AddProperty("phong", "diffuse", mat.rgba);
+  instance->set_illustration_properties(illus_props);
+  return instance;
+}
+
+// This adds shapes to the world according the required list above. It handles
+// adding a colored and textured version of each shape (if it is supported).
+void AddShapes(SceneGraph<double>* scene_graph) {
+  DRAKE_DEMAND(scene_graph != nullptr);
+
+  const SourceId source_id = scene_graph->RegisterSource("main");
+  const std::string texture_path =
+      FindResourceOrThrow("drake/geometry/render/dev/4_color_texture.png");
+  double x = 0.4;
+  double dx = -0.15;
+
+  const Box box(0.1, 0.075, 0.05);
+  scene_graph->RegisterAnchoredGeometry(
+      source_id, MakeInstance(box, Vector3d(x, -0.25, 0), Rgba(1.0, 0.25, 0.25),
+                              "rgba_box"));
+  scene_graph->RegisterAnchoredGeometry(
+      source_id,
+      MakeInstance(box, Vector3d(x, 0.25, 0), texture_path, "texture_box"));
+  x += dx;
+
+  const Capsule capsule(0.05, 0.1);
+  scene_graph->RegisterAnchoredGeometry(
+      source_id, MakeInstance(capsule, Vector3d(x, -0.25, 0),
+                              Rgba(1.0, 1.0, 0.25), "rgba_capsule"));
+  // NOTE: Apparently we don't have texture coordinates for capsules.
+  scene_graph->RegisterAnchoredGeometry(
+      source_id, MakeInstance(capsule, Vector3d(x, 0.25, 0), texture_path,
+                              "texture_capsule"));
+  x += dx;
+
+  const Cylinder cylinder(0.05, 0.1);
+  scene_graph->RegisterAnchoredGeometry(
+      source_id, MakeInstance(cylinder, Vector3d(x, -0.25, 0),
+                              Rgba(0.25, 1.0, 0.25), "rgba_cylinder"));
+  scene_graph->RegisterAnchoredGeometry(
+      source_id, MakeInstance(cylinder, Vector3d(x, 0.25, 0), texture_path,
+                              "texture_cylinder"));
+  x += dx;
+
+  const Ellipsoid ellipsoid(0.05, 0.025, 0.0375);
+  scene_graph->RegisterAnchoredGeometry(
+      source_id, MakeInstance(ellipsoid, Vector3d(x, -0.25, 0),
+                              Rgba(0.25, 1.0, 1.0), "rgba_ellipsoid"));
+  scene_graph->RegisterAnchoredGeometry(
+      source_id, MakeInstance(ellipsoid, Vector3d(x, 0.25, 0), texture_path,
+                              "texture_ellipsoid"));
+  x += dx;
+
+  const Sphere sphere(0.05);
+  scene_graph->RegisterAnchoredGeometry(
+      source_id, MakeInstance(sphere, Vector3d(x, -0.25, 0),
+                              Rgba(0.25, 0.25, 1.0), "rgba_sphere"));
+  scene_graph->RegisterAnchoredGeometry(
+      source_id, MakeInstance(sphere, Vector3d(x, 0.25, 0), texture_path,
+                              "texture_sphere"));
+  x += dx;
+
+  // We also need to add Mesh, Convex, and HalfSpace.
+}
 
 int do_main() {
   // Declare builder, plant, and scene_graph.
@@ -97,20 +195,17 @@ int do_main() {
   scene_graph->AddRenderer(render_name,
                            MakeRenderEngineVtk(RenderEngineVtkParams()));
 
-  // Add ycb models into a MultibodyPlant.
+  AddShapes(scene_graph);
+
+  // Add a single body (using a textured mesh) into a MultibodyPlant. We'll
+  // use MBP to *move* the object (by giving it an initial velocity; we don't
+  // want to have to wait for gravity to take effect to observe a difference
+  // in position.
   Parser parser{plant};
   const auto mustard_bottle = parser.AddModelFromFile(
       FindResourceOrThrow(
           "drake/manipulation/models/ycb/sdf/006_mustard_bottle.sdf"),
-          "mustard_bottle");
-  const RigidTransformd X_WMustardBottle(
-      RollPitchYawd{-M_PI / 2, 0, -M_PI / 2}, Vector3d(0, 0, 0));
-
-  plant->WeldFrames(
-      plant->world_frame(),
-      plant->GetFrameByName("base_link_mustard", mustard_bottle),
-      X_WMustardBottle);
-
+      "mustard_bottle");
 
   DrakeLcm lcm;
   DrakeVisualizerd::AddToBuilder(&builder, *scene_graph, &lcm);
@@ -175,6 +270,23 @@ int do_main() {
 
   systems::Simulator<double> simulator(*diagram);
 
+  auto& context = static_cast<systems::DiagramContext<double>&>(
+      simulator.get_mutable_context());
+  auto& plant_context = diagram->GetMutableSubsystemContext(*plant, &context);
+
+  // Initialize the moving bottle's position and speed so we can observe motion.
+  // The mustard bottle spins while climbing slightly.
+  plant->mutable_gravity_field().set_gravity_vector({0, 0, 0});
+  const auto& mustard_body =
+      plant->GetBodyByName("base_link_mustard", mustard_bottle);
+  const RigidTransformd X_WMustardBottle(RollPitchYawd{-M_PI / 2, 0, -M_PI / 2},
+                                         Vector3d(0, 0, 0));
+  plant->SetFreeBodyPose(&plant_context, mustard_body, X_WMustardBottle);
+  const multibody::SpatialVelocity<double> V_WMustardBottle(
+      Vector3d{0.6, 0, 0}, Vector3d{0, 0, 0.1});
+  plant->SetFreeBodySpatialVelocity(&plant_context, mustard_body,
+                                    V_WMustardBottle);
+
   simulator.get_mutable_integrator().set_maximum_step_size(0.002);
   simulator.set_target_realtime_rate(1.f);
   simulator.Initialize();
@@ -193,4 +305,3 @@ int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::geometry::render::minimal_example::do_main();
 }
-
