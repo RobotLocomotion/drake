@@ -18,6 +18,14 @@ namespace sensors {
 /// The inputs to this system are assumed to be in radians, and the outputs of
 /// the system are also in radians.
 ///
+/// @system
+/// name: RotaryEncoders
+/// input_ports:
+/// - u0
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @ingroup sensor_systems
 template <typename T>
 class RotaryEncoders final : public VectorSystem<T> {

@@ -15,6 +15,15 @@ namespace sensors {
 /// of images (lcmt_image).  The system has output ports for one color image as
 /// an ImageRgba8U and one depth image as ImageDepth32F (intended to be
 /// similar to the API of RgbdCamera, though without the label image port).
+///
+/// @system
+/// name: LcmImageArrayToImages
+/// input_ports:
+/// - image_array_t
+/// output_ports:
+/// - color_image
+/// - depth_image
+/// @endsystem
 class LcmImageArrayToImages : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmImageArrayToImages)
