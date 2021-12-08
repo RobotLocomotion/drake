@@ -10,6 +10,79 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+// a good way to document it and describe its invariants.
+template <typename T>
+SapConstraintsBundle<T>::SapConstraintsBundle(
+    BlockSparseMatrix<T>&& J, VectorX<T>&& vhat, VectorX<T>&& R,
+    std::vector<std::unique_ptr<Projection<T>>>&& projections)
+    : J_(std::move(J)),
+      vhat_(std::move(vhat)),
+      R_(std::move(R)),
+      Rinv_(R_.cwiseInverse()),
+      projections_(std::move(projections)) {}
+
+template <typename T>
+int SapConstraintsBundle<T>::num_constraints() const {
+  return projections_.size();
+}
+
+template <typename T>
+void SapConstraintsBundle<T>::MultiplyByJacobian(const VectorX<T>& v,
+                                                 VectorX<T>* vc) const {
+  J_.Multiply(v, vc);
+}
+
+template <typename T>
+void SapConstraintsBundle<T>::MultiplyByJacobianTranspose(
+    const VectorX<T>& gamma, VectorX<T>* jc) const {
+  J_.MultiplyByTranspose(gamma, jc);
+}
+
+template <typename T>
+void SapConstraintsBundle<T>::CalcUnprojectedImpulses(const VectorX<T>& vc,
+                                                      VectorX<T>* y) const {
+  *y = Rinv_.asDiagonal() * (vhat_ - vc);
+}
+
+template <typename T>
+void SapConstraintsBundle<T>::ProjectImpulses(
+    const VectorX<T>& y, const VectorX<T>& R, VectorX<T>* gamma,
+    std::vector<MatrixX<T>>* dPdy) const {
+  int constraint_start = 0;
+  for (int k = 0; k < num_constraints(); ++k) {
+    const Projection<T>& P = *projections_[k];
+    const int nk = P.dimension();
+    const auto y_k = y.segment(constraint_start, nk);
+    const auto R_k = R.segment(constraint_start, nk);
+    auto gamma_k = gamma->segment(constraint_start, nk);
+    if (dPdy != nullptr) {
+      MatrixX<T>& dPdy_k = (*dPdy)[k];
+      P.Project(y_k, R_k, &gamma_k, &dPdy_k);
+    } else {
+      P.Project(y_k, R_k, &gamma_k);
+    }
+    constraint_start += nk;
+  }
+}
+
+template <typename T>
+void SapConstraintsBundle<T>::CalcProjectImpulsesAndCalcConstraintsHessian(
+    const VectorX<T>& y, const VectorX<T>& R, VectorX<T>* gamma,
+    std::vector<MatrixX<T>>* G) const {
+  Project(y, R, gamma, G);  // G = dPdy.
+
+  // The regularizer Hessian is G = ∇²ℓ = d²ℓ/dvc² = dP/dy⋅R⁻¹.
+  int constraint_start = 0;
+  for (int k = 0; k < num_constraints(); ++k) {
+    const Projection<T>& P = *projections_[k];
+    const int nk = P.dimension();
+    const auto R_k = R.segment(constraint_start, nk);
+    const MatrixUpTo6<T> dPdy_k = (*G)[k];
+    (*G)[k] = dPdy_k * R_k.cwiseInverse().asDiagonal();
+    constraint_start += nk;
+  }
+}
+
 template <typename T>
 ContactSolverStatus SapSolver<T>::SolveWithGuess(
     const T& time_step, const SystemDynamicsData<T>& dynamics_data,
@@ -96,38 +169,6 @@ Vector3<T> SapSolver<T>::CalcProjectionOntoFrictionCone(
   }
 
   return gamma;
-}
-
-template <typename T>
-void SapSolver<T>::ProjectImpulses(const VectorX<T>& y, VectorX<T>* gamma,
-                                   std::vector<Matrix3<T>>* dgamma_dy) const {
-  const int nc = data().nc;
-  const int nc3 = 3 * nc;
-  DRAKE_DEMAND(y.size() == nc3);
-  DRAKE_DEMAND(gamma->size() == nc3);
-  if (dgamma_dy != nullptr)
-    DRAKE_DEMAND(static_cast<int>(dgamma_dy->size()) == nc);
-
-  // Data.
-  const auto& R = data().R;
-  const auto& mu = data().mu;
-
-  for (int ic = 0; ic < nc; ic++) {
-    const int ic3 = 3 * ic;
-    const auto& R_ic = R.template segment<3>(ic3);
-    const T& mu_ic = mu(ic);
-    const auto& y_ic = y.template segment<3>(ic3);
-
-    // Analytical projection of y onto the friction cone ℱ using the R norm.
-    auto gamma_ic = gamma->template segment<3>(ic3);
-    if (dgamma_dy != nullptr) {
-      auto& dgamma_dy_ic = (*dgamma_dy)[ic];
-      gamma_ic =
-          CalcProjectionOntoFrictionCone(mu_ic, R_ic, y_ic, &dgamma_dy_ic);
-    } else {
-      gamma_ic = CalcProjectionOntoFrictionCone(mu_ic, R_ic, y_ic);
-    }
-  }
 }
 
 template <typename T>
@@ -256,6 +297,21 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
   data.mu = mu;
   data.A.Multiply(data.v_star, &data.p_star);
 
+  // TODO: For now I'll duplicate data until all code depends on the bundle
+  // only.
+  BlockSparseMatrix<T> J_copy = data.J;
+  VectorX<T> vhat_copy = data.vhat;
+  VectorX<T> R_copy = data.R;
+  // Make projections for each constraint.
+  std::vector<std::unique_ptr<Projection<T>>> projections;
+  projections.reserve(nc);
+  for (int ic = 0; ic < nc; ++ic) {
+    projections.push_back(std::make_unique<FrictionConeProjection<T>>(mu(ic)));
+  }
+  data.constraints_bundle = std::make_unique<SapConstraintsBundle<T>>(
+      std::move(J_copy), std::move(vhat_copy), std::move(R_copy),
+      std::move(projections));
+
   return data;
 }
 
@@ -275,7 +331,8 @@ void SapSolver<T>::PackContactResults(const PreProcessedData& data,
   // forces.
   results->fn /= data.time_step;
   results->ft /= data.time_step;
-  data.J.MultiplyByTranspose(gamma, &results->tau_contact);
+  data.constraints_bundle->MultiplyByJacobianTranspose(gamma,
+                                                       &results->tau_contact);
   results->tau_contact /= data.time_step;
 }
 
@@ -512,7 +569,7 @@ void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
   {
     int nc = data().nc;
     const auto& A = data().A;
-    const auto& J = data().J;
+    const auto& J = constraints_bundle().J();
     const auto& G = cache.gradients_cache().G;
 
     MatrixX<T> Jdense(3 * nc, nv);
@@ -546,8 +603,8 @@ void SapSolver<T>::UpdateVelocitiesCache(const State& state,
                                          Cache* cache) const {
   if (cache->valid_velocities_cache()) return;
   auto& velocities_cache = cache->mutable_velocities_cache();
-  const auto& Jc = data().J;
-  Jc.Multiply(state.v(), &velocities_cache.vc);
+  data().constraints_bundle->MultiplyByJacobian(state.v(),
+                                                 &velocities_cache.vc);
   velocities_cache.valid = true;
 }
 
@@ -556,12 +613,9 @@ void SapSolver<T>::UpdateImpulsesCache(const State& state, Cache* cache) const {
   if (cache->valid_impulses_cache()) return;
   UpdateVelocitiesCache(state, cache);
   auto& impulses_cache = cache->mutable_impulses_cache();
-  const VectorX<T>& Rinv = data().Rinv;
-  const VectorX<T>& vhat = data().vhat;
-  impulses_cache.y = vhat - cache->vc();
-  // The (unprojected) impulse y=−R⁻¹⋅(vc − v̂).
-  impulses_cache.y.array() *= Rinv.array();
-  ProjectImpulses(impulses_cache.y, &impulses_cache.gamma);
+  constraints_bundle().CalcUnprojectedImpulses(cache->vc(), &impulses_cache.y);
+  constraints_bundle().ProjectImpulses(impulses_cache.y, data().R,
+                                       &impulses_cache.gamma);
   ++mutable_stats().num_impulses_cache_updates;
   impulses_cache.valid = true;
 }
@@ -572,7 +626,8 @@ void SapSolver<T>::UpdateMomentumCache(const State& state, Cache* cache) const {
   UpdateImpulsesCache(state, cache);
   auto& momentum_cache = cache->mutable_momentum_cache();
   data().A.Multiply(state.v(), &momentum_cache.p);  // p = A⋅v.
-  data().J.MultiplyByTranspose(state.cache().gamma(), &momentum_cache.j);
+  constraints_bundle().MultiplyByJacobianTranspose(state.cache().gamma(),
+                                                   &momentum_cache.j);
   // = p - p* = A⋅(v−v*).
   momentum_cache.momentum_change = momentum_cache.p - data().p_star;
   momentum_cache.valid = true;
@@ -611,8 +666,9 @@ void SapSolver<T>::UpdateCostAndGradientsCache(const State& state,
   const VectorX<T>& vhat = data().vhat;
   impulses_cache.y = vhat - cache->vc();
   impulses_cache.y.array() *= Rinv.array();
-  ProjectImpulses(impulses_cache.y, &impulses_cache.gamma,
-                  &gradients_cache.dgamma_dy);
+  constraints_bundle().ProjectImpulses(impulses_cache.y, data().R,
+                                       &impulses_cache.gamma,
+                                       &gradients_cache.dgamma_dy);
   ++mutable_stats().num_impulses_cache_updates;
   impulses_cache.valid = true;
 
@@ -624,9 +680,9 @@ void SapSolver<T>::UpdateCostAndGradientsCache(const State& state,
   // Update ∇ᵥℓ.
   const VectorX<T>& gamma = cache->gamma();
   const VectorX<T>& Adv = cache->momentum_cache().momentum_change;
-  data().J.MultiplyByTranspose(gamma,
-                               &gradients_cache.ell_grad_v);  // = Jᵀγ
-  gradients_cache.ell_grad_v = -gradients_cache.ell_grad_v;   // = -Jᵀγ
+  constraints_bundle().MultiplyByJacobianTranspose(
+      gamma, &gradients_cache.ell_grad_v);                   // = Jᵀγ
+  gradients_cache.ell_grad_v = -gradients_cache.ell_grad_v;  // = -Jᵀγ
   gradients_cache.ell_grad_v += Adv;  // = A⋅(v−v*) - Jᵀγ
 
   // Update G. G = -∂γ/∂vc = dP/dy⋅R⁻¹.
@@ -656,8 +712,8 @@ void SapSolver<T>::UpdateSearchDirectionCache(const State& state,
   CallDenseSolver(state, &search_direction_cache.dv);
 
   // Update Δp, Δvc and d²ellM/dα².
-  const auto& Jop = data().J;
-  Jop.Multiply(search_direction_cache.dv, &search_direction_cache.dvc);
+  constraints_bundle().MultiplyByJacobian(search_direction_cache.dv,
+                                          &search_direction_cache.dvc);
   data().A.Multiply(search_direction_cache.dv, &search_direction_cache.dp);
   search_direction_cache.d2ellM_dalpha2 =
       search_direction_cache.dv.dot(search_direction_cache.dp);

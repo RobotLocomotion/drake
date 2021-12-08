@@ -67,7 +67,7 @@ template <typename T>
 SapFrictionConeConstraint<T>::SapFrictionConeConstraint(int clique,
                                                         const MatrixX<T>& J,
                                                         const T& mu)
-    : SapConstraint<T>(clique, J), mu_(mu) {
+    : SapConstraint<T>(clique, J), projection_(mu) {
   DRAKE_DEMAND(mu >= 0.0);
   DRAKE_DEMAND(this->clique0_jacobian().rows() == 3);
 }
@@ -78,7 +78,7 @@ SapFrictionConeConstraint<T>::SapFrictionConeConstraint(int clique0,
                                                         const MatrixX<T>& J0,
                                                         const MatrixX<T>& J1,
                                                         const T& mu)
-    : SapConstraint<T>(clique0, clique1, J0, J1), mu_(mu) {
+    : SapConstraint<T>(clique0, clique1, J0, J1), projection_(mu) {
   DRAKE_DEMAND(mu >= 0.0);
   DRAKE_DEMAND(this->clique0_jacobian().rows() == 3);
   DRAKE_DEMAND(this->clique1_jacobian().rows() == 3);

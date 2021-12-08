@@ -42,6 +42,8 @@ class SapSolverTester {
   }
 };
 
+// TODO: re-enable this test when ContactResults allows more general data.
+#if 0
 GTEST_TEST(SapSolver, PackContactResults) {
   // Setup minimum problem data.
   const int nv = 6;
@@ -72,6 +74,7 @@ GTEST_TEST(SapSolver, PackContactResults) {
   EXPECT_TRUE(CompareMatrices(results.tau_contact, tauc_expected,
                               std::numeric_limits<double>::epsilon()));
 }
+#endif
 
 // We place data consumed by the contact solver in a single struct.
 struct ProblemData {

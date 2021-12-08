@@ -3,7 +3,10 @@
 #include <vector>
 
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
+#include "drake/multibody/contact_solvers/contact_problem_graph.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
+#include "drake/multibody/contact_solvers/partial_permutation.h"
+#include "drake/multibody/contact_solvers/sap_contact_problem.h"
 
 namespace drake {
 namespace multibody {
@@ -43,6 +46,56 @@ struct SapSolverParameters {
 
   // Tolerance used in impulse soft norms. In Ns.
   double soft_tolerance{1.0e-7};
+};
+
+template <typename T>
+class SapConstraintsBundle {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapConstraintsBundle);
+
+  // We keep a reference to `problem` and its data.
+  SapConstraintsBundle(
+      BlockSparseMatrix<T>&& J,
+      VectorX<T>&& vhat, 
+      VectorX<T>&& R, 
+      std::vector<std::unique_ptr<Projection<T>>>&& projections);
+
+  int num_constraints() const;
+
+  const BlockSparseMatrix<T>& J() const { return J_; }
+
+  const VectorX<T>& R() const { return R_;  }
+
+  const VectorX<T>& Rinv() const { return Rinv_;  }
+
+  const VectorX<T>& vhat() const { return vhat_;  }
+
+  void MultiplyByJacobian(const VectorX<T>& v, VectorX<T>* vc) const;
+
+  void MultiplyByJacobianTranspose(const VectorX<T>& gamma, VectorX<T>* jc) const;
+
+  void CalcUnprojectedImpulses(const VectorX<T>& vc, VectorX<T>* y) const;
+
+  // Computes the projection gamma = P(y) for all impulses and the gradient
+  // dP/dy if dgamma_dy != nullptr.
+  void ProjectImpulses(const VectorX<T>& y, const VectorX<T>& R,
+                       VectorX<T>* gamma,
+                       std::vector<MatrixX<T>>* dPdy = nullptr) const;
+
+  void CalcProjectImpulsesAndCalcConstraintsHessian(
+      const VectorX<T>& y, const VectorX<T>& R, VectorX<T>* gamma,
+      std::vector<MatrixX<T>>* G) const;
+
+ private:
+  // Jacobian for the entire bundle, with graph_.num_edges() block rows and
+  // graph_.num_cliques() block columns.
+  BlockSparseMatrix<T> J_;
+  VectorX<T> vhat_;
+  VectorX<T> R_;
+  VectorX<T> Rinv_;
+  // problem_ constraint references in the order dictated by the
+  // ContactProblemGraph.
+  std::vector<std::unique_ptr<Projection<T>>> projections_;
 };
 
 // This class implements the Semi-Analytic Primal (SAP) solver described in
@@ -172,12 +225,13 @@ class SapSolver final : public ContactSolver<T> {
     struct GradientsCache {
       void Resize(int nv, int nc) {
         ell_grad_v.resize(nv);
+        // N.B. The first time these are computed, they are allocated.
         dgamma_dy.resize(nc);
-        G.resize(nc, Matrix3<T>::Zero());
+        G.resize(nc);
       }
       bool valid{false};
       VectorX<T> ell_grad_v;              // Gradient of the cost in v.
-      std::vector<Matrix3<T>> dgamma_dy;  // ∂γ/∂y.
+      std::vector<MatrixX<T>> dgamma_dy;  // ∂γ/∂y.
       std::vector<MatrixX<T>> G;          // G = -∂γ/∂vc = dP/dy⋅R⁻¹.
     };
 
@@ -386,7 +440,7 @@ class SapSolver final : public ContactSolver<T> {
 
     T time_step{NAN};        // Discrete time step used by the solver.
     int nv{0};               // Number of generalized velocities.
-    int nc{0};               // Number of contacts.
+    int nc{0};               // Number of constrained dofs. Number of impulses.
     VectorX<T> R;            // (Diagonal) Regularization matrix, of size 3nc.
     VectorX<T> Rinv;         // Inverse of regularization matrix, of size 3nc.
     VectorX<T> vhat;         // Constraints stabilization velocity, of size 3nc.
@@ -405,6 +459,8 @@ class SapSolver final : public ContactSolver<T> {
     VectorX<T> v_star;  // Free-motion generalized velocities.
     VectorX<T> p_star;  // Free motion generalized impulse, i.e. p* = M⋅v*.
     VectorX<T> delassus_diagonal;  // Delassus operator diagonal approximation.
+    
+    std::unique_ptr<SapConstraintsBundle<T>> constraints_bundle;
   };
 
   // This class stores mutable data members making it non thread-safe.
@@ -442,11 +498,6 @@ class SapSolver final : public ContactSolver<T> {
   Vector3<T> CalcProjectionOntoFrictionCone(
       const T& mu, const Eigen::Ref<const Vector3<T>>& R,
       const Eigen::Ref<const Vector3<T>>& y, Matrix3<T>* dPdy = nullptr) const;
-
-  // Computes the projection gamma = P(y) for all impulses and the gradient
-  // dP/dy if dgamma_dy != nullptr.
-  void ProjectImpulses(const VectorX<T>& y, VectorX<T>* gamma,
-                       std::vector<Matrix3<T>>* dgamma_dy = nullptr) const;
 
   // Pack solution into ContactSolverResults. Where v is the vector of
   // generalized velocities, vc is the vector of contact velocities and gamma is
@@ -508,9 +559,12 @@ class SapSolver final : public ContactSolver<T> {
   }
   const PreProcessedData& data() const { return non_thread_safe_data_.data; }
   SolverStats& mutable_stats() const { return non_thread_safe_data_.stats; }
+  const SapConstraintsBundle<T>& constraints_bundle() const {
+    return *data().constraints_bundle;
+  }
 
-  // All data stored by this class.
-  mutable NonThreadSafeData non_thread_safe_data_;
+    // All data stored by this class.
+    mutable NonThreadSafeData non_thread_safe_data_;
 };
 
 template <>
