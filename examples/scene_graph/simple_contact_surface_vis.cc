@@ -209,10 +209,12 @@ class ContactResultMaker final : public LeafSystem<double> {
     std::vector<ContactSurface<double>> surfaces;
     std::vector<PenetrationAsPointPair<double>> points;
     if (use_strict_hydro_) {
-      surfaces = query_object.ComputeContactSurfaces();
+      surfaces = query_object.ComputeContactSurfaces(
+          geometry::HydroelasticContactRepresentation::kTriangle);
     } else {
-      query_object.ComputeContactSurfacesWithFallback(&surfaces,
-                                                      &points);
+      query_object.ComputeContactSurfacesWithFallback(
+          geometry::HydroelasticContactRepresentation::kTriangle, &surfaces,
+          &points);
     }
     const int num_surfaces = static_cast<int>(surfaces.size());
     const int num_pairs = static_cast<int>(points.size());
