@@ -267,8 +267,8 @@ class ContactResultMaker final : public LeafSystem<double> {
             inspector.NumGeometriesForFrameWithRole(inspector.GetFrameId(id2),
                                                     Role::kProximity);
 
-        const auto& mesh_W = surface.mesh_W();
-        const auto& e_MN_W = surface.e_MN();
+        const auto& mesh_W = surface.tri_mesh_W();
+        const auto& e_MN_W = surface.tri_e_MN();
         // Fake contact *force* and *moment* data, with some variations across
         // different faces to facilitate visualizer testing.
         write_double3(mesh_W.centroid(), surface_message.centroid_W);

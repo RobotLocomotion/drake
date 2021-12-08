@@ -219,8 +219,8 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     surface_message.body2_unique = name2.body_name_is_unique;
     surface_message.collision_count2 = name2.geometry_count;
 
-    const auto& mesh_W = contact_surface.mesh_W();
-    const auto& e_MN_W = contact_surface.e_MN();
+    const auto& mesh_W = contact_surface.tri_mesh_W();
+    const auto& e_MN_W = contact_surface.tri_e_MN();
 
     // Resultant force quantities.
     write_double3(mesh_W.centroid(), surface_message.centroid_W);
