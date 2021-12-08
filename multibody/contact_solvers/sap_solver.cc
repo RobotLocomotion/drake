@@ -236,7 +236,6 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
 
   // Store operators as block-sparse matrices.
   dynamics_data.get_A().AssembleMatrix(&data.A);
-  contact_data.get_Jc().AssembleMatrix(&data.J);
 
   // Extract momentum matrix's per-tree diagonal blocks. Compute diagonal
   // scaling inv_sqrt_A.
@@ -262,8 +261,9 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
   // Computation of a diagonal approximation to the Delassus operator. N.B. This
   // must happen before the computation of the regularization R below.
   const int nc = phi0.size();
-  CalcDelassusDiagonalApproximation(nc, data.At, data.J,
-                                    &data.delassus_diagonal);
+  BlockSparseMatrix<T> J;
+  contact_data.get_Jc().AssembleMatrix(&J);
+  CalcDelassusDiagonalApproximation(nc, data.At, J, &data.delassus_diagonal);
 
   // We use the Delassus scaling computed above to estimate regularization
   // parameters in the matrix R.
@@ -299,7 +299,6 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
 
   // TODO: For now I'll duplicate data until all code depends on the bundle
   // only.
-  BlockSparseMatrix<T> J_copy = data.J;
   VectorX<T> vhat_copy = data.vhat;
   VectorX<T> R_copy = data.R;
   // Make projections for each constraint.
@@ -309,7 +308,7 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
     projections.push_back(std::make_unique<FrictionConeProjection<T>>(mu(ic)));
   }
   data.constraints_bundle = std::make_unique<SapConstraintsBundle<T>>(
-      std::move(J_copy), std::move(vhat_copy), std::move(R_copy),
+      std::move(J), std::move(vhat_copy), std::move(R_copy),
       std::move(projections));
 
   return data;

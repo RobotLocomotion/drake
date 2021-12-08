@@ -445,7 +445,6 @@ class SapSolver final : public ContactSolver<T> {
     VectorX<T> Rinv;         // Inverse of regularization matrix, of size 3nc.
     VectorX<T> vhat;         // Constraints stabilization velocity, of size 3nc.
     VectorX<T> mu;           // Friction coefficients, of size nc.
-    BlockSparseMatrix<T> J;  // Jacobian as block-sparse matrix.
     BlockSparseMatrix<T> A;  // Momentum matrix as block-sparse matrix.
     std::vector<MatrixX<T>> At;  // Per-tree blocks of the momentum matrix.
 
