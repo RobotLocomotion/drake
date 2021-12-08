@@ -96,9 +96,10 @@ VectorX<T> SapFrictionConeConstraint<T>::Project(
 }
 
 template <typename T>
-SapContactProblem<T>::SapContactProblem(std::vector<MatrixX<T>>&& A,
+SapContactProblem<T>::SapContactProblem(const T& time_step,
+                                        std::vector<MatrixX<T>>&& A,
                                         VectorX<T>&& v_star)
-    : A_(std::move(A)), v_star_(std::move(v_star)) {
+    : time_step_(time_step), A_(std::move(A)), v_star_(std::move(v_star)) {
   nv_ = 0;
   for (const auto& Ac : A_) {
     DRAKE_DEMAND(Ac.rows() == Ac.cols());
@@ -135,7 +136,8 @@ void SapContactProblem<T>::AddConstraint(std::unique_ptr<SapConstraint<T>> c) {
   if (c->clique1() >= 0) {
     DRAKE_DEMAND(c->clique1_jacobian().cols() == num_velocities(c->clique1()));
   }
-  constraints_.push_back(std::move(c));
+  num_constrained_dofs_ += c->num_constrained_dofs();
+  constraints_.push_back(std::move(c));  
 }
 
 template <typename T>

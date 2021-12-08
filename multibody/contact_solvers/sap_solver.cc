@@ -233,12 +233,100 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
   VectorX<T>& inv_sqrt_A = data.inv_sqrt_A;
 
   // Store operators as block-sparse matrices.
+  BlockSparseMatrix<T> A;
+  dynamics_data.get_A().AssembleMatrix(&A);
+
+  // Extract momentum matrix's per-tree diagonal blocks. Compute diagonal
+  // scaling inv_sqrt_A.
+  data.At.clear();
+  data.At.reserve(A.num_blocks());
+  for (const auto& block : A.get_blocks()) {
+    const int t1 = std::get<0>(block);
+    const int t2 = std::get<1>(block);
+    const MatrixX<T>& Aij = std::get<2>(block);
+    // We verify the assumption that M is block diagonal.
+    DRAKE_DEMAND(t1 == t2);
+    // Each block must be square.
+    DRAKE_DEMAND(Aij.rows() == Aij.cols());
+
+    const int nt = Aij.rows();  // Number of DOFs in the tree.
+    data.At.push_back(Aij);
+
+    const int start = A.row_start(t1);
+    DRAKE_DEMAND(start == A.col_start(t2));
+    inv_sqrt_A.segment(start, nt) = Aij.diagonal().cwiseInverse().cwiseSqrt();
+  }
+
+  // Computation of a diagonal approximation to the Delassus operator. N.B. This
+  // must happen before the computation of the regularization R below.
+  const int nc = phi0.size();
+  BlockSparseMatrix<T> J;
+  contact_data.get_Jc().AssembleMatrix(&J);
+  CalcDelassusDiagonalApproximation(nc, data.At, J, &data.delassus_diagonal);
+
+  // We use the Delassus scaling computed above to estimate regularization
+  // parameters in the matrix R.
+  const VectorX<T>& delassus_diagonal = data.delassus_diagonal;
+  const double beta = parameters().beta;
+  const double sigma = parameters().sigma;
+  
+  // Rigid approximation constant: Rₙ = β²/(4π²)⋅wᵢ when the contact frequency
+  // ωₙ is below the limit ωₙ⋅δt ≤ 2π. That is, the period is Tₙ = β⋅δt. See
+  // [Castro et al., 2021] for details.
+  const T beta_factor = beta * beta / (4.0 * M_PI * M_PI);
+  VectorX<T> vhat(3 * nc);
+  VectorX<T> R(3 * nc);
+  for (int ic = 0; ic < nc; ++ic) {
+    const int ic3 = 3 * ic;
+    const T& k = stiffness(ic);
+    const T& c = dissipation(ic);
+    DRAKE_DEMAND(k > 0 && c >= 0);
+    const T& wi = delassus_diagonal(ic);
+    const T taud = c / k;  // Damping time scale.
+    const T Rn =
+        max(beta_factor * wi, 1.0 / (time_step * k * (time_step + taud)));
+    const T Rt = sigma * wi;
+    R.template segment<3>(ic3) = Vector3<T>(Rt, Rt, Rn);
+
+    // Stabilization velocity.
+    const T vn_hat = -phi0(ic) / (time_step + taud);
+    vhat.template segment<3>(ic3) = Vector3<T>(0, 0, vn_hat);
+  }
+  
+  data.v_star = dynamics_data.get_v_star();
+  A.Multiply(data.v_star, &data.p_star);
+
+  // Make projections for each constraint.
+  std::vector<std::unique_ptr<Projection<T>>> projections;
+  projections.reserve(nc);
+  for (int ic = 0; ic < nc; ++ic) {
+    projections.push_back(std::make_unique<FrictionConeProjection<T>>(mu(ic)));
+  }
+  data.constraints_bundle = std::make_unique<SapConstraintsBundle<T>>(
+      std::move(J), std::move(vhat), std::move(R), std::move(projections));
+
+  return data;
+}
+
+#if 0
+template <typename T>
+typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
+    const SapContactProblem<T>& problem) const {
+  using std::max;
+  using std::min;
+  using std::sqrt;
+
+  PreProcessedData data(problem.time_step(), problem.num_velocities(),
+                        contact_data.num_constrained_dofs());  
+
+  // Store operators as block-sparse matrices.
   dynamics_data.get_A().AssembleMatrix(&data.A);
 
   // Extract momentum matrix's per-tree diagonal blocks. Compute diagonal
   // scaling inv_sqrt_A.
   data.At.clear();
   data.At.reserve(data.A.num_blocks());
+  VectorX<T>& inv_sqrt_A = data.inv_sqrt_A;
   for (const auto& block : data.A.get_blocks()) {
     const int t1 = std::get<0>(block);
     const int t2 = std::get<1>(block);
@@ -306,6 +394,7 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
 
   return data;
 }
+#endif
 
 template <typename T>
 void SapSolver<T>::PackContactResults(const PreProcessedData& data,
@@ -560,14 +649,18 @@ void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
   MatrixX<T> H(nv, nv);
   {
     int nc = data().nc;
-    const auto& A = data().A;
     const auto& J = constraints_bundle().J();
     const auto& G = cache.gradients_cache().G;
 
     MatrixX<T> Jdense(3 * nc, nv);
     Jdense = J.MakeDenseMatrix();
-    MatrixX<T> Adense(nv, nv);
-    Adense = A.MakeDenseMatrix();
+    MatrixX<T> Adense = MatrixX<T>::Zero(nv, nv);
+    // Make dense dynamics matrix.
+    int offset = 0;
+    for (const auto& A : data().At) {
+      const int block_size = A.rows();
+      Adense.block(offset, offset, block_size, block_size) = A;
+    }
 
     MatrixX<T> GJ(3 * nc, nv);
     for (int ic = 0, ic3 = 0; ic < nc; ic++, ic3 += 3) {
@@ -617,7 +710,7 @@ void SapSolver<T>::UpdateMomentumCache(const State& state, Cache* cache) const {
   if (cache->valid_momentum_cache()) return;
   UpdateImpulsesCache(state, cache);
   auto& momentum_cache = cache->mutable_momentum_cache();
-  data().A.Multiply(state.v(), &momentum_cache.p);  // p = A⋅v.
+  MultiplyByDynamicsMatrix(state.v(), &momentum_cache.p);  // p = A⋅v.
   constraints_bundle().MultiplyByJacobianTranspose(state.cache().gamma(),
                                                    &momentum_cache.j);
   // = p - p* = A⋅(v−v*).
@@ -706,7 +799,8 @@ void SapSolver<T>::UpdateSearchDirectionCache(const State& state,
   // Update Δp, Δvc and d²ellM/dα².
   constraints_bundle().MultiplyByJacobian(search_direction_cache.dv,
                                           &search_direction_cache.dvc);
-  data().A.Multiply(search_direction_cache.dv, &search_direction_cache.dp);
+  MultiplyByDynamicsMatrix(search_direction_cache.dv,
+                           &search_direction_cache.dp);  // Δp = A⋅Δv
   search_direction_cache.d2ellM_dalpha2 =
       search_direction_cache.dv.dot(search_direction_cache.dp);
 

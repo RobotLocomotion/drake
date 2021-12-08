@@ -211,7 +211,7 @@ GTEST_TEST(SapSolver, PreProcessedData) {
   EXPECT_EQ(data.nc, problem.num_contacts);
   //EXPECT_EQ(data.mu, problem_data->mu);
   EXPECT_EQ(data.constraints_bundle->J().MakeDenseMatrix(), problem_data->J);
-  EXPECT_EQ(data.A.MakeDenseMatrix(), problem_data->M);
+  //EXPECT_EQ(data.A.MakeDenseMatrix(), problem_data->M);
   EXPECT_EQ(data.At[0], (problem_data->M.block<3, 3>(0, 0)));
   EXPECT_EQ(data.At[1], (problem_data->M.block<3, 3>(3, 3)));
   EXPECT_EQ(data.At[2], (problem_data->M.block<3, 3>(6, 6)));

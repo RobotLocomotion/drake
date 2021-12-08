@@ -203,7 +203,8 @@ class SapContactProblem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapContactProblem);
 
-  SapContactProblem(std::vector<MatrixX<T>>&& A, VectorX<T>&& v_star);
+  SapContactProblem(const T& time_step, std::vector<MatrixX<T>>&& A,
+                    VectorX<T>&& v_star);
 
   SapContactProblem(
       std::vector<MatrixX<T>>&& A, VectorX<T>&& v_star,
@@ -215,21 +216,29 @@ class SapContactProblem {
 
   int num_constraints() const;
 
+  int num_constrained_dofs() const { return num_constrained_dofs_; }
+
   int num_velocities() const;
 
   int num_velocities(int clique) const;
 
   const SapConstraint<T>& get_constraint(int k) const;
 
+  const T& time_step() const { return time_step_;  }
+
   // Returns the block diagonal dynamics matrix A.
   const std::vector<MatrixX<T>>& dynamics_matrix() const;
+
+  const VectorX<T>& v_star() const { return v_star_;  }
 
   ContactProblemGraph MakeGraph() const;
 
  private:
   int nv_{0};
+  T time_step_{0.0};
   std::vector<MatrixX<T>> A_;
   VectorX<T> v_star_;
+  int num_constrained_dofs_{0};
   std::vector<std::unique_ptr<SapConstraint<T>>> constraints_;
 };
 

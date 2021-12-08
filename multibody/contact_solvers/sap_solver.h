@@ -413,7 +413,7 @@ class SapSolver final : public ContactSolver<T> {
     PreProcessedData() = default;
 
     // @param nv Number of generalized velocities.
-    // @param nc Number of contact constraints.
+    // @param nc Total number of constrained DOFs.
     // @param dt The discrete time step used for simulation.
     PreProcessedData(double dt, int nv_in, int nc_in) : time_step(dt) {
       Resize(nv_in, nc_in);
@@ -423,7 +423,7 @@ class SapSolver final : public ContactSolver<T> {
     // generalized velocities and nc_in contact constraints. A call to this
     // method causes loss of all previously existing data.
     // @param nv_in Number of generalized velocities.
-    // @param nc_in Number of contact constraints.
+    // @param nc_in Total number of constrained DOFs.
     void Resize(int nv_in, int nc_in) {
       nv = nv_in;
       nc = nc_in;
@@ -436,7 +436,6 @@ class SapSolver final : public ContactSolver<T> {
     T time_step{NAN};        // Discrete time step used by the solver.
     int nv{0};               // Number of generalized velocities.
     int nc{0};               // Number of constrained dofs. Number of impulses.
-    BlockSparseMatrix<T> A;  // Momentum matrix as block-sparse matrix.
     std::vector<MatrixX<T>> At;  // Per-tree blocks of the momentum matrix.
 
     // Inverse of the diagonal matrix formed with the square root of the
@@ -479,6 +478,19 @@ class SapSolver final : public ContactSolver<T> {
   PreProcessedData PreProcessData(
       const T& time_step, const SystemDynamicsData<T>& dynamics_data,
       const PointContactData<T>& contact_data) const;
+
+  //PreProcessedData PreProcessData(const SapContactProblem<T>& problem) const;
+
+  // Performs multiplication p = A * v.
+  void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* p) const {
+    int block_start = 0;
+    for (const auto& Ab : data().At) {
+      const int block_size = Ab.rows();
+      p->segment(block_start, block_size) =
+          Ab * v.segment(block_start, block_size);
+      block_start += block_size;
+    }
+  }
 
   // Computes gamma = P(y) where P(y) is the projection of y onto the friction
   // cone defined by `mu` using the norm defined by `R`. The gradient dP/dy of
