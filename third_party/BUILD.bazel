@@ -5,12 +5,6 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 exports_files(
-    ["net_sf_jchart2d/LICENSE"],
-    licenses = ["restricted"],  # LGPL-3.0+
-    visibility = ["//tools/workspace/net_sf_jchart2d:__pkg__"],
-)
-
-exports_files(
     glob(["com_github_pybind_pybind11/**"]),
     licenses = ["notice"],  # BSD-3-Clause
     visibility = [

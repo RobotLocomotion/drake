@@ -20,7 +20,6 @@ if(${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX STREQUAL "/")
   set(${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX)
 endif()
 
-find_dependency(jchart2d CONFIG HINTS "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/cmake/jchart2d")
 set(_expectedTargets lcm::lcm-coretypes lcm::lcm lcm::lcm-gen lcm::lcm-java lcm::lcm-logger lcm::lcm-logplayer lcm::lcm-logplayer-gui lcm::lcm-spy)
 
 set(_targetsDefined)
