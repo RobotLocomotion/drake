@@ -430,7 +430,6 @@ class SapSolver final : public ContactSolver<T> {
       const int nc3 = 3 * nc;
       R.resize(nc3);
       Rinv.resize(nc3);
-      vhat.resize(nc3);
       mu.resize(nc);
       inv_sqrt_A.resize(nv);
       v_star.resize(nv);

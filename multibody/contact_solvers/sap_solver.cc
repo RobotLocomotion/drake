@@ -230,8 +230,7 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
   const VectorX<T>& dissipation = contact_data.get_dissipation();
 
   // Aliases to mutable pre-processed data.
-  VectorX<T>& R = data.R;
-  VectorX<T>& vhat = data.vhat;
+  VectorX<T>& R = data.R;  
   VectorX<T>& inv_sqrt_A = data.inv_sqrt_A;
 
   // Store operators as block-sparse matrices.
@@ -270,11 +269,12 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
   const VectorX<T>& delassus_diagonal = data.delassus_diagonal;
   const double beta = parameters().beta;
   const double sigma = parameters().sigma;
-
+  
   // Rigid approximation constant: Rₙ = β²/(4π²)⋅wᵢ when the contact frequency
   // ωₙ is below the limit ωₙ⋅δt ≤ 2π. That is, the period is Tₙ = β⋅δt. See
   // [Castro et al., 2021] for details.
   const T beta_factor = beta * beta / (4.0 * M_PI * M_PI);
+  VectorX<T> vhat(3 * nc);
   for (int ic = 0; ic < nc; ++ic) {
     const int ic3 = 3 * ic;
     const T& k = stiffness(ic);
@@ -299,7 +299,6 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
 
   // TODO: For now I'll duplicate data until all code depends on the bundle
   // only.
-  VectorX<T> vhat_copy = data.vhat;
   VectorX<T> R_copy = data.R;
   // Make projections for each constraint.
   std::vector<std::unique_ptr<Projection<T>>> projections;
@@ -308,7 +307,7 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
     projections.push_back(std::make_unique<FrictionConeProjection<T>>(mu(ic)));
   }
   data.constraints_bundle = std::make_unique<SapConstraintsBundle<T>>(
-      std::move(J), std::move(vhat_copy), std::move(R_copy),
+      std::move(J), std::move(vhat), std::move(R_copy),
       std::move(projections));
 
   return data;
@@ -662,7 +661,7 @@ void SapSolver<T>::UpdateCostAndGradientsCache(const State& state,
   auto& gradients_cache = cache->mutable_gradients_cache();
   UpdateVelocitiesCache(state, cache);
   const VectorX<T>& Rinv = data().Rinv;
-  const VectorX<T>& vhat = data().vhat;
+  const VectorX<T>& vhat = constraints_bundle().vhat();
   impulses_cache.y = vhat - cache->vc();
   impulses_cache.y.array() *= Rinv.array();
   constraints_bundle().ProjectImpulses(impulses_cache.y, data().R,
