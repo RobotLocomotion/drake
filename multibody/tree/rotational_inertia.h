@@ -989,40 +989,18 @@ class RotationalInertia {
   typename std::enable_if_t<scalar_predicate<T1>::is_bool>
   ThrowIfNotPhysicallyValid(const char* func_name) {
     DRAKE_DEMAND(func_name != nullptr);
-    if (CouldBePhysicallyValid())
-      return;
-
-    std::string error_msg = fmt::format(
-        "{}(): The rotational inertia\n"
-        "{}did not pass the test CouldBePhysicallyValid().",
-        func_name, *this);
-    // Provide additional information if a moment of inertia is non-negative
-    // or if moments of inertia do not satisfy the triangle inequality.
-    if constexpr (scalar_predicate<T>::is_bool) {
-      if (!IsNaN()) {
-        const Vector3<double> p = CalcPrincipalMomentsOfInertia();
-        if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-                p(0), p(1), p(2), /* epsilon = */ 0.0)) {
-          error_msg += fmt::format(
-              "\nThe associated principal moments of inertia:"
-              "\n{}  {}  {}", p(0), p(1), p(2));
-          if (p(0) < 0 || p(1) < 0 || p(2) < 0) {
-            error_msg += "\nare invalid since at least one is negative.";
-          } else {
-            error_msg += "\ndo not satisify the triangle inequality.";
-          }
-        }
-      }
-    }
-
-    throw std::logic_error(error_msg);
+    if (!CouldBePhysicallyValid())
+      ThrowNotPhysicallyValid(func_name);
   }
+
 
   // SFINAE for non-numeric types. See documentation in the implementation for
   // numeric types.
   template <typename T1 = T>
   typename std::enable_if_t<!scalar_predicate<T1>::is_bool>
   ThrowIfNotPhysicallyValid(const char*) {}
+
+  [[noreturn]] void ThrowNotPhysicallyValid(const char* func_name) const;
 
   // Throws an exception if a rotational inertia is multiplied by a negative
   // number - which implies that the resulting rotational inertia is invalid.

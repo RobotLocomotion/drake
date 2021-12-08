@@ -320,17 +320,17 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithZeroMass) {
   // Test when an attempt to form UnitInertia with a divide-by-zero problem.
   p_PBcm = Vector3d(0.0, 0.0, 0.0);
   const RotationalInertia<double> I(2, 3, 4);
-  std::string expected_msg =
-    "RotationalInertia::SetFromRotationalInertia\\(\\):"
-    " Division by zero mass or negative mass.";
+  const std::string expected_message =
+      "RotationalInertia::SetFromRotationalInertia\\(\\):"
+      " Division by zero mass or negative mass.";
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::MakeFromCentralInertia(mass_zero, p_PBcm, I),
-      std::exception, expected_msg);
+      expected_message);
 
   p_PBcm = Vector3d(1.0, 2.0, 3.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::MakeFromCentralInertia(mass_zero, p_PBcm, I),
-      std::exception, expected_msg);
+      expected_message);
 }
 
 // Test that it is not possible to create a spatial inertia with a bad
@@ -341,42 +341,42 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithBadInertia) {
   RotationalInertia<double> Ibad = I.MultiplyByScalarSkipValidityCheck(-1);
   Vector3d p_PBcm = Vector3d(0.0, 0.0, 0.0);
 
-  std::string expected_msg =
-    "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
-    " mass = 1(\\.0)?\n"
-    " Center of mass = \\[0(\\.0)?  0(\\.0)?  0(\\.0)?\\]\n"
-    " Inertia about point P, I_BP =\n"
-    "\\[  -2, -0.1, -0.2\\]\n"
-    "\\[-0.1,   -3, -0.3\\]\n"
-    "\\[-0.2, -0.3,   -4\\]\n"
-    " Principal moments of inertia about Bcm \\(center of mass\\) =\n"
-    "\\[-4.105976670111\\d+  -2.9188291125626\\d+  -1.9751942173260\\d+\\]\n";
+  const std::string expected_message =
+      "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
+      " mass = 1(\\.0)?\n"
+      " Center of mass = \\[0(\\.0)?  0(\\.0)?  0(\\.0)?\\]\n"
+      " Inertia about point P, I_BP =\n"
+      "\\[  -2, -0.1, -0.2\\]\n"
+      "\\[-0.1,   -3, -0.3\\]\n"
+      "\\[-0.2, -0.3,   -4\\]\n"
+      " Principal moments of inertia about Bcm \\(center of mass\\) =\n"
+      "\\[-4.105976670111\\d+  -2.9188291125626\\d+  -1.9751942173260\\d+\\]\n";
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::MakeFromCentralInertia(1.0, p_PBcm, Ibad),
-      std::exception, expected_msg);
+      expected_message);
 }
 
 // Tests IsPhysicallyValid() fails within the constructor since the COM given is
 // inconsistently too far out for the unit inertia provided.
 GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
-  std::string expected_msg =
-    "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
-    " mass = 1(\\.0)?\n"
-    " Center of mass = \\[2(\\.0)?  0(\\.0)?  0(\\.0)?\\]\n"
-    " Inertia about point P, I_BP =\n"
-    "\\[0.4,   0,   0\\]\n"
-    "\\[  0, 0.4,   0\\]\n"
-    "\\[  0,   0, 0.4\\]\n"
-    " Inertia about center of mass, I_BBcm =\n"
-    "\\[ 0.4,    0,    0\\]\n"
-    "\\[   0, -3.6,    0\\]\n"
-    "\\[   0,    0, -3.6\\]\n"
-    " Principal moments of inertia about Bcm \\(center of mass\\) =\n"
-    "\\[-3.6  -3.6  0.4\\]\n";
+  const std::string expected_message =
+      "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
+      " mass = 1(\\.0)?\n"
+      " Center of mass = \\[2(\\.0)?  0(\\.0)?  0(\\.0)?\\]\n"
+      " Inertia about point P, I_BP =\n"
+      "\\[0.4,   0,   0\\]\n"
+      "\\[  0, 0.4,   0\\]\n"
+      "\\[  0,   0, 0.4\\]\n"
+      " Inertia about center of mass, I_BBcm =\n"
+      "\\[ 0.4,    0,    0\\]\n"
+      "\\[   0, -3.6,    0\\]\n"
+      "\\[   0,    0, -3.6\\]\n"
+      " Principal moments of inertia about Bcm \\(center of mass\\) =\n"
+      "\\[-3.6  -3.6  0.4\\]\n";
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>(1.0, Vector3d(2.0, 0.0, 0.0),
                              UnitInertia<double>::SolidSphere(1.0)),
-      std::exception, expected_msg);
+      expected_message);
 }
 
 // Tests that an informative exception message is issued if a spatial inertia
@@ -404,25 +404,26 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidThrowsNiceExceptionMessage) {
 
   // Shift the spatial inertia from Bcm to point P and verify that it throws
   // an exception and the exception message makes sense.
-  std::string expected_msg = fmt::format(
-    "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
-    " mass = 0.634\n"
-    " Center of mass = \\[0(\\.0)?  0.016  -0.02\\]\n"
-    " Inertia about point P, I_BP =\n"
-    "\\[  0.0023989,    0.000245,     1.3e-05\\]\n"
-    "\\[   0.000245,   0.0023566,  0.00020438\\]\n"
-    "\\[    1.3e-05,  0.00020438, 0.000570304\\]\n"
-    " Inertia about center of mass, I_BBcm =\n"
-    "\\[0.001983, 0.000245,  1.3e-05\\]\n"
-    "\\[0.000245, 0.002103,  1.5e-06\\]\n"
-    "\\[ 1.3e-05,  1.5e-06, 0.000408\\]\n"
-    " Principal moments of inertia about Bcm \\(center of mass\\) =\n"
-    "\\[0.0004078925412\\d+  0.001790822592803\\d+  0.00229528486596\\d+\\]\n");
-    // Note: The principal moments of inertia (with more significant digits)
-    // are: 0.0004078925412357755  0.0017908225928030743  0.002295284865961151.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        SpatialInertia<double>::MakeFromCentralInertia(mass, p_PBcm, I_BBcm),
-        std::exception, expected_msg);
+  const std::string expected_message = fmt::format(
+      "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
+      " mass = 0.634\n"
+      " Center of mass = \\[0(\\.0)?  0.016  -0.02\\]\n"
+      " Inertia about point P, I_BP =\n"
+      "\\[  0.0023989,    0.000245,     1.3e-05\\]\n"
+      "\\[   0.000245,   0.0023566,  0.00020438\\]\n"
+      "\\[    1.3e-05,  0.00020438, 0.000570304\\]\n"
+      " Inertia about center of mass, I_BBcm =\n"
+      "\\[0.001983, 0.000245,  1.3e-05\\]\n"
+      "\\[0.000245, 0.002103,  1.5e-06\\]\n"
+      "\\[ 1.3e-05,  1.5e-06, 0.000408\\]\n"
+      " Principal moments of inertia about Bcm \\(center of mass\\) =\n"
+      "\\[0.0004078925412\\d+  0.001790822592803\\d+  0.00229528486596\\d+\\]"
+      "\n");
+  // Note: The principal moments of inertia (with more significant digits)
+  // are: 0.0004078925412357755  0.0017908225928030743  0.002295284865961151.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::MakeFromCentralInertia(mass, p_PBcm, I_BBcm),
+      expected_message);
 }
 
 // Tests that by setting skip_validity_check = true, it is possible to create
