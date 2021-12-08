@@ -293,7 +293,6 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
   }
   
   data.v_star = dynamics_data.get_v_star();
-  data.mu = mu;
   data.A.Multiply(data.v_star, &data.p_star);
 
   // Make projections for each constraint.
