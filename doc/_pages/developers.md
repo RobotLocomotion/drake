@@ -164,7 +164,6 @@ make the review faster.
 * @jwnimmer-tri (Toyota Research Institute)
 * @rpoyner-tri (Toyota Research Institute)
 * @sammy-tri (Toyota Research Institute)
-* @SeanCurtis-TRI (Toyota Research Institute)
 * @sherm1 (Toyota Research Institute)
 * @RussTedrake (MIT / Toyota Research Institute)
 
