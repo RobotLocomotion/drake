@@ -211,12 +211,14 @@ def fix_rpaths_and_strip():
             # the files is likely going to create the following error:
             # 'Not enough room for program headers, try linking with -N'
             if strip:
-                # TODO(svenevs): director tarballs on bionic fail on trying to
-                # strip any of the installed libraries.
+                # The libraries from vtk-8 tarballs (packed into director /
+                # drake_visualizer) cannot be stripped:
+                # Not enough room for program headers, try linking with -N
+                # patchelf is a required part of the build process.
                 if not (re.match(r".*libvtk.*-8\.2\.so", dst_full) or \
                         dst_full.endswith("vtkDRCFiltersPython.so") or \
                         re.match(
-                            r".*/director/thirdparty/vtkmodules/vtk.*Python.so",
+                            r".*vtkmodules/vtk.*Python.so",
                             dst_full)):
                     check_call([strip_tool, dst_full])
             linux_fix_rpaths(dst_full)
@@ -284,24 +286,23 @@ def linux_fix_rpaths(dst_full):
         '/usr/libx32',
         '/usr/local/lib',
     ]
-    file_output = check_output(["ldd", dst_full]).decode("utf-8")
+
     rpath = []
 
     # In order to update drake to vtk-9, drake_visualizer and the underlying
-    # director package need to keep an older vtk around.  These libraries are
-    # installed to lib/ next to the vtk-8 libraries, setting to $ORIGIN ensures
+    # director package need to keep an older vtk-8 around.  These libraries are
+    # installed to lib/ next to the vtk-9 libraries, setting to $ORIGIN ensures
     # they will be able to find their dependent vtk-8 counterparts.
     if re.match(r".*libvtk.*-8\.2\.so", dst_full):
         rpath = ["$ORIGIN"]
     # This is part of director, installed to site-packages, and needs an rpath
-    # to the vtk 8.x libraries.
-    elif dst_full.endswith("vtkDRCFiltersPython.so"):
+    # to the vtk 8.x libraries.  The vtk-8 python modules also need to be able
+    # to find their vtk-8 counterpart libraries.
+    elif dst_full.endswith("vtkDRCFiltersPython.so") or \
+            re.match(r".*vtkmodules/vtk.*Python.so", dst_full):
         rpath = ["$ORIGIN/../../.."]
-    # The vtk-8 python modules are stuffed into director/thirdparty and need
-    # to also be informed of where the vtk 8.x libraries are.
-    elif re.match(r".*/director/thirdparty/vtkmodules/vtk.*Python.so", dst_full):
-        rpath = ["$ORIGIN/../../../../.."]
     else:
+        file_output = check_output(["ldd", dst_full]).decode("utf-8")
         for line in file_output.splitlines():
             ldd_result = line.strip().split(' => ')
             if len(ldd_result) < 2:

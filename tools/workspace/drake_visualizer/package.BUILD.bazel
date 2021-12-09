@@ -34,7 +34,7 @@ filegroup(
         "lib/**/*.dylib",
         "lib/**/*.py",
         "lib/**/*.so",
-        "lib/**/*.so.1",
+        "lib/**/*.so.1",  # The vtk-8 libraries are included in the dv tarball.
     ]) + [
         "bin/drake-visualizer",
         "share/doc/director/LICENSE.txt",

@@ -208,19 +208,12 @@ RUN mkdir -p /director-build /opt/director \
     -exec patchelf --set-rpath '$ORIGIN' {} \; \
   && py_ver="$(python3 -c 'import sys; print("{}.{}".format(*sys.version_info[:2]))')" \
   && cp /opt/drake/lib/python3.*/site-packages/vtk.py \
-    /opt/director/lib/python$py_ver/site-packages/director/thirdparty/ \
-  && sed -i "s/'vtkmodules'/'director.thirdparty.vtkmodules'/g" \
-    /opt/director/lib/python$py_ver/site-packages/director/thirdparty/vtk.py \
-  && sed -i "s/'vtkmodules.all'/'director.thirdparty.vtkmodules.all'/g" \
-    /opt/director/lib/python$py_ver/site-packages/director/thirdparty/vtk.py \
+    /opt/director/lib/python$py_ver/site-packages/ \
   && cp -r /opt/drake/lib/python3.*/site-packages/vtkmodules \
-    /opt/director/lib/python$py_ver/site-packages/director/thirdparty/ \
-  && find /opt/director/lib/python$py_ver/site-packages/director/thirdparty/vtkmodules \
-    -type f -mindepth 1 -maxdepth 1 -name "vtk*.py" \
-    -exec sed -i 's/from \.\(vtk.*\) import \*/from importlib import __import__;_m_i = __import__("director.thirdparty.vtkmodules.\1", fromlist=["*"]);_m_i_x = {k: getattr(_m_i, k) for k in dir(_m_i) if not k.startswith("__")};globals().update(_m_i_x);del globals()["_m_i"];del globals()["_m_i_x"]/g' {} \; \
-  && find /opt/director/lib/python$py_ver/site-packages/director/thirdparty/vtkmodules \
+    /opt/director/lib/python$py_ver/site-packages/ \
+  && find /opt/director/lib/python$py_ver/site-packages/vtkmodules \
     -type f -mindepth 1 -maxdepth 1 -name "vtk*Python.so" \
-    -exec patchelf --set-rpath '$ORIGIN/../../../../..' {} \; \
+    -exec patchelf --set-rpath '$ORIGIN/../../..' {} \; \
   && strip \
     /opt/director/bin/drake-visualizer \
     /opt/director/lib/*.so \
