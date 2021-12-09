@@ -211,16 +211,7 @@ def fix_rpaths_and_strip():
             # the files is likely going to create the following error:
             # 'Not enough room for program headers, try linking with -N'
             if strip:
-                # The libraries from vtk-8 tarballs (packed into director /
-                # drake_visualizer) cannot be stripped:
-                # Not enough room for program headers, try linking with -N
-                # patchelf is a required part of the build process.
-                if not (re.match(r".*libvtk.*-8\.2\.so", dst_full) or \
-                        dst_full.endswith("vtkDRCFiltersPython.so") or \
-                        re.match(
-                            r".*vtkmodules/vtk.*Python.so",
-                            dst_full)):
-                    check_call([strip_tool, dst_full])
+                check_call([strip_tool, dst_full])
             linux_fix_rpaths(dst_full)
 
 
@@ -295,9 +286,9 @@ def linux_fix_rpaths(dst_full):
     # they will be able to find their dependent vtk-8 counterparts.
     if re.match(r".*libvtk.*-8\.2\.so", dst_full):
         rpath = ["$ORIGIN"]
-    # This is part of director, installed to site-packages, and needs an rpath
-    # to the vtk 8.x libraries.  The vtk-8 python modules also need to be able
-    # to find their vtk-8 counterpart libraries.
+    # This is part of director, installed to site-packages/director and
+    # site-packages/vtkmodules.  Their rpath needs to be able to find the vtk-8
+    # libraries installed under lib/.
     elif dst_full.endswith("vtkDRCFiltersPython.so") or \
             re.match(r".*vtkmodules/vtk.*Python.so", dst_full):
         rpath = ["$ORIGIN/../../.."]

@@ -1,0 +1,73 @@
+From 11f988658c1d659d2172aa9d265fe03408e6448c Mon Sep 17 00:00:00 2001
+From: Jamie Snape <jamie.snape@kitware.com>
+Date: Fri, 9 Jun 2017 12:00:00 -0400
+Subject: [PATCH] Explicitly link to Python libraries only when necessary
+
+---
+ Parallel/MPI4Py/module.cmake             | 1 -
+ Rendering/Matplotlib/module.cmake        | 4 +++-
+ Utilities/PythonInterpreter/module.cmake | 3 ++-
+ Web/Core/module.cmake                    | 1 -
+ 4 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/Parallel/MPI4Py/module.cmake b/Parallel/MPI4Py/module.cmake
+index 07d789b25a..e233e6d771 100644
+--- a/Parallel/MPI4Py/module.cmake
++++ b/Parallel/MPI4Py/module.cmake
+@@ -13,7 +13,6 @@ if (VTK_WRAP_PYTHON)
+       vtkWrapping
+     DEPENDS
+       vtkCommonCore
+-      vtkPython
+     PRIVATE_DEPENDS
+       vtkParallelMPI
+     )
+diff --git a/Rendering/Matplotlib/module.cmake b/Rendering/Matplotlib/module.cmake
+index 19ecf1997e..2334661dee 100644
+--- a/Rendering/Matplotlib/module.cmake
++++ b/Rendering/Matplotlib/module.cmake
+@@ -21,12 +21,14 @@ vtk_module(vtkRenderingMatplotlib
+   DEPENDS
+     vtkPythonInterpreter
+     vtkRenderingFreeType
++  COMPILE_DEPENDS
++    vtkPython
++  OPTIONAL_PYTHON_LINK
+   PRIVATE_DEPENDS
+     vtkCommonCore
+     vtkCommonDataModel
+     vtkCommonTransforms
+     vtkImagingCore
+-    vtkPython
+     vtkRenderingCore
+     vtkWrappingPythonCore
+   )
+diff --git a/Utilities/PythonInterpreter/module.cmake b/Utilities/PythonInterpreter/module.cmake
+index 3dc2b892e1..050bd107ac 100644
+--- a/Utilities/PythonInterpreter/module.cmake
++++ b/Utilities/PythonInterpreter/module.cmake
+@@ -1,10 +1,11 @@
+ vtk_module(vtkPythonInterpreter
+   DEPENDS
+     vtkCommonCore
+-    vtkPython
+     vtksys
+   EXCLUDE_FROM_WRAPPING
+   PRIVATE_DEPENDS
+     vtkCommonMisc
++  COMPILE_DEPENDS
++    vtkPython
+   OPTIONAL_PYTHON_LINK
+ )
+diff --git a/Web/Core/module.cmake b/Web/Core/module.cmake
+index dd212e91a8..1cfefd73e8 100644
+--- a/Web/Core/module.cmake
++++ b/Web/Core/module.cmake
+@@ -17,7 +17,6 @@ vtk_module(vtkWebCore
+     vtkIOCore
+     vtkIOImage
+     vtkParallelCore
+-    vtkPython
+     vtkRenderingCore
+     vtkWebGLExporter
+     vtksys

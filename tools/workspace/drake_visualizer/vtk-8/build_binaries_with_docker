@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# This shell script and the accompanying Dockerfile are used by the project
+# maintainers to create the precompiled vtk binaries that are downloaded during
+# the build. They are neither called during the build nor expected to be called
+# by most developers or users of the project.
+#
+# Maintainers should upload the created binaries to s3://drake-packages/vtk/.
+# Using the awscli tool and its "aws s3" subcommand is recommended.
+
+set -euxo pipefail
+
+rm -f vtk-*-x86_64.tar.gz vtk-*-x86_64.tar.gz.sha256
+
+docker build --build-arg UBUNTU_CODENAME=bionic --tag vtk-bionic \
+  "${BASH_SOURCE%/*}"
+trap 'docker rmi vtk-bionic' EXIT
+docker run --detach --name vtk-bionic-build --tty vtk-bionic
+trap 'docker rm --force vtk-bionic-build && docker rmi vtk-bionic' EXIT
+docker cp vtk-bionic-build:$(docker exec vtk-bionic-build \
+  find /opt/vtk/ -maxdepth 1 -name 'vtk-*-bionic-x86_64.tar.gz') .
+
+shasum --algorithm 256 vtk-*-bionic-x86_64.tar.gz \
+  | tee vtk-bionic-x86_64.tar.gz.sha256
+
+docker build --build-arg UBUNTU_CODENAME=focal --tag vtk-focal \
+  "${BASH_SOURCE%/*}"
+trap 'docker rmi vtk-focal && docker rm --force vtk-bionic-build && docker rmi vtk-bionic' EXIT
+docker run --detach --name vtk-focal-build --tty vtk-focal
+trap 'docker rm --force vtk-focal-build && docker rmi vtk-focal && docker rm --force vtk-bionic-build && docker rmi vtk-bionic' EXIT
+docker cp vtk-focal-build:$(docker exec vtk-focal-build \
+  find /opt/vtk/ -maxdepth 1 -name 'vtk-*-focal-x86_64.tar.gz') .
+
+shasum --algorithm 256 vtk-*-focal-x86_64.tar.gz \
+  | tee vtk-focal-x86_64.tar.gz.sha256
