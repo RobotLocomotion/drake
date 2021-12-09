@@ -204,16 +204,11 @@ RUN mkdir -p /director-build /opt/director \
     /opt/director/lib/robotlocomotion-lcmtypes \
   && find /opt/director -name __pycache__ -type d -exec rm -rf {} + \
   && cp /opt/drake/lib/*vtk*.so.1 /opt/director/lib \
-  && find /opt/director/lib -type f -mindepth 1 -maxdepth 1 -iname "*vtk*.so.1" \
-    -exec patchelf --set-rpath '$ORIGIN' {} \; \
   && py_ver="$(python3 -c 'import sys; print("{}.{}".format(*sys.version_info[:2]))')" \
   && cp /opt/drake/lib/python3.*/site-packages/vtk.py \
     /opt/director/lib/python$py_ver/site-packages/ \
   && cp -r /opt/drake/lib/python3.*/site-packages/vtkmodules \
     /opt/director/lib/python$py_ver/site-packages/ \
-  && find /opt/director/lib/python$py_ver/site-packages/vtkmodules \
-    -type f -mindepth 1 -maxdepth 1 -name "vtk*Python.so" \
-    -exec patchelf --set-rpath '$ORIGIN/../../..' {} \; \
   && strip \
     /opt/director/bin/drake-visualizer \
     /opt/director/lib/*.so \
