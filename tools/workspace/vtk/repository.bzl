@@ -116,10 +116,10 @@ def _impl(repository_ctx):
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "18.04":
             archive = "vtk-9.1.0-1-python-3.6.9-qt-5.9.5-bionic-x86_64.tar.gz"
-            sha256 = "ce30a68de521fef0eef3c1e447489f04beaaf99d2c7015e9367899e4defa2297"  # noqa
+            sha256 = "8a0214b96240a7049921b1910a4e292601a1b919e3a642339496551a4864c4ab"  # noqa
         elif os_result.ubuntu_release == "20.04":
             archive = "vtk-9.1.0-1-python-3.8.10-qt-5.12.8-focal-x86_64.tar.gz"
-            sha256 = "77b56123d6b138b4080c3d9ae59a201797b4119f43d566eae9b6fd7401374165"  # noqa
+            sha256 = "61684f2ba8fc773b13797a9cf907628c65dfb2377050a7b3e9d8cac530f396d7"  # noqa
         else:
             fail("Operating system is NOT supported {}".format(os_result))
 
@@ -150,6 +150,7 @@ licenses([
     "unencumbered",  # Public-Domain
 ])
 """
+
     # The following are either internal VTK libraries, or thirdparty libraries
     # bundled into the build.  We only create library targets for
     # enough of VTK to support those used directly or indirectly by Drake.
