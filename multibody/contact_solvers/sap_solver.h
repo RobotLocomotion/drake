@@ -412,30 +412,30 @@ class SapSolver final : public ContactSolver<T> {
     // Constructs an empty data.
     PreProcessedData() = default;
 
-    // @param nv Number of generalized velocities.
-    // @param nc Total number of constrained DOFs.
+    // @param nv_in Number of generalized velocities.
+    // @param nk_in Total number of constrained DOFs.
     // @param dt The discrete time step used for simulation.
-    PreProcessedData(double dt, int nv_in, int nc_in) : time_step(dt) {
-      Resize(nv_in, nc_in);
+    PreProcessedData(double dt, int nv_in, int nk_in) : time_step(dt) {
+      Resize(nv_in, nk_in);
     }
 
     // Resizes this PreProcessedData to store data for a problem with nv_in
     // generalized velocities and nc_in contact constraints. A call to this
     // method causes loss of all previously existing data.
     // @param nv_in Number of generalized velocities.
-    // @param nc_in Total number of constrained DOFs.
-    void Resize(int nv_in, int nc_in) {
+    // @param nk_in Total number of constrained DOFs.
+    void Resize(int nv_in, int nk_in) {
       nv = nv_in;
-      nc = nc_in;
+      nk = nk_in;
       inv_sqrt_A.resize(nv);
       v_star.resize(nv);
       p_star.resize(nv);
-      delassus_diagonal.resize(nc);
+      delassus_diagonal.resize(nk);
     }
 
     T time_step{NAN};        // Discrete time step used by the solver.
     int nv{0};               // Number of generalized velocities.
-    int nc{0};               // Number of constrained dofs. Number of impulses.
+    int nk{0};               // Number of constrained dofs. Number of impulses.
     std::vector<MatrixX<T>> At;  // Per-tree blocks of the momentum matrix.
 
     // Inverse of the diagonal matrix formed with the square root of the

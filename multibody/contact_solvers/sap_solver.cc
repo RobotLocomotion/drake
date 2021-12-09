@@ -402,7 +402,7 @@ void SapSolver<T>::PackContactResults(const PreProcessedData& data,
                                       const VectorX<T>& gamma,
                                       ContactSolverResults<T>* results) {
   DRAKE_DEMAND(results != nullptr);
-  results->Resize(data.nv, data.nc);
+  results->Resize(data.nv, data.nk);
   results->v_next = v;
   ExtractNormal(vc, &results->vn);
   ExtractTangent(vc, &results->vt);
@@ -450,7 +450,7 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
   using std::max;
 
   const int nv = data().nv;
-  const int nc = data().nc;
+  const int nc = data().nk;
   State state(nv, nc);
   mutable_stats().Reset();
 
@@ -648,7 +648,7 @@ void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
   const int nv = data().nv;
   MatrixX<T> H(nv, nv);
   {
-    int nc = data().nc;
+    int nc = data().nk;
     const auto& J = constraints_bundle().J();
     const auto& G = cache.gradients_cache().G;
 
@@ -771,7 +771,7 @@ void SapSolver<T>::UpdateCostAndGradientsCache(const State& state,
   gradients_cache.ell_grad_v += Adv;  // = A⋅(v−v*) - Jᵀγ
 
   // Update G. G = -∂γ/∂vc = dP/dy⋅R⁻¹.
-  const int nc = data().nc;
+  const int nc = data().nk;
   const auto& R = constraints_bundle().R();
   const auto& dgamma_dy = gradients_cache.dgamma_dy;
   for (int ic = 0, ic3 = 0; ic < nc; ic++, ic3 += 3) {
