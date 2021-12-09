@@ -55,7 +55,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update \
   && rm /usr/share/keyrings/kitware-archive-keyring.gpg \
   && apt-get install --no-install-recommends --quiet --yes kitware-archive-keyring \
-  && apt-get install --no-install-recommends --quiet --yes cmake \
+  && apt-get install --no-install-recommends --quiet --yes \
+    "cmake-data=3.16.3-*" "cmake=3.16.3-*" \
   && cmake --version \
   && rm -rf /var/lib/apt/lists/*
 RUN git clone --branch v9.1.0 --config advice.detachedHead=false --depth 1 --quiet \
