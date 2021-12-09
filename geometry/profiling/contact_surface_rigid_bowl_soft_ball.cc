@@ -100,6 +100,10 @@ DEFINE_string(soft, "ball",
               "Specify the shape of the soft geometry.\n"
               "[--soft={ball,box,capsule,cylinder}]\n"
               "By default, it is the ball.\n");
+DEFINE_bool(polygons, true,
+            "Set to true to use polygons to represent contact surfaces.\n"
+            "Set to false to use triangles to represent contact surfaces.\n"
+            "By default, it is true.");
 
 /* Places a soft geometry (a ball by default) and defines its velocity as being
  sinusoidal in time in World z direction.
@@ -254,8 +258,10 @@ class ContactResultMaker final : public LeafSystem<double> {
     const auto& query_object =
         get_geometry_query_port().Eval<QueryObject<double>>(context);
     std::vector<ContactSurface<double>> contacts =
-        query_object.ComputeContactSurfaces(
-            HydroelasticContactRepresentation::kTriangle);
+        FLAGS_polygons ? query_object.ComputeContactSurfaces(
+                             HydroelasticContactRepresentation::kPolygon)
+                       : query_object.ComputeContactSurfaces(
+                             HydroelasticContactRepresentation::kTriangle);
     const int num_contacts = static_cast<int>(contacts.size());
 
     auto& msg = *results;
