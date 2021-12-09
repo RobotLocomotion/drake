@@ -2227,7 +2227,7 @@ class TestPlant(unittest.TestCase):
         contact_info = contact_results.hydroelastic_contact_info(0)
         contact_info.contact_surface().id_M()
         contact_info.contact_surface().id_N()
-        contact_info.contact_surface().mesh_W().centroid()
+        contact_info.contact_surface().tri_mesh_W().centroid()
         contact_info.F_Ac_W().get_coeffs()
 
     @numpy_compare.check_nonsymbolic_types

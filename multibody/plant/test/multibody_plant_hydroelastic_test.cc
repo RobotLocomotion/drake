@@ -467,7 +467,7 @@ class ContactModelTest : public ::testing::Test {
       const FrameId fB_id = inspector.GetFrameId(B_id);
       const Body<double>& body_B = *plant_->GetBodyFromFrameId(fB_id);
 
-      const Vector3d p_WC = surface.mesh_W().centroid();
+      const Vector3d& p_WC = surface.centroid();
       const Vector3d& p_WAo =
           body_A.EvalPoseInWorld(*plant_context_).translation();
       const Vector3d p_CAo_W = p_WAo - p_WC;
@@ -574,6 +574,141 @@ TEST_F(ContactModelTest, HydroelasticWithFallbackDisconnectedPorts) {
       "geometry query output port of a SceneGraph object "
       "\\(see SceneGraph::get_query_output_port\\(\\)\\) to this plants input "
       "port in a Diagram.");
+}
+
+// TODO(DamrongGuoy): Create an independent test fixture instead of using
+//  inheritance and consider using parameter-value tests.
+
+// Tests MultibodyPlant::CalcContactSurfaces() which is used in
+// kHydroelastic contact model for both continuous systems and discrete
+// systems.
+//
+// This fixture sets up only rigid-compliant contact without rigid-rigid
+// contact.
+class CalcContactSurfacesTest : public ContactModelTest {
+ protected:
+  // @param time_step   Set to 0 to select a continuous system, and non-zero
+  //                    for a discrete system. The actual non-zero value is not
+  //                    relevant because we are not doing time stepping.
+  void Configure(double time_step) {
+    const bool connect_scene_graph = true;
+    // No rigid-rigid contact. Only the rigid-compliant contact.
+    bool are_rigid_spheres_in_contact = false;
+    ContactModelTest::Configure(ContactModel::kHydroelastic,
+                                connect_scene_graph, time_step,
+                                are_rigid_spheres_in_contact);
+  }
+};
+
+TEST_F(CalcContactSurfacesTest, ContinuousSystem_Triangles) {
+  const double time_step = 0.0;  // Zero to select continuous system.
+  this->Configure(time_step);
+
+  const ContactResults<double>& contact_results = GetContactResults();
+
+  EXPECT_EQ(contact_results.num_point_pair_contacts(), 0);
+  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+  EXPECT_TRUE(
+      contact_results.hydroelastic_contact_info(0).contact_surface().Equal(
+          plant_->get_geometry_query_input_port()
+              .template Eval<geometry::QueryObject<double>>(*plant_context_)
+              .ComputeContactSurfaces(
+                  geometry::HydroelasticContactRepresentation::kTriangle)
+              .at(0)));
+}
+
+TEST_F(CalcContactSurfacesTest, DiscreteSystem_Polygons) {
+  const double time_step = 5.0e-3;  // Non-zero to select discrete system.
+  this->Configure(time_step);
+
+  const ContactResults<double>& contact_results = GetContactResults();
+
+  EXPECT_EQ(contact_results.num_point_pair_contacts(), 0);
+  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+  EXPECT_TRUE(
+      contact_results.hydroelastic_contact_info(0).contact_surface().Equal(
+          plant_->get_geometry_query_input_port()
+              .template Eval<geometry::QueryObject<double>>(*plant_context_)
+              .ComputeContactSurfaces(
+                  geometry::HydroelasticContactRepresentation::kPolygon)
+              .at(0)));
+}
+
+// TODO(DamrongGuoy): Create an independent test fixture instead of using
+//  inheritance and consider using parameter-value tests.
+
+// Tests MultibodyPlant::CalcHydroelasticWithFallback() which is used in
+// kHydroelasticWithFallback contact model for both continuous systems and
+// discrete systems.
+//
+// This fixture sets up both rigid-compliant contact and rigid-rigid
+// contact.
+class CalcHydroelasticWithFallbackTest : public CalcContactSurfacesTest {
+ protected:
+  // @param time_step   Set to 0 to select a continuous system, and non-zero
+  //                    for a discrete system. The actual non-zero value is not
+  //                    relevant because we are not doing time stepping.
+  void Configure(double time_step) {
+    const bool connect_scene_graph = true;
+    // Get both the rigid-rigid-sphere contact and the rigid-compliant
+    // sphere-box contact.
+    bool are_rigid_spheres_in_contact = true;
+    ContactModelTest::Configure(ContactModel::kHydroelasticWithFallback,
+                                connect_scene_graph, time_step,
+                                are_rigid_spheres_in_contact);
+  }
+};
+
+TEST_F(CalcHydroelasticWithFallbackTest, ContinuousSystem_Triangles) {
+  const double time_step = 0.0;  // Zero to select continuous system.
+  this->Configure(time_step);
+
+  const ContactResults<double>& contact_results = GetContactResults();
+
+  std::vector<geometry::ContactSurface<double>> expected_surfaces;
+  std::vector<geometry::PenetrationAsPointPair<double>> expected_point_pairs;
+  plant_->get_geometry_query_input_port()
+      .template Eval<geometry::QueryObject<double>>(*plant_context_)
+      .ComputeContactSurfacesWithFallback(
+          geometry::HydroelasticContactRepresentation::kTriangle,
+          &expected_surfaces, &expected_point_pairs);
+
+  // We only check the penetration depth as an evidence that the tested
+  // result is what expected.
+  EXPECT_EQ(contact_results.num_point_pair_contacts(), 1);
+  EXPECT_EQ(contact_results.point_pair_contact_info(0).point_pair().depth,
+              expected_point_pairs.at(0).depth);
+
+  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+  EXPECT_TRUE(
+      contact_results.hydroelastic_contact_info(0).contact_surface().Equal(
+          expected_surfaces.at(0)));
+}
+
+TEST_F(CalcHydroelasticWithFallbackTest, DiscreteSystem_Polygons) {
+  const double time_step = 5.0e-3;  // Non-zero to select discrete system.
+  this->Configure(time_step);
+
+  const ContactResults<double>& contact_results = GetContactResults();
+
+  std::vector<geometry::ContactSurface<double>> expected_surfaces;
+  std::vector<geometry::PenetrationAsPointPair<double>> expected_point_pairs;
+  plant_->get_geometry_query_input_port()
+      .template Eval<geometry::QueryObject<double>>(*plant_context_)
+      .ComputeContactSurfacesWithFallback(
+          geometry::HydroelasticContactRepresentation::kPolygon,
+          &expected_surfaces, &expected_point_pairs);
+
+  // We only check the penetration depth as an evidence that the tested
+  // result is what expected.
+  EXPECT_EQ(contact_results.num_point_pair_contacts(), 1);
+  EXPECT_EQ(contact_results.point_pair_contact_info(0).point_pair().depth,
+            expected_point_pairs.at(0).depth);
+
+  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+  EXPECT_TRUE(
+      contact_results.hydroelastic_contact_info(0).contact_surface().Equal(
+          expected_surfaces.at(0)));
 }
 
 }  // namespace

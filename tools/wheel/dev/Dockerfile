@@ -6,18 +6,12 @@ ARG PLATFORM=ubuntu:18.04
 
 FROM ${PLATFORM} AS base
 
-ARG PYTHON=3
-
 ENV DEBIAN_FRONTEND=noninteractive
 
 ADD image/provision-base.sh /image/
 ADD image/known_hosts /root/.ssh/
 
 RUN /image/provision-base.sh
-
-ADD image/provision-python.sh /image/
-
-RUN /image/provision-python.sh ${PYTHON}
 
 # -----------------------------------------------------------------------------
 # Build Drake's dependencies.
@@ -36,14 +30,28 @@ ADD image/vtk-args /vtk/
 RUN /image/build-vtk.sh
 
 # -----------------------------------------------------------------------------
-# Build the Drake wheel.
+# Install Python.
 # -----------------------------------------------------------------------------
 
 FROM incubator AS clean
 
+ARG PYTHON=3
+
+ADD image/provision-python.sh /image/
+
+RUN /image/provision-python.sh ${PYTHON}
+
+# -----------------------------------------------------------------------------
+# Inject the primary build scripts.
+# -----------------------------------------------------------------------------
+
 ADD image/build-drake.sh /image/
 ADD image/pip-drake.patch /image/
 ADD image/drake-src.tar.xz /drake/
+
+# -----------------------------------------------------------------------------
+# Build the Drake wheel.
+# -----------------------------------------------------------------------------
 
 FROM clean AS wheel
 
