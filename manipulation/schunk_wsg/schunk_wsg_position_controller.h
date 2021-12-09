@@ -38,12 +38,15 @@ namespace schunk_wsg {
 /// name: SchunkWSGPdController
 /// input_ports:
 /// - desired_state
-/// - force_limit (optional)
+/// - force_limit
 /// - state
 /// output_ports:
 /// - generalized_force
 /// - grip_force
 /// @endsystem
+///
+/// The `force_limit` input port can be left unconnected; in this case, the
+/// `default_force_limit` value given at construction time will be used.
 ///
 /// The desired_state is a BasicVector<double> of size 2 (position and
 /// velocity of the distance between the fingers).  The force_limit is a
@@ -124,12 +127,15 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
 /// name: SchunkWSGPositionController
 /// input_ports:
 /// - desired_position
-/// - force_limit (optional)
+/// - force_limit
 /// - state
 /// output_ports:
 /// - generalized_force
 /// - grip_force
 /// @endsystem
+///
+/// The `force_limit` input port can be left unconnected; in this case, the
+/// `default_force_limit` value given at construction time will be used.
 ///
 /// @see SchunkWsgPdController
 /// @ingroup manipulation_systems
