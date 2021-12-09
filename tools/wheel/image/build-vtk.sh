@@ -2,7 +2,7 @@
 
 set -e
 
-VTK_VERSION=8.2.0
+VTK_VERSION=9.1.0
 
 mkdir -p /vtk
 cd /vtk
