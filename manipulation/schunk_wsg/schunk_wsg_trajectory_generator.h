@@ -25,6 +25,20 @@ namespace schunk_wsg {
 /// desired_position and force_limit are scalars (BasicVector<double> of size
 /// 1).
 ///
+/// @system
+/// name: SchunkWsgTrajectoryGenerator
+/// input_ports:
+/// - desired_position
+/// - force_limit
+/// - u0
+/// output_ports:
+/// - y0
+/// - y1
+/// @endsystem
+///
+/// Port `u0` accepts state. Port `y0` emits target position/velocity. Port
+/// `y1` emits max force.
+///
 /// @ingroup manipulation_systems
 class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
  public:
