@@ -7,7 +7,7 @@ CMAKE_PREFIX_PATH:PATH=/opt/drake-dependencies
 CMAKE_INSTALL_PREFIX:PATH=/opt/vtk
 # VTK-specific build configuration.
 BUILD_TESTING:BOOL=OFF
-VTK_ENABLE_VTKPYTHON:BOOL=OFF
+VTK_ENABLE_WRAPPING:BOOL=OFF
 VTK_WRAP_PYTHON:BOOL=OFF
 # Third party libraries.  These configurations should be identical to
 # tools/workspace/vtk/Dockerfile, except:

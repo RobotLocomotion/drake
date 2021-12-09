@@ -116,10 +116,10 @@ def _impl(repository_ctx):
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "18.04":
             archive = "vtk-9.1.0-1-python-3.6.9-qt-5.9.5-bionic-x86_64.tar.gz"
-            sha256 = "8a0214b96240a7049921b1910a4e292601a1b919e3a642339496551a4864c4ab"  # noqa
+            sha256 = "ba349980d7190abc22f031ac8395647a3f7b49764fc0a66dbabe3f9c15adfaec"  # noqa
         elif os_result.ubuntu_release == "20.04":
             archive = "vtk-9.1.0-1-python-3.8.10-qt-5.12.8-focal-x86_64.tar.gz"
-            sha256 = "61684f2ba8fc773b13797a9cf907628c65dfb2377050a7b3e9d8cac530f396d7"  # noqa
+            sha256 = "e6742351b62a4d06dedd98740b2b0701a2f70c808e991cce8367c4c11bece800"  # noqa
         else:
             fail("Operating system is NOT supported {}".format(os_result))
 

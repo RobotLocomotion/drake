@@ -63,7 +63,6 @@ RUN git clone --branch v9.1.0 --config advice.detachedHead=false --depth 1 --qui
 RUN mkdir -p /vtk-build /opt/vtk \
   && cd /vtk-build \
   && cmake \
-    -DBUILD_TESTING:BOOL=OFF \
     -DCMAKE_BUILD_TYPE:STRING=Release \
     -DCMAKE_C_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-deprecated-declarations' \
     -DCMAKE_CXX_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-deprecated-declarations' \
@@ -71,6 +70,9 @@ RUN mkdir -p /vtk-build /opt/vtk \
     -DCMAKE_INSTALL_PREFIX:PATH=/opt/vtk \
     -DCMAKE_MODULE_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
     -DCMAKE_SHARED_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
+    -DBUILD_TESTING:BOOL=OFF \
+    -DVTK_ENABLE_WRAPPING:BOOL=OFF \
+    -DVTK_WRAP_PYTHON:BOOL=OFF \
     -DVTK_BUILD_ALL_MODULES:BOOL=OFF \
     -DVTK_GROUP_ENABLE_Imaging:STRING=YES \
     -DVTK_GROUP_ENABLE_MPI:STRING=DONT_WANT \
