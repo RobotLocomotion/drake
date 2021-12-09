@@ -195,7 +195,7 @@ class SapSolver final : public ContactSolver<T> {
     Cache() = default;
 
     struct VelocitiesCache {
-      void Resize(int nc) { vc.resize(3 * nc); }
+      void Resize(int nk) { vc.resize(nk); }
       bool valid{false};
       VectorX<T> vc;  // constraint velocities vc = J⋅v.
     };
@@ -213,9 +213,9 @@ class SapSolver final : public ContactSolver<T> {
     };
 
     struct ImpulsesCache {
-      void Resize(int nc) {
-        y.resize(3 * nc);
-        gamma.resize(3 * nc);
+      void Resize(int nk) {
+        y.resize(nk);
+        gamma.resize(nk);
       }
       bool valid{false};
       VectorX<T> y;  // The (unprojected) impulse y = −R⁻¹⋅(vc − v̂).
@@ -226,12 +226,10 @@ class SapSolver final : public ContactSolver<T> {
       void Resize(int nv, int nc) {
         ell_grad_v.resize(nv);
         // N.B. The first time these are computed, they are allocated.
-        dgamma_dy.resize(nc);
         G.resize(nc);
       }
       bool valid{false};
       VectorX<T> ell_grad_v;              // Gradient of the cost in v.
-      std::vector<MatrixX<T>> dgamma_dy;  // ∂γ/∂y.
       std::vector<MatrixX<T>> G;          // G = -∂γ/∂vc = dP/dy⋅R⁻¹.
     };
 
@@ -243,10 +241,10 @@ class SapSolver final : public ContactSolver<T> {
     };
 
     struct SearchDirectionCache {
-      void Resize(int nv, int nc) {
+      void Resize(int nv, int nk) {
         dv.resize(nv);
         dp.resize(nv);
-        dvc.resize(3 * nc);
+        dvc.resize(nk);
       }
       bool valid{false};
       VectorX<T> dv;     // Search direction.
@@ -255,12 +253,15 @@ class SapSolver final : public ContactSolver<T> {
       T d2ellM_dalpha2;  // d²ellM/dα² = Δvᵀ⋅M⋅Δv.
     };
 
-    void Resize(int nv, int nc) {
-      velocities_cache_.Resize(nc);
+    // @param nv Number of generalized velocities.
+    // @param nc Number of constraints.
+    // @param nk Number of constrained DOFs i.e. impulses dimension.
+    void Resize(int nv, int nc, int nk) {
+      velocities_cache_.Resize(nk);
       momentum_cache_.Resize(nv);
-      impulses_cache_.Resize(nc);
+      impulses_cache_.Resize(nk);
       gradients_cache_.Resize(nv, nc);
-      search_direction_cache_.Resize(nv, nc);
+      search_direction_cache_.Resize(nv, nk);
     }
 
     // Marks the cache as invalid. This is meant to be called by State when
@@ -372,13 +373,19 @@ class SapSolver final : public ContactSolver<T> {
 
     // Constructs a state for a problem with nv generalized velocities and nc
     // contact constraints.
-    State(int nv, int nc) { Resize(nv, nc); }
+    // @param nv Number of generalized velocities.
+    // @param nc Number of constraints.
+    // @param nk Number of constrained DOFs i.e. impulses dimension.
+    State(int nv, int nc, int nk) { Resize(nv, nc, nk); }
 
     // Resizes the state for a problem with nv generalized velocities and nc
     // contact constraints.
-    void Resize(int nv, int nc) {
+    // @param nv Number of generalized velocities.
+    // @param nc Number of constraints.
+    // @param nk Number of constrained DOFs i.e. impulses dimension.
+    void Resize(int nv, int nc, int nk) {
       v_.resize(nv);
-      cache_.Resize(nv, nc);
+      cache_.Resize(nv, nc, nk);
     }
 
     const VectorX<T>& v() const { return v_; }
@@ -415,8 +422,9 @@ class SapSolver final : public ContactSolver<T> {
     // @param nv_in Number of generalized velocities.
     // @param nk_in Total number of constrained DOFs.
     // @param dt The discrete time step used for simulation.
-    PreProcessedData(double dt, int nv_in, int nk_in) : time_step(dt) {
-      Resize(nv_in, nk_in);
+    PreProcessedData(double dt, int nv_in, int nc_in, int nk_in)
+        : time_step(dt) {
+      Resize(nv_in, nc_in, nk_in);
     }
 
     // Resizes this PreProcessedData to store data for a problem with nv_in
@@ -424,17 +432,19 @@ class SapSolver final : public ContactSolver<T> {
     // method causes loss of all previously existing data.
     // @param nv_in Number of generalized velocities.
     // @param nk_in Total number of constrained DOFs.
-    void Resize(int nv_in, int nk_in) {
+    void Resize(int nv_in, int nc_in, int nk_in) {
       nv = nv_in;
+      nc = nc_in;
       nk = nk_in;
       inv_sqrt_A.resize(nv);
       v_star.resize(nv);
       p_star.resize(nv);
-      delassus_diagonal.resize(nk);
+      delassus_diagonal.resize(nc);
     }
 
     T time_step{NAN};        // Discrete time step used by the solver.
     int nv{0};               // Number of generalized velocities.
+    int nc{0};               // Number of constraints.
     int nk{0};               // Number of constrained dofs. Number of impulses.
     std::vector<MatrixX<T>> At;  // Per-tree blocks of the momentum matrix.
 

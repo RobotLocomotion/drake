@@ -69,7 +69,7 @@ template <typename T>
 void SapConstraintsBundle<T>::CalcProjectImpulsesAndCalcConstraintsHessian(
     const VectorX<T>& y, const VectorX<T>& R, VectorX<T>* gamma,
     std::vector<MatrixX<T>>* G) const {
-  Project(y, R, gamma, G);  // G = dPdy.
+  ProjectImpulses(y, R, gamma, G);  // G = dPdy.
 
   // The regularizer Hessian is G = ∇²ℓ = d²ℓ/dvc² = dP/dy⋅R⁻¹.
   int constraint_start = 0;
@@ -193,6 +193,7 @@ void SapSolver<T>::CalcDelassusDiagonalApproximation(
   std::vector<Matrix3<T>> W(nc, Matrix3<T>::Zero());
   for (auto [p, t, Jpt] : J.get_blocks()) {
     // Verify assumption that this indeed is a contact Jacobian.
+    // TODO: Update this to be written in terms of general constraints.
     DRAKE_DEMAND(J.row_start(p) % 3 == 0);
     DRAKE_DEMAND(Jpt.rows() % 3 == 0);
     // ic_start is the first contact point of patch p.
@@ -221,7 +222,8 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
   using std::sqrt;
 
   PreProcessedData data(time_step, dynamics_data.num_velocities(),
-                        contact_data.num_contacts());
+                        contact_data.num_contacts(),
+                        3 * contact_data.num_contacts());
 
   // Aliases to data.
   const VectorX<T>& mu = contact_data.get_mu();
@@ -262,7 +264,8 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
   const int nc = phi0.size();
   BlockSparseMatrix<T> J;
   contact_data.get_Jc().AssembleMatrix(&J);
-  CalcDelassusDiagonalApproximation(nc, data.At, J, &data.delassus_diagonal);
+  CalcDelassusDiagonalApproximation(data.nc, data.At, J,
+                                    &data.delassus_diagonal);
 
   // We use the Delassus scaling computed above to estimate regularization
   // parameters in the matrix R.
@@ -401,8 +404,11 @@ void SapSolver<T>::PackContactResults(const PreProcessedData& data,
                                       const VectorX<T>& v, const VectorX<T>& vc,
                                       const VectorX<T>& gamma,
                                       ContactSolverResults<T>* results) {
+  // TODO: Update ContactSolverResults to store a general contact problem. I'd
+  // imagine the best is a single gamma, with impulses stored in the order
+  // constraints were added to ContactProblem.
   DRAKE_DEMAND(results != nullptr);
-  results->Resize(data.nv, data.nk);
+  results->Resize(data.nv, data.nc);
   results->v_next = v;
   ExtractNormal(vc, &results->vn);
   ExtractTangent(vc, &results->vt);
@@ -450,8 +456,9 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
   using std::max;
 
   const int nv = data().nv;
-  const int nc = data().nk;
-  State state(nv, nc);
+  const int nc = data().nc;
+  const int nk = data().nk;
+  State state(nv, nc, nk);
   mutable_stats().Reset();
 
   state.mutable_v() = v_guess;
@@ -648,11 +655,11 @@ void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
   const int nv = data().nv;
   MatrixX<T> H(nv, nv);
   {
-    int nc = data().nk;
+    int nk = data().nk;
     const auto& J = constraints_bundle().J();
     const auto& G = cache.gradients_cache().G;
 
-    MatrixX<T> Jdense(3 * nc, nv);
+    MatrixX<T> Jdense(nk, nv);
     Jdense = J.MakeDenseMatrix();
     MatrixX<T> Adense = MatrixX<T>::Zero(nv, nv);
     // Make dense dynamics matrix.
@@ -662,10 +669,15 @@ void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
       Adense.block(offset, offset, block_size, block_size) = A;
     }
 
-    MatrixX<T> GJ(3 * nc, nv);
-    for (int ic = 0, ic3 = 0; ic < nc; ic++, ic3 += 3) {
-      const MatrixX<T>& G_ic = G[ic];
-      GJ.block(ic3, 0, 3, nv) = G_ic * Jdense.block(ic3, 0, 3, nv);
+    MatrixX<T> GJ(nk, nv);
+    int nc = data().nc;
+    int constraint_start = 0;
+    for (int k = 0; k < nc; ++k) {
+      const MatrixX<T>& Gk = G[k];
+      const int ni = Gk.rows();
+      GJ.block(constraint_start, 0, ni, nv) =
+          Gk * Jdense.block(constraint_start, 0, ni, nv);
+      constraint_start += ni;
     }
     H = Adense + Jdense.transpose() * GJ;
   }
@@ -750,10 +762,10 @@ void SapSolver<T>::UpdateCostAndGradientsCache(const State& state,
   const VectorX<T>& Rinv = constraints_bundle().Rinv();
   const VectorX<T>& vhat = constraints_bundle().vhat();
   impulses_cache.y = vhat - cache->vc();
-  impulses_cache.y.array() *= Rinv.array();
-  constraints_bundle().ProjectImpulses(impulses_cache.y, constraints_bundle().R(),
-                                       &impulses_cache.gamma,
-                                       &gradients_cache.dgamma_dy);
+  impulses_cache.y.array() *= Rinv.array();  
+  constraints_bundle().CalcProjectImpulsesAndCalcConstraintsHessian(
+      impulses_cache.y, constraints_bundle().R(), &impulses_cache.gamma,
+      &gradients_cache.G);
   ++mutable_stats().num_impulses_cache_updates;
   impulses_cache.valid = true;
 
@@ -769,18 +781,6 @@ void SapSolver<T>::UpdateCostAndGradientsCache(const State& state,
       gamma, &gradients_cache.ell_grad_v);                   // = Jᵀγ
   gradients_cache.ell_grad_v = -gradients_cache.ell_grad_v;  // = -Jᵀγ
   gradients_cache.ell_grad_v += Adv;  // = A⋅(v−v*) - Jᵀγ
-
-  // Update G. G = -∂γ/∂vc = dP/dy⋅R⁻¹.
-  const int nc = data().nk;
-  const auto& R = constraints_bundle().R();
-  const auto& dgamma_dy = gradients_cache.dgamma_dy;
-  for (int ic = 0, ic3 = 0; ic < nc; ic++, ic3 += 3) {
-    const auto& R_ic = R.template segment<3>(ic3);
-    const Vector3<T> Rinv_ic = R_ic.cwiseInverse();
-    const Matrix3<T>& dgamma_dy_ic = dgamma_dy[ic];
-    MatrixX<T>& G_ic = gradients_cache.G[ic];
-    G_ic = dgamma_dy_ic * Rinv_ic.asDiagonal();
-  }
 
   ++mutable_stats().num_gradients_cache_updates;
   gradients_cache.valid = true;
