@@ -25,7 +25,7 @@ namespace internal {
  moment between nominally rigid objects. Proc. IEEE/RSJ Intl. Conf. on
  Intelligent Robots and Systems (IROS), 2019.
 
- This class is only compatible with 'double' and 'AutoDiffXd' scalar types.
+ @tparam_nonsymbolic_scalar
  */
 template <typename T>
 class HydroelasticTractionCalculator {
@@ -144,6 +144,10 @@ class HydroelasticTractionCalculator {
       const Data& data, int face_index,
       const typename geometry::TriangleSurfaceMesh<T>::template Barycentric<T>&
           Q_barycentric,
+      double dissipation, double mu_coulomb) const;
+
+  HydroelasticQuadraturePointData<T> CalcTractionAtCentroid(
+      const Data& data, int face_index,
       double dissipation, double mu_coulomb) const;
 
   HydroelasticQuadraturePointData<T> CalcTractionAtQHelper(
