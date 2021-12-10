@@ -134,7 +134,7 @@ KukaTorqueController<T>::KukaTorqueController(
   // Exposes the estimated state port.
   // Connects the estimated state to the gravity compensator.
   input_port_index_estimated_state_ = builder.ExportInput(
-      gravity_comp->get_input_port_estimated_state());
+      gravity_comp->get_input_port_estimated_state(), "estimated_state");
 
   // Connects the estimated state to the spring.
   builder.ConnectInput(input_port_index_estimated_state_,
@@ -145,15 +145,16 @@ KukaTorqueController<T>::KukaTorqueController(
                        damper->get_input_port(0));
 
   // Exposes the desired state port.
-  input_port_index_desired_state_ =
-      builder.ExportInput(spring->get_input_port_desired_state());
+  input_port_index_desired_state_ = builder.ExportInput(
+      spring->get_input_port_desired_state(), "desired_state");
 
   // Exposes the commanded torque port.
   input_port_index_commanded_torque_ =
-      builder.ExportInput(adder->get_input_port(0));
+      builder.ExportInput(adder->get_input_port(0), "commanded_torque");
 
   // Exposes controller output.
-  output_port_index_control_ = builder.ExportOutput(adder->get_output_port());
+  output_port_index_control_ = builder.ExportOutput(
+      adder->get_output_port(), "control");
 
   builder.BuildInto(this);
 }
