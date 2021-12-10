@@ -88,7 +88,7 @@ class SapSolver final : public ContactSolver<T> {
     int num_iters{0};              // Number of Newton iterations.
     int num_line_search_iters{0};  // Total number of line search iterations.
 
-    // Number of impulse updates. This also includes dγ/dy updates, when
+    // Number of impulse updates. This also includes dP/dy updates, when
     // gradients are updated.
     int num_impulses_cache_updates{0};
 
@@ -437,7 +437,7 @@ class SapSolver final : public ContactSolver<T> {
   // VII) and its gradients (Appendix E).
   //
   // @pre R has the form R = (Rt, Rt, Rn).
-  Vector3<T> CalcProjectionOntoFrictionCone(
+  Vector3<T> ProjectOntoSingleFrictionCone(
       const T& mu, const Eigen::Ref<const Vector3<T>>& R,
       const Eigen::Ref<const Vector3<T>>& y, Matrix3<T>* dPdy = nullptr) const;
 
@@ -495,7 +495,7 @@ class SapSolver final : public ContactSolver<T> {
   // For a good reference on this method, see Section 11.3 of Bierlaire, M.,
   // 2015. "Optimization: principles and algorithms", EPFL Press.
   //
-  // @returns The optimal value of α at the minimum of ℓ(α).
+  // @returns A value of α that satisfies Armijo's criterion.
   T PerformBackTrackingLineSearch(const State& state, const VectorX<T>& dv,
                                   int* num_iterations) const;
 

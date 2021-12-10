@@ -1,5 +1,11 @@
 #include "drake/multibody/contact_solvers/sap_solver.h"
 
+// TODO(amcastro-tri): While many of tests in this file verify the correcness of
+// the solution, it might not be enough to ensure the entire implementation is
+// correct. E.g. misscalculation of the Hessian could lead to slower
+// convergence. Consider more fine grained unit tests, especially for the
+// Hessian and other gradients.
+
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -120,18 +126,18 @@ struct ProblemData {
 // data in SAP.
 class ParticlesStackProblem {
  public:
-  static constexpr int num_particles = 3;   // Number of particles.
-  static constexpr int num_velocities = 9;  // Three particles in 3D.
-  static constexpr int num_contacts = 3;    // Vertical stack.
+  static constexpr int kNumParticles = 3;   // Number of particles.
+  static constexpr int kNumVelocities = 9;  // Three particles in 3D.
+  static constexpr int kNumContacts = 3;    // Vertical stack.
 
   // Arbitrary non-zero free-motion velocities.
   VectorXd MakeFreeMotionVelocities() const {
-    return VectorXd::LinSpaced(num_velocities, 0, num_velocities);
+    return VectorXd::LinSpaced(kNumVelocities, 0, kNumVelocities);
   }
 
   // Arbitrary particle masses.
   VectorXd GetParticleMasses() const {
-    return 1.5 * VectorXd::LinSpaced(num_particles, 1, num_particles);
+    return 1.5 * VectorXd::LinSpaced(kNumParticles, 1, kNumParticles);
   }
 
   // Mass matrix for the system of three particles.
@@ -139,7 +145,7 @@ class ParticlesStackProblem {
     const VectorXd masses = GetParticleMasses();
     BlockSparseMatrixBuilder<double> builder(3, 3, 3);
     // Each particle is a block.
-    for (int p = 0; p < num_particles; ++p) {
+    for (int p = 0; p < kNumParticles; ++p) {
       builder.PushBlock(p, p, masses[p] * Matrix3d::Identity());
     }
     *M = builder.Build();
@@ -149,7 +155,7 @@ class ParticlesStackProblem {
   // a stack. Particle 2 on the ground, particle 1 on 2 and particle 0 on 1.
   void MakeContactJacobian(BlockSparseMatrix<double>* J) const {
     const MatrixXd Jblock = MatrixXd::Identity(3, 3);
-    BlockSparseMatrixBuilder<double> builder(num_contacts, num_particles, 5);
+    BlockSparseMatrixBuilder<double> builder(kNumContacts, kNumParticles, 5);
     // Contact between particles 0 and 1.
     builder.PushBlock(0, 0, Jblock);
     builder.PushBlock(0, 1, Jblock);
@@ -163,7 +169,7 @@ class ParticlesStackProblem {
 
   std::unique_ptr<ProblemData> MakeProblemData() const {
     // Set system dynamics data:
-    auto data = std::make_unique<ProblemData>(num_velocities, num_contacts);
+    auto data = std::make_unique<ProblemData>(kNumVelocities, kNumContacts);
     data->time_step = 5.0e-3;
     CalcMassMatrix(&data->Ablock);
     data->M = data->Ablock.MakeDenseMatrix();
@@ -180,10 +186,10 @@ class ParticlesStackProblem {
     data->Jop =
         std::make_unique<BlockSparseLinearOperator<double>>("J", &data->Jblock);
 
-    data->phi0.setLinSpaced(num_contacts, 1., num_contacts);
-    data->stiffness.setLinSpaced(num_contacts, 1., num_contacts);
-    data->dissipation.setLinSpaced(num_contacts, 1., num_contacts);
-    data->mu.setLinSpaced(num_contacts, 1., num_contacts);
+    data->phi0.setLinSpaced(kNumContacts, 1., kNumContacts);
+    data->stiffness.setLinSpaced(kNumContacts, 1., kNumContacts);
+    data->dissipation.setLinSpaced(kNumContacts, 1., kNumContacts);
+    data->mu.setLinSpaced(kNumContacts, 1., kNumContacts);
 
     data->contact_data = std::make_unique<PointContactData<double>>(
         &data->phi0, data->Jop.get(), &data->stiffness, &data->dissipation,
@@ -204,8 +210,8 @@ GTEST_TEST(SapSolver, PreProcessedData) {
       *problem_data->contact_data);
 
   EXPECT_EQ(data.time_step, problem_data->time_step);
-  EXPECT_EQ(data.nv, problem.num_velocities);
-  EXPECT_EQ(data.nc, problem.num_contacts);
+  EXPECT_EQ(data.nv, problem.kNumVelocities);
+  EXPECT_EQ(data.nc, problem.kNumContacts);
   EXPECT_EQ(data.mu, problem_data->mu);
   EXPECT_EQ(data.J.MakeDenseMatrix(), problem_data->J);
   EXPECT_EQ(data.A.MakeDenseMatrix(), problem_data->M);
@@ -241,8 +247,8 @@ GTEST_TEST(SapSolver, PreProcessedData) {
   const VectorXd Rn_expected =
       ((dt + taud.array()) * k.array() * dt).cwiseInverse();
   const VectorXd Rt_expected = parameters.sigma * Wdiag_expected;
-  VectorXd R_expected(3 * problem.num_contacts);
-  for (int i = 0; i < problem.num_contacts; ++i) {
+  VectorXd R_expected(3 * problem.kNumContacts);
+  for (int i = 0; i < problem.kNumContacts; ++i) {
     R_expected.segment<3>(3 * i) =
         Vector3d(Rt_expected(i), Rt_expected(i), Rn_expected(i));
   }
@@ -253,41 +259,41 @@ GTEST_TEST(SapSolver, PreProcessedData) {
 
 /* Model of a "pizza saver":
 
-  ^ y               C
+  ^ y
   |                 ◯
   |                /\
   ----> x         /  \
-               b /    \ a
+               a /    \ a
                 /      \
                /        \
               ◯----------◯
-              A     c    B
+                   a
 
 It is modeled as an equilateral triangle with a contact point at each of the
 legs. The total mass of the pizza saver is m and its rotational inertia about
 the triangle's barycenter is I.
 If h is the height of the triangle from any of its sides, the distance from
 any point to the triangle's center is 2h/3. The height h relates to the length
-a of a side by h = 3/2/sqrt(3) a.
-The generalized positions vector for this case is q = [x, y, theta], with
+a of a side by h = sqrt(3)/2 a.
+The generalized positions vector for this case is q = [x, y, z, theta], with
 theta = 0 for the triangle in the configuration shown in the schematic. */
 class PizzaSaverProblem {
  public:
-  static constexpr int num_velocities = 4;
-  static constexpr int num_contacts = 3;
+  static constexpr int kNumVelocities = 4;
+  static constexpr int kNumContacts = 3;
 
   // @param dt Discrete time step.
   // @param mass Total mass of the system, in Kg.
   // @param radius Radius of the circle circumscribing the triangular pizza
   // saver, in m.
   // @param mu Coefficient of dynamic friction.
-  // @param mu Stiffness with the ground, in N/m.
+  // @param k Stiffness with the ground, in N/m.
   // @param taud Dissipation time scale, in seconds.
   PizzaSaverProblem(double dt, double mass, double radius, double mu, double k,
                     double taud)
       : time_step_(dt),
         m_(mass),
-        R_(radius),
+        radius_(radius),
         mu_(mu),
         stiffness_(k),
         taud_(taud) {
@@ -295,7 +301,7 @@ class PizzaSaverProblem {
     // contact point to the triangle's center.
     // We model the pizza saver as three point masses m/3 at each contact
     // point and thus the moment of inertia is I = 3 * (m/3 R²) = m R²:
-    I_ = m_ * R_ * R_;
+    I_ = m_ * radius_ * radius_;
   }
 
   // Pizza saver model with default mass m = 1 Kg and radius = 1.0 m.
@@ -307,7 +313,7 @@ class PizzaSaverProblem {
   // Mass of each point mass, Kg. Total mass is three times mass().
   double mass() const { return m_; }
 
-  double radius() const { return R_; }
+  double radius() const { return radius_; }
 
   double rotational_inertia() const { return I_; }
 
@@ -315,7 +321,7 @@ class PizzaSaverProblem {
   double g() const { return g_; }
 
   void CalcMassMatrix(MatrixXd* M) const {
-    M->resize(num_velocities, num_velocities);
+    M->resize(kNumVelocities, kNumVelocities);
     // clang-format off
     *M << m_,  0,  0,  0,
            0, m_,  0,  0,
@@ -325,10 +331,10 @@ class PizzaSaverProblem {
   }
 
   void CalcContactJacobian(double theta, MatrixXd* Jc) const {
-    Jc->resize(3 * num_contacts, num_velocities);
+    Jc->resize(3 * kNumContacts, kNumVelocities);
 
-    const double c = cos(theta);
-    const double s = sin(theta);
+    const double c = std::cos(theta);
+    const double s = std::sin(theta);
 
     // 3D rotation matrix of the body frame B in the world frame W.
     // clang-format off
@@ -339,9 +345,9 @@ class PizzaSaverProblem {
     // clang-format on
 
     // Position of each contact point in the body frame B.
-    const Vector3d p_BoA(-sqrt(3) / 2.0, -0.5, 0.0);
-    const Vector3d p_BoB(sqrt(3) / 2.0, -0.5, 0.0);
-    const Vector3d p_BoC(0.0, 1.0, 0.0);
+    const Vector3d p_BoA = radius_ * Vector3d(-sqrt(3) / 2.0, -0.5, 0.0);
+    const Vector3d p_BoB = radius_ * Vector3d(sqrt(3) / 2.0, -0.5, 0.0);
+    const Vector3d p_BoC = radius_ * Vector3d(0.0, 1.0, 0.0);
 
     // Position of each contact point in the world frame W.
     const Vector3d p_BoA_W = R_WB * p_BoA;
@@ -350,19 +356,19 @@ class PizzaSaverProblem {
 
     // clang-format off
     // Point A
-    Jc->block(0, 0, 3, num_velocities) << 1, 0, 0, -p_BoA_W.y(),
-                                          0, 1, 0,  p_BoA_W.x(),
-                                          0, 0, 1, 0;
+    Jc->middleRows<3>(0) << 1, 0, 0, -p_BoA_W.y(),
+                            0, 1, 0,  p_BoA_W.x(),
+                            0, 0, 1, 0;
 
     // Point B
-    Jc->block(3, 0, 3, num_velocities) << 1, 0, 0, -p_BoB_W.y(),
-                                          0, 1, 0, p_BoB_W.x(),
-                                          0, 0, 1, 0;
+    Jc->middleRows<3>(3) << 1, 0, 0, -p_BoB_W.y(),
+                            0, 1, 0, p_BoB_W.x(),
+                            0, 0, 1, 0;
 
     // Point C
-    Jc->block(6, 0, 3, num_velocities) << 1, 0, 0, -p_BoC_W.y(),
-                                          0, 1, 0, p_BoC_W.x(),
-                                          0, 0, 1, 0;
+    Jc->middleRows<3>(6) << 1, 0, 0, -p_BoC_W.y(),
+                            0, 1, 0, p_BoC_W.x(),
+                            0, 0, 1, 0;
     // clang-format on
   }
 
@@ -372,7 +378,7 @@ class PizzaSaverProblem {
                                                const VectorXd& v0,
                                                const VectorXd& tau) const {
     // Set system dynamics data:
-    auto data = std::make_unique<ProblemData>(num_velocities, num_contacts);
+    auto data = std::make_unique<ProblemData>(kNumVelocities, kNumContacts);
     CalcMassMatrix(&data->M);
     {
       // A single block size.
@@ -383,16 +389,13 @@ class PizzaSaverProblem {
     data->Mop =
         std::make_unique<BlockSparseLinearOperator<double>>("M", &data->Ablock);
 
-    data->v_star.resize(num_velocities);
+    data->v_star.resize(kNumVelocities);
     data->v_star = v0 + time_step_ * data->M.ldlt().solve(tau);
 
     data->dynamics_data = std::make_unique<SystemDynamicsData<double>>(
         data->Mop.get(), nullptr, &data->v_star);
 
     // Set contact data:
-    // Some arbitrary orientation. This particular case has symmetry of
-    // revolution (meaning the result is independent of angle theta).
-    // const double theta = M_PI / 5;
     CalcContactJacobian(q0(3), &data->J);
     {
       // A single block size.
@@ -403,10 +406,10 @@ class PizzaSaverProblem {
     data->Jop =
         std::make_unique<BlockSparseLinearOperator<double>>("J", &data->Jblock);
 
-    data->phi0.setConstant(num_contacts, q0(2));
-    data->stiffness.setConstant(num_contacts, stiffness_);
-    data->dissipation.setConstant(num_contacts, taud_ * stiffness_);
-    data->mu.setConstant(num_contacts, mu_);
+    data->phi0.setConstant(kNumContacts, q0(2));
+    data->stiffness.setConstant(kNumContacts, stiffness_);
+    data->dissipation.setConstant(kNumContacts, taud_ * stiffness_);
+    data->mu.setConstant(kNumContacts, mu_);
 
     data->contact_data = std::make_unique<PointContactData<double>>(
         &data->phi0, data->Jop.get(), &data->stiffness, &data->dissipation,
@@ -427,7 +430,7 @@ class PizzaSaverProblem {
 
   // Pizza saver parameters.
   double m_{nan()};  // Mass of the pizza saver.
-  double R_{nan()};  // Distance from COM to any contact point.
+  double radius_{nan()};  // Distance from COM to any contact point.
   double I_{nan()};  // Rotational inertia about the z axis.
 
   // Contact parameters:
@@ -445,12 +448,12 @@ ContactSolverResults<double> AdvanceNumSteps(
   sap.set_parameters(params);
   ContactSolverResults<double> result;
   // Arbitrary non-zero guess to stress the solver.
-  VectorXd v_guess(problem.num_velocities);
+  VectorXd v_guess(problem.kNumVelocities);
   v_guess << 1.0, 2.0, 3.0, 4.0;
 
   const double theta = M_PI / 5;  // Arbitrary orientation.
   VectorXd q = Vector4d(0.0, 0.0, 0.0, theta);
-  VectorXd v = VectorXd::Zero(problem.num_velocities);
+  VectorXd v = VectorXd::Zero(problem.kNumVelocities);
 
   for (int i = 0; i < num_steps; ++i) {
     const auto data = problem.MakeProblemData(q, v, tau);
@@ -471,9 +474,9 @@ ContactSolverResults<double> AdvanceNumSteps(
     EXPECT_EQ(stats.num_gradients_cache_updates, stats.num_iters + 1);
 
     // Impulses are evaluated:
-    //  - At the very beggining of an iteration, to evaluate stopping criteria
+    //  - At the very beginning of an iteration, to evaluate stopping criteria
     //    (num_iters+1 since the last iteration does not perform factorization.)
-    //  - At the very beggining of line search iterations, i.e. num_iters.
+    //  - At the very beginning of line search iterations, i.e. num_iters.
     //  - Once per line search iteration.
     //    Therefore we expect impulses to be evaluated
     //    num_line_search_iters+2*num_iters+1 times.
@@ -491,7 +494,7 @@ GTEST_TEST(PizzaSaver, NoAppliedTorque) {
   const double mu = 1.0;
   const double k = 1.0e4;
   const double taud = dt;
-  PizzaSaverProblem problem(dt, mu, k, taud);
+  const PizzaSaverProblem problem(dt, mu, k, taud);
 
   SapSolverParameters params;
   params.rel_tolerance = 1.0e-6;
@@ -510,22 +513,22 @@ GTEST_TEST(PizzaSaver, NoAppliedTorque) {
   Vector4d tau_expected(0.0, 0.0, problem.mass() * problem.g(), 0.0);
 
   EXPECT_TRUE(CompareMatrices(result.v_next,
-                              VectorXd::Zero(problem.num_velocities),
+                              VectorXd::Zero(problem.kNumVelocities),
                               params.rel_tolerance));
   EXPECT_TRUE(CompareMatrices(result.tau_contact, tau_expected,
                               params.rel_tolerance,
                               MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(result.ft,
-                              VectorXd::Zero(2 * problem.num_contacts),
+                              VectorXd::Zero(2 * problem.kNumContacts),
                               params.rel_tolerance));
   EXPECT_TRUE(CompareMatrices(
       result.fn,
-      VectorXd::Constant(problem.num_contacts, tau_expected(2) / 3.0),
+      VectorXd::Constant(problem.kNumContacts, tau_expected(2) / 3.0),
       params.rel_tolerance, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(result.vt,
-                              VectorXd::Zero(2 * problem.num_contacts),
+                              VectorXd::Zero(2 * problem.kNumContacts),
                               params.rel_tolerance));
-  EXPECT_TRUE(CompareMatrices(result.vn, VectorXd::Zero(problem.num_contacts),
+  EXPECT_TRUE(CompareMatrices(result.vn, VectorXd::Zero(problem.kNumContacts),
                               params.rel_tolerance));
 }
 
@@ -554,7 +557,7 @@ GTEST_TEST(PizzaSaver, Stiction) {
   // Expected generalized force.
   const Vector4d tau_expected(0.0, 0.0, problem.mass() * problem.g(), -Mz);
 
-  // Maximum expected slip. See Castro et al. 2021 for details.
+  // Maximum expected slip. See Castro et al. 2021 for details (Eq. 22).
   const double max_slip_expected = params.sigma * dt * problem.g();
 
   EXPECT_TRUE(CompareMatrices(result.v_next.head<3>(), Vector3d::Zero(),
@@ -564,9 +567,9 @@ GTEST_TEST(PizzaSaver, Stiction) {
                               MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(
       result.fn,
-      VectorXd::Constant(problem.num_contacts, tau_expected(2) / 3.0),
+      VectorXd::Constant(problem.kNumContacts, tau_expected(2) / 3.0),
       params.rel_tolerance, MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(result.vn, VectorXd::Zero(problem.num_contacts),
+  EXPECT_TRUE(CompareMatrices(result.vn, VectorXd::Zero(problem.kNumContacts),
                               1.0e-13));
   const double friction_force_expected = Mz / problem.radius() / 3.0;
   for (int i = 0; i < 3; ++i) {
@@ -610,13 +613,13 @@ GTEST_TEST(PizzaSaver, NoFriction) {
                               2.0 * params.rel_tolerance,
                               MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(result.ft,
-                              VectorXd::Zero(2 * problem.num_contacts),
+                              VectorXd::Zero(2 * problem.kNumContacts),
                               std::numeric_limits<double>::epsilon()));
   EXPECT_TRUE(CompareMatrices(
       result.fn,
-      VectorXd::Constant(problem.num_contacts, tau_expected(2) / 3.0),
+      VectorXd::Constant(problem.kNumContacts, tau_expected(2) / 3.0),
       2.0 * params.rel_tolerance, MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(result.vn, VectorXd::Zero(problem.num_contacts),
+  EXPECT_TRUE(CompareMatrices(result.vn, VectorXd::Zero(problem.kNumContacts),
                               1.0e-13));
   for (int i = 0; i < 3; ++i) {
     const auto vt = result.vt.segment<2>(2 * i);
@@ -643,23 +646,12 @@ GTEST_TEST(PizzaSaver, Sliding) {
 
   const double Mz = 6.0;
   const double weight = problem.mass() * problem.g();
-  const double fn_expected = weight / 3.0;
-  const double ft_expected = mu * fn_expected;
-  const double friction_torque_expected = 3.0 * ft_expected * problem.radius();
-
   const Vector4d tau(0.0, 0.0, -weight, Mz);
 
   const ContactSolverResults<double> result =
       AdvanceNumSteps(problem, tau, 10, params);
 
-  // Expected generalized force.
-  const Vector4d tau_expected(0.0, 0.0, problem.mass() * problem.g(),
-                              -friction_torque_expected);
-
   EXPECT_GT(result.v_next(3), 0.0);  // It's accelerating.
-  EXPECT_NEAR(tau_expected.head<2>().norm(), 0.0, params.abs_tolerance);
-  EXPECT_GT(std::abs(tau_expected(2)), 0.0);
-  EXPECT_LT(std::abs(tau_expected(3)), Mz);
   for (int i = 0; i < 3; ++i) {
     const double friction_force = result.ft.segment<2>(2 * i).norm();
     const double normal_force = result.fn(i);
