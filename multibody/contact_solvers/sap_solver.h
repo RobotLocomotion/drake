@@ -88,7 +88,7 @@ class SapSolver final : public ContactSolver<T> {
     int num_iters{0};              // Number of Newton iterations.
     int num_line_search_iters{0};  // Total number of line search iterations.
 
-    // Number of impulse updates. This also includes dγ/dy updates, when
+    // Number of impulse updates. This also includes dP/dy updates, when
     // gradients are updated.
     int num_impulses_cache_updates{0};
 
@@ -146,14 +146,13 @@ class SapSolver final : public ContactSolver<T> {
   //  - Grad: GradientsCache
   //  - Search Direction: SearchDirectionCache
   //
-  // The SapSolver class provides methods to "evaluate" these cache entries.
-  // Algorithms (other than the "Eval" methods) should not access the cache
-  // directly but should obtain valid up-to-date quantities with the
-  // corresponding "Eval" method. As an example, consider the evaluation of the
-  // constraints velocity vc. This is accomplished with:
-  // const VectorX<T>& vc = EvalVelocitiesCache(state).vc;
+  // The SapSolver class provides methods to "evaluate" these cache entries and
+  // always return an up-to-date reference (the computation is performed only if
+  // the cache entry is not up-to-date.) As an example, consider the evaluation
+  // of the constraints velocity vc. This is accomplished with:
+  //   const VectorX<T>& vc = EvalVelocitiesCache(state).vc;
   // Notice that the call site does not mention the cache directly but it uses
-  // the corresponding eval method.
+  // the corresponding Eval method.
   //
   // N.B. The schematic above must be kept in sync with the implementation.
   //
@@ -238,8 +237,9 @@ class SapSolver final : public ContactSolver<T> {
       search_direction_cache_.valid = false;
     }
 
-    // Methods for const access of cache entries. These methods demand the entry
-    // to be valid, therefore providing some level of correctness guarantee.
+    // Methods for const access of cache entries. These methods are meant to be
+    // used only within Eval methods. Cache entries must be accessed through the
+    // corresponding Eval.
     const VelocitiesCache& velocities_cache() const {
       return velocities_cache_;
     }
@@ -251,8 +251,10 @@ class SapSolver final : public ContactSolver<T> {
       return search_direction_cache_;
     }
 
-    // Methods for mutable access of cache entries. The specific cache entry is
-    // marked invalid before it is returned.
+    // Methods for mutable access of cache entries. The specific cache entry and
+    // its dependents are marked invalid before it is returned. These methods
+    // are meant to be used only within Eval methods. Cache entries must be
+    // accessed through the corresponding Eval.
     VelocitiesCache& mutable_velocities_cache() {
       velocities_cache_.valid = false;
       impulses_cache_.valid = false;
@@ -437,7 +439,7 @@ class SapSolver final : public ContactSolver<T> {
   // VII) and its gradients (Appendix E).
   //
   // @pre R has the form R = (Rt, Rt, Rn).
-  Vector3<T> CalcProjectionOntoFrictionCone(
+  Vector3<T> ProjectOntoSingleFrictionCone(
       const T& mu, const Eigen::Ref<const Vector3<T>>& R,
       const Eigen::Ref<const Vector3<T>>& y, Matrix3<T>* dPdy = nullptr) const;
 
@@ -495,7 +497,7 @@ class SapSolver final : public ContactSolver<T> {
   // For a good reference on this method, see Section 11.3 of Bierlaire, M.,
   // 2015. "Optimization: principles and algorithms", EPFL Press.
   //
-  // @returns The optimal value of α at the minimum of ℓ(α).
+  // @returns A value of α that satisfies Armijo's criterion.
   T PerformBackTrackingLineSearch(const State& state, const VectorX<T>& dv,
                                   int* num_iterations) const;
 

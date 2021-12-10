@@ -35,7 +35,7 @@ ContactSolverStatus SapSolver<T>::SolveWithGuess(
 }
 
 template <typename T>
-Vector3<T> SapSolver<T>::CalcProjectionOntoFrictionCone(
+Vector3<T> SapSolver<T>::ProjectOntoSingleFrictionCone(
     const T& mu, const Eigen::Ref<const Vector3<T>>& R,
     const Eigen::Ref<const Vector3<T>>& y, Matrix3<T>* dPdy) const {
   // Computes the "soft norm" ‖x‖ₛ defined by ‖x‖ₛ² = ‖x‖² + ε², where ε =
@@ -133,7 +133,7 @@ void SapSolver<T>::ProjectAllImpulses(const VectorX<T>& y,
     const auto& y_ic = y.template segment<3>(ic3);
     // Analytical projection of y onto the friction cone ℱ using the R norm.
     gamma->template segment<3>(ic3) =
-        CalcProjectionOntoFrictionCone(mu_ic, R_ic, y_ic);
+        ProjectOntoSingleFrictionCone(mu_ic, R_ic, y_ic);
   }
 }
 
@@ -157,7 +157,7 @@ void SapSolver<T>::CalcAllProjectionsGradients(
 
     // Analytical projection of y onto the friction cone ℱ using the R norm.
     auto& dPdy_ic = (*dPdy)[ic];
-    CalcProjectionOntoFrictionCone(mu_ic, R_ic, y_ic, &dPdy_ic);
+    ProjectOntoSingleFrictionCone(mu_ic, R_ic, y_ic, &dPdy_ic);
   }
 }
 
@@ -425,6 +425,14 @@ T SapSolver<T>::CalcLineSearchCost(const State& state_v, const T& alpha,
   const T ellR = 0.5 * gamma.dot(R.asDiagonal() * gamma);
 
   // Momentum cost. We use the O(n) strategy described in [Castro et al., 2021].
+  // The momentum cost is: ellA(α) = 0.5‖v(α)−v*‖², where ‖⋅‖ is the norm
+  // defined by A. v(α) corresponds to the value of v along the search
+  // direction: v(α) = v + αΔv. Using v(α) in the expression of the cost and
+  // expanding the squared norm leads to: ellA(α) = 0.5‖v−v*‖² + αΔvᵀ⋅A⋅(v−v*) +
+  // 0.5‖Δv‖²α². We now notice some of those terms are already cached:
+  //  - dpᵀ = Δvᵀ⋅A
+  //  - ellA(v) = 0.5‖v−v*‖²
+  //  - d2ellA_dalpha2 = 0.5‖Δv‖²α², see [Castro et al., 2021; §VIII.C].
   T ellA = EvalCostCache(state_v).ellA;
   ellA += alpha * dp.dot(state_v.v() - v_star);
   ellA += 0.5 * alpha * alpha * d2ellA_dalpha2;
@@ -442,7 +450,7 @@ T SapSolver<T>::PerformBackTrackingLineSearch(
   const int max_iterations = parameters().ls_max_iterations;
 
   // Quantities at alpha = 0.
-  const T ell0 = EvalCostCache(state).ell;
+  const T& ell0 = EvalCostCache(state).ell;
   const auto& ell_grad_v0 = EvalGradientsCache(state).ell_grad_v;
 
   // dℓ/dα(α = 0) = ∇ᵥℓ(α = 0)⋅Δv.
@@ -456,6 +464,7 @@ T SapSolver<T>::PerformBackTrackingLineSearch(
   DRAKE_DEMAND(dell_dalpha0 < 0);
 
   T alpha = parameters().ls_alpha_max;
+  // TODO(amcastro-tri): Consider removing this heap allocation from this scope.
   State state_aux(state);  // Auxiliary workspace.
   T ell = CalcLineSearchCost(state, alpha, &state_aux);
 
@@ -508,7 +517,7 @@ T SapSolver<T>::PerformBackTrackingLineSearch(
   }
 
   // If we are here, the line-search could not find a valid parameter that
-  // satisfies Armijo's criterion. Either we need to incrase the maximum number
+  // satisfies Armijo's criterion. Either we need to increase the maximum number
   // of iterations parameter or condition the problem better.
   throw std::runtime_error(
       "Line search reached the maximum number of iterations.");
@@ -527,20 +536,21 @@ void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
   const int nv = data().nv;
   MatrixX<T> H(nv, nv);
   {
-    int nc = data().nc;
+    const int nc = data().nc;
     const auto& A = data().A;
     const auto& J = data().J;
     const auto& G = gradients_cache.G;
 
-    MatrixX<T> Jdense(3 * nc, nv);
-    Jdense = J.MakeDenseMatrix();
+    const MatrixX<T> Jdense = J.MakeDenseMatrix();
     MatrixX<T> Adense(nv, nv);
     Adense = A.MakeDenseMatrix();
 
     MatrixX<T> GJ(3 * nc, nv);
-    for (int ic = 0, ic3 = 0; ic < nc; ic++, ic3 += 3) {
+    for (int ic = 0; ic < nc; ++ic) {
+      const int ic3 = 3 * ic;
       const MatrixX<T>& G_ic = G[ic];
-      GJ.block(ic3, 0, 3, nv) = G_ic * Jdense.block(ic3, 0, 3, nv);
+      GJ.template middleRows<3>(ic3) =
+          G_ic * Jdense.template middleRows<3>(ic3);
     }
     H = Adense + Jdense.transpose() * GJ;
   }
@@ -548,7 +558,7 @@ void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
   // Factorize Hessian.
   // TODO(amcastro-tri): Make use of mat::SolveLinearSystem() for a quick and
   // dirty way to support AutoDiffXd, at least to build unit tests.
-  Eigen::LDLT<MatrixX<T>> Hldlt(H);
+  const Eigen::LDLT<MatrixX<T>> Hldlt(H);
   if (Hldlt.info() != Eigen::Success) {
     throw std::runtime_error("Dense LDLT factorization of the Hessian failed.");
   }
@@ -645,7 +655,8 @@ SapSolver<T>::EvalGradientsCache(const State& state) const {
   const int nc = data().nc;
   const auto& R = data().R;
   const auto& dPdy = cache.dPdy;
-  for (int ic = 0, ic3 = 0; ic < nc; ic++, ic3 += 3) {
+  for (int ic = 0; ic < nc; ++ic) {
+    const int ic3 = 3 * ic;
     const auto& R_ic = R.template segment<3>(ic3);
     const Vector3<T> Rinv_ic = R_ic.cwiseInverse();
     const Matrix3<T>& dPdy_ic = dPdy[ic];
@@ -670,8 +681,7 @@ SapSolver<T>::EvalSearchDirectionCache(const State& state) const {
   CallDenseSolver(state, &cache.dv);
 
   // Update Δp, Δvc and d²ellA/dα².
-  const auto& Jop = data().J;
-  Jop.Multiply(cache.dv, &cache.dvc);
+  data().J.Multiply(cache.dv, &cache.dvc);
   data().A.Multiply(cache.dv, &cache.dp);
   cache.d2ellA_dalpha2 = cache.dv.dot(cache.dp);
 
