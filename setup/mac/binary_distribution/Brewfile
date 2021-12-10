@@ -34,6 +34,7 @@ brew 'tinyxml2'
 # vtk@9.1.0 is needed for drake.
 brew 'robotlocomotion/director/vtk@8.2.0'
 # TODO: merge this into robotlocomotion when review is complete
+tap 'svenevs/director'
 brew 'svenevs/director/vtk@9.1.0'
 brew 'xz'
 brew 'yaml-cpp'
