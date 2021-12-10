@@ -145,6 +145,30 @@ void SapSolver<T>::ProjectAllImpulses(const VectorX<T>& y, VectorX<T>* gamma,
 }
 
 template <typename T>
+void SapSolver<T>::CalcAllProjectionsGradients(
+    const VectorX<T>& y, std::vector<Matrix3<T>>* dPdy) const {
+  const int nc = data().nc;
+  const int nc3 = 3 * nc;
+  DRAKE_DEMAND(y.size() == nc3);
+  if (dPdy != nullptr) DRAKE_DEMAND(static_cast<int>(dPdy->size()) == nc);
+
+  // Data.
+  const auto& R = data().R;
+  const auto& mu = data().mu;
+
+  for (int ic = 0; ic < nc; ++ic) {
+    const int ic3 = 3 * ic;
+    const auto& R_ic = R.template segment<3>(ic3);
+    const T& mu_ic = mu(ic);
+    const auto& y_ic = y.template segment<3>(ic3);
+
+    // Analytical projection of y onto the friction cone ℱ using the R norm.
+    auto& dPdy_ic = (*dPdy)[ic];
+    CalcProjectionOntoFrictionCone(mu_ic, R_ic, y_ic, &dPdy_ic);
+  }
+}
+
+template <typename T>
 void SapSolver<T>::CalcDelassusDiagonalApproximation(
     int nc, const std::vector<MatrixX<T>>& At, const BlockSparseMatrix<T>& J,
     VectorX<T>* delassus_diagonal) const {
@@ -299,9 +323,10 @@ void SapSolver<T>::CalcStoppingCriteriaResidual(const State& state,
                                                 T* momentum_scale) const {
   using std::max;
   const auto& inv_sqrt_A = data().inv_sqrt_A;
-  const VectorX<T>& p = state.cache().momentum_cache().p;
-  const VectorX<T>& jc = state.cache().momentum_cache().jc;
-  const VectorX<T>& ell_grad = state.cache().gradients_cache().ell_grad_v;
+  const auto& momentum_cache = EvalMomentumCache(state);
+  const VectorX<T>& p = momentum_cache.p;
+  const VectorX<T>& jc = momentum_cache.jc;
+  const VectorX<T>& ell_grad = EvalGradientsCache(state).ell_grad_v;
 
   // Scale generalized momentum quantities using inv_sqrt_A so that all entries
   // have the same units and we can weigh them equally.
@@ -331,21 +356,10 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
   mutable_stats().Reset();
 
   state.mutable_v() = v_guess;
-  auto& cache = state.mutable_cache();
-
-  // We perform the first update here so that we can evaluate the stopping
-  // criteria before we need an expensive factorization. If the state
-  // satisfies the stopping criteria we exit before a factorization is
-  // performed. In particular, if the initial guess satisfies the stopping
-  // criteria, the solver exits without performing a single factorization.
-  // Updating all cache entries here has the advantage that the first
-  // computation of the impulses is performed along with the computation of
-  // its gradients. Computing γ and dγ/dy can be performed in a single pass.
-  UpdateCostAndGradientsCache(state, &cache);
-  double ell_previous = cache.cost_cache().ell;
 
   // Start Newton iterations.
   int k = 0;
+  double ell_previous = EvalCostCache(state).ell;
   bool converged = false;
   for (; k < parameters().max_iterations; ++k) {
     // We first verify the stopping criteria. If satisfied, we skip expensive
@@ -365,27 +379,26 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
 
     // This is the most expensive update: it performs the factorization of H to
     // solve for the search direction dv.
-    UpdateSearchDirectionCache(state, &cache);
+    const VectorX<double>& dv = EvalSearchDirectionCache(state).dv;
 
     int ls_iters;
-    const double alpha = PerformBackTrackingLineSearch(state, &ls_iters);
+    const double alpha = PerformBackTrackingLineSearch(state, dv, &ls_iters);
     mutable_stats().num_line_search_iters += ls_iters;
 
     // Update state.
-    state.mutable_v() += alpha * cache.search_direction_cache().dv;
+    state.mutable_v() += alpha * dv;
 
-    // We update the cost here so that we can verify it is decreasing on each
-    // iteration.
-    // This call also has the effect of updating the state as needed to verify
-    // the stopping criteria at the begining of the next iteration.
-    UpdateCostAndGradientsCache(state, &cache);
-    DRAKE_DEMAND(state.cache().cost_cache().ell < ell_previous);
-    ell_previous = state.cache().cost_cache().ell;
+    // Verify the cost decreases on each iteration.
+    const double ell = EvalCostCache(state).ell;
+    DRAKE_DEMAND(ell < ell_previous);
+    ell_previous = ell;
   }
 
   if (!converged) return ContactSolverStatus::kFailure;
 
-  PackContactResults(data(), state.v(), cache.vc(), cache.gamma(), results);
+  const VectorX<double>& vc = EvalVelocitiesCache(state).vc;
+  const VectorX<double>& gamma = EvalImpulsesCache(state).gamma;
+  PackContactResults(data(), state.v(), vc, gamma, results);
 
   // N.B. If the stopping criteria is satisfied for k = 0, the solver is not
   // even instantiated and no factorizations are performed (the expensive part
@@ -404,7 +417,7 @@ T SapSolver<T>::CalcLineSearchCost(const State& state_v, const T& alpha,
 
   // Cached quantities at state v.
   const typename Cache::SearchDirectionCache& search_direction_cache =
-      state_v.cache().search_direction_cache();
+      EvalSearchDirectionCache(state_v);
   const VectorX<T>& dv = search_direction_cache.dv;
   const VectorX<T>& dp = search_direction_cache.dp;
   const T& d2ellA_dalpha2 = search_direction_cache.d2ellA_dalpha2;
@@ -413,14 +426,13 @@ T SapSolver<T>::CalcLineSearchCost(const State& state_v, const T& alpha,
   state_alpha->mutable_v() = state_v.v() + alpha * dv;
 
   // Update velocities and impulses at v(alpha).
-  UpdateImpulsesCache(*state_alpha, &state_alpha->mutable_cache());
-  const VectorX<T>& gamma = state_alpha->cache().gamma();
+  const VectorX<T>& gamma = EvalImpulsesCache(*state_alpha).gamma;
 
   // Regularizer cost.
   const T ellR = 0.5 * gamma.dot(R.asDiagonal() * gamma);
 
   // Momentum cost. We use the O(n) strategy described in [Castro et al., 2021].
-  T ellA = state_v.cache().cost_cache().ellA;
+  T ellA = EvalCostCache(state_v).ellA;
   ellA += alpha * dp.dot(state_v.v() - v_star);
   ellA += 0.5 * alpha * alpha * d2ellA_dalpha2;
   const T ell = ellA + ellR;
@@ -429,19 +441,16 @@ T SapSolver<T>::CalcLineSearchCost(const State& state_v, const T& alpha,
 }
 
 template <typename T>
-T SapSolver<T>::PerformBackTrackingLineSearch(const State& state,
-                                              int* num_iterations) const {
+T SapSolver<T>::PerformBackTrackingLineSearch(
+    const State& state, const VectorX<T>& dv, int* num_iterations) const {
   // Line search parameters.
   const double rho = parameters().ls_rho;
   const double c = parameters().ls_c;
   const int max_iterations = parameters().ls_max_iterations;
 
   // Quantities at alpha = 0.
-  const T ell0 = state.cache().cost_cache().ell;
-  const auto& ell_grad_v0 = state.cache().gradients_cache().ell_grad_v;
-
-  // Search direction.
-  const VectorX<T>& dv = state.cache().search_direction_cache().dv;
+  const T ell0 = EvalCostCache(state).ell;
+  const auto& ell_grad_v0 = EvalGradientsCache(state).ell_grad_v;
 
   // dℓ/dα(α = 0) = ∇ᵥℓ(α = 0)⋅Δv.
   const T dell_dalpha0 = ell_grad_v0.dot(dv);
@@ -517,9 +526,7 @@ T SapSolver<T>::PerformBackTrackingLineSearch(const State& state,
 
 template <typename T>
 void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
-  auto& cache = state.mutable_cache();
-  UpdateCostAndGradientsCache(state, &cache);
-
+  const auto& gradients_cache = EvalGradientsCache(state);
   // Explicitly build dense Hessian.
   // These matrices could be saved in the cache. However this method is only
   // intended as an alternative for debugging and optimizing it might not be
@@ -530,7 +537,7 @@ void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
     int nc = data().nc;
     const auto& A = data().A;
     const auto& J = data().J;
-    const auto& G = cache.gradients_cache().G;
+    const auto& G = gradients_cache.G;
 
     MatrixX<T> Jdense(3 * nc, nv);
     Jdense = J.MakeDenseMatrix();
@@ -554,130 +561,129 @@ void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
   }
 
   // Compute search direction.
-  const VectorX<T> rhs = -cache.gradients_cache().ell_grad_v;
+  const VectorX<T> rhs = -gradients_cache.ell_grad_v;
   *dv = Hldlt.solve(rhs);
 }
 
 template <typename T>
-void SapSolver<T>::UpdateVelocitiesCache(const State& state,
-                                         Cache* cache) const {
-  if (cache->valid_velocities_cache()) return;
-  auto& velocities_cache = cache->mutable_velocities_cache();
+const typename SapSolver<T>::Cache::VelocitiesCache&
+SapSolver<T>::EvalVelocitiesCache(const State& state) const {
+  if (state.cache().velocities_cache().valid)
+    return state.cache().velocities_cache();
+  typename Cache::VelocitiesCache& cache =
+      state.mutable_cache().mutable_velocities_cache();
   const auto& Jc = data().J;
-  Jc.Multiply(state.v(), &velocities_cache.vc);
-  velocities_cache.valid = true;
+  Jc.Multiply(state.v(), &cache.vc);
+  cache.valid = true;
+  return cache;
 }
 
 template <typename T>
-void SapSolver<T>::UpdateImpulsesCache(const State& state, Cache* cache) const {
-  if (cache->valid_impulses_cache()) return;
-  UpdateVelocitiesCache(state, cache);
-  auto& impulses_cache = cache->mutable_impulses_cache();
+const typename SapSolver<T>::Cache::ImpulsesCache&
+SapSolver<T>::EvalImpulsesCache(const State& state) const {
+  if (state.cache().impulses_cache().valid)
+    return state.cache().impulses_cache();
+  typename Cache::ImpulsesCache& cache =
+      state.mutable_cache().mutable_impulses_cache();
+  const VectorX<T>& vc = EvalVelocitiesCache(state).vc;
   const VectorX<T>& Rinv = data().Rinv;
   const VectorX<T>& vhat = data().vhat;
-  impulses_cache.y = vhat - cache->vc();
+  cache.y = vhat - vc;
   // The (unprojected) impulse y=−R⁻¹⋅(vc − v̂).
-  impulses_cache.y.array() *= Rinv.array();
-  ProjectAllImpulses(impulses_cache.y, &impulses_cache.gamma);
+  cache.y.array() *= Rinv.array();
+  ProjectAllImpulses(cache.y, &cache.gamma);
   ++mutable_stats().num_impulses_cache_updates;
-  impulses_cache.valid = true;
+  cache.valid = true;
+  return cache;
 }
 
 template <typename T>
-void SapSolver<T>::UpdateMomentumCache(const State& state, Cache* cache) const {
-  if (cache->valid_momentum_cache()) return;
-  UpdateImpulsesCache(state, cache);
-  auto& momentum_cache = cache->mutable_momentum_cache();
-  data().A.Multiply(state.v(), &momentum_cache.p);  // p = A⋅v.
-  data().J.MultiplyByTranspose(state.cache().gamma(), &momentum_cache.jc);
+const typename SapSolver<T>::Cache::MomentumCache&
+SapSolver<T>::EvalMomentumCache(const State& state) const {
+  if (state.cache().momentum_cache().valid)
+    return state.cache().momentum_cache();
+  typename Cache::MomentumCache& cache =
+      state.mutable_cache().mutable_momentum_cache();
+  data().A.Multiply(state.v(), &cache.p);  // p = A⋅v.
+  const VectorX<T>& gamma = EvalImpulsesCache(state).gamma;
+  data().J.MultiplyByTranspose(gamma, &cache.jc);
   // = p - p* = A⋅(v−v*).
-  momentum_cache.momentum_change = momentum_cache.p - data().p_star;
-  momentum_cache.valid = true;
+  cache.momentum_change = cache.p - data().p_star;
+  cache.valid = true;
+  return cache;
 }
 
 template <typename T>
-void SapSolver<T>::UpdateCostCache(const State& state, Cache* cache) const {
-  if (cache->valid_cost_cache()) return;
-  UpdateImpulsesCache(state, cache);
-  UpdateMomentumCache(state, cache);
+const typename SapSolver<T>::Cache::CostCache& SapSolver<T>::EvalCostCache(
+    const State& state) const {
+  if (state.cache().cost_cache().valid) return state.cache().cost_cache();
+  typename Cache::CostCache& cache =
+      state.mutable_cache().mutable_cost_cache();
   const auto& R = data().R;
   const auto& v_star = data().v_star;
-  const auto& Adv = cache->momentum_cache().momentum_change;
   const VectorX<T>& v = state.v();
-  const VectorX<T>& gamma = cache->gamma();
-  auto& cost_cache = cache->mutable_cost_cache();
-  cost_cache.ellA = 0.5 * Adv.dot(v - v_star);
-  cost_cache.ellR = 0.5 * gamma.dot(R.asDiagonal() * gamma);
-  cost_cache.ell = cost_cache.ellA + cost_cache.ellR;
-  cost_cache.valid = true;
+  const VectorX<T>& gamma = EvalImpulsesCache(state).gamma;
+  const auto& Adv = EvalMomentumCache(state).momentum_change;
+  cache.ellA = 0.5 * Adv.dot(v - v_star);
+  cache.ellR = 0.5 * gamma.dot(R.asDiagonal() * gamma);
+  cache.ell = cache.ellA + cache.ellR;
+  cache.valid = true;
+  return cache;
 }
 
 template <typename T>
-void SapSolver<T>::UpdateCostAndGradientsCache(const State& state,
-                                               Cache* cache) const {
-  if (cache->valid_gradients_cache()) return;
-
-  // Update γ(v) and dγ/dy(v). N.B. We update impulses and gradients together so
-  // that the we can reuse common terms in the analytical inverse dynamics. N.B.
-  // We make this update before updating the momentum or cost cache so that
-  // impulses are valid for them. Do not swap the order.
-  auto& impulses_cache = cache->mutable_impulses_cache();
-  auto& gradients_cache = cache->mutable_gradients_cache();
-  UpdateVelocitiesCache(state, cache);
-  const VectorX<T>& Rinv = data().Rinv;
-  const VectorX<T>& vhat = data().vhat;
-  impulses_cache.y = vhat - cache->vc();
-  impulses_cache.y.array() *= Rinv.array();
-  ProjectAllImpulses(impulses_cache.y, &impulses_cache.gamma,
-                     &gradients_cache.dPdy);
-  ++mutable_stats().num_impulses_cache_updates;
-  impulses_cache.valid = true;
-
-  // N.B. Since impulses were updated above along with dγ/dy, these updates will
-  // not need to recompute impulses.
-  UpdateMomentumCache(state, cache);
-  UpdateCostCache(state, cache);
+const typename SapSolver<T>::Cache::GradientsCache&
+SapSolver<T>::EvalGradientsCache(const State& state) const {
+  if (state.cache().gradients_cache().valid)
+    return state.cache().gradients_cache();
+  typename Cache::GradientsCache& cache =
+      state.mutable_cache().mutable_gradients_cache();
 
   // Update ∇ᵥℓ = A⋅(v−v*) - Jᵀ⋅γ
-  const VectorX<T>& Adv =
-      cache->momentum_cache().momentum_change;        // = A⋅(v−v*)
-  const VectorX<T>& jc = cache->momentum_cache().jc;  // = Jᵀ⋅γ
-  gradients_cache.ell_grad_v = Adv - jc;
+  const auto& momentum_cache = EvalMomentumCache(state);
+  const VectorX<T>& Adv = momentum_cache.momentum_change;  // = A⋅(v−v*)
+  const VectorX<T>& jc = momentum_cache.jc;  // = Jᵀ⋅γ
+  cache.ell_grad_v = Adv - jc;
 
-  // Update G. G = -∂γ/∂vc = dP/dy⋅R⁻¹.
+  // Update dPdy and G. G = -∂γ/∂vc = dP/dy⋅R⁻¹.
+  const VectorX<T>& y = EvalImpulsesCache(state).y;
+  CalcAllProjectionsGradients(y, &cache.dPdy);
+
   const int nc = data().nc;
   const auto& R = data().R;
-  const auto& dPdy = gradients_cache.dPdy;
+  const auto& dPdy = cache.dPdy;
   for (int ic = 0, ic3 = 0; ic < nc; ic++, ic3 += 3) {
     const auto& R_ic = R.template segment<3>(ic3);
     const Vector3<T> Rinv_ic = R_ic.cwiseInverse();
     const Matrix3<T>& dPdy_ic = dPdy[ic];
-    MatrixX<T>& G_ic = gradients_cache.G[ic];
+    MatrixX<T>& G_ic = cache.G[ic];
     G_ic = dPdy_ic * Rinv_ic.asDiagonal();
   }
 
   ++mutable_stats().num_gradients_cache_updates;
-  gradients_cache.valid = true;
+  cache.valid = true;
+  return cache;
 }
 
 template <typename T>
-void SapSolver<T>::UpdateSearchDirectionCache(const State& state,
-                                              Cache* cache) const {
-  if (cache->valid_search_direction_cache()) return;
-
-  auto& search_direction_cache = cache->mutable_search_direction_cache();
+const typename SapSolver<T>::Cache::SearchDirectionCache&
+SapSolver<T>::EvalSearchDirectionCache(const State& state) const {
+  if (state.cache().search_direction_cache().valid)
+    return state.cache().search_direction_cache();
+  typename Cache::SearchDirectionCache& cache =
+      state.mutable_cache().mutable_search_direction_cache();
 
   // Update search direction dv.
-  CallDenseSolver(state, &search_direction_cache.dv);
+  CallDenseSolver(state, &cache.dv);
 
   // Update Δp, Δvc and d²ellA/dα².
   const auto& Jop = data().J;
-  Jop.Multiply(search_direction_cache.dv, &search_direction_cache.dvc);
-  data().A.Multiply(search_direction_cache.dv, &search_direction_cache.dp);
-  search_direction_cache.d2ellA_dalpha2 =
-      search_direction_cache.dv.dot(search_direction_cache.dp);
+  Jop.Multiply(cache.dv, &cache.dvc);
+  data().A.Multiply(cache.dv, &cache.dp);
+  cache.d2ellA_dalpha2 = cache.dv.dot(cache.dp);
 
-  search_direction_cache.valid = true;
+  cache.valid = true;
+  return cache;
 }
 
 }  // namespace internal
