@@ -36,6 +36,22 @@ class TestGeometryRender(unittest.TestCase):
         self.assertEqual(params.default_label, label)
         self.assertTrue((params.default_diffuse == diffuse).all())
 
+    def test_render_engine_gl_params(self):
+        # A default constructor exists.
+        mut.render.RenderEngineGlParams()
+
+        # The kwarg constructor also works.
+        label = mut.render.RenderLabel(10)
+        diffuse = mut.Rgba(1.0, 0.0, 0.0, 0.0)
+        params = mut.render.RenderEngineGlParams(
+            default_clear_color=diffuse,
+            default_label=label,
+            default_diffuse=diffuse,
+        )
+        self.assertEqual(params.default_clear_color, diffuse)
+        self.assertEqual(params.default_label, label)
+        self.assertEqual(params.default_diffuse, diffuse)
+
     def test_render_label(self):
         RenderLabel = mut.render.RenderLabel
         value = 10

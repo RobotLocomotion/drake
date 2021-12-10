@@ -353,7 +353,8 @@ class TestGeometrySceneGraph(unittest.TestCase):
         render_params = mut.render.RenderEngineVtkParams()
         renderer_name = "test_renderer"
         scene_graph.AddRenderer(renderer_name,
-                                mut.render.MakeRenderEngineVtk(render_params))
+                                mut.render.MakeRenderEngineVtk(
+                                    params=render_params))
 
         context = scene_graph.CreateDefaultContext()
         pose_vector = FramePoseVector()
