@@ -638,13 +638,11 @@ void SapSolver<T>::UpdateCostAndGradientsCache(const State& state,
   UpdateMomentumCache(state, cache);
   UpdateCostCache(state, cache);
 
-  // Update ∇ᵥℓ.
-  const VectorX<T>& gamma = cache->gamma();
-  const VectorX<T>& Adv = cache->momentum_cache().momentum_change;
-  data().J.MultiplyByTranspose(gamma,
-                               &gradients_cache.ell_grad_v);  // = Jᵀγ
-  gradients_cache.ell_grad_v = -gradients_cache.ell_grad_v;   // = -Jᵀγ
-  gradients_cache.ell_grad_v += Adv;  // = A⋅(v−v*) - Jᵀγ
+  // Update ∇ᵥℓ = A⋅(v−v*) - Jᵀ⋅γ
+  const VectorX<T>& Adv =
+      cache->momentum_cache().momentum_change;        // = A⋅(v−v*)
+  const VectorX<T>& jc = cache->momentum_cache().jc;  // = Jᵀ⋅γ
+  gradients_cache.ell_grad_v = Adv - jc;
 
   // Update G. G = -∂γ/∂vc = dP/dy⋅R⁻¹.
   const int nc = data().nc;
