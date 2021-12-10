@@ -19,6 +19,9 @@ class PartialPermutation {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PartialPermutation);
 
+  
+  PartialPermutation() = default;
+
   explicit PartialPermutation(std::vector<int>&& permutation);
 
   PartialPermutation(int domain_size, std::vector<int>&& inverse_permutation);

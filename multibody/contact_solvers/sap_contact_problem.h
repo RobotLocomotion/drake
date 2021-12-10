@@ -17,6 +17,7 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+#if 0
 template <typename T>
 class Projection {
  public:
@@ -132,6 +133,7 @@ class FrictionConeProjection final : public Projection<T> {
   T mu_{0.0};
   double soft_tolerance_{1.0e-7};
 };
+#endif 
 
 template <typename T>
 class SapConstraint {
@@ -144,36 +146,38 @@ class SapConstraint {
 
   virtual ~SapConstraint() = default;
 
+  explicit SapConstraint(int num_constrained_dofs);
+
   SapConstraint(int clique, const MatrixX<T>& J);
 
   SapConstraint(int clique0, int clique1, const MatrixX<T>& J0,
                 const MatrixX<T>& J1);
 
-  int num_cliques() const;
-
   int num_constrained_dofs() const;
-
+  int num_cliques() const;
   int clique0() const;
   int clique1() const;
 
+  virtual void Project(const Eigen::Ref<const VectorX<T>>& y,
+                       const Eigen::Ref<const VectorX<T>>& R,
+                       EigenPtr<VectorX<T>> gamma,
+                       MatrixX<T>* dPdy = nullptr) const = 0;
+
   const MatrixX<T>& clique0_jacobian() const;
   const MatrixX<T>& clique1_jacobian() const;
-
-  virtual VectorX<T> Project(const Eigen::Ref<const VectorX<T>>& y,
-                             std::optional<MatrixX<T>> dPdy) const = 0;
-
-  virtual const Projection<T>& projection() const = 0;
 
   // VectorX<T> CalcConstraintBias(const T& wi);
   // VectorX<T> CalcRegularizationParameters(const T& wi);
 
  private:
+  int num_constrained_dofs_{0};
   // For now we limit ourselves to constraints between two cliques only.
   int clique0_{-1};
-  int clique1_{-1};
+  int num_velocities0_{0};
+  int clique1_{-1};  
+  int num_velocities1_{0};
   MatrixX<T> J0_;
   MatrixX<T> J1_;
-  int num_constrained_dofs_{0};
 };
 
 template <typename T>
@@ -181,18 +185,24 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapFrictionConeConstraint);
 
+  SapFrictionConeConstraint(const T& mu)
+      : SapConstraint<T>(3), mu_(mu) {}
+
   SapFrictionConeConstraint(int clique, const MatrixX<T>& J, const T& mu);
 
   SapFrictionConeConstraint(int clique0, int clique1, const MatrixX<T>& J0,
                             const MatrixX<T>& J1, const T& mu);
 
-  const Projection<T>& projection() const final { return projection_; }
+  void Project(const Eigen::Ref<const VectorX<T>>& y,
+               const Eigen::Ref<const VectorX<T>>& R,
+               EigenPtr<VectorX<T>> gamma,
+               MatrixX<T>* dPdy = nullptr) const final;
 
-  VectorX<T> Project(const Eigen::Ref<const VectorX<T>>&,
-                     std::optional<MatrixX<T>> dPdy) const final;
+  const T& mu() const { return mu_;  }
 
  private:
-  FrictionConeProjection<T> projection_;
+  T mu_{0.0};
+  double soft_tolerance_{1.0e-7};
 };
 
 // SAP Problem defined by:

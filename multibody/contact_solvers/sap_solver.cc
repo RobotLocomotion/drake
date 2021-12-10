@@ -14,16 +14,16 @@ namespace internal {
 template <typename T>
 SapConstraintsBundle<T>::SapConstraintsBundle(
     BlockSparseMatrix<T>&& J, VectorX<T>&& vhat, VectorX<T>&& R,
-    std::vector<std::unique_ptr<Projection<T>>>&& projections)
+    std::vector<std::unique_ptr<SapConstraint<T>>>&& constraints)
     : J_(std::move(J)),
       vhat_(std::move(vhat)),
       R_(std::move(R)),
       Rinv_(R_.cwiseInverse()),
-      projections_(std::move(projections)) {}
+      constraints_(std::move(constraints)) {}
 
 template <typename T>
 int SapConstraintsBundle<T>::num_constraints() const {
-  return projections_.size();
+  return constraints_.size();
 }
 
 template <typename T>
@@ -50,16 +50,16 @@ void SapConstraintsBundle<T>::ProjectImpulses(
     std::vector<MatrixX<T>>* dPdy) const {
   int constraint_start = 0;
   for (int k = 0; k < num_constraints(); ++k) {
-    const Projection<T>& P = *projections_[k];
-    const int nk = P.dimension();
+    const SapConstraint<T>& c = *constraints_[k];
+    const int nk = c.num_constrained_dofs();
     const auto y_k = y.segment(constraint_start, nk);
     const auto R_k = R.segment(constraint_start, nk);
     auto gamma_k = gamma->segment(constraint_start, nk);
     if (dPdy != nullptr) {
       MatrixX<T>& dPdy_k = (*dPdy)[k];
-      P.Project(y_k, R_k, &gamma_k, &dPdy_k);
+      c.Project(y_k, R_k, &gamma_k, &dPdy_k);
     } else {
-      P.Project(y_k, R_k, &gamma_k);
+      c.Project(y_k, R_k, &gamma_k);
     }
     constraint_start += nk;
   }
@@ -74,13 +74,103 @@ void SapConstraintsBundle<T>::CalcProjectImpulsesAndCalcConstraintsHessian(
   // The regularizer Hessian is G = ∇²ℓ = d²ℓ/dvc² = dP/dy⋅R⁻¹.
   int constraint_start = 0;
   for (int k = 0; k < num_constraints(); ++k) {
-    const Projection<T>& P = *projections_[k];
-    const int nk = P.dimension();
+    const SapConstraint<T>& c = *constraints_[k];
+    const int nk = c.num_constrained_dofs();
     const auto R_k = R.segment(constraint_start, nk);
     const MatrixUpTo6<T> dPdy_k = (*G)[k];
     (*G)[k] = dPdy_k * R_k.cwiseInverse().asDiagonal();
     constraint_start += nk;
   }
+}
+
+template <typename T>
+PartialPermutation SapSolver<T>::MakeParticipatingCliquesPermutation(
+    const ContactProblemGraph& graph) const {
+  std::vector<int> participating_cliques(graph.num_cliques(), -1);
+  int num_participating_cliques = 0;
+  for (const auto& e : graph.edges()) {
+    const int c0 = e.cliques.first();
+    const int c1 = e.cliques.second();
+    if (c0 >= 0 && participating_cliques[c0] < 0) {
+      participating_cliques[c0] = num_participating_cliques++;
+    }
+    if (participating_cliques[c1] < 0)
+      participating_cliques[c1] = num_participating_cliques++;
+  }
+  return PartialPermutation(std::move(participating_cliques));
+}
+
+template <typename T>
+BlockSparseMatrix<T> SapSolver<T>::MakeConstraintsBundleJacobian(
+    const SapContactProblem<T>& problem, const ContactProblemGraph& graph,
+    const PartialPermutation& cliques_permutation) const {
+  // We have at most two blocks per row, and one row per edge in the graph.
+  const int non_zero_blocks_capacity = 2 * graph.num_edges();
+  BlockSparseMatrixBuilder<T> builder(
+      graph.num_edges(), cliques_permutation.permuted_domain_size(),
+      non_zero_blocks_capacity);
+
+  // DOFs per edge.
+  // TODO: consider the graph storing "weights"; number of dofs per node
+  // (clique) and number of constrained dofs per edge.
+  std::vector<int> edge_dofs(graph.num_edges(), 0);
+  for (int e = 0; e < graph.num_edges(); ++e) {
+    const auto& edge = graph.get_edge(e);
+    for (int k : edge.constraints_index) {
+      const SapConstraint<T>& c = problem.get_constraint(k);
+      edge_dofs[e] += c.num_constrained_dofs();
+    }
+  }
+
+  // Add a block row (with one or two blocks) per edge in the graph.
+  for (int block_row = 0; block_row < graph.num_edges(); ++block_row) {
+    const auto& e = graph.get_edge(block_row);
+    const int c0 = e.cliques.first();
+    const int c1 = e.cliques.second();
+
+    // Allocate Jacobian blocks for this edge.
+    MatrixX<T> J0, J1;
+    const int num_rows = edge_dofs[block_row];
+    if (c0 >= 0) {
+      //  && cliques_permutation.participates(c0)
+      PRINT_VAR(c0);
+      const int nv0 = problem.num_velocities(c0);
+      J0.resize(num_rows, nv0);
+    }
+    DRAKE_DEMAND(c1 >= 0);
+    PRINT_VAR(c1);
+    const int nv1 = problem.num_velocities(c1);
+    J1.resize(num_rows, nv1);
+
+    int row_start = 0;
+    for (int k : e.constraints_index) {
+      const SapConstraint<T>& c = problem.get_constraint(k);
+      const int nk = c.num_constrained_dofs();
+
+      // N.B. Each edge stores its cliques as a sorted pair. However, the pair
+      // of cliques in the original constraints can be in arbitrary order.
+      // Therefore below we must check to what clique in the original constraint
+      // the edge's cliques correspond to.
+
+      if (c0 >= 0) {
+        J0.middleRows(row_start, nk) =
+            c0 == c.clique0() ? c.clique0_jacobian() : c.clique1_jacobian();
+      }
+      J1.middleRows(row_start, nk) =
+          c1 == c.clique0() ? c.clique0_jacobian() : c.clique1_jacobian();
+
+      row_start += nk;
+    }
+
+    if (c0 >= 0) {
+      const int participating_c0 = cliques_permutation.permuted_index(c0);
+      builder.PushBlock(block_row, participating_c0, J0);
+    }
+    const int participating_c1 = cliques_permutation.permuted_index(c1);
+    builder.PushBlock(block_row, participating_c1, J1);
+  }
+
+  return builder.Build();
 }
 
 template <typename T>
@@ -300,18 +390,19 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
   A.Multiply(data.v_star, &data.p_star);
 
   // Make projections for each constraint.
-  std::vector<std::unique_ptr<Projection<T>>> projections;
-  projections.reserve(nc);
+  std::vector<std::unique_ptr<SapConstraint<T>>> constraints;
+  constraints.reserve(nc);
   for (int ic = 0; ic < nc; ++ic) {
-    projections.push_back(std::make_unique<FrictionConeProjection<T>>(mu(ic)));
+    constraints.push_back(
+        std::make_unique<SapFrictionConeConstraint<T>>(mu(ic)));
   }
   data.constraints_bundle = std::make_unique<SapConstraintsBundle<T>>(
-      std::move(J), std::move(vhat), std::move(R), std::move(projections));
+      std::move(J), std::move(vhat), std::move(R), std::move(constraints));
 
   return data;
 }
 
-#if 0
+
 template <typename T>
 typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
     const SapContactProblem<T>& problem) const {
@@ -320,84 +411,35 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
   using std::sqrt;
 
   PreProcessedData data(problem.time_step(), problem.num_velocities(),
-                        contact_data.num_constrained_dofs());  
+                        problem.num_constraints(),
+                        problem.num_constrained_dofs());  
 
-  // Store operators as block-sparse matrices.
-  dynamics_data.get_A().AssembleMatrix(&data.A);
+  // TODO: compute partial permutations: cliques, velocities, impulses.
+  data.graph = std::make_unique<ContactProblemGraph>(problem.MakeGraph());
+
+  data.cliques_permutation = MakeParticipatingCliquesPermutation(*data.graph);
 
   // Extract momentum matrix's per-tree diagonal blocks. Compute diagonal
   // scaling inv_sqrt_A.
-  data.At.clear();
-  data.At.reserve(data.A.num_blocks());
-  VectorX<T>& inv_sqrt_A = data.inv_sqrt_A;
-  for (const auto& block : data.A.get_blocks()) {
-    const int t1 = std::get<0>(block);
-    const int t2 = std::get<1>(block);
-    const MatrixX<T>& Aij = std::get<2>(block);
-    // We verify the assumption that M is block diagonal.
-    DRAKE_DEMAND(t1 == t2);
+  data.cliques_permutation.ApplyInverse(problem.dynamics_matrix(), &data.At);
+
+  int offset = 0;
+  for (int clique = 0; clique < problem.num_cliques(); ++clique) {
+    const MatrixX<T>& Aclique = data.At[clique];
     // Each block must be square.
-    DRAKE_DEMAND(Aij.rows() == Aij.cols());
-
-    const int nt = Aij.rows();  // Number of DOFs in the tree.
-    data.At.push_back(Aij);
-
-    const int start = data.A.row_start(t1);
-    DRAKE_DEMAND(start == data.A.col_start(t2));
-    inv_sqrt_A.segment(start, nt) = Aij.diagonal().cwiseInverse().cwiseSqrt();
+    DRAKE_DEMAND(Aclique.rows() == Aclique.cols());
+    const int nv = Aclique.rows();  // Number of DOFs in the clique.
+    data.inv_sqrt_A.segment(offset, nv) =
+        Aclique.diagonal().cwiseInverse().cwiseSqrt();
+    offset += nv;
   }
 
-  // Computation of a diagonal approximation to the Delassus operator. N.B. This
-  // must happen before the computation of the regularization R below.
-  const int nc = phi0.size();
-  BlockSparseMatrix<T> J;
-  contact_data.get_Jc().AssembleMatrix(&J);
-  CalcDelassusDiagonalApproximation(nc, data.At, J, &data.delassus_diagonal);
-
-  // We use the Delassus scaling computed above to estimate regularization
-  // parameters in the matrix R.
-  const VectorX<T>& delassus_diagonal = data.delassus_diagonal;
-  const double beta = parameters().beta;
-  const double sigma = parameters().sigma;
-  
-  // Rigid approximation constant: Rₙ = β²/(4π²)⋅wᵢ when the contact frequency
-  // ωₙ is below the limit ωₙ⋅δt ≤ 2π. That is, the period is Tₙ = β⋅δt. See
-  // [Castro et al., 2021] for details.
-  const T beta_factor = beta * beta / (4.0 * M_PI * M_PI);
-  VectorX<T> vhat(3 * nc);
-  VectorX<T> R(3 * nc);
-  for (int ic = 0; ic < nc; ++ic) {
-    const int ic3 = 3 * ic;
-    const T& k = stiffness(ic);
-    const T& c = dissipation(ic);
-    DRAKE_DEMAND(k > 0 && c >= 0);
-    const T& wi = delassus_diagonal(ic);
-    const T taud = c / k;  // Damping time scale.
-    const T Rn =
-        max(beta_factor * wi, 1.0 / (time_step * k * (time_step + taud)));
-    const T Rt = sigma * wi;
-    R.template segment<3>(ic3) = Vector3<T>(Rt, Rt, Rn);
-
-    // Stabilization velocity.
-    const T vn_hat = -phi0(ic) / (time_step + taud);
-    vhat.template segment<3>(ic3) = Vector3<T>(0, 0, vn_hat);
-  }
-  
-  data.v_star = dynamics_data.get_v_star();
-  data.A.Multiply(data.v_star, &data.p_star);
-
-  // Make projections for each constraint.
-  std::vector<std::unique_ptr<Projection<T>>> projections;
-  projections.reserve(nc);
-  for (int ic = 0; ic < nc; ++ic) {
-    projections.push_back(std::make_unique<FrictionConeProjection<T>>(mu(ic)));
-  }
-  data.constraints_bundle = std::make_unique<SapConstraintsBundle<T>>(
-      std::move(J), std::move(vhat), std::move(R), std::move(projections));
+  const BlockSparseMatrix<T> J = MakeConstraintsBundleJacobian(
+      problem, *data.graph, data.cliques_permutation);
+  (void)J;
 
   return data;
 }
-#endif
 
 template <typename T>
 void SapSolver<T>::PackContactResults(const PreProcessedData& data,

@@ -58,7 +58,7 @@ class SapConstraintsBundle {
       BlockSparseMatrix<T>&& J,
       VectorX<T>&& vhat, 
       VectorX<T>&& R, 
-      std::vector<std::unique_ptr<Projection<T>>>&& projections);
+      std::vector<std::unique_ptr<SapConstraint<T>>>&& constraits);
 
   int num_constraints() const;
 
@@ -95,7 +95,7 @@ class SapConstraintsBundle {
   VectorX<T> Rinv_;
   // problem_ constraint references in the order dictated by the
   // ContactProblemGraph.
-  std::vector<std::unique_ptr<Projection<T>>> projections_;
+  std::vector<std::unique_ptr<SapConstraint<T>>> constraints_;
 };
 
 // This class implements the Semi-Analytic Primal (SAP) solver described in
@@ -458,7 +458,9 @@ class SapSolver final : public ContactSolver<T> {
     VectorX<T> v_star;  // Free-motion generalized velocities.
     VectorX<T> p_star;  // Free motion generalized impulse, i.e. p* = M⋅v*.
     VectorX<T> delassus_diagonal;  // Delassus operator diagonal approximation.
-    
+
+    std::unique_ptr<ContactProblemGraph> graph;
+    PartialPermutation cliques_permutation;
     std::unique_ptr<SapConstraintsBundle<T>> constraints_bundle;
   };
 
@@ -481,6 +483,13 @@ class SapSolver final : public ContactSolver<T> {
                                          const BlockSparseMatrix<T>& Jblock,
                                          VectorX<T>* delassus_diagonal) const;
 
+  PartialPermutation MakeParticipatingCliquesPermutation(
+      const ContactProblemGraph& graph) const;
+
+  BlockSparseMatrix<T> MakeConstraintsBundleJacobian(
+      const SapContactProblem<T>& problem, const ContactProblemGraph& graph,
+      const PartialPermutation& cliques_permutation) const;
+
   // This method extracts and pre-processes input data into a format that is
   // more convenient for computation. In particular, it computes quantities
   // directly appearing in the optimization problem such as R, v̂, W, among
@@ -488,6 +497,8 @@ class SapSolver final : public ContactSolver<T> {
   PreProcessedData PreProcessData(
       const T& time_step, const SystemDynamicsData<T>& dynamics_data,
       const PointContactData<T>& contact_data) const;
+
+  PreProcessedData PreProcessData(const SapContactProblem<T>& problem) const;
 
   //PreProcessedData PreProcessData(const SapContactProblem<T>& problem) const;
 
