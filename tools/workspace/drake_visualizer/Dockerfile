@@ -213,11 +213,7 @@ RUN mkdir -p /director-build /opt/director \
     /opt/director/bin/drake-visualizer \
     /opt/director/lib/*.so \
     /opt/director/lib/python3.*/site-packages/director/*.so \
-    /opt/director/lib/python3.*/site-packages/director/thirdparty/*.so \
-  && chrpath --replace '$ORIGIN/../lib' /opt/director/bin/drake-visualizer \
-  && chrpath --replace '$ORIGIN' /opt/director/lib/libddApp.so \
-  && chrpath --replace '$ORIGIN/../../..' \
-    /opt/director/lib/python3.*/site-packages/director/vtkDRCFiltersPython.so
+    /opt/director/lib/python3.*/site-packages/director/thirdparty/*.so
 # Create archive named dv-<version>-python-<python version>-qt-<qt version>
 #   -vtk-<vtk version>-<distribution codename>-<processor architecture>
 #   -<build_number>.tar.gz,
