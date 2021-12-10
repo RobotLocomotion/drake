@@ -143,6 +143,14 @@ Outputs: Output Port 0 corresponds to the state vector.
 - [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
                    Impact". SIAM Rev., 42(1), 3-39, 2000.
 
+@system
+name: Rod2D
+input_ports:
+- u0
+output_ports:
+- state_output
+@endsystem
+
 @tparam_double_only
 */
 template <typename T>

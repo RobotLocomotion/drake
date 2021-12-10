@@ -16,9 +16,21 @@ namespace scene_graph {
 namespace bouncing_ball {
 
 /** A model of a bouncing ball with Hunt-Crossley compliant contact model.
- The model supports 1D motion in a 3D world.
+The model supports 1D motion in a 3D world.
 
- @tparam_double_only
+@system
+name: BouncingBallPlant
+input_ports:
+- u0
+output_ports:
+- y0
+- y1
+@endsystem
+
+Port `u0` accepts a geometry::QueryObject. Ports `y0`, and `y1` emit state and
+geometry pose, respectively.
+
+@tparam_double_only
 */
 template <typename T>
 class BouncingBallPlant : public systems::LeafSystem<T> {

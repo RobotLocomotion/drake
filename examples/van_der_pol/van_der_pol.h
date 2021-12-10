@@ -20,6 +20,15 @@ namespace van_der_pol {
 /// the stationary distribution of the oscillator under process
 /// noise are coming soon).
 ///
+/// @system
+/// name: VanDerPolOscillator
+/// output_ports:
+/// - y0
+/// - y1
+/// @endsystem
+///
+/// Ports `y0` and `y1` emit y₀ and y₁, respectively.
+///
 /// @tparam_default_scalar
 template <typename T>
 class VanDerPolOscillator final : public systems::LeafSystem<T> {

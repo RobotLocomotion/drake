@@ -23,8 +23,6 @@ LcmPlanInterpolator::LcmPlanInterpolator(const std::string& model_path,
 
   // Add block to export a received iiwa status.
   auto status_receiver = builder.AddSystem<IiwaStatusReceiver>(num_joints_);
-  input_port_iiwa_status_ =
-      builder.ExportInput(status_receiver->get_input_port());
 
   // Add a demux block to pull out the positions from the position + velocity
   // vector
@@ -37,12 +35,16 @@ LcmPlanInterpolator::LcmPlanInterpolator(const std::string& model_path,
   command_sender->set_name("command_sender");
 
   // Export the inputs.
-  input_port_iiwa_plan_ =
-      builder.ExportInput(robot_plan_interpolator_->get_plan_input_port());
+  const auto& status_port = status_receiver->get_input_port();
+  input_port_iiwa_status_ = builder.ExportInput(
+      status_port, status_port.get_name());
+  const auto& plan_port = robot_plan_interpolator_->get_plan_input_port();
+  input_port_iiwa_plan_ = builder.ExportInput(plan_port, plan_port.get_name());
 
   // Export the output.
-  output_port_iiwa_command_ =
-      builder.ExportOutput(command_sender->get_output_port());
+  const auto& command_port = command_sender->get_output_port();
+  output_port_iiwa_command_ = builder.ExportOutput(
+      command_port, command_port.get_name());
 
   // Connect the subsystems.
   builder.Connect(robot_plan_interpolator_->get_output_port(0),

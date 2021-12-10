@@ -21,6 +21,14 @@ namespace kuka_iiwa_arm {
  * input_port_desired_state() method takes a full state for convenient wiring
  * with other Systems, but ignores the velocity component.
  *
+ * @system
+ * name: KukaTorqueController
+ * input_ports:
+ * - u0
+ * output_ports:
+ * - y0
+ * @endsystem
+ *
  * @tparam_double_only
  */
 template <typename T>
