@@ -75,6 +75,14 @@ namespace bead_on_a_wire {
 ///
 /// Outputs: same as state.
 ///
+/// @system
+/// name: BeadOnAWire
+/// input_ports:
+/// - u0
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @tparam_double_only
 template <typename T>
 class BeadOnAWire : public systems::LeafSystem<T> {

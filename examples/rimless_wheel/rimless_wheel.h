@@ -29,12 +29,13 @@ namespace rimless_wheel {
 /// @system
 /// name: RimlessWheel
 /// output_ports:
-/// - minimal_state (theta and thetadot only)
+/// - minimal_state
 /// - floating_base_state
 /// @endsystem
 ///
-/// Continuous States: theta, thetadot.
-/// Discrete States: stance toe position, double support indicator.
+/// Continuous States: theta, thetadot (emitted at `minimal_state` port).
+/// Discrete States: stance toe position (emitted at `floating_base_state`
+///   port), double support indicator.
 /// Parameters: mass, length, number of spokes, etc, are all set as Context
 ///   parameters using RimlessWheelParams.
 ///

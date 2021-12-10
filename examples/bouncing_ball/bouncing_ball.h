@@ -20,6 +20,12 @@ namespace bouncing_ball {
 /// Outputs: vertical position (state index 0) and velocity (state index 1) in
 /// units of m and m/s, respectively.
 ///
+/// @system
+/// name: BouncingBall
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @tparam_default_scalar
 template <typename T>
 class BouncingBall final : public systems::LeafSystem<T> {
