@@ -24,6 +24,18 @@ const double kHardwareStatusPeriod = 0.003;
 /// Has two output ports: one for the commanded position for each joint along
 /// with a zero velocity for each joint, and another for commanded additional
 /// feedforward joint torque. The joint torque command is currently not used.
+///
+/// @system
+/// name: AllegroCommandReceiver
+/// input_ports:
+/// - u0
+/// output_ports:
+/// - y0
+/// - y1
+/// @endsystem
+///
+/// Port `u0` accepts command messages. Ports `y0` and `y1` emit commanded
+/// position and feedforward torque, respectively.
 class AllegroCommandReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AllegroCommandReceiver)
@@ -83,6 +95,19 @@ class AllegroCommandReceiver : public systems::LeafSystem<double> {
 /// the message, the output of this system should be connected to an input port
 /// of a systems::lcm::LcmPublisherSystem that accepts a Value object
 /// templated on type `lcmt_allegro_status`.
+///
+/// @system
+/// name: AllegroStatusSender
+/// input_ports:
+/// - u0
+/// - u1
+/// - u2
+/// output_ports:
+/// - y0
+/// @endsystem
+///
+/// Ports `u0`, `u1`, and `u2` accept state, commanded position, and commanded
+/// torque, respectively. Port `y0` emits status messages.
 ///
 /// This system is presently only used in simulation.
 class AllegroStatusSender : public systems::LeafSystem<double> {
