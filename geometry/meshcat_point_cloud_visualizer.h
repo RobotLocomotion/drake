@@ -19,7 +19,7 @@ perception::PointCloud from its input port to Meshcat.
 name: MeshcatPointCloudVisualizer
 input_ports:
 - cloud
-- X_ParentCloud (optional)
+- X_ParentCloud
 @endsystem
 
 The PointCloud on the `cloud` input port must have XYZ values.  RGB values are
