@@ -122,18 +122,18 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Solve) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       A->Solve(
           PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-          PetscSymmetricBlockSparseMatrix::PreconditionerType::kBlockJacobi, b),
+          PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b),
       std::exception,
       "PetscSymmetricBlockSparseMatrix::Solve.*: matrix is not yet "
       "assembled.*");
   A->AssembleIfNecessary();
   const VectorXd x = A->Solve(
       PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kBlockJacobi, b);
+      PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b);
   VectorXd x_in_place = b;
   A->SolveInPlace(
       PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kBlockJacobi,
+      PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi,
       &x_in_place);
   EXPECT_EQ(x, x_in_place);
 }
@@ -163,10 +163,10 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Clone) {
   const VectorXd b = MakeVector9d();
   const VectorXd x = A->Solve(
       PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kBlockJacobi, b);
+      PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b);
   const VectorXd x_clone = A_clone->Solve(
       PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kBlockJacobi, b);
+      PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b);
   EXPECT_TRUE(CompareMatrices(x, x_clone, kEps));
 }
 
