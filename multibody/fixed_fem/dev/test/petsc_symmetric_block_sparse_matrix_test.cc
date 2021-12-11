@@ -114,6 +114,22 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, SetZero) {
   EXPECT_EQ(A_dense, Matrix3d::Zero());
 }
 
+/* Verifies that after PetscFinalize() is called in the destructor of
+ PetscSymmetricBlockSparseMatrix, a new PetscSymmetricBlockSparseMatrix can
+ still be constructed. */
+GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, PetscInitializeAndFinalize) {
+  EXPECT_EQ(PetscSymmetricBlockSparseMatrix::get_count(), 0);
+  {
+    unique_ptr<PetscSymmetricBlockSparseMatrix> A = MakeBlockSparseMatrix();
+    EXPECT_EQ(PetscSymmetricBlockSparseMatrix::get_count(), 1);
+  }
+  EXPECT_EQ(PetscSymmetricBlockSparseMatrix::get_count(), 0);
+  {
+    unique_ptr<PetscSymmetricBlockSparseMatrix> B = MakeBlockSparseMatrix();
+    EXPECT_EQ(PetscSymmetricBlockSparseMatrix::get_count(), 1);
+  }
+}
+
 GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Solve) {
   unique_ptr<PetscSymmetricBlockSparseMatrix> A = MakeBlockSparseMatrix();
   const MatrixXd A_eigen = MakeEigenDenseMatrix();
