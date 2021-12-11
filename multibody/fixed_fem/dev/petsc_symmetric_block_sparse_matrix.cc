@@ -1,5 +1,6 @@
 #include "drake/multibody/fixed_fem/dev/petsc_symmetric_block_sparse_matrix.h"
 
+#include <mutex>
 #include <numeric>
 #include <string>
 #include <utility>
@@ -62,12 +63,12 @@ class PetscSymmetricBlockSparseMatrix::Impl {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Impl);
 
-  Impl() = default;
+  Impl() { IncrementCountAndInitializeIfNeeded(); }
 
   Impl(int size, int block_size,
        const vector<int>& num_upper_triangular_blocks_per_row)
       : size_(size), block_size_(block_size), num_blocks_(size / block_size) {
-    EnsurePetscIsInitialized();
+    IncrementCountAndInitializeIfNeeded();
     MatCreateSeqSBAIJ(PETSC_COMM_SELF, block_size, size, size, 0,
                       num_upper_triangular_blocks_per_row.data(),
                       &owned_matrix_);
@@ -79,6 +80,24 @@ class PetscSymmetricBlockSparseMatrix::Impl {
   ~Impl() {
     KSPDestroy(&owned_solver_);
     MatDestroy(&owned_matrix_);
+    DecrementCountAndFinalizeIfNeeded();
+  }
+
+  void IncrementCountAndInitializeIfNeeded() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (count_ == 0) {
+      // TODO(xuchenhan-tri): Investigate PETSc's usage of global state.
+      PetscInitialize(PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+    }
+    ++count_;
+  }
+
+  void DecrementCountAndFinalizeIfNeeded() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    --count_;
+    if (count_ == 0) {
+      PetscFinalize();
+    }
   }
 
   std::unique_ptr<Impl> Clone() const {
@@ -137,8 +156,8 @@ class PetscSymmetricBlockSparseMatrix::Impl {
       case PreconditionerType::kIncompleteCholesky:
         PCSetType(preconditioner_, PCICC);
         break;
-      case PreconditionerType::kBlockJacobi:
-        PCSetType(preconditioner_, PCBJACOBI);
+      case PreconditionerType::kJacobi:
+        PCSetType(preconditioner_, PCJACOBI);
         break;
     }
 
@@ -224,6 +243,8 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     }
   }
 
+  static int get_count() { return count_; }
+
  private:
   void ThrowIfNotAssembled(const char* func) const {
     if (!is_assembled(owned_matrix_)) {
@@ -233,17 +254,8 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     }
   }
 
-  /* Invokes PetscInitialize() if it hasn't been invoked yet in the program.
-   No-op otherwise. */
-  void EnsurePetscIsInitialized() {
-    static bool done = []() {
-      // TODO(xuchenhan-tri): Investigate PETSc's usage of global state.
-      PetscInitialize(PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
-      return true;
-    }();
-    unused(done);
-  }
-
+  static int count_;
+  static std::mutex mutex_;
   // The underlying PETSc matrix stored as MATSEQSBAIJ.
   Mat owned_matrix_;
   int size_{0};
@@ -252,6 +264,9 @@ class PetscSymmetricBlockSparseMatrix::Impl {
   KSP owned_solver_;
   PC preconditioner_;
 };
+
+int PetscSymmetricBlockSparseMatrix::Impl::count_ = 0;
+std::mutex PetscSymmetricBlockSparseMatrix::Impl::mutex_;
 
 PetscSymmetricBlockSparseMatrix::PetscSymmetricBlockSparseMatrix() = default;
 
@@ -312,6 +327,10 @@ int PetscSymmetricBlockSparseMatrix::cols() const { return pimpl_->size(); }
 
 void PetscSymmetricBlockSparseMatrix::AssembleIfNecessary() {
   pimpl_->AssembleIfNecessary();
+}
+
+int PetscSymmetricBlockSparseMatrix::get_count() {
+  return PetscSymmetricBlockSparseMatrix::Impl::get_count();
 }
 
 }  // namespace internal

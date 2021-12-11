@@ -31,8 +31,9 @@ class PetscSymmetricBlockSparseMatrix {
   };
 
   enum class PreconditionerType {
-    /* For generic matrix. */
-    kBlockJacobi,
+    /* For generic matrix. N.B. the BlockJacobi preconditioner from PETSc by
+     default seems to assume positive definite blocks.*/
+    kJacobi,
     /* For positive definite matrix. */
     kCholesky,
     kIncompleteCholesky,
@@ -141,6 +142,10 @@ class PetscSymmetricBlockSparseMatrix {
    This method is cheap if the matrix is already "assembled", so invoke it if
    unsure. */
   void AssembleIfNecessary();
+
+  /* Returns the number of existing PetscSymmetricBlockSparseMatrix for
+   debugging purpose. */
+  static int get_count();
 
  private:
   class Impl;
