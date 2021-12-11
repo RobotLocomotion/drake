@@ -142,6 +142,10 @@ class PetscSymmetricBlockSparseMatrix {
    unsure. */
   void AssembleIfNecessary();
 
+  /* Returns the number of existing PetscSymmetricBlockSparseMatrix for
+   debugging purpose. */
+  static int get_count();
+
  private:
   class Impl;
 
