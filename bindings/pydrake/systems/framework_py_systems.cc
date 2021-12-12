@@ -90,6 +90,7 @@ struct Impl {
     using Base::DeclarePeriodicDiscreteUpdate;
     using Base::DeclarePeriodicEvent;
     using Base::DeclarePeriodicPublish;
+    using Base::DeclarePeriodicUnrestrictedUpdateEvent;
     using Base::DeclarePerStepEvent;
     using Base::DeclareStateOutputPort;
     using Base::DeclareVectorInputPort;
@@ -610,6 +611,25 @@ Note: The above is for the C++ documentation. For Python, use
             &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
             py::arg("period_sec"), py::arg("offset_sec") = 0.,
             doc.LeafSystem.DeclarePeriodicDiscreteUpdate.doc)
+        .def("DeclarePeriodicUnrestrictedUpdateEvent",
+            // TODO(russt): Implement the std::function variant of
+            // LeafSystem::DeclarePeriodicUnrestrictedUpdateEvent if it is ever
+            // needed, instead of effectively implementing it here.
+            WrapCallbacks(
+                [](PyLeafSystem* self, double period_sec, double offset_sec,
+                    std::function<EventStatus(const Context<T>&, State<T>*)>
+                        update) {
+                  self->DeclarePeriodicEvent(period_sec, offset_sec,
+                      UnrestrictedUpdateEvent<T>(TriggerType::kPeriodic,
+                          [update](const System<T>&, const Context<T>& context,
+                              const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+                            // TODO(sherm1) Forward the return status.
+                            update(
+                                context, &*x);  // Ignore return status for now.
+                          }));
+                }),
+            py::arg("period_sec"), py::arg("offset_sec"), py::arg("update"),
+            doc.LeafSystem.DeclarePeriodicUnrestrictedUpdateEvent.doc)
         .def(
             "DeclarePeriodicEvent",
             [](PyLeafSystem* self, double period_sec, double offset_sec,
