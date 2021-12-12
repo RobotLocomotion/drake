@@ -2576,6 +2576,35 @@ GTEST_TEST(TestMathematicalProgram, AddL2NormCost) {
   EXPECT_EQ(new_prog->l2norm_costs().size(), 1u);
 }
 
+GTEST_TEST(TestMathematicalProgram, AddL2NormCostUsingConicConstraint) {
+  MathematicalProgram prog{};
+  auto x = prog.NewContinuousVariables<2>();
+  Eigen::Matrix2d A;
+  A << 1, 2, 3, 4;
+  const Eigen::Vector2d b(2, 3);
+  const auto ret = prog.AddL2NormCostUsingConicConstraint(A, b, x);
+  const symbolic::Variable& s = std::get<0>(ret);
+  const Binding<LinearCost>& linear_cost = std::get<1>(ret);
+  const Binding<LorentzConeConstraint>& lorentz_cone_constraint =
+      std::get<2>(ret);
+  EXPECT_GE(prog.FindDecisionVariableIndex(s), 0);
+  EXPECT_EQ(linear_cost.variables().rows(), 1);
+  EXPECT_EQ(linear_cost.variables(), Vector1<symbolic::Variable>(s));
+  EXPECT_EQ(linear_cost.evaluator()->a(), Vector1d(1));
+  EXPECT_EQ(linear_cost.evaluator()->b(), 0);
+  EXPECT_EQ(prog.linear_costs().size(), 1u);
+  EXPECT_EQ(prog.lorentz_cone_constraints().size(), 1u);
+  EXPECT_EQ(lorentz_cone_constraint.variables().rows(), 3);
+  EXPECT_EQ(lorentz_cone_constraint.variables(),
+            Vector3<symbolic::Variable>(s, x(0), x(1)));
+  Vector3<symbolic::Expression> lorentz_eval_expected;
+  lorentz_eval_expected << s, A * x + b;
+  EXPECT_EQ(lorentz_cone_constraint.evaluator()->A() *
+                    lorentz_cone_constraint.variables() +
+                lorentz_cone_constraint.evaluator()->b(),
+            lorentz_eval_expected);
+}
+
 // Helper function for ArePolynomialIsomorphic.
 //
 // Transforms a monomial into an isomorphic one up to a given map (Variable::Id
