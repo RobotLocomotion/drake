@@ -25,6 +25,7 @@ from pydrake.systems.framework import (
     Diagram,
     DiagramBuilder,
     DiscreteStateIndex,
+    EventStatus,
     InputPortIndex,
     LeafSystem, LeafSystem_,
     NumericParameterIndex,
@@ -279,6 +280,7 @@ class TestCustom(unittest.TestCase):
                 self.called_initialize = False
                 self.called_per_step = False
                 self.called_periodic = False
+                self.called_periodic_unrestricted = False
                 self.called_getwitness = False
                 self.called_witness = False
                 self.called_guard = False
@@ -290,6 +292,10 @@ class TestCustom(unittest.TestCase):
                 self.DeclarePeriodicPublish(period_sec=1.0, offset_sec=0.)
                 self.DeclarePeriodicDiscreteUpdate(
                     period_sec=1.0, offset_sec=0.)
+                self.DeclarePeriodicUnrestrictedUpdateEvent(
+                    period_sec=1.0,
+                    offset_sec=0,
+                    update=self._on_periodic_unrestricted)
                 self.DeclareInitializationEvent(
                     event=PublishEvent(
                         trigger_type=TriggerType.kInitialization,
@@ -379,6 +385,13 @@ class TestCustom(unittest.TestCase):
                 test.assertFalse(self.called_periodic)
                 self.called_periodic = True
 
+            def _on_periodic_unrestricted(self, context, state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(state, State)
+                test.assertFalse(self.called_periodic_unrestricted)
+                self.called_periodic_unrestricted = True
+                return EventStatus.Succeeded()
+
             def _witness(self, context):
                 test.assertIsInstance(context, Context)
                 self.called_witness = True
@@ -445,6 +458,7 @@ class TestCustom(unittest.TestCase):
         simulator.AdvanceTo(0.99)
         self.assertTrue(system.called_per_step)
         self.assertTrue(system.called_periodic)
+        self.assertTrue(system.called_periodic_unrestricted)
         self.assertTrue(system.called_getwitness)
         self.assertTrue(system.called_witness)
         self.assertTrue(system.called_guard)
@@ -551,6 +565,15 @@ class TestCustom(unittest.TestCase):
             context.get_mutable_abstract_state(0))
         self.assertEqual(
             context.get_abstract_state(0).get_value(), model_value.get_value())
+
+        # Check state API
+        state = context.get_mutable_state()
+        self.assertTrue(
+            state.get_mutable_discrete_state(index=0) is
+            state.get_mutable_discrete_state().get_vector(index=0))
+        self.assertTrue(
+            state.get_mutable_abstract_state(index=0) is
+            state.get_mutable_abstract_state().get_value(index=0))
 
         # Check abstract state API (also test AbstractValues).
         values = context.get_abstract_state()

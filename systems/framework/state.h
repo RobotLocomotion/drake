@@ -84,6 +84,8 @@ class State {
     return *abstract_state_.get();
   }
 
+  /// Returns a mutable reference to the abstract component of the state,
+  /// which may be of size zero.
   AbstractValues& get_mutable_abstract_state() {
     DRAKE_ASSERT(abstract_state_ != nullptr);
     return *abstract_state_.get();

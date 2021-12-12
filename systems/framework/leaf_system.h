@@ -454,7 +454,8 @@ class LeafSystem : public System<T> {
   @code
     void MySystem::MyUpdate(const Context<T>&, State<T>*) const;
   @endcode
-  See the other signature for more information. */
+  See the other signature for more information.
+  @exclude_from_pydrake_mkdoc{This overload is not bound.} */
   template <class MySystem>
   void DeclarePeriodicUnrestrictedUpdateEvent(
       double period_sec, double offset_sec,
