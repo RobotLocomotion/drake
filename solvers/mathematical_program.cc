@@ -487,6 +487,31 @@ Binding<L2NormCost> MathematicalProgram::AddL2NormCost(
   return AddCost(std::make_shared<L2NormCost>(A, b), vars);
 }
 
+std::tuple<symbolic::Variable, Binding<LinearCost>,
+           Binding<LorentzConeConstraint>>
+MathematicalProgram::AddL2NormCostUsingConicConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+  auto s = this->NewContinuousVariables<1>("slack")(0);
+  auto linear_cost =
+      this->AddLinearCost(Vector1d(1), 0, Vector1<symbolic::Variable>(s));
+  // A_full = [1 0]
+  //          [0 A]
+  // b_full = [0 b]
+  // A_full * [s ; vars] + b_full = [s, A*vars+b]
+  Eigen::MatrixXd A_full(A.rows() + 1, A.cols() + 1);
+  A_full.setZero();
+  A_full(0, 0) = 1;
+  A_full.bottomRightCorner(A.rows(), A.cols()) = A;
+  Eigen::VectorXd b_full(b.rows() + 1);
+  b_full(0) = 0;
+  b_full.bottomRows(b.rows()) = b;
+  auto lorentz_cone_constraint = this->AddLorentzConeConstraint(
+      A_full, b_full, {Vector1<symbolic::Variable>(s), vars});
+  return std::make_tuple(s, linear_cost, lorentz_cone_constraint);
+}
+
 Binding<PolynomialCost> MathematicalProgram::AddPolynomialCost(
     const Expression& e) {
   auto binding = AddCost(internal::ParsePolynomialCost(e));
