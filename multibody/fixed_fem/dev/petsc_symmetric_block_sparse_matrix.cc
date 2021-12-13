@@ -87,6 +87,8 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     clone->size_ = this->size_;
     clone->block_size_ = this->block_size_;
     clone->num_blocks_ = this->num_blocks_;
+    /* The cloned matrix needs to be independently factored. */
+    clone->factored_ = false;
     MatDuplicate(this->owned_matrix_, MAT_COPY_VALUES, &clone->owned_matrix_);
 
     /* Initialize solver and preconditioner. */
@@ -99,21 +101,11 @@ class PetscSymmetricBlockSparseMatrix::Impl {
   void SetZero() {
     AssembleIfNecessary();
     MatZeroEntries(owned_matrix_);
+    factored_ = false;
   }
 
-  VectorX<double> Solve(SolverType solver_type,
-                        PreconditionerType preconditioner_type,
-                        const VectorX<double>& b) const {
-    ThrowIfNotAssembled(__func__);
-    VectorX<double> x = b;
-    SolveInPlace(solver_type, preconditioner_type, &x);
-    return x;
-  }
-
-  void SolveInPlace(SolverType solver_type,
-                    PreconditionerType preconditioner_type,
-                    EigenPtr<VectorX<double>> b) const {
-    ThrowIfNotAssembled(__func__);
+  void Factor(SolverType solver_type, PreconditionerType preconditioner_type) {
+    AssembleIfNecessary();
     switch (solver_type) {
       case SolverType::kDirect:
         KSPSetType(owned_solver_, KSPPREONLY);
@@ -137,12 +129,25 @@ class PetscSymmetricBlockSparseMatrix::Impl {
       case PreconditionerType::kIncompleteCholesky:
         PCSetType(preconditioner_, PCICC);
         break;
-      case PreconditionerType::kJacobi:
-        PCSetType(preconditioner_, PCJACOBI);
+      case PreconditionerType::kNone:
+        PCSetType(preconditioner_, PCNONE);
         break;
     }
 
     KSPSetFromOptions(owned_solver_);
+    KSPSetOperators(owned_solver_, owned_matrix_, owned_matrix_);
+    factored_ = true;
+  }
+
+  VectorX<double> Solve(const VectorX<double>& b) const {
+    ThrowIfNotFactored(__func__);
+    VectorX<double> x = b;
+    SolveInPlace(&x);
+    return x;
+  }
+
+  void SolveInPlace(EigenPtr<VectorX<double>> b) const {
+    ThrowIfNotFactored(__func__);
 
     // TODO(xuchenhan-tri): The solve involves some dynamic allocation and
     // moving data around. Measure whether they are heavy on performance and
@@ -162,13 +167,9 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     VecAssemblyBegin(b_petsc);
     VecAssemblyEnd(b_petsc);
 
-    // TODO(xuchenhan-tri): Currently we don't repeatedly solve the same system
-    // with multiple right hand sides, so we always reset the operators. Split
-    // the factorization and the solve into two distinct phases to reuse the
-    // factorization if we need that in the future.
-    /* Set matrix. */
-    KSPSetOperators(owned_solver_, owned_matrix_, owned_matrix_);
     /* Solve! */
+    KSPSetFromOptions(owned_solver_);
+    KSPSetOperators(owned_solver_, owned_matrix_, owned_matrix_);
     KSPSolve(owned_solver_, b_petsc, x_petsc);
 
     /* Copy solution data to eigen vector. */
@@ -188,6 +189,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     MatSetValuesBlocked(owned_matrix_, block_indices.size(),
                         block_indices.data(), block_indices.size(),
                         block_indices.data(), block.data(), ADD_VALUES);
+    factored_ = false;
   }
 
   /* Makes a dense matrix representation of this block-sparse matrix. This
@@ -208,6 +210,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     AssembleIfNecessary();
     MatZeroRowsColumns(owned_matrix_, indexes.size(), indexes.data(), value,
                        PETSC_NULL, PETSC_NULL);
+    factored_ = false;
   }
 
   void SetRelativeTolerance(double tolerance) {
@@ -233,6 +236,14 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     }
   }
 
+  void ThrowIfNotFactored(const char* func) const {
+    if (!factored_) {
+      throw std::runtime_error(
+          "PetscSymmetricBlockSparseMatrix::" + std::string(func) +
+          "(): matrix is not yet factored. Call Factor() first.");
+    }
+  }
+
   /* Invokes PetscInitialize() if it hasn't been invoked yet in the program.
    No-op otherwise. */
   void EnsurePetscIsInitialized() {
@@ -251,6 +262,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
   int num_blocks_{0};
   KSP owned_solver_;
   PC preconditioner_;
+  bool factored_{false};
 };
 
 PetscSymmetricBlockSparseMatrix::PetscSymmetricBlockSparseMatrix() = default;
@@ -279,16 +291,19 @@ void PetscSymmetricBlockSparseMatrix::AddToBlock(
   pimpl_->AddToBlock(block_indices, block);
 }
 
+void PetscSymmetricBlockSparseMatrix::Factor(
+    SolverType solver_type, PreconditionerType preconditioner_type) {
+  pimpl_->Factor(solver_type, preconditioner_type);
+}
+
 VectorX<double> PetscSymmetricBlockSparseMatrix::Solve(
-    SolverType solver_type, PreconditionerType preconditioner_type,
     const VectorX<double>& b) const {
-  return pimpl_->Solve(solver_type, preconditioner_type, b);
+  return pimpl_->Solve(b);
 }
 
 void PetscSymmetricBlockSparseMatrix::SolveInPlace(
-    SolverType solver_type, PreconditionerType preconditioner_type,
     EigenPtr<VectorX<double>> b) const {
-  pimpl_->SolveInPlace(solver_type, preconditioner_type, b);
+  pimpl_->SolveInPlace(b);
 }
 
 void PetscSymmetricBlockSparseMatrix::SetZero() { pimpl_->SetZero(); }

@@ -31,9 +31,8 @@ class PetscSymmetricBlockSparseMatrix {
   };
 
   enum class PreconditionerType {
-    /* For generic matrix. N.B. the BlockJacobi preconditioner from PETSc by
-     default seems to assume positive definite blocks.*/
-    kJacobi,
+    /* No preconditioner (for generic matrix). */
+    kNone,
     /* For positive definite matrix. */
     kCholesky,
     kIncompleteCholesky,
@@ -90,23 +89,23 @@ class PetscSymmetricBlockSparseMatrix {
   void AddToBlock(const VectorX<int>& block_indices,
                   const MatrixX<double>& block);
 
-  /* Solves for A*x = b using the given type of solver, where A is this matrix.
+  /* Factor the matrix/preconditioner with the given type of solver and
+   preconditioner.
    @warn The compatibility of the solver and preconditioner type with the
    problem at hand is not checked. Callers need to be careful to choose the
    reasonable combination of solver and preconditioner given the type of matrix.
-   @pre b.size() == A.rows()
-   @note The matrix/preconditioner will be refactored upon successive call to
-   this method even if the matrix hasn't changed.
-   @pre Matrix must be assembled. See AssembleIfNecessary(). */
-  VectorX<double> Solve(SolverType solver_type,
-                        PreconditionerType preconditioner_type,
-                        const VectorX<double>& b) const;
+  */
+  void Factor(SolverType solver_type, PreconditionerType preconditioner_type);
+
+  /* Solves for A*x = b after Factor() has been invoked. This method can be
+   repeatedly invoked without refactoring the matrix for the same system with
+   different right hand sides.
+   @throws std::exception if the matrix has not been factored. */
+  VectorX<double> Solve(const VectorX<double>& b) const;
 
   /* Similar to Solve(), but writes the result in `b`.
-   @pre Matrix must be assembled. See AssembleIfNecessary(). */
-  void SolveInPlace(SolverType solver_type,
-                    PreconditionerType preconditioner_type,
-                    EigenPtr<VectorX<double>> b) const;
+   @throws std::exception if the matrix has not been factored. */
+  void SolveInPlace(EigenPtr<VectorX<double>> b) const;
 
   /* Sets all blocks to zeros while maintaining the sparsity pattern. */
   void SetZero();
