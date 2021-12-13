@@ -1,6 +1,7 @@
 #include "drake/multibody/fixed_fem/dev/petsc_symmetric_block_sparse_matrix.h"
 
 #include <memory>
+#include <thread>
 #include <utility>
 
 #include <gtest/gtest.h>
@@ -94,6 +95,21 @@ VectorXd MakeVector9d() {
   return (Eigen::VectorXd(9) << 1, 1, 2, 3, 5, 8, 13, 21, 34).finished();
 }
 
+MatrixXd MakeMatrix9d() {
+  // clang-format off
+  return (Eigen::MatrixXd(9, 9) <<
+                            0, 8, 6, 9, 8, 0, 2, 7, 9,
+                            7, 4, 7, 7, 7, 0, 3, 9, 9,
+                            3, 1, 6, 8, 5, 8, 0, 7, 0,
+                            2, 9, 6, 4, 9, 6, 5, 4, 7,
+                            6, 3, 6, 6, 6, 4, 2, 8, 8,
+                            8, 3, 2, 4, 7, 0, 3, 7, 8,
+                            0, 9, 4, 2, 8, 1, 4, 3, 0,
+                            0, 3, 3, 3, 8, 0, 6, 3, 1,
+                            3, 8, 5, 4, 3, 9, 2, 8, 9).finished();
+  // clang-format on
+}
+
 /* Tests AddToBlock() and SetZero(). */
 GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Construction) {
   unique_ptr<PetscSymmetricBlockSparseMatrix> A = MakeBlockSparseMatrix();
@@ -168,6 +184,50 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Clone) {
       PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
       PetscSymmetricBlockSparseMatrix::PreconditionerType::kBlockJacobi, b);
   EXPECT_TRUE(CompareMatrices(x, x_clone, kEps));
+}
+
+/* Test if we can run several PETSc solves simultaneously on multiple threads.
+ We solve the same linear system with multiple right hand sides. The solution
+ from using threads should be the same as those from serial. */
+GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, MultiThreadTest) {
+  /* Form the matrix (shared by all threads). */
+  unique_ptr<PetscSymmetricBlockSparseMatrix> A = MakeBlockSparseMatrix();
+  A->AssembleIfNecessary();
+
+  /* We first will solve each linear system one at a time, and then solve them
+   all in parallel. The two sets of results should match. */
+  constexpr int kNumThreads = 9;
+  std::vector<VectorXd> single_threaded_results(kNumThreads);
+  std::vector<VectorXd> multi_threaded_results(kNumThreads);
+
+  /* Create a functor that solves A*x = b. */
+  auto run_solver = [&A](const VectorXd& b, VectorXd* x) {
+    *x = A->Solve(
+        PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+        PetscSymmetricBlockSparseMatrix::PreconditionerType::kBlockJacobi, b);
+  };
+
+  const MatrixXd bs = MakeMatrix9d();
+
+  /* Solve without using threads. */
+  for (int i = 0; i < kNumThreads; ++i) {
+    run_solver(bs.col(i), &single_threaded_results[i]);
+  }
+
+  /* Solve using threads. */
+  std::vector<std::thread> test_threads;
+  for (int i = 0; i < kNumThreads; ++i) {
+    test_threads.emplace_back(run_solver, bs.col(i),
+                              &multi_threaded_results[i]);
+  }
+  for (int i = 0; i < kNumThreads; ++i) {
+    test_threads[i].join();
+  }
+
+  /* All solutions should be the same. */
+  for (int i = 0; i < kNumThreads; ++i) {
+    EXPECT_EQ(single_threaded_results[i], multi_threaded_results[i]);
+  }
 }
 
 }  // namespace
