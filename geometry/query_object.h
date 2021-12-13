@@ -307,11 +307,17 @@ class QueryObject {
    *poses*. We cannot differentiate w.r.t. geometric properties (e.g., radius,
    length, etc.)
 
+   @param representation  Controls the mesh representation of the contact
+                          surface. See
+                          @ref contact_surface_discrete_representation
+                          "contact surface representation" for more details.
+
    @returns A vector populated with all detected intersections characterized as
             contact surfaces. The ordering of the results is guaranteed to be
             consistent -- for fixed geometry poses, the results will remain
             the same.  */
-  std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
+  std::vector<ContactSurface<T>> ComputeContactSurfaces(
+      HydroelasticContactRepresentation representation) const;
 
   /** Reports pairwise intersections and characterizes each non-empty
    intersection as a ContactSurface _where possible_ and as a
@@ -334,6 +340,10 @@ class QueryObject {
    supports double and AutoDiffXd to the extent that those constituent methods
    do.
 
+   @param representation    Controls the mesh representation of the contact
+                            surface. See
+                            @ref contact_surface_discrete_representation
+                            "contact surface representation" for more details.
    @param[out] surfaces     The vector that contact surfaces will be added to.
                             The vector will _not_ be cleared.
    @param[out] point_pairs  The vector that fall back point pair data will be
@@ -342,6 +352,7 @@ class QueryObject {
    @throws std::exception for the reasons described in ComputeContactSurfaces()
                           and ComputePointPairPenetration(). */
   void ComputeContactSurfacesWithFallback(
+      HydroelasticContactRepresentation representation,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
 

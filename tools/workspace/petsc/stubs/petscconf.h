@@ -1,5 +1,10 @@
 #pragma once
 
+// TODO(jwnimmer-tri): This file is a lightly-edited version of what comes out
+// of upstream's configure script. Between some combination of hard-coded
+// settings and platform-specific word size sensing, we need to reconstruct
+// and/or generate this file on the fly.
+
 #define MPI_Comm_create_errhandler(p_err_fun, p_errhandler) \
   MPI_Errhandler_create((p_err_fun), (p_errhandler))
 #define MPI_Comm_set_errhandler(comm, p_errhandler) \
@@ -126,8 +131,7 @@
 #define PETSC_PREFETCH_HINT_T1 _MM_HINT_T1
 #define PETSC_PREFETCH_HINT_T2 _MM_HINT_T2
 #define PETSC_PYTHON_EXE "NO_PETSC_PYTHON_EXE"
-#define PETSC_Prefetch(a, b, c) \
-  _mm_prefetch((const char*)(a), (c))
+#define PETSC_Prefetch(a, b, c) _mm_prefetch((const char*)(a), (c))
 #define PETSC_REPLACE_DIR_SEPARATOR '\\'
 #define PETSC_SIGNAL_CAST
 #define PETSC_SIZEOF_ENUM 4

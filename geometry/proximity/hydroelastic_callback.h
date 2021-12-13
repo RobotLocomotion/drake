@@ -50,15 +50,22 @@ struct CallbackData {
    @param X_WGs_in                The T-valued poses. Aliased.
    @param geometries_in           The set of all hydroelastic geometric
                                   representations. Aliased.
+   @param representation          Controls the mesh representation of
+                                  the contact surface. See
+                                  @ref contact_surface_discrete_representation
+                                  "contact surface representation" for more
+                                  details.
    @param surfaces_in             The output results. Aliased.  */
   CallbackData(
       const CollisionFilter* collision_filter_in,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs_in,
       const Geometries* geometries_in,
+      HydroelasticContactRepresentation representation_in,
       std::vector<ContactSurface<T>>* surfaces_in)
       : collision_filter(*collision_filter_in),
         X_WGs(*X_WGs_in),
         geometries(*geometries_in),
+        representation(representation_in),
         surfaces(*surfaces_in) {
     DRAKE_DEMAND(collision_filter_in != nullptr);
     DRAKE_DEMAND(X_WGs_in != nullptr);
@@ -74,6 +81,9 @@ struct CallbackData {
 
   /* The hydroelastic geometric representations.  */
   const Geometries& geometries;
+
+  /* The requested mesh representation type. */
+  const HydroelasticContactRepresentation representation;
 
   /* The results of the distance query.  */
   std::vector<ContactSurface<T>>& surfaces;
@@ -95,7 +105,8 @@ template <typename T>
 std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
     const SoftGeometry& soft, const math::RigidTransform<T>& X_WS,
     GeometryId id_S, const RigidGeometry& rigid,
-    const math::RigidTransform<T>& X_WR, GeometryId id_R) {
+    const math::RigidTransform<T>& X_WR, GeometryId id_R,
+    HydroelasticContactRepresentation representation) {
   if (soft.is_half_space() || rigid.is_half_space()) {
     if (soft.is_half_space()) {
       DRAKE_DEMAND(!rigid.is_half_space());
@@ -103,14 +114,15 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
       const TriangleSurfaceMesh<double>& mesh_R = rigid.mesh();
       const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R = rigid.bvh();
       return ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-          id_S, X_WS, soft.pressure_scale(), id_R, mesh_R, bvh_R, X_WR);
+          id_S, X_WS, soft.pressure_scale(), id_R, mesh_R, bvh_R, X_WR,
+          representation);
     } else {
       // Soft volume vs rigid half space.
       const VolumeMeshFieldLinear<double, double>& field_S =
           soft.pressure_field();
       const Bvh<Obb, VolumeMesh<double>>& bvh_S = soft.bvh();
       return ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-          id_S, field_S, bvh_S, X_WS, id_R, X_WR);
+          id_S, field_S, bvh_S, X_WS, id_R, X_WR, representation);
     }
   } else {
     // soft cannot be a half space; so this must be mesh-mesh.
@@ -121,7 +133,7 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R = rigid.bvh();
 
     return ComputeContactSurfaceFromSoftVolumeRigidSurface(
-        id_S, field_S, bvh_S, X_WS, id_R, mesh_R, bvh_R, X_WR);
+        id_S, field_S, bvh_S, X_WS, id_R, mesh_R, bvh_R, X_WR, representation);
   }
 }
 
@@ -172,7 +184,7 @@ CalcContactSurfaceResult MaybeCalcContactSurface(
   const math::RigidTransform<T>& X_WR(data->X_WGs.at(id_R));
 
   std::unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
-      soft, X_WS, id_S, rigid, X_WR, id_R);
+      soft, X_WS, id_S, rigid, X_WR, id_R, data->representation);
 
   if (surface != nullptr) {
     DRAKE_DEMAND(surface->id_M() < surface->id_N());

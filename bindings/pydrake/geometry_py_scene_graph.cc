@@ -485,7 +485,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
         .def("id_M", &Class::id_M, doc.ContactSurface.id_M.doc)
         .def("id_N", &Class::id_N, doc.ContactSurface.id_N.doc)
-        .def("mesh_W", &Class::mesh_W, doc.ContactSurface.mesh_W.doc);
+        .def("tri_mesh_W", &Class::tri_mesh_W,
+            doc.ContactSurface.tri_mesh_W.doc);
   }
 }
 }  // namespace

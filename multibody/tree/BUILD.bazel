@@ -354,6 +354,7 @@ drake_cc_googletest(
         "//common:autodiff",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
         "//math:gradient",
     ],
@@ -364,6 +365,7 @@ drake_cc_googletest(
     deps = [
         ":spatial_inertia",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
         "//math:gradient",
     ],

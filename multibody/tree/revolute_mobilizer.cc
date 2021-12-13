@@ -10,6 +10,24 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+std::string RevoluteMobilizer<T>::position_suffix(
+  int position_index_in_mobilizer) const {
+  if (position_index_in_mobilizer == 0) {
+    return "q";
+  }
+  throw std::runtime_error("RevoluteMobilizer has only 1 position.");
+}
+
+template <typename T>
+std::string RevoluteMobilizer<T>::velocity_suffix(
+  int velocity_index_in_mobilizer) const {
+  if (velocity_index_in_mobilizer == 0) {
+    return "w";
+  }
+  throw std::runtime_error("RevoluteMobilizer has only 1 velocity.");
+}
+
+template <typename T>
 const T& RevoluteMobilizer<T>::get_angle(
     const systems::Context<T>& context) const {
   auto q = this->get_positions(context);

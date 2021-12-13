@@ -47,32 +47,42 @@ void HydroelasticTractionCalculator<T>::
   // Reserve enough memory to keep from doing repeated heap allocations in the
   // quadrature process.
   traction_at_quadrature_points->clear();
-  traction_at_quadrature_points->reserve(data.surface.mesh_W().num_triangles());
+  traction_at_quadrature_points->reserve(data.surface.num_faces());
 
   // Integrate the tractions over all triangles in the contact surface.
-  for (int i = 0; i < data.surface.mesh_W().num_triangles(); ++i) {
+  for (int i = 0; i < data.surface.num_faces(); ++i) {
     // Construct the function to be integrated over triangle i.
     // TODO(sherm1) Pull functor creation out of the loop (not a good idea to
     //              create a new functor for every i).
-    std::function<SpatialForce<T>(const Vector3<T>&)> traction_Ac_W =
-        [this, &data, i, dissipation, mu_coulomb,
-         traction_at_quadrature_points](const Vector3<T>& Q_barycentric) {
-          traction_at_quadrature_points->emplace_back(CalcTractionAtPoint(
-              data, i, Q_barycentric, dissipation, mu_coulomb));
-          const HydroelasticQuadraturePointData<T>& traction_output =
-              traction_at_quadrature_points->back();
-          return ComputeSpatialTractionAtAcFromTractionAtAq(
+    if (data.surface.is_triangle()) {
+      std::function<SpatialForce<T>(const Vector3<T>&)> traction_Ac_W =
+          [this, &data, i, dissipation, mu_coulomb,
+           traction_at_quadrature_points](const Vector3<T>& Q_barycentric) {
+            traction_at_quadrature_points->emplace_back(CalcTractionAtPoint(
+                data, i, Q_barycentric, dissipation, mu_coulomb));
+            const HydroelasticQuadraturePointData<T>& traction_output =
+                traction_at_quadrature_points->back();
+            return ComputeSpatialTractionAtAcFromTractionAtAq(
+                data, traction_output.p_WQ, traction_output.traction_Aq_W);
+          };
+
+      // Compute the integral over the triangle to get a force from the
+      // tractions (force/area) at the Gauss points (shifted to C).
+      const SpatialForce<T> Fi_Ac_W =  // Force from triangle i.
+          TriangleQuadrature<SpatialForce<T>, T>::Integrate(
+              traction_Ac_W, gaussian, data.surface.area(i));
+      // Update the spatial force at the centroid.
+      (*F_Ac_W) += Fi_Ac_W;
+    } else {
+      traction_at_quadrature_points->emplace_back(
+          CalcTractionAtCentroid(data, i, dissipation, mu_coulomb));
+      const HydroelasticQuadraturePointData<T>& traction_output =
+          traction_at_quadrature_points->back();
+      const SpatialForce<T> traction_Ac_W =
+          ComputeSpatialTractionAtAcFromTractionAtAq(
               data, traction_output.p_WQ, traction_output.traction_Aq_W);
-        };
-
-    // Compute the integral over the triangle to get a force from the
-    // tractions (force/area) at the Gauss points (shifted to C).
-    const SpatialForce<T> Fi_Ac_W =  // Force from triangle i.
-        TriangleQuadrature<SpatialForce<T>, T>::Integrate(
-            traction_Ac_W, gaussian, data.surface.mesh_W().area(i));
-
-    // Update the spatial force at the centroid.
-    (*F_Ac_W) += Fi_Ac_W;
+      (*F_Ac_W) += data.surface.area(i) * traction_Ac_W;
+    }
   }
 }
 
@@ -134,18 +144,43 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
         Q_barycentric,
     double dissipation, double mu_coulomb) const {
   // Compute the point of contact in the world frame.
-  const Vector3<T> p_WQ = data.surface.mesh_W().CalcCartesianFromBarycentric(
-      face_index, Q_barycentric);
+  const Vector3<T> p_WQ =
+      data.surface.tri_mesh_W().CalcCartesianFromBarycentric(face_index,
+                                                             Q_barycentric);
 
-  const T e = data.surface.e_MN().Evaluate(face_index, Q_barycentric);
+  const T e = data.surface.tri_e_MN().Evaluate(face_index, Q_barycentric);
 
   // Contact surfaces are documented to have face normals that point *out of* N
   // and *into* M -- which is the face normal of the contact surface (as
   // documented).
-  const Vector3<T> nhat_W = data.surface.mesh_W().face_normal(face_index);
+  const Vector3<T> nhat_W = data.surface.face_normal(face_index);
 
   return CalcTractionAtQHelper(data, face_index, e, nhat_W, dissipation,
                                mu_coulomb, p_WQ);
+}
+
+template <typename T>
+HydroelasticQuadraturePointData<T>
+HydroelasticTractionCalculator<T>::CalcTractionAtCentroid(
+    const Data& data, int face_index, double dissipation,
+    double mu_coulomb) const {
+  const Vector3<T>& p_WC = data.surface.centroid(face_index);
+  T e;
+  if (data.surface.is_triangle()) {
+    const typename TriangleSurfaceMesh<T>::template Barycentric<T>
+        centroid_barycentric(1. / 3., 1. / 3., 1. / 3.);
+    e = data.surface.tri_e_MN().Evaluate(face_index, centroid_barycentric);
+  } else {
+    e = data.surface.poly_e_MN().EvaluateCartesian(face_index, p_WC);
+  }
+
+  // Contact surfaces are documented to have face normals that point *out of* N
+  // and *into* M -- which is the face normal of the contact surface (as
+  // documented).
+  const Vector3<T>& nhat_W = data.surface.face_normal(face_index);
+
+  return CalcTractionAtQHelper(data, face_index, e, nhat_W, dissipation,
+                               mu_coulomb, p_WC);
 }
 
 /*

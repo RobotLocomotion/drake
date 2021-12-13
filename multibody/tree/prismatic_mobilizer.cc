@@ -11,6 +11,24 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+std::string PrismaticMobilizer<T>::position_suffix(
+  int position_index_in_mobilizer) const {
+  if (position_index_in_mobilizer == 0) {
+    return "x";
+  }
+  throw std::runtime_error("PrismaticMobilizer has only 1 position.");
+}
+
+template <typename T>
+std::string PrismaticMobilizer<T>::velocity_suffix(
+  int velocity_index_in_mobilizer) const {
+  if (velocity_index_in_mobilizer == 0) {
+    return "v";
+  }
+  throw std::runtime_error("PrismaticMobilizer has only 1 velocity.");
+}
+
+template <typename T>
 const T& PrismaticMobilizer<T>::get_translation(
     const systems::Context<T>& context) const {
   auto q = this->get_positions(context);

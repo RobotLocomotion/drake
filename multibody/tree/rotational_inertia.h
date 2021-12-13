@@ -6,6 +6,7 @@
 #include <limits>
 #include <memory>
 #include <sstream>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -182,7 +183,7 @@ class RotationalInertia {
                     const T& Ixy, const T& Ixz, const T& Iyz) {
     set_moments_and_products_no_validity_check(Ixx, Iyy, Izz,
                                                Ixy, Ixz, Iyz);
-    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
+    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
   }
 
   /// Constructs a rotational inertia for a particle Q of mass `mass`, whose
@@ -200,9 +201,30 @@ class RotationalInertia {
   /// diagonal and with each product of inertia set to zero. This factory
   /// is useful for the rotational inertia of a uniform-density sphere or cube.
   /// In debug builds, throws std::exception if I_triaxial is negative/NaN.
-  // TODO(mitiguy) Per issue #6139  Update to ConstructTriaxiallySymmetric.
+  // TODO(mitiguy) Per issue #6139  Update to MakeTriaxiallySymmetric.
   static RotationalInertia<T> TriaxiallySymmetric(const T& I_triaxial) {
     return RotationalInertia(I_triaxial, I_triaxial, I_triaxial, 0.0, 0.0, 0.0);
+  }
+
+  /// (Internal use only) Creates a rotational inertia with moments of inertia
+  /// Ixx, Iyy, Izz, and with products of inertia Ixy, Ixz, Iyz.
+  /// @param[in] Ixx, Iyy, Izz Moments of inertia.
+  /// @param[in] Ixy, Ixz, Iyz Products of inertia.
+  /// @param[in] skip_validity_check If set to false, the rotational inertia is
+  /// checked via CouldBePhysicallyValid() to ensure it is physically valid.
+  /// If set to true (not generally recommended), the check is skipped (which
+  /// reduces some computational cost). The default value is false.
+  /// @throws std::exception if skip_validity_check is false and
+  /// CouldBePhysicallyValid() fails.
+  static RotationalInertia<T> MakeFromMomentsAndProductsOfInertia(
+      const T& Ixx, const T& Iyy, const T& Izz,
+      const T& Ixy, const T& Ixz, const T& Iyz,
+      bool skip_validity_check = false) {
+    RotationalInertia<T> I;
+    I.set_moments_and_products_no_validity_check(Ixx, Iyy, Izz,
+                                                 Ixy, Ixz, Iyz);
+    if (!skip_validity_check) I.ThrowIfNotPhysicallyValid(__func__);
+    return I;
   }
 
   /// For consistency with Eigen's API, the rows() method returns 3.
@@ -336,7 +358,7 @@ class RotationalInertia {
   /// subtracting B's rotational inertia from S's rotational inertia.
   RotationalInertia<T>& operator-=(const RotationalInertia<T>& I_BP_E) {
     MinusEqualsUnchecked(I_BP_E);
-    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
+    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
     return *this;
   }
 
@@ -418,6 +440,18 @@ class RotationalInertia {
   // TODO(Mitiguy) Issue #6145, add direct unit test for this method.
   RotationalInertia<T> operator/(const T& positive_scalar) const {
     return RotationalInertia(*this) /= positive_scalar;
+  }
+
+  /// (Internal use only) Multiplies a rotational inertia by a scalar.
+  /// @param[in] s Scalar which multiplies `this`.
+  /// @return `this` rotational inertia multiplied by `s`.
+  /// @see operator*(const T&, const RotationalInertia<T>&).
+  /// @note This method works even if `s` is negative or `this` is invalid. This
+  /// method is useful for error messages associated with an invalid inertia.
+  RotationalInertia<T> MultiplyByScalarSkipValidityCheck(const T& s) const {
+    RotationalInertia<T> I(*this);  // Mutable copy of `this`.
+    I.get_mutable_triangular_view() *= s;
+    return I;
   }
 
   /// Sets `this` rotational inertia so all its elements are equal to NaN.
@@ -551,7 +585,7 @@ class RotationalInertia {
     // largest product of inertia is at most half the largest moment of inertia.
     using std::max;
     const double precision = 10 * std::numeric_limits<double>::epsilon();
-    const T max_possible_inertia_moment  = CalcMaximumPossibleMomentOfInertia();
+    const T max_possible_inertia_moment = CalcMaximumPossibleMomentOfInertia();
 
     // In order to avoid false negatives for inertias close to zero we use, in
     // addition to a relative tolerance of "precision", an absolute tolerance
@@ -781,7 +815,7 @@ class RotationalInertia {
     const T mzz = mz*z;
     set_moments_and_products_no_validity_check(myy + mzz, mxx + mzz, mxx + myy,
                                                -mx * y,   -mx * z,   -my * z);
-    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
+    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
   }
 
   // Constructor from an Eigen expression that represents a matrix in ℝ³ˣ³ with
@@ -800,7 +834,7 @@ class RotationalInertia {
                   "as this rotational inertia");
     I_SP_E_ = I;
     if (!skip_validity_check) {
-      DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
+      DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
     }
   }
 
@@ -953,18 +987,20 @@ class RotationalInertia {
   // inequality.
   template <typename T1 = T>
   typename std::enable_if_t<scalar_predicate<T1>::is_bool>
-  ThrowIfNotPhysicallyValid() {
-    if (!CouldBePhysicallyValid()) {
-      throw std::logic_error("Error: Rotational inertia did not pass test: "
-                             "CouldBePhysicallyValid().");
-    }
+  ThrowIfNotPhysicallyValid(const char* func_name) {
+    DRAKE_DEMAND(func_name != nullptr);
+    if (!CouldBePhysicallyValid())
+      ThrowNotPhysicallyValid(func_name);
   }
+
 
   // SFINAE for non-numeric types. See documentation in the implementation for
   // numeric types.
   template <typename T1 = T>
   typename std::enable_if_t<!scalar_predicate<T1>::is_bool>
-  ThrowIfNotPhysicallyValid() {}
+  ThrowIfNotPhysicallyValid(const char*) {}
+
+  [[noreturn]] void ThrowNotPhysicallyValid(const char* func_name) const;
 
   // Throws an exception if a rotational inertia is multiplied by a negative
   // number - which implies that the resulting rotational inertia is invalid.
@@ -1015,38 +1051,10 @@ class RotationalInertia {
       typename Eigen::NumTraits<T>::Literal>::quiet_NaN())};
 };
 
-/// Insertion operator to write %RotationalInertia's into a `std::ostream`.
-/// Especially useful for debugging.
+/// Writes an instance of RotationalInertia into a std::ostream.
 /// @relates RotationalInertia
 template <typename T>
-std::ostream& operator<<(std::ostream& o,
-                         const RotationalInertia<T>& I) {
-  int width = 0;
-  // Computes largest width so that we can align columns for a prettier format.
-  // Idea taken from: Eigen::internal::print_matrix() in Eigen/src/Core/IO.h
-  for (int j = 0; j < I.cols(); ++j) {
-    for (int i = 0; i < I.rows(); ++i) {
-      std::stringstream sstr;
-      sstr.copyfmt(o);
-      sstr << I(i, j);
-      width = std::max<int>(width, static_cast<int>(sstr.str().length()));
-    }
-  }
-
-  // Outputs to stream.
-  for (int i = 0; i < I.rows(); ++i) {
-    o << "[";
-    if (width) o.width(width);
-    o << I(i, 0);
-    for (int j = 1; j < I.cols(); ++j) {
-      o << ", ";
-      if (width) o.width(width);
-      o << I(i, j);
-    }
-    o << "]" << std::endl;
-  }
-  return o;
-}
+std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I);
 
 // (This implementation is adapted from Simbody's Rotation::reexpressSymMat33.)
 // Use sneaky tricks from Featherstone to rotate a symmetric dyadic matrix.
@@ -1152,7 +1160,7 @@ RotationalInertia<T>& RotationalInertia<T>::ReExpressInPlace(
 
   // If both `this` and `R_AE` were valid upon entry to this method, the
   // returned rotational inertia should be valid.  Otherwise, it may not be.
-  DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
+  DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
   return *this;
 }
 

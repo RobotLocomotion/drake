@@ -5,7 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fixed_fem/dev/schur_complement.h"
+#include "drake/multibody/fixed_fem/schur_complement.h"
 
 namespace drake {
 namespace multibody {
@@ -25,7 +25,7 @@ class PetscSymmetricBlockSparseMatrix {
     /* For positive definite matrix. */
     kConjugateGradient,
     /* For positive definite matrix. Can only be paired with Cholesky
-                   preconditioner. */
+     preconditioner. */
     kDirect,
     /* For generic symmetric matrix. */
     kMINRES
@@ -39,23 +39,28 @@ class PetscSymmetricBlockSparseMatrix {
     kIncompleteCholesky,
   };
 
-  /* Constructs a `size`-by-`size` symmetric block sparse matrix with
-   `block_size`.
+  /* Constructs a symmetric block sparse matrix.
    @param size            The number of rows and columns of the symmetric
                           matrix.
-   @param block_size      The number rows and columns within a block.
-   @param nonzero_blocks The number of block nonzeros in the upper triangular
-                          plus diagonal portion of each block.
+   @param block_size      The number rows and columns within a single non-zero
+                          block. Each non-zero block in the sparse matrix is of
+                          the same size.
+   @param num_upper_triangular_blocks_per_row
+                          `num_upper_triangular_blocks_per_row[i]` contains the
+                          number of non-zero upper triangular and diagonal
+                          blocks in the i-th row block.
 
    @pre `size` >=  0, and `size` is a integer multiple of `block_size`.
-   @pre nonzero_blocks.size() == size/block_size.
-   @pre nonzero_blocks[i] <= size/block_size. */
-  PetscSymmetricBlockSparseMatrix(int size, int block_size,
-                                  const std::vector<int>& nonzero_blocks);
+   @pre num_upper_triangular_blocks_per_row.size() == size/block_size.
+   @pre num_upper_triangular_blocks_per_row[i] <= size/block_size. */
+  PetscSymmetricBlockSparseMatrix(
+      int size, int block_size,
+      const std::vector<int>& num_upper_triangular_blocks_per_row);
 
   ~PetscSymmetricBlockSparseMatrix();
 
-  /* Creates a deep identical copy of this matrix. */
+  /* Creates a deep identical copy of this matrix.
+   @pre Matrix must be assembled. See AssembleIfNecessary(). */
   std::unique_ptr<PetscSymmetricBlockSparseMatrix> Clone() const;
 
   /* Accumulate values in the block matrix. The Eigen analogy of this operation
@@ -76,7 +81,12 @@ class PetscSymmetricBlockSparseMatrix {
    @pre 0 <= block_indices[i] * block_size < size for each i =
    0, ..., block_indices.size()-1.
    @warn None of the prerequisite is checked since this is used in inner loop.
-  */
+   @warn Over the lifespan of this object, for each row block i, the number of
+   blocks accumulated in the i-th row block through `AddToBlock()` whose column
+   block index is >= i must not exceed the number of nonzero upper triangular
+   blocks in the i-th row block specified at construction.
+   @note The full matrix is expected for `block` even though the matrix is
+   symmetric. */
   void AddToBlock(const VectorX<int>& block_indices,
                   const MatrixX<double>& block);
 
@@ -84,23 +94,42 @@ class PetscSymmetricBlockSparseMatrix {
    @warn The compatibility of the solver and preconditioner type with the
    problem at hand is not checked. Callers need to be careful to choose the
    reasonable combination of solver and preconditioner given the type of matrix.
-   @pre b.size() == A.rows() */
+   @pre b.size() == A.rows()
+   @note The matrix/preconditioner will be refactored upon successive call to
+   this method even if the matrix hasn't changed.
+   @pre Matrix must be assembled. See AssembleIfNecessary(). */
   VectorX<double> Solve(SolverType solver_type,
                         PreconditionerType preconditioner_type,
-                        const VectorX<double>& b);
+                        const VectorX<double>& b) const;
+
+  /* Similar to Solve(), but writes the result in `b`.
+   @pre Matrix must be assembled. See AssembleIfNecessary(). */
+  void SolveInPlace(SolverType solver_type,
+                    PreconditionerType preconditioner_type,
+                    EigenPtr<VectorX<double>> b) const;
 
   /* Sets all blocks to zeros while maintaining the sparsity pattern. */
   void SetZero();
 
-  /* Makes a dense matrix representation of this block-sparse matrix. */
+  /* Makes a dense matrix representation of this block-sparse matrix.
+   @pre Matrix must be assembled. See AssembleIfNecessary(). */
   MatrixX<double> MakeDenseMatrix() const;
 
   /* Zeros out all rows and columns whose index is included in `indexes` and
-   sets the diagonal entry of these rows and columns to `value`. */
+   sets the diagonal entry of these rows and columns to `value`. In other words,
+   if `i` is contained in `indexes`, then the i-th row and column of the matrix
+   is set to zero and i-th diagonal entry is set to `value`. This operation
+   doesn't change the sparsity pattern.
+   @pre 0 <= indexes[i] < rows() for each i = 0, 1, ..., indexes.size()-1.  */
   void ZeroRowsAndColumns(const std::vector<int>& indexes, double value);
 
   /* Sets the relative tolerance of the linear solve A*x = b. Doesn't affect the
-   result of Solve() when the direct solver is used. */
+   result of Solve() when the direct solver is used.
+   In particular, this sets the relative convergence tolerance in
+   https://petsc.org/main/docs/manualpages/KSP/KSPSetTolerances.html. All the
+   other tolerance parameters (e.g. absolute tolerance, maximum number of
+   iterations, etc) are set to the default value specified in the PETSc
+   documentaion. */
   void SetRelativeTolerance(double tolerance);
 
   /* Calculates the Schur complement of D in the matrix
@@ -118,6 +147,11 @@ class PetscSymmetricBlockSparseMatrix {
   int rows() const;
 
   int cols() const;
+
+  /* Turn the matrix into "assembled" state if it's not already "assembled".
+   This method is cheap if the matrix is already "assembled", so invoke it if
+   unsure. */
+  void AssembleIfNecessary();
 
  private:
   class Impl;

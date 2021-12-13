@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <string>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -91,7 +92,11 @@ class UnitInertia : public RotationalInertia<T> {
   ///       not strictly positive.
   UnitInertia<T>& SetFromRotationalInertia(
       const RotationalInertia<T>& I, const T& mass) {
-    DRAKE_ASSERT(mass > 0);
+    if (mass <= 0) {
+      const std::string message = fmt::format("RotationalInertia::{}():"
+          " Division by zero mass or negative mass.", __func__);
+      throw std::runtime_error(message);
+    }
     RotationalInertia<T>::operator=(I / mass);
     return *this;
   }

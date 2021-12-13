@@ -23,6 +23,14 @@ namespace systems {
 /// A base class that specializes LeafSystem for use with only zero or one
 /// vector input ports, and only zero or one vector output ports.
 ///
+/// @system
+/// name: VectorSystem
+/// input_ports:
+/// - u0
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// By default, this base class does not declare any state; subclasses may
 /// optionally declare continuous or discrete state, but not both; subclasses
 /// may not declare abstract state.

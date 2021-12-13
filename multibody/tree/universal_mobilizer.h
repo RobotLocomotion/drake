@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -55,6 +56,11 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   UniversalMobilizer(const Frame<T>& inboard_frame_F,
                      const Frame<T>& outboard_frame_M)
       : MobilizerBase(inboard_frame_F, outboard_frame_M) {}
+
+  // Overloads to define the suffix names for the position and velocity
+  // elements.
+  std::string position_suffix(int position_index_in_mobilizer) const final;
+  std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
   // Retrieves from `context` the two angles, (θ₁, θ₂) which describe the state
   // for `this` mobilizer as documented in this class's documentation.
