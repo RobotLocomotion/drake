@@ -300,10 +300,24 @@ void DoScalarIndependentDefinitions(py::module m) {
       .def_readwrite("default_diffuse", &RenderEngineVtkParams::default_diffuse,
           doc.RenderEngineVtkParams.default_diffuse.doc);
 
-  m.def("MakeRenderEngineGl", &MakeRenderEngineGl, doc.MakeRenderEngineGl.doc);
-
   m.def("MakeRenderEngineVtk", &MakeRenderEngineVtk, py::arg("params"),
       doc.MakeRenderEngineVtk.doc);
+
+  {
+    using Class = RenderEngineGlParams;
+    constexpr auto& cls_doc = doc.RenderEngineGlParams;
+    py::class_<Class>(m, "RenderEngineGlParams", cls_doc.doc)
+        .def(ParamInit<Class>())
+        .def_readwrite(
+            "default_label", &Class::default_label, cls_doc.default_label.doc)
+        .def_readwrite("default_diffuse", &Class::default_diffuse,
+            cls_doc.default_diffuse.doc)
+        .def_readwrite("default_clear_color", &Class::default_clear_color,
+            cls_doc.default_clear_color.doc);
+  }
+
+  m.def("MakeRenderEngineGl", &MakeRenderEngineGl,
+      py::arg("params") = RenderEngineGlParams(), doc.MakeRenderEngineGl.doc);
 
   {
     py::class_<RenderLabel> render_label(m, "RenderLabel", doc.RenderLabel.doc);
