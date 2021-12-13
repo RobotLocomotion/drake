@@ -512,6 +512,7 @@ def _install_impl(ctx):
     files = ctx.runfiles(
         files = [a.src for a in actions if not hasattr(a, "main_class")] +
                 [i.src for i in installed_tests],
+        transitive_files = ctx.attr._install_lib[PyInfo].transitive_sources,
     )
     return [
         InstallInfo(
@@ -567,6 +568,9 @@ _install_rule = rule(
             default = Label("//tools/install:install.py.in"),
         ),
         "install_tests_script": attr.output(),
+        "_install_lib": attr.label(
+            default = Label("//tools/install:install_lib"),
+        ),
     },
     executable = True,
     implementation = _install_impl,
