@@ -29,7 +29,7 @@ Begin this process around 1 week prior to the intended release date.
    ```
 4. Push that branch and then open a new pull request titled:
    ```
-   doc: Add release notes v0.N.0
+   [doc] Add release notes v0.N.0
    ```
    Make sure that "Allow edits from maintainers" on the GitHub PR page is
    enabled (the checkbox is checked).
