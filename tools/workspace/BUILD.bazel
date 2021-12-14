@@ -67,12 +67,14 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "conex",
     "cds",
-    "drake_visualizer",
     "dreal",
     "net_sf_jchart2d",
     "optitrack_driver",
     "picosat",
 ]] + select({
+    "//conditions:default": ["//tools/workspace/drake_visualizer:install"],
+    "//tools:no_drake_visualizer": [],
+}) + select({
     "//conditions:default": ["@csdp//:install"],
     "//tools:no_csdp": [],
 }) + select({
