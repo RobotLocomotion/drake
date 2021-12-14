@@ -2225,10 +2225,35 @@ class TestPlant(unittest.TestCase):
 
         self.assertEqual(contact_results.num_hydroelastic_contacts(), 1)
         contact_info = contact_results.hydroelastic_contact_info(0)
-        contact_info.contact_surface().id_M()
-        contact_info.contact_surface().id_N()
-        contact_info.contact_surface().tri_mesh_W().centroid()
+        self._sanity_check_contact_surface(contact_info.contact_surface())
         contact_info.F_Ac_W().get_coeffs()
+
+    def _sanity_check_contact_surface(self, dut):
+        dut.id_M()
+        dut.id_N()
+        dut.num_faces()
+        dut.num_vertices()
+        dut.area(face_index=0)
+        dut.total_area()
+        dut.face_normal(face_index=0)
+        dut.centroid(face_index=0)
+        dut.centroid()
+        dut.is_triangle()
+        dut.representation()
+        if dut.is_triangle():
+            dut.tri_mesh_W().centroid()
+        else:
+            # XXX This is dead code (dead branch).
+            self.assertTrue(False)
+            dut.poly_mesh_W().centroid()
+        if dut.HasGradE_M():
+            # XXX This is dead code (dead branch).
+            self.assertTrue(False)
+            dut.EvaluateGradE_M_W(index=0)
+        if dut.HasGradE_N():
+            dut.EvaluateGradE_N_W(index=0)
+        dut.Equal(surface=dut)
+        copy.copy(dut)
 
     @numpy_compare.check_nonsymbolic_types
     def test_contact_results_to_meshcat(self, T):
