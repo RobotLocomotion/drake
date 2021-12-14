@@ -137,8 +137,8 @@ class PetscSymmetricBlockSparseMatrix::Impl {
       case PreconditionerType::kIncompleteCholesky:
         PCSetType(preconditioner_, PCICC);
         break;
-      case PreconditionerType::kBlockJacobi:
-        PCSetType(preconditioner_, PCBJACOBI);
+      case PreconditionerType::kJacobi:
+        PCSetType(preconditioner_, PCJACOBI);
         break;
     }
 
