@@ -114,14 +114,14 @@ class SapSolver final : public ContactSolver<T> {
 
   // New parameters will affect the next call to SolveWithGuess().
   void set_parameters(const SapSolverParameters& parameters) {
-    non_thread_safe_data_.parameters = parameters;
+    parameters_ = parameters;
   }
 
   // Returns solver statistics from the last call to SolveWithGuess().
   // Statistics are reset with SolverStats::Reset() on each new call to
   // SolveWithGuess().
   const SolverStats& get_statistics() const {
-    return non_thread_safe_data_.stats;
+    return stats_;
   }
 
  private:
@@ -519,14 +519,12 @@ class SapSolver final : public ContactSolver<T> {
       const State& state) const;
 
   // Quick access to mutable non thread-safe data.
-  const SapSolverParameters& parameters() const {
-    return non_thread_safe_data_.parameters;
-  }
-  const PreProcessedData& data() const { return non_thread_safe_data_.data; }
-  SolverStats& mutable_stats() const { return non_thread_safe_data_.stats; }
+  const PreProcessedData& data() const { return data_; }
 
   // All data stored by this class.
-  mutable NonThreadSafeData non_thread_safe_data_;
+  SapSolverParameters parameters_;
+  PreProcessedData data_;
+  mutable SolverStats stats_;
 };
 
 template <>

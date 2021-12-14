@@ -29,8 +29,7 @@ ContactSolverStatus SapSolver<T>::SolveWithGuess(
   // User code should only call the solver for problems with constraints.
   // Otherwise the solution is trivially v = v*.
   DRAKE_DEMAND(contact_data.num_contacts() != 0);
-  non_thread_safe_data_.data =
-      PreProcessData(time_step, dynamics_data, contact_data);
+  data_ = PreProcessData(time_step, dynamics_data, contact_data);
   return DoSolveWithGuess(v_guess, results);
 }
 
@@ -43,7 +42,7 @@ Vector3<T> SapSolver<T>::ProjectOntoSingleFrictionCone(
   // γₜ/‖γₜ‖ₛ, which is well defined even for γₜ = 0. Also gradients are well
   // defined and follow the same equations presented in [Castro et al., 2021]
   // where regular norms are simply replaced by soft norms.
-  auto soft_norm = [eps = parameters().soft_tolerance](
+  auto soft_norm = [eps = parameters_.soft_tolerance](
                        const Eigen::Ref<const VectorX<T>>& x) -> T {
     using std::sqrt;
     return sqrt(x.squaredNorm() + eps * eps);
@@ -143,7 +142,7 @@ void SapSolver<T>::CalcAllProjectionsGradients(
   const int nc = data().nc;
   const int nc3 = 3 * nc;
   DRAKE_DEMAND(y.size() == nc3);
-  if (dPdy != nullptr) DRAKE_DEMAND(static_cast<int>(dPdy->size()) == nc);
+  DRAKE_DEMAND(static_cast<int>(dPdy->size()) == nc);
 
   // Data.
   const auto& R = data().R;
@@ -258,8 +257,8 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
   // We use the Delassus scaling computed above to estimate regularization
   // parameters in the matrix R.
   const VectorX<T>& delassus_diagonal = data.delassus_diagonal;
-  const double beta = parameters().beta;
-  const double sigma = parameters().sigma;
+  const double beta = parameters_.beta;
+  const double sigma = parameters_.sigma;
 
   // Rigid approximation constant: Rₙ = β²/(4π²)⋅wᵢ when the contact frequency
   // ωₙ is below the limit ωₙ⋅δt ≤ 2π. That is, the period is Tₙ = β⋅δt. See
@@ -346,7 +345,7 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
   const int nv = data().nv;
   const int nc = data().nc;
   State state(nv, nc);
-  mutable_stats().Reset();
+  stats_.Reset();
 
   state.mutable_v() = v_guess;
 
@@ -354,14 +353,14 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
   int k = 0;
   double ell_previous = EvalCostCache(state).ell;
   bool converged = false;
-  for (; k < parameters().max_iterations; ++k) {
+  for (; k < parameters_.max_iterations; ++k) {
     // We first verify the stopping criteria. If satisfied, we skip expensive
     // factorizations.
     double momentum_residual, momentum_scale;
     CalcStoppingCriteriaResidual(state, &momentum_residual, &momentum_scale);
 
-    if (momentum_residual <= parameters().abs_tolerance +
-                                 parameters().rel_tolerance * momentum_scale) {
+    if (momentum_residual <= parameters_.abs_tolerance +
+                                 parameters_.rel_tolerance * momentum_scale) {
       converged = true;
       break;
     } else {
@@ -376,17 +375,32 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
 
     int ls_iters;
     const double alpha = PerformBackTrackingLineSearch(state, dv, &ls_iters);
-    mutable_stats().num_line_search_iters += ls_iters;
+    stats_.num_line_search_iters += ls_iters;
 
     // Update state.
     state.mutable_v() += alpha * dv;
 
     // Verify the cost decreases on each iteration.
     const double ell = EvalCostCache(state).ell;
+    // TODO(amcastro-tri): sometimes this demand is triggered due to round-off
+    // errors. Consider:
+    //  1. Verify this condition with a slop, i.e. ell < ell_previous + slop.
+    //  2. Update sopping criterion to also include a tolerance on the cost,
+    //     i.e. 2. * |ell-ell_previous|/(ell + ell_previous) < cost_tolerance.
     DRAKE_DEMAND(ell < ell_previous);
     ell_previous = ell;
   }
 
+  // If the solver happened to converge in the last iteration, we want to find
+  // to avoid reporting a false failure below.
+  if (k == parameters_.max_iterations && converged == false) {
+    double momentum_residual, momentum_scale;
+    CalcStoppingCriteriaResidual(state, &momentum_residual, &momentum_scale);
+    if (momentum_residual <= parameters_.abs_tolerance +
+                                 parameters_.rel_tolerance * momentum_scale) {
+      converged = true;
+    }
+  }
   if (!converged) return ContactSolverStatus::kFailure;
 
   const VectorX<double>& vc = EvalVelocitiesCache(state).vc;
@@ -396,7 +410,7 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
   // N.B. If the stopping criteria is satisfied for k = 0, the solver is not
   // even instantiated and no factorizations are performed (the expensive part
   // of the computation). We report zero number of iterations.
-  mutable_stats().num_iters = k;
+  stats_.num_iters = k;
 
   return ContactSolverStatus::kSuccess;
 }
@@ -445,9 +459,9 @@ template <typename T>
 T SapSolver<T>::PerformBackTrackingLineSearch(
     const State& state, const VectorX<T>& dv, int* num_iterations) const {
   // Line search parameters.
-  const double rho = parameters().ls_rho;
-  const double c = parameters().ls_c;
-  const int max_iterations = parameters().ls_max_iterations;
+  const double rho = parameters_.ls_rho;
+  const double c = parameters_.ls_c;
+  const int max_iterations = parameters_.ls_max_iterations;
 
   // Quantities at alpha = 0.
   const T& ell0 = EvalCostCache(state).ell;
@@ -461,9 +475,14 @@ T SapSolver<T>::PerformBackTrackingLineSearch(
   // of the Hessian for ill-conditioned systems (small regularization) can
   // destroy this property. If so, we abort given that'd mean the model must be
   // revisited.
-  DRAKE_DEMAND(dell_dalpha0 < 0);
+  if (dell_dalpha0 >= 0) {
+    throw std::runtime_error(
+        "The cost does not decrease along the search direction. This is "
+        "usually caused by an excessive accumulation round-off errors for "
+        "ill-conditioned systems. Consider revisiting your model.");
+  }
 
-  T alpha = parameters().ls_alpha_max;
+  T alpha = parameters_.ls_alpha_max;
   // TODO(amcastro-tri): Consider removing this heap allocation from this scope.
   State state_aux(state);  // Auxiliary workspace.
   T ell = CalcLineSearchCost(state, alpha, &state_aux);
@@ -482,38 +501,23 @@ T SapSolver<T>::PerformBackTrackingLineSearch(
   for (; iteration <= max_iterations; ++iteration) {
     alpha *= rho;
     ell = CalcLineSearchCost(state, alpha, &state_aux);
-    if (ell > ell_prev) {
-      if (satisfies_armijo(alpha, ell)) {
-        // The previous iteration is better if it satisfies Armijo's
-        // criterion since in this scope ell_prev < ell. If so, we
-        // backtrack to the previous iteration.
-        if (satisfies_armijo(alpha_prev, ell_prev)) alpha /= rho;
-        *num_iterations = iteration;
-        return alpha;
-      } else {
-        // This point could only be reached if ℓ(α) is not convex. Since for SAP
-        // the cost ℓ(α) is always convex, this could only mean that the data to
-        // the solver is invalid or somehow the iteration diverged due to
-        // ill-conditioning (SAP's convergence is guaranteed. Only
-        // ill-conditioning and the accumulation of round-off errors can make it
-        // fail.)
-        throw std::runtime_error(
-            "Backtracking line search failed. Either the cost is not convex "
-            "(and thus invalid input data to the solver) or round-off "
-            "errors due to ill-conditioning render the search direction "
-            "useless.");
-      }
+    // We scan discrete values of alpha from alpha_max to zero and seek for the
+    // minimum value of the cost evaluated at those discrete values. Since we
+    // know the cost is convex, we detect this minimum by checking the condition
+    // ell > ell_prev. If Armijo's criterion is satisfied, we are done.
+    // Otherwise we continue iterating until Armijo's criterion is satisfied.
+    // N.B. Armijo's criterion allows to prove convergence. Therefore we want
+    // the search parameter to satisfy it.
+    if (ell > ell_prev && satisfies_armijo(alpha, ell)) {
+      // The previous iteration is better if it satisfies Armijo's
+      // criterion since in this scope ell_prev < ell. If so, we
+      // backtrack to the previous iteration.
+      if (satisfies_armijo(alpha_prev, ell_prev)) alpha /= rho;
+      *num_iterations = iteration;
+      return alpha;
     }
     alpha_prev = alpha;
     ell_prev = ell;
-  }
-
-  // For costs with very steep slopes near alpha = 0 we might not reach the
-  // condition ell > ell_prev. However, if the latest value of alpha satisfies
-  // Armijo's criterion, it is a valid search parameter that we can use.
-  if (satisfies_armijo(alpha, ell)) {
-    *num_iterations = iteration;
-    return alpha;
   }
 
   // If we are here, the line-search could not find a valid parameter that
@@ -595,7 +599,7 @@ SapSolver<T>::EvalImpulsesCache(const State& state) const {
   // The (unprojected) impulse y=−R⁻¹⋅(vc − v̂).
   cache.y.array() *= Rinv.array();
   ProjectAllImpulses(cache.y, &cache.gamma);
-  ++mutable_stats().num_impulses_cache_updates;
+  ++stats_.num_impulses_cache_updates;
   cache.valid = true;
   return cache;
 }
@@ -664,7 +668,7 @@ SapSolver<T>::EvalGradientsCache(const State& state) const {
     G_ic = dPdy_ic * Rinv_ic.asDiagonal();
   }
 
-  ++mutable_stats().num_gradients_cache_updates;
+  ++stats_.num_gradients_cache_updates;
   cache.valid = true;
   return cache;
 }

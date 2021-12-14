@@ -1,8 +1,8 @@
 #include "drake/multibody/contact_solvers/sap_solver.h"
 
-// TODO(amcastro-tri): While many of tests in this file verify the correcness of
-// the solution, it might not be enough to ensure the entire implementation is
-// correct. E.g. misscalculation of the Hessian could lead to slower
+// TODO(amcastro-tri): While many of tests in this file verify the correctness
+// of the solution, it might not be enough to ensure the entire implementation
+// is correct. E.g. miscalculation of the Hessian could lead to slower
 // convergence. Consider more fine grained unit tests, especially for the
 // Hessian and other gradients.
 
@@ -260,23 +260,22 @@ GTEST_TEST(SapSolver, PreProcessedData) {
 /* Model of a "pizza saver":
 
   ^ y
-  |                 ◯
+  |                 ◯ C
   |                /\
   ----> x         /  \
                a /    \ a
                 /      \
                /        \
-              ◯----------◯
+            A ◯----------◯ B
                    a
 
 It is modeled as an equilateral triangle with a contact point at each of the
-legs. The total mass of the pizza saver is m and its rotational inertia about
-the triangle's barycenter is I.
-If h is the height of the triangle from any of its sides, the distance from
-any point to the triangle's center is 2h/3. The height h relates to the length
-a of a side by h = sqrt(3)/2 a.
-The generalized positions vector for this case is q = [x, y, z, theta], with
-theta = 0 for the triangle in the configuration shown in the schematic. */
+vertices. The total mass of the pizza saver is m and its rotational inertia
+about the triangle's barycenter is I. If h is the height of the triangle from
+any of its sides, the distance from any point to the triangle's center is 2h/3.
+The height h relates to the length a of a side by h = sqrt(3)/2 a. The
+generalized positions vector for this case is q = [x, y, z, theta], with theta =
+0 for the triangle in the configuration shown in the schematic. */
 class PizzaSaverProblem {
  public:
   static constexpr int kNumVelocities = 4;
@@ -304,9 +303,9 @@ class PizzaSaverProblem {
     I_ = m_ * radius_ * radius_;
   }
 
-  // Pizza saver model with default mass m = 1 Kg and radius = 1.0 m.
+  // Pizza saver model with default mass m = 3 Kg and radius = 1.5 m.
   PizzaSaverProblem(double dt, double mu, double k, double taud)
-      : PizzaSaverProblem(dt, 1.0, 1.0, mu, k, taud) {}
+      : PizzaSaverProblem(dt, 3.0, 1.5, mu, k, taud) {}
 
   double time_step() const { return time_step_; }
 
@@ -515,12 +514,11 @@ GTEST_TEST(PizzaSaver, NoAppliedTorque) {
   EXPECT_TRUE(CompareMatrices(result.v_next,
                               VectorXd::Zero(problem.kNumVelocities),
                               params.rel_tolerance));
-  EXPECT_TRUE(CompareMatrices(result.tau_contact, tau_expected,
-                              params.rel_tolerance,
-                              MatrixCompareType::relative));
+  EXPECT_TRUE((result.tau_contact - tau_expected).norm() / tau_expected.norm() <
+              params.rel_tolerance);
   EXPECT_TRUE(CompareMatrices(result.ft,
                               VectorXd::Zero(2 * problem.kNumContacts),
-                              params.rel_tolerance));
+                              2.0 * params.rel_tolerance));
   EXPECT_TRUE(CompareMatrices(
       result.fn,
       VectorXd::Constant(problem.kNumContacts, tau_expected(2) / 3.0),
@@ -532,14 +530,57 @@ GTEST_TEST(PizzaSaver, NoAppliedTorque) {
                               params.rel_tolerance));
 }
 
+// We verify SAP returns immediately when the exact guess is provided. To stress
+// test this case, the maximum number of iterations is set to zero. We expect
+// SAP to return the guess as the solution.
+GTEST_TEST(PizzaSaver, ConvergenceWithExactGuess) {
+  const double dt = 0.01;
+  const double mu = 1.0;
+  const double k = 1.0e4;
+  const double taud = dt;
+  const PizzaSaverProblem problem(dt, mu, k, taud);
+
+  SapSolverParameters params;
+  params.rel_tolerance = 1.0e-6;
+  params.beta = 0;  // No near-rigid regime.
+  params.ls_max_iterations = 40;
+  params.max_iterations = 0;
+
+  const double weight = problem.mass() * problem.g();
+  const Vector4d tau(0.0, 0.0, -weight, 0.0);
+
+  // We set the initial position so that the (three) compliant point contact
+  // forces balance weight.
+  const double z = -weight / k / 3.0;
+  const double theta = M_PI / 5;  // Arbitrary orientation.
+  VectorXd q = Vector4d(0.0, 0.0, z, theta);
+  VectorXd v = VectorXd::Zero(problem.kNumVelocities);
+
+  const auto data = problem.MakeProblemData(q, v, tau);
+  SapSolver<double> sap;
+  sap.set_parameters(params);
+  ContactSolverResults<double> result;
+  const ContactSolverStatus status =
+      sap.SolveWithGuess(problem.time_step(), *data->dynamics_data,
+                         *data->contact_data, v, &result);
+  EXPECT_EQ(status, ContactSolverStatus::kSuccess);
+
+  // Verify no iterations were performed.
+  const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+  EXPECT_EQ(stats.num_iters, 0);
+
+  // The guess was not even touched but directly copied into the results.
+  EXPECT_EQ(result.v_next, v);
+}
+
 // This tests the solver when we apply a moment Mz about COM to the pizza
 // saver. If Mz < mu * m * g * R, the saver should be in stiction (that is,
 // the sliding velocity should be smaller than the regularization parameter).
 // Otherwise the saver will start sliding. For this setup the transition
-// occurs at M_transition = mu * m * g * R = 5.0
+// occurs at M_transition = mu * m * g * R = 30.
 GTEST_TEST(PizzaSaver, Stiction) {
   const double dt = 0.01;
-  const double mu = 1.0;
+  const double mu = 2. / 3.;
   const double k = 1.0e4;
   const double taud = dt;
   PizzaSaverProblem problem(dt, mu, k, taud);
@@ -549,7 +590,7 @@ GTEST_TEST(PizzaSaver, Stiction) {
   params.beta = 0;  // No near-rigid regime.
   params.ls_max_iterations = 40;
 
-  const double Mz = 3.0;
+  const double Mz = 20.0;
   const Vector4d tau(0.0, 0.0, -problem.mass() * problem.g(), Mz);
   const ContactSolverResults<double> result =
       AdvanceNumSteps(problem, tau, 30, params);
@@ -560,24 +601,24 @@ GTEST_TEST(PizzaSaver, Stiction) {
   // Maximum expected slip. See Castro et al. 2021 for details (Eq. 22).
   const double max_slip_expected = params.sigma * dt * problem.g();
 
-  EXPECT_TRUE(CompareMatrices(result.v_next.head<3>(), Vector3d::Zero(),
-                              1.0e-12));
-  EXPECT_TRUE(CompareMatrices(result.tau_contact, tau_expected,
-                              params.rel_tolerance,
-                              MatrixCompareType::relative));
+  EXPECT_TRUE(
+      CompareMatrices(result.v_next.head<3>(), Vector3d::Zero(), 1.0e-9));
+  EXPECT_TRUE((result.tau_contact - tau_expected).norm() / tau_expected.norm() <
+              params.rel_tolerance);
   EXPECT_TRUE(CompareMatrices(
       result.fn,
       VectorXd::Constant(problem.kNumContacts, tau_expected(2) / 3.0),
       params.rel_tolerance, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(result.vn, VectorXd::Zero(problem.kNumContacts),
-                              1.0e-13));
+                              1.0e-9));
   const double friction_force_expected = Mz / problem.radius() / 3.0;
   for (int i = 0; i < 3; ++i) {
     const double slip = result.vt.segment<2>(2 * i).norm();
     const double friction_force = result.ft.segment<2>(2 * i).norm();
     const double normal_force = result.fn(i);
     EXPECT_LE(friction_force, mu * normal_force);
-    EXPECT_NEAR(friction_force, friction_force_expected, params.rel_tolerance);
+    EXPECT_NEAR(friction_force, friction_force_expected,
+                params.rel_tolerance * friction_force_expected);
     EXPECT_LE(slip, max_slip_expected);
   }
 }
@@ -631,10 +672,10 @@ GTEST_TEST(PizzaSaver, NoFriction) {
 
 // This tests the solver when we apply a moment Mz about COM to the pizza
 // saver. If Mz > mu * m * g * R, the saver will slide.
-// occurs at M_transition = mu * m * g * R = 5.0
+// occurs at M_transition = mu * m * g * R = 30.0
 GTEST_TEST(PizzaSaver, Sliding) {
   const double dt = 0.01;
-  const double mu = 0.5;
+  const double mu = 2. / 3.;
   const double k = 1.0e4;
   const double taud = dt;
   PizzaSaverProblem problem(dt, mu, k, taud);
@@ -644,7 +685,7 @@ GTEST_TEST(PizzaSaver, Sliding) {
   params.beta = 0;  // No near-rigid regime.
   params.ls_max_iterations = 40;
 
-  const double Mz = 6.0;
+  const double Mz = 40.0;
   const double weight = problem.mass() * problem.g();
   const Vector4d tau(0.0, 0.0, -weight, Mz);
 
@@ -656,7 +697,7 @@ GTEST_TEST(PizzaSaver, Sliding) {
     const double friction_force = result.ft.segment<2>(2 * i).norm();
     const double normal_force = result.fn(i);
     EXPECT_NEAR(friction_force, mu * normal_force,
-                5.0 * std::numeric_limits<double>::epsilon());
+                std::numeric_limits<double>::epsilon() * normal_force);
   }
 }
 
