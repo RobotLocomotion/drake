@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "drake/geometry/query_results/contact_surface.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -26,6 +27,20 @@ ContactModel GetContactModelFromString(std::string_view contact_model);
 // (Exposed for unit testing only.)
 // Returns the string name of an enumerated value for a contact model.
 std::string GetStringFromContactModel(ContactModel contact_model);
+
+// (Exposed for unit testing only.)
+// Parses a string name for a contact representation and returns the enumerated
+// value.  Valid string names are listed in MultibodyPlantConfig's class
+// overview.
+// @throws std::exception if an invalid string is passed in.
+geometry::HydroelasticContactRepresentation
+GetContactSurfaceRepresentationFromString(
+    std::string_view contact_representation);
+
+// (Exposed for unit testing only.)
+// Returns the string name of an enumerated value for a contact representation.
+std::string GetStringFromContactSurfaceRepresentation(
+    geometry::HydroelasticContactRepresentation contact_representation);
 
 }  // namespace internal
 }  // namespace multibody
