@@ -110,9 +110,9 @@ GTEST_TEST(ProximityEngineTests, AddDynamicGeometry) {
 // sufficient to confirm that it is being properly invoked. We'll simply attempt
 // to instantiate every shape and assert its classification based on whether
 // it's supported or not (note: this test doesn't depend on the choice of
-// rigid/soft -- for each shape, we pick an arbitrary compliance, preferring
-// one that is supported over one that is not. Otherwise, the compliance choice
-// is immaterial.)
+// rigid/compliant -- for each shape, we pick an arbitrary compliance type,
+// preferring one that is supported over one that is not. Otherwise, the
+// compliance choice is immaterial.)
 GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
   ProximityEngine<double> engine;
   // All of the geometries will have a scale comparable to edge_length, so that
@@ -125,7 +125,7 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
   ProximityProperties rigid_properties;
   AddRigidHydroelasticProperties(edge_length, &rigid_properties);
 
-  // Case: soft sphere.
+  // Case: compliant sphere.
   {
     Sphere sphere{edge_length};
     const GeometryId sphere_id = GeometryId::get_new_id();
@@ -253,8 +253,8 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
       drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
       1.0 /* scale */};
 
-  // Case: Soft sphere and rigid mesh with AutoDiffXd -- confirm the contact
-  // surface has derivatives.
+  // Case: Compliant sphere and rigid mesh with AutoDiffXd -- confirm the
+  // contact surface has derivatives.
   {
     ProximityEngine<double> engine_d;
     const auto X_WGs_d = PopulateEngine(&engine_d, sphere, anchored, soft, mesh,

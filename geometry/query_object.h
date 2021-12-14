@@ -277,25 +277,25 @@ class QueryObject {
      - This table shows which shapes can be declared for use in hydroelastic
        contact, and what compliance can be assigned.
 
-       |   Shape   | Soft  | Rigid |
-       | :-------: | :---: | :---- |
-       | Sphere    |  yes  |  yes  |
-       | Cylinder  |  yes  |  yes  |
-       | Box       |  yes  |  yes  |
-       | Capsule   |  yes  |  yes  |
-       | Ellipsoid |  yes  |  yes  |
-       | HalfSpace |  yes  |  yes  |
-       | Mesh      |  no   |  yes  |
-       | Convex    |  no   |  yes  |
+       |   Shape   | Compliant | Rigid |
+       | :-------: | :-------: | :---: |
+       | Sphere    |    yes    |  yes  |
+       | Cylinder  |    yes    |  yes  |
+       | Box       |    yes    |  yes  |
+       | Capsule   |    yes    |  yes  |
+       | Ellipsoid |    yes    |  yes  |
+       | HalfSpace |    yes    |  yes  |
+       | Mesh      |    no     |  yes  |
+       | Convex    |    no     |  yes  |
 
-     - We do not currently support contact between two geometries with the
-       *same* compliance; one geometry *must* be soft, and the other *must* be
-       rigid. If geometries with the same compliance collide, an exception will
-       be thrown. More particularly, if such a geometry pair *cannot be culled*
-       an exception will be thrown. No exception is thrown if the pair has been
-       filtered.
-     - The elasticity modulus E (N/m^2) of each geometry is set in
-       ProximityProperties (see AddContactMaterial()).
+     - We do not currently support contact between two geometries with
+       the *same* compliance type; one geometry *must* be compliant, and the
+       other *must* be rigid. If geometries with the same compliance type
+       collide, an exception will be thrown. More particularly, if such a
+       geometry pair *cannot be culled* an exception will be thrown. No
+       exception is thrown if the pair has been filtered.
+     - The hydroelastic modulus (N/m^2) of each compliant geometry is set in
+       ProximityProperties by AddSoftHydroelasticProperties().
      - The tessellation of the corresponding meshes is controlled by the
        resolution hint (where appropriate), as defined by
        AddSoftHydroelasticProperties() and AddRigidHydroelasticProperties().

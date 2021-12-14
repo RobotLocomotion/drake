@@ -89,9 +89,9 @@ namespace {
 void AddSoftHydroelasticProperties(double hydroelastic_modulus,
                                    ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
-  // The bare minimum of defining a soft geometry is to declare its compliance
-  // type. Downstream consumers (ProximityEngine) will determine if this is
-  // sufficient.
+  // The bare minimum of defining a compliant geometry is to declare its
+  // compliance type. Downstream consumers (ProximityEngine) will determine
+  // if this is sufficient.
   if (hydroelastic_modulus <= 0) {
     throw std::logic_error(
         fmt::format("The hydroelastic modulus must be positive; given {}",

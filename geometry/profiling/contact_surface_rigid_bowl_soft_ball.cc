@@ -1,13 +1,13 @@
 /* @file
  A simple binary for profiling computation of ContactSurface between an
- anchored rigid bowl and a dynamic soft ball. The rigid bowl is a realistic
- non-convex object represented by 7,910 triangles. The soft ball is
+ anchored rigid bowl and a dynamic compliant ball. The rigid bowl is a realistic
+ non-convex object represented by 7,910 triangles. The compliant ball is
  represented by a coarse tetrahedral mesh, which is typical in hydroelastic
  contact model. This is decoupled from dynamics so that just the geometric
  components can be evaluated in as light-weight a fashion as possible. The
  ball moves moderately and stays in contact with the bowl all the time.
  Optionally it can use a rigid ball or a rigid box instead of the rigid bowl.
- It can also use a soft box instead of the soft ball.
+ It can also use a compliant box instead of the compliant ball.
 */
 
 #include <cmath>
@@ -83,32 +83,32 @@ using systems::lcm::LcmPublisherSystem;
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds. "
               "By default, it is 10 seconds, which is the time for the "
-              "moving soft geometry to complete one period of sinusoidal "
+              "moving compliant geometry to complete one period of sinusoidal "
               "vertical motion while contacting the rigid geometry.");
 DEFINE_double(real_time, 1.0, "Real time factor.");
 DEFINE_double(resolution_hint, 0.0125,
-              "Target resolution for the soft ball's mesh-- smaller "
-              "numbers produce a denser, more expensive mesh. The soft ball "
-              "is 2.5cm in radius. By default, its mesh resolution is "
+              "Target resolution for the compliant ball's mesh-- smaller "
+              "numbers produce a denser, more expensive mesh. The compliant "
+              "ball is 2.5cm in radius. By default, its mesh resolution is "
               "1.25cm, which is half the radius. This parameter affects "
-              "none of the rigid bowl, the rigid box, or the soft box.");
+              "none of the rigid bowl, the rigid box, or the compliant box.");
 DEFINE_string(rigid, "bowl",
               "Specify the shape of the rigid geometry.\n"
               "[--rigid={ball,bowl,box,capsule,cylinder}]\n"
               "By default, it is the bowl.\n");
-DEFINE_string(soft, "ball",
-              "Specify the shape of the soft geometry.\n"
-              "[--soft={ball,box,capsule,cylinder}]\n"
+DEFINE_string(compliant, "ball",
+              "Specify the shape of the compliant geometry.\n"
+              "[--compliant={ball,box,capsule,cylinder}]\n"
               "By default, it is the ball.\n");
 DEFINE_bool(polygons, true,
             "Set to true to use polygons to represent contact surfaces.\n"
             "Set to false to use triangles to represent contact surfaces.\n"
             "By default, it is true.");
 
-/* Places a soft geometry (a ball by default) and defines its velocity as being
- sinusoidal in time in World z direction.
+/* Places a compliant geometry (a ball by default) and defines its velocity as
+ being sinusoidal in time in World z direction.
 
- The center of the moving soft geometry starts from a point O at the
+ The center of the moving compliant geometry starts from a point O at the
  mid-height of the default rigid bowl, which can change to a rigid ball or a
  rigid box via a command-line option.
    1. It goes up to the rim of the bowl, creating the smallest contact patch
@@ -126,16 +126,16 @@ DEFINE_bool(polygons, true,
  motion, and T is the time period.
 
  @system
- name: MovingSoftGeometry
+ name: MovingCompliantGeometry
  output_ports:
  - geometry_pose
  @endsystem
 
  This system's output is strictly a function of time and has no state.
  */
-class MovingSoftGeometry final : public LeafSystem<double> {
+class MovingCompliantGeometry final : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MovingSoftGeometry)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MovingCompliantGeometry)
 
   // Ball radius 2.5cm.
   static constexpr double kRadius = 0.025;
@@ -149,45 +149,46 @@ class MovingSoftGeometry final : public LeafSystem<double> {
   // Amplitude of motion, A = 0.5cm.
   static constexpr double kA = 0.005;
 
-  explicit MovingSoftGeometry(SceneGraph<double>* scene_graph) {
-    // Add a soft geometry that moves based on sinusoidal derivatives.
+  explicit MovingCompliantGeometry(SceneGraph<double>* scene_graph) {
+    // Add a compliant geometry that moves based on sinusoidal derivatives.
     source_id_ = scene_graph->RegisterSource("moving_geometry");
     frame_id_ =
         scene_graph->RegisterFrame(source_id_, GeometryFrame("moving_frame"));
-    if (FLAGS_soft == "box") {
+    if (FLAGS_compliant == "box") {
       geometry_id_ = scene_graph->RegisterGeometry(
           source_id_, frame_id_,
           make_unique<GeometryInstance>(
               RigidTransformd(), make_unique<Box>(Box::MakeCube(1.5 * kRadius)),
-              "soft box"));
-    } else if (FLAGS_soft == "capsule") {
+              "compliant box"));
+    } else if (FLAGS_compliant == "capsule") {
       geometry_id_ = scene_graph->RegisterGeometry(
           source_id_, frame_id_,
           make_unique<GeometryInstance>(
               RigidTransformd(),
               make_unique<Capsule>(Capsule(1.2 * kRadius, 1.5 * kRadius)),
-              "soft capsule"));
-    } else if (FLAGS_soft == "cylinder") {
+              "compliant capsule"));
+    } else if (FLAGS_compliant == "cylinder") {
       geometry_id_ = scene_graph->RegisterGeometry(
           source_id_, frame_id_,
           make_unique<GeometryInstance>(
               RigidTransformd(),
               make_unique<Cylinder>(Cylinder(1.2 * kRadius, 1.5 * kRadius)),
-              "soft cylinder"));
+              "compliant cylinder"));
     } else {
       geometry_id_ = scene_graph->RegisterGeometry(
           source_id_, frame_id_,
-          make_unique<GeometryInstance>(
-              RigidTransformd(), make_unique<Sphere>(kRadius), "soft ball"));
-      if (FLAGS_soft != "ball") {
-        std::cout << "Unsupported value for --soft==" << FLAGS_rigid
-                  << ", default to a soft ball.\n"
+          make_unique<GeometryInstance>(RigidTransformd(),
+                                        make_unique<Sphere>(kRadius),
+                                        "compliant ball"));
+      if (FLAGS_compliant != "ball") {
+        std::cout << "Unsupported value for --compliant=" << FLAGS_compliant
+                  << ", default to a compliant ball.\n"
                   << "Supported values are ball, box, capsule or cylinder."
                   << std::endl;
       }
     }
     ProximityProperties prox_props;
-    // Resolution Hint affects the soft ball but not the soft box.
+    // Resolution Hint affects the compliant ball but not the compliant box.
     AddSoftHydroelasticProperties(FLAGS_resolution_hint, 1e8, &prox_props);
     scene_graph->AssignRole(source_id_, geometry_id_, prox_props);
 
@@ -197,7 +198,7 @@ class MovingSoftGeometry final : public LeafSystem<double> {
 
     geometry_pose_port_ =
         this->DeclareAbstractOutputPort(
-                "geometry_pose", &MovingSoftGeometry::CalcFramePoseOutput)
+                "geometry_pose", &MovingCompliantGeometry::CalcFramePoseOutput)
             .get_index();
   }
 
@@ -336,7 +337,8 @@ int do_main() {
 
   auto& scene_graph = *builder.AddSystem<SceneGraph<double>>();
 
-  auto& moving_geometry = *builder.AddSystem<MovingSoftGeometry>(&scene_graph);
+  auto& moving_geometry =
+      *builder.AddSystem<MovingCompliantGeometry>(&scene_graph);
   builder.Connect(
       moving_geometry.get_geometry_pose_output_port(),
       scene_graph.get_source_pose_port(moving_geometry.source_id()));
@@ -349,8 +351,8 @@ int do_main() {
   // The bowl's bounding box is about 14.7cm x 14.7cm x 6.1cm with its
   // center at the origin Bo of frame B. Place B at 3.05cm above the ground
   // plane, so the bottom of the bowl is on the ground. Furthermore,
-  // place B at 5cm in +Y direction in World frame, so the soft ball moving
-  // along Z-axis in World frame will contact the edge of the bowl.
+  // place B at 5cm in +Y direction in World frame, so the compliant ball
+  // moving along Z-axis in World frame will contact the edge of the bowl.
   const RigidTransformd X_WB(Vector3d(0, 0.05, 0.0305));
   GeometryId rigid_geometry_id;
   if (FLAGS_rigid == "ball") {
