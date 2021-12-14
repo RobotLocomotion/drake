@@ -350,7 +350,9 @@ class QueryObject {
                             added to. The vector will _not_ be cleared.
    @pre Neither `surfaces` nor `point_pairs` is nullptr.
    @throws std::exception for the reasons described in ComputeContactSurfaces()
-                          and ComputePointPairPenetration(). */
+                          and ComputePointPairPenetration().
+   @note The `surfaces` and `point_pairs` are output pointers in C++, but are
+   return values in the Python bindings. */
   void ComputeContactSurfacesWithFallback(
       HydroelasticContactRepresentation representation,
       std::vector<ContactSurface<T>>* surfaces,

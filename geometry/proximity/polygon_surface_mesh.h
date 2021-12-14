@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -38,6 +39,10 @@ class SurfacePolygon {
 
   // TODO(SeanCurtis-TRI): Introduce vertices() method that returns a *range*
   //  iterator over the vertex indices referenced by this face.
+
+  /** (Internal use only) Returns a copy of this, wrapped in a unique_ptr.
+  This function is only intended for use by Drake's Python bindings. */
+  std::unique_ptr<SurfacePolygon> copy_to_unique() const;
 
  private:
   /* Only PolygonSurfaceMesh can create faces. */

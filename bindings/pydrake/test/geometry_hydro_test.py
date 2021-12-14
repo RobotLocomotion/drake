@@ -1,9 +1,11 @@
 import pydrake.geometry as mut
 import pydrake.geometry._testing as mut_testing
 
+import copy
 import unittest
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.math import RigidTransform
 
 
 class TestGeometryHydro(unittest.TestCase):
@@ -59,7 +61,46 @@ class TestGeometryHydro(unittest.TestCase):
         self.assertEqual(props.GetProperty("hydroelastic",
                                            "hydroelastic_modulus"), E)
 
-    def test_surface_mesh(self):
+    def test_polygon_surface_mesh(self):
+        # Default constructor.
+        mut.PolygonSurfaceMesh()
+
+        # Construct a single triangle.
+        vertices = [
+            (0, 0, 0),
+            (1, 0, 0),
+            (0, 1, 0),
+        ]
+        vertex_indices = [0, 1, 2]
+        face_data = [len(vertex_indices)] + vertex_indices
+        dut = mut.PolygonSurfaceMesh(face_data=face_data, vertices=vertices)
+
+        # Sanity check every accessor.
+        dut.element(e=0)
+        dut.vertex(v=0)
+        dut.num_vertices()
+        dut.num_elements()
+        dut.num_faces()
+        dut.area(f=0)
+        dut.total_area()
+        dut.face_normal(f=0)
+        dut.element_centroid(e=0)
+        dut.centroid()
+        dut.CalcBoundingBox()
+        dut.Equal(mesh=dut)
+        dut.face_data()
+        copy.copy(dut)
+
+        # Sanity check the mutators.
+        dut.TransformVertices(X_NM=RigidTransform())
+        dut.ReverseFaceWinding()
+
+        # Now check the SurfacePolygon bindings.
+        polygon = dut.element(e=0)
+        self.assertEqual(polygon.num_vertices(), 3)
+        self.assertEqual(polygon.vertex(i=1), 1)
+
+    def test_triangle_surface_mesh(self):
         # Create a mesh out of two triangles forming a quad.
         #
         #     0______1
