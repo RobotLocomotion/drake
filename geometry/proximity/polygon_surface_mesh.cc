@@ -9,6 +9,11 @@ using math::RigidTransform;
 using std::move;
 using std::vector;
 
+std::unique_ptr<SurfacePolygon> SurfacePolygon::copy_to_unique() const {
+  return std::unique_ptr<SurfacePolygon>(new SurfacePolygon(
+      &mesh_face_data_, index_));
+}
+
 template <typename T>
 PolygonSurfaceMesh<T>::PolygonSurfaceMesh(vector<int> face_data,
                                           vector<Vector3<T>> vertices)
