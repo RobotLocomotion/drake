@@ -188,6 +188,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sap_model",
+    srcs = ["sap_model.cc"],
+    hdrs = ["sap_model.h"],
+    deps = [
+        ":block_sparse_matrix",
+        ":contact_problem_graph",
+        ":partial_permutation",
+        ":sap_contact_problem",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "sap_solver",
     srcs = ["sap_solver.cc"],
     hdrs = ["sap_solver.h"],

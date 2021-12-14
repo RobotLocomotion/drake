@@ -42,6 +42,9 @@ class ContactProblemGraph {
     std::vector<int> constraints_index;
   };
 
+  // Graph for an empty model.
+  ContactProblemGraph() = default;
+
   ContactProblemGraph(int num_cliques, int num_edges);
 
   int AddEdge(Edge&& e);

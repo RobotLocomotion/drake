@@ -166,8 +166,9 @@ class SapConstraint {
   const MatrixX<T>& clique0_jacobian() const;
   const MatrixX<T>& clique1_jacobian() const;
 
-  // VectorX<T> CalcConstraintBias(const T& wi);
-  // VectorX<T> CalcRegularizationParameters(const T& wi);
+  virtual VectorX<T> CalcBiasTerm(const T& time_step, const T& wi) const = 0;
+  virtual VectorX<T> CalcDiagonalRegularization(const T& time_step,
+                                                const T& wi) const = 0;
 
  private:
   int num_constrained_dofs_{0};
@@ -185,23 +186,43 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapFrictionConeConstraint);
 
-  SapFrictionConeConstraint(const T& mu)
-      : SapConstraint<T>(3), mu_(mu) {}
+  struct Parameters {
+    T mu{0.0};
+    T stiffness{0.0};
+    T dissipation_time_scale{0.0};
+    T phi0{0.0};
+  };
 
-  SapFrictionConeConstraint(int clique, const MatrixX<T>& J, const T& mu);
+  SapFrictionConeConstraint(const Parameters& p)
+      : SapConstraint<T>(3), parameters_(p) {}
+
+  SapFrictionConeConstraint(int clique, const MatrixX<T>& J,
+                            const Parameters& p);
 
   SapFrictionConeConstraint(int clique0, int clique1, const MatrixX<T>& J0,
-                            const MatrixX<T>& J1, const T& mu);
+                            const MatrixX<T>& J1, const Parameters& p);
+
+  const T& mu() const { return parameters_.mu; }                            
 
   void Project(const Eigen::Ref<const VectorX<T>>& y,
                const Eigen::Ref<const VectorX<T>>& R,
                EigenPtr<VectorX<T>> gamma,
                MatrixX<T>* dPdy = nullptr) const final;
 
-  const T& mu() const { return mu_;  }
+  VectorX<T> CalcBiasTerm(const T& time_step, const T& wi) const final;
+  VectorX<T> CalcDiagonalRegularization(const T& time_step,
+                                        const T& wi) const final;
 
  private:
-  T mu_{0.0};
+  Parameters parameters_;
+  // Rigid approximation constant: Rₙ = β²/(4π²)⋅w when the contact frequency ωₙ
+  // is below the limit ωₙ⋅δt ≤ 2π. That is, the period is Tₙ = β⋅δt. w
+  // corresponds to a diagonal approximation of the Delassuss operator for each
+  // contact. See [Castro et al., 2021. §IX.A] for details.
+  double beta_{1.0};
+  // Dimensionless parameterization of the regularization of friction. An
+  // approximation for the bound on the slip velocity is vₛ ≈ σ⋅δt⋅g.
+  double sigma_{1.0e-3};
   double soft_tolerance_{1.0e-7};
 };
 

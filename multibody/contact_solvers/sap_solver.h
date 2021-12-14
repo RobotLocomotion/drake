@@ -48,56 +48,6 @@ struct SapSolverParameters {
   double soft_tolerance{1.0e-7};
 };
 
-template <typename T>
-class SapConstraintsBundle {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapConstraintsBundle);
-
-  // We keep a reference to `problem` and its data.
-  SapConstraintsBundle(
-      BlockSparseMatrix<T>&& J,
-      VectorX<T>&& vhat, 
-      VectorX<T>&& R, 
-      std::vector<std::unique_ptr<SapConstraint<T>>>&& constraits);
-
-  int num_constraints() const;
-
-  const BlockSparseMatrix<T>& J() const { return J_; }
-
-  const VectorX<T>& R() const { return R_;  }
-
-  const VectorX<T>& Rinv() const { return Rinv_;  }
-
-  const VectorX<T>& vhat() const { return vhat_;  }
-
-  void MultiplyByJacobian(const VectorX<T>& v, VectorX<T>* vc) const;
-
-  void MultiplyByJacobianTranspose(const VectorX<T>& gamma, VectorX<T>* jc) const;
-
-  void CalcUnprojectedImpulses(const VectorX<T>& vc, VectorX<T>* y) const;
-
-  // Computes the projection gamma = P(y) for all impulses and the gradient
-  // dP/dy if dgamma_dy != nullptr.
-  void ProjectImpulses(const VectorX<T>& y, const VectorX<T>& R,
-                       VectorX<T>* gamma,
-                       std::vector<MatrixX<T>>* dPdy = nullptr) const;
-
-  void CalcProjectImpulsesAndCalcConstraintsHessian(
-      const VectorX<T>& y, const VectorX<T>& R, VectorX<T>* gamma,
-      std::vector<MatrixX<T>>* G) const;
-
- private:
-  // Jacobian for the entire bundle, with graph_.num_edges() block rows and
-  // graph_.num_cliques() block columns.
-  BlockSparseMatrix<T> J_;
-  VectorX<T> vhat_;
-  VectorX<T> R_;
-  VectorX<T> Rinv_;
-  // problem_ constraint references in the order dictated by the
-  // ContactProblemGraph.
-  std::vector<std::unique_ptr<SapConstraint<T>>> constraints_;
-};
-
 // This class implements the Semi-Analytic Primal (SAP) solver described in
 // [Castro et al., 2021].
 //

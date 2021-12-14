@@ -74,9 +74,9 @@ const MatrixX<T>& SapConstraint<T>::clique1_jacobian() const {
 template <typename T>
 SapFrictionConeConstraint<T>::SapFrictionConeConstraint(int clique,
                                                         const MatrixX<T>& J,
-                                                        const T& mu)
-    : SapConstraint<T>(clique, J), mu_(mu) {
-  DRAKE_DEMAND(mu >= 0.0);
+                                                        const Parameters& p)
+    : SapConstraint<T>(clique, J), parameters_(p) {
+  DRAKE_DEMAND(p.mu >= 0.0);
   DRAKE_DEMAND(this->clique0_jacobian().rows() == 3);
 }
 
@@ -85,11 +85,38 @@ SapFrictionConeConstraint<T>::SapFrictionConeConstraint(int clique0,
                                                         int clique1,
                                                         const MatrixX<T>& J0,
                                                         const MatrixX<T>& J1,
-                                                        const T& mu)
-    : SapConstraint<T>(clique0, clique1, J0, J1), mu_(mu) {
-  DRAKE_DEMAND(mu >= 0.0);
+                                                        const Parameters& p)
+    : SapConstraint<T>(clique0, clique1, J0, J1), parameters_(p) {
+  DRAKE_DEMAND(p.mu >= 0.0);
   DRAKE_DEMAND(this->clique0_jacobian().rows() == 3);
   DRAKE_DEMAND(this->clique1_jacobian().rows() == 3);
+}
+
+template <typename T>
+VectorX<T> SapFrictionConeConstraint<T>::CalcBiasTerm(const T& time_step,
+                                                      const T&) const {
+  const T& taud = parameters_.dissipation_time_scale;
+  const T vn_hat = -parameters_.phi0 / (time_step + taud);
+  return Vector3<T>(0, 0, vn_hat);
+}
+
+template <typename T>
+VectorX<T> SapFrictionConeConstraint<T>::CalcDiagonalRegularization(
+    const T& time_step, const T& wi) const {
+  using std::max;
+
+  // Rigid approximation constant: Rₙ = β²/(4π²)⋅wᵢ when the contact frequency
+  // ωₙ is below the limit ωₙ⋅δt ≤ 2π. That is, the period is Tₙ = β⋅δt. See
+  // [Castro et al., 2021] for details.
+  const double beta_factor = beta_ * beta_ / (4.0 * M_PI * M_PI);
+
+  const T& k = parameters_.stiffness;
+  const T& taud = parameters_.dissipation_time_scale;
+
+  const T Rn =
+      max(beta_factor * wi, 1.0 / (time_step * k * (time_step + taud)));
+  const T Rt = sigma_ * wi;
+  return Vector3<T>(Rt, Rt, Rn);
 }
 
 template <typename T>
