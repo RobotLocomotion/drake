@@ -17,6 +17,11 @@ from pydrake.systems.sensors import (
 
 
 class TestGeometrySceneGraph(unittest.TestCase):
+
+    def test_hydroelastic_contact_representation_enum(self):
+        mut.HydroelasticContactRepresentation.kTriangle
+        mut.HydroelasticContactRepresentation.kPolygon
+
     @numpy_compare.check_nonsymbolic_types
     def test_scene_graph_api(self, T):
         SceneGraph = mut.SceneGraph_[T]
@@ -377,6 +382,13 @@ class TestGeometrySceneGraph(unittest.TestCase):
         results = query_object.ComputeSignedDistancePairwiseClosestPoints()
         self.assertEqual(len(results), 0)
         results = query_object.ComputePointPairPenetration()
+        self.assertEqual(len(results), 0)
+        hydro_rep = mut.HydroelasticContactRepresentation.kTriangle
+        results = query_object.ComputeContactSurfaces(representation=hydro_rep)
+        self.assertEqual(len(results), 0)
+        surfaces, results = query_object.ComputeContactSurfacesWithFallback(
+            representation=hydro_rep)
+        self.assertEqual(len(surfaces), 0)
         self.assertEqual(len(results), 0)
         results = query_object.ComputeSignedDistanceToPoint(p_WQ=(1, 2, 3))
         self.assertEqual(len(results), 0)
