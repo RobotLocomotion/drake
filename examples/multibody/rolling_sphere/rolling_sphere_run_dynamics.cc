@@ -33,18 +33,18 @@ DEFINE_double(dissipation, 5.0,
 DEFINE_double(friction_coefficient, 0.3, "friction coefficient.");
 DEFINE_bool(rigid_ball, false,
             "If true, the ball is given a rigid hydroelastic representation "
-            "(instead of the default soft value). Make sure you have the right "
-            "contact model to support this representation.");
+            "(instead of being compliant by the default). Make sure "
+            "you have the right contact model to support this representation.");
 DEFINE_bool(soft_ground, false,
             "If true, the ground is given a soft hydroelastic representation "
             "(instead of the default rigid value). Make sure you have the "
             "right contact model to support this representation.");
 DEFINE_bool(add_wall, false,
-            "If true, adds a wall with soft hydroelastic representation in the "
-            "path of the default ball trajectory. This will cause the "
-            "simulation to throw when the soft ball hits the wall with the "
-            "'hydroelastic' model; use the 'hybrid' or 'point' contact model "
-            "to simulate beyond this contact.");
+            "If true, adds a wall with compliant hydroelastic representation "
+            "in the path of the default ball trajectory. This will cause the "
+            "simulation to throw when the compliant ball hits the wall with "
+            "the 'hydroelastic' model; use the 'hybrid' or 'point' contact"
+            " model to simulate beyond this contact.");
 DEFINE_double(
     mbp_dt, 0.0,
     "The fixed time step period (in seconds) of discrete updates for the "
