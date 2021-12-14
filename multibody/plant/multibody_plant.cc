@@ -1982,8 +1982,8 @@ void MultibodyPlant<T>::CalcContactSurfaces(
 
   if (is_discrete()) {
     *contact_surfaces = query_object.ComputeContactSurfaces(
-        geometry::HydroelasticContactRepresentation::kPolygon);
-  } else {
+        get_contact_surface_representation());
+  } else {  // Continuous system has only one choice: kTriangle.
     *contact_surfaces = query_object.ComputeContactSurfaces(
         geometry::HydroelasticContactRepresentation::kTriangle);
   }
@@ -2011,9 +2011,9 @@ void MultibodyPlant<T>::CalcHydroelasticWithFallback(
 
     if (is_discrete()) {
       query_object.ComputeContactSurfacesWithFallback(
-          geometry::HydroelasticContactRepresentation::kPolygon,
-          &data->contact_surfaces, &data->point_pairs);
-    } else {
+          get_contact_surface_representation(), &data->contact_surfaces,
+          &data->point_pairs);
+    } else {  // Continuous system has only one choice: kTriangle.
       query_object.ComputeContactSurfacesWithFallback(
           geometry::HydroelasticContactRepresentation::kTriangle,
           &data->contact_surfaces, &data->point_pairs);

@@ -794,6 +794,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     collision_geometries_ = other.collision_geometries_;
     X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
+    contact_surface_representation_ =
+        other.contact_surface_representation_;
     penetration_allowance_ = other.penetration_allowance_;
     // Note: The physical models must be cloned before `FinalizePlantOnly()` is
     // called because `FinalizePlantOnly()` has to allocate system resources
@@ -1616,6 +1618,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// The default contact model is ContactModel::kPoint.
   /// @throws std::exception iff called post-finalize.
   void set_contact_model(ContactModel model);
+
+  /// Sets the representation of contact surfaces to be used by `this`
+  /// %MultibodyPlant for discrete systems.
+  void set_contact_surface_representation(
+      geometry::HydroelasticContactRepresentation representation) {
+    contact_surface_representation_ = representation;
+  }
+  /// Gets the representation of contact surfaces to be used by `this`
+  /// %MultibodyPlant for discrete systems.
+  geometry::HydroelasticContactRepresentation
+  get_contact_surface_representation() const {
+    return contact_surface_representation_;
+  }
 
 #ifndef DRAKE_DOXYGEN_CXX
   // TODO(xuchenhan-tri): Remove SetContactSolver() once
@@ -4875,6 +4890,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // with the default value in multibody_plant_config.h; there are already
   // assertions in the cc file that enforce this.
   ContactModel contact_model_{ContactModel::kPoint};
+
+  // User's choice of the representation of contact surfaces in discrete
+  // systems. Keep it sync with the default value in multibody_plant_config.h.
+  geometry::HydroelasticContactRepresentation
+      contact_surface_representation_{
+          geometry::HydroelasticContactRepresentation::kPolygon};
 
   // Port handles for geometry:
   systems::InputPortIndex geometry_query_port_;
