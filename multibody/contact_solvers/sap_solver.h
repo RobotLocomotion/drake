@@ -240,6 +240,16 @@ class SapSolver final : public ContactSolver<T> {
     // Methods for const access of cache entries. These methods are meant to be
     // used only within Eval methods. Cache entries must be accessed through the
     // corresponding Eval.
+    // TODO(amcastro-tri): Per review of #16080, remove these const access
+    // methods so that there is no possibility of a developer accessing an
+    // out-of-date cache entry. Consider a design where pre-processed data and
+    // calc methods are part of a SapModel class (to replace PreProcessedData).
+    // Then State would be the only object that knows how to access (valid)
+    // cache entries. Like so:
+    //   SapModel<T> model;
+    //   ... Model initialized at pre-process time.
+    //   State state(...)
+    //   const VectorX<T>& vc = state.EvalVelocitiesCache(model).vc;
     const VelocitiesCache& velocities_cache() const {
       return velocities_cache_;
     }
@@ -405,14 +415,6 @@ class SapSolver final : public ContactSolver<T> {
     VectorX<T> delassus_diagonal;  // Delassus operator diagonal approximation.
   };
 
-  // This class stores mutable data members making it non thread-safe.
-  // We confine all these mutable members within this single struct.
-  struct NonThreadSafeData {
-    SapSolverParameters parameters;
-    PreProcessedData data;
-    SolverStats stats;
-  };
-
   // Computes a diagonal approximation of the Delassus operator used to compute
   // a per constraint diagonal scaling into delassus_diagonal. Given an
   // approximation Wₖₖ of the block diagonal element corresponding to the k-th
@@ -439,7 +441,7 @@ class SapSolver final : public ContactSolver<T> {
   // VII) and its gradients (Appendix E).
   //
   // @pre R has the form R = (Rt, Rt, Rn).
-  Vector3<T> ProjectOntoSingleFrictionCone(
+  Vector3<T> ProjectSingleImpulse(
       const T& mu, const Eigen::Ref<const Vector3<T>>& R,
       const Eigen::Ref<const Vector3<T>>& y, Matrix3<T>* dPdy = nullptr) const;
 
@@ -524,6 +526,9 @@ class SapSolver final : public ContactSolver<T> {
   // All data stored by this class.
   SapSolverParameters parameters_;
   PreProcessedData data_;
+  // Since SolveWithGuess() is non-const, there is no real reason to make this
+  // member mutable, only convenience to update it within (const) eval methods.
+  // TODO(amcastro-tri): Consider moving stats into the State.
   mutable SolverStats stats_;
 };
 

@@ -34,7 +34,7 @@ ContactSolverStatus SapSolver<T>::SolveWithGuess(
 }
 
 template <typename T>
-Vector3<T> SapSolver<T>::ProjectOntoSingleFrictionCone(
+Vector3<T> SapSolver<T>::ProjectSingleImpulse(
     const T& mu, const Eigen::Ref<const Vector3<T>>& R,
     const Eigen::Ref<const Vector3<T>>& y, Matrix3<T>* dPdy) const {
   // Computes the "soft norm" ‖x‖ₛ defined by ‖x‖ₛ² = ‖x‖² + ε², where ε =
@@ -116,14 +116,14 @@ Vector3<T> SapSolver<T>::ProjectOntoSingleFrictionCone(
 template <typename T>
 void SapSolver<T>::ProjectAllImpulses(const VectorX<T>& y,
                                       VectorX<T>* gamma) const {
-  const int nc = data().nc;
+  const int nc = data_.nc;
   const int nc3 = 3 * nc;
   DRAKE_DEMAND(y.size() == nc3);
   DRAKE_DEMAND(gamma->size() == nc3);
 
   // Data.
-  const auto& R = data().R;
-  const auto& mu = data().mu;
+  const auto& R = data_.R;
+  const auto& mu = data_.mu;
 
   for (int ic = 0; ic < nc; ++ic) {
     const int ic3 = 3 * ic;
@@ -132,21 +132,21 @@ void SapSolver<T>::ProjectAllImpulses(const VectorX<T>& y,
     const auto& y_ic = y.template segment<3>(ic3);
     // Analytical projection of y onto the friction cone ℱ using the R norm.
     gamma->template segment<3>(ic3) =
-        ProjectOntoSingleFrictionCone(mu_ic, R_ic, y_ic);
+        ProjectSingleImpulse(mu_ic, R_ic, y_ic);
   }
 }
 
 template <typename T>
 void SapSolver<T>::CalcAllProjectionsGradients(
     const VectorX<T>& y, std::vector<Matrix3<T>>* dPdy) const {
-  const int nc = data().nc;
+  const int nc = data_.nc;
   const int nc3 = 3 * nc;
   DRAKE_DEMAND(y.size() == nc3);
   DRAKE_DEMAND(static_cast<int>(dPdy->size()) == nc);
 
   // Data.
-  const auto& R = data().R;
-  const auto& mu = data().mu;
+  const auto& R = data_.R;
+  const auto& mu = data_.mu;
 
   for (int ic = 0; ic < nc; ++ic) {
     const int ic3 = 3 * ic;
@@ -156,7 +156,7 @@ void SapSolver<T>::CalcAllProjectionsGradients(
 
     // Analytical projection of y onto the friction cone ℱ using the R norm.
     auto& dPdy_ic = (*dPdy)[ic];
-    ProjectOntoSingleFrictionCone(mu_ic, R_ic, y_ic, &dPdy_ic);
+    ProjectSingleImpulse(mu_ic, R_ic, y_ic, &dPdy_ic);
   }
 }
 
@@ -314,7 +314,7 @@ void SapSolver<T>::CalcStoppingCriteriaResidual(const State& state,
                                                 T* momentum_residual,
                                                 T* momentum_scale) const {
   using std::max;
-  const auto& inv_sqrt_A = data().inv_sqrt_A;
+  const auto& inv_sqrt_A = data_.inv_sqrt_A;
   const auto& momentum_cache = EvalMomentumCache(state);
   const VectorX<T>& p = momentum_cache.p;
   const VectorX<T>& jc = momentum_cache.jc;
@@ -342,8 +342,8 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
   using std::abs;
   using std::max;
 
-  const int nv = data().nv;
-  const int nc = data().nc;
+  const int nv = data_.nv;
+  const int nc = data_.nc;
   State state(nv, nc);
   stats_.Reset();
 
@@ -353,7 +353,7 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
   int k = 0;
   double ell_previous = EvalCostCache(state).ell;
   bool converged = false;
-  for (; k < parameters_.max_iterations; ++k) {
+  for (;; ++k) {
     // We first verify the stopping criteria. If satisfied, we skip expensive
     // factorizations.
     double momentum_residual, momentum_scale;
@@ -368,6 +368,11 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
       // iteration if it is needed. If the stopping criteria is satisfied at k =
       // 0 (good guess), then we skip the expensive instantiation of the solver.
     }
+
+    // Exit if the maximum number of iterations is reached, but only after
+    // checking the convergence criteria, so that also the last iteration is
+    // considered.
+    if (k == parameters_.max_iterations) break;
 
     // This is the most expensive update: it performs the factorization of H to
     // solve for the search direction dv.
@@ -385,27 +390,17 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
     // TODO(amcastro-tri): sometimes this demand is triggered due to round-off
     // errors. Consider:
     //  1. Verify this condition with a slop, i.e. ell < ell_previous + slop.
-    //  2. Update sopping criterion to also include a tolerance on the cost,
+    //  2. Update stopping criterion to also include a tolerance on the cost,
     //     i.e. 2. * |ell-ell_previous|/(ell + ell_previous) < cost_tolerance.
     DRAKE_DEMAND(ell < ell_previous);
     ell_previous = ell;
   }
 
-  // If the solver happened to converge in the last iteration, we want to find
-  // to avoid reporting a false failure below.
-  if (k == parameters_.max_iterations && converged == false) {
-    double momentum_residual, momentum_scale;
-    CalcStoppingCriteriaResidual(state, &momentum_residual, &momentum_scale);
-    if (momentum_residual <= parameters_.abs_tolerance +
-                                 parameters_.rel_tolerance * momentum_scale) {
-      converged = true;
-    }
-  }
   if (!converged) return ContactSolverStatus::kFailure;
 
   const VectorX<double>& vc = EvalVelocitiesCache(state).vc;
   const VectorX<double>& gamma = EvalImpulsesCache(state).gamma;
-  PackContactResults(data(), state.v(), vc, gamma, results);
+  PackContactResults(data_, state.v(), vc, gamma, results);
 
   // N.B. If the stopping criteria is satisfied for k = 0, the solver is not
   // even instantiated and no factorizations are performed (the expensive part
@@ -419,8 +414,8 @@ template <typename T>
 T SapSolver<T>::CalcLineSearchCost(const State& state_v, const T& alpha,
                                    State* state_alpha) const {
   // Data.
-  const VectorX<T>& R = data().R;
-  const VectorX<T>& v_star = data().v_star;
+  const VectorX<T>& R = data_.R;
+  const VectorX<T>& v_star = data_.v_star;
 
   // Cached quantities at state v.
   const typename Cache::SearchDirectionCache& search_direction_cache =
@@ -521,10 +516,11 @@ T SapSolver<T>::PerformBackTrackingLineSearch(
   }
 
   // If we are here, the line-search could not find a valid parameter that
-  // satisfies Armijo's criterion. Either we need to increase the maximum number
-  // of iterations parameter or condition the problem better.
+  // satisfies Armijo's criterion.
   throw std::runtime_error(
-      "Line search reached the maximum number of iterations.");
+      "Line search reached the maximum number of iterations. Either we need to "
+      "increase the maximum number of iterations parameter or to condition the "
+      "problem better.");
 
   // Silence "no-return value" warning from the compiler.
   DRAKE_UNREACHABLE();
@@ -537,12 +533,12 @@ void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
   // These matrices could be saved in the cache. However this method is only
   // intended as an alternative for debugging and optimizing it might not be
   // worth it.
-  const int nv = data().nv;
+  const int nv = data_.nv;
   MatrixX<T> H(nv, nv);
   {
-    const int nc = data().nc;
-    const auto& A = data().A;
-    const auto& J = data().J;
+    const int nc = data_.nc;
+    const auto& A = data_.A;
+    const auto& J = data_.J;
     const auto& G = gradients_cache.G;
 
     const MatrixX<T> Jdense = J.MakeDenseMatrix();
@@ -579,7 +575,7 @@ SapSolver<T>::EvalVelocitiesCache(const State& state) const {
     return state.cache().velocities_cache();
   typename Cache::VelocitiesCache& cache =
       state.mutable_cache().mutable_velocities_cache();
-  const auto& Jc = data().J;
+  const auto& Jc = data_.J;
   Jc.Multiply(state.v(), &cache.vc);
   cache.valid = true;
   return cache;
@@ -593,8 +589,8 @@ SapSolver<T>::EvalImpulsesCache(const State& state) const {
   typename Cache::ImpulsesCache& cache =
       state.mutable_cache().mutable_impulses_cache();
   const VectorX<T>& vc = EvalVelocitiesCache(state).vc;
-  const VectorX<T>& Rinv = data().Rinv;
-  const VectorX<T>& vhat = data().vhat;
+  const VectorX<T>& Rinv = data_.Rinv;
+  const VectorX<T>& vhat = data_.vhat;
   cache.y = vhat - vc;
   // The (unprojected) impulse y=−R⁻¹⋅(vc − v̂).
   cache.y.array() *= Rinv.array();
@@ -611,11 +607,11 @@ SapSolver<T>::EvalMomentumCache(const State& state) const {
     return state.cache().momentum_cache();
   typename Cache::MomentumCache& cache =
       state.mutable_cache().mutable_momentum_cache();
-  data().A.Multiply(state.v(), &cache.p);  // p = A⋅v.
+  data_.A.Multiply(state.v(), &cache.p);  // p = A⋅v.
   const VectorX<T>& gamma = EvalImpulsesCache(state).gamma;
-  data().J.MultiplyByTranspose(gamma, &cache.jc);
+  data_.J.MultiplyByTranspose(gamma, &cache.jc);
   // = p - p* = A⋅(v−v*).
-  cache.momentum_change = cache.p - data().p_star;
+  cache.momentum_change = cache.p - data_.p_star;
   cache.valid = true;
   return cache;
 }
@@ -626,8 +622,8 @@ const typename SapSolver<T>::Cache::CostCache& SapSolver<T>::EvalCostCache(
   if (state.cache().cost_cache().valid) return state.cache().cost_cache();
   typename Cache::CostCache& cache =
       state.mutable_cache().mutable_cost_cache();
-  const auto& R = data().R;
-  const auto& v_star = data().v_star;
+  const auto& R = data_.R;
+  const auto& v_star = data_.v_star;
   const VectorX<T>& v = state.v();
   const VectorX<T>& gamma = EvalImpulsesCache(state).gamma;
   const auto& Adv = EvalMomentumCache(state).momentum_change;
@@ -656,8 +652,8 @@ SapSolver<T>::EvalGradientsCache(const State& state) const {
   const VectorX<T>& y = EvalImpulsesCache(state).y;
   CalcAllProjectionsGradients(y, &cache.dPdy);
 
-  const int nc = data().nc;
-  const auto& R = data().R;
+  const int nc = data_.nc;
+  const auto& R = data_.R;
   const auto& dPdy = cache.dPdy;
   for (int ic = 0; ic < nc; ++ic) {
     const int ic3 = 3 * ic;
@@ -685,8 +681,8 @@ SapSolver<T>::EvalSearchDirectionCache(const State& state) const {
   CallDenseSolver(state, &cache.dv);
 
   // Update Δp, Δvc and d²ellA/dα².
-  data().J.Multiply(cache.dv, &cache.dvc);
-  data().A.Multiply(cache.dv, &cache.dp);
+  data_.J.Multiply(cache.dv, &cache.dvc);
+  data_.A.Multiply(cache.dv, &cache.dp);
   cache.d2ellA_dalpha2 = cache.dv.dot(cache.dp);
 
   cache.valid = true;
