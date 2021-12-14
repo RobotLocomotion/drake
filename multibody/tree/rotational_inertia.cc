@@ -60,7 +60,7 @@ std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I) {
     if (width) out.width(width);
     out << I(i, 0);
     for (int j = 1; j < I.cols(); ++j) {
-      out << ", ";
+      out << "  ";
       if (width) out.width(width);
       out << I(i, j);
     }

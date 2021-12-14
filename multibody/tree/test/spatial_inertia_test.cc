@@ -154,9 +154,9 @@ GTEST_TEST(SpatialInertia, ShiftOperator) {
       " mass = 2.5\n"
       " Center of mass = [0.1  -0.2  0.3]\n"
       " Inertia about point P, I_BP =\n"
-      "[ 5.0000,  0.2500, -0.2500]\n"
-      "[ 0.2500,  5.7500,  0.5000]\n"
-      "[-0.2500,  0.5000,  6.0000]\n";
+      "[ 5.0000   0.2500  -0.2500]\n"
+      "[ 0.2500   5.7500   0.5000]\n"
+      "[-0.2500   0.5000   6.0000]\n";
   EXPECT_EQ(expected_string, stream.str());
 }
 
@@ -346,9 +346,9 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithBadInertia) {
       " mass = 1(\\.0)?\n"
       " Center of mass = \\[0(\\.0)?  0(\\.0)?  0(\\.0)?\\]\n"
       " Inertia about point P, I_BP =\n"
-      "\\[  -2, -0.1, -0.2\\]\n"
-      "\\[-0.1,   -3, -0.3\\]\n"
-      "\\[-0.2, -0.3,   -4\\]\n"
+      "\\[  -2  -0.1  -0.2\\]\n"
+      "\\[-0.1    -3  -0.3\\]\n"
+      "\\[-0.2  -0.3    -4\\]\n"
       " Principal moments of inertia about Bcm \\(center of mass\\) =\n"
       "\\[-4.105976670111\\d+  -2.9188291125626\\d+  -1.9751942173260\\d+\\]\n";
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -364,13 +364,13 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
       " mass = 1(\\.0)?\n"
       " Center of mass = \\[2(\\.0)?  0(\\.0)?  0(\\.0)?\\]\n"
       " Inertia about point P, I_BP =\n"
-      "\\[0.4,   0,   0\\]\n"
-      "\\[  0, 0.4,   0\\]\n"
-      "\\[  0,   0, 0.4\\]\n"
+      "\\[0.4    0    0\\]\n"
+      "\\[  0  0.4    0\\]\n"
+      "\\[  0    0  0.4\\]\n"
       " Inertia about center of mass, I_BBcm =\n"
-      "\\[ 0.4,    0,    0\\]\n"
-      "\\[   0, -3.6,    0\\]\n"
-      "\\[   0,    0, -3.6\\]\n"
+      "\\[ 0.4     0     0\\]\n"
+      "\\[   0  -3.6     0\\]\n"
+      "\\[   0     0  -3.6\\]\n"
       " Principal moments of inertia about Bcm \\(center of mass\\) =\n"
       "\\[-3.6  -3.6  0.4\\]\n";
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -409,13 +409,13 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidThrowsNiceExceptionMessage) {
       " mass = 0.634\n"
       " Center of mass = \\[0(\\.0)?  0.016  -0.02\\]\n"
       " Inertia about point P, I_BP =\n"
-      "\\[  0.0023989,    0.000245,     1.3e-05\\]\n"
-      "\\[   0.000245,   0.0023566,  0.00020438\\]\n"
-      "\\[    1.3e-05,  0.00020438, 0.000570304\\]\n"
+      "\\[  0.0023989     0.000245      1.3e-05\\]\n"
+      "\\[   0.000245    0.0023566   0.00020438\\]\n"
+      "\\[    1.3e-05   0.00020438  0.000570304\\]\n"
       " Inertia about center of mass, I_BBcm =\n"
-      "\\[0.001983, 0.000245,  1.3e-05\\]\n"
-      "\\[0.000245, 0.002103,  1.5e-06\\]\n"
-      "\\[ 1.3e-05,  1.5e-06, 0.000408\\]\n"
+      "\\[0.001983  0.000245   1.3e-05\\]\n"
+      "\\[0.000245  0.002103   1.5e-06\\]\n"
+      "\\[ 1.3e-05   1.5e-06  0.000408\\]\n"
       " Principal moments of inertia about Bcm \\(center of mass\\) =\n"
       "\\[0.0004078925412\\d+  0.001790822592803\\d+  0.00229528486596\\d+\\]"
       "\n");
