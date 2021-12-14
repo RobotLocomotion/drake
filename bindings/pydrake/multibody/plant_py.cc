@@ -918,6 +918,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.set_contact_model.doc)
         .def("get_contact_model", &Class::get_contact_model,
             cls_doc.get_contact_model.doc)
+        .def_static("GetDefaultContactSurfaceRepresentation",
+            &Class::GetDefaultContactSurfaceRepresentation,
+            py::arg("time_step"),
+            cls_doc.GetDefaultContactSurfaceRepresentation.doc)
+        .def("set_contact_surface_representation",
+            &Class::set_contact_surface_representation,
+            py::arg("surface_representation"),
+            cls_doc.set_contact_surface_representation.doc)
+        .def("get_contact_surface_representation",
+            &Class::get_contact_surface_representation,
+            cls_doc.get_contact_surface_representation.doc)
         .def("set_penetration_allowance", &Class::set_penetration_allowance,
             py::arg("penetration_allowance") = 0.001,
             cls_doc.set_penetration_allowance.doc)

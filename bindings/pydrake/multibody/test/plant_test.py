@@ -85,6 +85,7 @@ from pydrake.geometry import (
     Box,
     GeometryId,
     GeometrySet,
+    HydroelasticContactRepresentation,
     Meshcat,
     Rgba,
     Role,
@@ -2028,6 +2029,21 @@ class TestPlant(unittest.TestCase):
         for model in models:
             plant.set_contact_model(model)
             self.assertEqual(plant.get_contact_model(), model)
+
+    def test_contact_surface_representation(self):
+        for time_step in [0.0, 0.1]:
+            plant = MultibodyPlant_[float](time_step)
+            self.assertEqual(
+                plant.get_contact_surface_representation(),
+                plant.GetDefaultContactSurfaceRepresentation(time_step))
+            reps = [
+                HydroelasticContactRepresentation.kTriangle,
+                HydroelasticContactRepresentation.kPolygon,
+            ]
+            for rep in reps:
+                plant.set_contact_surface_representation(rep)
+                self.assertEqual(
+                    plant.get_contact_surface_representation(), rep)
 
     def test_contact_results_to_lcm(self):
         # ContactResultsToLcmSystem
