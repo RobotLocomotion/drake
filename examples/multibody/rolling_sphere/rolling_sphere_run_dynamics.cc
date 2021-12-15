@@ -124,7 +124,7 @@ int do_main() {
     geometry::AddContactMaterial({} /* dissipation */, {} /* point stiffness */,
                                  CoulombFriction<double>(),
                                  &prox_prop);
-    geometry::AddSoftHydroelasticProperties(0.1, 1e8, &prox_prop);
+    geometry::AddCompliantHydroelasticProperties(0.1, 1e8, &prox_prop);
     plant.RegisterCollisionGeometry(plant.world_body(), X_WB, wall,
                                     "wall_collision", std::move(prox_prop));
 

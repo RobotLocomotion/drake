@@ -343,7 +343,7 @@ GTEST_TEST(Hydroelastic, GeometriesPopulationAndQuery) {
 
   GeometryId soft_id = GeometryId::get_new_id();
   ProximityProperties soft_properties;
-  AddSoftHydroelasticProperties(1.0, 1e8, &soft_properties);
+  AddCompliantHydroelasticProperties(1.0, 1e8, &soft_properties);
 
   GeometryId bad_id = GeometryId::get_new_id();
   EXPECT_EQ(geometries.hydroelastic_type(rigid_id),
@@ -378,7 +378,7 @@ GTEST_TEST(Hydroelastic, RemoveGeometry) {
   // Add a soft geometry.
   const GeometryId soft_id = GeometryId::get_new_id();
   ProximityProperties soft_properties;
-  AddSoftHydroelasticProperties(1.0, 1e8, &soft_properties);
+  AddCompliantHydroelasticProperties(1.0, 1e8, &soft_properties);
   geometries.MaybeAddGeometry(Sphere(0.5), soft_id, soft_properties);
   ASSERT_EQ(geometries.hydroelastic_type(soft_id), HydroelasticType::kSoft);
 
@@ -801,7 +801,7 @@ class HydroelasticSoftGeometryTest : public ::testing::Test {
   /* Creates a simple set of properties for generating soft geometry. */
   ProximityProperties soft_properties(double edge_length = 0.1) const {
     ProximityProperties soft_properties;
-    AddSoftHydroelasticProperties(edge_length, 1e8, &soft_properties);
+    AddCompliantHydroelasticProperties(edge_length, 1e8, &soft_properties);
     return soft_properties;
   }
 };

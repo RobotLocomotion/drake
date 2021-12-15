@@ -34,7 +34,7 @@ class TestGeometryHydro(unittest.TestCase):
 
         props = mut.ProximityProperties()
         res_hint = 0.275
-        mut.AddSoftHydroelasticProperties(
+        mut.AddCompliantHydroelasticProperties(
             resolution_hint=res_hint, hydroelastic_modulus=E, properties=props)
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
         self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
@@ -48,7 +48,7 @@ class TestGeometryHydro(unittest.TestCase):
 
         props = mut.ProximityProperties()
         slab_thickness = 0.275
-        mut.AddSoftHydroelasticPropertiesForHalfSpace(
+        mut.AddCompliantHydroelasticPropertiesForHalfSpace(
             slab_thickness=slab_thickness, hydroelastic_modulus=E,
             properties=props)
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))

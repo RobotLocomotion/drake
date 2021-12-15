@@ -1479,8 +1479,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// The hydroelastic modulus can be specified in one of two ways:
   ///
   /// - define it in an instance of geometry::ProximityProperties using
-  ///   the function geometry::AddSoftHydroelasticProperties() and
-  ///   geometry::AddSoftHydroelasticPropertiesForHalfSpace(), or
+  ///   the function geometry::AddCompliantHydroelasticProperties() and
+  ///   geometry::AddCompliantHydroelasticPropertiesForHalfSpace(), or
   /// - define it in an input URDF/SDF as detailed @ref sdf_contact_material
   ///   "here for SDF" or @ref urdf_contact_material "here for URDF".
   ///

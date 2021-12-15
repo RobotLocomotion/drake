@@ -166,14 +166,16 @@ void DoScalarIndependentDefinitions(py::module m) {
       py::overload_cast<ProximityProperties*>(&AddRigidHydroelasticProperties),
       py::arg("properties"), doc.AddRigidHydroelasticProperties.doc_1args);
 
-  m.def("AddSoftHydroelasticProperties", &AddSoftHydroelasticProperties,
-      py::arg("resolution_hint"), py::arg("hydroelastic_modulus"),
-      py::arg("properties"), doc.AddSoftHydroelasticProperties.doc);
-
-  m.def("AddSoftHydroelasticPropertiesForHalfSpace",
-      &AddSoftHydroelasticPropertiesForHalfSpace, py::arg("slab_thickness"),
+  m.def("AddCompliantHydroelasticProperties",
+      &AddCompliantHydroelasticProperties, py::arg("resolution_hint"),
       py::arg("hydroelastic_modulus"), py::arg("properties"),
-      doc.AddSoftHydroelasticPropertiesForHalfSpace.doc);
+      doc.AddCompliantHydroelasticProperties.doc);
+
+  m.def("AddCompliantHydroelasticPropertiesForHalfSpace",
+      &AddCompliantHydroelasticPropertiesForHalfSpace,
+      py::arg("slab_thickness"), py::arg("hydroelastic_modulus"),
+      py::arg("properties"),
+      doc.AddCompliantHydroelasticPropertiesForHalfSpace.doc);
 }
 
 }  // namespace

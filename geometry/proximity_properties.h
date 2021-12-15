@@ -151,9 +151,9 @@ void AddRigidHydroelasticProperties(ProximityProperties* properties);
                               names that this function would need to add.
  @pre 0 < `resolution_hint` < ∞, 0 < `hydroelastic_modulus`, and `properties`
       is not nullptr. */
-void AddSoftHydroelasticProperties(double resolution_hint,
-                                   double hydroelastic_modulus,
-                                   ProximityProperties* properties);
+void AddCompliantHydroelasticProperties(double resolution_hint,
+                                        double hydroelastic_modulus,
+                                        ProximityProperties* properties);
 
 /** Compliant half spaces are handled as a special case; they do not get
  tessellated. Instead, they are treated as infinite slabs with a finite
@@ -168,9 +168,9 @@ void AddSoftHydroelasticProperties(double resolution_hint,
                         that this function would need to add.
  @pre 0 < `slab_thickness` < ∞, 0 < `hydroelastic_modulus`, and `properties`
       is not nullptr. */
-void AddSoftHydroelasticPropertiesForHalfSpace(double slab_thickness,
-                                               double hydroelastic_modulus,
-                                               ProximityProperties* properties);
+void AddCompliantHydroelasticPropertiesForHalfSpace(
+    double slab_thickness, double hydroelastic_modulus,
+    ProximityProperties* properties);
 
 //@}
 

@@ -42,7 +42,7 @@ namespace contact_surface {
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::AddRigidHydroelasticProperties;
-using geometry::AddSoftHydroelasticProperties;
+using geometry::AddCompliantHydroelasticProperties;
 using geometry::Box;
 using geometry::ContactSurface;
 using geometry::Cylinder;
@@ -119,7 +119,7 @@ class MovingBall final : public LeafSystem<double> {
                                       make_unique<Sphere>(1.0), "ball"));
 
     ProximityProperties prox_props;
-    AddSoftHydroelasticProperties(FLAGS_length, 1e8, &prox_props);
+    AddCompliantHydroelasticProperties(FLAGS_length, 1e8, &prox_props);
     scene_graph->AssignRole(source_id_, geometry_id_, prox_props);
 
     IllustrationProperties illus_props;
