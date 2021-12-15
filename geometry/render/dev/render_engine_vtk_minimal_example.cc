@@ -27,6 +27,8 @@ DEFINE_bool(color, true, "Sets the enabled camera to render color");
 DEFINE_bool(depth, true, "Sets the enabled camera to render depth");
 DEFINE_bool(label, true, "Sets the enabled camera to render label");
 DEFINE_double(render_fps, 10, "Frames per simulation second to render");
+DEFINE_string(camera_xyz_rpy, "0.8, 0.0, 0.5, -2.2, 0.0, 1.57",
+    "Sets the camera pose by xyz (meters) and rpy (radians) values.");
 
 namespace drake {
 namespace geometry {
@@ -94,6 +96,28 @@ struct Material {
   Rgba rgba{1, 1, 1, 1};
   std::string diffuse_map;
 };
+
+RigidTransformd ParseCameraPose(const std::string& raw_input_str) {
+  std::string input_str = raw_input_str;
+  std::string delimiter = ", ";
+  std::vector<double> xyzrpy_numeric;
+
+  size_t pos = 0;
+  std::string token;
+  while ((pos = input_str.find(delimiter)) != std::string::npos) {
+    token = input_str.substr(0, pos);
+    input_str.erase(0, pos + delimiter.length());
+    xyzrpy_numeric.push_back(std::stod(token));
+  }
+  xyzrpy_numeric.push_back(std::stod(input_str));
+  DRAKE_DEMAND(xyzrpy_numeric.size() == 6);
+
+  const RigidTransformd X_WB(
+      RollPitchYawd{xyzrpy_numeric[3], xyzrpy_numeric[4], xyzrpy_numeric[5]},
+      Vector3d(xyzrpy_numeric[0], xyzrpy_numeric[1], xyzrpy_numeric[2]));
+
+  return X_WB;
+}
 
 // Make an instance of the given shape, at the given position, with the given
 // material (named as indicated).
@@ -214,8 +238,7 @@ int do_main() {
     const ColorRenderCamera color_camera{
         {render_name, {640, 480, M_PI_4}, {0.01, 10.0}, {}}, false};
     const DepthRenderCamera depth_camera{color_camera.core(), {0.01, 10.0}};
-    const RigidTransformd X_WB(
-        RollPitchYawd{-M_PI *0.7, 0, M_PI / 2}, Vector3d(0.8, 0, 0.5));
+    const RigidTransformd X_WB = ParseCameraPose(FLAGS_camera_xyz_rpy);
 
     auto world_id = plant->GetBodyFrameIdOrThrow(plant->world_body().index());
     auto camera = builder.AddSystem<RgbdSensor>(
