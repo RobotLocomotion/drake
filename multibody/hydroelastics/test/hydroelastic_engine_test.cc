@@ -46,8 +46,8 @@ class HydroelasticEngineTest : public ::testing::Test {
     return id;
   }
 
-  /** Adds a geometry with the given name and assigns soft hydroelastic geometry
-   properties.  */
+  /** Adds a geometry with the given name and assigns compliant hydroelastic
+   geometry properties.  */
   GeometryId AddCompliantGeometry(const std::string& name,
                              double hydroelastic_modulus, double dissipation) {
     GeometryId id = AddGeometry(name);

@@ -775,7 +775,9 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
   add_geometry(make_unique<Box>(1, 1, 1), "box", props, X_PBox);
   add_geometry(make_unique<HalfSpace>(), "rigid_half_space", props);
 
-  /* Populate with soft hydroelastic properties and add soft geometries. */
+  /* Populate with compliant hydroelastic properties and add
+     compliant geometries.
+  */
   props.AddProperty(internal::kHydroGroup, internal::kSlabThickness, 5.0);
   props.AddProperty(internal::kHydroGroup, internal::kElastic, 5.0);
   props.UpdateProperty(internal::kHydroGroup, internal::kComplianceType,

@@ -597,7 +597,7 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
             geometry::internal::HydroelasticType::kRigid);
   }
 
-  // Case: specifies soft hydroelastic.
+  // Case: specifies compliant hydroelastic.
   {
     unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>

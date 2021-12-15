@@ -135,9 +135,9 @@ void AddRigidHydroelasticProperties(ProximityProperties* properties);
 // TODO(SeanCurtis-TRI): Add module that explains resolution hint and reference
 //  it in the documentation below.
 /** Adds properties to the given set of proximity properties sufficient to cause
- the associated geometry to generate a soft hydroelastic representation. The
- geometry's pressure field will be the function p(e) = Ee, where E is the
- elastic modulus stored in the given `properties`.
+ the associated geometry to generate a compliant hydroelastic representation.
+ The geometry's pressure field will be the function p(e) = Ee, where E is the
+ hydroelastic modulus stored in the given `properties`.
 
  @param resolution_hint       If the geometry is to be tessellated, it is the
                               parameter that guides the level of mesh

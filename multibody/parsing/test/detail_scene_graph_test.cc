@@ -1111,7 +1111,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
               geometry::internal::HydroelasticType::kRigid);
   }
 
-  // Case: specifies soft hydroelastic.
+  // Case: specifies compliant hydroelastic.
   {
     unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
   <drake:proximity_properties>
