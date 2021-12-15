@@ -232,6 +232,7 @@ def test_wheel(target, options):
 
 
 def check_version(version):
+    """Returns True iff the given version string matches PEP 440."""
     return re.match(
         r'^([1-9][0-9]*!)?(0|[1-9][0-9]*)'
         r'(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?'
