@@ -16,22 +16,37 @@ py_library(
     deps = ["//:module_py"],
 )
 
-# TODO(eric.cousineau): Move this to //tools/workspace:drake_visualizer.
 py_binary(
     name = "drake_visualizer_py",
-    srcs = ["//tools/workspace/drake_visualizer:drake_visualizer_bazel.py"],
-    data = [
-        "//examples:prod_models",
-        "@drake_visualizer",
-    ],
-    main = "//tools/workspace/drake_visualizer:drake_visualizer_bazel.py",
-    deps = [
-        "//lcmtypes:lcmtypes_drake_py",
-        "//tools/workspace/drake_visualizer:builtin_scripts_py",
-        "//tools/workspace/drake_visualizer:stub_pydrake",
-        "@drake_visualizer//:drake_visualizer_python_deps",
-        "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
-    ],
+    srcs = select({
+        "//conditions:default": [
+            "//tools/workspace/drake_visualizer:drake_visualizer_bazel.py",
+        ],
+        "//tools:no_drake_visualizer": [
+            "//tools/workspace/drake_visualizer:drake_visualizer_disabled.py",
+        ],
+    }),
+    data = select({
+        "//conditions:default": [
+            "//examples:prod_models",
+            "@drake_visualizer",
+        ],
+        "//tools:no_drake_visualizer": [],
+    }),
+    main = select({
+        "//conditions:default": "//tools/workspace/drake_visualizer:drake_visualizer_bazel.py",  # noqa
+        "//tools:no_drake_visualizer": "//tools/workspace/drake_visualizer:drake_visualizer_disabled.py",  # noqa
+    }),
+    deps = select({
+        "//conditions:default": [
+            "//lcmtypes:lcmtypes_drake_py",
+            "//tools/workspace/drake_visualizer:builtin_scripts_py",
+            "//tools/workspace/drake_visualizer:stub_pydrake",
+            "@drake_visualizer//:drake_visualizer_python_deps",
+            "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
+        ],
+        "//tools:no_drake_visualizer": [],
+    }),
 )
 
 drake_runfiles_binary(
@@ -61,6 +76,15 @@ config_setting(
 config_setting(
     name = "with_snopt",
     values = {"define": "WITH_SNOPT=ON"},
+)
+
+# This setting disables the download and installation of Drake's pre-compiled
+# drake-visualizer binary executable and its dependencies.  It does not disable
+# the drake::geometry::DrakeVisualizer system that is able to publish geometry
+# to the visualizer binary (in case you still have your own binary).
+config_setting(
+    name = "no_drake_visualizer",
+    values = {"define": "NO_DRAKE_VISUALIZER=ON"},
 )
 
 # CLP is an open-source solver, and is included in the Drake build by

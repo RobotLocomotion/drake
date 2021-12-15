@@ -5,12 +5,19 @@ import unittest
 
 
 class TestDrakeVisualizerBazel(unittest.TestCase):
-    def test_help(self):
-        """Ensure we can call drake_visualizer --help in Bazel."""
+
+    def _check_help_output(self):
         bin_path = "tools/drake_visualizer"
         self.assertTrue(isfile(bin_path), bin_path)
-        text = subprocess.check_output([bin_path, "--help"], encoding="utf8")
+        return subprocess.check_output([bin_path, "--help"], encoding="utf8")
 
+    def test_help_basic(self):
+        """Ensure we can call drake_visualizer --help in Bazel."""
+        self._check_help_output()
+
+    def test_help_details(self):
+        """Check that the help string is from the correct program."""
+        text = self._check_help_output()
         # N.B. This should be kept in sync with
         # `drake_visualizer_installed_help_test`.
         print(text)
