@@ -88,6 +88,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("start_col"), py::arg("block_rows"), py::arg("block_cols"),
             cls_doc.CopyBlock.doc)
         .def("CopyHead", &Class::CopyHead, py::arg("n"), cls_doc.CopyHead.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
@@ -297,6 +298,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("replacement"), py::arg("segment_index"),
             py::arg("row_start") = 0, py::arg("col_start") = 0,
             cls_doc.setPolynomialMatrixBlock.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
@@ -340,6 +342,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.angular_velocity.doc)
         .def("angular_acceleration", &Class::angular_acceleration,
             py::arg("time"), cls_doc.angular_acceleration.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
@@ -371,6 +374,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.get_position_trajectory.doc)
         .def("get_orientation_trajectory", &Class::get_orientation_trajectory,
             cls_doc.get_orientation_trajectory.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 }
 }  // namespace

@@ -1,9 +1,11 @@
+import copy
 import numpy as np
 import unittest
 
 from pydrake.common import ToleranceType
 from pydrake.common.eigen_geometry import AngleAxis_, Quaternion_
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.value import AbstractValue
 from pydrake.math import BsplineBasis_, RigidTransform_, RotationMatrix_
 from pydrake.polynomial import Polynomial_
 from pydrake.trajectories import (
@@ -54,12 +56,20 @@ class TestTrajectories(unittest.TestCase):
             basis=BsplineBasis(2, [0, 1, 2, 3]),
             control_points=[np.zeros(3), np.ones(3)])
         self.assertIsInstance(bspline.CopyHead(n=2), BsplineTrajectory)
+        # Ensure we can copy.
+        self.assertEqual(copy.copy(bspline).rows(), 3)
+        self.assertEqual(copy.deepcopy(bspline).rows(), 3)
 
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_empty_constructor(self, T):
         PiecewisePolynomial = PiecewisePolynomial_[T]
 
         pp = PiecewisePolynomial()
+        # Ensure we can copy.
+        copy.copy(pp)
+        copy.deepcopy(pp)
+        self.assertEqual(copy.copy(pp).get_number_of_segments(), 0)
+        self.assertEqual(copy.deepcopy(pp).get_number_of_segments(), 0)
 
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_constant_constructor(self, T):
@@ -70,6 +80,9 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(pp.rows(), 2)
         self.assertEqual(pp.cols(), 1)
         numpy_compare.assert_float_equal(pp.value(11.), x)
+        # Ensure we can copy.
+        self.assertEqual(copy.copy(pp).rows(), 2)
+        self.assertEqual(copy.deepcopy(pp).rows(), 2)
 
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_matrix_constructor(self, T):
@@ -83,6 +96,9 @@ class TestTrajectories(unittest.TestCase):
                                    pm1)
         pm3 = np.array([[Polynomial(5), Polynomial(10)]])
         pp.setPolynomialMatrixBlock(replacement=pm3, segment_index=1)
+        # Ensure we can copy.
+        self.assertEqual(copy.copy(pp).cols(), 2)
+        self.assertEqual(copy.deepcopy(pp).cols(), 2)
 
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_vector_constructor(self, T):
@@ -92,6 +108,9 @@ class TestTrajectories(unittest.TestCase):
         p1 = Polynomial(1)
         p2 = Polynomial(2)
         pp = PiecewisePolynomial([p1, p2], [0, 1, 2])
+        # Ensure we can copy.
+        self.assertEqual(copy.copy(pp).rows(), 1)
+        self.assertEqual(copy.deepcopy(pp).rows(), 1)
 
     @numpy_compare.check_all_types
     def test_zero_order_hold_vector(self, T):
@@ -355,6 +374,17 @@ class TestTrajectories(unittest.TestCase):
         numpy_compare.assert_float_equal(
             pq.angular_acceleration(time=1), np.zeros(3)
         )
+        # Ensure we can copy.
+        numpy_compare.assert_float_allclose(
+            copy.copy(pq).orientation(time=1).wxyz(),
+            np.array([np.cos(np.pi/4), 0, 0, np.sin(np.pi/4)]),
+            atol=1e-15, rtol=0,
+        )
+        numpy_compare.assert_float_allclose(
+            copy.deepcopy(pq).orientation(time=1).wxyz(),
+            np.array([np.cos(np.pi/4), 0, 0, np.sin(np.pi/4)]),
+            atol=1e-15, rtol=0,
+        )
 
     @numpy_compare.check_all_types
     def test_piecewise_pose(self, T):
@@ -398,3 +428,6 @@ class TestTrajectories(unittest.TestCase):
             times=t, poses=[X, X, X], start_vel=np.zeros((3, 1)),
             end_vel=np.zeros((3, 1)))
         self.assertEqual(ppose.get_number_of_segments(), 2)
+        # Ensure we can copy.
+        self.assertEqual(copy.copy(ppose).get_number_of_segments(), 2)
+        self.assertEqual(copy.deepcopy(ppose).get_number_of_segments(), 2)

@@ -139,8 +139,8 @@ class PetscSymmetricBlockSparseMatrix::Impl {
       case PreconditionerType::kIncompleteCholesky:
         PCSetType(preconditioner_, PCICC);
         break;
-      case PreconditionerType::kBlockJacobi:
-        PCSetType(preconditioner_, PCBJACOBI);
+      case PreconditionerType::kJacobi:
+        PCSetType(preconditioner_, PCJACOBI);
         break;
     }
 
@@ -245,9 +245,8 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     // Create a dense version of the underlying PETSc matrix because
     // MatCreateSubMatrix() doesn't support matrix of type MATSEQSBAIJ.
     Mat matrix_dense;
-    MatAssemblyBegin(matrix_, MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(matrix_, MAT_FINAL_ASSEMBLY);
-    MatConvert(matrix_, MATSEQDENSE, MAT_INITIAL_MATRIX, &matrix_dense);
+    AssembleIfNecessary();
+    MatConvert(owned_matrix_, MATSEQDENSE, MAT_INITIAL_MATRIX, &matrix_dense);
 
     // Copy to A, Bᵀ, D.
     Mat A_petsc, B_transpose_petsc, D_petsc;
@@ -270,9 +269,9 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     KSPMatSolve(solver, B_transpose_petsc, Dinv_B_transpose_petsc);
 
     // Convert all quantities from PETSc to Eigen.
-    MatrixXd A = internal::MakeDenseMatrix(A_petsc);
-    MatrixXd B_transpose = internal::MakeDenseMatrix(B_transpose_petsc);
-    neg_Dinv_B_transpose = internal::MakeDenseMatrix(Dinv_B_transpose_petsc);
+    MatrixXd A = MakeEigenMatrix(A_petsc);
+    MatrixXd B_transpose = MakeEigenMatrix(B_transpose_petsc);
+    neg_Dinv_B_transpose = MakeEigenMatrix(Dinv_B_transpose_petsc);
     neg_Dinv_B_transpose *= -1.0;
     D_complement = A + B_transpose.transpose() * neg_Dinv_B_transpose;
 

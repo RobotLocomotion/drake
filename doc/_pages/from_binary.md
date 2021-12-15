@@ -27,11 +27,11 @@ Mac are available to download as attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v0.36.0](https://github.com/RobotLocomotion/drake/releases/tag/v0.36.0):
+[v0.37.0](https://github.com/RobotLocomotion/drake/releases/tag/v0.37.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v0.36.0/drake-20211116-bionic.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.36.0/drake-20211116-bionic.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v0.36.0/drake-20211116-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.36.0/drake-20211116-focal.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v0.36.0/drake-20211116-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.36.0/drake-20211116-mac.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-bionic.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-bionic.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-focal.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-mac.tar.gz)
 
 ### Use as a C++ library
 

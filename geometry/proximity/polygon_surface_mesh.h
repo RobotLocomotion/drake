@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -23,7 +24,8 @@ class PolygonSurfaceMesh;
 /** Representation of a polygonal face in a SurfacePolygon. */
 class SurfacePolygon {
  public:
-  // TODO(SeanCurtis-TRI): Consider making this copy-constructible.
+  // TODO(SeanCurtis-TRI): Consider making this copy-constructible, in which
+  // case we can remove copy_to_unique() function, below.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SurfacePolygon)
 
   /** Returns the number of vertices in this face. */
@@ -38,6 +40,10 @@ class SurfacePolygon {
 
   // TODO(SeanCurtis-TRI): Introduce vertices() method that returns a *range*
   //  iterator over the vertex indices referenced by this face.
+
+  /** (Internal use only) Returns a copy of this, wrapped in a unique_ptr.
+  This function is only intended for use by Drake's Python bindings. */
+  std::unique_ptr<SurfacePolygon> copy_to_unique() const;
 
  private:
   /* Only PolygonSurfaceMesh can create faces. */

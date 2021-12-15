@@ -29,7 +29,7 @@ Begin this process around 1 week prior to the intended release date.
    ```
 4. Push that branch and then open a new pull request titled:
    ```
-   doc: Add release notes v0.N.0
+   [doc] Add release notes v0.N.0
    ```
    Make sure that "Allow edits from maintainers" on the GitHub PR page is
    enabled (the checkbox is checked).
@@ -194,3 +194,27 @@ the main body of the document:
       2. If not, then create a new release named ``v0.0.foo`` where ``foo`` is
          the 8-digit datestamp associated with the ``commit`` in question (i.e.,
          four digit year, two digit month, two digit day).
+
+## Post-release wheel builds
+
+After tagging the release, you must manually build and upload a PyPI release.
+
+If you haven't done so already, follow Drake's PyPI
+[account setup](https://docs.google.com/document/d/17D0yzyr0kGH44eWpiNY7E33A8hW1aiJRmADaoAlVISE/edit#)
+instructions to obtain a username and password.
+
+1. Use your Ubuntu 20.04 workstation for these steps.  (Do not use any other OS.)
+2. Create some empty scratch folder to use for these steps, and then ``cd`` into it.
+3. Run ``sudo apt install docker.io twine``
+   1. If you get an "docker.sock connect" error, you might need to give yourself Docker permissions:
+      1. Run ``sudo usermod -aG docker $USER``
+      2. Run ``newgrp docker``
+   2. If Docker still doesn't work, you might need to logout and/or reboot first.
+4. Run ``git clone --filter=blob:none https://github.com/RobotLocomotion/drake.git``
+5. Run ``cd drake``
+6. Run ``git checkout v0.N.0``
+7. Run ``cd tools/wheel``
+8. Run ``./build-wheels --test 0.N.0``
+9. Wait a long time for it to finish (around 60 minutes on a beefy workstation). It will take over all of your computer's resources, so don't plan to do much else concurrently.
+10. There should have been exactly two whl files created. Run ``twine upload <...>``, replacing the ``<...>`` placeholder with the path to each of the wheels to be uploaded (e.g., ``drake-0.35.0b1-cp36-cp36m-manylinux_2_27_x86_64``, etc.)
+    1. You will need your PyPI username and password for this. (Do not use drake-robot.)

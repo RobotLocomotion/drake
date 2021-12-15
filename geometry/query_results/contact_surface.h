@@ -18,11 +18,6 @@
 namespace drake {
 namespace geometry {
 
-// TODO(SeanCurtis-TRI): It would be nice if this were *inside* `ContactSurface`
-//  so it didn't have to be a scoped enumeration -- the class would handle the
-//  scope. But, because ContactSurface is templated, I'd end up with different
-//  enumerations that depend on scalar.  :-P  And going non-scoped seems a bad
-//  idea with such simple designations of "kTriangle" and "kPolygon".
 /** Reports on how a hydroelastic contact surface is represented. See
  @ref contact_surface_discrete_representation
  "the documentation in ContactSurface" for more details. */

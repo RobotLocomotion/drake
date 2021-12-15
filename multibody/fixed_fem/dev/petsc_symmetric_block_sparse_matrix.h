@@ -5,7 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fixed_fem/schur_complement.h"
+#include "drake/multibody/fixed_fem/dev/schur_complement.h"
 
 namespace drake {
 namespace multibody {
@@ -32,8 +32,9 @@ class PetscSymmetricBlockSparseMatrix {
   };
 
   enum class PreconditionerType {
-    /* For generic matrix. */
-    kBlockJacobi,
+    /* For generic matrix. N.B. the BlockJacobi preconditioner from PETSc by
+     default seems to assume positive definite blocks.*/
+    kJacobi,
     /* For positive definite matrix. */
     kCholesky,
     kIncompleteCholesky,

@@ -93,9 +93,9 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
     // invalid rotational inertia (a principal moment of inertia is negative).
     std::string expected_message =
         "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
-        "\\[ 1, -3, -3\\]\n"
-        "\\[-3, 13, -6\\]\n"
-        "\\[-3, -6, 10\\]\n"
+        "\\[ 1  -3  -3\\]\n"
+        "\\[-3  13  -6\\]\n"
+        "\\[-3  -6  10\\]\n"
         "did not pass the test CouldBePhysicallyValid\\(\\)\\.";
     expected_message += fmt::format(
         "\nThe associated principal moments of inertia:"
@@ -112,9 +112,9 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
     // rotational inertia that violates the triangle inequality.
     expected_message =
       "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
-        "\\[34, -3, -3\\]\n"
-        "\\[-3, 13, -6\\]\n"
-        "\\[-3, -6, 10\\]\n"
+        "\\[34  -3  -3\\]\n"
+        "\\[-3  13  -6\\]\n"
+        "\\[-3  -6  10\\]\n"
         "did not pass the test CouldBePhysicallyValid\\(\\)\\.";
     expected_message += fmt::format(
         "\nThe associated principal moments of inertia:"
@@ -628,9 +628,9 @@ GTEST_TEST(RotationalInertia, ShiftOperator) {
   RotationalInertia<double> I(1, 2.718, 3.14);
   stream << std::fixed << std::setprecision(4) << I;
   std::string expected_string =
-                  "[1.0000, 0.0000, 0.0000]\n"
-                  "[0.0000, 2.7180, 0.0000]\n"
-                  "[0.0000, 0.0000, 3.1400]\n";
+                  "[1.0000  0.0000  0.0000]\n"
+                  "[0.0000  2.7180  0.0000]\n"
+                  "[0.0000  0.0000  3.1400]\n";
   EXPECT_EQ(expected_string, stream.str());
 }
 

@@ -502,7 +502,7 @@ void DefGetPropertyCpp(py::module m) {
 // defined in set of properties. If we ever move HydroelasticType out of
 // internal and bind it, we can eliminate this helper.
 //
-// Return true if the properties indicate soft compliance, false if rigid, and
+// Return true if the properties indicate being compliant, false if rigid, and
 // throws if the property isn't set at all (or set to undefined).
 bool PropertiesIndicateSoftHydro(const geometry::ProximityProperties& props) {
   using geometry::internal::HydroelasticType;
