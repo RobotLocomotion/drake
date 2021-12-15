@@ -1,0 +1,32 @@
+--- include/petsc/private/petscimpl.h
++++ include/petsc/private/petscimpl.h
+@@ -6,6 +6,7 @@
+ #if !defined(PETSCIMPL_H)
+ #define PETSCIMPL_H
+ #include <petscsys.h>
++#include <stdatomic.h>
+ 
+ #if defined(PETSC_CLANG_STATIC_ANALYZER)
+ #define PetscDisableStaticAnalyzerForExpressionUnderstandingThatThisIsDangerousAndBugprone(expr)
+@@ -886,9 +887,9 @@ PETSC_EXTERN PetscMPIInt Petsc_ShmComm_keyval;
+   PetscCommDuplicate(), PetscCommDestroy(), PetscCommGetNewTag(), PetscObjectGetName()
+ */
+ typedef struct {
+-  PetscMPIInt tag;              /* next free tag value */
+-  PetscInt    refcount;         /* number of references, communicator can be freed when this reaches 0 */
+-  PetscInt    namecount;        /* used to generate the next name, as in Vec_0, Mat_1, ... */
++  atomic_int atomic_tag;        /* next free tag value */
++  atomic_int atomic_refcount;   /* number of references, communicator can be freed when this reaches 0 */
++  atomic_int atomic_namecount;  /* used to generate the next name, as in Vec_0, Mat_1, ... */
+   PetscMPIInt *iflags;          /* length of comm size, shared by all calls to PetscCommBuildTwoSided_Allreduce/RedScatter on this comm */
+ } PetscCommCounter;
+ 
+@@ -972,7 +973,7 @@ PETSC_STATIC_INLINE PetscErrorCode PetscSpinlockDestroy(PetscSpinlock *omp_lock)
+   return 0;
+ }
+ #else
+-Thread safety requires either --with-openmp or --download-concurrencykit
++#include <petsc_drake_pthread.h>
+ #endif
+ 
+ #else

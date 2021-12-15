@@ -6,6 +6,7 @@ load("@drake//tools/skylark:py.bzl", "py_test")
 cc_library(
     name = "stubs",
     hdrs = [
+        "stubs/petsc_drake_pthread.h",
         "stubs/petscconf.h",
         "stubs/petscconf_poison.h",
         "stubs/petscconfiginfo.h",
