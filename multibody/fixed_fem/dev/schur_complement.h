@@ -50,6 +50,9 @@ class SchurComplement {
                   const Eigen::Ref<const Eigen::SparseMatrix<T>>& B_transpose,
                   const Eigen::Ref<const Eigen::SparseMatrix<T>>& D);
 
+  /* Creates a SchurComplement with prescribed A - BD⁻¹Bᵀ and -D⁻¹Bᵀ. */
+  SchurComplement(MatrixX<T>&& D_complement, MatrixX<T>&& neg_Dinv_B_transpose);
+
   /* Returns the Schur complement for the block D of the matrix M, A - BD⁻¹Bᵀ.
    */
   const MatrixX<T>& get_D_complement() const { return D_complement_; }
@@ -64,8 +67,8 @@ class SchurComplement {
   int q_{0};  // Number of rows and columns for D.
   // TODO(xuchenhan-tri): Investigate the sparsity pattern of D⁻¹Bᵀ with actual
   //  meshes.
-  Eigen::SparseMatrix<T> neg_Dinv_B_transpose_{};  // -D⁻¹Bᵀ.
-  MatrixX<T> D_complement_{};                      // A - BD⁻¹Bᵀ.
+  MatrixX<T> D_complement_{};          // A - BD⁻¹Bᵀ.
+  MatrixX<T> neg_Dinv_B_transpose_{};  // -D⁻¹Bᵀ.
 };
 
 }  // namespace internal

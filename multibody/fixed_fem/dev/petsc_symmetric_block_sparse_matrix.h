@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/fixed_fem/dev/schur_complement.h"
 
 namespace drake {
 namespace multibody {
@@ -132,7 +133,17 @@ class PetscSymmetricBlockSparseMatrix {
    documentaion. */
   void SetRelativeTolerance(double tolerance);
 
-  // TODO(xuchenhan-tri): Support Schur complement.
+  /* Calculates the Schur complement of D in the matrix
+    M = [A  B
+         Bᵀ D],
+   where `A` is formed by extracting block rows and columns with indexes
+   "non_eliminated_indexes", `D` is formed by extracting block rows and
+   columns with indexes "eliminated_indexes", and `B` is formed by extracting
+   block rows with "non_eliminated_indexes" and block columns with
+   "eliminated_indexes". */
+  SchurComplement<double> CalcSchurComplement(
+      const std::vector<int>& eliminated_indexes,
+      const std::vector<int>& non_eliminated_indexes) const;
 
   int rows() const;
 

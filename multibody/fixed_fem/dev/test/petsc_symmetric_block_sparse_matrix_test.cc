@@ -120,21 +120,19 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Solve) {
   const VectorXd b = MakeVector9d();
   const VectorXd x_expected = A_eigen.lu().solve(b);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      A->Solve(
-          PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-          PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b),
+      A->Solve(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+               PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b),
       std::exception,
       "PetscSymmetricBlockSparseMatrix::Solve.*: matrix is not yet "
       "assembled.*");
   A->AssembleIfNecessary();
-  const VectorXd x = A->Solve(
-      PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b);
+  const VectorXd x =
+      A->Solve(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+               PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b);
   VectorXd x_in_place = b;
-  A->SolveInPlace(
-      PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi,
-      &x_in_place);
+  A->SolveInPlace(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+                  PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi,
+                  &x_in_place);
   EXPECT_EQ(x, x_in_place);
 }
 
@@ -161,13 +159,42 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Clone) {
   unique_ptr<PetscSymmetricBlockSparseMatrix> A_clone = A->Clone();
   EXPECT_EQ(A->MakeDenseMatrix(), A_clone->MakeDenseMatrix());
   const VectorXd b = MakeVector9d();
-  const VectorXd x = A->Solve(
-      PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b);
+  const VectorXd x =
+      A->Solve(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+               PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b);
   const VectorXd x_clone = A_clone->Solve(
       PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
       PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b);
   EXPECT_TRUE(CompareMatrices(x, x_clone, kEps));
+}
+
+GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, CalcSchurComplement) {
+  unique_ptr<PetscSymmetricBlockSparseMatrix> A = MakeBlockSparseMatrix();
+  const vector<int> eliminated = {2};
+  const vector<int> rest = {0, 1};
+  const SchurComplement schur_complement =
+      A->CalcSchurComplement(eliminated, rest);
+  const MatrixXd schur_complement_matrix = schur_complement.get_D_complement();
+  const MatrixXd A_eigen = MakeEigenDenseMatrix();
+  const MatrixXd expected_schur_complement =
+      A_eigen.topLeftCorner<6, 6>() -
+      A_eigen.topRightCorner<6, 3>() *
+          A_eigen.bottomRightCorner<3, 3>().lu().solve(
+              A_eigen.bottomLeftCorner<3, 6>());
+  EXPECT_TRUE(CompareMatrices(schur_complement_matrix,
+                              expected_schur_complement, kEps));
+  /* Set arbitrary solution for x in the system
+    Ax + By  =  a
+    Bᵀx + Dy =  0
+   Verify that y is solved to be -D⁻¹Bᵀx. */
+  VectorXd x(6);
+  x << 1, 2, 3, 4, 5, 6;
+  const VectorXd y = schur_complement.SolveForY(x);
+  VectorXd expected_y = -1.0 *
+                        A_eigen.bottomRightCorner<3, 3>().lu().solve(
+                            A_eigen.bottomLeftCorner<3, 6>()) *
+                        x;
+  EXPECT_TRUE(CompareMatrices(y, expected_y, kEps));
 }
 
 }  // namespace
