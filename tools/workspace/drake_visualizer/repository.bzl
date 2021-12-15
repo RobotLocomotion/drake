@@ -43,11 +43,11 @@ def _impl(repository_ctx):
         python_version = "3.9"
     elif os_result.ubuntu_release == "18.04":
         archive = "dv-0.1.0-406-g4c3e570a-python-3.6.9-qt-5.9.5-vtk-8.2.0-bionic-x86_64-2.tar.gz"  # noqa
-        sha256 = "dac89c595328f7f2a3498fa7e9c40711c2daedaae5a4579efb184d8e38815af9"  # noqa
+        sha256 = "4f92a213e45f3ad5758a2ab9839f603075f87dc0407335b7addc9cc18f015ecb"  # noqa
         python_version = "3.6"
     elif os_result.ubuntu_release == "20.04":
         archive = "dv-0.1.0-406-g4c3e570a-python-3.8.10-qt-5.12.8-vtk-8.2.0-focal-x86_64-2.tar.gz"  # noqa
-        sha256 = "0a8351f582bdeba509ba1c28a7a7f09881e8414c2a55aa575b30451d2c6717d0"  # noqa
+        sha256 = "857206d0733d6352bbf2715dcc69ceb1f1af370a150c1aa7cb8447d05e82eb9d"  # noqa
         python_version = "3.8"
     elif os_result.is_manylinux:
         repository_ctx.symlink(
