@@ -40,11 +40,13 @@ setup(name='drake',
       version=DRAKE_VERSION,
       description='Model-based design and verification for robotics',
       long_description='''
-Drake ("dragon" in Middle English) is a toolbox maintained by the Robot
-Locomotion Group at the MIT Computer Science and Artificial Intelligence
-Lab (CSAIL). It is a collection of tools for analyzing the dynamics of
-robots and building control systems for them in C++ and Python, with a
-heavy emphasis on optimization-based design/analysis.'''.strip(),
+Drake ("dragon" in Middle English) is a toolbox started by the Robot Locomotion
+Group at the MIT Computer Science and Artificial Intelligence Lab (CSAIL).
+The development team has now grown significantly, with core development led by
+the Toyota Research Institute.
+It is a collection of tools for analyzing the dynamics of our robots and
+building control systems for them, with a heavy emphasis on optimization-based
+design/analysis.'''.strip(),
       url='https://drake.mit.edu',
       author='Drake Development Team',
       author_email='drake-users@mit.edu',
