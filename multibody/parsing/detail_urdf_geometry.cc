@@ -549,13 +549,14 @@ geometry::GeometryInstance ParseCollision(
     const XMLElement* const rigid_element =
         drake_element->FirstChildElement("drake:rigid_hydroelastic");
     const XMLElement* const soft_element =
-        drake_element->FirstChildElement("drake:soft_hydroelastic");
+        drake_element->FirstChildElement("drake:compliant_hydroelastic");
     if (rigid_element && soft_element) {
-      throw std::runtime_error(fmt::format(
-          "Collision geometry has defined mutually-exclusive tags "
-          "<drake:rigid_hydroelastic> and <drake:soft_hydroelastic> on lines "
-          "{} and {}, respectively. Only one can be provided.",
-          rigid_element->GetLineNum(), soft_element->GetLineNum()));
+      throw std::runtime_error(
+          fmt::format("Collision geometry has defined mutually-exclusive tags "
+                      "<drake:rigid_hydroelastic> and "
+                      "<drake:compliant_hydroelastic> on lines "
+                      "{} and {}, respectively. Only one can be provided.",
+                      rigid_element->GetLineNum(), soft_element->GetLineNum()));
     }
 
     props = ParseProximityProperties(read_double, rigid_element != nullptr,

@@ -152,7 +152,7 @@ math::RigidTransformd MakeGeometryPoseFromSdfCollision(
  | drake:mu_dynamic                 | material     | coulomb_friction          | See note below on friction.                                                                                                      |
  | drake:mu_static                  | material     | coulomb_friction          | See note below on friction.                                                                                                      |
  | drake:rigid_hydroelastic         | hydroelastic | compliance_type           | Requests a rigid hydroelastic representation. Cannot be combined *with* soft_hydroelastic.                                       |
- | drake:soft_hydroelastic          | hydroelastic | compliance_type           | Requests a soft hydroelastic representation. Cannot be combined *with* rigid_hydroelastic. Requires a value for hydroelastic_modulus. |
+ | drake:compliant_hydroelastic          | hydroelastic | compliance_type           | Requests a soft hydroelastic representation. Cannot be combined *with* rigid_hydroelastic. Requires a value for hydroelastic_modulus. |
 
  <h3>Coefficients of friction</h3>
 
