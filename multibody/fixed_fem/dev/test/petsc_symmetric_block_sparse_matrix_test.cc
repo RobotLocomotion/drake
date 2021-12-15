@@ -218,6 +218,45 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, MultiThreadTest) {
     EXPECT_EQ(single_threaded_results[i], multi_threaded_results[i]);
   }
 }
+
+GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, CalcSchurComplement) {
+  unique_ptr<PetscSymmetricBlockSparseMatrix> M = MakeBlockSparseMatrix();
+  const vector<int> D_block_indexes = {1};
+  const vector<int> A_block_indexes = {0, 2};
+  const MatrixXd M_eigen = MakeEigenDenseMatrix();
+
+  MatrixXd A = MatrixXd::Zero(6, 6);
+  A.topLeftCorner<3, 3>() = M_eigen.topLeftCorner<3, 3>();
+  A.topRightCorner<3, 3>() = M_eigen.topRightCorner<3, 3>();
+  A.bottomLeftCorner<3, 3>() = M_eigen.bottomLeftCorner<3, 3>();
+  A.bottomRightCorner<3, 3>() = M_eigen.bottomRightCorner<3, 3>();
+
+  MatrixXd D = M_eigen.block<3, 3>(3, 3);
+
+  MatrixXd B = MatrixXd::Zero(6, 3);
+  B.topLeftCorner<3, 3>() = M_eigen.block<3, 3>(3, 0);
+  B.bottomLeftCorner<3, 3>() = M_eigen.block<3, 3>(3, 6);
+
+  const SchurComplement schur_complement =
+      M->CalcSchurComplement(D_block_indexes, A_block_indexes);
+  const MatrixXd schur_complement_matrix = schur_complement.get_D_complement();
+
+  const MatrixXd expected_schur_complement =
+      A - B * D.lu().solve(B.transpose());
+  EXPECT_TRUE(CompareMatrices(schur_complement_matrix,
+                              expected_schur_complement, kEps));
+
+  /* Set arbitrary solution for x in the system
+    Ax + By  =  a
+    Bᵀx + Dy =  0
+   Verify that y is solved to be -D⁻¹Bᵀx. */
+  VectorXd x(6);
+  x << 1, 2, 3, 4, 5, 6;
+  const VectorXd y = schur_complement.SolveForY(x);
+  VectorXd expected_y = -1.0 * D.lu().solve(B.transpose()) * x;
+  EXPECT_TRUE(CompareMatrices(y, expected_y, kEps));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace fem
