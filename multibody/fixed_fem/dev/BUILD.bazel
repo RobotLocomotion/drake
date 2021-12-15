@@ -493,6 +493,7 @@ drake_cc_library(
         "petsc_symmetric_block_sparse_matrix.h",
     ],
     deps = [
+        ":schur_complement",
         "//common:essential",
         "//common:unused",
         "@petsc",
