@@ -548,18 +548,19 @@ geometry::GeometryInstance ParseCollision(
 
     const XMLElement* const rigid_element =
         drake_element->FirstChildElement("drake:rigid_hydroelastic");
-    const XMLElement* const soft_element =
-        drake_element->FirstChildElement("drake:soft_hydroelastic");
-    if (rigid_element && soft_element) {
+    const XMLElement* const compliant_element =
+        drake_element->FirstChildElement("drake:compliant_hydroelastic");
+    if (rigid_element && compliant_element) {
       throw std::runtime_error(fmt::format(
           "Collision geometry has defined mutually-exclusive tags "
-          "<drake:rigid_hydroelastic> and <drake:soft_hydroelastic> on lines "
+          "<drake:rigid_hydroelastic> and "
+          "<drake:compliant_hydroelastic> on lines "
           "{} and {}, respectively. Only one can be provided.",
-          rigid_element->GetLineNum(), soft_element->GetLineNum()));
+          rigid_element->GetLineNum(), compliant_element->GetLineNum()));
     }
 
     props = ParseProximityProperties(read_double, rigid_element != nullptr,
-        soft_element != nullptr);
+                                     compliant_element != nullptr);
   }
 
   // TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on

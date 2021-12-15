@@ -50,14 +50,15 @@ class TestGeometrySceneGraph(unittest.TestCase):
         mut.AddRigidHydroelasticProperties(resolution_hint=1, properties=props)
         scene_graph.AssignRole(source_id=global_source, geometry_id=sphere_2,
                                properties=props)
-        # We'll explicitly give sphere_3 a soft hydroelastic representation.
+        # We'll explicitly give sphere_3 a compliant hydroelastic
+        # representation.
         sphere_3 = scene_graph.RegisterAnchoredGeometry(
             source_id=global_source,
             geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
                                           shape=mut.Sphere(1.),
                                           name="sphere3"))
         props = mut.ProximityProperties()
-        mut.AddSoftHydroelasticProperties(
+        mut.AddCompliantHydroelasticProperties(
             resolution_hint=1, hydroelastic_modulus=1e8, properties=props)
         scene_graph.AssignRole(source_id=global_source, geometry_id=sphere_3,
                                properties=props)

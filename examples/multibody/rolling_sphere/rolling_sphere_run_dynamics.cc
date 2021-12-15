@@ -35,10 +35,11 @@ DEFINE_bool(rigid_ball, false,
             "If true, the ball is given a rigid hydroelastic representation "
             "(instead of being compliant by the default). Make sure "
             "you have the right contact model to support this representation.");
-DEFINE_bool(soft_ground, false,
-            "If true, the ground is given a soft hydroelastic representation "
-            "(instead of the default rigid value). Make sure you have the "
-            "right contact model to support this representation.");
+DEFINE_bool(
+    compliant_ground, false,
+    "If true, the ground is given a compliant hydroelastic representation "
+    "(instead of the default rigid value). Make sure you have the "
+    "right contact model to support this representation.");
 DEFINE_bool(add_wall, false,
             "If true, adds a wall with compliant hydroelastic representation "
             "in the path of the default ball trajectory. This will cause the "
@@ -115,7 +116,7 @@ int do_main() {
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeBouncingBallPlant(
       FLAGS_mbp_dt, radius, mass, FLAGS_hydroelastic_modulus, FLAGS_dissipation,
       coulomb_friction, -g * Vector3d::UnitZ(), FLAGS_rigid_ball,
-      FLAGS_soft_ground, &scene_graph));
+      FLAGS_compliant_ground, &scene_graph));
 
   if (FLAGS_add_wall) {
     geometry::Box wall{0.2, 4, 0.4};
@@ -124,7 +125,7 @@ int do_main() {
     geometry::AddContactMaterial({} /* dissipation */, {} /* point stiffness */,
                                  CoulombFriction<double>(),
                                  &prox_prop);
-    geometry::AddSoftHydroelasticProperties(0.1, 1e8, &prox_prop);
+    geometry::AddCompliantHydroelasticProperties(0.1, 1e8, &prox_prop);
     plant.RegisterCollisionGeometry(plant.world_body(), X_WB, wall,
                                     "wall_collision", std::move(prox_prop));
 

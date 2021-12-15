@@ -3716,7 +3716,7 @@ GTEST_TEST(GeometryStateHydroTest, GetHydroMesh) {
   AddRigidHydroelasticProperties(1.0, &rigid_hydro);
   ProximityProperties soft_hydro;
   AddContactMaterial(0.0, {}, {}, &soft_hydro);
-  AddSoftHydroelasticProperties(1.0, 1e8, &soft_hydro);
+  AddCompliantHydroelasticProperties(1.0, 1e8, &soft_hydro);
 
   // We'll simply affix a number of geometries as anchored with the identity
   // pose. The other details don't really matter.
