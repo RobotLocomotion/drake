@@ -1,6 +1,7 @@
 #include "drake/multibody/fixed_fem/dev/petsc_symmetric_block_sparse_matrix.h"
 
 #include <memory>
+#include <thread>
 #include <utility>
 
 #include <gtest/gtest.h>
@@ -120,21 +121,19 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Solve) {
   const VectorXd b = MakeVector9d();
   const VectorXd x_expected = A_eigen.lu().solve(b);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      A->Solve(
-          PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-          PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b),
+      A->Solve(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+               PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b),
       std::exception,
       "PetscSymmetricBlockSparseMatrix::Solve.*: matrix is not yet "
       "assembled.*");
   A->AssembleIfNecessary();
-  const VectorXd x = A->Solve(
-      PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b);
+  const VectorXd x =
+      A->Solve(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+               PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b);
   VectorXd x_in_place = b;
-  A->SolveInPlace(
-      PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi,
-      &x_in_place);
+  A->SolveInPlace(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+                  PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi,
+                  &x_in_place);
   EXPECT_EQ(x, x_in_place);
 }
 
@@ -161,15 +160,56 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Clone) {
   unique_ptr<PetscSymmetricBlockSparseMatrix> A_clone = A->Clone();
   EXPECT_EQ(A->MakeDenseMatrix(), A_clone->MakeDenseMatrix());
   const VectorXd b = MakeVector9d();
-  const VectorXd x = A->Solve(
-      PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b);
+  const VectorXd x =
+      A->Solve(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+               PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b);
   const VectorXd x_clone = A_clone->Solve(
       PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
       PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b);
   EXPECT_TRUE(CompareMatrices(x, x_clone, kEps));
 }
+/* Test if we can run several PETSc solves simultaneously on multiple threads.
+ We solve the same linear system with multiple right hand sides. The solution
+ from using threads should be the same as those from serial. */
+GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, MultiThreadTest) {
+  /* We first will solve each linear system one at a time, and then solve them
+   all in parallel. The two sets of results should match. */
+  constexpr int kNumThreads = 9;
 
+  std::vector<VectorXd> single_threaded_results(kNumThreads);
+  std::vector<VectorXd> multi_threaded_results(kNumThreads);
+
+  const MatrixXd bs = MatrixXd::Identity(kNumThreads, kNumThreads);
+
+  /* Create a functor that solves A*x = b. */
+  auto run_solver = [](const VectorXd& b, VectorXd* x) {
+    unique_ptr<PetscSymmetricBlockSparseMatrix> A = MakeBlockSparseMatrix();
+    A->AssembleIfNecessary();
+    *x = A->Solve(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+                  PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi,
+                  b);
+  };
+
+  /* Solve without using threads. */
+  for (int i = 0; i < kNumThreads; ++i) {
+    run_solver(bs.col(i), &single_threaded_results[i]);
+  }
+
+  /* Solve using threads. */
+  std::vector<std::thread> test_threads;
+  for (int i = 0; i < kNumThreads; ++i) {
+    test_threads.emplace_back(run_solver, bs.col(i),
+                              &multi_threaded_results[i]);
+  }
+  for (int i = 0; i < kNumThreads; ++i) {
+    test_threads[i].join();
+  }
+
+  /* All solutions should be the same. */
+  for (int i = 0; i < kNumThreads; ++i) {
+    EXPECT_EQ(single_threaded_results[i], multi_threaded_results[i]);
+  }
+}
 }  // namespace
 }  // namespace internal
 }  // namespace fem

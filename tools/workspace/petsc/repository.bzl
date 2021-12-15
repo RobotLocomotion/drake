@@ -12,4 +12,8 @@ def petsc_repository(
         sha256 = "474500ac45d847f5542ac595d8ad27578f360985751fb7d706cd067e12c40b84",  # noqa
         build_file = "@drake//tools/workspace/petsc:package.BUILD.bazel",
         mirrors = mirrors,
+        patches = [
+            # Patch to avoid loading unused packages. */
+            "@drake//tools/workspace/petsc:remove_packages.patch",
+        ],
     )
