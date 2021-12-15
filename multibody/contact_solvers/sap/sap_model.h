@@ -97,10 +97,13 @@ class SapModel {
  private:
   PartialPermutation MakeParticipatingCliquesPermutation(
       const ContactProblemGraph& graph) const;
+  PartialPermutation MakeParticipatingVelocitiesPermutation(
+      const SapContactProblem<T>& problem,
+      const PartialPermutation& cliques_permutation) const;
 
   BlockSparseMatrix<T> MakeConstraintsBundleJacobian(
       const SapContactProblem<T>& problem, const ContactProblemGraph& graph,
-      const PartialPermutation& cliques_permutation) const;
+      const PartialPermutation& cliques_permutation) const;  
 
   // Computes a diagonal approximation of the Delassus operator used to
   // compute
@@ -108,19 +111,28 @@ class SapModel {
   // approximation Wₖₖ of the block diagonal element corresponding to the k-th
   // constraint, the scaling is computed as delassus_diagonal[k] = ‖Wₖₖ‖ᵣₘₛ =
   // ‖Wₖₖ‖/3. See [Castro et al. 2021] for details.
-  // @pre Matrix entries stored in `At` are SPD.
+  // @pre Matrix entries stored in `At` are SPD.  
+  void CalcDelassusDiagonalApproximation(
+      const std::vector<MatrixX<T>>& At, const SapContactProblem<T>& problem,
+      const ContactProblemGraph& graph,
+      const PartialPermutation& cliques_permutation,
+      VectorX<T>* delassus_diagonal) const;
+
+  // Overload used when a BlockSparseMatrix of the contact jacobian is
+  // available. Used when building a model from SystemDynamicsData and
+  // PointContactData.
   void CalcDelassusDiagonalApproximation(int nc,
                                          const std::vector<MatrixX<T>>& At,
                                          const BlockSparseMatrix<T>& Jblock,
                                          VectorX<T>* delassus_diagonal) const;
 
   const SapContactProblem<T>* problem_{nullptr};
-  ContactProblemGraph graph_;  // The graph corresponding to problem_.
   PartialPermutation cliques_permutation_;
+  PartialPermutation velocities_permutation_;
 
   // Per-clique blocks of the momentum matrix. Only participating cliques.
   // That is, the size of At is cliques_permutation_.domain_size().
-  std::vector<MatrixX<T>> participating_cliques_dynamics_;
+  std::vector<MatrixX<T>> A_;
 
   // Inverse of the diagonal matrix formed with the square root of the
   // diagonal entries of the momentum matrix, i.e. inv_sqrt_A =
@@ -130,6 +142,7 @@ class SapModel {
   VectorX<T> inv_sqrt_A_;
 
   VectorX<T> delassus_diagonal_;  // Delassus operator diagonal approximation.
+  VectorX<T> v_star_;  // Free motion generalized velocity v*.
   VectorX<T> p_star_;  // Free motion generalized impulse, i.e. p* = M⋅v*.
   std::unique_ptr<SapConstraintsBundle<T>> constraints_bundle_;
 };
