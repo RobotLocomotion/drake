@@ -20,4 +20,5 @@ pip install \
 ln -s /usr/bin/${PYTHON}-config /usr/bin/python3-config
 ln -s /usr/bin/${PYTHON}-config /usr/local/bin/python-config
 ln -s /usr/local/bin/python /usr/bin/python
+ln -s /usr/include/${PYTHON} /usr/local/include/
 ln -s /usr/include/${PYTHON}m /usr/local/include/

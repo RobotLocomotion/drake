@@ -34,8 +34,7 @@ Target = namedtuple('Target', [
 targets = (
     Target('36', 'ubuntu', '18.04', 'bionic'),
     Target('37', 'ubuntu', '18.04', 'bionic'),
-    # TODO(mwoehlke-kitware) VTK 8.2 needs a patch to build against Python 3.8.
-    # Target('38', 'ubuntu', '18.04', 'bionic'),
+    Target('38', 'ubuntu', '18.04', 'bionic'),
 )
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -217,7 +216,11 @@ def test_wheel(target, options):
     Runs the test script for the wheel matching the specified target.
     """
     vm = f'cp{target.python_version}'
-    wheel = f'drake-{options.version}-{vm}-{vm}m-manylinux_2_27_x86_64.whl'
+    if target.python_version < '38':
+        abi = f'{vm}m'
+    else:
+        abi = f'{vm}'
+    wheel = f'drake-{options.version}-{vm}-{abi}-manylinux_2_27_x86_64.whl'
 
     platform = target.platform_alias
     container = f'{tag_base}:test-{platform}-py{target.python_version}'
@@ -272,7 +275,7 @@ def main(args):
              ' (default: %(default)s)')
     parser.add_argument(
         '--python', dest='python_versions', metavar='VERSIONS',
-        default=','.join(set([t.python_version for t in targets])),
+        default=','.join(sorted(set([t.python_version for t in targets]))),
         help='python version(s) to build; separate with \',\''
              ' (default: %(default)s)')
 
