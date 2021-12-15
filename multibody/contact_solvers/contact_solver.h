@@ -69,7 +69,7 @@ enum class ContactSolverStatus {
 // i.e. `N(q)` is the identity mapping.
 //
 // Finally, it is evident that this same framework allows for a model
-// containing both rigid and soft objects.
+// containing both rigid and deformable objects.
 //
 // TODO(amcastro-tri): add sections specific to bilateral and unilateral
 // constraints.
@@ -191,9 +191,9 @@ enum class ContactSolverStatus {
 // where τ₀ includes external forces as well as Coriolis and centrifugal terms.
 // In this case A = ∇F = M, v* = v₀ + dt⋅M⁻¹⋅τ₀.
 //
-// As a second example, consider the simulation of soft bodies with frictional
-// contact for which, without diving into the details, the momentum equations
-// can be briefly summarized as:
+// As a second example, consider the simulation of deformable bodies with
+// frictional contact for which, without diving into the details, the momentum
+// equations can be briefly summarized as:
 // <pre>
 //   F(v) = M⋅(v−v₀) + dt⋅Fᵢₙₜ(q(v), v)
 //   q(v) = q₀ + dt⋅v
