@@ -6,6 +6,7 @@
 #include "drake/multibody/contact_solvers/contact_problem_graph.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/contact_solvers/partial_permutation.h"
+#include "drake/multibody/contact_solvers/sap_model.h"
 #include "drake/multibody/contact_solvers/sap_contact_problem.h"
 
 namespace drake {
@@ -361,64 +362,10 @@ class SapSolver final : public ContactSolver<T> {
     mutable Cache cache_;
   };
 
-  // Structure used to store input data pre-processed for computation. For
-  // mathematical quantities, we attempt to follow the notation introduced in
-  // [Castro et al., 2021] as best as we can, though with ASCII and Unicode
-  // symbols.
-  struct PreProcessedData {
-    // Constructs an empty data.
-    PreProcessedData() = default;
-
-    // @param nv_in Number of generalized velocities.
-    // @param nk_in Total number of constrained DOFs.
-    // @param dt The discrete time step used for simulation.
-    PreProcessedData(double dt, int nv_in, int nc_in, int nk_in)
-        : time_step(dt) {
-      Resize(nv_in, nc_in, nk_in);
-    }
-
-    // Resizes this PreProcessedData to store data for a problem with nv_in
-    // generalized velocities and nc_in contact constraints. A call to this
-    // method causes loss of all previously existing data.
-    // @param nv_in Number of generalized velocities.
-    // @param nk_in Total number of constrained DOFs.
-    void Resize(int nv_in, int nc_in, int nk_in) {
-      nv = nv_in;
-      nc = nc_in;
-      nk = nk_in;
-      inv_sqrt_A.resize(nv);
-      v_star.resize(nv);
-      p_star.resize(nv);
-      delassus_diagonal.resize(nc);
-    }
-
-    T time_step{NAN};        // Discrete time step used by the solver.
-    int nv{0};               // Number of generalized velocities.
-    int nc{0};               // Number of constraints.
-    int nk{0};               // Number of constrained dofs. Number of impulses.
-    std::vector<MatrixX<T>> At;  // Per-tree blocks of the momentum matrix.
-
-    // Inverse of the diagonal matrix formed with the square root of the
-    // diagonal entries of the momentum matrix, i.e. inv_sqrt_A =
-    // diag(A)^{-1/2}. This matrix is used to compute a scaled momentum
-    // residual, see discussion on tolerances in SapSolverParameters for
-    // details.
-    VectorX<T> inv_sqrt_A;
-
-    VectorX<T> v_star;  // Free-motion generalized velocities.
-    VectorX<T> p_star;  // Free motion generalized impulse, i.e. p* = M⋅v*.
-    VectorX<T> delassus_diagonal;  // Delassus operator diagonal approximation.
-
-    std::unique_ptr<ContactProblemGraph> graph;
-    PartialPermutation cliques_permutation;
-    std::unique_ptr<SapConstraintsBundle<T>> constraints_bundle;
-  };
-
   // This class stores mutable data members making it non thread-safe.
   // We confine all these mutable members within this single struct.
   struct NonThreadSafeData {
     SapSolverParameters parameters;
-    PreProcessedData data;
     SolverStats stats;
   };
 
@@ -440,17 +387,9 @@ class SapSolver final : public ContactSolver<T> {
       const SapContactProblem<T>& problem, const ContactProblemGraph& graph,
       const PartialPermutation& cliques_permutation) const;
 
-  // This method extracts and pre-processes input data into a format that is
-  // more convenient for computation. In particular, it computes quantities
-  // directly appearing in the optimization problem such as R, v̂, W, among
-  // others.
-  PreProcessedData PreProcessData(
+  std::unique_ptr<SapContactProblem<T>> MakeSapContactProblem(
       const T& time_step, const SystemDynamicsData<T>& dynamics_data,
-      const PointContactData<T>& contact_data) const;
-
-  PreProcessedData PreProcessData(const SapContactProblem<T>& problem) const;
-
-  //PreProcessedData PreProcessData(const SapContactProblem<T>& problem) const;
+      const PointContactData<T>& contact_data) const;  
 
   // Performs multiplication p = A * v.
   void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* p) const {
@@ -475,7 +414,7 @@ class SapSolver final : public ContactSolver<T> {
   // Pack solution into ContactSolverResults. Where v is the vector of
   // generalized velocities, vc is the vector of contact velocities and gamma is
   // the vector of generalized contact impulses.
-  static void PackContactResults(const PreProcessedData& data,
+  static void PackContactResults(const SapModel<T>& model,
                                  const VectorX<T>& v, const VectorX<T>& vc,
                                  const VectorX<T>& gamma,
                                  ContactSolverResults<T>* result);
@@ -530,7 +469,6 @@ class SapSolver final : public ContactSolver<T> {
   const SapSolverParameters& parameters() const {
     return non_thread_safe_data_.parameters;
   }
-  const PreProcessedData& data() const { return non_thread_safe_data_.data; }
   SolverStats& mutable_stats() const { return non_thread_safe_data_.stats; }
   const SapConstraintsBundle<T>& constraints_bundle() const {
     return *data().constraints_bundle;

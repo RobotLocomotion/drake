@@ -1,4 +1,4 @@
-#include "drake/multibody/contact_solvers/contact_problem_graph.h"
+#include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 
 namespace drake {
 namespace multibody {

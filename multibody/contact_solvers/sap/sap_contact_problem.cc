@@ -1,4 +1,4 @@
-#include "drake/multibody/contact_solvers/sap_contact_problem.h"
+#include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 
 #include <iostream>
 
@@ -6,8 +6,9 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
-#include "drake/multibody/contact_solvers/contact_problem_graph.h"
 #include "drake/multibody/contact_solvers/partial_permutation.h"
+#include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
+
 #define PRINT_VAR(a) std::cout << #a ": " << a << std::endl;
 
 namespace drake {

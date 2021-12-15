@@ -196,8 +196,10 @@ drake_cc_library(
         ":contact_problem_graph",
         ":partial_permutation",
         ":sap_contact_problem",
+        ":point_contact_data",        
+        ":system_dynamics_data",
         "//common:default_scalars",
-        "//common:essential",
+        "//common:essential",        
     ],
 )
 
@@ -213,6 +215,7 @@ drake_cc_library(
         ":contact_problem_graph",
         ":partial_permutation",
         ":sap_contact_problem",
+        ":sap_model",
         ":system_dynamics_data",
         "//common:default_scalars",
         "//common:essential",

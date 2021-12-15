@@ -4,9 +4,11 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
-#include "drake/multibody/contact_solvers/contact_problem_graph.h"
 #include "drake/multibody/contact_solvers/partial_permutation.h"
-#include "drake/multibody/contact_solvers/sap_contact_problem.h"
+#include "drake/multibody/contact_solvers/point_contact_data.h"
+#include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
+#include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
+#include "drake/multibody/contact_solvers/system_dynamics_data.h"
 
 namespace drake {
 namespace multibody {
@@ -72,6 +74,9 @@ class SapModel {
 
   // `problem` must outlive `this` model.  
   explicit SapModel(const SapContactProblem<T>* problem);
+
+  SapModel(const T& time_step, const SystemDynamicsData<T>& dynamics_data,
+           const PointContactData<T>& contact_data);
 
   const SapContactProblem<T>& sap_problem() const { 
       DRAKE_ASSERT(problem_!=nullptr);

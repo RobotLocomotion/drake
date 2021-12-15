@@ -10,7 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
-#include "drake/multibody/contact_solvers/contact_problem_graph.h"
+#include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 
 namespace drake {
 namespace multibody {

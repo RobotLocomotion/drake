@@ -1,4 +1,4 @@
-#include "drake/multibody/contact_solvers/sap_model.h"
+#include "drake/multibody/contact_solvers/sap/sap_model.h"
 
 namespace drake {
 namespace multibody {
@@ -76,6 +76,15 @@ void SapConstraintsBundle<T>::CalcProjectImpulsesAndCalcConstraintsHessian(
     (*G)[k] = dPdy_k * R_k.cwiseInverse().asDiagonal();
     constraint_start += nk;
   }
+}
+
+template <typename T>
+SapModel<T>::SapModel(const T& time_step,
+                      const SystemDynamicsData<T>& dynamics_data,
+                      const PointContactData<T>& contact_data) {
+  (void)time_step;
+  (void)dynamics_data;
+  (void)contact_data;
 }
 
 template <typename T>

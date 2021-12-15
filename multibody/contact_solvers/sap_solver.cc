@@ -231,6 +231,14 @@ void SapSolver<T>::CalcDelassusDiagonalApproximation(
 }
 
 template <typename T>
+std::unique_ptr<SapContactProblem<T>> SapSolver<T>::MakeSapContactProblem(
+    const T& time_step, const SystemDynamicsData<T>& dynamics_data,
+    const PointContactData<T>& contact_data) const {
+        
+}
+
+#if 0
+template <typename T>
 typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
     const T& time_step, const SystemDynamicsData<T>& dynamics_data,
     const PointContactData<T>& contact_data) const {
@@ -367,6 +375,7 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
 
   return data;
 }
+#endif
 
 template <typename T>
 void SapSolver<T>::PackContactResults(const PreProcessedData& data,
