@@ -236,6 +236,7 @@ drake_cc_googletest(
         ":block_sparse_linear_operator",
         ":block_sparse_matrix",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//multibody/contact_solvers:sap_solver",
     ],
 )
