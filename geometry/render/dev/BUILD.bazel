@@ -31,6 +31,7 @@ drake_cc_binary(
     ],
     test_rule_tags = vtk_test_tags(),
     deps = [
+        ":render_client_gltf",
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//geometry/render:render_engine_vtk",
