@@ -56,3 +56,10 @@ drake_cc_test(
     srcs = ["test/json_compile_test.cc"],
     deps = ["@json"],
 )
+
+# TODO(svenevs): delete this picosha2 "test" after client is merged.
+drake_cc_test(
+    name = "picosha2_compile_test",
+    srcs = ["test/picosha2_compile_test.cc"],
+    deps = ["@picosha2"],
+)
