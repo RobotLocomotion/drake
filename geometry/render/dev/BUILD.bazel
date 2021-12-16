@@ -5,6 +5,7 @@ load(
     "drake_cc_binary",
     "drake_cc_library",
 )
+load("//tools/skylark:py.bzl", "py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
@@ -81,6 +82,37 @@ drake_cc_library(
         "@picosha2",
         "@vtk//:vtkIOExport",
     ],
+)
+
+# ------------------------------------------------------------------------------
+# Render server
+drake_cc_binary(
+    name = "render_server_backend",
+    srcs = ["render_server/render_server_backend.cc"],
+    deps = [
+        "@gflags",
+        "@vtk//:vtkIOImage",
+        "@vtk//:vtkIOImport",
+        "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOpenGL2",
+    ],
+)
+
+py_binary(
+    name = "server",
+    srcs = [
+        "render_server/gltf_render_server.py",
+        "render_server/wsgi.py",
+    ],
+    # TODO(svenevs): see README.md for how to run the server.  The __main__
+    # in gltf_render_server.py looks for `proxy_run_gunicorn` and just does
+    # it there.  There should be a way to achieve this with bazel.
+    args = ["proxy_run_gunicorn"],
+    data = [
+        "render_server/README.md",
+        ":render_server_backend",
+    ],
+    main = "render_server/gltf_render_server.py",
 )
 
 # ------------------------------------------------------------------------------
