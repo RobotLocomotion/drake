@@ -47,7 +47,7 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
         examples::multibody::bouncing_ball::MakeBouncingBallPlant(
             0.0 /* mbp_dt */, radius, mass, hydroelastic_modulus, dissipation,
             friction, gravity_W, false /* rigid_sphere */,
-            false /* soft_ground */, &scene_graph));
+            false /* compliant_ground */, &scene_graph));
     plant_->set_contact_model(ContactModel::kHydroelastic);
     plant_->Finalize();
 

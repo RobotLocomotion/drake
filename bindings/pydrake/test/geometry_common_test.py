@@ -256,7 +256,7 @@ class TestGeometryCore(unittest.TestCase):
         mut.AddRigidHydroelasticProperties(
             resolution_hint=res_hint, properties=props)
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
-        self.assertFalse(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertFalse(mut_testing.PropertiesIndicateCompliantHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
         self.assertEqual(props.GetProperty("hydroelastic", "resolution_hint"),
                          res_hint)
@@ -264,7 +264,7 @@ class TestGeometryCore(unittest.TestCase):
         props = mut.ProximityProperties()
         mut.AddRigidHydroelasticProperties(properties=props)
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
-        self.assertFalse(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertFalse(mut_testing.PropertiesIndicateCompliantHydro(props))
         self.assertFalse(props.HasProperty("hydroelastic", "resolution_hint"))
 
         props = mut.ProximityProperties()
@@ -272,7 +272,7 @@ class TestGeometryCore(unittest.TestCase):
         mut.AddCompliantHydroelasticProperties(
             resolution_hint=res_hint, hydroelastic_modulus=E, properties=props)
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
-        self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertTrue(mut_testing.PropertiesIndicateCompliantHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
         self.assertEqual(props.GetProperty("hydroelastic", "resolution_hint"),
                          res_hint)
@@ -287,7 +287,7 @@ class TestGeometryCore(unittest.TestCase):
             slab_thickness=slab_thickness, hydroelastic_modulus=E,
             properties=props)
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
-        self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertTrue(mut_testing.PropertiesIndicateCompliantHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "slab_thickness"))
         self.assertEqual(props.GetProperty("hydroelastic", "slab_thickness"),
                          slab_thickness)
