@@ -3,6 +3,7 @@
 
 #include <gflags/gflags.h>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
@@ -17,6 +18,7 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
+#include "drake/systems/sensors/image_writer.h"
 #include "drake/systems/sensors/pixel_types.h"
 #include "drake/systems/sensors/rgbd_sensor.h"
 
@@ -29,6 +31,8 @@ DEFINE_bool(label, true, "Sets the enabled camera to render label");
 DEFINE_double(render_fps, 10, "Frames per simulation second to render");
 DEFINE_string(camera_xyz_rpy, "0.8, 0.0, 0.5, -2.2, 0.0, 1.57",
     "Sets the camera pose by xyz (meters) and rpy (radians) values.");
+DEFINE_string(save_dir, "",
+    "If specified, the rendered images will be saved to this directory.");
 
 namespace drake {
 namespace geometry {
@@ -86,15 +90,14 @@ using systems::sensors::PixelType;
 using systems::sensors::RgbdSensor;
 
 struct Material {
-  // For convenience, create a handful of *implicit* conversion constructors.
-  // NOLINTNEXTLINE(runtime/explicit)
-  Material(const Rgba rgba_in) : rgba(rgba_in) {}
-  // NOLINTNEXTLINE(runtime/explicit)
-  Material(const std::string& diffuse_map_in) : diffuse_map(diffuse_map_in) {}
+  Material(const Rgba rgba_in, int label_value)
+      : rgba(rgba_in), label(label_value) {}
+  Material(const std::string& diffuse_map_in, int label_value)
+      : diffuse_map(diffuse_map_in), label(label_value) {}
 
-  RenderLabel label{RenderLabel::kDontCare};
   Rgba rgba{1, 1, 1, 1};
   std::string diffuse_map;
+  RenderLabel label{RenderLabel::kDontCare};
 };
 
 RigidTransformd ParseCameraPose(const std::string& raw_input_str) {
@@ -154,52 +157,86 @@ void AddShapes(SceneGraph<double>* scene_graph) {
       FindResourceOrThrow("drake/geometry/render/dev/4_color_texture.png");
   double x = 0.4;
   double dx = -0.15;
+  int label_value = 0;
 
   const Box box(0.1, 0.075, 0.05);
   scene_graph->RegisterAnchoredGeometry(
-      source_id, MakeInstance(box, Vector3d(x, -0.25, 0), Rgba(1.0, 0.25, 0.25),
-                              "rgba_box"));
+      source_id,
+      MakeInstance(
+          box, Vector3d(x, -0.25, 0),
+          Material(Rgba(1.0, 0.25, 0.25), label_value), "rgba_box"));
+
+  ++label_value;
   scene_graph->RegisterAnchoredGeometry(
       source_id,
-      MakeInstance(box, Vector3d(x, 0.25, 0), texture_path, "texture_box"));
+      MakeInstance(
+          box, Vector3d(x, 0.25, 0),
+          Material(texture_path, label_value), "texture_box"));
   x += dx;
 
   const Capsule capsule(0.05, 0.1);
+  ++label_value;
   scene_graph->RegisterAnchoredGeometry(
-      source_id, MakeInstance(capsule, Vector3d(x, -0.25, 0),
-                              Rgba(1.0, 1.0, 0.25), "rgba_capsule"));
+      source_id,
+      MakeInstance(
+          capsule, Vector3d(x, -0.25, 0),
+          Material(Rgba(1.0, 1.0, 0.25), label_value), "rgba_capsule"));
+
+  ++label_value;
   // NOTE: Apparently we don't have texture coordinates for capsules.
   scene_graph->RegisterAnchoredGeometry(
-      source_id, MakeInstance(capsule, Vector3d(x, 0.25, 0), texture_path,
-                              "texture_capsule"));
+      source_id,
+      MakeInstance(
+          capsule, Vector3d(x, 0.25, 0),
+          Material(texture_path, label_value), "texture_capsule"));
   x += dx;
 
   const Cylinder cylinder(0.05, 0.1);
+  ++label_value;
   scene_graph->RegisterAnchoredGeometry(
-      source_id, MakeInstance(cylinder, Vector3d(x, -0.25, 0),
-                              Rgba(0.25, 1.0, 0.25), "rgba_cylinder"));
+      source_id,
+      MakeInstance(
+          cylinder, Vector3d(x, -0.25, 0),
+          Material(Rgba(0.25, 1.0, 0.25), label_value), "rgba_cylinder"));
+
+  ++label_value;
   scene_graph->RegisterAnchoredGeometry(
-      source_id, MakeInstance(cylinder, Vector3d(x, 0.25, 0), texture_path,
-                              "texture_cylinder"));
+      source_id,
+      MakeInstance(
+          cylinder, Vector3d(x, 0.25, 0),
+          Material(texture_path, label_value), "texture_cylinder"));
   x += dx;
 
   const Ellipsoid ellipsoid(0.05, 0.025, 0.0375);
+  ++label_value;
   scene_graph->RegisterAnchoredGeometry(
-      source_id, MakeInstance(ellipsoid, Vector3d(x, -0.25, 0),
-                              Rgba(0.25, 1.0, 1.0), "rgba_ellipsoid"));
+      source_id,
+      MakeInstance(
+          ellipsoid, Vector3d(x, -0.25, 0),
+          Material(Rgba(0.25, 1.0, 1.0), label_value),  "rgba_ellipsoid"));
+
+  ++label_value;
   scene_graph->RegisterAnchoredGeometry(
-      source_id, MakeInstance(ellipsoid, Vector3d(x, 0.25, 0), texture_path,
-                              "texture_ellipsoid"));
+      source_id,
+      MakeInstance(
+          ellipsoid, Vector3d(x, 0.25, 0),
+          Material(texture_path, label_value), "texture_ellipsoid"));
   x += dx;
 
   const Sphere sphere(0.05);
+  ++label_value;
   scene_graph->RegisterAnchoredGeometry(
-      source_id, MakeInstance(sphere, Vector3d(x, -0.25, 0),
-                              Rgba(0.25, 0.25, 1.0), "rgba_sphere"));
+      source_id,
+      MakeInstance(
+          sphere, Vector3d(x, -0.25, 0),
+          Material(Rgba(0.25, 0.25, 1.0), label_value), "rgba_sphere"));
+
+  ++label_value;
   scene_graph->RegisterAnchoredGeometry(
-      source_id, MakeInstance(sphere, Vector3d(x, 0.25, 0), texture_path,
-                              "texture_sphere"));
-  x += dx;
+      source_id,
+      MakeInstance(
+          sphere, Vector3d(x, 0.25, 0),
+          Material(texture_path, label_value), "texture_sphere"));
 
   // We also need to add Mesh, Convex, and HalfSpace.
 }
@@ -253,6 +290,7 @@ int do_main() {
     image_to_lcm_image_array->set_name("converter");
 
     systems::lcm::LcmPublisherSystem* image_array_lcm_publisher{nullptr};
+    systems::sensors::ImageWriter* image_writer{nullptr};
     if ((FLAGS_color || FLAGS_depth || FLAGS_label)) {
       image_array_lcm_publisher =
           builder.template AddSystem(systems::lcm::LcmPublisherSystem::Make<
@@ -264,13 +302,29 @@ int do_main() {
       builder.Connect(
           image_to_lcm_image_array->image_array_t_msg_output_port(),
           image_array_lcm_publisher->get_input_port());
+
+      image_writer =
+          builder.template AddSystem<systems::sensors::ImageWriter>();
     }
+
+    const std::string filename =
+        (filesystem::path(FLAGS_save_dir) / "{image_type}_{count:03}").string();
 
     if (FLAGS_color) {
       const auto& port =
           image_to_lcm_image_array->DeclareImageInputPort<PixelType::kRgba8U>(
               "color");
       builder.Connect(camera->color_image_output_port(), port);
+
+      if (!FLAGS_save_dir.empty()) {
+        const auto& writer_port =
+            image_writer->DeclareImageInputPort<PixelType::kRgba8U>(
+                "color",
+                filename,
+                1. / FLAGS_render_fps /* publish period */,
+                0.);
+        builder.Connect(camera->color_image_output_port(), writer_port);
+      }
     }
 
     if (FLAGS_depth) {
@@ -278,6 +332,16 @@ int do_main() {
           image_to_lcm_image_array
               ->DeclareImageInputPort<PixelType::kDepth32F>("depth");
       builder.Connect(camera->depth_image_32F_output_port(), port);
+
+      if (!FLAGS_save_dir.empty()) {
+        const auto& writer_port =
+            image_writer->DeclareImageInputPort<PixelType::kDepth32F>(
+                "depth",
+                filename,
+                1. / FLAGS_render_fps /* publish period */,
+                0.);
+        builder.Connect(camera->depth_image_32F_output_port(), writer_port);
+      }
     }
 
     if (FLAGS_label) {
@@ -285,6 +349,16 @@ int do_main() {
           image_to_lcm_image_array
               ->DeclareImageInputPort<PixelType::kLabel16I>("label");
       builder.Connect(camera->label_image_output_port(), port);
+
+      if (!FLAGS_save_dir.empty()) {
+        const auto& writer_port =
+            image_writer->DeclareImageInputPort<PixelType::kLabel16I>(
+                "label",
+                filename,
+                1. / FLAGS_render_fps /* publish period */,
+                0.);
+        builder.Connect(camera->label_image_output_port(), writer_port);
+      }
     }
   }
 
