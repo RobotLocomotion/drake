@@ -14,5 +14,10 @@ def petsc_repository(
         mirrors = mirrors,
         patches = [
             "@drake//tools/workspace/petsc:remove_packages.patch",
+            "@drake//tools/workspace/petsc:inherit.patch",
+            "@drake//tools/workspace/petsc:tagm.patch",
+            "@drake//tools/workspace/petsc:destroy.patch",
+            "@drake//tools/workspace/petsc:petscimpl.patch",
+            "@drake//tools/workspace/petsc:matrix.patch",
         ],
     )
