@@ -37,4 +37,21 @@ drake_cc_library(
     deps = ["//geometry/render:render_engine"],
 )
 
+drake_cc_library(
+    name = "meshcat_environment",
+    testonly = 1,
+    srcs = ["meshcat_environment.cc"],
+    hdrs = ["meshcat_environment.h"],
+    tags = [
+        # This utility introduces global test set-up and tear-down.
+        # Developers should opt-in to that behavior, rather than have it occur
+        # implicitly by depending on the entire utilities library.
+        "exclude_from_package",
+    ],
+    deps = [
+        "//geometry:meshcat",
+        "@gtest//:without_main",
+    ],
+)
+
 add_lint_tests()
