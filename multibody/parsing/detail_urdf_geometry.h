@@ -155,7 +155,7 @@ geometry::GeometryInstance ParseVisual(
  property set.
 
  Mapping from URDF tag to geometry property. See
- @ref YET_TO_BE_WRITTEN_HYDROELATIC_GEOMETRY_MODULE for details on the semantics
+ @ref YET_TO_BE_WRITTEN_HYDROELASTIC_GEOMETRY_MODULE for details on the semantics
  of these properties.
  | Tag                              | Group        | Property                  | Notes                                                                                                                            |
  | :------------------------------: | :----------: | :-----------------------: | :------------------------------------------------------------------------------------------------------------------------------: |
