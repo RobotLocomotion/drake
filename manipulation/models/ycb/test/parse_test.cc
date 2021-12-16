@@ -21,10 +21,10 @@ Showing the first object:
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/common/never_destroyed.h"
 #include "drake/common/scope_exit.h"
 #include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
@@ -36,6 +36,7 @@ namespace drake {
 namespace manipulation {
 namespace {
 
+using geometry::GetTestEnvironmentMeshcat;
 using geometry::Meshcat;
 using geometry::MeshcatVisualizerd;
 using geometry::SceneGraph;
@@ -48,29 +49,17 @@ using systems::Simulator;
 
 class ParseTest : public testing::TestWithParam<std::string> {};
 
-constexpr char kButtonName[] = "Show Next Model";
-
-std::shared_ptr<Meshcat> MakeMeshcat() {
-  auto result = std::make_shared<Meshcat>();
-  result->AddButton(kButtonName);
-  return result;
-}
-
-std::shared_ptr<Meshcat> GetMeshcat() {
-  static never_destroyed<std::shared_ptr<Meshcat>> meshcat(MakeMeshcat());
-  return meshcat.access();
-}
-
 void WaitForNextButtonClick() {
+  std::shared_ptr<Meshcat> meshcat = GetTestEnvironmentMeshcat();
+  constexpr char kButtonName[] = "Show Next Model";
+  meshcat->AddButton(kButtonName);
+  ScopeExit guard([&meshcat, kButtonName]() {
+    meshcat->DeleteButton(kButtonName);
+  });
   drake::log()->info(
       "Pausing until '{}' is clicked in the Meshcat control panel...",
       kButtonName);
-  const int old_clicks = GetMeshcat()->GetButtonClicks(kButtonName);
-  while (true) {
-    const int new_clicks = GetMeshcat()->GetButtonClicks(kButtonName);
-    if (new_clicks != old_clicks) {
-      return;
-    }
+  while (meshcat->GetButtonClicks(kButtonName) == 0) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 }
@@ -84,7 +73,7 @@ TEST_P(ParseTest, Quantities) {
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   Parser(&plant).AddModelFromFile(filename);
   const auto& visualizer = MeshcatVisualizerd::AddToBuilder(
-      &builder, scene_graph, GetMeshcat());
+      &builder, scene_graph, GetTestEnvironmentMeshcat());
   plant.Finalize();
   auto diagram = builder.Build();
   ScopeExit guard([&visualizer]() {
