@@ -14,7 +14,7 @@
  {
    PetscErrorCode  ierr;
 -  static PetscInt inassm = 0;
-+  static _Thread_local inassm = 0;
++  static _Thread_local PetscInt inassm = 0;
    PetscBool       flg    = PETSC_FALSE;
  
    PetscFunctionBegin;
