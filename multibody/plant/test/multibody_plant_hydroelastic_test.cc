@@ -124,7 +124,7 @@ class HydroelasticModelTests : public ::testing::Test {
 
     geometry::ProximityProperties props;
     // This should produce a level-2 refinement (two steps beyond octahedron).
-    geometry::AddSoftHydroelasticProperties(
+    geometry::AddCompliantHydroelasticProperties(
         radius / 2, hydroelastic_modulus, &props);
     geometry::AddContactMaterial(
         dissipation, {},
@@ -388,7 +388,7 @@ class ContactModelTest : public ::testing::Test {
     const double kSize = 10;
     const RigidTransformd X_WG{Vector3d{0, 0, -kSize / 2}};
     geometry::Box ground = geometry::Box::MakeCube(kSize);
-    geometry::AddSoftHydroelasticProperties(
+    geometry::AddCompliantHydroelasticProperties(
         kSize, kElasticModulus, &contact_material);
     plant->RegisterCollisionGeometry(plant->world_body(), X_WG, ground,
                                      "GroundCollisionGeometry",

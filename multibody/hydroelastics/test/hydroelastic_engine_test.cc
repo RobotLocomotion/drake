@@ -46,9 +46,9 @@ class HydroelasticEngineTest : public ::testing::Test {
     return id;
   }
 
-  /** Adds a geometry with the given name and assigns soft hydroelastic geometry
-   properties.  */
-  GeometryId AddSoftGeometry(const std::string& name,
+  /** Adds a geometry with the given name and assigns compliant hydroelastic
+   geometry properties.  */
+  GeometryId AddCompliantGeometry(const std::string& name,
                              double hydroelastic_modulus, double dissipation) {
     GeometryId id = AddGeometry(name);
     ProximityProperties props;
@@ -83,7 +83,7 @@ class HydroelasticEngineTest : public ::testing::Test {
 TEST_F(HydroelasticEngineTest, CombineSoftAndRigidMaterialProperties) {
   const double E_A = 10.0;
   const double d_A = 1.0;
-  GeometryId id_A = AddSoftGeometry("SoftBody", E_A, d_A);
+  GeometryId id_A = AddCompliantGeometry("SoftBody", E_A, d_A);
   GeometryId id_B = AddRigidGeometry("RigidBody");
 
   // Create an engine.
@@ -119,8 +119,8 @@ TEST_F(HydroelasticEngineTest, CombineSoftAndSoftMaterialProperties) {
   // Expected combined properties.
   const double Estar = 1.6;
   const double dstar = 1.6;
-  GeometryId id_A = AddSoftGeometry("SoftBodyA", E_A, d_A);
-  GeometryId id_B = AddSoftGeometry("SoftBodyB", E_B, d_B);
+  GeometryId id_A = AddCompliantGeometry("SoftBodyA", E_A, d_A);
+  GeometryId id_B = AddCompliantGeometry("SoftBodyB", E_B, d_B);
 
   // Create an engine.
   HydroelasticEngine<double> engine;

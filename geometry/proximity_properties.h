@@ -135,9 +135,9 @@ void AddRigidHydroelasticProperties(ProximityProperties* properties);
 // TODO(SeanCurtis-TRI): Add module that explains resolution hint and reference
 //  it in the documentation below.
 /** Adds properties to the given set of proximity properties sufficient to cause
- the associated geometry to generate a soft hydroelastic representation. The
- geometry's pressure field will be the function p(e) = Ee, where E is the
- elastic modulus stored in the given `properties`.
+ the associated geometry to generate a compliant hydroelastic representation.
+ The geometry's pressure field will be the function p(e) = Ee, where E is the
+ hydroelastic modulus stored in the given `properties`.
 
  @param resolution_hint       If the geometry is to be tessellated, it is the
                               parameter that guides the level of mesh
@@ -151,9 +151,9 @@ void AddRigidHydroelasticProperties(ProximityProperties* properties);
                               names that this function would need to add.
  @pre 0 < `resolution_hint` < ∞, 0 < `hydroelastic_modulus`, and `properties`
       is not nullptr. */
-void AddSoftHydroelasticProperties(double resolution_hint,
-                                   double hydroelastic_modulus,
-                                   ProximityProperties* properties);
+void AddCompliantHydroelasticProperties(double resolution_hint,
+                                        double hydroelastic_modulus,
+                                        ProximityProperties* properties);
 
 /** Compliant half spaces are handled as a special case; they do not get
  tessellated. Instead, they are treated as infinite slabs with a finite
@@ -168,9 +168,9 @@ void AddSoftHydroelasticProperties(double resolution_hint,
                         that this function would need to add.
  @pre 0 < `slab_thickness` < ∞, 0 < `hydroelastic_modulus`, and `properties`
       is not nullptr. */
-void AddSoftHydroelasticPropertiesForHalfSpace(double slab_thickness,
-                                               double hydroelastic_modulus,
-                                               ProximityProperties* properties);
+void AddCompliantHydroelasticPropertiesForHalfSpace(
+    double slab_thickness, double hydroelastic_modulus,
+    ProximityProperties* properties);
 
 //@}
 

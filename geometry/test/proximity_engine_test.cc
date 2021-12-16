@@ -121,7 +121,7 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
   const double edge_length = 0.5;
   const double E = 1e8;  // Elastic modulus.
   ProximityProperties soft_properties;
-  AddSoftHydroelasticProperties(edge_length, E, &soft_properties);
+  AddCompliantHydroelasticProperties(edge_length, E, &soft_properties);
   ProximityProperties rigid_properties;
   AddRigidHydroelasticProperties(edge_length, &rigid_properties);
 
@@ -215,7 +215,7 @@ std::pair<GeometryId, RigidTransformd> AddShape(ProximityEngine<double>* engine,
   const double edge_length = 0.5;
   ProximityProperties properties;
   if (is_soft) {
-    AddSoftHydroelasticProperties(edge_length, 1e8, &properties);
+    AddCompliantHydroelasticProperties(edge_length, 1e8, &properties);
   } else {
     AddRigidHydroelasticProperties(edge_length, &properties);
   }
@@ -520,7 +520,7 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
     EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kUndefined);
   }
 
-  // Create a baseline property set that requests a soft hydroelastic
+  // Create a baseline property set that requests a compliant hydroelastic
   // representation, but is not necessarily sufficient to define one.
   ProximityProperties hydro_trigger;
   hydro_trigger.AddProperty(kHydroGroup, kComplianceType,
@@ -1902,7 +1902,7 @@ class ProximityEngineHydro : public testing::Test {
     poses_ = MakeCollidingRing(r, 4);
 
     ProximityProperties soft_properties;
-    AddSoftHydroelasticProperties(r, 1e8, &soft_properties);
+    AddCompliantHydroelasticProperties(r, 1e8, &soft_properties);
     ProximityProperties rigid_properties;
     AddRigidHydroelasticProperties(r, &rigid_properties);
 
@@ -1960,7 +1960,7 @@ class ProximityEngineHydroWithFallback : public testing::Test {
     poses_ = MakeCollidingRing(r, N_);
 
     ProximityProperties soft_properties;
-    AddSoftHydroelasticProperties(r / 2, 1e8, &soft_properties);
+    AddCompliantHydroelasticProperties(r / 2, 1e8, &soft_properties);
     ProximityProperties rigid_properties;
     AddRigidHydroelasticProperties(r, &rigid_properties);
 

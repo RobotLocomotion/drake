@@ -597,11 +597,11 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
             geometry::internal::HydroelasticType::kRigid);
   }
 
-  // Case: specifies soft hydroelastic.
+  // Case: specifies compliant hydroelastic.
   {
     unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
-    <drake:soft_hydroelastic/>
+    <drake:compliant_hydroelastic/>
   </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
@@ -620,7 +620,7 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
   {
     unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
-    <drake:soft_hydroelastic/>
+    <drake:compliant_hydroelastic/>
     <drake:rigid_hydroelastic/>
   </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
@@ -629,7 +629,7 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
         ParseCollision("link_name", package_map, root_dir, collision_node),
         std::runtime_error,
         "Collision geometry has defined mutually-exclusive tags .*rigid.* and "
-        ".*soft.*");
+        ".*compliant.*");
   }
 
   // TODO(SeanCurtis-TRI): This is the *old* interface; the new
