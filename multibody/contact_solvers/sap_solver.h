@@ -24,7 +24,16 @@ struct SapSolverParameters {
   // momentum equally.
   double abs_tolerance{1.e-14};  // Absolute tolerance εₐ, square root of Joule.
   double rel_tolerance{1.e-6};   // Relative tolerance εᵣ.
-  int max_iterations{100};       // Maximum number of Newton iterations.
+
+  // We monitor the decrease of the cost on each iteration. It is not worth it
+  // to keep iterating if round-off errors do not allow the cost to keep
+  // decreasing. Therefore SAP stops the Newton iteration when the optimality
+  // condition OR the cost condition is satisfied. Given the costs ℓᵐ and ℓᵐ⁺¹
+  // at Newton iterations m and m+1 respectively, the cost condition is:
+  // |ℓᵐ⁺¹−ℓᵐ| < εₐ + εᵣ (ℓᵐ⁺¹+ℓᵐ)/2.
+  double cost_abs_tolerance{1.e-14};  // Absolute tolerance εₐ, in Joules.
+  double cost_rel_tolerance{1.e-12};  // Relative tolerance εᵣ.
+  int max_iterations{100};  // Maximum number of Newton iterations.
 
   // Line-search parameters.
   double ls_alpha_max{1.5};   // Maximum line search parameter allowed.
