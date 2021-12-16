@@ -144,6 +144,21 @@ class RenderEngineVtk : public RenderEngine,
   /** Copy constructor for the purpose of cloning. */
   RenderEngineVtk(const RenderEngineVtk& other);
 
+  /** Helper method for \ref DoRenderColorImage to populate output buffer.
+   Assumes that the scene VTK update has already been performed.
+  */
+  virtual void ExportColorImage(systems::sensors::ImageRgba8U* buffer) const;
+
+  /** Helper method for \ref DoRenderDepthImage to populate output buffer.
+   Assumes that the scene VTK update has already been performed.
+  */
+  virtual void ExportDepthImage(systems::sensors::ImageRgba8U* buffer) const;
+
+  /** Helper method for \ref DoRenderLabelImage to populate output buffer.
+   Assumes that the scene VTK update has already been performed.
+  */
+  virtual void ExportLabelImage(systems::sensors::ImageRgba8U* buffer) const;
+
  private:
   // @see RenderEngine::DoRegisterVisual().
   bool DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -192,6 +207,13 @@ class RenderEngineVtk : public RenderEngine,
     vtkNew<vtkRenderWindow> window;
     vtkNew<vtkWindowToImageFilter> filter;
     vtkNew<vtkImageExport> exporter;
+  };
+
+  // A human friendly indexing system into pipelines_ member.
+  enum ImageType {
+    kColor = 0,
+    kLabel = 1,
+    kDepth = 2,
   };
 
   // Updates VTK rendering related objects including vtkRenderWindow,

@@ -72,12 +72,6 @@ float CheckRangeAndConvertToMeters(float z_buffer_value, double z_near,
   return static_cast<float>(z_buffer_value * (z_far - z_near) + z_near);
 }
 
-enum ImageType {
-  kColor = 0,
-  kLabel = 1,
-  kDepth = 2,
-};
-
 // TODO(SeanCurtis-TRI): Add X_PG pose to this data.
 // A package of data required to register a visual geometry.
 struct RegistrationData {
@@ -232,10 +226,13 @@ void RenderEngineVtk::DoRenderColorImage(
   UpdateWindow(camera.core(), camera.show_window(),
                pipelines_[ImageType::kColor].get(), "Color Image");
   PerformVtkUpdate(*pipelines_[ImageType::kColor]);
+  ExportColorImage(color_image_out);
+}
 
+void RenderEngineVtk::ExportColorImage(ImageRgba8U* buffer) const {
   // TODO(SeanCurtis-TRI): Determine if this copies memory (and find some way
   // around copying).
-  pipelines_[ImageType::kColor]->exporter->Export(color_image_out->at(0, 0));
+  pipelines_[ImageType::kColor]->exporter->Export(buffer->at(0, 0));
 }
 
 void RenderEngineVtk::DoRenderDepthImage(
@@ -246,13 +243,7 @@ void RenderEngineVtk::DoRenderDepthImage(
 
   const CameraInfo& intrinsics = camera.core().intrinsics();
   ImageRgba8U image(intrinsics.width(), intrinsics.height());
-  // TODO(SeanCurtis-TRI): We're doing multiple passes on the pixel data. This
-  // does one pass by copying the filter to the given image. We then do a second
-  // pass where we re-encode the values. It would be much better to process the
-  // pixels in a single pass.  The solution is to simply call
-  // exporter->GetPointerToData() and process the pixels as they are read.
-  // See the implementation in vtkImageExport::Export() for details.
-  pipelines_[ImageType::kDepth]->exporter->Export(image.at(0, 0));
+  ExportDepthImage(&image);
 
   const double min_depth = camera.depth_range().min_depth();
   const double max_depth = camera.depth_range().max_depth();
@@ -278,6 +269,16 @@ void RenderEngineVtk::DoRenderDepthImage(
   }
 }
 
+void RenderEngineVtk::ExportDepthImage(ImageRgba8U* buffer) const {
+  // TODO(SeanCurtis-TRI): We're doing multiple passes on the pixel data. This
+  // does one pass by copying the filter to the given image. We then do a second
+  // pass where we re-encode the values. It would be much better to process the
+  // pixels in a single pass.  The solution is to simply call
+  // exporter->GetPointerToData() and process the pixels as they are read.
+  // See the implementation in vtkImageExport::Export() for details.
+  pipelines_[ImageType::kDepth]->exporter->Export(buffer->at(0, 0));
+}
+
 void RenderEngineVtk::DoRenderLabelImage(
     const ColorRenderCamera& camera,
     ImageLabel16I* label_image_out) const {
@@ -291,7 +292,7 @@ void RenderEngineVtk::DoRenderLabelImage(
   // See the implementation in vtkImageExport::Export() for details.
   const CameraInfo& intrinsics = camera.core().intrinsics();
   ImageRgba8U image(intrinsics.width(), intrinsics.height());
-  pipelines_[ImageType::kLabel]->exporter->Export(image.at(0, 0));
+  ExportLabelImage(&image);
 
   ColorI color;
   for (int v = 0; v < intrinsics.height(); ++v) {
@@ -302,6 +303,10 @@ void RenderEngineVtk::DoRenderLabelImage(
       label_image_out->at(u, v)[0] = RenderEngine::LabelFromColor(color);
     }
   }
+}
+
+void RenderEngineVtk::ExportLabelImage(ImageRgba8U* buffer) const {
+  pipelines_[ImageType::kLabel]->exporter->Export(buffer->at(0, 0));
 }
 
 RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
