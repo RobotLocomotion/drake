@@ -33,8 +33,7 @@ drake_cc_googletest(
     data = [":models"],
     deps = [
         "//common:find_resource",
-        "//common:scope_exit",
-        "//geometry:meshcat_visualizer",
+        "//geometry:drake_visualizer",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",

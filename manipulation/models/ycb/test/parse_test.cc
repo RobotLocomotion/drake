@@ -2,14 +2,14 @@
 @file
 Parses and visualizes YCB objects.
 
-An example of showing all objects:
+An example of showing all objects at a 5s interval:
 
-    bazel run //manipulation/models/ycb:parse_test -- --pause
+    bazel run //manipulation/models/ycb:parse_test -- --visualize_sec=5
 
-Showing the first object:
+Showing the first object for 1s:
 
     bazel run //manipulation/models/ycb:parse_test -- \
-        --pause --gtest_filter='*0'
+        --visualize_sec=1 --gtest_filter='*0'
 */
 
 #include <chrono>
@@ -21,23 +21,22 @@ Showing the first object:
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/common/never_destroyed.h"
-#include "drake/common/scope_exit.h"
-#include "drake/geometry/meshcat_visualizer.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-DEFINE_bool(pause, false, "Show each object until the user clicks.");
+// N.B. We choose to pause because using stdin w/ `bazel run` is painful.
+DEFINE_double(
+    visualize_sec, 0., "Pause and visualize to Drake Visualizer.");
 
 namespace drake {
 namespace manipulation {
 namespace {
 
-using geometry::Meshcat;
-using geometry::MeshcatVisualizerd;
+using geometry::DrakeVisualizerd;
 using geometry::SceneGraph;
 using multibody::AddMultibodyPlantSceneGraph;
 using multibody::MultibodyPlant;
@@ -48,33 +47,6 @@ using systems::Simulator;
 
 class ParseTest : public testing::TestWithParam<std::string> {};
 
-constexpr char kButtonName[] = "Show Next Model";
-
-std::shared_ptr<Meshcat> MakeMeshcat() {
-  auto result = std::make_shared<Meshcat>();
-  result->AddButton(kButtonName);
-  return result;
-}
-
-std::shared_ptr<Meshcat> GetMeshcat() {
-  static never_destroyed<std::shared_ptr<Meshcat>> meshcat(MakeMeshcat());
-  return meshcat.access();
-}
-
-void WaitForNextButtonClick() {
-  drake::log()->info(
-      "Pausing until '{}' is clicked in the Meshcat control panel...",
-      kButtonName);
-  const int old_clicks = GetMeshcat()->GetButtonClicks(kButtonName);
-  while (true) {
-    const int new_clicks = GetMeshcat()->GetButtonClicks(kButtonName);
-    if (new_clicks != old_clicks) {
-      return;
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  }
-}
-
 TEST_P(ParseTest, Quantities) {
   const std::string object_name = GetParam();
   const std::string filename = FindResourceOrThrow(fmt::format(
@@ -83,13 +55,9 @@ TEST_P(ParseTest, Quantities) {
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   Parser(&plant).AddModelFromFile(filename);
-  const auto& visualizer = MeshcatVisualizerd::AddToBuilder(
-      &builder, scene_graph, GetMeshcat());
+  DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
   plant.Finalize();
   auto diagram = builder.Build();
-  ScopeExit guard([&visualizer]() {
-    visualizer.Delete();
-  });
 
   // MultibodyPlant always creates at least two model instances, one for the
   // world and one for a default model instance for unspecified modeling
@@ -99,12 +67,15 @@ TEST_P(ParseTest, Quantities) {
   // Each object has two bodies, the world body and the object body.
   EXPECT_EQ(plant.num_bodies(), 2);
 
-  // Display the object; optionally wait for user input.
-  drake::log()->info("Visualize: {}", object_name);
-  auto context = diagram->CreateDefaultContext();
-  diagram->Publish(*context);
-  if (FLAGS_pause) {
-    WaitForNextButtonClick();
+  if (FLAGS_visualize_sec > 0.) {
+    drake::log()->info("Visualize: {}", object_name);
+    Simulator<double>(*diagram).Initialize();
+    auto context = diagram->CreateDefaultContext();
+    diagram->Publish(*context);
+    drake::log()->info("Pausing for {} sec...", FLAGS_visualize_sec);
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(
+            static_cast<int>(1000 * FLAGS_visualize_sec)));
   }
 }
 
