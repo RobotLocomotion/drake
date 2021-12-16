@@ -81,7 +81,7 @@ class ShaderCallback : public vtkCommand {
 #endif  // !DRAKE_DOXYGEN_CXX
 
 /** See documentation of MakeRenderEngineVtk().  */
-class RenderEngineVtk : public RenderEngine,
+class RenderEngineVtk : virtual public RenderEngine,
                         private internal::ModuleInitVtkRenderingOpenGL2 {
  public:
   /** \name Does not allow copy, move, or assignment  */
@@ -160,6 +160,9 @@ class RenderEngineVtk : public RenderEngine,
   virtual void ExportLabelImage(systems::sensors::ImageRgba8U* buffer) const;
 
  private:
+  // The RenderClientGLTF needs access to the rendering pipelines.
+  friend class RenderClientGLTF;
+
   // @see RenderEngine::DoRegisterVisual().
   bool DoRegisterVisual(GeometryId id, const Shape& shape,
                         const PerceptionProperties& properties,

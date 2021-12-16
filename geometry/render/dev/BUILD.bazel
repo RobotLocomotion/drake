@@ -45,4 +45,44 @@ drake_cc_binary(
     ],
 )
 
+# ------------------------------------------------------------------------------
+drake_cc_library(
+    name = "render_client",
+    srcs = ["render_client.cc"],
+    hdrs = ["render_client.h"],
+    deps = [
+        "//geometry/render:render_engine",
+    ],
+)
+
+# ------------------------------------------------------------------------------
+# The VTK-based render client GLTF exporter.
+drake_cc_library(
+    name = "render_client_gltf",
+    srcs = [
+        "render_client_gltf.cc",
+        "render_client_gltf_factory.cc",
+    ],
+    hdrs = [
+        "render_client_gltf.h",
+        "render_client_gltf_factory.h",
+    ],
+    # render_client_gltf.h directly pulls in VTK headers; leave it out of the
+    # install.
+    install_hdrs_exclude = ["render_client_gltf.h"],
+    deps = [
+        ":render_client",
+        "//common",
+        "//geometry/render:render_engine_vtk",
+        "//geometry/render/shaders:depth_shaders",
+        "//systems/sensors:color_palette",
+        "@json",
+        "@libcurl",
+        "@picosha2",
+        "@vtk//:vtkIOExport",
+    ],
+)
+
+# ------------------------------------------------------------------------------
+
 add_lint_tests()
