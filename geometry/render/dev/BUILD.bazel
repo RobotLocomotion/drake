@@ -51,6 +51,6 @@ add_lint_tests()
 # TODO(svenevs): delete this curl "test" after client is merged.
 drake_cc_test(
     name = "libcurl_compile_test",
-    srcs = ["libcurl_compile_test.cc"],
+    srcs = ["test/libcurl_compile_test.cc"],
     deps = ["@libcurl"],
 )
