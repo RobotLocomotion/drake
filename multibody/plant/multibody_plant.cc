@@ -368,8 +368,6 @@ MultibodyPlant<T>::MultibodyPlant(
     : internal::MultibodyTreeSystem<T>(
           systems::SystemTypeTag<MultibodyPlant>{},
           std::move(tree_in), time_step > 0),
-      contact_surface_representation_(
-        GetDefaultContactSurfaceRepresentation(time_step)),
       time_step_(time_step) {
   DRAKE_THROW_UNLESS(time_step >= 0);
   // TODO(eric.cousineau): Combine all of these elements into one struct, make
@@ -1982,8 +1980,13 @@ void MultibodyPlant<T>::CalcContactSurfaces(
 
   const auto& query_object = EvalGeometryQueryInput(context);
 
-  *contact_surfaces = query_object.ComputeContactSurfaces(
-      get_contact_surface_representation());
+  if (is_discrete()) {
+    *contact_surfaces = query_object.ComputeContactSurfaces(
+        geometry::HydroelasticContactRepresentation::kPolygon);
+  } else {
+    *contact_surfaces = query_object.ComputeContactSurfaces(
+        geometry::HydroelasticContactRepresentation::kTriangle);
+  }
 }
 
 template <>
@@ -2006,9 +2009,15 @@ void MultibodyPlant<T>::CalcHydroelasticWithFallback(
     data->contact_surfaces.clear();
     data->point_pairs.clear();
 
-    query_object.ComputeContactSurfacesWithFallback(
-        get_contact_surface_representation(), &data->contact_surfaces,
-        &data->point_pairs);
+    if (is_discrete()) {
+      query_object.ComputeContactSurfacesWithFallback(
+          geometry::HydroelasticContactRepresentation::kPolygon,
+          &data->contact_surfaces, &data->point_pairs);
+    } else {
+      query_object.ComputeContactSurfacesWithFallback(
+          geometry::HydroelasticContactRepresentation::kTriangle,
+          &data->contact_surfaces, &data->point_pairs);
+    }
   }
 }
 

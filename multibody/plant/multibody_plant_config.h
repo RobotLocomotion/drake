@@ -18,7 +18,6 @@ struct MultibodyPlantConfig {
     a->Visit(DRAKE_NVP(penetration_allowance));
     a->Visit(DRAKE_NVP(stiction_tolerance));
     a->Visit(DRAKE_NVP(contact_model));
-    a->Visit(DRAKE_NVP(contact_surface_representation));
   }
 
   /// Configures the MultibodyPlant::MultibodyPlant() constructor time_step.
@@ -41,17 +40,6 @@ struct MultibodyPlantConfig {
   /// - "hydroelastic"
   /// - "hydroelastic_with_fallback"
   std::string contact_model{"point"};
-
-  /// Configures the MultibodyPlant::set_contact_surface_representation().
-  /// Refer to drake::geometry::HydroelasticContactRepresentation for details.
-  /// Valid strings are:
-  /// - "triangle"
-  /// - "polygon"
-  ///
-  /// The default value used here is consistent with the default time_step
-  /// chosen above; keep this consistent with
-  /// MultibodyPlant::GetDefaultContactSurfaceRepresentation().
-  std::string contact_surface_representation{"polygon"};
 };
 
 }  // namespace multibody
