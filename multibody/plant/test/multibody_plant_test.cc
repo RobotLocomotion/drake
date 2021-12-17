@@ -129,6 +129,20 @@ class MultibodyPlantTester {
 };
 
 namespace {
+
+// Verifies that fresh-constructed plants are using the default contact surface
+// representation.
+GTEST_TEST(MultibodyPlant, GetDefaultContactSurfaceRepresentation) {
+  std::array<double, 2> time_steps{0.0, 0.1};
+  for (const auto& time_step : time_steps) {
+    MultibodyPlant<double> plant{time_step};
+    EXPECT_EQ(
+        plant.get_contact_surface_representation(),
+        MultibodyPlant<double>::
+            GetDefaultContactSurfaceRepresentation(time_step));
+  }
+}
+
 // This test creates a simple model for an acrobot using MultibodyPlant and
 // verifies a number of invariants such as that body and joint models were
 // properly added and the model sizes.

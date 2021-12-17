@@ -537,7 +537,7 @@ TEST_F(ContactModelTest, HydroelasticOnly) {
                               "Requested contact between two rigid objects .+");
 }
 
-TEST_F(ContactModelTest, HydroelasitcWithFallback) {
+TEST_F(ContactModelTest, HydroelasticWithFallback) {
   this->Configure(ContactModel::kHydroelasticWithFallback);
   const ContactResults<double>& contact_results = GetContactResults();
   EXPECT_EQ(contact_results.num_point_pair_contacts(), 1);
@@ -598,40 +598,54 @@ class CalcContactSurfacesTest : public ContactModelTest {
                                 connect_scene_graph, time_step,
                                 are_rigid_spheres_in_contact);
   }
+
+  void RunTest(geometry::HydroelasticContactRepresentation expected_rep) {
+    const ContactResults<double>& contact_results = GetContactResults();
+
+    EXPECT_EQ(contact_results.num_point_pair_contacts(), 0);
+    EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+    EXPECT_TRUE(
+        contact_results.hydroelastic_contact_info(0).contact_surface().Equal(
+            plant_->get_geometry_query_input_port()
+            .template Eval<geometry::QueryObject<double>>(*plant_context_)
+            .ComputeContactSurfaces(expected_rep).at(0)));
+  }
 };
 
 TEST_F(CalcContactSurfacesTest, ContinuousSystem_Triangles) {
   const double time_step = 0.0;  // Zero to select continuous system.
   this->Configure(time_step);
 
-  const ContactResults<double>& contact_results = GetContactResults();
+  SCOPED_TRACE("continuous system hydro: triangle rep");
+  this->RunTest(geometry::HydroelasticContactRepresentation::kTriangle);
+}
 
-  EXPECT_EQ(contact_results.num_point_pair_contacts(), 0);
-  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
-  EXPECT_TRUE(
-      contact_results.hydroelastic_contact_info(0).contact_surface().Equal(
-          plant_->get_geometry_query_input_port()
-              .template Eval<geometry::QueryObject<double>>(*plant_context_)
-              .ComputeContactSurfaces(
-                  geometry::HydroelasticContactRepresentation::kTriangle)
-              .at(0)));
+TEST_F(CalcContactSurfacesTest, ContinuousSystem_Polygons) {
+  const double time_step = 0.0;  // Zero to select continuous system.
+  this->Configure(time_step);
+  plant_->set_contact_surface_representation(
+      geometry::HydroelasticContactRepresentation::kPolygon);
+
+  SCOPED_TRACE("continuous system hydro: polygon rep");
+  this->RunTest(geometry::HydroelasticContactRepresentation::kPolygon);
 }
 
 TEST_F(CalcContactSurfacesTest, DiscreteSystem_Polygons) {
   const double time_step = 5.0e-3;  // Non-zero to select discrete system.
   this->Configure(time_step);
 
-  const ContactResults<double>& contact_results = GetContactResults();
+  SCOPED_TRACE("discrete system hydro: polygon rep");
+  this->RunTest(geometry::HydroelasticContactRepresentation::kPolygon);
+}
 
-  EXPECT_EQ(contact_results.num_point_pair_contacts(), 0);
-  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
-  EXPECT_TRUE(
-      contact_results.hydroelastic_contact_info(0).contact_surface().Equal(
-          plant_->get_geometry_query_input_port()
-              .template Eval<geometry::QueryObject<double>>(*plant_context_)
-              .ComputeContactSurfaces(
-                  geometry::HydroelasticContactRepresentation::kPolygon)
-              .at(0)));
+TEST_F(CalcContactSurfacesTest, DiscreteSystem_Triangles) {
+  const double time_step = 5.0e-3;  // Non-zero to select discrete system.
+  this->Configure(time_step);
+  plant_->set_contact_surface_representation(
+      geometry::HydroelasticContactRepresentation::kTriangle);
+
+  SCOPED_TRACE("discrete system hydro: triangle rep");
+  this->RunTest(geometry::HydroelasticContactRepresentation::kTriangle);
 }
 
 // TODO(DamrongGuoy): Create an independent test fixture instead of using
@@ -657,58 +671,65 @@ class CalcHydroelasticWithFallbackTest : public CalcContactSurfacesTest {
                                 connect_scene_graph, time_step,
                                 are_rigid_spheres_in_contact);
   }
+
+  void RunTest(geometry::HydroelasticContactRepresentation expected_rep) {
+    const ContactResults<double>& contact_results = GetContactResults();
+
+    std::vector<geometry::ContactSurface<double>> expected_surfaces;
+    std::vector<geometry::PenetrationAsPointPair<double>> expected_point_pairs;
+    plant_->get_geometry_query_input_port()
+        .template Eval<geometry::QueryObject<double>>(*plant_context_)
+        .ComputeContactSurfacesWithFallback(
+            expected_rep,
+            &expected_surfaces, &expected_point_pairs);
+
+    // We only check the penetration depth as an evidence that the tested
+    // result is what expected.
+    EXPECT_EQ(contact_results.num_point_pair_contacts(), 1);
+    EXPECT_EQ(contact_results.point_pair_contact_info(0).point_pair().depth,
+              expected_point_pairs.at(0).depth);
+
+    EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+    EXPECT_TRUE(
+        contact_results.hydroelastic_contact_info(0).contact_surface().Equal(
+            expected_surfaces.at(0)));
+  }
 };
 
 TEST_F(CalcHydroelasticWithFallbackTest, ContinuousSystem_Triangles) {
   const double time_step = 0.0;  // Zero to select continuous system.
   this->Configure(time_step);
 
-  const ContactResults<double>& contact_results = GetContactResults();
+  SCOPED_TRACE("continuous system hydro with fallback: triangle rep");
+  this->RunTest(geometry::HydroelasticContactRepresentation::kTriangle);
+}
 
-  std::vector<geometry::ContactSurface<double>> expected_surfaces;
-  std::vector<geometry::PenetrationAsPointPair<double>> expected_point_pairs;
-  plant_->get_geometry_query_input_port()
-      .template Eval<geometry::QueryObject<double>>(*plant_context_)
-      .ComputeContactSurfacesWithFallback(
-          geometry::HydroelasticContactRepresentation::kTriangle,
-          &expected_surfaces, &expected_point_pairs);
+TEST_F(CalcHydroelasticWithFallbackTest, ContinuousSystem_Polygons) {
+  const double time_step = 0.0;  // Zero to select continuous system.
+  this->Configure(time_step);
+  plant_->set_contact_surface_representation(
+      geometry::HydroelasticContactRepresentation::kPolygon);
 
-  // We only check the penetration depth as an evidence that the tested
-  // result is what expected.
-  EXPECT_EQ(contact_results.num_point_pair_contacts(), 1);
-  EXPECT_EQ(contact_results.point_pair_contact_info(0).point_pair().depth,
-              expected_point_pairs.at(0).depth);
-
-  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
-  EXPECT_TRUE(
-      contact_results.hydroelastic_contact_info(0).contact_surface().Equal(
-          expected_surfaces.at(0)));
+  SCOPED_TRACE("continuous system hydro with fallback: polygon rep");
+  this->RunTest(geometry::HydroelasticContactRepresentation::kPolygon);
 }
 
 TEST_F(CalcHydroelasticWithFallbackTest, DiscreteSystem_Polygons) {
   const double time_step = 5.0e-3;  // Non-zero to select discrete system.
   this->Configure(time_step);
 
-  const ContactResults<double>& contact_results = GetContactResults();
+  SCOPED_TRACE("discrete system hydro with fallback: polygon rep");
+  this->RunTest(geometry::HydroelasticContactRepresentation::kPolygon);
+}
 
-  std::vector<geometry::ContactSurface<double>> expected_surfaces;
-  std::vector<geometry::PenetrationAsPointPair<double>> expected_point_pairs;
-  plant_->get_geometry_query_input_port()
-      .template Eval<geometry::QueryObject<double>>(*plant_context_)
-      .ComputeContactSurfacesWithFallback(
-          geometry::HydroelasticContactRepresentation::kPolygon,
-          &expected_surfaces, &expected_point_pairs);
+TEST_F(CalcHydroelasticWithFallbackTest, DiscreteSystem_Triangles) {
+  const double time_step = 5.0e-3;  // Non-zero to select discrete system.
+  this->Configure(time_step);
+  plant_->set_contact_surface_representation(
+      geometry::HydroelasticContactRepresentation::kTriangle);
 
-  // We only check the penetration depth as an evidence that the tested
-  // result is what expected.
-  EXPECT_EQ(contact_results.num_point_pair_contacts(), 1);
-  EXPECT_EQ(contact_results.point_pair_contact_info(0).point_pair().depth,
-            expected_point_pairs.at(0).depth);
-
-  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
-  EXPECT_TRUE(
-      contact_results.hydroelastic_contact_info(0).contact_surface().Equal(
-          expected_surfaces.at(0)));
+  SCOPED_TRACE("discrete system hydro with fallback: triangle rep");
+  this->RunTest(geometry::HydroelasticContactRepresentation::kTriangle);
 }
 
 }  // namespace
