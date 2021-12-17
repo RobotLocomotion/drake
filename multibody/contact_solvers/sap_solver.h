@@ -22,6 +22,18 @@ struct SapSolverParameters {
   // where each component has the same units, square root of Joules. Therefore
   // the norms above are used to weigh all components of the generalized
   // momentum equally.
+  //
+  // Nominal values:
+  //  * For rel_tolerance > 1.0e-5 the solver will have no problem reaching this
+  //    condition.
+  //  * At rel_tolerance ≈ 1.0e-6, the solver might reach the cost condition
+  //    (below) first due to round-off errors, but mostly for ill conditioned
+  //    problems.
+  //  * For rel_tolerance ≲ 1.0e-7 the solver will most likely reach the cost
+  //    condition first.
+  //
+  // SolverStats::optimality_condition_reached indicates of this condition was
+  // reached.
   double abs_tolerance{1.e-14};  // Absolute tolerance εₐ, square root of Joule.
   double rel_tolerance{1.e-6};   // Relative tolerance εᵣ.
 
@@ -31,8 +43,20 @@ struct SapSolverParameters {
   // condition OR the cost condition is satisfied. Given the costs ℓᵐ and ℓᵐ⁺¹
   // at Newton iterations m and m+1 respectively, the cost condition is:
   // |ℓᵐ⁺¹−ℓᵐ| < εₐ + εᵣ (ℓᵐ⁺¹+ℓᵐ)/2.
-  double cost_abs_tolerance{1.e-14};  // Absolute tolerance εₐ, in Joules.
-  double cost_rel_tolerance{1.e-12};  // Relative tolerance εᵣ.
+  //
+  // Interaction with the optimality condition (abs_tolerance, rel_tolerance):
+  // The purpose of this condition is to detect when the solver reaches the best
+  // solution within round-off errors. We expect the optimality condition to be
+  // satisfied first for values of the optimality tolerances within nominal
+  // values. However, we expect to reach the cost condition when:
+  //  1. Optimality condition tolerances are set below nominal values.
+  //  2. Ill conditioning of the problem makes reaching the optimality condition
+  //     difficult, specially when in the lower range of nominal values.
+  //
+  // SolverStats::cost_condition_reached indicates of this condition was
+  // reached.
+  double cost_abs_tolerance{1.e-30};  // Absolute tolerance εₐ, in Joules.
+  double cost_rel_tolerance{1.e-15};  // Relative tolerance εᵣ.
   int max_iterations{100};  // Maximum number of Newton iterations.
 
   // Line-search parameters.
@@ -104,6 +128,12 @@ class SapSolver final : public ContactSolver<T> {
 
     // Number of times the gradients cache is updated.
     int num_gradients_cache_updates{0};
+
+    // Indicates if the optimality condition was reached.
+    bool optimality_criterion_reached{false};
+
+    // Indicates if the cost condition was reached.
+    bool cost_criterion_reached{false};
   };
 
   SapSolver() = default;
@@ -116,6 +146,9 @@ class SapSolver final : public ContactSolver<T> {
   // @pre dynamics_data must contain data for inverse dynamics, i.e.
   // dynamics_data.has_inverse_dynamics() is true.
   // @pre contact_data Must contain a non-zero number of contact constraints.
+  //
+  // Convergence of the solver is controlled by set_parameters(). Refer to
+  // SapSolverParameters for details on the convergence conditions.
   //
   // N.B. SolveWithGuess() is a non-const method and thefore changes to the
   // state of the SapSolver object are allowed. This means that when using this
