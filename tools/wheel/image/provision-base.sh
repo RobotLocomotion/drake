@@ -1,9 +1,9 @@
 #!/bin/bash
 
-set -e
+set -eu -o pipefail
 
-BAZEL_VERSION=4.2.1
-BAZEL_ROOT=https://github.com/bazelbuild/bazel/releases/download
+readonly BAZEL_VERSION=4.2.1
+readonly BAZEL_ROOT=https://github.com/bazelbuild/bazel/releases/download
 
 # Fix ssh permissions.
 chmod 700 ~/.ssh
@@ -15,8 +15,7 @@ apt-get -y upgrade
 
 apt-get -y install --no-install-recommends \
     default-jdk \
-    autoconf automake \
-    libtool libltdl-dev \
+    autoconf automake libtool libltdl-dev \
     gcc g++ gfortran libgfortran-7-dev \
     libclang-9-dev clang-format-9 \
     git cmake ninja-build pkg-config \
