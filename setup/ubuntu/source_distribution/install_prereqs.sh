@@ -99,7 +99,7 @@ packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
 apt-get install ${maybe_yes} --no-install-recommends ${packages}
 
 cat "${BASH_SOURCE%/*}/packages-satisfy.txt" | \
-  xargs apt-get satisfy ${maybe_yes} --no-install-recommends
+  xargs -I{} apt-get satisfy ${maybe_yes} --no-install-recommends {}
 
 # Ensure that we have available a locale that supports UTF-8 for generating a
 # C++ header containing Python API documentation during the build.
