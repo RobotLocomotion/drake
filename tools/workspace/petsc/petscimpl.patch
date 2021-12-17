@@ -21,3 +21,12 @@
    PetscMPIInt *iflags;          /* length of comm size, shared by all calls to PetscCommBuildTwoSided_Allreduce/RedScatter on this comm */
  } PetscCommCounter;
  
+@@ -972,7 +973,7 @@ PETSC_STATIC_INLINE PetscErrorCode PetscSpinlockDestroy(PetscSpinlock *omp_lock)
+   return 0;
+ }
+ #else
+-Thread safety requires either --with-openmp or --download-concurrencykit
++#include <petsc_drake_pthread.h>
+ #endif
+ 
+ #else

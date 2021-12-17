@@ -19,5 +19,7 @@ def petsc_repository(
             "@drake//tools/workspace/petsc:destroy.patch",
             "@drake//tools/workspace/petsc:petscimpl.patch",
             "@drake//tools/workspace/petsc:matrix.patch",
+            "@drake//tools/workspace/petsc:mpi.patch",
+            "@drake//tools/workspace/petsc:pname.patch",
         ],
     )

@@ -131,13 +131,9 @@ cc_library(
     copts = [
         "-Wno-all",
         "-fvisibility=hidden",
-        "-fopenmp",
     ],
     includes = ["include"],
-    linkopts = [
-        "-ldl",
-        "-lgomp",
-    ],
+    linkopts = ["-ldl"],
     linkstatic = 1,
     deps = [
         "@blas",

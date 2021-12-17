@@ -79,7 +79,6 @@
 #define PETSC_HAVE_NANOSLEEP 1
 #define PETSC_HAVE_NETDB_H 1
 #define PETSC_HAVE_NETINET_IN_H 1
-#define PETSC_HAVE_OPENMP 1
 #define PETSC_HAVE_PACKAGES ":blaslapack:mathlib:mpi:regex:"
 #define PETSC_HAVE_POPEN 1
 #define PETSC_HAVE_PTHREAD_H 1
