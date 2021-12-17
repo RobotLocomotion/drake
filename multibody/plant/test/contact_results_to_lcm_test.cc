@@ -130,7 +130,7 @@ std::ostream& operator<<(std::ostream& out, const FullBodyName& name) {
 
 namespace {
 
-/* The fixed number of faces in the test mesh for hydroleastic contact. */
+/* The fixed number of faces in the test mesh for hydroelastic contact. */
 constexpr int kNumFaces = 2;
 constexpr int kNumPointPerTri = 3;
 
@@ -598,11 +598,11 @@ TYPED_TEST(ContactResultsToLcmTest, PointPairContactOnly) {
   }
 }
 
-/* Tests the case where ContactResults contains *only* hydroleastic data. This
- test bears primary responsibility to make sure that hydroleastic data is
+/* Tests the case where ContactResults contains *only* hydroelastic data. This
+ test bears primary responsibility to make sure that hydroelastic data is
  serialized correctly.
 
- Translation of hydroleastic contact results to lcm message is straightforward.
+ Translation of hydroelastic contact results to lcm message is straightforward.
  There are *three* things that this system does in the process:
 
    - Extracts double values from T-Valued quantities.

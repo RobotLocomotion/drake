@@ -741,7 +741,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
   using T = TypeParam;
 
   DrakeVisualizerParams params;
-  /* We'll expect the visualizer default color gets applied to the hydroelasitc
+  /* We'll expect the visualizer default color gets applied to the hydroelastic
    meshes -- we haven't defined any other color to the geometry. So, we'll pick
    an arbitrary value that *isn't* the default value. */
   params.default_color = Rgba{0.25, 0.5, 0.75, 0.5};

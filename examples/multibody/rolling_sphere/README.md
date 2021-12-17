@@ -49,7 +49,7 @@ hydroelastic representation and some types of contact which aren't modeled yet.
 
   - Contact between a rigid shape and compliant shape is supported.
   - Contact between two rigid or two compliant objects isn't supported.
-  - Drake `Mesh` shapes can only be modeled with _rigid_ hydroleastic
+  - Drake `Mesh` shapes can only be modeled with _rigid_ hydroelastic
     representation.
 
 __Solvers__
