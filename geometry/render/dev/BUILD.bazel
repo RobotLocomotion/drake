@@ -51,6 +51,6 @@ add_lint_tests()
 # TODO(svenevs): delete this picosha2 "test" after client is merged.
 drake_cc_test(
     name = "picosha2_compile_test",
-    srcs = ["picosha2_compile_test.cc"],
+    srcs = ["test/picosha2_compile_test.cc"],
     deps = ["@picosha2"],
 )
