@@ -34,8 +34,8 @@ for more choices.
 </div>
 
 <div class="warning" markdown="1">
-Drake's pip wheels are only published for CPython 3.6 and CPython 3.7 running
-on Linux.  In the future, we intend to publish additional builds.
+Drake's pip wheels are only published for CPython 3.6, CPython 3.7, and CPython
+3.8 running on Linux.  In the future, we intend to publish additional builds.
 </div>
 
 We recommend installing drake into a
