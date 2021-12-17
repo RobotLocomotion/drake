@@ -319,6 +319,8 @@ class PizzaSaverProblem {
 
   double rotational_inertia() const { return I_; }
 
+  double mu() const { return mu_; }
+
   // Acceleration of gravity, m/s².
   double g() const { return g_; }
 
@@ -445,11 +447,14 @@ class PizzaSaverProblem {
 
 ContactSolverResults<double> AdvanceNumSteps(
     const PizzaSaverProblem& problem, const VectorXd& tau, int num_steps,
-    const SapSolverParameters& params) {
+    const SapSolverParameters& params, bool cost_criterion_reached = false) {
   SapSolver<double> sap;
   sap.set_parameters(params);
   ContactSolverResults<double> result;
   // Arbitrary non-zero guess to stress the solver.
+  // N.B. We need non-zero values when cost_criterion_reached = true since
+  // v_guess = 0 would be close to the steady state solution and SAP would
+  // satisfy the optimality even when very tight tolerances are specified.
   VectorXd v_guess(problem.kNumVelocities);
   v_guess << 1.0, 2.0, 3.0, 4.0;
 
@@ -468,6 +473,12 @@ ContactSolverResults<double> AdvanceNumSteps(
 
     // Verify the number of times cache entries were updated.
     const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+
+    if (cost_criterion_reached) {
+      EXPECT_TRUE(stats.cost_criterion_reached);
+    } else {
+      EXPECT_TRUE(stats.optimality_criterion_reached);
+    }
 
     // N.B. We only count iterations that perform factorizations. Since impulses
     // need to be computed in order to evaluate the termination criteria (before
@@ -576,54 +587,101 @@ GTEST_TEST(PizzaSaver, ConvergenceWithExactGuess) {
   EXPECT_EQ(result.v_next, v);
 }
 
-// This tests the solver when we apply a moment Mz about COM to the pizza
-// saver. If Mz < mu * m * g * R, the saver should be in stiction (that is,
-// the sliding velocity should be smaller than the regularization parameter).
-// Otherwise the saver will start sliding. For this setup the transition
-// occurs at M_transition = mu * m * g * R = 30.
-GTEST_TEST(PizzaSaver, Stiction) {
+// Makes a problem for which we know the solution will be in stiction. If Mz <
+// mu * m * g * R, the saver should be in stiction (that is, the sliding
+// velocity should be smaller than the regularization parameter). Otherwise the
+// saver will start sliding. For this setup the transition occurs at
+// M_transition = mu * m * g * R = 30.
+PizzaSaverProblem MakeStictionProblem() {
   const double dt = 0.01;
   const double mu = 2. / 3.;
   const double k = 1.0e4;
   const double taud = dt;
-  PizzaSaverProblem problem(dt, mu, k, taud);
+  return PizzaSaverProblem(dt, mu, k, taud);
+}
 
-  SapSolverParameters params;
-  params.rel_tolerance = 1.0e-6;
-  params.beta = 0;  // No near-rigid regime.
-  params.ls_max_iterations = 40;
+// Make a stiction problem with MakeStictionProblem() and verify the solution is
+// accurate to within `relative_tolerance`. `params` specifies SAP's parameters.
+// `cost_criterion_reached` specifies if we expect the cost criterion to be
+// reached for all time steps.
+void VerifyStictionSolution(const SapSolverParameters& params,
+                            double relative_tolerance,
+                            bool cost_criterion_reached) {
+  PizzaSaverProblem problem = MakeStictionProblem();
 
   const double Mz = 20.0;
   const Vector4d tau(0.0, 0.0, -problem.mass() * problem.g(), Mz);
   const ContactSolverResults<double> result =
-      AdvanceNumSteps(problem, tau, 30, params);
+      AdvanceNumSteps(problem, tau, 40, params, cost_criterion_reached);
 
   // Expected generalized force.
   const Vector4d tau_expected(0.0, 0.0, problem.mass() * problem.g(), -Mz);
 
   // Maximum expected slip. See Castro et al. 2021 for details (Eq. 22).
-  const double max_slip_expected = params.sigma * dt * problem.g();
+  const double max_slip_expected =
+      params.sigma * problem.time_step() * problem.g();
 
   EXPECT_TRUE(
-      CompareMatrices(result.v_next.head<3>(), Vector3d::Zero(), 1.0e-9));
+      CompareMatrices(result.v_next.head<3>(), Vector3d::Zero(), 1.0e-10));
   EXPECT_TRUE((result.tau_contact - tau_expected).norm() / tau_expected.norm() <
-              2.0 * params.rel_tolerance);
+              relative_tolerance);
   EXPECT_TRUE(CompareMatrices(
       result.fn,
       VectorXd::Constant(problem.kNumContacts, tau_expected(2) / 3.0),
-      params.rel_tolerance, MatrixCompareType::relative));
+      relative_tolerance, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(result.vn, VectorXd::Zero(problem.kNumContacts),
-                              1.0e-9));
+                              1.0e-10));
   const double friction_force_expected = Mz / problem.radius() / 3.0;
   for (int i = 0; i < 3; ++i) {
     const double slip = result.vt.segment<2>(2 * i).norm();
     const double friction_force = result.ft.segment<2>(2 * i).norm();
     const double normal_force = result.fn(i);
-    EXPECT_LE(friction_force, mu * normal_force);
+    EXPECT_LE(friction_force, problem.mu() * normal_force);
     EXPECT_NEAR(friction_force, friction_force_expected,
-                5.0 * params.rel_tolerance * friction_force_expected);
+                relative_tolerance * friction_force_expected);
     EXPECT_LE(slip, max_slip_expected);
   }
+}
+
+// Solve a stiction problem and verify the solution for a nominal set of solver
+// parameters.
+GTEST_TEST(PizzaSaver, Stiction) {
+  SapSolverParameters params;
+  params.abs_tolerance = 1.0e-14;
+  params.rel_tolerance = 1.0e-6;
+  params.beta = 0;  // No near-rigid regime.
+  params.ls_max_iterations = 40;
+  // For the tolerances specified, we expect the solver to reach the optimality
+  // condition for all time steps.
+  const bool cost_criterion_reached = false;
+  // At these tolerances, the solution error scales with the optimality
+  // condition specified tolerance.
+  const double relative_tolerance = params.rel_tolerance;
+  VerifyStictionSolution(params, relative_tolerance, cost_criterion_reached);
+}
+
+// We set a very tight optimality tolerance. The solver won't be able to reach
+// these tolerances. However, it will reach the optimal solution within
+// round-off errors. This is the best the solver could do. It makes sense that
+// we return this as the valid solution. To detect this condition the solver
+// monitors the decrease of the cost each iteration. If the decrease of the cost
+// is below the relative tolerance specified by
+// SapSolverParameters::cost_rel_tolerance, the solver stops the iteration and
+// returns a success code with the last computed solution.
+// In this test we verify the computed solution is accurate within a reasonable
+// tolerance that takes into account the temporal transient.
+GTEST_TEST(PizzaSaver, StictionAtTightOptimalityTolerance) {
+  SapSolverParameters params;
+  // Extremely tight tolerances to trigger the cost stopping criterion.
+  params.abs_tolerance = 1.0e-20;
+  params.rel_tolerance = 1.0e-20;
+  params.beta = 0;  // No near-rigid regime.
+  params.ls_max_iterations = 40;
+  // Inform the unit test we want to verify this condition.
+  const bool cost_criterion_reached = true;
+  // Use a reasonable tolerance to verify the accuracy of the solution.
+  const double relative_tolerance = 1.0e-6;
+  VerifyStictionSolution(params, relative_tolerance, cost_criterion_reached);
 }
 
 // Test case with zero friction coefficient.
