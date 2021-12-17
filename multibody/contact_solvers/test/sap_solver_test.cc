@@ -607,7 +607,7 @@ GTEST_TEST(PizzaSaver, Stiction) {
   EXPECT_TRUE(
       CompareMatrices(result.v_next.head<3>(), Vector3d::Zero(), 1.0e-9));
   EXPECT_TRUE((result.tau_contact - tau_expected).norm() / tau_expected.norm() <
-              params.rel_tolerance);
+              2.0 * params.rel_tolerance);
   EXPECT_TRUE(CompareMatrices(
       result.fn,
       VectorXd::Constant(problem.kNumContacts, tau_expected(2) / 3.0),
@@ -621,7 +621,7 @@ GTEST_TEST(PizzaSaver, Stiction) {
     const double normal_force = result.fn(i);
     EXPECT_LE(friction_force, mu * normal_force);
     EXPECT_NEAR(friction_force, friction_force_expected,
-                params.rel_tolerance * friction_force_expected);
+                5.0 * params.rel_tolerance * friction_force_expected);
     EXPECT_LE(slip, max_slip_expected);
   }
 }

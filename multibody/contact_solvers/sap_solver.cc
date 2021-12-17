@@ -357,6 +357,7 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
   int k = 0;
   double ell_previous = EvalCostCache(state).ell;
   bool converged = false;
+  bool cost_converged = false;
   for (;; ++k) {
     // We first verify the stopping criteria. If satisfied, we skip expensive
     // factorizations.
@@ -364,7 +365,8 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
     CalcStoppingCriteriaResidual(state, &momentum_residual, &momentum_scale);
 
     if (momentum_residual <= parameters_.abs_tolerance +
-                                 parameters_.rel_tolerance * momentum_scale) {
+                                 parameters_.rel_tolerance * momentum_scale ||
+        cost_converged) {
       converged = true;
       break;
     } else {
@@ -388,14 +390,21 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
     // Update state.
     state.mutable_v() += alpha * dv;
 
-    // Verify the cost decreases on each iteration.
     const double ell = EvalCostCache(state).ell;
-    // TODO(amcastro-tri): sometimes this demand is triggered due to round-off
-    // errors. Consider:
-    //  1. Verify this condition with a slop, i.e. ell < ell_previous + slop.
-    //  2. Update stopping criterion to also include a tolerance on the cost,
-    //     i.e. 2. * |ell-ell_previous|/(ell + ell_previous) < cost_tolerance.
-    DRAKE_DEMAND(ell < ell_previous);
+    const double ell_error = std::abs(ell - ell_previous);
+    const double ell_scale = (ell + ell_previous) / 2.0;
+    // SAP's convergence is monotonous. We sanity check this here.
+    DRAKE_DEMAND(ell <= ell_previous);
+
+    // N.B. Here we want alpha≈1 and therefore we impose alpha > 0.5, an
+    // arbitrarily "large" value. This is to avoid a false positive on the
+    // convergence of the cost due to a small value of the line search
+    // parameter.
+    cost_converged =
+        ell_error < parameters_.cost_abs_tolerance +
+                        parameters_.cost_rel_tolerance * ell_scale &&
+        alpha > 0.5;
+
     ell_previous = ell;
   }
 
