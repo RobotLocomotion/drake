@@ -550,6 +550,20 @@ geometry::GeometryInstance ParseCollision(
         drake_element->FirstChildElement("drake:rigid_hydroelastic");
     const XMLElement* const compliant_element =
         drake_element->FirstChildElement("drake:compliant_hydroelastic");
+
+    // TODO(16229): Remove this ad-hoc input sanitization when we resolve
+    //  issue 16229 "Diagnostics for unsupported SDFormat and URDF stanzas."
+    const XMLElement* const no_longer_supported =
+        drake_element->FirstChildElement("drake:soft_hydroelastic");
+    if (no_longer_supported) {
+      throw std::runtime_error(fmt::format(
+          "Collision geometry uses the tag <drake:soft_hydroelastic> "
+          "on line {}, "
+          "which is no longer supported. Please change it to "
+          "<drake:compliant_hydroelastic>.",
+          no_longer_supported->GetLineNum()));
+    }
+
     if (rigid_element && compliant_element) {
       throw std::runtime_error(fmt::format(
           "Collision geometry has defined mutually-exclusive tags "
