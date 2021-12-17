@@ -566,7 +566,7 @@ class TestCustom(unittest.TestCase):
         self.assertEqual(
             context.get_abstract_state(0).get_value(), model_value.get_value())
 
-        # Check state API
+        # Check state API.
         state = context.get_mutable_state()
         self.assertTrue(
             state.get_mutable_discrete_state(index=0) is
