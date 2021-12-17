@@ -13,7 +13,7 @@
                                            MPI_Comm comm,PetscObjectDestroyFunction destroy,PetscObjectViewFunction view)
  {
 -  static PetscInt idcnt = 1;
-+  atomic_int atomic_idcnt = 1;
++  static atomic_int atomic_idcnt = 1;
    PetscErrorCode  ierr;
  #if defined(PETSC_USE_LOG)
    PetscObject     *newPetscObjects;
