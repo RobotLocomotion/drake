@@ -787,6 +787,11 @@ void DoScalarDependentDefinitions(py::module m) {
           overload_cast_explicit<DiscreteValues<T>&>(
               &State<T>::get_mutable_discrete_state),
           py_rvp::reference_internal, doc.State.get_mutable_discrete_state.doc)
+      .def("get_mutable_discrete_state",
+          overload_cast_explicit<BasicVector<T>&, int>(
+              &State<T>::get_mutable_discrete_state),
+          py::arg("index"), py_rvp::reference_internal,
+          doc.State.get_mutable_discrete_state.doc)
       .def("get_abstract_state",
           static_cast<const AbstractValues& (State<T>::*)() const>(
               &State<T>::get_abstract_state),
@@ -796,7 +801,15 @@ void DoScalarDependentDefinitions(py::module m) {
           [](State<T>* self) -> AbstractValues& {
             return self->get_mutable_abstract_state();
           },
-          py_rvp::reference_internal, doc.State.get_mutable_abstract_state.doc);
+          py_rvp::reference_internal,
+          doc.State.get_mutable_abstract_state.doc_0args)
+      .def(
+          "get_mutable_abstract_state",
+          [](State<T>* self, int index) -> AbstractValue& {
+            return self->get_mutable_abstract_state().get_mutable_value(index);
+          },
+          py::arg("index"), py_rvp::reference_internal,
+          doc.State.get_mutable_abstract_state.doc_1args);
 
   // - Constituents.
   auto continuous_state = DefineTemplateClassWithDefault<ContinuousState<T>>(
