@@ -12,6 +12,7 @@ cc_library(
         "stubs/petscfix.h",
         "stubs/petscmachineinfo.h",
         "stubs/petscpkg_version.h",
+        "stubs/petscpthread.h",
     ],
     strip_include_prefix = "stubs",
     tags = [

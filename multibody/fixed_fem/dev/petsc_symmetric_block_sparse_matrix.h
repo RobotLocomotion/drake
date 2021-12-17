@@ -15,8 +15,7 @@ namespace internal {
  and linear algebra operations. It provides supports for the inverse operator,
  i.e. one can solve for A*x = b where A is this matrix. It also supports
  calculating the Schur complement of the matrix. It only supports double as
- the scalar type. Since PETSc is inherently not thread safe, neither is this
- class. */
+ the scalar type. */
 class PetscSymmetricBlockSparseMatrix {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PetscSymmetricBlockSparseMatrix);
