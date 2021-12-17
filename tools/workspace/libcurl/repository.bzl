@@ -9,10 +9,7 @@ def libcurl_repository(
         name,
         licenses = ["notice"],  # curl
         modname = "libcurl",
-        pkg_config_paths = [
-            "/usr/lib/x86_64-linux-gnu/pkgconfig",  # Ubuntu
-            "/opt/homebrew/opt/curl/lib/pkgconfig",  # macOS (brew)
-        ],
+        pkg_config_paths = ["/usr/local/opt/curl/lib/pkgconfig"],
         **kwargs):
     pkg_config_repository(
         name = name,
