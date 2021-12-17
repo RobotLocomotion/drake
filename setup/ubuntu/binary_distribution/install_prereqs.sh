@@ -31,9 +31,9 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 if [[ "${with_asking}" -eq 0 ]]; then
-  apt_get_install='apt-get install -y'
+  maybe_yes='-y'
 else
-  apt_get_install='apt-get install'
+  maybe_yes=''
 fi
 
 
@@ -62,7 +62,7 @@ EOF
   binary_distribution_called_update=1
 fi
 
-$apt_get_install --no-install-recommends lsb-release
+apt-get install ${maybe_yes} --no-install-recommends lsb-release
 
 codename=$(lsb_release -sc)
 
@@ -71,7 +71,7 @@ if [[ "${codename}" != 'bionic' && "${codename}" != 'focal' ]]; then
   exit 2
 fi
 
-$apt_get_install --no-install-recommends $(cat <<EOF
+apt-get install ${maybe_yes} --no-install-recommends $(cat <<EOF
 build-essential
 cmake
 pkg-config
@@ -79,4 +79,4 @@ EOF
 )
 
 packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
-$apt_get_install --no-install-recommends ${packages}
+apt-get install ${maybe_yes} --no-install-recommends ${packages}
