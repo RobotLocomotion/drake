@@ -51,6 +51,6 @@ add_lint_tests()
 # TODO(svenevs): delete this json "test" after client is merged.
 drake_cc_test(
     name = "json_compile_test",
-    srcs = ["json_compile_test.cc"],
+    srcs = ["test/json_compile_test.cc"],
     deps = ["@json"],
 )
