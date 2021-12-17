@@ -7,9 +7,7 @@ load(
 
 def libcurl_repository(
         name,
-        # ISC with advertising exception:
-        # https://github.com/curl/curl/blob/master/COPYING
-        licenses = ["notice"],
+        licenses = ["notice"],  # curl
         modname = "libcurl",
         pkg_config_paths = [
             "/usr/lib/x86_64-linux-gnu/pkgconfig",  # Ubuntu
