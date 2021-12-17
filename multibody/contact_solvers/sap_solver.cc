@@ -1,6 +1,7 @@
 #include "drake/multibody/contact_solvers/sap_solver.h"
 
 #include <algorithm>
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -349,7 +350,7 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
   const int nv = data_.nv;
   const int nc = data_.nc;
   State state(nv, nc);
-  stats_.Reset();
+  stats_ = SolverStats();
 
   state.mutable_v() = v_guess;
 
@@ -357,16 +358,16 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
   int k = 0;
   double ell_previous = EvalCostCache(state).ell;
   bool converged = false;
-  bool cost_converged = false;
   for (;; ++k) {
     // We first verify the stopping criteria. If satisfied, we skip expensive
     // factorizations.
     double momentum_residual, momentum_scale;
     CalcStoppingCriteriaResidual(state, &momentum_residual, &momentum_scale);
-
-    if (momentum_residual <= parameters_.abs_tolerance +
-                                 parameters_.rel_tolerance * momentum_scale ||
-        cost_converged) {
+    stats_.optimality_criterion_reached =
+        momentum_residual <=
+        parameters_.abs_tolerance + parameters_.rel_tolerance * momentum_scale;
+    // TODO(amcastro-tri): consider monitoring the duality gap.
+    if (stats_.optimality_criterion_reached || stats_.cost_criterion_reached) {
       converged = true;
       break;
     } else {
@@ -391,17 +392,26 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
     state.mutable_v() += alpha * dv;
 
     const double ell = EvalCostCache(state).ell;
-    const double ell_error = std::abs(ell - ell_previous);
     const double ell_scale = (ell + ell_previous) / 2.0;
-    // SAP's convergence is monotonous. We sanity check this here.
-    DRAKE_DEMAND(ell <= ell_previous);
+    // N.B. Even though theoretically we expect ell < ell_previous, round-off
+    // errors might make the difference ell_previous - ell negative, within
+    // machine epsilon. Therefore we take the absolute value here.
+    const double ell_decrement = std::abs(ell_previous - ell);
+
+    // SAP's convergence is monotonic. We sanity check this here. We use a slop
+    // to account for round-off errors.
+    // TODO(amcastro-tri): We might need to loosen this slop or make this an
+    // ASSERT instead.
+    const double slop =
+        50 * std::numeric_limits<double>::epsilon() * std::max(1.0, ell_scale);
+    DRAKE_DEMAND(ell <= ell_previous + slop);
 
     // N.B. Here we want alpha≈1 and therefore we impose alpha > 0.5, an
     // arbitrarily "large" value. This is to avoid a false positive on the
     // convergence of the cost due to a small value of the line search
     // parameter.
-    cost_converged =
-        ell_error < parameters_.cost_abs_tolerance +
+    stats_.cost_criterion_reached =
+        ell_decrement < parameters_.cost_abs_tolerance +
                         parameters_.cost_rel_tolerance * ell_scale &&
         alpha > 0.5;
 
@@ -465,6 +475,7 @@ T SapSolver<T>::CalcLineSearchCost(const State& state_v, const T& alpha,
 template <typename T>
 std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
     const State& state, const VectorX<T>& dv) const {
+  using std::abs;
   // Line search parameters.
   const double rho = parameters_.ls_rho;
   const double c = parameters_.ls_c;
@@ -477,6 +488,26 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
   // dℓ/dα(α = 0) = ∇ᵥℓ(α = 0)⋅Δv.
   const T dell_dalpha0 = ell_grad_v0.dot(dv);
 
+  T alpha = parameters_.ls_alpha_max;
+  // TODO(amcastro-tri): Consider removing this heap allocation from this scope.
+  State state_aux(state);  // Auxiliary workspace.
+  T ell = CalcLineSearchCost(state, alpha, &state_aux);
+
+  const double kTolerance = 50 * std::numeric_limits<double>::epsilon();
+  // N.B. We expect ell_scale != 0 since otherwise SAP's optimality condition
+  // would've been reached and the solver would not reach this point.
+  // N.B. ell = 0 implies v = v* and gamma = 0, for which the momentum residual
+  // is zero.
+  // Given that the Hessian in SAP is SPD we know that dell_dalpha0 < 0
+  // (strictly). dell_dalpha0 = 0 would mean that we reached the optimum but
+  // most certainly due to round-off errors or very tight user specified
+  // optimality tolerances, the optimality condition was not met and SAP
+  // performed an additional iteration to find a search direction that, most
+  // likely, is close to zero. We therefore detect this case with dell_dalpha0 ≈
+  // 0 and accept the search direction with alpha = 1.
+  const T ell_scale = 0.5 * (ell + ell0);
+  if (abs(dell_dalpha0 / ell_scale) < kTolerance) return std::make_pair(1.0, 0);
+
   // dℓ/dα(α = 0) is guaranteed to be strictly negative given the the Hessian of
   // the cost is positive definite. Only round-off errors in the factorization
   // of the Hessian for ill-conditioned systems (small regularization) can
@@ -488,11 +519,6 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
         "usually caused by an excessive accumulation round-off errors for "
         "ill-conditioned systems. Consider revisiting your model.");
   }
-
-  T alpha = parameters_.ls_alpha_max;
-  // TODO(amcastro-tri): Consider removing this heap allocation from this scope.
-  State state_aux(state);  // Auxiliary workspace.
-  T ell = CalcLineSearchCost(state, alpha, &state_aux);
 
   // Verifies if ell(alpha) satisfies Armijo's criterion.
   auto satisfies_armijo = [c, ell0, dell_dalpha0](const T& alpha_in,
