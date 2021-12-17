@@ -46,3 +46,10 @@ drake_cc_binary(
 )
 
 add_lint_tests()
+
+# TODO(svenevs): delete this rule and file after the client merges.
+drake_cc_binary(
+    name = "libcurl_compile_test",
+    srcs = ["libcurl_compile_test.cc"],
+    deps = ["@libcurl"],
+)
