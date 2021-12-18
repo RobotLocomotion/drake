@@ -5,7 +5,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fixed_fem/dev/schur_complement.h"
 
 namespace drake {
 namespace multibody {
@@ -133,20 +132,7 @@ class PetscSymmetricBlockSparseMatrix {
    documentaion. */
   void SetRelativeTolerance(double tolerance);
 
-  /* Given a linear system of equations Mz = c that can be written in block form
-  as:
-      Ax + By  =  a     (1)
-      Bᵀx + Dy =  0     (2)
-  where M = [A B; Bᵀ D] is `this` matrix, zᵀ = [xᵀ yᵀ], cᵀ = [aᵀ 0ᵀ], builds a
-  SchurComplement object that solves the system. See SchurComplement for more
-  details.
-  @param D_block_indexes The indexes of the block row and columns consisting of
-                         D.
-  @param A_block_indexes The indexes of the block row and columns consisting of
-                         A. */
-  SchurComplement<double> CalcSchurComplement(
-      const std::vector<int>& D_block_indexes,
-      const std::vector<int>& A_block_indexes) const;
+  // TODO(xuchenhan-tri): Support Schur complement.
 
   int rows() const;
 

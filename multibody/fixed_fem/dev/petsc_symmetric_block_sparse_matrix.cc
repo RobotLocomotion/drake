@@ -215,82 +215,6 @@ class PetscSymmetricBlockSparseMatrix::Impl {
                      PETSC_DEFAULT);
   }
 
-  SchurComplement<double> CalcSchurComplement(
-      const vector<int>& D_block_indexes, const vector<int>& A_block_indexes) {
-    using std::move;
-
-    MatrixXd D_complement;          // A - BD⁻¹Bᵀ.
-    MatrixXd neg_Dinv_B_transpose;  // -D⁻¹Bᵀ.
-
-    if (D_block_indexes.size() == 0) {
-      D_complement = MakeDenseMatrix();
-      neg_Dinv_B_transpose.resize(0, size_);
-      return SchurComplement(move(D_complement), move(neg_Dinv_B_transpose));
-    }
-    if (A_block_indexes.size() == 0) {
-      D_complement.resize(0, 0);
-      neg_Dinv_B_transpose.resize(size_, 0);
-      return SchurComplement(move(D_complement), move(neg_Dinv_B_transpose));
-    }
-    // Build indices to create the four blocks in the Schur complement.
-    IS is0, is1;
-    ISCreateBlock(PETSC_COMM_SELF, block_size_, A_block_indexes.size(),
-                  A_block_indexes.data(), PETSC_COPY_VALUES, &is0);
-    ISCreateBlock(PETSC_COMM_SELF, block_size_, D_block_indexes.size(),
-                  D_block_indexes.data(), PETSC_COPY_VALUES, &is1);
-
-    // Create a MATSEQBAIJ version of the underlying PETSc matrix because
-    // MatCreateSubMatrix() doesn't support matrix of type MATSEQSBAIJ.
-    AssembleIfNecessary();
-    Mat matrix_sparse;
-    MatConvert(owned_matrix_, MATSEQBAIJ, MAT_INITIAL_MATRIX, &matrix_sparse);
-
-    // Copy to A, Bᵀ, D.
-    Mat A_petsc, B_transpose_petsc, D_petsc;
-    MatCreateSubMatrix(matrix_sparse, is0, is0, MAT_INITIAL_MATRIX, &A_petsc);
-    MatCreateSubMatrix(matrix_sparse, is1, is0, MAT_INITIAL_MATRIX,
-                       &B_transpose_petsc);
-    MatCreateSubMatrix(matrix_sparse, is1, is1, MAT_INITIAL_MATRIX, &D_petsc);
-
-    // Calculate D⁻¹Bᵀ.
-    KSP solver;
-    PC preconditioner;
-    KSPCreate(PETSC_COMM_SELF, &solver);
-    KSPGetPC(solver, &preconditioner);
-    KSPSetType(solver, KSPPREONLY);
-    PCSetType(preconditioner, PCCHOLESKY);
-    KSPSetOperators(solver, D_petsc, D_petsc);
-
-    // KSPMatSolve only takes dense right hand side.
-    Mat B_transpose_petsc_dense;
-    MatConvert(B_transpose_petsc, MATSEQDENSE, MAT_INITIAL_MATRIX,
-               &B_transpose_petsc_dense);
-    Mat Dinv_B_transpose_petsc;
-    MatDuplicate(B_transpose_petsc_dense, MAT_DO_NOT_COPY_VALUES,
-                 &Dinv_B_transpose_petsc);
-    KSPMatSolve(solver, B_transpose_petsc_dense, Dinv_B_transpose_petsc);
-
-    // Convert all quantities from PETSc to Eigen.
-    MatrixXd A = MakeEigenMatrix(A_petsc);
-    MatrixXd B_transpose = MakeEigenMatrix(B_transpose_petsc);
-    neg_Dinv_B_transpose = MakeEigenMatrix(Dinv_B_transpose_petsc);
-    neg_Dinv_B_transpose *= -1.0;
-    D_complement = A + B_transpose.transpose() * neg_Dinv_B_transpose;
-
-    // Clean up all allocated memories in this method.
-    KSPDestroy(&solver);
-    MatDestroy(&matrix_sparse);
-    MatDestroy(&Dinv_B_transpose_petsc);
-    MatDestroy(&B_transpose_petsc);
-    MatDestroy(&B_transpose_petsc_dense);
-    MatDestroy(&D_petsc);
-    MatDestroy(&A_petsc);
-    ISDestroy(&is0);
-    ISDestroy(&is1);
-
-    return SchurComplement(move(D_complement), move(neg_Dinv_B_transpose));
-  }
-
   int size() const { return size_; }
 
   void AssembleIfNecessary() {
@@ -380,12 +304,6 @@ void PetscSymmetricBlockSparseMatrix::ZeroRowsAndColumns(
 
 void PetscSymmetricBlockSparseMatrix::SetRelativeTolerance(double tolerance) {
   pimpl_->SetRelativeTolerance(tolerance);
-}
-
-SchurComplement<double> PetscSymmetricBlockSparseMatrix::CalcSchurComplement(
-    const vector<int>& D_block_indexes,
-    const vector<int>& A_block_indexes) const {
-  return pimpl_->CalcSchurComplement(D_block_indexes, A_block_indexes);
 }
 
 int PetscSymmetricBlockSparseMatrix::rows() const { return pimpl_->size(); }
