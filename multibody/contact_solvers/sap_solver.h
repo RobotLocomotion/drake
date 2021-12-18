@@ -14,7 +14,28 @@ namespace internal {
 // SAP solver parameters such as tolerances, maximum number of iterations and
 // regularization parameters.
 struct SapSolverParameters {
-  // Stopping criteria tolerances. We monitor the optimality condition (for
+  // Stopping Criteria:
+  //   SAP uses two stopping criteria, one on the optimality condition and a
+  // second one on the cost, see specifics below for each criteria. SAP
+  // terminates with a success status whenever one of these criteria is
+  // satisfied first. The criteria on the cost is meant to detect when the
+  // solver stalls due to round-off errors. When this happens, the solver
+  // terminates and returns the best solution it could find with finite
+  // precision arithmetic. The solver cannot do better pass this point. Under
+  // normal circumstances, for a well conditioned problem, nominal values
+  // documented below are designed so that the solver reaches the optimality
+  // condition first. With the values documented below, it is expected that the
+  // solver meets the cost condition first only when the problem is
+  // ill-conditioned or when the user requests a tight tolerance below the
+  // recommended nominal values. Most often SAP returns a solution to a very
+  // tight accuracy, with an error significantly below the requested tolerance
+  // and often close to machine precision [Castro et al., 2021]. The cost
+  // criterion is meant for rare events at which the state of the multibody
+  // system leads to an ill-conditioned problem for which reducing the error
+  // below the specified tolerance is not possible in practice due to round-off
+  // errors.
+
+  // Optimality condition criterion: We monitor the optimality condition (for
   // SAP, balance of momentum), i.e. ‖∇ℓ‖ < εₐ + εᵣ max(‖p‖,‖jc‖),
   // where ∇ℓ = A⋅(v−v*)−Jᵀγ is the momentum balance residual, p = A⋅v and jc =
   // Jᵀ⋅γ. The norms above are defined as ‖x‖ = ‖D⋅x‖₂, where D = diag(A)^(1/2).
@@ -22,17 +43,49 @@ struct SapSolverParameters {
   // where each component has the same units, square root of Joules. Therefore
   // the norms above are used to weigh all components of the generalized
   // momentum equally.
+  //
+  // Nominal values:
+  //  * For rel_tolerance > 1.0e-5 the solver will have no problem reaching this
+  //    condition.
+  //  * At rel_tolerance ≈ 1.0e-6, the solver might reach the cost condition
+  //    (below) first due to round-off errors, but mostly for ill conditioned
+  //    problems.
+  //  * For rel_tolerance ≲ 1.0e-7 the solver will most likely reach the cost
+  //    condition first.
+  //
+  // SolverStats::optimality_condition_reached indicates if this condition was
+  // reached.
   double abs_tolerance{1.e-14};  // Absolute tolerance εₐ, square root of Joule.
   double rel_tolerance{1.e-6};   // Relative tolerance εᵣ.
 
-  // We monitor the decrease of the cost on each iteration. It is not worth it
-  // to keep iterating if round-off errors do not allow the cost to keep
-  // decreasing. Therefore SAP stops the Newton iteration when the optimality
-  // condition OR the cost condition is satisfied. Given the costs ℓᵐ and ℓᵐ⁺¹
-  // at Newton iterations m and m+1 respectively, the cost condition is:
-  // |ℓᵐ⁺¹−ℓᵐ| < εₐ + εᵣ (ℓᵐ⁺¹+ℓᵐ)/2.
-  double cost_abs_tolerance{1.e-14};  // Absolute tolerance εₐ, in Joules.
-  double cost_rel_tolerance{1.e-12};  // Relative tolerance εᵣ.
+  // Cost condition criterion: We monitor the decrease of the cost on each
+  // iteration. It is not worth it to keep iterating if round-off errors do not
+  // allow the cost to keep decreasing. Therefore SAP stops the Newton iteration
+  // when the optimality condition OR the cost condition is satisfied. Given the
+  // costs ℓᵐ and ℓᵐ⁺¹ at Newton iterations m and m+1 respectively, the cost
+  // condition is: |ℓᵐ⁺¹−ℓᵐ| < εₐ + εᵣ (ℓᵐ⁺¹+ℓᵐ)/2.
+  //
+  // Interaction with the optimality condition (abs_tolerance, rel_tolerance):
+  // The purpose of this condition is to detect when the solver reaches the best
+  // solution within round-off errors. We expect the optimality condition to be
+  // satisfied first for values of the optimality tolerances within nominal
+  // values. However, we expect to reach the cost condition when:
+  //  1. Optimality condition tolerances are set below nominal values.
+  //  2. Ill conditioning of the problem makes reaching the optimality condition
+  //     difficult, specially when in the lower range of nominal values.
+  //
+  // SolverStats::cost_condition_reached indicates if this condition was
+  // reached.
+  //
+  // Nominal values:
+  //  * cost_rel_tolerance: we want to detect when changes in the cost are close
+  //    to machine epsilon. Since round-off errors are typically larger than
+  //    machine epsilon, we typically use larger values.
+  //  * cost_abs_tolerance: This has units of Joule. Here we use a value that is
+  //    a few orders of magnitude smaller than abs_tolerance (with units of
+  //    square root of Joule) squared.
+  double cost_abs_tolerance{1.e-30};  // Absolute tolerance εₐ, in Joules.
+  double cost_rel_tolerance{1.e-15};  // Relative tolerance εᵣ.
   int max_iterations{100};  // Maximum number of Newton iterations.
 
   // Line-search parameters.
@@ -104,6 +157,12 @@ class SapSolver final : public ContactSolver<T> {
 
     // Number of times the gradients cache is updated.
     int num_gradients_cache_updates{0};
+
+    // Indicates if the optimality condition was reached.
+    bool optimality_criterion_reached{false};
+
+    // Indicates if the cost condition was reached.
+    bool cost_criterion_reached{false};
   };
 
   SapSolver() = default;
@@ -116,6 +175,9 @@ class SapSolver final : public ContactSolver<T> {
   // @pre dynamics_data must contain data for inverse dynamics, i.e.
   // dynamics_data.has_inverse_dynamics() is true.
   // @pre contact_data Must contain a non-zero number of contact constraints.
+  //
+  // Convergence of the solver is controlled by set_parameters(). Refer to
+  // SapSolverParameters for details on the convergence conditions.
   //
   // N.B. SolveWithGuess() is a non-const method and thefore changes to the
   // state of the SapSolver object are allowed. This means that when using this
