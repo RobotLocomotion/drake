@@ -295,12 +295,53 @@ class PolygonSurfaceMesh {
   }
 
  private:
+  // Tolerance used to compute a smooth variant of the centroid that is also
+  // valid in the limit to zero sized areas.
+  // For a given surface, the centroid is defined as:
+  // c = 1/A∫ x dA, where x is the position of a point on the surface and c is
+  // the centroid of the surface, with both positions measured and expressed in
+  // the frame M of the mesh. With this equation, centroid c is not well defined
+  // for A = 0 and we expect round-off errors to dominate the accuracy of the
+  // computation also when A is within machine epsilon. Therefore we want to
+  // define a smooth (differentiable) centroid cₛ with the properties:
+  //  - If we scale a mesh towards zero size, mathematically, the centroid of
+  //    the mesh will converge towards the mean value of the vertices. Therefore
+  //    we want cₛ to have this property.
+  //  - cₛ must be well defined at A = 0. At A = 0, we define cₛ to return the
+  //    mean value of the vertices, so that the function and its limit match.
+  //
+  // We define the average of the vertices of a mesh as <v>. We choose an area
+  // tolerance εₛ and define the weighs:
+  //   z  = A / (A+εₛ)
+  //   zc = 1 - z = εₛ / (A+εₛ)
+  // which are both well defined at A = 0 and z + zc = 1.
+  // We then defined a smooth centroid with the properties above as:
+  //   cₛ = z⋅c + zc⋅<v>
+  // which, using the definition of the centroid, we simplify to:
+  //   cₛ = 1/(A+εₛ)∫ x dA + zc⋅<v>
+  // Where notice now this expression does not contain a division by A and it is
+  // continuous and valid at A = 0.
+  //
+  // Tolerance εₛ is chosen to be a number close to machine epsilon. As an
+  // example, an area of size εₛ = 10⁻¹⁴ m² will have an effective length of
+  // about ℓ ≈ 10⁻⁷ m, well below macroscopic sizes in typical robotic
+  // applications.
+  //
+  // We use this smooth definition of the centroid in two places:
+  //  1. In the computation of polygon's centroids (where the mesh is a single
+  //     polygon), in CalcAreaNormalAndCentroid() and,
+  //  2. In the computation of the polygonal mesh surface, in its constructor.
+  double area_smooth_tolerance_{1.0e-14};  // Tolerance εₛ, with units of m².
+
   /* Calculates the area and face normal of a polygon. Further computes its
    contribution to the surface centroid.
 
    @param poly_index The index of the polygon to compute the derived quantities.
-                     Must be in the range [0, poly_indices_.size()). */
-  void CalcAreaNormalAndCentroid(int poly_index);
+                     Must be in the range [0, poly_indices_.size()).
+   @returns The pair {p_MPi_area_scaled, Ai} where Ai is the area of the
+   polygon indicated by `poly_index` and p_MPi_area_scaled = Ai * p_MPi, with
+   p_MPi the centroid of the polygon. */
+  std::pair<Vector3<T>, T> CalcAreaNormalAndCentroid(int poly_index);
 
   /* The encoding of the mesh's polygons. See the advanced constructor for
    details. */

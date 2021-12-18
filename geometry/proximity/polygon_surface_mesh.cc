@@ -20,14 +20,30 @@ PolygonSurfaceMesh<T>::PolygonSurfaceMesh(vector<int> face_data,
     : face_data_(move(face_data)),
       vertices_M_(move(vertices)),
       p_MSc_(Vector3<T>::Zero()) {
+  const double Aeps = area_smooth_tolerance_;
+
   /* Build the polygons and derived quantities from the given data. */
   int poly_count = -1;
   int i = 0;
   while (i < static_cast<int>(face_data_.size())) {
     poly_indices_.push_back(i);
-    CalcAreaNormalAndCentroid(++poly_count);
-    i += face_data_[i] + 1;  /* Jump to the next polygon. */
+    // Accumulate contribution to the centroid and total area of the mesh.
+    const auto [p_MPi_area_scaled, Ai] =
+        CalcAreaNormalAndCentroid(++poly_count);
+    p_MSc_ += p_MPi_area_scaled;
+    total_area_ += Ai;
+    i += face_data_[i] + 1; /* Jump to the next polygon. */
   }
+
+  // Compute mean vertex position.
+  Vector3<T> p_MVmean(0, 0, 0);
+  for (const Vector3<T>& p_MV : vertices_M_) p_MVmean += p_MV;
+  p_MVmean /= num_vertices();
+
+  // Compute smooth centroid.
+  const T zc = Aeps / (total_area_ + Aeps);
+  p_MSc_ = p_MSc_ / (total_area_ + Aeps) + zc * p_MVmean;
+
   DRAKE_DEMAND(poly_indices_.size() == areas_.size());
   DRAKE_DEMAND(poly_indices_.size() == face_normals_.size());
 }
@@ -76,7 +92,8 @@ bool PolygonSurfaceMesh<T>::Equal(const PolygonSurfaceMesh<T>& mesh) const {
 }
 
 template <class T>
-void PolygonSurfaceMesh<T>::CalcAreaNormalAndCentroid(int poly_index) {
+std::pair<Vector3<T>, T> PolygonSurfaceMesh<T>::CalcAreaNormalAndCentroid(
+    int poly_index) {
   int data_index = poly_indices_[poly_index];
   const int v_count = face_data_[data_index];
   int v_index_offset = data_index + 1;
@@ -153,16 +170,28 @@ void PolygonSurfaceMesh<T>::CalcAreaNormalAndCentroid(int poly_index) {
    */
   face_normals_.emplace_back(normal_M.normalized());
 
+  const double Aeps = area_smooth_tolerance_;
+  const T zc = Aeps / (poly_area + Aeps);
+
+  // Compute mean vertex position. In the limit to a zero size polygon, mean
+  // vertex position and centroid are the same.
+  Vector3<T> p_MVmean(0, 0, 0);
+  for (int v = 0; v < v_count; ++v) {
+    const Vector3<T>& p_MV = vertices_M_[face_data_[v_index_offset + v]];
+    p_MVmean += p_MV;
+  }
+  p_MVmean /= v_count;
+
   /* Accumulate the contribution of *this* polygon into the mesh centroid. We
    implicitly have the weighted contribution of all previous polygons as the
    product of current centroid and total area. This allows us to add in this
    polygon's contribution proportionately (although, we want to add in Aₚ⋅p_MFc,
    but what we computed is 6⋅Aₚ⋅p_MFc. */
   const Vector3<T> p_MTc_area_scaled = p_MTc_scaled / 6;
-  element_centroid_M_.emplace_back(p_MTc_area_scaled / poly_area);
-  const T old_area = total_area_;
-  total_area_ += poly_area;
-  p_MSc_ = (p_MSc_ * old_area + p_MTc_area_scaled) / total_area_;
+  const Vector3<T> p_MCentroidSmooth =
+      p_MTc_area_scaled / (poly_area + Aeps) + zc * p_MVmean;
+  element_centroid_M_.emplace_back(p_MCentroidSmooth);
+  return std::make_pair(p_MTc_area_scaled, poly_area);
 }
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(

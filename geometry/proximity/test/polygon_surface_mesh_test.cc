@@ -303,8 +303,13 @@ TYPED_TEST(PolygonSurfaceMeshTest, ZeroFaceNormal) {
   /* Make sure the face normals computed are in the frame of the vertices. */
   const PolygonSurfaceMesh<T> mesh = this->MakeMesh({poly});
 
-  ASSERT_TRUE(
+  // For a zero sized polygon we expect the centroid to be the average of the
+  // vertex positions.
+  const Vector3d expected_centroid(1.0, 0.0, 0.0);
+  EXPECT_TRUE(
       CompareMatrices(ExtractDoubleOrThrow(mesh.face_normal(0)), poly.normal));
+  EXPECT_TRUE(CompareMatrices(ExtractDoubleOrThrow(mesh.centroid()),
+                              expected_centroid));
 }
 
 /* In the case where a face has collinear vertices, we want to confirm that we
@@ -343,7 +348,7 @@ TYPED_TEST(PolygonSurfaceMeshTest, DegenerateFaceNormal) {
     ASSERT_TRUE(CompareMatrices(ExtractDoubleOrThrow(mesh.face_normal(0)),
                                 poly.normal));
     ASSERT_TRUE(CompareMatrices(ExtractDoubleOrThrow(mesh.element_centroid(0)),
-                                poly.centroid));
+                                poly.centroid, 2.0e-15));
     ASSERT_EQ(mesh.total_area(), poly.area);
   }
 }
