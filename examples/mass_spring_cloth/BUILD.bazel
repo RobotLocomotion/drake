@@ -56,7 +56,7 @@ drake_cc_binary(
         ":cloth_spring_model",
         ":cloth_spring_model_geometry",
         "//common:add_text_logging_gflags",
-        "//geometry:drake_visualizer",
+        "//geometry:meshcat_visualizer",
         "//systems/analysis:simulator_gflags",
         "//systems/framework:diagram",
     ],
