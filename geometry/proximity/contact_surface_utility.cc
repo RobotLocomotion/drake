@@ -276,6 +276,10 @@ Vector3<T> CalcPolygonCentroid(const std::vector<int>& polygon,
     total_weight += weight;
   }
 
+  // TODO(amcastro-tri): Incorporate definition of the centroid introduced in
+  // #16253 so that this computation is valid for areas close to machine
+  // epsilon. The exact comparison below would only be valid for precisely set
+  // configurations for which areas are exactly zero.
   if (total_weight == 0) {
     // The polygon is degenerate with no area. In that case, we'll simply
     // define the centroid as the average vertex position. (Alternatively we

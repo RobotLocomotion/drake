@@ -493,6 +493,10 @@ void TriangleSurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
   }
 
   // Finalize centroid.
+  // TODO(amcastro-tri): Incorporate definition of the centroid introduced in
+  // #16253 so that this computation is valid for areas close to machine
+  // epsilon. The exact comparison below would only be valid for precisely set
+  // configurations for which areas are exactly zero.
   if (total_area_ != T(0.))
     p_MSc_ /= (3. * total_area_);
 }
