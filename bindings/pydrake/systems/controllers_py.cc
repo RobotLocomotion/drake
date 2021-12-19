@@ -113,7 +113,11 @@ PYBIND11_MODULE(controllers, m) {
       .def("get_output_port_control",
           &InverseDynamicsController<double>::get_output_port_control,
           py_rvp::reference_internal,
-          doc.InverseDynamicsController.get_output_port_control.doc);
+          doc.InverseDynamicsController.get_output_port_control.doc)
+      .def("get_multibody_plant_for_control",
+          &InverseDynamicsController<double>::get_multibody_plant_for_control,
+          py_rvp::reference_internal,
+          doc.InverseDynamicsController.get_multibody_plant_for_control.doc);
 
   py::class_<PidControlledSystem<double>, Diagram<double>>(
       m, "PidControlledSystem", doc.PidControlledSystem.doc)
