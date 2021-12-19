@@ -25,6 +25,7 @@ from pydrake.systems.framework import (
     Diagram,
     DiagramBuilder,
     DiscreteStateIndex,
+    DiscreteValues,
     EventStatus,
     InputPortIndex,
     LeafSystem, LeafSystem_,
@@ -280,7 +281,15 @@ class TestCustom(unittest.TestCase):
                 self.called_initialize = False
                 self.called_per_step = False
                 self.called_periodic = False
+                self.called_initialize_publish = False
+                self.called_initialize_discrete = False
+                self.called_initialize_unrestricted = False
+                self.called_periodic_publish = False
+                self.called_periodic_discrete = False
                 self.called_periodic_unrestricted = False
+                self.called_per_step_publish = False
+                self.called_per_step_discrete = False
+                self.called_per_step_unrestricted = False
                 self.called_getwitness = False
                 self.called_witness = False
                 self.called_guard = False
@@ -290,16 +299,36 @@ class TestCustom(unittest.TestCase):
                 self.DeclarePeriodicPublish(1.0)
                 self.DeclarePeriodicPublish(1.0, 0)
                 self.DeclarePeriodicPublish(period_sec=1.0, offset_sec=0.)
-                self.DeclarePeriodicDiscreteUpdate(
-                    period_sec=1.0, offset_sec=0.)
-                self.DeclarePeriodicUnrestrictedUpdateEvent(
-                    period_sec=1.0,
-                    offset_sec=0,
-                    update=self._on_periodic_unrestricted)
+                self.DeclareInitializationPublishEvent(
+                    publish=self._on_initialize_publish)
+                self.DeclareInitializationDiscreteUpdateEvent(
+                    update=self._on_initialize_discrete)
+                self.DeclareInitializationUnrestrictedUpdateEvent(
+                    update=self._on_initialize_unrestricted)
                 self.DeclareInitializationEvent(
                     event=PublishEvent(
                         trigger_type=TriggerType.kInitialization,
                         callback=self._on_initialize))
+                self.DeclarePeriodicDiscreteUpdate(
+                    period_sec=1.0, offset_sec=0.)
+                self.DeclarePeriodicPublishEvent(
+                    period_sec=1.0,
+                    offset_sec=0,
+                    publish=self._on_periodic_publish)
+                self.DeclarePeriodicDiscreteUpdateEvent(
+                    period_sec=1.0,
+                    offset_sec=0,
+                    update=self._on_periodic_discrete)
+                self.DeclarePeriodicUnrestrictedUpdateEvent(
+                    period_sec=1.0,
+                    offset_sec=0,
+                    update=self._on_periodic_unrestricted)
+                self.DeclarePerStepPublishEvent(
+                    publish=self._on_per_step_publish)
+                self.DeclarePerStepDiscreteUpdateEvent(
+                    update=self._on_per_step_discrete)
+                self.DeclarePerStepUnrestrictedUpdateEvent(
+                    update=self._on_per_step_unrestricted)
                 self.DeclarePerStepEvent(
                     event=PublishEvent(
                         trigger_type=TriggerType.kPerStep,
@@ -385,11 +414,61 @@ class TestCustom(unittest.TestCase):
                 test.assertFalse(self.called_periodic)
                 self.called_periodic = True
 
+            def _on_initialize_publish(self, context):
+                test.assertIsInstance(context, Context)
+                test.assertFalse(self.called_initialize_publish)
+                self.called_initialize_publish = True
+                return EventStatus.Succeeded()
+
+            def _on_initialize_discrete(self, context, discrete_state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(discrete_state, DiscreteValues)
+                test.assertFalse(self.called_initialize_discrete)
+                self.called_initialize_discrete = True
+                return EventStatus.Succeeded()
+
+            def _on_initialize_unrestricted(self, context, state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(state, State)
+                test.assertFalse(self.called_initialize_unrestricted)
+                self.called_initialize_unrestricted = True
+                return EventStatus.Succeeded()
+
+            def _on_periodic_publish(self, context):
+                test.assertIsInstance(context, Context)
+                test.assertFalse(self.called_periodic_publish)
+                self.called_periodic_publish = True
+                return EventStatus.Succeeded()
+
+            def _on_periodic_discrete(self, context, discrete_state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(discrete_state, DiscreteValues)
+                test.assertFalse(self.called_periodic_discrete)
+                self.called_periodic_discrete = True
+                return EventStatus.Succeeded()
+
             def _on_periodic_unrestricted(self, context, state):
                 test.assertIsInstance(context, Context)
                 test.assertIsInstance(state, State)
                 test.assertFalse(self.called_periodic_unrestricted)
                 self.called_periodic_unrestricted = True
+                return EventStatus.Succeeded()
+
+            def _on_per_step_publish(self, context):
+                test.assertIsInstance(context, Context)
+                self.called_per_step_publish = True
+                return EventStatus.Succeeded()
+
+            def _on_per_step_discrete(self, context, discrete_state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(discrete_state, DiscreteValues)
+                self.called_per_step_discrete = True
+                return EventStatus.Succeeded()
+
+            def _on_per_step_unrestricted(self, context, state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(state, State)
+                self.called_per_step_unrestricted = True
                 return EventStatus.Succeeded()
 
             def _witness(self, context):
@@ -458,7 +537,15 @@ class TestCustom(unittest.TestCase):
         simulator.AdvanceTo(0.99)
         self.assertTrue(system.called_per_step)
         self.assertTrue(system.called_periodic)
+        self.assertTrue(system.called_initialize_publish)
+        self.assertTrue(system.called_initialize_discrete)
+        self.assertTrue(system.called_initialize_unrestricted)
+        self.assertTrue(system.called_periodic_publish)
+        self.assertTrue(system.called_periodic_discrete)
         self.assertTrue(system.called_periodic_unrestricted)
+        self.assertTrue(system.called_per_step_publish)
+        self.assertTrue(system.called_per_step_discrete)
+        self.assertTrue(system.called_per_step_unrestricted)
         self.assertTrue(system.called_getwitness)
         self.assertTrue(system.called_witness)
         self.assertTrue(system.called_guard)
