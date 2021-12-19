@@ -296,11 +296,14 @@ class PolygonSurfaceMesh {
 
  private:
   /* Calculates the area and face normal of a polygon. Further computes its
-   contribution to the surface centroid.
+   contribution to the surface centroid and returns it.
 
    @param poly_index The index of the polygon to compute the derived quantities.
-                     Must be in the range [0, poly_indices_.size()). */
-  void CalcAreaNormalAndCentroid(int poly_index);
+                     Must be in the range [0, poly_indices_.size()).
+   @returns The pair {p_MPi_area_scaled, Ai} where Ai is the area of the
+   polygon indicated by `poly_index` and p_MPi_area_scaled = Ai * p_MPi, with
+   p_MPi the centroid of the polygon. */
+  std::pair<Vector3<T>, T> CalcAreaNormalAndCentroid(int poly_index);
 
   /* The encoding of the mesh's polygons. See the advanced constructor for
    details. */

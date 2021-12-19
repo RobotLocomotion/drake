@@ -24,6 +24,8 @@ DEFINE_double(simulation_time, 2.0,
 // Contact model parameters.
 DEFINE_string(contact_model, "point",
               "Contact model. Options are: 'point', 'hydroelastic', 'hybrid'.");
+DEFINE_string(hydro_rep, "tri",
+              "Surface representation. Options are: 'tri', 'poly'.");
 DEFINE_double(hydroelastic_modulus, 5.0e4,
               "For hydroelastic (and hybrid) contact, "
               "hydroelastic modulus, [Pa].");
@@ -133,6 +135,14 @@ int do_main() {
     illus_prop.AddProperty("phong", "diffuse", Vector4d(0.7, 0.5, 0.4, 0.5));
     plant.RegisterVisualGeometry(plant.world_body(), X_WB, wall, "wall_visual",
                                  std::move(illus_prop));
+  }
+
+  if (FLAGS_hydro_rep == "tri") {
+    plant.set_contact_surface_representation(
+        geometry::HydroelasticContactRepresentation::kTriangle);
+  } else {
+    plant.set_contact_surface_representation(
+        geometry::HydroelasticContactRepresentation::kPolygon);
   }
 
   // Set contact model and parameters.
