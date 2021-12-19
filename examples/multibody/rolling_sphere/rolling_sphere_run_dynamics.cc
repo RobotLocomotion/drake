@@ -24,6 +24,10 @@ DEFINE_double(simulation_time, 2.0,
 // Contact model parameters.
 DEFINE_string(contact_model, "point",
               "Contact model. Options are: 'point', 'hydroelastic', 'hybrid'.");
+DEFINE_string(hydro_rep, "tri",
+              "Contact-surface representation for hydroelastics. "
+              "Options are: 'tri' for triangles, 'poly' for polygons. "
+              "Default is 'tri'. It has no effect on point contact.");
 DEFINE_double(hydroelastic_modulus, 5.0e4,
               "For hydroelastic (and hybrid) contact, "
               "hydroelastic modulus, [Pa].");
@@ -133,6 +137,17 @@ int do_main() {
     illus_prop.AddProperty("phong", "diffuse", Vector4d(0.7, 0.5, 0.4, 0.5));
     plant.RegisterVisualGeometry(plant.world_body(), X_WB, wall, "wall_visual",
                                  std::move(illus_prop));
+  }
+
+  if (FLAGS_hydro_rep == "tri") {
+    plant.set_contact_surface_representation(
+        geometry::HydroelasticContactRepresentation::kTriangle);
+  } else if (FLAGS_hydro_rep == "poly") {
+    plant.set_contact_surface_representation(
+        geometry::HydroelasticContactRepresentation::kPolygon);
+  } else {
+    throw std::runtime_error("Invalid choice of contact-surface representation "
+                             "for hydroelastics '" + FLAGS_hydro_rep + "'.");
   }
 
   // Set contact model and parameters.
