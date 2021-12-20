@@ -443,7 +443,7 @@ else()
   set(BAZEL_ARGS)
 endif()
 
-# N.B. If you are testing the CMake API and making changes to `install.py.in`,
+# N.B. If you are testing the CMake API and making changes to `installer.py`,
 # you can change this target to something more lightweight, such as
 # `//tools/install/dummy:install`.
 set(BAZEL_TARGETS //:install)
