@@ -10,6 +10,7 @@ int main(int /* argc */, char* /* argv */[]) {
   std::string sha = picosha2::bytes_to_hex_string(hash.begin(), hash.end());
 
   // If the sha is correct, we desire a return code of 0.
-  return \
-      sha != "a8a2f6ebe286697c527eb35a58b5539532e9b3ae3b64d4eb0a46fb657b41562c";
+  // The literal hash value here can be checked via the command:
+  //   echo -n "This is a test." | sha256sum
+  return sha != "a8a2f6ebe286697c527eb35a58b5539532e9b3ae3b64d4eb0a46fb657b41562c";
 }
