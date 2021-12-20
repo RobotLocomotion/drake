@@ -173,6 +173,12 @@ class PolygonSurfaceMesh {
    @param vertices   The vertex positions, measured and expressed in this
                      mesh's frame.
    @pre The indices in `face_data` all refer to valid indices into `vertices`.
+
+   @note If `face_data` includes a zero-area polygon, that polygon will have
+         a non-NaN centroid chosen arbitrarily. For hydroelastics, this is
+         acceptable because its zero area will neutralize its contribution to
+         computation of contact wrench. If all polygons have zero area, the
+         mesh's centroid will be chosen arbitrarily as well.
    */
   PolygonSurfaceMesh(std::vector<int> face_data,
                      std::vector<Vector3<T>> vertices);
@@ -295,12 +301,32 @@ class PolygonSurfaceMesh {
   }
 
  private:
+  // TODO(DamrongGuoy): Make CalcAreaNormalAndCentroid() return area, normal
+  //  vector, and centroid instead of accumulating them into member
+  //  variables. Therefore, the function would become publicly accessible, and
+  //  we can test it directly.
+
   /* Calculates the area and face normal of a polygon. Further computes its
    contribution to the surface centroid.
 
    @param poly_index The index of the polygon to compute the derived quantities.
                      Must be in the range [0, poly_indices_.size()). */
   void CalcAreaNormalAndCentroid(int poly_index);
+
+  // TODO(DamrongGuoy): Right now CalcAveragePosition() is used as a fallback
+  //  for the centroid of a zero-area polygon in CalcAreaNormalAndCentroid().
+  //  If it is useful in other contexts, make it public and test it properly.
+
+  /* Calculates the average vertex position of a polygon. Depending on vertex
+   distribution, it might be surprisingly far from the "middle" of the
+   polygon. For example, the zero-area polygon {(0,0,0),(0,0,0),(0,0,0),
+   (1,0,0)} spans a unit line segment, but its average vertex position is
+   (0.25,0,0), which is far from the middle (0.5,0,0) of the line segment.
+
+   @param poly_index The index of the polygon.
+                     Must be in the range [0, poly_indices_.size()).
+   */
+  Vector3<T> CalcAveragePosition(int poly_index);
 
   /* The encoding of the mesh's polygons. See the advanced constructor for
    details. */
