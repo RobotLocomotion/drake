@@ -39,42 +39,54 @@ PYBIND11_MODULE(schema, m) {
   {
     using Class = Deterministic;
     constexpr auto& cls_doc = doc.Deterministic;
-    py::class_<Class, Distribution>(m, "Deterministic", cls_doc.doc)
+    py::class_<Class, Distribution> cls(m, "Deterministic", cls_doc.doc);
+    cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
+        .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<double>(), py::arg("value"), cls_doc.ctor.doc)
         .def_readwrite("value", &Class::value, cls_doc.value.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
     using Class = Gaussian;
     constexpr auto& cls_doc = doc.Gaussian;
-    py::class_<Class, Distribution>(m, "Gaussian", cls_doc.doc)
+    py::class_<Class, Distribution> cls(m, "Gaussian", cls_doc.doc);
+    cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
+        .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<double, double>(), py::arg("mean"), py::arg("stddev"),
             cls_doc.ctor.doc)
         .def_readwrite("mean", &Class::mean, cls_doc.mean.doc)
         .def_readwrite("stddev", &Class::stddev, cls_doc.stddev.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
     using Class = Uniform;
     constexpr auto& cls_doc = doc.Uniform;
-    py::class_<Class, Distribution>(m, "Uniform", cls_doc.doc)
+    py::class_<Class, Distribution> cls(m, "Uniform", cls_doc.doc);
+    cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
+        .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<double, double>(), py::arg("min"), py::arg("max"),
             cls_doc.ctor.doc)
         .def_readwrite("min", &Class::min, cls_doc.min.doc)
         .def_readwrite("max", &Class::max, cls_doc.max.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
     using Class = UniformDiscrete;
     constexpr auto& cls_doc = doc.UniformDiscrete;
-    py::class_<Class, Distribution>(m, "UniformDiscrete", cls_doc.doc)
+    py::class_<Class, Distribution> cls(m, "UniformDiscrete", cls_doc.doc);
+    cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
+        .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<std::vector<double>>(), py::arg("values"),
             cls_doc.ctor.doc)
         .def_readwrite("values", &Class::values, cls_doc.values.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
@@ -126,38 +138,48 @@ PYBIND11_MODULE(schema, m) {
     constexpr int size = Eigen::Dynamic;
     using Class = DeterministicVector<size>;
     constexpr auto& cls_doc = doc.DeterministicVector;
-    py::class_<Class, DistributionVector>(
-        m, "DeterministicVectorX", cls_doc.doc)
+    py::class_<Class, DistributionVector> cls(
+        m, "DeterministicVectorX", cls_doc.doc);
+    cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
+        .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<const drake::Vector<double, size>&>(), py::arg("value"),
             cls_doc.ctor.doc)
         .def_readwrite("value", &Class::value, cls_doc.value.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
     constexpr int size = Eigen::Dynamic;
     using Class = GaussianVector<size>;
     constexpr auto& cls_doc = doc.GaussianVector;
-    py::class_<Class, DistributionVector>(m, "GaussianVectorX", cls_doc.doc)
+    py::class_<Class, DistributionVector> cls(
+        m, "GaussianVectorX", cls_doc.doc);
+    cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
+        .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<const drake::Vector<double, size>&,
                  const drake::VectorX<double>&>(),
             py::arg("mean"), py::arg("stddev"), cls_doc.ctor.doc)
         .def_readwrite("mean", &Class::mean, cls_doc.mean.doc)
         .def_readwrite("stddev", &Class::stddev, cls_doc.stddev.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
     constexpr int size = Eigen::Dynamic;
     using Class = UniformVector<size>;
     constexpr auto& cls_doc = doc.UniformVector;
-    py::class_<Class, DistributionVector>(m, "UniformVectorX", cls_doc.doc)
+    py::class_<Class, DistributionVector> cls(m, "UniformVectorX", cls_doc.doc);
+    cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
+        .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<const drake::Vector<double, size>&,
                  const drake::Vector<double, size>&>(),
             py::arg("min"), py::arg("max"), cls_doc.ctor.doc)
         .def_readwrite("min", &Class::min, cls_doc.min.doc)
         .def_readwrite("max", &Class::max, cls_doc.max.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
@@ -187,6 +209,7 @@ PYBIND11_MODULE(schema, m) {
     py::class_<Class> cls(m, "Rotation", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<const math::RotationMatrixd&>(), cls_doc.ctor.doc_1args)
         .def(py::init<const math::RollPitchYawd&>(), cls_doc.ctor.doc_1args)
         .def("IsDeterministic", &Class::IsDeterministic,
@@ -199,6 +222,7 @@ PYBIND11_MODULE(schema, m) {
     // TODO(jwnimmer-tri) Bind the .value field.
     // In the meantime, a work-around for read access is to call ToSymbolic or
     // GetDeterministicValue.
+    DefCopyAndDeepCopy(&cls);
   }
 
   // Bindings for transform.h.
@@ -209,6 +233,7 @@ PYBIND11_MODULE(schema, m) {
     py::class_<Class> cls(m, "Transform", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<const math::RigidTransformd&>(), cls_doc.ctor.doc_1args)
         .def("set_rotation_rpy_deg", &Class::set_rotation_rpy_deg,
             py::arg("rpy_deg"), cls_doc.set_rotation_rpy_deg.doc)
@@ -223,6 +248,7 @@ PYBIND11_MODULE(schema, m) {
     // TODO(jwnimmer-tri) Bind the .translation and .rotation fields.
     // In the meantime, a work-around for read access is to call ToSymbolic or
     // GetDeterministicValue.
+    DefCopyAndDeepCopy(&cls);
   }
 }
 
