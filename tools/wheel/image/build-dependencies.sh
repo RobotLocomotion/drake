@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -eu -o pipefail
 
 mkdir -p /dependencies/build
 cd /dependencies/build

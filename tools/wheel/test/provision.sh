@@ -4,7 +4,7 @@
 # It is not intended to be run directly; use test-wheel.sh or test-wheels.sh,
 # or the accompanying Dockerfile, instead.
 
-set -e
+set -eu -o pipefail
 
 PYTHON=python${1:-3}
 
