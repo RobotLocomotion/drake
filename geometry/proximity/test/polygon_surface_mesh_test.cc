@@ -424,6 +424,24 @@ TYPED_TEST(PolygonSurfaceMeshTest, CalcGradientVectorOfLinearField) {
       "be provided at construction.");
 }
 
+GTEST_TEST(PolygonSurfaceMeshTestCornerCases, ZeroAreaPolygon) {
+  // An arbitrary location of the zero-area mesh.
+  const Vector3d p_MC(0.5, 2.3, 100.4);
+  PolygonSurfaceMesh<double> zero_area_mesh_M(
+      {4, 0, 1, 2, 3},  // one polygon of 4 vertices
+      {p_MC, p_MC, p_MC, p_MC});
+
+  // Check the entire mesh.
+  ASSERT_EQ(zero_area_mesh_M.num_faces(), 1);
+  EXPECT_EQ(zero_area_mesh_M.total_area(), 0.0);
+  EXPECT_EQ(zero_area_mesh_M.centroid(), p_MC);
+
+  // Check the polygonal face.
+  EXPECT_EQ(zero_area_mesh_M.element_centroid(0), p_MC);
+  EXPECT_EQ(zero_area_mesh_M.face_normal(0), Vector3d::Zero());
+  EXPECT_EQ(zero_area_mesh_M.area(0), 0.0);
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
