@@ -25,6 +25,16 @@ namespace sensors {
 /// instead check the semantic of those images with
 /// lcmt_image::pixel_format before using them.
 ///
+/// @system
+/// name: ImageToLcmImageArrayT
+/// input_ports:
+/// - (user assigned port name)
+/// - ...
+/// - (user assigned port name)
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @note The output message's header field `seq` is always zero.
 class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
  public:
