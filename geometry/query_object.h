@@ -295,10 +295,11 @@ class QueryObject {
        geometry pair *cannot be culled* an exception will be thrown. No
        exception is thrown if the pair has been filtered.
      - The hydroelastic modulus (N/m^2) of each compliant geometry is set in
-       ProximityProperties by AddSoftHydroelasticProperties().
+       ProximityProperties by AddCompliantHydroelasticProperties().
      - The tessellation of the corresponding meshes is controlled by the
        resolution hint (where appropriate), as defined by
-       AddSoftHydroelasticProperties() and AddRigidHydroelasticProperties().
+       AddCompliantHydroelasticProperties() and
+       AddRigidHydroelasticProperties().
 
    <h3>Scalar support</h3>
 

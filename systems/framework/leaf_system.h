@@ -317,7 +317,8 @@ class LeafSystem : public System<T> {
   @code
     void MySystem::MyPublish(const Context<T>&) const;
   @endcode
-  See the other signature for more information. */
+  See the other signature for more information.
+  @exclude_from_pydrake_mkdoc{This overload is not bound.} */
   template <class MySystem>
   void DeclarePeriodicPublishEvent(double period_sec, double offset_sec,
                                    void (MySystem::*publish)(const Context<T>&)
@@ -387,7 +388,8 @@ class LeafSystem : public System<T> {
     void MySystem::MyUpdate(const Context<T>&,
                             DiscreteValues<T>*) const;
   @endcode
-  See the other signature for more information. */
+  See the other signature for more information.
+  @exclude_from_pydrake_mkdoc{This overload is not bound.} */
   template <class MySystem>
   void DeclarePeriodicDiscreteUpdateEvent(
       double period_sec, double offset_sec,
@@ -454,7 +456,8 @@ class LeafSystem : public System<T> {
   @code
     void MySystem::MyUpdate(const Context<T>&, State<T>*) const;
   @endcode
-  See the other signature for more information. */
+  See the other signature for more information.
+  @exclude_from_pydrake_mkdoc{This overload is not bound.} */
   template <class MySystem>
   void DeclarePeriodicUnrestrictedUpdateEvent(
       double period_sec, double offset_sec,

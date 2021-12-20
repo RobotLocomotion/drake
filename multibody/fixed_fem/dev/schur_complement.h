@@ -67,7 +67,7 @@ class SchurComplement {
   int q_{0};  // Number of rows and columns for D.
   // TODO(xuchenhan-tri): Investigate the sparsity pattern of D⁻¹Bᵀ with actual
   //  meshes.
-  MatrixX<T> D_complement_{};                      // A - BD⁻¹Bᵀ.
+  MatrixX<T> D_complement_{};          // A - BD⁻¹Bᵀ.
   MatrixX<T> neg_Dinv_B_transpose_{};  // -D⁻¹Bᵀ.
 };
 

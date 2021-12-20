@@ -1,4 +1,4 @@
-"""Tests the behavior of targets generated from `install.py.in`."""
+"""Tests the behavior of targets that use `installer.py`."""
 
 import os
 from os.path import isdir, join, relpath

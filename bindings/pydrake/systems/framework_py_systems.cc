@@ -90,6 +90,7 @@ struct Impl {
     using Base::DeclarePeriodicDiscreteUpdate;
     using Base::DeclarePeriodicEvent;
     using Base::DeclarePeriodicPublish;
+    using Base::DeclarePeriodicUnrestrictedUpdateEvent;
     using Base::DeclarePerStepEvent;
     using Base::DeclareStateOutputPort;
     using Base::DeclareVectorInputPort;
@@ -596,6 +597,54 @@ Note: The above is for the C++ documentation. For Python, use
                 AbstractStateIndex>(&LeafSystemPublic::DeclareStateOutputPort),
             py::arg("name"), py::arg("state_index"), py_rvp::reference_internal,
             doc.LeafSystem.DeclareStateOutputPort.doc_abstract)
+        // TODO(russt): Implement the std::function variant of
+        // LeafSystem::Declare*Event sugar methods if they are ever needed,
+        // instead of implementing them here.
+        .def("DeclareInitializationPublishEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self,
+                    std::function<EventStatus(const Context<T>&)> publish) {
+                  self->DeclareInitializationEvent(
+                      PublishEvent<T>(TriggerType::kInitialization,
+                          [publish](const System<T>&, const Context<T>& context,
+                              const PublishEvent<T>&) {
+                            // TODO(sherm1) Forward the return status.
+                            publish(context);  // Ignore return status for now.
+                          }));
+                }),
+            py::arg("publish"),
+            doc.LeafSystem.DeclareInitializationPublishEvent.doc)
+        .def("DeclareInitializationDiscreteUpdateEvent",
+            WrapCallbacks([](PyLeafSystem* self,
+                              std::function<EventStatus(
+                                  const Context<T>&, DiscreteValues<T>*)>
+                                  update) {
+              self->DeclareInitializationEvent(DiscreteUpdateEvent<T>(
+                  TriggerType::kInitialization,
+                  [update](const System<T>&, const Context<T>& context,
+                      const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
+                    // TODO(sherm1) Forward the return status.
+                    update(context,
+                        &*xd);  // Ignore return status for now.
+                  }));
+            }),
+            py::arg("update"),
+            doc.LeafSystem.DeclareInitializationDiscreteUpdateEvent.doc)
+        .def("DeclareInitializationUnrestrictedUpdateEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self,
+                    std::function<EventStatus(const Context<T>&, State<T>*)>
+                        update) {
+                  self->DeclareInitializationEvent(UnrestrictedUpdateEvent<T>(
+                      TriggerType::kInitialization,
+                      [update](const System<T>&, const Context<T>& context,
+                          const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+                        // TODO(sherm1) Forward the return status.
+                        update(context, &*x);  // Ignore return status for now.
+                      }));
+                }),
+            py::arg("update"),
+            doc.LeafSystem.DeclareInitializationUnrestrictedUpdateEvent.doc)
         .def(
             "DeclareInitializationEvent",
             [](PyLeafSystem* self, const Event<T>& event) {
@@ -610,6 +659,54 @@ Note: The above is for the C++ documentation. For Python, use
             &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
             py::arg("period_sec"), py::arg("offset_sec") = 0.,
             doc.LeafSystem.DeclarePeriodicDiscreteUpdate.doc)
+        .def("DeclarePeriodicPublishEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self, double period_sec, double offset_sec,
+                    std::function<EventStatus(const Context<T>&)> publish) {
+                  self->DeclarePeriodicEvent(period_sec, offset_sec,
+                      PublishEvent<T>(TriggerType::kPeriodic,
+                          [publish](const System<T>&, const Context<T>& context,
+                              const PublishEvent<T>&) {
+                            // TODO(sherm1) Forward the return status.
+                            publish(context);  // Ignore return status for now.
+                          }));
+                }),
+            py::arg("period_sec"), py::arg("offset_sec"), py::arg("publish"),
+            doc.LeafSystem.DeclarePeriodicPublishEvent.doc)
+        .def("DeclarePeriodicDiscreteUpdateEvent",
+            WrapCallbacks([](PyLeafSystem* self, double period_sec,
+                              double offset_sec,
+                              std::function<EventStatus(
+                                  const Context<T>&, DiscreteValues<T>*)>
+                                  update) {
+              self->DeclarePeriodicEvent(period_sec, offset_sec,
+                  DiscreteUpdateEvent<T>(TriggerType::kPeriodic,
+                      [update](const System<T>&, const Context<T>& context,
+                          const DiscreteUpdateEvent<T>&,
+                          DiscreteValues<T>* xd) {
+                        // TODO(sherm1) Forward the return status.
+                        update(context,
+                            &*xd);  // Ignore return status for now.
+                      }));
+            }),
+            py::arg("period_sec"), py::arg("offset_sec"), py::arg("update"),
+            doc.LeafSystem.DeclarePeriodicDiscreteUpdateEvent.doc)
+        .def("DeclarePeriodicUnrestrictedUpdateEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self, double period_sec, double offset_sec,
+                    std::function<EventStatus(const Context<T>&, State<T>*)>
+                        update) {
+                  self->DeclarePeriodicEvent(period_sec, offset_sec,
+                      UnrestrictedUpdateEvent<T>(TriggerType::kPeriodic,
+                          [update](const System<T>&, const Context<T>& context,
+                              const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+                            // TODO(sherm1) Forward the return status.
+                            update(
+                                context, &*x);  // Ignore return status for now.
+                          }));
+                }),
+            py::arg("period_sec"), py::arg("offset_sec"), py::arg("update"),
+            doc.LeafSystem.DeclarePeriodicUnrestrictedUpdateEvent.doc)
         .def(
             "DeclarePeriodicEvent",
             [](PyLeafSystem* self, double period_sec, double offset_sec,
@@ -618,6 +715,51 @@ Note: The above is for the C++ documentation. For Python, use
             },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("event"),
             doc.LeafSystem.DeclarePeriodicEvent.doc)
+        .def("DeclarePerStepPublishEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self,
+                    std::function<EventStatus(const Context<T>&)> publish) {
+                  self->DeclarePerStepEvent(
+                      PublishEvent<T>(TriggerType::kPerStep,
+                          [publish](const System<T>&, const Context<T>& context,
+                              const PublishEvent<T>&) {
+                            // TODO(sherm1) Forward the return status.
+                            publish(context);  // Ignore return status for now.
+                          }));
+                }),
+            py::arg("publish"), doc.LeafSystem.DeclarePerStepPublishEvent.doc)
+        .def("DeclarePerStepDiscreteUpdateEvent",
+            WrapCallbacks([](PyLeafSystem* self,
+                              std::function<EventStatus(
+                                  const Context<T>&, DiscreteValues<T>*)>
+                                  update) {
+              self->DeclarePerStepEvent(DiscreteUpdateEvent<T>(
+                  TriggerType::kPerStep,
+                  [update](const System<T>&, const Context<T>& context,
+                      const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
+                    // TODO(sherm1) Forward the return status.
+                    update(context,
+                        &*xd);  // Ignore return status for now.
+                  }));
+            }),
+            py::arg("update"),
+            doc.LeafSystem.DeclarePerStepDiscreteUpdateEvent.doc)
+        .def("DeclarePerStepUnrestrictedUpdateEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self,
+                    std::function<EventStatus(const Context<T>&, State<T>*)>
+                        update) {
+                  self->DeclarePerStepEvent(UnrestrictedUpdateEvent<T>(
+                      TriggerType::kPerStep,
+                      [update](const System<T>&, const Context<T>& context,
+                          const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+                        // TODO(sherm1) Forward the return status.
+                        update(context,
+                            &*x);  // Ignore return status for now.
+                      }));
+                }),
+            py::arg("update"),
+            doc.LeafSystem.DeclarePerStepUnrestrictedUpdateEvent.doc)
         .def(
             "DeclarePerStepEvent",
             [](PyLeafSystem* self, const Event<T>& event) {

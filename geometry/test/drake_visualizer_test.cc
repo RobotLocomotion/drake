@@ -741,7 +741,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
   using T = TypeParam;
 
   DrakeVisualizerParams params;
-  /* We'll expect the visualizer default color gets applied to the hydroelasitc
+  /* We'll expect the visualizer default color gets applied to the hydroelastic
    meshes -- we haven't defined any other color to the geometry. So, we'll pick
    an arbitrary value that *isn't* the default value. */
   params.default_color = Rgba{0.25, 0.5, 0.75, 0.5};
@@ -775,7 +775,9 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
   add_geometry(make_unique<Box>(1, 1, 1), "box", props, X_PBox);
   add_geometry(make_unique<HalfSpace>(), "rigid_half_space", props);
 
-  /* Populate with soft hydroelastic properties and add soft geometries. */
+  /* Populate with compliant hydroelastic properties and add
+     compliant geometries.
+  */
   props.AddProperty(internal::kHydroGroup, internal::kSlabThickness, 5.0);
   props.AddProperty(internal::kHydroGroup, internal::kElastic, 5.0);
   props.UpdateProperty(internal::kHydroGroup, internal::kComplianceType,

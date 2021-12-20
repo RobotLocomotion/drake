@@ -35,6 +35,7 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common:scope_exit",
         "//geometry:meshcat_visualizer",
+        "//geometry/test_utilities:meshcat_environment",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",

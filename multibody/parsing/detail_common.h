@@ -48,7 +48,7 @@ inline CoulombFriction<double> default_friction() {
 // the two parsers use different mechanisms to extract data from the file):
 //
 //   1. Determine if the `<drake:rigid_hydroelastic>` tag is present.
-//   2. Determine if the `<drake:soft_hydroelastic>` tag is present.
+//   2. Determine if the `<drake:compliant_hydroelastic>` tag is present.
 //   3. Create a function that will extract an *optional* double-valued scalar
 //      from a <drake:some_property> child tag of the
 //      <drake:proximity_properties> tag.
@@ -64,13 +64,13 @@ inline CoulombFriction<double> default_friction() {
 //                     named tags.
 // @param is_rigid     True if the caller detected the presence of the
 //                     <drake:rigid_hydroelastic> tag.
-// @param is_soft      True if the caller detected the presence of the
-//                     <drake:soft_hydroelastic> tag.
+// @param is_compliant True if the caller detected the presence of the
+//                     <drake:compliant_hydroelastic> tag.
 // @return All proximity properties discovered via the `read_double` function.
-// @pre At most one of `is_rigid` and `is_soft` is true.
+// @pre At most one of `is_rigid` and `is_compliant` is true.
 geometry::ProximityProperties ParseProximityProperties(
     const std::function<std::optional<double>(const char*)>& read_double,
-    bool is_rigid, bool is_soft);
+    bool is_rigid, bool is_compliant);
 
 // Populates a LinearBushingRollPitchYaw from a reading interface in a URDF/SDF
 // agnostic manner. This function does no semantic parsing and leaves the

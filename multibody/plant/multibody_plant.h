@@ -794,6 +794,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     collision_geometries_ = other.collision_geometries_;
     X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
+    contact_surface_representation_ =
+        other.contact_surface_representation_;
     penetration_allowance_ = other.penetration_allowance_;
     // Note: The physical models must be cloned before `FinalizePlantOnly()` is
     // called because `FinalizePlantOnly()` has to allocate system resources
@@ -1479,8 +1481,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// The hydroelastic modulus can be specified in one of two ways:
   ///
   /// - define it in an instance of geometry::ProximityProperties using
-  ///   the function geometry::AddSoftHydroelasticProperties() and
-  ///   geometry::AddSoftHydroelasticPropertiesForHalfSpace(), or
+  ///   the function geometry::AddCompliantHydroelasticProperties() and
+  ///   geometry::AddCompliantHydroelasticPropertiesForHalfSpace(), or
   /// - define it in an input URDF/SDF as detailed @ref sdf_contact_material
   ///   "here for SDF" or @ref urdf_contact_material "here for URDF".
   ///
@@ -1616,6 +1618,36 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// The default contact model is ContactModel::kPoint.
   /// @throws std::exception iff called post-finalize.
   void set_contact_model(ContactModel model);
+
+
+  /// Return the default value for contact representation, given the desired
+  /// time step. Discrete systems default to use polygons; continuous systems
+  /// default to use triangles.
+  static geometry::HydroelasticContactRepresentation
+  GetDefaultContactSurfaceRepresentation(double time_step) {
+    // Maintainers should keep this function consistent with defaults chosen in
+    // MultibodyPlantConfig.
+    if (time_step == 0.0) {
+      return geometry::HydroelasticContactRepresentation::kTriangle;
+    }
+    return geometry::HydroelasticContactRepresentation::kPolygon;
+  }
+
+  /// Sets the representation of contact surfaces to be used by `this`
+  /// %MultibodyPlant. See geometry::HydroelasticContactRepresentation for
+  /// available options. See GetDefaultContactSurfaceRepresentation() for
+  /// explanation of default values.
+  void set_contact_surface_representation(
+      geometry::HydroelasticContactRepresentation representation) {
+    contact_surface_representation_ = representation;
+  }
+
+  /// Gets the current representation of contact surfaces used by `this`
+  /// %MultibodyPlant.
+  geometry::HydroelasticContactRepresentation
+  get_contact_surface_representation() const {
+    return contact_surface_representation_;
+  }
 
 #ifndef DRAKE_DOXYGEN_CXX
   // TODO(xuchenhan-tri): Remove SetContactSolver() once
@@ -4875,6 +4907,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // with the default value in multibody_plant_config.h; there are already
   // assertions in the cc file that enforce this.
   ContactModel contact_model_{ContactModel::kPoint};
+
+  // User's choice of the representation of contact surfaces in discrete
+  // systems. The default value is dependent on whether the system is
+  // continuous or discrete, so the constructor will set it. See
+  // GetDefaultContactSurfaceRepresentation().
+  geometry::HydroelasticContactRepresentation contact_surface_representation_{};
 
   // Port handles for geometry:
   systems::InputPortIndex geometry_query_port_;

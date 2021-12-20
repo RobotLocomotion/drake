@@ -50,7 +50,7 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::AddContactMaterial;
 using geometry::AddRigidHydroelasticProperties;
-using geometry::AddSoftHydroelasticProperties;
+using geometry::AddCompliantHydroelasticProperties;
 using geometry::Box;
 using geometry::Capsule;
 using geometry::ContactSurface;
@@ -189,7 +189,7 @@ class MovingCompliantGeometry final : public LeafSystem<double> {
     }
     ProximityProperties prox_props;
     // Resolution Hint affects the compliant ball but not the compliant box.
-    AddSoftHydroelasticProperties(FLAGS_resolution_hint, 1e8, &prox_props);
+    AddCompliantHydroelasticProperties(FLAGS_resolution_hint, 1e8, &prox_props);
     scene_graph->AssignRole(source_id_, geometry_id_, prox_props);
 
     IllustrationProperties illus_props;

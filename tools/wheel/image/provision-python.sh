@@ -1,8 +1,8 @@
 #!/bin/bash
 
-set -e
+set -eu -o pipefail
 
-PYTHON=python${1:-3}
+readonly PYTHON=python${1:-3}
 
 # Set up Python environment and install Python prerequisites.
 apt-get -y install --no-install-recommends \

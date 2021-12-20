@@ -44,7 +44,7 @@ namespace bouncing_ball {
 /// @param[in] rigid_sphere
 ///   If `true`, the sphere will have a _rigid_ hydroelastic representation
 ///   (soft otherwise).
-/// @param[in] soft_ground
+/// @param[in] compliant_ground
 ///   If 'true', the ground will have a _soft_ hydroelastic representation
 ///   (rigid otherwise).
 /// @param scene_graph
@@ -60,7 +60,7 @@ MakeBouncingBallPlant(
     double radius, double mass,
     double hydroelastic_modulus, double dissipation,
     const drake::multibody::CoulombFriction<double>& surface_friction,
-    const Vector3<double>& gravity_W, bool rigid_sphere, bool soft_ground,
+    const Vector3<double>& gravity_W, bool rigid_sphere, bool compliant_ground,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace bouncing_ball

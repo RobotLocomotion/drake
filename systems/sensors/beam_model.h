@@ -18,12 +18,11 @@ namespace sensors {
 /// occlusions (short returns), of missed detections (returning the max depth),
 /// and of returning just a (uniform) random measurement.
 ///
-/// Four additional input ports (each of the same dimension as the depth signal)
-/// are provided for the random inputs:  One for determining which of the events
-/// occurred (true + noise, short return, max return, or uniform return), and
-/// one
-/// each for modeling the distribution of short true but noisy returns, short
-/// returns, and uniform returns).
+/// Four additional input ports (each of the same dimension as the depth
+/// signal) are provided for the random inputs: One for determining which of
+/// the events occurred (true + noise, short return, max return, or uniform
+/// return), and one each for modeling the distribution of short true but noisy
+/// returns, short returns, and uniform returns).
 ///
 /// We deviate from the textbook model in one respect: both here and in the
 /// textbook, the distribution over short returns and the distribution over
@@ -42,8 +41,21 @@ namespace sensors {
 /// have here that builds the output out of simple (non-truncated) random
 /// variable inputs.
 ///
+/// @system
+/// name: BeamModel
+/// input_ports:
+/// - depth
+/// - event
+/// - hit
+/// - short
+/// - uniform
+/// output_ports:
+/// - depth
+/// @endsystem
+///
 /// @tparam_nonsymbolic_scalar
 /// @ingroup sensor_systems
+// TODO(rpoyner-tri): add a @code example showing AddRandomInputs() usage.
 template <typename T>
 class BeamModel final : public LeafSystem<T> {
  public:

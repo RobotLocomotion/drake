@@ -133,17 +133,20 @@ class PetscSymmetricBlockSparseMatrix {
    documentaion. */
   void SetRelativeTolerance(double tolerance);
 
-  /* Calculates the Schur complement of D in the matrix
-    M = [A  B
-         Bᵀ D],
-   where `A` is formed by extracting block rows and columns with indexes
-   "non_eliminated_indexes", `D` is formed by extracting block rows and columns
-   with indexes "eliminated_indexes", and `B` is formed by extracting block
-   rows with "non_eliminated_indexes" and block columns with
-   "eliminated_indexes". */
+  /* Given a linear system of equations Mz = c that can be written in block form
+  as:
+      Ax + By  =  a     (1)
+      Bᵀx + Dy =  0     (2)
+  where M = [A B; Bᵀ D] is `this` matrix, zᵀ = [xᵀ yᵀ], cᵀ = [aᵀ 0ᵀ], builds a
+  SchurComplement object that solves the system. See SchurComplement for more
+  details.
+  @param D_block_indexes The indexes of the block row and columns consisting of
+                         D.
+  @param A_block_indexes The indexes of the block row and columns consisting of
+                         A. */
   SchurComplement<double> CalcSchurComplement(
-      const std::vector<int>& eliminated_indexes,
-      const std::vector<int>& non_eliminated_indexes) const;
+      const std::vector<int>& D_block_indexes,
+      const std::vector<int>& A_block_indexes) const;
 
   int rows() const;
 

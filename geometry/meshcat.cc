@@ -519,14 +519,25 @@ class Meshcat::WebSocketPublisher {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
-    // We simply loop until the backpressure is zero.  In each iteration,
-    // loop->defer will add our query to the queue, allowing the websocket
-    // thread to drain before our request gets processed again.
+    // We simply loop until the backpressure is zero.  In each iteration, if
+    // the connections have any backpressure, then we sleep the main thread to
+    // let the websocket thread drain.
+    //
+    // Note: The following attempts to avoid the explicit sleep failed:
+    // - loop->defer does not drain automatically between executing the
+    //   deferred callbacks.
+    // - calling app_->topicTree->drain() or ws->send("") did not actually
+    //   force any drainage.
+    //
+    // It *is* possible to monitor the drainage by registering the
+    // behavior.drain callback on the websocket connection, but we avoid
+    // explicitly locking the main thread to wait for the drainage in order to
+    // keep the thread logic simpler.
     int main_backpressure;
 
-    // Set a very conservative iteration limit; this is only intended to escape
-    // infinite loops that would be the result of a logic bug.
-    const int kIterationLimit{100000};
+    // Set a very conservative iteration limit; since we sleep for .1 seconds
+    // on each iteration, this corresponds to (approximately) 10 minutes.
+    const int kIterationLimit{6000};
     int iteration = 0;
 
     do {
@@ -541,14 +552,16 @@ class Meshcat::WebSocketPublisher {
         p.set_value(websocket_backpressure);
       });
       main_backpressure = f.get();
+      if (main_backpressure > 0) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      }
       ++iteration;
     } while (main_backpressure > 0 && iteration < kIterationLimit);
 
     if (main_backpressure > 0) {
       drake::log()->warn(
           "Meshcat::Flush() reached an iteration limit before the buffer could "
-          "be completely flushed.  Our intention was that this limit should "
-          "never be reached. If you encounter this, please open an issue.");
+          "be completely flushed.");
     }
   }
 

@@ -142,17 +142,18 @@ math::RigidTransformd MakeGeometryPoseFromSdfCollision(
  corresponding property will be missing from the property set.
 
  Mapping from SDF tag to geometry property. See
- @ref YET_TO_BE_WRITTEN_HYDROELATIC_GEOMETRY_MODULE for details on the semantics
- of these properties.
- | Tag                              | Group        | Property                  | Notes                                                                                                                            |
+  @ref YET_TO_BE_WRITTEN_HYDROELASTIC_GEOMETRY_MODULE for details on the
+ semantics of these properties.
+
+  | Tag                              | Group        | Property                  | Notes                                                                                                                            |
  | :------------------------------: | :----------: | :-----------------------: | :------------------------------------------------------------------------------------------------------------------------------: |
  | drake:mesh_resolution_hint       | hydroelastic | resolution_hint           | Required for shapes that require tessellation to support hydroelastic contact.                                                   |
- | drake:hydroelastic_modulus       | hydroelastic | hydroelastic_modulus      | Finite positive value. Required for soft hydroelastic representations.                                                           |
+ | drake:hydroelastic_modulus       | hydroelastic | hydroelastic_modulus      | Finite positive value. Required for compliant hydroelastic representations.                                                           |
  | drake:hunt_crossley_dissipation  | material     | hunt_crossley_dissipation |                                                                                                                                  |
  | drake:mu_dynamic                 | material     | coulomb_friction          | See note below on friction.                                                                                                      |
  | drake:mu_static                  | material     | coulomb_friction          | See note below on friction.                                                                                                      |
  | drake:rigid_hydroelastic         | hydroelastic | compliance_type           | Requests a rigid hydroelastic representation. Cannot be combined *with* soft_hydroelastic.                                       |
- | drake:soft_hydroelastic          | hydroelastic | compliance_type           | Requests a soft hydroelastic representation. Cannot be combined *with* rigid_hydroelastic. Requires a value for hydroelastic_modulus. |
+ | drake:compliant_hydroelastic     | hydroelastic | compliance_type           | Requests a compliant hydroelastic representation. Cannot be combined *with* rigid_hydroelastic. Requires a value for hydroelastic_modulus. |
 
  <h3>Coefficients of friction</h3>
 

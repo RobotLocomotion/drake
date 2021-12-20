@@ -597,11 +597,11 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
             geometry::internal::HydroelasticType::kRigid);
   }
 
-  // Case: specifies soft hydroelastic.
+  // Case: specifies compliant hydroelastic.
   {
     unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
-    <drake:soft_hydroelastic/>
+    <drake:compliant_hydroelastic/>
   </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
@@ -616,11 +616,29 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
               geometry::internal::HydroelasticType::kSoft);
   }
 
-  // Case: specifies both -- should be an error.
+  // TODO(16229): Remove this ad-hoc input sanitization when we resolve
+  //  issue 16229 "Diagnostics for unsupported SDFormat and URDF stanzas."
+  // Case: specifies unsupported drake:soft_hydroelastic -- should be an error.
   {
     unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
     <drake:soft_hydroelastic/>
+  </drake:proximity_properties>)""");
+    const XMLElement* collision_node = doc->FirstChildElement("collision");
+    ASSERT_NE(collision_node, nullptr);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        ParseCollision("link_name", package_map, root_dir, collision_node),
+        std::runtime_error,
+        "Collision geometry uses the tag <drake:soft_hydroelastic> .* "
+        "which is no longer supported. Please change it to "
+        "<drake:compliant_hydroelastic>.");
+  }
+
+  // Case: specifies both -- should be an error.
+  {
+    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
+  <drake:proximity_properties>
+    <drake:compliant_hydroelastic/>
     <drake:rigid_hydroelastic/>
   </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
@@ -629,7 +647,7 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
         ParseCollision("link_name", package_map, root_dir, collision_node),
         std::runtime_error,
         "Collision geometry has defined mutually-exclusive tags .*rigid.* and "
-        ".*soft.*");
+        ".*compliant.*");
   }
 
   // TODO(SeanCurtis-TRI): This is the *old* interface; the new

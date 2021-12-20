@@ -116,7 +116,7 @@ def _is_important_warning(line):
         if "(" in line:
             return False
         # TODO(#14107) Remove this if-clause once the issue is resolved.
-        if "multibody_plant" in line and "df_contact_material" in line:
+        if "df_contact_material" in line:
             return False
         # Broken link.
         return True
