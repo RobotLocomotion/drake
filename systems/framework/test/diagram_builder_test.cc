@@ -464,6 +464,17 @@ GTEST_TEST(DiagramBuilderTest, DefaultInputPortNamesAreUniqueTest) {
   DRAKE_EXPECT_NO_THROW(builder.Build());
 }
 
+GTEST_TEST(DiagramBuilderTest, DefaultInputPortNamesDeprecationTest) {
+  DiagramBuilder<double> builder;
+  auto sink = builder.AddSystem<Sink<double>>();
+  builder.ExportInput(sink->get_input_port(0), "input");
+  auto diagram = builder.Build();
+  const auto deprecated = DefaultDiagramPortName(sink->get_input_port(0));
+  diagram->DeclareDeprecatedInputPort("3456-11-11", deprecated, "input");
+  EXPECT_EQ(&diagram->GetInputPort("input"),
+            &diagram->GetInputPort(deprecated));
+}
+
 GTEST_TEST(DiagramBuilderTest, DefaultOutputPortNamesAreUniqueTest) {
   DiagramBuilder<double> builder;
 
@@ -475,6 +486,17 @@ GTEST_TEST(DiagramBuilderTest, DefaultOutputPortNamesAreUniqueTest) {
 
   // If the port names were not unique, then the build step would throw.
   DRAKE_EXPECT_NO_THROW(builder.Build());
+}
+
+GTEST_TEST(DiagramBuilderTest, DefaultOutputPortNamesDeprecationTest) {
+  DiagramBuilder<double> builder;
+  auto source = builder.AddSystem<Source<double>>();
+  builder.ExportOutput(source->get_output_port(0), "output");
+  auto diagram = builder.Build();
+  const auto deprecated = DefaultDiagramPortName(source->get_output_port(0));
+  diagram->DeclareDeprecatedOutputPort("3456-11-11", deprecated, "output");
+  EXPECT_EQ(&diagram->GetOutputPort("output"),
+            &diagram->GetOutputPort(deprecated));
 }
 
 GTEST_TEST(DiagramBuilderTest, DefaultPortNamesAreUniqueTest2) {

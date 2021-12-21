@@ -117,11 +117,9 @@ InputPortIndex DiagramBuilder<T>::DeclareInput(
   InputPortLocator id{&input.get_system(), input.get_index()};
   ThrowIfSystemNotRegistered(&input.get_system());
 
-  // The requirement that subsystem names are unique guarantees uniqueness
-  // of the port names.
   std::string port_name =
       name == kUseDefaultName
-          ? input.get_system().get_name() + "_" + input.get_name()
+          ? DefaultDiagramPortName(input)
           : std::get<std::string>(std::move(name));
   DRAKE_DEMAND(!port_name.empty());
 
@@ -209,11 +207,9 @@ OutputPortIndex DiagramBuilder<T>::ExportOutput(
   output_port_ids_.push_back(
       OutputPortLocator{&output.get_system(), output.get_index()});
 
-  // The requirement that subsystem names are unique guarantees uniqueness
-  // of the port names.
   std::string port_name =
       name == kUseDefaultName
-          ? output.get_system().get_name() + "_" + output.get_name()
+          ? DefaultDiagramPortName(output)
           : std::get<std::string>(std::move(name));
   DRAKE_DEMAND(!port_name.empty());
   output_port_names_.emplace_back(std::move(port_name));

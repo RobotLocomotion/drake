@@ -17,6 +17,16 @@
 namespace drake {
 namespace systems {
 
+/// Returns the name used for a diagram port if it is declared using the
+/// `kUseDefaultName` argument to the `ExportInput` or `ExportOutput` methods
+/// of DiagramBuilder.
+template <typename PortType>
+std::string DefaultDiagramPortName(const PortType& port) {
+  // The requirement that subsystem names are unique guarantees uniqueness of
+  // the port names.
+  return port.get_system().get_name() + "_" + port.get_name();
+}
+
 /// DiagramBuilder is a factory class for Diagram.
 ///
 /// It is single use: after calling Build or BuildInto, DiagramBuilder gives up
