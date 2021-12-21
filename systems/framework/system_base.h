@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/name_deprecator.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/abstract_value_cloner.h"
 #include "drake/systems/framework/cache_entry.h"
@@ -203,6 +204,22 @@ class SystemBase : public internal::SystemMessageInterface {
   const OutputPortBase& get_output_port_base(OutputPortIndex port_index) const {
     return GetOutputPortBaseOrThrow(__func__, port_index);
   }
+
+  /** Declare a deprecated alias name for an input port.
+  @pre `removal_date` roughly matches Y-m-d format, `deprecated_name` does not
+       name a real (not alias) input port, `correct_name` names a real input
+       port, and `deprecated_name` has not already been declared. */
+  void DeclareDeprecatedInputPort(const std::string& removal_date,
+                                  const std::string& deprecated_name,
+                                  const std::string& correct_name);
+
+  /** Declare a deprecated alias name for an output port.
+  @pre `removal_date` roughly matches Y-m-d format, `deprecated_name` does not
+       name a real (not alias) output port, `correct_name` names a real output
+       port, and `deprecated_name` has not already been declared. */
+  void DeclareDeprecatedOutputPort(const std::string& removal_date,
+                                   const std::string& deprecated_name,
+                                   const std::string& correct_name);
 
   /** Returns the total dimension of all of the vector-valued input ports (as if
   they were muxed). */
@@ -1144,6 +1161,16 @@ class SystemBase : public internal::SystemMessageInterface {
   system. See @ref system_compatibility. */
   internal::SystemId get_system_id() const { return system_id_; }
 
+  /** Returns an InputPortIndex for a port given its name. Most users should
+  use System methods HasInputPort or GetInputPort instead. */
+  std::optional<InputPortIndex>
+  FindInputPortIndex(const std::string& port_name) const;
+
+  /** Returns an OutputPortIndex for a port given its name. Most users should
+  use System methods HasOutputPort or GetOutputPort instead. */
+  std::optional<OutputPortIndex>
+  FindOutputPortIndex(const std::string& port_name) const;
+
  private:
   void CreateSourceTrackers(ContextBase*) const;
 
@@ -1210,6 +1237,10 @@ class SystemBase : public internal::SystemMessageInterface {
   std::vector<TrackerInfo> numeric_parameter_tickets_;
   // Indexed by AbstractParameterIndex.
   std::vector<TrackerInfo> abstract_parameter_tickets_;
+
+  // Ports may have deprecated names.
+  drake::internal::NameDeprecator input_port_deprecator_;
+  drake::internal::NameDeprecator output_port_deprecator_;
 
   // Initialize to the first ticket number available after all the well-known
   // ones. This gets incremented as tickets are handed out for the optional

@@ -25,6 +25,36 @@ internal::SystemId SystemBase::get_next_id() {
   return internal::SystemId::get_new_id();
 }
 
+void SystemBase::DeclareDeprecatedInputPort(
+    const std::string& removal_date,
+    const std::string& deprecated_name,
+    const std::string& correct_name) {
+  if (!input_port_deprecator_.HasScope()) {
+    input_port_deprecator_.DeclareScope(
+        fmt::format("system '{}' input ports", get_name()),
+        [this](const std::string& x){
+          return FindInputPortIndex(x).has_value();
+        });
+  }
+  input_port_deprecator_.DeclareDeprecatedName(
+      removal_date, deprecated_name, correct_name);
+}
+
+void SystemBase::DeclareDeprecatedOutputPort(
+    const std::string& removal_date,
+    const std::string& deprecated_name,
+    const std::string& correct_name) {
+  if (!output_port_deprecator_.HasScope()) {
+    output_port_deprecator_.DeclareScope(
+        fmt::format("system '{}' output ports", get_name()),
+        [this](const std::string& x){
+          return FindOutputPortIndex(x).has_value();
+        });
+  }
+  output_port_deprecator_.DeclareDeprecatedName(
+      removal_date, deprecated_name, correct_name);
+}
+
 std::string SystemBase::GetSystemPathname() const {
   const std::string parent_path =
       get_parent_service() ? get_parent_service()->GetParentPathname()
@@ -107,6 +137,28 @@ void SystemBase::InitializeContextBase(ContextBase* context_ptr) const {
 
   internal::SystemBaseContextBaseAttorney::mark_context_base_initialized(
       &context);
+}
+
+std::optional<InputPortIndex>
+SystemBase::FindInputPortIndex(const std::string& port_name) const {
+  const auto& checked_name = input_port_deprecator_.MaybeTranslate(port_name);
+  for (InputPortIndex i{0}; i < num_input_ports(); i++) {
+    if (checked_name == get_input_port_base(i).get_name()) {
+      return i;
+    }
+  }
+  return std::nullopt;
+}
+
+std::optional<OutputPortIndex>
+SystemBase::FindOutputPortIndex(const std::string& port_name) const {
+  const auto& checked_name = output_port_deprecator_.MaybeTranslate(port_name);
+  for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
+    if (checked_name == get_output_port_base(i).get_name()) {
+      return i;
+    }
+  }
+  return std::nullopt;
 }
 
 // Set up trackers for variable-numbered independent sources: discrete and
