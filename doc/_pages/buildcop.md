@@ -42,6 +42,9 @@ fix the failure within 60 minutes, the build cop will merge the pull request to
 revert the commits and verify that the continuous builds triggered by that merge
 pass.
 
+In the case of failures in a ``dev`` directory, the build cop should disable the
+failing test instead of reverting the entire commit.
+
 Use the [DrakeDevelopers Slack channel #buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
 to discuss build issues with your partner build cop and other Drake
 contributors.
