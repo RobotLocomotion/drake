@@ -39,9 +39,11 @@ using systems::DiscreteUpdateEvent;
 using systems::DiscreteValues;
 using systems::LeafSystem;
 using systems::PublishEvent;
+using systems::State;
 using systems::System;
 using systems::SystemBase;
 using systems::SystemScalarConverter;
+using systems::UnrestrictedUpdateEvent;
 using systems::VectorSystem;
 using systems::WitnessFunction;
 
@@ -95,6 +97,9 @@ struct Impl {
     using Base::DeclareStateOutputPort;
     using Base::DeclareVectorInputPort;
     using Base::DeclareVectorOutputPort;
+    using Base::get_mutable_forced_discrete_update_events;
+    using Base::get_mutable_forced_publish_events;
+    using Base::get_mutable_forced_unrestricted_update_events;
     using Base::MakeWitnessFunction;
 
     // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
@@ -104,6 +109,7 @@ struct Impl {
     // bind `PyLeafSystem::DoPublish` to `py::class_<LeafSystem<T>, ...>`.
     using Base::DoCalcDiscreteVariableUpdates;
     using Base::DoCalcTimeDerivatives;
+    using Base::DoCalcUnrestrictedUpdate;
     using Base::DoPublish;
   };
 
@@ -147,6 +153,16 @@ struct Impl {
           "DoCalcDiscreteVariableUpdates", &context, events, discrete_state);
       // If the macro did not return, use default functionality.
       Base::DoCalcDiscreteVariableUpdates(context, events, discrete_state);
+    }
+
+    void DoCalcUnrestrictedUpdate(const Context<T>& context,
+        const std::vector<const UnrestrictedUpdateEvent<T>*>& events,
+        State<T>* state) const override {
+      // See `DoPublish` for explanation.
+      PYBIND11_OVERLOAD_INT(void, LeafSystem<T>, "DoCalcUnrestrictedUpdate",
+          &context, events, state);
+      // If the macro did not return, use default functionality.
+      Base::DoCalcUnrestrictedUpdate(context, events, state);
     }
 
     // This actually changes the signature of DoGetWitnessFunction,
@@ -383,6 +399,11 @@ struct Impl {
                 &System<T>::CalcDiscreteVariableUpdates),
             py::arg("context"), py::arg("discrete_state"),
             doc.System.CalcDiscreteVariableUpdates.doc_2args)
+        .def("CalcUnrestrictedUpdate",
+            overload_cast_explicit<void, const Context<T>&, State<T>*>(
+                &System<T>::CalcUnrestrictedUpdate),
+            py::arg("context"), py::arg("state"),
+            doc.System.CalcUnrestrictedUpdate.doc_2args)
         .def("GetSubsystemContext",
             overload_cast_explicit<const Context<T>&, const System<T>&,
                 const Context<T>&>(&System<T>::GetSubsystemContext),
@@ -766,6 +787,52 @@ Note: The above is for the C++ documentation. For Python, use
               self->DeclarePerStepEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclarePerStepEvent.doc)
+        .def("DeclareForcedPublishEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self,
+                    std::function<EventStatus(const Context<T>&)> publish) {
+                  self->get_mutable_forced_publish_events().AddEvent(
+                      PublishEvent<T>(TriggerType::kForced,
+                          [publish](const System<T>&, const Context<T>& context,
+                              const PublishEvent<T>&) {
+                            // TODO(sherm1) Forward the return status.
+                            publish(context);  // Ignore return status for now.
+                          }));
+                }),
+            py::arg("publish"), doc.LeafSystem.DeclareForcedPublishEvent.doc)
+        .def("DeclareForcedDiscreteUpdateEvent",
+            WrapCallbacks([](PyLeafSystem* self,
+                              std::function<EventStatus(
+                                  const Context<T>&, DiscreteValues<T>*)>
+                                  update) {
+              self->get_mutable_forced_discrete_update_events().AddEvent(
+                  DiscreteUpdateEvent<T>(TriggerType::kForced,
+                      [update](const System<T>&, const Context<T>& context,
+                          const DiscreteUpdateEvent<T>&,
+                          DiscreteValues<T>* xd) {
+                        // TODO(sherm1) Forward the return status.
+                        update(context,
+                            &*xd);  // Ignore return status for now.
+                      }));
+            }),
+            py::arg("update"),
+            doc.LeafSystem.DeclareForcedDiscreteUpdateEvent.doc)
+        .def("DeclareForcedUnrestrictedUpdateEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self,
+                    std::function<EventStatus(const Context<T>&, State<T>*)>
+                        update) {
+                  self->get_mutable_forced_unrestricted_update_events()
+                      .AddEvent(UnrestrictedUpdateEvent<T>(TriggerType::kForced,
+                          [update](const System<T>&, const Context<T>& context,
+                              const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+                            // TODO(sherm1) Forward the return status.
+                            update(
+                                context, &*x);  // Ignore return status for now.
+                          }));
+                }),
+            py::arg("update"),
+            doc.LeafSystem.DeclareForcedUnrestrictedUpdateEvent.doc)
         .def("MakeWitnessFunction",
             WrapCallbacks([](PyLeafSystem* self, const std::string& description,
                               const WitnessFunctionDirection& direction_type,
@@ -834,6 +901,9 @@ Note: The above is for the C++ documentation. For Python, use
         .def("DoCalcDiscreteVariableUpdates",
             &LeafSystemPublic::DoCalcDiscreteVariableUpdates,
             doc.LeafSystem.DoCalcDiscreteVariableUpdates.doc)
+        .def("DoCalcUnrestrictedUpdate",
+            &LeafSystemPublic::DoCalcUnrestrictedUpdate,
+            doc.LeafSystem.DoCalcUnrestrictedUpdate.doc)
         // Abstract state.
         .def("DeclareAbstractState",
             py::overload_cast<const AbstractValue&>(

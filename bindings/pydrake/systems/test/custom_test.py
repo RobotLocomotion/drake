@@ -278,6 +278,7 @@ class TestCustom(unittest.TestCase):
                 self.called_publish = False
                 self.called_continuous = False
                 self.called_discrete = False
+                self.called_unrestricted = False
                 self.called_initialize = False
                 self.called_per_step = False
                 self.called_periodic = False
@@ -290,6 +291,9 @@ class TestCustom(unittest.TestCase):
                 self.called_per_step_publish = False
                 self.called_per_step_discrete = False
                 self.called_per_step_unrestricted = False
+                self.called_forced_publish = False
+                self.called_forced_discrete = False
+                self.called_forced_unrestricted = False
                 self.called_getwitness = False
                 self.called_witness = False
                 self.called_guard = False
@@ -333,6 +337,12 @@ class TestCustom(unittest.TestCase):
                     event=PublishEvent(
                         trigger_type=TriggerType.kPerStep,
                         callback=self._on_per_step))
+                self.DeclareForcedPublishEvent(
+                    publish=self._on_forced_publish)
+                self.DeclareForcedDiscreteUpdateEvent(
+                    update=self._on_forced_discrete)
+                self.DeclareForcedUnrestrictedUpdateEvent(
+                    update=self._on_forced_unrestricted)
                 self.DeclarePeriodicEvent(
                     period_sec=1.0,
                     offset_sec=0.0,
@@ -391,6 +401,13 @@ class TestCustom(unittest.TestCase):
                 LeafSystem.DoCalcDiscreteVariableUpdates(
                     self, context, events, discrete_state)
                 self.called_discrete = True
+
+            def DoCalcUnrestrictedUpdate(
+                    self, context, events, state):
+                # Call base method to ensure we do not get recursion.
+                LeafSystem.DoCalcUnrestrictedUpdate(
+                    self, context, events, state)
+                self.called_unrestricted = True
 
             def DoGetWitnessFunctions(self, context):
                 self.called_getwitness = True
@@ -471,6 +488,26 @@ class TestCustom(unittest.TestCase):
                 self.called_per_step_unrestricted = True
                 return EventStatus.Succeeded()
 
+            def _on_forced_publish(self, context):
+                test.assertIsInstance(context, Context)
+                test.assertFalse(self.called_forced_publish)
+                self.called_forced_publish = True
+                return EventStatus.Succeeded()
+
+            def _on_forced_discrete(self, context, discrete_state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(discrete_state, DiscreteValues)
+                test.assertFalse(self.called_forced_discrete)
+                self.called_forced_discrete = True
+                return EventStatus.Succeeded()
+
+            def _on_forced_unrestricted(self, context, state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(state, State)
+                test.assertFalse(self.called_forced_unrestricted)
+                self.called_forced_unrestricted = True
+                return EventStatus.Succeeded()
+
             def _witness(self, context):
                 test.assertIsInstance(context, Context)
                 self.called_witness = True
@@ -498,12 +535,14 @@ class TestCustom(unittest.TestCase):
         self.assertFalse(system.called_publish)
         self.assertFalse(system.called_continuous)
         self.assertFalse(system.called_discrete)
+        self.assertFalse(system.called_unrestricted)
         self.assertFalse(system.called_initialize)
         results = call_leaf_system_overrides(system)
         self.assertTrue(system.called_publish)
         self.assertFalse(results["has_direct_feedthrough"])
         self.assertTrue(system.called_continuous)
         self.assertTrue(system.called_discrete)
+        self.assertTrue(system.called_unrestricted)
         self.assertTrue(system.called_initialize)
         self.assertEqual(results["discrete_next_t"], 1.0)
 
@@ -517,6 +556,7 @@ class TestCustom(unittest.TestCase):
         context = system.CreateDefaultContext()
         system.Publish(context)
         self.assertTrue(system.called_publish)
+        self.assertTrue(system.called_forced_publish)
         context_update = context.Clone()
         system.CalcTimeDerivatives(
             context=context,
@@ -528,6 +568,14 @@ class TestCustom(unittest.TestCase):
             context=context,
             discrete_state=context_update.get_mutable_discrete_state())
         self.assertTrue(system.called_discrete)
+        self.assertTrue(system.called_forced_discrete)
+
+        system.CalcUnrestrictedUpdate(
+            context=context,
+            state=context_update.get_mutable_state()
+        )
+        self.assertTrue(system.called_unrestricted)
+        self.assertTrue(system.called_forced_unrestricted)
 
         # Test per-step, periodic, and witness call backs
         system = TrivialSystem()
