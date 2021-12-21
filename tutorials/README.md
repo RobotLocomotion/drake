@@ -44,9 +44,10 @@ and does not provide simple anchors for headings.
 Binder lets you browse notebooks too, but you must wait for about 10-20s for
 it to provision a kernel and let you see the notebook.
 
-**Warning**: `meshcat-visualizer` is not supported by Binder since port 7000 is
-not exposed, so tutorials that use `meshcat.Visualizer.jupyter_cell()` will not
-display correctly on Binder.
+**Warning**: `Meshcat` is not supported by Binder since port 7000 is not
+exposed, so tutorials that use `Meshcat` will not display correctly on Binder.
+We are currently transitioning to Deepnote, which supports `Meshcat`
+beautifully.  (See Drake issue #13683)
 
 ## For Developers
 
