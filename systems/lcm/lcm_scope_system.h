@@ -16,6 +16,14 @@ namespace lcm {
 simple LCM message and publish that message periodically. The intention is to
 instrument complex diagrams using external tools like `lcm-spy`.
 
+@system
+name: LcmScopeSystem
+input_ports:
+- input
+output_ports:
+- output
+@endsystem
+
 @ingroup message_passing */
 class LcmScopeSystem final : public LeafSystem<double> {
  public:
