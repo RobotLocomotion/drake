@@ -16,12 +16,6 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-
-// Forward declarations to give LCM message publication appropriate access.
-namespace lcm {
-class DrakeLcmInterface;
-}  // namespace lcm
-
 namespace geometry {
 
 class GeometryInstance;
@@ -40,13 +34,14 @@ class QueryObject;
  @system
  name: SceneGraph
  input_ports:
- - source_pose{0}
- - ...
- - source_pose{N-1}
+ - <em style="color:gray">(source name)</em>_pose
  output_ports:
- - lcm_visualization
  - query
  @endsystem
+
+For each registered "geometry source", there is an input port whose name begins
+with <em style="color:gray">(source name)</em>.
+
 
  Only registered "geometry sources" can introduce geometry into %SceneGraph.
  Geometry sources will typically be other leaf systems, but, in the case of
