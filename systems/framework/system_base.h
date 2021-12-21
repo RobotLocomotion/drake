@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/name_deprecator.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/abstract_value_cloner.h"
 #include "drake/systems/framework/cache_entry.h"
@@ -203,6 +204,24 @@ class SystemBase : public internal::SystemMessageInterface {
   const OutputPortBase& get_output_port_base(OutputPortIndex port_index) const {
     return GetOutputPortBaseOrThrow(__func__, port_index);
   }
+
+  /** Returns an index to an InputPort given its name. */
+  std::optional<InputPortIndex>
+  FindInputPort(const std::string& port_name) const;
+
+  /** Returns an index to an OutputPort given its name. */
+  std::optional<OutputPortIndex>
+  FindOutputPort(const std::string& port_name) const;
+
+  /** Declare a deprecated alias name for an input port. */
+  void DeclareDeprecatedInputPort(const std::string& removal_date,
+                                  const std::string& deprecated_name,
+                                  const std::string& correct_name);
+
+  /** Declare a deprecated alias name for an output port. */
+  void DeclareDeprecatedOutputPort(const std::string& removal_date,
+                                   const std::string& deprecated_name,
+                                   const std::string& correct_name);
 
   /** Returns the total dimension of all of the vector-valued input ports (as if
   they were muxed). */
@@ -1210,6 +1229,10 @@ class SystemBase : public internal::SystemMessageInterface {
   std::vector<TrackerInfo> numeric_parameter_tickets_;
   // Indexed by AbstractParameterIndex.
   std::vector<TrackerInfo> abstract_parameter_tickets_;
+
+  // Ports may have deprecated names.
+  drake::internal::NameDeprecator input_port_deprecator_;
+  drake::internal::NameDeprecator output_port_deprecator_;
 
   // Initialize to the first ticket number available after all the well-known
   // ones. This gets incremented as tickets are handed out for the optional

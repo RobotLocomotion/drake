@@ -427,6 +427,9 @@ TEST_F(SystemTest, PortNameTest) {
       system_.DeclareInputPort("my_input", kVectorValued, 3);
   const auto& named_abstract_input =
       system_.DeclareInputPort("abstract", kAbstractValued, 0);
+  system_.DeclareDeprecatedInputPort(
+      "2345-11-11", "dep_in", unnamed_input.get_name());
+  system_.DeclareDeprecatedInputPort("2345-11-11", "dep_in2", "abstract");
 
   EXPECT_EQ(unnamed_input.get_name(), "u0");
   EXPECT_EQ(named_input.get_name(), "my_input");
@@ -438,18 +441,31 @@ TEST_F(SystemTest, PortNameTest) {
       std::logic_error, ".*already has an input port named.*");
 
   // Test string-based get_input_port accessors.
+  EXPECT_EQ(system_.FindInputPort("dep_in"), system_.FindInputPort("u0"));
+  EXPECT_EQ(system_.FindInputPort("dep_in2"),
+            system_.FindInputPort("abstract"));
   EXPECT_EQ(&system_.GetInputPort("u0"), &unnamed_input);
+  EXPECT_EQ(&system_.GetInputPort("dep_in"), &unnamed_input);
   EXPECT_EQ(&system_.GetInputPort("my_input"), &named_input);
   EXPECT_EQ(&system_.GetInputPort("abstract"), &named_abstract_input);
-  EXPECT_EQ(system_.HasInputPort("u0"), true);
-  EXPECT_EQ(system_.HasInputPort("fake_name"), false);
+  EXPECT_EQ(&system_.GetInputPort("dep_in2"), &named_abstract_input);
+  EXPECT_TRUE(system_.HasInputPort("u0"));
+  EXPECT_TRUE(system_.HasInputPort("dep_in"));
+  EXPECT_FALSE(system_.HasInputPort("fake_name"));
+  EXPECT_FALSE(system_.FindInputPort("fake_name"));
 
   // Test output port names.
   const auto& output_port = system_.AddAbstractOutputPort();
+  system_.DeclareDeprecatedOutputPort(
+      "2345-11-11", "dep_out", output_port.get_name());
   EXPECT_EQ(output_port.get_name(), "y0");
+  EXPECT_EQ(system_.FindOutputPort("y0"), system_.FindOutputPort("dep_out"));
   EXPECT_EQ(&system_.GetOutputPort("y0"), &output_port);
-  EXPECT_EQ(system_.HasOutputPort("y0"), true);
-  EXPECT_EQ(system_.HasOutputPort("fake_name"), false);
+  EXPECT_EQ(&system_.GetOutputPort("dep_out"), &output_port);
+  EXPECT_TRUE(system_.HasOutputPort("y0"));
+  EXPECT_TRUE(system_.HasOutputPort("dep_out"));
+  EXPECT_FALSE(system_.HasOutputPort("fake_name"));
+  EXPECT_FALSE(system_.FindOutputPort("fake_name"));
 
   // Requesting a non-existing port name should throw.
   DRAKE_EXPECT_THROWS_MESSAGE(
