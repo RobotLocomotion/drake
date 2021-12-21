@@ -230,3 +230,9 @@ class TestGeometryVisualizers(unittest.TestCase):
             ad_visualizer = visualizer.ToAutoDiffXd()
             self.assertIsInstance(
                 ad_visualizer, mut.MeshcatPointCloudVisualizerCpp_[AutoDiffXd])
+
+    def test_start_meshcat(self):
+        # StartMeshcat only performs interesting work on Deepnote or Google
+        # Colab.  Here we simply ensure that it runs.
+        meshcat = mut.StartMeshcat()
+        self.assertIsInstance(meshcat, mut.Meshcat)

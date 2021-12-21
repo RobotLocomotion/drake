@@ -152,6 +152,7 @@ drake_pybind_library(
         "//bindings/pydrake/systems:framework_py",
         "//bindings/pydrake/systems:lcm_py",
     ],
+    py_srcs = ["_geometry_extra.py"],
 )
 
 drake_pybind_library(
