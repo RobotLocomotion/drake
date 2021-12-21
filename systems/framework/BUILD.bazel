@@ -339,6 +339,7 @@ drake_cc_library(
         ":input_port_base",
         ":output_port_base",
         ":value_producer",
+        "//common:name_deprecator",
     ],
 )
 

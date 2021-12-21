@@ -659,10 +659,8 @@ const InputPort<T>* System<T>::get_input_port_selection(
 template <typename T>
 const InputPort<T>& System<T>::GetInputPort(
     const std::string& port_name) const {
-  for (InputPortIndex i{0}; i < num_input_ports(); i++) {
-    if (port_name == get_input_port_base(i).get_name()) {
-      return get_input_port(i);
-    }
+  if (const auto found = this->FindInputPort(port_name)) {
+    return get_input_port(*found);
   }
   throw std::logic_error("System " + GetSystemName() +
                          " does not have an input port named " +
@@ -672,12 +670,7 @@ const InputPort<T>& System<T>::GetInputPort(
 template <typename T>
 bool System<T>::HasInputPort(
     const std::string& port_name) const {
-  for (InputPortIndex i{0}; i < num_input_ports(); i++) {
-    if (port_name == get_input_port_base(i).get_name()) {
-      return true;
-    }
-  }
-  return false;
+  return this->FindInputPort(port_name).has_value();
 }
 
 template <typename T>
@@ -701,10 +694,8 @@ const OutputPort<T>* System<T>::get_output_port_selection(
 template <typename T>
 const OutputPort<T>& System<T>::GetOutputPort(
     const std::string& port_name) const {
-  for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
-    if (port_name == get_output_port_base(i).get_name()) {
-      return get_output_port(i);
-    }
+  if (const auto found = this->FindOutputPort(port_name)) {
+    return get_output_port(*found);
   }
   throw std::logic_error("System " + GetSystemName() +
                          " does not have an output port named " +
@@ -714,12 +705,7 @@ const OutputPort<T>& System<T>::GetOutputPort(
 template <typename T>
 bool System<T>::HasOutputPort(
     const std::string& port_name) const {
-  for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
-    if (port_name == get_output_port_base(i).get_name()) {
-      return true;
-    }
-  }
-  return false;
+  return this->FindOutputPort(port_name).has_value();
 }
 
 template <typename T>
