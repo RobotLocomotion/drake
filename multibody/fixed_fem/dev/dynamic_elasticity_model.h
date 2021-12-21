@@ -26,6 +26,7 @@ class DynamicElasticityModel : public ElasticityModel<Element> {
 
   using T = typename Element::Traits::T;
   using ConstitutiveModel = typename Element::Traits::ConstitutiveModel;
+  using State = FemState<Element>;
 
   // TODO(xuchenhan-tri): Currently the time stepping scheme is hard coded to
   //  gamma = 1.0 and beta = 0.5. Consider letting the user configure the time
