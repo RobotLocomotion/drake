@@ -185,7 +185,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         vis = mut.MeshcatVisualizerCpp_[T](meshcat=meshcat, params=params)
         vis.Delete()
         self.assertIsInstance(vis.query_object_input_port(), InputPort_[T])
-        animation = vis.StartRecording()
+        animation = vis.StartRecording(set_transforms_while_recording=True)
         self.assertIsInstance(animation, mut.MeshcatAnimation)
         self.assertEqual(animation, vis.get_mutable_recording())
         vis.StopRecording()
