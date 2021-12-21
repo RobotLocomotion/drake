@@ -988,6 +988,17 @@ class TestMathematicalProgram(unittest.TestCase):
             A=np.array([[1, 2.], [3., 4]]), b=np.array([1., 2.]), vars=x)
         self.assertEqual(len(prog.l2norm_costs()), 1)
 
+    def test_add_l2norm_cost_using_conic_constraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+        s, linear_cost, lorentz_cone_constraint = \
+            prog.AddL2NormCostUsingConicConstraint(
+                A=np.array([[1, 2.], [3., 4]]),
+                b=np.array([1., 2.]), vars=x)
+        self.assertEqual(len(prog.linear_costs()), 1)
+        self.assertEqual(len(prog.lorentz_cone_constraints()), 1)
+        self.assertEqual(prog.num_vars(), 3)
+
     def test_addcost_shared_ptr(self):
         # In particular, confirm that LinearCost ends up in linear_costs, etc.
         # as opposed to everything ending up as a generic_cost.

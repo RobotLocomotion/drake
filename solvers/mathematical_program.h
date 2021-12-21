@@ -1156,6 +1156,25 @@ class MathematicalProgram {
   }
 
   /**
+   * Adds an L2 norm cost min |Ax+b|₂ as a linear cost min s
+   * on the slack variable s, together with a Lorentz cone constraint
+   * s ≥ |Ax+b|₂
+   * Many conic optimization solvers (Gurobi, Mosek, SCS, etc) natively prefers
+   * this form of linear cost + conic constraints. So if you are going to use
+   * one of these conic solvers, then add the L2 norm cost using this function
+   * instead of AddL2NormCost().
+   * @return (s, linear_cost, lorentz_cone_constraint). `s` is the slack
+   * variable (with variable name string as "slack"), `linear_cost` is the cost
+   * on `s`, and `lorentz_cone_constraint` is the constraint s≥|Ax+b|₂
+   */
+  std::tuple<symbolic::Variable, Binding<LinearCost>,
+             Binding<LorentzConeConstraint>>
+  AddL2NormCostUsingConicConstraint(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
    * Adds a cost term in the polynomial form.
    * @param e A symbolic expression in the polynomial form.
    * @return The newly created cost and the bound variables.
