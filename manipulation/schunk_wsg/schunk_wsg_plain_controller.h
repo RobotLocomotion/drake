@@ -104,6 +104,21 @@ enum class ControlMode { kPosition = 0, kForce = 1 };
  * ControlMode::kPosition and the "desired grip state" input is ignored for
  * ControlMode::kPosition.
  *
+ * @system
+ * name: SchunkWsgPlainController
+ * input_ports:
+ * - joint_state
+ * - max_force
+ * - <span style="color:gray">desired_grip_state</span>
+ * - <span style="color:gray">feed_forward_force</span>
+ * output_ports:
+ * - control
+ * @endsystem
+ *
+ * The `desired_grip_state` port is present only when the control mode is
+ * `kPosition`; the `feed_forward_force` port is present only when the control
+ * mode is `kForce`.
+ *
  * @ingroup manipulation_systems
  */
 class SchunkWsgPlainController

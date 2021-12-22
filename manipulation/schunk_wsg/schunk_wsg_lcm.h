@@ -76,10 +76,13 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
 /// name: SchunkWsgCommandSender
 /// input_ports:
 /// - position
-/// - force_limit (optional)
+/// - force_limit
 /// output_ports:
 /// - lcmt_schunk_wsg_command
 /// @endsystem
+///
+/// The `force_limit` input port can be left unconnected; in this case, the
+/// `default_force_limit` value given at construction time will be used.
 ///
 /// @ingroup manipulation_systems
 class SchunkWsgCommandSender : public systems::LeafSystem<double> {

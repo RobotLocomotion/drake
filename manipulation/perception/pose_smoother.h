@@ -30,6 +30,18 @@ namespace perception {
  *  NASA Technical note, available to download at
  *  https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20070017872.pdf
  *
+ * @system
+ * name: PoseSmoother
+ * input_ports:
+ * - u0
+ * output_ports:
+ * - y0
+ * - y1
+ * @endsystem
+ *
+ * Port `u0` accepts poses. Ports `y0` and `y1` produce smoothed poses and
+ * velocities, respectively.
+ *
  *  @ingroup manipulation_systems
  */
 class PoseSmoother : public systems::LeafSystem<double> {

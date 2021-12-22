@@ -62,6 +62,15 @@ MakeMultibodyStateToWsgStateSystem() {
 
 /// Extract the gripper measured force from the generalized forces on the two
 /// fingers.
+///
+/// @system
+/// name: MultibodyForceToWsgForceSystem
+/// input_ports:
+/// - u0
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @ingroup manipulation_systems
 template <typename T>
 class MultibodyForceToWsgForceSystem : public systems::VectorSystem<T> {
