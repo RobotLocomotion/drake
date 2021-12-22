@@ -34,10 +34,28 @@ void FemModelBase<T>::CalcTangentMatrix(
 }
 
 template <typename T>
+void FemModelBase<T>::CalcTangentMatrix(
+    const FemStateBase<T>& state,
+    internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const {
+  DRAKE_DEMAND(tangent_matrix != nullptr);
+  DRAKE_DEMAND(tangent_matrix->rows() == num_dofs());
+  DRAKE_DEMAND(tangent_matrix->cols() == num_dofs());
+  ThrowIfModelStateIncompatible(__func__, state);
+  DoCalcTangentMatrix(state, tangent_matrix);
+  // TODO(xuchenhan-tri): Apply boundary condition to the tangent matrix.
+}
+
+template <typename T>
 void FemModelBase<T>::SetTangentMatrixSparsityPattern(
     Eigen::SparseMatrix<T>* tangent_matrix) const {
   DRAKE_DEMAND(tangent_matrix != nullptr);
   DoSetTangentMatrixSparsityPattern(tangent_matrix);
+}
+
+template <typename T>
+std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix>
+FemModelBase<T>::MakePetscSymmetricBlockSparseTangentMatrix() const {
+  return DoMakePetscSymmetricBlockSparseTangentMatrix();
 }
 
 template <typename T>

@@ -15,21 +15,35 @@ namespace drake {
 namespace multibody {
 namespace fem {
 namespace {
+
+using Eigen::MatrixXd;
+
 constexpr int kNaturalDimension = 3;
 constexpr int kSpatialDimension = 3;
 constexpr int kSolutionDimension = 3;
 constexpr int kQuadratureOrder = 1;
-using T = AutoDiffXd;
 using QuadratureType =
     internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
 constexpr int kNumQuads = QuadratureType::num_quadrature_points;
-using IsoparametricElementType =
-    internal::LinearSimplexElement<T, kNaturalDimension, kSpatialDimension,
+
+using AutoDiffIsoparametricElement =
+    internal::LinearSimplexElement<AutoDiffXd, kNaturalDimension,
+                                   kSpatialDimension, kNumQuads>;
+using AutoDiffConstitutiveModel =
+    internal::LinearConstitutiveModel<AutoDiffXd, kNumQuads>;
+using AutoDiffElement =
+    DynamicElasticityElement<AutoDiffIsoparametricElement, QuadratureType,
+                             AutoDiffConstitutiveModel>;
+
+using DoubleIsoparametricElement =
+    internal::LinearSimplexElement<double, kNaturalDimension, kSpatialDimension,
                                    kNumQuads>;
-using ConstitutiveModelType = internal::LinearConstitutiveModel<T, kNumQuads>;
-using ElementType =
-    DynamicElasticityElement<IsoparametricElementType, QuadratureType,
-                             ConstitutiveModelType>;
+using DoubleConstitutiveModel =
+    internal::LinearConstitutiveModel<double, kNumQuads>;
+using DoubleElement =
+    DynamicElasticityElement<DoubleIsoparametricElement, QuadratureType,
+                             DoubleConstitutiveModel>;
+
 const double kYoungsModulus = 1.23;
 const double kPoissonRatio = 0.456;
 const double kDensity = 0.789;
@@ -47,7 +61,8 @@ const double kStiffnessDamping = 0.02;
 class DynamicElasticityModelTest : public ::testing::Test {
  protected:
   /* Make a box and subdivide it into 6 tetrahedra. */
-  static geometry::VolumeMesh<T> MakeBoxTetMesh() {
+  template <typename T>
+  geometry::VolumeMesh<T> MakeBoxTetMesh() {
     const double length = 0.1;
     geometry::Box box(length, length, length);
     geometry::VolumeMesh<T> mesh =
@@ -56,16 +71,18 @@ class DynamicElasticityModelTest : public ::testing::Test {
     return mesh;
   }
 
-  void AddBoxToModel() {
-    geometry::VolumeMesh<T> mesh = MakeBoxTetMesh();
-    const ConstitutiveModelType constitutive_model(kYoungsModulus,
-                                                   kPoissonRatio);
+  template <typename FemModel>
+  void AddBoxToModel(FemModel* fem_model) {
+    using T = typename FemModel::T;
+    geometry::VolumeMesh<T> mesh = MakeBoxTetMesh<T>();
+    const typename FemModel::ConstitutiveModel constitutive_model(
+        kYoungsModulus, kPoissonRatio);
     const DampingModel<T> damping_model(kMassDamping, kStiffnessDamping);
-    model_.AddDynamicElasticityElementsFromTetMesh(mesh, constitutive_model,
-                                                   kDensity, damping_model);
+    fem_model->AddDynamicElasticityElementsFromTetMesh(mesh, constitutive_model,
+                                                       kDensity, damping_model);
   }
 
-  void SetUp() override { AddBoxToModel(); }
+  void SetUp() override { AddBoxToModel(&model_); }
 
   /* Returns an arbitrary perturbation to the reference configuration of the
    cube geometry. */
@@ -79,24 +96,38 @@ class DynamicElasticityModelTest : public ::testing::Test {
 
   /* Returns an arbitrary FemState whose generalized positions are different
    from reference positions and whose velocities and acclerations are nonzero.
-   In addition, set up AutoDiff derivatives for qddot. */
-  FemState<ElementType> MakeDeformedState() const {
-    const FemState<ElementType> reference_state = model_.MakeFemState();
-    FemState<ElementType> deformed_state = model_.MakeFemState();
-    /* Perturb qddot and set up derivatives. */
-    const Vector<double, kNumDofs> perturbed_qddot =
-        math::ExtractValue(deformed_state.qddot()) + perturbation();
-    Vector<T, kNumDofs> perturbed_qddot_autodiff;
-    math::InitializeAutoDiff(perturbed_qddot, &perturbed_qddot_autodiff);
-    /* It's important to set up the `deformed_state` with AdvanceOneTimeStep()
-     so that the derivatives such as dq/dqddot are set up. */
-    model_.AdvanceOneTimeStep(reference_state, perturbed_qddot_autodiff,
-                              &deformed_state);
+   In addition, set up AutoDiff derivatives for qddot if the scalar type is
+   AutoDiffXd. */
+  template <typename FemModelType>
+  typename FemModelType::State MakeDeformedState(
+      const FemModelType& fem_model) const {
+    using State = typename FemModelType::State;
+    using T = typename FemModelType::T;
+
+    const State reference_state = fem_model.MakeFemState();
+    State deformed_state = fem_model.MakeFemState();
+    /* Perturb qddot and set up derivatives if necessary. */
+    if constexpr (std::is_same_v<T, AutoDiffXd>) {
+      const Vector<double, kNumDofs> perturbed_qddot =
+          math::ExtractValue(deformed_state.qddot()) + perturbation();
+      Vector<AutoDiffXd, kNumDofs> perturbed_qddot_autodiff;
+      math::InitializeAutoDiff(perturbed_qddot, &perturbed_qddot_autodiff);
+      /* It's important to set up the `deformed_state` with AdvanceOneTimeStep()
+       so that the derivatives such as dq/dqddot are set up. */
+      fem_model.AdvanceOneTimeStep(reference_state, perturbed_qddot_autodiff,
+                                   &deformed_state);
+    } else {
+      const Vector<double, kNumDofs> perturbed_qddot =
+          deformed_state.qddot() + perturbation();
+      fem_model.AdvanceOneTimeStep(reference_state, perturbed_qddot,
+                                   &deformed_state);
+    }
+
     return deformed_state;
   }
 
   /* The model under test. */
-  DynamicElasticityModel<ElementType> model_{kDt};
+  DynamicElasticityModel<AutoDiffElement> model_{kDt};
 };
 
 /* Tests the mesh has been successfully converted to elements. */
@@ -108,8 +139,9 @@ TEST_F(DynamicElasticityModelTest, Geometry) {
 /* Tests that the tangent matrix of the model is the derivative of the residual
  with respect to the change in qddot. */
 TEST_F(DynamicElasticityModelTest, TangentMatrixIsResidualDerivative) {
-  const FemState<ElementType> state = MakeDeformedState();
+  using T = AutoDiffXd;
 
+  const FemState<AutoDiffElement> state = MakeDeformedState(model_);
   VectorX<T> residual(state.num_generalized_positions());
   model_.CalcResidual(state, &residual);
 
@@ -134,17 +166,42 @@ TEST_F(DynamicElasticityModelTest, TangentMatrixIsResidualDerivative) {
   }
 }
 
+/* Verifies that the tangent matrix calculated as PETSc matrix is the same as
+ that calculated as Eigen::SparseMatrix. */
+TEST_F(DynamicElasticityModelTest, TangentMatrixParity) {
+  const FemState<AutoDiffElement> state = MakeDeformedState(model_);
+  Eigen::SparseMatrix<AutoDiffXd> eigen_tangent_matrix;
+  model_.SetTangentMatrixSparsityPattern(&eigen_tangent_matrix);
+  model_.CalcTangentMatrix(state, &eigen_tangent_matrix);
+  const MatrixX<AutoDiffXd> eigen_dense_autodiff_matrix = eigen_tangent_matrix;
+  const MatrixXd eigen_dense_matrix =
+      math::ExtractValue(eigen_dense_autodiff_matrix);
+
+  DynamicElasticityModel<DoubleElement> double_model(kDt);
+  AddBoxToModel(&double_model);
+  const FemState<DoubleElement> double_state = MakeDeformedState(double_model);
+  std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix>
+      petsc_tangent_matrix =
+          double_model.MakePetscSymmetricBlockSparseTangentMatrix();
+  double_model.CalcTangentMatrix(double_state, petsc_tangent_matrix.get());
+  petsc_tangent_matrix->AssembleIfNecessary();
+  const MatrixXd petsc_dense_matrix = petsc_tangent_matrix->MakeDenseMatrix();
+  EXPECT_TRUE(CompareMatrices(eigen_dense_matrix, petsc_dense_matrix,
+                              std::numeric_limits<double>::epsilon()));
+}
+
 /* Adds two copies of the same set of elements and tests that the residual for
  the two copies are identical. In particular, tests that the node offsets in
  AddDynamicElasticityElementsFromTetMesh() are working as intended. */
 TEST_F(DynamicElasticityModelTest, MultipleMesh) {
+  using T = AutoDiffXd;
   /* Add a second box mesh to the model. */
-  AddBoxToModel();
+  AddBoxToModel(&model_);
   EXPECT_EQ(model_.num_nodes(), 2 * kNumCubeVertices);
   /* Each cube is split into 6 tetrahedra. */
   EXPECT_EQ(model_.num_elements(), 2 * kNumElements);
 
-  FemState<ElementType> state = model_.MakeFemState();
+  FemState<AutoDiffElement> state = model_.MakeFemState();
   EXPECT_EQ(state.num_generalized_positions(), 2 * kNumDofs);
 
   VectorX<T> residual(state.num_generalized_positions());
@@ -152,6 +209,7 @@ TEST_F(DynamicElasticityModelTest, MultipleMesh) {
   EXPECT_TRUE(
       CompareMatrices(residual.head(kNumDofs), residual.tail(kNumDofs), 0));
 }
+
 }  // namespace
 }  // namespace fem
 }  // namespace multibody
