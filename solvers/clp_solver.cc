@@ -301,6 +301,17 @@ int ChooseLogLevel(const SolverOptions& options) {
   }
   return 0;
 }
+
+int ChooseScaling(const SolverOptions& options) {
+  const auto& clp_options = options.GetOptionsInt(ClpSolver::id());
+  auto it = clp_options.find("scaling");
+  if (it == clp_options.end()) {
+    // Default scaling is 1.
+    return 1;
+  } else {
+    return it->second;
+  }
+}
 }  // namespace
 
 bool ClpSolver::is_available() { return true; }
@@ -340,6 +351,11 @@ void ClpSolver::DoSolve(const MathematicalProgram& prog,
     SetBoundingBoxConstraintDualIndices(prog, bb_con, xlow, xupp,
                                         &bb_con_dual_variable_indices);
   }
+
+  // As suggested by the CLP author, we should call scaling() to handle tiny (or
+  // huge) number in program data. See https://github.com/coin-or/Clp/issues/217
+  // for the discussion.
+  model.scaling(ChooseScaling(merged_options));
 
   // Solve
   model.primal();
