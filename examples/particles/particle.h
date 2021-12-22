@@ -18,6 +18,14 @@ namespace particles {
 ///   - linear position (state/output index 0), in @f$ m @f$ units.
 ///   - linear velocity (state/output index 1), in @f$ m/s @f$ units.
 ///
+/// @system
+/// name: Particle
+/// input_ports:
+/// - u0
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @tparam_double_only
 template <typename T>
 class Particle final : public systems::LeafSystem<T> {
