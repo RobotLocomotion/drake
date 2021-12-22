@@ -53,9 +53,19 @@ namespace sensors {
 /// - depth
 /// @endsystem
 ///
+/// It is convenient to use `systems::AddRandomInputs()` to supply all the
+/// random input signals:
+/// @code
+///  DiagramBuilder<double> builder;
+///  auto beam_model = builder.AddSystem<BeamModel>(1, 5.0);
+///  builder.ExportInput(beam_model->get_depth_input_port(), "depth");
+///  builder.ExportOutput(beam_model->get_output_port(0), "depth");
+///  AddRandomInputs(0.01, &builder);
+///  auto diagram = builder.Build();
+/// @endcode
+///
 /// @tparam_nonsymbolic_scalar
 /// @ingroup sensor_systems
-// TODO(rpoyner-tri): add a @code example showing AddRandomInputs() usage.
 template <typename T>
 class BeamModel final : public LeafSystem<T> {
  public:
