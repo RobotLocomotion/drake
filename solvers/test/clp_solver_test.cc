@@ -202,6 +202,11 @@ GTEST_TEST(ClpSolverTest, TestVerbosity) {
     solver.Solve(prog, {}, options);
   }
 }
+GTEST_TEST(ClpSolverTest, TestNumericalScaling) {
+  ClpSolver solver;
+  TestLPPoorScaling1(solver);
+  TestLPPoorScaling2(solver);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

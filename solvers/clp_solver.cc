@@ -341,6 +341,11 @@ void ClpSolver::DoSolve(const MathematicalProgram& prog,
                                         &bb_con_dual_variable_indices);
   }
 
+  // As suggested by the CLP author, we should call scaling() to handle tiny (or
+  // huge) number in program data. See https://github.com/coin-or/Clp/issues/217
+  // for the discussion.
+  model.scaling();
+
   // Solve
   model.primal();
 
