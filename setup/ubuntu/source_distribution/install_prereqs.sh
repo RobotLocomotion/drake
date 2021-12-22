@@ -100,8 +100,8 @@ apt-get install ${maybe_yes} --no-install-recommends ${packages}
 
 # TODO(svenevs): when bionic is dropped, satisfy can be used unconditionally.
 if  [[ "${codename}" != 'bionic' ]]; then
-  cat "${BASH_SOURCE%/*}/packages-${codename}-satisfy.txt" | \
-    xargs -I{} apt-get satisfy ${maybe_yes} --no-install-recommends {}
+  apt-get satisfy  ${maybe_yes} --no-install-recommends \
+    'libcurl4-gnutls-dev | libcurl4-dev'
 fi
 
 # Ensure that we have available a locale that supports UTF-8 for generating a
