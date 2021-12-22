@@ -1,1 +1,0 @@
-libcurl4-dev | libcurl4-gnutls-dev
