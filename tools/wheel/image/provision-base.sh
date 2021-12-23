@@ -26,10 +26,11 @@ apt-get -y install --no-install-recommends \
     libgl1-mesa-dev libxt-dev \
     opencl-headers ocl-icd-opencl-dev
 
+# Install CMake.
 # To build vtk-9 on bionic we need an updated CMake.
 # See: https://apt.kitware.com/
-# TODO(svenevs) Revert this when we drop support for bionic
-apt-get -y install --no-install-recommends gpg lsb-release
+# TODO(svenevs) Use distro version of CMake when we drop Bionic support.
+apt-get -y install --no-install-recommends gpg lsb-release wget
 kw_asc="https://apt.kitware.com/keys/kitware-archive-latest.asc"
 wget -O - "$kw_asc" 2>/dev/null | \
     gpg --dearmor - | \
