@@ -298,22 +298,24 @@ def linux_fix_rpaths(dst_full):
             if len(ldd_result) < 2:
                 continue
             # Library in install prefix.
-            if ldd_result[1] == 'not found' or ldd_result[1].startswith(prefix):
+            if ldd_result[1] == 'not found' or \
+                    ldd_result[1].startswith(prefix):
                 re_result = re.match(dylib_match, ldd_result[0])
-                # Look for the absolute path in the dictionary of libraries using
-                # the library name without its possible version number.
+                # Look for the absolute path in the dictionary of libraries
+                # using the library name without its possible version number.
                 soname, _, _ = re_result.groups()
                 if soname not in libraries_to_fix_rpath:
                     continue
                 lib_dirname = os.path.dirname(dst_full)
                 diff_path = os.path.dirname(
-                    os.path.relpath(libraries_to_fix_rpath[soname], lib_dirname)
+                    os.path.relpath(libraries_to_fix_rpath[soname],
+                                    lib_dirname)
                 )
                 rpath.append('$ORIGIN' + '/' + diff_path)
             # System library not in ld.so search path.
             else:
-                # Remove (hexadecimal) address from output leaving (at most) the
-                # path to the library.
+                # Remove (hexadecimal) address from output leaving (at most)
+                # the path to the library.
                 ldd_regex = r"(.*\.so(?:\.\d+)*) \(0x[0-9a-f]+\)$"
                 re_result = re.match(ldd_regex, ldd_result[1])
                 if re_result:
@@ -336,9 +338,9 @@ def linux_fix_rpaths(dst_full):
     str_rpath = ":".join(x for x in rpath)
     check_output(
         ["patchelf",
-        "--force-rpath",  # We need to override LD_LIBRARY_PATH.
-        "--set-rpath", str_rpath,
-        dst_full]
+         "--force-rpath",  # We need to override LD_LIBRARY_PATH.
+         "--set-rpath", str_rpath,
+         dst_full]
     )
 
 

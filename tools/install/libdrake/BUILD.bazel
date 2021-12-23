@@ -175,17 +175,16 @@ cc_library(
         # declared without having to repeat this list here.
         "@vtk//:vtkCommonCore",
         "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkCommonExecutionModel",
         "@vtk//:vtkCommonTransforms",
         "@vtk//:vtkFiltersGeneral",
-        "@vtk//:vtkFiltersHybrid",
         "@vtk//:vtkFiltersSources",
-        "@vtk//:vtkImagingCore",
-        "@vtk//:vtkImagingSources",
+        "@vtk//:vtkIOExport",
         "@vtk//:vtkIOGeometry",
         "@vtk//:vtkIOImage",
+        "@vtk//:vtkIOImport",
         "@vtk//:vtkRenderingCore",
         "@vtk//:vtkRenderingOpenGL2",
-        "@vtk//:vtkRenderingUI",
     ],
 )
 
