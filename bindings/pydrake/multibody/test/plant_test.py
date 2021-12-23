@@ -85,6 +85,7 @@ from pydrake.geometry import (
     Box,
     GeometryId,
     GeometrySet,
+    HydroelasticContactRepresentation,
     Meshcat,
     Rgba,
     Role,
@@ -2029,6 +2030,21 @@ class TestPlant(unittest.TestCase):
             plant.set_contact_model(model)
             self.assertEqual(plant.get_contact_model(), model)
 
+    def test_contact_surface_representation(self):
+        for time_step in [0.0, 0.1]:
+            plant = MultibodyPlant_[float](time_step)
+            self.assertEqual(
+                plant.get_contact_surface_representation(),
+                plant.GetDefaultContactSurfaceRepresentation(time_step))
+            reps = [
+                HydroelasticContactRepresentation.kTriangle,
+                HydroelasticContactRepresentation.kPolygon,
+            ]
+            for rep in reps:
+                plant.set_contact_surface_representation(rep)
+                self.assertEqual(
+                    plant.get_contact_surface_representation(), rep)
+
     def test_contact_results_to_lcm(self):
         # ContactResultsToLcmSystem
         file_name = FindResourceOrThrow(
@@ -2288,3 +2304,15 @@ class TestPlant(unittest.TestCase):
             contact_results_port=plant.get_contact_results_output_port(),
             meshcat=meshcat,
             params=params)
+
+    def test_free_base_bodies(self):
+        plant = MultibodyPlant_[float](time_step=0.01)
+        model_instance = plant.AddModelInstance("new instance")
+        added_body = plant.AddRigidBody(
+            name="body", model_instance=model_instance,
+            M_BBo_B=SpatialInertia_[float]())
+        plant.Finalize()
+        self.assertTrue(plant.HasBodyNamed("body", model_instance))
+        self.assertTrue(plant.HasUniqueFreeBaseBody(model_instance))
+        body = plant.GetUniqueFreeBaseBodyOrThrow(model_instance)
+        self.assertEqual(body.index(), added_body.index())

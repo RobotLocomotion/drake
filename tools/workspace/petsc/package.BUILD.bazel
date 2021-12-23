@@ -115,6 +115,7 @@ _SRCS = glob([
     "src/sys/classes/viewer/impls/mathematica/**",
     "src/sys/classes/viewer/impls/matlab/**",
     "src/sys/classes/viewer/impls/socket/**",
+    "src/sys/logging/utils/**",
     "src/ts/characteristic/**",
     "src/ts/impls/implicit/radau5/**",
     "src/ts/impls/implicit/sundials/**",

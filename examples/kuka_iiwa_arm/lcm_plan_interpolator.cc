@@ -17,20 +17,20 @@ LcmPlanInterpolator::LcmPlanInterpolator(const std::string& model_path,
   DiagramBuilder<double> builder;
 
   // Add plan interpolation block.
-  robot_plan_interpolator_ =
-      builder.AddSystem<RobotPlanInterpolator>(model_path, interpolator_type);
+  robot_plan_interpolator_ = builder.AddNamedSystem<RobotPlanInterpolator>(
+      "plan_interpolator", model_path, interpolator_type);
   num_joints_ = robot_plan_interpolator_->plant().num_positions();
 
   // Add block to export a received iiwa status.
-  auto status_receiver = builder.AddSystem<IiwaStatusReceiver>(num_joints_);
+  auto status_receiver = builder.AddNamedSystem<IiwaStatusReceiver>(
+      "status_receiver", num_joints_);
   input_port_iiwa_status_ =
       builder.ExportInput(status_receiver->get_input_port());
 
   // Add a demux block to pull out the positions from the position + velocity
   // vector
-  auto target_demux =
-      builder.AddSystem<systems::Demultiplexer>(num_joints_ * 2, num_joints_);
-  target_demux->set_name("target_demux");
+  auto target_demux = builder.AddNamedSystem<systems::Demultiplexer>(
+      "target_demux", num_joints_ * 2, num_joints_);
 
   // Add a block to convert the desired position vector to iiwa command.
   auto command_sender = builder.AddSystem<IiwaCommandSender>(num_joints_);

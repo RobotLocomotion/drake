@@ -205,23 +205,23 @@ SchunkWsgPlainController::SchunkWsgPlainController(ControlMode control_mode,
   auto adder = builder.AddSystem<systems::Adder<double>>(2 /*num_inputs*/, nq);
 
   // Export the inputs.
-  state_input_port_ =
-      builder.ExportInput(joint_state_to_control_state->get_input_port());
+  state_input_port_ = builder.ExportInput(
+      joint_state_to_control_state->get_input_port(), "joint_state");
   // Max force input -> Saturation
   max_force_input_port_ =
-      builder.ExportInput(positive_gain->get_input_port());
+      builder.ExportInput(positive_gain->get_input_port(), "max_force");
   builder.ConnectInput(max_force_input_port_, negative_gain->get_input_port());
   if (desired_grip_state_input_port) {
-    desired_grip_state_input_port_ =
-        builder.ExportInput(*desired_grip_state_input_port);
+    desired_grip_state_input_port_ = builder.ExportInput(
+        *desired_grip_state_input_port, "desired_grip_state");
   }
   if (feed_forward_force_input_port) {
-    feed_forward_force_input_port_ =
-        builder.ExportInput(*feed_forward_force_input_port);
+    feed_forward_force_input_port_ = builder.ExportInput(
+        *feed_forward_force_input_port, "feed_forward_force");
   }
 
   // Export the output.
-  builder.ExportOutput(adder->get_output_port());
+  builder.ExportOutput(adder->get_output_port(), "control");
 
   // Connect the subsystems.
   // Upstream subsystems -> PID

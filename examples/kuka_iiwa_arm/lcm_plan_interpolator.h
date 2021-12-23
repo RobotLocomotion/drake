@@ -8,6 +8,21 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
+/**
+ * A Diagram that adapts a RobotPlanInterpolator for use with an Iiwa arm.
+ *
+ * @system
+ * name: LcmPlanInterpolator
+ * input_ports:
+ * - status_receiver_lcmt_iiwa_status
+ * - plan_interpolator_plan
+ * output_ports:
+ * - command_sender_lcmt_iiwa_command
+ * @endsystem
+ *
+ * @see `lcmt_iiwa_status.lcm`, `lcmt_iiwa_command.lcm`, `lcmt_robot_plan.lcm`,
+ * and `lcmt_robot_state.lcm` for additional documentation.
+ */
 class LcmPlanInterpolator : public systems::Diagram<double> {
  public:
   LcmPlanInterpolator(

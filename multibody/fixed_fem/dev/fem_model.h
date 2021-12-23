@@ -1,9 +1,11 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -186,6 +188,47 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
     }
   }
 
+  /* Helper for DoCalcTangentMatrix(). */
+  void CalcTangentMatrixForConcreteState(
+      const FemState<Element>& state,
+      internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const {
+    if constexpr (!std::is_same_v<typename Element::T, double>) {
+      throw std::logic_error(
+          "The PetscSymmetricBlockSparseMatrix overload of "
+          "FemModel::CalcTangentMatrixForConcreteState() only supports scalar "
+          "type `double`.");
+    } else {
+      DRAKE_DEMAND(tangent_matrix != nullptr &&
+                   tangent_matrix->rows() == num_dofs() &&
+                   tangent_matrix->cols() == num_dofs());
+      DRAKE_DEMAND(state.element_cache_size() == num_elements());
+
+      /* The values are accumulated in the tangent_matrix, so it is important to
+       clear the old data. */
+      tangent_matrix->SetZero();
+
+      /* Aliases to improve readability. */
+      constexpr int kNumDofs = Element::Traits::kNumDofs;
+      constexpr int kNumNodes = Element::Traits::kNumNodes;
+
+      /* Scratch space to store the contribution to the tangent matrix from each
+       element. */
+      Vector<int, kNumNodes> block_indices;
+      Eigen::Matrix<T, kNumDofs, kNumDofs> element_tangent_matrix;
+      const Vector3<T>& weights = this->state_updater().weights();
+      for (ElementIndex e(0); e < num_elements(); ++e) {
+        element_tangent_matrix = CalcElementTangentMatrix(state, weights, e);
+        const std::array<NodeIndex, kNumNodes>& element_node_indices =
+            elements_[e].node_indices();
+        // TODO(xuchenhan-tri): Avoid this index copy.
+        for (int a = 0; a < kNumNodes; ++a) {
+          block_indices(a) = element_node_indices[a];
+        }
+        tangent_matrix->AddToBlock(block_indices, element_tangent_matrix);
+      }
+    }
+  }
+
   /* Implements FemModelBase::SetTangentMatrixSparsityPattern(). */
   void DoSetTangentMatrixSparsityPattern(
       Eigen::SparseMatrix<T>* tangent_matrix) const final {
@@ -222,6 +265,55 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
     tangent_matrix->makeCompressed();
   }
 
+  /* Implements FemModelBase::MakePetscSymmetricBlockSparseTangentMatrix(). */
+  std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix>
+  DoMakePetscSymmetricBlockSparseTangentMatrix() const final {
+    std::vector<std::unordered_set<int>> neighbor_nodes(this->num_nodes());
+    /* Alias for readability. */
+    constexpr int element_num_nodes = Element::Traits::kNumNodes;
+    constexpr int element_num_dofs = Element::Traits::kNumDofs;
+    constexpr int kDim = Element::Traits::kSolutionDimension;
+    /* Create a nonzero block for each pair of nodes that are connected by an
+     edge in the mesh. */
+    for (int e = 0; e < num_elements(); ++e) {
+      const std::array<NodeIndex, element_num_nodes>& element_node_indices =
+          elements_[e].node_indices();
+      for (int a = 0; a < element_num_nodes; ++a) {
+        for (int b = a; b < element_num_nodes; ++b) {
+          const int block_row =
+              std::min(element_node_indices[a], element_node_indices[b]);
+          const int block_col =
+              std::max(element_node_indices[a], element_node_indices[b]);
+          neighbor_nodes[block_row].insert(block_col);
+        }
+      }
+    }
+    std::vector<int> nonzero_blocks(this->num_nodes());
+    for (int i = 0; i < this->num_nodes(); ++i) {
+      nonzero_blocks[i] = neighbor_nodes[i].size();
+    }
+    auto tangent_matrix =
+        std::make_unique<internal::PetscSymmetricBlockSparseMatrix>(
+            num_dofs(), kDim, nonzero_blocks);
+
+    /* Populate the tangent matrix with zeros at appropriate places to allocate
+     memory. */
+    Vector<int, element_num_nodes> block_indices;
+    const Eigen::Matrix<double, element_num_dofs, element_num_dofs>
+        zero_matrix =
+            Eigen::Matrix<double, element_num_dofs, element_num_dofs>::Zero();
+    for (ElementIndex e(0); e < num_elements(); ++e) {
+      const std::array<NodeIndex, element_num_nodes>& element_node_indices =
+          elements_[e].node_indices();
+      // TODO(xuchenhan-tri): Avoid this index copy.
+      for (int a = 0; a < element_num_nodes; ++a) {
+        block_indices(a) = element_node_indices[a];
+      }
+      tangent_matrix->AddToBlock(block_indices, zero_matrix);
+    }
+    return tangent_matrix;
+  }
+
   /* Implements FemModelBase::CalcResidual() by casting the FemStateBase
    to its concrete type. */
   void DoCalcResidual(const FemStateBase<T>& state,
@@ -234,6 +326,15 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
    FemStateBase to its concrete type. */
   void DoCalcTangentMatrix(const FemStateBase<T>& state,
                            Eigen::SparseMatrix<T>* tangent_matrix) const final {
+    const FemState<Element>& concrete_state = cast_to_concrete_state(state);
+    CalcTangentMatrixForConcreteState(concrete_state, tangent_matrix);
+  }
+
+  /* Implements FemModelBase::CalcTangentMatrix() by casting the
+   FemStateBase to its concrete type. */
+  void DoCalcTangentMatrix(
+      const FemStateBase<T>& state,
+      internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const final {
     const FemState<Element>& concrete_state = cast_to_concrete_state(state);
     CalcTangentMatrixForConcreteState(concrete_state, tangent_matrix);
   }

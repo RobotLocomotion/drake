@@ -1,3 +1,4 @@
+import copy
 import unittest
 
 from pydrake.common import RandomGenerator
@@ -8,8 +9,13 @@ import pydrake.math
 class TestSchema(unittest.TestCase):
 
     def _check_distribution(self, dut):
-        """Confirms that subclasses of Distribution bind the base methods."""
+        """Confirms that a subclass instance of Distribution
+        * binds the base methods, and
+        * supports copy/deepcopy (even though the superclass does not).
+        """
         self.assertIsInstance(dut, mut.Distribution)
+        copy.copy(dut)
+        copy.deepcopy(dut)
         dut.Sample(generator=RandomGenerator())
         dut.Mean()
         dut.ToSymbolic()
@@ -59,10 +65,13 @@ class TestSchema(unittest.TestCase):
                 mut.GetDeterministicValue(var=item)
 
     def _check_distribution_vector(self, dut):
-        """Confirms that subclasses of DistributionVector bind the base
-        methods.
+        """Confirms that a subclass instance of DistributionVector
+        * binds the base methods, and
+        * supports copy/deepcopy (even though the superclass does not).
         """
         self.assertIsInstance(dut, mut.DistributionVector)
+        copy.copy(dut)
+        copy.deepcopy(dut)
         dut.Sample(generator=RandomGenerator())
         dut.Mean()
         dut.ToSymbolic()
@@ -105,6 +114,8 @@ class TestSchema(unittest.TestCase):
         mut.Rotation()
         mut.Rotation(pydrake.math.RotationMatrix())
         dut = mut.Rotation(pydrake.math.RollPitchYaw([0.0, 0.0, 0.0]))
+        copy.copy(dut)
+        copy.deepcopy(dut)
         dut.IsDeterministic()
         dut.GetDeterministicValue()
         dut.ToSymbolic()
@@ -113,6 +124,8 @@ class TestSchema(unittest.TestCase):
     def test_transform(self):
         mut.Transform()
         dut = mut.Transform(pydrake.math.RigidTransform())
+        copy.copy(dut)
+        copy.deepcopy(dut)
         dut.set_rotation_rpy_deg([0.1, 0.2, 0.3])
         dut.IsDeterministic()
         dut.GetDeterministicValue()

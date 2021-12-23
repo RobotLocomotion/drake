@@ -1,5 +1,7 @@
 #include "drake/multibody/fixed_fem/dev/schur_complement.h"
 
+#include <utility>
+
 namespace drake {
 namespace multibody {
 namespace fem {
@@ -33,6 +35,17 @@ SchurComplement<T>::SchurComplement(
     neg_Dinv_B_transpose_ = D_factorization.solve(-B_transpose);
     D_complement_ = A + B_transpose.transpose() * neg_Dinv_B_transpose_;
   }
+}
+
+template <typename T>
+SchurComplement<T>::SchurComplement(MatrixX<T>&& D_complement,
+                                    MatrixX<T>&& neg_Dinv_B_transpose)
+    : D_complement_(std::move(D_complement)),
+      neg_Dinv_B_transpose_(std::move(neg_Dinv_B_transpose)) {
+  DRAKE_DEMAND(D_complement_.rows() == D_complement_.cols());
+  DRAKE_DEMAND(neg_Dinv_B_transpose_.cols() == D_complement_.cols());
+  p_ = D_complement_.cols();
+  q_ = neg_Dinv_B_transpose_.rows();
 }
 
 template <typename T>

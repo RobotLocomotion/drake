@@ -37,6 +37,12 @@ namespace lcm {
  * then see drake::systems::lcm::LcmLogPlaybackSystem for a helper to advance
  * the log cursor in concert with the simulation.
  *
+ * @system
+ * name: LcmSubscriberSystem
+ * output_ports:
+ * - y0
+ * @endsystem
+ *
  * @ingroup message_passing
  */
 class LcmSubscriberSystem : public LeafSystem<double> {

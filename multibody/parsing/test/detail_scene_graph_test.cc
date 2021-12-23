@@ -1126,6 +1126,22 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
               geometry::internal::HydroelasticType::kSoft);
   }
 
+  // TODO(16229): Remove this ad-hoc input sanitization when we resolve
+  //  issue 16229 "Diagnostics for unsupported SDFormat and URDF stanzas."
+  // Case: specifies unsupported drake:soft_hydroelastic -- should be an error.
+  {
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
+  <drake:proximity_properties>
+    <drake:soft_hydroelastic/>
+  </drake:proximity_properties>)""");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        MakeProximityPropertiesForCollision(*sdf_collision),
+        std::runtime_error,
+        "A <collision> geometry has defined the unsupported tag "
+        "<drake:soft_hydroelastic>. Please change it to "
+        "<drake:compliant_hydroelastic>.");
+  }
+
   // Case: specifies both -- should be an error.
   {
     unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(

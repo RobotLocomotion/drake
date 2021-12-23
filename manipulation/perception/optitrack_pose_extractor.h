@@ -58,6 +58,14 @@ std::optional<int> FindOptitrackObjectId(
  * Eigen::Isometry3d from an Optitrack LCM OPTITRACK_FRAME_T message, the
  * pose transformed to a desired coordinate frame.
  *
+ * @system
+ * name: OptitrackPoseExtractor
+ * input_ports:
+ * - u0
+ * output_ports:
+ * - y0
+ * @endsystem
+ *
  * @ingroup manipulation_systems
  */
 class DRAKE_DEPRECATED("2022-02-01", "Use OptitrackReceiver instead.")
