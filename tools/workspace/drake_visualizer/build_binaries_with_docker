@@ -5,11 +5,6 @@
 # that are downloaded during the build. They are neither called during the
 # build nor expected to be called by most developers or users of the project.
 
-# Ensure you have docker(1) installed (apt-get install docker.io or brew
-# install [--cask] docker), shasum(1) installed (apt-get install
-# libdigest-sha-perl), and the vtk tar.gz archives for both bionic and focal
-# have been copied or downloaded to same directory as this shell script.
-
 set -eu -o pipefail
 
 salt=$(dd if=/dev/urandom bs=2 count=4 | od -An -x | tr -d ' ')
@@ -48,7 +43,7 @@ extract()
 
 ###############################################################################
 
-rm -f dv-*-x86_64.tar.gz{,.sha256}
+rm -f dv-*.tar.gz{,.sha256}
 
 build bionic --build-arg PLATFORM=ubuntu:18.04
 extract bionic
