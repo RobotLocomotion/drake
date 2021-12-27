@@ -182,14 +182,11 @@ void DefineGeometryOptimization(py::module m) {
     const auto& cls_doc = doc.VPolytope;
     py::class_<VPolytope, ConvexSet>(m, "VPolytope", cls_doc.doc)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&>(),
-            py::arg("vertices"), cls_doc.ctor.doc_vertices)
-        .def(py::init<const HPolyhedron&>(), py::arg("H"),
-            cls_doc.ctor.doc_hpolyhedron)
+            py::arg("vertices"), cls_doc.ctor.doc_1args)
         .def(py::init<const QueryObject<double>&, GeometryId,
                  std::optional<FrameId>>(),
             py::arg("query_object"), py::arg("geometry_id"),
-            py::arg("reference_frame") = std::nullopt,
-            cls_doc.ctor.doc_scenegraph)
+            py::arg("reference_frame") = std::nullopt, cls_doc.ctor.doc_3args)
         .def("vertices", &VPolytope::vertices, cls_doc.vertices.doc)
         .def_static("MakeBox", &VPolytope::MakeBox, py::arg("lb"),
             py::arg("ub"), cls_doc.MakeBox.doc)

@@ -58,7 +58,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "meshcat_python",
     "petsc",
     "pybind11",
-    "qhull",
     "sdformat",
     "spdlog",
     "tinyobjloader",

@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "drake/geometry/optimization/convex_set.h"
-#include "drake/geometry/optimization/hpolyhedron.h"
 
 namespace drake {
 namespace geometry {
@@ -29,18 +28,10 @@ class VPolytope final : public ConvexSet {
 
   /** Constructs the polytope from a d-by-n matrix, where d is the ambient
   dimension, and n is the number of vertices.  The vertices do not have to be
-  ordered, nor minimal (they can contain points inside their convex hull).
-  @pydrake_mkdoc_identifier{vertices} */
+  ordered, nor minimal (they can contain points inside their convex hull).  */
   explicit VPolytope(const Eigen::Ref<const Eigen::MatrixXd>& vertices);
 
-  /** Constructs the polytope from a bounded polyhedron (using Qhull).
-  @throws std::runtime_error if H is unbounded or if Qhull terminates with an
-  error.
-  @pydrake_mkdoc_identifier{hpolyhedron} */
-  explicit VPolytope(const HPolyhedron& H);
-
-  /** Constructs the polytope from a SceneGraph geometry.
-  @pydrake_mkdoc_identifier{scenegraph} */
+  /** Construct the polytope from a SceneGraph geometry. */
   VPolytope(const QueryObject<double>& query_object, GeometryId geometry_id,
             std::optional<FrameId> reference_frame = std::nullopt);
 
