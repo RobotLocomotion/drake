@@ -223,23 +223,24 @@ GTEST_TEST(VPolytopeTest, From3DHSimplexTest) {
   HPolyhedron H(A, b);
   VPolytope V(H);
 
-  // Vertices are (0,0,0), (1,0,0), (0,1,0), and (0,0,1).
-  const Vector3d in1_W{.01, .01, .01}, in2_W{.9, .01, .01}, in3_W{.01, .9, .01},
-      in4_W{.01, .01, .9}, in5_W{.33, .33, .33}, out1_W{-.01, -.01, -.01},
-      out2_W{1., .01, .01}, out3_W{.01, 1., .01}, out4_W{.01, .01, 1.},
-      out5_W{.34, .34, .34};
-
-  const double kTol = 1e-11;
-  EXPECT_TRUE(V.PointInSet(in1_W, kTol));
-  EXPECT_TRUE(V.PointInSet(in2_W, kTol));
-  EXPECT_TRUE(V.PointInSet(in3_W, kTol));
-  EXPECT_TRUE(V.PointInSet(in4_W, kTol));
-  EXPECT_TRUE(V.PointInSet(in5_W, kTol));
-  EXPECT_FALSE(V.PointInSet(out1_W, kTol));
-  EXPECT_FALSE(V.PointInSet(out2_W, kTol));
-  EXPECT_FALSE(V.PointInSet(out3_W, kTol));
-  EXPECT_FALSE(V.PointInSet(out4_W, kTol));
-  EXPECT_FALSE(V.PointInSet(out5_W, kTol));
+  // Vertices are (0,0,0), (1,0,0), (0,1,0), and (0,0,1).  The order of the
+  // returned vertices need not be unique.
+  Eigen::MatrixXd vertices(3, 4);
+  // clang-format off
+  vertices << 0, 1, 0, 0,
+              0, 0, 1, 0,
+              0, 0, 0, 1;
+  // clang-format on
+  for (int i = 0; i < 4; ++i) {
+    bool found_match = false;
+    for (int j = 0; j < 4; ++j) {
+      if (CompareMatrices(vertices.col(i), V.vertices().col(j), 1e-11)) {
+        found_match = true;
+        break;
+      }
+    }
+    EXPECT_TRUE(found_match);
+  }
 }
 
 // Same as FromHPolytopeTest but with two redundant constraints.
