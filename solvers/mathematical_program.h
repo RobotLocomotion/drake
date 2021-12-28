@@ -2568,6 +2568,35 @@ class MathematicalProgram {
   AddSosConstraint(const symbolic::Expression& e);
 
   /**
+   * Adds the constraints that a given polynomial p is non-negative for all
+   * indeterminates. Namely `p` can be decomposed into `mᵀQm`, where m is
+   * `monomial_basis`. Q is the Gram matrix. Depending on `type`, we will impose
+   * different constraint on Q.
+   * @param p The polynomial constrained to be non-negative.
+   * @param monomial_basis The monomial basis m for this polynomial, such that p
+   * = mᵀQm
+   * @param type The type of the non-negative polynomial (sos, sdsos, dsos).
+   * @return Q The Gram matrix.
+   * @note It calls `Reparse` to enforce `p` to have this MathematicalProgram's
+   * indeterminates if necessary.
+   */
+  MatrixXDecisionVariable AddNonnegativePolynomialConstraint(
+      const symbolic::Polynomial& p,
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+      NonnegativePolynomial type);
+
+  /**
+   * Overload AddNonnegativePolynomialConstraint, except the user doesn't
+   * specify the monomial basis. Now the program computes the monomial basis,
+   * and return it as the second argument.
+   * @return (Gram, monomial_basis), returns the Gram matrix Q and the monomial
+   * basis m, such that p = mᵀQm
+   */
+  std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
+  AddNonnegativePolynomialConstraint(const symbolic::Polynomial& p,
+                                     NonnegativePolynomial type);
+
+  /**
    * Constraining that two polynomials are the same (i.e., they have the same
    * coefficients for each monomial). This function is often used in
    * sum-of-squares optimization.

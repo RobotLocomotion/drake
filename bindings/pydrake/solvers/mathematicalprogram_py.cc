@@ -1166,6 +1166,22 @@ void BindMathematicalProgram(py::module m) {
                   MathematicalProgram::*)(const Expression&)>(
               &MathematicalProgram::AddSosConstraint),
           py::arg("e"), doc.MathematicalProgram.AddSosConstraint.doc_1args_e)
+      .def("AddNonnegativePolynomialConstraint",
+          static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
+              const symbolic::Polynomial&,
+              const Eigen::Ref<const VectorX<symbolic::Monomial>>&,
+              MathematicalProgram::NonnegativePolynomial)>(
+              &MathematicalProgram::AddNonnegativePolynomialConstraint),
+          py::arg("p"), py::arg("monomial_basis"), py::arg("type"),
+          doc.MathematicalProgram.AddNonnegativePolynomialConstraint.doc_3args)
+      .def("AddNonnegativePolynomialConstraint",
+          static_cast<
+              std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> (
+                  MathematicalProgram::*)(const symbolic::Polynomial&,
+                  MathematicalProgram::NonnegativePolynomial)>(
+              &MathematicalProgram::AddNonnegativePolynomialConstraint),
+          py::arg("p"), py::arg("type"),
+          doc.MathematicalProgram.AddNonnegativePolynomialConstraint.doc_2args)
       .def("AddEqualityConstraintBetweenPolynomials",
           &MathematicalProgram::AddEqualityConstraintBetweenPolynomials,
           py::arg("p1"), py::arg("p2"),
