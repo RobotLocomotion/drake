@@ -2520,13 +2520,16 @@ class MathematicalProgram {
    * that is, @p p can be decomposed into `mᵀQm`, where m is the @p
    * monomial_basis. It returns the coefficients matrix Q, which is positive
    * semidefinite.
+   * @param type The type of the polynomial. @default is kSos, but the user can
+   * also use kSdsos and kDsos.
    *
    * @note It calls `Reparse` to enforce `p` to have this MathematicalProgram's
    * indeterminates if necessary.
    */
   MatrixXDecisionVariable AddSosConstraint(
       const symbolic::Polynomial& p,
-      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+      NonnegativePolynomial type = NonnegativePolynomial::kSos);
 
   /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
@@ -2541,7 +2544,8 @@ class MathematicalProgram {
    *  - The monomial basis m.
    */
   std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
-  AddSosConstraint(const symbolic::Polynomial& p);
+  AddSosConstraint(const symbolic::Polynomial& p,
+                   NonnegativePolynomial type = NonnegativePolynomial::kSos);
 
   /**
    * Adds constraints that a given symbolic expression @p e is a
@@ -2553,7 +2557,8 @@ class MathematicalProgram {
    */
   MatrixXDecisionVariable AddSosConstraint(
       const symbolic::Expression& e,
-      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+      NonnegativePolynomial type = NonnegativePolynomial::kSos);
 
   /**
    * Adds constraints that a given symbolic expression @p e is a sums-of-squares
@@ -2565,7 +2570,8 @@ class MathematicalProgram {
    *  - The monomial basis m.
    */
   std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
-  AddSosConstraint(const symbolic::Expression& e);
+  AddSosConstraint(const symbolic::Expression& e,
+                   NonnegativePolynomial type = NonnegativePolynomial::kSos);
 
   /**
    * Constraining that two polynomials are the same (i.e., they have the same
