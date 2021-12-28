@@ -600,6 +600,17 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertIsInstance(gram_odd, np.ndarray)
             self.assertIsInstance(gram_even, np.ndarray)
 
+    def test_add_sos_constraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewIndeterminates(1, "x")
+        Q = prog.AddSosConstraint(
+           p=sym.Polynomial(x[0]**2 + 1),
+           monomial_basis=[sym.Monomial(x[0])],
+           type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos)
+        Q, m = prog.AddSosConstraint(
+            p=sym.Polynomial(x[0]**2 + 2),
+            type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos)
+
     def test_sos(self):
         # Find a,b,c,d subject to
         # a(0) + a(1)*x,
