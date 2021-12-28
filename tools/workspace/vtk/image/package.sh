@@ -2,20 +2,19 @@
 
 set -eu -o pipefail
 
-readonly PYTHON_VERSINFO=($(python3 -c 'import sys; print(*sys.version_info)'))
-readonly python=python${PYTHON_VERSINFO[0]}.${PYTHON_VERSINFO[1]}
-
 # Get various version numbers.
 readonly vtk_tag=vtk-9.1.0
-readonly py_tag=python-$(echo ${PYTHON_VERSINFO[@]:0:3} | tr ' ' '.')
+# To re-package, increase build_number by 1 and update repository.bzl to avoid
+# overwriting artifacts thus breaking historical builds.
+readonly build_number=1
 readonly platform=$(lsb_release --codename --short)-$(uname --processor)
 
 # Create archive named:
 #   vtk-<version>
-#     -python-<python version>
+#     -<build_number>
 #     -<distribution codename>
 #     -<processor architecture>.tar.gz
-readonly archive=${vtk_tag}-${py_tag}-${platform}.tar.gz
+readonly archive=${vtk_tag}-${build_number}-${platform}.tar.gz
 cd /opt/vtk
 
 tar czf $archive -- *

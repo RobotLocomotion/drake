@@ -10,7 +10,7 @@ robotlocomotion/director tap
 (https://github.com/RobotLocomotion/homebrew-director) using Homebrew.
 
 Archive naming convention:
-    vtk-<version>[-<rebuild>]-python-<python version>-<platform>-<arch>
+    vtk-<version>-<build_number>-<platform>-<arch>.tar.gz
 
 Example:
     WORKSPACE:
@@ -114,11 +114,11 @@ def _impl(repository_ctx):
         ), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "18.04":
-            archive = "vtk-9.1.0-python-3.6.9-bionic-x86_64.tar.gz"
-            sha256 = "f8b87b15b049b8d2f465050b443479c6dc23bd0f92099bf66d234bec8d839fc4"  # noqa
+            archive = "vtk-9.1.0-1-bionic-x86_64.tar.gz"
+            sha256 = "1e3634fafacedbbec63a0dd9f99db7ac815f6c7a9b8289e3cfdeffcdf4bc006d"  # noqa
         elif os_result.ubuntu_release == "20.04":
-            archive = "vtk-9.1.0-python-3.8.10-focal-x86_64.tar.gz"
-            sha256 = "a73df29ce432fa529c7ae6056d2570cd3efc279d1895b2ec09c24b3b7519c64c"  # noqa
+            archive = "vtk-9.1.0-1-focal-x86_64.tar.gz"
+            sha256 = "4adb4b40182c06f003f987a7e4e1218a147d15373114e4ea33d16ccd521c6722"  # noqa
         else:
             fail("Operating system is NOT supported {}".format(os_result))
 
@@ -160,7 +160,7 @@ licenses([
     #
     #     Linux: /tools/workspace/vtk/image/vtk-args
     #     macOS: https://github.com/RobotLocomotion/homebrew-director
-    #     manylinux: /tools/wheel/dev/image/vtk-args
+    #     manylinux: /tools/wheel/image/vtk-args
     #
     # For each library, it is necessary to supply the appropriate dependencies
     # as well as for manylinux (wheel) supply the appropriate linker flags for
@@ -173,6 +173,7 @@ licenses([
     #
     #     this_file_dir = Path(__file__).parent.absolute()
     #
+    #     # NOTE: update "x" to wherever you have extracted the VTK .tar.gz.
     #     lib_dir = this_file_dir / "x" / "lib"
     #     for lib in sorted(lib_dir.glob("*.so")):
     #         if lib.name.lower() == lib.name:
