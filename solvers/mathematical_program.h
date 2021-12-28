@@ -2520,19 +2520,34 @@ class MathematicalProgram {
    * that is, @p p can be decomposed into `mᵀQm`, where m is the @p
    * monomial_basis. It returns the coefficients matrix Q, which is positive
    * semidefinite.
+   * @param type The type of the polynomial. @default is kSos, but the user can
+   * also use kSdsos and kDsos. For more
+   * information about these polynomial types, please refer to
+   * "DSOS and SDSOS Optimization: More Tractable
+   * Alternatives to Sum of Squares and Semidefinite Optimization" by Amir Ali
+   * Ahmadi and Anirudha Majumdar, with arXiv link
+   * https://arxiv.org/abs/1706.02586
    *
    * @note It calls `Reparse` to enforce `p` to have this MathematicalProgram's
    * indeterminates if necessary.
    */
   MatrixXDecisionVariable AddSosConstraint(
       const symbolic::Polynomial& p,
-      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+      NonnegativePolynomial type = NonnegativePolynomial::kSos);
 
   /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
    * that is, @p p can be decomposed into `mᵀQm`, where m is a monomial
    * basis selected from the sparsity of @p p. It returns a pair of constraint
    * bindings expressing:
+   * @param type The type of the polynomial. @default is kSos, but the user can
+   * also use kSdsos and kDsos. For more
+   * information about these polynomial types, please refer to
+   * "DSOS and SDSOS Optimization: More Tractable
+   * Alternatives to Sum of Squares and Semidefinite Optimization" by Amir Ali
+   * Ahmadi and Anirudha Majumdar, with arXiv link
+   * https://arxiv.org/abs/1706.02586
    *
    * @note It calls `Reparse` to enforce `p` to have this MathematicalProgram's
    * indeterminates if necessary.
@@ -2541,7 +2556,8 @@ class MathematicalProgram {
    *  - The monomial basis m.
    */
   std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
-  AddSosConstraint(const symbolic::Polynomial& p);
+  AddSosConstraint(const symbolic::Polynomial& p,
+                   NonnegativePolynomial type = NonnegativePolynomial::kSos);
 
   /**
    * Adds constraints that a given symbolic expression @p e is a
@@ -2550,22 +2566,26 @@ class MathematicalProgram {
    * polynomial with respect to `indeterminates()` in this mathematical
    * program. It returns the coefficients matrix Q, which is positive
    * semidefinite.
+   * @param type Refer to NonnegativePolynomial class documentation.
    */
   MatrixXDecisionVariable AddSosConstraint(
       const symbolic::Expression& e,
-      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+      NonnegativePolynomial type = NonnegativePolynomial::kSos);
 
   /**
    * Adds constraints that a given symbolic expression @p e is a sums-of-squares
    * (SOS), that is, @p e can be decomposed into `mᵀQm`. Note that it decomposes
    * @p e into a polynomial with respect to `indeterminates()` in this
    * mathematical program. It returns a pair expressing:
+   * @param type Refer to NonnegativePolynomial class documentation.
    *
    *  - The coefficients matrix Q, which is positive semidefinite.
    *  - The monomial basis m.
    */
   std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
-  AddSosConstraint(const symbolic::Expression& e);
+  AddSosConstraint(const symbolic::Expression& e,
+                   NonnegativePolynomial type = NonnegativePolynomial::kSos);
 
   /**
    * Constraining that two polynomials are the same (i.e., they have the same
