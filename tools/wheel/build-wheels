@@ -35,6 +35,8 @@ targets = (
     Target('36', 'ubuntu', '18.04', 'bionic'),
     Target('37', 'ubuntu', '18.04', 'bionic'),
     Target('38', 'ubuntu', '18.04', 'bionic'),
+    Target('38', 'ubuntu', '20.04', 'focal'),
+    Target('39', 'ubuntu', '20.04', 'focal'),
 )
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -126,7 +128,7 @@ def create_source_tar(path):
     print('[-] Creating source archive', end='', flush=True)
     for f in sorted(os.listdir(repo_dir)):
         # Exclude build and VCS directories.
-        if f == '.git' or f.startswith('bazel-'):
+        if f == '.git' or f == 'user.bazelrc' or f.startswith('bazel-'):
             continue
 
         print('.', end='', flush=True)
