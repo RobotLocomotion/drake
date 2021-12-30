@@ -10,17 +10,17 @@ def _impl(repo_ctx):
     os_result = determine_os(repo_ctx)
     if os_result.error != None:
         fail(os_result.error)
-    if os_result.is_ubuntu:
+    if os_result.is_manylinux:
+        # TODO(jwnimmer-tri) Ideally, we wouldn't be hard-coding paths when
+        # using manylinux.
+        include = "/opt/drake-dependencies/include"
+        lib = "/opt/drake-dependencies/lib"
+    elif os_result.is_ubuntu:
         include = "/usr/include/suitesparse"
         lib = "/usr/lib"
     elif os_result.is_macos:
         include = "/usr/local/opt/suite-sparse/include"
         lib = "/usr/local/opt/suite-sparse/lib"
-    elif os_result.is_manylinux:
-        # TODO(jwnimmer-tri) Ideally, we wouldn't be hard-coding paths when
-        # using manylinux.
-        include = "/opt/drake-dependencies/include"
-        lib = "/opt/drake-dependencies/lib"
     else:
         fail("Unknown OS")
 

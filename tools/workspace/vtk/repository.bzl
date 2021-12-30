@@ -75,9 +75,6 @@ def _vtk_cc_library(
                 "-l{}-{}".format(name, VTK_MAJOR_MINOR_VERSION),
                 "-Wl,-rpath,{}".format(lib_dir),
             ]
-    elif os_result.is_ubuntu:
-        if not header_only:
-            srcs = ["lib/lib{}-{}.so.1".format(name, VTK_MAJOR_MINOR_VERSION)]
     elif os_result.is_manylinux:
         if not header_only:
             # TODO(jwnimmer-tri) Ideally, we wouldn't be hard-coding paths when
@@ -87,6 +84,9 @@ def _vtk_cc_library(
                 "-L{}".format(lib_dir),
                 "-l{}-{}".format(name, VTK_MAJOR_MINOR_VERSION),
             ]
+    elif os_result.is_ubuntu:
+        if not header_only:
+            srcs = ["lib/lib{}-{}.so.1".format(name, VTK_MAJOR_MINOR_VERSION)]
     else:
         fail("Unknown os_result {}".format(os_result))
 
@@ -113,6 +113,8 @@ def _impl(repository_ctx):
         repository_ctx.symlink("/usr/local/opt/vtk@{}/include".format(
             VTK_MAJOR_MINOR_PATCH_VERSION,
         ), "include")
+    elif os_result.is_manylinux:
+        repository_ctx.symlink("/opt/vtk/include", "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "18.04":
             archive = "vtk-8.2.0-1-python-3.6.9-qt-5.9.5-bionic-x86_64.tar.gz"
@@ -135,8 +137,6 @@ def _impl(repository_ctx):
             sha256 = sha256,
             type = "tar.gz",
         )
-    elif os_result.is_manylinux:
-        repository_ctx.symlink("/opt/vtk/include", "include")
     else:
         fail("Operating system is NOT supported {}".format(os_result))
 

@@ -14,14 +14,14 @@ def _impl(repository_ctx):
             "/usr/local/opt/double-conversion/include",
             "include",
         )
+    elif os_result.is_manylinux:
+        build_flavor = "ubuntu"
     elif os_result.is_ubuntu:
         build_flavor = "ubuntu"
         repository_ctx.symlink(
             "/usr/include/double-conversion",
             "include/double-conversion",
         )
-    elif os_result.is_manylinux:
-        build_flavor = "ubuntu"
     else:
         fail("Operating system is NOT supported {}".format(os_result))
 
