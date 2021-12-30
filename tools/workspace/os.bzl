@@ -68,7 +68,7 @@ def _make_result(
         error = error,
         distribution = distribution,
         is_macos = (macos_release != None),
-        is_ubuntu = (ubuntu_release != None),
+        is_ubuntu = (ubuntu_release != None and not is_manylinux),
         is_manylinux = is_manylinux,
         ubuntu_release = ubuntu_release,
         macos_release = macos_release,
@@ -82,14 +82,16 @@ def _determine_linux(repository_ctx):
 
     # Allow the user to override the OS selection.
     drake_os = repository_ctx.os.environ.get("DRAKE_OS", "")
+    is_manylinux = False
     if len(drake_os) > 0:
         if drake_os == "manylinux":
-            return _make_result(is_manylinux = True)
-        return _make_result(error = "{}{} DRAKE_OS={}".format(
-            error_prologue,
-            "unknown value for environment variable",
-            drake_os,
-        ))
+            is_manylinux = True
+        else:
+            return _make_result(error = "{}{} DRAKE_OS={}".format(
+                error_prologue,
+                "unknown value for environment variable",
+                drake_os,
+            ))
 
     # Run sed to determine Linux NAME and VERSION_ID.
     sed = exec_using_which(repository_ctx, [
@@ -109,7 +111,10 @@ def _determine_linux(repository_ctx):
     # both doc/developers.rst the root CMakeLists.txt.
     for ubuntu_release in ["18.04", "20.04"]:
         if distro == "Ubuntu " + ubuntu_release:
-            return _make_result(ubuntu_release = ubuntu_release)
+            return _make_result(
+                ubuntu_release = ubuntu_release,
+                is_manylinux = is_manylinux,
+            )
 
     # Nothing matched.
     return _make_result(
