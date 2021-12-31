@@ -522,7 +522,9 @@ Binding<Cost> MathematicalProgram::AddCost(const Expression& e) {
   return AddCost(internal::ParseCost(e));
 }
 
-void MathematicalProgram::AddMaximizeLogDeterminantSymmetricMatrixCost(
+std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
+           MatrixX<symbolic::Expression>>
+MathematicalProgram::AddMaximizeLogDeterminantSymmetricMatrixCost(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
   DRAKE_DEMAND(X.rows() == X.cols());
   const int X_rows = X.rows();
@@ -554,7 +556,8 @@ void MathematicalProgram::AddMaximizeLogDeterminantSymmetricMatrixCost(
         Vector3<symbolic::Expression>(Z(i, i), 1, t(i)));
   }
 
-  AddLinearCost(-t.cast<symbolic::Expression>().sum());
+  const auto cost = AddLinearCost(-Eigen::VectorXd::Ones(t.rows()), t);
+  return std::make_tuple(cost, std::move(t), std::move(Z));
 }
 
 void MathematicalProgram::AddMaximizeGeometricMeanCost(

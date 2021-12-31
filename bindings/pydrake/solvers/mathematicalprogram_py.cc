@@ -875,7 +875,9 @@ void BindMathematicalProgram(py::module m) {
           py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddL2NormCostUsingConicConstraint.doc)
       .def("AddMaximizeLogDeterminantSymmetricMatrixCost",
-          static_cast<void (MathematicalProgram::*)(
+          static_cast<std::tuple<Binding<LinearCost>,
+              VectorX<symbolic::Variable>, MatrixX<symbolic::Expression>> (
+              MathematicalProgram::*)(
               const Eigen::Ref<const MatrixX<symbolic::Expression>>& X)>(
               &MathematicalProgram::
                   AddMaximizeLogDeterminantSymmetricMatrixCost),
