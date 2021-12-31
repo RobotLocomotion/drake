@@ -95,7 +95,7 @@ void MinimalEllipsoidCoveringPoints(const SolverInterface& solver, double tol) {
   ellipsoid_psd << S, b.cast<symbolic::Expression>() / 2,
       b.cast<symbolic::Expression>().transpose() / 2, c;
   prog.AddPositiveSemidefiniteConstraint(ellipsoid_psd);
-  prog.AddMaximizeLogDeterminantSymmetricMatrixCost(
+  const auto log_det_ret = prog.AddMaximizeLogDeterminantSymmetricMatrixCost(
       S.cast<symbolic::Expression>());
   for (int i = 0; i < 4; ++i) {
     prog.AddLinearConstraint(
@@ -122,6 +122,10 @@ void MinimalEllipsoidCoveringPoints(const SolverInterface& solver, double tol) {
   const double expected_cost =
       -std::log(0.25 / std::pow(scaling_factor(0) * scaling_factor(1), 2));
   EXPECT_NEAR(result.get_optimal_cost(), expected_cost, tol);
+  EXPECT_NEAR(result.EvalBinding(std::get<0>(log_det_ret))(0), expected_cost,
+              tol);
+  EXPECT_NEAR(result.GetSolution(std::get<1>(log_det_ret)).sum(),
+              -expected_cost, tol);
   EXPECT_NEAR(-std::log(S_sol.determinant()), expected_cost, tol);
 }
 }  // namespace test
