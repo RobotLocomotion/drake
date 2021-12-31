@@ -95,8 +95,11 @@ void MinimalEllipsoidCoveringPoints(const SolverInterface& solver, double tol) {
   ellipsoid_psd << S, b.cast<symbolic::Expression>() / 2,
       b.cast<symbolic::Expression>().transpose() / 2, c;
   prog.AddPositiveSemidefiniteConstraint(ellipsoid_psd);
-  prog.AddMaximizeLogDeterminantSymmetricMatrixCost(
+  const auto log_det_ret = prog.AddMaximizeLogDeterminantSymmetricMatrixCost(
       S.cast<symbolic::Expression>());
+  const auto linear_cost = std::get<0>(log_det_ret);
+  const auto log_det_t = std::get<1>(log_det_ret);
+  const auto log_det_Z = std::get<2>(log_det_ret);
   for (int i = 0; i < 4; ++i) {
     prog.AddLinearConstraint(
         pts.col(i).dot(S.cast<symbolic::Expression>() * pts.col(i)) +
@@ -122,6 +125,13 @@ void MinimalEllipsoidCoveringPoints(const SolverInterface& solver, double tol) {
   const double expected_cost =
       -std::log(0.25 / std::pow(scaling_factor(0) * scaling_factor(1), 2));
   EXPECT_NEAR(result.get_optimal_cost(), expected_cost, tol);
+  EXPECT_NEAR(result.EvalBinding(linear_cost)(0), expected_cost, tol);
+  const Eigen::VectorXd log_det_t_sol = result.GetSolution(log_det_t);
+  EXPECT_NEAR(log_det_t_sol.sum(), -expected_cost, tol);
+  const Eigen::MatrixXd log_det_Z_sol = result.GetSolution(log_det_Z);
+  EXPECT_TRUE(
+      (log_det_Z_sol.diagonal().array().log() >= log_det_t_sol.array() - tol)
+          .all());
   EXPECT_NEAR(-std::log(S_sol.determinant()), expected_cost, tol);
 }
 }  // namespace test

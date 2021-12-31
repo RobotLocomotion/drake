@@ -1205,12 +1205,16 @@ class MathematicalProgram {
    * and we will minimize -∑ᵢt(i).
    * @param X A symmetric positive semidefinite matrix X, whose log(det(X)) will
    * be maximized.
+   * @return (cost, t, Z) cost is -∑ᵢt(i), we also return the newly created
+   * slack variables t and Z.
    * @pre X is a symmetric matrix.
    * @note The constraint log(Z(i, i)) >= t(i) is imposed as an exponential cone
    * constraint. Please make sure your have a solver that supports exponential
    * cone constraint (currently SCS does).
    */
-  void AddMaximizeLogDeterminantSymmetricMatrixCost(
+  std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
+             MatrixX<symbolic::Variable>>
+  AddMaximizeLogDeterminantSymmetricMatrixCost(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**

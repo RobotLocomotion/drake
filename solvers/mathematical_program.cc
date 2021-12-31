@@ -522,12 +522,15 @@ Binding<Cost> MathematicalProgram::AddCost(const Expression& e) {
   return AddCost(internal::ParseCost(e));
 }
 
-void MathematicalProgram::AddMaximizeLogDeterminantSymmetricMatrixCost(
+std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
+           MatrixX<symbolic::Variable>>
+MathematicalProgram::AddMaximizeLogDeterminantSymmetricMatrixCost(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
   DRAKE_DEMAND(X.rows() == X.cols());
   const int X_rows = X.rows();
   auto Z_lower = NewContinuousVariables(X_rows * (X_rows + 1) / 2);
   MatrixX<symbolic::Expression> Z(X_rows, X_rows);
+  MatrixX<symbolic::Variable> Z_var(X_rows, X_rows);
   Z.setZero();
   // diag_Z is the diagonal matrix that only contains the diagonal entries of Z.
   MatrixX<symbolic::Expression> diag_Z(X_rows, X_rows);
@@ -535,6 +538,10 @@ void MathematicalProgram::AddMaximizeLogDeterminantSymmetricMatrixCost(
   int Z_lower_index = 0;
   for (int j = 0; j < X_rows; ++j) {
     for (int i = j; i < X_rows; ++i) {
+      Z_var(i, j) = Z_lower(Z_lower_index);
+      if (i > j) {
+        Z_var(j, i) = Z_var(i, j);
+      }
       Z(i, j) = Z_lower(Z_lower_index++);
     }
     diag_Z(j, j) = Z(j, j);
@@ -554,7 +561,8 @@ void MathematicalProgram::AddMaximizeLogDeterminantSymmetricMatrixCost(
         Vector3<symbolic::Expression>(Z(i, i), 1, t(i)));
   }
 
-  AddLinearCost(-t.cast<symbolic::Expression>().sum());
+  const auto cost = AddLinearCost(-Eigen::VectorXd::Ones(t.rows()), t);
+  return std::make_tuple(cost, std::move(t), std::move(Z_var));
 }
 
 void MathematicalProgram::AddMaximizeGeometricMeanCost(
