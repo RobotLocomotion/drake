@@ -342,6 +342,37 @@ GTEST_TEST(testConstraint, testLorentzConeConstraintAtZeroZ) {
   EXPECT_TRUE(CompareMatrices(y_gradient, A.row(0)));
 }
 
+GTEST_TEST(testConstraint, LorentzConeConstraintUpdateCoefficients) {
+  Eigen::Matrix<double, 3, 2> A;
+  A << 1, 2, -2, -1, 2, 3;
+  Eigen::Vector3d b(1, 2, 3);
+  LorentzConeConstraint cnstr(A, b,
+                              LorentzConeConstraint::EvalType::kConvexSmooth);
+  const int num_constraints = cnstr.num_constraints();
+  A *= 2;
+  b *= 3;
+  cnstr.UpdateCoefficients(A, b);
+  EXPECT_TRUE(CompareMatrices(cnstr.A().toDense(), A));
+  EXPECT_TRUE(CompareMatrices(cnstr.A_dense(), A));
+  EXPECT_TRUE(CompareMatrices(cnstr.b(), b));
+
+  // Now try A with different number of rows. UpdateCoefficients should still
+  // work.
+  Eigen::Matrix<double, 4, 2> new_A;
+  new_A << Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Identity();
+  Eigen::Vector4d new_b = Eigen::Vector4d::Zero();
+  cnstr.UpdateCoefficients(new_A, new_b);
+  EXPECT_EQ(cnstr.num_vars(), 2);
+  EXPECT_EQ(cnstr.num_constraints(), num_constraints);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      cnstr.UpdateCoefficients(Eigen::Matrix3d::Identity(),
+                               Eigen::Vector3d::Zero()),
+      std::exception,
+      ".*UpdateCoefficients uses new_A with 3 columns to update a constraint "
+      "with 2 variables.");
+}
+
 GTEST_TEST(testConstraint, testRotatedLorentzConeConstraint) {
   // [1;2;1] is in the interior of the rotated lorentz cone.
   TestRotatedLorentzConeEval(Eigen::Matrix3d::Identity(),
@@ -376,6 +407,37 @@ GTEST_TEST(testConstraint, testRotatedLorentzConeConstraint) {
   Eigen::Vector3d A4(1, 3, 2);
   Eigen::Vector3d b4 = Eigen::Vector3d(-1, -2, 1) - A4 * x4;
   TestRotatedLorentzConeEval(A4, b4, x4, false);
+}
+
+GTEST_TEST(testConstraint, RotatedLorentzConeConstraintUpdateCoefficients) {
+  Eigen::Matrix<double, 3, 2> A;
+  A << 1, 2, -2, -1, 2, 3;
+  Eigen::Vector3d b(1, 2, 3);
+  RotatedLorentzConeConstraint cnstr(A, b);
+  const int num_constraints = cnstr.num_constraints();
+  A *= 2;
+  b *= 3;
+  cnstr.UpdateCoefficients(A, b);
+  EXPECT_TRUE(CompareMatrices(cnstr.A().toDense(), A));
+  EXPECT_TRUE(CompareMatrices(cnstr.A_dense(), A));
+  EXPECT_TRUE(CompareMatrices(cnstr.b(), b));
+  EXPECT_EQ(cnstr.num_vars(), 2);
+
+  // Now try A with different number of rows. UpdateCoefficients should still
+  // work.
+  Eigen::Matrix<double, 4, 2> new_A;
+  new_A << Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Identity();
+  Eigen::Vector4d new_b = Eigen::Vector4d::Zero();
+  cnstr.UpdateCoefficients(new_A, new_b);
+  EXPECT_EQ(cnstr.num_vars(), 2);
+  EXPECT_EQ(cnstr.num_constraints(), num_constraints);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      cnstr.UpdateCoefficients(Eigen::Matrix3d::Identity(),
+                               Eigen::Vector3d::Zero()),
+      std::exception,
+      ".*UpdateCoefficients uses new_A with 3 columns to update a constraint "
+      "with 2 variables.");
 }
 
 GTEST_TEST(testConstraint, testPositiveSemidefiniteConstraint) {
