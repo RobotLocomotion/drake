@@ -1656,7 +1656,10 @@ void BindEvaluatorsAndBindings(py::module m) {
       .def("A", &LorentzConeConstraint::A, doc.LorentzConeConstraint.A.doc)
       .def("b", &LorentzConeConstraint::b, doc.LorentzConeConstraint.b.doc)
       .def("eval_type", &LorentzConeConstraint::eval_type,
-          doc.LorentzConeConstraint.eval_type.doc);
+          doc.LorentzConeConstraint.eval_type.doc)
+      .def("UpdateCoefficients", &LorentzConeConstraint::UpdateCoefficients,
+          py::arg("new_A"), py::arg("new_b"),
+          doc.LorentzConeConstraint.UpdateCoefficients.doc);
 
   py::class_<RotatedLorentzConeConstraint, Constraint,
       std::shared_ptr<RotatedLorentzConeConstraint>>(
@@ -1668,7 +1671,11 @@ void BindEvaluatorsAndBindings(py::module m) {
       .def("A", &RotatedLorentzConeConstraint::A,
           doc.RotatedLorentzConeConstraint.A.doc)
       .def("b", &RotatedLorentzConeConstraint::b,
-          doc.RotatedLorentzConeConstraint.b.doc);
+          doc.RotatedLorentzConeConstraint.b.doc)
+      .def("UpdateCoefficients",
+          &RotatedLorentzConeConstraint::UpdateCoefficients, py::arg("new_A"),
+          py::arg("new_b"),
+          doc.RotatedLorentzConeConstraint.UpdateCoefficients.doc);
 
   py::class_<LinearEqualityConstraint, LinearConstraint,
       std::shared_ptr<LinearEqualityConstraint>>(

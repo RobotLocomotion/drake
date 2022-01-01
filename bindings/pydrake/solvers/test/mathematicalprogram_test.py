@@ -1119,6 +1119,9 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(
             constraint.eval_type(),
             mp.LorentzConeConstraint.EvalType.kConvexSmooth)
+        constraint.UpdateCoefficients(new_A=2 * A, new_b=3 * b)
+        np.testing.assert_array_equal(constraint.A().todense(), 2 * A)
+        np.testing.assert_array_equal(constraint.b(), 3 * b)
 
     def test_add_lorentz_cone_constraint(self):
         # Call AddLorentzConeConstraint, make sure no error is thrown.
@@ -1148,6 +1151,9 @@ class TestMathematicalProgram(unittest.TestCase):
         constraint = mp.RotatedLorentzConeConstraint(A=A, b=b)
         np.testing.assert_array_equal(constraint.A().todense(), A)
         np.testing.assert_array_equal(constraint.b(), b)
+        constraint.UpdateCoefficients(new_A=2 * A, new_b=3 * b)
+        np.testing.assert_array_equal(constraint.A().todense(), 2 * A)
+        np.testing.assert_array_equal(constraint.b(), 3 * b)
 
     def test_add_rotated_lorentz_cone_constraint(self):
         prog = mp.MathematicalProgram()

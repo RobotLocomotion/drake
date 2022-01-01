@@ -3,6 +3,7 @@
 #include <cmath>
 #include <limits>
 #include <set>
+#include <stdexcept>
 #include <unordered_map>
 
 #include <fmt/format.h>
@@ -144,6 +145,22 @@ LorentzConeConstraint::LorentzConeConstraint(
   DRAKE_ASSERT(A_.rows() == b_.rows());
 }
 
+void LorentzConeConstraint::UpdateCoefficients(
+    const Eigen::Ref<const Eigen::MatrixXd>& new_A,
+    const Eigen::Ref<const Eigen::VectorXd>& new_b) {
+  if (new_A.cols() != num_vars()) {
+    throw std::invalid_argument(
+        fmt::format("LorentzConeConstraint::UpdateCoefficients uses new_A with "
+                    "{} columns to update a constraint with {} variables.",
+                    new_A.cols(), num_vars()));
+  }
+  A_ = new_A.sparseView();
+  A_dense_ = new_A;
+  b_ = new_b;
+  DRAKE_DEMAND(A_.rows() >= 2);
+  DRAKE_ASSERT(A_.rows() == b_.rows());
+}
+
 namespace {
 template <typename DerivedX>
 void LorentzConeConstraintEvalConvex2Autodiff(
@@ -212,6 +229,22 @@ void LorentzConeConstraint::DoEval(
 std::ostream& LorentzConeConstraint::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayConstraint(*this, os, "LorentzConeConstraint", vars, false);
+}
+
+void RotatedLorentzConeConstraint::UpdateCoefficients(
+    const Eigen::Ref<const Eigen::MatrixXd>& new_A,
+    const Eigen::Ref<const Eigen::VectorXd>& new_b) {
+  if (new_A.cols() != num_vars()) {
+    throw std::invalid_argument(fmt::format(
+        "RotatedLorentzConeConstraint::UpdateCoefficients uses new_A with "
+        "{} columns to update a constraint with {} variables.",
+        new_A.cols(), num_vars()));
+  }
+  A_ = new_A.sparseView();
+  A_dense_ = new_A;
+  b_ = new_b;
+  DRAKE_DEMAND(A_.rows() >= 3);
+  DRAKE_ASSERT(A_.rows() == b_.rows());
 }
 
 template <typename DerivedX, typename ScalarY>
