@@ -281,6 +281,22 @@ void DefineGeometryOptimization(py::module m) {
                     &GraphOfConvexSets::AddEdge),
                 py::arg("u"), py::arg("v"), py::arg("name") = "",
                 py_rvp::reference_internal, cls_doc.AddEdge.doc_by_reference)
+            .def("RemoveVertex",
+                py::overload_cast<const GraphOfConvexSets::VertexId&>(
+                    &GraphOfConvexSets::RemoveVertex),
+                py::arg("vertex_id"), cls_doc.RemoveVertex.doc_by_id)
+            .def("RemoveVertex",
+                py::overload_cast<const GraphOfConvexSets::Vertex&>(
+                    &GraphOfConvexSets::RemoveVertex),
+                py::arg("vertex"), cls_doc.RemoveVertex.doc_by_reference)
+            .def("RemoveEdge",
+                py::overload_cast<const GraphOfConvexSets::EdgeId&>(
+                    &GraphOfConvexSets::RemoveEdge),
+                py::arg("edge_id"), cls_doc.RemoveEdge.doc_by_id)
+            .def("RemoveEdge",
+                py::overload_cast<const GraphOfConvexSets::Edge&>(
+                    &GraphOfConvexSets::RemoveEdge),
+                py::arg("edge"), cls_doc.RemoveEdge.doc_by_reference)
             .def(
                 "Vertices",
                 [](GraphOfConvexSets* self) {
