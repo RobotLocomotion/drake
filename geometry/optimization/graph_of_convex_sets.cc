@@ -158,6 +158,27 @@ Edge* GraphOfConvexSets::AddEdge(const Vertex& u, const Vertex& v,
   return AddEdge(u.id(), v.id(), std::move(name));
 }
 
+void GraphOfConvexSets::RemoveVertex(VertexId vertex_id) {
+  DRAKE_DEMAND(vertices_.find(vertex_id) != vertices_.end());
+  for (const auto& [e_id, e] : edges_) {
+    if (e->u().id() == vertex_id || e->v().id() == vertex_id) {
+      RemoveEdge(e_id);
+    }
+  }
+  vertices_.erase(vertex_id);
+}
+
+void GraphOfConvexSets::RemoveVertex(const Vertex& vertex) {
+  RemoveVertex(vertex.id());
+}
+
+void GraphOfConvexSets::RemoveEdge(EdgeId edge_id) {
+  DRAKE_DEMAND(edges_.find(edge_id) != edges_.end());
+  edges_.erase(edge_id);
+}
+
+void GraphOfConvexSets::RemoveEdge(const Edge& edge) { RemoveEdge(edge.id()); }
+
 std::vector<Vertex*> GraphOfConvexSets::Vertices() {
   std::vector<Vertex*> vertices;
   vertices.reserve(vertices_.size());

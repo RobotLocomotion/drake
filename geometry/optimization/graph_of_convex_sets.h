@@ -263,6 +263,32 @@ class GraphOfConvexSets {
   */
   Edge* AddEdge(const Vertex& u, const Vertex& v, std::string name = "");
 
+  /** Removes vertex @p vertex_id from the graph as well as any edges from or to
+  the vertex. Runtime is O(nₑ) where nₑ is the number of edges in the graph.
+  @pre The vertex must be part of the graph.
+  @pydrake_mkdoc_identifier{by_id}
+  */
+  void RemoveVertex(VertexId vertex_id);
+
+  /** Removes vertex @p vertex from the graph as well as any edges from or to
+  the vertex. Runtime is O(nₑ) where nₑ is the number of edges in the graph.
+  @pre The vertex must be part of the graph.
+  @pydrake_mkdoc_identifier{by_reference}
+  */
+  void RemoveVertex(const Vertex& vertex);
+
+  /** Removes edge @p edge_id from the graph.
+  @pre The edge must be part of the graph.
+  @pydrake_mkdoc_identifier{by_id}
+  */
+  void RemoveEdge(EdgeId edge_id);
+
+  /** Removes edge @p edge from the graph.
+  @pre The edge must be part of the graph.
+  @pydrake_mkdoc_identifier{by_reference}
+  */
+  void RemoveEdge(const Edge& edge);
+
   /** Returns mutable pointers to the vertices stored in the graph. */
   std::vector<Vertex*> Vertices();
 

@@ -314,3 +314,17 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(binding, Binding[Constraint])
         edge0.AddPhiConstraint(phi_value=False)
         edge0.ClearPhiConstraints()
+
+        # Remove Edges
+        self.assertEqual(len(spp.Edges()), 2)
+        spp.RemoveEdge(edge1.id())
+        self.assertEqual(len(spp.Edges()), 1)
+        spp.RemoveEdge(edge0)
+        self.assertEqual(len(spp.Edges()), 0)
+
+        # Remove Vertices
+        self.assertEqual(len(spp.Vertices()), 2)
+        spp.RemoveVertex(source.id())
+        self.assertEqual(len(spp.Vertices()), 1)
+        spp.RemoveVertex(target)
+        self.assertEqual(len(spp.Vertices()), 0)
