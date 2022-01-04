@@ -15,7 +15,7 @@ void FemModelBase<T>::CalcResidual(const FemStateBase<T>& state,
   ThrowIfModelStateIncompatible(__func__, state);
   DoCalcResidual(state, residual);
   if (dirichlet_bc_ != nullptr) {
-    dirichlet_bc_->ApplyBcToResidual(residual);
+    dirichlet_bc_->ApplyBoundaryConditionToResidual(residual);
   }
 }
 
@@ -29,7 +29,7 @@ void FemModelBase<T>::CalcTangentMatrix(
   ThrowIfModelStateIncompatible(__func__, state);
   DoCalcTangentMatrix(state, tangent_matrix);
   if (dirichlet_bc_ != nullptr) {
-    dirichlet_bc_->ApplyBcToTangentMatrix(tangent_matrix);
+    dirichlet_bc_->ApplyBoundaryConditionToTangentMatrix(tangent_matrix);
   }
 }
 
@@ -42,7 +42,9 @@ void FemModelBase<T>::CalcTangentMatrix(
   DRAKE_DEMAND(tangent_matrix->cols() == num_dofs());
   ThrowIfModelStateIncompatible(__func__, state);
   DoCalcTangentMatrix(state, tangent_matrix);
-  // TODO(xuchenhan-tri): Apply boundary condition to the tangent matrix.
+  if (dirichlet_bc_ != nullptr) {
+    dirichlet_bc_->ApplyBoundaryConditionToTangentMatrix(tangent_matrix);
+  }
 }
 
 template <typename T>
