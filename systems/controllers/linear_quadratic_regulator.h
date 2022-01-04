@@ -70,12 +70,13 @@ LinearQuadraticRegulatorResult DiscreteTimeLinearQuadraticRegulator(
 /// regulator (LQR).  If @p system is a continuous-time system, then solves
 /// the continuous-time LQR problem:
 ///
-///   @f[ \min_u \int_0^\infty x^T(t)Qx(t) + u^T(t)Ru(t) dt. @f]
+///   @f[ \min_u \int_0^\infty x^T(t)Qx(t) + u^T(t)Ru(t) + + 2x^T(t)Nu(t) dt.
+///   @f]
 ///
 /// If @p system is a discrete-time system, then solves the discrete-time LQR
 /// problem:
 ///
-///   @f[ \min_u \sum_0^\infty x^T[n]Qx[n] + u^T[n]Ru[n]. @f]
+///   @f[ \min_u \sum_0^\infty x^T[n]Qx[n] + u^T[n]Ru[n] + 2x^T[n]Nu[n]. @f]
 ///
 /// @param system The System to be controlled.
 /// @param Q A symmetric positive semi-definite cost matrix of size num_states x
@@ -102,12 +103,14 @@ std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
 /// @p system is a continuous-time system, then solves
 /// the continuous-time LQR problem:
 ///
-///   @f[ \min_u \int_0^\infty (x-x_0)^TQ(x-x_0) + (u-u_0)^TR(u-u_0) dt. @f]
+///   @f[ \min_u \int_0^\infty (x-x_0)^TQ(x-x_0) + (u-u_0)^TR(u-u_0) + 2
+///   (x-x_0)^TN(u-u_0) dt. @f]
 ///
 /// If @p system is a discrete-time system, then solves the discrete-time LQR
 /// problem:
 ///
-///   @f[ \min_u \sum_0^\infty (x-x_0)^TQ(x-x_0) + (u-u_0)^TR(u-u_0), @f]
+///   @f[ \min_u \sum_0^\infty (x-x_0)^TQ(x-x_0) + (u-u_0)^TR(u-u_0) +
+///   2(x-x_0)^TN(u-u_0), @f]
 ///
 /// where @f$ x_0 @f$ is the nominal state and @f$ u_0 @f$ is the nominal input.
 /// The system is considered discrete if it has a single discrete state
