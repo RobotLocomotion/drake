@@ -29,6 +29,10 @@ void CompareActuatorLimits(const multibody::JointActuator<double>& joint_a,
                               joint_b.joint().velocity_lower_limits()));
   EXPECT_TRUE(CompareMatrices(joint_a.joint().velocity_upper_limits(),
                               joint_b.joint().velocity_upper_limits()));
+  EXPECT_TRUE(CompareMatrices(joint_a.joint().position_lower_limits(),
+                              joint_b.joint().position_lower_limits()));
+  EXPECT_TRUE(CompareMatrices(joint_a.joint().position_upper_limits(),
+                              joint_b.joint().position_upper_limits()));
   EXPECT_EQ(joint_a.effort_limit(), joint_b.effort_limit());
 }
 
