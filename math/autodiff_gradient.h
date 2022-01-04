@@ -34,6 +34,11 @@ entries. (Each entry contains a value and derivatives.)
     to the number of derivatives. Each output row corresponds to one entry of
     the input matrix, in input row order.
 
+@tparam ColsAtCompileTime An optional argument that allows the returned
+    gradient matrix, of size (rows x ColsAtCompileTime) to be allocated on the
+    stack rather than the heap. ColsAtCompileTime must be set to the number of
+    derivatives (or to Eigen::Dynamic, which will allocate the gradient matrix
+    onto the heap).
 @tparam Derived An Eigen type representing a matrix with AutoDiffScalar
     entries. The type will be inferred from the type of the `auto_diff_matrix`
     parameter at the call site.
@@ -42,9 +47,9 @@ entries. (Each entry contains a value and derivatives.)
     non-zero numbers of derivatives.
 @throws std::exception if `num_derivatives` is specified but the input matrix
     has a different, non-zero number of derivatives.*/
-template <typename Derived>
+template <int ColsAtCompileTime = Eigen::Dynamic, typename Derived>
 Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::SizeAtCompileTime,
-              Eigen::Dynamic>
+              ColsAtCompileTime>
 ExtractGradient(const Eigen::MatrixBase<Derived>& auto_diff_matrix,
                 std::optional<int> num_derivatives = {}) {
   // Entries in an AutoDiff matrix must all have the same number of derivatives,
@@ -76,7 +81,7 @@ ExtractGradient(const Eigen::MatrixBase<Derived>& auto_diff_matrix,
   }
 
   Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::SizeAtCompileTime,
-                Eigen::Dynamic>
+                ColsAtCompileTime>
       gradient(auto_diff_matrix.size(), *num_derivatives);
   for (int row = 0; row < auto_diff_matrix.rows(); ++row) {
     for (int col = 0; col < auto_diff_matrix.cols(); ++col) {

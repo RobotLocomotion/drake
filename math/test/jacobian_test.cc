@@ -6,6 +6,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/math/autodiff_gradient.h"
 
 using Eigen::MatrixXd;
@@ -88,8 +89,8 @@ TEST_F(AutoDiffHessianTest, QuadraticFunction) {
   using Eigen::VectorXd;
   using Eigen::Index;
 
-  Index n = 4;
-  Index m = 5;
+  constexpr Index n = 4;
+  constexpr Index m = 5;
 
   MatrixXd A(n, m);
   VectorXd b(n);
@@ -139,8 +140,13 @@ TEST_F(AutoDiffHessianTest, QuadraticFunction) {
   // Ensure that the two ways of computing the Jacobian from AutoDiff match.
   auto jac_autodiff = ExtractGradient(hess_chunk_size_default);
   auto jac1 = ExtractValue(jac_autodiff);
-  auto jac2 = ExtractGradient(value_autodiff);
-  EXPECT_TRUE(jac1 == jac2);
+  {
+    // While we're at it, ensure that specifying the number of columns of the 
+    // Jacobian matrix causes the function to allocate no heap.
+    test::LimitMalloc guard;
+    auto jac2 = ExtractGradient<m>(value_autodiff);
+    EXPECT_TRUE(jac1 == jac2);
+  }
 
   // Ensure that the Jacobian is correct.
   auto jac_expected = ((A * x + b).transpose() * C * D +

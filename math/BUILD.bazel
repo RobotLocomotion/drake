@@ -402,6 +402,7 @@ drake_cc_googletest(
         ":gradient",
         ":jacobian",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 
