@@ -277,7 +277,7 @@ const auto& GetElementByName(
         "Get{}ByName(): There is no {} named '{}' in the model instance named"
         " '{}', but one does exist in other model instances ({}).",
         element_classname, element_classname, name,
-	tree.GetModelInstanceName(*model_instance), known_instances));
+        tree.GetModelInstanceName(*model_instance), known_instances));
   }
 
   // With no model instance requested, ensure the name is globally unique.
