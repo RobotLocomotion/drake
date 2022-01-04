@@ -131,7 +131,7 @@ class PetscSymmetricBlockSparseMatrix {
    other tolerance parameters (e.g. absolute tolerance, maximum number of
    iterations, etc) are set to the default value specified in the PETSc
    documentaion. */
-  void SetRelativeTolerance(double tolerance);
+  void set_relative_tolerance(double tolerance);
 
   /* Given a linear system of equations Mz = c that can be written in block form
   as:
