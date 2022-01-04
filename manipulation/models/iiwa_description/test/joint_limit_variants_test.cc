@@ -38,9 +38,10 @@ void CompareActuatorLimits(const multibody::JointActuator<double>& joint_a,
 
 // Tests that KUKA LBR iiwa14 models have consistent joint limits.
 // It takes iiwa14_no_collisions.sdf as the canonical model.
-// Note: assumes all joints are declared in the same order.
+// It assumes all joints are declared in the same order.
+// It checks values directly on urdf files, generated from xacro.
 // TODO(marcoag): when xacro support is used as per (#15613)
-// check values on xacro files.
+// check values on xacro files instead of the generated ones.
 GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityValues) {
   multibody::MultibodyPlant<double> canonical_plant(0.0);
   multibody::ModelInstanceIndex canonical_model_instance =
