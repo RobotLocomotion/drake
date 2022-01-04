@@ -224,13 +224,7 @@ class ProximityEngine {
    @param X_WGs the current poses of all geometries in World in the
                 current scalar type, keyed on each geometry's GeometryId.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces(
-      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
-      const;
-
-  /* Implementation of GeometryState::ComputePolygonalContactSurfaces().
-   @param X_WGs the current poses of all geometries in World in the
-                current scalar type, keyed on each geometry's GeometryId.  */
-  std::vector<ContactSurface<T>> ComputePolygonalContactSurfaces(
+      HydroelasticContactRepresentation representation,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
       const;
 
@@ -238,14 +232,7 @@ class ProximityEngine {
    @param X_WGs the current poses of all geometries in World in the
                 current scalar type, keyed on each geometry's GeometryId.  */
   void ComputeContactSurfacesWithFallback(
-      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
-      std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
-
-  /* Implement GeometryState::ComputePolygonalContactSurfacesWithFallback().
-   @param X_WGs the current poses of all geometries in World in the
-                current scalar type, keyed on each geometry's GeometryId.  */
-  void ComputePolygonalContactSurfacesWithFallback(
+      HydroelasticContactRepresentation representation,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;

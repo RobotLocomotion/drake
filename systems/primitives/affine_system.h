@@ -18,9 +18,9 @@ namespace systems {
  * @system
  * name: TimeVaryingAffineSystem
  * input_ports:
- * - u(t)
+ * - u0
  * output_ports:
- * - y(t)
+ * - y0
  * @endsystem
  *
  * If `time_period > 0.0`, then the affine system will have the state update:
@@ -158,9 +158,9 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
 /// @system
 /// name: AffineSystem
 /// input_ports:
-/// - u(t)
+/// - u0
 /// output_ports:
-/// - y(t)
+/// - y0
 /// @endsystem
 ///
 /// Let `u` denote the input vector, `x` denote the state vector, and

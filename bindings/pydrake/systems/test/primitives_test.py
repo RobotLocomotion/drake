@@ -41,7 +41,6 @@ from pydrake.systems.primitives import (
     Linearize,
     LinearSystem, LinearSystem_,
     LinearTransformDensity, LinearTransformDensity_,
-    LogOutput,
     LogVectorOutput,
     MatrixGain,
     Multiplexer, Multiplexer_,
@@ -49,7 +48,6 @@ from pydrake.systems.primitives import (
     PassThrough, PassThrough_,
     RandomSource,
     Saturation, Saturation_,
-    SignalLogger, SignalLogger_,
     Sine, Sine_,
     StateInterpolatorWithDiscreteDerivative,
     StateInterpolatorWithDiscreteDerivative_,
@@ -99,7 +97,6 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(Multiplexer_)
         self._check_instantiations(PassThrough_)
         self._check_instantiations(Saturation_)
-        self._check_instantiations(SignalLogger_)
         self._check_instantiations(Sine_)
         self._check_instantiations(StateInterpolatorWithDiscreteDerivative_)
         self._check_instantiations(SymbolicVectorSystem_)
@@ -110,87 +107,6 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(VectorLogSink_)
         self._check_instantiations(WrapToSystem_)
         self._check_instantiations(ZeroOrderHold_)
-
-    @numpy_compare.check_nonsymbolic_types
-    def test_signal_logger(self, T):
-        # Log the output of a simple diagram containing a constant
-        # source and an integrator.
-        builder = DiagramBuilder_[T]()
-        kValue = T(2.4)
-        source = builder.AddSystem(ConstantVectorSource_[T]([kValue]))
-        kSize = 1
-        integrator = builder.AddSystem(Integrator_[T](kSize))
-        with catch_drake_warnings(expected_count=1):
-            logger_per_step = builder.AddSystem(SignalLogger_[T](kSize))
-        builder.Connect(source.get_output_port(0),
-                        integrator.get_input_port(0))
-        builder.Connect(integrator.get_output_port(0),
-                        logger_per_step.get_input_port(0))
-
-        # Add a redundant logger via the helper method.
-        if T == float:
-            with catch_drake_warnings(expected_count=1):
-                logger_per_step_2 = LogOutput(
-                    integrator.get_output_port(0), builder
-                )
-        else:
-            with catch_drake_warnings(expected_count=1):
-                logger_per_step_2 = LogOutput[T](
-                    integrator.get_output_port(0), builder
-                )
-
-        # Add a periodic logger
-        with catch_drake_warnings(expected_count=1):
-            logger_periodic = builder.AddSystem(SignalLogger_[T](kSize))
-        kPeriod = 0.1
-        logger_periodic.set_publish_period(kPeriod)
-        builder.Connect(integrator.get_output_port(0),
-                        logger_periodic.get_input_port(0))
-
-        diagram = builder.Build()
-        simulator = Simulator_[T](diagram)
-        integrator.set_integral_value(
-            context=integrator.GetMyContextFromRoot(
-                simulator.get_mutable_context()),
-            value=[0]*kSize)
-        kTime = 1.
-        simulator.AdvanceTo(kTime)
-
-        # Verify outputs of the every-step logger
-        t = logger_per_step.sample_times()
-        x = logger_per_step.data()
-
-        self.assertTrue(t.shape[0] > 2)
-        self.assertTrue(t.shape[0] == x.shape[1])
-        numpy_compare.assert_allclose(
-            t[-1]*kValue, x[0, -1], atol=1e-15, rtol=0
-        )
-        numpy_compare.assert_equal(x, logger_per_step_2.data())
-
-        # Verify outputs of the periodic logger
-        t = logger_periodic.sample_times()
-        x = logger_periodic.data()
-        # Should log exactly once every kPeriod, up to and including
-        # kTime.
-        self.assertTrue(t.shape[0] == np.floor(kTime / kPeriod) + 1.)
-
-        logger_per_step.reset()
-
-        # Verify that t and x retain their values after systems are
-        # deleted.
-        t_copy = t.copy()
-        x_copy = x.copy()
-        del builder
-        del integrator
-        del logger_periodic
-        del logger_per_step
-        del logger_per_step_2
-        del diagram
-        del simulator
-        del source
-        gc.collect()
-        self.assertTrue((t == t_copy).all())
-        self.assertTrue((x == x_copy).all())
 
     def test_linear_affine_system(self):
         # Just make sure linear system is spelled correctly.

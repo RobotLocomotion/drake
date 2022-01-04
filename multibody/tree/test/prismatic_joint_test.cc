@@ -176,6 +176,11 @@ TEST_F(PrismaticJointTest, Clone) {
             joint1_->get_default_translation());
 }
 
+TEST_F(PrismaticJointTest, NameSuffix) {
+  EXPECT_EQ(joint1_->position_suffix(0), "x");
+  EXPECT_EQ(joint1_->velocity_suffix(0), "v");
+}
+
 TEST_F(PrismaticJointTest, RandomTranslationTest) {
   // Calling SetRandomContext before setting the distribution results in the
   // zero state.

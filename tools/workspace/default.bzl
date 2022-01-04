@@ -14,6 +14,7 @@ load("@drake//tools/workspace/clp:repository.bzl", "clp_repository")
 load("@drake//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
 load("@drake//tools/workspace/common_robotics_utilities:repository.bzl", "common_robotics_utilities_repository")  # noqa
 load("@drake//tools/workspace/commons_io:repository.bzl", "commons_io_repository")  # noqa
+load("@drake//tools/workspace/conex:repository.bzl", "conex_repository")
 load("@drake//tools/workspace/csdp:repository.bzl", "csdp_repository")
 load("@drake//tools/workspace/double_conversion:repository.bzl", "double_conversion_repository")  # noqa
 load("@drake//tools/workspace/doxygen:repository.bzl", "doxygen_repository")
@@ -38,10 +39,11 @@ load("@drake//tools/workspace/ignition_math:repository.bzl", "ignition_math_repo
 load("@drake//tools/workspace/ignition_utils:repository.bzl", "ignition_utils_repository")  # noqa
 load("@drake//tools/workspace/intel_realsense_ros:repository.bzl", "intel_realsense_ros_repository")  # noqa
 load("@drake//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
-load("@drake//tools/workspace/jsoncpp:repository.bzl", "jsoncpp_repository")
+load("@drake//tools/workspace/json:repository.bzl", "json_repository")
 load("@drake//tools/workspace/lapack:repository.bzl", "lapack_repository")
 load("@drake//tools/workspace/lcm:repository.bzl", "lcm_repository")
 load("@drake//tools/workspace/libblas:repository.bzl", "libblas_repository")
+load("@drake//tools/workspace/libcurl:repository.bzl", "libcurl_repository")
 load("@drake//tools/workspace/libjpeg:repository.bzl", "libjpeg_repository")
 load("@drake//tools/workspace/liblapack:repository.bzl", "liblapack_repository")  # noqa
 load("@drake//tools/workspace/liblz4:repository.bzl", "liblz4_repository")
@@ -61,12 +63,15 @@ load("@drake//tools/workspace/opengl:repository.bzl", "opengl_repository")
 load("@drake//tools/workspace/optitrack_driver:repository.bzl", "optitrack_driver_repository")  # noqa
 load("@drake//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
 load("@drake//tools/workspace/osqp:repository.bzl", "osqp_repository")
+load("@drake//tools/workspace/petsc:repository.bzl", "petsc_repository")
 load("@drake//tools/workspace/picosat:repository.bzl", "picosat_repository")
+load("@drake//tools/workspace/picosha2:repository.bzl", "picosha2_repository")
 load("@drake//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("@drake//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")  # noqa
 load("@drake//tools/workspace/pygame_py:repository.bzl", "pygame_py_repository")  # noqa
 load("@drake//tools/workspace/python:repository.bzl", "python_repository")
 load("@drake//tools/workspace/qdldl:repository.bzl", "qdldl_repository")
+load("@drake//tools/workspace/qhull:repository.bzl", "qhull_repository")
 load("@drake//tools/workspace/ros_xacro:repository.bzl", "ros_xacro_repository")  # noqa
 load("@drake//tools/workspace/rules_pkg:repository.bzl", "rules_pkg_repository")  # noqa
 load("@drake//tools/workspace/rules_python:repository.bzl", "rules_python_repository")  # noqa
@@ -123,6 +128,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         common_robotics_utilities_repository(name = "common_robotics_utilities", mirrors = mirrors)  # noqa
     if "commons_io" not in excludes:
         commons_io_repository(name = "commons_io", mirrors = mirrors)
+    if "conex" not in excludes:
+        conex_repository(name = "conex", mirrors = mirrors)
     if "csdp" not in excludes:
         csdp_repository(name = "csdp", mirrors = mirrors)
     if "double_conversion" not in excludes:
@@ -173,14 +180,16 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         intel_realsense_ros_repository(name = "intel_realsense_ros", mirrors = mirrors)  # noqa
     if "ipopt" not in excludes:
         ipopt_repository(name = "ipopt")
-    if "jsoncpp" not in excludes:
-        jsoncpp_repository(name = "jsoncpp")
+    if "json" not in excludes:
+        json_repository(name = "json", mirrors = mirrors)
     if "lapack" not in excludes:
         lapack_repository(name = "lapack")
     if "lcm" not in excludes:
         lcm_repository(name = "lcm", mirrors = mirrors)
     if "libblas" not in excludes:
         libblas_repository(name = "libblas")
+    if "libcurl" not in excludes:
+        libcurl_repository(name = "libcurl")
     if "libjpeg" not in excludes:
         libjpeg_repository(name = "libjpeg")
     if "liblapack" not in excludes:
@@ -219,8 +228,12 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         org_apache_xmlgraphics_commons_repository(name = "org_apache_xmlgraphics_commons", mirrors = mirrors)  # noqa
     if "osqp" not in excludes:
         osqp_repository(name = "osqp", mirrors = mirrors)
+    if "petsc" not in excludes:
+        petsc_repository(name = "petsc", mirrors = mirrors)
     if "picosat" not in excludes:
         picosat_repository(name = "picosat", mirrors = mirrors)
+    if "picosha2" not in excludes:
+        picosha2_repository(name = "picosha2", mirrors = mirrors)
     if "pybind11" not in excludes:
         pybind11_repository(name = "pybind11", mirrors = mirrors)
     if "pycodestyle" not in excludes:
@@ -231,6 +244,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         python_repository(name = "python")
     if "qdldl" not in excludes:
         qdldl_repository(name = "qdldl", mirrors = mirrors)
+    if "qhull" not in excludes:
+        qhull_repository(name = "qhull", mirrors = mirrors)
     if "ros_xacro" not in excludes:
         ros_xacro_repository(name = "ros_xacro", mirrors = mirrors)
     if "rules_pkg" not in excludes:

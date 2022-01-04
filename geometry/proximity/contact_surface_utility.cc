@@ -8,10 +8,25 @@
 #include "drake/common/default_scalars.h"
 
 namespace drake {
-
 namespace geometry {
 namespace internal {
 namespace {
+
+template <typename T>
+void ThrowForInvalidVertexIndex(const std::vector<int>& indices,
+                                const std::vector<Vector3<T>>& vertices,
+                                const char* func) {
+  const int v_count = static_cast<int>(vertices.size());
+  for (int index : indices) {
+    if (index < 0 || index >= v_count) {
+      throw std::logic_error(fmt::format(
+          "{}: Adding a polygon to a ContactSurface mesh builder requires that "
+          "the polygon vertex indices refer to vertices that have already been "
+          "added. New polygon references index {} out {} vertices.",
+          func, index, v_count));
+    }
+  }
+}
 
 /* Utility for CalcPolygonCentroid() to evaluate the correctness of the inputs
  to CalcPolygonCentroid(). CalcPolygonCentroid() uses area computations to
@@ -122,6 +137,90 @@ void ThrowIfInvalidForCentroid(const char* prefix,
 }  // namespace
 
 template <typename T>
+int TriMeshBuilder<T>::AddPolygon(
+    const std::vector<int>& polygon_vertices,
+    const Vector3<T>& nhat_B,
+    const Vector3<T>& grad_e_MN_B) {
+  // Vertices and pressure values at vertex positions must already have been
+  // explicitly added to use this method.
+  DRAKE_ASSERT_VOID(
+      ThrowForInvalidVertexIndex(polygon_vertices, vertices_B_, __func__));
+
+  const int initial_face_count = static_cast<int>(faces_.size());
+  AddPolygonToTriangleMeshData(polygon_vertices, nhat_B, &faces_, &vertices_B_);
+
+  // The call to AddPolygonToTriangleMeshData adds *one* more vertex at the
+  // polygon's centroid - it is the *last* vertex in vertices_B_; we need to
+  // sample its pressure as well. We can compute the pressure at the centroid
+  // based on the gradient of the function, and a previous vertex position and
+  // pressure value.
+  //
+  //    p(x⃗) = ∇e⋅x⃗ + d,
+  //    p(vₙ) = ∇e⋅vₙ + d  →  d = p(vₙ) - ∇e⋅vₙ
+  //    p(v_c) = ∇e⋅v_c + p(vₙ) - ∇e⋅vₙ
+  //           = ∇e⋅(v_c - vₙ) + p(vₙ)
+  const Vector3<T>& p_BC = vertices_B_.back();
+  const Vector3<T>& p_BN = vertices_B_[polygon_vertices[0]];
+  const T& pressure_at_N = pressures_[polygon_vertices[0]];
+  pressures_.emplace_back(grad_e_MN_B.dot(p_BC - p_BN) + pressure_at_N);
+  return faces_.size() - initial_face_count;
+}
+
+template <typename T>
+std::pair<std::unique_ptr<TriangleSurfaceMesh<T>>,
+          std::unique_ptr<TriangleSurfaceMeshFieldLinear<T, T>>>
+TriMeshBuilder<T>::MakeMeshAndField() {
+  auto mesh = std::make_unique<TriangleSurfaceMesh<T>>(std::move(faces_),
+                                                       std::move(vertices_B_));
+  auto* raw = mesh.get();
+  const bool calculate_gradient = false;
+  return {std::move(mesh),
+          std::make_unique<TriangleSurfaceMeshFieldLinear<T, T>>(
+              std::move(pressures_), raw, calculate_gradient)};
+}
+
+template <typename T>
+PolyMeshBuilder<T>::PolyMeshBuilder() {
+  // This amount is arbitrary -- it is certainly sufficient for coarse meshes
+  // in contact, but otherwise could be larger or smaller to mitigate
+  // allocations vs memory footprint.
+  grad_e_MN_B_per_face_.reserve(20);
+}
+
+template <typename T>
+int PolyMeshBuilder<T>::AddPolygon(
+    const std::vector<int>& polygon_vertices,
+    const Vector3<T>& /* nhat_B */,
+    const Vector3<T>& grad_e_MN_B) {
+  // Vertices and pressure values at vertex positions must already have been
+  // explicitly added to use this method.
+  DRAKE_ASSERT_VOID(
+      ThrowForInvalidVertexIndex(polygon_vertices, vertices_B_, __func__));
+
+  ++polygon_count_;
+
+  // TODO(SeanCurtis-TRI): Make use of the known face normal of the surface mesh
+  //  in adding the polygon to reduce the cost of computing polygon area. That
+  //  would entail accumulating the currently ignored face normals (nhat_B) in
+  //  this builder and passing collection into the PolygonSurfaceMesh
+  //  constructor.
+  AddPolygonToPolygonMeshData(polygon_vertices, &face_data_);
+  grad_e_MN_B_per_face_.push_back(grad_e_MN_B);
+  return 1;
+}
+
+template <typename T>
+std::pair<std::unique_ptr<PolygonSurfaceMesh<T>>,
+          std::unique_ptr<PolygonSurfaceMeshFieldLinear<T, T>>>
+PolyMeshBuilder<T>::MakeMeshAndField() {
+  auto mesh = std::make_unique<PolygonSurfaceMesh<T>>(std::move(face_data_),
+                                                      std::move(vertices_B_));
+  auto field = std::make_unique<PolygonSurfaceMeshFieldLinear<T, T>>(
+      std::move(pressures_), mesh.get(), std::move(grad_e_MN_B_per_face_));
+  return {std::move(mesh), std::move(field)};
+}
+
+template <typename T>
 Vector3<T> CalcPolygonCentroid(const std::vector<int>& polygon,
                                const Vector3<T>& n_F,
                                const std::vector<Vector3<T>>& vertices_F) {
@@ -192,44 +291,10 @@ Vector3<T> CalcPolygonCentroid(const std::vector<int>& polygon,
 }
 
 template <typename T>
-Vector3<T> CalcPolygonCentroid(const std::vector<Vector3<T>>& p_FVs,
-                               const Vector3<T>& n_F) {
-  int num_vertices = p_FVs.size();
-  std::vector<int> polygon(num_vertices);
-  std::iota(polygon.begin(), polygon.end(), 0);
-
-  return CalcPolygonCentroid(polygon, n_F, p_FVs);
-}
-
-template <typename T>
-T CalcPolygonArea(const std::vector<Vector3<T>>& p_FVs,
-                  const Vector3<T>& nhat_F) {
-  int num_vertices = p_FVs.size();
-  DRAKE_DEMAND(num_vertices >= 3);
-
-  T total_double_area{0};
-  const Vector3<T>& p_FA = p_FVs[0];
-  for (int i = 2; i < num_vertices; ++i) {
-    // Adding area of sub-triangles of the given polygon. For example, the
-    // polygon V₀V₁V₂V₃V₄ will have these sub-triangles:
-    //  i    triangle ABC
-    //  2       V₀V₁V₂
-    //  3       V₀V₂V₃
-    //  4       V₀V₃V₄
-    const Vector3<T> p_FB = p_FVs[i-1];
-    const Vector3<T> p_FC = p_FVs[i];
-    const Vector3<T> ABxAC_F = (p_FB - p_FA).cross(p_FC - p_FA);
-    T double_area = ABxAC_F.dot(nhat_F);
-    total_double_area += double_area;
-  }
-  return total_double_area / 2;
-}
-
-template <typename T>
-void AddPolygonToMeshData(const std::vector<int>& polygon,
-                          const Vector3<T>& n_F,
-                          std::vector<SurfaceTriangle>* faces,
-                          std::vector<Vector3<T>>* vertices_F) {
+void AddPolygonToTriangleMeshData(const std::vector<int>& polygon,
+                                  const Vector3<T>& n_F,
+                                  std::vector<SurfaceTriangle>* faces,
+                                  std::vector<Vector3<T>>* vertices_F) {
   DRAKE_DEMAND(faces != nullptr);
   DRAKE_DEMAND(vertices_F != nullptr);
   DRAKE_DEMAND(polygon.size() >= 3);
@@ -255,71 +320,24 @@ void AddPolygonToMeshData(const std::vector<int>& polygon,
   }
 }
 
-template <typename T>
-void AddPolygonToMeshDataAsOneTriangle(const std::vector<Vector3<T>>& polygon_F,
-                                       const Vector3<T>& nhat_F,
-                                       std::vector<SurfaceTriangle>* faces,
-                                       std::vector<Vector3<T>>* vertices_F) {
-  DRAKE_DEMAND(faces != nullptr);
-  DRAKE_DEMAND(vertices_F != nullptr);
-  DRAKE_DEMAND(polygon_F.size() >= 3);
-  const T polygon_area = CalcPolygonArea(polygon_F, nhat_F);
-  if (polygon_area < kMinimumPolygonArea) {
-    return;
+void AddPolygonToPolygonMeshData(const std::vector<int>& polygon,
+                                 std::vector<int>* face_data) {
+  DRAKE_DEMAND(face_data != nullptr);
+  DRAKE_DEMAND(polygon.size() >= 3);
+
+  const int polygon_size = static_cast<int>(polygon.size());
+  face_data->push_back(polygon_size);
+  for (int v : polygon) {
+    face_data->push_back(v);
   }
-
-  // Locations of vertices of the representative triangle.
-  Vector3<T> p_FVs[3];
-  if (polygon_F.size() == 3) {
-    p_FVs[0] = polygon_F[0];
-    p_FVs[1] = polygon_F[1];
-    p_FVs[2] = polygon_F[2];
-  } else {
-    Vector3<T> p_FC = CalcPolygonCentroid(polygon_F, nhat_F);
-
-    // We will set the representative triangle as an isosceles right triangle
-    // in a local frame G such that its third basis vector Gz_F, expressed in
-    // frame F, is the same as the face normal vector nhat_F. The triangle
-    // has centroid C (coincident with the polygon's centroid) at Go, and its
-    // two edges V₀V₁ and V₀V₂ are parallel to Gx and Gy respectively, as shown
-    // in the following picture (Gz points outward from the screen).
-    //
-    //               Gy
-    //               ^
-    //               |
-    //        V₂ ●   |
-    //           x x |
-    //           x   x
-    //        l  x   | x
-    //           x C ○---x--------> Gx
-    //           x         x
-    //       V₀  ● x x x x x ●
-    //                 l     V₁
-    //
-    // The two edges of the triangle in Gx and Gy directions have the same
-    // length l such that the triangle has the same area as the polygon:
-    //      l²/2 = polygon_area
-    //      l    = √(2 * polygon_area)
-    // N.B. We should have positive polygon_area, so the scalar type AutoDiffXd
-    // would be fine with sqrt().
-    const T l = sqrt(2. * polygon_area);
-    // Pass axis_index = 2, so that Gz_F = R_FG.col(2) = nhat_F.
-    const auto R_FG = math::RotationMatrix<T>::MakeFromOneUnitVector(nhat_F, 2);
-    const Vector3<T> Gx_F = R_FG.col(0);
-    const Vector3<T> Gy_F = R_FG.col(1);
-    p_FVs[0] = p_FC + (l / 3) * (   -Gx_F      - Gy_F);  // V₀ #NOLINT
-    p_FVs[1] = p_FC + (l / 3) * (2 * Gx_F      - Gy_F);  // V₁ #NOLINT
-    p_FVs[2] = p_FC + (l / 3) * (   -Gx_F + 2. * Gy_F);  // V₂ #NOLINT
-  }
-
-  const int n = vertices_F->size();
-  const int v[3] = {n, n + 1, n + 2};
-  faces->emplace_back(v);
-  vertices_F->emplace_back(p_FVs[0]);
-  vertices_F->emplace_back(p_FVs[1]);
-  vertices_F->emplace_back(p_FVs[2]);
 }
 
+// TODO(SeanCurtis-TRI): This test is not currently directly tested in
+//  contact_surface_utility_test.cc. It is, however, tested in other tests
+//  indirectly (e.g., mesh_intersection_test.cc
+//  IsFaceNormalAlongPressureGradient). Testing this explicitly will allow those
+//  other test sites that *exercise* this function to become simpler, merely
+//  seeking evidence that it is invoked correctly.
 template <typename T>
 bool IsFaceNormalInNormalDirection(const Vector3<T>& normal_F,
                                    const TriangleSurfaceMesh<T>& surface_M,
@@ -342,21 +360,16 @@ bool IsFaceNormalInNormalDirection(const Vector3<T>& normal_F,
 
 // Instantiation to facilitate unit testing of this support function.
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-    &AddPolygonToMeshData<T>,
-    &AddPolygonToMeshDataAsOneTriangle<T>,
-    &CalcPolygonArea<T>,
+    &AddPolygonToTriangleMeshData<T>,
     &IsFaceNormalInNormalDirection<T>,
-    /* Use static_cast to disambiguate the two different overloads. */
-    static_cast<Vector3<T>(*)(
-       const std::vector<int>&,
-       const Vector3<T>&,
-       const std::vector<Vector3<T>>&)>(&CalcPolygonCentroid),
-    /* Use static_cast to disambiguate the two different overloads. */
-    static_cast<Vector3<T>(*)(
-       const std::vector<Vector3<T>>&,
-       const Vector3<T>&)>(&CalcPolygonCentroid)
+    &CalcPolygonCentroid<T>
 ))
 
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+  class ::drake::geometry::internal::TriMeshBuilder)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+  class ::drake::geometry::internal::PolyMeshBuilder)

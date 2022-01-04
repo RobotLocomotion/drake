@@ -37,6 +37,9 @@ class SurfaceTriangle {
   explicit SurfaceTriangle(const int v[3])
       : SurfaceTriangle(v[0], v[1], v[2]) {}
 
+  /** Returns the number of vertices in this face. */
+  int num_vertices() const { return 3; }
+
   /** Returns the vertex index in TriangleSurfaceMesh of the i-th vertex of this
    triangle.
    @param i  The local index of the vertex in this triangle.
@@ -126,6 +129,21 @@ class TriangleSurfaceMesh {
     return triangles_[e];
   }
 
+  /** Returns the centroid of a triangle measured and expressed in the mesh's
+   frame. */
+  Vector3<T> element_centroid(int t) const {
+    DRAKE_DEMAND(0 <= t && t < num_triangles());
+    /* We're not pre-computing and returning stored values because the current
+     expectation is that the cost of storing the values (greater construction
+     time, more complexity in code) is probably not justified based on how
+     many times the centroid would be accessed. So, for now, we'll compute on
+     the fly until we know that the query cost dominates. */
+    const auto& tri = triangles_[t];
+    return (vertices_[tri.vertex(0)] + vertices_[tri.vertex(1)] +
+            vertices_[tri.vertex(2)]) /
+           3;
+  }
+
   /** Returns the triangles. */
   const std::vector<SurfaceTriangle>& triangles() const { return triangles_; }
 
@@ -160,7 +178,7 @@ class TriangleSurfaceMesh {
    @param vertices  The vertices.
    */
   TriangleSurfaceMesh(std::vector<SurfaceTriangle>&& triangles,
-              std::vector<Vector3<T>>&& vertices)
+                      std::vector<Vector3<T>>&& vertices)
       : triangles_(std::move(triangles)),
         vertices_(std::move(vertices)),
         area_(triangles_.size()),  // Pre-allocate here, not yet calculated.
@@ -284,8 +302,8 @@ class TriangleSurfaceMesh {
    @pre t ∈ {0, 1, 2,..., num_triangles()-1}.
    */
   template <typename C>
-  Vector3<promoted_numerical_t<T, C>> CalcBarycentric(const Vector3<C>& p_MQ,
-                                                      int t) const {
+  Barycentric<promoted_numerical_t<T, C>> CalcBarycentric(
+      const Vector3<C>& p_MQ, int t) const {
     const Vector3<T>& v0 = vertex(element(t).vertex(0));
     const Vector3<T>& v1 = vertex(element(t).vertex(1));
     const Vector3<T>& v2 = vertex(element(t).vertex(2));
@@ -494,7 +512,7 @@ Vector3<T> TriangleSurfaceMesh<T>::CalcGradBarycentric(int t, int i) const {
   //  vector in TriangleSurfaceMeshFieldLinear since this calculation is not
   //  reliable for zero- or almost-zero-area triangles. For example, the code
   //  that creates ContactSurface by triangle-tetrahedron intersection can set
-  //  the pressure gradient along a contact polygon by projecting the soft
+  //  the pressure gradient along a contact polygon by projecting the compliant
   //  tetrahedron's pressure gradient onto the plane of the rigid triangle.
 
   // Let bᵥ be the barycentric coordinate function corresponding to vertex V.

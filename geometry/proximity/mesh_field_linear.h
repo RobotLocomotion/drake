@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <map>
 #include <memory>
@@ -9,12 +10,14 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/common/reset_on_copy.h"
 #include "drake/common/sorted_pair.h"
+#include "drake/common/unused.h"
 #include "drake/geometry/proximity/mesh_traits.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
-#include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -71,6 +74,23 @@ namespace geometry {
        f(Q) = fᵉ(Q) = ∑bᵉᵢ(Q)Fᵉᵢ
 
  where Fᵉᵢ is the field value at the iᵗʰ vertex of element E.
+
+ <h3> Frame dependency </h3>
+
+ A %MeshFieldLinear is a frame-dependent quantity. Instances of a field should
+ be named, as with any other frame-dependent quantity, with a trailing _F
+ indicating the field's frame F. The field's frame is implicitly defined to be
+ the same as the mesh's frame on which the field is instantiated. The field's
+ frame affects two APIs:
+
+   - The gradients reported by EvaluateGradient() are expressed in the field's
+     frame.
+   - The cartesian point passed to EvaluateCartesian() must be measured and
+     expressed in the field's frame.
+
+ The field (along with its corresponding mesh) can be transformed into a new
+ frame by invoking the TransformVertices() method on the mesh and Transform()
+ on the field, passing the same math::RigidTransform to both.
 
  <h3> Gradient </h3>
 
@@ -158,10 +178,36 @@ class MeshFieldLinear {
     }
   }
 
+  /** (Advanced) Constructor variant which receives the pre-computed,
+   per-element gradients of the field. `gradients[i]` is the
+   gradient of the linear function defined on the ith element of `mesh`.
+
+   The caller is responsible for making sure that the gradients are consistent
+   with the field `values` defined at the vertices. Failure to do so will
+   lead to nonsensical results when evaluating the field _near_ a mesh vertex as
+   opposed to _at_ the vertex.
+
+   As with the other constructor, `mesh` must remain alive at least as long as
+   this field instance.
+
+   @pre gradients.size() == mesh.num_elements().
+   */
+  MeshFieldLinear(std::vector<T>&& values, const MeshType* mesh,
+                  std::vector<Vector3<T>>&& gradients)
+      : mesh_(mesh),
+        values_(std::move(values)),
+        gradients_(std::move(gradients)) {
+    DRAKE_DEMAND(mesh_ != nullptr);
+    DRAKE_DEMAND(static_cast<int>(values_.size()) == mesh_->num_vertices());
+    DRAKE_DEMAND(static_cast<int>(gradients_.size()) == mesh_->num_elements());
+
+    CalcValueAtMeshOriginForAllElements();
+  }
+
   DRAKE_DEPRECATED("2022-01-01", "This object will no longer store a name")
   MeshFieldLinear(std::string name, std::vector<T>&& values,
                   const MeshType* mesh, bool calculate_gradient = true)
-    : MeshFieldLinear(std::move(values), mesh, calculate_gradient) {
+      : MeshFieldLinear(std::move(values), mesh, calculate_gradient) {
     name_ = std::move(name);
   }
 
@@ -180,8 +226,13 @@ class MeshFieldLinear {
    Barycentric coordinate type `B`.  See
    @ref drake::geometry::promoted_numerical "promoted_numerical_t" for details.
 
+   @warning This can only be evaluated if the underlying MeshType itself
+            supports barycentric evaluation (e.g., compare TriangleSurfaceMesh
+            with PolygonSurfaceMesh).
+
    @param e The index of the element.
    @param b The barycentric coordinates.
+   @throws std::exception if MeshType doesn't support Barycentric coordinates.
    @tparam B The scalar type for the barycentric coordinate.
    */
   template <typename B>
@@ -189,12 +240,23 @@ class MeshFieldLinear {
       int e,
       // NOLINTNEXTLINE(runtime/references): "template Bar..." confuses cpplint.
       const typename MeshType::template Barycentric<B>& b) const {
-    const auto& element = this->mesh().element(e);
-    promoted_numerical_t<B, T> value = b[0] * values_[element.vertex(0)];
-    for (int i = 1; i < MeshType::kVertexPerElement; ++i) {
-      value += b[i] * values_[element.vertex(i)];
+    if constexpr (MeshType::kVertexPerElement <= 0) {
+      // We can only evaluate barycentric coordinates on simplices with a
+      // known number of vertices. This indeterminate vertex count requires
+      // throwing.
+      unused(e, b);
+      throw std::runtime_error(
+          fmt::format("MeshFieldLinear::Evaluate() cannot be evaluated with "
+                      "barycentric coordinates on a {} mesh type",
+                      NiceTypeName::Get<MeshType>()));
+    } else {
+      const auto& element = this->mesh().element(e);
+      promoted_numerical_t<B, T> value = b[0] * values_[element.vertex(0)];
+      for (int i = 1; i < MeshType::kVertexPerElement; ++i) {
+        value += b[i] * values_[element.vertex(i)];
+      }
+      return value;
     }
-    return value;
   }
 
   /** Evaluates the field at a point Qp on an element. If the element is a
@@ -212,6 +274,8 @@ class MeshFieldLinear {
    @param e The index of the element.
    @param p_MQ The position of point Q expressed in frame M, in Cartesian
                coordinates. M is the frame of the mesh.
+   @throws std::exception if the field does not have gradients defined _and_ the
+           MeshType doesn't support Barycentric coordinates.
    */
   template <typename C>
   promoted_numerical_t<C, T> EvaluateCartesian(int e,
@@ -237,15 +301,19 @@ class MeshFieldLinear {
     return gradients_[e];
   }
 
-  /** Transforms the gradient vectors of this field from its initial frame M
-   to the new frame N.
-   @warning Use this function when the reference mesh of this field changes
-   its frame in the same way.
+  /** (Advanced) Transforms this mesh field to be measured and expressed in
+   frame N (from its original frame M). See the class documentation for further
+   details.
+
+   @warning This method should always be invoked in tandem with the
+   transformation of the underlying mesh into the same frame
+   (TransformVertices()). To be safe, the mesh should be transformed first.
    */
-  void TransformGradients(
+  void Transform(
       const math::RigidTransform<typename MeshType::ScalarType>& X_NM) {
-    for (auto& grad : gradients_) {
-      grad = X_NM.rotation() * grad;
+    for (size_t i = 0; i < gradients_.size(); ++i) {
+      gradients_[i] = X_NM.rotation() * gradients_[i];
+      values_at_Mo_[i] -= gradients_[i].dot(X_NM.translation());
     }
   }
 
@@ -304,8 +372,14 @@ class MeshFieldLinear {
   }
 
   Vector3<T> CalcGradientVector(int e) const {
-    std::array<T, MeshType::kVertexPerElement> u;
-    for (int i = 0; i < MeshType::kVertexPerElement; ++i) {
+    // In the case of the PolygonSurfaceMesh, where kVertexPerElement is marked
+    // as "indeterminate" (aka -1), we'll simply use the first three vertices.
+    // If we were to have a PolytopeVolumeMesh (i.e., a volume mesh that is
+    // comprised of non-tetrahedral volume elements) this wouldn't work and we'd
+    // have to devise an alternate rubric, but, for now, this works.
+    constexpr int kVCount = std::max(3, MeshType::kVertexPerElement);
+    std::array<T, kVCount> u;
+    for (int i = 0; i < kVCount; ++i) {
       u[i] = values_[this->mesh().element(e).vertex(i)];
     }
     return this->mesh().CalcGradientVectorOfLinearField(u, e);

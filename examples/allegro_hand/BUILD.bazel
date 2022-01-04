@@ -49,7 +49,6 @@ drake_cc_binary(
         "//multibody/plant",
         "//systems/analysis:simulator",
         "//systems/primitives:constant_vector_source",
-        "//systems/rendering:pose_bundle_to_draw_message",
         "@gflags",
     ],
 )

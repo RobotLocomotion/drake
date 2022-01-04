@@ -4,6 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <yaml-cpp/yaml.h>
 
 #include "drake/common/name_value.h"
 #include "drake/common/nice_type_name.h"
@@ -59,7 +60,12 @@ class YamlReadArchiveTest
     bool raised = false;
     std::string what;
     try {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      // TODO(jwnimmer-tri) Once the deprecation 2022-03-01 date hits,
+      // port this to use the drake::yaml::internal::Node API instead.
       YamlReadArchive(root, GetParam()).Accept(&result);
+#pragma GCC diagnostic pop
     } catch (const std::exception& e) {
       raised = true;
       what = e.what();
@@ -74,7 +80,12 @@ class YamlReadArchiveTest
   template <typename Serializable>
   static void AcceptIntoDummy(const YAML::Node& root) {
     Serializable dummy{};
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      // TODO(jwnimmer-tri) Once the deprecation 2022-03-01 date hits,
+      // port this to use the drake::yaml::internal::Node API instead.
     YamlReadArchive(root, GetParam()).Accept(&dummy);
+#pragma GCC diagnostic pop
   }
 
   // Parses root into a Serializable and returns the result of the parse.
@@ -88,7 +99,12 @@ class YamlReadArchiveTest
     bool raised = false;
     std::string what;
     try {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      // TODO(jwnimmer-tri) Once the deprecation 2022-03-01 date hits,
+      // port this to use the drake::yaml::internal::Node API instead.
       YamlReadArchive(root, GetParam()).Accept(&result);
+#pragma GCC diagnostic pop
     } catch (const std::exception& e) {
       raised = true;
       what = e.what();
@@ -137,6 +153,29 @@ TEST_P(YamlReadArchiveTest, Double) {
 TEST_P(YamlReadArchiveTest, DoubleMissing) {
   const auto& x = AcceptEmptyDoc<DoubleStruct>();
   EXPECT_EQ(x.value, kNominalDouble);
+}
+
+TEST_P(YamlReadArchiveTest, AllScalars) {
+  const std::string doc = R"""(
+doc:
+  some_bool: true
+  some_double: 100.0
+  some_float: 101.0
+  some_int32: 102
+  some_uint32: 103
+  some_int64: 104
+  some_uint64: 105
+  some_string: foo
+)""";
+  const auto& x = AcceptNoThrow<AllScalarsStruct>(Load(doc));
+  EXPECT_EQ(x.some_bool, true);
+  EXPECT_EQ(x.some_double, 100.0);
+  EXPECT_EQ(x.some_float, 101.0);
+  EXPECT_EQ(x.some_int32, 102);
+  EXPECT_EQ(x.some_uint32, 103);
+  EXPECT_EQ(x.some_int64, 104);
+  EXPECT_EQ(x.some_uint64, 105);
+  EXPECT_EQ(x.some_string, "foo");
 }
 
 TEST_P(YamlReadArchiveTest, StdArray) {
@@ -353,6 +392,52 @@ doc:
 )""")),
       "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has invalid merge key type \\(Null\\).");
+}
+
+TEST_P(YamlReadArchiveTest, StdMapDirectly) {
+  const std::string doc = R"""(
+doc:
+  key_1:
+    value: 1.0
+  key_2:
+    value: 2.0
+)""";
+  const auto& x = AcceptNoThrow<std::map<std::string, DoubleStruct>>(Load(doc));
+  EXPECT_EQ(x.size(), 2);
+  EXPECT_EQ(x.at("key_1").value, 1.0);
+  EXPECT_EQ(x.at("key_2").value, 2.0);
+}
+
+TEST_P(YamlReadArchiveTest, StdMapDirectlyWithDefaults) {
+  const std::string doc = R"""(
+doc:
+  key_1:
+    value: 1.0
+  key_with_defaulted_value: {}
+)""";
+  const auto node = Load(doc);
+  if (GetParam().allow_cpp_with_no_yaml) {
+    std::map<std::string, DoubleStruct> result;
+    result.emplace("pre_existing_default", DoubleStruct{.value = 0.0});
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // TODO(jwnimmer-tri) Once the deprecation 2022-03-01 date hits,
+    // port this to use the drake::yaml::internal::Node API instead.
+    YamlReadArchive(node, GetParam()).Accept(&result);
+#pragma GCC diagnostic pop
+    if (GetParam().retain_map_defaults) {
+      EXPECT_EQ(result.size(), 3);
+      EXPECT_EQ(result.at("pre_existing_default").value, 0.0);
+    } else {
+      EXPECT_EQ(result.size(), 2);
+    }
+    EXPECT_EQ(result.at("key_1").value, 1.0);
+    EXPECT_EQ(result.at("key_with_defaulted_value").value, kNominalDouble);
+  } else {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        (AcceptIntoDummy<std::map<std::string, DoubleStruct>>(node)),
+        ".*missing entry for double value.*");
+  }
 }
 
 TEST_P(YamlReadArchiveTest, Optional) {

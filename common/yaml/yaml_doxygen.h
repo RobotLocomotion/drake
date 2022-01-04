@@ -102,4 +102,21 @@ std::unordered_map.
 
 For inspiration and background, see:
 https://www.boost.org/doc/libs/release/libs/serialization/doc/tutorial.html
+
+<!--
+TODO(jwnimmer-tri) Describe the special case for top-level collections without
+a Serialize function, i.e., std::map<std::string, Serializable>.
+
+Usually we require that we have a serializable struct that matches the YAML
+document. However, for the special case of a C++ collection type that matches
+a YAML node type exactly, sometimes it's convenient to parse the document
+directly into that collection, without the need to define an enclosing struct.
+
+This PR adds std::map<std::string, Serializable> along those lines. In the
+future we could imagine adding std::vector<Serializable> as well just for
+completeness, though I no examples of needing that come to mind. Those are the
+only two collection types that we'd want to allow in this kind of special case.
+(They are the only ones that directly align with YAML node semantics.)
+-->
+
 */

@@ -10,6 +10,7 @@ git
 libblas-dev
 libbz2-dev
 libclang-9-dev
+libcurl4-openssl-dev
 libdouble-conversion-dev
 libexpat1-dev
 libgflags-dev
@@ -17,7 +18,6 @@ libgl1-mesa-dev
 libglew-dev
 libglib2.0-dev
 libjpeg-turbo8-dev
-libjsoncpp-dev
 liblapack-dev
 liblz4-dev
 liblzma-dev

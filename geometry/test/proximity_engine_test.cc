@@ -110,9 +110,9 @@ GTEST_TEST(ProximityEngineTests, AddDynamicGeometry) {
 // sufficient to confirm that it is being properly invoked. We'll simply attempt
 // to instantiate every shape and assert its classification based on whether
 // it's supported or not (note: this test doesn't depend on the choice of
-// rigid/soft -- for each shape, we pick an arbitrary compliance, preferring
-// one that is supported over one that is not. Otherwise, the compliance choice
-// is immaterial.)
+// rigid/compliant -- for each shape, we pick an arbitrary compliance type,
+// preferring one that is supported over one that is not. Otherwise, the
+// compliance choice is immaterial.)
 GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
   ProximityEngine<double> engine;
   // All of the geometries will have a scale comparable to edge_length, so that
@@ -121,11 +121,11 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
   const double edge_length = 0.5;
   const double E = 1e8;  // Elastic modulus.
   ProximityProperties soft_properties;
-  AddSoftHydroelasticProperties(edge_length, E, &soft_properties);
+  AddCompliantHydroelasticProperties(edge_length, E, &soft_properties);
   ProximityProperties rigid_properties;
   AddRigidHydroelasticProperties(edge_length, &rigid_properties);
 
-  // Case: soft sphere.
+  // Case: compliant sphere.
   {
     Sphere sphere{edge_length};
     const GeometryId sphere_id = GeometryId::get_new_id();
@@ -215,7 +215,7 @@ std::pair<GeometryId, RigidTransformd> AddShape(ProximityEngine<double>* engine,
   const double edge_length = 0.5;
   ProximityProperties properties;
   if (is_soft) {
-    AddSoftHydroelasticProperties(edge_length, 1e8, &properties);
+    AddCompliantHydroelasticProperties(edge_length, 1e8, &properties);
   } else {
     AddRigidHydroelasticProperties(edge_length, &properties);
   }
@@ -243,6 +243,8 @@ unordered_map<GeometryId, RigidTransformd> PopulateEngine(
   return X_WGs;
 }
 
+// The autodiff support is independent of what the contact surface mesh
+// representation is; so we'll simply use kTriangle.
 GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
   const bool anchored{true};
   const bool soft{true};
@@ -251,8 +253,8 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
       drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
       1.0 /* scale */};
 
-  // Case: Soft sphere and rigid mesh with AutoDiffXd -- confirm the contact
-  // surface has derivatives.
+  // Case: Compliant sphere and rigid mesh with AutoDiffXd -- confirm the
+  // contact surface has derivatives.
   {
     ProximityEngine<double> engine_d;
     const auto X_WGs_d = PopulateEngine(&engine_d, sphere, anchored, soft, mesh,
@@ -282,14 +284,15 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
     // callback. So, exercising one is "sufficient". If they ever deviate in
     // execution (i.e., there were to no longer share the same callback), this
     // test would have to be elaborated.
-    engine_ad->ComputeContactSurfacesWithFallback(X_WGs_ad, &surfaces,
-                                                  &point_pairs);
+    engine_ad->ComputeContactSurfacesWithFallback(
+        HydroelasticContactRepresentation::kTriangle, X_WGs_ad, &surfaces,
+        &point_pairs);
     EXPECT_EQ(surfaces.size(), 1);
     EXPECT_EQ(point_pairs.size(), 0);
     // We'll poke *one* quantity of the surface mesh to confirm it has
     // derivatives. We won't consider the *value*, just the existence as proof
     // that it has been wired up to code that has already tested value.
-    EXPECT_EQ(surfaces[0].mesh_W().vertex(0).x().derivatives().size(), 3);
+    EXPECT_EQ(surfaces[0].tri_mesh_W().vertex(0).x().derivatives().size(), 3);
   }
 
   // Case: Rigid sphere and mesh with AutoDiffXd -- contact would be a point
@@ -306,8 +309,9 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
 
     std::vector<ContactSurface<AutoDiffXd>> surfaces;
     std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
-    engine_ad->ComputeContactSurfacesWithFallback(X_WGs_ad, &surfaces,
-                                                  &point_pairs);
+    engine_ad->ComputeContactSurfacesWithFallback(
+        HydroelasticContactRepresentation::kTriangle, X_WGs_ad, &surfaces,
+        &point_pairs);
     EXPECT_EQ(surfaces.size(), 0);
     EXPECT_EQ(point_pairs.size(), 1);
   }
@@ -324,6 +328,8 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
 //
 //   - A concave mesh queries penetration and distance like its convex hull.
 //   - A concave mesh queries hydroelastic based on the actual mesh.
+//
+// The test doesn't depend on the mesh representation type.
 GTEST_TEST(ProximityEngineTests, MeshSupportAsConvex) {
   /* This mesh looks like this:
                          +z
@@ -372,7 +378,8 @@ GTEST_TEST(ProximityEngineTests, MeshSupportAsConvex) {
     engine.UpdateWorldPoses(X_WGs);
 
     // Existence of a contact surface depends on the radius of the sphere.
-    const auto contact_surfaces = engine.ComputeContactSurfaces(X_WGs);
+    const auto contact_surfaces = engine.ComputeContactSurfaces(
+        HydroelasticContactRepresentation::kTriangle, X_WGs);
     EXPECT_EQ(contact_surfaces.size(), radius > 0.5 ? 1 : 0);
 
     {
@@ -513,7 +520,7 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
     EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kUndefined);
   }
 
-  // Create a baseline property set that requests a soft hydroelastic
+  // Create a baseline property set that requests a compliant hydroelastic
   // representation, but is not necessarily sufficient to define one.
   ProximityProperties hydro_trigger;
   hydro_trigger.AddProperty(kHydroGroup, kComplianceType,
@@ -1883,7 +1890,8 @@ GTEST_TEST(ProximityEngineTests, FindCollisionCandidatesResultOrdering) {
 // Confirms that the ComputeContactSurfaces() computation returns the
 // same results twice in a row. This test is explicitly required because it is
 // known that updating the pose in the FCL tree can lead to erratic ordering.
-// We also test ComputePolygonalContactSurfaces() similarly.
+// This logic doesn't depend on mesh representation, so we test it with a single
+// representation.
 class ProximityEngineHydro : public testing::Test {
  protected:
   void SetUp() override {
@@ -1894,7 +1902,7 @@ class ProximityEngineHydro : public testing::Test {
     poses_ = MakeCollidingRing(r, 4);
 
     ProximityProperties soft_properties;
-    AddSoftHydroelasticProperties(r, 1e8, &soft_properties);
+    AddCompliantHydroelasticProperties(r, 1e8, &soft_properties);
     ProximityProperties rigid_properties;
     AddRigidHydroelasticProperties(r, &rigid_properties);
 
@@ -1921,26 +1929,13 @@ class ProximityEngineHydro : public testing::Test {
 
 TEST_F(ProximityEngineHydro, ComputeContactSurfacesResultOrdering) {
   engine_.UpdateWorldPoses(poses_);
-  const auto results1 = engine_.ComputeContactSurfaces(poses_);
+  const auto results1 = engine_.ComputeContactSurfaces(
+      HydroelasticContactRepresentation::kTriangle, poses_);
   ASSERT_EQ(results1.size(), poses_.size());
 
   engine_.UpdateWorldPoses(poses_);
-  const auto results2 = engine_.ComputeContactSurfaces(poses_);
-  ASSERT_EQ(results2.size(), poses_.size());
-
-  for (size_t i = 0; i < poses_.size(); ++i) {
-    EXPECT_EQ(results1[i].id_M(), results2[i].id_M());
-    EXPECT_EQ(results1[i].id_N(), results2[i].id_N());
-  }
-}
-
-TEST_F(ProximityEngineHydro, ComputePolygonalContactSurfacesResultOrdering) {
-  engine_.UpdateWorldPoses(poses_);
-  const auto results1 = engine_.ComputePolygonalContactSurfaces(poses_);
-  ASSERT_EQ(results1.size(), poses_.size());
-
-  engine_.UpdateWorldPoses(poses_);
-  const auto results2 = engine_.ComputePolygonalContactSurfaces(poses_);
+  const auto results2 = engine_.ComputeContactSurfaces(
+      HydroelasticContactRepresentation::kTriangle, poses_);
   ASSERT_EQ(results2.size(), poses_.size());
 
   for (size_t i = 0; i < poses_.size(); ++i) {
@@ -1952,7 +1947,8 @@ TEST_F(ProximityEngineHydro, ComputePolygonalContactSurfacesResultOrdering) {
 // Confirms that the ComputeContactSurfacesWithFallback() computation returns
 // the same results twice in a row. This test is explicitly required because it
 // is known that updating the pose in the FCL tree can lead to erratic ordering.
-// We also test ComputePolygonalContactSurfacesWithFallback() similarly.
+// This logic is independent of mesh representation, so, we only test for one
+// mesh type.
 class ProximityEngineHydroWithFallback : public testing::Test {
  protected:
   void SetUp() override {
@@ -1964,7 +1960,7 @@ class ProximityEngineHydroWithFallback : public testing::Test {
     poses_ = MakeCollidingRing(r, N_);
 
     ProximityProperties soft_properties;
-    AddSoftHydroelasticProperties(r / 2, 1e8, &soft_properties);
+    AddCompliantHydroelasticProperties(r / 2, 1e8, &soft_properties);
     ProximityProperties rigid_properties;
     AddRigidHydroelasticProperties(r, &rigid_properties);
 
@@ -1996,40 +1992,18 @@ TEST_F(ProximityEngineHydroWithFallback,
   engine_.UpdateWorldPoses(poses_);
   vector<ContactSurface<double>> surfaces1;
   vector<PenetrationAsPointPair<double>> points1;
-  engine_.ComputeContactSurfacesWithFallback(poses_, &surfaces1, &points1);
+  engine_.ComputeContactSurfacesWithFallback(
+      HydroelasticContactRepresentation::kTriangle, poses_, &surfaces1,
+      &points1);
   ASSERT_EQ(surfaces1.size(), N_ / 2);
   ASSERT_EQ(points1.size(), N_ / 2);
 
   engine_.UpdateWorldPoses(poses_);
   vector<ContactSurface<double>> surfaces2;
   vector<PenetrationAsPointPair<double>> points2;
-  engine_.ComputeContactSurfacesWithFallback(poses_, &surfaces2, &points2);
-  ASSERT_EQ(surfaces2.size(), N_ / 2);
-  ASSERT_EQ(points2.size(), N_ / 2);
-
-  for (size_t i = 0; i < N_ / 2; ++i) {
-    EXPECT_EQ(surfaces1[i].id_M(), surfaces2[i].id_M());
-    EXPECT_EQ(surfaces1[i].id_N(), surfaces2[i].id_N());
-    EXPECT_EQ(points1[i].id_A, points2[i].id_A);
-    EXPECT_EQ(points1[i].id_B, points2[i].id_B);
-  }
-}
-
-TEST_F(ProximityEngineHydroWithFallback,
-       ComputePolygonalContactSurfacesWithFallbackResultOrdering) {
-  engine_.UpdateWorldPoses(poses_);
-  vector<ContactSurface<double>> surfaces1;
-  vector<PenetrationAsPointPair<double>> points1;
-  engine_.ComputePolygonalContactSurfacesWithFallback(poses_, &surfaces1,
-                                                      &points1);
-  ASSERT_EQ(surfaces1.size(), N_ / 2);
-  ASSERT_EQ(points1.size(), N_ / 2);
-
-  engine_.UpdateWorldPoses(poses_);
-  vector<ContactSurface<double>> surfaces2;
-  vector<PenetrationAsPointPair<double>> points2;
-  engine_.ComputePolygonalContactSurfacesWithFallback(poses_, &surfaces2,
-                                                      &points2);
+  engine_.ComputeContactSurfacesWithFallback(
+      HydroelasticContactRepresentation::kTriangle, poses_, &surfaces2,
+      &points2);
   ASSERT_EQ(surfaces2.size(), N_ / 2);
   ASSERT_EQ(points2.size(), N_ / 2);
 

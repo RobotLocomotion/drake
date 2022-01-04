@@ -41,7 +41,7 @@ void PlanarManipulandStatusDecoder::OutputStatus(
     const systems::Context<double>& context,
     systems::BasicVector<double>* output) const {
   Eigen::VectorBlock<VectorX<double>> output_vec = output->get_mutable_value();
-  output_vec = context.get_discrete_state(0).get_value();
+  output_vec = context.get_discrete_state(0).value();
 }
 
 PlanarManipulandStatusEncoder::PlanarManipulandStatusEncoder() {

@@ -1,13 +1,13 @@
 /* @file
  A simple binary for profiling computation of ContactSurface between an
- anchored rigid bowl and a dynamic soft ball. The rigid bowl is a realistic
- non-convex object represented by 7,910 triangles. The soft ball is
+ anchored rigid bowl and a dynamic compliant ball. The rigid bowl is a realistic
+ non-convex object represented by 7,910 triangles. The compliant ball is
  represented by a coarse tetrahedral mesh, which is typical in hydroelastic
  contact model. This is decoupled from dynamics so that just the geometric
  components can be evaluated in as light-weight a fashion as possible. The
  ball moves moderately and stays in contact with the bowl all the time.
  Optionally it can use a rigid ball or a rigid box instead of the rigid bowl.
- It can also use a soft box instead of the soft ball.
+ It can also use a compliant box instead of the compliant ball.
 */
 
 #include <cmath>
@@ -48,9 +48,12 @@ namespace contact_surface {
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using geometry::AddContactMaterial;
+using geometry::AddRigidHydroelasticProperties;
+using geometry::AddCompliantHydroelasticProperties;
 using geometry::Box;
-using geometry::ContactSurface;
 using geometry::Capsule;
+using geometry::ContactSurface;
 using geometry::Cylinder;
 using geometry::DrakeVisualizerd;
 using geometry::FrameId;
@@ -58,8 +61,7 @@ using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
-using geometry::AddRigidHydroelasticProperties;
-using geometry::AddSoftHydroelasticProperties;
+using geometry::HydroelasticContactRepresentation;
 using geometry::IllustrationProperties;
 using geometry::Mesh;
 using geometry::ProximityProperties;
@@ -74,35 +76,39 @@ using std::make_unique;
 using systems::Context;
 using systems::DiagramBuilder;
 using systems::ExplicitEulerIntegrator;
-using systems::lcm::LcmPublisherSystem;
 using systems::LeafSystem;
 using systems::Simulator;
+using systems::lcm::LcmPublisherSystem;
 
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds. "
               "By default, it is 10 seconds, which is the time for the "
-              "moving soft geometry to complete one period of sinusoidal "
+              "moving compliant geometry to complete one period of sinusoidal "
               "vertical motion while contacting the rigid geometry.");
 DEFINE_double(real_time, 1.0, "Real time factor.");
 DEFINE_double(resolution_hint, 0.0125,
-              "Target resolution for the soft ball's mesh-- smaller "
-              "numbers produce a denser, more expensive mesh. The soft ball "
-              "is 2.5cm in radius. By default, its mesh resolution is "
+              "Target resolution for the compliant ball's mesh-- smaller "
+              "numbers produce a denser, more expensive mesh. The compliant "
+              "ball is 2.5cm in radius. By default, its mesh resolution is "
               "1.25cm, which is half the radius. This parameter affects "
-              "none of the rigid bowl, the rigid box, or the soft box.");
+              "none of the rigid bowl, the rigid box, or the compliant box.");
 DEFINE_string(rigid, "bowl",
               "Specify the shape of the rigid geometry.\n"
               "[--rigid={ball,bowl,box,capsule,cylinder}]\n"
               "By default, it is the bowl.\n");
-DEFINE_string(soft, "ball",
-              "Specify the shape of the soft geometry.\n"
-              "[--soft={ball,box,capsule,cylinder}]\n"
+DEFINE_string(compliant, "ball",
+              "Specify the shape of the compliant geometry.\n"
+              "[--compliant={ball,box,capsule,cylinder}]\n"
               "By default, it is the ball.\n");
+DEFINE_bool(polygons, true,
+            "Set to true to use polygons to represent contact surfaces.\n"
+            "Set to false to use triangles to represent contact surfaces.\n"
+            "By default, it is true.");
 
-/* Places a soft geometry (a ball by default) and defines its velocity as being
- sinusoidal in time in World z direction.
+/* Places a compliant geometry (a ball by default) and defines its velocity as
+ being sinusoidal in time in World z direction.
 
- The center of the moving soft geometry starts from a point O at the
+ The center of the moving compliant geometry starts from a point O at the
  mid-height of the default rigid bowl, which can change to a rigid ball or a
  rigid box via a command-line option.
    1. It goes up to the rim of the bowl, creating the smallest contact patch
@@ -120,16 +126,16 @@ DEFINE_string(soft, "ball",
  motion, and T is the time period.
 
  @system
- name: MovingSoftGeometry
+ name: MovingCompliantGeometry
  output_ports:
  - geometry_pose
  @endsystem
 
  This system's output is strictly a function of time and has no state.
  */
-class MovingSoftGeometry final : public LeafSystem<double> {
+class MovingCompliantGeometry final : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MovingSoftGeometry)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MovingCompliantGeometry)
 
   // Ball radius 2.5cm.
   static constexpr double kRadius = 0.025;
@@ -143,46 +149,47 @@ class MovingSoftGeometry final : public LeafSystem<double> {
   // Amplitude of motion, A = 0.5cm.
   static constexpr double kA = 0.005;
 
-  explicit MovingSoftGeometry(SceneGraph<double>* scene_graph) {
-    // Add a soft geometry that moves based on sinusoidal derivatives.
+  explicit MovingCompliantGeometry(SceneGraph<double>* scene_graph) {
+    // Add a compliant geometry that moves based on sinusoidal derivatives.
     source_id_ = scene_graph->RegisterSource("moving_geometry");
     frame_id_ =
         scene_graph->RegisterFrame(source_id_, GeometryFrame("moving_frame"));
-    if (FLAGS_soft == "box") {
+    if (FLAGS_compliant == "box") {
       geometry_id_ = scene_graph->RegisterGeometry(
           source_id_, frame_id_,
           make_unique<GeometryInstance>(
               RigidTransformd(), make_unique<Box>(Box::MakeCube(1.5 * kRadius)),
-              "soft box"));
-    } else if (FLAGS_soft == "capsule") {
+              "compliant box"));
+    } else if (FLAGS_compliant == "capsule") {
       geometry_id_ = scene_graph->RegisterGeometry(
           source_id_, frame_id_,
           make_unique<GeometryInstance>(
               RigidTransformd(),
               make_unique<Capsule>(Capsule(1.2 * kRadius, 1.5 * kRadius)),
-              "soft capsule"));
-    } else if (FLAGS_soft == "cylinder") {
+              "compliant capsule"));
+    } else if (FLAGS_compliant == "cylinder") {
       geometry_id_ = scene_graph->RegisterGeometry(
           source_id_, frame_id_,
           make_unique<GeometryInstance>(
               RigidTransformd(),
               make_unique<Cylinder>(Cylinder(1.2 * kRadius, 1.5 * kRadius)),
-              "soft cylinder"));
+              "compliant cylinder"));
     } else {
       geometry_id_ = scene_graph->RegisterGeometry(
           source_id_, frame_id_,
-          make_unique<GeometryInstance>(
-              RigidTransformd(), make_unique<Sphere>(kRadius), "soft ball"));
-      if (FLAGS_soft != "ball") {
-        std::cout << "Unsupported value for --soft==" << FLAGS_rigid
-                  << ", default to a soft ball.\n"
+          make_unique<GeometryInstance>(RigidTransformd(),
+                                        make_unique<Sphere>(kRadius),
+                                        "compliant ball"));
+      if (FLAGS_compliant != "ball") {
+        std::cout << "Unsupported value for --compliant=" << FLAGS_compliant
+                  << ", default to a compliant ball.\n"
                   << "Supported values are ball, box, capsule or cylinder."
                   << std::endl;
       }
     }
     ProximityProperties prox_props;
-    // Resolution Hint affects the soft ball but not the soft box.
-    AddSoftHydroelasticProperties(FLAGS_resolution_hint, 1e8, &prox_props);
+    // Resolution Hint affects the compliant ball but not the compliant box.
+    AddCompliantHydroelasticProperties(FLAGS_resolution_hint, 1e8, &prox_props);
     scene_graph->AssignRole(source_id_, geometry_id_, prox_props);
 
     IllustrationProperties illus_props;
@@ -191,7 +198,7 @@ class MovingSoftGeometry final : public LeafSystem<double> {
 
     geometry_pose_port_ =
         this->DeclareAbstractOutputPort(
-                "geometry_pose", &MovingSoftGeometry::CalcFramePoseOutput)
+                "geometry_pose", &MovingCompliantGeometry::CalcFramePoseOutput)
             .get_index();
   }
 
@@ -251,8 +258,11 @@ class ContactResultMaker final : public LeafSystem<double> {
                           lcmt_contact_results_for_viz* results) const {
     const auto& query_object =
         get_geometry_query_port().Eval<QueryObject<double>>(context);
+    const auto contact_representation =
+        FLAGS_polygons ? HydroelasticContactRepresentation::kPolygon
+                       : HydroelasticContactRepresentation::kTriangle;
     std::vector<ContactSurface<double>> contacts =
-        query_object.ComputeContactSurfaces();
+        query_object.ComputeContactSurfaces(contact_representation);
     const int num_contacts = static_cast<int>(contacts.size());
 
     auto& msg = *results;
@@ -262,42 +272,58 @@ class ContactResultMaker final : public LeafSystem<double> {
     msg.num_hydroelastic_contacts = num_contacts;
     msg.hydroelastic_contacts.resize(num_contacts);
 
-    auto write_double3 = [](const Vector3d& src, double* dest) {
-      dest[0] = src(0);
-      dest[1] = src(1);
-      dest[2] = src(2);
-    };
-
     for (int i = 0; i < num_contacts; ++i) {
-      lcmt_hydroelastic_contact_surface_for_viz& surface_msg =
+      lcmt_hydroelastic_contact_surface_for_viz& surface_message =
           msg.hydroelastic_contacts[i];
+      const ContactSurface<double>& surface = contacts[i];
 
-      surface_msg.body1_name = "Id_" + to_string(contacts[i].id_M());
-      surface_msg.body2_name = "Id_" + to_string(contacts[i].id_N());
+      // TODO(SeanCurtis-TRI): This currently skips the full naming and doesn't
+      //  report any dynamics (e.g., force, moment, or quadrature data).
 
-      const TriangleSurfaceMesh<double>& mesh_W = contacts[i].mesh_W();
-      surface_msg.num_triangles = mesh_W.num_triangles();
-      surface_msg.triangles.resize(surface_msg.num_triangles);
+      surface_message.body1_name = "Id_" + to_string(surface.id_M());
+      surface_message.body2_name = "Id_" + to_string(surface.id_N());
 
-      // Loop through each contact triangle on the contact surface.
-      const auto& field = contacts[i].e_MN();
-      for (int j = 0; j < surface_msg.num_triangles; ++j) {
-        lcmt_hydroelastic_contact_surface_tri_for_viz& tri_msg =
-            surface_msg.triangles[j];
+      const int num_vertices = surface.num_vertices();
+      surface_message.num_vertices = num_vertices;
+      surface_message.p_WV.resize(num_vertices);
+      surface_message.pressure.resize(num_vertices);
+      if (surface.is_triangle()) {
+        const auto& mesh_W = surface.tri_mesh_W();
+        const auto& e_MN_W = surface.tri_e_MN();
 
-        // Get the three vertices.
-        const auto& face = mesh_W.element(j);
-        const Vector3d& vA = mesh_W.vertex(face.vertex(0));
-        const Vector3d& vB = mesh_W.vertex(face.vertex(1));
-        const Vector3d& vC = mesh_W.vertex(face.vertex(2));
+        // Write vertices and per vertex pressure values.
+        for (int v = 0; v < num_vertices; ++v) {
+          const Vector3d& p_WV = mesh_W.vertex(v);
+          surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
+          surface_message.pressure[v] =
+              ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
+        }
 
-        write_double3(vA, tri_msg.p_WA);
-        write_double3(vB, tri_msg.p_WB);
-        write_double3(vC, tri_msg.p_WC);
+        // Write faces.
+        surface_message.poly_data_int_count = mesh_W.num_triangles() * 4;
+        surface_message.poly_data.resize(surface_message.poly_data_int_count);
+        int index = -1;
+        for (int t = 0; t < mesh_W.num_triangles(); ++t) {
+          const geometry::SurfaceTriangle& tri = mesh_W.element(t);
+          surface_message.poly_data[++index] = 3;
+          surface_message.poly_data[++index] = tri.vertex(0);
+          surface_message.poly_data[++index] = tri.vertex(1);
+          surface_message.poly_data[++index] = tri.vertex(2);
+        }
+      } else {
+        const auto& mesh_W = surface.poly_mesh_W();
+        const auto& e_MN_W = surface.poly_e_MN();
 
-        tri_msg.pressure_A = field.EvaluateAtVertex(face.vertex(0));
-        tri_msg.pressure_B = field.EvaluateAtVertex(face.vertex(1));
-        tri_msg.pressure_C = field.EvaluateAtVertex(face.vertex(2));
+        // Write vertices and per vertex pressure values.
+        for (int v = 0; v < num_vertices; ++v) {
+          const Vector3d& p_WV = mesh_W.vertex(v);
+          surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
+          surface_message.pressure[v] =
+              ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
+        }
+
+        surface_message.poly_data_int_count = mesh_W.face_data().size();
+        surface_message.poly_data = mesh_W.face_data();
       }
     }
   }
@@ -311,7 +337,8 @@ int do_main() {
 
   auto& scene_graph = *builder.AddSystem<SceneGraph<double>>();
 
-  auto& moving_geometry = *builder.AddSystem<MovingSoftGeometry>(&scene_graph);
+  auto& moving_geometry =
+      *builder.AddSystem<MovingCompliantGeometry>(&scene_graph);
   builder.Connect(
       moving_geometry.get_geometry_pose_output_port(),
       scene_graph.get_source_pose_port(moving_geometry.source_id()));
@@ -324,8 +351,8 @@ int do_main() {
   // The bowl's bounding box is about 14.7cm x 14.7cm x 6.1cm with its
   // center at the origin Bo of frame B. Place B at 3.05cm above the ground
   // plane, so the bottom of the bowl is on the ground. Furthermore,
-  // place B at 5cm in +Y direction in World frame, so the soft ball moving
-  // along Z-axis in World frame will contact the edge of the bowl.
+  // place B at 5cm in +Y direction in World frame, so the compliant ball
+  // moving along Z-axis in World frame will contact the edge of the bowl.
   const RigidTransformd X_WB(Vector3d(0, 0.05, 0.0305));
   GeometryId rigid_geometry_id;
   if (FLAGS_rigid == "ball") {

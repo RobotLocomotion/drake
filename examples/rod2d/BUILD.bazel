@@ -49,7 +49,6 @@ drake_cc_library(
         "//multibody/constraint",
         "//solvers:mathematical_program",
         "//systems/framework:leaf_system",
-        "//systems/rendering:pose_vector",
     ],
 )
 

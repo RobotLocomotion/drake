@@ -28,6 +28,14 @@ namespace systems {
 /// The Bode plot in phase exhibits a -90 degrees shift (lag) for frequencies
 /// much larger than the cutoff frequency and a zero shift for low frequencies.
 ///
+/// @system
+/// name: FirstOrderLowPassFilter
+/// input_ports:
+/// - u0
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>

@@ -13,6 +13,10 @@
 namespace drake {
 namespace examples {
 namespace planar_gripper {
+
+// This should be the update frequency of the mocap system.
+constexpr double kPlanarManipulandStatusPeriod = 0.010;
+
 /// Handles lcmt_planar_manipuland_status messages from a LcmSubscriberSystem.
 ///
 /// This system has one abstract valued input port which expects a
@@ -24,10 +28,14 @@ namespace planar_gripper {
 ///
 /// All ports will continue to output their initial state (typically
 /// zero) until a message is received.
-
-// This should be the update frequency of the mocap system.
-constexpr double kPlanarManipulandStatusPeriod = 0.010;
-
+///
+/// @system
+/// name: PlanarManipulandStatusDecoder
+/// input_ports:
+/// - manipuland_state
+/// output_ports:
+/// - y0
+/// @endsystem
 class PlanarManipulandStatusDecoder : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanarManipulandStatusDecoder)
@@ -59,6 +67,14 @@ class PlanarManipulandStatusDecoder : public systems::LeafSystem<double> {
  * the output of this system should be connected to an input port of a
  * systems::lcm::LcmPublisherSystem that accepts a Value object templated on
  * type `lcmt_planar_manipuland_status`.
+ *
+ * @system
+ * name: PlanarManipulandStatusEncoder
+ * input_ports:
+ * - u0
+ * output_ports:
+ * - y0
+ * @endsystem
  */
 class PlanarManipulandStatusEncoder : public systems::LeafSystem<double> {
  public:

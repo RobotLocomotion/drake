@@ -15,6 +15,14 @@ namespace systems {
 ///   y = D u
 /// @f]
 ///
+/// @system
+/// name: MatrixGain
+/// input_ports:
+/// - u0
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
 ///

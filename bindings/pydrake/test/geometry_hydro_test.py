@@ -1,9 +1,11 @@
 import pydrake.geometry as mut
 import pydrake.geometry._testing as mut_testing
 
+import copy
 import unittest
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.math import RigidTransform
 
 
 class TestGeometryHydro(unittest.TestCase):
@@ -19,7 +21,7 @@ class TestGeometryHydro(unittest.TestCase):
         mut.AddRigidHydroelasticProperties(
             resolution_hint=res_hint, properties=props)
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
-        self.assertFalse(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertFalse(mut_testing.PropertiesIndicateCompliantHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
         self.assertEqual(props.GetProperty("hydroelastic", "resolution_hint"),
                          res_hint)
@@ -27,15 +29,15 @@ class TestGeometryHydro(unittest.TestCase):
         props = mut.ProximityProperties()
         mut.AddRigidHydroelasticProperties(properties=props)
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
-        self.assertFalse(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertFalse(mut_testing.PropertiesIndicateCompliantHydro(props))
         self.assertFalse(props.HasProperty("hydroelastic", "resolution_hint"))
 
         props = mut.ProximityProperties()
         res_hint = 0.275
-        mut.AddSoftHydroelasticProperties(
+        mut.AddCompliantHydroelasticProperties(
             resolution_hint=res_hint, hydroelastic_modulus=E, properties=props)
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
-        self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertTrue(mut_testing.PropertiesIndicateCompliantHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
         self.assertEqual(props.GetProperty("hydroelastic", "resolution_hint"),
                          res_hint)
@@ -46,11 +48,11 @@ class TestGeometryHydro(unittest.TestCase):
 
         props = mut.ProximityProperties()
         slab_thickness = 0.275
-        mut.AddSoftHydroelasticPropertiesForHalfSpace(
+        mut.AddCompliantHydroelasticPropertiesForHalfSpace(
             slab_thickness=slab_thickness, hydroelastic_modulus=E,
             properties=props)
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
-        self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertTrue(mut_testing.PropertiesIndicateCompliantHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "slab_thickness"))
         self.assertEqual(props.GetProperty("hydroelastic", "slab_thickness"),
                          slab_thickness)
@@ -59,7 +61,46 @@ class TestGeometryHydro(unittest.TestCase):
         self.assertEqual(props.GetProperty("hydroelastic",
                                            "hydroelastic_modulus"), E)
 
-    def test_surface_mesh(self):
+    def test_polygon_surface_mesh(self):
+        # Default constructor.
+        mut.PolygonSurfaceMesh()
+
+        # Construct a single triangle.
+        vertices = [
+            (0, 0, 0),
+            (1, 0, 0),
+            (0, 1, 0),
+        ]
+        vertex_indices = [0, 1, 2]
+        face_data = [len(vertex_indices)] + vertex_indices
+        dut = mut.PolygonSurfaceMesh(face_data=face_data, vertices=vertices)
+
+        # Sanity check every accessor.
+        dut.element(e=0)
+        dut.vertex(v=0)
+        dut.num_vertices()
+        dut.num_elements()
+        dut.num_faces()
+        dut.area(f=0)
+        dut.total_area()
+        dut.face_normal(f=0)
+        dut.element_centroid(e=0)
+        dut.centroid()
+        dut.CalcBoundingBox()
+        dut.Equal(mesh=dut)
+        dut.face_data()
+        copy.copy(dut)
+
+        # Sanity check the mutators.
+        dut.TransformVertices(X_NM=RigidTransform())
+        dut.ReverseFaceWinding()
+
+        # Now check the SurfacePolygon bindings.
+        polygon = dut.element(e=0)
+        self.assertEqual(polygon.num_vertices(), 3)
+        self.assertEqual(polygon.vertex(i=1), 1)
+
+    def test_triangle_surface_mesh(self):
         # Create a mesh out of two triangles forming a quad.
         #
         #     0______1
@@ -86,6 +127,8 @@ class TestGeometryHydro(unittest.TestCase):
         self.assertEqual(len(mesh.triangles()), 2)
         self.assertEqual(len(mesh.vertices()), 4)
         self.assertListEqual(list(mesh.centroid()), [0, 0, 0])
+        self.assertListEqual(list(mesh.element_centroid(t=1)),
+                             [-1/3.0, 1/3.0, 0])
 
     def test_volume_mesh(self):
         # Create a mesh out of two tetrahedra with a single, shared face

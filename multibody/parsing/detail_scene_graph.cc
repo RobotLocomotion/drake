@@ -417,16 +417,28 @@ ProximityProperties MakeProximityPropertiesForCollision(
     };
 
     const bool is_rigid = drake_element->HasElement("drake:rigid_hydroelastic");
-    const bool is_soft = drake_element->HasElement("drake:soft_hydroelastic");
+    const bool is_compliant =
+        drake_element->HasElement("drake:compliant_hydroelastic");
 
-    if (is_rigid && is_soft) {
+    // TODO(16229): Remove this ad-hoc input sanitization when we resolve
+    //  issue 16229 "Diagnostics for unsupported SDFormat and URDF stanzas."
+    const bool is_unsupported_soft =
+        drake_element->HasElement("drake:soft_hydroelastic");
+    if (is_unsupported_soft) {
       throw std::runtime_error(
-          "A <collision> geometry has defined mutually-exclusive tags "
-          "<drake:rigid_hydroelastic> and <drake:soft_hydroelastic>. Only one "
-          "can be provided.");
+          "A <collision> geometry has defined the unsupported tag "
+          "<drake:soft_hydroelastic>. Please change it to "
+          "<drake:compliant_hydroelastic>.");
     }
 
-    properties = ParseProximityProperties(read_double, is_rigid, is_soft);
+    if (is_rigid && is_compliant) {
+      throw std::runtime_error(
+          "A <collision> geometry has defined mutually-exclusive tags "
+          "<drake:rigid_hydroelastic> and <drake:compliant_hydroelastic>. Only "
+          "one can be provided.");
+    }
+
+    properties = ParseProximityProperties(read_double, is_rigid, is_compliant);
   }
 
   // TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on

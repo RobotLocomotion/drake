@@ -23,18 +23,17 @@ int sgn(const T& x) {
   }
 }
 
-/* Utility routine for calculating the intersection point between an edge and
- a plane. Given an edge (defined by its two end-point vertices a and b) and the
- signed distances from a plane (`s_a` and `s_b`, respectively), returns the
- position where the plane splits the edge.
+/* Calculates the intersection point between an edge and a plane. Given an edge
+ (defined by its two end-point vertices A and B) and the vertices' signed
+ distances from the plane (`s_a` and `s_b`, respectively), returns the position
+ where the plane splits the edge. The split vertex is measured and expressed in
+ the same frame as the input vertices, F.
 
- @pre s_a and s_b must not have the same sign (positive, negative, or zero).
- */
+ @pre s_a and s_b must not have the same sign (positive, negative, or zero). */
 template <typename T>
 Vector3<T> CalcEdgePlaneIntersection(
     int a, int b, const T& s_a, const T& s_b,
-    const std::vector<Vector3<double>>& vertices_F,
-    const math::RigidTransform<T>& X_WF) {
+    const std::vector<Vector3<double>>& vertices_F) {
   DRAKE_DEMAND(a != b);
   DRAKE_DEMAND(sgn(s_a) != sgn(s_b));
   using std::abs;
@@ -44,9 +43,7 @@ Vector3<T> CalcEdgePlaneIntersection(
   // never be greater than unity). Barring an (unlikely) machine epsilon
   // remainder on division, the assertion below should hold.
   DRAKE_DEMAND(t >= 0 && t <= 1);
-  const Vector3<T> p_WV =
-      X_WF * (vertices_F[a] + t * (vertices_F[b] - vertices_F[a]));
-  return p_WV;
+  return vertices_F[a] + t * (vertices_F[b] - vertices_F[a]);
 }
 
 /* Utility routine for getting the vertex index from the
@@ -56,76 +53,83 @@ Vector3<T> CalcEdgePlaneIntersection(
  crossing plane. The method creates the vertex if the edge hasn't previously
  been split.
 
- @pre s_a and s_b must not have the same sign (positive, negative, or zero).
- */
-template <typename T>
+ @pre s_a and s_b must not have the same sign (positive, negative, or zero). */
+template <typename MeshBuilder>
 int GetVertexAddIfNeeded(
-    int a, int b, const T& s_a, const T& s_b,
+    int a, int b, const typename MeshBuilder::ScalarType& s_a,
+    const typename MeshBuilder::ScalarType& s_b,
     const std::vector<Vector3<double>>& vertices_F,
-    const math::RigidTransform<T>& X_WF,
+    const std::function<typename MeshBuilder::ScalarType(
+        const Vector3<typename MeshBuilder::ScalarType>&)>& pressure_in_F,
+    const math::RigidTransform<typename MeshBuilder::ScalarType>& X_WF,
     std::unordered_map<SortedPair<int>, int>* edges_to_newly_created_vertices,
-    std::vector<Vector3<T>>* new_vertices_W) {
+    MeshBuilder* builder_W) {
+  using T = typename MeshBuilder::ScalarType;
   DRAKE_DEMAND(sgn(s_a) != sgn(s_b));
 
   SortedPair<int> edge_a_b(a, b);
   auto edge_a_b_intersection_iter =
       edges_to_newly_created_vertices->find(edge_a_b);
   if (edge_a_b_intersection_iter == edges_to_newly_created_vertices->end()) {
+    const Vector3<T> p_FV =
+        CalcEdgePlaneIntersection(a, b, s_a, s_b, vertices_F);
+    const int builder_index =
+        builder_W->AddVertex(X_WF * p_FV, pressure_in_F(p_FV));
     bool inserted;
     std::tie(edge_a_b_intersection_iter, inserted) =
-        edges_to_newly_created_vertices->insert(
-            {edge_a_b, static_cast<int>(new_vertices_W->size())});
+        edges_to_newly_created_vertices->insert({edge_a_b, builder_index});
     DRAKE_DEMAND(inserted);
-    new_vertices_W->emplace_back(
-        CalcEdgePlaneIntersection(a, b, s_a, s_b, vertices_F, X_WF));
   }
 
   return edge_a_b_intersection_iter->second;
 }
 
 /* Utility routine for getting the vertex index from the
- `vertices_to_newly_created_vertices` hashtable. Given a vertex `index` from the
- input mesh, returns the corresponding vertex index in `new_vertices_W`. The
- method creates the vertex in `new_vertices_W` if it hasn't already been added.
- */
-template <typename T>
+ `vertices_to_newly_created_vertices` hashtable. Given a vertex `v_index` from
+ the input mesh, returns the corresponding vertex index in `builder_W`. The
+ method adds the vertex to `builder_W` if it doesn't already exist. */
+template <typename MeshBuilder, typename T = typename MeshBuilder::ScalarType>
 int GetVertexAddIfNeeded(
-    const std::vector<Vector3<double>>& vertices_F, int index,
+    const std::vector<Vector3<double>>& vertices_F, int v_index,
+    const std::function<T(const Vector3<T>&)>& pressure_in_F,
     const math::RigidTransform<T>& X_WF,
     std::unordered_map<int, int>* vertices_to_newly_created_vertices,
-    std::vector<Vector3<T>>* new_vertices_W) {
-  auto v_to_new_v_iter = vertices_to_newly_created_vertices->find(index);
+    MeshBuilder* builder_W) {
+  auto v_to_new_v_iter = vertices_to_newly_created_vertices->find(v_index);
   if (v_to_new_v_iter == vertices_to_newly_created_vertices->end()) {
-    bool inserted;
-    std::tie(v_to_new_v_iter, inserted) =
-        vertices_to_newly_created_vertices->insert(
-            {index, static_cast<int>(new_vertices_W->size())});
-    DRAKE_DEMAND(inserted);
     // Note: although the vertex is *always* Vector3<double>, we don't support
     // Vector3<AD> = RigidTransform<AD> * Vector3<double>. Therefore, we must
     // cast the vector to T to account for when it is AutoDiffXd.
-    const Vector3<T> p_WV = X_WF * vertices_F[index].cast<T>();
-    new_vertices_W->emplace_back(p_WV);
+    const Vector3<T> p_FV = vertices_F[v_index].cast<T>();
+    const int builder_index =
+        builder_W->AddVertex(X_WF * p_FV, pressure_in_F(p_FV));
+    bool inserted;
+    std::tie(v_to_new_v_iter, inserted) =
+        vertices_to_newly_created_vertices->insert({v_index, builder_index});
+    DRAKE_DEMAND(inserted);
   }
   return v_to_new_v_iter->second;
 }
 
 }  // namespace
 
-template <typename T>
+template <typename MeshBuilder>
 void ConstructTriangleHalfspaceIntersectionPolygon(
     const TriangleSurfaceMesh<double>& mesh_F, int tri_index,
-    const PosedHalfSpace<T>& half_space_F, const math::RigidTransform<T>& X_WF,
-    ContactPolygonRepresentation representation,
-    std::vector<Vector3<T>>* new_vertices_W,
-    std::vector<SurfaceTriangle>* new_faces,
+    const PosedHalfSpace<typename MeshBuilder::ScalarType>& half_space_F,
+    const std::function<typename MeshBuilder::ScalarType(
+        const Vector3<typename MeshBuilder::ScalarType>&)>&
+        pressure_in_F,
+    const Vector3<typename MeshBuilder::ScalarType>& grad_pressure_in_W,
+    const math::RigidTransform<typename MeshBuilder::ScalarType>& X_WF,
+    MeshBuilder* builder_W,
     std::unordered_map<int, int>* vertices_to_newly_created_vertices,
     std::unordered_map<SortedPair<int>, int>* edges_to_newly_created_vertices) {
+  using T = typename MeshBuilder::ScalarType;
   // TODO(SeanCurtis-TRI): This needs to support the "backface" culling that is
   //  implemented in mesh-mesh intersection. See the
   //  IsFaceNormalAlongPressureGradient() function in mesh_intersection.h.
-  DRAKE_DEMAND(new_vertices_W != nullptr);
-  DRAKE_DEMAND(new_faces != nullptr);
+  DRAKE_DEMAND(builder_W != nullptr);
   DRAKE_DEMAND(vertices_to_newly_created_vertices != nullptr);
   DRAKE_DEMAND(edges_to_newly_created_vertices != nullptr);
 
@@ -188,12 +192,12 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   // Compute the signed distance of each triangle vertex from the half space.
   // The table of possibilities is listed next with p = num_positive.
   //
-  //     p  intersection
+  //     p  |  intersection
   //     ---------------------------------
-  // 1.  0  triangle (original)
-  // 2.  1  quad (2 edges clipped)
-  // 3.  2  triangle (2 edges clipped)
-  // 4.  3  none
+  // 1.  0  |  triangle (original)
+  // 2.  1  |  quad (2 edges clipped)
+  // 3.  2  |  triangle (2 edges clipped)
+  // 4.  3  |  none
 
   // Compute the signed distance of each triangle vertex from the half space.
   T s[3];
@@ -214,33 +218,18 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   // Case 1: triangle lies completely within the half space. Preserve
   // the ordering of the triangle vertices.
   if (num_positive == 0) {
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision: {
-        const int v0_new_index = GetVertexAddIfNeeded(
-            vertices_F, triangle.vertex(0), X_WF,
-            vertices_to_newly_created_vertices, new_vertices_W);
-        const int v1_new_index = GetVertexAddIfNeeded(
-            vertices_F, triangle.vertex(1), X_WF,
-            vertices_to_newly_created_vertices, new_vertices_W);
-        const int v2_new_index = GetVertexAddIfNeeded(
-            vertices_F, triangle.vertex(2), X_WF,
-            vertices_to_newly_created_vertices, new_vertices_W);
+    const int v0_new_index = GetVertexAddIfNeeded(
+        vertices_F, triangle.vertex(0), pressure_in_F, X_WF,
+        vertices_to_newly_created_vertices, builder_W);
+    const int v1_new_index = GetVertexAddIfNeeded(
+        vertices_F, triangle.vertex(1), pressure_in_F, X_WF,
+        vertices_to_newly_created_vertices, builder_W);
+    const int v2_new_index = GetVertexAddIfNeeded(
+        vertices_F, triangle.vertex(2), pressure_in_F, X_WF,
+        vertices_to_newly_created_vertices, builder_W);
 
-        AddPolygonToMeshData({v0_new_index, v1_new_index, v2_new_index},
-                             nhat_W, new_faces, new_vertices_W);
-        break;
-      }
-      case ContactPolygonRepresentation::kSingleTriangle: {
-        AddPolygonToMeshDataAsOneTriangle(
-            {
-                X_WF * vertices_F[triangle.vertex(0)].cast<T>(),
-                X_WF * vertices_F[triangle.vertex(1)].cast<T>(),
-                X_WF * vertices_F[triangle.vertex(2)].cast<T>(),
-            },
-            nhat_W, new_faces, new_vertices_W);
-        break;
-      }
-    }
+    builder_W->AddPolygon({v0_new_index, v1_new_index, v2_new_index}, nhat_W,
+                          grad_pressure_in_W);
     return;
   }
 
@@ -254,58 +243,40 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
         const int v1 = triangle.vertex(i1);
         const int v2 = triangle.vertex(i2);
 
-        switch (representation) {
-          case ContactPolygonRepresentation::kCentroidSubdivision: {
-            // Get the vertices that result from intersecting edge i0/i1 and
-            // i0/i2.
-            const int edge_i0_i1_intersection_index = GetVertexAddIfNeeded(
-                v0, v1, s[i0], s[i1], vertices_F, X_WF,
-                edges_to_newly_created_vertices, new_vertices_W);
-            const int edge_i0_i2_intersection_index = GetVertexAddIfNeeded(
-                v0, v2, s[i0], s[i2], vertices_F, X_WF,
-                edges_to_newly_created_vertices, new_vertices_W);
+        // Get the vertices that result from intersecting edge i0/i1 and
+        // i0/i2.
+        const int edge_i0_i1_intersection_index = GetVertexAddIfNeeded(
+            v0, v1, s[i0], s[i1], vertices_F, pressure_in_F, X_WF,
+            edges_to_newly_created_vertices, builder_W);
+        const int edge_i0_i2_intersection_index = GetVertexAddIfNeeded(
+            v0, v2, s[i0], s[i2], vertices_F, pressure_in_F, X_WF,
+            edges_to_newly_created_vertices, builder_W);
 
-            // Get the indices of the new vertices, adding them if needed.
-            const int i1_new_index = GetVertexAddIfNeeded(
-                vertices_F, v1, X_WF, vertices_to_newly_created_vertices,
-                new_vertices_W);
-            const int i2_new_index = GetVertexAddIfNeeded(
-                vertices_F, v2, X_WF, vertices_to_newly_created_vertices,
-                new_vertices_W);
+        // Get the indices of the new vertices, adding them if needed.
+        const int i1_new_index =
+            GetVertexAddIfNeeded(vertices_F, v1, pressure_in_F, X_WF,
+                                 vertices_to_newly_created_vertices, builder_W);
+        const int i2_new_index =
+            GetVertexAddIfNeeded(vertices_F, v2, pressure_in_F, X_WF,
+                                 vertices_to_newly_created_vertices, builder_W);
 
-            // Add the polygon (i1, i2, e02, e01)
-            //
-            //             i0
-            //            ╱╲
-            //       e01 ╱  ╲ e02
-            //    ______╱____╲___
-            //         ╱      ╲
-            //        ╱________╲
-            //      i1          i2
-            //
-            AddPolygonToMeshData(
-                {i1_new_index, i2_new_index, edge_i0_i2_intersection_index,
-                 edge_i0_i1_intersection_index},
-                nhat_W, new_faces, new_vertices_W);
-            break;
-          }
-          case ContactPolygonRepresentation::kSingleTriangle: {
-            AddPolygonToMeshDataAsOneTriangle(
-                {X_WF * vertices_F[v1].cast<T>(),
-                 X_WF * vertices_F[v2].cast<T>(),
-                 CalcEdgePlaneIntersection(v0, v2, s[i0], s[i2], vertices_F,
-                                           X_WF),
-                 CalcEdgePlaneIntersection(v0, v1, s[i0], s[i1], vertices_F,
-                                           X_WF)},
-                nhat_W, new_faces, new_vertices_W);
-            break;
-          }
-        }
+        // Add the polygon (i1, i2, e02, e01)
+        //
+        //             i0
+        //            ╱╲
+        //       e01 ╱  ╲ e02
+        //    ______╱____╲___
+        //         ╱      ╲
+        //        ╱________╲
+        //      i1          i2
+        //
+        builder_W->AddPolygon(
+            {i1_new_index, i2_new_index, edge_i0_i2_intersection_index,
+             edge_i0_i1_intersection_index},
+            nhat_W, grad_pressure_in_W);
         return;
       }
     }
-
-    DRAKE_UNREACHABLE();
   }
 
   // Case 3: The portion of the triangle in the half space is a triangle.
@@ -318,39 +289,24 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
         const int v1 = triangle.vertex(i1);
         const int v2 = triangle.vertex(i2);
 
-        switch (representation) {
-          case ContactPolygonRepresentation::kCentroidSubdivision: {
-            // Get the vertex that corresponds to i0.
-            const int i0_new_index = GetVertexAddIfNeeded(
-                vertices_F, v0, X_WF, vertices_to_newly_created_vertices,
-                new_vertices_W);
+        // Get the vertex that corresponds to i0.
+        const int i0_new_index =
+            GetVertexAddIfNeeded(vertices_F, v0, pressure_in_F, X_WF,
+                                 vertices_to_newly_created_vertices, builder_W);
 
-            // Get the vertex that results from intersecting edge i0/i1.
-            const int edge_i0_i1_intersection_index = GetVertexAddIfNeeded(
-                v0, v1, s[i0], s[i1], vertices_F, X_WF,
-                edges_to_newly_created_vertices, new_vertices_W);
+        // Get the vertex that results from intersecting edge i0/i1.
+        const int edge_i0_i1_intersection_index = GetVertexAddIfNeeded(
+            v0, v1, s[i0], s[i1], vertices_F, pressure_in_F, X_WF,
+            edges_to_newly_created_vertices, builder_W);
 
-            // Get the vertex that results from intersecting edge i0/i2.
-            const int edge_i0_i2_intersection_index = GetVertexAddIfNeeded(
-                v0, v2, s[i0], s[i2], vertices_F, X_WF,
-                edges_to_newly_created_vertices, new_vertices_W);
+        // Get the vertex that results from intersecting edge i0/i2.
+        const int edge_i0_i2_intersection_index = GetVertexAddIfNeeded(
+            v0, v2, s[i0], s[i2], vertices_F, pressure_in_F, X_WF,
+            edges_to_newly_created_vertices, builder_W);
 
-            AddPolygonToMeshData({i0_new_index, edge_i0_i1_intersection_index,
-                                  edge_i0_i2_intersection_index},
-                                 nhat_W, new_faces, new_vertices_W);
-            break;
-          }
-          case ContactPolygonRepresentation::kSingleTriangle: {
-            AddPolygonToMeshDataAsOneTriangle(
-                {X_WF * vertices_F[v0].cast<T>(),
-                 CalcEdgePlaneIntersection(v0, v1, s[i0], s[i1], vertices_F,
-                                           X_WF),
-                 CalcEdgePlaneIntersection(v0, v2, s[i0], s[i2], vertices_F,
-                                           X_WF)},
-                nhat_W, new_faces, new_vertices_W);
-            break;
-          }
-        }
+        builder_W->AddPolygon({i0_new_index, edge_i0_i1_intersection_index,
+                               edge_i0_i2_intersection_index},
+                              nhat_W, grad_pressure_in_W);
         return;
       }
     }
@@ -359,35 +315,49 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   }
 }
 
-template <typename T>
-std::unique_ptr<TriangleSurfaceMesh<T>>
-ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-    const TriangleSurfaceMesh<double>& input_mesh_F,
-    const PosedHalfSpace<T>& half_space_F,
+template <typename MeshBuilder>
+std::unique_ptr<ContactSurface<typename MeshBuilder::ScalarType>>
+ComputeContactSurface(
+    GeometryId mesh_id, const TriangleSurfaceMesh<double>& input_mesh_F,
+    GeometryId half_space_id,
+    const PosedHalfSpace<typename MeshBuilder::ScalarType>& half_space_F,
+    const std::function<typename MeshBuilder::ScalarType(
+        const Vector3<typename MeshBuilder::ScalarType>&)>&
+        pressure_in_F,
+    const Vector3<typename MeshBuilder::ScalarType>& grad_p_W,
     const std::vector<int>& tri_indices,
-    const math::RigidTransform<T>& X_WF,
-    ContactPolygonRepresentation representation) {
-  std::vector<Vector3<T>> new_vertices_W;
-  std::vector<SurfaceTriangle> new_faces;
+    const math::RigidTransform<typename MeshBuilder::ScalarType>& X_WF) {
+  using T = typename MeshBuilder::ScalarType;
+
+  if (tri_indices.size() == 0) return nullptr;
+
+  // Build infrastructure as we process each potentially colliding triangle.
+  MeshBuilder builder_W;
   std::unordered_map<int, int> vertices_to_newly_created_vertices;
   std::unordered_map<SortedPair<int>, int> edges_to_newly_created_vertices;
 
   for (const auto& tri_index : tri_indices) {
     ConstructTriangleHalfspaceIntersectionPolygon(
-        input_mesh_F, tri_index, half_space_F, X_WF, representation,
-        &new_vertices_W, &new_faces, &vertices_to_newly_created_vertices,
+        input_mesh_F, tri_index, half_space_F, pressure_in_F, grad_p_W, X_WF,
+        &builder_W, &vertices_to_newly_created_vertices,
         &edges_to_newly_created_vertices);
   }
 
-  if (new_faces.size() == 0) return nullptr;
+  if (builder_W.num_faces() == 0) return nullptr;
 
-  // TODO(SeanCurtis-TRI): This forces TriangleSurfaceMesh to recompute the
-  //  normals for every triangle in the set of faces. But we know that they
-  //  should be the normals drawn from the input mesh. We should accumulate the
-  //  normals during accumulation and explicitly provide them here (with a
-  //  reasonable check that the winding and the normals are consistent).
-  return std::make_unique<TriangleSurfaceMesh<T>>(std::move(new_faces),
-                                                  std::move(new_vertices_W));
+  auto [mesh_W, field_W] = builder_W.MakeMeshAndField();
+
+  // TODO(SeanCurtis-TRI) In this case, the gradient across the contact surface
+  //  is a constant. It would be good if we could exploit this and *not* copy
+  //  the same vector value once per face.
+  auto grad_eS_W = std::make_unique<std::vector<Vector3<T>>>(
+      mesh_W->num_elements(), grad_p_W);
+
+  // ConstructTriangleHalfspaceIntersectionPolygon() promises to make the
+  // face normals point out of the rigid surface and into the soft half space.
+  return std::make_unique<ContactSurface<T>>(
+      half_space_id, mesh_id, std::move(mesh_W), std::move(field_W),
+      std::move(grad_eS_W), nullptr);
 }
 
 template <typename T>
@@ -397,7 +367,7 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR,
-    ContactPolygonRepresentation representation) {
+    HydroelasticContactRepresentation representation) {
   std::vector<int> tri_indices;
   tri_indices.reserve(mesh_R.num_elements());
   auto bvh_callback = [&tri_indices, &mesh_R,
@@ -430,54 +400,90 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
   // sufficiently unit-length for our purposes.
   const PosedHalfSpace<T> hs_R{Sz_R, p_RSo, false /* needs_normalization */};
 
-  // TODO(SeanCurtis-TRI): Modify this to return the signed distances of all the
-  //  vertices. It will be cheaper than re-evaluating the signed distance for
-  //  every vertex just so I can compute the pressure. Alternatively, these
-  //  should take a functor for evaluating the pressure or some such thing.
-  //  This is a recurrent them in _all_ of the contact surface generating
-  //  methods.
-  std::unique_ptr<TriangleSurfaceMesh<T>> mesh_W =
-      ConstructSurfaceMeshFromMeshHalfspaceIntersection(mesh_R, hs_R,
-                                                        tri_indices, X_WR,
-                                                        representation);
-
-  if (mesh_W == nullptr) return nullptr;
-
-  // Compute the pressure field
-  using std::min;
-  std::vector<T> vertex_pressures;
-  const PosedHalfSpace<T> hs_W{X_WR.rotation() * hs_R.normal(), X_WR * p_RSo};
-  vertex_pressures.reserve(mesh_W->num_vertices());
-  for (int v = 0; v < mesh_W->num_vertices(); ++v) {
-    const Vector3<T> p_WV = mesh_W->vertex(v);
+  auto calc_pressure_R = [&hs_R, pressure_scale](const Vector3<T>& p_RV) {
     // The signed distance of the point is the negative of the penetration
     // depth. We can use the pressure_scale to directly compute pressure at the
     // point.
-    const T phi_V = hs_W.CalcSignedDistance(p_WV);
-    vertex_pressures.push_back(-phi_V * pressure_scale);
+    const T phi_V = hs_R.CalcSignedDistance(p_RV);
+    return -phi_V * pressure_scale;
+  };
+
+  // The pressure gradient lies in the opposite direction of the half space
+  // normal.
+  const Vector3<T> grad_p_W = (-pressure_scale) * X_WS.rotation().col(2);
+
+  if (representation == HydroelasticContactRepresentation::kTriangle) {
+    return ComputeContactSurface<TriMeshBuilder<T>>(
+        id_R, mesh_R, id_S, hs_R, calc_pressure_R, grad_p_W, tri_indices, X_WR);
+  } else {
+    return ComputeContactSurface<PolyMeshBuilder<T>>(
+        id_R, mesh_R, id_S, hs_R, calc_pressure_R, grad_p_W, tri_indices, X_WR);
   }
-  auto field_W = std::make_unique<TriangleSurfaceMeshFieldLinear<T, T>>(
-      std::move(vertex_pressures), mesh_W.get(), false /* calc_gradient */);
-
-  // TODO(SeanCurtis-TRI) In this case, the gradient across the contact surface
-  //  is a constant. It would be good if we could exploit this and *not* copy
-  //  the same vector value once per triangle.
-  const Vector3<T>& unit_grad_p_W = X_WS.rotation().col(2);
-  auto grad_eS_W = std::make_unique<std::vector<Vector3<T>>>(
-      mesh_W->num_elements(), -pressure_scale * unit_grad_p_W);
-
-  // ConstructSurfaceMeshFromMeshHalfspaceIntersection() promises to make the
-  // face normals point out of the rigid surface and into the soft half space.
-  return std::make_unique<ContactSurface<T>>(id_S, id_R, std::move(mesh_W),
-                                             std::move(field_W),
-                                             std::move(grad_eS_W), nullptr);
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-    &ConstructTriangleHalfspaceIntersectionPolygon<T>,
-    &ConstructSurfaceMeshFromMeshHalfspaceIntersection<T>,
-    &ComputeContactSurfaceFromSoftHalfSpaceRigidMesh<T>
-))
+// We can't use the standard Drake macros for defining these because these
+// aren't templated purely on *scalar*; they are templated on mesh builder.
+
+template void
+ConstructTriangleHalfspaceIntersectionPolygon<TriMeshBuilder<double>>(
+    const TriangleSurfaceMesh<double>&, int, const PosedHalfSpace<double>&,
+    const std::function<double(const Vector3<double>&)>&,
+    const Vector3<double>&, const math::RigidTransform<double>&,
+    TriMeshBuilder<double>*, std::unordered_map<int, int>*,
+    std::unordered_map<SortedPair<int>, int>*);
+template void
+ConstructTriangleHalfspaceIntersectionPolygon<TriMeshBuilder<AutoDiffXd>>(
+    const TriangleSurfaceMesh<double>&, int, const PosedHalfSpace<AutoDiffXd>&,
+    const std::function<AutoDiffXd(const Vector3<AutoDiffXd>&)>&,
+    const Vector3<AutoDiffXd>&, const math::RigidTransform<AutoDiffXd>&,
+    TriMeshBuilder<AutoDiffXd>*, std::unordered_map<int, int>*,
+    std::unordered_map<SortedPair<int>, int>*);
+template void
+ConstructTriangleHalfspaceIntersectionPolygon<PolyMeshBuilder<double>>(
+    const TriangleSurfaceMesh<double>&, int, const PosedHalfSpace<double>&,
+    const std::function<double(const Vector3<double>&)>&,
+    const Vector3<double>&, const math::RigidTransform<double>&,
+    PolyMeshBuilder<double>*, std::unordered_map<int, int>*,
+    std::unordered_map<SortedPair<int>, int>*);
+template void
+ConstructTriangleHalfspaceIntersectionPolygon<PolyMeshBuilder<AutoDiffXd>>(
+    const TriangleSurfaceMesh<double>&, int, const PosedHalfSpace<AutoDiffXd>&,
+    const std::function<AutoDiffXd(const Vector3<AutoDiffXd>&)>&,
+    const Vector3<AutoDiffXd>&, const math::RigidTransform<AutoDiffXd>&,
+    PolyMeshBuilder<AutoDiffXd>*, std::unordered_map<int, int>*,
+    std::unordered_map<SortedPair<int>, int>*);
+
+template std::unique_ptr<ContactSurface<double>>
+ComputeContactSurface<TriMeshBuilder<double>>(
+    GeometryId, const TriangleSurfaceMesh<double>&, GeometryId,
+    const PosedHalfSpace<double>&,
+    const std::function<double(const Vector3<double>&)>&,
+    const Vector3<double>&, const std::vector<int>&,
+    const math::RigidTransform<double>&);
+template std::unique_ptr<ContactSurface<AutoDiffXd>>
+ComputeContactSurface<TriMeshBuilder<AutoDiffXd>>(
+    GeometryId, const TriangleSurfaceMesh<double>&, GeometryId,
+    const PosedHalfSpace<AutoDiffXd>&,
+    const std::function<AutoDiffXd(const Vector3<AutoDiffXd>&)>&,
+    const Vector3<AutoDiffXd>&, const std::vector<int>&,
+    const math::RigidTransform<AutoDiffXd>&);
+template std::unique_ptr<ContactSurface<double>>
+ComputeContactSurface<PolyMeshBuilder<double>>(
+    GeometryId, const TriangleSurfaceMesh<double>&, GeometryId,
+    const PosedHalfSpace<double>&,
+    const std::function<double(const Vector3<double>&)>&,
+    const Vector3<double>&, const std::vector<int>&,
+    const math::RigidTransform<double>&);
+template std::unique_ptr<ContactSurface<AutoDiffXd>>
+ComputeContactSurface<PolyMeshBuilder<AutoDiffXd>>(
+    GeometryId, const TriangleSurfaceMesh<double>&, GeometryId,
+    const PosedHalfSpace<AutoDiffXd>&,
+    const std::function<AutoDiffXd(const Vector3<AutoDiffXd>&)>&,
+    const Vector3<AutoDiffXd>&, const std::vector<int>&,
+    const math::RigidTransform<AutoDiffXd>&);
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&ComputeContactSurfaceFromSoftHalfSpaceRigidMesh<T>))
 
 }  // namespace internal
 }  // namespace geometry

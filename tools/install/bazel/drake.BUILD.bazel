@@ -8,6 +8,19 @@ package(default_visibility = ["//:__subpackages__"])
 
 _DRAKE_RUNFILES = MANIFEST["runfiles"]["drake"]
 
+_DRAKE_SHLIBS = glob([
+    ".lib/libdrake*.so",
+    ".lib/libvtk*.so.*",
+    ".lib/libvtk*.so.*",
+    # For Mosek (not enabled by default).
+    ".lib/libcilkrts*.so*",
+    ".lib/libmosek64*.so*",
+    # For Gurobi (not enabled by default).
+    ".lib/libgurobi*.so*",
+], exclude = [
+    ".lib/libvtk*Python*",
+])
+
 _PYTHON_SITE_PACKAGES_RELPATH = MANIFEST["python_site_packages_relpath"]
 
 _DRAKE_ROOT_PACKAGE_RUNFILES = [x for x in _DRAKE_RUNFILES if "/" not in x]
@@ -50,9 +63,40 @@ filegroup(
     ],
 )
 
-# TODO(jwnimmer-tri) Use the correct cc_import phrasing, then mark this public.
+cc_library(
+    name = ".drake_headers",
+    hdrs = glob([".include/drake/**"]),
+    strip_include_prefix = ".include",
+)
+
+cc_library(
+    name = ".fmt_headers",
+    hdrs = glob([".include/fmt/**"], allow_empty = True),
+    strip_include_prefix = ".include/fmt",
+)
+
+[
+    cc_import(
+        name = ".imported{}".format(shlib),
+        shared_library = shlib,
+    )
+    for shlib in _DRAKE_SHLIBS
+]
+
+cc_library(
+    name = "drake_shared_library",
+    deps = [
+        ":.drake_headers",
+        ":.fmt_headers",
+    ] + [
+        ":.imported{}".format(shlib)
+        for shlib in _DRAKE_SHLIBS
+    ],
+    visibility = ["//visibility:public"],
+)
+
 filegroup(
-    name = ".drake_shared_library",
+    name = ".all_shlib_data",
     data = glob([
         ".lib/*.so",
         ".lib/*.so.*",
@@ -79,7 +123,7 @@ py_library(
         _IMPORT + "/**/*.so",
     ]) + [
         ":.all_runfiles",
-        ":.drake_shared_library",
+        ":.all_shlib_data",
     ],
     deps = [
         ":.lcmtypes_drake_py",

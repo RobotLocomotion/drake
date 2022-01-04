@@ -65,6 +65,7 @@ def _drake_impl(repo_ctx):
     # Symlink our libraries into the repository.  We can use any path for
     # these, since our BUILD rules will declare new names for everything,
     # unrelated to their physical structure here.
+    repo_ctx.symlink(prefix.get_child("include"), ".include")
     repo_ctx.symlink(prefix.get_child("lib"), ".lib")
 
     # Create the stub BUILD files.  (During development, these live at
@@ -91,6 +92,10 @@ def _drake_impl(repo_ctx):
     # Emit the manifest for later loading.
     manifest_bzl = "MANIFEST = " + struct(**_MANIFEST).to_json()
     repo_ctx.file(".manifest.bzl", content = manifest_bzl, executable = False)
+
+    # Annotate the OS for use by our BUILD files.
+    os_bzl = "NAME = \"{}\"\n".format(repo_ctx.os.name)
+    repo_ctx.file(".os.bzl", content = os_bzl, executable = False)
 
 # * # This placeholder definition in repo_template.bzl is rewritten by repo_gen
 # * # during the Drake source build.  Its new contents will be the bodies of

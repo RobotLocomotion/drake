@@ -313,6 +313,12 @@ GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   IpoptSolver solver;
   SolveAndCheckSmallestEllipsoidCoveringProblems(solver, 1E-6);
 }
+
+GTEST_TEST(TestLP, PoorScaling) {
+  IpoptSolver solver;
+  TestLPPoorScaling1(solver, true, 1E-6);
+  TestLPPoorScaling2(solver, true, 1E-4);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":deformable_volume_mesh",
         ":distance_to_point_callback",
         ":distance_to_shape_callback",
+        ":field_intersection",
         ":find_collision_candidates_callback",
         ":hydroelastic_callback",
         ":hydroelastic_internal",
@@ -47,6 +48,7 @@ drake_cc_package_library(
         ":obj_to_surface_mesh",
         ":penetration_as_point_pair_callback",
         ":plane",
+        ":polygon_surface_mesh",
         ":posed_half_space",
         ":proximity_utilities",
         ":sorted_triplet",
@@ -140,6 +142,8 @@ drake_cc_library(
     srcs = ["contact_surface_utility.cc"],
     hdrs = ["contact_surface_utility.h"],
     deps = [
+        ":mesh_field",
+        ":polygon_surface_mesh",
         ":triangle_surface_mesh",
         "//common:default_scalars",
     ],
@@ -193,6 +197,17 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:nice_type_name",
         "//geometry/query_results:signed_distance_pair",
+    ],
+)
+
+drake_cc_library(
+    name = "field_intersection",
+    srcs = ["field_intersection.cc"],
+    hdrs = ["field_intersection.h"],
+    deps = [
+        ":mesh_field",
+        ":plane",
+        "//common:default_scalars",
     ],
 )
 
@@ -408,18 +423,22 @@ drake_cc_library(
 drake_cc_library(
     name = "mesh_field",
     srcs = [
+        "polygon_surface_mesh_field.cc",
         "triangle_surface_mesh_field.cc",
         "volume_mesh_field.cc",
     ],
     hdrs = [
         "mesh_field_linear.h",
+        "polygon_surface_mesh_field.h",
         "triangle_surface_mesh_field.h",
         "volume_mesh_field.h",
     ],
     deps = [
         ":mesh_traits",
+        ":polygon_surface_mesh",
         ":triangle_surface_mesh",
         ":volume_mesh",
+        "//common:nice_type_name",
         "//common:reset_on_copy",
         "//common:sorted_pair",
     ],
@@ -590,6 +609,16 @@ drake_cc_library(
     name = "triangle_surface_mesh",
     srcs = ["triangle_surface_mesh.cc"],
     hdrs = ["triangle_surface_mesh.h"],
+    deps = [
+        ":mesh_traits",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "polygon_surface_mesh",
+    srcs = ["polygon_surface_mesh.cc"],
+    hdrs = ["polygon_surface_mesh.h"],
     deps = [
         ":mesh_traits",
         "//math:geometric_transform",
@@ -775,6 +804,15 @@ drake_cc_googletest(
         ":distance_to_shape_callback",
         "//common:temp_directory",
         "//geometry:proximity_engine",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "field_intersection_test",
+    deps = [
+        ":field_intersection",
+        "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
     ],
 )
@@ -1027,6 +1065,15 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:autodiff",
+    ],
+)
+
+drake_cc_googletest(
+    name = "polygon_surface_mesh_test",
+    deps = [
+        ":polygon_surface_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

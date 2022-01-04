@@ -595,6 +595,12 @@ Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::get_mutable_velocities(
   return make_mutable_block_segment(&qv, num_positions(), num_velocities());
 }
 
+// Although this private method could return a const VectorX<T>& since we
+// currently have only qv in the discrete state, it is used in
+// get_positions_and_velocities() where we are choosing between a qv block of
+// the continuous qvz state or the discrete qv state so must return a block.
+// (If we add z variables to MbP in the future this would need to return a block
+// anyway.)
 template <typename T>
 Eigen::VectorBlock<const VectorX<T>>
 MultibodyTree<T>::get_discrete_state_vector(
@@ -606,7 +612,7 @@ MultibodyTree<T>::get_discrete_state_vector(
       context.get_discrete_state(discrete_state_index_);
   DRAKE_ASSERT(discrete_state_vector.size() ==
                num_positions() + num_velocities());
-  return discrete_state_vector.get_value();
+  return discrete_state_vector.value().head(discrete_state_vector.size());
 }
 
 template <typename T>
@@ -660,8 +666,8 @@ MultibodyTree<T>::extract_qv_from_continuous(
   const systems::BasicVector<T>& continuous_qvz =
       static_cast<const systems::BasicVector<T>&>(continuous_qvz_base);
   DRAKE_ASSERT(continuous_qvz.size() >= num_qv);
-  Eigen::VectorBlock<const VectorX<T>> qvz = continuous_qvz.get_value();
-  return make_block_segment(qvz, 0, num_qv);
+  const VectorX<T>& qvz = continuous_qvz.value();
+  return qvz.segment(0, num_qv);
 }
 
 template <typename T>

@@ -201,7 +201,7 @@ class Expression {
 
   /** Constructs a constant. */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
-  Expression(double d);
+  Expression(double constant);
   /** Constructs an expression from @p var.
    * @pre @p var is neither a dummy nor a BOOLEAN variable.
    */

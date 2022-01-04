@@ -163,25 +163,30 @@ MakeD415CameraModel(const std::string& renderer_name) {
   // - w: 848, h: 480, fx: 616.285, fy: 615.778, ppx: 405.418, ppy: 232.864
   // DEPTH:
   // - w: 848, h: 480, fx: 645.138, fy: 645.138, ppx: 420.789, ppy: 239.13
+  // However, given that (a) these fixed constants will not always be true and
+  // (b) we do not have a quick RGBD registration algorithm in Drake, we will
+  // simply publish according to the RGB intrinsics and extrinsics.
   const int kHeight = 480;
   const int kWidth = 848;
 
-  // To pose the two sensors relative to the camera body, we'll assume X_BC = I,
-  // and select a representative value for X_CD drawn from calibration to define
-  // X_BD.
+  // From color camera.
+  const systems::sensors::CameraInfo intrinsics{
+      kWidth, kHeight, 616.285, 615.778, 405.418, 232.864};
+
+  const RigidTransformd X_BC;
+  // This is not necessarily true, but we simplify this s.t. we don't have a
+  // lie for generating point clouds.
+  const RigidTransformd X_BD;
+
   geometry::render::ColorRenderCamera color_camera{
       {renderer_name,
-       {kWidth, kHeight, 616.285, 615.778, 405.418, 232.864} /* intrinsics */,
+       intrinsics,
        {0.01, 3.0} /* clipping_range */,
-       {} /* X_BC */},
+       X_BC},
       false};
-  const RigidTransformd X_BD(
-      RotationMatrix<double>(RollPitchYaw<double>(
-          -0.19 * M_PI / 180, -0.016 * M_PI / 180, -0.03 * M_PI / 180)),
-      Vector3d(0.015, -0.00019, -0.0001));
   geometry::render::DepthRenderCamera depth_camera{
       {renderer_name,
-       {kWidth, kHeight, 645.138, 645.138, 420.789, 239.13} /* intrinsics */,
+       intrinsics,
        {0.01, 3.0} /* clipping_range */,
        X_BD},
       {0.1, 2.0} /* depth_range */};
@@ -737,11 +742,6 @@ void ManipulationStation<T>::Finalize(
     }
   }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  builder.ExportOutput(scene_graph_->get_pose_bundle_output_port(),
-                       "pose_bundle");
-#pragma GCC diagnostic pop
   builder.ExportOutput(scene_graph_->get_query_output_port(), "query_object");
 
   builder.ExportOutput(scene_graph_->get_query_output_port(),

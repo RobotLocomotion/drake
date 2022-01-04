@@ -75,11 +75,18 @@ struct PerSocketData {
 using WebSocket = uWS::WebSocket<kSsl, kIsServer, PerSocketData>;
 using MsgPackMap = std::map<std::string, msgpack::object>;
 
-// The maximum "backpressure" allowed each websocket, in bytes.  This
-// effectively sets a maximum size for messages, which may include mesh files
-// and texture maps.  50mb is a guess at a compromise that is safely larger than
-// reasonable meshfiles.
-constexpr static double kMaxBackPressure{50 * 1024 * 1024};
+// Encode the meshcat command into a Javascript fetch() command.  The particular
+// syntax using `fetch()` was replicated from the corresponding functionality in
+// meshcat-python.
+std::string CreateCommand(const std::string& data) {
+  return fmt::format(R"""(
+fetch("data:application/octet-binary;base64,{}")
+    .then(res => res.arrayBuffer())
+    .then(buffer => viewer.handle_command_bytearray(new Uint8Array(buffer)));
+)""",
+                     common_robotics_utilities::base64_helpers::Encode(
+                         std::vector<uint8_t>(data.begin(), data.end())));
+}
 
 class SceneTreeElement {
  public:
@@ -180,6 +187,28 @@ class SceneTreeElement {
       unused(name);
       child->Send(ws);
     }
+  }
+
+  // Returns a string which implements the entire tree directly in javascript.
+  // This is intended for use in generating a "static html" of the scene.
+  std::string CreateCommands() {
+    std::string html;
+    if (object_) {
+      html += CreateCommand(*object_);
+    }
+    if (transform_) {
+      html += CreateCommand(*transform_);
+    }
+    for (const auto& [property, msg] : properties_) {
+      unused(property);
+      html += CreateCommand(msg);
+    }
+
+    for (const auto& [name, child] : children_) {
+      unused(name);
+      html += child->CreateCommands();
+    }
+    return html;
   }
 
  private:
@@ -434,6 +463,14 @@ class MeshcatShapeReifier : public ShapeReifier {
   uuids::uuid_random_generator* const uuid_generator_{};
 };
 
+int ToMeshcatColor(const Rgba& rgba) {
+  // Note: The returned color discards the alpha value, which is handled
+  // separately (e.g. by the opacity field in the material properties).
+  return (static_cast<int>(255 * rgba.r()) << 16) +
+         (static_cast<int>(255 * rgba.g()) << 8) +
+         static_cast<int>(255 * rgba.b());
+}
+
 }  // namespace
 
 class Meshcat::WebSocketPublisher {
@@ -478,6 +515,56 @@ class Meshcat::WebSocketPublisher {
     return port_;
   }
 
+  void Flush() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    DRAKE_DEMAND(loop_ != nullptr);
+
+    // We simply loop until the backpressure is zero.  In each iteration, if
+    // the connections have any backpressure, then we sleep the main thread to
+    // let the websocket thread drain.
+    //
+    // Note: The following attempts to avoid the explicit sleep failed:
+    // - loop->defer does not drain automatically between executing the
+    //   deferred callbacks.
+    // - calling app_->topicTree->drain() or ws->send("") did not actually
+    //   force any drainage.
+    //
+    // It *is* possible to monitor the drainage by registering the
+    // behavior.drain callback on the websocket connection, but we avoid
+    // explicitly locking the main thread to wait for the drainage in order to
+    // keep the thread logic simpler.
+    int main_backpressure;
+
+    // Set a very conservative iteration limit; since we sleep for .1 seconds
+    // on each iteration, this corresponds to (approximately) 10 minutes.
+    const int kIterationLimit{6000};
+    int iteration = 0;
+
+    do {
+      std::promise<int> p;
+      std::future<int> f = p.get_future();
+      loop_->defer([this, p = std::move(p)]() mutable {
+        DRAKE_DEMAND(IsThread(websocket_thread_id_));
+        int websocket_backpressure = 0;
+        for (WebSocket* ws : websockets_) {
+          websocket_backpressure += ws->getBufferedAmount();
+        }
+        p.set_value(websocket_backpressure);
+      });
+      main_backpressure = f.get();
+      if (main_backpressure > 0) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      }
+      ++iteration;
+    } while (main_backpressure > 0 && iteration < kIterationLimit);
+
+    if (main_backpressure > 0) {
+      drake::log()->warn(
+          "Meshcat::Flush() reached an iteration limit before the buffer could "
+          "be completely flushed.");
+    }
+  }
+
   void SetObject(std::string_view path, const Shape& shape, const Rgba& rgba) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
@@ -507,9 +594,7 @@ class Meshcat::WebSocketPublisher {
       auto material = std::make_unique<internal::MaterialData>();
       material->uuid = uuids::to_string(uuid_generator());
       material->type = "MeshPhongMaterial";
-      material->color = (static_cast<int>(255 * rgba.r()) << 16) +
-                      (static_cast<int>(255 * rgba.g()) << 8) +
-                      static_cast<int>(255 * rgba.b());
+      material->color = ToMeshcatColor(rgba);
       // TODO(russt): Most values are taken verbatim from meshcat-python.
       material->reflectivity = 0.5;
       material->side = internal::kDoubleSide;
@@ -539,15 +624,6 @@ class Meshcat::WebSocketPublisher {
       // (here and throughout) to avoid this copy.
       // https://github.com/redboltz/msgpack-c/wiki/v2_0_cpp_packer
       std::string message = message_stream.str();
-      if (message.size() > kMaxBackPressure) {
-        drake::log()->warn(
-            "The message describing the object at {} is too large for the "
-            "current websocket setup (size {} is greater than the max "
-            "backpressure {}).  You will either need to reduce the size of "
-            "your object/mesh/textures, or modify the code to increase the "
-            "allowance.",
-            data.path, message.size(), kMaxBackPressure);
-      }
       app_->publish("all", message, uWS::OpCode::BINARY, false);
       SceneTreeElement& e = scene_tree_root_[data.path];
       e.object() = std::move(message);
@@ -574,9 +650,9 @@ class Meshcat::WebSocketPublisher {
     auto material = std::make_unique<internal::MaterialData>();
     material->uuid = uuids::to_string(uuid_generator());
     material->type = "PointsMaterial";
-    material->color = (static_cast<int>(255 * rgba.r()) << 16) +
-                      (static_cast<int>(255 * rgba.g()) << 8) +
-                      static_cast<int>(255 * rgba.b());
+    material->color = ToMeshcatColor(rgba);
+    material->transparent = (rgba.a() != 1.0);
+    material->opacity = rgba.a();
     material->size = point_size;
     material->vertexColors = cloud.has_rgbs();
     data.object.material = std::move(material);
@@ -592,15 +668,92 @@ class Meshcat::WebSocketPublisher {
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
       std::string message = message_stream.str();
-      if (message.size() > kMaxBackPressure) {
-        drake::log()->warn(
-            "The message describing the object at {} is too large for the "
-            "current websocket setup (size {} is greater than the max "
-            "backpressure {}).  You will either need to reduce the size of "
-            "your object/mesh/textures, or modify the code to increase the "
-            "allowance.",
-            data.path, message.size(), kMaxBackPressure);
-      }
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+      SceneTreeElement& e = scene_tree_root_[data.path];
+      e.object() = std::move(message);
+    });
+  }
+
+  void SetLine(std::string_view path,
+               const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+               double line_width, const Rgba& rgba, bool line_segments) {
+    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(loop_ != nullptr);
+
+    uuids::uuid_random_generator uuid_generator{generator_};
+    internal::SetObjectData data;
+    data.path = FullPath(path);
+
+    auto geometry = std::make_unique<internal::BufferGeometryData>();
+    geometry->uuid = uuids::to_string(uuid_generator());
+    geometry->position = vertices.cast<float>();
+    data.object.geometry = std::move(geometry);
+
+    auto material = std::make_unique<internal::MaterialData>();
+    material->uuid = uuids::to_string(uuid_generator());
+    material->type = "LineBasicMaterial";
+    material->color = ToMeshcatColor(rgba);
+    material->linewidth = line_width;
+    material->vertexColors = false;
+    data.object.material = std::move(material);
+
+    internal::MeshData mesh;
+    mesh.uuid = uuids::to_string(uuid_generator());
+    mesh.type = line_segments ? "LineSegments" : "Line";
+    mesh.geometry = data.object.geometry->uuid;
+    mesh.material = data.object.material->uuid;
+    data.object.object = std::move(mesh);
+
+    loop_->defer([this, data = std::move(data)]() {
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      std::string message = message_stream.str();
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+      SceneTreeElement& e = scene_tree_root_[data.path];
+      e.object() = std::move(message);
+    });
+  }
+
+  void SetTriangleMesh(std::string_view path,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+                       const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+                       const Rgba& rgba, bool wireframe,
+                       double wireframe_line_width) {
+    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(loop_ != nullptr);
+
+    uuids::uuid_random_generator uuid_generator{generator_};
+    internal::SetObjectData data;
+    data.path = FullPath(path);
+
+    auto geometry = std::make_unique<internal::BufferGeometryData>();
+    geometry->uuid = uuids::to_string(uuid_generator());
+    geometry->position = vertices.cast<float>();
+    geometry->faces = faces.cast<uint32_t>();
+    data.object.geometry = std::move(geometry);
+
+    auto material = std::make_unique<internal::MaterialData>();
+    material->uuid = uuids::to_string(uuid_generator());
+    material->type = "MeshPhongMaterial";
+    material->color = ToMeshcatColor(rgba);
+    material->transparent = (rgba.a() != 1.0);
+    material->opacity = rgba.a();
+    material->wireframe = wireframe;
+    material->wireframeLineWidth = wireframe_line_width;
+    material->vertexColors = false;
+    data.object.material = std::move(material);
+
+    internal::MeshData mesh;
+    mesh.uuid = uuids::to_string(uuid_generator());
+    mesh.type = "Mesh";
+    mesh.geometry = data.object.geometry->uuid;
+    mesh.material = data.object.material->uuid;
+    data.object.object = std::move(mesh);
+
+    loop_->defer([this, data = std::move(data)]() {
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      std::string message = message_stream.str();
       app_->publish("all", message, uWS::OpCode::BINARY, false);
       SceneTreeElement& e = scene_tree_root_[data.path];
       e.object() = std::move(message);
@@ -627,96 +780,97 @@ class Meshcat::WebSocketPublisher {
       SceneTreeElement& e = scene_tree_root_[data.path];
       e.object() = std::move(message);
     });
-  }
+    }
 
-  void SetTransform(std::string_view path,
-                    const Eigen::Ref<const Eigen::Matrix4d>& matrix) {
-    DRAKE_DEMAND(IsThread(main_thread_id_));
-    DRAKE_DEMAND(loop_ != nullptr);
+    void SetTransform(std::string_view path,
+                      const Eigen::Ref<const Eigen::Matrix4d>& matrix) {
+      DRAKE_DEMAND(IsThread(main_thread_id_));
+      DRAKE_DEMAND(loop_ != nullptr);
 
-    internal::SetTransformData data;
-    data.path = FullPath(path);
-    Eigen::Map<Eigen::Matrix4d>(data.matrix) = matrix;
+      internal::SetTransformData data;
+      data.path = FullPath(path);
+      Eigen::Map<Eigen::Matrix4d>(data.matrix) = matrix;
 
-    loop_->defer([this, data = std::move(data)]() {
-      DRAKE_DEMAND(IsThread(websocket_thread_id_));
-      DRAKE_DEMAND(app_ != nullptr);
+      loop_->defer([this, data = std::move(data)]() {
+        DRAKE_DEMAND(IsThread(websocket_thread_id_));
+        DRAKE_DEMAND(app_ != nullptr);
+        std::stringstream message_stream;
+        msgpack::pack(message_stream, data);
+        std::string message = message_stream.str();
+        app_->publish("all", message, uWS::OpCode::BINARY, false);
+        SceneTreeElement& e = scene_tree_root_[data.path];
+        e.transform() = std::move(message);
+      });
+    }
+
+    void Delete(std::string_view path) {
+      DRAKE_DEMAND(IsThread(main_thread_id_));
+      DRAKE_DEMAND(loop_ != nullptr);
+
+      internal::DeleteData data;
+      data.path = FullPath(path);
+
+      loop_->defer([this, data = std::move(data)]() {
+        DRAKE_DEMAND(IsThread(websocket_thread_id_));
+        DRAKE_DEMAND(app_ != nullptr);
+        std::stringstream message_stream;
+        msgpack::pack(message_stream, data);
+        app_->publish("all", message_stream.str(), uWS::OpCode::BINARY, false);
+        scene_tree_root_.Delete(data.path);
+      });
+    }
+
+    template <typename T>
+    void SetProperty(std::string_view path, std::string property,
+                     const T& value) {
+      DRAKE_DEMAND(IsThread(main_thread_id_));
+      DRAKE_DEMAND(loop_ != nullptr);
+
+      internal::SetPropertyData<T> data;
+      data.path = FullPath(path);
+      data.property = std::move(property);
+      data.value = value;
+
+      loop_->defer([this, data = std::move(data)]() {
+        DRAKE_DEMAND(IsThread(websocket_thread_id_));
+        DRAKE_DEMAND(app_ != nullptr);
+        std::stringstream message_stream;
+        msgpack::pack(message_stream, data);
+        std::string message = message_stream.str();
+        app_->publish("all", message, uWS::OpCode::BINARY, false);
+        SceneTreeElement& e = scene_tree_root_[data.path];
+        e.properties()[data.property] = std::move(message);
+      });
+    }
+
+    void SetAnimation(const MeshcatAnimation& animation) {
+      DRAKE_DEMAND(IsThread(main_thread_id_));
+      DRAKE_DEMAND(loop_ != nullptr);
+
       std::stringstream message_stream;
-      msgpack::pack(message_stream, data);
-      std::string message = message_stream.str();
-      app_->publish("all", message, uWS::OpCode::BINARY, false);
-      SceneTreeElement& e = scene_tree_root_[data.path];
-      e.transform() = std::move(message);
-    });
-  }
-
-  void Delete(std::string_view path) {
-    DRAKE_DEMAND(IsThread(main_thread_id_));
-    DRAKE_DEMAND(loop_ != nullptr);
-
-    internal::DeleteData data;
-    data.path = FullPath(path);
-
-    loop_->defer([this, data = std::move(data)]() {
-      DRAKE_DEMAND(IsThread(websocket_thread_id_));
-      DRAKE_DEMAND(app_ != nullptr);
-      std::stringstream message_stream;
-      msgpack::pack(message_stream, data);
-      app_->publish("all", message_stream.str(), uWS::OpCode::BINARY, false);
-      scene_tree_root_.Delete(data.path);
-    });
-  }
-
-  template <typename T>
-  void SetProperty(std::string_view path, std::string property,
-                   const T& value) {
-    DRAKE_DEMAND(IsThread(main_thread_id_));
-    DRAKE_DEMAND(loop_ != nullptr);
-
-    internal::SetPropertyData<T> data;
-    data.path = FullPath(path);
-    data.property = std::move(property);
-    data.value = value;
-
-    loop_->defer([this, data = std::move(data)]() {
-      DRAKE_DEMAND(IsThread(websocket_thread_id_));
-      DRAKE_DEMAND(app_ != nullptr);
-      std::stringstream message_stream;
-      msgpack::pack(message_stream, data);
-      std::string message = message_stream.str();
-      app_->publish("all", message, uWS::OpCode::BINARY, false);
-      SceneTreeElement& e = scene_tree_root_[data.path];
-      e.properties()[data.property] = std::move(message);
-    });
-  }
-
-  void SetAnimation(const MeshcatAnimation& animation) {
-    DRAKE_DEMAND(IsThread(main_thread_id_));
-    DRAKE_DEMAND(loop_ != nullptr);
-
-    std::stringstream message_stream;
-    // We pack this message in-place (rather than using structs to organize the
-    // packing) for a few reasons:
-    //  1) we want to avoid copying the big data nested structure,
-    //  2) this message type would require a nasty hairball of structs, and
-    //  3) the nested structures have path's inside that must be modified with
-    //     FullPath().
-    msgpack::packer o(message_stream);
-    // The details of this message have been extracted primarily from
-    // meshcat/test/animation.html and meshcat-python/src/meshcat/animation.py.
-    o.pack_map(3);
-    o.pack("type");
-    o.pack("set_animation");
-    o.pack("animations");
-    {
-      o.pack_array(animation.path_tracks_.size());
-      for (const auto& path_track : animation.path_tracks_) {
-        o.pack_map(2);
-        o.pack("path");
-        // TODO(russt): Handle the case where the FullPaths are not unique.
-        o.pack(FullPath(path_track.first));
-        o.pack("clip");
-        {
+      // We pack this message in-place (rather than using structs to organize
+      // the packing) for a few reasons:
+      //  1) we want to avoid copying the big data nested structure,
+      //  2) this message type would require a nasty hairball of structs, and
+      //  3) the nested structures have paths inside that must be modified with
+      //     FullPath().
+      msgpack::packer o(message_stream);
+      // The details of this message have been extracted primarily from
+      // meshcat/test/animation.html and
+      // meshcat-python/src/meshcat/animation.py.
+      o.pack_map(3);
+      o.pack("type");
+      o.pack("set_animation");
+      o.pack("animations");
+      {
+        o.pack_array(animation.path_tracks_.size());
+        for (const auto& path_track : animation.path_tracks_) {
+          o.pack_map(2);
+          o.pack("path");
+          // TODO(russt): Handle the case where the FullPaths are not unique.
+          o.pack(FullPath(path_track.first));
+          o.pack("clip");
+          {
             o.pack_map(3);
             o.pack("fps");
             o.pack(animation.frames_per_second());
@@ -982,6 +1136,44 @@ class Meshcat::WebSocketPublisher {
     }
   }
 
+  std::string StaticHtml() {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    std::string html = GetUrlContent("/");
+
+    std::promise<std::string> p;
+    std::future<std::string> f = p.get_future();
+    loop_->defer([this, p = std::move(p)]() mutable {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
+      std::string commands = scene_tree_root_.CreateCommands();
+      if (!animation_.empty()) {
+        commands += CreateCommand(animation_);
+      }
+      p.set_value(std::move(commands));
+    });
+
+    // Replace the javascript code in the original html file which connects via
+    // websockets with the static javascript commands.
+    // Note: If the html code changes, the DRAKE_DEMAND will fail, and the code
+    // string here will need to be updated to once again match the html.
+    const std::string html_connect = R"""(try {
+      viewer.connect();
+    } catch (e) {
+      console.info("Not connected to MeshCat websocket server: ", e);
+    })""";
+    size_t pos = html.find(html_connect);
+    DRAKE_DEMAND(pos != std::string::npos);
+    html.replace(pos, html_connect.size(), std::move(f.get()));
+
+    // Insert the javascript directly into the html.
+    const std::string meshcat_src_link(" src=\"meshcat.js\"");
+    pos = html.find(meshcat_src_link);
+    DRAKE_DEMAND(pos != std::string::npos);
+    html.erase(pos, meshcat_src_link.size());
+    html.insert(pos+1, GetUrlContent("/meshcat.js"));
+
+    return html;
+  }
+
   bool HasPath(std::string_view path) const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
@@ -1075,7 +1267,7 @@ class Meshcat::WebSocketPublisher {
       websockets_.emplace(ws);
       ws->subscribe("all");
       // Update this new connection with previously published data.
-      SendTree(ws);
+      scene_tree_root_.Send(ws);
       if (!animation_.empty()) {
         ws->send(animation_);
       }
@@ -1095,11 +1287,9 @@ class Meshcat::WebSocketPublisher {
         }
       }
     };
-    // TODO(russt): I could increase this more if necessary (when it was too
-    // low, some SetObject messages were dropped).  But at some point the real
-    // fix is to actually throttle the sending (e.g. by slowing down the main
-    // thread).
-    behavior.maxBackpressure = kMaxBackPressure;
+    // Set maxBackpressure = 0 so that uWS does *not* drop any messages due to
+    // back pressure.
+    behavior.maxBackpressure = 0;
     behavior.message = [this](WebSocket* ws, std::string_view message,
                               uWS::OpCode op_code) {
       unused(ws, op_code);
@@ -1174,11 +1364,6 @@ class Meshcat::WebSocketPublisher {
     }
   }
 
-  void SendTree(WebSocket* ws) {
-    DRAKE_DEMAND(IsThread(websocket_thread_id_));
-    scene_tree_root_.Send(ws);
-  }
-
   std::string FullPath(std::string_view path) const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     while (path.size() > 1 && path.back() == '/') {
@@ -1246,6 +1431,10 @@ std::string Meshcat::ws_url() const {
   return fmt::format("ws://localhost:{}", publisher_->port());
 }
 
+void Meshcat::Flush() const {
+  publisher_->Flush();
+}
+
 void Meshcat::SetObject(std::string_view path, const Shape& shape,
                         const Rgba& rgba) {
   publisher_->SetObject(path, shape, rgba);
@@ -1255,6 +1444,54 @@ void Meshcat::SetObject(std::string_view path,
                         const perception::PointCloud& cloud, double point_size,
                         const Rgba& rgba) {
   publisher_->SetObject(path, cloud, point_size, rgba);
+}
+
+void Meshcat::SetObject(std::string_view path,
+                        const TriangleSurfaceMesh<double>& mesh,
+                        const Rgba& rgba, bool wireframe,
+                        double wireframe_line_width) {
+  Eigen::Matrix3Xd vertices(3, mesh.num_vertices());
+  for (int i = 0; i < mesh.num_vertices(); ++i) {
+    vertices.col(i) = mesh.vertex(i);
+  }
+  Eigen::Matrix3Xi faces(3, mesh.num_triangles());
+  for (int i = 0; i < mesh.num_triangles(); ++i) {
+    const auto& e = mesh.element(i);
+    for (int j = 0; j < 3; ++j) {
+      faces(j, i) = e.vertex(j);
+    }
+  }
+  publisher_->SetTriangleMesh(path, vertices, faces, rgba, wireframe,
+                              wireframe_line_width);
+}
+
+void Meshcat::SetLine(std::string_view path,
+                      const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+                      double line_width, const Rgba& rgba) {
+  const bool kLineSegments = false;
+  publisher_->SetLine(path, vertices, line_width, rgba, kLineSegments);
+}
+
+void Meshcat::SetLineSegments(std::string_view path,
+                              const Eigen::Ref<const Eigen::Matrix3Xd>& start,
+                              const Eigen::Ref<const Eigen::Matrix3Xd>& end,
+                              double line_width, const Rgba& rgba) {
+  DRAKE_THROW_UNLESS(start.cols() == end.cols());
+  // The LineSegments loader in three.js take the same data structure as Line,
+  // but takes every consecutive pair of vertices as a (start, end).
+  Eigen::Matrix<double, 6, Eigen::Dynamic> vstack(6, start.cols());
+  vstack << start, end;
+  Eigen::Map<Eigen::Matrix3Xd> vertices(vstack.data(), 3, 2*start.cols());
+  const bool kLineSegments = true;
+  publisher_->SetLine(path, vertices, line_width, rgba, kLineSegments);
+}
+
+void Meshcat::SetTriangleMesh(
+    std::string_view path, const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+    const Eigen::Ref<const Eigen::Matrix3Xi>& faces, const Rgba& rgba,
+    bool wireframe, double wireframe_line_width) {
+  publisher_->SetTriangleMesh(path, vertices, faces, rgba, wireframe,
+                              wireframe_line_width);
 }
 
 void Meshcat::SetCamera(PerspectiveCamera camera, std::string path) {
@@ -1359,6 +1596,10 @@ void Meshcat::DeleteSlider(std::string name) {
 
 void Meshcat::DeleteAddedControls() {
   publisher_->DeleteAddedControls();
+}
+
+std::string Meshcat::StaticHtml() {
+  return publisher_->StaticHtml();
 }
 
 bool Meshcat::HasPath(std::string_view path) const {

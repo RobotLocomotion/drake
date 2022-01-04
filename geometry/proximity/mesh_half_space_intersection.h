@@ -20,26 +20,20 @@ namespace internal {
 /*
  Computes the intersection between a triangle and a half space.
  The intersecting geometry (e.g. vertices and triangles) are added to the
- provided collections. This method is intended to be used in contexts where
+ provided mesh builder. This method is intended to be used in contexts where
  zero area triangles and triangles coplanar with the half space boundary are
  unimportant (see note below).
 
  This function is a component of the larger operation of clipping a
  TriangleSurfaceMesh by a half space.
 
- For `representation` = ContactPolygonRepresentation::kCentroidSubdivision,
- we do not introduce any duplicate vertices (beyond those already in the input
+ We do not introduce any duplicate vertices (beyond those already in the input
  mesh). This function uses bookkeeping to prevent the addition of such
  duplicate vertices, which can be created when either a vertex lies inside/on
- the half space or when an edge intersects the half space. The method tracks
- these resultant vertices using `vertices_to_newly_created_vertices` and
- `edges_to_newly_created_vertices`, respectively.
-
- For `representation` = ContactPolygonRepresentation::kSingleTriangle, it
- creates 3 or 4 times fewer triangles than the other choice by representing
- the intersected polygon (triangle or quadrilateral) as one triangle. However,
- it allows duplicate vertices and ignores `vertices_to_newly_created_vertices`
- and `edges_to_newly_created_vertices`.
+ the half space or when an edge intersects the boundary of the half space. The
+ method tracks these resultant vertices using
+ `vertices_to_newly_created_vertices` and `edges_to_newly_created_vertices`,
+ respectively.
 
  @param mesh_F
      The surface mesh to intersect, measured and expressed in Frame F.
@@ -47,20 +41,18 @@ namespace internal {
      The index of the triangle, drawn from `mesh_F` to intersect with the half
      space.
  @param half_space_F
-     The half space measured and expressed in Frame F.
+     The half space measured and expressed in the mesh's frame F.
+ @param pressure_in_F
+     A function that evaluates the pressure at a position X inside the half
+     space measured and expressed in the common frame F.
+ @param grad_pressure_in_W
+     The gradient of the pressure field, expressed in the world frame.
  @param X_WF
      The relative pose between Frame F and Frame W.
- @param[in] representation
-     The preferred representation of the intersected polygon.
- @param[in,out] new_vertices_W
-     The accumulator for all of the vertices in the intersecting mesh. It should
-     be empty for the first call and will gradually accumulate all of the
-     vertices with each subsequent call to this method. The vertex positions are
-     measured and expressed in frame W.
- @param[in,out] new_faces
-     The accumulator for all of the faces in the intersecting mesh. It should be
-     empty for the first call and will gradually accumulate all of the faces
-     with each subsequent call to this method.
+ @param[in,out] builder_W
+     The mesh builder that will add the resulting intersecting polygon to the
+     mesh (along with sampled pressure values). The mesh being constructed has
+     vertex positions measured and expressed in the world frame.
  @param[in,out] vertices_to_newly_created_vertices
      The accumulated mapping from indices in `mesh_F.vertices()` to indices in
      `new_vertices_W`. It should be empty for the first call and will gradually
@@ -81,52 +73,66 @@ namespace internal {
        half space surface are innocuous (in hydroelastic contact, for example,
        both cases contribute nothing to the contact wrench).
 */
-template <typename T>
+template <typename MeshBuilder>
 void ConstructTriangleHalfspaceIntersectionPolygon(
     const TriangleSurfaceMesh<double>& mesh_F, int tri_index,
-    const PosedHalfSpace<T>& half_space_F, const math::RigidTransform<T>& X_WF,
-    ContactPolygonRepresentation representation,
-    std::vector<Vector3<T>>* new_vertices_W,
-    std::vector<SurfaceTriangle>* new_faces,
+    const PosedHalfSpace<typename MeshBuilder::ScalarType>& half_space_F,
+    const std::function<typename MeshBuilder::ScalarType(
+        const Vector3<typename MeshBuilder::ScalarType>&)>&
+        pressure_in_F,
+    const Vector3<typename MeshBuilder::ScalarType>& grad_pressure_in_W,
+    const math::RigidTransform<typename MeshBuilder::ScalarType>& X_WF,
+    MeshBuilder* builder_W,
     std::unordered_map<int, int>* vertices_to_newly_created_vertices,
     std::unordered_map<SortedPair<int>, int>* edges_to_newly_created_vertices);
 
 /*
- Computes a triangular surface mesh by intersecting a half space with a set of
- triangles drawn from the given surface mesh. The indicated triangles would
- typically be the result of broadphase culling.
+ Computes a ContactSurface between a half space and a collection of triangles
+ drawn from a triangle surface mesh. The indicated triangles would typically be
+ the result of broadphase culling.
 
- For `representation` = ContactPolygonRepresentation::kCentroidSubdivision,
- each triangle in `mesh_W` is a proper subset of one triangle in `input_mesh_F`
- (i.e., fully contained within the triangle in `input_mesh_F`). As such,
- the face normal for each triangle in `mesh_W` will point in the same direction
- as its containing triangle in `input_mesh_F`.
+ Each face in the contact surface's mesh corresponds to one triangle in
+ `input_mesh_F` (although multiple contact surface faces may map to the same
+ input triangle based on the ContactSurface's mesh representation). The
+ correspondence is that the contact surface mesh face is always fully contained
+ by a single triangle in the input mesh. As such, the face normal for each face
+ in the contact surface mesh will point in the same direction as its
+ corresponding triangle's in `input_mesh_F`.
 
- For `representation` = ContactPolygonRepresentation::kSingleTriangle, each
- triangle in `mesh_W` corresponds to one triangle in `input_mesh_F` that
- intersects the half space. Their face normals will point in the same direction.
-
+ @param mesh_id
+     The identifier for the surface mesh.
  @param input_mesh_F
      The mesh with vertices measured and expressed in some frame, F.
+ @param half_space_id
+     The identifier for the half space.
  @param half_space_F
-     The half space measured and expressed in Frame F.
+     The half space measured and expressed in the common frame F.
+ @param pressure_in_F
+     A function that evaluates the pressure at a position X inside the half
+     space measured and expressed in the common frame F.
  @param tri_indices
      A collection of triangle indices in `input_mesh_F`.
  @param X_WF
      The relative pose of Frame F with the world frame W.
- @param[in] representation
-     The preferred representation of each intersected polygon.
+ @param grad_p_W
+     The gradient of the half space's pressure field, expressed in the world
+     frame.
  @retval `mesh_W`, the TriangleSurfaceMesh corresponding to the intersection
          between the mesh and the half space; the vertices are measured and
          expressed in Frame W. `nullptr` if there is no intersection.
  */
-template <typename T>
-std::unique_ptr<TriangleSurfaceMesh<T>>
-ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-    const TriangleSurfaceMesh<double>& input_mesh_F,
-    const PosedHalfSpace<T>& half_space_F, const std::vector<int>& tri_indices,
-    const math::RigidTransform<T>& X_WF,
-    ContactPolygonRepresentation representation);
+template <typename MeshBuilder>
+std::unique_ptr<ContactSurface<typename MeshBuilder::ScalarType>>
+ComputeContactSurface(
+    GeometryId mesh_id, const TriangleSurfaceMesh<double>& input_mesh_F,
+    GeometryId half_space_id,
+    const PosedHalfSpace<typename MeshBuilder::ScalarType>& half_space_F,
+    const std::function<typename MeshBuilder::ScalarType(
+        const Vector3<typename MeshBuilder::ScalarType>&)>&
+        pressure_in_F,
+    const Vector3<typename MeshBuilder::ScalarType>& grad_p_W,
+    const std::vector<int>& tri_indices,
+    const math::RigidTransform<typename MeshBuilder::ScalarType>& X_WF);
 
 /*
  Computes the ContactSurface formed by a soft half space and the given rigid
@@ -165,7 +171,7 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR,
-    ContactPolygonRepresentation representation);
+    HydroelasticContactRepresentation representation);
 
 }  // namespace internal
 }  // namespace geometry

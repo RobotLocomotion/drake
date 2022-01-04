@@ -11,12 +11,14 @@ namespace {
 
 using drake::symbolic::Expression;
 using drake::symbolic::ExpressionKind;
+using drake::symbolic::Formula;
+using drake::symbolic::FormulaKind;
 
 // Given the pydrake.symbolic module as "m" and an expression "e", returns
 // the callable object (i.e., factory function or constructor) that would
 // be able to re-construct the same expression, given appropriate arguments.
 py::object MakeConstructor(py::module m, const Expression& e) {
-  // This list of cases is in aphabetical order.
+  // This list of cases is in alphabetical order.
   switch (e.get_kind()) {
     case ExpressionKind::Abs:
       return m.attr("abs");
@@ -161,10 +163,105 @@ py::list MakeArgs(const Expression& e) {
   return result;
 }
 
+// Given the pydrake.symbolic module as "m" and a formula "f", returns
+// the callable object (i.e., factory function or constructor) that would
+// be able to re-construct the same formula, given appropriate arguments.
+py::object MakeConstructor(py::module m, const Formula& f) {
+  switch (f.get_kind()) {
+    case FormulaKind::False:
+      return m.attr("Formula").attr("False_");
+    case FormulaKind::True:
+      return m.attr("Formula").attr("True_");
+    case FormulaKind::Var:
+      return m.attr("Formula");
+    case FormulaKind::Eq:
+      return m.attr("operator").attr("eq");
+    case FormulaKind::Neq:
+      return m.attr("operator").attr("ne");
+    case FormulaKind::Gt:
+      return m.attr("operator").attr("gt");
+    case FormulaKind::Geq:
+      return m.attr("operator").attr("ge");
+    case FormulaKind::Lt:
+      return m.attr("operator").attr("lt");
+    case FormulaKind::Leq:
+      return m.attr("operator").attr("le");
+    case FormulaKind::And:
+      return m.attr("logical_and");
+    case FormulaKind::Or:
+      return m.attr("logical_or");
+    case FormulaKind::Not:
+      return m.attr("logical_not");
+    case FormulaKind::Forall:
+      return m.attr("forall");
+    case FormulaKind::Isnan:
+      return m.attr("isnan");
+    case FormulaKind::PositiveSemidefinite:
+      return m.attr("positive_semidefinite");
+  }
+  DRAKE_UNREACHABLE();
+}
+
+// Given the formula "f", returns an extracted list of arguments that would
+// be able to re-construct the same formula, when passed to the result of
+// MakeConstructor.
+py::list MakeArgs(const Formula& f) {
+  py::list result;
+  switch (f.get_kind()) {
+    case FormulaKind::False:
+    case FormulaKind::True: {
+      break;
+    }
+    case FormulaKind::Var: {
+      result.append(get_variable(f));
+      break;
+    }
+    case FormulaKind::Eq:
+    case FormulaKind::Neq:
+    case FormulaKind::Gt:
+    case FormulaKind::Geq:
+    case FormulaKind::Lt:
+    case FormulaKind::Leq: {
+      result.append(get_lhs_expression(f));
+      result.append(get_rhs_expression(f));
+      break;
+    }
+    case FormulaKind::And:
+    case FormulaKind::Or: {
+      for (const Formula& operand : get_operands(f)) {
+        result.append(operand);
+      }
+      break;
+    }
+    case FormulaKind::Not: {
+      result.append(get_operand(f));
+      break;
+    }
+    case FormulaKind::Forall: {
+      result.append(get_quantified_variables(f));
+      result.append(get_quantified_formula(f));
+      break;
+    }
+    case FormulaKind::Isnan: {
+      result.append(get_unary_expression(f));
+      break;
+    }
+    case FormulaKind::PositiveSemidefinite: {
+      result.append(get_matrix_in_positive_semidefinite(f));
+      break;
+    }
+  }
+  return result;
+}
+
 }  // namespace
 
 py::object Unapply(py::module m, const Expression& e) {
   return py::make_tuple(MakeConstructor(m, e), MakeArgs(e));
+}
+
+py::object Unapply(py::module m, const symbolic::Formula& f) {
+  return py::make_tuple(MakeConstructor(m, f), MakeArgs(f));
 }
 
 }  // namespace internal

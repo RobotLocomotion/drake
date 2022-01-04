@@ -27,9 +27,13 @@ b = sym.Variable("b")
 c = sym.Variable("c")
 e_x = sym.Expression(x)
 e_y = sym.Expression(y)
+boolean = sym.Variable(name="boolean", type=sym.Variable.Type.BOOLEAN)
 
 
 class TestSymbolicVariable(unittest.TestCase):
+    def test_is_dummy(self):
+        self.assertFalse(a.is_dummy())
+
     def test_get_name(self):
         self.assertEqual(a.get_name(), "a")
         self.assertEqual(b.get_name(), "b")
@@ -173,6 +177,9 @@ class TestSymbolicVariable(unittest.TestCase):
         numpy_compare.assert_equal(
             sym.if_then_else(x > y, x, y), "(if (x > y) then x else y)")
         numpy_compare.assert_equal(
+            sym.if_then_else(f_cond=x > y, e_then=x, e_else=y),
+            "(if (x > y) then x else y)")
+        numpy_compare.assert_equal(
             sym.uninterpreted_function(name="func_name", arguments=[e_x, e_y]),
             "func_name(x, y)")
 
@@ -282,16 +289,24 @@ class TestSymbolicVariables(unittest.TestCase):
         vars = sym.Variables()
         vars.insert(x)
         self.assertEqual(vars.size(), 1)
+        vars.insert(var=y)
+        self.assertEqual(vars.size(), 2)
 
     def test_insert2(self):
         vars = sym.Variables([x])
         vars.insert(sym.Variables([y, z]))
         self.assertEqual(vars.size(), 3)
+        vars.insert(vars=sym.Variables([a, b, c]))
+        self.assertEqual(vars.size(), 6)
 
     def test_erase1(self):
         vars = sym.Variables([x, y, z])
         count = vars.erase(x)
         self.assertEqual(count, 1)
+        self.assertEqual(vars.size(), 2)
+        count = vars.erase(key=y)
+        self.assertEqual(count, 1)
+        self.assertEqual(vars.size(), 1)
 
     def test_erase2(self):
         vars1 = sym.Variables([x, y, z])
@@ -300,9 +315,17 @@ class TestSymbolicVariables(unittest.TestCase):
         self.assertEqual(count, 1)
         self.assertEqual(vars1.size(), 2)
 
+    def test_erase2_kwarg(self):
+        vars1 = sym.Variables([x, y, z])
+        vars2 = sym.Variables([x, y])
+        count = vars1.erase(vars=vars2)
+        self.assertEqual(count, 2)
+        self.assertEqual(vars1.size(), 1)
+
     def test_include(self):
         vars = sym.Variables([x, y, z])
         self.assertTrue(vars.include(y))
+        self.assertTrue(vars.include(key=x))
         self.assertTrue(z in vars)
 
     def test_equalto(self):
@@ -323,9 +346,13 @@ class TestSymbolicVariables(unittest.TestCase):
         vars1 = sym.Variables([x, y, z])
         vars2 = sym.Variables([x, y])
         self.assertFalse(vars1.IsSubsetOf(vars2))
+        self.assertFalse(vars1.IsSubsetOf(vars=vars2))
         self.assertFalse(vars1.IsStrictSubsetOf(vars2))
+        self.assertFalse(vars1.IsStrictSubsetOf(vars=vars2))
         self.assertTrue(vars1.IsSupersetOf(vars2))
+        self.assertTrue(vars1.IsSupersetOf(vars=vars2))
         self.assertTrue(vars1.IsStrictSupersetOf(vars2))
+        self.assertTrue(vars1.IsStrictSupersetOf(vars=vars2))
 
     def test_eq(self):
         vars1 = sym.Variables([x, y, z])
@@ -374,6 +401,8 @@ class TestSymbolicVariables(unittest.TestCase):
         vars2 = sym.Variables([y, w])
         vars3 = sym.intersect(vars1, vars2)  # = [y]
         self.assertEqual(vars3, sym.Variables([y]))
+        vars4 = sym.intersect(vars1=vars1, vars2=vars2)
+        self.assertEqual(vars4, sym.Variables([y]))
 
     def test_iterable(self):
         vars = sym.Variables([x, y, z])
@@ -392,6 +421,12 @@ class TestSymbolicExpression(unittest.TestCase):
         # TODO(eric.cousineau): This used to be necessary for PY3-only, but
         # with NumPy 1.16, it became PY2 too. Figure out why.
         install_numpy_warning_filters(force=True)
+
+    def test_constructor(self):
+        sym.Expression(z)
+        sym.Expression(var=z)
+        sym.Expression(2.2)
+        sym.Expression(constant=2.2)
 
     def _check_algebra(self, algebra):
         xv = algebra.to_algebra(x)
@@ -738,31 +773,50 @@ class TestSymbolicExpression(unittest.TestCase):
         #  = |cos(y)   -x * sin(y)|
         #    |sin(y)    x * cos(y)|
         #    | 2 * x             0|
-        J = sym.Jacobian([x * sym.cos(y), x * sym.sin(y), x ** 2], [x, y])
-        numpy_compare.assert_equal(J[0, 0], sym.cos(y))
-        numpy_compare.assert_equal(J[1, 0], sym.sin(y))
-        numpy_compare.assert_equal(J[2, 0], 2 * x)
-        numpy_compare.assert_equal(J[0, 1], - x * sym.sin(y))
-        numpy_compare.assert_equal(J[1, 1], x * sym.cos(y))
-        numpy_compare.assert_equal(J[2, 1], sym.Expression(0))
+        def check_jacobian(J):
+            numpy_compare.assert_equal(J[0, 0], sym.cos(y))
+            numpy_compare.assert_equal(J[1, 0], sym.sin(y))
+            numpy_compare.assert_equal(J[2, 0], 2 * x)
+            numpy_compare.assert_equal(J[0, 1], - x * sym.sin(y))
+            numpy_compare.assert_equal(J[1, 1], x * sym.cos(y))
+            numpy_compare.assert_equal(J[2, 1], sym.Expression(0))
+
+        f = [x * sym.cos(y), x * sym.sin(y), x ** 2]
+        vars = [x, y]
+        check_jacobian(sym.Jacobian(f, vars))
+        check_jacobian(sym.Jacobian(f=f, vars=vars))
 
     def test_method_jacobian(self):
         # (x * cos(y)).Jacobian([x, y]) returns [cos(y), -x * sin(y)].
-        J = (x * sym.cos(y)).Jacobian([x, y])
-        numpy_compare.assert_equal(J[0], sym.cos(y))
-        numpy_compare.assert_equal(J[1], -x * sym.sin(y))
+        def check_jacobian(J):
+            numpy_compare.assert_equal(J[0], sym.cos(y))
+            numpy_compare.assert_equal(J[1], -x * sym.sin(y))
+
+        e = x * sym.cos(y)
+        vars = [x, y]
+        check_jacobian(e.Jacobian(vars))
+        check_jacobian(e.Jacobian(vars=vars))
 
     def test_is_affine(self):
         M = np.array([[a * a * x, 3 * x], [2 * x, 3 * a]])
-        self.assertTrue(sym.IsAffine(M, sym.Variables([x])))
+        vars = sym.Variables([x])
+        self.assertTrue(sym.IsAffine(M, vars))
+        self.assertTrue(sym.IsAffine(m=M, vars=vars))
         self.assertFalse(sym.IsAffine(M))
+        self.assertFalse(sym.IsAffine(m=M))
 
     def test_differentiate(self):
         e = x * x
         numpy_compare.assert_equal(e.Differentiate(x), 2 * x)
+        numpy_compare.assert_equal(e.Differentiate(x=x), 2 * x)
 
     def test_repr(self):
         self.assertEqual(repr(e_x), '<Expression "x">')
+
+    def test_to_string(self):
+        e = (x + y)
+        self.assertEqual(e.to_string(), "(x + y)")
+        self.assertEqual(str(e), "(x + y)")
 
     def test_evaluate(self):
         env = {x: 3.0,
@@ -793,6 +847,8 @@ class TestSymbolicExpression(unittest.TestCase):
         partial_evaluated = (x + y + z).EvaluatePartial(env)
         expected = env[x] + env[y] + z
         self.assertTrue(partial_evaluated.EqualTo(expected))
+        partial_evaluated = (x + y + z).EvaluatePartial(env=env)
+        self.assertTrue(partial_evaluated.EqualTo(expected))
 
     def test_evaluate_exception_np_nan(self):
         env = {x: np.nan}
@@ -807,13 +863,17 @@ class TestSymbolicExpression(unittest.TestCase):
     def test_substitute_with_pair(self):
         e = x + y
         numpy_compare.assert_equal(e.Substitute(x, x + 5), x + y + 5)
+        numpy_compare.assert_equal(e.Substitute(var=x, e=(x + 5)), x + y + 5)
         numpy_compare.assert_equal(e.Substitute(y, z), x + z)
+        numpy_compare.assert_equal(e.Substitute(var=y, e=z), x + z)
         numpy_compare.assert_equal(e.Substitute(y, 3), x + 3)
+        numpy_compare.assert_equal(e.Substitute(var=y, e=3), x + 3)
 
     def test_substitute_with_dict(self):
         e = x + y
         env = {x: x + 2, y:  y + 3}
         numpy_compare.assert_equal(e.Substitute(env), x + y + 5)
+        numpy_compare.assert_equal(e.Substitute(s=env), x + y + 5)
 
     def test_copy(self):
         numpy_compare.assert_equal(copy.copy(e_x), e_x)
@@ -830,6 +890,22 @@ class TestSymbolicExpression(unittest.TestCase):
 
 
 class TestSymbolicFormula(unittest.TestCase):
+    def test_constructor(self):
+        sym.Formula(var=boolean)
+
+    def test_factory_functions(self):
+        f = sym.forall(vars=sym.Variables([x]), f=(x > 0))
+        self.assertEqual(f.get_kind(), sym.FormulaKind.Forall)
+
+        f = sym.isnan(e_x)
+        self.assertEqual(f.get_kind(), sym.FormulaKind.Isnan)
+
+        f = sym.positive_semidefinite([e_x])
+        self.assertEqual(f.get_kind(), sym.FormulaKind.PositiveSemidefinite)
+
+    def test_get_kind(self):
+        self.assertEqual((x > y).get_kind(), sym.FormulaKind.Gt)
+
     def test_get_free_variables(self):
         f = x > y
         self.assertEqual(f.GetFreeVariables(), sym.Variables([x, y]))
@@ -837,13 +913,17 @@ class TestSymbolicFormula(unittest.TestCase):
     def test_substitute_with_pair(self):
         f = x > y
         self.assertEqual(f.Substitute(y, y + 5), x > y + 5)
+        self.assertEqual(f.Substitute(var=y, e=y + 5), x > y + 5)
         self.assertEqual(f.Substitute(y, z), x > z)
+        self.assertEqual(f.Substitute(var=y, e=z), x > z)
         self.assertEqual(f.Substitute(y, 3), x > 3)
+        self.assertEqual(f.Substitute(var=y, e=3), x > 3)
 
     def test_substitute_with_dict(self):
         f = x + y > z
-        self.assertEqual(f.Substitute({x: x + 2, y:  y + 3}),
-                         x + y + 5 > z)
+        s = {x: x + 2, y:  y + 3}
+        self.assertEqual(f.Substitute(s), x + y + 5 > z)
+        self.assertEqual(f.Substitute(s=s), x + y + 5 > z)
 
     def test_to_string(self):
         f = x > y
@@ -875,6 +955,9 @@ class TestSymbolicFormula(unittest.TestCase):
                y: 4.0}
         self.assertEqual((x > y).Evaluate(env),
                          env[x] > env[y])
+        self.assertEqual((x < y).Evaluate(env=env),
+                         env[x] < env[y])
+        self.assertTrue(sym.Formula.True_().Evaluate())
 
     def test_evaluate_exception_np_nan(self):
         env = {x: np.nan}
@@ -894,22 +977,31 @@ class TestSymbolicMonomial(unittest.TestCase):
         self.assertEqual(m.total_degree(), 0)
 
     def test_constructor_variable(self):
-        m = sym.Monomial(x)  # m = x¹
-        self.assertEqual(m.degree(x), 1)
-        self.assertEqual(m.total_degree(), 1)
+        def check_monomial(m):  # m = x¹
+            self.assertEqual(m.degree(x), 1)
+            self.assertEqual(m.total_degree(), 1)
+
+        check_monomial(sym.Monomial(x))
+        check_monomial(sym.Monomial(var=x))
 
     def test_constructor_variable_int(self):
-        m = sym.Monomial(x, 2)  # m = x²
-        self.assertEqual(m.degree(x), 2)
-        self.assertEqual(m.total_degree(), 2)
+        def check_monomial(m):  # m = x²
+            self.assertEqual(m.degree(x), 2)
+            self.assertEqual(m.total_degree(), 2)
+
+        check_monomial(sym.Monomial(x, 2))
+        check_monomial(sym.Monomial(var=x, exponent=2))
 
     def test_constructor_map(self):
+        def check_monomial(m):
+            powers_out = EqualToDict(m.get_powers())
+            self.assertEqual(powers_out[x], 2)
+            self.assertEqual(powers_out[y], 3)
+            self.assertEqual(powers_out[z], 4)
+
         powers_in = {x: 2, y: 3, z: 4}
-        m = sym.Monomial(powers_in)
-        powers_out = EqualToDict(m.get_powers())
-        self.assertEqual(powers_out[x], 2)
-        self.assertEqual(powers_out[y], 3)
-        self.assertEqual(powers_out[z], 4)
+        check_monomial(sym.Monomial(powers_in))
+        check_monomial(sym.Monomial(powers=powers_in))
 
     def test_constructor_vars_exponents(self):
         m = sym.Monomial([x, y], [1, 2])
@@ -962,7 +1054,7 @@ class TestSymbolicMonomial(unittest.TestCase):
         m2 = sym.Monomial(y, 3)
         m3 = m1 * m2
         self.assertEqual(m3.degree(x), 2)
-        self.assertEqual(m3.degree(y), 3)
+        self.assertEqual(m3.degree(v=y), 3)  # NOTE: tests kwarg v binding.
 
     def test_multiplication2(self):
         m1 = sym.Monomial(x, 2)
@@ -1012,6 +1104,12 @@ class TestSymbolicMonomial(unittest.TestCase):
         self.assertEqual(m1.degree(y), 2)
         self.assertEqual(m2.degree(x), 4)
         self.assertEqual(m2.degree(y), 2)
+        # Test repeated for testing kwarg p=2.
+        m3 = m1.pow_in_place(p=2)
+        self.assertEqual(m1.degree(x), 8)
+        self.assertEqual(m1.degree(y), 4)
+        self.assertEqual(m3.degree(x), 8)
+        self.assertEqual(m3.degree(y), 4)
 
     def test_get_powers(self):
         m = sym.Monomial(x, 2) * sym.Monomial(y)  # m = x²y
@@ -1032,9 +1130,13 @@ class TestSymbolicMonomial(unittest.TestCase):
     def test_monomial_basis(self):
         vars = sym.Variables([x, y, z])
         basis1 = sym.MonomialBasis(vars, 3)
-        basis2 = sym.MonomialBasis([x, y, z], 3)
+        basis2 = sym.MonomialBasis(vars=vars, degree=3)
+        basis3 = sym.MonomialBasis([x, y, z], 3)
+        basis4 = sym.MonomialBasis(vars=[x, y, z], degree=3)
         self.assertEqual(basis1.size, 20)
         self.assertEqual(basis2.size, 20)
+        self.assertEqual(basis3.size, 20)
+        self.assertEqual(basis4.size, 20)
 
     def test_even_degree_monomial_basis(self):
         vars = sym.Variables([x, y])
@@ -1052,6 +1154,8 @@ class TestSymbolicMonomial(unittest.TestCase):
                y: 3.0}
         self.assertEqual(m.Evaluate(env),
                          env[x] ** 3 * env[y])
+        self.assertEqual(m.Evaluate(env=env),
+                         env[x] ** 3 * env[y])
 
     def test_evaluate_exception_np_nan(self):
         m = sym.Monomial(x, 3)
@@ -1065,6 +1169,18 @@ class TestSymbolicMonomial(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             m.Evaluate(env)
 
+    def test_evaluate_partial(self):
+        m = sym.Monomial(x, 3) * sym.Monomial(y, 2)  # m = x³y²
+        env = {x: 2.0,
+               y: 3.0}
+        d_72, m_1 = m.EvaluatePartial(env)
+        self.assertEqual(d_72, 72.0)
+        self.assertEqual(m_1, sym.Monomial())  # Monomial{} = 1
+
+        d_8, y_2 = m.EvaluatePartial(env={x: 2.0})
+        self.assertEqual(d_8, 8.0)
+        self.assertEqual(y_2, sym.Monomial(y, 2))
+
 
 class TestSymbolicPolynomial(unittest.TestCase):
     def test_default_constructor(self):
@@ -1074,22 +1190,40 @@ class TestSymbolicPolynomial(unittest.TestCase):
     def test_constructor_maptype(self):
         m = {sym.Monomial(x): sym.Expression(3),
              sym.Monomial(y): sym.Expression(2)}  # 3x + 2y
-        p = sym.Polynomial(m)
+        p1 = sym.Polynomial(m)
+        p2 = sym.Polynomial(map=m)
         expected = 3 * x + 2 * y
-        numpy_compare.assert_equal(p.ToExpression(), expected)
+        numpy_compare.assert_equal(p1.ToExpression(), expected)
+        numpy_compare.assert_equal(p2.ToExpression(), expected)
+
+    def test_constructor_monomial(self):
+        m = sym.Monomial(x, 2)
+        p1 = sym.Polynomial(m)
+        p2 = sym.Polynomial(m=m)
+        expected = "pow(x, 2)"
+        numpy_compare.assert_equal(p1.ToExpression(), expected)
+        numpy_compare.assert_equal(p2.ToExpression(), expected)
 
     def test_constructor_expression(self):
         e = 2 * x + 3 * y
-        p = sym.Polynomial(e)
-        numpy_compare.assert_equal(p.ToExpression(), e)
+        p1 = sym.Polynomial(e)
+        p2 = sym.Polynomial(e=e)
+        numpy_compare.assert_equal(p1.ToExpression(), e)
+        numpy_compare.assert_equal(p2.ToExpression(), e)
 
     def test_constructor_expression_indeterminates(self):
         e = a * x + b * y + c * z
-        p = sym.Polynomial(e, sym.Variables([x, y, z]))
+        p1 = sym.Polynomial(e, sym.Variables([x, y, z]))
+        p2 = sym.Polynomial(e=e, indeterminates=sym.Variables([x, y, z]))
+        p3 = sym.Polynomial(e=e, indeterminates=[x, y, z])
         decision_vars = sym.Variables([a, b, c])
         indeterminates = sym.Variables([x, y, z])
-        self.assertEqual(p.indeterminates(), indeterminates)
-        self.assertEqual(p.decision_variables(), decision_vars)
+        self.assertEqual(p1.indeterminates(), indeterminates)
+        self.assertEqual(p1.decision_variables(), decision_vars)
+        self.assertEqual(p2.indeterminates(), indeterminates)
+        self.assertEqual(p2.decision_variables(), decision_vars)
+        self.assertEqual(p3.indeterminates(), indeterminates)
+        self.assertEqual(p3.decision_variables(), decision_vars)
 
     def test_set_indeterminates(self):
         e = a * x * x + b * y + c * z
@@ -1101,10 +1235,14 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p.SetIndeterminates(indeterminates2)
         self.assertEqual(p.TotalDegree(), 1)
 
+        p.SetIndeterminates(new_indeterminates=indeterminates1)
+        self.assertEqual(p.TotalDegree(), 2)
+
     def test_degree_total_degree(self):
         e = a * (x ** 2) + b * (y ** 3) + c * z
         p = sym.Polynomial(e, [x, y, z])
         self.assertEqual(p.Degree(x), 2)
+        self.assertEqual(p.Degree(v=y), 3)
         self.assertEqual(p.TotalDegree(), 3)
 
     def test_monomial_to_coefficient_map(self):
@@ -1119,6 +1257,8 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p = sym.Polynomial(e, [x])  # p = ax²
         result = p.Differentiate(x)  # = 2ax
         numpy_compare.assert_equal(result.ToExpression(), 2 * a * x)
+        result = p.Differentiate(x=x)
+        numpy_compare.assert_equal(result.ToExpression(), 2 * a * x)
 
     def test_integrate(self):
         e = 3 * a * (x ** 2)
@@ -1127,17 +1267,25 @@ class TestSymbolicPolynomial(unittest.TestCase):
         numpy_compare.assert_equal(result.ToExpression(), a * x**3)
         result = p.Integrate(x, -1, 1)  # = 2a
         numpy_compare.assert_equal(result.ToExpression(), 2 * a)
+        result = p.Integrate(x=x, a=-1, b=1)
+        numpy_compare.assert_equal(result.ToExpression(), 2 * a)
 
     def test_add_product(self):
         p = sym.Polynomial()
         m = sym.Monomial(x)
         p.AddProduct(sym.Expression(3), m)  # p += 3 * x
         numpy_compare.assert_equal(p.ToExpression(), 3 * x)
+        p.AddProduct(coeff=sym.Expression(3), m=m)  # p += 3 * x
+        numpy_compare.assert_equal(p.ToExpression(), 6 * x)
 
     def test_remove_terms_with_small_coefficients(self):
         e = 3 * x + 1e-12 * y
         p = sym.Polynomial(e, [x, y])
         q = p.RemoveTermsWithSmallCoefficients(1e-6)
+        numpy_compare.assert_equal(q.ToExpression(), 3 * x)
+        e = 3 * x + 1e-12 * y
+        p = sym.Polynomial(e, [x, y])
+        q = p.RemoveTermsWithSmallCoefficients(coefficient_tol=1e-6)
         numpy_compare.assert_equal(q.ToExpression(), 3 * x)
 
     def test_comparison(self):
@@ -1156,7 +1304,8 @@ class TestSymbolicPolynomial(unittest.TestCase):
         self.assertTrue(
             p.CoefficientsAlmostEqual(p + sym.Polynomial(1e-7 * x), 1e-6))
         self.assertFalse(
-            p.CoefficientsAlmostEqual(p + sym.Polynomial(2e-6 * x), 1e-6))
+            p.CoefficientsAlmostEqual(
+                p=(p + sym.Polynomial(2e-6 * x)), tolerance=1e-6))
 
     def test_repr(self):
         p = sym.Polynomial()
@@ -1241,9 +1390,13 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p_dx = sym.Polynomial(10 * x + 8 * y, [x, y])  # ∂p/∂x = 10x + 8y
         p_dy = sym.Polynomial(8 * y + 8 * x, [x, y])   # ∂p/∂y =  8y + 8x
 
-        J = p.Jacobian([x, y])
-        numpy_compare.assert_equal(J[0], p_dx)
-        numpy_compare.assert_equal(J[1], p_dy)
+        def check_jacobian(J):
+            numpy_compare.assert_equal(J[0], p_dx)
+            numpy_compare.assert_equal(J[1], p_dy)
+
+        vars = [x, y]
+        check_jacobian(p.Jacobian(vars))
+        check_jacobian(p.Jacobian(vars=vars))
 
     def test_jacobian_matrix(self):
         p1 = sym.Polynomial(x * x + y, [x, y])      # p1 = x² + y
@@ -1253,11 +1406,16 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p2_dx = sym.Polynomial(2, [x, y])           # ∂p1/∂x = 2
         p2_dy = sym.Polynomial(2 * y, [x, y])       # ∂p1/∂y =  2y
 
-        J = sym.Jacobian([p1, p2], [x, y])
-        numpy_compare.assert_equal(J[0, 0], p1_dx)
-        numpy_compare.assert_equal(J[0, 1], p1_dy)
-        numpy_compare.assert_equal(J[1, 0], p2_dx)
-        numpy_compare.assert_equal(J[1, 1], p2_dy)
+        def check_jacobian(J):
+            numpy_compare.assert_equal(J[0, 0], p1_dx)
+            numpy_compare.assert_equal(J[0, 1], p1_dy)
+            numpy_compare.assert_equal(J[1, 0], p2_dx)
+            numpy_compare.assert_equal(J[1, 1], p2_dy)
+
+        f = [p1, p2]
+        vars = [x, y]
+        check_jacobian(sym.Jacobian(f, vars))
+        check_jacobian(sym.Jacobian(f=f, vars=vars))
 
     def test_evaluate_polynomial_matrix(self):
         p1 = sym.Polynomial(x * x + y, [x, y])      # p1 = x² + y
@@ -1327,6 +1485,8 @@ class TestSymbolicPolynomial(unittest.TestCase):
                x: 2.0}
         self.assertEqual(p.Evaluate(env),
                          env[a] * env[x] * env[x] + env[b] * env[x] + env[c])
+        self.assertEqual(p.Evaluate(env=env),
+                         env[a] * env[x] * env[x] + env[b] * env[x] + env[c])
 
     def test_evaluate_exception_np_nan(self):
         p = sym.Polynomial(x * x, [x])
@@ -1349,7 +1509,13 @@ class TestSymbolicPolynomial(unittest.TestCase):
             p.EvaluatePartial(env),
             sym.Polynomial(env[a] * x * x + env[b] * x + env[c], [x]))
         numpy_compare.assert_equal(
+            p.EvaluatePartial(env=env),
+            sym.Polynomial(env[a] * x * x + env[b] * x + env[c], [x]))
+        numpy_compare.assert_equal(
             p.EvaluatePartial(a, 2),
+            sym.Polynomial(2 * x * x + b * x + c, [x]))
+        numpy_compare.assert_equal(
+            p.EvaluatePartial(var=a, c=2),
             sym.Polynomial(2 * x * x + b * x + c, [x]))
 
 
@@ -1449,7 +1615,7 @@ class TestDecomposeLumpedParameters(unittest.TestCase):
         numpy_compare.assert_equal(w0, [sym.Expression(x), sym.Expression(0)])
 
 
-class TestUnapply(unittest.TestCase):
+class TestUnapplyExpression(unittest.TestCase):
     def setUp(self):
         # For these kinds of expressions, the unapplied args should only ever
         # be of type Expression or float.
@@ -1557,3 +1723,68 @@ class TestUnapply(unittest.TestCase):
             for arg in old_args
         ]
         return ctor(*new_args)
+
+
+class TestUnapplyFormula(unittest.TestCase):
+    def setUp(self):
+        self._relational_formulas = [
+            x == y,
+            x != y,
+            x > y,
+            x >= y,
+            x < y,
+            x <= y,
+        ]
+        self._compound_formulas = [
+            sym.logical_and((x > y), (x > z)),
+            sym.logical_or((x > y), (x > z)),
+            sym.logical_not(x < y),
+        ]
+        self._misc_formulas = [
+            sym.Formula.False_(),
+            sym.Formula.True_(),
+            sym.Formula(boolean),
+            sym.forall(vars=sym.Variables([x]), f=(x > 0)),
+            sym.isnan(e_x),
+            sym.positive_semidefinite([e_x]),
+        ]
+        self._all_formulas = (
+            self._relational_formulas
+            + self._compound_formulas
+            + self._misc_formulas
+        )
+
+    def test_round_trip(self):
+        """Focused unit test to check each kind of Formula at least once."""
+        for f in self._all_formulas:
+            with self.subTest(f=f):
+                self._check_one_round_trip(f)
+
+    def _check_one_round_trip(self, f):
+        ctor, args = f.Unapply()
+        result = ctor(*args)
+        self.assertTrue(f.EqualTo(result), msg=repr(result))
+
+    def test_all_relational(self):
+        """Relational formulas should have Expression args."""
+        for f in self._relational_formulas:
+            with self.subTest(f=f):
+                self._check_one_relational(f)
+
+    def _check_one_relational(self, f):
+        ctor, args = f.Unapply()
+        self.assertEqual(len(args), 2)
+        self.assertIsInstance(args[0], sym.Expression)
+        self.assertIsInstance(args[1], sym.Expression)
+
+    def test_all_compound(self):
+        """Relational formulas should have Formula args."""
+        for f in self._compound_formulas:
+            with self.subTest(f=f):
+                self._check_one_compound(f)
+
+    def _check_one_compound(self, f):
+        ctor, args = f.Unapply()
+        self.assertGreaterEqual(len(args), 1)
+        for arg in args:
+            self.assertIsInstance(arg, sym.Formula)

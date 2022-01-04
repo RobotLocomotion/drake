@@ -205,6 +205,15 @@ TEST_F(BallRpyJointTest, SetVelocityAndAccelerationLimits) {
                std::runtime_error);
 }
 
+TEST_F(BallRpyJointTest, NameSuffix) {
+  EXPECT_EQ(joint_->position_suffix(0), "qx");
+  EXPECT_EQ(joint_->position_suffix(1), "qy");
+  EXPECT_EQ(joint_->position_suffix(2), "qz");
+  EXPECT_EQ(joint_->velocity_suffix(0), "wx");
+  EXPECT_EQ(joint_->velocity_suffix(1), "wy");
+  EXPECT_EQ(joint_->velocity_suffix(2), "wz");
+}
+
 TEST_F(BallRpyJointTest, DefaultAngles) {
   const Vector3d lower_limit_angles = Vector3d::Constant(kPositionLowerLimit);
   const Vector3d upper_limit_angles = Vector3d::Constant(kPositionUpperLimit);

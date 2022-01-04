@@ -120,15 +120,24 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
   EXPECT_EQ(expected_floating_bodies, floating_bodies);
 
   // Verify state indexes for free bodies.
-  const std::unordered_set<int> expected_floating_positions_start({0, 7, 14});
+  // N.B. This test assumes DOFs are in a depth-first-traversal order with
+  // mobilities assigned in the order mobilizers were added to the model. In
+  // addition, we use our internal knowledge that free floating mobilizers are
+  // assigned in the order bodies were added to the model. This assumption
+  // implies that DOFs for the first tree are first, followed by DOFs for the
+  // second tree, etc.
+  const int atlas_nq = plant.num_positions(atlas_model1);
+  const std::unordered_set<int> expected_floating_positions_start(
+      {0, atlas_nq, 2 * atlas_nq});
   const std::unordered_set<int> floating_positions_start(
       {pelvis1.floating_positions_start(), pelvis2.floating_positions_start(),
        mug.floating_positions_start()});
   EXPECT_EQ(floating_positions_start, expected_floating_positions_start);
 
   const int nq = plant.num_positions();
+  const int atlas_nv = plant.num_velocities(atlas_model1);
   const std::unordered_set<int> expected_floating_velocities_start(
-      {nq, nq + 6, nq + 12});
+      {nq, nq + atlas_nv, nq + 2 * atlas_nv});
   const std::unordered_set<int> floating_velocities_start(
       {pelvis1.floating_velocities_start(), pelvis2.floating_velocities_start(),
        mug.floating_velocities_start()});

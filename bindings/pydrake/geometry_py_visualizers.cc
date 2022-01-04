@@ -120,6 +120,7 @@ MeshcatVisualizer.  See #13038.)""")
             cls_doc.ctor.doc)
         .def("Delete", &Class::Delete, cls_doc.Delete.doc)
         .def("StartRecording", &Class::StartRecording,
+            py::arg("set_transforms_while_recording") = true,
             py_rvp::reference_internal, cls_doc.StartRecording.doc)
         .def("StopRecording", &Class::StopRecording, cls_doc.StopRecording.doc)
         .def("PublishRecording", &Class::PublishRecording,
@@ -199,6 +200,7 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("web_url", &Class::web_url, cls_doc.web_url.doc)
         .def("port", &Class::port, cls_doc.port.doc)
         .def("ws_url", &Class::ws_url, cls_doc.ws_url.doc)
+        .def("Flush", &Class::Flush, cls_doc.Flush.doc)
         .def("SetObject",
             py::overload_cast<std::string_view, const Shape&, const Rgba&>(
                 &Class::SetObject),
@@ -209,6 +211,26 @@ void DoScalarIndependentDefinitions(py::module m) {
                 double, const Rgba&>(&Class::SetObject),
             py::arg("path"), py::arg("cloud"), py::arg("point_size") = 0.001,
             py::arg("rgba") = Rgba(.9, .9, .9, 1.), cls_doc.SetObject.doc_cloud)
+        .def("SetObject",
+            py::overload_cast<std::string_view,
+                const TriangleSurfaceMesh<double>&, const Rgba&, bool, double>(
+                &Class::SetObject),
+            py::arg("path"), py::arg("mesh"),
+            py::arg("rgba") = Rgba(0.1, 0.1, 0.1, 1.0),
+            py::arg("wireframe") = false, py::arg("wireframe_line_width") = 1.0,
+            cls_doc.SetObject.doc_triangle_surface_mesh)
+        .def("SetLine", &Class::SetLine, py::arg("path"), py::arg("vertices"),
+            py::arg("line_width") = 1.0,
+            py::arg("rgba") = Rgba(0.1, 0.1, 0.1, 1.0), cls_doc.SetLine.doc)
+        .def("SetLineSegments", &Class::SetLineSegments, py::arg("path"),
+            py::arg("start"), py::arg("end"), py::arg("line_width") = 1.0,
+            py::arg("rgba") = Rgba(0.1, 0.1, 0.1, 1.0),
+            cls_doc.SetLineSegments.doc)
+        .def("SetTriangleMesh", &Class::SetTriangleMesh, py::arg("path"),
+            py::arg("vertices"), py::arg("faces"),
+            py::arg("rgba") = Rgba(0.1, 0.1, 0.1, 1.0),
+            py::arg("wireframe") = false, py::arg("wireframe_line_width") = 1.0,
+            cls_doc.SetTriangleMesh.doc)
         // TODO(russt): Bind SetCamera.
         .def("Set2dRenderMode", &Class::Set2dRenderMode,
             py::arg("X_WC") = RigidTransformd{Eigen::Vector3d{0, -1, 0}},
@@ -237,6 +259,11 @@ void DoScalarIndependentDefinitions(py::module m) {
                 &Class::SetProperty),
             py::arg("path"), py::arg("property"), py::arg("value"),
             cls_doc.SetProperty.doc_double)
+        .def("SetProperty",
+            py::overload_cast<std::string_view, std::string,
+                const std::vector<double>&>(&Class::SetProperty),
+            py::arg("path"), py::arg("property"), py::arg("value"),
+            cls_doc.SetProperty.doc_vector_double)
         .def("SetAnimation", &Class::SetAnimation, py::arg("animation"),
             +cls_doc.SetAnimation.doc)
         .def("AddButton", &Class::AddButton, py::arg("name"),
@@ -255,7 +282,8 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("DeleteSlider", &Class::DeleteSlider, py::arg("name"),
             cls_doc.DeleteSlider.doc)
         .def("DeleteAddedControls", &Class::DeleteAddedControls,
-            cls_doc.DeleteAddedControls.doc);
+            cls_doc.DeleteAddedControls.doc)
+        .def("StaticHtml", &Class::StaticHtml, cls_doc.StaticHtml.doc);
     // Note: we intentionally do not bind the advanced methods (HasProperty and
     // GetPacked*) which were intended primarily for testing in C++.
   }

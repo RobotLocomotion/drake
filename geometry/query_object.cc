@@ -104,27 +104,18 @@ bool QueryObject<T>::HasCollisions() const {
 }
 
 template <typename T>
-std::vector<ContactSurface<T>>
-QueryObject<T>::ComputeContactSurfaces() const {
+std::vector<ContactSurface<T>> QueryObject<T>::ComputeContactSurfaces(
+    HydroelasticContactRepresentation representation) const {
   ThrowIfNotCallable();
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
-  return state.ComputeContactSurfaces();
-}
-
-template <typename T>
-std::vector<ContactSurface<T>>
-QueryObject<T>::ComputePolygonalContactSurfaces() const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
-  const GeometryState<T>& state = geometry_state();
-  return state.ComputePolygonalContactSurfaces();
+  return state.ComputeContactSurfaces(representation);
 }
 
 template <typename T>
 void QueryObject<T>::ComputeContactSurfacesWithFallback(
+    HydroelasticContactRepresentation representation,
     std::vector<ContactSurface<T>>* surfaces,
     std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
   DRAKE_DEMAND(surfaces != nullptr);
@@ -134,21 +125,8 @@ void QueryObject<T>::ComputeContactSurfacesWithFallback(
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
-  state.ComputeContactSurfacesWithFallback(surfaces, point_pairs);
-}
-
-template <typename T>
-void QueryObject<T>::ComputePolygonalContactSurfacesWithFallback(
-    std::vector<ContactSurface<T>>* surfaces,
-    std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-  DRAKE_DEMAND(surfaces != nullptr);
-  DRAKE_DEMAND(point_pairs != nullptr);
-
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
-  const GeometryState<T>& state = geometry_state();
-  state.ComputePolygonalContactSurfacesWithFallback(surfaces, point_pairs);
+  state.ComputeContactSurfacesWithFallback(representation, surfaces,
+                                           point_pairs);
 }
 
 template <typename T>

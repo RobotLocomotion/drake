@@ -14,15 +14,8 @@
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
-
-// Forward declarations to give LCM message publication appropriate access.
-namespace lcm {
-class DrakeLcmInterface;
-}  // namespace lcm
-
 namespace geometry {
 
 class GeometryInstance;
@@ -41,13 +34,14 @@ class QueryObject;
  @system
  name: SceneGraph
  input_ports:
- - source_pose{0}
- - ...
- - source_pose{N-1}
+ - <em style="color:gray">(source name)</em>_pose
  output_ports:
- - lcm_visualization
  - query
  @endsystem
+
+For each registered "geometry source", there is an input port whose name begins
+with <em style="color:gray">(source name)</em>.
+
 
  Only registered "geometry sources" can introduce geometry into %SceneGraph.
  Geometry sources will typically be other leaf systems, but, in the case of
@@ -100,12 +94,6 @@ class QueryObject;
  SceneGraph::ComputeContact()). This assumes that the querying system has
  access to a const pointer to the connected %SceneGraph instance. Use
  get_query_output_port() to acquire the output port for the query handle.
-
- __lcm visualization port__: An abstract-valued port containing an instance of
- PoseBundle. This is a convenience port designed to feed LCM update messages to
- drake_visualizer for the purpose of visualizing the state of the world's
- geometry. Additional uses of this port are strongly discouraged; instead, use
- an appropriate geometric query to obtain the state of the world's geometry.
 
  @section geom_sys_workflow Working with SceneGraph
 
@@ -333,15 +321,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
    frames.
    @throws std::exception if the source_id is _not_ recognized.  */
   const systems::InputPort<T>& get_source_pose_port(SourceId id) const;
-
-  /** Returns the output port which produces the PoseBundle for LCM
-   communication to drake visualizer.  */
-  DRAKE_DEPRECATED("2021-12-01",
-                   "PoseBundle is no longer in use. Visualizers typically "
-                   "connect to SceneGraph's QueryObject port.")
-  const systems::OutputPort<T>& get_pose_bundle_output_port() const {
-    return systems::System<T>::get_output_port(bundle_port_index_);
-  }
 
   /** Returns the output port which produces the QueryObject for performing
    geometric queries.  */
@@ -863,15 +842,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
   void CalcQueryObject(const systems::Context<T>& context,
                        QueryObject<T>* output) const;
 
-  // Aggregates the input poses into the output PoseBundle, in the same order as
-  // was used in allocation. Aborts if any inputs have a _different_ size than
-  // expected.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  void CalcPoseBundle(const systems::Context<T>& context,
-                      systems::rendering::PoseBundle<T>* output) const;
-#pragma GCC diagnostic pop
-
   // Collects all of the *dynamic* frames that have geometries with the given
   // role.
   std::vector<FrameId> GetDynamicFrames(const GeometryState<T>& g_state,
@@ -910,9 +880,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // A mapping from added source identifier to the port indices associated with
   // that id.
   std::unordered_map<SourceId, SourcePorts> input_source_ids_;
-
-  // The index of the output port with the PoseBundle abstract value.
-  int bundle_port_index_{-1};
 
   // The index of the output port with the QueryObject abstract value.
   int query_port_index_{-1};

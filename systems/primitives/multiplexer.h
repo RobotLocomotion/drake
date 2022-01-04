@@ -12,6 +12,16 @@ namespace systems {
 /// This system combines multiple vector-valued inputs into a vector-valued
 /// output.  The input to this system directly feeds through to its output.
 ///
+/// @system
+/// name: Multiplexer
+/// input_ports:
+/// - u0
+/// - ...
+/// - u(N-1)
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>
@@ -21,11 +31,31 @@ class Multiplexer : public LeafSystem<T> {
 
   /// Constructs a %Multiplexer with `num_scalar_inputs` scalar-valued input
   /// ports, and one vector-valued output port of size `num_scalar_inputs`.
+  ///
+  /// @system
+  /// name: Multiplexer
+  /// input_ports:
+  /// - u0
+  /// - ...
+  /// - u(num_scalar_inputs - 1)
+  /// output_ports:
+  /// - y0
+  /// @endsystem
   explicit Multiplexer(int num_scalar_inputs);
 
   /// Constructs a %Multiplexer with `input_sizes.size()` vector-valued input
   /// ports where the i-th input has size `input_sizes[i]`, and one vector-
   /// valued output port of size `sum(input_sizes)`.
+  ///
+  /// @system
+  /// name: Multiplexer
+  /// input_ports:
+  /// - u0
+  /// - ...
+  /// - u(input_sizes.size() - 1)
+  /// output_ports:
+  /// - y0
+  /// @endsystem
   explicit Multiplexer(std::vector<int> input_sizes);
 
   /// Constructs a %Multiplexer with model_vector.size() scalar-valued inputs

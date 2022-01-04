@@ -44,6 +44,11 @@ GTEST_TEST(BasicVectorTest, Access) {
   const BasicVector<double> pair{1.0, 2.0};
   EXPECT_EQ(1.0, pair.GetAtIndex(0));
   EXPECT_EQ(2.0, pair.GetAtIndex(1));
+
+  EXPECT_EQ(Eigen::Vector2d(1.0, 2.0), pair.value());
+
+  // To be deprecated: get_value() wraps a VectorBlock around the value.
+  EXPECT_EQ(pair.value(), pair.get_value());
 }
 
 GTEST_TEST(BasicVectorTest, OutOfRange) {
@@ -57,16 +62,16 @@ GTEST_TEST(BasicVectorTest, OutOfRange) {
 // Tests SetZero functionality.
 GTEST_TEST(BasicVectorTest, SetZero) {
   BasicVector<double> vec{1.0, 2.0, 3.0};
-  EXPECT_EQ(Eigen::Vector3d(1.0, 2.0, 3.0), vec.get_value());
+  EXPECT_EQ(Eigen::Vector3d(1.0, 2.0, 3.0), vec.value());
   vec.SetZero();
-  EXPECT_EQ(Eigen::Vector3d(0, 0, 0), vec.get_value());
+  EXPECT_EQ(Eigen::Vector3d(0, 0, 0), vec.value());
 }
 
 // Tests that the BasicVector<double> is initialized to NaN.
 GTEST_TEST(BasicVectorTest, DoubleInitiallyNaN) {
   BasicVector<double> vec(3);
   Eigen::Vector3d expected(NAN, NAN, NAN);
-  EXPECT_TRUE(CompareMatrices(expected, vec.get_value(),
+  EXPECT_TRUE(CompareMatrices(expected, vec.value(),
                               Eigen::NumTraits<double>::epsilon(),
                               MatrixCompareType::absolute));
 }
@@ -82,15 +87,15 @@ GTEST_TEST(BasicVectorTest, AutodiffInitiallyNaN) {
 // Tests that the BasicVector<symbolic::Expression> is initialized to NaN.
 GTEST_TEST(BasicVectorTest, SymbolicInitiallyNaN) {
   BasicVector<symbolic::Expression> vec(1);
-  EXPECT_TRUE(symbolic::is_nan(vec.get_value()[0]));
+  EXPECT_TRUE(symbolic::is_nan(vec.value()[0]));
 }
 
 // Tests BasicVector<T>::Make.
 GTEST_TEST(BasicVectorTest, Make) {
   auto dut1 = BasicVector<double>::Make(1.0, 2.0);
   auto dut2 = BasicVector<double>::Make({3.0, 4.0});
-  EXPECT_TRUE(CompareMatrices(dut1->get_value(), Eigen::Vector2d(1.0, 2.0)));
-  EXPECT_TRUE(CompareMatrices(dut2->get_value(), Eigen::Vector2d(3.0, 4.0)));
+  EXPECT_TRUE(CompareMatrices(dut1->value(), Eigen::Vector2d(1.0, 2.0)));
+  EXPECT_TRUE(CompareMatrices(dut2->value(), Eigen::Vector2d(3.0, 4.0)));
 }
 
 // Tests that BasicVector<symbolic::Expression>::Make does what it says on
@@ -117,7 +122,7 @@ GTEST_TEST(BasicVectorTest, Mutate) {
   vec.get_mutable_value() << 1, 2;
   Eigen::Vector2d expected;
   expected << 1, 2;
-  EXPECT_EQ(expected, vec.get_value());
+  EXPECT_EQ(expected, vec.value());
 }
 
 // Tests that the BasicVector can be addressed as an array.
@@ -128,7 +133,7 @@ GTEST_TEST(BasicVectorTest, ArrayOperator) {
 
   Eigen::Vector2d expected;
   expected << 76, 42;
-  EXPECT_EQ(expected, vec.get_value());
+  EXPECT_EQ(expected, vec.value());
 
   const auto& const_vec = vec;
   EXPECT_EQ(76, const_vec[0]);
@@ -143,12 +148,12 @@ GTEST_TEST(BasicVectorTest, SetWholeVector) {
   Eigen::Vector2d next_value;
   next_value << 3, 4;
   vec.set_value(next_value);
-  EXPECT_EQ(next_value, vec.get_value());
+  EXPECT_EQ(next_value, vec.value());
 
   Eigen::Vector2d another_value;
   another_value << 5, 6;
   vec.SetFromVector(another_value);
-  EXPECT_EQ(another_value, vec.get_value());
+  EXPECT_EQ(another_value, vec.value());
 
   EXPECT_THROW(vec.SetFromVector(Eigen::Vector3d::Zero()), std::exception);
 }
@@ -160,7 +165,7 @@ GTEST_TEST(BasicVectorTest, SetFrom) {
   BasicVector<double> next_vec(2);
   next_vec.get_mutable_value() << 3, 4;
   vec.SetFrom(next_vec);
-  EXPECT_EQ(next_vec.get_value(), vec.get_value());
+  EXPECT_EQ(next_vec.value(), vec.value());
   EXPECT_THROW(vec.SetFrom(BasicVector<double>(3)), std::exception);
 }
 
@@ -173,7 +178,7 @@ GTEST_TEST(BasicVectorTest, Clone) {
 
   Eigen::Vector2d expected;
   expected << 1, 2;
-  EXPECT_EQ(expected, clone->get_value());
+  EXPECT_EQ(expected, clone->value());
 }
 
 // Tests that an error is thrown when the BasicVector is set from a vector
@@ -202,27 +207,27 @@ GTEST_TEST(BasicVectorTest, PlusEqScaled) {
   VectorBase<double>& v5 = vec5;
   ogvec.PlusEqScaled(2, v1);
   ans1 << 2, 4;
-  EXPECT_EQ(ans1, ogvec.get_value());
+  EXPECT_EQ(ans1, ogvec.value());
 
   ogvec.SetZero();
   ogvec.PlusEqScaled({{2, v1}, {3, v2}});
   ans2 << 11, 19;
-  EXPECT_EQ(ans2, ogvec.get_value());
+  EXPECT_EQ(ans2, ogvec.value());
 
   ogvec.SetZero();
   ogvec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}});
   ans3 << 46, 74;
-  EXPECT_EQ(ans3, ogvec.get_value());
+  EXPECT_EQ(ans3, ogvec.value());
 
   ogvec.SetZero();
   ogvec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}, {7, v4}});
   ans4 << 137, 193;
-  EXPECT_EQ(ans4, ogvec.get_value());
+  EXPECT_EQ(ans4, ogvec.value());
 
   ogvec.SetZero();
   ogvec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}, {7, v4}, {11, v5}});
   ans5 << 346, 446;
-  EXPECT_EQ(ans5, ogvec.get_value());
+  EXPECT_EQ(ans5, ogvec.value());
 }
 
 template <typename T>
@@ -240,7 +245,7 @@ TYPED_TEST(TypedBasicVectorTest, StringStream) {
   std::stringstream s;
   s << "hello " << vec << " world";
   std::stringstream s_expected;
-  s_expected << "hello " << vec.get_value().transpose() << " world";
+  s_expected << "hello " << vec.value().transpose() << " world";
   EXPECT_EQ(s.str(), s_expected.str());
 }
 
@@ -251,7 +256,7 @@ TYPED_TEST(TypedBasicVectorTest, ZeroLengthStringStream) {
   std::stringstream s;
   s << "foo [" << vec << "] bar";
   std::stringstream s_expected;
-  s_expected << "foo [" << vec.get_value().transpose() << "] bar";
+  s_expected << "foo [" << vec.value().transpose() << "] bar";
   EXPECT_EQ(s.str(), s_expected.str());
 }
 

@@ -86,12 +86,12 @@ void AddRigidHydroelasticProperties(ProximityProperties* properties) {
 }
 
 namespace {
-void AddSoftHydroelasticProperties(double hydroelastic_modulus,
-                                   ProximityProperties* properties) {
+void AddCompliantHydroelasticProperties(double hydroelastic_modulus,
+                                        ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
-  // The bare minimum of defining a soft geometry is to declare its compliance
-  // type. Downstream consumers (ProximityEngine) will determine if this is
-  // sufficient.
+  // The bare minimum of defining a compliant geometry is to declare its
+  // compliance type. Downstream consumers (ProximityEngine) will determine
+  // if this is sufficient.
   if (hydroelastic_modulus <= 0) {
     throw std::logic_error(
         fmt::format("The hydroelastic modulus must be positive; given {}",
@@ -104,22 +104,22 @@ void AddSoftHydroelasticProperties(double hydroelastic_modulus,
 }
 }  // namespace
 
-void AddSoftHydroelasticProperties(double resolution_hint,
-                                   double hydroelastic_modulus,
-                                   ProximityProperties* properties) {
+void AddCompliantHydroelasticProperties(double resolution_hint,
+                                        double hydroelastic_modulus,
+                                        ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
   properties->AddProperty(internal::kHydroGroup, internal::kRezHint,
                           resolution_hint);
-  AddSoftHydroelasticProperties(hydroelastic_modulus, properties);
+  AddCompliantHydroelasticProperties(hydroelastic_modulus, properties);
 }
 
-void AddSoftHydroelasticPropertiesForHalfSpace(
+void AddCompliantHydroelasticPropertiesForHalfSpace(
     double slab_thickness, double hydroelastic_modulus,
     ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
   properties->AddProperty(internal::kHydroGroup, internal::kSlabThickness,
                           slab_thickness);
-  AddSoftHydroelasticProperties(hydroelastic_modulus, properties);
+  AddCompliantHydroelasticProperties(hydroelastic_modulus, properties);
 }
 
 }  // namespace geometry

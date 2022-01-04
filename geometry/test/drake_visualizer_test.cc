@@ -18,7 +18,6 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcm/lcm_messages.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/lcmt_viewer_geometry_data.hpp"
@@ -51,7 +50,7 @@ class DrakeVisualizerTester {
  public:
   template <typename T>
   static std::string lcm_url(const DrakeVisualizer<T>& visualizer) {
-    return dynamic_cast<lcm::DrakeLcm*>(visualizer.lcm_)->get_lcm_url();
+    return visualizer.lcm_->get_lcm_url();
   }
 
   template <typename T>
@@ -315,7 +314,7 @@ class DrakeVisualizerTest : public ::testing::Test {
   static constexpr char kSourceName[] = "DrakeVisualizerTest";
 
   /* The LCM visualizer broadcasts messages on.  */
-  lcm::DrakeMockLcm lcm_;
+  lcm::DrakeLcm lcm_;
   /* The subscribers for draw and load messages.  */
   lcm::Subscriber<lcmt_viewer_draw> draw_subscriber_{&lcm_, kDrawChannel};
   lcm::Subscriber<lcmt_viewer_load_robot> load_subscriber_{&lcm_, kLoadChannel};
@@ -742,7 +741,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
   using T = TypeParam;
 
   DrakeVisualizerParams params;
-  /* We'll expect the visualizer default color gets applied to the hydroelasitc
+  /* We'll expect the visualizer default color gets applied to the hydroelastic
    meshes -- we haven't defined any other color to the geometry. So, we'll pick
    an arbitrary value that *isn't* the default value. */
   params.default_color = Rgba{0.25, 0.5, 0.75, 0.5};
@@ -776,7 +775,9 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
   add_geometry(make_unique<Box>(1, 1, 1), "box", props, X_PBox);
   add_geometry(make_unique<HalfSpace>(), "rigid_half_space", props);
 
-  /* Populate with soft hydroelastic properties and add soft geometries. */
+  /* Populate with compliant hydroelastic properties and add
+     compliant geometries.
+  */
   props.AddProperty(internal::kHydroGroup, internal::kSlabThickness, 5.0);
   props.AddProperty(internal::kHydroGroup, internal::kElastic, 5.0);
   props.UpdateProperty(internal::kHydroGroup, internal::kComplianceType,

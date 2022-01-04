@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
+#include "drake/geometry/proximity/polygon_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
@@ -25,6 +26,48 @@ void DoScalarDependentDefinitions(py::module m, T) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
 
+  // PolygonSurfaceMesh
+  {
+    using Class = PolygonSurfaceMesh<T>;
+    constexpr auto& cls_doc = doc.PolygonSurfaceMesh;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "PolygonSurfaceMesh", param, cls_doc.doc);
+    cls  // BR
+        .def(
+            "element",
+            [](Class* self, int e) {
+              // The SurfacePolygon class is non-copyable, so we need to do a
+              // little dance here in order to bind it into pydrake.
+              return self->element(e).copy_to_unique();
+            },
+            py::arg("e"),
+            // The return value is a view into the PolygonSurfaceMesh storage.
+            py::keep_alive<0, 1>(), cls_doc.element.doc)
+        .def("vertex", &Class::vertex, py::arg("v"), cls_doc.vertex.doc)
+        .def("num_vertices", &Class::num_vertices, cls_doc.num_vertices.doc)
+        .def("num_elements", &Class::num_elements, cls_doc.num_elements.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<std::vector<int>, std::vector<Vector3<T>>>(),
+            py::arg("face_data"), py::arg("vertices"), cls_doc.ctor.doc_2args)
+        .def("TransformVertices", &Class::TransformVertices, py::arg("X_NM"),
+            cls_doc.TransformVertices.doc)
+        .def("ReverseFaceWinding", &Class::ReverseFaceWinding,
+            cls_doc.ReverseFaceWinding.doc)
+        .def("num_faces", &Class::num_faces, cls_doc.num_faces.doc)
+        .def("area", &Class::area, py::arg("f"), cls_doc.area.doc)
+        .def("total_area", &Class::total_area, cls_doc.total_area.doc)
+        .def("face_normal", &Class::face_normal, py::arg("f"),
+            cls_doc.face_normal.doc)
+        .def("element_centroid", &Class::element_centroid, py::arg("e"),
+            cls_doc.element_centroid.doc)
+        .def("centroid", &Class::centroid, cls_doc.centroid.doc)
+        .def("CalcBoundingBox", &Class::CalcBoundingBox,
+            cls_doc.CalcBoundingBox.doc)
+        .def("Equal", &Class::Equal, py::arg("mesh"), cls_doc.Equal.doc)
+        .def("face_data", &Class::face_data, cls_doc.face_data.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
+
   // TriangleSurfaceMesh
   {
     using Class = TriangleSurfaceMesh<T>;
@@ -37,8 +80,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("triangles", &Class::triangles,
             doc.TriangleSurfaceMesh.triangles.doc)
         .def("vertices", &Class::vertices, doc.TriangleSurfaceMesh.vertices.doc)
-        .def(
-            "centroid", &Class::centroid, doc.TriangleSurfaceMesh.centroid.doc);
+        .def("centroid", &Class::centroid, doc.TriangleSurfaceMesh.centroid.doc)
+        .def("element_centroid", &Class::element_centroid, py::arg("t"),
+            doc.TriangleSurfaceMesh.element_centroid.doc);
   }
 
   // VolumeMesh
@@ -66,6 +110,16 @@ void DoScalarIndependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
   constexpr auto& doc = pydrake_doc.drake.geometry;
+
+  // SurfacePolygon
+  {
+    using Class = SurfacePolygon;
+    constexpr auto& cls_doc = doc.SurfacePolygon;
+    py::class_<Class> cls(m, "SurfacePolygon", cls_doc.doc);
+    cls  // BR
+        .def("num_vertices", &Class::num_vertices, cls_doc.num_vertices.doc)
+        .def("vertex", &Class::vertex, py::arg("i"), cls_doc.vertex.doc);
+  }
 
   // SurfaceTriangle
   {
@@ -112,14 +166,16 @@ void DoScalarIndependentDefinitions(py::module m) {
       py::overload_cast<ProximityProperties*>(&AddRigidHydroelasticProperties),
       py::arg("properties"), doc.AddRigidHydroelasticProperties.doc_1args);
 
-  m.def("AddSoftHydroelasticProperties", &AddSoftHydroelasticProperties,
-      py::arg("resolution_hint"), py::arg("hydroelastic_modulus"),
-      py::arg("properties"), doc.AddSoftHydroelasticProperties.doc);
-
-  m.def("AddSoftHydroelasticPropertiesForHalfSpace",
-      &AddSoftHydroelasticPropertiesForHalfSpace, py::arg("slab_thickness"),
+  m.def("AddCompliantHydroelasticProperties",
+      &AddCompliantHydroelasticProperties, py::arg("resolution_hint"),
       py::arg("hydroelastic_modulus"), py::arg("properties"),
-      doc.AddSoftHydroelasticPropertiesForHalfSpace.doc);
+      doc.AddCompliantHydroelasticProperties.doc);
+
+  m.def("AddCompliantHydroelasticPropertiesForHalfSpace",
+      &AddCompliantHydroelasticPropertiesForHalfSpace,
+      py::arg("slab_thickness"), py::arg("hydroelastic_modulus"),
+      py::arg("properties"),
+      doc.AddCompliantHydroelasticPropertiesForHalfSpace.doc);
 }
 
 }  // namespace

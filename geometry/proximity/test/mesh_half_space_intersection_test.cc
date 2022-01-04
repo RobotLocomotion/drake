@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/mesh_half_space_intersection.h"
 
+#include <functional>
 #include <limits>
 #include <memory>
 #include <utility>
@@ -82,214 +83,303 @@ TriangleSurfaceMesh<double> CreateBoxMesh(const RigidTransform<double>& X_FB) {
   return {move(faces), move(vertices_F)};
 }
 
-// Creates a new TriangleSurfaceMesh mesh from the given input mesh, such that
-// the resulting mesh has the same domain, but with two differences:
-//
-//   1. The vertices in the resultant mesh are measured and expressed in
-//      Frame W (as opposed to the input mesh's Frame F)
-//   2. Each triangle in the input mesh has been turned into three triangles;
-//      the original turned into a triangle fan around its centroid.
-// This method confirms that the face normal directions are preserved.
-template <typename T>
-static TriangleSurfaceMesh<double> CreateMeshWithCentroids(
-    const TriangleSurfaceMesh<double>& mesh_F, const RigidTransform<T>& X_WF) {
-  constexpr double kEps = 8 * std::numeric_limits<double>::epsilon();
-  const RigidTransform<double>& X_WF_d = convert_to_double(X_WF);
-
-  // All of the original vertices are part of the final mesh. And each face
-  // is a polygon we want to add to the new mesh. So, we copy the vertices
-  // and then simply add polygon after polygon.
-  std::vector<SurfaceTriangle> new_faces;
-  std::vector<Vector3d> new_vertices_W;
-  std::transform(mesh_F.vertices().begin(), mesh_F.vertices().end(),
-                 std::back_inserter(new_vertices_W),
-                 [&X_WF_d](const Vector3d& v_F) -> Vector3d {
-                   return X_WF_d * v_F;
-                 });
-
-  const RotationMatrix<double>& R_WF = X_WF_d.rotation();
-  for (int f_index = 0; f_index < mesh_F.num_triangles(); ++f_index) {
-    const SurfaceTriangle& f = mesh_F.element(f_index);
-    // We want to add the triangle fan for the existing face, but also want to
-    // confirm that the new faces have normals that match the input face.
-    std::vector<int> polygon{f.vertex(0), f.vertex(1), f.vertex(2)};
-    const Vector3d& nhat_W = R_WF * mesh_F.face_normal(f_index);
-    AddPolygonToMeshData(polygon, nhat_W, &new_faces, &new_vertices_W);
-
-    // Confirm polygon winding matches between source triangle and triangles
-    // in the new fan.
-    // The triangle fan consists of the last three faces in `new_faces`.
-    const int num_new_faces = static_cast<int>(new_faces.size());
-    const int first_new_face_index = num_new_faces - 3;
-    for (int j = first_new_face_index; j < num_new_faces; ++j) {
-      const SurfaceTriangle& new_face = new_faces[j];
-      const Vector3d& a = new_vertices_W[new_face.vertex(0)];
-      const Vector3d& b = new_vertices_W[new_face.vertex(1)];
-      const Vector3d& c = new_vertices_W[new_face.vertex(2)];
-      const Vector3d new_nhat_W = (b - a).cross((c - a)).normalized();
-      if (!CompareMatrices(nhat_W, new_nhat_W, kEps)) {
-        throw std::runtime_error("Derived mesh's normals are incorrect");
+// Given a triangle mesh expressed in frame F, creates a "contact surface mesh"
+// expressed in frame W. If the mesh representation is polygon, the triangles
+// are simply transformed into 3-sided polygons. If the mesh representation is
+// triangle, each triangle is tessellated around its centroid.
+template <typename MeshType>
+MeshType RexpressAsContactMesh(
+    const TriangleSurfaceMesh<double>& mesh_F,
+    const RigidTransform<typename MeshType::ScalarType>& X_WF) {
+  using T = typename MeshType::ScalarType;
+  vector<Vector3<T>> vertices_W;
+  vertices_W.reserve(mesh_F.num_vertices());
+  for (const auto& p_MV : mesh_F.vertices()) {
+    vertices_W.emplace_back(X_WF * p_MV.cast<T>());
+  }
+  if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
+    vector<SurfaceTriangle> triangles;
+    triangles.reserve(mesh_F.num_triangles() * 3);
+    vector<int> polygon(8);
+    for (int t_index = 0; t_index < mesh_F.num_triangles(); ++t_index) {
+      const auto& tri = mesh_F.element(t_index);
+      polygon.clear();
+      polygon.push_back(tri.vertex(0));
+      polygon.push_back(tri.vertex(1));
+      polygon.push_back(tri.vertex(2));
+      const Vector3<T>& nhat_W =
+          X_WF.rotation() * mesh_F.face_normal(t_index).cast<T>();
+      AddPolygonToTriangleMeshData(polygon, nhat_W, &triangles, &vertices_W);
+    }
+    return {move(triangles), move(vertices_W)};
+  } else {
+    vector<int> face_data;
+    face_data.reserve(mesh_F.num_triangles() * 4);
+    for (const auto& tri : mesh_F.triangles()) {
+      face_data.push_back(3);
+      for (int i = 0; i < 3; ++i) {
+        face_data.push_back(tri.vertex(i));
       }
     }
+    return {move(face_data), move(vertices_W)};
   }
-
-  return TriangleSurfaceMesh<double>(move(new_faces), move(new_vertices_W));
 }
 
-// Creates a new TriangleSurfaceMesh mesh from the given input mesh such that
-// all triangles are independent with no shared vertices. The resulting mesh has
-// the same domain, but with two differences:
-//
-//   1. The vertices in the resultant mesh are measured and expressed in
-//      Frame W (as opposed to the input mesh's Frame F)
-//   2. Triangles in the new mesh are independent and share no vertices.
-//      Duplicate vertices are typical. We need this property for testing
-//      the contact polygon representing as independent triangles, i.e.,
-//      ContactPolygonRepresentation::kSingleTriangle.
-//
-// @note Even if the input mesh's faces share vertices, the output mesh's
-//       faces will not share vertices.
-template <typename T>
-TriangleSurfaceMesh<double> CreateMeshOfIndependentTriangles(
-    const TriangleSurfaceMesh<double>& mesh_F, const RigidTransform<T>& X_WF) {
-  std::vector<Vector3d> vertices_W;
-  std::vector<SurfaceTriangle> faces;
-  const RigidTransform<double>& X_WF_d = convert_to_double(X_WF);
-  for (const auto& face : mesh_F.triangles()) {
-    const size_t v = vertices_W.size();
-    faces.emplace_back(v, v + 1, v + 2);
-    vertices_W.emplace_back(X_WF_d * mesh_F.vertex(face.vertex(0)));
-    vertices_W.emplace_back(X_WF_d * mesh_F.vertex(face.vertex(1)));
-    vertices_W.emplace_back(X_WF_d * mesh_F.vertex(face.vertex(2)));
-  }
-  return {move(faces), move(vertices_W)};
-}
 
+// TODO(SeanCurtis-TRI): All of the tests where we actually examine the mesh
+//  use a mesh with a _single_ triangle. In this case, the face-local index
+//  values are perfectly aligned with the mesh-local index values. This hides
+//  potential errors where the two sets of indices do _not_ align so nicely.
+//  One potential solution is to simply insert an additional vertex in the mesh
+//  that isn't referenced so the face isn't built on (0, 1, 2), but (1, 2, 3).
+//
 // Creates a TriangleSurfaceMesh with a single triangle using the given
 // vertices.
 TriangleSurfaceMesh<double> CreateOneTriangleMesh(const Vector3d& v0,
-                                          const Vector3d& v1,
-                                          const Vector3d& v2) {
+                                                  const Vector3d& v1,
+                                                  const Vector3d& v2) {
   std::vector<Vector3d> vertices{{v0, v1, v2}};
-
   std::vector<SurfaceTriangle> faces{{0, 1, 2}};
-
   return TriangleSurfaceMesh<double>(move(faces), move(vertices));
 }
+
+// Helper for getting the appropriate mesh builder from an expected mesh type.
+template <typename MeshType>
+struct BuilderTypeFromMesh {};
+
+template <typename T>
+struct BuilderTypeFromMesh<TriangleSurfaceMesh<T>> {
+ public:
+  using Type = TriMeshBuilder<T>;
+};
+
+template <typename T>
+struct BuilderTypeFromMesh<PolygonSurfaceMesh<T>> {
+ public:
+  using Type = PolyMeshBuilder<T>;
+};
 
 /* This test evaluates the *values* of the mesh-half space intersection
  algorithm for all supported scalars (double and AutoDiffXd). The derivatives
  for AutoDiffXd are tested below. */
-template <typename T>
+template <typename MeshType>
 class MeshHalfSpaceValueTest : public ::testing::Test {
  public:
+  // Using the symbol T here wreaks havoc with trying to use that same symbol
+  // in the classes in the derived types: shadow warnings. So, we'll simply
+  // distinguish names.
+  using Scalar = typename MeshType::ScalarType;
+
   // Accessors for data structures used repeatedly.
-  std::vector<Vector3<T>>& new_vertices_W() { return new_vertices_W_; }
-  std::vector<SurfaceTriangle>& new_faces() { return new_faces_; }
   std::unordered_map<int, int>& vertices_to_newly_created_vertices() {
     return vertices_to_newly_created_vertices_;
   }
   std::unordered_map<SortedPair<int>, int>& edges_to_newly_created_vertices() {
     return edges_to_newly_created_vertices_;
   }
-
-  // Checks whether two faces from two meshes are equivalent, which we define
-  // to mean as some permutation of acceptable windings for the vertices of
-  // `fb` yields vertices coincident with those of `fa`.
-  bool AreFacesEquivalent(const SurfaceTriangle& fa,
-                          const TriangleSurfaceMesh<double>& mesh_a,
-                          const SurfaceTriangle& fb,
-                          const TriangleSurfaceMesh<T>& mesh_b) {
-    constexpr double kEps = 32 * std::numeric_limits<double>::epsilon();
-    // Get the three vertices from each.
-    std::array<Vector3d, 3> vertices_a = {mesh_a.vertex(fa.vertex(0)),
-                                          mesh_a.vertex(fa.vertex(1)),
-                                          mesh_a.vertex(fa.vertex(2))};
-    std::array<Vector3<T>, 3> vertices_b = {mesh_b.vertex(fb.vertex(0)),
-                                            mesh_b.vertex(fb.vertex(1)),
-                                            mesh_b.vertex(fb.vertex(2))};
-
-    // Set an array of faces that will be used to determine how the two
-    // triangles align. Each of these faces encodes an "acceptable" triangle
-    // winding. They are "acceptable" because they represent triangles with the
-    // same winding and, therefore, the same normal.
-    std::array<SurfaceTriangle, 3> permutations = {SurfaceTriangle(0, 1, 2),
-                                                   SurfaceTriangle(1, 2, 0),
-                                                   SurfaceTriangle(2, 0, 1)};
-
-    // Verify that at least one of the permutations gives essentially the
-    // vertices from fb. We use epsilon because the centroid vertex may have
-    // rounding error in it.
-    using std::min;
-    T closest_dist = std::numeric_limits<T>::max();
-    for (const auto& face : permutations) {
-      T dist = 0;
-      for (int i = 0; i < 3; ++i)
-        dist += (vertices_a[face.vertex(i)] - vertices_b[i]).norm();
-      closest_dist = min(closest_dist, dist);
-      if (closest_dist <= kEps) break;
-    }
-
-    return closest_dist <= kEps;
+  typename BuilderTypeFromMesh<MeshType>::Type& builder_W() {
+    return builder_W_;
   }
 
-  // Checks whether two meshes are equivalent, meaning that there is a bijective
-  // mapping from every face in mesh a to every face in mesh b. A mapping
-  // between faces can only exist if the face in a is considered equivalent to
-  // the corresponding face in b -- see AreFacesEquivalent().
-  void VerifyMeshesEquivalent(const TriangleSurfaceMesh<double>& mesh_a,
-                              const TriangleSurfaceMesh<T>& mesh_b) {
+  // Checks whether two faces (identified by their indices) from two meshes are
+  // equivalent, which we define to mean as some permutation of acceptable
+  // windings for the vertices of `fb` yields vertices coincident with those of
+  // `fa`.
+  bool AreFacesEquivalent(int a,
+                          const MeshType& mesh_a,
+                          int b,
+                          const MeshType& mesh_b) {
+    const auto& fa = mesh_a.element(a);
+    const auto& fb = mesh_b.element(b);
+    if (fa.num_vertices() != fb.num_vertices()) return false;
+
+    // Verify that there exists a valid rotation that aligns the vertices in fa
+    // and fb. A "rotation" between two ordered lists is a permutation in which
+    // the position of every element in one list is a constant, fixed offset
+    // from its position in the other (with periodic boundary conditions). For
+    // a given rotation, the ith vertex in each face "align" if the vertices
+    // are coincident (to within epsilon units of distance).
+    const int num_vertices = fa.num_vertices();
+    constexpr double kEps = 32 * std::numeric_limits<double>::epsilon();
+    constexpr double kEps2 = kEps * kEps;
+    // For N vertices, there are N valid rotations.
+    for (int rotation = 0; rotation < num_vertices; ++rotation) {
+      bool match = true;
+      for (int a_i = 0; a_i < num_vertices; ++a_i) {
+        const int b_i = (a_i + rotation) % num_vertices;
+        if ((mesh_a.vertex(fa.vertex(a_i)) - mesh_b.vertex(fb.vertex(b_i)))
+                .squaredNorm() > kEps2) {
+          match = false;
+          break;
+        }
+      }
+      if (match) return true;
+    }
+
+    return false;
+  }
+
+  // Calling CallConstructTriangleHalfspaceIntersectionPolygon() produces a mesh
+  // and field. This confirms that the resulting test mesh is equivalent to an
+  // expected mesh. Specifically:
+  //
+  //   - The meshes must:
+  //     - have the same number of vertices (permuted order is allowed).
+  //     - have the same number of faces (again, permuted order is allowed)
+  //       - There must be a 1-to-1 correspondence between mesh faces in that
+  //         they span the same surface (but possibly with "rotated" vertex
+  //         ordering).
+  ::testing::AssertionResult MeshesEquivalent(const MeshType& test_mesh_W,
+                                              const MeshType& expected_mesh_W) {
     // Simple checks first.
-    ASSERT_EQ(mesh_a.num_triangles(), mesh_b.num_triangles());
-    ASSERT_EQ(mesh_a.num_vertices(), mesh_b.num_vertices());
+    if (test_mesh_W.num_elements() != expected_mesh_W.num_elements()) {
+      return ::testing::AssertionFailure()
+             << "Mismatch in face count. Test has "
+             << test_mesh_W.num_elements() << " faces; expected "
+             << expected_mesh_W.num_elements();
+    }
+    if (test_mesh_W.num_vertices() != expected_mesh_W.num_vertices()) {
+      return ::testing::AssertionFailure()
+             << "Mismatch in vertex count. Test has "
+             << test_mesh_W.num_vertices() << " vertices; expected "
+             << expected_mesh_W.num_vertices();
+    }
 
     // Iterate through each face of the first mesh, looking for a face from the
     // second mesh that is within the given tolerance. This is a quadratic
     // time algorithm (in the number of faces of the meshes) but we expect the
     // number of faces that this algorithm is run on to be small.
-    std::vector<SurfaceTriangle> faces_from_mesh_b = mesh_b.triangles();
-    for (const SurfaceTriangle& f1 : mesh_a.triangles()) {
+    const int face_count = test_mesh_W.num_elements();
+    vector<int> unmatched_from_expected(face_count);
+    std::iota(unmatched_from_expected.begin(), unmatched_from_expected.end(),
+              0);
+    for (int i = 0; i < face_count; ++i) {
       bool found_match = false;
-      for (int i = 0; i < static_cast<int>(faces_from_mesh_b.size()); ++i) {
-        if (AreFacesEquivalent(f1, mesh_a, faces_from_mesh_b[i], mesh_b)) {
+      for (int j : unmatched_from_expected) {
+        if (AreFacesEquivalent(i, test_mesh_W, j, expected_mesh_W)) {
           found_match = true;
-          faces_from_mesh_b[i] = faces_from_mesh_b.back();
-          faces_from_mesh_b.pop_back();
+          // Modifying the vector during range iteration is ok, because this
+          // modifications triggers dropping out of the iteration.
+          unmatched_from_expected[j] = unmatched_from_expected.back();
+          unmatched_from_expected.pop_back();
           break;
         }
       }
-
-      // If this test fails, it may fail catastrophically badly such that no two
-      // faces match between the meshes. We don't want to spew *all* the
-      // failures. The first is sufficient.
-      ASSERT_TRUE(found_match)
-          << "At least one face failed to match; there may be more.";
+      // One unmatched element is sufficient to stop the test with failure.
+      if (!found_match) {
+        return ::testing::AssertionFailure()
+               << "At least one face in the test mesh failed to match to a "
+                  "face in the expected mesh; there may be more.";
+      }
     }
+
+    return ::testing::AssertionSuccess();
+  }
+
+  // Calling CallConstructTriangleHalfspaceIntersectionPolygon() produces a mesh
+  // and field. This tests the resulting mesh field against this test fixture's
+  // pressure field. Specifically:
+  //
+  //   - The field must:
+  //     - report the same per-vertex pressure as when evaluating this fixture's
+  //       pressure_in_F_.
+  //     - The gradient on each element is equal to this fixture's grad_p_F_.
+  //     - For each face, given two vertices on that face, the following must be
+  //       true:
+  //           (p(V0) + p(V1)) / 2 = p((V0 + V1) / 2)
+  //       In other words, we're making sure the field value on the interior is
+  //       a linear function consistent with the per-vertex values.
+  ::testing::AssertionResult FieldConsistent(const MeshType& test_mesh_W,
+                    const MeshFieldLinear<Scalar, MeshType>& test_field_W,
+                    const RigidTransform<Scalar>& X_WF) {
+    using std::abs;
+    const RigidTransform<Scalar> X_FW = X_WF.inverse();
+
+    // This pressure test seems to need a bit more error tolerance. While it's
+    // still an acceptable order of magnitude, some investigation as to why
+    // this is would be beneficial.
+    constexpr double kPressureEps = 3e-14;
+    for (int v = 0; v < test_mesh_W.num_vertices(); ++v) {
+      const Scalar test_pressure = test_field_W.EvaluateAtVertex(v);
+      const Vector3<Scalar> p_FV = X_FW * test_mesh_W.vertex(v);
+      const Scalar expected_pressure = pressure_in_F_(p_FV);
+      const Scalar error = abs(test_pressure - expected_pressure);
+      if (error > kPressureEps) {
+        return ::testing::AssertionFailure()
+               << "\nBad pressure field value at vertex " << v << "\n"
+               << "  Expected: " << expected_pressure << "\n"
+               << "  Found: " << test_pressure << "\n"
+               << "  tolerance: " << kPressureEps << "\n"
+               << "  error: " << error;
+      }
+    }
+
+    // We don't store/compute the gradients of the field for
+    // TriangleSurfaceMesh. Given the algorithm would produce them
+    // automatically, if we choose to do so for the triangle mesh, we could
+    // remove the compilation guard here.
+    if (std::is_same_v<MeshType, PolygonSurfaceMesh<Scalar>>) {
+      const Vector3<Scalar> grad_p_W = X_WF.rotation() * grad_p_F_;
+      for (int f = 0; f < test_mesh_W.num_elements(); ++f) {
+        auto result =
+            CompareMatrices(test_field_W.EvaluateGradient(f), grad_p_W);
+        if (!result) return result << "\nOn face " << f;
+      }
+    }
+
+    for (int f = 0; f < test_mesh_W.num_elements(); ++f) {
+      const auto& face = test_mesh_W.element(f);
+      const Vector3<Scalar>& p_WV0 = test_mesh_W.vertex(face.vertex(0));
+      const Vector3<Scalar>& p_WV1 = test_mesh_W.vertex(face.vertex(1));
+      const Vector3<Scalar> p_WX = (p_WV0 + p_WV1) / 2;
+      const Scalar p_0 = test_field_W.EvaluateAtVertex(face.vertex(0));
+      const Scalar p_1 = test_field_W.EvaluateAtVertex(face.vertex(1));
+      const Scalar p_X_expected = (p_0 + p_1) / 2;
+      const Scalar p_X_test = test_field_W.EvaluateCartesian(f, p_WX);
+      const Scalar error = (p_X_test - p_X_expected);
+      if (error > kPressureEps) {
+        return ::testing::AssertionFailure()
+               << "\nMesh face " << f
+               << " failed to provide the correct pressure for a point on the "
+                  "inside of the face: " << p_WX.transpose() << ".\n"
+               << "  Expected: " << p_X_expected << "\n"
+               << "  Found: " << p_X_test << "\n"
+               << "  tolerance: " << kPressureEps << "\n"
+               << "  error: " << error;
+      }
+    }
+
+    return ::testing::AssertionSuccess();
   }
 
   // Clears all data structures used for constructing the intersection.
   void ClearConstructionDataStructures() {
-    new_vertices_W().clear();
-    new_faces().clear();
-    vertices_to_newly_created_vertices().clear();
-    edges_to_newly_created_vertices().clear();
+    builder_W_ = typename BuilderTypeFromMesh<MeshType>::Type();
+    vertices_to_newly_created_vertices_.clear();
+    edges_to_newly_created_vertices_.clear();
   }
 
-  // Calls the triangle-half space intersection routine using this object's
-  // half space as well as the test harness's built-in mesh and construction
-  // data structures. The vertices of the final answer will be expressed in the
-  // world frame based on the given relative pose between mesh frame F and
-  // world frame W.
+  // Calls the triangle-half space intersection routine between the test
+  // fixture's half space and the provided mesh (measured and expressed in frame
+  // F). The resulting builder data are measured and expressed in the world
+  // frame (courtesy of the X_WF value).
+  //
+  // The contact mesh and field are built by iteratively invoking
+  // ConstructTriangleHalfSpaceIntersectionPolygon() on *every* triangle of the
+  // mesh. It uses this test fixture's caching data structures (which can be
+  // inspected after the call).
+  //
+  // Each call starts with an empty mesh builder and empty cache data
+  // structures.
   void CallConstructTriangleHalfspaceIntersectionPolygon(
-      const TriangleSurfaceMesh<double>& mesh_F, const RigidTransform<T> X_WF,
-      ContactPolygonRepresentation representation) {
+      const TriangleSurfaceMesh<double>& mesh_F,
+      const RigidTransform<Scalar> X_WF) {
     ClearConstructionDataStructures();
-    for (int f_index = 0; f_index < mesh_F.num_elements();
-         ++f_index) {
+    const Vector3<Scalar> grad_p_W = X_WF.rotation() * this->grad_p_F_;
+    for (int f_index = 0; f_index < mesh_F.num_elements(); ++f_index) {
       ConstructTriangleHalfspaceIntersectionPolygon(
-          mesh_F, f_index, *this->half_space_F_, X_WF, representation,
-          &this->new_vertices_W_, &this->new_faces_,
-          &this->vertices_to_newly_created_vertices_,
+          mesh_F, f_index, *this->half_space_F_, this->pressure_in_F_, grad_p_W,
+          X_WF, &this->builder_W_, &this->vertices_to_newly_created_vertices_,
           &this->edges_to_newly_created_vertices_);
     }
   }
@@ -298,49 +388,54 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
   void SetUp() {
     // The tests all use half space normal [0 0 1], with point [0 0 2]
     // lying on the half space.
-    Vector3<T> normal_H(0, 0, 1);
-    const Vector3<T> point_H(0, 0, 2);
-    half_space_F_ = std::make_unique<PosedHalfSpace<T>>(normal_H, point_H);
+    Vector3<Scalar> normal_F(0, 0, 1);
+    const Vector3<Scalar> point_F(0, 0, 2);
+    half_space_F_ = std::make_unique<PosedHalfSpace<Scalar>>(normal_F, point_F);
+    // Define the half space's pressure field with arbitrary pressure "scale",
+    // but make sure it is zero on the surface.
+    pressure_scale_ = 17;
+    grad_p_F_ = -pressure_scale_ * normal_F;
+    pressure_in_F_ = [grad_p_F = grad_p_F_,
+                      point_F](const Vector3<Scalar>& p_VF) {
+      return grad_p_F.dot(p_VF - point_F);
+    };
   }
 
-  std::vector<Vector3<T>> new_vertices_W_;
-  std::vector<SurfaceTriangle> new_faces_;
+  typename BuilderTypeFromMesh<MeshType>::Type builder_W_;
   std::unordered_map<int, int> vertices_to_newly_created_vertices_;
   std::unordered_map<SortedPair<int>, int> edges_to_newly_created_vertices_;
   // In this test harness, the half space is always simply defined in the
   // mesh's frame F.
-  std::unique_ptr<PosedHalfSpace<T>> half_space_F_;
+  std::unique_ptr<PosedHalfSpace<Scalar>> half_space_F_;
+  double pressure_scale_;
+  Vector3<Scalar> grad_p_F_;
+  std::function<Scalar(const Vector3<Scalar>&)> pressure_in_F_;
 };  // namespace
+
 TYPED_TEST_SUITE_P(MeshHalfSpaceValueTest);
 
 // Verifies that a triangle that lies fully outside of the half space yields an
-// empty intersection. This covers Case 4 in the code.
+// empty intersection. This covers Case 4 in the code. This code is agnostic
+// of the MeshBuilder type, so we simply execute it with a PolyMeshBuilder.
 TYPED_TEST_P(MeshHalfSpaceValueTest, NoIntersection) {
   // Create the mesh, constructing the vertices of the triangle to lie outside
   // the half space.
   const TriangleSurfaceMesh<double> mesh_F = CreateOneTriangleMesh(
       Vector3d(0, 0, 3), Vector3d(1, 0, 3), Vector3d(0, 1, 3));
 
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
-
-    // X_WF = I -- because there is no intersection, the frame of the
-    // non-existent intersection mesh is irrelevant.
-    this->CallConstructTriangleHalfspaceIntersectionPolygon(mesh_F, {},
-                                                            representation);
-    EXPECT_TRUE(this->new_vertices_W().empty());
-    EXPECT_TRUE(this->new_faces().empty());
-    EXPECT_TRUE(this->vertices_to_newly_created_vertices().empty());
-    EXPECT_TRUE(this->edges_to_newly_created_vertices().empty());
-  }
+  // X_WF = I -- because there is no intersection, the frame of the
+  // non-existent intersection mesh is irrelevant.
+  this->CallConstructTriangleHalfspaceIntersectionPolygon(mesh_F, {});
+  EXPECT_EQ(this->builder_W().num_faces(), 0);
+  EXPECT_TRUE(this->vertices_to_newly_created_vertices().empty());
+  EXPECT_TRUE(this->edges_to_newly_created_vertices().empty());
 }
 
 // Verifies that a triangle that lies inside or on the half space yields
 // that same triangle. This covers Case 1 in the code.
 TYPED_TEST_P(MeshHalfSpaceValueTest, InsideOrOnIntersection) {
-  using T = TypeParam;
+  using MeshType = TypeParam;
+  using T = typename MeshType::ScalarType;
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
   // multiplicative identities.
@@ -349,94 +444,52 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, InsideOrOnIntersection) {
           AngleAxis<T>{M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
       Vector3<T>{-0.25, 0.5, 0.75});
 
-  // Case: The triangular mesh lies well inside the half space.
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("represenation = {}", representation));
-    const TriangleSurfaceMesh<double> mesh_F = CreateOneTriangleMesh(
+  // Case: The triangular mesh lies *completely* inside the half space.
+  {
+    // Because the mesh is wholly contained within the half space, the contact
+    // mesh is the same mesh, just re-expressed in the world frame. Remember,
+    // the half space is Fz <= 2. So, putting these triangles at Fz = 1,
+    // they'll lie inside.
+    const TriangleSurfaceMesh<double> tri_mesh_F = CreateOneTriangleMesh(
         Vector3d(3, 5, 1), Vector3d(4, 5, 1), Vector3d(3, 6, 1));
 
-    this->CallConstructTriangleHalfspaceIntersectionPolygon(mesh_F, X_WF,
-                                                            representation);
+    this->CallConstructTriangleHalfspaceIntersectionPolygon(tri_mesh_F, X_WF);
+    auto [mesh_W, field_W] = this->builder_W().MakeMeshAndField();
 
-    std::unique_ptr<TriangleSurfaceMesh<double>> expected_mesh_W;
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        expected_mesh_W = std::make_unique<TriangleSurfaceMesh<double>>(
-            CreateMeshWithCentroids(mesh_F, X_WF));
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        expected_mesh_W = std::make_unique<TriangleSurfaceMesh<double>>(
-            CreateMeshOfIndependentTriangles(mesh_F, X_WF));
-        break;
-    }
-    // Verify the intersection.
-    SCOPED_TRACE("Single triangle inside half space");
-    this->VerifyMeshesEquivalent(
-        *expected_mesh_W, TriangleSurfaceMesh<T>{move(this->new_faces()),
-                                                 move(this->new_vertices_W())});
+    auto expected_mesh_W = RexpressAsContactMesh<MeshType>(tri_mesh_F, X_WF);
+    EXPECT_TRUE(this->MeshesEquivalent(*mesh_W, expected_mesh_W));
+    EXPECT_TRUE(this->FieldConsistent(*mesh_W, *field_W, X_WF));
   }
 
   // Case: triangle lies on the boundary plane.
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("represenation = {}", representation));
-    const TriangleSurfaceMesh<double> mesh_F = CreateOneTriangleMesh(
+  {
+    // This triangle is located at Fz = 2, so it lies exactly on the boundary.
+    const TriangleSurfaceMesh<double> tri_mesh_F = CreateOneTriangleMesh(
         Vector3d(3, 5, 2), Vector3d(4, 5, 2), Vector3d(3, 6, 2));
 
-    // Verify the intersection.
-    this->CallConstructTriangleHalfspaceIntersectionPolygon(mesh_F, X_WF,
-                                                            representation);
+    this->CallConstructTriangleHalfspaceIntersectionPolygon(tri_mesh_F, X_WF);
+    auto [mesh_W, field_W] = this->builder_W().MakeMeshAndField();
 
-    std::unique_ptr<TriangleSurfaceMesh<double>> expected_mesh_W;
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        expected_mesh_W = std::make_unique<TriangleSurfaceMesh<double>>(
-            CreateMeshWithCentroids(mesh_F, X_WF));
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        expected_mesh_W = std::make_unique<TriangleSurfaceMesh<double>>(
-            CreateMeshOfIndependentTriangles(mesh_F, X_WF));
-        break;
-    }
-    SCOPED_TRACE("Single triangle on half space boundary");
-    this->VerifyMeshesEquivalent(
-        *expected_mesh_W, TriangleSurfaceMesh<T>{move(this->new_faces()),
-                                                 move(this->new_vertices_W())});
+    auto expected_mesh_W = RexpressAsContactMesh<MeshType>(tri_mesh_F, X_WF);
+    EXPECT_TRUE(this->MeshesEquivalent(*mesh_W, expected_mesh_W));
+    EXPECT_TRUE(this->FieldConsistent(*mesh_W, *field_W, X_WF));
   }
 
   // Case: two triangles with a shared edge, completely enclosed in the half
   // space.
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("represenation = {}", representation));
+  {
     std::vector<Vector3d> vertices = {Vector3d(4, 5, 2), Vector3d(3, 5, 2),
                                       Vector3d(3, 5, 1), Vector3d(2, 5, 2)};
     std::vector<SurfaceTriangle> faces{{0, 1, 2}, {2, 1, 3}};
-    const TriangleSurfaceMesh<double> mesh_F(move(faces), move(vertices));
+    const TriangleSurfaceMesh<double> tri_mesh_F(move(faces), move(vertices));
 
     // Verify the intersection.
-    this->CallConstructTriangleHalfspaceIntersectionPolygon(mesh_F, X_WF,
-                                                            representation);
+    this->CallConstructTriangleHalfspaceIntersectionPolygon(tri_mesh_F, X_WF);
+    auto [mesh_W, field_W] = this->builder_W().MakeMeshAndField();
 
-    std::unique_ptr<TriangleSurfaceMesh<double>> expected_mesh_W;
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        expected_mesh_W = std::make_unique<TriangleSurfaceMesh<double>>(
-            CreateMeshWithCentroids(mesh_F, X_WF));
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        expected_mesh_W = std::make_unique<TriangleSurfaceMesh<double>>(
-            CreateMeshOfIndependentTriangles(mesh_F, X_WF));
-        break;
-    }
-    SCOPED_TRACE("Two triangles inside half space");
-    this->VerifyMeshesEquivalent(
-        *expected_mesh_W, TriangleSurfaceMesh<T>{move(this->new_faces()),
-                                                 move(this->new_vertices_W())});
+    auto expected_mesh_W = RexpressAsContactMesh<MeshType>(tri_mesh_F, X_WF);
+    EXPECT_TRUE(this->MeshesEquivalent(*mesh_W, expected_mesh_W));
+    EXPECT_TRUE(this->FieldConsistent(*mesh_W, *field_W, X_WF));
   }
 }
 
@@ -446,7 +499,8 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, InsideOrOnIntersection) {
 // triangle (if the other two vertices lie within the half space). This
 // covers Case 3 for (a) and Case 1 for (b).
 TYPED_TEST_P(MeshHalfSpaceValueTest, VertexOnHalfspaceIntersection) {
-  using T = TypeParam;
+  using MeshType = TypeParam;
+  using T = typename MeshType::ScalarType;
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
   // multiplicative identities.
@@ -456,84 +510,52 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, VertexOnHalfspaceIntersection) {
       Vector3<T>{-0.25, 0.5, 0.75});
 
   // Case: (a) one vertex on the boundary, two vertices outside.
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("represenation = {}", representation));
-    const TriangleSurfaceMesh<double> mesh_F = CreateOneTriangleMesh(
+  {
+    const TriangleSurfaceMesh<double> tri_mesh_F = CreateOneTriangleMesh(
         Vector3d(3, 5, 2), Vector3d(4, 5, 3), Vector3d(3, 6, 3));
 
     // Verify the degenerate intersection.
-    this->CallConstructTriangleHalfspaceIntersectionPolygon(mesh_F, X_WF,
-                                                            representation);
+    this->CallConstructTriangleHalfspaceIntersectionPolygon(tri_mesh_F, X_WF);
+    auto [mesh_W, field_W] = this->builder_W().MakeMeshAndField();
 
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision: {
-        EXPECT_EQ(this->new_vertices_W().size(), 4);
-        EXPECT_EQ(this->new_faces().size(), 3);
-        // Evidence that we copied one vertex and split two edges.
-        EXPECT_EQ(this->vertices_to_newly_created_vertices().size(), 1);
-        EXPECT_EQ(this->edges_to_newly_created_vertices().size(), 2);
+    if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
+        EXPECT_EQ(mesh_W->num_vertices(), 4);
+        EXPECT_EQ(mesh_W->num_elements(), 3);
+    } else {
+        EXPECT_EQ(mesh_W->num_vertices(), 3);
+        EXPECT_EQ(mesh_W->num_elements(), 1);
+    }
+    // Evidence that when computing the intersecting _polygon_, we copied one
+    // vertex and split two edges.
+    EXPECT_EQ(this->vertices_to_newly_created_vertices().size(), 1);
+    EXPECT_EQ(this->edges_to_newly_created_vertices().size(), 2);
 
-        // Check that the mesh that results is equivalent to the expected
-        // degenerate mesh. The degenerate mesh is a triangle fan around a
-        // centroid. We model the degeneracy as four identical vertices with
-        // the appropriate face topologies.
-        const RigidTransform<double>& X_WF_d = convert_to_double(X_WF);
-        std::vector<Vector3d> expected_vertices_W = {
-            X_WF_d * Vector3d(3, 5, 2), X_WF_d * Vector3d(3, 5, 2),
-            X_WF_d * Vector3d(3, 5, 2), X_WF_d * Vector3d(3, 5, 2)};
-        std::vector<SurfaceTriangle> expected_faces = {
-            SurfaceTriangle(0, 1, 3), SurfaceTriangle(1, 2, 3),
-            SurfaceTriangle(2, 0, 3)};
-        const TriangleSurfaceMesh<double> expected_mesh_W(move(expected_faces),
-                                                  move(expected_vertices_W));
-        const TriangleSurfaceMesh<T> actual_mesh_W(move(this->new_faces()),
-                                           move(this->new_vertices_W()));
-        SCOPED_TRACE(
-            "Triangle outside half space has single vertex on the plane");
-        this->VerifyMeshesEquivalent(expected_mesh_W, actual_mesh_W);
-        break;
-      }
-      case ContactPolygonRepresentation::kSingleTriangle: {
-        // This option skips the zero-area intersected polygon, which is a
-        // degenerated triangle.
-        EXPECT_TRUE(this->new_vertices_W().empty());
-        EXPECT_TRUE(this->new_faces().empty());
-        EXPECT_TRUE(this->vertices_to_newly_created_vertices().empty());
-        EXPECT_TRUE(this->edges_to_newly_created_vertices().empty());
-        break;
-      }
+    // Confirm degeneracy: areas are close to zero, and vertices are close to
+    // vertex 0 in tri_mesh_F.
+    for (int f = 0; f < mesh_W->num_elements(); ++f) {
+      EXPECT_NEAR(ExtractDoubleOrThrow(mesh_W->area(f)), 0, 1e-15);
+    }
+    // The reference vertex.
+    const Vector3<T> p_WR = X_WF * tri_mesh_F.vertex(0).cast<T>();
+    for (int v = 0; v < mesh_W->num_vertices(); ++v) {
+      EXPECT_NEAR(ExtractDoubleOrThrow((mesh_W->vertex(v) - p_WR).norm()), 0,
+                  1e-15);
+      EXPECT_NEAR(ExtractDoubleOrThrow(field_W->EvaluateAtVertex(v)), 0, 1e-15);
     }
   }
 
   // Case: (b) one vertex on the boundary, two vertices inside.
-  for (const auto representation :
-       {ContactPolygonRepresentation::kCentroidSubdivision,
-        ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("represenation = {}", representation));
-    const TriangleSurfaceMesh<double> mesh_F = CreateOneTriangleMesh(
+  {
+    const TriangleSurfaceMesh<double> tri_mesh_F = CreateOneTriangleMesh(
         Vector3d(3, 5, 2), Vector3d(4, 5, 1), Vector3d(3, 6, 1));
 
     // Verify the intersection.
-    this->CallConstructTriangleHalfspaceIntersectionPolygon(mesh_F, X_WF,
-                                                            representation);
+    this->CallConstructTriangleHalfspaceIntersectionPolygon(tri_mesh_F, X_WF);
+    auto [mesh_W, field_W] = this->builder_W().MakeMeshAndField();
 
-    std::unique_ptr<TriangleSurfaceMesh<double>> expected_mesh_W;
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        expected_mesh_W = std::make_unique<TriangleSurfaceMesh<double>>(
-            CreateMeshWithCentroids(mesh_F, X_WF));
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        expected_mesh_W = std::make_unique<TriangleSurfaceMesh<double>>(
-            CreateMeshOfIndependentTriangles(mesh_F, X_WF));
-        break;
-    }
-    SCOPED_TRACE("Triangle inside half space has single vertex on the plane");
-    this->VerifyMeshesEquivalent(
-        *expected_mesh_W, TriangleSurfaceMesh<T>{move(this->new_faces()),
-                                                 move(this->new_vertices_W())});
+    auto expected_mesh_W = RexpressAsContactMesh<MeshType>(tri_mesh_F, X_WF);
+    EXPECT_TRUE(this->MeshesEquivalent(*mesh_W, expected_mesh_W));
+    EXPECT_TRUE(this->FieldConsistent(*mesh_W, *field_W, X_WF));
   }
 }
 
@@ -543,7 +565,8 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, VertexOnHalfspaceIntersection) {
 // triangle (if the other vertex lies within the half space). This covers
 // Case 2 for (a) and Case 1 for (b).
 TYPED_TEST_P(MeshHalfSpaceValueTest, EdgeOnHalfspaceIntersection) {
-  using T = TypeParam;
+  using MeshType = TypeParam;
+  using T = typename MeshType::ScalarType;
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
   // multiplicative identities.
@@ -553,103 +576,80 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, EdgeOnHalfspaceIntersection) {
       Vector3<T>{-0.25, 0.5, 0.75});
 
   // Case: (a) two vertices on the boundary, one outside.
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("represenation = {}", representation));
-    const TriangleSurfaceMesh<double> mesh_F = CreateOneTriangleMesh(
+  {
+    const TriangleSurfaceMesh<double> tri_mesh_F = CreateOneTriangleMesh(
         Vector3d(3, 5, 3), Vector3d(2, 5, 2), Vector3d(4, 5, 2));
 
-    this->CallConstructTriangleHalfspaceIntersectionPolygon(mesh_F, X_WF,
-                                                            representation);
+    this->CallConstructTriangleHalfspaceIntersectionPolygon(tri_mesh_F, X_WF);
+    auto [mesh_W, field_W] = this->builder_W().MakeMeshAndField();
 
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision: {
-        EXPECT_EQ(this->new_vertices_W().size(), 5);
-        EXPECT_EQ(this->new_faces().size(), 4);
-        EXPECT_EQ(this->vertices_to_newly_created_vertices().size(), 2);
-        EXPECT_EQ(this->edges_to_newly_created_vertices().size(), 2);
+    if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
+        EXPECT_EQ(mesh_W->num_vertices(), 5);
+        EXPECT_EQ(mesh_W->num_elements(), 4);
+    } else {
+        EXPECT_EQ(mesh_W->num_vertices(), 4);
+        EXPECT_EQ(mesh_W->num_elements(), 1);
+    }
+    // Evidence that when computing the intersecting _polygon_, we copied two
+    // vertices and split two edges.
+    EXPECT_EQ(this->vertices_to_newly_created_vertices().size(), 2);
+    EXPECT_EQ(this->edges_to_newly_created_vertices().size(), 2);
 
-        //                    a
-        //                   ╱ ╲
-        // ^ z              ╱   ╲
-        // |         ______╱__.__╲_____
-        // |         ▒▒▒b/e▒▒▒f▒▒▒c/d▒▒
-        // |         ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
-        // |         ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
-        // --------> x
-        //
-        // The degenerate quad is formed by (b, c, d, e) which results in a
-        // triangle fan around centroid f.
-
-        // Check that the mesh that results is equivalent to the expected
-        // degenerate mesh.
-        const RigidTransform<double>& X_WF_d = convert_to_double(X_WF);
-        std::vector<Vector3d> expected_vertices = {
-            X_WF_d * Vector3d(2, 5, 2),
-            X_WF_d * Vector3d(4, 5, 2),
-            X_WF_d * Vector3d(4, 5, 2),
-            X_WF_d * Vector3d(2, 5, 2),
-            X_WF_d * Vector3d(3, 5, 2)};
-        const int b{0}, c{1}, d{2}, e{3}, f{4};
-        std::vector<SurfaceTriangle> expected_faces = {
-            SurfaceTriangle(b, c, f), SurfaceTriangle(c, d, f),
-            SurfaceTriangle(d, e, f), SurfaceTriangle(e, b, f)};
-
-        SCOPED_TRACE(
-            "Triangle outside half space has single edge on the plane");
-        this->VerifyMeshesEquivalent(
-            TriangleSurfaceMesh<double>{move(expected_faces),
-                                        move(expected_vertices)},
-            TriangleSurfaceMesh<T>{move(this->new_faces()),
-                                   move(this->new_vertices_W())});
-        break;
-      }
-      case ContactPolygonRepresentation::kSingleTriangle: {
-        // This option skips the zero-area intersected quadrilateral.
-        EXPECT_TRUE(this->new_vertices_W().empty());
-        EXPECT_TRUE(this->new_faces().empty());
-        EXPECT_TRUE(this->vertices_to_newly_created_vertices().empty());
-        EXPECT_TRUE(this->edges_to_newly_created_vertices().empty());
-        break;
-      }
+    //                    a
+    //                   ╱ ╲
+    // ^ z              ╱   ╲
+    // |         ______╱__.__╲_____
+    // |         ▒▒▒b/e▒▒▒f▒▒▒c/d▒▒
+    // |         ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+    // |         ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+    // --------> x
+    //
+    // The intersecting triangle would consist of vertices a, b, & c. The
+    // intersection will end up duplicating vertices b and c into vertices e
+    // and d, respectively. The resulting contact polygon is a zero-area quad
+    // over vertices b, e, c, & d. The final triangle fan is formed around the
+    // centroid f.
+    //
+    // Confirm degeneracy: areas are close to zero, and vertices are close to
+    // vertices 1 and 2 in tri_mesh_F (as documented above).
+    for (int f = 0; f < mesh_W->num_elements(); ++f) {
+      EXPECT_NEAR(ExtractDoubleOrThrow(mesh_W->area(f)), 0, 1e-15);
+    }
+    // The reference vertices. For simplicity, we'll only consider the
+    // _minimum_ distance each vertex is to one of these two references.
+    const Vector3<T> p_WV1 = X_WF * tri_mesh_F.vertex(1).cast<T>();
+    const Vector3<T> p_WV2 = X_WF * tri_mesh_F.vertex(2).cast<T>();
+    using std::min;
+    // The last vertex is the centroid we're ignoring for now.
+    for (int v = 0; v < mesh_W->num_vertices() - 1; ++v) {
+      const double min_dist =
+          ExtractDoubleOrThrow(min((mesh_W->vertex(v) - p_WV1).norm(),
+                                   (mesh_W->vertex(v) - p_WV2).norm()));
+      EXPECT_NEAR(min_dist, 0, 1e-15);
+      EXPECT_NEAR(ExtractDoubleOrThrow(field_W->EvaluateAtVertex(v)), 0, 1e-15);
     }
   }
 
   // Case: (b) two vertices on the boundary, one vertex inside.
-  for (const auto representation :
-       {ContactPolygonRepresentation::kCentroidSubdivision,
-        ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("represenation = {}", representation));
-    const TriangleSurfaceMesh<double> mesh_F = CreateOneTriangleMesh(
+  {
+    const TriangleSurfaceMesh<double> tri_mesh_F = CreateOneTriangleMesh(
         Vector3d(3, 5, 1), Vector3d(4, 5, 2), Vector3d(3, 6, 2));
 
     // Verify the intersection.
-    this->CallConstructTriangleHalfspaceIntersectionPolygon(mesh_F, X_WF,
-                                                            representation);
+    this->CallConstructTriangleHalfspaceIntersectionPolygon(tri_mesh_F, X_WF);
+    auto [mesh_W, field_W] = this->builder_W().MakeMeshAndField();
 
-    std::unique_ptr<TriangleSurfaceMesh<double>> expected_mesh_W;
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        expected_mesh_W = std::make_unique<TriangleSurfaceMesh<double>>(
-            CreateMeshWithCentroids(mesh_F, X_WF));
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        expected_mesh_W = std::make_unique<TriangleSurfaceMesh<double>>(
-            CreateMeshOfIndependentTriangles(mesh_F, X_WF));
-        break;
-    }
-    SCOPED_TRACE("Triangle inside half space has single edge on the plane");
-    this->VerifyMeshesEquivalent(
-        *expected_mesh_W, TriangleSurfaceMesh<T>{move(this->new_faces()),
-                                                 move(this->new_vertices_W())});
+    auto expected_mesh_W = RexpressAsContactMesh<MeshType>(tri_mesh_F, X_WF);
+    EXPECT_TRUE(this->MeshesEquivalent(*mesh_W, expected_mesh_W));
+    EXPECT_TRUE(this->FieldConsistent(*mesh_W, *field_W, X_WF));
   }
 }
 
 // Verifies that a triangle that has two vertices within the half space and
 // another outside the half space produces a quadrilateral. This covers Case 2.
 TYPED_TEST_P(MeshHalfSpaceValueTest, QuadrilateralResults) {
-  using T = TypeParam;
+  using MeshType = TypeParam;
+  using T = typename MeshType::ScalarType;
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
   // multiplicative identities.
@@ -660,13 +660,8 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, QuadrilateralResults) {
 
   // Construct one vertex of the triangle to lie outside the half space and the
   // other two to lie inside the half space.
-  const TriangleSurfaceMesh<double> mesh_F = CreateOneTriangleMesh(
+  const TriangleSurfaceMesh<double> tri_mesh_F = CreateOneTriangleMesh(
       Vector3d(3, 5, 3), Vector3d(2, 5, 1), Vector3d(4, 5, 1));
-
-  const Vector3d nhat_F =
-      (mesh_F.vertices()[1] - mesh_F.vertices()[0])
-          .cross(mesh_F.vertices()[2] - mesh_F.vertices()[0])
-          .normalized();
 
   //                   a
   //                   ╱╲
@@ -678,67 +673,53 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, QuadrilateralResults) {
   // |         ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
   // --------> x
 
-
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
-
+  {
     // Verify the intersection.
-    this->CallConstructTriangleHalfspaceIntersectionPolygon(mesh_F, X_WF,
-                                                            representation);
+    this->CallConstructTriangleHalfspaceIntersectionPolygon(tri_mesh_F, X_WF);
+    auto [mesh_W, field_W] = this->builder_W().MakeMeshAndField();
 
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision: {
-        ASSERT_EQ(this->new_faces().size(), 4);
-        ASSERT_EQ(this->new_vertices_W().size(), 5);
-        EXPECT_EQ(this->vertices_to_newly_created_vertices().size(), 2);
-        ASSERT_EQ(this->edges_to_newly_created_vertices().size(), 2);
-        break;
-      }
-      case ContactPolygonRepresentation::kSingleTriangle: {
-        // Added only one new face per original polygon.
-        ASSERT_EQ(this->new_faces().size(), 1);
-        // Added three new vertices for the new triangle.
-        ASSERT_EQ(this->new_vertices_W().size(), 3);
-        // No book keeping of new vertices because a representative triangle
-        // is designed to be independent and shares no vertices with others.
-        EXPECT_TRUE(this->vertices_to_newly_created_vertices().empty());
-        ASSERT_TRUE(this->edges_to_newly_created_vertices().empty());
-        break;
-      }
+    if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
+      EXPECT_EQ(mesh_W->num_vertices(), 5);
+      EXPECT_EQ(mesh_W->num_elements(), 4);
+    } else {
+      EXPECT_EQ(mesh_W->num_vertices(), 4);
+      EXPECT_EQ(mesh_W->num_elements(), 1);
     }
+    // Evidence that when computing the intersecting _polygon_, we copied two
+    // vertices and split two edges.
+    EXPECT_EQ(this->vertices_to_newly_created_vertices().size(), 2);
+    EXPECT_EQ(this->edges_to_newly_created_vertices().size(), 2);
 
     // Check that the mesh that results is equivalent to the expected mesh.
-    const RigidTransform<double> X_WF_d = convert_to_double(X_WF);
-    const std::vector<Vector3d> quad_W = {X_WF_d * Vector3d(2, 5, 1),     // b
-                                          X_WF_d * Vector3d(4, 5, 1),     // c
-                                          X_WF_d * Vector3d(3.5, 5, 2),   // d
-                                          X_WF_d * Vector3d(2.5, 5, 2)};  // e
-    std::vector<Vector3d> expected_vertices_W;
-    std::vector<SurfaceTriangle> expected_faces;
-    const Vector3d nhat_W = X_WF_d.rotation() * nhat_F;
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision: {
-        expected_vertices_W = quad_W;
-        const int b{0}, c{1}, d{2}, e{3};
-        const std::vector<int> polygon{b, c, d, e};
-        AddPolygonToMeshData(polygon, nhat_W, &expected_faces,
-                             &expected_vertices_W);
-        break;
-      }
-      case ContactPolygonRepresentation::kSingleTriangle: {
-        AddPolygonToMeshDataAsOneTriangle(quad_W, nhat_W, &expected_faces,
-                                          &expected_vertices_W);
-        break;
-      }
+    std::vector<Vector3<T>> expected_vertices_W = {
+        X_WF * Vector3<T>(2, 5, 1),     // b
+        X_WF * Vector3<T>(4, 5, 1),     // c
+        X_WF * Vector3<T>(3.5, 5, 2),   // d
+        X_WF * Vector3<T>(2.5, 5, 2)};  // e
+    const int b{0}, c{1}, d{2}, e{3};
+    const std::vector<int> polygon{b, c, d, e};
+    // We have to use a unique_ptr because TriangleSurfaceMesh doesn't have a
+    // default constructor.
+    unique_ptr<MeshType> expected_mesh_W;
+    if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
+    // TODO(SeanCurtis-TRI): When we use the known polygon normal in the
+    // AddPolygonToPolygonMeshData, move this normal definition out.
+    const Vector3<T> nhat_W =
+        X_WF.rotation() * tri_mesh_F.face_normal(0).cast<T>();
+      std::vector<SurfaceTriangle> expected_faces;
+      AddPolygonToTriangleMeshData(polygon, nhat_W, &expected_faces,
+                                   &expected_vertices_W);
+      expected_mesh_W = make_unique<MeshType>(move(expected_faces),
+                                              move(expected_vertices_W));
+    } else {
+      std::vector<int> face_data;
+      AddPolygonToPolygonMeshData(polygon, &face_data);
+      expected_mesh_W =
+          make_unique<MeshType>(move(face_data), move(expected_vertices_W));
     }
-    SCOPED_TRACE("Triangle intersects; forms quad");
-    this->VerifyMeshesEquivalent(
-        TriangleSurfaceMesh<double>{move(expected_faces),
-                                    move(expected_vertices_W)},
-        TriangleSurfaceMesh<T>{move(this->new_faces()),
-                               move(this->new_vertices_W())});
+
+    EXPECT_TRUE(this->MeshesEquivalent(*mesh_W, *expected_mesh_W));
+    EXPECT_TRUE(this->FieldConsistent(*mesh_W, *field_W, X_WF));
   }
 }
 
@@ -747,110 +728,97 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, QuadrilateralResults) {
 // space produces the intersected polygon that is a degenerated quadrilateral
 // with a zero-length edge. This test covers Case 2.
 TYPED_TEST_P(MeshHalfSpaceValueTest, OutsideInsideOn) {
-  using T = TypeParam;
+  using MeshType = TypeParam;
+  using T = typename MeshType::ScalarType;
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
   // multiplicative identities.
-  const RigidTransform<T> X_WF(
-      RotationMatrix<T>(
-          AngleAxis<T>{M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
-      Vector3<T>{-0.25, 0.5, 0.75});
+  const RigidTransform<T> X_WF(RotationMatrix<T>(AngleAxis<T>{
+                                   M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
+                               Vector3<T>{-0.25, 0.5, 0.75});
 
-  const TriangleSurfaceMesh<double> mesh_F = CreateOneTriangleMesh(
+  const TriangleSurfaceMesh<double> tri_mesh_F = CreateOneTriangleMesh(
       Vector3d(3, 5, 3), Vector3d(2, 5, 1), Vector3d(3.5, 5, 2));
 
-  const Vector3d nhat_F =
-      (mesh_F.vertices()[1] - mesh_F.vertices()[0])
-          .cross(mesh_F.vertices()[2] - mesh_F.vertices()[0])
-          .normalized();
+  // Verify the intersection.
+  this->CallConstructTriangleHalfspaceIntersectionPolygon(tri_mesh_F, X_WF);
+  auto [mesh_W, field_W] = this->builder_W().MakeMeshAndField();
 
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
-
-    // Verify the intersection.
-    this->CallConstructTriangleHalfspaceIntersectionPolygon(mesh_F, X_WF,
-                                                            representation);
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        ASSERT_EQ(this->edges_to_newly_created_vertices().size(), 2);
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        ASSERT_TRUE(this->edges_to_newly_created_vertices().empty());
-        break;
-    }
-
-    //                   a
-    //                   ╱╲
-    // ^ z              ╱  ╲
-    // |         _____e╱____╲c/d___
-    // |         ▒▒▒▒▒╱▒▒▒▒▒▒▒▒▒▒▒▒
-    // |         ▒▒▒▒╱▒▒▒▒▒▒▒▒▒▒▒▒▒
-    // |         ▒▒▒b▒▒▒▒▒▒▒▒▒▒▒▒▒▒
-    // |         ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
-    // --------> x
-    //
-    // Note: there is an unvisualized edge between vertices b and c -- ascii art
-    // can't draw a line at that angle.
-
-    // Check that the mesh that results is equivalent to the expected mesh.
-    const RigidTransform<double> X_WF_d = convert_to_double(X_WF);
-    // The intersected polygon is a degenerated quadrilateral with the
-    // zero-length edge cd.
-    const std::vector<Vector3<double>> degenerated_quadrilateral_W = {
-        X_WF_d * Vector3d(2, 5, 1),     // b
-        X_WF_d * Vector3d(3.5, 5, 2),   // c
-        X_WF_d * Vector3d(3.5, 5, 2),   // d
-        X_WF_d * Vector3d(2.5, 5, 2)};  // e
-    std::vector<Vector3d> expected_vertices_W;
-    std::vector<SurfaceTriangle> expected_faces;
-    const Vector3d nhat_W = X_WF_d.rotation() * nhat_F;
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision: {
-        expected_vertices_W = degenerated_quadrilateral_W;
-        const int b{0}, c{1}, d{2}, e{3};
-        std::vector<int> polygon{b, c, d, e};
-        AddPolygonToMeshData(polygon, nhat_W, &expected_faces,
-                             &expected_vertices_W);
-        break;
-      }
-      case ContactPolygonRepresentation::kSingleTriangle: {
-        AddPolygonToMeshDataAsOneTriangle(degenerated_quadrilateral_W, nhat_W,
-                                          &expected_faces,
-                                          &expected_vertices_W);
-        break;
-      }
-    }
-    SCOPED_TRACE("Triangle intersects; single vertex on boundary");
-    this->VerifyMeshesEquivalent(
-        TriangleSurfaceMesh<double>{move(expected_faces),
-                                    move(expected_vertices_W)},
-        TriangleSurfaceMesh<T>{move(this->new_faces()),
-                               move(this->new_vertices_W())});
+  if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
+    EXPECT_EQ(mesh_W->num_vertices(), 5);
+    EXPECT_EQ(mesh_W->num_elements(), 4);
+  } else {
+    EXPECT_EQ(mesh_W->num_vertices(), 4);
+    EXPECT_EQ(mesh_W->num_elements(), 1);
   }
+  // Evidence that when computing the intersecting _polygon_, we copied two
+  // vertices and split two edges.
+  EXPECT_EQ(this->vertices_to_newly_created_vertices().size(), 2);
+  EXPECT_EQ(this->edges_to_newly_created_vertices().size(), 2);
+
+  //                   a
+  //                   ╱╲
+  // ^ z              ╱  ╲
+  // |         _____e╱____╲c/d___
+  // |         ▒▒▒▒▒╱▒▒▒▒▒▒▒▒▒▒▒▒
+  // |         ▒▒▒▒╱▒▒▒▒▒▒▒▒▒▒▒▒▒
+  // |         ▒▒▒b▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+  // |         ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+  // --------> x
+  //
+  // Note: there is an unvisualized edge between vertices b and c -- ascii art
+  // can't draw a line at that angle.
+
+  // Check that the mesh that results is equivalent to the expected mesh.
+
+  // The intersected polygon is a degenerated quadrilateral with the
+  // zero-length edge cd.
+  std::vector<Vector3<T>> expected_vertices_W = {
+      X_WF * Vector3<T>(2, 5, 1),     // b
+      X_WF * Vector3<T>(3.5, 5, 2),   // c
+      X_WF * Vector3<T>(3.5, 5, 2),   // d
+      X_WF * Vector3<T>(2.5, 5, 2)};  // e
+  const int b{0}, c{1}, d{2}, e{3};
+  const std::vector<int> polygon{b, c, d, e};
+  // We have to use a unique_ptr because TriangleSurfaceMesh doesn't have a
+  // default constructor.
+  unique_ptr<MeshType> expected_mesh_W;
+  if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
+    // TODO(SeanCurtis-TRI): When we use the known polygon normal in the
+    // AddPolygonToPolygonMeshData, move this normal definition out.
+    const Vector3<T> nhat_W =
+        X_WF.rotation() * tri_mesh_F.face_normal(0).cast<T>();
+    std::vector<SurfaceTriangle> expected_faces;
+    AddPolygonToTriangleMeshData(polygon, nhat_W, &expected_faces,
+                                 &expected_vertices_W);
+    expected_mesh_W =
+        make_unique<MeshType>(move(expected_faces), move(expected_vertices_W));
+  } else {
+    std::vector<int> face_data;
+    AddPolygonToPolygonMeshData(polygon, &face_data);
+    expected_mesh_W =
+        make_unique<MeshType>(move(face_data), move(expected_vertices_W));
+  }
+
+  EXPECT_TRUE(this->MeshesEquivalent(*mesh_W, *expected_mesh_W));
+  EXPECT_TRUE(this->FieldConsistent(*mesh_W, *field_W, X_WF));
 }
 
 // Verifies that a triangle with one vertex inside the half space and two
 // vertices outside of the half space produces an interesected polygon that
 // is a triangle. This test covers Case 3.
 TYPED_TEST_P(MeshHalfSpaceValueTest, OneInsideTwoOutside) {
-  using T = TypeParam;
+  using MeshType = TypeParam;
+  using T = typename MeshType::ScalarType;
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
   // multiplicative identities.
-  const RigidTransform<T> X_WF(
-      RotationMatrix<T>(
-          AngleAxis<T>{M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
-      Vector3<T>{-0.25, 0.5, 0.75});
+  const RigidTransform<T> X_WF(RotationMatrix<T>(AngleAxis<T>{
+                                   M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
+                               Vector3<T>{-0.25, 0.5, 0.75});
 
-  const TriangleSurfaceMesh<double> mesh_F = CreateOneTriangleMesh(
+  const TriangleSurfaceMesh<double> tri_mesh_F = CreateOneTriangleMesh(
       Vector3d(3, 5, 3), Vector3d(4, 5, 3), Vector3d(3, 6, 1));
-
-  const Vector3d nhat_F =
-      (mesh_F.vertices()[1] - mesh_F.vertices()[0])
-          .cross(mesh_F.vertices()[2] - mesh_F.vertices()[0])
-          .normalized();
 
   // ^ z
   // |            b ________ c
@@ -861,51 +829,67 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, OneInsideTwoOutside) {
   // |         ▒▒▒▒▒▒▒▒a▒▒▒▒▒▒▒▒
   // --------> x
 
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
+  // Verify the intersection.
+  this->CallConstructTriangleHalfspaceIntersectionPolygon(tri_mesh_F, X_WF);
+  auto [mesh_W, field_W] = this->builder_W().MakeMeshAndField();
 
-    // Verify the intersection.
-    this->CallConstructTriangleHalfspaceIntersectionPolygon(mesh_F, X_WF,
-                                                            representation);
-
-    // Check that the mesh that results is equivalent to the expected mesh.
-    const RigidTransform<double> X_WF_d = convert_to_double(X_WF);
-    std::vector<Vector3<double>> triangle_W = {X_WF_d * Vector3d(3, 6, 1),
-                                               X_WF_d * Vector3d(3, 5.5, 2),
-                                               X_WF_d * Vector3d(3.5, 5.5, 2)};
-    std::vector<Vector3d> expected_vertices_W;
-    std::vector<SurfaceTriangle> expected_faces;
-    const Vector3d nhat_W = X_WF_d.rotation() * nhat_F;
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision: {
-        expected_vertices_W = triangle_W;
-        std::vector<int> polygon{0, 1, 2};
-        AddPolygonToMeshData(polygon, nhat_W, &expected_faces,
-                             &expected_vertices_W);
-        break;
-      }
-      case ContactPolygonRepresentation::kSingleTriangle: {
-        AddPolygonToMeshDataAsOneTriangle(triangle_W, nhat_W, &expected_faces,
-                                          &expected_vertices_W);
-        break;
-      }
-    }
-    SCOPED_TRACE("Triangle intersects; forms a smaller triangle");
-    this->VerifyMeshesEquivalent(
-        TriangleSurfaceMesh<double>{move(expected_faces),
-                                    move(expected_vertices_W)},
-        TriangleSurfaceMesh<T>{move(this->new_faces()),
-                               move(this->new_vertices_W())});
+  if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
+    EXPECT_EQ(mesh_W->num_vertices(), 4);
+    EXPECT_EQ(mesh_W->num_elements(), 3);
+  } else {
+    EXPECT_EQ(mesh_W->num_vertices(), 3);
+    EXPECT_EQ(mesh_W->num_elements(), 1);
   }
+  // Evidence that when computing the intersecting _polygon_, we copied one
+  // vertex and split two edges.
+  EXPECT_EQ(this->vertices_to_newly_created_vertices().size(), 1);
+  EXPECT_EQ(this->edges_to_newly_created_vertices().size(), 2);
+
+  std::vector<Vector3<T>> expected_vertices_W = {
+      X_WF * Vector3<T>(3, 6, 1), X_WF * Vector3<T>(3, 5.5, 2),
+      X_WF * Vector3<T>(3.5, 5.5, 2)};
+  const std::vector<int> polygon{0, 1, 2};
+  // We have to use a unique_ptr because TriangleSurfaceMesh doesn't have a
+  // default constructor.
+  unique_ptr<MeshType> expected_mesh_W;
+  if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
+    // TODO(SeanCurtis-TRI): When we use the known polygon normal in the
+    // AddPolygonToPolygonMeshData, move this normal definition out.
+    const Vector3<T> nhat_W =
+        X_WF.rotation() * tri_mesh_F.face_normal(0).cast<T>();
+    std::vector<SurfaceTriangle> expected_faces;
+    AddPolygonToTriangleMeshData(polygon, nhat_W, &expected_faces,
+                                 &expected_vertices_W);
+    expected_mesh_W =
+        make_unique<MeshType>(move(expected_faces), move(expected_vertices_W));
+  } else {
+    std::vector<int> face_data;
+    AddPolygonToPolygonMeshData(polygon, &face_data);
+    expected_mesh_W =
+        make_unique<MeshType>(move(face_data), move(expected_vertices_W));
+  }
+
+  EXPECT_TRUE(this->MeshesEquivalent(*mesh_W, *expected_mesh_W));
+  EXPECT_TRUE(this->FieldConsistent(*mesh_W, *field_W, X_WF));
 }
 
-// Tests that a mesh of a box bisected by the half space produces the expected
-// number of faces and vertices (other unit tests in this file assess the
-// correctness of various kinds of triangle/half space intersections).
-TYPED_TEST_P(MeshHalfSpaceValueTest, BoxMesh) {
-  using T = TypeParam;
+// Tests ComputeContactSurface() by intersecting a box with a half space. We
+// pretend that BVH culling produced a vector consisting of *all* box triangles.
+// In this case, we need to confirm the following:
+//   - nullptr is returned for empty index list or no *actual* intersections
+//     among the triangle indices provided.
+//   - Otherwise a valid contact surface is returned:
+//     - the mesh is as expected (coarsely), we rely on the unit tests of the
+//       underlying infrastructure to get the details correct.
+//     - the field is as expected (again, coarsely).
+//     - We have gradient samples on geometry M.
+TYPED_TEST_P(MeshHalfSpaceValueTest, ComputeContactSurfaceInvocation) {
+  using MeshType = TypeParam;
+  using T = typename MeshType::ScalarType;
+
+  static_assert(std::is_same_v<MeshType, TriangleSurfaceMesh<T>> ||
+                    std::is_same_v<MeshType, PolygonSurfaceMesh<T>>,
+                "Mesh type isn't a mesh");
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
   // multiplicative identities.
@@ -916,71 +900,110 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, BoxMesh) {
 
   // Set B to an arbitrarily chosen pose relative to F.
   RigidTransform<T> X_FB(math::RollPitchYaw<T>(M_PI_4, M_PI_4, M_PI_4),
-                               Vector3<T>(1.0, 2.0, 3.0));
+                         Vector3<T>(1.0, 2.0, 3.0));
   RigidTransform<double> X_FB_d = convert_to_double(X_FB);
 
-  const TriangleSurfaceMesh<double> mesh_F = CreateBoxMesh(X_FB_d);
+
+  const TriangleSurfaceMesh<double> tri_mesh_F = CreateBoxMesh(X_FB_d);
+  const GeometryId mesh_id = GeometryId::get_new_id();
 
   // Construct the half-space.
   const Vector3<T> Bz_F = X_FB.rotation().col(2);
   const PosedHalfSpace<T> half_space_F(Bz_F, X_FB.translation());
+  const GeometryId half_space_id = GeometryId::get_new_id();
+  const Vector3<T> grad_p_F = -17 * Bz_F;
+  const Vector3<T> grad_p_W = X_WF.rotation() * grad_p_F;
+  auto pressure_in_F = [grad_p_F,
+                        p_F0 = X_FB.translation()](const Vector3<T>& p_FV) {
+    return grad_p_F.dot(p_FV - p_F0);
+  };
 
+  using MeshBuilder = typename BuilderTypeFromMesh<MeshType>::Type;
+
+  // Case no intersections returns nullptr.
   {
-    // Case: Plane doesn't intersect. In fact, the plane _does_ intersect the
-    // mesh, but we will simulate non-intersection by providing indices to
-    // triangles that _don't_ intersect (the two triangles on the +z face).
-    std::vector<int> tri_indices{8, 9};
-    EXPECT_EQ(ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-                  mesh_F, half_space_F, tri_indices, X_WF,
-                  ContactPolygonRepresentation::kCentroidSubdivision),
+    // The triangles indicated don't actually intersect the half space.
+    EXPECT_EQ(ComputeContactSurface<MeshBuilder>(
+                  mesh_id, tri_mesh_F, half_space_id, half_space_F,
+                  pressure_in_F, grad_p_W, {8, 9}, X_WF),
               nullptr);
-    EXPECT_EQ(ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-                  mesh_F, half_space_F, tri_indices, X_WF,
-                  ContactPolygonRepresentation::kSingleTriangle),
+    // There are no indices provided.
+    EXPECT_EQ(ComputeContactSurface<MeshBuilder>(
+                  mesh_id, tri_mesh_F, half_space_id, half_space_F,
+                  pressure_in_F, grad_p_W, {}, X_WF),
               nullptr);
   }
 
-  // Case: Plane intersect the mesh.
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
-
+  // Case: Plane intersects the mesh.
+  {
     // We pass in indices of *all* the triangles.
-    std::vector<int> tri_indices(mesh_F.num_elements());
+    std::vector<int> tri_indices(tri_mesh_F.num_elements());
     std::iota(tri_indices.begin(), tri_indices.end(), 0);
 
-    const std::unique_ptr<TriangleSurfaceMesh<T>> intersection_mesh_W =
-        ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-            mesh_F, half_space_F, tri_indices, X_WF, representation);
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        // Total number of vertices:            22
-        //   -------------------------------------
-        //   vertices lying in half space:       4
-        //   vertices from split edges:          8
-        //   centroid per intersection polygon: 10
-        ASSERT_EQ(intersection_mesh_W->num_vertices(), 22);
+    const auto& surface = ComputeContactSurface<MeshBuilder>(
+        mesh_id, tri_mesh_F, half_space_id, half_space_F, pressure_in_F,
+        grad_p_W, tri_indices, X_WF);
 
-        // Each of the +/- X, Y faces of the box have two triangles. They get
-        // clipped into a triangle and quad. Each of those is transformed into a
-        // triangle fan around its centroid, producing 3 and 4 triangles for a
-        // total of seven per direction.
-        // Total number of faces:                         34
-        //   -----------------------------------------------
-        //   -Z triangles, each fanned around centroid:    6
-        //   4 X new triangles per box face:      7 * 4 = 28
-        ASSERT_EQ(intersection_mesh_W->num_triangles(), 34);
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        // Each of the ±X, ±Y, and -Z square faces of the box contribute two
-        // intersecting polygons for the total of 10 polygons. Each polygon
-        // has one representative triangle.
-        ASSERT_EQ(intersection_mesh_W->num_triangles(), 10);
-        // The ten representative triangles do not share vertices, so there
-        // are 3x10 = 30 vertices with some duplication.
-        ASSERT_EQ(intersection_mesh_W->num_vertices(), 30);
-        break;
+    // The half space intersects the mesh with four vertices inside and four
+    // outside. Therefore, we expect intersection to produce the following
+    // with respect to the intersecting *polygons*.
+    //
+    // Total number of vertices:            12
+    //   -------------------------------------
+    //   vertices lying in half space:       4
+    //   vertices from split edges:          8
+    //
+    // Each of the +/- X, Y faces of the box has two triangles. They get
+    // clipped into a triangle and quad. Furthermore, the -Z face has two
+    // triangles included directly. That leads to 10 total intersection
+    // *polygons*.
+    //
+    // If, however, we are creating a TriangleSurfaceMesh-valued result, each of
+    // those faces will be tessellated around its centroid, adding a further 10
+    // vertices. Furthermore, there are six triangles and four quads.
+    // Tessellating the quads will introduce an *additional* three triangles per
+    // quad (4 * 3 = 12 triangles). Tessellating the original triangles will
+    // introduce an additional two triangles each (2 * 6 = 12 triangles). So,
+    // the TriangleSurfaceMesh will have an addition 24 triangles.
+    const MeshType* mesh_W{};
+    const MeshFieldLinear<T, MeshType>* field_W{};
+    int expected_vert_count = 12;  // Baseline.
+    int expected_face_count = 10;
+    if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
+      expected_vert_count += 10;
+      expected_face_count += 24;
+      mesh_W = &surface->tri_mesh_W();
+      field_W = &surface->tri_e_MN();
+    } else {
+      mesh_W = &surface->poly_mesh_W();
+      field_W = &surface->poly_e_MN();
+    }
+
+    // We'll assert that the correct number of vertices *and* faces is
+    // sufficient evidence to show that ComputeContactSurfaces is correctly
+    // calling ConstructTriangleHalfspaceIntersectionPolygon().
+    ASSERT_EQ(mesh_W->num_vertices(), expected_vert_count);
+    ASSERT_EQ(mesh_W->num_elements(), expected_face_count);
+    // The field has been constructed with the same mesh is evidence that the
+    // surface has been constructed from the right pieces.
+    ASSERT_EQ(&field_W->mesh(), mesh_W);
+
+    // Confirm that we've sampled the half space gradient per face. This test is
+    // formulated without assumptions about whether the half space is M or N for
+    // the contact surface.
+    if (surface->id_M() == half_space_id) {
+      ASSERT_TRUE(surface->HasGradE_M());
+      for (int f = 0; f < mesh_W->num_elements(); ++f) {
+        EXPECT_TRUE(CompareMatrices(surface->EvaluateGradE_M_W(f), grad_p_W));
+      }
+    } else if (surface->id_N() == half_space_id) {
+      ASSERT_TRUE(surface->HasGradE_N());
+      for (int f = 0; f < mesh_W->num_elements(); ++f) {
+        EXPECT_TRUE(CompareMatrices(surface->EvaluateGradE_N_W(f), grad_p_W));
+      }
+    } else {
+      GTEST_FAIL()
+          << "The half space id was not referenced in the contact surface.";
     }
   }
 }
@@ -989,24 +1012,23 @@ REGISTER_TYPED_TEST_SUITE_P(MeshHalfSpaceValueTest, NoIntersection,
                             InsideOrOnIntersection,
                             VertexOnHalfspaceIntersection,
                             EdgeOnHalfspaceIntersection, QuadrilateralResults,
-                            OutsideInsideOn, OneInsideTwoOutside, BoxMesh);
+                            OutsideInsideOn, OneInsideTwoOutside,
+                            ComputeContactSurfaceInvocation);
 
 // The ComputeContactSurfaceFromSoftHalfSpaceRigidMesh() method has the
 // following responsibilities:
 //
 //    - Dispatch BVH culling
 //    - If no candidates, return nullptr.
-//    - Pass candidates to ConstructSurfaceMeshFromMeshHalfspaceIntersection()
-//    - If no faces, return nullptr.
-//    - Compute pressure field on mesh.
-//    - Return contact surface with mesh and pressure; field must have pointer
-//      to the mesh.
-//    - Report the gradients of soft half space's pressure field across all
-//      triangles.
+//    - Otherwise, pass candidates to ComputeContactSurface() and return its
+//      return value directly. This function maps the enumeration type to the
+//      appropriate mesh representation type.
 //
 // It is impossible to test correct BVH use (it's all fully contained within
 // the implementation). So, we'll focus on intersecting and non-intersecting
-// configurations and make sure the data reported is as expected.
+// configurations and make sure the data reported is as expected. This function
+// does its work independent of scalar type, so we'll only check the
+// double-valued instantiation.
 GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
   // An arbitrary relationship between Frames W and F -- avoiding additive and
   // multiplicative identities.
@@ -1034,11 +1056,11 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
     const RigidTransform<double> X_WH{Vector3<double>{0, 0, -5}};
     EXPECT_EQ(ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
                   hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
-                  ContactPolygonRepresentation::kCentroidSubdivision),
+                  HydroelasticContactRepresentation::kTriangle),
               nullptr);
     EXPECT_EQ(ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
                   hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
-                  ContactPolygonRepresentation::kSingleTriangle),
+                  HydroelasticContactRepresentation::kPolygon),
               nullptr);
   }
 
@@ -1051,107 +1073,46 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
   // actually have the half space perfectly aligned with the mesh.
   // We pick a rotation roughly 5 degrees away from Bz and a small offset
   // from the origin.
+  //
+  // We will simply confirm that the resulting ContactSurface exists and
+  // respects the requested representation.
   const RigidTransform<double> X_BH{
       AngleAxis<double>{M_PI * 0.027, Vector3d{1, 1, 0}.normalized()},
       Vector3<double>{0.1, -0.05, 0.075}};
   const RigidTransform<double> X_WH = X_WF * X_FB * X_BH;
 
-  // Case: intersecting configuration (ignoring the gradients of the
-  // constituent pressure fields).
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
-
+  // Case: Request triangle surface mesh.
+  {
     const std::unique_ptr<ContactSurface<double>> contact_surface =
         ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
             hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
-            representation);
+            HydroelasticContactRepresentation::kTriangle);
     ASSERT_NE(contact_surface, nullptr);
-
-    // Quick reality check on the topology of the contact surface's mesh. See
-    // BoxMesh test for the origin of the number of vertices and faces.
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 22);
-        EXPECT_EQ(contact_surface->mesh_W().num_triangles(), 34);
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 30);
-        EXPECT_EQ(contact_surface->mesh_W().num_triangles(), 10);
-        break;
-    }
-
-    // Confirm wiring in the contact surface.
-    EXPECT_EQ(&contact_surface->mesh_W(), &contact_surface->e_MN().mesh());
-
-    // Confirm pressure values.
-    PosedHalfSpace<double> hs_W{X_WH.rotation().col(2), X_WH.translation()};
-    // Simply test each vertex and confirm that the corresponding pressure
-    // value is expected.
-    const TriangleSurfaceMesh<double>& mesh_W = contact_surface->mesh_W();
-    for (int v = 0; v < mesh_W.num_vertices(); ++v) {
-      const double pressure = contact_surface->e_MN().EvaluateAtVertex(v);
-      const Vector3d& p_WV = mesh_W.vertex(v);
-      // Pressure is a function of _penetration depth_ = -signed distance.
-      const double depth = -hs_W.CalcSignedDistance(p_WV);
-      const double expected_pressure = depth * pressure_scale;
-      EXPECT_NEAR(pressure, expected_pressure, 1e-15);
-    }
+    ASSERT_EQ(contact_surface->representation(),
+              HydroelasticContactRepresentation::kTriangle);
   }
 
-  // Case:  A repeat of the previous test, this time, we simply test for the
-  // existence (and correctness) of the pressure field gradient associated
-  // with the half space; it should be the negative scaled half space normal.
-  // We'll repeat the test twice, swapping ids to make sure the pressure field
-  // moves from M to N.
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
-
-    const Vector3d grad_eH_W_expected =
-        -pressure_scale * X_WH.rotation().col(2);
-    {
-      const std::unique_ptr<ContactSurface<double>> contact_surface =
-          ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-              hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
-              representation);
-      ASSERT_NE(contact_surface, nullptr);
-      ASSERT_LT(mesh_id, hs_id);
-      EXPECT_FALSE(contact_surface->HasGradE_M());
-      EXPECT_TRUE(contact_surface->HasGradE_N());
-
-      EXPECT_GT(contact_surface->mesh_W().num_triangles(), 0);
-      for (int f = 0; f < contact_surface->mesh_W().num_triangles(); ++f) {
-        ASSERT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_N_W(f),
-                                    grad_eH_W_expected));
-      }
-    }
-
-    {
-      const std::unique_ptr<ContactSurface<double>> contact_surface =
-          ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-              mesh_id, X_WH, pressure_scale, hs_id, mesh_F, bvh_F, X_WF,
-              representation);
-      ASSERT_NE(contact_surface, nullptr);
-      EXPECT_TRUE(contact_surface->HasGradE_M());
-      EXPECT_FALSE(contact_surface->HasGradE_N());
-
-      EXPECT_GT(contact_surface->mesh_W().num_triangles(), 0);
-      for (int f = 0; f < contact_surface->mesh_W().num_triangles(); ++f) {
-        ASSERT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_M_W(f),
-                                    grad_eH_W_expected));
-      }
-    }
+  // Case: Request polygon surface mesh.
+  {
+    const std::unique_ptr<ContactSurface<double>> contact_surface =
+        ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+            hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
+            HydroelasticContactRepresentation::kPolygon);
+    ASSERT_NE(contact_surface, nullptr);
+    ASSERT_EQ(contact_surface->representation(),
+              HydroelasticContactRepresentation::kPolygon);
   }
 }
 
 // Confirm that the rigid-soft intersection correctly culls backface geometry.
-GTEST_TEST(CompupteContactSurfaceFromSoftHalfSpaceRigidMeshTest, BackfaceCull) {
+// Culling is independent of ultimate contact surface mesh representation, so
+// we'll simply test it against one mesh and scalar type and call it good. We
+// choose the TriangleSurfaceMesh so we can invoke
+// IsFaceNormalInNormalDirection() as part of the test.
+GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, BackfaceCull) {
   // For this test, we're just testing for culling. We presume that for a given
   // configuration of mesh and half space, the right calculations will be done
-  // to compute the intersection mesh. So, to that end:
+  // to compute the intersection mesh based on previous tests. So, accordingly:
   //
   //   1. We'll leave the box centered on the world frame origin and aligned
   //      with the world frame basis.  This implies that B = F = W.
@@ -1172,93 +1133,67 @@ GTEST_TEST(CompupteContactSurfaceFromSoftHalfSpaceRigidMeshTest, BackfaceCull) {
   // We align the half space normal along a diagonal of the box (to ease the
   // prediction of what the outcome should be -- see below).
   const Vector3<double> normal_W = Vector3<double>{1, -1, -1}.normalized();
-  const RigidTransform<double> X_WH = HalfSpace::MakePose(
-      normal_W, Vector3<double>{0, 0, -30});
+  const RigidTransform<double> X_WH =
+      HalfSpace::MakePose(normal_W, Vector3<double>{0, 0, -30});
   const double pressure_scale{1.5};
 
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
+  const std::unique_ptr<ContactSurface<double>> contact_surface =
+      ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+          hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
+          HydroelasticContactRepresentation::kTriangle);
+  // It definitely produces a contact surface.
+  ASSERT_NE(contact_surface, nullptr);
 
-    const std::unique_ptr<ContactSurface<double>> contact_surface =
-        ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-            hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF,
-            representation);
-    // It definitely produces a contact surface.
-    ASSERT_NE(contact_surface, nullptr);
+  const TriangleSurfaceMesh<double>& mesh_W = contact_surface->tri_mesh_W();
 
-    const TriangleSurfaceMesh<double>& contact_mesh_W =
-        contact_surface->mesh_W();
+  // For a wholly enclosed mesh _without_ backface culling, the contact
+  // surface would be the full mesh. The input mesh has two triangles per face
+  // for a total of 12 triangles and 8 vertices.
+  //
+  // In fact, because the face normal points along one of the box diagonals.
+  // Only three of the box's faces will contribute to the contact surface. So,
+  // we'd have 6 faces (2 triangles per face). For vertices, we'll include all
+  // but one of the input mesh's vertices (7).
+  //
+  // For the TriangleSurfaceMesh, those faces would get tessellated around
+  // their centroids. So, instead of 6 3-sided polygons, we have 18 triangles.
+  // And in addition to the 7-input vertices, we add 6 centroids.
+  ASSERT_EQ(mesh_W.num_elements(), 18);
+  ASSERT_EQ(mesh_W.num_vertices(), 13);
 
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        // For a wholly enclosed mesh _without_ backface culling, the contact
-        // surface would be the full mesh. The input mesh has two triangles per
-        // face for a total of 12 triangles and 8 vertices. As a contact
-        // surface, each of those triangles would be split around its centroid.
-        // This means for each triangle in the input mesh, we have three
-        // triangles in the contact surface mesh, and one additional 1 vertex.
-        // Thus the unculled contact surface would have 8 + 12 = 20 vertices and
-        // 12 * 3 = 36 triangles.
-        //
-        // In fact, because the face normal points along one of the box
-        // diagonals. Only three of the box's faces will contribute to the
-        // contact surface. So, we'll have 18 faces (6 triangles per face). For
-        // vertices, we'll include all but one of the input mesh's vertices (7),
-        // and introduce one vertex per input triangle (6) for a total of 13
-        // vertices.
-        ASSERT_EQ(contact_mesh_W.num_triangles(), 18);
-        ASSERT_EQ(contact_mesh_W.num_vertices(), 13);
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        // Because the half space normal is along a diagonal of the box,
-        // only three box's faces contribute to the contact surface. Each
-        // box's face has two triangles, so there are 3x2 = 6 contact triangles.
-        ASSERT_EQ(contact_mesh_W.num_triangles(), 6);
-        // Triangles do not share vertices, so there are 3x6 = 18 vertices
-        // with some duplication.
-        ASSERT_EQ(contact_mesh_W.num_vertices(), 18);
-        break;
-    }
-
-    // Let's explicitly confirm that every face in the contact surface mesh
-    // passes the culling test.
-    // There are two tricky bits in setting up this test.
-    //
-    //   1. The gradient of the half space pressure is in the opposite direction
-    //      as its normal. So, in normal circumstances: grad_p_W = -normal_W.
-    //   2. We only know that the normals of the contact surface mesh point
-    //      *out* of geometry N and *into* geometry M (in the contact
-    //      surface). We don't know what the mapping between those ids and the
-    //      mesh and half space ids are. If id N is the same as the mesh_id,
-    //      then we know the contact surface normals point in the mesh normal
-    //      direction. We're done. However, if mesh_id is the id for M, the
-    //      contact surface mesh normals point in the opposite direction as the
-    //      input mesh. So, to evaluate an _equivalent_ culling test, we should
-    //      likewise reverse the gradient direction. That's what the next two
-    //      lines of code do to define the gradient direction vector.
-    const double grad_scale = contact_surface->id_N() == mesh_id ? 1.0 : -1.0;
-    const Vector3<double> grad_p_W = grad_scale * -normal_W;
-    for (int tri = 0; tri < contact_mesh_W.num_triangles(); ++tri) {
-      // Everything is defined in the world frame; so the transform X_WM = I.
-      ASSERT_TRUE(
-          IsFaceNormalInNormalDirection(grad_p_W, contact_mesh_W, tri, {}))
-                    << "Face " << tri;
-    }
+  // Let's explicitly confirm that every face in the contact surface mesh
+  // passes the culling test.
+  // There are two tricky bits in setting up this test.
+  //
+  //   1. The gradient of the half space pressure is in the opposite direction
+  //      as its normal. So, in normal circumstances: grad_p_W = -normal_W.
+  //   2. We only know that the normals of the contact surface mesh point
+  //      *out* of geometry N and *into* geometry M (in the contact
+  //      surface). We don't know what the mapping between those ids and the
+  //      mesh and half space ids are. If id N is the same as the mesh_id,
+  //      then we know the contact surface normals point in the mesh normal
+  //      direction. We're done. However, if mesh_id is the id for M, the
+  //      contact surface mesh normals point in the opposite direction as the
+  //      input mesh. So, to evaluate an _equivalent_ culling test, we should
+  //      likewise reverse the gradient direction. That's what the next two
+  //      lines of code do to define the gradient direction vector.
+  const double grad_scale = contact_surface->id_N() == mesh_id ? 1.0 : -1.0;
+  const Vector3<double> grad_p_W = grad_scale * -normal_W;
+  for (int tri = 0; tri < mesh_W.num_elements(); ++tri) {
+    // Everything is defined in the world frame; so the transform X_WM = I.
+    ASSERT_TRUE(IsFaceNormalInNormalDirection(grad_p_W, mesh_W, tri, {}))
+        << "Face " << tri;
   }
+
   // Note: this confirms that the reported faces satisfy the non-culling
   // criteria, but doesn't (can't) confirm that the omitted faces don't. Rethink
   // this test if that proves to be a problem (highly unlikely).
 }
 
-// TODO(SeanCurtis-TRI): All of the tests where we actually examine the mesh
-//  use a mesh with a _single_ triangle. In this case, the face-local index
-//  values are perfectly aligned with the mesh-local index values. This hides
-//  potential errors where the two sets of indices do _not_ align so nicely.
-//  Add a test where we intersect a face that doesn't use vertices 0, 1, and 2.
-
-typedef ::testing::Types<double, AutoDiffXd> MyTypes;
+typedef ::testing::Types<
+    TriangleSurfaceMesh<double>, TriangleSurfaceMesh<AutoDiffXd>,
+    PolygonSurfaceMesh<double>, PolygonSurfaceMesh<AutoDiffXd>>
+    MyTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, MeshHalfSpaceValueTest, MyTypes);
 
 /* This test fixture enables some limited testing of the autodiff-valued contact
@@ -1295,7 +1230,13 @@ INSTANTIATE_TYPED_TEST_SUITE_P(My, MeshHalfSpaceValueTest, MyTypes);
  The function TestPositionDerivative() will pose the triangle mesh and compute
  a contact surface. It invokes a provided functor to assess the reported
  derivatives of some arbitrary quantity of the contact surface with respect to
- the position of the origin of frame R. */
+ the position of the origin of frame R.
+
+ This test exclusively uses the TriangleSurfaceMesh output type. The reason for
+ this is that the introduction of the centroid is a very convenient property to
+ use for evaluating correct propagation of derivatives. All other face,
+ vertices, and per-feature values would be equivalent for the two mesh
+ representation types. */
 class MeshHalfSpaceDerivativesTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -1411,11 +1352,12 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
 
       auto surface = ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
           id_S_, X_WS_, pressure_scale_, id_R_, *mesh_R_, *bvh_R_, X_WR,
-          ContactPolygonRepresentation::kCentroidSubdivision);
+          HydroelasticContactRepresentation::kTriangle);
 
       SCOPED_TRACE(config.name);
       ASSERT_NE(surface, nullptr);
-      ASSERT_EQ(surface->mesh_W().num_triangles(), config.expected_num_faces);
+      ASSERT_EQ(surface->tri_mesh_W().num_triangles(),
+                config.expected_num_faces);
 
       evaluate_quantity(*surface, X_WR, config.pose);
     }
@@ -1486,7 +1428,7 @@ TEST_F(MeshHalfSpaceDerivativesTest, Area) {
                            const ContactSurface<AutoDiffXd>& surface,
                            const RigidTransform<AutoDiffXd>& X_WR_ad,
                            TriPose pose) {
-    const auto& mesh_W = surface.mesh_W();
+    const auto& mesh_W = surface.tri_mesh_W();
 
     // For v × A, this makes a matrix V such that VA = v × A.
     auto skew_matrix = [](const Vector3d& v) {
@@ -1661,7 +1603,7 @@ TEST_F(MeshHalfSpaceDerivativesTest, VertexPosition) {
      in the half space. We'll evaluate all of those and then handle the centroid
      specially. */
     const Vector3d n_S{0, 0, 1};
-    const TriangleSurfaceMesh<AutoDiffXd>& mesh_W = surface.mesh_W();
+    const TriangleSurfaceMesh<AutoDiffXd>& mesh_W = surface.tri_mesh_W();
     const RigidTransformd X_WS = convert_to_double(this->X_WS_);
     const RotationMatrixd& R_WS = X_WS.rotation();
     const RotationMatrixd R_SW = R_WS.inverse();
@@ -1726,8 +1668,8 @@ TEST_F(MeshHalfSpaceDerivativesTest, FaceNormalsWrtPosition) {
                              const RigidTransform<AutoDiffXd>&, TriPose) {
     constexpr double kEps = std::numeric_limits<double>::epsilon();
     const Matrix3<double> zero_matrix = Matrix3<double>::Zero();
-    for (int t = 0; t < surface.mesh_W().num_elements(); ++t) {
-      const Vector3<AutoDiffXd> n_W = surface.mesh_W().face_normal(t);
+    for (int t = 0; t < surface.tri_mesh_W().num_elements(); ++t) {
+      const Vector3<AutoDiffXd> n_W = surface.tri_mesh_W().face_normal(t);
       EXPECT_TRUE(CompareMatrices(math::ExtractGradient(n_W),
                                   zero_matrix, 32 * kEps));
     }
@@ -1780,19 +1722,19 @@ TEST_F(MeshHalfSpaceDerivativesTest, FaceNormalsWrtOrientation) {
 
     auto surface = ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
         id_S_, X_WS_, pressure_scale_, id_R_, *mesh_R_, *bvh_R_, X_WR,
-        ContactPolygonRepresentation::kCentroidSubdivision);
+        HydroelasticContactRepresentation::kTriangle);
 
     SCOPED_TRACE(fmt::format("theta = {:.5f} radians", theta));
     /* surface != nullptr --> num_elements() > 0 as documented in the API but
      we'll explicitly confirm to make sure the test doesn't pass by accident. */
     ASSERT_NE(surface, nullptr);
-    ASSERT_GT(surface->mesh_W().num_elements(), 0);
+    ASSERT_GT(surface->tri_mesh_W().num_elements(), 0);
 
     /* Test dn̂/dθ = v̂ × n̂  = v̂ × Ry. */
     const Vector3d Ry_W = math::ExtractValue(X_WR.rotation().col(1));
     const Vector3d expected_deriv = v_W.cross(Ry_W);
-    for (int t = 0; t < surface->mesh_W().num_elements(); ++t) {
-      const auto& n = surface->mesh_W().face_normal(t);
+    for (int t = 0; t < surface->tri_mesh_W().num_elements(); ++t) {
+      const auto& n = surface->tri_mesh_W().face_normal(t);
       /* Precision decreases as the mesh gets closer to lying parallel to the
        half space surface. This simple switch accounts for the observed
        behavior in this test. */
@@ -1822,11 +1764,11 @@ TEST_F(MeshHalfSpaceDerivativesTest, Pressure) {
                                 double theta) {
     constexpr double kEps = std::numeric_limits<double>::epsilon();
     const Vector3d& n_W = X_WS.rotation().col(2);
-    for (int v = 0; v < surface.mesh_W().num_vertices(); ++v) {
-      const auto& p_WV = surface.mesh_W().vertex(v);
+    for (int v = 0; v < surface.tri_mesh_W().num_vertices(); ++v) {
+      const auto& p_WV = surface.tri_mesh_W().vertex(v);
       const Matrix3<double> dV_dRo = math::ExtractGradient(p_WV);
       const Vector3d expected_dp_dRo = -E * n_W.transpose() * dV_dRo;
-      const AutoDiffXd& p = surface.e_MN().EvaluateAtVertex(v);
+      const AutoDiffXd& p = surface.tri_e_MN().EvaluateAtVertex(v);
       EXPECT_TRUE(
           CompareMatrices(p.derivatives(), expected_dp_dRo, 3 * E * kEps));
     }

@@ -19,18 +19,16 @@ load(
 load(
     "@drake//tools/install:install.bzl",
     "install",
-    "install_files",
 )
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 licenses(["notice"])  # Apache-2.0
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
 config_setting(
     name = "linux",
     values = {"cpu": "k8"},
-    visibility = ["//visibility:private"],
 )
 
 PROJECT_MAJOR = 6
@@ -54,7 +52,6 @@ cmake_configure_file(
         "PROJECT_VERSION_FULL=%d.%d.%d" % (PROJECT_MAJOR, PROJECT_MINOR, PROJECT_PATCH),  # noqa
         "PROJECT_NAME_NO_VERSION=ignition-math",
     ],
-    visibility = ["//visibility:private"],
 )
 
 generate_file(
@@ -79,7 +76,6 @@ generate_file(
 #endif
 #define IGN_DEPRECATED(version) __attribute__ ((__deprecated__))
     """,
-    visibility = ["//visibility:private"],
 )
 
 public_headers_no_gen = [
@@ -176,10 +172,8 @@ public_headers = public_headers_no_gen + [
 # Generates the library.  The explicitly listed srcs= matches upstream's
 # explicitly listed sources plus private headers.  The explicitly listed
 # hdrs= matches upstream's public headers.
-# TODO(jwnimmer-tri) On 2021-12-01 when the ":ignition_math" target is removed,
-# we should rename this to `name = "ignition_math"`, i.e., take over its name.
 cc_library(
-    name = "ignition_math_static",
+    name = "ignition_math",
     srcs = [
         "src/Angle.cc",
         "src/AxisAlignedBox.cc",
@@ -212,72 +206,14 @@ cc_library(
     ],
     linkstatic = True,
     includes = ["include"],
+    visibility = ["//visibility:public"],
 )
 
-# TODO(jwnimmer-tri) On 2021-12-01 when the ":ignition_math" target is removed,
-# we should also remove this target.
-cc_whole_archive_library(
-    name = "ignition_math_static_whole_archive",
-    deps = [":ignition_math_static"],
-    visibility = ["//visibility:private"],
-)
-
-# TODO(jwnimmer-tri) On 2021-12-01 when the ":ignition_math" target is removed,
-# we should also remove this target.
-cc_binary(
-    name = "libdrake_ignition_math.so",
-    deps = [
-        ":ignition_math_static_whole_archive",
-    ],
-    linkopts = select({
-        ":linux": ["-Wl,-soname,libdrake_ignition_math.so"],
-        "//conditions:default": [],
-    }),
-    linkshared = 1,
-    linkstatic = 1,
-    visibility = [],
-)
-
-cc_library(
-    name = "ignition_math",
-    srcs = ["libdrake_ignition_math.so"],
-    hdrs = public_headers,
-    includes = ["include"],
-    deprecation = "DRAKE DEPRECATED: The @ignition_math external is becoming private to Drake. The shared library will no longer be available nor installed from Drake on or after 2021-12-01.",  # noqa
-)
-
-# TODO(jwnimmer-tri) On 2021-12-01 when the ":ignition_math" target is removed,
-# we should also remove this constant.
-CMAKE_PACKAGE = "ignition-math%d" % (PROJECT_MAJOR)
-
-# TODO(jwnimmer-tri) On 2021-12-01 when the ":ignition_math" target is removed,
-# we should also remove this rule.
-install_files(
-    name = "install_cmake_config",
-    dest = "lib/cmake/{}".format(CMAKE_PACKAGE),
-    files = [
-        "@drake//tools/workspace/ignition_math:{}-config.cmake".format(CMAKE_PACKAGE),  # noqa
-        "@drake//tools/workspace/ignition_math:{}-config-version.cmake".format(CMAKE_PACKAGE),  # noqa
-    ],
-    strip_prefix = ["**/"],
-    allowed_externals = ["@drake//:.bazelproject"],
-    visibility = ["//visibility:private"],
-)
-
-# TODO(jwnimmer-tri) On 2021-12-01 when the ":ignition_math" target is removed,
-# this target should remove all of its attributes other than "name" and "docs".
 install(
     name = "install",
-    workspace = CMAKE_PACKAGE,
-    targets = [":libdrake_ignition_math.so"],
-    hdrs = public_headers,
-    hdr_dest = "include/" + CMAKE_PACKAGE,
-    hdr_strip_prefix = ["include"],
     docs = [
         "COPYING",
         "LICENSE",
     ],
-    # TODO(jwnimmer-tri) On 2021-12-01 when the ":ignition_math" target is
-    # removed, we should also remove install_cmake_config from deps.
-    deps = [":install_cmake_config"],
+    visibility = ["//visibility:public"],
 )

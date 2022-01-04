@@ -12,6 +12,9 @@ for compatibility details.
 To learn about other installation methods, refer to
 [Installation and Quickstart](/installation.html).
 
+If you experience any problems or questions with Drake, please
+[ask for help on Stack Overflow](/getting_help.html).
+
 Drake binary releases incorporate a pre-compiled version of
 [SNOPT](https://ccom.ucsd.edu/~optimizers/solvers/snopt/) as part of the
 [Mathematical Program toolbox](https://drake.mit.edu/doxygen_cxx/group__solvers.html).
@@ -24,11 +27,11 @@ Mac are available to download as attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v0.35.0](https://github.com/RobotLocomotion/drake/releases/tag/v0.35.0):
+[v0.37.0](https://github.com/RobotLocomotion/drake/releases/tag/v0.37.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v0.35.0/drake-20211021-bionic.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.35.0/drake-20211021-bionic.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v0.35.0/drake-20211021-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.35.0/drake-20211021-focal.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v0.35.0/drake-20211021-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.35.0/drake-20211021-mac.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-bionic.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-bionic.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-focal.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-mac.tar.gz)
 
 ### Use as a C++ library
 

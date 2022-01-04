@@ -18,8 +18,8 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":calc_distance_and_time_derivative",
+        ":compliant_contact_manager",
         ":contact_jacobians",
-        ":contact_permutation",
         ":contact_results",
         ":contact_results_to_meshcat",
         ":contact_results_to_meshcat_params",
@@ -35,6 +35,17 @@ drake_cc_package_library(
         ":point_pair_contact_info",
         ":propeller",
         ":tamsi_solver",
+    ],
+)
+
+drake_cc_library(
+    name = "compliant_contact_manager",
+    srcs = ["compliant_contact_manager.cc"],
+    hdrs = ["compliant_contact_manager.h"],
+    deps = [
+        ":multibody_plant_core",
+        "//multibody/contact_solvers:contact_solver",
+        "//multibody/triangle_quadrature",
     ],
 )
 
@@ -305,15 +316,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "contact_permutation",
-    srcs = ["contact_permutation.cc"],
-    hdrs = ["contact_permutation.h"],
-    deps = [
-        "//multibody/tree:multibody_tree_topology",
-    ],
-)
-
-drake_cc_library(
     name = "multibody_plant_config",
     srcs = ["multibody_plant_config.cc"],
     hdrs = ["multibody_plant_config.h"],
@@ -330,6 +332,18 @@ drake_cc_library(
         ":multibody_plant_config",
         ":multibody_plant_core",
         "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "compliant_contact_manager_test",
+    deps = [
+        ":compliant_contact_manager",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/contact_solvers:pgs_solver",
+        "//systems/primitives:pass_through",
+        "//systems/primitives:zero_order_hold",
     ],
 )
 
@@ -768,22 +782,6 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//systems/analysis:simulator",
         "//systems/framework:abstract_value_cloner",
-    ],
-)
-
-drake_cc_googletest(
-    name = "contact_permutation_test",
-    data = [
-        "//examples/kuka_iiwa_arm/models",
-        "//examples/simple_gripper:simple_gripper_models",
-        "//manipulation/models/allegro_hand_description:models",
-        "//manipulation/models/iiwa_description:models",
-    ],
-    deps = [
-        ":contact_permutation",
-        ":plant",
-        "//common:find_resource",
-        "//multibody/parsing",
     ],
 )
 

@@ -400,34 +400,20 @@ class GeometryState {
   }
 
   /** Implementation of QueryObject::ComputeContactSurfaces().  */
-  std::vector<ContactSurface<T>> ComputeContactSurfaces() const {
-    return geometry_engine_->ComputeContactSurfaces(X_WGs_);
-  }
-
-  /** Implementation of QueryObject::ComputePolygonalContactSurfaces().  */
-  std::vector<ContactSurface<T>> ComputePolygonalContactSurfaces() const {
-    return geometry_engine_->ComputePolygonalContactSurfaces(X_WGs_);
+  std::vector<ContactSurface<T>> ComputeContactSurfaces(
+      HydroelasticContactRepresentation representation) const {
+    return geometry_engine_->ComputeContactSurfaces(representation, X_WGs_);
   }
 
   /** Implementation of QueryObject::ComputeContactSurfacesWithFallback().  */
   void ComputeContactSurfacesWithFallback(
+      HydroelasticContactRepresentation representation,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
     DRAKE_DEMAND(surfaces != nullptr);
     DRAKE_DEMAND(point_pairs != nullptr);
     return geometry_engine_->ComputeContactSurfacesWithFallback(
-        X_WGs_, surfaces, point_pairs);
-  }
-
-  /** Implementation of
-   QueryObject::ComputePolygonalContactSurfacesWithFallback().  */
-  void ComputePolygonalContactSurfacesWithFallback(
-      std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-    DRAKE_DEMAND(surfaces != nullptr);
-    DRAKE_DEMAND(point_pairs != nullptr);
-    return geometry_engine_->ComputePolygonalContactSurfacesWithFallback(
-        X_WGs_, surfaces, point_pairs);
+        representation, X_WGs_, surfaces, point_pairs);
   }
 
   /** Implementation of QueryObject::FindCollisionCandidates().  */

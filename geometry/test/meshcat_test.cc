@@ -18,6 +18,7 @@ namespace {
 
 using Eigen::Vector3d;
 using math::RigidTransformd;
+using math::RotationMatrixd;
 using ::testing::HasSubstr;
 
 // A small wrapper around std::system to ensure correct argument passing.
@@ -25,7 +26,7 @@ int SystemCall(const std::vector<std::string>& argv) {
   std::string command;
   for (const std::string& arg : argv) {
     // Note: Can't use ASSERT_THAT inside this subroutine.
-    EXPECT_THAT(arg, ::testing::Not(::testing::HasSubstr("'")));
+    EXPECT_THAT(arg, ::testing::Not(HasSubstr("'")));
     command = std::move(command) + "'" + arg + "' ";
   }
   return std::system(command.c_str());
@@ -137,6 +138,73 @@ GTEST_TEST(MeshcatTest, SetObjectWithPointCloud) {
   // clang-format on
   meshcat.SetObject("rgb_cloud", rgb_cloud);
   EXPECT_FALSE(meshcat.GetPackedObject("rgb_cloud").empty());
+}
+
+GTEST_TEST(MeshcatTest, SetObjectWithTriangleSurfaceMesh) {
+  Meshcat meshcat;
+
+  const int face_data[2][3] = {{0, 1, 2}, {2, 3, 0}};
+  std::vector<SurfaceTriangle> faces;
+  for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
+  const Eigen::Vector3d vertex_data[4] = {
+      {0, 0, 0}, {0.5, 0, 0}, {0.5, 0.5, 0}, {0, 0.5, 0.5}};
+  std::vector<Eigen::Vector3d> vertices;
+  for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
+  TriangleSurfaceMesh<double> surface_mesh(
+      std::move(faces), std::move(vertices));
+  meshcat.SetObject("triangle_mesh", surface_mesh, Rgba(.9, 0, .9, 1.0));
+  EXPECT_FALSE(meshcat.GetPackedObject("triangle_mesh").empty());
+
+  meshcat.SetObject("triangle_mesh_wireframe", surface_mesh,
+                    Rgba(.9, 0, .9, 1.0), true, 5.0);
+  EXPECT_FALSE(meshcat.GetPackedObject("triangle_mesh_wireframe").empty());
+}
+
+GTEST_TEST(MeshcatTest, SetLine) {
+  Meshcat meshcat;
+
+  Eigen::Matrix3Xd vertices(3, 200);
+  Eigen::RowVectorXd t = Eigen::RowVectorXd::LinSpaced(200, 0, 10 * M_PI);
+  vertices << .25 * t.array().sin(), .25 * t.array().cos(), t / (10 * M_PI);
+  meshcat.SetLine("line", vertices, 3.0, Rgba(0, 0, 1, 1));
+  EXPECT_FALSE(meshcat.GetPackedObject("line").empty());
+
+  Eigen::Matrix3Xd start(3, 4), end(3, 4);
+  // clang-format off
+  start << -.1, -.1,  .1, .1,
+           -.1,  .1, -.1, .1,
+           0, 0, 0, 0;
+  // clang-format on
+  end = start;
+  end.row(2) = Eigen::RowVector4d::Ones();
+  meshcat.SetLineSegments("line_segments", start, end, 5.0, Rgba(0, 1, 0, 1));
+  EXPECT_FALSE(meshcat.GetPackedObject("line_segments").empty());
+
+  // Throws if start.cols() != end.cols().
+  EXPECT_THROW(
+      meshcat.SetLineSegments("bad_segments", Eigen::Matrix3Xd::Identity(3, 4),
+                              Eigen::Matrix3Xd::Identity(3, 3)),
+      std::exception);
+}
+
+GTEST_TEST(MeshcatTest, SetTriangleMesh) {
+  Meshcat meshcat;
+
+  // Populate the vertices/faces transposed, for easier Eigen initialization.
+  Eigen::MatrixXd vertices(4, 3);
+  Eigen::MatrixXi faces(2, 3);
+  // clang-format off
+  vertices << 0, 0, 0,
+              1, 0, 0,
+              1, 0, 1,
+              0, 0, 1;
+  faces << 0, 1, 2,
+           3, 0, 2;
+  // clang-format on
+
+  meshcat.SetTriangleMesh("triangle_mesh", vertices.transpose(),
+                         faces.transpose(), Rgba(1, 0, 0, 1), true, 5.0);
+  EXPECT_FALSE(meshcat.GetPackedObject("triangle_mesh").empty());
 }
 
 GTEST_TEST(MeshcatTest, SetTransform) {
@@ -389,6 +457,10 @@ GTEST_TEST(MeshcatTest, SetPropertyWebSocket) {
       "property": "visible",
       "value": false
     })""");
+
+  // Confirm that meshcat.Flush() doesn't crash even when we've had multiple
+  // clients connect, received data, and disconnect.
+  meshcat.Flush();
 }
 
 GTEST_TEST(MeshcatTest, SetPerspectiveCamera) {
@@ -577,6 +649,28 @@ GTEST_TEST(MeshcatTest, ResetRenderMode) {
   EXPECT_FALSE(meshcat.GetPackedProperty("/Grid", "visible").empty());
   EXPECT_FALSE(meshcat.GetPackedProperty("/Axes", "visible").empty());
 }
+
+GTEST_TEST(MeshcatTest, StaticHtml) {
+  Meshcat meshcat;
+
+  // Call each command that will be saved (at least) once.
+  meshcat.SetObject("box", Box(.25, .25, .5), Rgba(0, 0, 1, 1));
+  meshcat.SetTransform("box", RigidTransformd(Vector3d{0, 0, 0}));
+  meshcat.SetProperty("/Background", "visible", false);
+
+  MeshcatAnimation animation;
+  animation.SetTransform(0, "box", RigidTransformd());
+  animation.SetTransform(20, "box",
+                         RigidTransformd(RotationMatrixd::MakeZRotation(M_PI)));
+
+  const std::string html = meshcat.StaticHtml();
+  // Confirm that I have some base64 content.
+  EXPECT_THAT(html, HasSubstr("data:application/octet-binary;base64"));
+
+  // Confirm that the meshcat.js link was replaced.
+  EXPECT_THAT(html, ::testing::Not(HasSubstr("meshcat.js")));
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake

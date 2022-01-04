@@ -6,6 +6,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <typeinfo>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -21,6 +22,13 @@
 
 namespace drake {
 namespace systems {
+
+#ifndef DRAKE_DOXYGEN_CXX
+namespace internal {
+// This class is defined later in this header file, below.
+class DiagramSystemBaseAttorney;
+}  // namespace internal
+#endif
 
 /** Provides non-templatized functionality shared by the templatized System
 classes.
@@ -630,6 +638,8 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
  protected:
+  friend class internal::DiagramSystemBaseAttorney;
+
   /** (Internal use only). */
   SystemBase() = default;
 
@@ -1053,10 +1063,11 @@ class SystemBase : public internal::SystemMessageInterface {
   check(s) given by ValidateContext have failed. */
   [[noreturn]] void ThrowValidateContextMismatch(const ContextBase&) const;
 
-  /** (Internal use only) Throws a std::exception for unsupported scalar type
-  conversions. */
-  [[noreturn]] static void ThrowUnsupportedScalarConversion(
-      const SystemBase& from, const std::string& destination_type_name);
+  /** (Internal use only) Returns the message to use for a std::exception in
+  the case of unsupported scalar type conversions. */
+  virtual std::string GetUnsupportedScalarConversionMessage(
+      const std::type_info& source_type,
+      const std::type_info& destination_type) const;
 
   /** This method must be invoked from within derived class DoAllocateContext()
   implementations right after the concrete Context object has been allocated.
@@ -1260,6 +1271,27 @@ CacheEntry& SystemBase::DeclareCacheEntry(
   return DeclareCacheEntry(std::move(description), ValueType{}, calc,
                            std::move(prerequisites_of_calc));
 }
+
+#ifndef DRAKE_DOXYGEN_CXX
+template <typename> class Diagram;
+namespace internal {
+// This is an attorney-client pattern class providing Diagram with access to
+// certain specific SystemBase protected member functions, and nothing else.
+// Without this, Diagram couldn't call protected member functions on instances
+// other than itself.
+class DiagramSystemBaseAttorney {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramSystemBaseAttorney)
+  DiagramSystemBaseAttorney() = delete;
+
+ private:
+  template <typename> friend class drake::systems::Diagram;
+
+  static std::string GetUnsupportedScalarConversionMessage(
+      const SystemBase&, const std::type_info&, const std::type_info&);
+};
+}  // namespace internal
+#endif
 
 }  // namespace systems
 }  // namespace drake

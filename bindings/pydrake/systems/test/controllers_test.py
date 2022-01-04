@@ -158,6 +158,8 @@ class TestControllers(unittest.TestCase):
         self.assertEqual(estimated_state_port.size(), kStateSize)
         self.assertEqual(desired_state_port.size(), kStateSize)
         self.assertEqual(control_port.size(), kNumVelocities)
+        self.assertIsInstance(controller.get_multibody_plant_for_control(),
+                              MultibodyPlant)
 
         # Current state.
         q = np.array([-0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3])

@@ -43,27 +43,29 @@ namespace hydroelastic {
 template <typename T>
 struct CallbackData {
   /* Constructs the fully-specified callback data. The values are as described
-   in the class documentation. All parameters except `polygon_representation`
-   are aliased in the data and must remain valid at least as long as the
-   CallbackData instance.
+   in the class documentation. All parameters are aliased in the data and must
+   remain valid at least as long as the CallbackData instance.
 
    @param collision_filter_in     The collision filter system. Aliased.
    @param X_WGs_in                The T-valued poses. Aliased.
    @param geometries_in           The set of all hydroelastic geometric
                                   representations. Aliased.
-   @param polygon_representation_in  The choice of representation of contact
-                                  polygons.
+   @param representation          Controls the mesh representation of
+                                  the contact surface. See
+                                  @ref contact_surface_discrete_representation
+                                  "contact surface representation" for more
+                                  details.
    @param surfaces_in             The output results. Aliased.  */
   CallbackData(
       const CollisionFilter* collision_filter_in,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs_in,
       const Geometries* geometries_in,
-      ContactPolygonRepresentation polygon_representation_in,
+      HydroelasticContactRepresentation representation_in,
       std::vector<ContactSurface<T>>* surfaces_in)
       : collision_filter(*collision_filter_in),
         X_WGs(*X_WGs_in),
         geometries(*geometries_in),
-        polygon_representation(polygon_representation_in),
+        representation(representation_in),
         surfaces(*surfaces_in) {
     DRAKE_DEMAND(collision_filter_in != nullptr);
     DRAKE_DEMAND(X_WGs_in != nullptr);
@@ -80,7 +82,8 @@ struct CallbackData {
   /* The hydroelastic geometric representations.  */
   const Geometries& geometries;
 
-  const ContactPolygonRepresentation polygon_representation;
+  /* The requested mesh representation type. */
+  const HydroelasticContactRepresentation representation;
 
   /* The results of the distance query.  */
   std::vector<ContactSurface<T>>& surfaces;
@@ -103,7 +106,7 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
     const SoftGeometry& soft, const math::RigidTransform<T>& X_WS,
     GeometryId id_S, const RigidGeometry& rigid,
     const math::RigidTransform<T>& X_WR, GeometryId id_R,
-    ContactPolygonRepresentation representation) {
+    HydroelasticContactRepresentation representation) {
   if (soft.is_half_space() || rigid.is_half_space()) {
     if (soft.is_half_space()) {
       DRAKE_DEMAND(!rigid.is_half_space());
@@ -181,7 +184,7 @@ CalcContactSurfaceResult MaybeCalcContactSurface(
   const math::RigidTransform<T>& X_WR(data->X_WGs.at(id_R));
 
   std::unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
-      soft, X_WS, id_S, rigid, X_WR, id_R, data->polygon_representation);
+      soft, X_WS, id_S, rigid, X_WR, id_R, data->representation);
 
   if (surface != nullptr) {
     DRAKE_DEMAND(surface->id_M() < surface->id_N());

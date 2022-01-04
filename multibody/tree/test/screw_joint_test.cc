@@ -182,6 +182,11 @@ TEST_F(ScrewJointTest, Clone) {
             joint_->get_default_translation());
 }
 
+TEST_F(ScrewJointTest, NameSuffix) {
+  EXPECT_EQ(joint_->position_suffix(0), "q");
+  EXPECT_EQ(joint_->velocity_suffix(0), "w");
+}
+
 TEST_F(ScrewJointTest, DefaultState) {
   const double new_default_translation = kPositionNonZeroDefault;
   const double out_of_bounds_low_translation = kPositionLowerLimit - 1;

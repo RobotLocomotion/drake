@@ -355,6 +355,7 @@ drake_cc_library(
     deps = [
         ":dirichlet_boundary_condition",
         ":fem_state_base",
+        ":petsc_symmetric_block_sparse_matrix",
         ":state_updater",
         "//common:default_scalars",
         "//common:essential",
@@ -481,6 +482,22 @@ drake_cc_library(
     ],
     deps = [
         ":state_updater",
+    ],
+)
+
+drake_cc_library(
+    name = "petsc_symmetric_block_sparse_matrix",
+    srcs = [
+        "petsc_symmetric_block_sparse_matrix.cc",
+    ],
+    hdrs = [
+        "petsc_symmetric_block_sparse_matrix.h",
+    ],
+    deps = [
+        ":schur_complement",
+        "//common:essential",
+        "//common:unused",
+        "@petsc",
     ],
 )
 
@@ -870,6 +887,19 @@ drake_cc_googletest(
         "//geometry/proximity:make_box_mesh",
         "//geometry/proximity:mesh_to_vtk",
         "//geometry/proximity:proximity_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "petsc_symmetric_block_sparse_matrix_test",
+    tags = [
+        # This tests uses multiple CPUs concurrently.
+        "cpu:100",
+    ],
+    deps = [
+        ":petsc_symmetric_block_sparse_matrix",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

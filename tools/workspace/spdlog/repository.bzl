@@ -65,6 +65,10 @@ install(name = "install")
             # of the version compatibility matrix in spdlog/repository.bzl.
             default = "v1.5.0",
         ),
+        "commit_pin": attr.int(
+            # Per the comment on "commit", above.
+            default = 1,
+        ),
         "sha256": attr.string(
             default = "b38e0bbef7faac2b82fed550a0c19b0d4e7f6737d5321d4fd8f216b80f8aee8a",  # noqa
         ),

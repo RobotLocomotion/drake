@@ -86,22 +86,6 @@ class SceneGraphInspector {
     return state_->get_num_frames();
   }
 
-  /** Provides a range object for all of the frame ids in the scene graph. The
-   order is not generally guaranteed; but it will be consistent as long as there
-   are no changes to the topology. This is intended to be used as:
-   @code
-   for (FrameId id : inspector.all_frame_ids()) {
-    ...
-   }
-   @endcode
-
-   This includes the id for the world frame.  */
-  DRAKE_DEPRECATED("2021-12-01", "Please use GetAllFrameIds() instead.")
-  typename GeometryState<T>::FrameIdRange all_frame_ids() const {
-    DRAKE_DEMAND(state_ != nullptr);
-    return state_->get_frame_ids();
-  }
-
   /** Returns all of the frame ids in the scene graph. The order is not
    guaranteed; but it will be consistent across invocations as long as there are
    no changes to the topology. The ids includes the world frame's id.  */

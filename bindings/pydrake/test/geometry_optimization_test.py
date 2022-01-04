@@ -4,6 +4,7 @@ import unittest
 
 import numpy as np
 
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import (
     Box, Capsule, Cylinder, Ellipsoid, FramePoseVector, GeometryFrame,
     GeometryInstance, SceneGraph, Sphere,
@@ -119,6 +120,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(v_box.PointInSet([0, 0, 0]))
         v_unit_box = mut.VPolytope.MakeUnitBox(dim=3)
         self.assertTrue(v_unit_box.PointInSet([0, 0, 0]))
+        v_from_h = mut.VPolytope(H=mut.HPolyhedron.MakeUnitBox(dim=3))
+        self.assertTrue(v_from_h.PointInSet([0, 0, 0]))
 
     def test_cartesian_product(self):
         point = mut.Point(np.array([11.1, 12.2, 13.3]))
@@ -205,6 +208,7 @@ class TestGeometryOptimization(unittest.TestCase):
         options.require_sample_point_is_contained = True
         options.iteration_limit = 1
         options.termination_threshold = 0.1
+        options.relative_termination_threshold = 0.01
         self.assertNotIn("object at 0x", repr(options))
         region = mut.Iris(
             obstacles=obstacles, sample=[2, 3.4, 5],
@@ -245,10 +249,14 @@ class TestGeometryOptimization(unittest.TestCase):
         diagram = builder.Build()
         context = diagram.CreateDefaultContext()
         options = mut.IrisOptions()
+        with catch_drake_warnings(expected_count=1):
+            region = mut.IrisInConfigurationSpace(
+                plant=plant, context=plant.GetMyContextFromRoot(context),
+                sample=[0], options=options)
+        plant.SetPositions(plant.GetMyMutableContextFromRoot(context), [0])
         region = mut.IrisInConfigurationSpace(
-            plant=plant,
-            context=plant.GetMyContextFromRoot(context),
-            sample=[0], options=options)
+            plant=plant, context=plant.GetMyContextFromRoot(context),
+            options=options)
         self.assertIsInstance(region, mut.ConvexSet)
         self.assertEqual(region.ambient_dimension(), 1)
         self.assertTrue(region.PointInSet([1.0]))

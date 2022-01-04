@@ -1,0 +1,72 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_library",
+    "drake_cc_test",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
+
+package(default_visibility = ["//visibility:private"])
+
+filegroup(
+    name = "example_resources",
+    srcs = [
+        "4_color_texture.png",
+    ],
+)
+
+drake_cc_binary(
+    name = "render_engine_vtk_minimal_example",
+    srcs = ["render_engine_vtk_minimal_example.cc"],
+    add_test_rule = 1,
+    data = [
+        ":example_resources",
+        "//manipulation/models/ycb:models",
+    ],
+    test_rule_args = [
+        "--simulation_time=0.1",
+    ],
+    test_rule_tags = vtk_test_tags(),
+    deps = [
+        "//common:filesystem",
+        "//geometry:drake_visualizer",
+        "//geometry:scene_graph",
+        "//geometry/render:render_engine_vtk",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm:lcm_pubsub_system",
+        "//systems/primitives:constant_vector_source",
+        "//systems/sensors:image_to_lcm_image_array_t",
+        "//systems/sensors:image_writer",
+        "//systems/sensors:rgbd_sensor",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()
+
+# TODO(svenevs): delete this json "test" after client is merged.
+drake_cc_test(
+    name = "json_compile_test",
+    srcs = ["test/json_compile_test.cc"],
+    deps = ["@json"],
+)
+
+# TODO(svenevs): delete this picosha2 "test" after client is merged.
+drake_cc_test(
+    name = "picosha2_compile_test",
+    srcs = ["test/picosha2_compile_test.cc"],
+    deps = ["@picosha2"],
+)
+
+# TODO(svenevs): delete this curl "test" after client is merged.
+drake_cc_test(
+    name = "libcurl_compile_test",
+    srcs = ["test/libcurl_compile_test.cc"],
+    deps = ["@libcurl"],
+)

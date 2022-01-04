@@ -7,6 +7,7 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+
 template <typename T>
 std::unique_ptr<DiscreteUpdateManager<double>>
 DiscreteUpdateManager<T>::CloneToDouble() const {
@@ -87,6 +88,14 @@ DiscreteUpdateManager<T>::EvalDiscreteContactPairs(
 }
 
 template <typename T>
+const std::vector<geometry::ContactSurface<T>>&
+DiscreteUpdateManager<T>::EvalContactSurfaces(
+    const systems::Context<T>& context) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::EvalContactSurfaces(
+      plant(), context);
+}
+
+template <typename T>
 std::vector<CoulombFriction<double>>
 DiscreteUpdateManager<T>::CalcCombinedFrictionCoefficients(
     const systems::Context<T>& context,
@@ -100,6 +109,14 @@ void DiscreteUpdateManager<T>::AddInForcesFromInputPorts(
     const drake::systems::Context<T>& context,
     MultibodyForces<T>* forces) const {
   MultibodyPlantDiscreteUpdateManagerAttorney<T>::AddInForcesFromInputPorts(
+      plant(), context, forces);
+}
+
+template <typename T>
+void DiscreteUpdateManager<T>::CalcNonContactForces(
+    const drake::systems::Context<T>& context,
+    MultibodyForces<T>* forces) const {
+  MultibodyPlantDiscreteUpdateManagerAttorney<T>::CalcNonContactForces(
       plant(), context, forces);
 }
 
@@ -128,6 +145,7 @@ DiscreteUpdateManager<T>::geometry_id_to_body_index() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
       T>::geometry_id_to_body_index(*plant_);
 }
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

@@ -862,6 +862,18 @@ void BindMathematicalProgram(py::module m) {
               &MathematicalProgram::Add2NormSquaredCost),
           py::arg("A"), py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.Add2NormSquaredCost.doc)
+      .def("AddL2NormCost",
+          overload_cast_explicit<Binding<L2NormCost>,
+              const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::VectorXd>&,
+              const Eigen::Ref<const VectorXDecisionVariable>&>(
+              &MathematicalProgram::AddL2NormCost),
+          py::arg("A"), py::arg("b"), py::arg("vars"),
+          doc.MathematicalProgram.AddL2NormCost.doc_3args_A_b_vars)
+      .def("AddL2NormCostUsingConicConstraint",
+          &MathematicalProgram::AddL2NormCostUsingConicConstraint, py::arg("A"),
+          py::arg("b"), py::arg("vars"),
+          doc.MathematicalProgram.AddL2NormCostUsingConicConstraint.doc)
       .def("AddMaximizeLogDeterminantSymmetricMatrixCost",
           static_cast<void (MathematicalProgram::*)(
               const Eigen::Ref<const MatrixX<symbolic::Expression>>& X)>(
@@ -1308,6 +1320,8 @@ void BindMathematicalProgram(py::module m) {
           doc.MathematicalProgram.linear_costs.doc)
       .def("quadratic_costs", &MathematicalProgram::quadratic_costs,
           doc.MathematicalProgram.quadratic_costs.doc)
+      .def("l2norm_costs", &MathematicalProgram::l2norm_costs,
+          doc.MathematicalProgram.l2norm_costs.doc)
       .def("linear_constraints", &MathematicalProgram::linear_constraints,
           doc.MathematicalProgram.linear_constraints.doc)
       .def("lorentz_cone_constraints",

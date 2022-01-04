@@ -147,12 +147,12 @@ def setup_pkg_config_repository(repository_ctx):
     # Blacklist various system include paths on macOS.
     blacklisted_includes = [
         "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include",  # noqa
-        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk/usr/include",  # noqa
         "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.0.sdk/usr/include",  # noqa
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.0.sdk/usr/include",  # noqa
         "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include",  # noqa
         "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include",
-        "/Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/usr/include",
         "/Library/Developer/CommandLineTools/SDKs/MacOSX11.0.sdk/usr/include",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX12.0.sdk/usr/include",
         "/Library/Developer/CommandLineTools/usr/include",
     ]
 

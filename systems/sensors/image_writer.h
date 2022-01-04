@@ -69,10 +69,9 @@ void SaveToPng(const ImageGrey8U& image, const std::string& file_path);
  @system
  name: ImageWriter
  input_ports:
- - declared_image1
- - declared_image2
+ - (user assigned port name)
  - ...
- - declared_imageN
+ - (user assigned port name)
  @endsystem
 
  %ImageWriter supports three specific types of images:

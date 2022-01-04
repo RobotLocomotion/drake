@@ -31,9 +31,9 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 if [[ "${with_asking}" -eq 0 ]]; then
-  apt_get_install='apt-get install -y'
+  maybe_yes='-y'
 else
-  apt_get_install='apt-get install'
+  maybe_yes=''
 fi
 
 
@@ -44,14 +44,25 @@ fi
 binary_distribution_called_update=0
 
 if [[ "${with_update}" -eq 1 ]]; then
-  apt-get update || (sleep 30; apt-get update)
+  apt-get update || (sleep 30; apt-get update) || (cat <<EOF && false)
+****************************************************************************
+Drake is unable to run 'sudo apt-get update', probably because this computer
+contains incorrect entries in its sources.list files, or possibly because an
+internet service is down.
+
+Run 'sudo apt-get update' and try to resolve whatever problems it reports.
+Do not try to set up Drake until that command succeeds.
+
+This is not a bug in Drake.  Do not contact the Drake team for help.
+****************************************************************************
+EOF
 
   # Do NOT call apt-get update again when installing prerequisites for source
   # distributions.
   binary_distribution_called_update=1
 fi
 
-$apt_get_install --no-install-recommends lsb-release
+apt-get install ${maybe_yes} --no-install-recommends lsb-release
 
 codename=$(lsb_release -sc)
 
@@ -60,7 +71,7 @@ if [[ "${codename}" != 'bionic' && "${codename}" != 'focal' ]]; then
   exit 2
 fi
 
-$apt_get_install --no-install-recommends $(cat <<EOF
+apt-get install ${maybe_yes} --no-install-recommends $(cat <<EOF
 build-essential
 cmake
 pkg-config
@@ -68,4 +79,4 @@ EOF
 )
 
 packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
-$apt_get_install --no-install-recommends ${packages}
+apt-get install ${maybe_yes} --no-install-recommends ${packages}

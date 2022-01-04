@@ -21,6 +21,8 @@
 #include "drake/common/symbolic_decompose.h"
 #include "drake/common/symbolic_monomial_util.h"
 #include "drake/math/matrix_util.h"
+#include "drake/solvers/binding.h"
+#include "drake/solvers/decision_variable.h"
 #include "drake/solvers/sos_basis_generator.h"
 
 namespace drake {
@@ -67,6 +69,7 @@ std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
   new_prog->generic_costs_ = generic_costs_;
   new_prog->quadratic_costs_ = quadratic_costs_;
   new_prog->linear_costs_ = linear_costs_;
+  new_prog->l2norm_costs_ = l2norm_costs_;
 
   // Add constraints
   new_prog->generic_constraints_ = generic_constraints_;
@@ -401,6 +404,8 @@ Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
     return AddCost(internal::BindingDynamicCast<QuadraticCost>(binding));
   } else if (dynamic_cast<LinearCost*>(cost)) {
     return AddCost(internal::BindingDynamicCast<LinearCost>(binding));
+  } else if (dynamic_cast<L2NormCost*>(cost)) {
+    return AddCost(internal::BindingDynamicCast<L2NormCost>(binding));
   } else {
     CheckBinding(binding);
     required_capabilities_.insert(ProgramAttribute::kGenericCost);
@@ -465,6 +470,46 @@ Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
     const Eigen::Ref<const VectorXDecisionVariable>& vars,
     std::optional<bool> is_convex) {
   return AddQuadraticCost(Q, b, 0., vars, is_convex);
+}
+
+Binding<L2NormCost> MathematicalProgram::AddCost(
+    const Binding<L2NormCost>& binding) {
+  CheckBinding(binding);
+  required_capabilities_.insert(ProgramAttribute::kL2NormCost);
+  l2norm_costs_.push_back(binding);
+  return l2norm_costs_.back();
+}
+
+Binding<L2NormCost> MathematicalProgram::AddL2NormCost(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+  return AddCost(std::make_shared<L2NormCost>(A, b), vars);
+}
+
+std::tuple<symbolic::Variable, Binding<LinearCost>,
+           Binding<LorentzConeConstraint>>
+MathematicalProgram::AddL2NormCostUsingConicConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+  auto s = this->NewContinuousVariables<1>("slack")(0);
+  auto linear_cost =
+      this->AddLinearCost(Vector1d(1), 0, Vector1<symbolic::Variable>(s));
+  // A_full = [1 0]
+  //          [0 A]
+  // b_full = [0 b]
+  // A_full * [s ; vars] + b_full = [s, A*vars+b]
+  Eigen::MatrixXd A_full(A.rows() + 1, A.cols() + 1);
+  A_full.setZero();
+  A_full(0, 0) = 1;
+  A_full.bottomRightCorner(A.rows(), A.cols()) = A;
+  Eigen::VectorXd b_full(b.rows() + 1);
+  b_full(0) = 0;
+  b_full.bottomRows(b.rows()) = b;
+  auto lorentz_cone_constraint = this->AddLorentzConeConstraint(
+      A_full, b_full, {Vector1<symbolic::Variable>(s), vars});
+  return std::make_tuple(s, linear_cost, lorentz_cone_constraint);
 }
 
 Binding<PolynomialCost> MathematicalProgram::AddPolynomialCost(
@@ -1155,6 +1200,7 @@ std::vector<Binding<Cost>> MathematicalProgram::GetAllCosts() const {
   costlist.insert(costlist.end(), linear_costs_.begin(), linear_costs_.end());
   costlist.insert(costlist.end(), quadratic_costs_.begin(),
                   quadratic_costs_.end());
+  costlist.insert(costlist.end(), l2norm_costs_.begin(), l2norm_costs_.end());
   return costlist;
 }
 
@@ -1518,6 +1564,11 @@ void MathematicalProgram::UpdateRequiredCapability(
           "UpdateRequiredCapability(): should not handle quadratic constraint "
           "capability.");
     }
+    case ProgramAttribute::kL2NormCost: {
+      UpdateRequiredCapabilityImpl(query_capability, this->l2norm_costs(),
+                                   &required_capabilities_);
+      break;
+    }
     case ProgramAttribute::kBinaryVariable: {
       bool has_binary_var = false;
       for (int i = 0; i < num_vars(); ++i) {
@@ -1553,6 +1604,10 @@ int MathematicalProgram::RemoveCost(const Binding<Cost>& cost) {
     return RemoveCostOrConstraintImpl(
         internal::BindingDynamicCast<LinearCost>(cost),
         ProgramAttribute::kLinearCost, &(this->linear_costs_));
+  } else if (dynamic_cast<L2NormCost*>(cost_evaluator)) {
+    return RemoveCostOrConstraintImpl(
+        internal::BindingDynamicCast<L2NormCost>(cost),
+        ProgramAttribute::kL2NormCost, &(this->l2norm_costs_));
   } else {
     return RemoveCostOrConstraintImpl(cost, ProgramAttribute::kGenericCost,
                                       &(this->generic_costs_));

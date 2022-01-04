@@ -29,7 +29,7 @@ Begin this process around 1 week prior to the intended release date.
    ```
 4. Push that branch and then open a new pull request titled:
    ```
-   doc: Add release notes v0.N.0
+   [doc] Add release notes v0.N.0
    ```
    Make sure that "Allow edits from maintainers" on the GitHub PR page is
    enabled (the checkbox is checked).
@@ -109,7 +109,7 @@ the main body of the document:
       has nothing still running (modulo the ``*-coverage`` builds, which we can
       ignore)
    3. Open the latest builds from the following builds:
-      1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-catalina-unprovisioned-clang-bazel-nightly-snopt-packaging/>
+      1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-big-sur-unprovisioned-clang-bazel-nightly-snopt-packaging/>
       2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-bionic-unprovisioned-gcc-bazel-nightly-snopt-packaging/>
       3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-snopt-packaging/>
    4. Check the logs for those packaging builds and find the URLs they posted
@@ -131,10 +131,12 @@ the main body of the document:
     them all.
    1. Update the github links within doc/_pages/from_binary.md to reflect the
       upcoming v0.N.0 and YYYYMMDD.
-11. Merge the release notes PR
-   1. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
+11. Re-enable CI by reverting the commit you added in step 3.
+12. Merge the release notes PR
+   1. Take care when squashing not to accept github's auto-generated commit message if it is not appropriate.
+   2. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
       * If you don't have "Build now" click "Log in" first in upper right.
-12. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
+13. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
     a new release".  Note that this page does has neither history nor undo.  Be
     slow and careful!
     1. Tag version is: v0.N.0
@@ -150,7 +152,7 @@ the main body of the document:
        them.", drag and drop the 9 release binary artifacts from above (the 3
        tarballs, and their 6 checksums)
     6. Choose "Save draft" and take a deep breath.
-13. Once the documentation build finishes, release!
+14. Once the documentation build finishes, release!
     1. Check that the link to drake.mit.edu docs from the GitHub release draft
        page actually works.
     2. Click "Publish release"
@@ -192,3 +194,27 @@ the main body of the document:
       2. If not, then create a new release named ``v0.0.foo`` where ``foo`` is
          the 8-digit datestamp associated with the ``commit`` in question (i.e.,
          four digit year, two digit month, two digit day).
+
+## Post-release wheel builds
+
+After tagging the release, you must manually build and upload a PyPI release.
+
+If you haven't done so already, follow Drake's PyPI
+[account setup](https://docs.google.com/document/d/17D0yzyr0kGH44eWpiNY7E33A8hW1aiJRmADaoAlVISE/edit#)
+instructions to obtain a username and password.
+
+1. Use your Ubuntu 20.04 workstation for these steps.  (Do not use any other OS.)
+2. Create some empty scratch folder to use for these steps, and then ``cd`` into it.
+3. Run ``sudo apt install docker.io twine``
+   1. If you get an "docker.sock connect" error, you might need to give yourself Docker permissions:
+      1. Run ``sudo usermod -aG docker $USER``
+      2. Run ``newgrp docker``
+   2. If Docker still doesn't work, you might need to logout and/or reboot first.
+4. Run ``git clone --filter=blob:none https://github.com/RobotLocomotion/drake.git``
+5. Run ``cd drake``
+6. Run ``git checkout v0.N.0``
+7. Run ``cd tools/wheel``
+8. Run ``./build-wheels --test 0.N.0``
+9. Wait a long time for it to finish (around 60 minutes on a beefy workstation). It will take over all of your computer's resources, so don't plan to do much else concurrently.
+10. There should have been exactly three whl files created. Run ``twine upload <...>``, replacing the ``<...>`` placeholder with the path to each of the wheels to be uploaded (e.g., ``drake-0.35.0b1-cp36-cp36m-manylinux_2_27_x86_64``, etc.)
+    1. You will need your PyPI username and password for this. (Do not use drake-robot.)

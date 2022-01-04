@@ -17,6 +17,11 @@ from pydrake.systems.sensors import (
 
 
 class TestGeometrySceneGraph(unittest.TestCase):
+
+    def test_hydroelastic_contact_representation_enum(self):
+        mut.HydroelasticContactRepresentation.kTriangle
+        mut.HydroelasticContactRepresentation.kPolygon
+
     @numpy_compare.check_nonsymbolic_types
     def test_scene_graph_api(self, T):
         SceneGraph = mut.SceneGraph_[T]
@@ -45,14 +50,15 @@ class TestGeometrySceneGraph(unittest.TestCase):
         mut.AddRigidHydroelasticProperties(resolution_hint=1, properties=props)
         scene_graph.AssignRole(source_id=global_source, geometry_id=sphere_2,
                                properties=props)
-        # We'll explicitly give sphere_3 a soft hydroelastic representation.
+        # We'll explicitly give sphere_3 a compliant hydroelastic
+        # representation.
         sphere_3 = scene_graph.RegisterAnchoredGeometry(
             source_id=global_source,
             geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
                                           shape=mut.Sphere(1.),
                                           name="sphere3"))
         props = mut.ProximityProperties()
-        mut.AddSoftHydroelasticProperties(
+        mut.AddCompliantHydroelasticProperties(
             resolution_hint=1, hydroelastic_modulus=1e8, properties=props)
         scene_graph.AssignRole(source_id=global_source, geometry_id=sphere_3,
                                properties=props)
@@ -60,9 +66,6 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertIsInstance(
             scene_graph.get_source_pose_port(global_source), InputPort)
 
-        with catch_drake_warnings(expected_count=1):
-            self.assertIsInstance(
-                scene_graph.get_pose_bundle_output_port(), OutputPort)
         self.assertIsInstance(
             scene_graph.get_query_output_port(), OutputPort)
 
@@ -77,11 +80,6 @@ class TestGeometrySceneGraph(unittest.TestCase):
         inspector = scene_graph.model_inspector()
         self.assertEqual(inspector.num_sources(), 2)
         self.assertEqual(inspector.num_frames(), 3)
-        with catch_drake_warnings(expected_count=3):
-            self.assertEqual(len(inspector.all_frame_ids()), 3)
-            self.assertTrue(inspector.world_frame_id()
-                            in inspector.all_frame_ids())
-            self.assertTrue(global_frame in inspector.all_frame_ids())
         self.assertEqual(len(inspector.GetAllFrameIds()), 3)
         self.assertTrue(inspector.world_frame_id()
                         in inspector.GetAllFrameIds())
@@ -361,7 +359,8 @@ class TestGeometrySceneGraph(unittest.TestCase):
         render_params = mut.render.RenderEngineVtkParams()
         renderer_name = "test_renderer"
         scene_graph.AddRenderer(renderer_name,
-                                mut.render.MakeRenderEngineVtk(render_params))
+                                mut.render.MakeRenderEngineVtk(
+                                    params=render_params))
 
         context = scene_graph.CreateDefaultContext()
         pose_vector = FramePoseVector()
@@ -384,6 +383,13 @@ class TestGeometrySceneGraph(unittest.TestCase):
         results = query_object.ComputeSignedDistancePairwiseClosestPoints()
         self.assertEqual(len(results), 0)
         results = query_object.ComputePointPairPenetration()
+        self.assertEqual(len(results), 0)
+        hydro_rep = mut.HydroelasticContactRepresentation.kTriangle
+        results = query_object.ComputeContactSurfaces(representation=hydro_rep)
+        self.assertEqual(len(results), 0)
+        surfaces, results = query_object.ComputeContactSurfacesWithFallback(
+            representation=hydro_rep)
+        self.assertEqual(len(surfaces), 0)
         self.assertEqual(len(results), 0)
         results = query_object.ComputeSignedDistanceToPoint(p_WQ=(1, 2, 3))
         self.assertEqual(len(results), 0)

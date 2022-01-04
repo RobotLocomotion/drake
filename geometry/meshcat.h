@@ -9,6 +9,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/meshcat_animation.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
@@ -102,6 +103,13 @@ class Meshcat {
   interface.  Most users should connect via a browser opened to web_url(). */
   std::string ws_url() const;
 
+  /** Blocks the calling thread until all buffered data in the websocket thread
+  has been sent to any connected clients. This can be especially useful when
+  sending many or large mesh files / texture maps, to avoid large "backpressure"
+  and/or simply to make sure that the simulation does not get far ahead of the
+  visualization. */
+  void Flush() const;
+
   /** Sets the 3D object at a given `path` in the scene tree.  Note that
   `path`="/foo" will always set an object in the tree at "/foo/<object>".  See
   @ref meshcat_path.  Any objects previously set at this `path` will be
@@ -134,6 +142,82 @@ class Meshcat {
                  const perception::PointCloud& point_cloud,
                  double point_size = 0.001,
                  const Rgba& rgba = Rgba(.9, .9, .9, 1.));
+
+  /** Sets the "object" at `path` in the scene tree to a TriangleSurfaceMesh.
+
+  @param path a "/"-delimited string indicating the path in the scene tree. See
+              @ref meshcat_path "Meshcat paths" for the semantics.
+  @param mesh is a TriangleSurfaceMesh object.
+  @param rgba is the mesh face or wireframe color.
+  @param wireframe if "true", then only the triangle edges are visualized, not
+                   the faces.
+  @param wireframe_line_width is the width in pixels.  Due to limitations in
+                              WebGL implementations, the line width may be 1
+                              regardless of the set value.
+  @pydrake_mkdoc_identifier{triangle_surface_mesh}
+  */
+  void SetObject(std::string_view path, const TriangleSurfaceMesh<double>& mesh,
+                 const Rgba& rgba = Rgba(0.1, 0.1, 0.1, 1.0),
+                 bool wireframe = false, double wireframe_line_width = 1.0);
+
+  /** Sets the "object" at `path` in the scene tree to a piecewise-linear
+  interpolation between the `vertices`.
+
+  @param path a "/"-delimited string indicating the path in the scene tree. See
+              @ref meshcat_path "Meshcat paths" for the semantics.
+  @param vertices are the 3D points defining the lines.
+  @param line_width is the width in pixels.  Due to limitations in WebGL
+                    implementations, the line width may be 1 regardless
+                    of the set value.
+  @param rgba is the line color. */
+  void SetLine(std::string_view path,
+               const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+               double line_width = 1.0,
+               const Rgba& rgba = Rgba(0.1, 0.1, 0.1, 1.0));
+
+  /** Sets the "object" at `path` in the scene tree to a number of line
+  segments.
+
+  @param path a "/"-delimited string indicating the path in the scene tree. See
+              @ref meshcat_path "Meshcat paths" for the semantics.
+  @param start is a 3-by-N matrix of 3D points defining the start of each
+               segment.
+  @param end is a 3-by-N matrix of 3D points defining the end of each
+             segment.
+  @param line_width is the width in pixels.  Due to limitations in WebGL
+                    implementations, the line width may be 1 regardless
+                    of the set value.
+  @param rgba is the line color.
+
+  @throws std::exception if start.cols != end.cols(). */
+  void SetLineSegments(std::string_view path,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& start,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& end,
+                       double line_width = 1.0,
+                       const Rgba& rgba = Rgba(0.1, 0.1, 0.1, 1.0));
+
+  // TODO(russt): Support per-vertex coloring (maybe rgba as std::variant).
+  /** Sets the "object" at `path` in the scene tree to a triangular mesh.
+
+  @param path a "/"-delimited string indicating the path in the scene tree. See
+              @ref meshcat_path "Meshcat paths" for the semantics.
+  @param vertices is a 3-by-N matrix of 3D point defining the vertices of the
+                  mesh.
+  @param faces is a 3-by-N integer matrix with each entry denoting an index
+               into vertices and each column denoting one face (aka
+               SurfaceTriangle).
+  @param rgba is the mesh face or wireframe color.
+  @param wireframe if "true", then only the triangle edges are visualized, not
+                   the faces.
+  @param wireframe_line_width is the width in pixels.  Due to limitations in
+                              WebGL implementations, the line width may be 1
+                              regardless of the set value. */
+  void SetTriangleMesh(std::string_view path,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+                       const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+                       const Rgba& rgba = Rgba(0.1, 0.1, 0.1, 1.0),
+                       bool wireframe = false,
+                       double wireframe_line_width = 1.0);
 
   // TODO(russt): Provide a more general SetObject(std::string_view path,
   // msgpack::object object) that would allow users to pass through anything
@@ -261,7 +345,7 @@ class Meshcat {
 
   /** Sets a single named property of the object at the given path. For example,
   @verbatim
-  meshcat.SetProperty("box", "position", [1.0, 0.0, 0.0]);
+  meshcat.SetProperty("/Background", "top_color", {1.0, 0.0, 0.0});
   @endverbatim
   See @ref meshcat_path "Meshcat paths" for more details about these properties
   and how to address them.
@@ -342,6 +426,15 @@ class Meshcat {
   void DeleteAddedControls();
 
   //@}
+
+  /** Returns an HTML string that can be saved to a file for a snapshot of the
+  visualizer and its contents. The HTML can be viewed in the browser
+  without any connection to a Meshcat "server" (e.g. `this`). This is a great
+  way to save and share your 3D content.
+
+  Note that controls (e.g. sliders and buttons) are not included in the HTML
+  output, because their usefulness relies on a connection to the server. */
+  std::string StaticHtml();
 
   /* These remaining public methods are intended to primarily for testing. These
   calls must safely acquire the data from the websocket thread and will block

@@ -58,15 +58,15 @@ int DoMain() {
   final_state.set_thetadot(0.0);
 
   dircol.AddLinearConstraint(dircol.initial_state() ==
-                             initial_state.get_value());
-  dircol.AddLinearConstraint(dircol.final_state() == final_state.get_value());
+                             initial_state.value());
+  dircol.AddLinearConstraint(dircol.final_state() == final_state.value());
 
   const double R = 10;  // Cost on input "effort".
   dircol.AddRunningCost((R * u) * u);
 
   const double timespan_init = 4;
   auto traj_init_x = PiecewisePolynomial<double>::FirstOrderHold(
-      {0, timespan_init}, {initial_state.get_value(), final_state.get_value()});
+      {0, timespan_init}, {initial_state.value(), final_state.value()});
   dircol.SetInitialTrajectory(PiecewisePolynomial<double>(), traj_init_x);
   const auto result = solvers::Solve(dircol);
   if (!result.is_success()) {
@@ -117,8 +117,8 @@ int DoMain() {
       PendulumPlant<double>::get_state(diagram->GetSubsystemContext(
           *pendulum_ptr, simulator.get_context()));
 
-  if (!is_approx_equal_abstol(pendulum_state.get_value(),
-                              final_state.get_value(), 1e-3)) {
+  if (!is_approx_equal_abstol(pendulum_state.value(),
+                              final_state.value(), 1e-3)) {
     throw std::runtime_error("Did not reach trajectory target.");
   }
   return 0;

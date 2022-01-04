@@ -14,6 +14,9 @@ namespace {
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
+using symbolic::Expression;
+using symbolic::Formula;
+using symbolic::Variable;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
@@ -452,7 +455,6 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByRigidTransform) {
   EXPECT_TRUE(will_be_X_CA.IsNearlyEqualTo(X_CA_expected, 32 * kEpsilon));
 
   // Repeat both tests for the non-double implementations.
-  using symbolic::Expression;
   const RigidTransform<Expression> X_BAx = X_BA.cast<Expression>();
   const RigidTransform<Expression> X_CBx = X_CB.cast<Expression>();
   const RigidTransform<Expression> X_CAx = X_CBx * X_BAx;
@@ -481,8 +483,6 @@ GTEST_TEST(RigidTransform, InvertAndCompose) {
   EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AC_expected, 32 * kEpsilon));
 
   // Now check the implementation for T ≠ double.
-  using symbolic::Expression;
-
   const RigidTransform<Expression> X_BAx = X_BA.cast<Expression>();
   const RigidTransform<Expression> X_BCx = X_BC.cast<Expression>();
   const RigidTransform<Expression> X_ACx = X_BAx.InvertAndCompose(X_BCx);
@@ -530,72 +530,72 @@ GTEST_TEST(RigidTransform, CastFromDoubleToAutoDiffXd) {
 }
 
 // Verify RigidTransform is compatible with symbolic::Expression. This includes,
-// construction and methods involving Bool specialized for symbolic::Expression,
-// namely: IsExactlyIdentity(), IsIdentityToEpsilon(), IsNearlyEqualTo().
+// construction and methods involving Bool specialized for Expression, namely:
+// IsExactlyIdentity(), IsIdentityToEpsilon(), IsNearlyEqualTo().
 GTEST_TEST(RigidTransform, SymbolicRigidTransformSimpleTests) {
-  // Test RigidTransform can be constructed with symbolic::Expression.
-  RigidTransform<symbolic::Expression> X;
+  // Test RigidTransform can be constructed with Expression.
+  RigidTransform<Expression> X;
 
-  // Test IsExactlyIdentity() nominally works with symbolic::Expression.
-  symbolic::Formula test_Bool = X.IsExactlyIdentity();
+  // Test IsExactlyIdentity() nominally works with Expression.
+  Formula test_Bool = X.IsExactlyIdentity();
   EXPECT_TRUE(test_Bool);
 
-  // Test IsIdentityToEpsilon() nominally works with symbolic::Expression.
+  // Test IsIdentityToEpsilon() nominally works with Expression.
   test_Bool = X.IsIdentityToEpsilon(kEpsilon);
   EXPECT_TRUE(test_Bool);
 
-  // Test IsExactlyEqualTo() nominally works for symbolic::Expression.
-  const RigidTransform<symbolic::Expression>& X_built_in_identity =
-      RigidTransform<symbolic::Expression>::Identity();
+  // Test IsExactlyEqualTo() nominally works for Expression.
+  const RigidTransform<Expression>& X_built_in_identity =
+      RigidTransform<Expression>::Identity();
   test_Bool = X.IsExactlyEqualTo(X_built_in_identity);
   EXPECT_TRUE(test_Bool);
 
-  // Test IsNearlyEqualTo() nominally works for symbolic::Expression.
+  // Test IsNearlyEqualTo() nominally works for Expression.
   test_Bool = X.IsNearlyEqualTo(X_built_in_identity, kEpsilon);
   EXPECT_TRUE(test_Bool);
 
   // Now perform the same tests on a non-identity transform.
-  const Vector3<symbolic::Expression> p_symbolic(1, 2, 3);
+  const Vector3<Expression> p_symbolic(1, 2, 3);
   X.set_translation(p_symbolic);
 
-  // Test IsExactlyIdentity() works with symbolic::Expression.
+  // Test IsExactlyIdentity() works with Expression.
   test_Bool = X.IsExactlyIdentity();
   EXPECT_FALSE(test_Bool);
 
-  // Test IsIdentityToEpsilon() works with symbolic::Expression.
+  // Test IsIdentityToEpsilon() works with Expression.
   test_Bool = X.IsIdentityToEpsilon(kEpsilon);
   EXPECT_FALSE(test_Bool);
 
-  // Test IsExactlyEqualTo() works for symbolic::Expression.
+  // Test IsExactlyEqualTo() works for Expression.
   test_Bool = X.IsExactlyEqualTo(X_built_in_identity);
   EXPECT_FALSE(test_Bool);
 
-  // Test IsNearlyEqualTo() works for symbolic::Expression.
+  // Test IsNearlyEqualTo() works for Expression.
   test_Bool = X.IsNearlyEqualTo(X_built_in_identity, kEpsilon);
   EXPECT_FALSE(test_Bool);
 }
 
 // Test that symbolic conversions may throw exceptions.
 GTEST_TEST(RigidTransform, SymbolicRigidTransformThrowsExceptions) {
-  const symbolic::Variable x("x");  // Arbitrary variable.
-  Matrix3<symbolic::Expression> m_symbolic;
+  const Variable x("x");  // Arbitrary variable.
+  Matrix3<Expression> m_symbolic;
   m_symbolic << 1, 0, 0,
                 0, 1, 0,
                 0, 0, x;  // Not necessarily an identity matrix.
-  RotationMatrix<symbolic::Expression> R_symbolic(m_symbolic);
-  const Vector3<symbolic::Expression> p_symbolic(0, 0, 0);
-  const RigidTransform<symbolic::Expression> X_symbolic(R_symbolic, p_symbolic);
+  RotationMatrix<Expression> R_symbolic(m_symbolic);
+  const Vector3<Expression> p_symbolic(0, 0, 0);
+  const RigidTransform<Expression> X_symbolic(R_symbolic, p_symbolic);
 
   // The next four tests should throw exceptions since the tests are
   // inconclusive because the value of x is unknown.
-  symbolic::Formula test_Bool = X_symbolic.IsExactlyIdentity();
+  Formula test_Bool = X_symbolic.IsExactlyIdentity();
   EXPECT_THROW(test_Bool.Evaluate(), std::runtime_error);
 
   test_Bool = X_symbolic.IsIdentityToEpsilon(kEpsilon);
   EXPECT_THROW(test_Bool.Evaluate(), std::runtime_error);
 
-  const RigidTransform<symbolic::Expression>& X_identity =
-      RigidTransform<symbolic::Expression>::Identity();
+  const RigidTransform<Expression>& X_identity =
+      RigidTransform<Expression>::Identity();
   test_Bool = X_symbolic.IsExactlyEqualTo(X_identity);
   EXPECT_THROW(test_Bool.Evaluate(), std::runtime_error);
 
@@ -797,10 +797,11 @@ void VerifyStreamInsertionOperator(const RigidTransform<T> X_AB,
   // “rpy = 0.12499999999999997 0.25 0.4999999999999999 xyz = 4.0 3.0 2.0
   std::stringstream stream;  stream << X_AB;
   const std::string stream_string = stream.str();
-  EXPECT_EQ(stream_string.find("rpy = "), 0);
+  ASSERT_EQ(stream_string.find("rpy = "), 0);
   const char* cstring = stream_string.c_str() + 6;  // Start of double value.
   double roll, pitch, yaw;
-  sscanf(cstring, "%lf %lf %lf ", &roll, &pitch, &yaw);
+  int match_count = sscanf(cstring, "%lf %lf %lf ", &roll, &pitch, &yaw);
+  ASSERT_EQ(match_count, 3) << "When scanning " << stream_string;
   EXPECT_TRUE(CompareMatrices(Vector3<double>(roll, pitch, yaw), rpy_expected,
                               4 * kEpsilon));
 
@@ -837,19 +838,27 @@ GTEST_TEST(RigidTransform, StreamInsertionOperator) {
       RigidTransform<AutoDiffXd>(rpy_autodiff, xyz_autodiff), rpy_values,
       xyz_expected_string);
 
-  // Test stream insertion for RigidTransform<symbolic::Expression>.
+  // Test stream insertion for RigidTransform<Expression>.
   // Note: A numerical process calculates RollPitchYaw from a RotationMatrix.
   // Verify that RigidTransform prints a symbolic placeholder for its rotational
-  // component (roll-pitch-yaw string) when T = symbolic::Expression.
-  const symbolic::Variable x("x"), y("y"), z("z");
-  const symbolic::Variable roll("roll"), pitch("pitch"), yaw("yaw");
-  const Vector3<symbolic::Expression> xyz_symbolic(x, y, z);
-  RollPitchYaw<symbolic::Expression> rpy_symbolic(roll, pitch, yaw);
-  RigidTransform<symbolic::Expression> X_symbolic(rpy_symbolic, xyz_symbolic);
+  // component (roll-pitch-yaw string) when T = Expression.
+  const Variable x("x"), y("y"), z("z");
+  const Variable roll("roll"), pitch("pitch"), yaw("yaw");
+  const Vector3<Expression> xyz_symbolic(x, y, z);
+  RollPitchYaw<Expression> rpy_symbolic(roll, pitch, yaw);
+  RigidTransform<Expression> X_symbolic(rpy_symbolic, xyz_symbolic);
   std::stringstream stream;  stream << X_symbolic;
   const std::string expected_string =
-      "rpy = symbolic (not supported) xyz = x y z";
+      "rpy = <symbolic> <symbolic> <symbolic> xyz = x y z";
   EXPECT_EQ(expected_string, stream.str());
+
+  // Test stream insertion for RigidTransform<Expression> when the expression
+  // is only constants (i.e., with no free variables).
+  const RollPitchYaw<Expression> rpy_const_expr(-0.1, 0.2, 0.3);
+  const Vector3<Expression> xyz_const_expr(-10, 20, 30);
+  VerifyStreamInsertionOperator(
+      RigidTransform<Expression>(rpy_const_expr, xyz_const_expr),
+      Vector3d{-0.1, 0.2, 0.3}, "xyz = -10 20 30");
 }
 
 }  // namespace

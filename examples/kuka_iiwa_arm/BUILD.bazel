@@ -214,7 +214,9 @@ sh_test(
     tags = ["no_kcov"],
 )
 
-# This examples needs to be install for external projects such as Spartan.
+# TODO(jwnimmer-tri) On 2022-01-01 once this deprecation date has passed,
+# remove this entire stanza, 'git rm' these two python test files, and
+# remove the references to these two programs from drake/tools/wheel/...
 install(
     name = "install",
     install_tests = [

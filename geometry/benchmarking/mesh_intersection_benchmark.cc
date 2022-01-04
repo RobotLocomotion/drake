@@ -14,7 +14,7 @@ namespace internal {
 /* @defgroup mesh_intersection_benchmarks Mesh Intersection Benchmarks
  @ingroup proximity_queries
 
- The benchmark evaluates mesh intersection between soft and rigid meshes.
+ The benchmark evaluates mesh intersection between compliant and rigid meshes.
 
  It computes the contact surface formed from the intersection of an ellipsoid
  and a sphere using broad-phase culling (via a bounding volume hierarchy).
@@ -109,15 +109,15 @@ Resulting contact surface sizes:
      the scenes to a resolution hint, see AddRigidHydroelasticProperties() for
      more details.
    - __contact_overlap__: Affects the size of the resulting contact surface by
-     translating the rigid mesh relative to the soft mesh. Contact overlap
+     translating the rigid mesh relative to the compliant mesh. Contact overlap
      should be one of the following enumeration values representing:
      - 0: No contact and no overlapping bounding volumes at all.
      - 1: No contact but overlapping bounding volumes.
      - 2: The minimal, or at least very small, contact surface.
      - 3: An intermediate sized contact surface.
      - 4: The maximal contact surface (in area).
-   - __rotation_factor__: How much rotation to offset between the soft and the
-     rigid mesh to increase axis misalignment. Given an offset, int `i`, the
+   - __rotation_factor__: How much rotation to offset between the compliant and
+     the rigid mesh to increase axis misalignment. Given an offset, int `i`, the
      resulting rotation is calculated as `i / max_factor * π/4` radians around
      the geometry's shortest axis, in this case, the x-axis. When rotation
      factor is zero, they are perfectly aligned, as rotation factor increases,
@@ -235,12 +235,12 @@ BENCHMARK_DEFINE_F(MeshIntersectionBenchmark, RigidSoftMesh)
   const auto bvh_R = Bvh<Obb, TriangleSurfaceMesh<double>>(mesh_R_);
   std::unique_ptr<TriangleSurfaceMesh<double>> surface_SR;
   std::unique_ptr<TriangleSurfaceMeshFieldLinear<double, double>> e_SR;
-  std::vector<Vector3<double>> grad_eM_Ms;
   for (auto _ : state) {
-    SurfaceVolumeIntersector<double>().SampleVolumeFieldOnSurface(
-        field_S_, bvh_S, mesh_R_, bvh_R, X_SR_,
-        ContactPolygonRepresentation::kCentroidSubdivision,
-        &surface_SR, &e_SR, &grad_eM_Ms);
+    SurfaceVolumeIntersector<TriangleSurfaceMesh<double>> intersector;
+    intersector.SampleVolumeFieldOnSurface(field_S_, bvh_S, mesh_R_, bvh_R,
+                                           X_SR_, TriMeshBuilder<double>());
+    surface_SR = intersector.release_mesh();
+    e_SR = intersector.release_field();
   }
   RecordContactSurfaceResult(surface_SR.get(), "RigidSoftMesh", state);
 }

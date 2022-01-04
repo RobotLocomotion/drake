@@ -17,11 +17,6 @@ class Meshcat;
 /** An interface for recording/playback animations in Meshcat. Use
 Meshcat::SetAnimation to publish a MeshcatAnimation to the visualizer.
 
-NOTE: There is a significant bug in meshcat/three.js that limits the ability to
-set multiple property types in a single animation.  Your mileage with property
-animations may vary until we can resolve
-https://github.com/rdeits/meshcat/issues/105.
-
 Currently, an animation consists of (only) transforms and properties that are
 set at a particular integer frame number. Although we do not support calls to
 SetObject/Delete in an animation, you can consider using `SetProperty(frame,

@@ -65,6 +65,10 @@ install(name = "install")
             # from source instead of using the host version.
             default = "6.1.2",
         ),
+        "commit_pin": attr.int(
+            # Per the comment on "commit", above.
+            default = 1,
+        ),
         "sha256": attr.string(
             default = "1cafc80701b746085dddf41bd9193e6d35089e1c6ec1940e037fcb9c98f62365",  # noqa
         ),

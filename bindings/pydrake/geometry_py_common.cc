@@ -502,15 +502,16 @@ void DefGetPropertyCpp(py::module m) {
 // defined in set of properties. If we ever move HydroelasticType out of
 // internal and bind it, we can eliminate this helper.
 //
-// Return true if the properties indicate soft compliance, false if rigid, and
+// Return true if the properties indicate being compliant, false if rigid, and
 // throws if the property isn't set at all (or set to undefined).
-bool PropertiesIndicateSoftHydro(const geometry::ProximityProperties& props) {
+bool PropertiesIndicateCompliantHydro(
+    const geometry::ProximityProperties& props) {
   using geometry::internal::HydroelasticType;
   const HydroelasticType hydro_type =
       props.GetPropertyOrDefault(geometry::internal::kHydroGroup,
           geometry::internal::kComplianceType, HydroelasticType::kUndefined);
   if (hydro_type == HydroelasticType::kUndefined) {
-    throw std::runtime_error("No specification of rigid or soft");
+    throw std::runtime_error("No specification of rigid or compliant");
   }
   return hydro_type == HydroelasticType::kSoft;
 }
@@ -521,7 +522,7 @@ void def_testing_module(py::module m) {
   const auto constant_id = geometry::FilterId::get_new_id();
   m.def("get_constant_id", [constant_id]() { return constant_id; });
 
-  m.def("PropertiesIndicateSoftHydro", &PropertiesIndicateSoftHydro);
+  m.def("PropertiesIndicateCompliantHydro", &PropertiesIndicateCompliantHydro);
 
   // For use with `test_geometry_properties_cpp_types`.
   DefGetPropertyCpp<std::string>(m);

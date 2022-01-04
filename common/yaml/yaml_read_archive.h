@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <map>
 #include <optional>
 #include <ostream>
@@ -12,16 +13,24 @@
 #include <variant>
 #include <vector>
 
-#include "yaml-cpp/yaml.h"
 #include <Eigen/Core>
 #include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/name_value.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/unused.h"
 #include "drake/common/yaml/yaml_node.h"
+
+// Forward-declaration from "yaml-cpp/yaml.h".
+// TODO(jwnimmer-tri) Remove these on 2022-03-01 when the deprecated YAML::Node
+// functions in this file are also removed.
+namespace YAML {
+class Node;
+template <typename T> struct convert;
+}  // namespace YAML
 
 namespace drake {
 namespace yaml {
@@ -56,13 +65,15 @@ class YamlReadArchive final {
     bool retain_map_defaults{false};
   };
 
-  /// (Advanced) Creates an archive that reads from @p root.
+  /// (Deprecated) Creates an archive that reads from @p root.
   /// Prefer to use the functions in yaml_io.h, instead.
+  DRAKE_DEPRECATED("2022-03-01", "Use LoadYamlFile or LoadYamlString instead.")
   explicit YamlReadArchive(const YAML::Node& root);
 
-  /// (Advanced) Creates an archive that reads from @p root,
+  /// (Deprecated) Creates an archive that reads from @p root,
   /// with @p options that allow for less restrictive parsing.
   /// Prefer to use the functions in yaml_io.h, instead.
+  DRAKE_DEPRECATED("2022-03-01", "Use LoadYamlFile or LoadYamlString instead.")
   YamlReadArchive(const YAML::Node& root, const Options& options);
 
   /// (Internal use only.)
@@ -82,7 +93,8 @@ class YamlReadArchive final {
   /// associated this archive.
   template <typename Serializable>
   void Accept(Serializable* serializable) {
-    DoAccept(this, serializable, static_cast<int32_t>(0));
+    DRAKE_THROW_UNLESS(serializable != nullptr);
+    this->DoAccept(serializable, static_cast<int32_t>(0));
     CheckAllAccepted();
   }
 
@@ -151,16 +163,30 @@ class YamlReadArchive final {
   // @name Overloads for the Accept() implementation
 
   // This version applies when Serialize is member method.
-  template <typename Archive, typename Serializable>
-  auto DoAccept(Archive* a, Serializable* serializable, int32_t) ->
-      decltype(serializable->Serialize(a)) {
-    serializable->Serialize(a);
+  template <typename Serializable>
+  auto DoAccept(Serializable* serializable, int32_t) ->
+      decltype(serializable->Serialize(this)) {
+    serializable->Serialize(this);
+  }
+
+  // This version applies when `value` is a std::map from std::string to
+  // Serializable.  The map's values must be serializable, but there is no
+  // Serialize function required for the map itself.
+  template <typename Serializable>
+  void DoAccept(std::map<std::string, Serializable>* value, int32_t) {
+    DRAKE_THROW_UNLESS(root_ != nullptr);
+    DRAKE_THROW_UNLESS(root_->IsMapping());
+    VisitMapDirectly<Serializable>(*root_, value);
+    for (const auto& [name, ignored] : *value) {
+      unused(ignored);
+      visited_names_.insert(name);
+    }
   }
 
   // This version applies when Serialize is an ADL free function.
-  template <typename Archive, typename Serializable>
-  void DoAccept(Archive* a, Serializable* serializable, int64_t) {
-    Serialize(a, serializable);
+  template <typename Serializable>
+  void DoAccept(Serializable* serializable, int64_t) {
+    Serialize(this, serializable);
   }
 
   // --------------------------------------------------------------------------
@@ -466,19 +492,24 @@ class YamlReadArchive final {
     const internal::Node* sub_node = GetSubNodeMapping(nvp.name());
     if (sub_node == nullptr) { return; }
     auto& result = *nvp.value();
+    this->VisitMapDirectly<Value>(*sub_node, &result);
+  }
+
+  template <typename Value, typename Map>
+  void VisitMapDirectly(const internal::Node& node, Map* result) {
     if (!options_.retain_map_defaults) {
-      result.clear();
+      result->clear();
     }
-    for (const auto& [key, value] : sub_node->GetMapping()) {
+    for (const auto& [key, value] : node.GetMapping()) {
       unused(value);
-      auto newiter_inserted = result.emplace(key, Value{});
+      auto newiter_inserted = result->emplace(key, Value{});
       auto& newiter = newiter_inserted.first;
       const bool inserted = newiter_inserted.second;
       if (!options_.retain_map_defaults) {
         DRAKE_DEMAND(inserted == true);
       }
       Value& newvalue = newiter->second;
-      YamlReadArchive item_archive(sub_node, this);
+      YamlReadArchive item_archive(&node, this);
       item_archive.Visit(drake::MakeNameValue(key.c_str(), &newvalue));
     }
   }
@@ -486,18 +517,31 @@ class YamlReadArchive final {
   // --------------------------------------------------------------------------
   // @name Scalar parsers
 
-  // For commonly-used scalars, avoid inlining the parsing code.
+  // These are the only scalar types that Drake supports.
+  // Users cannot add de-string-ification functions for custom scalars.
   void ParseScalar(const std::string& value, bool* result);
+  void ParseScalar(const std::string& value, float* result);
   void ParseScalar(const std::string& value, double* result);
-  void ParseScalar(const std::string& value, int* result);
+  void ParseScalar(const std::string& value, int32_t* result);
+  void ParseScalar(const std::string& value, uint32_t* result);
+  void ParseScalar(const std::string& value, int64_t* result);
+  void ParseScalar(const std::string& value, uint64_t* result);
   void ParseScalar(const std::string& value, std::string* result);
 
-  template <typename T>
+  // We use DeprecatedYamlNode here to allow YAML::Node to be forward-declared
+  // in the typical case where this function is not called by any users' code.
+  // If we mentioned YAML::Node in the function body directly (i.e., without
+  // the template argument indirection), then the header file would fail to
+  // compile when using Clang 9.
+  template <typename T, typename DeprecatedYamlNode = YAML::Node>
+  DRAKE_DEPRECATED("2022-03-01",
+      "YAML loading only supports scalars of specific primitive types. "
+      "Please file a Drake issue if you need any additional types.")
   void ParseScalar(const std::string& value, T* result) {
     DRAKE_DEMAND(result != nullptr);
     // For the decode-able types, see /usr/include/yaml-cpp/node/convert.h.
     // Generally, all of the POD types are supported.
-    bool success = YAML::convert<T>::decode(YAML::Node(value), *result);
+    bool success = YAML::convert<T>::decode(DeprecatedYamlNode(value), *result);
     if (!success) {
       ReportError(fmt::format(
           "could not parse {} value", drake::NiceTypeName::Get<T>()));

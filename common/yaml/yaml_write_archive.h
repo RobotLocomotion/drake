@@ -38,7 +38,7 @@ class YamlWriteArchive final {
     auto* serializable_mutable = const_cast<Serializable*>(&serializable);
     root_ = internal::Node::MakeMapping();
     visit_order_.clear();
-    DoAccept(this, serializable_mutable, static_cast<int32_t>(0));
+    this->DoAccept(serializable_mutable, static_cast<int32_t>(0));
     if (!visit_order_.empty()) {
       auto key_order = internal::Node::MakeSequence();
       for (const std::string& key : visit_order_) {
@@ -93,17 +93,25 @@ class YamlWriteArchive final {
   // --------------------------------------------------------------------------
   // @name Overloads for the Accept() implementation
 
-  // This version applies when Serialize is member method.
-  template <typename Archive, typename Serializable>
-  auto DoAccept(Archive* a, Serializable* serializable, int32_t) ->
-      decltype(serializable->Serialize(a)) {
-    return serializable->Serialize(a);
+  // This version applies when Serialize is member function.
+  template <typename Serializable>
+  auto DoAccept(Serializable* serializable, int32_t) ->
+      decltype(serializable->Serialize(this)) {
+    return serializable->Serialize(this);
+  }
+
+  // This version applies when `value` is a std::map from std::string to
+  // Serializable.  The map's values must be serializable, but there is no
+  // Serialize function required for the map itself.
+  template <typename Serializable>
+  void DoAccept(std::map<std::string, Serializable>* value, int32_t) {
+    root_ = VisitMapDirectly(value);
   }
 
   // This version applies when Serialize is an ADL free function.
-  template <typename Archive, typename Serializable>
-  void DoAccept(Archive* a, Serializable* serializable, int64_t) {
-    Serialize(a, serializable);
+  template <typename Serializable>
+  void DoAccept(Serializable* serializable, int64_t) {
+    Serialize(this, serializable);
   }
 
   // --------------------------------------------------------------------------
@@ -324,16 +332,23 @@ class YamlWriteArchive final {
     // we should never allow a YAML Sequence or Mapping to be a used as a key.
     static_assert(std::is_same_v<Key, std::string>,
                   "Map keys must be strings");
-    auto sub_node = internal::Node::MakeMapping();
+    auto sub_node = this->VisitMapDirectly(nvp.value());
+    root_.Add(nvp.name(), std::move(sub_node));
+  }
+
+  template <typename Map>
+  internal::Node VisitMapDirectly(Map* value) {
+    DRAKE_DEMAND(value != nullptr);
+    auto result = internal::Node::MakeMapping();
     // N.B. For std::unordered_map, this iteration order is non-deterministic,
     // but because internal::Node::MapData uses sorted keys anyway, it doesn't
     // matter what order we insert them here.
-    for (auto&& [key, value] : *nvp.value()) {
+    for (auto&& [key, sub_value] : *value) {
       YamlWriteArchive sub_archive;
-      sub_archive.Visit(drake::MakeNameValue(key.c_str(), &value));
-      sub_node.Add(key, std::move(sub_archive.root_.At(key)));
+      sub_archive.Visit(drake::MakeNameValue(key.c_str(), &sub_value));
+      result.Add(key, std::move(sub_archive.root_.At(key)));
     }
-    root_.Add(nvp.name(), std::move(sub_node));
+    return result;
   }
 
   internal::Node root_ = internal::Node::MakeMapping();

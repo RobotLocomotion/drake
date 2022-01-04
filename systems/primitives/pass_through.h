@@ -32,7 +32,7 @@ namespace systems {
 /// @system
 /// name: PassThrough
 /// input_ports:
-/// - u (optional)
+/// - u
 /// output_ports:
 /// - y
 /// @endsystem

@@ -1,12 +1,16 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
+#include "drake/geometry/proximity/polygon_surface_mesh.h"
+#include "drake/geometry/proximity/polygon_surface_mesh_field.h"
 #include "drake/geometry/proximity/posed_half_space.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh_field.h"
@@ -20,18 +24,22 @@ namespace geometry {
 namespace internal {
 
 // Forward declaration of Tester class, so we can grant friend access.
-template <typename T> class SurfaceVolumeIntersectorTester;
+template <typename MeshType> class SurfaceVolumeIntersectorTester;
 
 /* %SurfaceVolumeIntersector performs a mesh-intersection algorithm between a
  triangulated surface mesh and a tetrahedral volume mesh with a field
  variable. It also interpolates the field variable onto the resulted
  surface.
 
- @tparam_nonsymbolic_scalar
- */
-template <typename T>
+ @tparam MeshType The type of surface mesh to represent the contact surface.
+   It can be either TriangleSurfaceMesh<T> or PolygonSurfaceMesh<T> for
+   T = double or AutoDiffXd. */
+template <typename MeshType>
 class SurfaceVolumeIntersector {
  public:
+  using T = typename MeshType::ScalarType;
+  using FieldType = MeshFieldLinear<T, MeshType>;
+
   SurfaceVolumeIntersector() {
     // We know that each contact polygon has at most 7 vertices.
     // Each surface triangle is clipped by four half-spaces of the four
@@ -64,10 +72,6 @@ class SurfaceVolumeIntersector {
        A bounding volume hierarchy built on the geometry `surface_N`.
    @param[in] X_MN
        The pose of frame N in frame M.
-   @param[in] representation
-       Specify the preferred representation of each intersecting polygon,
-       which is the intersection of a tetrahedron and a triangle from the two
-       meshes.
    @param[out] surface_MN_M
        The intersecting surface between the volume mesh M and the surface N.
        Vertex positions are measured and expressed in M's frame. If no
@@ -81,17 +85,25 @@ class SurfaceVolumeIntersector {
        triangle in `surface_MN_M`).
    @note
        The output surface mesh may have duplicate vertices.
+   @tparam MeshBuilder An instance of either TriMeshBuilder<T> or
+    PolyMeshBuilder<T> (for T = double or AutoDiffXd).
+    (See the documentation in contact_surface_utility.h for details.)
    */
+  template <typename MeshBuilder>
   void SampleVolumeFieldOnSurface(
       const VolumeMeshFieldLinear<double, double>& volume_field_M,
       const Bvh<Obb, VolumeMesh<double>>& bvh_M,
       const TriangleSurfaceMesh<double>& surface_N,
       const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_N,
       const math::RigidTransform<T>& X_MN,
-      ContactPolygonRepresentation representation,
-      std::unique_ptr<TriangleSurfaceMesh<T>>* surface_MN_M,
-      std::unique_ptr<TriangleSurfaceMeshFieldLinear<T, T>>* e_MN,
-      std::vector<Vector3<T>>* grad_eM_Ms);
+      MeshBuilder builder);
+
+  bool has_intersection() const { return mesh_M_ != nullptr; }
+  MeshType& mutable_mesh() { return *mesh_M_; }
+  std::unique_ptr<MeshType>&& release_mesh() { return std::move(mesh_M_); }
+  FieldType& mutable_field() { return *field_M_; }
+  std::unique_ptr<FieldType>&& release_field() { return std::move(field_M_); }
+  std::vector<Vector3<T>>& mutable_grad_eM_M() { return grad_eM_Ms_; }
 
  private:
   /* Calculates the intersection point between an infinite straight line
@@ -310,7 +322,22 @@ class SurfaceVolumeIntersector {
   // not introduced.
   std::vector<Vector3<T>> polygon_[2];
 
-  friend class SurfaceVolumeIntersectorTester<T>;
+  // A container for the vertex indices that define an intersection polygon.
+  // By making it a member, we only allocate on the heap *once* for a pair
+  // of meshes (instead of once per intersecting polygon). This exists purely
+  // for performance optimization.
+  std::vector<int> polygon_vertex_indices_;
+
+  // The mesh produced from intersecting the volume mesh with the surface mesh,
+  // measured and expressed in the volume mesh's frame M.
+  std::unique_ptr<MeshType> mesh_M_;
+  // The field defined on mesh_M_ (in the same frame M).
+  std::unique_ptr<FieldType> field_M_;
+  // The spatial gradient of the volume mesh field, sampled once for each face
+  // in mesh_M_.
+  std::vector<Vector3<T>> grad_eM_Ms_;
+
+  friend class SurfaceVolumeIntersectorTester<MeshType>;
 };
 
 /* Computes the contact surface between a soft geometry S and a rigid
@@ -338,8 +365,7 @@ class SurfaceVolumeIntersector {
  @param[in] X_WR
      The pose of the rigid frame R in the world frame W.
  @param[in] representation
-     Specify the preferred representation of each contact polygon between the
-     two geometries.
+     The preferred representation of each contact polygon.
  @return
      The contact surface between M and N. Geometries S and R map to M and N
      with a consistent mapping (as documented in ContactSurface) but without any
@@ -373,7 +399,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR,
-    ContactPolygonRepresentation representation);
+    HydroelasticContactRepresentation representation);
 
 }  // namespace internal
 }  // namespace geometry

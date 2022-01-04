@@ -1,4 +1,9 @@
+#include <cstdio>
+#include <fstream>
+#include <iostream>
+
 #include "drake/common/find_resource.h"
+#include "drake/common/temp_directory.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/meshcat_visualizer.h"
@@ -53,14 +58,62 @@ int do_main() {
                                "006_mustard_bottle_textured.obj"), 3.0));
   meshcat->SetTransform("mustard", RigidTransformd(Vector3d{3, 0, 0}));
 
-  const int kPoints = 100000;
-  perception::PointCloud cloud(
-      kPoints, perception::pc_flags::kXYZs | perception::pc_flags::kRGBs);
-  Eigen::Matrix3Xf m = Eigen::Matrix3Xf::Random(3, kPoints);
-  cloud.mutable_xyzs() = Eigen::DiagonalMatrix<float, 3>{.25, .25, .5} * m;
-  cloud.mutable_rgbs() = (255.0 * (m.array() + 1.0) / 2.0).cast<uint8_t>();
-  meshcat->SetObject("point_cloud", cloud, 0.01);
-  meshcat->SetTransform("point_cloud", RigidTransformd(Vector3d{4, 0, 0}));
+  {
+    const int kPoints = 100000;
+    perception::PointCloud cloud(
+        kPoints, perception::pc_flags::kXYZs | perception::pc_flags::kRGBs);
+    Eigen::Matrix3Xf m = Eigen::Matrix3Xf::Random(3, kPoints);
+    cloud.mutable_xyzs() = Eigen::DiagonalMatrix<float, 3>{.25, .25, .5} * m;
+    cloud.mutable_rgbs() = (255.0 * (m.array() + 1.0) / 2.0).cast<uint8_t>();
+    meshcat->SetObject("point_cloud", cloud, 0.01);
+    meshcat->SetTransform("point_cloud", RigidTransformd(Vector3d{4, 0, 0}));
+  }
+
+  {
+    Eigen::Matrix3Xd vertices(3, 200);
+    Eigen::RowVectorXd t = Eigen::RowVectorXd::LinSpaced(200, 0, 10 * M_PI);
+    vertices << .25 * t.array().sin(), .25 * t.array().cos(), t / (10 * M_PI);
+    meshcat->SetLine("line", vertices, 3.0, Rgba(0, 0, 1, 1));
+    meshcat->SetTransform("line", RigidTransformd(Vector3d{5, 0, -.5}));
+  }
+
+  {
+    Eigen::Matrix3Xd start(3, 4), end(3, 4);
+    // clang-format off
+    start << -.1, -.1,  .1, .1,
+            -.1,  .1, -.1, .1,
+            0, 0, 0, 0;
+    // clang-format on
+    end = start;
+    end.row(2) = Eigen::RowVector4d::Ones();
+    meshcat->SetLineSegments("line_segments", start, end, 5.0,
+                             Rgba(0, 1, 0, 1));
+    meshcat->SetTransform("line_segments",
+                          RigidTransformd(Vector3d{6, 0, -.5}));
+  }
+
+  // The TriangleSurfaceMesh variant of SetObject calls SetTriangleMesh(), so
+  // visually inspecting the results of TriangleSurfaceMesh is sufficient here.
+  {
+    const int face_data[2][3] = {{0, 1, 2}, {2, 3, 0}};
+    std::vector<SurfaceTriangle> faces;
+    for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
+    const Eigen::Vector3d vertex_data[4] = {
+        {0, 0, 0}, {0.5, 0, 0}, {0.5, 0.5, 0}, {0, 0.5, 0.5}};
+    std::vector<Eigen::Vector3d> vertices;
+    for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
+    TriangleSurfaceMesh<double> surface_mesh(
+        std::move(faces), std::move(vertices));
+    meshcat->SetObject("triangle_mesh", surface_mesh, Rgba(.9, 0, .9, 1.0));
+    meshcat->SetTransform("triangle_mesh",
+                          RigidTransformd(Vector3d{6.75, -.25, 0}));
+
+    meshcat->SetObject("triangle_mesh_wireframe", surface_mesh,
+                       Rgba(.9, 0, .9, 1.0), true, 5.0);
+    meshcat->SetTransform("triangle_mesh_wireframe",
+                          RigidTransformd(Vector3d{7.75, -.25, 0}));
+  }
+
   std::cout << R"""(
 Open up your browser to the URL above.
 
@@ -74,9 +127,18 @@ Open up your browser to the URL above.
   - a bright green cube (the green comes from a texture map)
   - a yellow mustard bottle w/ label
   - a dense rainbow point cloud in a box (long axis in z)
+  - a blue line coiling up (in z).
+  - 4 green vertical line segments (in z).
+  - a purple triangle mesh with 2 faces.
+  - the same purple triangle mesh drawn as a wireframe.
 )""";
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  std::cout << "Calling meshcat.Flush(), which will block until all clients "
+               "have received all the data)...";
+  meshcat->Flush();
+  std::cout << "Done." << std::endl;
 
   std::cout << "Animations:\n";
   MeshcatAnimation animation;
@@ -93,36 +155,25 @@ Open up your browser to the URL above.
   animation.SetTransform(
       40, "box", RigidTransformd(RotationMatrixd::MakeZRotation(2 * M_PI)));
   animation.set_repetitions(4);
-  meshcat->SetAnimation(animation);
-
-  // TODO(russt): Do all of these in a single animation pending resolution of
-  // https://github.com/rdeits/meshcat/issues/105
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
-  MeshcatAnimation animation2;
-  animation2.SetProperty(0, "cylinder", "visible", true);
-  animation2.SetProperty(20, "cylinder", "visible", false);
-  animation2.SetProperty(40, "cylinder", "visible", true);
-  animation2.set_repetitions(4);
-  meshcat->SetAnimation(animation2);
 
   std::cout << "- the green cylinder should appear and disappear.\n";
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
-  MeshcatAnimation animation3;
-  animation3.SetProperty(0, "ellipsoid/<object>", "material.opacity", 1.0);
-  animation3.SetProperty(20, "ellipsoid/<object>", "material.opacity", 0.0);
-  animation3.SetProperty(40, "ellipsoid/<object>", "material.opacity", 1.0);
-  animation3.set_repetitions(4);
-  meshcat->SetAnimation(animation3);
+  animation.SetProperty(0, "cylinder", "visible", true);
+  animation.SetProperty(20, "cylinder", "visible", false);
+  animation.SetProperty(40, "cylinder", "visible", true);
+  animation.set_repetitions(4);
 
   std::cout
       << "- the pink ellipsoid should get less and then more transparent.\n";
+  animation.SetProperty(0, "ellipsoid/<object>", "material.opacity", 1.0);
+  animation.SetProperty(20, "ellipsoid/<object>", "material.opacity", 0.0);
+  animation.SetProperty(40, "ellipsoid/<object>", "material.opacity", 1.0);
+  animation.set_repetitions(4);
+
+  meshcat->SetAnimation(animation);
+
+  std::cout << "You can review/replay the animation from the controls menu.\n";
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
 
   meshcat->Set2dRenderMode(math::RigidTransform(Eigen::Vector3d{0, -3, 0}), -4,
                            4, -2, 2);
@@ -229,6 +280,25 @@ Open up your browser to the URL above.
 
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  const std::string html_filename(temp_directory() + "/meshcat_static.html");
+  std::ofstream html_file(html_filename);
+  html_file << meshcat->StaticHtml();
+  html_file.close();
+
+  std::cout << "A standalone HTML file capturing this scene (including the "
+               "animation) has been written to file://"
+            << html_filename
+            << "\nOpen that location in your browser now and confirm that "
+               "the iiwa is visible and the animation plays."
+            << std::endl;
+
+  std::cout << "[Press RETURN to continue]." << std::endl;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  std::remove(html_filename.c_str());
+  std::cout
+      << "Note: I've deleted the temporary HTML file (it's several Mb).\n\n";
 
   meshcat->AddButton("ButtonTest");
   meshcat->AddSlider("SliderTest", 0, 1, 0.01, 0.5);

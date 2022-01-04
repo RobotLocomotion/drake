@@ -80,14 +80,14 @@ unique_ptr<ContactSurface<double>> BoxContactSurface() {
   return ComputeContactSurfaceFromSoftVolumeRigidSurface(
       GeometryId::get_new_id(), field_S, bvh_volume_S, X_WS,
       GeometryId::get_new_id(), surface_R, bvh_surface_R, X_WR,
-      ContactPolygonRepresentation::kCentroidSubdivision);
+      HydroelasticContactRepresentation::kTriangle);
 }
 
 GTEST_TEST(MeshToVtkTest, BoxContactSurfacePressure) {
   unique_ptr<ContactSurface<double>> contact = BoxContactSurface();
   auto contact_pressure =
       dynamic_cast<const TriangleSurfaceMeshFieldLinear<double, double>*>(
-          &contact->e_MN());
+          &contact->tri_e_MN());
   ASSERT_NE(contact_pressure, nullptr);
   WriteTriangleSurfaceMeshFieldLinearToVtk(
       temp_directory() + "/" + "box_rigid_soft_contact_pressure.vtk",

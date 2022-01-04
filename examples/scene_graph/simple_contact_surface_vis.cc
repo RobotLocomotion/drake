@@ -42,7 +42,7 @@ namespace contact_surface {
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::AddRigidHydroelasticProperties;
-using geometry::AddSoftHydroelasticProperties;
+using geometry::AddCompliantHydroelasticProperties;
 using geometry::Box;
 using geometry::ContactSurface;
 using geometry::Cylinder;
@@ -82,6 +82,7 @@ DEFINE_bool(rigid_cylinders, true,
             "Set to true, the cylinders are given a rigid "
             "hydroelastic representation");
 DEFINE_bool(hybrid, false, "Set to true to run hybrid hydroelastic");
+DEFINE_bool(polygons, false, "Set to true to get polygonal contact surfaces");
 DEFINE_bool(force_full_name, false,
             "If true, the message will declare the body names are not unique, "
             "forcing the visualizer to use the full model/body names.");
@@ -118,7 +119,7 @@ class MovingBall final : public LeafSystem<double> {
                                       make_unique<Sphere>(1.0), "ball"));
 
     ProximityProperties prox_props;
-    AddSoftHydroelasticProperties(FLAGS_length, 1e8, &prox_props);
+    AddCompliantHydroelasticProperties(FLAGS_length, 1e8, &prox_props);
     scene_graph->AssignRole(source_id_, geometry_id_, prox_props);
 
     IllustrationProperties illus_props;
@@ -208,20 +209,22 @@ class ContactResultMaker final : public LeafSystem<double> {
         get_geometry_query_port().Eval<QueryObject<double>>(context);
     std::vector<ContactSurface<double>> surfaces;
     std::vector<PenetrationAsPointPair<double>> points;
+    const geometry::HydroelasticContactRepresentation representation =
+        FLAGS_polygons ? geometry::HydroelasticContactRepresentation::kPolygon
+                       : geometry::HydroelasticContactRepresentation::kTriangle;
     if (use_strict_hydro_) {
-      surfaces = query_object.ComputeContactSurfaces();
+      surfaces = query_object.ComputeContactSurfaces(representation);
     } else {
-      query_object.ComputeContactSurfacesWithFallback(&surfaces, &points);
+      query_object.ComputeContactSurfacesWithFallback(representation, &surfaces,
+                                                      &points);
     }
     const int num_surfaces = static_cast<int>(surfaces.size());
     const int num_pairs = static_cast<int>(points.size());
 
-    auto& msg = *results;
-    msg.timestamp = context.get_time() * 1e6;  // express in microseconds.
-    msg.num_point_pair_contacts = num_pairs;
-    msg.point_pair_contact_info.resize(num_pairs);
-    msg.num_hydroelastic_contacts = num_surfaces;
-    msg.hydroelastic_contacts.resize(num_surfaces);
+    auto& message = *results;
+    message.timestamp = context.get_time() * 1e6;  // express in microseconds.
+    message.num_point_pair_contacts = num_pairs;
+    message.point_pair_contact_info.resize(num_pairs);
 
     auto write_double3 = [](const Vector3d& src, double* dest) {
       dest[0] = src(0);
@@ -232,100 +235,124 @@ class ContactResultMaker final : public LeafSystem<double> {
     const auto& inspector = query_object.inspector();
 
     // Contact surfaces.
+    message.num_hydroelastic_contacts = num_surfaces;
+    message.hydroelastic_contacts.resize(num_surfaces);
     for (int i = 0; i < num_surfaces; ++i) {
-      lcmt_hydroelastic_contact_surface_for_viz& surface_msg =
-          msg.hydroelastic_contacts[i];
+        lcmt_hydroelastic_contact_surface_for_viz& surface_message =
+            message.hydroelastic_contacts[i];
+        const auto& surface = surfaces[i];
 
-      // We'll simulate MbP's model instance/body paradigm. We have a look up
-      // function to define a model instance. The body name will be the frame
-      // name as there is a 1-to-1 correspondence between MbP bodies and
-      // geometry frames. The geometry will use the name stored in SceneGraph.
-      const GeometryId id1 = surfaces[i].id_M();
-      const FrameId f_id1 = inspector.GetFrameId(id1);
-      surface_msg.body1_name = inspector.GetName(f_id1);
-      surface_msg.model1_name =
-          ModelInstanceName(inspector.GetFrameGroup(f_id1));
-      surface_msg.geometry1_name = inspector.GetName(id1);
-      surface_msg.body1_unique = !FLAGS_force_full_name;
-      surface_msg.collision_count1 = inspector.NumGeometriesForFrameWithRole(
-          inspector.GetFrameId(id1), Role::kProximity);
+        // We'll simulate MbP's model instance/body paradigm. We have a look up
+        // function to define a model instance. The body name will be the frame
+        // name as there is a 1-to-1 correspondence between MbP bodies and
+        // geometry frames. The geometry will use the name stored in SceneGraph.
+        const GeometryId id1 = surface.id_M();
+        const FrameId f_id1 = inspector.GetFrameId(id1);
+        surface_message.body1_name = inspector.GetName(f_id1);
+        surface_message.model1_name =
+            ModelInstanceName(inspector.GetFrameGroup(f_id1));
+        surface_message.geometry1_name = inspector.GetName(id1);
+        surface_message.body1_unique = !FLAGS_force_full_name;
+        surface_message.collision_count1 =
+            inspector.NumGeometriesForFrameWithRole(inspector.GetFrameId(id1),
+                                                    Role::kProximity);
 
-      const GeometryId id2 = surfaces[i].id_N();
-      const FrameId f_id2 = inspector.GetFrameId(id2);
-      surface_msg.body2_name = inspector.GetName(inspector.GetFrameId(id2));
-      surface_msg.model2_name =
-          ModelInstanceName(inspector.GetFrameGroup(f_id2));
-      surface_msg.geometry2_name = inspector.GetName(id2);
-      surface_msg.body2_unique = !FLAGS_force_full_name;
-      surface_msg.collision_count2 = inspector.NumGeometriesForFrameWithRole(
-          inspector.GetFrameId(id2), Role::kProximity);
+        const GeometryId id2 = surface.id_N();
+        const FrameId f_id2 = inspector.GetFrameId(id2);
+        surface_message.body2_name =
+            inspector.GetName(inspector.GetFrameId(id2));
+        surface_message.model2_name =
+            ModelInstanceName(inspector.GetFrameGroup(f_id2));
+        surface_message.geometry2_name = inspector.GetName(id2);
+        surface_message.body2_unique = !FLAGS_force_full_name;
+        surface_message.collision_count2 =
+            inspector.NumGeometriesForFrameWithRole(inspector.GetFrameId(id2),
+                                                    Role::kProximity);
 
-      const TriangleSurfaceMesh<double>& mesh_W = surfaces[i].mesh_W();
-      surface_msg.num_triangles = mesh_W.num_triangles();
-      surface_msg.triangles.resize(surface_msg.num_triangles);
-      write_double3(mesh_W.centroid(), surface_msg.centroid_W);
-      surface_msg.num_quadrature_points = surface_msg.num_triangles;
-      surface_msg.quadrature_point_data.resize(
-          surface_msg.num_quadrature_points);
+        // Fake contact *force* and *moment* data, with some variations across
+        // different faces to facilitate visualizer testing.
+        write_double3(surface.centroid(), surface_message.centroid_W);
+        write_double3(Vector3<double>(1.2 * (i + 1), 0, 0),
+                      surface_message.force_C_W);
+        write_double3(Vector3<double>(0, 0, 0.5 * (i + 1)),
+                      surface_message.moment_C_W);
 
-      // Loop through each contact triangle on the contact surface.
-      const auto& field = surfaces[i].e_MN();
-      for (int j = 0; j < surface_msg.num_triangles; ++j) {
-        lcmt_hydroelastic_contact_surface_tri_for_viz& tri_msg =
-            surface_msg.triangles[j];
-        lcmt_hydroelastic_quadrature_per_point_data_for_viz& quad_msg =
-            surface_msg.quadrature_point_data[j];
+        // Write fake quadrature data.
+        surface_message.num_quadrature_points = surface.num_faces();
+        surface_message.quadrature_point_data.resize(
+            surface_message.num_quadrature_points);
+        for (int j = 0; j < surface_message.num_quadrature_points; ++j) {
+          lcmt_hydroelastic_quadrature_per_point_data_for_viz&
+              quad_data_message = surface_message.quadrature_point_data[j];
+          write_double3(surface.centroid(j), quad_data_message.p_WQ);
+          write_double3(Vector3d(0, 0.2 + (j * 0.005), 0),
+                        quad_data_message.vt_BqAq_W);
+          write_double3(Vector3d(0, -0.2 - (j * 0.005), 0),
+                        quad_data_message.traction_Aq_W);
+        }
 
-        // Get the three vertices.
-        const auto& face = mesh_W.element(j);
-        const Vector3d& vA = mesh_W.vertex(face.vertex(0));
-        const Vector3d& vB = mesh_W.vertex(face.vertex(1));
-        const Vector3d& vC = mesh_W.vertex(face.vertex(2));
+        // Now write the *real* mesh.
+        const int num_vertices = surface.num_vertices();
+        surface_message.num_vertices = num_vertices;
+        surface_message.p_WV.resize(num_vertices);
+        surface_message.pressure.resize(num_vertices);
 
-        write_double3(vA, tri_msg.p_WA);
-        write_double3(vB, tri_msg.p_WB);
-        write_double3(vC, tri_msg.p_WC);
-        write_double3((vA + vB + vC) / 3.0, quad_msg.p_WQ);
+        if (surface.is_triangle()) {
+          const auto& mesh_W = surface.tri_mesh_W();
+          const auto& e_MN_W = surface.tri_e_MN();
 
-        tri_msg.pressure_A = field.EvaluateAtVertex(face.vertex(0));
-        tri_msg.pressure_B = field.EvaluateAtVertex(face.vertex(1));
-        tri_msg.pressure_C = field.EvaluateAtVertex(face.vertex(2));
+          // Write vertices and per vertex pressure values.
+          for (int v = 0; v < num_vertices; ++v) {
+            const Vector3d& p_WV = mesh_W.vertex(v);
+            surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
+            surface_message.pressure[v] =
+                ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
+          }
 
-        // Fake contact *traction* and *slip velocity* data, with some
-        // variations across different data instances. The variation allows one
-        // to appreciate the differences among the vector scaling models for
-        // hydroelastics (fixed-length, scaled, and auto-scale). Without the
-        // variation, there's no visible difference between the fixed-length
-        // mode and the auto-scale mode.
-        write_double3(Vector3<double>(0, 0.2 + (j * 0.005), 0),
-                      quad_msg.vt_BqAq_W);
-        write_double3(Vector3<double>(0, -0.2 - (j * 0.005), 0),
-                      quad_msg.traction_Aq_W);
-      }
-      // Fake contact *force* and *moment* data, with some variations across
-      // different data instances to facilitate visualizer testing (see above).
-      write_double3(Vector3<double>(1.2 * (i + 1), 0, 0),
-                    surface_msg.force_C_W);
-      write_double3(Vector3<double>(0, 0, 0.5 * (i + 1)),
-                    surface_msg.moment_C_W);
+          // Write faces.
+          surface_message.poly_data_int_count = mesh_W.num_triangles() * 4;
+          surface_message.poly_data.resize(surface_message.poly_data_int_count);
+          int index = -1;
+          for (int t = 0; t < mesh_W.num_triangles(); ++t) {
+            const geometry::SurfaceTriangle& tri = mesh_W.element(t);
+            surface_message.poly_data[++index] = 3;
+            surface_message.poly_data[++index] = tri.vertex(0);
+            surface_message.poly_data[++index] = tri.vertex(1);
+            surface_message.poly_data[++index] = tri.vertex(2);
+          }
+        } else {
+          const auto& mesh_W = surface.poly_mesh_W();
+          const auto& e_MN_W = surface.poly_e_MN();
+
+          // Write vertices and per vertex pressure values.
+          for (int v = 0; v < num_vertices; ++v) {
+            const Vector3d& p_WV = mesh_W.vertex(v);
+            surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
+            surface_message.pressure[v] =
+                ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
+          }
+
+          surface_message.poly_data_int_count = mesh_W.face_data().size();
+          surface_message.poly_data = mesh_W.face_data();
+        }
     }
 
     // Point pairs.
     for (int i = 0; i < num_pairs; ++i) {
-      lcmt_point_pair_contact_info_for_viz& info_msg =
-          msg.point_pair_contact_info[i];
-      info_msg.timestamp = msg.timestamp;
+      lcmt_point_pair_contact_info_for_viz& info_message =
+          message.point_pair_contact_info[i];
+      info_message.timestamp = message.timestamp;
       const PenetrationAsPointPair<double>& pair = points[i];
 
-      info_msg.body1_name = query_object.inspector().GetName(pair.id_A);
-      info_msg.body1_name = query_object.inspector().GetName(pair.id_B);
+      info_message.body1_name = query_object.inspector().GetName(pair.id_A);
+      info_message.body1_name = query_object.inspector().GetName(pair.id_B);
 
       // Fake contact *force* data from strictly contact data. Contact point
       // is midway between the two contact points and force = normal.
       const Vector3d contact_point = (pair.p_WCa + pair.p_WCb) / 2.0;
-      write_double3(contact_point, info_msg.contact_point);
-      write_double3(pair.nhat_BA_W, info_msg.contact_force);
-      write_double3(pair.nhat_BA_W, info_msg.normal);
+      write_double3(contact_point, info_message.contact_point);
+      write_double3(pair.nhat_BA_W, info_message.contact_force);
+      write_double3(pair.nhat_BA_W, info_message.normal);
     }
   }
 

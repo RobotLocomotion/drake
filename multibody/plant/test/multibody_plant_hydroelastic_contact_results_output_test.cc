@@ -47,7 +47,7 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
         examples::multibody::bouncing_ball::MakeBouncingBallPlant(
             0.0 /* mbp_dt */, radius, mass, hydroelastic_modulus, dissipation,
             friction, gravity_W, false /* rigid_sphere */,
-            false /* soft_ground */, &scene_graph));
+            false /* compliant_ground */, &scene_graph));
     plant_->set_contact_model(ContactModel::kHydroelastic);
     plant_->Finalize();
 
@@ -108,7 +108,8 @@ TEST_F(HydroelasticContactResultsOutputTester, ContactSurfaceEquivalent) {
   // Compute the contact surface using the hydroelastic engine.
   ASSERT_FALSE(plant_->is_discrete());
   std::vector<geometry::ContactSurface<double>> contact_surfaces =
-      query_object.ComputeContactSurfaces();
+      query_object.ComputeContactSurfaces(
+          geometry::HydroelasticContactRepresentation::kTriangle);
 
   // Check that the two contact surfaces are equivalent.
   ASSERT_EQ(contact_surfaces.size(), 1);
@@ -124,7 +125,7 @@ TEST_F(HydroelasticContactResultsOutputTester, SpatialForceAtCentroid) {
 
   // The following crude quadrature process relies upon there being three
   // quadrature points per triangle.
-  ASSERT_EQ(results.contact_surface().mesh_W().num_triangles() * 3,
+  ASSERT_EQ(results.contact_surface().num_faces() * 3,
             results.quadrature_point_data().size());
 
   // Sanity check that geometry ID is consistent with direction of spatial
@@ -150,7 +151,7 @@ TEST_F(HydroelasticContactResultsOutputTester, SpatialForceAtCentroid) {
   for (const HydroelasticQuadraturePointData<double>& datum :
        results.quadrature_point_data()) {
     F_Ac_W_expected.translational() +=
-        results.contact_surface().mesh_W().area(datum.face_index) * 1.0 / 3 *
+        results.contact_surface().area(datum.face_index) * 1.0 / 3 *
         datum.traction_Aq_W;
   }
 
@@ -210,10 +211,10 @@ TEST_F(HydroelasticContactResultsOutputTester, Traction) {
   for (const auto& quadrature_point_datum : quadrature_point_data) {
     // Convert the quadrature point to barycentric coordinates.
     const Vector3d p_barycentric =
-        results.contact_surface().mesh_W().CalcBarycentric(
+        results.contact_surface().tri_mesh_W().CalcBarycentric(
             quadrature_point_datum.p_WQ, quadrature_point_datum.face_index);
 
-    const double pressure = results.contact_surface().e_MN().Evaluate(
+    const double pressure = results.contact_surface().tri_e_MN().Evaluate(
         quadrature_point_datum.face_index, p_barycentric);
 
     // The conversion from Cartesian to barycentric coordinates introduces some
@@ -264,7 +265,8 @@ TEST_F(HydroelasticContactResultsOutputTester, AutoDiffXdSupport) {
   // as a reality check; make sure that the underlying contact surface has
   // derivatives as expected.
   std::vector<geometry::ContactSurface<AutoDiffXd>> contact_surfaces =
-      query_object.ComputeContactSurfaces();
+      query_object.ComputeContactSurfaces(
+          geometry::HydroelasticContactRepresentation::kTriangle);
 
   ASSERT_EQ(contact_surfaces.size(), 1);
   // Contact surface documents the surface normal as pointing "out of N and into
@@ -280,7 +282,7 @@ TEST_F(HydroelasticContactResultsOutputTester, AutoDiffXdSupport) {
 
   // The area has derivatives (three) and the area only changes magnitude based
   // on p_WBo.z.
-  const AutoDiffXd area = contact_surfaces[0].mesh_W().total_area();
+  const AutoDiffXd area = contact_surfaces[0].total_area();
   ASSERT_EQ(area.derivatives().size(), 3);
   ASSERT_NEAR(area.derivatives()[0], 0, 1e-15);
   ASSERT_NEAR(area.derivatives()[1], 0, 1e-15);

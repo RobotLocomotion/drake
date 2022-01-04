@@ -121,6 +121,7 @@ void TestConversionPass() {
 
   // Do the conversion.
   EXPECT_TRUE((dut.IsConvertible<T, U>()));
+  EXPECT_TRUE(dut.IsConvertible(typeid(T), typeid(U)));
   const S<U> original{kMagic};
   const std::unique_ptr<System<T>> converted = dut.Convert<T, U>(original);
   EXPECT_TRUE(converted != nullptr);
@@ -139,6 +140,7 @@ void TestConversionFail() {
 
   // Do the conversion.
   EXPECT_FALSE((dut.IsConvertible<T, U>()));
+  EXPECT_FALSE(dut.IsConvertible(typeid(T), typeid(U)));
   const S<U> original{0};
   const std::unique_ptr<System<T>> converted = dut.Convert<T, U>(original);
 
