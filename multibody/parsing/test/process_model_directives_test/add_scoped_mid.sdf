@@ -1,0 +1,34 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="add_scoped_mid">
+    <model name="nested">
+      <!--
+      simple_model_origin was supposed to have world as base frame, but that violates
+      scoping, this will be relative to the model frame instead.
+      -->
+      <frame name="simple_model_origin">
+        <pose>10 0 0   0 0 0</pose>
+      </frame>
+
+      <include merge="true">
+        <uri>package://process_model_directives_test/add_scoped_sub.sdf</uri>
+        <!--
+          //placement frame and //pose[@relative_to] is added here to pass the
+          tests of comparing poses between the frames added by model directives
+          and frames through sdf.
+        -->
+        <placement_frame>simple_model::base</placement_frame>
+        <pose relative_to="simple_model_origin"/>
+      </include>
+
+      <!--
+      This backreference sdf does not have a top level model and violates
+      scoping rules.
+      <include>
+        <uri>package://process_model_directives_test/add_backreference.sdf
+      </include>
+      -->
+    </model>
+
+  </model>
+</sdf>

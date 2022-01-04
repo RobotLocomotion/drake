@@ -1,0 +1,47 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="add_scoped_sub">
+
+    <include>
+      <name>simple_model</name>
+      <uri>package://process_model_directives_test/simple_model.sdf</uri>
+    </include>
+
+    <!-- This will implicitly resolve to the `simple_model` instance. -->
+    <frame name="sub_added_frame" attached_to="simple_model::frame">
+      <pose>10 20 30   0 0 0</pose>
+    </frame>
+
+    <!--
+      Explicitly resolving a frame by namespacing its name is not supported
+      and not needed, hence they will be commented out.
+
+      TODO(aaronchongth): Without this feature, there may be existing workflows
+      that are impacted and will need adjustment. For example, adding
+      "left::arm::gripper_origin" from a top level include, and then leveraging
+      this new model scope for other operations just scoped within "left::".
+    -->
+    <!--
+    <frame name="simple_model::sub_added_frame_explicit" ...>
+      <pose>10 20 30   0 0 0</pose>
+    </frame>
+    -->
+
+    <include>
+      <name>extra_model</name>
+      <uri>package://process_model_directives_test/simple_model.sdf</uri>
+      <placement_frame>base</placement_frame>
+      <pose relative_to="simple_model::frame"/>
+    </include>
+
+    <!--
+    A weld can be replaced by having a zero relative pose between the two frames,
+    as well as a fixed joint between them.
+    -->
+    <joint name="add_scoped_sub_weld" type="fixed">
+      <parent>simple_model::frame</parent>
+      <child>extra_model::base</child>
+    </joint>
+
+  </model>
+</sdf>

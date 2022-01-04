@@ -1,0 +1,64 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="add_scoped_top">
+    <frame name="world_frame"/>
+
+    <frame name="simple_model_origin" attached_to="world_frame"/>
+    <include merge="true">
+      <uri>package://process_model_directives_test/add_scoped_sub.sdf</uri>
+    </include>
+    <frame name="top_added_frame" attached_to="simple_model">
+      <!--
+      sub_added_frame was added under the scope of add_scoped_sub, even though
+      the directives indicate it is under add_scoped_top::simple_model
+      <pose relative_to="simple_model::sub_added_frame">
+      -->
+      <pose relative_to="sub_added_frame">
+        5 10 15   0 0 0
+      </pose>
+    </frame>
+
+    <model name="left">
+      <pose relative_to="world_frame"/>
+      <frame name="simple_model_origin">
+        <pose>0 1 0   0 0 0</pose>
+      </frame>
+      <include merge="true">
+        <uri>package://process_model_directives_test/add_scoped_sub.sdf</uri>
+      </include>
+      <frame name="top_added_frame" attached_to="simple_model">
+        <pose relative_to="sub_added_frame">
+          5 10 15   0 0 0
+        </pose>
+      </frame>
+    </model>
+
+    <model name="right">
+      <pose relative_to="world_frame"/>
+      <frame name="simple_model_origin">
+        <pose>0 -1 0   0 0 0</pose>
+      </frame>
+      <include merge="true">
+        <uri>package://process_model_directives_test/add_scoped_sub.sdf</uri>
+      </include>
+      <frame name="top_added_frame" attached_to="simple_model">
+        <pose relative_to="sub_added_frame">
+          5 10 15   0 0 0
+        </pose>
+      </frame>
+    </model>
+
+    <model name="mid">
+      <pose relative_to="world_frame"/>
+      <include merge="true">
+        <uri>package://process_model_directives_test/add_scoped_mid.sdf</uri>
+      </include>
+      <frame name="top_added_frame" attached_to="nested::simple_model">
+        <pose relative_to="nested::sub_added_frame">
+          5 10 15   0 0 0
+        </pose>
+      </frame>
+    </model>
+
+  </model>
+</sdf>
