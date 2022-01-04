@@ -9,6 +9,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -122,6 +123,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
 
   // Get links by name.
   for (const std::string& link_name : kLinkNames) {
+    drake::test::LimitMalloc guard;
     const Body<T>& link = model.GetBodyByName(link_name);
     EXPECT_EQ(link.name(), link_name);
   }
@@ -135,6 +137,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
 
   // Test we can also retrieve links as RigidBody objects.
   for (const std::string& link_name : kLinkNames) {
+    drake::test::LimitMalloc guard;
     const RigidBody<T>& link = model.GetRigidBodyByName(link_name);
     EXPECT_EQ(link.name(), link_name);
   }
@@ -144,6 +147,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
 
   // Get frames by name.
   for (const std::string& frame_name : kFrameNames) {
+    drake::test::LimitMalloc guard;
     const Frame<T>& frame = model.GetFrameByName(frame_name);
     EXPECT_EQ(frame.name(), frame_name);
     EXPECT_EQ(
@@ -155,6 +159,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
 
   // Get joints by name.
   for (const std::string& joint_name : kJointNames) {
+    drake::test::LimitMalloc guard;
     const Joint<T>& joint = model.GetJointByName(joint_name);
     EXPECT_EQ(joint.name(), joint_name);
   }
@@ -164,6 +169,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
 
   // Templatized version to obtain a particular known type of joint.
   for (const std::string& joint_name : kJointNames) {
+    drake::test::LimitMalloc guard;
     const RevoluteJoint<T>& joint =
         model.template GetJointByName<RevoluteJoint>(joint_name);
     EXPECT_EQ(joint.name(), joint_name);
@@ -177,6 +183,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
 
   // Get actuators by name.
   for (const std::string& actuator_name : kActuatorNames) {
+    drake::test::LimitMalloc guard;
     const JointActuator<T>& actuator =
         model.GetJointActuatorByName(actuator_name);
     EXPECT_EQ(actuator.name(), actuator_name);
@@ -188,6 +195,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   // Test we can retrieve joints from the actuators.
   int names_index = 0;
   for (const std::string& actuator_name : kActuatorNames) {
+    drake::test::LimitMalloc guard;
     const JointActuator<T>& actuator =
         model.GetJointActuatorByName(actuator_name);
     // We added actuators and joints in the same order. Assert this before
