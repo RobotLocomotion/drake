@@ -3349,6 +3349,43 @@ GTEST_TEST(TestMathematicalProgram, ReparsePolynomial) {
   }
 }
 
+GTEST_TEST(TestMathematicalProgram, AddSosConstraint) {
+  MathematicalProgram prog{};
+  const auto x = prog.NewIndeterminates<1>()(0);
+  const auto a = prog.NewContinuousVariables<1>()(0);
+
+  // p1 has both a and x as indeterminates. So we need to reparse the polynomial
+  // to have only x as the indeterminates.
+  const symbolic::Polynomial p1(a + x * x);
+  const Vector2<symbolic::Monomial> monomial_basis(symbolic::Monomial{},
+                                                   symbolic::Monomial(x, 1));
+
+  const Matrix2<symbolic::Variable> Q_psd =
+      prog.AddSosConstraint(p1, monomial_basis);
+  EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1u);
+  EXPECT_EQ(prog.lorentz_cone_constraints().size(), 0u);
+  EXPECT_EQ(prog.rotated_lorentz_cone_constraints().size(), 0u);
+  const int num_lin_con = prog.linear_constraints().size() +
+                          prog.linear_equality_constraints().size();
+  // Now call AddSosConstraint with type=kDsos.
+  prog.AddSosConstraint(p1, monomial_basis,
+                        MathematicalProgram::NonnegativePolynomial::kDsos);
+  // With dsos, the mathematical program adds more linear constraints than it
+  // did with sos.
+  EXPECT_GT(prog.linear_constraints().size() +
+                prog.linear_equality_constraints().size(),
+            2 * num_lin_con);
+  EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1u);
+
+  // Now call AddSosConstraint with type=kSdsos.
+  prog.AddSosConstraint(p1, monomial_basis,
+                        MathematicalProgram::NonnegativePolynomial::kSdsos);
+  EXPECT_GT(prog.lorentz_cone_constraints().size() +
+                prog.rotated_lorentz_cone_constraints().size(),
+            0u);
+  EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1u);
+}
+
 template <typename C>
 void RemoveCostTest(MathematicalProgram* prog,
                     const symbolic::Expression& cost1_expr,
