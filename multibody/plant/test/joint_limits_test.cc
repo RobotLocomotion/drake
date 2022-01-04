@@ -190,8 +190,8 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
 
 VectorX<double> KukaPositionLowerLimits() {
   VectorX<double> lower_limits(7);
-  lower_limits
-      << -2.96706, -2.0944, -2.96706, -2.0944, -2.96706, -2.0944, -3.05433;
+  lower_limits << -2.96705972839, -2.09439510239, -2.96705972839,
+      -2.09439510239, -2.96705972839, -2.09439510239, -3.05432619099;
   return lower_limits;
 }
 
