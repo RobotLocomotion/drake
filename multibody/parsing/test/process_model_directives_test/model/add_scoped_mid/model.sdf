@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name='nested'>
+
+    <frame name='simple_model_origin' attached_to='world'>
+      <pose>10 0 0   0 0 0</pose>
+    </frame>
+
+    <!-- This name will be prefixed by `model_namespace` -->
+    <include merge="true">
+      <uri>package://process_model_directives_test/add_scoped_sub.sdf</uri>
+    </include>
+
+    <include merge="true">
+      <uri>package://process_model_directives_test/add_backreference.sdf</uri>
+    </include>
+
+  </model>
+</sdf>

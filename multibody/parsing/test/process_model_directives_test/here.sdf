@@ -1,0 +1,31 @@
+<?xml version='1.0'?>
+<sdf version='1.9'>
+
+    <!-- This name will be prefixed by `model_namespace` -->
+    <include>
+      <name>simple_model</name>
+      <uri>scoped_model</uri>
+    </include>
+
+    <!-- This will implicitly resolve to the `simple_model` instance -->
+    <frame name='sub_added_frame' attached_to='frame'>
+      <pose>10 20 30   0 0 0</pose>
+    </frame>
+
+    <!-- This will explicitly resolve to the `simple_model` instance -->
+    <frame name='sub_added_frame_explicit' attached_to='frame'>
+      <pose>10 20 30   0 0 0</pose>
+    </frame>
+
+    <!-- <include merge="true"> -->
+    <include>
+      <name>extra_model</name>
+      <uri>scoped_model</uri>
+    </include>
+
+    <frame name='extra_model_base' attached_to='extra_model::base'/>
+
+    <frame name='weld' attached_to='extra_model_base'>
+      <pose relative_to='frame'/>
+    </frame>
+</sdf>

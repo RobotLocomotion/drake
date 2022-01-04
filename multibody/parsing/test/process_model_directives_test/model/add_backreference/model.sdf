@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <frame name='weld' attached_to='simple_model::base'>
+    <pose relative_to='simple_model_origin'>
+  </frame>
+</sdf>
