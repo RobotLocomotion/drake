@@ -42,7 +42,7 @@ void CompareActuatorLimits(const multibody::JointActuator<double>& joint_a,
 // It checks values directly on urdf files, generated from xacro.
 // TODO(marcoag): when xacro support is used as per (#15613)
 // check values on xacro files instead of the generated ones.
-GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityValues) {
+GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValues) {
   multibody::MultibodyPlant<double> canonical_plant(0.0);
   multibody::ModelInstanceIndex canonical_model_instance =
       LoadCanonicalModel(&canonical_plant);
@@ -87,7 +87,7 @@ GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityValues) {
 
 // Tests planar KUKA LBR iiwa14 model joint limit values.
 // It takes iiwa14_no_collisions.sdf as the canonical model.
-GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityValuesPlanarModel) {
+GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValuesPlanarModel) {
   multibody::MultibodyPlant<double> canonical_plant(0.0);
   multibody::ModelInstanceIndex canonical_model_instance =
       LoadCanonicalModel(&canonical_plant);
