@@ -141,7 +141,7 @@ TEST_F(AutoDiffHessianTest, QuadraticFunction) {
   auto jac_autodiff = ExtractGradient(hess_chunk_size_default);
   auto jac1 = ExtractValue(jac_autodiff);
   {
-    // While we're at it, ensure that specifying the number of columns of the 
+    // While we're at it, ensure that specifying the number of columns of the
     // Jacobian matrix causes the function to allocate no heap.
     test::LimitMalloc guard;
     auto jac2 = ExtractGradient<m>(value_autodiff);
