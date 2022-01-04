@@ -17,7 +17,7 @@
               package:// URI resolution.
           -->
           <drake:diffuse_map>
-            package://process_model_directives_test/model/scoped_model/circle.png
+            package://process_model_directives_test/circle.png
           </drake:diffuse_map>
         </material>
       </visual>

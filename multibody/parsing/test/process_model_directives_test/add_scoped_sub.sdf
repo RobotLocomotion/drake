@@ -1,0 +1,33 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="add_scoped_sub">
+
+    <model name="simple_model">
+      <include merge="true">
+        <uri>package://process_model_directives_test/simple_model.sdf</uri>
+      </include>
+    </model>
+
+    <!-- This will implicitly resolve to the `simple_model` instance. -->
+    <frame name="sub_added_frame" attached_to="simple_model::frame">
+      <pose>10 20 30   0 0 0</pose>
+    </frame>
+
+    <!-- This is supposed to explicitly resolve to the `simple_model` instance. -->
+    <!-- <frame name="simple_model::sub_added_frame_explicit" ...> -->
+    <!-- but scoped names in name attributes are not allowed anymore -->
+    <frame name="sub_added_frame_explicit" attached_to="simple_model::frame">
+      <pose>10 20 30   0 0 0</pose>
+    </frame>
+
+    <model name="extra_model">
+      <pose relative_to="simple_model::frame"/>
+      <include merge="true">
+        <uri>package://process_model_directives_test/simple_model.sdf</uri>
+        <placement_frame>base</placement_frame>
+        <pose/>
+      </include>
+    </model>
+
+  </model>
+</sdf>

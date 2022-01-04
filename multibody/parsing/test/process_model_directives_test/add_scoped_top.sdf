@@ -1,0 +1,19 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <world name="world">
+
+    <frame name="simple_model_origin"/>
+    <model name="added_scoped_sub">
+      <include merge="true">
+        <uri>package://process_model_directives_test/add_scoped_sub.sdf</uri>
+      </include>
+    </model>
+    <!--
+    <frame name="top_added_frame" attached_to="add_scoped_sub::simple_model">
+      <pose relative_to="add_scoped_sub::simple_model::sub_added_frame">
+        5 10 15   0 0 0
+      </pose>
+    </frame>
+    -->
+  </world>
+</sdf>
