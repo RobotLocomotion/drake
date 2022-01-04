@@ -192,12 +192,17 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
   void CalcTangentMatrixForConcreteState(
       const FemState<Element>& state,
       internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const {
-    DRAKE_DEMAND(tangent_matrix != nullptr &&
-                 tangent_matrix->rows() == num_dofs() &&
-                 tangent_matrix->cols() == num_dofs());
-    DRAKE_DEMAND(state.element_cache_size() == num_elements());
+    if constexpr (!std::is_same_v<typename Element::T, double>) {
+      throw std::logic_error(
+          "The PetscSymmetricBlockSparseMatrix overload of "
+          "FemModel::CalcTangentMatrixForConcreteState() only supports scalar "
+          "type `double`.");
+    } else {
+      DRAKE_DEMAND(tangent_matrix != nullptr &&
+                   tangent_matrix->rows() == num_dofs() &&
+                   tangent_matrix->cols() == num_dofs());
+      DRAKE_DEMAND(state.element_cache_size() == num_elements());
 
-    if constexpr (std::is_same_v<typename Element::T, double>) {
       /* The values are accumulated in the tangent_matrix, so it is important to
        clear the old data. */
       tangent_matrix->SetZero();
@@ -215,6 +220,7 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
         element_tangent_matrix = CalcElementTangentMatrix(state, weights, e);
         const std::array<NodeIndex, kNumNodes>& element_node_indices =
             elements_[e].node_indices();
+        // TODO(xuchenhan-tri): Avoid this index copy.
         for (int a = 0; a < kNumNodes; ++a) {
           block_indices(a) = element_node_indices[a];
         }
@@ -299,6 +305,7 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
     for (ElementIndex e(0); e < num_elements(); ++e) {
       const std::array<NodeIndex, element_num_nodes>& element_node_indices =
           elements_[e].node_indices();
+      // TODO(xuchenhan-tri): Avoid this index copy.
       for (int a = 0; a < element_num_nodes; ++a) {
         block_indices(a) = element_node_indices[a];
       }

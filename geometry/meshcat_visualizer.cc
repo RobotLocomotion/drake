@@ -166,7 +166,9 @@ void MeshcatVisualizer<T>::SetTransforms(
   for (const auto& [frame_id, path] : dynamic_frames_) {
     const math::RigidTransformd X_WF =
         internal::convert_to_double(query_object.GetPoseInWorld(frame_id));
-    meshcat_->SetTransform(path, X_WF);
+    if (!recording_ || set_transforms_while_recording_) {
+      meshcat_->SetTransform(path, X_WF);
+    }
     if (recording_) {
       animation_->SetTransform(
           animation_->frame(ExtractDoubleOrThrow(context.get_time())), path,

@@ -2,8 +2,12 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/examples/acrobot/acrobot_plant.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
@@ -197,6 +201,47 @@ GTEST_TEST(TestLQR, DiscreteDoubleIntegrator) {
 
   // Test AffineSystem version of the LQR
   TestLQRAffineSystemAgainstKnownSolution(tol, sys, K, Q, R);
+}
+
+// Adds test coverage for calling LQR from a LeafSystem and from a
+// MultibodyPlant.
+GTEST_TEST(TestLQR, AcrobotTest) {
+  const examples::acrobot::AcrobotPlant<double> plant;
+  auto context = plant.CreateDefaultContext();
+
+  // Set nominal state to the upright fixed point.
+  examples::acrobot::AcrobotState<double>& state =
+      plant.get_mutable_state(context.get());
+  state.set_theta1(M_PI);
+  state.set_theta2(0.0);
+  state.set_theta1dot(0.0);
+  state.set_theta2dot(0.0);
+
+  plant.GetInputPort("elbow_torque").FixValue(context.get(), 0.0);
+
+  const Eigen::Matrix4d Q = Eigen::Vector4d(10.0, 10.0, 1.0, 1.0).asDiagonal();
+  const Vector1d R(1);
+  const auto controller = LinearQuadraticRegulator(plant, *context, Q, R);
+
+  // Confirm that I get the same result by linearizing explicitly.
+  const auto linear_system = Linearize(plant, *context);
+  const auto lqr_result = LinearQuadraticRegulator(
+          linear_system->A(), linear_system->B(), Q, R);
+  EXPECT_TRUE(CompareMatrices(-lqr_result.K, controller->D(), 1e-12));
+
+  // Confirm that I get the same result via MultibodyPlant.
+  multibody::MultibodyPlant<double> mbp(0.0);
+  multibody::Parser(&mbp).AddModelFromFile(
+      FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"));
+  mbp.Finalize();
+  auto mbp_context = mbp.CreateDefaultContext();
+  mbp.SetPositions(mbp_context.get(), Eigen::Vector2d(M_PI, 0));
+  mbp.get_actuation_input_port().FixValue(mbp_context.get(), 0.0);
+  const auto mbp_controller = LinearQuadraticRegulator(
+      mbp, *mbp_context, Q, R, Eigen::Matrix<double, 4, 1>::Zero(),
+      mbp.get_actuation_input_port().get_index());
+
+  EXPECT_TRUE(CompareMatrices(mbp_controller->D(), controller->D(), 1e-9));
 }
 
 }  // namespace

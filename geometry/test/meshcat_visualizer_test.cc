@@ -240,6 +240,33 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Recording) {
   visualizer_->PublishRecording();
 }
 
+TEST_F(MeshcatVisualizerWithIiwaTest, RecordingWithoutSetTransform) {
+  SetUpDiagram();
+  diagram_->Publish(*context_);
+  std::string X_7_message =
+      meshcat_->GetPackedTransform("/drake/visualizer/iiwa14/iiwa_link_7");
+
+  // Now update the position of the iiwa.
+  plant_->SetPositions(&plant_->GetMyMutableContextFromRoot(context_.get()),
+                       Eigen::VectorXd::Constant(7, .1));
+
+  bool set_transforms_while_recording = false;
+  visualizer_->StartRecording(set_transforms_while_recording);
+  // This publish should *not* change the transform in the Meshcat scene tree.
+  diagram_->Publish(*context_);
+  EXPECT_EQ(
+      meshcat_->GetPackedTransform("/drake/visualizer/iiwa14/iiwa_link_7"),
+      X_7_message);
+
+  set_transforms_while_recording = true;
+  visualizer_->StartRecording(set_transforms_while_recording);
+  // This publish *should* change the transform in the Meshcat scene tree.
+  diagram_->Publish(*context_);
+  EXPECT_NE(
+      meshcat_->GetPackedTransform("/drake/visualizer/iiwa14/iiwa_link_7"),
+      X_7_message);
+}
+
 TEST_F(MeshcatVisualizerWithIiwaTest, ScalarConversion) {
   SetUpDiagram();
 

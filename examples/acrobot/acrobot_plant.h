@@ -118,8 +118,11 @@ class AcrobotPlant : public systems::LeafSystem<T> {
 /// - elbow_torque
 /// output_ports:
 /// - measured_joint_positions
-/// - acrobot_state (optional)
+/// - <span style="color:gray">acrobot_state</span>
 /// @endsystem
+///
+/// The `acrobot_state` output port is present only if the construction
+/// parameter `acrobot_state_as_second_output` is true.
 ///
 /// @ingroup acrobot_systems
 template <typename T>

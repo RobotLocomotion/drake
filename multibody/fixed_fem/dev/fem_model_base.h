@@ -119,6 +119,14 @@ class FemModelBase {
   void SetTangentMatrixSparsityPattern(
       Eigen::SparseMatrix<T>* tangent_matrix) const;
 
+  // TODO(xuchenhan-tri): We are returning a pointer to internal objects in a
+  //  public method in a non-internal class. Moving
+  //  PetscSymmetricBlockSparseMatrix out of internal namespace seems to be the
+  //  easiest fix to this issue.
+
+  /** Creates a PetscSymmetricBlockSparseMatrix that has the sparsity pattern of
+   the tangent matrix of this FEM model. In particular, the size of the tangent
+   matrix is `num_dofs()`-by`num_dofs()`. */
   std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix>
   MakePetscSymmetricBlockSparseTangentMatrix() const;
 

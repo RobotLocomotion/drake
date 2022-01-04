@@ -63,3 +63,10 @@ drake_cc_test(
     srcs = ["test/picosha2_compile_test.cc"],
     deps = ["@picosha2"],
 )
+
+# TODO(svenevs): delete this curl "test" after client is merged.
+drake_cc_test(
+    name = "libcurl_compile_test",
+    srcs = ["test/libcurl_compile_test.cc"],
+    deps = ["@libcurl"],
+)

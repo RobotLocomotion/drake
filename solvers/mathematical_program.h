@@ -1156,6 +1156,25 @@ class MathematicalProgram {
   }
 
   /**
+   * Adds an L2 norm cost min |Ax+b|₂ as a linear cost min s
+   * on the slack variable s, together with a Lorentz cone constraint
+   * s ≥ |Ax+b|₂
+   * Many conic optimization solvers (Gurobi, Mosek, SCS, etc) natively prefers
+   * this form of linear cost + conic constraints. So if you are going to use
+   * one of these conic solvers, then add the L2 norm cost using this function
+   * instead of AddL2NormCost().
+   * @return (s, linear_cost, lorentz_cone_constraint). `s` is the slack
+   * variable (with variable name string as "slack"), `linear_cost` is the cost
+   * on `s`, and `lorentz_cone_constraint` is the constraint s≥|Ax+b|₂
+   */
+  std::tuple<symbolic::Variable, Binding<LinearCost>,
+             Binding<LorentzConeConstraint>>
+  AddL2NormCostUsingConicConstraint(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
    * Adds a cost term in the polynomial form.
    * @param e A symbolic expression in the polynomial form.
    * @return The newly created cost and the bound variables.
@@ -1180,9 +1199,12 @@ class MathematicalProgram {
    * log(det(X)) is a concave function of X, so we can maximize it through
    * convex optimization. In order to do that, we introduce slack variables t,
    * and a lower triangular matrix Z, with the constraints
-   * ⌈X         Z⌉ is positive semidifinite.
-   * ⌊Zᵀ  diag(Z)⌋
-   * log(Z(i, i)) >= t(i)
+   *
+   *     ⌈X         Z⌉ is positive semidifinite.
+   *     ⌊Zᵀ  diag(Z)⌋
+   *
+   *     log(Z(i, i)) >= t(i)
+   *
    * and we will minimize -∑ᵢt(i).
    * @param X A symmetric positive semidefinite matrix X, whose log(det(X)) will
    * be maximized.
@@ -1190,6 +1212,8 @@ class MathematicalProgram {
    * @note The constraint log(Z(i, i)) >= t(i) is imposed as an exponential cone
    * constraint. Please make sure your have a solver that supports exponential
    * cone constraint (currently SCS does).
+   * Refer to https://docs.mosek.com/modeling-cookbook/sdo.html#log-determinant
+   * for more details.
    */
   void AddMaximizeLogDeterminantSymmetricMatrixCost(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);

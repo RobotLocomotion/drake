@@ -49,7 +49,13 @@ class FemSolver {
   explicit FemSolver(const FemModelBase<T>* model) : model_(model) {
     DRAKE_DEMAND(model_ != nullptr);
     Resize();
-    set_linear_solve_tolerance(1e-4);
+    /* Use PETSc matrix (created in call to `Resize()`) when scalar type is
+     double. Otherwise, use Eigen matrix and create a custom solver. */
+    if constexpr (!std::is_same_v<T, double>) {
+      linear_solver_ =
+          std::make_unique<internal::EigenConjugateGradientSolver<T>>(
+              &tangent_operator_);
+    }
   }
 
   /** For dynamic models, advances the given FEM state from the previous time
@@ -125,12 +131,18 @@ class FemSolver {
     absolute_tolerance_ = tolerance;
   }
 
-  /** Sets the relative tolerance for the linear solver used in `this`
-   FemSolver if the linear solver is iterative. The default value is 1e-4. No-op
-   if the linear solver is direct. */
-  void set_linear_solve_tolerance(double tolerance) {
-    DRAKE_DEMAND(A_ != nullptr);
-    A_->SetRelativeTolerance(tolerance);
+  /** Sets the relative tolerance for the linear solver used in `this` FemSolver
+   if the linear solver is iterative. The default (unitless) tolerance
+   is 1e-4. */
+  void set_linear_solve_tolerance(const T& tolerance) {
+    linear_solve_tolerance_ = tolerance;
+    if constexpr (std::is_same_v<T, double>) {
+      if (tangent_matrix_petsc_ != nullptr) {
+        tangent_matrix_petsc_->set_relative_tolerance(tolerance);
+      }
+    } else {
+      linear_solver_->set_tolerance(tolerance);
+    }
   }
 
  private:
@@ -140,25 +152,98 @@ class FemSolver {
    be compatible with the model owned by `this` solver.
    @param[in, out] state  As input, `state` provides an initial guess of
    the solution. As output, `state` reports the equilibrium state. */
-  int SolveWithInitialGuess(FemStateBase<T>* state) const;
+  int SolveWithInitialGuess(FemStateBase<T>* state) const {
+    /* Make sure the scratch quantities are of the correct size and apply BC if
+     one is specified. */
+    Resize();
+    model_->ApplyBoundaryCondition(state);
+    model_->CalcResidual(*state, &b_);
+    int iter = 0;
+    /* Newton-Raphson iterations. We iterate until any of the following is true:
+     1. The max number of allowed iterations is reached;
+     2. The norm of the change in the state in a single iteration is smaller
+        than the absolute tolerance.
+     3. The relative error (the norm of the change in the state divided by the
+        norm of the state) is smaller than the unitless relative tolerance. */
+    do {
+      /* Use PETSc matrix when scalar type is double. Otherwise, use Eigen
+       matrix. */
+      if constexpr (std::is_same_v<T, double>) {
+        model_->CalcTangentMatrix(*state, tangent_matrix_petsc_.get());
+        tangent_matrix_petsc_->AssembleIfNecessary();
+        /* Solving for A * dz = -b, where A is the tangent matrix. */
+        dz_ = tangent_matrix_petsc_->Solve(
+            internal::PetscSymmetricBlockSparseMatrix::SolverType::
+                kConjugateGradient,
+            internal::PetscSymmetricBlockSparseMatrix::PreconditionerType::
+                kIncompleteCholesky,
+            -b_);
+
+      } else {
+        model_->CalcTangentMatrix(*state, &tangent_matrix_eigen_);
+        linear_solver_->Compute();
+        /* Solving for A * dz = -b, where A is the tangent matrix. */
+        linear_solver_->Solve(-b_, &dz_);
+      }
+      model_->UpdateStateFromChangeInUnknowns(dz_, state);
+      model_->CalcResidual(*state, &b_);
+      ++iter;
+    } while (dz_.norm() > std::max(relative_tolerance_ *
+                                       model_->GetUnknowns(*state).norm(),
+                                   absolute_tolerance_) &&
+             iter < kMaxIterations_);
+    if (iter == kMaxIterations_) {
+      // TODO(xuchenhan-tri): Provide some advice on how to get a "better
+      //  initial guess". Or instead, return a status indicating the solver
+      //  did not converge and let users decide what to do.
+      throw std::runtime_error(
+          "The solver did not converge " + std::to_string(kMaxIterations_) +
+          " iterations. Please provide a better initial guess.");
+    }
+    return iter;
+  }
 
   /* Resize the scratch quantities to the size of the model. */
-  void Resize() const;
+  void Resize() const {
+    if (b_.size() != model_->num_dofs()) {
+      b_.resize(model_->num_dofs());
+      dz_.resize(model_->num_dofs());
+      if constexpr (std::is_same_v<T, double>) {
+        tangent_matrix_petsc_ =
+            model_->MakePetscSymmetricBlockSparseTangentMatrix();
+        tangent_matrix_petsc_->set_relative_tolerance(linear_solve_tolerance_);
+      } else {
+        tangent_matrix_eigen_.resize(model_->num_dofs(), model_->num_dofs());
+        model_->SetTangentMatrixSparsityPattern(&tangent_matrix_eigen_);
+      }
+    }
+  }
 
   /* The FEM model being solved by `this` solver. */
   const FemModelBase<T>* model_;
-  /* Tangent matrix. */
-  mutable std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix> A_;
+  /* The linear solver used to solve the FEM model. */
+  std::unique_ptr<internal::LinearSystemSolver<T>> linear_solver_;
+  /* A scratch sparse matrix to store the tangent matrix of the model. */
+  mutable Eigen::SparseMatrix<T> tangent_matrix_eigen_;
+  mutable std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix>
+      tangent_matrix_petsc_;
+  /* The operator form of the Eigen tangent matrix. */
+  const contact_solvers::internal::SparseLinearOperator<T> tangent_operator_{
+      "FEM tangent matrix", &tangent_matrix_eigen_};
   /* A scratch vector to store the residual of the model. */
-  mutable VectorX<double> b_;
-  /* A scratch vector to store the solution to A * dz = -b. */
-  mutable VectorX<double> dz_;
+  mutable VectorX<T> b_;
+  /* A scratch vector to store the solution to A * dz = -b, where A is the
+   tangent matrix. */
+  mutable VectorX<T> dz_;
   /* The relative tolerance for determining the convergence of the Newton
    solver, unitless. */
   double relative_tolerance_{1e-6};
   /* The absolute tolerance for determining the convergence of the Newton
    solver. It has the same unit as the unknown variable z. */
-  double absolute_tolerance_{1e-6};
+  T absolute_tolerance_{1e-6};
+  /* The relative tolerance when solving for A * dz = -b, where A is the tangent
+   matrix. */
+  T linear_solve_tolerance_{1e-4};
   // TODO(xuchenhan-tri): Consider making `kMaxIterations_` configurable.
   /* Any reasonable Newton solve should converge within 20 iterations. If it
    doesn't converge in 20 iterations, chances are it will never converge. */

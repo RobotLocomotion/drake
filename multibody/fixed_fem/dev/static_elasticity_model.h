@@ -24,6 +24,7 @@ class StaticElasticityModel : public ElasticityModel<Element> {
 
   using T = typename Element::Traits::T;
   using ConstitutiveModel = typename Element::Traits::ConstitutiveModel;
+  using State = FemState<Element>;
 
   StaticElasticityModel()
       : ElasticityModel<Element>(
