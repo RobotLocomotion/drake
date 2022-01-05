@@ -126,7 +126,7 @@ def create_source_tar(path):
     print('[-] Creating source archive', end='', flush=True)
     for f in sorted(os.listdir(repo_dir)):
         # Exclude build and VCS directories.
-        if f == '.git' or f.startswith('bazel-'):
+        if f == '.git' or f == 'user.bazelrc' or f.startswith('bazel-'):
             continue
 
         print('.', end='', flush=True)
