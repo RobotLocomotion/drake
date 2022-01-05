@@ -74,8 +74,8 @@
   </link>
   <!-- For now at least, We care only that Drake's custom tag doesn't break
        parsing the rest of the elements in this file. -->
-  <collision_filter_group name="filter_group1">
-    <member link="link1"/>
-    <member link="link2"/>
-  </collision_filter_group>
+  <drake:collision_filter_group name="filter_group1">
+    <drake:member link="link1"/>
+    <drake:member link="link2"/>
+  </drake:collision_filter_group>
 </robot>
