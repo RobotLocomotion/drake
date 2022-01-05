@@ -135,6 +135,13 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       std::logic_error,
       ".*There is no Body.*but one does exist in other model instances.*");
 
+  // Test that calling GetBodyByName() with an invalid ModelInstanceIndex
+  // throws.
+  const ModelInstanceIndex kInvalidIndex(1<<30);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model.GetBodyByName(kLinkNames[0], kInvalidIndex), std::logic_error,
+      ".*There is no model instance.*in the model.*");
+
   // Test we can also retrieve links as RigidBody objects.
   for (const std::string& link_name : kLinkNames) {
     drake::test::LimitMalloc guard;
