@@ -1224,6 +1224,42 @@ class MathematicalProgram {
    */
   std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
              MatrixX<symbolic::Expression>>
+  AddMaximizeLogDeterminantCost(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+
+  /**
+   * Adds the cost to maximize the log determinant of symmetric matrix X.
+   * log(det(X)) is a concave function of X, so we can maximize it through
+   * convex optimization. In order to do that, we introduce slack variables t,
+   * and a lower triangular matrix Z, with the constraints
+   *
+   *     ⌈X         Z⌉ is positive semidifinite.
+   *     ⌊Zᵀ  diag(Z)⌋
+   *
+   *     log(Z(i, i)) >= t(i)
+   *
+   * and we will minimize -∑ᵢt(i).
+   * @param X A symmetric positive semidefinite matrix X, whose log(det(X)) will
+   * be maximized.
+   * @return (cost, t, Z) cost is -∑ᵢt(i), we also return the newly created
+   * slack variables t and the lower triangular matrix Z. Note that Z is not a
+   * matrix of symbolic::Variable but symbolic::Expression, because the
+   * upper-diagonal entries of Z are not variable, but expression 0.
+   * @pre X is a symmetric matrix.
+   * @note We implicitly require that `X` being positive semidefinite (psd) (as
+   * X is the diagonal entry of the big psd matrix above). If your `X` is not
+   * necessarily psd, then don't call this function.
+   * @note The constraint log(Z(i, i)) >= t(i) is imposed as an exponential cone
+   * constraint. Please make sure your have a solver that supports exponential
+   * cone constraint (currently SCS does).
+   * Refer to https://docs.mosek.com/modeling-cookbook/sdo.html#log-determinant
+   * for more details.
+   */
+  DRAKE_DEPRECATED("2022-05-01",
+                   "AddMaximizeLogDeterminantSymmetricMatrixCost has been "
+                   "renamed to AddMaximizeLogDeterminantCost.")
+  std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
+             MatrixX<symbolic::Expression>>
   AddMaximizeLogDeterminantSymmetricMatrixCost(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 

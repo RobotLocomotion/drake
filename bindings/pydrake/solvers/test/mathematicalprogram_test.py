@@ -1,4 +1,6 @@
 from pydrake.solvers import mathematicalprogram as mp
+
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 import pydrake.solvers.mathematicalprogram._testing as mp_testing
 from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.snopt import SnoptSolver
@@ -698,7 +700,23 @@ class TestMathematicalProgram(unittest.TestCase):
             pt = pts[i, :]
             prog.AddLinearConstraint(pt.dot(X.dot(pt)) <= 1)
         linear_cost, log_det_t, log_det_Z = \
-            prog.AddMaximizeLogDeterminantSymmetricMatrixCost(X=X)
+            prog.AddMaximizeLogDeterminantCost(X=X)
+        self.assertEqual(log_det_t.shape, (2,))
+        self.assertEqual(log_det_Z.shape, (2, 2))
+        result = mp.Solve(prog)
+        self.assertTrue(result.is_success())
+
+    def test_log_determinant_depreated(self):
+        # Find the minimal ellipsoid that covers some given points.
+        prog = mp.MathematicalProgram()
+        X = prog.NewSymmetricContinuousVariables(2)
+        pts = np.array([[1, 1], [1, -1], [-1, 1]])
+        for i in range(3):
+            pt = pts[i, :]
+            prog.AddLinearConstraint(pt.dot(X.dot(pt)) <= 1)
+        with catch_drake_warnings(expected_count=1):
+            linear_cost, log_det_t, log_det_Z = \
+                prog.AddMaximizeLogDeterminantSymmetricMatrixCost(X=X)
         self.assertEqual(log_det_t.shape, (2,))
         self.assertEqual(log_det_Z.shape, (2, 2))
         result = mp.Solve(prog)
