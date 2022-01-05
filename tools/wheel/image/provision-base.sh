@@ -5,6 +5,9 @@ set -eu -o pipefail
 readonly BAZEL_VERSION=4.2.1
 readonly BAZEL_ROOT=https://github.com/bazelbuild/bazel/releases/download
 
+readonly DISTRO=$(grep UBUNTU_CODENAME /etc/os-release | \
+                  cut -f2 -d= | tr -d '"')
+
 # Fix ssh permissions.
 chmod 700 ~/.ssh
 chmod 600 ~/.ssh/known_hosts
@@ -13,18 +16,10 @@ chmod 600 ~/.ssh/known_hosts
 apt-get -y update
 apt-get -y upgrade
 
-apt-get -y install --no-install-recommends \
-    default-jdk \
-    autoconf automake libtool libltdl-dev \
-    gcc g++ gfortran libgfortran-7-dev \
-    libclang-9-dev clang-format-9 \
-    git cmake ninja-build pkg-config \
-    yasm file wget unzip zip ssh
+mapfile -t PACKAGES < \
+    <(cat /image/packages-common /image/packages-${DISTRO} | sed -e '/^#/d')
 
-apt-get -y install --no-install-recommends \
-    libglib2.0-dev libnlopt-dev \
-    libgl1-mesa-dev libxt-dev \
-    opencl-headers ocl-icd-opencl-dev
+apt-get -y install --no-install-recommends ${PACKAGES[@]}
 
 # Install Bazel.
 cd /tmp
