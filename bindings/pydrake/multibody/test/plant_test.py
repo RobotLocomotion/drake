@@ -2304,3 +2304,15 @@ class TestPlant(unittest.TestCase):
             contact_results_port=plant.get_contact_results_output_port(),
             meshcat=meshcat,
             params=params)
+
+    def test_free_base_bodies(self):
+        plant = MultibodyPlant_[float](time_step=0.01)
+        model_instance = plant.AddModelInstance("new instance")
+        added_body = plant.AddRigidBody(
+            name="body", model_instance=model_instance,
+            M_BBo_B=SpatialInertia_[float]())
+        plant.Finalize()
+        self.assertTrue(plant.HasBodyNamed("body", model_instance))
+        self.assertTrue(plant.HasUniqueFreeBaseBody(model_instance))
+        body = plant.GetUniqueFreeBaseBodyOrThrow(model_instance)
+        self.assertEqual(body.index(), added_body.index())

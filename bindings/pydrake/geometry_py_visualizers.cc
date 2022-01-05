@@ -120,6 +120,7 @@ MeshcatVisualizer.  See #13038.)""")
             cls_doc.ctor.doc)
         .def("Delete", &Class::Delete, cls_doc.Delete.doc)
         .def("StartRecording", &Class::StartRecording,
+            py::arg("set_transforms_while_recording") = true,
             py_rvp::reference_internal, cls_doc.StartRecording.doc)
         .def("StopRecording", &Class::StopRecording, cls_doc.StopRecording.doc)
         .def("PublishRecording", &Class::PublishRecording,

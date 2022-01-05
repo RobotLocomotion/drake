@@ -93,6 +93,14 @@ bool operator==(const FullBodyName& n1, const FullBodyName& n2);
  to be instantiated as double valued. If a diagram with a different scalar
  type is required, it should subsequently be scalar converted.
 
+ @system
+ name: ContactResultsToLcmSystem
+ input_ports:
+ - u0
+ output_ports:
+ - y0
+ @endsystem
+
  @tparam_default_scalar
  @ingroup visualization */
 template <typename T>

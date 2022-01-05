@@ -600,6 +600,17 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertIsInstance(gram_odd, np.ndarray)
             self.assertIsInstance(gram_even, np.ndarray)
 
+    def test_add_sos_constraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewIndeterminates(1, "x")
+        Q = prog.AddSosConstraint(
+           p=sym.Polynomial(x[0]**2 + 1),
+           monomial_basis=[sym.Monomial(x[0])],
+           type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos)
+        Q, m = prog.AddSosConstraint(
+            p=sym.Polynomial(x[0]**2 + 2),
+            type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos)
+
     def test_sos(self):
         # Find a,b,c,d subject to
         # a(0) + a(1)*x,
@@ -988,6 +999,17 @@ class TestMathematicalProgram(unittest.TestCase):
             A=np.array([[1, 2.], [3., 4]]), b=np.array([1., 2.]), vars=x)
         self.assertEqual(len(prog.l2norm_costs()), 1)
 
+    def test_add_l2norm_cost_using_conic_constraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+        s, linear_cost, lorentz_cone_constraint = \
+            prog.AddL2NormCostUsingConicConstraint(
+                A=np.array([[1, 2.], [3., 4]]),
+                b=np.array([1., 2.]), vars=x)
+        self.assertEqual(len(prog.linear_costs()), 1)
+        self.assertEqual(len(prog.lorentz_cone_constraints()), 1)
+        self.assertEqual(prog.num_vars(), 3)
+
     def test_addcost_shared_ptr(self):
         # In particular, confirm that LinearCost ends up in linear_costs, etc.
         # as opposed to everything ending up as a generic_cost.
@@ -1108,6 +1130,9 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(
             constraint.eval_type(),
             mp.LorentzConeConstraint.EvalType.kConvexSmooth)
+        constraint.UpdateCoefficients(new_A=2 * A, new_b=3 * b)
+        np.testing.assert_array_equal(constraint.A().todense(), 2 * A)
+        np.testing.assert_array_equal(constraint.b(), 3 * b)
 
     def test_add_lorentz_cone_constraint(self):
         # Call AddLorentzConeConstraint, make sure no error is thrown.
@@ -1137,6 +1162,9 @@ class TestMathematicalProgram(unittest.TestCase):
         constraint = mp.RotatedLorentzConeConstraint(A=A, b=b)
         np.testing.assert_array_equal(constraint.A().todense(), A)
         np.testing.assert_array_equal(constraint.b(), b)
+        constraint.UpdateCoefficients(new_A=2 * A, new_b=3 * b)
+        np.testing.assert_array_equal(constraint.A().todense(), 2 * A)
+        np.testing.assert_array_equal(constraint.b(), 3 * b)
 
     def test_add_rotated_lorentz_cone_constraint(self):
         prog = mp.MathematicalProgram()

@@ -487,6 +487,31 @@ Binding<L2NormCost> MathematicalProgram::AddL2NormCost(
   return AddCost(std::make_shared<L2NormCost>(A, b), vars);
 }
 
+std::tuple<symbolic::Variable, Binding<LinearCost>,
+           Binding<LorentzConeConstraint>>
+MathematicalProgram::AddL2NormCostUsingConicConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+  auto s = this->NewContinuousVariables<1>("slack")(0);
+  auto linear_cost =
+      this->AddLinearCost(Vector1d(1), 0, Vector1<symbolic::Variable>(s));
+  // A_full = [1 0]
+  //          [0 A]
+  // b_full = [0 b]
+  // A_full * [s ; vars] + b_full = [s, A*vars+b]
+  Eigen::MatrixXd A_full(A.rows() + 1, A.cols() + 1);
+  A_full.setZero();
+  A_full(0, 0) = 1;
+  A_full.bottomRightCorner(A.rows(), A.cols()) = A;
+  Eigen::VectorXd b_full(b.rows() + 1);
+  b_full(0) = 0;
+  b_full.bottomRows(b.rows()) = b;
+  auto lorentz_cone_constraint = this->AddLorentzConeConstraint(
+      A_full, b_full, {Vector1<symbolic::Variable>(s), vars});
+  return std::make_tuple(s, linear_cost, lorentz_cone_constraint);
+}
+
 Binding<PolynomialCost> MathematicalProgram::AddPolynomialCost(
     const Expression& e) {
   auto binding = AddCost(internal::ParsePolynomialCost(e));
@@ -1270,8 +1295,9 @@ namespace {
 // const Eigen::Ref<const VectorX<symbolic::Monomial>>&).
 MatrixXDecisionVariable DoAddSosConstraint(
     MathematicalProgram* const prog, const symbolic::Polynomial& p,
-    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
-  const auto pair = prog->NewSosPolynomial(monomial_basis);
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+    MathematicalProgram::NonnegativePolynomial type) {
+  const auto pair = prog->NewNonnegativePolynomial(monomial_basis, type);
   const symbolic::Polynomial& sos_poly{pair.first};
   const MatrixXDecisionVariable& Q{pair.second};
 
@@ -1284,9 +1310,10 @@ MatrixXDecisionVariable DoAddSosConstraint(
 }
 // Body of MathematicalProgram::AddSosConstraint(const symbolic::Polynomial&).
 pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> DoAddSosConstraint(
-    MathematicalProgram* const prog, const symbolic::Polynomial& p) {
+    MathematicalProgram* const prog, const symbolic::Polynomial& p,
+    MathematicalProgram::NonnegativePolynomial type) {
   const VectorX<symbolic::Monomial> m = ConstructMonomialBasis(p);
-  const MatrixXDecisionVariable Q = prog->AddSosConstraint(p, m);
+  const MatrixXDecisionVariable Q = prog->AddSosConstraint(p, m, type);
   return std::make_pair(Q, m);
 }
 
@@ -1294,47 +1321,53 @@ pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> DoAddSosConstraint(
 
 MatrixXDecisionVariable MathematicalProgram::AddSosConstraint(
     const symbolic::Polynomial& p,
-    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+    MathematicalProgram::NonnegativePolynomial type) {
   const Variables indeterminates_vars{indeterminates()};
   if (Variables(p.indeterminates()).IsSubsetOf(indeterminates_vars) &&
       intersect(indeterminates_vars, Variables(p.decision_variables()))
           .empty()) {
-    return DoAddSosConstraint(this, p, monomial_basis);
+    return DoAddSosConstraint(this, p, monomial_basis, type);
   } else {
     // Need to reparse p, we first make a copy of p and reparse that.
     symbolic::Polynomial p_reparsed{p};
     Reparse(&p_reparsed);
-    return DoAddSosConstraint(this, p_reparsed, monomial_basis);
+    return DoAddSosConstraint(this, p_reparsed, monomial_basis, type);
   }
 }
 
 pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
-MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& p) {
+MathematicalProgram::AddSosConstraint(
+    const symbolic::Polynomial& p,
+    MathematicalProgram::NonnegativePolynomial type) {
   const Variables indeterminates_vars{indeterminates()};
   if (Variables(p.indeterminates()).IsSubsetOf(indeterminates_vars) &&
       intersect(indeterminates_vars, Variables(p.decision_variables()))
           .empty()) {
-    return DoAddSosConstraint(this, p);
+    return DoAddSosConstraint(this, p, type);
   } else {
     // Need to reparse p, we first make a copy of p and reparse that.
     symbolic::Polynomial p_reparsed{p};
     Reparse(&p_reparsed);
-    return DoAddSosConstraint(this, p_reparsed);
+    return DoAddSosConstraint(this, p_reparsed, type);
   }
 }
 
 MatrixXDecisionVariable MathematicalProgram::AddSosConstraint(
     const symbolic::Expression& e,
-    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+    MathematicalProgram::NonnegativePolynomial type) {
   return AddSosConstraint(
       symbolic::Polynomial{e, symbolic::Variables{indeterminates_}},
-      monomial_basis);
+      monomial_basis, type);
 }
 
 pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
-MathematicalProgram::AddSosConstraint(const symbolic::Expression& e) {
+MathematicalProgram::AddSosConstraint(
+    const symbolic::Expression& e,
+    MathematicalProgram::NonnegativePolynomial type) {
   return AddSosConstraint(
-      symbolic::Polynomial{e, symbolic::Variables{indeterminates_}});
+      symbolic::Polynomial{e, symbolic::Variables{indeterminates_}}, type);
 }
 
 void MathematicalProgram::AddEqualityConstraintBetweenPolynomials(

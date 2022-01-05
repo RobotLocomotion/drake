@@ -471,6 +471,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("model_instance"), cls_doc.HasUniqueFreeBaseBody.doc)
         .def("GetUniqueFreeBaseBodyOrThrow",
             &Class::GetUniqueFreeBaseBodyOrThrow, py::arg("model_instance"),
+            py_rvp::reference_internal,
             cls_doc.GetUniqueFreeBaseBodyOrThrow.doc)
         .def(
             "EvalBodyPoseInWorld",

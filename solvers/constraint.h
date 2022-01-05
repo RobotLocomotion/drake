@@ -335,6 +335,16 @@ class LorentzConeConstraint : public Constraint {
   /** Getter for eval type. */
   EvalType eval_type() const { return eval_type_; }
 
+  /**
+   * Updates the coefficients, the updated constraint is z=new_A * x + new_b in
+   * the Lorentz cone.
+   * @throws std::exception if the new_A.cols() != A.cols(), namely the variable
+   * size should not change.
+   * @pre `new_A` has to have at least 2 rows and new_A.rows() == new_b.rows().
+   */
+  void UpdateCoefficients(const Eigen::Ref<const Eigen::MatrixXd>& new_A,
+                          const Eigen::Ref<const Eigen::VectorXd>& new_b);
+
  private:
   template <typename DerivedX, typename ScalarY>
   void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
@@ -352,11 +362,11 @@ class LorentzConeConstraint : public Constraint {
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
 
-  const Eigen::SparseMatrix<double> A_;
+  Eigen::SparseMatrix<double> A_;
   // We need to store a dense matrix of A_, so that we can compute the gradient
   // using AutoDiffXd, and return the gradient as a dense matrix.
-  const Eigen::MatrixXd A_dense_;
-  const Eigen::VectorXd b_;
+  Eigen::MatrixXd A_dense_;
+  Eigen::VectorXd b_;
   const EvalType eval_type_;
 };
 
@@ -407,6 +417,16 @@ class RotatedLorentzConeConstraint : public Constraint {
 
   ~RotatedLorentzConeConstraint() override {}
 
+  /**
+   * Updates the coefficients, the updated constraint is z=new_A * x + new_b in
+   * the rotated Lorentz cone.
+   * @throw std::exception if the new_A.cols() != A.cols(), namely the variable
+   * size should not change.
+   * @pre new_A.rows() >= 3 and new_A.rows() == new_b.rows().
+   */
+  void UpdateCoefficients(const Eigen::Ref<const Eigen::MatrixXd>& new_A,
+                          const Eigen::Ref<const Eigen::VectorXd>& new_b);
+
  private:
   template <typename DerivedX, typename ScalarY>
   void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
@@ -424,11 +444,11 @@ class RotatedLorentzConeConstraint : public Constraint {
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
 
-  const Eigen::SparseMatrix<double> A_;
+  Eigen::SparseMatrix<double> A_;
   // We need to store a dense matrix of A_, so that we can compute the gradient
   // using AutoDiffXd, and return the gradient as a dense matrix.
-  const Eigen::MatrixXd A_dense_;
-  const Eigen::VectorXd b_;
+  Eigen::MatrixXd A_dense_;
+  Eigen::VectorXd b_;
 };
 
 /**

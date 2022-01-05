@@ -4,13 +4,13 @@
 # It is not intended to be run directly; use test-wheel.sh or test-wheels.sh,
 # or the accompanying Dockerfile, instead.
 
-set -e
+set -eu -o pipefail
 
 PYTHON=python${1:-3}
 
 export DEBIAN_FRONTEND=noninteractive
 
-apt-get update
+apt-get -y update
 
 apt-get -y install --no-install-recommends \
     lib${PYTHON}-dev ${PYTHON}-venv \

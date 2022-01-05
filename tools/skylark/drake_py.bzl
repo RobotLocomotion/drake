@@ -13,6 +13,7 @@ def drake_py_library(
     py_library(
         name = name,
         deps = deps,
+        srcs_version = "PY3",
         **kwargs
     )
 
@@ -140,6 +141,8 @@ def drake_py_binary(
         data = data,
         deps = deps,
         tags = tags,
+        python_version = "PY3",
+        srcs_version = "PY3",
         **kwargs
     )
     if add_test_rule:
@@ -236,6 +239,8 @@ def drake_py_test(
         srcs = srcs,
         deps = deps,
         tags = tags,
+        python_version = "PY3",
+        srcs_version = "PY3",
         **kwargs
     )
 

@@ -104,12 +104,19 @@ class Environment {
   /** Returns a const iterator to the end. */
   [[nodiscard]] const_iterator cend() const { return map_.cend(); }
 
-  /** Inserts a pair (@p key, @p elem). */
+  /** Inserts a pair (@p key, @p elem) if this environment doesn't contain @p
+   * key. Similar to insert function in map, if the key already
+   * exists in this environment, then calling insert(key, elem) doesn't change
+   * the existing key-value in this environment.
+   */
   void insert(const key_type& key, const mapped_type& elem);
 
   /** Given a matrix of symbolic variables @p keys and a matrix of values @p
    * elements, inserts each pair (keys(i, j), elements(i, j)) into the
-   * environment.
+   * environment if this environment doesn't contain keys(i, j) . Similar to
+   * insert function in map, if keys(i, j) already exists in this
+   * environment, then this function doesn't change the its existing value in
+   * this environment.
    *
    * @throws std::exception if the size of @p keys is different from the size
    * of @p elements.

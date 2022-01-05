@@ -153,7 +153,7 @@ TEST_F(DeformableRigidContactSolverTest, SteadyState) {
   const auto& diagram_context = simulator.get_context();
   const auto& plant_context = plant_->GetMyContextFromRoot(diagram_context);
   /* Run simulation for long enough to reach steady state. */
-  simulator.AdvanceTo(0.8);
+  simulator.AdvanceTo(1.0);
 
   /* Verify the system has reached steady state. */
   const FemStateBase<double>& fem_state =

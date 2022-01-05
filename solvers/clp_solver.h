@@ -30,6 +30,12 @@ struct ClpSolverDetails {
  * A wrapper to call CLP using Drake's MathematicalProgram.
  * @note Currently our ClpSolver has a memory issue when solving a QP. The user
  * should be aware of this risk.
+ * @note The authors can adjust the problem scaling option by setting "scaling"
+ as mentioned in
+ https://github.com/coin-or/Clp/blob/43129ba1a7fd66ce70fe0761fcd696951917ed2e/src/ClpModel.hpp#L705-L706
+ * For example
+ * prog.SetSolverOption(ClpSolver::id(), "scaling", 0);
+ * will do "no scaling". The default is 1.
  */
 class ClpSolver final : public SolverBase {
  public:

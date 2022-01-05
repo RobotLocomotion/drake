@@ -7,6 +7,7 @@ libamd2
 libblas3
 libboost-all-dev
 libbz2-1.0
+libcurl4
 libdouble-conversion1
 libeigen3-dev
 libexpat1

@@ -7,7 +7,7 @@
 # container, and the container's path to the wheel should be given as an
 # argument to the script.
 
-set -e
+set -eu -o pipefail
 
 if [ -z "$1" ]; then
     echo "Usage: $0 <wheel>" >&2

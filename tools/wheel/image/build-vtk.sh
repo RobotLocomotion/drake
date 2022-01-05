@@ -1,8 +1,8 @@
 #!/bin/bash
 
-set -e
+set -eu -o pipefail
 
-VTK_VERSION=8.2.0
+readonly VTK_VERSION=8.2.0
 
 mkdir -p /vtk
 cd /vtk

@@ -518,6 +518,77 @@ void TestLPDualSolution3(const SolverInterface& solver, double tol) {
                                 Vector1d::Zero(), tol));
   }
 }
+
+void TestLPPoorScaling1(const SolverInterface& solver, bool expect_success,
+                        double tol,
+                        const std::optional<SolverOptions>& options) {
+  MathematicalProgram prog;
+  const auto alpha = prog.NewContinuousVariables<4>();
+  const auto z = prog.NewContinuousVariables<1>()(0);
+  const double eps = 5.5511151231257827e-17;
+  Eigen::Matrix<double, 2, 4> vertices;
+  // clang-format off
+  vertices << eps, 1, eps, 1,
+              eps, 1, 2, 2;
+  // clang-format on
+  const Eigen::Vector2d pt(0.99, 1.99);
+  prog.AddLinearConstraint(-z + vertices.row(0).dot(alpha) <= pt(0));
+  prog.AddLinearConstraint(-z + vertices.row(1).dot(alpha) <= pt(1));
+  prog.AddLinearConstraint(z + vertices.row(0).dot(alpha) >= pt(0));
+  prog.AddLinearConstraint(z + vertices.row(1).dot(alpha) >= pt(1));
+  prog.AddBoundingBoxConstraint(0, 1, alpha);
+  prog.AddLinearCost(z);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, std::nullopt, options, &result);
+    const auto alpha_sol = result.GetSolution(alpha);
+    ASSERT_TRUE(result.is_success());
+    if (expect_success) {
+      EXPECT_TRUE(CompareMatrices(vertices * alpha_sol, pt, tol));
+      EXPECT_NEAR(result.GetSolution(z), 0, tol);
+    } else {
+      EXPECT_GT(result.GetSolution(z), tol);
+    }
+  }
+}
+
+void TestLPPoorScaling2(const SolverInterface& solver, bool expect_success,
+                        double tol,
+                        const std::optional<SolverOptions>& options) {
+  Eigen::Matrix<double, 10, 3> A;
+  A.topRows<3>() = Eigen::Matrix3d::Identity();
+  A.middleRows<3>(3) = -Eigen::Matrix3d::Identity();
+  // clang-format off
+  A.bottomRows<4>() << 9.99400723e-01, -1.75186298e-21,  3.46149414e-02,
+  9.82328785e-01,  1.82238474e-20, -1.87163452e-01,
+  9.68599420e-01, -2.48626556e-01, -1.27003703e-12,
+  9.68599420e-01,  2.48626556e-01, -1.27003703e-12;
+  // clang-format on
+  Eigen::Matrix<double, 10, 1> b;
+  b << 1.0, 0.5, 1.0, -0.0, 0.5, -0.0, 0.46783912, 0.39023174, 0.50647967,
+      0.50647967;
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  auto r = prog.NewContinuousVariables<1>()(0);
+  const double kInf = std::numeric_limits<double>::infinity();
+  for (int i = 0; i < A.rows(); ++i) {
+    prog.AddLinearConstraint(A.row(i).dot(x) + A.row(i).norm() * r <= b(i));
+  }
+  prog.AddBoundingBoxConstraint(0, kInf, r);
+  prog.AddLinearCost(-r);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, std::nullopt, options, &result);
+    ASSERT_TRUE(result.is_success());
+    const Eigen::Vector3d x_expected(0.2282, 0, 0.3323);
+    if (expect_success) {
+      EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, tol));
+    } else {
+      EXPECT_GT((result.GetSolution(x) - x_expected).norm(), tol);
+    }
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

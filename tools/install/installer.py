@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Installation script generated from a Bazel `install` target.
 """
@@ -197,8 +196,8 @@ def fix_rpaths_and_strip():
             # dictionary to fixup other library and executable paths.
             continue
         # Enable write permissions to allow modification.
-        os.chmod(dst_full, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
-                 stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+        os.chmod(dst_full, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
+                 | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
         if sys.platform == "darwin":
             # From the manual for BSD `strip`: for dynamic shared libraries,
             # the maximum level of stripping is usually -x (to remove all
@@ -364,8 +363,8 @@ done
 java {} {} "$@"
 """.format(strclasspath, jvm_flags, main_class)
         launcher_file.write(content)
-    os.chmod(filename, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH |
-             stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    os.chmod(filename, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
+             | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
 def main(args):
@@ -379,6 +378,9 @@ def main(args):
     # Set up options.
     parser = argparse.ArgumentParser()
     parser.add_argument('prefix', type=str, help='Install prefix')
+    parser.add_argument(
+        '--actions', type=str, required=True,
+        help='file path to installer actions')
     parser.add_argument(
         '--color', action='store_true', default=False,
         help='colorize the output')
@@ -447,7 +449,13 @@ def main(args):
             ansi_color_escape, ansi_reset_escape))
 
     # Execute the install actions.
-    <<actions>>
+    # TODO(jwnimmer-tri) Executing arbitrary Python code from the actions file
+    # is an absurd implementation choice that we've inherited from the original
+    # installer scripts.  We should rework the install.bzl <=> installer.py
+    # specification format to use something other than open-ended Python code.
+    with open(args.actions, "r", encoding="utf-8") as f:
+        actions = f.read()
+    exec(actions)
 
     # Libraries paths may need to be updated in libraries and executables.
     fix_rpaths_and_strip()

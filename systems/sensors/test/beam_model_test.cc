@@ -190,6 +190,17 @@ GTEST_TEST(BeamModelTest, ScalarConversion) {
   EXPECT_FALSE(is_symbolic_convertible(model));
 }
 
+// This test should track the @code example in the header to make sure it
+// compiles and runs.
+GTEST_TEST(BeamModelTest, AddRandomInputsExample) {
+  DiagramBuilder<double> builder;
+  auto beam_model = builder.AddSystem<BeamModel>(1, 5.0);
+  builder.ExportInput(beam_model->get_depth_input_port(), "depth");
+  builder.ExportOutput(beam_model->get_output_port(0), "depth");
+  AddRandomInputs(0.01, &builder);
+  auto diagram = builder.Build();
+}
+
 }  // namespace
 }  // namespace sensors
 }  // namespace systems

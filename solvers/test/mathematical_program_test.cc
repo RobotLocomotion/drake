@@ -2576,6 +2576,35 @@ GTEST_TEST(TestMathematicalProgram, AddL2NormCost) {
   EXPECT_EQ(new_prog->l2norm_costs().size(), 1u);
 }
 
+GTEST_TEST(TestMathematicalProgram, AddL2NormCostUsingConicConstraint) {
+  MathematicalProgram prog{};
+  auto x = prog.NewContinuousVariables<2>();
+  Eigen::Matrix2d A;
+  A << 1, 2, 3, 4;
+  const Eigen::Vector2d b(2, 3);
+  const auto ret = prog.AddL2NormCostUsingConicConstraint(A, b, x);
+  const symbolic::Variable& s = std::get<0>(ret);
+  const Binding<LinearCost>& linear_cost = std::get<1>(ret);
+  const Binding<LorentzConeConstraint>& lorentz_cone_constraint =
+      std::get<2>(ret);
+  EXPECT_GE(prog.FindDecisionVariableIndex(s), 0);
+  EXPECT_EQ(linear_cost.variables().rows(), 1);
+  EXPECT_EQ(linear_cost.variables(), Vector1<symbolic::Variable>(s));
+  EXPECT_EQ(linear_cost.evaluator()->a(), Vector1d(1));
+  EXPECT_EQ(linear_cost.evaluator()->b(), 0);
+  EXPECT_EQ(prog.linear_costs().size(), 1u);
+  EXPECT_EQ(prog.lorentz_cone_constraints().size(), 1u);
+  EXPECT_EQ(lorentz_cone_constraint.variables().rows(), 3);
+  EXPECT_EQ(lorentz_cone_constraint.variables(),
+            Vector3<symbolic::Variable>(s, x(0), x(1)));
+  Vector3<symbolic::Expression> lorentz_eval_expected;
+  lorentz_eval_expected << s, A * x + b;
+  EXPECT_EQ(lorentz_cone_constraint.evaluator()->A() *
+                    lorentz_cone_constraint.variables() +
+                lorentz_cone_constraint.evaluator()->b(),
+            lorentz_eval_expected);
+}
+
 // Helper function for ArePolynomialIsomorphic.
 //
 // Transforms a monomial into an isomorphic one up to a given map (Variable::Id
@@ -3318,6 +3347,43 @@ GTEST_TEST(TestMathematicalProgram, ReparsePolynomial) {
     prog.Reparse(&p);
     EXPECT_PRED2(PolyEqual, p, expected);
   }
+}
+
+GTEST_TEST(TestMathematicalProgram, AddSosConstraint) {
+  MathematicalProgram prog{};
+  const auto x = prog.NewIndeterminates<1>()(0);
+  const auto a = prog.NewContinuousVariables<1>()(0);
+
+  // p1 has both a and x as indeterminates. So we need to reparse the polynomial
+  // to have only x as the indeterminates.
+  const symbolic::Polynomial p1(a + x * x);
+  const Vector2<symbolic::Monomial> monomial_basis(symbolic::Monomial{},
+                                                   symbolic::Monomial(x, 1));
+
+  const Matrix2<symbolic::Variable> Q_psd =
+      prog.AddSosConstraint(p1, monomial_basis);
+  EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1u);
+  EXPECT_EQ(prog.lorentz_cone_constraints().size(), 0u);
+  EXPECT_EQ(prog.rotated_lorentz_cone_constraints().size(), 0u);
+  const int num_lin_con = prog.linear_constraints().size() +
+                          prog.linear_equality_constraints().size();
+  // Now call AddSosConstraint with type=kDsos.
+  prog.AddSosConstraint(p1, monomial_basis,
+                        MathematicalProgram::NonnegativePolynomial::kDsos);
+  // With dsos, the mathematical program adds more linear constraints than it
+  // did with sos.
+  EXPECT_GT(prog.linear_constraints().size() +
+                prog.linear_equality_constraints().size(),
+            2 * num_lin_con);
+  EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1u);
+
+  // Now call AddSosConstraint with type=kSdsos.
+  prog.AddSosConstraint(p1, monomial_basis,
+                        MathematicalProgram::NonnegativePolynomial::kSdsos);
+  EXPECT_GT(prog.lorentz_cone_constraints().size() +
+                prog.rotated_lorentz_cone_constraints().size(),
+            0u);
+  EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1u);
 }
 
 template <typename C>

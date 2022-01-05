@@ -3,6 +3,7 @@
 #include <cmath>
 #include <limits>
 #include <set>
+#include <stdexcept>
 #include <unordered_map>
 
 #include <fmt/format.h>
@@ -144,6 +145,27 @@ LorentzConeConstraint::LorentzConeConstraint(
   DRAKE_ASSERT(A_.rows() == b_.rows());
 }
 
+void LorentzConeConstraint::UpdateCoefficients(
+    const Eigen::Ref<const Eigen::MatrixXd>& new_A,
+    const Eigen::Ref<const Eigen::VectorXd>& new_b) {
+  if (new_A.cols() != num_vars()) {
+    throw std::invalid_argument(
+        fmt::format("LorentzConeConstraint::UpdateCoefficients uses new_A with "
+                    "{} columns to update a constraint with {} variables.",
+                    new_A.cols(), num_vars()));
+  }
+  A_ = new_A.sparseView();
+  A_dense_ = new_A;
+  b_ = new_b;
+  DRAKE_DEMAND(A_.rows() >= 2);
+  DRAKE_DEMAND(A_.rows() == b_.rows());
+  // Note that we don't need to update the lower and upper bounds as the
+  // constraints lower/upper bounds are fixed (independent of A and b). The
+  // bounds only depend on EvalType. When EvalType=kNonconvex, the lower/upper
+  // bound is [0, 0]/[inf, inf] respectively; otherwise, the lower/upper bound
+  // is 0/inf respectively.
+}
+
 namespace {
 template <typename DerivedX>
 void LorentzConeConstraintEvalConvex2Autodiff(
@@ -212,6 +234,24 @@ void LorentzConeConstraint::DoEval(
 std::ostream& LorentzConeConstraint::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayConstraint(*this, os, "LorentzConeConstraint", vars, false);
+}
+
+void RotatedLorentzConeConstraint::UpdateCoefficients(
+    const Eigen::Ref<const Eigen::MatrixXd>& new_A,
+    const Eigen::Ref<const Eigen::VectorXd>& new_b) {
+  if (new_A.cols() != num_vars()) {
+    throw std::invalid_argument(fmt::format(
+        "RotatedLorentzConeConstraint::UpdateCoefficients uses new_A with "
+        "{} columns to update a constraint with {} variables.",
+        new_A.cols(), num_vars()));
+  }
+  A_ = new_A.sparseView();
+  A_dense_ = new_A;
+  b_ = new_b;
+  DRAKE_DEMAND(A_.rows() >= 3);
+  DRAKE_DEMAND(A_.rows() == b_.rows());
+  // Note that we don't need to update the lower and upper bounds as the
+  // constraints lower/upper bounds are fixed (independent of A and b).
 }
 
 template <typename DerivedX, typename ScalarY>

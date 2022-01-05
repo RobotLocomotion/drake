@@ -78,11 +78,18 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   existing frame in the animation.  Frames are added at the index
   MeshcatAnimation::frame(context.get_time()).
 
+  @param set_transforms_while_recording if true, then each Publish will set the
+  transform in Meshcat *and* record the transform in the animation.  Set to
+  false to avoid updating the visualization during recording.  Note that
+  animations do not support SetObject, so the objects must still be sent to the
+  visualizer during the recording.
+
   @returns a mutable pointer to the current recording.  See
   get_mutable_recording().
   */
-  MeshcatAnimation* StartRecording() {
+  MeshcatAnimation* StartRecording(bool set_transforms_while_recording = true) {
     recording_ = true;
+    set_transforms_while_recording_ = set_transforms_while_recording;
     return get_mutable_recording();
   }
 
@@ -205,6 +212,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   /* Recording status.  True means that each new Publish event will record a
   frame in the animation. */
   bool recording_{false};
+  bool set_transforms_while_recording_{true};
 };
 
 /** A convenient alias for the MeshcatVisualizer class when using the `double`

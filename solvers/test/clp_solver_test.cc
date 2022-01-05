@@ -202,6 +202,17 @@ GTEST_TEST(ClpSolverTest, TestVerbosity) {
     solver.Solve(prog, {}, options);
   }
 }
+GTEST_TEST(ClpSolverTest, TestNumericalScaling) {
+  ClpSolver solver;
+  TestLPPoorScaling1(solver);
+  TestLPPoorScaling2(solver);
+  // Try another scaling option. Set scaling equal to 2. Somehow in CLP with
+  // this scaling mode, the problem is not solved successfully.
+  SolverOptions solver_options;
+  solver_options.SetOption(ClpSolver::id(), "scaling", 2);
+  TestLPPoorScaling1(solver, false, 1E-14, solver_options);
+  TestLPPoorScaling2(solver, false, 1E-4, solver_options);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

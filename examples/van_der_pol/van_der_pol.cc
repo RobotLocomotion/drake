@@ -17,11 +17,11 @@ VanDerPolOscillator<T>::VanDerPolOscillator()
   // State is (q,q̇).
   auto state_index = this->DeclareContinuousState(1, 1, 0);
 
-  // First output, y₁ = q, for interesting estimation problems.
+  // First output, y₀ = q, for interesting estimation problems.
   this->DeclareVectorOutputPort(systems::kUseDefaultName, 1,
                                 &VanDerPolOscillator::CopyPositionToOutput);
 
-  // Second output, y₂ = [q,q̇]', for e.g. visualizing the full state.
+  // Second output, y₁ = [q,q̇]', for e.g. visualizing the full state.
   this->DeclareStateOutputPort(systems::kUseDefaultName, state_index);
 
   // Single parameter, μ, with default μ=1.
