@@ -697,7 +697,10 @@ class TestMathematicalProgram(unittest.TestCase):
         for i in range(3):
             pt = pts[i, :]
             prog.AddLinearConstraint(pt.dot(X.dot(pt)) <= 1)
-        prog.AddMaximizeLogDeterminantSymmetricMatrixCost(X)
+        linear_cost, log_det_t, log_det_Z = \
+            prog.AddMaximizeLogDeterminantSymmetricMatrixCost(X=X)
+        self.assertEqual(log_det_t.shape, (2,))
+        self.assertEqual(log_det_Z.shape, (2, 2))
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
 
