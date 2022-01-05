@@ -248,6 +248,12 @@ const auto& GetElementByName(
     const MultibodyTree<T>& tree, std::string_view name,
     std::optional<ModelInstanceIndex> model_instance,
     const NameToIndex<ElementIndex>& name_to_index) {
+  // We fetch the model instance name as the first operation in this function
+  // (even though we'll only need it for error messages) because it throws an
+  // exception when the model_instance index is invalid.
+  const std::string& model_instance_name =
+      model_instance ? tree.GetModelInstanceName(*model_instance)
+                     : std::string();
   const std::string_view element_classname =
       GetElementClassname<ElementIndex>();
 
@@ -276,8 +282,8 @@ const auto& GetElementByName(
     throw std::logic_error(fmt::format(
         "Get{}ByName(): There is no {} named '{}' in the model instance named"
         " '{}', but one does exist in other model instances ({}).",
-        element_classname, element_classname, name,
-        tree.GetModelInstanceName(*model_instance), known_instances));
+        element_classname, element_classname, name, model_instance_name,
+        known_instances));
   }
 
   // With no model instance requested, ensure the name is globally unique.
