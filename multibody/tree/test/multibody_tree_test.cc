@@ -134,6 +134,10 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       model.GetBodyByName(kLinkNames[0], world_model_instance()),
       std::logic_error,
       ".*There is no Body.*but one does exist in other model instances.*");
+  const ModelInstanceIndex kInvalidIndex(1<<30);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model.GetBodyByName(kLinkNames[0], kInvalidIndex), std::logic_error,
+      ".*There is no model instance.*in the model.*");
 
   // Test we can also retrieve links as RigidBody objects.
   for (const std::string& link_name : kLinkNames) {
