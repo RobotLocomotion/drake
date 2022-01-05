@@ -885,16 +885,14 @@ void BindMathematicalProgram(py::module m) {
           &MathematicalProgram::AddL2NormCostUsingConicConstraint, py::arg("A"),
           py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddL2NormCostUsingConicConstraint.doc)
-      .def("AddMaximizeLogDeterminantSymmetricMatrixCost",
+      .def("AddMaximizeLogDeterminantCost",
           static_cast<std::tuple<Binding<LinearCost>,
               VectorX<symbolic::Variable>, MatrixX<symbolic::Expression>> (
               MathematicalProgram::*)(
               const Eigen::Ref<const MatrixX<symbolic::Expression>>& X)>(
-              &MathematicalProgram::
-                  AddMaximizeLogDeterminantSymmetricMatrixCost),
+              &MathematicalProgram::AddMaximizeLogDeterminantCost),
           py::arg("X"),
-          doc.MathematicalProgram.AddMaximizeLogDeterminantSymmetricMatrixCost
-              .doc)
+          doc.MathematicalProgram.AddMaximizeLogDeterminantCost.doc)
       .def("AddMaximizeGeometricMeanCost",
           overload_cast_explicit<void, const Eigen::Ref<const Eigen::MatrixXd>&,
               const Eigen::Ref<const Eigen::VectorXd>&,
@@ -1497,7 +1495,20 @@ for every column of ``prog_var_vals``. )""")
       .def("RemoveConstraint", &MathematicalProgram::RemoveConstraint,
           py::arg("constraint"), doc.MathematicalProgram.RemoveConstraint.doc);
 
-  py::enum_<SolutionResult>(m, "SolutionResult", doc.SolutionResult.doc)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  prog_cls
+      .def("AddMaximizeLogDeterminantSymmetricMatrixCost",
+          static_cast<std::tuple<Binding<LinearCost>,
+              VectorX<symbolic::Variable>, MatrixX<symbolic::Expression>> (
+              MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>& X)>(
+              &MathematicalProgram::AddMaximizeLogDeterminantCost),
+          py::arg("X"),
+          doc.MathematicalProgram.AddMaximizeLogDeterminantCost.doc);
+#pragma GCC diagnostic pop
+
+          py::enum_<SolutionResult>(m, "SolutionResult", doc.SolutionResult.doc)
       .value("kSolutionFound", SolutionResult::kSolutionFound,
           doc.SolutionResult.kSolutionFound.doc)
       .value("kInvalidInput", SolutionResult::kInvalidInput,
