@@ -524,7 +524,7 @@ Binding<Cost> MathematicalProgram::AddCost(const Expression& e) {
 
 std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
            MatrixX<symbolic::Expression>>
-MathematicalProgram::AddMaximizeLogDeterminantSymmetricMatrixCost(
+MathematicalProgram::AddMaximizeLogDeterminantCost(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
   DRAKE_DEMAND(X.rows() == X.cols());
   const int X_rows = X.rows();

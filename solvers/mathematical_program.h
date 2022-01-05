@@ -1224,6 +1224,14 @@ class MathematicalProgram {
    */
   std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
              MatrixX<symbolic::Expression>>
+  AddMaximizeLogDeterminantCost(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+
+  DRAKE_DEPRECATED("2022-04-01",
+                   "AddMaximizeLogDeterminantSymmetricMatrixCost has been "
+                   "renamed to AddMaximizeLogDeterminantCost.")
+  std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
+             MatrixX<symbolic::Expression>>
   AddMaximizeLogDeterminantSymmetricMatrixCost(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
