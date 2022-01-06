@@ -291,8 +291,7 @@ TEST_F(DeformableRigidManagerTest, UpdateDeformableVertexPositions) {
             deformed_meshes[0].mesh().num_vertices() * 3);
   for (int i = 0; i < deformed_meshes[0].mesh().num_vertices(); ++i) {
     const Vector3<double> p_WV = current_positions[0].segment<3>(3 * i);
-    EXPECT_TRUE(
-        CompareMatrices(p_WV, deformed_meshes[0].mesh().vertex(i)));
+    EXPECT_TRUE(CompareMatrices(p_WV, deformed_meshes[0].mesh().vertex(i)));
   }
 }
 
@@ -1003,9 +1002,12 @@ class DeformableRigidDynamicsDataTest : public ::testing::Test {
    dense matrix. */
   MatrixXd CalcFreeMotionTangentMatrix(const Context<double>& context,
                                        DeformableBodyIndex index) const {
-    const Eigen::SparseMatrix<double> tangent_matrix_sparse =
-        deformable_rigid_manager_->EvalFreeMotionTangentMatrix(context, index);
-    return MatrixXd(tangent_matrix_sparse);
+    const auto& petsc_tangent_matrix =
+        deformable_rigid_manager_->plant()
+            .get_cache_entry(
+                deformable_rigid_manager_->tangent_matrix_cache_indexes_[index])
+            .template Eval<internal::PetscSymmetricBlockSparseMatrix>(context);
+    return petsc_tangent_matrix.MakeDenseMatrix();
   }
 
   /* Calls DeformableRigidManager::EvalFreeMotionTangentMatrixSchurComplement()
