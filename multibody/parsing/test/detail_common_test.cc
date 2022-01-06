@@ -37,8 +37,9 @@ ReadDoubleFunc param_read_double(
 }
 
 // Tests for a particular value in the given properties.
+template<typename T>
 ::testing::AssertionResult ExpectScalar(const char* group, const char* property,
-                                        double expected,
+                                        T expected,
                                         const ProximityProperties& p) {
   ::testing::AssertionResult failure = ::testing::AssertionFailure();
   const bool has_value = p.HasProperty(group, property);
@@ -46,7 +47,7 @@ ReadDoubleFunc param_read_double(
     return failure << "Expected (" << group << ", " << property
                    << "); not found";
   }
-  const double value = p.GetProperty<double>(group, property);
+  const T value = p.template GetProperty<T>(group, property);
   if (value != expected) {
     return failure << "Wrong value for (" << group << ", " << property << "):"
                    << "\n  Expected: " << expected << "\n  Found: " << value;
@@ -157,6 +158,21 @@ GTEST_TEST(ParseProximityPropertiesTest, HydroelasticModulus) {
       !compliant);
   EXPECT_TRUE(ExpectScalar(kHydroGroup, kElastic, kValue, properties));
   // Hydroelastic modulus is the only property.
+  EXPECT_EQ(properties.GetPropertiesInGroup(kHydroGroup).size(), 1u);
+  EXPECT_EQ(properties.num_groups(), 2);  // Hydro and default groups.
+}
+
+// Confirms ignored parsing of hydroelastic modulus for explicit rigid geometry.
+GTEST_TEST(ParseProximityPropertiesTest, RigidHydroelasticModulusIgnored) {
+  const double kValue = 1.75;
+  ProximityProperties properties = ParseProximityProperties(
+      param_read_double("drake:hydroelastic_modulus", kValue), rigid,
+      !compliant);
+  EXPECT_FALSE(ExpectScalar(kHydroGroup, kElastic, kValue, properties));
+  EXPECT_TRUE(ExpectScalar(kHydroGroup, kComplianceType,
+                           geometry::internal::HydroelasticType::kRigid,
+                           properties));
+  // Compliance type is the only property.
   EXPECT_EQ(properties.GetPropertiesInGroup(kHydroGroup).size(), 1u);
   EXPECT_EQ(properties.num_groups(), 2);  // Hydro and default groups.
 }
