@@ -30,12 +30,9 @@ TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
                                        DerivedA::ColsAtCompileTime>>(A)
             .solve(b);
   }
-  for (const bool use_deprecated : {true, false}) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    const auto x = use_deprecated ? LinearSolve<LinearSolverType>(A, b)
-                                  : SolveLinearSystem<LinearSolverType>(A, b);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+  // TODO(jwnimmer-tri) Remove this extra unnecessary level of indentation.
+  {
+    const auto x = SolveLinearSystem<LinearSolverType>(A, b);
     if constexpr (std::is_same_v<typename DerivedA::Scalar, double> &&
                   std::is_same_v<typename DerivedB::Scalar, double>) {
       static_assert(std::is_same_v<typename decltype(x)::Scalar, double>,
@@ -46,7 +43,7 @@ TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
           "The returned  x should have scalar type as AutoDiffScalar.");
     }
     // Now check Ax = z and A*∂x/∂z + ∂A/∂z * x = ∂b/∂z
-    const auto Ax = A * x;
+    const auto Ax = (A * x).eval();
     Eigen::MatrixXd Ax_val, b_val;
     std::vector<Eigen::MatrixXd> Ax_grad;
     std::vector<Eigen::MatrixXd> b_grad;
@@ -226,12 +223,9 @@ template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
 void TestSolveLinearSystemSymbolic(const Eigen::MatrixBase<DerivedA>& A,
                                    const Eigen::MatrixBase<DerivedB>& b) {
-  for (const bool use_deprecated : {true, false}) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    const auto x = use_deprecated ? LinearSolve<LinearSolverType>(A, b)
-                                  : SolveLinearSystem<LinearSolverType>(A, b);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+  // TODO(jwnimmer-tri) Remove this extra unnecessary level of indentation.
+  {
+    const auto x = SolveLinearSystem<LinearSolverType>(A, b);
     static_assert(
         std::is_same_v<typename decltype(x)::Scalar, symbolic::Expression>,
         "The scalar type should be symbolic expression");
@@ -377,24 +371,12 @@ TEST_F(LinearSolveTest, TestWrongGradientSize) {
       SolveLinearSystem<Eigen::LLT>(A_ad_error, b_vec_ad_),
       ".* has size 2, while another entry has size 3");
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DRAKE_EXPECT_THROWS_MESSAGE(LinearSolve<Eigen::LLT>(A_ad_error, b_vec_ad_),
-                              ".* has size 2, while another entry has size 3");
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-
   // b's gradient has inconsistent size.
   auto b_vec_ad_error = b_vec_ad_;
   b_vec_ad_error(1).derivatives() = Eigen::Vector2d(1, 2);
   DRAKE_EXPECT_THROWS_MESSAGE(
       SolveLinearSystem<Eigen::LLT>(A_ad_, b_vec_ad_error),
       ".* has size 2, while another entry has size 3");
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DRAKE_EXPECT_THROWS_MESSAGE(LinearSolve<Eigen::LLT>(A_ad_, b_vec_ad_error),
-                              ".* has size 2, while another entry has size 3");
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
   // A and b have different number of derivatives.
   auto b_vec_ad_error2 = b_vec_ad_;
@@ -404,14 +386,6 @@ TEST_F(LinearSolveTest, TestWrongGradientSize) {
       SolveLinearSystem<Eigen::LLT>(A_ad_, b_vec_ad_error2),
       ".*A contains derivatives for 3 variables, while b contains derivatives "
       "for 4 variables");
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      LinearSolve<Eigen::LLT>(A_ad_, b_vec_ad_error2),
-      ".*A contains derivatives for 3 variables, while b contains derivatives "
-      "for 4 variables");
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 }
 
 template <template <typename, int...> typename LinearSolverType,
