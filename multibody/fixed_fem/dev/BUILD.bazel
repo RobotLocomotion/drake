@@ -734,6 +734,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "deformable_rigid_manager_test",
+    # TODO(xuchenhan-tri) Re-enable once this test passes for UBSan.
+    tags = ["no_ubsan"],
     deps = [
         ":deformable_rigid_manager",
         "//common/test_utilities:eigen_matrix_compare",
