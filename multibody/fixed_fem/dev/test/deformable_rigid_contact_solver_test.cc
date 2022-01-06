@@ -175,11 +175,16 @@ class DeformableRigidContactSolverTest : public ::testing::Test {
         context);
   }
 
-  /* Calls DeformableRigidManager::EvalFreeMotionTangentMatrix(). */
-  const Eigen::SparseMatrix<double>& EvalFreeMotionTangentMatrix(
-      const Context<double>& context, DeformableBodyIndex index) const {
-    return deformable_rigid_manager_->EvalFreeMotionTangentMatrix(context,
-                                                                  index);
+  /* Returns the free motion tangent matrix of the body with the given `index`.
+   */
+  MatrixX<double> CalcFreeMotionTangentMatrix(const Context<double>& context,
+                                              DeformableBodyIndex index) const {
+    const auto& petsc_tangent_matrix =
+        deformable_rigid_manager_->plant()
+            .get_cache_entry(
+                deformable_rigid_manager_->tangent_matrix_cache_indexes_[index])
+            .template Eval<internal::PetscSymmetricBlockSparseMatrix>(context);
+    return petsc_tangent_matrix.MakeDenseMatrix();
   }
 
   /* Calls DeformableRigidManager::EvalDeformableContactSolverResults(). */
@@ -399,8 +404,8 @@ TEST_F(DeformableRigidContactSolverTest, DeformableResults) {
   const VectorXd& octahedron_v =
       deformable_results.v_next.tail(3 * kNumOctahedronVertices);
   const VectorXd dv = octahedron_v - octahedron_v_star;
-  const MatrixXd A(
-      EvalFreeMotionTangentMatrix(plant_context, deformable_octahedron_));
+  const MatrixXd A =
+      CalcFreeMotionTangentMatrix(plant_context, deformable_octahedron_);
   const VectorXd Adv = A * dv;
   /* This `tau` is given by Jcᵀ⋅γ. */
   const VectorXd octahedron_tau =

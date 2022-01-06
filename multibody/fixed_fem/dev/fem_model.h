@@ -226,6 +226,7 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
         }
         tangent_matrix->AddToBlock(block_indices, element_tangent_matrix);
       }
+      tangent_matrix->AssembleIfNecessary();
     }
   }
 
@@ -311,6 +312,7 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
       }
       tangent_matrix->AddToBlock(block_indices, zero_matrix);
     }
+    tangent_matrix->AssembleIfNecessary();
     return tangent_matrix;
   }
 
