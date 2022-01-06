@@ -44,7 +44,7 @@ using symbolic::Variables;
 
 GraphOfConvexSets::~GraphOfConvexSets() = default;
 
-Vertex::Vertex(const VertexId& id, const ConvexSet& set, std::string name)
+Vertex::Vertex(VertexId id, const ConvexSet& set, std::string name)
     : id_(id),
       set_(set.Clone()),
       name_(std::move(name)),
@@ -136,7 +136,7 @@ Vertex* GraphOfConvexSets::AddVertex(const ConvexSet& set, std::string name) {
   return iter->second.get();
 }
 
-Edge* GraphOfConvexSets::AddEdge(const VertexId& u_id, const VertexId& v_id,
+Edge* GraphOfConvexSets::AddEdge(VertexId u_id, VertexId v_id,
                                  std::string name) {
   auto u_iter = vertices_.find(u_id);
   DRAKE_DEMAND(u_iter != vertices_.end());
@@ -157,6 +157,27 @@ Edge* GraphOfConvexSets::AddEdge(const Vertex& u, const Vertex& v,
                                  std::string name) {
   return AddEdge(u.id(), v.id(), std::move(name));
 }
+
+void GraphOfConvexSets::RemoveVertex(VertexId vertex_id) {
+  DRAKE_DEMAND(vertices_.find(vertex_id) != vertices_.end());
+  for (const auto& [e_id, e] : edges_) {
+    if (e->u().id() == vertex_id || e->v().id() == vertex_id) {
+      RemoveEdge(e_id);
+    }
+  }
+  vertices_.erase(vertex_id);
+}
+
+void GraphOfConvexSets::RemoveVertex(const Vertex& vertex) {
+  RemoveVertex(vertex.id());
+}
+
+void GraphOfConvexSets::RemoveEdge(EdgeId edge_id) {
+  DRAKE_DEMAND(edges_.find(edge_id) != edges_.end());
+  edges_.erase(edge_id);
+}
+
+void GraphOfConvexSets::RemoveEdge(const Edge& edge) { RemoveEdge(edge.id()); }
 
 std::vector<Vertex*> GraphOfConvexSets::Vertices() {
   std::vector<Vertex*> vertices;
@@ -237,8 +258,7 @@ std::string GraphOfConvexSets::GetGraphvizString(
 }
 
 MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
-    const VertexId& source_id, const VertexId& target_id,
-    bool convex_relaxation) const {
+    VertexId source_id, VertexId target_id, bool convex_relaxation) const {
   DRAKE_DEMAND(vertices_.find(source_id) != vertices_.end());
   DRAKE_DEMAND(vertices_.find(target_id) != vertices_.end());
 
