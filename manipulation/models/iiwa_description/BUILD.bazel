@@ -27,8 +27,8 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "joint_limit_variants_test",
-    srcs = ["test/joint_limit_variants_test.cc"],
+    name = "iiwa_variants_parsing_test",
+    srcs = ["test/iiwa_variants_parsing_test.cc"],
     data = [":models"],
     deps = [
         "//common:find_resource",

@@ -41,7 +41,8 @@ void CompareActuatorLimits(const multibody::JointActuator<double>& joint_a,
 // It assumes all joints are declared in the same order.
 // It checks values directly on urdf files, generated from xacro.
 // TODO(marcoag): when xacro support is used as per (#15613)
-// check values on xacro files instead of the generated ones.
+// check values on files directly generated from xacro,
+// rather than ones checked into the source tree with manual edits
 GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValues) {
   multibody::MultibodyPlant<double> canonical_plant(0.0);
   multibody::ModelInstanceIndex canonical_model_instance =
