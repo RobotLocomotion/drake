@@ -160,9 +160,12 @@ Edge* GraphOfConvexSets::AddEdge(const Vertex& u, const Vertex& v,
 
 void GraphOfConvexSets::RemoveVertex(VertexId vertex_id) {
   DRAKE_DEMAND(vertices_.find(vertex_id) != vertices_.end());
-  for (const auto& [e_id, e] : edges_) {
-    if (e->u().id() == vertex_id || e->v().id() == vertex_id) {
-      RemoveEdge(e_id);
+  const auto& last_edge = edges_.end();
+  for (auto e = edges_.begin(); e != last_edge;) {
+    if (e->second->u().id() == vertex_id || e->second->v().id() == vertex_id) {
+      e = edges_.erase(e);
+    } else {
+      ++e;
     }
   }
   vertices_.erase(vertex_id);
