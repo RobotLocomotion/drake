@@ -24,8 +24,9 @@ building or using the Drake Python bindings.
 
 # Installation
 
-Refer to [Installation](/installation.html) for how to install Drake's
-stable releases using pip.
+Refer to [Installation via Pip](/pip.html#stable-releases) for how to install
+Drake's releases using pip, or the general [Installation](/installation.html)
+instructions for alternative options.
 
 # Using the Python Bindings
 

@@ -92,7 +92,7 @@ class GraphOfConvexSets {
 
    private:
     // Constructs a new vertex.
-    Vertex(const VertexId& id, const ConvexSet& set, std::string name);
+    Vertex(VertexId id, const ConvexSet& set, std::string name);
 
     const VertexId id_{};
     const std::unique_ptr<const ConvexSet> set_;
@@ -253,8 +253,7 @@ class GraphOfConvexSets {
   default name will be provided.
   @pydrake_mkdoc_identifier{by_id}
   */
-  Edge* AddEdge(const VertexId& u_id, const VertexId& v_id,
-                std::string name = "");
+  Edge* AddEdge(VertexId u_id, VertexId v_id, std::string name = "");
 
   /** Adds an edge to the graph from Vertex @p u to Vertex @p v.  The
   vertex references must refer to valid vertices in this graph. If @p name is
@@ -262,6 +261,32 @@ class GraphOfConvexSets {
   @pydrake_mkdoc_identifier{by_reference}
   */
   Edge* AddEdge(const Vertex& u, const Vertex& v, std::string name = "");
+
+  /** Removes vertex @p vertex_id from the graph as well as any edges from or to
+  the vertex. Runtime is O(nₑ) where nₑ is the number of edges in the graph.
+  @pre The vertex must be part of the graph.
+  @pydrake_mkdoc_identifier{by_id}
+  */
+  void RemoveVertex(VertexId vertex_id);
+
+  /** Removes vertex @p vertex from the graph as well as any edges from or to
+  the vertex. Runtime is O(nₑ) where nₑ is the number of edges in the graph.
+  @pre The vertex must be part of the graph.
+  @pydrake_mkdoc_identifier{by_reference}
+  */
+  void RemoveVertex(const Vertex& vertex);
+
+  /** Removes edge @p edge_id from the graph.
+  @pre The edge must be part of the graph.
+  @pydrake_mkdoc_identifier{by_id}
+  */
+  void RemoveEdge(EdgeId edge_id);
+
+  /** Removes edge @p edge from the graph.
+  @pre The edge must be part of the graph.
+  @pydrake_mkdoc_identifier{by_reference}
+  */
+  void RemoveEdge(const Edge& edge);
 
   /** Returns mutable pointers to the vertices stored in the graph. */
   std::vector<Vertex*> Vertices();
@@ -316,7 +341,7 @@ class GraphOfConvexSets {
   @pydrake_mkdoc_identifier{by_id}
   */
   solvers::MathematicalProgramResult SolveShortestPath(
-      const VertexId& source_id, const VertexId& target_id,
+      VertexId source_id, VertexId target_id,
       bool convex_relaxation = false) const;
 
   /** Convenience overload that takes const reference arguments for source and

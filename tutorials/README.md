@@ -106,3 +106,9 @@ branch) in the relevant documentation in `/doc`, e.g.,
   Deepnote interface if they do not have it.  Note: If your updates depend on
   changes to Drake outside of the tutorials directory, then you will have to
   wait for the updated nightly binaries to update Deepnote.
+
+### Notes on formatting
+
+- Deepnote (and others) use KaTeX for Latex. $\begin{aligned}math here \end{aligned}$ works.
+`gathered` also works; the more typical `gather` and `align` do not.
+

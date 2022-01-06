@@ -424,6 +424,31 @@ TYPED_TEST(PolygonSurfaceMeshTest, CalcGradientVectorOfLinearField) {
       "be provided at construction.");
 }
 
+GTEST_TEST(PolygonSurfaceMeshTestCornerCases, ZeroAreaPolygon) {
+  // Create a zero-area polygon mesh than spans a line segment from the
+  // origin to an arbitrary point P.
+  const Vector3d p_MP(10.0, 20.0, 30.0);
+  PolygonSurfaceMesh<double> zero_area_mesh_M(
+      {4, 0, 1, 2, 3},  // one polygon of 4 vertices
+      {Vector3d::Zero(), Vector3d::Zero(), Vector3d::Zero(), p_MP});
+
+  // This expected centroid p_MC assumes that our code falls back from
+  // area-weighted averaging to arithmetic averaging for zero-area polygons.
+  // Notice that p_MC(2.5, 5.0, 7.5) is not at the middle of the line segment,
+  // which is (5.0, 10.0, 15.0)
+  const Vector3d expected_p_MC(2.5, 5.0, 7.5);
+
+  // Check the entire mesh.
+  ASSERT_EQ(zero_area_mesh_M.num_faces(), 1);
+  EXPECT_EQ(zero_area_mesh_M.total_area(), 0.0);
+  EXPECT_EQ(zero_area_mesh_M.centroid(), expected_p_MC);
+
+  // Check the polygonal face.
+  EXPECT_EQ(zero_area_mesh_M.element_centroid(0), expected_p_MC);
+  EXPECT_EQ(zero_area_mesh_M.face_normal(0), Vector3d::Zero());
+  EXPECT_EQ(zero_area_mesh_M.area(0), 0.0);
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake

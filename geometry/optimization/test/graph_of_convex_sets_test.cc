@@ -135,6 +135,50 @@ GTEST_TEST(GraphOfConvexSetsTest, AddEdge2) {
   EXPECT_EQ(Variables(e->xv()), Variables(v->x()));
 }
 
+GTEST_TEST(GraphOfConvexSetsTest, RemoveEdge) {
+  GraphOfConvexSets g;
+  Point pu(Vector3d(1.0, 2.0, 3.0));
+  Point pv(Vector2d(4., 5.));
+  Vertex* u = g.AddVertex(pu, "u");
+  Vertex* v = g.AddVertex(pv, "v");
+  Edge* e1 = g.AddEdge(*u, *v, "e1");
+  Edge* e2 = g.AddEdge(*v, *u, "e2");
+
+  EXPECT_EQ(g.Edges().size(), 2);
+
+  g.RemoveEdge(e1->id());
+  auto edges = g.Edges();
+  EXPECT_EQ(edges.size(), 1);
+  EXPECT_EQ(edges.at(0), e2);
+
+  g.RemoveEdge(*e2);
+  EXPECT_EQ(g.Edges().size(), 0);
+}
+
+GTEST_TEST(GraphOfConvexSetsTest, RemoveVertex) {
+  GraphOfConvexSets g;
+  Vertex* v1 = g.AddVertex(Point(Vector2d(3., 5.)));
+  Vertex* v2 = g.AddVertex(Point(Vector2d(-2., 4.)));
+  Vertex* v3 = g.AddVertex(Point(Vector2d(5., -2.3)));
+  Edge* e1 = g.AddEdge(*v1, *v2);
+  g.AddEdge(*v1, *v3);
+  g.AddEdge(*v3, *v1);
+
+  EXPECT_EQ(g.Vertices().size(), 3);
+  EXPECT_EQ(g.Edges().size(), 3);
+
+  g.RemoveVertex(v3->id());
+  EXPECT_EQ(g.Vertices().size(), 2);
+  auto edges = g.Edges();
+  EXPECT_EQ(edges.size(), 1);
+  EXPECT_EQ(edges.at(0), e1);
+
+  g.RemoveVertex(*v2);
+  auto vertices = g.Vertices();
+  EXPECT_EQ(vertices.size(), 1);
+  EXPECT_EQ(vertices.at(0), v1);
+  EXPECT_EQ(g.Edges().size(), 0);
+}
 
 /*
 ┌───┐       ┌───┐

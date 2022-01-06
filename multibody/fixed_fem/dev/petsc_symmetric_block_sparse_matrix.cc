@@ -210,7 +210,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
                        PETSC_NULL, PETSC_NULL);
   }
 
-  void SetRelativeTolerance(double tolerance) {
+  void set_relative_tolerance(double tolerance) {
     KSPSetTolerances(owned_solver_, tolerance, PETSC_DEFAULT, PETSC_DEFAULT,
                      PETSC_DEFAULT);
   }
@@ -378,8 +378,8 @@ void PetscSymmetricBlockSparseMatrix::ZeroRowsAndColumns(
   pimpl_->ZeroRowsAndColumns(indexes, value);
 }
 
-void PetscSymmetricBlockSparseMatrix::SetRelativeTolerance(double tolerance) {
-  pimpl_->SetRelativeTolerance(tolerance);
+void PetscSymmetricBlockSparseMatrix::set_relative_tolerance(double tolerance) {
+  pimpl_->set_relative_tolerance(tolerance);
 }
 
 SchurComplement<double> PetscSymmetricBlockSparseMatrix::CalcSchurComplement(

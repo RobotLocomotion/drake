@@ -600,6 +600,17 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertIsInstance(gram_odd, np.ndarray)
             self.assertIsInstance(gram_even, np.ndarray)
 
+    def test_add_sos_constraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewIndeterminates(1, "x")
+        Q = prog.AddSosConstraint(
+           p=sym.Polynomial(x[0]**2 + 1),
+           monomial_basis=[sym.Monomial(x[0])],
+           type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos)
+        Q, m = prog.AddSosConstraint(
+            p=sym.Polynomial(x[0]**2 + 2),
+            type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos)
+
     def test_sos(self):
         # Find a,b,c,d subject to
         # a(0) + a(1)*x,
@@ -686,7 +697,10 @@ class TestMathematicalProgram(unittest.TestCase):
         for i in range(3):
             pt = pts[i, :]
             prog.AddLinearConstraint(pt.dot(X.dot(pt)) <= 1)
-        prog.AddMaximizeLogDeterminantSymmetricMatrixCost(X)
+        linear_cost, log_det_t, log_det_Z = \
+            prog.AddMaximizeLogDeterminantSymmetricMatrixCost(X=X)
+        self.assertEqual(log_det_t.shape, (2,))
+        self.assertEqual(log_det_Z.shape, (2, 2))
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
 
@@ -1119,6 +1133,9 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(
             constraint.eval_type(),
             mp.LorentzConeConstraint.EvalType.kConvexSmooth)
+        constraint.UpdateCoefficients(new_A=2 * A, new_b=3 * b)
+        np.testing.assert_array_equal(constraint.A().todense(), 2 * A)
+        np.testing.assert_array_equal(constraint.b(), 3 * b)
 
     def test_add_lorentz_cone_constraint(self):
         # Call AddLorentzConeConstraint, make sure no error is thrown.
@@ -1148,6 +1165,9 @@ class TestMathematicalProgram(unittest.TestCase):
         constraint = mp.RotatedLorentzConeConstraint(A=A, b=b)
         np.testing.assert_array_equal(constraint.A().todense(), A)
         np.testing.assert_array_equal(constraint.b(), b)
+        constraint.UpdateCoefficients(new_A=2 * A, new_b=3 * b)
+        np.testing.assert_array_equal(constraint.A().todense(), 2 * A)
+        np.testing.assert_array_equal(constraint.b(), 3 * b)
 
     def test_add_rotated_lorentz_cone_constraint(self):
         prog = mp.MathematicalProgram()

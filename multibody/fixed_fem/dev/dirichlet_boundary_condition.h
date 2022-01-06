@@ -3,11 +3,13 @@
 #include <map>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include <Eigen/Sparse>
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/fixed_fem/dev/fem_indexes.h"
+#include "drake/multibody/fixed_fem/dev/petsc_symmetric_block_sparse_matrix.h"
 
 namespace drake {
 namespace multibody {
@@ -70,7 +72,8 @@ class DirichletBoundaryCondition {
    @throw std::exception if the any of the indexes of the dofs under the
    boundary condition specified by `this` %DirichletBoundaryCondition is
    greater than or equal to the `tangent_matrix->cols()`. */
-  void ApplyBcToTangentMatrix(Eigen::SparseMatrix<T>* tangent_matrix) const {
+  void ApplyBoundaryConditionToTangentMatrix(
+      Eigen::SparseMatrix<T>* tangent_matrix) const {
     DRAKE_DEMAND(tangent_matrix != nullptr);
     DRAKE_DEMAND(tangent_matrix->rows() == tangent_matrix->cols());
     if (bcs_.size() == 0) {
@@ -89,6 +92,26 @@ class DirichletBoundaryCondition {
     }
   }
 
+  void ApplyBoundaryConditionToTangentMatrix(
+      internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const {
+    DRAKE_DEMAND(tangent_matrix != nullptr);
+    DRAKE_DEMAND(tangent_matrix->rows() == tangent_matrix->cols());
+    if (bcs_.size() == 0) {
+      return;
+    }
+    /* Check validity of the dof indices stored. */
+    VerifyBcIndexes(tangent_matrix->cols());
+
+    /* Zero out all rows and columns of the tangent matrix corresponding to dofs
+     under the BC (except the diagonal entry which is set to 1). */
+    std::vector<int> indexes(bcs_.size());
+    int i = 0;
+    for (const auto& it : bcs_) {
+      indexes[i++] = it.first;
+    }
+    tangent_matrix->ZeroRowsAndColumns(indexes, /* diagonal entry */ 1.0);
+  }
+
   /** Modifies the given residual that arises from an FEM system without BC into
    the residual for the same system subject to `this` BC. More specifically, the
    entries corresponding to dofs under the BC will be zeroed out.
@@ -96,7 +119,7 @@ class DirichletBoundaryCondition {
    @throw std::exception if any of the indexes of the dofs under the boundary
    condition specified by `this` %DirichletBoundaryCondition  is greater than
    or equal to the `residual->size()`. */
-  void ApplyBcToResidual(EigenPtr<VectorX<T>> residual) const {
+  void ApplyBoundaryConditionToResidual(EigenPtr<VectorX<T>> residual) const {
     DRAKE_DEMAND(residual != nullptr);
     if (bcs_.size() == 0) {
       return;
