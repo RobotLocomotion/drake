@@ -35,7 +35,12 @@ targets = (
     Target('36', 'ubuntu', '18.04', 'bionic'),
     Target('37', 'ubuntu', '18.04', 'bionic'),
     Target('38', 'ubuntu', '18.04', 'bionic'),
+    Target('39', 'ubuntu', '20.04', 'focal'),
 )
+glibc_versions = {
+    'bionic': '2_27',
+    'focal': '2_31',
+}
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -216,11 +221,12 @@ def test_wheel(target, options):
     Runs the test script for the wheel matching the specified target.
     """
     vm = f'cp{target.python_version}'
+    glibc = glibc_versions[target.platform_alias]
     if target.python_version < '38':
         abi = f'{vm}m'
     else:
         abi = f'{vm}'
-    wheel = f'drake-{options.version}-{vm}-{abi}-manylinux_2_27_x86_64.whl'
+    wheel = f'drake-{options.version}-{vm}-{abi}-manylinux_{glibc}_x86_64.whl'
 
     platform = target.platform_alias
     container = f'{tag_base}:test-{platform}-py{target.python_version}'
