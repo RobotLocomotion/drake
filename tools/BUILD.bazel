@@ -37,6 +37,8 @@ py_binary(
         "//conditions:default": "//tools/workspace/drake_visualizer:drake_visualizer_bazel.py",  # noqa
         "//tools:no_drake_visualizer": "//tools/workspace/drake_visualizer:drake_visualizer_disabled.py",  # noqa
     }),
+    python_version = "PY3",
+    srcs_version = "PY3",
     deps = select({
         "//conditions:default": [
             "//lcmtypes:lcmtypes_drake_py",
