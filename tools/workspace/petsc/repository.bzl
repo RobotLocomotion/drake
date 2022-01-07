@@ -22,5 +22,6 @@ def petsc_repository(
             "@drake//tools/workspace/petsc:patches/pname.patch",
             "@drake//tools/workspace/petsc:patches/remove_packages.patch",
             "@drake//tools/workspace/petsc:patches/tagm.patch",
+            "@drake//tools/workspace/petsc:patches/sbaijfact2.patch",
         ],
     )
