@@ -65,8 +65,10 @@ _IGNORED_REPOSITORIES = [
 _OVERLOOK_RELEASE_REPOSITORIES = {
     "github3_py": r"^(\d+.)",
     "intel_realsense_ros": r"^(\d+\.\d+\.)",
+    "petsc": r"^(v)",
     "pycodestyle": "",
     "ros_xacro": r"^(\d+\.\d+\.)",
+    "qhull": r"^(2)",
 }
 
 
@@ -95,9 +97,29 @@ def _smells_like_a_git_commit(revision):
     return len(revision) == 40
 
 
+def _is_prerelease(commit, workspace):
+    """Returns true iff commit seems to be a pre-release
+    """
+    development_stages = ["alpha", "beta", "rc", "pre"]
+    prerelease = any(stage in commit for stage in development_stages)
+    if prerelease:
+        print("Skipping prerelease {} for {}".format(commit, workspace))
+    return prerelease
+
+
+def _latest_tag(gh_repo, workspace):
+    for tag in gh_repo.tags():
+        if _is_prerelease(tag.name, workspace):
+            continue
+        return tag.name
+    print("Could not find any matching tags for {}".format(workspace))
+    return None
+
+
 def _handle_github(workspace_name, gh, data):
     time.sleep(0.2)  # Don't make github angry.
     old_commit = data["commit"]
+    new_commit = None
     owner, repo_name = data["repository"].split("/")
     gh_repo = gh.repository(owner, repo_name)
 
@@ -109,7 +131,7 @@ def _handle_github(workspace_name, gh, data):
     # Sometimes prefer checking only tags, not releases.
     tags_pattern = _OVERLOOK_RELEASE_REPOSITORIES.get(workspace_name)
     if tags_pattern == "":
-        new_commit = next(gh_repo.tags()).name
+        new_commit = _latest_tag(gh_repo, workspace_name)
         return old_commit, new_commit
 
     # Sometimes limit candidate tags to those matching a regex.
@@ -122,6 +144,8 @@ def _handle_github(workspace_name, gh, data):
             if match:
                 (new_hit,) = match.groups()
                 if old_hit == new_hit:
+                    if _is_prerelease(tag.name, workspace_name):
+                        continue
                     new_commit = tag.name
                     break
         return old_commit, new_commit
@@ -130,8 +154,10 @@ def _handle_github(workspace_name, gh, data):
     # latest tag.
     try:
         new_commit = gh_repo.latest_release().tag_name
+        if _is_prerelease(new_commit, workspace_name):
+            new_commit = _latest_tag(gh_repo, workspace_name)
     except github3.exceptions.NotFoundError:
-        new_commit = next(gh_repo.tags()).name
+        new_commit = _latest_tag(gh_repo, workspace_name)
     return old_commit, new_commit
 
 
@@ -189,6 +215,8 @@ def _do_upgrade(temp_dir, gh, workspace_name, metadata):
     old_commit, new_commit = _handle_github(workspace_name, gh, data)
     if old_commit == new_commit:
         raise RuntimeError(f"No upgrade needed for {workspace_name}")
+    elif new_commit is None:
+        raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
     print("Upgrading {} from {} to {}".format(
         workspace_name, old_commit, new_commit))
 
