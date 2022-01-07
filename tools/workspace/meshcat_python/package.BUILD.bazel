@@ -23,6 +23,8 @@ py_binary(
     name = "meshcat-server",
     srcs = ["@drake//tools/workspace/meshcat_python:meshcat-server.py"],
     legacy_create_init = 0,
+    python_version = "PY3",
+    srcs_version = "PY3",
     visibility = ["//visibility:public"],
     deps = [":meshcat"],
 )
