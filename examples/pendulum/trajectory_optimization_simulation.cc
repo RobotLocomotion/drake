@@ -41,6 +41,7 @@ int DoMain() {
   systems::trajectory_optimization::DirectCollocation dircol(
       pendulum.get(), *context, kNumTimeSamples, kMinimumTimeStep,
       kMaximumTimeStep);
+  auto& prog = dircol.prog();
 
   dircol.AddEqualTimeIntervalsConstraints();
 
@@ -57,9 +58,9 @@ int DoMain() {
   final_state.set_theta(M_PI);
   final_state.set_thetadot(0.0);
 
-  dircol.AddLinearConstraint(dircol.initial_state() ==
+  prog.AddLinearConstraint(dircol.initial_state() ==
                              initial_state.value());
-  dircol.AddLinearConstraint(dircol.final_state() == final_state.value());
+  prog.AddLinearConstraint(dircol.final_state() == final_state.value());
 
   const double R = 10;  // Cost on input "effort".
   dircol.AddRunningCost((R * u) * u);

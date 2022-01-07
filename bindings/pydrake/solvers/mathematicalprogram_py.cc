@@ -20,6 +20,7 @@
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 #include "drake/solvers/solver_type_converter.h"
+#include "drake/systems/trajectory_optimization/multiple_shooting.h"
 
 using Eigen::Dynamic;
 using std::string;
@@ -1900,7 +1901,32 @@ void BindFreeFunctions(py::module m) {
               const std::optional<SolverOptions>&>(&solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
-      .def("GetProgramType", &solvers::GetProgramType, doc.GetProgramType.doc);
+      .def("GetProgramType", &solvers::GetProgramType, doc.GetProgramType.doc)
+      // The following Solve() methods are placed here to be in the
+      // mathematicalprogram module, so as not to provide a conflicting Solve
+      // method in the trajectory optimization module.
+      .def("Solve",
+          overload_cast_explicit<solvers::MathematicalProgramResult,
+              const systems::trajectory_optimization::MultipleShooting&>(
+              &systems::trajectory_optimization::Solve),
+          py::arg("trajopt"),
+          pydrake_doc.drake.systems.trajectory_optimization.Solve.doc)
+      .def("Solve",
+          overload_cast_explicit<solvers::MathematicalProgramResult,
+              const systems::trajectory_optimization::MultipleShooting&,
+              const Eigen::Ref<const Eigen::VectorXd>&>(
+              &systems::trajectory_optimization::Solve),
+          py::arg("trajopt"), py::arg("initial_guess"),
+          pydrake_doc.drake.systems.trajectory_optimization.Solve.doc)
+      .def("Solve",
+          overload_cast_explicit<solvers::MathematicalProgramResult,
+              const systems::trajectory_optimization::MultipleShooting&,
+              const std::optional<Eigen::VectorXd>&,
+              const std::optional<solvers::SolverOptions>&>(
+              &systems::trajectory_optimization::Solve),
+          py::arg("trajopt"), py::arg("initial_guess"),
+          py::arg("solver_options"),
+          pydrake_doc.drake.systems.trajectory_optimization.Solve.doc);
 }
 
 PYBIND11_MODULE(mathematicalprogram, m) {

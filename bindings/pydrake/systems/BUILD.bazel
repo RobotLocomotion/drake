@@ -179,6 +179,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["trajectory_optimization_py.cc"],
     package_info = PACKAGE_INFO,
@@ -188,6 +189,7 @@ drake_pybind_library(
         "//bindings/pydrake/solvers:mathematicalprogram_py",
         "//bindings/pydrake:trajectories_py",
     ],
+    py_srcs = ["_trajectory_optimization_extra.py"],
 )
 
 # TODO(eric.cousineau): Put this under test once `pydot` is in
