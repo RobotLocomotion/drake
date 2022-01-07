@@ -44,6 +44,7 @@ drake_cc_library(
         "//common/trajectories:piecewise_polynomial",
         "//solvers:ipopt_solver",
         "//solvers:mathematical_program",
+        "//solvers:solve",
     ],
 )
 

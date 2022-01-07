@@ -20,6 +20,7 @@
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 #include "drake/solvers/solver_type_converter.h"
+#include "drake/systems/trajectory_optimization/multiple_shooting.h"
 
 using Eigen::Dynamic;
 using std::string;
@@ -1900,7 +1901,21 @@ void BindFreeFunctions(py::module m) {
               const std::optional<SolverOptions>&>(&solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
-      .def("GetProgramType", &solvers::GetProgramType, doc.GetProgramType.doc);
+      .def("GetProgramType", &solvers::GetProgramType, doc.GetProgramType.doc)
+      // The following Solve() methods are placed here to be in the
+      // mathematicalprogram module, so as not to provide a conflicting Solve
+      // method in the trajectory optimization module.
+      .def(
+          "Solve",
+          [](const systems::trajectory_optimization::MultipleShooting&
+                  trajopt) {
+            WarnDeprecated(
+                "The trajectory optimization classes no longer derive from "
+                "MathematicalProgram.  Use Solve(trajopt.prog()).",
+                "2022-05-01");
+            return Solve(trajopt.prog());
+          },
+          py::arg("trajopt"), "This method calls Solve(trajopt.prog()).");
 }
 
 PYBIND11_MODULE(mathematicalprogram, m) {

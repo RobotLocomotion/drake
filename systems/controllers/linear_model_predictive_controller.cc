@@ -92,23 +92,25 @@ VectorX<T> LinearModelPredictiveController<T>::SetupAndSolveQp(
   const int kNumSampleTimes =
       static_cast<int>(time_horizon_ / time_period_ + 0.5);
 
-  DirectTranscription prog(linear_model_.get(), *base_context_,
-                           kNumSampleTimes);
+  DirectTranscription dirtran(linear_model_.get(), *base_context_,
+                              kNumSampleTimes);
+  auto& prog = dirtran.prog();
 
-  const auto state_error = prog.state();
-  const auto input_error = prog.input();
+  const auto state_error = dirtran.state();
+  const auto input_error = dirtran.input();
 
-  prog.AddRunningCost(state_error.transpose() * Q_ * state_error +
-                      input_error.transpose() * R_ * input_error);
+  dirtran.AddRunningCost(state_error.transpose() * Q_ * state_error +
+                         input_error.transpose() * R_ * input_error);
 
   const VectorX<T> state_ref =
       base_context.get_discrete_state().get_vector().CopyToVector();
-  prog.AddLinearConstraint(prog.initial_state() == current_state - state_ref);
+  prog.AddLinearConstraint(dirtran.initial_state() ==
+                           current_state - state_ref);
 
   const auto result = Solve(prog);
   DRAKE_DEMAND(result.is_success());
 
-  return prog.GetInputSamples(result).col(0);
+  return dirtran.GetInputSamples(result).col(0);
 }
 
 template class LinearModelPredictiveController<double>;
