@@ -4,6 +4,7 @@ import warnings
 
 import numpy as np
 
+from pydrake.common.deprecation import DrakeDeprecationWarning
 from pydrake.examples.pendulum import PendulumPlant
 from pydrake.trajectories import PiecewisePolynomial
 from pydrake.solvers import mathematicalprogram as mp
@@ -82,7 +83,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
         dircol.AddCompleteTrajectoryCallback(callback=complete_callback,
                                              names=["test"])
 
-        result = mp.Solve(dircol)
+        result = mp.Solve(dircol.prog())
         self.assertTrue(was_called["input"])
         self.assertTrue(was_called["state"])
         self.assertTrue(was_called["complete"])
@@ -99,7 +100,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
         AddDirectCollocationConstraint(constraint, dircol.timestep(0),
                                        dircol.state(0), dircol.state(1),
                                        dircol.input(0), dircol.input(1),
-                                       dircol)
+                                       dircol.prog())
 
     def test_direct_transcription(self):
         # Integrator.
@@ -129,7 +130,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
         initial_x = PiecewisePolynomial()
         dirtran.SetInitialTrajectory(initial_u, initial_x)
 
-        result = mp.Solve(dirtran)
+        result = mp.Solve(dirtran.prog())
         times = dirtran.GetSampleTimes(result)
         inputs = dirtran.GetInputSamples(result)
         states = dirtran.GetStateSamples(result)
@@ -142,4 +143,39 @@ class TestTrajectoryOptimization(unittest.TestCase):
         context = plant.CreateDefaultContext()
         dirtran = DirectTranscription(plant, context, num_time_samples=3,
                                       fixed_timestep=TimeStep(0.1))
-        self.assertEqual(len(dirtran.linear_equality_constraints()), 3)
+        with warnings.catch_warnings():
+            warnings.simplefilter("once", DrakeDeprecationWarning)
+            self.assertEqual(len(dirtran.linear_equality_constraints()), 3)
+        self.assertEqual(len(dirtran.prog().linear_equality_constraints()), 3)
+
+    def test_deprecated_math_prog_methods(self):
+        plant = LinearSystem(A=[0.], B=[1.], C=[1.], D=[0.])
+        context = plant.CreateDefaultContext()
+        dirtran = DirectTranscription(plant, context, num_time_samples=3,
+                                      fixed_timestep=TimeStep(0.1))
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("once", DrakeDeprecationWarning)
+            dirtran.num_vars()
+            self.assertEqual(len(w), 1)
+            expected_message = ("Use trajopt.prog().num_vars(...) instead "
+                                "of trajopt.num_vars(...).")
+            self.assertIn(expected_message, str(w[0].message))
+
+        # Test a small subset of the exhaustive list.
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("once", DrakeDeprecationWarning)
+            x = dirtran.NewContinuousVariables(3, 'x')
+            dirtran.AddCost(x[0] + 2)
+            dirtran.AddLinearCost(x[0])
+            dirtran.AddConstraint(x[1] == x[2])
+            self.assertEqual(len(w), 4)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("once", DrakeDeprecationWarning)
+            result = mp.Solve(dirtran)
+            self.assertEqual(len(w), 1)
+            expected_message = (
+                "The trajectory optimization classes no longer derive from "
+                "MathematicalProgram.  Use Solve(trajopt.prog()).")
+            self.assertIn(expected_message, str(w[0].message))
