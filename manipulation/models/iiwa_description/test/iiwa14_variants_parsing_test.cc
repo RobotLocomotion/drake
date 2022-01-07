@@ -12,7 +12,7 @@ namespace manipulation {
 namespace {
 
 // Read the canonical plant from main SDFormat model
-multibody::ModelInstanceIndex LoadCanonicalModel(
+multibody::ModelInstanceIndex LoadIiwa14CanonicalModel(
     multibody::MultibodyPlant<double>* plant) {
   const std::string canonical_model_file(
       FindResourceOrThrow("drake/manipulation/models/iiwa_description/sdf/"
@@ -46,7 +46,7 @@ void CompareActuatorLimits(const multibody::JointActuator<double>& joint_a,
 GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValues) {
   multibody::MultibodyPlant<double> canonical_plant(0.0);
   multibody::ModelInstanceIndex canonical_model_instance =
-      LoadCanonicalModel(&canonical_plant);
+      LoadIiwa14CanonicalModel(&canonical_plant);
   canonical_plant.Finalize();
 
   const std::vector<multibody::JointIndex> joint_canonical_indices =
@@ -91,7 +91,7 @@ GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValues) {
 GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValuesPlanarModel) {
   multibody::MultibodyPlant<double> canonical_plant(0.0);
   multibody::ModelInstanceIndex canonical_model_instance =
-      LoadCanonicalModel(&canonical_plant);
+      LoadIiwa14CanonicalModel(&canonical_plant);
   canonical_plant.Finalize();
 
   const std::vector<multibody::JointIndex> joint_canonical_indices =
