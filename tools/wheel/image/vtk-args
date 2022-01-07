@@ -1,3 +1,4 @@
+# NOTE: need to update this file?  Refer to tools/workspace/vtk/README.md.
 # Basic build configuration.  NOTE: wheel builds should be static.
 CMAKE_BUILD_TYPE:STRING=Release
 BUILD_SHARED_LIBS:BOOL=OFF

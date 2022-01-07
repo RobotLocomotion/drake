@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# NOTE: need to update this file?  Refer to tools/workspace/vtk/README.md.
+
 set -eu -o pipefail
 
 readonly VTK_VERSION=9.1.0

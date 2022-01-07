@@ -12,6 +12,8 @@ robotlocomotion/director tap
 Archive naming convention:
     vtk-<version>-<build_number>-<platform>-<arch>.tar.gz
 
+See also: image/package.sh.
+
 Example:
     WORKSPACE:
         load("@drake//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
@@ -150,38 +152,8 @@ licenses([
 ])
 """
 
-    # The following are either internal VTK libraries, or thirdparty libraries
-    # bundled into the build.  We only create library targets for
-    # enough of VTK to support those used directly or indirectly by Drake.
-    #
-    # For the most part, the linux and macOS builds of VTK have the same
-    # configuration options, with the exception of `pugixml`.  The manylinux
-    # switches are for the pip wheel builds.  Build arg locations:
-    #
-    #     Linux: /tools/workspace/vtk/image/vtk-args
-    #     macOS: https://github.com/RobotLocomotion/homebrew-director
-    #     manylinux: /tools/wheel/image/vtk-args
-    #
-    # For each library, it is necessary to supply the appropriate dependencies
-    # as well as for manylinux (wheel) supply the appropriate linker flags for
-    # -ldl, and -lpthread.  Each internal / private library from VTK is all
-    # lower case, put the following in a script to enumerate the dependencies
-    # and encode them appropriately below:
-    #
-    #     from pathlib import Path
-    #     import subprocess
-    #
-    #     this_file_dir = Path(__file__).parent.absolute()
-    #
-    #     # NOTE: update "x" to wherever you have extracted the VTK .tar.gz.
-    #     lib_dir = this_file_dir / "x" / "lib"
-    #     for lib in sorted(lib_dir.glob("*.so")):
-    #         if lib.name.lower() == lib.name:
-    #             vsep = "*" * 44
-    #             print(f"{vsep}\n* {lib.name}\n{vsep}")
-    #             subprocess.run(["ldd", str(lib)])
-    #
-    # The vtkkwiml library is the only exception, its headers are needed.
+    ###########################################################################
+    # VTK "Private" Libraries (See: tools/workspace/vtk/README.md)
     file_content += _vtk_cc_library(os_result, "vtkfmt")
 
     # NOTE: see /tools/wheel/image/vtk-args, this is to avoid packaging glew.
@@ -240,40 +212,7 @@ licenses([
         file_content += _vtk_cc_library(os_result, "vtksys")
 
     ###########################################################################
-    # To see what the VTK module dependencies are, you can inspect VTK's source
-    # tree. For example, for vtkCommonCore and vtkCommonDataModel:
-    #
-    #   VTK/Common/Core/vtk.module
-    #   VTK/Common/DataModel/vtk.module
-    #
-    # Make sure to include the sections from both DEPENDS and PRIVATE_DEPENDS.
-    # The vtk.module file will help determine what the `deps` field for a given
-    # library should be.  Where header files are concerned, a bit of manual
-    # effort is required to determine which header files to include.  You can
-    # obtain a full list of header files a given VTK module produces by running
-    # the `find_vtk_headers.py` file.  This full list can be used to determine
-    # which libraries drake is actually consuming.  You can obtain the current
-    # list of header files drake uses by:
-    #
-    #     grep -rh '#include <vtk.*\.h>' . | sort | uniq > headers.txt
-    #
-    # and compare with the list(s) produced by `find_vtk_headers.py` to
-    # determine which VTK modules are needed *directly* by drake.  With your
-    # list of direct dependencies, the vtk.module dependencies will enumerate
-    # the indirect dependencies of libraries consumed by drake.  At the time of
-    # writing this, drake depends directly on:
-    #
-    #     vtkCommonCore, vtkCommonDataModel, vtkCommonExecutionModel,
-    #     vtkCommonTransforms, vtkFiltersGeneral, vtkFiltersSources,
-    #     vtkIOExport, vtkIOGeometry, vtkIOImage, vtkIOImport,
-    #     vtkRenderingCore, vtkRenderingOpenGL2
-    #
-    # While there may be a more direct way to solve which transitive headers
-    # are needed (e.g., with IWYU), the header list for each library below
-    # started by enumerating every header available (commented out) and
-    # iteratively re-compiling / un-commenting a given header file until all
-    # compilation errors were resolved.  Then delete all remaining commented
-    # out header files.
+    # VTK "Public" Libraries (See: tools/workspace/vtk/README.md)
 
     # Indirect dependency: omit headers.
     file_content += _vtk_cc_library(
