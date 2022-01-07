@@ -20,5 +20,7 @@ py_binary(
         "src/xacro/**/*.py",
     ], allow_empty = False),
     imports = ["src"],
+    python_version = "PY3",
+    srcs_version = "PY3",
     visibility = ["//visibility:public"],
 )
