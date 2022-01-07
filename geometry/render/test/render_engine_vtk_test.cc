@@ -493,7 +493,7 @@ TEST_F(RenderEngineVtkTest, NoBodyTest) {
   Init(RigidTransformd::Identity());
   Render();
 
-  VerifyUniformColor(kBgColor, 0u);
+  VerifyUniformColor(kBgColor, 255u);
   VerifyUniformLabel(RenderLabel::kEmpty);
   VerifyUniformDepth(std::numeric_limits<float>::infinity());
 }
@@ -506,7 +506,7 @@ TEST_F(RenderEngineVtkTest, ControlBackgroundColor) {
         {}, {}, Vector3d{bg.r / 255., bg.g / 255., bg.b / 255.}};
     RenderEngineVtk engine(params);
     Render(&engine);
-    VerifyUniformColor(bg, 0u);
+    VerifyUniformColor(bg, 255u);
   }
 }
 
@@ -1560,7 +1560,7 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderLabelImage(color_camera, &label);
 
     SCOPED_TRACE("Far plane in front of scene");
-    VerifyUniformColor(kBgColor, 0u, &color);
+    VerifyUniformColor(kBgColor, 255u, &color);
     VerifyUniformLabel(RenderLabel::kEmpty, &label);
     VerifyUniformDepth(std::numeric_limits<float>::infinity(), &depth);
   }
@@ -1584,7 +1584,7 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderLabelImage(color_camera, &label);
 
     SCOPED_TRACE("Near plane beyond scene");
-    VerifyUniformColor(kBgColor, 0u, &color);
+    VerifyUniformColor(kBgColor, 255u, &color);
     VerifyUniformLabel(RenderLabel::kEmpty, &label);
     VerifyUniformDepth(std::numeric_limits<float>::infinity(), &depth);
   }
