@@ -63,7 +63,7 @@ Hyperellipsoid HPolyhedron::MaximumVolumeInscribedEllipsoid() const {
   VectorXDecisionVariable d = prog.NewContinuousVariables(N, "d");
 
   // max log det (C).  This method also imposes C ≽ 0.
-  prog.AddMaximizeLogDeterminantSymmetricMatrixCost(C.cast<Expression>());
+  prog.AddMaximizeLogDeterminantCost(C.cast<Expression>());
   // |aᵢC|₂ ≤ bᵢ - aᵢd, ∀i
   // TODO(russt): We could potentially avoid Expression parsing here by using
   // AddLorentzConeConstraint(A,b,vars), but it's nontrivial because of the
