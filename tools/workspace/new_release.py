@@ -65,8 +65,10 @@ _IGNORED_REPOSITORIES = [
 _OVERLOOK_RELEASE_REPOSITORIES = {
     "github3_py": r"^(\d+.)",
     "intel_realsense_ros": r"^(\d+\.\d+\.)",
+    "petsc": r"^v(\d+\.)",
     "pycodestyle": "",
     "ros_xacro": r"^(\d+\.\d+\.)",
+    "qhull": r"^(\d+\.)",
 }
 
 
@@ -95,6 +97,14 @@ def _smells_like_a_git_commit(revision):
     return len(revision) == 40
 
 
+def _is_stable_release(commit):
+    """Returns true iff commit seems to be a stable release (as opposed to
+    alpha, beta, rc, etc.)
+    """
+    development_stages = ["alpha", "beta", "rc", "pre"]
+    return not any(stage in commit for stage in development_stages)
+
+
 def _handle_github(workspace_name, gh, data):
     time.sleep(0.2)  # Don't make github angry.
     old_commit = data["commit"]
@@ -109,8 +119,13 @@ def _handle_github(workspace_name, gh, data):
     # Sometimes prefer checking only tags, not releases.
     tags_pattern = _OVERLOOK_RELEASE_REPOSITORIES.get(workspace_name)
     if tags_pattern == "":
-        new_commit = next(gh_repo.tags()).name
-        return old_commit, new_commit
+        for tag in gh_repo.tags():
+            new_commit = tag.name
+            if _is_stable_release(new_commit):
+                return old_commit, new_commit
+            else:
+                print("Skipping non-stable release {} for {}".format(
+                    new_commit, workspace_name))
 
     # Sometimes limit candidate tags to those matching a regex.
     if tags_pattern is not None:
@@ -123,15 +138,32 @@ def _handle_github(workspace_name, gh, data):
                 (new_hit,) = match.groups()
                 if old_hit == new_hit:
                     new_commit = tag.name
-                    break
+                    if _is_stable_release(new_commit):
+                        break
+                    else:
+                        print("Skipping non-stable release {} for {}".format(
+                            new_commit, workspace_name))
         return old_commit, new_commit
 
     # By default, use the latest release if there is one.  Otherwise, use the
     # latest tag.
     try:
         new_commit = gh_repo.latest_release().tag_name
+        if _is_stable_release(new_commit):
+            return old_commit, new_commit
+        else:
+            print("Skipping non-stable release {} for {}".format(
+                new_commit, workspace_name))
     except github3.exceptions.NotFoundError:
-        new_commit = next(gh_repo.tags()).name
+        pass
+
+    for tag in gh_repo.tags():
+        new_commit = tag.name
+        if _is_stable_release(new_commit):
+            return old_commit, new_commit
+        else:
+            print("Skipping non-stable release {} for {}".format(
+                new_commit, workspace_name))
     return old_commit, new_commit
 
 
