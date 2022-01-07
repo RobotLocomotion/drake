@@ -152,10 +152,11 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   ///   same frame E as `this` spatial velocity V_WBp_E.
   /// @retval 6-element representation of the power of spatial force F_Bp_E in
   ///   frame W, equal to F_Bp_E ⋅ V_WBp_E.
-  /// @note Just as equating force 𝐅 to mass times acceleration as 𝐅 = m𝐚 relies
+  /// @note Just as equating force 𝐅 to mass * acceleration as 𝐅 = m𝐚 relies
   ///   on acceleration 𝐚 being measured in a world frame W (also called a
   ///   Newtonian or inertial frame), equating power = dK/dt (where K is
   ///   kinetic energy) relies on K being measured in a world frame W.
+  ///   It is unusual to call this method unless frame W is the world frame.
   /// @note Although the spatial vectors F_Bp_E and V_WBp_E must have the same
   ///   expressed-in frame E, the result is independent of that frame.
   inline T dot(const SpatialForce<T>& F_Q_E) const;
