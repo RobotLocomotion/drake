@@ -225,12 +225,19 @@ TEST_F(SymbolicPolynomialTest, AdditionPolynomialMonomial) {
   // (Polynomial(e) + m).ToExpression() = (e + m.ToExpression()).Expand()
   // (m + Polynomial(e)).ToExpression() = (m.ToExpression() + e).Expand()
   for (const Expression& e : exprs_) {
+    const symbolic::Polynomial p{e};
     for (int i = 0; i < monomials_.size(); ++i) {
       const Monomial& m{monomials_[i]};
-      EXPECT_PRED2(ExprEqual, (Polynomial(e) + m).ToExpression(),
+      const symbolic::Polynomial sum1 = p + m;
+      const symbolic::Polynomial sum2 = m + p;
+      EXPECT_PRED2(ExprEqual, sum1.ToExpression(),
                    (e + m.ToExpression()).Expand());
-      EXPECT_PRED2(ExprEqual, (m + Polynomial(e)).ToExpression(),
+      EXPECT_PRED2(ExprEqual, sum2.ToExpression(),
                    (m.ToExpression() + e).Expand());
+      EXPECT_EQ(sum1.indeterminates(), p.indeterminates() + m.GetVariables());
+      EXPECT_EQ(sum2.indeterminates(), p.indeterminates() + m.GetVariables());
+      EXPECT_EQ(sum1.decision_variables(), p.decision_variables());
+      EXPECT_EQ(sum2.decision_variables(), p.decision_variables());
     }
   }
   // Test Polynomial& operator+=(const Monomial& m);
@@ -238,9 +245,13 @@ TEST_F(SymbolicPolynomialTest, AdditionPolynomialMonomial) {
     for (int i = 0; i < monomials_.size(); ++i) {
       const Monomial& m{monomials_[i]};
       Polynomial p{e};
+      const symbolic::Variables e_indeterminates = p.indeterminates();
+      const symbolic::Variables e_decision_variables = p.decision_variables();
       p += m;
       EXPECT_PRED2(ExprEqual, p.ToExpression(),
                    (e + m.ToExpression()).Expand());
+      EXPECT_EQ(p.indeterminates(), e_indeterminates + m.GetVariables());
+      EXPECT_EQ(p.decision_variables(), e_decision_variables);
     }
   }
 }
@@ -388,17 +399,33 @@ TEST_F(SymbolicPolynomialTest, MultiplicationPolynomialPolynomial1) {
   // (Polynomial(e₁) * Polynomial(e₂)).ToExpression() = (e₁ * e₂).Expand()
   for (const Expression& e1 : exprs_) {
     for (const Expression& e2 : exprs_) {
-      EXPECT_PRED2(ExprEqual, (Polynomial{e1} * Polynomial{e2}).ToExpression(),
+      const symbolic::Polynomial p1{e1};
+      const symbolic::Polynomial p2{e2};
+      const symbolic::Polynomial product = p1 * p2;
+      EXPECT_PRED2(ExprEqual, product.ToExpression(),
                    (e1.Expand() * e2.Expand()).Expand());
+      // After multiplication, the product's indeterminates should be the union
+      // of p1's indeterminates and p2's indeterminates. Same for the decision
+      // variables.
+      EXPECT_EQ(product.indeterminates(),
+                p1.indeterminates() + p2.indeterminates());
+      EXPECT_EQ(product.decision_variables(),
+                p1.decision_variables() + p2.decision_variables());
     }
   }
   // Test Polynomial& operator*=(Polynomial& c);
   for (const Expression& e1 : exprs_) {
     for (const Expression& e2 : exprs_) {
       Polynomial p{e1};
-      p *= Polynomial{e2};
+      const symbolic::Variables e1_indeterminates = p.indeterminates();
+      const symbolic::Variables e1_decision_variables = p.decision_variables();
+      const symbolic::Polynomial p2{e2};
+      p *= p2;
       EXPECT_PRED2(ExprEqual, p.ToExpression(),
                    (e1.Expand() * e2.Expand()).Expand());
+      EXPECT_EQ(p.indeterminates(), e1_indeterminates + p2.indeterminates());
+      EXPECT_EQ(p.decision_variables(),
+                e1_decision_variables + p2.decision_variables());
     }
   }
 }
@@ -409,10 +436,19 @@ TEST_F(SymbolicPolynomialTest, MultiplicationPolynomialMonomial) {
   for (const Expression& e : exprs_) {
     for (int i = 0; i < monomials_.size(); ++i) {
       const Monomial& m{monomials_[i]};
-      EXPECT_PRED2(ExprEqual, (Polynomial(e) * m).ToExpression(),
+      const symbolic::Polynomial p{e};
+      const symbolic::Polynomial product1 = p * m;
+      const symbolic::Polynomial product2 = m * p;
+      EXPECT_PRED2(ExprEqual, product1.ToExpression(),
                    (e * m.ToExpression()).Expand());
-      EXPECT_PRED2(ExprEqual, (m * Polynomial(e)).ToExpression(),
+      EXPECT_PRED2(ExprEqual, product2.ToExpression(),
                    (m.ToExpression() * e).Expand());
+      EXPECT_EQ(product1.indeterminates(),
+                p.indeterminates() + m.GetVariables());
+      EXPECT_EQ(product2.indeterminates(),
+                p.indeterminates() + m.GetVariables());
+      EXPECT_EQ(product1.decision_variables(), p.decision_variables());
+      EXPECT_EQ(product2.decision_variables(), p.decision_variables());
     }
   }
   // Test Polynomial& operator*=(const Monomial& m);
