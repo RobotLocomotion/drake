@@ -13,6 +13,7 @@
 #include "drake/bindings/pydrake/symbolic_py_unapply.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/common/symbolic_decompose.h"
+#include "drake/common/symbolic_latex.h"
 
 #pragma GCC diagnostic push
 // Apple LLVM version 10.0.1 (clang-1001.0.46.3) and Clang version 7.0.0 add
@@ -850,6 +851,26 @@ PYBIND11_MODULE(symbolic, m) {
         return Jacobian(f, vars);
       },
       py::arg("f"), py::arg("vars"), doc.Jacobian.doc_polynomial);
+
+  m.def("ToLatex",
+      overload_cast_explicit<std::string, const Expression&, int>(&ToLatex),
+      py::arg("e"), py::arg("precision") = 3, doc.ToLatex.doc_expression);
+  m.def("ToLatex",
+      overload_cast_explicit<std::string, const Formula&, int>(&ToLatex),
+      py::arg("f"), py::arg("precision") = 3, doc.ToLatex.doc_formula);
+
+  m.def(
+      "ToLatex",
+      [](const MatrixX<Expression>& M, int precision) {
+        return ToLatex(M, precision);
+      },
+      py::arg("M"), py::arg("precision") = 3, doc.ToLatex.doc_matrix);
+  m.def(
+      "ToLatex",
+      [](const MatrixX<double>& M, int precision) {
+        return ToLatex(M, precision);
+      },
+      py::arg("M"), py::arg("precision") = 3, doc.ToLatex.doc_matrix);
 
   // We have this line because pybind11 does not permit transitive
   // conversions. See
