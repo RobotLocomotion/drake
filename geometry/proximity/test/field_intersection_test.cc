@@ -2,10 +2,20 @@
 
 #include <memory>
 
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/proximity/contact_surface_utility.h"
+#include "drake/geometry/proximity/make_box_field.h"
+#include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/geometry/proximity/make_sphere_field.h"
+#include "drake/geometry/proximity/make_sphere_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh_field.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
+#include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -16,6 +26,7 @@ namespace {
 using Eigen::Vector3d;
 using math::RigidTransformd;
 using math::RollPitchYawd;
+using math::RotationMatrixd;
 
 // This fixture is for intersection of two tetrahedra with linear functions.
 // We set up the tetrahedra and linear functions in such a way that
@@ -177,6 +188,124 @@ TEST_F(FieldIntersectionLowLevelTest, CalcEquilibriumPlaneNone) {
     const Vector3d p_FQ(0.1, 0.2, 0.3);
     const double expected_height = init_plane_M.CalcHeight<double>(p_FQ);
     EXPECT_EQ(plane_M.CalcHeight<double>(p_FQ), expected_height);
+  }
+}
+
+TEST_F(FieldIntersectionLowLevelTest, IntersectPlaneTetrahedron) {
+  const int first_element_in_field0{0};
+  // Define the X-Y plane in frame M.
+  const Plane<double> plane_M(Vector3d::UnitZ(), Vector3d::Zero());
+
+  std::vector<Vector3d> polygon_M;
+  IntersectPlaneTetrahedron(first_element_in_field0, field0_M_, plane_M,
+                            &polygon_M);
+
+  EXPECT_EQ(polygon_M.size(), 4);
+}
+
+TEST_F(FieldIntersectionLowLevelTest, IntersectTetrahedra) {
+  const int first_element_in_field0{0};
+  const int first_element_in_field1{0};
+  const RigidTransformd identity_X_MN = RigidTransformd::Identity();
+  Plane<double> plane_M{Vector3d::UnitZ(), Vector3d::Zero()};
+  bool success = CalcEquilibriumPlane(first_element_in_field0, field0_M_,
+                                      first_element_in_field1, field1_N_,
+                                      identity_X_MN, &plane_M);
+  ASSERT_TRUE(success);
+
+  Vector3d normal_M;
+  const std::vector<Vector3d> polygon_M = IntersectTetrahedra(
+      first_element_in_field0, field0_M_, first_element_in_field1, field1_N_,
+      identity_X_MN, plane_M);
+
+  EXPECT_EQ(polygon_M.size(), 8);
+}
+
+class FieldIntersectionHighLevelTest : public ::testing::Test {
+ public:
+  FieldIntersectionHighLevelTest()
+      : box_mesh0_M_(MakeBoxVolumeMeshWithMa<double>(box_)),
+        box_field0_M_(MakeBoxPressureField<double>(box_, &box_mesh0_M_,
+                                                   kBoxElasitcModulus_)),
+        box_bvh0_M_(box_mesh0_M_),
+        // Get a mesh of an octahedron from a sphere specification by
+        // specifying very coarse resolution hint.
+        octahedron_mesh1_N_(MakeSphereVolumeMesh<double>(
+            sphere_, 10 * sphere_.radius(),
+            TessellationStrategy::kSingleInteriorVertex)),
+        octahedron_field1_N_(MakeSpherePressureField<double>(
+            sphere_, &octahedron_mesh1_N_, kOctahedronElasticModulus_)),
+        octahedron_bvh1_N_(octahedron_mesh1_N_) {}
+
+ protected:
+  void SetUp() override {
+    ASSERT_EQ(octahedron_mesh1_N_.num_elements(), 8);
+  }
+
+  // Geometry 0 and its field.
+  const Box box_{0.06, 0.10, 0.14};  // 6cm-thick compliant pad.
+  const double kBoxElasitcModulus_{1.0e5};
+  const VolumeMesh<double> box_mesh0_M_;
+  const VolumeMeshFieldLinear<double, double> box_field0_M_;
+  const Bvh<Obb, VolumeMesh<double>> box_bvh0_M_;
+
+  // Geometry 1 and its field.
+  const Sphere sphere_{0.03};  // 3cm-radius (6cm-diameter) finger tip.
+  const double kOctahedronElasticModulus_{1.0e5};
+  const VolumeMesh<double> octahedron_mesh1_N_;
+  const VolumeMeshFieldLinear<double, double> octahedron_field1_N_;
+  const Bvh<Obb, VolumeMesh<double>> octahedron_bvh1_N_;
+};
+
+TEST_F(FieldIntersectionHighLevelTest, FieldIntersection) {
+  const RigidTransformd X_MN = RigidTransformd::Identity();
+  std::vector<Vector3<double>> grad_eM_Ms;
+  std::vector<Vector3<double>> grad_eN_Ms;
+  {
+    SCOPED_TRACE("Use TriMeshBuilder.");
+    std::unique_ptr<TriangleSurfaceMesh<double>> surface_MN_M;
+    std::unique_ptr<TriangleSurfaceMeshFieldLinear<double, double>> e_MN_M;
+    FieldIntersection(box_field0_M_, box_bvh0_M_,
+                      octahedron_field1_N_, octahedron_bvh1_N_, X_MN,
+                      TriMeshBuilder<double>(),
+                      &surface_MN_M, &e_MN_M, &grad_eM_Ms, &grad_eN_Ms);
+
+    EXPECT_TRUE(surface_MN_M);
+  }
+  {
+    SCOPED_TRACE("Use PolyMeshBuilder.");
+    std::unique_ptr<PolygonSurfaceMesh<double>> surface_MN_M;
+    std::unique_ptr<PolygonSurfaceMeshFieldLinear<double, double>> e_MN_M;
+    FieldIntersection(box_field0_M_, box_bvh0_M_,
+                      octahedron_field1_N_, octahedron_bvh1_N_, X_MN,
+                      PolyMeshBuilder<double>(),
+                      &surface_MN_M, &e_MN_M, &grad_eM_Ms, &grad_eN_Ms);
+
+    EXPECT_TRUE(surface_MN_M);
+  }
+}
+
+TEST_F(FieldIntersectionHighLevelTest,
+       ComputeContactSurfaceFromCompliantVolumes) {
+  GeometryId first_id = GeometryId::get_new_id();
+  GeometryId second_id = GeometryId::get_new_id();
+  const RigidTransformd X_WM = RigidTransformd::Identity();
+  const RigidTransformd X_WN = RigidTransformd::Identity();
+  {
+    SCOPED_TRACE("Request triangle contact surfaces.");
+    std::unique_ptr<ContactSurface<double>> contact_patch_W =
+        ComputeContactSurfaceFromCompliantVolumes(
+            first_id, box_field0_M_, box_bvh0_M_, X_WM,
+            second_id, octahedron_field1_N_, octahedron_bvh1_N_, X_WN,
+            HydroelasticContactRepresentation::kTriangle);
+  }
+  {
+    SCOPED_TRACE("Request triangle contact surfaces.");
+    std::unique_ptr<ContactSurface<double>> contact_patch_W =
+        ComputeContactSurfaceFromCompliantVolumes(
+            first_id, box_field0_M_, box_bvh0_M_, X_WM,
+            second_id, octahedron_field1_N_, octahedron_bvh1_N_, X_WN,
+            HydroelasticContactRepresentation::kPolygon);
   }
 }
 
