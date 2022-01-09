@@ -9,7 +9,7 @@ filegroup(
     srcs = [
         "models/box.urdf",
         "models/box_small.urdf",
-    ],
+    ] + glob(["models/mujoco_gym/*.xml"]),
 )
 
 add_lint_tests()
