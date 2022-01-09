@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/examples/rimless_wheel/rimless_wheel.h"
 #include "drake/math/autodiff.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
@@ -718,6 +719,24 @@ GTEST_TEST(DirectCollocation, IgnoreNonContinuousState) {
   const auto result = Solve(prog);
   EXPECT_TRUE(result.is_success());
 }
+
+GTEST_TEST(DirectCollocation, DiscreteTimeSystemThrows) {
+  const Vector1d one{1.0};
+  const double time_period = 0.1;
+  const LinearSystem<double> plant(one, one, one, one, time_period);
+  auto context = plant.CreateDefaultContext();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(DirectCollocationConstraint(plant, *context),
+                              ".*doesn't have any continuous states.*");
+
+  const int kNumSamples = 15;
+  const double kMinStep = 0.01;
+  const double kMaxStep = 0.1;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DirectCollocation(&plant, *context, kNumSamples, kMinStep, kMaxStep),
+      ".*doesn't have any continuous states.*");
+}
+
 }  // anonymous namespace
 }  // namespace trajectory_optimization
 }  // namespace systems

@@ -18,6 +18,17 @@ using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
 using trajectories::PiecewisePolynomial;
 
+namespace {
+int CheckAndReturnStates(int states) {
+  if (states <= 0) {
+    throw std::logic_error(
+        "This system doesn't have any continuous states. DirectCollocation "
+        "only makes sense for systems with continuous-time dynamics.");
+  }
+  return states;
+}
+}  // namespace
+
 DirectCollocationConstraint::DirectCollocationConstraint(
     const System<double>& system, const Context<double>& context,
     std::variant<InputPortSelection, InputPortIndex> input_port_index,
@@ -34,7 +45,8 @@ DirectCollocationConstraint::DirectCollocationConstraint(
     int num_states, int num_inputs,
     std::variant<InputPortSelection, InputPortIndex> input_port_index,
     bool assume_non_continuous_states_are_fixed)
-    : Constraint(num_states, 1 + (2 * num_states) + (2 * num_inputs),
+    : Constraint(CheckAndReturnStates(num_states),
+                 1 + (2 * num_states) + (2 * num_inputs),
                  Eigen::VectorXd::Zero(num_states),
                  Eigen::VectorXd::Zero(num_states)),
       system_(System<double>::ToAutoDiffXd(system)),
@@ -156,8 +168,8 @@ DirectCollocation::DirectCollocation(
           system->get_input_port_selection(input_port_index)
               ? system->get_input_port_selection(input_port_index)->size()
               : 0,
-          context.num_continuous_states(), num_time_samples,
-          minimum_timestep, maximum_timestep),
+          CheckAndReturnStates(context.num_continuous_states()),
+          num_time_samples, minimum_timestep, maximum_timestep),
       system_(system),
       context_(context.Clone()),
       continuous_state_(system_->AllocateTimeDerivatives()),
