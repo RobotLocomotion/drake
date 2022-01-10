@@ -51,7 +51,7 @@
         <geometry>
           <mesh>
             <drake:declare_convex/>
-            <uri>../tri_cube.obj</uri>
+            <uri>package://drake/multibody/parsing/test/tri_cube.obj</uri>
           </mesh>
         </geometry>
       </collision>
@@ -95,7 +95,7 @@
       <collision name="Mesh">
         <geometry>
           <mesh>
-            <uri>../tri_cube.obj</uri>
+            <uri>package://drake/multibody/parsing/test/tri_cube.obj</uri>
           </mesh>
         </geometry>
       </collision>
