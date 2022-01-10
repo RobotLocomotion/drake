@@ -273,6 +273,7 @@ cc_library(
     includes = ["include"],
     linkstatic = 1,
     deps = [
+        "@drake//common:essential",
         ":urdfdom",
         "@ignition_math",
         "@ignition_utils",
