@@ -323,6 +323,7 @@ drake_cc_library(
     deps = [
         "//common",
         "//math:geometric_transform",
+        "@tinyobjloader",
     ],
 )
 
@@ -530,6 +531,8 @@ filegroup(
         "test/extruded_u.obj",
         "test/forbidden_two_cubes.obj",
         "test/non_convex_mesh.obj",
+        "test/octahedron.mtl",
+        "test/octahedron.obj",
         "test/quad_cube.mtl",
         "test/quad_cube.obj",
     ],
@@ -699,6 +702,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "utilities_test",
+    data = [":test_obj_files"],
     deps = [
         "utilities",
         "//common/test_utilities",

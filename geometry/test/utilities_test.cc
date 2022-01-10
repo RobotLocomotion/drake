@@ -7,6 +7,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -115,6 +116,62 @@ GTEST_TEST(GeometryUtilities, Vector3Conversion) {
   Vector3<AutoDiffXd> p_AB_ad(p_AB);
   Vector3<double> X_AB_ad_converted = convert_to_double(p_AB_ad);
   EXPECT_TRUE(CompareMatrices(p_AB, X_AB_ad_converted));
+}
+
+GTEST_TEST(ReadObjForConvex, Test1) {
+  // Test with triangulate=false.
+  // TODO(hongkai.dai): add the test with triangulate=true.
+  for (const double scale : {1., 0.5, 1.5}) {
+    const auto [vertices, faces, num_faces] = ReadObjForConvex(
+        FindResourceOrThrow("drake/geometry/test/quad_cube.obj"), scale,
+        false /*triangulate */);
+    EXPECT_EQ(vertices->size(), 8);
+    EXPECT_EQ(num_faces, 6);
+    Eigen::Matrix<double, 8, 3> vertices_expected;
+    // clang-format off
+  vertices_expected << -1, -1, -1,
+                       -1, -1, 1,
+                       -1, 1, 1,
+                       -1, 1, -1,
+                       1, 1, -1,
+                       1, -1, -1,
+                       1, -1, 1,
+                       1, 1, 1;
+    // clang-format on
+    vertices_expected *= scale;
+    for (int i = 0; i < 8; ++i) {
+      bool found_match = false;
+      for (int j = 0; j < 8; ++j) {
+        if (((*vertices)[i] - vertices_expected.row(j).transpose()).norm() <
+            1E-6) {
+          found_match = true;
+          break;
+        }
+      }
+      EXPECT_TRUE(found_match);
+    }
+    // Each face has 4 vertices, hence the size of faces is num_faces * (1 + 4).
+    // The point on the same face will have one coordinate with the same value.
+    EXPECT_EQ(faces->size(), num_faces * 5);
+    for (int i = 0; i < num_faces; ++i) {
+      bool found_coord = false;
+      for (int coord = 0; coord < 3; ++coord) {
+        bool coord_same_value = true;
+        for (int vert = 2; vert <= 4; ++vert) {
+          if ((*vertices)[(*faces)[5 * i + vert]](coord) !=
+              (*vertices)[(*faces)[5 * i + 1]](coord)) {
+            coord_same_value = false;
+            break;
+          }
+        }
+        if (coord_same_value) {
+          found_coord = true;
+          break;
+        }
+      }
+      EXPECT_TRUE(found_coord);
+    }
+  }
 }
 
 }  // namespace

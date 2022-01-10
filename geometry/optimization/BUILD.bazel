@@ -161,6 +161,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "vpolytope_test",
+    data = ["//geometry:test_obj_files"],
     deps = [
         ":convex_set",
         ":test_utilities",

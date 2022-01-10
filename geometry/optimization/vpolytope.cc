@@ -233,6 +233,16 @@ void VPolytope::ImplementGeometry(const Box& box, void* data) {
   // clang-format on
 }
 
+void VPolytope::ImplementGeometry(const Convex& convex, void* data) {
+  const auto [tinyobj_vertices, faces, num_faces] = internal::ReadObjForConvex(
+      convex.filename(), convex.scale(), false /* triangulate */);
+  Matrix3Xd* vertices = static_cast<Matrix3Xd*>(data);
+  vertices->resize(3, tinyobj_vertices->size());
+  for (int i = 0; i < vertices->cols(); ++i) {
+    vertices->col(i) = (*tinyobj_vertices)[i];
+  }
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

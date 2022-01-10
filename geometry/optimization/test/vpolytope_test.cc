@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
@@ -138,6 +139,51 @@ GTEST_TEST(VPolytopeTest, ArbitraryBoxTest) {
   auto query2 =
       scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context2);
   VPolytope V_F(query2, geom_id, frame_id);
+
+  const RigidTransformd X_FW = X_WF.inverse();
+  EXPECT_TRUE(V_F.PointInSet(X_FW * in1_W, kTol));
+  EXPECT_TRUE(V_F.PointInSet(X_FW * in2_W, kTol));
+  EXPECT_FALSE(V_F.PointInSet(X_FW * out_W, kTol));
+}
+
+GTEST_TEST(VPolytopeTest, OctahedronTest) {
+  const RigidTransformd X_WG(math::RollPitchYawd(.1, .2, 3),
+                             Vector3d(-4.0, -5.0, -6.0));
+  auto [scene_graph, geom_id] = MakeSceneGraphWithShape(
+      Convex(FindResourceOrThrow("drake/geometry/test/octahedron.obj")), X_WG);
+  auto context = scene_graph->CreateDefaultContext();
+  auto query =
+      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
+  VPolytope V(query, geom_id);
+  ASSERT_EQ(V.vertices().cols(), 6);
+
+  EXPECT_EQ(V.ambient_dimension(), 3);
+  const Vector3d in1_G{0, 0, 0.}, in2_G{0.1, 0.2, -0.5}, out_G{0.51, .9, 0.4};
+  const Vector3d in1_W = X_WG * in1_G, in2_W = X_WG * in2_G,
+                 out_W = X_WG * out_G;
+
+  const double kTol = 1e-9;
+  EXPECT_TRUE(V.PointInSet(in1_W, kTol));
+  EXPECT_TRUE(V.PointInSet(in2_W, kTol));
+  EXPECT_FALSE(V.PointInSet(out_W, kTol));
+
+  EXPECT_TRUE(CheckAddPointInSetConstraints(V, in1_W));
+  EXPECT_TRUE(CheckAddPointInSetConstraints(V, in2_W));
+  EXPECT_FALSE(CheckAddPointInSetConstraints(V, out_W));
+
+  // Test reference_frame frame.
+  SourceId source_id = scene_graph->RegisterSource("F");
+  FrameId frame_id = scene_graph->RegisterFrame(source_id, GeometryFrame("F"));
+  auto context2 = scene_graph->CreateDefaultContext();
+  const RigidTransformd X_WF{math::RollPitchYawd(5.1, 3.2, -3),
+                             Vector3d{.5, .87, .1}};
+  const FramePoseVector<double> pose_vector{{frame_id, X_WF}};
+  scene_graph->get_source_pose_port(source_id).FixValue(context2.get(),
+                                                        pose_vector);
+  auto query2 =
+      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context2);
+  VPolytope V_F(query2, geom_id, frame_id);
+  EXPECT_TRUE(CompareMatrices(V.vertices(), X_WF * V_F.vertices(), kTol));
 
   const RigidTransformd X_FW = X_WF.inverse();
   EXPECT_TRUE(V_F.PointInSet(X_FW * in1_W, kTol));
