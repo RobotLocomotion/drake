@@ -766,10 +766,10 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
-  <collision_filter_group name="wrist">
-    <member link="iiwa_link_5"/>
-    <member link="iiwa_link_6"/>
-    <member link="iiwa_link_7"/>
-    <ignored_collision_filter_group collision_filter_group="wrist"/>
-  </collision_filter_group>
+  <drake:collision_filter_group name="wrist">
+    <drake:member link="iiwa_link_5"/>
+    <drake:member link="iiwa_link_6"/>
+    <drake:member link="iiwa_link_7"/>
+    <drake:ignored_collision_filter_group name="wrist"/>
+  </drake:collision_filter_group>
 </robot>
