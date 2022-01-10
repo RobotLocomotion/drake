@@ -39,7 +39,6 @@
                world frame is fixed and that the geometry aligns with that of
                the box.
           -->
-          <pose>0 0 0.95 0 0 0</pose>
           <box>
             <size>10.0 10.0 0.1</size>
           </box>

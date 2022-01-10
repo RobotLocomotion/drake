@@ -1150,19 +1150,19 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
   sdf::Console::Instance()->GetMsgStream() =
     sdf::Console::ConsoleStream(&buffer);
 
-  // TODO(#15018): This throws a warning, make this an error.
-  ParseTestString(R"""(
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"""(
 <model name='model_with_bad_element'>
   <link name='a'/>
   <bad_element/>
 </model>
-)""");
+)"""),
+      std::runtime_error,
+      R"([\s\S]*Error: XML Element\[bad_element\], child of )"
+      R"(element\[model\], not defined in SDF.[\s\S]*)");
 
-  EXPECT_THAT(buffer.str(), testing::MatchesRegex(
-      ".*Warning.*XML Element\\[bad_element\\], child of"
-      " element\\[model\\], not defined in SDF.*"));
-
-  ParseTestString(R"""(
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"""(
 <model name='a'>
   <link name='l1'/>
   <link name='l2'/>
@@ -1173,11 +1173,10 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
       <initial_position>0</initial_position>
     </axis>
   </joint>
-</model>)""", "1.9");
-
-  EXPECT_THAT(buffer.str(), testing::MatchesRegex(
-      ".*Warning.*XML Element\\[initial_position\\], child of element"
-      "\\[axis\\], not defined in SDF.*"));
+</model>)""", "1.9"),
+      std::runtime_error,
+      R"([\s\S]*Error: XML Element\[initial_position\], child of )"
+      R"(element\[axis\], not defined in SDF.[\s\S]*)");
 }
 
 // Reports if the frame with the given id has a geometry with the given role
