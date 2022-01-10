@@ -27,7 +27,6 @@ drake_cc_package_library(
         ":frame_kinematics",
         ":geometry_frame",
         ":geometry_ids",
-        ":geometry_index",
         ":geometry_instance",
         ":geometry_properties",
         ":geometry_roles",
@@ -160,13 +159,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "geometry_index",
-    srcs = [],
-    hdrs = ["geometry_index.h"],
-    deps = ["//common:type_safe_index"],
-)
-
-drake_cc_library(
     name = "geometry_instance",
     srcs = ["geometry_instance.cc"],
     hdrs = ["geometry_instance.h"],
@@ -228,7 +220,6 @@ drake_cc_library(
         ":frame_kinematics",
         ":geometry_frame",
         ":geometry_ids",
-        ":geometry_index",
         ":geometry_instance",
         ":geometry_set",
         ":geometry_version",
