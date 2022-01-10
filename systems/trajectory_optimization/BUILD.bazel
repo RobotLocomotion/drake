@@ -119,8 +119,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "direct_transcription_test",
     data = ["//examples/pendulum:prod_models"],
-    # This test has two long cases; run them in parallel.
-    shard_count = 2,
+    # This test has two duplicated long cases; run them in parallel.
+    shard_count = 4,
     deps = [
         ":direct_transcription",
         "//common/test_utilities:eigen_matrix_compare",
