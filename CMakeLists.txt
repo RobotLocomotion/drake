@@ -193,10 +193,10 @@ else()
 
   # To allow the build type to be case-insensitive,
   # use this variable for any string comparisions
-  string(TOLOWER "${CMAKE_BUILD_TYPE}" BUILD_TYPE)
+  string(TOLOWER "${CMAKE_BUILD_TYPE}" BUILD_TYPE_LOWER)
 
-  string(TOLOWER "${SUPPORTED_BUILD_TYPES}" BUILD_TYPES_LOWER)
-  if(NOT BUILD_TYPE IN_LIST BUILD_TYPES_LOWER)
+  string(TOLOWER "${SUPPORTED_BUILD_TYPES}" SUPPORTED_BUILD_TYPES_LOWER)
+  if(NOT BUILD_TYPE_LOWER IN_LIST SUPPORTED_BUILD_TYPES_LOWER)
     message(WARNING "Configuration ${CMAKE_BUILD_TYPE} is NOT supported")
   endif()
 endif()
@@ -296,7 +296,7 @@ else()
     set(MAYBE_BAZEL_COPT_OS "--copt=${FLAG_OS} --host_copt=${FLAG_OS}")
   else()
     set(MAYBE_BAZEL_COPT_OS)
-    if(CMAKE_CONFIGURATION_TYPES OR BUILD_TYPE STREQUAL minsizerel)
+    if(CMAKE_CONFIGURATION_TYPES OR BUILD_TYPE_LOWER STREQUAL minsizerel)
       message(WARNING
         "Compilation with ${CMAKE_CXX_COMPILER_ID} in configuration MinSizeRel "
         "is NOT supported because it does not accept the ${FLAG_OS} flag. Code "
@@ -312,7 +312,7 @@ else()
     set(MAYBE_BAZEL_COPT_G "--copt=${FLAG_G} --host_copt=${FLAG_G}")
   else()
     set(MAYBE_BAZEL_COPT_G)
-    if(CMAKE_CONFIGURATION_TYPES OR BUILD_TYPE STREQUAL relwithdebinfo)
+    if(CMAKE_CONFIGURATION_TYPES OR BUILD_TYPE_LOWER STREQUAL relwithdebinfo)
       message(WARNING
         "Compilation with ${CMAKE_CXX_COMPILER_ID} in configuration "
         "RelWithDebInfo is NOT supported because it does not accept the "
@@ -440,7 +440,7 @@ configure_file(cmake/bazel.rc.in bazel.rc @ONLY)
 
 set(BAZEL_STARTUP_ARGS "--bazelrc=${CMAKE_CURRENT_BINARY_DIR}/bazel.rc")
 
-if(CMAKE_CONFIGURATION_TYPES OR BUILD_TYPE MATCHES "^(debug|minsizerel|release|relwithdebinfo)$")
+if(CMAKE_CONFIGURATION_TYPES OR BUILD_TYPE_LOWER MATCHES "^(debug|minsizerel|release|relwithdebinfo)$")
   set(BAZEL_ARGS
     "$<$<CONFIG:Debug>:--config=Debug>$<$<CONFIG:MinSizeRel>:--config=MinSizeRel>$<$<CONFIG:Release>:--config=Release>$<$<CONFIG:RelWithDebInfo>:--config=RelWithDebInfo>"
   )
@@ -478,7 +478,7 @@ endif()
 
 # If CMAKE_BUILD_TYPE is Debug or RelWithDebInfo, do NOT strip symbols during
 # install.
-if(CMAKE_CONFIGURATION_TYPES OR BUILD_TYPE MATCHES "^(debug|relwithdebinfo)$")
+if(CMAKE_CONFIGURATION_TYPES OR BUILD_TYPE_LOWER MATCHES "^(debug|relwithdebinfo)$")
   # SNOPT has restrictions for redistribution given that we are statically
   # linking it in.
   if(WITH_SNOPT OR WITH_ROBOTLOCOMOTION_SNOPT)
