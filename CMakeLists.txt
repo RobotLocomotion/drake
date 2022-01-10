@@ -195,10 +195,7 @@ else()
   # use this variable for any string comparisions
   string(TOLOWER "${CMAKE_BUILD_TYPE}" BUILD_TYPE)
 
-  string(TOLOWER "${SUPPORTED_BUILD_TYPES_STRING}" BUILD_TYPES_STRING_LOWER)
-  string(REPLACE " " ";" BUILD_TYPES_LOWER
-    "${BUILD_TYPES_STRING_LOWER}"
-  )
+  string(TOLOWER "${SUPPORTED_BUILD_TYPES}" BUILD_TYPES_LOWER)
   if(NOT BUILD_TYPE IN_LIST BUILD_TYPES_LOWER)
     message(WARNING "Configuration ${CMAKE_BUILD_TYPE} is NOT supported")
   endif()
