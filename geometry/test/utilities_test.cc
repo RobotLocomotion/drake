@@ -7,6 +7,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -116,6 +117,7 @@ GTEST_TEST(GeometryUtilities, Vector3Conversion) {
   Vector3<double> X_AB_ad_converted = convert_to_double(p_AB_ad);
   EXPECT_TRUE(CompareMatrices(p_AB, X_AB_ad_converted));
 }
+
 
 }  // namespace
 }  // namespace internal

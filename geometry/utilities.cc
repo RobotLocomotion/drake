@@ -3,6 +3,7 @@
 #include <regex>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace geometry {

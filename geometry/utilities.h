@@ -115,7 +115,6 @@ math::RigidTransformd convert_to_double(
 }
 
 //@}
-
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
