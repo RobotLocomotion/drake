@@ -1,0 +1,38 @@
+# JDK (for Bazel).
+default-jdk
+# GNU autotools.
+autoconf
+automake
+libtool
+libltdl-dev
+# Core compilers.
+gcc
+g++
+gfortran
+libgfortran-7-dev
+yasm
+# Clang (for clang-format).
+libclang-9-dev
+clang-format-9
+# Other code tools.
+git
+cmake
+make
+ninja-build
+pkg-config
+# Other general tools.
+file
+patch
+ssh
+wget
+unzip
+zip
+
+# Build dependencies (general).
+libgl1-mesa-dev
+libglib2.0-dev
+libnlopt-dev
+libxt-dev
+# Build dependencies (OpenCL).
+opencl-headers
+ocl-icd-opencl-dev
