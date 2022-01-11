@@ -131,6 +131,49 @@ shared_ptr<QuadraticCost> Make2NormSquaredCost(
                                     -2 * A.transpose() * b, c);
 }
 
+L1NormCost::L1NormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                       const Eigen::Ref<const Eigen::VectorXd>& b)
+    : Cost(A.cols()), A_(A), b_(b) {
+  DRAKE_DEMAND(A_.rows() == b_.rows());
+}
+
+void L1NormCost::UpdateCoefficients(
+    const Eigen::Ref<const Eigen::MatrixXd>& new_A,
+    const Eigen::Ref<const Eigen::VectorXd>& new_b) {
+  if (new_A.cols() != A_.cols()) {
+    throw std::runtime_error("Can't change the number of decision variables");
+  }
+  if (new_A.rows() != new_b.rows()) {
+    throw std::runtime_error("A and b must have the same number of rows.");
+  }
+
+  A_ = new_A;
+  b_ = new_b;
+}
+
+void L1NormCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                        Eigen::VectorXd* y) const {
+  y->resize(1);
+  (*y)(0) = (A_ * x + b_).lpNorm<1>();
+}
+
+void L1NormCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                        AutoDiffVecXd* y) const {
+  y->resize(1);
+  (*y)(0) = (A_ * x + b_).lpNorm<1>();
+}
+
+void L1NormCost::DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+                        VectorX<symbolic::Expression>* y) const {
+  y->resize(1);
+  (*y)(0) = (A_ * x + b_).cwiseAbs().sum();
+}
+
+std::ostream& L1NormCost::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayCost(*this, os, "L1NormCost", vars);
+}
+
 L2NormCost::L2NormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
                        const Eigen::Ref<const Eigen::VectorXd>& b)
     : Cost(A.cols()), A_(A), b_(b) {
@@ -172,6 +215,50 @@ void L2NormCost::DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
 std::ostream& L2NormCost::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayCost(*this, os, "L2NormCost", vars);
+}
+
+LInfNormCost::LInfNormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                           const Eigen::Ref<const Eigen::VectorXd>& b)
+    : Cost(A.cols()), A_(A), b_(b) {
+  DRAKE_DEMAND(A_.rows() == b_.rows());
+}
+
+void LInfNormCost::UpdateCoefficients(
+    const Eigen::Ref<const Eigen::MatrixXd>& new_A,
+    const Eigen::Ref<const Eigen::VectorXd>& new_b) {
+  if (new_A.cols() != A_.cols()) {
+    throw std::runtime_error("Can't change the number of decision variables");
+  }
+  if (new_A.rows() != new_b.rows()) {
+    throw std::runtime_error("A and b must have the same number of rows.");
+  }
+
+  A_ = new_A;
+  b_ = new_b;
+}
+
+void LInfNormCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                          Eigen::VectorXd* y) const {
+  y->resize(1);
+  (*y)(0) = (A_ * x + b_).lpNorm<Eigen::Infinity>();
+}
+
+void LInfNormCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                          AutoDiffVecXd* y) const {
+  y->resize(1);
+  (*y)(0) = (A_ * x + b_).lpNorm<Eigen::Infinity>();
+}
+
+void LInfNormCost::DoEval(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+    VectorX<symbolic::Expression>* y) const {
+  y->resize(1);
+  (*y)(0) = (A_ * x + b_).cwiseAbs().maxCoeff();
+}
+
+std::ostream& LInfNormCost::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayCost(*this, os, "LInfNormCost", vars);
 }
 
 }  // namespace solvers

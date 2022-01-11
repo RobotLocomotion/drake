@@ -465,6 +465,49 @@ TEST_F(ThreePoints, QuadraticCost5) {
     ".* must be strictly non-negative.*");
 }
 
+TEST_F(ThreePoints, L1NormCost) {
+  // |xu - xv|₁
+  Matrix<double, 2, 4> A;
+  A.leftCols(2) = Matrix2d::Identity();
+  A.rightCols(2) = -Matrix2d::Identity();
+  auto cost = std::make_shared<solvers::L1NormCost>(A, Vector2d::Zero());
+  e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
+  e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
+  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  if (result.get_solver_id() == solvers::IpoptSolver::id()) {
+    return;  // See IpoptTest for details.
+  }
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(e_on_->GetSolutionCost(result),
+              (p_source_.x() - p_target_.x()).cwiseAbs().sum(), 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
+}
+
+TEST_F(ThreePoints, L1NormCost2) {
+  // L1-norm of an arbitrary transformation of xu and xv.
+  Matrix<double, 2, 4> A;
+  // clang-format off
+  A << 4.3, .5, -.4, 1.2,
+       0.1, .2, -2., -.34;
+  // clang-format on
+  const Vector2d b{.5, .3};
+  auto cost = std::make_shared<solvers::L1NormCost>(A, b);
+  e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
+  e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
+  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  if (result.get_solver_id() == solvers::IpoptSolver::id()) {
+    return;  // See IpoptTest for details.
+  }
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(
+      e_on_->GetSolutionCost(result),
+      (A.leftCols(2) * p_source_.x() + A.rightCols(2) * p_target_.x() + b)
+          .cwiseAbs()
+          .sum(),
+      1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
+}
+
 TEST_F(ThreePoints, L2NormCost) {
   // |xu - xv|₂
   Matrix<double, 2, 4> A;
@@ -503,6 +546,49 @@ TEST_F(ThreePoints, L2NormCost2) {
       e_on_->GetSolutionCost(result),
       (A.leftCols(2) * p_source_.x() + A.rightCols(2) * p_target_.x() + b)
           .norm(),
+      1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
+}
+
+TEST_F(ThreePoints, LInfNormCost) {
+  // |xu - xv|∞
+  Matrix<double, 2, 4> A;
+  A.leftCols(2) = Matrix2d::Identity();
+  A.rightCols(2) = -Matrix2d::Identity();
+  auto cost = std::make_shared<solvers::LInfNormCost>(A, Vector2d::Zero());
+  e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
+  e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
+  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  if (result.get_solver_id() == solvers::IpoptSolver::id()) {
+    return;  // See IpoptTest for details.
+  }
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(e_on_->GetSolutionCost(result),
+              (p_source_.x() - p_target_.x()).cwiseAbs().maxCoeff(), 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
+}
+
+TEST_F(ThreePoints, LInfNormCost2) {
+  // LInfinity-norm of an arbitrary transformation of xu and xv.
+  Matrix<double, 2, 4> A;
+  // clang-format off
+  A << 4.3, .5, -.4, 1.2,
+       0.1, .2, -2., -.34;
+  // clang-format on
+  const Vector2d b{.5, .3};
+  auto cost = std::make_shared<solvers::LInfNormCost>(A, b);
+  e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
+  e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
+  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  if (result.get_solver_id() == solvers::IpoptSolver::id()) {
+    return;  // See IpoptTest for details.
+  }
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(
+      e_on_->GetSolutionCost(result),
+      (A.leftCols(2) * p_source_.x() + A.rightCols(2) * p_target_.x() + b)
+          .cwiseAbs()
+          .maxCoeff(),
       1e-6);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
 }
