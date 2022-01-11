@@ -18,8 +18,8 @@ xargs -d$'\n' apt-get -y install --no-install-recommends < /image/prereqs
 # See: https://apt.kitware.com/
 # TODO(svenevs) Use distro version of CMake when we drop Bionic support.
 apt-get -y install --no-install-recommends gpg lsb-release wget
-kw_asc="https://apt.kitware.com/keys/kitware-archive-latest.asc"
-wget -O - "$kw_asc" 2>/dev/null | \
+readonly KW_ASC="https://apt.kitware.com/keys/kitware-archive-latest.asc"
+wget -O - "$KW_ASC" 2>/dev/null | \
     gpg --dearmor - | \
     tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
 echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] " \
