@@ -16,13 +16,13 @@ package(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "dual_iiwa14_polytope_collision_test",
-    srcs = ["urdf/test/dual_iiwa14_polytope_collision_test.cc"],
+    name = "iiwa14_variants_parsing_test",
+    srcs = ["test/iiwa14_variants_parsing_test.cc"],
     data = [":models"],
     deps = [
         "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
-        "//multibody/plant",
     ],
 )
 

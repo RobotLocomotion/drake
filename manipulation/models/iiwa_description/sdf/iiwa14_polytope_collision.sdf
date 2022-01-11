@@ -69,10 +69,10 @@ Later edited by hand to rename the base link and remove damping from the joints.
       <axis>
         <xyz expressed_in="__model__">0 0 1</xyz>
         <limit>
-          <lower>-2.96706</lower>
-          <upper>2.96706</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <lower>-2.96705972839</lower>
+          <upper>2.96705972839</upper>
+          <effort>320</effort>
+          <velocity>1.4835298641951802</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -128,10 +128,10 @@ Later edited by hand to rename the base link and remove damping from the joints.
       <axis>
         <xyz expressed_in="__model__">-0 1 0</xyz>
         <limit>
-          <lower>-2.0944</lower>
-          <upper>2.0944</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <lower>-2.09439510239</lower>
+          <upper>2.09439510239</upper>
+          <effort>320</effort>
+          <velocity>1.4835298641951802</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -198,10 +198,10 @@ Later edited by hand to rename the base link and remove damping from the joints.
       <axis>
         <xyz expressed_in="__model__">0 0 1</xyz>
         <limit>
-          <lower>-2.96706</lower>
-          <upper>2.96706</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <lower>-2.96705972839</lower>
+          <upper>2.96705972839</upper>
+          <effort>176</effort>
+          <velocity>1.7453292519943295</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -257,10 +257,10 @@ Later edited by hand to rename the base link and remove damping from the joints.
       <axis>
         <xyz expressed_in="__model__">0 -1 0</xyz>
         <limit>
-          <lower>-2.0944</lower>
-          <upper>2.0944</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <lower>-2.09439510239</lower>
+          <upper>2.09439510239</upper>
+          <effort>176</effort>
+          <velocity>1.3089969389957472</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -327,10 +327,10 @@ Later edited by hand to rename the base link and remove damping from the joints.
       <axis>
         <xyz expressed_in="__model__">0 0 1</xyz>
         <limit>
-          <lower>-2.96706</lower>
-          <upper>2.96706</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <lower>-2.96705972839</lower>
+          <upper>2.96705972839</upper>
+          <effort>110</effort>
+          <velocity>2.2689280275926285</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -386,10 +386,10 @@ Later edited by hand to rename the base link and remove damping from the joints.
       <axis>
         <xyz expressed_in="__model__">-0 1 -0</xyz>
         <limit>
-          <lower>-2.0944</lower>
-          <upper>2.0944</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <lower>-2.09439510239</lower>
+          <upper>2.09439510239</upper>
+          <effort>40</effort>
+          <velocity>2.356194490192345"</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -453,10 +453,11 @@ Later edited by hand to rename the base link and remove damping from the joints.
       <axis>
         <xyz expressed_in="__model__">0 0 1</xyz>
         <limit>
-          <lower>-3.05433</lower>
-          <upper>3.05433</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <lower>-3.05432619099</lower>
+          <upper>3.05432619099</upper>
+
+          <effort>40</effort>
+          <velocity>2.356194490192345"</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
