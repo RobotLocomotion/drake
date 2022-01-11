@@ -29,7 +29,7 @@ during a normal build of drake.  This `vtk-args` file should be considered the
 file for macOS or wheel builds should be documented in their corresponding build
 file.
 
-When developing an upgrade to a new VTK version, developers will need to modify
+When developing an upgrade to a new VTK version, developers will need to modify:
 
 - `image/build-vtk.sh`: update the version of VTK being downloaded to compile.
 - `image/vtk-args`: update any CMake configurations needed.  Pay close attention
