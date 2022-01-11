@@ -2081,15 +2081,13 @@ class TestPlant(unittest.TestCase):
             0)
         # Check all valid combinations of the optional arguments.
         for optional_args in itertools.product(
-                [{}, {"scene_graph": scene_graph}],
                 [{}, {"lcm": None}, {"lcm": DrakeLcm()}],
                 [{}, {"publish_period": None}, {"publish_period": 1.0/32}]):
             kwargs = collections.ChainMap(*optional_args)
             with self.subTest(num_optional_args=len(kwargs), **kwargs):
-                is_deprecated = 0 if "scene_graph" in kwargs else 1
-                with catch_drake_warnings(expected_count=is_deprecated) as w:
-                    publisher = ConnectContactResultsToDrakeVisualizer(
-                        builder=builder, plant=plant, **kwargs)
+                publisher = ConnectContactResultsToDrakeVisualizer(
+                    builder=builder, plant=plant, scene_graph=scene_graph,
+                    **kwargs)
                 self.assertIsInstance(publisher, LcmPublisherSystem)
 
     def test_collision_filter(self):
