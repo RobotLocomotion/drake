@@ -62,10 +62,10 @@ GTEST_TEST(UnitInertia, PrincipalAxesConstructor) {
 // off-diagonal elements for which the six entries need to be specified.
 // Also test SetZero() and SetNaN methods.
 GTEST_TEST(UnitInertia, GeneralConstructor) {
-  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
-  UnitInertia<double> I(m(0), m(1), m(2), /* moments of inertia */
-                        p(0), p(1), p(2));/* products of inertia */
+  const Vector3d m(2.0, 2.3, 2.4);         // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);        // p for products.
+  UnitInertia<double> I(m(0), m(1), m(2),  /* moments of inertia */
+                        p(0), p(1), p(2)); /* products of inertia */
   Vector3d moments_expected = m;
   Vector3d products_expected = p;
   EXPECT_EQ(I.get_moments(), moments_expected);
@@ -82,7 +82,7 @@ GTEST_TEST(UnitInertia, GeneralConstructor) {
 
 // Test constructor from a RotationalInertia.
 GTEST_TEST(UnitInertia, ConstructorFromRotationalInertia) {
-  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3d m(2.0, 2.3, 2.4);  // m for moments.
   RotationalInertia<double> I(m(0), m(1), m(2));
   UnitInertia<double> G(I);
   EXPECT_EQ(G.get_moments(), I.get_moments());
@@ -140,8 +140,8 @@ GTEST_TEST(UnitInertia, PointMass) {
 GTEST_TEST(UnitInertia, SolidSphere) {
   const double radius = 3.5;
   const double sphere_I = 4.9;
-  const UnitInertia<double> G_expected = UnitInertia<double>::
-                                         TriaxiallySymmetric(sphere_I);
+  const UnitInertia<double> G_expected =
+      UnitInertia<double>::TriaxiallySymmetric(sphere_I);
   UnitInertia<double> G = UnitInertia<double>::SolidSphere(radius);
   EXPECT_TRUE(G_expected.get_moments() == G.get_moments());
   EXPECT_TRUE(G_expected.get_products() == G.get_products());
@@ -150,9 +150,9 @@ GTEST_TEST(UnitInertia, SolidSphere) {
 // Tests the static method to obtain the unit inertia of a hollow sphere.
 GTEST_TEST(UnitInertia, HollowSphere) {
   const double radius = 3.5;
-  const double sphere_I = 2.0 *radius * radius / 3.0;
-  const UnitInertia<double> G_expected = UnitInertia<double>::
-                                         TriaxiallySymmetric(sphere_I);
+  const double sphere_I = 2.0 * radius * radius / 3.0;
+  const UnitInertia<double> G_expected =
+      UnitInertia<double>::TriaxiallySymmetric(sphere_I);
   UnitInertia<double> G = UnitInertia<double>::HollowSphere(radius);
   EXPECT_TRUE(G_expected.get_moments() == G.get_moments());
   EXPECT_TRUE(G_expected.get_products() == G.get_products());
@@ -169,19 +169,19 @@ GTEST_TEST(UnitInertia, SolidBox) {
   const double Izz = (Lx2 + Ly2) / 12.0;
   const UnitInertia<double> G_expected(Ixx, Iyy, Izz);
   UnitInertia<double> G = UnitInertia<double>::SolidBox(Lx, Ly, Lz);
-  EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), kEpsilon));
+  EXPECT_TRUE(
+      G.CopyToFullMatrix3().isApprox(G_expected.CopyToFullMatrix3(), kEpsilon));
 }
 
 // Tests the static method to obtain the unit inertia of a solid cube.
 GTEST_TEST(UnitInertia, SolidCube) {
   const double L = 1.5;
   const double I = L * L / 6.0;
-  const UnitInertia<double> G_expected = UnitInertia<double>::
-                                         TriaxiallySymmetric(I);
-    UnitInertia<double> G = UnitInertia<double>::SolidCube(L);
-  EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), kEpsilon));
+  const UnitInertia<double> G_expected =
+      UnitInertia<double>::TriaxiallySymmetric(I);
+  UnitInertia<double> G = UnitInertia<double>::SolidCube(L);
+  EXPECT_TRUE(
+      G.CopyToFullMatrix3().isApprox(G_expected.CopyToFullMatrix3(), kEpsilon));
 }
 
 // Tests the static method to obtain the unit inertia of a solid cylinder.
@@ -193,30 +193,28 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
   const UnitInertia<double> Gz_expected(I_perp, I_perp, I_axial);
   // Compute the unit inertia for a cylinder oriented along the z-axis
   // (the default).
-  UnitInertia<double> Gz =
-      UnitInertia<double>::SolidCylinder(r, L);
-  EXPECT_TRUE(Gz.CopyToFullMatrix3().isApprox(
-      Gz_expected.CopyToFullMatrix3(), kEpsilon));
+  UnitInertia<double> Gz = UnitInertia<double>::SolidCylinder(r, L);
+  EXPECT_TRUE(Gz.CopyToFullMatrix3().isApprox(Gz_expected.CopyToFullMatrix3(),
+                                              kEpsilon));
 
   // Compute the unit inertia for a cylinder oriented along the x-axis.
   const UnitInertia<double> Gx =
       UnitInertia<double>::SolidCylinder(r, L, Vector3d::UnitX());
   const UnitInertia<double> Gx_expected(I_axial, I_perp, I_perp);
-  EXPECT_TRUE(Gx.CopyToFullMatrix3().isApprox(
-      Gx_expected.CopyToFullMatrix3(), kEpsilon));
+  EXPECT_TRUE(Gx.CopyToFullMatrix3().isApprox(Gx_expected.CopyToFullMatrix3(),
+                                              kEpsilon));
 
   // Compute the unit inertia for a cylinder oriented along the y-axis.
   const UnitInertia<double> Gy =
       UnitInertia<double>::SolidCylinder(r, L, Vector3d::UnitY());
   const UnitInertia<double> Gy_expected(I_perp, I_axial, I_perp);
-  EXPECT_TRUE(Gy.CopyToFullMatrix3().isApprox(
-      Gy_expected.CopyToFullMatrix3(), kEpsilon));
+  EXPECT_TRUE(Gy.CopyToFullMatrix3().isApprox(Gy_expected.CopyToFullMatrix3(),
+                                              kEpsilon));
 
   // Compute the unit inertia for a cylinder oriented along a non-unit,
   // non-axial vector.
   const Vector3d v(1.0, 2.0, 3.0);
-  const UnitInertia<double> Gv =
-      UnitInertia<double>::SolidCylinder(r, L, v);
+  const UnitInertia<double> Gv = UnitInertia<double>::SolidCylinder(r, L, v);
   // Generate a rotation matrix from a Frame V in which Vz = v to frame Z where
   // Zz = zhat.
   const drake::math::RotationMatrix<double> R_ZV(
@@ -224,8 +222,8 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
   // Generate expected solution by computing it in the V frame and re-expressing
   // in the Z frame.
   const UnitInertia<double> Gv_expected = Gz.ReExpress(R_ZV);
-  EXPECT_TRUE(Gv.CopyToFullMatrix3().isApprox(
-      Gv_expected.CopyToFullMatrix3(), kEpsilon));
+  EXPECT_TRUE(Gv.CopyToFullMatrix3().isApprox(Gv_expected.CopyToFullMatrix3(),
+                                              kEpsilon));
 }
 
 // Tests the static method to obtain the unit inertia of a solid cylinder
@@ -233,12 +231,103 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
 GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
   const double r = 2.5;
   const double L = 1.5;
-  const double I_perp = (3.0 * r * r + L * L) / 12.0 + L * L /4.0;
+  const double I_perp = (3.0 * r * r + L * L) / 12.0 + L * L / 4.0;
   const double I_axial = r * r / 2.0;
   const UnitInertia<double> G_expected(I_perp, I_perp, I_axial);
   UnitInertia<double> G = UnitInertia<double>::SolidCylinderAboutEnd(r, L);
-  EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), kEpsilon));
+  EXPECT_TRUE(
+      G.CopyToFullMatrix3().isApprox(G_expected.CopyToFullMatrix3(), kEpsilon));
+}
+
+// Tests the static method to obtain the unit inertia of a solid capsule
+// computed about its center of mass.
+GTEST_TEST(UnitInertia, SolidCapsule) {
+  // We calculate the inertia of a capsule in two ways and verify that the
+  // results are consistent:
+  //  1. Multiply the mass of the capsule with the unit inertia of the capsule.
+  //  2. Calculate the inertia analytically.
+  const double r = 0.5;
+  const double L = 1.5;
+  const double density = 0.1;
+
+  const double r2 = r * r;
+  const double r3 = r2 * r;
+  const double L2 = L * L;
+
+  const double volume_cylinder = M_PI * r2 * L;
+  const double volume_sphere = M_PI * 4.0 * r3 / 3.0;
+
+  const double mass_cylinder = volume_cylinder * density;
+  const double mass_sphere = volume_sphere * density;
+  const double mass_capsule = mass_sphere + mass_cylinder;
+
+  // Calculate inertia of capsule with method 1.
+  const UnitInertia<double> G_capsule = UnitInertia<double>::SolidCapsule(r, L);
+  const RotationalInertia<double> I_capsule = mass_capsule * G_capsule;
+
+  // Calculate inertia of capsule with method 2.
+  //
+  // I = Ic + Is where Ic is the inertia of the cylinder part of the capsule,
+  // and Is is the inertia of the two half spheres.
+  //
+  // Suppose m₁ is the mass of the cylinder part and m₂ is the mass of the
+  // cylinder part and the spherical part (sum of the two half-spheres)
+  // respectively.
+  //
+  // Ic = diag(Ic_xx, Ic_yy, Ic_zz).
+  // Ic_xx = Ic_yy = m₁(L²/12 + r²/4).
+  // Ic_zz = m₁r²/2.
+
+  // Is = diag(Is_xx, Is_yy, Is_zz).
+  // Is_xx = Is_yy = m₂(2r²/5 + L²/4 + 3Lr/8), which is calculated by shifting
+  // each half of the sphere twice (first from the center of the sphere to COM
+  // then by half of the length of the cylinder along the z-axis).
+  // Is_zz = 2m₂r²/5.
+
+  const double Ixx =
+      mass_cylinder * (L2 / 12.0 + r2 / 4.0) +
+      mass_sphere * (2.0 * r2 / 5.0 + L2 / 4.0 + 3 * L * r / 8.0);
+  const double Iyy = Ixx;
+  const double Izz = mass_cylinder * r2 / 2.0 + mass_sphere * 2.0 * r2 / 5.0;
+  const RotationalInertia<double> I_capsule_expected(Ixx, Iyy, Izz);
+  EXPECT_TRUE(CompareMatrices(I_capsule.get_moments(),
+                              I_capsule_expected.get_moments(), kEpsilon));
+  EXPECT_TRUE(CompareMatrices(I_capsule.get_products(),
+                              I_capsule_expected.get_products(), kEpsilon));
+}
+
+// Tests a degenerate capsule (into sphere) has the same unit inertia as a
+// sphere.
+GTEST_TEST(UnitInertia, SolidCapsuleDegenerateIntoSolidSphere) {
+  const double r = 2.5;
+  const double L = 0;
+  const UnitInertia<double> G_expected = UnitInertia<double>::SolidSphere(r);
+  const UnitInertia<double> G = UnitInertia<double>::SolidCapsule(r, L);
+  EXPECT_TRUE(CompareMatrices(G.get_moments(), G_expected.get_moments()));
+  EXPECT_TRUE(CompareMatrices(G.get_products(), G_expected.get_products()));
+}
+
+// Tests a degenerate capsule (into a thin rod) has the same unit inertia as a
+// thin rod.
+GTEST_TEST(UnitInertia, SolidCapsuleDegenerateIntoThinRod) {
+  const double r = 0;
+  const double L = 1.5;
+  const UnitInertia<double> G_expected =
+      UnitInertia<double>::ThinRod(L, Vector3d::UnitZ());
+  const UnitInertia<double> G_degenerate =
+      UnitInertia<double>::SolidCapsule(r, L);
+  EXPECT_TRUE(
+      CompareMatrices(G_degenerate.get_moments(), G_expected.get_moments()));
+  EXPECT_TRUE(
+      CompareMatrices(G_degenerate.get_products(), G_expected.get_products()));
+  // The unit inertia of the capsule should be close to that of a thin rod when
+  // the radius is vanishingly small.
+  const UnitInertia<double> G_close_to_degenerate =
+      UnitInertia<double>::SolidCapsule(kEpsilon, L);
+  EXPECT_TRUE(CompareMatrices(G_close_to_degenerate.get_moments(),
+                              G_expected.get_moments(), kEpsilon));
+  EXPECT_TRUE(CompareMatrices(G_close_to_degenerate.get_products(),
+                              G_expected.get_products()));
 }
 
 // Unit tests for the factory method UnitInertia::AxiallySymmetric().
@@ -280,8 +369,8 @@ GTEST_TEST(UnitInertia, AxiallySymmetric) {
   UnitInertia<double> G_E_expected = G_Z.ReExpress(R_EZ);
 
   // Verify the computed values.
-  EXPECT_TRUE(G_E.CopyToFullMatrix3().isApprox(
-      G_E_expected.CopyToFullMatrix3(), kEpsilon));
+  EXPECT_TRUE(G_E.CopyToFullMatrix3().isApprox(G_E_expected.CopyToFullMatrix3(),
+                                               kEpsilon));
 
   // Verify the principal moments indeed are I_perp and I_axial:
   Vector3d moments = G_E.CalcPrincipalMomentsOfInertia();
@@ -320,8 +409,7 @@ GTEST_TEST(UnitInertia, ThinRod) {
       drake::math::RotationMatrix<double>::MakeXRotation(-M_PI_4);
 
   // Unit inertia computed with StraightLine().
-  UnitInertia<double> G_E =
-      UnitInertia<double>::StraightLine(I_rod, b_E);
+  UnitInertia<double> G_E = UnitInertia<double>::StraightLine(I_rod, b_E);
 
   // The expected inertia is that of a cylinder of zero radius and height L with
   // its longitudinal axis aligned with b.
@@ -329,8 +417,8 @@ GTEST_TEST(UnitInertia, ThinRod) {
   UnitInertia<double> G_E_expected = G_Z.ReExpress(R_EZ);
 
   // Verify the computed values.
-  EXPECT_TRUE(G_E.CopyToFullMatrix3().isApprox(
-      G_E_expected.CopyToFullMatrix3(), kEpsilon));
+  EXPECT_TRUE(G_E.CopyToFullMatrix3().isApprox(G_E_expected.CopyToFullMatrix3(),
+                                               kEpsilon));
 
   // Verify the result from ThinRod():
   UnitInertia<double> G_rod = UnitInertia<double>::ThinRod(L, b_E);
@@ -349,8 +437,8 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
   const UnitInertia<double> G_expected =
       UnitInertia<double>::SolidCylinderAboutEnd(r, L);
   UnitInertia<double> G = UnitInertia<double>::SolidCylinder(r, L);
-  EXPECT_FALSE(G.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), kEpsilon));  // Not equal yet.
+  EXPECT_FALSE(G.CopyToFullMatrix3().isApprox(G_expected.CopyToFullMatrix3(),
+                                              kEpsilon));  // Not equal yet.
   G.ShiftFromCenterOfMassInPlace({0.0, 0.0, L / 2.0});
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), kEpsilon));  // Equal after shifting.
@@ -369,10 +457,10 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
 
   // Create a new object.
   UnitInertia<double> G3 =
-      UnitInertia<double>::
-      SolidCylinder(r, L).ShiftFromCenterOfMass({0.0, 0.0, L / 2.0});
-  EXPECT_TRUE(G3.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), kEpsilon));
+      UnitInertia<double>::SolidCylinder(r, L).ShiftFromCenterOfMass(
+          {0.0, 0.0, L / 2.0});
+  EXPECT_TRUE(G3.CopyToFullMatrix3().isApprox(G_expected.CopyToFullMatrix3(),
+                                              kEpsilon));
   EXPECT_TRUE(G3.CouldBePhysicallyValid());
 }
 
@@ -405,8 +493,8 @@ GTEST_TEST(UnitInertia, CastToAutoDiff) {
 GTEST_TEST(UnitInertia, AutoDiff) {
   // Helper lambda to extract from a matrix of auto-diff scalar's the matrix of
   // values and the matrix of derivatives.
-  auto extract_derivatives = [](
-      const Matrix3<AutoDiffXd>& M, Matrix3d& Mvalue, Matrix3d& Mdot) {
+  auto extract_derivatives = [](const Matrix3<AutoDiffXd>& M, Matrix3d& Mvalue,
+                                Matrix3d& Mdot) {
     for (int i = 0; i < 3; ++i) {
       for (int j = 0; j < 3; ++j) {
         Mvalue(i, j) = M(i, j).value();
@@ -445,11 +533,8 @@ GTEST_TEST(UnitInertia, AutoDiff) {
   // Therefore we have w× = Rdot * R.transpose().
   Matrix3<double> wcross = Rdot_WB * Rvalue_WB.transpose();
   Matrix3<double> wcross_expected;
-  wcross_expected << 0.0,  -wz, 0.0,
-                      wz,  0.0, 0.0,
-                     0.0,  0.0, 0.0;
-  EXPECT_TRUE(wcross.isApprox(
-      wcross_expected, kEpsilon));
+  wcross_expected << 0.0, -wz, 0.0, wz, 0.0, 0.0, 0.0, 0.0, 0.0;
+  EXPECT_TRUE(wcross.isApprox(wcross_expected, kEpsilon));
 
   // Re-express inertia into another frame.
   const UnitInertia<AutoDiffXd> I_W = G_B.ReExpress(R_WB);
@@ -476,8 +561,7 @@ GTEST_TEST(UnitInertia, AutoDiff) {
 
   const Matrix3d Idot_W_expected = Ix * Rdot_x + Iy * Rdot_y + Iz * Rdot_z;
 
-  EXPECT_TRUE(Idot_W.isApprox(
-      Idot_W_expected, kEpsilon));
+  EXPECT_TRUE(Idot_W.isApprox(Idot_W_expected, kEpsilon));
 }
 
 // The code below is in support of the goal to use a unit-test to confirm that
@@ -489,20 +573,25 @@ GTEST_TEST(UnitInertia, AutoDiff) {
 // operator.
 
 // This overload gets chosen if the *= double would compile.
-template <typename T,
-    typename = decltype(std::declval<T&>() *= 1.)>
-bool has_times_equal_helper(int) { return true; }
+template <typename T, typename = decltype(std::declval<T&>() *= 1.)>
+bool has_times_equal_helper(int) {
+  return true;
+}
 
 // This overload gets chosen if the above can't compile.
 // It is made to take any other argument but the above is a better match to an
 // int argument if it got compiled, and therefore gets selected for a class with
 // an operator*=() defined.
 template <typename T>
-bool has_times_equal_helper(...) { return false; }
+bool has_times_equal_helper(...) {
+  return false;
+}
 
 // This method returns true at runtime if type T has an operator*=().
 template <typename T>
-bool has_times_equal() { return has_times_equal_helper<T>(1); }
+bool has_times_equal() {
+  return has_times_equal_helper<T>(1);
+}
 
 // Tests that operator*=() is indeed not available for a UnitInertia while it is
 // available for a general RotationalInertia.
@@ -516,13 +605,18 @@ GTEST_TEST(UnitInertia, TimesEqualScalar) {
 
 // See the explanation for these template helpers in the analogous
 // implementation for has_times_equal() above.
-template <typename T,
-    typename = decltype(std::declval<T&>() /= 1.)>
-bool has_divide_equal_helper(int) { return true; }
+template <typename T, typename = decltype(std::declval<T&>() /= 1.)>
+bool has_divide_equal_helper(int) {
+  return true;
+}
 template <typename T>
-bool has_divide_equal_helper(...) { return false; }
+bool has_divide_equal_helper(...) {
+  return false;
+}
 template <typename T>
-bool has_divide_equal() { return has_divide_equal_helper<T>(1); }
+bool has_divide_equal() {
+  return has_divide_equal_helper<T>(1);
+}
 
 // Tests that operator/=() is indeed not available for a UnitInertia while it is
 // available for a general RotationalInertia.
@@ -536,13 +630,18 @@ GTEST_TEST(UnitInertia, DivideEqualScalar) {
 
 // See the explanation for this template helpers in the analogous implementation
 // for has_times_equal() above.
-template <typename T,
-    typename = decltype(std::declval<T&>() += T())>
-bool has_plus_equal_helper(int) { return true; }
+template <typename T, typename = decltype(std::declval<T&>() += T())>
+bool has_plus_equal_helper(int) {
+  return true;
+}
 template <typename T>
-bool has_plus_equal_helper(...) { return false; }
+bool has_plus_equal_helper(...) {
+  return false;
+}
 template <typename T>
-bool has_plus_equal() { return has_plus_equal_helper<T>(1); }
+bool has_plus_equal() {
+  return has_plus_equal_helper<T>(1);
+}
 
 // Tests that operator+=() is indeed not available for a UnitInertia while it is
 // available for a general RotationalInertia.
