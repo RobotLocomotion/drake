@@ -39,10 +39,12 @@ from pydrake.systems.framework import (
     EventStatus,
     GenerateHtml,
     InputPort, InputPort_,
+    InputPortIndex,
     kUseDefaultName,
     LeafContext, LeafContext_,
     LeafSystem, LeafSystem_,
     OutputPort, OutputPort_,
+    OutputPortIndex,
     Parameters, Parameters_,
     PeriodicEventData,
     PublishEvent, PublishEvent_,
@@ -50,6 +52,7 @@ from pydrake.systems.framework import (
     Subvector, Subvector_,
     Supervector, Supervector_,
     System, System_,
+    SystemVisitor, SystemVisitor_,
     SystemBase,
     SystemOutput, SystemOutput_,
     VectorBase, VectorBase_,
@@ -923,6 +926,29 @@ class TestGeneral(unittest.TestCase):
         self.assertRegex(graph, "_u0 -> .*:u4")
         self.assertRegex(graph, "_u1 -> .*:u5")
 
+    def test_diagram_api(self):
+        builder = DiagramBuilder()
+        adder1 = builder.AddNamedSystem("adder1", Adder(2, 2))
+        adder2 = builder.AddNamedSystem("adder2", Adder(1, 2))
+        builder.Connect(adder1.get_output_port(), adder2.get_input_port())
+        builder.ExportOutput(adder2.get_output_port())
+        in0_index = builder.ExportInput(adder1.get_input_port(0), "in0")
+        in1_index = builder.ExportInput(adder1.get_input_port(1), "in1")
+        out_index = builder.ExportOutput(adder2.get_output_port(), "out")
+        diagram = builder.Build()
+
+        connections = diagram.connection_map()
+        self.assertIn((adder2, in0_index), connections)
+        self.assertEqual(connections[(adder2, in0_index)],
+                         (adder1, OutputPortIndex(0)))
+
+        self.assertEqual(diagram.GetInputPortLocators(in0_index),
+                         [(adder1, InputPortIndex(0))])
+        self.assertEqual(diagram.GetInputPortLocators(in1_index),
+                         [(adder1, InputPortIndex(1))])
+        self.assertEqual(diagram.get_output_port_locator(out_index),
+                         (adder2, OutputPortIndex(0)))
+
     def test_add_named_system(self):
         builder = DiagramBuilder()
         adder1 = builder.AddNamedSystem("adder1", Adder(2, 3))
@@ -932,3 +958,27 @@ class TestGeneral(unittest.TestCase):
 
     def test_module_constants(self):
         self.assertEqual(repr(kUseDefaultName), "kUseDefaultName")
+
+    def test_system_visitor(self):
+        builder = DiagramBuilder()
+        builder.AddNamedSystem("adder1", Adder(2, 2))
+        builder.AddNamedSystem("adder2", Adder(2, 2))
+        system = builder.Build()
+        system.set_name("diagram")
+
+        visited_systems = []
+        visited_diagrams = []
+
+        class MyVisitor(SystemVisitor):
+            def VisitSystem(self, system):
+                visited_systems.append(system.get_name())
+
+            def VisitDiagram(self, diagram):
+                visited_diagrams.append(diagram.get_name())
+                for sys in diagram.GetSystems():
+                    sys.Accept(self)
+
+        visitor = MyVisitor()
+        system.Accept(visitor)
+        self.assertEqual(visited_systems, ["adder1", "adder2"])
+        self.assertEqual(visited_diagrams, ["diagram"])

@@ -18,6 +18,7 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_html.h"
 #include "drake/systems/framework/system_scalar_converter.h"
+#include "drake/systems/framework/system_visitor.h"
 #include "drake/systems/framework/vector_system.h"
 #include "drake/systems/framework/witness_function.h"
 
@@ -43,6 +44,7 @@ using systems::State;
 using systems::System;
 using systems::SystemBase;
 using systems::SystemScalarConverter;
+using systems::SystemVisitor;
 using systems::UnrestrictedUpdateEvent;
 using systems::VectorSystem;
 using systems::WitnessFunction;
@@ -280,6 +282,18 @@ struct Impl {
     }
   };
 
+  class PySystemVisitor : public py::wrapper<SystemVisitor<T>> {
+   public:
+    // Trampoline virtual methods.
+    void VisitSystem(const System<T>& system) override {
+      PYBIND11_OVERLOAD_INT(void, SystemVisitor<T>, "VisitSystem", system);
+    };
+
+    void VisitDiagram(const Diagram<T>& diagram) override {
+      PYBIND11_OVERLOAD_INT(void, SystemVisitor<T>, "VisitDiagram", diagram);
+    }
+  };
+
   static void DoScalarDependentDefinitions(py::module m) {
     // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
     using namespace drake::systems;
@@ -294,6 +308,10 @@ struct Impl {
         DefineTemplateClassWithDefault<System<T>, SystemBase, PySystem>(
             m, "System", GetPyParam<T>(), doc.System.doc);
     system_cls  // BR
+        .def(
+            "Accept",
+            [](const System<T>* self, PySystemVisitor* v) { self->Accept(v); },
+            py::arg("v"), doc.System.Accept.doc)
         .def("get_input_port",
             overload_cast_explicit<const InputPort<T>&, int>(
                 &System<T>::get_input_port),
@@ -905,6 +923,12 @@ Note: The above is for the C++ documentation. For Python, use
     DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
         .def(py::init<>(), doc.Diagram.ctor.doc_0args)
+        .def("connection_map", &Diagram<T>::connection_map,
+            py_rvp::reference_internal, doc.Diagram.connection_map.doc)
+        .def("GetInputPortLocators", &Diagram<T>::GetInputPortLocators,
+            py_rvp::reference_internal, doc.Diagram.GetInputPortLocators.doc)
+        .def("get_output_port_locator", &Diagram<T>::get_output_port_locator,
+            py_rvp::reference_internal, doc.Diagram.get_output_port_locator.doc)
         .def("GetMutableSubsystemState",
             overload_cast_explicit<State<T>&, const System<T>&, Context<T>*>(
                 &Diagram<T>::GetMutableSubsystemState),
@@ -929,6 +953,7 @@ Note: The above is for the C++ documentation. For Python, use
               return out;
             },
             doc.Diagram.GetSystems.doc);
+    //        .def("get_output_port_locator", py::arg("port_index"));
 
     // N.B. This will effectively allow derived classes of `VectorSystem` to
     // override `LeafSystem` methods, disrespecting `final`-ity.
@@ -948,6 +973,14 @@ Note: The above is for the C++ documentation. For Python, use
     // wrapper to convert `Map<Derived>*` arguments.
     // N.B. This could be mitigated by using `EigenPtr` in public interfaces in
     // upstream code.
+
+    DefineTemplateClassWithDefault<SystemVisitor<T>, PySystemVisitor>(
+        m, "SystemVisitor", GetPyParam<T>(), doc.SystemVisitor.doc)
+        .def(py::init())
+        .def("VisitSystem", &SystemVisitor<T>::VisitSystem, py::arg("system"),
+            doc.SystemVisitor.VisitSystem.doc)
+        .def("VisitDiagram", &SystemVisitor<T>::VisitDiagram,
+            py::arg("diagram"), doc.SystemVisitor.VisitDiagram.doc);
   }
 };
 
