@@ -136,8 +136,8 @@ and/or `-lpthread`).  Each internal / private library from VTK is all lower
 case, which makes it easy to distinguish them from the public VTK libraries.
 Assuming you have built a `vtk*.tar.gz` archive using
 `build_binaries_with_docker`, and extracted that archive in a directory called
-`x`, you can create the following script to help identify what the `deps` of a
-given `_vtk_cc_library` call will be:
+`vtk_extract`, you can create the following script to help identify what the
+`deps` of a given `_vtk_cc_library` call will be:
 
 ```py
 from pathlib import Path
@@ -145,8 +145,8 @@ import subprocess
 
 this_file_dir = Path(__file__).parent.absolute()
 
-# NOTE: update "x" to wherever you have extracted the VTK .tar.gz.
-lib_dir = this_file_dir / "x" / "lib"
+# NOTE: update "vtk_extract" to wherever you have extracted the VTK .tar.gz.
+lib_dir = this_file_dir / "vtk_extract" / "lib"
 for lib in sorted(lib_dir.glob("*.so")):
     if lib.name.lower() == lib.name:
         vsep = "*" * 44
