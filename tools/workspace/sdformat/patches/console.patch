@@ -1,0 +1,317 @@
+Redirect sdformat console messages into drake logging
+
+Change ConsoleStream to DiagnosticStream.  The former is just a stream that
+  happens to contain newlines; the latter uses the destructor to denote EOM
+  and thus submit the message to the logger.
+Remove all configuration options for sdf::Console logging.  All of them make
+  thread-unsafe uses of globals, and Drake doesn't call them in any case.
+Add "color" to sdfdbg messages to help communicate the log level.
+
+
+diff --git include/sdf/Console.hh include/sdf/Console.hh
+index 04856e90..0f379ab2 100644
+--- include/sdf/Console.hh
++++ include/sdf/Console.hh
+@@ -19,8 +19,8 @@
+ #define SDF_CONSOLE_HH_
+ 
+ #include <fstream>
+-#include <iostream>
+ #include <memory>
++#include <sstream>
+ #include <string>
+ 
+ #include <sdf/sdf_config.h>
+@@ -43,7 +43,8 @@ namespace sdf
+   /// \{
+ 
+   /// \brief Output a debug message
+-  #define sdfdbg (sdf::Console::Instance()->Log("Dbg", __FILE__, __LINE__))
++  #define sdfdbg (sdf::Console::Instance()->ColorMsg("Dbg", \
++                                                     __FILE__, __LINE__, 34))
+ 
+   /// \brief Output a message
+   #define sdfmsg (sdf::Console::Instance()->ColorMsg("Msg", \
+@@ -67,6 +68,7 @@ namespace sdf
+   /// \brief Message, error, warning, and logging functionality
+   class SDFORMAT_VISIBLE Console
+   {
++#if 0
+     /// \brief An ostream-like class that we'll use for logging.
+     public: class SDFORMAT_VISIBLE ConsoleStream
+     {
+@@ -105,6 +107,25 @@ namespace sdf
+       /// \brief The ostream to log to; can be NULL/nullptr.
+       private: std::ostream *stream;
+     };
++#else
++    public: class DiagnosticStream final {
++      public: DiagnosticStream(
++          const std::string &_lbl,
++          const std::string &_file,
++          unsigned int _line, 
++          int _color);
++
++      public: ~DiagnosticStream();
++
++      public: template <class T> DiagnosticStream &operator<<(const T &_rhs) {
++        buffer << _rhs;
++        return *this;
++      }
++
++      private: const int color;
++      private: std::stringstream buffer;
++    };
++#endif
+ 
+     /// \brief Default constructor
+     private: Console();
+@@ -115,23 +136,28 @@ namespace sdf
+     /// \brief Return an instance to this class.
+     public: static ConsolePtr Instance();
+ 
++#if 0
+     /// \brief Clear out the current console to make room for a new one.
+     public: static void Clear();
++#endif
+ 
++#if 0
+     /// \brief Set quiet output
+     /// \param[in] q True to prevent warning
+     public: void SetQuiet(bool _q);
++#endif
+ 
+     /// \brief Use this to output a colored message to the terminal
+     /// \param[in] _lbl Text label
+     /// \param[in] _file File containing the error
+     /// \param[in] _line Line containing the error
+     /// \param[in] _color Color to make the label
+-    /// \return Reference to an output stream
+-    public: ConsoleStream &ColorMsg(const std::string &lbl,
+-                                    const std::string &file,
+-                                    unsigned int line, int color);
++    /// \return Output stream; the message will be logged when it is destroyed.
++    public: DiagnosticStream ColorMsg(const std::string &lbl,
++                                      const std::string &file,
++                                      unsigned int line, int color);
+ 
++#if 0
+     /// \brief Use this to output a message to a log file at
+     /// `$HOME/.sdformat/sdformat.log`.
+     /// To disable this log file, define the following symbol when
+@@ -140,24 +166,32 @@ namespace sdf
+     public: ConsoleStream &Log(const std::string &lbl,
+                                const std::string &file,
+                                unsigned int line);
++#endif
+ 
++#if 0
+     /// \brief Get the current message stream object. This can be
+     /// useful for redirecting the output, for example, to a std::stringstream
+     /// for testing.
+     /// \return Mutable reference to current message stream object.
+     public: ConsoleStream &GetMsgStream();
++#endif
+ 
++#if 0
+     /// \brief Get the current log stream object. This can be
+     /// useful for redirecting the output, for example, to a std::stringstream
+     /// for testing.
+     /// \return Mutable reference to current log stream object.
+     public: ConsoleStream &GetLogStream();
++#endif
+ 
++#if 0
+     /// \internal
+     /// \brief Pointer to private data.
+     private: std::unique_ptr<ConsolePrivate> dataPtr;
++#endif
+   };
+ 
++#if 0
+   /// \internal
+   /// \brief Private data for Console
+   class ConsolePrivate
+@@ -174,7 +208,9 @@ namespace sdf
+     /// \brief logfile stream
+     public: std::ofstream logFileStream;
+   };
++#endif
+ 
++#if 0
+   ///////////////////////////////////////////////
+   template <class T>
+   Console::ConsoleStream &Console::ConsoleStream::operator<<(const T &_rhs)
+@@ -192,6 +228,7 @@ namespace sdf
+ 
+     return *this;
+   }
++#endif
+   }
+ 
+   /// \}
+diff --git src/Console.cc src/Console.cc
+index c0f4c4ed..a2f82f5d 100644
+--- src/Console.cc
++++ src/Console.cc
+@@ -26,12 +26,15 @@
+ #include "sdf/Types.hh"
+ #include "sdf/sdf_config.h"
+ 
++#include "drake/common/text_logging.h"
++
+ using namespace sdf;
+ 
+ /// Static pointer to the console.
+ static std::shared_ptr<Console> myself;
+ static std::mutex g_instance_mutex;
+ 
++#if 0
+ /// \todo Output disabled for windows, to allow tests to pass. We should
+ /// disable output just for tests on windows.
+ #ifndef _WIN32
+@@ -41,10 +44,13 @@ static bool g_quiet = true;
+ #endif
+ 
+ static Console::ConsoleStream g_NullStream(nullptr);
++#endif
+ 
+ //////////////////////////////////////////////////
+ Console::Console()
++#if 0
+   : dataPtr(new ConsolePrivate)
++#endif
+ {
+ #ifndef SDFORMAT_DISABLE_CONSOLE_LOGFILE
+   // Set up the file that we'll log to.
+@@ -94,6 +100,7 @@ ConsolePtr Console::Instance()
+   return myself;
+ }
+ 
++#if 0
+ //////////////////////////////////////////////////
+ void Console::Clear()
+ {
+@@ -101,30 +108,38 @@ void Console::Clear()
+ 
+   myself = nullptr;
+ }
++#endif
+ 
++#if 0
+ //////////////////////////////////////////////////
+ void Console::SetQuiet(bool _quiet)
+ {
+   g_quiet = _quiet;
+ }
++#endif
+ 
++#if 0
+ //////////////////////////////////////////////////
+ sdf::Console::ConsoleStream &Console::GetMsgStream()
+ {
+   return this->dataPtr->msgStream;
+ }
++#endif
+ 
++#if 0
+ //////////////////////////////////////////////////
+ sdf::Console::ConsoleStream &Console::GetLogStream()
+ {
+   return this->dataPtr->logStream;
+ }
++#endif
+ 
+ //////////////////////////////////////////////////
+-Console::ConsoleStream &Console::ColorMsg(const std::string &lbl,
+-                                          const std::string &file,
+-                                          unsigned int line, int color)
++Console::DiagnosticStream Console::ColorMsg(const std::string &lbl,
++                                            const std::string &file,
++                                            unsigned int line, int color)
+ {
++#if 0
+   if (!g_quiet)
+   {
+     this->dataPtr->msgStream.Prefix(lbl, file, line, color);
+@@ -134,8 +149,12 @@ Console::ConsoleStream &Console::ColorMsg(const std::string &lbl,
+   {
+     return g_NullStream;
+   }
++#else
++  return DiagnosticStream(lbl, file, line, color);
++#endif
+ }
+ 
++#if 0
+ //////////////////////////////////////////////////
+ Console::ConsoleStream &Console::Log(const std::string &lbl,
+                                      const std::string &file,
+@@ -144,7 +163,9 @@ Console::ConsoleStream &Console::Log(const std::string &lbl,
+   this->dataPtr->logStream.Prefix(lbl, file, line, 0);
+   return this->dataPtr->logStream;
+ }
++#endif
+ 
++#if 0
+ //////////////////////////////////////////////////
+ void Console::ConsoleStream::Prefix(const std::string &_lbl,
+                                     const std::string &_file,
+@@ -172,15 +193,57 @@ void Console::ConsoleStream::Prefix(const std::string &_lbl,
+       _file.substr(index , _file.size() - index)<< ":" << _line << "] ";
+   }
+ }
++#endif
+ 
++#if 0
+ //////////////////////////////////////////////////
+ void Console::ConsoleStream::SetStream(std::ostream *_stream)
+ {
+   this->stream = _stream;
+ }
++#endif
+ 
++#if 0
+ //////////////////////////////////////////////////
+ std::ostream *Console::ConsoleStream::GetStream()
+ {
+   return this->stream;
+ }
++#endif
++
++#if 1
++Console::DiagnosticStream::DiagnosticStream(
++    const std::string &_lbl,
++    const std::string &_file,
++    unsigned int _line, 
++    int _color)
++    : color(_color)
++{
++  const size_t index = _file.find_last_of("/") + 1;
++  const std::string basename = _file.substr(index , _file.size() - index);
++  buffer << _lbl << " [" << basename << ":" << _line << "] ";
++}
++
++Console::DiagnosticStream::~DiagnosticStream() {
++  std::string message = buffer.str();
++  if (!message.empty() && (message.back() == '\n')) {
++    message.pop_back();
++  }
++  switch (color) {
++  case 34:  // Dbg
++    drake::log()->debug("SDFormat {}", message);
++    return;
++  case 32:  // Msg
++    drake::log()->info("SDFormat {}", message);
++    return;
++  case 33:  // Warning
++    drake::log()->warn("SDFormat {}", message);
++    return;
++  case 31:  // Error
++    drake::log()->error("SDFormat {}", message);
++    return;
++  }
++  throw std::runtime_error(
++      "Invalid diagnostic color code: " + std::to_string(color));
++}
++#endif

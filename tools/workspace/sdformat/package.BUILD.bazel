@@ -277,6 +277,10 @@ cc_library(
         "@ignition_math",
         "@ignition_utils",
         "@tinyxml2",
+        # N.B. It's very unusual to add a dependency from a third-party library
+        # onto Drake, but in this case it's the simplest way to be able to send
+        # error messages from sdformat parsing into Drake's logging API.
+        "@drake//common:essential",
     ],
 )
 
