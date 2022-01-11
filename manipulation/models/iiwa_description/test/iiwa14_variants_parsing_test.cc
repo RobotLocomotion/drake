@@ -104,7 +104,8 @@ GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValuesPlanarModel) {
                           "planar_iiwa14_spheres_dense_elbow_collision.urdf"));
   plant.Finalize();
 
-  // This model only has actuators 2, 4 and 6 of the canonical version
+  // This model only has three actuators. They correspond to actuators 1, 3 and
+  // 5 from the canonical version.
   CompareActuatorLimits(
       canonical_plant.get_joint_actuator(
           drake::multibody::JointActuatorIndex(1)),
