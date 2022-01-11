@@ -23,7 +23,6 @@ echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] " \
     "https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" | \
     tee /etc/apt/sources.list.d/kitware.list >/dev/null
 apt-get -y update
-rm /usr/share/keyrings/kitware-archive-keyring.gpg
 apt-get -y install --no-install-recommends kitware-archive-keyring
 apt-get -y install --no-install-recommends \
     "cmake-data=3.16.3-*" "cmake=3.16.3-*"
