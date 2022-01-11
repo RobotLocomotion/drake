@@ -11,8 +11,6 @@
 /// If a stop message is received, it will immediately discard the
 /// current plan and wait until a new plan is received.
 
-#include <string.h>
-
 #include <iostream>
 #include <memory>
 
@@ -20,7 +18,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
-#include "drake/common/text_logging.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -201,15 +198,6 @@ int do_main() {
 }  // namespace drake
 
 
-int main(int /* argc */, char* argv[]) {
-  // TODO(jwnimmer-tri) On 2022-01-01 once this deprecation date has passed,
-  // revert the portion of the patch that changed this file.
-  if (::strstr(argv[0], "bazel-bin/") == NULL) {
-    drake::log()->warn(
-        "The use of kuka_plan_runner outside of Drake"
-        " (i.e., via 'make install'  or a pre-compiled release image)"
-        " is deprecated and will be removed from the install"
-        " on or after 2022-01-01");
-  }
+int main() {
   return drake::examples::kuka_iiwa_arm::do_main();
 }

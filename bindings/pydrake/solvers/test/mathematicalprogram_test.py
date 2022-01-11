@@ -62,10 +62,30 @@ class TestCost(unittest.TestCase):
         cost = mp.QuadraticCost(np.array([[1., 2.], [2., 6.]]), b, c)
         self.assertTrue(cost.is_convex())
 
+    def test_l1norm_cost(self):
+        A = np.array([[1., 2.], [-.4, .7]])
+        b = np.array([0.5, -.4])
+        cost = mp.L1NormCost(A=A, b=b)
+        np.testing.assert_allclose(cost.A(), A)
+        np.testing.assert_allclose(cost.b(), b)
+        cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
+        np.testing.assert_allclose(cost.A(), 2*A)
+        np.testing.assert_allclose(cost.b(), 2*b)
+
     def test_l2norm_cost(self):
         A = np.array([[1., 2.], [-.4, .7]])
         b = np.array([0.5, -.4])
         cost = mp.L2NormCost(A=A, b=b)
+        np.testing.assert_allclose(cost.A(), A)
+        np.testing.assert_allclose(cost.b(), b)
+        cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
+        np.testing.assert_allclose(cost.A(), 2*A)
+        np.testing.assert_allclose(cost.b(), 2*b)
+
+    def test_linfnorm_cost(self):
+        A = np.array([[1., 2.], [-.4, .7]])
+        b = np.array([0.5, -.4])
+        cost = mp.LInfNormCost(A=A, b=b)
         np.testing.assert_allclose(cost.A(), A)
         np.testing.assert_allclose(cost.b(), b)
         cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
@@ -1406,7 +1426,9 @@ class TestMathematicalProgram(unittest.TestCase):
             mp.Cost,
             mp.LinearCost,
             mp.QuadraticCost,
+            mp.L1NormCost,
             mp.L2NormCost,
+            mp.LInfNormCost,
             mp.VisualizationCallback,
         ]
         for cls in cls_list:

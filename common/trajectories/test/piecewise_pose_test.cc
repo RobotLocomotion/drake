@@ -86,12 +86,6 @@ TEST_F(PiecewisePoseTest, TestPose) {
     EXPECT_TRUE(drake::CompareMatrices(dut_.GetPose(time).GetAsMatrix4(),
                                        expected.GetAsMatrix4(), 1e-12,
                                        drake::MatrixCompareType::absolute));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    EXPECT_TRUE(drake::CompareMatrices(dut_.get_pose(time).GetAsMatrix4(),
-                                       expected.GetAsMatrix4(), 1e-12,
-                                       drake::MatrixCompareType::absolute));
-#pragma GCC diagnostic pop
     EXPECT_TRUE(drake::CompareMatrices(dut_.value(time),
                                        expected.GetAsMatrix4(), 1e-12,
                                        drake::MatrixCompareType::absolute));
@@ -111,11 +105,6 @@ TEST_F(PiecewisePoseTest, TestVelocity) {
 
     EXPECT_TRUE(drake::CompareMatrices(dut_.GetVelocity(time), expected, 1e-12,
                                        drake::MatrixCompareType::absolute));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    EXPECT_TRUE(drake::CompareMatrices(dut_.get_velocity(time), expected, 1e-12,
-                                       drake::MatrixCompareType::absolute));
-#pragma GCC diagnostic pop
   }
 }
 
@@ -133,12 +122,6 @@ TEST_F(PiecewisePoseTest, TestAcceleration) {
     EXPECT_TRUE(drake::CompareMatrices(dut_.GetAcceleration(time), expected,
                                        1e-12,
                                        drake::MatrixCompareType::absolute));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    EXPECT_TRUE(drake::CompareMatrices(dut_.get_acceleration(time), expected,
-                                       1e-12,
-                                       drake::MatrixCompareType::absolute));
-#pragma GCC diagnostic pop
   }
 }
 
@@ -169,17 +152,9 @@ TEST_F(PiecewisePoseTest, TestIsApprox) {
 
   PiecewisePose<double> diff_position(new_pos_traj, orientation_);
   EXPECT_TRUE(!diff_position.IsApprox(dut_, 1e-12));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_TRUE(!diff_position.is_approx(dut_, 1e-12));
-#pragma GCC diagnostic pop
 
   PiecewisePose<double> diff_orientation(position_, new_rot_traj);
   EXPECT_TRUE(!diff_orientation.IsApprox(dut_, 1e-12));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_TRUE(!diff_orientation.is_approx(dut_, 1e-12));
-#pragma GCC diagnostic pop
 }
 
 // Tests getters.

@@ -956,73 +956,73 @@
   <frame link="r_foot" name="r_foot_sole" rpy="0 0 0" xyz="0.0426 -0.0017 -0.07645"/>
   <frame link="l_foot" name="l_foot_toe" rpy="0 0 0" xyz="0.1728 0.0017 -0.07645"/>
   <frame link="r_foot" name="r_foot_toe" rpy="0 0 0" xyz="0.1728 -0.0017 -0.07645"/>
-  <collision_filter_group name="feet">
-    <member link="l_foot"/>
-    <member link="r_foot"/>
-    <ignored_collision_filter_group collision_filter_group="feet"/>
-  </collision_filter_group>
-  <collision_filter_group name="core">
-    <member link="utorso"/>
-    <member link="pelvis"/>
-    <ignored_collision_filter_group collision_filter_group="core"/>
-  </collision_filter_group>
-  <collision_filter_group name="ignore_core">
-    <member link="r_scap"/>
-    <member link="l_scap"/>
-    <member link="r_clav"/>
-    <member link="l_clav"/>
-    <ignored_collision_filter_group collision_filter_group="core"/>
-  </collision_filter_group>
-  <collision_filter_group name="r_uleg">
-    <member link="r_uglut"/>
-    <member link="r_lglut"/>
-    <member link="r_uleg"/>
-    <ignored_collision_filter_group collision_filter_group="core"/>
-    <ignored_collision_filter_group collision_filter_group="r_uleg"/>
-    <ignored_collision_filter_group collision_filter_group="l_uleg"/>
-  </collision_filter_group>
-  <collision_filter_group name="l_uleg">
-    <member link="l_uglut"/>
-    <member link="l_lglut"/>
-    <member link="l_uleg"/>
-    <ignored_collision_filter_group collision_filter_group="core"/>
-    <ignored_collision_filter_group collision_filter_group="l_uleg"/>
-    <ignored_collision_filter_group collision_filter_group="l_uleg"/>
-  </collision_filter_group>
-  <collision_filter_group name="r_leg">
-    <member link="r_lleg"/>
-    <member link="r_talus"/>
-    <member link="r_foot"/>
-    <ignored_collision_filter_group collision_filter_group="r_leg"/>
-    <ignored_collision_filter_group collision_filter_group="r_uleg"/>
-  </collision_filter_group>
-  <collision_filter_group name="l_leg">
-    <member link="l_lleg"/>
-    <member link="l_talus"/>
-    <member link="l_foot"/>
-    <ignored_collision_filter_group collision_filter_group="l_leg"/>
-    <ignored_collision_filter_group collision_filter_group="l_uleg"/>
-  </collision_filter_group>
-  <collision_filter_group name="r_arm">
-    <member link="r_clav"/>
-    <member link="r_scap"/>
-    <member link="r_uarm"/>
-    <member link="r_larm"/>
-    <member link="r_ufarm"/>
-    <member link="r_lfarm"/>
-    <member link="r_hand"/>
-    <ignored_collision_filter_group collision_filter_group="r_arm"/>
-  </collision_filter_group>
-  <collision_filter_group name="l_arm">
-    <member link="l_clav"/>
-    <member link="l_scap"/>
-    <member link="l_uarm"/>
-    <member link="l_larm"/>
-    <member link="l_ufarm"/>
-    <member link="l_lfarm"/>
-    <member link="l_hand"/>
-    <ignored_collision_filter_group collision_filter_group="l_arm"/>
-  </collision_filter_group>
+  <drake:collision_filter_group name="feet">
+    <drake:member link="l_foot"/>
+    <drake:member link="r_foot"/>
+    <drake:ignored_collision_filter_group name="feet"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="core">
+    <drake:member link="utorso"/>
+    <drake:member link="pelvis"/>
+    <drake:ignored_collision_filter_group name="core"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="ignore_core">
+    <drake:member link="r_scap"/>
+    <drake:member link="l_scap"/>
+    <drake:member link="r_clav"/>
+    <drake:member link="l_clav"/>
+    <drake:ignored_collision_filter_group name="core"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="r_uleg">
+    <drake:member link="r_uglut"/>
+    <drake:member link="r_lglut"/>
+    <drake:member link="r_uleg"/>
+    <drake:ignored_collision_filter_group name="core"/>
+    <drake:ignored_collision_filter_group name="r_uleg"/>
+    <drake:ignored_collision_filter_group name="l_uleg"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="l_uleg">
+    <drake:member link="l_uglut"/>
+    <drake:member link="l_lglut"/>
+    <drake:member link="l_uleg"/>
+    <drake:ignored_collision_filter_group name="core"/>
+    <drake:ignored_collision_filter_group name="l_uleg"/>
+    <drake:ignored_collision_filter_group name="l_uleg"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="r_leg">
+    <drake:member link="r_lleg"/>
+    <drake:member link="r_talus"/>
+    <drake:member link="r_foot"/>
+    <drake:ignored_collision_filter_group name="r_leg"/>
+    <drake:ignored_collision_filter_group name="r_uleg"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="l_leg">
+    <drake:member link="l_lleg"/>
+    <drake:member link="l_talus"/>
+    <drake:member link="l_foot"/>
+    <drake:ignored_collision_filter_group name="l_leg"/>
+    <drake:ignored_collision_filter_group name="l_uleg"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="r_arm">
+    <drake:member link="r_clav"/>
+    <drake:member link="r_scap"/>
+    <drake:member link="r_uarm"/>
+    <drake:member link="r_larm"/>
+    <drake:member link="r_ufarm"/>
+    <drake:member link="r_lfarm"/>
+    <drake:member link="r_hand"/>
+    <drake:ignored_collision_filter_group name="r_arm"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="l_arm">
+    <drake:member link="l_clav"/>
+    <drake:member link="l_scap"/>
+    <drake:member link="l_uarm"/>
+    <drake:member link="l_larm"/>
+    <drake:member link="l_ufarm"/>
+    <drake:member link="l_lfarm"/>
+    <drake:member link="l_hand"/>
+    <drake:ignored_collision_filter_group name="l_arm"/>
+  </drake:collision_filter_group>
   <link name="head">
     <inertial>
       <origin rpy="0 0 0" xyz="-0.075493 3.3383E-05 0.02774"/>

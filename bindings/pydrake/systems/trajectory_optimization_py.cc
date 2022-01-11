@@ -17,6 +17,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
   using namespace drake::systems::trajectory_optimization;
   constexpr auto& doc = pydrake_doc.drake.systems.trajectory_optimization;
 
+  using solvers::MathematicalProgram;
   using solvers::VectorXDecisionVariable;
 
   py::module::import("pydrake.symbolic");
@@ -24,9 +25,11 @@ PYBIND11_MODULE(trajectory_optimization, m) {
   py::module::import("pydrake.systems.primitives");
   py::module::import("pydrake.solvers.mathematicalprogram");
 
-  py::class_<MultipleShooting, solvers::MathematicalProgram>(
-      m, "MultipleShooting", doc.MultipleShooting.doc)
+  py::class_<MultipleShooting>(m, "MultipleShooting", doc.MultipleShooting.doc)
       .def("time", &MultipleShooting::time, doc.MultipleShooting.time.doc)
+      .def("prog",
+          overload_cast_explicit<MathematicalProgram&>(&MultipleShooting::prog),
+          py_rvp::reference_internal, doc.MultipleShooting.prog.doc)
       .def("timestep", &MultipleShooting::timestep, py::arg("index"),
           doc.MultipleShooting.timestep.doc)
       .def("fixed_timestep", &MultipleShooting::fixed_timestep,
@@ -224,6 +227,8 @@ PYBIND11_MODULE(trajectory_optimization, m) {
           py::arg("input_port_index") =
               systems::InputPortSelection::kUseFirstInputIfItExists,
           doc.DirectTranscription.ctor.doc_5args);
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake
