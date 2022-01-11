@@ -478,11 +478,11 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
   std::array<vtkNew<vtkOpenGLPolyDataMapper>, kNumPipelines> mappers;
 
   // Sets vertex and fragment shaders only to the depth mapper.
-  vtkOpenGLShaderProperty* sp = vtkOpenGLShaderProperty::SafeDownCast(
+  vtkOpenGLShaderProperty* shader_prop = vtkOpenGLShaderProperty::SafeDownCast(
       actors[ImageType::kDepth]->GetShaderProperty());
-  DRAKE_DEMAND(sp != nullptr);
-  sp->SetVertexShaderCode(shaders::kDepthVS);
-  sp->SetFragmentShaderCode(shaders::kDepthFS);
+  DRAKE_DEMAND(shader_prop != nullptr);
+  shader_prop->SetVertexShaderCode(shaders::kDepthVS);
+  shader_prop->SetFragmentShaderCode(shaders::kDepthFS);
   mappers[ImageType::kDepth]->AddObserver(
       vtkCommand::UpdateShaderEvent, uniform_setting_callback_.Get());
 
