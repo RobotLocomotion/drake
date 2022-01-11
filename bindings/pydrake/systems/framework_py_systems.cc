@@ -18,6 +18,7 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_html.h"
 #include "drake/systems/framework/system_scalar_converter.h"
+#include "drake/systems/framework/system_visitor.h"
 #include "drake/systems/framework/vector_system.h"
 #include "drake/systems/framework/witness_function.h"
 
@@ -43,6 +44,7 @@ using systems::State;
 using systems::System;
 using systems::SystemBase;
 using systems::SystemScalarConverter;
+using systems::SystemVisitor;
 using systems::UnrestrictedUpdateEvent;
 using systems::VectorSystem;
 using systems::WitnessFunction;
@@ -280,6 +282,18 @@ struct Impl {
     }
   };
 
+  class PySystemVisitor : public py::wrapper<SystemVisitor<T>> {
+   public:
+    // Trampoline virtual methods.
+    void VisitSystem(const System<T>& system) override {
+      PYBIND11_OVERLOAD_PURE(void, SystemVisitor<T>, VisitSystem, system);
+    };
+
+    void VisitDiagram(const Diagram<T>& diagram) override {
+      PYBIND11_OVERLOAD_PURE(void, SystemVisitor<T>, VisitDiagram, diagram);
+    }
+  };
+
   static void DoScalarDependentDefinitions(py::module m) {
     // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
     using namespace drake::systems;
@@ -294,6 +308,10 @@ struct Impl {
         DefineTemplateClassWithDefault<System<T>, SystemBase, PySystem>(
             m, "System", GetPyParam<T>(), doc.System.doc);
     system_cls  // BR
+        .def(
+            "Accept",
+            [](const System<T>* self, PySystemVisitor* v) { self->Accept(v); },
+            py::arg("v"), doc.System.Accept.doc)
         .def("get_input_port",
             overload_cast_explicit<const InputPort<T>&, int>(
                 &System<T>::get_input_port),
@@ -905,6 +923,71 @@ Note: The above is for the C++ documentation. For Python, use
     DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
         .def(py::init<>(), doc.Diagram.ctor.doc_0args)
+        .def(
+            "connection_map",
+            [](Diagram<T>* self) {
+              py::dict out;
+              py::object self_py = py::cast(self, py_rvp::reference);
+              for (auto& [input_locator, output_locator] :
+                  self->connection_map()) {
+                py::object input_system_py =
+                    py::cast(input_locator.first, py_rvp::reference);
+                py::object input_port_index_py = py::cast(input_locator.second);
+                // Keep alive, ownership: `input_system_py` keeps `self` alive.
+                py_keep_alive(input_system_py, self_py);
+                py::tuple input_locator_py(2);
+                input_locator_py[0] = input_system_py;
+                input_locator_py[1] = input_port_index_py;
+
+                py::object output_system_py =
+                    py::cast(output_locator.first, py_rvp::reference);
+                py::object output_port_index_py =
+                    py::cast(output_locator.second);
+                // Keep alive, ownership: `output_system_py` keeps `self` alive.
+                py_keep_alive(output_system_py, self_py);
+                py::tuple output_locator_py(2);
+                output_locator_py[0] = output_system_py;
+                output_locator_py[1] = output_port_index_py;
+
+                out[input_locator_py] = output_locator_py;
+              }
+              return out;
+            },
+            doc.Diagram.connection_map.doc)
+        .def(
+            "GetInputPortLocators",
+            [](Diagram<T>* self, InputPortIndex port_index) {
+              py::list out;
+              py::object self_py = py::cast(self, py_rvp::reference);
+              for (auto& locator : self->GetInputPortLocators(port_index)) {
+                py::object system_py =
+                    py::cast(locator.first, py_rvp::reference);
+                py::object port_index_py = py::cast(locator.second);
+                // Keep alive, ownership: `system_py` keeps `self` alive.
+                py_keep_alive(system_py, self_py);
+                py::tuple locator_py(2);
+                locator_py[0] = system_py;
+                locator_py[1] = port_index_py;
+                out.append(locator_py);
+              }
+              return out;
+            },
+            py::arg("port_index"), doc.Diagram.GetInputPortLocators.doc)
+        .def(
+            "get_output_port_locator",
+            [](Diagram<T>* self, OutputPortIndex port_index) {
+              py::object self_py = py::cast(self, py_rvp::reference);
+              const auto& locator = self->get_output_port_locator(port_index);
+              py::object system_py = py::cast(locator.first, py_rvp::reference);
+              py::object port_index_py = py::cast(locator.second);
+              // Keep alive, ownership: `system_py` keeps `self` alive.
+              py_keep_alive(system_py, self_py);
+              py::tuple locator_py(2);
+              locator_py[0] = system_py;
+              locator_py[1] = port_index_py;
+              return locator_py;
+            },
+            py::arg("port_index"), doc.Diagram.get_output_port_locator.doc)
         .def("GetMutableSubsystemState",
             overload_cast_explicit<State<T>&, const System<T>&, Context<T>*>(
                 &Diagram<T>::GetMutableSubsystemState),
@@ -948,6 +1031,14 @@ Note: The above is for the C++ documentation. For Python, use
     // wrapper to convert `Map<Derived>*` arguments.
     // N.B. This could be mitigated by using `EigenPtr` in public interfaces in
     // upstream code.
+
+    DefineTemplateClassWithDefault<SystemVisitor<T>, PySystemVisitor>(
+        m, "SystemVisitor", GetPyParam<T>(), doc.SystemVisitor.doc)
+        .def(py::init())
+        .def("VisitSystem", &SystemVisitor<T>::VisitSystem, py::arg("system"),
+            doc.SystemVisitor.VisitSystem.doc)
+        .def("VisitDiagram", &SystemVisitor<T>::VisitDiagram,
+            py::arg("diagram"), doc.SystemVisitor.VisitDiagram.doc);
   }
 };
 
