@@ -20,6 +20,9 @@ Drake binary releases incorporate a pre-compiled version of
 [Mathematical Program toolbox](https://drake.mit.edu/doxygen_cxx/group__solvers.html).
 Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
+Drake's binary releases do not support the Mosek nor Gurobi solvers. To use
+Mosek or Gurobi, you will need to [build Drake from source](/from_source.html).
+
 ## Stable Releases
 
 Binary packages of Drake for Ubuntu 18.04 (Bionic), Ubuntu 20.04 (Focal) and
