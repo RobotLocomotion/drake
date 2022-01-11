@@ -353,6 +353,7 @@ class TestGeometryCore(unittest.TestCase):
             self, box,
             lambda shape: [shape.width(), shape.depth(), shape.height()])
         numpy_compare.assert_float_equal(box.size(), np.array([1.0, 2.0, 3.0]))
+        self.assertAlmostEqual(mut.CalcVolume(box), 6.0, 1e-14)
 
         capsule = mut.Capsule(radius=1.0, length=2.0)
         assert_shape_api(capsule)
