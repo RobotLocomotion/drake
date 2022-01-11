@@ -19,7 +19,7 @@ bucket.  When a consumer compiles drake, the `.tar.gz` archive for VTK is
 downloaded and extracted as part of the build.  As such, any modifications to
 the VTK build should modify the naming scheme of the `.tar.gz` file by updating
 the `image/package.sh` file's `build_number` variable.  Never overwrite a build
-artifact of the same name on `drake-packages`, doing so will break any users
+artifact of the same name on `drake-packages` as doing so will break any users
 trying to perform a historical build.
 
 The file `image/vtk-args` contains the full set of CMake configuration arguments
