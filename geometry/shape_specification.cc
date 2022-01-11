@@ -1,5 +1,7 @@
 #include "drake/geometry/shape_specification.h"
 
+#include <limits>
+
 #include <fmt/format.h>
 
 #include "drake/common/nice_type_name.h"
@@ -16,12 +18,21 @@ void Shape::Reify(ShapeReifier* reifier, void* user_data) const {
 
 std::unique_ptr<Shape> Shape::Clone() const { return cloner_(*this); }
 
+double Shape::CalcVolume() const {
+  throw std::logic_error(
+      "The CalcVolume() method for this Shape is not implemented yet.");
+}
+
 Sphere::Sphere(double radius)
     : Shape(ShapeTag<Sphere>()), radius_(radius) {
   if (radius < 0) {
     throw std::logic_error(
         fmt::format("Sphere radius should be >= 0 (was {}).", radius));
   }
+}
+
+double Sphere::CalcVolume() const {
+  return 4.0/3.0 * M_PI * std::pow(radius_, 3);
 }
 
 Cylinder::Cylinder(double radius, double length)
@@ -36,7 +47,15 @@ Cylinder::Cylinder(double radius, double length)
   }
 }
 
+double Cylinder::CalcVolume() const {
+  return M_PI * std::pow(radius_, 2) * length_;
+}
+
 HalfSpace::HalfSpace() : Shape(ShapeTag<HalfSpace>()) {}
+
+double HalfSpace::CalcVolume() const {
+  return std::numeric_limits<double>::infinity();
+}
 
 RigidTransform<double> HalfSpace::MakePose(const Vector3<double>& Hz_dir_F,
                                            const Vector3<double>& p_FB) {
@@ -80,6 +99,10 @@ Box::Box(double width, double depth, double height)
   }
 }
 
+double Box::CalcVolume() const {
+  return size_[0] * size_[1] * size_[2];
+}
+
 Box Box::MakeCube(double edge_size) {
   return Box(edge_size, edge_size, edge_size);
 }
@@ -94,6 +117,11 @@ Capsule::Capsule(double radius, double length)
   }
 }
 
+double Capsule::CalcVolume() const {
+  return M_PI * std::pow(radius_, 2) * length_ +
+         4.0 / 3.0 * M_PI * std::pow(radius_, 3);
+}
+
 Ellipsoid::Ellipsoid(double a, double b, double c)
     : Shape(ShapeTag<Ellipsoid>()), radii_(a, b, c) {
   if (a <= 0 || b <= 0 || c <= 0) {
@@ -102,6 +130,10 @@ Ellipsoid::Ellipsoid(double a, double b, double c)
                     "should all be > 0 (were {}, {}, and {}, respectively).",
                     a, b, c));
   }
+}
+
+double Ellipsoid::CalcVolume() const {
+  return 4.0 / 3.0 * M_PI * radii_[0] * radii_[1] * radii_[2];
 }
 
 Mesh::Mesh(const std::string& absolute_filename, double scale)
@@ -126,6 +158,10 @@ MeshcatCone::MeshcatCone(double height, double a, double b)
         "{}, {}, and {}, respectively).",
         height, a, b));
   }
+}
+
+double MeshcatCone::CalcVolume() const {
+  return 1.0 / 3.0 * M_PI * a_ * b_ * height_;
 }
 
 void ShapeReifier::ImplementGeometry(const Sphere&, void*) {

@@ -359,6 +359,7 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     py::class_<Shape> shape_cls(m, "Shape", doc.Shape.doc);
     DefClone(&shape_cls);
+    shape_cls.def("CalcVolume", &Shape::CalcVolume, doc.Shape.CalcVolume.doc);
 
     py::class_<Box, Shape>(m, "Box", doc.Box.doc)
         .def(py::init<double, double, double>(), py::arg("width"),

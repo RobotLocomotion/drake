@@ -544,6 +544,24 @@ GTEST_TEST(ShapeName, Streaming) {
   EXPECT_EQ(ss.str(), name.name());
 }
 
+GTEST_TEST(ShapeTest, Volume) {
+  EXPECT_NEAR(Sphere(3).CalcVolume(), 36.0 * M_PI, 1e-13);
+  EXPECT_NEAR(Cylinder(1.3, 2.1).CalcVolume(), M_PI * 1.3 * 1.3 * 2.1, 1e-14);
+  EXPECT_NEAR(Box(1, 2, 3).CalcVolume(), 6.0, 1e-14);
+  EXPECT_NEAR(Capsule(1.23, 2.4).CalcVolume(),
+              Cylinder(1.23, 2.4).CalcVolume() + Sphere(1.23).CalcVolume(),
+              1e-14);
+  EXPECT_NEAR(Ellipsoid(1, 2, 3).CalcVolume(), 8.0 * M_PI, 1e-14);
+  EXPECT_EQ(HalfSpace().CalcVolume(), std::numeric_limits<double>::infinity());
+
+  DRAKE_EXPECT_THROWS_MESSAGE(Mesh("filepath", 1.0).CalcVolume(),
+                              ".*not implemented yet.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(Convex("filepath", 1.0).CalcVolume(),
+                              ".*not implemented yet.*");
+
+  EXPECT_NEAR(MeshcatCone(4, 2, 3).CalcVolume(), 8.0 * M_PI, 1e-14);
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake

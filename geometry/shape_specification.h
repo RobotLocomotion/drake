@@ -61,6 +61,12 @@ class Shape {
   /** Creates a unique copy of this shape. */
   std::unique_ptr<Shape> Clone() const;
 
+  /** Calculates the volume (in meters^3) for the Shape.
+   @throws std::exception if the derived type hasn't overloaded this
+   implementation (yet).
+  */
+  virtual double CalcVolume() const;
+
  protected:
   // This is *not* in the public section. However, this allows the children to
   // also use this macro, but precludes the possibility of external users
@@ -112,6 +118,9 @@ class Sphere final : public Shape {
 
   double radius() const { return radius_; }
 
+  /** Calculates the volume (in meters^3) for the Shape. */
+  double CalcVolume() const override;
+
  private:
   double radius_{};
 };
@@ -129,6 +138,9 @@ class Cylinder final : public Shape {
 
   double radius() const { return radius_; }
   double length() const { return length_; }
+
+  /** Calculates the volume (in meters^3) for the Shape. */
+  double CalcVolume() const override;
 
  private:
   double radius_{};
@@ -165,6 +177,9 @@ class Box final : public Shape {
   /** Returns the box's dimensions. */
   const Vector3<double>& size() const { return size_; }
 
+  /** Calculates the volume (in meters^3) for the Shape. */
+  double CalcVolume() const override;
+
  private:
   Vector3<double> size_;
 };
@@ -187,6 +202,9 @@ class Capsule final : public Shape {
 
   double radius() const { return radius_; }
   double length() const { return length_; }
+
+  /** Calculates the volume (in meters^3) for the Shape. */
+  double CalcVolume() const override;
 
  private:
   double radius_{};
@@ -215,6 +233,9 @@ class Ellipsoid final : public Shape {
   double b() const { return radii_(1); }
   double c() const { return radii_(2); }
 
+  /** Calculates the volume (in meters^3) for the Shape. */
+  double CalcVolume() const override;
+
  private:
   Vector3<double> radii_;
 };
@@ -230,6 +251,9 @@ class HalfSpace final : public Shape {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HalfSpace)
 
   HalfSpace();
+
+  /** Returns the volume of the half space, which is always infinity. */
+  double CalcVolume() const override;
 
   /** Creates the pose of a canonical half space in frame F.
    The half space's normal is aligned to the positive z-axis of its canonical
@@ -344,6 +368,9 @@ class MeshcatCone final : public Shape {
   double height() const { return height_; }
   double a() const { return a_; }
   double b() const { return b_; }
+
+  /** Calculates the volume (in meters^3) for the Shape. */
+  double CalcVolume() const override;
 
  private:
   double height_;
