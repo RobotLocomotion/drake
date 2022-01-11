@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# NOTE: need to update this file?  Refer to tools/workspace/vtk/README.md.
+# NOTE: If you need to update this file, please refer to
+#       tools/workspace/vtk/README for important details.
 
 set -eu -o pipefail
 
