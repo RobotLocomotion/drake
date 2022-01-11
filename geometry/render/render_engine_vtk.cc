@@ -441,6 +441,7 @@ void RenderEngineVtk::InitializePipelines() {
   pipelines_[ImageType::kColor]->renderer->UseFXAAOn();
   pipelines_[ImageType::kColor]->renderer->SetBackground(
       default_clear_color_.r, default_clear_color_.g, default_clear_color_.b);
+  pipelines_[ImageType::kColor]->renderer->SetBackgroundAlpha(1.0);
 }
 
 void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
