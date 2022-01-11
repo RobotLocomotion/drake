@@ -136,6 +136,28 @@ GTEST_TEST(UnitInertia, PointMass) {
   EXPECT_TRUE(uxuxv.isApprox(G * v, kEpsilon));
 }
 
+// Tests the static method to obtain the unit inertia of a solid ellipsoid.
+GTEST_TEST(UnitInertia, SolidEllipsoid) {
+  const double a = 3.0;
+  const double b = 4.0;
+  const double c = 5.0;
+  const UnitInertia<double> G_expected = UnitInertia<double>(8.2, 6.8, 5.0);
+  const UnitInertia<double> G = UnitInertia<double>::SolidEllipsoid(a, b, c);
+  EXPECT_TRUE(
+      CompareMatrices(G_expected.get_moments(), G.get_moments(), 1e-14));
+  EXPECT_TRUE(G_expected.get_products() == G.get_products());
+
+  // The ellipsoid degenerates into a solid sphere when all semi-axes are equal.
+  const UnitInertia<double> G_degenerate_ellipsoid =
+      UnitInertia<double>::SolidEllipsoid(a, a, a);
+  const UnitInertia<double> G_solid_sphere =
+      UnitInertia<double>::SolidSphere(a);
+  EXPECT_TRUE(CompareMatrices(G_degenerate_ellipsoid.get_moments(),
+                              G_solid_sphere.get_moments(), 1e-14));
+  EXPECT_TRUE(G_degenerate_ellipsoid.get_products() ==
+              G_solid_sphere.get_products());
+}
+
 // Tests the static method to obtain the unit inertia of a solid sphere.
 GTEST_TEST(UnitInertia, SolidSphere) {
   const double radius = 3.5;
