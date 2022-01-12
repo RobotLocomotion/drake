@@ -317,6 +317,8 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
   }
 }
 
+// Most of the calculation in this function should be the same as in
+// MultibodyPlant<T>::CalcDiscreteContactPairs().
 template <typename T>
 void CompliantContactManager<T>::
     AppendDiscreteContactPairsForHydroelasticContact(
@@ -338,6 +340,10 @@ void CompliantContactManager<T>::
   const std::vector<geometry::ContactSurface<T>>& surfaces =
       this->EvalContactSurfaces(context);
   for (const auto& s : surfaces) {
+    const bool M_is_compliant = s.HasGradE_M();
+    const bool N_is_compliant = s.HasGradE_N();
+    DRAKE_DEMAND(M_is_compliant || N_is_compliant);
+
     const T tau_M = GetDissipationTimeConstant(s.id_M(), inspector);
     const T tau_N = GetDissipationTimeConstant(s.id_N(), inspector);
     const T tau = CombineDissipationTimeConstant(tau_M, tau_N);
@@ -355,43 +361,58 @@ void CompliantContactManager<T>::
       // We therefore ignore infinitesimally small triangles. The tolerance
       // below is somehow arbitrary and could possibly be tightened.
       if (Ae > 1.0e-14) {
-        // N.B Assuming rigid-soft contact, and thus only a single pressure
-        // gradient is considered to be valid. We first verify this indeed
-        // is the case by checking that only one side has gradient
-        // information (the volumetric side).
-        const bool M_is_soft = s.HasGradE_M();
-        const bool N_is_soft = s.HasGradE_N();
-        DRAKE_DEMAND(M_is_soft ^ N_is_soft);
-
-        // Pressure gradient always points into the soft geometry by
-        // construction.
-        const Vector3<T>& grad_pres_W =
-            M_is_soft ? s.EvaluateGradE_M_W(face) : s.EvaluateGradE_N_W(face);
-
         // From ContactSurface's documentation: The normal of each face is
         // guaranteed to point "out of" N and "into" M.
         const Vector3<T>& nhat_W = s.face_normal(face);
 
+        // One dimensional pressure gradient (in Pa/m). Unlike [Masterjohn
+        // et al. 2021], for convenience we define both pressure gradients
+        // to be positive in the direction "into" the bodies. Therefore,
+        // we use the minus sign for gN.
+        // [Masterjohn et al., 2021] Discrete Approximation of Pressure
+        // Field Contact Patches.
+        const T gM = M_is_compliant
+                     ? s.EvaluateGradE_M_W(face).dot(nhat_W)
+                     : T(std::numeric_limits<double>::infinity());
+        const T gN = N_is_compliant
+                     ? -s.EvaluateGradE_N_W(face).dot(nhat_W)
+                     : T(std::numeric_limits<double>::infinity());
+
+        constexpr double kGradientEpsilon = 1.0e-14;
+        if (gM < kGradientEpsilon || gN < kGradientEpsilon) {
+          // Mathematically g = gN*gM/(gN+gM) and therefore g = 0 when
+          // either gradient on one of the bodies is zero. A zero gradient
+          // means there is no contact constraint, and therefore we
+          // ignore it to avoid numerical problems in the discrete solver.
+          continue;
+        }
+
+        // Effective hydroelastic pressure gradient g result of
+        // compliant-compliant interaction, see [Masterjohn et al., 2021].
+        // The expression below is mathematically equivalent to g =
+        // gN*gM/(gN+gM) but it has the advantage of also being valid if
+        // one of the gradients is infinity.
+        const T g = 1.0 / (1.0 / gM + 1.0 / gN);
+
         // Position of quadrature point Q in the world frame (since mesh_W
         // is measured and expressed in W).
         const Vector3<T>& p_WQ = s.centroid(face);
-        // TODO(DamrongGuoy) EvaluateCartesian() on the triangle mesh field
-        //  is expensive if the field doesn't have the gradients. The
-        //  field computation for triangle representation should capture
-        //  the field gradients, just like the polygon field does. (That
-        //  also unifies the APIs and logic on the geometry side better.)
+        // For a triangle, its centroid has the fixed barycentric
+        // coordinates independent of the shape of the triangle. Using
+        // barycentric coordinates to evaluate field value could be
+        // faster than using Cartesian coordiantes, especially if the
+        // TriangleSurfaceMeshFieldLinear<> does not store gradients and
+        // has to solve linear equations to convert Cartesian to
+        // barycentric coordinates.
+        const Vector3<T> tri_centroid_barycentric(1 / 3., 1 / 3., 1 / 3.);
         // Pressure at the quadrature point.
         const T p0 = s.is_triangle()
-                          ? s.tri_e_MN().EvaluateCartesian(face, p_WQ)
-                          : s.poly_e_MN().EvaluateCartesian(face, p_WQ);
+                     ? s.tri_e_MN().Evaluate(
+                face, tri_centroid_barycentric)
+                     : s.poly_e_MN().EvaluateCartesian(face, p_WQ);
 
         // Force contribution by this quadrature point.
         const T fn0 = Ae * p0;
-
-        // Since the normal always points into M, regardless of which body
-        // is soft, we must take into account the change of sign when body
-        // N is soft and M is rigid.
-        const T sign = M_is_soft ? 1.0 : -1.0;
 
         // TODO(amcastro-tri): Re-wordsmith this so that it's less about
         //  "quadrature points" and "weights", and more about the first order
@@ -434,7 +455,7 @@ void CompliantContactManager<T>::
         // [Masterjohn, 2021] Masterjohn J., Guoy D., Shepherd J. and Castro
         // A., 2021. Discrete Approximation of Pressure Field Contact Patches.
         // Available at https://arxiv.org/abs/2110.04157.
-        const T k = sign * Ae * grad_pres_W.dot(nhat_W);
+        const T k = Ae * g;
 
         // N.B. The normal is guaranteed to point into M. However, when M
         // is soft, the gradient is not guaranteed to be in the direction
@@ -451,7 +472,7 @@ void CompliantContactManager<T>::
         // of k is correct, we decided to keep these contributions.
 
         // phi < 0 when in penetration.
-        const T phi0 = -sign * p0 / grad_pres_W.dot(nhat_W);
+        const T phi0 = -p0 / g;
 
         if (k > 0) {
           const T dissipation = tau * k;
