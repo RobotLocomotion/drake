@@ -116,9 +116,8 @@ void ClipPolygonByHalfSpace(
   }
 }
 
-template <typename MeshType>
-void SurfaceVolumeIntersector<MeshType>::RemoveDuplicateVertices(
-    std::vector<Vector3<T>>* polygon) {
+template <typename T>
+void RemoveDuplicateVertices(std::vector<Vector3<T>>* polygon) {
   DRAKE_ASSERT(polygon != nullptr);
 
   // TODO(SeanCurtis-TRI): The resulting polygon depends on the order of the
