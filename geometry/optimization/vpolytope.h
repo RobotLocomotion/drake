@@ -88,9 +88,7 @@ class VPolytope final : public ConvexSet {
   // Implement support shapes for the ShapeReifier interface.
   using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* data) final;
-  // TODO(russt): Support ImplementGeometry(const Convex& convex, ...), but
-  // currently it would require e.g. digging ReadObjForConvex out of
-  // proximity_engine.cc.
+  void ImplementGeometry(const Convex& convex, void* data) final;
 
   Eigen::MatrixXd vertices_;
 };
