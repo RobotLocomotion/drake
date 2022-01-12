@@ -38,11 +38,10 @@ static constexpr double nan() {
 }
 
 // In this fixture we set a simple model consisting of:
-//  1. The flat ground.
-//  2. A sphere (sphere 1) on top of the ground.
-//  3. A second sphere (sphere 2) on top of the first sphere.
-// The flat ground is modeled as rigid-hydroelastic.
-// Sphere 1 interacts with the ground using the hydroelastic contact model
+//  1. The rigid-hydroelastic flat ground,
+//  2. A compliant-hydroelastic sphere (sphere 1) on top of the ground,
+//  3. A non-hydroelastic sphere (sphere 2) on top of the first sphere.
+// Sphere 1 interacts with the ground using the hydroelastic contact model.
 // Sphere 2 interacts with sphere 1 using the point contact model.
 // We use this fixture to verify the contact quantities computed by the
 // CompliantContactManager.
@@ -74,21 +73,22 @@ class CompliantContactManagerTest : public ::testing::Test {
   // The default setup for this fixture corresponds to:
   //   - A rigid-hydroelastic half-space for the ground.
   //   - A compliant-hydroelastic sphere on top of the ground.
-  //   - A second compliant-hydroelastic sphere on top of the first sphere.
+  //   - A second non-hydroelastic sphere on top of the first sphere.
   //   - Both spheres also have point contact compliance.
   //   - We set MultibodyPlant to use hydroelastic contact with fallback.
   //   - Sphere 1 penetrates into the ground penetration_distance_.
   //   - Sphere 1 and 2 penetrate penetration_distance_.
   //   - Velocities are zero.
   void MakeDefaultSetup(bool sphere1_on_prismatic_joint = false) {
-    const ContactParameters soft_contact{1.0e5, 1.0e5, 0.01, 1.0};
-    const ContactParameters hard_hydro_contact{
+    const ContactParameters compliant_contact{1.0e5, 1.0e5, 0.01, 1.0};
+    const ContactParameters non_hydro_contact{1.0e5, {}, 0.01, 1.0};
+    const ContactParameters rigid_hydro_contact{
         std::nullopt, std::numeric_limits<double>::infinity(), 0.0, 1.0};
     const SphereParameters sphere1_params{"Sphere1", 10.0 /* mass */,
-                                          0.2 /* size */, soft_contact};
+                                          0.2 /* size */, compliant_contact};
     const SphereParameters sphere2_params{"Sphere2", 10.0 /* mass */,
-                                          0.2 /* size */, soft_contact};
-    MakeModel(hard_hydro_contact, sphere1_params, sphere2_params,
+                                          0.2 /* size */, non_hydro_contact};
+    MakeModel(rigid_hydro_contact, sphere1_params, sphere2_params,
               sphere1_on_prismatic_joint);
   }
 
@@ -400,7 +400,7 @@ TEST_F(CompliantContactManagerTest,
 
   const std::vector<geometry::ContactSurface<double>>& surfaces =
       EvalContactSurfaces(*plant_context_);
-  ASSERT_EQ(surfaces.size(), 1u);
+  ASSERT_EQ(surfaces.size(), 1);
   EXPECT_EQ(pairs.size(), surfaces[0].num_faces() + num_point_pairs);
 }
 
