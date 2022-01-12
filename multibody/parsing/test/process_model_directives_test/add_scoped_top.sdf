@@ -1,13 +1,16 @@
 <?xml version="1.0" ?>
 <sdf version="1.9">
-  <world name="world">
+  <world name="add_scoped_top">
 
+    <!--
     <frame name="simple_model_origin"/>
-    <model name="added_scoped_sub">
-      <include merge="true">
-        <uri>package://process_model_directives_test/add_scoped_sub.sdf</uri>
-      </include>
-    </model>
+    -->
+    <!-- Ideally we would like to use <include merge="true"> -->
+    <!-- However sdformat currently doesn't allow merging into worlds -->
+    <!-- <include merge="true"> -->
+    <include>
+      <uri>package://process_model_directives_test/add_scoped_sub.sdf</uri>
+    </include>
     <!--
     <frame name="top_added_frame" attached_to="add_scoped_sub::simple_model">
       <pose relative_to="add_scoped_sub::simple_model::sub_added_frame">
@@ -15,5 +18,6 @@
       </pose>
     </frame>
     -->
+
   </world>
 </sdf>

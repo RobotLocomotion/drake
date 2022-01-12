@@ -67,7 +67,7 @@ GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTest) {
 }
 
 // Simple smoke test of the most basic model directives.
-GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTestFromWorldFile) {
+GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTestFromSDF) {
   ModelDirectives station_directives = LoadModelDirectives(
       FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.yaml"));
   const MultibodyPlant<double> md_empty_plant(0.0);
@@ -89,7 +89,6 @@ GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTestFromWorldFile) {
   auto context = plant.CreateDefaultContext();
 
   // Note(AA): The number of bodies is now 3, due to the overall model add_scoped_sub
-
   // // Expect the two model instances added by the directives.
   // EXPECT_EQ(plant.num_model_instances() - empty_plant.num_model_instances(), 2);
 
@@ -99,64 +98,35 @@ GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTestFromWorldFile) {
   // A great many frames are added in model directives processing, but we
   // should at least expect that our named ones are present.
   EXPECT_TRUE(plant.HasFrameNamed("sub_added_frame"));
-  EXPECT_TRUE(plant.HasFrameNamed("sub_added_frame_explicit"));
   EXPECT_TRUE(plant.HasFrameNamed(
       "sub_added_frame", plant.GetModelInstanceByName("add_scoped_sub::simple_model")));
-  EXPECT_TRUE(plant.HasFrameNamed(
-      "sub_added_frame_explicit", plant.GetModelInstanceByName("add_scoped_sub::simple_model")));
   EXPECT_TRUE(plant.HasFrameNamed(
       "frame", plant.GetModelInstanceByName("add_scoped_sub::simple_model")));
   EXPECT_TRUE(plant.HasFrameNamed(
       "frame", plant.GetModelInstanceByName("add_scoped_sub::extra_model")));
 
   // Compare all the frames
-  // EXPECT_TRUE(CompareMatrices(
-  //     md_plant.GetFrameByName("sub_added_frame")
-  //         .CalcPoseInWorld(*md_context)
-  //         .GetAsMatrix4(),
-  //     plant.GetFrameByName("sub_added_frame")
-  //         .CalcPoseInWorld(*context)
-  //         .GetAsMatrix4())); 
-  // EXPECT_TRUE(CompareMatrices(
-  //     md_plant.GetFrameByName("sub_added_frame_explicit")
-  //         .CalcPoseInWorld(*md_context)
-  //         .GetAsMatrix4(),
-  //     plant.GetFrameByName("sub_added_frame_explicit")
-  //         .CalcPoseInWorld(*context)
-  //         .GetAsMatrix4()));
-  // EXPECT_TRUE(CompareMatrices(
-  //     md_plant.GetFrameByName("frame", md_plant.GetModelInstanceByName("simple_model"))
-  //         .CalcPoseInWorld(*md_context)
-  //         .GetAsMatrix4(),
-  //     plant.GetFrameByName("frame", plant.GetModelInstanceByName("simple_model"))
-  //         .CalcPoseInWorld(*context)
-  //         .GetAsMatrix4()));
-  // EXPECT_TRUE(CompareMatrices(
-  //     md_plant.GetFrameByName("frame", md_plant.GetModelInstanceByName("extra_model"))
-  //         .CalcPoseInWorld(*md_context)
-  //         .GetAsMatrix4(),
-  //     plant.GetFrameByName("frame", plant.GetModelInstanceByName("extra_model"))
-  //         .CalcPoseInWorld(*context)
-  //         .GetAsMatrix4()));
-
-  // Compare all the bodies
-  // EXPECT_EQ(md_plant.num_bodies(), plant.num_bodies());
-  // for (const std::string model : {"simple_model", "extra_model"}) {
-  //   auto md_body_indices =
-  //       md_plant.GetBodyIndices(md_plant.GetModelInstanceByName(model));
-  //   auto body_indices =
-  //       plant.GetBodyIndices(plant.GetModelInstanceByName(model));
-  //   EXPECT_EQ(md_body_indices.size(), body_indices.size());
-
-  //   for (std::size_t i = 0; i < md_body_indices.size(); ++i) {
-  //     EXPECT_EQ(
-  //         md_plant.get_body(md_body_indices[i]).name(),
-  //         plant.get_body(body_indices[i]).name());
-  //     EXPECT_TRUE(CompareMatrices(
-  //         md_plant.get_body(md_body_indices[i]).EvalPoseInWorld(*md_context).GetAsMatrix4(),
-  //         plant.get_body(body_indices[i]).EvalPoseInWorld(*context).GetAsMatrix4()));
-  //   }
-  // }
+  EXPECT_TRUE(CompareMatrices(
+      md_plant.GetFrameByName("sub_added_frame")
+          .CalcPoseInWorld(*md_context)
+          .GetAsMatrix4(),
+      plant.GetFrameByName("sub_added_frame")
+          .CalcPoseInWorld(*context)
+          .GetAsMatrix4())); 
+  EXPECT_TRUE(CompareMatrices(
+      md_plant.GetFrameByName("frame", md_plant.GetModelInstanceByName("simple_model"))
+          .CalcPoseInWorld(*md_context)
+          .GetAsMatrix4(),
+      plant.GetFrameByName("frame", plant.GetModelInstanceByName("add_scoped_sub::simple_model"))
+          .CalcPoseInWorld(*context)
+          .GetAsMatrix4()));
+  EXPECT_TRUE(CompareMatrices(
+      md_plant.GetFrameByName("frame", md_plant.GetModelInstanceByName("extra_model"))
+          .CalcPoseInWorld(*md_context)
+          .GetAsMatrix4(),
+      plant.GetFrameByName("frame", plant.GetModelInstanceByName("add_scoped_sub::extra_model"))
+          .CalcPoseInWorld(*context)
+          .GetAsMatrix4()));
 }
 
 // Acceptance tests for the ModelDirectives name scoping, including acceptance
@@ -204,17 +174,17 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTest) {
 // Acceptance tests for the ModelDirectives name scoping, including acceptance
 // testing its interaction with SceneGraph.
 GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTestFromWorldFile) {
-  ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_top.yaml"));
+  // ModelDirectives directives = LoadModelDirectives(
+  //     FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_top.yaml"));
 
-  // Ensure that we have a SceneGraph present so that we test relevant visual
-  // pieces.
-  DiagramBuilder<double> builder;
-  MultibodyPlant<double>& md_plant = AddMultibodyPlantSceneGraph(&builder, 0.);
-  ProcessModelDirectives(directives, &md_plant,
-                         nullptr, make_parser(&md_plant).get());
-  md_plant.Finalize();
-  auto diagram = builder.Build();
+  // // Ensure that we have a SceneGraph present so that we test relevant visual
+  // // pieces.
+  // DiagramBuilder<double> builder;
+  // MultibodyPlant<double>& md_plant = AddMultibodyPlantSceneGraph(&builder, 0.);
+  // ProcessModelDirectives(directives, &md_plant,
+  //                        nullptr, make_parser(&md_plant).get());
+  // md_plant.Finalize();
+  // auto diagram = builder.Build();
 
   MultibodyPlant<double> plant(0.0);
   const std::string sdf_name = FindResourceOrThrow(
@@ -225,67 +195,67 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTestFromWorldFile) {
   auto context = plant.CreateDefaultContext();
 }
 
-// #pragma GCC diagnostic push
-// #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// // Test the model error mechanism.
-// GTEST_TEST(ProcessModelDirectivesTest, SmokeTestInjectWeldError) {
-//   const RigidTransformd error_transform({0.1, 0., 0.1}, {2, 3, 4});
-//   ModelDirectives directives = LoadModelDirectives(
-//       FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.yaml"));
-// 
-//   // This error function should add model error to exactly one weld, the
-//   // attachment of the `first_instance` sdf model to the `smoke_test_origin`
-//   // frame.
-//   MultibodyPlant<double> plant(0.0);
-// 
-//   auto error = [&](const std::string& parent, const std::string& child) {
-//     const std::string error_parent = "simple_model::frame";
-//     const std::string error_child = "extra_model::base";
-//     optional<RigidTransformd> out;
-//     if (parent == error_parent && child == error_child)
-//         out = error_transform;
-//     return out;
-//   };
-// 
-//   ProcessModelDirectives(directives, &plant,
-//                          nullptr, make_parser(&plant).get(), error);
-//   plant.Finalize();
-// 
-//   // This should have created an error frame for the relevant weld.
-//   const std::string expected_error_frame_name = "frame_weld_error_to_base";
-//   EXPECT_TRUE(plant.HasFrameNamed(expected_error_frame_name));
-//   const auto& frame = plant.GetFrameByName(expected_error_frame_name);
-//   EXPECT_TRUE(
-//       dynamic_cast<const drake::multibody::FixedOffsetFrame<double>*>(&frame));
-//   const RigidTransformd expected_error =
-//       (plant
-//        .GetFrameByName("frame", plant.GetModelInstanceByName("simple_model"))
-//        .GetFixedPoseInBodyFrame())
-//       * error_transform;
-// 
-//   EXPECT_TRUE(
-//       frame.GetFixedPoseInBodyFrame().IsExactlyEqualTo(expected_error));
-// 
-//   // This should not have created an error frame for other welds.
-//   for (drake::multibody::FrameIndex frame_id(0);
-//        frame_id < plant.num_frames();
-//        frame_id++) {
-//     const std::string frame_name = plant.get_frame(frame_id).name();
-//     if (frame_name != expected_error_frame_name) {
-//       EXPECT_TRUE(frame_name.find("error") == std::string::npos);
-//     }
-//   }
-// }
-// #pragma GCC diagnostic pop
-// 
-// // Make sure we have good error messages.
-// GTEST_TEST(ProcessModelDirectivesTest, ErrorMessages) {
-//   // When the user gives a bogus filename, at minimum we must echo it back to
-//   // them so they know what failed.
-//   DRAKE_EXPECT_THROWS_MESSAGE(
-//       LoadModelDirectives("no-such-file.yaml"),
-//       ".*no-such-file.yaml.*");
-// }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// Test the model error mechanism.
+GTEST_TEST(ProcessModelDirectivesTest, SmokeTestInjectWeldError) {
+  const RigidTransformd error_transform({0.1, 0., 0.1}, {2, 3, 4});
+  ModelDirectives directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.yaml"));
+
+  // This error function should add model error to exactly one weld, the
+  // attachment of the `first_instance` sdf model to the `smoke_test_origin`
+  // frame.
+  MultibodyPlant<double> plant(0.0);
+
+  auto error = [&](const std::string& parent, const std::string& child) {
+    const std::string error_parent = "simple_model::frame";
+    const std::string error_child = "extra_model::base";
+    optional<RigidTransformd> out;
+    if (parent == error_parent && child == error_child)
+        out = error_transform;
+    return out;
+  };
+
+  ProcessModelDirectives(directives, &plant,
+                         nullptr, make_parser(&plant).get(), error);
+  plant.Finalize();
+
+  // This should have created an error frame for the relevant weld.
+  const std::string expected_error_frame_name = "frame_weld_error_to_base";
+  EXPECT_TRUE(plant.HasFrameNamed(expected_error_frame_name));
+  const auto& frame = plant.GetFrameByName(expected_error_frame_name);
+  EXPECT_TRUE(
+      dynamic_cast<const drake::multibody::FixedOffsetFrame<double>*>(&frame));
+  const RigidTransformd expected_error =
+      (plant
+       .GetFrameByName("frame", plant.GetModelInstanceByName("simple_model"))
+       .GetFixedPoseInBodyFrame())
+      * error_transform;
+
+  EXPECT_TRUE(
+      frame.GetFixedPoseInBodyFrame().IsExactlyEqualTo(expected_error));
+
+  // This should not have created an error frame for other welds.
+  for (drake::multibody::FrameIndex frame_id(0);
+       frame_id < plant.num_frames();
+       frame_id++) {
+    const std::string frame_name = plant.get_frame(frame_id).name();
+    if (frame_name != expected_error_frame_name) {
+      EXPECT_TRUE(frame_name.find("error") == std::string::npos);
+    }
+  }
+}
+#pragma GCC diagnostic pop
+
+// Make sure we have good error messages.
+GTEST_TEST(ProcessModelDirectivesTest, ErrorMessages) {
+  // When the user gives a bogus filename, at minimum we must echo it back to
+  // them so they know what failed.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      LoadModelDirectives("no-such-file.yaml"),
+      ".*no-such-file.yaml.*");
+}
 
 }  // namespace
 }  // namespace parsing
