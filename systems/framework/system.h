@@ -402,7 +402,7 @@ class System : public SystemBase {
   @pre the port must be evaluable (connected or fixed).
 
   @see InputPort::Eval() */
-  DRAKE_DEPRECATED("2021-03-01",
+  DRAKE_DEPRECATED("2022-03-01",
       "Use get_input_port(index).Eval(context) instead.")
   Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
       const Context<T>& context, int port_index) const;
