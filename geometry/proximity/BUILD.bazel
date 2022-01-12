@@ -247,6 +247,7 @@ drake_cc_library(
     ],
     deps = [
         ":collision_filter",
+        ":field_intersection",
         ":hydroelastic_internal",
         ":mesh_half_space_intersection",
         ":mesh_intersection",
