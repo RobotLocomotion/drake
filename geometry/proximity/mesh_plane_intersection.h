@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -16,6 +17,38 @@
 namespace drake {
 namespace geometry {
 namespace internal {
+
+/* Intersects a tetrahedron with a plane, the resulting polygon is added to
+ polygon_vertices. An optional parameter, cut_edges, is provided to store,
+ for each vertex in polygon_vertices, the intersected edge in mesh_M on which
+ it lies.
+
+ The face vertices are ordered such that the normal implied by their winding
+ points in the direction of the plane's normal.
+
+ If there is no intersection, then neither polygon_vertices nor cut_edges will
+ change.
+
+ @param[in] tet_index              The index of the tetrahedron to attempt to
+                                   intersect.
+@param[in] mesh_M                 The volume meshcontaining the tetrahedra to
+                                   intersect. The vertex positions are all
+                                   measured and expressed in Frame M.
+ @param[in] plane_M                The definition of a plane measured and
+                                   expressed in Frame M.
+ @param[in, out] polygon_vertices  The list of vertices of the resulting
+                                   intersection polygon.
+ @param[in,out] cut_edges          The optional list of volume mesh edges that
+                                   constains at index *i* the edge in mesh_M
+                                   that was intersected to create vertex *i*
+                                   in polygon_vertices.
+ @pre `tet_index` lies in the range `[0, field_M.mesh().num_elements())`.
+ */
+template <typename T>
+void SliceTetrahedronWithPlane(
+    int tet_index, const VolumeMesh<double>& mesh_M, const Plane<T>& plane_M,
+    std::vector<Vector3<T>>* polygon_vertices,
+    std::optional<std::vector<SortedPair<int>>*> cut_edges);
 
 /* Intersects a tetrahedron with a plane, the resulting polygon is passed
  into the provided MeshBuilder.
