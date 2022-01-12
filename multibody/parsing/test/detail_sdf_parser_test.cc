@@ -7,6 +7,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <sdf/sdf.hh>
+#include <spdlog/sinks/dist_sink.h>
+#include <spdlog/sinks/ostream_sink.h>
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
@@ -1141,14 +1143,18 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
 )"""),
     R"([\s\S]*Root object can only contain one model.*)");
 
-  std::stringstream buffer;
-  sdf::Console::ConsoleStream old_stream =
-    sdf::Console::Instance()->GetMsgStream();
-  ScopeExit revert_stream(
-    [&old_stream]()
-    { sdf::Console::Instance()->GetMsgStream() = old_stream; });
-  sdf::Console::Instance()->GetMsgStream() =
-    sdf::Console::ConsoleStream(&buffer);
+  // Temporarily append new log messages into a memory stream.
+  std::ostringstream buffer;
+  drake::logging::sink* const sink_base = drake::logging::get_dist_sink();
+  ASSERT_NE(sink_base, nullptr);
+  auto* const sink = dynamic_cast<spdlog::sinks::dist_sink_mt*>(sink_base);
+  ASSERT_NE(sink, nullptr);
+  auto buffer_sink = std::make_shared<spdlog::sinks::ostream_sink_st>(
+      buffer, true /* flush */);
+  sink->add_sink(buffer_sink);
+  ScopeExit revert_buffer_sink(
+      [&sink, &buffer_sink]()
+      { sink->remove_sink(buffer_sink); });
 
   // TODO(#15018): This throws a warning, make this an error.
   ParseTestString(R"""(
@@ -1162,6 +1168,7 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
       ".*Warning.*XML Element\\[bad_element\\], child of"
       " element\\[model\\], not defined in SDF.*"));
 
+  buffer.str("");  // Reset the buffer to be empty.
   ParseTestString(R"""(
 <model name='a'>
   <link name='l1'/>
