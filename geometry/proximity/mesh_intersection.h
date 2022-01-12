@@ -80,6 +80,19 @@ void ClipPolygonByHalfSpace(const std::vector<Vector3<T>>& input_vertices_F,
                             const PosedHalfSpace<double>& H_F,
                             std::vector<Vector3<T>>* output_vertices_F);
 
+/* Remove duplicate vertices from a polygon represented as a cyclical
+ sequence of vertex positions. In other words, for a sequence `A,B,B,C,A`, the
+ pair of B's is reduced to one B and the first and last A vertices are
+ considered duplicates and the result would be `A,B,C`. The polygon might be
+ reduced to a pair of points (i.e., `A,A,B,B` becomes `A,B`) or a single point
+ (`A,A,A` becomes `A`).
+ @param[in,out] polygon
+     The input polygon, and the output equivalent polygon with no duplicate
+     vertices.
+ */
+template <typename T>
+void RemoveDuplicateVertices(std::vector<Vector3<T>>* polygon);
+
 // Forward declaration of Tester class, so we can grant friend access.
 template <typename MeshType> class SurfaceVolumeIntersectorTester;
 
@@ -163,18 +176,6 @@ class SurfaceVolumeIntersector {
   std::vector<Vector3<T>>& mutable_grad_eM_M() { return grad_eM_Ms_; }
 
  private:
-  /* Remove duplicate vertices from a polygon represented as a cyclical
-   sequence of vertex positions. In other words, for a sequence `A,B,B,C,A`, the
-   pair of B's is reduced to one B and the first and last A vertices are
-   considered duplicates and the result would be `A,B,C`. The polygon might be
-   reduced to a pair of points (i.e., `A,A,B,B` becomes `A,B`) or a single point
-   (`A,A,A` becomes `A`).
-   @param[in,out] polygon
-       The input polygon, and the output equivalent polygon with no duplicate
-       vertices.
-   */
-  static void RemoveDuplicateVertices(std::vector<Vector3<T>>* polygon);
-
   /* Intersects a triangle with a tetrahedron, returning the portion of the
    triangle with non-zero area contained in the tetrahedron.
    @param element
