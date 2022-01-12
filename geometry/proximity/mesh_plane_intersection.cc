@@ -61,6 +61,56 @@ constexpr std::array<std::array<int, 4>, 16> kMarchingTetsTable = {
 
 }  // namespace
 
+template <typename T>
+void SliceTetrahedronWithPlane(
+    int tet_index, const VolumeMesh<double>& mesh_M, const Plane<T>& plane_M,
+    std::vector<Vector3<T>>* polygon_vertices,
+    std::vector<SortedPair<int>>* cut_edges) {
+
+  DRAKE_DEMAND(polygon_vertices != nullptr);
+
+  T distance[4];
+  // Bit encoding of the sign of signed-distance: v0, v1, v2, v3.
+  int intersection_code = 0;
+  for (int i = 0; i < 4; ++i) {
+    const int v = mesh_M.element(tet_index).vertex(i);
+    distance[i] = plane_M.CalcHeight(mesh_M.vertex(v));
+    if (distance[i] > T(0)) intersection_code |= 1 << i;
+  }
+
+  const std::array<int, 4>& intersected_edges =
+      kMarchingTetsTable[intersection_code];
+
+  // No intersecting edges --> no intersection.
+  if (intersected_edges[0] == -1) return;
+
+  int num_intersections = 0;
+  for (int e = 0; e < 4; ++e) {
+    const int edge_index = intersected_edges[e];
+    if (edge_index == -1) break;
+    ++num_intersections;
+    const TetrahedronEdge& tet_edge = kTetEdges[edge_index];
+    const int v0 = mesh_M.element(tet_index).vertex(tet_edge.first);
+    const int v1 = mesh_M.element(tet_index).vertex(tet_edge.second);
+
+    const Vector3<double>& p_MV0 = mesh_M.vertex(v0);
+    const Vector3<double>& p_MV1 = mesh_M.vertex(v1);
+    const T d_v0 = distance[tet_edge.first];
+    const T d_v1 = distance[tet_edge.second];
+    // Note: It should be impossible for the denominator to be zero. By
+    // definition, this is an edge that is split by the plane; they can't
+    // both have the same value. More particularly, one must be strictly
+    // positive the other must be strictly non-positive.
+    const T t = d_v0 / (d_v0 - d_v1);
+    const Vector3<T> p_MC = p_MV0 + t * (p_MV1 - p_MV0);
+    polygon_vertices->push_back(p_MC);
+    if (cut_edges != nullptr) {
+      const SortedPair<int> mesh_edge{v0, v1};
+      cut_edges->push_back(mesh_edge);
+    }
+  }
+}
+
 template <typename MeshBuilder>
 int SliceTetWithPlane(
     int tet_index, const VolumeMeshFieldLinear<double, double>& field_M,
@@ -261,8 +311,9 @@ ComputeContactSurface<PolyMeshBuilder<AutoDiffXd>>(
     GeometryId plane_id, const Plane<AutoDiffXd>&, const std::vector<int>&,
     const math::RigidTransform<AutoDiffXd>&);
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&ComputeContactSurfaceFromSoftVolumeRigidHalfSpace<T>))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &ComputeContactSurfaceFromSoftVolumeRigidHalfSpace<T>,
+    &SliceTetrahedronWithPlane<T>))
 
 }  // namespace internal
 }  // namespace geometry

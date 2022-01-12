@@ -108,14 +108,21 @@ VolumeMesh<T> TrivialVolumeMesh(
   return {std::move(elements), std::move(vertices)};
 }
 
-/* Infrastructure for testing SliceTetWithPlane(). These tests involve three
- frames: M, F, and W. The trivial mesh (see above) is defined in its frame M.
- However, we transform that trivial mesh into some arbitrary frame F (so that
- the mesh vertices don't have a bunch of trivial zeros and ones). The
- intersecting plane is likewise defined in that same frame F. Finally, the
- result of slicing the tet with the plane produces results in the *world* frame
- W (via the X_WF_ transform). */
-class SliceTetWithPlaneTest : public ::testing::Test {
+/* Type for testing the two versions of tet/plane slicing. */
+enum class SliceFunctionType {
+  SliceTet,
+  SliceTetrahedron,
+};
+
+/* Infrastructure for testing SliceTetWithPlane() and
+ SliceTetrahedronWithPlane().. These tests involve three frames: M, F, and W.
+ The trivial mesh (see above) is defined in its frame M. However, we transform
+ that trivial mesh into some arbitrary frame F (so that the mesh vertices don't
+ have a bunch of trivial zeros and ones). The intersecting plane is likewise
+ defined in that same frame F. Finally, the result of slicing the tet with the
+ plane produces results in the *world* frame W (via the X_WF_ transform). */
+class SliceTest
+    : public ::testing::TestWithParam<SliceFunctionType> {
  protected:
   void SetUp() override {
     // An arbitrary transform that doesn't contain any identities (although it
@@ -124,6 +131,22 @@ class SliceTetWithPlaneTest : public ::testing::Test {
     X_WF_ = RigidTransformd{
         RotationMatrixd{AngleAxisd{M_PI / 3, Vector3d{-1, 1, 1}.normalized()}},
         Vector3d{1.25, 2.5, -3.75}};
+  }
+
+  /* Wrapper function that decides which slice function to called based on the
+   value of the test parameter. */
+  pair<unique_ptr<PolygonSurfaceMesh<double>>,
+       unique_ptr<PolygonSurfaceMeshFieldLinear<double, double>>>
+  CallSliceFunction(const Plane<double>& plane_F, const RigidTransformd& X_FM,
+                    SliceFunctionType type) {
+    switch (type) {
+      case SliceFunctionType::SliceTet:
+        return CallSliceTetWithPlane(plane_F, X_FM);
+      case SliceFunctionType::SliceTetrahedron:
+        return CallSliceTetrahedronWithPlane(plane_F, X_FM);
+      default:
+        throw std::runtime_error("Invalid SliceFunctionType");
+    }
   }
 
   /* Invokes SliceTetWithPlane() on a trivial mesh in frame F. This method
@@ -157,6 +180,62 @@ class SliceTetWithPlaneTest : public ::testing::Test {
     builder_W_ = PolyMeshBuilder<double>();
     SliceTetWithPlane(tet_index, *field_F_, plane_F, X_WF_, &builder_W_,
                       &cut_edges_);
+    return builder_W_.MakeMeshAndField();
+  }
+
+  /* Invokes SliceTetrahedronWithPlane() on a trivial mesh in frame F. This
+   function uses a PolygonMeshBuilder to emulate the behavior of the more
+   heavyweight SliceTetWithPlane() method. To share the test infrastructure
+   between the heavier SliceTetWithPlane() and the lighter
+   SliceTetrahedronWithPlane(), this adapter makes SliceTetrahedronWithPlane()
+   on par with SliceTetWithPlane(). The mesh and field created by building the
+   mesh after this single slicing operation are returned. The mesh *may* be
+   empty.
+
+   As a side effect, member fields volume_mesh_F_ and field_F_ are written to;
+   they are the mesh and field used in the query (posed in frame F via the given
+   X_FM). cut_edges_ is also cleared and written to.
+
+   @param plane_F       The slicing plane (measured and expressed in Frame F).
+   @param X_FM          The relative pose between the trivial mesh's canonical
+                        frame M and the query frame F.
+
+   @returns The resulting mesh and field expressed in the world frame. */
+  pair<unique_ptr<PolygonSurfaceMesh<double>>,
+       unique_ptr<PolygonSurfaceMeshFieldLinear<double, double>>>
+  CallSliceTetrahedronWithPlane(const Plane<double>& plane_F,
+                                const RigidTransformd& X_FM) {
+    volume_mesh_F_ = make_unique<VolumeMesh<double>>(TrivialVolumeMesh(X_FM));
+    // Make an arbitrary mesh field with heterogeneous values.
+    vector<double> values{0.25, 0.5, 0.75, 1, -1};
+    field_F_ = make_unique<VolumeMeshFieldLinear<double, double>>(
+        move(values), volume_mesh_F_.get());
+
+    const int tet_index = 0;
+    std::vector<Vector3<double>> polygon_vertices;
+    std::vector<SortedPair<int>> edges;
+    cut_edges_.clear();
+    SliceTetrahedronWithPlane(tet_index, *volume_mesh_F_, plane_F,
+                              &polygon_vertices, &edges);
+
+    DRAKE_ASSERT(polygon_vertices.size() >= 3 || polygon_vertices.size() == 0);
+    builder_W_ = PolyMeshBuilder<double>();
+    if (polygon_vertices.size() != 0) {
+      std::vector<int> face_verts;
+      for (int i = 0; i < static_cast<int>(polygon_vertices.size()); ++i) {
+        const Vector3<double> p_WC = X_WF_ * polygon_vertices[i];
+        const int new_index = builder_W_.AddVertex(
+            p_WC, field_F_->EvaluateCartesian(tet_index, polygon_vertices[i]));
+        face_verts.push_back(new_index);
+        cut_edges_[edges[i]] = new_index;
+      }
+
+      const Vector3<double> nhat_W = X_WF_.rotation() * plane_F.normal();
+      const Vector3<double> grad_e_FN_W =
+          X_WF_.rotation() * field_F_->EvaluateGradient(tet_index);
+
+      builder_W_.AddPolygon(face_verts, nhat_W, grad_e_FN_W);
+    }
     return builder_W_.MakeMeshAndField();
   }
 
@@ -393,7 +472,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
  when separated and a non-zero number of faces when intersecting. The exact
  value of that non-zero value is not important to the test -- merely that it is
  non-zero, indicating intersection. */
-TEST_F(SliceTetWithPlaneTest, NonIntersectingConfiguration) {
+TEST_P(SliceTest, NonIntersectingConfiguration) {
   // This uses a plane whose normal is aligned with the Mz axis. To assess the
   // thresholds of detecting intersection and not, we need to know the extrema
   // of the tet in that direction (its minimum and maximum points). We'll call
@@ -409,6 +488,7 @@ TEST_F(SliceTetWithPlaneTest, NonIntersectingConfiguration) {
       RigidTransformd{RotationMatrixd{AngleAxisd{
                           8 * M_PI / 7, Vector3d{1, 2, 3}.normalized()}},
                       Vector3d{-2.3, -4.2, 3.7}}};
+
   for (const auto& X_FM : X_FMs) {
     const Vector3d& Mz_F = X_FM.rotation().col(2);
     // The minimum and maximum points of the tet in frame F.
@@ -419,31 +499,31 @@ TEST_F(SliceTetWithPlaneTest, NonIntersectingConfiguration) {
 
     // Case: Plane lies completely above the tet (just beyond V3)
     {
-      const auto [mesh_W, field_W] =
-          CallSliceTetWithPlane(Plane<double>{Mz_F, p_FMax + offset_F}, X_FM);
+      const auto [mesh_W, field_W] = CallSliceFunction(
+          Plane<double>{Mz_F, p_FMax + offset_F}, X_FM, GetParam());
       EXPECT_TRUE(HasNVertices(*mesh_W, *field_W, 0));
     }
 
     // Case: Plane lies _almost_ completely above the tet (V3 penetrates the
     // plane).
     {
-      const auto [mesh_W, field_W] =
-          CallSliceTetWithPlane(Plane<double>{Mz_F, p_FMax - offset_F}, X_FM);
+      const auto [mesh_W, field_W] = CallSliceFunction(
+          Plane<double>{Mz_F, p_FMax - offset_F}, X_FM, GetParam());
       EXPECT_TRUE(HasNVertices(*mesh_W, *field_W, 3));
     }
 
     // Case: Plane lies completely below the tet (the bottom faces lies on the
     // z = 0 plane in Frame M).
     {
-      const auto [mesh_W, field_W] =
-          CallSliceTetWithPlane(Plane<double>{Mz_F, p_FMin - offset_F}, X_FM);
+      const auto [mesh_W, field_W] = CallSliceFunction(
+          Plane<double>{Mz_F, p_FMin - offset_F}, X_FM, GetParam());
       EXPECT_TRUE(HasNVertices(*mesh_W, *field_W, 0));
     }
 
     // Case: Plane lies _almost_ completely below the tet.
     {
-      const auto [mesh_W, field_W] =
-          CallSliceTetWithPlane(Plane<double>{Mz_F, p_FMin + offset_F}, X_FM);
+      const auto [mesh_W, field_W] = CallSliceFunction(
+          Plane<double>{Mz_F, p_FMin + offset_F}, X_FM, GetParam());
       EXPECT_TRUE(HasNVertices(*mesh_W, *field_W, 3));
     }
 
@@ -455,16 +535,18 @@ TEST_F(SliceTetWithPlaneTest, NonIntersectingConfiguration) {
     // Case: Plane is just beyond the v1, v2, v3, plane; it passes through a
     // point _near_ V3, but just offset in the normal direction.
     {
-      const auto [mesh_W, field_W] = CallSliceTetWithPlane(
-          Plane<double>{normal_F, p_FMax + kEps * normal_F}, X_FM);
+      const auto [mesh_W, field_W] = CallSliceFunction(
+          Plane<double>{normal_F, p_FMax + kEps * normal_F}, X_FM, GetParam());
       EXPECT_TRUE(HasNVertices(*mesh_W, *field_W, 0));
     }
 
     // Case: Plane intersects the tet near the v1, v2, v3, plane; it passes
-    // through a point _near_ V3, but offset in the _negative_ normal direction.
+    // through a point _near_ V3, but offset in the _negative_ normal
+    // direction.
     {
-      const auto [mesh_W, field_W] = CallSliceTetWithPlane(
-          Plane<double>{normal_F, p_FMax - 4 * kEps * normal_F}, X_FM);
+      const auto [mesh_W, field_W] = CallSliceFunction(
+          Plane<double>{normal_F, p_FMax - 4 * kEps * normal_F}, X_FM,
+          GetParam());
       EXPECT_TRUE(HasNVertices(*mesh_W, *field_W, 3));
     }
   }
@@ -474,7 +556,7 @@ TEST_F(SliceTetWithPlaneTest, NonIntersectingConfiguration) {
  triangle. It confirms the triangular polygon produced, confirms face normal
  direction, and uses the test infrastructure to evaluate the consistency of the
  set of polygons. */
-TEST_F(SliceTetWithPlaneTest, TriangleIntersections) {
+TEST_P(SliceTest, TriangleIntersections) {
   // There are eight unique configurations for a plane-tet intersection to be
   // a triangle. If a single vertex of the tet lies on one side of the plane
   // and the other three lie on the opposite side, that forms a triangle. There
@@ -531,7 +613,8 @@ TEST_F(SliceTetWithPlaneTest, TriangleIntersections) {
             EXPECT_LT(plane_sign * plane_F.CalcHeight(p_FVj), 0);
           }
         }
-        const auto [mesh_W, field_W] = CallSliceTetWithPlane(plane_F, X_FM);
+        const auto [mesh_W, field_W] =
+            CallSliceFunction(plane_F, X_FM, GetParam());
         ASSERT_TRUE(SliceIsConsistent(*mesh_W, *field_W, 0, *field_F_));
 
         // Further consistency analysis.
@@ -545,7 +628,7 @@ TEST_F(SliceTetWithPlaneTest, TriangleIntersections) {
 
 /* Similar for the TriangleIntersections test, but for intersections that form
  quads. */
-TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
+TEST_P(SliceTest, QuadIntersections) {
   /* A plane forms a quad when intersecting a tet when two vertices are on one
    side and two are on the other. There are three ways to partition the four
    vertices in this manner.
@@ -571,7 +654,7 @@ TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
   vector<RigidTransformd> X_FMs{
       RigidTransformd::Identity(), RigidTransformd{Vector3d{1.5, 2.5, 3.5}},
       RigidTransformd{RotationMatrixd{AngleAxisd{
-          9 * M_PI / 7, Vector3d{1, 2, 3}.normalized()}},
+                          9 * M_PI / 7, Vector3d{1, 2, 3}.normalized()}},
                       Vector3d{-2.3, -4.2, 3.7}}};
   for (const auto& X_FM : X_FMs) {
     VolumeMesh<double> mesh_F = TrivialVolumeMesh(X_FM);
@@ -585,7 +668,7 @@ TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
     // spanned by A and B -- valid for this context; every point internal to
     // a tet in the trivial mesh projects onto all six edges.
     auto nearest_point_to_edge = [](const Vector3d& p_FQ, const Vector3d& p_FA,
-        const Vector3d& p_FB) -> Vector3d {
+                                    const Vector3d& p_FB) -> Vector3d {
       const Vector3d p_AQ_F = p_FQ - p_FA;
       const Vector3d p_AB_F = p_FB - p_FA;
       return p_FA + p_AB_F.dot(p_AQ_F) / p_AB_F.squaredNorm() * p_AB_F;
@@ -624,7 +707,8 @@ TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
           }
         }
 
-        const auto [mesh_W, field_W] = CallSliceTetWithPlane(plane_F, X_FM);
+        const auto [mesh_W, field_W] =
+            CallSliceFunction(plane_F, X_FM, GetParam());
         ASSERT_TRUE(SliceIsConsistent(*mesh_W, *field_W, 0, *field_F_));
 
         // Further consistency analysis.
@@ -639,7 +723,7 @@ TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
 /* Confirms that unique vertices on the VolumeMesh produce unique vertices on
  the output (and conversely duplicate input vertices lead to duplicate output
  vertices). */
-TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
+TEST_F(SliceTest, DuplicateOutputFromDuplicateInput) {
   // We create the mesh twice; once with duplicates, once without. The plane
   // will slice through *both* tets simultaneously. In both cases we should
   // end up with six triangles (one triangle per tet divided into three
@@ -717,7 +801,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
 /* This confirms that the structure of the query precludes "double counting". If
  the slicing plane is co-planar with a face shared by two tets, only
  intersection with _one_ of those tets will produce a result. */
-TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
+TEST_F(SliceTest, NoDoubleCounting) {
   /* Arranging the tet face to be _perfectly_ coplanar with the slicing plane
    is subject to all sorts of numerical rounding issues. The simplest way to
    confirm implicit handling of this scenario is to do the test in a regime
@@ -759,6 +843,11 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
   }
 }
 
+INSTANTIATE_TEST_SUITE_P(
+    SliceFunctionCases, SliceTest,
+    ::testing::Values(SliceFunctionType::SliceTet,
+                      SliceFunctionType::SliceTetrahedron));
+
 /* Test of ComputeContactSurface(). Most of the hard-core math is contained in
  SliceTetWithPlane (and is covered by its unit tests). This function has the
  following unique responsibilities:
@@ -778,8 +867,8 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
      type of MeshBuilder passed.
 
  These tests are done in a single, non-trivial frame F. The robustness of the
- numerics is covered in the SliceTetWithPlaneTest and this just needs to
- account for data tracking.
+ numerics is covered in the SliceTest and this just needs to account for data
+ tracking.
 
  ComputeContactSurface() is *largely* agnostic of the type of mesh
  representation being requested. Only responsibility 7 directly depends on that
