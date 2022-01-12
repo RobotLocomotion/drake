@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
@@ -143,6 +144,74 @@ GTEST_TEST(VPolytopeTest, ArbitraryBoxTest) {
   EXPECT_TRUE(V_F.PointInSet(X_FW * in1_W, kTol));
   EXPECT_TRUE(V_F.PointInSet(X_FW * in2_W, kTol));
   EXPECT_FALSE(V_F.PointInSet(X_FW * out_W, kTol));
+}
+
+// Check if the set of vertices equals to the set of vertices_expected.
+void CheckVertices(const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+                   const Eigen::Ref<const Eigen::Matrix3Xd>& vertices_expected,
+                   double tol) {
+  EXPECT_EQ(vertices.cols(), vertices_expected.cols());
+  const int num_vertices = vertices.cols();
+  for (int i = 0; i < num_vertices; ++i) {
+    bool found_match = false;
+    for (int j = 0; j < num_vertices; ++j) {
+      if (CompareMatrices(vertices.col(i), vertices_expected.col(j), tol)) {
+        found_match = true;
+        break;
+      }
+    }
+    EXPECT_TRUE(found_match);
+  }
+}
+
+GTEST_TEST(VPolytopeTest, OctahedronTest) {
+  const RigidTransformd X_WG(math::RollPitchYawd(.1, .2, 3),
+                             Vector3d(-4.0, -5.0, -6.0));
+  auto [scene_graph, geom_id] = MakeSceneGraphWithShape(
+      Convex(FindResourceOrThrow("drake/geometry/test/octahedron.obj")), X_WG);
+  auto context = scene_graph->CreateDefaultContext();
+  auto query =
+      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
+  VPolytope V(query, geom_id);
+  EXPECT_EQ(V.vertices().cols(), 6);
+
+  EXPECT_EQ(V.ambient_dimension(), 3);
+
+  Eigen::Matrix<double, 6, 3> p_GV_expected;
+  // clang-format off
+  p_GV_expected << 1, 1, 0,
+                   1, -1, 0,
+                   -1, 1, 0,
+                   -1, -1, 0,
+                   0, 0, std::sqrt(2),
+                   0, 0, -std::sqrt(2);
+  // clang-format on
+  CheckVertices(V.vertices(), X_WG * p_GV_expected.transpose(), 1E-9);
+}
+
+GTEST_TEST(VPolytopeTest, NonconvexMesh) {
+  auto [scene_graph, geom_id] = MakeSceneGraphWithShape(
+      Convex(FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj")),
+      RigidTransformd{});
+  auto context = scene_graph->CreateDefaultContext();
+  auto query =
+      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
+  VPolytope V(query, geom_id);
+
+  // The non-convex mesh contains 5 vertices, but the convex hull contains only
+  // 4 vertices.
+  const int num_vertices = 4;
+  EXPECT_EQ(V.vertices().cols(), num_vertices);
+  EXPECT_EQ(V.ambient_dimension(), 3);
+  Eigen::Matrix<double, 4, 3> vertices_expected;
+  // clang-format off
+  vertices_expected << 0, 0, 0,
+                       1, 0, 0,
+                       0, 1, 0,
+                       0, 0, 1;
+  // clang-format on
+  const double tol = 1E-12;
+  CheckVertices(V.vertices(), vertices_expected.transpose(), tol);
 }
 
 GTEST_TEST(VPolytopeTest, UnitBox6DTest) {

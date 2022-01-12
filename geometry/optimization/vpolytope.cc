@@ -8,6 +8,7 @@
 #include <libqhullcpp/QhullVertexSet.h>
 
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/geometry/read_obj.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -224,6 +225,7 @@ void VPolytope::ImplementGeometry(const Box& box, void* data) {
   const double x = box.width() / 2.0;
   const double y = box.depth() / 2.0;
   const double z = box.height() / 2.0;
+  DRAKE_ASSERT(data != nullptr);
   Matrix3Xd* vertices = static_cast<Matrix3Xd*>(data);
   vertices->resize(3, 8);
   // clang-format off
@@ -231,6 +233,36 @@ void VPolytope::ImplementGeometry(const Box& box, void* data) {
                 y,  y, -y, -y, -y, -y,  y,  y,
                -z, -z, -z, -z,  z,  z,  z,  z;
   // clang-format on
+}
+
+void VPolytope::ImplementGeometry(const Convex& convex, void* data) {
+  DRAKE_ASSERT(data != nullptr);
+  const auto [tinyobj_vertices, faces, num_faces] = internal::ReadObjFile(
+      convex.filename(), convex.scale(), false /* triangulate */);
+  unused(faces);
+  unused(num_faces);
+  orgQhull::Qhull qhull;
+  const int dim = 3;
+  std::vector<double> tinyobj_vertices_flat(tinyobj_vertices->size() * dim);
+  for (int i = 0; i < static_cast<int>(tinyobj_vertices->size()); ++i) {
+    for (int j = 0; j < dim; ++j) {
+      tinyobj_vertices_flat[dim * i + j] = (*tinyobj_vertices)[i](j);
+    }
+  }
+  qhull.runQhull("", dim, tinyobj_vertices->size(),
+                 tinyobj_vertices_flat.data(), "");
+  if (qhull.qhullStatus() != 0) {
+    throw std::runtime_error(
+        fmt::format("Qhull terminated with status {} and  message:\n{}",
+                    qhull.qhullStatus(), qhull.qhullMessage()));
+  }
+  Matrix3Xd* vertices = static_cast<Matrix3Xd*>(data);
+  vertices->resize(3, qhull.vertexCount());
+  int vertex_count = 0;
+  for (const auto& qhull_vertex : qhull.vertexList()) {
+    vertices->col(vertex_count++) =
+        Eigen::Map<Eigen::Vector3d>(qhull_vertex.point().toStdVector().data());
+  }
 }
 
 }  // namespace optimization
