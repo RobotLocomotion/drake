@@ -37,14 +37,17 @@ static constexpr double nan() {
   return std::numeric_limits<double>::quiet_NaN();
 }
 
-// In this fixture we set a simple model consisting of:
-//  1. The rigid-hydroelastic flat ground,
-//  2. A compliant-hydroelastic sphere (sphere 1) on top of the ground,
-//  3. A non-hydroelastic sphere (sphere 2) on top of the first sphere.
-// Sphere 1 interacts with the ground using the hydroelastic contact model.
-// Sphere 2 interacts with sphere 1 using the point contact model.
-// We use this fixture to verify the contact quantities computed by the
-// CompliantContactManager.
+// TODO(DamrongGuoy): Simplify the test fixture somehow (need discussion
+//  among the architects). Due to the existing architecture of our code,
+//  our fixture is too complex for the purpose of unit tests. Ideally there
+//  should be one-to-one matching between tested functions (_.h) and testing
+//  functions (_test.cc) as the unit tests.
+
+// In this fixture we set a simple model consisting of a flat ground,
+// a sphere (sphere 1) on top of the ground, and another sphere (sphere 2)
+// on top the the first sphere. They are assigned to be rigid-hydroelastic,
+// compliant-hydroelastic, or non-hydroelastic to test various cases of
+// contact quantities computed by the CompliantContactManager.
 class CompliantContactManagerTest : public ::testing::Test {
  public:
   // Contact model parameters.
@@ -70,7 +73,24 @@ class CompliantContactManagerTest : public ::testing::Test {
     ContactParameters contact_parameters;
   };
 
-  // The default setup for this fixture corresponds to:
+  // Three Setup* functions:
+  // 1. SetupRigidGroundCompliantSphereAndNonHydroSphere()
+  //    Test rigid-compliant contact and point contact as fall back.
+  //    Use it to check contact quantities in details in the
+  //    unit tests CompliantContactManagerTest.EvalContactJacobianCache,
+  //    CompliantContactManagerTest.CalcFreeMotionVelocitiesWithExternalForces,
+  //    CompliantContactManagerTest.CalcFreeMotionVelocitiesWithJointLimits.
+  //
+  // 2. SetupRigidGroundCompliantSphereCompliantSphere()
+  //    Test coverage of compliant-compliant contact. There is no checking of
+  //    contact quantities in details.
+  //
+  // 3. SetupRigidGroundCompliantSphereRigidSphere()
+  //    Test coverage of compliant-rigid contact. There is no checking of
+  //    contact quantities in details.
+
+  // To check contact quantities of rigid-compliant contact in details,
+  // setup this fixture to have:
   //   - A rigid-hydroelastic half-space for the ground.
   //   - A compliant-hydroelastic sphere on top of the ground.
   //   - A second non-hydroelastic sphere on top of the first sphere.
@@ -79,7 +99,8 @@ class CompliantContactManagerTest : public ::testing::Test {
   //   - Sphere 1 penetrates into the ground penetration_distance_.
   //   - Sphere 1 and 2 penetrate penetration_distance_.
   //   - Velocities are zero.
-  void MakeDefaultSetup(bool sphere1_on_prismatic_joint = false) {
+  void SetupRigidGroundCompliantSphereAndNonHydroSphere(
+      bool sphere1_on_prismatic_joint = false) {
     const ContactParameters compliant_contact{1.0e5, 1.0e5, 0.01, 1.0};
     const ContactParameters non_hydro_contact{1.0e5, {}, 0.01, 1.0};
     const ContactParameters rigid_hydro_contact{
@@ -88,6 +109,32 @@ class CompliantContactManagerTest : public ::testing::Test {
                                           0.2 /* size */, compliant_contact};
     const SphereParameters sphere2_params{"Sphere2", 10.0 /* mass */,
                                           0.2 /* size */, non_hydro_contact};
+    MakeModel(rigid_hydro_contact, sphere1_params, sphere2_params,
+              sphere1_on_prismatic_joint);
+  }
+
+  void SetupRigidGroundCompliantSphereCompliantSphere(
+      bool sphere1_on_prismatic_joint = false) {
+    const ContactParameters compliant_contact{1.0e5, 1.0e5, 0.01, 1.0};
+    const ContactParameters rigid_hydro_contact{
+        std::nullopt, std::numeric_limits<double>::infinity(), 0.0, 1.0};
+    const SphereParameters sphere1_params{"Sphere1", 10.0 /* mass */,
+                                          0.2 /* size */, compliant_contact};
+    const SphereParameters sphere2_params{"Sphere2", 10.0 /* mass */,
+                                          0.2 /* size */, compliant_contact};
+    MakeModel(rigid_hydro_contact, sphere1_params, sphere2_params,
+              sphere1_on_prismatic_joint);
+  }
+
+  void SetupRigidGroundCompliantSphereRigidSphere(
+      bool sphere1_on_prismatic_joint = false) {
+    const ContactParameters compliant_contact{1.0e5, 1.0e5, 0.01, 1.0};
+    const ContactParameters rigid_hydro_contact{
+        std::nullopt, std::numeric_limits<double>::infinity(), 0.0, 1.0};
+    const SphereParameters sphere1_params{"Sphere1", 10.0 /* mass */,
+                                          0.2 /* size */, compliant_contact};
+    const SphereParameters sphere2_params{"Sphere2", 10.0 /* mass */,
+                                          0.2 /* size */, compliant_contact};
     MakeModel(rigid_hydro_contact, sphere1_params, sphere2_params,
               sphere1_on_prismatic_joint);
   }
@@ -327,40 +374,27 @@ class CompliantContactManagerTest : public ::testing::Test {
       const ContactParameters& params) {
     DRAKE_DEMAND(params.point_stiffness || params.hydro_modulus);
     ProximityProperties properties;
-    if (params.point_stiffness) {
-      properties.AddProperty(geometry::internal::kMaterialGroup,
-                             geometry::internal::kPointStiffness,
-                             *params.point_stiffness);
-    }
-
     if (params.hydro_modulus) {
       if (params.hydro_modulus == std::numeric_limits<double>::infinity()) {
-        properties.AddProperty(geometry::internal::kHydroGroup,
-                               geometry::internal::kComplianceType,
-                               geometry::internal::HydroelasticType::kRigid);
+        geometry::AddRigidHydroelasticProperties(/* resolution_hint */ 1.0,
+                                                 &properties);
       } else {
-        properties.AddProperty(geometry::internal::kHydroGroup,
-                               geometry::internal::kComplianceType,
-                               geometry::internal::HydroelasticType::kSoft);
-        properties.AddProperty(geometry::internal::kHydroGroup,
-                               geometry::internal::kElastic,
-                               *params.hydro_modulus);
+        geometry::AddCompliantHydroelasticProperties(
+            /* resolution_hint */ 1.0, *params.hydro_modulus, &properties);
       }
       // N.B. Add the slab thickness property by default so that we can model a
       // half space (either compliant or rigid).
       properties.AddProperty(geometry::internal::kHydroGroup,
                              geometry::internal::kSlabThickness, 1.0);
-      properties.AddProperty(geometry::internal::kHydroGroup,
-                             geometry::internal::kRezHint, 1.0);
     }
-
+    geometry::AddContactMaterial(
+        /* "hunt_crossley_dissipation" */ {}, params.point_stiffness,
+        CoulombFriction<double>(params.friction_coefficient,
+                                params.friction_coefficient),
+        &properties);
     properties.AddProperty(geometry::internal::kMaterialGroup,
                            "dissipation_time_constant",
                            params.dissipation_time_constant);
-    properties.AddProperty(
-        geometry::internal::kMaterialGroup, geometry::internal::kFriction,
-        CoulombFriction<double>(params.friction_coefficient,
-                                params.friction_coefficient));
     return properties;
   }
 };
@@ -386,10 +420,12 @@ TEST_F(CompliantContactManagerTest,
 }
 
 // Unit test to verify discrete contact pairs computed by the manager for
-// hydroelastic contact.
+// rigid-compliant hydroelastic contact with point-contact fall back.
+// It also covers case: g = -gN;
+// in AppendDiscreteContactPairsForHydroelasticContact()
 TEST_F(CompliantContactManagerTest,
-       VerifyDiscreteContactPairsFromHydroelasticContact) {
-  MakeDefaultSetup();
+       VerifyDiscreteContactPairsFromRigidCompliantHydroelasticContact) {
+  SetupRigidGroundCompliantSphereAndNonHydroSphere();
 
   const std::vector<PenetrationAsPointPair<double>>& point_pairs =
       EvalPointPairPenetrations(*plant_context_);
@@ -404,9 +440,49 @@ TEST_F(CompliantContactManagerTest,
   EXPECT_EQ(pairs.size(), surfaces[0].num_faces() + num_point_pairs);
 }
 
+// Coverage test of case: g = gM * gN / (gN - gM);
+// in AppendDiscreteContactPairsForHydroelasticContact()
+TEST_F(CompliantContactManagerTest,
+       VerifyDiscreteContactPairsFromCompliantCompliantHydroelasticContact) {
+  SetupRigidGroundCompliantSphereCompliantSphere();
+
+  const std::vector<PenetrationAsPointPair<double>>& point_pairs =
+      EvalPointPairPenetrations(*plant_context_);
+  const int num_point_pairs = point_pairs.size();
+  EXPECT_EQ(num_point_pairs, 0);
+  const std::vector<DiscreteContactPair<double>>& pairs =
+      EvalDiscreteContactPairs(*plant_context_);
+
+  const std::vector<geometry::ContactSurface<double>>& surfaces =
+      EvalContactSurfaces(*plant_context_);
+  ASSERT_EQ(surfaces.size(), 2);
+  EXPECT_EQ(pairs.size(), surfaces[0].num_faces() + surfaces[1].num_faces() +
+                              num_point_pairs);
+}
+
+// Coverage test of case: g = gM;
+// in AppendDiscreteContactPairsForHydroelasticContact()
+TEST_F(CompliantContactManagerTest,
+       VerifyDiscreteContactPairsFromCompliantRigidHydroelasticContact) {
+  SetupRigidGroundCompliantSphereRigidSphere();
+
+  const std::vector<PenetrationAsPointPair<double>>& point_pairs =
+      EvalPointPairPenetrations(*plant_context_);
+  const int num_point_pairs = point_pairs.size();
+  EXPECT_EQ(num_point_pairs, 0);
+  const std::vector<DiscreteContactPair<double>>& pairs =
+      EvalDiscreteContactPairs(*plant_context_);
+
+  const std::vector<geometry::ContactSurface<double>>& surfaces =
+      EvalContactSurfaces(*plant_context_);
+  ASSERT_EQ(surfaces.size(), 2);
+  EXPECT_EQ(pairs.size(), surfaces[0].num_faces() + surfaces[1].num_faces() +
+      num_point_pairs);
+}
+
 // Unit test to verify the computation of the contact Jacobian.
 TEST_F(CompliantContactManagerTest, EvalContactJacobianCache) {
-  MakeDefaultSetup();
+  SetupRigidGroundCompliantSphereAndNonHydroSphere();
   const double radius = 0.2;  // Spheres's radii in the default setup.
   const double kTolerance = std::numeric_limits<double>::epsilon();
 
@@ -481,7 +557,7 @@ TEST_F(CompliantContactManagerTest, EvalContactJacobianCache) {
 // external forces are applied.
 TEST_F(CompliantContactManagerTest,
        CalcFreeMotionVelocitiesWithExternalForces) {
-  MakeDefaultSetup();
+  SetupRigidGroundCompliantSphereAndNonHydroSphere();
   const double kTolerance = std::numeric_limits<double>::epsilon();
 
   // We set an arbitrary non-zero external force to the plant to verify it gets
@@ -517,7 +593,8 @@ TEST_F(CompliantContactManagerTest, CalcFreeMotionVelocitiesWithJointLimits) {
   // In this model sphere 1 is attached to the world by a prismatic joint with
   // lower limit z = 0.
   const bool sphere1_on_prismatic_joint = true;
-  MakeDefaultSetup(sphere1_on_prismatic_joint);
+  SetupRigidGroundCompliantSphereAndNonHydroSphere(
+      sphere1_on_prismatic_joint);
 
   const int nv = plant_->num_velocities();
 
