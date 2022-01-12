@@ -2107,6 +2107,12 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
       const std::vector<geometry::ContactSurface<T>>& surfaces =
           EvalContactSurfaces(context);
       for (const auto& s : surfaces) {
+        const bool M_is_compliant = s.HasGradE_M();
+        const bool M_is_rigid = !M_is_compliant;
+        const bool N_is_compliant = s.HasGradE_N();
+        const bool N_is_rigid = !N_is_compliant;
+        DRAKE_DEMAND(!(M_is_rigid && N_is_rigid));
+
         // Combined Hunt & Crossley dissipation.
         const T dissipation = hydroelastics_engine_.CalcCombinedDissipation(
             s.id_M(), s.id_N(), inspector);
@@ -2124,44 +2130,54 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
           // We therefore ignore infinitesimally small triangles. The tolerance
           // below is somewhat arbitrary and could possibly be tightened.
           if (Ae > 1.0e-14) {
-            // N.B Assuming rigid-soft contact, and thus only a single pressure
-            // gradient is considered to be valid. We first verify this indeed
-            // is the case by checking that only one side has gradient
-            // information (the volumetric side).
-            const bool M_is_soft = s.HasGradE_M();
-            const bool N_is_soft = s.HasGradE_N();
-            DRAKE_DEMAND(M_is_soft != N_is_soft);
-
-            // Pressure gradient always points into the soft geometry by
-            // construction.
-            const Vector3<T>& grad_pres_W = M_is_soft
-                                                ? s.EvaluateGradE_M_W(face)
-                                                : s.EvaluateGradE_N_W(face);
-
             // From ContactSurface's documentation: The normal of each face is
             // guaranteed to point "out of" N and "into" M.
             const Vector3<T>& nhat_W = s.face_normal(face);
 
+            // One dimensional pressure gradient (in Pa/m). Unlike [Masterjohn
+            // et al. 2021], for convenience we define both pressure gradients
+            // to be positive in the direction "into" the bodies. Therefore,
+            // we use the minus sign for gN.
+            // [Masterjohn et al., 2021] Discrete Approximation of Pressure
+            // Field Contact Patches.
+            const T gM = M_is_compliant
+                             ? s.EvaluateGradE_M_W(face).dot(nhat_W)
+                             : T(std::numeric_limits<double>::infinity());
+            const T gN = N_is_compliant
+                             ? -s.EvaluateGradE_N_W(face).dot(nhat_W)
+                             : T(std::numeric_limits<double>::infinity());
+
+            // Effective hydroelastic pressure gradient g result of
+            // compliant-compliant interation, see [Masterjohn et al., 2021].
+            constexpr double kGradientEpsilon = 1.0e-14;
+            T g = 0.0;
+            if (gM < kGradientEpsilon || gN < kGradientEpsilon) {
+              // Mathematically g = gN*gM/(gN+gM) and therefore g = 0 when
+              // either gradient on one of the bodies is zero. A zero gradient
+              // means there is no contact constraint, and therefore we
+              // ignore it to avoid numerical problems in the discrete solver.
+              continue;
+            } else {
+              // The expression below is mathematically equivalent to g =
+              // gN*gM/(gN+gM) but it has the advantage of also being valid if
+              // ones of the gradients is infinity.
+              g = 1.0 / (1.0 / gM + 1.0 / gN);
+            }
+
             // Position of quadrature point Q in the world frame (since mesh_W
             // is measured and expressed in W).
             const Vector3<T>& p_WQ = s.centroid(face);
-            // TODO(DamrongGuoy) EvaluateCartesian() on the triangle mesh field
-            //  is expensive if the field doesn't have the gradients. The
-            //  field computation for triangle representation should capture
-            //  the field gradients, just like the polygon field does. (That
-            //  also unifies the APIs and logic on the geometry side better.)
             // Pressure at the quadrature point.
             const T p0 = s.is_triangle()
-                             ? s.tri_e_MN().EvaluateCartesian(face, p_WQ)
+                             ? s.tri_e_MN().Evaluate(
+                                   face, Vector3<T>(1 / 3., 1 / 3., 1 / 3.))
                              : s.poly_e_MN().EvaluateCartesian(face, p_WQ);
 
             // Force contribution by this quadrature point.
             const T fn0 = Ae * p0;
 
-            // Since the normal always points into M, regardless of which body
-            // is soft, we must take into account the change of sign when body
-            // N is soft and M is rigid.
-            const T sign = M_is_soft ? 1.0 : -1.0;
+            // TODO(amcastro-tri) this discussion needs to be updated to match
+            //  the equations from the paper.
 
             // In order to provide some intuition, and though not entirely
             // complete, here we document the first order idea that leads to
@@ -2194,7 +2210,7 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
             // does not stretch nor shrink). For triangles close to the
             // boundary of the contact surface, this is only a first order
             // approximation.
-            const T k = sign * Ae * grad_pres_W.dot(nhat_W);
+            const T k = Ae * g;
 
             // N.B. The normal is guaranteed to point into M. However, when M
             // is soft, the gradient is not guaranteed to be in the direction
