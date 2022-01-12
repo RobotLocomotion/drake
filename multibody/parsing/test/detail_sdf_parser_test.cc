@@ -1106,7 +1106,7 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
   <pose relative_to='invalid_usage'/>
   <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
 </model>)"),
-      R"([\s\S]*Error: Attribute //pose\[@relative_to\] of top level model )"
+      R"([\s\S]*Attribute //pose\[@relative_to\] of top level model )"
       R"(must be left empty[\s\S]*)");
 
   FailWithRelativeToNotDefined(R"(
@@ -1158,7 +1158,7 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
 </model>
 )"""),
       std::exception,
-      R"([\s\S]*Error: XML Element\[bad_element\], child of )"
+      R"([\s\S]*XML Element\[bad_element\], child of )"
       R"(element\[model\], not defined in SDF.[\s\S]*)");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -1175,7 +1175,7 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
   </joint>
 </model>)""", "1.9"),
       std::exception,
-      R"([\s\S]*Error: XML Element\[initial_position\], child of )"
+      R"([\s\S]*XML Element\[initial_position\], child of )"
       R"(element\[axis\], not defined in SDF.[\s\S]*)");
 }
 
