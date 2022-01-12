@@ -124,7 +124,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("F_Q_E"), cls_doc.dot.doc_1args_F_Q_E)
         .def("dot",
             overload_cast_explicit<T, const SpatialMomentum<T>&>(&Class::dot),
-            py::arg("L_NBp_E"), cls_doc.dot.doc_1args_L_NBp_E);
+            py::arg("L_WBp_E"), cls_doc.dot.doc_1args_L_WBp_E);
     cls.attr("__matmul__") = cls.attr("dot");
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
