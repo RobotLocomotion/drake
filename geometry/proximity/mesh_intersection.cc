@@ -47,7 +47,7 @@ namespace internal {
 // TODO(DamrongGuoy): Handle the case that the line is parallel to the plane.
 template <typename T>
 Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
-                            const PosedHalfSpace<double>& H_F) {
+                            const PosedHalfSpace<T>& H_F) {
   const T a = H_F.CalcSignedDistance(p_FA);
   const T b = H_F.CalcSignedDistance(p_FB);
   DRAKE_DEMAND(a != b);
@@ -75,7 +75,7 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
 template <typename T>
 void ClipPolygonByHalfSpace(
     const std::vector<Vector3<T>>& input_vertices_F,
-    const PosedHalfSpace<double>& H_F,
+    const PosedHalfSpace<T>& H_F,
     std::vector<Vector3<T>>* output_vertices_F) {
   DRAKE_ASSERT(output_vertices_F != nullptr);
   // Note: this is the inner loop of a modified Sutherland-Hodgman algorithm for
@@ -116,9 +116,8 @@ void ClipPolygonByHalfSpace(
   }
 }
 
-template <typename MeshType>
-void SurfaceVolumeIntersector<MeshType>::RemoveDuplicateVertices(
-    std::vector<Vector3<T>>* polygon) {
+template <typename T>
+void RemoveNearlyDuplicateVertices(std::vector<Vector3<T>>* polygon) {
   DRAKE_ASSERT(polygon != nullptr);
 
   // TODO(SeanCurtis-TRI): The resulting polygon depends on the order of the
@@ -224,12 +223,12 @@ SurfaceVolumeIntersector<MeshType>::ClipTriangleByTetrahedron(
   std::vector<Vector3<T>>* in_M = polygon_M;
   std::vector<Vector3<T>>* out_M = &(polygon_[1]);
   for (auto& face_vertex : faces) {
-    const Vector3<double>& p_MA = p_MVs[face_vertex[0]];
-    const Vector3<double>& p_MB = p_MVs[face_vertex[1]];
-    const Vector3<double>& p_MC = p_MVs[face_vertex[2]];
+    const Vector3<T>& p_MA = p_MVs[face_vertex[0]].cast<T>();
+    const Vector3<T>& p_MB = p_MVs[face_vertex[1]].cast<T>();
+    const Vector3<T>& p_MC = p_MVs[face_vertex[2]].cast<T>();
     // We'll allow the PosedHalfSpace to normalize our vector.
-    const Vector3<double> normal_M = (p_MB - p_MA).cross(p_MC - p_MA);
-    PosedHalfSpace<double> half_space_M(normal_M, p_MA);
+    const Vector3<T> normal_M = (p_MB - p_MA).cross(p_MC - p_MA);
+    PosedHalfSpace<T> half_space_M(normal_M, p_MA);
     // Intersects the output polygon by the half space of each face of the
     // tetrahedron.
     ClipPolygonByHalfSpace(*in_M, half_space_M, out_M);
@@ -242,10 +241,10 @@ SurfaceVolumeIntersector<MeshType>::ClipTriangleByTetrahedron(
   //  ClipPolygonByHalfSpace().
 
   // Remove possible duplicate vertices from ClipPolygonByHalfSpace().
-  RemoveDuplicateVertices(polygon_M);
+  RemoveNearlyDuplicateVertices(polygon_M);
   if (polygon_M->size() < 3) {
-    // RemoveDuplicateVertices() may have shrunk the polygon down to one or
-    // two vertices, so we empty the polygon.
+    // RemoveNearlyDuplicateVertices() may have shrunk the polygon down to
+    // one or two vertices, so we empty the polygon.
     polygon_M->clear();
   }
 
@@ -421,6 +420,7 @@ template class SurfaceVolumeIntersector<PolygonSurfaceMesh<AutoDiffXd>>;
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
     &CalcIntersection<T>,
     &ClipPolygonByHalfSpace<T>,
+    &RemoveNearlyDuplicateVertices<T>,
     &ComputeContactSurfaceFromSoftVolumeRigidSurface<T>
 ))
 

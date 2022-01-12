@@ -38,7 +38,7 @@ namespace internal {
  */
 template <typename T>
 Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
-                            const PosedHalfSpace<double>& H_F);
+                            const PosedHalfSpace<T>& H_F);
 
 /* Intersects a polygon with the half space H. It keeps the part of
  the polygon contained in the half space (signed distance is <= 0).
@@ -77,8 +77,21 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
 */
 template <typename T>
 void ClipPolygonByHalfSpace(const std::vector<Vector3<T>>& input_vertices_F,
-                            const PosedHalfSpace<double>& H_F,
+                            const PosedHalfSpace<T>& H_F,
                             std::vector<Vector3<T>>* output_vertices_F);
+
+/* Removes nearly duplicate vertices from a polygon represented as a cyclical
+ sequence of vertex positions. We consider two positions nearly duplicate when
+ they are within 1e-14 meter ε tolerance. For example, with input
+ `A,B,B+ε,C,A+ε`, the result would be `A,B,C`. The polygon might be reduced
+ to a pair of points (i.e., `A,A+ε,B,B+ε` becomes `A,B`) or a single point
+ (i.e., `A,A+ε,A` becomes `A`).
+ @param[in,out] polygon
+     The input polygon, and the output equivalent polygon with no duplicate
+     vertices.
+ */
+template <typename T>
+void RemoveNearlyDuplicateVertices(std::vector<Vector3<T>>* polygon);
 
 // Forward declaration of Tester class, so we can grant friend access.
 template <typename MeshType> class SurfaceVolumeIntersectorTester;
@@ -163,18 +176,6 @@ class SurfaceVolumeIntersector {
   std::vector<Vector3<T>>& mutable_grad_eM_M() { return grad_eM_Ms_; }
 
  private:
-  /* Remove duplicate vertices from a polygon represented as a cyclical
-   sequence of vertex positions. In other words, for a sequence `A,B,B,C,A`, the
-   pair of B's is reduced to one B and the first and last A vertices are
-   considered duplicates and the result would be `A,B,C`. The polygon might be
-   reduced to a pair of points (i.e., `A,A,B,B` becomes `A,B`) or a single point
-   (`A,A,A` becomes `A`).
-   @param[in,out] polygon
-       The input polygon, and the output equivalent polygon with no duplicate
-       vertices.
-   */
-  static void RemoveDuplicateVertices(std::vector<Vector3<T>>* polygon);
-
   /* Intersects a triangle with a tetrahedron, returning the portion of the
    triangle with non-zero area contained in the tetrahedron.
    @param element
