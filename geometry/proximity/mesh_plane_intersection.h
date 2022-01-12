@@ -17,6 +17,11 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+template <typename T>
+void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
+                               const Plane<T>& plane_M,
+                               std::vector<Vector3<T>>* polygon_vertices);
+
 /* Intersects a tetrahedron with a plane, the resulting polygon is passed
  into the provided MeshBuilder.
 
