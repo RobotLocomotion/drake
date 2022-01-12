@@ -122,7 +122,7 @@ class TestMultibodyTreeMath(unittest.TestCase):
         self.assertIsInstance(V.dot(F_Q_E=F), T)
         self.assertIsInstance(V @ F, T)
         L = SpatialMomentum_[T].Zero()
-        self.assertIsInstance(V.dot(L_NBp_E=L), T)
+        self.assertIsInstance(V.dot(L_WBp_E=L), T)
         self.assertIsInstance(V @ L, T)
 
     @numpy_compare.check_all_types
