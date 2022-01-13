@@ -45,37 +45,15 @@ namespace internal {
 //  tetrahedrons.
 
 // TODO(DamrongGuoy): Handle the case that the line is parallel to the plane.
-template <typename MeshType>
-Vector3<typename MeshType::ScalarType>
-SurfaceVolumeIntersector<MeshType>::CalcIntersection(
-    const Vector3<T>& p_FA, const Vector3<T>& p_FB,
-    const PosedHalfSpace<double>& H_F) {
+template <typename T>
+Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
+                            const PosedHalfSpace<double>& H_F) {
   const T a = H_F.CalcSignedDistance(p_FA);
   const T b = H_F.CalcSignedDistance(p_FB);
-  // We require that A and B classify in opposite directions (one inside and one
-  // outside). Outside has a strictly positive distance, inside is non-positive.
-  // We confirm that their product is non-positive and that at least one of the
-  // values is positive -- they can't both be zero. This prevents b - a becoming
-  // zero and the corresponding division by zero.
-  DRAKE_ASSERT(a * b <= 0 && (a > 0 || b > 0));
+  DRAKE_DEMAND(a != b);
   const T wa = b / (b - a);
-  const T wb = T(1.0) - wa;  // Enforce a + b = 1.
+  const T wb = T(1.0) - wa;  // Enforce wa + wb = 1, i.e., wb = -a/(b-a)
   const Vector3<T> intersection = wa * p_FA + wb * p_FB;
-  // Empirically we found that numeric_limits<double>::epsilon() 2.2e-16 is
-  // too small.
-  const T kEps(1e-14);
-  // TODO(SeanCurtis-TRI): Consider refactoring this fuzzy test *into*
-  //  PosedHalfSpace if it turns out we need to perform this test at other
-  //  sites. Also, the precision that works depends on the size of the triangles
-  //  in play. Generally, as long as the triangles are no larger than unit size
-  //  this should be fine.
-  // TODO(SeanCurtis-TRI): This probably shouldn't be executed in release
-  //  builds. This type of test is best suited for a unit test (do we trust this
-  //  math or not?)
-  // Verify that the intersection point is on the plane of the half space.
-  using std::abs;
-  DRAKE_DEMAND(abs(H_F.CalcSignedDistance(convert_to_double(intersection))) <
-               kEps);
   return intersection;
   // Justification.
   // 1. We set up the weights wa and wb such that wa + wb = 1, which
@@ -86,7 +64,6 @@ SurfaceVolumeIntersector<MeshType>::CalcIntersection(
   //      sdf(wa * A + wb * B)
   //      = N.dot(wa * A + wb * B) + d
   //      = wa * N.dot(A) + wb * N.dot(B) + d
-  //      = b * N.dot(A)/(b - a) + a * N.dot(B)/(a - b) + d
   //      = b * N.dot(A)/(b - a) - a * N.dot(B)/(b - a) + d
   //      = (b * N.dot(A) - a * N.dot(B) + (b - a) * d) / (b - a)
   //      = (b * (N.dot(A) + d) - a * (N.dot(B) + d)) / (b-a)
@@ -95,8 +72,8 @@ SurfaceVolumeIntersector<MeshType>::CalcIntersection(
   //      = 0 when a != b.
 }
 
-template <typename MeshType>
-void SurfaceVolumeIntersector<MeshType>::ClipPolygonByHalfSpace(
+template <typename T>
+void ClipPolygonByHalfSpace(
     const std::vector<Vector3<T>>& input_vertices_F,
     const PosedHalfSpace<double>& H_F,
     std::vector<Vector3<T>>* output_vertices_F) {
@@ -442,6 +419,8 @@ template class SurfaceVolumeIntersector<PolygonSurfaceMesh<double>>;
 template class SurfaceVolumeIntersector<PolygonSurfaceMesh<AutoDiffXd>>;
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &CalcIntersection<T>,
+    &ClipPolygonByHalfSpace<T>,
     &ComputeContactSurfaceFromSoftVolumeRigidSurface<T>
 ))
 
