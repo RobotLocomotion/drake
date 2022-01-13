@@ -470,6 +470,8 @@ void DoScalarIndependentDefinitions(py::module m) {
             }));
   }
 
+  m.def("CalcVolume", &CalcVolume, py::arg("shape"), doc.CalcVolume.doc);
+
   m.def("MakePhongIllustrationProperties", &MakePhongIllustrationProperties,
       py_rvp::reference_internal, py::arg("diffuse"),
       doc.MakePhongIllustrationProperties.doc);

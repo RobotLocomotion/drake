@@ -50,7 +50,14 @@ geometry::ProximityProperties ParseProximityProperties(
     }
   }
   if (hydroelastic_modulus) {
-    properties.AddProperty(kHydroGroup, kElastic, *hydroelastic_modulus);
+    if (is_rigid) {
+      static const logging::Warn log_once(
+        "Rigid geometries defined with the tag drake:rigid_hydroelastic should"
+        " not contain the tag drake:hydroelastic_modulus. Any values will be"
+        " ignored.");
+    } else {
+      properties.AddProperty(kHydroGroup, kElastic, *hydroelastic_modulus);
+    }
   }
 
   std::optional<double> dissipation =

@@ -3,6 +3,7 @@
 import pydrake.systems.framework as mut
 
 import copy
+import gc
 from textwrap import dedent
 import warnings
 
@@ -39,10 +40,12 @@ from pydrake.systems.framework import (
     EventStatus,
     GenerateHtml,
     InputPort, InputPort_,
+    InputPortIndex,
     kUseDefaultName,
     LeafContext, LeafContext_,
     LeafSystem, LeafSystem_,
     OutputPort, OutputPort_,
+    OutputPortIndex,
     Parameters, Parameters_,
     PeriodicEventData,
     PublishEvent, PublishEvent_,
@@ -50,6 +53,7 @@ from pydrake.systems.framework import (
     Subvector, Subvector_,
     Supervector, Supervector_,
     System, System_,
+    SystemVisitor, SystemVisitor_,
     SystemBase,
     SystemOutput, SystemOutput_,
     VectorBase, VectorBase_,
@@ -923,6 +927,46 @@ class TestGeneral(unittest.TestCase):
         self.assertRegex(graph, "_u0 -> .*:u4")
         self.assertRegex(graph, "_u1 -> .*:u5")
 
+    def test_diagram_api(self):
+        def make_diagram():
+            builder = DiagramBuilder()
+            adder1 = builder.AddNamedSystem("adder1", Adder(2, 2))
+            adder2 = builder.AddNamedSystem("adder2", Adder(1, 2))
+            builder.Connect(adder1.get_output_port(), adder2.get_input_port())
+            builder.ExportInput(adder1.get_input_port(0), "in0")
+            builder.ExportInput(adder1.get_input_port(1), "in1")
+            builder.ExportOutput(adder2.get_output_port(), "out")
+            diagram = builder.Build()
+            return adder1, adder2, diagram
+
+        adder1, adder2, diagram = make_diagram()
+        connections = diagram.connection_map()
+        self.assertIn((adder2, InputPortIndex(0)), connections)
+        self.assertEqual(connections[(adder2, InputPortIndex(0))],
+                         (adder1, OutputPortIndex(0)))
+        del adder1, adder2, diagram  # To test keep-alive logic
+        gc.collect()
+        self.assertEqual(list(connections.keys())[0][0].get_name(), "adder2")
+
+        adder1, adder2, diagram = make_diagram()
+        in0_locators = diagram.GetInputPortLocators(
+            port_index=InputPortIndex(0))
+        in1_locators = diagram.GetInputPortLocators(
+            port_index=InputPortIndex(1))
+        self.assertEqual(in0_locators, [(adder1, InputPortIndex(0))])
+        self.assertEqual(in1_locators, [(adder1, InputPortIndex(1))])
+        del adder1, adder2, diagram  # To test keep-alive logic
+        gc.collect()
+        self.assertEqual(in0_locators[0][0].get_name(), "adder1")
+
+        adder1, adder2, diagram = make_diagram()
+        out_locators = diagram.get_output_port_locator(
+            port_index=OutputPortIndex(0))
+        self.assertEqual(out_locators, (adder2, OutputPortIndex(0)))
+        del adder1, adder2, diagram  # To test keep-alive logic
+        gc.collect()
+        self.assertEqual(out_locators[0].get_name(), "adder2")
+
     def test_add_named_system(self):
         builder = DiagramBuilder()
         adder1 = builder.AddNamedSystem("adder1", Adder(2, 3))
@@ -932,3 +976,27 @@ class TestGeneral(unittest.TestCase):
 
     def test_module_constants(self):
         self.assertEqual(repr(kUseDefaultName), "kUseDefaultName")
+
+    def test_system_visitor(self):
+        builder = DiagramBuilder()
+        builder.AddNamedSystem("adder1", Adder(2, 2))
+        builder.AddNamedSystem("adder2", Adder(2, 2))
+        system = builder.Build()
+        system.set_name("diagram")
+
+        visited_systems = []
+        visited_diagrams = []
+
+        class MyVisitor(SystemVisitor):
+            def VisitSystem(self, system):
+                visited_systems.append(system.get_name())
+
+            def VisitDiagram(self, diagram):
+                visited_diagrams.append(diagram.get_name())
+                for sys in diagram.GetSystems():
+                    sys.Accept(self)
+
+        visitor = MyVisitor()
+        system.Accept(v=visitor)
+        self.assertEqual(visited_systems, ["adder1", "adder2"])
+        self.assertEqual(visited_diagrams, ["diagram"])
