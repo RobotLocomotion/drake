@@ -121,7 +121,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("V_PB_E"), cls_doc.ComposeWithMovingFrameVelocity.doc)
         .def("dot",
             overload_cast_explicit<T, const SpatialForce<T>&>(&Class::dot),
-            py::arg("F_Q_E"), cls_doc.dot.doc_1args_F_Q_E)
+            py::arg("F_Bp_E"), cls_doc.dot.doc_1args_F_Bp_E)
         .def("dot",
             overload_cast_explicit<T, const SpatialMomentum<T>&>(&Class::dot),
             py::arg("L_WBp_E"), cls_doc.dot.doc_1args_L_WBp_E);
@@ -143,7 +143,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             py::init<const Vector6<T>&>(), py::arg("L"), cls_doc.ctor.doc_1args)
         .def("Shift", &Class::Shift, py::arg("p_BpBq_E"), cls_doc.Shift.doc)
-        .def("dot", &Class::dot, py::arg("V_IBp_E"), cls_doc.dot.doc);
+        .def("dot", &Class::dot, py::arg("V_WBp_E"), cls_doc.dot.doc);
     cls.attr("__matmul__") = cls.attr("dot");
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
@@ -193,7 +193,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("p_BpBq_E"), cls_doc.Shift.doc_1args)
         .def("dot",
             overload_cast_explicit<T, const SpatialVelocity<T>&>(&Class::dot),
-            py::arg("V_IBp_E"), cls_doc.dot.doc);
+            py::arg("V_WBp_E"), cls_doc.dot.doc);
     cls.attr("__matmul__") = cls.attr("dot");
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.

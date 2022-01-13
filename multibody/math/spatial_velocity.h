@@ -24,8 +24,6 @@ namespace multibody {
 /// frame B with respect to a "measured-in" frame A. This class assumes that
 /// both the rotational velocity w and translational velocity v are expressed
 /// in the same "expressed-in" frame E.
-/// Reminder: Translational velocity v is associated with a single point of
-/// frame B, e.g., B's origin (Bo) or if B is a body, its center of mass Bcm.
 /// This class only stores 6 elements (namely w and v) and does not store the
 /// underlying frames B, A, E or the point of B associated with v.  The user is
 /// responsible for keeping track of the underlying frames B, A, E, etc., which
@@ -158,7 +156,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   ///   It is unusual to use this method unless frame W is the world frame.
   /// @note Although the spatial vectors F_Bp_E and V_WBp_E must have the same
   ///   expressed-in frame E, the result is a scalar (independent of frame E).
-  inline T dot(const SpatialForce<T>& F_Q_E) const;
+  inline T dot(const SpatialForce<T>& F_Bp_E) const;
   // The dot() method is implemented at the end of this file, so that all of
   // the dot methods are co-located for easy understanding. We need the inline
   // keyword to ensure the method is still inlined even with `extern template`.
@@ -177,9 +175,9 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// information, see SpatialMomentum::Shift() and SpatialVelocity::Shift().
   /// @param[in] L_WBp_E spatial momentum of body B at Bp, measured-in frame W,
   ///   expressed in the same frame E as `this` spatial velocity V_WBp_E.
-  /// @retval Twice the kinetic energy of body B in frame W.
-  /// @note In most situations, the usefulness of kinetic energy is associated
-  ///   with a world frame W (also called a Newtonian or inertial frame).
+  /// @returns Twice the kinetic energy of body B in frame W.
+  /// @note In most situations, kinetic energy calculations are only useful when
+  ///   frame W is a world frame (also called a Newtonian or inertial frame).
   ///   It is unusual to use this method unless frame W is the world frame.
   /// @note Although the spatial vectors V_WBp_E and L_WBp_E must have the same
   ///   expressed-in frame E, the result is a scalar (independent of frame E).
@@ -219,7 +217,7 @@ inline SpatialVelocity<T> operator+(
 /// @note This method should only be used if you are sure it makes sense.
 ///   One use case is calculating relative spatial velocity, e.g., the spatial
 ///   velocity of a frame B at point Bp measured-in a frame W relative to the
-///   spatial velocity of a frame A at point Ap measure in framw W.
+///   spatial velocity of a frame A at point Ap measure in frame W.
 ///   For this use case, this method returns V_W_ApBp_E = V_WBp_E - V_WAp_E.
 ///
 ///   A second use case calculates the spatial velocity V_ABp of a frame B at
@@ -238,15 +236,15 @@ inline SpatialVelocity<T> operator-(
 }
 
 template <typename T>
-T SpatialVelocity<T>::dot(const SpatialForce<T>& F_Q_E) const {
-  return this->get_coeffs().dot(F_Q_E.get_coeffs());
+T SpatialVelocity<T>::dot(const SpatialForce<T>& F_Bp_E) const {
+  return this->get_coeffs().dot(F_Bp_E.get_coeffs());
 }
 
 // This was declared in spatial_force.h, but must be implemented here in
 // order to break the dependency cycle.
 template <typename T>
-T SpatialForce<T>::dot(const SpatialVelocity<T>& V_IBp_E) const {
-  return V_IBp_E.dot(*this);  // dot-product is commutative.
+T SpatialForce<T>::dot(const SpatialVelocity<T>& V_WBp_E) const {
+  return V_WBp_E.dot(*this);  // dot-product is commutative.
 }
 
 // This was declared in spatial_momentum.h, but must be implemented here in
