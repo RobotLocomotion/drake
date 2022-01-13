@@ -120,9 +120,10 @@ class RandomSource final : public LeafSystem<T> {
   std::optional<Seed> fixed_seed_;
 };
 
-// TODO(jwnimmer-tri) On 2022-01-01 we should deprecate this vestigial alias.
 /// A convenient alias for a RandomSource that uses the `double` scalar type.
-using RandomSourced = RandomSource<double>;
+using RandomSourced
+    DRAKE_DEPRECATED("2022-05-01", "Use RandomSource<double> instead.")
+    = RandomSource<double>;
 
 /// For each subsystem input port in @p builder that is (a) not yet connected
 /// and (b) labeled as random in the InputPort, this method will add a

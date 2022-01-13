@@ -232,12 +232,6 @@
       <child>A</child>
       <parent>world</parent>
       <axis>
-        <!--
-          This revolute joint's initial angle is
-          tan⁻¹(√15) ≈ 1.318116071652818 ≈ 75.52°.
-          See the README for more details.
-        -->
-        <initial_position>1.318116071652818</initial_position>
         <xyz expressed_in="__model__">0 1 0</xyz>
         <limit>
           <!-- No limit provided. sdformat defaults to -1, which we parse as
@@ -252,12 +246,6 @@
       <child>B</child>
       <parent>A</parent>
       <axis>
-        <!-- 
-          This revolute joint's initial angle is
-          π − tan⁻¹(√15) ≈ 1.8234765819369751 ≈ 104.48°.
-          See the README for more details.
-        -->
-        <initial_position>1.8234765819369751</initial_position>
         <xyz expressed_in="__model__">0 1 0</xyz>
         <limit>
           <!-- An effort of 0 is parsed as an unactuated joint. -->
@@ -272,12 +260,6 @@
       <child>C</child>
       <parent>world</parent>
       <axis>
-        <!-- 
-          This revolute joint's initial angle is
-          π − tan⁻¹(√15) ≈ 1.8234765819369751 ≈ 104.48°.
-          See the README for more details.
-        -->
-        <initial_position>1.8234765819369751</initial_position>
         <xyz expressed_in="__model__">0 1 0</xyz>
         <limit>
           <!-- An effort of 0 is parsed as an unactuated joint. -->

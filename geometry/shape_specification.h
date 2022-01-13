@@ -327,7 +327,7 @@ class Convex final : public Shape {
       sqrt(x²/a² + y²/b²) ≤ z;  z ∈ [0, height],
 
  where `a` and `b` are the lengths of the principle semi-axes of the horizontal
- section at `z=1`.
+ section at `z=height()`.
 
  This shape is currently only supported by Meshcat. It will not appear in any
  renderings, proximity queries, or other visualizers.
@@ -500,6 +500,12 @@ class ShapeName final : public ShapeReifier {
 
 /** @relates ShapeName */
 std::ostream& operator<<(std::ostream& out, const ShapeName& name);
+
+/** Calculates the volume (in meters^3) for the Shape.
+ @throws std::exception if the derived type hasn't overloaded this
+  implementation (yet).
+*/
+double CalcVolume(const Shape& shape);
 
 }  // namespace geometry
 }  // namespace drake
