@@ -269,6 +269,11 @@ To use kcov on Ubuntu 18.04 (Bionic), you must first run Drake's
 20.04 (Focal), the option is ignored. The macOS ``install_prereqs`` setup
 script does not install kcov, and passing a ``--with-kcov`` option is an error.
 
+In some cases, running kcov builds and regular builds from the same source
+tree will lead to Bazel error messages like "this rule is missing dependency
+declarations".  To resolve that problem, either run the kcov build from a
+fresh checkout, or else run a ``bazel clean``.
+
 To analyze test coverage, run one (or more) tests under ``kcov``:
 
 ```
