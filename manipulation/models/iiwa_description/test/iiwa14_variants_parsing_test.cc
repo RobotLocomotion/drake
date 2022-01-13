@@ -66,7 +66,9 @@ GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValues) {
       "drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_spheres_dense_collision.urdf",
       "drake/manipulation/models/iiwa_description/urdf/"
-      "iiwa14_spheres_dense_elbow_collision.urdf"};
+      "iiwa14_spheres_dense_elbow_collision.urdf",
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "dual_iiwa14_polytope_collision.urdf"};
 
   for (auto& model_file : model_files) {
     multibody::MultibodyPlant<double> plant(0.0);
@@ -82,6 +84,17 @@ GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValues) {
           plant.get_joint_actuator(drake::multibody::JointActuatorIndex(i));
 
       CompareActuatorLimits(canonical_joint_actuator, joint_actuator);
+
+      // Test the joints from the second instance of tue dual iiwa14 polytope
+      // collision model. They correspond to joints 7 to 13 of the model.
+      if (model_file.substr(model_file.find_last_of('/') + 1) ==
+          "dual_iiwa14_polytope_collision.urdf") {
+        const multibody::JointActuator<double>& second_instance_joint_actuator =
+            plant.get_joint_actuator(
+                drake::multibody::JointActuatorIndex(i + 7));
+        CompareActuatorLimits(canonical_joint_actuator,
+                              second_instance_joint_actuator);
+      }
     }
   }
 }
