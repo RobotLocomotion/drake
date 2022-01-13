@@ -45,11 +45,9 @@ namespace internal {
 //  tetrahedrons.
 
 // TODO(DamrongGuoy): Handle the case that the line is parallel to the plane.
-template <typename MeshType>
-Vector3<typename MeshType::ScalarType>
-SurfaceVolumeIntersector<MeshType>::CalcIntersection(
-    const Vector3<T>& p_FA, const Vector3<T>& p_FB,
-    const PosedHalfSpace<double>& H_F) {
+template <typename T>
+Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
+                            const PosedHalfSpace<double>& H_F) {
   const T a = H_F.CalcSignedDistance(p_FA);
   const T b = H_F.CalcSignedDistance(p_FB);
   // We require that A and B classify in opposite directions (one inside and one
@@ -95,8 +93,8 @@ SurfaceVolumeIntersector<MeshType>::CalcIntersection(
   //      = 0 when a != b.
 }
 
-template <typename MeshType>
-void SurfaceVolumeIntersector<MeshType>::ClipPolygonByHalfSpace(
+template <typename T>
+void ClipPolygonByHalfSpace(
     const std::vector<Vector3<T>>& input_vertices_F,
     const PosedHalfSpace<double>& H_F,
     std::vector<Vector3<T>>* output_vertices_F) {
@@ -442,6 +440,8 @@ template class SurfaceVolumeIntersector<PolygonSurfaceMesh<double>>;
 template class SurfaceVolumeIntersector<PolygonSurfaceMesh<AutoDiffXd>>;
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &CalcIntersection<T>,
+    &ClipPolygonByHalfSpace<T>,
     &ComputeContactSurfaceFromSoftVolumeRigidSurface<T>
 ))
 
