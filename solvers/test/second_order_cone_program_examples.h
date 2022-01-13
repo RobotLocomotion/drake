@@ -171,6 +171,7 @@ class MaximizeGeometricMeanTrivialProblem1 {
  private:
   std::unique_ptr<MathematicalProgram> prog_;
   symbolic::Variable x_;
+  Binding<LinearCost> cost_;
 };
 
 /**

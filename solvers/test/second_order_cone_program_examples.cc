@@ -5,6 +5,7 @@
 #include <optional>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/solvers/decision_variable.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 namespace drake {
@@ -354,7 +355,8 @@ void TestFindSpringEquilibrium::SolveAndCheckSolution(
 
 MaximizeGeometricMeanTrivialProblem1::MaximizeGeometricMeanTrivialProblem1()
     : prog_{new MathematicalProgram()},
-      x_{prog_->NewContinuousVariables<1>()(0)} {
+      x_{prog_->NewContinuousVariables<1>()(0)},
+      cost_{std::shared_ptr<LinearCost>(nullptr), VectorXDecisionVariable(0)} {
   prog_->AddBoundingBoxConstraint(-kInf, 10, x_);
   Eigen::Vector2d A(2, 3);
   Eigen::Vector2d b(3, 2);
