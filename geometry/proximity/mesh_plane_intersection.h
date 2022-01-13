@@ -17,10 +17,34 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+/* Lighter version of SliceTetWithPlane(). It doesn't require a MeshBuilder
+ and works on a tetrahedral mesh directly. No _linear_ volume mesh field is
+ needed since it doesn't perform linear interpolation of field values.
+
+ The output polygon is represented by a sequence of vertices ordered such that
+ the normal implied by their winding points in the direction of the plane's
+ normal.
+
+ @param[in] tet_index       The index of the tetrahedron to attempt to
+                            intersect.
+ @param[in] mesh_M          The mesh containing the tetrahedron to intersect.
+                            The vertex positions are all measured and expressed
+                            in Frame M.
+ @param[in] plane_M         The definition of a plane measured and expressed
+                            in Frame M.
+ @param[out] polygon_vertices_M  The output polygon is represented as a
+                            sequence of vertex positions in Frame M. It is
+                            empty if there is no intersection.
+
+ @returns an entry of a marching tetrahedron table that encodes which of the
+ six edges of the tetrahedron intersects the plane.
+
+ @pre `tet_index` lies in the range `[0, mesh_M.num_elements())`.
+ */
 template <typename T>
-void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
-                               const Plane<T>& plane_M,
-                               std::vector<Vector3<T>>* polygon_vertices);
+const std::array<int, 4>& SliceTetrahedronWithPlane(
+    int tet_index, const VolumeMesh<double>& mesh_M, const Plane<T>& plane_M,
+    std::vector<Vector3<T>>* polygon_vertices_M);
 
 /* Intersects a tetrahedron with a plane, the resulting polygon is passed
  into the provided MeshBuilder.

@@ -62,9 +62,11 @@ constexpr std::array<std::array<int, 4>, 16> kMarchingTetsTable = {
 }  // namespace
 
 template <typename T>
-void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
-                               const Plane<T>& plane_M,
-                               std::vector<Vector3<T>>* polygon_vertices) {
+const std::array<int, 4>& SliceTetrahedronWithPlane(
+    int tet_index, const VolumeMesh<double>& mesh_M, const Plane<T>& plane_M,
+    std::vector<Vector3<T>>* polygon_vertices_M) {
+  polygon_vertices_M->clear();
+
   T distance[4];
   // Bit encoding of the sign of signed-distance: v0, v1, v2, v3.
   int intersection_code = 0;
@@ -78,7 +80,7 @@ void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
       kMarchingTetsTable[intersection_code];
 
   // No intersecting edges --> no intersection.
-  if (intersected_edges[0] == -1) return;
+  if (intersected_edges[0] == -1) return intersected_edges;
 
   int num_intersections = 0;
   for (int e = 0; e < 4; ++e) {
@@ -88,7 +90,6 @@ void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
     const TetrahedronEdge& tet_edge = kTetEdges[edge_index];
     const int v0 = mesh_M.element(tet_index).vertex(tet_edge.first);
     const int v1 = mesh_M.element(tet_index).vertex(tet_edge.second);
-    const SortedPair<int> mesh_edge{v0, v1};
 
     const Vector3<double>& p_MV0 = mesh_M.vertex(v0);
     const Vector3<double>& p_MV1 = mesh_M.vertex(v1);
@@ -100,8 +101,9 @@ void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
     // positive the other must be strictly non-positive.
     const T t = d_v0 / (d_v0 - d_v1);
     const Vector3<T> p_MC = p_MV0 + t * (p_MV1 - p_MV0);
-    polygon_vertices->push_back(p_MC);
+    polygon_vertices_M->push_back(p_MC);
   }
+  return intersected_edges;
 }
 
 template <typename MeshBuilder>
@@ -114,29 +116,20 @@ int SliceTetWithPlane(
   using T = typename MeshBuilder::ScalarType;
   const VolumeMesh<double>& mesh_M = field_M.mesh();
 
-  T distance[4];
-  // Bit encoding of the sign of signed-distance: v0, v1, v2, v3.
-  int intersection_code = 0;
-  for (int i = 0; i < 4; ++i) {
-    const int v = mesh_M.element(tet_index).vertex(i);
-    distance[i] = plane_M.CalcHeight(mesh_M.vertex(v));
-    if (distance[i] > T(0)) intersection_code |= 1 << i;
-  }
-
+  std::vector<Vector3<T>> polygon_vertices_M;
   const std::array<int, 4>& intersected_edges =
-      kMarchingTetsTable[intersection_code];
+      SliceTetrahedronWithPlane(tet_index, mesh_M, plane_M,
+                                &polygon_vertices_M);
 
   // No intersecting edges --> no intersection.
   if (intersected_edges[0] == -1) return 0;
 
-  int num_intersections = 0;
   // Indices of the new polygon's vertices in vertices_W. There can be, at
   // most, four due to the intersection with the plane.
-  std::vector<int> face_verts(4);
+  std::vector<int> face_verts(polygon_vertices_M.size());
   for (int e = 0; e < 4; ++e) {
     const int edge_index = intersected_edges[e];
     if (edge_index == -1) break;
-    ++num_intersections;
     const TetrahedronEdge& tet_edge = kTetEdges[edge_index];
     const int v0 = mesh_M.element(tet_index).vertex(tet_edge.first);
     const int v1 = mesh_M.element(tet_index).vertex(tet_edge.second);
@@ -147,28 +140,13 @@ int SliceTetWithPlane(
       // Result has already been computed.
       face_verts[e] = iter->second;
     } else {
-      // Need to compute the result; but we already know that this edge
-      // intersects the plane based on the signed distances of its two
-      // vertices.
-      const Vector3<double>& p_MV0 = mesh_M.vertex(v0);
-      const Vector3<double>& p_MV1 = mesh_M.vertex(v1);
-      const T d_v0 = distance[tet_edge.first];
-      const T d_v1 = distance[tet_edge.second];
-      // Note: It should be impossible for the denominator to be zero. By
-      // definition, this is an edge that is split by the plane; they can't
-      // both have the same value. More particularly, one must be strictly
-      // positive the other must be strictly non-positive.
-      const T t = d_v0 / (d_v0 - d_v1);
-      const Vector3<T> p_MC = p_MV0 + t * (p_MV1 - p_MV0);
-      const double e0 = field_M.EvaluateAtVertex(v0);
-      const double e1 = field_M.EvaluateAtVertex(v1);
-      const int new_index =
-          builder_W->AddVertex(X_WM * p_MC, e0 + t * (e1 - e0));
+      const Vector3<T>& p_MV = polygon_vertices_M.at(e);
+      const int new_index = builder_W->AddVertex(
+          p_MV, field_M.template EvaluateCartesian(tet_index, p_MV));
       (*cut_edges)[mesh_edge] = new_index;
       face_verts[e] = new_index;
     }
   }
-  face_verts.resize(num_intersections);
 
   // Because the vertices are measured and expressed in the world frame, we
   // need to provide a normal expressed in the same.
