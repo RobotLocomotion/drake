@@ -2352,6 +2352,41 @@ TEST_F(GeometryStateTest, GeometryNameStorage) {
   }
 }
 
+// Confirms parental relationships between frames are stored
+TEST_F(GeometryStateTest, GeometryAncestryStorage) {
+  SetUpSingleSourceTree();
+
+  // {child, parent}
+  std::vector<std::pair<std::string, std::string>> expected_relationships = {
+    {"world", "world"},
+    {"f0", "world"},
+    {"f1", "world"},
+    {"f2", "f1"},
+  };
+
+  ASSERT_EQ(expected_relationships.size(), geometry_state_.get_num_frames());
+
+  for (const FrameId frame_id : geometry_state_.get_frame_ids()) {
+    const std::string& frame_name = geometry_state_.GetName(frame_id);
+    const FrameId parent_frame_id = geometry_state_.GetParent(frame_id);
+    const std::string& parent_frame_name = geometry_state_.GetName(
+        parent_frame_id);
+    bool found_relationship;
+
+    for (const auto& relationship : expected_relationships) {
+      const std::string & expected_frame_name = relationship.first;
+      const std::string & expected_parent_name = relationship.second;
+      if (expected_frame_name == frame_name) {
+        EXPECT_EQ(expected_parent_name, parent_frame_name);
+        found_relationship = true;
+        break;
+      }
+    }
+    ASSERT_TRUE(found_relationship)
+      << "test knows no relationship for [" << frame_name << "]";
+  }
+}
+
 // Tests the logic for confirming if a name is valid or not.
 TEST_F(GeometryStateTest, GeometryNameValidation) {
   SetUpSingleSourceTree(Assign::kProximity);
