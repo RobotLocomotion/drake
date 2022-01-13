@@ -59,7 +59,7 @@ obtain the `vtk*.tar.gz` from an alternate location.  An example change:
  DEFAULT_MIRRORS = {
      # ... other projects ...
      "vtk": [
-+    # NOTE:   vvv there must be three slashes.
++    # NOTE:   ↓↓↓ there must be three slashes.
 +        "file:///abs/path/to/drake/tools/workspace/vtk/{archive}",
 +    #   "https://drake-packages.csail.mit.edu/vtk/{archive}",
 +    #   "https://s3.amazonaws.com/drake-packages/vtk/{archive}",
