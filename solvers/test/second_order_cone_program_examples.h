@@ -171,6 +171,7 @@ class MaximizeGeometricMeanTrivialProblem1 {
  private:
   std::unique_ptr<MathematicalProgram> prog_;
   symbolic::Variable x_;
+  std::unique_ptr<Binding<LinearCost>> cost_;
 };
 
 /**
@@ -197,6 +198,7 @@ class MaximizeGeometricMeanTrivialProblem2 {
  private:
   std::unique_ptr<MathematicalProgram> prog_;
   symbolic::Variable x_;
+  std::unique_ptr<Binding<LinearCost>> cost_;
 };
 
 /**
@@ -234,6 +236,7 @@ class SmallestEllipsoidCoveringProblem {
   std::unique_ptr<MathematicalProgram> prog_;
   VectorX<symbolic::Variable> a_;
   Eigen::MatrixXd p_;
+  std::unique_ptr<Binding<LinearCost>> cost_;
 };
 
 class SmallestEllipsoidCoveringProblem1
