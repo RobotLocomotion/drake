@@ -237,26 +237,6 @@ inline SpatialVelocity<T> operator-(
   return SpatialVelocity<T>(V1_E) -= V2_E;
 }
 
-/// Physically, the subtraction operation allow us to compute the relative
-/// velocity between two frames. As an example, consider having the spatial
-/// velocities `V_MA` and `V_MB` of two frames A and B respectively measured in
-/// the same frame M. The velocity of B in A can be obtained as: <pre>
-///   V_AB_E = V_MB_E - V_MAb_E = V_AB_E = V_MB_E - V_MA_E.Shift(p_AB_E)
-/// </pre>
-/// where we have expressed all quantities in a common frame E. Notice that,
-/// as explained in the documentation for
-/// operator+(const SpatialVelocity<T>&, const SpatialVelocity<T>&) a shift
-/// operation with SpatialVelocity::Shift() operation is needed.
-///
-/// @relates SpatialVelocity
-template <typename T>
-inline SpatialVelocity<T> operator-(
-    const SpatialVelocity<T>& V_MB_E, const SpatialVelocity<T>& V_MAb_E) {
-  // N.B. We use SpatialVector's implementation, though we provide the overload
-  // for specific documentation purposes.
-  return SpatialVelocity<T>(V_MB_E) -= V_MAb_E;
-}
-
 template <typename T>
 T SpatialVelocity<T>::dot(const SpatialForce<T>& F_Q_E) const {
   return this->get_coeffs().dot(F_Q_E.get_coeffs());
@@ -273,12 +253,12 @@ T SpatialForce<T>::dot(const SpatialVelocity<T>& V_IBp_E) const {
 // order to break the dependency cycle.
 template <typename T>
 T SpatialMomentum<T>::dot(const SpatialVelocity<T>& V_WBp_E) const {
-  return this->get_coeffs().dot(V_NBp_E.get_coeffs());
+  return this->get_coeffs().dot(V_WBp_E.get_coeffs());
 }
 
 template <typename T>
 T SpatialVelocity<T>::dot(const SpatialMomentum<T>& L_WBp_E) const {
-  return L_NBp_E.dot(*this);  // dot-product is commutative.
+  return L_WBp_E.dot(*this);  // dot-product is commutative.
 }
 
 }  // namespace multibody
