@@ -1290,9 +1290,11 @@ class MathematicalProgram {
   //@{
   /**
    * An overloaded version of @ref maximize_geometric_mean.
+   * @return cost The added cost (note that since MathematicalProgram only
+   * minimizes the cost, the returned cost evaluates to -c * power(∏ᵢx(i), 1/n).
    * @pre A.rows() == b.rows(), A.rows() >= 2.
    */
-  void AddMaximizeGeometricMeanCost(
+  Binding<LinearCost> AddMaximizeGeometricMeanCost(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
       const Eigen::Ref<const Eigen::VectorXd>& b,
       const Eigen::Ref<const VectorX<symbolic::Variable>>& x);
@@ -1303,10 +1305,12 @@ class MathematicalProgram {
    * 1/n).
    * @param c The positive coefficient of the geometric mean cost, @default
    * is 1.
+   * @return cost The added cost (note that since MathematicalProgram only
+   * minimizes the cost, the returned cost evaluates to -c * power(∏ᵢx(i), 1/n).
    * @pre x.rows() >= 2.
    * @pre c > 0.
    */
-  void AddMaximizeGeometricMeanCost(
+  Binding<LinearCost> AddMaximizeGeometricMeanCost(
       const Eigen::Ref<const VectorX<symbolic::Variable>>& x, double c = 1.0);
   //@}
 

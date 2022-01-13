@@ -567,7 +567,7 @@ MathematicalProgram::AddMaximizeLogDeterminantSymmetricMatrixCost(
   return AddMaximizeLogDeterminantCost(X);
 }
 
-void MathematicalProgram::AddMaximizeGeometricMeanCost(
+Binding<LinearCost> MathematicalProgram::AddMaximizeGeometricMeanCost(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x) {
@@ -620,13 +620,12 @@ void MathematicalProgram::AddMaximizeGeometricMeanCost(
     AddRotatedLorentzConeConstraint(C, d, xw);
   }
   if (w.rows() == 1) {
-    AddLinearCost(-w(0));
-    return;
+    return AddLinearCost(-w(0));
   }
-  AddMaximizeGeometricMeanCost(w, 1);
+  return AddMaximizeGeometricMeanCost(w, 1);
 }
 
-void MathematicalProgram::AddMaximizeGeometricMeanCost(
+Binding<LinearCost> MathematicalProgram::AddMaximizeGeometricMeanCost(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x, double c) {
   if (c <= 0) {
     throw std::invalid_argument(
@@ -670,10 +669,9 @@ void MathematicalProgram::AddMaximizeGeometricMeanCost(
         C, d, Vector2<symbolic::Variable>(x(x.rows() - 1), w(w.rows() - 1)));
   }
   if (x.rows() == 2) {
-    AddLinearCost(-c * w(0));
-    return;
+    return AddLinearCost(-c * w(0));
   }
-  AddMaximizeGeometricMeanCost(w);
+  return AddMaximizeGeometricMeanCost(w);
 }
 
 Binding<Constraint> MathematicalProgram::AddConstraint(
