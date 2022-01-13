@@ -40,8 +40,10 @@ filegroup(
         "share/doc/director/LICENSE.txt",
     ],
     data = [
-        # We no longer depend on @vtk as it is no longer vtk-8.  vtk-8 is
-        # provided separately (in tarball for Linux, or via brew for Mac).
+        # N.B. We do NOT depend on "@vtk" here, even though drake-visualizer
+        # uses VTK. In Drake, "@vtk" refers to a newer version; the VTK used by
+        # drake-visuazlier is already built-in to the visualizer's globbed list
+        # of files, immediately above.
         ":drake_visualizer_python_deps",
         "@lcm//:libdrake_lcm.so",
     ],
