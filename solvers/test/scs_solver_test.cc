@@ -211,22 +211,18 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
 
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
-  MaximizeGeometricMeanTrivialProblem1 prob;
   ScsSolver solver;
   if (solver.available()) {
-    const auto result = solver.Solve(prob.prog(), {}, {});
     // Practically I observe SCS requires looser tolerance for this test. I
     // don't know why.
-    prob.CheckSolution(result, 3 * kTol);
+    MaximizeGeometricMeanTrivialProblem1(solver, 3 * kTol);
   }
 }
 
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
-  MaximizeGeometricMeanTrivialProblem2 prob;
   ScsSolver solver;
   if (solver.available()) {
-    const auto result = solver.Solve(prob.prog(), {}, {});
-    prob.CheckSolution(result, kTol);
+    MaximizeGeometricMeanTrivialProblem2(solver, kTol);
   }
 }
 

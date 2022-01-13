@@ -268,23 +268,19 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
 
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
-  MaximizeGeometricMeanTrivialProblem1 prob;
   for (auto method : GetRemoveFreeVariableMethods()) {
     CsdpSolver solver(method);
     if (solver.available()) {
-      const auto result = solver.Solve(prob.prog(), {}, {});
-      prob.CheckSolution(result, 1E-6);
+      MaximizeGeometricMeanTrivialProblem1(solver, 1E-6);
     }
   }
 }
 
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
-  MaximizeGeometricMeanTrivialProblem2 prob;
   for (auto method : GetRemoveFreeVariableMethods()) {
     CsdpSolver solver(method);
     if (solver.available()) {
-      const auto result = solver.Solve(prob.prog(), {}, {});
-      prob.CheckSolution(result, 1E-6);
+      MaximizeGeometricMeanTrivialProblem2(solver, 1E-6);
     }
   }
 }

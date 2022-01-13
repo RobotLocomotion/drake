@@ -595,11 +595,9 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
 
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
-  MaximizeGeometricMeanTrivialProblem1 prob;
   SnoptSolver solver;
   if (solver.available()) {
-    const auto result = solver.Solve(prob.prog(), {}, {});
-    prob.CheckSolution(result, 4E-6);
+    MaximizeGeometricMeanTrivialProblem1(solver, 4E-6);
   }
 }
 }  // namespace test

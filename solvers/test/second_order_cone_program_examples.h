@@ -8,6 +8,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_interface.h"
+#include "drake/solvers/test/second_order_cone_program_examples.h"
 
 namespace drake {
 namespace solvers {
@@ -158,21 +159,8 @@ class TestFindSpringEquilibrium
  * regarding the cost as the square of geometric mean between 2x+3 and 3x+2.
  * The optimal is x* = 10.
  */
-class MaximizeGeometricMeanTrivialProblem1 {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaximizeGeometricMeanTrivialProblem1)
-
-  MaximizeGeometricMeanTrivialProblem1();
-
-  const MathematicalProgram& prog() const { return *prog_; }
-
-  void CheckSolution(const MathematicalProgramResult& result, double tol);
-
- private:
-  std::unique_ptr<MathematicalProgram> prog_;
-  symbolic::Variable x_;
-  Binding<LinearCost> cost_;
-};
+void MaximizeGeometricMeanTrivialProblem1(const SolverInterface& solver,
+                                          double tol);
 
 /**
  * Solve the following trivial problem
@@ -185,20 +173,8 @@ class MaximizeGeometricMeanTrivialProblem1 {
  * regarding the cost as the square of geometric mean between 2x+3, 3x+2 and
  * 4x+5. The optimal is x* = 10.
  */
-class MaximizeGeometricMeanTrivialProblem2 {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaximizeGeometricMeanTrivialProblem2)
-
-  MaximizeGeometricMeanTrivialProblem2();
-
-  const MathematicalProgram& prog() const { return *prog_; }
-
-  void CheckSolution(const MathematicalProgramResult& result, double tol);
-
- private:
-  std::unique_ptr<MathematicalProgram> prog_;
-  symbolic::Variable x_;
-};
+void MaximizeGeometricMeanTrivialProblem2(const SolverInterface& solver,
+                                          double tol);
 
 /**
  * Tests maximizing geometric mean through second order cone constraint.
@@ -210,45 +186,6 @@ class MaximizeGeometricMeanTrivialProblem2 {
  * s.t pᵢᵀ diag(a) * pᵢ ≤ 1 for all i.
  *     a(j) > 0
  */
-class SmallestEllipsoidCoveringProblem {
- public:
-  // p.col(i) is the point pᵢ.
-  explicit SmallestEllipsoidCoveringProblem(
-      const Eigen::Ref<const Eigen::MatrixXd>& p);
-
-  virtual ~SmallestEllipsoidCoveringProblem() {}
-
-  const MathematicalProgram& prog() const { return *prog_; }
-
-  void CheckSolution(const MathematicalProgramResult& result, double tol) const;
-
- protected:
-  const VectorX<symbolic::Variable>& a() const { return a_; }
-
- private:
-  // CheckSolution() already checks if the result is successful, and if all the
-  // points are within the ellipsoid, with at least one point on the boundary
-  // of the ellipsoid. CheckSolutionExtra can do extra checks for each specific
-  // problem.
-  virtual void CheckSolutionExtra(const MathematicalProgramResult&,
-                                  double) const {}
-  std::unique_ptr<MathematicalProgram> prog_;
-  VectorX<symbolic::Variable> a_;
-  Eigen::MatrixXd p_;
-};
-
-class SmallestEllipsoidCoveringProblem1
-    : public SmallestEllipsoidCoveringProblem {
- public:
-  SmallestEllipsoidCoveringProblem1();
-
-  ~SmallestEllipsoidCoveringProblem1() override {}
-
- private:
-  void CheckSolutionExtra(const MathematicalProgramResult& result,
-                          double tol) const override;
-};
-
 void SolveAndCheckSmallestEllipsoidCoveringProblems(
     const SolverInterface& solver, double tol);
 

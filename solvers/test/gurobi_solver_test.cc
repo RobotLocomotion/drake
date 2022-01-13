@@ -260,23 +260,19 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
 
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
-  MaximizeGeometricMeanTrivialProblem1 prob;
   GurobiSolver solver;
   if (solver.available()) {
-    const auto result = solver.Solve(prob.prog(), {}, {});
-    prob.CheckSolution(result, 4E-6);
+    MaximizeGeometricMeanTrivialProblem1(solver, 4E-6);
   }
 }
 
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
-  MaximizeGeometricMeanTrivialProblem2 prob;
   GurobiSolver solver;
   if (solver.available()) {
-    const auto result = solver.Solve(prob.prog(), {}, {});
     // Gurobi 9.0.0 returns a solution that is accurate up to 1.4E-6 for this
     // specific problem. Might need to change the tolerance when we upgrade
     // Gurobi.
-    prob.CheckSolution(result, 1.4E-6);
+    MaximizeGeometricMeanTrivialProblem2(solver, 1.4E-6);
   }
 }
 

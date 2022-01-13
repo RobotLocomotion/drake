@@ -6,6 +6,8 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/decision_variable.h"
+#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 namespace drake {
@@ -353,62 +355,63 @@ void TestFindSpringEquilibrium::SolveAndCheckSolution(
   }
 }
 
-MaximizeGeometricMeanTrivialProblem1::MaximizeGeometricMeanTrivialProblem1()
-    : prog_{new MathematicalProgram()},
-      x_{prog_->NewContinuousVariables<1>()(0)},
-      cost_{std::shared_ptr<LinearCost>(nullptr), VectorXDecisionVariable(0)} {
-  prog_->AddBoundingBoxConstraint(-kInf, 10, x_);
+void MaximizeGeometricMeanTrivialProblem1(const SolverInterface& solver,
+                                          double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>()(0);
+  prog.AddBoundingBoxConstraint(-kInf, 10, x);
   Eigen::Vector2d A(2, 3);
   Eigen::Vector2d b(3, 2);
-  prog_->AddMaximizeGeometricMeanCost(A, b, Vector1<symbolic::Variable>(x_));
-}
-
-void MaximizeGeometricMeanTrivialProblem1::CheckSolution(
-    const MathematicalProgramResult& result, double tol) {
+  auto cost =
+      prog.AddMaximizeGeometricMeanCost(A, b, Vector1<symbolic::Variable>(x));
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, std::nullopt, &result);
   ASSERT_TRUE(result.is_success());
-  EXPECT_NEAR(result.GetSolution(x_), 10, tol);
-  EXPECT_NEAR(result.get_optimal_cost(), -std::sqrt(23 * 32), tol);
+  EXPECT_NEAR(result.GetSolution(x), 10, tol);
+  const double cost_expected = -std::sqrt(23 * 32);
+  EXPECT_NEAR(result.get_optimal_cost(), cost_expected, tol);
+  EXPECT_NEAR(result.EvalBinding(cost)(0), cost_expected, tol);
 }
 
-MaximizeGeometricMeanTrivialProblem2::MaximizeGeometricMeanTrivialProblem2()
-    : prog_{new MathematicalProgram()},
-      x_{prog_->NewContinuousVariables<1>()(0)} {
-  prog_->AddBoundingBoxConstraint(-kInf, 10, x_);
+void MaximizeGeometricMeanTrivialProblem2(const SolverInterface& solver,
+                                          double tol) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<1>()(0);
+  prog.AddBoundingBoxConstraint(-kInf, 10, x);
   const Eigen::Vector3d A(2, 3, 4);
   const Eigen::Vector3d b(3, 2, 5);
-  prog_->AddMaximizeGeometricMeanCost(A, b, Vector1<symbolic::Variable>(x_));
-}
-
-void MaximizeGeometricMeanTrivialProblem2::CheckSolution(
-    const MathematicalProgramResult& result, double tol) {
+  auto cost =
+      prog.AddMaximizeGeometricMeanCost(A, b, Vector1<symbolic::Variable>(x));
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, std::nullopt, &result);
   ASSERT_TRUE(result.is_success());
-  EXPECT_NEAR(result.GetSolution(x_), 10, tol);
-  EXPECT_NEAR(result.get_optimal_cost(), -std::pow(23 * 32 * 45, 1.0 / 4), tol);
+  EXPECT_NEAR(result.GetSolution(x), 10, tol);
+  const double cost_expected = -std::pow(23 * 32 * 45, 1.0 / 4);
+  EXPECT_NEAR(result.get_optimal_cost(), cost_expected, tol);
+  EXPECT_NEAR(result.EvalBinding(cost)(0), cost_expected, tol);
 }
 
-SmallestEllipsoidCoveringProblem::SmallestEllipsoidCoveringProblem(
-    const Eigen::Ref<const Eigen::MatrixXd>& p)
-    : prog_{new MathematicalProgram()},
-      a_{prog_->NewContinuousVariables(p.rows())},
-      p_{p} {
-  prog_->AddMaximizeGeometricMeanCost(a_);
-  const Eigen::MatrixXd p_dot_p = (p_.array() * p_.array()).matrix();
+void SmallestEllipsoidCoveringProblem(
+    const SolverInterface& solver, const Eigen::Ref<const Eigen::MatrixXd>& p,
+    const std::optional<const Eigen::Ref<const Eigen::VectorXd>>& a_expected,
+    double tol) {
+  MathematicalProgram prog;
+  const auto a = prog.NewContinuousVariables(p.rows());
+  auto cost = prog.AddMaximizeGeometricMeanCost(a);
+  const Eigen::MatrixXd p_dot_p = (p.array() * p.array()).matrix();
   const int num_points = p.cols();
-  prog_->AddLinearConstraint(p_dot_p.transpose(),
-                             Eigen::VectorXd::Constant(num_points, -kInf),
-                             Eigen::VectorXd::Ones(num_points), a_);
-}
-
-void SmallestEllipsoidCoveringProblem::CheckSolution(
-    const MathematicalProgramResult& result, double tol) const {
-  const auto a_sol = result.GetSolution(a_);
+  prog.AddLinearConstraint(p_dot_p.transpose(),
+                           Eigen::VectorXd::Constant(num_points, -kInf),
+                           Eigen::VectorXd::Ones(num_points), a);
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, std::nullopt, &result);
+  const auto a_sol = result.GetSolution(a);
   // p_dot_a_dot_p(i) is pᵢᵀ diag(a) * pᵢ
   const Eigen::RowVectorXd p_dot_a_dot_p =
-      a_sol.transpose() * (p_.array() * p_.array()).matrix();
+      a_sol.transpose() * (p.array() * p.array()).matrix();
   // All points are within the ellipsoid.
   EXPECT_TRUE((p_dot_a_dot_p.array() <= 1 + tol).all());
   // At least one point is on the boundary of the ellipsoid.
-  const int num_points = p_.cols();
   EXPECT_TRUE(
       ((p_dot_a_dot_p.transpose().array() - Eigen::ArrayXd::Ones(num_points))
            .abs() <= Eigen::ArrayXd::Constant(num_points, tol))
@@ -417,32 +420,21 @@ void SmallestEllipsoidCoveringProblem::CheckSolution(
   const double cost_expected = -std::pow(
       a_sol.prod(), 1.0 / std::pow(2, (std::ceil(std::log2(a_sol.rows())))));
   EXPECT_NEAR(result.get_optimal_cost(), cost_expected, tol);
+  EXPECT_NEAR(result.EvalBinding(cost)(0), cost_expected, tol);
 
-  CheckSolutionExtra(result, tol);
-}
-
-// Cover the 4 points (1, 1), (1, -1), (-1, 1) and (-1, -1).
-SmallestEllipsoidCoveringProblem1::SmallestEllipsoidCoveringProblem1()
-    : SmallestEllipsoidCoveringProblem(
-          (Eigen::Matrix<double, 2, 4>() << 1, 1, -1, -1, 1, -1, 1, -1)
-              .finished()) {}
-
-void SmallestEllipsoidCoveringProblem1::CheckSolutionExtra(
-    const MathematicalProgramResult& result, double tol) const {
-  ASSERT_TRUE(result.is_success());
-  // The smallest ellipsoid is a = (0.5, 0.5);
-  const Eigen::Vector2d a_expected(0.5, 0.5);
-  EXPECT_TRUE(CompareMatrices(result.GetSolution(a()), a_expected, tol));
-  EXPECT_NEAR(result.get_optimal_cost(), -0.5, tol);
+  if (a_expected.has_value()) {
+    EXPECT_TRUE(CompareMatrices(a_sol, a_expected.value(), tol));
+  }
 }
 
 void SolveAndCheckSmallestEllipsoidCoveringProblems(
     const SolverInterface& solver, double tol) {
-  SmallestEllipsoidCoveringProblem1 prob1;
   if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(prob1.prog(), {}, {}, &result);
-    prob1.CheckSolution(result, tol);
+    const Eigen::MatrixXd p =
+        (Eigen::Matrix<double, 2, 4>() << 1, 1, -1, -1, 1, -1, 1, -1)
+            .finished();
+    const Eigen::Vector2d a_expected(0.5, 0.5);
+    SmallestEllipsoidCoveringProblem(solver, p, a_expected, tol);
   }
 
   // Now try 3D points;
@@ -453,11 +445,8 @@ void SolveAndCheckSmallestEllipsoidCoveringProblems(
               -0.3, 0.1, -2.5, 0.8,
               1.2, 0.3, 1.5, 3.2;
   // clang-format on
-  SmallestEllipsoidCoveringProblem prob_3d(points_3d);
   if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(prob_3d.prog(), {}, {}, &result);
-    prob_3d.CheckSolution(result, tol);
+    SmallestEllipsoidCoveringProblem(solver, points_3d, std::nullopt, tol);
   }
 
   // Now try arbitrary 4d points.
@@ -468,11 +457,8 @@ void SolveAndCheckSmallestEllipsoidCoveringProblems(
               -0.2, -3.1, 0.4, 1.5, 1.8, 1.9,
               -1, -2, -3, -4, -5, -6;
   // clang-format on
-  SmallestEllipsoidCoveringProblem prob_4d(points_4d);
   if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(prob_4d.prog(), {}, {}, &result);
-    prob_4d.CheckSolution(result, tol);
+    SmallestEllipsoidCoveringProblem(solver, points_4d, std::nullopt, tol);
   }
 }
 
