@@ -276,54 +276,37 @@ def linux_fix_rpaths(dst_full):
         '/usr/libx32',
         '/usr/local/lib',
     ]
-
+    file_output = check_output(["ldd", dst_full]).decode("utf-8")
     rpath = []
-
-    # In order to update drake to vtk-9, drake_visualizer and the underlying
-    # director package need to keep an older vtk-8 around.  These libraries are
-    # installed to lib/ next to the vtk-9 libraries, setting to $ORIGIN ensures
-    # they will be able to find their dependent vtk-8 counterparts.
-    if re.match(r".*libvtk.*-8\.2\.so", dst_full):
-        rpath = ["$ORIGIN"]
-    # This is part of director, installed to site-packages/director and
-    # site-packages/vtkmodules.  Their rpath needs to be able to find the vtk-8
-    # libraries installed under lib/.
-    elif dst_full.endswith("vtkDRCFiltersPython.so") or \
-            re.match(r".*vtkmodules/vtk.*Python.so", dst_full):
-        rpath = ["$ORIGIN/../../.."]
-    else:
-        file_output = check_output(["ldd", dst_full]).decode("utf-8")
-        for line in file_output.splitlines():
-            ldd_result = line.strip().split(' => ')
-            if len(ldd_result) < 2:
+    for line in file_output.splitlines():
+        ldd_result = line.strip().split(' => ')
+        if len(ldd_result) < 2:
+            continue
+        # Library in install prefix.
+        if ldd_result[1] == 'not found' or ldd_result[1].startswith(prefix):
+            re_result = re.match(dylib_match, ldd_result[0])
+            # Look for the absolute path in the dictionary of libraries using
+            # the library name without its possible version number.
+            soname, _, _ = re_result.groups()
+            if soname not in libraries_to_fix_rpath:
                 continue
-            # Library in install prefix.
-            if ldd_result[1] == 'not found' or \
-                    ldd_result[1].startswith(prefix):
-                re_result = re.match(dylib_match, ldd_result[0])
-                # Look for the absolute path in the dictionary of libraries
-                # using the library name without its possible version number.
-                soname, _, _ = re_result.groups()
-                if soname not in libraries_to_fix_rpath:
-                    continue
-                lib_dirname = os.path.dirname(dst_full)
-                diff_path = os.path.dirname(
-                    os.path.relpath(libraries_to_fix_rpath[soname],
-                                    lib_dirname)
+            lib_dirname = os.path.dirname(dst_full)
+            diff_path = os.path.dirname(
+                os.path.relpath(libraries_to_fix_rpath[soname], lib_dirname)
+            )
+            rpath.append('$ORIGIN' + '/' + diff_path)
+        # System library not in ld.so search path.
+        else:
+            # Remove (hexadecimal) address from output leaving (at most) the
+            # path to the library.
+            ldd_regex = r"(.*\.so(?:\.\d+)*) \(0x[0-9a-f]+\)$"
+            re_result = re.match(ldd_regex, ldd_result[1])
+            if re_result:
+                lib_dirname = os.path.dirname(
+                    os.path.realpath(re_result.group(1))
                 )
-                rpath.append('$ORIGIN' + '/' + diff_path)
-            # System library not in ld.so search path.
-            else:
-                # Remove (hexadecimal) address from output leaving (at most)
-                # the path to the library.
-                ldd_regex = r"(.*\.so(?:\.\d+)*) \(0x[0-9a-f]+\)$"
-                re_result = re.match(ldd_regex, ldd_result[1])
-                if re_result:
-                    lib_dirname = os.path.dirname(
-                        os.path.realpath(re_result.group(1))
-                    )
-                    if lib_dirname not in ld_so_search_paths:
-                        rpath.append(lib_dirname + '/')
+                if lib_dirname not in ld_so_search_paths:
+                    rpath.append(lib_dirname + '/')
 
     # The above may have duplicated some items into the list.  Uniquify it
     # here, preserving order.  Note that we do not just use a set() above,
