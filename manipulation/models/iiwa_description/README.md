@@ -30,13 +30,13 @@ manually.
 
 ## Additional Edits
 
+Limits have been added to the xacro files, and then manually merged into the
+hand-edited files.
+
 ### Velocity and Effort Limits
 
-Velocity and effort limits have been added to the xacro files, and then manually
-merged into the hand-edited files.
-
-The limits were derived from the third table at page 30 of the followking KUKA
-brochure:
+Velocity and effort limits were derived from the third table at page 30 of the
+followking KUKA brochure:
 
 * "KUKA Sensitive robotics_LBR iiwa. (URL:
 <https://www.kuka.com/-/media/kuka-downloads/imported/9cb8e311bfd744b4b0eab25ca883f6d3/kuka_lbr_iiwa_brochure_en.pdf>
@@ -53,3 +53,25 @@ For the record, the velocity and effort limits:
 |Axis 5 (A5)|110 Nm     |130 deg/s    |
 |Axis 6 (A6)|40 Nm      |135 deg/s    |
 |Axis 7 (A7)|40 Nm      |135 deg/s    |
+
+### Acceleration Limits
+
+Acceleration limits were derived from experimental results listed in Table 4
+(page 50) of the following Master's thesis:
+
+* "Including a Collaborative Robot in Digital Twin Manufacturing Systems",
+Christian Larsen, Gothenburg, Sweden 2019. (URL:
+<https://odr.chalmers.se/bitstream/20.500.12380/256658/1/256658.pdf>, Accessed
+on 2022-01-15)
+
+For the record, acceleration limits:
+
+|Axis data  |    deg/s    |     rad/s     |
+|-----------|------------:|--------------:|
+|Axis 1 (A1)|490.77 deg/s |8.57 rad/s     |
+|Axis 2 (A2)|490.80 deg/s |8.57 rad/s     |
+|Axis 3 (A3)|500.77 deg/s |8.74 rad/s     |
+|Axis 4 (A4)|650.71 deg/s |11.36 rad/s    |
+|Axis 5 (A5)|700.73 deg/s |12.23 rad/s    |
+|Axis 6 (A6)|900.66 deg/s |15.72 rad/s    |
+|Axis 7 (A7)|900.69 deg/s |15.72 rad/s    |
