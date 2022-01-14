@@ -22,6 +22,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"
@@ -479,6 +480,8 @@ class MathematicalProgram {
    * @return (p, Q) The polynomial p and the Gramian matrix Q. Q has been
    * added as decision variables to the program.
    */
+  DRAKE_DEPRECATED("2022-05-01",
+                   "Use NewSosPolynomial instead of NewNonnegativePolynomial")
   std::pair<symbolic::Polynomial, MatrixXDecisionVariable>
   NewNonnegativePolynomial(
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
@@ -495,6 +498,8 @@ class MathematicalProgram {
    * - if type = kDsos, we impose the Gramian matrix being positive diagonally
    *   dominant.
    */
+  DRAKE_DEPRECATED("2022-05-01",
+                   "Use NewSosPolynomial instead of NewNonnegativePolynomial")
   symbolic::Polynomial NewNonnegativePolynomial(
       const Eigen::Ref<const MatrixX<symbolic::Variable>>& gramian,
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
@@ -506,11 +511,6 @@ class MathematicalProgram {
    * indeterminates of total order up to @p degree / 2, hence the returned
    * polynomial p contains all the monomials of @p indeterminates of total order
    * up to @p degree.
-   * Depending on the type of the polynomial, we will impose different
-   * constraint on the polynomial.
-   * - if type = kSos, we impose the polynomial being SOS.
-   * - if type = kSdsos, we impose the polynomial being SDSOS.
-   * - if type = kDsos, we impose the polynomial being DSOS.
    * @param indeterminates All the indeterminates in the polynomial p.
    * @param degree The polynomial p will contain all the monomials up to order
    * @p degree.
@@ -519,6 +519,8 @@ class MathematicalProgram {
    * added as decision variables to the program.
    * @pre @p degree is a positive even number.
    */
+  DRAKE_DEPRECATED("2022-05-01",
+                   "Use NewSosPolynomial instead of NewNonnegativePolynomial")
   std::pair<symbolic::Polynomial, MatrixXDecisionVariable>
   NewNonnegativePolynomial(const symbolic::Variables& indeterminates,
                            int degree, NonnegativePolynomial type);
@@ -529,24 +531,47 @@ class MathematicalProgram {
    * polynomial
    *   p = Q₍₀,₀₎x² + 2Q₍₁,₀₎xy + Q₍₁,₁₎y²
    * and Q.
+   * Depending on the type of the polynomial, we will impose different
+   * constraint on the polynomial.
+   * - if type = kSos, we impose the polynomial being SOS.
+   * - if type = kSdsos, we impose the polynomial being SDSOS.
+   * - if type = kDsos, we impose the polynomial being DSOS.
    * @note Q is a symmetric monomial_basis.rows() x monomial_basis.rows()
    * matrix.
    */
   std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
-      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+      NonnegativePolynomial type = NonnegativePolynomial::kSos);
 
-  /** Returns a pair of a SOS polynomial p = m(x)ᵀQm(x) of degree @p degree
+  /**
+   * Overloads NewSosPolynomial, except the Gramian matrix Q is an
+   * input instead of an output.
+   */
+  symbolic::Polynomial NewSosPolynomial(
+      const Eigen::Ref<const MatrixX<symbolic::Variable>>& gramian,
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+      NonnegativePolynomial type = NonnegativePolynomial::kSos);
+
+  /**
+   * Overloads NewSosPolynomial.
+   * Returns a pair of a SOS polynomial p = m(x)ᵀQm(x) of degree @p degree
    * and the Gramian matrix Q that should be PSD, where m(x) is the
    * result of calling `MonomialBasis(indeterminates, degree/2)`. For example,
    * `NewSosPolynomial({x}, 4)` returns a pair of a polynomial
    *   p = Q₍₀,₀₎x⁴ + 2Q₍₁,₀₎ x³ + (2Q₍₂,₀₎ + Q₍₁,₁₎)x² + 2Q₍₂,₁₎x + Q₍₂,₂₎
    * and Q.
+   * @param type Depending on the type of the polynomial, we will impose
+   * different constraint on the polynomial.
+   * - if type = kSos, we impose the polynomial being SOS.
+   * - if type = kSdsos, we impose the polynomial being SDSOS.
+   * - if type = kDsos, we impose the polynomial being DSOS.
    *
    * @throws std::exception if @p degree is not a positive even integer.
    * @see MonomialBasis.
    */
   std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
-      const symbolic::Variables& indeterminates, int degree);
+      const symbolic::Variables& indeterminates, int degree,
+      NonnegativePolynomial type = NonnegativePolynomial::kSos);
 
   /**
    * @anchor even_degree_nonnegative_polynomial
