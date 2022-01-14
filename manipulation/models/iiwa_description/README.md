@@ -66,12 +66,12 @@ on 2022-01-15)
 
 For the record, acceleration limits:
 
-|Axis data  |    deg/s    |     rad/s     |
-|-----------|------------:|--------------:|
-|Axis 1 (A1)|490.77 deg/s |8.57 rad/s     |
-|Axis 2 (A2)|490.80 deg/s |8.57 rad/s     |
-|Axis 3 (A3)|500.77 deg/s |8.74 rad/s     |
-|Axis 4 (A4)|650.71 deg/s |11.36 rad/s    |
-|Axis 5 (A5)|700.73 deg/s |12.23 rad/s    |
-|Axis 6 (A6)|900.66 deg/s |15.72 rad/s    |
-|Axis 7 (A7)|900.69 deg/s |15.72 rad/s    |
+|Axis data  | deg/s^2 | rad/s^2 |
+|-----------|--------:|--------:|
+|Axis 1 (A1)|490.77   |8.57     |
+|Axis 2 (A2)|490.80   |8.57     |
+|Axis 3 (A3)|500.77   |8.74     |
+|Axis 4 (A4)|650.71   |11.36    |
+|Axis 5 (A5)|700.73   |12.23    |
+|Axis 6 (A6)|900.66   |15.72    |
+|Axis 7 (A7)|900.69   |15.72    |
