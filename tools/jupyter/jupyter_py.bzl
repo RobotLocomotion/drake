@@ -15,7 +15,10 @@ from drake.tools.jupyter.jupyter_bazel import _jupyter_bazel_notebook_main
 
 
 def main():
-    cur_dir = os.path.dirname(__file__)
+    # Work around kcov#368 by consuming KCOV_LINK_PATH.
+    # TODO(rpoyner-tri): remove KCOV_LINK_PATH when newer kcov is available.
+    cur_dir = os.path.dirname(os.environ.get('KCOV_LINK_PATH', __file__))
+    os.environ.pop('KCOV_LINK_PATH', None)
     notebook = {notebook}
     _jupyter_bazel_notebook_main(cur_dir, notebook, sys.argv[1:])
 
