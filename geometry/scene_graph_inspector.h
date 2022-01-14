@@ -254,9 +254,9 @@ class SceneGraphInspector {
   /** Reports the FrameId of the parent of `frame_id`.
    @throws std::exception if `frame_id` does not map to a registered frame.
    */
-  FrameId GetParent(FrameId frame_id) const {
+  FrameId GetParentFrame(FrameId frame_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetParent(frame_id);
+    return state_->GetParentFrame(frame_id);
   }
 
   /** Reports the frame group for the frame with the given `frame_id`.

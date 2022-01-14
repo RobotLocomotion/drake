@@ -2368,7 +2368,7 @@ TEST_F(GeometryStateTest, GeometryAncestryStorage) {
 
   for (const FrameId frame_id : geometry_state_.get_frame_ids()) {
     const std::string& frame_name = geometry_state_.GetName(frame_id);
-    const FrameId parent_frame_id = geometry_state_.GetParent(frame_id);
+    const FrameId parent_frame_id = geometry_state_.GetParentFrame(frame_id);
     const std::string& parent_frame_name = geometry_state_.GetName(
         parent_frame_id);
     bool found_relationship;

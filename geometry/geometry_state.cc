@@ -239,7 +239,7 @@ const std::string& GeometryState<T>::GetName(FrameId frame_id) const {
 }
 
 template <typename T>
-FrameId GeometryState<T>::GetParent(FrameId frame_id) const {
+FrameId GeometryState<T>::GetParentFrame(FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No frame name available for invalid frame id: " +
         to_string(frame_id);
