@@ -9,7 +9,7 @@ def glew_repository(
         name,
         licenses = ["notice"],  # BSD-3-Clause AND MIT
         modname = "glew",
-        pkg_config_paths = ["/usr/local/opt/glew/lib/pkgconfig"],
+        pkg_config_paths = ["{homebrew}/glew/lib/pkgconfig"],
         **kwargs):
     pkg_config_repository(
         name = name,

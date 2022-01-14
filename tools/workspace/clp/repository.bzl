@@ -12,7 +12,7 @@ def clp_repository(
         ],
         modname = "clp",
         pkg_config_paths = [
-            "/usr/local/opt/clp/lib/pkgconfig",
+            "{homebrew}/clp/lib/pkgconfig",
         ],
         **kwargs):
     pkg_config_repository(

@@ -10,7 +10,7 @@ def gflags_repository(
         name,
         licenses = ["notice"],  # BSD-3-Clause
         modname = "gflags",
-        pkg_config_paths = ["/usr/local/opt/gflags/lib/pkgconfig"],
+        pkg_config_paths = ["{homebrew}/gflags/lib/pkgconfig"],
         **kwargs):
     pkg_config_repository(
         name = name,

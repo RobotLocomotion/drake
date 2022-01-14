@@ -9,7 +9,7 @@ def libtiff_repository(
         name,
         licenses = ["notice"],  # Libtiff
         modname = "libtiff-4",
-        pkg_config_paths = ["/usr/local/opt/libtiff/lib/pkgconfig"],
+        pkg_config_paths = ["{homebrew}/libtiff/lib/pkgconfig"],
         **kwargs):
     pkg_config_repository(
         name = name,

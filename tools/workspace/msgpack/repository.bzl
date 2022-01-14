@@ -25,7 +25,7 @@ def _impl(repo_ctx):
         if error != None:
             fail(error)
     else:
-        prefix = "/usr/local/opt/msgpack-cxx/"
+        prefix = "{}/msgpack-cxx/".format(os_result.homebrew_prefix)
         repo_ctx.symlink("{}/include".format(prefix), "msgpack")
 
         hdrs_patterns = ["msgpack/**/*.hpp"]

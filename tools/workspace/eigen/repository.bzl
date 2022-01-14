@@ -15,7 +15,7 @@ def eigen_repository(
         modname = "eigen3",
         atleast_version = "3.3.4",
         extra_defines = ["EIGEN_MPL2_ONLY"],
-        pkg_config_paths = ["/usr/local/opt/eigen/share/pkgconfig"],
+        pkg_config_paths = ["{homebrew}/eigen/share/pkgconfig"],
         **kwargs):
     pkg_config_repository(
         name = name,

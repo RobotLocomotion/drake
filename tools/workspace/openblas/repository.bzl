@@ -36,7 +36,7 @@ openblas_repository = repository_rule(
         "modname": attr.string(default = "openblas"),
         "licenses": attr.string_list(default = ["notice"]),  # BSD-3-Clause
         "pkg_config_paths": attr.string_list(
-            default = ["/usr/local/opt/openblas/lib/pkgconfig"],
+            default = ["{homebrew}/openblas/lib/pkgconfig"],
         ),
     },
     local = True,

@@ -1,15 +1,36 @@
 # -*- python -*-
 
 load("@drake//tools/workspace:execute.bzl", "path", "which")
+load("@drake//tools/workspace:os.bzl", "determine_os")
 
 _DEFAULT_TEMPLATE = Label("@drake//tools/workspace:pkg_config.BUILD.tpl")
 
 _DEFAULT_STATIC = False
 
-def _run_pkg_config(repository_ctx, command_line, pkg_config_paths):
+def _run_pkg_config(
+        repository_ctx,
+        *,
+        command_line,
+        pkg_config_paths,
+        homebrew_prefix):
     """Run command_line with PKG_CONFIG_PATH = pkg_config_paths and return its
-    tokenized output."""
-    pkg_config_path = ":".join(pkg_config_paths)
+    tokenized output.  See note below about special {homebrew} substitution."""
+    paths_after_substitution = []
+    for one_path in pkg_config_paths:
+        # Replace the magic token if we can; otherwise, skip this one entirely.
+        if "{homebrew}" in one_path:
+            if homebrew_prefix != None:
+                updated_path = one_path.replace("{homebrew}", homebrew_prefix)
+                paths_after_substitution.append(updated_path)
+                continue
+            else:
+                # Omit it.
+                continue
+
+        # Otherwise, no path-rewriting is necessary.
+        paths_after_substitution.append(one_path)
+
+    pkg_config_path = ":".join(paths_after_substitution)
     result = repository_ctx.execute(
         command_line,
         environment = {
@@ -50,18 +71,31 @@ def setup_pkg_config_repository(repository_ctx):
         [],
     )
 
+    # Find the desired homebrew prefix, if any.
+    homebrew_prefix = determine_os(repository_ctx).homebrew_prefix
+
     # Check if we can find the required *.pc file of any version.
-    result = _run_pkg_config(repository_ctx, args, pkg_config_paths)
+    result = _run_pkg_config(
+        repository_ctx,
+        command_line = args,
+        pkg_config_paths = pkg_config_paths,
+        homebrew_prefix = homebrew_prefix,
+    )
     if result.error != None:
         return result
 
     # If we have a minimum version, enforce that.
     atleast_version = getattr(repository_ctx.attr, "atleast_version", "")
     if atleast_version:
-        result = _run_pkg_config(repository_ctx, args + [
-            "--atleast-version",
-            atleast_version,
-        ], pkg_config_paths)
+        result = _run_pkg_config(
+            repository_ctx,
+            command_line = args + [
+                "--atleast-version",
+                atleast_version,
+            ],
+            pkg_config_paths = pkg_config_paths,
+            homebrew_prefix = homebrew_prefix,
+        )
         if result.error != None:
             return struct(error = result.error + "during version check")
 
@@ -70,7 +104,12 @@ def setup_pkg_config_repository(repository_ctx):
     libs_args = args + ["--libs"]
     if static:
         libs_args = libs_args + ["--static"]
-    result = _run_pkg_config(repository_ctx, libs_args, pkg_config_paths)
+    result = _run_pkg_config(
+        repository_ctx,
+        command_line = libs_args,
+        pkg_config_paths = pkg_config_paths,
+        homebrew_prefix = homebrew_prefix,
+    )
     if result.error != None:
         return result
     linkopts = result.tokens
@@ -131,8 +170,9 @@ def setup_pkg_config_repository(repository_ctx):
     # Determine cflags; we'll split into includes and defines in a moment.
     result = _run_pkg_config(
         repository_ctx,
-        args + ["--cflags"],
-        pkg_config_paths,
+        command_line = args + ["--cflags"],
+        pkg_config_paths = pkg_config_paths,
+        homebrew_prefix = homebrew_prefix,
     )
     if result.error != None:
         return result
@@ -354,7 +394,9 @@ Args:
     build_epilog: (Optional) Extra text to add to the generated BUILD.bazel.
     pkg_config_paths: (Optional) Paths to find pkg-config files (.pc). Note
                       that we ignore the environment variable PKG_CONFIG_PATH
-                      set by the user.
+                      set by the user. The magic string "{homebrew}" will be
+                      will be replaced by the current arch's homebrew prefix
+                      (if one exists); otherwise, the path will be skipped.
     extra_deprecation: (Optional) Add a deprecation message to the library
                        BUILD target.
 """
