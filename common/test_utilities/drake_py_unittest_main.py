@@ -24,7 +24,10 @@ except ImportError:
 def main():
     # Obtain the full path for this test case; it looks a bit like this:
     # .../execroot/.../foo_test.runfiles/.../drake_py_unittest_main.py
-    main_py = sys.argv[0]
+    # Also work around kcov#368 by consuming KCOV_LINK_PATH.
+    # TODO(rpoyner-tri): remove KCOV_LINK_PATH when newer kcov is available.
+    main_py = os.environ.get('KCOV_LINK_PATH', sys.argv[0])
+    os.environ.pop('KCOV_LINK_PATH', None)
 
     # Parse the test case name out of the runfiles directory name.
     match = re.search("^(.*bin/(.*?/)?(py/)?([^/]*_test).runfiles/)", main_py)
@@ -198,7 +201,9 @@ if __name__ == '__main__':
     # TODO(eric.cousineau): Move this into `main()` to leverage argparse if we
     # can simplify the custom parsing logic (e.g. not have to import source
     # modules).
-    if "--nostdout_to_stderr" not in sys.argv:
+    # Avoid re-executing if run under kcov; it defeats kcov's instrumentation.
+    is_kcov = 'KCOV_COMMAND' in os.environ
+    if "--nostdout_to_stderr" not in sys.argv and not is_kcov:
         reexecute_if_unbuffered()
         # N.B. If execv is called by `reexecute_if_unbuffered`, then `main`
         # will not be called by this current process image; instead, it will be
