@@ -29,6 +29,34 @@ namespace systems {
 /// A system must be added to the DiagramBuilder with AddSystem or
 /// AddNamedSystem before it can be wired up in any way. Every system must have
 /// a unique, non-empty name.
+///
+/// @anchor DiagramBuilder_feedthrough
+/// <h2>Building large Diagrams</h2>
+///
+/// When building large Diagrams with many added systems and input-output port
+/// connections, the runtime performance of DiagramBuilder::Build() might become
+/// relevant.
+///
+/// As part of its correctness checks, the DiagramBuilder::Build() function
+/// performs a graph search of the diagram's dependencies. In the graph, the
+/// nodes are the child systems that have been added to the diagram, and the
+/// edges are the diagram connections from one child's output port to another
+/// child's input port(s). The builder must confirm that the graph is acyclic;
+/// a cycle would imply an infinite loop in an output calculation function.
+/// With a large graph, this check can be computationally expensive. To speed
+/// it up, ensure that your output ports do not gratuitously depend on
+/// irrelevant input ports.
+///
+/// The dependencies are supplied via the `prerequisites_of_calc` argument to
+/// DeclareOutputPort family of functions.  If the default value is used (i.e.,
+/// when no prerequisites are provided), the default is to assume the output
+/// port value is dependent on all possible sources.
+///
+/// Refer to the
+/// @ref DeclareLeafOutputPort_feedthrough "Direct feedthrough"
+/// documentation for additional details and examples.  In particular, the
+/// SystemBase::all_sources_except_input_ports_ticket() is a convenient
+/// shortcut for outputs that do not depend on any inputs.
 template <typename T>
 class DiagramBuilder {
  public:
@@ -291,6 +319,9 @@ class DiagramBuilder {
   /// Builds the Diagram that has been described by the calls to Connect,
   /// ExportInput, and ExportOutput.
   /// @throws std::exception if the graph is not buildable.
+  ///
+  /// See @ref DiagramBuilder_feedthrough "Building large Diagrams" for tips
+  /// on improving runtime performance of this function.
   std::unique_ptr<Diagram<T>> Build();
 
   /// Configures @p target to have the topology that has been described by
