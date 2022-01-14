@@ -311,6 +311,16 @@ class UnitInertia : public RotationalInertia<T> {
     return AxiallySymmetric(J, K, b_E);
   }
 
+  /// Computes the unit inertia for a uniform density unit-mass capsule C
+  /// whose axis of revolution is along the z-axis.
+  /// @param[in] r The radius of the the cylinder/half-sphere part of the
+  /// capsule.
+  /// @param[in] L The length of the cylindrical part of the capsule.
+  /// @throws std::exception
+  ///   - Radius r is negative.
+  ///   - Length L is negative.
+  static UnitInertia<T> SolidCapsule(const T& r, const T& L);
+
   /// Computes the unit inertia for a unit-mass cylinder of uniform density
   /// oriented along the z-axis computed about a point at the center of
   /// its base.
