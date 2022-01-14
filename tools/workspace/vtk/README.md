@@ -271,10 +271,9 @@ address those as needed.  For updates to `repository.bzl`,
           deps = []
     ```
 
-2. In the `_vtk_cc_library` function, update to use linker options rather than
-   specify `srcs`.  Refer to the `os_result.is_manylinux` section for reference
-   for library modifications.  You will need to specify a library directory
-   manually.  Something like
+2. In the `_vtk_cc_library` function, you might need to update to use linker
+   options rather than specify srcs. In the past, we've used this change while
+   bisecting, but it might not have been strictly required.
 
     ```diff
       elif os_result.is_ubuntu:
