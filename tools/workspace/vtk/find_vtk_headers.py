@@ -112,7 +112,8 @@ VTK_SOURCE_MAP = {
 Map of vtk library name to path under the source tree that the library lives.
 """
 
-if __name__ == "__main__":
+
+def main():
     parser = argparse.ArgumentParser(
         description="Find header files for a given VTK module.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -251,3 +252,7 @@ if __name__ == "__main__":
 
     for f in found:
         print(f)
+
+
+if __name__ == "__main__":
+    main()
