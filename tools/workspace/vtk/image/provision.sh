@@ -27,6 +27,7 @@ apt-get -y install --no-install-recommends kitware-archive-keyring
 apt-get -y install --no-install-recommends \
     "cmake-data=3.16.3-*" "cmake=3.16.3-*"
 
-# Note that we symlink /usr/bin/python since the package names to install an
-# executable named as such are not the same in different Ubuntu packages.
+# TODO(svenevs): the manual symlink of /usr/bin/python can be removed when
+# bionic support is dropped and the `python-is-python3` package therefore
+# available unconditionally.
 ln -s /usr/bin/python3 /usr/bin/python

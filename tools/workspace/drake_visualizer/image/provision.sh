@@ -37,6 +37,7 @@ wget ${BAZEL_ROOT}/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_6
 bash /tmp/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
 rm /tmp/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
 
-# Note that we symlink /usr/bin/python since the package names to install an
-# executable named as such are not the same in different Ubuntu packages.
+# TODO(svenevs): the manual symlink of /usr/bin/python can be removed when
+# bionic support is dropped and the `python-is-python3` package therefore
+# available unconditionally.
 ln -s /usr/bin/python3 /usr/bin/python
