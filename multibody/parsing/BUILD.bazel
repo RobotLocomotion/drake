@@ -7,6 +7,8 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/workspace:forward_files.bzl", "forward_files")
+load("//tools/workspace/dm_control:files.bzl", "dm_control_mujoco_files")
 
 filegroup(
     name = "test_models",
@@ -169,6 +171,32 @@ drake_cc_library(
     deps = [
         ":detail_misc",
         ":package_map",
+        ":scoped_names",
+        "//multibody/plant",
+        "@fmt",
+        "@tinyxml2",
+    ],
+)
+
+drake_cc_library(
+    name = "detail_mujoco_parser",
+    srcs = [
+        "detail_mujoco_parser.cc",
+    ],
+    hdrs = [
+        "detail_mujoco_parser.h",
+    ],
+    install_hdrs_exclude = [
+        "detail_mujoco_parser.h",
+    ],
+    # TODO(russt): Include this in the parsing package upon completion
+    # of issue #16369.
+    tags = ["exclude_from_package"],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        ":detail_misc",
         ":scoped_names",
         "//multibody/plant",
         "@fmt",
@@ -360,6 +388,22 @@ drake_cc_googletest(
         "//common/test_utilities",
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/acrobot:make_acrobot_plant",
+    ],
+)
+
+_DM_CONTROL_MUJOCO_FILES = forward_files(
+    srcs = ["@dm_control//:" + x for x in dm_control_mujoco_files()],
+    dest_prefix = "",
+    strip_prefix = "@dm_control//:",
+    visibility = ["//visibility:private"],
+)
+
+drake_cc_googletest(
+    name = "detail_mujoco_parser_test",
+    data = _DM_CONTROL_MUJOCO_FILES,
+    deps = [
+        ":detail_mujoco_parser",
+        "//common:find_resource",
     ],
 )
 
