@@ -2382,7 +2382,7 @@ TEST_F(GeometryStateTest, GeometryAncestryStorage) {
         break;
       }
     }
-    ASSERT_TRUE(found_relationship)
+    EXPECT_TRUE(found_relationship)
       << "test knows no relationship for [" << frame_name << "]";
   }
 }
