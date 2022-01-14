@@ -490,6 +490,7 @@ drake_py_library(
 # deprecation API.
 drake_py_unittest(
     name = "deprecation_test",
+    tags = ["no_kcov"],  # kcov messes with module ref counts.
     deps = [
         # N.B. We include this here due to awkward setup for `pydrake.common`.
         ":module_py",
