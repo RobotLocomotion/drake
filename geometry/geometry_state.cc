@@ -239,6 +239,20 @@ const std::string& GeometryState<T>::GetName(FrameId frame_id) const {
 }
 
 template <typename T>
+FrameId GeometryState<T>::GetParentFrame(FrameId frame_id) const {
+  FindOrThrow(frame_id, frames_, [frame_id]() {
+    return "No frame name available for invalid frame id: " +
+        to_string(frame_id);
+  });
+  const FrameId parent_frame_id = frames_.at(frame_id).parent_frame_id();
+  if (parent_frame_id == frame_id) {
+    // If there's no parent frame then world frame is implicitly the parent
+    return InternalFrame::world_frame_id();
+  }
+  return parent_frame_id;
+}
+
+template <typename T>
 int GeometryState<T>::GetFrameGroup(FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No frame group available for invalid frame id: " +

@@ -1,6 +1,7 @@
 #include "drake/geometry/geometry_state.h"
 
 #include <algorithm>
+#include <map>
 #include <memory>
 #include <set>
 #include <unordered_set>
@@ -2349,6 +2350,29 @@ TEST_F(GeometryStateTest, GeometryNameStorage) {
         make_unique<GeometryInstance>(
             RigidTransformd::Identity(), make_unique<Sphere>(1), name));
     EXPECT_EQ(geometry_state_.GetName(id), name);
+  }
+}
+
+// Confirms parental relationships between frames are stored
+TEST_F(GeometryStateTest, GeometryAncestryStorage) {
+  SetUpSingleSourceTree();
+
+  // {child, parent}
+  std::map<std::string, std::string> expected_relationships = {
+    {"world", "world"},
+    {"f0", "world"},
+    {"f1", "world"},
+    {"f2", "f1"},
+  };
+
+  ASSERT_EQ(expected_relationships.size(), geometry_state_.get_num_frames());
+
+  for (const FrameId frame_id : geometry_state_.get_frame_ids()) {
+    const std::string& frame_name = geometry_state_.GetName(frame_id);
+    const FrameId parent_frame_id = geometry_state_.GetParentFrame(frame_id);
+    const std::string& parent_frame_name = geometry_state_.GetName(
+        parent_frame_id);
+    EXPECT_EQ(parent_frame_name, expected_relationships[frame_name]);
   }
 }
 
