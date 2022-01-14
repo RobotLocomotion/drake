@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <fmt/format.h>
@@ -137,15 +138,56 @@ class MujocoParser {
     return RigidTransformd(X_default.rotation(), pos);
   }
 
+  SpatialInertia<double> ParseInertial(XMLElement* node) {
+    // We use F to denote the "inertial frame" in the MujoCo documentation.  B
+    // is the body frame.
+    RigidTransformd X_BF = ParseTransform(node);
+    double mass;
+    if (!ParseScalarAttribute(node, "mass", &mass)) {
+      throw std::logic_error(
+          "The inertial tag must include the mass attribute.");
+    }
+
+    // We interpret the MuJoCo XML documentation as saying that if a
+    // diaginertia is provided, it is I_BFo_F.  If a full inertia is provided,
+    // then it must be I_BFo_B (since the inertia is always diagonal in F).
+    RotationalInertia<double> I_BFo_B;
+
+    Vector3d diag;
+    if (ParseVectorAttribute(node, "diaginertia", &diag)) {
+      I_BFo_B =
+          RotationalInertia<double>(diag[0], diag[1], diag[2])
+              .ReExpress(X_BF.rotation());
+    } else {
+      // fullinertia is required if diaginertia is not specified.
+      Vector6d full;
+      if (ParseVectorAttribute(node, "fullinertia", &full)) {
+        I_BFo_B = RotationalInertia<double>(full[0], full[1], full[2], full[3],
+                                           full[4], full[5]);
+      } else {
+        throw std::logic_error(
+            "The inertial tag must include either the diaginertia or "
+            "fullinertia attribute.");
+      }
+    }
+
+    SpatialInertia<double> M_BBo_B =
+        SpatialInertia<double>::MakeFromCentralInertia(mass, X_BF.translation(),
+                                                       I_BFo_B);
+    return M_BBo_B;
+  }
+
   struct MujocoGeometry {
     RigidTransformd X_BG{};
     std::string name{};
     std::unique_ptr<geometry::Shape> shape{};
     Vector4d rgba{.5, .5, .5, 1};
     CoulombFriction<double> friction{1.0, 1.0};
+    SpatialInertia<double> M_GBo_B{};
   };
 
   MujocoGeometry ParseGeometry(XMLElement* node, int num_geom,
+                               bool compute_inertia,
                                const std::string& child_class = "") {
     MujocoGeometry geom;
 
@@ -197,6 +239,7 @@ class MujocoParser {
       geom.X_BG = ParseTransform(node);
     }
 
+    multibody::UnitInertia<double> unit_M_GG_G;
     if (type == "plane") {
       // We interpret the MuJoCo infinite plane as a half-space.
       geom.shape = std::make_unique<geometry::HalfSpace>();
@@ -208,6 +251,7 @@ class MujocoParser {
             "element.");
       }
       geom.shape = std::make_unique<geometry::Sphere>(size[0]);
+      unit_M_GG_G = multibody::UnitInertia<double>::SolidSphere(size[0]);
     } else if (type == "capsule") {
       if (has_fromto) {
         if (size.size() < 1) {
@@ -217,6 +261,9 @@ class MujocoParser {
         }
         double length = (fromto.head<3>() - fromto.tail<3>()).norm();
         geom.shape = std::make_unique<geometry::Capsule>(size[0], length);
+        unit_M_GG_G =
+            multibody::UnitInertia<double>::SolidCapsule(size[0], length);
+
       } else {
         if (size.size() < 2) {
           throw std::logic_error(
@@ -224,6 +271,8 @@ class MujocoParser {
               "elements.");
         }
         geom.shape = std::make_unique<geometry::Capsule>(size[0], 2 * size[1]);
+        unit_M_GG_G =
+            multibody::UnitInertia<double>::SolidCapsule(size[0], 2 * size[1]);
       }
     } else if (type == "ellipsoid") {
       if (has_fromto) {
@@ -241,6 +290,8 @@ class MujocoParser {
         }
         geom.shape =
             std::make_unique<geometry::Ellipsoid>(size[0], size[1], size[2]);
+        unit_M_GG_G = multibody::UnitInertia<double>::SolidEllipsoid(
+            size[0], size[1], size[2]);
       }
     } else if (type == "cylinder") {
       if (has_fromto) {
@@ -251,6 +302,8 @@ class MujocoParser {
         }
         double length = (fromto.head<3>() - fromto.tail<3>()).norm();
         geom.shape = std::make_unique<geometry::Cylinder>(size[0], length);
+        unit_M_GG_G =
+            multibody::UnitInertia<double>::SolidCylinder(size[0], length);
       } else {
         if (size.size() < 2) {
           throw std::logic_error(
@@ -258,6 +311,8 @@ class MujocoParser {
               "elements.");
         }
         geom.shape = std::make_unique<geometry::Cylinder>(size[0], 2 * size[1]);
+        unit_M_GG_G =
+            multibody::UnitInertia<double>::SolidCylinder(size[0], 2 * size[1]);
       }
     } else if (type == "box") {
       if (has_fromto) {
@@ -270,10 +325,12 @@ class MujocoParser {
       } else {
         if (size.size() < 3) {
           throw std::logic_error(
-              "The size attribute for box geom must have at least two "
+              "The size attribute for box geom must have at least three "
               "elements.");
         }
         geom.shape = std::make_unique<geometry::Box>(
+            size[0] * 2.0, size[1] * 2.0, size[2] * 2.0);
+        unit_M_GG_G = multibody::UnitInertia<double>::SolidBox(
             size[0] * 2.0, size[1] * 2.0, size[2] * 2.0);
       }
     } else if (type == "mesh" || type == "hfield") {
@@ -325,10 +382,100 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "fitscale");
     WarnUnsupportedAttribute(*node, "user");
 
-    WarnUnsupportedAttribute(*node, "mass");
-    WarnUnsupportedAttribute(*node, "density");
-
+    if (compute_inertia) {
+      double mass, density{1000};
+      if (!ParseScalarAttribute(node, "mass", &mass)) {
+        ParseScalarAttribute(node, "density", &density);
+        mass = density * geometry::CalcVolume(*geom.shape);
+      }
+      multibody::SpatialInertia<double> M_GG_G(mass, Vector3d::Zero(),
+                                               unit_M_GG_G);
+      geom.M_GBo_B = M_GG_G.ReExpress(geom.X_BG.rotation())
+                         .Shift(-geom.X_BG.translation());
+    }
     return geom;
+  }
+
+  void ParseBody(XMLElement* node, const RigidBody<double>& parent,
+                 const std::string& parent_class = "") {
+    std::string body_name;
+    if (!ParseStringAttribute(node, "name", &body_name)) {
+      // Use "body#" as the default body name.
+      body_name = fmt::format("body{}", plant_->num_bodies());
+    }
+
+    std::string child_class{};
+    if (!ParseStringAttribute(node, "childclass", &child_class)) {
+      child_class = parent_class;
+    }
+
+    bool compute_inertia;
+    SpatialInertia<double> M_BBo_B(0, {0, 0, 0}, {0, 0, 0});
+    XMLElement* inertial_node = node->FirstChildElement("inertial");
+    if (inertial_node && (!inertia_from_geom_ || !*inertia_from_geom_)) {
+      // Then we have a node and inertial_from_geom is "auto" or "false".
+      M_BBo_B = ParseInertial(inertial_node);
+      compute_inertia = false;
+    } else if (!inertial_node && inertia_from_geom_ && !inertia_from_geom_) {
+      // We don't have a node and inertial_from_geom is "false".
+      // https://mujoco.readthedocs.io/en/latest/XMLreference.html#compiler
+      // says we should throw.
+      throw std::runtime_error(fmt::format(
+          "{} has no inertial tag and inertiafromgeom=false. You must specify "
+          "an inertia.",
+          body_name));
+    } else {
+      compute_inertia = true;
+    }
+
+    // Note: Because AddRigidBody returns a const RigidBody, I must know the
+    // (default) SpatialInertia at construction time.  So I'm forced to parse
+    // the geometry into an intermediate representation (to possibly compute the
+    // inertia), then add the body, then add the geometry.
+
+    // Parses geom elements.
+    std::vector<MujocoGeometry> geometries;
+    for (XMLElement* link_node = node->FirstChildElement("geom"); link_node;
+         link_node = link_node->NextSiblingElement("geom")) {
+      auto geom = ParseGeometry(link_node, geometries.size(), compute_inertia,
+                                child_class);
+      if (!geom.shape) continue;
+      if (compute_inertia) {
+        M_BBo_B += geom.M_GBo_B;
+      }
+      geometries.push_back(std::move(geom));
+    }
+
+    // Add a rigid body to model each link.
+    const RigidBody<double>& body =
+        plant_->AddRigidBody(body_name, model_instance_, M_BBo_B);
+
+    if (plant_->geometry_source_is_registered()) {
+      for (auto& geom : geometries) {
+        plant_->RegisterVisualGeometry(body, geom.X_BG, *geom.shape, geom.name,
+                                       geom.rgba);
+        plant_->RegisterCollisionGeometry(body, geom.X_BG, *geom.shape,
+                                          geom.name, geom.friction);
+      }
+    }
+
+    const RigidTransformd X_PB = ParseTransform(node);
+    WarnUnsupportedElement(*node, "joint");
+    unused(parent, X_PB);  // These will be used for the joints.
+
+    WarnUnsupportedAttribute(*node, "mocap");
+    WarnUnsupportedAttribute(*node, "user");
+
+    WarnUnsupportedElement(*node, "site");
+    WarnUnsupportedElement(*node, "camera");
+    WarnUnsupportedElement(*node, "light");
+    WarnUnsupportedElement(*node, "composite");
+
+    // Parses child body elements.
+    for (XMLElement* link_node = node->FirstChildElement("body"); link_node;
+         link_node = link_node->NextSiblingElement("body")) {
+      ParseBody(link_node, body, child_class);
+    }
   }
 
   void ParseWorldBody(XMLElement* node) {
@@ -336,7 +483,7 @@ class MujocoParser {
       std::vector<MujocoGeometry> geometries;
       for (XMLElement* link_node = node->FirstChildElement("geom"); link_node;
            link_node = link_node->NextSiblingElement("geom")) {
-        auto geom = ParseGeometry(link_node, geometries.size());
+        auto geom = ParseGeometry(link_node, geometries.size(), false);
         if (!geom.shape) continue;
         plant_->RegisterVisualGeometry(plant_->world_body(), geom.X_BG,
                                        *geom.shape, geom.name, geom.rgba);
@@ -346,11 +493,16 @@ class MujocoParser {
       }
     }
 
-    WarnUnsupportedElement(*node, "body");
     WarnUnsupportedElement(*node, "site");
     WarnUnsupportedElement(*node, "camera");
     WarnUnsupportedElement(*node, "light");
     WarnUnsupportedElement(*node, "composite");
+
+    // Parses child body elements.
+    for (XMLElement* link_node = node->FirstChildElement("body"); link_node;
+         link_node = link_node->NextSiblingElement("body")) {
+      ParseBody(link_node, plant_->world_body());
+    }
   }
 
   void ParseDefault(XMLElement* node, const std::string& parent_default = "") {
@@ -460,7 +612,25 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "convexhull");
     // Note: we intentionally (silently) ignore "usethread" attribute.
     WarnUnsupportedAttribute(*node, "fusestatic");
-    WarnUnsupportedAttribute(*node, "inertiafromgeom");
+
+    bool flag;
+    switch (node->QueryBoolAttribute("inertiafromgeom", &flag)) {
+      case tinyxml2::XML_SUCCESS:
+        inertia_from_geom_ = flag;
+        break;
+      case tinyxml2::XML_WRONG_ATTRIBUTE_TYPE:
+        if (std::string(node->Attribute("inertiafromgeom")) == "auto") {
+          break;
+        }
+        drake::log()->warn(
+            "The attribute 'inertiafromgeom' found in a '{}' tag cannot be "
+            "interpreted as a boolean nor 'auto' and will be ignored.",
+            node->Name());
+        break;
+      default:
+        // Ok. No attribute to set.
+        break;
+    }
     WarnUnsupportedAttribute(*node, "inertiagrouprange");
   }
 
@@ -510,8 +680,12 @@ class MujocoParser {
       ParseWorldBody(link_node);
     }
 
-    // These will all be (at least partially) supported via #16369.
-    WarnUnsupportedElement(*node, "body");
+    // Parses the model's link elements.
+    for (XMLElement* link_node = node->FirstChildElement("body"); link_node;
+         link_node = link_node->NextSiblingElement("body")) {
+      ParseBody(link_node, plant_->world_body());
+    }
+
     WarnUnsupportedElement(*node, "actuator");
 
     // These will not be supported initially.
@@ -535,6 +709,7 @@ class MujocoParser {
   enum Angle { kRadian, kDegree };
   Angle angle_{kDegree};
   std::map<std::string, XMLElement*> default_geometry_{};
+  std::optional<bool> inertia_from_geom_{};  // !has_value() => "auto".
 };
 
 }  // namespace
