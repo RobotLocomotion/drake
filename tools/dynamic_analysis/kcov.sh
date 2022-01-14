@@ -37,10 +37,28 @@ if  is_kcov_339_vulnerable "$1"; then
     exit 1
 fi
 
+read -d '' KCOV_COMMAND <<- eof
 kcov \
     "--include-path=${WORKSPACE}" \
     --verify \
+    --python-parse=python3 \
     --exclude-pattern=third_party \
-    "${TEST_UNDECLARED_OUTPUTS_DIR}/kcov" \
     "--replace-src-path=/proc/self/cwd:${WORKSPACE}" \
-    "$@"
+    "${TEST_UNDECLARED_OUTPUTS_DIR}/kcov"
+eof
+
+# If we have a Python target...
+if [[ $(file -b -i -L "$1") == *text/x-python* ]]; then
+    # Bazel's Python wrappers require extra treatment. PYTHON_COVERAGE and
+    # COVERAGE_DIR are consumed by the bazel wrapper.
+    export PYTHON_COVERAGE="${WORKSPACE}/tools/dynamic_analysis/kcoverage.py"
+    export COVERAGE_DIR="${TEST_UNDECLARED_OUTPUTS_DIR}/kcov"
+
+    # KCOV_COMMAND is consumed by drake's kcov/python integration.
+    export KCOV_COMMAND
+
+    # Execute our "target", which is really the Bazel Python wrapper.
+    exec "$@"
+fi
+
+eval ${KCOV_COMMAND} "$@"
