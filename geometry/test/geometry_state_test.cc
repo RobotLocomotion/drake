@@ -1,6 +1,7 @@
 #include "drake/geometry/geometry_state.h"
 
 #include <algorithm>
+#include <map>
 #include <memory>
 #include <set>
 #include <unordered_set>
@@ -2357,7 +2358,7 @@ TEST_F(GeometryStateTest, GeometryAncestryStorage) {
   SetUpSingleSourceTree();
 
   // {child, parent}
-  std::vector<std::pair<std::string, std::string>> expected_relationships = {
+  std::map<std::string, std::string> expected_relationships = {
     {"world", "world"},
     {"f0", "world"},
     {"f1", "world"},
@@ -2371,19 +2372,7 @@ TEST_F(GeometryStateTest, GeometryAncestryStorage) {
     const FrameId parent_frame_id = geometry_state_.GetParentFrame(frame_id);
     const std::string& parent_frame_name = geometry_state_.GetName(
         parent_frame_id);
-    bool found_relationship;
-
-    for (const auto& relationship : expected_relationships) {
-      const std::string & expected_frame_name = relationship.first;
-      const std::string & expected_parent_name = relationship.second;
-      if (expected_frame_name == frame_name) {
-        EXPECT_EQ(expected_parent_name, parent_frame_name);
-        found_relationship = true;
-        break;
-      }
-    }
-    EXPECT_TRUE(found_relationship)
-      << "test knows no relationship for [" << frame_name << "]";
+    EXPECT_EQ(parent_frame_name, expected_relationships[frame_name]);
   }
 }
 
