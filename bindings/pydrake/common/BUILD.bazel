@@ -485,6 +485,7 @@ drake_py_unittest(
         ":module_py",
         ":deprecation_example",
     ],
+    tags = ["no_kcov"],  # kcov messes with module ref counts.
 )
 
 # Provides a unittest for high-level deprecation API.
