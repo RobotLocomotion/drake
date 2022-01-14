@@ -7,6 +7,9 @@ CMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON
 CMAKE_CXX_STANDARD:STRING=17
 CMAKE_PREFIX_PATH:PATH=/opt/drake-dependencies
 CMAKE_INSTALL_PREFIX:PATH=/opt/vtk
+# VTK by default installs license files to `share/licenses/PROJECT_NAME`, we
+# want the license files to end up in `share/doc/PROJECT_NAME`.
+CMAKE_INSTALL_LICENSEDIR:STRING=share/doc/vtk-9.1
 # VTK-specific build configuration.
 BUILD_TESTING:BOOL=OFF
 VTK_ENABLE_WRAPPING:BOOL=OFF
