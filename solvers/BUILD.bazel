@@ -22,6 +22,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":aggregate_costs_constraints",
+        ":augmented_lagrangian",
         ":bilinear_product_util",
         ":binding",
         ":branch_and_bound",
@@ -71,6 +72,16 @@ drake_cc_package_library(
         ":sos_basis_generator",
         ":system_identification",
         ":unrevised_lemke_solver",
+    ],
+)
+
+drake_cc_library(
+    name = "augmented_lagrangian",
+    srcs = ["augmented_lagrangian.cc"],
+    hdrs = ["augmented_lagrangian.h"],
+    deps = [
+        ":aggregate_costs_constraints",
+        ":mathematical_program",
     ],
 )
 
@@ -1795,6 +1806,14 @@ drake_cc_googletest(
         ":solver_options",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "augmented_lagrangian_test",
+    deps = [
+        ":augmented_lagrangian",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
