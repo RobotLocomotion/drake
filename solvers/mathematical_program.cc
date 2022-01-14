@@ -191,13 +191,12 @@ symbolic::Polynomial MathematicalProgram::NewOddDegreeFreePolynomial(
 // symmetric matrix Q as decision variables, and return m' * Q * m as the new
 // polynomial, where m is the monomial basis.
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
-MathematicalProgram::NewNonnegativePolynomial(
+MathematicalProgram::NewSosPolynomial(
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
     NonnegativePolynomial type) {
   const MatrixXDecisionVariable Q =
       NewSymmetricContinuousVariables(monomial_basis.size());
-  const symbolic::Polynomial p =
-      NewNonnegativePolynomial(Q, monomial_basis, type);
+  const symbolic::Polynomial p = NewSosPolynomial(Q, monomial_basis, type);
   return std::make_pair(p, Q);
 }
 
@@ -221,7 +220,7 @@ symbolic::Polynomial ComputePolynomialFromMonomialBasisAndGramMatrix(
 }
 }  // namespace
 
-symbolic::Polynomial MathematicalProgram::NewNonnegativePolynomial(
+symbolic::Polynomial MathematicalProgram::NewSosPolynomial(
     const Eigen::Ref<const MatrixX<symbolic::Variable>>& gramian,
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
     NonnegativePolynomial type) {
@@ -248,27 +247,33 @@ symbolic::Polynomial MathematicalProgram::NewNonnegativePolynomial(
 }
 
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
-MathematicalProgram::NewNonnegativePolynomial(
-    const symbolic::Variables& indeterminates, int degree,
-    NonnegativePolynomial type) {
+MathematicalProgram::NewSosPolynomial(const symbolic::Variables& indeterminates,
+                                      int degree, NonnegativePolynomial type) {
   DRAKE_DEMAND(degree > 0 && degree % 2 == 0);
   const drake::VectorX<symbolic::Monomial> x{
       MonomialBasis(indeterminates, degree / 2)};
-  return NewNonnegativePolynomial(x, type);
+  return NewSosPolynomial(x, type);
 }
 
 std::pair<symbolic::Polynomial, MatrixXDecisionVariable>
-MathematicalProgram::NewSosPolynomial(
-    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
-  return NewNonnegativePolynomial(
-      monomial_basis, MathematicalProgram::NonnegativePolynomial::kSos);
+MathematicalProgram::NewNonnegativePolynomial(
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+    NonnegativePolynomial type) {
+  return NewSosPolynomial(monomial_basis, type);
+}
+
+symbolic::Polynomial MathematicalProgram::NewNonnegativePolynomial(
+    const Eigen::Ref<const MatrixX<symbolic::Variable>>& gramian,
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+    NonnegativePolynomial type) {
+  return NewSosPolynomial(gramian, monomial_basis, type);
 }
 
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
-MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
-                                      const int degree) {
-  return NewNonnegativePolynomial(
-      indeterminates, degree, MathematicalProgram::NonnegativePolynomial::kSos);
+MathematicalProgram::NewNonnegativePolynomial(const Variables& indeterminates,
+                                              const int degree,
+                                              NonnegativePolynomial type) {
+  return NewSosPolynomial(indeterminates, degree, type);
 }
 
 std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
@@ -283,8 +288,8 @@ MathematicalProgram::NewEvenDegreeNonnegativePolynomial(
       OddDegreeMonomialBasis(indeterminates, degree / 2);
   symbolic::Polynomial p1, p2;
   MatrixXDecisionVariable Q_ee, Q_oo;
-  std::tie(p1, Q_ee) = NewNonnegativePolynomial(m_e, type);
-  std::tie(p2, Q_oo) = NewNonnegativePolynomial(m_o, type);
+  std::tie(p1, Q_ee) = NewSosPolynomial(m_e, type);
+  std::tie(p2, Q_oo) = NewSosPolynomial(m_o, type);
   const symbolic::Polynomial p = p1 + p2;
   return std::make_tuple(p, Q_oo, Q_ee);
 }
@@ -1307,7 +1312,7 @@ MatrixXDecisionVariable DoAddSosConstraint(
     MathematicalProgram* const prog, const symbolic::Polynomial& p,
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
     MathematicalProgram::NonnegativePolynomial type) {
-  const auto pair = prog->NewNonnegativePolynomial(monomial_basis, type);
+  const auto pair = prog->NewSosPolynomial(monomial_basis, type);
   const symbolic::Polynomial& sos_poly{pair.first};
   const MatrixXDecisionVariable& Q{pair.second};
 
