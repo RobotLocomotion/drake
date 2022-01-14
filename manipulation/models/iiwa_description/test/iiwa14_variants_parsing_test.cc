@@ -85,7 +85,7 @@ GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValues) {
 
       CompareActuatorLimits(canonical_joint_actuator, joint_actuator);
 
-      // Test the joints from the second instance of tue dual iiwa14 polytope
+      // Test the joints from the second instance of the dual iiwa14 polytope
       // collision model. They correspond to joints 7 to 13 of the model.
       if (model_file.substr(model_file.find_last_of('/') + 1) ==
           "dual_iiwa14_polytope_collision.urdf") {
