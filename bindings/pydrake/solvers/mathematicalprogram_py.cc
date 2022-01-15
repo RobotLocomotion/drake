@@ -717,45 +717,35 @@ void BindMathematicalProgram(py::module m) {
           py::arg("indeterminates"), py::arg("degree"),
           py::arg("coeff_name") = "a",
           doc.MathematicalProgram.NewOddDegreeFreePolynomial.doc)
-      .def("NewNonnegativePolynomial",
-          static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
-              MathematicalProgram::*)(
-              const Eigen::Ref<const VectorX<symbolic::Monomial>>&,
-              MathematicalProgram::NonnegativePolynomial)>(
-              &MathematicalProgram::NewNonnegativePolynomial),
-          py::arg("monomial_basis"), py::arg("type"),
-          doc.MathematicalProgram.NewNonnegativePolynomial
-              .doc_2args_monomial_basis_type)
-      .def("NewNonnegativePolynomial",
-          static_cast<symbolic::Polynomial (MathematicalProgram::*)(
-              const Eigen::Ref<const MatrixX<symbolic::Variable>>&,
-              const Eigen::Ref<const VectorX<symbolic::Monomial>>&,
-              MathematicalProgram::NonnegativePolynomial)>(
-              &MathematicalProgram::NewNonnegativePolynomial),
-          py::arg("gramian"), py::arg("monomial_basis"), py::arg("type"),
-          doc.MathematicalProgram.NewNonnegativePolynomial
-              .doc_3args_gramian_monomial_basis_type)
-      .def("NewNonnegativePolynomial",
-          static_cast<std::pair<symbolic::Polynomial, MatrixXDecisionVariable> (
-              MathematicalProgram::*)(const symbolic::Variables&, int degree,
-              MathematicalProgram::NonnegativePolynomial)>(
-              &MathematicalProgram::NewNonnegativePolynomial),
-          py::arg("indeterminates"), py::arg("degree"), py::arg("type"),
-          doc.MathematicalProgram.NewNonnegativePolynomial
-              .doc_3args_indeterminates_degree_type)
       .def("NewSosPolynomial",
           static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
               MathematicalProgram::*)(
-              const Eigen::Ref<const VectorX<Monomial>>&)>(
+              const Eigen::Ref<const VectorX<Monomial>>&,
+              MathematicalProgram::NonnegativePolynomial)>(
               &MathematicalProgram::NewSosPolynomial),
           py::arg("monomial_basis"),
-          doc.MathematicalProgram.NewSosPolynomial.doc_1args)
+          py::arg("type") = MathematicalProgram::NonnegativePolynomial::kSos,
+          doc.MathematicalProgram.NewSosPolynomial
+              .doc_2args_monomial_basis_type)
+      .def("NewSosPolynomial",
+          static_cast<Polynomial (MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Variable>>&,
+              const Eigen::Ref<const VectorX<Monomial>>&,
+              MathematicalProgram::NonnegativePolynomial)>(
+              &MathematicalProgram::NewSosPolynomial),
+          py::arg("gramian"), py::arg("monomial_basis"),
+          py::arg("type") = MathematicalProgram::NonnegativePolynomial::kSos,
+          doc.MathematicalProgram.NewSosPolynomial
+              .doc_3args_gramian_monomial_basis_type)
       .def("NewSosPolynomial",
           static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
-              MathematicalProgram::*)(const Variables&, int)>(
+              MathematicalProgram::*)(const Variables&, int,
+              MathematicalProgram::NonnegativePolynomial)>(
               &MathematicalProgram::NewSosPolynomial),
           py::arg("indeterminates"), py::arg("degree"),
-          doc.MathematicalProgram.NewSosPolynomial.doc_2args)
+          py::arg("type") = MathematicalProgram::NonnegativePolynomial::kSos,
+          doc.MathematicalProgram.NewSosPolynomial
+              .doc_3args_indeterminates_degree_type)
       .def("NewEvenDegreeNonnegativePolynomial",
           &MathematicalProgram::NewEvenDegreeNonnegativePolynomial,
           py::arg("indeterminates"), py::arg("degree"), py::arg("type"),
@@ -1504,19 +1494,56 @@ for every column of ``prog_var_vals``. )""")
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  prog_cls.def("AddMaximizeLogDeterminantSymmetricMatrixCost",
-      WrapDeprecated(
+  prog_cls
+      .def("NewNonnegativePolynomial",
+          WrapDeprecated(
+              doc.MathematicalProgram.NewNonnegativePolynomial
+                  .doc_deprecated_deprecated_2args_monomial_basis_type,
+              static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
+                  MathematicalProgram::*)(
+                  const Eigen::Ref<const VectorX<symbolic::Monomial>>&,
+                  MathematicalProgram::NonnegativePolynomial)>(
+                  &MathematicalProgram::NewNonnegativePolynomial)),
+          py::arg("monomial_basis"), py::arg("type"),
+          doc.MathematicalProgram.NewNonnegativePolynomial
+              .doc_deprecated_deprecated_2args_monomial_basis_type)
+      .def("NewNonnegativePolynomial",
+          WrapDeprecated(
+              doc.MathematicalProgram.NewNonnegativePolynomial
+                  .doc_deprecated_deprecated_3args_gramian_monomial_basis_type,
+              static_cast<symbolic::Polynomial (MathematicalProgram::*)(
+                  const Eigen::Ref<const MatrixX<symbolic::Variable>>&,
+                  const Eigen::Ref<const VectorX<symbolic::Monomial>>&,
+                  MathematicalProgram::NonnegativePolynomial)>(
+                  &MathematicalProgram::NewNonnegativePolynomial)),
+          py::arg("gramian"), py::arg("monomial_basis"), py::arg("type"),
+          doc.MathematicalProgram.NewNonnegativePolynomial
+              .doc_deprecated_deprecated_3args_gramian_monomial_basis_type)
+      .def("NewNonnegativePolynomial",
+          WrapDeprecated(
+              doc.MathematicalProgram.NewNonnegativePolynomial
+                  .doc_deprecated_deprecated_3args_indeterminates_degree_type,
+              static_cast<
+                  std::pair<symbolic::Polynomial, MatrixXDecisionVariable> (
+                      MathematicalProgram::*)(const symbolic::Variables&,
+                      int degree, MathematicalProgram::NonnegativePolynomial)>(
+                  &MathematicalProgram::NewNonnegativePolynomial)),
+          py::arg("indeterminates"), py::arg("degree"), py::arg("type"),
+          doc.MathematicalProgram.NewNonnegativePolynomial
+              .doc_deprecated_deprecated_3args_indeterminates_degree_type)
+      .def("AddMaximizeLogDeterminantSymmetricMatrixCost",
+          WrapDeprecated(
+              doc.MathematicalProgram
+                  .AddMaximizeLogDeterminantSymmetricMatrixCost.doc_deprecated,
+              static_cast<std::tuple<Binding<LinearCost>,
+                  VectorX<symbolic::Variable>, MatrixX<symbolic::Expression>> (
+                  MathematicalProgram::*)(
+                  const Eigen::Ref<const MatrixX<symbolic::Expression>>& X)>(
+                  &MathematicalProgram::
+                      AddMaximizeLogDeterminantSymmetricMatrixCost)),
+          py::arg("X"),
           doc.MathematicalProgram.AddMaximizeLogDeterminantSymmetricMatrixCost
-              .doc_deprecated,
-          static_cast<std::tuple<Binding<LinearCost>,
-              VectorX<symbolic::Variable>, MatrixX<symbolic::Expression>> (
-              MathematicalProgram::*)(
-              const Eigen::Ref<const MatrixX<symbolic::Expression>>& X)>(
-              &MathematicalProgram::
-                  AddMaximizeLogDeterminantSymmetricMatrixCost)),
-      py::arg("X"),
-      doc.MathematicalProgram.AddMaximizeLogDeterminantSymmetricMatrixCost
-          .doc_deprecated);
+              .doc_deprecated);
 #pragma GCC diagnostic pop
 
   py::enum_<SolutionResult>(m, "SolutionResult", doc.SolutionResult.doc)
