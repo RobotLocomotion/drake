@@ -95,9 +95,9 @@ class MultibodyPlantTester {
   MultibodyPlantTester() = delete;
 
   template <typename T>
-  static BodyIndex geometry_id_to_body_index(
+  static BodyIndex FindContactBody(
       const MultibodyPlant<T>& plant, GeometryId id) {
-    return plant.geometry_id_to_body_index_.at(id);
+    return plant.FindContactBody(id);
   }
 
   static void CalcNormalAndTangentContactJacobians(
@@ -498,6 +498,16 @@ GTEST_TEST(MultibodyPlantTest, EmptyWorldContinuous) {
   EXPECT_EQ(residual.size(), 0);
   DRAKE_EXPECT_NO_THROW(plant.CalcImplicitTimeDerivativesResidual(
       *context, *new_derivatives, &residual));
+}
+
+GTEST_TEST(MultibodyPlantTest, EmptyWorldContactErrors) {
+  MultibodyPlant<double> plant(0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MultibodyPlantTester::FindContactBody(plant, GeometryId{}),
+      ".* contact results for a null GeometryId.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MultibodyPlantTester::FindContactBody(plant, GeometryId::get_new_id()),
+      ".* contact results for GeometryId .* but that ID is not known.*");
 }
 
 GTEST_TEST(ActuationPortsTest, CheckActuation) {
@@ -2374,7 +2384,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     for (const auto& pair : pairs_set) {
       PenetrationAsPointPair<T> pair_on_T;
 
-      BodyIndex bodyA_index = MultibodyPlantTester::geometry_id_to_body_index(
+      BodyIndex bodyA_index = MultibodyPlantTester::FindContactBody(
           plant_on_T, pair.id_A);
       const RigidTransform<T>& X_WA = plant_on_T.EvalBodyPoseInWorld(
           context_on_T, plant_on_T.get_body(bodyA_index));
@@ -2382,7 +2392,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
           plant_on_T.EvalBodySpatialVelocityInWorld(
               context_on_T, plant_on_T.get_body(bodyA_index));
 
-      BodyIndex bodyB_index = MultibodyPlantTester::geometry_id_to_body_index(
+      BodyIndex bodyB_index = MultibodyPlantTester::FindContactBody(
           plant_on_T, pair.id_B);
       const RigidTransform<T>& X_WB = plant_on_T.EvalBodyPoseInWorld(
           context_on_T, plant_on_T.get_body(bodyB_index));
@@ -2429,7 +2439,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     for (const auto& pair : pairs_set) {
       PenetrationAsPointPair<T> pair_on_T;
 
-      BodyIndex bodyA_index = MultibodyPlantTester::geometry_id_to_body_index(
+      BodyIndex bodyA_index = MultibodyPlantTester::FindContactBody(
           plant_on_T, pair.id_A);
       const RigidTransform<T>& X_WA = plant_on_T.EvalBodyPoseInWorld(
           context_on_T, plant_on_T.get_body(bodyA_index));
@@ -2437,7 +2447,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
           plant_on_T.EvalBodySpatialVelocityInWorld(
               context_on_T, plant_on_T.get_body(bodyA_index));
 
-      BodyIndex bodyB_index = MultibodyPlantTester::geometry_id_to_body_index(
+      BodyIndex bodyB_index = MultibodyPlantTester::FindContactBody(
           plant_on_T, pair.id_B);
       const RigidTransform<T>& X_WB = plant_on_T.EvalBodyPoseInWorld(
           context_on_T, plant_on_T.get_body(bodyB_index));
