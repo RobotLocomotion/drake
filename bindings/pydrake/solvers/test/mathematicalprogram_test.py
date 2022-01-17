@@ -584,26 +584,52 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(np.all(eigs >= -tol))
         self.assertTrue(S[0, 1] >= -tol)
 
-    def test_nonnegative_polynomial(self):
+    def test_sos_polynomial(self):
         # Only check if the API works.
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(3, "x")
-        (poly1, gramian1) = prog.NewNonnegativePolynomial(
+        (poly1, gramian1) = prog.NewSosPolynomial(
             indeterminates=sym.Variables(x), degree=4,
             type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos)
         self.assertIsInstance(poly1, sym.Polynomial)
         self.assertIsInstance(gramian1, np.ndarray)
 
         gramian2 = prog.NewSymmetricContinuousVariables(2)
-        poly2 = prog.NewNonnegativePolynomial(
+        poly2 = prog.NewSosPolynomial(
             gramian=gramian2,
             monomial_basis=(sym.Monomial(x[0]), sym.Monomial(x[1])),
             type=mp.MathematicalProgram.NonnegativePolynomial.kDsos)
         self.assertIsInstance(gramian2, np.ndarray)
 
-        poly3, gramian3 = prog.NewNonnegativePolynomial(
+        poly3, gramian3 = prog.NewSosPolynomial(
             monomial_basis=(sym.Monomial(x[0]), sym.Monomial(x[1])),
             type=mp.MathematicalProgram.NonnegativePolynomial.kSos)
+        self.assertIsInstance(poly3, sym.Polynomial)
+        self.assertIsInstance(gramian3, np.ndarray)
+
+    def test_nonnegative_polynomial(self):
+        # Only check if the API works.
+        prog = mp.MathematicalProgram()
+        x = prog.NewIndeterminates(3, "x")
+        with catch_drake_warnings(expected_count=1):
+            (poly1, gramian1) = prog.NewNonnegativePolynomial(
+                indeterminates=sym.Variables(x), degree=4,
+                type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos)
+        self.assertIsInstance(poly1, sym.Polynomial)
+        self.assertIsInstance(gramian1, np.ndarray)
+
+        gramian2 = prog.NewSymmetricContinuousVariables(2)
+        with catch_drake_warnings(expected_count=1):
+            poly2 = prog.NewNonnegativePolynomial(
+                gramian=gramian2,
+                monomial_basis=(sym.Monomial(x[0]), sym.Monomial(x[1])),
+                type=mp.MathematicalProgram.NonnegativePolynomial.kDsos)
+        self.assertIsInstance(gramian2, np.ndarray)
+
+        with catch_drake_warnings(expected_count=1):
+            poly3, gramian3 = prog.NewNonnegativePolynomial(
+                monomial_basis=(sym.Monomial(x[0]), sym.Monomial(x[1])),
+                type=mp.MathematicalProgram.NonnegativePolynomial.kSos)
         self.assertIsInstance(poly3, sym.Polynomial)
         self.assertIsInstance(gramian3, np.ndarray)
 

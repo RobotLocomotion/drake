@@ -28,7 +28,10 @@ improvements in the Broadwell architecture in 2014. Drake is compiled with
 machines). Drake can be used on older machines if necessary by building from
 source with that flag removed.
 
-⁽²⁾ Running Drake under Rosetta 2 emulation on arm64 is not supported. Plans
+⁽²⁾ For users running on Apple's newer arm64 hardware, refer to
+[Running under Rosetta 2](/rosetta2.html)
+for instructions on running using x86_64 emulation.
+Building and running directly on arm64 is not yet supported; plans
 for any future arm64 support on macOS and/or Ubuntu are discussed in
 [issue #13514](https://github.com/RobotLocomotion/drake/issues/13514).
 
