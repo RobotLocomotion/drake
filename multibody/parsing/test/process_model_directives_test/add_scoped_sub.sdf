@@ -27,5 +27,14 @@
       <pose relative_to="simple_model::frame"/>
     </include>
 
+    <!--
+    A weld can be replaced by having a zero relative pose between the two frames,
+    as well as a fixed joint between them.
+    -->
+    <joint name="add_scoped_sub_weld" type="fixed">
+      <parent>simple_model::frame</parent>
+      <child>extra_model::base</child>
+    </joint>
+
   </model>
 </sdf>

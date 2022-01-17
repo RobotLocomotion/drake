@@ -1,23 +1,63 @@
 <?xml version="1.0" ?>
 <sdf version="1.9">
-  <world name="add_scoped_top">
+  <model name="add_scoped_top">
+    <frame name="world_frame"/>
 
-    <!--
-    <frame name="simple_model_origin"/>
-    -->
-    <!-- Ideally we would like to use <include merge="true"> -->
-    <!-- However sdformat currently doesn't allow merging into worlds -->
-    <!-- <include merge="true"> -->
-    <include>
+    <frame name="simple_model_origin" attached_to="world_frame"/>
+    <include merge="true">
       <uri>package://process_model_directives_test/add_scoped_sub.sdf</uri>
     </include>
-    <!--
-    <frame name="top_added_frame" attached_to="add_scoped_sub::simple_model">
-      <pose relative_to="add_scoped_sub::simple_model::sub_added_frame">
+    <frame name="top_added_frame" attached_to="simple_model">
+      <!--
+      sub_added_frame was added under the scope of add_scoped_sub, even though
+      the directives indicate it is under add_sceoped_sub::simple_model
+      <pose relative_to="simple_model::sub_added_frame">
+      -->
+      <pose relative_to="sub_added_frame">
         5 10 15   0 0 0
       </pose>
     </frame>
-    -->
 
-  </world>
+    <model name="left">
+      <frame name="simple_model_origin"/>
+      <pose relative_to="world_frame">
+        0 1 0   0 0 0
+      </pose>
+      <include merge="true">
+        <uri>package://process_model_directives_test/add_scoped_sub.sdf</uri>
+      </include>
+      <frame name="top_added_frame" attached_to="simple_model">
+        <pose relative_to="sub_added_frame">
+          5 10 15   0 0 0
+        </pose>
+      </frame>
+    </model>
+
+    <model name="right">
+      <frame name="simple_model_origin"/>
+      <pose relative_to="world_frame">
+        0 -1 0   0 0 0
+      </pose>
+      <include merge="true">
+        <uri>package://process_model_directives_test/add_scoped_sub.sdf</uri>
+      </include>
+      <frame name="top_added_frame" attached_to="simple_model">
+        <pose relative_to="sub_added_frame">
+          5 10 15   0 0 0
+        </pose>
+      </frame>
+    </model>
+
+    <model name="mid">
+      <include merge="true">
+        <uri>package://process_model_directives_test/add_scoped_mid.sdf</uri>
+      </include>
+      <frame name="top_added_frame" attached_to="nested::simple_model">
+        <pose relative_to="nested::sub_added_frame">
+          5 10 15   0 0 0
+        </pose>
+      </frame>
+    </model>
+
+  </model>
 </sdf>

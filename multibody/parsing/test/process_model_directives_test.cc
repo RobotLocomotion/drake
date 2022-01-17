@@ -174,17 +174,17 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTest) {
 // Acceptance tests for the ModelDirectives name scoping, including acceptance
 // testing its interaction with SceneGraph.
 GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTestFromWorldFile) {
-  // ModelDirectives directives = LoadModelDirectives(
-  //     FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_top.yaml"));
+  ModelDirectives directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_top.yaml"));
 
-  // // Ensure that we have a SceneGraph present so that we test relevant visual
-  // // pieces.
-  // DiagramBuilder<double> builder;
-  // MultibodyPlant<double>& md_plant = AddMultibodyPlantSceneGraph(&builder, 0.);
-  // ProcessModelDirectives(directives, &md_plant,
-  //                        nullptr, make_parser(&md_plant).get());
-  // md_plant.Finalize();
-  // auto diagram = builder.Build();
+  // Ensure that we have a SceneGraph present so that we test relevant visual
+  // pieces.
+  DiagramBuilder<double> builder;
+  MultibodyPlant<double>& md_plant = AddMultibodyPlantSceneGraph(&builder, 0.);
+  ProcessModelDirectives(directives, &md_plant,
+                         nullptr, make_parser(&md_plant).get());
+  md_plant.Finalize();
+  auto diagram = builder.Build();
 
   MultibodyPlant<double> plant(0.0);
   const std::string sdf_name = FindResourceOrThrow(
@@ -193,6 +193,46 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTestFromWorldFile) {
   parser->AddAllModelsFromFile(sdf_name);
   plant.Finalize();
   auto context = plant.CreateDefaultContext();
+
+  // // Note(AA): The number of bodies is now 3, due to the overall model add_scoped_sub
+  // // // Expect the two model instances added by the directives.
+  // // EXPECT_EQ(plant.num_model_instances() - empty_plant.num_model_instances(), 2);
+
+  // // // Expect the two bodies added by the directives.
+  // // EXPECT_EQ(plant.num_bodies() - empty_plant.num_bodies(), 2);
+
+  // // A great many frames are added in model directives processing, but we
+  // // should at least expect that our named ones are present.
+  // EXPECT_TRUE(plant.HasFrameNamed("sub_added_frame"));
+  // EXPECT_TRUE(plant.HasFrameNamed(
+  //     "sub_added_frame", plant.GetModelInstanceByName("add_scoped_sub::simple_model")));
+  // EXPECT_TRUE(plant.HasFrameNamed(
+  //     "frame", plant.GetModelInstanceByName("add_scoped_sub::simple_model")));
+  // EXPECT_TRUE(plant.HasFrameNamed(
+  //     "frame", plant.GetModelInstanceByName("add_scoped_sub::extra_model")));
+
+  // // Compare all the frames
+  // EXPECT_TRUE(CompareMatrices(
+  //     md_plant.GetFrameByName("sub_added_frame")
+  //         .CalcPoseInWorld(*md_context)
+  //         .GetAsMatrix4(),
+  //     plant.GetFrameByName("sub_added_frame")
+  //         .CalcPoseInWorld(*context)
+  //         .GetAsMatrix4())); 
+  // EXPECT_TRUE(CompareMatrices(
+  //     md_plant.GetFrameByName("frame", md_plant.GetModelInstanceByName("simple_model"))
+  //         .CalcPoseInWorld(*md_context)
+  //         .GetAsMatrix4(),
+  //     plant.GetFrameByName("frame", plant.GetModelInstanceByName("add_scoped_sub::simple_model"))
+  //         .CalcPoseInWorld(*context)
+  //         .GetAsMatrix4()));
+  // EXPECT_TRUE(CompareMatrices(
+  //     md_plant.GetFrameByName("frame", md_plant.GetModelInstanceByName("extra_model"))
+  //         .CalcPoseInWorld(*md_context)
+  //         .GetAsMatrix4(),
+  //     plant.GetFrameByName("frame", plant.GetModelInstanceByName("add_scoped_sub::extra_model"))
+  //         .CalcPoseInWorld(*context)
+  //         .GetAsMatrix4()));
 }
 
 #pragma GCC diagnostic push
