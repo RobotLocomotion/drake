@@ -533,6 +533,31 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       prog.AddLinearConstraint(RowVectorXd::Ones(outgoing.size()), 0.0,
                                is_target ? 0.0 : 1.0, phi_out);
     }
+
+    // Two step loop constraint: ∑ ϕ_u,in - ϕ_uv - ϕ_vu >= 0
+    if (incoming.size() > 0 && !is_source) {
+      RowVectorXd a = RowVectorXd::Ones(incoming.size());
+      VectorXDecisionVariable phi_vars(incoming.size());
+      for (int i = 0; i < static_cast<int>(incoming.size()); ++i) {
+        phi_vars[i] = convex_relaxation ? relaxed_phi.at(incoming[i]->id())
+                                        : incoming[i]->phi_;
+      }
+      for (int i = 0; i < static_cast<int>(incoming.size()); ++i) {
+        const auto* e_in = incoming[i];
+        for (const auto* e_out : outgoing) {
+          if (e_in->u().id() == e_out->v().id()) {
+            const auto old_phi = phi_vars[i];
+            a[i] = -1.0;
+            phi_vars[i] =
+                convex_relaxation ? relaxed_phi.at(e_out->id()) : e_out->phi_;
+            prog.AddLinearConstraint(a, 0.0, 1.0, phi_vars);
+
+            a[i] = 1.0;
+            phi_vars[i] = old_phi;
+          }
+        }
+      }
+    }
   }
 
   MathematicalProgramResult result = solvers::Solve(prog);
