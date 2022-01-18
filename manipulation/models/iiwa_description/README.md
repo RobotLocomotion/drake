@@ -64,7 +64,10 @@ Christian Larsen, Gothenburg, Sweden 2019. (URL:
 <https://odr.chalmers.se/bitstream/20.500.12380/256658/1/256658.pdf>, Accessed
 on 2022-01-15)
 
-For the record, acceleration limits:
+The average acceleration limits are used, and rounded to second decimal
+place.
+
+For the record, te rounded average acceleration limits:
 
 |Axis data  | deg/s^2 | rad/s^2 |
 |-----------|--------:|--------:|
