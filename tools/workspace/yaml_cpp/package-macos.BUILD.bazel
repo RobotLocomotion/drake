@@ -1,5 +1,10 @@
 # -*- python -*-
 
+load(
+    "@drake_detected_os//:os.bzl",
+    "HOMEBREW_PREFIX",
+)
+
 licenses(["notice"])  # X11
 
 cc_library(
@@ -7,8 +12,8 @@ cc_library(
     hdrs = glob(["include/yaml-cpp/**/*.h"]),
     includes = ["include"],
     linkopts = [
-        "-L/usr/local/opt/yaml-cpp/lib",
-        "-Wl,-rpath,/usr/local/opt/yaml-cpp/lib",
+        "-L{}/opt/yaml-cpp/lib".format(HOMEBREW_PREFIX),
+        "-Wl,-rpath,{}/opt/yaml-cpp/lib".format(HOMEBREW_PREFIX),
         "-lyaml-cpp",
     ],
     visibility = ["//visibility:public"],

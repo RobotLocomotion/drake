@@ -11,7 +11,7 @@ def _impl(repository_ctx):
     if os_result.is_macos:
         build_flavor = "macos"
         repository_ctx.symlink(
-            "/usr/local/opt/double-conversion/include",
+            "{}/double-conversion/include".format(os_result.homebrew_prefix),
             "include",
         )
     elif os_result.is_ubuntu:
