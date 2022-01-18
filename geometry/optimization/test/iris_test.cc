@@ -193,6 +193,36 @@ GTEST_TEST(IrisTest, BallInBoxNDims) {
   EXPECT_FALSE(region.PointInSet(query - VectorXd::Constant(N, 0.01)));
 }
 
+GTEST_TEST(IrisTest, ClosestPointFailure) {
+  ConvexSets obstacles;
+  obstacles.emplace_back(
+      Hyperellipsoid::MakeHypersphere(1.457, Vector2d(-4.42, -1.58)));
+  obstacles.emplace_back(
+      Hyperellipsoid::MakeHypersphere(1.200, Vector2d(-3.89, 1.79)));
+  obstacles.emplace_back(
+      Hyperellipsoid::MakeHypersphere(1.185, Vector2d(0.42, -1.70)));
+  ConvexSets shrunk_obstacles;
+  shrunk_obstacles.emplace_back(
+      Hyperellipsoid::MakeHypersphere(0.99 * 1.457, Vector2d(-4.42, -1.58)));
+  shrunk_obstacles.emplace_back(
+      Hyperellipsoid::MakeHypersphere(0.99 * 1.200, Vector2d(-3.89, 1.79)));
+  shrunk_obstacles.emplace_back(
+      Hyperellipsoid::MakeHypersphere(0.99 * 1.185, Vector2d(0.42, -1.70)));
+
+  const HPolyhedron domain =
+      HPolyhedron::MakeBox(Vector2d::Constant(-10.), Vector2d::Constant(10.));
+
+  IrisOptions options;
+  options.require_sample_point_is_contained = true;
+
+  const Vector2d sample(-4.00, 0.25);
+  const HPolyhedron region = Iris(obstacles, sample, domain, options);
+
+  for (const auto& o : shrunk_obstacles) {
+    EXPECT_FALSE(o->IntersectsWith(region));
+  }
+}
+
 class SceneGraphTester : public ::testing::Test {
  protected:
   void SetUp() { source_id_ = scene_graph_.RegisterSource("test"); }
