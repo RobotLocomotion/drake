@@ -65,9 +65,9 @@ Christian Larsen, Gothenburg, Sweden 2019. (URL:
 on 2022-01-15)
 
 The average acceleration limits are used, and rounded to second decimal
-place.
+place for radians.
 
-For the record, te rounded average acceleration limits:
+For the record, the rounded average acceleration limits:
 
 |Axis data  | deg/s^2 | rad/s^2 |
 |-----------|--------:|--------:|
