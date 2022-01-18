@@ -198,8 +198,8 @@ rotations, translations, and transforms using stochastic schemas.
 /// Base class for a single distribution, to be used with YAML archives.
 /// (See class DistributionVector for vector-valued distributions.)
 ///
-/// See @ref serialize_tips for implementation details, especially the
-/// unusually public member fields in our subclasses.
+/// See @ref implementing_serialize "Implementing Serialize" for implementation
+/// details, especially the unusually public member fields of our subclasses.
 class Distribution {
  public:
   virtual ~Distribution();
@@ -346,7 +346,7 @@ double GetDeterministicValue(const DistributionVariant& var);
 /// Base class for a vector of distributions, to be used with YAML archives.
 /// (See class Distribution for scalar-valued distributions.)
 ///
-/// See @ref serialize_tips for implementation details, especially the
+/// See @ref implementing_serialize for implementation details, especially the
 /// unusually public member fields in our subclasses.
 class DistributionVector {
  public:

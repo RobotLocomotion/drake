@@ -20,8 +20,8 @@ namespace schema {
 /// For an overview of configuring stochastic transforms, see
 /// @ref schema_transform and @ref schema_stochastic.
 ///
-/// See @ref serialize_tips for implementation details, especially the
-/// unusually public member fields.
+/// See @ref implementing_serialize "Implementing Serialize" for implementation
+/// details, especially the unusually public member fields.
 class Rotation {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rotation)

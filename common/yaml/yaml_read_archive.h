@@ -24,6 +24,7 @@
 #include "drake/common/unused.h"
 #include "drake/common/yaml/yaml_node.h"
 
+#ifndef DRAKE_DOXYGEN_CXX
 // Forward-declaration from "yaml-cpp/yaml.h".
 // TODO(jwnimmer-tri) Remove these on 2022-03-01 when the deprecated YAML::Node
 // functions in this file are also removed.
@@ -31,6 +32,7 @@ namespace YAML {
 class Node;
 template <typename T> struct convert;
 }  // namespace YAML
+#endif
 
 namespace drake {
 namespace yaml {
