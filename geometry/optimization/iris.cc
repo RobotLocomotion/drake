@@ -77,14 +77,13 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
     int num_constraints = domain.A().rows();
     tangent_matrix = 2.0 * E.A().transpose() * E.A();
     for (int i = 0; i < N; ++i) {
-      const VectorXd point = closest_points.col(scaling[i].second);
-      // Only add a constraint if this point is still within the set that has
-      // been constructed so far on this iteration.
-      if (((A.topRows(num_constraints) * point).array() <=
-           b.head(num_constraints).array())
-              .all()) {
+      // Only add a constraint if this obstacle still has overlap with the set
+      // that has been constructed so far on this iteration.
+      if (HPolyhedron(A.topRows(num_constraints), b.head(num_constraints))
+              .IntersectsWith(*obstacles[scaling[i].second])) {
         // Add the tangent to the (scaled) ellipsoid at this point as a
         // constraint.
+        const VectorXd point = closest_points.col(scaling[i].second);
         A.row(num_constraints) =
             (tangent_matrix * (point - E.center())).normalized();
         b[num_constraints] = A.row(num_constraints) * point;
