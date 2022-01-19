@@ -37,7 +37,7 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L) {
   const T mh = vh / v;        // Mass in each half-sphere (relates to volume).
 
   // The distance dH between Hcm (half-sphere H's center of mass) and
-  // Ccm (cylinder C's center of mass) is from [Kane, Figure A23, pg. 369] as:
+  // Ccm (cylinder C's center of mass) is from [Kane, Figure A23, pg. 369].
   // Note: The capsule's center of mass is coincident with Ccm.
   const T dH = 3.0 / 8.0 * r + L / 2.0;
 
