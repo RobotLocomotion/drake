@@ -521,10 +521,9 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   }
   member_scene_graph().AssignRole(*source_id_, id, perception_props);
 
-  const int visual_index = geometry_id_to_visual_index_.size();
-  geometry_id_to_visual_index_[id] = visual_index;
-  DRAKE_ASSERT(num_bodies() == static_cast<int>(visual_geometries_.size()));
+  DRAKE_ASSERT(static_cast<int>(visual_geometries_.size()) == num_bodies());
   visual_geometries_[body.index()].push_back(id);
+  ++num_visual_geometries_;
   return id;
 }
 
@@ -544,10 +543,6 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   DRAKE_THROW_UNLESS(properties.HasProperty(geometry::internal::kMaterialGroup,
                                             geometry::internal::kFriction));
 
-  const CoulombFriction<double> coulomb_friction =
-      properties.GetProperty<CoulombFriction<double>>(
-          geometry::internal::kMaterialGroup, geometry::internal::kFriction);
-
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
@@ -555,15 +550,9 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
       body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
 
   member_scene_graph().AssignRole(*source_id_, id, std::move(properties));
-  const int collision_index = geometry_id_to_collision_index_.size();
-  geometry_id_to_collision_index_[id] = collision_index;
-  DRAKE_ASSERT(
-      static_cast<int>(default_coulomb_friction_.size()) == collision_index);
-  // TODO(SeanCurtis-TRI): Stop storing coulomb friction in MBP and simply
-  //  acquire it from SceneGraph.
-  default_coulomb_friction_.push_back(coulomb_friction);
-  DRAKE_ASSERT(num_bodies() == static_cast<int>(collision_geometries_.size()));
+  DRAKE_ASSERT(static_cast<int>(collision_geometries_.size()) == num_bodies());
   collision_geometries_[body.index()].push_back(id);
+  ++num_collision_geometries_;
   return id;
 }
 
@@ -1029,9 +1018,9 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     const GeometryId geometryA_id = point_pair.id_A;
     const GeometryId geometryB_id = point_pair.id_B;
 
-    BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
+    const BodyIndex bodyA_index = FindBodyByGeometryId(geometryA_id);
+    const BodyIndex bodyB_index = FindBodyByGeometryId(geometryB_id);
     const Body<T>& bodyA = get_body(bodyA_index);
-    BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
     const Body<T>& bodyB = get_body(bodyB_index);
 
     // Penetration depth > 0 if bodies interpenetrate.
@@ -1119,6 +1108,22 @@ void MultibodyPlant<T>::CalcContactJacobiansCache(
     Jc.row(3 * i + 1) = Jt.row(2 * i + 1);
     Jc.row(3 * i + 2) = Jn.row(i);
   }
+}
+
+template <typename T>
+BodyIndex MultibodyPlant<T>::FindBodyByGeometryId(
+    GeometryId geometry_id) const {
+  if (!geometry_id.is_valid()) {
+    throw std::logic_error(
+        "MultibodyPlant received contact results for a null GeometryId");
+  }
+  const auto iter = geometry_id_to_body_index_.find(geometry_id);
+  if (iter != geometry_id_to_body_index_.end()) {
+    return iter->second;
+  }
+  throw std::logic_error(fmt::format(
+      "MultibodyPlant received contact results for GeometryId {}, but that"
+      " ID is not known to this plant", geometry_id));
 }
 
 template <typename T>
@@ -1389,8 +1394,8 @@ void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
     const GeometryId geometryA_id = pair.id_A;
     const GeometryId geometryB_id = pair.id_B;
 
-    BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
-    BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
+    const BodyIndex bodyA_index = FindBodyByGeometryId(geometryA_id);
+    const BodyIndex bodyB_index = FindBodyByGeometryId(geometryB_id);
 
     internal::BodyNodeIndex bodyA_node_index =
         get_body(bodyA_index).node_index();
@@ -1543,8 +1548,8 @@ void MultibodyPlant<T>::CalcContactResultsDiscretePointPair(
     const GeometryId geometryA_id = pair.id_A;
     const GeometryId geometryB_id = pair.id_B;
 
-    const BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
-    const BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
+    const BodyIndex bodyA_index = FindBodyByGeometryId(geometryA_id);
+    const BodyIndex bodyB_index = FindBodyByGeometryId(geometryB_id);
 
     const Vector3<T> p_WC = 0.5 * (pair.p_WCa + pair.p_WCb);
 
@@ -1613,8 +1618,8 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const GeometryId geometryA_id = pair.id_A;
     const GeometryId geometryB_id = pair.id_B;
 
-    const BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
-    const BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
+    const BodyIndex bodyA_index = FindBodyByGeometryId(geometryA_id);
+    const BodyIndex bodyB_index = FindBodyByGeometryId(geometryB_id);
 
     internal::BodyNodeIndex bodyA_node_index =
         get_body(bodyA_index).node_index();
@@ -1720,8 +1725,8 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
 
     // Get the bodies that the two geometries are affixed to. We'll call these
     // A and B.
-    const BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryM_id);
-    const BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryN_id);
+    const BodyIndex bodyA_index = FindBodyByGeometryId(geometryM_id);
+    const BodyIndex bodyB_index = FindBodyByGeometryId(geometryN_id);
     const Body<T>& bodyA = get_body(bodyA_index);
     const Body<T>& bodyB = get_body(bodyB_index);
 
