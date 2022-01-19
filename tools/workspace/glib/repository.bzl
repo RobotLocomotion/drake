@@ -9,7 +9,8 @@ def glib_repository(
         name,
         licenses = ["restricted"],  # LGPL-2.0+
         modname = "glib-2.0",
-        pkg_config_paths = ["/usr/local/opt/glib/lib/pkgconfig"],
+        pkg_config_paths = [],
+        homebrew_subdir = "opt/glib/lib/pkgconfig",
         **kwargs):
     pkg_config_repository(
         name = name,

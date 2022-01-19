@@ -1,6 +1,4 @@
-# Configure ${PATH} for actions.
-# N.B. Ensure this is consistent with `execute.bzl`.
-build --action_env=PATH=/usr/local/bin:/usr/bin:/bin
+# Common options for macOS, no matter the arch (x86 or arm).
 
 # Suppress numerous "'_FORTIFY_SOURCE' macro redefined" warnings when using
 # sanitizers.

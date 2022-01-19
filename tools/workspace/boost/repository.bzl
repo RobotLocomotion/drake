@@ -1,6 +1,11 @@
 # -*- mode: python -*-
 # vi: set ft=python :
 
+load(
+    "@drake//tools/workspace:os.bzl",
+    "determine_os",
+)
+
 """
 Makes Boost headers available to be used as a C/C++ dependency.
 
@@ -26,15 +31,14 @@ HDRS_PATTERNS = [
     "boost/**/*.ipp",
 ]
 
-LINUX_PREFIX = "/usr"
-
-MAC_OS_X_PREFIX = "/usr/local/opt/boost"
-
 def _impl(repository_ctx):
-    if repository_ctx.os.name == "mac os x":
-        prefix = MAC_OS_X_PREFIX
-    elif repository_ctx.os.name == "linux":
-        prefix = LINUX_PREFIX
+    os_result = determine_os(repository_ctx)
+    if os_result.error != None:
+        fail(os_result.error)
+    elif os_result.is_macos:
+        prefix = "{}/opt/boost".format(os_result.homebrew_prefix)
+    elif os_result.is_ubuntu or os_result.is_manylinux:
+        prefix = "/usr"
     else:
         fail(
             "Operating system is NOT supported",
