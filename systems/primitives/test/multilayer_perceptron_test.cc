@@ -177,9 +177,30 @@ GTEST_TEST(MultilayerPerceptionTest, Backprop) {
   }
 }
 
+GTEST_TEST(MultilayerPereceptronTest, BatchOutput) {
+  for (const auto& type : {kIdentity, kReLU, kTanh}) {
+    std::vector<int> layers({2, 3, 3, 2});
+    MultilayerPerceptron<double> mlp(layers, type);
+    auto context = mlp.CreateDefaultContext();
+
+    RandomGenerator generator(243);
+    mlp.SetRandomContext(context.get(), &generator);
+
+    Eigen::Matrix<double, 2, 3> X, Y, Y_desired;
+    X << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6;
+    for (int i = 0; i < 3; ++i) {
+      mlp.get_input_port().FixValue(context.get(), X.col(i));
+      Y_desired.col(i) = mlp.get_output_port().Eval(*context);
+    }
+    mlp.BatchOutput(*context, X, &Y);
+
+    EXPECT_TRUE(CompareMatrices(Y, Y_desired, 1e-14));
+  }
+}
+
 GTEST_TEST(MultilayerPerceptronTest, ScalarConversion) {
   MultilayerPerceptron<double> mlp({1, 2, 3, 4},
-                                   PerceptronActivationType::kReLU);
+                                   kReLU);
 
   auto mlp_ad = mlp.ToAutoDiffXd();
   EXPECT_EQ(mlp_ad->get_input_port().size(), 1);
