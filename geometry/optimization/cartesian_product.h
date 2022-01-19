@@ -90,6 +90,17 @@ class CartesianProduct final : public ConvexSet {
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
       const symbolic::Variable& t) const final;
 
+  std::vector<solvers::Binding<solvers::Constraint>>
+  DoAddPointInNonnegativeScalingConstraints(
+      solvers::MathematicalProgram* prog,
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+      const Eigen::Ref<const Eigen::RowVectorXd>& b,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const final {
+    return ConvexSet::DoAddPointInNonnegativeScalingConstraints(prog, A, x, b,
+                                                                t);
+  }
+
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
 

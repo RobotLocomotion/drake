@@ -213,6 +213,35 @@ VPolytope::DoAddPointInNonnegativeScalingConstraints(
   return constraints;
 }
 
+std::vector<solvers::Binding<solvers::Constraint>>
+VPolytope::DoAddPointInNonnegativeScalingConstraints(
+    solvers::MathematicalProgram* prog,
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+    const Eigen::Ref<const Eigen::RowVectorXd>& b,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const {
+  std::vector<solvers::Binding<solvers::Constraint>> constraints;
+  const int n = ambient_dimension();
+  const int m = vertices_.cols();
+  VectorXDecisionVariable alpha = prog->NewContinuousVariables(m, "a");
+  // αᵢ ≥ 0.
+  constraints.emplace_back(prog->AddBoundingBoxConstraint(
+      0, std::numeric_limits<double>::infinity(), alpha));
+  // v α = A * x.
+  MatrixXd A_combination(n, m + x.size());
+  A_combination.leftCols(m) = vertices_;
+  A_combination.rightCols(x.size()) = -A;
+  constraints.emplace_back(prog->AddLinearEqualityConstraint(
+      A_combination, VectorXd::Zero(n), {alpha, x}));
+
+  // ∑ αᵢ = b * t.
+  RowVectorXd a = RowVectorXd::Ones(m + t.size());
+  a.tail(t.size()) = -b;
+  constraints.emplace_back(
+      prog->AddLinearEqualityConstraint(a, 0.0, {alpha, t}));
+  return constraints;
+}
+
 std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
 VPolytope::DoToShapeWithPose() const {
   throw std::runtime_error(

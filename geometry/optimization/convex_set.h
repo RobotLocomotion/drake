@@ -126,6 +126,28 @@ class ConvexSet : public ShapeReifier {
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
       const symbolic::Variable& t) const;
 
+  /** Let S be this convex set.  When S is bounded, this method adds the convex
+  constraints to imply
+  @verbatim
+  A * x ∈ b * t S,
+  b * t ≥ 0,
+  @endverbatim
+  where A is a constant n-by-m matrix (with n the ambient_dimension), x is a
+  point in ℜᵐ, b is a constant row-vector and t is a vector.
+
+  When S is unbounded, then the behavior is almost identical, except when b *
+  t=0. In this case, the constraints imply b * t ≥ 0, A * x ∈ b * t S ⊕ rec(S),
+  where rec(S) is the recession cone of S (the asymptotic directions in which S
+  is not bounded) and ⊕ is the Minkowski sum.  For b * t > 0, this is equivalent
+  to A * x ∈ b * t S, but for b * t = 0, we have only A * x ∈ rec(S). */
+  std::vector<solvers::Binding<solvers::Constraint>>
+  AddPointInNonnegativeScalingConstraints(
+      solvers::MathematicalProgram* prog,
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+      const Eigen::Ref<const Eigen::RowVectorXd>& b,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const;
+
   /** Constructs a Shape and a pose of the set in the world frame for use in
   the SceneGraph geometry ecosystem.
 
@@ -174,6 +196,14 @@ class ConvexSet : public ShapeReifier {
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
       const symbolic::Variable& t) const = 0;
+
+  virtual std::vector<solvers::Binding<solvers::Constraint>>
+  DoAddPointInNonnegativeScalingConstraints(
+      solvers::MathematicalProgram* prog,
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+      const Eigen::Ref<const Eigen::RowVectorXd>& b,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const;
 
   virtual std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
   DoToShapeWithPose() const = 0;

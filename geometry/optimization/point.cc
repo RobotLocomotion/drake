@@ -78,6 +78,26 @@ Point::DoAddPointInNonnegativeScalingConstraints(
   return constraints;
 }
 
+std::vector<Binding<Constraint>>
+Point::DoAddPointInNonnegativeScalingConstraints(
+    solvers::MathematicalProgram* prog,
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+    const Eigen::Ref<const Eigen::RowVectorXd>& b,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const {
+  std::vector<Binding<Constraint>> constraints;
+  // A*x == b*t*x_.
+  const int n = ambient_dimension();
+  const int m = x.size();
+  const int p = t.size();
+  MatrixXd Aeq(n, m + p);
+  Aeq.leftCols(m) = A;
+  Aeq.rightCols(p) = -x_ * b;
+  constraints.emplace_back(
+      prog->AddLinearEqualityConstraint(Aeq, VectorXd::Zero(n), {x, t}));
+  return constraints;
+}
+
 std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
 Point::DoToShapeWithPose() const {
   return std::make_pair(std::make_unique<Sphere>(0.0),
