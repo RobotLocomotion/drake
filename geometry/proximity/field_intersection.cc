@@ -74,23 +74,6 @@ bool CalcEquilibriumPlane(int element0,
   return true;
 }
 
-// TODO(16374): Refactor ClipPolygonByHalfSpace() to share between
-//  mesh_intersection and field_intersection instead of this hack.
-template<typename MeshType>
-class SurfaceVolumeIntersectorTester {
- public:
-  using T = typename MeshType::ScalarType;
-
-  void ClipPolygonByHalfSpace(const std::vector<Vector3<T>>& polygon_vertices_F,
-                              const PosedHalfSpace<double>& H_F,
-                              std::vector<Vector3<T>>* output_vertices_F) {
-    intersect_.ClipPolygonByHalfSpace(polygon_vertices_F, H_F,
-                                      output_vertices_F);
-  }
- private:
-  SurfaceVolumeIntersector<MeshType> intersect_;
-};
-
 template <typename T>
 std::vector<Vector3<T>> IntersectTetrahedra(
     int element0, const VolumeMeshFieldLinear<double, double>& field0_M,
@@ -133,10 +116,7 @@ std::vector<Vector3<T>> IntersectTetrahedra(
     const Vector3<double> triangle_outward_normal_M =
         (p_MB - p_MA).cross(p_MC - p_MA);
     PosedHalfSpace<double> half_space_M(triangle_outward_normal_M, p_MA);
-    // TODO(DamrongGuoy) When 16374 merges, use ClipPolygonByHalfSpace()
-    //  directly without SurfaceVolumeIntersector.
-    SurfaceVolumeIntersectorTester<TriangleSurfaceMesh<T>>()
-        .ClipPolygonByHalfSpace(*in_M, half_space_M, out_M);
+    ClipPolygonByHalfSpace(*in_M, half_space_M, out_M);
     std::swap(in_M, out_M);
   }
   polygon_M = in_M;
