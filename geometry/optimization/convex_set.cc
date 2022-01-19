@@ -45,6 +45,25 @@ ConvexSet::AddPointInNonnegativeScalingConstraints(
   return constraints;
 }
 
+std::vector<solvers::Binding<solvers::Constraint>>
+ConvexSet::AddPointInNonnegativeScalingConstraints(
+    solvers::MathematicalProgram* prog,
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b,
+    const Eigen::Ref<const Eigen::VectorXd>& c, double d,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const {
+  DRAKE_DEMAND(A.rows() == ambient_dimension());
+  DRAKE_DEMAND(A.rows() == b.rows());
+  DRAKE_DEMAND(A.cols() == x.size());
+  DRAKE_DEMAND(c.rows() == t.size());
+  std::vector<solvers::Binding<solvers::Constraint>> constraints =
+      DoAddPointInNonnegativeScalingConstraints(prog, A, b, c, d, x, t);
+  constraints.emplace_back(prog->AddLinearConstraint(
+      c.transpose(), -d, std::numeric_limits<double>::infinity(), t));
+  return constraints;
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
