@@ -37,7 +37,7 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L) {
   const T mh = vh / v;        // Mass in each half-sphere (relates to volume).
 
   // The distance dH between Hcm (the half-sphere H's center of mass) and Ccm
-  // (the cylinder C's center of mass) is from [Kane, Figure A23, pg. 369] is
+  // (the cylinder C's center of mass) is from [Kane, Figure A23, pg. 369].
   // dH = 3.0 / 8.0 * r + L / 2.0;
   const T dH = 0.375 * r + 0.5 * L;
 
@@ -57,7 +57,7 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L) {
   // Note: The capsule's center of mass is coincident with Ccm.
   // Ixx = Ic_xx + 2 Ih_xx + 2 mh dH²
   // Izz = Ic_zz + 2 Ih_zz;
-  
+
   // The previous algorithm for Ixx and Izz can be algebraically manipulated to
   // a more efficient result by factoring on mh and mc and computing numbers as
   const T Ixx = mc * (L*L/12.0 + 0.25*r2) + mh * (0.51875*r2 + 2*dH*dH);
