@@ -210,6 +210,26 @@ HPolyhedron::DoAddPointInNonnegativeScalingConstraints(
   return constraints;
 }
 
+std::vector<Binding<Constraint>>
+HPolyhedron::DoAddPointInNonnegativeScalingConstraints(
+    MathematicalProgram* prog, const Eigen::Ref<const MatrixXd>& A_x,
+    const Eigen::Ref<const VectorXd>& b_x, const Eigen::Ref<const VectorXd>& c,
+    double d, const Eigen::Ref<const VectorXDecisionVariable>& x,
+    const Eigen::Ref<const VectorXDecisionVariable>& t) const {
+  std::vector<Binding<Constraint>> constraints;
+  // A (A_x x + b_x) ≤ (c' t + d) b, written as [A * A_x, -b * c'][x;t] ≤ d * b
+  // - A * b_x
+  const int m = A_.rows();
+  MatrixXd A_bar(m, x.size() + t.size());
+  A_bar.leftCols(x.size()) = A_ * A_x;
+  A_bar.rightCols(t.size()) = -b_ * c.transpose();
+  VectorXd b_bar = d * b_ - A_ * b_x;
+  constraints.emplace_back(prog->AddLinearConstraint(
+      A_bar, VectorXd::Constant(m, -std::numeric_limits<double>::infinity()),
+      b_bar, {x, t}));
+  return constraints;
+}
+
 std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
 HPolyhedron::DoToShapeWithPose() const {
   throw std::runtime_error(

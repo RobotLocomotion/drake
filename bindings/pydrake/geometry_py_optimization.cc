@@ -48,9 +48,27 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("prog"), py::arg("vars"),
             cls_doc.AddPointInSetConstraints.doc)
         .def("AddPointInNonnegativeScalingConstraints",
-            &ConvexSet::AddPointInNonnegativeScalingConstraints,
+            overload_cast_explicit<
+                std::vector<solvers::Binding<solvers::Constraint>>,
+                solvers::MathematicalProgram*,
+                const Eigen::Ref<const solvers::VectorXDecisionVariable>&,
+                const symbolic::Variable&>(
+                &ConvexSet::AddPointInNonnegativeScalingConstraints),
             py::arg("prog"), py::arg("x"), py::arg("t"),
-            cls_doc.AddPointInNonnegativeScalingConstraints.doc)
+            cls_doc.AddPointInNonnegativeScalingConstraints.doc_3args)
+        .def("AddPointInNonnegativeScalingConstraints",
+            overload_cast_explicit<
+                std::vector<solvers::Binding<solvers::Constraint>>,
+                solvers::MathematicalProgram*,
+                const Eigen::Ref<const Eigen::MatrixXd>&,
+                const Eigen::Ref<const Eigen::VectorXd>&,
+                const Eigen::Ref<const Eigen::VectorXd>&, double,
+                const Eigen::Ref<const solvers::VectorXDecisionVariable>&,
+                const Eigen::Ref<const solvers::VectorXDecisionVariable>&>(
+                &ConvexSet::AddPointInNonnegativeScalingConstraints),
+            py::arg("prog"), py::arg("A"), py::arg("b"), py::arg("c"),
+            py::arg("d"), py::arg("x"), py::arg("t"),
+            cls_doc.AddPointInNonnegativeScalingConstraints.doc_7args)
         .def("ToShapeWithPose", &ConvexSet::ToShapeWithPose,
             cls_doc.ToShapeWithPose.doc);
     // Note: We use the copyable_unique_ptr constructor which calls Clone() on
