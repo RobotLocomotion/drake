@@ -21,7 +21,8 @@ multibody::ModelInstanceIndex LoadIiwa14CanonicalModel(
   return parser.AddModelFromFile(canonical_model_file);
 }
 
-// Compares velocity, effort and position limits of two given actuators
+// Compares velocity, acceleration, effort and position limits of two given
+// actuators.
 void CompareActuatorLimits(const multibody::JointActuator<double>& joint_a,
                            const multibody::JointActuator<double>& joint_b) {
   EXPECT_NE(&joint_a, &joint_b);  // Different instance.
@@ -34,6 +35,10 @@ void CompareActuatorLimits(const multibody::JointActuator<double>& joint_a,
   EXPECT_TRUE(CompareMatrices(joint_a.joint().position_upper_limits(),
                               joint_b.joint().position_upper_limits()));
   EXPECT_EQ(joint_a.effort_limit(), joint_b.effort_limit());
+  EXPECT_TRUE(CompareMatrices(joint_a.joint().acceleration_lower_limits(),
+            joint_b.joint().acceleration_lower_limits()));
+  EXPECT_TRUE(CompareMatrices(joint_a.joint().acceleration_upper_limits(),
+            joint_b.joint().acceleration_upper_limits()));
 }
 
 // Tests that KUKA LBR iiwa14 models have consistent joint limits.

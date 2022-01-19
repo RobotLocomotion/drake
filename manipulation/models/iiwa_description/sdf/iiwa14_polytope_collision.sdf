@@ -73,6 +73,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <upper>2.96705972839</upper>
           <effort>320</effort>
           <velocity>1.4835298641951802</velocity>
+          <drake:acceleration>8.57</drake:acceleration>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -132,6 +133,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <upper>2.09439510239</upper>
           <effort>320</effort>
           <velocity>1.4835298641951802</velocity>
+          <drake:acceleration>8.57</drake:acceleration>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -202,6 +204,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <upper>2.96705972839</upper>
           <effort>176</effort>
           <velocity>1.7453292519943295</velocity>
+          <drake:acceleration>8.74</drake:acceleration>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -261,6 +264,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <upper>2.09439510239</upper>
           <effort>176</effort>
           <velocity>1.3089969389957472</velocity>
+          <drake:acceleration>11.36</drake:acceleration>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -331,6 +335,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <upper>2.96705972839</upper>
           <effort>110</effort>
           <velocity>2.2689280275926285</velocity>
+          <drake:acceleration>12.23</drake:acceleration>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -390,6 +395,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <upper>2.09439510239</upper>
           <effort>40</effort>
           <velocity>2.356194490192345"</velocity>
+          <drake:acceleration>15.72</drake:acceleration>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -455,9 +461,9 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <limit>
           <lower>-3.05432619099</lower>
           <upper>3.05432619099</upper>
-
           <effort>40</effort>
           <velocity>2.356194490192345"</velocity>
+          <drake:acceleration>15.72</drake:acceleration>
         </limit>
         <dynamics>
           <damping>0</damping>
