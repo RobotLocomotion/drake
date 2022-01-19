@@ -399,6 +399,55 @@ GTEST_TEST(VPolytopeTest, NonnegativeScalingTest) {
   EXPECT_FALSE(PointInScaledSet(2.01, 2.0));
 }
 
+// Returns true iff a scaled version of the upper corner is confirmed to be
+// inside the scaled box.
+bool PointInTransformedScaledSet(double x_scale, Vector2d t_guess) {
+  const Vector3d lb{1, 1, 1}, ub{2, 3, 4};
+  VPolytope V = VPolytope::MakeBox(lb, ub);
+
+  MathematicalProgram prog;
+  Eigen::MatrixXd A(3, 2);
+  // clang-format off
+  A << 1, 0,
+       0, 1,
+       2, 0;
+  // clang-format on
+  Eigen::Vector3d b = Eigen::Vector3d::Zero();
+  auto x = prog.NewContinuousVariables(2, "x");
+  Eigen::Vector2d c(1, -1);
+  double d = 0;
+  auto t = prog.NewContinuousVariables(2, "t");
+
+  std::vector<Binding<Constraint>> constraints =
+      V.AddPointInNonnegativeScalingConstraints(&prog, A, b, c, d, x, t);
+
+  EXPECT_EQ(constraints.size(), 4);
+
+  prog.AddBoundingBoxConstraint(x_scale * ub.head(2), x_scale * ub.head(2), x);
+  prog.AddBoundingBoxConstraint(t_guess, t_guess, t);
+  auto result = solvers::Solve(prog);
+  return result.is_success();
+}
+
+GTEST_TEST(VPolytopeTest, NonnegativeScalingTest2) {
+  // Note: I have to call Solve on these (not just check the constraints)
+  // because of the slack variables.
+  EXPECT_TRUE(PointInTransformedScaledSet(.99, Vector2d(1.0, 0)));
+  EXPECT_TRUE(PointInTransformedScaledSet(.99, Vector2d(0, -1.0)));
+  EXPECT_FALSE(PointInTransformedScaledSet(1.01, Vector2d(1.0, 0)));
+  EXPECT_FALSE(PointInTransformedScaledSet(1.01, Vector2d(0, -1.0)));
+  EXPECT_FALSE(PointInTransformedScaledSet(.99, Vector2d(-0.01, 0)));
+  EXPECT_FALSE(PointInTransformedScaledSet(.99, Vector2d(0, -0.01)));
+  EXPECT_TRUE(PointInTransformedScaledSet(.49, Vector2d(.5, 0)));
+  EXPECT_TRUE(PointInTransformedScaledSet(.49, Vector2d(0, -0.5)));
+  EXPECT_FALSE(PointInTransformedScaledSet(.51, Vector2d(.5, 0)));
+  EXPECT_FALSE(PointInTransformedScaledSet(.51, Vector2d(0, -0.5)));
+  EXPECT_TRUE(PointInTransformedScaledSet(1.99, Vector2d(2.0, 0)));
+  EXPECT_TRUE(PointInTransformedScaledSet(1.99, Vector2d(0, -2.0)));
+  EXPECT_FALSE(PointInTransformedScaledSet(2.01, Vector2d(2.0, 0)));
+  EXPECT_FALSE(PointInTransformedScaledSet(2.01, Vector2d(0, -2.0)));
+}
+
 GTEST_TEST(VPolytopeTest, CalcVolume) {
   const double tol{1E-6};
   EXPECT_NEAR(VPolytope::MakeUnitBox(3).CalcVolume(), 8, tol);

@@ -26,7 +26,14 @@ class TestGeometryOptimization(unittest.TestCase):
         self.b = [1.0, 1.0, 1.0]
         self.prog = MathematicalProgram()
         self.x = self.prog.NewContinuousVariables(3, "x")
-        self.t = self.prog.NewContinuousVariables(1, "t")
+        self.t = self.prog.NewContinuousVariables(1, "t")[0]
+
+        self.Ay = np.array([[1., 0.], [0., 1.], [1., 0.]])
+        self.by = np.ones(3)
+        self.cz = np.ones(2)
+        self.dz = 1.
+        self.y = self.prog.NewContinuousVariables(2, "y")
+        self.z = self.prog.NewContinuousVariables(2, "z")
 
     def test_point_convex_set(self):
         p = np.array([11.1, 12.2, 13.3])
@@ -48,6 +55,14 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(hpoly.PointInSet(x=[0, 0, 0], tol=0.0))
         self.assertFalse(hpoly.IsBounded())
         hpoly.AddPointInSetConstraints(self.prog, self.x)
+        constraints = hpoly.AddPointInNonnegativeScalingConstraints(
+            self.prog, self.x, self.t)
+        self.assertGreaterEqual(len(constraints), 2)
+        self.assertIsInstance(constraints[0], Binding[Constraint])
+        constraints = hpoly.AddPointInNonnegativeScalingConstraints(
+            self.prog, self.Ay, self.by, self.cz, self.dz, self.y, self.z)
+        self.assertGreaterEqual(len(constraints), 2)
+        self.assertIsInstance(constraints[0], Binding[Constraint])
         with self.assertRaisesRegex(
                 RuntimeError, ".*not implemented yet for HPolyhedron.*"):
             hpoly.ToShapeWithPose()
@@ -77,6 +92,14 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(ellipsoid.center(), self.b)
         self.assertTrue(ellipsoid.PointInSet(x=self.b, tol=0.0))
         ellipsoid.AddPointInSetConstraints(self.prog, self.x)
+        constraints = ellipsoid.AddPointInNonnegativeScalingConstraints(
+            self.prog, self.x, self.t)
+        self.assertGreaterEqual(len(constraints), 2)
+        self.assertIsInstance(constraints[0], Binding[Constraint])
+        constraints = ellipsoid.AddPointInNonnegativeScalingConstraints(
+            self.prog, self.Ay, self.by, self.cz, self.dz, self.y, self.z)
+        self.assertGreaterEqual(len(constraints), 2)
+        self.assertIsInstance(constraints[0], Binding[Constraint])
         shape, pose = ellipsoid.ToShapeWithPose()
         self.assertIsInstance(shape, Ellipsoid)
         self.assertIsInstance(pose, RigidTransform)
@@ -115,6 +138,15 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(vpoly.vertices(), vertices)
         self.assertTrue(vpoly.PointInSet(x=[1.0, 5.0], tol=1e-8))
         vpoly.AddPointInSetConstraints(self.prog, self.x[0:2])
+        constraints = vpoly.AddPointInNonnegativeScalingConstraints(
+            self.prog, self.x[:2], self.t)
+        self.assertGreaterEqual(len(constraints), 2)
+        self.assertIsInstance(constraints[0], Binding[Constraint])
+        constraints = vpoly.AddPointInNonnegativeScalingConstraints(
+            self.prog, self.Ay[:2], self.by[:2], self.cz, self.dz, self.y,
+            self.z)
+        self.assertGreaterEqual(len(constraints), 2)
+        self.assertIsInstance(constraints[0], Binding[Constraint])
         v_box = mut.VPolytope.MakeBox(
             lb=[-1, -1, -1], ub=[1, 1, 1])
         self.assertTrue(v_box.PointInSet([0, 0, 0]))
