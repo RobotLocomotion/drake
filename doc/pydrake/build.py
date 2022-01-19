@@ -114,7 +114,10 @@ def _build(*, out_dir, temp_dir, modules):
     assert len(os.listdir(out_dir)) == 0
 
     sphinx_build = "/usr/share/sphinx/scripts/python3/sphinx-build"
-    assert os.path.isfile(sphinx_build)
+    if not os.path.isfile(sphinx_build):
+        print("Please re-run 'sudo setup/ubuntu/install_prereqs.sh' with the "
+              "'--with-doc-only' flag")
+        sys.exit(1)
 
     # Create a hermetic copy of our input.  This helps ensure that only files
     # listed in BUILD.bazel will render onto the website.
