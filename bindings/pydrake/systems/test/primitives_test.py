@@ -556,6 +556,12 @@ class TestGeneral(unittest.TestCase):
                                             dloss_dparams=dloss_dparams)
         self.assertTrue(dloss_dparams.any())  # No longer all zero.
 
+        Y = np.asfortranarray(np.eye(3))
+        mlp.BatchOutput(context=context, X=np.array([[0.1, 0.3, 0.4]]), Y=Y)
+        self.assertFalse(np.allclose(Y, np.eye(3)))
+        Y2 = mlp.BatchOutput(context=context, X=np.array([[0.1, 0.3, 0.4]]))
+        np.testing.assert_array_equal(Y, Y2)
+
         mlp2 = MultilayerPerceptron(layers=[1, 2, 3],
                                     activation_types=[
                                         PerceptronActivationType.kReLU,
