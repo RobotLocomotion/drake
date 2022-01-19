@@ -156,26 +156,52 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
     next_fem_state_cache_indexes_.emplace_back(
         next_fem_state_cache_entry.cache_index());
 
-    /* Allocates and calculates the free-motion tangent matrix for the
-     deformable body. */
-    EigenSparseMatrix<T> model_tangent_matrix = {
-        Eigen::SparseMatrix<T>(fem_model.num_dofs(), fem_model.num_dofs())};
-    fem_model.SetTangentMatrixSparsityPattern(&(model_tangent_matrix.data));
-    const auto& tangent_matrix_cache_entry = this->DeclareCacheEntry(
-        fmt::format("Free motion FEM tangent matrix {}", deformable_body_id),
-        systems::ValueProducer(model_tangent_matrix,
-                               std::function<void(const systems::Context<T>&,
-                                                  EigenSparseMatrix<T>*)>{
-                                   [this, deformable_body_id](
-                                       const systems::Context<T>& context,
-                                       EigenSparseMatrix<T>* tangent_matrix) {
-                                     this->CalcFreeMotionTangentMatrix(
-                                         context, deformable_body_id,
-                                         tangent_matrix);
-                                   }}),
-        {free_motion_cache_entry.ticket()});
-    tangent_matrix_cache_indexes_.emplace_back(
-        tangent_matrix_cache_entry.cache_index());
+    /* Allocates the free-motion tangent matrix for the deformable body. Use
+     PETSc matrix to store the tangent matrix for performance when the scalar
+     type is double. Use Eigen::SparseMatrix otherwise. */
+    systems::DependencyTicket tangent_matrix_cache_entry_ticket;
+    if constexpr (std::is_same_v<T, double>) {
+      std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix>
+          model_tangent_matrix =
+              fem_model.MakePetscSymmetricBlockSparseTangentMatrix();
+      const auto& tangent_matrix_cache_entry = this->DeclareCacheEntry(
+          fmt::format("Free motion FEM tangent matrix {}", deformable_body_id),
+          systems::ValueProducer(
+              *model_tangent_matrix,
+              std::function<void(const systems::Context<T>&,
+                                 internal::PetscSymmetricBlockSparseMatrix*)>{
+                  [this, deformable_body_id](
+                      const systems::Context<T>& context,
+                      internal::PetscSymmetricBlockSparseMatrix*
+                          tangent_matrix) {
+                    this->CalcFreeMotionTangentMatrix(
+                        context, deformable_body_id, tangent_matrix);
+                  }}),
+          {free_motion_cache_entry.ticket()});
+      tangent_matrix_cache_indexes_.emplace_back(
+          tangent_matrix_cache_entry.cache_index());
+      tangent_matrix_cache_entry_ticket = tangent_matrix_cache_entry.ticket();
+    } else {
+      EigenSparseMatrix<T> model_tangent_matrix = {
+          Eigen::SparseMatrix<T>(fem_model.num_dofs(), fem_model.num_dofs())};
+      fem_model.SetTangentMatrixSparsityPattern(&(model_tangent_matrix.data));
+      const auto& tangent_matrix_cache_entry = this->DeclareCacheEntry(
+          fmt::format("Free motion FEM tangent matrix {}", deformable_body_id),
+          systems::ValueProducer(model_tangent_matrix,
+                                 std::function<void(const systems::Context<T>&,
+                                                    EigenSparseMatrix<T>*)>{
+                                     [this, deformable_body_id](
+                                         const systems::Context<T>& context,
+                                         EigenSparseMatrix<T>* tangent_matrix) {
+                                       this->CalcFreeMotionTangentMatrix(
+                                           context, deformable_body_id,
+                                           tangent_matrix);
+                                     }}),
+          {free_motion_cache_entry.ticket()});
+      tangent_matrix_cache_indexes_.emplace_back(
+          tangent_matrix_cache_entry.cache_index());
+      tangent_matrix_cache_entry_ticket = tangent_matrix_cache_entry.ticket();
+    }
 
     /* Calculates the Schur complement of the free-motion tangent matrix for the
      deformable body. */
@@ -191,7 +217,7 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
                       context, deformable_body_id, schur_complement);
                 }}),
             {free_motion_cache_entry.ticket(),
-             tangent_matrix_cache_entry.ticket()});
+             tangent_matrix_cache_entry_ticket});
     tangent_matrix_schur_complement_cache_indexes_.emplace_back(
         tangent_matrix_schur_complement_cache_entry.cache_index());
   }
@@ -570,10 +596,34 @@ template <typename T>
 void DeformableRigidManager<T>::CalcFreeMotionTangentMatrix(
     const systems::Context<T>& context, DeformableBodyIndex index,
     EigenSparseMatrix<T>* tangent_matrix) const {
-  const FemStateBase<T>& free_motion_fem_state =
-      EvalFreeMotionFemStateBase(context, index);
-  const FemModelBase<T>& fem_model = deformable_model_->fem_model(index);
-  fem_model.CalcTangentMatrix(free_motion_fem_state, &(tangent_matrix->data));
+  if constexpr (std::is_same_v<T, double>) {
+    unused(context, index, tangent_matrix);
+    throw std::logic_error(
+        "The PETSc overload of `CalcFreeMotionTangentMatrix()` should be used "
+        "for scalar type double.");
+  } else {
+    const FemStateBase<T>& free_motion_fem_state =
+        EvalFreeMotionFemStateBase(context, index);
+    const FemModelBase<T>& fem_model = deformable_model_->fem_model(index);
+    fem_model.CalcTangentMatrix(free_motion_fem_state, &(tangent_matrix->data));
+  }
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcFreeMotionTangentMatrix(
+    const systems::Context<T>& context, DeformableBodyIndex index,
+    internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const {
+  if constexpr (!std::is_same_v<T, double>) {
+    unused(context, index, tangent_matrix);
+    throw std::logic_error(
+        "The Eigen::SparseMatrix overload of `CalcFreeMotionTangentMatrix()` "
+        "should be used for scalar types other than double.");
+  } else {
+    const FemStateBase<T>& free_motion_fem_state =
+        EvalFreeMotionFemStateBase(context, index);
+    const FemModelBase<T>& fem_model = deformable_model_->fem_model(index);
+    fem_model.CalcTangentMatrix(free_motion_fem_state, tangent_matrix);
+  }
 }
 
 template <typename T>
@@ -581,7 +631,10 @@ void DeformableRigidManager<T>::CalcFreeMotionTangentMatrixSchurComplement(
     const systems::Context<T>& context, DeformableBodyIndex index,
     internal::SchurComplement<T>* schur_complement) const {
   const Eigen::SparseMatrix<T>& free_motion_tangent_matrix =
-      EvalFreeMotionTangentMatrix(context, index);
+      this->plant()
+          .get_cache_entry(tangent_matrix_cache_indexes_[index])
+          .template Eval<EigenSparseMatrix<T>>(context)
+          .data;
   const std::vector<internal::DeformableContactData<T>>&
       deformable_contact_data = EvalDeformableRigidContact(context);
   /* Reindex the deformable dofs so that the tangent matrix assumes a block
@@ -601,6 +654,34 @@ void DeformableRigidManager<T>::CalcFreeMotionTangentMatrixSchurComplement(
                                                dofs_in_contact),
       permuted_tangent_matrix.bottomRightCorner(total_dofs - dofs_in_contact,
                                                 total_dofs - dofs_in_contact));
+}
+
+template <>
+void DeformableRigidManager<double>::CalcFreeMotionTangentMatrixSchurComplement(
+    const systems::Context<double>& context, DeformableBodyIndex index,
+    internal::SchurComplement<double>* schur_complement) const {
+  const internal::PetscSymmetricBlockSparseMatrix& free_motion_tangent_matrix =
+      this->plant()
+          .get_cache_entry(tangent_matrix_cache_indexes_[index])
+          .template Eval<internal::PetscSymmetricBlockSparseMatrix>(context);
+  const std::vector<internal::DeformableContactData<double>>&
+      deformable_contact_data = EvalDeformableRigidContact(context);
+  const auto& body_contact_data = deformable_contact_data[index];
+  /* Reindex the deformable dofs so that the tangent matrix assumes a block
+   structure associated with the contact pattern that facilitates subsequent
+   computations. */
+  const std::vector<int>& permuted_to_original_indexes =
+      body_contact_data.permuted_to_original_indexes();
+  const std::vector<int> participating_vertices(
+      permuted_to_original_indexes.begin(),
+      permuted_to_original_indexes.begin() +
+          body_contact_data.num_vertices_in_contact());
+  const std::vector<int> non_participating_vertices(
+      permuted_to_original_indexes.begin() +
+          body_contact_data.num_vertices_in_contact(),
+      permuted_to_original_indexes.end());
+  *schur_complement = free_motion_tangent_matrix.CalcSchurComplement(
+      non_participating_vertices, participating_vertices);
 }
 
 template <typename T>
@@ -658,8 +739,8 @@ DeformableRigidManager<T>::CalcDeformableRigidContactPair(
       deformable_model_->proximity_properties()[deformable_id];
   const auto [deformable_stiffness, deformable_dissipation] =
       get_point_contact_parameters(deformable_props);
-  const CoulombFriction<T> deformable_mu =
-      deformable_props.GetProperty<CoulombFriction<T>>(
+  const CoulombFriction<double> deformable_mu =
+      deformable_props.GetProperty<CoulombFriction<double>>(
           geometry::internal::kMaterialGroup, geometry::internal::kFriction);
 
   /* Extract the stiffness, dissipation and friction parameters of the rigid
@@ -668,8 +749,8 @@ DeformableRigidManager<T>::CalcDeformableRigidContactPair(
       collision_objects_.proximity_properties(rigid_id);
   const auto [rigid_stiffness, rigid_dissipation] =
       get_point_contact_parameters(rigid_proximity_properties);
-  const CoulombFriction<T> rigid_mu =
-      rigid_proximity_properties.GetProperty<CoulombFriction<T>>(
+  const CoulombFriction<double> rigid_mu =
+      rigid_proximity_properties.GetProperty<CoulombFriction<double>>(
           geometry::internal::kMaterialGroup, geometry::internal::kFriction);
 
   /* Combine the stiffness, dissipation and friction parameters for the
@@ -677,7 +758,7 @@ DeformableRigidManager<T>::CalcDeformableRigidContactPair(
   auto [k, d] = multibody::internal::CombinePointContactParameters(
       deformable_stiffness, rigid_stiffness, deformable_dissipation,
       rigid_dissipation);
-  const CoulombFriction<T> mu =
+  const CoulombFriction<double> mu =
       CalcContactFrictionFromSurfaceProperties(deformable_mu, rigid_mu);
   return internal::DeformableRigidContactPair<T>(std::move(contact_surface),
                                                  rigid_id, deformable_id, k, d,
