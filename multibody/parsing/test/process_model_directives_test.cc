@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <stdexcept>
+#include <iostream>
 
 #include <gtest/gtest.h>
 
@@ -185,6 +186,7 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTestFromWorldFile) {
                          nullptr, make_parser(&md_plant).get());
   md_plant.Finalize();
   auto diagram = builder.Build();
+  auto md_context = md_plant.CreateDefaultContext();
 
   MultibodyPlant<double> plant(0.0);
   const std::string sdf_name = FindResourceOrThrow(
@@ -194,45 +196,54 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTestFromWorldFile) {
   plant.Finalize();
   auto context = plant.CreateDefaultContext();
 
-  // // Note(AA): The number of bodies is now 3, due to the overall model add_scoped_sub
-  // // // Expect the two model instances added by the directives.
-  // // EXPECT_EQ(plant.num_model_instances() - empty_plant.num_model_instances(), 2);
+  // // Query information and ensure we have expected results.
+  // // - Manually spell out one example.
+  // ASSERT_EQ(
+  //     &GetScopedFrameByName(plant, "add_scoped_top::left::simple_model::frame"),
+  //     &plant.GetFrameByName(
+  //         "frame", plant.GetModelInstanceByName("add_scoped_top::left::simple_model")));
 
-  // // // Expect the two bodies added by the directives.
-  // // EXPECT_EQ(plant.num_bodies() - empty_plant.num_bodies(), 2);
+  // // - Automate other stuff.
+  // auto check_frame = [&md_plant, &md_context, &plant, &context](
+  //     const std::string md_instance, const std::string frame) {
+  //   const std::string instance = "add_scoped_top::" + md_instance;
 
-  // // A great many frames are added in model directives processing, but we
-  // // should at least expect that our named ones are present.
-  // EXPECT_TRUE(plant.HasFrameNamed("sub_added_frame"));
-  // EXPECT_TRUE(plant.HasFrameNamed(
-  //     "sub_added_frame", plant.GetModelInstanceByName("add_scoped_sub::simple_model")));
-  // EXPECT_TRUE(plant.HasFrameNamed(
-  //     "frame", plant.GetModelInstanceByName("add_scoped_sub::simple_model")));
-  // EXPECT_TRUE(plant.HasFrameNamed(
-  //     "frame", plant.GetModelInstanceByName("add_scoped_sub::extra_model")));
+  //   drake::log()->debug("Check instance: {}", instance);
+  //   std::cout << "Check instance: " << instance << std::endl;
+  //   ASSERT_TRUE(md_plant.HasModelInstanceNamed(md_instance));
+  //   ASSERT_TRUE(plant.HasModelInstanceNamed(instance));
 
-  // // Compare all the frames
-  // EXPECT_TRUE(CompareMatrices(
-  //     md_plant.GetFrameByName("sub_added_frame")
-  //         .CalcPoseInWorld(*md_context)
-  //         .GetAsMatrix4(),
-  //     plant.GetFrameByName("sub_added_frame")
-  //         .CalcPoseInWorld(*context)
-  //         .GetAsMatrix4())); 
-  // EXPECT_TRUE(CompareMatrices(
-  //     md_plant.GetFrameByName("frame", md_plant.GetModelInstanceByName("simple_model"))
-  //         .CalcPoseInWorld(*md_context)
-  //         .GetAsMatrix4(),
-  //     plant.GetFrameByName("frame", plant.GetModelInstanceByName("add_scoped_sub::simple_model"))
-  //         .CalcPoseInWorld(*context)
-  //         .GetAsMatrix4()));
-  // EXPECT_TRUE(CompareMatrices(
-  //     md_plant.GetFrameByName("frame", md_plant.GetModelInstanceByName("extra_model"))
-  //         .CalcPoseInWorld(*md_context)
-  //         .GetAsMatrix4(),
-  //     plant.GetFrameByName("frame", plant.GetModelInstanceByName("add_scoped_sub::extra_model"))
-  //         .CalcPoseInWorld(*context)
-  //         .GetAsMatrix4()));
+  //   drake::log()->debug("Check frame: {}", frame);
+  //   std::cout << "Check frame: " << frame << std::endl;
+  //   ASSERT_TRUE(
+  //       md_plant.HasFrameNamed(frame, md_plant.GetModelInstanceByName(md_instance)));
+  //   ASSERT_TRUE(
+  //       plant.HasFrameNamed(frame, plant.GetModelInstanceByName(instance)));
+
+  //   const std::string scoped_frame = instance + "::" + frame;
+  //   ASSERT_EQ(
+  //       &GetScopedFrameByName(plant, scoped_frame),
+  //       &plant.GetFrameByName(frame,
+  //           plant.GetModelInstanceByName(instance)));
+
+  //   EXPECT_TRUE(CompareMatrices(
+  //       md_plant.GetFrameByName(frame, md_plant.GetModelInstanceByName(md_instance))
+  //           .CalcPoseInWorld(*md_context)
+  //           .GetAsMatrix4(),
+  //       plant.GetFrameByName(frame, plant.GetModelInstanceByName(instance))
+  //           .CalcPoseInWorld(*context)
+  //           .GetAsMatrix4()));
+  // };
+  // for (const std::string prefix : {"", "left::", "right::", "mid::nested::"}) {
+  //   const std::string simple_model = prefix + "simple_model";
+  //   check_frame(simple_model, "base");
+  //   // check_frame(simple_model, "frame");
+  //   // check_frame(simple_model, "sub_added_frame");
+  //   // check_frame(simple_model, "top_added_frame");
+  //   // const std::string extra_model = prefix + "extra_model";
+  //   // check_frame(extra_model, "base");
+  //   // check_frame(extra_model, "frame");
+  // }
 }
 
 #pragma GCC diagnostic push

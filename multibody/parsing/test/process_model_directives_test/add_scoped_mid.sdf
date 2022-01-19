@@ -23,11 +23,11 @@
       </include>
 
       We use /include/placement_frame and /include/pose instead.
-      -->
       <joint name="backreference_weld" type="fixed">
         <parent>simple_model_origin</parent>
         <child>simple_model::base</child>
       </joint>
+      -->
     </model>
 
   </model>
