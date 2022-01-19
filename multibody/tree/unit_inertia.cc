@@ -29,8 +29,8 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L) {
   const T vc = M_PI * r2 * L;          // vc = π r² L
   const T vh = 2.0 / 3.0 * M_PI * r3;  // vh = 2/3 π r³
 
-  // Denoting mc as the mass of cylinder C and mh asthe mass of half-sphere H,
-  // and knowing the capsule has a uniform density and the capsule mass is 1
+  // Denoting mc as the mass of cylinder C and mh as the mass of half-sphere H,
+  // and knowing the capsule has a uniform density and the capsule's mass is 1
   // (for unit inertia), calculate mc and mh.
   const T v = vc + 2 * vh;    // Volume of capsule.
   const T mc = vc / v;        // Mass in the cylinder (relates to volume).
