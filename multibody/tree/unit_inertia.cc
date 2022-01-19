@@ -36,10 +36,10 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L) {
   const T mc = vc / v;        // Mass in the cylinder (relates to volume).
   const T mh = vh / v;        // Mass in each half-sphere (relates to volume).
 
-  // The distance dH between Hcm (half-sphere H's center of mass) and
-  // Ccm (cylinder C's center of mass) is from [Kane, Figure A23, pg. 369].
-  // Note: The capsule's center of mass is coincident with Ccm.
-  const T dH = 3.0 / 8.0 * r + L / 2.0;
+  // The distance dH between Hcm (the half-sphere H's center of mass) and Ccm
+  // (the cylinder C's center of mass) is from [Kane, Figure A23, pg. 369] is
+  // dH = 3.0 / 8.0 * r + L / 2.0;
+  const T dH = 0.375 * r + 0.5 * L;
 
   // Form cylinder C's moments of inertia about Ccm (C's center of mass).
   // Ic_xx = Ic_yy = mc(L²/12 + r²/4)  From [Kane, Figure A20, pg. 368].
@@ -51,15 +51,16 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L) {
   // Pegagogical note: H's inertia matrix about Ho (as compared with about Hcm)
   // is instead diag(2/5 mh r², 2/5 mh r², 2/5 mh r²).
 
-  // The capsule's inertia matrix about Ccm is calculated with the shift theorem
+  // The capsule's inertia about Ccm is calculated with the shift theorem
   // (parallel axis theorem) in terms of dH (distance between Hcm and Ccm) as
-  // I = Ic + 2 Ih + 2 mh dH^2 (the factor of 2 is due to the two half-spheres).
-  // Ixx = Ic_xx + 2 * Ih_xx + 2 * mh * dH * dH;
-  // Izz = Ic_zz + 2 * Ih_zz;
-
+  // follows where the factor of 2 is due to the 2 half-spheres.
+  // Note: The capsule's center of mass is coincident with Ccm.
+  // Ixx = Ic_xx + 2 Ih_xx + 2 mh dH²
+  // Izz = Ic_zz + 2 Ih_zz;
+  
   // The previous algorithm for Ixx and Izz can be algebraically manipulated to
   // a more efficient result by factoring on mh and mc and computing numbers as
-  const T Ixx = mc * (L*L / 12.0 + 0.25 * r2) + mh*(0.51875*r2 + 2*dH*dH);
+  const T Ixx = mc * (L*L/12.0 + 0.25*r2) + mh * (0.51875*r2 + 2*dH*dH);
   const T Izz = (0.5*mc + 0.8*mh) * r2;
   return UnitInertia(Ixx, Ixx, Izz);
 }
