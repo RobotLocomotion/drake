@@ -95,7 +95,7 @@ git clone -b master -c advice.detachedHead=false -q \
 git -C "${temporary_directory}/director" checkout 4c3e570a6797ff840c74067c742455daaa113d93
 readonly director_version="$(git -C "${temporary_directory}/director" describe)"
 
-readonly patches_directory="$(realpath "${BASH_SOURCE%/*}")"
+readonly patches_directory="$(realpath "${BASH_SOURCE%/*}")/image/director-patches"
 git -C "${temporary_directory}/director" apply \
   "${patches_directory}/"*-dv-all-*.patch \
   "${patches_directory}/"*-dv-mac-*.patch

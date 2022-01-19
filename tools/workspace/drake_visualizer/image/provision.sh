@@ -2,29 +2,19 @@
 
 set -eu -o pipefail
 
+export DEBIAN_FRONTEND=noninteractive
+
 readonly BAZEL_VERSION=4.2.1
 readonly BAZEL_ROOT=https://github.com/bazelbuild/bazel/releases/download
 
-
-# Fix ssh permissions.
-chmod 700 ~/.ssh
-chmod 600 ~/.ssh/known_hosts
-
-# Prepare system to install packages, and apply any updates.
+# Install prerequisites.
 apt-get -y update
 apt-get -y upgrade
 
-apt-get -y install lsb-release
-
-# Install prerequisites.
-readonly DISTRO=$(lsb_release -sc)
-
-mapfile -t PACKAGES < <(sed -e '/^#/d' < /image/packages-${DISTRO})
-
-apt-get -y install --no-install-recommends ${PACKAGES[@]}
+xargs -d$'\n' apt-get -y install --no-install-recommends < /image/prereqs
 
 # Install CMake.
-# To build vtk-9 on bionic we need an updated CMake.
+# To find the right OpenGL library (GLVND) on bionic we need an updated CMake.
 # See: https://apt.kitware.com/
 # TODO(svenevs) Use distro version of CMake when we drop Bionic support.
 apt-get -y install --no-install-recommends gpg lsb-release wget
@@ -41,7 +31,13 @@ apt-get -y install --no-install-recommends \
     "cmake-data=3.16.3-*" "cmake=3.16.3-*"
 
 # Install Bazel.
+apt-get -y install --no-install-recommends unzip
 cd /tmp
 wget ${BAZEL_ROOT}/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
 bash /tmp/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
 rm /tmp/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
+
+# TODO(svenevs): the manual symlink of /usr/bin/python can be removed when
+# bionic support is dropped and the `python-is-python3` package therefore
+# available unconditionally.
+ln -s /usr/bin/python3 /usr/bin/python

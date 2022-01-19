@@ -42,12 +42,12 @@ def _impl(repository_ctx):
         sha256 = "8a13ffa117167fada851acef8535a42d613b71be2200ea3c7139e9fea05782b8"  # noqa
         python_version = "3.9"
     elif os_result.ubuntu_release == "18.04":
-        archive = "dv-0.1.0-406-g4c3e570a-python-3.6.9-qt-5.9.5-vtk-8.2.0-bionic-x86_64-1.tar.gz"  # noqa
-        sha256 = "2c477c2f1186cd151710af9a6f50bd3720034ced3c5ed21d977b0a822ac56237"  # noqa
+        archive = "dv-0.1.0-406-g4c3e570a-python-3.6.9-qt-5.9.5-vtk-8.2.0-bionic-x86_64-2.tar.gz"  # noqa
+        sha256 = "4f92a213e45f3ad5758a2ab9839f603075f87dc0407335b7addc9cc18f015ecb"  # noqa
         python_version = "3.6"
     elif os_result.ubuntu_release == "20.04":
-        archive = "dv-0.1.0-406-g4c3e570a-python-3.8.2-qt-5.12.8-vtk-8.2.0-focal-x86_64-1.tar.gz"  # noqa
-        sha256 = "282438d7fabd72dddc8a9f5b3b7481b6b6ea53e4355f79f5bda1dae6e258d6be"  # noqa
+        archive = "dv-0.1.0-406-g4c3e570a-python-3.8.10-qt-5.12.8-vtk-8.2.0-focal-x86_64-2.tar.gz"  # noqa
+        sha256 = "857206d0733d6352bbf2715dcc69ceb1f1af370a150c1aa7cb8447d05e82eb9d"  # noqa
         python_version = "3.8"
     elif os_result.is_manylinux:
         repository_ctx.symlink(

@@ -29,6 +29,7 @@ cp -r -t /wheel/pydrake \
 cp -r -t /wheel/pydrake/lib \
     /opt/drake/lib/libdrake*.so
 
+# NOTE: build-vtk.sh also puts licenses in /opt/drake-dependencies/licenses.
 cp -r -t /wheel/pydrake/doc \
     /opt/drake-dependencies/licenses/*
 
