@@ -137,6 +137,53 @@ GTEST_TEST(PointTest, NonnegativeScalingTest) {
   EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 1e-16));
 }
 
+GTEST_TEST(PointTest, NonnegativeScalingTest2) {
+  Eigen::Vector4d p{1., 2., 3., 4.};
+  Point P(p);
+
+  MathematicalProgram prog;
+  Eigen::MatrixXd A(4, 3);
+  // clang-format off
+  A << 1, 0, 0,
+       0, 1, 0,
+       0, 0, 3,
+       0, 2, 0;
+  // clang-format on
+  Eigen::Vector4d b = Eigen::Vector4d::Zero();
+  auto x = prog.NewContinuousVariables(3, "x");
+  Eigen::Vector2d c(1, -1);
+  double d = 0;
+  auto t = prog.NewContinuousVariables(2, "t");
+
+  std::vector<Binding<Constraint>> constraints =
+      P.AddPointInNonnegativeScalingConstraints(&prog, A, b, c, d, x, t);
+
+  EXPECT_EQ(constraints.size(), 2);
+
+  Eigen::Vector3d x_solution(1, 2, 1);
+  Eigen::Vector3d scale(0.5, 1.0, 2.0);
+  Eigen::MatrixXd t_solutions(2, 9);
+  // clang-format off
+  t_solutions << 0.5,  0,  0.25, 1,  0,  0.5, 2,  0,  1,
+                 0, -0.5, -0.25, 0, -1, -0.5, 0, -2, -1;
+  // clang-format on
+  for (int ii = 0; ii < t_solutions.cols(); ii++) {
+    prog.SetInitialGuess(x, scale[ii / 3] * x_solution);
+    prog.SetInitialGuess(t, t_solutions.col(ii));
+    EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, 1e-16));
+    prog.SetInitialGuess(x, 0.99 * scale[ii / 3] * x_solution);
+    EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 1e-16));
+  }
+
+  prog.SetInitialGuess(x, x_solution);
+  prog.SetInitialGuess(t, Eigen::Vector2d(0, 1));
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 1e-16));
+
+  prog.SetInitialGuess(x, x_solution);
+  prog.SetInitialGuess(t, Eigen::Vector2d(-1, 0));
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 1e-16));
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
