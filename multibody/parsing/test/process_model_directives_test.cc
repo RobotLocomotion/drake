@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <stdexcept>
-#include <iostream>
 
 #include <gtest/gtest.h>
 
@@ -196,54 +195,52 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTestFromWorldFile) {
   plant.Finalize();
   auto context = plant.CreateDefaultContext();
 
-  // // Query information and ensure we have expected results.
-  // // - Manually spell out one example.
-  // ASSERT_EQ(
-  //     &GetScopedFrameByName(plant, "add_scoped_top::left::simple_model::frame"),
-  //     &plant.GetFrameByName(
-  //         "frame", plant.GetModelInstanceByName("add_scoped_top::left::simple_model")));
+  // Query information and ensure we have expected results.
+  // - Manually spell out one example.
+  ASSERT_EQ(
+      &GetScopedFrameByName(plant, "add_scoped_top::left::simple_model::frame"),
+      &plant.GetFrameByName(
+          "frame", plant.GetModelInstanceByName("add_scoped_top::left::simple_model")));
 
-  // // - Automate other stuff.
-  // auto check_frame = [&md_plant, &md_context, &plant, &context](
-  //     const std::string md_instance, const std::string frame) {
-  //   const std::string instance = "add_scoped_top::" + md_instance;
+  // - Automate other stuff.
+  auto check_frame = [&md_plant, &md_context, &plant, &context](
+      const std::string md_instance, const std::string frame) {
+    const std::string instance = "add_scoped_top::" + md_instance;
 
-  //   drake::log()->debug("Check instance: {}", instance);
-  //   std::cout << "Check instance: " << instance << std::endl;
-  //   ASSERT_TRUE(md_plant.HasModelInstanceNamed(md_instance));
-  //   ASSERT_TRUE(plant.HasModelInstanceNamed(instance));
+    drake::log()->debug("Check instance: {}", instance);
+    ASSERT_TRUE(md_plant.HasModelInstanceNamed(md_instance));
+    ASSERT_TRUE(plant.HasModelInstanceNamed(instance));
 
-  //   drake::log()->debug("Check frame: {}", frame);
-  //   std::cout << "Check frame: " << frame << std::endl;
-  //   ASSERT_TRUE(
-  //       md_plant.HasFrameNamed(frame, md_plant.GetModelInstanceByName(md_instance)));
-  //   ASSERT_TRUE(
-  //       plant.HasFrameNamed(frame, plant.GetModelInstanceByName(instance)));
+    drake::log()->debug("Check frame: {}", frame);
+    ASSERT_TRUE(
+        md_plant.HasFrameNamed(frame, md_plant.GetModelInstanceByName(md_instance)));
+    ASSERT_TRUE(
+        plant.HasFrameNamed(frame, plant.GetModelInstanceByName(instance)));
 
-  //   const std::string scoped_frame = instance + "::" + frame;
-  //   ASSERT_EQ(
-  //       &GetScopedFrameByName(plant, scoped_frame),
-  //       &plant.GetFrameByName(frame,
-  //           plant.GetModelInstanceByName(instance)));
+    const std::string scoped_frame = instance + "::" + frame;
+    ASSERT_EQ(
+        &GetScopedFrameByName(plant, scoped_frame),
+        &plant.GetFrameByName(frame,
+            plant.GetModelInstanceByName(instance)));
 
-  //   EXPECT_TRUE(CompareMatrices(
-  //       md_plant.GetFrameByName(frame, md_plant.GetModelInstanceByName(md_instance))
-  //           .CalcPoseInWorld(*md_context)
-  //           .GetAsMatrix4(),
-  //       plant.GetFrameByName(frame, plant.GetModelInstanceByName(instance))
-  //           .CalcPoseInWorld(*context)
-  //           .GetAsMatrix4()));
-  // };
-  // for (const std::string prefix : {"", "left::", "right::", "mid::nested::"}) {
-  //   const std::string simple_model = prefix + "simple_model";
-  //   check_frame(simple_model, "base");
-  //   // check_frame(simple_model, "frame");
-  //   // check_frame(simple_model, "sub_added_frame");
-  //   // check_frame(simple_model, "top_added_frame");
-  //   // const std::string extra_model = prefix + "extra_model";
-  //   // check_frame(extra_model, "base");
-  //   // check_frame(extra_model, "frame");
-  // }
+    EXPECT_TRUE(CompareMatrices(
+        md_plant.GetFrameByName(frame, md_plant.GetModelInstanceByName(md_instance))
+            .CalcPoseInWorld(*md_context)
+            .GetAsMatrix4(),
+        plant.GetFrameByName(frame, plant.GetModelInstanceByName(instance))
+            .CalcPoseInWorld(*context)
+            .GetAsMatrix4()));
+  };
+  for (const std::string prefix : {"", "left::", "right::", "mid::nested::"}) {
+    const std::string simple_model = prefix + "simple_model";
+    check_frame(simple_model, "base");
+    check_frame(simple_model, "frame");
+    check_frame(simple_model, "sub_added_frame");
+    check_frame(simple_model, "top_added_frame");
+    const std::string extra_model = prefix + "extra_model";
+    check_frame(extra_model, "base");
+    check_frame(extra_model, "frame");
+  }
 }
 
 #pragma GCC diagnostic push

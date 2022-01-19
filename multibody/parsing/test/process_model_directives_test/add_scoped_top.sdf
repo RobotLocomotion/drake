@@ -18,9 +18,11 @@
       </pose>
     </frame>
 
-    <model name="left" placement_frame="simple_model_origin">
-      <frame name="simple_model_origin"/>
-      <pose relative_to="world_frame">0 1 0   0 0 0</pose>
+    <model name="left">
+      <pose relative_to="world_frame"/>
+      <frame name="simple_model_origin">
+        <pose>0 1 0   0 0 0</pose>
+      </frame>
       <include merge="true">
         <uri>package://process_model_directives_test/add_scoped_sub.sdf</uri>
       </include>
@@ -32,10 +34,10 @@
     </model>
 
     <model name="right">
-      <frame name="simple_model_origin"/>
-      <pose relative_to="world_frame">
-        0 -1 0   0 0 0
-      </pose>
+      <pose relative_to="world_frame"/>
+      <frame name="simple_model_origin">
+        <pose>0 -1 0   0 0 0</pose>
+      </frame>
       <include merge="true">
         <uri>package://process_model_directives_test/add_scoped_sub.sdf</uri>
       </include>
@@ -47,6 +49,7 @@
     </model>
 
     <model name="mid">
+      <pose relative_to="world_frame"/>
       <include merge="true">
         <uri>package://process_model_directives_test/add_scoped_mid.sdf</uri>
       </include>
