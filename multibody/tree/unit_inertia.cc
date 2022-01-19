@@ -48,7 +48,7 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L) {
   // Form half-sphere H's moments of inertia about Hcm (H's center of mass).
   // Ih_xx = Ih_yy = 83/320 mh r²      From [Kane, Figure A23, pg. 369].
   // Ih_zz = 2/5 mh r²                 From [Kane, Figure A23, pg. 369].
-  // Pegagogical note: H's inertia matrix about Ho (as compared with about Hcm)
+  // Pedagogical note: H's inertia matrix about Ho (as compared with about Hcm)
   // is instead diag(2/5 mh r², 2/5 mh r², 2/5 mh r²).
 
   // The capsule's inertia about Ccm is calculated with the shift theorem
@@ -58,8 +58,8 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L) {
   // Ixx = Ic_xx + 2 Ih_xx + 2 mh dH²
   // Izz = Ic_zz + 2 Ih_zz;
 
-  // The previous algorithm for Ixx and Izz can be algebraically manipulated to
-  // a more efficient result by factoring on mh and mc and computing numbers as
+  // The previous algorithm for Ixx and Izz is algebraically manipulated to a
+  // more efficient result by factoring on mh and mc and computing numbers as
   const T Ixx = mc * (L*L/12.0 + 0.25*r2) + mh * (0.51875*r2 + 2*dH*dH);
   const T Izz = (0.5*mc + 0.8*mh) * r2;
   return UnitInertia(Ixx, Ixx, Izz);
