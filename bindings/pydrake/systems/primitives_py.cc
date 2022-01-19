@@ -20,6 +20,7 @@
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/linear_transform_density.h"
 #include "drake/systems/primitives/matrix_gain.h"
+#include "drake/systems/primitives/multilayer_perceptron.h"
 #include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/random_source.h"
@@ -51,6 +52,16 @@ PYBIND11_MODULE(primitives, m) {
   constexpr auto& doc = pydrake_doc.drake.systems;
 
   py::module::import("pydrake.systems.framework");
+
+  py::enum_<PerceptronActivationType>(
+      m, "PerceptronActivationType", doc.PerceptronActivationType.doc)
+      .value("kIdentity", PerceptronActivationType::kIdentity,
+          doc.PerceptronActivationType.kIdentity.doc)
+      .value("kReLU", PerceptronActivationType::kReLU,
+          doc.PerceptronActivationType.kReLU.doc)
+      .value("kTanh", PerceptronActivationType::kTanh,
+          doc.PerceptronActivationType.kTanh.doc);
+
   // N.B. Capturing `&doc` should not be required; workaround per #9600.
   auto bind_common_scalar_types = [&m, &doc](auto dummy) {
     using T = decltype(dummy);
@@ -216,6 +227,117 @@ PYBIND11_MODULE(primitives, m) {
             doc.Multiplexer.ctor.doc_1args_input_sizes)
         .def(py::init<const BasicVector<T>&>(), py::arg("model_vector"),
             doc.Multiplexer.ctor.doc_1args_model_vector);
+
+    DefineTemplateClassWithDefault<MultilayerPerceptron<T>, LeafSystem<T>>(m,
+        "MultilayerPerceptron", GetPyParam<T>(), doc.MultilayerPerceptron.doc)
+        .def(py::init<const std::vector<int>&, PerceptronActivationType>(),
+            py::arg("layers"),
+            py::arg("activation_type") = PerceptronActivationType::kTanh,
+            doc.MultilayerPerceptron.ctor.doc_single_activation)
+        .def(py::init<const std::vector<int>&,
+                 const std::vector<PerceptronActivationType>&>(),
+            py::arg("layers"), py::arg("activation_types"),
+            doc.MultilayerPerceptron.ctor.doc_vector_activation)
+        .def("num_parameters", &MultilayerPerceptron<T>::num_parameters,
+            doc.MultilayerPerceptron.num_parameters.doc)
+        .def("layers", &MultilayerPerceptron<T>::layers,
+            doc.MultilayerPerceptron.layers.doc)
+        .def("activation_type", &MultilayerPerceptron<T>::activation_type,
+            py::arg("layer"), doc.MultilayerPerceptron.activation_type.doc)
+        .def("GetParameters", &MultilayerPerceptron<T>::GetParameters,
+            py::arg("context"),
+            py::keep_alive<0, 2>() /* return keeps context alive */,
+            py_rvp::reference, doc.MultilayerPerceptron.GetParameters.doc)
+        .def("SetParameters", &MultilayerPerceptron<T>::SetParameters,
+            py::arg("context"), py::arg("params"),
+            doc.MultilayerPerceptron.SetParameters.doc)
+        .def("GetWeights",
+            overload_cast_explicit<Eigen::Map<const MatrixX<T>>,
+                const Context<T>&, int>(&MultilayerPerceptron<T>::GetWeights),
+            py::arg("context"), py::arg("layer"),
+            py::keep_alive<0, 2>() /* return keeps context alive */,
+            py_rvp::reference, doc.MultilayerPerceptron.GetWeights.doc_context)
+        .def("GetBiases",
+            overload_cast_explicit<Eigen::Map<const VectorX<T>>,
+                const Context<T>&, int>(&MultilayerPerceptron<T>::GetBiases),
+            py::arg("context"), py::arg("layer"),
+            py::keep_alive<0, 2>() /* return keeps context alive */,
+            py_rvp::reference, doc.MultilayerPerceptron.GetBiases.doc_context)
+        .def("SetWeights",
+            overload_cast_explicit<void, Context<T>*, int,
+                const Eigen::Ref<const MatrixX<T>>&>(
+                &MultilayerPerceptron<T>::SetWeights),
+            py::arg("context"), py::arg("layer"), py::arg("W"),
+            doc.MultilayerPerceptron.SetWeights.doc_context)
+        .def("SetBiases",
+            overload_cast_explicit<void, Context<T>*, int,
+                const Eigen::Ref<const VectorX<T>>&>(
+                &MultilayerPerceptron<T>::SetBiases),
+            py::arg("context"), py::arg("layer"), py::arg("b"),
+            doc.MultilayerPerceptron.SetBiases.doc_context)
+        .def("GetWeights",
+            overload_cast_explicit<Eigen::Map<const MatrixX<T>>,
+                const Eigen::Ref<const VectorX<T>>&, int>(
+                &MultilayerPerceptron<T>::GetWeights),
+            py::arg("params"), py::arg("layer"),
+            py::keep_alive<0, 2>() /* return keeps params alive */,
+            py_rvp::reference, doc.MultilayerPerceptron.GetWeights.doc_vector)
+        .def("GetBiases",
+            overload_cast_explicit<Eigen::Map<const VectorX<T>>,
+                const Eigen::Ref<const VectorX<T>>&, int>(
+                &MultilayerPerceptron<T>::GetBiases),
+            py::arg("params"), py::arg("layer"),
+            py::keep_alive<0, 2>() /* return keeps params alive */,
+            py_rvp::reference, doc.MultilayerPerceptron.GetBiases.doc_vector)
+        .def(
+            "SetWeights",
+            [](const MultilayerPerceptron<T>* self,
+                Eigen::Ref<VectorX<T>> params, int layer,
+                const Eigen::Ref<const MatrixX<T>>& W) {
+              self->SetWeights(&params, layer, W);
+            },
+            py::arg("params"), py::arg("layer"), py::arg("W"),
+            doc.MultilayerPerceptron.SetWeights.doc_vector)
+        .def(
+            "SetBiases",
+            [](const MultilayerPerceptron<T>* self,
+                Eigen::Ref<VectorX<T>> params, int layer,
+                const Eigen::Ref<const VectorX<T>>& b) {
+              self->SetBiases(&params, layer, b);
+            },
+            py::arg("params"), py::arg("layer"), py::arg("b"),
+            doc.MultilayerPerceptron.SetBiases.doc_vector)
+        .def("Backpropagation",
+            WrapCallbacks(
+                [](const MultilayerPerceptron<T>* self,
+                    const Context<T>& context,
+                    const Eigen::Ref<const MatrixX<T>>& X,
+                    std::function<T(const Eigen::Ref<const MatrixX<T>>& Y,
+                        Eigen::Ref<MatrixX<T>> dloss_dY)>
+                        loss,
+                    Eigen::Ref<VectorX<T>> dloss_dparams) {
+                  auto new_loss = [loss](const Eigen::Ref<const MatrixX<T>>& Y,
+                                      EigenPtr<MatrixX<T>> dloss_dY) {
+                    return loss(Y, *dloss_dY);
+                  };
+                  return self->Backpropagation(
+                      context, X, new_loss, &dloss_dparams);
+                }),
+            py::arg("context"), py::arg("X"), py::arg("loss"),
+            py::arg("dloss_dparams"),
+            doc.MultilayerPerceptron.Backpropagation.doc)
+        .def(
+            "BackpropagationMeanSquaredError",
+            [](const MultilayerPerceptron<T>* self, const Context<T>& context,
+                const Eigen::Ref<const MatrixX<T>>& X,
+                const Eigen::Ref<const MatrixX<T>>& Y_desired,
+                Eigen::Ref<VectorX<T>> dloss_dparams) {
+              return self->BackpropagationMeanSquaredError(
+                  context, X, Y_desired, &dloss_dparams);
+            },
+            py::arg("context"), py::arg("X"), py::arg("Y_desired"),
+            py::arg("dloss_dparams"),
+            doc.MultilayerPerceptron.BackpropagationMeanSquaredError.doc);
 
     DefineTemplateClassWithDefault<PassThrough<T>, LeafSystem<T>>(
         m, "PassThrough", GetPyParam<T>(), doc.PassThrough.doc)
@@ -581,8 +703,6 @@ PYBIND11_MODULE(primitives, m) {
 
   m.def("IsObservable", &IsObservable, py::arg("sys"),
       py::arg("threshold") = std::nullopt, doc.IsObservable.doc);
-
-  // TODO(eric.cousineau): Add more systems as needed.
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

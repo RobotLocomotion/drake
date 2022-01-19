@@ -28,6 +28,7 @@ drake_cc_package_library(
         ":linear_system",
         ":linear_transform_density",
         ":matrix_gain",
+        ":multilayer_perceptron",
         ":multiplexer",
         ":pass_through",
         ":port_switch",
@@ -189,6 +190,15 @@ drake_cc_library(
     hdrs = ["matrix_gain.h"],
     deps = [
         ":linear_system",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "multilayer_perceptron",
+    srcs = ["multilayer_perceptron.cc"],
+    hdrs = ["multilayer_perceptron.h"],
+    deps = [
         "//systems/framework",
     ],
 )
@@ -505,6 +515,17 @@ drake_cc_googletest(
         ":matrix_gain",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multilayer_perceptron_test",
+    deps = [
+        ":multilayer_perceptron",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
         "//systems/framework/test_utilities",
     ],
 )
