@@ -62,9 +62,10 @@ possible kinds of value at runtime:
 
 Refer to https://yaml.org/spec/1.2.2/#nodes for details.
 
-Note that even though YAML in general allows the keys of a mapping to be
-any type of node, in our implementation we limit keys to be only strings,
-for better compatibility with other serialization formats such as JSON.
+This class implements the https://yaml.org/spec/1.2.2/#321-representation-graph
+concept, with two caveats for better compatibility with JSON serialization:
+- graph cycles are not allowed;
+- mapping keys must only be scalar strings.
 
 Each node may also have a tag.  By default (i.e., at construction time),
 the tag will be empty.  Use GetTag() and SetTag() to query and adjust it.
