@@ -891,14 +891,15 @@ void BindMathematicalProgram(py::module m) {
           py::arg("X"),
           doc.MathematicalProgram.AddMaximizeLogDeterminantCost.doc)
       .def("AddMaximizeGeometricMeanCost",
-          overload_cast_explicit<void, const Eigen::Ref<const Eigen::MatrixXd>&,
+          overload_cast_explicit<Binding<LinearCost>,
+              const Eigen::Ref<const Eigen::MatrixXd>&,
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorX<symbolic::Variable>>&>(
               &MathematicalProgram::AddMaximizeGeometricMeanCost),
           py::arg("A"), py::arg("b"), py::arg("x"),
           doc.MathematicalProgram.AddMaximizeGeometricMeanCost.doc_3args)
       .def("AddMaximizeGeometricMeanCost",
-          overload_cast_explicit<void,
+          overload_cast_explicit<Binding<LinearCost>,
               const Eigen::Ref<const VectorX<symbolic::Variable>>&, double>(
               &MathematicalProgram::AddMaximizeGeometricMeanCost),
           py::arg("x"), py::arg("c"),

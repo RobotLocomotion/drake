@@ -3,8 +3,10 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <utility>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/solvers/decision_variable.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 namespace drake {
@@ -354,42 +356,54 @@ void TestFindSpringEquilibrium::SolveAndCheckSolution(
 
 MaximizeGeometricMeanTrivialProblem1::MaximizeGeometricMeanTrivialProblem1()
     : prog_{new MathematicalProgram()},
-      x_{prog_->NewContinuousVariables<1>()(0)} {
+      x_{prog_->NewContinuousVariables<1>()(0)},
+      cost_{nullptr} {
   prog_->AddBoundingBoxConstraint(-kInf, 10, x_);
   Eigen::Vector2d A(2, 3);
   Eigen::Vector2d b(3, 2);
-  prog_->AddMaximizeGeometricMeanCost(A, b, Vector1<symbolic::Variable>(x_));
+  auto cost = prog_->AddMaximizeGeometricMeanCost(
+      A, b, Vector1<symbolic::Variable>(x_));
+  cost_ = std::make_unique<Binding<LinearCost>>(std::move(cost));
 }
 
 void MaximizeGeometricMeanTrivialProblem1::CheckSolution(
     const MathematicalProgramResult& result, double tol) {
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(result.GetSolution(x_), 10, tol);
-  EXPECT_NEAR(result.get_optimal_cost(), -std::sqrt(23 * 32), tol);
+  const double cost_expected = -std::sqrt(23.0 * 32);
+  EXPECT_NEAR(result.get_optimal_cost(), cost_expected, tol);
+  EXPECT_NEAR(result.EvalBinding(*cost_)(0), cost_expected, tol);
 }
 
 MaximizeGeometricMeanTrivialProblem2::MaximizeGeometricMeanTrivialProblem2()
     : prog_{new MathematicalProgram()},
-      x_{prog_->NewContinuousVariables<1>()(0)} {
+      x_{prog_->NewContinuousVariables<1>()(0)},
+      cost_{nullptr} {
   prog_->AddBoundingBoxConstraint(-kInf, 10, x_);
   const Eigen::Vector3d A(2, 3, 4);
   const Eigen::Vector3d b(3, 2, 5);
-  prog_->AddMaximizeGeometricMeanCost(A, b, Vector1<symbolic::Variable>(x_));
+  auto cost = prog_->AddMaximizeGeometricMeanCost(
+      A, b, Vector1<symbolic::Variable>(x_));
+  cost_ = std::make_unique<Binding<LinearCost>>(std::move(cost));
 }
 
 void MaximizeGeometricMeanTrivialProblem2::CheckSolution(
     const MathematicalProgramResult& result, double tol) {
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(result.GetSolution(x_), 10, tol);
-  EXPECT_NEAR(result.get_optimal_cost(), -std::pow(23 * 32 * 45, 1.0 / 4), tol);
+  const double cost_expected = -std::pow(23 * 32 * 45, 1.0 / 4);
+  EXPECT_NEAR(result.get_optimal_cost(), cost_expected, tol);
+  EXPECT_NEAR(result.EvalBinding(*cost_)(0), cost_expected, tol);
 }
 
 SmallestEllipsoidCoveringProblem::SmallestEllipsoidCoveringProblem(
     const Eigen::Ref<const Eigen::MatrixXd>& p)
     : prog_{new MathematicalProgram()},
       a_{prog_->NewContinuousVariables(p.rows())},
-      p_{p} {
-  prog_->AddMaximizeGeometricMeanCost(a_);
+      p_{p},
+      cost_{nullptr} {
+  auto cost = prog_->AddMaximizeGeometricMeanCost(a_);
+  cost_ = std::make_unique<Binding<LinearCost>>(std::move(cost));
   const Eigen::MatrixXd p_dot_p = (p_.array() * p_.array()).matrix();
   const int num_points = p.cols();
   prog_->AddLinearConstraint(p_dot_p.transpose(),
@@ -415,6 +429,7 @@ void SmallestEllipsoidCoveringProblem::CheckSolution(
   const double cost_expected = -std::pow(
       a_sol.prod(), 1.0 / std::pow(2, (std::ceil(std::log2(a_sol.rows())))));
   EXPECT_NEAR(result.get_optimal_cost(), cost_expected, tol);
+  EXPECT_NEAR(result.EvalBinding(*cost_)(0), cost_expected, tol);
 
   CheckSolutionExtra(result, tol);
 }
