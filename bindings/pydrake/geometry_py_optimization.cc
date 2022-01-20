@@ -194,7 +194,8 @@ void DefineGeometryOptimization(py::module m) {
         .def_static("MakeBox", &VPolytope::MakeBox, py::arg("lb"),
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &VPolytope::MakeUnitBox, py::arg("dim"),
-            cls_doc.MakeUnitBox.doc);
+            cls_doc.MakeUnitBox.doc)
+        .def("CalcVolume", &VPolytope::CalcVolume, cls_doc.CalcVolume.doc);
     py::implicitly_convertible<VPolytope, copyable_unique_ptr<ConvexSet>>();
   }
 
