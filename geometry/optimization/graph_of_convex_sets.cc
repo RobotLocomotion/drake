@@ -523,15 +523,50 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       }
     }
 
-    // Degree constraint: ∑ ϕ_out <= 1- δ(is_target).
     if (outgoing.size() > 0) {
+      int n_v = v->ambient_dimension();
       VectorXDecisionVariable phi_out(outgoing.size());
+      VectorXDecisionVariable yz_out(outgoing.size() * n_v);
       for (int i = 0; i < static_cast<int>(outgoing.size()); ++i) {
         phi_out[i] = convex_relaxation ? relaxed_phi.at(outgoing[i]->id())
                                        : outgoing[i]->phi_;
+        yz_out.segment(i * n_v, n_v) = outgoing[i]->y_;
       }
+      // Degree constraint: ∑ ϕ_out <= 1- δ(is_target).
       prog.AddLinearConstraint(RowVectorXd::Ones(outgoing.size()), 0.0,
                                is_target ? 0.0 : 1.0, phi_out);
+
+      if (!is_source && !is_target) {
+        RowVectorXd a = RowVectorXd::Ones(outgoing.size());
+        MatrixXd A_yz(n_v, outgoing.size() * n_v);
+        for (int i = 0; i < static_cast<int>(outgoing.size()); ++i) {
+          A_yz.block(0, i * n_v, n_v, n_v) = MatrixXd::Identity(n_v, n_v);
+        }
+        for (int i = 0; i < static_cast<int>(outgoing.size()); ++i) {
+          const auto* e_out = outgoing[i];
+          for (const auto* e_in : incoming) {
+            if (e_in->u().id() == e_out->v().id()) {
+              a[i] = -1.0;
+              phi_out[i] =
+                  convex_relaxation ? relaxed_phi.at(e_in->id()) : e_in->phi_;
+              // Two-cycle constraint: ∑ ϕ_u,out - ϕ_uv - ϕ_vu >= 0
+              prog.AddLinearConstraint(a, 0.0, 1.0, phi_out);
+              A_yz.block(0, i * n_v, n_v, n_v) = -MatrixXd::Identity(n_v, n_v);
+              yz_out.segment(i * n_v, n_v) = e_in->z_;
+              // Two-cycle spatial constraint:
+              // ∑ y_u - y_uv - z_vu ∈ (∑ ϕ_u,out - ϕ_uv - ϕ_vu) X_u
+              v->set().AddPointInNonnegativeScalingConstraints(
+                  &prog, A_yz, VectorXd::Zero(n_v), a, 0, yz_out, phi_out);
+
+              a[i] = 1.0;
+              phi_out[i] =
+                  convex_relaxation ? relaxed_phi.at(e_out->id()) : e_out->phi_;
+              A_yz.block(0, i * n_v, n_v, n_v) = MatrixXd::Identity(n_v, n_v);
+              yz_out.segment(i * n_v, n_v) = e_out->y_;
+            }
+          }
+        }
+      }
     }
   }
 
