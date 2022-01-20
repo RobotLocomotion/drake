@@ -523,15 +523,82 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       }
     }
 
-    // Degree constraint: ∑ ϕ_out <= 1- δ(is_target).
     if (outgoing.size() > 0) {
+      int n_v = v->ambient_dimension();
       VectorXDecisionVariable phi_out(outgoing.size());
+      VectorXDecisionVariable yz_out(outgoing.size() * n_v);
       for (int i = 0; i < static_cast<int>(outgoing.size()); ++i) {
         phi_out[i] = convex_relaxation ? relaxed_phi.at(outgoing[i]->id())
                                        : outgoing[i]->phi_;
+        yz_out.segment(i * n_v, n_v) = outgoing[i]->y_;
       }
+      // Degree constraint: ∑ ϕ_out <= 1- δ(is_target).
       prog.AddLinearConstraint(RowVectorXd::Ones(outgoing.size()), 0.0,
                                is_target ? 0.0 : 1.0, phi_out);
+
+      // Two step loop constraint: ∑ ϕ_u,out - ϕ_uv - ϕ_vu >= 0
+      // Also adds the spatial constraint because we have not formally verified
+      // whether the constraint is redundant.
+      if (!is_target) {
+        RowVectorXd a = RowVectorXd::Ones(outgoing.size());
+        MatrixXd A_yz(n_v, outgoing.size() * n_v);
+        for (int i = 0; i < static_cast<int>(outgoing.size()); ++i) {
+          A_yz.block(0, i * n_v, n_v, n_v) = MatrixXd::Identity(n_v, n_v);
+        }
+        for (int i = 0; i < static_cast<int>(outgoing.size()); ++i) {
+          const auto* e_out = outgoing[i];
+          for (const auto* e_in : incoming) {
+            if (e_in->u().id() == e_out->v().id()) {
+              a[i] = -1.0;
+              phi_out[i] =
+                  convex_relaxation ? relaxed_phi.at(e_in->id()) : e_in->phi_;
+              prog.AddLinearConstraint(a, 0.0, 1.0, phi_out);
+              A_yz.block(0, i * n_v, n_v, n_v) = -MatrixXd::Identity(n_v, n_v);
+              yz_out.segment(i * n_v, n_v) = e_in->z_;
+              v->set().AddPointInNonnegativeScalingConstraints(
+                  &prog, A_yz, VectorXd::Zero(n_v), a, 0, yz_out, phi_out);
+
+              a[i] = 1.0;
+              phi_out[i] =
+                  convex_relaxation ? relaxed_phi.at(e_out->id()) : e_out->phi_;
+              A_yz.block(0, i * n_v, n_v, n_v) = MatrixXd::Identity(n_v, n_v);
+              yz_out.segment(i * n_v, n_v) = e_out->y_;
+            }
+          }
+        }
+      } else {
+        RowVectorXd a = RowVectorXd::Ones(incoming.size());
+        MatrixXd A_yz(n_v, incoming.size() * n_v);
+        VectorXDecisionVariable phi_in(incoming.size());
+        VectorXDecisionVariable yz_in(incoming.size() * n_v);
+        for (int i = 0; i < static_cast<int>(incoming.size()); ++i) {
+          A_yz.block(0, i * n_v, n_v, n_v) = MatrixXd::Identity(n_v, n_v);
+          phi_in[i] = convex_relaxation ? relaxed_phi.at(incoming[i]->id())
+                                        : incoming[i]->phi_;
+          yz_in.segment(i * n_v, n_v) = incoming[i]->z_;
+        }
+        for (int i = 0; i < static_cast<int>(incoming.size()); ++i) {
+          const auto* e_in = incoming[i];
+          for (const auto* e_out : outgoing) {
+            if (e_in->u().id() == e_out->v().id()) {
+              a[i] = -1.0;
+              phi_in[i] =
+                  convex_relaxation ? relaxed_phi.at(e_out->id()) : e_out->phi_;
+              prog.AddLinearConstraint(a, 0.0, 1.0, phi_in);
+              A_yz.block(0, i * n_v, n_v, n_v) = -MatrixXd::Identity(n_v, n_v);
+              yz_in.segment(i * n_v, n_v) = e_out->y_;
+              v->set().AddPointInNonnegativeScalingConstraints(
+                  &prog, A_yz, VectorXd::Zero(n_v), a, 0, yz_in, phi_in);
+
+              a[i] = 1.0;
+              phi_in[i] =
+                  convex_relaxation ? relaxed_phi.at(e_in->id()) : e_in->phi_;
+              A_yz.block(0, i * n_v, n_v, n_v) = MatrixXd::Identity(n_v, n_v);
+              yz_in.segment(i * n_v, n_v) = e_in->z_;
+            }
+          }
+        }
+      }
     }
   }
 
