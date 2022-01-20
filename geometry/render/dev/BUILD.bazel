@@ -6,6 +6,7 @@ load(
     "drake_cc_library",
     "drake_cc_test",
 )
+load("//tools/skylark:py.bzl", "py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
@@ -31,6 +32,9 @@ drake_cc_binary(
     ],
     test_rule_tags = vtk_test_tags(),
     deps = [
+        ":render_client",
+        ":render_client_gltf",
+        ":render_server_backend",
         "//common:filesystem",
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
@@ -47,6 +51,86 @@ drake_cc_binary(
         "@gflags",
     ],
 )
+
+# ------------------------------------------------------------------------------
+drake_cc_library(
+    name = "render_client",
+    srcs = ["render_client.cc"],
+    hdrs = ["render_client.h"],
+    deps = [
+        "//geometry/render:render_engine",
+        "@json",
+        "@libcurl",
+        "@picosha2",
+        "@vtk//:vtkIOImage",
+    ],
+)
+
+# ------------------------------------------------------------------------------
+# The VTK-based render client GLTF exporter.
+drake_cc_library(
+    name = "render_client_gltf",
+    srcs = [
+        "render_client_gltf.cc",
+        "render_client_gltf_factory.cc",
+    ],
+    hdrs = [
+        "render_client_gltf.h",
+        "render_client_gltf_factory.h",
+    ],
+    # render_client_gltf.h directly pulls in VTK headers; leave it out of the
+    # install.
+    install_hdrs_exclude = ["render_client_gltf.h"],
+    deps = [
+        ":render_client",
+        "//common",
+        "//geometry/render:render_engine_vtk",
+        "//geometry/render/shaders:depth_shaders",
+        "//systems/sensors:color_palette",
+        "@vtk//:vtkIOExport",
+    ],
+)
+
+# ------------------------------------------------------------------------------
+# Render server
+drake_cc_binary(
+    name = "render_server_backend",
+    srcs = ["render_server/render_server_backend.cc"],
+    deps = [
+        "//geometry/render:render_engine",
+        "//geometry/render:render_engine_vtk",
+        "//geometry/render/shaders:depth_shaders",
+        "//math:geometric_transform",
+        "//systems/sensors:color_palette",
+        "@gflags",
+        "@vtk//:vtkIOImage",
+        "@vtk//:vtkIOImport",
+        "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOpenGL2",
+    ],
+)
+
+py_binary(
+    name = "server",
+    srcs = [
+        "render_server/gltf_render_server.py",
+        "render_server/wsgi.py",
+    ],
+    # TODO(svenevs): see README.md for how to run the server.  The __main__
+    # in gltf_render_server.py looks for `proxy_run_gunicorn` and just does
+    # it there.  There should be a way to achieve this with bazel.
+    # NOTE: developing the server?  Using gunicorn you will not see all error
+    # messages, comment out the `args` here to get the default (single
+    # threaded) flask runner with more debug information.
+    args = ["proxy_run_gunicorn"],
+    data = [
+        "render_server/README.md",
+        ":render_server_backend",
+    ],
+    main = "render_server/gltf_render_server.py",
+)
+
+# ------------------------------------------------------------------------------
 
 add_lint_tests()
 
