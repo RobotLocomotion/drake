@@ -399,6 +399,26 @@ GTEST_TEST(VPolytopeTest, NonnegativeScalingTest) {
   EXPECT_FALSE(PointInScaledSet(2.01, 2.0));
 }
 
+GTEST_TEST(VPolytopeTest, CalcVolume) {
+  const double tol{1E-6};
+  EXPECT_NEAR(VPolytope::MakeUnitBox(3).CalcVolume(), 8, tol);
+
+  Eigen::Matrix<double, 2, 4> vertices_2d;
+  // clang-format off
+  vertices_2d << 1, -1, 0, 0,
+                 0, 0, 1, -1;
+  // clang-format on
+  EXPECT_NEAR(VPolytope(vertices_2d).CalcVolume(), 2, tol);
+
+  Eigen::Matrix<double, 3, 5> vertices_3d;
+  // clang-format off
+  vertices_3d << 1, 0, 0, 0, 0.25,
+                 0, 1, 0, 0, 0.25,
+                 0, 0, 1, 0, 0.25;
+  // clang-format on
+  EXPECT_NEAR(VPolytope(vertices_3d).CalcVolume(), 1.0 / 6, tol);
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
