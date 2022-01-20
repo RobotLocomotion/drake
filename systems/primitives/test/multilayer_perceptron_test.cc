@@ -145,7 +145,7 @@ void BackpropTest(PerceptronActivationType type) {
   auto context = mlp.CreateDefaultContext();
   auto context_ad = mlp_ad.CreateDefaultContext();
 
-  RandomGenerator generator(0.243);
+  RandomGenerator generator(243);
   mlp.SetRandomContext(context.get(), &generator);
 
   mlp_ad.SetParameters(context_ad.get(),
