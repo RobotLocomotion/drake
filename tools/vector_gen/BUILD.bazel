@@ -81,6 +81,8 @@ sh_test(
         "test/goal/sample.h",
         "test/lcmt_sample_t.lcm",
     ],
+    # Valgrind Memcheck reports several leaks in the sed executable.
+    tags = ["no_memcheck"],
 )
 
 add_lint_tests()

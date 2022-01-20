@@ -58,6 +58,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "pose_smoother_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":pose_smoother",
         "//common/test_utilities:eigen_geometry_compare",

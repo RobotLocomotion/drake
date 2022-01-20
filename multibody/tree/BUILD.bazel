@@ -325,6 +325,7 @@ drake_cc_googletest(
     deps = [
         ":tree",
         "//common/test_utilities",
+        "//common/test_utilities:limit_malloc",
         "//math:gradient",
         "//multibody/benchmarks/kuka_iiwa_robot",
         "//multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",

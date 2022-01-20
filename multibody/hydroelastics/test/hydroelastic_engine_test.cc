@@ -49,13 +49,13 @@ class HydroelasticEngineTest : public ::testing::Test {
   /** Adds a geometry with the given name and assigns compliant hydroelastic
    geometry properties.  */
   GeometryId AddCompliantGeometry(const std::string& name,
-                             double hydroelastic_modulus, double dissipation) {
+                                  double hydroelastic_modulus,
+                                  double dissipation) {
     GeometryId id = AddGeometry(name);
     ProximityProperties props;
-    props.AddProperty(geometry::internal::kHydroGroup,
-                      geometry::internal::kElastic, hydroelastic_modulus);
-    props.AddProperty(geometry::internal::kMaterialGroup,
-                      geometry::internal::kHcDissipation, dissipation);
+    geometry::AddCompliantHydroelasticProperties(/* resolution_hint */ 1.0,
+                                                 hydroelastic_modulus, &props);
+    geometry::AddContactMaterial(dissipation, {}, {}, &props);
     scene_graph_.AssignRole(source_id_, id, props);
     return id;
   }
@@ -67,7 +67,24 @@ class HydroelasticEngineTest : public ::testing::Test {
     // modulus or dissipation default to being rigid. Only the presence of
     // proximity properties are required.
     GeometryId id = AddGeometry(name);
-    scene_graph_.AssignRole(source_id_, id, ProximityProperties());
+    ProximityProperties props;
+    geometry::AddRigidHydroelasticProperties(/* resolution_hint */ 1.0, &props);
+    scene_graph_.AssignRole(source_id_, id, props);
+    return id;
+  }
+
+  /** Adds a geometry with the given name and assigns rigid hydroelastic
+   geometry properties as well as a value for hydroelastic_modulus.  */
+  GeometryId AddRigidGeometryWithElasticModulus(const std::string& name,
+                                                double hydroelastic_modulus) {
+    // NOTE: For geometries defined to be rigid, HydroelasticEngine will ignore
+    // any stored hydroelastic_modulus values and assume infinity.
+    GeometryId id = AddGeometry(name);
+    ProximityProperties props;
+    geometry::AddRigidHydroelasticProperties(/* resolution_hint */ 1.0, &props);
+    props.AddProperty(geometry::internal::kHydroGroup,
+                      geometry::internal::kElastic, hydroelastic_modulus);
+    scene_graph_.AssignRole(source_id_, id, props);
     return id;
   }
 
@@ -80,9 +97,31 @@ class HydroelasticEngineTest : public ::testing::Test {
   SourceId source_id_;
 };
 
+TEST_F(HydroelasticEngineTest, RigidHydroelasticModulusIgnored) {
+  const double E_A = 10.0;  // Pa
+  const double E_B = 10.0;  // Pa
+  const double d_B = 1.0;   // s/m
+
+  GeometryId id_A = AddRigidGeometryWithElasticModulus("RigidBody", E_A);
+  GeometryId id_B = AddCompliantGeometry("SoftBody", E_B, d_B);
+
+  // Create an engine.
+  HydroelasticEngine<double> engine;
+
+  // Verify that the combined hydroelastic_modulus (would both geometries be
+  // compliant) is not the same as B's hydroelastic modulus.
+  double combined_E_if_they_are_both_compliant = (E_A * E_B) / (E_A + E_B);
+  ASSERT_NE(E_B, combined_E_if_they_are_both_compliant);
+
+  // The engine will ignore the rigid geometry A's hydroelastic modulus and
+  // return B's.
+  EXPECT_EQ(engine.CalcCombinedElasticModulus(id_A, id_B, inspector()), E_B);
+  EXPECT_EQ(engine.CalcCombinedElasticModulus(id_B, id_A, inspector()), E_B);
+}
+
 TEST_F(HydroelasticEngineTest, CombineSoftAndRigidMaterialProperties) {
-  const double E_A = 10.0;
-  const double d_A = 1.0;
+  const double E_A = 10.0;  // Pa
+  const double d_A = 1.0;   // s/m
   GeometryId id_A = AddCompliantGeometry("SoftBody", E_A, d_A);
   GeometryId id_B = AddRigidGeometry("RigidBody");
 
@@ -112,10 +151,10 @@ TEST_F(HydroelasticEngineTest, CombineRigidAndRigidMaterialProperties) {
 }
 
 TEST_F(HydroelasticEngineTest, CombineSoftAndSoftMaterialProperties) {
-  const double E_A = 2.0;
-  const double d_A = 1.0;
-  const double E_B = 8.0;
-  const double d_B = 4.0;
+  const double E_A = 2.0;  // Pa
+  const double d_A = 1.0;  // s/m
+  const double E_B = 8.0;  // Pa
+  const double d_B = 4.0;  // s/m
   // Expected combined properties.
   const double Estar = 1.6;
   const double dstar = 1.6;

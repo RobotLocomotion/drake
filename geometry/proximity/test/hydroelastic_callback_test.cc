@@ -333,7 +333,8 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidMesh) {
   for (const auto representation :
        {HydroelasticContactRepresentation::kTriangle,
         HydroelasticContactRepresentation::kPolygon}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
+    SCOPED_TRACE(
+        fmt::format("representation = {}", static_cast<int>(representation)));
     {
       // Case 1: Intersecting spheres.
       scene.PoseGeometry(colliding);
@@ -386,7 +387,8 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidHalfSpace) {
   for (const auto representation :
        {HydroelasticContactRepresentation::kTriangle,
         HydroelasticContactRepresentation::kPolygon}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
+    SCOPED_TRACE(
+        fmt::format("representation = {}", static_cast<int>(representation)));
     // Case 1: Intersecting geometry.
     scene.PoseGeometry(colliding);
     const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
@@ -428,7 +430,8 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftHalfSpaceRigidMesh) {
   for (const auto representation :
        {HydroelasticContactRepresentation::kTriangle,
         HydroelasticContactRepresentation::kPolygon}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
+    SCOPED_TRACE(
+        fmt::format("representation = {}", static_cast<int>(representation)));
     // Case 1: Intersecting geometry.
     scene.PoseGeometry(colliding);
     const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);

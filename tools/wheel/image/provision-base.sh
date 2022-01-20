@@ -5,26 +5,40 @@ set -eu -o pipefail
 readonly BAZEL_VERSION=4.2.1
 readonly BAZEL_ROOT=https://github.com/bazelbuild/bazel/releases/download
 
+
 # Fix ssh permissions.
 chmod 700 ~/.ssh
 chmod 600 ~/.ssh/known_hosts
 
-# Install prerequisites.
+# Prepare system to install packages, and apply any updates.
 apt-get -y update
 apt-get -y upgrade
 
-apt-get -y install --no-install-recommends \
-    default-jdk \
-    autoconf automake libtool libltdl-dev \
-    gcc g++ gfortran libgfortran-7-dev \
-    libclang-9-dev clang-format-9 \
-    git cmake ninja-build pkg-config \
-    yasm file wget unzip zip ssh
+apt-get -y install lsb-release
 
+# Install prerequisites.
+readonly DISTRO=$(lsb_release -sc)
+
+mapfile -t PACKAGES < <(sed -e '/^#/d' < /image/packages-${DISTRO})
+
+apt-get -y install --no-install-recommends ${PACKAGES[@]}
+
+# Install CMake.
+# To build vtk-9 on bionic we need an updated CMake.
+# See: https://apt.kitware.com/
+# TODO(svenevs) Use distro version of CMake when we drop Bionic support.
+apt-get -y install --no-install-recommends gpg lsb-release wget
+readonly KW_ASC="https://apt.kitware.com/keys/kitware-archive-latest.asc"
+wget -O - "$KW_ASC" 2>/dev/null | \
+    gpg --dearmor - | \
+    tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] " \
+    "https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" | \
+    tee /etc/apt/sources.list.d/kitware.list >/dev/null
+apt-get -y update
+apt-get -y install --no-install-recommends kitware-archive-keyring
 apt-get -y install --no-install-recommends \
-    libglib2.0-dev libnlopt-dev \
-    libgl1-mesa-dev libxt-dev \
-    opencl-headers ocl-icd-opencl-dev
+    "cmake-data=3.16.3-*" "cmake=3.16.3-*"
 
 # Install Bazel.
 cd /tmp

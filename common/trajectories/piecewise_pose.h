@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
@@ -72,11 +71,6 @@ class PiecewisePose final : public PiecewiseTrajectory<T> {
 
   Eigen::Index cols() const override { return 4; }
 
-  DRAKE_DEPRECATED("2022-01-01", "get_pose() has been renamed to GetPose().")
-  math::RigidTransform<T> get_pose(const T& time) const {
-    return GetPose(time);
-  }
-
   /**
    * Returns the interpolated pose at @p time.
    */
@@ -86,35 +80,17 @@ class PiecewisePose final : public PiecewiseTrajectory<T> {
     return GetPose(t).GetAsMatrix4();
   }
 
-  DRAKE_DEPRECATED("2022-01-01",
-                   "get_velocity() has been renamed to GetVelocity().")
-  Vector6<T> get_velocity(const T& time) const {
-    return GetVelocity(time);
-  }
-
   /**
    * Returns the interpolated velocity at @p time or zero if @p time is before
    * this trajectory's start time or after its end time.
    */
   Vector6<T> GetVelocity(const T& time) const;
 
-  DRAKE_DEPRECATED("2022-01-01",
-                   "get_acceleration() has been renamed to GetAcceleration().")
-  Vector6<T> get_acceleration(const T& time) const {
-    return GetAcceleration(time);
-  }
-
   /**
    * Returns the interpolated acceleration at @p time or zero if @p time is
    * before this trajectory's start time or after its end time.
    */
   Vector6<T> GetAcceleration(const T& time) const;
-
-  DRAKE_DEPRECATED("2022-01-01",
-                   "is_approx() has been renamed to IsApprox().")
-  bool is_approx(const PiecewisePose<T>& other, double tol) const {
-    return IsApprox(other, tol);
-  }
 
   /**
    * Returns true if the position and orientation trajectories are both

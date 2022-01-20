@@ -29,6 +29,7 @@ cp -r -t /wheel/pydrake \
 cp -r -t /wheel/pydrake/lib \
     /opt/drake/lib/libdrake*.so
 
+# NOTE: build-vtk.sh also puts licenses in /opt/drake-dependencies/licenses.
 cp -r -t /wheel/pydrake/doc \
     /opt/drake-dependencies/licenses/*
 
@@ -44,8 +45,6 @@ cp -r -t /wheel/pydrake/share/drake \
 # TODO(mwoehlke-kitware) We need to remove these to keep the wheel from being
 # too large, but (per above), the whole of share/drake shouldn't be in the
 # wheel.
-rm /wheel/pydrake/share/drake/examples/kuka_iiwa_arm/kuka_plan_runner
-rm /wheel/pydrake/share/drake/examples/kuka_iiwa_arm/kuka_simulation
 rm /wheel/pydrake/share/drake/manipulation/models/ycb/meshes/*.png
 rm -r /wheel/pydrake/share/drake/examples/atlas
 

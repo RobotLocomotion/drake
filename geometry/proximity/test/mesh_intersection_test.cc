@@ -36,16 +36,6 @@ class SurfaceVolumeIntersectorTester {
  public:
   using T = typename MeshType::ScalarType;
 
-  Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
-                              const PosedHalfSpace<double>& H_F) {
-    return intersect_.CalcIntersection(p_FA, p_FB, H_F);
-  }
-  void ClipPolygonByHalfSpace(const std::vector<Vector3<T>>& polygon_vertices_F,
-                              const PosedHalfSpace<double>& H_F,
-                              std::vector<Vector3<T>>* output_vertices_F) {
-    intersect_.ClipPolygonByHalfSpace(polygon_vertices_F, H_F,
-                                      output_vertices_F);
-  }
   void RemoveDuplicateVertices(std::vector<Vector3<T>>* polygon) {
     intersect_.RemoveDuplicateVertices(polygon);
   }
@@ -82,51 +72,64 @@ using std::pair;
 using std::unique_ptr;
 using std::vector;
 
-// TODO(SeanCurtis-TRI): Robustly confirm that epsilon of 1e-14 is correct for
-//  determining that the intersection is valid. One would suppose that it will
-//  depend on the magnitude of the values in play.
-
-// TODO(DamrongGuoy): More comprehensive tests.
-/* This test is independent of ContactSurface mesh representation; so we'll
- simply use TriangleSurfaceMesh. */
+// Tests all cases of an infinite line through two points intersecting the
+// bounding plane of a half space:
+//     - Both points are in the half space (negative side of the plane).
+//     - Both points are outside the half space (positive side of the plane).
+//     - Two points are on different sides of the bounding plane.
+//     - One point is on the bounding plane; the other is not.
 GTEST_TEST(MeshIntersectionTest, CalcIntersection) {
-  using MeshType = TriangleSurfaceMesh<double>;
+  // Normal vector of the bounding plane of the half space in frame H. We use
+  // an arbitrary normal vector.
+  const Vector3d unit_normal_H = Vector3d(0.1, 2.0, -3.0).normalized();
+  // The bounding plane will pass this point I that will serve as the
+  // intersection point with the testing line. We pick I arbitrarily.
+  const Vector3d p_HI(0.7, 0.1, 1.5);
+  const PosedHalfSpace<double> half_space_H(unit_normal_H, p_HI);
 
-  const double kEps = std::numeric_limits<double>::epsilon();
-  // TODO(SeanCurtis-TRI): This test has too many zeros in it (the normal is
-  //  [1, 0, 0] -- that is not a robust test. Pick a more arbitrary normal.
-  // Half space {(x,y,z) : x <= 2.0}
-  const Vector3d unit_normal_H = Vector3d::UnitX();
-  const double plane_offset = 2.0;
-  const PosedHalfSpace<double> half_space_H(unit_normal_H,
-                                            plane_offset * unit_normal_H);
+  // The testing line will pass through p_HI with this arbitrary unit tangent
+  // vector.
+  const Vector3d unit_tangent_H = Vector3d(1.0, 1.5, -2.0).normalized();
+  // Confirms that the plane's normal vector is not perpendicular to the
+  // line's tangent vector. Otherwise, the line is parallel to the plane
+  // violating the precondition of CalcIntersection().
+  //     In fact, their dot product being positive means they get "along".
+  // Going along the direction of the tangent vector will increase the
+  // signed distance from the half space.
+  ASSERT_GT(unit_normal_H.dot(unit_tangent_H), 0.0);
 
-  // The line AB intersects the plane of the half space.
-  {
-    const Vector3d p_HA = Vector3d::Zero();
-    const Vector3d p_HB(4, 6, 10);
-    const Vector3d intersection =
-        SurfaceVolumeIntersectorTester<MeshType>().CalcIntersection(
-            p_HA, p_HB, half_space_H);
-    const Vector3d expect_intersection(2, 3, 5);
-    EXPECT_LE((expect_intersection - intersection).norm(), kEps);
-  }
+  // These are different points on the same testing line. The term "distance"
+  // here is the distance along the testing line, which has the same sign as
+  // the signed distance from the half space (but not neccessarily the same
+  // magnitude).
+  // "Positive" point at unit distance along the line from the plane.
+  const Vector3d p_HP1 = p_HI + 1.0 * unit_tangent_H;
+  // "Positive" point at distance 2.0 along the line from the plane.
+  const Vector3d p_HP2 = p_HI + 2.0 * unit_tangent_H;
+  // "Negative" point at -1 distance along the line from the plane.
+  const Vector3d p_HN1 = p_HI - 1.0 * unit_tangent_H;
+  // "Negative" point at -2 distance along the line from the plane.
+  const Vector3d p_HN2 = p_HI - 2.0 * unit_tangent_H;
+  ASSERT_GT(half_space_H.CalcSignedDistance(p_HP1), 0.0);
+  ASSERT_GT(half_space_H.CalcSignedDistance(p_HP2), 0.0);
+  ASSERT_LT(half_space_H.CalcSignedDistance(p_HN1), 0.0);
+  ASSERT_LT(half_space_H.CalcSignedDistance(p_HN2), 0.0);
 
-  // The line AB is almost parallel to the plane of the half space.
-  {
-    const Vector3d p_HA(plane_offset + 2.0 * kEps, 0., 0.);
-    const Vector3d p_HB(plane_offset - 2.0 * kEps, 1., 1.);
-    const Vector3d intersection =
-        SurfaceVolumeIntersectorTester<MeshType>().CalcIntersection(
-            p_HA, p_HB, half_space_H);
-    const Vector3d expect_intersection(2., 0.5, 0.5);
-    EXPECT_LE((expect_intersection - intersection).norm(), kEps);
-  }
+  // An empirical tolerance: one order of magnitude above the machine epsilon.
+  const double kEps = 10.0 * std::numeric_limits<double>::epsilon();
 
-  // TODO(SeanCurtis-TRI): Confirm death test in debug mode for if the points
-  //  don't properly "straddle" the boundary plane.
-  //  - Both on negative, both on positive, both *on* the plane.
-  //  - parallel negative, parallel positive.
+  // Tests two points are on the same positive side.
+  EXPECT_TRUE(CompareMatrices(CalcIntersection(p_HP1, p_HP2, half_space_H),
+                                p_HI, kEps));
+  // Tests two points are on the same negative side.
+  EXPECT_TRUE(CompareMatrices(CalcIntersection(p_HN1, p_HN2, half_space_H),
+                              p_HI, kEps));
+  // Tests two points are on different sides of the bounding plane.
+  EXPECT_TRUE(CompareMatrices(CalcIntersection(p_HP2, p_HN2, half_space_H),
+                              p_HI, kEps));
+  // Tests one point on the plane while the other point is not.
+  EXPECT_TRUE(CompareMatrices(CalcIntersection(p_HI, p_HP2, half_space_H),
+                              p_HI, kEps));
 }
 
 // TODO(DamrongGuoy): Move the definition of this function here after 11612
@@ -137,11 +140,8 @@ bool CompareConvexPolygon(const std::vector<Vector3<T>>& polygon0,
 
 // Although polygons with zero, one, or two vertices are valid input and are
 // treated correctly by this function, they are not tested as being a
-// meaningless operation. This test is independent of ContactSurface mesh
-// representation; so we'll simply use TriangleSurfaceMesh.
+// meaningless operation.
 GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
-  using MeshType = TriangleSurfaceMesh<double>;
-
   // All quantities are (measured and) expressed in the half space frame H.
 
   // TODO(SeanCurtis-TRI): This half space does *not* tax the numerics at all.
@@ -176,8 +176,7 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // Also, by construction, the winding matches, so we will also not be
     // explicitly testing that.
     std::vector<Vector3d> output_polygon;
-    SurfaceVolumeIntersectorTester<MeshType>().ClipPolygonByHalfSpace(
-        input_polygon, half_space_H, &output_polygon);
+    ClipPolygonByHalfSpace(input_polygon, half_space_H, &output_polygon);
     EXPECT_TRUE(CompareConvexPolygon(expect_output_polygon, output_polygon));
   }
   // The input polygon is on the plane X=0, which is parallel to the plane of
@@ -195,8 +194,7 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // Because we expect the output polygon to *be* the input polygon, we don't
     // need to explicitly test planarity or winding.
     std::vector<Vector3d> output_polygon;
-    SurfaceVolumeIntersectorTester<MeshType>().ClipPolygonByHalfSpace(
-        input_polygon, half_space_H, &output_polygon);
+    ClipPolygonByHalfSpace(input_polygon, half_space_H, &output_polygon);
     EXPECT_TRUE(CompareConvexPolygon(input_polygon, output_polygon));
   }
   // The input polygon is on the plane X=3, which is parallel to the plane of
@@ -213,8 +211,7 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // clang-format on
     // Empty polygons have no winding and no planarity.
     std::vector<Vector3d> output_polygon;
-    SurfaceVolumeIntersectorTester<MeshType>().ClipPolygonByHalfSpace(
-        input_polygon, half_space_H, &output_polygon);
+    ClipPolygonByHalfSpace(input_polygon, half_space_H, &output_polygon);
     const std::vector<Vector3d> empty_polygon;
     EXPECT_TRUE(CompareConvexPolygon(empty_polygon, output_polygon));
   }
@@ -232,8 +229,7 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // Because we expect the output polygon to *be* the input polygon, we don't
     // need to explicitly test planarity or winding.
     std::vector<Vector3d> output_polygon;
-    SurfaceVolumeIntersectorTester<MeshType>().ClipPolygonByHalfSpace(
-        input_polygon, half_space_H, &output_polygon);
+    ClipPolygonByHalfSpace(input_polygon, half_space_H, &output_polygon);
     EXPECT_TRUE(CompareConvexPolygon(input_polygon, output_polygon));
   }
   // The input polygon is outside the half space, but it has one edge on the
@@ -257,8 +253,7 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // By construction, expected output is planar (z = 0 for all vertices). It
     // has no area, so winding is immaterial.
     std::vector<Vector3d> output_polygon;
-    SurfaceVolumeIntersectorTester<MeshType>().ClipPolygonByHalfSpace(
-        input_polygon, half_space_H, &output_polygon);
+    ClipPolygonByHalfSpace(input_polygon, half_space_H, &output_polygon);
     EXPECT_TRUE(CompareConvexPolygon(expect_output_polygon, output_polygon));
   }
   // The input polygon is outside the half space, but it has one vertex on the
@@ -280,8 +275,7 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // By construction, expected output is planar (z = 0 for all vertices). It
     // has no area, so winding is immaterial.
     std::vector<Vector3d> output_polygon;
-    SurfaceVolumeIntersectorTester<MeshType>().ClipPolygonByHalfSpace(
-        input_polygon, half_space_H, &output_polygon);
+    ClipPolygonByHalfSpace(input_polygon, half_space_H, &output_polygon);
     EXPECT_TRUE(CompareConvexPolygon(expect_output_polygon, output_polygon));
   }
   // TODO(SeanCurtis-TRI): Clip a triangle into a quad. Clip a triangle into a

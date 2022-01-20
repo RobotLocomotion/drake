@@ -216,5 +216,5 @@ instructions to obtain a username and password.
 7. Run ``cd tools/wheel``
 8. Run ``./build-wheels --test 0.N.0``
 9. Wait a long time for it to finish (around 60 minutes on a beefy workstation). It will take over all of your computer's resources, so don't plan to do much else concurrently.
-10. There should have been exactly three whl files created. Run ``twine upload <...>``, replacing the ``<...>`` placeholder with the path to each of the wheels to be uploaded (e.g., ``drake-0.35.0b1-cp36-cp36m-manylinux_2_27_x86_64``, etc.)
+10. There should have been exactly four whl files created. Run ``twine upload <...>``, replacing the ``<...>`` placeholder with the path to each of the wheels to be uploaded (e.g., ``drake-0.35.0b1-cp36-cp36m-manylinux_2_27_x86_64``, etc.)
     1. You will need your PyPI username and password for this. (Do not use drake-robot.)

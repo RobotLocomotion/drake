@@ -150,13 +150,39 @@ RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
                                    I(1, 0), I(2, 0), I(2, 1));
 }
 
+void EmitError(std::ostream& out, const sdf::Error& e) {
+  // Adapted from: https://github.com/ignitionrobotics/sdformat/blob/sdformat12_12.3.0/src/Utils.cc#L110-L134
+  // N.B. This provides slightly different information than the nominal
+  // operator<< for sdf::Error.
+  if (!e.XmlPath().has_value()) {
+    out << e.Message();
+  } else if (!e.FilePath().has_value()) {
+    out
+        << "[" << e.XmlPath().value()
+        << "]: " << e.Message();
+  } else if (!e.LineNumber().has_value()) {
+    out
+        << "[" << e.XmlPath().value()
+        << ":" << e.FilePath().value()
+        << "]: " << e.Message();
+  } else {
+    out
+        << "[" << e.XmlPath().value()
+        << ":" << e.FilePath().value()
+        << ":L" << e.LineNumber().value()
+        << "]: " << e.Message();
+  }
+}
+
 // Throws an exception if there are any errors present in the `errors` list.
 void ThrowAnyErrors(const sdf::Errors& errors) {
   if (!errors.empty()) {
     std::ostringstream os;
     os << "From AddModelFromSdfFile():";
-    for (const auto& e : errors)
-      os << "\nError: " + e.Message();
+    for (const auto& e : errors) {
+      os << "\nError: ";
+      EmitError(os, e);
+    }
     throw std::runtime_error(os.str());
   }
 }
@@ -1264,7 +1290,7 @@ sdf::ParserConfig CreateNewSdfParserConfig(
   parser_config.SetWarningsPolicy(sdf::EnforcementPolicy::ERR);
   parser_config.SetDeprecatedElementsPolicy(sdf::EnforcementPolicy::WARN);
   // TODO(#15018): Change unrecognized elements policy to become an error on
-  // or after 2022-01-01.
+  // or after 2022-02-01.
   parser_config.SetUnrecognizedElementsPolicy(sdf::EnforcementPolicy::WARN);
   parser_config.SetFindCallback(
     [=](const std::string &_input) {

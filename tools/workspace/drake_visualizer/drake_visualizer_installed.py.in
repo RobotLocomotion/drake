@@ -7,6 +7,7 @@ Note that it is not entirely important that this script's Python interpreter
 match that of the real `drake-visualizer` binary.
 """
 
+import os
 from os.path import isdir, join, dirname, realpath
 import sys
 
@@ -23,6 +24,9 @@ sys.path.insert(0, site_dir)
 from _drake_visualizer_builtin_scripts import (  # noqa
     _exec_drake_visualizer_with_plugins,
 )
+
+# Ensure that we can load the necessary shared libraries, when on Linux.
+os.environ["LD_LIBRARY_PATH"] = join(PREFIX_DIR, "lib")
 
 
 def main():

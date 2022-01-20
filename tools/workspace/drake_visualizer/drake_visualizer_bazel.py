@@ -72,13 +72,9 @@ def main():
         pass
 
     if sys.platform.startswith("linux"):
-        # Ensure that we handle LD_LIBRARY_PATH for @lcm and @vtk and
-        # PYTHONPATH for @vtk.
+        # Ensure that we handle LD_LIBRARY_PATH for @lcm and vtk-8.
         set_path("LD_LIBRARY_PATH", "external/lcm")
-        prepend_path("LD_LIBRARY_PATH", "external/vtk/lib")
-        prepend_path(
-            "PYTHONPATH", "external/vtk/lib/python{}.{}/site-packages".format(
-                *sys.version_info[:2]))
+        prepend_path("LD_LIBRARY_PATH", "external/drake_visualizer/lib")
     elif sys.platform == "darwin":
         # Ensure that we handle DYLD_LIBRARY_PATH for @lcm.
         set_path("DYLD_LIBRARY_PATH", "external/lcm")

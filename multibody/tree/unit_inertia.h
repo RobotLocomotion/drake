@@ -232,6 +232,16 @@ class UnitInertia : public RotationalInertia<T> {
         mp0 * p_FQ[1], mp0 * p_FQ[2], mp1 * p_FQ[2]);
   }
 
+  /// Computes the unit inertia for a unit-mass solid ellipsoid of uniform
+  /// density taken about its center. The lengths of the semi-axes of the
+  /// ellipsoid in the principal x,y,z-axes are `a`, `b`, and `c` respectively.
+  static UnitInertia<T> SolidEllipsoid(const T& a, const T& b, const T& c) {
+    const T a2 = a * a;
+    const T b2 = b * b;
+    const T c2 = c * c;
+    return UnitInertia<T>(0.2 * (b2 + c2), 0.2 * (a2 + c2), 0.2 * (a2 + b2));
+  }
+
   /// Computes the unit inertia for a unit-mass solid sphere of uniform density
   /// and radius `r` taken about its center.
   static UnitInertia<T> SolidSphere(const T& r) {
@@ -300,6 +310,16 @@ class UnitInertia : public RotationalInertia<T> {
     const T K = (T(3) * r * r + L * L) / T(12);
     return AxiallySymmetric(J, K, b_E);
   }
+
+  /// Computes the unit inertia for a uniform density unit-mass capsule C
+  /// whose axis of revolution is along the z-axis.
+  /// @param[in] r The radius of the the cylinder/half-sphere part of the
+  /// capsule.
+  /// @param[in] L The length of the cylindrical part of the capsule.
+  /// @throws std::exception
+  ///   - Radius r is negative.
+  ///   - Length L is negative.
+  static UnitInertia<T> SolidCapsule(const T& r, const T& L);
 
   /// Computes the unit inertia for a unit-mass cylinder of uniform density
   /// oriented along the z-axis computed about a point at the center of

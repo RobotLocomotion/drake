@@ -76,10 +76,10 @@ bool PolygonSurfaceMesh<T>::Equal(const PolygonSurfaceMesh<T>& mesh) const {
 }
 
 template <class T>
-void PolygonSurfaceMesh<T>::CalcAreaNormalAndCentroid(int poly_index) {
-  int data_index = poly_indices_[poly_index];
+void PolygonSurfaceMesh<T>::CalcAreaNormalAndCentroid(const int poly_index) {
+  const int data_index = poly_indices_[poly_index];
   const int v_count = face_data_[data_index];
-  int v_index_offset = data_index + 1;
+  const int v_index_offset = data_index + 1;
   const Vector3<T>& r_MA = vertices_M_[face_data_[v_index_offset]];
 
   Vector3<T> p_MTc_scaled(0, 0, 0);
@@ -159,10 +159,41 @@ void PolygonSurfaceMesh<T>::CalcAreaNormalAndCentroid(int poly_index) {
    polygon's contribution proportionately (although, we want to add in Aₚ⋅p_MFc,
    but what we computed is 6⋅Aₚ⋅p_MFc. */
   const Vector3<T> p_MTc_area_scaled = p_MTc_scaled / 6;
-  element_centroid_M_.emplace_back(p_MTc_area_scaled / poly_area);
+  if (poly_area != 0.0) {
+    element_centroid_M_.emplace_back(p_MTc_area_scaled / poly_area);
+  } else {
+    // For a zero-area polygon, we will use the average vertex position.
+    // It may or may not be in the "middle" of the zero-area polygon.
+    element_centroid_M_.emplace_back(CalcAveragePosition(poly_index));
+  }
   const T old_area = total_area_;
   total_area_ += poly_area;
-  p_MSc_ = (p_MSc_ * old_area + p_MTc_area_scaled) / total_area_;
+  if (total_area_ != 0.0) {
+    p_MSc_ = (p_MSc_ * old_area + p_MTc_area_scaled) / total_area_;
+  } else {
+    // The accumulated total area is still zero, so we simply use the last
+    // entry of element_centroid_M_ as a temporary solution for now. If the
+    // next polygon in the mesh has non-zero area, its centroid will take over.
+    p_MSc_ = element_centroid_M_.back();
+  }
+}
+
+template <class T>
+Vector3<T> PolygonSurfaceMesh<T>::CalcAveragePosition(const int poly_index) {
+  const int data_index = poly_indices_[poly_index];
+  const int v_count = face_data_[data_index];
+  const int v_index_offset = data_index + 1;
+  const Vector3<T>& r_MA = vertices_M_[face_data_[v_index_offset]];
+
+  // Initialize the accumulation from the first vertex.
+  Vector3<T> p_MVaccumulate(r_MA);
+
+  // Accumulate the remaining vertices.
+  for (int v = 1; v < v_count; ++v) {
+    p_MVaccumulate += vertices_M_[face_data_[v_index_offset + v]];
+  }
+
+  return p_MVaccumulate / v_count;
 }
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(

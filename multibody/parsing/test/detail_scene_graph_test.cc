@@ -78,7 +78,16 @@ unique_ptr<sdf::Geometry> MakeSdfGeometryFromString(
       "</sdf>";
   sdf::SDFPtr sdf_parsed(new sdf::SDF());
   sdf::init(sdf_parsed);
-  sdf::readString(sdf_str, sdf_parsed);
+  sdf::Errors errors;
+  const bool success = sdf::readString(sdf_str, sdf_parsed, errors);
+  if (!success) {
+    for (const auto& error : errors) {
+      drake::log()->error("MakeSdfGeometryFromString parse error: {}", error);
+    }
+    // Note that we don't throw here, we just spam the console.  This is not
+    // great, but it matches the pre-existing behavior which wants this helper
+    // to return a default-constructed value in the case of syntax errors.
+  }
   sdf::ElementPtr geometry_element =
       sdf_parsed->Root()->GetElement("model")->
           GetElement("link")->GetElement("visual")->GetElement("geometry");
@@ -111,7 +120,16 @@ unique_ptr<sdf::Visual> MakeSdfVisualFromString(
       "</sdf>";
   sdf::SDFPtr sdf_parsed(new sdf::SDF());
   sdf::init(sdf_parsed);
-  sdf::readString(sdf_str, sdf_parsed);
+  sdf::Errors errors;
+  const bool success = sdf::readString(sdf_str, sdf_parsed, errors);
+  if (!success) {
+    for (const auto& error : errors) {
+      drake::log()->error("MakeSdfVisualFromString parse error: {}", error);
+    }
+    // Note that we don't throw here, we just spam the console.  This is not
+    // great, but it matches the pre-existing behavior which wants this helper
+    // to return a default-constructed value in the case of syntax errors.
+  }
   sdf::ElementPtr visual_element =
       sdf_parsed->Root()->GetElement("model")->
           GetElement("link")->GetElement("visual");

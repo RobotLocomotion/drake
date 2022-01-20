@@ -21,6 +21,8 @@ cc_library(
         "src/voxelized_geometry_tools/collision_map.cpp",
         "src/voxelized_geometry_tools/dynamic_spatial_hashed_collision_map.cpp",  # noqa
         "src/voxelized_geometry_tools/mesh_rasterizer.cpp",
+        "src/voxelized_geometry_tools/signed_distance_field.cpp",
+        "src/voxelized_geometry_tools/signed_distance_field_generation.cpp",  # noqa
         "src/voxelized_geometry_tools/tagged_object_collision_map.cpp",
     ],
     hdrs = [

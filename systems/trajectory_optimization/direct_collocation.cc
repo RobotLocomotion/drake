@@ -18,6 +18,17 @@ using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
 using trajectories::PiecewisePolynomial;
 
+namespace {
+int CheckAndReturnStates(int states) {
+  if (states <= 0) {
+    throw std::logic_error(
+        "This system doesn't have any continuous states. DirectCollocation "
+        "only makes sense for systems with continuous-time dynamics.");
+  }
+  return states;
+}
+}  // namespace
+
 DirectCollocationConstraint::DirectCollocationConstraint(
     const System<double>& system, const Context<double>& context,
     std::variant<InputPortSelection, InputPortIndex> input_port_index,
@@ -34,7 +45,8 @@ DirectCollocationConstraint::DirectCollocationConstraint(
     int num_states, int num_inputs,
     std::variant<InputPortSelection, InputPortIndex> input_port_index,
     bool assume_non_continuous_states_are_fixed)
-    : Constraint(num_states, 1 + (2 * num_states) + (2 * num_inputs),
+    : Constraint(CheckAndReturnStates(num_states),
+                 1 + (2 * num_states) + (2 * num_inputs),
                  Eigen::VectorXd::Zero(num_states),
                  Eigen::VectorXd::Zero(num_states)),
       system_(System<double>::ToAutoDiffXd(system)),
@@ -156,8 +168,8 @@ DirectCollocation::DirectCollocation(
           system->get_input_port_selection(input_port_index)
               ? system->get_input_port_selection(input_port_index)->size()
               : 0,
-          context.num_continuous_states(), num_time_samples,
-          minimum_timestep, maximum_timestep),
+          CheckAndReturnStates(context.num_continuous_states()),
+          num_time_samples, minimum_timestep, maximum_timestep),
       system_(system),
       context_(context.Clone()),
       continuous_state_(system_->AllocateTimeDerivatives()),
@@ -184,10 +196,11 @@ DirectCollocation::DirectCollocation(
   // along with the state and input vectors at that breakpoint and the
   // next.
   for (int i = 0; i < N() - 1; i++) {
-    AddConstraint(constraint,
-                  {h_vars().segment<1>(i),
-                   x_vars().segment(i * num_states(), num_states() * 2),
-                   u_vars().segment(i * num_inputs(), num_inputs() * 2)})
+    prog()
+        .AddConstraint(constraint,
+                       {h_vars().segment<1>(i),
+                        x_vars().segment(i * num_states(), num_states() * 2),
+                        u_vars().segment(i * num_inputs(), num_inputs() * 2)})
         .evaluator()
         ->set_description(
             fmt::format("collocation constraint for segment {}", i));
@@ -200,12 +213,13 @@ void DirectCollocation::DoAddRunningCost(const symbolic::Expression& g) {
   // g_0*h_0/2.0 + [sum_{i=1...N-2} g_i*(h_{i-1} + h_i)/2.0] +
   // g_{N-1}*h_{N-2}/2.0.
 
-  AddCost(SubstitutePlaceholderVariables(g * h_vars()(0) / 2, 0));
+  prog().AddCost(SubstitutePlaceholderVariables(g * h_vars()(0) / 2, 0));
   for (int i = 1; i <= N() - 2; i++) {
-    AddCost(SubstitutePlaceholderVariables(
+    prog().AddCost(SubstitutePlaceholderVariables(
         g * (h_vars()(i - 1) + h_vars()(i)) / 2, i));
   }
-  AddCost(SubstitutePlaceholderVariables(g * h_vars()(N() - 2) / 2, N() - 1));
+  prog().AddCost(SubstitutePlaceholderVariables(
+      g * h_vars()(N() - 2) / 2, N() - 1));
 }
 
 PiecewisePolynomial<double> DirectCollocation::ReconstructInputTrajectory(

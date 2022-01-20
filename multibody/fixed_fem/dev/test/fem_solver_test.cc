@@ -18,6 +18,8 @@
 namespace drake {
 namespace multibody {
 namespace fem {
+namespace {
+
 constexpr int kNaturalDimension = 3;
 constexpr int kSpatialDimension = 3;
 constexpr int kSolutionDimension = 3;
@@ -27,27 +29,29 @@ constexpr int kNumDirichlet = 4;
 constexpr int kNumNodes = 8;
 constexpr int kNumDofs = kNumNodes * kSolutionDimension;
 constexpr double kTol = 1e-14;
-using T = double;
-using QuadratureType =
-    internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
-constexpr int kNumQuads = QuadratureType::num_quadrature_points;
-using IsoparametricElementType =
-    internal::LinearSimplexElement<T, kNaturalDimension, kSpatialDimension,
-                                   kNumQuads>;
-using ConstitutiveModelType = internal::LinearConstitutiveModel<T, kNumQuads>;
-using ElementType =
-    StaticElasticityElement<IsoparametricElementType, QuadratureType,
-                            ConstitutiveModelType>;
-using ModelType = StaticElasticityModel<ElementType>;
-using State = FemState<ElementType>;
-const double kYoungsModulus = 1.234;
-const double kPoissonRatio = 0.4567;
-const double kDensity = 8.90;
-/* Set a non-default gravity to check gravity's set correctly. */
-const Vector3<T> kGravity{1.23, -4.56, 7.89};
+constexpr double kYoungsModulus = 1.234;
+constexpr double kPoissonRatio = 0.4567;
+constexpr double kDensity = 8.90;
 
+template <typename T>
 class FemSolverTest : public ::testing::Test {
  protected:
+  using QuadratureType =
+      internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
+  static constexpr int kNumQuads = QuadratureType::num_quadrature_points;
+  using IsoparametricElementType =
+      internal::LinearSimplexElement<T, kNaturalDimension, kSpatialDimension,
+                                     kNumQuads>;
+  using ConstitutiveModelType = internal::LinearConstitutiveModel<T, kNumQuads>;
+  using ElementType =
+      StaticElasticityElement<IsoparametricElementType, QuadratureType,
+                              ConstitutiveModelType>;
+  using ModelType = StaticElasticityModel<ElementType>;
+  using State = FemState<ElementType>;
+
+  /* A non-default gravity to check gravity's set correctly. */
+  const Vector3<T> kGravity{1.23, -4.56, 7.89};
+
   /* Make a box and subdivide it into 6 tetrahedra. */
   static geometry::VolumeMesh<T> MakeBoxTetMesh() {
     const double kLength = 0.1;
@@ -124,44 +128,56 @@ class FemSolverTest : public ::testing::Test {
   FemSolver<T> solver_{&model_};
 };
 
-namespace {
+using ScalarTypes = ::testing::Types<double, AutoDiffXd>;
+TYPED_TEST_SUITE(FemSolverTest, ScalarTypes);
+
 /* We move the vertices of the mesh to arbitrary locations q and record the net
 force f exerted on the vertices. Then if we apply f on the vertices in the
 reference state, we should recover the positions q for static equilibrium. */
-TEST_F(FemSolverTest, StaticForceEquilibrium) {
-  /* Create an arbitrary state and find the nodel force exerted on the vertices
-   of the mesh (in unit N). */
-  const State prescribed_state = MakeArbitraryState();
+TYPED_TEST(FemSolverTest, StaticForceEquilibrium) {
+  using T = TypeParam;
+  using StateType = typename FemSolverTest<T>::State;
+
+  /* Create an arbitrary state and find the nodel force exerted on the
+   vertices of the mesh (in unit N). */
+  const StateType prescribed_state = this->MakeArbitraryState();
   VectorX<T> nodal_force(kNumDofs);
-  model_.CalcResidual(prescribed_state, &nodal_force);
+  this->model_.CalcResidual(prescribed_state, &nodal_force);
 
   /* If we exert the same force on the reference state, we should expect to
    recover the same positions as above. */
-  const T initial_error = nodal_force.norm();
-  model_.SetExplicitExternalForce(nodal_force);
-  State state = MakeReferenceState();
-  solver_.SolveStaticModelWithInitialGuess(&state);
+  const double initial_error = ExtractDoubleOrThrow(nodal_force.norm());
+  this->model_.SetExplicitExternalForce(nodal_force);
+  StateType state = this->MakeReferenceState();
+  this->solver_.SolveStaticModelWithInitialGuess(&state);
   EXPECT_TRUE(CompareMatrices(state.q(), prescribed_state.q(),
                               std::max(kTol, kTol * initial_error)));
 }
 
 /* Verifies that methods that take FemStateBase as argument throw if the
  concrete state type is incompatible with the model type. */
-TEST_F(FemSolverTest, IncompatibleState) {
-  FemState<test::DummyElement<0>> dummy_state(Vector3<double>(1, 2, 3));
+TYPED_TEST(FemSolverTest, IncompatibleState) {
+  using T = TypeParam;
+  if constexpr (std::is_same_v<T, double>) {
+    FemState<test::DummyElement<0>> dummy_state(Vector3<double>(1, 2, 3));
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        this->solver_.SolveStaticModelWithInitialGuess(&dummy_state),
+        "SolveStaticModelWithInitialGuess\\(\\): The type of the FemState is "
+        "incompatible "
+        "with the type of the FemModel.");
+  }
+
+  using StateType = typename FemSolverTest<T>::State;
+  StateType state_with_wrong_size(Vector3<T>(1, 2, 3));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      solver_.SolveStaticModelWithInitialGuess(&dummy_state),
-      "SolveStaticModelWithInitialGuess\\(\\): The type of the FemState is "
-      "incompatible "
-      "with the type of the FemModel.");
-  State state_with_wrong_size(Vector3<double>(1, 2, 3));
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      solver_.SolveStaticModelWithInitialGuess(&state_with_wrong_size),
+      this->solver_.SolveStaticModelWithInitialGuess(&state_with_wrong_size),
       "SolveStaticModelWithInitialGuess\\(\\): The size of the "
       "FemState \\(3\\) is incompatible "
       "with the size of the FemModel \\(24\\).");
 }
+
 // TODO(xuchenhan-tri): Add unit test for AdvanceOneTimeStep().
+
 }  // namespace
 }  // namespace fem
 }  // namespace multibody

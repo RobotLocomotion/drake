@@ -24,8 +24,9 @@ building or using the Drake Python bindings.
 
 # Installation
 
-Refer to [Installation](/installation.html) for how to install Drake's
-stable releases using pip.
+Refer to [Installation via Pip](/pip.html#stable-releases) for how to install
+Drake's releases using pip, or the general [Installation](/installation.html)
+instructions for alternative options.
 
 # Using the Python Bindings
 
@@ -311,6 +312,52 @@ if __name__ == "__main__":
 <div class="note" markdown="1">
 If you are developing in Drake and are using the `drake_py_unittest` macro, you can specify the argument `--trace=user` to get the same behavior.
 </div>
+
+<!-- TODO(eric.cousineau): Move this into pydrake.common.debug. -->
+
+Additionally, you can also decorate your function to break on an exception so
+you can get a REPL (which works in a terminal or in a Jupyter notebook) to
+actively inspect the context (like `dbstop if error` in MATLAB).
+
+```python
+from contextlib import contextmanager
+import pdb
+import sys
+import traceback
+
+
+@contextmanager
+def launch_pdb_on_exception():
+    """
+    Provides a context that will launch interactive pdb console automatically
+    if an exception is raised.
+
+    Example usage with @iex decorator shorthand below:
+
+        @iex
+        def my_bad_function():
+            x = 1
+            assert False
+
+        my_bad_function()
+        # Should bring up debugger at `assert` statement.
+    """
+    # Adapted from:
+    # https://github.com/gotcha/ipdb/blob/fc83b4f5f/ipdb/__main__.py#L219-L232
+
+    try:
+        yield
+    except Exception:
+        traceback.print_exc()
+        _, _, tb = sys.exc_info()
+        pdb.post_mortem(tb)
+        # Resume original execution.
+        raise
+
+
+# Mirror `@ipdb.iex` decorator. See docs for `launch_pdb_on_exception()`.
+iex = launch_pdb_on_exception()
+```
 
 This generally should help you trace where the code is dying. However, if you
 still need to dig in, you can build the bindings in debug mode, without symbol

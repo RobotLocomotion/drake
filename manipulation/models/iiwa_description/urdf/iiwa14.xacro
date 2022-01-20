@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+<robot xmlns:drake="http://drake.mit.edu" xmlns:xacro="http://www.ros.org/wiki/xacro">
   <!-- Provide additional material for the silver logo band. -->
   <material name="Silver">
     <color rgba="0.6 0.6 0.6 1.0"/>
@@ -14,8 +14,6 @@
   <xacro:property name="safety_controller_k_pos" value="100"/>
   <xacro:property name="safety_controller_k_vel" value="2"/>
   <xacro:property name="joint_damping" value="0.5"/>
-  <xacro:property name="max_effort" value="300"/>
-  <xacro:property name="max_velocity" value="10"/>
   <xacro:macro name="iiwa14" params="parent hardware_interface robot_name collision_type *origin">
     <!--joint between {parent} and link_0-->
     <joint name="${robot_name}_${parent}_joint" type="fixed">
@@ -68,7 +66,7 @@
       <child link="${robot_name}_link_1"/>
       <origin xyz="0 0 0.1575" rpy="0 0 0"/>
       <axis xyz="0 0 1"/>
-      <limit lower="${-170 * PI / 180}" upper="${170 * PI / 180}" effort="${max_effort}" velocity="${max_velocity}"/>
+      <limit lower="${-170 * PI / 180}" upper="${170 * PI / 180}" effort="320" velocity="${85 * PI / 180}" drake:acceleration="8.57"/>
       <safety_controller soft_lower_limit="${-168 * PI / 180}" soft_upper_limit="${168 * PI / 180}" k_position="${safety_controller_k_pos}" k_velocity="${safety_controller_k_vel}"/>
       <dynamics damping="${joint_damping}"/>
     </joint>
@@ -111,7 +109,7 @@
       <child link="${robot_name}_link_2"/>
       <origin xyz="0 0 0.2025" rpy="${PI / 2}   0 ${PI}"/>
       <axis xyz="0 0 1"/>
-      <limit lower="${-120 * PI / 180}" upper="${120 * PI / 180}" effort="${max_effort}" velocity="${max_velocity}"/>
+      <limit lower="${-120 * PI / 180}" upper="${120 * PI / 180}" effort="320" velocity="${85 * PI / 180}" drake:acceleration="8.57"/>
       <safety_controller soft_lower_limit="${-118 * PI / 180}" soft_upper_limit="${118 * PI / 180}" k_position="${safety_controller_k_pos}" k_velocity="${safety_controller_k_vel}"/>
       <dynamics damping="${joint_damping}"/>
     </joint>
@@ -163,7 +161,7 @@
       <child link="${robot_name}_link_3"/>
       <origin xyz="0 0.2045 0" rpy="${PI / 2} 0 ${PI}"/>
       <axis xyz="0 0 1"/>
-      <limit lower="${-170 * PI / 180}" upper="${170 * PI / 180}" effort="${max_effort}" velocity="${max_velocity}"/>
+      <limit lower="${-170 * PI / 180}" upper="${170 * PI / 180}" effort="176" velocity="${100 * PI / 180}" drake:acceleration="8.74"/>
       <safety_controller soft_lower_limit="${-118 * PI / 180}" soft_upper_limit="${118 * PI / 180}" k_position="${safety_controller_k_pos}" k_velocity="${safety_controller_k_vel}"/>
       <dynamics damping="${joint_damping}"/>
     </joint>
@@ -222,7 +220,7 @@
       <child link="${robot_name}_link_4"/>
       <origin xyz="0 0 0.2155" rpy="${PI / 2} 0 0"/>
       <axis xyz="0 0 1"/>
-      <limit lower="${-120 * PI / 180}" upper="${120 * PI / 180}" effort="${max_effort}" velocity="${max_velocity}"/>
+      <limit lower="${-120 * PI / 180}" upper="${120 * PI / 180}" effort="176" velocity="${75 * PI / 180}" drake:acceleration="11.36"/>
       <safety_controller soft_lower_limit="${-118 * PI / 180}" soft_upper_limit="${118 * PI / 180}" k_position="${safety_controller_k_pos}" k_velocity="${safety_controller_k_vel}"/>
       <dynamics damping="${joint_damping}"/>
     </joint>
@@ -274,7 +272,7 @@
       <child link="${robot_name}_link_5"/>
       <origin xyz="0 0.1845 0" rpy="${-PI / 2} ${PI} 0"/>
       <axis xyz="0 0 1"/>
-      <limit lower="${-170 * PI / 180}" upper="${170 * PI / 180}" effort="${max_effort}" velocity="${max_velocity}"/>
+      <limit lower="${-170 * PI / 180}" upper="${170 * PI / 180}" effort="110" velocity="${130 * PI / 180}" drake:acceleration="12.23"/>
       <safety_controller soft_lower_limit="${-118 * PI / 180}" soft_upper_limit="${118 * PI / 180}" k_position="${safety_controller_k_pos}" k_velocity="${safety_controller_k_vel}"/>
       <dynamics damping="${joint_damping}"/>
     </joint>
@@ -333,7 +331,7 @@
       <child link="${robot_name}_link_6"/>
       <origin xyz="0 0 0.2155" rpy="${PI / 2} 0 0"/>
       <axis xyz="0 0 1"/>
-      <limit lower="${-120 * PI / 180}" upper="${120 * PI / 180}" effort="${max_effort}" velocity="${max_velocity}"/>
+      <limit lower="${-120 * PI / 180}" upper="${120 * PI / 180}" effort="40" velocity="${135 * PI / 180}" drake:acceleration="15.72"/>
       <safety_controller soft_lower_limit="${-118 * PI / 180}" soft_upper_limit="${118 * PI / 180}" k_position="${safety_controller_k_pos}" k_velocity="${safety_controller_k_vel}"/>
       <dynamics damping="${joint_damping}"/>
     </joint>
@@ -387,7 +385,7 @@
       <child link="${robot_name}_link_7"/>
       <origin xyz="0 0.081 0" rpy="${- PI / 2} ${PI} 0"/>
       <axis xyz="0 0 1"/>
-      <limit lower="${-175 * PI / 180}" upper="${175 * PI / 180}" effort="${max_effort}" velocity="${max_velocity}"/>
+      <limit lower="${-175 * PI / 180}" upper="${175 * PI / 180}" effort="40" velocity="${135 * PI / 180}" drake:acceleration="15.72"/>
       <safety_controller soft_lower_limit="${-173 * PI / 180}" soft_upper_limit="${173 * PI / 180}" k_position="${safety_controller_k_pos}" k_velocity="${safety_controller_k_vel}"/>
       <dynamics damping="${joint_damping}"/>
     </joint>

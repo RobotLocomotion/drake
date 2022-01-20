@@ -44,8 +44,10 @@ from pydrake.systems.primitives import (
     LogVectorOutput,
     MatrixGain,
     Multiplexer, Multiplexer_,
+    MultilayerPerceptron, MultilayerPerceptron_,
     ObservabilityMatrix,
     PassThrough, PassThrough_,
+    PerceptronActivationType,
     RandomSource,
     Saturation, Saturation_,
     Sine, Sine_,
@@ -95,6 +97,7 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(LinearTransformDensity_,
                                    supports_symbolic=False)
         self._check_instantiations(Multiplexer_)
+        self._check_instantiations(MultilayerPerceptron_)
         self._check_instantiations(PassThrough_)
         self._check_instantiations(Saturation_)
         self._check_instantiations(Sine_)
@@ -498,6 +501,70 @@ class TestGeneral(unittest.TestCase):
                 # Check the type matches MyVector2.
                 value = output.get_vector_data(0)
                 self.assertTrue(isinstance(value, MyVector2))
+
+    def test_multilayer_perceptron(self):
+        mlp = MultilayerPerceptron(
+            layers=[1, 2, 3], activation_type=PerceptronActivationType.kReLU)
+        self.assertEqual(mlp.get_input_port().size(), 1)
+        self.assertEqual(mlp.get_output_port().size(), 3)
+        context = mlp.CreateDefaultContext()
+        params = np.zeros((mlp.num_parameters(), 1))
+        self.assertEqual(mlp.num_parameters(), 13)
+        self.assertEqual(mlp.layers(), [1, 2, 3])
+        self.assertEqual(mlp.activation_type(layer=0),
+                         PerceptronActivationType.kReLU)
+        self.assertEqual(len(mlp.GetParameters(context=context)),
+                         mlp.num_parameters())
+        mlp.SetWeights(context=context, layer=0, W=np.array([[1], [2]]))
+        mlp.SetBiases(context=context, layer=0, b=[3, 4])
+        np.testing.assert_array_equal(
+            mlp.GetWeights(context=context, layer=0), np.array([[1], [2]]))
+        np.testing.assert_array_equal(
+            mlp.GetBiases(context=context, layer=0), np.array([3, 4]))
+        params = np.zeros(mlp.num_parameters())
+        mlp.SetWeights(params=params, layer=0, W=np.array([[1], [2]]))
+        mlp.SetBiases(params=params, layer=0, b=[3, 4])
+        np.testing.assert_array_equal(
+            mlp.GetWeights(params=params, layer=0), np.array([[1], [2]]))
+        np.testing.assert_array_equal(
+            mlp.GetBiases(params=params, layer=0), np.array([3, 4]))
+
+        global called_loss
+        called_loss = False
+
+        def silly_loss(Y, dloss_dY):
+            global called_loss
+            called_loss = True
+            dloss_dY = 0*Y + 1
+            return Y.sum()
+
+        dloss_dparams = np.zeros((13,))
+        generator = RandomGenerator(23)
+        mlp.SetRandomContext(context, generator)
+        mlp.Backpropagation(context=context,
+                            X=np.array([1, 3, 4]).reshape((1, 3)),
+                            loss=silly_loss,
+                            dloss_dparams=dloss_dparams)
+        self.assertTrue(called_loss)
+        self.assertTrue(dloss_dparams.any())  # No longer all zero.
+
+        dloss_dparams = np.zeros((13,))
+        mlp.BackpropagationMeanSquaredError(context=context,
+                                            X=np.array([1, 3, 4]).reshape(
+                                                (1, 3)),
+                                            Y_desired=np.eye(3),
+                                            dloss_dparams=dloss_dparams)
+        self.assertTrue(dloss_dparams.any())  # No longer all zero.
+
+        mlp2 = MultilayerPerceptron(layers=[1, 2, 3],
+                                    activation_types=[
+                                        PerceptronActivationType.kReLU,
+                                        PerceptronActivationType.kTanh
+                                    ])
+        self.assertEqual(mlp2.activation_type(0),
+                         PerceptronActivationType.kReLU)
+        self.assertEqual(mlp2.activation_type(1),
+                         PerceptronActivationType.kTanh)
 
     def test_random_source(self):
         source = RandomSource(distribution=RandomDistribution.kUniform,

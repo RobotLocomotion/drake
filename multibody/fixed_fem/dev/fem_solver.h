@@ -47,8 +47,13 @@ class FemSolver {
   explicit FemSolver(const FemModelBase<T>* model) : model_(model) {
     DRAKE_DEMAND(model_ != nullptr);
     Resize();
-    linear_solver_ =
-        std::make_unique<internal::EigenConjugateGradientSolver<T>>(&A_op_);
+    /* Use PETSc matrix (created in call to `Resize()`) when scalar type is
+     double. Otherwise, use Eigen matrix and create a custom solver. */
+    if constexpr (!std::is_same_v<T, double>) {
+      linear_solver_ =
+          std::make_unique<internal::EigenConjugateGradientSolver<T>>(
+              &tangent_operator_);
+    }
   }
 
   /** For dynamic models, advances the given FEM state from the previous time
@@ -124,11 +129,18 @@ class FemSolver {
     absolute_tolerance_ = tolerance;
   }
 
-  /** Sets the relative tolerance for the linear solver used in `this`
-   FemSolver if the linear solver is iterative. No-op if the linear solver is
-   direct. */
+  /** Sets the relative tolerance for the linear solver used in `this` FemSolver
+   if the linear solver is iterative. The default (unitless) tolerance
+   is 1e-4. */
   void set_linear_solve_tolerance(const T& tolerance) {
-    linear_solver_->set_tolerance(tolerance);
+    linear_solve_tolerance_ = tolerance;
+    if constexpr (std::is_same_v<T, double>) {
+      if (tangent_matrix_petsc_ != nullptr) {
+        tangent_matrix_petsc_->set_relative_tolerance(tolerance);
+      }
+    } else {
+      linear_solver_->set_tolerance(tolerance);
+    }
   }
 
  private:
@@ -152,10 +164,25 @@ class FemSolver {
      3. The relative error (the norm of the change in the state divided by the
         norm of the state) is smaller than the unitless relative tolerance. */
     do {
-      model_->CalcTangentMatrix(*state, &A_);
-      linear_solver_->Compute();
-      /* Solving for A * dz = -b. */
-      linear_solver_->Solve(-b_, &dz_);
+      /* Use PETSc matrix when scalar type is double. Otherwise, use Eigen
+       matrix. */
+      if constexpr (std::is_same_v<T, double>) {
+        model_->CalcTangentMatrix(*state, tangent_matrix_petsc_.get());
+        tangent_matrix_petsc_->AssembleIfNecessary();
+        /* Solving for A * dz = -b, where A is the tangent matrix. */
+        dz_ = tangent_matrix_petsc_->Solve(
+            internal::PetscSymmetricBlockSparseMatrix::SolverType::
+                kConjugateGradient,
+            internal::PetscSymmetricBlockSparseMatrix::PreconditionerType::
+                kIncompleteCholesky,
+            -b_);
+
+      } else {
+        model_->CalcTangentMatrix(*state, &tangent_matrix_eigen_);
+        linear_solver_->Compute();
+        /* Solving for A * dz = -b, where A is the tangent matrix. */
+        linear_solver_->Solve(-b_, &dz_);
+      }
       model_->UpdateStateFromChangeInUnknowns(dz_, state);
       model_->CalcResidual(*state, &b_);
       ++iter;
@@ -179,8 +206,14 @@ class FemSolver {
     if (b_.size() != model_->num_dofs()) {
       b_.resize(model_->num_dofs());
       dz_.resize(model_->num_dofs());
-      A_.resize(model_->num_dofs(), model_->num_dofs());
-      model_->SetTangentMatrixSparsityPattern(&A_);
+      if constexpr (std::is_same_v<T, double>) {
+        tangent_matrix_petsc_ =
+            model_->MakePetscSymmetricBlockSparseTangentMatrix();
+        tangent_matrix_petsc_->set_relative_tolerance(linear_solve_tolerance_);
+      } else {
+        tangent_matrix_eigen_.resize(model_->num_dofs(), model_->num_dofs());
+        model_->SetTangentMatrixSparsityPattern(&tangent_matrix_eigen_);
+      }
     }
   }
 
@@ -189,12 +222,16 @@ class FemSolver {
   /* The linear solver used to solve the FEM model. */
   std::unique_ptr<internal::LinearSystemSolver<T>> linear_solver_;
   /* A scratch sparse matrix to store the tangent matrix of the model. */
-  mutable Eigen::SparseMatrix<T> A_;
-  /* The operator form of A_. */
-  const contact_solvers::internal::SparseLinearOperator<T> A_op_{"A", &A_};
+  mutable Eigen::SparseMatrix<T> tangent_matrix_eigen_;
+  mutable std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix>
+      tangent_matrix_petsc_;
+  /* The operator form of the Eigen tangent matrix. */
+  const contact_solvers::internal::SparseLinearOperator<T> tangent_operator_{
+      "FEM tangent matrix", &tangent_matrix_eigen_};
   /* A scratch vector to store the residual of the model. */
   mutable VectorX<T> b_;
-  /* A scratch vector to store the solution to A * dz = -b. */
+  /* A scratch vector to store the solution to A * dz = -b, where A is the
+   tangent matrix. */
   mutable VectorX<T> dz_;
   /* The relative tolerance for determining the convergence of the Newton
    solver, unitless. */
@@ -202,6 +239,9 @@ class FemSolver {
   /* The absolute tolerance for determining the convergence of the Newton
    solver. It has the same unit as the unknown variable z. */
   T absolute_tolerance_{1e-6};
+  /* The relative tolerance when solving for A * dz = -b, where A is the tangent
+   matrix. */
+  T linear_solve_tolerance_{1e-4};
   // TODO(xuchenhan-tri): Consider making `kMaxIterations_` configurable.
   /* Any reasonable Newton solve should converge within 20 iterations. If it
    doesn't converge in 20 iterations, chances are it will never converge. */

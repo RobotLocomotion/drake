@@ -787,11 +787,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     body_index_to_frame_id_ = other.body_index_to_frame_id_;
     frame_id_to_body_index_ = other.frame_id_to_body_index_;
     geometry_id_to_body_index_ = other.geometry_id_to_body_index_;
-    geometry_id_to_visual_index_ = other.geometry_id_to_visual_index_;
-    geometry_id_to_collision_index_ = other.geometry_id_to_collision_index_;
-    default_coulomb_friction_ = other.default_coulomb_friction_;
     visual_geometries_ = other.visual_geometries_;
+    num_visual_geometries_ = other.num_visual_geometries_;
     collision_geometries_ = other.collision_geometries_;
+    num_collision_geometries_ = other.num_collision_geometries_;
     X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
     contact_surface_representation_ =
@@ -4058,7 +4057,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
   int num_visual_geometries() const {
-    return static_cast<int>(geometry_id_to_visual_index_.size());
+    return num_visual_geometries_;
   }
 
   /// Returns the number of geometries registered for contact modeling.
@@ -4066,7 +4065,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
   int num_collision_geometries() const {
-    return geometry_id_to_collision_index_.size();
+    return num_collision_geometries_;
   }
 
   /// Returns the unique id identifying `this` plant as a source for a
@@ -4592,11 +4591,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
 
-  // Helper to evaluate if a GeometryId corresponds to a collision model.
-  bool is_collision_geometry(geometry::GeometryId id) const {
-    return geometry_id_to_collision_index_.count(id) > 0;
-  }
-
   // Helper method to compute penetration point pairs for a given `context`.
   // Having this as a separate method allows us to control specializations for
   // different scalar types.
@@ -4724,6 +4718,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return this->get_cache_entry(cache_indexes_.contact_jacobians)
         .template Eval<internal::ContactJacobians<T>>(context);
   }
+
+  // Given a GeometryId, return the corresponding BodyIndex or throw if the
+  // GeometryId is invalid or unknown to this plant.
+  BodyIndex FindBodyByGeometryId(geometry::GeometryId) const;
 
   // Registers a joint in the graph.
   void RegisterJointInGraph(const Joint<T>& joint) {
@@ -4878,30 +4876,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::unordered_map<geometry::GeometryId, BodyIndex>
       geometry_id_to_body_index_;
 
-  // Maps a GeometryId with a visual index. This allows, for instance, to find
-  // out visual properties for a given geometry.
-  // TODO(amcastro-tri): verify insertions were correct once visual_index gets
-  // used with the landing of visual properties in SceneGraph.
-  std::unordered_map<geometry::GeometryId, int> geometry_id_to_visual_index_;
-
   // Per-body arrays of visual geometries indexed by BodyIndex.
   // That is, visual_geometries_[body_index] corresponds to the array of visual
   // geometries for body with index body_index.
   std::vector<std::vector<geometry::GeometryId>> visual_geometries_;
+
+  // The total number of GeometryId values within visual_geometries_.
+  int num_visual_geometries_{0};
 
   // Per-body arrays of collision geometries indexed by BodyIndex.
   // That is, collision_geometries_[body_index] corresponds to the array of
   // collision geometries for body with index body_index.
   std::vector<std::vector<geometry::GeometryId>> collision_geometries_;
 
-  // Maps a GeometryId with a collision index. This allows, for instance, to
-  // find out collision properties (such as friction coefficient) for a given
-  // geometry.
-  std::unordered_map<geometry::GeometryId, int> geometry_id_to_collision_index_;
-
-  // Friction coefficients ordered by collision index.
-  // See geometry_id_to_collision_index_.
-  std::vector<CoulombFriction<double>> default_coulomb_friction_;
+  // The total number of GeometryId values within collision_geometries_.
+  int num_collision_geometries_{0};
 
   // The model used by the plant to compute contact forces. Keep this in sync
   // with the default value in multibody_plant_config.h; there are already

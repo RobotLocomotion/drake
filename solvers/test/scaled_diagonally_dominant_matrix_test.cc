@@ -189,7 +189,7 @@ GTEST_TEST(SdsosTest, SdsosPolynomial) {
       symbolic::Monomial({{x(0), 1}, {x(1), 1}});
 
   symbolic::Polynomial p;
-  std::tie(p, std::ignore) = prog.NewNonnegativePolynomial(
+  std::tie(p, std::ignore) = prog.NewSosPolynomial(
       m, MathematicalProgram::NonnegativePolynomial::kSdsos);
 
   Eigen::Matrix4d dd_X;

@@ -11,7 +11,6 @@ _DRAKE_RUNFILES = MANIFEST["runfiles"]["drake"]
 _DRAKE_SHLIBS = glob([
     ".lib/libdrake*.so",
     ".lib/libvtk*.so.*",
-    ".lib/libvtk*.so.*",
     # For Mosek (not enabled by default).
     ".lib/libcilkrts*.so*",
     ".lib/libmosek64*.so*",
@@ -19,6 +18,7 @@ _DRAKE_SHLIBS = glob([
     ".lib/libgurobi*.so*",
 ], exclude = [
     ".lib/libvtk*Python*",
+    ".lib/libvtk*-8.2.so.*",
 ])
 
 _PYTHON_SITE_PACKAGES_RELPATH = MANIFEST["python_site_packages_relpath"]

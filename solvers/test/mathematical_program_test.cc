@@ -3102,14 +3102,13 @@ GTEST_TEST(TestMathematicalProgram, TestSolverOptions) {
   EXPECT_EQ(prog.GetSolverOptionsStr(solver_id).size(), 0);
 }
 
-void CheckNewNonnegativePolynomial(
-    MathematicalProgram::NonnegativePolynomial type) {
+void CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial type) {
   // Check if the newly created nonnegative polynomial can be computed as m' * Q
   // * m.
   MathematicalProgram prog;
   auto t = prog.NewIndeterminates<4>();
   const auto m = symbolic::MonomialBasis<4, 2>(symbolic::Variables(t));
-  const auto pair = prog.NewNonnegativePolynomial(m, type);
+  const auto pair = prog.NewSosPolynomial(m, type);
   const symbolic::Polynomial& p = pair.first;
   const MatrixXDecisionVariable& Q = pair.second;
   MatrixX<symbolic::Polynomial> Q_poly(m.rows(), m.rows());
@@ -3123,17 +3122,14 @@ void CheckNewNonnegativePolynomial(
   const symbolic::Polynomial p_expected(m.dot(Q_poly * m));
   EXPECT_TRUE(p.EqualTo(p_expected));
 
-  const auto p2 = prog.NewNonnegativePolynomial(Q, m, type);
+  const auto p2 = prog.NewSosPolynomial(Q, m, type);
   EXPECT_TRUE(p2.EqualTo(p_expected));
 }
 
-GTEST_TEST(TestMathematicalProgram, NewNonnegativePolynomial) {
-  CheckNewNonnegativePolynomial(
-      MathematicalProgram::NonnegativePolynomial::kSos);
-  CheckNewNonnegativePolynomial(
-      MathematicalProgram::NonnegativePolynomial::kSdsos);
-  CheckNewNonnegativePolynomial(
-      MathematicalProgram::NonnegativePolynomial::kDsos);
+GTEST_TEST(TestMathematicalProgram, NewSosPolynomial) {
+  CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial::kSos);
+  CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial::kSdsos);
+  CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial::kDsos);
 }
 
 void CheckNewEvenDegreeNonnegativePolynomial(

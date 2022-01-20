@@ -69,6 +69,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.BelongsToSource(frame_id, source_id);
   inspector.GetOwningSourceName(frame_id);
   inspector.GetName(frame_id);
+  inspector.GetParentFrame(frame_id);
   inspector.GetFrameGroup(frame_id);
   inspector.NumGeometriesForFrame(frame_id);
   inspector.NumGeometriesForFrameWithRole(frame_id, Role::kUnassigned);

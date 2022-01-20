@@ -9,14 +9,14 @@ This URDF contains a single link with, in order:
   <link name="base_link">
     <collision>
       <geometry>
-        <mesh filename="../tri_cube.obj">
+        <mesh filename="package://drake/multibody/parsing/test/tri_cube.obj">
           <drake:declare_convex/>
         </mesh>
       </geometry>
     </collision>
     <collision>
       <geometry>
-        <mesh filename="../tri_cube.obj"/>
+        <mesh filename="package://drake/multibody/parsing/test/tri_cube.obj"/>
       </geometry>
     </collision>
   </link>

@@ -493,7 +493,7 @@ TEST_F(RenderEngineVtkTest, NoBodyTest) {
   Init(RigidTransformd::Identity());
   Render();
 
-  VerifyUniformColor(kBgColor, 0u);
+  VerifyUniformColor(kBgColor, 255u);
   VerifyUniformLabel(RenderLabel::kEmpty);
   VerifyUniformDepth(std::numeric_limits<float>::infinity());
 }
@@ -506,7 +506,7 @@ TEST_F(RenderEngineVtkTest, ControlBackgroundColor) {
         {}, {}, Vector3d{bg.r / 255., bg.g / 255., bg.b / 255.}};
     RenderEngineVtk engine(params);
     Render(&engine);
-    VerifyUniformColor(bg, 0u);
+    VerifyUniformColor(bg, 255u);
   }
 }
 

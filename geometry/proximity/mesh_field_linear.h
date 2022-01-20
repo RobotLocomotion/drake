@@ -10,7 +10,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/reset_on_copy.h"
@@ -204,13 +203,6 @@ class MeshFieldLinear {
     CalcValueAtMeshOriginForAllElements();
   }
 
-  DRAKE_DEPRECATED("2022-01-01", "This object will no longer store a name")
-  MeshFieldLinear(std::string name, std::vector<T>&& values,
-                  const MeshType* mesh, bool calculate_gradient = true)
-      : MeshFieldLinear(std::move(values), mesh, calculate_gradient) {
-    name_ = std::move(name);
-  }
-
   /** Evaluates the field value at a vertex.
    @param v The index of the vertex.
    @pre v ∈ [0, this->mesh().num_vertices()).
@@ -333,8 +325,6 @@ class MeshFieldLinear {
   }
 
   const MeshType& mesh() const { return *mesh_; }
-  DRAKE_DEPRECATED("2022-01-01", "This object will no longer store a name")
-  const std::string& name() const { return name_; }
   const std::vector<T>& values() const { return values_; }
 
   // TODO(#12173): Consider NaN==NaN to be true in equality tests.
@@ -406,8 +396,6 @@ class MeshFieldLinear {
   // the pointer to null when a MeshFieldLinear is copied.
   reset_on_copy<const MeshType*> mesh_;
 
-  // (Deprecated.)
-  std::string name_;
   // The field values are indexed in the same way as vertices, i.e.,
   // values_[i] is the field value for the mesh vertices_[i].
   std::vector<T> values_;

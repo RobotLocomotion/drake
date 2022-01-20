@@ -20,6 +20,9 @@ Drake binary releases incorporate a pre-compiled version of
 [Mathematical Program toolbox](https://drake.mit.edu/doxygen_cxx/group__solvers.html).
 Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
+Drake's binary releases do not support the Mosek nor Gurobi solvers. To use
+Mosek or Gurobi, you will need to [build Drake from source](/from_source.html).
+
 ## Stable Releases
 
 Binary packages of Drake for Ubuntu 18.04 (Bionic), Ubuntu 20.04 (Focal) and
@@ -27,11 +30,11 @@ Mac are available to download as attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v0.37.0](https://github.com/RobotLocomotion/drake/releases/tag/v0.37.0):
+[v0.38.0](https://github.com/RobotLocomotion/drake/releases/tag/v0.38.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-bionic.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-bionic.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-focal.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.37.0/drake-20211213-mac.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v0.38.0/drake-20220114-bionic.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.38.0/drake-20220114-bionic.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v0.38.0/drake-20220114-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.38.0/drake-20220114-focal.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v0.38.0/drake-20220114-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.38.0/drake-20220114-mac.tar.gz)
 
 ### Use as a C++ library
 

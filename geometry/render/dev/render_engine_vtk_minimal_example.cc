@@ -29,6 +29,16 @@ DEFINE_bool(color, true, "Sets the enabled camera to render color");
 DEFINE_bool(depth, true, "Sets the enabled camera to render depth");
 DEFINE_bool(label, true, "Sets the enabled camera to render label");
 DEFINE_double(render_fps, 10, "Frames per simulation second to render");
+/* Helpful viewpoints:
+ Top: "0.0, 0.0, 1.5, -3.14, 0.0, 1.57"
+ Right: "0.0, 1.0, 0.0, 1.57, 3.14, 0.0"
+ Left: "0.0, -1.0, 0.0, -1.57, 0.0, 0.0"
+ Front: (default) "0.8, 0.0, 0.5, -2.2, 0.0, 1.57"
+ Behind: "-0.8, 0.0, 0.5, -2.2, 0.0, -1.57"
+ Cylinder,Sphere Close-Ups:
+   Diffuse: "0.0, 0.0, 0.0, 1.57, 3.14, 0.0"
+   Textured: "0.0, 0.0, 0.0, -1.57, 0.0, 0.0"
+ */
 DEFINE_string(camera_xyz_rpy, "0.8, 0.0, 0.5, -2.2, 0.0, 1.57",
     "Sets the camera pose by xyz (meters) and rpy (radians) values.");
 DEFINE_string(save_dir, "",

@@ -242,7 +242,6 @@ drake_cc_library(
         "//common:essential",
         "//common:filesystem",
         "//systems/framework",
-        "@vtk//:vtkCommonDataModel",
         "@vtk//:vtkIOImage",
     ],
 )

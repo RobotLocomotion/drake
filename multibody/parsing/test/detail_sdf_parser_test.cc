@@ -7,6 +7,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <sdf/sdf.hh>
+#include <spdlog/sinks/dist_sink.h>
+#include <spdlog/sinks/ostream_sink.h>
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
@@ -621,7 +623,7 @@ GTEST_TEST(SdfParser, StaticModelWithJoints) {
   };
   // The message contains the elaborate joint name inserted by the parser.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      weld_and_finalize(), std::runtime_error,
+      weld_and_finalize(), std::exception,
       ".*sdformat_model_static.*");
 
   // Drake does not support "frozen" joints (#12227).
@@ -639,7 +641,7 @@ GTEST_TEST(SdfParser, StaticModelWithJoints) {
     </axis>
   </joint>
 </model>)"""),
-    std::runtime_error,
+    std::exception,
     "Only fixed joints are permitted in static models.");
 }
 
@@ -654,7 +656,7 @@ GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
   MultibodyPlant<double> plant(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddModelFromSdfFile(sdf_file_path, "", package_map, &plant),
-      std::runtime_error,
+      std::exception,
       /* Verify this method is throwing for the right reasons. */
       "Joint damping is negative for joint '.*'. "
           "Joint damping must be a non-negative number.");
@@ -1050,7 +1052,7 @@ void FailWithRelativeToNotDefined(const std::string& inner) {
   SCOPED_TRACE(inner);
   DRAKE_EXPECT_THROWS_MESSAGE(
       ParseTestString(inner),
-      std::runtime_error,
+      std::exception,
       R"([\s\S]*XML Attribute\[relative_to\] in element\[pose\] not )"
       R"(defined in SDF.\n)");
 }
@@ -1059,7 +1061,7 @@ void FailWithInvalidWorld(const std::string& inner) {
   SCOPED_TRACE(inner);
   DRAKE_EXPECT_THROWS_MESSAGE(
       ParseTestString(inner),
-      std::runtime_error,
+      std::exception,
       R"([\s\S]*(attached_to|relative_to) name\[world\] specified by frame )"
       R"(with name\[.*\] does not match a nested model, link, joint, or )"
       R"(frame name in model with name\[bad\][\s\S]*)");
@@ -1069,7 +1071,7 @@ void FailWithReservedName(const std::string& inner) {
   SCOPED_TRACE(inner);
   DRAKE_EXPECT_THROWS_MESSAGE(
       ParseTestString(inner),
-      std::runtime_error,
+      std::exception,
       R"([\s\S]*The supplied frame name \[.*\] is reserved.[\s\S]*)");
 }
 
@@ -1106,7 +1108,7 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
   <pose relative_to='invalid_usage'/>
   <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
 </model>)"),
-      R"([\s\S]*Error: Attribute //pose\[@relative_to\] of top level model )"
+      R"([\s\S]*Attribute //pose\[@relative_to\] of top level model )"
       R"(must be left empty[\s\S]*)");
 
   FailWithRelativeToNotDefined(R"(
@@ -1126,7 +1128,7 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
   <link name='a'/>
 </model>
 )"""),
-      std::runtime_error,
+      std::exception,
       R"([\s\S]*XML Attribute\[bad_attribute\] in element\[model\] not )"
       R"(defined in SDF.[\s\S]*)");
 
@@ -1141,14 +1143,18 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
 )"""),
     R"([\s\S]*Root object can only contain one model.*)");
 
-  std::stringstream buffer;
-  sdf::Console::ConsoleStream old_stream =
-    sdf::Console::Instance()->GetMsgStream();
-  ScopeExit revert_stream(
-    [&old_stream]()
-    { sdf::Console::Instance()->GetMsgStream() = old_stream; });
-  sdf::Console::Instance()->GetMsgStream() =
-    sdf::Console::ConsoleStream(&buffer);
+  // Temporarily append new log messages into a memory stream.
+  std::ostringstream buffer;
+  drake::logging::sink* const sink_base = drake::logging::get_dist_sink();
+  ASSERT_NE(sink_base, nullptr);
+  auto* const sink = dynamic_cast<spdlog::sinks::dist_sink_mt*>(sink_base);
+  ASSERT_NE(sink, nullptr);
+  auto buffer_sink = std::make_shared<spdlog::sinks::ostream_sink_st>(
+      buffer, true /* flush */);
+  sink->add_sink(buffer_sink);
+  ScopeExit revert_buffer_sink(
+      [&sink, &buffer_sink]()
+      { sink->remove_sink(buffer_sink); });
 
   // TODO(#15018): This throws a warning, make this an error.
   ParseTestString(R"""(
@@ -1162,6 +1168,7 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
       ".*Warning.*XML Element\\[bad_element\\], child of"
       " element\\[model\\], not defined in SDF.*"));
 
+  buffer.str("");  // Reset the buffer to be empty.
   ParseTestString(R"""(
 <model name='a'>
   <link name='l1'/>
@@ -1342,7 +1349,7 @@ GTEST_TEST(SdfParser, BushingParsing) {
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>
     </model>)"),
-                              std::runtime_error,
+                              std::exception,
                               "<drake:linear_bushing_rpy>: Unable to find the "
                               "<drake:bushing_frameC> child tag.");
 
@@ -1364,7 +1371,7 @@ GTEST_TEST(SdfParser, BushingParsing) {
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>
     </model>)"),
-      std::runtime_error,
+      std::exception,
       "<drake:linear_bushing_rpy>: Frame 'frameZ' specified for "
       "<drake:bushing_frameC> does not exist in "
       "the model.");
@@ -1385,7 +1392,7 @@ GTEST_TEST(SdfParser, BushingParsing) {
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>
     </model>)"),
-                              std::runtime_error,
+                              std::exception,
                               "<drake:linear_bushing_rpy>: Unable to find the "
                               "<drake:bushing_torque_damping> child tag.");
 }
@@ -2183,7 +2190,7 @@ GTEST_TEST(SdfParser, CollisionFilterGroupParsingErrorsTest) {
   <link name='a'/>
   <drake:collision_filter_group/>
 </model>)"""),
-      std::runtime_error,
+      std::exception,
       ".*The tag <drake:collision_filter_group> is "
       "missing the required attribute "
       "\"name\".*");
@@ -2196,7 +2203,7 @@ GTEST_TEST(SdfParser, CollisionFilterGroupParsingErrorsTest) {
     <drake:member></drake:member>
   </drake:collision_filter_group>
 </model>)"""),
-      std::runtime_error,
+      std::exception,
       ".*The tag <drake:member> is missing a required string value.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -2208,7 +2215,7 @@ GTEST_TEST(SdfParser, CollisionFilterGroupParsingErrorsTest) {
     </drake:ignored_collision_filter_group>
   </drake:collision_filter_group>
 </model>)"""),
-      std::runtime_error,
+      std::exception,
       ".*The tag <drake:ignored_collision_filter_group> is missing a "
       "required string value.*");
 }

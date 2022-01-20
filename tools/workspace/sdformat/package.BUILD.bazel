@@ -169,6 +169,8 @@ genrule(
 py_binary(
     name = "embed_sdf",
     srcs = ["@drake//tools/workspace/sdformat:embed_sdf.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
 )
 
 SDFORMAT_ALL_PUBLIC_HDRS = SDFORMAT_MOST_PUBLIC_HDRS + [
@@ -275,6 +277,10 @@ cc_library(
         "@ignition_math",
         "@ignition_utils",
         "@tinyxml2",
+        # N.B. It's very unusual to add a dependency from a third-party library
+        # onto Drake, but in this case it's the simplest way to be able to send
+        # error messages from sdformat parsing into Drake's logging API.
+        "@drake//common:essential",
     ],
 )
 

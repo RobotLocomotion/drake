@@ -34,14 +34,18 @@ filegroup(
         "lib/**/*.dylib",
         "lib/**/*.py",
         "lib/**/*.so",
+        "lib/**/*.so.1",  # vtk-8 libraries present in Linux.
     ]) + [
         "bin/drake-visualizer",
         "share/doc/director/LICENSE.txt",
     ],
     data = [
+        # N.B. We do NOT depend on "@vtk" here, even though drake-visualizer
+        # uses VTK. In Drake, "@vtk" refers to a newer version; the VTK used by
+        # drake-visuazlier is already built-in to the visualizer's globbed list
+        # of files, immediately above.
         ":drake_visualizer_python_deps",
         "@lcm//:libdrake_lcm.so",
-        "@vtk",
     ],
     visibility = ["//visibility:public"],
 )

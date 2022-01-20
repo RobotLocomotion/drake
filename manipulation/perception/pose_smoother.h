@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/manipulation/util/moving_average_filter.h"
 #include "drake/systems/framework/event.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -44,7 +45,10 @@ namespace perception {
  *
  *  @ingroup manipulation_systems
  */
-class PoseSmoother : public systems::LeafSystem<double> {
+class DRAKE_DEPRECATED("2022-05-01",
+    "This class is being removed.  You are invited to copy it into your own"
+    " project in case you still need it.")
+PoseSmoother : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseSmoother)
 

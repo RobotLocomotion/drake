@@ -41,6 +41,8 @@ py_library(
 py_binary(
     name = "mkdoc",
     srcs = ["mkdoc.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
     visibility = ["//visibility:public"],
     deps = [
         ":libclang_setup_py",
@@ -109,6 +111,8 @@ py_library(
 py_binary(
     name = "generate_pybind_coverage",
     srcs = ["generate_pybind_coverage.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
     visibility = ["//visibility:public"],
     deps = [":pybind_coverage_py"],
 )

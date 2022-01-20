@@ -106,9 +106,6 @@
             <size> 0.022 0.022 0.0598 </size>
           </box>
         </geometry>
-        <material>
-          <diffuse>1 0 1 1</diffuse>
-        </material>
       </collision>
       <visual name="sensor_visual">
         <pose>0 0 -0.0425 0 0 0</pose>
@@ -199,9 +196,6 @@
             <radius>0.015</radius>
           </sphere>
         </geometry>
-        <material>
-          <diffuse>1 1 1 1</diffuse>
-        </material>
       </collision>
     </link>
     <joint name="finger1_sensor_weldjoint" type="fixed">
@@ -309,9 +303,6 @@
             <size> 0.022 0.022 0.0598 </size>
           </box>
         </geometry>
-        <material>
-          <diffuse>1 0 1 1</diffuse>
-        </material>
       </collision>
       <visual name="sensor_visual">
         <pose>0 0 -0.0425 0 0 0</pose>
@@ -402,9 +393,6 @@
             <radius>0.015</radius>
           </sphere>
         </geometry>
-        <material>
-          <diffuse>1 1 1 1</diffuse>
-        </material>
       </collision>
     </link>
     <joint name="finger2_sensor_weldjoint" type="fixed">
@@ -512,9 +500,6 @@
             <size> 0.022 0.022 0.0598 </size>
           </box>
         </geometry>
-        <material>
-          <diffuse>1 0 1 1</diffuse>
-        </material>
       </collision>
       <visual name="sensor_visual">
         <pose>0 0 -0.0425 0 0 0</pose>
@@ -605,9 +590,6 @@
             <radius>0.015</radius>
           </sphere>
         </geometry>
-        <material>
-          <diffuse>1 1 1 1</diffuse>
-        </material>
       </collision>
     </link>
     <joint name="finger3_sensor_weldjoint" type="fixed">

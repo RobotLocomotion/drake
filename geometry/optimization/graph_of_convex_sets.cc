@@ -29,10 +29,12 @@ using Eigen::VectorXd;
 using solvers::Binding;
 using solvers::Constraint;
 using solvers::Cost;
+using solvers::L1NormCost;
 using solvers::L2NormCost;
 using solvers::LinearConstraint;
 using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
+using solvers::LInfNormCost;
 using solvers::MathematicalProgram;
 using solvers::MathematicalProgramResult;
 using solvers::QuadraticCost;
@@ -44,7 +46,7 @@ using symbolic::Variables;
 
 GraphOfConvexSets::~GraphOfConvexSets() = default;
 
-Vertex::Vertex(const VertexId& id, const ConvexSet& set, std::string name)
+Vertex::Vertex(VertexId id, const ConvexSet& set, std::string name)
     : id_(id),
       set_(set.Clone()),
       name_(std::move(name)),
@@ -136,7 +138,7 @@ Vertex* GraphOfConvexSets::AddVertex(const ConvexSet& set, std::string name) {
   return iter->second.get();
 }
 
-Edge* GraphOfConvexSets::AddEdge(const VertexId& u_id, const VertexId& v_id,
+Edge* GraphOfConvexSets::AddEdge(VertexId u_id, VertexId v_id,
                                  std::string name) {
   auto u_iter = vertices_.find(u_id);
   DRAKE_DEMAND(u_iter != vertices_.end());
@@ -157,6 +159,30 @@ Edge* GraphOfConvexSets::AddEdge(const Vertex& u, const Vertex& v,
                                  std::string name) {
   return AddEdge(u.id(), v.id(), std::move(name));
 }
+
+void GraphOfConvexSets::RemoveVertex(VertexId vertex_id) {
+  DRAKE_DEMAND(vertices_.find(vertex_id) != vertices_.end());
+  const auto& last_edge = edges_.end();
+  for (auto e = edges_.begin(); e != last_edge;) {
+    if (e->second->u().id() == vertex_id || e->second->v().id() == vertex_id) {
+      e = edges_.erase(e);
+    } else {
+      ++e;
+    }
+  }
+  vertices_.erase(vertex_id);
+}
+
+void GraphOfConvexSets::RemoveVertex(const Vertex& vertex) {
+  RemoveVertex(vertex.id());
+}
+
+void GraphOfConvexSets::RemoveEdge(EdgeId edge_id) {
+  DRAKE_DEMAND(edges_.find(edge_id) != edges_.end());
+  edges_.erase(edge_id);
+}
+
+void GraphOfConvexSets::RemoveEdge(const Edge& edge) { RemoveEdge(edge.id()); }
 
 std::vector<Vertex*> GraphOfConvexSets::Vertices() {
   std::vector<Vertex*> vertices;
@@ -237,8 +263,7 @@ std::string GraphOfConvexSets::GetGraphvizString(
 }
 
 MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
-    const VertexId& source_id, const VertexId& target_id,
-    bool convex_relaxation) const {
+    VertexId source_id, VertexId target_id, bool convex_relaxation) const {
   DRAKE_DEMAND(vertices_.find(source_id) != vertices_.end());
   DRAKE_DEMAND(vertices_.find(target_id) != vertices_.end());
 
@@ -342,14 +367,57 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
         A_cone.block(2, 2, R.rows(), R.cols()) = R;
         prog.AddRotatedLorentzConeConstraint(
             A_cone, VectorXd::Zero(A_cone.rows()), vars);
+      } else if (L1NormCost* l1c = dynamic_cast<L1NormCost*>(cost)) {
+        // |Ax + b|₁ becomes ℓ ≥ Σᵢ δᵢ and δᵢ ≥ |Aᵢx+bᵢϕ|.
+        int A_rows = l1c->A().rows();
+        int A_cols = l1c->A().cols();
+        auto l1c_slack =
+            prog.NewContinuousVariables(A_rows, fmt::format("l1c_slack{}", i));
+        VectorXDecisionVariable cost_vars(vars.size() + l1c_slack.size());
+        cost_vars << vars, l1c_slack;
+        MatrixXd A_linear = MatrixXd::Zero(2 * A_rows + 1, cost_vars.size());
+
+        // δᵢ ≥ Aᵢx+bᵢϕ
+        A_linear.block(0, 0, A_rows, 1) = l1c->b();       // bϕ.
+        A_linear.block(0, 2, A_rows, A_cols) = l1c->A();  // Ax.
+        A_linear.block(0, A_cols + 2, A_rows, l1c_slack.size()) =
+            -MatrixXd::Identity(A_rows, A_rows);  // -δ.
+
+        // -δᵢ ≤ Aᵢx+bᵢϕ
+        A_linear.block(A_rows, 0, A_rows, 1) = -l1c->b();       // -bϕ.
+        A_linear.block(A_rows, 2, A_rows, A_cols) = -l1c->A();  // -Ax.
+        A_linear.block(A_rows, A_cols + 2, A_rows, l1c_slack.size()) =
+            -MatrixXd::Identity(A_rows, A_rows);  // -δ.
+
+        // ℓ ≥ Σᵢ δᵢ
+        A_linear(2 * A_rows, 1) = -1;
+        A_linear.block(2 * A_rows, A_cols + 2, 1, l1c_slack.size()) =
+            RowVectorXd::Ones(l1c_slack.size());
+        prog.AddLinearConstraint(A_linear,
+                                 VectorXd::Constant(A_linear.rows(), -inf),
+                                 VectorXd::Zero(A_linear.rows()), cost_vars);
       } else if (L2NormCost* l2c = dynamic_cast<L2NormCost*>(cost)) {
         // |Ax + b|₂ becomes ℓ ≥ |Ax+bϕ|₂.
-        MatrixXd A_cone = MatrixXd::Zero(l2c->A().rows() + 2, vars.size());
+        MatrixXd A_cone = MatrixXd::Zero(l2c->A().rows() + 1, vars.size());
         A_cone(0, 1) = 1.0;                                 // z₀ = ℓ.
         A_cone.block(1, 0, l2c->A().rows(), 1) = l2c->b();  // bϕ.
         A_cone.block(1, 2, l2c->A().rows(), l2c->A().cols()) = l2c->A();  // Ax.
         prog.AddLorentzConeConstraint(A_cone, VectorXd::Zero(A_cone.rows()),
                                       vars);
+      } else if (LInfNormCost* linfc = dynamic_cast<LInfNormCost*>(cost)) {
+        // |Ax + b|∞ becomes ℓ ≥ |Aᵢx+bᵢϕ| ∀ i.
+        int A_rows = linfc->A().rows();
+        MatrixXd A_linear(2 * A_rows, vars.size());
+        A_linear.block(0, 0, A_rows, 1) = linfc->b();                  // bϕ.
+        A_linear.block(0, 1, A_rows, 1) = -VectorXd::Ones(A_rows);     // -ℓ.
+        A_linear.block(0, 2, A_rows, linfc->A().cols()) = linfc->A();  // Ax.
+        A_linear.block(A_rows, 0, A_rows, 1) = -linfc->b();            // -bϕ.
+        A_linear.block(A_rows, 1, A_rows, 1) = -VectorXd::Ones(A_rows);  // -ℓ.
+        A_linear.block(A_rows, 2, A_rows, linfc->A().cols()) =
+            -linfc->A();  // -Ax.
+        prog.AddLinearConstraint(A_linear,
+                                 VectorXd::Constant(A_linear.rows(), -inf),
+                                 VectorXd::Zero(A_linear.rows()), vars);
       } else {
         throw std::runtime_error(fmt::format(
             "GraphOfConvexSets::Edge does not support this binding type: {}",

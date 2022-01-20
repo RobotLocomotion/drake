@@ -44,6 +44,7 @@ drake_cc_library(
         "//common/trajectories:piecewise_polynomial",
         "//solvers:ipopt_solver",
         "//solvers:mathematical_program",
+        "//solvers:solve",
     ],
 )
 
@@ -108,6 +109,7 @@ drake_cc_googletest(
     deps = [
         ":direct_collocation",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//examples/rimless_wheel",
         "//multibody/benchmarks/pendulum",
         "//solvers:solve",
@@ -118,8 +120,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "direct_transcription_test",
     data = ["//examples/pendulum:prod_models"],
-    # This test has two long cases; run them in parallel.
-    shard_count = 2,
+    # This test has two duplicated long cases; run them in parallel.
+    shard_count = 4,
     deps = [
         ":direct_transcription",
         "//common/test_utilities:eigen_matrix_compare",

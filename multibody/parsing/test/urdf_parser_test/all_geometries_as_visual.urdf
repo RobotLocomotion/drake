@@ -28,7 +28,7 @@
     </visual>
     <visual name="Convex">
       <geometry>
-        <mesh filename="../tri_cube.obj">
+        <mesh filename="package://drake/multibody/parsing/test/tri_cube.obj">
           <drake:declare_convex/>
         </mesh>
       </geometry>
@@ -56,7 +56,7 @@
     -->
     <visual name="Mesh">
       <geometry>
-        <mesh filename="../tri_cube.obj"/>
+        <mesh filename="package://drake/multibody/parsing/test/tri_cube.obj"/>
       </geometry>
     </visual>
     <visual name="Sphere">

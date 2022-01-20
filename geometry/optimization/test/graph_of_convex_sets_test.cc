@@ -135,6 +135,50 @@ GTEST_TEST(GraphOfConvexSetsTest, AddEdge2) {
   EXPECT_EQ(Variables(e->xv()), Variables(v->x()));
 }
 
+GTEST_TEST(GraphOfConvexSetsTest, RemoveEdge) {
+  GraphOfConvexSets g;
+  Point pu(Vector3d(1.0, 2.0, 3.0));
+  Point pv(Vector2d(4., 5.));
+  Vertex* u = g.AddVertex(pu, "u");
+  Vertex* v = g.AddVertex(pv, "v");
+  Edge* e1 = g.AddEdge(*u, *v, "e1");
+  Edge* e2 = g.AddEdge(*v, *u, "e2");
+
+  EXPECT_EQ(g.Edges().size(), 2);
+
+  g.RemoveEdge(e1->id());
+  auto edges = g.Edges();
+  EXPECT_EQ(edges.size(), 1);
+  EXPECT_EQ(edges.at(0), e2);
+
+  g.RemoveEdge(*e2);
+  EXPECT_EQ(g.Edges().size(), 0);
+}
+
+GTEST_TEST(GraphOfConvexSetsTest, RemoveVertex) {
+  GraphOfConvexSets g;
+  Vertex* v1 = g.AddVertex(Point(Vector2d(3., 5.)));
+  Vertex* v2 = g.AddVertex(Point(Vector2d(-2., 4.)));
+  Vertex* v3 = g.AddVertex(Point(Vector2d(5., -2.3)));
+  Edge* e1 = g.AddEdge(*v1, *v2);
+  g.AddEdge(*v1, *v3);
+  g.AddEdge(*v3, *v1);
+
+  EXPECT_EQ(g.Vertices().size(), 3);
+  EXPECT_EQ(g.Edges().size(), 3);
+
+  g.RemoveVertex(v3->id());
+  EXPECT_EQ(g.Vertices().size(), 2);
+  auto edges = g.Edges();
+  EXPECT_EQ(edges.size(), 1);
+  EXPECT_EQ(edges.at(0), e1);
+
+  g.RemoveVertex(*v2);
+  auto vertices = g.Vertices();
+  EXPECT_EQ(vertices.size(), 1);
+  EXPECT_EQ(vertices.at(0), v1);
+  EXPECT_EQ(g.Edges().size(), 0);
+}
 
 /*
 ┌───┐       ┌───┐
@@ -421,6 +465,49 @@ TEST_F(ThreePoints, QuadraticCost5) {
     ".* must be strictly non-negative.*");
 }
 
+TEST_F(ThreePoints, L1NormCost) {
+  // |xu - xv|₁
+  Matrix<double, 2, 4> A;
+  A.leftCols(2) = Matrix2d::Identity();
+  A.rightCols(2) = -Matrix2d::Identity();
+  auto cost = std::make_shared<solvers::L1NormCost>(A, Vector2d::Zero());
+  e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
+  e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
+  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  if (result.get_solver_id() == solvers::IpoptSolver::id()) {
+    return;  // See IpoptTest for details.
+  }
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(e_on_->GetSolutionCost(result),
+              (p_source_.x() - p_target_.x()).cwiseAbs().sum(), 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
+}
+
+TEST_F(ThreePoints, L1NormCost2) {
+  // L1-norm of an arbitrary transformation of xu and xv.
+  Matrix<double, 2, 4> A;
+  // clang-format off
+  A << 4.3, .5, -.4, 1.2,
+       0.1, .2, -2., -.34;
+  // clang-format on
+  const Vector2d b{.5, .3};
+  auto cost = std::make_shared<solvers::L1NormCost>(A, b);
+  e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
+  e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
+  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  if (result.get_solver_id() == solvers::IpoptSolver::id()) {
+    return;  // See IpoptTest for details.
+  }
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(
+      e_on_->GetSolutionCost(result),
+      (A.leftCols(2) * p_source_.x() + A.rightCols(2) * p_target_.x() + b)
+          .cwiseAbs()
+          .sum(),
+      1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
+}
+
 TEST_F(ThreePoints, L2NormCost) {
   // |xu - xv|₂
   Matrix<double, 2, 4> A;
@@ -459,6 +546,49 @@ TEST_F(ThreePoints, L2NormCost2) {
       e_on_->GetSolutionCost(result),
       (A.leftCols(2) * p_source_.x() + A.rightCols(2) * p_target_.x() + b)
           .norm(),
+      1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
+}
+
+TEST_F(ThreePoints, LInfNormCost) {
+  // |xu - xv|∞
+  Matrix<double, 2, 4> A;
+  A.leftCols(2) = Matrix2d::Identity();
+  A.rightCols(2) = -Matrix2d::Identity();
+  auto cost = std::make_shared<solvers::LInfNormCost>(A, Vector2d::Zero());
+  e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
+  e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
+  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  if (result.get_solver_id() == solvers::IpoptSolver::id()) {
+    return;  // See IpoptTest for details.
+  }
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(e_on_->GetSolutionCost(result),
+              (p_source_.x() - p_target_.x()).cwiseAbs().maxCoeff(), 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
+}
+
+TEST_F(ThreePoints, LInfNormCost2) {
+  // LInfinity-norm of an arbitrary transformation of xu and xv.
+  Matrix<double, 2, 4> A;
+  // clang-format off
+  A << 4.3, .5, -.4, 1.2,
+       0.1, .2, -2., -.34;
+  // clang-format on
+  const Vector2d b{.5, .3};
+  auto cost = std::make_shared<solvers::LInfNormCost>(A, b);
+  e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
+  e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
+  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  if (result.get_solver_id() == solvers::IpoptSolver::id()) {
+    return;  // See IpoptTest for details.
+  }
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(
+      e_on_->GetSolutionCost(result),
+      (A.leftCols(2) * p_source_.x() + A.rightCols(2) * p_target_.x() + b)
+          .cwiseAbs()
+          .maxCoeff(),
       1e-6);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
 }

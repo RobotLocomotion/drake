@@ -2,7 +2,6 @@
 
 #include <optional>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -130,21 +129,6 @@ SolveLinearSystem(const LinearSolver& linear_solver,
   return linear_solver.solve(b);
 }
 
-template <typename LinearSolver, typename DerivedA, typename DerivedB>
-DRAKE_DEPRECATED("2022-01-01",
-                 "Please use SolveLinearSystem() instead of LinearSolve()")
-typename std::enable_if<
-    internal::is_double_or_symbolic_v<typename DerivedA::Scalar> &&
-        internal::is_double_or_symbolic_v<typename DerivedB::Scalar> &&
-        std::is_same_v<typename DerivedA::Scalar, typename DerivedB::Scalar>,
-    Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-                  DerivedB::ColsAtCompileTime>>::type
-    LinearSolve(const LinearSolver& linear_solver,
-                const Eigen::MatrixBase<DerivedA>& A,
-                const Eigen::MatrixBase<DerivedB>& b) {
-  return SolveLinearSystem(linear_solver, A, b);
-}
-
 /**
  * Specialized the matrix in linear_solver is a double-valued matrix and b is
  * an AutoDiffScalar-valued matrix. See @ref linear_solve_given_solver for more
@@ -202,20 +186,6 @@ SolveLinearSystem(const LinearSolver& linear_solver,
                   const Eigen::MatrixBase<DerivedB>& b) {
   unused(A);
   return SolveLinearSystem(linear_solver, b);
-}
-
-template <typename LinearSolver, typename DerivedA, typename DerivedB>
-DRAKE_DEPRECATED("2022-01-01",
-                 "Please use SolveLinearSystem() instead of LinearSolve()")
-typename std::enable_if<
-    std::is_same_v<typename DerivedA::Scalar, double> &&
-        internal::is_autodiff_v<typename DerivedB::Scalar>,
-    Eigen::Matrix<typename DerivedB::Scalar, DerivedA::RowsAtCompileTime,
-                  DerivedB::ColsAtCompileTime>>::type
-    LinearSolve(const LinearSolver& linear_solver,
-                const Eigen::MatrixBase<DerivedA>& A,
-                const Eigen::MatrixBase<DerivedB>& b) {
-  return SolveLinearSystem(linear_solver, A, b);
 }
 
 /**
@@ -327,19 +297,6 @@ SolveLinearSystem(const LinearSolver& linear_solver,
     }
   }
   return x_ad;
-}
-
-template <typename LinearSolver, typename DerivedA, typename DerivedB>
-DRAKE_DEPRECATED("2022-01-01",
-                 "Please use SolveLinearSystem() instead of LinearSolve()")
-typename std::enable_if<
-    internal::is_autodiff_v<typename DerivedA::Scalar>,
-    Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-                  DerivedB::ColsAtCompileTime>>::type
-    LinearSolve(const LinearSolver& linear_solver,
-                const Eigen::MatrixBase<DerivedA>& A,
-                const Eigen::MatrixBase<DerivedB>& b) {
-  return SolveLinearSystem(linear_solver, A, b);
 }
 
 //@}
@@ -552,47 +509,6 @@ internal::Solution<DerivedA, DerivedB> SolveLinearSystem(
   return SolveLinearSystem(linear_solver, A, b);
 }
 
-template <template <typename, int...> typename LinearSolverType,
-          typename DerivedA, typename DerivedB>
-DRAKE_DEPRECATED("2022-01-01",
-                 "Please use SolveLinearSystem() instead of LinearSolve()")
-typename std::enable_if<
-    internal::is_double_or_symbolic_v<typename DerivedA::Scalar> &&
-        internal::is_double_or_symbolic_v<typename DerivedB::Scalar> &&
-        std::is_same_v<typename DerivedA::Scalar, typename DerivedB::Scalar>,
-    Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-                  DerivedB::ColsAtCompileTime>>::type
-    LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
-                const Eigen::MatrixBase<DerivedB>& b) {
-  return SolveLinearSystem<LinearSolverType>(A, b);
-}
-
-template <template <typename, int...> typename LinearSolverType,
-          typename DerivedA, typename DerivedB>
-DRAKE_DEPRECATED("2022-01-01",
-                 "Please use SolveLinearSystem() instead of LinearSolve()")
-typename std::enable_if<
-    std::is_same_v<typename DerivedA::Scalar, double> &&
-        internal::is_autodiff_v<typename DerivedB::Scalar>,
-    Eigen::Matrix<typename DerivedB::Scalar, DerivedA::RowsAtCompileTime,
-                  DerivedB::ColsAtCompileTime>>::type
-    LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
-                const Eigen::MatrixBase<DerivedB>& b) {
-  return SolveLinearSystem<LinearSolverType>(A, b);
-}
-
-template <template <typename, int...> typename LinearSolverType,
-          typename DerivedA, typename DerivedB>
-DRAKE_DEPRECATED("2022-01-01",
-                 "Please use SolveLinearSystem() instead of LinearSolve()")
-typename std::enable_if<
-    internal::is_autodiff_v<typename DerivedA::Scalar>,
-    Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-                  DerivedB::ColsAtCompileTime>>::type
-    LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
-                const Eigen::MatrixBase<DerivedB>& b) {
-  return SolveLinearSystem<LinearSolverType>(A, b);
-}
 //@}
 
 /**

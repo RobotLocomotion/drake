@@ -48,6 +48,7 @@ int do_main() {
   const double kMaximumTimeStep = 0.2;
   systems::trajectory_optimization::DirectCollocation dircol(
       &acrobot, *context, kNumTimeSamples, kMinimumTimeStep, kMaximumTimeStep);
+  auto& prog = dircol.prog();
 
   dircol.AddEqualTimeIntervalsConstraints();
 
@@ -59,8 +60,8 @@ int do_main() {
 
   const Eigen::Vector4d x0(0, 0, 0, 0);
   const Eigen::Vector4d xG(M_PI, 0, 0, 0);
-  dircol.AddLinearConstraint(dircol.initial_state() == x0);
-  dircol.AddLinearConstraint(dircol.final_state() == xG);
+  prog.AddLinearConstraint(dircol.initial_state() == x0);
+  prog.AddLinearConstraint(dircol.final_state() == xG);
 
   const double R = 10;  // Cost on input "effort".
   dircol.AddRunningCost((R * u) * u);
@@ -71,7 +72,7 @@ int do_main() {
   dircol.SetInitialTrajectory(PiecewisePolynomialType(), traj_init_x);
 
   solvers::SnoptSolver solver;
-  const auto result = solver.Solve(dircol);
+  const auto result = solver.Solve(dircol.prog());
   if (!result.is_success()) {
     std::cerr << "No solution found.\n";
     return 1;

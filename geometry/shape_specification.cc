@@ -1,5 +1,7 @@
 #include "drake/geometry/shape_specification.h"
 
+#include <limits>
+
 #include <fmt/format.h>
 
 #include "drake/common/nice_type_name.h"
@@ -171,6 +173,50 @@ void ShapeReifier::ThrowUnsupportedGeometry(const std::string& shape_name) {
 std::ostream& operator<<(std::ostream& out, const ShapeName& name) {
   out << name.name();
   return out;
+}
+
+namespace {
+class CalcVolumeReifier final : public ShapeReifier {
+ public:
+  CalcVolumeReifier() = default;
+
+  using ShapeReifier::ImplementGeometry;
+
+  void ImplementGeometry(const Sphere& sphere, void*) final {
+    volume_ = 4.0 / 3.0 * M_PI * std::pow(sphere.radius(), 3);
+  }
+  void ImplementGeometry(const Cylinder& cylinder, void*) final {
+    volume_ = M_PI * std::pow(cylinder.radius(), 2) * cylinder.length();
+  }
+  void ImplementGeometry(const HalfSpace&, void*) final {
+    volume_ = std::numeric_limits<double>::infinity();
+  }
+  void ImplementGeometry(const Box& box, void*) final {
+    volume_ = box.width() * box.depth() * box.height();
+  }
+  void ImplementGeometry(const Capsule& capsule, void*) final {
+    volume_ = M_PI * std::pow(capsule.radius(), 2) * capsule.length() +
+         4.0 / 3.0 * M_PI * std::pow(capsule.radius(), 3);
+  }
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void*) final {
+    volume_ = 4.0 / 3.0 * M_PI * ellipsoid.a() * ellipsoid.b() * ellipsoid.c();
+  }
+  void ImplementGeometry(const MeshcatCone& cone, void*) final {
+    volume_ = 1.0 / 3.0 * M_PI * cone.a() * cone.b() * cone.height();
+  }
+
+  double volume() const { return volume_; }
+
+ private:
+  double volume_{0.0};
+};
+
+}  // namespace
+
+double CalcVolume(const Shape& shape) {
+  CalcVolumeReifier reifier;
+  shape.Reify(&reifier);
+  return reifier.volume();
 }
 
 }  // namespace geometry

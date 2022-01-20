@@ -1,35 +1,52 @@
 #!/bin/bash
 
-# This shell script and the accompanying Dockerfile are used by the project
-# maintainers to create the precompiled vtk binaries that are downloaded during
-# the build. They are neither called during the build nor expected to be called
-# by most developers or users of the project.
-#
-# Maintainers should upload the created binaries to s3://drake-packages/vtk/.
-# Using the awscli tool and its "aws s3" subcommand is recommended.
+# This shell script and the accompanying Dockerfile and patch files are used by
+# the project maintainers to create the precompiled vtk binaries that are
+# downloaded during the build. They are neither called during the build nor
+# expected to be called by most developers or users of the project.
 
-set -euxo pipefail
+set -eu -o pipefail
 
-rm -f vtk-*-x86_64.tar.gz vtk-*-x86_64.tar.gz.sha256
+salt=$(dd if=/dev/urandom bs=2 count=4 | od -An -x | tr -d ' ')
+tag_prefix=vtk:$(date -u +%Y%m%d%H%M%S)-$salt
 
-docker build --build-arg UBUNTU_CODENAME=bionic --tag vtk-bionic \
-  "${BASH_SOURCE%/*}"
-trap 'docker rmi vtk-bionic' EXIT
-docker run --detach --name vtk-bionic-build --tty vtk-bionic
-trap 'docker rm --force vtk-bionic-build && docker rmi vtk-bionic' EXIT
-docker cp vtk-bionic-build:$(docker exec vtk-bionic-build \
-  find /opt/vtk/ -maxdepth 1 -name 'vtk-*-bionic-x86_64.tar.gz') .
+declare -a images
 
-shasum --algorithm 256 vtk-*-bionic-x86_64.tar.gz \
-  | tee vtk-bionic-x86_64.tar.gz.sha256
+trap cleanup EXIT
 
-docker build --build-arg UBUNTU_CODENAME=focal --tag vtk-focal \
-  "${BASH_SOURCE%/*}"
-trap 'docker rmi vtk-focal && docker rm --force vtk-bionic-build && docker rmi vtk-bionic' EXIT
-docker run --detach --name vtk-focal-build --tty vtk-focal
-trap 'docker rm --force vtk-focal-build && docker rmi vtk-focal && docker rm --force vtk-bionic-build && docker rmi vtk-bionic' EXIT
-docker cp vtk-focal-build:$(docker exec vtk-focal-build \
-  find /opt/vtk/ -maxdepth 1 -name 'vtk-*-focal-x86_64.tar.gz') .
+###############################################################################
 
-shasum --algorithm 256 vtk-*-focal-x86_64.tar.gz \
-  | tee vtk-focal-x86_64.tar.gz.sha256
+cleanup()
+{
+    [ ${#images[@]} -gt 0 ] && docker image rm "${images[@]}"
+}
+
+build()
+{
+    local tag=${tag_prefix}-$1
+    shift 1
+
+    docker build \
+        --force-rm --tag $tag \
+        "$@" "$(dirname "${BASH_SOURCE}")"
+    images+=($tag)
+}
+
+extract()
+{
+    local tag=${tag_prefix}-$1
+
+    docker run --rm $tag \
+        bash -c 'tar -cf - /opt/vtk/vtk-*.tar.gz{,.sha256}' | \
+        tar --strip-components=2 -xf -
+}
+
+###############################################################################
+
+rm -f vtk-*.tar.gz{,.sha256}
+
+build bionic --build-arg PLATFORM=ubuntu:18.04
+extract bionic
+
+build focal --build-arg PLATFORM=ubuntu:20.04
+extract focal

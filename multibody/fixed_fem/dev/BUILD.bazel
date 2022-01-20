@@ -231,6 +231,7 @@ drake_cc_library(
     ],
     deps = [
         ":fem_indexes",
+        ":petsc_symmetric_block_sparse_matrix",
         "//common:essential",
     ],
 )

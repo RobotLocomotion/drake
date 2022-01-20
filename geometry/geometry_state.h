@@ -173,6 +173,9 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetName(FrameId) const.  */
   const std::string& GetName(FrameId frame_id) const;
 
+  /** Implementation of SceneGraphInspector::GetParentFrame(FrameId) const.  */
+  FrameId GetParentFrame(FrameId frame_id) const;
+
   /** Implementation of SceneGraphInspector::GetFrameGroup().  */
   int GetFrameGroup(FrameId frame_id) const;
 

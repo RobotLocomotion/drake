@@ -23,6 +23,63 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+/* Calculates the intersection point between an infinite straight line
+ spanning points A and B and the bounding plane of the half space H.
+ @param p_FA
+     Point A measured and expressed in the common frame F.
+ @param p_FB
+     Point B measured and expressed in the common frame F.
+ @param H_F
+     The half space H measured and expressed in frame F (i.e., points also
+     measured and expressed in frame F can be tested against it).
+ @pre
+     A and B are two different points, and their spanning line is not
+     parallel to the bounding plane of the half space H.
+ */
+template <typename T>
+Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
+                            const PosedHalfSpace<double>& H_F);
+
+/* Intersects a polygon with the half space H. It keeps the part of
+ the polygon contained in the half space (signed distance is <= 0).
+ The half space `H_F` and vertex positions of `input_vertices_F` are both
+ defined in a common frame F.
+ @param[in] input_vertices_F
+     Input polygon is represented as a sequence of positions of its vertices.
+     The input polygon is allowed to have zero area.
+ @param[in] H_F
+     The clipping half space H in frame F.
+ @param[out] output_vertices_F
+     Output polygon is represented as a sequence of positions of its vertices.
+     It could be an empty sequence if the input polygon is entirely outside
+     the half space. It could be the same as the input polygon if the input
+     polygon is entirely inside the half space. The output polygon is
+     guaranteed to be planar (within floating point tolerance) and, if the
+     polygon has area, the normal implied by the winding will be the same
+     as the input polygon.
+ @pre `input_vertices_F` has at least three vertices.
+ @pre the vertices in `input_vertices_F` are all planar.
+ @note
+     1. For an input polygon P that is parallel to the plane of the half
+        space, there are three cases:
+        1.1 If P is completely inside the half space, the output polygon
+            will be the same as P.
+        1.2 If P is completely outside the half space, the output polygon
+            will be empty.
+        1.3 If P is on the plane of the half space, the output polygon will
+            be the same as P.
+     2. For an input polygon P outside the half space with one edge on the
+        plane of the half space, the output polygon will be a zero-area
+        4-gon with two pairs of duplicate vertices.
+     3. For an input polygon P outside the half space with one vertex on the
+        plane of the half space, the output polygon will be a zero-area
+        triangle with three duplicate vertices.
+*/
+template <typename T>
+void ClipPolygonByHalfSpace(const std::vector<Vector3<T>>& input_vertices_F,
+                            const PosedHalfSpace<double>& H_F,
+                            std::vector<Vector3<T>>* output_vertices_F);
+
 // Forward declaration of Tester class, so we can grant friend access.
 template <typename MeshType> class SurfaceVolumeIntersectorTester;
 
@@ -106,67 +163,6 @@ class SurfaceVolumeIntersector {
   std::vector<Vector3<T>>& mutable_grad_eM_M() { return grad_eM_Ms_; }
 
  private:
-  /* Calculates the intersection point between an infinite straight line
-   spanning points A and B and the bounding plane of the half space H.
-   @param p_FA
-       Point A measured and expressed in the common frame F.
-   @param p_FB
-       Point B measured and expressed in the common frame F.
-   @param H_F
-       The half space H measured and expressed in frame F (i.e., points also
-       measured and expressed in frame F can be tested against it).
-   @pre
-       One of A and B is outside the half space, and the other is inside or
-       on the boundary of the half space.
-   */
-  static Vector3<T> CalcIntersection(const Vector3<T>& p_FA,
-                                     const Vector3<T>& p_FB,
-                                     const PosedHalfSpace<double>& H_F);
-
-  // TODO(SeanCurtis-TRI): This function duplicates functionality implemented in
-  //  mesh_half_space_intersection.h. Reconcile the two implementations.
-  // TODO(DamrongGuoy): Avoid duplicate vertices mentioned in the note below and
-  //  check whether we can have other as yet undocumented degenerate cases.
-  /* Intersects a polygon with the half space H. It keeps the part of
-   the polygon contained in the half space (signed distance is <= 0).
-   The half space `H_F` and vertex positions of `input_vertices_F` are both
-   defined in a common frame F.
-   @param[in] input_vertices_F
-       Input polygon is represented as a sequence of positions of its vertices.
-       The input polygon is allowed to have zero area.
-   @param[in] H_F
-       The clipping half space H in frame F.
-   @param[out] output_vertices_F
-       Output polygon is represented as a sequence of positions of its vertices.
-       It could be an empty sequence if the input polygon is entirely outside
-       the half space. It could be the same as the input polygon if the input
-       polygon is entirely inside the half space. The output polygon is
-       guaranteed to be planar (within floating point tolerance) and, if the
-       polygon has area, the normal implied by the winding will be the same
-       as the input polygon.
-   @pre `input_vertices_F` has at least three vertices.
-   @pre the vertices in `input_vertices_F` are all planar.
-   @note
-       1. For an input polygon P that is parallel to the plane of the half
-          space, there are three cases:
-          1.1 If P is completely inside the half space, the output polygon
-              will be the same as P.
-          1.2 If P is completely outside the half space, the output polygon
-              will be empty.
-          1.3 If P is on the plane of the half space, the output polygon will
-              be the same as P.
-       2. For an input polygon P outside the half space with one edge on the
-          plane of the half space, the output polygon will be a zero-area
-          4-gon with two pairs of duplicate vertices.
-       3. For an input polygon P outside the half space with one vertex on the
-          plane of the half space, the output polygon will be a zero-area
-          triangle with three duplicate vertices.
-  */
-  static void ClipPolygonByHalfSpace(
-      const std::vector<Vector3<T>>& input_vertices_F,
-      const PosedHalfSpace<double>& H_F,
-      std::vector<Vector3<T>>* output_vertices_F);
-
   /* Remove duplicate vertices from a polygon represented as a cyclical
    sequence of vertex positions. In other words, for a sequence `A,B,B,C,A`, the
    pair of B's is reduced to one B and the first and last A vertices are

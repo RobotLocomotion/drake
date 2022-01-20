@@ -23,8 +23,8 @@
 namespace drake {
 namespace multibody {
 namespace fem {
-
 namespace internal {
+
 /* Struct to hold data (friction, signed distance-like value, stiffness, and
  damping) at each contact point in DeformableRigidManager. */
 template <typename T>
@@ -40,6 +40,13 @@ struct ContactPointData {
     damping.resize(size);
   }
 };
+
+/* Forward declare tests to be friended by DeformableRigidManager. */
+template <typename U>
+class DeformableRigidManagerTest;
+class DeformableRigidContactDataTest;
+class DeformableRigidDynamicsDataTest;
+
 }  // namespace internal
 
 /** %DeformableRigidManager implements the interface in DiscreteUpdateManager
@@ -122,9 +129,9 @@ class DeformableRigidManager final
     Eigen::SparseMatrix<Scalar, Options, StorageIndex> data;
   };
 
-  friend class DeformableRigidManagerTest;
-  friend class DeformableRigidContactDataTest;
-  friend class DeformableRigidDynamicsDataTest;
+  friend class internal::DeformableRigidManagerTest<T>;
+  friend class internal::DeformableRigidContactDataTest;
+  friend class internal::DeformableRigidDynamicsDataTest;
   friend class DeformableRigidContactSolverTest;
 
   // TODO(xuchenhan-tri): Implement CloneToDouble() and CloneToAutoDiffXd() and
@@ -238,20 +245,19 @@ class DeformableRigidManager final
                             DeformableBodyIndex body_index,
                             FemStateBase<T>* fem_state) const;
 
-  /* Eval version of CalcFreeMotionTangentMatrix(). */
-  const Eigen::SparseMatrix<T>& EvalFreeMotionTangentMatrix(
-      const systems::Context<T>& context, DeformableBodyIndex index) const {
-    return this->plant()
-        .get_cache_entry(tangent_matrix_cache_indexes_[index])
-        .template Eval<EigenSparseMatrix<T>>(context)
-        .data;
-  }
-
   /* Calculates the tangent matrix of the deformable body with the given `index`
-   at free motion state. */
+   at free motion state as an Eigen sparse matrix. This should only be used for
+   non-double scalar types. */
   void CalcFreeMotionTangentMatrix(const systems::Context<T>& context,
                                    DeformableBodyIndex index,
                                    EigenSparseMatrix<T>* tangent_matrix) const;
+
+  /* Calculates the tangent matrix of the deformable body with the given `index`
+   at free motion state as a PETSc sparse matrix. This should only be used for
+   scalar type double. */
+  void CalcFreeMotionTangentMatrix(
+      const systems::Context<T>& context, DeformableBodyIndex index,
+      internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const;
 
   /* Eval version of CalcFreeMotionTangentMatrixSchurComplement(). */
   const internal::SchurComplement<T>&
@@ -542,8 +548,15 @@ class DeformableRigidManager final
       deformable_meshes_;
   mutable internal::CollisionObjects<T> collision_objects_;
 };
+
+template <>
+void DeformableRigidManager<double>::CalcFreeMotionTangentMatrixSchurComplement(
+    const systems::Context<double>&, DeformableBodyIndex,
+    internal::SchurComplement<double>*) const;
+
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake
+
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::multibody::fem::DeformableRigidManager)

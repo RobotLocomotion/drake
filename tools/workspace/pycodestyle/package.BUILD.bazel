@@ -35,4 +35,6 @@ py_binary(
         "pycodestyle.py",
     ],
     main = "pycodestyle.py",
+    python_version = "PY3",
+    srcs_version = "PY3",
 )

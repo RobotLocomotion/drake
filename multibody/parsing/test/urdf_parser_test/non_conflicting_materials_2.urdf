@@ -27,7 +27,7 @@ material should indeed be brown.
     </visual>
     <visual>
       <geometry>
-        <mesh filename="../tri_cube.obj" scale="1.1 1.1 1.1"/>
+        <mesh filename="package://drake/multibody/parsing/test/tri_cube.obj" scale="1.1 1.1 1.1"/>
       </geometry>
     </visual>
     <collision>

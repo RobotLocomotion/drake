@@ -68,7 +68,7 @@ def _make_result(
         error = error,
         distribution = distribution,
         is_macos = (macos_release != None),
-        is_ubuntu = (ubuntu_release != None),
+        is_ubuntu = (ubuntu_release != None and not is_manylinux),
         is_manylinux = is_manylinux,
         ubuntu_release = ubuntu_release,
         macos_release = macos_release,
@@ -82,34 +82,43 @@ def _determine_linux(repository_ctx):
 
     # Allow the user to override the OS selection.
     drake_os = repository_ctx.os.environ.get("DRAKE_OS", "")
+    is_manylinux = False
     if len(drake_os) > 0:
         if drake_os == "manylinux":
-            return _make_result(is_manylinux = True)
-        return _make_result(error = "{}{} DRAKE_OS={}".format(
-            error_prologue,
-            "unknown value for environment variable",
-            drake_os,
-        ))
+            is_manylinux = True
+        else:
+            return _make_result(error = "{}{} DRAKE_OS={}".format(
+                error_prologue,
+                "unknown value for environment variable",
+                drake_os,
+            ))
 
-    # Run sed to determine Linux NAME and VERSION_ID.
-    sed = exec_using_which(repository_ctx, [
-        "sed",
-        "-n",
-        r"/^\(NAME\|VERSION_ID\)=/{s/[^=]*=//;s/\"//g;p}",
-        "/etc/os-release",
-    ])
-    if sed.error != None:
-        return _make_result(error = error_prologue + sed.error)
+    # Get distro name.
+    lsb = exec_using_which(repository_ctx, ["lsb_release", "-si"])
+    if lsb.error != None:
+        return _make_result(error = error_prologue + lsb.error)
+    distro = lsb.stdout.strip()
 
-    # Compute an identifying string, in the form of "$NAME $VERSION_ID".
-    lines = [line.strip() for line in sed.stdout.strip().split("\n")]
-    distro = " ".join([x for x in lines if len(x) > 0])
+    if distro == "Ubuntu":
+        lsb = exec_using_which(repository_ctx, ["lsb_release", "-sr"])
+        if lsb.error != None:
+            return _make_result(error = error_prologue + lsb.error)
+        ubuntu_release = lsb.stdout.strip()
 
-    # Match supported Ubuntu release(s). These should match those listed in
-    # both doc/developers.rst the root CMakeLists.txt.
-    for ubuntu_release in ["18.04", "20.04"]:
-        if distro == "Ubuntu " + ubuntu_release:
-            return _make_result(ubuntu_release = ubuntu_release)
+        # Match supported Ubuntu release(s). These should match those listed in
+        # both doc/developers.rst the root CMakeLists.txt.
+        if ubuntu_release in ["18.04", "20.04"]:
+            return _make_result(
+                ubuntu_release = ubuntu_release,
+                is_manylinux = is_manylinux,
+            )
+
+        # Nothing matched.
+        return _make_result(
+            error = (error_prologue +
+                     "unsupported '%s' release '%s'" %
+                     (distro, ubuntu_release)),
+        )
 
     # Nothing matched.
     return _make_result(

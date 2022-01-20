@@ -112,6 +112,13 @@ def _dsym_command(name):
         ),
     })
 
+def _dsym_srcs(name):
+    """Returns the input for making a .dSYM on macOS, or a no-op on Linux."""
+    return select({
+        "//tools/cc_toolchain:apple_debug": [":" + name],
+        "//conditions:default": [],
+    })
+
 def _check_library_deps_blacklist(name, deps):
     """Report an error if a library should not use something from deps."""
     if not deps:
@@ -545,7 +552,7 @@ def drake_cc_binary(
     tags = kwargs.pop("tags", [])
     native.genrule(
         name = name + "_dsym",
-        srcs = [":" + name],
+        srcs = _dsym_srcs(name),
         outs = [name + ".dSYM"],
         output_to_bindir = 1,
         testonly = testonly,
@@ -619,7 +626,7 @@ def drake_cc_test(
     # Also generate the OS X debug symbol file for this test.
     native.genrule(
         name = name + "_dsym",
-        srcs = [":" + name],
+        srcs = _dsym_srcs(name),
         outs = [name + ".dSYM"],
         output_to_bindir = 1,
         testonly = kwargs["testonly"],

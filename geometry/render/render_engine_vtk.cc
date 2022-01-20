@@ -10,6 +10,7 @@
 #include <vtkCylinderSource.h>
 #include <vtkOBJReader.h>
 #include <vtkOpenGLPolyDataMapper.h>
+#include <vtkOpenGLShaderProperty.h>
 #include <vtkOpenGLTexture.h>
 #include <vtkPNGReader.h>
 #include <vtkPlaneSource.h>
@@ -329,6 +330,8 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
       vtkActor& source = *source_actors[i];
       vtkActor& clone = *clone_actors[i];
 
+      clone.SetShaderProperty(source.GetShaderProperty());
+
       // NOTE: The clone renderer and original renderer *share* polygon data
       // (via the shared mapper) and all textures. If the meshes or textures get
       // modified _in place_ in a clone, the change would be visible to all
@@ -441,6 +444,7 @@ void RenderEngineVtk::InitializePipelines() {
   pipelines_[ImageType::kColor]->renderer->UseFXAAOn();
   pipelines_[ImageType::kColor]->renderer->SetBackground(
       default_clear_color_.r, default_clear_color_.g, default_clear_color_.b);
+  pipelines_[ImageType::kColor]->renderer->SetBackgroundAlpha(1.0);
 }
 
 void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
@@ -474,8 +478,11 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
   std::array<vtkNew<vtkOpenGLPolyDataMapper>, kNumPipelines> mappers;
 
   // Sets vertex and fragment shaders only to the depth mapper.
-  mappers[ImageType::kDepth]->SetVertexShaderCode(shaders::kDepthVS);
-  mappers[ImageType::kDepth]->SetFragmentShaderCode(shaders::kDepthFS);
+  vtkOpenGLShaderProperty* shader_prop = vtkOpenGLShaderProperty::SafeDownCast(
+      actors[ImageType::kDepth]->GetShaderProperty());
+  DRAKE_DEMAND(shader_prop != nullptr);
+  shader_prop->SetVertexShaderCode(shaders::kDepthVS);
+  shader_prop->SetFragmentShaderCode(shaders::kDepthFS);
   mappers[ImageType::kDepth]->AddObserver(
       vtkCommand::UpdateShaderEvent, uniform_setting_callback_.Get());
 
