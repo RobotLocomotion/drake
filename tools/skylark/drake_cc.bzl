@@ -22,6 +22,7 @@ CXX_FLAGS = [
 CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=absolute-value",
     "-Werror=inconsistent-missing-override",
+    "-Werror=literal-conversion",
     "-Werror=non-virtual-dtor",
     "-Werror=return-stack-address",
     "-Werror=sign-compare",
