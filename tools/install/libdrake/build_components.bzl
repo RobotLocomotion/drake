@@ -63,6 +63,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/hydroelastics",
     "//multibody/inverse_kinematics",
     "//multibody/math",
+    "//multibody/meshcat",
     "//multibody/optimization",
     "//multibody/parsing",
     "//multibody/plant",
