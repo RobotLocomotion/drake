@@ -266,10 +266,6 @@ GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
 // Tests the static method to obtain the unit inertia of a solid capsule
 // computed about its center of mass.
 GTEST_TEST(UnitInertia, SolidCapsule) {
-  // We calculate the inertia of a capsule in two ways and verify that the
-  // results are consistent:
-  //  1. Multiply the mass of the capsule with the unit inertia of the capsule.
-  //  2. Calculate the inertia analytically.
   const double r = 0.5;
   const double L = 1.5;
   const double density = 0.1;
@@ -285,27 +281,25 @@ GTEST_TEST(UnitInertia, SolidCapsule) {
   const double mass_sphere = volume_sphere * density;
   const double mass_capsule = mass_sphere + mass_cylinder;
 
-  // Calculate inertia of capsule with method 1.
+  // The inertia properties of a capsule is calculated three ways.
+  // Calculation 1: Multiply the capsule's mass with its unit inertia.
   const UnitInertia<double> G_capsule = UnitInertia<double>::SolidCapsule(r, L);
-  const RotationalInertia<double> I_capsule = mass_capsule * G_capsule;
+  RotationalInertia<double> I_capsule = mass_capsule * G_capsule;
 
-  // Calculate inertia of capsule with method 2.
-  //
+  // Calculation 2: Calculate the inertia analytically.
   // I = Ic + Is, where Ic is the inertia of the cylinder part of the capsule,
   // and Is is the inertia of the two half spheres.
   //
   // Suppose m₁ is the mass of the cylinder part and m₂ is the mass of
   // the spherical part (sum of the two half-spheres).
-
   //
   // Ic = diag(Ic_xx, Ic_yy, Ic_zz).
   // Ic_xx = Ic_yy = m₁(L²/12 + r²/4).
   // Ic_zz = m₁r²/2.
-
+  //
   // Is = diag(Is_xx, Is_yy, Is_zz).
   // Is_xx = Is_yy = m₂(2r²/5 + L²/4 + 3Lr/8), which is calculated by shifting
   // each half of the sphere twice (first from Ho, the geometrically significant
-
   // point at the center of the connection between the half-sphere and the
   // cylinder to Hcm, the center of mass of the half sphere, then from Hcm to
   // the capsule's center of mass).
@@ -316,6 +310,34 @@ GTEST_TEST(UnitInertia, SolidCapsule) {
   const double Iyy = Ixx;
   const double Izz = mass_cylinder * r2 / 2.0 + mass_sphere * 2.0 * r2 / 5.0;
   const RotationalInertia<double> I_capsule_expected(Ixx, Iyy, Izz);
+  EXPECT_TRUE(CompareMatrices(I_capsule.get_moments(),
+                              I_capsule_expected.get_moments(), kEpsilon));
+  EXPECT_TRUE(CompareMatrices(I_capsule.get_products(),
+                              I_capsule_expected.get_products(), kEpsilon));
+
+  // Calculation 3: Use built-in shift methods.
+  // The capsule is regarded as a cylinder C of length L and radius r and two
+  // half-spheres (each of radius r). The first half-sphere H is rigidly fixed
+  // to one end of cylinder C so that the intersection between H and C forms
+  // a circle centered at point Ho.  Similarly, the other half-sphere is rigidly
+  // fixed to the other end of cylinder C.
+
+  // Form the inertia for a unit mass solid half sphere H about Ho.
+  const double mh = 0.5 * mass_sphere;  // mh is the mass of half-sphere H.
+  RotationalInertia<double> Ih = mh * UnitInertia<double>::SolidSphere(r);
+
+  // Form the position vector from Ho to Hcm (H's center of mass), expressed in
+  // the capsule frame C.  H is the "lower" half-sphere (negative z direction).
+  const Vector3<double> p_HoHcm_C(0, 0, -3.0 * r / 8.0);
+  // The position vector from Hcm to Ccm (the capsule's center of mass) is
+  const Vector3<double> p_HcmCcm_C(0, 0, 3.0 * r / 8.0 + 0.5 * L);
+  // Shift H's inertia from Hcm to Ccm (the other half-sphere shifts similarly).
+  Ih.ShiftToThenAwayFromCenterOfMassInPlace(mh, p_HoHcm_C, p_HcmCcm_C);
+
+  // Form the cylinder's inertia about its center of mass and verify results.
+  const RotationalInertia<double> I_cylinder =
+      mass_cylinder * UnitInertia<double>::SolidCylinder(r, L);
+  I_capsule = I_cylinder + 2 * Ih;
   EXPECT_TRUE(CompareMatrices(I_capsule.get_moments(),
                               I_capsule_expected.get_moments(), kEpsilon));
   EXPECT_TRUE(CompareMatrices(I_capsule.get_products(),
