@@ -68,7 +68,8 @@ def _vtk_cc_library(
 
     if os_result.is_macos:
         if not header_only:
-            lib_dir = "/usr/local/opt/vtk@{}/lib".format(
+            lib_dir = "{}/opt/vtk@{}/lib".format(
+                os_result.homebrew_prefix,
                 VTK_MAJOR_MINOR_PATCH_VERSION,
             )
             linkopts = linkopts + [
@@ -111,7 +112,8 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
-        repository_ctx.symlink("/usr/local/opt/vtk@{}/include".format(
+        repository_ctx.symlink("{}/opt/vtk@{}/include".format(
+            os_result.homebrew_prefix,
             VTK_MAJOR_MINOR_PATCH_VERSION,
         ), "include")
     elif os_result.is_ubuntu:

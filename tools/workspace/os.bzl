@@ -54,7 +54,8 @@ def _make_result(
         error = None,
         ubuntu_release = None,
         macos_release = None,
-        is_manylinux = False):
+        is_manylinux = False,
+        homebrew_prefix = None):
     """Return a fully-populated struct result for determine_os, below."""
     if ubuntu_release != None:
         distribution = "ubuntu"
@@ -72,6 +73,7 @@ def _make_result(
         is_manylinux = is_manylinux,
         ubuntu_release = ubuntu_release,
         macos_release = macos_release,
+        homebrew_prefix = homebrew_prefix,
     )
 
 def _determine_linux(repository_ctx):
@@ -145,9 +147,19 @@ def _determine_macos(repository_ctx):
     else:
         macos_release = major_minor_versions[0]
 
+    # Check which arch we should be using.
+    arch_result = exec_using_which(repository_ctx, ["/usr/bin/arch"])
+    if arch_result.stdout.strip() == "arm64":
+        homebrew_prefix = "/opt/homebrew"
+    else:
+        homebrew_prefix = "/usr/local"
+
     # Match supported macOS release(s).
     if macos_release in ["11", "12"]:
-        return _make_result(macos_release = macos_release)
+        return _make_result(
+            macos_release = macos_release,
+            homebrew_prefix = homebrew_prefix,
+        )
 
     # Nothing matched.
     return _make_result(
@@ -175,6 +187,8 @@ def determine_os(repository_ctx):
         - is_macos: True iff on a supported macOS release, else False
         - macos_release: str like "11" or "12" iff on a supported macOS,
                          else None
+        - homebrew_prefix: str "/usr/local" or "/opt/homebrew" iff is_macos,
+                           else None.
         - is_ubuntu: True iff on a supported Ubuntu version, else False
         - ubuntu_release: str like "18.04" iff on a supported ubuntu, else None
         - is_manylinux: True iff this build will be packaged into a Python
@@ -277,10 +291,12 @@ def _os_impl(repo_ctx):
 DISTRIBUTION = {distribution}
 UBUNTU_RELEASE = {ubuntu_release}
 MACOS_RELEASE = {macos_release}
+HOMEBREW_PREFIX = {homebrew_prefix}
     """.format(
         distribution = repr(os_result.distribution),
         ubuntu_release = repr(os_result.ubuntu_release),
         macos_release = repr(os_result.macos_release),
+        homebrew_prefix = repr(os_result.homebrew_prefix),
     )
     repo_ctx.file("os.bzl", constants)
 

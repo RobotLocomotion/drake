@@ -14,8 +14,12 @@ def _impl(repo_ctx):
         include = "/usr/include/suitesparse"
         lib = "/usr/lib"
     elif os_result.is_macos:
-        include = "/usr/local/opt/suite-sparse/include"
-        lib = "/usr/local/opt/suite-sparse/lib"
+        include = "{}/opt/suite-sparse/include".format(
+            os_result.homebrew_prefix,
+        )
+        lib = "{}/opt/suite-sparse/lib".format(
+            os_result.homebrew_prefix,
+        )
     elif os_result.is_manylinux:
         # TODO(jwnimmer-tri) Ideally, we wouldn't be hard-coding paths when
         # using manylinux.
