@@ -754,6 +754,66 @@ GTEST_TEST(ShortestPathTest, ClassicalShortestPath) {
   }
 }
 
+GTEST_TEST(ShortestPathTest, TwoStepLoopConstraint) {
+  GraphOfConvexSets spp;
+
+  spp.AddVertex(Point(Vector2d(0, 0)));
+  spp.AddVertex(HPolyhedron::MakeBox(Vector2d(1.3, 1.3), Vector2d(2.7, 2.7)));
+  spp.AddVertex(HPolyhedron::MakeBox(Vector2d(3.3, 1.3), Vector2d(4.7, 2.7)));
+  spp.AddVertex(HPolyhedron::MakeBox(Vector2d(1.3, -2.7), Vector2d(2.7, -1.3)));
+  spp.AddVertex(HPolyhedron::MakeBox(Vector2d(3.3, -2.7), Vector2d(4.7, -1.3)));
+  spp.AddVertex(Point(Vector2d(6, 0)));
+
+  auto v = spp.Vertices();
+
+  // |xu - xv|₂
+  Matrix<double, 4, 4> A = Matrix<double, 4, 4>::Identity();
+  A.block(0, 2, 2, 2) = -Matrix2d::Identity();
+  A.block(2, 0, 2, 2) = -Matrix2d::Identity();
+  auto cost = std::make_shared<solvers::QuadraticCost>(A, Vector4d::Zero());
+
+  spp.AddEdge(*v[0], *v[1])
+      ->AddCost(solvers::Binding(cost, {v[0]->x(), v[1]->x()}));
+  spp.AddEdge(*v[1], *v[0])
+      ->AddCost(solvers::Binding(cost, {v[1]->x(), v[0]->x()}));
+  spp.AddEdge(*v[1], *v[2])
+      ->AddCost(solvers::Binding(cost, {v[1]->x(), v[2]->x()}));
+  spp.AddEdge(*v[2], *v[1])
+      ->AddCost(solvers::Binding(cost, {v[2]->x(), v[1]->x()}));
+  spp.AddEdge(*v[2], *v[5])
+      ->AddCost(solvers::Binding(cost, {v[2]->x(), v[5]->x()}));
+  spp.AddEdge(*v[5], *v[2])
+      ->AddCost(solvers::Binding(cost, {v[5]->x(), v[2]->x()}));
+
+  spp.AddEdge(*v[0], *v[3])
+      ->AddCost(solvers::Binding(cost, {v[0]->x(), v[3]->x()}));
+  spp.AddEdge(*v[3], *v[0])
+      ->AddCost(solvers::Binding(cost, {v[3]->x(), v[0]->x()}));
+  spp.AddEdge(*v[3], *v[4])
+      ->AddCost(solvers::Binding(cost, {v[3]->x(), v[4]->x()}));
+  spp.AddEdge(*v[4], *v[3])
+      ->AddCost(solvers::Binding(cost, {v[4]->x(), v[3]->x()}));
+  spp.AddEdge(*v[4], *v[5])
+      ->AddCost(solvers::Binding(cost, {v[4]->x(), v[5]->x()}));
+  spp.AddEdge(*v[5], *v[4])
+      ->AddCost(solvers::Binding(cost, {v[5]->x(), v[4]->x()}));
+
+  auto result = spp.SolveShortestPath(*v[0], *v[5], true);
+  if (result.get_solver_id() == solvers::IpoptSolver::id()) {
+    return;  // See IpoptTest for details.
+  }
+  EXPECT_TRUE(result.is_success());
+
+  int non_zero_edges = 0;
+  for (const auto& e : spp.Edges()) {
+    // Tuned so that off edges are below this value for all solvers
+    if (result.GetSolution(e->phi()) > 1e-5) {
+      ++non_zero_edges;
+    }
+  }
+  EXPECT_EQ(non_zero_edges, 6);
+}
+
 GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   GraphOfConvexSets spp;
 
