@@ -10,6 +10,7 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
 )
@@ -70,6 +71,24 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
     ],
+)
+
+drake_py_library(
+    name = "fred_py",
+    srcs = ["fred.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":module_py",
+        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake:lcm_py",
+        "//lcmtypes:lcmtypes_drake_py",
+    ],
+)
+
+drake_py_binary(
+    name = "fred",
+    srcs = ["fred.py"],
+    deps = [":fred_py"],
 )
 
 drake_py_library(
