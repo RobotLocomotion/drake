@@ -67,6 +67,16 @@ MultilayerPerceptron<T>::MultilayerPerceptron(
       dsigma_.push_back([](const Eigen::Ref<const MatrixX<T>>& X) {
         return (X.array() <= 0).select(MatrixX<T>::Zero(X.rows(), X.cols()), 1);
       });
+    } else if (activation_types_[i] == kSiLU) {
+      const static auto SiLU = [](const Eigen::Ref<const MatrixX<T>>& X) {
+        return (X.array() / (1 + (-X).array().exp())).matrix();
+      };
+      sigma_.push_back(SiLU);
+      dsigma_.push_back([](const Eigen::Ref<const MatrixX<T>>& X) {
+        // SiLU(x) + Sigmoid(x)*(1-SiLU(x))
+        return SiLU(X) +
+               ((1 - SiLU(X).array()) / (1 + (-X).array().exp())).matrix();
+      });
     } else {
       DRAKE_DEMAND(activation_types_[i] == kIdentity);
       sigma_.push_back([](const Eigen::Ref<const MatrixX<T>>& X) { return X; });

@@ -556,15 +556,18 @@ class TestGeneral(unittest.TestCase):
                                             dloss_dparams=dloss_dparams)
         self.assertTrue(dloss_dparams.any())  # No longer all zero.
 
-        mlp2 = MultilayerPerceptron(layers=[1, 2, 3],
+        mlp2 = MultilayerPerceptron(layers=[1, 2, 3, 1],
                                     activation_types=[
                                         PerceptronActivationType.kReLU,
-                                        PerceptronActivationType.kTanh
+                                        PerceptronActivationType.kTanh,
+                                        PerceptronActivationType.kSiLU,
                                     ])
         self.assertEqual(mlp2.activation_type(0),
                          PerceptronActivationType.kReLU)
         self.assertEqual(mlp2.activation_type(1),
                          PerceptronActivationType.kTanh)
+        self.assertEqual(mlp2.activation_type(2),
+                         PerceptronActivationType.kSiLU)
 
     def test_random_source(self):
         source = RandomSource(distribution=RandomDistribution.kUniform,

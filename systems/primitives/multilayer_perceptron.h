@@ -13,6 +13,7 @@ enum PerceptronActivationType {
   kIdentity,
   kReLU,
   kTanh,
+  kSiLU,  ///<  x/(1+e⁻ˣ), the Sigmoid Linear Unit, also known as Swish.
 };
 
 /** The MultilayerPerceptron (MLP) is one of the most common forms of neural

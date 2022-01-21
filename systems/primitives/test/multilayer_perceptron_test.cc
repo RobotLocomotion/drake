@@ -172,7 +172,7 @@ void BackpropTest(PerceptronActivationType type) {
 }
 
 GTEST_TEST(MultilayerPerceptionTest, Backprop) {
-  for (const auto& type : {kIdentity, kReLU, kTanh}) {
+  for (const auto& type : {kIdentity, kReLU, kTanh, kSiLU}) {
     BackpropTest(type);
   }
 }

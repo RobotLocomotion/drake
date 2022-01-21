@@ -60,7 +60,9 @@ PYBIND11_MODULE(primitives, m) {
       .value("kReLU", PerceptronActivationType::kReLU,
           doc.PerceptronActivationType.kReLU.doc)
       .value("kTanh", PerceptronActivationType::kTanh,
-          doc.PerceptronActivationType.kTanh.doc);
+          doc.PerceptronActivationType.kTanh.doc)
+      .value("kSiLU", PerceptronActivationType::kSiLU,
+          doc.PerceptronActivationType.kSiLU.doc);
 
   // N.B. Capturing `&doc` should not be required; workaround per #9600.
   auto bind_common_scalar_types = [&m, &doc](auto dummy) {
