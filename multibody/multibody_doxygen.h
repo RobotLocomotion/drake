@@ -231,27 +231,30 @@ with respect to frame L are transformed and stored internally with respect to
 B's body frame.
 
 <h3>Notation for offset frame</h3>
-Sometimes we need a frame that is rigidly attached to a frame F with its basis
-rigidly aligned to F's basis but with its origin shifted from Fo to a point R.
-We call that an _offset frame_ and denote this offset frame in typeset notation
-as @f$ F_R @f$. Since code lacks subscripts, we lowercase the point name to
-make it look more like a subscript as `Fr`.  Recall that we permit frame names
-and body names to also serve as points (by using their origins).  Suppose you
-would like a frame that is regarded as rigidly attached to frame F but whose
-origin is coincident with some body B. In this case, create an offset frame `Fb`
-whose basis rigidly aligns with F's basis but whose origin is coincident with
-Bo (B's origin).
+As discussed, a frame F consists of right-handed orthogonal unit vectors Fx, Fy,
+Fz and an origin point Fo. Sometimes we need an _offset frame_ Fp which consists
+of the _same_ aformentioned unit vectors Fx, Fy, Fz and an origin point Fp which
+is _fixed_ to F (hence Fp's velocity measured in frame F is always 0).
+Similarly, the offset frame Fq is rigidly attached to frame F, has the same unit
+vectors Fx, Fy, Fz, and has an origin point Fq _fixed_ to F.
+Likewise, a rigid body B has a center of mass point Bcm which may be regarded as
+an offset frame Bcm.  There may be other points such as Bp and Bq that are fixed
+to body B and which may be regarded as offset frames.
+The notation Fc is helpful for an offset frame fixed to F with unit vectors
+Fx, Fy, Fz, whose origin point Fc is _fixed _ to F and coincident with the
+origin Co of a frame C.
 
-Notation example: V_WB @f$(^WV^B)@f$ denotes the spatial velocity of a frame B
-in World W. V_WBp @f$(^WV^{Bp)}@f$ denotes the spatial velocity of a frame
-whose orientation is the same as B but whose origin is offset from Bo to be
-coincident with a point P.  V_WBcm @f$(^WV^{Bcm})@f$ denotes the spatial
-velocity of a frame whose orientation is the same as B but whose origin is
-located at Bcm (B's center of mass).
+Notation example: V_AB @f$(^AV^B)@f$ denotes the spatial velocity of a frame B
+measured in a frame A and contains the angular velocity w_AB @f$(^A𝛚^B)@f$ and
+translational velocity v_ABo @f$(^A𝐯^{Bo})@f$. V_AB may also be denoted V_ABo.
+For a body B, V_ABcm @f$(^AV^{Bcm})@f$ denotes the spatial velocity of a frame
+with unit vectors Bx, By, Bz with origin at Bcm (B's center of mass).
+V_ABp @f$(^AV^{Bp)}@f$ denotes the spatial velocity of a frame with unit vectors
+Bx, By, Bz, whose origin point Bp is fixed on B.
 
-If this notation is not sufficient for your purposes, please name the offset
-frame and use comments to precisely describe the orientation of its basis and
-the location of its origin.
+If this notation is insufficient for your purposes, please carefully and
+thoughtfully name the offset frame and use comments to precisely describe the
+orientation of its orthogonal unit vectors and the location of its origin.
 
 Next topic: @ref multibody_quantities
 */
