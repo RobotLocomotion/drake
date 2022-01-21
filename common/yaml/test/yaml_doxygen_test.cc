@@ -62,8 +62,8 @@ bar: [2.0, 3.0]
 
   // This code is an example from the Doxygen header.
   const MyData data = LoadYamlFile<MyData>(input_filename);
-  std_cout << fmt::format("foo = {:.1}\n", data.foo);
-  std_cout << fmt::format("bar = {:.1}\n", fmt::join(data.bar, ", "));
+  std_cout << fmt::format("foo = {:.1f}\n", data.foo);
+  std_cout << fmt::format("bar = {:.1f}\n", fmt::join(data.bar, ", "));
 
   const std::string expected_output = R"""(
 foo = 1.0
@@ -116,8 +116,8 @@ bar: [2.0, 3.0]
 
   // This code is an example from the Doxygen header.
   const MyData data = LoadMyData(input_filename);
-  std_cout << fmt::format("foo = {:.1}\n", data.foo);
-  std_cout << fmt::format("bar = {:.1}\n", fmt::join(data.bar, ", "));
+  std_cout << fmt::format("foo = {:.1f}\n", data.foo);
+  std_cout << fmt::format("bar = {:.1f}\n", fmt::join(data.bar, ", "));
 
   // This data is an example from the Doxygen header.
   const std::string expected_output = R"""(
@@ -146,8 +146,8 @@ data_2:
   std::stringstream std_cout;
 
   const MyData data = LoadMyData2(input_filename);
-  std_cout << fmt::format("foo = {:.1}\n", data.foo);
-  std_cout << fmt::format("bar = {:.1}\n", fmt::join(data.bar, ", "));
+  std_cout << fmt::format("foo = {:.1f}\n", data.foo);
+  std_cout << fmt::format("bar = {:.1f}\n", fmt::join(data.bar, ", "));
 
   // This data is an example from the Doxygen header.
   const std::string expected_output = R"""(

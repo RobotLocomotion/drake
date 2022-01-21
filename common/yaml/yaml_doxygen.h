@@ -37,8 +37,8 @@ We can use LoadYamlFile() to load the file:
 @code{cpp}
 int main() {
   const MyData data = LoadYamlFile<MyData>("filename.yaml");
-  std::cout << fmt::format("foo = {:.1}\n", data.foo);
-  std::cout << fmt::format("bar = {:.1}\n", fmt::join(data.bar, ", "));
+  std::cout << fmt::format("foo = {:.1f}\n", data.foo);
+  std::cout << fmt::format("bar = {:.1f}\n", fmt::join(data.bar, ", "));
 }
 @endcode
 
@@ -193,8 +193,8 @@ MyData LoadMyData(const std::string& filename) {
 }
 int main() {
   const MyData data = LoadMyData("filename.yaml");
-  std::cout << fmt::format("foo = {:.1}\n", data.foo);
-  std::cout << fmt::format("bar = {:.1}\n", fmt::join(data.bar, ", "));
+  std::cout << fmt::format("foo = {:.1f}\n", data.foo);
+  std::cout << fmt::format("bar = {:.1f}\n", fmt::join(data.bar, ", "));
 }
 @endcode
 
