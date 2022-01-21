@@ -49,6 +49,24 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
     // Add quadratic_cost.c to constant term
     *constant_cost_term += quadratic_cost.evaluator()->c();
   }
+
+  // Scale the A matrix for varaible scaling feature
+  const auto & scale_map = prog.GetVariableScaling();
+  for (auto & triplet : P_triplets) {
+    // Column 
+    auto it = scale_map.find(triplet.col());
+    if (it != scale_map.end()) {
+      triplet = Eigen::Triplet<double>(triplet.row(), triplet.col(),
+        triplet.value()*(it->second));
+    }
+    // Row 
+    it = scale_map.find(triplet.row());
+    if (it != scale_map.end()) {
+      triplet = Eigen::Triplet<double>(triplet.row(), triplet.col(),
+        triplet.value()*(it->second));
+    }
+  }
+
   P->resize(prog.num_vars(), prog.num_vars());
   P->setFromTriplets(P_triplets.begin(), P_triplets.end());
 }
@@ -70,6 +88,12 @@ void ParseLinearCosts(const MathematicalProgram& prog, std::vector<c_float>* q,
     }
     // Add the constant cost term to constant_cost_term.
     *constant_cost_term += linear_cost.evaluator()->b();
+  }
+
+  // Scale linear cost
+  const auto & scale_map = prog.GetVariableScaling();
+  for (const auto & member : scale_map) {
+    q->at(member.first) *= member.second;
   }
 }
 
@@ -161,6 +185,17 @@ void ParseAllLinearConstraints(
                          l, u, &num_A_rows, constraint_start_row);
   ParseBoundingBoxConstraints(prog, &A_triplets, l, u, &num_A_rows,
                               constraint_start_row);
+
+  // Scale the A matrix for varaible scaling feature
+  const auto & scale_map = prog.GetVariableScaling();
+  for (auto & triplet : A_triplets) {
+    auto it = scale_map.find(triplet.col());
+    if (it != scale_map.end()) {
+      triplet = Eigen::Triplet<double>(triplet.row(), triplet.col(),
+        triplet.value()*(it->second));
+    }
+  }
+
   A->resize(num_A_rows, prog.num_vars());
   A->setFromTriplets(A_triplets.begin(), A_triplets.end());
 }
@@ -281,16 +316,13 @@ void OsqpSolver::DoSolve(
     const Eigen::VectorXd& initial_guess,
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
-  if (!prog.GetVariableScaling().empty()) {
-    static const logging::Warn log_once(
-      "OsqpSolver doesn't support the feature of variable scaling.");
-  }
-
   OsqpSolverDetails& solver_details =
       result->SetSolverDetailsType<OsqpSolverDetails>();
 
   // TODO(hongkai.dai): OSQP uses initial guess to warm start.
   unused(initial_guess);
+
+  const auto & scale_map = prog.GetVariableScaling();
 
   // OSQP solves a convex quadratic programming problem
   // min 0.5 xᵀPx + qᵀx
@@ -375,7 +407,14 @@ void OsqpSolver::DoSolve(
       case OSQP_SOLVED_INACCURATE: {
         const Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> osqp_sol(
             work->solution->x, prog.num_vars());
-        result->set_x_val(osqp_sol.cast<double>());
+
+        // Scale solution back
+        drake::VectorX<double> scaled_sol = osqp_sol.cast<double>();
+        for (const auto & member : scale_map) {
+          scaled_sol(member.first) *= member.second;
+        }
+
+        result->set_x_val(scaled_sol);
         result->set_optimal_cost(work->info->obj_val + constant_cost_term);
         solver_details.y =
             Eigen::Map<Eigen::VectorXd>(work->solution->y, work->data->m);
