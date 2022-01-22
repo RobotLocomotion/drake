@@ -56,6 +56,11 @@ drake_runfiles_binary(
     target = ":drake_visualizer_py",
 )
 
+alias(
+    name = "meldis",
+    actual = "//bindings/pydrake/visualization:meldis",
+)
+
 # === config_setting rules ===
 
 # When this is set, a Drake build will promote some warnings to errors.
