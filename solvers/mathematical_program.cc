@@ -724,10 +724,17 @@ Binding<Constraint> MathematicalProgram::AddConstraint(const Expression& e,
 }
 
 Binding<Constraint> MathematicalProgram::AddConstraint(
-    const Eigen::Ref<const VectorX<Expression>>& v,
-    const Eigen::Ref<const Eigen::VectorXd>& lb,
-    const Eigen::Ref<const Eigen::VectorXd>& ub) {
-  return AddConstraint(internal::ParseConstraint(v, lb, ub));
+    const Eigen::Ref<const MatrixX<Expression>>& v,
+    const Eigen::Ref<const Eigen::MatrixXd>& lb,
+    const Eigen::Ref<const Eigen::MatrixXd>& ub) {
+  DRAKE_DEMAND(v.rows() == lb.rows());
+  DRAKE_DEMAND(v.rows() == ub.rows());
+  DRAKE_DEMAND(v.cols() == lb.cols());
+  DRAKE_DEMAND(v.cols() == ub.cols());
+  return AddConstraint(internal::ParseConstraint(
+      Eigen::Map<const VectorX<Expression>>(v.data(), v.rows() * v.cols()),
+      Eigen::Map<const Eigen::VectorXd>(lb.data(), lb.rows() * lb.cols()),
+      Eigen::Map<const Eigen::VectorXd>(ub.data(), ub.rows() * ub.cols())));
 }
 
 Binding<Constraint> MathematicalProgram::AddConstraint(
@@ -754,10 +761,18 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
-    const Eigen::Ref<const VectorX<Expression>>& v,
-    const Eigen::Ref<const Eigen::VectorXd>& lb,
-    const Eigen::Ref<const Eigen::VectorXd>& ub) {
-  Binding<Constraint> binding = internal::ParseConstraint(v, lb, ub);
+    const Eigen::Ref<const MatrixX<Expression>>& v,
+    const Eigen::Ref<const Eigen::MatrixXd>& lb,
+    const Eigen::Ref<const Eigen::MatrixXd>& ub) {
+  DRAKE_DEMAND(v.rows() == lb.rows());
+  DRAKE_DEMAND(v.rows() == ub.rows());
+  DRAKE_DEMAND(v.cols() == lb.cols());
+  DRAKE_DEMAND(v.cols() == ub.cols());
+  Binding<Constraint> binding = internal::ParseConstraint(
+      Eigen::Map<const VectorX<symbolic::Expression>>(v.data(),
+                                                      v.rows() * v.cols()),
+      Eigen::Map<const Eigen::VectorXd>(lb.data(), lb.rows() * lb.cols()),
+      Eigen::Map<const Eigen::VectorXd>(ub.data(), ub.rows() * ub.cols()));
   Constraint* constraint = binding.evaluator().get();
   if (dynamic_cast<LinearConstraint*>(constraint)) {
     return AddConstraint(
@@ -929,12 +944,20 @@ MathematicalProgram::AddRotatedLorentzConeConstraint(
 }
 
 Binding<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
-    const Eigen::Ref<const Eigen::VectorXd>& lb,
-    const Eigen::Ref<const Eigen::VectorXd>& ub,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+    const Eigen::Ref<const Eigen::MatrixXd>& lb,
+    const Eigen::Ref<const Eigen::MatrixXd>& ub,
+    const Eigen::Ref<const MatrixXDecisionVariable>& vars) {
+  DRAKE_DEMAND(lb.rows() == ub.rows());
+  DRAKE_DEMAND(lb.rows() == vars.rows());
+  DRAKE_DEMAND(lb.cols() == ub.cols());
+  DRAKE_DEMAND(lb.cols() == vars.cols());
   shared_ptr<BoundingBoxConstraint> constraint =
-      make_shared<BoundingBoxConstraint>(lb, ub);
-  return AddConstraint(Binding<BoundingBoxConstraint>(constraint, vars));
+      make_shared<BoundingBoxConstraint>(
+          Eigen::Map<const Eigen::VectorXd>(lb.data(), lb.rows() * lb.cols()),
+          Eigen::Map<const Eigen::VectorXd>(ub.data(), ub.rows() * ub.cols()));
+  return AddConstraint(Binding<BoundingBoxConstraint>(
+      constraint, Eigen::Map<const VectorXDecisionVariable>(
+                      vars.data(), vars.rows() * vars.cols())));
 }
 
 Binding<LinearComplementarityConstraint> MathematicalProgram::AddConstraint(
@@ -959,12 +982,20 @@ MathematicalProgram::AddLinearComplementarityConstraint(
 }
 
 Binding<Constraint> MathematicalProgram::AddPolynomialConstraint(
-    const VectorXPoly& polynomials,
-    const vector<Polynomiald::VarType>& poly_vars, const Eigen::VectorXd& lb,
-    const Eigen::VectorXd& ub,
+    const MatrixX<Polynomiald>& polynomials,
+    const vector<Polynomiald::VarType>& poly_vars, const Eigen::MatrixXd& lb,
+    const Eigen::MatrixXd& ub,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  auto constraint =
-      internal::MakePolynomialConstraint(polynomials, poly_vars, lb, ub);
+  DRAKE_DEMAND(polynomials.rows() == lb.rows());
+  DRAKE_DEMAND(polynomials.rows() == ub.rows());
+  DRAKE_DEMAND(polynomials.cols() == lb.cols());
+  DRAKE_DEMAND(polynomials.cols() == ub.cols());
+  auto constraint = internal::MakePolynomialConstraint(
+      Eigen::Map<const VectorXPoly>(polynomials.data(),
+                                    polynomials.rows() * polynomials.cols()),
+      poly_vars,
+      Eigen::Map<const Eigen::VectorXd>(lb.data(), lb.rows() * lb.cols()),
+      Eigen::Map<const Eigen::VectorXd>(ub.data(), ub.rows() * ub.cols()));
   return AddConstraint(constraint, vars);
 }
 

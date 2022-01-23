@@ -1378,9 +1378,9 @@ class MathematicalProgram {
    * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<Constraint> AddConstraint(
-      const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
-      const Eigen::Ref<const Eigen::VectorXd>& lb,
-      const Eigen::Ref<const Eigen::VectorXd>& ub);
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& v,
+      const Eigen::Ref<const Eigen::MatrixXd>& lb,
+      const Eigen::Ref<const Eigen::MatrixXd>& ub);
 
   /**
    * Add a constraint represented by a symbolic formula to the program. The
@@ -1584,9 +1584,9 @@ class MathematicalProgram {
    * ub</tt> includes trivial/unsatisfiable constraints.
    */
   Binding<LinearConstraint> AddLinearConstraint(
-      const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
-      const Eigen::Ref<const Eigen::VectorXd>& lb,
-      const Eigen::Ref<const Eigen::VectorXd>& ub);
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& v,
+      const Eigen::Ref<const Eigen::MatrixXd>& lb,
+      const Eigen::Ref<const Eigen::MatrixXd>& ub);
 
   /**
    * Add a linear constraint represented by a symbolic formula to the
@@ -1889,13 +1889,13 @@ class MathematicalProgram {
    * decision variables.
    * @param lb The lower bound.
    * @param ub The upper bound.
-   * @param vars Will imposes constraint lb(i) <= vars(i) <= ub(i).
+   * @param vars Will imposes constraint lb(i, j) <= vars(i, j) <= ub(i, j).
    * @return The newly constructed BoundingBoxConstraint.
    */
   Binding<BoundingBoxConstraint> AddBoundingBoxConstraint(
-      const Eigen::Ref<const Eigen::VectorXd>& lb,
-      const Eigen::Ref<const Eigen::VectorXd>& ub,
-      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+      const Eigen::Ref<const Eigen::MatrixXd>& lb,
+      const Eigen::Ref<const Eigen::MatrixXd>& ub,
+      const Eigen::Ref<const MatrixXDecisionVariable>& vars);
 
   /**
    * Adds bounds for a single variable.
@@ -2417,9 +2417,9 @@ class MathematicalProgram {
    * of the decision variables (defined in the vars parameter).
    */
   Binding<Constraint> AddPolynomialConstraint(
-      const VectorXPoly& polynomials,
+      const MatrixX<Polynomiald>& polynomials,
       const std::vector<Polynomiald::VarType>& poly_vars,
-      const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
+      const Eigen::MatrixXd& lb, const Eigen::MatrixXd& ub,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**

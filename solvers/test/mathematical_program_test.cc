@@ -82,6 +82,7 @@ namespace test {
 
 namespace {
 constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
+constexpr double kInf = std::numeric_limits<double>::infinity();
 }  // namespace
 
 struct Movable {
@@ -747,6 +748,32 @@ GTEST_TEST(TestMathematicalProgram, BoundingBoxTest2) {
       CompareMatrices(constraint4->upper_bound(), constraint5->upper_bound()));
   EXPECT_TRUE(
       CompareMatrices(constraint5->upper_bound(), constraint6->upper_bound()));
+}
+
+GTEST_TEST(TestMathematicalProgram, BoundingBoxTest3) {
+  // The bounds and variables are matrices.
+  MathematicalProgram prog;
+  auto X = prog.NewContinuousVariables(2, 3, "X");
+  Eigen::MatrixXd X_lo(2, 3);
+  X_lo << 1, 2, 3, 4, 5, 6;
+  // Use a row-major matrix to make sure that our code works for different types
+  // of matrix.
+  Eigen::Matrix<double, 2, 3, Eigen::RowMajor> X_up =
+      (X_lo.array() + 1).matrix();
+  auto cnstr = prog.AddBoundingBoxConstraint(X_lo, X_up, X);
+  EXPECT_EQ(cnstr.evaluator()->num_constraints(), 6);
+  std::unordered_map<symbolic::Variable, std::pair<double, double>> X_bounds;
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 3; j++) {
+      X_bounds.emplace(X(i, j), std::make_pair(X_lo(i, j), X_up(i, j)));
+    }
+  }
+  for (int i = 0; i < 6; ++i) {
+    EXPECT_EQ(cnstr.evaluator()->lower_bound()(i),
+              X_bounds.at(cnstr.variables()(i)).first);
+    EXPECT_EQ(cnstr.evaluator()->upper_bound()(i),
+              X_bounds.at(cnstr.variables()(i)).second);
+  }
 }
 
 // Verifies if the added cost evaluates the same as the original cost.
@@ -3246,7 +3273,7 @@ GTEST_TEST(TestMathematicalProgram, TestVariableScaling) {
   EXPECT_EQ(prog.GetVariableScaling().size(), 4);
 }
 
-GTEST_TEST(TestMathematicalProgram, AddConstraintMatrix) {
+GTEST_TEST(TestMathematicalProgram, AddConstraintMatrix1) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
 
@@ -3286,6 +3313,62 @@ GTEST_TEST(TestMathematicalProgram, AddConstraintMatrix) {
   EXPECT_EQ(binding.evaluator()->A(), A_expected);
   EXPECT_EQ(binding.evaluator()->lower_bound(), lower_bound_expected);
   EXPECT_EQ(binding.evaluator()->upper_bound(), upper_bound_expected);
+}
+
+GTEST_TEST(TestMathematicalProgram, AddConstraintMatrix2) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  Eigen::Matrix<symbolic::Expression, 2, 2> exprs;
+  // clang-format off
+  exprs << x(0), x(0) + 2*x(1),
+           x(1), x(0) + x(1);
+  // clang-format on
+  // This test relies on the pair (lb(i), ub(i)) being unique.
+  Eigen::Matrix2d lb;
+  lb << 0, -kInf, 2., -1.;
+  Eigen::Matrix<double, 2, 2, Eigen::RowMajor> ub;
+  ub(0, 0) = kInf;
+  ub(0, 1) = 3;
+  ub(1, 0) = 2;
+  ub(1, 1) = kInf;
+  prog.AddConstraint(exprs, lb, ub);
+
+  ASSERT_EQ(prog.GetAllConstraints().size(), 1);
+  ASSERT_EQ(prog.GetAllLinearConstraints().size(), 1);
+
+  Eigen::Matrix<double, 4, 2> A_expected;
+  Eigen::Matrix<double, 4, 1> lower_bound_expected;
+  Eigen::Matrix<double, 4, 1> upper_bound_expected;
+  std::array<std::array<Eigen::RowVector2d, 2>, 2> coeff;
+  coeff[0][0] << 1, 0;
+  coeff[0][1] << 1, 2;
+  coeff[1][0] << 0, 1;
+  coeff[1][1] << 1, 1;
+
+  auto check_binding = [&lb, &ub,
+                        &coeff](const Binding<LinearConstraint>& binding) {
+    EXPECT_EQ(binding.evaluator()->num_constraints(), 4);
+    for (int i = 0; i < 2; ++i) {
+      for (int j = 0; j < 2; ++j) {
+        bool find_match = false;
+        for (int k = 0; k < 4; ++k) {
+          if (binding.evaluator()->lower_bound()(k) == lb(i, j) &&
+              binding.evaluator()->upper_bound()(k) == ub(i, j)) {
+            EXPECT_TRUE(
+                CompareMatrices(binding.evaluator()->A().row(k), coeff[i][j]));
+            find_match = true;
+          }
+        }
+        EXPECT_TRUE(find_match);
+      }
+    }
+  };
+  const auto binding1 = prog.GetAllLinearConstraints()[0];
+  check_binding(binding1);
+
+  const auto binding2 = prog.AddLinearConstraint(exprs, lb, ub);
+  check_binding(binding2);
 }
 
 GTEST_TEST(TestMathematicalProgram, ReparsePolynomial) {
