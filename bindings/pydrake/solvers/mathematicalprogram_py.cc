@@ -959,9 +959,9 @@ void BindMathematicalProgram(py::module m) {
           doc.MathematicalProgram.AddLinearConstraint.doc_3args_e_lb_ub)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
-              const Eigen::Ref<const VectorX<symbolic::Expression>>&,
-              const Eigen::Ref<const Eigen::VectorXd>&,
-              const Eigen::Ref<const Eigen::VectorXd>&)>(
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>&,
+              const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::MatrixXd>&)>(
               &MathematicalProgram::AddLinearConstraint),
           py::arg("v"), py::arg("lb"), py::arg("ub"),
           doc.MathematicalProgram.AddLinearConstraint.doc_3args_v_lb_ub)
@@ -1011,9 +1011,9 @@ void BindMathematicalProgram(py::module m) {
               .doc_2args_constEigenMatrixBase_constEigenMatrixBase)
       .def("AddBoundingBoxConstraint",
           static_cast<Binding<BoundingBoxConstraint> (MathematicalProgram::*)(
-              const Eigen::Ref<const Eigen::VectorXd>&,
-              const Eigen::Ref<const Eigen::VectorXd>&,
-              const Eigen::Ref<const VectorXDecisionVariable>&)>(
+              const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const MatrixXDecisionVariable>&)>(
               &MathematicalProgram::AddBoundingBoxConstraint),
           doc.MathematicalProgram.AddBoundingBoxConstraint.doc_3args_lb_ub_vars)
       .def("AddBoundingBoxConstraint",
