@@ -3255,7 +3255,7 @@ class MathematicalProgram {
   void SetVariableScaling(const symbolic::Variable& var, double s);
 
   /**
-   * Clears the scaling factors of decision variables.
+   * Clears the scaling factors for decision variables.
    *
    * See @ref variable_scaling "Variable scaling" for more information.
    */
