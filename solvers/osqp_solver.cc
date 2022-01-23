@@ -413,14 +413,13 @@ void OsqpSolver::DoSolve(
         const Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> osqp_sol(
             work->solution->x, prog.num_vars());
 
+        // Scale solution back if `scale_map` is not empty
         const auto& scale_map = prog.GetVariableScaling();
         if (!scale_map.empty()) {
-          // Scale solution back
           drake::VectorX<double> scaled_sol = osqp_sol.cast<double>();
           for (const auto& member : scale_map) {
             scaled_sol(member.first) *= member.second;
           }
-
           result->set_x_val(scaled_sol);
         } else {
           result->set_x_val(osqp_sol.cast<double>());
