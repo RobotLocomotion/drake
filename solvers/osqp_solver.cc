@@ -322,8 +322,6 @@ void OsqpSolver::DoSolve(
   // TODO(hongkai.dai): OSQP uses initial guess to warm start.
   unused(initial_guess);
 
-  const auto & scale_map = prog.GetVariableScaling();
-
   // OSQP solves a convex quadratic programming problem
   // min 0.5 xᵀPx + qᵀx
   // s.t l ≤ Ax ≤ u
@@ -409,6 +407,7 @@ void OsqpSolver::DoSolve(
             work->solution->x, prog.num_vars());
 
         // Scale solution back
+        const auto & scale_map = prog.GetVariableScaling();
         drake::VectorX<double> scaled_sol = osqp_sol.cast<double>();
         for (const auto & member : scale_map) {
           scaled_sol(member.first) *= member.second;
