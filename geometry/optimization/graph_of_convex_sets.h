@@ -340,8 +340,9 @@ class GraphOfConvexSets {
   @pydrake_mkdoc_identifier{by_id}
   */
   solvers::MathematicalProgramResult SolveShortestPath(
-      VertexId source_id, VertexId target_id,
-      bool convex_relaxation = false) const;
+      VertexId source_id, VertexId target_id, bool convex_relaxation = false,
+      const std::optional<solvers::SolverOptions>& solver_options =
+          std::nullopt) const;
 
   /** Convenience overload that takes const reference arguments for source and
   target.
@@ -349,7 +350,9 @@ class GraphOfConvexSets {
   */
   solvers::MathematicalProgramResult SolveShortestPath(
       const Vertex& source, const Vertex& target,
-      bool convex_relaxation = false) const;
+      bool convex_relaxation = false,
+      const std::optional<solvers::SolverOptions>& solver_options =
+          std::nullopt) const;
 
  private:
   std::map<VertexId, std::unique_ptr<Vertex>> vertices_{};
