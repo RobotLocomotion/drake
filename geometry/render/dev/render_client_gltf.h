@@ -14,32 +14,32 @@ namespace render {
 /** A RenderClient that exports
  <a href="https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html">glTF
  </a> scenes to upload to a render server. */
-class RenderClientGLTF : public RenderEngineVtk, public RenderClient {
+class RenderClientGltf : public RenderEngineVtk, public RenderClient {
  public:
   /** \name Does not allow copy, move, or assignment  */
   //@{
 #ifdef DRAKE_DOXYGEN_CXX
   // Note: the copy constructor operator is actually protected to serve as the
   // basis for implementing the DoClone() method.
-  RenderClientGLTF(const RenderClientGLTF&) = delete;
+  RenderClientGltf(const RenderClientGltf&) = delete;
 #endif
-  RenderClientGLTF& operator=(const RenderClientGLTF&) = delete;
-  RenderClientGLTF(RenderClientGLTF&&) = delete;
-  RenderClientGLTF& operator=(RenderClientGLTF&&) = delete;
+  RenderClientGltf& operator=(const RenderClientGltf&) = delete;
+  RenderClientGltf(RenderClientGltf&&) = delete;
+  RenderClientGltf& operator=(RenderClientGltf&&) = delete;
   //@}}
 
   /** Constructs the render engine from the given `parameters`.  By default the
-   %RenderClientGLTF will communicate with a local server.
-   \sa RenderClientGLTFParams */
-  RenderClientGLTF(
-      const RenderClientGLTFParams& parameters = RenderClientGLTFParams());
+   %RenderClientGltf will communicate with a local server.
+   \sa RenderClientGltfParams */
+  RenderClientGltf(
+      const RenderClientGltfParams& parameters = RenderClientGltfParams());
 
   // TODO(svenevs): remove this once vtkGLTFExporter is patched to invert.
   void UpdateViewpoint(const math::RigidTransformd& X_WC) override;
 
  protected:
   /** Copy constructor for the purpose of cloning. */
-  RenderClientGLTF(const RenderClientGLTF& other);
+  RenderClientGltf(const RenderClientGltf& other);
 
  private:
   // \see RenderEngine::DoClone().

@@ -145,8 +145,8 @@ class RenderEngineVtk : public RenderEngine,
   RenderEngineVtk(const RenderEngineVtk& other);
 
  private:
-  // The RenderClientGLTF needs access to the rendering pipelines.
-  friend class RenderClientGLTF;
+  // The RenderClientGltf needs access to the rendering pipelines.
+  friend class RenderClientGltf;
 
   // @see RenderEngine::DoRegisterVisual().
   bool DoRegisterVisual(GeometryId id, const Shape& shape,

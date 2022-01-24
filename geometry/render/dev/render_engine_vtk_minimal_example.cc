@@ -281,7 +281,7 @@ int do_main() {
                              MakeRenderEngineVtk(RenderEngineVtkParams()));
   } else {  // FLAGS_render_engine == "client"
     scene_graph->AddRenderer(render_name,
-                             MakeRenderClientGLTF(RenderClientGLTFParams()));
+                             MakeRenderClientGltf(RenderClientGltfParams()));
   }
 
   AddShapes(scene_graph);

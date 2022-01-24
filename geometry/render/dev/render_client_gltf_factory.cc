@@ -6,9 +6,9 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-std::unique_ptr<RenderEngine> MakeRenderClientGLTF(
-    const RenderClientGLTFParams& params) {
-  return std::make_unique<RenderClientGLTF>(params);
+std::unique_ptr<RenderEngine> MakeRenderClientGltf(
+    const RenderClientGltfParams& params) {
+  return std::make_unique<RenderClientGltf>(params);
 }
 
 }  // namespace render

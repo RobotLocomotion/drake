@@ -10,7 +10,7 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-struct RenderClientGLTFParams {
+struct RenderClientGltfParams {
   std::optional<RenderLabel> default_label{};
   std::string url{"http://127.0.0.1"};
   unsigned port{8000};
@@ -20,8 +20,8 @@ struct RenderClientGLTFParams {
   bool no_cleanup = false;
 };
 
-std::unique_ptr<RenderEngine> MakeRenderClientGLTF(
-    const RenderClientGLTFParams& params);
+std::unique_ptr<RenderEngine> MakeRenderClientGltf(
+    const RenderClientGltfParams& params);
 
 }  // namespace render
 }  // namespace geometry

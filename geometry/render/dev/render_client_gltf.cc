@@ -76,7 +76,7 @@ using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 
-RenderClientGLTF::RenderClientGLTF(const RenderClientGLTFParams& parameters)
+RenderClientGltf::RenderClientGltf(const RenderClientGltfParams& parameters)
     : RenderEngineVtk({parameters.default_label,
                        std::nullopt,
                        // Same as RenderEngineVtkParams default clear color,
@@ -86,14 +86,14 @@ RenderClientGLTF::RenderClientGLTF(const RenderClientGLTFParams& parameters)
                    parameters.render_endpoint, parameters.verbose,
                    parameters.no_cleanup) {}
 
-RenderClientGLTF::RenderClientGLTF(const RenderClientGLTF& other)
+RenderClientGltf::RenderClientGltf(const RenderClientGltf& other)
     : RenderEngineVtk(other), RenderClient(other) {}
 
-std::unique_ptr<RenderEngine> RenderClientGLTF::DoClone() const {
-  return std::unique_ptr<RenderClientGLTF>(new RenderClientGLTF(*this));
+std::unique_ptr<RenderEngine> RenderClientGltf::DoClone() const {
+  return std::unique_ptr<RenderClientGltf>(new RenderClientGltf(*this));
 }
 
-void RenderClientGLTF::UpdateViewpoint(const math::RigidTransformd& X_WC) {
+void RenderClientGltf::UpdateViewpoint(const math::RigidTransformd& X_WC) {
   // TODO(svenevs): remove this once vtkGLTFExporter is patched to invert.
   // The vtkGLTFExporter sends over the camera's model view transformation, but
   // it should be sending the inverse of this matrix (bug in vtk that will be
@@ -129,14 +129,14 @@ void RenderClientGLTF::UpdateViewpoint(const math::RigidTransformd& X_WC) {
   }
 }
 
-void RenderClientGLTF::ExportColorImage(const ColorRenderCamera& camera,
+void RenderClientGltf::ExportColorImage(const ColorRenderCamera& camera,
                                         ImageRgba8U* color_image_out) const {
   // TODO(svenevs): good thread-safe location for tracking color frame id?
   static size_t color_frame_id{0};
 
   // TODO(svenevs): is logging desired?  Use drake's log()?
   if (verbose()) {
-    std::cout << "RenderClientGLTF color frame: " << color_frame_id << '\n';
+    std::cout << "RenderClientGltf color frame: " << color_frame_id << '\n';
   }
 
   // Export and render the glTF scene.
@@ -159,14 +159,14 @@ void RenderClientGLTF::ExportColorImage(const ColorRenderCamera& camera,
   ++color_frame_id;
 }
 
-void RenderClientGLTF::ExportDepthImage(const DepthRenderCamera& camera,
+void RenderClientGltf::ExportDepthImage(const DepthRenderCamera& camera,
                                         ImageDepth32F* depth_image_out) const {
   // TODO(svenevs): good thread-safe location for tracking depth frame id?
   static size_t depth_frame_id{0};
 
   // TODO(svenevs): is logging desired?  Use drake's log()?
   if (verbose()) {
-    std::cout << "RenderClientGLTF depth frame: " << depth_frame_id << '\n';
+    std::cout << "RenderClientGltf depth frame: " << depth_frame_id << '\n';
   }
 
   // Export and render the glTF scene.
@@ -191,14 +191,14 @@ void RenderClientGLTF::ExportDepthImage(const DepthRenderCamera& camera,
   ++depth_frame_id;
 }
 
-void RenderClientGLTF::ExportLabelImage(const ColorRenderCamera& camera,
+void RenderClientGltf::ExportLabelImage(const ColorRenderCamera& camera,
                                         ImageLabel16I* label_image_out) const {
   // TODO(svenevs): good thread-safe location for tracking label frame id?
   static size_t label_frame_id{0};
 
   // TODO(svenevs): is logging desired?  Use drake's log()?
   if (verbose()) {
-    std::cout << "RenderClientGLTF label frame: " << label_frame_id << '\n';
+    std::cout << "RenderClientGltf label frame: " << label_frame_id << '\n';
   }
 
   // Export and render the glTF scene.
@@ -221,7 +221,7 @@ void RenderClientGLTF::ExportLabelImage(const ColorRenderCamera& camera,
   ++label_frame_id;
 }
 
-std::string RenderClientGLTF::ExportPathFor(ImageType image_type,
+std::string RenderClientGltf::ExportPathFor(ImageType image_type,
                                             size_t frame_id) const {
   // Create e.g., {temp_directory()}/000000000000-color.gltf
   const drake::filesystem::path base{temp_directory()};
@@ -236,7 +236,7 @@ std::string RenderClientGLTF::ExportPathFor(ImageType image_type,
   return base / (frame + suffix);
 }
 
-std::string RenderClientGLTF::ExportScene(ImageType image_type,
+std::string RenderClientGltf::ExportScene(ImageType image_type,
                                           size_t frame_id) const {
   vtkNew<vtkGLTFExporter> gltf_exporter;
   gltf_exporter->InlineDataOn();
@@ -247,7 +247,7 @@ std::string RenderClientGLTF::ExportScene(ImageType image_type,
   return scene_path;
 }
 
-std::string RenderClientGLTF::UploadAndRender(const RenderCameraCore& core,
+std::string RenderClientGltf::UploadAndRender(const RenderCameraCore& core,
                                               ImageType image_type,
                                               const std::string& scene_path,
                                               double min_depth,
