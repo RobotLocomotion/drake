@@ -62,9 +62,10 @@ constexpr std::array<std::array<int, 4>, 16> kMarchingTetsTable = {
 }  // namespace
 
 template <typename T>
-void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
-                               const Plane<T>& plane_M,
-                               std::vector<Vector3<T>>* polygon_vertices) {
+void SliceTetrahedronWithPlane(
+    int tet_index, const VolumeMesh<double>& mesh_M, const Plane<T>& plane_M,
+    std::vector<Vector3<T>>* polygon_vertices,
+    std::optional<std::vector<SortedPair<int>>*> cut_edges) {
   T distance[4];
   // Bit encoding of the sign of signed-distance: v0, v1, v2, v3.
   int intersection_code = 0;
@@ -88,7 +89,6 @@ void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
     const TetrahedronEdge& tet_edge = kTetEdges[edge_index];
     const int v0 = mesh_M.element(tet_index).vertex(tet_edge.first);
     const int v1 = mesh_M.element(tet_index).vertex(tet_edge.second);
-    const SortedPair<int> mesh_edge{v0, v1};
 
     const Vector3<double>& p_MV0 = mesh_M.vertex(v0);
     const Vector3<double>& p_MV1 = mesh_M.vertex(v1);
@@ -101,6 +101,10 @@ void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
     const T t = d_v0 / (d_v0 - d_v1);
     const Vector3<T> p_MC = p_MV0 + t * (p_MV1 - p_MV0);
     polygon_vertices->push_back(p_MC);
+    if (cut_edges.has_value()) {
+      const SortedPair<int> mesh_edge{v0, v1};
+      (*cut_edges)->push_back(mesh_edge);
+    }
   }
 }
 
