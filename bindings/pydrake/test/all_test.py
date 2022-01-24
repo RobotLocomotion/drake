@@ -169,6 +169,8 @@ class TestAll(unittest.TestCase):
             # - sensors
             "Image",
             # visualization
+            # - meldis
+            "Meldis",
             # - plotting
             "plot_sublevelset_quadratic",
         )

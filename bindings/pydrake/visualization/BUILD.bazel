@@ -7,6 +7,7 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
 )
@@ -29,6 +30,25 @@ drake_py_library(
 )
 
 drake_py_library(
+    name = "meldis_py",
+    srcs = ["meldis.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":module_py",
+        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake:lcm_py",
+        "//lcmtypes:lcmtypes_drake_py",
+    ],
+)
+
+drake_py_binary(
+    name = "meldis",
+    srcs = ["meldis.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = [":meldis_py"],
+)
+
+drake_py_library(
     name = "plotting_py",
     srcs = ["plotting.py"],
     imports = PACKAGE_INFO.py_imports,
@@ -41,6 +61,7 @@ drake_py_library(
 
 PY_LIBRARIES = [
     ":module_py",
+    ":meldis_py",
     ":plotting_py",
 ]
 

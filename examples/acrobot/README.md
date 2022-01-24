@@ -33,9 +33,12 @@ visualization data over LCM, so if you run `//tools:drake_visualizer` it will
 appear there.
 
 ```
-bazel run //tools:drake_visualizer &
+bazel run //tools:meldis -- --open-window &
 bazel run //examples/acrobot:run_passive
 ```
+
+You can leave the same meldis display open for all of the demos below;
+you don't need to close and re-open it each time.
 
 
 ### `//examples/acrobot:`*run_lqr*
@@ -46,7 +49,7 @@ information to LCM.  Unlike *run_passive*
  * It attaches an LQR controller that can maintain the upright position.
 
 ```
-bazel run //tools:drake_visualizer &
+bazel run //tools:meldis -- --open-window &
 bazel run //examples/acrobot:run_lqr
 ```
 
@@ -59,7 +62,7 @@ the acrobot up to near its vertical posture, then switches to the LQR
 controller to hold it there.
 
 ```
-bazel run //tools:drake_visualizer &
+bazel run //tools:meldis -- --open-window &
 bazel run //examples/acrobot:run_swing_up
 ```
 
@@ -79,7 +82,7 @@ The observer trajectory is not visible in drake_visualizer, but can be
 visualized via the `call_python_client_cli` remote python interpreter.
 
 ```
-bazel run //tools:drake_visualizer &
+bazel run //tools:meldis -- --open-window &
 bazel run //examples/acrobot:run_lqr_w_estimator
 bazel run //common/proto:call_python_client_cli
 ```
@@ -95,7 +98,7 @@ trajectory.
 This demonstration requires SNOPT and will not run without it.
 
 ```
-bazel run //tools:drake_visualizer &
+bazel run //tools:meldis -- --open-window &
 bazel run //examples/acrobot:run_swing_up_traj_optimization
 ```
 
@@ -128,7 +131,7 @@ attached to an LCM receiver.
 ### Putting them together
 
 ```
-bazel run //tools:drake_visualizer &
+bazel run //tools:meldis -- --open-window &
 bazel run //examples/acrobot:run_plant_w_lcm &
 bazel run //examples/acrobot:spong_controller_w_lcm
 ```
