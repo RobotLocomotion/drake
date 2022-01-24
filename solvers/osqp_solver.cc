@@ -50,22 +50,22 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
     *constant_cost_term += quadratic_cost.evaluator()->c();
   }
 
-  // Scale the matrix P in the cost
-  // Note that the linear term is scaled in ParseLinearCosts()
+  // Scale the matrix P in the cost.
+  // Note that the linear term is scaled in ParseLinearCosts().
   const auto& scale_map = prog.GetVariableScaling();
   if (!scale_map.empty()) {
     for (auto& triplet : P_triplets) {
       // Column
-      auto it = scale_map.find(triplet.col());
-      if (it != scale_map.end()) {
+      const auto column = scale_map.find(triplet.col());
+      if (column != scale_map.end()) {
         triplet = Eigen::Triplet<double>(triplet.row(), triplet.col(),
-                                         triplet.value() * (it->second));
+                                         triplet.value() * (column->second));
       }
       // Row
-      it = scale_map.find(triplet.row());
-      if (it != scale_map.end()) {
+      const auto row = scale_map.find(triplet.row());
+      if (row != scale_map.end()) {
         triplet = Eigen::Triplet<double>(triplet.row(), triplet.col(),
-                                         triplet.value() * (it->second));
+                                         triplet.value() * (row->second));
       }
     }
   }
@@ -93,11 +93,11 @@ void ParseLinearCosts(const MathematicalProgram& prog, std::vector<c_float>* q,
     *constant_cost_term += linear_cost.evaluator()->b();
   }
 
-  // Scale the vector q in the cost
+  // Scale the vector q in the cost.
   const auto& scale_map = prog.GetVariableScaling();
   if (!scale_map.empty()) {
-    for (const auto& member : scale_map) {
-      q->at(member.first) *= member.second;
+    for (const auto& [index, scale] : scale_map) {
+      q->at(index) *= scale;
     }
   }
 }
@@ -191,14 +191,17 @@ void ParseAllLinearConstraints(
   ParseBoundingBoxConstraints(prog, &A_triplets, l, u, &num_A_rows,
                               constraint_start_row);
 
-  // Scale the matrix A
+  // Scale the matrix A.
+  // Note that we only scale the columns of A, because the constraint has the
+  // form l <= Ax <= u where the scaling of x enters the columns of A instead of
+  // rows of A.
   const auto& scale_map = prog.GetVariableScaling();
   if (!scale_map.empty()) {
     for (auto& triplet : A_triplets) {
-      auto it = scale_map.find(triplet.col());
-      if (it != scale_map.end()) {
+      auto column = scale_map.find(triplet.col());
+      if (column != scale_map.end()) {
         triplet = Eigen::Triplet<double>(triplet.row(), triplet.col(),
-                                         triplet.value() * (it->second));
+                                         triplet.value() * (column->second));
       }
     }
   }
@@ -413,12 +416,12 @@ void OsqpSolver::DoSolve(
         const Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> osqp_sol(
             work->solution->x, prog.num_vars());
 
-        // Scale solution back if `scale_map` is not empty
+        // Scale solution back if `scale_map` is not empty.
         const auto& scale_map = prog.GetVariableScaling();
         if (!scale_map.empty()) {
           drake::VectorX<double> scaled_sol = osqp_sol.cast<double>();
-          for (const auto& member : scale_map) {
-            scaled_sol(member.first) *= member.second;
+          for (const auto& [index, scale] : scale_map) {
+            scaled_sol(index) *= scale;
           }
           result->set_x_val(scaled_sol);
         } else {
