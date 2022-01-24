@@ -26,7 +26,6 @@ class RenderClientGLTF : public RenderEngineVtk, public RenderClient {
   RenderClientGLTF& operator=(const RenderClientGLTF&) = delete;
   RenderClientGLTF(RenderClientGLTF&&) = delete;
   RenderClientGLTF& operator=(RenderClientGLTF&&) = delete;
-  virtual ~RenderClientGLTF() = default;
   //@}}
 
   /** Constructs the render engine from the given `parameters`.  By default the

@@ -94,9 +94,6 @@ class RenderEngineVtk : public RenderEngine,
   RenderEngineVtk& operator=(const RenderEngineVtk&) = delete;
   RenderEngineVtk(RenderEngineVtk&&) = delete;
   RenderEngineVtk& operator=(RenderEngineVtk&&) = delete;
-  // Note: the vtk instances will destroy themselves and all other data members
-  // of this class are trivially destructible. This exists for RenderClientGLTF.
-  virtual ~RenderEngineVtk() = default;
   //@}}
 
   /** Constructs the render engine from the given `parameters`.
