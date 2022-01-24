@@ -87,40 +87,47 @@ class RenderClient {
   void ValidDepthRangeOrThrow(double min_depth, double max_depth) const;
 
   /** Download a render from the server, returning the path to the file.  Users
-   should have already uploaded the scene to the server using \ref UploadScene.
-   Note that the returned file path will have a `.bin` file extension as this
-   method is agnostic to the type of image file being transmitted.  Users can
-   call any one of the helper methods \ref LoadColorImage, \ref LoadDepthImage,
-   or \ref LoadLabelImage directly with the return value of this function
-   without needing to rename the file.
+   should have already uploaded the scene to the server using UploadScene().
+   The returned file path may be used directly with any one of the helper
+   methods LoadColorImage(), LoadDepthImage(), or LoadLabelImage().  The file
+   path returned will be in temp_directory(), users do not need to delete the
+   file manually after they are finished.
+
+   \sa no_cleanup()
 
    \param camera_core
-     The \ref RenderCameraCore of the camera being rendered.  Its
-     \ref systems::sensors::CameraInfo intrinsics will be communicated to the
-     server.
+     The RenderCameraCore of the camera being rendered.  Its
+     RenderCameraCore::intrinsics() will be communicated to the server.
    \param image_type
      The type of image being rendered.
    \param scene_path
-     The path to the input scene that is being rendered.
+     The path to the input scene that is being rendered.  The client will use
+     the basename of the file path to construct the final output file, stored
+     in its temp_directory().  For example, `/some/path/scene.gltf` would be
+     saved in `{temp_directory()}/scene.gltf.png` (if the server returned a PNG
+     file), regardless of whether `/some/path` is in temp_directory().  Users
+     are strongly encouraged to store their scene files in temp_directory().
    \param scene_sha256
      The `sha256sum` of the file denoted by `scene_path`.  This is the "scene
      identifier" that the server uses to determine which file to render.
    \param min_depth
-     The minimum depth range.  Required when `image_type` is depth,
-     \sa ValidDepthRangeOrThrow.
+     The minimum depth range.  Required when `image_type` is depth.  See also:
+     ValidDepthRangeOrThrow().
    \param max_depth
-     The maximum depth range.  Required when `image_type` is depth,
-     \sa ValidDepthRangeOrThrow.
+     The maximum depth range.  Required when `image_type` is depth.  See also:
+     ValidDepthRangeOrThrow().
 
    \return
      A successful download of a rendering from the server will return the path
-     to the downloaded file, which will be exactly `{scene_path} + ".bin"`.
-     This method simply writes the data to a binary file, and is not aware of
-     what kind of output image type is desired or required for the `image_type`
-     being rendered.
+     to the downloaded file, which will be exactly
+     `{temp_directory()}/{$(basename scene_path)} + extension`, where
+     `extension` will depend on what the server returns, e.g., `.png` or
+     `.tiff`.
 
    \throws std::runtime_error
-     If a rendering cannot be obtained from the server for any reason. */
+     If a rendering cannot be obtained from the server for any reason, including
+     invalid parameters supplied to this method such as not including
+     `min_depth` and/or `max_depth` when `image_type` is depth. */
   virtual std::string RetrieveRender(const RenderCameraCore& camera_core,
                                      ImageType image_type,
                                      const std::string& scene_path,
@@ -138,29 +145,18 @@ class RenderClient {
    (RGB) or four (RGBA) channels.
 
    \param path
-     The path to the file to try and load as a color image.  The file extension
-     does not matter, a path returned from \ref RetrieveRender can be used
-     directly.
+     The path to the file to try and load as a depth image.  The path returned
+     by RetrieveRender() can be used directly for this parameter.
    \param color_image_out
      The already allocated drake image buffer to load `path` into.
-   \param rename
-     Whether or not the file should be renamed to the appropriate file extension
-     `.png`.  Default: `true`.
-
-   \return
-     The path of the final file.  If `rename=false`, this is the same value as
-     the input `path`.  Otherwise, the file extension will be changed to end
-     with `.png`.
 
    \throws std::runtime_error
-     If the specified `path` cannot be loaded as an RGB or RGBA PNG file, the
+     If the specified `path` cannot be loaded as an RGB or RGBA PNG file, or the
      image denoted by `path` does not have the same width and height of the
-     specified `color_image_out`, or there was a problem renaming the file when
-     `rename=true`. */
-  virtual std::string LoadColorImage(
+     specified `color_image_out`.*/
+  virtual void LoadColorImage(
       const std::string& path,
-      drake::systems::sensors::ImageRgba8U* color_image_out,
-      bool rename = true) const;
+      drake::systems::sensors::ImageRgba8U* color_image_out) const;
 
   /** Load the specified image file to a drake output buffer.
 
@@ -173,67 +169,47 @@ class RenderClient {
      meters when copying to the output buffer.
 
    \param path
-     The path to the file to try and load as a depth image.  The file extension
-     does not matter, a path returned from \ref RetrieveRender can be used
-     directly.
+     The path to the file to try and load as a depth image.  The path returned
+     by RetrieveRender() can be used directly for this parameter.
    \param depth_image_out
      The already allocated drake image buffer to load `path` into.
-   \param rename
-     Whether or not the file should be renamed to the appropriate file extension
-     depending on if it was loaded as `.tiff` or `.png`.  Default: `true`.
-
-   \return
-     The path of the final file.  If `rename=false`, this is the same value as
-     the input `path`.  Otherwise, the file extension will be changed to the
-     type of file loaded.
 
    \throws std::runtime_error
      If the specified `path` cannot be loaded as a single channel TIFF or PNG,
-     image, the image denoted by `path` does not have the same width and height
-     of the specified `depth_image_out`, or there was a problem renaming the
-     file when `rename=true`. */
-  virtual std::string LoadDepthImage(
+     image, or the image denoted by `path` does not have the same width and
+     height of the specified `depth_image_out`. */
+  virtual void LoadDepthImage(
       const std::string& path,
-      drake::systems::sensors::ImageDepth32F* depth_image_out,
-      bool rename = true) const;
+      drake::systems::sensors::ImageDepth32F* depth_image_out) const;
 
   /** Load the specified image file to a drake output buffer.
 
    This method only supports loading single channel unsigned short PNG images.
 
    \param path
-     The path to the file to try and load as a label image.  The file extension
-     does not matter, a path returned from \ref RetrieveRender can be used
-     directly.
+     The path to the file to try and load as a label image.  The path returned
+     by RetrieveRender() can be used directly for this parameter.
    \param label_image_out
      The already allocated drake image buffer to load `path` into.
-   \param rename
-     Whether or not the file should be renamed to the appropriate file extension
-     `.png`.  Default: `true`.
-
-   \return
-     The path of the final file.  If `rename=false`, this is the same value as
-     the input `path`.  Otherwise, the file extension will be changed to end
-     with `.png`.
 
    \throws std::runtime_error
      If the specified `path` cannot be loaded as a single channel unsigned short
-     PNG image, the image denoted by `path` does not have the same width and
-     height of the specified `label_image_out`, or there was a problem renaming
-     the file when `rename=true`. */
-  virtual std::string LoadLabelImage(
+     PNG image, or the image denoted by `path` does not have the same width and
+     height of the specified `label_image_out`. */
+  virtual void LoadLabelImage(
       const std::string& path,
-      drake::systems::sensors::ImageLabel16I* label_image_out,
-      bool rename = true) const;
+      drake::systems::sensors::ImageLabel16I* label_image_out) const;
 
   /** Rename the specified file with the provided extension.  Helper method for
-   \ref LoadColorImage, \ref LoadDepthImage, and \ref LoadLabelImage.
+   RetrieveRender() which will download files as
+   `{temp_directory()}/{scene_path}.bin` and then rename the file depending on
+   the type of image that was downloaded.
 
    \param path
      The input path to change the file extension for, e.g., `"file.bin"`.
    \param ext
      The new file extension, e.g., `".png"`.  Uses
-     `std::filesystem::path::replace_extension` internally.
+     `std::filesystem::path::replace_extension()` internally.
    \return
      The path to the new file after renaming it.
    \throws

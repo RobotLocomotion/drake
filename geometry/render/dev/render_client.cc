@@ -386,9 +386,46 @@ std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
   headerlist = curl_slist_append(headerlist, "Expect:");
   curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);
 
-  // Have curl write directly to a file.
-  const std::string bin_out_path = scene_path + ".bin";
+  /* Have curl write directly to a file.  The provided scene_path does not
+   necessarily reside in temp_directory_, construct a path that is safe for this
+   RenderClient to write to. */
+  const drake::filesystem::path fs_scene_path{scene_path};
+  const drake::filesystem::path tmp_bin_out =
+      drake::filesystem::path(temp_directory_) /
+      (drake::filesystem::path{fs_scene_path.filename().string() + ".bin"});
+  // Start with a clean file each time.
+  if (drake::filesystem::exists(tmp_bin_out)) {
+    try {
+      if (!drake::filesystem::remove(tmp_bin_out)) {
+        throw std::runtime_error("unable to remove file.");
+      }
+    } catch (const std::exception& e) {
+      throw std::runtime_error(fmt::format(
+          "RenderClient: error reusing '{}' to retrieve a new render, consider "
+          "calling RetrieveRender with unique scene_path arguments to receive "
+          "a unique temporary file each time: {}",
+          tmp_bin_out.string(), e.what()));
+    }
+  }
+  // Open the file for writing, pass it off to curl.
+  const std::string bin_out_path{tmp_bin_out.string()};
   std::ofstream bin_out(bin_out_path, std::ios::binary);
+  if (!bin_out.good()) {
+    const auto state = bin_out.rdstate();
+    std::string why{""};
+    if (state == std::ios_base::badbit) {
+      why = "badbit was set.";
+    } else if (state == std::ios_base::failbit) {
+      why = "failbit was set.";
+    } else {
+      why = "unknown error.";
+    }
+
+    throw std::runtime_error(fmt::format(
+        "RenderClient: unable to open '{}' for writing results from server to: "
+        "{}",
+        bin_out_path, why));
+  }
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &write_file_data);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, &bin_out);
 
@@ -440,7 +477,35 @@ std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
   curl_slist_free_all(headerlist);
   curl_easy_cleanup(curl);
 
-  return bin_out_path;
+  /* At this point we have a seemingly valid return file from the server, see
+   if it can be loaded as one of the supported image types.  We do not check for
+   the validity (e.g., underlying type or number of channels), the Load*Image
+   methods are responsible for this.  However, this method will rename the file
+   from ".bin" to the correct image file extension for better housekeeping in
+   the temp_directory_.
+
+   If the server did not return one of the kinds of files that are supported,
+   error out now. */
+  std::string img_types_tried = "";  // Build up for error message at end.
+
+  vtkNew<vtkPNGReader> png_reader;
+  if (png_reader->CanReadFile(bin_out_path.c_str())) {
+    return RenameFileExtension(bin_out_path, ".png");
+  }
+  img_types_tried += "PNG";
+
+  vtkNew<vtkTIFFReader> tiff_reader;
+  if (tiff_reader->CanReadFile(bin_out_path.c_str())) {
+    return RenameFileExtension(bin_out_path, ".tiff");
+  }
+  img_types_tried += ", TIFF";
+
+  throw std::runtime_error(fmt::format(
+      "RenderClient: while trying to render the scene_id={} with provided "
+      "scene_path='{}', the file returned by the server saved in '{}' is not "
+      "understood as an image type that is supported.  Image types attempted "
+      "loading as: {}.",
+      scene_sha256, scene_path, bin_out_path));
 }
 
 /** Verify the loaded image has the correct dimensions.
@@ -481,9 +546,8 @@ void VerifyImportedImageDimensions(int expected_width, int expected_height,
   }
 }
 
-std::string RenderClient::LoadColorImage(const std::string& path,
-                                         ImageRgba8U* color_image_out,
-                                         bool rename) const {
+void RenderClient::LoadColorImage(const std::string& path,
+                                  ImageRgba8U* color_image_out) const {
   DRAKE_DEMAND(color_image_out != nullptr);
 
   // Load the PNG file from disk if possible.
@@ -559,14 +623,10 @@ std::string RenderClient::LoadColorImage(const std::string& path,
       }
     }
   }
-
-  if (rename) return RenameFileExtension(path, ".png");
-  return path;
 }
 
-std::string RenderClient::LoadDepthImage(const std::string& path,
-                                         ImageDepth32F* depth_image_out,
-                                         bool rename) const {
+void RenderClient::LoadDepthImage(const std::string& path,
+                                  ImageDepth32F* depth_image_out) const {
   DRAKE_DEMAND(depth_image_out != nullptr);
 
   // Load the TIFF file from disk if possible.
@@ -608,14 +668,10 @@ std::string RenderClient::LoadDepthImage(const std::string& path,
   }
 
   image_exporter->Export(depth_image_out->at(0, 0));
-
-  if (rename) return RenameFileExtension(path, ".tiff");
-  return path;
 }
 
-std::string RenderClient::LoadLabelImage(const std::string& path,
-                                         ImageLabel16I* label_image_out,
-                                         bool rename) const {
+void RenderClient::LoadLabelImage(const std::string& path,
+                                  ImageLabel16I* label_image_out) const {
   DRAKE_DEMAND(label_image_out != nullptr);
 
   // Load the PNG file from disk if possible.
@@ -656,9 +712,6 @@ std::string RenderClient::LoadLabelImage(const std::string& path,
    will reinterpret this as unsigned internally, since the loaded PNG image is
    required to be unsigned short data, negative values will not occur. */
   image_exporter->Export(label_image_out->at(0, 0));
-
-  if (rename) return RenameFileExtension(path, ".png");
-  return path;
 }
 
 std::string RenderClient::RenameFileExtension(const std::string& path,
