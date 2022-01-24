@@ -52,24 +52,24 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
 
   // Scale the matrix P in the cost
   // Note that the linear term is scaled in ParseLinearCosts()
-  const auto & scale_map = prog.GetVariableScaling();
+  const auto& scale_map = prog.GetVariableScaling();
   if (!scale_map.empty()) {
-    for (auto & triplet : P_triplets) {
-      // Column 
+    for (auto& triplet : P_triplets) {
+      // Column
       auto it = scale_map.find(triplet.col());
       if (it != scale_map.end()) {
         triplet = Eigen::Triplet<double>(triplet.row(), triplet.col(),
-          triplet.value()*(it->second));
+                                         triplet.value() * (it->second));
       }
-      // Row 
+      // Row
       it = scale_map.find(triplet.row());
       if (it != scale_map.end()) {
         triplet = Eigen::Triplet<double>(triplet.row(), triplet.col(),
-          triplet.value()*(it->second));
+                                         triplet.value() * (it->second));
       }
-    }    
+    }
   }
-
+  
   P->resize(prog.num_vars(), prog.num_vars());
   P->setFromTriplets(P_triplets.begin(), P_triplets.end());
 }
@@ -94,9 +94,9 @@ void ParseLinearCosts(const MathematicalProgram& prog, std::vector<c_float>* q,
   }
 
   // Scale the vector q in the cost
-  const auto & scale_map = prog.GetVariableScaling();
+  const auto& scale_map = prog.GetVariableScaling();
   if (!scale_map.empty()) {
-    for (const auto & member : scale_map) {
+    for (const auto& member : scale_map) {
       q->at(member.first) *= member.second;
     }
   }
@@ -192,13 +192,13 @@ void ParseAllLinearConstraints(
                               constraint_start_row);
 
   // Scale the matrix A
-  const auto & scale_map = prog.GetVariableScaling();
+  const auto& scale_map = prog.GetVariableScaling();
   if (!scale_map.empty()) {
-    for (auto & triplet : A_triplets) {
+    for (auto& triplet : A_triplets) {
       auto it = scale_map.find(triplet.col());
       if (it != scale_map.end()) {
         triplet = Eigen::Triplet<double>(triplet.row(), triplet.col(),
-          triplet.value()*(it->second));
+                                         triplet.value() * (it->second));
       }
     }
   }

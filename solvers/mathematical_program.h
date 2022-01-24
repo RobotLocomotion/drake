@@ -3259,9 +3259,7 @@ class MathematicalProgram {
    *
    * See @ref variable_scaling "Variable scaling" for more information.
    */
-  void ClearVariableScaling() {
-    var_scaling_map_.clear();
-  }
+  void ClearVariableScaling() { var_scaling_map_.clear(); }
   //@}
 
   /**
