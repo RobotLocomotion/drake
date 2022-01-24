@@ -72,6 +72,12 @@ GTEST_TEST(MujocoParser, GeometryTypes) {
 
   std::string xml = R"""(
 <mujoco model="test">
+  <default class="default_box">
+    <geom type="box" size="0.1 0.2 0.3"/>
+    <default class="sub">
+      <geom size="0.4 0.5 0.6"/>
+    </default>
+  </default>
   <worldbody>
     <geom name="default" size="0.1"/>
     <geom name="plane" type="plane"/>
@@ -80,6 +86,9 @@ GTEST_TEST(MujocoParser, GeometryTypes) {
     <geom name="ellipsoid" type="ellipsoid" size="0.1 0.2 0.3"/>
     <geom name="cylinder" type="cylinder" size="0.1 2.0"/>
     <geom name="box" type="box" size="0.1 2.0 3.0"/>
+    <geom name="box_from_default" class="default_box"/>
+    <geom name="ellipsoid_from_default" type="ellipsoid" class="default_box"/>
+    <geom name="box_from_sub" class="sub"/>
   </worldbody>
 </mujoco>
 )""";
@@ -111,6 +120,9 @@ GTEST_TEST(MujocoParser, GeometryTypes) {
   CheckShape("ellipsoid", "Ellipsoid");
   CheckShape("cylinder", "Cylinder");
   CheckShape("box", "Box");
+  CheckShape("box_from_default", "Box");
+  CheckShape("ellipsoid_from_default", "Ellipsoid");
+  CheckShape("box_from_sub", "Box");
 
   // TODO(russt): Check the sizes of the shapes.  (It seems that none of our
   // existing parser tests actually check the sizes of of the shapes; the Reify
@@ -138,6 +150,9 @@ GTEST_TEST(MujocoParser, GeometryPose) {
   // By default, angles are in degrees.
   std::string xml = R"""(
 <mujoco model="test">
+  <default class="default_pose">
+    <geom pos="1 2 3" quat="0 1 0 0"/>
+  </default>
   <worldbody>
     <geom name="identity" type="sphere" size="0.1" />
     <geom name="quat" quat="0 1 0 0" pos="1 2 3" type="sphere" size="0.1" />
@@ -151,6 +166,7 @@ GTEST_TEST(MujocoParser, GeometryPose) {
           quat="0.2 0.4 0.3 .1" pos="1 2 3" type="capsule" size="0.1" />
     <geom name="fromto_cylinder" fromto="-1 -3 -3 -1 -1 -3"
           quat="0.2 0.4 0.3 .1" pos="1 2 3" type="cylinder" size="0.1" />
+    <geom name="from_default" type="sphere" size="0.1" class="default_pose" />
   </worldbody>
 </mujoco>
 )""";
@@ -222,6 +238,8 @@ GTEST_TEST(MujocoParser, GeometryPose) {
             RigidTransformd(RotationMatrixd::MakeXRotation(-M_PI / 2.0), -p));
   CheckPose("fromto_cylinder",
             RigidTransformd(RotationMatrixd::MakeXRotation(-M_PI / 2.0), -p));
+  CheckPose("from_default",
+            RigidTransformd(Eigen::Quaternion<double>{0, 1, 0, 0}, p));
 
   CheckPose(
       "axisangle_rad",
@@ -242,8 +260,12 @@ GTEST_TEST(MujocoParser, GeometryProperties) {
 
   std::string xml = R"""(
 <mujoco model="test">
+  <default class="default_rgba">
+    <geom rgba="0 1 0 1"/>
+  </default>
   <worldbody>
     <geom name="default" type="sphere" size="0.1"/>
+    <geom name="default_rgba" type="sphere" size="0.1" class="default_rgba"/>
     <geom name="sphere" type="sphere" size="0.1" friction="0.9 0.0 0.0"
           rgba="1 0 0 1"/>
   </worldbody>
@@ -288,6 +310,7 @@ GTEST_TEST(MujocoParser, GeometryProperties) {
   };
 
   CheckProperties("default", 1.0, Vector4d{.5, .5, .5, 1});
+  CheckProperties("default_rgba", 1.0, Vector4d{0, 1, 0, 1});
   CheckProperties("sphere", 0.9, Vector4d{1, 0, 0, 1});
 }
 

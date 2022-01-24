@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_mujoco_parser.h"
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -24,6 +25,7 @@ using Eigen::Vector4d;
 using geometry::GeometryInstance;
 using math::RigidTransformd;
 using math::RotationMatrixd;
+using tinyxml2::XMLAttribute;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
@@ -54,13 +56,39 @@ void WarnUnsupportedAttribute(const XMLElement& node,
   }
 }
 
+// Any attributes from `default` that are not specified in `node` will be added
+// to `node`.
+void ApplyDefaultAttributes(const XMLElement& default_node, XMLElement* node) {
+  for (const XMLAttribute* default_attr = default_node.FirstAttribute();
+       default_attr != nullptr; default_attr = default_attr->Next()) {
+    if (!node->Attribute(default_attr->Name())) {
+      node->SetAttribute(default_attr->Name(), default_attr->Value());
+    }
+  }
+}
+
 class MujocoParser {
  public:
   explicit MujocoParser(MultibodyPlant<double>* plant) : plant_{plant} {}
 
-  RigidTransformd ParseTransform(XMLElement* node) {
-    Vector3d pos{0, 0, 0};  // Default position is zero.
+  RigidTransformd ParseTransform(
+      XMLElement* node, const RigidTransformd& X_default = RigidTransformd{}) {
+    Vector3d pos(X_default.translation());
     ParseVectorAttribute(node, "pos", &pos);
+
+    // Check that only one of the orientation variants are supplied:
+    std::vector<bool> orientation_attrs = {
+        node->Attribute("quat"), node->Attribute("axisangle"),
+        node->Attribute("euler"), node->Attribute("xyaxes"),
+        node->Attribute("zaxis")};
+    if (std::count(orientation_attrs.begin(), orientation_attrs.end(), true) >
+        1) {
+      throw std::logic_error(fmt::format(
+          "Element {} has more than one orientation attribute specified "
+          "(perhaps through defaults). There must be no more than one instance "
+          "of `quat`, `axisangle`, `euler`, `xyaxes`, or `zaxis`.",
+          node->Name()));
+    }
 
     Vector4d quat;  // MuJoCo uses w,x,y,z order.
     if (ParseVectorAttribute(node, "quat", &quat)) {
@@ -104,7 +132,7 @@ class MujocoParser {
           pos);
     }
 
-    return RigidTransformd(pos);
+    return RigidTransformd(X_default.rotation(), pos);
   }
 
   struct MujocoGeometry {
@@ -115,16 +143,26 @@ class MujocoParser {
     CoulombFriction<double> friction{1.0, 1.0};
   };
 
-  MujocoGeometry ParseGeometry(XMLElement* node, int num_geom) {
+  MujocoGeometry ParseGeometry(XMLElement* node, int num_geom,
+                               const std::string& child_class = "") {
     MujocoGeometry geom;
-    geom.X_BG = ParseTransform(node);
 
     if (!ParseStringAttribute(node, "name", &geom.name)) {
       // Use "geom#" as the default body name.
       geom.name = fmt::format("geom{}", num_geom);
     }
 
-    WarnUnsupportedAttribute(*node, "class");
+    std::string class_name;
+    if (!ParseStringAttribute(node, "class", &class_name)) {
+      class_name = child_class.empty() ? "main" : child_class;
+    }
+    if (default_geometry_.count(class_name) > 0) {
+      // TODO(russt): Add a test case covering childclass/default nesting once
+      // the body element is supported.
+      ApplyDefaultAttributes(*default_geometry_.at(class_name), node);
+    }
+
+    geom.X_BG = ParseTransform(node);
 
     std::string type;
     if (!ParseStringAttribute(node, "type", &type)) {
@@ -254,13 +292,22 @@ class MujocoParser {
 
     ParseVectorAttribute(node, "rgba", &geom.rgba);
 
-    Vector3d friction{1, 0.005, 0.0001};
-    if (ParseVectorAttribute(node, "friction", &friction)) {
+    // Note: The documentation suggests that at least 3 friction parameters
+    // should be specified.  But humanoid_CMU.xml in the DeepMind suite
+    // specifies only one, and in fact we only need one.
+    std::vector<double> friction;
+    {
+      std::string friction_attr;
+      ParseStringAttribute(node, "friction", &friction_attr);
+      friction = ConvertToDoubles(friction_attr);
+    }
+    if (!friction.empty()) {
       // MuJoCo's friction specification is [sliding, torsional, rolling].  We
       // set the static and dynamic friction to `sliding`, and do not support
       // the other parameters.
       geom.friction = CoulombFriction(friction[0], friction[0]);
-      if (friction[1] != 0.0 || friction[2] != 0.0) {
+      if ((friction.size() > 1 && friction[1] != 0.0) ||
+          (friction.size() > 2 && friction[2] != 0.0)) {
         drake::log()->warn(
             "The torsional and rolling friction specified in the friction "
             "attribute of {} are unsupported and will be ignored.",
@@ -286,7 +333,7 @@ class MujocoParser {
     if (plant_->geometry_source_is_registered()) {
       std::vector<MujocoGeometry> geometries;
       for (XMLElement* link_node = node->FirstChildElement("geom"); link_node;
-          link_node = link_node->NextSiblingElement("geom")) {
+           link_node = link_node->NextSiblingElement("geom")) {
         auto geom = ParseGeometry(link_node, geometries.size());
         if (!geom.shape) continue;
         plant_->RegisterVisualGeometry(plant_->world_body(), geom.X_BG,
@@ -302,6 +349,53 @@ class MujocoParser {
     WarnUnsupportedElement(*node, "camera");
     WarnUnsupportedElement(*node, "light");
     WarnUnsupportedElement(*node, "composite");
+  }
+
+  void ParseDefault(XMLElement* node, const std::string& parent_default = "") {
+    std::string class_name;
+    if (!ParseStringAttribute(node, "class", &class_name)) {
+      if (parent_default.empty()) {
+        class_name = "main";
+      } else {
+        throw std::logic_error(
+            "The `class` attribute is required for all `default` elements "
+            "except at the top-level");
+      }
+    }
+
+    // Parse default geometries.
+    for (XMLElement* geom_node = node->FirstChildElement("geom"); geom_node;
+         geom_node = geom_node->NextSiblingElement("geom")) {
+      default_geometry_[class_name] = geom_node;
+      if (!parent_default.empty() &&
+          default_geometry_.count(parent_default) > 0) {
+        ApplyDefaultAttributes(*default_geometry_.at(parent_default),
+                               geom_node);
+      }
+    }
+
+    // Parse child defaults.
+    for (XMLElement* default_node = node->FirstChildElement("default");
+         default_node;
+         default_node = default_node->NextSiblingElement("default")) {
+      ParseDefault(default_node, class_name);
+    }
+
+    WarnUnsupportedElement(*node, "mesh");
+    WarnUnsupportedElement(*node, "material");
+    WarnUnsupportedElement(*node, "joint");
+    WarnUnsupportedElement(*node, "site");
+    WarnUnsupportedElement(*node, "camera");
+    WarnUnsupportedElement(*node, "light");
+    WarnUnsupportedElement(*node, "pair");
+    WarnUnsupportedElement(*node, "equality");
+    WarnUnsupportedElement(*node, "tendon");
+    WarnUnsupportedElement(*node, "general");
+    WarnUnsupportedElement(*node, "motor");
+    WarnUnsupportedElement(*node, "position");
+    WarnUnsupportedElement(*node, "velocity");
+    WarnUnsupportedElement(*node, "cylinder");
+    WarnUnsupportedElement(*node, "muscle");
   }
 
   void ParseOption(XMLElement* node) {
@@ -397,9 +491,15 @@ class MujocoParser {
 
     // Parse the options.
     for (XMLElement* option_node = node->FirstChildElement("option");
-         option_node;
-         option_node = option_node->NextSiblingElement("option")) {
+         option_node; option_node = option_node->NextSiblingElement("option")) {
       ParseOption(option_node);
+    }
+
+    // Parse the defaults.
+    for (XMLElement* default_node = node->FirstChildElement("default");
+         default_node;
+         default_node = default_node->NextSiblingElement("default")) {
+      ParseDefault(default_node);
     }
 
     // Parses the model's world link elements.
@@ -416,7 +516,6 @@ class MujocoParser {
     WarnUnsupportedElement(*node, "size");
     WarnUnsupportedElement(*node, "visual");
     WarnUnsupportedElement(*node, "statistic");
-    WarnUnsupportedElement(*node, "default");
     WarnUnsupportedElement(*node, "custom");
     WarnUnsupportedElement(*node, "asset");
     WarnUnsupportedElement(*node, "contact");
@@ -433,6 +532,7 @@ class MujocoParser {
   ModelInstanceIndex model_instance_{};
   enum Angle { kRadian, kDegree };
   Angle angle_{kDegree};
+  std::map<std::string, XMLElement*> default_geometry_{};
 };
 
 }  // namespace
