@@ -12,6 +12,11 @@
 
       <include merge="true">
         <uri>package://process_model_directives_test/add_scoped_sub.sdf</uri>
+        <!--
+          //placement frame and //pose[@relative_to] is added here to pass the
+          tests of comparing poses between the frames added by model directives
+          and frames through sdf.
+        -->
         <placement_frame>simple_model::base</placement_frame>
         <pose relative_to="simple_model_origin"/>
       </include>
@@ -22,12 +27,6 @@
       <include>
         <uri>package://process_model_directives_test/add_backreference.sdf
       </include>
-
-      We use /include/placement_frame and /include/pose instead.
-      <joint name="backreference_weld" type="fixed">
-        <parent>simple_model_origin</parent>
-        <child>simple_model::base</child>
-      </joint>
       -->
     </model>
 
