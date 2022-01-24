@@ -12,9 +12,8 @@ def ipopt_repository(
             "unencumbered",  # Public-Domain
         ],
         modname = "ipopt",
-        pkg_config_paths = [
-            "/usr/local/opt/ipopt/lib/pkgconfig",
-        ],
+        pkg_config_paths = [],
+        homebrew_subdir = "opt/ipopt/lib/pkgconfig",
         **kwargs):
     pkg_config_repository(
         name = name,

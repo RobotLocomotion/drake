@@ -11,11 +11,11 @@ def _impl(repository_ctx):
     if os_result.is_macos:
         build_flavor = "macos"
         repository_ctx.symlink(
-            "/usr/local/opt/nlopt/include/nlopt.h",
+            "{}/opt/nlopt/include/nlopt.h".format(os_result.homebrew_prefix),
             "include/nlopt.h",
         )
         repository_ctx.symlink(
-            "/usr/local/opt/nlopt/include/nlopt.hpp",
+            "{}/opt/nlopt/include/nlopt.hpp".format(os_result.homebrew_prefix),
             "include/nlopt.hpp",
         )
     elif os_result.is_ubuntu or os_result.is_manylinux:

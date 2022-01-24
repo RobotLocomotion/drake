@@ -10,7 +10,10 @@ def _impl(repository_ctx):
 
     if os_result.is_macos:
         build_flavor = "macos"
-        repository_ctx.symlink("/usr/local/opt/jpeg/include", "include")
+        repository_ctx.symlink(
+            "{}/opt/jpeg/include".format(os_result.homebrew_prefix),
+            "include",
+        )
     elif os_result.is_ubuntu or os_result.is_manylinux:
         build_flavor = "ubuntu"
         for hdr in ["jerror.h", "jmorecfg.h", "jpegint.h", "jpeglib.h"]:

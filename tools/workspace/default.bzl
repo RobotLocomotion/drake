@@ -307,7 +307,8 @@ def add_default_toolchains(excludes = []):
         # --extra_toolchains=//tools/py_toolchain:linux_dbg_toolchain
         native.register_toolchains(
             "@drake//tools/py_toolchain:linux_toolchain",
-            "@drake//tools/py_toolchain:macos_toolchain",
+            "@drake//tools/py_toolchain:macos_i386_toolchain",
+            "@drake//tools/py_toolchain:macos_arm64_toolchain",
         )
 
 def add_default_workspace(

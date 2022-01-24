@@ -8,7 +8,14 @@ def path(repo_ctx, additional_search_paths = []):
     # N.B. Ensure ${PATH} in each platform `tools/*.bazelrc` matches these
     # paths.
     if repo_ctx.os.name == "mac os x":
-        search_paths = search_paths + ["/usr/local/bin"]
+        arch_result = repo_ctx.execute(["/usr/bin/arch"])
+        if arch_result.return_code != 0:
+            fail("Failure while running /usr/bin/arch")
+        if arch_result.stdout.strip() == "arm64":
+            homebrew_bin = "/opt/homebrew/bin"
+        else:
+            homebrew_bin = "/usr/local/bin"
+        search_paths = search_paths + [homebrew_bin]
     search_paths = search_paths + ["/usr/bin", "/bin"]
     return ":".join(search_paths)
 
