@@ -337,7 +337,29 @@ PYBIND11_MODULE(primitives, m) {
             },
             py::arg("context"), py::arg("X"), py::arg("Y_desired"),
             py::arg("dloss_dparams"),
-            doc.MultilayerPerceptron.BackpropagationMeanSquaredError.doc);
+            doc.MultilayerPerceptron.BackpropagationMeanSquaredError.doc)
+        .def(
+            "BatchOutput",
+            [](const MultilayerPerceptron<T>* self, const Context<T>& context,
+                const Eigen::Ref<const MatrixX<T>>& X,
+                Eigen::Ref<MatrixX<T>> Y) {
+              self->BatchOutput(context, X, &Y);
+            },
+            py::arg("context"), py::arg("X"), py::arg("Y"),
+            doc.MultilayerPerceptron.BatchOutput.doc)
+        .def(
+            "BatchOutput",
+            [](const MultilayerPerceptron<T>* self, const Context<T>& context,
+                const Eigen::Ref<const MatrixX<T>>& X) {
+              MatrixX<T> Y(self->get_output_port().size(), X.cols());
+              self->BatchOutput(context, X, &Y);
+              return Y;
+            },
+            py::arg("context"), py::arg("X"),
+            "Evaluates the batch output for the MLP with a batch input vector. "
+            "See BatchOutput(context, X, Y) for a version that can avoid "
+            "dynamic memory allocations of Y (e.g. if this is used inside an "
+            "optimization loop).");
 
     DefineTemplateClassWithDefault<PassThrough<T>, LeafSystem<T>>(
         m, "PassThrough", GetPyParam<T>(), doc.PassThrough.doc)
