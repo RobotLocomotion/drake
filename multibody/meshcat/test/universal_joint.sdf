@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="alice">
+    <link name="bob">
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.1</iyy>
+          <iyz>0</iyz>
+          <izz>0.1</izz>
+        </inertia>
+      </inertial>
+    </link>
+    <joint name="charlie" type="universal">
+      <child>bob</child>
+      <parent>world</parent>
+      <axis>
+        <dynamics>
+          <damping>0.1</damping>
+        </dynamics>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+      </axis>
+    </joint>
+  </model>
+</sdf>

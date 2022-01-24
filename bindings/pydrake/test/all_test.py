@@ -125,6 +125,8 @@ class TestAll(unittest.TestCase):
             "InverseKinematics",
             # - math
             "SpatialVelocity",
+            # - meshcat
+            "JointSliders",
             # - parsing
             "Parser",
             # - parsers
