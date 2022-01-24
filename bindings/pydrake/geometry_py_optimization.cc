@@ -351,17 +351,25 @@ void DefineGeometryOptimization(py::module m) {
             .def("SolveShortestPath",
                 overload_cast_explicit<solvers::MathematicalProgramResult,
                     GraphOfConvexSets::VertexId, GraphOfConvexSets::VertexId,
-                    bool>(&GraphOfConvexSets::SolveShortestPath),
+                    bool, const solvers::SolverInterface*,
+                    const std::optional<solvers::SolverOptions>&>(
+                    &GraphOfConvexSets::SolveShortestPath),
                 py::arg("source_id"), py::arg("target_id"),
                 py::arg("convex_relaxation") = false,
+                py::arg("solver") = nullptr,
+                py::arg("solver_options") = std::nullopt,
                 cls_doc.SolveShortestPath.doc_by_id)
             .def("SolveShortestPath",
                 overload_cast_explicit<solvers::MathematicalProgramResult,
                     const GraphOfConvexSets::Vertex&,
-                    const GraphOfConvexSets::Vertex&, bool>(
+                    const GraphOfConvexSets::Vertex&, bool,
+                    const solvers::SolverInterface*,
+                    const std::optional<solvers::SolverOptions>&>(
                     &GraphOfConvexSets::SolveShortestPath),
                 py::arg("source"), py::arg("target"),
                 py::arg("convex_relaxation") = false,
+                py::arg("solver") = nullptr,
+                py::arg("solver_options") = std::nullopt,
                 cls_doc.SolveShortestPath.doc_by_reference);
 
     BindIdentifier<GraphOfConvexSets::VertexId>(
