@@ -14,6 +14,8 @@
 #include "drake/common/symbolic.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/solvers/mathematical_program_result.h"
+#include "drake/solvers/solver_interface.h"
+#include "drake/solvers/solver_options.h"
 
 namespace drake {
 namespace geometry {
@@ -340,8 +342,10 @@ class GraphOfConvexSets {
   @pydrake_mkdoc_identifier{by_id}
   */
   solvers::MathematicalProgramResult SolveShortestPath(
-      VertexId source_id, VertexId target_id,
-      bool convex_relaxation = false) const;
+      VertexId source_id, VertexId target_id, bool convex_relaxation = false,
+      const solvers::SolverInterface* solver = nullptr,
+      const std::optional<solvers::SolverOptions>& solver_options =
+          std::nullopt) const;
 
   /** Convenience overload that takes const reference arguments for source and
   target.
@@ -349,7 +353,10 @@ class GraphOfConvexSets {
   */
   solvers::MathematicalProgramResult SolveShortestPath(
       const Vertex& source, const Vertex& target,
-      bool convex_relaxation = false) const;
+      bool convex_relaxation = false,
+      const solvers::SolverInterface* solver = nullptr,
+      const std::optional<solvers::SolverOptions>& solver_options =
+          std::nullopt) const;
 
  private:
   std::map<VertexId, std::unique_ptr<Vertex>> vertices_{};

@@ -13,8 +13,10 @@ from pydrake.math import RigidTransform
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.framework import DiagramBuilder
+from pydrake.solvers.clp import ClpSolver
 from pydrake.solvers.mathematicalprogram import (
-    MathematicalProgram, MathematicalProgramResult, Binding, Cost, Constraint
+    MathematicalProgram, MathematicalProgramResult, Binding, Cost, Constraint,
+    SolverOptions
 )
 from pydrake.symbolic import Variable
 
@@ -310,8 +312,22 @@ class TestGeometryOptimization(unittest.TestCase):
             convex_relaxation=True)
         self.assertIsInstance(result, MathematicalProgramResult)
         self.assertIsInstance(spp.SolveShortestPath(
+            source_id=source.id(), target_id=target.id(),
+            convex_relaxation=True, solver=ClpSolver()),
+            MathematicalProgramResult)
+        self.assertIsInstance(spp.SolveShortestPath(
+            source_id=source.id(), target_id=target.id(),
+            convex_relaxation=True, solver_options=SolverOptions()),
+            MathematicalProgramResult)
+        self.assertIsInstance(spp.SolveShortestPath(
             source=source, target=target, convex_relaxation=True),
             MathematicalProgramResult)
+        self.assertIsInstance(spp.SolveShortestPath(
+            source=source, target=target, convex_relaxation=True,
+            solver=ClpSolver()), MathematicalProgramResult)
+        self.assertIsInstance(spp.SolveShortestPath(
+            source=source, target=target, convex_relaxation=True,
+            solver_options=SolverOptions()), MathematicalProgramResult)
         self.assertIn("source", spp.GetGraphvizString(
             result=result, show_slacks=True, precision=2, scientific=False))
 
