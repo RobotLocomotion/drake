@@ -15,8 +15,10 @@ fi
 
 workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../../.." && pwd)"
 bazelrc="${workspace_dir}/gen/environment.bazelrc"
+arch="$(/usr/bin/arch)"
 
 mkdir -p "$(dirname "${bazelrc}")"
 cat > "${bazelrc}" <<EOF
 import %workspace%/tools/macos.bazelrc
+import %workspace%/tools/macos-${arch}.bazelrc
 EOF

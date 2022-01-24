@@ -3,7 +3,7 @@
 """
 On Ubuntu, pkg-config is used to locate the msgpack headers. On macOS,
 no pkg-config file is installed, but the msgpack headers are always
-located at /usr/local/opt/msgpack-cxx/include.
+located at ${homebrew_prefix}/opt/msgpack-cxx/include.
 """
 
 load(
@@ -25,7 +25,7 @@ def _impl(repo_ctx):
         if error != None:
             fail(error)
     else:
-        prefix = "/usr/local/opt/msgpack-cxx/"
+        prefix = "{}/opt/msgpack-cxx/".format(os_result.homebrew_prefix)
         repo_ctx.symlink("{}/include".format(prefix), "msgpack")
 
         hdrs_patterns = ["msgpack/**/*.hpp"]

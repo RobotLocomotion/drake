@@ -11,7 +11,9 @@ def _impl(repository_ctx):
     if os_result.is_macos:
         build_flavor = "macos"
         repository_ctx.symlink(
-            "/usr/local/opt/yaml-cpp/include/yaml-cpp",
+            "{}/opt/yaml-cpp/include/yaml-cpp".format(
+                os_result.homebrew_prefix,
+            ),
             "include/yaml-cpp",
         )
     elif os_result.is_ubuntu:

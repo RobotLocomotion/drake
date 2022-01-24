@@ -9,7 +9,8 @@ def liblzma_repository(
         name,
         licenses = ["unencumbered"],  # Public-Domain
         modname = "liblzma",
-        pkg_config_paths = ["/usr/local/opt/xz/lib/pkgconfig"],
+        pkg_config_paths = [],
+        homebrew_subdir = "opt/xz/lib/pkgconfig",
         **kwargs):
     pkg_config_repository(
         name = name,
