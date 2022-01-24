@@ -117,7 +117,7 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
 
   p_star_.resize(nv_participating);
   v_star_.resize(nv_participating);
-  velocities_permutation_.Apply(sap_problem().v_star(), &p_star_);
+  velocities_permutation_.Apply(sap_problem().v_star(), &v_star_);
   MultiplyByDynamicsMatrix(v_star_, &p_star_);
 
   BlockSparseMatrix<T> J = MakeConstraintsBundleJacobian(sap_problem(), graph,

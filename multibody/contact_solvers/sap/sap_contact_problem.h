@@ -186,6 +186,7 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapFrictionConeConstraint);
 
+  // TODO: Simplify, get rid of struct Parameters.
   struct Parameters {
     T mu{0.0};
     T stiffness{0.0};
