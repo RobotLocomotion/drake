@@ -3232,7 +3232,8 @@ class MathematicalProgram {
    * unscaled. Namely, MathematicalProgramResult::GetSolution(var) returns the
    * value of var, not var_value / scaling_factor.
    *
-   * The feature of variable scaling is currently only implemented for SNOPT.
+   * The feature of variable scaling is currently only implemented for SNOPT and
+   * OSQP.
    */
   //@{
   /**
