@@ -69,7 +69,7 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
       }
     }
   }
-  
+
   P->resize(prog.num_vars(), prog.num_vars());
   P->setFromTriplets(P_triplets.begin(), P_triplets.end());
 }
