@@ -68,14 +68,24 @@ class RenderClient {
   std::string ComputeSha256(const std::string& path) const;
 
   /** Upload the scene to the render server.
-   \param image_type   The type of scene being uploaded.
-   \param scene_path   The path to the scene file to upload to the server.
-   \param scene_sha256 The `sha256sum` of the file denoted by `scene_path`.
+
+   \param image_type
+     The type of scene being uploaded.
+   \param scene_path
+     The path to the scene file to upload to the server.
+   \param scene_sha256
+     The `sha256sum` of the file denoted by `scene_path`.
+   \param mime_type
+     The mime type to set for the scene file being uploaded as a file.  If not
+     provided, no mime type will be sent to the server.  No validity checks on
+     the value of the provided mime type are performed.
+
    \throws std::runtime_error
      If the file cannot be uploaded to the server successfully, or if the server
      does not respond with the same `sha256sum` of the uploaded file. */
   virtual void UploadScene(ImageType image_type, const std::string& scene_path,
-                           const std::string& scene_sha256) const;
+                           const std::string& scene_sha256,
+                           const std::optional<std::string>& mime_type) const;
 
   /** Validates the specified depth range.  Helper method used in
    \ref RetrieveRender when the `image_type` is depth.  \sa DepthRange

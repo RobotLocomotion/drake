@@ -333,6 +333,19 @@ def upload():
             gltf_out = gltf_path(sha, image_type)
             tmp_path.rename(gltf_out)
 
+            # Print to the console what was just saved, including the mime type
+            # if it has been provided.  Users may choose to fail the upload in
+            # the event of an unsupported mime type being provided, however in
+            # general relying on accurate mime type reporting is not advisable.
+            message = (
+                f"==> Scene file with image_type={image_type} saved to "
+                f"'{str(gltf_out)}' with a sha256 hash of '{sha}'."
+            )
+            mime_type = getattr(data, "content_type", None)
+            if mime_type:
+                message += f"  Client reported a mime type of '{mime_type}'."
+            print(message)
+
             # Report the computed sha256 back to the client.
             return json_code_response(error=False, code=200, sha256=sha)
         except Exception as e:

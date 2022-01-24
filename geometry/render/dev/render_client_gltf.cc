@@ -256,7 +256,9 @@ std::string RenderClientGltf::UploadAndRender(const RenderCameraCore& core,
     ValidDepthRangeOrThrow(min_depth, max_depth);
 
   const std::string scene_sha256 = ComputeSha256(scene_path);
-  UploadScene(image_type, scene_path, scene_sha256);
+  /* NOTE: for the mime type, the VTK glTF export produces base64 encoded data
+   in a single .gltf file, this is "gltf+json" (not the binary format). */
+  UploadScene(image_type, scene_path, scene_sha256, "model/gltf+json");
   return RetrieveRender(core, image_type, scene_path, scene_sha256, min_depth,
                         max_depth);
 }

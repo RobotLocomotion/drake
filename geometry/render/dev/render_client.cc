@@ -151,9 +151,10 @@ std::string RenderClient::ComputeSha256(const std::string& path) const {
   }
 }
 
-void RenderClient::UploadScene(ImageType image_type,
-                               const std::string& scene_path,
-                               const std::string& scene_sha256) const {
+void RenderClient::UploadScene(
+    ImageType image_type, const std::string& scene_path,
+    const std::string& scene_sha256,
+    const std::optional<std::string>& mime_type) const {
   CURL* curl{nullptr};
   CURLcode result;
   curl = curl_easy_init();
@@ -177,6 +178,7 @@ void RenderClient::UploadScene(ImageType image_type,
   field = curl_mime_addpart(form);
   curl_mime_name(field, "data");
   curl_mime_filedata(field, scene_path.c_str());
+  if (mime_type.has_value()) curl_mime_type(field, mime_type.value().c_str());
 
   // Fill out <input type="text" name="image_type">
   AddImageTypeFieldToForm(form, image_type);
@@ -485,7 +487,11 @@ std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
    the temp_directory_.
 
    If the server did not return one of the kinds of files that are supported,
-   error out now. */
+   error out now.
+
+   NOTE: do not rely on or trust the server to (correctly) report a valid mime
+   type for the sent image.  VTK's image readers 'CanReadFile' methods check
+   if the file *content* can actually be loaded (regardless of extension). */
   std::string img_types_tried = "";  // Build up for error message at end.
 
   vtkNew<vtkPNGReader> png_reader;
@@ -505,7 +511,7 @@ std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
       "scene_path='{}', the file returned by the server saved in '{}' is not "
       "understood as an image type that is supported.  Image types attempted "
       "loading as: {}.",
-      scene_sha256, scene_path, bin_out_path));
+      scene_sha256, scene_path, bin_out_path, img_types_tried));
 }
 
 /** Verify the loaded image has the correct dimensions.

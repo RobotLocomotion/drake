@@ -1,4 +1,5 @@
 # glTF Render Server API
+
 This render server consumes a [glTF](https://www.khronos.org/registry/glTF/)
 file and produces a rendered image in response.
 
@@ -41,46 +42,74 @@ and implement the `render_callback` method to invoke the desired renderer.
 
 # Server API
 
-All methods use POST and expect `multipart/form-data`.  When errors occur, it
-is expected that a json response containing
-`{"error": "true", "code": "XYZ", "message": "Some error message."}` is
-returned.
+A given server implementation is required to implement an "Upload Endpoint" and
+a "Render Endpoint".  The client will first upload a scene file to the upload
+endpoint, and then subsequently request a rendering for the now-uploaded file.
+
+**Your server is required to send a valid [HTTP response code][http_responses]
+in both the event of success and failure.**  As a special note about `flask`
+in particular, if you do not return the code yourself the default response is
+always `200` which indicates success.  When in doubt, have your server respond
+with `200` for a success, `400` for any failure related to bad requests (e.g.,
+missing `min_depth` or `max_depth` for an `image_type="depth"`), and `500` for
+any unhandled errors.  The HTTP response code (**only**) is what is used by the
+client to determine if the interaction was successful.
+
+[http_responses]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+
+## Additional Notes on Communicating Errors
+
+When errors occur, the sample server implements a json response containing:
+`{"error": "true", "code": "XYZ", "message": "Some error message."}`.  When an
+error occurs on the server side, sending a `json` response is helpful for
+indicating _why_ there was an upload or render failure.  When provided, this
+information will be included in the exception message produced by the
+`RenderClient`.  In the sample server, the values here represent:
 
 - `error`: a boolean flag, `true` or `false`.
 - `code`: the HTTP response code.
 - `message`: an indication of why there was an error for the client to log.
 
-It is assumed that the value in `code` in the json response, and the HTTP
-response are the same.
+At the very least, a custom server should return
+`{"message": "Why there was a failure"}`.  Though this is not strictly required,
+the user of the server will have no hints as to what is going wrong with the
+client-server communication.
 
-## `/upload`
+## Upload Endpoint
 
-The `/upload` endpoint receives an input scene file, as well as form data for
-`image_type` to enable the server to store the file appropriately.  The
-client will transmit the following fields:
+The upload endpoint (by default: `/upload`) receives an input scene file, as
+well as form data for `image_type` to enable the server to store the file
+appropriately.  The client will transmit the following fields:
 
 - Field `data`:
 
-    The glTF contents.  Should be sent as if from
-    `<input type="file" name="data">`.
+    The scene file contents.  Sent as if from
+    `<input type="file" name="data">`.  Sent as `multipart/form-data`, with a
+    mime type of [`model/gltf+json`][gltf_mimetypes].
 
 - Field `image_type`:
 
     The type of image being rendered.  Allowed values: `color`, `depth`,
     `label`.  Sent as form data `<input type="text" name="image_type">`.
 
-A successful upload will return a json response:
+A successful upload from the sample server will return a json response:
 `{"error": "false", "code": "200", "sha256": "... computed sha256 hash..."}`.
 The client will validate the returned sha256 sum to ensure the correct scene was
-uploaded.  **The server is required to return a `sha256` hash by the client.**
+uploaded.  **The server is required to return a json value with at least the
+key-value pair `{"sha256": "... computed sha256 hash..."}`.**  Failure to
+respond with the sha256 hash of the uploaded scene will result in an error on
+the client side.
 
-## `/render`
+[gltf_mimetypes]: https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#_media_type_registrations
 
-The `/render` endpoint is responsible for rendering and transmitting an image
-back to the client.  The server is provided with all information about a given
-drake sensor in the form data transmitted to the `/render` endpoint by the
-client.  It is worth mentioning that the [glTF Projection Matrices][glTF_proj]
-in the glTF file sent by the client will have the following attributes:
+## Render Endpoint
+
+The render endpoint (by default: `/render`) is responsible for rendering and
+transmitting an image back to the client.  The server is provided with all
+information about a given drake sensor is transmitted to the render endpoint
+in the form data.  It is worth mentioning that the
+[glTF Projection Matrices][glTF_proj] in the glTF file sent by the client will
+have the following attributes:
 
 [glTF_proj]: https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#projection-matrices
 
@@ -101,9 +130,9 @@ in the glTF file sent by the client will have the following attributes:
 ```
 
 While this information is usually sufficient to re-construct a similar
-projection matrix, the `/render` endpoint is provided with all attributes from
-a given sensor's `drake::systems::sensors::CameraInfo` object.  In addition,
-when (and only when) the `image_type="depth"`, the associated
+projection matrix, the render endpoint is provided with all attributes from a
+given sensor's `drake::systems::sensors::CameraInfo` object.  In addition, when
+(_and only when_) the `image_type="depth"`, the associated
 `drake::geometry::render::DepthRange`'s `min_depth` and `max_depth` will be
 provided.  The server may decide which attributes to use at its discretion, the
 client only requires that the rendered `width` and `height` are as requested.
@@ -169,22 +198,20 @@ The client will provide the server with the following information:
     The principal point's y coordinate in pixels.  Sent as form data
     `<input type="number" name="center_y">`.  Decimal value.
 
-
-
 ### Allowed Image Response Types from the Server
 
 The client accepts the following image types from a server render:
 
-- When `image_type=color`, the server may return:
+- When `image_type="color"`, the server may return:
     - An RGB (3 channel) unsigned char PNG image.
     - An RGBA (4 channel) unsigned char PNG image.
 
-- When `image_type=depth`, the server may return:
+- When `image_type="depth"`, the server may return:
     - A 16 bit or 32 bit single channel TIFF image.  The client will interpret
       this rendering as units of meters.
     - TODO(svenevs): A single channel unsigned short PNG image.  The client will
       interpret this rendering as units of millimeters and will convert to
       meters.
 
-- When `image_type=label`, the server may return:
+- When `image_type="label"`, the server may return:
     - A single channel unsigned short PNG image.
