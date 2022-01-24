@@ -66,10 +66,18 @@ class RenderClientGltf : public RenderEngineVtk, public RenderClient {
       const ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const override;
 
-  // TODO(svenevs): finish adding documentation.
+  /* Return the path to export a glTF scene file to for the specified
+  `image_type` and `frame_id`.  The returned path is constructed as
+  `{RenderClient::temp_directory()}/{frame_id}-{image_type}.gltf`. */
   std::string ExportPathFor(ImageType image_type, size_t frame_id) const;
 
+  /* Exports the `RenderEngineVtk::pipelines_[image_type]` VTK scene to a
+  glTF file, returning the path to the newly exported file. */
   std::string ExportScene(ImageType image_type, size_t frame_id) const;
+
+  /* Upload and render the scene described by `scene_path` for the associated
+  camera `core` and `image_type`.  Both `min_depth` and `max_depth` must be
+  supplied with `image_type=depth`. */
   std::string UploadAndRender(const RenderCameraCore& core,
                               ImageType image_type,
                               const std::string& scene_path,

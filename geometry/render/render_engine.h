@@ -407,7 +407,7 @@ class RenderEngine : public ShapeReifier {
 };
 
 /** Convenience enumeration for developer friendly code.
- Used in \ref RenderEngineVtk and \ref RenderClient.
+ Used in RenderEngineVtk and RenderClient.
  */
 enum ImageType {
   // NOTE: this enumeration may *NOT* be changed (no additions or removals),

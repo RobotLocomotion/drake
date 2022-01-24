@@ -47,8 +47,8 @@ class RenderClient {
      Whether or not the client should be verbose in logging its communications
      with the server.
    \param no_cleanup
-     Whether or not the \ref temporary_directory() should be deleted upon
-     destruction of this instance. */
+     Whether or not the temp_directory() should be deleted upon destruction of
+     this instance. */
   explicit RenderClient(const std::string& url, unsigned port,
                         const std::string& upload_endpoint,
                         const std::string& render_endpoint, bool verbose,
@@ -60,12 +60,6 @@ class RenderClient {
 
   /** \name Server communication */
   //@{
-
-  /** Compute and return the `sha256sum` of the specified `path`.
-   \throws std::runtime_error
-     If the `path` cannot be opened or the hash fails to compute.
-   */
-  std::string ComputeSha256(const std::string& path) const;
 
   /** Upload the scene to the render server.
 
@@ -79,22 +73,12 @@ class RenderClient {
      The mime type to set for the scene file being uploaded as a file.  If not
      provided, no mime type will be sent to the server.  No validity checks on
      the value of the provided mime type are performed.
-
    \throws std::runtime_error
      If the file cannot be uploaded to the server successfully, or if the server
      does not respond with the same `sha256sum` of the uploaded file. */
   virtual void UploadScene(ImageType image_type, const std::string& scene_path,
                            const std::string& scene_sha256,
                            const std::optional<std::string>& mime_type) const;
-
-  /** Validates the specified depth range.  Helper method used in
-   \ref RetrieveRender when the `image_type` is depth.  \sa DepthRange
-   \param min_depth The minimum depth range.
-   \param max_depth The maximum depth range.
-   \throws std::logic_error
-     If `min_depth` or `max_depth` are less than `0.0`, or if
-     `max_depth <= min_depth`. */
-  void ValidDepthRangeOrThrow(double min_depth, double max_depth) const;
 
   /** Download a render from the server, returning the path to the file.  Users
    should have already uploaded the scene to the server using UploadScene().
@@ -104,7 +88,6 @@ class RenderClient {
    file manually after they are finished.
 
    \sa no_cleanup()
-
    \param camera_core
      The RenderCameraCore of the camera being rendered.  Its
      RenderCameraCore::intrinsics() will be communicated to the server.
@@ -126,14 +109,12 @@ class RenderClient {
    \param max_depth
      The maximum depth range.  Required when `image_type` is depth.  See also:
      ValidDepthRangeOrThrow().
-
    \return
      A successful download of a rendering from the server will return the path
      to the downloaded file, which will be exactly
      `{temp_directory()}/{$(basename scene_path)} + extension`, where
      `extension` will depend on what the server returns, e.g., `.png` or
      `.tiff`.
-
    \throws std::runtime_error
      If a rendering cannot be obtained from the server for any reason, including
      invalid parameters supplied to this method such as not including
@@ -144,6 +125,45 @@ class RenderClient {
                                      const std::string& scene_sha256,
                                      double min_depth = -1.0,
                                      double max_depth = -1.0) const;
+
+  //@}
+  /** \name Server communication helpers */
+  //@{
+
+  /** Compute and return the `sha256sum` of the specified `path`.
+   \throws std::runtime_error
+     If the `path` cannot be opened or the hash fails to compute.
+   */
+  std::string ComputeSha256(const std::string& path) const;
+
+  /** Validates the specified depth range.  Helper method used in
+   RetrieveRender() when the `image_type` is depth.
+
+   \sa DepthRange
+   \param min_depth The minimum depth range.
+   \param max_depth The maximum depth range.
+   \throws std::logic_error
+     If `min_depth` or `max_depth` are less than `0.0`, or if
+     `max_depth <= min_depth`. */
+  void ValidDepthRangeOrThrow(double min_depth, double max_depth) const;
+
+  /** Rename the specified file with the provided extension.  Helper method for
+   RetrieveRender() which will download files as
+   `{temp_directory()}/{scene_path}.bin` and then rename the file depending on
+   the type of image that was downloaded.
+
+   \param path
+     The input path to change the file extension for, e.g., `"file.bin"`.
+   \param ext
+     The new file extension, e.g., `".png"`.  Uses
+     `std::filesystem::path::replace_extension()` internally.
+   \return
+     The path to the new file after renaming it.
+   \throws std::exception
+     When any errors arise from renaming the file. */
+  std::string RenameFileExtension(const std::string& path,
+                                  const std::string& ext) const;
+
   //@}
 
   /** \name Image loading helpers */
@@ -183,7 +203,6 @@ class RenderClient {
      by RetrieveRender() can be used directly for this parameter.
    \param depth_image_out
      The already allocated drake image buffer to load `path` into.
-
    \throws std::runtime_error
      If the specified `path` cannot be loaded as a single channel TIFF or PNG,
      image, or the image denoted by `path` does not have the same width and
@@ -201,7 +220,6 @@ class RenderClient {
      by RetrieveRender() can be used directly for this parameter.
    \param label_image_out
      The already allocated drake image buffer to load `path` into.
-
    \throws std::runtime_error
      If the specified `path` cannot be loaded as a single channel unsigned short
      PNG image, or the image denoted by `path` does not have the same width and
@@ -209,23 +227,6 @@ class RenderClient {
   virtual void LoadLabelImage(
       const std::string& path,
       drake::systems::sensors::ImageLabel16I* label_image_out) const;
-
-  /** Rename the specified file with the provided extension.  Helper method for
-   RetrieveRender() which will download files as
-   `{temp_directory()}/{scene_path}.bin` and then rename the file depending on
-   the type of image that was downloaded.
-
-   \param path
-     The input path to change the file extension for, e.g., `"file.bin"`.
-   \param ext
-     The new file extension, e.g., `".png"`.  Uses
-     `std::filesystem::path::replace_extension()` internally.
-   \return
-     The path to the new file after renaming it.
-   \throws
-     When any errors arise from renaming the file. */
-  std::string RenameFileExtension(const std::string& path,
-                                  const std::string& ext) const;
 
   //@}
 
@@ -240,7 +241,7 @@ class RenderClient {
    encouraged) to utilize this directory to create any additional files needed
    to communicate with the server such as scene files to upload.  The temporary
    directory will be deleted upon destruction of this instance unless
-   @ref no_cleanup is true. */
+   no_cleanup() is true. */
   const std::string& temp_directory() const { return temp_directory_; }
 
   /** The url of the server to communicate with. */
@@ -249,16 +250,18 @@ class RenderClient {
   /** The port of the server to communicate on.  `0` means no port. */
   unsigned port() const { return port_; }
 
-  /** The upload endpoint of the server, used in @ref UploadScene. */
+  /** The upload endpoint of the server, used in UploadScene().  Should **not**
+   include a preceding slash. */
   const std::string& upload_endpoint() const { return upload_endpoint_; }
 
-  /** The render endpoint of the server, used in @ref RetrieveRender. */
+  /** The render endpoint of the server, used in RetrieveRender().
+   Should **not** include a preceding slash. */
   const std::string& render_endpoint() const { return render_endpoint_; }
 
-  /** Whether the client should be verbose. */
+  /** Whether or not the client should be verbose. */
   bool verbose() const { return verbose_; }
 
-  /** Whether the client should cleanup its @ref temp_directory. */
+  /** Whether or not the client should cleanup its temp_directory(). */
   bool no_cleanup() const { return no_cleanup_; }
 
   //@}

@@ -83,6 +83,44 @@ void AddImageTypeFieldToForm(curl_mime* form, ImageType image_type) {
   curl_mime_data(field, image_type_str.c_str(), CURL_ZERO_TERMINATED);
 }
 
+/** Verify the loaded image has the correct dimensions.
+
+ \param expected_width
+   The expected width of the loaded image.
+ \param expected_height
+   The expected height of the loaded image.
+ \param image_exporter
+   The already-loaded vtk image exporter.
+ \param path
+   The filename of the path that image_exporter has data from.  Used to populate
+   the exception message.
+ \throws std::runtime_error
+   If the expected_width or expected_height are not the same as image_exporter.
+ */
+void VerifyImportedImageDimensions(int expected_width, int expected_height,
+                                   vtkImageExport* image_exporter,
+                                   const std::string& path) {
+  const int* extent = image_exporter->GetDataExtent();
+  const int img_width = extent[1] - extent[0] + 1;
+  const int img_height = extent[3] - extent[2] + 1;
+  if (img_width != expected_width || img_height != expected_height) {
+    throw std::runtime_error(fmt::format(
+        "RenderClient: expected to import (width={},height={}) from the file "
+        "'{}', but got (width={},height={}).",
+        expected_width, expected_height, path, img_width, img_height));
+  }
+  /* This method should only be getting called for loading two dimensional
+   images; VTK supports 3D images so we additionally check that the depth
+   dimension is 1. */
+  const int img_depth = extent[5] - extent[4] + 1;
+  if (img_depth != 1) {
+    throw std::runtime_error(fmt::format(
+        "RenderClient: expected two dimensional image, but loaded image from "
+        "'{}' has a z dimension of {}.",
+        path, img_depth));
+  }
+}
+
 }  // namespace
 
 RenderClient::RenderClient(const std::string& url, unsigned port,
@@ -137,18 +175,6 @@ RenderClient::~RenderClient() {
   }
   --n_clients;
   static_curl_cleanup();
-}
-
-std::string RenderClient::ComputeSha256(const std::string& path) const {
-  try {
-    std::ifstream f_in(path, std::ios::binary);
-    std::vector<unsigned char> hash(picosha2::k_digest_size);
-    picosha2::hash256(f_in, hash.begin(), hash.end());
-    return picosha2::bytes_to_hex_string(hash.begin(), hash.end());
-  } catch (const std::exception& e) {
-    throw std::runtime_error("ComputeSha256: unable to compute hash: " +
-                             std::string(e.what()));
-  }
 }
 
 void RenderClient::UploadScene(
@@ -243,18 +269,6 @@ void RenderClient::UploadScene(
         "responded with '{}'.",
         scene_path, scene_sha256, server_sha256));
   }
-}
-
-void RenderClient::ValidDepthRangeOrThrow(double min_depth,
-                                          double max_depth) const {
-  // Make sure min_depth/max_depth are provided and make sense for depth images.
-  if (min_depth < 0.0 || max_depth < 0.0)
-    throw std::logic_error(
-        "min_depth and max_depth must be provided for "
-        "depth images, and be positive.");
-  if (max_depth <= min_depth)
-    throw std::logic_error(
-        "max_depth cannot be less than or equal to min_depth.");
 }
 
 std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
@@ -514,42 +528,44 @@ std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
       scene_sha256, scene_path, bin_out_path, img_types_tried));
 }
 
-/** Verify the loaded image has the correct dimensions.
- \param expected_width
-   The expected width of the loaded image.
- \param expected_height
-   The expected height of the loaded image.
- \param image_exporter
-   The already-loaded vtk image exporter.
- \param path
-   The filename of the path that image_exporter has data from.  Used to populate
-   the exception message.
+std::string RenderClient::ComputeSha256(const std::string& path) const {
+  try {
+    std::ifstream f_in(path, std::ios::binary);
+    std::vector<unsigned char> hash(picosha2::k_digest_size);
+    picosha2::hash256(f_in, hash.begin(), hash.end());
+    return picosha2::bytes_to_hex_string(hash.begin(), hash.end());
+  } catch (const std::exception& e) {
+    throw std::runtime_error("ComputeSha256: unable to compute hash: " +
+                             std::string(e.what()));
+  }
+}
 
- \throws std::runtime_error
-   If the expected_width or expected_height are not the same as image_exporter.
- */
-void VerifyImportedImageDimensions(int expected_width, int expected_height,
-                                   vtkImageExport* image_exporter,
-                                   const std::string& path) {
-  const int* extent = image_exporter->GetDataExtent();
-  const int img_width = extent[1] - extent[0] + 1;
-  const int img_height = extent[3] - extent[2] + 1;
-  if (img_width != expected_width || img_height != expected_height) {
-    throw std::runtime_error(fmt::format(
-        "RenderClient: expected to import (width={},height={}) from the file "
-        "'{}', but got (width={},height={}).",
-        expected_width, expected_height, path, img_width, img_height));
+void RenderClient::ValidDepthRangeOrThrow(double min_depth,
+                                          double max_depth) const {
+  // Make sure min_depth/max_depth are provided and make sense for depth images.
+  if (min_depth < 0.0 || max_depth < 0.0)
+    throw std::logic_error(
+        "min_depth and max_depth must be provided for "
+        "depth images, and be positive.");
+  if (max_depth <= min_depth)
+    throw std::logic_error(
+        "max_depth cannot be less than or equal to min_depth.");
+}
+
+std::string RenderClient::RenameFileExtension(const std::string& path,
+                                              const std::string& ext) const {
+  const drake::filesystem::path origin{path};
+  drake::filesystem::path destination{path};
+  destination.replace_extension(drake::filesystem::path{ext});
+  drake::filesystem::rename(origin, destination);
+
+  // TODO(svenevs): logging desired?  Replace with log() from drake?
+  if (verbose_) {
+    std::cout << "RenderClient: renamed " << origin << " to " << destination
+              << '\n';
   }
-  /* This method should only be getting called for loading two dimensional
-   images; VTK supports 3D images so we additionally check that the depth
-   dimension is 1. */
-  const int img_depth = extent[5] - extent[4] + 1;
-  if (img_depth != 1) {
-    throw std::runtime_error(fmt::format(
-        "RenderClient: expected two dimensional image, but loaded image from "
-        "'{}' has a z dimension of {}.",
-        path, img_depth));
-  }
+
+  return destination;
 }
 
 void RenderClient::LoadColorImage(const std::string& path,
@@ -718,22 +734,6 @@ void RenderClient::LoadLabelImage(const std::string& path,
    will reinterpret this as unsigned internally, since the loaded PNG image is
    required to be unsigned short data, negative values will not occur. */
   image_exporter->Export(label_image_out->at(0, 0));
-}
-
-std::string RenderClient::RenameFileExtension(const std::string& path,
-                                              const std::string& ext) const {
-  const drake::filesystem::path origin{path};
-  drake::filesystem::path destination{path};
-  destination.replace_extension(drake::filesystem::path{ext});
-  drake::filesystem::rename(origin, destination);
-
-  // TODO(svenevs): logging desired?  Replace with log() from drake?
-  if (verbose_) {
-    std::cout << "RenderClient: renamed " << origin << " to " << destination
-              << '\n';
-  }
-
-  return destination;
 }
 
 }  // namespace render
