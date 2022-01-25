@@ -84,14 +84,20 @@ class SapModel {
   }
 
   int num_velocities() const;
+  int num_participating_velocities() const;
   int num_constraints() const;
   int num_impulses() const;
 
+  // Returns free-motion velocities for participating dofs.  
   const VectorX<T>& v_star() const;
+
+  // Returns free-motion generalized momenta for participating dofs.
   const VectorX<T>& p_star() const;
 
-  // Performs multiplication p = A * v. Only participating cliques are
+  // Performs multiplication p = A * v. Only participating dofs are
   // considered.
+  // @pre p must be a valid pointer.
+  // @pre both v and p must be of size num_participating_velocities().
   void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* p) const;
 
  private:

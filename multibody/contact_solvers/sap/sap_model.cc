@@ -89,7 +89,12 @@ SapModel<T>::SapModel(const T& time_step,
 
 template <typename T>
 SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
+  // Graph for the original contact problem, including all cliques
+  // (participating and non-participating).
   const ContactProblemGraph graph = sap_problem().MakeGraph();
+
+  // Permutations to map indexes from participating cliques/dofs to the original
+  // set of cliques/dofs.
   cliques_permutation_ = MakeParticipatingCliquesPermutation(graph);
   velocities_permutation_ = MakeParticipatingVelocitiesPermutation(
       sap_problem(), cliques_permutation_);
@@ -167,6 +172,11 @@ int SapModel<T>::num_velocities() const {
 }
 
 template <typename T>
+int SapModel<T>::num_participating_velocities() const {
+  return velocities_permutation_.permuted_domain_size();
+}
+
+template <typename T>
 int SapModel<T>::num_constraints() const {
   return sap_problem().num_constraints();
 }
@@ -178,7 +188,7 @@ int SapModel<T>::num_impulses() const {
 
 template <typename T>
 const VectorX<T>& SapModel<T>::v_star() const {
-  return sap_problem().v_star();
+  return v_star_;
 }
 
 template <typename T>
@@ -398,12 +408,14 @@ BlockSparseMatrix<T> SapModel<T>::MakeConstraintsBundleJacobian(
 template <typename T>
 void SapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
                                            VectorX<T>* p) const {
-  int block_start = 0;
+  DRAKE_DEMAND(v.size() == num_participating_velocities());
+  DRAKE_DEMAND(p->size() == num_participating_velocities());
+  int clique_start = 0;
   for (const auto& Ab : A_) {
-    const int block_size = Ab.rows();
-    p->segment(block_start, block_size) =
-        Ab * v.segment(block_start, block_size);
-    block_start += block_size;
+    const int clique_size = Ab.rows();
+    p->segment(clique_start, clique_size) =
+        Ab * v.segment(clique_start, clique_size);
+    clique_start += clique_size;
   }
 }
 

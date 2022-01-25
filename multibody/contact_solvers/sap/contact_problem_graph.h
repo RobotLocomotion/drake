@@ -25,6 +25,7 @@ class ContactProblemGraph {
     int nv;  // Number of generalized velocities per clique.
   };
 
+  // TODO: rename to ConstraintGroup?
   struct Edge {
     Edge(const drake::SortedPair<int>& cliques_in,
          std::vector<int>&& constraints_in)
@@ -53,6 +54,7 @@ class ContactProblemGraph {
   int num_edges() const;
   int num_constraints() const;
   const std::vector<Edge>& edges() const;
+  // TODO: rename to get_constraint_group()?
   const Edge& get_edge(int e) const;
 
  private:
