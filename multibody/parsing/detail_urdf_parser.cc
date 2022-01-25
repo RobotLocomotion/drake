@@ -450,7 +450,7 @@ void ParseJoint(ModelInstanceIndex model_instance,
       ParseVectorAttribute(dynamics_node, "damping", &damping_vec);
     }
     plant->AddJoint<PlanarJoint>(name, parent_body, X_PJ,
-                                 child_body, std::nullopt, damping_vec);
+<                                 child_body, std::nullopt, damping_vec);
   } else if (type.compare("universal") == 0) {
     throw_on_custom_joint(true);
     ParseJointDynamics(node, &damping);
