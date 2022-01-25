@@ -36,7 +36,7 @@ ContactProblemGraph ContactProblemGraph::MakeGraphOfParticipatingCliques(
   if (num_participating_cliques == num_cliques()) return *this;
 
   ContactProblemGraph participating_cliques_graph(num_participating_cliques,
-                                                  num_edges());
+                                                  num_constraint_groups());
   for (const auto& e : edges_) {
     const int c0 = e.cliques.first() >= 0
                        ? participating_clique_index[e.cliques.first()]
@@ -44,8 +44,8 @@ ContactProblemGraph ContactProblemGraph::MakeGraphOfParticipatingCliques(
     const int c1 = e.cliques.second() >= 0
                        ? participating_clique_index[e.cliques.second()]
                        : -1;
-    Edge participating_edge({c0, c1}, e.constraints_index);
-    participating_cliques_graph.AddEdge(std::move(participating_edge));
+    ConstraintGroup participating_edge({c0, c1}, e.constraints_index);
+    participating_cliques_graph.AddConstraintGroup(std::move(participating_edge));
   }
   return participating_cliques_graph;
 }
@@ -55,7 +55,7 @@ PartialPermutation MakeParticipatingCliquesPermutation(
     const ContactProblemGraph& graph) {
   std::vector<int> participating_cliques(graph.num_cliques(), -1);
   int num_participating_cliques = 0;
-  for (const auto& e : graph.edges()) {
+  for (const auto& e : graph.constraint_groups()) {
     const int c0 = e.cliques.first();
     const int c1 = e.cliques.second();
     if (c0 >= 0 && participating_cliques[c0] < 0) {

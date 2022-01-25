@@ -90,12 +90,12 @@ GTEST_TEST(ContactProblem, MakeConstraintsBundleJacobian) {
   // Unit test MakeGraph().
   const ContactProblemGraph graph = problem.MakeGraph();
   EXPECT_EQ(graph.num_cliques(), 4);
-  EXPECT_EQ(graph.num_edges(), 4);
+  EXPECT_EQ(graph.num_constraint_groups(), 4);
   EXPECT_EQ(graph.num_constraints(), 5);
 
   PRINT_VAR(graph.num_cliques());
-  PRINT_VAR(graph.num_edges());
-  for (const auto& e : graph.edges()) {
+  PRINT_VAR(graph.num_constraint_groups());
+  for (const auto& e : graph.constraint_groups()) {
     PRINT_VAR(e.cliques);
   }
 
@@ -113,7 +113,7 @@ GTEST_TEST(ContactProblem, MakeConstraintsBundleJacobian) {
 
   EXPECT_EQ(J.rows(), 15);
   EXPECT_EQ(J.cols(), 9);
-  EXPECT_EQ(J.block_rows(), graph.num_edges());
+  EXPECT_EQ(J.block_rows(), graph.num_constraint_groups());
   EXPECT_EQ(J.block_cols(), cliques_permutation.permuted_domain_size());
 
   PRINT_VAR(J.rows());

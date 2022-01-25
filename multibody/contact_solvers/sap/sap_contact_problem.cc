@@ -285,7 +285,7 @@ ContactProblemGraph SapContactProblem<T>::MakeGraph() const {
   const int num_edges = edge_constraints.size();
   ContactProblemGraph graph(num_cliques(), num_edges);
   for (auto& e : edge_constraints) {
-    graph.AddEdge(ContactProblemGraph::Edge(e.first, std::move(e.second)));
+    graph.AddConstraintGroup(ContactProblemGraph::ConstraintGroup(e.first, std::move(e.second)));
   }
 
   return graph;

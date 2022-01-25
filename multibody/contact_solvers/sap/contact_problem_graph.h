@@ -16,7 +16,7 @@ namespace contact_solvers {
 namespace internal {
 
 // Cliques are the nodes.
-// Edges are a bundle of constraints that connect two cliques.
+// ConstraintGroups are a bundle of constraints that connect two cliques.
 class ContactProblemGraph {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactProblemGraph);
@@ -25,12 +25,11 @@ class ContactProblemGraph {
     int nv;  // Number of generalized velocities per clique.
   };
 
-  // TODO: rename to ConstraintGroup?
-  struct Edge {
-    Edge(const drake::SortedPair<int>& cliques_in,
+  struct ConstraintGroup {
+    ConstraintGroup(const drake::SortedPair<int>& cliques_in,
          std::vector<int>&& constraints_in)
         : cliques(cliques_in), constraints_index(std::move(constraints_in)) {}
-    Edge(const drake::SortedPair<int>& cliques_in,
+    ConstraintGroup(const drake::SortedPair<int>& cliques_in,
          const std::vector<int>& constraints_in)
         : cliques(cliques_in), constraints_index(constraints_in) {}
     drake::SortedPair<int> cliques;
@@ -48,20 +47,19 @@ class ContactProblemGraph {
 
   ContactProblemGraph(int num_cliques, int num_edges);
 
-  int AddEdge(Edge&& e);
+  int AddConstraintGroup(ConstraintGroup&& e);
 
   int num_cliques() const;
-  int num_edges() const;
+  int num_constraint_groups() const;
   int num_constraints() const;
-  const std::vector<Edge>& edges() const;
-  // TODO: rename to get_constraint_group()?
-  const Edge& get_edge(int e) const;
+  const std::vector<ConstraintGroup>& constraint_groups() const;
+  const ConstraintGroup& get_constraint_group(int e) const;
 
  private:
   int num_cliques_{0};
   int num_constraints_{0};
   std::vector<Clique> cliques_;
-  std::vector<Edge> edges_;
+  std::vector<ConstraintGroup> edges_;
 };
 
 }  // namespace internal

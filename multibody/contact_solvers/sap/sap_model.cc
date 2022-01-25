@@ -145,7 +145,7 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
   constraints.reserve(sap_problem().num_constraints());
 
   offset = 0;  // impulse index.
-  for (const ContactProblemGraph::Edge& e : graph.edges()) {
+  for (const ContactProblemGraph::ConstraintGroup& e : graph.constraint_groups()) {
     for (int i : e.constraints_index) {
       const SapConstraint<T>& c = sap_problem().get_constraint(i);
       constraints.push_back(&c);
@@ -201,7 +201,7 @@ PartialPermutation SapModel<T>::MakeParticipatingCliquesPermutation(
     const ContactProblemGraph& graph) const {
   std::vector<int> participating_cliques(graph.num_cliques(), -1);
   int num_participating_cliques = 0;
-  for (const auto& e : graph.edges()) {
+  for (const auto& e : graph.constraint_groups()) {
     const int c0 = e.cliques.first();
     const int c1 = e.cliques.second();
     if (c0 >= 0 && participating_cliques[c0] < 0) {
@@ -257,7 +257,7 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
   const int num_constraints = problem.num_constraints();
   std::vector<MatrixX<T>> W(num_constraints);
 
-  for (const ContactProblemGraph::Edge& e : graph.edges()) {
+  for (const ContactProblemGraph::ConstraintGroup& e : graph.constraint_groups()) {
     for (int k : e.constraints_index) {      
       const SapConstraint<T>& constraint = sap_problem().get_constraint(k);
       const int nk = constraint.num_constrained_dofs();
@@ -337,17 +337,17 @@ BlockSparseMatrix<T> SapModel<T>::MakeConstraintsBundleJacobian(
     const SapContactProblem<T>& problem, const ContactProblemGraph& graph,
     const PartialPermutation& cliques_permutation) const {
   // We have at most two blocks per row, and one row per edge in the graph.
-  const int non_zero_blocks_capacity = 2 * graph.num_edges();
+  const int non_zero_blocks_capacity = 2 * graph.num_constraint_groups();
   BlockSparseMatrixBuilder<T> builder(
-      graph.num_edges(), cliques_permutation.permuted_domain_size(),
+      graph.num_constraint_groups(), cliques_permutation.permuted_domain_size(),
       non_zero_blocks_capacity);
 
   // DOFs per edge.
   // TODO: consider the graph storing "weights"; number of dofs per node
   // (clique) and number of constrained dofs per edge.
-  std::vector<int> edge_dofs(graph.num_edges(), 0);
-  for (int e = 0; e < graph.num_edges(); ++e) {
-    const auto& edge = graph.get_edge(e);
+  std::vector<int> edge_dofs(graph.num_constraint_groups(), 0);
+  for (int e = 0; e < graph.num_constraint_groups(); ++e) {
+    const auto& edge = graph.get_constraint_group(e);
     for (int k : edge.constraints_index) {
       const SapConstraint<T>& c = problem.get_constraint(k);
       edge_dofs[e] += c.num_constrained_dofs();
@@ -355,8 +355,8 @@ BlockSparseMatrix<T> SapModel<T>::MakeConstraintsBundleJacobian(
   }
 
   // Add a block row (with one or two blocks) per edge in the graph.
-  for (int block_row = 0; block_row < graph.num_edges(); ++block_row) {
-    const auto& e = graph.get_edge(block_row);
+  for (int block_row = 0; block_row < graph.num_constraint_groups(); ++block_row) {
+    const auto& e = graph.get_constraint_group(block_row);
     const int c0 = e.cliques.first();
     const int c1 = e.cliques.second();
 

@@ -53,7 +53,7 @@ class SapConstraintsBundle {
       std::vector<MatrixX<T>>* G) const;
 
  private:
-  // Jacobian for the entire bundle, with graph_.num_edges() block rows and
+  // Jacobian for the entire bundle, with graph_.num_constraint_groups() block rows and
   // graph_.num_cliques() block columns.
   BlockSparseMatrix<T> J_;
   VectorX<T> vhat_;

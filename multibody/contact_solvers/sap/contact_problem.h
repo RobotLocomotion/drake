@@ -38,17 +38,17 @@ BlockSparseMatrix<T> MakeConstraintsBundleJacobian(
     const ContactProblemGraph& graph,
     const PartialPermutation& cliques_permutation) {
   // We have at most two blocks per row, and one row per edge in the graph.
-  const int non_zero_blocks_capacity = 2 * graph.num_edges();
+  const int non_zero_blocks_capacity = 2 * graph.num_constraint_groups();
   BlockSparseMatrixBuilder<T> builder(
-      graph.num_edges(), cliques_permutation.permuted_domain_size(),
+      graph.num_constraint_groups(), cliques_permutation.permuted_domain_size(),
       non_zero_blocks_capacity);
 
   // DOFs per edge.
   // TODO: consider the graph storing "weights"; number of dofs per node
   // (clique) and number of constrained dofs per edge.
-  std::vector<int> edge_dofs(graph.num_edges(), 0);
-  for (int e = 0; e < graph.num_edges(); ++e) {
-    const auto& edge = graph.get_edge(e);
+  std::vector<int> edge_dofs(graph.num_constraint_groups(), 0);
+  for (int e = 0; e < graph.num_constraint_groups(); ++e) {
+    const auto& edge = graph.get_constraint_group(e);
     for (int k : edge.constraints_index) {
       const SapConstraint<T>& c = problem.get_constraint(k);
       edge_dofs[e] += c.num_constrained_dofs();
@@ -56,8 +56,8 @@ BlockSparseMatrix<T> MakeConstraintsBundleJacobian(
   }                                      
 
   // Add a block row (with one or two blocks) per edge in the graph.
-  for (int block_row = 0; block_row < graph.num_edges(); ++block_row) {
-    const auto& e = graph.get_edge(block_row);
+  for (int block_row = 0; block_row < graph.num_constraint_groups(); ++block_row) {
+    const auto& e = graph.get_constraint_group(block_row);
     const int c0 = e.cliques.first();
     const int c1 = e.cliques.second();
 
@@ -118,23 +118,23 @@ BlockSparseMatrix<T> MakeConstraintsBundleJacobian(
     const ContactProblemGraph& participating_cliques_graph) {
   // We have at most two blocks per row, and one row per edge in the graph.
   const int non_zero_blocks_capacity =
-      2 * participating_cliques_graph.num_edges();
-  BlockSparseMatrixBuilder<T> builder(participating_cliques_graph.num_edges(),
+      2 * participating_cliques_graph.num_constraint_groups();
+  BlockSparseMatrixBuilder<T> builder(participating_cliques_graph.num_constraint_groups(),
                                       participating_cliques_graph.num_cliques(),
                                       non_zero_blocks_capacity);
 
-  std::vector<int> edge_dofs(participating_cliques_graph.num_edges(), 0);
-  for (int e = 0; e < participating_cliques_graph.num_edges(); ++e) {
-    const auto& edge = participating_cliques_graph.get_edge(e);
+  std::vector<int> edge_dofs(participating_cliques_graph.num_constraint_groups(), 0);
+  for (int e = 0; e < participating_cliques_graph.num_constraint_groups(); ++e) {
+    const auto& edge = participating_cliques_graph.get_constraint_group(e);
     for (int k : edge.constraints_index) {
       const SapConstraint<T>& c = problem.get_constraint(k);
       edge_dofs[e] += c.num_constrained_dofs();
     }
   }
 
-  for (int block_row = 0; block_row < participating_cliques_graph.num_edges();
+  for (int block_row = 0; block_row < participating_cliques_graph.num_constraint_groups();
        ++block_row) {
-    const auto& e = participating_cliques_graph.get_edge(block_row);
+    const auto& e = participating_cliques_graph.get_constraint_group(block_row);
     const int participating_c0 = e.cliques.first();
     const int participating_c1 = e.cliques.second();
     const int c0 =
@@ -253,7 +253,7 @@ class SapConstraintsBundle {
   }
 
  private:
-  // Jacobian for the entire bundle, with graph_.num_edges() block rows and
+  // Jacobian for the entire bundle, with graph_.num_constraint_groups() block rows and
   // graph_.num_cliques() block columns.
   BlockSparseMatrix<T> J_;
   // problem_ constraint references in the order dictated by the
@@ -272,7 +272,7 @@ std::unique_ptr<SapConstraintsBundle<T>> MakeConstraintsBundle(
   // Bundle constraints in the order specified in the graph (where constraints
   // are grouped by clique pairs)
   std::vector<SapConstraint<T>*> constraints(problem.num_constraints());
-  for (const auto& e : graph.edges()) {
+  for (const auto& e : graph.constraint_groups()) {
     for (int k : e.constraints_index){
       const auto& c = problem.get_constraint(k);
       constraints[k] = &c;
