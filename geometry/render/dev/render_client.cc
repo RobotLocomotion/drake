@@ -221,7 +221,7 @@ void RenderClient::UploadScene(
 
   curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
 
-  // Disable 100-Coninue.  See:
+  // Disable 100-Continue.  See:
   // http://www.iandennismiller.com/posts/curl-http1-1-100-continue-and-multipartform-data-post.html
   headerlist = curl_slist_append(headerlist, "Expect:");
   curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);
@@ -402,7 +402,7 @@ std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
 
   curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
 
-  // Disable 100-Coninue.  See:
+  // Disable 100-Continue.  See:
   // http://www.iandennismiller.com/posts/curl-http1-1-100-continue-and-multipartform-data-post.html
   headerlist = curl_slist_append(headerlist, "Expect:");
   curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);
