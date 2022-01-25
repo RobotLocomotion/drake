@@ -1,8 +1,19 @@
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 
+#include <chrono>
+#include <thread>
+
+#include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/scope_exit.h"
+#include "drake/common/text_logging.h"
+
+DEFINE_bool(
+    meshcat_pause_during_tests, false,
+   "When running the tests, pause for the user clicks, for debugging. This"
+    " is probably most useful when also using --gtest_filter for brevity.");
 
 namespace drake {
 namespace geometry {
@@ -48,6 +59,26 @@ std::shared_ptr<Meshcat> GetTestEnvironmentMeshcat() {
   auto* cast = dynamic_cast<const MeshcatEnvironment*>(g_meshcat_environment);
   DRAKE_DEMAND(cast != nullptr);
   return cast->GetSingleton();
+}
+
+void PauseTestEnvironmentMeshcat() {
+  std::shared_ptr<Meshcat> meshcat = GetTestEnvironmentMeshcat();
+
+  const std::string label = fmt::format(
+      "Paused test {}, click to continue",
+      ::testing::UnitTest::GetInstance()->current_test_info()->name());
+  meshcat->AddButton(label);
+  ScopeExit guard([&meshcat, label]() {
+    meshcat->DeleteButton(label);
+  });
+
+  if (FLAGS_meshcat_pause_during_tests) {
+    drake::log()->info(
+        "Pausing for the 'click here' button on the Meshcat control panel");
+    while (meshcat->GetButtonClicks(label) == 0) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+  }
 }
 
 }  // namespace geometry

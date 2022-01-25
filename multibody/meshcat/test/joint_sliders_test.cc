@@ -16,6 +16,7 @@ namespace {
 
 using Eigen::Vector2d;
 using geometry::Meshcat;
+using geometry::PauseTestEnvironmentMeshcat;
 
 class JointSlidersTest : public ::testing::Test {
  public:
@@ -69,6 +70,7 @@ TEST_F(JointSlidersTest, NarrowConstructor) {
   // Add the sliders.
   const JointSliders<double> dut(meshcat_, &plant_);
   auto context = dut.CreateDefaultContext();
+  PauseTestEnvironmentMeshcat();
 
   // Sliders start at their default context value.
   EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint1), default_angle_1);
@@ -113,6 +115,7 @@ TEST_F(JointSlidersTest, WideConstructorWithVectors) {
   const JointSliders dut(
       meshcat_, &plant_, initial_value, lower_limit, upper_limit, step);
   auto context = dut.CreateDefaultContext();
+  PauseTestEnvironmentMeshcat();
 
   // Sliders start at their initial value.
   EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint1), default_angle_1);
@@ -199,6 +202,7 @@ TEST_F(JointSlidersTest, DuplicatedJointNames) {
 
   // Add the sliders.
   const JointSliders<double> dut(meshcat_, &plant_);
+  PauseTestEnvironmentMeshcat();
 
   // Confirm that the names are unique.
   const std::string alpha = "/alpha";
