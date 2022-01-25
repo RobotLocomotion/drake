@@ -324,14 +324,14 @@ def upload():
             # This will be a werkzeug.datastructures.FileStorage, see
             # https://werkzeug.palletsprojects.com/en/2.0.x/datastructures/
             data = request.files["data"]
-            _, tmp_path = tempfile.mkstemp(dir=server_cache)
-            data.save(tmp_path)
+            _, temp_path = tempfile.mkstemp(dir=server_cache)
+            data.save(temp_path)
 
             # Compute the hash and rename it.
-            tmp_path = Path(tmp_path)
-            sha = compute_hash(tmp_path)
+            temp_path = Path(temp_path)
+            sha = compute_hash(temp_path)
             gltf_out = gltf_path(sha, image_type)
-            tmp_path.rename(gltf_out)
+            temp_path.rename(gltf_out)
 
             # Print to the console what was just saved, including the mime type
             # if it has been provided.  Users may choose to fail the upload in
@@ -642,13 +642,13 @@ def render():
             out_type = "png"
         else:  # image_type := "depth"
             out_type = "tiff"
-        img_out = gltf_in.parent / (gltf_in.name + f".{out_type}")
-        if img_out.is_file():
-            img_out.unlink()
+        image_out = gltf_in.parent / (gltf_in.name + f".{out_type}")
+        if image_out.is_file():
+            image_out.unlink()
 
         ret = render_callback(
             input_scene=str(gltf_in),
-            output_path=str(img_out),
+            output_path=str(image_out),
             scene_id=scene_id,
             image_type=image_type,
             width=str(width),
@@ -668,7 +668,7 @@ def render():
             json_dict, code = ret
             return json_dict, code
 
-        return send_file(str(img_out), mimetype=f"image/{out_type}")
+        return send_file(str(image_out), mimetype=f"image/{out_type}")
 
     # request.method := "GET"
     min_max = 'min="16" max="65535"'

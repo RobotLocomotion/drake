@@ -106,23 +106,23 @@ void VerifyImportedImageDimensions(int expected_width, int expected_height,
                                    vtkImageExport* image_exporter,
                                    const std::string& path) {
   const int* extent = image_exporter->GetDataExtent();
-  const int img_width = extent[1] - extent[0] + 1;
-  const int img_height = extent[3] - extent[2] + 1;
-  if (img_width != expected_width || img_height != expected_height) {
+  const int image_width = extent[1] - extent[0] + 1;
+  const int image_height = extent[3] - extent[2] + 1;
+  if (image_width != expected_width || image_height != expected_height) {
     throw std::runtime_error(fmt::format(
         "RenderClient: expected to import (width={},height={}) from the file "
         "'{}', but got (width={},height={}).",
-        expected_width, expected_height, path, img_width, img_height));
+        expected_width, expected_height, path, image_width, image_height));
   }
   /* This method should only be getting called for loading two dimensional
    images; VTK supports 3D images so we additionally check that the depth
    dimension is 1. */
-  const int img_depth = extent[5] - extent[4] + 1;
-  if (img_depth != 1) {
+  const int image_depth = extent[5] - extent[4] + 1;
+  if (image_depth != 1) {
     throw std::runtime_error(fmt::format(
         "RenderClient: expected two dimensional image, but loaded image from "
         "'{}' has a z dimension of {}.",
-        path, img_depth));
+        path, image_depth));
   }
 }
 
@@ -411,13 +411,13 @@ std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
    necessarily reside in temp_directory_, construct a path that is safe for this
    RenderClient to write to. */
   const drake::filesystem::path fs_scene_path{scene_path};
-  const drake::filesystem::path tmp_bin_out =
+  const drake::filesystem::path temp_bin_out =
       drake::filesystem::path(temp_directory_) /
       (drake::filesystem::path{fs_scene_path.filename().string() + ".bin"});
   // Start with a clean file each time.
-  if (drake::filesystem::exists(tmp_bin_out)) {
+  if (drake::filesystem::exists(temp_bin_out)) {
     try {
-      if (!drake::filesystem::remove(tmp_bin_out)) {
+      if (!drake::filesystem::remove(temp_bin_out)) {
         throw std::runtime_error("unable to remove file.");
       }
     } catch (const std::exception& e) {
@@ -425,11 +425,11 @@ std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
           "RenderClient: error reusing '{}' to retrieve a new render, consider "
           "calling RetrieveRender with unique scene_path arguments to receive "
           "a unique temporary file each time: {}",
-          tmp_bin_out.string(), e.what()));
+          temp_bin_out.string(), e.what()));
     }
   }
   // Open the file for writing, pass it off to curl.
-  const std::string bin_out_path{tmp_bin_out.string()};
+  const std::string bin_out_path{temp_bin_out.string()};
   std::ofstream bin_out(bin_out_path, std::ios::binary);
   if (!bin_out.good()) {
     const auto state = bin_out.rdstate();
@@ -511,26 +511,26 @@ std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
    NOTE: do not rely on or trust the server to (correctly) report a valid mime
    type for the sent image.  VTK's image readers 'CanReadFile' methods check
    if the file *content* can actually be loaded (regardless of extension). */
-  std::string img_types_tried = "";  // Build up for error message at end.
+  std::string image_types_tried = "";  // Build up for error message at end.
 
   vtkNew<vtkPNGReader> png_reader;
   if (png_reader->CanReadFile(bin_out_path.c_str())) {
     return RenameFileExtension(bin_out_path, ".png");
   }
-  img_types_tried += "PNG";
+  image_types_tried += "PNG";
 
   vtkNew<vtkTIFFReader> tiff_reader;
   if (tiff_reader->CanReadFile(bin_out_path.c_str())) {
     return RenameFileExtension(bin_out_path, ".tiff");
   }
-  img_types_tried += ", TIFF";
+  image_types_tried += ", TIFF";
 
   throw std::runtime_error(fmt::format(
       "RenderClient: while trying to render the scene_id={} with provided "
       "scene_path='{}', the file returned by the server saved in '{}' is not "
       "understood as an image type that is supported.  Image types attempted "
       "loading as: {}.",
-      scene_sha256, scene_path, bin_out_path, img_types_tried));
+      scene_sha256, scene_path, bin_out_path, image_types_tried));
 }
 
 std::string RenderClient::ComputeSha256(const std::string& path) const {

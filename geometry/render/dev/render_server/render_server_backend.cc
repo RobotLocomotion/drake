@@ -92,15 +92,16 @@ static bool valid_output(const char* flagname, const std::string& f_path) {
 DEFINE_validator(output, &valid_output);
 
 // Require that image_type is provided explicitly and in {color, depth, label}.
-static bool valid_image_type(const char* flagname, const std::string& im_type) {
-  if (im_type == "color")
+static bool valid_image_type(const char* flagname,
+                             const std::string& image_type) {
+  if (image_type == "color")
     return true;
-  else if (im_type == "depth")
+  else if (image_type == "depth")
     return true;
-  else if (im_type == "label")
+  else if (image_type == "label")
     return true;
 
-  printf("Invalid value for --%s: %s, %s\n", flagname, im_type.c_str(),
+  printf("Invalid value for --%s: %s, %s\n", flagname, image_type.c_str(),
          "must be one of 'color', 'depth', or 'label'.");
   return false;
 }

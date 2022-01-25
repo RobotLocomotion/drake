@@ -147,14 +147,14 @@ void RenderClientGltf::DoRenderColorImage(const ColorRenderCamera& camera,
     std::cout << "  Scene exported to: " << scene_path << '\n';
   }
 
-  const std::string img_path =
+  const std::string image_path =
       UploadAndRender(camera.core(), internal::ImageType::kColor, scene_path);
   if (verbose()) {
-    std::cout << "  Server response image: " << img_path << '\n';
+    std::cout << "  Server response image: " << image_path << '\n';
   }
 
   // Load the returned image back to the drake buffer.
-  LoadColorImage(img_path, color_image_out);
+  LoadColorImage(image_path, color_image_out);
   ++color_frame_id;
 }
 
@@ -184,15 +184,15 @@ void RenderClientGltf::DoRenderDepthImage(
 
   const double min_depth = camera.depth_range().min_depth();
   const double max_depth = camera.depth_range().max_depth();
-  const std::string img_path =
+  const std::string image_path =
       UploadAndRender(camera.core(), internal::ImageType::kDepth, scene_path,
                       min_depth, max_depth);
   if (verbose()) {
-    std::cout << "  Server response image: " << img_path << '\n';
+    std::cout << "  Server response image: " << image_path << '\n';
   }
 
   // Load the returned image back to the drake buffer.
-  LoadDepthImage(img_path, depth_image_out);
+  LoadDepthImage(image_path, depth_image_out);
   ++depth_frame_id;
 }
 
@@ -221,14 +221,14 @@ void RenderClientGltf::DoRenderLabelImage(
     std::cout << "  Scene exported to: " << scene_path << '\n';
   }
 
-  const std::string img_path =
+  const std::string image_path =
       UploadAndRender(camera.core(), internal::ImageType::kLabel, scene_path);
   if (verbose()) {
-    std::cout << "  Server response image: " << img_path << '\n';
+    std::cout << "  Server response image: " << image_path << '\n';
   }
 
   // Load the returned image back to the drake buffer.
-  LoadLabelImage(img_path, label_image_out);
+  LoadLabelImage(image_path, label_image_out);
   ++label_frame_id;
 }
 
