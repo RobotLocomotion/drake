@@ -146,18 +146,41 @@ class SapConstraint {
 
   virtual ~SapConstraint() = default;
 
+  // TODO: do I need this constraint?
   explicit SapConstraint(int num_constrained_dofs);
 
+  // Costructor for a constraint among dofs within a single `clique`.
   SapConstraint(int clique, const MatrixX<T>& J);
 
+  // Constructor for a constraint among dofs in two cliques `clique0` and
+  // `clique1`.
   SapConstraint(int clique0, int clique1, const MatrixX<T>& J0,
                 const MatrixX<T>& J1);
 
+  // Number of dofs constrained by this constraint.
   int num_constrained_dofs() const;
+
+  // Number of participating cliques. One (1) or two (2).
   int num_cliques() const;
+
+  // Index of the first (and maybe only) participating clique. Always a
+  // non-negative number.
   int clique0() const;
+
+  // Index of the second participating clique. It is negative is there is only a
+  // single clique that participates.
   int clique1() const;
 
+  // Computes the projection γ = P(y) onto the convex set specific to a
+  // constraint in the norm defined by the diagonal positive matrix R, i.e. the
+  // norm ‖x‖ = xᵀ⋅R⋅x.
+  // @param[in] y Impulse to be projected, of size num_constrained_dofs().
+  // @param[in] R Specifies the diagonal components of matrix R, of size
+  // num_constrained_dofs().
+  // @param[out] gamma On output, the projected impulse y. On input it must be
+  // of size num_constrained_dofs().
+  // @param[out] Not used if nullptr. Otherwise it must be a squared matrix of
+  // size num_constrained_dofs() to store the Jacobian dP/dy on output.
   virtual void Project(const Eigen::Ref<const VectorX<T>>& y,
                        const Eigen::Ref<const VectorX<T>>& R,
                        EigenPtr<VectorX<T>> gamma,
@@ -166,7 +189,20 @@ class SapConstraint {
   const MatrixX<T>& clique0_jacobian() const;
   const MatrixX<T>& clique1_jacobian() const;
 
+  // Computes the bias term v̂ used to compute the constraint impulses before
+  // projection as y = −R⁻¹⋅(vc − v̂).
+  // @param[in] time_step The time step used in the temporal discretization.
+  // @param[in] wi Constraint Delassus approximation (inverse of mass). Specific
+  // constraints can use this information to estimate stabilization terms in the
+  // "near-rigid" regime.
   virtual VectorX<T> CalcBiasTerm(const T& time_step, const T& wi) const = 0;
+
+  // Computes the regularization R used to compute the constraint impulses
+  // before projection as y = −R⁻¹⋅(vc − v̂).
+  // @param[in] time_step The time step used in the temporal discretization.
+  // @param[in] wi Constraint Delassus approximation (inverse of mass). Specific
+  // constraints can use this information to estimate stabilization terms in the
+  // "near-rigid" regime.
   virtual VectorX<T> CalcDiagonalRegularization(const T& time_step,
                                                 const T& wi) const = 0;
 
@@ -197,9 +233,11 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
   SapFrictionConeConstraint(const Parameters& p)
       : SapConstraint<T>(3), parameters_(p) {}
 
+  // @throws if the number of rows in J is different from three.
   SapFrictionConeConstraint(int clique, const MatrixX<T>& J,
                             const Parameters& p);
 
+  // @throws if the number of rows in J0 and J1 is different from three.
   SapFrictionConeConstraint(int clique0, int clique1, const MatrixX<T>& J0,
                             const MatrixX<T>& J1, const Parameters& p);
 
