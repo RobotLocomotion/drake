@@ -84,7 +84,7 @@ class ShaderCallback : public vtkCommand {
 class RenderEngineVtk : public RenderEngine,
                         private internal::ModuleInitVtkRenderingOpenGL2 {
  public:
-  /** \name Does not allow copy, move, or assignment  */
+  /** @name Does not allow copy, move, or assignment  */
   //@{
 #ifdef DRAKE_DOXYGEN_CXX
   // Note: the copy constructor operator is actually protected to serve as the
