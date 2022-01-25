@@ -28,8 +28,8 @@ using drake::systems::sensors::ImageDepth32F;
 using drake::systems::sensors::ImageLabel16I;
 using drake::systems::sensors::ImageRgba8U;
 
-// Render client constructor increases, destructor decreases n_clients.
-std::atomic<int> n_clients{0};
+// Render client constructor increases, destructor decreases num_clients.
+std::atomic<int> num_clients{0};
 // is_initialized should only be modified in static_curl_{init,cleanup}.
 std::atomic<bool> is_initialized{false};
 
@@ -41,7 +41,7 @@ void static_curl_init() {
 }
 
 void static_curl_cleanup() {
-  if (n_clients == 0) {
+  if (num_clients == 0) {
     curl_global_cleanup();
     is_initialized = false;
   }
@@ -140,7 +140,7 @@ RenderClient::RenderClient(const std::string& url, unsigned port,
       verbose_{verbose},
       no_cleanup_{no_cleanup} {
   static_curl_init();
-  ++n_clients;
+  ++num_clients;
 }
 
 RenderClient::RenderClient(const RenderClient& other)
@@ -157,7 +157,7 @@ RenderClient::RenderClient(const RenderClient& other)
     temp_directory_ = drake::temp_directory();
   }
   static_curl_init();
-  ++n_clients;
+  ++num_clients;
 }
 
 RenderClient::~RenderClient() {
@@ -178,7 +178,7 @@ RenderClient::~RenderClient() {
     std::cout << "RenderClient temporary directory '" << temp_directory_
               << "' was *NOT* deleted.\n";
   }
-  --n_clients;
+  --num_clients;
   static_curl_cleanup();
 }
 
