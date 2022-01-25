@@ -21,8 +21,6 @@ import stat
 import sys
 from subprocess import check_output, check_call
 
-# Stores subdirectories that have already been created.
-subdirs = set()
 # Stored from command-line.
 color = False
 prefix = None
@@ -137,8 +135,6 @@ def copy_or_link(src, dst):
 
 
 def install(src, dst):
-    global subdirs
-
     # In list-only mode, just display the filename, don't do any real work.
     if list_only:
         print(dst)
@@ -146,11 +142,8 @@ def install(src, dst):
 
     # Ensure destination subdirectory exists, creating it if necessary.
     subdir = os.path.dirname(dst)
-    if subdir not in subdirs:
-        subdir_full = os.path.join(prefix, subdir)
-        if not os.path.exists(subdir_full):
-            os.makedirs(subdir_full)
-        subdirs.add(subdir)
+    subdir_full = os.path.join(prefix, subdir)
+    os.makedirs(subdir_full, exist_ok=True)
 
     dst_full = os.path.join(prefix, dst)
     # Install file, if not up to date.
