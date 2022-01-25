@@ -3232,7 +3232,8 @@ class MathematicalProgram {
    * unscaled. Namely, MathematicalProgramResult::GetSolution(var) returns the
    * value of var, not var_value / scaling_factor.
    *
-   * The feature of variable scaling is currently only implemented for SNOPT.
+   * The feature of variable scaling is currently only implemented for SNOPT and
+   * OSQP.
    */
   //@{
   /**
@@ -3253,6 +3254,13 @@ class MathematicalProgram {
    * See @ref variable_scaling "Variable scaling" for more information.
    */
   void SetVariableScaling(const symbolic::Variable& var, double s);
+
+  /**
+   * Clears the scaling factors for decision variables.
+   *
+   * See @ref variable_scaling "Variable scaling" for more information.
+   */
+  void ClearVariableScaling() { var_scaling_map_.clear(); }
   //@}
 
   /**
