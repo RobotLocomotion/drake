@@ -11,8 +11,8 @@
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/meshcat/contact_visualizer.h"
 #include "drake/multibody/parsing/parser.h"
-#include "drake/multibody/plant/contact_results_to_meshcat.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
 
@@ -242,9 +242,9 @@ Open up your browser to the URL above.
   auto& visualizer = MeshcatVisualizerd::AddToBuilder(
       &builder, scene_graph, meshcat, std::move(params));
 
-  multibody::ContactResultsToMeshcatParams cparams;
+  multibody::meshcat::ContactVisualizerParams cparams;
   cparams.newtons_per_meter = 60.0;
-  auto& contact = multibody::ContactResultsToMeshcatd::AddToBuilder(
+  auto& contact = multibody::meshcat::ContactVisualizerd::AddToBuilder(
       &builder, plant, meshcat, std::move(cparams));
 
   auto diagram = builder.Build();

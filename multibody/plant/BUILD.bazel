@@ -21,8 +21,6 @@ drake_cc_package_library(
         ":compliant_contact_manager",
         ":contact_jacobians",
         ":contact_results",
-        ":contact_results_to_meshcat",
-        ":contact_results_to_meshcat_params",
         ":coulomb_friction",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
@@ -213,32 +211,6 @@ drake_cc_library(
         "//lcmtypes:point_pair_contact_info_for_viz",
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_pubsub_system",
-    ],
-)
-
-drake_cc_library(
-    name = "contact_results_to_meshcat_params",
-    hdrs = ["contact_results_to_meshcat_params.h"],
-    deps = [
-        "//geometry:rgba",
-    ],
-)
-
-drake_cc_library(
-    name = "contact_results_to_meshcat",
-    srcs = ["contact_results_to_meshcat.cc"],
-    hdrs = [
-        "contact_results_to_meshcat.h",
-    ],
-    deps = [
-        ":contact_results_to_meshcat_params",
-        ":multibody_plant_core",
-        "//common:essential",
-        "//geometry:meshcat",
-        "//math:geometric_transform",
-        "//systems/framework:context",
-        "//systems/framework:diagram_builder",
-        "//systems/framework:leaf_system",
     ],
 )
 
@@ -641,19 +613,6 @@ drake_cc_googletest(
     deps = [
         ":contact_results_to_lcm",
         "//common/test_utilities:eigen_geometry_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "contact_results_to_meshcat_test",
-    data = [
-        "//examples/manipulation_station:models",
-    ],
-    deps = [
-        ":contact_results_to_meshcat",
-        ":plant",
-        "//common/test_utilities:expect_throws_message",
-        "//multibody/parsing",
     ],
 )
 
