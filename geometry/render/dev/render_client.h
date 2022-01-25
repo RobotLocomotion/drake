@@ -3,9 +3,8 @@
 #include <optional>
 #include <string>
 
-#include <curl/curl.h>
-
-#include "drake/geometry/render/render_engine.h"
+#include "drake/geometry/render/render_camera.h"
+#include "drake/systems/sensors/image.h"
 
 namespace drake {
 namespace geometry {

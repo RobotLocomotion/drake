@@ -3,26 +3,24 @@
 #include <vtkAutoInit.h>
 #include <vtkCamera.h>
 #include <vtkGLTFImporter.h>
-#include <vtkIndent.h>
+#include <vtkImageExport.h>
 #include <vtkLight.h>
 #include <vtkMatrix4x4.h>
-#include <vtkNew.h>
 #include <vtkOpenGLPolyDataMapper.h>
 #include <vtkOpenGLShaderProperty.h>
 #include <vtkPNGWriter.h>
 #include <vtkProperty.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderer.h>
-#include <vtkSmartPointer.h>
 #include <vtkTIFFWriter.h>
-#include <vtkType.h>  // for type traits
 #include <vtkWindowToImageFilter.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/filesystem.h"
-#include "drake/geometry/render/render_engine.h"
+#include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
 #include "drake/systems/sensors/color_palette.h"
+#include "drake/systems/sensors/image.h"
 // Depth shaders need to use the same callback.
 #include "drake/geometry/render/render_engine_vtk.h"
 

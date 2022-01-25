@@ -1,36 +1,20 @@
 #include "drake/geometry/render/dev/render_client_gltf.h"
 
-#include <iostream>
-#include <memory>
-#include <string>
-#include <vector>
-
 #include <vtkCamera.h>
 #include <vtkGLTFExporter.h>
-#include <vtkImageExport.h>
-#include <vtkIndent.h>
 #include <vtkMatrix4x4.h>
-#include <vtkPNGReader.h>
+#include <vtkTransform.h>
 
 #include "drake/common/filesystem.h"
-#include "drake/common/text_logging.h"
-#include "drake/geometry/render/render_engine_vtk_base.h"
-#include "drake/geometry/render/shaders/depth_shaders.h"
-#include "drake/geometry/render/vtk_util.h"
-#include "drake/systems/sensors/color_palette.h"
 
 namespace drake {
 namespace geometry {
 namespace render {
 
-using systems::sensors::CameraInfo;
-using systems::sensors::ColorD;
-using systems::sensors::ColorI;
+using geometry::render::RenderCameraCore;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
-using systems::sensors::ImageTraits;
-using systems::sensors::PixelType;
 
 namespace {
 
@@ -84,12 +68,6 @@ RenderImageType InternalToRenderImageType(internal::ImageType image_type) {
 }
 
 }  // namespace
-
-using drake::geometry::render::vtk_util::ConvertToVtkTransform;
-using Eigen::Vector3d;
-using systems::sensors::ImageDepth32F;
-using systems::sensors::ImageLabel16I;
-using systems::sensors::ImageRgba8U;
 
 RenderClientGltf::RenderClientGltf(const RenderClientGltfParams& parameters)
     : RenderEngineVtk({parameters.default_label,

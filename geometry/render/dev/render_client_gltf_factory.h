@@ -4,7 +4,8 @@
 #include <optional>
 #include <string>
 
-#include "drake/geometry/render/dev/render_client.h"
+#include "drake/geometry/render/render_engine.h"
+#include "drake/geometry/render/render_label.h"
 
 namespace drake {
 namespace geometry {
