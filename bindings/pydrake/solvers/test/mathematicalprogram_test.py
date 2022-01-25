@@ -777,9 +777,10 @@ class TestMathematicalProgram(unittest.TestCase):
         for i in range(3):
             pt = pts[i, :]
             prog.AddLinearConstraint(pt.dot(a * pt) <= 1)
-        prog.AddMaximizeGeometricMeanCost(a, 1)
+        cost = prog.AddMaximizeGeometricMeanCost(a, 1)
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
+        self.assertIsInstance(cost, mp.Binding[mp.LinearCost])
 
     def test_max_geometric_mean_trivial(self):
         # Solve the trivial problem.

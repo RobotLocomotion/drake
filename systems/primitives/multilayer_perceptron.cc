@@ -88,10 +88,16 @@ MultilayerPerceptron<T>::MultilayerPerceptron(
                                &MultilayerPerceptron<T>::CalcHiddenLayers);
 
   // Declare cache entries for Backpropagation:
-  // Wx_plus_b[i], Xn[i], dloss_dXn[i], dloss_dW_plus_b[i], and dloss_dW[i].
   std::vector<MatrixX<T>> backprop_data(5 * num_weights_);
   backprop_cache_ = &this->DeclareCacheEntry(
       "backprop", backprop_data, &MultilayerPerceptron<T>::BackpropCacheNoOp);
+  // Wx_plus_b is num_weights_ matrices starting at std::vector index 0.
+  Wx_plus_b_cache_index_ = 0;
+  // The Xn[0] matrix is at backprop_cache_[num_weights], etc.
+  Xn_cache_index_ = num_weights_;
+  dloss_dXn_cache_index_ = 2 * num_weights_;
+  dloss_dWx_plus_b_cache_index_ = 3 * num_weights_;
+  dloss_dW_cache_index_ = 4 * num_weights_;
 }
 
 template <typename T>
@@ -216,11 +222,11 @@ T MultilayerPerceptron<T>::Backpropagation(
   auto& cache = backprop_cache_->get_mutable_cache_entry_value(context)
                     .template GetMutableValueOrThrow<std::vector<MatrixX<T>>>();
   // TODO(russt): Try to reduce the amount of scratch memory.
-  MatrixX<T>* Wx_plus_b = &cache[0];
-  MatrixX<T>* Xn = &cache[num_weights_];
-  MatrixX<T>* dloss_dXn = &cache[2 * num_weights_];
-  MatrixX<T>* dloss_dWx_plus_b = &cache[3 * num_weights_];
-  MatrixX<T>* dloss_dW = &cache[4 * num_weights_];
+  MatrixX<T>* Wx_plus_b = &cache[Wx_plus_b_cache_index_];
+  MatrixX<T>* Xn = &cache[Xn_cache_index_];
+  MatrixX<T>* dloss_dXn = &cache[dloss_dXn_cache_index_];
+  MatrixX<T>* dloss_dWx_plus_b = &cache[dloss_dWx_plus_b_cache_index_];
+  MatrixX<T>* dloss_dW = &cache[dloss_dW_cache_index_];
   // Forward pass:
   Wx_plus_b[0] = (GetWeights(context, 0) * X).colwise() + GetBiases(context, 0);
   Xn[0] = sigma_[0](Wx_plus_b[0]);
@@ -263,14 +269,43 @@ T MultilayerPerceptron<T>::BackpropagationMeanSquaredError(
   DRAKE_DEMAND(Y_desired.rows() == layers_[num_weights_]);
   DRAKE_DEMAND(Y_desired.cols() == X.cols());
   // tests to cover the Backpropagation method.
-  DRAKE_DEMAND(Y_desired.rows() == layers_[num_weights_] &&
-               Y_desired.cols() == X.cols());
+  DRAKE_DEMAND(Y_desired.rows() == layers_[num_weights_]);
+  DRAKE_DEMAND(Y_desired.cols() == X.cols());
   auto MSE_loss = [Y_desired](const Eigen::Ref<const MatrixX<T>>& Y,
                               EigenPtr<MatrixX<T>> dloss_dY) {
     *dloss_dY = 2.0 * (Y - Y_desired) / Y.cols();
     return (Y - Y_desired).squaredNorm() / Y.cols();
   };
   return Backpropagation(context, X, MSE_loss, dloss_dparams);
+}
+
+template <typename T>
+void MultilayerPerceptron<T>::BatchOutput(
+    const Context<T>& context, const Eigen::Ref<const MatrixX<T>>& X,
+    EigenPtr<MatrixX<T>> Y) const {
+  this->ValidateContext(context);
+  DRAKE_DEMAND(X.rows() == layers_[0]);
+  DRAKE_DEMAND(Y->rows() == layers_[num_weights_]);
+  DRAKE_DEMAND(Y->cols() == X.cols());
+  // Note: Should aim for zero dynamic allocations in here (except on the
+  // first calls and whenever X changes size).
+  auto& cache = backprop_cache_->get_mutable_cache_entry_value(context)
+                    .template GetMutableValueOrThrow<std::vector<MatrixX<T>>>();
+  // TODO(russt): Try to reduce the amount of scratch memory.
+  MatrixX<T>* Wx_plus_b = &cache[Wx_plus_b_cache_index_];
+  MatrixX<T>* Xn = &cache[Xn_cache_index_];
+  // Forward pass:
+  Wx_plus_b[0] = (GetWeights(context, 0) * X).colwise() + GetBiases(context, 0);
+  Xn[0] = sigma_[0](Wx_plus_b[0]);
+  for (int i = 1; i < num_weights_; ++i) {
+    Wx_plus_b[i] =
+        (GetWeights(context, i) * Xn[i - 1]).colwise() + GetBiases(context, i);
+    if (i == num_weights_ - 1) {
+      *Y = sigma_[i](Wx_plus_b[i]);
+    } else {
+      Xn[i] = sigma_[i](Wx_plus_b[i]);
+    }
+  }
 }
 
 template <typename T>

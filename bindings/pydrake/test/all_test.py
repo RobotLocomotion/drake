@@ -125,6 +125,8 @@ class TestAll(unittest.TestCase):
             "InverseKinematics",
             # - math
             "SpatialVelocity",
+            # - meshcat
+            "JointSliders",
             # - parsing
             "Parser",
             # - parsers
@@ -167,6 +169,8 @@ class TestAll(unittest.TestCase):
             # - sensors
             "Image",
             # visualization
+            # - meldis
+            "Meldis",
             # - plotting
             "plot_sublevelset_quadratic",
         )

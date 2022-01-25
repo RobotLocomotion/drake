@@ -9,7 +9,8 @@ def liblz4_repository(
         name,
         licenses = ["notice"],  # BSD-2-Clause
         modname = "liblz4",
-        pkg_config_paths = ["/usr/local/opt/lz4/lib/pkgconfig"],
+        pkg_config_paths = [],
+        homebrew_subdir = "opt/lz4/lib/pkgconfig",
         **kwargs):
     pkg_config_repository(
         name = name,

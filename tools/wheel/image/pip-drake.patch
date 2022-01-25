@@ -17,4 +17,4 @@ index 1608e49b1..d6b5d5e07 100644
 +LINUX_DBG_INTERPRETER_PATH = "/usr/local/bin/python"
 
  # Default value of interpreter_path used by the py_runtime in the default
- # Python toolchain registered on the @platforms//os:osx platform.
+ # Python toolchain registered on the @platforms//os:osx platform when

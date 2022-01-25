@@ -193,6 +193,42 @@ GTEST_TEST(IrisTest, BallInBoxNDims) {
   EXPECT_FALSE(region.PointInSet(query - VectorXd::Constant(N, 0.01)));
 }
 
+// A previous version of the IRIS algorithm used containment of the point on an
+// obstacle closest to the ellipse center to determine whether an additional
+// hyperplane should be added to the region. This tests a case where the closest
+// point on an obstacle is outside the region but a different part of the
+// obstacle is not. This caused the old approach to yield a region that
+// overlapped one of the obstacles.
+GTEST_TEST(IrisTest, ClosestPointFailure) {
+  Eigen::Vector3d radii(1.457, 1.2, 1.185);
+  Eigen::MatrixXd centers(2, 3);
+  // clang-format off
+  centers << -4.42, -3.89, 0.42,
+             -1.58, 1.79, -1.70;
+  // clang-format on
+  ConvexSets obstacles;
+  ConvexSets shrunk_obstacles;
+  for (int ii = 0; ii < radii.size(); ++ii) {
+    obstacles.emplace_back(
+        Hyperellipsoid::MakeHypersphere(radii[ii], centers.col(ii)));
+    shrunk_obstacles.emplace_back(
+        Hyperellipsoid::MakeHypersphere(0.99 * radii[ii], centers.col(ii)));
+  }
+
+  const HPolyhedron domain =
+      HPolyhedron::MakeBox(Vector2d::Constant(-10.), Vector2d::Constant(10.));
+
+  IrisOptions options;
+  options.require_sample_point_is_contained = true;
+
+  const Vector2d sample(-4.00, 0.25);
+  const HPolyhedron region = Iris(obstacles, sample, domain, options);
+
+  for (const auto& o : shrunk_obstacles) {
+    EXPECT_FALSE(o->IntersectsWith(region));
+  }
+}
+
 class SceneGraphTester : public ::testing::Test {
  protected:
   void SetUp() { source_id_ = scene_graph_.RegisterSource("test"); }

@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "third_party/com_github_finetjul_bender/vtkCapsuleSource.h"
+#include <vtkCapsuleSource.h>
 #include <vtkCellArray.h>
 #include <vtkFloatArray.h>
 #include <vtkInformation.h>
@@ -236,8 +236,6 @@ class DrakeCubeSource : public vtkPolyDataAlgorithm {
 }  // namespace
 
 vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkCapsule(const Capsule& capsule) {
-  using com_github_finetjul_bender::vtkCapsuleSource;
-
   vtkNew<vtkCapsuleSource> vtk_capsule;
   vtk_capsule->SetCylinderLength(capsule.length());
   vtk_capsule->SetRadius(capsule.radius());

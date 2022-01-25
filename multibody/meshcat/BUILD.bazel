@@ -1,0 +1,45 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "meshcat",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":joint_sliders",
+    ],
+)
+
+drake_cc_library(
+    name = "joint_sliders",
+    srcs = ["joint_sliders.cc"],
+    hdrs = ["joint_sliders.h"],
+    deps = [
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_googletest(
+    name = "joint_sliders_test",
+    data = [
+        ":test/universal_joint.sdf",
+        "//multibody:models",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":joint_sliders",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry/test_utilities:meshcat_environment",
+        "//multibody/parsing",
+    ],
+)
+
+add_lint_tests()

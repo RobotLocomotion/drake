@@ -29,6 +29,8 @@ PYBIND11_MODULE(lcm, m) {
     using Class = DrakeLcmInterface;
     constexpr auto& cls_doc = doc.DrakeLcmInterface;
     py::class_<Class>(m, "DrakeLcmInterface", cls_doc.doc)
+        .def("get_lcm_url", &DrakeLcmInterface::get_lcm_url,
+            cls_doc.get_lcm_url.doc)
         // N.B. We do not bind `Subscribe` as multi-threading from C++ may
         // wreak havoc on the Python GIL with a callback.
         .def(

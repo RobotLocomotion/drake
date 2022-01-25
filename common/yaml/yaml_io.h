@@ -28,8 +28,8 @@ examples.
 
 @returns the loaded user data.
 
-@tparam Serializable must implement a
-  @ref serialize_tips "Serialize" function and be default constructible. */
+@tparam Serializable must implement a @ref implementing_serialize "Serialize"
+  function and be default constructible. */
 template <typename Serializable>
 static Serializable LoadYamlFile(
     const std::string& filename,
@@ -55,8 +55,8 @@ examples.
 
 @returns the loaded user data.
 
-@tparam Serializable must implement a
-  @ref serialize_tips "Serialize" function and be default constructible. */
+@tparam Serializable must implement a @ref implementing_serialize "Serialize"
+  function and be default constructible. */
 template <typename Serializable>
 static Serializable LoadYamlString(
     const std::string& data,
@@ -81,8 +81,8 @@ only one entry, whose key is `child_name` and value is the serialized `data`.
 @param defaults (optional) If provided, then only data that differs from
   the given defaults will be serialized.
 
-@tparam Serializable must implement a
-  @ref serialize_tips "Serialize" function. */
+@tparam Serializable must implement a @ref implementing_serialize "Serialize"
+  function. */
 template <typename Serializable>
 void SaveYamlFile(
     const std::string& filename,
@@ -108,8 +108,8 @@ only one entry, whose key is `child_name` and value is the serialized `data`.
 
 @returns the YAML document as a string.
 
-@tparam Serializable must implement a
-  @ref serialize_tips "Serialize" function. */
+@tparam Serializable must implement a @ref implementing_serialize "Serialize"
+  function. */
 template <typename Serializable>
 std::string SaveYamlString(
     const Serializable& data,
