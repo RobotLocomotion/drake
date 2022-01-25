@@ -1995,7 +1995,18 @@ TEST_F(ProximityEngineHydroWithFallback,
   engine_.ComputeContactSurfacesWithFallback(
       HydroelasticContactRepresentation::kTriangle, poses_, &surfaces1,
       &points1);
+  // The arrangement (see MakeCollidingRing()) looks somewhat
+  // like this (R = rigid sphere, C = compliant sphere):
+  //
+  //      R  R
+  //    C      C
+  //    C      C
+  //      R  R
+  //
+  // Only two R-R (rigid-rigid) contacts are point contacts.
   const size_t num_point_contacts = 2;
+  // The remaining contacts are either R-C (rigid-compliant) or C-C
+  // (compliant-compliant) hydroelastic contact patches.
   const size_t num_patch_contacts = N_ - 2;
   ASSERT_EQ(surfaces1.size(), num_patch_contacts);
   ASSERT_EQ(points1.size(), num_point_contacts);

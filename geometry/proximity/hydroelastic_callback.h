@@ -138,9 +138,6 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
   }
 }
 
-// TODO(DamrongGuoy): Take care of exceptions to soft half spaces in a better
-//  way.
-
 /* Computes ContactSurface using the algorithm appropriate to the Shape types
  represented by the given `compliant` geometries.
  @pre None of the geometries are half spaces. */
