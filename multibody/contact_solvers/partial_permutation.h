@@ -13,17 +13,30 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-// TODO: make this work.
 // Represents a permutation p such that u[p(i)] = x[i].
 class PartialPermutation {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PartialPermutation);
 
-  
   PartialPermutation() = default;
 
+  // The permutation is provided as an array of ints with N =
+  // permutation.size(), this permutation maps integers in [0, N) to integers in
+  // [0, M), with M <= N. The permutation for the i-th integer in the domain [0,
+  // N) is defined by integer ip = permutation[i] in [0, M). The permutation is
+  // a full permutation when M = N and all integers in [0, M) are present in
+  // `permutation`. It is a "partial permutation" when M < N. An index i that is
+  // not permuted is indicated with a negative entry, i.e. permutation[i] < 0.
+  // For both partial and full permutations, all integers in [0, M) must be
+  // present or an exception is thrown.
+  //
+  // Example: permutation = {-1, 0, 2, 1, -1, 3}, which indicates that P(3) = 1
+  // and that P(0) is not defined or is not permuted (partial permutation).
+  // For this case domain_size() = 6 and permuted_domain_size() = 4. Notice that
+  // all integers in [0, 4) are present in the provided array `permutation`.
   explicit PartialPermutation(std::vector<int>&& permutation);
 
+  // TODO: write unit test for this constructor.
   PartialPermutation(int domain_size, std::vector<int>&& inverse_permutation);
 
   int domain_size() const { return permutation_.size(); }
@@ -46,9 +59,10 @@ class PartialPermutation {
   // PointerToPermutedVectorType must resolve to a pointer to a class of type
   // PermutedVectorType. Both VectorType and PermutedVectorType must implement:
   //  - VectorType::size().
-  //  - VectorType::operator[](int).  
+  //  - VectorType::operator[](int).
   template <class VectorType, class PointerToPermutedVectorType>
-  void Apply(const VectorType& x, PointerToPermutedVectorType x_permuted) const {
+  void Apply(const VectorType& x,
+             PointerToPermutedVectorType x_permuted) const {
     DRAKE_DEMAND(static_cast<int>(x.size()) == domain_size());
     DRAKE_DEMAND(x_permuted != nullptr);
     DRAKE_DEMAND(static_cast<int>(x_permuted->size()) ==
@@ -65,7 +79,7 @@ class PartialPermutation {
                     PointerToVectorType x) const {
     DRAKE_DEMAND(static_cast<int>(x_permuted.size()) == permuted_domain_size());
     DRAKE_DEMAND(x != nullptr);
-    DRAKE_DEMAND(static_cast<int>(x->size()) == domain_size());        
+    DRAKE_DEMAND(static_cast<int>(x->size()) == domain_size());
     for (int i_permuted = 0; i_permuted < permuted_domain_size();
          ++i_permuted) {
       const int i = inverse_permutation_[i_permuted];

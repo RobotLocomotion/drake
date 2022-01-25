@@ -26,7 +26,7 @@ PartialPermutation::PartialPermutation(int domain_size,
 
 PartialPermutation::PartialPermutation(std::vector<int>&& permutation)
     : permutation_(std::move(permutation)) {
-  const int from_size = permutation_.size();      
+  const int from_size = permutation_.size();
   // Determine size of the permuted domain.
   const int to_size =
       *std::max_element(permutation_.begin(), permutation_.end()) + 1;
@@ -41,7 +41,7 @@ PartialPermutation::PartialPermutation(std::vector<int>&& permutation)
 
   // Allocate inverse permutation and indicated values that are not present with
   // an invalid (-1) index.
-  inverse_permutation_.resize(to_size, -1);  
+  inverse_permutation_.resize(to_size, -1);
   // Fill in inverse permutation and check for valid permuted entries.
   for (int i = 0; i < from_size; ++i) {
     const int i_permuted = permutation_[i];
