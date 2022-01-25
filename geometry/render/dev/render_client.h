@@ -11,6 +11,13 @@ namespace drake {
 namespace geometry {
 namespace render {
 
+/** The type of image being rendered. */
+enum RenderImageType {
+  kColorRgba8U = 0,    ///< The color frame.
+  kLabel16I = 1,       ///< The label frame.
+  kDepthDepth32F = 2,  ///< The depth frame.
+};
+
 /* TODO(svenevs): link to the render-client specification document once we
  decide where in the documentation it will live. */
 /** The client which communicates with a render server. */
@@ -76,7 +83,8 @@ class RenderClient {
    \throws std::runtime_error
      If the file cannot be uploaded to the server successfully, or if the server
      does not respond with the same `sha256sum` of the uploaded file. */
-  virtual void UploadScene(ImageType image_type, const std::string& scene_path,
+  virtual void UploadScene(RenderImageType image_type,
+                           const std::string& scene_path,
                            const std::string& scene_sha256,
                            const std::optional<std::string>& mime_type) const;
 
@@ -120,7 +128,7 @@ class RenderClient {
      invalid parameters supplied to this method such as not including
      `min_depth` and/or `max_depth` when `image_type` is depth. */
   virtual std::string RetrieveRender(const RenderCameraCore& camera_core,
-                                     ImageType image_type,
+                                     RenderImageType image_type,
                                      const std::string& scene_path,
                                      const std::string& scene_sha256,
                                      double min_depth = -1.0,

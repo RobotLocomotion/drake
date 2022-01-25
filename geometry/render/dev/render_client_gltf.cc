@@ -68,6 +68,21 @@ void SetGltfCameraPerspective(vtkCamera* camera, const RenderCameraCore& core) {
   camera->SetViewAngle(fy);
 }
 
+// Convert the RenderEngineVtk internal::ImageType to a RenderImageType.
+// NOTE: if RenderImageType expands to have more image types, this logic will
+// have to be revisited (e.g., two kinds of depth images supported).
+RenderImageType InternalToRenderImageType(internal::ImageType image_type) {
+  if (image_type == internal::ImageType::kColor)
+    return RenderImageType::kColorRgba8U;
+  else if (image_type == internal::ImageType::kDepth)
+    return RenderImageType::kDepthDepth32F;
+  else if (image_type == internal::ImageType::kLabel)
+    return RenderImageType::kLabel16I;
+
+  throw std::runtime_error(fmt::format(
+      "RenderClientGltf: unspported internal ImageType of '{}'", image_type));
+}
+
 }  // namespace
 
 using drake::geometry::render::vtk_util::ConvertToVtkTransform;
@@ -141,20 +156,21 @@ void RenderClientGltf::DoRenderColorImage(const ColorRenderCamera& camera,
 
   // Update the VTK scene before exporting to glTF.
   UpdateWindow(camera.core(), camera.show_window(),
-               pipelines_[ImageType::kColor].get(), "Color Image");
-  PerformVtkUpdate(*pipelines_[ImageType::kColor]);
+               pipelines_[internal::ImageType::kColor].get(), "Color Image");
+  PerformVtkUpdate(*pipelines_[internal::ImageType::kColor]);
 
   // Export and render the glTF scene.
   SetGltfCameraPerspective(
-      pipelines_[ImageType::kColor]->renderer->GetActiveCamera(),
+      pipelines_[internal::ImageType::kColor]->renderer->GetActiveCamera(),
       camera.core());
-  const std::string scene_path = ExportScene(ImageType::kColor, color_frame_id);
+  const std::string scene_path =
+      ExportScene(internal::ImageType::kColor, color_frame_id);
   if (verbose()) {
     std::cout << "  Scene exported to: " << scene_path << '\n';
   }
 
   const std::string img_path =
-      UploadAndRender(camera.core(), ImageType::kColor, scene_path);
+      UploadAndRender(camera.core(), internal::ImageType::kColor, scene_path);
   if (verbose()) {
     std::cout << "  Server response image: " << img_path << '\n';
   }
@@ -175,22 +191,24 @@ void RenderClientGltf::DoRenderDepthImage(
   }
 
   // Update the VTK scene before exporting to glTF.
-  UpdateWindow(camera, pipelines_[ImageType::kDepth].get());
-  PerformVtkUpdate(*pipelines_[ImageType::kDepth]);
+  UpdateWindow(camera, pipelines_[internal::ImageType::kDepth].get());
+  PerformVtkUpdate(*pipelines_[internal::ImageType::kDepth]);
 
   // Export and render the glTF scene.
   SetGltfCameraPerspective(
-      pipelines_[ImageType::kDepth]->renderer->GetActiveCamera(),
+      pipelines_[internal::ImageType::kDepth]->renderer->GetActiveCamera(),
       camera.core());
-  const std::string scene_path = ExportScene(ImageType::kDepth, depth_frame_id);
+  const std::string scene_path =
+      ExportScene(internal::ImageType::kDepth, depth_frame_id);
   if (verbose()) {
     std::cout << "  Scene exported to: " << scene_path << '\n';
   }
 
   const double min_depth = camera.depth_range().min_depth();
   const double max_depth = camera.depth_range().max_depth();
-  const std::string img_path = UploadAndRender(
-      camera.core(), ImageType::kDepth, scene_path, min_depth, max_depth);
+  const std::string img_path =
+      UploadAndRender(camera.core(), internal::ImageType::kDepth, scene_path,
+                      min_depth, max_depth);
   if (verbose()) {
     std::cout << "  Server response image: " << img_path << '\n';
   }
@@ -212,20 +230,21 @@ void RenderClientGltf::DoRenderLabelImage(
 
   // Update the VTK scene before exporting to glTF.
   UpdateWindow(camera.core(), camera.show_window(),
-               pipelines_[ImageType::kLabel].get(), "Label Image");
-  PerformVtkUpdate(*pipelines_[ImageType::kLabel]);
+               pipelines_[internal::ImageType::kLabel].get(), "Label Image");
+  PerformVtkUpdate(*pipelines_[internal::ImageType::kLabel]);
 
   // Export and render the glTF scene.
   SetGltfCameraPerspective(
-      pipelines_[ImageType::kLabel]->renderer->GetActiveCamera(),
+      pipelines_[internal::ImageType::kLabel]->renderer->GetActiveCamera(),
       camera.core());
-  const std::string scene_path = ExportScene(ImageType::kLabel, label_frame_id);
+  const std::string scene_path =
+      ExportScene(internal::ImageType::kLabel, label_frame_id);
   if (verbose()) {
     std::cout << "  Scene exported to: " << scene_path << '\n';
   }
 
   const std::string img_path =
-      UploadAndRender(camera.core(), ImageType::kLabel, scene_path);
+      UploadAndRender(camera.core(), internal::ImageType::kLabel, scene_path);
   if (verbose()) {
     std::cout << "  Server response image: " << img_path << '\n';
   }
@@ -235,22 +254,22 @@ void RenderClientGltf::DoRenderLabelImage(
   ++label_frame_id;
 }
 
-std::string RenderClientGltf::ExportPathFor(ImageType image_type,
+std::string RenderClientGltf::ExportPathFor(internal::ImageType image_type,
                                             size_t frame_id) const {
   // Create e.g., {temp_directory()}/000000000000-color.gltf
   const drake::filesystem::path base{temp_directory()};
   const std::string frame{fmt::format("{:0>12}", frame_id)};
   std::string suffix;
-  if (image_type == ImageType::kColor)
+  if (image_type == internal::ImageType::kColor)
     suffix = "-color.gltf";
-  else if (image_type == ImageType::kDepth)
+  else if (image_type == internal::ImageType::kDepth)
     suffix = "-depth.gltf";
-  else  // image_type == ImageType::kLabel
+  else  // image_type == internal::ImageType::kLabel
     suffix = "-label.gltf";
   return base / (frame + suffix);
 }
 
-std::string RenderClientGltf::ExportScene(ImageType image_type,
+std::string RenderClientGltf::ExportScene(internal::ImageType image_type,
                                           size_t frame_id) const {
   vtkNew<vtkGLTFExporter> gltf_exporter;
   gltf_exporter->InlineDataOn();
@@ -262,19 +281,20 @@ std::string RenderClientGltf::ExportScene(ImageType image_type,
 }
 
 std::string RenderClientGltf::UploadAndRender(const RenderCameraCore& core,
-                                              ImageType image_type,
+                                              internal::ImageType image_type,
                                               const std::string& scene_path,
                                               double min_depth,
                                               double max_depth) const {
-  if (image_type == ImageType::kDepth)
+  if (image_type == internal::ImageType::kDepth)
     ValidDepthRangeOrThrow(min_depth, max_depth);
 
   const std::string scene_sha256 = ComputeSha256(scene_path);
   /* NOTE: for the mime type, the VTK glTF export produces base64 encoded data
    in a single .gltf file, this is "gltf+json" (not the binary format). */
-  UploadScene(image_type, scene_path, scene_sha256, "model/gltf+json");
-  return RetrieveRender(core, image_type, scene_path, scene_sha256, min_depth,
-                        max_depth);
+  auto render_image_type = InternalToRenderImageType(image_type);
+  UploadScene(render_image_type, scene_path, scene_sha256, "model/gltf+json");
+  return RetrieveRender(core, render_image_type, scene_path, scene_sha256,
+                        min_depth, max_depth);
 }
 
 }  // namespace render

@@ -406,17 +406,6 @@ class RenderEngine : public ShapeReifier {
   RenderLabel default_render_label_{};
 };
 
-/** Convenience enumeration for developer friendly code.
- Used in RenderEngineVtk and RenderClient.
- */
-enum ImageType {
-  // NOTE: this enumeration may *NOT* be changed (no additions or removals),
-  // RenderEngineVtk uses it as an index system to a data member.
-  kColor = 0,  ///< The color frame type.
-  kLabel = 1,  ///< The label frame type.
-  kDepth = 2,  ///< The depth frame type.
-};
-
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

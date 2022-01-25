@@ -67,19 +67,24 @@ size_t write_file_data(void* buffer, size_t size, size_t nmemb, void* userp) {
 
 // Fill out <input type="text" name="image_type"> for an already created curl
 // form with the specified image_type.
-void AddImageTypeFieldToForm(curl_mime* form, ImageType image_type) {
+void AddImageTypeFieldToForm(curl_mime* form, RenderImageType image_type) {
   DRAKE_DEMAND(form != nullptr);
   // NOTE: field gets freed with curl_easy_cleanup(curl).
   curl_mimepart* field{nullptr};
   field = curl_mime_addpart(form);
   curl_mime_name(field, "image_type");
   std::string image_type_str;
-  if (image_type == ImageType::kColor)
+  if (image_type == RenderImageType::kColorRgba8U) {
     image_type_str = "color";
-  else if (image_type == ImageType::kDepth)
+  } else if (image_type == RenderImageType::kDepthDepth32F) {
     image_type_str = "depth";
-  else  // image_type == ImageType::kLabel
+  } else if (image_type == RenderImageType::kLabel16I) {
     image_type_str = "label";
+  } else {
+    throw std::runtime_error(fmt::format(
+        "RenderClient: unsupported RenderImageType of {} requested.",
+        image_type));
+  }
   curl_mime_data(field, image_type_str.c_str(), CURL_ZERO_TERMINATED);
 }
 
@@ -178,7 +183,7 @@ RenderClient::~RenderClient() {
 }
 
 void RenderClient::UploadScene(
-    ImageType image_type, const std::string& scene_path,
+    RenderImageType image_type, const std::string& scene_path,
     const std::string& scene_sha256,
     const std::optional<std::string>& mime_type) const {
   CURL* curl{nullptr};
@@ -272,12 +277,12 @@ void RenderClient::UploadScene(
 }
 
 std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
-                                         ImageType image_type,
+                                         RenderImageType image_type,
                                          const std::string& scene_path,
                                          const std::string& scene_sha256,
                                          double min_depth,
                                          double max_depth) const {
-  if (image_type == ImageType::kDepth)
+  if (image_type == RenderImageType::kDepthDepth32F)
     ValidDepthRangeOrThrow(min_depth, max_depth);
 
   CURL* curl{nullptr};
@@ -376,7 +381,7 @@ std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
   // For depth images, an additional min_depth and max_depth are sent for the
   // depth range of the sensor (the range sensor's clipping range for valid
   // measuremeants, not the perspective clipping of the sensor's curvature).
-  if (image_type == ImageType::kDepth) {
+  if (image_type == RenderImageType::kDepthDepth32F) {
     // Fill out <input type="number" name="min_depth">
     const std::string min_depth_str = fmt::format("{}", min_depth);
     field = curl_mime_addpart(form);

@@ -76,6 +76,14 @@ class ShaderCallback : public vtkCommand {
   float z_far_{0.f};
 };
 
+// Not for external use, RenderEngineVtk uses this to index pipelines_ member.
+// Do not change, remove, or add any values.
+enum ImageType {
+  kColor = 0,
+  kLabel = 1,
+  kDepth = 2,
+};
+
 }  // namespace internal
 
 #endif  // !DRAKE_DOXYGEN_CXX

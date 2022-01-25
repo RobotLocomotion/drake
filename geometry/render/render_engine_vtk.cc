@@ -33,6 +33,7 @@ using Eigen::Vector2d;
 using Eigen::Vector4d;
 using math::RigidTransformd;
 using std::make_unique;
+using internal::ImageType;
 using systems::sensors::CameraInfo;
 using systems::sensors::ColorD;
 using systems::sensors::ColorI;
