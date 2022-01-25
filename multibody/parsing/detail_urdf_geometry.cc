@@ -290,17 +290,21 @@ std::unique_ptr<geometry::Shape> ParseGeometry(const XMLElement* node,
     return ParseCylinder(child_node);
   } else if (child_node = node->FirstChildElement("capsule");
              child_node) {
-    // TODO(SeanCurtis-TRI): This should *not* be <capsule>. It should be
-    //  <drake:capsule>. <capsule> is not in the spec
-    //  http://wiki.ros.org/urdf/XML/link. And even there has been a three-year
-    //  debate about adding it into ros (still unresolved):
-    //  https://github.com/ros/urdfdom_headers/pull/24
-    //  Given that this is a tag that is *not* in the spec, it requires the
-    //  namespace.
-    //  As a footnote, bullet does support it:
-    //  https://github.com/bulletphysics/bullet3/blob/master/data/capsule.urdf
-    //  and we have a number of legacy files that have <capsule> declarations
-    //  in them.
+    // Accepting the <capsule> is non-standard:
+    // http://wiki.ros.org/urdf/XML/link. And even there has been a long debate
+    // about adding it into ros (still unresolved):
+    // https://github.com/ros/urdfdom_headers/pull/24
+    // As a footnote, bullet does support it:
+    // https://github.com/bulletphysics/bullet3/blob/master/data/capsule.urdf
+    // and we have a number of legacy files that have <capsule> declarations
+    // in them.
+    // TODO(rpoyner-tri): If the spec treatment of <capsule> changes, this
+    // parse should be updated to match.
+    return ParseCapsule(child_node);
+  } else if (child_node = node->FirstChildElement("drake:capsule");
+             child_node) {
+    // We also accept <drake:capsule>, both as a hedge against changes in the
+    // standard, and for similarity with drake SDFormat extensions.
     return ParseCapsule(child_node);
   } else if (child_node = node->FirstChildElement("mesh"); child_node) {
     return ParseMesh(child_node, package_map, root_dir);
