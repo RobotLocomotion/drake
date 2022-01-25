@@ -56,7 +56,7 @@ static bool valid_input(const char* flagname, const std::string& f_path) {
   const drake::filesystem::path input_f{f_path};
   std::string failure{""};
   const std::string ext = input_f.extension();
-  if (!std::filesystem::exists(input_f)) {
+  if (!drake::filesystem::exists(input_f)) {
     failure = "file does not exist!";
   } else if (ext != ".gltf") {
     failure = "unrecognized file extension " + ext + "'.";
@@ -77,7 +77,7 @@ static bool valid_output(const char* flagname, const std::string& f_path) {
   const std::string ext = output_f.extension();
   if (f_path == output_default) {
     failure = "output path explicitly required.";
-  } else if (std::filesystem::exists(output_f)) {
+  } else if (drake::filesystem::exists(output_f)) {
     failure = "file already exists!";
   } else if (ext != ".png" && ext != ".tiff") {
     failure = "unrecognized file extension '" + ext +
