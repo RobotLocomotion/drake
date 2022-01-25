@@ -11,6 +11,9 @@ namespace drake {
 namespace geometry {
 namespace render {
 
+// TODO(svenevs): The RenderClientGltf class needs access to the private
+// rendering pipelines of RenderEngineVtk.  We should reconsider the need for
+// private friendship prior to promoting this class out of `dev`.
 /** A RenderClient that exports
  <a href="https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html">glTF
  </a> scenes to upload to a render server. */

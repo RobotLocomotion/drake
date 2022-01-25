@@ -153,7 +153,10 @@ class RenderEngineVtk : public RenderEngine,
   RenderEngineVtk(const RenderEngineVtk& other);
 
  private:
-  // The RenderClientGltf needs access to the rendering pipelines.
+  // TODO(svenevs): The RenderClientGltf class from the work-in-progress `dev`
+  // folder needs access to the rendering pipelines.  We should reconsider the
+  // need for private friendship prior to promoting the RenderClientGltf class
+  // out of `dev`.
   friend class RenderClientGltf;
 
   // @see RenderEngine::DoRegisterVisual().
