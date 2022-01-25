@@ -340,6 +340,17 @@ drake_cc_googletest(
     deps = [
         ":process_model_directives",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "model_directives_to_sdf_parity_test",
+    data = [
+        ":process_model_directives_test_models",
+    ],
+    deps = [
+        ":process_model_directives",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
