@@ -78,9 +78,11 @@ class MujocoParser {
 
     // Check that only one of the orientation variants are supplied:
     std::vector<bool> orientation_attrs = {
-        node->Attribute("quat"), node->Attribute("axisangle"),
-        node->Attribute("euler"), node->Attribute("xyaxes"),
-        node->Attribute("zaxis")};
+        static_cast<bool>(node->Attribute("quat")),
+        static_cast<bool>(node->Attribute("axisangle")),
+        static_cast<bool>(node->Attribute("euler")),
+        static_cast<bool>(node->Attribute("xyaxes")),
+        static_cast<bool>(node->Attribute("zaxis"))};
     if (std::count(orientation_attrs.begin(), orientation_attrs.end(), true) >
         1) {
       throw std::logic_error(fmt::format(
