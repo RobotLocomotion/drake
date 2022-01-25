@@ -327,7 +327,7 @@ GTEST_TEST(OsqpSolverTest, VariableScaling1) {
 }
 
 GTEST_TEST(OsqpSolverTest, VariableScaling2) {
-  // Quadractic cost and linear equality constraints.
+  // Quadratic and linear cost, together with bounding box constraints.
   double s = 100;
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
