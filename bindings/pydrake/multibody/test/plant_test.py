@@ -60,6 +60,8 @@ from pydrake.multibody.plant import (
     ContactModel,
     ContactResults_,
     ContactResultsToLcmSystem,
+    ContactResultsToMeshcatParams,
+    ContactResultsToMeshcat_,
     CoulombFriction_,
     ExternallyAppliedSpatialForce_,
     MultibodyPlant_,
@@ -84,6 +86,7 @@ from pydrake.geometry import (
     GeometryId,
     GeometrySet,
     HydroelasticContactRepresentation,
+    Meshcat,
     Role,
     PenetrationAsPointPair_,
     ProximityProperties,
@@ -2269,6 +2272,16 @@ class TestPlant(unittest.TestCase):
             dut.EvaluateGradE_N_W(index=0)
         dut.Equal(surface=dut)
         copy.copy(dut)
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_deprecated_contact_results_to_meshcat(self, T):
+        meshcat = Meshcat()
+        with catch_drake_warnings(expected_count=1):
+            params = ContactResultsToMeshcatParams()
+        self.assertIsNotNone(params)
+        with catch_drake_warnings(expected_count=1):
+            vis = ContactResultsToMeshcat_[T](meshcat=meshcat, params=params)
+        vis.Delete()
 
     def test_free_base_bodies(self):
         plant = MultibodyPlant_[float](time_step=0.01)
