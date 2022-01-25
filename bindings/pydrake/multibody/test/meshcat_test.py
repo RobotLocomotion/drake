@@ -34,6 +34,7 @@ class TestMeshcat(unittest.TestCase):
         parser = Parser(plant)
         parser.AddModelFromFile(acrobot_file)
         plant.Finalize()
+        diagram = builder.Build()
 
         # Construct a sliders system, using every available option.
         meshcat = Meshcat()
@@ -75,3 +76,6 @@ class TestMeshcat(unittest.TestCase):
 
         # The constructor has default values, in any case.
         dut = JointSliders(meshcat, plant)
+
+        # The Run function doesn't crash.
+        dut.Run(diagram=diagram, timeout=1.0)

@@ -9,6 +9,7 @@
 
 #include "drake/geometry/meshcat.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -91,6 +92,24 @@ class JointSliders final : public systems::LeafSystem<T> {
 
   /** Performs a Delete(), if one has not already been done. */
   ~JointSliders() final;
+
+  /** Publishes the given Diagram (typically, to cause it to be visualized)
+  whenever our sliders' values change.  Blocks until the user clicks a "Stop"
+  button in the MeshCat control panel, or if the timeout limit is reached.
+
+  @param timeout (Optional) In the absence of a button click, the duration (in
+  seconds) to wait before returning. If the button is clicked, this function
+  will return promptly, without waiting for the timeout. When no timeout is
+  given, this function will block indefinitely.
+
+  @pre `diagram` must be a top-level (i.e., "root") diagram.
+  @pre `diagram` must contain this JointSliders system.
+  @pre `diagarm` must contain the `plant` that was passed into this
+  JointSliders system's constructor.
+  */
+  void Run(
+      const systems::Diagram<T>& diagram,
+      std::optional<double> timeout = std::nullopt) const;
 
  private:
   void CalcOutput(const systems::Context<T>&, systems::BasicVector<T>*) const;

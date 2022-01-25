@@ -23,6 +23,8 @@ drake_cc_library(
     srcs = ["joint_sliders.cc"],
     hdrs = ["joint_sliders.h"],
     deps = [
+        "//common:scope_exit",
+        "//geometry:meshcat",
         "//multibody/plant",
     ],
 )
@@ -37,6 +39,7 @@ drake_cc_googletest(
     deps = [
         ":joint_sliders",
         "//common/test_utilities:expect_throws_message",
+        "//geometry:meshcat_visualizer",
         "//geometry/test_utilities:meshcat_environment",
         "//multibody/parsing",
     ],
