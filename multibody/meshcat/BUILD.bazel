@@ -14,7 +14,46 @@ drake_cc_package_library(
     name = "meshcat",
     visibility = ["//visibility:public"],
     deps = [
+        ":contact_visualizer",
+        ":contact_visualizer_params",
         ":joint_sliders",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_visualizer",
+    srcs = ["contact_visualizer.cc"],
+    hdrs = ["contact_visualizer.h"],
+    deps = [
+        ":contact_visualizer_params",
+        "//common:essential",
+        "//geometry:meshcat",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//systems/framework:context",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_visualizer_test",
+    data = [
+        "//examples/manipulation_station:models",
+    ],
+    deps = [
+        ":contact_visualizer",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_visualizer_params",
+    hdrs = ["contact_visualizer_params.h"],
+    deps = [
+        "//geometry:rgba",
     ],
 )
 
