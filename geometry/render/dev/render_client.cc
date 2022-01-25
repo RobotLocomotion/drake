@@ -90,16 +90,16 @@ void AddImageTypeFieldToForm(curl_mime* form, RenderImageType image_type) {
 
 /** Verify the loaded image has the correct dimensions.
 
- \param expected_width
+ @param expected_width
    The expected width of the loaded image.
- \param expected_height
+ @param expected_height
    The expected height of the loaded image.
- \param image_exporter
+ @param image_exporter
    The already-loaded vtk image exporter.
- \param path
+ @param path
    The filename of the path that image_exporter has data from.  Used to populate
    the exception message.
- \throws std::runtime_error
+ @throws std::runtime_error
    If the expected_width or expected_height are not the same as image_exporter.
  */
 void VerifyImportedImageDimensions(int expected_width, int expected_height,

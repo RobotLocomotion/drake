@@ -19,7 +19,7 @@ namespace render {
  </a> scenes to upload to a render server. */
 class RenderClientGltf : public RenderEngineVtk, public RenderClient {
  public:
-  /** \name Does not allow copy, move, or assignment  */
+  /** @name Does not allow copy, move, or assignment  */
   //@{
 #ifdef DRAKE_DOXYGEN_CXX
   // Note: the copy constructor operator is actually protected to serve as the
@@ -33,7 +33,7 @@ class RenderClientGltf : public RenderEngineVtk, public RenderClient {
 
   /** Constructs the render engine from the given `parameters`.  By default the
    %RenderClientGltf will communicate with a local server.
-   \sa RenderClientGltfParams */
+   @sa RenderClientGltfParams */
   RenderClientGltf(
       const RenderClientGltfParams& parameters = RenderClientGltfParams());
 
@@ -45,7 +45,7 @@ class RenderClientGltf : public RenderEngineVtk, public RenderClient {
   RenderClientGltf(const RenderClientGltf& other);
 
  private:
-  // \see RenderEngine::DoClone().
+  // @see RenderEngine::DoClone().
   std::unique_ptr<RenderEngine> DoClone() const override;
 
   // @see RenderEngine::DoRenderColorImage().
