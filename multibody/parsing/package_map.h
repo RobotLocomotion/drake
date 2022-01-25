@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 
 namespace drake {
 namespace multibody {
@@ -100,6 +101,8 @@ class PackageMap final {
   ///
   /// @param[in] model_file The model file whose directory is the start of the
   /// search for `package.xml` files. This file must be an SDF or URDF file.
+  DRAKE_DEPRECATED("2022-05-01",
+      "This function is a no-op; you may remove any calls to it.")
   void PopulateUpstreamToDrake(const std::string& model_file);
 
   friend std::ostream& operator<<(std::ostream& out,

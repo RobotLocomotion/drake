@@ -144,7 +144,6 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
       "drake/multibody/parsing/test/"
       "links_with_visuals_and_collisions.sdf");
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
 
   ModelInstanceIndex instance1 =
       AddModelFromSdfFile(full_name, "instance1", package_map, &plant);
@@ -652,7 +651,6 @@ GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
       "drake/multibody/parsing/test/sdf_parser_test/"
       "negative_damping_joint.sdf");
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(sdf_file_path);
   MultibodyPlant<double> plant(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddModelFromSdfFile(sdf_file_path, "", package_map, &plant),
@@ -738,7 +736,6 @@ GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
       "drake/multibody/parsing/test/"
       "links_with_visuals_and_collisions.sdf");
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
 
   int num_visuals_explicit{};
   {
@@ -770,7 +767,6 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
       "drake/multibody/parsing/test/sdf_parser_test/"
       "joint_parsing_test.sdf");
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
 
   // Read in the SDF file.
   const std::vector<ModelInstanceIndex> instances =
@@ -927,7 +923,6 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointActuatorParsingTest) {
       "drake/multibody/parsing/test/sdf_parser_test/"
       "joint_actuator_parsing_test.sdf");
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
 
   // Read in the SDF file.
   AddModelFromSdfFile(full_name, "", package_map, &plant, nullptr);
@@ -962,7 +957,6 @@ GTEST_TEST(MultibodyPlantSdfParserTest, RevoluteSpringParsingTest) {
       "drake/multibody/parsing/test/sdf_parser_test/"
       "revolute_spring_parsing_test.sdf");
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
 
   // Reads in the SDF file.
   AddModelFromSdfFile(full_name, "", package_map, &plant, nullptr);
@@ -1225,7 +1219,6 @@ template <typename ShapeType>
 void TestForParsedGeometry(const char* sdf_name, geometry::Role role) {
   const std::string full_name = FindResourceOrThrow(sdf_name);
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
   MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
@@ -1474,7 +1467,6 @@ GTEST_TEST(SdfParser, LoadDirectlyNestedModelsInWorld) {
   ASSERT_EQ(plant.num_joints(), 0);
 
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
   AddModelsFromSdfFile(full_name, package_map, &plant);
   plant.Finalize();
 
@@ -1533,7 +1525,6 @@ GTEST_TEST(SdfParser, LoadDirectlyNestedModelsInModel) {
   ASSERT_EQ(plant.num_joints(), 0);
 
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
   AddModelsFromSdfFile(full_name, package_map, &plant);
   plant.Finalize();
 
@@ -1961,7 +1952,6 @@ GTEST_TEST(SdfParser, FramesAsJointParentOrChild) {
   MultibodyPlant<double> plant(0.0);
 
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
   AddModelsFromSdfFile(full_name, package_map, &plant);
   ASSERT_TRUE(plant.HasModelInstanceNamed("parent_model"));
 
@@ -2016,7 +2006,9 @@ GTEST_TEST(SdfParser, InterfaceAPI) {
       "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
       "top.sdf");
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(sdf_file_path);
+  package_map.AddPackageXml(FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
+      "package.xml"));
   MultibodyPlant<double> plant(0.0);
 
   DRAKE_ASSERT_NO_THROW(AddModelFromSdfFile(sdf_file_path, "", package_map,
@@ -2123,7 +2115,6 @@ GTEST_TEST(SdfParser, CollisionFilterGroupParsingTest) {
   MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_sdf_filename);
 
   // Read in the SDF file.
   AddModelFromSdfFile(full_sdf_filename, "", package_map, &plant, &scene_graph);

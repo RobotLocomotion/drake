@@ -1,6 +1,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/parsing/package_map.h"
@@ -27,7 +28,8 @@ PYBIND11_MODULE(parsing, m) {
   {
     using Class = PackageMap;
     constexpr auto& cls_doc = doc.PackageMap;
-    py::class_<Class>(m, "PackageMap", cls_doc.doc)
+    py::class_<Class> cls(m, "PackageMap", cls_doc.doc);
+    cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("Add", &Class::Add, py::arg("package_name"),
             py::arg("package_path"), cls_doc.Add.doc)
@@ -48,9 +50,14 @@ PYBIND11_MODULE(parsing, m) {
         .def("PopulateFromEnvironment", &Class::PopulateFromEnvironment,
             py::arg("environment_variable"),
             cls_doc.PopulateFromEnvironment.doc)
-        .def("PopulateUpstreamToDrake", &Class::PopulateUpstreamToDrake,
-            py::arg("model_file"), cls_doc.PopulateUpstreamToDrake.doc)
         .def_static("MakeEmpty", &Class::MakeEmpty, cls_doc.MakeEmpty.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("PopulateUpstreamToDrake",
+        WrapDeprecated(cls_doc.PopulateUpstreamToDrake.doc_deprecated,
+            &Class::PopulateUpstreamToDrake),
+        py::arg("model_file"), cls_doc.PopulateUpstreamToDrake.doc_deprecated);
+#pragma GCC diagnostic pop
   }
 
   // Parser
