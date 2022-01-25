@@ -129,8 +129,8 @@ void RenderClientGltf::UpdateViewpoint(const math::RigidTransformd& X_WC) {
   }
 }
 
-void RenderClientGltf::ExportColorImage(const ColorRenderCamera& camera,
-                                        ImageRgba8U* color_image_out) const {
+void RenderClientGltf::DoRenderColorImage(const ColorRenderCamera& camera,
+                                          ImageRgba8U* color_image_out) const {
   // TODO(svenevs): good thread-safe location for tracking color frame id?
   static size_t color_frame_id{0};
 
@@ -138,6 +138,11 @@ void RenderClientGltf::ExportColorImage(const ColorRenderCamera& camera,
   if (verbose()) {
     std::cout << "RenderClientGltf color frame: " << color_frame_id << '\n';
   }
+
+  // Update the VTK scene before exporting to glTF.
+  UpdateWindow(camera.core(), camera.show_window(),
+               pipelines_[ImageType::kColor].get(), "Color Image");
+  PerformVtkUpdate(*pipelines_[ImageType::kColor]);
 
   // Export and render the glTF scene.
   SetGltfCameraPerspective(
@@ -159,8 +164,8 @@ void RenderClientGltf::ExportColorImage(const ColorRenderCamera& camera,
   ++color_frame_id;
 }
 
-void RenderClientGltf::ExportDepthImage(const DepthRenderCamera& camera,
-                                        ImageDepth32F* depth_image_out) const {
+void RenderClientGltf::DoRenderDepthImage(
+    const DepthRenderCamera& camera, ImageDepth32F* depth_image_out) const {
   // TODO(svenevs): good thread-safe location for tracking depth frame id?
   static size_t depth_frame_id{0};
 
@@ -168,6 +173,10 @@ void RenderClientGltf::ExportDepthImage(const DepthRenderCamera& camera,
   if (verbose()) {
     std::cout << "RenderClientGltf depth frame: " << depth_frame_id << '\n';
   }
+
+  // Update the VTK scene before exporting to glTF.
+  UpdateWindow(camera, pipelines_[ImageType::kDepth].get());
+  PerformVtkUpdate(*pipelines_[ImageType::kDepth]);
 
   // Export and render the glTF scene.
   SetGltfCameraPerspective(
@@ -191,8 +200,8 @@ void RenderClientGltf::ExportDepthImage(const DepthRenderCamera& camera,
   ++depth_frame_id;
 }
 
-void RenderClientGltf::ExportLabelImage(const ColorRenderCamera& camera,
-                                        ImageLabel16I* label_image_out) const {
+void RenderClientGltf::DoRenderLabelImage(
+    const ColorRenderCamera& camera, ImageLabel16I* label_image_out) const {
   // TODO(svenevs): good thread-safe location for tracking label frame id?
   static size_t label_frame_id{0};
 
@@ -200,6 +209,11 @@ void RenderClientGltf::ExportLabelImage(const ColorRenderCamera& camera,
   if (verbose()) {
     std::cout << "RenderClientGltf label frame: " << label_frame_id << '\n';
   }
+
+  // Update the VTK scene before exporting to glTF.
+  UpdateWindow(camera.core(), camera.show_window(),
+               pipelines_[ImageType::kLabel].get(), "Label Image");
+  PerformVtkUpdate(*pipelines_[ImageType::kLabel]);
 
   // Export and render the glTF scene.
   SetGltfCameraPerspective(

@@ -168,30 +168,15 @@ class RenderEngineVtk : public RenderEngine,
       const ColorRenderCamera& camera,
       systems::sensors::ImageRgba8U* color_image_out) const override;
 
-  // Helper method for DoRenderColorImage, copy VTK buffers to drake buffers.
-  virtual void ExportColorImage(
-      const ColorRenderCamera& camera,
-      systems::sensors::ImageRgba8U* color_image_out) const;
-
   // @see RenderEngine::DoRenderDepthImage().
   void DoRenderDepthImage(
       const DepthRenderCamera& render_camera,
       systems::sensors::ImageDepth32F* depth_image_out) const override;
 
-  // Helper method for DoRenderDepthImage, copy VTK buffers to drake buffers.
-  virtual void ExportDepthImage(
-      const DepthRenderCamera& camera,
-      systems::sensors::ImageDepth32F* depth_image_out) const;
-
   // @see RenderEngine::DoRenderLabelImage().
   void DoRenderLabelImage(
       const ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const override;
-
-  // Helper method for DoRenderLabelImage, copy VTK buffers to drake buffers.
-  virtual void ExportLabelImage(
-      const ColorRenderCamera& camera,
-      systems::sensors::ImageLabel16I* label_image_out) const;
 
   // Initializes the VTK pipelines.
   void InitializePipelines();

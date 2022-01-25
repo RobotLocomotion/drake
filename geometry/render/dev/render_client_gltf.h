@@ -45,24 +45,18 @@ class RenderClientGltf : public RenderEngineVtk, public RenderClient {
   // \see RenderEngine::DoClone().
   std::unique_ptr<RenderEngine> DoClone() const override;
 
-  /* Exports a glTF scene for the color scene, uploads it to the server,
-   retrieves the rendering, and stores the final output in `color_image_out`.
-   \see RenderEngineVtk::ExportColorImage. */
-  void ExportColorImage(
+  // @see RenderEngine::DoRenderColorImage().
+  void DoRenderColorImage(
       const ColorRenderCamera& camera,
       systems::sensors::ImageRgba8U* color_image_out) const override;
 
-  /* Exports a glTF scene for the depth scene, uploads it to the server,
-   retrieves the rendering, and stores the final output in `depth_image_out`.
-   \see RenderEngineVtk::ExportDepthImage. */
-  void ExportDepthImage(
+  // @see RenderEngine::DoRenderDepthImage().
+  void DoRenderDepthImage(
       const DepthRenderCamera& render_camera,
       systems::sensors::ImageDepth32F* depth_image_out) const override;
 
-  /* Exports a glTF scene for the label scene, uploads it to the server,
-   retrieves the rendering, and stores the final output in `label_image_out`.
-   \see RenderEngineVtk::ExportLabelImage. */
-  void ExportLabelImage(
+  // @see RenderEngine::DoRenderLabelImage().
+  void DoRenderLabelImage(
       const ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const override;
 
