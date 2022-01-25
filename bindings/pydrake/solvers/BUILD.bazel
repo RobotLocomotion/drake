@@ -72,6 +72,21 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "augmented_lagrangian_py",
+    cc_deps = [
+        "//bindings/pydrake:autodiff_types_pybind",
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake:symbolic_types_pybind",
+    ],
+    cc_srcs = ["augmented_lagrangian_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":mathematicalprogram_py",
+        "//bindings/pydrake:autodiffutils_py",
+    ],
+)
+
+drake_pybind_library(
     name = "branch_and_bound_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
@@ -286,6 +301,7 @@ drake_pybind_library(
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
+    ":augmented_lagrangian_py",
     ":branch_and_bound_py",
     ":clp_py",
     ":csdp_py",
@@ -326,6 +342,14 @@ install(
     targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
+)
+
+drake_py_unittest(
+    name = "augmented_lagrangian_test",
+    deps = [
+        ":augmented_lagrangian_py",
+        "//bindings/pydrake:autodiffutils_py",
+    ],
 )
 
 drake_py_unittest(
