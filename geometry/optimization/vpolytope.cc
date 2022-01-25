@@ -134,6 +134,25 @@ VPolytope VPolytope::MakeUnitBox(int dim) {
   return MakeBox(VectorXd::Constant(dim, -1.0), VectorXd::Constant(dim, 1.0));
 }
 
+double VPolytope::CalcVolume() const {
+  orgQhull::Qhull qhull;
+  try {
+    qhull.runQhull("", ambient_dimension_, vertices_.cols(), vertices_.data(),
+                   "");
+  } catch (const orgQhull::QhullError& e) {
+    if (e.errorCode() == qh_ERRsingular) {
+      // The convex hull is singular. It has 0 volume.
+      return 0;
+    }
+  }
+  if (qhull.qhullStatus() != 0) {
+    throw std::runtime_error(
+        fmt::format("Qhull terminated with status {} and  message:\n{}",
+                    qhull.qhullStatus(), qhull.qhullMessage()));
+  }
+  return qhull.volume();
+}
+
 bool VPolytope::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                              double tol) const {
   const int n = ambient_dimension();

@@ -118,6 +118,7 @@ class TestGeometryOptimization(unittest.TestCase):
         v_box = mut.VPolytope.MakeBox(
             lb=[-1, -1, -1], ub=[1, 1, 1])
         self.assertTrue(v_box.PointInSet([0, 0, 0]))
+        self.assertAlmostEqual(v_box.CalcVolume(), 8, 1E-10)
         v_unit_box = mut.VPolytope.MakeUnitBox(dim=3)
         self.assertTrue(v_unit_box.PointInSet([0, 0, 0]))
         v_from_h = mut.VPolytope(H=mut.HPolyhedron.MakeUnitBox(dim=3))

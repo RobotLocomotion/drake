@@ -66,6 +66,12 @@ class VPolytope final : public ConvexSet {
   This is an axis-aligned box, centered at the origin, with edge length 2. */
   static VPolytope MakeUnitBox(int dim);
 
+  /**
+   * Computes the volume of this V-Polytope.
+   * @note this function calls qhull to compute the volume.
+   */
+  [[nodiscard]] double CalcVolume() const;
+
  private:
   bool DoIsBounded() const { return true; }
 
