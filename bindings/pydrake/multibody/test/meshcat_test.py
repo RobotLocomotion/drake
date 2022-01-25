@@ -75,3 +75,8 @@ class TestMeshcat(unittest.TestCase):
 
         # The constructor has default values, in any case.
         dut = JointSliders(meshcat, plant)
+
+        # The Run function doesn't crash.
+        builder.AddSystem(dut)
+        diagram = builder.Build()
+        dut.Run(diagram=diagram, timeout=1.0)

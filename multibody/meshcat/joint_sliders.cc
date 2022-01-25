@@ -1,10 +1,13 @@
 #include "drake/multibody/meshcat/joint_sliders.h"
 
+#include <chrono>
+#include <thread>
 #include <unordered_set>
 #include <utility>
 
 #include <fmt/format.h>
 
+#include "drake/common/scope_exit.h"
 #include "drake/common/unused.h"
 
 namespace {
@@ -20,6 +23,7 @@ namespace meshcat {
 using Eigen::VectorXd;
 using systems::BasicVector;
 using systems::Context;
+using systems::Diagram;
 
 namespace {
 
@@ -212,6 +216,59 @@ void JointSliders<T>::CalcOutput(
       // call to Delete, we might race and ask for a deleted slider value.
       (*output)[position_index] = meshcat_->GetSliderValue(slider_name);
     }
+  }
+}
+
+template <typename T>
+void JointSliders<T>::Run(
+    const Diagram<T>& diagram,
+    std::optional<double> timeout) const {
+  // Make a context and create reference shortcuts to some pieces of it.
+  // TODO(jwnimmer-tri) If the user has forgotten to add the plant or sliders
+  // to the diagram, our error message here is awful. Ideally, we should be
+  // asking the diagram if the systems have been added already, but as of
+  // when this code was written, there was no function available to ask that
+  // question.
+  std::unique_ptr<Context<T>> root_context = diagram.CreateDefaultContext();
+  const auto& diagram_context = *root_context;
+  const auto& sliders_context = this->GetMyContextFromRoot(*root_context);
+  auto& plant_context = plant_->GetMyMutableContextFromRoot(&*root_context);
+
+  // Add the Stop button.
+  constexpr char kButtonName[] = "Stop JointSliders";
+  log()->info("Press the '{}' button in Meshcat to continue.", kButtonName);
+  meshcat_->AddButton(kButtonName);
+  ScopeExit guard([this, kButtonName]() {
+    meshcat_->DeleteButton(kButtonName);
+  });
+
+  // Grab the current time, to implement the timout.
+  using Clock = std::chrono::steady_clock;
+  using Duration = std::chrono::duration<double>;
+  const auto start_time = Clock::now();
+
+  // Loop until the button is clicked, or the timeout (when given) is reached.
+  diagram.Publish(diagram_context);
+  while (meshcat_->GetButtonClicks(kButtonName) < 1) {
+    if (timeout.has_value()) {
+      const auto elapsed = Duration(Clock::now() - start_time).count();
+      log()->error("elapsed = {}", elapsed);
+      if (elapsed >= timeout.value()) {
+        break;
+      }
+    }
+
+    // If the sliders have not changed, avoid invalidating the context.
+    const auto& old_positions = plant_->GetPositions(plant_context);
+    const auto& new_positions = this->get_output_port().Eval(sliders_context);
+    if (new_positions == old_positions) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      continue;
+    }
+
+    // Publish the new positions.
+    plant_->SetPositions(&plant_context, new_positions);
+    diagram.Publish(diagram_context);
   }
 }
 
