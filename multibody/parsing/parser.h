@@ -12,7 +12,8 @@ namespace drake {
 namespace multibody {
 
 /// Parses SDF and URDF input files into a MultibodyPlant and (optionally) a
-/// SceneGraph.
+/// SceneGraph. For documentation of Drake-specific extensions and limitations,
+/// see @ref multibody_parsing.
 class Parser final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Parser)
