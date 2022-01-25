@@ -4,6 +4,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -16,14 +17,17 @@ namespace {
 
 using Eigen::Vector2d;
 using geometry::Meshcat;
+using geometry::MeshcatVisualizer;
+using geometry::SceneGraph;
 
 class JointSlidersTest : public ::testing::Test {
  public:
   JointSlidersTest()
       : meshcat_{geometry::GetTestEnvironmentMeshcat()},
         builder_{},
-        plant_{static_cast<MultibodyPlant<double>&>(
-            AddMultibodyPlantSceneGraph(&builder_, 0.0))} {}
+        plant_and_scene_graph_{AddMultibodyPlantSceneGraph(&builder_, 0.0)},
+        plant_{plant_and_scene_graph_.plant},
+        scene_graph_{plant_and_scene_graph_.scene_graph} {}
 
   void Add(const std::string& resource_path,
            const std::string& model_name = {}) {
@@ -42,7 +46,9 @@ class JointSlidersTest : public ::testing::Test {
  protected:
   std::shared_ptr<Meshcat> meshcat_;
   systems::DiagramBuilder<double> builder_;
+  AddMultibodyPlantSceneGraphResult<double> plant_and_scene_graph_;
   MultibodyPlant<double>& plant_;
+  SceneGraph<double>& scene_graph_;
 };
 
 // Test the narrowest constructor, where all optionals are null.
@@ -260,6 +266,35 @@ TEST_F(JointSlidersTest, Destructor) {
   EXPECT_THROW(meshcat_->GetSliderValue(kAcrobotJoint1), std::exception);
 }
 
+// Tests the "Run" sugar function.
+TEST_F(JointSlidersTest, Run) {
+  // Add the acrobot visualizer and sliders.
+  AddAcrobot();
+  MeshcatVisualizer<double>::AddToBuilder(&builder_, scene_graph_, meshcat_);
+  auto* dut = builder_.AddSystem<JointSliders<double>>(meshcat_, &plant_);
+  auto diagram = builder_.Build();
+
+  // Run for a while.
+  const double timeout = 1.0;
+  dut->Run(*diagram, timeout);
+
+  // Obtain the current pose of one shape.
+  const std::string geometry_path = "visualizer/acrobot/Link1";
+  const std::string original = meshcat_->GetPackedTransform(geometry_path);
+  ASSERT_FALSE(original.empty());
+
+  // Set a non-default slider position.
+  meshcat_->SetSliderValue(kAcrobotJoint1, 0.25);
+
+  // Run for a while.
+  dut->Run(*diagram, timeout);
+
+  // Check that the slider's transform had any effect, i.e., that the
+  // MeshcatVisualizer::Publish was called.
+  const std::string updated = meshcat_->GetPackedTransform(geometry_path);
+  ASSERT_FALSE(updated.empty());
+  EXPECT_NE(updated, original);
+}
 
 }  // namespace
 }  // namespace meshcat
