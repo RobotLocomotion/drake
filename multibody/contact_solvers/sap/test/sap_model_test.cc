@@ -1,4 +1,4 @@
-#include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
+#include "drake/multibody/contact_solvers/sap/sap_model.h"
 
 #include <iostream>
 
@@ -6,6 +6,8 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
+
 #define PRINT_VAR(a) std::cout << #a ": " << a << std::endl;
 #define PRINT_VARn(a) std::cout << #a ":\n" << a << std::endl;
 
@@ -67,8 +69,11 @@ GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
   }
   const int num_velocities = 10;
   VectorXd v_star = VectorXd::LinSpaced(num_velocities, 1.0, 10.0);
-  
-  SapContactProblem<double> problem(time_step, std::move(A), std::move(v_star));
+
+  // N.B. We create copies of A and v_star so that when moved in the constructor
+  // arguments the original objects remain valid in this scope.
+  SapContactProblem<double> problem(time_step, std::vector<MatrixXd>(A),
+                                    VectorXd(v_star));
   EXPECT_EQ(problem.num_cliques(), 4);
   EXPECT_EQ(problem.num_constraints(), 0);
   EXPECT_EQ(problem.num_velocities(), num_velocities);
@@ -114,7 +119,42 @@ GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
   PRINT_VAR(problem.num_constraints());
   PRINT_VAR(problem.num_constrained_dofs());            
   EXPECT_EQ(problem.num_constraints(), 5);
-  EXPECT_EQ(problem.num_constrained_dofs(), 15);  
+  EXPECT_EQ(problem.num_constrained_dofs(), 15);
+
+  const SapModel<double> model(&problem);
+  EXPECT_EQ(model.num_cliques(), 4);
+  EXPECT_EQ(model.num_participating_cliques(), 3);
+  EXPECT_EQ(model.num_velocities(), num_velocities);
+  EXPECT_EQ(model.num_constraints(), 5);
+  EXPECT_EQ(model.num_participating_velocities(), 6);
+  EXPECT_EQ(model.num_impulses(), 15);
+
+  PRINT_VAR(model.num_cliques());
+  PRINT_VAR(model.num_participating_cliques());
+
+  for (const auto& Ac : model.dynamics_matrix()) {
+    PRINT_VARn(Ac);
+  }
+
+  PRINT_VAR(model.num_participating_cliques());
+
+  std::vector<MatrixXd> A_permuted_expected;
+  A_permuted_expected.push_back(A[0]);
+  A_permuted_expected.push_back(A[1]);
+  A_permuted_expected.push_back(A[2]);
+
+  for (const auto& Ac : A_permuted_expected) {
+    PRINT_VARn(Ac);
+  }
+
+  EXPECT_EQ(model.dynamics_matrix(), A_permuted_expected);
+
+  PRINT_VAR(model.num_cliques());
+  PRINT_VAR(model.num_participating_cliques());
+  PRINT_VAR(model.num_velocities());
+  PRINT_VAR(model.num_constraints());
+  PRINT_VAR(model.num_participating_velocities());
+  PRINT_VAR(model.num_impulses());
 
 #if 0
   // Unit test MakeGraph().

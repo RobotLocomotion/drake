@@ -1,5 +1,9 @@
 #include "drake/multibody/contact_solvers/sap/sap_model.h"
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a ": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a ":\n" << a << std::endl;
+
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
@@ -103,8 +107,11 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
   // scaling inv_sqrt_A.
   const int num_participating_cliques =
       cliques_permutation_.permuted_domain_size();
-  A_.resize(num_participating_cliques);
-  cliques_permutation_.Apply(sap_problem().dynamics_matrix(), &A_);  
+  A_.resize(num_participating_cliques);  
+  cliques_permutation_.Apply(sap_problem().dynamics_matrix(), &A_);
+  for (const auto& Ac : A_) {
+    PRINT_VARn(Ac);
+  }
 
   // Compute inv_sqrt_A_.
   const int nv_participating = velocities_permutation_.permuted_domain_size();
@@ -167,6 +174,16 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
 }
 
 template <typename T>
+int SapModel<T>::num_cliques() const {
+  return cliques_permutation_.domain_size();
+}
+
+template <typename T>
+int SapModel<T>::num_participating_cliques() const {
+  return cliques_permutation_.permuted_domain_size();
+}
+
+template <typename T>
 int SapModel<T>::num_velocities() const {
   return sap_problem().num_velocities();
 }
@@ -184,6 +201,11 @@ int SapModel<T>::num_constraints() const {
 template <typename T>
 int SapModel<T>::num_impulses() const {
   return sap_problem().num_constrained_dofs();
+}
+
+template <typename T>
+const std::vector<MatrixX<T>>& SapModel<T>::dynamics_matrix() const {
+  return A_;
 }
 
 template <typename T>
@@ -241,12 +263,11 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
     const ContactProblemGraph& graph, 
     const PartialPermutation& cliques_permutation,
     VectorX<T>* delassus_diagonal) const {
-  DRAKE_DEMAND(delassus_diagonal != nullptr);
-  DRAKE_DEMAND(delassus_diagonal->size() == problem.num_constraints());
-  const int num_cliques = A.size();
+  DRAKE_DEMAND(delassus_diagonal != nullptr);    
 
   // We compute a factorization of A once so we can re-use it multiple times
   // below.
+  const int num_cliques = A.size();  // N.B. Participating cliques.
   std::vector<Eigen::LDLT<MatrixX<T>>> A_ldlt;
   A_ldlt.resize(num_cliques);
   for (int c = 0; c < num_cliques; ++c) {
@@ -258,35 +279,36 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
   std::vector<MatrixX<T>> W(num_constraints);
 
   for (const ContactProblemGraph::ConstraintGroup& e : graph.constraint_groups()) {
-    for (int k : e.constraints_index) {      
-      const SapConstraint<T>& constraint = sap_problem().get_constraint(k);
-      const int nk = constraint.num_constrained_dofs();
-      if (W[k].size() == 0) {
+    for (int i : e.constraints_index) {      
+      const SapConstraint<T>& constraint = sap_problem().get_constraint(i);
+      const int ni = constraint.num_constrained_dofs();
+      if (W[i].size() == 0) {
         // Resize and initialize to zero on the first time it gets accessed.
-        W[k].resize(nk, nk);
-        W[k].setZero();
+        W[i].resize(ni, ni);
+        W[i].setZero();
       }
 
       // Clique 0 is always present. Add its contribution.
       {
         const int c = cliques_permutation.permuted_index(constraint.clique0());
-        const MatrixX<T>& Jkc = constraint.clique0_jacobian();
-        W[k] += Jkc * A_ldlt[c].solve(Jkc.transpose());
+        const MatrixX<T>& Jic = constraint.clique0_jacobian();
+        W[i] += Jic * A_ldlt[c].solve(Jic.transpose());
       }
 
       // Adds clique 1 contribution, if present.
       if (constraint.num_cliques() == 2) {
         const int c = cliques_permutation.permuted_index(constraint.clique1());
-        const MatrixX<T>& Jkc = constraint.clique1_jacobian();
-        W[k] += Jkc * A_ldlt[c].solve(Jkc.transpose());
+        const MatrixX<T>& Jic = constraint.clique1_jacobian();
+        W[i] += Jic * A_ldlt[c].solve(Jic.transpose());
       }
     }
   }
 
   // Compute delassus_diagonal as the rms norm of the diagonal block for the
-  // k-th constraint.
-  for (int k = 0; k < num_constraints; ++k) {
-    (*delassus_diagonal)[k] = W[k].norm() / W[k].rows();
+  // i-th constraint.
+  delassus_diagonal->resize(num_constraints);
+  for (int i = 0; i < num_constraints; ++i) {
+    (*delassus_diagonal)[i] = W[i].norm() / W[i].rows();
   }
 }
 

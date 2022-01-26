@@ -83,18 +83,23 @@ class SapModel {
       return *problem_; 
   }
 
+  int num_cliques() const;
+  int num_participating_cliques() const;  
   int num_velocities() const;
   int num_participating_velocities() const;
   int num_constraints() const;
   int num_impulses() const;
 
-  // Returns free-motion velocities for participating dofs.  
+  // Returns the system dynamics matrix A for the participating DOFs only.
+  const std::vector<MatrixX<T>>& dynamics_matrix() const;
+
+  // Returns free-motion velocities for participating DOFs.
   const VectorX<T>& v_star() const;
 
-  // Returns free-motion generalized momenta for participating dofs.
+  // Returns free-motion generalized momenta for participating DOFs.
   const VectorX<T>& p_star() const;
 
-  // Performs multiplication p = A * v. Only participating dofs are
+  // Performs multiplication p = A * v. Only participating DOFs are
   // considered.
   // @pre p must be a valid pointer.
   // @pre both v and p must be of size num_participating_velocities().
@@ -111,13 +116,18 @@ class SapModel {
       const SapContactProblem<T>& problem, const ContactProblemGraph& graph,
       const PartialPermutation& cliques_permutation) const;  
 
-  // Computes a diagonal approximation of the Delassus operator used to
-  // compute
+  // Computes a diagonal approximation of the Delassus operator used to compute
   // a per constraint diagonal scaling into delassus_diagonal. Given an
-  // approximation Wₖₖ of the block diagonal element corresponding to the k-th
-  // constraint, the scaling is computed as delassus_diagonal[k] = ‖Wₖₖ‖ᵣₘₛ =
-  // ‖Wₖₖ‖/3. See [Castro et al. 2021] for details.
-  // @pre Matrix entries stored in `At` are SPD.  
+  // approximation Wᵢᵢ of the block diagonal element corresponding to the i-th
+  // constraint, the scaling is computed as delassus_diagonal[i] = ‖Wᵢᵢ‖ᵣₘₛ =
+  // ‖Wᵢᵢ‖/nᵢ. See [Castro et al. 2021] for details.
+  // @pre Matrix entries stored in `At` are SPD.
+  //
+  // @param[out] cliques_permutation On output an array of size nc (number of
+  // constraints) where each entry stores the Delassus operator constraint
+  // scaling. That is, wi = delassus_diagonal[i] corresponds to the scaling for
+  // the i-th constraint and mi = 1./wi corresponds to the mass scaling for the
+  // same constraint.
   void CalcDelassusDiagonalApproximation(
       const std::vector<MatrixX<T>>& At, const SapContactProblem<T>& problem,
       const ContactProblemGraph& graph,
