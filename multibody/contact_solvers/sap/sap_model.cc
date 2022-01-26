@@ -97,10 +97,6 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
   // (participating and non-participating).
   const ContactProblemGraph graph = sap_problem().MakeGraph();
 
-  for (const auto& g : graph.constraint_groups()) {
-    PRINT_VAR(g.cliques);
-  }
-
   // Permutations to map indexes from participating cliques/dofs to the original
   // set of cliques/dofs.
   cliques_permutation_ = MakeParticipatingCliquesPermutation(graph);
@@ -112,10 +108,7 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
   const int num_participating_cliques =
       cliques_permutation_.permuted_domain_size();
   A_.resize(num_participating_cliques);  
-  cliques_permutation_.Apply(sap_problem().dynamics_matrix(), &A_);
-  for (const auto& Ac : A_) {
-    PRINT_VARn(Ac);
-  }
+  cliques_permutation_.Apply(sap_problem().dynamics_matrix(), &A_);  
 
   // Compute inv_sqrt_A_.
   const int nv_participating = velocities_permutation_.permuted_domain_size();
@@ -235,11 +228,7 @@ PartialPermutation SapModel<T>::MakeParticipatingCliquesPermutation(
     }
     if (c1 != c0 && participating_cliques[c1] < 0)
       participating_cliques[c1] = num_participating_cliques++;
-  }
-  PRINT_VAR(participating_cliques.size());
-  for (auto cp : participating_cliques) {
-    PRINT_VAR(cp);
-  }
+  }  
   return PartialPermutation(std::move(participating_cliques));
 }
 
@@ -261,11 +250,7 @@ PartialPermutation SapModel<T>::MakeParticipatingVelocitiesPermutation(
       }
     }
     v_first += nv;
-  }
-  PRINT_VAR(participating_velocities.size());
-  for (auto vp : participating_velocities) {
-    PRINT_VAR(vp);
-  }
+  }  
   return PartialPermutation(std::move(participating_velocities));
 }
 
@@ -400,11 +385,9 @@ BlockSparseMatrix<T> SapModel<T>::MakeConstraintsBundleJacobian(
     // Allocate Jacobian blocks for this group of constraints.
     MatrixX<T> J0, J1;
     const int num_rows = group_dofs[block_row];
-    PRINT_VAR(c0);
     const int nv0 = problem.num_velocities(c0);
     J0.resize(num_rows, nv0);
     if (c1 != c0) {  // If not a "loop" in the graph.
-      PRINT_VAR(c1);
       const int nv1 = problem.num_velocities(c1);
       J1.resize(num_rows, nv1);
     }

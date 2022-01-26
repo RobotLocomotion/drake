@@ -205,11 +205,8 @@ SapContactProblem<T>::SapContactProblem(const T& time_step,
   nv_ = 0;
   for (const auto& Ac : A_) {
     DRAKE_DEMAND(Ac.rows() == Ac.cols());
-    PRINT_VAR(Ac.rows());
     nv_ += Ac.rows();
   }
-  PRINT_VAR(nv_);
-  PRINT_VAR(v_star_.size());
   DRAKE_DEMAND(v_star_.size() == nv_);
 }
 
@@ -225,8 +222,6 @@ SapContactProblem<T>::SapContactProblem(
     DRAKE_DEMAND(Ac.rows() == Ac.cols());
     nv_ += Ac.rows();
   }
-  PRINT_VAR(nv_);
-  PRINT_VAR(v_star_.size());
   DRAKE_DEMAND(v_star_.size() == nv_);
 }
 
