@@ -255,6 +255,8 @@ void PackageMap::PopulateUpstreamToDrakeHelper(
       GetParentDirectory(directory), stop_at_directory);
 }
 
+// N.B. When removing this deprecated function, also be sure to remove
+// the PopulateUpstreamToDrakeHelper, immediately above.
 void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
   DRAKE_DEMAND(!model_file.empty());
   drake::log()->trace("PopulateUpstreamToDrake: {}", model_file);
