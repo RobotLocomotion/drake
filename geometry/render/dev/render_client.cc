@@ -1,7 +1,9 @@
 #include "drake/geometry/render/dev/render_client.h"
 
 #include <atomic>
+#include <regex>
 #include <string>
+#include <utility>  // std::pair
 #include <vector>
 
 #include <curl/curl.h>
@@ -16,6 +18,7 @@
 
 #include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace geometry {
@@ -27,6 +30,8 @@ using json = nlohmann::json;
 using drake::systems::sensors::ImageDepth32F;
 using drake::systems::sensors::ImageLabel16I;
 using drake::systems::sensors::ImageRgba8U;
+
+// Curl setup / teardown -------------------------------------------------------
 
 // Render client constructor increases, destructor decreases num_clients.
 std::atomic<int> num_clients{0};
@@ -47,6 +52,8 @@ void static_curl_cleanup() {
   }
 }
 
+// Curl callbacks --------------------------------------------------------------
+
 // Write callback for libcurl, assumes `userp` points to an std::string.
 // See: https://curl.se/libcurl/c/libcurl-tutorial.html
 size_t write_string_data(void* buffer, size_t size, size_t nmemb, void* userp) {
@@ -56,14 +63,145 @@ size_t write_string_data(void* buffer, size_t size, size_t nmemb, void* userp) {
   return data_size;
 }
 
-// header_callback
-
 size_t write_file_data(void* buffer, size_t size, size_t nmemb, void* userp) {
   const size_t data_size = size * nmemb;
   std::ofstream* f = static_cast<std::ofstream*>(userp);
   f->write(static_cast<char*>(buffer), data_size);
   return data_size;
 }
+
+using debug_data_t =
+    std::vector<std::pair<const curl_infotype, const std::string>>;
+/* Used with CURLOPT_VERBOSE in order to add to drake::log(), see also:
+ https://curl.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
+
+ `userp` is assumed to be debug_data_t defined above, this method simply
+ accumulates the incoming messages from curl, LogCurlDebugData below combines
+ and adds them to the drake log.  The following types are skipped, as these
+ items should be handled by the write / read callback (binary data should not be
+ logged to drake::log()):
+
+ - CURLINFO_DATA_IN
+ - CURLINFO_DATA_OUT
+ - CURLINFO_SSL_DATA_IN
+ - CURLINFO_SSL_DATA_OUT */
+int debug_callback(CURL* /* handle */, curl_infotype type, char* data,
+                   size_t size, void* userp) {
+  if (type != CURLINFO_DATA_IN && type != CURLINFO_DATA_OUT &&
+      type != CURLINFO_SSL_DATA_IN && type != CURLINFO_SSL_DATA_OUT) {
+    debug_data_t* debug_data = static_cast<debug_data_t*>(userp);
+    debug_data->emplace_back(type, std::string(data, data + size));
+  }
+
+  return 0;  // See docs, return of 0 is always required.
+}
+
+// Used in logging curl data, returns a human friendly string.
+std::string CurlInfoTypeAsString(curl_infotype type) {
+  if (type == CURLINFO_TEXT)
+    return "CURLINFO_TEXT";
+  else if (type == CURLINFO_HEADER_IN)
+    return "CURLINFO_HEADER_IN";
+  else if (type == CURLINFO_HEADER_OUT)
+    return "CURLINFO_HEADER_OUT";
+  else if (type == CURLINFO_DATA_IN)
+    return "CURLINFO_DATA_IN";
+  else if (type == CURLINFO_DATA_OUT)
+    return "CURLINFO_DATA_OUT";
+  else if (type == CURLINFO_SSL_DATA_IN)
+    return "CURLINFO_SSL_DATA_IN";
+  else if (type == CURLINFO_SSL_DATA_OUT)
+    return "CURLINFO_SSL_DATA_OUT";
+  else if (type == CURLINFO_END)
+    return "CURLINFO_END";
+  return fmt::format("UNKNOWN_CURLINFO_TYPE={}", type);
+}
+
+/* Remove leading / trailing whitespace from message before logging.  Curl
+ includes newline characters in its entries, which are desirable for the
+ accumulated interior message parts but the trailing whitespace in particular
+ leads to cluttered logs (drake::log() adds a trailing newline). */
+void LogIfTrimmedWhitespaceNonEmpty(curl_infotype type,
+                                    const std::string& message) {
+  const auto trimmed =
+      std::regex_replace(message, std::regex(R"(^\s+|\s+$)"), "");
+  // Some curl messages were just the \n character, don't log "nothing".
+  if (!trimmed.empty()) {
+    drake::log()->info("[{}] {}", CurlInfoTypeAsString(type), trimmed);
+  }
+}
+
+/* Log the combined messages added to `debug_data` by the debug_callback.
+ When curl calls the debug_callack, it will do so with piecemeal components.  In
+ the below walk-through, the "Accept: ..." statement was modified to add spaces
+ between * and / to avoid ending the comment.
+
+ Call 1: type=CURLINFO_HEADER_OUT
+         data="  Trying 127.0.0.1:8000...\n"
+ Call 2: type=CURLINFO_HEADER_OUT
+         data="TCP_NODELAY set\n"
+ Call 3: type=CURLINFO_HEADER_OUT
+         data="Connected to 127.0.0.1 (127.0.0.1) port 8000 (#0)\n"
+ Call 4: type=CURLINFO_TEXT
+         data="POST /render HTTP/1.1
+         Host: 127.0.0.1:8000
+         Accept: * / *
+         Content-Length: 1448
+         Content-Type: multipart/form-data; boundary=--...---c13a866cb4280bc1\n"
+ Call 5: type=CURLINFO_HEADER_IN
+         data="We are completely uploaded and fine\n"
+ ...
+
+ Unlike after CURLINFO_HEADER_OUT, the CURLINFO_TEXT included after
+ CURLINFO_HEADER_IN is provided one line at a time.  As a result, the
+ drake::log() if added to directly in debug_callback can become somewhat
+ cluttered and inconsistent.  This method combines any sequential messages that
+ were appended into a single accumulated log call, trimming preceding and
+ trailing whitespace to keep the log as orderly as possible.  In the example
+ above, the input vector would look something like:
+
+ {
+   {CURLINFO_HEADER_OUT, "  Trying 127.0.0.1:8000...\n"},
+   {CURLINFO_HEADER_OUT, "TCP_NODELAY set\n"},
+   {CURLINFO_HEADER_OUT, "Connected to 127.0.0.1 (127.0.0.1) port 8000 (#0)\n"},
+   {CURLINFO_TEXT, "POST /render HTTP/1.1\n...\n...\n"},
+   {CURLINFO_HEADER_IN, "We are completely uploaded and fine\n"},
+ }
+
+ and the drake::log() will have three total combined calls, the first three
+ CURLINFO_HEADER_OUT will be combined into one log call, then CURLINFO_TEXT,
+ then CURLINFO_HEADER_IN.
+ */
+void LogCurlDebugData(const debug_data_t& debug_data) {
+  // NOTE: not very efficient in terms of copies, but messages are small.
+  std::string accumulator;
+  curl_infotype prev_type;
+  auto counter = 0;
+  for (const auto& pair : debug_data) {
+    // On the first iteration, initialize the previous type and accumulator.
+    if (counter++ == 0) {
+      prev_type = pair.first;
+      accumulator += pair.second;
+    } else {
+      /* If the current and previous type are the same, accumulate and continue.
+       Otherwise, log the now complete accumulator and reset for the newly
+       encountered curl_infotype. */
+      if (pair.first == prev_type) {
+        accumulator += pair.second;
+      } else {
+        LogIfTrimmedWhitespaceNonEmpty(pair.first, accumulator);
+        prev_type = pair.first;
+        accumulator = pair.second;
+      }
+    }
+  }
+  // Log final results (loop will have accumulated at least the last element).
+  if (counter > 0) {
+    LogIfTrimmedWhitespaceNonEmpty(prev_type, accumulator);
+  }
+}
+
+// Additional helper utilities -------------------------------------------------
 
 // Fill out <input type="text" name="image_type"> for an already created curl
 // form with the specified image_type.
@@ -168,15 +306,16 @@ RenderClient::~RenderClient() {
         drake::filesystem::remove_all(temp_dir);
       } catch (const std::exception& e) {
         // TODO(svenevs): what is the right thing to do if we cannot delete?
-        std::cerr << "WARNING: could not delete '" << temp_directory_ << "'. "
-                  << e.what() << '\n';
+        drake::log()->critical("RenderClient: could not delete '{}'. {}",
+                               temp_directory_, e.what());
       }
     }
   } else {
     // TODO(svenevs): make this `else if (verbose_)` instead?  This gets printed
     // twice because of cloning.
-    std::cout << "RenderClient temporary directory '" << temp_directory_
-              << "' was *NOT* deleted.\n";
+    drake::log()->warn(
+        "RenderClient: temporary directory '{}' was *NOT* deleted.",
+        temp_directory_);
   }
   --num_clients;
   static_curl_cleanup();
@@ -191,7 +330,13 @@ void RenderClient::UploadScene(
   curl = curl_easy_init();
   DRAKE_DEMAND(curl != nullptr);
 
-  curl_easy_setopt(curl, CURLOPT_VERBOSE, static_cast<int64_t>(verbose_));
+  // Used when verbose_, needed in scope for logging after curl_easy_perform.
+  debug_data_t debug_data;
+  if (verbose_) {
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+    curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &debug_callback);
+    curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &debug_data);
+  }
 
   // Setup the POST url.
   const std::string upload_url = url_ + "/" + upload_endpoint_;
@@ -231,8 +376,11 @@ void RenderClient::UploadScene(
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, &post_response_text);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &write_string_data);
 
-  // Perform the POST.
+  // Perform the POST and drake::log() prior to any potential exceptions.
   result = curl_easy_perform(curl);
+  if (verbose_) {
+    LogCurlDebugData(debug_data);
+  }
 
   int64_t http_code{0};
   curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
@@ -290,7 +438,13 @@ std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
   curl = curl_easy_init();
   DRAKE_DEMAND(curl != nullptr);
 
-  curl_easy_setopt(curl, CURLOPT_VERBOSE, static_cast<int64_t>(verbose_));
+  // Used when verbose_, needed in scope for logging after curl_easy_perform.
+  debug_data_t debug_data;
+  if (verbose_) {
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+    curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &debug_callback);
+    curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &debug_data);
+  }
 
   // Setup the POST url.
   const std::string post_url = url_ + "/" + render_endpoint_;
@@ -450,8 +604,11 @@ std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &write_file_data);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, &bin_out);
 
-  // Perform the POST.
+  // Perform the POST and drake::log() prior to any potential exceptions.
   result = curl_easy_perform(curl);
+  if (verbose_) {
+    LogCurlDebugData(debug_data);
+  }
 
   // Write callback is complete, close the file.
   bin_out.close();
@@ -564,10 +721,9 @@ std::string RenderClient::RenameFileExtension(const std::string& path,
   destination.replace_extension(drake::filesystem::path{ext});
   drake::filesystem::rename(origin, destination);
 
-  // TODO(svenevs): logging desired?  Replace with log() from drake?
   if (verbose_) {
-    std::cout << "RenderClient: renamed " << origin << " to " << destination
-              << '\n';
+    drake::log()->info("RenderClient: renamed '{}' to '{}'.", origin.string(),
+                       destination.string());
   }
 
   return destination;

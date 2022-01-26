@@ -6,6 +6,7 @@
 #include <vtkTransform.h>
 
 #include "drake/common/filesystem.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace geometry {
@@ -64,7 +65,38 @@ RenderImageType InternalToRenderImageType(internal::ImageType image_type) {
     return RenderImageType::kLabel16I;
 
   throw std::runtime_error(fmt::format(
-      "RenderClientGltf: unspported internal ImageType of '{}'", image_type));
+      "RenderClientGltf: unspported internal ImageType of '{}'.", image_type));
+}
+
+std::string ImageTypeToString(internal::ImageType image_type) {
+  if (image_type == internal::ImageType::kColor) {
+    return "color";
+  } else if (image_type == internal::ImageType::kDepth) {
+    return "depth";
+  } else if (image_type == internal::ImageType::kLabel) {
+    return "label";
+  }
+
+  throw std::runtime_error(fmt::format(
+      "RenderClientGltf: unspported internal ImageType of '{}'.", image_type));
+}
+
+void LogFrameStart(internal::ImageType image_type, size_t frame_id) {
+  drake::log()->info("RenderClientGltf: rendering {} frame {}.",
+                     ImageTypeToString(image_type), frame_id);
+}
+
+void LogFrameGltfExportPath(internal::ImageType image_type,
+                            const std::string& path) {
+  drake::log()->info("RenderClientGltf: {} scene exported to '{}'.",
+                     ImageTypeToString(image_type), path);
+}
+
+void LogFrameServerResponsePath(internal::ImageType image_type,
+                                const std::string& path) {
+  drake::log()->info(
+      "RenderClientGltf: {} server response image saved to '{}'.",
+      ImageTypeToString(image_type), path);
 }
 
 }  // namespace
@@ -127,9 +159,8 @@ void RenderClientGltf::DoRenderColorImage(const ColorRenderCamera& camera,
   // TODO(svenevs): good thread-safe location for tracking color frame id?
   static size_t color_frame_id{0};
 
-  // TODO(svenevs): is logging desired?  Use drake's log()?
   if (verbose()) {
-    std::cout << "RenderClientGltf color frame: " << color_frame_id << '\n';
+    LogFrameStart(internal::ImageType::kColor, color_frame_id);
   }
 
   // Update the VTK scene before exporting to glTF.
@@ -144,13 +175,13 @@ void RenderClientGltf::DoRenderColorImage(const ColorRenderCamera& camera,
   const std::string scene_path =
       ExportScene(internal::ImageType::kColor, color_frame_id);
   if (verbose()) {
-    std::cout << "  Scene exported to: " << scene_path << '\n';
+    LogFrameGltfExportPath(internal::ImageType::kColor, scene_path);
   }
 
   const std::string image_path =
       UploadAndRender(camera.core(), internal::ImageType::kColor, scene_path);
   if (verbose()) {
-    std::cout << "  Server response image: " << image_path << '\n';
+    LogFrameServerResponsePath(internal::ImageType::kColor, image_path);
   }
 
   // Load the returned image back to the drake buffer.
@@ -163,9 +194,8 @@ void RenderClientGltf::DoRenderDepthImage(
   // TODO(svenevs): good thread-safe location for tracking depth frame id?
   static size_t depth_frame_id{0};
 
-  // TODO(svenevs): is logging desired?  Use drake's log()?
   if (verbose()) {
-    std::cout << "RenderClientGltf depth frame: " << depth_frame_id << '\n';
+    LogFrameStart(internal::ImageType::kDepth, depth_frame_id);
   }
 
   // Update the VTK scene before exporting to glTF.
@@ -179,7 +209,7 @@ void RenderClientGltf::DoRenderDepthImage(
   const std::string scene_path =
       ExportScene(internal::ImageType::kDepth, depth_frame_id);
   if (verbose()) {
-    std::cout << "  Scene exported to: " << scene_path << '\n';
+    LogFrameGltfExportPath(internal::ImageType::kDepth, scene_path);
   }
 
   const double min_depth = camera.depth_range().min_depth();
@@ -188,7 +218,7 @@ void RenderClientGltf::DoRenderDepthImage(
       UploadAndRender(camera.core(), internal::ImageType::kDepth, scene_path,
                       min_depth, max_depth);
   if (verbose()) {
-    std::cout << "  Server response image: " << image_path << '\n';
+    LogFrameServerResponsePath(internal::ImageType::kDepth, image_path);
   }
 
   // Load the returned image back to the drake buffer.
@@ -201,9 +231,8 @@ void RenderClientGltf::DoRenderLabelImage(
   // TODO(svenevs): good thread-safe location for tracking label frame id?
   static size_t label_frame_id{0};
 
-  // TODO(svenevs): is logging desired?  Use drake's log()?
   if (verbose()) {
-    std::cout << "RenderClientGltf label frame: " << label_frame_id << '\n';
+    LogFrameStart(internal::ImageType::kLabel, label_frame_id);
   }
 
   // Update the VTK scene before exporting to glTF.
@@ -218,13 +247,13 @@ void RenderClientGltf::DoRenderLabelImage(
   const std::string scene_path =
       ExportScene(internal::ImageType::kLabel, label_frame_id);
   if (verbose()) {
-    std::cout << "  Scene exported to: " << scene_path << '\n';
+    LogFrameGltfExportPath(internal::ImageType::kLabel, scene_path);
   }
 
   const std::string image_path =
       UploadAndRender(camera.core(), internal::ImageType::kLabel, scene_path);
   if (verbose()) {
-    std::cout << "  Server response image: " << image_path << '\n';
+    LogFrameServerResponsePath(internal::ImageType::kLabel, image_path);
   }
 
   // Load the returned image back to the drake buffer.
@@ -236,15 +265,9 @@ std::string RenderClientGltf::ExportPathFor(internal::ImageType image_type,
                                             size_t frame_id) const {
   // Create e.g., {temp_directory()}/000000000000-color.gltf
   const drake::filesystem::path base{temp_directory()};
-  const std::string frame{fmt::format("{:0>12}", frame_id)};
-  std::string suffix;
-  if (image_type == internal::ImageType::kColor)
-    suffix = "-color.gltf";
-  else if (image_type == internal::ImageType::kDepth)
-    suffix = "-depth.gltf";
-  else  // image_type == internal::ImageType::kLabel
-    suffix = "-label.gltf";
-  return base / (frame + suffix);
+  const std::string frame{
+      fmt::format("{:0>12}-{}.gltf", frame_id, ImageTypeToString(image_type))};
+  return base / frame;
 }
 
 std::string RenderClientGltf::ExportScene(internal::ImageType image_type,
