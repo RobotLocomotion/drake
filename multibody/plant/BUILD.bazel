@@ -215,6 +215,33 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "contact_results_to_meshcat_params",
+    hdrs = ["contact_results_to_meshcat_params.h"],
+    tags = [
+        # Don't add this deprecated library into the ":plant" package library.
+        # Doing so would cause a dependency cycle.
+        "exclude_from_package",
+    ],
+    deps = [
+        "//multibody/meshcat:contact_visualizer_params",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_results_to_meshcat",
+    hdrs = ["contact_results_to_meshcat.h"],
+    tags = [
+        # Don't add this deprecated library into the ":plant" package library.
+        # Doing so would cause a dependency cycle.
+        "exclude_from_package",
+    ],
+    deps = [
+        ":contact_results_to_meshcat_params",
+        "//multibody/meshcat:contact_visualizer",
+    ],
+)
+
+drake_cc_library(
     name = "coulomb_friction",
     srcs = [
         "coulomb_friction.cc",
@@ -613,6 +640,14 @@ drake_cc_googletest(
     deps = [
         ":contact_results_to_lcm",
         "//common/test_utilities:eigen_geometry_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_results_to_meshcat_test",
+    copts = ["-Wno-deprecated-declarations"],
+    deps = [
+        ":contact_results_to_meshcat",
     ],
 )
 
