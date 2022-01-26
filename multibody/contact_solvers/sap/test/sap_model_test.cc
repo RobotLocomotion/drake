@@ -172,7 +172,7 @@ GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
   std::vector<MatrixXd> A_permuted_expected;
   A_permuted_expected.push_back(A[0]);
   A_permuted_expected.push_back(A[1]);
-  A_permuted_expected.push_back(A[2]);
+  A_permuted_expected.push_back(A[3]);
 
   for (const auto& Ac : A_permuted_expected) {
     PRINT_VARn(Ac);
@@ -186,6 +186,26 @@ GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
   PRINT_VAR(model.num_constraints());
   PRINT_VAR(model.num_participating_velocities());
   PRINT_VAR(model.num_impulses());
+
+  // Unit test MultiplyByDynamicsMatrix().
+  const VectorXd v = VectorXd::LinSpaced(10, 1.0, 10.0);
+  VectorXd v_participating(model.num_participating_velocities());
+  model.velocities_permutation().Apply(v, &v_participating);
+  PRINT_VARn(v.transpose());
+  PRINT_VARn(v_participating.transpose());
+
+  VectorXd p_participating(model.num_participating_velocities());
+  model.MultiplyByDynamicsMatrix(v_participating, &p_participating);
+
+  // clang-format off
+  const VectorXd p_participating_expected = (VectorXd(7) << 
+    1,                           // clique 0. 1 x 1.
+    4, 6,                        // clique 1. 1 x (2, 3).
+    28, 32, 36, 40).finished();  // clique 3. 4 x (7, 8, 9, 10).
+  // clang-format on
+  EXPECT_TRUE(CompareMatrices(p_participating, p_participating_expected));
+  PRINT_VARn(p_participating.transpose());
+
 
 #if 0
   // Unit test MakeGraph().
