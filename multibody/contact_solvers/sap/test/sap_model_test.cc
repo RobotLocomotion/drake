@@ -161,6 +161,12 @@ class SapModelTester : public ::testing::Test {
     problem_->AddConstraint(std::make_unique<TestConstraint>(0, 3, 5.0));
   }
 
+  static const SapConstraintsBundle<double>& constraints_bundle(
+      const SapModel<double>& model) {
+    DRAKE_DEMAND(model.constraints_bundle_ != nullptr);
+    return *model.constraints_bundle_;
+  }
+
  protected:
   // Data used to define the linearized dynamics of the system, i.e.
   // A⋅(v−v*) = Jᵀ⋅γ.
@@ -185,85 +191,21 @@ TEST_F(SapModelTester, VerifySizes) {
   PRINT_VAR(problem_->num_velocities());
   PRINT_VAR(problem_->num_constraints());
   PRINT_VAR(problem_->num_constrained_dofs());
-}
 
-GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
-  const double time_step = 0.01;
-  const int num_cliques = 4;
-  // Initialize the dynamics matrix to A = {I₁, 2I₂, 3I₃, 4I₄}.
-  // Therefore the number of generalized velocities is nv = 10.
-  std::vector<MatrixXd> A;
-  A.resize(num_cliques);
-  for (int c = 1; c <= num_cliques; ++c) {
-    A[c - 1].resize(c, c);
-    A[c - 1] = MatrixXd::Identity(c, c) * c;
-  }
-  const int num_velocities = 10;
-  VectorXd v_star = VectorXd::LinSpaced(num_velocities, 1.0, 10.0);
-
-  // N.B. We create copies of A and v_star so that when moved in the constructor
-  // arguments the original objects remain valid in this scope.
-  SapContactProblem<double> problem(time_step, std::vector<MatrixXd>(A),
-                                    VectorXd(v_star));  
-
-  // Make a problem using contact constraints with the following graph:
-  //
-  //                       2
-  //                      ┌─┐
-  //                      │ │
-  // ┌───┐  0  ┌───┐  1  ┌┴─┴┐     ┌───┐
-  // │ 0 ├─────┤ 1 ├─────┤ 3 │     │ 2 │
-  // └─┬─┘     └───┘     └─┬─┘     └───┘
-  //   │                   │
-  //   └───────────────────┘
-  //           3,4
-  //
-
-  // Contact constraint properties:
-  const double mu = 1.0;        // Friction coefficient.
-  const double k = 1.0e10;      // Stiffness.
-  const double taud = 0.0;      // Dissipation time scale.
-  const double phi0 = -1.0e-3;  // Signed distance.
-  const SapFrictionConeConstraint<double>::Parameters parameters{mu, k, taud,
-                                                                 phi0};
-  problem.AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-      0, 1, J31, J32, parameters));
-  problem.AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-      1, 3, J32, J34, parameters));  
-  problem.AddConstraint(
-      std::make_unique<SapFrictionConeConstraint<double>>(3, J34, parameters));        
-  problem.AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-      0, 3, J31, J34, parameters));
-  problem.AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-      0, 3, J31, J34, parameters));        
-
-  PRINT_VAR(problem.num_constraints());
-  PRINT_VAR(problem.num_constrained_dofs());            
-  EXPECT_EQ(problem.num_constraints(), 5);
-  EXPECT_EQ(problem.num_constrained_dofs(), 15);
-
-  // Verify graph invariants:
-  // 1. Constraints involving a single clique are represented by a "loop"
-  //    connecting the clique with itself (therefore we expect constraint 2 to
-  //    connect clique 3 with itself.)  
-  // 2. Constraint gropus are lexicographically sorted by clique pair.
-  // 3. Participating cliques are numbered in the order they were originally
-  //    defined. Therefore we expect participating cliques to be re-numbered as:
-  //    0 --> 0, 1 --> 1, 3 --> 2.   
-  //const ContactProblemGraph graph = problem.MakeGraph();
-
-
-  const SapModel<double> model(&problem);
+  const SapModel<double> model(problem_.get());
   EXPECT_EQ(model.num_cliques(), 4);
   EXPECT_EQ(model.num_participating_cliques(), 3);
-  EXPECT_EQ(model.num_velocities(), num_velocities);
+  EXPECT_EQ(model.num_velocities(), 10);
   EXPECT_EQ(model.num_constraints(), 5);
   EXPECT_EQ(model.num_participating_velocities(), 7);
   EXPECT_EQ(model.num_impulses(), 15);
+}
 
-  // Verify participating cliques are numbered according to the order they were
-  // defined originally. That is, we expect participating cliques to be
-  // re-numbered as: 0 --> 0, 1 --> 1, 3 --> 2.
+// Verify participating cliques are numbered according to the order they were
+// defined originally. That is, we expect participating cliques to be
+// re-numbered as: 0 --> 0, 1 --> 1, 3 --> 2.
+TEST_F(SapModelTester, VerifyPermutations) {
+  const SapModel<double> model(problem_.get());
   const std::vector<int> cliques_permutation_expected{0, 1, -1, 2};
   EXPECT_EQ(model.cliques_permutation().permutation(),
             cliques_permutation_expected);
@@ -278,21 +220,18 @@ GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
   // clang-format on
   EXPECT_EQ(model.velocities_permutation().permutation(),
             velocities_permutation_expected);
+}
 
-  PRINT_VAR(model.num_cliques());
-  PRINT_VAR(model.num_participating_cliques());
-  for (const auto& Ac : model.dynamics_matrix()) {
-    PRINT_VARn(Ac);
-  }
-
-  PRINT_VAR(model.num_participating_cliques());
+// Unit test to verify dynamics quantities related to participating DOFs only.
+TEST_F(SapModelTester, VerifyParticipatingDofsDynamics) {
+  const SapModel<double> model(problem_.get());
 
   // N.B. We know that participating cliques are enumerated according to the
   // order they were enumerated in the original cliques.
   std::vector<MatrixXd> A_permuted_expected;
-  A_permuted_expected.push_back(A[0]);
-  A_permuted_expected.push_back(A[1]);
-  A_permuted_expected.push_back(A[3]);
+  A_permuted_expected.push_back(A_[0]);
+  A_permuted_expected.push_back(A_[1]);
+  A_permuted_expected.push_back(A_[3]);
 
   for (const auto& Ac : A_permuted_expected) {
     PRINT_VARn(Ac);
@@ -317,7 +256,7 @@ GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
   // Verify p_star = A * v (participating DOFs only).
   const VectorXd p_star_participating_expected =
       (VectorXd(7) << 1., 4., 6., 28., 32., 36., 40.).finished();
-  EXPECT_EQ(model.p_star(), p_star_participating_expected);      
+  EXPECT_EQ(model.p_star(), p_star_participating_expected);
 
   // Unit test MultiplyByDynamicsMatrix().
   const VectorXd v = VectorXd::LinSpaced(10, 1.0, 10.0);
@@ -337,8 +276,11 @@ GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
   // clang-format on
   EXPECT_TRUE(CompareMatrices(p_participating, p_participating_expected));
   PRINT_VARn(p_participating.transpose());
+}
 
-  // Verify constraints bundle.
+TEST_F(SapModelTester, VerifyConstraintsBundleJacobian) {
+  const SapModel<double> model(problem_.get());
+
   // clang-format off
   const MatrixXd J_expected = (MatrixXd(15, 7) <<
     J31, J32, Z34,
@@ -349,45 +291,10 @@ GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
   // clang-format on
   PRINT_VARn(J_expected);
 
-  const MatrixXd J = model.constraints_bundle().J().MakeDenseMatrix();
+  const MatrixXd J = constraints_bundle(model).J().MakeDenseMatrix();
   EXPECT_TRUE(CompareMatrices(J, J_expected));
 
   PRINT_VARn(J);
-
-#if 0
-  // Unit test MakeGraph().
-  const ContactProblemGraph graph = problem.MakeGraph();
-  EXPECT_EQ(graph.num_cliques(), 4);
-  EXPECT_EQ(graph.num_constraint_groups(), 4);
-  EXPECT_EQ(graph.num_constraints(), 5);
-
-  PRINT_VAR(graph.num_cliques());
-  PRINT_VAR(graph.num_constraint_groups());
-  for (const auto& e : graph.constraint_groups()) {
-    PRINT_VAR(e.cliques);
-  }
-#endif  
-
-  // TODO: This below should be part of the SapModel unit tests.
-#if 0
-  const PartialPermutation cliques_permutation =
-      MakeParticipatingCliquesPermutation(graph);
-  EXPECT_EQ(cliques_permutation.domain_size(), graph.num_cliques());
-  EXPECT_EQ(cliques_permutation.permuted_domain_size(), 3);
-
-  PRINT_VAR(cliques_permutation.domain_size());
-  PRINT_VAR(cliques_permutation.permuted_domain_size());
-  const BlockSparseMatrix<double> J =
-      MakeConstraintsBundleJacobian(problem, graph, cliques_permutation);
-
-  EXPECT_EQ(J.rows(), 15);
-  EXPECT_EQ(J.cols(), 9);
-  EXPECT_EQ(J.block_rows(), graph.num_constraint_groups());
-  EXPECT_EQ(J.block_cols(), cliques_permutation.permuted_domain_size());
-
-  PRINT_VAR(J.rows());
-  PRINT_VAR(J.cols());
-#endif
 }
 
 }  // namespace

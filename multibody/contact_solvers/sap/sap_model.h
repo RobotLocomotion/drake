@@ -113,13 +113,7 @@ class SapModel {
   // considered.
   // @pre p must be a valid pointer.
   // @pre both v and p must be of size num_participating_velocities().
-  void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* p) const;
-
-  // TODO: make private.
-  // Now made public for testing. Use friend tester class.
-  const SapConstraintsBundle<T>& constraints_bundle() const {
-      return *constraints_bundle_;
-  }
+  void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* p) const;  
 
  private:
   friend class SapModelTester;
