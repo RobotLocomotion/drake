@@ -233,27 +233,25 @@ B's body frame.
 <h3>Notation for offset frame</h3>
 As discussed above, a frame F consists of right-handed orthogonal unit vectors
 Fx, Fy, Fz and an origin point Fo. Sometimes we need an _offset frame_ Fp which
-consists of the _same_ aformentioned unit vectors Fx, Fy, Fz and an origin point
-Fp which is _fixed_ to F (hence Fp's velocity measured in frame F is always 0).
-One use case for Fp is as a frame _fixed_ on F but whose origin is always
-instanteously coincident with a point P that moves relative to F. In this case,
-Fp is a useful intermediary for calculating P's velocity (Fp is also useful for
-applying forces from P to F). The typeset for a frame Fp that is coincident with
+consists of right-handed orthogonal unit vectors _fixed_ in F (e.g., Fx, Fy, Fz)
+and an origin point which is _fixed_ to F (hence Fp's spatial velocity measured
+in frame F is always 0). One use case for an offset frame Fp is when there is a
+point (or frame) P that moves relative to F and is in contact with F. Frame Fp
+is so named because Fp's origin is always instantaneously coincident with P.
+Hence, Fp is a useful intermediary for calculating P's velocity and for also
+applying forces from P to F. The typeset for a frame Fp that is coincident with
 a point P is @f$F_P@f$ (in typeset the subscript is capital letter P to help
-remind us of the association of @f$F_P@f$ with point P).  Due to the lack of
+remind us of the association of @f$F_P@f$ with point P). Due to the lack of
 subscripts in ASCII and unicode, we code with Fp (i.e., we change capital P to
-a lowercase p so it appears more like a subscript). Similarly, the offset frame
-Fq is rigidly attached to frame F, has the same unit vectors Fx, Fy, Fz, and has
-an origin point Fq _fixed_ to F. Although the name Fq is used for both the frame
-and its origin, they are disambiguated by context.
+a lowercase p so it appears more like a subscript). Although the name Fp can be
+used for both the frame and its origin, it is disambiguated by context.
 Likewise, a rigid body B has a center of mass point Bcm which may be regarded as
 an offset frame Bcm (or specifically a @ref drake::multibody::FixedOffsetFrame
 "FixedOffsetFrame" if the @ref drake::math::RigidTransform "RigidTransform"
-between B and Bcm is constant). There may be other points such as Bp and Bq that
-are fixed to body B and which may be regarded as offset frames. For example, the
-offset frame Bp has unit vectors Bx, By, Bz, and has an origin point Bp that is
-_fixed_ to B but always instantaneously coincident with a point P (or the origin
-Po of a frame P), where P may be moving on B.
+between B and Bcm is constant). There may be a need for other offset frames
+fixed to body B, e.g., such as an offset frame Bp whose origin point Bp is
+_fixed_ to B but always instantaneously coincident with a point (or frame) P,
+where P may be moving on B or in contact with B.
 
 Notation example: V_AB @f$(^AV^B)@f$ denotes the spatial velocity of a frame B
 measured in a frame A and contains the angular velocity w_AB @f$(^A𝛚^B)@f$ and
