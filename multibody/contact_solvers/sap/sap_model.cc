@@ -379,61 +379,63 @@ BlockSparseMatrix<T> SapModel<T>::MakeConstraintsBundleJacobian(
   // DOFs per edge.
   // TODO: consider the graph storing "weights"; number of dofs per node
   // (clique) and number of constrained dofs per edge.
-  std::vector<int> edge_dofs(graph.num_constraint_groups(), 0);
+  std::vector<int> group_dofs(graph.num_constraint_groups(), 0);
   for (int e = 0; e < graph.num_constraint_groups(); ++e) {
     const auto& edge = graph.get_constraint_group(e);
     for (int k : edge.constraints_index) {
       const SapConstraint<T>& c = problem.get_constraint(k);
-      edge_dofs[e] += c.num_constrained_dofs();
+      group_dofs[e] += c.num_constrained_dofs();
     }
   }
 
-  // Add a block row (with one or two blocks) per edge in the graph.
+  // Add a block row (with one or two blocks) per group of constraints in the
+  // graph.
   for (int block_row = 0; block_row < graph.num_constraint_groups(); ++block_row) {
-    const auto& e = graph.get_constraint_group(block_row);
-    const int c0 = e.cliques.first();
-    const int c1 = e.cliques.second();
+    const auto& constraint_group = graph.get_constraint_group(block_row);
+    // N.B. These are clique indexes in the original contact problem (including
+    // both participating and non-participating cliques).
+    const int c0 = constraint_group.cliques.first();
+    const int c1 = constraint_group.cliques.second();
 
-    // Allocate Jacobian blocks for this edge.
+    // Allocate Jacobian blocks for this group of constraints.
     MatrixX<T> J0, J1;
-    const int num_rows = edge_dofs[block_row];
-    if (c0 >= 0) {
-      //  && cliques_permutation.participates(c0)
-      PRINT_VAR(c0);
-      const int nv0 = problem.num_velocities(c0);
-      J0.resize(num_rows, nv0);
+    const int num_rows = group_dofs[block_row];
+    PRINT_VAR(c0);
+    const int nv0 = problem.num_velocities(c0);
+    J0.resize(num_rows, nv0);
+    if (c1 != c0) {  // If not a "loop" in the graph.
+      PRINT_VAR(c1);
+      const int nv1 = problem.num_velocities(c1);
+      J1.resize(num_rows, nv1);
     }
-    DRAKE_DEMAND(c1 >= 0);
-    PRINT_VAR(c1);
-    const int nv1 = problem.num_velocities(c1);
-    J1.resize(num_rows, nv1);
 
+    // Constraints are added in the order set by the graph.
     int row_start = 0;
-    for (int k : e.constraints_index) {
-      const SapConstraint<T>& c = problem.get_constraint(k);
-      const int nk = c.num_constrained_dofs();
+    for (int i : constraint_group.constraints_index) {
+      const SapConstraint<T>& c = problem.get_constraint(i);
+      const int ni = c.num_constrained_dofs();
 
       // N.B. Each edge stores its cliques as a sorted pair. However, the pair
       // of cliques in the original constraints can be in arbitrary order.
       // Therefore below we must check to what clique in the original constraint
-      // the edge's cliques correspond to.
-
-      if (c0 >= 0) {
-        J0.middleRows(row_start, nk) =
+      // the group's cliques correspond to.
+      
+      J0.middleRows(row_start, ni) =
             c0 == c.clique0() ? c.clique0_jacobian() : c.clique1_jacobian();
+      if (c1 != c0) {
+        J1.middleRows(row_start, ni) =
+            c1 == c.clique0() ? c.clique0_jacobian() : c.clique1_jacobian();
       }
-      J1.middleRows(row_start, nk) =
-          c1 == c.clique0() ? c.clique0_jacobian() : c.clique1_jacobian();
 
-      row_start += nk;
+      row_start += ni;
     }
 
-    if (c0 >= 0) {
-      const int participating_c0 = cliques_permutation.permuted_index(c0);
-      builder.PushBlock(block_row, participating_c0, J0);
+    const int participating_c0 = cliques_permutation.permuted_index(c0);
+    builder.PushBlock(block_row, participating_c0, J0);
+    if (c1 != c0) {
+      const int participating_c1 = cliques_permutation.permuted_index(c1);
+      builder.PushBlock(block_row, participating_c1, J1);
     }
-    const int participating_c1 = cliques_permutation.permuted_index(c1);
-    builder.PushBlock(block_row, participating_c1, J1);
   }
 
   return builder.Build();
