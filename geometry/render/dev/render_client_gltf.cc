@@ -12,6 +12,7 @@ namespace drake {
 namespace geometry {
 namespace render {
 
+using geometry::FrameId;
 using geometry::render::RenderCameraCore;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
@@ -81,8 +82,8 @@ std::string ImageTypeToString(internal::ImageType image_type) {
       "RenderClientGltf: unspported internal ImageType of '{}'.", image_type));
 }
 
-void LogFrameStart(internal::ImageType image_type, size_t frame_id) {
-  drake::log()->info("RenderClientGltf: rendering {} frame {}.",
+void LogFrameStart(internal::ImageType image_type, const FrameId& frame_id) {
+  drake::log()->info("RenderClientGltf: rendering {} frame id {}.",
                      ImageTypeToString(image_type), frame_id);
 }
 
@@ -156,9 +157,7 @@ void RenderClientGltf::UpdateViewpoint(const math::RigidTransformd& X_WC) {
 
 void RenderClientGltf::DoRenderColorImage(const ColorRenderCamera& camera,
                                           ImageRgba8U* color_image_out) const {
-  // TODO(svenevs): good thread-safe location for tracking color frame id?
-  static size_t color_frame_id{0};
-
+  const auto color_frame_id = FrameId::get_new_id();
   if (verbose()) {
     LogFrameStart(internal::ImageType::kColor, color_frame_id);
   }
@@ -186,14 +185,11 @@ void RenderClientGltf::DoRenderColorImage(const ColorRenderCamera& camera,
 
   // Load the returned image back to the drake buffer.
   LoadColorImage(image_path, color_image_out);
-  ++color_frame_id;
 }
 
 void RenderClientGltf::DoRenderDepthImage(
     const DepthRenderCamera& camera, ImageDepth32F* depth_image_out) const {
-  // TODO(svenevs): good thread-safe location for tracking depth frame id?
-  static size_t depth_frame_id{0};
-
+  const auto depth_frame_id = FrameId::get_new_id();
   if (verbose()) {
     LogFrameStart(internal::ImageType::kDepth, depth_frame_id);
   }
@@ -223,14 +219,11 @@ void RenderClientGltf::DoRenderDepthImage(
 
   // Load the returned image back to the drake buffer.
   LoadDepthImage(image_path, depth_image_out);
-  ++depth_frame_id;
 }
 
 void RenderClientGltf::DoRenderLabelImage(
     const ColorRenderCamera& camera, ImageLabel16I* label_image_out) const {
-  // TODO(svenevs): good thread-safe location for tracking label frame id?
-  static size_t label_frame_id{0};
-
+  const auto label_frame_id = FrameId::get_new_id();
   if (verbose()) {
     LogFrameStart(internal::ImageType::kLabel, label_frame_id);
   }
@@ -258,20 +251,19 @@ void RenderClientGltf::DoRenderLabelImage(
 
   // Load the returned image back to the drake buffer.
   LoadLabelImage(image_path, label_image_out);
-  ++label_frame_id;
 }
 
 std::string RenderClientGltf::ExportPathFor(internal::ImageType image_type,
-                                            size_t frame_id) const {
-  // Create e.g., {temp_directory()}/000000000000-color.gltf
+                                            const FrameId& frame_id) const {
+  // Create e.g., {temp_directory()}/000000000XYZ-color.gltf
   const drake::filesystem::path base{temp_directory()};
-  const std::string frame{
-      fmt::format("{:0>12}-{}.gltf", frame_id, ImageTypeToString(image_type))};
+  const std::string frame{fmt::format("{:0>12}-{}.gltf", frame_id.get_value(),
+                                      ImageTypeToString(image_type))};
   return base / frame;
 }
 
 std::string RenderClientGltf::ExportScene(internal::ImageType image_type,
-                                          size_t frame_id) const {
+                                          const FrameId& frame_id) const {
   vtkNew<vtkGLTFExporter> gltf_exporter;
   gltf_exporter->InlineDataOn();
   gltf_exporter->SetRenderWindow(pipelines_[image_type]->window);
