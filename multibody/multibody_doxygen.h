@@ -261,7 +261,8 @@ translational velocity v_ABo @f$(^A𝐯^{Bo})@f$. V_AB may also be denoted V_ABo
 For a body B, V_ABcm @f$(^AV^{Bcm})@f$ denotes the spatial velocity of a frame
 with unit vectors Bx, By, Bz with origin at Bcm (B's center of mass).
 V_ABp @f$(^AV^{Bp)}@f$ denotes the spatial velocity of a frame with unit vectors
-Bx, By, Bz, whose origin point Bp is fixed on B.
+Bx, By, Bz, whose origin point Bp is fixed on B and instantaneously coincident
+with some point P.
 
 If this notation is insufficient for your purposes, please carefully and
 thoughtfully name the offset frame and use comments to precisely describe the
