@@ -1,4 +1,4 @@
-#include "drake/multibody/plant/contact_results_to_meshcat.h"
+#include "drake/multibody/meshcat/contact_visualizer.h"
 
 #include <gtest/gtest.h>
 
@@ -11,18 +11,19 @@
 
 namespace drake {
 namespace multibody {
+namespace meshcat {
 namespace {
 
 using geometry::Meshcat;
 
 // Set up a simple plant + visualizer.  The plant has two spheres on prismatic
 // joints.
-class ContactResultsToMeshcatTest : public ::testing::Test {
+class ContactVisualizerTest : public ::testing::Test {
  protected:
-  ContactResultsToMeshcatTest() : meshcat_(std::make_shared<Meshcat>()) {}
+  ContactVisualizerTest() : meshcat_(std::make_shared<Meshcat>()) {}
 
-  void SetUpDiagram(const ContactResultsToMeshcatParams& cparams =
-                        ContactResultsToMeshcatParams()) {
+  void SetUpDiagram(const ContactVisualizerParams& cparams =
+                        ContactVisualizerParams()) {
     systems::DiagramBuilder<double> builder;
     auto [plant, scene_graph] =
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
@@ -43,7 +44,7 @@ class ContactResultsToMeshcatTest : public ::testing::Test {
     // The SceneGraph is needed for contact, but not referenced directly.
     unused(scene_graph);
 
-    visualizer_ = &ContactResultsToMeshcatd::AddToBuilder(&builder, plant,
+    visualizer_ = &ContactVisualizerd::AddToBuilder(&builder, plant,
                                                           meshcat_, cparams);
 
     diagram_ = builder.Build();
@@ -54,12 +55,12 @@ class ContactResultsToMeshcatTest : public ::testing::Test {
   }
 
   std::shared_ptr<Meshcat> meshcat_;
-  const ContactResultsToMeshcat<double>* visualizer_{};
+  const ContactVisualizer<double>* visualizer_{};
   std::unique_ptr<systems::Diagram<double>> diagram_{};
   std::unique_ptr<systems::Context<double>> context_{};
 };
 
-TEST_F(ContactResultsToMeshcatTest, Publish) {
+TEST_F(ContactVisualizerTest, Publish) {
   SetUpDiagram();
 
   EXPECT_FALSE(meshcat_->HasPath("contact_forces"));
@@ -67,8 +68,8 @@ TEST_F(ContactResultsToMeshcatTest, Publish) {
   EXPECT_TRUE(meshcat_->HasPath("contact_forces"));
 }
 
-TEST_F(ContactResultsToMeshcatTest, Parameters) {
-  ContactResultsToMeshcatParams params;
+TEST_F(ContactVisualizerTest, Parameters) {
+  ContactVisualizerParams params;
   params.prefix = "test_prefix";
   params.publish_period = 1 / 12.0;
   // We don't have a good way to test the other parameters without
@@ -87,7 +88,7 @@ TEST_F(ContactResultsToMeshcatTest, Parameters) {
   }
 }
 
-TEST_F(ContactResultsToMeshcatTest, Delete) {
+TEST_F(ContactVisualizerTest, Delete) {
   SetUpDiagram();
 
   diagram_->Publish(*context_);
@@ -100,10 +101,10 @@ TEST_F(ContactResultsToMeshcatTest, Delete) {
   EXPECT_TRUE(meshcat_->HasPath("contact_forces"));
 }
 
-GTEST_TEST(ContactResultsToMeshcat, PortTest) {
+GTEST_TEST(ContactVisualizer, PortTest) {
   auto meshcat = std::make_shared<Meshcat>();
   // Also tests the default constructor.
-  ContactResultsToMeshcat<double> visualizer(meshcat);
+  ContactVisualizer<double> visualizer(meshcat);
   auto context = visualizer.CreateDefaultContext();
 
   // Confirm that I can assign a ContactResults to this port.
@@ -113,7 +114,7 @@ GTEST_TEST(ContactResultsToMeshcat, PortTest) {
 
 // Test the other variant of AddToBuilder (taking the port instead of the
 // plant).
-GTEST_TEST(ContactResultsToMeshcat, AddToBuilderVariant) {
+GTEST_TEST(ContactVisualizer, AddToBuilderVariant) {
   auto meshcat = std::make_shared<Meshcat>();
   systems::DiagramBuilder<double> builder;
   auto [plant, scene_graph] =
@@ -135,7 +136,7 @@ GTEST_TEST(ContactResultsToMeshcat, AddToBuilderVariant) {
   // The SceneGraph is needed for contact, but not referenced directly.
   unused(scene_graph);
 
-  ContactResultsToMeshcatd::AddToBuilder(
+  ContactVisualizerd::AddToBuilder(
       &builder, plant.get_contact_results_output_port(), meshcat);
 
   auto diagram = builder.Build();
@@ -147,7 +148,7 @@ GTEST_TEST(ContactResultsToMeshcat, AddToBuilderVariant) {
   EXPECT_TRUE(meshcat->HasPath("contact_forces"));
 }
 
-TEST_F(ContactResultsToMeshcatTest, ScalarConversion) {
+TEST_F(ContactVisualizerTest, ScalarConversion) {
   SetUpDiagram();
 
   auto ad_diagram = diagram_->ToAutoDiffXd();
@@ -159,5 +160,6 @@ TEST_F(ContactResultsToMeshcatTest, ScalarConversion) {
 }
 
 }  // namespace
+}  // namespace meshcat
 }  // namespace multibody
 }  // namespace drake

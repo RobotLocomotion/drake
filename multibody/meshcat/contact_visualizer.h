@@ -6,22 +6,23 @@
 #include <utility>
 
 #include "drake/geometry/meshcat.h"
-#include "drake/multibody/plant/contact_results_to_meshcat_params.h"
+#include "drake/multibody/meshcat/contact_visualizer_params.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace multibody {
+namespace meshcat {
 
-/** ContactResultsToMeshcat is a system that publishes a ContactResults to
+/** ContactVisualizer is a system that publishes a ContactResults to
 geometry::Meshcat; it draws double-sided arrows at the location of the contact
 force with length scaled by the magnitude of the contact force.  The most common
 use of this system is to connect its input port to the contact results output
 port of a MultibodyPlant.
 
  @system
- name: ContactResultsToMeshcat
+ name: ContactVisualizer
  input_ports:
  - contact_results
  @endsystem
@@ -31,18 +32,18 @@ Note: This system current only visualizes "point pair" contacts.
 @tparam_nonsymbolic_scalar
 @ingroup visualization */
 template <typename T>
-class ContactResultsToMeshcat final : public systems::LeafSystem<T> {
+class ContactVisualizer final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactResultsToMeshcat)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactVisualizer)
 
-  /** Creates an instance of %ContactResultsToMeshcat */
-  explicit ContactResultsToMeshcat(std::shared_ptr<geometry::Meshcat> meshcat,
-                                   ContactResultsToMeshcatParams params = {});
+  /** Creates an instance of %ContactVisualizer */
+  explicit ContactVisualizer(std::shared_ptr<geometry::Meshcat> meshcat,
+                                   ContactVisualizerParams params = {});
 
   /** Scalar-converting copy constructor. See @ref system_scalar_conversion.
   It should only be used to convert _from_ double _to_ other scalar types. */
   template <typename U>
-  explicit ContactResultsToMeshcat(const ContactResultsToMeshcat<U>& other);
+  explicit ContactVisualizer(const ContactVisualizer<U>& other);
 
   /** Calls geometry::Meshcat::Delete(std::string_view path), with the path set
   to `prefix`. Since this visualizer will only ever add geometry under this
@@ -60,26 +61,26 @@ class ContactResultsToMeshcat final : public systems::LeafSystem<T> {
     return this->get_input_port(contact_results_input_port_);
   }
 
-  /** Adds a ContactResultsToMeshcat and connects it to the given
+  /** Adds a ContactVisualizer and connects it to the given
   MultibodyPlant's ContactResults-valued output port. */
-  static const ContactResultsToMeshcat<T>& AddToBuilder(
+  static const ContactVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder, const MultibodyPlant<T>& plant,
       std::shared_ptr<geometry::Meshcat> meshcat,
-      ContactResultsToMeshcatParams params = {});
+      ContactVisualizerParams params = {});
 
-  /** Adds a ContactResultsToMeshcat and connects it to the given
+  /** Adds a ContactVisualizer and connects it to the given
   multibody::ContactResults-valued output port. */
-  static const ContactResultsToMeshcat<T>& AddToBuilder(
+  static const ContactVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder,
       const systems::OutputPort<T>& contact_results_port,
       std::shared_ptr<geometry::Meshcat> meshcat,
-      ContactResultsToMeshcatParams params = {});
+      ContactVisualizerParams params = {});
 
  private:
-  /* ContactResultsToMeshcat of different scalar types can all access each
+  /* ContactVisualizer of different scalar types can all access each
   other's data. */
   template <typename>
-  friend class ContactResultsToMeshcat;
+  friend class ContactVisualizer;
 
   /* The periodic event handler. It tests to see if the last scene description
   is valid (if not, sends the objects) and then sends the transforms. */
@@ -102,16 +103,16 @@ class ContactResultsToMeshcat final : public systems::LeafSystem<T> {
   mutable std::map<SortedPair<geometry::GeometryId>, bool> contacts_{};
 
   /* The parameters for the visualizer.  */
-  ContactResultsToMeshcatParams params_;
+  ContactVisualizerParams params_;
 };
 
-/** A convenient alias for the ContactResultsToMeshcat class when using
+/** A convenient alias for the ContactVisualizer class when using
 the `double` scalar type. */
-using ContactResultsToMeshcatd = ContactResultsToMeshcat<double>;
+using ContactVisualizerd = ContactVisualizer<double>;
 
+}  // namespace meshcat
 }  // namespace multibody
-
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::ContactResultsToMeshcat)
+    class ::drake::multibody::meshcat::ContactVisualizer)

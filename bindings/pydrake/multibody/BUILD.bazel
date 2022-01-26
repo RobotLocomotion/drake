@@ -303,6 +303,7 @@ drake_py_unittest(
     deps = [
         ":meshcat_py",
         ":parsing_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
 

@@ -7,6 +7,8 @@
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/multibody/meshcat/contact_visualizer.h"
+#include "drake/multibody/meshcat/contact_visualizer_params.h"
 #include "drake/multibody/meshcat/joint_sliders.h"
 
 using drake::multibody::MultibodyPlant;
@@ -14,8 +16,55 @@ using drake::systems::LeafSystem;
 
 namespace drake {
 namespace pydrake {
-
 namespace {
+
+void DoScalarIndependentDefinitions(py::module m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::multibody::meshcat;
+  constexpr auto& doc = pydrake_doc.drake.multibody.meshcat;
+
+  // ContactVisualizerParams
+  {
+    using Class = ContactVisualizerParams;
+    constexpr auto& cls_doc = doc.ContactVisualizerParams;
+    py::class_<Class>(
+        m, "ContactVisualizerParams", py::dynamic_attr(), cls_doc.doc)
+        .def(ParamInit<Class>())
+        .def_readwrite("publish_period",
+            &ContactVisualizerParams::publish_period,
+            cls_doc.publish_period.doc)
+        .def_readwrite(
+            "color", &ContactVisualizerParams::color, cls_doc.color.doc)
+        .def_readwrite(
+            "prefix", &ContactVisualizerParams::prefix, cls_doc.prefix.doc)
+        .def_readwrite("delete_on_initialization_event",
+            &ContactVisualizerParams::delete_on_initialization_event,
+            cls_doc.delete_on_initialization_event.doc)
+        .def_readwrite("force_threshold",
+            &ContactVisualizerParams::force_threshold,
+            cls_doc.force_threshold.doc)
+        .def_readwrite("newtons_per_meter",
+            &ContactVisualizerParams::newtons_per_meter,
+            cls_doc.newtons_per_meter.doc)
+        .def_readwrite(
+            "radius", &ContactVisualizerParams::radius, cls_doc.radius.doc)
+        .def("__repr__", [](const Class& self) {
+          return py::str(
+              "ContactVisualizerParams("
+              "publish_period={}, "
+              "color={}, "
+              "prefix={}, "
+              "delete_on_initialization_event={}, "
+              "force_threshold={}, "
+              "newtons_per_meter={}, "
+              "radius={})")
+              .format(self.publish_period, self.color, self.prefix,
+                  self.delete_on_initialization_event, self.force_threshold,
+                  self.newtons_per_meter, self.radius);
+        });
+  }
+}
+
 template <typename T>
 void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
@@ -23,6 +72,47 @@ void DoScalarDependentDefinitions(py::module m, T) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody::meshcat;
   constexpr auto& doc = pydrake_doc.drake.multibody.meshcat;
+
+  // ContactVisualizer
+  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+    using Class = ContactVisualizer<T>;
+    constexpr auto& cls_doc = doc.ContactVisualizer;
+    auto cls = DefineTemplateClassWithDefault<Class, systems::LeafSystem<T>>(
+        m, "ContactVisualizer", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<std::shared_ptr<geometry::Meshcat>,
+                 ContactVisualizerParams>(),
+            py::arg("meshcat"), py::arg("params") = ContactVisualizerParams{},
+            // `meshcat` is a shared_ptr, so does not need a keep_alive.
+            cls_doc.ctor.doc)
+        .def("Delete", &Class::Delete, cls_doc.Delete.doc)
+        .def("contact_results_input_port", &Class::contact_results_input_port,
+            py_rvp::reference_internal, cls_doc.contact_results_input_port.doc)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<T>*,
+                const MultibodyPlant<T>&, std::shared_ptr<geometry::Meshcat>,
+                ContactVisualizerParams>(&ContactVisualizer<T>::AddToBuilder),
+            py::arg("builder"), py::arg("plant"), py::arg("meshcat"),
+            py::arg("params") = ContactVisualizerParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // `meshcat` is a shared_ptr, so does not need a keep_alive.
+            py_rvp::reference,
+            cls_doc.AddToBuilder.doc_4args_builder_plant_meshcat_params)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<T>*,
+                const systems::OutputPort<T>&,
+                std::shared_ptr<geometry::Meshcat>, ContactVisualizerParams>(
+                &ContactVisualizer<T>::AddToBuilder),
+            py::arg("builder"), py::arg("contact_results_port"),
+            py::arg("meshcat"), py::arg("params") = ContactVisualizerParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // `meshcat` is a shared_ptr, so does not need a keep_alive.
+            py_rvp::reference,
+            cls_doc.AddToBuilder
+                .doc_4args_builder_contact_results_port_meshcat_params);
+  }
 
   // JointSliders
   {
@@ -55,6 +145,7 @@ PYBIND11_MODULE(meshcat, m) {
 
   py::module::import("pydrake.multibody.plant");
 
+  DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       NonSymbolicScalarPack{});
 }
