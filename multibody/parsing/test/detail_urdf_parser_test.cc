@@ -80,7 +80,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
   std::string full_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/double_pendulum.urdf");
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
   AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
   plant.Finalize();
 
@@ -119,7 +118,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAtlasMinimalContact) {
   std::string full_name = FindResourceOrThrow(
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
 
   AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
   plant.Finalize();
@@ -140,7 +138,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAddWithQuaternionFloatingDof) {
   const std::string model_file =
       FindResourceOrThrow(resource_dir + "zero_dof_robot.urdf");
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(model_file);
 
   MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
@@ -155,7 +152,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestOptionalSceneGraph) {
   const std::string full_name = FindResourceOrThrow(
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
   int num_visuals_explicit{};
   {
     // Test explicitly specifying `scene_graph`.
@@ -182,7 +178,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
       "drake/multibody/parsing/test/urdf_parser_test/"
       "joint_parsing_test.urdf");
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
 
   MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
@@ -440,7 +435,6 @@ template <typename ShapeType>
 void TestForParsedGeometry(const char* sdf_name, geometry::Role role) {
   const std::string full_name = FindResourceOrThrow(sdf_name);
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
   MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
@@ -831,7 +825,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, CollisionFilterGroupParsingTest) {
       "drake/multibody/parsing/test/urdf_parser_test/"
       "collision_filter_group_parsing_test.urdf");
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
 
   MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;

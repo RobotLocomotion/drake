@@ -234,9 +234,6 @@ class UrdfGeometryTests : public testing::Test {
       root_dir_ = full_path.substr(0, found);
     }
 
-    // TODO(sam.creasey) Add support for using an existing package map.
-    package_map_.PopulateUpstreamToDrake(full_path);
-
     const XMLElement* node = xml_doc_.FirstChildElement("robot");
     ASSERT_TRUE(node);
 
