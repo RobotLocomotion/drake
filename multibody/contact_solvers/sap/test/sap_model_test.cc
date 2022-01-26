@@ -57,6 +57,10 @@ const MatrixXd J34 =
                        2, 4, 9, 6).finished();
 // clang-format on
 
+const MatrixXd Z31 = MatrixXd::Zero(3, 1);
+const MatrixXd Z32 = MatrixXd::Zero(3, 2);
+const MatrixXd Z34 = MatrixXd::Zero(3, 4);
+
 GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
   const double time_step = 0.01;
   const int num_cliques = 4;
@@ -218,6 +222,21 @@ GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
   EXPECT_TRUE(CompareMatrices(p_participating, p_participating_expected));
   PRINT_VARn(p_participating.transpose());
 
+  // Verify constraints bundle.
+  // clang-format off
+  const MatrixXd J_expected = (MatrixXd(15, 7) <<
+    J31, J32, Z34,
+    J31, Z32, J34,
+    J31, Z32, J34,
+    Z31, J32, J34,
+    Z31, Z32, J34).finished();
+  // clang-format on
+  PRINT_VARn(J_expected);
+
+  const MatrixXd J = model.constraints_bundle().J().MakeDenseMatrix();
+  EXPECT_TRUE(CompareMatrices(J, J_expected));
+  
+  PRINT_VARn(J);
 
 #if 0
   // Unit test MakeGraph().

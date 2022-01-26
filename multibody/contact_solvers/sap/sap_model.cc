@@ -136,7 +136,6 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
   velocities_permutation_.Apply(sap_problem().v_star(), &v_star_);
   MultiplyByDynamicsMatrix(v_star_, &p_star_);
 
-#if 0
   BlockSparseMatrix<T> J = MakeConstraintsBundleJacobian(sap_problem(), graph,
                                                          cliques_permutation_);
 
@@ -176,7 +175,6 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
   // Create constraints bundle.
   constraints_bundle_ = std::make_unique<SapConstraintsBundle<T>>(
       std::move(J), std::move(vhat), std::move(R), std::move(constraints));
-#endif      
 }
 
 template <typename T>
