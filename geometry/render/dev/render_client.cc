@@ -56,14 +56,14 @@ void static_curl_cleanup() {
 
 // Write callback for libcurl, assumes `userp` points to an std::string.
 // See: https://curl.se/libcurl/c/libcurl-tutorial.html
-size_t write_string_data(void* buffer, size_t size, size_t nmemb, void* userp) {
+size_t WriteStringData(void* buffer, size_t size, size_t nmemb, void* userp) {
   const size_t data_size = size * nmemb;
   std::string* s = static_cast<std::string*>(userp);
   s->append(static_cast<char*>(buffer), data_size);
   return data_size;
 }
 
-size_t write_file_data(void* buffer, size_t size, size_t nmemb, void* userp) {
+size_t WriteFileData(void* buffer, size_t size, size_t nmemb, void* userp) {
   const size_t data_size = size * nmemb;
   std::ofstream* f = static_cast<std::ofstream*>(userp);
   f->write(static_cast<char*>(buffer), data_size);
@@ -85,8 +85,8 @@ using debug_data_t =
  - CURLINFO_DATA_OUT
  - CURLINFO_SSL_DATA_IN
  - CURLINFO_SSL_DATA_OUT */
-int debug_callback(CURL* /* handle */, curl_infotype type, char* data,
-                   size_t size, void* userp) {
+int DebugCallback(CURL* /* handle */, curl_infotype type, char* data,
+                  size_t size, void* userp) {
   if (type != CURLINFO_DATA_IN && type != CURLINFO_DATA_OUT &&
       type != CURLINFO_SSL_DATA_IN && type != CURLINFO_SSL_DATA_OUT) {
     debug_data_t* debug_data = static_cast<debug_data_t*>(userp);
@@ -131,8 +131,8 @@ void LogIfTrimmedWhitespaceNonEmpty(curl_infotype type,
   }
 }
 
-/* Log the combined messages added to `debug_data` by the debug_callback.
- When curl calls the debug_callack, it will do so with piecemeal components.  In
+/* Log the combined messages added to `debug_data` by the DebugCallback.
+ When curl calls the DebugCallback, it will do so with piecemeal components.  In
  the below walk-through, the "Accept: ..." statement was modified to add spaces
  between * and / to avoid ending the comment.
 
@@ -154,7 +154,7 @@ void LogIfTrimmedWhitespaceNonEmpty(curl_infotype type,
 
  Unlike after CURLINFO_HEADER_OUT, the CURLINFO_TEXT included after
  CURLINFO_HEADER_IN is provided one line at a time.  As a result, the
- drake::log() if added to directly in debug_callback can become somewhat
+ drake::log() if added to directly in DebugCallback can become somewhat
  cluttered and inconsistent.  This method combines any sequential messages that
  were appended into a single accumulated log call, trimming preceding and
  trailing whitespace to keep the log as orderly as possible.  In the example
@@ -334,7 +334,7 @@ void RenderClient::UploadScene(
   debug_data_t debug_data;
   if (verbose_) {
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-    curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &debug_callback);
+    curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &DebugCallback);
     curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &debug_data);
   }
 
@@ -374,7 +374,7 @@ void RenderClient::UploadScene(
   // Receive json response from the server.
   std::string post_response_text;
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, &post_response_text);
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &write_string_data);
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &WriteStringData);
 
   // Perform the POST and drake::log() prior to any potential exceptions.
   result = curl_easy_perform(curl);
@@ -442,7 +442,7 @@ std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
   debug_data_t debug_data;
   if (verbose_) {
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-    curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &debug_callback);
+    curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &DebugCallback);
     curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &debug_data);
   }
 
@@ -601,7 +601,7 @@ std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
         "{}",
         bin_out_path, why));
   }
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &write_file_data);
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &WriteFileData);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, &bin_out);
 
   // Perform the POST and drake::log() prior to any potential exceptions.
