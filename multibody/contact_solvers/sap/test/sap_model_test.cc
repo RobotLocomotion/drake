@@ -187,6 +187,18 @@ GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
   PRINT_VAR(model.num_participating_velocities());
   PRINT_VAR(model.num_impulses());
 
+  // Verify v_star.
+  // Clique 2 with velocities (4, 5, 6) does not participate and therefore it
+  // does not show up in v_start_participating.
+  const VectorXd v_star_participating_expected =
+      (VectorXd(7) << 1., 2., 3., 7., 8., 9., 10.).finished();
+  EXPECT_EQ(model.v_star(), v_star_participating_expected);
+
+  // Verify p_star = A * v (participating DOFs only).
+  const VectorXd p_star_participating_expected =
+      (VectorXd(7) << 1., 4., 6., 28., 32., 36., 40.).finished();
+  EXPECT_EQ(model.p_star(), p_star_participating_expected);      
+
   // Unit test MultiplyByDynamicsMatrix().
   const VectorXd v = VectorXd::LinSpaced(10, 1.0, 10.0);
   VectorXd v_participating(model.num_participating_velocities());
