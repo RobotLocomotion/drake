@@ -5,6 +5,7 @@ import unittest
 import numpy as np
 
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import (
     Box, Capsule, Cylinder, Ellipsoid, FramePoseVector, GeometryFrame,
     GeometryInstance, SceneGraph, Sphere,
@@ -43,6 +44,7 @@ class TestGeometryOptimization(unittest.TestCase):
         point.set_x(x=2*p)
         np.testing.assert_array_equal(point.x(), 2*p)
         point.set_x(x=p)
+        assert_pickle(self, point, lambda S: S.x())
 
         # TODO(SeanCurtis-TRI): This doesn't test the constructor that
         # builds from shape.
@@ -67,6 +69,7 @@ class TestGeometryOptimization(unittest.TestCase):
         with self.assertRaisesRegex(
                 RuntimeError, ".*not implemented yet for HPolyhedron.*"):
             hpoly.ToShapeWithPose()
+        assert_pickle(self, hpoly, lambda S: np.vstack((S.A(), S.b())))
 
         h_box = mut.HPolyhedron.MakeBox(
             lb=[-1, -1, -1], ub=[1, 1, 1])
@@ -110,6 +113,8 @@ class TestGeometryOptimization(unittest.TestCase):
         scale, witness = ellipsoid.MinimumUniformScalingToTouch(point)
         self.assertTrue(scale > 0.0)
         np.testing.assert_array_almost_equal(witness, p)
+        assert_pickle(self, ellipsoid,
+                      lambda S: np.vstack((S.A(), S.center())))
         e_ball = mut.Hyperellipsoid.MakeAxisAligned(
             radius=[1, 1, 1], center=self.b)
         np.testing.assert_array_equal(e_ball.A(), self.A)
@@ -149,6 +154,7 @@ class TestGeometryOptimization(unittest.TestCase):
             x=self.y, t=self.z)
         self.assertGreaterEqual(len(constraints), 2)
         self.assertIsInstance(constraints[0], Binding[Constraint])
+        assert_pickle(self, vpoly, lambda S: S.vertices())
         v_box = mut.VPolytope.MakeBox(
             lb=[-1, -1, -1], ub=[1, 1, 1])
         self.assertTrue(v_box.PointInSet([0, 0, 0]))
