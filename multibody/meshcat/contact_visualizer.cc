@@ -1,4 +1,4 @@
-#include "drake/multibody/plant/contact_results_to_meshcat.h"
+#include "drake/multibody/meshcat/contact_visualizer.h"
 
 #include <memory>
 #include <string>
@@ -12,14 +12,15 @@
 
 namespace drake {
 namespace multibody {
+namespace meshcat {
 
 using geometry::GeometryId;
 using geometry::Meshcat;
 
 template <typename T>
-ContactResultsToMeshcat<T>::ContactResultsToMeshcat(
-    std::shared_ptr<Meshcat> meshcat, ContactResultsToMeshcatParams params)
-    : systems::LeafSystem<T>(systems::SystemTypeTag<ContactResultsToMeshcat>{}),
+ContactVisualizer<T>::ContactVisualizer(
+    std::shared_ptr<Meshcat> meshcat, ContactVisualizerParams params)
+    : systems::LeafSystem<T>(systems::SystemTypeTag<ContactVisualizer>{}),
       meshcat_(std::move(meshcat)),
       params_(std::move(params)) {
   DRAKE_DEMAND(meshcat_ != nullptr);
@@ -27,12 +28,12 @@ ContactResultsToMeshcat<T>::ContactResultsToMeshcat(
   DRAKE_DEMAND(params_.force_threshold > 0.0);  // Strictly positive.
 
   this->DeclarePeriodicPublishEvent(params_.publish_period, 0.0,
-                                    &ContactResultsToMeshcat::UpdateMeshcat);
-  this->DeclareForcedPublishEvent(&ContactResultsToMeshcat::UpdateMeshcat);
+                                    &ContactVisualizer::UpdateMeshcat);
+  this->DeclareForcedPublishEvent(&ContactVisualizer::UpdateMeshcat);
 
   if (params_.delete_on_initialization_event) {
     this->DeclareInitializationPublishEvent(
-        &ContactResultsToMeshcat::OnInitialization);
+        &ContactVisualizer::OnInitialization);
   }
 
   contact_results_input_port_ =
@@ -43,30 +44,30 @@ ContactResultsToMeshcat<T>::ContactResultsToMeshcat(
 
 template <typename T>
 template <typename U>
-ContactResultsToMeshcat<T>::ContactResultsToMeshcat(
-    const ContactResultsToMeshcat<U>& other)
-    : ContactResultsToMeshcat(other.meshcat_, other.params_) {}
+ContactVisualizer<T>::ContactVisualizer(
+    const ContactVisualizer<U>& other)
+    : ContactVisualizer(other.meshcat_, other.params_) {}
 
 template <typename T>
-void ContactResultsToMeshcat<T>::Delete() const {
+void ContactVisualizer<T>::Delete() const {
   meshcat_->Delete(params_.prefix);
   contacts_.clear();
 }
 
 template <typename T>
-const ContactResultsToMeshcat<T>& ContactResultsToMeshcat<T>::AddToBuilder(
+const ContactVisualizer<T>& ContactVisualizer<T>::AddToBuilder(
     systems::DiagramBuilder<T>* builder, const MultibodyPlant<T>& plant,
-    std::shared_ptr<Meshcat> meshcat, ContactResultsToMeshcatParams params) {
+    std::shared_ptr<Meshcat> meshcat, ContactVisualizerParams params) {
   return AddToBuilder(builder, plant.get_contact_results_output_port(),
                       std::move(meshcat), std::move(params));
 }
 
 template <typename T>
-const ContactResultsToMeshcat<T>& ContactResultsToMeshcat<T>::AddToBuilder(
+const ContactVisualizer<T>& ContactVisualizer<T>::AddToBuilder(
     systems::DiagramBuilder<T>* builder,
     const systems::OutputPort<T>& contact_results_port,
-    std::shared_ptr<Meshcat> meshcat, ContactResultsToMeshcatParams params) {
-  auto& visualizer = *builder->template AddSystem<ContactResultsToMeshcat<T>>(
+    std::shared_ptr<Meshcat> meshcat, ContactVisualizerParams params) {
+  auto& visualizer = *builder->template AddSystem<ContactVisualizer<T>>(
       std::move(meshcat), std::move(params));
   builder->Connect(contact_results_port,
                    visualizer.contact_results_input_port());
@@ -74,7 +75,7 @@ const ContactResultsToMeshcat<T>& ContactResultsToMeshcat<T>::AddToBuilder(
 }
 
 template <typename T>
-systems::EventStatus ContactResultsToMeshcat<T>::UpdateMeshcat(
+systems::EventStatus ContactVisualizer<T>::UpdateMeshcat(
     const systems::Context<T>& context) const {
   const auto& contact_results =
       contact_results_input_port().template Eval<ContactResults<T>>(context);
@@ -169,14 +170,15 @@ systems::EventStatus ContactResultsToMeshcat<T>::UpdateMeshcat(
 }
 
 template <typename T>
-systems::EventStatus ContactResultsToMeshcat<T>::OnInitialization(
+systems::EventStatus ContactVisualizer<T>::OnInitialization(
     const systems::Context<T>&) const {
   Delete();
   return systems::EventStatus::Succeeded();
 }
 
+}  // namespace meshcat
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::ContactResultsToMeshcat)
+    class ::drake::multibody::meshcat::ContactVisualizer)

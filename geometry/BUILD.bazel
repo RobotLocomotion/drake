@@ -437,9 +437,9 @@ drake_cc_binary(
     deps = [
         ":meshcat",
         ":meshcat_visualizer",
+        "//multibody/meshcat:contact_visualizer",
         "//multibody/parsing",
         "//multibody/plant",
-        "//multibody/plant:contact_results_to_meshcat",
         "//systems/analysis:simulator",
     ],
 )

@@ -120,6 +120,7 @@ drake_pybind_library(
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake/common:cpp_template_py",
     ],
+    py_srcs = ["_plant_extra.py"],
 )
 
 drake_pybind_library(
@@ -284,6 +285,8 @@ drake_py_unittest(
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
         "//bindings/pydrake/systems:analysis_py",
         "//bindings/pydrake/systems:scalar_conversion_py",
+        # TODO(jwnimmer-tri) Remove this on 2022-05-01 per deprecations.
+        ":meshcat_py",
     ],
 )
 
@@ -303,6 +306,7 @@ drake_py_unittest(
     deps = [
         ":meshcat_py",
         ":parsing_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
 
