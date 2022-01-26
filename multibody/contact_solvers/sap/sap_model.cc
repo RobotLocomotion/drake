@@ -97,6 +97,10 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
   // (participating and non-participating).
   const ContactProblemGraph graph = sap_problem().MakeGraph();
 
+  for (const auto& g : graph.constraint_groups()) {
+    PRINT_VAR(g.cliques);
+  }
+
   // Permutations to map indexes from participating cliques/dofs to the original
   // set of cliques/dofs.
   cliques_permutation_ = MakeParticipatingCliquesPermutation(graph);
@@ -132,6 +136,7 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
   velocities_permutation_.Apply(sap_problem().v_star(), &v_star_);
   MultiplyByDynamicsMatrix(v_star_, &p_star_);
 
+#if 0
   BlockSparseMatrix<T> J = MakeConstraintsBundleJacobian(sap_problem(), graph,
                                                          cliques_permutation_);
 
@@ -171,6 +176,7 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
   // Create constraints bundle.
   constraints_bundle_ = std::make_unique<SapConstraintsBundle<T>>(
       std::move(J), std::move(vhat), std::move(R), std::move(constraints));
+#endif      
 }
 
 template <typename T>
@@ -226,11 +232,15 @@ PartialPermutation SapModel<T>::MakeParticipatingCliquesPermutation(
   for (const auto& e : graph.constraint_groups()) {
     const int c0 = e.cliques.first();
     const int c1 = e.cliques.second();
-    if (c0 >= 0 && participating_cliques[c0] < 0) {
+    if (participating_cliques[c0] < 0) {
       participating_cliques[c0] = num_participating_cliques++;
     }
-    if (participating_cliques[c1] < 0)
+    if (c1 != c0 && participating_cliques[c1] < 0)
       participating_cliques[c1] = num_participating_cliques++;
+  }
+  PRINT_VAR(participating_cliques.size());
+  for (auto cp : participating_cliques) {
+    PRINT_VAR(cp);
   }
   return PartialPermutation(std::move(participating_cliques));
 }
@@ -253,6 +263,10 @@ PartialPermutation SapModel<T>::MakeParticipatingVelocitiesPermutation(
       }
     }
     v_first += nv;
+  }
+  PRINT_VAR(participating_velocities.size());
+  for (auto vp : participating_velocities) {
+    PRINT_VAR(vp);
   }
   return PartialPermutation(std::move(participating_velocities));
 }

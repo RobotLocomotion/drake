@@ -7,6 +7,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
+#include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 
 #define PRINT_VAR(a) std::cout << #a ": " << a << std::endl;
 #define PRINT_VARn(a) std::cout << #a ":\n" << a << std::endl;
@@ -91,7 +92,7 @@ GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
   //                      ┌─┐
   //                      │ │
   // ┌───┐  0  ┌───┐  1  ┌┴─┴┐     ┌───┐
-  // │ 0 ├─────┤ 1 ├─────┤ 2 │     │ 3 │
+  // │ 0 ├─────┤ 1 ├─────┤ 3 │     │ 2 │
   // └─┬─┘     └───┘     └─┬─┘     └───┘
   //   │                   │
   //   └───────────────────┘
@@ -108,36 +109,66 @@ GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
   problem.AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
       0, 1, J31, J32, parameters));
   problem.AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-      1, 2, J32, J33, parameters));  
+      1, 3, J32, J34, parameters));  
   problem.AddConstraint(
-      std::make_unique<SapFrictionConeConstraint<double>>(2, J33, parameters));        
+      std::make_unique<SapFrictionConeConstraint<double>>(3, J34, parameters));        
   problem.AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-      0, 2, J31, J33, parameters));
+      0, 3, J31, J34, parameters));
   problem.AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-      0, 2, J31, J33, parameters));        
+      0, 3, J31, J34, parameters));        
 
   PRINT_VAR(problem.num_constraints());
   PRINT_VAR(problem.num_constrained_dofs());            
   EXPECT_EQ(problem.num_constraints(), 5);
   EXPECT_EQ(problem.num_constrained_dofs(), 15);
 
+  // Verify graph invariants:
+  // 1. Constraints involving a single clique are represented by a "loop"
+  //    connecting the clique with itself (therefore we expect constraint 2 to
+  //    connect clique 3 with itself.)  
+  // 2. Constraint gropus are lexicographically sorted by clique pair.
+  // 3. Participating cliques are numbered in the order they were originally
+  //    defined. Therefore we expect participating cliques to be re-numbered as:
+  //    0 --> 0, 1 --> 1, 3 --> 2.   
+  //const ContactProblemGraph graph = problem.MakeGraph();
+
+
   const SapModel<double> model(&problem);
   EXPECT_EQ(model.num_cliques(), 4);
   EXPECT_EQ(model.num_participating_cliques(), 3);
   EXPECT_EQ(model.num_velocities(), num_velocities);
   EXPECT_EQ(model.num_constraints(), 5);
-  EXPECT_EQ(model.num_participating_velocities(), 6);
+  EXPECT_EQ(model.num_participating_velocities(), 7);
   EXPECT_EQ(model.num_impulses(), 15);
+
+  // Verify participating cliques are numbered according to the order they were
+  // defined originally. That is, we expect participating cliques to be
+  // re-numbered as: 0 --> 0, 1 --> 1, 3 --> 2.
+  const std::vector<int> cliques_permutation_expected{0, 1, -1, 2};
+  EXPECT_EQ(model.cliques_permutation().permutation(),
+            cliques_permutation_expected);
+
+  // Verify participating velocities permutation.
+  // clang-format off
+  const std::vector<int> velocities_permutation_expected{
+    0,              // clique 0
+    1, 2,           // clique 1
+    -1, -1, -1,     // clique 2 (does not participate)
+    3, 4, 5,  6};   // clique 3
+  // clang-format on
+  EXPECT_EQ(model.velocities_permutation().permutation(),
+            velocities_permutation_expected);
 
   PRINT_VAR(model.num_cliques());
   PRINT_VAR(model.num_participating_cliques());
-
   for (const auto& Ac : model.dynamics_matrix()) {
     PRINT_VARn(Ac);
   }
 
   PRINT_VAR(model.num_participating_cliques());
 
+  // N.B. We know that participating cliques are enumerated according to the
+  // order they were enumerated in the original cliques.
   std::vector<MatrixXd> A_permuted_expected;
   A_permuted_expected.push_back(A[0]);
   A_permuted_expected.push_back(A[1]);

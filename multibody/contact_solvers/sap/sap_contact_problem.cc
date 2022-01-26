@@ -1,6 +1,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 
 #include <iostream>
+#include <map>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -275,16 +276,26 @@ const std::vector<MatrixX<T>>& SapContactProblem<T>::dynamics_matrix() const {
 
 template <typename T>
 ContactProblemGraph SapContactProblem<T>::MakeGraph() const {
-  std::unordered_map<SortedPair<int>, std::vector<int>> edge_constraints;
+  // We sort the constraint groups by clique pair lexicographically. This allow
+  // us to provide an invariant when checking the correctness of the code. As an
+  // additional invariant, this will us allow later on the enumerate
+  // participating cliques in the order they were provided.
+  // TODO(amcastro-tri): while these invariants are nice to have an
+  // unordered_map might be more efficient. Try this if profiling reveals a
+  // bottleneck here.
+  std::map<SortedPair<int>, std::vector<int>> constraint_groups;
   for (size_t k = 0; k < constraints_.size(); ++k) {
     const auto& c = constraints_[k];
-    const auto cliques_pair = drake::MakeSortedPair(c->clique0(), c->clique1());
-    edge_constraints[cliques_pair].push_back(k);
+    const int c0 = c->clique0();  // N.B. we know that clique0() > 0 always.
+    // The create a "loop" to signify a constraint within the same clique.
+    const int c1 = c->clique1() > 0 ? c->clique1() : c->clique0();
+    const auto cliques_pair = drake::MakeSortedPair(c0, c1);
+    constraint_groups[cliques_pair].push_back(k);
   }
 
-  const int num_edges = edge_constraints.size();
+  const int num_edges = constraint_groups.size();
   ContactProblemGraph graph(num_cliques(), num_edges);
-  for (auto& e : edge_constraints) {
+  for (auto& e : constraint_groups) {
     graph.AddConstraintGroup(ContactProblemGraph::ConstraintGroup(e.first, std::move(e.second)));
   }
 

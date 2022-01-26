@@ -90,6 +90,16 @@ class SapModel {
   int num_constraints() const;
   int num_impulses() const;
 
+  // Returns permutation for participating cliques.  
+  const PartialPermutation& cliques_permutation() const {
+    return cliques_permutation_;
+  }
+
+  // Returns permutation for participating velocities.
+  const PartialPermutation& velocities_permutation() const {
+    return velocities_permutation_;
+  }
+
   // Returns the system dynamics matrix A for the participating DOFs only.
   const std::vector<MatrixX<T>>& dynamics_matrix() const;
 

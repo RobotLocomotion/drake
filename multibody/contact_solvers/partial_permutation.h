@@ -87,6 +87,11 @@ class PartialPermutation {
     }
   }
 
+  // Returns permutation as a std::vector, see constructor for details.
+  const std::vector<int>& permutation() const {
+    return permutation_;
+  }
+
  private:
   std::vector<int> permutation_;
   std::vector<int> inverse_permutation_;
