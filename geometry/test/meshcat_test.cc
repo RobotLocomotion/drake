@@ -73,6 +73,11 @@ GTEST_TEST(MeshcatTest, Ports) {
   EXPECT_LE(m3.port(), 7099);
 }
 
+GTEST_TEST(MeshcatTest, NumActive) {
+  Meshcat meshcat;
+  EXPECT_EQ(meshcat.GetNumActiveConnections(), 0);
+}
+
 // The correctness of this is established with meshcat_manual_test.  Here we
 // simply aim to provide code coverage for CI (e.g., no segfaults).
 GTEST_TEST(MeshcatTest, SetObjectWithShape) {
