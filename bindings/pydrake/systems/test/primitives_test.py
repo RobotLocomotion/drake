@@ -535,7 +535,7 @@ class TestGeneral(unittest.TestCase):
         def silly_loss(Y, dloss_dY):
             global called_loss
             called_loss = True
-            dloss_dY = 0*Y + 1
+            dloss_dY[:] = 1
             return Y.sum()
 
         dloss_dparams = np.zeros((13,))
