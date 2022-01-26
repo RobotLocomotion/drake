@@ -60,6 +60,65 @@ const MatrixXd Z31 = MatrixXd::Zero(3, 1);
 const MatrixXd Z32 = MatrixXd::Zero(3, 2);
 const MatrixXd Z34 = MatrixXd::Zero(3, 4);
 
+class TestConstraint final : public SapConstraint<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestConstraint);
+
+  TestConstraint(int clique, double param)
+      : SapConstraint<double>(clique, MakeJacobianMatrix(clique)),
+        param_(param) {}
+
+  // @throws if the number of rows in J0 and J1 is different from three.
+  TestConstraint(int clique0, int clique1, double param)
+      : SapConstraint<double>(clique0, clique1, MakeJacobianMatrix(clique0),
+                              MakeJacobianMatrix(clique1)),
+        param_(param) {}
+
+  VectorX<double> CalcBiasTerm(const double&, const double&) const final {
+    return Eigen::Vector3d::Ones() * param_;
+  }
+
+  VectorX<double> CalcDiagonalRegularization(const double& time_step,
+                                             const double& wi) const final {
+    return Eigen::Vector3d::Ones() * param_;
+  }
+
+  // Not used in these tests.
+  void Project(const Eigen::Ref<const VectorX<double>>&,
+               const Eigen::Ref<const VectorX<double>>&,
+               EigenPtr<VectorX<double>>, MatrixX<double>*) const final {
+    DRAKE_UNREACHABLE();
+  };
+
+ private:
+  // This class constraints 3 DOFs. Therefore Jacobian matrices always have 3
+  // rows. For this test, the dimension of the dynamics matrix is the clique
+  // index plus one. Therefore this helper methods generates an arbitrary
+  // Jacobian matrix with the proper size for a given clique index. That is,
+  // while sizes are consistent with the problem in this test, numeric values
+  // are arbitrary.
+  MatrixXd MakeJacobianMatrix(int clique) {
+    switch (clique) {
+      case 0:
+        return J31;
+        break;
+      case 1:
+        return J32;
+        break;
+      case 2:
+        return J33;
+        break;
+      case 3:
+        return J34;
+        break;
+      default:
+        throw std::runtime_error("More than 4 DOFs not supported.");
+    }
+  }
+
+  double param_{0.0};  
+};
+
 class SapModelTester : public ::testing::Test {
  public:
   // Creates MultibodyPlant for an acrobot model.
@@ -82,6 +141,24 @@ class SapModelTester : public ::testing::Test {
     // during the unit test (SapContactProblem's constructor moves the data).
     problem_ = std::make_unique<SapContactProblem<double>>(
         time_step, std::vector<MatrixXd>(A_), VectorXd(v_star_));
+
+    // Make a problem using contact constraints with the following graph:
+    //
+    //                       2
+    //                      ┌─┐
+    //                      │ │
+    // ┌───┐  0  ┌───┐  1  ┌┴─┴┐     ┌───┐
+    // │ 0 ├─────┤ 1 ├─────┤ 3 │     │ 2 │
+    // └─┬─┘     └───┘     └─┬─┘     └───┘
+    //   │                   │
+    //   └───────────────────┘
+    //           3,4
+    //
+    problem_->AddConstraint(std::make_unique<TestConstraint>(0, 1, 1.0));
+    problem_->AddConstraint(std::make_unique<TestConstraint>(1, 3, 2.0));
+    problem_->AddConstraint(std::make_unique<TestConstraint>(3, 3.0));
+    problem_->AddConstraint(std::make_unique<TestConstraint>(0, 3, 4.0));
+    problem_->AddConstraint(std::make_unique<TestConstraint>(0, 3, 5.0));
   }
 
  protected:
@@ -96,15 +173,18 @@ namespace {
 
 TEST_F(SapModelTester, VerifySizes) {
   EXPECT_EQ(problem_->num_cliques(), 4);
-  EXPECT_EQ(problem_->num_constraints(), 0);
   EXPECT_EQ(problem_->num_velocities(), 10);
   EXPECT_EQ(problem_->num_velocities(0), 1);
   EXPECT_EQ(problem_->num_velocities(1), 2);
   EXPECT_EQ(problem_->num_velocities(2), 3);
   EXPECT_EQ(problem_->num_velocities(3), 4);
+  EXPECT_EQ(problem_->num_constraints(), 5);
+  EXPECT_EQ(problem_->num_constrained_dofs(), 15);
 
   PRINT_VAR(problem_->num_cliques());
   PRINT_VAR(problem_->num_velocities());
+  PRINT_VAR(problem_->num_constraints());
+  PRINT_VAR(problem_->num_constrained_dofs());
 }
 
 GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
