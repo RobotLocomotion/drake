@@ -20,7 +20,6 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
-namespace {
 
 // clang-format off
 const Eigen::Matrix2d S22 =
@@ -61,6 +60,53 @@ const MatrixXd Z31 = MatrixXd::Zero(3, 1);
 const MatrixXd Z32 = MatrixXd::Zero(3, 2);
 const MatrixXd Z34 = MatrixXd::Zero(3, 4);
 
+class SapModelTester : public ::testing::Test {
+ public:
+  // Creates MultibodyPlant for an acrobot model.
+  void SetUp() override {
+    const double time_step = 0.01;
+
+    // Setup a problem with four cliques and linear dynamics given by
+    // A = {I₁, 2I₂, 3I₃, 4I₄}.
+    // Therefore the number of generalized velocities is nv = 10.
+    const int num_cliques = 4;
+    A_.resize(num_cliques);
+    for (int c = 1; c <= num_cliques; ++c) {
+      A_[c - 1].resize(c, c);
+      A_[c - 1] = MatrixXd::Identity(c, c) * c;
+    }
+    const int num_velocities = 10;
+    v_star_ = VectorXd::LinSpaced(num_velocities, 1.0, 10.0);
+
+    // N.B. We create copies of A and v_star so that we can keep the originals
+    // during the unit test (SapContactProblem's constructor moves the data).
+    problem_ = std::make_unique<SapContactProblem<double>>(
+        time_step, std::vector<MatrixXd>(A_), VectorXd(v_star_));
+  }
+
+ protected:
+  // Data used to define the linearized dynamics of the system, i.e.
+  // A⋅(v−v*) = Jᵀ⋅γ.
+  std::vector<MatrixXd> A_;  // Linear system dynamics.
+  VectorXd v_star_;          // Free-motion generalized velocities.
+  std::unique_ptr<SapContactProblem<double>> problem_;
+};
+
+namespace {
+
+TEST_F(SapModelTester, VerifySizes) {
+  EXPECT_EQ(problem_->num_cliques(), 4);
+  EXPECT_EQ(problem_->num_constraints(), 0);
+  EXPECT_EQ(problem_->num_velocities(), 10);
+  EXPECT_EQ(problem_->num_velocities(0), 1);
+  EXPECT_EQ(problem_->num_velocities(1), 2);
+  EXPECT_EQ(problem_->num_velocities(2), 3);
+  EXPECT_EQ(problem_->num_velocities(3), 4);
+
+  PRINT_VAR(problem_->num_cliques());
+  PRINT_VAR(problem_->num_velocities());
+}
+
 GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
   const double time_step = 0.01;
   const int num_cliques = 4;
@@ -78,17 +124,7 @@ GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
   // N.B. We create copies of A and v_star so that when moved in the constructor
   // arguments the original objects remain valid in this scope.
   SapContactProblem<double> problem(time_step, std::vector<MatrixXd>(A),
-                                    VectorXd(v_star));
-  EXPECT_EQ(problem.num_cliques(), 4);
-  EXPECT_EQ(problem.num_constraints(), 0);
-  EXPECT_EQ(problem.num_velocities(), num_velocities);
-  EXPECT_EQ(problem.num_velocities(0), 1);
-  EXPECT_EQ(problem.num_velocities(1), 2);
-  EXPECT_EQ(problem.num_velocities(2), 3);
-  EXPECT_EQ(problem.num_velocities(3), 4);
-
-  PRINT_VAR(problem.num_cliques());
-  PRINT_VAR(problem.num_velocities());
+                                    VectorXd(v_star));  
 
   // Make a problem using contact constraints with the following graph:
   //
@@ -235,7 +271,7 @@ GTEST_TEST(SapModel, MakeConstraintsBundleJacobian) {
 
   const MatrixXd J = model.constraints_bundle().J().MakeDenseMatrix();
   EXPECT_TRUE(CompareMatrices(J, J_expected));
-  
+
   PRINT_VARn(J);
 
 #if 0

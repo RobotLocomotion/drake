@@ -122,6 +122,8 @@ class SapModel {
   }
 
  private:
+  friend class SapModelTester;
+
   PartialPermutation MakeParticipatingCliquesPermutation(
       const ContactProblemGraph& graph) const;
   PartialPermutation MakeParticipatingVelocitiesPermutation(
