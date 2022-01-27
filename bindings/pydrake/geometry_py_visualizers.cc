@@ -283,9 +283,10 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.DeleteSlider.doc)
         .def("DeleteAddedControls", &Class::DeleteAddedControls,
             cls_doc.DeleteAddedControls.doc)
-        .def("StaticHtml", &Class::StaticHtml, cls_doc.StaticHtml.doc);
-    // Note: we intentionally do not bind the advanced methods (HasProperty and
-    // GetPacked*) which were intended primarily for testing in C++.
+        .def("StaticHtml", &Class::StaticHtml, cls_doc.StaticHtml.doc)
+        .def("HasPath", &Class::HasPath, py::arg("path"), cls_doc.HasPath.doc);
+    // Note: we intentionally do not bind the advanced methods (GetPacked...)
+    // which were intended primarily for testing in C++.
   }
 
   // MeshcatAnimation
