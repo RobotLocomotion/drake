@@ -247,11 +247,11 @@ This model is simple to implement and cheap to compute, but has some drawbacks.
 - The witness points are not necessarily unique (see Figure 3). This means, generally, there is no guarantee that the witness points will be consistent from frame to frame, which means that the point at which the force is applied will not be consistent. This leads to integration issues.
 
 
-- TODO: add image
+@image html "multibody/hydroelastics/images/contact-fig-01.png"
 
 Figure 1: Two intersections with significantly different intersecting volumes characterized with the same measure: d.
 
-- TODO: add image
+@image html "multibody/hydroelastics/images/contact-fig-02.png"
 
 Figure 2: Modeling contact forces with point contact. (a) the actual intersection of the simulated bodies. (b) the conceptual deformation of the orange body creating a large area of contact. (c) how point contact sees the deformation: contact at a single point.
 
@@ -263,12 +263,11 @@ Hydroelastic Contact is another compliant contact formulation. It was originally
 
 The basic idea is that the two colliding objects have some measure of rigidity. This rigidity is modeled as a pressure field on the interior of the object (see Figure 3). A point on the surface experiences zero pressure, but as it is pressed inward, it experiences an increase in pressure (up to a maximum pressure on the interior of the body). When two bodies are colliding, we look for a surface in the intersecting volume where the pressure on the surface is the same in each object; it’s an equilibrium surface (see Figure 4). There is pressure defined across the entire contact surface. It is integrated to define the resultant contact force and moment.
 
-
-- TODO: add image
+@image html "multibody/hydroelastics/images/contact-fig-03.png"
 
 Figure 3: Three shapes and possible pressure fields in the interior of the object. Pressure is zero at the outer boundary, and maximum on the interior.
 
-- TODO: add image
+@image html "multibody/hydroelastics/images/contact-fig-04.png"
 
 Figure 4: The equilibrium contact surface (pale green) between two bodies where the left-hand, yellow body has (a) greater rigidity, (b) equal rigidity, and (c) less rigidity.
 
