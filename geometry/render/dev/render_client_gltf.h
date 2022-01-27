@@ -76,7 +76,8 @@ class RenderClientGltf : public RenderEngineVtk, public RenderClient {
 
   /* Upload and render the scene described by `scene_path` for the associated
   camera `core` and `image_type`.  Both `min_depth` and `max_depth` must be
-  supplied with `image_type=depth`. */
+  supplied with `image_type=depth`.  The returned value is the path to the image
+  file on disk ready to be loaded into a drake image buffer. */
   std::string UploadAndRender(const RenderCameraCore& core,
                               internal::ImageType image_type,
                               const std::string& scene_path,
