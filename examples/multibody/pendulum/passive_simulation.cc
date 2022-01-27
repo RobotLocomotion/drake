@@ -168,7 +168,7 @@ int do_main() {
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "A simple pendulum demo using Drake's MultibodyPlant. "
-      "Launch drake-visualizer before running this example.");
+      "Launch meldis before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::multibody::pendulum::do_main();
 }

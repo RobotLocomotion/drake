@@ -15,8 +15,8 @@ namespace examples {
 namespace acrobot {
 namespace {
 
-// Simple example which simulates the (passive) Acrobot.  Run drake-visualizer
-// to see the animated result.
+// Simple example which simulates the (passive) Acrobot.  Run meldis to see
+// the animated result.
 
 DEFINE_double(simulation_sec, 10.0,
               "Number of seconds to simulate.");

@@ -16,6 +16,11 @@ bazel build examples/particles/uniformly_accelerated_particle_demo
 
 ### How do I run it?
 
+Open a visualizer window
+```
+bazel run //tools:meldis -- --open-window &
+```
+
 To run this demo, from Drake's repository root just run:
 
 ```

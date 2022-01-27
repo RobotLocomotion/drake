@@ -40,11 +40,11 @@ Prerequisites
 -------------
 
 From your `drake` workspace directory you first need to build this example and
-the drake visualizer.
+the visualizer.
 
-Ensure that you have built drake visualizer with
+Open a visualizer window
 ```
-bazel build //tools:drake_visualizer
+bazel run //tools:meldis -- --open-window &
 ```
 
 Build this example with
@@ -55,19 +55,10 @@ bazel build //examples/simple_gripper
 Running the Example
 -------------------
 
-Launch the visualizer (optionally visualizing contact forces or not)
-
-Without contact forces visualized:
-```
-./bazel-bin/tools/drake_visualizer```
-With contact forces visualized:
-```
-./bazel-bin/tools/drake_visualizer --script multibody/rigid_body_plant/visualization/contact_viz.py
-```
-
 Launch the simulation with
 ```
-./bazel-bin/examples/simple_gripper/simple_gripper --simulation_time=10.0
+./bazel-bin/examples/simple_gripper/simple_gripper --simulation_time=10.0 \
+  --simulator_target_realtime_rate=1.0
 ```
 where for this particular invocation example we are specifying the simulation
 time in seconds as a command line option. To get a list of command line options
