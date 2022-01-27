@@ -8,7 +8,7 @@
      fine after the fix in #13953.
      TODO(sherm1) Use the original file plus a patch or in-memory editing
                   rather than this complete copy (issue #13954). -->
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="atlas">
+<robot xmlns:drake="http://drake.mit.edu" xmlns:xacro="http://www.ros.org/wiki/xacro" name="atlas">
   <link name="l_clav">
     <inertial>
       <mass value="4.466"/>
