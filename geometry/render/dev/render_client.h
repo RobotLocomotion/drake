@@ -39,8 +39,8 @@ class RenderClient {
    @param url
      The url of the server to communicate with, e.g., `"http://127.0.0.1"`.
    @param port
-     The port to communicate with the server on, e.g., `8000`.  A value of `0`
-     implies no port-level communication is needed.
+     The port to communicate with the server on, e.g., `8000`.  A value of less
+     than or equal to `0` implies no port-level communication is needed.
    @param upload_endpoint
      The endpoint that the server expects to receive scene file uploads to,
      e.g., `"upload"`.  Do not include a preceding `/`, communications with the
@@ -254,7 +254,8 @@ class RenderClient {
   /** The url of the server to communicate with. */
   const std::string& url() const { return url_; }
 
-  /** The port of the server to communicate on.  `0` means no port. */
+  /** The port of the server to communicate on.  A value of less than or equal
+   `0` means no port level communication is required. */
   int32_t port() const { return port_; }
 
   /** The upload endpoint of the server, used in UploadScene().  Should **not**
@@ -265,7 +266,8 @@ class RenderClient {
    Should **not** include a preceding slash. */
   const std::string& render_endpoint() const { return render_endpoint_; }
 
-  /** Whether or not the client should be verbose. */
+  /** Whether or not the client should be verbose including logging all curl
+   communications. */
   bool verbose() const { return verbose_; }
 
   /** Whether or not the client should cleanup its temp_directory(). */
