@@ -9,6 +9,7 @@ a dependency of the executable, and `xacro` will be run automatically.
 ## Run the example
 Run the example with the default available solver:
 ```
+bazel run //tools:meldis -- --open-window &
 bazel run //examples/multibody/strandbeest:run_with_motor
 ```
 Run the example with the [SNOPT](https://drake.mit.edu/bazel.html#snopt) 

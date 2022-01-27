@@ -27,6 +27,7 @@ import numpy as np
 import webbrowser
 
 from drake import (
+    lcmt_contact_results_for_viz,
     lcmt_viewer_draw,
     lcmt_viewer_geometry_data,
     lcmt_viewer_load_robot,
@@ -50,6 +51,11 @@ from pydrake.lcm import (
 from pydrake.math import (
     RigidTransform,
     RotationMatrix,
+)
+from pydrake.multibody.meshcat import (
+    _PointContactVisualizer,
+    _PointContactVisualizerItem,
+    ContactVisualizerParams,
 )
 
 
@@ -151,10 +157,39 @@ class _ViewerApplet:
             p=(p_x, p_y, p_z))
 
 
+class _ContactApplet:
+    """Displays lcmt_contact_results_for_viz into Meshcat."""
+
+    def __init__(self, *, meshcat):
+        # By default, don't show any contact illustrations.
+        meshcat.SetProperty("/CONTACT_RESULTS", "visible", False)
+
+        # Add point visualization.
+        params = ContactVisualizerParams()
+        params.prefix = "/CONTACT_RESULTS/point"
+        self._helper = _PointContactVisualizer(meshcat, params)
+
+    def on_contact_results(self, message):
+        """Handler for lcmt_contact_results_for_viz. Note that only point
+        contacts are shown so far; hydroelastic contacts are not shown."""
+        viz_items = []
+        for lcm_item in message.point_pair_contact_info:
+            viz_items.append(_PointContactVisualizerItem(
+                body_A=lcm_item.body1_name,
+                body_B=lcm_item.body2_name,
+                contact_force=lcm_item.contact_force,
+                contact_point=lcm_item.contact_point))
+        self._helper.Update(viz_items)
+
+
 class Meldis:
     """
+    MeshCat LCM Display Server (MeLDiS)
+
     Offers a MeshCat vizualization server that listens for and draws Drake's
     legacy LCM vizualization messages.
+
+    Refer to the pydrake.visualization.meldis module docs for details.
     """
 
     def __init__(self, *, meshcat_port=None):
@@ -172,7 +207,10 @@ class Meldis:
                         message_type=lcmt_viewer_draw,
                         handler=viewer.on_viewer_draw)
 
-        # TODO(jwnimmer-tri) Add an applet for lcmt_contact_results_for_viz.
+        contact = _ContactApplet(meshcat=self.meshcat)
+        self._subscribe(channel="CONTACT_RESULTS",
+                        message_type=lcmt_contact_results_for_viz,
+                        handler=contact.on_contact_results)
 
     def _subscribe(self, channel, message_type, handler):
         def _parse_and_handle(data):
