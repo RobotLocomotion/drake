@@ -102,6 +102,7 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
   cliques_permutation_ = MakeParticipatingCliquesPermutation(graph);
   velocities_permutation_ = MakeParticipatingVelocitiesPermutation(
       sap_problem(), cliques_permutation_);
+  impulses_permutation_ = MakeImpulsesPermutation(graph);
 
   // Extract momentum matrix's per-tree diagonal blocks. Compute diagonal
   // scaling inv_sqrt_A.
@@ -252,6 +253,34 @@ PartialPermutation SapModel<T>::MakeParticipatingVelocitiesPermutation(
     v_first += nv;
   }  
   return PartialPermutation(std::move(participating_velocities));
+}
+
+template <typename T>
+PartialPermutation SapModel<T>::MakeImpulsesPermutation(
+    const ContactProblemGraph& graph) const {
+  std::vector<int> constraint_start(sap_problem().num_constraints());
+  constraint_start[0] = 0;
+  for (int i = 1; i < sap_problem().num_constraints(); ++i) {
+    const int previous_constraint_size =
+        sap_problem().get_constraint(i - 1).num_constrained_dofs();
+    constraint_start[i] = constraint_start[i - 1] + previous_constraint_size;
+  }
+
+  std::vector<int> impulses_permutation(sap_problem().num_constrained_dofs());
+  int group_offset = 0;  // impulse index.
+  for (const ContactProblemGraph::ConstraintGroup& g : graph.constraint_groups()) {
+    for (int i : g.constraints_index) {
+      const SapConstraint<T>& c = sap_problem().get_constraint(i);
+      const int ni = c.num_constrained_dofs();
+      const int offset = constraint_start[i];
+      for (int m = 0; m < ni; ++m) {
+        impulses_permutation[offset + m] = group_offset + m;
+      }
+      group_offset += ni;
+    }
+  }
+
+  return PartialPermutation(std::move(impulses_permutation));
 }
 
 template <typename T>

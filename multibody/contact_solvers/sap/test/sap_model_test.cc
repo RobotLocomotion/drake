@@ -221,6 +221,23 @@ TEST_F(SapModelTester, VerifyPermutations) {
   // clang-format on
   EXPECT_EQ(model.velocities_permutation().permutation(),
             velocities_permutation_expected);
+
+  // Clique pair  |  Constraint |  Indexes
+  //     (0, 1)   |  0          |  0, 1, 2
+  //     (0, 3)   |  3          |  3, 4, 5
+  //     (0, 3)   |  4          |  6, 7, 8
+  //     (1, 3)   |  1          |  9, 10, 11
+  //     (3, 3)   |  2          |  12, 13, 14
+  // clang-format off
+  const std::vector<int> impulses_permutation_expected{
+    0, 1, 2,     // constraint 0
+    9, 10, 11,   // constraint 1
+    12, 13, 14,  // constraint 2
+    3, 4, 5,     // constraint 3
+    6, 7, 8};    // constraint 4
+  // clang-format on
+  EXPECT_EQ(model.impulses_permutation().permutation(),
+            impulses_permutation_expected);
 }
 
 // Unit test to verify dynamics quantities related to participating DOFs only.

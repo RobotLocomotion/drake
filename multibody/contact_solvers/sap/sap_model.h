@@ -100,6 +100,10 @@ class SapModel {
     return velocities_permutation_;
   }
 
+  const PartialPermutation& impulses_permutation() const {
+    return impulses_permutation_;
+  }
+
   const T& time_step() const { return problem_->time_step(); }
 
   // Returns the system dynamics matrix A for the participating DOFs only.
@@ -127,6 +131,8 @@ class SapModel {
   PartialPermutation MakeParticipatingVelocitiesPermutation(
       const SapContactProblem<T>& problem,
       const PartialPermutation& cliques_permutation) const;
+  PartialPermutation MakeImpulsesPermutation(
+      const ContactProblemGraph& graph) const;
 
   BlockSparseMatrix<T> MakeConstraintsBundleJacobian(
       const SapContactProblem<T>& problem, const ContactProblemGraph& graph,
@@ -161,6 +167,7 @@ class SapModel {
   const SapContactProblem<T>* problem_{nullptr};
   PartialPermutation cliques_permutation_;
   PartialPermutation velocities_permutation_;
+  PartialPermutation impulses_permutation_;
 
   // Per-clique blocks of the momentum matrix. Only participating cliques.
   // That is, the size of At is cliques_permutation_.domain_size().
