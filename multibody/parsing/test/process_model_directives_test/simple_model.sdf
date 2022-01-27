@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version="1.7">
+<sdf xmlns:drake="http://drake.mit.edu" version="1.7">
   <model name="scoped_model">
     <link name="base">
       <inertial>

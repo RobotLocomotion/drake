@@ -4,7 +4,7 @@ SDF automatically generated with: gz sdf -p ../urdf/iiwa14_polytope_collision.ur
 
 Later edited by hand to rename the base link and remove damping from the joints.
 -->
-<sdf version="1.7">
+<sdf xmlns:drake="http://drake.mit.edu" version="1.7">
   <model name="iiwa14">
     <link name="iiwa_link_0">
       <inertial>

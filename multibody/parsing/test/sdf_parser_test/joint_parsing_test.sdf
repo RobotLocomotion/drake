@@ -2,7 +2,7 @@
 <!--
 Defines an SDF model with various types of joints used for testing the parser.
 -->
-<sdf version="1.7">
+<sdf xmlns:drake="http://drake.mit.edu" version="1.7">
   <world name="joint_parsing_test_world">
     <model name="joint_parsing_test">
       <link name="link1">
