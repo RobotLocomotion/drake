@@ -1,9 +1,7 @@
 #pragma once
 
-#include <map>
 #include <memory>
-#include <string>
-#include <utility>
+#include <vector>
 
 #include "drake/geometry/meshcat.h"
 #include "drake/multibody/meshcat/contact_visualizer_params.h"
@@ -15,9 +13,15 @@ namespace drake {
 namespace multibody {
 namespace meshcat {
 
+namespace internal {
+// Defined in point_contact_visualizer.h.
+class PointContactVisualizer;
+struct PointContactVisualizerItem;
+}  // namespace internal
+
 /** ContactVisualizer is a system that publishes a ContactResults to
 geometry::Meshcat; it draws double-sided arrows at the location of the contact
-force with length scaled by the magnitude of the contact force.  The most common
+force with length scaled by the magnitude of the contact force. The most common
 use of this system is to connect its input port to the contact results output
 port of a MultibodyPlant.
 
@@ -29,6 +33,11 @@ port of a MultibodyPlant.
 
 Note: This system current only visualizes "point pair" contacts.
 
+@warning In the current implementation, ContactVisualizer methods must be called
+from the same thread where the class instance was constructed. For example,
+running multiple simulations in parallel using the same ContactVisualizer
+instance is not yet supported. We may generalize this in the future.
+
 @tparam_nonsymbolic_scalar
 @ingroup visualization */
 template <typename T>
@@ -38,12 +47,14 @@ class ContactVisualizer final : public systems::LeafSystem<T> {
 
   /** Creates an instance of %ContactVisualizer */
   explicit ContactVisualizer(std::shared_ptr<geometry::Meshcat> meshcat,
-                                   ContactVisualizerParams params = {});
+                             ContactVisualizerParams params = {});
 
   /** Scalar-converting copy constructor. See @ref system_scalar_conversion.
   It should only be used to convert _from_ double _to_ other scalar types. */
   template <typename U>
   explicit ContactVisualizer(const ContactVisualizer<U>& other);
+
+  ~ContactVisualizer() final;
 
   /** Calls geometry::Meshcat::Delete(std::string_view path), with the path set
   to `prefix`. Since this visualizer will only ever add geometry under this
@@ -62,7 +73,7 @@ class ContactVisualizer final : public systems::LeafSystem<T> {
   }
 
   /** Adds a ContactVisualizer and connects it to the given
-  MultibodyPlant's ContactResults-valued output port. */
+  MultibodyPlant's multibody::ContactResults-valued output port. */
   static const ContactVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder, const MultibodyPlant<T>& plant,
       std::shared_ptr<geometry::Meshcat> meshcat,
@@ -84,26 +95,35 @@ class ContactVisualizer final : public systems::LeafSystem<T> {
 
   /* The periodic event handler. It tests to see if the last scene description
   is valid (if not, sends the objects) and then sends the transforms. */
-  systems::EventStatus UpdateMeshcat(const systems::Context<T>& context) const;
+  systems::EventStatus UpdateMeshcat(const systems::Context<T>&) const;
+
+  /* Calc function for the cache entry of visualized point contacts. */
+  void CalcPointContacts(
+      const systems::Context<T>&,
+      std::vector<internal::PointContactVisualizerItem>*) const;
 
   /* Handles the initialization event. */
   systems::EventStatus OnInitialization(const systems::Context<T>&) const;
 
-  /* The index of this System's QueryObject-valued input port. */
-  int contact_results_input_port_{};
-
   /* Meshcat is mutable because we must send messages (a non-const operation)
-  from a const System (e.g. during simulation).  We use shared_ptr instead of
+  from a const System (e.g., during simulation). We use shared_ptr instead of
   unique_ptr to facilitate sharing ownership through scalar conversion;
   creating a new Meshcat object during the conversion is not a viable option.
-   */
-  mutable std::shared_ptr<geometry::Meshcat> meshcat_{};
+  */
+  const std::shared_ptr<geometry::Meshcat> meshcat_;
 
-  /* Map of the published contact pairs to their boolean visible status. */
-  mutable std::map<SortedPair<geometry::GeometryId>, bool> contacts_{};
+  /* The parameters for the visualizer. */
+  const ContactVisualizerParams params_;
 
-  /* The parameters for the visualizer.  */
-  ContactVisualizerParams params_;
+  /* This helper class is mutable because we must update it (a non-const
+  operation) from a const System (e.g., during simulation). */
+  std::unique_ptr<internal::PointContactVisualizer> point_visualizer_;
+
+  /* The index of this System's ContactResults-valued input port. */
+  systems::InputPortIndex contact_results_input_port_;
+
+  /* The index of the point_contacts cache entry. */
+  systems::CacheIndex point_contacts_cache_;
 };
 
 /** A convenient alias for the ContactVisualizer class when using

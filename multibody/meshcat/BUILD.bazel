@@ -17,6 +17,7 @@ drake_cc_package_library(
         ":contact_visualizer",
         ":contact_visualizer_params",
         ":joint_sliders",
+        ":point_contact_visualizer",
     ],
 )
 
@@ -26,6 +27,7 @@ drake_cc_library(
     hdrs = ["contact_visualizer.h"],
     deps = [
         ":contact_visualizer_params",
+        ":point_contact_visualizer",
         "//common:essential",
         "//geometry:meshcat",
         "//math:geometric_transform",
@@ -81,6 +83,18 @@ drake_cc_googletest(
         "//geometry:meshcat_visualizer",
         "//geometry/test_utilities:meshcat_environment",
         "//multibody/parsing",
+    ],
+)
+
+drake_cc_library(
+    name = "point_contact_visualizer",
+    srcs = ["point_contact_visualizer.cc"],
+    hdrs = ["point_contact_visualizer.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":contact_visualizer_params",
+        "//geometry:meshcat",
+        "//math:geometric_transform",
     ],
 )
 
