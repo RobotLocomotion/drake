@@ -30,7 +30,7 @@ There are three different options:
 
 The default model is ContactModel::kPoint and is the implementation of the point contact model defined in the introduction. Hydroelastic contact plays no role in determining the dynamics.
 
-Models ContactModel::kHydroelastic and ContactModel::kHydroelasticWithFallback will both enable the hydroelastic contact. For forces to be created from hydroleastic contact, geometries need to have hydroelastic representations (see Creating hydroelastic representations of geometries).
+Models ContactModel::kHydroelastic and ContactModel::kHydroelasticWithFallback will both enable the hydroelastic contact. For forces to be created from hydroelastic contact, geometries need to have hydroelastic representations (see Creating hydroelastic representations of geometries).
 
 Contact::kHydroelastic is a strict contact model that will attempt to create a hydroelastic contact surface whenever a geometry with a hydroelastic representation appears to be in contact (based on broad-phase bounding volume culling). With this contact model, the simulator will throw an exception if:
     - The contact is between two geometries with rigid hydroelastic representation, or
@@ -133,7 +133,7 @@ For a body, we’ve defined a collision geometry called “body1_collision”. I
 Let’s look at the specific tags:
 
 - <drake:proximity_properties>: This is the container for all Drake-specific proximity property values.
-- The following tags define hydroleastic properties for the collision geometry and would be contained in the <drake:proximity_properties> tag.
+- The following tags define hydroelastic properties for the collision geometry and would be contained in the <drake:proximity_properties> tag.
   - <drake:rigid_hydroelastic> or <drake:compliant_hydroelastic>
   - <drake:mesh_resolution_hint>
   - <drake:hydroelastic_modulus> (for compliant geometry only)
@@ -154,7 +154,7 @@ Hydroelastic properties can be set to objects dynamically via the following APIs
 
 Some extra notes:
 
-AddContactMaterial isn’t hydroelastic contact specific, but does provide a mechanism for setting the friction coefficients that hydroelastic and point contact models both use.
+AddContactMaterial() isn’t hydroelastic contact specific, but does provide a mechanism for setting the friction coefficients that hydroelastic and point contact models both use.
 
 AddRigidHydroelasticProperties() is overloaded. One version accepts a value for resolution hint, one does not. When in doubt which to use, it is harmless to provide a resolution hint value that would be ignored for some geometries, but failing to provide one where necessary will cause the simulation to throw an exception.
 Note the special case for declaring a compliant half space -- it takes the required slab thickness parameter in addition to the hydroelastic modulus value.
@@ -233,7 +233,7 @@ This is a random collection of things we can do to maximize the benefits of the 
 - Sometimes my model should be rigid, sometimes compliant based on what it’s making contact with. Assign *two* collision geometries to the body. Make one rigid, one compliant. Via *very* careful manipulation of collision filters, filter out undesired contact. Include an example/tutorial of this temporary workaround.
 
 <h4>Gaming the model</h4>
-- Rigid meshes need not be closed. You can use this to provide finegrain control over where a contact surface can actually exist.
+- Rigid meshes need not be closed. You can use this to provide fine grained control over where a contact surface can actually exist.
 - For a given relative configuration between bodies, the magnitude of force can be tuned in two ways: increasing the hydroelastic modulus and/or scaling the geometry up (in essence, increasing the average penetration depth).
 
 <h1>Appendix</h1>
