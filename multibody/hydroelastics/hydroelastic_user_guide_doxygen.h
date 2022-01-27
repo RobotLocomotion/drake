@@ -21,7 +21,7 @@ Using hydroelastic contact requires two things:
 
 <h3>Enabling Hydroelastic contact in your simulation</h3>
 
-Because MultibodyPlant is responsible for computing the dynamics of the system (and the contact forces are part of that), the ability to enable/disable the hydroelastic contact model is part of MultibodyPlant’s API:  MultibodyPlant::set_contact_model().
+Because MultibodyPlant is responsible for computing the dynamics of the system (and the contact forces are part of that), the ability to enable/disable the hydroelastic contact model is part of MultibodyPlant’s API: MultibodyPlant::set_contact_model().
 
 There are three different options:
     - ContactModel::kPoint
@@ -102,27 +102,19 @@ In order for a mesh to be given a hydroelastic representation, it must be assign
 
 Properties can be assigned to geometries inside a URDF or SDFormat file using some custom Drake XML tags. Alternatively, the properties can be assigned programmatically.
 
-<h4?Assigning hydroelastic properties in file specifications</h4>
+<h4>Assigning hydroelastic properties in file specifications</h4>
 
 Drake has introduced a number of custom tags to provide a uniform language to specify hydroelastic properties in both URDF and SDFormat. The tag names are the same but the values are expressed differently (to align with the practices common to URDF and SDFormat. For example, consider a custom tag <drake:foo> that takes a single real value. In an SDFormat file it would look like:
 
-<pre>
-
-	<drake:foo>17</drake:foo>
-
-</pre>
+    <drake:foo>17</drake:foo>
 
 But in a URDF file it would look like this:
 
-<pre>
-
-	<drake:foo value=”17”/>
-
-</pre>
+    <drake:foo value=”17”/>
 
 Both URDF and SDFormat files define a <collision> tag. This tag contains the tag for specifying the geometry type and associated properties. The hydroelastic properties can be specified as a child of the <collision> tag. Consider the following SDFormat example:
-<pre>
-…
+
+    …
       <collision name="body1_collision">
         <geometry>
           ...
@@ -134,8 +126,7 @@ Both URDF and SDFormat files define a <collision> tag. This tag contains the tag
           <drake:hunt_crossley_dissipation>1.25</drake:hunt_crossley_dissipation>
         </drake:proximity_properties>
       </collision>
-…
-</pre>
+    …
 
 For a body, we’ve defined a collision geometry called “body1_collision”. Inside the <collision> tag (as a sibling to the <geometry> tag), we’ve introduced the Drake-specific <drake:proximity_properties> tag. In it we’ve defined the geometry to be compliant for hydroelastic contact and specified its resolution hint, its hydroelastic modulus,  and its dissipation.
 
