@@ -266,7 +266,7 @@ void VerifyImportedImageDimensions(int expected_width, int expected_height,
 
 }  // namespace
 
-RenderClient::RenderClient(const std::string& url, unsigned port,
+RenderClient::RenderClient(const std::string& url, int32_t port,
                            const std::string& upload_endpoint,
                            const std::string& render_endpoint, bool verbose,
                            bool no_cleanup)

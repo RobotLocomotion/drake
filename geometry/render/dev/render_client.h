@@ -55,7 +55,7 @@ class RenderClient {
    @param no_cleanup
      Whether or not the temp_directory() should be deleted upon destruction of
      this instance. */
-  explicit RenderClient(const std::string& url, unsigned port,
+  explicit RenderClient(const std::string& url, int32_t port,
                         const std::string& upload_endpoint,
                         const std::string& render_endpoint, bool verbose,
                         bool no_cleanup);
@@ -255,7 +255,7 @@ class RenderClient {
   const std::string& url() const { return url_; }
 
   /** The port of the server to communicate on.  `0` means no port. */
-  unsigned port() const { return port_; }
+  int32_t port() const { return port_; }
 
   /** The upload endpoint of the server, used in UploadScene().  Should **not**
    include a preceding slash. */
@@ -276,7 +276,7 @@ class RenderClient {
  private:
   std::string temp_directory_;
   std::string url_;
-  unsigned port_;
+  int32_t port_;
   std::string upload_endpoint_;
   std::string render_endpoint_;
   bool verbose_;

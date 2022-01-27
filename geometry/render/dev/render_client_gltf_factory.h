@@ -14,7 +14,7 @@ namespace render {
 struct RenderClientGltfParams {
   std::optional<RenderLabel> default_label{};
   std::string url{"http://127.0.0.1"};
-  unsigned port{8000};
+  int32_t port{8000};
   std::string upload_endpoint{"upload"};
   std::string render_endpoint{"render"};
   bool verbose = false;
