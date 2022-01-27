@@ -149,8 +149,8 @@ Hydroelastic properties can be set to objects dynamically via the following APIs
 
 - AddContactMaterial()
 - AddRigidHydroelasticProperties()
-- AddSoftHydroelasticProperties()
-- AddSoftHydroelasticPropertiesForHalfSpace()
+- AddCompliantHydroelasticProperties()
+- AddCompliantHydroelasticPropertiesForHalfSpace()
 
 Some extra notes:
 
@@ -230,7 +230,7 @@ This is a random collection of things we can do to maximize the benefits of the 
 
 <h4>Working within the limitations</h4>
 
-- Sometimes my model should be rigid, sometimes soft based on what it’s making contact with. Assign *two* collision geometries to the body. Make one rigid, one soft. Via *very* careful manipulation of collision filters, filter out undesired contact. Include an example/tutorial of this temporary workaround.
+- Sometimes my model should be rigid, sometimes compliant based on what it’s making contact with. Assign *two* collision geometries to the body. Make one rigid, one compliant. Via *very* careful manipulation of collision filters, filter out undesired contact. Include an example/tutorial of this temporary workaround.
 
 <h4>Gaming the model</h4>
 - Rigid meshes need not be closed. You can use this to provide finegrain control over where a contact surface can actually exist.
