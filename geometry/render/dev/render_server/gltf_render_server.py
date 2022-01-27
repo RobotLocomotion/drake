@@ -152,9 +152,11 @@ def render_callback(
         for which the calling method will pass forward to the client to
         indicate failure.
     """
-    # NOTE: the path to `render_server_backend` is only valid from in bazel.
+    # NOTE: the path to `vtk_render_server_backend` is only valid from bazel.
     # The path to the renderer executable to call.
-    backend = str((this_file_dir / ".." / "render_server_backend").resolve())
+    backend = str(
+        (this_file_dir / ".." / "vtk_render_server_backend").resolve()
+    )
     proc_args = [
         backend,
         "--input",

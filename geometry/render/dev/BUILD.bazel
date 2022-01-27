@@ -94,8 +94,8 @@ drake_cc_library(
 # ------------------------------------------------------------------------------
 # Render server
 drake_cc_binary(
-    name = "render_server_backend",
-    srcs = ["render_server/render_server_backend.cc"],
+    name = "vtk_render_server_backend",
+    srcs = ["render_server/vtk_render_server_backend.cc"],
     deps = [
         "//common:filesystem",
         "//geometry/render:render_engine_vtk",
@@ -127,7 +127,7 @@ py_binary(
     args = ["proxy_run_gunicorn"],
     data = [
         "render_server/README.md",
-        ":render_server_backend",
+        ":vtk_render_server_backend",
     ],
     main = "render_server/gltf_render_server.py",
 )
