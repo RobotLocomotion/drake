@@ -100,8 +100,12 @@ class SapModel {
     return velocities_permutation_;
   }
 
+  const T& time_step() const { return problem_->time_step(); }
+
   // Returns the system dynamics matrix A for the participating DOFs only.
   const std::vector<MatrixX<T>>& dynamics_matrix() const;
+
+  const BlockSparseMatrix<T>& J() const { return constraints_bundle_->J(); }
 
   // Returns free-motion velocities for participating DOFs.
   const VectorX<T>& v_star() const;
@@ -113,7 +117,7 @@ class SapModel {
   // considered.
   // @pre p must be a valid pointer.
   // @pre both v and p must be of size num_participating_velocities().
-  void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* p) const;  
+  void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* p) const;    
 
  private:
   friend class SapModelTester;
