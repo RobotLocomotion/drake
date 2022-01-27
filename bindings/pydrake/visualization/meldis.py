@@ -157,7 +157,7 @@ class Meldis:
     legacy LCM vizualization messages.
     """
 
-    def __init__(self, meshcat_port=None):
+    def __init__(self, *, meshcat_port=None):
         self._lcm = DrakeLcm()
         lcm_url = self._lcm.get_lcm_url()
         logging.info(f"Meldis is listening for LCM messages at {lcm_url}")
