@@ -16,36 +16,35 @@ There are many ways to model contact between rigid bodies. Drake uses an approac
 It is relatively simple to enable a simulation to use hydroelastic contact. However, using it effectively requires some experience and consideration. This section details the mechanisms and choice involved in enabling hydroelastic contact and the next section helps guide you through some common tips, tricks, and traps.
 
 Using hydroelastic contact requires two things:
-- Configuring the system (MultibodyPlant) to use hydroelastic contact.
+- Configuring the system (drake::multibody::MultibodyPlant) to use hydroelastic contact.
 - Applying appropriate properties to the collision geometries to enable hydroelastic contact calculations.
 
 <h3>Enabling Hydroelastic contact in your simulation</h3>
 
-Because MultibodyPlant is responsible for computing the dynamics of the system (and the contact forces are part of that), the ability to enable/disable the hydroelastic contact model is part of MultibodyPlant’s API: MultibodyPlant::set_contact_model().
+Because `MultibodyPlant` is responsible for computing the dynamics of the system (and the contact forces are part of that), the ability to enable/disable the hydroelastic contact model is part of `MultibodyPlant`’s API: drake::multibody::MultibodyPlant::set_contact_model().
 
 There are three different options:
-- ContactModel::kPoint
-- ContactModel::kHydroelastic
-- ContactModel::kHydroelasticWithFallback
+- drake::multibody::ContactModel::kPoint
+- drake::multibody::ContactModel::kHydroelastic
+- drake::multibody::ContactModel::kHydroelasticWithFallback
 
-The default model is ContactModel::kPoint and is the implementation of the point contact model defined in the introduction. Hydroelastic contact plays no role in determining the dynamics.
+The default model is `ContactModel::kPoint` and is the implementation of the point contact model defined in the introduction. Hydroelastic contact plays no role in determining the dynamics.
 
-Models ContactModel::kHydroelastic and ContactModel::kHydroelasticWithFallback will both enable the hydroelastic contact. For forces to be created from hydroelastic contact, geometries need to have hydroelastic representations (see Creating hydroelastic representations of geometries).
+Models `ContactModel::kHydroelastic` and `ContactModel::kHydroelasticWithFallback` will both enable the hydroelastic contact. For forces to be created from hydroelastic contact, geometries need to have hydroelastic representations (see Creating hydroelastic representations of geometries).
 
-Contact::kHydroelastic is a strict contact model that will attempt to create a hydroelastic contact surface whenever a geometry with a hydroelastic representation appears to be in contact (based on broad-phase bounding volume culling). With this contact model, the simulator will throw an exception if:
+`ContactModel::kHydroelastic` is a strict contact model that will attempt to create a hydroelastic contact surface whenever a geometry with a hydroelastic representation appears to be in contact (based on broad-phase bounding volume culling). With this contact model, the simulator will throw an exception if:
     - The contact is between two geometries with rigid hydroelastic representation, or
     - The contact is between a geometry with a hydroelastic representation and one without.
 
 Collisions between two geometries where neither has a hydroelastic representation are simply ignored.
 
-Contact::kHydroelasticWithFallback provides “fallback” behavior for when ContactModel::kHydroelastic would throw. When those scenarios are detected, it uses the point contact model between the colliding geometries so that the contact can be accounted for and produce contact forces. As the implementation evolves, more and more contact will be captured with hydroelastic contact and the circumstances in which the point-contact fallback is applied will decrease.
-
+`Contact::kHydroelasticWithFallback` provides “fallback” behavior for when `ContactModel::kHydroelastic` would throw. When those scenarios are detected, it uses the point contact model between the colliding geometries so that the contact can be accounted for and produce contact forces. As the implementation evolves, more and more contact will be captured with hydroelastic contact and the circumstances in which the point-contact fallback is applied will decrease.
 
 <h3>Creating hydroelastic representations of collision geometries</h3>
 
-By default no geometry in SceneGraph has a hydroelastic representation. So, enabling hydroelastic contact in MultibodyPlant, but forgetting to configure the geometries will lead to either simulation crashes or point contact-based forces.
+By default no geometry in drake::geometry::SceneGraph has a hydroelastic representation. So, enabling hydroelastic contact in `MultibodyPlant`, but forgetting to configure the geometries will lead to either simulation crashes or point contact-based forces.
 
-In order for a mesh to be given a hydroelastic representation, it must be assigned certain properties. The exact properties it needs depends on the Shape type and whether it is rigid or compliant. Some properties can be defined, but if they are absent they’ll be provided by MultibodyPlant. First we’ll discuss each of the properties and then discuss how they can be specified.
+In order for a mesh to be given a hydroelastic representation, it must be assigned certain properties. The exact properties it needs depends on the Shape type and whether it is rigid or compliant. Some properties can be defined, but if they are absent they’ll be provided by `MultibodyPlant`. First we’ll discuss each of the properties and then discuss how they can be specified.
 
 <h4>Properties for hydroelastic contact</h4>
 - Hydroelastic classification
@@ -74,7 +73,7 @@ In order for a mesh to be given a hydroelastic representation, it must be assign
 - Hydroelastic modulus
   - This is the measure of how stiff the material is. It directly defines how much pressure is exerted given a certain amount of penetration. More pressure leads to greater forces. Larger values create stiffer objects. An infinite modulus is mathematically equivalent to a “rigid” object. (Although, it is probably better, in that case, to simply declare it “rigid”.)
   - This is *only* required for shapes declared to be “compliant”. It can be defined for shapes declared as “rigid”, but the value will be ignored. (It can be convenient to always define it to enable tests where one might toggle the classification between rigid and compliant such that the compliant declaration is always well formed.)
-  - Declaring a geometry to be compliant but not providing a valid hydroelastic modulus will produce an error at the time the geometry is added to SceneGraph.
+  - Declaring a geometry to be compliant but not providing a valid hydroelastic modulus will produce an error at the time the geometry is added to `SceneGraph`.
   - This is similar to something like Young’s modulus but it is not identical.
     - The primary distinction is this isn’t purely a material property. The value is entangled with the geometry. It essentially scales the force based on the *percentage* of penetration into an object (i.e., strain). So, a fixed modulus value might lead to a 1cm penetration on one sphere. But if the sphere were scaled up by a factor of 10, the penetration would become 10cm. So, if there are constraints on penetration depth, the modulus would have to increase with the scale of the geometry.
   - Notes on choosing a value:
@@ -84,7 +83,7 @@ In order for a mesh to be given a hydroelastic representation, it must be assign
   - A non-negative real value in ???.
   - This gives the contact an energy-damping property.
   - The larger the value, the more energy is damped.
-  - If no value is provided, MultibodyPlant provides a default value of zero.
+  - If no value is provided, `MultibodyPlant` provides a default value of zero.
   - Notes on choosing a value:
     - For objects that are nominally rigid, starting with zero-damping is good.
     - If the behavior seems “jittery”, gradually increase the amount of dissipation. Typical values would remain in the range [0, 3] with 1 being a typical damping amount.
@@ -161,7 +160,7 @@ Note the special case for declaring a compliant half space -- it takes the requi
 
 <h2>Visualizing hydroelastic contact</h2>
 
-Currently we can visualize the contact surface using drake_visualizer; however, it will be replaced by MeshCat in the future.
+Currently we can visualize the contact surface using drake_visualizer; however, it will be replaced by [MeshCat](https://github.com/rdeits/meshcat) in the future.
 
 Start drake_visualizer by:
 
@@ -175,7 +174,9 @@ Run a simulation with hydroelastic contact model; for example,
 
 By default, at the time of this writing, Drake Visualizer will look like this:
 
-- TOOO: add image
+|  |  |
+| :-: | :-: |
+| @image html "multibody/hydroelastics/images/drake-vis-01.png" width=90% | @image html "multibody/hydroelastics/images/drake-vis-02.png" width=95% |
 
 In the above pictures, we see two red force vectors acting at the centroids of the two contact surfaces and also the blue moment vector. One contact surface represents the ball pushing the dinner plate down. The other contact surface represents the rectangular floor pushing the dinner plate up. Gravity forces are not shown.
 
@@ -187,21 +188,20 @@ The Scene Browser lists all the hydroelastic contacts. We can turn off the plate
 
 - TODO: add image
 
-To customize the contact visualization, go to the following menu:
-Plugins > Contacts > Configure Hydroelastic Contact Visualization
+To customize the contact visualization, go to the following menu: `Plugins` > `Contacts` > `Configure Hydroelastic Contact Visualization`
 
 - TODO: add image
 
-You can set <Maximum pressure> to what is observed (5e4 Pa in this example, default 1e8 Pa), so the shading of the contact surface looks more reasonable in the following picture:
+You can set `Maximum pressure` to what is observed (5e4 Pa in this example, default 1e8 Pa), so the shading of the contact surface looks more reasonable in the following picture:
 
 - TODO: add image
 
 
-You can set <Edge width> of the white meshes of the contact surface with options to toggle the pressure shading (<Render contact surface with pressure>) and the contact mesh (<Render contact surface edges>).
+You can set `Edge width` of the white meshes of the contact surface with options to toggle the pressure shading (`Render contact surface with pressure`) and the contact mesh (`Render contact surface edges`).
 
 - TODO: add image
 
-By default, the force vectors are drawn at fixed length. We can draw each force according to its magnitude by <Vector scaling mode> and <Global scale of all vectors>. The following picture shows that the floor-plate contact force is slightly stronger than the floor-ball contact force to compensate for gravity.
+By default, the force vectors are drawn at fixed length. We can draw each force according to its magnitude by `Vector scaling mode` and `Global scale of all vectors`. The following picture shows that the floor-plate contact force is slightly stronger than the floor-ball contact force to compensate for gravity.
 
     Vector scaling mode = Scaled (default Fixed Length)
     Global scale of all vectors = 0.001 (default 0.300)
@@ -210,7 +210,7 @@ By default, the force vectors are drawn at fixed length. We can draw each force 
 
 <h2>Pitfalls/Troubleshooting</h2>
 
-Various ways that hydroelastic contact may surprise you.
+Here are various ways that hydroelastic contact may surprise you.
 - By default, a rigid body is not a rigid hydroelastic body until users say so. Otherwise, it is ignored by the hydroelastic contact model and might get point contact instead.
   - Users need to call AddRigidHydroelasticProperties() or use the URDF or SDFormat tag <drake:rigid_hydroelastic/>.
 - Backface culling -- the visualized contact surface is not what you expect. Or, “Why are there holes?”
@@ -219,10 +219,10 @@ Various ways that hydroelastic contact may surprise you.
   - Make the sphere bigger, the force gets weaker for the same contact surface.
 - “I don’t seem to be getting any contact surfaces although my spheres are clearly overlapping!” Depending on how coarsely you tessellated your geometry (a sphere, at its coarsest, is an octahedron), there can be a large amount of error between the primitive surface and discrete mesh’s surface. Make sure you visualize the hydro meshes and have what you expect.
 - Stiff and coarse is seldom a good thing. The stiffer an object is, the more the details of the discrete tessellation will directly contribute to the dynamics.
-  - Ideally, a demo that shows a coarse sphere with decreasing elasticity rolling would be good. One rolls like an 8-sided dice. One more closely approximates a sphere.
+  - Ideally, there should be a demo that shows a coarse sphere with decreasing elasticity rolling would be good. One rolls like an 8-sided dice. One more closely approximates a sphere.
 - Getting moments out of the contact depends on how many elements are in the contact surface. If the elements of the two contributing meshes are much larger than the actual contact surface, the contact can become, in essence, point contact.
 - Half spaces are not represented by meshes. They don’t contribute *any* geometry to the resultant contact surface. The contact surface’s refinement will depend on the other geometry’s level of refinement.
-- Resolution hint (<drake:mesh_resolution_hint>) has no effect on Box.
+- Resolution hint (`drake:mesh_resolution_hint`) has no effect on Box.
 
 <h3>Tips and Tricks</h3>
 
