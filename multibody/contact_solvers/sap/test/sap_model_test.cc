@@ -14,6 +14,7 @@
 
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
+using Eigen::Vector3d;
 using Eigen::VectorXd;
 
 namespace drake {
@@ -295,6 +296,38 @@ TEST_F(SapModelTester, VerifyConstraintsBundleJacobian) {
   EXPECT_TRUE(CompareMatrices(J, J_expected));
 
   PRINT_VARn(J);
+}
+
+TEST_F(SapModelTester, VerifyConstraintBias) {
+  const SapModel<double> model(problem_.get());
+
+  // SapModel organizes the constraints bundle in the order specified by the
+  // ContactProblemGraph of the specified SapContactProblem. We know the graph
+  // groups constraints lexicographically by clique pairs. Within each group
+  // constraints are in the order they were added. Therefore we know constraints
+  // are in the following new order dictated by the graph:
+  //
+  // Clique pair  |  Constraint index (see schematic in the fixture)
+  //     (0, 1)   |  0
+  //     (0, 3)   |  3
+  //     (0, 3)   |  4
+  //     (1, 3)   |  1
+  //     (3, 3)   |  2
+
+  // Based on the reordering of constraints documented above, and given the
+  // implementation of TestConstraint::CalcBiasTerm(), we know the expected vhat
+  // is:
+  // clang-format off
+  const VectorXd vhat_expected = (VectorXd(15) << 
+    Vector3d::Ones() * 1.0,
+    Vector3d::Ones() * 4.0,
+    Vector3d::Ones() * 5.0,
+    Vector3d::Ones() * 2.0,
+    Vector3d::Ones() * 3.0
+  ).finished();
+  // clang-format on
+
+  EXPECT_TRUE(CompareMatrices(constraints_bundle(model).vhat(), vhat_expected));
 }
 
 }  // namespace
