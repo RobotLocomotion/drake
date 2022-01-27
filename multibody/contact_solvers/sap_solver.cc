@@ -741,7 +741,7 @@ void SapSolver<T>::UpdateCostAndGradientsCache(const State& state,
   const VectorX<T>& vhat = constraints_bundle().vhat();
   impulses_cache.y = vhat - cache->vc();
   impulses_cache.y.array() *= Rinv.array();  
-  constraints_bundle().CalcProjectImpulsesAndCalcConstraintsHessian(
+  constraints_bundle().ProjectImpulsesAndCalcConstraintsHessian(
       impulses_cache.y, constraints_bundle().R(), &impulses_cache.gamma,
       &gradients_cache.G);
   ++mutable_stats().num_impulses_cache_updates;

@@ -48,7 +48,7 @@ class SapConstraintBundle {
                        VectorX<T>* gamma,
                        std::vector<MatrixX<T>>* dPdy = nullptr) const;
 
-  void CalcProjectImpulsesAndCalcConstraintsHessian(
+  void ProjectImpulsesAndCalcConstraintsHessian(
       const VectorX<T>& y, const VectorX<T>& R, VectorX<T>* gamma,
       std::vector<MatrixX<T>>* G) const;
 

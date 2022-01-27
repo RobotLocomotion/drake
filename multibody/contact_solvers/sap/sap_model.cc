@@ -48,37 +48,37 @@ void SapConstraintBundle<T>::ProjectImpulses(
     const VectorX<T>& y, const VectorX<T>& R, VectorX<T>* gamma,
     std::vector<MatrixX<T>>* dPdy) const {
   int constraint_start = 0;
-  for (int k = 0; k < num_constraints(); ++k) {
-    const SapConstraint<T>& c = *constraints_[k];
-    const int nk = c.num_constrained_dofs();
-    const auto y_k = y.segment(constraint_start, nk);
-    const auto R_k = R.segment(constraint_start, nk);
-    auto gamma_k = gamma->segment(constraint_start, nk);
+  for (int i = 0; i < num_constraints(); ++i) {
+    const SapConstraint<T>& c = *constraints_[i];
+    const int ni = c.num_constrained_dofs();
+    const auto y_i = y.segment(constraint_start, ni);
+    const auto R_i = R.segment(constraint_start, ni);
+    auto gamma_i = gamma->segment(constraint_start, ni);
     if (dPdy != nullptr) {
-      MatrixX<T>& dPdy_k = (*dPdy)[k];
-      c.Project(y_k, R_k, &gamma_k, &dPdy_k);
+      MatrixX<T>& dPdy_i = (*dPdy)[i];
+      c.Project(y_i, R_i, &gamma_i, &dPdy_i);
     } else {
-      c.Project(y_k, R_k, &gamma_k);
+      c.Project(y_i, R_i, &gamma_i);
     }
-    constraint_start += nk;
+    constraint_start += ni;
   }
 }
 
 template <typename T>
-void SapConstraintBundle<T>::CalcProjectImpulsesAndCalcConstraintsHessian(
+void SapConstraintBundle<T>::ProjectImpulsesAndCalcConstraintsHessian(
     const VectorX<T>& y, const VectorX<T>& R, VectorX<T>* gamma,
     std::vector<MatrixX<T>>* G) const {
   ProjectImpulses(y, R, gamma, G);  // G = dPdy.
 
   // The regularizer Hessian is G = ∇²ℓ = d²ℓ/dvc² = dP/dy⋅R⁻¹.
   int constraint_start = 0;
-  for (int k = 0; k < num_constraints(); ++k) {
-    const SapConstraint<T>& c = *constraints_[k];
-    const int nk = c.num_constrained_dofs();
-    const auto R_k = R.segment(constraint_start, nk);
-    const MatrixUpTo6<T> dPdy_k = (*G)[k];
-    (*G)[k] = dPdy_k * R_k.cwiseInverse().asDiagonal();
-    constraint_start += nk;
+  for (int i = 0; i < num_constraints(); ++i) {
+    const SapConstraint<T>& c = *constraints_[i];
+    const int ni = c.num_constrained_dofs();
+    const auto R_i = R.segment(constraint_start, ni);
+    const MatrixUpTo6<T> dPdy_i = (*G)[i];
+    (*G)[i] = dPdy_i * R_i.cwiseInverse().asDiagonal();
+    constraint_start += ni;
   }
 }
 

@@ -235,7 +235,7 @@ class SapConstraintBundle {
     }
   }
 
-  void CalcProjectImpulsesAndCalcConstraintsHessian(
+  void ProjectImpulsesAndCalcConstraintsHessian(
       const VectorX<T>& y, const VectorX<T>& R, VectorX<T>* gamma,
       std::vector<MatrixX<T>>* G) {
     Project(y, R, gamma, G);  // G = dPdy.
