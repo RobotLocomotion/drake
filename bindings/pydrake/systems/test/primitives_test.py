@@ -535,7 +535,10 @@ class TestGeneral(unittest.TestCase):
         def silly_loss(Y, dloss_dY):
             global called_loss
             called_loss = True
-            dloss_dY = 0*Y + 1
+            # We must be careful to update the dloss in place, rather than bind
+            # a new matrix to the same variable name.
+            dloss_dY[:] = 1
+            # dloss_dY = np.array(...etc...)  # <== wrong
             return Y.sum()
 
         dloss_dparams = np.zeros((13,))
