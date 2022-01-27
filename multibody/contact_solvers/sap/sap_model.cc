@@ -442,3 +442,6 @@ void SapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
+
+template class ::drake::multibody::contact_solvers::internal::
+    SapConstraintsBundle<double>;

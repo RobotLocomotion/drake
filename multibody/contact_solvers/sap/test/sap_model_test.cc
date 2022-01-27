@@ -81,7 +81,7 @@ class TestConstraint final : public SapConstraint<double> {
 
   VectorX<double> CalcDiagonalRegularization(const double& time_step,
                                              const double& wi) const final {
-    return Eigen::Vector3d::Ones() * param_;
+    return Eigen::Vector3d::Ones() * param_ * 2.0;
   }
 
   // Not used in these tests.
@@ -282,6 +282,8 @@ TEST_F(SapModelTester, VerifyParticipatingDofsDynamics) {
 TEST_F(SapModelTester, VerifyConstraintsBundleJacobian) {
   const SapModel<double> model(problem_.get());
 
+  EXPECT_EQ(constraints_bundle(model).num_constraints(), 5);
+
   // clang-format off
   const MatrixXd J_expected = (MatrixXd(15, 7) <<
     J31, J32, Z34,
@@ -298,7 +300,7 @@ TEST_F(SapModelTester, VerifyConstraintsBundleJacobian) {
   PRINT_VARn(J);
 }
 
-TEST_F(SapModelTester, VerifyConstraintBias) {
+TEST_F(SapModelTester, VerifyConstraintBiasAndRegularization) {
   const SapModel<double> model(problem_.get());
 
   // SapModel organizes the constraints bundle in the order specified by the
@@ -328,6 +330,21 @@ TEST_F(SapModelTester, VerifyConstraintBias) {
   // clang-format on
 
   EXPECT_TRUE(CompareMatrices(constraints_bundle(model).vhat(), vhat_expected));
+
+  // Based on the reordering of constraints documented above, and given the
+  // implementation of TestConstraint::CalcDiagonalRegularization(), we know the
+  // expected regularization diagonal matrix R is:
+  // clang-format off
+  const VectorXd R_expected = (VectorXd(15) << 
+    Vector3d::Ones() * 2.0,
+    Vector3d::Ones() * 8.0,
+    Vector3d::Ones() * 10.0,
+    Vector3d::Ones() * 4.0,
+    Vector3d::Ones() * 6.0
+  ).finished();
+  // clang-format on
+
+  EXPECT_TRUE(CompareMatrices(constraints_bundle(model).R(), R_expected));
 }
 
 }  // namespace
