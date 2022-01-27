@@ -2,6 +2,7 @@ from pydrake.multibody.meshcat import (
     ContactVisualizer_,
     ContactVisualizerParams,
     JointSliders,
+    _PointContactVisualizer,
 )
 
 import os
@@ -116,3 +117,11 @@ class TestMeshcat(unittest.TestCase):
         builder.AddSystem(dut)
         diagram = builder.Build()
         dut.Run(diagram=diagram, timeout=1.0)
+
+    def test_internal_point_contact_visualizer(self):
+        """A very basic existance test, since this class is internal use only.
+        The pydrake-internal user (meldis) has additional acceptance tests.
+        """
+        meshcat = Meshcat()
+        params = ContactVisualizerParams()
+        dut = _PointContactVisualizer(meshcat=meshcat, params=params)
