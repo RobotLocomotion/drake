@@ -182,31 +182,30 @@ In the above pictures, we see two red force vectors acting at the centroids of t
 
 In the next picture, we zoom-in and rotate to show the contact surface between the dinner plate and the floor better. The ball is pushing one side of the plate downward enough that only half of the bottom of the plate makes contact with the floor.
 
-- TODO: add image
+@image html "multibody/hydroelastics/images/drake-vis-03.png"
 
 The Scene Browser lists all the hydroelastic contacts. We can turn off the plate-ball contact keeping only the plate-floor contact for clarity. Use the “eye” icon to toggle off the ball-plate contact as shown in the following picture. We can also make the dinner plate transparent too.
 
-- TODO: add image
+@image html "multibody/hydroelastics/images/drake-vis-04.png"
 
-To customize the contact visualization, go to the following menu: `Plugins` > `Contacts` > `Configure Hydroelastic Contact Visualization`
+To customize the contact visualization, go to the following menu:
 
-- TODO: add image
+    Plugins` > `Contacts` > `Configure Hydroelastic Contact Visualization
+
+@image html "multibody/hydroelastics/images/drake-vis-05.png"
 
 You can set `Maximum pressure` to what is observed (5e4 Pa in this example, default 1e8 Pa), so the shading of the contact surface looks more reasonable in the following picture:
 
-- TODO: add image
-
+@image html "multibody/hydroelastics/images/drake-vis-06.png"
 
 You can set `Edge width` of the white meshes of the contact surface with options to toggle the pressure shading (`Render contact surface with pressure`) and the contact mesh (`Render contact surface edges`).
-
-- TODO: add image
 
 By default, the force vectors are drawn at fixed length. We can draw each force according to its magnitude by `Vector scaling mode` and `Global scale of all vectors`. The following picture shows that the floor-plate contact force is slightly stronger than the floor-ball contact force to compensate for gravity.
 
     Vector scaling mode = Scaled (default Fixed Length)
     Global scale of all vectors = 0.001 (default 0.300)
 
-- TODO: add image
+@image html "multibody/hydroelastics/images/drake-vis-07.png"
 
 <h2>Pitfalls/Troubleshooting</h2>
 
