@@ -16,17 +16,17 @@ There are many ways to model contact between rigid bodies. Drake uses an approac
 It is relatively simple to enable a simulation to use hydroelastic contact. However, using it effectively requires some experience and consideration. This section details the mechanisms and choice involved in enabling hydroelastic contact and the next section helps guide you through some common tips, tricks, and traps.
 
 Using hydroelastic contact requires two things:
-    - Configuring the system (MultibodyPlant) to use hydroelastic contact.
-    - Applying appropriate properties to the collision geometries to enable hydroelastic contact calculations.
+- Configuring the system (MultibodyPlant) to use hydroelastic contact.
+- Applying appropriate properties to the collision geometries to enable hydroelastic contact calculations.
 
 <h3>Enabling Hydroelastic contact in your simulation</h3>
 
 Because MultibodyPlant is responsible for computing the dynamics of the system (and the contact forces are part of that), the ability to enable/disable the hydroelastic contact model is part of MultibodyPlant’s API: MultibodyPlant::set_contact_model().
 
 There are three different options:
-    - ContactModel::kPoint
-    - ContactModel::kHydroelastic
-    - ContactModel::kHydroelasticWithFallback
+- ContactModel::kPoint
+- ContactModel::kHydroelastic
+- ContactModel::kHydroelasticWithFallback
 
 The default model is ContactModel::kPoint and is the implementation of the point contact model defined in the introduction. Hydroelastic contact plays no role in determining the dynamics.
 
@@ -48,55 +48,55 @@ By default no geometry in SceneGraph has a hydroelastic representation. So, enab
 In order for a mesh to be given a hydroelastic representation, it must be assigned certain properties. The exact properties it needs depends on the Shape type and whether it is rigid or compliant. Some properties can be defined, but if they are absent they’ll be provided by MultibodyPlant. First we’ll discuss each of the properties and then discuss how they can be specified.
 
 <h4>Properties for hydroelastic contact</h4>
-    - Hydroelastic classification
-        - To have a hydroelastic representation, a shape needs to be classified as either “compliant” or “rigid”. This must be explicit -- there are no implicit assumptions.
-    - Resolution hint (meters)
-        - A positive real value in meters.
-        - Most shapes (capsules, cylinders, ellipsoids, spheres) need to be tessellated into meshes. The resolution hint is a measure used to define the resolution of the resultant mesh.
-        - For all tessellated geometries, Drake puts hard limits on the effect of the resolution hint property. There is a limit to how fine Drake tessellate a primitive. Drake has hard-coded internal limits that are still very generous (approximately 100 million tetrahedra or triangles) which should be more than enough for any application. In practice, resolution hints will be quite “large” as coarser meshes are typically more desirable.
-        - Notes on choosing a value:
-            - Generally, the coarsest mesh that produces desirable results will allow the simulation to run as efficiently as possible.
-            - The coarsest mesh will typically be generated when the resolution is equal to the geometry’s maximum measure (see the details below).
-            - If tessellation artifacts become obvious in the simulation, either make the object more compliant (see hydroelastic modulus) or increase the resolution (as discussed for the various shapes below).
-        - Capsule
-            - A capsule can be considered like a cylinder with hemi-spherical caps. The resolution hint is expressed in terms of the cylinder’s radius value and, more particularly, the circumference of the circular cross section. The resolution hint is the target length of each edge of the tessellated mesh around the circular circumference. The circle will have N = ⌈2πr/h⌉, where r is the capsule radius and h is the resolution hint. The number N changes discontinuously as h changes. However, generally, decreasing the resolution hint by some factor will increase the number of edges by that same factor. The number of elements will grow quadratically.
-            - No intermediate vertices are introduced along the length of the cylindrical body.
-            - The hemi-spherical caps are tessellated to produce regular triangles based on the edge length defined by resolution hint.
-            - The volume mesh has one tetrahedron for each triangle on the surface; there are no strictly internal tetrahedra.
-        - Cylinder
-            - The resolution hint works with the cylinder’s radius and its effect is defined in terms of the circumference of the cylinder’s circular cross section. The resolution hint is the target length of each edge of the tessellated mesh around the circular circumference. The circle will have N = ⌈2πr/h⌉, where r is the capsule radius and h is the resolution hint. The number N changes discontinuously has h changes. However, generally, decreasing the resolution hint by some factor will increase the number of edges by that same factor. The number of elements will grow quadratically.
-            - No intermediate vertices are introduced along the length of the cylinder’s body.
-            - The volume mesh has one tetrahedron for each triangle on the surface; there are no strictly internal tetrahedra.
-        - Ellipsoid
-            - TODO: Details
-        - Sphere
-            - TODO: Details
-    - Hydroelastic modulus
-        -This is the measure of how stiff the material is. It directly defines how much pressure is exerted given a certain amount of penetration. More pressure leads to greater forces. Larger values create stiffer objects. An infinite modulus is mathematically equivalent to a “rigid” object. (Although, it is probably better, in that case, to simply declare it “rigid”.)
-        - This is *only* required for shapes declared to be “compliant”. It can be defined for shapes declared as “rigid”, but the value will be ignored. (It can be convenient to always define it to enable tests where one might toggle the classification between rigid and compliant such that the compliant declaration is always well formed.)
-        - Declaring a geometry to be compliant but not providing a valid hydroelastic modulus will produce an error at the time the geometry is added to SceneGraph.
-        - This is similar to something like Young’s modulus but it is not identical.
-            - The primary distinction is this isn’t purely a material property. The value is entangled with the geometry. It essentially scales the force based on the *percentage* of penetration into an object (i.e., strain). So, a fixed modulus value might lead to a 1cm penetration on one sphere. But if the sphere were scaled up by a factor of 10, the penetration would become 10cm. So, if there are constraints on penetration depth, the modulus would have to increase with the scale of the geometry.
-        - Notes on choosing a value:
-            - Starting with the value for Young’s modulus is not unreasonable. Empirical evidence suggests that the hydroelastic modulus tends to be smaller depending on the size of the objects.
-            - For large modulus values, the resolution of the representations matter more. A very high modulus will keep the contact near the surface of the geometry, exposing tessellation artifacts. A smaller modulus has a smoothing effect.
-    - Hunt-Crossley dissipation
-        - A non-negative real value in ???.
-        - This gives the contact an energy-damping property.
-        - The larger the value, the more energy is damped.
-        - If no value is provided, MultibodyPlant provides a default value of zero.
-        - Notes on choosing a value:
-            - For objects that are nominally rigid, starting with zero-damping is good.
-            - If the behavior seems “jittery”, gradually increase the amount of dissipation. Typical values would remain in the range [0, 3] with 1 being a typical damping amount.
-            - Remember, as this value increases, your simulation will lose energy at a higher rate.
-    - Slab thickness
-        - A positive real value in meters
-        - Only used for compliant half spaces. Declaring a half space to be compliant but lacking a value for slab thickness will cause the simulation to error out.
-        - A measure of the thickness of the compliant material near the boundary of the half space.
-            - A compliant half space can be made more rigid by:
-                - Increasing the hydroelastic modulus and fixing slab thickness.
-                - Fixing the hydroelastic modulus and decreasing the slab thickness.
-                - Increasing the hydroelastic modulus and decreasing the slab thickness.
+- Hydroelastic classification
+   - To have a hydroelastic representation, a shape needs to be classified as either “compliant” or “rigid”. This must be explicit -- there are no implicit assumptions.
+- Resolution hint (meters)
+   - A positive real value in meters.
+   - Most shapes (capsules, cylinders, ellipsoids, spheres) need to be tessellated into meshes. The resolution hint is a measure used to define the resolution of the resultant mesh.
+   - For all tessellated geometries, Drake puts hard limits on the effect of the resolution hint property. There is a limit to how fine Drake tessellate a primitive. Drake has hard-coded internal limits that are still very generous (approximately 100 million tetrahedra or triangles) which should be more than enough for any application. In practice, resolution hints will be quite “large” as coarser meshes are typically more desirable.
+   - Notes on choosing a value:
+     - Generally, the coarsest mesh that produces desirable results will allow the simulation to run as efficiently as possible.
+     - The coarsest mesh will typically be generated when the resolution is equal to the geometry’s maximum measure (see the details below).
+     - If tessellation artifacts become obvious in the simulation, either make the object more compliant (see hydroelastic modulus) or increase the resolution (as discussed for the various shapes below).
+   - Capsule
+     - A capsule can be considered like a cylinder with hemi-spherical caps. The resolution hint is expressed in terms of the cylinder’s radius value and, more particularly, the circumference of the circular cross section. The resolution hint is the target length of each edge of the tessellated mesh around the circular circumference. The circle will have N = ⌈2πr/h⌉, where r is the capsule radius and h is the resolution hint. The number N changes discontinuously as h changes. However, generally, decreasing the resolution hint by some factor will increase the number of edges by that same factor. The number of elements will grow quadratically.
+     - No intermediate vertices are introduced along the length of the cylindrical body.
+     - The hemi-spherical caps are tessellated to produce regular triangles based on the edge length defined by resolution hint.
+     - The volume mesh has one tetrahedron for each triangle on the surface; there are no strictly internal tetrahedra.
+   - Cylinder
+     - The resolution hint works with the cylinder’s radius and its effect is defined in terms of the circumference of the cylinder’s circular cross section. The resolution hint is the target length of each edge of the tessellated mesh around the circular circumference. The circle will have N = ⌈2πr/h⌉, where r is the capsule radius and h is the resolution hint. The number N changes discontinuously has h changes. However, generally, decreasing the resolution hint by some factor will increase the number of edges by that same factor. The number of elements will grow quadratically.
+     - No intermediate vertices are introduced along the length of the cylinder’s body.
+     - The volume mesh has one tetrahedron for each triangle on the surface; there are no strictly internal tetrahedra.
+   - Ellipsoid
+     - TODO: Details
+   - Sphere
+     - TODO: Details
+- Hydroelastic modulus
+  - This is the measure of how stiff the material is. It directly defines how much pressure is exerted given a certain amount of penetration. More pressure leads to greater forces. Larger values create stiffer objects. An infinite modulus is mathematically equivalent to a “rigid” object. (Although, it is probably better, in that case, to simply declare it “rigid”.)
+  - This is *only* required for shapes declared to be “compliant”. It can be defined for shapes declared as “rigid”, but the value will be ignored. (It can be convenient to always define it to enable tests where one might toggle the classification between rigid and compliant such that the compliant declaration is always well formed.)
+  - Declaring a geometry to be compliant but not providing a valid hydroelastic modulus will produce an error at the time the geometry is added to SceneGraph.
+  - This is similar to something like Young’s modulus but it is not identical.
+    - The primary distinction is this isn’t purely a material property. The value is entangled with the geometry. It essentially scales the force based on the *percentage* of penetration into an object (i.e., strain). So, a fixed modulus value might lead to a 1cm penetration on one sphere. But if the sphere were scaled up by a factor of 10, the penetration would become 10cm. So, if there are constraints on penetration depth, the modulus would have to increase with the scale of the geometry.
+  - Notes on choosing a value:
+    - Starting with the value for Young’s modulus is not unreasonable. Empirical evidence suggests that the hydroelastic modulus tends to be smaller depending on the size of the objects.
+    - For large modulus values, the resolution of the representations matter more. A very high modulus will keep the contact near the surface of the geometry, exposing tessellation artifacts. A smaller modulus has a smoothing effect.
+- Hunt-Crossley dissipation
+  - A non-negative real value in ???.
+  - This gives the contact an energy-damping property.
+  - The larger the value, the more energy is damped.
+  - If no value is provided, MultibodyPlant provides a default value of zero.
+  - Notes on choosing a value:
+    - For objects that are nominally rigid, starting with zero-damping is good.
+    - If the behavior seems “jittery”, gradually increase the amount of dissipation. Typical values would remain in the range [0, 3] with 1 being a typical damping amount.
+    - Remember, as this value increases, your simulation will lose energy at a higher rate.
+- Slab thickness
+  - A positive real value in meters
+  - Only used for compliant half spaces. Declaring a half space to be compliant but lacking a value for slab thickness will cause the simulation to error out.
+  - A measure of the thickness of the compliant material near the boundary of the half space.
+    - A compliant half space can be made more rigid by:
+      - Increasing the hydroelastic modulus and fixing slab thickness.
+      - Fixing the hydroelastic modulus and decreasing the slab thickness.
+      - Increasing the hydroelastic modulus and decreasing the slab thickness.
 
 <h3>Assigning hydroelastic properties to geometries</h3>
 
@@ -132,25 +132,25 @@ For a body, we’ve defined a collision geometry called “body1_collision”. I
 
 Let’s look at the specific tags:
 
-    - <drake:proximity_properties>: This is the container for all Drake-specific proximity property values.
-    - The following tags define hydroleastic properties for the collision geometry and would be contained in the <drake:proximity_properties> tag.
-        - <drake:rigid_hydroelastic> or <drake:compliant_hydroelastic>
-        - <drake:mesh_resolution_hint>
-        - <drake:hydroelastic_modulus> (for compliant geometry only)
-        - <drake:hunt_crossley_dissipation>
-    - In the name of completeness, the following tags would be children of the <drake:proximity_properties> tag as well, but don’t specify hydroelastic contact properties.
-        - <drake:point_contact_stiffness>: Only used when this geometry is for point contact. Defines the compliance of the point contact.
-        - <drake:mu_static> The coefficient for static friction; this applies to both point contact and hydroelastic contact.
-        - <drake:mu_dynamic> The coefficient for dynamic friction; this applies to both point contact and hydroelastic contact.
+- <drake:proximity_properties>: This is the container for all Drake-specific proximity property values.
+- The following tags define hydroleastic properties for the collision geometry and would be contained in the <drake:proximity_properties> tag.
+  - <drake:rigid_hydroelastic> or <drake:compliant_hydroelastic>
+  - <drake:mesh_resolution_hint>
+  - <drake:hydroelastic_modulus> (for compliant geometry only)
+  - <drake:hunt_crossley_dissipation>
+- In the name of completeness, the following tags would be children of the <drake:proximity_properties> tag as well, but don’t specify hydroelastic contact properties.
+  - <drake:point_contact_stiffness>: Only used when this geometry is for point contact. Defines the compliance of the point contact.
+  - <drake:mu_static> The coefficient for static friction; this applies to both point contact and hydroelastic contact.
+  - <drake:mu_dynamic> The coefficient for dynamic friction; this applies to both point contact and hydroelastic contact.
 
 <h4>Assigning hydroelastic properties in code</h4>
 
 Hydroelastic properties can be set to objects dynamically via the following APIs (see their documentation for further details):
 
-    - AddContactMaterial()
-    - AddRigidHydroelasticProperties()
-     -AddSoftHydroelasticProperties()
-    - AddSoftHydroelasticPropertiesForHalfSpace()
+- AddContactMaterial()
+- AddRigidHydroelasticProperties()
+- AddSoftHydroelasticProperties()
+- AddSoftHydroelasticPropertiesForHalfSpace()
 
 Some extra notes:
 
@@ -165,15 +165,13 @@ Currently we can visualize the contact surface using drake_visualizer; however, 
 
 Start drake_visualizer by:
 
-<pre>
-bazel run //tools:drake_visualizer &
-</pre>
+    $ bazel run //tools:drake_visualizer &
 
 Run a simulation with hydroelastic contact model; for example,
 
-<pre>
-bazel run //examples/hydroelastic/ball_plate:ball_plate_run_dynamics -- --mbp_dt=0.001 --simulator_publish_every_time_step --x0=0.10 --z0=0.15 --simulation_time=0.015 --simulator_target_realtime_rate=0.05 --vz=-7.0
-</pre>
+    $ bazel run //examples/hydroelastic/ball_plate:ball_plate_run_dynamics -- \
+       --mbp_dt=0.001 --simulator_publish_every_time_step --x0=0.10 --z0=0.15 \
+       --simulation_time=0.015 --simulator_target_realtime_rate=0.05 --vz=-7.0
 
 By default, at the time of this writing, Drake Visualizer will look like this:
 
@@ -205,28 +203,26 @@ You can set <Edge width> of the white meshes of the contact surface with options
 
 By default, the force vectors are drawn at fixed length. We can draw each force according to its magnitude by <Vector scaling mode> and <Global scale of all vectors>. The following picture shows that the floor-plate contact force is slightly stronger than the floor-ball contact force to compensate for gravity.
 
-<pre>
-Vector scaling mode = Scaled (default Fixed Length)
-Global scale of all vectors = 0.001 (default 0.300)
-</pre>
+    Vector scaling mode = Scaled (default Fixed Length)
+    Global scale of all vectors = 0.001 (default 0.300)
 
 - TODO: add image
 
 <h2>Pitfalls/Troubleshooting</h2>
 
 Various ways that hydroelastic contact may surprise you.
-    - By default, a rigid body is not a rigid hydroelastic body until users say so. Otherwise, it is ignored by the hydroelastic contact model and might get point contact instead.
-        - Users need to call AddRigidHydroelasticProperties() or use the URDF or SDFormat tag <drake:rigid_hydroelastic/>.
-    - Backface culling -- the visualized contact surface is not what you expect. Or, “Why are there holes?”
-        - This should come with some illustrations to make this clear.
-    - Hydroelastic modulus is not properly a material property; it combines material and geometry.
-        - Make the sphere bigger, the force gets weaker for the same contact surface.
-    - “I don’t seem to be getting any contact surfaces although my spheres are clearly overlapping!” Depending on how coarsely you tessellated your geometry (a sphere, at its coarsest, is an octahedron), there can be a large amount of error between the primitive surface and discrete mesh’s surface. Make sure you visualize the hydro meshes and have what you expect.
-    - Stiff and coarse is seldom a good thing. The stiffer an object is, the more the details of the discrete tessellation will directly contribute to the dynamics.
-        - Ideally, a demo that shows a coarse sphere with decreasing elasticity rolling would be good. One rolls like an 8-sided dice. One more closely approximates a sphere.
-    - Getting moments out of the contact depends on how many elements are in the contact surface. If the elements of the two contributing meshes are much larger than the actual contact surface, the contact can become, in essence, point contact.
-    - Half spaces are not represented by meshes. They don’t contribute *any* geometry to the resultant contact surface. The contact surface’s refinement will depend on the other geometry’s level of refinement.
-    - Resolution hint (<drake:mesh_resolution_hint>) has no effect on Box.
+- By default, a rigid body is not a rigid hydroelastic body until users say so. Otherwise, it is ignored by the hydroelastic contact model and might get point contact instead.
+  - Users need to call AddRigidHydroelasticProperties() or use the URDF or SDFormat tag <drake:rigid_hydroelastic/>.
+- Backface culling -- the visualized contact surface is not what you expect. Or, “Why are there holes?”
+  - This should come with some illustrations to make this clear.
+- Hydroelastic modulus is not properly a material property; it combines material and geometry.
+  - Make the sphere bigger, the force gets weaker for the same contact surface.
+- “I don’t seem to be getting any contact surfaces although my spheres are clearly overlapping!” Depending on how coarsely you tessellated your geometry (a sphere, at its coarsest, is an octahedron), there can be a large amount of error between the primitive surface and discrete mesh’s surface. Make sure you visualize the hydro meshes and have what you expect.
+- Stiff and coarse is seldom a good thing. The stiffer an object is, the more the details of the discrete tessellation will directly contribute to the dynamics.
+  - Ideally, a demo that shows a coarse sphere with decreasing elasticity rolling would be good. One rolls like an 8-sided dice. One more closely approximates a sphere.
+- Getting moments out of the contact depends on how many elements are in the contact surface. If the elements of the two contributing meshes are much larger than the actual contact surface, the contact can become, in essence, point contact.
+- Half spaces are not represented by meshes. They don’t contribute *any* geometry to the resultant contact surface. The contact surface’s refinement will depend on the other geometry’s level of refinement.
+- Resolution hint (<drake:mesh_resolution_hint>) has no effect on Box.
 
 <h3>Tips and Tricks</h3>
 
@@ -234,11 +230,11 @@ This is a random collection of things we can do to maximize the benefits of the 
 
 <h4>Working within the limitations</h4>
 
-    - Sometimes my model should be rigid, sometimes soft based on what it’s making contact with. Assign *two* collision geometries to the body. Make one rigid, one soft. Via *very* careful manipulation of collision filters, filter out undesired contact. Include an example/tutorial of this temporary workaround.
+- Sometimes my model should be rigid, sometimes soft based on what it’s making contact with. Assign *two* collision geometries to the body. Make one rigid, one soft. Via *very* careful manipulation of collision filters, filter out undesired contact. Include an example/tutorial of this temporary workaround.
 
 <h4>Gaming the model</h4>
-    - Rigid meshes need not be closed. You can use this to provide finegrain control over where a contact surface can actually exist.
-    - For a given relative configuration between bodies, the magnitude of force can be tuned in two ways: increasing the hydroelastic modulus and/or scaling the geometry up (in essence, increasing the average penetration depth).
+- Rigid meshes need not be closed. You can use this to provide finegrain control over where a contact surface can actually exist.
+- For a given relative configuration between bodies, the magnitude of force can be tuned in two ways: increasing the hydroelastic modulus and/or scaling the geometry up (in essence, increasing the average penetration depth).
 
 <h1>Appendix</h1>
 
@@ -247,9 +243,9 @@ This is a random collection of things we can do to maximize the benefits of the 
 Before we get into hydroelastic contact, it’s worth describing the compliant point contact model as a reference model. The point contact model defines the contact force by determining the minimum translational displacement (MTD). The minimum translational displacement is the smallest relative displacement between two volumes that will take them from intersecting to just touching. This quantity need not be unique (if two spheres have coincident centers, any direction will serve). Once we have this displacement, we get three quantities that we use to define the contact force: the direction of the displacement vector is the contact normal. The magnitude is a measure of the amount of penetration (and is correlated with the magnitude of the normal component of the contact force). Finally, we have two witness points for the MTD. The witness points comprise one point on the surface of each volume such that when we apply the minimum translational displacement, they are coincident. We use the witness points (and other physical parameters) to define the point at which the contact force is applied.
 
 This model is simple to implement and cheap to compute, but has some drawbacks.
-    - A single measure of “maximum penetration” cannot distinguish between a large intersecting volume and a small intersecting volume (see Figure 1). The two intersections would produce the same amount of contact force despite the fact that one is clearly compressing more material.
-    - Contact along a large interface is treated as contact at a single point (see Figure 2). Effects that depend on a contact interface over a domain with non-zero area disappear (e.g., torsional friction).
-    - The witness points are not necessarily unique (see Figure 3). This means, generally, there is no guarantee that the witness points will be consistent from frame to frame, which means that the point at which the force is applied will not be consistent. This leads to integration issues.
+- A single measure of “maximum penetration” cannot distinguish between a large intersecting volume and a small intersecting volume (see Figure 1). The two intersections would produce the same amount of contact force despite the fact that one is clearly compressing more material.
+- Contact along a large interface is treated as contact at a single point (see Figure 2). Effects that depend on a contact interface over a domain with non-zero area disappear (e.g., torsional friction).
+- The witness points are not necessarily unique (see Figure 3). This means, generally, there is no guarantee that the witness points will be consistent from frame to frame, which means that the point at which the force is applied will not be consistent. This leads to integration issues.
 
 
 - TODO: add image
@@ -261,7 +257,6 @@ Figure 1: Two intersections with significantly different intersecting volumes ch
 Figure 2: Modeling contact forces with point contact. (a) the actual intersection of the simulated bodies. (b) the conceptual deformation of the orange body creating a large area of contact. (c) how point contact sees the deformation: contact at a single point.
 
 Hydroelastic contact was created to address some of the short-comings in point contact. In fact, one might argue that many of the strategies used to mitigate the shortcomings of point contact push it closer and closer to hydroelastic contact.
-
 
 <h2>Hydroelastic Contact</h2>
 
@@ -279,11 +274,11 @@ Figure 3: Three shapes and possible pressure fields in the interior of the objec
 Figure 4: The equilibrium contact surface (pale green) between two bodies where the left-hand, yellow body has (a) greater rigidity, (b) equal rigidity, and (c) less rigidity.
 
 This equilibrium surface has important properties:
-    - The contact surface will always be contained within the intersecting volume.
-    - The surface’s edge will always lie on the surface of both objects and have zero pressure.
-    - The location of the surface depends on the relative rigidity of the two objects. As one object becomes more rigid than the other, the contact surface begins to converge to its surface (see Figure 4). As one surface becomes perfectly rigid, the other object deforms completely to conform to its shape.
-    - The contacting bodies need not be convex, nor will the contact surface between two objects necessarily be a single contiguous patch. For non-convex geometries, the contact can be meaningfully represented by multiple disjoint patches. The resultant contact force will still be meaningful.
-    - The resultant contact force is continuous with respect to the relative pose between bodies. In fact, the contact surface’s mesh, its area, and the pressures measured on the surface are likewise continuous.
+- The contact surface will always be contained within the intersecting volume.
+- The surface’s edge will always lie on the surface of both objects and have zero pressure.
+- The location of the surface depends on the relative rigidity of the two objects. As one object becomes more rigid than the other, the contact surface begins to converge to its surface (see Figure 4). As one surface becomes perfectly rigid, the other object deforms completely to conform to its shape.
+- The contacting bodies need not be convex, nor will the contact surface between two objects necessarily be a single contiguous patch. For non-convex geometries, the contact can be meaningfully represented by multiple disjoint patches. The resultant contact force will still be meaningful.
+- The resultant contact force is continuous with respect to the relative pose between bodies. In fact, the contact surface’s mesh, its area, and the pressures measured on the surface are likewise continuous.
 
 
 <h2>Hydroelastic Contact in practice</h2>
@@ -297,10 +292,10 @@ The resulting contact surface is likewise a discrete mesh. This mesh may be buil
 We model perfectly rigid objects (objects with no compliance at all) as triangle surface meshes. They have no pressure field associated with them because any penetration from the surface instantaneously produces infinite pressure. When colliding a rigid object against a compliant object, the contact surface always follows the  surface of the rigid object. Think of it as the compliant object doing 100% of the deformation, so it conforms to the shape of the rigid object.
 
 Important points to note:
-    - The time cost of resolving contact scales with the complexity of the contact surface (number of faces).
-    - The complexity of the contact surface is a function of the complexity of the contacting geometries.
-    - The best performance comes from the lowest resolution meshes that produce “acceptable” behaviors.
-    - It is not universally true that every geometry is represented discretely. The implementation may represent some shapes differently when it allows performance improvements. The canonical example would be a half space geometry. As a shape with infinite volume, it would be infeasible to create a finite, discrete representation. It is also unnecessary. Intersecting meshes directly with a half space is far more efficient.
+- The time cost of resolving contact scales with the complexity of the contact surface (number of faces).
+- The complexity of the contact surface is a function of the complexity of the contacting geometries.
+- The best performance comes from the lowest resolution meshes that produce “acceptable” behaviors.
+- It is not universally true that every geometry is represented discretely. The implementation may represent some shapes differently when it allows performance improvements. The canonical example would be a half space geometry. As a shape with infinite volume, it would be infeasible to create a finite, discrete representation. It is also unnecessary. Intersecting meshes directly with a half space is far more efficient.
 
 
 <h2>Current state of implementation</h2>
@@ -308,15 +303,15 @@ Important points to note:
 The implementation of hydroelastic contact in Drake is still under active development. This section will be updated as the scope and feature set of hydroelastic contact is advanced. The main crux of this section is to clearly indicate what can and cannot be done with hydroelastic contact.
 
 <h3>What can you do with hydroelastic contact?</h3>
-    - Hydroelastic contact can be used with MultibodyPlant in either continuous or discrete mode. There are implications to which you choose (see Enabling Hydroelastic contact in your simulation for details).
-    - You can visualize the contact surfaces, their pressure fields, and the resultant contact forces in drake_visualizer (see Visualizing hydroelastic contact).
-    - All Drake Shape types can be used to create rigid hydroelastic bodies (this includes arbitrary meshes defined as OBJs).
-    - Drake primitive Shape types (Box, Capsule, Cylinder, Ellipsoid, HalfSpace, and Cylinder) can all be used to create compliant hydroelastic bodies.
+- Hydroelastic contact can be used with MultibodyPlant in either continuous or discrete mode. There are implications to which you choose (see Enabling Hydroelastic contact in your simulation for details).
+- You can visualize the contact surfaces, their pressure fields, and the resultant contact forces in drake_visualizer (see Visualizing hydroelastic contact).
+- All Drake Shape types can be used to create rigid hydroelastic bodies (this includes arbitrary meshes defined as OBJs).
+- Drake primitive Shape types (Box, Capsule, Cylinder, Ellipsoid, HalfSpace, and Cylinder) can all be used to create compliant hydroelastic bodies.
 
 <h3>What can’t you do with hydroelastic contact?</h3>
-    - You can’t get contact surfaces between two compliant geometries or two rigid geometries. Contact between compliant geometries will be supported soon. The contact surface between rigid geometries is ill defined and will most likely never be supported. See Enabling Hydroelastic contact in your simulation on how to deal with contact in these cases.
-    - Drake Mesh and Convex types cannot serve as a compliant hydroelastic geometry.
-    - Pressure grows strictly linearly with increasing penetration depth; the gradients of the pressure field have a fixed magnitude in the domain of the mesh. Putting that another way, pushing a fixed cross section in the first millimeter introduces as much force as the last millimeter. In the real world, it would become increasingly difficult.
+- You can’t get contact surfaces between two compliant geometries or two rigid geometries. Contact between compliant geometries will be supported soon. The contact surface between rigid geometries is ill defined and will most likely never be supported. See Enabling Hydroelastic contact in your simulation on how to deal with contact in these cases.
+- Drake Mesh and Convex types cannot serve as a compliant hydroelastic geometry.
+- Pressure grows strictly linearly with increasing penetration depth; the gradients of the pressure field have a fixed magnitude in the domain of the mesh. Putting that another way, pushing a fixed cross section in the first millimeter introduces as much force as the last millimeter. In the real world, it would become increasingly difficult.
 
 
  */
