@@ -39,7 +39,7 @@ int64_t GetNextSceneId() {
  NOTE: the modifications on the vtkCamera do *NOT* need to be undone, the camera
  is modified on every frame.
  */
-void SetGltfCameraPerspective(vtkCamera* camera, const RenderCameraCore& core) {
+void SetGltfCameraPerspective(const RenderCameraCore& core, vtkCamera* camera) {
   /* Exported parameters:
    https://gitlab.kitware.com/vtk/vtk/-/blob/v9.1.0/IO/Export/vtkGLTFExporter.cxx#L352
 
@@ -178,8 +178,8 @@ void RenderClientGltf::DoRenderColorImage(const ColorRenderCamera& camera,
 
   // Export and render the glTF scene.
   SetGltfCameraPerspective(
-      pipelines_[internal::ImageType::kColor]->renderer->GetActiveCamera(),
-      camera.core());
+      camera.core(),
+      pipelines_[internal::ImageType::kColor]->renderer->GetActiveCamera());
   const std::string scene_path =
       ExportScene(internal::ImageType::kColor, color_scene_id);
   if (verbose()) {
@@ -209,8 +209,8 @@ void RenderClientGltf::DoRenderDepthImage(
 
   // Export and render the glTF scene.
   SetGltfCameraPerspective(
-      pipelines_[internal::ImageType::kDepth]->renderer->GetActiveCamera(),
-      camera.core());
+      camera.core(),
+      pipelines_[internal::ImageType::kDepth]->renderer->GetActiveCamera());
   const std::string scene_path =
       ExportScene(internal::ImageType::kDepth, depth_scene_id);
   if (verbose()) {
@@ -244,8 +244,8 @@ void RenderClientGltf::DoRenderLabelImage(
 
   // Export and render the glTF scene.
   SetGltfCameraPerspective(
-      pipelines_[internal::ImageType::kLabel]->renderer->GetActiveCamera(),
-      camera.core());
+      camera.core(),
+      pipelines_[internal::ImageType::kLabel]->renderer->GetActiveCamera());
   const std::string scene_path =
       ExportScene(internal::ImageType::kLabel, label_scene_id);
   if (verbose()) {
