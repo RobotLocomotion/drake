@@ -135,19 +135,20 @@ void RenderClientGltf::UpdateViewpoint(const math::RigidTransformd& X_WC) {
   // transformation matrix in the world, not transform the world into it.
   // NOTE: use the inverse of RigidTransformd, which will transpose the rotation
   // and invert the translation rather than doing a full matrix inverse.
-  auto lh_xform = X_WC.inverse().GetAsMatrix4();
-  Eigen::Matrix4d hand_change;
+  const auto drake_transform = X_WC.inverse().GetAsMatrix4();
+  Eigen::Matrix4d coordinate_transform;
   // clang-format off
-  hand_change << 1.0,  0.0,  0.0, 0.0,
-                 0.0, -1.0,  0.0, 0.0,
-                 0.0,  0.0, -1.0, 0.0,
-                 0.0,  0.0,  0.0, 1.0;
+  coordinate_transform << 1.0,  0.0,  0.0, 0.0,
+                          0.0, -1.0,  0.0, 0.0,
+                          0.0,  0.0, -1.0, 0.0,
+                          0.0,  0.0,  0.0, 1.0;
   // clang-format on
-  Eigen::Matrix4d xform = hand_change * lh_xform * hand_change;
+  Eigen::Matrix4d final_transform =
+      coordinate_transform * drake_transform * coordinate_transform;
   vtkNew<vtkMatrix4x4> vtk_mat;
   for (int i = 0; i < 4; ++i) {
     for (int j = 0; j < 4; ++j) {
-      vtk_mat->SetElement(i, j, xform(i, j));
+      vtk_mat->SetElement(i, j, final_transform(i, j));
     }
   }
   // Essentially the same thing as RenderEngineVtk::UpdateViewpoint.
