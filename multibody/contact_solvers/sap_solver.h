@@ -470,7 +470,7 @@ class SapSolver final : public ContactSolver<T> {
     return non_thread_safe_data_.parameters;
   }
   SolverStats& mutable_stats() const { return non_thread_safe_data_.stats; }
-  const SapConstraintsBundle<T>& constraints_bundle() const {
+  const SapConstraintBundle<T>& constraints_bundle() const {
     return *data().constraints_bundle;
   }
 

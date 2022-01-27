@@ -16,12 +16,12 @@ namespace contact_solvers {
 namespace internal {
 
 template <typename T>
-class SapConstraintsBundle {
+class SapConstraintBundle {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapConstraintsBundle);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapConstraintBundle);
 
   // We keep a reference to `problem` and its data.
-  SapConstraintsBundle(
+  SapConstraintBundle(
       BlockSparseMatrix<T>&& J, VectorX<T>&& vhat, VectorX<T>&& R,
       std::vector<const SapConstraint<T>*>&& constraits);
 
@@ -172,7 +172,7 @@ class SapModel {
   VectorX<T> delassus_diagonal_;  // Delassus operator diagonal approximation.
   VectorX<T> v_star_;  // Free motion generalized velocity v*.
   VectorX<T> p_star_;  // Free motion generalized impulse, i.e. p* = M⋅v*.
-  std::unique_ptr<SapConstraintsBundle<T>> constraints_bundle_;
+  std::unique_ptr<SapConstraintBundle<T>> constraints_bundle_;
 };
 
 }  // namespace internal

@@ -162,7 +162,7 @@ class SapModelTester : public ::testing::Test {
     problem_->AddConstraint(std::make_unique<TestConstraint>(0, 3, 5.0));
   }
 
-  static const SapConstraintsBundle<double>& constraints_bundle(
+  static const SapConstraintBundle<double>& constraints_bundle(
       const SapModel<double>& model) {
     DRAKE_DEMAND(model.constraints_bundle_ != nullptr);
     return *model.constraints_bundle_;

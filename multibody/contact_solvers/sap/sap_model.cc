@@ -11,7 +11,7 @@ namespace internal {
 
 // a good way to document it and describe its invariants.
 template <typename T>
-SapConstraintsBundle<T>::SapConstraintsBundle(
+SapConstraintBundle<T>::SapConstraintBundle(
     BlockSparseMatrix<T>&& J, VectorX<T>&& vhat, VectorX<T>&& R,
     std::vector<const SapConstraint<T>*>&& constraints)
     : J_(std::move(J)),
@@ -21,30 +21,30 @@ SapConstraintsBundle<T>::SapConstraintsBundle(
       constraints_(std::move(constraints)) {}
 
 template <typename T>
-int SapConstraintsBundle<T>::num_constraints() const {
+int SapConstraintBundle<T>::num_constraints() const {
   return constraints_.size();
 }
 
 template <typename T>
-void SapConstraintsBundle<T>::MultiplyByJacobian(const VectorX<T>& v,
+void SapConstraintBundle<T>::MultiplyByJacobian(const VectorX<T>& v,
                                                  VectorX<T>* vc) const {
   J_.Multiply(v, vc);
 }
 
 template <typename T>
-void SapConstraintsBundle<T>::MultiplyByJacobianTranspose(
+void SapConstraintBundle<T>::MultiplyByJacobianTranspose(
     const VectorX<T>& gamma, VectorX<T>* jc) const {
   J_.MultiplyByTranspose(gamma, jc);
 }
 
 template <typename T>
-void SapConstraintsBundle<T>::CalcUnprojectedImpulses(const VectorX<T>& vc,
+void SapConstraintBundle<T>::CalcUnprojectedImpulses(const VectorX<T>& vc,
                                                       VectorX<T>* y) const {
   *y = Rinv_.asDiagonal() * (vhat_ - vc);
 }
 
 template <typename T>
-void SapConstraintsBundle<T>::ProjectImpulses(
+void SapConstraintBundle<T>::ProjectImpulses(
     const VectorX<T>& y, const VectorX<T>& R, VectorX<T>* gamma,
     std::vector<MatrixX<T>>* dPdy) const {
   int constraint_start = 0;
@@ -65,7 +65,7 @@ void SapConstraintsBundle<T>::ProjectImpulses(
 }
 
 template <typename T>
-void SapConstraintsBundle<T>::CalcProjectImpulsesAndCalcConstraintsHessian(
+void SapConstraintBundle<T>::CalcProjectImpulsesAndCalcConstraintsHessian(
     const VectorX<T>& y, const VectorX<T>& R, VectorX<T>* gamma,
     std::vector<MatrixX<T>>* G) const {
   ProjectImpulses(y, R, gamma, G);  // G = dPdy.
@@ -166,7 +166,7 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
   }
 
   // Create constraints bundle.
-  constraints_bundle_ = std::make_unique<SapConstraintsBundle<T>>(
+  constraints_bundle_ = std::make_unique<SapConstraintBundle<T>>(
       std::move(J), std::move(vhat), std::move(R), std::move(constraints));
 }
 
@@ -444,4 +444,4 @@ void SapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
 }  // namespace drake
 
 template class ::drake::multibody::contact_solvers::internal::
-    SapConstraintsBundle<double>;
+    SapConstraintBundle<double>;

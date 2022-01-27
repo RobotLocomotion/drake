@@ -199,12 +199,12 @@ std::vector<MatrixX<T>> ExtractParticipatingDynamics(
 // rearrange constraints in the order it needs them. I just need to come up with
 // a good way to document it and describe its invariants.
 template <typename T>
-class SapConstraintsBundle {
+class SapConstraintBundle {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapConstraintsBundle);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapConstraintBundle);
 
   // We keep a reference to `problem` and its data.
-  SapConstraintsBundle(BlockSparseMatrix<T>&& J,
+  SapConstraintBundle(BlockSparseMatrix<T>&& J,
                        std::vector<SapConstraint<T>*>&& constraints)
       : J_(std::move(J)), constraints_(std::move(constraints)) {}
 
@@ -262,7 +262,7 @@ class SapConstraintsBundle {
 };
 
 template <typename T>
-std::unique_ptr<SapConstraintsBundle<T>> MakeConstraintsBundle(
+std::unique_ptr<SapConstraintBundle<T>> MakeConstraintsBundle(
     const SapContactProblem<T>& problem,
     const ContactProblemGraph& graph,
     const PartialPermutation& cliques_permutation) {
@@ -279,7 +279,7 @@ std::unique_ptr<SapConstraintsBundle<T>> MakeConstraintsBundle(
     }
   }
 
-  return std::make_unique<SapConstraintsBundle<T>>(std::move(J),
+  return std::make_unique<SapConstraintBundle<T>>(std::move(J),
                                                    std::move(constraints));
 }
 

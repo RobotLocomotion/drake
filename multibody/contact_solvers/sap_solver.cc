@@ -331,7 +331,7 @@ typename SapSolver<T>::PreProcessedData SapSolver<T>::PreProcessData(
     constraints.push_back(
         std::make_unique<SapFrictionConeConstraint<T>>(mu(ic)));
   }
-  data.constraints_bundle = std::make_unique<SapConstraintsBundle<T>>(
+  data.constraints_bundle = std::make_unique<SapConstraintBundle<T>>(
       std::move(J), std::move(vhat), std::move(R), std::move(constraints));
 
   return data;
