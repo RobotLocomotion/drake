@@ -3,7 +3,6 @@
 #include <memory>
 #include <string>
 
-#include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/render/dev/render_client.h"
 #include "drake/geometry/render/dev/render_client_gltf_factory.h"
 #include "drake/geometry/render/render_engine_vtk.h"
@@ -65,15 +64,15 @@ class RenderClientGltf : public RenderEngineVtk, public RenderClient {
       systems::sensors::ImageLabel16I* label_image_out) const override;
 
   /* Return the path to export a glTF scene file to for the specified
-  `image_type` and `frame_id`.  The returned path is constructed as
-  `{RenderClient::temp_directory()}/{frame_id}-{image_type}.gltf`. */
+  `image_type` and `scene_id`.  The returned path is constructed as
+  `{RenderClient::temp_directory()}/{scene_id}-{image_type}.gltf`. */
   std::string ExportPathFor(internal::ImageType image_type,
-                            const drake::geometry::FrameId& frame_id) const;
+                            int64_t scene_id) const;
 
   /* Exports the `RenderEngineVtk::pipelines_[image_type]` VTK scene to a
   glTF file, returning the path to the newly exported file. */
   std::string ExportScene(internal::ImageType image_type,
-                          const drake::geometry::FrameId& frame_id) const;
+                          int64_t scene_id) const;
 
   /* Upload and render the scene described by `scene_path` for the associated
   camera `core` and `image_type`.  Both `min_depth` and `max_depth` must be

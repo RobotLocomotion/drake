@@ -84,7 +84,6 @@ drake_cc_library(
     deps = [
         ":render_client",
         "//common:filesystem",
-        "//geometry:geometry_ids",
         "//geometry/render:render_camera",
         "//geometry/render:render_engine_vtk",
         "//systems/sensors:image",
