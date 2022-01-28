@@ -4,6 +4,46 @@ This render server consumes a [glTF](https://www.khronos.org/registry/glTF/)
 file and produces a rendered image in response.
 
 ## Basic Usage
+
+### Installation
+
+The server requirements are not currently installed via drake's `setup/` install
+scripts.  To use the server you will need to install `flask` and `gunicorn`.
+
+#### Ubuntu
+
+Option 1: use the system package manager.
+
+```console
+# Install the prerequisites.
+# NOTE: python3-gunicorn does not provide the `gunicorn` executable.
+$ sudo apt-get install python3-flask gunicorn
+
+# Verify that `gunicorn` is in your $PATH.
+$ which gunicorn
+/usr/bin/gunicorn
+```
+
+Option 2: create a virtual environment.
+
+```console
+# Install the prerequisites.
+$ python3 -m venv venv
+$ source venv/bin/activate
+$ pip install flask gunicorn
+
+# Verify that `gunicorn` is in your $PATH.
+$ which gunicorn
+/path/to/venv/bin/gunicorn
+```
+
+#### macOS
+
+Use `pip` or a virtual environment as shown in Option 2 for Ubuntu above
+(`pip install flask gunicorn`).  Verify that `which gunicorn` produces output.
+
+### Server Use
+
 For development purposes, within the `render_server` directory you may run
 
 ```console

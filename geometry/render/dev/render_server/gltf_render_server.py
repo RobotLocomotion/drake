@@ -1,15 +1,11 @@
 """
 A prototype glTF render server.  Users seeking to utilize their own renderer
 as a replacement for the sample VTK based C++ executable can simply change the
-implementation in the ``render_callback`` method.  Additionally, you will
-likely want to modify the ``root`` that returns a rendered ``README.md`` (to
-return your own string for the ``/`` index if e.g., you do not have a
-``README.md`` in the same directory).
+implementation in the ``render_callback`` method.
 
 The dependent package requirements for running this server::
 
     flask>=1.1
-    markdown
     gunicorn
 
 .. note::
@@ -34,8 +30,6 @@ from pathlib import Path
 
 from flask import Flask, request, send_file
 
-import markdown
-from markdown.extensions.codehilite import CodeHiliteExtension
 
 app = Flask(__name__)
 """The main flask application."""
@@ -268,23 +262,30 @@ def gltf_path(sha256_hash: str, image_type: str) -> Path:
 
 @app.route("/")
 def root():
-    """The main listing page, renders README.md in this directory."""
-    try:
-        with open(this_file_dir / "README.md") as readme:
-            return markdown.markdown(
-                readme.read()
-                + f"# Server Cache\nThe cache is here: `{server_cache}`.",
-                # https://python-markdown.github.io/extensions/#officially-supported-extensions
-                extensions=[
-                    "def_list",
-                    "extra",
-                    "fenced_code",
-                    "tables",
-                    CodeHiliteExtension(noclasses=True),
-                ],
-            )
-    except Exception:
-        return "<p>Nothing to see here...</p>"
+    """The main listing page, renders a simple redirect page including where
+    the server cache lives for development.  This endpoint (``/``) is not
+    required by the drake server-client relationship and only serves to aid
+    development.
+    """
+    return dedent(
+        f"""
+        <!doctype html>
+        <html>
+          <body>
+            <h1>Drake Render Server</h1>
+            <hr>
+            <ul>
+              <li><a href="/upload">Upload</a> a scene.</li>
+              <li><a href="/render">Render</a> a scene.</li>
+            </ul>
+
+            <h1>Server Cache</h1>
+            <hr>
+            <p>The server cache lives here: <tt>{server_cache}</tt></p>
+          </body>
+        </html>
+    """
+    )
 
 
 @app.route("/upload", methods=["GET", "POST"])
@@ -800,7 +801,9 @@ if __name__ == "__main__":
             #     black
             #     flake8
             #     mypy
-            #     types-Markdown
+            #
+            # You may need to `pip install -U importlib_metadata` to satisfy
+            # mypy, or ignore warnings about importlib_metadata types.
             # NOTE: use `run` not `check_call` so that all run.
             def log_and_run(*args):
                 print(f"$ {' '.join(args)}")

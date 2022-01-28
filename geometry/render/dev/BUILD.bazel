@@ -112,23 +112,22 @@ drake_cc_binary(
     ],
 )
 
+# NOTE: see geometry/render/dev/render_server/README.md for installation
+# instructions to run this server, the drake setup scripts do not include the
+# dependencies for this target.
+# TODO(svenevs): install the final list of dependencies when decided.
 py_binary(
     name = "server",
     srcs = [
         "render_server/gltf_render_server.py",
         "render_server/wsgi.py",
     ],
-    # TODO(svenevs): see README.md for how to run the server.  The __main__
-    # in gltf_render_server.py looks for `proxy_run_gunicorn` and just does
-    # it there.  There should be a way to achieve this with bazel.
+    # TODO(svenevs): fix this bazel rule or remove gunicorn.
     # NOTE: developing the server?  Using gunicorn you will not see all error
     # messages, comment out the `args` here to get the default (single
     # threaded) flask runner with more debug information.
     args = ["proxy_run_gunicorn"],
-    data = [
-        "render_server/README.md",
-        ":vtk_render_server_backend",
-    ],
+    data = [":vtk_render_server_backend"],
     main = "render_server/gltf_render_server.py",
 )
 
