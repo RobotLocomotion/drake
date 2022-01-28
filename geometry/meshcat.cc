@@ -515,6 +515,18 @@ class Meshcat::WebSocketPublisher {
     return port_;
   }
 
+  int GetNumActiveConnections() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    DRAKE_DEMAND(loop_ != nullptr);
+    std::promise<int> p;
+    std::future<int> f = p.get_future();
+    loop_->defer([this, p = std::move(p)]() mutable {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
+      p.set_value(websockets_.size());
+    });
+    return f.get();
+  }
+
   void Flush() const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
@@ -1429,6 +1441,10 @@ int Meshcat::port() const {
 
 std::string Meshcat::ws_url() const {
   return fmt::format("ws://localhost:{}", publisher_->port());
+}
+
+int Meshcat::GetNumActiveConnections() const {
+  return publisher_->GetNumActiveConnections();
 }
 
 void Meshcat::Flush() const {
