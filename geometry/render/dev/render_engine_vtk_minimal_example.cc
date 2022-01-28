@@ -6,6 +6,7 @@
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/geometry/drake_visualizer.h"
+#include "drake/geometry/render/dev/render_client_gltf_factory.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
@@ -43,6 +44,17 @@ DEFINE_string(camera_xyz_rpy, "0.8, 0.0, 0.5, -2.2, 0.0, 1.57",
     "Sets the camera pose by xyz (meters) and rpy (radians) values.");
 DEFINE_string(save_dir, "",
     "If specified, the rendered images will be saved to this directory.");
+
+static bool valid_render_engine(const char* flagname, const std::string& val) {
+  if (val == "vtk") return true;
+  else if (val == "client") return true;
+  printf("Invalid value for --%s: '%s'; choices: 'vtk' or 'client'.\n",
+      flagname, val.c_str());
+  return false;
+}
+DEFINE_string(render_engine, "vtk",
+              "Renderer choice, options: 'vtk', 'client'.");
+DEFINE_validator(render_engine, &valid_render_engine);
 
 namespace drake {
 namespace geometry {
@@ -260,11 +272,16 @@ int do_main() {
   std::tie(plant, scene_graph) =
       drake::multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
 
-  // Add RenderEngineVtk with default params.
+  // Add the renderer with default params.
   scene_graph->set_name("scene_graph");
   const std::string render_name("renderer");
-  scene_graph->AddRenderer(render_name,
-                           MakeRenderEngineVtk(RenderEngineVtkParams()));
+  if (FLAGS_render_engine == "vtk") {
+    scene_graph->AddRenderer(render_name,
+                             MakeRenderEngineVtk(RenderEngineVtkParams()));
+  } else {  // FLAGS_render_engine == "client"
+    scene_graph->AddRenderer(render_name,
+                             MakeRenderClientGltf(RenderClientGltfParams()));
+  }
 
   AddShapes(scene_graph);
 
