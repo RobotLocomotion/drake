@@ -24,6 +24,7 @@ convenient.
 import argparse
 import logging
 import numpy as np
+import time
 import webbrowser
 
 from drake import (
@@ -92,6 +93,9 @@ class _ViewerApplet:
                     continue
                 self._meshcat.SetObject(path=geom_path, shape=shape, rgba=rgba)
                 self._meshcat.SetTransform(path=geom_path, X_ParentPath=pose)
+
+        # Avoid a queue backup while the scene loads.
+        self._meshcat.Flush()
 
     def on_viewer_draw(self, message):
         """Handler for lcmt_viewer_draw."""
@@ -212,6 +216,9 @@ class Meldis:
                         message_type=lcmt_contact_results_for_viz,
                         handler=contact.on_contact_results)
 
+        # Bookkeeping for update throtting.
+        self._last_update_time = time.time()
+
     def _subscribe(self, channel, message_type, handler):
         def _parse_and_handle(data):
             handler(message=message_type.decode(data))
@@ -222,7 +229,17 @@ class Meldis:
         # period of time, we should probably give up and quit, rather than
         # leave a zombie meldis running forever.
         while True:
+            self._throttle_update_frequency()
             self._lcm.HandleSubscriptions(timeout_millis=1000)
+            self.meshcat.Flush()
+
+    def _throttle_update_frequency(self):
+        """Post updates to MeshCat no faster than 40 Hz."""
+        desired_update_time = self._last_update_time + 0.025  # 40 Hz
+        pause_for = desired_update_time - time.time()
+        if pause_for > 0.0:
+            time.sleep(pause_for)
+        self._last_update_time = time.time()
 
 
 def _main():
