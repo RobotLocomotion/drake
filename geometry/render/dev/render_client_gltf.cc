@@ -91,19 +91,19 @@ std::string ImageTypeToString(internal::ImageType image_type) {
 }
 
 void LogFrameStart(internal::ImageType image_type, int64_t scene_id) {
-  drake::log()->info("RenderClientGltf: rendering {} scene id {}.",
-                     ImageTypeToString(image_type), scene_id);
+  drake::log()->debug("RenderClientGltf: rendering {} scene id {}.",
+                      ImageTypeToString(image_type), scene_id);
 }
 
 void LogFrameGltfExportPath(internal::ImageType image_type,
                             const std::string& path) {
-  drake::log()->info("RenderClientGltf: {} scene exported to '{}'.",
-                     ImageTypeToString(image_type), path);
+  drake::log()->debug("RenderClientGltf: {} scene exported to '{}'.",
+                      ImageTypeToString(image_type), path);
 }
 
 void LogFrameServerResponsePath(internal::ImageType image_type,
                                 const std::string& path) {
-  drake::log()->info(
+  drake::log()->debug(
       "RenderClientGltf: {} server response image saved to '{}'.",
       ImageTypeToString(image_type), path);
 }

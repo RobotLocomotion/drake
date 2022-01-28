@@ -128,7 +128,7 @@ void LogIfTrimmedWhitespaceNonEmpty(curl_infotype type,
       std::regex_replace(message, std::regex(R"(^\s+|\s+$)"), "");
   // Some curl messages were just the \n character, don't log "nothing".
   if (!trimmed.empty()) {
-    drake::log()->info("[{}] {}", CurlInfoTypeAsString(type), trimmed);
+    drake::log()->debug("[{}] {}", CurlInfoTypeAsString(type), trimmed);
   }
 }
 
@@ -345,14 +345,14 @@ RenderClient::~RenderClient() {
         drake::filesystem::remove_all(temp_dir);
       } catch (const std::exception& e) {
         // TODO(svenevs): what is the right thing to do if we cannot delete?
-        drake::log()->critical("RenderClient: could not delete '{}'. {}",
-                               temp_directory_, e.what());
+        drake::log()->debug("RenderClient: could not delete '{}'. {}",
+                            temp_directory_, e.what());
       }
     }
   } else {
     // TODO(svenevs): make this `else if (verbose_)` instead?  This gets printed
     // twice because of cloning.
-    drake::log()->warn(
+    drake::log()->debug(
         "RenderClient: temporary directory '{}' was *NOT* deleted.",
         temp_directory_);
   }
@@ -678,8 +678,8 @@ std::string RenderClient::RenameFileExtension(const std::string& path,
   drake::filesystem::rename(origin, destination);
 
   if (verbose_) {
-    drake::log()->info("RenderClient: renamed '{}' to '{}'.", origin.string(),
-                       destination.string());
+    drake::log()->debug("RenderClient: renamed '{}' to '{}'.", origin.string(),
+                        destination.string());
   }
 
   return destination;
