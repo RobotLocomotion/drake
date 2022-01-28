@@ -3,6 +3,7 @@
 #include <atomic>
 #include <regex>
 #include <string>
+#include <type_traits>
 #include <utility>  // std::pair
 #include <vector>
 
@@ -203,27 +204,65 @@ void LogCurlDebugData(const debug_data_t& debug_data) {
 
 // Additional helper utilities -------------------------------------------------
 
-// Fill out <input type="text" name="image_type"> for an already created curl
-// form with the specified image_type.
-void AddImageTypeFieldToForm(curl_mime* form, RenderImageType image_type) {
+/* Helper method to add a field of `field_name` with value `field_data` to the
+ specified curl `form` instance reducing code redundancy.  Only to be used for
+ "simple fields" using `curl_mime_data`.  For files, use AddFileField.
+ NOTE: the created curl_mimepart* is freed via curl_easy_cleanup. */
+void AddField(curl_mime* form, const char* field_name,
+              const std::string& field_data) {
   DRAKE_DEMAND(form != nullptr);
-  // NOTE: field gets freed with curl_easy_cleanup(curl).
-  curl_mimepart* field{nullptr};
-  field = curl_mime_addpart(form);
-  curl_mime_name(field, "image_type");
-  std::string image_type_str;
-  if (image_type == RenderImageType::kColorRgba8U) {
-    image_type_str = "color";
-  } else if (image_type == RenderImageType::kDepthDepth32F) {
-    image_type_str = "depth";
-  } else if (image_type == RenderImageType::kLabel16I) {
-    image_type_str = "label";
+  DRAKE_DEMAND(field_name != nullptr);
+  curl_mimepart* field = curl_mime_addpart(form);
+  curl_mime_name(field, field_name);
+  curl_mime_data(field, field_data.c_str(), CURL_ZERO_TERMINATED);
+}
+
+/* Template overload so that we do not have to std::to_string ever member of
+ the intrinsics() below. */
+template <typename T>
+void AddField(curl_mime* form, const char* field_name, T field_data) {
+  static_assert(
+      std::is_arithmetic_v<T> && !std::is_enum_v<T>,
+      "Manually convert field_data to a string, or specialize this function.");
+  AddField(form, field_name, std::to_string(field_data));
+}
+
+// Overload required to prevent bad conversions between const char* and long.
+template <>
+void AddField<const char*>(curl_mime* form, const char* field_name,
+                           const char* field_data) {
+  AddField(form, field_name, std::string(field_data));
+}
+
+// Overload for RenderImageType, to avoid bad conversion via std::to_string.
+template <>
+void AddField<RenderImageType>(curl_mime* form, const char* field_name,
+                               RenderImageType field_data) {
+  if (field_data == RenderImageType::kColorRgba8U) {
+    AddField(form, field_name, "color");
+  } else if (field_data == RenderImageType::kDepthDepth32F) {
+    AddField(form, field_name, "depth");
+  } else if (field_data == RenderImageType::kLabel16I) {
+    AddField(form, field_name, "label");
   } else {
     throw std::runtime_error(fmt::format(
         "RenderClient: unsupported RenderImageType of {} requested.",
-        image_type));
+        field_data));
   }
-  curl_mime_data(field, image_type_str.c_str(), CURL_ZERO_TERMINATED);
+}
+
+/* Same as AddField, only for files using curl_mime_filedata, informing curl of
+ the `file_path` to upload under the specified `field_name`.  The optional
+ mime_type will be added to the form when provided.*/
+void AddFileField(curl_mime* form, const char* field_name,
+                  const std::string& file_path,
+                  const std::optional<std::string>& mime_type) {
+  DRAKE_DEMAND(form != nullptr);
+  DRAKE_DEMAND(field_name != nullptr);
+  auto* field = curl_mime_addpart(form);
+  curl_mime_name(field, "data");
+  curl_mime_filedata(field, file_path.c_str());
+  if (mime_type.has_value()) curl_mime_type(field, mime_type.value().c_str());
 }
 
 /** Verify the loaded image has the correct dimensions.
@@ -346,23 +385,13 @@ void RenderClient::UploadScene(
 
   // Create and fill out a <form> to POST.
   curl_mime* form{nullptr};
-  curl_mimepart* field{nullptr};
   struct curl_slist* headerlist{nullptr};
   form = curl_mime_init(curl);
 
-  // Fill out <input type="file" name="data">
-  field = curl_mime_addpart(form);
-  curl_mime_name(field, "data");
-  curl_mime_filedata(field, scene_path.c_str());
-  if (mime_type.has_value()) curl_mime_type(field, mime_type.value().c_str());
-
-  // Fill out <input type="text" name="image_type">
-  AddImageTypeFieldToForm(form, image_type);
-
-  // Fill out <input type="submit" value="Upload" name="submit">
-  field = curl_mime_addpart(form);
-  curl_mime_name(field, "submit");
-  curl_mime_data(field, "Upload", CURL_ZERO_TERMINATED);
+  // Add the fields to the form.
+  AddFileField(form, "data", scene_path, mime_type);
+  AddField(form, "image_type", image_type);
+  AddField(form, "submit", "Upload");
 
   curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
 
@@ -454,105 +483,32 @@ std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
 
   // Create and fill out a <form> to POST.
   curl_mime* form{nullptr};
-  curl_mimepart* field{nullptr};
   struct curl_slist* headerlist{nullptr};
   form = curl_mime_init(curl);
 
-  // Fill out <input type="text" name="id">
-  field = curl_mime_addpart(form);
-  curl_mime_name(field, "id");
-  curl_mime_data(field, scene_sha256.c_str(), CURL_ZERO_TERMINATED);
-
-  // Fill out <input type="text" name="image_type">
-  AddImageTypeFieldToForm(form, image_type);
-
-  // Get the width / height of the image we are rendering.
+  // Add the fields to the form.
+  AddField(form, "id", scene_sha256);
+  AddField(form, "image_type", image_type);
   const auto& intrinsics = camera_core.intrinsics();
-  const int cam_width = intrinsics.width();
-  const int cam_height = intrinsics.height();
-  const std::string width = fmt::format("{}", cam_width);
-  const std::string height = fmt::format("{}", cam_height);
-
-  // Fill out <input type="number" name="width">
-  field = curl_mime_addpart(form);
-  curl_mime_name(field, "width");
-  curl_mime_data(field, width.c_str(), CURL_ZERO_TERMINATED);
-
-  // Fill out <input type="number" name="height">
-  field = curl_mime_addpart(form);
-  curl_mime_name(field, "height");
-  curl_mime_data(field, height.c_str(), CURL_ZERO_TERMINATED);
-
-  // Fill out <input type="number" name="near">
+  AddField(form, "width", intrinsics.width());
+  AddField(form, "height", intrinsics.height());
   const auto& clipping = camera_core.clipping();
-  const std::string near = fmt::format("{}", clipping.near());
-  field = curl_mime_addpart(form);
-  curl_mime_name(field, "near");
-  curl_mime_data(field, near.c_str(), CURL_ZERO_TERMINATED);
-
-  // Fill out <input type="number" name="far">
-  const std::string far = fmt::format("{}", clipping.far());
-  field = curl_mime_addpart(form);
-  curl_mime_name(field, "far");
-  curl_mime_data(field, far.c_str(), CURL_ZERO_TERMINATED);
-
-  // Fill out <input type="number" name="focal_x">
-  const std::string focal_x = fmt::format("{}", intrinsics.focal_x());
-  field = curl_mime_addpart(form);
-  curl_mime_name(field, "focal_x");
-  curl_mime_data(field, focal_x.c_str(), CURL_ZERO_TERMINATED);
-
-  // Fill out <input type="number" name="focal_y">
-  const std::string focal_y = fmt::format("{}", intrinsics.focal_y());
-  field = curl_mime_addpart(form);
-  curl_mime_name(field, "focal_y");
-  curl_mime_data(field, focal_y.c_str(), CURL_ZERO_TERMINATED);
-
-  // Fill out <input type="number" name="fov_x">
-  const std::string fov_x = fmt::format("{}", intrinsics.fov_x());
-  field = curl_mime_addpart(form);
-  curl_mime_name(field, "fov_x");
-  curl_mime_data(field, fov_x.c_str(), CURL_ZERO_TERMINATED);
-
-  // Fill out <input type="number" name="fov_y">
-  const std::string fov_y = fmt::format("{}", intrinsics.fov_y());
-  field = curl_mime_addpart(form);
-  curl_mime_name(field, "fov_y");
-  curl_mime_data(field, fov_y.c_str(), CURL_ZERO_TERMINATED);
-
-  // Fill out <input type="number" name="center_x">
-  const std::string center_x = fmt::format("{}", intrinsics.center_x());
-  field = curl_mime_addpart(form);
-  curl_mime_name(field, "center_x");
-  curl_mime_data(field, center_x.c_str(), CURL_ZERO_TERMINATED);
-
-  // Fill out <input type="number" name="center_y">
-  const std::string center_y = fmt::format("{}", intrinsics.center_y());
-  field = curl_mime_addpart(form);
-  curl_mime_name(field, "center_y");
-  curl_mime_data(field, center_y.c_str(), CURL_ZERO_TERMINATED);
-
+  AddField(form, "near", clipping.near());
+  AddField(form, "far", clipping.far());
+  AddField(form, "focal_x", intrinsics.focal_x());
+  AddField(form, "focal_y", intrinsics.focal_y());
+  AddField(form, "fov_x", intrinsics.fov_x());
+  AddField(form, "fov_y", intrinsics.fov_y());
+  AddField(form, "center_x", intrinsics.center_x());
+  AddField(form, "center_y", intrinsics.center_y());
   // For depth images, an additional min_depth and max_depth are sent for the
   // depth range of the sensor (the range sensor's clipping range for valid
   // measuremeants, not the perspective clipping of the sensor's curvature).
   if (image_type == RenderImageType::kDepthDepth32F) {
-    // Fill out <input type="number" name="min_depth">
-    const std::string min_depth_str = fmt::format("{}", min_depth);
-    field = curl_mime_addpart(form);
-    curl_mime_name(field, "min_depth");
-    curl_mime_data(field, min_depth_str.c_str(), CURL_ZERO_TERMINATED);
-
-    // Fill out <input type="number" name="max_depth">
-    const std::string max_depth_str = fmt::format("{}", max_depth);
-    field = curl_mime_addpart(form);
-    curl_mime_name(field, "max_depth");
-    curl_mime_data(field, max_depth_str.c_str(), CURL_ZERO_TERMINATED);
+    AddField(form, "min_depth", min_depth);
+    AddField(form, "max_depth", max_depth);
   }
-
-  // Fill out <input type="submit" name="submit" value="Render">
-  field = curl_mime_addpart(form);
-  curl_mime_name(field, "submit");
-  curl_mime_data(field, "Render", CURL_ZERO_TERMINATED);
+  AddField(form, "submit", "Render");
 
   curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
 
