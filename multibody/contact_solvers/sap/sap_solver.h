@@ -93,17 +93,7 @@ struct SapSolverParameters {
   double ls_alpha_max{1.5};   // Maximum line search parameter allowed.
   int ls_max_iterations{40};  // Maximum number of line search iterations.
   double ls_c{1.0e-4};        // Armijo's criterion parameter.
-  double ls_rho{0.8};         // Backtracking search parameter.
-
-  // Rigid approximation constant: Rₙ = β²/(4π²)⋅w when the contact frequency ωₙ
-  // is below the limit ωₙ⋅δt ≤ 2π. That is, the period is Tₙ = β⋅δt. w
-  // corresponds to a diagonal approximation of the Delassuss operator for each
-  // contact. See [Castro et al., 2021. §IX.A] for details.
-  double beta{1.0};
-
-  // Dimensionless parameterization of the regularization of friction. An
-  // approximation for the bound on the slip velocity is vₛ ≈ σ⋅δt⋅g.
-  double sigma{1.0e-3};
+  double ls_rho{0.8};         // Backtracking search parameter.  
 
   // Tolerance used in impulse soft norms. In Ns.
   double soft_tolerance{1.0e-7};

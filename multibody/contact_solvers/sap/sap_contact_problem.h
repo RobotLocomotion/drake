@@ -227,19 +227,27 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
     T mu{0.0};
     T stiffness{0.0};
     T dissipation_time_scale{0.0};
-    T phi0{0.0};
+    // Rigid approximation constant: Rₙ = β²/(4π²)⋅w when the contact frequency
+    // ωₙ is below the limit ωₙ⋅δt ≤ 2π. That is, the period is Tₙ = β⋅δt. w
+    // corresponds to a diagonal approximation of the Delassuss operator for
+    // each contact. See [Castro et al., 2021. §IX.A] for details.
+    double beta{1.0};
+    // Dimensionless parameterization of the regularization of friction. An
+    // approximation for the bound on the slip velocity is vₛ ≈ σ⋅δt⋅g.
+    double sigma{1.0e-3};
   };
 
   SapFrictionConeConstraint(const Parameters& p)
       : SapConstraint<T>(3), parameters_(p) {}
 
   // @throws if the number of rows in J is different from three.
-  SapFrictionConeConstraint(int clique, const MatrixX<T>& J,
-                            const Parameters& p);
+  SapFrictionConeConstraint(const Parameters& p, int clique,
+                            const MatrixX<T>& J, const T& phi0);
 
   // @throws if the number of rows in J0 and J1 is different from three.
-  SapFrictionConeConstraint(int clique0, int clique1, const MatrixX<T>& J0,
-                            const MatrixX<T>& J1, const Parameters& p);
+  SapFrictionConeConstraint(const Parameters& p, int clique0, int clique1,
+                            const MatrixX<T>& J0, const MatrixX<T>& J1,
+                            const T& phi0);
 
   const T& mu() const { return parameters_.mu; }                            
 
@@ -254,14 +262,7 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
 
  private:
   Parameters parameters_;
-  // Rigid approximation constant: Rₙ = β²/(4π²)⋅w when the contact frequency ωₙ
-  // is below the limit ωₙ⋅δt ≤ 2π. That is, the period is Tₙ = β⋅δt. w
-  // corresponds to a diagonal approximation of the Delassuss operator for each
-  // contact. See [Castro et al., 2021. §IX.A] for details.
-  double beta_{1.0};
-  // Dimensionless parameterization of the regularization of friction. An
-  // approximation for the bound on the slip velocity is vₛ ≈ σ⋅δt⋅g.
-  double sigma_{1.0e-3};
+  T phi0_;
   double soft_tolerance_{1.0e-7};
 };
 

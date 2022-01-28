@@ -19,6 +19,10 @@
 #include "drake/multibody/contact_solvers/system_dynamics_data.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
@@ -428,7 +432,8 @@ class PizzaSaverProblem {
   }
 
   std::unique_ptr<SapContactProblem<double>> MakeContactProblem(
-      const VectorXd& q0, const VectorXd& v0, const VectorXd& tau) const {
+      const VectorXd& q0, const VectorXd& v0, const VectorXd& tau,
+      double beta = 1.0) const {
     // For this problem there is a single clique for the pizza saver.        
     std::vector<MatrixXd> A(1);
     CalcMassMatrix(&A[0]);
@@ -442,15 +447,15 @@ class PizzaSaverProblem {
     // Add contact constraints.
     const double phi0 = q0(2);
     const SapFrictionConeConstraint<double>::Parameters parameters{
-        mu_, stiffness_, taud_, phi0};
+        mu_, stiffness_, taud_, beta, 1.0e-3};
     MatrixXd J;  // Full system Jacobian for the three contacts.
     CalcContactJacobian(q0(3), &J);
     problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-        0, J.middleRows(0, 3), parameters));
+        parameters, 0, J.middleRows(0, 3), phi0));
     problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-        0, J.middleRows(3, 3), parameters));
+        parameters, 0, J.middleRows(3, 3), phi0));
     problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-        0, J.middleRows(6, 3), parameters));
+        parameters, 0, J.middleRows(6, 3), phi0));
 
     return problem;
   }
@@ -480,7 +485,8 @@ class PizzaSaverProblem {
 
 ContactSolverResults<double> AdvanceNumSteps(
     const PizzaSaverProblem& problem, const VectorXd& tau, int num_steps,
-    const SapSolverParameters& params, bool cost_criterion_reached = false) {
+    const SapSolverParameters& params, double beta = 1.0,
+    bool cost_criterion_reached = false) {
   SapSolver<double> sap;
   sap.set_parameters(params);
   ContactSolverResults<double> result;
@@ -496,7 +502,7 @@ ContactSolverResults<double> AdvanceNumSteps(
   VectorXd v = VectorXd::Zero(problem.kNumVelocities);
 
   for (int i = 0; i < num_steps; ++i) {
-    const auto contact_problem = problem.MakeContactProblem(q, v, tau);
+    const auto contact_problem = problem.MakeContactProblem(q, v, tau, beta);
     const ContactSolverStatus status =
         sap.SolveWithGuess(*contact_problem, v_guess, &result);
     EXPECT_EQ(status, ContactSolverStatus::kSuccess);
@@ -543,12 +549,12 @@ GTEST_TEST(PizzaSaver, NoAppliedTorque) {
 
   SapSolverParameters params;
   params.rel_tolerance = 1.0e-6;
-  params.beta = 0;  // No near-rigid regime.
+  const double beta = 0;  // No near-rigid regime.
   params.ls_max_iterations = 40;
 
   const Vector4d tau(0.0, 0.0, -problem.mass() * problem.g(), 0.0);
   const ContactSolverResults<double> result =
-      AdvanceNumSteps(problem, tau, 30, params);
+      AdvanceNumSteps(problem, tau, 30, params, beta);
 
   // N.B. The accuracy of the solutions is significantly higher when using exact
   // line search.
@@ -556,6 +562,9 @@ GTEST_TEST(PizzaSaver, NoAppliedTorque) {
 
   // Expected generalized force.
   Vector4d tau_expected(0.0, 0.0, problem.mass() * problem.g(), 0.0);
+
+  PRINT_VAR(tau_expected.transpose());
+  PRINT_VAR(result.tau_contact.transpose());
 
   EXPECT_TRUE(CompareMatrices(result.v_next,
                               VectorXd::Zero(problem.kNumVelocities),
@@ -588,7 +597,7 @@ GTEST_TEST(PizzaSaver, ConvergenceWithExactGuess) {
 
   SapSolverParameters params;
   params.rel_tolerance = 1.0e-6;
-  params.beta = 0;  // No near-rigid regime.
+  const double beta = 0;  // No near-rigid regime.
   params.ls_max_iterations = 40;
   params.max_iterations = 0;
 
@@ -606,7 +615,7 @@ GTEST_TEST(PizzaSaver, ConvergenceWithExactGuess) {
   SapSolver<double> sap;
   sap.set_parameters(params);
   ContactSolverResults<double> result;
-  const auto contact_problem = problem.MakeContactProblem(q, v, tau);
+  const auto contact_problem = problem.MakeContactProblem(q, v, tau, beta);
   const ContactSolverStatus status =
         sap.SolveWithGuess(*contact_problem, v, &result);
   EXPECT_EQ(status, ContactSolverStatus::kSuccess);
@@ -643,15 +652,22 @@ void VerifyStictionSolution(const SapSolverParameters& params,
 
   const double Mz = 20.0;
   const Vector4d tau(0.0, 0.0, -problem.mass() * problem.g(), Mz);
+  const double beta = 0;  // No near-rigid regime.
+  // TODO: consider refactoring this to a fixuture so that this sigma is in sync
+  // with the sigma used in the cone constraints's paratmers.
+  const double sigma = 1.0e-3;  
   const ContactSolverResults<double> result =
-      AdvanceNumSteps(problem, tau, 40, params, cost_criterion_reached);
+      AdvanceNumSteps(problem, tau, 40, params, beta, cost_criterion_reached);
 
   // Expected generalized force.
   const Vector4d tau_expected(0.0, 0.0, problem.mass() * problem.g(), -Mz);
 
   // Maximum expected slip. See Castro et al. 2021 for details (Eq. 22).
   const double max_slip_expected =
-      params.sigma * problem.time_step() * problem.g();
+      sigma * problem.time_step() * problem.g();
+
+  PRINT_VAR(tau_expected.transpose());
+  PRINT_VAR(result.tau_contact.transpose());
 
   EXPECT_TRUE(
       CompareMatrices(result.v_next.head<3>(), Vector3d::Zero(), 1.0e-10));
@@ -680,8 +696,7 @@ void VerifyStictionSolution(const SapSolverParameters& params,
 GTEST_TEST(PizzaSaver, Stiction) {
   SapSolverParameters params;
   params.abs_tolerance = 1.0e-14;
-  params.rel_tolerance = 1.0e-6;
-  params.beta = 0;  // No near-rigid regime.
+  params.rel_tolerance = 1.0e-6;  
   params.ls_max_iterations = 40;
   // For the tolerances specified, we expect the solver to reach the optimality
   // condition for all time steps.
@@ -707,7 +722,6 @@ GTEST_TEST(PizzaSaver, StictionAtTightOptimalityTolerance) {
   // Extremely tight tolerances to trigger the cost stopping criterion.
   params.abs_tolerance = 1.0e-20;
   params.rel_tolerance = 1.0e-20;
-  params.beta = 0;  // No near-rigid regime.
   params.ls_max_iterations = 40;
   // Inform the unit test we want to verify this condition.
   const bool cost_criterion_reached = true;
@@ -727,13 +741,13 @@ GTEST_TEST(PizzaSaver, NoFriction) {
 
   SapSolverParameters params;
   params.rel_tolerance = 1.0e-6;
-  params.beta = 0;  // No near-rigid regime.
+  const double beta = 0;  // No near-rigid regime.
   params.ls_max_iterations = 40;
 
   const double fx = 1.0;
   const Vector4d tau(fx, 0.0, -problem.mass() * problem.g(), 0.0);
   const ContactSolverResults<double> result =
-      AdvanceNumSteps(problem, tau, num_steps, params);
+      AdvanceNumSteps(problem, tau, num_steps, params, beta);
 
   // Expected generalized force.
   const Vector4d tau_expected(0.0, 0.0, problem.mass() * problem.g(), 0.0);
@@ -775,7 +789,7 @@ GTEST_TEST(PizzaSaver, Sliding) {
 
   SapSolverParameters params;
   params.rel_tolerance = 1.0e-6;
-  params.beta = 0;  // No near-rigid regime.
+  const double beta = 0;  // No near-rigid regime.
   params.ls_max_iterations = 40;
 
   const double Mz = 40.0;
@@ -783,7 +797,7 @@ GTEST_TEST(PizzaSaver, Sliding) {
   const Vector4d tau(0.0, 0.0, -weight, Mz);
 
   const ContactSolverResults<double> result =
-      AdvanceNumSteps(problem, tau, 10, params);
+      AdvanceNumSteps(problem, tau, 10, params, beta);
 
   EXPECT_GT(result.v_next(3), 0.0);  // It's accelerating.
   for (int i = 0; i < 3; ++i) {
@@ -823,22 +837,34 @@ GTEST_TEST(PizzaSaver, NearRigidStiction) {
 
   // We first verify that if we don't use the near-rigid regime strategy the
   // solver fails to converge.
-  params.beta = 0.0;  // near-rigid regime disabled.
-  EXPECT_THROW(AdvanceNumSteps(problem, tau, 30, params), std::exception);
+  double beta = 0.0;  // near-rigid regime disabled.
+  EXPECT_THROW(AdvanceNumSteps(problem, tau, 30, params, beta), std::exception);
+  {
+    const ContactSolverResults<double> result =
+      AdvanceNumSteps(problem, tau, 30, params);
+    PRINT_VAR(result.tau_contact.transpose());
+  }
 
   // We try again the same problem but with with near-rigid transition enabled.
   // N.B. AdvanceNumSteps() creates a new SAP solver every time. Therefore it is
   // impossible that results from the previous computation affect this new
   // computation.
-  params.beta = 1.0;  // Enable near-rigid regime with default value of beta.
+  beta = 1.0;  // Enable near-rigid regime with default value of beta.
   const ContactSolverResults<double> result =
-      AdvanceNumSteps(problem, tau, 30, params);
+      AdvanceNumSteps(problem, tau, 30, params, beta);
+  PRINT_VAR(result.tau_contact.transpose());      
 
   // Expected generalized force.
   const Vector4d tau_expected(0.0, 0.0, problem.mass() * problem.g(), -Mz);
 
+  PRINT_VAR(tau_expected.transpose());
+
+  // TODO: consider refactoring this to a fixuture so that this sigma is in sync
+  // with the sigma used in the cone constraints's paratmers.
+  const double sigma = 1.0e-3;
+
   // Maximum expected slip. See Castro et al. 2021 for details (Eq. 22).
-  const double max_slip_expected = params.sigma * dt * problem.g();
+  const double max_slip_expected = sigma * dt * problem.g();
 
   EXPECT_TRUE(
       CompareMatrices(result.v_next.head<3>(), Vector3d::Zero(), 1.0e-9));
