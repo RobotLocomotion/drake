@@ -18,22 +18,21 @@ namespace drake {
 namespace multibody {
 
 /// This class represents a _spatial velocity_ (also called a _twist_) and has
-/// 6 elements with a rotational (angular) velocity w (ordinary 3-vector) on top
-/// of a translational (linear) velocity v (ordinary 3-vector).
+/// 6 elements with a rotational (angular) velocity w (3-element vector) on top
+/// of a translational (linear) velocity v (3-element vector).
 /// A spatial velocity represents the rotational and translational motion of a
 /// frame B with respect to a "measured-in" frame A. This class assumes that
 /// both the rotational velocity w and translational velocity v are expressed
-/// in the same "expressed-in" frame E.
-/// This class only stores 6 elements (namely w and v) and does not store the
-/// underlying frames B, A, E or the point of B associated with v.  The user is
-/// responsible for keeping track of the underlying frames B, A, E, etc., which
-/// is best done through monogram notation.  For a point Bp that is fixed to a
-/// frame (or body) B, the spatial velocity of point Bp of frame B measured in
-/// frame A, expressed in frame E is denoted `V_ABp_E`. `V_ABp_E` contains
+/// in the same "expressed-in" frame E.  This class only stores 6 elements
+/// (namely w and v) and does not store the underlying frames B, A, E.  The user
+/// is responsible for keeping track of these underlying frames which is best
+/// done through monogram notation. The spatial velocity of a frame B measured
+/// in a frame A, expressed in frame E is denoted `V_AB_E`. `V_AB_E` contains
 /// w_AB_E (B's rotational velocity w measured in A, expressed in E) and
-/// v_ABp_E (point Bp's translational velocity v measured in A, expressed in E).
-/// The abbreviated monogram notation V_AB_E denotes the spatial velocity of
-/// frame B's origin (Bo) measured in A, expressed in E.  Details on spatial
+/// v_ABo_E (Bo's translational velocity measured in A, expressed in E), where
+/// Bo is the frame B's origin point.  For an @ref multibody_frames_and_bodies
+/// "offset frame" Bp, the monogram notation V_ABp_E denotes the spatial
+/// velocity of frame Bp measured in A, expressed in E.  Details on spatial
 /// vectors and monogram notation are in section @ref multibody_spatial_vectors.
 ///
 /// @tparam_default_scalar
@@ -60,26 +59,26 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
                   const Eigen::Ref<const Vector3<T>>& v) : Base(w, v) {}
 
   /// SpatialVelocity constructor from an Eigen expression that represents a
-  /// six-dimensional vector.
-  /// This constructor will assert the size of V is six (6) at compile-time
-  /// for fixed sized Eigen expressions and at run-time for dynamic sized Eigen
-  /// expressions.
+  /// six-dimensional vector (i.e., two 3-element vectors, namely an angular
+  /// velocity and a translational velocity).  This constructor will assert the
+  /// size of V is six (6) at compile-time for fixed sized Eigen expressions
+  /// and at run-time for dynamic sized Eigen expressions.
   template <typename Derived>
   explicit SpatialVelocity(const Eigen::MatrixBase<Derived>& V) : Base(V) {}
 
   /// In-place shift of a %SpatialVelocity from one point Bp of a rigid body or
   /// frame B to another point Bq of B (both Bp and Bq are fixed to B).
-  /// On entry, `this` is the spatial velocity `V_ABp_E` of frame B at Bp,
-  /// measured in a frame A, and expressed in a frame E.  On return `this` is
-  /// modified to be `V_ABq_E`, the spatial velocity of frame B at Bq,
-  /// measured in frame A, and expressed in frame E.
-  /// @param[in] p_BpBq_E position vector from point Bp of B to point Bq of B,
-  ///   expressed in frame E. Point Bp is the point whose translational velocity
-  ///   is stored in `this` spatial velocity on entry.  p_BpBq_E must have the
-  ///   same expressed-in frame E as `this` spatial velocity.
+  /// On entry, `this` is the spatial velocity `V_ABp_E` of frame Bp, measured
+  /// in a frame A, and expressed in a frame E.  On return `this` is modified to
+  /// be `V_ABq_E`, the spatial velocity of frame Bq, measured in frame A, and
+  /// expressed in frame E.
+  /// @param[in] p_BpBq_E position vector from Bp to Bq, expressed in frame E.
+  ///   Frame Bp's origin is the point whose translational velocity is stored in
+  ///  `this` spatial velocity on entry. The expressed-in frame for p_BpBq_E
+  ///   must be frame E, the same expressed-in frame as `this` spatial velocity.
   /// @retval V_ABq_E reference to `this` spatial velocity which has been
-  ///   modified to represent the spatial velocity of frame B at point Bq,
-  ///   still measured in frame A and expressed in frame E. This is calculated:
+  ///   modified to represent frame Bq's spatial velocity still measured in
+  ///   frame A and expressed in frame E. This is calculated as:
   /// <pre>
   ///  w_AB_E  = w_AB_E               (angular velocity of `this` is unchanged).
   ///  v_ABq_E = v_ABp_E + w_AB_E x p_BpBq_E   (translational velocity changes).
@@ -106,39 +105,40 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// frame B to another point Bq of B (both Bp and Bq are fixed to B).
   /// This method differs from ShiftInPlace() in that this method does not
   /// modify `this` whereas ShiftInPlace() does modify `this`.
-  /// @param[in] p_BpBq_E position vector from point Bp of B to point Bq of B,
-  ///   expressed in frame E. Point Bp is the point whose translational velocity
-  ///   is stored in `this` spatial velocity.  p_BpBq_E must have the same
-  ///   expressed-in frame E as `this` spatial velocity.
-  /// @retval V_ABq_E spatial velocity of frame B at point Bq,
-  ///   measured in frame A, and expressed in frame E.
+  /// @param[in] p_BpBq_E position vector from Bp to Bq, expressed in frame E.
+  ///   Frame Bp's origin is the point whose translational velocity is stored in
+  ///  `this` spatial velocity on entry. The expressed-in frame for p_BpBq_E
+  ///   must be frame E, the same expressed-in frame as `this` spatial velocity.
+  /// @retval V_ABq_E spatial velocity of frame Bq, measured in frame A, and
+  ///   expressed in frame E.
   /// @see ShiftInPlace() for more information.
   SpatialVelocity<T> Shift(const Vector3<T>& p_BpBq_E) const {
     return SpatialVelocity<T>(*this).ShiftInPlace(p_BpBq_E);
   }
 
-  /// This method implements the formula to calculate the spatial velocity of a
-  /// frame B at point Bq that is moving on a frame A, measured in a frame W.
-  /// @param[in] p_ApBq_E position vector from a point Ap of frame A to a point
-  ///   Bq of frame B, expressed in a frame E.  Point Ap is the point whose
-  ///   translational velocity is stored in `this` spatial velocity. p_ApBq_E
-  ///   must have the same expressed-in frame E as `this` spatial velocity.
-  /// @param[in] V_ABq_E spatial velocity of frame B at point Bq measured in
-  ///   frame A, expressed in the same frame E as `this` spatial velocity.
-  /// @retval V_WBq_E spatial velocity of frame B at point Bq,
-  ///   measured in frame W and expressed in frame E.
-  /// @note The angular velocity component w and translational velocity
-  ///   component w of the returned spatial velocity V_WBq_E are calculated:
+  /// For an arbitrary frame B that moves on a frame A, this method calculates
+  /// frame B's spatial velocity measured in a frame W, expressed in a frame E.
+  /// @param[in] p_AqBo_E position vector from the origin of a frame Aq that is
+  ///   fixed to a frame A to Bo (frame B's origin), expressed in frame E.
+  ///   Frame Aq's origin is the point whose translational velocity is stored in
+  ///  `this` spatial velocity. p_AqBo_E must have the same expressed-in frame E
+  ///   as `this` spatial velocity.
+  /// @param[in] V_AB_E frame B's spatial velocity measured in frame A,
+  ///   expressed in the same frame E as `this` spatial velocity.
+  /// @retval V_WB_E frame B's spatial velocity measured in frame W and
+  ///   expressed in frame E.
+  /// @note The returned spatial velocity V_WB_E contains an angular velocity
+  ///   w_wB_E and translational velocity v_WBo_E that are calculated as:
   /// <pre>
   ///  w_WB_E  = w_WA_E + w_AB_E
-  ///  v_WBq_E = v_WAp_E + w_WA_E x p_ApBq_E + v_ABq_E
+  ///  v_WBo_E = v_WAp_E + w_WA_E x p_AqBo_E + v_ABo_E
   /// </pre>
-  /// If frame B is rigidly fixed to frame A (as in a rigid body), V_ABq_E = 0
+  /// If frame B is rigidly fixed to frame A (as in a rigid body), V_AB_E = 0
   /// and this method produces a Shift() operation (albeit inefficiently).
   SpatialVelocity<T> ComposeWithMovingFrameVelocity(
-      const Vector3<T>& p_ApBq_E, const SpatialVelocity<T>& V_ABq_E) const {
-    // V_WBq_E = V_WAp_E.Shift(p_ApBq_E) + V_ABq_E
-    return this->Shift(p_ApBq_E) + V_ABq_E;
+      const Vector3<T>& p_AqBo_E, const SpatialVelocity<T>& V_AB_E) const {
+    // V_WB_E = V_WAp_E.Shift(p_AqBo_E) + V_AB_E
+    return this->Shift(p_AqBo_E) + V_AB_E;
   }
 
   /// Calculates the dot-product of `this` spatial velocity with a spatial
