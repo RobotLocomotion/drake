@@ -99,6 +99,8 @@ class CompliantContactManager final
   // Provide private access for unit testing only.
   friend class CompliantContactManagerTest;
 
+  void ExtractModelInfo() final;
+
   // TODO(amcastro-tri): Implement these methods in future PRs.
   void DoCalcDiscreteValues(const drake::systems::Context<T>&,
                             drake::systems::DiscreteValues<T>*) const final {
@@ -208,6 +210,7 @@ class CompliantContactManager final
 
   std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver_;
   CacheIndexes cache_indexes_;
+  std::vector<int> num_tree_velocities_;
 };
 
 }  // namespace internal

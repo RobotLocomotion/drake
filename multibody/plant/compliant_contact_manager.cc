@@ -16,6 +16,10 @@
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 #include "drake/systems/framework/context.h"
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a ": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a ":\n" << a << std::endl;
+
 using drake::geometry::GeometryId;
 using drake::geometry::PenetrationAsPointPair;
 using drake::math::RotationMatrix;
@@ -577,6 +581,43 @@ void CompliantContactManager<T>::DoCalcContactSolverResults(
   // In the absence of contact, v_next = v*.
   results->v_next = EvalFreeMotionVelocities(context);
   results->tau_contact.setZero();
+}
+
+template <typename T>
+void CompliantContactManager<T>::ExtractModelInfo() {
+  const MultibodyTreeTopology& topology =  
+      internal::GetInternalTree(this->plant()).get_topology();
+
+  // Sanity check: I expect always the first node to be connected to the world.
+  // Otherwise something went terribly wrong.
+  // TODO: remove. Note that the check assumes at least one tree and therefore
+  // not work for empty models.
+  //const BodyNodeTopology& first_tree_base =
+  //    topology.get_body_node(BodyNodeIndex(1));
+  //DRAKE_DEMAND(first_tree_base.level == 1);
+
+  const BodyNodeTopology& root = topology.get_body_node(BodyNodeIndex(0));
+  const int num_trees = root.child_nodes.size();
+  num_tree_velocities_.resize(num_trees, 0);
+
+  int t = -1;  // current tree.
+  // Traverse nodes in their DFT order, skiping the world.
+  for (BodyNodeIndex node_index(1); node_index < topology.get_num_body_nodes();
+       ++node_index) {
+    const BodyNodeTopology& node = topology.get_body_node(node_index);
+    if (node.level == 1) ++t;
+    num_tree_velocities_[t] += node.num_mobilizer_velocities;
+  }
+
+  // When I'm done t should point at the last tree.
+  // TODO: remove.
+  DRAKE_DEMAND(t == (num_trees - 1));  // sanity check.
+
+  PRINT_VAR(num_tree_velocities_.size());
+  for (int nt : num_tree_velocities_) {
+    PRINT_VAR(nt);
+  }
+
 }
 
 }  // namespace internal
