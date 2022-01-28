@@ -167,7 +167,7 @@ class SapSolver {
   };
 
   SapSolver() = default;
-  ~SapSolver() final = default;
+  ~SapSolver() = default;
 
   // Solve the contact problem specified by the input data. See
   // ContactSolver::SolveWithGuess() for details. Currently, only `T = double`
@@ -186,7 +186,8 @@ class SapSolver {
   // instantiated locally or stored within a Context cache entry to ensure
   // thread safety.
   ContactSolverStatus SolveWithGuess(const SapContactProblem<T>& problem,
-                                     ContactSolverResults<T>* result) final;
+                                     const VectorX<T>& v_guess,
+                                     ContactSolverResults<T>* result);
 
   // New parameters will affect the next call to SolveWithGuess().
   void set_parameters(const SapSolverParameters& parameters) {
@@ -524,8 +525,9 @@ class SapSolver {
 };
 
 template <>
-ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
-    const VectorX<double>&, ContactSolverResults<double>*);
+ContactSolverStatus SapSolver<double>::SolveWithGuess(
+    const SapContactProblem<double>&, const VectorX<double>&,
+    ContactSolverResults<double>*);
 
 }  // namespace internal
 }  // namespace contact_solvers

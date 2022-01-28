@@ -36,8 +36,8 @@ void SapSolver<T>::PackContactResults(const VectorX<T>& v_star,
   // For now we will assume the SapContactProblem only contains contact
   // constraints.
   DRAKE_DEMAND(v_participating.size() == model_->num_participating_velocities());
-  DRAKE_DEMAND(vc.size() == model_->num_impulses());
-  DRAKE_DEMAND(gamma.size() == model_->num_impulses());
+  DRAKE_DEMAND(vc_grouped.size() == model_->num_impulses());
+  DRAKE_DEMAND(gamma_grouped.size() == model_->num_impulses());
   
   results->Resize(model_->num_velocities(), model_->num_constraints());
 
@@ -45,11 +45,11 @@ void SapSolver<T>::PackContactResults(const VectorX<T>& v_star,
   // Overwrite participating DOFs only.
   model_->velocities_permutation().ApplyInverse(v_participating,
                                                 &results->v_next);
-  VectorXd vc(vc_grouped.size());
+  VectorX<T> vc(vc_grouped.size());
   model_->impulses_permutation().ApplyInverse(vc_grouped, &vc);  
   ExtractNormal(vc, &results->vn);
   ExtractTangent(vc, &results->vt);
-  VectorXd gamma(gamma_grouped.size());
+  VectorX<T> gamma(gamma_grouped.size());
   model_->impulses_permutation().ApplyInverse(gamma_grouped, &gamma);
   ExtractNormal(gamma, &results->fn);
   ExtractTangent(gamma, &results->ft);
@@ -59,7 +59,7 @@ void SapSolver<T>::PackContactResults(const VectorX<T>& v_star,
   results->fn /= model_->time_step();
   results->ft /= model_->time_step();
   VectorX<T> tau_contact_participating(v_participating.size());
-  model_->J().MultiplyByTranspose(gamma_grouped, tau_contact_participating);
+  model_->J().MultiplyByTranspose(gamma_grouped, &tau_contact_participating);
   tau_contact_participating /= model_->time_step();
   results->tau_contact.setZero();
   model_->velocities_permutation().Apply(tau_contact_participating,
@@ -88,15 +88,18 @@ void SapSolver<T>::CalcStoppingCriteriaResidual(const State& state,
 }
 
 template <typename T>
-ContactSolverStatus SolveWithGuess(const SapContactProblem<T>& problem,
-                                   ContactSolverResults<T>* result) {
+ContactSolverStatus SapSolver<T>::SolveWithGuess(
+    const SapContactProblem<T>& problem, const VectorX<T>& v_guess,
+    ContactSolverResults<T>* result) {
   throw std::logic_error(
       "SapSolver::SolveWithGuess(): Only T = double is supported.");
 }
 
 template <>
-ContactSolverStatus SolveWithGuess(const SapContactProblem<double>& problem,
-                                   ContactSolverResults<double>* result) {
+ContactSolverStatus SapSolver<double>::SolveWithGuess(
+    const SapContactProblem<double>& problem,
+    const VectorX<double>& v_guess,
+    ContactSolverResults<double>* results) {
   using std::abs;
   using std::max;
 
@@ -326,15 +329,16 @@ void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
   // intended as an alternative for debugging and optimizing it might not be
   // worth it.
   const int nv = model_->num_participating_velocities();
+  const int nk = model_->num_impulses();
 
   // Make dense dynamics matrix.
   const std::vector<MatrixX<T>> Acliques = model_->dynamics_matrix();
   MatrixX<T> Adense = MatrixX<T>::Zero(nv, nv);
-  int v_offset = 0;
+  int offset = 0;
   for (const auto& Ac : Acliques) {
     const int nv_clique = Ac.rows();
     Adense.block(offset, offset, nv_clique, nv_clique) = Ac;
-    v_offset += nv_clique;
+    offset += nv_clique;
   }
 
   // Make dense Jacobian matrix.
@@ -342,7 +346,7 @@ void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
 
   // Make dense Hessian matrix G.
   MatrixX<T> Gdense = MatrixX<T>::Zero(nk, nk);
-  int offset = 0;
+  offset = 0;
   for (const auto& Gi : gradients_cache.G) {
     const int ni = Gi.rows();
     Gdense.block(offset, offset, ni, ni) = Gi;
@@ -458,7 +462,7 @@ SapSolver<T>::EvalGradientsCache(const State& state) const {
   // TODO: clean this up to avoid recomputing impulses in this call.
   // Maybe a sugar method on SapModel would suffice.
   VectorX<T> dummy(y.size());
-  model_->ProjectImpulsesAndCalcConstraintsHessian(y, dummy, &cache.G);
+  model_->ProjectImpulsesAndCalcConstraintsHessian(y, &dummy, &cache.G);
   ++stats_.num_gradients_cache_updates;
   cache.valid = true;
   return cache;
