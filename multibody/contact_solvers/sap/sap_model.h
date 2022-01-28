@@ -44,10 +44,12 @@ class SapConstraintBundle {
 
   // Computes the projection gamma = P(y) for all impulses and the gradient
   // dP/dy if dgamma_dy != nullptr.
+  // TODO: no need to have R as an argument. Remove.
   void ProjectImpulses(const VectorX<T>& y, const VectorX<T>& R,
                        VectorX<T>* gamma,
                        std::vector<MatrixX<T>>* dPdy = nullptr) const;
 
+  // TODO: no need to have R as an argument. Remove.
   void ProjectImpulsesAndCalcConstraintsHessian(
       const VectorX<T>& y, const VectorX<T>& R, VectorX<T>* gamma,
       std::vector<MatrixX<T>>* G) const;
@@ -111,17 +113,38 @@ class SapModel {
 
   const BlockSparseMatrix<T>& J() const { return constraints_bundle_->J(); }
 
+  const VectorX<T>& R() const {
+    return constraints_bundle_->R();
+  }
+
+  const VectorX<T>& Rinv() const {
+    return constraints_bundle_->Rinv();
+  }
+
   // Returns free-motion velocities for participating DOFs.
   const VectorX<T>& v_star() const;
 
   // Returns free-motion generalized momenta for participating DOFs.
   const VectorX<T>& p_star() const;
 
+  // Returns diag(A)^{-1/2}. Used for scaling SAP equations and residuals.
+  // Of size num_participating_velocities().
+  const VectorX<T>& inv_sqrt_A() const { return inv_sqrt_A_; }
+
   // Performs multiplication p = A * v. Only participating DOFs are
   // considered.
   // @pre p must be a valid pointer.
   // @pre both v and p must be of size num_participating_velocities().
   void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* p) const;    
+
+  void CalcConstraintVelocities(const VectorX<T>& v, VectorX<T>* vc) const;
+
+  void CalcUnprojectedImpulses(const VectorX<T>& vc, VectorX<T>* y) const;
+
+  void ProjectImpulses(const VectorX<T>& y, VectorX<T>* gamma) const;
+
+  void ProjectImpulsesAndCalcConstraintsHessian(
+      const VectorX<T>& y, VectorX<T>* gamma, std::vector<MatrixX<T>>* G) const;
 
  private:
   friend class SapModelTester;
