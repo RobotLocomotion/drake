@@ -176,7 +176,9 @@ void LogIfTrimmedWhitespaceNonEmpty(curl_infotype type,
 void LogCurlDebugData(const debug_data_t& debug_data) {
   // NOTE: not very efficient in terms of copies, but messages are small.
   std::string accumulator;
-  curl_infotype prev_type;
+  /* The value must be initialized for compiler warnings, prev_type gets set on
+   the first iteration. Initialize to intentionally invalid value. */
+  curl_infotype prev_type = static_cast<curl_infotype>(-1);
   auto counter = 0;
   for (const auto& pair : debug_data) {
     // On the first iteration, initialize the previous type and accumulator.
@@ -253,7 +255,7 @@ void AddField<RenderImageType>(curl_mime* form, const char* field_name,
 
 /* Same as AddField, only for files using curl_mime_filedata, informing curl of
  the `file_path` to upload under the specified `field_name`.  The optional
- mime_type will be added to the form when provided.*/
+ mime_type will be added to the form when provided. */
 void AddFileField(curl_mime* form, const char* field_name,
                   const std::string& file_path,
                   const std::optional<std::string>& mime_type) {
