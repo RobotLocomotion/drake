@@ -10,7 +10,7 @@
     <frame name="top_added_frame" attached_to="simple_model">
       <!--
       sub_added_frame was added under the scope of add_scoped_sub, even though
-      the directives indicate it is under add_sceoped_sub::simple_model
+      the directives indicate it is under add_scoped_top::simple_model
       <pose relative_to="simple_model::sub_added_frame">
       -->
       <pose relative_to="sub_added_frame">

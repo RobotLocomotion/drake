@@ -12,8 +12,15 @@
       <pose>10 20 30   0 0 0</pose>
     </frame>
 
-    <!-- This is supposed to explicitly resolve to the `simple_model` instance. -->
-    <!-- However in sdf there is no way to write explicitly anymore. -->
+    <!--
+      Explicitly resolving a frame by namespacing its name is not supported
+      and not needed, hence they will be commented out.
+
+      TODO(aaronchongth): Without this feature, there may be existing workflows
+      that are impacted and will need adjustment. For example, adding
+      "left::arm::gripper_origin" from a top level include, and then leveraging
+      this new model scope for other operations just scoped within "left::".
+    -->
     <!--
     <frame name="simple_model::sub_added_frame_explicit" ...>
       <pose>10 20 30   0 0 0</pose>
