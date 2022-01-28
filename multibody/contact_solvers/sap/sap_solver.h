@@ -254,7 +254,7 @@ class SapSolver {
     // sure those get invalidated when it does.
 
     struct VelocitiesCache {
-      void Resize(int nc) { vc.resize(3 * nc); }
+      void Resize(int nk) { vc.resize(nk); }
       void Invalidate(Cache* cache) {
         valid = false;
         cache->mutable_impulses_cache();
@@ -264,9 +264,9 @@ class SapSolver {
     };
 
     struct ImpulsesCache {
-      void Resize(int nc) {
-        y.resize(3 * nc);
-        gamma.resize(3 * nc);
+      void Resize(int nk) {
+        y.resize(nk);
+        gamma.resize(nk);
       }
       void Invalidate(Cache* cache) {
         valid = false;
@@ -306,7 +306,7 @@ class SapSolver {
       void Resize(int nv, int nc) {
         ell_grad_v.resize(nv);
         dPdy.resize(nc);
-        G.resize(nc, Matrix3<T>::Zero());
+        G.resize(nc);
       }
       void Invalidate(Cache* cache) {
         valid = false;
@@ -314,15 +314,15 @@ class SapSolver {
       }
       bool valid{false};
       VectorX<T> ell_grad_v;         // Gradient of the cost in v.
-      std::vector<Matrix3<T>> dPdy;  // Gradient of the projection, ∂P/∂y.
+      std::vector<MatrixX<T>> dPdy;  // Gradient of the projection, ∂P/∂y.
       std::vector<MatrixX<T>> G;     // G = -∂γ/∂vc = dP/dy⋅R⁻¹.
     };
 
     struct SearchDirectionCache {
-      void Resize(int nv, int nc) {
+      void Resize(int nv, int nk) {
         dv.resize(nv);
         dp.resize(nv);
-        dvc.resize(3 * nc);
+        dvc.resize(nk);
         d2ellA_dalpha2 = NAN;
       }
       void Invalidate(Cache*) { valid = false; }
@@ -336,7 +336,7 @@ class SapSolver {
     // Resizes all the cache entries to store quantities for a problem with nv
     // generalized velocities and nc contact constraints. All existing
     // data is lost.
-    void Resize(int nv, int nc);
+    void Resize(int nv, int nc, int nk);
 
     // Marks the cache as invalid. This is meant to be called by State when
     // mutating its internal state.
@@ -415,13 +415,13 @@ class SapSolver {
 
     // Constructs a state for a problem with nv generalized velocities and nc
     // contact constraints.
-    State(int nv, int nc) { Resize(nv, nc); }
+    State(int nv, int nc, int nk) { Resize(nv, nc, nk); }
 
     // Resizes the state for a problem with nv generalized velocities and nc
     // contact constraints.
-    void Resize(int nv, int nc) {
+    void Resize(int nv, int nc, int nk) {
       v_.resize(nv);
-      cache_.Resize(nv, nc);
+      cache_.Resize(nv, nc, nk);
     }
 
     const VectorX<T>& v() const { return v_; }
