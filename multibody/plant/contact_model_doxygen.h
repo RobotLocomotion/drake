@@ -311,8 +311,8 @@ Next topic: @ref contact_engineering
  Next topic: @ref stribeck_approximation
  */
 
-/** @defgroup stribeck_approximation Continuous Approximation of Coulomb
- Friction
+/**
+ @defgroup stribeck_approximation Continuous Approximation of Coulomb Friction
  @ingroup drake_contacts
 
  Static friction (or stiction) arises due to surface characteristics at the

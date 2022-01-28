@@ -122,32 +122,56 @@ MatrixXDecisionVariable MathematicalProgram::NewSymmetricContinuousVariables(
   return NewVariables(VarType::CONTINUOUS, rows, rows, true, names);
 }
 
-void MathematicalProgram::AddDecisionVariables(
-    const Eigen::Ref<const VectorXDecisionVariable>& decision_variables) {
-  const int num_existing_decision_vars = num_vars();
-  for (int i = 0; i < decision_variables.rows(); ++i) {
-    if (decision_variables(i).is_dummy()) {
-      throw std::runtime_error(fmt::format(
-          "decision_variables({}) should not be a dummy variable", i));
+namespace {
+template <typename T>
+VectorX<T> Flatten(const Eigen::Ref<const MatrixX<T>>& mat) {
+  if (mat.cols() == 1) {
+    return mat;
+  } else {
+    // Cannot use Eigen::Map to flatten the matrix since mat.outerStride() might
+    // not equal to mat.rows(), namely the data in mat is not in contiguous
+    // space on memory.
+    // TODO(hongkai.dai): figure out a better way that avoids copy and dynamic
+    // memory allocation.
+    VectorX<T> vec(mat.size());
+    for (int j = 0; j < mat.cols(); ++j) {
+      vec.segment(j * mat.rows(), mat.rows()) = mat.col(j);
     }
-    if (decision_variable_index_.find(decision_variables(i).get_id()) !=
-        decision_variable_index_.end()) {
-      throw std::runtime_error(fmt::format("{} is already a decision variable.",
-                                           decision_variables(i)));
-    }
-    if (indeterminates_index_.find(decision_variables(i).get_id()) !=
-        indeterminates_index_.end()) {
-      throw std::runtime_error(fmt::format("{} is already an indeterminate.",
-                                           decision_variables(i)));
-    }
-    CheckVariableType(decision_variables(i).get_type());
-    decision_variable_index_.insert(std::make_pair(
-        decision_variables(i).get_id(), num_existing_decision_vars + i));
+    return vec;
   }
+}
+}  // namespace
+
+void MathematicalProgram::AddDecisionVariables(
+    const Eigen::Ref<const MatrixXDecisionVariable>& decision_variables) {
+  const int num_existing_decision_vars = num_vars();
   decision_variables_.conservativeResize(num_existing_decision_vars +
-                                         decision_variables.rows());
-  decision_variables_.tail(decision_variables.rows()) = decision_variables;
-  AppendNanToEnd(decision_variables.rows(), &x_initial_guess_);
+                                         decision_variables.size());
+  for (int i = 0; i < decision_variables.rows(); ++i) {
+    for (int j = 0; j < decision_variables.cols(); ++j) {
+      const auto& var = decision_variables(i, j);
+      if (var.is_dummy()) {
+        throw std::runtime_error(fmt::format(
+            "decision_variables({}, {}) should not be a dummy variable", i, j));
+      }
+      if (decision_variable_index_.find(var.get_id()) !=
+          decision_variable_index_.end()) {
+        throw std::runtime_error(
+            fmt::format("{} is already a decision variable.", var));
+      }
+      if (indeterminates_index_.find(var.get_id()) !=
+          indeterminates_index_.end()) {
+        throw std::runtime_error(
+            fmt::format("{} is already an indeterminate.", var));
+      }
+      CheckVariableType(var.get_type());
+      const int var_index =
+          num_existing_decision_vars + j * decision_variables.rows() + i;
+      decision_variable_index_.insert(std::make_pair(var.get_id(), var_index));
+      decision_variables_(var_index) = var;
+    }
+  }
+  AppendNanToEnd(decision_variables.size(), &x_initial_guess_);
 }
 
 symbolic::Polynomial MathematicalProgram::NewFreePolynomialImpl(
@@ -365,31 +389,33 @@ MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
 }
 
 void MathematicalProgram::AddIndeterminates(
-    const Eigen::Ref<const VectorXDecisionVariable>& new_indeterminates) {
+    const Eigen::Ref<const MatrixXDecisionVariable>& new_indeterminates) {
   const int num_old_indeterminates = num_indeterminates();
-  for (int i = 0; i < new_indeterminates.rows(); ++i) {
-    if (new_indeterminates(i).is_dummy()) {
-      throw std::runtime_error(fmt::format(
-          "new_indeterminates({}) should not be a dummy variable.", i));
-    }
-    if (indeterminates_index_.find(new_indeterminates(i).get_id()) !=
-            indeterminates_index_.end() ||
-        decision_variable_index_.find(new_indeterminates(i).get_id()) !=
-            decision_variable_index_.end()) {
-      throw std::runtime_error(
-          fmt::format("{} already exists in the optimization program.",
-                      new_indeterminates(i)));
-    }
-    if (new_indeterminates(i).get_type() !=
-        symbolic::Variable::Type::CONTINUOUS) {
-      throw std::runtime_error("indeterminate should of type CONTINUOUS.\n");
-    }
-    indeterminates_index_.insert(std::make_pair(new_indeterminates(i).get_id(),
-                                                num_old_indeterminates + i));
-  }
   indeterminates_.conservativeResize(num_old_indeterminates +
-                                     new_indeterminates.rows());
-  indeterminates_.tail(new_indeterminates.rows()) = new_indeterminates;
+                                     new_indeterminates.size());
+  for (int i = 0; i < new_indeterminates.rows(); ++i) {
+    for (int j = 0; j < new_indeterminates.cols(); ++j) {
+      const auto& var = new_indeterminates(i, j);
+      if (var.is_dummy()) {
+        throw std::runtime_error(fmt::format(
+            "new_indeterminates({},{}) should not be a dummy variable.", i, j));
+      }
+      if (indeterminates_index_.find(var.get_id()) !=
+              indeterminates_index_.end() ||
+          decision_variable_index_.find(var.get_id()) !=
+              decision_variable_index_.end()) {
+        throw std::runtime_error(
+            fmt::format("{} already exists in the optimization program.", var));
+      }
+      if (var.get_type() != symbolic::Variable::Type::CONTINUOUS) {
+        throw std::runtime_error("indeterminate should of type CONTINUOUS.\n");
+      }
+      const int var_index =
+          num_old_indeterminates + j * new_indeterminates.rows() + i;
+      indeterminates_index_.insert(std::make_pair(var.get_id(), var_index));
+      indeterminates_(var_index) = var;
+    }
+  }
 }
 
 Binding<VisualizationCallback> MathematicalProgram::AddVisualizationCallback(
@@ -724,10 +750,15 @@ Binding<Constraint> MathematicalProgram::AddConstraint(const Expression& e,
 }
 
 Binding<Constraint> MathematicalProgram::AddConstraint(
-    const Eigen::Ref<const VectorX<Expression>>& v,
-    const Eigen::Ref<const Eigen::VectorXd>& lb,
-    const Eigen::Ref<const Eigen::VectorXd>& ub) {
-  return AddConstraint(internal::ParseConstraint(v, lb, ub));
+    const Eigen::Ref<const MatrixX<Expression>>& v,
+    const Eigen::Ref<const Eigen::MatrixXd>& lb,
+    const Eigen::Ref<const Eigen::MatrixXd>& ub) {
+  DRAKE_DEMAND(v.rows() == lb.rows());
+  DRAKE_DEMAND(v.rows() == ub.rows());
+  DRAKE_DEMAND(v.cols() == lb.cols());
+  DRAKE_DEMAND(v.cols() == ub.cols());
+  return AddConstraint(
+      internal::ParseConstraint(Flatten(v), Flatten(lb), Flatten(ub)));
 }
 
 Binding<Constraint> MathematicalProgram::AddConstraint(
@@ -754,10 +785,15 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
-    const Eigen::Ref<const VectorX<Expression>>& v,
-    const Eigen::Ref<const Eigen::VectorXd>& lb,
-    const Eigen::Ref<const Eigen::VectorXd>& ub) {
-  Binding<Constraint> binding = internal::ParseConstraint(v, lb, ub);
+    const Eigen::Ref<const MatrixX<Expression>>& v,
+    const Eigen::Ref<const Eigen::MatrixXd>& lb,
+    const Eigen::Ref<const Eigen::MatrixXd>& ub) {
+  DRAKE_DEMAND(v.rows() == lb.rows());
+  DRAKE_DEMAND(v.rows() == ub.rows());
+  DRAKE_DEMAND(v.cols() == lb.cols());
+  DRAKE_DEMAND(v.cols() == ub.cols());
+  Binding<Constraint> binding =
+      internal::ParseConstraint(Flatten(v), Flatten(lb), Flatten(ub));
   Constraint* constraint = binding.evaluator().get();
   if (dynamic_cast<LinearConstraint*>(constraint)) {
     return AddConstraint(
@@ -929,12 +965,17 @@ MathematicalProgram::AddRotatedLorentzConeConstraint(
 }
 
 Binding<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
-    const Eigen::Ref<const Eigen::VectorXd>& lb,
-    const Eigen::Ref<const Eigen::VectorXd>& ub,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+    const Eigen::Ref<const Eigen::MatrixXd>& lb,
+    const Eigen::Ref<const Eigen::MatrixXd>& ub,
+    const Eigen::Ref<const MatrixXDecisionVariable>& vars) {
+  DRAKE_DEMAND(lb.rows() == ub.rows());
+  DRAKE_DEMAND(lb.rows() == vars.rows());
+  DRAKE_DEMAND(lb.cols() == ub.cols());
+  DRAKE_DEMAND(lb.cols() == vars.cols());
   shared_ptr<BoundingBoxConstraint> constraint =
-      make_shared<BoundingBoxConstraint>(lb, ub);
-  return AddConstraint(Binding<BoundingBoxConstraint>(constraint, vars));
+      make_shared<BoundingBoxConstraint>(Flatten(lb), Flatten(ub));
+  return AddConstraint(
+      Binding<BoundingBoxConstraint>(constraint, Flatten(vars)));
 }
 
 Binding<LinearComplementarityConstraint> MathematicalProgram::AddConstraint(
@@ -959,12 +1000,17 @@ MathematicalProgram::AddLinearComplementarityConstraint(
 }
 
 Binding<Constraint> MathematicalProgram::AddPolynomialConstraint(
-    const VectorXPoly& polynomials,
-    const vector<Polynomiald::VarType>& poly_vars, const Eigen::VectorXd& lb,
-    const Eigen::VectorXd& ub,
+    const Eigen::Ref<const MatrixX<Polynomiald>>& polynomials,
+    const vector<Polynomiald::VarType>& poly_vars,
+    const Eigen::Ref<const Eigen::MatrixXd>& lb,
+    const Eigen::Ref<const Eigen::MatrixXd>& ub,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  auto constraint =
-      internal::MakePolynomialConstraint(polynomials, poly_vars, lb, ub);
+  DRAKE_DEMAND(polynomials.rows() == lb.rows());
+  DRAKE_DEMAND(polynomials.rows() == ub.rows());
+  DRAKE_DEMAND(polynomials.cols() == lb.cols());
+  DRAKE_DEMAND(polynomials.cols() == ub.cols());
+  auto constraint = internal::MakePolynomialConstraint(
+      Flatten(polynomials), poly_vars, Flatten(lb), Flatten(ub));
   return AddConstraint(constraint, vars);
 }
 
@@ -984,15 +1030,7 @@ Binding<PositiveSemidefiniteConstraint> MathematicalProgram::AddConstraint(
     shared_ptr<PositiveSemidefiniteConstraint> con,
     const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var) {
   DRAKE_ASSERT(math::IsSymmetric(symmetric_matrix_var));
-  int num_rows = symmetric_matrix_var.rows();
-  // TODO(hongkai.dai): this dynamic memory allocation/copying is ugly.
-  // TODO(eric.cousineau): See if Eigen::Map<> can be used (column-major)
-  VectorXDecisionVariable flat_symmetric_matrix_var(num_rows * num_rows);
-  for (int i = 0; i < num_rows; ++i) {
-    flat_symmetric_matrix_var.segment(i * num_rows, num_rows) =
-        symmetric_matrix_var.col(i);
-  }
-  return AddConstraint(CreateBinding(con, flat_symmetric_matrix_var));
+  return AddConstraint(CreateBinding(con, Flatten(symmetric_matrix_var)));
 }
 
 Binding<PositiveSemidefiniteConstraint>

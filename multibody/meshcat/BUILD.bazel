@@ -14,7 +14,48 @@ drake_cc_package_library(
     name = "meshcat",
     visibility = ["//visibility:public"],
     deps = [
+        ":contact_visualizer",
+        ":contact_visualizer_params",
         ":joint_sliders",
+        ":point_contact_visualizer",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_visualizer",
+    srcs = ["contact_visualizer.cc"],
+    hdrs = ["contact_visualizer.h"],
+    deps = [
+        ":contact_visualizer_params",
+        ":point_contact_visualizer",
+        "//common:essential",
+        "//geometry:meshcat",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//systems/framework:context",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_visualizer_test",
+    data = [
+        "//examples/manipulation_station:models",
+    ],
+    deps = [
+        ":contact_visualizer",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_visualizer_params",
+    hdrs = ["contact_visualizer_params.h"],
+    deps = [
+        "//geometry:rgba",
     ],
 )
 
@@ -23,6 +64,8 @@ drake_cc_library(
     srcs = ["joint_sliders.cc"],
     hdrs = ["joint_sliders.h"],
     deps = [
+        "//common:scope_exit",
+        "//geometry:meshcat",
         "//multibody/plant",
     ],
 )
@@ -37,8 +80,21 @@ drake_cc_googletest(
     deps = [
         ":joint_sliders",
         "//common/test_utilities:expect_throws_message",
+        "//geometry:meshcat_visualizer",
         "//geometry/test_utilities:meshcat_environment",
         "//multibody/parsing",
+    ],
+)
+
+drake_cc_library(
+    name = "point_contact_visualizer",
+    srcs = ["point_contact_visualizer.cc"],
+    hdrs = ["point_contact_visualizer.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":contact_visualizer_params",
+        "//geometry:meshcat",
+        "//math:geometric_transform",
     ],
 )
 

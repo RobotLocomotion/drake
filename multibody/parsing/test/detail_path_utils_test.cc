@@ -169,7 +169,10 @@ GTEST_TEST(ResolveUriTest, TestModel) {
 
   // Create the package map.
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(sdf_file_name);
+  package_map.AddPackageXml(FindResourceOrThrow(
+      "drake/multibody/parsing/test/"
+          "package_map_test_packages/package_map_test_package_a/"
+          "package.xml"));
 
   // Set the root directory - it will not end up being used in ResolveUri().
   const std::string root_dir = "/no/such/root";

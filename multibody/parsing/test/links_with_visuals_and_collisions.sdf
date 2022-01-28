@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version="1.7">
+<sdf xmlns:drake="http://drake.mit.edu" version="1.7">
   <model name="test_robot">
     <!-- This sdf file defines a simple test robot with multiple links so that
          we can test visuals and collisions are properly added to each link.

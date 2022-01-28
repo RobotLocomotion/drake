@@ -26,10 +26,10 @@ Users can navigate their browser to the hosted URL to visualize the Meshcat
 scene.  Note that, unlike many visualizers, one cannot open the visualizer until
 this server is running.
 
-In the current implementation, Meshcat methods must be called from the same
-thread where the class instance was constructed.  For example, running multiple
-simulations in parallel using the same Meshcat instance is not yet supported. We
-may generalize this in the future.
+@warning In the current implementation, Meshcat methods must be called from the
+same thread where the class instance was constructed.  For example, running
+multiple simulations in parallel using the same Meshcat instance is not yet
+supported. We may generalize this in the future.
 
 @section meshcat_path Meshcat paths and the scene tree
 

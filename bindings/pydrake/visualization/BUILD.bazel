@@ -37,6 +37,7 @@ drake_py_library(
         ":module_py",
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake:lcm_py",
+        "//bindings/pydrake/multibody:meshcat_py",
         "//lcmtypes:lcmtypes_drake_py",
     ],
 )
@@ -83,6 +84,18 @@ install(
     name = "install",
     targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
+)
+
+drake_py_unittest(
+    name = "meldis_test",
+    data = [
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":meldis_py",
+        "//bindings/pydrake/multibody:parsing_py",
+        "//bindings/pydrake/multibody:plant_py",
+    ],
 )
 
 drake_py_unittest(

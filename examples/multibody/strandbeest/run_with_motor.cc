@@ -232,8 +232,8 @@ int do_main() {
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "A demo showing the Strandbeest walking forward with a proportionally "
-      "controlled motor set to a desired crank velocity. Launch "
-      "drake-visualizer before running this example.");
+      "controlled motor set to a desired crank velocity. Launch meldis before "
+      "running this example.");
 
   FLAGS_simulator_accuracy = 1e-2;
   FLAGS_simulator_max_time_step = 1e-1;
