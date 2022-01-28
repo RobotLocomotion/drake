@@ -31,6 +31,7 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+#if 0
 class SapSolverTester {
  public:
   using PreProcessedData = SapSolver<double>::PreProcessedData;
@@ -52,7 +53,6 @@ class SapSolverTester {
   }
 };
 
-#if 0
 GTEST_TEST(SapSolver, PackContactResults) {
   // Setup minimum problem data.
   const int nv = 6;
@@ -606,9 +606,9 @@ GTEST_TEST(PizzaSaver, ConvergenceWithExactGuess) {
   SapSolver<double> sap;
   sap.set_parameters(params);
   ContactSolverResults<double> result;
+  const auto contact_problem = problem.MakeContactProblem(q, v, tau);
   const ContactSolverStatus status =
-      sap.SolveWithGuess(problem.time_step(), *data->dynamics_data,
-                         *data->contact_data, v, &result);
+        sap.SolveWithGuess(*contact_problem, v, &result);
   EXPECT_EQ(status, ContactSolverStatus::kSuccess);
 
   // Verify no iterations were performed.
