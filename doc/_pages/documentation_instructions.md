@@ -36,21 +36,18 @@ $ bazel run //doc:build -- --help
 # Preview the entire site, exactly how it will appear online.
 $ bazel run //doc:build -- --serve
 
-# Speed up the preview by limiting it to major section(s):
-$ bazel run //doc:build -- --serve pages       # Only the main site.
-$ bazel run //doc:build -- --serve doxygen     # Only the C++ API reference.
-$ bazel run //doc:build -- --serve pydrake     # Only the Python API reference.
-$ bazel run //doc:build -- --serve styleguide  # Only the Style Guide.
+# Speed up the preview by only processing certain tool(s):
+$ bazel run //doc:pages             -- --serve  # Only the main site.
+$ bazel run //doc/doxygen_cxx:build -- --serve  # Only the C++ API reference.
+$ bazel run //doc/pydrake:build     -- --serve  # Only the Python API reference.
+$ bazel run //doc/styleguide:build  -- --serve  # Only the Style Guide.
 
 # Further speed up preview generating only some API modules, e.g., math:
-$ bazel run //doc:build -- --serve drake.math            # C++ math API.
-$ bazel run //doc:build -- --serve pydrake.math          # Python math API.
-$ bazel run //doc:build -- --serve {drake,pydrake}.math  # Both at once.
+$ bazel run //doc/doxygen_cxx:build -- --serve drake.math            # C++ math API.
+$ bazel run //doc/pydrake:build     -- --serve pydrake.math          # Python math API.
+$ bazel run //doc:build             -- --serve {drake,pydrake}.math  # Both at once.
 
 # Further speed up preview by omitting expensive `dot` graphs:
-$ bazel run //doc:build -- --serve --quick drake.math
-
-# Further speed up preview by avoiding rebuilding pydrake:
 $ bazel run //doc/doxygen_cxx:build -- --serve --quick drake.math
 ````
 
@@ -105,7 +102,8 @@ $ bazel run //doc/styleguide:build    # Style Guide subdir only.
 The first command provides options to rebuild subsets of the website, and so
 offers one-stop shopping for developers, as explained in the prior section.
 The latter commands are used for focused regression testing, and might be
-more convenient while modifying the documentation tooling.
+more convenient while modifying the documentation tooling, or to avoid
+spurious Bazel dependencies.
 
 Each build command can be run in either "generate" mode (writing the files into
 a scratch folder) or "serve" mode (http serving for web browser preview).  The
