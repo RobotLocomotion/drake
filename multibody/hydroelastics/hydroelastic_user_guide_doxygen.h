@@ -19,6 +19,11 @@ small compression at the point of contact is characterized such that,
 ultimately, we can compute the contact force (magnitude and direction) and the
 point at which it is applied to each of the colliding bodies.
 
+Drake implements two models for resolving contact to forces: point contact
+and hydroelastic contact. See
+@ref hydro_appendix_a "Appendix A: Compliant Contact Models" for a fuller
+discussion of the theory and practice of contact models.
+
 <h2>Working with Hydroelastic Contact</h2>
 
 It is relatively simple to enable a simulation to use hydroelastic
@@ -46,14 +51,15 @@ There are three different options:
 - drake::multibody::ContactModel::kHydroelasticWithFallback
 
 The default model is `ContactModel::kPoint` and is the implementation of the
-point contact model defined in the introduction. Hydroelastic contact plays no
-role in determining the dynamics.
+point contact model (see
+@ref hydro_appendix_a "Appendix A: Compliant Contact Models"). Hydroelastic
+contact plays no role in determining the dynamics.
 
 Models `ContactModel::kHydroelastic` and
 `ContactModel::kHydroelasticWithFallback` will both enable the hydroelastic
 contact. For forces to be created from hydroelastic contact, geometries need to
-have hydroelastic representations (see Creating hydroelastic representations of
-geometries).
+have hydroelastic representations (see
+@ref creating_hydro_reps "Creating hydroelastic representations of collision geometries").
 
 `ContactModel::kHydroelastic` is a strict contact model that will attempt to
 create a hydroelastic contact surface whenever a geometry with a hydroelastic
@@ -73,6 +79,7 @@ contact can be accounted for and produce contact forces. As the implementation
 evolves, more and more contact will be captured with hydroelastic contact and
 the circumstances in which the point-contact fallback is applied will decrease.
 
+@anchor creating_hydro_reps
 <h3>Creating hydroelastic representations of collision geometries</h3>
 
 By default no geometry in drake::geometry::SceneGraph has a hydroelastic
@@ -270,7 +277,8 @@ Let’s look at the specific tags:
 
 <h4>Assigning hydroelastic properties in code</h4>
 
-Hydroelastic properties can be set to objects dynamically via the following APIs (see their documentation for further details):
+Hydroelastic properties can be set to objects dynamically via the following
+APIs (see their documentation for further details):
 
 - AddContactMaterial()
 - AddRigidHydroelasticProperties()
@@ -417,7 +425,9 @@ framework.
   be tuned in two ways: increasing the hydroelastic modulus and/or scaling the
   geometry up (in essence, increasing the average penetration depth).
 
-<h1>Appendix</h1>
+
+@anchor hydro_appendix_a
+<h1>Appendix A: Compliant Contact Models</h1>
 
 <h2>Compliant Point Contact</h2>
 
@@ -562,8 +572,8 @@ Important points to note:
   finite, discrete representation. It is also unnecessary. Intersecting meshes
   directly with a half space is far more efficient.
 
-
-<h2>Current state of implementation</h2>
+@anchor hydro_appendix_a
+<h1>Appendix B: Current state of implementation</h1>
 
 The implementation of hydroelastic contact in Drake is still under active
 development. This section will be updated as the scope and feature set of
