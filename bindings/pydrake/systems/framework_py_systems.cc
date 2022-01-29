@@ -407,6 +407,17 @@ struct Impl {
         .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives,
             py::arg("context"), py::arg("derivatives"),
             doc.System.CalcTimeDerivatives.doc)
+        .def(
+            "CalcImplicitTimeDerivativesResidual",
+            [](const System<T>* self, const Context<T>& context,
+                const ContinuousState<T>& proposed_derivatives,
+                Eigen::Ref<VectorX<T>> residual) {
+              self->CalcImplicitTimeDerivativesResidual(
+                  context, proposed_derivatives, &residual);
+            },
+            py::arg("context"), py::arg("proposed_derivatives"),
+            py::arg("residual"),
+            doc.System.CalcImplicitTimeDerivativesResidual.doc)
         .def("CalcDiscreteVariableUpdates",
             overload_cast_explicit<void, const Context<T>&, DiscreteValues<T>*>(
                 &System<T>::CalcDiscreteVariableUpdates),
@@ -1069,6 +1080,16 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.num_input_ports.doc)
         .def("num_output_ports", &Class::num_output_ports,
             cls_doc.num_output_ports.doc)
+        // States.
+        .def("num_continuous_states", &Class::num_continuous_states,
+            cls_doc.num_continuous_states.doc)
+        .def("num_discrete_state_groups", &Class::num_discrete_state_groups,
+            cls_doc.num_discrete_state_groups.doc)
+        .def("num_abstract_states", &Class::num_abstract_states,
+            cls_doc.num_abstract_states.doc)
+        .def("implicit_time_derivatives_residual_size",
+            &Class::implicit_time_derivatives_residual_size,
+            cls_doc.implicit_time_derivatives_residual_size.doc)
         // Parameters.
         .def("num_abstract_parameters", &Class::num_abstract_parameters,
             cls_doc.num_abstract_parameters.doc)
