@@ -61,6 +61,7 @@ from pydrake.multibody.plant import (
     ContactResults_,
     ContactResultsToLcmSystem,
     ContactResultsToMeshcatParams,
+    ContactResultsToMeshcat,
     ContactResultsToMeshcat_,
     CoulombFriction_,
     ExternallyAppliedSpatialForce_,
@@ -2273,8 +2274,25 @@ class TestPlant(unittest.TestCase):
         dut.Equal(surface=dut)
         copy.copy(dut)
 
+    def test_deprecated_contact_results_to_meshcat_default_scalar(self):
+        """Checks ContactResultsToMeshcat for deprecation."""
+        meshcat = Meshcat()
+        with catch_drake_warnings(expected_count=1):
+            params = ContactResultsToMeshcatParams()
+        self.assertIsNotNone(params)
+        with catch_drake_warnings(expected_count=1):
+            vis = ContactResultsToMeshcat(meshcat=meshcat, params=params)
+        vis.Delete()
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        plant.Finalize()
+        with catch_drake_warnings(expected_count=1):
+            ContactResultsToMeshcat.AddToBuilder(
+                builder=builder, plant=plant, meshcat=meshcat, params=params)
+
     @numpy_compare.check_nonsymbolic_types
-    def test_deprecated_contact_results_to_meshcat(self, T):
+    def test_deprecated_contact_results_to_meshcat_specific_scalar(self, T):
+        """Checks ContactResultsToMeshcat_[T] for deprecation."""
         meshcat = Meshcat()
         with catch_drake_warnings(expected_count=1):
             params = ContactResultsToMeshcatParams()
@@ -2282,6 +2300,12 @@ class TestPlant(unittest.TestCase):
         with catch_drake_warnings(expected_count=1):
             vis = ContactResultsToMeshcat_[T](meshcat=meshcat, params=params)
         vis.Delete()
+        builder = DiagramBuilder_[T]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        plant.Finalize()
+        with catch_drake_warnings(expected_count=1):
+            ContactResultsToMeshcat_[T].AddToBuilder(
+                builder=builder, plant=plant, meshcat=meshcat, params=params)
 
     def test_free_base_bodies(self):
         plant = MultibodyPlant_[float](time_step=0.01)
