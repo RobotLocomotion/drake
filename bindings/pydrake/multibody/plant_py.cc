@@ -275,9 +275,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
             py::arg("frame_A"), cls_doc.CalcPointsPositions.doc);
-    // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
-    // overload that (a) services MBP directly and (b) uses body
-    // association that is less awkward than implicit BodyNodeIndex.
     cls  // BR
         .def("CalcTotalMass",
             overload_cast_explicit<T, const Context<T>&>(&Class::CalcTotalMass),

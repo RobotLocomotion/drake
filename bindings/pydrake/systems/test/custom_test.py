@@ -547,13 +547,30 @@ class TestCustom(unittest.TestCase):
         system.Publish(context)
         self.assertTrue(system.called_publish)
         self.assertTrue(system.called_forced_publish)
+
         context_update = context.Clone()
         system.CalcTimeDerivatives(
             context=context,
             derivatives=context_update.get_mutable_continuous_state())
         self.assertTrue(system.called_continuous)
+
+        system.called_continuous = False
+        residual = system.AllocateImplicitTimeDerivativesResidual()
+        system.CalcImplicitTimeDerivativesResidual(
+            context=context,
+            proposed_derivatives=context_update.get_continuous_state(),
+            residual=residual)
+        np.testing.assert_allclose(residual, 0, 1e-14)
+        self.assertTrue(system.called_continuous)
+        np.testing.assert_allclose(
+            system.CalcImplicitTimeDerivativesResidual(
+                context=context,
+                proposed_derivatives=context_update.get_continuous_state()), 0,
+            1e-14)
+
         witnesses = system.GetWitnessFunctions(context)
         self.assertEqual(len(witnesses), 3)
+
         system.CalcDiscreteVariableUpdates(
             context=context,
             discrete_state=context_update.get_mutable_discrete_state())
