@@ -215,11 +215,6 @@ class MultilayerPerceptron final : public LeafSystem<T> {
   void CalcHiddenLayers(const Context<T>& context,
                         std::vector<VectorX<T>>* hidden) const;
 
-  // Dummy function. The caching interface requires it to exist, but we do not
-  // use it in practice.
-  void BackpropCacheNoOp(const Context<T>& context,
-                         std::vector<MatrixX<T>>* bp) const;
-
   int num_hidden_layers_;  // The number of layers - 2.
   int num_weights_;     // The number of weight matrices (number of layers -1 ).
   int num_parameters_;  // Total number of parameters.
@@ -241,13 +236,6 @@ class MultilayerPerceptron final : public LeafSystem<T> {
 
   CacheEntry* hidden_layer_cache_{};
   CacheEntry* backprop_cache_{};
-  // These values are the starting indices of the components of the
-  // `backprop_cache_` vector.
-  int Wx_plus_b_cache_index_{};
-  int Xn_cache_index_{};
-  int dloss_dXn_cache_index_{};
-  int dloss_dWx_plus_b_cache_index_{};
-  int dloss_dW_cache_index_{};
 
   template <typename>
   friend class MultilayerPerceptron;
