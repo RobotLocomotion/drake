@@ -92,7 +92,7 @@ class UnitInertia : public RotationalInertia<T> {
   ///       not strictly positive.
   UnitInertia<T>& SetFromRotationalInertia(
       const RotationalInertia<T>& I, const T& mass) {
-    if (mass <= 0) {
+    if (!std::is_same_v<T, symbolic::Expression> && mass <= 0) {
       const std::string message = fmt::format("RotationalInertia::{}():"
           " Division by zero mass or negative mass.", __func__);
       throw std::runtime_error(message);

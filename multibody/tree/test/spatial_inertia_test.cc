@@ -566,6 +566,19 @@ GTEST_TEST(SpatialInertia, SymbolicConstant) {
   ASSERT_TRUE(M.IsPhysicallyValid());
 }
 
+// Ensure that MakeFromCentralInertia works for Expression.  This test
+// represents a minimal reproduction from a user issue.
+GTEST_TEST(SpatialInertia, SymbolicMakeFromCentralInertia) {
+  using T = symbolic::Expression;
+
+  symbolic::Variable m("m");
+  VectorX<T> com = symbolic::MakeVectorVariable(3, "com");
+  VectorX<T> I = symbolic::MakeVectorVariable(3, "I");
+  RotationalInertia<T> I_SScm_E(I[0], I[1], I[2]);
+
+  SpatialInertia<T>::MakeFromCentralInertia(m, com, I_SScm_E);
+}
+
 // The composition of spatial inertias for two massless bodies is not well
 // defined. However we do support this operation in Drake in the limit to zero
 // mass when the two bodies have equal mass. In this case, the center of mass
