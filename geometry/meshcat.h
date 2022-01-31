@@ -103,6 +103,9 @@ class Meshcat {
   interface.  Most users should connect via a browser opened to web_url(). */
   std::string ws_url() const;
 
+  /** (Advanced) Returns the number of currently-open websocket connections. */
+  int GetNumActiveConnections() const;
+
   /** Blocks the calling thread until all buffered data in the websocket thread
   has been sent to any connected clients. This can be especially useful when
   sending many or large mesh files / texture maps, to avoid large "backpressure"
