@@ -741,8 +741,6 @@ template <typename T>
 void CompliantContactManager<T>::DoCalcContactSolverResults(
     const systems::Context<T>& context,
     contact_solvers::internal::ContactSolverResults<T>* results) const {
-  results->Resize(plant().num_velocities(), 0);  
-
   // In the absence of contact, v_next = v*.
   VectorX<T> v_star = EvalFreeMotionVelocities(context);
   std::vector<MatrixX<T>> A = EvalLinearDynamicsMatrix(context);
@@ -763,9 +761,22 @@ void CompliantContactManager<T>::DoCalcContactSolverResults(
   // Setup contact constraints.  
   AddContactConstraints(context, problem.get());
 
-  // Pack contact results.
-  //results->v_next = EvalFreeMotionVelocities(context);
-  //results->tau_contact.setZero();        
+  // We use the velocity stored in the current context as initial guess.
+  const VectorX<T>& x0 =
+      context.get_discrete_state(this->multibody_state_index()).value();
+  const auto v0 = x0.bottomRows(this->plant().num_velocities());
+
+  // Solve contact problem.
+  drake::multibody::contact_solvers::internal::SapSolverParameters params;
+  //params.rel_tolerance = 1.0e-6;
+  SapSolver<T> sap;
+  sap.set_parameters(params);
+  const drake::multibody::contact_solvers::internal::ContactSolverStatus
+      status = sap.SolveWithGuess(*problem, v0, results);
+  if (status != drake::multibody::contact_solvers::internal::
+                    ContactSolverStatus::kSuccess) {
+    throw std::runtime_error("SAP solver failed.");
+  }
 }
 
 template <typename T>
