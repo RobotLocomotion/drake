@@ -217,6 +217,8 @@ build:memcheck --build_tests_only
 build:memcheck --copt -g
 # https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
 build:memcheck --copt -O2
+build:memcheck --copt=-DNDEBUG                # Disable third-party asserts.
+build:memcheck --copt=-DDRAKE_ENABLE_ASSERTS  # ... but keep Drake's asserts.
 build:memcheck --run_under=//tools/dynamic_analysis:valgrind
 # We explicitly do not filter `sh` targets because some C++ binaries are tested
 # indirectly via those targets. Any Python code that is run through a `sh`
@@ -236,6 +238,8 @@ build:memcheck_everything --define=WITH_SNOPT=ON
 build:memcheck_everything --copt -g
 # https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
 build:memcheck_everything --copt -O2
+build:memcheck_everything --copt=-DNDEBUG                # Disable third-party asserts.
+build:memcheck_everything --copt=-DDRAKE_ENABLE_ASSERTS  # ...but keep Drake's asserts.
 build:memcheck_everything --test_tag_filters=-no_memcheck,-no_valgrind_tools
 build:memcheck_everything --run_under=//tools/dynamic_analysis:valgrind
 build:memcheck_everything --test_lang_filters=-sh,-py
