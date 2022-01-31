@@ -24,6 +24,7 @@ convenient.
 import argparse
 import logging
 import numpy as np
+import time
 import webbrowser
 
 from drake import (
@@ -193,6 +194,14 @@ class Meldis:
     """
 
     def __init__(self, *, meshcat_port=None):
+        # Bookkeeping for update throtting.
+        self._last_update_time = time.time()
+
+        # Bookkeeping for subscriptions, keyed by LCM channel name.
+        self._message_types = {}
+        self._message_handlers = {}
+        self._message_pending_data = {}
+
         self._lcm = DrakeLcm()
         lcm_url = self._lcm.get_lcm_url()
         logging.info(f"Meldis is listening for LCM messages at {lcm_url}")
@@ -213,9 +222,38 @@ class Meldis:
                         handler=contact.on_contact_results)
 
     def _subscribe(self, channel, message_type, handler):
-        def _parse_and_handle(data):
-            handler(message=message_type.decode(data))
-        self._lcm.Subscribe(channel=channel, handler=_parse_and_handle)
+        """Subscribes the handler to the given channel, using message_type to
+        pass in a decoded message object (not the raw bytes). The handler will
+        only be called at some maximum frequency. Messages on the same channel
+        that arrive too quickly will be discarded.
+        """
+        # Record this channel's type and handler.
+        assert self._message_types.get(channel, message_type) == message_type
+        self._message_types[channel] = message_type
+        self._message_handlers.setdefault(channel, []).append(handler)
+
+        # Subscribe using an internal function that implements "last one wins".
+        # It's important to service the LCM queue as frequently as possible:
+        #  https://github.com/RobotLocomotion/drake/issues/15234
+        #  https://github.com/lcm-proj/lcm/issues/345
+        # However, if the sender is transmitting visualization messages at
+        # a high rate (e.g., if a sim is running much faster than realtime),
+        # then we should only pass some of them along to MeshCat to avoid
+        # flooding it. The hander merely records the message data; we'll
+        # pass it along to MeshCat using our `self._should_update()` timer.
+        def _on_message(data):
+            self._message_pending_data[channel] = data
+        self._lcm.Subscribe(channel=channel, handler=_on_message)
+
+    def _invoke_subscriptions(self):
+        """Posts any unhandled messages to their handlers and clears the
+        collection of unhandled messages.
+        """
+        for channel, data in self._message_pending_data.items():
+            message = self._message_types[channel].decode(data)
+            for function in self._message_handlers[channel]:
+                function(message=message)
+        self._message_pending_data.clear()
 
     def serve_forever(self):
         # TODO(jwnimmer-tri) If there are no browser connections open for some
@@ -223,6 +261,21 @@ class Meldis:
         # leave a zombie meldis running forever.
         while True:
             self._lcm.HandleSubscriptions(timeout_millis=1000)
+            if not self._should_update():
+                continue
+            self._invoke_subscriptions()
+            self.meshcat.Flush()
+
+    def _should_update(self):
+        """Post LCM-driven updates to MeshCat no faster than 40 Hz."""
+        now = time.time()
+        update_period = 0.025  # 40 Hz
+        remaining = update_period - (now - self._last_update_time)
+        if remaining > 0.0:
+            return False
+        else:
+            self._last_update_time = now
+            return True
 
 
 def _main():
