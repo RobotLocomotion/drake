@@ -24,6 +24,7 @@ convenient.
 import argparse
 import logging
 import numpy as np
+import sys
 import time
 import webbrowser
 
@@ -221,6 +222,10 @@ class Meldis:
                         message_type=lcmt_contact_results_for_viz,
                         handler=contact.on_contact_results)
 
+        # Bookkeeping for automatic shutdown.
+        self._last_poll = None
+        self._last_active = None
+
     def _subscribe(self, channel, message_type, handler):
         """Subscribes the handler to the given channel, using message_type to
         pass in a decoded message object (not the raw bytes). The handler will
@@ -255,16 +260,20 @@ class Meldis:
                 function(message=message)
         self._message_pending_data.clear()
 
-    def serve_forever(self):
-        # TODO(jwnimmer-tri) If there are no browser connections open for some
-        # period of time, we should probably give up and quit, rather than
-        # leave a zombie meldis running forever.
+    def serve_forever(self, *, idle_timeout=None):
+        """Run indefinitely, forwarding LCM => MeshCat messages.
+
+        If provided, the optional idle_timeout must be strictly positive and
+        this loop will sys.exit after that many seconds without any websocket
+        connections.
+        """
         while True:
             self._lcm.HandleSubscriptions(timeout_millis=1000)
             if not self._should_update():
                 continue
             self._invoke_subscriptions()
             self.meshcat.Flush()
+            self._check_for_shutdown(idle_timeout=idle_timeout)
 
     def _should_update(self):
         """Post LCM-driven updates to MeshCat no faster than 40 Hz."""
@@ -276,6 +285,34 @@ class Meldis:
         else:
             self._last_update_time = now
             return True
+
+    def _check_for_shutdown(self, *, idle_timeout):
+        # Allow the user to opt-out of the timeout feature.
+        if idle_timeout is None:
+            return
+        assert idle_timeout > 0.0
+
+        # One-time initialization.
+        now = time.time()
+        if self._last_active is None:
+            self._last_active = now
+            return
+
+        # Only check once every 5 seconds.
+        if (self._last_poll is not None) and (now < self._last_poll + 5.0):
+            return
+        self._last_poll = now
+
+        # Check to see if any browser client(s) are connected.
+        if self.meshcat.GetNumActiveConnections() > 0:
+            self._last_active = now
+            return
+
+        # In case we are idle for too long, exit automatically.
+        if now > self._last_active + idle_timeout:
+            logging.info("Meldis is exiting now; no browser was connected for"
+                         f" >{idle_timeout} seconds")
+            sys.exit(1)
 
 
 def _main():
@@ -294,12 +331,21 @@ def _main():
         "-w", "--open-window", dest="browser_new",
         action="store_const", const=1, default=None,
         help="Open the MeshCat display in a new browser window.")
+    parser.add_argument(
+        "--idle-timeout", metavar="TIME", type=float, default=15*60,
+        help="When no web browser has been connected for this many seconds,"
+        " this program will automatically exit. Set to 0 to run indefinitely.")
     args = parser.parse_args()
     meldis = Meldis(meshcat_port=args.port)
     if args.browser_new is not None:
         url = meldis.meshcat.web_url()
         webbrowser.open(url=url, new=args.browser_new)
-    meldis.serve_forever()
+    idle_timeout = args.idle_timeout
+    if idle_timeout == 0.0:
+        idle_timeout = None
+    elif idle_timeout < 0.0:
+        parser.error("The --idle_timeout cannot be negative.")
+    meldis.serve_forever(idle_timeout=idle_timeout)
 
 
 if __name__ == "__main__":

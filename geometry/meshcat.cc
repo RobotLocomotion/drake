@@ -1,6 +1,7 @@
 #include "drake/geometry/meshcat.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cctype>
 #include <exception>
 #include <fstream>
@@ -513,6 +514,10 @@ class Meshcat::WebSocketPublisher {
   int port() const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     return port_;
+  }
+
+  int GetNumActiveConnections() const {
+    return num_websockets_.load();
   }
 
   void Flush() const {
@@ -1265,6 +1270,9 @@ class Meshcat::WebSocketPublisher {
     behavior.open = [this](WebSocket* ws) {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
       websockets_.emplace(ws);
+      const int new_count = ++num_websockets_;
+      DRAKE_DEMAND(new_count >= 0);
+      DRAKE_DEMAND(new_count == static_cast<int>(websockets_.size()));
       ws->subscribe("all");
       // Update this new connection with previously published data.
       scene_tree_root_.Send(ws);
@@ -1330,6 +1338,9 @@ class Meshcat::WebSocketPublisher {
     behavior.close = [this](WebSocket* ws, int, std::string_view) {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
       websockets_.erase(ws);
+      const int new_count = --num_websockets_;
+      DRAKE_DEMAND(new_count >= 0);
+      DRAKE_DEMAND(new_count == static_cast<int>(websockets_.size()));
     };
 
     uWS::App app =
@@ -1402,6 +1413,10 @@ class Meshcat::WebSocketPublisher {
   us_listen_socket_t* listen_socket_{nullptr};
   std::set<WebSocket*> websockets_{};
 
+  // This variable may be accessed from any thread, but should only be modified
+  // in the websocket thread.
+  std::atomic<int> num_websockets_{0};
+
   // This pointer should only be accessed in the main thread, but the Loop
   // object itself should be only used in the websocket thread, with one
   // exception: loop_->defer(), which is thread safe. See the documentation for
@@ -1429,6 +1444,10 @@ int Meshcat::port() const {
 
 std::string Meshcat::ws_url() const {
   return fmt::format("ws://localhost:{}", publisher_->port());
+}
+
+int Meshcat::GetNumActiveConnections() const {
+  return publisher_->GetNumActiveConnections();
 }
 
 void Meshcat::Flush() const {
