@@ -21,6 +21,9 @@ release = u''
 
 # -- General configuration ---------------------------------------------------
 
+# Relative paths are taken as relative to the configuration directory.
+templates_path = ['.']
+
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
