@@ -63,8 +63,8 @@ std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
   // Add variables and indeterminates
   // AddDecisionVariables and AddIndeterminates also set
   // decision_variable_index_ and indeterminate_index_ properly.
-  new_prog->AddDecisionVariables(decision_variables_);
-  new_prog->AddIndeterminates(indeterminates_);
+  new_prog->AddDecisionVariables(this->decision_variables());
+  new_prog->AddIndeterminates(this->indeterminates());
   // Add costs
   new_prog->generic_costs_ = generic_costs_;
   new_prog->quadratic_costs_ = quadratic_costs_;
@@ -144,9 +144,6 @@ VectorX<T> Flatten(const Eigen::Ref<const MatrixX<T>>& mat) {
 
 void MathematicalProgram::AddDecisionVariables(
     const Eigen::Ref<const MatrixXDecisionVariable>& decision_variables) {
-  const int num_existing_decision_vars = num_vars();
-  decision_variables_.conservativeResize(num_existing_decision_vars +
-                                         decision_variables.size());
   for (int i = 0; i < decision_variables.rows(); ++i) {
     for (int j = 0; j < decision_variables.cols(); ++j) {
       const auto& var = decision_variables(i, j);
@@ -165,10 +162,9 @@ void MathematicalProgram::AddDecisionVariables(
             fmt::format("{} is already an indeterminate.", var));
       }
       CheckVariableType(var.get_type());
-      const int var_index =
-          num_existing_decision_vars + j * decision_variables.rows() + i;
+      decision_variables_.push_back(var);
+      const int var_index = decision_variables_.size() - 1;
       decision_variable_index_.insert(std::make_pair(var.get_id(), var_index));
-      decision_variables_(var_index) = var;
     }
   }
   AppendNanToEnd(decision_variables.size(), &x_initial_guess_);
@@ -390,9 +386,6 @@ MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
 
 void MathematicalProgram::AddIndeterminates(
     const Eigen::Ref<const MatrixXDecisionVariable>& new_indeterminates) {
-  const int num_old_indeterminates = num_indeterminates();
-  indeterminates_.conservativeResize(num_old_indeterminates +
-                                     new_indeterminates.size());
   for (int i = 0; i < new_indeterminates.rows(); ++i) {
     for (int j = 0; j < new_indeterminates.cols(); ++j) {
       const auto& var = new_indeterminates(i, j);
@@ -410,10 +403,9 @@ void MathematicalProgram::AddIndeterminates(
       if (var.get_type() != symbolic::Variable::Type::CONTINUOUS) {
         throw std::runtime_error("indeterminate should of type CONTINUOUS.\n");
       }
-      const int var_index =
-          num_old_indeterminates + j * new_indeterminates.rows() + i;
+      const int var_index = indeterminates_.size();
       indeterminates_index_.insert(std::make_pair(var.get_id(), var_index));
-      indeterminates_(var_index) = var;
+      indeterminates_.push_back(var);
     }
   }
 }
@@ -1409,7 +1401,7 @@ MatrixXDecisionVariable MathematicalProgram::AddSosConstraint(
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
     MathematicalProgram::NonnegativePolynomial type) {
   return AddSosConstraint(
-      symbolic::Polynomial{e, symbolic::Variables{indeterminates_}},
+      symbolic::Polynomial{e, symbolic::Variables{this->indeterminates()}},
       monomial_basis, type);
 }
 
@@ -1418,7 +1410,8 @@ MathematicalProgram::AddSosConstraint(
     const symbolic::Expression& e,
     MathematicalProgram::NonnegativePolynomial type) {
   return AddSosConstraint(
-      symbolic::Polynomial{e, symbolic::Variables{indeterminates_}}, type);
+      symbolic::Polynomial{e, symbolic::Variables{this->indeterminates()}},
+      type);
 }
 
 void MathematicalProgram::AddEqualityConstraintBetweenPolynomials(
@@ -1631,7 +1624,7 @@ void MathematicalProgram::UpdateRequiredCapability(
     case ProgramAttribute::kBinaryVariable: {
       bool has_binary_var = false;
       for (int i = 0; i < num_vars(); ++i) {
-        if (decision_variables_(i).get_type() ==
+        if (decision_variables_[i].get_type() ==
             symbolic::Variable::Type::BINARY) {
           has_binary_var = true;
           break;
