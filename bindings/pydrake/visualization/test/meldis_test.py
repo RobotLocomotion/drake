@@ -57,6 +57,7 @@ class TestMeldis(unittest.TestCase):
 
         # Process the load + draw; make sure the geometry exists now.
         lcm.HandleSubscriptions(timeout_millis=0)
+        dut._invoke_subscriptions()
         self.assertEqual(meshcat.HasPath(link_path), True)
 
     def test_contact_applet(self):
@@ -98,4 +99,5 @@ class TestMeldis(unittest.TestCase):
 
         # Process the load + draw; make sure the geometry exists now.
         lcm.HandleSubscriptions(timeout_millis=0)
+        dut._invoke_subscriptions()
         self.assertEqual(meshcat.HasPath(pair_path), True)
