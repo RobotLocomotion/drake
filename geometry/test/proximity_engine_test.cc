@@ -1995,8 +1995,21 @@ TEST_F(ProximityEngineHydroWithFallback,
   engine_.ComputeContactSurfacesWithFallback(
       HydroelasticContactRepresentation::kTriangle, poses_, &surfaces1,
       &points1);
-  ASSERT_EQ(surfaces1.size(), N_ / 2);
-  ASSERT_EQ(points1.size(), N_ / 2);
+  // The arrangement (see MakeCollidingRing()) looks somewhat
+  // like this (R = rigid sphere, C = compliant sphere):
+  //
+  //      R  R
+  //    C      C
+  //    C      C
+  //      R  R
+  //
+  // Only two R-R (rigid-rigid) contacts are point contacts.
+  const size_t num_point_contacts = 2;
+  // The remaining contacts are either R-C (rigid-compliant) or C-C
+  // (compliant-compliant) hydroelastic contact patches.
+  const size_t num_patch_contacts = N_ - 2;
+  ASSERT_EQ(surfaces1.size(), num_patch_contacts);
+  ASSERT_EQ(points1.size(), num_point_contacts);
 
   engine_.UpdateWorldPoses(poses_);
   vector<ContactSurface<double>> surfaces2;
@@ -2004,12 +2017,14 @@ TEST_F(ProximityEngineHydroWithFallback,
   engine_.ComputeContactSurfacesWithFallback(
       HydroelasticContactRepresentation::kTriangle, poses_, &surfaces2,
       &points2);
-  ASSERT_EQ(surfaces2.size(), N_ / 2);
-  ASSERT_EQ(points2.size(), N_ / 2);
+  ASSERT_EQ(surfaces2.size(), num_patch_contacts);
+  ASSERT_EQ(points2.size(), num_point_contacts);
 
-  for (size_t i = 0; i < N_ / 2; ++i) {
+  for (size_t i = 0; i < num_patch_contacts; ++i) {
     EXPECT_EQ(surfaces1[i].id_M(), surfaces2[i].id_M());
     EXPECT_EQ(surfaces1[i].id_N(), surfaces2[i].id_N());
+  }
+  for (size_t i = 0; i < num_point_contacts; ++i) {
     EXPECT_EQ(points1[i].id_A, points2[i].id_A);
     EXPECT_EQ(points1[i].id_B, points2[i].id_B);
   }
