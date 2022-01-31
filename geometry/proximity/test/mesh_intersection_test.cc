@@ -36,9 +36,6 @@ class SurfaceVolumeIntersectorTester {
  public:
   using T = typename MeshType::ScalarType;
 
-  void RemoveDuplicateVertices(std::vector<Vector3<T>>* polygon) {
-    intersect_.RemoveDuplicateVertices(polygon);
-  }
   const std::vector<Vector3<T>>& ClipTriangleByTetrahedron(
       int element, const VolumeMesh<double>& volume_M, int face,
       const TriangleSurfaceMesh<double>& surface_N,
@@ -284,9 +281,7 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
 
 /* This test is independent of ContactSurface mesh representation; so we'll
  simply use TriangleSurfaceMesh. */
-GTEST_TEST(MeshIntersectionTest, RemoveDuplicateVertices) {
-  using MeshType = TriangleSurfaceMesh<double>;
-
+GTEST_TEST(MeshIntersectionTest, RemoveNearlyDuplicateVertices) {
   // ABCD: No duplicate vertices. Expect no change to the polygon.
   {
     // clang-format off
@@ -298,8 +293,7 @@ GTEST_TEST(MeshIntersectionTest, RemoveDuplicateVertices) {
     };
     // clang-format on
     std::vector<Vector3d> output_polygon = input_polygon;
-    SurfaceVolumeIntersectorTester<MeshType>().RemoveDuplicateVertices(
-        &output_polygon);
+    RemoveNearlyDuplicateVertices(&output_polygon);
     EXPECT_TRUE(CompareConvexPolygon(input_polygon, output_polygon));
   }
   // AAA: Three identical vertices reduced to a single vertex A.
@@ -315,8 +309,7 @@ GTEST_TEST(MeshIntersectionTest, RemoveDuplicateVertices) {
     };
     // clang-format on
     std::vector<Vector3d> output_polygon = input_polygon;
-    SurfaceVolumeIntersectorTester<MeshType>().RemoveDuplicateVertices(
-        &output_polygon);
+    RemoveNearlyDuplicateVertices(&output_polygon);
     EXPECT_TRUE(CompareConvexPolygon(expect_single_vertex, output_polygon));
   }
   // AABB: Two pairs of duplicate vertices. Reduced to two vertices AB.
@@ -334,8 +327,7 @@ GTEST_TEST(MeshIntersectionTest, RemoveDuplicateVertices) {
     };
     // clang-format on
     std::vector<Vector3d> output_polygon = input_polygon;
-    SurfaceVolumeIntersectorTester<MeshType>().RemoveDuplicateVertices(
-        &output_polygon);
+    RemoveNearlyDuplicateVertices(&output_polygon);
     EXPECT_TRUE(CompareConvexPolygon(expect_two_vertices, output_polygon));
   }
   // TODO(SeanCurtis-TRI): Add tests:
@@ -362,8 +354,7 @@ GTEST_TEST(MeshIntersectionTest, RemoveDuplicateVertices) {
     };
     // clang-format on
     std::vector<Vector3d> output_polygon = input_polygon;
-    SurfaceVolumeIntersectorTester<MeshType>().RemoveDuplicateVertices(
-        &output_polygon);
+    RemoveNearlyDuplicateVertices(&output_polygon);
     EXPECT_TRUE(CompareConvexPolygon(expect_three_vertices, output_polygon));
   }
 }
