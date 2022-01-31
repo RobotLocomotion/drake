@@ -234,24 +234,29 @@ B's body frame.
 As discussed above, a frame F consists of right-handed orthogonal unit vectors
 Fx, Fy, Fz and an origin point Fo. Sometimes we need a frame that is fixed to F
 but whose origin is shifted to a point coincident with some other point Q. We
-call that an offset frame and typeset that as @f$F_Q@f$ or Fq in code. Since Fq
-is fixed to F, Fq's spatial velocity (and spatial acceleration) measured in
-frame F is always 0. Consistent with frame notation elsewhere, the name Fq can
-denote the frame or its origin point (it is disambiguated by context). Frame Fq
-can be a useful intermediary for calculating Q's velocity or for applying forces
-from Q to F. The typeset for frame Fq is @f$F_Q@f$, with the subscript as
-capital Q to remind us how @f$F_Q@f$ associates with point Q). Due to the lack
-of subscripts in ASCII and unicode, we code with Fq (i.e., we change capital Q
-to lowercase q so it appears more like a subscript).
+call that an offset frame and typeset that as @f$F_Q@f$ or Fq in code (the
+lowercase q in Fq is to associate with point Q and compensate for the lack of
+subscripts in ASCII and unicode). Since Fq is fixed to F, Fq's spatial velocity
+(and spatial acceleration) measured in frame F is always 0. Consistent with
+frame notation elsewhere, the name Fq can denote the frame or its origin point
+(it is disambiguated by context). Frame Fq can be a useful intermediary for
+calculating Q's velocity or for applying forces from Q to F.
 Likewise, a rigid body B has a center of mass point Bcm which may be regarded as
-an offset frame Bcm (or specifically a @ref drake::multibody::FixedOffsetFrame
-"FixedOffsetFrame" if the @ref drake::math::RigidTransform "RigidTransform"
-between B and Bcm is constant). There may be a need for other offset frames
-fixed to body B, e.g., an offset frame Bq whose origin point Bq is _fixed_ to B
-but instantaneously coincident with a point (or frame) Q, where Q may be
-moving on B and/or in contact with B. By default, the orthogonal unit vectors in
-an offset frame Bp are the _same_ as those in B. If Bp's orthogonal unit vectors
-differ from B, their orientation must be very carefully documented in code.
+an offset frame Bcm. There may be a need for other offset frames fixed to
+body B, e.g., an offset frame Bq whose origin point Bq is _fixed_ to B but
+instantaneously coincident with a point (or frame) Q, where Q may be moving on B
+and/or in contact with B. By default, the orthogonal unit vectors in an offset
+frame Bp are the _same_ as those in B. If Bp's orthogonal unit vectors differ
+from B, their orientation must be very carefully documented in code.
+
+A @ref drake::multibody::FixedOffsetFrame "FixedOffsetFrame" is a special type
+of offset frame. A FixedOffsetFrame can be constructed with an argument of type
+@ref drake::math::RigidTransform "RigidTransform". One possible use case for a
+FixedOffsetFrame is for a body B's center of mass frame Bcm in which the origin
+of frame Bcm has a constant offset from Bo (body B's origin) and/or frame Bcm
+has unit vectors with a constant rotation relative to frame B's unit vectors.
+As documented in @ref drake::multibody::FixedOffsetFrame "FixedOffsetFrame",
+body frame B is called the "parent frame" and frame Bcm is a fixed offset frame.
 
 Notation example: V_AB @f$(^AV^B)@f$ denotes the spatial velocity of a frame B
 measured in a frame A and contains the angular velocity w_AB @f$(^A𝛚^B)@f$ and
