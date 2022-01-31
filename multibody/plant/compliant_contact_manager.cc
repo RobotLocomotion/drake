@@ -780,6 +780,32 @@ void CompliantContactManager<T>::DoCalcContactSolverResults(
 }
 
 template <typename T>
+void CompliantContactManager<T>::DoCalcDiscreteValues(
+    const drake::systems::Context<T>& context,
+    drake::systems::DiscreteValues<T>* updates) const {
+  const contact_solvers::internal::ContactSolverResults<T>& results =
+      this->EvalContactSolverResults(context);
+
+  // Previous time step positions.
+  const int nq = plant().num_positions();
+  const auto x0 =
+      context.get_discrete_state(this->multibody_state_index()).get_value();
+  const auto q0 = x0.topRows(nq);
+
+  // Retrieve the solution velocity for the next time step.
+  const VectorX<T>& v_next = results.v_next;
+
+  // Update generalized positions.
+  VectorX<T> qdot_next(plant().num_positions());
+  plant().MapVelocityToQDot(context, v_next, &qdot_next);
+  const VectorX<T> q_next = q0 + plant().time_step() * qdot_next;
+
+  VectorX<T> x_next(plant().num_multibody_states());
+  x_next << q_next, v_next;
+  updates->set_value(this->multibody_state_index(), x_next);
+}
+
+template <typename T>
 void CompliantContactManager<T>::ExtractModelInfo() {
   const MultibodyTreeTopology& topology =  
       internal::GetInternalTree(this->plant()).get_topology();

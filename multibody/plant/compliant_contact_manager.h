@@ -126,13 +126,7 @@ class CompliantContactManager final
 
   int num_trees() const { return num_tree_velocities_.size(); }
 
-  // TODO(amcastro-tri): Implement these methods in future PRs.
-  void DoCalcDiscreteValues(const drake::systems::Context<T>&,
-                            drake::systems::DiscreteValues<T>*) const final {
-    throw std::runtime_error(
-        "CompliantContactManager::DoCalcDiscreteValues() must be "
-        "implemented.");
-  }
+  // TODO(amcastro-tri): Implement these methods in future PRs.  
   void DoCalcAccelerationKinematicsCache(
       const systems::Context<T>&,
       multibody::internal::AccelerationKinematicsCache<T>*) const final {
@@ -145,6 +139,8 @@ class CompliantContactManager final
   void DoCalcContactSolverResults(
       const systems::Context<T>&,
       contact_solvers::internal::ContactSolverResults<T>*) const final;
+  void DoCalcDiscreteValues(const drake::systems::Context<T>&,
+                            drake::systems::DiscreteValues<T>*) const final;
 
   // Returns the point contact stiffness stored in group
   // geometry::internal::kMaterialGroup with property
