@@ -12,6 +12,8 @@
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
+#include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 #include "drake/systems/framework/context.h"
@@ -25,6 +27,9 @@ using drake::geometry::PenetrationAsPointPair;
 using drake::math::RotationMatrix;
 using drake::multibody::internal::MultibodyTreeTopology;
 using drake::systems::Context;
+using drake::multibody::contact_solvers::internal::SapContactProblem;
+using drake::multibody::contact_solvers::internal::SapSolver;
+using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
 
 namespace drake {
 namespace multibody {
@@ -73,6 +78,15 @@ void CompliantContactManager<T>::DeclareCacheEntries() {
       {systems::System<T>::xd_ticket(),
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.contact_jacobian = contact_jacobian_cache_entry.cache_index();
+
+  auto& linear_dynamics_matrix_cache_entry = this->DeclareCacheEntry(
+      std::string("Linear dynamics matrix, A."),
+      systems::ValueProducer(
+          this, &CompliantContactManager<T>::CalcLinearDynamicsMatrix),
+      {systems::System<T>::xd_ticket(),
+       systems::System<T>::all_parameters_ticket()});
+  cache_indexes_.linear_dynamics_matrix =
+      linear_dynamics_matrix_cache_entry.cache_index();
 
   auto& free_motion_velocities_cache_entry = this->DeclareCacheEntry(
       std::string("Free motion velocities, v*."),
@@ -136,6 +150,10 @@ void CompliantContactManager<T>::CalcContactJacobianCache(
   R_WC_set.clear();
   R_WC_set.reserve(num_contacts);
 
+  std::vector<std::pair<TreeJacobian<T>, TreeJacobian<T>>>& tree_blocks =
+      cache->tree_blocks;
+  tree_blocks.resize(num_contacts);
+
   // Quick no-op exit.
   if (num_contacts == 0) return;
 
@@ -173,6 +191,31 @@ void CompliantContactManager<T>::CalcContactJacobianCache(
         frame_W, frame_W, &Jv_WBc_W);
     Jv_AcBc_W = Jv_WBc_W - Jv_WAc_W;
 
+    const int treeA_index = body_to_tree_index_[bodyA_index];
+    const int treeB_index = body_to_tree_index_[bodyB_index];
+
+    // Sanity check, at least one must be positive.
+    DRAKE_DEMAND(treeA_index >= 0 || treeB_index >= 0);
+
+    if (treeA_index >= 0) {
+      TreeJacobian<T>& tree_jacobian = tree_blocks[icontact].first;
+      tree_jacobian.tree = treeA_index;
+      tree_jacobian.J =
+          Jv_AcBc_W.middleCols(tree_velocities_start_[treeA_index],
+                               num_tree_velocities_[treeA_index]);
+    }
+
+    // N.B. For self contact, when treeA_index = treeB_index, we only need to
+    // extract the block once. Therefore we ignore this block of code for the
+    // self-contact case.
+    if (treeB_index >= 0 && treeB_index != treeA_index) {
+      TreeJacobian<T>& tree_jacobian = tree_blocks[icontact].second;
+      tree_jacobian.tree = treeB_index;
+      tree_jacobian.J =
+          Jv_AcBc_W.middleCols(tree_velocities_start_[treeB_index],
+                               num_tree_velocities_[treeB_index]);
+    }
+
     // Define a contact frame C at the contact point such that the z-axis Cz
     // equals nhat_W. The tangent vectors are arbitrary, with the only
     // requirement being that they form a valid right handed basis with nhat_W.
@@ -182,6 +225,59 @@ void CompliantContactManager<T>::CalcContactJacobianCache(
 
     Jc.template middleRows<3>(3 * icontact).noalias() =
         R_WC.matrix().transpose() * Jv_AcBc_W;
+  }
+}
+
+template <typename T>
+void CompliantContactManager<T>::AddContactConstraints(
+    const systems::Context<T>& context, SapContactProblem<T>* problem) const {
+  DRAKE_DEMAND(problem != nullptr);
+
+  // TODO: make these parameters accessible.
+  const double beta = 1.0;
+  const double sigma = 1.0e-3;
+
+  const std::vector<internal::DiscreteContactPair<T>>& contact_pairs =
+      EvalDiscreteContactPairs(context);
+  const int num_contacts = contact_pairs.size();  
+
+  // Quick no-op exit.
+  if (num_contacts == 0) return;
+
+  const internal::ContactJacobianCache<T>& contact_cache =
+      EvalContactJacobianCache(context);
+  const std::vector<std::pair<TreeJacobian<T>, TreeJacobian<T>>>& tree_blocks =
+      contact_cache.tree_blocks;
+
+  for (int icontact = 0; icontact < num_contacts; ++icontact) {
+    const auto& point_pair = contact_pairs[icontact];
+
+    const T stiffness = point_pair.stiffness;
+    const T dissipation_time_scale = point_pair.damping;
+    const T friction = point_pair.mu;
+    const T phi0 = point_pair.phi0;
+    const auto& tree_jacobian_pair = tree_blocks[icontact];
+
+    const typename SapFrictionConeConstraint<T>::Parameters parameters{
+        friction, stiffness, dissipation_time_scale, beta, sigma};
+
+    if (tree_jacobian_pair.first.tree < 0 ||
+        tree_jacobian_pair.second.tree < 0) {
+      // Contat only involves a single tree (contact with the world or
+      // self-contact.)
+      const TreeJacobian<T>& tree_jacobian = tree_jacobian_pair.first.tree >= 0
+                                                 ? tree_jacobian_pair.first
+                                                 : tree_jacobian_pair.second;
+      problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(
+          parameters, tree_jacobian.tree, tree_jacobian.J, phi0));
+    } else {
+      // Contact involves two distinct trees.
+      const TreeJacobian<T>& treeA_jacobian = tree_jacobian_pair.first;
+      const TreeJacobian<T>& treeB_jacobian = tree_jacobian_pair.second;
+      problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(
+          parameters, treeA_jacobian.tree, treeB_jacobian.tree,
+          treeA_jacobian.J, treeB_jacobian.J, phi0));
+    }
   }
 }
 
@@ -213,6 +309,23 @@ T CompliantContactManager<T>::GetDissipationTimeConstant(
   return prop->template GetPropertyOrDefault<T>(
       geometry::internal::kMaterialGroup, "dissipation_time_constant",
       plant().time_step());
+}
+
+template <typename T>
+const CoulombFriction<double>& CompliantContactManager<T>::GetCoulombFriction(
+    geometry::GeometryId id,
+    const geometry::SceneGraphInspector<T>& inspector) const {
+  if constexpr (std::is_same_v<symbolic::Expression, T>) {
+    throw std::domain_error(
+        "This method doesn't support T = symbolic::Expression.");
+  }
+  const geometry::ProximityProperties* prop =
+      inspector.GetProximityProperties(id);
+  DRAKE_DEMAND(prop != nullptr);
+  DRAKE_THROW_UNLESS(prop->HasProperty(geometry::internal::kMaterialGroup,
+                                       geometry::internal::kFriction));
+  return prop->GetProperty<CoulombFriction<double>>(
+      geometry::internal::kMaterialGroup, geometry::internal::kFriction);
 }
 
 template <typename T>
@@ -297,6 +410,12 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
           .template Eval<geometry::QueryObject<T>>(context);
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
+  // Simple utility to detect 0 / 0. As it is used in this method, denom
+  // can only be zero if num is also zero, so we'll simply return zero.
+  auto safe_divide = [](const T& num, const T& denom) {
+    return denom == 0.0 ? 0.0 : num / denom;
+  };
+
   // Fill in the point contact pairs.
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       plant().EvalPointPairPenetrations(context);
@@ -307,7 +426,13 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
     const T tauA = GetDissipationTimeConstant(pair.id_A, inspector);
     const T tauB = GetDissipationTimeConstant(pair.id_B, inspector);
     const T tau = CombineDissipationTimeConstant(tauA, tauB);
-    const T d = tau * k;
+
+    // Combine friction coefficients.
+    const double muA =
+        GetCoulombFriction(pair.id_A, inspector).dynamic_friction();
+    const double muB =
+        GetCoulombFriction(pair.id_B, inspector).dynamic_friction();
+    const T mu = T(safe_divide(2.0 * muA * muB, muA + muB));
 
     // We compute the position of the point contact based on Hertz's theory
     // for contact between two elastic bodies.
@@ -319,7 +444,7 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
     const T phi0 = -pair.depth;
     const T fn0 = -k * phi0;
     contact_pairs.push_back(
-        {pair.id_A, pair.id_B, p_WC, pair.nhat_BA_W, phi0, fn0, k, d});
+        {pair.id_A, pair.id_B, p_WC, pair.nhat_BA_W, phi0, fn0, k, tau, mu});
   }
 }
 
@@ -329,6 +454,12 @@ void CompliantContactManager<T>::
         const systems::Context<T>& context,
         std::vector<internal::DiscreteContactPair<T>>* result) const {
   std::vector<internal::DiscreteContactPair<T>>& contact_pairs = *result;
+
+  // Simple utility to detect 0 / 0. As it is used in this method, denom
+  // can only be zero if num is also zero, so we'll simply return zero.
+  auto safe_divide = [](const T& num, const T& denom) {
+    return denom == 0.0 ? 0.0 : num / denom;
+  };
 
   // N.B. For discrete hydro we use a first order quadrature rule.
   // Higher order quadratures are possible, however using a lower order
@@ -351,6 +482,13 @@ void CompliantContactManager<T>::
     const T tau_M = GetDissipationTimeConstant(s.id_M(), inspector);
     const T tau_N = GetDissipationTimeConstant(s.id_N(), inspector);
     const T tau = CombineDissipationTimeConstant(tau_M, tau_N);
+
+    // Combine friction coefficients.
+    const double muA =
+        GetCoulombFriction(s.id_M(), inspector).dynamic_friction();
+    const double muB =
+        GetCoulombFriction(s.id_N(), inspector).dynamic_friction();
+    const T mu = T(safe_divide(2.0 * muA * muB, muA + muB));
 
     for (int face = 0; face < mesh_W.num_triangles(); ++face) {
       const T& Ae = mesh_W.area(face);  // Face element area.
@@ -454,9 +592,8 @@ void CompliantContactManager<T>::
           const T phi0 = -sign * p0 / grad_pres_W.dot(nhat_W);
 
           if (k > 0) {
-            const T dissipation = tau * k;
-            contact_pairs.push_back(
-                {s.id_M(), s.id_N(), p_WQ, nhat_W, phi0, fn0, k, dissipation});
+            contact_pairs.push_back({s.id_M(), s.id_N(), p_WQ, nhat_W, phi0,
+                                     fn0, k, tau, mu});
           }
         }
       }
@@ -515,6 +652,30 @@ void CompliantContactManager<T>::CalcAccelerationsDueToNonContactForcesCache(
 }
 
 template <typename T>
+void CompliantContactManager<T>::CalcLinearDynamicsMatrix(
+    const systems::Context<T>& context, std::vector<MatrixX<T>>* A) const {
+  DRAKE_DEMAND(A != nullptr);  
+  A->resize(num_trees());
+  const int nv = plant().num_velocities();
+
+  // TODO(amcastro-tri): implicitly include force elements such as joint
+  // dissipation and/or stiffness.
+  // TODO(amcastro-tri): consider placing the computation of the dense mass
+  // matrix  in a cache entry to minimize heap allocations or better yet,
+  // implement a MultibodyPlant method to compute the per-tree mass matrices.
+  MatrixX<T> M(nv, nv);
+  plant().CalcMassMatrix(context, &M);
+
+  int v = 0;
+  for (int t = 0; t < num_trees(); ++t) {
+    const int nt = num_tree_velocities_[t];
+    (*A)[t].resize(nt, nt);
+    (*A)[t] = M.block(v, v, nt, nt);
+    v += nt;
+  }
+}
+
+template <typename T>
 void CompliantContactManager<T>::CalcFreeMotionVelocities(
     const systems::Context<T>& context, VectorX<T>* v_star) const {
   DRAKE_DEMAND(v_star != nullptr);
@@ -550,6 +711,15 @@ CompliantContactManager<T>::EvalContactJacobianCache(
 }
 
 template <typename T>
+const std::vector<MatrixX<T>>&
+CompliantContactManager<T>::EvalLinearDynamicsMatrix(
+    const systems::Context<T>& context) const {
+  return plant()
+      .get_cache_entry(cache_indexes_.linear_dynamics_matrix)
+      .template Eval<std::vector<MatrixX<T>>>(context);
+}
+
+template <typename T>
 const VectorX<T>& CompliantContactManager<T>::EvalFreeMotionVelocities(
     const systems::Context<T>& context) const {
   return plant()
@@ -571,16 +741,31 @@ template <typename T>
 void CompliantContactManager<T>::DoCalcContactSolverResults(
     const systems::Context<T>& context,
     contact_solvers::internal::ContactSolverResults<T>* results) const {
-  results->Resize(plant().num_velocities(), 0);
-
-  // N.B. For now this update is only valid for problems without contact.
-  const std::vector<internal::DiscreteContactPair<T>>& discrete_pairs =
-      EvalDiscreteContactPairs(context);
-  DRAKE_DEMAND(discrete_pairs.size() == 0u);
+  results->Resize(plant().num_velocities(), 0);  
 
   // In the absence of contact, v_next = v*.
-  results->v_next = EvalFreeMotionVelocities(context);
-  results->tau_contact.setZero();
+  VectorX<T> v_star = EvalFreeMotionVelocities(context);
+  std::vector<MatrixX<T>> A = EvalLinearDynamicsMatrix(context);
+
+  PRINT_VAR(v_star.size());
+  PRINT_VAR(A.size());
+  for (const auto& At : A) {
+    PRINT_VARn(At);
+  }
+
+  const double time_step = plant().time_step();
+  // TODO: notice that above this (move) constructor requires making a copy
+  // (heap allocation) of both A and v_star. Consider a constructor that keeps a
+  // reference to valid data in this scope.
+  auto problem = std::make_unique<SapContactProblem<T>>(
+        time_step, std::move(A), std::move(v_star));
+
+  // Setup contact constraints.  
+  AddContactConstraints(context, problem.get());
+
+  // Pack contact results.
+  //results->v_next = EvalFreeMotionVelocities(context);
+  //results->tau_contact.setZero();        
 }
 
 template <typename T>
@@ -599,6 +784,7 @@ void CompliantContactManager<T>::ExtractModelInfo() {
   const BodyNodeTopology& root = topology.get_body_node(BodyNodeIndex(0));
   const int num_trees = root.child_nodes.size();
   num_tree_velocities_.resize(num_trees, 0);
+  body_to_tree_index_.resize(plant().num_bodies());
 
   int t = -1;  // current tree.
   // Traverse nodes in their DFT order, skiping the world.
@@ -607,6 +793,7 @@ void CompliantContactManager<T>::ExtractModelInfo() {
     const BodyNodeTopology& node = topology.get_body_node(node_index);
     if (node.level == 1) ++t;
     num_tree_velocities_[t] += node.num_mobilizer_velocities;
+    body_to_tree_index_[node.body] = t;
   }
 
   // When I'm done t should point at the last tree.
@@ -616,6 +803,12 @@ void CompliantContactManager<T>::ExtractModelInfo() {
   PRINT_VAR(num_tree_velocities_.size());
   for (int nt : num_tree_velocities_) {
     PRINT_VAR(nt);
+  }
+
+  tree_velocities_start_.resize(num_trees, 0);
+  for (t = 1; t < num_trees; ++t) {
+    tree_velocities_start_[t] =
+        tree_velocities_start_[t - 1] + num_tree_velocities_[t - 1];
   }
 
 }

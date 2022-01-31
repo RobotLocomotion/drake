@@ -10,10 +10,22 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/systems/framework/context.h"
+#include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
+
+template <typename T>
+struct TreeJacobian {
+  // Index of the tree participating in this Jacobian. Negative for an invalid
+  // non-participating Jacobian.
+  int tree{-1};
+
+  // J.cols() must equal the number of generalized velocities for
+  // the corresponding tree. J.rows() will equal the size of the constraint.
+  MatrixX<T> J;
+};
 
 // CompliantContactManager computes the contact Jacobian J_AcBc_C for the
 // relative velocity at a contact point Co between two geometries A and B,
@@ -28,6 +40,16 @@ struct ContactJacobianCache {
   // Rotation matrix to re-express between contact frame C and world frame W.
   // R_WC_list[i] corresponds to rotation R_WC for the i-th contact pair.
   std::vector<drake::math::RotationMatrix<T>> R_WC_list;
+
+  // Each contact involves one (contact with the world or with itself) or two
+  // trees (contact between two distinct trees). `tree_blocks_` stores the
+  // Jacobian contribution from each tree for the i-th contact constraint.
+  // When only one tree is involved in the contact, one
+  // of the indexes is negative (and thus must be ignored). Always, at least one
+  // index will be positive.
+  // When two trees are involved, the two Jacobian contributions must have the
+  // same number of rows.
+  std::vector<std::pair<TreeJacobian<T>, TreeJacobian<T>>> tree_blocks;
 };
 
 // To compute accelerations due to external forces (in particular non-contact
@@ -90,6 +112,7 @@ class CompliantContactManager final
     systems::CacheIndex contact_jacobian;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex free_motion_velocities;
+    systems::CacheIndex linear_dynamics_matrix;
     systems::CacheIndex non_contact_forces_accelerations;
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
   };
@@ -100,6 +123,8 @@ class CompliantContactManager final
   friend class CompliantContactManagerTest;
 
   void ExtractModelInfo() final;
+
+  int num_trees() const { return num_tree_velocities_.size(); }
 
   // TODO(amcastro-tri): Implement these methods in future PRs.
   void DoCalcDiscreteValues(const drake::systems::Context<T>&,
@@ -136,6 +161,12 @@ class CompliantContactManager final
   // "dissipation_time_constant". If not present, it returns
   // plant().time_step().
   T GetDissipationTimeConstant(
+      geometry::GeometryId id,
+      const geometry::SceneGraphInspector<T>& inspector) const;
+
+  // Helper to acquire per-geometry Coulomb friction coefficients from
+  // SceneGraph.
+  const CoulombFriction<double>& GetCoulombFriction(
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector) const;
 
@@ -188,6 +219,13 @@ class CompliantContactManager final
   const internal::ContactJacobianCache<T>& EvalContactJacobianCache(
       const systems::Context<T>& context) const;
 
+  void CalcLinearDynamicsMatrix(const systems::Context<T>& context,
+                                std::vector<MatrixX<T>>* A) const;
+
+  // Eval version of CalcLinearDynamicsMatrix().
+  const std::vector<MatrixX<T>>& EvalLinearDynamicsMatrix(
+      const systems::Context<T>& context) const;
+
   // Given the previous state x0 stored in `context`, this method computes the
   // "free motion" velocities, denoted v*.
   void CalcFreeMotionVelocities(const systems::Context<T>& context,
@@ -208,9 +246,19 @@ class CompliantContactManager final
   EvalAccelerationsDueToNonContactForcesCache(
       const systems::Context<T>& context) const;
 
+  void AddContactConstraints(
+      const systems::Context<T>& context,
+      drake::multibody::contact_solvers::internal::SapContactProblem<T>*
+          problem) const;
+
   std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver_;
   CacheIndexes cache_indexes_;
+  // Number of generalized velocities for the t-th tree.
   std::vector<int> num_tree_velocities_;
+  // Offset in the full vector of velocities for the t-th tree.
+  std::vector<int> tree_velocities_start_;
+  // Body index to tree index map.
+  std::vector<int> body_to_tree_index_;
 };
 
 }  // namespace internal
