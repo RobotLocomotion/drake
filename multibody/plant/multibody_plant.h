@@ -509,11 +509,15 @@ See Drake issue #12942 for more discussion.
 
 Once the user is done adding modeling elements and registering geometry, a
 call to Finalize() must be performed. This call will:
-- Build the underlying MultibodyTree topology, see MultibodyTree::Finalize()
-  for details,
+- Build the underlying tree structure of the multibody model,
 - declare the plant's state,
 - declare the plant's input and output ports,
-- declare input and output ports for communication with a SceneGraph.
+- declare collision filters to ignore collisions:
+  - between bodies connected by a joint,
+  - between bodies welded (directly or transitively) to the world.
+
+<!-- TODO(#16422): ignore collisions within all groups of welded-together
+     bodies -->
 
 <!-- TODO(amcastro-tri): Consider making the actual geometry registration
      with GS AFTER Finalize() so that we can tell if there are any bodies
@@ -1153,15 +1157,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// No more multibody elements can be added after a call to Finalize().
   ///
   /// At Finalize(), state and input/output ports for `this` plant are declared.
-  /// If `this` plant registered geometry with a SceneGraph, input and
-  /// output ports to enable communication with that SceneGraph are declared
-  /// as well.
   ///
-  /// If geometry has been registered on a SceneGraph instance, that instance
-  /// must be provided to the Finalize() method so that any geometric
-  /// implications of the finalization process can be appropriately handled.
+  /// For a full account of the effects of Finalize(), see
+  /// @ref mbp_finalize_stage "Finalize() stage".
   ///
-  /// @see is_finalized().
+  /// @see is_finalized(), @ref mbp_finalize_stage "Finalize() stage".
   ///
   /// @throws std::exception if the %MultibodyPlant has already been
   /// finalized.
