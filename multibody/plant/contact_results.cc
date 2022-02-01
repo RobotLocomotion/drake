@@ -47,8 +47,20 @@ ContactResults<T>& ContactResults<T>::operator=(
   }
 
   point_pairs_info_ = contact_results.point_pairs_info_;
+  plant_ = contact_results.plant_;
 
   return *this;
+}
+
+template <typename T>
+const MultibodyPlant<T>* ContactResults<T>::plant() const {
+  return plant_;
+}
+
+template <typename T>
+void ContactResults<T>::set_plant(const MultibodyPlant<T>* plant) {
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  plant_ = plant;
 }
 
 template <typename T>
@@ -59,6 +71,7 @@ void ContactResults<T>::Clear() {
   } else {
     hydroelastic_contact_vector_of_unique_ptrs().clear();
   }
+  plant_ = nullptr;
 }
 
 template <typename T>

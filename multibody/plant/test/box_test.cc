@@ -77,6 +77,7 @@ class SlidingBoxTest : public ::testing::Test {
       const ContactResults<double>& contact_results =
           the_plant.get_contact_results_output_port()
               .Eval<ContactResults<double>>(the_context);
+      ASSERT_EQ(contact_results.plant(), &the_plant);
 
       // Only one contact pair.
       ASSERT_EQ(contact_results.num_point_pair_contacts(), 1);
