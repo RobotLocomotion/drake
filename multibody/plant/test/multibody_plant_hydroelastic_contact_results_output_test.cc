@@ -86,6 +86,7 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
     const ContactResults<double>& contact_results =
         plant_->get_contact_results_output_port().Eval<ContactResults<double>>(
             *plant_context_);
+    DRAKE_DEMAND(contact_results.plant() == plant_);
     DRAKE_DEMAND(contact_results.num_hydroelastic_contacts() == 1);
     return contact_results.hydroelastic_contact_info(0);
   }

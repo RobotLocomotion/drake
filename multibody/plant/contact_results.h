@@ -15,6 +15,10 @@
 namespace drake {
 namespace multibody {
 
+#ifndef DRAKE_DOXYGEN_CXX
+template <typename T> class MultibodyPlant;
+#endif
+
 /**
  A container class storing the contact results information for each contact
  pair for a given state of the simulation. Note that copying this data structure
@@ -50,11 +54,18 @@ class ContactResults {
    method aborts. */
   const HydroelasticContactInfo<T>& hydroelastic_contact_info(int i) const;
 
+  /** Returns the plant that produced these contact results. In most cases the
+  result will be non-null, but default-constructed results might have nulls. */
+  const MultibodyPlant<T>* plant() const;
+
   // The following methods should only be called by MultibodyPlant and testing
   // fixtures and are undocumented rather than being made private with friends.
   #ifndef DRAKE_DOXYGEN_CXX
+  /* Sets the plant that produced these contact results. */
+  void set_plant(const MultibodyPlant<T>* plant);
+
   /* Clears the set of contact information for when the old data becomes
-   invalid. */
+   invalid. This includes clearing the `plant` back to nullptr. */
   void Clear();
 
   /* Add a new contact pair result to `this`. */
@@ -123,6 +134,8 @@ class ContactResults {
   std::variant<std::vector<const HydroelasticContactInfo<T>*>,
                std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>>
       hydroelastic_contact_info_;
+
+  const MultibodyPlant<T>* plant_{nullptr};
 };
 
 }  // namespace multibody
