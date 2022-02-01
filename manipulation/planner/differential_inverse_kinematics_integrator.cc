@@ -95,17 +95,6 @@ void DifferentialInverseKinematicsIntegrator::DoCalcDiscreteVariableUpdates(
       input->get_value<math::RigidTransformd>();
   const math::RigidTransform<double> X_WE = ForwardKinematics(context);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  {
-    const Vector6<double> isometry_result =
-        ComputePoseDiffInCommonFrame(X_WE.GetAsIsometry3(),
-                                     X_WE_desired.GetAsIsometry3());
-    // Ignore the result; we only care that it compiles and doesn't segfault.
-    (void)(isometry_result);
-  }
-#pragma GCC diagnostic push
-
   const Vector6<double> V_WE_desired =
       ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) /
       time_step_;

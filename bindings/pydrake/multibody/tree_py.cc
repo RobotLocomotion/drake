@@ -6,7 +6,6 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -48,11 +47,6 @@ using std::string;
 using math::RigidTransform;
 using multibody::SpatialAcceleration;
 using multibody::SpatialVelocity;
-
-constexpr char doc_iso3_deprecation[] = R"""(
-Use of Isometry3 with the MultibodyPlant API is deprecated and will be removed
-from Drake on or after 2022-02-01.  Pass a pydrake.math.RigidTransform instead.
-)""";
 
 namespace {
 
@@ -248,15 +242,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.ctor.doc_3args)
         .def(py::init<const Body<T>&, const math::RigidTransform<double>&>(),
             py::arg("bodyB"), py::arg("X_BF"), cls_doc.ctor.doc_2args)
-        .def(py::init([](const std::string& name, const Frame<T>& P,
-                          const Isometry3<double>& X_PF,
-                          std::optional<ModelInstanceIndex> model_instance) {
-          WarnDeprecated(doc_iso3_deprecation);
-          return std::make_unique<Class>(
-              name, P, RigidTransform<double>(X_PF), model_instance);
-        }),
-            py::arg("name"), py::arg("P"), py::arg("X_PF"),
-            py::arg("model_instance") = std::nullopt, doc_iso3_deprecation)
         .def("SetPoseInBodyFrame", &Class::SetPoseInBodyFrame,
             py::arg("context"), py::arg("X_PF"),
             cls_doc.SetPoseInBodyFrame.doc);
@@ -635,16 +620,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
                  const RigidTransform<double>&>(),
             py::arg("name"), py::arg("frame_on_parent_P"),
             py::arg("frame_on_child_C"), py::arg("X_PC"), cls_doc.ctor.doc)
-        .def(
-            py::init([](const std::string& name, const Frame<T>& parent_frame_P,
-                         const Frame<T>& child_frame_C,
-                         const Isometry3<double>& X_PC) {
-              WarnDeprecated(doc_iso3_deprecation);
-              return std::make_unique<Class>(name, parent_frame_P,
-                  child_frame_C, RigidTransform<double>(X_PC));
-            }),
-            py::arg("name"), py::arg("parent_frame_P"),
-            py::arg("child_frame_C"), py::arg("X_PC"), doc_iso3_deprecation)
         .def("X_PC", &Class::X_PC, cls_doc.X_PC.doc);
   }
 

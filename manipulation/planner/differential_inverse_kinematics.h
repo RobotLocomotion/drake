@@ -11,7 +11,6 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/math/spatial_algebra.h"
@@ -47,15 +46,6 @@ struct DifferentialInverseKinematicsResult {
 Vector6<double> ComputePoseDiffInCommonFrame(
     const math::RigidTransform<double>& X_C0,
     const math::RigidTransform<double>& X_C1);
-
-DRAKE_DEPRECATED("2022-02-01", "Use RigidTransform instead of Isometry3")
-inline Vector6<double> ComputePoseDiffInCommonFrame(
-      const Isometry3<double>& X_C0,
-      const Isometry3<double>& X_C1) {
-  return ComputePoseDiffInCommonFrame(
-      math::RigidTransform<double>(X_C0),
-      math::RigidTransform<double>(X_C1));
-}
 
 /**
  * Contains parameters for differential inverse kinematics.
@@ -351,18 +341,6 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const math::RigidTransform<double>& X_WE_desired,
     const multibody::Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
-
-DRAKE_DEPRECATED("2022-02-01", "Use RigidTransform instead of Isometry3")
-inline DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::MultibodyPlant<double>& robot,
-    const systems::Context<double>& context,
-    const Isometry3<double>& X_WE_desired,
-    const multibody::Frame<double>& frame_E,
-    const DifferentialInverseKinematicsParameters& parameters) {
-  return DoDifferentialInverseKinematics(
-      robot, context, math::RigidTransform<double>(X_WE_desired), frame_E,
-      parameters);
-}
 
 #ifndef DRAKE_DOXYGEN_CXX
 namespace internal {

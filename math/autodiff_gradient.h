@@ -11,7 +11,6 @@ gradient matrices. */
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/unused.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/gradient.h"
@@ -92,30 +91,6 @@ ExtractGradient(const Eigen::MatrixBase<Derived>& auto_diff_matrix,
   return gradient;
 }
 
-template <typename Derived>
-struct DRAKE_DEPRECATED("2022-02-01", "Used only in deprecated functions.")
-    AutoDiffToGradientMatrix {
-  typedef typename Gradient<
-      Eigen::Matrix<typename Derived::Scalar::Scalar,
-                    Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>,
-      Eigen::Dynamic>::type type;
-};
-
-// This deprecated function uses the above deprecated struct.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <typename Derived>
-DRAKE_DEPRECATED("2022-02-01", "Use ExtractGradient().")
-typename AutoDiffToGradientMatrix<Derived>::type autoDiffToGradientMatrix(
-    const Eigen::MatrixBase<Derived>& autodiff_matrix,
-    int num_derivatives = Eigen::Dynamic) {
-  return ExtractGradient(autodiff_matrix,
-                         num_derivatives == Eigen::Dynamic
-                             ? std::nullopt
-                             : std::optional<int>(num_derivatives));
-}
-#pragma GCC diagnostic pop
-
 /** Initializes an AutoDiff matrix given a matrix of values and a gradient
 matrix.
 
@@ -172,17 +147,6 @@ void InitializeAutoDiff(
   }
 }
 
-template <typename DerivedValue, typename DerivedGradient,
-          typename DerivedAutoDiff>
-DRAKE_DEPRECATED("2022-02-01", "Use InitializeAutoDiff().")
-void initializeAutoDiffGivenGradientMatrix(
-    const Eigen::MatrixBase<DerivedValue>& value,
-    const Eigen::MatrixBase<DerivedGradient>& gradient,
-    // NOLINTNEXTLINE(runtime/references).
-    Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix) {
-  InitializeAutoDiff(value, gradient, &auto_diff_matrix);
-}
-
 /** Returns an AutoDiff matrix given a matrix of values and a gradient
 matrix.
 
@@ -202,15 +166,6 @@ InitializeAutoDiff(
       auto_diff_matrix(value.rows(), value.cols());
   InitializeAutoDiff(value, gradient, &auto_diff_matrix);
   return auto_diff_matrix;
-}
-
-template <typename DerivedValue, typename DerivedGradient>
-DRAKE_DEPRECATED("2022-02-01", "Use InitializeAutoDiff() instead")
-AutoDiffMatrixType<DerivedValue, DerivedGradient::ColsAtCompileTime>
-initializeAutoDiffGivenGradientMatrix(
-    const Eigen::MatrixBase<DerivedValue>& val,
-    const Eigen::MatrixBase<DerivedGradient>& gradient) {
-  return InitializeAutoDiff(val, gradient);
 }
 
 /** `B = DiscardZeroGradient(A, precision)` enables casting from a matrix of

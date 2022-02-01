@@ -103,59 +103,6 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTest) {
   }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// Test the model error mechanism.
-GTEST_TEST(ProcessModelDirectivesTest, SmokeTestInjectWeldError) {
-  const RigidTransformd error_transform({0.1, 0., 0.1}, {2, 3, 4});
-  ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.yaml"));
-
-  // This error function should add model error to exactly one weld, the
-  // attachment of the `first_instance` sdf model to the `smoke_test_origin`
-  // frame.
-  MultibodyPlant<double> plant(0.0);
-
-  auto error = [&](const std::string& parent, const std::string& child) {
-    const std::string error_parent = "simple_model::frame";
-    const std::string error_child = "extra_model::base";
-    optional<RigidTransformd> out;
-    if (parent == error_parent && child == error_child)
-        out = error_transform;
-    return out;
-  };
-
-  ProcessModelDirectives(directives, &plant,
-                         nullptr, make_parser(&plant).get(), error);
-  plant.Finalize();
-
-  // This should have created an error frame for the relevant weld.
-  const std::string expected_error_frame_name = "frame_weld_error_to_base";
-  EXPECT_TRUE(plant.HasFrameNamed(expected_error_frame_name));
-  const auto& frame = plant.GetFrameByName(expected_error_frame_name);
-  EXPECT_TRUE(
-      dynamic_cast<const drake::multibody::FixedOffsetFrame<double>*>(&frame));
-  const RigidTransformd expected_error =
-      (plant
-       .GetFrameByName("frame", plant.GetModelInstanceByName("simple_model"))
-       .GetFixedPoseInBodyFrame())
-      * error_transform;
-
-  EXPECT_TRUE(
-      frame.GetFixedPoseInBodyFrame().IsExactlyEqualTo(expected_error));
-
-  // This should not have created an error frame for other welds.
-  for (drake::multibody::FrameIndex frame_id(0);
-       frame_id < plant.num_frames();
-       frame_id++) {
-    const std::string frame_name = plant.get_frame(frame_id).name();
-    if (frame_name != expected_error_frame_name) {
-      EXPECT_TRUE(frame_name.find("error") == std::string::npos);
-    }
-  }
-}
-#pragma GCC diagnostic pop
-
 // Make sure we have good error messages.
 GTEST_TEST(ProcessModelDirectivesTest, ErrorMessages) {
   // When the user gives a bogus filename, at minimum we must echo it back to

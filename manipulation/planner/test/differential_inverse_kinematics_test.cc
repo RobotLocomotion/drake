@@ -84,15 +84,6 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
 
   DifferentialInverseKinematicsResult DoDiffIKForRigidTransform(
       const math::RigidTransform<double>& X_WE_desired) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    DifferentialInverseKinematicsResult isometry_result =
-        DoDifferentialInverseKinematics(
-            *plant_, *context_, X_WE_desired.GetAsIsometry3(), *frame_E_,
-            *params_);
-    // Ignore the result; we only care that it compiles and doesn't segfault.
-    (void)(isometry_result);
-#pragma GCC diagnostic pop
     return DoDifferentialInverseKinematics(
         *plant_, *context_, X_WE_desired, *frame_E_, *params_);
   }

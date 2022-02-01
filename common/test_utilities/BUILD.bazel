@@ -26,7 +26,6 @@ drake_cc_package_library(
     testonly = 1,
     visibility = ["//visibility:public"],
     deps = [
-        ":eigen_geometry_compare",
         ":eigen_matrix_compare",
         ":expect_no_throw",
         ":expect_throws_message",
@@ -35,19 +34,6 @@ drake_cc_package_library(
         ":measure_execution",
         ":random_polynomial_matrix",
         ":symbolic_test_util",
-    ],
-)
-
-drake_cc_library(
-    name = "eigen_geometry_compare",
-    testonly = 1,
-    srcs = ["eigen_geometry_compare.cc"],
-    hdrs = ["eigen_geometry_compare.h"],
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":eigen_matrix_compare",
-        "//common:essential",
-        "@gtest//:without_main",
     ],
 )
 
