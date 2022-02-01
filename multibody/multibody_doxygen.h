@@ -231,27 +231,45 @@ with respect to frame L are transformed and stored internally with respect to
 B's body frame.
 
 <h3>Notation for offset frame</h3>
-Sometimes we need a frame that is rigidly attached to a frame F with its basis
-rigidly aligned to F's basis but with its origin shifted from Fo to a point R.
-We call that an _offset frame_ and denote this offset frame in typeset notation
-as @f$ F_R @f$. Since code lacks subscripts, we lowercase the point name to
-make it look more like a subscript as `Fr`.  Recall that we permit frame names
-and body names to also serve as points (by using their origins).  Suppose you
-would like a frame that is regarded as rigidly attached to frame F but whose
-origin is coincident with some body B. In this case, create an offset frame `Fb`
-whose basis rigidly aligns with F's basis but whose origin is coincident with
-Bo (B's origin).
+As discussed above, a frame F consists of right-handed orthogonal unit vectors
+Fx, Fy, Fz and an origin point Fo. Sometimes we need a frame that is fixed to F
+but whose origin is shifted to a point coincident with some other point Q. We
+call that an offset frame and typeset that as @f$F_Q@f$ or Fq in code (the
+lowercase q in Fq is to associate with point Q and compensate for the lack of
+subscripts in ASCII and unicode). Since Fq is fixed to F, Fq's spatial velocity
+(and spatial acceleration) measured in frame F is always 0. Consistent with
+frame notation elsewhere, the name Fq can denote the frame or its origin point
+(it is disambiguated by context). Frame Fq can be a useful intermediary for
+calculating Q's velocity or for applying forces from Q to F.
+Likewise, a rigid body B has a center of mass point Bcm which may be regarded as
+an offset frame Bcm. There may be a need for other offset frames fixed to
+body B, e.g., an offset frame Bq whose origin point Bq is _fixed_ to B but
+instantaneously coincident with a point (or frame) Q, where Q may be moving on B
+and/or in contact with B. By default, the orthogonal unit vectors in an offset
+frame Bp are the _same_ as those in B. If Bp's orthogonal unit vectors differ
+from B, their orientation must be very carefully documented in code.
 
-Notation example: V_WB @f$(^WV^B)@f$ denotes the spatial velocity of a frame B
-in World W. V_WBp @f$(^WV^{Bp)}@f$ denotes the spatial velocity of a frame
-whose orientation is the same as B but whose origin is offset from Bo to be
-coincident with a point P.  V_WBcm @f$(^WV^{Bcm})@f$ denotes the spatial
-velocity of a frame whose orientation is the same as B but whose origin is
-located at Bcm (B's center of mass).
+A @ref drake::multibody::FixedOffsetFrame "FixedOffsetFrame" is a special type
+of offset frame. A FixedOffsetFrame can be constructed with an argument of type
+@ref drake::math::RigidTransform "RigidTransform". One possible use case for a
+FixedOffsetFrame is for a body B's center of mass frame Bcm in which the origin
+of frame Bcm has a constant offset from Bo (body B's origin) and/or frame Bcm
+has unit vectors with a constant rotation relative to frame B's unit vectors.
+As documented in @ref drake::multibody::FixedOffsetFrame "FixedOffsetFrame",
+body frame B is called the "parent frame" and frame Bcm is a fixed offset frame.
 
-If this notation is not sufficient for your purposes, please name the offset
-frame and use comments to precisely describe the orientation of its basis and
-the location of its origin.
+Notation example: V_AB @f$(^AV^B)@f$ denotes the spatial velocity of a frame B
+measured in a frame A and contains the angular velocity w_AB @f$(^A𝛚^B)@f$ and
+translational velocity v_ABo @f$(^A𝐯^{Bo})@f$. V_AB may also be denoted V_ABo.
+For a body B, V_ABcm @f$(^AV^{Bcm})@f$ denotes the spatial velocity of a frame
+with unit vectors Bx, By, Bz with origin at Bcm (B's center of mass).
+V_ABq @f$(^AV^{Bq)}@f$ denotes the spatial velocity of a frame with unit vectors
+Bx, By, Bz, whose origin point Bq is fixed on B and instantaneously coincident
+with some point Q.
+
+If this notation is insufficient for your purposes, please carefully and
+thoughtfully name the offset frame and use comments to precisely describe the
+orientation of its orthogonal unit vectors and the location of its origin.
 
 Next topic: @ref multibody_quantities
 */
