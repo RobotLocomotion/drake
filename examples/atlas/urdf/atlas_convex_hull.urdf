@@ -1704,6 +1704,47 @@
     <child link="r_hand_camera_optical_frame"/>
   </joint>
   <link name="r_hand_camera_optical_frame"/>
+
+  <!-- The following set of collision groups is defined in order to avoid
+  collision between links that in real life do not collide with each other.
+  Without these filters we get spurious collisions due to the geometry
+  approximations in the model.  -->
+  <drake:collision_filter_group name="hokuyo_link_vs_head">
+    <drake:member link="hokuyo_link"/>
+    <drake:member link="head"/>
+    <drake:ignored_collision_filter_group name="hokuyo_link_vs_head"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="l_foot_vs_l_lleg">
+    <drake:member link="l_foot"/>
+    <drake:member link="l_lleg"/>
+    <drake:ignored_collision_filter_group name="l_foot_vs_l_lleg"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="r_foot_vs_r_lleg">
+    <drake:member link="r_foot"/>
+    <drake:member link="r_lleg"/>
+    <drake:ignored_collision_filter_group name="r_foot_vs_r_lleg"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="l_lglut_vs_pelivs">
+    <drake:member link="l_lglut"/>
+    <drake:member link="pelvis"/>
+    <drake:ignored_collision_filter_group name="l_lglut_vs_pelivs"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="l_uleg_vs_pelivs">
+    <drake:member link="l_uleg"/>
+    <drake:member link="pelvis"/>
+    <drake:ignored_collision_filter_group name="l_uleg_vs_pelivs"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="r_lglut_vs_pelivs">
+    <drake:member link="r_lglut"/>
+    <drake:member link="pelvis"/>
+    <drake:ignored_collision_filter_group name="r_lglut_vs_pelivs"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="r_uleg_vs_pelivs">
+    <drake:member link="r_uleg"/>
+    <drake:member link="pelvis"/>
+    <drake:ignored_collision_filter_group name="r_uleg_vs_pelivs"/>
+  </drake:collision_filter_group>
+
   <gazebo reference="r_hand_camera_link">
     <sensor name="r_hand_camera_sensor" type="camera">
       <update_rate>10.0</update_rate>
