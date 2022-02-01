@@ -261,6 +261,9 @@ template <typename T>
 PartialPermutation SapModel<T>::MakeImpulsesPermutation(
     const ContactProblemGraph& graph) const {
   std::vector<int> constraint_start(sap_problem().num_constraints());
+  if (sap_problem().num_constraints() == 0)  
+    return PartialPermutation();  // empty permutation.
+    
   constraint_start[0] = 0;
   for (int i = 1; i < sap_problem().num_constraints(); ++i) {
     const int previous_constraint_size =

@@ -8,6 +8,10 @@
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a ": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a ":\n" << a << std::endl;
+
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
@@ -114,14 +118,22 @@ ContactSolverStatus SapSolver<double>::SolveWithGuess(
   using std::abs;
   using std::max;
 
+  if (problem.num_constraints() == 0) {
+    results->Resize(problem.num_velocities(), problem.num_constraints());
+    results->v_next = problem.v_star();
+    results->tau_contact.setZero();
+    return ContactSolverStatus::kSuccess;
+  }
+
   model_ = std::make_unique<SapModel<double>>(&problem);
   const int nv = model_->num_participating_velocities();
   const int nc = model_->num_constraints();
   const int nk = model_->num_impulses();
+
   State state(nv, nc, nk);
   stats_ = SolverStats();
 
-  state.mutable_v() = v_guess;
+  model_->velocities_permutation().Apply(v_guess, &state.mutable_v());
 
   // Start Newton iterations.
   int k = 0;
