@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/parsing/model_directives.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/parsing/parser.h"
@@ -56,24 +55,6 @@ void ProcessModelDirectives(
     drake::multibody::MultibodyPlant<double>* plant,
     std::vector<ModelInstanceInfo>* added_models = nullptr,
     drake::multibody::Parser* parser = nullptr);
-
-// To be removed on 2022-02-01.
-using ModelWeldErrorFunctionToBeDeprecated =
-    std::function<std::optional<drake::math::RigidTransformd>(
-        const std::string& parent,
-        const std::string& child)>;
-
-DRAKE_DEPRECATED("2022-02-01", "ModelWeldErrorFunction is no longer supported.")
-void ProcessModelDirectives(
-    const ModelDirectives& directives,
-    drake::multibody::MultibodyPlant<double>* plant,
-    std::vector<ModelInstanceInfo>* added_models,
-    drake::multibody::Parser* parser,
-    ModelWeldErrorFunctionToBeDeprecated);
-
-using ModelWeldErrorFunction
-    DRAKE_DEPRECATED("2022-02-01", "This feature is no longer supported.")
-    = ModelWeldErrorFunctionToBeDeprecated;
 
 }  // namespace parsing
 }  // namespace multibody

@@ -15,21 +15,7 @@ drake_cc_package_library(
     name = "perception",
     visibility = ["//visibility:public"],
     deps = [
-        ":optitrack_pose_extractor",
         ":pose_smoother",
-    ],
-)
-
-drake_cc_library(
-    name = "optitrack_pose_extractor",
-    srcs = ["optitrack_pose_extractor.cc"],
-    hdrs = ["optitrack_pose_extractor.h"],
-    copts = ["-Wno-deprecated-declarations"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//math:geometric_transform",
-        "//systems/framework",
-        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )
 
@@ -46,22 +32,10 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "optitrack_pose_extractor_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":optitrack_pose_extractor",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_no_throw",
-        "//systems/framework",
-    ],
-)
-
-drake_cc_googletest(
     name = "pose_smoother_test",
     copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":pose_smoother",
-        "//common/test_utilities:eigen_geometry_compare",
         "//common/test_utilities:eigen_matrix_compare",
         "//manipulation/util:moving_average_filter",
         "//systems/framework",
