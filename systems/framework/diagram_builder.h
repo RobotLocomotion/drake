@@ -63,6 +63,14 @@ class DiagramBuilder {
   // DiagramBuilder objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramBuilder)
 
+  /// A designator for a "system + input port" pair, to uniquely refer to
+  /// some input port on one of this builder's subsystems.
+  using InputPortLocator = typename Diagram<T>::InputPortLocator;
+
+  /// A designator for a "system + output port" pair, to uniquely refer to
+  /// some output port on one of this builder's subsystems.
+  using OutputPortLocator = typename Diagram<T>::OutputPortLocator;
+
   DiagramBuilder();
   virtual ~DiagramBuilder();
 
@@ -248,6 +256,11 @@ class DiagramBuilder {
   /// See also GetSystems().
   std::vector<System<T>*> GetMutableSystems();
 
+  /// (Advanced) Returns a reference to the map of connections between Systems.
+  /// @warning The return value is only valid until the next call to any
+  /// non-const member function (e.g., `Connect`).
+  const std::map<InputPortLocator, OutputPortLocator>& connection_map() const;
+
   /// Declares that input port @p dest is connected to output port @p src.
   /// @note The connection created between @p src and @p dest via a call to
   /// this method can be effectively overridden by any subsequent call to
@@ -337,9 +350,6 @@ class DiagramBuilder {
   bool IsConnectedOrExported(const InputPort<T>& port) const;
 
  private:
-  using InputPortLocator = typename Diagram<T>::InputPortLocator;
-  using OutputPortLocator = typename Diagram<T>::OutputPortLocator;
-
   // Declares a new input to the entire Diagram, using @p model_input to
   // supply the data type. @p name is an optional name for the input port; if
   // it is unspecified, then a default name will be provided.

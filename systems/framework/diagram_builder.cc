@@ -41,6 +41,14 @@ std::vector<System<T>*> DiagramBuilder<T>::GetMutableSystems() {
 }
 
 template <typename T>
+const std::map<typename DiagramBuilder<T>::InputPortLocator,
+               typename DiagramBuilder<T>::OutputPortLocator>&
+DiagramBuilder<T>::connection_map() const {
+  ThrowIfAlreadyBuilt();
+  return connection_map_;
+}
+
+template <typename T>
 void DiagramBuilder<T>::Connect(
     const OutputPort<T>& src,
     const InputPort<T>& dest) {
