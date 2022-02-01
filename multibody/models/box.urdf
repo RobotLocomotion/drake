@@ -12,7 +12,7 @@
         <box size=".1 .2 .3"/>
       </geometry>
     </visual>
-    <collision>
+    <collision name="box">
       <geometry>
         <box size=".1 .2 .3"/>
       </geometry>
