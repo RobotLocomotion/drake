@@ -99,7 +99,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
   constexpr auto& doc = pydrake_doc.drake.multibody.meshcat;
 
   // ContactVisualizer
-  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+  {
     using Class = ContactVisualizer<T>;
     constexpr auto& cls_doc = doc.ContactVisualizer;
     auto cls = DefineTemplateClassWithDefault<Class, systems::LeafSystem<T>>(
