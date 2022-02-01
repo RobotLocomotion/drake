@@ -180,16 +180,12 @@ class SapSolver {
                                      ContactSolverResults<T>* result);
 
   // New parameters will affect the next call to SolveWithGuess().
-  void set_parameters(const SapSolverParameters& parameters) {
-    parameters_ = parameters;
-  }
+  void set_parameters(const SapSolverParameters& parameters);
 
   // Returns solver statistics from the last call to SolveWithGuess().
   // Statistics are reset with SolverStats::Reset() on each new call to
   // SolveWithGuess().
-  const SolverStats& get_statistics() const {
-    return stats_;
-  }
+  const SolverStats& get_statistics() const;
 
  private:
   friend class SapSolverTester;

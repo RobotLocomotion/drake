@@ -4,6 +4,7 @@
 #include <map>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
@@ -302,10 +303,10 @@ ContactProblemGraph SapContactProblem<T>::MakeGraph() const {
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::internal::SapConstraint<
-    double>;
-template class ::drake::multibody::contact_solvers::internal::
-    SapFrictionConeConstraint<double>;
-
-template class ::drake::multibody::contact_solvers::internal::SapContactProblem<
-    double>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::contact_solvers::internal::SapConstraint)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::contact_solvers::internal::
+        SapFrictionConeConstraint)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::contact_solvers::internal::SapContactProblem)

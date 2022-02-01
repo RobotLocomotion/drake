@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 
 namespace drake {
@@ -19,6 +20,16 @@ void SapSolver<T>::Cache::Resize(int nv, int nc, int nk) {
   impulses_cache_.Resize(nk);
   gradients_cache_.Resize(nv, nc);
   search_direction_cache_.Resize(nv, nk);
+}
+
+template <typename T>
+void SapSolver<T>::set_parameters(const SapSolverParameters& parameters) {
+  parameters_ = parameters;
+}
+
+template <typename T>
+const typename SapSolver<T>::SolverStats& SapSolver<T>::get_statistics() const {
+  return stats_;
 }
 
 template <typename T>
@@ -89,8 +100,8 @@ void SapSolver<T>::CalcStoppingCriteriaResidual(const State& state,
 
 template <typename T>
 ContactSolverStatus SapSolver<T>::SolveWithGuess(
-    const SapContactProblem<T>& problem, const VectorX<T>& v_guess,
-    ContactSolverResults<T>* result) {
+    const SapContactProblem<T>&, const VectorX<T>&,
+    ContactSolverResults<T>*) {
   throw std::logic_error(
       "SapSolver::SolveWithGuess(): Only T = double is supported.");
 }
@@ -495,4 +506,5 @@ SapSolver<T>::EvalSearchDirectionCache(const State& state) const {
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::internal::SapSolver<double>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::contact_solvers::internal::SapSolver)

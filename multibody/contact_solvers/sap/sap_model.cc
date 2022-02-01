@@ -1,5 +1,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_model.h"
 
+#include "drake/common/default_scalars.h"
+
 #include <iostream>
 #define PRINT_VAR(a) std::cout << #a ": " << a << std::endl;
 #define PRINT_VARn(a) std::cout << #a ":\n" << a << std::endl;
@@ -502,5 +504,7 @@ void SapModel<T>::ProjectImpulsesAndCalcConstraintsHessian(
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::internal::
-    SapConstraintBundle<double>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::contact_solvers::internal::SapConstraintBundle)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::contact_solvers::internal::SapModel)    

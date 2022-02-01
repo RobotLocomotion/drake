@@ -214,4 +214,3 @@ class SapModel {
 }  // namespace multibody
 }  // namespace drake
 
-template class ::drake::multibody::contact_solvers::internal::SapModel<double>;

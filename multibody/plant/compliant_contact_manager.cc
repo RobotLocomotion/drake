@@ -46,7 +46,7 @@ template <typename T>
 CompliantContactManager<T>::CompliantContactManager(
     std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver)
     : contact_solver_(std::move(contact_solver)) {
-  DRAKE_DEMAND(contact_solver_ != nullptr);
+  //DRAKE_DEMAND(contact_solver_ != nullptr);
 }
 
 template <typename T>
