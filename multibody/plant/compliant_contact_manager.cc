@@ -163,6 +163,8 @@ void CompliantContactManager<T>::CalcContactJacobianCache(
   Matrix3X<T> Jv_WAc_W(3, nv);
   Matrix3X<T> Jv_WBc_W(3, nv);
   Matrix3X<T> Jv_AcBc_W(3, nv);
+  // Jacobian for the relative velocity measured in frame W and expressed in C.
+  Matrix3X<T> Jv_W_AcBc_C(3, nv);
 
   const Frame<T>& frame_W = plant().world_frame();
   for (int icontact = 0; icontact < num_contacts; ++icontact) {
@@ -191,6 +193,14 @@ void CompliantContactManager<T>::CalcContactJacobianCache(
         frame_W, frame_W, &Jv_WBc_W);
     Jv_AcBc_W = Jv_WBc_W - Jv_WAc_W;
 
+    // Define a contact frame C at the contact point such that the z-axis Cz
+    // equals nhat_W. The tangent vectors are arbitrary, with the only
+    // requirement being that they form a valid right handed basis with nhat_W.
+    const math::RotationMatrix<T> R_WC =
+        math::RotationMatrix<T>::MakeFromOneVector(nhat_W, 2);
+    R_WC_set.push_back(R_WC);
+    Jv_W_AcBc_C.noalias() = R_WC.matrix().transpose() * Jv_AcBc_W;
+
     const int treeA_index = body_to_tree_index_[bodyA_index];
     const int treeB_index = body_to_tree_index_[bodyB_index];
 
@@ -201,8 +211,8 @@ void CompliantContactManager<T>::CalcContactJacobianCache(
       TreeJacobian<T>& tree_jacobian = tree_blocks[icontact].first;
       tree_jacobian.tree = treeA_index;
       tree_jacobian.J =
-          Jv_AcBc_W.middleCols(tree_velocities_start_[treeA_index],
-                               num_tree_velocities_[treeA_index]);
+          Jv_W_AcBc_C.middleCols(tree_velocities_start_[treeA_index],
+                                 num_tree_velocities_[treeA_index]);
     }
 
     // N.B. For self contact, when treeA_index = treeB_index, we only need to
@@ -212,19 +222,11 @@ void CompliantContactManager<T>::CalcContactJacobianCache(
       TreeJacobian<T>& tree_jacobian = tree_blocks[icontact].second;
       tree_jacobian.tree = treeB_index;
       tree_jacobian.J =
-          Jv_AcBc_W.middleCols(tree_velocities_start_[treeB_index],
-                               num_tree_velocities_[treeB_index]);
+          Jv_W_AcBc_C.middleCols(tree_velocities_start_[treeB_index],
+                                 num_tree_velocities_[treeB_index]);
     }
 
-    // Define a contact frame C at the contact point such that the z-axis Cz
-    // equals nhat_W. The tangent vectors are arbitrary, with the only
-    // requirement being that they form a valid right handed basis with nhat_W.
-    const math::RotationMatrix<T> R_WC =
-        math::RotationMatrix<T>::MakeFromOneVector(nhat_W, 2);
-    R_WC_set.push_back(R_WC);
-
-    Jc.template middleRows<3>(3 * icontact).noalias() =
-        R_WC.matrix().transpose() * Jv_AcBc_W;
+    Jc.template middleRows<3>(3 * icontact) = Jv_W_AcBc_C;
   }
 }
 
@@ -744,12 +746,6 @@ void CompliantContactManager<T>::DoCalcContactSolverResults(
   // In the absence of contact, v_next = v*.
   VectorX<T> v_star = EvalFreeMotionVelocities(context);
   std::vector<MatrixX<T>> A = EvalLinearDynamicsMatrix(context);
-
-  PRINT_VAR(v_star.size());
-  PRINT_VAR(A.size());
-  for (const auto& At : A) {
-    PRINT_VARn(At);
-  }
 
   const double time_step = plant().time_step();
   // TODO: notice that above this (move) constructor requires making a copy
