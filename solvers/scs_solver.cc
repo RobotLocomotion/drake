@@ -726,7 +726,7 @@ void ScsSolver::DoSolve(
   // This guard will free cone, scs_problem_data, and scs_stgs (together with
   // their instantiated members) upon return from the DoSolve function.
   ScopeExit scs_free_guard([&cone, &scs_problem_data, &scs_stgs]() {
-    scs_free_data(scs_problem_data, cone, scs_stgs);
+    _scs_free_data(scs_problem_data, cone, scs_stgs);
   });
 
   // Set the parameters to default values.
@@ -797,7 +797,7 @@ void ScsSolver::DoSolve(
 
   ScsSolution* scs_sol =
       static_cast<ScsSolution*>(scs_calloc(1, sizeof(ScsSolution)));
-  ScopeExit sol_guard([&scs_sol]() { scs_free_sol(scs_sol); });
+  ScopeExit sol_guard([&scs_sol]() { _scs_free_sol(scs_sol); });
 
   ScsSolverDetails& solver_details =
       result->SetSolverDetailsType<ScsSolverDetails>();
