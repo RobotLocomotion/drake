@@ -4,13 +4,11 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph.h"
@@ -35,10 +33,6 @@ using systems::Context;
 using systems::State;
 
 namespace {
-constexpr char doc_iso3_deprecation[] = R"""(
-Use of Isometry3 with the MultibodyPlant API is deprecated and will be removed
-from Drake on or after 2022-02-01.  Pass a pydrake.math.RigidTransform instead.
-)""";
 
 template <typename T>
 int GetVariableSize(const multibody::MultibodyPlant<T>& plant,
@@ -243,15 +237,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("X_PC") = RigidTransform<double>::Identity(),
             py_rvp::reference_internal, cls_doc.WeldFrames.doc)
         .def(
-            "WeldFrames",
-            [](Class* self, const Frame<T>& A, const Frame<T>& B,
-                const Isometry3<double>& X_AB) -> const WeldJoint<T>& {
-              WarnDeprecated(doc_iso3_deprecation);
-              return self->WeldFrames(A, B, RigidTransform<double>(X_AB));
-            },
-            py::arg("A"), py::arg("B"), py::arg("X_AB"),
-            py_rvp::reference_internal, doc_iso3_deprecation)
-        .def(
             "AddForceElement",
             [](Class * self,
                 std::unique_ptr<ForceElement<T>> force_element) -> auto& {
@@ -362,16 +347,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
             py::arg("context"), py::arg("body"), py::arg("X_WB"),
             cls_doc.SetFreeBodyPose.doc_3args)
-        .def(
-            "SetFreeBodyPose",
-            [](const Class* self, Context<T>* context, const Body<T>& body,
-                const Isometry3<T>& X_WB) {
-              WarnDeprecated(doc_iso3_deprecation);
-              return self->SetFreeBodyPose(
-                  context, body, RigidTransform<T>(X_WB));
-            },
-            py::arg("context"), py::arg("body"), py::arg("X_WB"),
-            doc_iso3_deprecation)
         .def("SetDefaultFreeBodyPose", &Class::SetDefaultFreeBodyPose,
             py::arg("body"), py::arg("X_WB"),
             cls_doc.SetDefaultFreeBodyPose.doc)
@@ -767,25 +742,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("diffuse_color"),
             cls_doc.RegisterVisualGeometry
                 .doc_5args_body_X_BG_shape_name_diffuse_color)
-        .def(
-            "RegisterVisualGeometry",
-            [](Class* self, const Body<T>& body, const Isometry3<double>& X_BG,
-                const geometry::Shape& shape, const std::string& name,
-                const Vector4<double>& diffuse_color,
-                geometry::SceneGraph<T>* scene_graph) {
-              WarnDeprecated(doc_iso3_deprecation);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              if (!self->geometry_source_is_registered()) {
-                self->RegisterAsSourceForSceneGraph(scene_graph);
-              }
-              return self->RegisterVisualGeometry(body,
-                  RigidTransform<double>(X_BG), shape, name, diffuse_color);
-#pragma GCC diagnostic pop
-            },
-            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
-            py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
-            doc_iso3_deprecation)
         .def("RegisterCollisionGeometry",
             py::overload_cast<const Body<T>&, const RigidTransform<double>&,
                 const geometry::Shape&, const std::string&,

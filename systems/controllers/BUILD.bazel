@@ -22,7 +22,6 @@ drake_cc_package_library(
         ":linear_quadratic_regulator",
         ":pid_controlled_system",
         ":pid_controller",
-        ":setpoint",
         ":state_feedback_controller_interface",
         ":zmp_planner",
     ],
@@ -137,16 +136,6 @@ drake_cc_library(
         "//systems/primitives:adder",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:saturation",
-    ],
-)
-
-drake_cc_library(
-    name = "setpoint",
-    srcs = ["setpoint.cc"],
-    hdrs = ["setpoint.h"],
-    deps = [
-        "//common:essential",
-        "//math:geometric_transform",
     ],
 )
 
@@ -273,18 +262,6 @@ drake_cc_googletest(
         ":pid_controller",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
-    ],
-)
-
-drake_cc_googletest(
-    name = "setpoint_test",
-    srcs = ["test/setpoint_test.cc"],
-    copts = ["-Wno-deprecated-declarations"],
-    # TODO(ggould-tri) This test hit kcov#339; untag when we have kcov>=40.
-    tags = ["no_kcov"],
-    deps = [
-        ":setpoint",
-        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

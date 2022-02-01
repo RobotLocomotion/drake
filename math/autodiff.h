@@ -10,7 +10,6 @@ Utilities for arithmetic on AutoDiffScalar. */
 #include <Eigen/Dense>
 
 #include "drake/common/autodiff.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/unused.h"
 
 namespace drake {
@@ -54,26 +53,6 @@ ExtractValue(const Eigen::MatrixBase<Derived>& auto_diff_matrix) {
   }
   return value;
 }
-
-template <typename Derived>
-struct DRAKE_DEPRECATED("2022-02-01", "Used only in deprecated functions.")
-    AutoDiffToValueMatrix {
-  typedef typename Eigen::Matrix<typename Derived::Scalar::Scalar,
-                                 Derived::RowsAtCompileTime,
-                                 Derived::ColsAtCompileTime>
-      type;
-};
-
-// This deprecated function uses the above deprecated struct.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <typename Derived>
-DRAKE_DEPRECATED("2022-02-01", "Use ExtractValue() instead")
-typename AutoDiffToValueMatrix<Derived>::type
-    autoDiffToValueMatrix(const Eigen::MatrixBase<Derived>& autodiff_matrix) {
-  return ExtractValue(autodiff_matrix);
-}
-#pragma GCC diagnostic pop
 
 /** `B = DiscardGradient(A)` enables casting from a matrix of AutoDiffScalars
 to AutoDiffScalar::Scalar type, explicitly throwing away any gradient
@@ -164,20 +143,6 @@ void InitializeAutoDiff(
   InitializeAutoDiff(value, {}, {}, auto_diff_matrix);
 }
 
-template <typename Derived, typename DerivedAutoDiff>
-DRAKE_DEPRECATED("2022-02-01", "Use InitializeAutoDiff() instead")
-void initializeAutoDiff(const Eigen::MatrixBase<Derived>& value,
-                        // NOLINTNEXTLINE(runtime/references).
-                        Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix,
-                        Eigen::DenseIndex num_derivatives = Eigen::Dynamic,
-                        Eigen::DenseIndex deriv_num_start = 0) {
-  InitializeAutoDiff(value,
-                     num_derivatives == Eigen::Dynamic
-                         ? std::nullopt
-                         : std::optional<int>(num_derivatives),
-                     static_cast<int>(deriv_num_start), &auto_diff_matrix);
-}
-
 /** The appropriate AutoDiffScalar matrix type given the value type and the
 number of derivatives at compile time. */
 template <typename Derived, int nq>
@@ -213,19 +178,6 @@ AutoDiffMatrixType<Derived, nq> InitializeAutoDiff(
   InitializeAutoDiff(value, num_derivatives.value_or(value.size()),
                      deriv_num_start.value_or(0), &auto_diff_matrix);
   return auto_diff_matrix;
-}
-
-template <int nq = Eigen::Dynamic, typename Derived>
-DRAKE_DEPRECATED("2022-02-01", "Use InitializeAutoDiff() instead")
-AutoDiffMatrixType<Derived, nq> initializeAutoDiff(
-    const Eigen::MatrixBase<Derived>& mat,
-    Eigen::DenseIndex num_derivatives = -1,
-    Eigen::DenseIndex deriv_num_start = 0) {
-  return InitializeAutoDiff<nq, Derived>(
-      mat,
-      num_derivatives == -1 ? std::nullopt
-                            : std::optional<int>(num_derivatives),
-      static_cast<int>(deriv_num_start));
 }
 
 namespace internal {
@@ -334,14 +286,6 @@ InitializeAutoDiffTuple(const Eigen::MatrixBase<Deriveds>&... args) {
   internal::InitializeAutoDiffTupleHelper<sizeof...(args)>::run(
       values, dynamic_num_derivs, 0, &result);
   return result;
-}
-
-template <typename... Deriveds>
-DRAKE_DEPRECATED("2022-02-01", "Use InitializeAutoDiffTuple() instead")
-std::tuple<AutoDiffMatrixType<
-    Deriveds, internal::total_size_at_compile_time<Deriveds...>()>...>
-initializeAutoDiffTuple(const Eigen::MatrixBase<Deriveds>&... args) {
-  return InitializeAutoDiffTuple(args...);
 }
 
 }  // namespace math
