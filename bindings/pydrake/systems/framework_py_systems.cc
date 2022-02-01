@@ -956,6 +956,8 @@ Note: The above is for the C++ documentation. For Python, use
         .def(
             "connection_map",
             [](Diagram<T>* self) {
+              // N.B. This code is duplicated with DiagramBuilder's same-named
+              // function. Keep the two copies in sync.
               py::dict out;
               py::object self_py = py::cast(self, py_rvp::reference);
               for (auto& [input_locator, output_locator] :

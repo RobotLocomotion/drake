@@ -72,7 +72,12 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // Diagram objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Diagram)
 
+  /// A designator for a "system + input port" pair, to uniquely refer to
+  /// some input port on one of this diagram's subsystems.
   using InputPortLocator = std::pair<const System<T>*, InputPortIndex>;
+
+  /// A designator for a "system + output port" pair, to uniquely refer to
+  /// some output port on one of this diagram's subsystems.
   using OutputPortLocator = std::pair<const System<T>*, OutputPortIndex>;
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.

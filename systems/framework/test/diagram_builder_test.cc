@@ -622,6 +622,27 @@ TEST_F(DiagramBuilderSolePortsTest, SourceGainSink) {
   DRAKE_EXPECT_NO_THROW(builder_.Build());
 }
 
+// The connection map for Source->Gain->Sink is as expected.
+TEST_F(DiagramBuilderSolePortsTest, ConnectionMap) {
+  builder_.Connect(*out1_, *in1out1_);
+  builder_.Connect(*in1out1_, *in1_);
+  ASSERT_EQ(builder_.connection_map().size(), 2);
+  {
+    const DiagramBuilder<double>::OutputPortLocator out1_output{
+        out1_, OutputPortIndex{0}};
+    const DiagramBuilder<double>::InputPortLocator in1out1_input{
+        in1out1_, InputPortIndex{0}};
+    EXPECT_EQ(builder_.connection_map().at(in1out1_input), out1_output);
+  }
+  {
+    const DiagramBuilder<double>::OutputPortLocator in1out1_output{
+        in1out1_, OutputPortIndex{0}};
+    const DiagramBuilder<double>::InputPortLocator in1_input{
+        in1_, InputPortIndex{0}};
+    EXPECT_EQ(builder_.connection_map().at(in1_input), in1out1_output);
+  }
+}
+
 // The cascade synonym also works.
 TEST_F(DiagramBuilderSolePortsTest, SourceGainSinkCascade) {
   DRAKE_EXPECT_NO_THROW(builder_.Cascade(*out1_, *in1out1_));
