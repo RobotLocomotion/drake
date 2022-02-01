@@ -11,7 +11,9 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -41,6 +43,8 @@ using multibody::MultibodyPlant;
 using multibody::Parser;
 using multibody::PrismaticJoint;
 using systems::Sine;
+using drake::multibody::internal::CompliantContactManager;
+using drake::multibody::contact_solvers::internal::SapSolver;
 
 // TODO(amcastro-tri): Consider moving this large set of parameters to a
 // configuration file (e.g. YAML).
@@ -211,6 +215,11 @@ int do_main() {
   // Now the model is complete.
   plant.Finalize();
 
+  auto owned_contact_manager =
+      std::make_unique<CompliantContactManager<double>>(nullptr);
+  // contact_manager_ = owned_contact_manager.get();
+  plant.SetDiscreteUpdateManager(std::move(owned_contact_manager));
+
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(FLAGS_penetration_allowance);
   plant.set_stiction_tolerance(FLAGS_v_stiction_tolerance);
@@ -251,7 +260,7 @@ int do_main() {
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
   // Publish contact results for visualization.
-  ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph, &lcm);
+  //ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph, &lcm);
 
   // Sinusoidal force input. We want the gripper to follow a trajectory of the
   // form x(t) = X0 * sin(ω⋅t). By differentiating once, we can compute the
