@@ -22,7 +22,8 @@ class JacoCommandReceiverTest : public testing::Test {
 
   // For use only by our constructor.
   systems::FixedInputPortValue& FixInput() {
-    return dut_.get_input_port().FixValue(&context_, lcmt_jaco_command{});
+    return dut_.get_message_input_port().FixValue(
+        &context_, lcmt_jaco_command{});
   }
 
   // Test cases should call this to set the DUT's input value.
@@ -43,7 +44,10 @@ class JacoCommandReceiverTest : public testing::Test {
   systems::FixedInputPortValue& fixed_input_;
 };
 
-TEST_F(JacoCommandReceiverTest, AcceptanceTest) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
+TEST_F(JacoCommandReceiverTest, DeprecatedInitialPositionTest) {
   constexpr int total_dof =
       kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers;
 
@@ -53,6 +57,23 @@ TEST_F(JacoCommandReceiverTest, AcceptanceTest) {
   // Check that we can set a different initial position.
   const VectorXd q0 = VectorXd::LinSpaced(total_dof, 0.1, 0.2);
   dut_.set_initial_position(&context_, q0);
+  EXPECT_TRUE(CompareMatrices(state().head(total_dof), q0));
+  EXPECT_TRUE(CompareMatrices(state().tail(total_dof),
+                              VectorXd::Zero(total_dof)));
+}
+
+#pragma GCC diagnostic pop
+
+TEST_F(JacoCommandReceiverTest, AcceptanceTest) {
+  constexpr int total_dof =
+      kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers;
+
+  // Check that the commanded pose starts out at zero
+  EXPECT_TRUE(CompareMatrices(state(), VectorXd::Zero(total_dof * 2)));
+
+  // Check that we can set a different initial position.
+  const VectorXd q0 = VectorXd::LinSpaced(total_dof, 0.1, 0.2);
+  dut_.get_position_measured_input_port().FixValue(&context_, q0);
   EXPECT_TRUE(CompareMatrices(state().head(total_dof), q0));
   EXPECT_TRUE(CompareMatrices(state().tail(total_dof),
                               VectorXd::Zero(total_dof)));

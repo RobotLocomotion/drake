@@ -22,6 +22,7 @@
 #include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
+#include "drake/systems/primitives/demultiplexer.h"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
@@ -43,6 +44,7 @@ using drake::multibody::Body;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
 using drake::systems::controllers::InverseDynamicsController;
+using drake::systems::Demultiplexer;
 
 namespace drake {
 namespace examples {
@@ -98,7 +100,13 @@ int DoMain() {
           "KINOVA_JACO_COMMAND", lcm));
   auto command_receiver = builder.AddSystem<JacoCommandReceiver>();
   builder.Connect(command_sub->get_output_port(),
-                  command_receiver->get_input_port());
+                  command_receiver->get_message_input_port());
+  auto plant_state_demux = builder.AddSystem<Demultiplexer>(
+      2 * num_positions, num_positions);
+  builder.Connect(jaco_plant->get_state_output_port(jaco_id),
+                  plant_state_demux->get_input_port());
+  builder.Connect(plant_state_demux->get_output_port(0),
+                  command_receiver->get_position_measured_input_port());
   builder.Connect(command_receiver->get_output_port(),
                   jaco_controller->get_input_port_desired_state());
   builder.Connect(jaco_controller->get_output_port_control(),
@@ -133,9 +141,6 @@ int DoMain() {
   initial_position(5) = 4.49;
   initial_position(6) = 5.03;
 
-  command_receiver->set_initial_position(
-      &diagram->GetMutableSubsystemContext(*command_receiver, &root_context),
-      initial_position);
   jaco_plant->SetPositions(
       &diagram->GetMutableSubsystemContext(*jaco_plant, &root_context),
       initial_position);
