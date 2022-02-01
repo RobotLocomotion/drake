@@ -773,6 +773,9 @@ void CompliantContactManager<T>::DoCalcContactSolverResults(
                     ContactSolverStatus::kSuccess) {
     throw std::runtime_error("SAP solver failed.");
   }
+
+  //const typename SapSolver<T>::SolverStats& stats = sap.get_statistics();
+  //PRINT_VAR(stats.num_iters);
 }
 
 template <typename T>
