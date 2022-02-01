@@ -284,7 +284,7 @@ ContactProblemGraph SapContactProblem<T>::MakeGraph() const {
     const auto& c = constraints_[k];
     const int c0 = c->clique0();  // N.B. we know that clique0() > 0 always.
     // The create a "loop" to signify a constraint within the same clique.
-    const int c1 = c->clique1() > 0 ? c->clique1() : c->clique0();
+    const int c1 = c->clique1() >= 0 ? c->clique1() : c->clique0();
     const auto cliques_pair = drake::MakeSortedPair(c0, c1);
     constraint_groups[cliques_pair].push_back(k);
   }
