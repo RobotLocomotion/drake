@@ -17,6 +17,7 @@ drake_cc_package_library(
     deps = [
         ":constitutive_model",
         ":deformation_gradient_data",
+        ":element_cache_entry",
         ":isoparametric_element",
         ":linear_constitutive_model_data",
         ":linear_simplex_element",
@@ -47,6 +48,16 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:nice_type_name",
+    ],
+)
+
+drake_cc_library(
+    name = "element_cache_entry",
+    hdrs = [
+        "element_cache_entry.h",
+    ],
+    deps = [
+        "//common:essential",
     ],
 )
 
@@ -134,6 +145,13 @@ drake_cc_googletest(
         ":deformation_gradient_data",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "element_cache_entry_test",
+    deps = [
+        ":element_cache_entry",
     ],
 )
 
