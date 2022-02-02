@@ -1023,6 +1023,12 @@
     <drake:member link="l_hand"/>
     <drake:ignored_collision_filter_group name="l_arm"/>
   </drake:collision_filter_group>
+  <drake:collision_filter_group name="hokuyo_filter">
+    <drake:member link="hokuyo_link"/>
+    <drake:member link="utorso"/>
+    <drake:member link="head"/>
+    <drake:ignored_collision_filter_group name="hokuyo_filter"/>
+  </drake:collision_filter_group>
   <link name="head">
     <inertial>
       <origin rpy="0 0 0" xyz="-0.075493 3.3383E-05 0.02774"/>
