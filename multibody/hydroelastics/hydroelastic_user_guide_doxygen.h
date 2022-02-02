@@ -91,6 +91,8 @@ if they are absent they’ll be provided by `MultibodyPlant`. First we’ll disc
 each of the properties and then discuss how they can be specified.
 
 @paragraph hug_properties Properties for hydroelastic contact
+<!-- TODO(rpoyner-tri): consider restructuring this section to paragraphs,
+     rather than a nested list -->
 - Hydroelastic classification
    - To have a hydroelastic representation, a shape needs to be classified as
      either “compliant” or “rigid”. This must be explicit -- there are no
