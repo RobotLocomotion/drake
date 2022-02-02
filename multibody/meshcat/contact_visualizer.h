@@ -29,6 +29,7 @@ port of a MultibodyPlant.
  name: ContactVisualizer
  input_ports:
  - contact_results
+ - query_object (optional)
  @endsystem
 
 Note: This system current only visualizes "point pair" contacts.
@@ -72,6 +73,13 @@ class ContactVisualizer final : public systems::LeafSystem<T> {
     return this->get_input_port(contact_results_input_port_);
   }
 
+  /** Returns the geometry::QueryObject-valued input port. It should be
+  (optionally) connected to SceneGraphs's get_query_output_port(). Failure
+  to do so will prevent the display from showing names for the geometry. */
+  const systems::InputPort<T>& query_object_input_port() const {
+    return this->get_input_port(query_object_input_port_);
+  }
+
   /** Adds a ContactVisualizer and connects it to the given
   MultibodyPlant's multibody::ContactResults-valued output port. */
   static const ContactVisualizer<T>& AddToBuilder(
@@ -80,7 +88,19 @@ class ContactVisualizer final : public systems::LeafSystem<T> {
       ContactVisualizerParams params = {});
 
   /** Adds a ContactVisualizer and connects it to the given
-  multibody::ContactResults-valued output port. */
+  multibody::ContactResults-valued output port and the given
+  geometry::QueryObject-valued output port. */
+  static const ContactVisualizer<T>& AddToBuilder(
+      systems::DiagramBuilder<T>* builder,
+      const systems::OutputPort<T>& contact_results_port,
+      const systems::OutputPort<T>& query_object_port,
+      std::shared_ptr<geometry::Meshcat> meshcat,
+      ContactVisualizerParams params = {});
+
+  /** Adds a ContactVisualizer and connects it to the given
+  multibody::ContactResults-valued output port.
+  @warning This overload is dispreferred because it omits the geometr' names
+  from the display. */
   static const ContactVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder,
       const systems::OutputPort<T>& contact_results_port,
@@ -119,10 +139,9 @@ class ContactVisualizer final : public systems::LeafSystem<T> {
   operation) from a const System (e.g., during simulation). */
   std::unique_ptr<internal::PointContactVisualizer> point_visualizer_;
 
-  /* The index of this System's ContactResults-valued input port. */
   systems::InputPortIndex contact_results_input_port_;
-
-  /* The index of the point_contacts cache entry. */
+  systems::InputPortIndex query_object_input_port_;
+  systems::CacheIndex geometry_names_scratch_;
   systems::CacheIndex point_contacts_cache_;
 };
 
