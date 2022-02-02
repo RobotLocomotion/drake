@@ -59,26 +59,39 @@ void SapSolver<T>::PackContactResults(const VectorX<T>& v_star,
   results->v_next = v_star;
   // Overwrite participating DOFs only.
   model_->velocities_permutation().ApplyInverse(v_participating,
-                                                &results->v_next);
-  VectorX<T> vc(vc_grouped.size());
-  model_->impulses_permutation().ApplyInverse(vc_grouped, &vc);  
-  ExtractNormal(vc, &results->vn);
-  ExtractTangent(vc, &results->vt);
+                                                &results->v_next);  
+
   VectorX<T> gamma(gamma_grouped.size());
   model_->impulses_permutation().ApplyInverse(gamma_grouped, &gamma);
-  ExtractNormal(gamma, &results->fn);
-  ExtractTangent(gamma, &results->ft);
+
+  // TODO: Enable for when there are mixed constraints.
+  // This is just a quick hack to enable the testing of the prototype.
+  // Probably the best solution is for SapSolver results to compute
+  // SapSolverResults and then let the contact manager fill in the
+  // ContactSolverResults.
+  if (3 * model_->num_constraints() == model_->num_impulses()) {
+    VectorX<T> vc(vc_grouped.size());
+    model_->impulses_permutation().ApplyInverse(vc_grouped, &vc);
+    ExtractNormal(vc, &results->vn);
+    ExtractTangent(vc, &results->vt);
+
+    ExtractNormal(gamma, &results->fn);
+    ExtractTangent(gamma, &results->ft);
+    results->fn /= model_->time_step();
+    results->ft /= model_->time_step();
+  } else {
+    results->fn.setZero();
+    results->ft.setZero();
+  }
 
   // N.B. While contact solver works with impulses, results are reported as
-  // forces.
-  results->fn /= model_->time_step();
-  results->ft /= model_->time_step();
-  VectorX<T> tau_contact_participating(v_participating.size());
+  // forces.  
+  VectorX<T> tau_contact_participating(v_participating.size());  
   model_->J().MultiplyByTranspose(gamma_grouped, &tau_contact_participating);
   tau_contact_participating /= model_->time_step();
   results->tau_contact.setZero();
-  model_->velocities_permutation().Apply(tau_contact_participating,
-                                         &results->tau_contact);
+  model_->velocities_permutation().ApplyInverse(tau_contact_participating,
+                                                &results->tau_contact);
 }
 
 template <typename T>

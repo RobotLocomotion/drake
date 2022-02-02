@@ -14,6 +14,11 @@
 
 namespace drake {
 namespace multibody {
+
+#ifndef DRAKE_DOXYGEN_CXX
+template <typename T> class Joint;
+#endif
+
 namespace internal {
 
 template <typename T>
@@ -105,7 +110,19 @@ class CompliantContactManager final
 
   ~CompliantContactManager() final;
 
+  void AddCouplerConstraint(const Joint<T>& joint0, const Joint<T>& joint1,
+                            const T& gear_ratio, const T& stiffness,
+                            const T& dissipation_time_scale);
+
  private:
+  struct CouplerConstraintInfo {
+    int q0{-1};
+    int q1{-1};
+    T gear_ratio{1.0};
+    T stiffness{std::numeric_limits<double>::infinity()};
+    T dissipation_time_scale{0.0};
+  };
+
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
   struct CacheIndexes {
@@ -247,6 +264,11 @@ class CompliantContactManager final
       drake::multibody::contact_solvers::internal::SapContactProblem<T>*
           problem) const;
 
+  void AddCouplerConstraints(
+      const systems::Context<T>& context,
+      drake::multibody::contact_solvers::internal::SapContactProblem<T>*
+          problem) const;            
+
   std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver_;
   CacheIndexes cache_indexes_;
   // Number of generalized velocities for the t-th tree.
@@ -255,6 +277,9 @@ class CompliantContactManager final
   std::vector<int> tree_velocities_start_;
   // Body index to tree index map.
   std::vector<int> body_to_tree_index_;
+  std::vector<int> dof_to_tree_index_;
+
+  std::vector<CouplerConstraintInfo> coupler_constraints_info_;
 };
 
 }  // namespace internal

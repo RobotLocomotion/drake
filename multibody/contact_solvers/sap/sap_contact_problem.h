@@ -148,6 +148,53 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
   double soft_tolerance_{1.0e-7};
 };
 
+
+// Imposes the constraint g = qᵢ − r⋅qⱼ that couples the i-th and j-th DOFs. r
+// is the gear ratio, which can also be negative.
+// The compliant constraint forces obeys the relationship: γ=−k⋅g−c⋅ġ with
+// linear dissipation model constant c = τ⋅k.
+template <typename T>
+class SapCouplerConstraint final : public SapConstraint<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapCouplerConstraint);
+
+  // TODO: Simplify, get rid of struct Parameters.
+  struct Parameters {
+    T gear_ratio{1.0};  // It can be negative to impose opposing motions.
+    T stiffness{0.0};
+    T dissipation_time_scale{0.0};
+    // Rigid approximation constant: Rₙ = β²/(4π²)⋅w when the contact frequency
+    // ωₙ is below the limit ωₙ⋅δt ≤ 2π. That is, the period is Tₙ = β⋅δt. w
+    // corresponds to a diagonal approximation of the Delassuss operator for
+    // each contact. See [Castro et al., 2021. §IX.A] for details.
+    double beta{1.0};
+  };
+
+  SapCouplerConstraint(const Parameters& p)
+      : SapConstraint<T>(3), parameters_(p) {}
+
+  // @throws if the number of rows in J is different from three.
+  SapCouplerConstraint(const Parameters& p, int clique, const MatrixX<T>& J,
+                       const T& phi0);
+
+  // @throws if the number of rows in J0 and J1 is different from three.
+  SapCouplerConstraint(const Parameters& p, int clique0, int clique1,
+                       const MatrixX<T>& J0, const MatrixX<T>& J1, const T& g0);
+
+  void Project(const Eigen::Ref<const VectorX<T>>& y,
+               const Eigen::Ref<const VectorX<T>>& R,
+               EigenPtr<VectorX<T>> gamma,
+               MatrixX<T>* dPdy = nullptr) const final;
+
+  VectorX<T> CalcBiasTerm(const T& time_step, const T& wi) const final;
+  VectorX<T> CalcDiagonalRegularization(const T& time_step,
+                                        const T& wi) const final;
+
+ private:
+  Parameters parameters_;
+  T g0_;
+};
+
 // SAP Problem defined by:
 //   - A⋅(v−v*) = Jᵀ⋅γ
 //   - Constraints.
