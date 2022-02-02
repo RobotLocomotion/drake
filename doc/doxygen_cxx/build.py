@@ -7,6 +7,7 @@ import argparse
 from fnmatch import fnmatch
 import os
 from os.path import join, relpath
+import shutil
 import sys
 
 from bazel_tools.tools.python.runfiles import runfiles
@@ -99,6 +100,30 @@ def _generate_doxyfile(*, manifest, out_dir, temp_dir, dot):
         ])
     assert os.path.exists(output_filename)
     return output_filename
+
+
+def _generate_doxygen_header(*, doxygen, temp_dir):
+    """Creates Drake's header.html based on a patch to Doxygen's default
+    header template.
+    """
+    # This matches Doxyfile_CXX.
+    header_path = f"{temp_dir}/drake/doc/doxygen_cxx/header.html"
+
+    # Extract the default templates from the Doxygen binary. We only want the
+    # header, but it forces us to create all three in this exact order.
+    scratch_files = [
+        "header.html.orig",
+        "footer.html.orig",
+        "customdoxygen.css.orig",
+    ]
+    check_call([doxygen, "-w", "html"] + scratch_files, cwd=temp_dir)
+    shutil.copy(f"{temp_dir}/header.html.orig", header_path)
+    for orig in scratch_files:
+        os.remove(f"{temp_dir}/{orig}")
+
+    # Apply our patch.
+    patch_file = f"{header_path}.patch"
+    check_call(["/usr/bin/patch", header_path, patch_file])
 
 
 def _is_important_warning(line):
@@ -197,6 +222,10 @@ def _build(*, out_dir, temp_dir, modules, quick):
     # Prepare our input.
     symlink_input(
         "drake/doc/doxygen_cxx/doxygen_input.txt", temp_dir)
+    _generate_doxygen_header(
+        doxygen=doxygen,
+        temp_dir=temp_dir,
+    )
     _symlink_headers(
         drake_workspace=drake_workspace,
         temp_dir=temp_dir,
