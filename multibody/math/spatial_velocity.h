@@ -150,7 +150,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// unusual to use this method unless frame W is the world frame.
   /// @note Although the spatial vectors F_B_E and V_WB_E must have the same
   /// expressed-in frame E, the returned scalar is independent of frame E.
-  inline T dot(const SpatialForce<T>& F_Bp_E) const;
+  inline T dot(const SpatialForce<T>& F_B_E) const;
   // The dot() method is implemented at the end of this file, so that all of
   // the dot methods are co-located for easy understanding. We need the inline
   // keyword to ensure the method is still inlined even with `extern template`.
