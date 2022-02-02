@@ -1,0 +1,21 @@
+--- header.html.orig	2022-01-28 16:27:47.441718384 -0800
++++ header.html	2022-01-28 16:54:08.058606102 -0800
+@@ -47,6 +47,18 @@
+    <!--BEGIN SEARCHENGINE-->
+    <td>$searchbox</td>
++   <td>
++    <div id="DDGSearch">
++     <form id="ddg-search-form" class="wy_form" action="https://duckduckgo.com/" method="get">
++      <input type="text" name="q" placeholder="Search C++ API only…" />
++      <input type="hidden" name="sites" value="drake.mit.edu/doxygen_cxx" />
++     </form>
++     <form id="ddg-search-form" class="wy_form" action="https://duckduckgo.com/" method="get">
++      <input type="text" name="q" placeholder="Search all of Drake…" />
++      <input type="hidden" name="sites" value="drake.mit.edu" />
++     </form>
++    </div">
++   </td>
+    <!--END SEARCHENGINE-->
+   <!--END DISABLE_INDEX-->
+  </tr>
+  </tbody>

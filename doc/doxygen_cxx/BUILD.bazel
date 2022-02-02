@@ -39,6 +39,7 @@ filegroup(
         "DoxygenLayout.xml",
         "doxygen.h",
         "doxygen_extra.css",
+        "header.html.patch",
         "footer.html",
         # We call this program directly as a shebang executable, without using
         # the py_library target above.  This is easier than trying to get the
