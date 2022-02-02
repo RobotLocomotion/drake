@@ -13,9 +13,9 @@ workspace directory.
 cd drake
 ```
 
-Ensure that you have installed the drake visualizer with
+Open a visualizer window
 ```
-bazel build //tools:drake_visualizer
+bazel run //tools:meldis -- --open-window &
 ```
 
 Build the examples in this directory:
@@ -25,13 +25,7 @@ bazel build //examples/kinova_jaco_arm/...
 
 ### Examples
 
-Before running any examples, launch the visualizer:
-```
-bazel-bin/tools/drake_visualizer
-```
-
 The following examples of a simulated jaco are present:
-
 
 ```
 bazel-bin/examples/kinova_jaco_arm/jaco_simulation

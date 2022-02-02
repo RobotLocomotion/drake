@@ -16,8 +16,8 @@ namespace acrobot {
 namespace {
 
 // Simple example which simulates the Acrobot, started near the upright, with an
-// LQR controller designed to stabilize the unstable fixed point.  Run
-// drake-visualizer to see the animated result.
+// LQR controller designed to stabilize the unstable fixed point.  Run meldis to
+// see the animated result.
 //
 // Note: See also examples/multibody/acrobot for an almost identical test
 // using the MultibodyPlant version of the Acrobot dynamics.

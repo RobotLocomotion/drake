@@ -29,8 +29,7 @@ SDFormat file.
 ### `//examples/acrobot:`*run_passive*
 
 This program runs a passive acrobot with no applied torque.  It publishes
-visualization data over LCM, so if you run `//tools:drake_visualizer` it will
-appear there.
+visualization data over LCM, so if you run `meldis` it will appear there.
 
 ```
 bazel run //tools:meldis -- --open-window &
@@ -78,7 +77,7 @@ output is limited to joint positions, and an observer system with a model of
 the acrobot estimates the model state from the observed positions.  The
 controller then relies only on the estimated positions.
 
-The observer trajectory is not visible in drake_visualizer, but can be
+The observer trajectory does not show up in the visualizer, but can be
 visualized via the `call_python_client_cli` remote python interpreter.
 
 ```

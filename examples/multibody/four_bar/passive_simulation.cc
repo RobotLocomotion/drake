@@ -176,8 +176,8 @@ int do_main() {
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "A four bar linkage demo demonstrating the use of a linear bushing as "
-      "a way to model a kinematic loop. Launch drake-visualizer before running "
-      "this example.");
+      "a way to model a kinematic loop. Launch meldis before running this "
+      "example.");
   // Changes the default realtime rate to 1.0, so the visualization looks
   // realistic. Otherwise, it finishes so fast that we can't appreciate the
   // motion. Users can still change it on command-line, e.g. "

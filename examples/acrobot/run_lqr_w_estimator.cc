@@ -23,8 +23,8 @@ namespace {
 
 // Simple example which simulates the Acrobot, started near the upright
 // configuration, with an LQR controller designed to stabilize the unstable
-// fixed point and a state estimator in the loop. Run drake-visualizer to
-// see the animated result.
+// fixed point and a state estimator in the loop. Run meldis to see the
+// animated result.
 
 DEFINE_double(simulation_sec, 5.0,
               "Number of seconds to simulate.");

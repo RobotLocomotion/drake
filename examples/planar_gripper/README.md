@@ -12,9 +12,9 @@ workspace directory.
 cd drake
 ```
 
-Ensure that you have built the Drake visualizer with
+Open a visualizer window
 ```
-bazel build //tools:drake_visualizer
+bazel run //tools:meldis -- --open-window &
 ```
 
 Build the example in this directory
@@ -22,19 +22,12 @@ Build the example in this directory
 bazel build //examples/planar_gripper/...
 ```
 
-## Visualizer
-
-Before running the example, launch the visualizer:
-```
-bazel-bin/tools/drake_visualizer
-```
-
 ## Example
 
 ### Run Trajectory Publisher
 
 ```
-bazel-bin/examples/planar_gripper/planar_gripper_trajectory_publisher
+bazel-bin/examples/planar_gripper/run_planar_gripper_trajectory_publisher
 ```
 
 Sends desired joint positions over LCM. Requires a suitable LCM based

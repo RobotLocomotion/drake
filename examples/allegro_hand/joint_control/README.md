@@ -10,20 +10,22 @@ that the joint-level controllers do not cause the simulation to become unstable
 in a numerical sense. Eventually, the mug may come loose, which is expected for
 this simple controller setup.
 
+Open a visualizer window
+```
+bazel run //tools:meldis -- --open-window &
+```
+
 To run the following example:
 
 ```sh
-bazel build \
-    //examples/allegro_hand/joint_control/...
-    //tools:drake_visualizer
+bazel build //examples/allegro_hand/joint_control/...
 ```
 
 Run each of the following lines in separate terminals:
 
 ```sh
-bazel-bin/tools/drake_visualizer
-
-bazel-bin/examples/allegro_hand/joint_control/allegro_single_object_simulation
+bazel-bin/examples/allegro_hand/joint_control/allegro_single_object_simulation \
+    --simulator_target_realtime_rate=1.0
 
 bazel-bin/examples/allegro_hand/joint_control/run_twisting_mug
 ```

@@ -25,7 +25,7 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Simulator::set_target_realtime_rate() for details.");
 
 /// Simulates the rimless wheel from various initial velocities (accepted as
-/// command-line arguments.  Run drake-visualizer to watch the results.
+/// command-line arguments.  Run meldis to watch the results.
 int DoMain() {
   systems::DiagramBuilder<double> builder;
   auto rimless_wheel = builder.AddSystem<RimlessWheel>();
