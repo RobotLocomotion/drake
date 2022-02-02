@@ -537,6 +537,39 @@ void DoScalarDependentDefinitions(py::module m) {
             return out;
           },
           doc.DiagramBuilder.GetMutableSystems.doc)
+      .def(
+          "connection_map",
+          [](DiagramBuilder<T>* self) {
+            // N.B. This code is duplicated with Diagram's same-named function.
+            // Keep the two copies in sync. The detailed unit test is written
+            // against the Diagram copy of this function, not this one.
+            py::dict out;
+            py::object self_py = py::cast(self, py_rvp::reference);
+            for (auto& [input_locator, output_locator] :
+                self->connection_map()) {
+              py::object input_system_py =
+                  py::cast(input_locator.first, py_rvp::reference);
+              py::object input_port_index_py = py::cast(input_locator.second);
+              // Keep alive, ownership: `input_system_py` keeps `self` alive.
+              py_keep_alive(input_system_py, self_py);
+              py::tuple input_locator_py(2);
+              input_locator_py[0] = input_system_py;
+              input_locator_py[1] = input_port_index_py;
+
+              py::object output_system_py =
+                  py::cast(output_locator.first, py_rvp::reference);
+              py::object output_port_index_py = py::cast(output_locator.second);
+              // Keep alive, ownership: `output_system_py` keeps `self` alive.
+              py_keep_alive(output_system_py, self_py);
+              py::tuple output_locator_py(2);
+              output_locator_py[0] = output_system_py;
+              output_locator_py[1] = output_port_index_py;
+
+              out[input_locator_py] = output_locator_py;
+            }
+            return out;
+          },
+          doc.DiagramBuilder.connection_map.doc)
       .def("Connect",
           py::overload_cast<const OutputPort<T>&, const InputPort<T>&>(
               &DiagramBuilder<T>::Connect),
