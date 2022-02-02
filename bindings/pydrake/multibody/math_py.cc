@@ -144,6 +144,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::init<const Vector6<T>&>(), py::arg("L"), cls_doc.ctor.doc_1args)
         .def("Shift", &Class::Shift, py::arg("p_BpBq_E"), cls_doc.Shift.doc)
         .def("dot", &Class::dot, py::arg("V_WBp_E"), cls_doc.dot.doc);
+        constexpr char doc_dotWithArgumentNameV_WBp_E_deprecated[] =
+            "dot(V_WBp_E) is deprecated, and will be "
+            "removed on or around 2022-05-01. Please use "
+            "dot(V_WB_E) instead.";
+        cls.def("dot",
+            WrapDeprecated(doc_dotWithArgumentNameV_WBp_E_deprecated,
+                &Class::dot),
+            py::arg("V_WBp_E"), doc_dotWithArgumentNameV_WBp_E_deprecated);
     cls.attr("__matmul__") = cls.attr("dot");
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
