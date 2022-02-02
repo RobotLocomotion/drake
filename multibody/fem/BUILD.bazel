@@ -15,6 +15,7 @@ drake_cc_package_library(
     name = "fem",
     visibility = ["//multibody/fixed_fem:__subpackages__"],
     deps = [
+        ":calc_lame_parameters",
         ":constitutive_model",
         ":deformation_gradient_data",
         ":isoparametric_element",
@@ -22,6 +23,19 @@ drake_cc_package_library(
         ":linear_simplex_element",
         ":quadrature",
         ":simplex_gaussian_quadrature",
+    ],
+)
+
+drake_cc_library(
+    name = "calc_lame_parameters",
+    srcs = [
+        "calc_lame_parameters.cc",
+    ],
+    hdrs = [
+        "calc_lame_parameters.h",
+    ],
+    deps = [
+        "//common:default_scalars",
     ],
 )
 
@@ -116,6 +130,14 @@ drake_cc_library(
     ],
     deps = [
         ":quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "calc_lame_parameters_test",
+    deps = [
+        ":calc_lame_parameters",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
