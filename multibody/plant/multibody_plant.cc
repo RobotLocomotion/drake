@@ -242,7 +242,8 @@ struct JointLimitsPenaltyParametersEstimator {
 namespace {
 
 // Hack to fully qualify frame names, pending resolution of #9128. Used by
-// geometry registration routines.
+// geometry registration routines. When this hack is removed, also undo the
+// de-hacking step within internal_geometry_names.cc.
 template <typename T>
 std::string GetScopedName(
     const MultibodyPlant<T>& plant,
