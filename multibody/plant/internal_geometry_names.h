@@ -69,6 +69,11 @@ class GeometryNames {
   template <typename T>
   void ResetBasic(const MultibodyPlant<T>& plant);
 
+  /* Returns the concatenated model name, body name, and geometry name for
+  the given ID using the given separator. If either the model or geometry
+  name is not required to form a unique result, that item is omitted. */
+  std::string GetFullName(geometry::GeometryId, std::string_view sep) const;
+
   /* Returns the entry associated with the given ID.
   The return value is no longer valid after any call to a reset function. */
   const Entry& Find(geometry::GeometryId) const;

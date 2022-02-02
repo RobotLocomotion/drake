@@ -113,6 +113,35 @@ const GeometryNames::Entry& GeometryNames::Find(GeometryId id) const {
   throw std::logic_error("GeometryNames::Find could not find the given id");
 }
 
+std::string GeometryNames::GetFullName(
+    GeometryId id, std::string_view sep) const {
+  const Entry& entry = Find(id);
+
+  // We'll join these at the end.
+  std::vector<std::string_view> tokens;
+
+  // Only use the model name if it matters.
+  if (!entry.body_name_is_unique_within_plant) {
+    tokens.push_back(entry.model_instance_name);
+  }
+
+  // Always use the body name.
+  tokens.push_back(entry.body_name);
+
+  // Only use the geometry name if it matters.
+  std::string id_as_string;
+  if (!entry.is_sole_geometry_within_body) {
+    if (entry.geometry_name.has_value()) {
+      tokens.push_back(*entry.geometry_name);
+    } else {
+      id_as_string = fmt::format("Id({})", id);
+      tokens.push_back(id_as_string);
+    }
+  }
+
+  return fmt::format("{}", fmt::join(tokens, sep));
+}
+
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
     &GeometryNames::ResetFull<T>
 ))
