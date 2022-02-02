@@ -4425,30 +4425,35 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Helper method to fill in the ContactResults given the current context when
   // the model is continuous.
+  // @param[out] contact_results is fully overwritten
   void CalcContactResultsContinuous(const systems::Context<T>& context,
                                     ContactResults<T>* contact_results) const;
 
   // Helper method for the continuous mode plant, to fill in the ContactResults
   // for the point pair model, given the current context. Called by
   // CalcContactResultsContinuous.
-  void CalcContactResultsContinuousPointPair(
+  // @param[in,out] contact_results is appended to
+  void AppendContactResultsContinuousPointPair(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
 
   // Helper method to fill in `contact_results` with hydroelastic forces as a
   // function of the state stored in `context`.
+  // @param[in,out] contact_results is appended to
   void AppendContactResultsContinuousHydroelastic(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
 
   // This method accumulates both point and hydroelastic contact results into
   // contact_results when the model is discrete.
+  // @param[out] contact_results is fully overwritten
   void CalcContactResultsDiscrete(const systems::Context<T>& context,
                                   ContactResults<T>* contact_results) const;
 
   // Helper method to fill in contact_results with point contact information
   // for the given state stored in context, when the model is discrete.
-  void CalcContactResultsDiscretePointPair(
+  // @param[in,out] contact_results is appended to
+  void AppendContactResultsDiscretePointPair(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
 

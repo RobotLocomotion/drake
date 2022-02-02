@@ -1327,11 +1327,12 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
   this->ValidateContext(context);
   DRAKE_DEMAND(contact_results != nullptr);
   contact_results->Clear();
+  contact_results->set_plant(this);
   if (num_collision_geometries() == 0) return;
 
   switch (contact_model_) {
     case ContactModel::kPoint:
-      CalcContactResultsContinuousPointPair(context, contact_results);
+      AppendContactResultsContinuousPointPair(context, contact_results);
       break;
 
     case ContactModel::kHydroelastic:
@@ -1340,7 +1341,7 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
 
     case ContactModel::kHydroelasticWithFallback:
       // Simply merge the contributions of each contact representation.
-      CalcContactResultsContinuousPointPair(context, contact_results);
+      AppendContactResultsContinuousPointPair(context, contact_results);
       AppendContactResultsContinuousHydroelastic(context, contact_results);
       break;
   }
@@ -1360,6 +1361,8 @@ void MultibodyPlant<T>::AppendContactResultsContinuousHydroelastic(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   this->ValidateContext(context);
+  DRAKE_DEMAND(contact_results != nullptr);
+  DRAKE_DEMAND(contact_results->plant() == this);
   const internal::HydroelasticContactInfoAndBodySpatialForces<T>&
       contact_info_and_spatial_body_forces =
           EvalHydroelasticContactForces(context);
@@ -1372,10 +1375,12 @@ void MultibodyPlant<T>::AppendContactResultsContinuousHydroelastic(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
+void MultibodyPlant<T>::AppendContactResultsContinuousPointPair(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   this->ValidateContext(context);
+  DRAKE_DEMAND(contact_results != nullptr);
+  DRAKE_DEMAND(contact_results->plant() == this);
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       EvalPointPairPenetrations(context);
@@ -1389,7 +1394,6 @@ void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
       EvalGeometryQueryInput(context);
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
-  contact_results->Clear();
   for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
     const auto& pair = point_pairs[icontact];
     const GeometryId geometryA_id = pair.id_A;
@@ -1491,11 +1495,12 @@ void MultibodyPlant<T>::CalcContactResultsDiscrete(
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
   contact_results->Clear();
+  contact_results->set_plant(this);
   if (num_collision_geometries() == 0) return;
 
   switch (contact_model_) {
     case ContactModel::kPoint:
-      CalcContactResultsDiscretePointPair(context, contact_results);
+      AppendContactResultsDiscretePointPair(context, contact_results);
       break;
 
     case ContactModel::kHydroelastic:
@@ -1506,7 +1511,7 @@ void MultibodyPlant<T>::CalcContactResultsDiscrete(
 
     case ContactModel::kHydroelasticWithFallback:
       // Simply merge the contributions of each contact representation.
-      CalcContactResultsDiscretePointPair(context, contact_results);
+      AppendContactResultsDiscretePointPair(context, contact_results);
 
       // N.B. We are simply computing the hydro force as function of the state,
       // not the actual discrete approximation used by the contact solver.
@@ -1516,11 +1521,12 @@ void MultibodyPlant<T>::CalcContactResultsDiscrete(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcContactResultsDiscretePointPair(
+void MultibodyPlant<T>::AppendContactResultsDiscretePointPair(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   this->ValidateContext(context);
   DRAKE_DEMAND(contact_results != nullptr);
+  DRAKE_DEMAND(contact_results->plant() == this);
   if (num_collision_geometries() == 0) return;
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
@@ -1543,7 +1549,6 @@ void MultibodyPlant<T>::CalcContactResultsDiscretePointPair(
   DRAKE_DEMAND(vn.size() >= num_contacts);
   DRAKE_DEMAND(vt.size() >= 2 * num_contacts);
 
-  contact_results->Clear();
   for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
     const auto& pair = point_pairs[icontact];
     const GeometryId geometryA_id = pair.id_A;
