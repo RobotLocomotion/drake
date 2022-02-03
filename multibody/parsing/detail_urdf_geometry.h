@@ -4,6 +4,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include <utility>
 
 #include <Eigen/Dense>
@@ -122,17 +123,20 @@ UrdfMaterial ParseMaterial(const tinyxml2::XMLElement* node, bool name_required,
  This feature is one way to provide multiple visual representations of a body.
 
  @param[in] parent_element_name The name of the parent link element, used
- to construct default geometry names and for error reporting.
+ for error reporting.
  @param[in,out] materials The MaterialMap is used to look up materials
  which are referenced by name only in the visual element.  New materials
  which are specified by both color and name will be added to the map and
  can be used by later visual elements.  Material definitions may be
- repeated if the material properties are identical. */
+ repeated if the material properties are identical.
+ @param[in,out] geometry_names The list of geometry names already used within
+ the current MbP body (i.e., link), so that this function can be sure not to
+ reuse an already-used name. The name used by this geometry is added to it. */
 geometry::GeometryInstance ParseVisual(
     const std::string& parent_element_name,
     const PackageMap& package_map,
     const std::string& root_dir, const tinyxml2::XMLElement* node,
-    MaterialMap* materials);
+    MaterialMap* materials, std::unordered_set<std::string>* geometry_names);
 
 /* @anchor urdf_contact_material
  Parses a <collision> element in @p node.
@@ -192,14 +196,18 @@ geometry::GeometryInstance ParseVisual(
  the ('material', 'coulomb_friction') property.
 
  @param[in] parent_element_name The name of the parent link element, used
- to construct default geometry names and for error reporting.
+ for error reporting.
  @param[in] package_map The map used to resolve paths.
  @param[in] root_dir The root directory of the containing URDF file.
- @param[in] node The node corresponding to the <collision> tag. */
+ @param[in] node The node corresponding to the <collision> tag.
+ @param[in,out] geometry_names The list of geometry names already used within
+ the current MbP body (i.e., link), so that this function can be sure not to
+ reuse an already-used name. The name used by this geometry is added to it. */
 geometry::GeometryInstance ParseCollision(
     const std::string& parent_element_name,
     const PackageMap& package_map,
-    const std::string& root_dir, const tinyxml2::XMLElement* node);
+    const std::string& root_dir, const tinyxml2::XMLElement* node,
+    std::unordered_set<std::string>* geometry_names);
 
 }  // namespace internal
 }  // namespace multibody

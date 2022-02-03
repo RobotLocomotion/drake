@@ -314,27 +314,38 @@ std::unique_ptr<geometry::Shape> ParseGeometry(const XMLElement* node,
       "does not have a recognizable shape type", node->GetLineNum()));
 }
 
-std::string MakeGeometryName(const std::string& basename,
-                             const XMLElement* node) {
-  using std::hex;
-  using std::setfill;
-  using std::setw;
-
-  // Append the address spelled like "@0123456789abcdef".
-  intptr_t address = reinterpret_cast<intptr_t>(node);
-  std::ostringstream result;
-  result << basename << '@' << setfill('0') << setw(16) << hex << address;
-  return result.str();
+// The goal here is to invent a name that will be unique within the enclosing
+// body (i.e., link). To be as useful as possible, we'll use the shape name as
+// the geometry name, and then tack on a number if necessary to be unique.
+//
+// TODO(jwnimmer-tri) The "tack on a number" heuristic might fail if the user
+// mixes named and unnamed geometry within the same link and they happen to
+// use the shape name. We should probably try to handle this in the outer
+// parsing loop during ParseBody (by detecting the name collision). For now,
+// though, that doesn't seem worth dealing with yet.
+std::string MakeDefaultGeometryName(
+    const geometry::Shape& shape,
+    const std::unordered_set<std::string>& geometry_names) {
+  const std::string shape_name = geometry::ShapeName(shape).name();
+  if (geometry_names.count(shape_name) == 0) {
+    return shape_name;
+  }
+  for (int i = 1; i < 10000; ++i) {
+    std::string guess = fmt::format("{}{}", shape_name, i);
+    if (geometry_names.count(guess) == 0) {
+      return guess;
+    }
+  }
+  throw std::runtime_error("Too may identical geometries with default names.");
 }
 
 }  // namespace
 
 // Parses a "visual" element in @p node.
-geometry::GeometryInstance ParseVisual(const std::string& parent_element_name,
-                                       const PackageMap& package_map,
-                                       const std::string& root_dir,
-                                       const XMLElement* node,
-                                       MaterialMap* materials) {
+geometry::GeometryInstance ParseVisual(
+    const std::string& parent_element_name, const PackageMap& package_map,
+    const std::string& root_dir, const XMLElement* node,
+    MaterialMap* materials, std::unordered_set<std::string>* geometry_names) {
   if (std::string(node->Name()) != "visual") {
     throw std::runtime_error("In link " + parent_element_name +
                              " expected visual element, got " + node->Name());
@@ -402,8 +413,9 @@ geometry::GeometryInstance ParseVisual(const std::string& parent_element_name,
 
   std::string geometry_name;
   if (!ParseStringAttribute(node, "name", &geometry_name)) {
-    geometry_name = MakeGeometryName(parent_element_name + "_Visual", node);
+    geometry_name = MakeDefaultGeometryName(*shape, *geometry_names);
   }
+  geometry_names->insert(geometry_name);
 
   auto instance = geometry::GeometryInstance(T_element_to_link,
                                              std::move(shape), geometry_name);
@@ -486,7 +498,8 @@ CoulombFriction<double> ParseCoulombFrictionFromDrakeCompliance(
 // @param[out] friction Coulomb friction for the associated geometry.
 geometry::GeometryInstance ParseCollision(
     const std::string& parent_element_name, const PackageMap& package_map,
-    const std::string& root_dir, const XMLElement* node) {
+    const std::string& root_dir, const XMLElement* node,
+    std::unordered_set<std::string>* geometry_names) {
   if (std::string(node->Name()) != "collision") {
     throw std::runtime_error(
         fmt::format("In link '{}' expected collision element, got {}",
@@ -603,8 +616,9 @@ geometry::GeometryInstance ParseCollision(
 
   std::string geometry_name;
   if (!ParseStringAttribute(node, "name", &geometry_name)) {
-    geometry_name = MakeGeometryName(parent_element_name + "_Collision", node);
+    geometry_name = MakeDefaultGeometryName(*shape, *geometry_names);
   }
+  geometry_names->insert(geometry_name);
 
   geometry::GeometryInstance instance(T_element_to_link, std::move(shape),
                                       geometry_name);
