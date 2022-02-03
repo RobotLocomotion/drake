@@ -24,8 +24,7 @@ namespace optimization {
 @brief Provides an abstraction for reasoning about geometry in optimization
 problems, and using optimization problems to solve geometry problems.
 
-(Experimental).  Note that the features/designs in this class hierarchy are
-considered experimental, and may change without deprecation.
+@experimental
 
 ### Relationship to other components in Drake.
 

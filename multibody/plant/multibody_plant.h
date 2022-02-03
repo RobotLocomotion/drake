@@ -1648,64 +1648,70 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return contact_surface_representation_;
   }
 
-#ifndef DRAKE_DOXYGEN_CXX
-  // TODO(xuchenhan-tri): Remove SetContactSolver() once
-  //  SetDiscreteUpdateManager() stabilizes.
-  // (Experimental) SetContactSolver() should only be called by advanced
-  // developers wanting to try out their custom contact solvers. We choose not
-  // to show it in public documentations rather than making it private with
-  // friends.
-  // @param solver The contact solver to be used for simulations of discrete
-  // models with frictional contact. Discrete updates will use this solver after
-  // this call.
-  // @pre solver != nullptr.
-  // @note `this` MultibodyPlant will no longer support scalar conversion to or
-  // from symbolic::Expression after a call to this method.
+  /// <!-- TODO(xuchenhan-tri): Remove SetContactSolver() once
+  /// SetDiscreteUpdateManager() stabilizes. -->
+  ///
+  /// For use only by advanced developers wanting to try out their custom
+  /// contact solvers.
+  ///
+  /// @experimental
+  ///
+  /// @param solver The contact solver to be used for simulations of discrete
+  /// models with frictional contact. Discrete updates will use this solver
+  /// after this call.
+  /// @pre solver != nullptr.
+  /// @note `this` MultibodyPlant will no longer support scalar conversion to or
+  /// from symbolic::Expression after a call to this method.
   void SetContactSolver(
       std::unique_ptr<contact_solvers::internal::ContactSolver<T>> solver) {
     DRAKE_DEMAND(solver != nullptr);
     contact_solver_ = std::move(solver);
   }
 
-  // (Experimental) SetDiscreteUpdateManager() should only be called by advanced
-  // developers wanting to try out their custom time stepping strategies,
-  // including contact resolution. We choose not to show it in public
-  // documentations rather than making it private with friends. With this method
-  // MultibodyPlant takes ownership of `manager`.
-  //
-  // @note Setting a contact manager bypasses the mechanism to set a different
-  // contact solver with SetContactSolver(). Use only one of these two
-  // experimental mechanims but never both.
-  //
-  // @param manager
-  //   After this call the new manager is used to advance discrete states.
-  // @pre manager != nullptr.
-  // @throws std::exception if called pre-finalize. See Finalize().
-  // @note `this` MultibodyPlant will no longer support scalar conversion to or
-  // from symbolic::Expression after a call to this method.
+  /// For use only by advanced developers wanting to try out their custom time
+  /// stepping strategies, including contact resolution.
+  ///
+  /// @experimental
+  ///
+  /// With this method MultibodyPlant takes ownership of `manager`.
+  ///
+  /// @note Setting a contact manager bypasses the mechanism to set a different
+  /// contact solver with SetContactSolver(). Use only one of these two
+  /// experimental mechanims but never both.
+  ///
+  /// @param manager
+  ///   After this call the new manager is used to advance discrete states.
+  /// @pre manager != nullptr.
+  /// @throws std::exception if called pre-finalize. See Finalize().
+  /// @note `this` MultibodyPlant will no longer support scalar conversion to or
+  /// from symbolic::Expression after a call to this method.
   void SetDiscreteUpdateManager(
       std::unique_ptr<internal::DiscreteUpdateManager<T>> manager);
 
-  // (Experimental) AddPhysicalModel() should only be called by advanced
-  // developers wanting to try out their new physical models. We choose not to
-  // show it in public documentations rather than making it private with
-  // friends. With this method MultibodyPlant takes ownership of `model` and
-  // calls its DeclareSystemResources() method at Finalize(), giving specific
-  // physical model implementations a chance to declare the system resources it
-  // needs.
-  //
-  // @param model After this call the model is owned by `this` MultibodyPlant.
-  // @pre model != nullptr.
-  // @throws std::exception if called post-finalize. See Finalize().
-  // @note `this` MultibodyPlant will no longer support scalar conversion to or
-  // from symbolic::Expression after a call to this method.
+  /// For use only by advanced developers wanting to try out their new physical
+  /// models.
+  ///
+  /// @experimental
+  ///
+  /// With this method MultibodyPlant takes ownership of `model` and
+  /// calls its DeclareSystemResources() method at Finalize(), giving specific
+  /// physical model implementations a chance to declare the system resources it
+  /// needs.
+  ///
+  /// @param model After this call the model is owned by `this` MultibodyPlant.
+  /// @pre model != nullptr.
+  /// @throws std::exception if called post-finalize. See Finalize().
+  /// @note `this` MultibodyPlant will no longer support scalar conversion to or
+  /// from symbolic::Expression after a call to this method.
   void AddPhysicalModel(std::unique_ptr<internal::PhysicalModel<T>> model);
 
+  /// For use only by advanced developers.
+  ///
+  /// @experimental
   const std::vector<std::unique_ptr<internal::PhysicalModel<T>>>&
   physical_models() const {
     return physical_models_;
   }
-#endif
 
   // TODO(amcastro-tri): per work in #13064, we should reconsider whether to
   // deprecate/remove this method altogether or at least promote to proper
