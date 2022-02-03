@@ -804,7 +804,14 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
    Simply acquiring an instance of CollisionFilterManager will advance the
    @ref scene_graph_versioning "proximity version" for the related geometry
-   data (model or context).  */
+   data (model or context).
+
+   @note %SceneGraph does not track topology or semantic information of models,
+   so decisions about *what* to filter belong in software layers that have the
+   necessary information. For example, some automatic filtering is done in
+   @ref mbp_finalize_stage "MultibodyPlant::Finalize()". Applications may
+   need to add more filtering or adjust filters during simulation.
+  */
   //@{
 
   /** Returns the collision filter manager for this %SceneGraph instance's
