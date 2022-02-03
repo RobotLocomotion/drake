@@ -4,7 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/fem/deformation_gradient_data.h"
-#include "drake/multibody/fixed_fem/dev/matrix_utilities.h"
+#include "drake/multibody/fem/matrix_utilities.h"
 
 namespace drake {
 namespace multibody {
