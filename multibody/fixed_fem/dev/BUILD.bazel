@@ -256,17 +256,6 @@ drake_cc_library(
 )
 
 # === test/ ===
-drake_cc_library(
-    name = "test_utilities",
-    testonly = 1,
-    srcs = ["test/test_utilities.cc"],
-    hdrs = ["test/test_utilities.h"],
-    deps = [
-        "//common:default_scalars",
-        "//common:essential",
-    ],
-)
-
 drake_cc_googletest(
     name = "collision_objects_test",
     data = ["//geometry:test_obj_files"],
@@ -285,7 +274,6 @@ drake_cc_library(
     deps = [
         ":corotated_model",
         ":linear_constitutive_model",
-        ":test_utilities",
         "//common:autodiff",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -314,7 +302,6 @@ drake_cc_googletest(
     name = "matrix_utilities_test",
     deps = [
         ":matrix_utilities",
-        ":test_utilities",
         "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",

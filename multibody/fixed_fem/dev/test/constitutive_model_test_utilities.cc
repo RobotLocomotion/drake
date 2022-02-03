@@ -8,7 +8,7 @@
 #include "drake/multibody/fem/constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/corotated_model.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
-#include "drake/multibody/fixed_fem/dev/test/test_utilities.h"
+#include "drake/multibody/fixed_fem/dev/matrix_utilities.h"
 
 namespace drake {
 namespace multibody {
@@ -126,7 +126,7 @@ void TestPIsDerivativeOfPsi() {
   for (int i = 0; i < num_locations; ++i) {
     EXPECT_TRUE(CompareMatrices(
         Eigen::Map<const Matrix3d>(energy[i].derivatives().data(), 3, 3), P[i],
-        fem::test::CalcConditionNumber<AutoDiffXd>(P[i]) * kTolerance));
+        CalcConditionNumber<AutoDiffXd>(P[i]) * kTolerance));
   }
 }
 
@@ -159,8 +159,7 @@ void TestdPdFIsDerivativeOfP() {
         }
         EXPECT_TRUE(CompareMatrices(
             Eigen::Map<const Matrix3d>(P[q](i, j).derivatives().data(), 3, 3),
-            dPijdF,
-            fem::test::CalcConditionNumber<AutoDiffXd>(P[q]) * kTolerance));
+            dPijdF, CalcConditionNumber<AutoDiffXd>(P[q]) * kTolerance));
       }
     }
   }
