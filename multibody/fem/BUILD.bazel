@@ -24,6 +24,7 @@ drake_cc_package_library(
         ":linear_simplex_element",
         ":matrix_utilities",
         ":quadrature",
+        ":schur_complement",
         ":simplex_gaussian_quadrature",
     ],
 )
@@ -151,6 +152,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "schur_complement",
+    srcs = [
+        "schur_complement.cc",
+    ],
+    hdrs = [
+        "schur_complement.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "simplex_gaussian_quadrature",
     srcs = [
         "simplex_gaussian_quadrature.cc",
@@ -231,6 +246,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "schur_complement_test",
+    deps = [
+        ":schur_complement",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
