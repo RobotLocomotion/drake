@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<robot name="two_unnamed_boxes">
+  <link name="base_link">
+    <collision>
+      <geometry>
+        <box size=".1 .2 .3"/>
+      </geometry>
+    </collision>
+    <collision>
+      <geometry>
+        <box size=".3 .2 .1"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>

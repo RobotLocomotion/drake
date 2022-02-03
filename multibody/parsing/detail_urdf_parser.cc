@@ -7,6 +7,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <variant>
 
@@ -149,12 +150,14 @@ void ParseBody(const multibody::PackageMap& package_map,
 
   if (plant->geometry_source_is_registered()) {
     const RigidBody<double>& body = *body_pointer;
+    std::unordered_set<std::string> geometry_names;
 
     for (XMLElement* visual_node = node->FirstChildElement("visual");
          visual_node;
          visual_node = visual_node->NextSiblingElement("visual")) {
       geometry::GeometryInstance geometry_instance =
-          ParseVisual(body_name, package_map, root_dir, visual_node, materials);
+          ParseVisual(body_name, package_map, root_dir, visual_node, materials,
+                      &geometry_names);
       // The parsing should *always* produce an IllustrationProperties
       // instance, even if it is empty.
       DRAKE_DEMAND(geometry_instance.illustration_properties() != nullptr);
@@ -168,7 +171,8 @@ void ParseBody(const multibody::PackageMap& package_map,
          collision_node;
          collision_node = collision_node->NextSiblingElement("collision")) {
       geometry::GeometryInstance geometry_instance =
-          ParseCollision(body_name, package_map, root_dir, collision_node);
+          ParseCollision(body_name, package_map, root_dir, collision_node,
+          &geometry_names);
       DRAKE_DEMAND(geometry_instance.proximity_properties() != nullptr);
       plant->RegisterCollisionGeometry(
           body, geometry_instance.pose(), geometry_instance.shape(),
