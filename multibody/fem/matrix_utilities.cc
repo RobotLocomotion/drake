@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/matrix_utilities.h"
+#include "drake/multibody/fem/matrix_utilities.h"
 
 #include "drake/common/default_scalars.h"
 

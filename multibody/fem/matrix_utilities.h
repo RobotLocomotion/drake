@@ -88,13 +88,16 @@ void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
  @param[in] scale        The scalar multiple of the result.
  @param[out] scaled_dRdF The variable to which scale * dR/dF is added.
  @pre tr(S)I − S is invertible.
+ @pre scaled_dRdF != nullptr.
  @tparam_nonsymbolic_scalar */
 template <typename T>
 void AddScaledRotationalDerivative(
     const Matrix3<T>& R, const Matrix3<T>& S, const T& scale,
     EigenPtr<Eigen::Matrix<T, 9, 9>> scaled_dRdF);
 
-/* Calculates the cofactor matrix of the given input 3-by-3 matrix M. */
+/* Calculates the cofactor matrix of the given input 3-by-3 matrix M.
+ @pre cofactor != nullptr.
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 void CalcCofactorMatrix(const Matrix3<T>& M, EigenPtr<Matrix3<T>> cofactor);
 
@@ -103,6 +106,7 @@ void CalcCofactorMatrix(const Matrix3<T>& M, EigenPtr<Matrix3<T>> cofactor);
  @param[in] M            The input matrix.
  @param[in] scale        The scalar multiple of the result.
  @param[out] scaled_dCdF The variable to which scale * dC/dM is added.
+ @pre scaled_dCdM != nullptr.
  @tparam_nonsymbolic_scalar */
 template <typename T>
 void AddScaledCofactorMatrixDerivative(
@@ -121,7 +125,7 @@ permutation will be:
 @param[in] block_permutation  block_permutation[i] gives the index of the
                               permuted block whose original index is `i`.
 @pre v.size() % 3 == 0.
-@pre block_permutation is a permutation of {0, 1, ..., v.size()/3-1}.
+@pre block_permutation is a permutation of {0, 1, ..., v.size()/3 - 1}.
 @tparam_nonsymbolic_scalar */
 template <typename T>
 VectorX<T> PermuteBlockVector(const Eigen::Ref<const VectorX<T>>& v,
