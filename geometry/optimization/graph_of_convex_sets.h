@@ -20,14 +20,13 @@ namespace geometry {
 namespace optimization {
 
 /**
-(Experimental) -- This class is not yet fully functional, and the interface may
-change without deprecation.
-
 GraphOfConvexSets implements the design pattern and optimization problems first
-introduced in
+introduced in the paper "Shortest Paths in Graphs of Convex Sets".
 
 "Shortest Paths in Graphs of Convex Sets" by Tobia Marcucci, Jack Umenberger,
 Pablo A. Parrilo, Russ Tedrake. https://arxiv.org/abs/2101.11565
+
+@experimental
 
 Each vertex in the graph is associated with a convex set over continuous
 variables, edges in the graph contain convex costs and constraints on these

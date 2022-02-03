@@ -1651,7 +1651,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 #ifndef DRAKE_DOXYGEN_CXX
   // TODO(xuchenhan-tri): Remove SetContactSolver() once
   //  SetDiscreteUpdateManager() stabilizes.
-  // (Experimental) SetContactSolver() should only be called by advanced
+  // @experimental
+  // SetContactSolver() should only be called by advanced
   // developers wanting to try out their custom contact solvers. We choose not
   // to show it in public documentations rather than making it private with
   // friends.
@@ -1667,7 +1668,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     contact_solver_ = std::move(solver);
   }
 
-  // (Experimental) SetDiscreteUpdateManager() should only be called by advanced
+  // @experimental
+  // SetDiscreteUpdateManager() should only be called by advanced
   // developers wanting to try out their custom time stepping strategies,
   // including contact resolution. We choose not to show it in public
   // documentations rather than making it private with friends. With this method
@@ -1686,7 +1688,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetDiscreteUpdateManager(
       std::unique_ptr<internal::DiscreteUpdateManager<T>> manager);
 
-  // (Experimental) AddPhysicalModel() should only be called by advanced
+  // @experimental
+  // AddPhysicalModel() should only be called by advanced
   // developers wanting to try out their new physical models. We choose not to
   // show it in public documentations rather than making it private with
   // friends. With this method MultibodyPlant takes ownership of `model` and
