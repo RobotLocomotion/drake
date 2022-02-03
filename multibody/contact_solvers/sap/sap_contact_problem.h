@@ -80,6 +80,8 @@ class SapConstraint {
   // @param[in] wi Constraint Delassus approximation (inverse of mass). Specific
   // constraints can use this information to estimate stabilization terms in the
   // "near-rigid" regime.
+  // TODO: Provide default implementation based on the value of g passed at
+  // construction.
   virtual VectorX<T> CalcBiasTerm(const T& time_step, const T& wi) const = 0;
 
   // Computes the regularization R used to compute the constraint impulses
