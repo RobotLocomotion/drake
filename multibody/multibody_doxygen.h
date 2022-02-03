@@ -328,21 +328,24 @@ Angular velocity     |  w   |@f$^B\omega^C@f$          |`w_BC`      |Frame C's a
 Velocity             |  v   |@f$^Bv^Q@f$               |`v_BQ`      |%Point Q's translational velocity in frame B
 Spatial velocity     |  V   |@f$^BV^{C}@f$             |`V_BC`      |Frame C's spatial velocity in frame B (for point Co)ᵇ
 Spatial velocity     |  V   |@f$^BV^{Cp}@f$            |`V_BCp`     |Frame C's spatial velocity in frame B (for point Cp)ᵇ
+Relative velocity    |  v   |@f$^Bv^{Q/P}@f$           |`v_B_PQ`    |%Point Q's translational velocity relative to point P in frame B
 Angular acceleration |alpha |@f$^B\alpha^C@f$          |`alpha_BC`  |Frame C's angular acceleration in frame B
-Acceleration         |  a   |@f$^Ba^Q@f$               |`a_BQ`      |%Point Q's translational acceleration in B
+Acceleration         |  a   |@f$^Ba^Q@f$               |`a_BQ`      |%Point Q's translational acceleration in frame B
 Spatial acceleration |  A   |@f$^BA^{C}@f$             |`A_BC`      |Frame C's spatial acceleration in frame B (for point Co)ᵇ
 Spatial acceleration |  A   |@f$^BA^{Cp}@f$            |`A_BCp`     |Frame C's spatial acceleration in frame B (for point Cp)ᵇ
-Torque               |  t   |@f$t^{B}@f$               |`t_B`       |Torque on a body (or frame) B
+Relative acceleration|  a   |@f$^Ba^{Q/P}@f$           |`a_B_PQ`    |%Point Q's translational acceleration relative to point P in frame B
+Torque               |  t   |@f$\tau^{B}@f$            |`t_B`       |Torque on a body (or frame) B
 Force                |  f   |@f$f^{P}@f$               |`f_P`       |Force on a point P
 Spatial force        |  F   |@f$F^{P}@f$               |`F_P`       |Spatial force (torque/force)ᶜ
 Inertia matrix       |  I   |@f$I^{B/Bo}@f$            |`I_BBo`     |Body B's inertia matrix about Bo
 Spatial inertia      |  M   |@f$M^{B/Bo}@f$            |`M_BBo`     |Body B's spatial inertia about Boᵃ
-Spatial momentum     |  L   |@f$^AL^{S/P}@f$           |`L_ASP`     |System S's spatial momentum about point P in frame A
-Spatial momentum     |  L   |@f$^AL^{S/Scm}@f$         |`L_AScm`    |System S's spatial momentum about point Scm in frame A
-Jacobian wrt qᵈ      | Jq   |@f$[J_{q}^{{}^Pp^Q}]_E@f$ |`Jq_p_PQ_E` |Q's position Jacobian from P <b>in</b> E wrt q
-Jacobian wrt q̇       | Jqdot|@f$J_{q̇}^{{}^Bv^Q}@f$     |`Jqdot_v_BQ`|Q's translational velocity Jacobian in B wrt q̇
-Jacobian wrt v       | Jv   |@f$J_{v}^{{}^Bv^Q}@f$     |`Jv_v_BQ`   |Q's translational velocity Jacobian in B wrt v
-Jacobian wrt v       | Jv   |@f$J_{v}^{{}^B\omega^C}@f$|`Jv_w_BC`   |C's angular velocity Jacobian in B wrt v
+Spatial momentum     |  L   |@f$^BL^{S/P}@f$           |`L_BSP`     |System S's spatial momentum about point P in frame B
+Spatial momentum     |  L   |@f$^BL^{S/Scm}@f$         |`L_BScm`    |System S's spatial momentum about point Scm in frame B
+Kinetic energy       |  K   |@f$^BK^S@f$               |`K_BS`      |System S's kinetic energy in frame B
+Jacobian wrt qᵈ      | Jq   |@f$[J_{q}^{{}^Pp^Q}]_E@f$ |`Jq_p_PQ_E` |%Point Q's position Jacobian from P <b>in</b> E wrt q <SMALL>(<b>in</b> means both measured-in and expressed-in)</SMALL>
+Jacobian wrt q̇       | Jqdot|@f$J_{q̇}^{{}^Bv^Q}@f$     |`Jqdot_v_BQ`|%Point Q's translational velocity Jacobian in frame B wrt q̇
+Jacobian wrt v       | Jv   |@f$J_{v}^{{}^Bv^Q}@f$     |`Jv_v_BQ`   |%Point Q's translational velocity Jacobian in frame B wrt v
+Jacobian wrt v       | Jv   |@f$J_{v}^{{}^B\omega^C}@f$|`Jv_w_BC`   |%Frame C's angular velocity Jacobian in frame B wrt v
 
 ᵃ In code, a vector has an expressed-in-frame which appears after the quantity.
 <br>Example: `w_BC_E` is C's angular velocity in B, expressed in frame E, typeset
