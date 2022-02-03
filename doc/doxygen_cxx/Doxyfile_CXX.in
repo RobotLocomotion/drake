@@ -43,6 +43,7 @@ ALIASES                = "default=@n @a Default: " \
                          "tparam_default_scalar=@tparam T The scalar type, which must be one of the @ref default_scalars \"default scalars\". " \
                          "tparam_nonsymbolic_scalar=@tparam T The scalar type, which must be one of the @ref default_scalars \"default nonsymbolic scalars\". " \
                          "tparam_double_only=@tparam T The scalar type, which must be `double`. " \
+                         "experimental=@warning This feature is considered to be **experimental** and may change or be removed at any time, without any deprecation notice ahead of time. " \
                          "pydrake_mkdoc_identifier{1}= " \
                          "exclude_from_pydrake_mkdoc{1}= "
 OPTIMIZE_OUTPUT_FOR_C  = NO
