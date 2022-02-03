@@ -28,14 +28,17 @@ class SapConstraint {
 
   virtual ~SapConstraint() = default;
 
-  // TODO: do I need this constraint?
-  explicit SapConstraint(int num_constrained_dofs);
-
   // Costructor for a constraint among dofs within a single `clique`.
+  // TODO: consider these constructors also take the function g. That way
+  // essentially the constructors are provided with constraint function and
+  // Jacobian values for the initial state. This seems nicely consistent.
   SapConstraint(int clique, const MatrixX<T>& J);
 
   // Constructor for a constraint among dofs in two cliques `clique0` and
   // `clique1`.
+  // TODO: consider these constructors also take the function g. That way
+  // essentially the constructors are provided with constraint function and
+  // Jacobian values for the initial state. This seems nicely consistent.
   SapConstraint(int clique0, int clique1, const MatrixX<T>& J0,
                 const MatrixX<T>& J1);
 
@@ -119,9 +122,6 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
     double sigma{1.0e-3};
   };
 
-  SapFrictionConeConstraint(const Parameters& p)
-      : SapConstraint<T>(3), parameters_(p) {}
-
   // @throws if the number of rows in J is different from three.
   SapFrictionConeConstraint(const Parameters& p, int clique,
                             const MatrixX<T>& J, const T& phi0);
@@ -169,9 +169,6 @@ class SapCouplerConstraint final : public SapConstraint<T> {
     // each contact. See [Castro et al., 2021. §IX.A] for details.
     double beta{1.0};
   };
-
-  SapCouplerConstraint(const Parameters& p)
-      : SapConstraint<T>(3), parameters_(p) {}
 
   // @throws if the number of rows in J is different from three.
   SapCouplerConstraint(const Parameters& p, int clique, const MatrixX<T>& J,

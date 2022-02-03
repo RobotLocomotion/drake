@@ -41,10 +41,6 @@ SapConstraint<T>::SapConstraint(int clique0, int clique1, const MatrixX<T>& J0,
 }
 
 template <typename T>
-SapConstraint<T>::SapConstraint(int num_constrained_dofs)
-    : num_constrained_dofs_(num_constrained_dofs) {}
-
-template <typename T>
 int SapConstraint<T>::num_cliques() const {
   return clique1_ < 0 ? 1 : 2;
 }
