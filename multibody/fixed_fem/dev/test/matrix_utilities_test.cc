@@ -6,7 +6,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/fixed_fem/dev/test/test_utilities.h"
 
 namespace drake {
 namespace multibody {
@@ -40,7 +39,17 @@ const double kTol = 1e-14;
  input matrix A. */
 template <typename T>
 double CalcTolerance(const Matrix3<T>& A) {
-  return test::CalcConditionNumber<T>(A) * kTol;
+  return CalcConditionNumberOfInvertibleMatrix<T>(A) * kTol;
+}
+
+GTEST_TEST(MatrixUtilitiesTest, CalcConditionNumber) {
+  const Matrix3<double> A = Vector3<double>(1, 2, 3).asDiagonal();
+  EXPECT_DOUBLE_EQ(CalcConditionNumberOfInvertibleMatrix<double>(A), 3);
+
+  /* The input must be square. */
+  const MatrixX<double> B(1, 2);
+  EXPECT_THROW(CalcConditionNumberOfInvertibleMatrix<double>(B),
+               std::exception);
 }
 
 GTEST_TEST(MatrixUtilitiesTest, PolarDecompose) {
@@ -121,30 +130,6 @@ GTEST_TEST(MatrixUtilitiesTest, PermuteBlockVector) {
   VectorX<double> expected_result(3 * kNumBlocks);
   expected_result << 6, 7, 8, 0, 1, 2, 3, 4, 5;
   EXPECT_TRUE(CompareMatrices(expected_result, permuted_v));
-}
-
-/* Verify that `PermuteBlockSparseMatrix()` provides the expected answer on a
- 3x3 block matrix. We choose a 3x3 block test case so that the permutation is
- neither the identity nor a self-inverse. */
-GTEST_TEST(MatrixUtilitiesTest, PermuteBlockSparseMatrix) {
-  constexpr int kNumBlocks = 3;
-  constexpr int kSize = kNumBlocks * 3;
-  const MatrixXd A = MakeMatrix(kSize, kSize);
-  const Eigen::SparseMatrix<double> A_sparse = A.sparseView();
-  const std::vector<int> block_permutation = {1, 2, 0};
-  const Eigen::SparseMatrix<double> permuted_A =
-      PermuteBlockSparseMatrix(A_sparse, block_permutation);
-  const MatrixXd permuted_A_dense = permuted_A;
-
-  MatrixXd expected_result(kSize, kSize);
-  for (int i = 0; i < kNumBlocks; ++i) {
-    for (int j = 0; j < kNumBlocks; ++j) {
-      expected_result.block<3, 3>(3 * block_permutation[i],
-                                  3 * block_permutation[j]) =
-          A.block<3, 3>(3 * i, 3 * j);
-    }
-  }
-  EXPECT_TRUE(CompareMatrices(expected_result, permuted_A_dense));
 }
 
 }  // namespace
