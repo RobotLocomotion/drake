@@ -1,6 +1,8 @@
 #include "drake/examples/multibody/cylinder_with_multicontact/make_cylinder_plant.h"
 
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
+#include "drake/multibody/plant/compliant_contact_manager.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver.h"
 
 namespace drake {
 namespace examples {
@@ -18,6 +20,8 @@ using geometry::HalfSpace;
 using geometry::SceneGraph;
 using geometry::Sphere;
 using math::RigidTransformd;
+using drake::multibody::internal::CompliantContactManager;
+using drake::multibody::contact_solvers::internal::SapSolver;
 
 void AddCylinderWithMultiContact(
     MultibodyPlant<double>* plant, const RigidBody<double>& body,
@@ -102,6 +106,11 @@ MakeCylinderPlant(double radius, double length, double mass,
 
   // We are done creating the plant.
   plant->Finalize();
+
+  auto owned_contact_manager =
+      std::make_unique<CompliantContactManager<double>>(nullptr);
+  // contact_manager_ = owned_contact_manager.get();
+  plant->SetDiscreteUpdateManager(std::move(owned_contact_manager));
 
   return plant;
 }

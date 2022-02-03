@@ -1,0 +1,117 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
+    name = "contact_problem_graph",
+    srcs = ["contact_problem_graph.cc"],
+    hdrs = ["contact_problem_graph.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+        "//common:sorted_pair",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_contact_problem",
+    srcs = ["sap_contact_problem.cc"],
+    hdrs = ["sap_contact_problem.h"],
+    deps = [
+        ":contact_problem_graph",
+        "//common:default_scalars",
+        "//common:essential",
+        "//common:sorted_pair",
+        "//multibody/contact_solvers:block_sparse_matrix",        
+        "//multibody/contact_solvers:partial_permutation",        
+    ],
+)
+
+drake_cc_library(
+    name = "sap_model",
+    srcs = ["sap_model.cc"],
+    hdrs = ["sap_model.h"],
+    deps = [        
+        ":contact_problem_graph",        
+        ":sap_contact_problem",
+        "//multibody/contact_solvers:block_sparse_matrix",
+        "//multibody/contact_solvers:partial_permutation",
+        "//multibody/contact_solvers:point_contact_data",        
+        "//multibody/contact_solvers:system_dynamics_data",
+        "//common:default_scalars",
+        "//common:essential",        
+    ],
+)
+
+drake_cc_library(
+    name = "sap_solver",
+    srcs = ["sap_solver.cc"],
+    hdrs = ["sap_solver.h"],
+    deps = [
+        "//multibody/contact_solvers:block_sparse_matrix",
+        "//multibody/contact_solvers:contact_solver",
+        "//multibody/contact_solvers:contact_solver_utils",
+        "//multibody/contact_solvers:point_contact_data",
+        ":contact_problem_graph",
+        "//multibody/contact_solvers:partial_permutation",
+        ":sap_contact_problem",
+        ":sap_model",
+        "//multibody/contact_solvers:system_dynamics_data",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "constraint_bundle_test",
+    deps = [
+        ":sap_model",
+        "//multibody/contact_solvers:block_sparse_matrix",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_contact_problem_test",
+    deps = [        
+        ":sap_contact_problem",
+        "//multibody/contact_solvers:block_sparse_matrix",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_model_test",
+    deps = [        
+        ":sap_model",
+        "//multibody/contact_solvers:block_sparse_matrix",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_solver_test",
+    deps = [
+        "sap_solver",
+        "//multibody/contact_solvers:block_sparse_linear_operator",
+        "//multibody/contact_solvers:block_sparse_matrix",
+        "//common/test_utilities:eigen_matrix_compare", 
+        "//common/test_utilities:expect_throws_message",       
+    ],
+)
+
+add_lint_tests()

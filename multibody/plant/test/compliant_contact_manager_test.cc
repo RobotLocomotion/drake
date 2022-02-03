@@ -235,7 +235,7 @@ class CompliantContactManagerTest : public ::testing::Test {
 
     const double tau1 = sphere1_contact_params.dissipation_time_constant;
     const double tau2 = sphere2_contact_params.dissipation_time_constant;
-    const double dissipation_expected = stiffness_expected * (tau1 + tau2);
+    const double dissipation_expected = tau1 + tau2;
     EXPECT_NEAR(point_pair.damping, dissipation_expected,
                 kEps * dissipation_expected);
 

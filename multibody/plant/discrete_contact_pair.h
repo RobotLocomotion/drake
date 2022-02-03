@@ -38,6 +38,8 @@ struct DiscreteContactPair {
   T stiffness{0.0};
   /* The effective damping of the contact pair. */
   T damping{0.0};
+  /* Coefficient of dynamic friction. */
+  T mu{0.0};
 };
 
 }  // namespace internal

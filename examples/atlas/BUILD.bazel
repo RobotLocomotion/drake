@@ -28,6 +28,7 @@ drake_cc_binary(
         "//geometry:drake_visualizer",
         "//multibody/parsing",
         "//multibody/plant:contact_results_to_lcm",
+        "//multibody/contact_solvers/sap:sap_solver",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_gflags",
         "//systems/framework:diagram",
