@@ -250,6 +250,7 @@ class UrdfGeometryTests : public testing::Test {
       const char* attr = node->Attribute("name");
       ASSERT_TRUE(attr);
       const std::string body_name = attr;
+      std::unordered_set<std::string> geometry_names;
 
       for (const XMLElement* visual_node =
                link_node->FirstChildElement("visual");
@@ -257,7 +258,7 @@ class UrdfGeometryTests : public testing::Test {
            visual_node = visual_node->NextSiblingElement("visual")) {
         geometry::GeometryInstance geometry_instance =
             internal::ParseVisual(body_name, package_map_, root_dir_,
-                                  visual_node, &materials_);
+                                  visual_node, &materials_, &geometry_names);
         visual_instances_.push_back(geometry_instance);
       }
 
@@ -267,7 +268,7 @@ class UrdfGeometryTests : public testing::Test {
            collision_node = collision_node->NextSiblingElement("collision")) {
         geometry::GeometryInstance geometry_instance =
             internal::ParseCollision(body_name, package_map_, root_dir_,
-                                     collision_node);
+                                     collision_node, &geometry_names);
         collision_instances_.push_back(geometry_instance);
       }
     }
@@ -327,8 +328,9 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
 
   ASSERT_EQ(visual_instances_.size(), 4);
   const auto& visual = visual_instances_[0];
-  const std::string name_base = "non_conflicting_materials_1";
-  EXPECT_EQ(visual.name().substr(0, name_base.size()), name_base);
+
+  // The <visual/> has no name, so type of Shape is used instead.
+  EXPECT_EQ(visual.name(), "Box");
 
   EXPECT_TRUE(CompareMatrices(
       visual.pose().GetAsMatrix34(), RigidTransformd().GetAsMatrix34()));
@@ -486,14 +488,15 @@ TEST_F(UrdfGeometryTests, TestWrongElementType) {
   const XMLElement* material_node = node->FirstChildElement("material");
   ASSERT_TRUE(material_node);
 
+  std::unordered_set<std::string> geometry_names;
   DRAKE_EXPECT_THROWS_MESSAGE(
       internal::ParseVisual("fake_name", package_map_, root_dir_, material_node,
-                            &materials_), std::runtime_error,
+                            &materials_, &geometry_names),
       "In link fake_name expected visual element, got material");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       internal::ParseCollision("fake_name", package_map_, root_dir_,
-                               material_node), std::runtime_error,
+                               material_node, &geometry_names),
       "In link 'fake_name' expected collision element, got material");
 }
 
@@ -562,8 +565,10 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
   </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
+    std::unordered_set<std::string> geometry_names;
     GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node);
+        ParseCollision("link_name", package_map, root_dir, collision_node,
+                       &geometry_names);
     ASSERT_NE(instance.proximity_properties(), nullptr);
     const ProximityProperties& properties = *instance.proximity_properties();
     verify_single_property(properties, geometry::internal::kHydroGroup,
@@ -583,8 +588,10 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
   </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
+    std::unordered_set<std::string> geometry_names;
     GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node);
+        ParseCollision("link_name", package_map, root_dir, collision_node,
+                       &geometry_names);
     ASSERT_NE(instance.proximity_properties(), nullptr);
     const ProximityProperties& properties = *instance.proximity_properties();
     ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
@@ -602,8 +609,10 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
   </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
+    std::unordered_set<std::string> geometry_names;
     GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node);
+        ParseCollision("link_name", package_map, root_dir, collision_node,
+                       &geometry_names);
     ASSERT_NE(instance.proximity_properties(), nullptr);
     const ProximityProperties& properties = *instance.proximity_properties();
     ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
@@ -623,9 +632,10 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
   </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
+    std::unordered_set<std::string> geometry_names;
     DRAKE_EXPECT_THROWS_MESSAGE(
-        ParseCollision("link_name", package_map, root_dir, collision_node),
-        std::runtime_error,
+        ParseCollision("link_name", package_map, root_dir, collision_node,
+                       &geometry_names),
         "Collision geometry uses the tag <drake:soft_hydroelastic> .* "
         "which is no longer supported. Please change it to "
         "<drake:compliant_hydroelastic>.");
@@ -640,9 +650,10 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
   </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
+  std::unordered_set<std::string> geometry_names;
     DRAKE_EXPECT_THROWS_MESSAGE(
-        ParseCollision("link_name", package_map, root_dir, collision_node),
-        std::runtime_error,
+        ParseCollision("link_name", package_map, root_dir, collision_node,
+                       &geometry_names),
         "Collision geometry has defined mutually-exclusive tags .*rigid.* and "
         ".*compliant.*");
   }
@@ -659,8 +670,10 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
   </drake_compliance>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
+    std::unordered_set<std::string> geometry_names;
     GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node);
+        ParseCollision("link_name", package_map, root_dir, collision_node,
+                       &geometry_names);
     ASSERT_NE(instance.proximity_properties(), nullptr);
     const ProximityProperties& properties = *instance.proximity_properties();
     verify_friction(properties, {3.5, 2.5});
@@ -678,8 +691,10 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
   </drake:proximity_properties>)""");
   const XMLElement* collision_node = doc->FirstChildElement("collision");
   ASSERT_NE(collision_node, nullptr);
+  std::unordered_set<std::string> geometry_names;
   GeometryInstance instance =
-      ParseCollision("link_name", package_map, root_dir, collision_node);
+      ParseCollision("link_name", package_map, root_dir, collision_node,
+                     &geometry_names);
   ASSERT_NE(instance.proximity_properties(), nullptr);
   const ProximityProperties& properties = *instance.proximity_properties();
   verify_friction(properties, {4.5, 4.5});
@@ -727,6 +742,20 @@ TEST_F(UrdfGeometryTests, AcceptingRenderers) {
                      << instance.name();
     }
   }
+}
+
+// Check that unnamed geometry is given a name based on its shape, and that
+// more than one instance of a shape has an additional numeric suffix added.
+TEST_F(UrdfGeometryTests, TwoUnnamedBoxes) {
+  const std::string resource_dir{
+    "drake/multibody/parsing/test/urdf_parser_test/"};
+  const std::string two_unnamed_boxes = FindResourceOrThrow(
+      resource_dir + "two_unnamed_boxes.urdf");
+  ParseUrdfGeometry(two_unnamed_boxes);
+
+  ASSERT_EQ(collision_instances_.size(), 2);
+  EXPECT_EQ(collision_instances_[0].name(), "Box");
+  EXPECT_EQ(collision_instances_[1].name(), "Box1");
 }
 
 }  // namespace
