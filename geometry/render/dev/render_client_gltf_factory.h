@@ -23,9 +23,6 @@ struct RenderClientGltfParams {
    `0` implies no port level communication is needed. */
   int32_t port{8000};
 
-  /** The RenderClient::upload_endpoint() to upload scene files to. */
-  std::string upload_endpoint{"upload"};
-
   /** The RenderClient::render_endpoint() to retrieve renderings from. */
   std::string render_endpoint{"render"};
 
