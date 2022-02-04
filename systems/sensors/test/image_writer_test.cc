@@ -350,14 +350,12 @@ TEST_F(ImageWriterTest, DirectoryFromFormat) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       tester.DirectoryFromFormat("", "port_name", PixelType::kRgba8U),
-      std::logic_error,
       ".*empty.*");
   EXPECT_EQ("",
             tester.DirectoryFromFormat("/root", "port_name",
                                        PixelType::kRgba8U));
   DRAKE_EXPECT_THROWS_MESSAGE(
       tester.DirectoryFromFormat("/root/", "port_name", PixelType::kRgba8U),
-      std::logic_error,
       ".*cannot end with a '/'");
   EXPECT_EQ(
       "/root",
@@ -378,22 +376,18 @@ TEST_F(ImageWriterTest, DirectoryFromFormat) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       tester.DirectoryFromFormat("/root/{count}/file", "port",
                                  PixelType::kRgba8U),
-      std::logic_error,
       ".*The directory path cannot include time or image count");
   DRAKE_EXPECT_THROWS_MESSAGE(
       tester.DirectoryFromFormat("/root/{time_double}/file", "port",
                                  PixelType::kRgba8U),
-      std::logic_error,
       ".*The directory path cannot include time or image count");
   DRAKE_EXPECT_THROWS_MESSAGE(
       tester.DirectoryFromFormat("/root/{time_usec}/file", "port",
                                  PixelType::kRgba8U),
-      std::logic_error,
       ".*The directory path cannot include time or image count");
   DRAKE_EXPECT_THROWS_MESSAGE(
       tester.DirectoryFromFormat("/root/{time_msec}/file", "port",
                                  PixelType::kRgba8U),
-      std::logic_error,
       ".*The directory path cannot include time or image count");
 
   // Make sure it's not fooled by strings that are *almost* format arguments.
@@ -504,7 +498,6 @@ TEST_F(ImageWriterTest, ConfigureInputPortErrors) {
   // Bad publish period.
   DRAKE_EXPECT_THROWS_MESSAGE(writer.DeclareImageInputPort<PixelType::kRgba8U>(
                                   "port", "format", -0.1, 0),
-                              std::logic_error,
                               ".* publish period must be positive");
 
   // Invalid directory -- relies on tested correctness of ValidateDirectory()
@@ -512,7 +505,6 @@ TEST_F(ImageWriterTest, ConfigureInputPortErrors) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       writer.DeclareImageInputPort<PixelType::kRgba8U>("port", "/root/name",
                                                        0.1, 0),
-      std::logic_error,
       ".*The format string .* implied the invalid directory.*");
 
   // Now test a port with the same name -- can only happen if one port has
@@ -533,7 +525,6 @@ TEST_F(ImageWriterTest, ConfigureInputPortErrors) {
   path2.append("alt_file_{count:3}");
   DRAKE_EXPECT_THROWS_MESSAGE(writer.DeclareImageInputPort<PixelType::kRgba8U>(
                                   "port", path2.string(), 0.1, 0),
-                              std::logic_error,
                               "System .* already has an input port named .*");
 }
 
@@ -650,7 +641,7 @@ TEST_F(ImageWriterTest, SingleConfiguredPort) {
       // in an error.
       DRAKE_EXPECT_THROWS_MESSAGE(
           writer.Publish(*context, events->get_publish_events()),
-          std::logic_error, ".*InputPort.* is not connected");
+          ".*InputPort.* is not connected");
 
       // Confirms that a valid publish increments the counter.
       port.FixValue(context.get(), test_image<PixelType::kRgba8U>());

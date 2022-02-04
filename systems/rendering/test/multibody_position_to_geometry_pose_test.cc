@@ -26,7 +26,7 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, BadConstruction) {
     mbp.Finalize();
 
     DRAKE_EXPECT_THROWS_MESSAGE(
-        MultibodyPositionToGeometryPose<double>{mbp}, std::logic_error,
+        MultibodyPositionToGeometryPose<double>{mbp},
         "MultibodyPositionToGeometryPose requires a MultibodyPlant that has "
         "been registered with a SceneGraph");
   }
@@ -39,7 +39,6 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, BadConstruction) {
         FindResourceOrThrow("drake/manipulation/models/iiwa_description/iiwa7"
                             "/iiwa7_no_collision.sdf"));
     DRAKE_EXPECT_THROWS_MESSAGE(MultibodyPositionToGeometryPose<double>{mbp},
-                                std::logic_error,
                                 "MultibodyPositionToGeometryPose requires a "
                                 "MultibodyPlant that has been finalized");
   }

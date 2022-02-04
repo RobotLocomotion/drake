@@ -782,7 +782,7 @@ TEST_F(DiagramContextTest, CloneAccuracy) {
 TEST_F(DiagramContextTest, SubcontextCloneIsError) {
   const auto& subcontext = context_->GetSubsystemContext(SubsystemIndex{0});
   DRAKE_EXPECT_THROWS_MESSAGE(
-      subcontext.Clone(), std::logic_error,
+      subcontext.Clone(),
       "Context::Clone..: Cannot clone a non-root Context; "
       "this Context was created by 'adder0'.");
 }

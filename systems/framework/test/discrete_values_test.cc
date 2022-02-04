@@ -187,12 +187,10 @@ GTEST_TEST(DiscreteValuesSingleGroupTest, ConvenienceSugar) {
 GTEST_TEST(DiscreteValuesSingleGroupTest, ConvenienceSugarEmpty) {
   static constexpr char expected_pattern[] = ".*exactly one group.*";
   DiscreteValues<double> xd;
-  DRAKE_EXPECT_THROWS_MESSAGE(xd.size(), std::logic_error, expected_pattern);
-  DRAKE_EXPECT_THROWS_MESSAGE(xd[0], std::logic_error, expected_pattern);
-  DRAKE_EXPECT_THROWS_MESSAGE(xd.get_vector(), std::logic_error,
-                              expected_pattern);
-  DRAKE_EXPECT_THROWS_MESSAGE(xd.get_mutable_vector(), std::logic_error,
-                              expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.size(), expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd[0], expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.get_vector(), expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.get_mutable_vector(), expected_pattern);
   DRAKE_EXPECT_THROWS_MESSAGE(xd.set_value(VectorXd()), expected_pattern);
   DRAKE_EXPECT_THROWS_MESSAGE(xd.value(), expected_pattern);
   DRAKE_EXPECT_THROWS_MESSAGE(xd.get_mutable_value(), expected_pattern);
@@ -203,12 +201,10 @@ GTEST_TEST(DiscreteValuesSingleGroupTest, ConvenienceSugarEmpty) {
 TEST_F(DiscreteValuesTest, ConvenienceSugarMultiple) {
   static constexpr char expected_pattern[] = ".*exactly one group.*";
   DiscreteValues<double> xd(std::move(data_));
-  DRAKE_EXPECT_THROWS_MESSAGE(xd.size(), std::logic_error, expected_pattern);
-  DRAKE_EXPECT_THROWS_MESSAGE(xd[0], std::logic_error, expected_pattern);
-  DRAKE_EXPECT_THROWS_MESSAGE(xd.get_vector(), std::logic_error,
-                              expected_pattern);
-  DRAKE_EXPECT_THROWS_MESSAGE(xd.get_mutable_vector(), std::logic_error,
-                              expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.size(), expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd[0], expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.get_vector(), expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.get_mutable_vector(), expected_pattern);
 
   Eigen::Vector2d vec{44., 45.}, vec2{46., 47.};
   xd.set_value(1, vec);

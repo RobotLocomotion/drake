@@ -89,7 +89,7 @@ GTEST_TEST(InitialValueProblemTest, ConstructionPreconditionsValidation) {
           OdeContext no_values;
       const InitialValueProblem<double> ivp(
           dummy_ode_function, no_values);
-    }, std::logic_error, "No default.*");
+    }, "No default.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE({
       InitialValueProblem<double>::
@@ -98,7 +98,7 @@ GTEST_TEST(InitialValueProblemTest, ConstructionPreconditionsValidation) {
       values_without_t0.x0 = VectorX<double>::Zero(2).eval();
       const InitialValueProblem<double> ivp(
           dummy_ode_function, values_without_t0);
-    }, std::logic_error, "No default initial time.*");
+    }, "No default initial time.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE({
       InitialValueProblem<double>::
@@ -107,7 +107,7 @@ GTEST_TEST(InitialValueProblemTest, ConstructionPreconditionsValidation) {
       values_without_x0.k = VectorX<double>();
       const InitialValueProblem<double> ivp(
           dummy_ode_function, values_without_x0);
-    }, std::logic_error, "No default initial state.*");
+    }, "No default initial state.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE({
       InitialValueProblem<double>::
@@ -116,7 +116,7 @@ GTEST_TEST(InitialValueProblemTest, ConstructionPreconditionsValidation) {
       values_without_k.x0 = VectorX<double>();
       const InitialValueProblem<double> ivp(
           dummy_ode_function, values_without_k);
-    }, std::logic_error, "No default parameters.*");
+    }, "No default parameters.*");
 }
 
 // Validates preconditions when solving any given IVP.
@@ -169,18 +169,18 @@ GTEST_TEST(InitialValueProblemTest, ComputationPreconditionsValidation) {
   const std::string kInvalidParametersErrorMessage{
     ".*parameters.*wrong dimension.*"};
 
-  DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kInvalidTime), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kInvalidTime),
                               kInvalidTimeErrorMessage);
-  DRAKE_EXPECT_THROWS_MESSAGE(ivp.DenseSolve(kInvalidTime), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(ivp.DenseSolve(kInvalidTime),
                               kInvalidTimeErrorMessage);
   {
     InitialValueProblem<double>::OdeContext values;
     values.k = kInvalidParameters;
     DRAKE_EXPECT_THROWS_MESSAGE(
-        ivp.Solve(kValidTime, values), std::logic_error,
+        ivp.Solve(kValidTime, values),
         kInvalidParametersErrorMessage);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        ivp.DenseSolve(kValidTime, values), std::logic_error,
+        ivp.DenseSolve(kValidTime, values),
         kInvalidParametersErrorMessage);
   }
 
@@ -188,10 +188,8 @@ GTEST_TEST(InitialValueProblemTest, ComputationPreconditionsValidation) {
     InitialValueProblem<double>::OdeContext values;
     values.k = kValidParameters;
     DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kInvalidTime, values),
-                                std::logic_error,
                                 kInvalidTimeErrorMessage);
     DRAKE_EXPECT_THROWS_MESSAGE(ivp.DenseSolve(kInvalidTime, values),
-                                std::logic_error,
                                 kInvalidTimeErrorMessage);
   }
 
@@ -199,10 +197,9 @@ GTEST_TEST(InitialValueProblemTest, ComputationPreconditionsValidation) {
     InitialValueProblem<double>::OdeContext values;
     values.x0 = kInvalidState;
     values.k = kValidParameters;
-    DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kValidTime, values), std::logic_error,
+    DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kValidTime, values),
                                 kInvalidInitialStateErrorMessage);
     DRAKE_EXPECT_THROWS_MESSAGE(ivp.DenseSolve(kValidTime, values),
-                                std::logic_error,
                                 kInvalidInitialStateErrorMessage);
   }
 
@@ -210,10 +207,9 @@ GTEST_TEST(InitialValueProblemTest, ComputationPreconditionsValidation) {
     InitialValueProblem<double>::OdeContext values;
     values.x0 = kValidState;
     values.k = kInvalidParameters;
-    DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kValidTime, values), std::logic_error,
+    DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kValidTime, values),
                                 kInvalidParametersErrorMessage);
     DRAKE_EXPECT_THROWS_MESSAGE(ivp.DenseSolve(kValidTime, values),
-                                std::logic_error,
                                 kInvalidParametersErrorMessage);
   }
 
@@ -222,9 +218,9 @@ GTEST_TEST(InitialValueProblemTest, ComputationPreconditionsValidation) {
     values.x0 = kValidState;
     values.k = kValidParameters;
     DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kInvalidTime, values),
-                                std::logic_error, kInvalidTimeErrorMessage);
+                                kInvalidTimeErrorMessage);
     DRAKE_EXPECT_THROWS_MESSAGE(ivp.DenseSolve(kInvalidTime, values),
-                                std::logic_error, kInvalidTimeErrorMessage);
+                                kInvalidTimeErrorMessage);
   }
 }
 

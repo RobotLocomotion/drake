@@ -902,7 +902,6 @@ TEST_F(LeafSystemTest, ContinuousStateBelongsWithSystem) {
   auto other_context = other_system.AllocateContext();
   DRAKE_EXPECT_THROWS_MESSAGE(
       other_system.CalcTimeDerivatives(*other_context, derivatives.get()),
-      std::logic_error,
       ".*::ContinuousState<double> was not created for.*::TestSystem.*");
 }
 
@@ -1035,7 +1034,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   EXPECT_TRUE(in3_ticket.is_valid() && in4_ticket.is_valid());
   EXPECT_NE(in3_ticket, in4_ticket);  // We don't know the actual values.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.get_input_port_base(InputPortIndex(10)), std::out_of_range,
+      dut.get_input_port_base(InputPortIndex(10)),
       "System.*get_input_port_base().*no input port.*10.*only 5.*");
 
   // Check DependencyTracker setup for input ports.
@@ -1059,7 +1058,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   EXPECT_TRUE(out2_ticket.is_valid() && out3_ticket.is_valid());
   EXPECT_NE(out2_ticket, out3_ticket);  // We don't know the actual values.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.get_output_port_base(OutputPortIndex(7)), std::out_of_range,
+      dut.get_output_port_base(OutputPortIndex(7)),
       "System.*get_output_port_base().*no output port.*7.*only 4.*");
 
   const InputPort<double>& in0 = dut.get_input_port(0);
@@ -3043,7 +3042,6 @@ GTEST_TEST(ImplicitTimeDerivatives, DefaultImplementation) {
   Vector4d residual4;
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut.CalcImplicitTimeDerivativesResidual(*context, *xdot, &residual4),
-      std::logic_error,
       "System::DoCalcImplicitTimeDerivativesResidual.*"
       "default implementation requires.*residual size.*4.*"
       "matches.*state variables.*3.*must override.*");
@@ -3052,7 +3050,6 @@ GTEST_TEST(ImplicitTimeDerivatives, DefaultImplementation) {
   // we should get stopped by the NVI public method.
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut.CalcImplicitTimeDerivativesResidual(*context, *xdot, &residual3),
-      std::logic_error,
       ".*CalcImplicitTimeDerivativesResidual.*"
       "expected residual.*size 4 but got.*size 3.*\n"
       "Use AllocateImplicitTimeDerivativesResidual.*");
@@ -3084,7 +3081,6 @@ GTEST_TEST(ImplicitTimeDerivatives, OverrideImplementation) {
   Vector3d bad_residual;
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut.CalcImplicitTimeDerivativesResidual(*context, *xdot, &bad_residual),
-      std::logic_error,
       ".*CalcImplicitTimeDerivativesResidual.*"
       "expected residual.*size 1 but got.*size 3.*\n"
       "Use AllocateImplicitTimeDerivativesResidual.*");
