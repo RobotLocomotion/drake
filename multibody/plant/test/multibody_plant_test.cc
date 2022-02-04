@@ -174,11 +174,11 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
 
   // Verify that a non-positive penetration_allowance throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant->set_penetration_allowance(-1), std::logic_error,
+      plant->set_penetration_allowance(-1),
       "set_penetration_allowance\\(\\): penetration_allowance must be strictly "
       "positive.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant->set_penetration_allowance(0), std::logic_error,
+      plant->set_penetration_allowance(0),
       "set_penetration_allowance\\(\\): penetration_allowance must be strictly "
       "positive.");
 
@@ -304,7 +304,6 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       &plant->GetForceElement<UniformGravityFieldElement>(gravity_field_index));
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant->GetForceElement<RevoluteSpring>(gravity_field_index),
-      std::logic_error,
       ".*not of type .*RevoluteSpring.* but of type "
       ".*UniformGravityFieldElement.*");
   const ForceElementIndex invalid_force_index(plant->num_force_elements() + 1);
@@ -340,7 +339,6 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant->GetJointByName<PrismaticJoint>(parameters.shoulder_joint_name(),
                                             shoulder.model_instance()),
-      std::logic_error,
       ".*not of type .*PrismaticJoint.* but of type "
       ".*RevoluteJoint.*");
 
@@ -349,14 +347,12 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant->AddRigidBody("AnotherBody", default_model_instance(),
                           SpatialInertia<double>()),
-      std::logic_error,
       "Post-finalize calls to '.*' are not allowed; "
       "calls to this method must happen before Finalize\\(\\).");
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant->AddJoint<RevoluteJoint>(
           "AnotherJoint", link1, std::nullopt, link2, std::nullopt,
           Vector3d::UnitZ()),
-      std::logic_error,
       "Post-finalize calls to '.*' are not allowed; "
       "calls to this method must happen before Finalize\\(\\).");
   // Test API for simplified `AddJoint` method.
@@ -364,7 +360,6 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       plant->AddJoint(std::make_unique<RevoluteJoint<double>>(
           "AnotherJoint", link1.body_frame(), link2.body_frame(),
           Vector3d::UnitZ())),
-      std::logic_error,
       "Post-finalize calls to '.*' are not allowed; "
       "calls to this method must happen before Finalize\\(\\).");
   // TODO(amcastro-tri): add test to verify that requesting a joint of the wrong
@@ -548,7 +543,7 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
       AllocateTimeDerivatives();
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.CalcTimeDerivatives(*context, continuous_state.get()),
-      std::logic_error, "Actuation input port for model instance .* must "
+      "Actuation input port for model instance .* must "
           "be connected.");
 
   // Verify that derivatives can be computed after fixing the acrobot actuation
@@ -571,7 +566,6 @@ GTEST_TEST(MultibodyPlant, UniformGravityFieldElementTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.AddForceElement<UniformGravityFieldElement>(
           Vector3d(-1, 0, 0)),
-      std::runtime_error,
       "This model already contains a gravity field element.*");
 }
 
@@ -597,7 +591,6 @@ class AcrobotPlantTests : public ::testing::Test {
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_state_output_port(),
-        std::logic_error,
         /* Verify this method is throwing for the right reasons. */
         "Pre-finalize calls to '.*' are not allowed; "
         "you must call Finalize\\(\\) first.");
@@ -1002,7 +995,6 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   // world.
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_->GetBodyFrameIdOrThrow(world_index()),
-      std::logic_error,
       /* Verify this method is throwing for the right reasons. */
       "Body 'WorldBody' does not have geometry registered with it.");
 
@@ -1317,7 +1309,7 @@ GTEST_TEST(MultibodyPlantTest, AutoBodySceneGraphRegistration) {
   const RigidBody<double>& body1 = plant.AddRigidBody(
       "body1", SpatialInertia<double>());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.GetBodyFrameIdOrThrow(body1.index()), std::logic_error,
+      plant.GetBodyFrameIdOrThrow(body1.index()),
       "Body 'body1' does not have geometry registered with it.");
 
   geometry::SceneGraph<double> scene_graph;
@@ -1378,13 +1370,13 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometriesErrors) {
   RigidBody<double> body{SpatialInertia<double>()};
   // The case where the plant has *not* been finalized.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.CollectRegisteredGeometries({&body}), std::runtime_error,
+      plant.CollectRegisteredGeometries({&body}),
       "Failure .* in CollectRegisteredGeometries.* failed.");
 
   // The case where the plant has *not* been registered as a source.
   plant.Finalize();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.CollectRegisteredGeometries({&body}), std::runtime_error,
+      plant.CollectRegisteredGeometries({&body}),
       "Failure .* in CollectRegisteredGeometries.* failed.");
 }
 
@@ -1536,7 +1528,6 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
   // reflect that.
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.Finalize(),
-      std::runtime_error,
       "This multibody tree already has a mobilizer connecting "
       "inboard frame \\(index=0\\) and outboard frame \\(index=\\d*\\). "
       "More than one mobilizer between two frames is not allowed.");
@@ -1866,7 +1857,6 @@ GTEST_TEST(MultibodyPlantTest, CalcPointPairPenetrationsDisconnectedPorts) {
   // should be invalid.
   DRAKE_EXPECT_THROWS_MESSAGE(
       MultibodyPlantTester::EvalGeometryQueryInput(plant, *context),
-      std::logic_error,
       "The geometry query input port \\(see "
       "MultibodyPlant::get_geometry_query_input_port\\(\\)\\) "
       "of this MultibodyPlant is not connected. Please connect the"
@@ -2152,7 +2142,7 @@ TEST_F(SplitPendulum, GetMultibodyPlantFromElement) {
   } mb_system;
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      mb_system.rigid_body->GetParentPlant(), std::logic_error,
+      mb_system.rigid_body->GetParentPlant(),
       ".*multibody element.*not owned by.*MultibodyPlant.*");
 }
 
@@ -2169,7 +2159,7 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
   // N.B. Use extra parentheses; otherwise, compiler may think this is a
   // declaration.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      (MultibodyPlant<AutoDiffXd>(plant)), std::logic_error,
+      (MultibodyPlant<AutoDiffXd>(plant)),
       ".*MultibodyTree with an invalid topology.*");
 
   plant.Finalize();
@@ -2870,15 +2860,12 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
   // Verify error conditions.
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_->GetPositionsAndVelocities(*context_, arm2, &q_out),
-      std::exception,
       "Output array is not properly sized.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_->GetPositions(*context_, arm2, &qv_out),
-      std::exception,
       "Output array is not properly sized.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_->GetVelocities(*context_, arm2, &qv_out),
-      std::exception,
       "Output array is not properly sized.");
 
   // Test the GetPositionsFromArray and GetVelocitiesFromArray functionality.
@@ -2906,12 +2893,10 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_->GetPositionsFromArray(arm2,
         state_vector.head(plant_->num_positions()), &q_out_array_err),
-      std::exception,
       "Output array is not properly sized.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_->GetVelocitiesFromArray(arm2,
         state_vector.tail(plant_->num_velocities()), &v_out_array_err),
-      std::exception,
       "Output array is not properly sized.");
 }
 
@@ -2944,7 +2929,6 @@ GTEST_TEST(StateSelection, JointHasNoActuator) {
   selected_joints.push_back(plant.GetJointByName("ShoulderJoint").index());
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.MakeActuatorSelectorMatrix(selected_joints),
-      std::logic_error,
       "Joint 'ShoulderJoint' does not have an actuator.");
 }
 
@@ -3056,7 +3040,6 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
       {"iiwa_joint_2", "iiwa_joint_3", "iiwa_joint_7", "iiwa_joint_3"};
   DRAKE_EXPECT_THROWS_MESSAGE(
       OldMakeStateSelectorMatrixFromJointNames(repeated_joint_names),
-      std::logic_error,
       "Joint named 'iiwa_joint_3' is repeated multiple times.");
 
   // Intentionally attempt to create a state selector from a vector with
@@ -3067,7 +3050,6 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.MakeStateSelectorMatrix(repeated_joint_indexes),
-      std::logic_error,
       "Joint named 'iiwa_joint_3' is repeated multiple times.");
 
   // Verify the arm's actuation selector.
@@ -3298,7 +3280,6 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.SetFreeBodyPoseInAnchoredFrame(
           context.get(), end_effector_frame, mug, X_OM),
-      std::logic_error,
       "Frame 'iiwa_link_7' must be anchored to the world frame.");
 }
 

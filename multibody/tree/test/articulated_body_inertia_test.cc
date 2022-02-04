@@ -203,7 +203,6 @@ GTEST_TEST(ArticulatedBodyInertia, Symbolic) {
       -Matrix6<symbolic::Expression>::Identity()));
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       ArticulatedBodyInertia<double> Ds(-Matrix6<double>::Identity()),
-      std::runtime_error,
       "The resulting articulated body inertia is not physically "
       "valid.[\\s\\S]*");
 }

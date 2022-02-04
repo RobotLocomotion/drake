@@ -50,7 +50,7 @@ GTEST_TEST(JointActuatorTest, JointAcutatorLimitTest) {
           Eigen::Vector3d(0, 0, 1)));
   DRAKE_EXPECT_THROWS_MESSAGE(
       tree.AddJointActuator("act2", body2_body1, kNegativeEffortLimit),
-      std::runtime_error, "Effort limit must be strictly positive!");
+      "Effort limit must be strictly positive!");
 
   // Throw is the effort limit is set to be negative.
   const Joint<double>& body3_body2 =
@@ -59,7 +59,7 @@ GTEST_TEST(JointActuatorTest, JointAcutatorLimitTest) {
           Eigen::Vector3d(0, 0, 1)));
   DRAKE_EXPECT_THROWS_MESSAGE(
       tree.AddJointActuator("act3", body3_body2, kZeroEffortLimit),
-      std::runtime_error, "Effort limit must be strictly positive!");
+      "Effort limit must be strictly positive!");
 
   tree.Finalize();
 }

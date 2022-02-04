@@ -12,23 +12,18 @@ namespace {
 
 GTEST_TEST(CalcLameParametersTest, InvalidParameters) {
   DRAKE_EXPECT_THROWS_MESSAGE(CalcLameParameters<double>(-1.0, 0.25),
-                              std::exception,
                               "Young's modulus must be nonnegative.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(CalcLameParameters<double>(100.0, 0.5),
-                              std::exception,
                               "Poisson's ratio must be in .*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(CalcLameParameters<double>(100.0, 0.6),
-                              std::exception,
                               "Poisson's ratio must be in .*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(CalcLameParameters<double>(100.0, -1.0),
-                              std::exception,
                               "Poisson's ratio must be in .*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(CalcLameParameters<double>(100.0, -1.1),
-                              std::exception,
                               "Poisson's ratio must be in .*");
 }
 

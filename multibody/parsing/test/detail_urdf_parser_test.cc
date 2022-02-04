@@ -323,7 +323,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTagMismatchTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddModelFromUrdfFile(full_name_mismatch_1, "",
                            package_map, &plant, &scene_graph),
-      std::runtime_error,
       "ERROR: Joint fixed_joint of type fixed is a standard joint type, "
       "and should be a <joint>");
 
@@ -333,7 +332,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTagMismatchTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddModelFromUrdfFile(full_name_mismatch_2, "",
                            package_map, &plant, &scene_graph),
-      std::runtime_error,
       "ERROR: Joint ball_joint of type ball is a custom joint type, "
       "and should be a <drake:joint>");
 }
@@ -617,7 +615,7 @@ GTEST_TEST(MultibodyPlantUrdfParserDeathTest, ZeroMassNonZeroInertia) {
   // Test that attempt to parse links with zero mass and non-zero inertia fails.
   const std::string expected_message = ".*condition 'mass > 0' failed.";
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseZeroMassNonZeroInertia(), std::exception, expected_message);
+      ParseZeroMassNonZeroInertia(), expected_message);
 }
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
@@ -680,7 +678,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
     </robot>)"),
-      std::runtime_error,
       "Unable to find the <drake:bushing_frameC> tag on line [0-9]+");
 
   // Test non-existent frame
@@ -701,7 +698,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
     </robot>)"),
-      std::runtime_error,
       "Frame: frameZ specified for <drake:bushing_frameC> does not exist in "
       "the model.");
 
@@ -722,7 +718,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
     </robot>)"),
-      std::runtime_error,
       "Unable to find the <drake:bushing_torque_damping> tag on line [0-9]+");
 
   // Test missing `value` attribute
@@ -743,7 +738,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
     </robot>)"),
-      std::runtime_error,
       "Unable to read the 'value' attribute for the"
       " <drake:bushing_torque_stiffness> tag on line [0-9]+");
 }
@@ -891,7 +885,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest,
   <drake:collision_filter_group>
   </drake:collision_filter_group>
 </robot>)"""),
-      std::runtime_error,
       ".*The tag <drake:collision_filter_group> does not specify the required "
       "attribute \"name\" at line 5..*");
 
@@ -903,7 +896,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest,
     <drake:member/>
   </drake:collision_filter_group>
 </robot>)"""),
-      std::runtime_error,
       ".*The tag <drake:member> does not specify the required "
       "attribute \"link\" at line 6..*");
 
@@ -915,7 +907,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest,
     <drake:ignored_collision_filter_group/>
   </drake:collision_filter_group>
 </robot>)"""),
-      std::runtime_error,
       ".*The tag <drake:ignored_collision_filter_group> does not specify the "
       "required attribute \"name\" at line 6..*");
 }
