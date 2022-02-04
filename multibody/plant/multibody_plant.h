@@ -193,8 +193,8 @@ the model instance; for example, one GetPositions() method obtains the
 generalized positions for the entire plant while another GetPositions()
 method obtains the generalized positions for model instance.
 
-Model instances are frequently defined through SDF files
-(using the `model` tag) and are automatically created when SDF
+Model instances are frequently defined through SDFormat files
+(using the `model` tag) and are automatically created when SDFormat
 files are parsed (by Parser). There are two special
 multibody::ModelInstanceIndex values. The world body is always
 multibody::ModelInstanceIndex 0. multibody::ModelInstanceIndex 1 is
@@ -246,9 +246,9 @@ the system's generalized forces. These incorporate gravity, springs,
 externally applied body forces, constraint forces, and contact forces.
 
 @anchor sdf_loading
-                 ### Loading models from SDF files
+                 ### Loading models from SDFormat files
 
-Drake has the capability to load multibody models from SDF and URDF
+Drake has the capability to load multibody models from SDFormat and URDF
 files.  Consider the example below which loads an acrobot model:
 @code
   MultibodyPlant<T> acrobot;
@@ -1474,16 +1474,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// - define it in an instance of geometry::ProximityProperties using
   ///   the function geometry::AddContactMaterial(), or
-  /// - define it in an input URDF/SDF as detailed @ref sdf_contact_material
-  ///   "here for SDF" or @ref urdf_contact_material "here for URDF".
+  /// - define it in an input URDF/SDFormat file as detailed here:
+  ///   @ref tag_drake_hunt_crossley_dissipation.
   ///
   /// The hydroelastic modulus can be specified in one of two ways:
   ///
   /// - define it in an instance of geometry::ProximityProperties using
   ///   the function geometry::AddCompliantHydroelasticProperties() and
   ///   geometry::AddCompliantHydroelasticPropertiesForHalfSpace(), or
-  /// - define it in an input URDF/SDF as detailed @ref sdf_contact_material
-  ///   "here for SDF" or @ref urdf_contact_material "here for URDF".
+  /// - define it in an input URDF/SDFormat file as detailed here:
+  ///   @ref tag_drake_hydroelastic_modulus.
   ///
   /// With the effective properties of the pair defined as above, the
   /// hydroelastic model pressure field is computed according to:
