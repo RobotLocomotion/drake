@@ -480,7 +480,7 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
 
   // Case: throws when the id doesn't refer to a valid geometry.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.UpdateRepresentationForNewProperties(sphere, {}), std::logic_error,
+      engine.UpdateRepresentationForNewProperties(sphere, {}),
       "The proximity engine does not contain a geometry with the id \\d+; its "
       "properties cannot be updated");
 
@@ -534,14 +534,14 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.UpdateRepresentationForNewProperties(sphere,
                                                     bad_props_no_elasticity),
-        std::logic_error, "Cannot create soft Sphere; missing the .+ property");
+        "Cannot create soft Sphere; missing the .+ property");
 
     ProximityProperties bad_props_no_length(hydro_trigger);
     bad_props_no_length.AddProperty(kHydroGroup, kElastic, 5e8);
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.UpdateRepresentationForNewProperties(sphere,
                                                     bad_props_no_length),
-        std::logic_error, "Cannot create soft Sphere; missing the .+ property");
+        "Cannot create soft Sphere; missing the .+ property");
   }
 }
 
@@ -617,7 +617,7 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
                   1.0};
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
-        std::runtime_error, ".*only OBJs with a single object.*");
+        ".*only OBJs with a single object.*");
   }
 
   const filesystem::path temp_dir = temp_directory();
@@ -629,7 +629,7 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
     Convex convex{file.string(), 1.0};
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
-        std::runtime_error, "The file parsed contains no objects;.+");
+        "The file parsed contains no objects;.+");
   }
 
   // The file is not an OBJ.
@@ -640,7 +640,7 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
     Convex convex{file.string(), 1.0};
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
-        std::runtime_error, "The file parsed contains no objects;.+");}
+        "The file parsed contains no objects;.+");}
 }
 
 // Tests for copy/move semantics.  ---------------------------------------------
@@ -841,7 +841,6 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
   {
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.ComputeSignedDistancePairClosestPoints(bad_id, id_B, X_WGs),
-        std::runtime_error,
         fmt::format("The geometry given by id {} does not reference .+ used in "
                     "a signed distance query", bad_id));
   }
@@ -850,7 +849,6 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
   {
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.ComputeSignedDistancePairClosestPoints(id_A, bad_id, X_WGs),
-        std::runtime_error,
         fmt::format("The geometry given by id {} does not reference .+ used in "
                     "a signed distance query", bad_id));
   }
@@ -867,7 +865,6 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
         extract_ids, false /* is_invariant */);
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs),
-        std::runtime_error,
         fmt::format("The geometry pair \\({}, {}\\) does not support a signed "
                     "distance query", id_A, id_B));
   }
@@ -3301,7 +3298,6 @@ GTEST_TEST(SignedDistancePairError, HalfspaceException) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
-      std::logic_error,
       "Signed distance queries between shapes .* and .* are not supported.*");
 }
 
@@ -4248,7 +4244,6 @@ GTEST_TEST(ProximityEngineTests,
       {id2, RigidTransform<AutoDiffXd>::Identity()}};
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
-      std::logic_error,
       "Signed distance queries between shapes 'Box' and 'Box' are not "
       "supported for scalar type drake::AutoDiffXd");
 }

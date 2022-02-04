@@ -44,7 +44,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
     ProximityProperties p;
     p.AddProperty(kMaterialGroup, kHcDissipation, d);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        AddContactMaterial(d, ps, mu, &p), std::logic_error,
+        AddContactMaterial(d, ps, mu, &p),
         ".+ Trying to add property \\('.+', '.+'\\).+ name already exists");
   }
 
@@ -53,7 +53,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
     ProximityProperties p;
     p.AddProperty(kMaterialGroup, kPointStiffness, ps);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        AddContactMaterial(d, ps, mu, &p), std::logic_error,
+        AddContactMaterial(d, ps, mu, &p),
         ".+ Trying to add property \\('.+', '.+'\\).+ name already exists");
   }
 
@@ -62,7 +62,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
     ProximityProperties p;
     p.AddProperty(kMaterialGroup, kFriction, mu);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        AddContactMaterial(d, ps, mu, &p), std::logic_error,
+        AddContactMaterial(d, ps, mu, &p),
         ".+ Trying to add property \\('.+', '.+'\\).+ name already exists");
   }
 
@@ -70,7 +70,6 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
   {
     ProximityProperties p;
     DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(-1.2, ps, mu, &p),
-                                std::logic_error,
                                 ".+dissipation can't be negative.+");
   }
 
@@ -78,7 +77,6 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
   {
     ProximityProperties p;
     DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(d, -200, mu, &p),
-                                std::logic_error,
                                 ".+stiffness must be strictly positive.+");
   }
 
@@ -86,7 +84,6 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
   {
     ProximityProperties p;
     DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(d, 0, mu, &p),
-                                std::logic_error,
                                 ".+stiffness must be strictly positive.+");
   }
 }
@@ -117,14 +114,12 @@ void CheckDisallowedModulusValues(
   {
     ProximityProperties p;
     DRAKE_EXPECT_THROWS_MESSAGE(function_to_test(0., &p),
-                                std::logic_error,
                                 ".+elastic modulus must be positive.+");
   }
   // Error case: negative hydroelastic modulus.
   {
     ProximityProperties p;
     DRAKE_EXPECT_THROWS_MESSAGE(function_to_test(-1.3, &p),
-                                std::logic_error,
                                 ".+elastic modulus must be positive.+");
   }
 }

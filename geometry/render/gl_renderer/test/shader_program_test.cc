@@ -206,21 +206,21 @@ TEST_F(ShaderProgramTest, LoadShadersError) {
     // Case: Bad vertex shader.
     DRAKE_EXPECT_THROWS_MESSAGE(
         program.LoadFromSources("This is garbage", kFragmentSource),
-        std::runtime_error, "Error compiling vertex shader[^]+");
+        "Error compiling vertex shader[^]+");
   }
 
   {
     // Case: Bad fragment shader.
     DRAKE_EXPECT_THROWS_MESSAGE(
         program.LoadFromSources(kVertexSource, "This is garbage"),
-        std::runtime_error, "Error compiling fragment shader[^]+");
+        "Error compiling fragment shader[^]+");
   }
 
   {
     // Case: Both shaders are bad. This stops at reporting the vertex error.
     DRAKE_EXPECT_THROWS_MESSAGE(
         program.LoadFromSources("This is garbage", "also garbage"),
-        std::runtime_error, "Error compiling vertex shader[^]+");
+        "Error compiling vertex shader[^]+");
   }
 
   {
@@ -232,7 +232,6 @@ TEST_F(ShaderProgramTest, LoadShadersError) {
             void foo() {
               gl_FragColor = vec4(0.1, 0.2, 0.3, 1.0);
             })"""),
-                                std::runtime_error,
                                 "Error linking shaders[^]+");
   }
 
@@ -240,7 +239,7 @@ TEST_F(ShaderProgramTest, LoadShadersError) {
     // Case: file referenced is not available.
     DRAKE_EXPECT_THROWS_MESSAGE(
         program.LoadFromFiles("invalid.vert", "invalid.frag"),
-        std::runtime_error, "Error opening shader file: .+");
+        "Error opening shader file: .+");
   }
 
   {
@@ -258,7 +257,7 @@ TEST_F(ShaderProgramTest, LoadShadersError) {
   }
 )""",
                                 kFragmentSource),
-        std::runtime_error, "Cannot get shader uniform 'T_DC'");
+        "Cannot get shader uniform 'T_DC'");
   }
 
   {
@@ -276,7 +275,7 @@ TEST_F(ShaderProgramTest, LoadShadersError) {
   }
 )""",
                                 kFragmentSource),
-        std::runtime_error, "Cannot get shader uniform 'T_CM'");
+        "Cannot get shader uniform 'T_CM'");
   }
 }
 
@@ -285,7 +284,6 @@ TEST_F(ShaderProgramTest, UniformAccess) {
   program.LoadFromSources(kVertexSource, kFragmentSource);
   EXPECT_NO_THROW(program.GetUniformLocation("test_uniform"));
   DRAKE_EXPECT_THROWS_MESSAGE(program.GetUniformLocation("invalid"),
-                              std::runtime_error,
                               "Cannot get shader uniform 'invalid'");
 }
 

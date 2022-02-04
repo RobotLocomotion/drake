@@ -82,7 +82,6 @@ GTEST_TEST(SphereShapeDistance, FallbackSupport) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       CalcDistanceFallback<AutoDiffXd>(obj_a, obj_b, request,
                                        &distance_pair_ad),
-      std::logic_error,
       "Signed distance queries between shapes .+ and .+ are not supported for "
       "scalar type .*AutoDiffXd");
 }

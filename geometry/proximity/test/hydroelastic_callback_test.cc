@@ -696,7 +696,6 @@ TYPED_TEST(StrictHydroelasticCallbackTyped,
   // configuration is representative of that set.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()),
-      std::logic_error,
       "Requested a contact surface between a pair of geometries without "
       "hydroelastic representation .+ rigid .+ undefined .+");
 }
@@ -716,7 +715,6 @@ TYPED_TEST(StrictHydroelasticCallbackTyped, ThrowForRigidRigid) {
   // configuration is representative of that set.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()),
-      std::logic_error,
       "Requested contact between two rigid objects .+");
 }
 
@@ -732,7 +730,6 @@ TYPED_TEST(StrictHydroelasticCallbackTyped, ThrowForTwoHalfSpaces) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()),
-      std::logic_error,
       "Requested contact between two half spaces .+");
 }
 
@@ -747,7 +744,6 @@ TYPED_TEST(StrictHydroelasticCallbackTyped,
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()),
-      std::logic_error,
       "Requested hydroelastic contact between two compliant geometries, one "
       "of which is a half space .+");
 }

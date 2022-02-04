@@ -65,7 +65,7 @@ GTEST_TEST(GeometryInstanceTest, CanonicalName) {
   GeometryInstance trailing = make_instance(canonical + "  ");
   EXPECT_EQ(trailing.name(), canonical);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(make_instance(" "), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(make_instance(" "),
                               "GeometryInstance given the name '.*' which is "
                               "an empty canonical string");
 
@@ -73,7 +73,7 @@ GTEST_TEST(GeometryInstanceTest, CanonicalName) {
   to_rename.set_name("renamed");
   EXPECT_EQ(to_rename.name(), "renamed");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(to_rename.set_name(" "), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(to_rename.set_name(" "),
                               "GeometryInstance given the name '.*' which is "
                               "an empty canonical string");
 }

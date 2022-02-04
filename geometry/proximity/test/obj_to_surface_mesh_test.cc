@@ -151,13 +151,12 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToTriangleSurfaceMesh) {
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionInvalidFilePath) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       ReadObjToTriangleSurfaceMesh(std::string("invalid_file_path")),
-      std::runtime_error, "Cannot open file 'invalid_file_path'");
+      "Cannot open file 'invalid_file_path'");
 }
 
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForEmptyFile) {
   std::istringstream empty("");
   DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToTriangleSurfaceMesh(&empty),
-                              std::runtime_error,
                               "The Wavefront obj file has no faces.");
 }
 
@@ -200,7 +199,6 @@ v 0.0 1.0 0.0
 v 0.0 0.0 1.0
 )"};
   DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToTriangleSurfaceMesh(&no_faces),
-                              std::runtime_error,
                               "The Wavefront obj file has no faces.");
 }
 
@@ -212,7 +210,6 @@ v 0.0 1.0 0.0
 v 0.0 0.0 1.0
 )"};
   DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToTriangleSurfaceMesh(&no_faces),
-                              std::runtime_error,
                               "The Wavefront obj file has no faces.");
 }
 
