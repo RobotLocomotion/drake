@@ -104,7 +104,7 @@ TEST_F(SymbolicPolynomialBasisElementTest, Constructor) {
   EXPECT_EQ(p4.total_degree(), 0);
   EXPECT_EQ(p4.var_to_degree_map().size(), 0);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(DerivedBasisA({{x_, -1}}), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(DerivedBasisA({{x_, -1}}),
                               "The degree for x is negative.");
 }
 
@@ -165,7 +165,7 @@ TEST_F(SymbolicPolynomialBasisElementTest, Evaluate) {
   EXPECT_EQ(p1.Evaluate(env2), 9);
   // p2=xy², but env2 does not contain value for x.
   double dummy{};
-  DRAKE_EXPECT_THROWS_MESSAGE(dummy = p2.Evaluate(env2), std::invalid_argument,
+  DRAKE_EXPECT_THROWS_MESSAGE(dummy = p2.Evaluate(env2),
                               ".* x is not in env");
   unused(dummy);
 }
