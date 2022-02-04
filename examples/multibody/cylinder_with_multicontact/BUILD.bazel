@@ -30,6 +30,8 @@ drake_cc_googletest(
     name = "make_cylinder_plant_test",
     deps = [
         ":make_cylinder_plant",
+        "//multibody/plant:compliant_contact_manager",
+        "//multibody/contact_solvers/sap:sap_solver",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/plant",
     ],
