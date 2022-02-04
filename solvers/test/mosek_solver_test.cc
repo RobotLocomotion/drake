@@ -229,7 +229,7 @@ GTEST_TEST(MosekTest, TestLogging) {
   // Now set both print to console and the log file. This will cause an error.
   solver_options.SetOption(CommonSolverOption::kPrintToConsole, 1);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      solver.Solve(prog, {}, solver_options, &result), std::runtime_error,
+      solver.Solve(prog, {}, solver_options, &result),
       ".* cannot print to both the console and the log file.");
 }
 

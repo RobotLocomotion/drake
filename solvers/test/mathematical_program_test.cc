@@ -472,7 +472,6 @@ GTEST_TEST(TestAddDecisionVariables, AddVariable3) {
     const symbolic::Variable unsupported_var("b", unsupported_type);
     DRAKE_EXPECT_THROWS_MESSAGE(
         prog.AddDecisionVariables(VectorDecisionVariable<1>(unsupported_var)),
-        std::runtime_error,
         "MathematicalProgram does not support .* variables.");
   }
 }

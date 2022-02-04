@@ -132,7 +132,6 @@ GTEST_TEST(SolverOptionsTest, CheckOptionKeysForSolver) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_options.CheckOptionKeysForSolver(id1, {"key1"}, {"key2"},
                                               {"key3"}),
-      std::invalid_argument,
       "key2 is not allowed in the SolverOptions for id1.");
 
   DRAKE_EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(
@@ -143,12 +142,11 @@ GTEST_TEST(SolverOptionsTest, SetOptionError) {
   SolverOptions solver_options;
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_options.SetOption(CommonSolverOption::kPrintFileName, 1),
-      std::runtime_error,
       "SolverOptions::SetOption support kPrintFileName only with std::string "
       "value.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_options.SetOption(CommonSolverOption::kPrintToConsole, 2),
-      std::runtime_error, "kPrintToConsole expects value either 0 or 1");
+      "kPrintToConsole expects value either 0 or 1");
 }
 }  // namespace solvers
 }  // namespace drake
