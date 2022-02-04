@@ -1,5 +1,6 @@
 #include "drake/multibody/plant/internal_geometry_names.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
@@ -117,6 +118,7 @@ TEST_F(GeometryNamesTest, BasicBox) {
   EXPECT_EQ(entry.geometry_name, std::nullopt);
   EXPECT_EQ(entry.body_name_is_unique_within_plant, true);
   EXPECT_EQ(entry.is_sole_geometry_within_body, true);
+  EXPECT_EQ(dut.GetFullName(id, "$"), "box");
 }
 
 TEST_F(GeometryNamesTest, FullBox) {
@@ -129,6 +131,7 @@ TEST_F(GeometryNamesTest, FullBox) {
   EXPECT_EQ(entry.geometry_name, "box");
   EXPECT_EQ(entry.body_name_is_unique_within_plant, true);
   EXPECT_EQ(entry.is_sole_geometry_within_body, true);
+  EXPECT_EQ(dut.GetFullName(id, "$"), "box");
 }
 
 TEST_F(GeometryNamesTest, BasicSphere1) {
@@ -141,6 +144,7 @@ TEST_F(GeometryNamesTest, BasicSphere1) {
   EXPECT_EQ(entry.geometry_name, std::nullopt);
   EXPECT_EQ(entry.body_name_is_unique_within_plant, false);
   EXPECT_EQ(entry.is_sole_geometry_within_body, true);
+  EXPECT_EQ(dut.GetFullName(id, "$"), "sphere1$base_link");
 }
 
 TEST_F(GeometryNamesTest, FullSphere1) {
@@ -153,6 +157,7 @@ TEST_F(GeometryNamesTest, FullSphere1) {
   EXPECT_EQ(entry.geometry_name, "sphere_collision");
   EXPECT_EQ(entry.body_name_is_unique_within_plant, false);
   EXPECT_EQ(entry.is_sole_geometry_within_body, true);
+  EXPECT_EQ(dut.GetFullName(id, "$"), "sphere1$base_link");
 }
 
 TEST_F(GeometryNamesTest, BasicBin) {
@@ -166,6 +171,7 @@ TEST_F(GeometryNamesTest, BasicBin) {
   EXPECT_EQ(entry.geometry_name, std::nullopt);
   EXPECT_EQ(entry.body_name_is_unique_within_plant, true);
   EXPECT_EQ(entry.is_sole_geometry_within_body, false);
+  EXPECT_THAT(dut.GetFullName(id, "$"), testing::StartsWith("bin_base$Id("));
 }
 
 TEST_F(GeometryNamesTest, FullBin) {
@@ -179,6 +185,7 @@ TEST_F(GeometryNamesTest, FullBin) {
   EXPECT_EQ(entry.geometry_name, "front");
   EXPECT_EQ(entry.body_name_is_unique_within_plant, true);
   EXPECT_EQ(entry.is_sole_geometry_within_body, false);
+  EXPECT_EQ(dut.GetFullName(id, "$"), "bin_base$front");
 }
 
 }  // namespace

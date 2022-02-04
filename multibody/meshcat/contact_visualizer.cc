@@ -9,6 +9,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/meshcat/point_contact_visualizer.h"
 #include "drake/multibody/plant/contact_results.h"
+#include "drake/multibody/plant/internal_geometry_names.h"
 
 namespace drake {
 namespace multibody {
@@ -19,12 +20,14 @@ using geometry::GeometryId;
 using geometry::Meshcat;
 using meshcat::internal::PointContactVisualizer;
 using meshcat::internal::PointContactVisualizerItem;
+using multibody::internal::GeometryNames;
 using systems::CacheEntry;
 using systems::Context;
 using systems::DiagramBuilder;
 using systems::EventStatus;
 using systems::InputPort;
 using systems::OutputPort;
+using systems::ValueProducer;
 
 template <typename T>
 ContactVisualizer<T>::ContactVisualizer(
@@ -51,8 +54,14 @@ ContactVisualizer<T>::ContactVisualizer(
   }
 
   const InputPort<T>& contact_results = this->DeclareAbstractInputPort(
-    "contact_results", Value<ContactResults<T>>());
+      "contact_results", Value<ContactResults<T>>());
   contact_results_input_port_ = contact_results.get_index();
+
+  const CacheEntry& geometry_names = this->DeclareCacheEntry(
+      "geometry_names", ValueProducer(
+          GeometryNames(), &ValueProducer::NoopCalc),
+      {this->nothing_ticket()});
+  geometry_names_scratch_ = geometry_names.cache_index();
 
   const CacheEntry& point_contacts = this->DeclareCacheEntry(
       "point_contacts", &ContactVisualizer::CalcPointContacts,
@@ -87,6 +96,7 @@ template <typename T>
 const ContactVisualizer<T>& ContactVisualizer<T>::AddToBuilder(
     DiagramBuilder<T>* builder, const OutputPort<T>& contact_results_port,
     std::shared_ptr<Meshcat> meshcat, ContactVisualizerParams params) {
+  DRAKE_THROW_UNLESS(builder != nullptr);
   auto& visualizer = *builder->template AddSystem<ContactVisualizer<T>>(
       std::move(meshcat), std::move(params));
   builder->Connect(contact_results_port,
@@ -110,20 +120,34 @@ void ContactVisualizer<T>::CalcPointContacts(
     std::vector<PointContactVisualizerItem>* result) const {
   result->clear();
 
-  const auto& contact_results =
+  // Obtain the list of contacts.
+  const ContactResults<T>& contact_results =
       contact_results_input_port().template Eval<ContactResults<T>>(context);
+
+  // Freshen the dictionary of contact names for the proximity geometries.
+  const MultibodyPlant<T>* const plant = contact_results.plant();
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  GeometryNames& geometry_names =
+      this->get_cache_entry(geometry_names_scratch_).
+      get_mutable_cache_entry_value(context).
+      template GetMutableValueOrThrow<GeometryNames>();
+  if (geometry_names.entries().empty()) {
+    // TODO(jwnimmer-tri) Connect the QueryObject input port so that we can
+    // use ResetFull here.
+    geometry_names.ResetBasic(*plant);
+  }
+
+  // Update our output vector of items.
   for (int i = 0; i < contact_results.num_point_pair_contacts(); ++i) {
     const PointPairContactInfo<T>& info =
         contact_results.point_pair_contact_info(i);
     const geometry::PenetrationAsPointPair<T>& pair = info.point_pair();
-    // TODO(russt): Use geometry instance names once they are cleaned up
-    // or the body name convention in ContactResultsToLcmSystem.
     const SortedPair<GeometryId> sorted_ids(pair.id_A, pair.id_B);
-    const std::string body_A = fmt::format("{}", sorted_ids.first());
-    const std::string body_B = fmt::format("{}", sorted_ids.second());
-    const Vector3d force = ExtractDoubleOrThrow(info.contact_force());
-    const Vector3d point = ExtractDoubleOrThrow(info.contact_point());
-    result->push_back({body_A, body_B, force, point});
+    std::string body_A = geometry_names.GetFullName(sorted_ids.first(), ".");
+    std::string body_B = geometry_names.GetFullName(sorted_ids.second(), ".");
+    Vector3d force = ExtractDoubleOrThrow(info.contact_force());
+    Vector3d point = ExtractDoubleOrThrow(info.contact_point());
+    result->push_back({std::move(body_A), std::move(body_B), force, point});
   }
 }
 

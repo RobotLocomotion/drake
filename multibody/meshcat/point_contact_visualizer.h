@@ -15,8 +15,6 @@ namespace internal {
 
 /* Like multibody::PointPairContactInfo, but only the visualization info. */
 struct PointContactVisualizerItem {
-  // TODO(jwnimmer-tri) Once ContactVisualizer has useful (permanent) names
-  // for its bodies, we might use a string_view here instead of a string.
   std::string body_A;
   std::string body_B;
   Eigen::Vector3d contact_force;
