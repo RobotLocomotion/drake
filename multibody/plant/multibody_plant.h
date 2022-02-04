@@ -79,7 +79,7 @@ class MultibodyPlantDiscreteUpdateManagerAttorney;
 // contact_model_doxygen.h.
 /// Enumeration for contact model options.
 enum class ContactModel {
-  /// Contact forces are computed using the Hydroelastic model. Conctact between
+  /// Contact forces are computed using the Hydroelastic model. Contact between
   /// unsupported geometries will cause a runtime exception.
   kHydroelastic,
 
@@ -371,7 +371,7 @@ the following properties for point contact modeling:
 ¹ Collision geometry is required to be registered with a
   geometry::ProximityProperties object that contains the
   ("material", "coulomb_friction") property. If the property
-  is missing, %MultibodyPlant will throw an exeception.
+  is missing, %MultibodyPlant will throw an exception.
 
 ² If the property is missing, %MultibodyPlant will use
   a heuristic value as the default. Refer to the
@@ -419,7 +419,7 @@ const CoulombFriction<T>& geometry_friction =
               ### Working with %MultibodyElement parameters
 Several %MultibodyElements expose parameters, allowing the user flexible
 modification of some aspects of the plant's model, post systems::Context
-creation. For details, refer to the docmentation for the MultibodyElement
+creation. For details, refer to the documentation for the MultibodyElement
 whose parameters you are trying to modify/access (e.g. RigidBody,
 FixedOffsetFrame, etc.)
 
@@ -1466,9 +1466,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// However, it is quantitatively different and may require experimentation
   /// to match empirical behavior.
   ///
-  /// We use a dissipation model inspired by the model in
-  /// [Hunt and Crossley, 1975], parameterized by a dissipation constant with
-  /// units of inverse of velocity, i.e. `s/m`.
+  /// We use a Hunt & Crossley dissipation model parameterized by a dissipation
+  /// constant with units of inverse of velocity, i.e. `s/m`. See
+  /// @ref mbp_dissipation_model "Modeling Dissipation" for more detail.
   ///
   /// The dissipation can be specified in one of two ways:
   ///
@@ -1510,10 +1510,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   and moment between nominally rigid objects. Proc. IEEE/RSJ Intl. Conf.
   ///   on Intelligent Robots and Systems (IROS), 2019.
   ///
-  /// [Hunt and Crossley 1975] Hunt, KH and Crossley, FRE, 1975. Coefficient
-  ///   of restitution interpreted as damping in vibroimpact. Journal of Applied
-  ///   Mechanics, vol. 42, pp. 440–445.
-  ///
   /// @anchor mbp_penalty_method
   ///                   #### Penalty method point contact
   ///
@@ -1528,17 +1524,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   fₙ = k(1+dẋ)x
   /// </pre>
   /// where the normal contact force `fₙ` is made a continuous function of the
-  /// penetration distance x between the bodies (defined to be
-  /// positive when the bodies are in contact) and the penetration distance
-  /// rate ẋ (with ẋ > 0 meaning the penetration distance is increasing and
-  /// therefore the interpenetration between the bodies is also increasing).
-  /// k and d are the combined penalty method coefficients for stiffness and
-  /// dissipation, given a pair of colliding geometries.
-  /// For flexibility of parameterization, stiffness and dissipation are set on
-  /// a per-geometry basis (@ref accessing_contact_properties). Given two
-  /// geometries with individual stiffness and dissipation parameters (k₁, d₁)
-  /// and (k₂, d₂), we define the rule for combined stiffness (k) and
-  /// dissipation (d) as: <pre>
+  /// penetration distance x between the bodies (defined to be positive when
+  /// the bodies are in contact) and the penetration distance rate ẋ (with ẋ >
+  /// 0 meaning the penetration distance is increasing and therefore the
+  /// interpenetration between the bodies is also increasing).  k and d are the
+  /// combined penalty method coefficients for stiffness and dissipation, given
+  /// a pair of colliding geometries. Dissipation is modeled using a Hunt &
+  /// Crossley model of dissipation, see
+  /// @ref mbp_dissipation_model "Modeling Dissipation" for
+  /// details.  For flexibility of parameterization, stiffness and dissipation
+  /// are set on a per-geometry basis
+  /// (@ref accessing_contact_properties). Given two geometries with individual
+  /// stiffness and dissipation parameters (k₁, d₁) and (k₂, d₂), we define the
+  /// rule for combined stiffness (k) and dissipation (d) as: <pre>
   ///     k = (k₁⋅k₂)/(k₁+k₂)
   ///     d = (k₂/(k₁+k₂))⋅d₁ + (k₁/(k₁+k₂))⋅d₂
   /// </pre>
@@ -1553,7 +1551,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   requires a stiffness that approaches infinity, and
   /// - the computational cost of the numerical integration, which will
   ///   require smaller time steps for stiffer systems.
-  ///
   ///
   /// There is no exact procedure for choosing these coefficients, and
   /// estimating them manually can be cumbersome since in general they will
@@ -1610,6 +1607,37 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// For further details on contact modeling in Drake, please refer to the
   /// section @ref drake_contacts "Contact Modeling in Drake" of our
   /// documentation.
+  ///
+  /// @anchor mbp_dissipation_model
+  ///                   #### Modeling Dissipation
+  ///
+  /// We use a dissipation model inspired by the model in
+  /// [Hunt and Crossley, 1975], parameterized by a dissipation constant with
+  /// units of inverse of velocity, i.e. `s/m`.
+  ///
+  /// To be more precise, compliant point contact forces are modeled as a
+  /// function of state x: <pre>
+  ///   f(x) = f₀(x)⋅(1 - d⋅vₙ(x))₊
+  /// </pre>
+  /// where here `f₀(x)` denotes the elastic forces, vₙ(x) is the contact
+  /// velocity in the normal direction (negative when objects approach) and
+  /// `(a)₊` denotes "the positive part of a". The model parameter `d ` is the
+  /// Hunt & Crossley dissipation constant, in s/m. The Hunt & Crossley term
+  /// `(1 - d⋅vₙ(x))₊` models the effect of dissipation due to deformation.
+  ///
+  /// Similarly, Drake's hydroelastic contact model incorporates dissipation at
+  /// the stress level, rather than forces. That is, pressure `p(x)` at a
+  /// specific point on the contact surface is replaces the force `f(x)` in the
+  /// point contact model: <pre>
+  ///   p(x) = p₀(x)⋅(1 - d⋅vₙ(x))₊
+  /// </pre>
+  /// where `p₀(x)` is the (elastic) hydroelastic pressure and once more the
+  /// term `(1 - d⋅vₙ(x))₊` models Hunt & Crossley dissipation.
+  ///
+  /// [Hunt and Crossley 1975] Hunt, KH and Crossley, FRE, 1975. Coefficient
+  ///   of restitution interpreted as damping in vibroimpact. Journal of Applied
+  ///   Mechanics, vol. 42, pp. 440–445.
+  ///
   /// @{
 
   /// Sets the contact model to be used by `this` %MultibodyPlant, see
@@ -1677,7 +1705,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @note Setting a contact manager bypasses the mechanism to set a different
   /// contact solver with SetContactSolver(). Use only one of these two
-  /// experimental mechanims but never both.
+  /// experimental mechanisms but never both.
   ///
   /// @param manager
   ///   After this call the new manager is used to advance discrete states.
@@ -3112,7 +3140,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
   /// JacobianWrtVariable::kV, indicating whether the translational
-  /// accceleration bias is with respect to 𝑠 = q̇ or 𝑠 = v.
+  /// acceleration bias is with respect to 𝑠 = q̇ or 𝑠 = v.
   /// @param[in] frame_B The frame on which points Bi are affixed/welded.
   /// @param[in] p_BoBi_B A position vector or list of p position vectors from
   /// Bo (frame_B's origin) to points Bi (regarded as affixed to B), where each
@@ -4253,7 +4281,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // x = (q - qᵤ) near the upper limit when q > qᵤ and x = (q - qₗ) near the
   // lower limit when q < qₗ and where ω₀² = k / m̃ is the characteristic
   // numerical stiffness frequency and m̃ is an inertia term that for prismatic
-  // joints reduces to a simple function of the mass of the bodies adjancent to
+  // joints reduces to a simple function of the mass of the bodies adjacent to
   // a particular joint. For revolute joints m̃ relates to the rotational inertia
   // of the adjacent bodies to a joint. See the implementation notes for further
   // details. Both ω₀ and ζ are non-negative numbers.
@@ -4416,7 +4444,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Depending on the ContactModel, this method performs point contact and
   // hydroelastic queries and prepares the results in the form of a list of
-  // DiscreteContactPair to be consummed by our discrete solvers.
+  // DiscreteContactPair to be consumed by our discrete solvers.
   // TODO(amcastro-tri): consider adding a separate unit test for this method.
   void CalcDiscreteContactPairs(
       const systems::Context<T>&,
