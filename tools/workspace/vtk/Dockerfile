@@ -23,6 +23,7 @@ RUN /image/provision.sh
 FROM base AS vtk
 
 ADD image/build-vtk.sh /image/
+ADD image/patches/* /vtk/patches/
 ADD image/vtk-args /vtk/
 
 RUN /image/build-vtk.sh
