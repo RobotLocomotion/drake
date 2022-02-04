@@ -1,8 +1,7 @@
-ExternalProject_Add(clp
-    URL ${clp_url}
-    URL_MD5 ${clp_md5}
-    DOWNLOAD_NAME ${clp_dlname}
-    DEPENDS coinutils
+ExternalProject_Add(coinutils
+    URL ${coinutils_url}
+    URL_MD5 ${coinutils_md5}
+    DOWNLOAD_NAME ${coinutils_dlname}
     ${COMMON_EP_ARGS}
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ./configure
@@ -14,6 +13,6 @@ ExternalProject_Add(clp
     INSTALL_COMMAND make install
     )
 
-extract_license(clp
-    Clp/LICENSE
+extract_license(coinutils
+    CoinUtils/LICENSE
 )

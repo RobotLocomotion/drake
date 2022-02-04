@@ -106,7 +106,18 @@ set(suitesparse_url "http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-$
 set(SuiteSparse_md5 "a2926c27f8a5285e4a10265cc68bbc18")
 list(APPEND ALL_PROJECTS suitesparse)
 
-# clp (TODO)
+# coinutils
+set(coinutils_version 2.11.4)
+set(coinutils_url "https://github.com/coin-or/CoinUtils/archive/refs/tags/releases/${coinutils_version}.tar.gz")
+set(coinutils_md5 "dcdb2a327344014de9d8b050575fa90b")
+set(coinutils_dlname "coinutils-${coinutils_version}.tar.gz")
+list(APPEND ALL_PROJECTS coinutils)
+
+# clp
+set(clp_version 1.17.5)
+set(clp_url "https://github.com/coin-or/Clp/archive/refs/tags/releases/${clp_version}.tar.gz")
+set(clp_md5 "f7c25af22d2f03398cbbdf38c8b4f6fd")
+set(clp_dlname "clp-${clp_version}.tar.gz")
 list(APPEND ALL_PROJECTS clp)
 
 # ipopt (TODO)
