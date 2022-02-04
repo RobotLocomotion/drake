@@ -37,9 +37,6 @@ class RenderClientGltf : public RenderEngineVtk, public RenderClient {
   RenderClientGltf(
       const RenderClientGltfParams& parameters = RenderClientGltfParams());
 
-  // TODO(svenevs): remove this once vtkGLTFExporter is patched to invert.
-  void UpdateViewpoint(const math::RigidTransformd& X_WC) override;
-
  protected:
   /** Copy constructor for the purpose of cloning. */
   RenderClientGltf(const RenderClientGltf& other);

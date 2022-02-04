@@ -127,43 +127,6 @@ std::unique_ptr<RenderEngine> RenderClientGltf::DoClone() const {
   return std::unique_ptr<RenderClientGltf>(new RenderClientGltf(*this));
 }
 
-void RenderClientGltf::UpdateViewpoint(const math::RigidTransformd& X_WC) {
-  // TODO(svenevs): remove this once vtkGLTFExporter is patched to invert.
-  // The vtkGLTFExporter sends over the camera's model view transformation, but
-  // it should be sending the inverse of this matrix (bug in vtk that will be
-  // patched), the specification is vague but the matrix for the camera is its
-  // transformation matrix in the world, not transform the world into it.
-  // NOTE: use the inverse of RigidTransformd, which will transpose the rotation
-  // and invert the translation rather than doing a full matrix inverse.
-  const auto drake_transform = X_WC.inverse().GetAsMatrix4();
-  Eigen::Matrix4d coordinate_transform;
-  // clang-format off
-  coordinate_transform << 1.0,  0.0,  0.0, 0.0,
-                          0.0, -1.0,  0.0, 0.0,
-                          0.0,  0.0, -1.0, 0.0,
-                          0.0,  0.0,  0.0, 1.0;
-  // clang-format on
-  Eigen::Matrix4d final_transform =
-      coordinate_transform * drake_transform * coordinate_transform;
-  vtkNew<vtkMatrix4x4> vtk_mat;
-  for (int i = 0; i < 4; ++i) {
-    for (int j = 0; j < 4; ++j) {
-      vtk_mat->SetElement(i, j, final_transform(i, j));
-    }
-  }
-  // Essentially the same thing as RenderEngineVtk::UpdateViewpoint.
-  vtkSmartPointer<vtkTransform> vtk_transform =
-      vtkSmartPointer<vtkTransform>::New();
-  vtk_transform->SetMatrix(vtk_mat.GetPointer());
-  for (auto& pipeline : pipelines_) {
-    auto* camera = pipeline->renderer->GetActiveCamera();
-    camera->SetPosition(0, 0, 0);
-    camera->SetFocalPoint(0, 0, 1);
-    camera->SetViewUp(0, -1, 0);
-    camera->ApplyTransform(vtk_transform);
-  }
-}
-
 void RenderClientGltf::DoRenderColorImage(const ColorRenderCamera& camera,
                                           ImageRgba8U* color_image_out) const {
   const auto color_scene_id = GetNextSceneId();
