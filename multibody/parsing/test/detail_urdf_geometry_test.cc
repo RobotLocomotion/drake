@@ -111,7 +111,7 @@ GTEST_TEST(DetailUrdfGeometryTest, AddMaterialToMaterialMap) {
         AddMaterialToMaterialMap(rgba_mat_name,
                                  UrdfMaterial{rgba_color3, {}},
                                  !abort_if_name_clash, &materials),
-        std::runtime_error, "Material '.+' was previously defined[^]+");
+        "Material '.+' was previously defined[^]+");
   }
 
   // Case: Adding a unique material with only diffuse map - get default rgba.
@@ -170,7 +170,7 @@ GTEST_TEST(DetailUrdfGeometryTest, AddMaterialToMaterialMap) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddMaterialToMaterialMap(empty_mat_name, empty_mat, abort_if_name_clash,
                                  &materials),
-        std::runtime_error, "Material '.+' was previously defined[^]+");
+        "Material '.+' was previously defined[^]+");
   }
 
   // ----    Failure modes.
@@ -184,21 +184,21 @@ GTEST_TEST(DetailUrdfGeometryTest, AddMaterialToMaterialMap) {
       AddMaterialToMaterialMap(rgba_mat_name,
                                UrdfMaterial{Vector4d{0.1, 0.1, 0.1, 0.1}, {}},
                                !abort_if_name_clash, &materials),
-      std::runtime_error, "Material '.+' was previously defined[^]+");
+      "Material '.+' was previously defined[^]+");
 
   // Case: Cached diffuse_map is nullopt, input is not.
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddMaterialToMaterialMap(rgba_mat_name,
                                UrdfMaterial{{}, "bad_name"},
                                !abort_if_name_clash, &materials),
-      std::runtime_error, "Material '.+' was previously defined[^]+");
+      "Material '.+' was previously defined[^]+");
 
   // Case: Cached and input have non-matching values.
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddMaterialToMaterialMap(full_mat_name,
                                UrdfMaterial{full_color, "bad_name"},
                                !abort_if_name_clash, &materials),
-      std::runtime_error, "Material '.+' was previously defined[^]+");
+      "Material '.+' was previously defined[^]+");
 }
 
 // Creates a special XML DOM consisting of *only* a collision object. XML text
@@ -482,7 +482,6 @@ TEST_F(UrdfGeometryTests, TestWrongElementType) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(internal::ParseMaterial(node, false, package_map_,
                                                       root_dir_, &materials_),
-                              std::runtime_error,
                               "Expected material element, got <robot>");
 
   const XMLElement* material_node = node->FirstChildElement("material");

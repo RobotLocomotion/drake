@@ -126,7 +126,6 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Solve) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       A->Solve(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
                PetscSymmetricBlockSparseMatrix::PreconditionerType::kJacobi, b),
-      std::exception,
       "PetscSymmetricBlockSparseMatrix::Solve.*: matrix is not yet "
       "assembled.*");
   A->AssembleIfNecessary();

@@ -163,7 +163,6 @@ GTEST_TEST(MinimumDistanceConstraintTest,
   auto context = plant->CreateDefaultContext();
   DRAKE_EXPECT_THROWS_MESSAGE(
       MinimumDistanceConstraint(plant.get(), 0.1, context.get()),
-      std::invalid_argument,
       "Kinematic constraint: MultibodyPlant has not registered "
       "with a SceneGraph yet. Please refer to "
       "AddMultibodyPlantSceneGraph on how to connect MultibodyPlant to "
@@ -198,12 +197,10 @@ TEST_F(TwoFreeSpheresTest, NonpositiveInfluenceDistanceOffset) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       MinimumDistanceConstraint(plant_double_, 0.1, plant_context_double_, {},
                                 0.0),
-      std::invalid_argument,
       "MinimumDistanceConstraint: influence_distance_offset must be positive.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       MinimumDistanceConstraint(plant_double_, 0.1, plant_context_double_, {},
                                 -0.1),
-      std::invalid_argument,
       "MinimumDistanceConstraint: influence_distance_offset must be positive.");
 }
 
@@ -211,12 +208,10 @@ TEST_F(TwoFreeSpheresTest, NonfiniteInfluenceDistanceOffset) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       MinimumDistanceConstraint(plant_double_, 0.1, plant_context_double_, {},
                                 std::numeric_limits<double>::infinity()),
-      std::invalid_argument,
       "MinimumDistanceConstraint: influence_distance_offset must be finite.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       MinimumDistanceConstraint(plant_double_, 0.1, plant_context_double_, {},
                                 std::numeric_limits<double>::quiet_NaN()),
-      std::invalid_argument,
       "MinimumDistanceConstraint: influence_distance_offset must be finite.");
 }
 

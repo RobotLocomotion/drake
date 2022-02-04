@@ -595,7 +595,7 @@ TEST_F(ContactModelTest, PointPairContact) {
 TEST_F(ContactModelTest, HydroelasticOnly) {
   this->Configure(ContactModel::kHydroelastic);
   // Rigid-rigid contact precludes successful evaluation.
-  DRAKE_EXPECT_THROWS_MESSAGE(GetContactResults(), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(GetContactResults(),
                               "Requested contact between two rigid objects .+");
 }
 
@@ -629,7 +629,7 @@ TEST_F(ContactModelTest, HydroelasticWithFallbackDisconnectedPorts) {
   // Plant was not connected to the SceneGraph in a diagram, so its input port
   // should be invalid.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      GetContactResults(), std::logic_error,
+      GetContactResults(),
       "The geometry query input port \\(see "
       "MultibodyPlant::get_geometry_query_input_port\\(\\)\\) "
       "of this MultibodyPlant is not connected. Please connect the"

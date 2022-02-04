@@ -83,7 +83,7 @@ GTEST_TEST(LinearOperator, MultiplyByTransposeDense) {
   const TestLinearOperator<double> Aop("A");
   VectorXd y(2);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Aop.MultiplyByTranspose(VectorXd(3), &y), std::exception,
+      Aop.MultiplyByTranspose(VectorXd(3), &y),
       "DoMultiplyByTranspose().*must provide an implementation.");
 }
 
@@ -91,7 +91,7 @@ GTEST_TEST(LinearOperator, MultiplyByTransposeSparse) {
   const TestLinearOperator<double> Aop("A");
   SparseVectord y(2);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Aop.MultiplyByTranspose(SparseVectord(3), &y), std::exception,
+      Aop.MultiplyByTranspose(SparseVectord(3), &y),
       "DoMultiplyByTranspose().*must provide an implementation.");
 }
 
@@ -99,7 +99,7 @@ GTEST_TEST(LinearOperator, AssembleMatrixSparse) {
   const TestLinearOperator<double> Aop("A");
   SparseMatrixd Asparse(3, 2);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Aop.AssembleMatrix(&Asparse), std::exception,
+      Aop.AssembleMatrix(&Asparse),
       "DoAssembleMatrix().*must provide an implementation.");
 }
 
@@ -107,7 +107,7 @@ GTEST_TEST(LinearOperator, AssembleMatrixBlockSparse) {
   const TestLinearOperator<double> Aop("A");
   BlockSparseMatrix<double> Ablock;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Aop.AssembleMatrix(&Ablock), std::exception,
+      Aop.AssembleMatrix(&Ablock),
       "DoAssembleMatrix().*must provide an implementation.");
 }
 

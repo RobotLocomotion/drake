@@ -63,13 +63,13 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
   // Introspection of the underlying mathematical model is not available until
   // we call Finalize().
   DRAKE_EXPECT_THROWS_MESSAGE(
-      mug.is_floating(), std::runtime_error,
+      mug.is_floating(),
       ".*The model to which this body belongs must be finalized.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      mug.has_quaternion_dofs(), std::runtime_error,
+      mug.has_quaternion_dofs(),
       ".*The model to which this body belongs must be finalized.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.GetFloatingBaseBodies(), std::logic_error,
+      plant.GetFloatingBaseBodies(),
       "Pre-finalize calls to 'GetFloatingBaseBodies\\(\\)' are not allowed.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.GetUniqueFreeBaseBodyOrThrow(robot_table_model),

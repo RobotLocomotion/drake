@@ -61,19 +61,19 @@ void TestParameters() {
   EXPECT_EQ(model.shear_modulus(), kExpectedMu);
   EXPECT_EQ(model.lame_first_parameter(), kExpectedLambda);
 
-  DRAKE_EXPECT_THROWS_MESSAGE((Model(-1.0, 0.25)), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE((Model(-1.0, 0.25)),
                               "Young's modulus must be nonnegative.");
 
-  DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, 0.5)), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, 0.5)),
                               "Poisson ratio must be in \\(-1, 0.5\\).");
 
-  DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, 0.6)), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, 0.6)),
                               "Poisson ratio must be in \\(-1, 0.5\\).");
 
-  DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, -1.0)), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, -1.0)),
                               "Poisson ratio must be in \\(-1, 0.5\\).");
 
-  DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, -1.1)), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, -1.1)),
                               "Poisson ratio must be in \\(-1, 0.5\\).");
 }
 
