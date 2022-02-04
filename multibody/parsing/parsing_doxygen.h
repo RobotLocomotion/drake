@@ -367,12 +367,10 @@ units of 1/m for prismatic joints.
 If present, this element provides a value (units of inverse of velocity,
 i.e. s/m) for the Hunt-Crossley dissipation model. It is stored in a
 ProximityProperties object under `(material, hunt_crossley_dissipation)`.
-<!-- TODO(rpoyner-tri): Find a home for @amcastro's theory documentation, discussed
-     in #16444. -->
 
 @see drake::geometry::ProximityProperties,
 @ref mbp_hydroelastic_materials_properties "Hydroelastic contact",
-@ref MODULE_NOT_WRITTEN_YET
+@ref mbp_dissipation_model "Modeling Dissipation"
 
 @subsection tag_drake_hydroelastic_modulus drake:hydroelastic_modulus
 
