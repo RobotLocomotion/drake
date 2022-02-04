@@ -114,7 +114,6 @@ GTEST_TEST(FrameKinematicsVector, WorkingWithValues) {
 
   // Ask for the pose of an id that does not belong to the set.
   DRAKE_EXPECT_THROWS_MESSAGE(poses.value(FrameId::get_new_id()),
-                              std::runtime_error,
                               "No such FrameId \\d+.");
 }
 

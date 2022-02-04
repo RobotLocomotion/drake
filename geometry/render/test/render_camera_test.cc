@@ -31,11 +31,11 @@ GTEST_TEST(ClippingRangeTest, Constructor) {
     const char* error_message =
         "The clipping range values must both be positive and far must be "
         "greater than near. Instantiated with near = {} and far = {}";
-    DRAKE_EXPECT_THROWS_MESSAGE(ClippingRange(-0.1, 10), std::runtime_error,
+    DRAKE_EXPECT_THROWS_MESSAGE(ClippingRange(-0.1, 10),
                                 fmt::format(error_message, -0.1, 10.));
-    DRAKE_EXPECT_THROWS_MESSAGE(ClippingRange(0.1, -10), std::runtime_error,
+    DRAKE_EXPECT_THROWS_MESSAGE(ClippingRange(0.1, -10),
                                 fmt::format(error_message, 0.1, -10.0));
-    DRAKE_EXPECT_THROWS_MESSAGE(ClippingRange(1.5, 1.0), std::runtime_error,
+    DRAKE_EXPECT_THROWS_MESSAGE(ClippingRange(1.5, 1.0),
                                 fmt::format(error_message, 1.5, 1.0));
   }
 }
@@ -222,11 +222,11 @@ GTEST_TEST(DepthRangeTest, Constructor) {
         "The depth range values must both be positive and the maximum depth "
         "must be greater than the minimum depth. Instantiated with min = {} "
         "and max = {}";
-    DRAKE_EXPECT_THROWS_MESSAGE(DepthRange(-0.1, 10), std::runtime_error,
+    DRAKE_EXPECT_THROWS_MESSAGE(DepthRange(-0.1, 10),
                                 fmt::format(error_message, -0.1, 10.));
-    DRAKE_EXPECT_THROWS_MESSAGE(DepthRange(0.1, -10), std::runtime_error,
+    DRAKE_EXPECT_THROWS_MESSAGE(DepthRange(0.1, -10),
                                 fmt::format(error_message, 0.1, -10.0));
-    DRAKE_EXPECT_THROWS_MESSAGE(DepthRange(1.5, 1.0), std::runtime_error,
+    DRAKE_EXPECT_THROWS_MESSAGE(DepthRange(1.5, 1.0),
                                 fmt::format(error_message, 1.5, 1.0));
   }
 }
@@ -255,19 +255,16 @@ GTEST_TEST(DepthRenderCameraTest, Constructor) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       DepthRenderCamera(core,
                         DepthRange(clipping.near() - 0.1, clipping.far())),
-      std::runtime_error,
       "Depth camera's depth range extends beyond the clipping planes; near = "
       ".+, far = .+, min. depth = .+, max. depth = .+");
   DRAKE_EXPECT_THROWS_MESSAGE(
       DepthRenderCamera(core,
                         DepthRange(clipping.near(), clipping.far() + 0.1)),
-      std::runtime_error,
       "Depth camera's depth range extends beyond the clipping planes; near = "
       ".+, far = .+, min. depth = .+, max. depth = .+");
   DRAKE_EXPECT_THROWS_MESSAGE(
       DepthRenderCamera(
           core, DepthRange(clipping.near() - 0.1, clipping.far() + 0.1)),
-      std::runtime_error,
       "Depth camera's depth range extends beyond the clipping planes; near = "
       ".+, far = .+, min. depth = .+, max. depth = .+");
 }

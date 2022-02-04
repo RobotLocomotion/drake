@@ -1320,7 +1320,6 @@ TEST_F(RenderEngineGlTest, DefaultProperties) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       renderer_->RegisterVisual(id, box, PerceptionProperties(),
                                 RigidTransformd::Identity(), true),
-      std::logic_error,
       ".* geometry with the 'unspecified' or 'empty' render labels.*");
   PerceptionProperties material;
   material.AddProperty("label", "id", RenderLabel::kDontCare);
@@ -1354,7 +1353,6 @@ TEST_F(RenderEngineGlTest, DefaultProperties_RenderLabel) {
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         populate_default_sphere(&renderer),
-        std::logic_error,
         ".* geometry with the 'unspecified' or 'empty' render labels.*");
   }
 
@@ -1366,7 +1364,6 @@ TEST_F(RenderEngineGlTest, DefaultProperties_RenderLabel) {
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         populate_default_sphere(&renderer),
-        std::logic_error,
         ".* geometry with the 'unspecified' or 'empty' render labels.*");
   }
 
@@ -1390,7 +1387,7 @@ TEST_F(RenderEngineGlTest, DefaultProperties_RenderLabel) {
     for (RenderLabel label :
         {RenderLabel::kEmpty, RenderLabel(1), RenderLabel::kDoNotRender}) {
       DRAKE_EXPECT_THROWS_MESSAGE(
-          RenderEngineGl({.default_label = label}), std::logic_error,
+          RenderEngineGl({.default_label = label}),
           ".* default render label .* either 'kUnspecified' or 'kDontCare'.*");
     }
   }

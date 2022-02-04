@@ -27,14 +27,14 @@ GTEST_TEST(LoadMeshFromObjTest, ErrorModes) {
   {
     // Case: Vertices only reports no faces found.
     std::stringstream in_stream("v 1 2 3");
-    DRAKE_EXPECT_THROWS_MESSAGE(LoadMeshFromObj(&in_stream), std::runtime_error,
+    DRAKE_EXPECT_THROWS_MESSAGE(LoadMeshFromObj(&in_stream),
                                 "The OBJ data appears to have no faces.*");
   }
   {
     // Case: Not an obj in any way reports as no faces.
     std::stringstream in_stream("Not an obj\njust some\nmeaningles text.\n");
     DRAKE_EXPECT_THROWS_MESSAGE(
-        LoadMeshFromObj(&in_stream), std::runtime_error,
+        LoadMeshFromObj(&in_stream),
         "The OBJ data appears to have no faces.* might not be an OBJ file.+");
   }
   {
@@ -42,7 +42,7 @@ GTEST_TEST(LoadMeshFromObjTest, ErrorModes) {
     // invalid in that it references vertex positions that don't exist.
     std::stringstream in_stream("v 1 2 3\nf 1 2 3\n");
     DRAKE_EXPECT_THROWS_MESSAGE(
-        LoadMeshFromObj(&in_stream), std::runtime_error,
+        LoadMeshFromObj(&in_stream),
         "OBJ has no normals; RenderEngineGl requires OBJs with normals.+");
   }
   {
@@ -55,7 +55,7 @@ vn 0 0 1
 vt 0 1
 f 1 2 3
 )""");
-    DRAKE_EXPECT_THROWS_MESSAGE(LoadMeshFromObj(&in_stream), std::runtime_error,
+    DRAKE_EXPECT_THROWS_MESSAGE(LoadMeshFromObj(&in_stream),
                                 "Not all faces reference normals.+");
   }
   {
@@ -69,7 +69,7 @@ vt 0 0
 f 1//0 2//0 3//0
 )""");
     DRAKE_EXPECT_THROWS_MESSAGE(
-        LoadMeshFromObj(&in_stream), std::runtime_error,
+        LoadMeshFromObj(&in_stream),
         "tinyobj::LoadObj failed to load file.+");
   }
 }
@@ -100,7 +100,6 @@ GTEST_TEST(LoadMeshFromObjTest, ReadingFile) {
   EXPECT_EQ(mesh_data.indices.rows(), 12);
 
   DRAKE_EXPECT_THROWS_MESSAGE(LoadMeshFromObj("Bad file name"),
-                              std::runtime_error,
                               "Cannot load the obj file 'Bad file name'");
 }
 

@@ -167,7 +167,7 @@ TEST_F(SceneGraphTest, RegisterSourcePostContext) {
   // Not found in allocated context.
   DRAKE_EXPECT_THROWS_MESSAGE(
       query_object().inspector().GetName(new_source),
-      std::logic_error, "Querying source name for an invalid source id.*");
+      "Querying source name for an invalid source id.*");
 }
 
 // Tests ability to report if a source is registered or not.
@@ -185,7 +185,7 @@ TEST_F(SceneGraphTest, SourceIsRegistered) {
 TEST_F(SceneGraphTest, InputPortsForInvalidSource) {
   SourceId fake_source = SourceId::get_new_id();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.get_source_pose_port(fake_source), std::logic_error,
+      scene_graph_.get_source_pose_port(fake_source),
       "Can't acquire pose port for unknown source id: \\d+.");
 }
 
@@ -526,7 +526,6 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateDisconnected) {
       diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get());
   DRAKE_EXPECT_THROWS_MESSAGE(
       SceneGraphTester::FullPoseUpdate(*scene_graph, sg_context),
-      std::logic_error,
       fmt::format("Source '{}' \\(id: \\d+\\) has registered dynamic frames "
                   "but is not connected .+",
                   GeometrySourceSystem::kRegisteredSourceName));
@@ -547,7 +546,6 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateNoConnections) {
       diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get());
   DRAKE_EXPECT_THROWS_MESSAGE(
       SceneGraphTester::FullPoseUpdate(*scene_graph, sg_context),
-      std::logic_error,
       fmt::format("Source '{}' \\(id: \\d+\\) has registered dynamic frames "
                   "but is not connected .+",
                   GeometrySourceSystem::kRegisteredSourceName));
@@ -603,7 +601,6 @@ GTEST_TEST(SceneGraphContextModifier, RegisterGeometry) {
   EXPECT_EQ(1, inspector.NumGeometriesForFrame(frame_id));
   DRAKE_EXPECT_THROWS_MESSAGE(
       inspector.GetFrameId(sphere_id_2),
-      std::logic_error,
       "Referenced geometry \\d+ has not been registered.");
 }
 

@@ -35,7 +35,6 @@ GTEST_TEST(PosedHalfSpaceTest, Construction) {
     // With assertions armed, it must be sufficiently unit length.
     DRAKE_EXPECT_THROWS_MESSAGE(
         PosedHalfSpace<double>(nhat_F * 0.99999, p_FP, true),
-        std::runtime_error,
         "Plane constructed with a normal vector that was declared normalized;"
         " the vector is not unit length.*");
   } else {

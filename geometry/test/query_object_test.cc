@@ -151,7 +151,7 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_TRUE(is_default(default_object));
 
 #define EXPECT_DEFAULT_ERROR(expression) \
-  DRAKE_EXPECT_THROWS_MESSAGE(expression, std::runtime_error, \
+  DRAKE_EXPECT_THROWS_MESSAGE(expression, \
       "Attempting to perform query on invalid QueryObject.+");
 
   EXPECT_DEFAULT_ERROR(ThrowIfNotCallable(default_object));

@@ -334,7 +334,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     vector<PenetrationAsPointPair<T>> point_pairs;
     CallbackData<T> callback_data(&collision_filter_, &X_WGs, &point_pairs);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        Callback<T>(&shape1, &shape2, &callback_data), std::logic_error,
+        Callback<T>(&shape1, &shape2, &callback_data),
         "Penetration queries between shapes .* and .* are not supported for "
         "scalar type .*");
   }

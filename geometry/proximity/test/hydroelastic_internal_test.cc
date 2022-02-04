@@ -441,10 +441,10 @@ TEST_F(HydroelasticRigidGeometryTest, HalfSpace) {
   EXPECT_TRUE(half_space->is_half_space());
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      half_space->mesh(), std::runtime_error,
+      half_space->mesh(),
       "RigidGeometry::mesh.* cannot be invoked .* half space");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      half_space->bvh(), std::runtime_error,
+      half_space->bvh(),
       "RigidGeometry::bvh.* cannot be invoked .* half space");
 }
 
@@ -734,7 +734,7 @@ void TestPropertyErrors(
   // Error case: missing property value.
   {
     DRAKE_EXPECT_THROWS_MESSAGE(
-        maker(shape_spec, props), std::logic_error,
+        maker(shape_spec, props),
         fmt::format("Cannot create {} {}.+'{}'\\) property", compliance,
                     shape_name, property_name));
   }
@@ -745,7 +745,7 @@ void TestPropertyErrors(
     wrong_value.AddProperty(group_name, property_name, "10");
     // This error message comes from GeometryProperties::GetProperty().
     DRAKE_EXPECT_THROWS_MESSAGE(
-        maker(shape_spec, wrong_value), std::logic_error,
+        maker(shape_spec, wrong_value),
         fmt::format(".*The property \\('{}', '{}'\\) exists, but is of a "
                     "different type.+string'",
                     group_name, property_name));
@@ -756,7 +756,7 @@ void TestPropertyErrors(
     ProximityProperties negative_value(props);
     negative_value.AddProperty(group_name, property_name, *bad_value);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        maker(shape_spec, negative_value), std::logic_error,
+        maker(shape_spec, negative_value),
         fmt::format("Cannot create {} {}.+'{}'.+ positive", compliance,
                     shape_name, property_name));
   }
@@ -826,7 +826,7 @@ TEST_F(HydroelasticSoftGeometryTest, HalfSpace) {
 
   // Case: A half space without (hydroelastic, slab_thickness) throws.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeSoftRepresentation(HalfSpace(), properties), std::logic_error,
+      MakeSoftRepresentation(HalfSpace(), properties),
       "Cannot create soft HalfSpace; missing the .*slab_thickness.* property");
 
   // Case: fully specified half space.
@@ -841,13 +841,13 @@ TEST_F(HydroelasticSoftGeometryTest, HalfSpace) {
       properties.GetProperty<double>(kHydroGroup, kElastic) / thickness);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      half_space->mesh(), std::runtime_error,
+      half_space->mesh(),
       "SoftGeometry::mesh.* cannot be invoked .* half space");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      half_space->pressure_field(), std::runtime_error,
+      half_space->pressure_field(),
       "SoftGeometry::pressure.* cannot be invoked .* half space");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      half_space->bvh(), std::runtime_error,
+      half_space->bvh(),
       "SoftGeometry::bvh.* cannot be invoked .* half space");
 }
 
@@ -875,7 +875,7 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
   // meshes and slab_thickness() does.
   EXPECT_NO_THROW(sphere1->bvh());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      sphere1->pressure_scale(), std::runtime_error,
+      sphere1->pressure_scale(),
       "SoftGeometry::pressure_scale.* cannot be invoked .* soft mesh");
 
   // Confirm that all vertices lie inside the sphere and that at least one lies
