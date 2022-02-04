@@ -14,6 +14,9 @@ git clone \
     --branch v${VTK_VERSION} --depth 1 \
     https://gitlab.kitware.com/vtk/vtk.git src
 
+cd /vtk/src
+git apply /vtk/patches/*.patch
+
 mkdir -p /vtk/build
 cd /vtk/build
 

@@ -26,6 +26,7 @@ ADD image/build-dependencies.sh /image/
 RUN /image/build-dependencies.sh
 
 ADD image/build-vtk.sh /image/
+ADD image/vtk-patches/* /vtk/patches/
 ADD image/vtk-args /vtk/
 
 RUN /image/build-vtk.sh
