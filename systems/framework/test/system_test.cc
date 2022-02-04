@@ -288,10 +288,9 @@ TEST_F(SystemTest, ContextBelongsWithSystem) {
 
   // These just uses a couple of arbitrary methods to test that a Context not
   // created by a System throws the appropriate exception.
-  DRAKE_EXPECT_THROWS_MESSAGE(system2.Publish(*context_), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(system2.Publish(*context_),
                               "Context was not created for.*");
   DRAKE_EXPECT_THROWS_MESSAGE(system2.SetDefaultContext(context_.get()),
-                              std::logic_error,
                               "Context was not created for.*");
 }
 
@@ -399,24 +398,24 @@ TEST_F(SystemTest, PortReferencesAreStable) {
 // Tests the convenience methods for the case when we have exactly one input or
 // output port.
 TEST_F(SystemTest, ExactlyOnePortConvenience) {
-  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_input_port(), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_input_port(),
                               ".*num_input_ports\\(\\) = 0");
 
   system_.DeclareInputPort("one", kVectorValued, 2);
   EXPECT_EQ(&system_.get_input_port(), &system_.get_input_port(0));
 
   system_.DeclareInputPort("two", kVectorValued, 2);
-  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_input_port(), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_input_port(),
                               ".*num_input_ports\\(\\) = 2");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_output_port(), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_output_port(),
                               ".*num_output_ports\\(\\) = 0");
 
   system_.AddAbstractOutputPort();
   EXPECT_EQ(&system_.get_output_port(), &system_.get_output_port(0));
 
   system_.AddAbstractOutputPort();
-  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_output_port(), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_output_port(),
                               ".*num_output_ports\\(\\) = 2");
 }
 
@@ -435,7 +434,7 @@ TEST_F(SystemTest, PortNameTest) {
   // Duplicate port names should throw.
   DRAKE_EXPECT_THROWS_MESSAGE(
       system_.DeclareInputPort("my_input", kAbstractValued, 0),
-      std::logic_error, ".*already has an input port named.*");
+      ".*already has an input port named.*");
 
   // Test string-based get_input_port accessors.
   EXPECT_EQ(&system_.GetInputPort("u0"), &unnamed_input);
@@ -454,10 +453,10 @@ TEST_F(SystemTest, PortNameTest) {
   // Requesting a non-existing port name should throw.
   DRAKE_EXPECT_THROWS_MESSAGE(
       system_.GetInputPort("not_my_input"),
-      std::logic_error, ".*does not have an input port named.*");
+      ".*does not have an input port named.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       system_.GetOutputPort("not_my_output"),
-      std::logic_error, ".*does not have an output port named.*");
+      ".*does not have an output port named.*");
 }
 
 TEST_F(SystemTest, PortSelectionTest) {
@@ -705,29 +704,29 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
 
   // Try some illegal port numbers.
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.get_input_port(-1), std::out_of_range,
+      system_.get_input_port(-1),
       ".*get_input_port.*negative.*-1.*illegal.*");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalVectorInput(*context_, -1), std::out_of_range,
+      system_.EvalVectorInput(*context_, -1),
       ".*EvalVectorInput.*negative.*-1.*illegal.*");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalAbstractInput(*context_, -2), std::out_of_range,
+      system_.EvalAbstractInput(*context_, -2),
       ".*EvalAbstractInput.*negative.*-2.*illegal.*");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalInputValue<int>(*context_, -3), std::out_of_range,
+      system_.EvalInputValue<int>(*context_, -3),
       ".*EvalInputValue.*negative.*-3.*illegal.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.get_input_port(9), std::out_of_range,
+      system_.get_input_port(9),
       ".*get_input_port.*no input port.*9.*only.*4.*");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalVectorInput(*context_, 9), std::out_of_range,
+      system_.EvalVectorInput(*context_, 9),
       ".*EvalVectorInput.*no input port.*9.*only.*4.*");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalAbstractInput(*context_, 10), std::out_of_range,
+      system_.EvalAbstractInput(*context_, 10),
       ".*EvalAbstractInput.*no input port.*10.*only.*4.*");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalInputValue<int>(*context_, 11), std::out_of_range,
+      system_.EvalInputValue<int>(*context_, 11),
       ".*EvalInputValue.*no input port.*11.*only.*4.*");
 
   // No ports have values yet.
@@ -738,7 +737,7 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalEigenVectorInput(*context_, 1), std::logic_error,
+      system_.EvalEigenVectorInput(*context_, 1),
       ".*EvalEigenVectorInput.*input port 'u1' .*index 1.* is neither "
       "connected nor fixed.*");
 #pragma GCC diagnostic pop
@@ -749,14 +748,14 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   DRAKE_EXPECT_NO_THROW(
       system_.EvalVectorInput(*context_, 2));  // BasicVector OK.
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalVectorInput<WrongVector>(*context_, 2), std::logic_error,
+      system_.EvalVectorInput<WrongVector>(*context_, 2),
       ".*EvalVectorInput.*expected.*WrongVector"
           ".*input port.*2.*actual.*MyVector.*");
 
   DRAKE_EXPECT_NO_THROW(
       system_.EvalInputValue<BasicVector<double>>(*context_, 1));
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalInputValue<int>(*context_, 1), std::logic_error,
+      system_.EvalInputValue<int>(*context_, 1),
       ".*EvalInputValue.*expected.*int.*input port.*1.*actual.*MyVector.*");
 
   // Now induce errors that only apply to abstract-valued input ports.
@@ -764,26 +763,24 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   EXPECT_EQ(*system_.EvalInputValue<std::string>(*context_, 0), "");
   DRAKE_EXPECT_NO_THROW(system_.EvalAbstractInput(*context_, 0));
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalVectorInput(*context_, 0), std::logic_error,
+      system_.EvalVectorInput(*context_, 0),
       ".*EvalVectorInput.*vector port required.*input port.*0.*"
           "was declared abstract.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalInputValue<double>(*context_, 0),
-      std::logic_error,
       ".*EvalInputValue.*expected.*double.*input port.*0.*actual.*string.*");
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalEigenVectorInput(*context_, -4), std::out_of_range,
+      system_.EvalEigenVectorInput(*context_, -4),
       ".*EvalEigenVectorInput.*negative.*-4.*illegal.*");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalEigenVectorInput(*context_, 12), std::out_of_range,
+      system_.EvalEigenVectorInput(*context_, 12),
       ".*EvalEigenVectorInput.*no input port.*12.*only.*4.*");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalEigenVectorInput(*context_, 0),
-      std::logic_error,
       ".*EvalEigenVectorInput.*vector port required.*input port.*0.*"
           "was declared abstract.*");
 #pragma GCC diagnostic pop

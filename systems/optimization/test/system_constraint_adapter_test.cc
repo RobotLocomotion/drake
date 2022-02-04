@@ -223,7 +223,7 @@ GTEST_TEST(SystemConstraintAdapterTest,
     DRAKE_EXPECT_THROWS_MESSAGE(
         adapter.MaybeCreateGenericConstraintSymbolically(
             system.constraint_index(), *context),
-        std::invalid_argument, failure_message);
+        failure_message);
   };
 
   // With abstract state, no abstract parameters.

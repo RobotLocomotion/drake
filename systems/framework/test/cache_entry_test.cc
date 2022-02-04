@@ -188,7 +188,7 @@ GTEST_TEST(CacheEntryAllocTest, BadAllocGetsCaught) {
   // description, and the specific message. The first three are boilerplate so
   // we'll just check once here; everywhere else we'll just check for the
   // right message.
-  DRAKE_EXPECT_THROWS_MESSAGE(system.AllocateContext(), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(system.AllocateContext(),
                               ".*cache_entry_test_system"
                               ".*MySystemBase"
                               ".*bad alloc entry"
@@ -209,7 +209,6 @@ GTEST_TEST(CacheEntryAllocTest, EmptyPrerequisiteListForbidden) {
           "no prerequisites", alloc3_calc99, {system.nothing_ticket()}));
   DRAKE_EXPECT_THROWS_MESSAGE(
       system.DeclareCacheEntry("empty prerequisites", alloc3_calc99, {}),
-      std::logic_error,
       ".*[Cc]annot create.*empty prerequisites.*nothing_ticket.*");
 }
 
@@ -297,7 +296,6 @@ class CacheEntryTest : public ::testing::Test {
     // Let's change string's initial value. Can't when it's up to date.
     DRAKE_EXPECT_THROWS_MESSAGE(
         cache_value(string_index_).SetValueOrThrow<string>("initial"),
-        std::logic_error,
         ".*SetValueOrThrow().*current value.*already up to date.*");
     cache_value(string_index_).mark_out_of_date();
     cache_value(string_index_).SetValueOrThrow<string>("initial");
@@ -306,7 +304,7 @@ class CacheEntryTest : public ::testing::Test {
 
     // vector_entry still invalid so we can only peek.
     DRAKE_EXPECT_THROWS_MESSAGE(
-        vector_entry().GetKnownUpToDate<MyVector3d>(context_), std::logic_error,
+        vector_entry().GetKnownUpToDate<MyVector3d>(context_),
         ".*GetKnownUpToDate().*value out of date.*");
     EXPECT_EQ(
         cache_value(vector_index_).PeekValueOrThrow<MyVector3d>().get_value(),
@@ -379,7 +377,6 @@ TEST_F(CacheEntryTest, ValueMethodsWork) {
   EXPECT_EQ(value0.serial_number(), expected_serial_num);  // No change.
   value0.mark_out_of_date();
   DRAKE_EXPECT_THROWS_MESSAGE(entry0().GetKnownUpToDate<int>(context_),
-                              std::logic_error,
                               ".*GetKnownUpToDate().*value out of date.*");
   EXPECT_EQ(entry0().Eval<int>(context_), 99);  // Should update now.
   ++expected_serial_num;
@@ -415,7 +412,7 @@ TEST_F(CacheEntryTest, ValueMethodsWork) {
   if (kDrakeAssertIsArmed) {
     auto bad_out = AbstractValue::Make<double>(3.14);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        string_entry().Calc(context_, &*bad_out), std::logic_error,
+        string_entry().Calc(context_, &*bad_out),
         ".*Calc().*expected.*type.*string.*but got.*double.*");
   }
 
@@ -425,10 +422,9 @@ TEST_F(CacheEntryTest, ValueMethodsWork) {
   // Force out-of-date.
   string_value.mark_out_of_date();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      string_entry().GetKnownUpToDateAbstract(context_), std::logic_error,
+      string_entry().GetKnownUpToDateAbstract(context_),
       ".*GetKnownUpToDateAbstract().*value out of date.*");
   DRAKE_EXPECT_THROWS_MESSAGE(string_entry().GetKnownUpToDate<string>(context_),
-                              std::logic_error,
                               ".*GetKnownUpToDate().*value out of date.*");
   string_entry().Eval<string>(context_);
   ++expected_serial_num;
@@ -443,7 +439,7 @@ TEST_F(CacheEntryTest, ValueMethodsWork) {
 
   // This is the wrong value type.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      string_entry().GetKnownUpToDate<int>(context_), std::logic_error,
+      string_entry().GetKnownUpToDate<int>(context_),
       ".*GetKnownUpToDate().*wrong value type.*int.*actual type.*string.*");
 }
 
@@ -672,11 +668,10 @@ TEST_F(CacheEntryTest, CanSwapValue) {
   if (kDrakeAssertIsArmed) {
     std::unique_ptr<AbstractValue> empty_ptr;
     DRAKE_EXPECT_THROWS_MESSAGE(entry_value.swap_value(&empty_ptr),
-                                std::logic_error,
                                 ".*swap_value().*value.*empty.*");
     auto bad_value = AbstractValue::Make<int>(29);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        entry_value.swap_value(&bad_value), std::logic_error,
+        entry_value.swap_value(&bad_value),
         ".*swap_value().*value.*wrong concrete type.*int.*"
         "[Ee]xpected.*string.*");
   }

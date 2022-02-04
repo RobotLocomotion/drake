@@ -107,40 +107,40 @@ GTEST_TEST(AntiderivativeFunctionTest, EvaluatePreconditionValidation) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       antiderivative_function.Evaluate(
           kInvalidUpperIntegrationBound),
-      std::logic_error, kInvalidIntegrationBoundErrorMessage);
+      kInvalidIntegrationBoundErrorMessage);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       antiderivative_function.MakeDenseEvalFunction(
           kInvalidUpperIntegrationBound),
-      std::logic_error, kInvalidIntegrationBoundErrorMessage);
+      kInvalidIntegrationBoundErrorMessage);
 
   DRAKE_EXPECT_THROWS_MESSAGE({
       AntiderivativeFunction<double>::IntegrableFunctionContext values;
       values.k = kInvalidParameters;
       antiderivative_function.Evaluate(
           kValidUpperIntegrationBound, values);
-    }, std::logic_error, kInvalidParametersErrorMessage);
+    }, kInvalidParametersErrorMessage);
 
   DRAKE_EXPECT_THROWS_MESSAGE({
       AntiderivativeFunction<double>::IntegrableFunctionContext values;
       values.k = kInvalidParameters;
       antiderivative_function.MakeDenseEvalFunction(
           kValidUpperIntegrationBound, values);
-    }, std::logic_error, kInvalidParametersErrorMessage);
+    }, kInvalidParametersErrorMessage);
 
   DRAKE_EXPECT_THROWS_MESSAGE({
     AntiderivativeFunction<double>::IntegrableFunctionContext values;
     values.k = kValidParameters;
     antiderivative_function.Evaluate(
         kInvalidUpperIntegrationBound, values);
-    }, std::logic_error, kInvalidIntegrationBoundErrorMessage);
+    }, kInvalidIntegrationBoundErrorMessage);
 
   DRAKE_EXPECT_THROWS_MESSAGE({
     AntiderivativeFunction<double>::IntegrableFunctionContext values;
     values.k = kValidParameters;
     antiderivative_function.MakeDenseEvalFunction(
         kInvalidUpperIntegrationBound, values);
-    }, std::logic_error, kInvalidIntegrationBoundErrorMessage);
+    }, kInvalidIntegrationBoundErrorMessage);
 }
 
 class AntiderivativeFunctionAccuracyTest

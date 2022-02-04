@@ -924,7 +924,6 @@ TEST_F(DiagramTest, ContinuousStateBelongsWithSystem) {
   auto other_context = other_diagram.AllocateContext();
   DRAKE_EXPECT_THROWS_MESSAGE(
       other_diagram.CalcTimeDerivatives(*other_context, derivatives.get()),
-      std::logic_error,
       ".*::ContinuousState<double> was not created for.*::ExampleDiagram.*");
 }
 
@@ -951,7 +950,7 @@ TEST_F(DiagramTest, GetSubsystemByName) {
       nullptr);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      diagram_->GetSubsystemByName("not_a_subsystem"), std::logic_error,
+      diagram_->GetSubsystemByName("not_a_subsystem"),
       "System .* does not have a subsystem named not_a_subsystem");
 }
 
@@ -1080,7 +1079,7 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
   auto diagram_with_double_only = std::make_unique<ExampleDiagram>(
       kSize, use_abstract, use_double_only);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      diagram_with_double_only->ToAutoDiffXd(), std::exception,
+      diagram_with_double_only->ToAutoDiffXd(),
       ".*ExampleDiagram.*AutoDiffXd.*DoubleOnlySystem.*");
 }
 
@@ -2702,13 +2701,12 @@ TEST_F(NestedDiagramContextTest, GetSubsystemContext) {
       diagram0_->GetMyMutableContextFromRoot(&*big_context_);
   // This should fail because this context is not a root context.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      integrator1_->GetMyContextFromRoot(diagram0_context), std::logic_error,
+      integrator1_->GetMyContextFromRoot(diagram0_context),
       ".*context must be a root context.*");
 
   // Should fail because integrator3 is not in diagram0.
   DRAKE_EXPECT_THROWS_MESSAGE(
       diagram0_->GetSubsystemContext(*integrator3_, diagram0_context),
-      std::logic_error,
       ".*Integrator.*int3.*not contained in.*Diagram.*diagram0.*");
 
   // Modify through the sub-Diagram context, then read back from root.
@@ -2962,16 +2960,16 @@ GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
   DRAKE_EXPECT_NO_THROW(diagram_context->SetAccuracy(1e-6));
 
   // Time & accuracy changes NOT allowed at child (leaf) level.
-  DRAKE_EXPECT_THROWS_MESSAGE(context0.SetTime(3.), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(context0.SetTime(3.),
                               ".*SetTime.*Time change allowed only.*root.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context0.SetTimeAndContinuousState(4., new_x0), std::logic_error,
+      context0.SetTimeAndContinuousState(4., new_x0),
       ".*SetTimeAndContinuousState.*Time change allowed only.*root.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context0.SetTimeStateAndParametersFrom(context1), std::logic_error,
+      context0.SetTimeStateAndParametersFrom(context1),
       ".*SetTimeStateAndParametersFrom.*Time change allowed only.*root.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context0.SetAccuracy(1e-7), std::logic_error,
+      context0.SetAccuracy(1e-7),
       ".*SetAccuracy.*Accuracy change allowed only.*root.*");
 }
 

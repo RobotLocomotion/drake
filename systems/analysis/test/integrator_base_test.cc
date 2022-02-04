@@ -263,7 +263,7 @@ GTEST_TEST(IntegratorBaseTest, DenseOutputTest) {
   context->SetTime(0.2);
   DRAKE_EXPECT_THROWS_MESSAGE(
       static_cast<void>(integrator.IntegrateWithSingleFixedStepToTime(0.3)),
-      std::runtime_error, ".*ConcatenateInTime.*time_offset.*");
+      ".*ConcatenateInTime.*time_offset.*");
 }
 
 }  // namespace

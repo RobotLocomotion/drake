@@ -446,7 +446,7 @@ GTEST_TEST(TestSystem, IsDifferentEquationSystem) {
 GTEST_TEST(TestLinearize, LinearizingOnAbstractPortThrows) {
   EmptyStateSystemWithAbstractInput<double> system;
   auto context = system.CreateDefaultContext();
-  DRAKE_EXPECT_THROWS_MESSAGE(Linearize(system, *context), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(Linearize(system, *context),
       "Port requested for differentiation is abstract, and differentiation of "
       "abstract ports is not supported.");
 }
@@ -457,7 +457,7 @@ GTEST_TEST(TestLinearize, LinearizingWithMixedInputs) {
   auto context = system.CreateDefaultContext();
 
   // First check without the vector-valued input port connected.
-  DRAKE_EXPECT_THROWS_MESSAGE(Linearize(system, *context), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(Linearize(system, *context),
                               "InputPort.*is not connected");
 
   // Now check with the vector-valued input port connected but the abstract

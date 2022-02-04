@@ -135,17 +135,17 @@ GTEST_TEST(TestBaseClass, BadAllocators) {
                                      dummy.assign_next_dependency_ticket()};
 
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      string_allocator.Allocate(), std::logic_error,
+      string_allocator.Allocate(),
       "OutputPort::Allocate().*expected BasicVector.*but got.*std::string"
       ".*OutputPort\\[0\\].*");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      bad_size_allocator.Allocate(), std::logic_error,
+      bad_size_allocator.Allocate(),
       "OutputPort::Allocate().*expected vector.*size 2.*but got.*size 3"
       ".*OutputPort\\[1\\].*");
 
   // Nullptr check is unconditional.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      null_allocator.Allocate(), std::logic_error,
+      null_allocator.Allocate(),
       "OutputPort::Allocate().*nullptr.*OutputPort\\[2\\].*");
 }
 
@@ -166,7 +166,7 @@ GTEST_TEST(TestBaseClass, BadOutputType) {
   // message is thrown in Release it must be the expected one.
   if (kDrakeAssertIsArmed) {
     DRAKE_EXPECT_THROWS_MESSAGE(
-        port.Calc(*context, bad_port_value.get()), std::logic_error,
+        port.Calc(*context, bad_port_value.get()),
         "OutputPort::Calc().*expected.*MyVector.*but got.*std::string"
         ".*OutputPort\\[0\\].*");
   }
@@ -248,7 +248,7 @@ void AbstractPortCheck(const Context<double>& context,
 
   // Can't Eval into the wrong type.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      port.Eval<int>(context), std::logic_error,
+      port.Eval<int>(context),
       "OutputPort::Eval().*wrong value type int.*actual type.*std::string.*");
 }
 
@@ -352,7 +352,7 @@ TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
   auto bad_out = AbstractValue::Make<int>(5);
   DRAKE_EXPECT_NO_THROW(absport_general_.Calc(*context_, good_out.get()));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      absport_general_.Calc(*context_, bad_out.get()), std::logic_error,
+      absport_general_.Calc(*context_, bad_out.get()),
       "OutputPort::Calc().*expected.*std::string.*got.*int.*");
 
   // The vector port is a MyVector3d, we'll give it a BasicVector.
@@ -360,7 +360,7 @@ TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
   auto bad_vec = AbstractValue::Make(BasicVector<double>(2));
   DRAKE_EXPECT_NO_THROW(vecport_general_.Calc(*context_, good_vec.get()));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      vecport_general_.Calc(*context_, bad_vec.get()), std::logic_error,
+      vecport_general_.Calc(*context_, bad_vec.get()),
       "OutputPort::Calc().*expected.*MyVector.*got.*BasicVector.*");
 }
 

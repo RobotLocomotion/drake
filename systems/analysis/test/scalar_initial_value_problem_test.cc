@@ -86,7 +86,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, ConstructionPreconditionsValidation) {
           ScalarOdeContext no_values;
       const ScalarInitialValueProblem<double> ivp(
           dummy_scalar_ode_function, no_values);
-    }, std::logic_error, "No default.*");
+    }, "No default.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE({
       ScalarInitialValueProblem<double>::
@@ -95,7 +95,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, ConstructionPreconditionsValidation) {
       values_without_t0.x0 = 0.0;
       const ScalarInitialValueProblem<double> ivp(
           dummy_scalar_ode_function, values_without_t0);
-    }, std::logic_error, "No default initial time.*");
+    }, "No default initial time.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE({
       ScalarInitialValueProblem<double>::
@@ -104,7 +104,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, ConstructionPreconditionsValidation) {
       values_without_x0.k = VectorX<double>();
       const ScalarInitialValueProblem<double> ivp(
           dummy_scalar_ode_function, values_without_x0);
-    }, std::logic_error, "No default initial state.*");
+    }, "No default initial state.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE({
       ScalarInitialValueProblem<double>::
@@ -113,7 +113,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, ConstructionPreconditionsValidation) {
       values_without_k.x0 = 0.0;
       const ScalarInitialValueProblem<double> ivp(
           dummy_scalar_ode_function, values_without_k);
-    }, std::logic_error, "No default parameters.*");
+    }, "No default parameters.*");
 }
 
 // Validates preconditions when solving any given IVP.
@@ -160,17 +160,17 @@ GTEST_TEST(ScalarInitialValueProblemTest, ComputationPreconditionsValidation) {
   const std::string kInvalidParametersErrorMessage{
     ".*parameters.*wrong dimension.*"};
 
-  DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kInvalidTime), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kInvalidTime),
                               kInvalidTimeErrorMessage);
-  DRAKE_EXPECT_THROWS_MESSAGE(ivp.DenseSolve(kInvalidTime), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(ivp.DenseSolve(kInvalidTime),
                               kInvalidTimeErrorMessage);
   {
     ScalarInitialValueProblem<double>::ScalarOdeContext values;
     values.k = kInvalidParameters;
-    DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kValidTime, values), std::logic_error,
+    DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kValidTime, values),
                                 kInvalidParametersErrorMessage);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        ivp.DenseSolve(kValidTime, values), std::logic_error,
+        ivp.DenseSolve(kValidTime, values),
         kInvalidParametersErrorMessage);
   }
 
@@ -178,9 +178,9 @@ GTEST_TEST(ScalarInitialValueProblemTest, ComputationPreconditionsValidation) {
     ScalarInitialValueProblem<double>::ScalarOdeContext values;
     values.k = kValidParameters;
     DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kInvalidTime, values),
-                                std::logic_error, kInvalidTimeErrorMessage);
+                                kInvalidTimeErrorMessage);
     DRAKE_EXPECT_THROWS_MESSAGE(ivp.DenseSolve(kInvalidTime, values),
-                                std::logic_error, kInvalidTimeErrorMessage);
+                                kInvalidTimeErrorMessage);
   }
 }
 
