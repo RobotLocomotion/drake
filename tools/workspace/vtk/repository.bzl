@@ -118,11 +118,11 @@ def _impl(repository_ctx):
         ), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "18.04":
-            archive = "vtk-9.1.0-1-bionic-x86_64.tar.gz"
-            sha256 = "1b51691d09c9fa77a74ad237fe320fed606e071f732f10645efeffa859352bb6"  # noqa
+            archive = "vtk-9.1.0-2-bionic-x86_64.tar.gz"
+            sha256 = "5d9f98533e8a2dfb9bdcc81b75c605bf728d29ebb9622a58d31f1aff12a95f90"  # noqa
         elif os_result.ubuntu_release == "20.04":
-            archive = "vtk-9.1.0-1-focal-x86_64.tar.gz"
-            sha256 = "b21e8b98ad71da205305bc074d8e3d4208e9dff307ae716384cefb4d1e606d2f"  # noqa
+            archive = "vtk-9.1.0-2-focal-x86_64.tar.gz"
+            sha256 = "a6f3379b1f0d308ae9c3209d88a42a29e9121b63a53adeafac344b1207a5e400"  # noqa
         else:
             fail("Operating system is NOT supported {}".format(os_result))
 
