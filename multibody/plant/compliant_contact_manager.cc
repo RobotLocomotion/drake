@@ -107,10 +107,15 @@ void CompliantContactManager<T>::DeclareCacheEntries() {
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.contact_jacobian = contact_jacobian_cache_entry.cache_index();
 
+  std::vector<MatrixX<T>> Amodel(num_trees());
+  for (int t = 0; t < num_trees(); ++t) {
+    const int nt = num_tree_velocities_[t];
+    Amodel[t].resize(nt, nt);
+  }
   auto& linear_dynamics_matrix_cache_entry = this->DeclareCacheEntry(
       std::string("Linear dynamics matrix, A."),
       systems::ValueProducer(
-          this, &CompliantContactManager<T>::CalcLinearDynamicsMatrix),
+          this, Amodel, &CompliantContactManager<T>::CalcLinearDynamicsMatrix),
       {systems::System<T>::xd_ticket(),
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.linear_dynamics_matrix =
@@ -119,7 +124,9 @@ void CompliantContactManager<T>::DeclareCacheEntries() {
   auto& free_motion_velocities_cache_entry = this->DeclareCacheEntry(
       std::string("Free motion velocities, v*."),
       systems::ValueProducer(
-          this, &CompliantContactManager<T>::CalcFreeMotionVelocities),
+          this, 
+          VectorX<T>(plant().num_velocities()),
+          &CompliantContactManager<T>::CalcFreeMotionVelocities),
       {systems::System<T>::xd_ticket(),
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.free_motion_velocities =

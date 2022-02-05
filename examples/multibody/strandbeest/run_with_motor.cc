@@ -27,6 +27,7 @@ a way to model kinematic loops. It shows:
 #include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/multibody/plant/compliant_contact_manager.h"
 
 namespace drake {
 
@@ -50,6 +51,7 @@ using systems::LeafSystem;
 using systems::OutputPort;
 using systems::OutputPortIndex;
 using systems::Simulator;
+using drake::multibody::internal::CompliantContactManager;
 
 namespace examples {
 namespace multibody {
@@ -61,7 +63,7 @@ DEFINE_double(simulation_time, 5.0, "Duration of the simulation in seconds.");
 DEFINE_double(initial_velocity, 1.0,
               "Initial velocity of the crossbar_crank joint.");
 
-DEFINE_double(mbt_dt, 0.0,
+DEFINE_double(mbt_dt, 0.01,
               "Discrete time step. Defaults to 0.0 for a continuous system.");
 
 DEFINE_double(penetration_allowance, 1.0e-2, "MBP penetration allowance.");
@@ -205,6 +207,25 @@ int do_main() {
     ik.AddPointToPointDistanceConstraint(
         bushing.frameA(), Eigen::Vector3d(0, 0, 0), bushing.frameC(),
         Eigen::Vector3d(0, 0, 0), 0, 0);
+  }
+
+  // Replace bushings with constraints.
+  // Add discrete update manager.  
+  auto owned_contact_manager =
+      std::make_unique<CompliantContactManager<double>>(nullptr);
+  CompliantContactManager<double>* manager = owned_contact_manager.get();
+  strandbeest.SetDiscreteUpdateManager(std::move(owned_contact_manager));  
+  for (ForceElementIndex bushing_index(1);
+       bushing_index < strandbeest.num_force_elements(); ++bushing_index) {
+    const LinearBushingRollPitchYaw<double>& bushing =
+        strandbeest.GetForceElement<LinearBushingRollPitchYaw>(bushing_index);
+
+    const double stiffness = 20000;
+    const double tau_dissipation = 0.1;
+
+    manager->AddDistanceConstraint(bushing.frameA().body(), Vector3d::Zero(),
+                                   bushing.frameC().body(), Vector3d::Zero(),
+                                   0.0, stiffness, tau_dissipation);
   }
 
   // Solve the IK. The solved positions will be stored in the context passed
