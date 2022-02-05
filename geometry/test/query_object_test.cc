@@ -269,5 +269,11 @@ TEST_F(QueryObjectTest, BakedCopyHasFullUpdate) {
   EXPECT_NE(&stale_pose, &baked_pose);
 }
 
+// Ensure that I can construct a QueryObject with the default scalar types.
+GTEST_TEST(QueryObjectScalarTest, ScalarTypes) {
+  EXPECT_NO_THROW(QueryObject<AutoDiffXd>());
+  EXPECT_NO_THROW(QueryObject<symbolic::Expression>());
+}
+
 }  // namespace geometry
 }  // namespace drake

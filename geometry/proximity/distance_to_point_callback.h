@@ -230,7 +230,7 @@ class DistanceToPoint {
 
 template <typename T>
 struct ScalarSupport {
-  static bool is_supported(fcl::NODE_TYPE node_type) { return false; }
+  static bool is_supported(fcl::NODE_TYPE) { return false; }
 };
 
 /* Primitive support for double-valued query.  */
