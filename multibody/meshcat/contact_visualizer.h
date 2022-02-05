@@ -119,10 +119,8 @@ class ContactVisualizer final : public systems::LeafSystem<T> {
   operation) from a const System (e.g., during simulation). */
   std::unique_ptr<internal::PointContactVisualizer> point_visualizer_;
 
-  /* The index of this System's ContactResults-valued input port. */
   systems::InputPortIndex contact_results_input_port_;
-
-  /* The index of the point_contacts cache entry. */
+  systems::CacheIndex geometry_names_scratch_;
   systems::CacheIndex point_contacts_cache_;
 };
 
