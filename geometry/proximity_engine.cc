@@ -42,6 +42,7 @@ using std::shared_ptr;
 using std::unique_ptr;
 using std::unordered_map;
 using std::vector;
+using symbolic::Expression;
 
 namespace {
 
@@ -230,8 +231,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   Impl(Impl&& other) = delete;
   Impl& operator=(Impl&&) = delete;
 
-  std::unique_ptr<ProximityEngine<AutoDiffXd>::Impl> ToAutoDiff() const {
-    auto engine = make_unique<ProximityEngine<AutoDiffXd>::Impl>();
+  template <typename U>
+  std::unique_ptr<typename ProximityEngine<U>::Impl> ToScalarType() const {
+    auto engine = make_unique<typename ProximityEngine<U>::Impl>();
 
     // TODO(SeanCurtis-TRI): When AutoDiff is fully supported in the internal
     // types, modify this map to the appropriate scalar and modify consuming
@@ -573,7 +575,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return data.collisions_exist;
   }
 
-  vector<ContactSurface<T>> ComputeContactSurfaces(
+  template <typename T1 = T>
+  std::enable_if_t<!std::is_same_v<T1, Expression>, vector<ContactSurface<T>>>
+  ComputeContactSurfaces(
       HydroelasticContactRepresentation representation,
       const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
     vector<ContactSurface<T>> surfaces;
@@ -594,7 +598,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return surfaces;
   }
 
-  void ComputeContactSurfacesWithFallback(
+  template <typename T1 = T>
+  std::enable_if_t<!std::is_same_v<T1, Expression>, void>
+  ComputeContactSurfacesWithFallback(
       HydroelasticContactRepresentation representation,
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
       std::vector<ContactSurface<T>>* surfaces,
@@ -874,10 +880,10 @@ double ProximityEngine<T>::distance_tolerance() const {
 }
 
 template <typename T>
-std::unique_ptr<ProximityEngine<AutoDiffXd>> ProximityEngine<T>::ToAutoDiffXd()
-    const {
-  return unique_ptr<ProximityEngine<AutoDiffXd>>(
-      new ProximityEngine<AutoDiffXd>(impl_->ToAutoDiff().release()));
+template <typename U>
+std::unique_ptr<ProximityEngine<U>> ProximityEngine<T>::ToScalarType() const {
+  return std::unique_ptr<ProximityEngine<U>>(
+      new ProximityEngine<U>(impl_->template ToScalarType<U>().release()));
 }
 
 template <typename T>
@@ -934,7 +940,13 @@ template <typename T>
 std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces(
     HydroelasticContactRepresentation representation,
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
-  return impl_->ComputeContactSurfaces(representation, X_WGs);
+  if constexpr(std::is_same_v<T, symbolic::Expression>) {
+    unused(representation, X_WGs);
+    throw std::runtime_error(
+        "Hydroelastic contact does not support symbolic::Expression.");
+  } else {
+    return impl_->ComputeContactSurfaces(representation, X_WGs);
+  }
 }
 
 template <typename T>
@@ -943,8 +955,14 @@ void ProximityEngine<T>::ComputeContactSurfacesWithFallback(
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
     std::vector<ContactSurface<T>>* surfaces,
     std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-  return impl_->ComputeContactSurfacesWithFallback(representation, X_WGs,
+  if constexpr(std::is_same_v<T, symbolic::Expression>) {
+    unused(representation, X_WGs, surfaces, point_pairs);
+    throw std::runtime_error(
+        "Hydroelastic contact does not support symbolic::Expression.");
+  } else {
+    return impl_->ComputeContactSurfacesWithFallback(representation, X_WGs,
                                                    surfaces, point_pairs);
+  }
 }
 
 template <typename T>
@@ -977,9 +995,12 @@ bool ProximityEngine<T>::IsFclConvexType(GeometryId id) const {
   return impl_->IsFclConvexType(id);
 }
 
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (&ProximityEngine<T>::template ToScalarType<U>))
+
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::geometry::internal::ProximityEngine)
