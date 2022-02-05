@@ -80,6 +80,9 @@ class ProximityEngine {
    to using the copy constructor to create a duplicate on the heap.  */
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ToAutoDiffXd() const;
 
+  template <typename U>
+  std::unique_ptr<ProximityEngine<U>> ToScalarType() const;
+
   /* Provides access to the mutable collision filter this engine uses. */
   CollisionFilter& collision_filter();
 

@@ -10,6 +10,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
+#include "drake/common/extract_double.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
@@ -1024,8 +1025,10 @@ void GeometryState<T>::RenderLabelImage(const ColorRenderCamera& camera,
 }
 
 template <typename T>
-std::unique_ptr<GeometryState<AutoDiffXd>> GeometryState<T>::ToAutoDiffXd()
-    const {
+template <typename T1>
+typename std::enable_if_t<std::is_same_v<T1, double>,
+                          std::unique_ptr<GeometryState<AutoDiffXd>>>
+GeometryState<T>::ToAutoDiffXd() const {
   return std::unique_ptr<GeometryState<AutoDiffXd>>(
       new GeometryState<AutoDiffXd>(*this));
 }
@@ -1393,8 +1396,5 @@ RigidTransformd GeometryState<T>::GetDoubleWorldPose(FrameId frame_id) const {
 }  // namespace geometry
 }  // namespace drake
 
-// TODO(SeanCurtis-TRI): Currently assumes that "non-symbolic" implies
-// AutoDiffXd. Update things appropriately when more non-symbolic scalars
-// are available.
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::geometry::GeometryState)

@@ -530,7 +530,10 @@ class GeometryState {
    scalar values initialized from the current values. If this is invoked on an
    instance already instantiated on AutoDiffXd, it is equivalent to cloning
    the instance.  */
-  std::unique_ptr<GeometryState<AutoDiffXd>> ToAutoDiffXd() const;
+  template <typename T1 = T>
+  typename std::enable_if_t<std::is_same_v<T1, double>,
+                            std::unique_ptr<GeometryState<AutoDiffXd>>>
+  ToAutoDiffXd() const;
 
   //@}
 
@@ -539,8 +542,7 @@ class GeometryState {
   template <typename>
   friend class GeometryState;
 
-  // Conversion constructor. In the initial implementation, this is only
-  // intended to be used to clone an AutoDiffXd instance from a double instance.
+  // Conversion constructor.
   // It is _vitally_ important that all members are _explicitly_ accounted for
   // (either in the initialization list or in the body). Failure to do so will
   // lead to errors in the converted GeometryState instance.
@@ -554,7 +556,8 @@ class GeometryState {
         frames_(source.frames_),
         geometries_(source.geometries_),
         frame_index_to_id_map_(source.frame_index_to_id_map_),
-        geometry_engine_(std::move(source.geometry_engine_->ToAutoDiffXd())),
+        geometry_engine_(
+            std::move(source.geometry_engine_->template ToScalarType<T>())),
         render_engines_(source.render_engines_),
         geometry_version_(source.geometry_version_) {
     auto convert_pose_vector = [](const std::vector<math::RigidTransform<U>>& s,
