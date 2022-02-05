@@ -104,7 +104,7 @@ class SceneGraph;
      report no more than 1e-14 error across all supportable geometry pairs
      and scalars. At that point, the table will simply disappear.
 
- @tparam_nonsymbolic_scalar
+ @tparam_default_scalar
 */
 template <typename T>
 class QueryObject {
@@ -319,7 +319,10 @@ class QueryObject {
             contact surfaces. The ordering of the results is guaranteed to be
             consistent -- for fixed geometry poses, the results will remain
             the same.  */
-  std::vector<ContactSurface<T>> ComputeContactSurfaces(
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool,
+                            std::vector<ContactSurface<T>>>
+  ComputeContactSurfaces(
       HydroelasticContactRepresentation representation) const;
 
   /** Reports pairwise intersections and characterizes each non-empty
@@ -356,7 +359,9 @@ class QueryObject {
                           and ComputePointPairPenetration().
    @note The `surfaces` and `point_pairs` are output pointers in C++, but are
    return values in the Python bindings. */
-  void ComputeContactSurfacesWithFallback(
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+  ComputeContactSurfacesWithFallback(
       HydroelasticContactRepresentation representation,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
