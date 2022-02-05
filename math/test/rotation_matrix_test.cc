@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/extract_double.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -1136,6 +1137,8 @@ void VerifyMakeFromOneUnitVector(const RotationMatrix<double>& R_AB,
 // tests in VerifyMakeFromOneUnitVector(), and do so for a set of test vectors
 // that span a relevant combination of u_min (u_min is defined above).
 GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
+  using symbolic::Expression;
+
   const std::vector<Vector3<double>> test_vectors {
     Vector3<double>{0, 1, 2},        // u_min = ux = 0
     Vector3<double>{2, 0, 1},        // u_min = uy = 0
@@ -1161,6 +1164,13 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
       const RotationMatrix<double> R_AB_basic =
           RotationMatrix<double>::MakeFromOneVector(b_A, axis_index);
       EXPECT_TRUE(CompareMatrices(R_AB.matrix(), R_AB_basic.matrix()));
+
+      // Verify that it also works for a "constant" Expression (holding double
+      // values).
+      const RotationMatrix<Expression> R_AB_sym =
+          RotationMatrix<Expression>::MakeFromOneVector(b_A, axis_index);
+      EXPECT_TRUE(CompareMatrices(R_AB.matrix(),
+                                  ExtractDoubleOrThrow(R_AB_sym.matrix())));
     }
   }
 }
@@ -1218,14 +1228,6 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
     EXPECT_FALSE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(1, 2, 3), axis_index).IsValid());
   }
-
-  // Verify an exception is always thrown for a symbolic (non-numeric) type.
-  Vector3<symbolic::Expression> u_symbolic(1, 0, 0);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      RotationMatrix<symbolic::Expression>::MakeFromOneVector(u_symbolic,
-                                                              axis_index),
-      "RotationMatrix::MakeFromOneUnitVector.* "
-      "cannot be used with a symbolic type.");
 }
 
 // Verify that the "basic" method MakeFromOneVector() throws an exception in
@@ -1269,14 +1271,6 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   const Vector3<double> huge_vector(1.2E21, 3.4E42, -5.6E63);
   R_AB = RotationMatrix<double>::MakeFromOneVector(huge_vector, axis_index);
   VerifyMakeFromOneUnitVector(R_AB, huge_vector.normalized(), axis_index);
-
-  // Verify an exception is always thrown for a symbolic (non-numeric) type.
-  Vector3<symbolic::Expression> v_symbolic(3, 2, 1);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      RotationMatrix<symbolic::Expression>::MakeFromOneVector(v_symbolic,
-                                                              axis_index),
-      "RotationMatrix::MakeFromOneUnitVector.* "
-      "cannot be used with a symbolic type.");
 }
 
 }  // namespace

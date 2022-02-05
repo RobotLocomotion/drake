@@ -63,7 +63,7 @@ using FrameIdSet = std::unordered_set<FrameId>;
 
  @note This is intended as an internal class only.
 
- @tparam_nonsymbolic_scalar
+ @tparam_default_scalar
 */
 template <typename T>
 class GeometryState {
@@ -403,13 +403,18 @@ class GeometryState {
   }
 
   /** Implementation of QueryObject::ComputeContactSurfaces().  */
-  std::vector<ContactSurface<T>> ComputeContactSurfaces(
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool,
+                            std::vector<ContactSurface<T>>>
+  ComputeContactSurfaces(
       HydroelasticContactRepresentation representation) const {
     return geometry_engine_->ComputeContactSurfaces(representation, X_WGs_);
   }
 
   /** Implementation of QueryObject::ComputeContactSurfacesWithFallback().  */
-  void ComputeContactSurfacesWithFallback(
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+  ComputeContactSurfacesWithFallback(
       HydroelasticContactRepresentation representation,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
@@ -530,7 +535,10 @@ class GeometryState {
    scalar values initialized from the current values. If this is invoked on an
    instance already instantiated on AutoDiffXd, it is equivalent to cloning
    the instance.  */
-  std::unique_ptr<GeometryState<AutoDiffXd>> ToAutoDiffXd() const;
+  template <typename T1 = T>
+  typename std::enable_if_t<!std::is_same_v<T1, symbolic::Expression>,
+                            std::unique_ptr<GeometryState<AutoDiffXd>>>
+  ToAutoDiffXd() const;
 
   //@}
 
@@ -539,11 +547,14 @@ class GeometryState {
   template <typename>
   friend class GeometryState;
 
-  // Conversion constructor. In the initial implementation, this is only
-  // intended to be used to clone an AutoDiffXd instance from a double instance.
+  // Conversion constructor.
   // It is _vitally_ important that all members are _explicitly_ accounted for
   // (either in the initialization list or in the body). Failure to do so will
   // lead to errors in the converted GeometryState instance.
+  //
+  // TODO(russt): Move this to the .cc file, support
+  // (T=AutoDiffXd,U=Expression), and remove the enable_if restriction on
+  // ToAutoDiffXd().
   template <typename U>
   explicit GeometryState(const GeometryState<U>& source)
       : self_source_(source.self_source_),
@@ -554,7 +565,8 @@ class GeometryState {
         frames_(source.frames_),
         geometries_(source.geometries_),
         frame_index_to_id_map_(source.frame_index_to_id_map_),
-        geometry_engine_(std::move(source.geometry_engine_->ToAutoDiffXd())),
+        geometry_engine_(
+            std::move(source.geometry_engine_->template ToScalarType<T>())),
         render_engines_(source.render_engines_),
         geometry_version_(source.geometry_version_) {
     auto convert_pose_vector = [](const std::vector<math::RigidTransform<U>>& s,

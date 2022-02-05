@@ -104,7 +104,7 @@ class SceneGraph;
      report no more than 1e-14 error across all supportable geometry pairs
      and scalars. At that point, the table will simply disappear.
 
- @tparam_nonsymbolic_scalar
+ @tparam_default_scalar
 */
 template <typename T>
 class QueryObject {
@@ -239,6 +239,18 @@ class QueryObject {
    geometries approximately 20cm in size for `T` = @ref drake::AutoDiffXd
    "AutoDiffXd".
 
+   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
+   | --------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
+   | Box       | throwsᵉ |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Capsule   | throwsᵉ | throwsᵉ  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Convex    | throwsᵉ | throwsᵉ  | throwsᵉ |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Cylinder  | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Ellipsoid | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | HalfSpace | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |   throwsᵉ  |  ░░░░░  |  ░░░░░  |
+   | Mesh      |    ᵇ    |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
+   | Sphere    | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |    throwsᵉ  |    ᵇ    | throwsᵉ |
+   __*Table 3*__: Support for `T` = @ref drake::symbolic::Expression.
+
    - ᵃ Penetration depth between two HalfSpace instances has no meaning; either
        they don't intersect, or they have infinite penetration.
    - ᵇ Meshes are represented by the *convex* hull of the mesh, therefore the
@@ -248,6 +260,8 @@ class QueryObject {
        values reported here are confirmed, observed worst case answers.
    - ᵈ These results are simply not supported for
        `T` = @ref drake::AutoDiffXd "AutoDiffXd" at this time.
+   - ᵉ These results are simply not supported for
+       `T` = @ref drake::symbolic::Expression at this time.
 
    <!-- Note to developers: the tests that support the assertions here are
    located in penetration_as_point_pair_characterize_test.cc. The values in this
@@ -305,10 +319,10 @@ class QueryObject {
 
    <h3>Scalar support</h3>
 
-   This method provides support for both double and AutoDiffXd. Like with the
-   other proximity queries, derivatives can only be introduced via geometry
-   *poses*. We cannot differentiate w.r.t. geometric properties (e.g., radius,
-   length, etc.)
+   This method provides support for both double and AutoDiffXd, but not
+   Expression. Like with the other proximity queries, derivatives can only be
+   introduced via geometry *poses*. We cannot differentiate w.r.t. geometric
+   properties (e.g., radius, length, etc.)
 
    @param representation  Controls the mesh representation of the contact
                           surface. See
@@ -319,7 +333,10 @@ class QueryObject {
             contact surfaces. The ordering of the results is guaranteed to be
             consistent -- for fixed geometry poses, the results will remain
             the same.  */
-  std::vector<ContactSurface<T>> ComputeContactSurfaces(
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool,
+                            std::vector<ContactSurface<T>>>
+  ComputeContactSurfaces(
       HydroelasticContactRepresentation representation) const;
 
   /** Reports pairwise intersections and characterizes each non-empty
@@ -341,7 +358,7 @@ class QueryObject {
    The scalar support is a combination of the scalar support offered by
    ComputeContactSurfaces() and ComputePointPairPenetration(). This method
    supports double and AutoDiffXd to the extent that those constituent methods
-   do.
+   do, but does not support Expression.
 
    @param representation    Controls the mesh representation of the contact
                             surface. See
@@ -356,7 +373,9 @@ class QueryObject {
                           and ComputePointPairPenetration().
    @note The `surfaces` and `point_pairs` are output pointers in C++, but are
    return values in the Python bindings. */
-  void ComputeContactSurfacesWithFallback(
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+  ComputeContactSurfacesWithFallback(
       HydroelasticContactRepresentation representation,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
@@ -482,7 +501,7 @@ class QueryObject {
    | HalfSpace | throwsᵃ |  throwsᵃ | throwsᵃ |  throwsᵃ  |  throwsᵃ   |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
    | Mesh      |    ᶜ    |    ᶜ     |    ᶜ    |     ᶜ     |      ᶜ     |   throwsᵃ  |    ᶜ    |  ░░░░░  |
    | Sphere    |  3e-15  |  6e-15   |   3e-6  |   5e-15   |    4e-5    |    3e-15   |    ᶜ    |  6e-15  |
-   __*Table 3*__: Worst observed error (in m) for 2mm penetration/separation
+   __*Table 4*__: Worst observed error (in m) for 2mm penetration/separation
    between geometries approximately 20cm in size for `T` = `double`.
 
    |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
@@ -495,9 +514,21 @@ class QueryObject {
    | HalfSpace | throwsᵃ |  throwsᵃ | throwsᵃ |  throwsᵃ  |  throwsᵃ   |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
    | Mesh      |    ᶜ    |    ᶜ     |    ᶜ    |     ᶜ     |      ᶜ     |      ᵃ     |    ᶜ    |  ░░░░░  |
    | Sphere    |  2e-15  |  throwsᵇ | throwsᵇ |  throwsᵇ  |  throwsᵇ   |    2e-15   |    ᶜ    |  5e-15  |
-   __*Table 4*__: Worst observed error (in m) for 2mm penetration/separation
+   __*Table 5*__: Worst observed error (in m) for 2mm penetration/separation
    between geometries approximately 20cm in size for `T` =
    @ref drake::AutoDiffXd "AutoDiffXd".
+
+   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
+   | --------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
+   | Box       | throwsᵈ |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Capsule   | throwsᵈ | throwsᵈ  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Convex    | throwsᵈ | throwsᵈ  | throwsᵈ |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Cylinder  | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Ellipsoid | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | HalfSpace | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   throwsᵈ  |  ░░░░░  |  ░░░░░  |
+   | Mesh      |    ᵇ    |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
+   | Sphere    | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |    throwsᵈ  |    ᵇ    | throwsᵈ |
+   __*Table 6*__: Support for `T` = @ref drake::symbolic::Expression.
 
    - ᵃ We don't currently support queries between HalfSpace and any other shape
        (except for Sphere).
@@ -505,6 +536,8 @@ class QueryObject {
        `T` = @ref drake::AutoDiffXd "AutoDiffXd" at this time.
    - ᶜ Meshes are represented by the *convex* hull of the mesh, therefore the
        results for Mesh are the same as for Convex.
+   - ᵈ These results are simply not supported for
+       `T` = @ref drake::symbolic::Expression at this time.
 
    <!-- Note to developers: the tests that support the assertions here are
    located in distance_to_shape_characterize_test.cc. The values in this
@@ -587,11 +620,12 @@ class QueryObject {
    of shape pairs, but a list of shapes. Otherwise, the methodology is the same
    as described, with the point being represented as a zero-radius sphere.
 
-   | Scalar |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
+   |   Scalar   |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
    | :----: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
-   | double |  2e-15  |   4e-15  |    ᵃ    |   3e-15   |    3e-5ᵇ   |    5e-15   |    ᵃ    |  4e-15  |
-   | ADXd   |  1e-15  |   4e-15  |    ᵃ    |     ᵃ     |      ᵃ     |    5e-15   |    ᵃ    |  3e-15  |
-   __*Table 5*__: Worst observed error (in m) for 2mm penetration/separation
+   |   double   |  2e-15  |   4e-15  |    ᵃ    |   3e-15   |    3e-5ᵇ   |    5e-15   |    ᵃ    |  4e-15  |
+   | AutoDiffXd |  1e-15  |   4e-15  |    ᵃ    |     ᵃ     |      ᵃ     |    5e-15   |    ᵃ    |  3e-15  |
+   | Expression |   ᵃ     |    ᵃ     |    ᵃ    |     ᵃ     |      ᵃ     |      ᵃ     |    ᵃ    |    ᵃ    |
+   __*Table 7*__: Worst observed error (in m) for 2mm penetration/separation
    between geometry approximately 20cm in size and a point.
 
    - ᵃ Unsupported geometry/scalar combinations are simply ignored; no results

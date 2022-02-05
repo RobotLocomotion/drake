@@ -25,9 +25,8 @@ SceneGraphInspector<T>::CloneGeometryInstance(GeometryId id) const {
   return geometry_instance;
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class SceneGraphInspector<double>;
-template class SceneGraphInspector<AutoDiffXd>;
-
 }  // namespace geometry
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::geometry::SceneGraphInspector)
