@@ -104,7 +104,7 @@ class SceneGraph;
      report no more than 1e-14 error across all supportable geometry pairs
      and scalars. At that point, the table will simply disappear.
 
- @tparam_nonsymbolic_scalar
+ @tparam_default_scalar
 */
 template <typename T>
 class QueryObject {

@@ -16,12 +16,6 @@ RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
   DRAKE_ASSERT(axis_index >= 0 && axis_index <= 2);
   DRAKE_ASSERT_VOID(ThrowIfNotUnitLength(u_A, __func__));
 
-  if constexpr (scalar_predicate<T>::is_bool == false) {
-    throw std::logic_error(
-        "RotationMatrix::MakeFromOneUnitVector() "
-        "cannot be used with a symbolic type.");
-  }
-
   // This method forms a right-handed orthonormal basis with u_A and two
   // internally-constructed unit vectors v_A and w_A.
   // Herein u_A, v_A, w_A are abbreviated u, v, w, respectively.

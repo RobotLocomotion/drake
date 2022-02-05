@@ -18,6 +18,7 @@ namespace {
 
 using math::RigidTransform;
 using math::RollPitchYaw;
+using symbolic::Expression;
 
 GTEST_TEST(GeometryUtilities, CanonicalizeGeometryName) {
   // Confirms that the canonical version of the given name is unchanged.
@@ -75,6 +76,11 @@ GTEST_TEST(GeometryUtilities, RigidTransformConversion) {
   RigidTransform<double> X_AB_ad_converted = convert_to_double(X_AB_ad);
   EXPECT_TRUE(
       CompareMatrices(X_AB.GetAsMatrix34(), X_AB_ad_converted.GetAsMatrix34()));
+
+  RigidTransform<Expression> X_AB_sym(X_AB.cast<Expression>());
+  RigidTransform<double> X_AB_sym_converted = convert_to_double(X_AB_sym);
+  EXPECT_TRUE(CompareMatrices(X_AB.GetAsMatrix34(),
+                              X_AB_sym_converted.GetAsMatrix34()));
 }
 
 GTEST_TEST(GeometryUtilities, MapKeyRange) {

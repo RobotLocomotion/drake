@@ -8,6 +8,7 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/extract_double.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -84,9 +85,9 @@ inline const Vector3<double>& convert_to_double(const Vector3<double>& vec) {
   return vec;
 }
 
-template <class VectorType>
+template <class T>
 Vector3<double> convert_to_double(
-    const Vector3<Eigen::AutoDiffScalar<VectorType>>& vec) {
+    const Vector3<T>& vec) {
   Vector3<double> result;
   for (int r = 0; r < 3; ++r) {
     result(r) = ExtractDoubleOrThrow(vec(r));
@@ -113,6 +114,13 @@ math::RigidTransformd convert_to_double(
   }
   return math::RigidTransformd(math::RotationMatrixd(R_converted), p_converted);
 }
+
+inline math::RigidTransformd convert_to_double(
+    const math::RigidTransform<symbolic::Expression>& X_AB) {
+  return math::RigidTransform<double>(
+      ExtractDoubleOrThrow(X_AB.GetAsMatrix34()));
+}
+
 
 //@}
 

@@ -52,7 +52,7 @@ namespace internal {
  <h3>Geometry proximity properties</h3>
  -->
 
- @tparam_nonsymbolic_scalar
+ @tparam_default_scalar
 
  @internal Historically, this replaces the DrakeCollision::Model class.  */
 template <typename T>
@@ -75,10 +75,11 @@ class ProximityEngine {
    engine will be returned to its default-initialized state.  */
   ProximityEngine& operator=(ProximityEngine&& other) noexcept;
 
-  /* Returns an independent copy of this engine templated on the AutoDiffXd
-   scalar type. If the engine is already an AutoDiffXd engine, it is equivalent
-   to using the copy constructor to create a duplicate on the heap.  */
-  std::unique_ptr<ProximityEngine<AutoDiffXd>> ToAutoDiffXd() const;
+  /* Returns an independent copy of this engine templated on a scalar type. If
+   T=U, it is equivalent to using the copy constructor to create a duplicate on
+   the heap. */
+  template <typename U>
+  std::unique_ptr<ProximityEngine<U>> ToScalarType() const;
 
   /* Provides access to the mutable collision filter this engine uses. */
   CollisionFilter& collision_filter();
