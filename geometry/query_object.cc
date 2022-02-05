@@ -104,7 +104,10 @@ bool QueryObject<T>::HasCollisions() const {
 }
 
 template <typename T>
-std::vector<ContactSurface<T>> QueryObject<T>::ComputeContactSurfaces(
+template <typename T1>
+typename std::enable_if_t<scalar_predicate<T1>::is_bool,
+                          std::vector<ContactSurface<T>>>
+QueryObject<T>::ComputeContactSurfaces(
     HydroelasticContactRepresentation representation) const {
   ThrowIfNotCallable();
 
@@ -114,7 +117,9 @@ std::vector<ContactSurface<T>> QueryObject<T>::ComputeContactSurfaces(
 }
 
 template <typename T>
-void QueryObject<T>::ComputeContactSurfacesWithFallback(
+template <typename T1>
+typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+QueryObject<T>::ComputeContactSurfacesWithFallback(
     HydroelasticContactRepresentation representation,
     std::vector<ContactSurface<T>>* surfaces,
     std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
@@ -220,8 +225,22 @@ const GeometryState<T>& QueryObject<T>::geometry_state() const {
   }
 }
 
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&QueryObject<T>::template ComputeContactSurfaces<T>))
+
+// The DEFINE_FUNCTION_TEMPLATE macro doesn't handle 3 arguments yet.
+template void QueryObject<double>::ComputeContactSurfacesWithFallback<double>(
+    HydroelasticContactRepresentation representation,
+    std::vector<ContactSurface<double>>* surfaces,
+    std::vector<PenetrationAsPointPair<double>>* point_pairs) const;
+template void
+QueryObject<AutoDiffXd>::ComputeContactSurfacesWithFallback<AutoDiffXd>(
+    HydroelasticContactRepresentation representation,
+    std::vector<ContactSurface<AutoDiffXd>>* surfaces,
+    std::vector<PenetrationAsPointPair<AutoDiffXd>>* point_pairs) const;
+
 }  // namespace geometry
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::geometry::QueryObject)

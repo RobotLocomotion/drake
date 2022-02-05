@@ -166,15 +166,6 @@ void RgbdSensor::ConvertDepth32FTo16U(const ImageDepth32F& d32,
   }
 }
 
-// Note: Ideally, this would be inlined. However, inlining this caused GCC
-// to do something weird with GeometryState such that the rgbd_sensor_test.cc
-// was unable to instantiate an GeometryStateTester that GCC recognized as a
-// friend to GeometryState.
-const geometry::QueryObject<double>& RgbdSensor::get_query_object(
-    const Context<double>& context) const {
-  return query_object_input_port().Eval<geometry::QueryObject<double>>(context);
-}
-
 RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
                                        double period, bool render_label_image)
     : camera_(camera.get()), period_(period) {

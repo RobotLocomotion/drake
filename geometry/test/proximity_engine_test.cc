@@ -92,6 +92,8 @@ using std::shared_ptr;
 using std::unordered_map;
 using std::vector;
 
+using symbolic::Expression;
+
 // Tests for manipulating the population of the proximity engine.
 
 // Test simple addition of dynamic geometry.
@@ -260,7 +262,7 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
     const auto X_WGs_d = PopulateEngine(&engine_d, sphere, anchored, soft, mesh,
                                         !anchored, !soft);
 
-    const auto engine_ad = engine_d.ToAutoDiffXd();
+    const auto engine_ad = engine_d.ToScalarType<AutoDiffXd>();
     unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
     bool added_derivatives = false;
     for (const auto& [id, X_WG_d] : X_WGs_d) {
@@ -301,7 +303,7 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
     ProximityEngine<double> engine_d;
     const auto X_WGs_d =
         PopulateEngine(&engine_d, sphere, false, !soft, sphere, false, !soft);
-    const auto engine_ad = engine_d.ToAutoDiffXd();
+    const auto engine_ad = engine_d.ToScalarType<AutoDiffXd>();
     unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
     for (const auto& [id, X_WG_d] : X_WGs_d) {
       X_WGs_ad[id] = RigidTransform<AutoDiffXd>(X_WG_d.GetAsMatrix34());
@@ -1677,6 +1679,16 @@ TEST_P(SignedDistanceToPointTest, SingleQueryPointWithThreshold) {
       engine.ComputeSignedDistanceToPoint(data.p_WQ, X_WGs, small_threshold);
   // The small threshold skips all objects.
   EXPECT_EQ(results.size(), 0);
+
+  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
+      engine.ToScalarType<Expression>();
+  auto sym_results = sym_engine->ComputeSignedDistanceToPoint(
+      data.p_WQ.cast<Expression>(),
+      {{data.expected_result.id_G, data.X_WG.cast<Expression>()}},
+      large_threshold);
+  // No geometries are supported yet for Expression. Currently, this call
+  // succeeds, but will always return empty results.
+  EXPECT_EQ(sym_results.size(), 0);
 }
 
 // To debug a specific test, you can use Bazel flag --test_filter and
@@ -2258,10 +2270,15 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectPenetration(anchored_id, dynamic_id, &copy_engine);
 
-  // Test AutoDiffXd converted engine.
+  // Test scalar-converted engines.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToAutoDiffXd();
+      engine_.ToScalarType<AutoDiffXd>();
   ExpectPenetration(anchored_id, dynamic_id, ad_engine.get());
+  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
+      engine_.ToScalarType<Expression>();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ExpectPenetration(anchored_id, dynamic_id, sym_engine.get()),
+      ".*are not supported for scalar type drake::symbolic::Expression.*");
 }
 
 // Performs the same collision test between two dynamic spheres which belong to
@@ -2289,10 +2306,15 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectPenetration(origin_id, collide_id, &copy_engine);
 
-  // Test AutoDiffXd converted engine.
+  // Test scalar-converted engines.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToAutoDiffXd();
+      engine_.ToScalarType<AutoDiffXd>();
   ExpectPenetration(origin_id, collide_id, ad_engine.get());
+  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
+      engine_.ToScalarType<Expression>();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ExpectPenetration(origin_id, collide_id, sym_engine.get()),
+      ".*are not supported for scalar type drake::symbolic::Expression.*");
 }
 
 // Tests if collisions exist between dynamic and anchored sphere. One case
@@ -2323,10 +2345,13 @@ TEST_F(SimplePenetrationTest, HasCollisionsDynamicAndAnchored) {
   ProximityEngine<double> copy_engine(engine_);
   EXPECT_TRUE(copy_engine.HasCollisions());
 
-  // Test AutoDiffXd converted engine.
+  // Test scalar-converted engines.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToAutoDiffXd();
+      engine_.ToScalarType<AutoDiffXd>();
   EXPECT_TRUE(ad_engine->HasCollisions());
+  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
+      engine_.ToScalarType<Expression>();
+  EXPECT_TRUE(sym_engine->HasCollisions());
 }
 
 // Performs the same collision test between two dynamic spheres which belong to
@@ -2354,10 +2379,13 @@ TEST_F(SimplePenetrationTest, HasCollisionsDynamicAndDynamicSingleSource) {
   ProximityEngine<double> copy_engine(engine_);
   EXPECT_TRUE(copy_engine.HasCollisions());
 
-  // Test AutoDiffXd converted engine.
+  // Test scalar-converted engines.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToAutoDiffXd();
+      engine_.ToScalarType<AutoDiffXd>();
   EXPECT_TRUE(ad_engine->HasCollisions());
+  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
+      engine_.ToScalarType<Expression>();
+  EXPECT_TRUE(sym_engine->HasCollisions());
 }
 
 // Performs the same collision test where the geometries have been filtered.
@@ -2398,10 +2426,13 @@ TEST_F(SimplePenetrationTest, WithCollisionFilters) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectIgnoredPenetration(origin_id, collide_id, &copy_engine);
 
-  // Test AutoDiffXd converted engine.
+  // Test scalar-converted engines.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToAutoDiffXd();
+      engine_.ToScalarType<AutoDiffXd>();
   ExpectIgnoredPenetration(origin_id, collide_id, ad_engine.get());
+  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
+      engine_.ToScalarType<Expression>();
+  ExpectIgnoredPenetration(origin_id, collide_id, sym_engine.get());
 }
 
 // Confirms that non-positive thresholds produce the right value. Creates three
@@ -4246,6 +4277,33 @@ GTEST_TEST(ProximityEngineTests,
       engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
       "Signed distance queries between shapes 'Box' and 'Box' are not "
       "supported for scalar type drake::AutoDiffXd");
+}
+
+// Tests that an unsupported geometry causes the engine to throw.
+GTEST_TEST(ProximityEngineTests, ExpressionUnsupported) {
+  ProximityEngine<Expression> engine;
+
+  // Add two geometries that can't be queried.
+  const GeometryId id1 = GeometryId::get_new_id();
+  const GeometryId id2 = GeometryId::get_new_id();
+  engine.AddDynamicGeometry(Box(1, 2, 3), {}, id1);
+  engine.AddDynamicGeometry(Box(2, 4, 6), {}, id2);
+
+  const unordered_map<GeometryId, RigidTransform<Expression>> X_WGs{
+      {id1, RigidTransform<Expression>::Identity()},
+      {id2, RigidTransform<Expression>::Identity()}};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
+      "Signed distance queries between shapes 'Box' and 'Box' are not "
+      "supported for scalar type drake::symbolic::Expression");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.ComputeSignedDistancePairClosestPoints(id1, id2, X_WGs),
+      "Signed distance queries between shapes 'Box' and 'Box' are not "
+      "supported for scalar type drake::symbolic::Expression");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.ComputePointPairPenetration(X_WGs),
+      "Penetration queries between shapes 'Box' and 'Box' are not supported "
+      "for scalar type drake::symbolic::Expression");
 }
 
 }  // namespace
