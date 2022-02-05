@@ -203,7 +203,7 @@ struct __is_fast_hash<hash<drake::SortedPair<T>>> : std::false_type {};
 ///    SortedPair<Foo> pair(Foo(1), Foo(2));
 ///    const auto& [a, b] = pair;
 template <typename T>
-struct tuple_size<drake::SortedPair<T>> : integral_constant<size_t, 2> {};
+struct tuple_size<drake::SortedPair<T>> : std::integral_constant<size_t, 2> {};
 
 template <size_t Index, typename T>
 struct tuple_element<Index, drake::SortedPair<T>> {

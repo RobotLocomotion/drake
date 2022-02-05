@@ -9,11 +9,13 @@
 
 #include "drake/common/drake_copyable.h"
 
+#ifndef DRAKE_DOXYGEN_CXX
 // Forward declaration to avoid the inclusion of conex's headers within a Drake
 // header.
 namespace conex {
 class SupernodalKKTSolver;
 }
+#endif
 
 namespace drake {
 namespace multibody {
