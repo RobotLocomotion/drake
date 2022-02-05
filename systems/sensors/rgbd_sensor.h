@@ -197,7 +197,10 @@ class RgbdSensor final : public LeafSystem<double> {
   // Extract the query object from the given context (via the appropriate input
   // port.
   const geometry::QueryObject<double>& get_query_object(
-      const Context<double>& context) const;
+      const Context<double>& context) const {
+    return query_object_input_port().Eval<geometry::QueryObject<double>>(
+        context);
+  }
 
   const InputPort<double>* query_object_input_port_{};
   const OutputPort<double>* color_image_port_{};

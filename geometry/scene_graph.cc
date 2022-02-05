@@ -100,11 +100,7 @@ template <typename T>
 template <typename U>
 SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
     : SceneGraph() {
-  // TODO(SeanCurtis-TRI) This is very brittle; we are essentially assuming that
-  //  T = AutoDiffXd. For now, that's true. If we ever support
-  //  symbolic::Expression, this U --> T conversion will have to be more
-  //  generic.
-  model_ = *(other.model_.ToAutoDiffXd());
+  model_ = GeometryState<T>(other.model_);
 
   // We need to guarantee that the same source ids map to the same port indices.
   // We'll do this by processing the source ids in monotonically increasing
@@ -444,9 +440,15 @@ const GeometryState<T>& SceneGraph<T>::geometry_state(
       .template get_abstract_parameter<GeometryState<T>>(geometry_state_index_);
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class SceneGraph<double>;
-template class SceneGraph<AutoDiffXd>;
-
 }  // namespace geometry
+
+namespace systems {
+namespace scalar_conversion {
+template <> struct Traits<geometry::SceneGraph> : public FromDoubleTraits {};
+}  // namespace scalar_conversion
+}  // namespace systems
+
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::geometry::SceneGraph)

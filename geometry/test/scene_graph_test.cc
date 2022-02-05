@@ -31,6 +31,7 @@ namespace geometry {
 
 using internal::DummyRenderEngine;
 using math::RigidTransformd;
+using symbolic::Expression;
 using systems::Context;
 using systems::System;
 using std::make_unique;
@@ -286,43 +287,51 @@ TEST_F(SceneGraphTest, FullPoseUpdateAnchoredOnly) {
 
 // Tests operations on a transmogrified SceneGraph. Whether a context has been
 // allocated or not, subsequent operations should be allowed.
-TEST_F(SceneGraphTest, TransmogrifyWithoutAllocation) {
-  SourceId s_id = scene_graph_.RegisterSource();
+template <typename T>
+void TransmogrifyWithoutAllocation(SceneGraph<double>* scene_graph) {
+  SourceId s_id = scene_graph->RegisterSource();
   // This should allow additional geometry registration.
-  std::unique_ptr<systems::System<AutoDiffXd>> system_ad =
-      scene_graph_.ToAutoDiffXd();
-  SceneGraph<AutoDiffXd>& scene_graph_ad =
-      *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
+  std::unique_ptr<systems::System<T>> system_T = scene_graph->ToScalarType<T>();
+  SceneGraph<T>& scene_graph_T = *dynamic_cast<SceneGraph<T>*>(system_T.get());
   DRAKE_EXPECT_NO_THROW(
-      scene_graph_ad.RegisterAnchoredGeometry(s_id, make_sphere_instance()));
+      scene_graph_T.RegisterAnchoredGeometry(s_id, make_sphere_instance()));
 
   // After allocation, registration should _still_ be valid.
-  CreateDefaultContext();
-  system_ad = scene_graph_.ToAutoDiffXd();
-  SceneGraph<AutoDiffXd>& scene_graph_ad2 =
-      *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
+  scene_graph->CreateDefaultContext();
+  system_T = scene_graph->ToScalarType<T>();
+  SceneGraph<T>& scene_graph_T2 = *dynamic_cast<SceneGraph<T>*>(system_T.get());
   DRAKE_EXPECT_NO_THROW(
-      scene_graph_ad2.RegisterAnchoredGeometry(s_id, make_sphere_instance()));
+      scene_graph_T2.RegisterAnchoredGeometry(s_id, make_sphere_instance()));
+}
+
+TEST_F(SceneGraphTest, TransmogrifyWithoutAllocation) {
+  TransmogrifyWithoutAllocation<AutoDiffXd>(&scene_graph_);
+  TransmogrifyWithoutAllocation<Expression>(&scene_graph_);
+}
+
+template <typename T>
+void TransmogrifyPorts(SceneGraph<double>* scene_graph) {
+  SourceId s_id = scene_graph->RegisterSource();
+  scene_graph->CreateDefaultContext();
+  std::unique_ptr<systems::System<T>> system_T =
+      scene_graph->ToScalarType<T>();
+  SceneGraph<T>& scene_graph_T = *dynamic_cast<SceneGraph<T>*>(system_T.get());
+  EXPECT_EQ(scene_graph_T.num_input_ports(), scene_graph->num_input_ports());
+  EXPECT_EQ(scene_graph_T.get_source_pose_port(s_id).get_index(),
+            scene_graph->get_source_pose_port(s_id).get_index());
+  EXPECT_NO_THROW(scene_graph_T.CreateDefaultContext());
 }
 
 // Tests that the ports are correctly mapped.
 TEST_F(SceneGraphTest, TransmogrifyPorts) {
-  SourceId s_id = scene_graph_.RegisterSource();
-  CreateDefaultContext();
-  std::unique_ptr<systems::System<AutoDiffXd>> system_ad =
-      scene_graph_.ToAutoDiffXd();
-  SceneGraph<AutoDiffXd>& scene_graph_ad =
-      *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
-  EXPECT_EQ(scene_graph_ad.num_input_ports(),
-            scene_graph_.num_input_ports());
-  EXPECT_EQ(scene_graph_ad.get_source_pose_port(s_id).get_index(),
-            scene_graph_.get_source_pose_port(s_id).get_index());
-  EXPECT_NO_THROW(scene_graph_ad.CreateDefaultContext());
+  TransmogrifyPorts<AutoDiffXd>(&scene_graph_);
+  TransmogrifyPorts<Expression>(&scene_graph_);
 }
 
 // Tests that the work to "set" the context values for the transmogrified system
 // behaves correctly.
-TEST_F(SceneGraphTest, TransmogrifyContext) {
+template <typename T>
+void TransmogrifyContext() {
   SceneGraph<double> sg;
   SourceId s_id = sg.RegisterSource();
   // Register geometry that should be successfully transmogrified.
@@ -331,24 +340,29 @@ TEST_F(SceneGraphTest, TransmogrifyContext) {
   // This should transmogrify the internal *model*, so when I allocate the
   // transmogrified context, I should get the "same" values (considering type
   // change).
-  std::unique_ptr<System<AutoDiffXd>> system_ad = sg.ToAutoDiffXd();
-  SceneGraph<AutoDiffXd>& scene_graph_ad =
-      *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
-  std::unique_ptr<Context<AutoDiffXd>> context_ad =
-      scene_graph_ad.CreateDefaultContext();
+  std::unique_ptr<System<T>> system_T = sg.ToScalarType<T>();
+  SceneGraph<T>& scene_graph_T =
+      *dynamic_cast<SceneGraph<T>*>(system_T.get());
+  std::unique_ptr<Context<T>> context_T =
+      scene_graph_T.CreateDefaultContext();
 
   // Extract the GeometryState and query some invariants on it directly.
-  const GeometryState<AutoDiffXd>& geo_state_ad =
-      SceneGraphTester::GetGeometryState(scene_graph_ad, *context_ad);
+  const GeometryState<T>& geo_state_T =
+      SceneGraphTester::GetGeometryState(scene_graph_T, *context_T);
   // If the anchored geometry were not ported over, this would throw an
   // exception.
-  EXPECT_TRUE(geo_state_ad.BelongsToSource(g_id, s_id));
-  EXPECT_THROW(geo_state_ad.BelongsToSource(GeometryId::get_new_id(), s_id),
+  EXPECT_TRUE(geo_state_T.BelongsToSource(g_id, s_id));
+  EXPECT_THROW(geo_state_T.BelongsToSource(GeometryId::get_new_id(), s_id),
                std::logic_error);
 
   // Quick reality check that this is still valid although unnecessary vis a
   // vis the GeometryState.
-  DRAKE_EXPECT_NO_THROW(context_ad->SetTimeStateAndParametersFrom(*context));
+  DRAKE_EXPECT_NO_THROW(context_T->SetTimeStateAndParametersFrom(*context));
+}
+
+TEST_F(SceneGraphTest, TransmogrifyContext) {
+  TransmogrifyContext<AutoDiffXd>();
+  TransmogrifyContext<Expression>();
 }
 
 // Tests the model inspector. Exercises a token piece of functionality. The
@@ -561,6 +575,18 @@ GTEST_TEST(SceneGraphAutoDiffTest, InstantiateAutoDiff) {
       QueryObjectTest::MakeNullQueryObject<AutoDiffXd>();
   SceneGraphTester::GetQueryObjectPortValue(scene_graph, *context, &handle);
 }
+
+// Confirms that the SceneGraph can be instantiated on Expression type.
+GTEST_TEST(SceneGraphExpressionTest, InstantiateExpression) {
+  SceneGraph<Expression> scene_graph;
+  scene_graph.RegisterSource("dummy_source");
+  auto context = scene_graph.CreateDefaultContext();
+
+  QueryObject<Expression> handle =
+      QueryObjectTest::MakeNullQueryObject<Expression>();
+  SceneGraphTester::GetQueryObjectPortValue(scene_graph, *context, &handle);
+}
+
 
 // Tests that exercise the Context-modifying API
 

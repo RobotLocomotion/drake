@@ -177,6 +177,55 @@ TEST_P(AutoDiffTest, Characterize) {
   this->RunCharacterization(GetParam());
 }
 
+class ExpressionTest
+    : public CharacterizeShapeDistanceResultTest<symbolic::Expression>,
+      public testing::WithParamInterface<QueryInstance> {};
+
+// clang-format off
+INSTANTIATE_TEST_SUITE_P(
+    ShapeDistance, ExpressionTest,
+    testing::Values(
+        QueryInstance(kBox, kBox, kThrows),
+        QueryInstance(kBox, kCapsule, kThrows),
+        QueryInstance(kBox, kConvex, kThrows),
+        QueryInstance(kBox, kCylinder, kThrows),
+        QueryInstance(kBox, kEllipsoid, kThrows),
+        QueryInstance(kBox, kHalfSpace, kThrows),
+        QueryInstance(kBox, kSphere, kThrows),
+
+        QueryInstance(kCapsule, kCapsule, kThrows),
+        QueryInstance(kCapsule, kConvex, kThrows),
+        QueryInstance(kCapsule, kCylinder, kThrows),
+        QueryInstance(kCapsule, kEllipsoid, kThrows),
+        QueryInstance(kCapsule, kHalfSpace, kThrows),
+        QueryInstance(kCapsule, kSphere, kThrows),
+
+        QueryInstance(kConvex, kConvex, kThrows),
+        QueryInstance(kConvex, kCylinder, kThrows),
+        QueryInstance(kConvex, kEllipsoid, kThrows),
+        QueryInstance(kConvex, kHalfSpace, kThrows),
+        QueryInstance(kConvex, kSphere, kThrows),
+
+        QueryInstance(kCylinder, kCylinder, kThrows),
+        QueryInstance(kCylinder, kEllipsoid, kThrows),
+        QueryInstance(kCylinder, kHalfSpace, kThrows),
+        QueryInstance(kCylinder, kSphere, kThrows),
+
+        QueryInstance(kEllipsoid, kEllipsoid, kThrows),
+        QueryInstance(kEllipsoid, kHalfSpace, kThrows),
+        QueryInstance(kEllipsoid, kSphere, kThrows),
+
+        QueryInstance(kHalfSpace, kHalfSpace, kThrows),
+        QueryInstance(kHalfSpace, kSphere, kThrows),
+
+        QueryInstance(kSphere, kSphere, kThrows)),
+    QueryInstanceName);
+// clang-format on
+
+TEST_P(ExpressionTest, Characterize) {
+  this->RunCharacterization(GetParam());
+}
+
 }  // namespace
 }  // namespace shape_distance
 }  // namespace internal
