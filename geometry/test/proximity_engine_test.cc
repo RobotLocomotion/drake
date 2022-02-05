@@ -92,6 +92,8 @@ using std::shared_ptr;
 using std::unordered_map;
 using std::vector;
 
+using symbolic::Expression;
+
 // Tests for manipulating the population of the proximity engine.
 
 // Test simple addition of dynamic geometry.
@@ -260,7 +262,7 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
     const auto X_WGs_d = PopulateEngine(&engine_d, sphere, anchored, soft, mesh,
                                         !anchored, !soft);
 
-    const auto engine_ad = engine_d.ToAutoDiffXd();
+    const auto engine_ad = engine_d.ToScalarType<AutoDiffXd>();
     unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
     bool added_derivatives = false;
     for (const auto& [id, X_WG_d] : X_WGs_d) {
@@ -301,7 +303,7 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
     ProximityEngine<double> engine_d;
     const auto X_WGs_d =
         PopulateEngine(&engine_d, sphere, false, !soft, sphere, false, !soft);
-    const auto engine_ad = engine_d.ToAutoDiffXd();
+    const auto engine_ad = engine_d.ToScalarType<AutoDiffXd>();
     unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
     for (const auto& [id, X_WG_d] : X_WGs_d) {
       X_WGs_ad[id] = RigidTransform<AutoDiffXd>(X_WG_d.GetAsMatrix34());
@@ -2258,9 +2260,9 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectPenetration(anchored_id, dynamic_id, &copy_engine);
 
-  // Test AutoDiffXd converted engine.
+  // Test scalar-converted engines.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToAutoDiffXd();
+      engine_.ToScalarType<AutoDiffXd>();
   ExpectPenetration(anchored_id, dynamic_id, ad_engine.get());
 }
 
@@ -2291,7 +2293,7 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
 
   // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToAutoDiffXd();
+      engine_.ToScalarType<AutoDiffXd>();
   ExpectPenetration(origin_id, collide_id, ad_engine.get());
 }
 
@@ -2325,7 +2327,7 @@ TEST_F(SimplePenetrationTest, HasCollisionsDynamicAndAnchored) {
 
   // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToAutoDiffXd();
+      engine_.ToScalarType<AutoDiffXd>();
   EXPECT_TRUE(ad_engine->HasCollisions());
 }
 
@@ -2356,7 +2358,7 @@ TEST_F(SimplePenetrationTest, HasCollisionsDynamicAndDynamicSingleSource) {
 
   // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToAutoDiffXd();
+      engine_.ToScalarType<AutoDiffXd>();
   EXPECT_TRUE(ad_engine->HasCollisions());
 }
 
@@ -2400,7 +2402,7 @@ TEST_F(SimplePenetrationTest, WithCollisionFilters) {
 
   // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToAutoDiffXd();
+      engine_.ToScalarType<AutoDiffXd>();
   ExpectIgnoredPenetration(origin_id, collide_id, ad_engine.get());
 }
 
