@@ -2,7 +2,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/manipulation/planner/differential_inverse_kinematics.h"
@@ -141,26 +140,6 @@ PYBIND11_MODULE(planner, m) {
       py::arg("frame_E"), py::arg("parameters"),
       doc.DoDifferentialInverseKinematics
           .doc_5args_robot_context_X_WE_desired_frame_E_parameters);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("DoDifferentialInverseKinematics",
-      WrapDeprecated(
-          doc.DoDifferentialInverseKinematics
-              .doc_deprecated_deprecated_5args_robot_context_X_WE_desired_frame_E_parameters,
-          [](const multibody::MultibodyPlant<double>& robot,
-              const systems::Context<double>& context,
-              const Isometry3<double>& X_WE_desired,
-              const multibody::Frame<double>& frame_E,
-              const manipulation::planner::
-                  DifferentialInverseKinematicsParameters& parameters) {
-            return manipulation::planner::DoDifferentialInverseKinematics(
-                robot, context, X_WE_desired, frame_E, parameters);
-          }),
-      py::arg("robot"), py::arg("context"), py::arg("X_WE_desired"),
-      py::arg("frame_E"), py::arg("parameters"),
-      doc.DoDifferentialInverseKinematics
-          .doc_deprecated_deprecated_5args_robot_context_X_WE_desired_frame_E_parameters);
-#pragma GCC diagnostic pop
 
   {
     using Class =

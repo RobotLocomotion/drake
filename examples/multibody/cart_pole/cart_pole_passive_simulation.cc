@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "A simple cart pole demo using Drake's MultibodyPlant,"
       "with SceneGraph visualization. "
-      "Launch drake-visualizer before running this example.");
+      "Launch meldis before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::multibody::cart_pole::do_main();
 }

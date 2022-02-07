@@ -153,7 +153,7 @@ TEST_F(SpringDamperTester, RestLength) {
 
 TEST_F(SpringDamperTester, LengthApproachesZero) {
   SetSliderState(0.0, 0.0);
-  DRAKE_EXPECT_THROWS_MESSAGE(CalcSpringDamperForces(), std::runtime_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcSpringDamperForces(),
                               "The length of the spring became nearly zero. "
                               "Revisit your model to avoid this situation.");
 }

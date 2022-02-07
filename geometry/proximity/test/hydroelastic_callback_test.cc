@@ -266,8 +266,10 @@ class TestScene {
 // looking for positive indicators that the rigorously tested intersection code
 // has been properly connected in the callback.
 //
-// Only one of grad e_N or grad e_M will be defined -- it is the field from the
-// soft mesh.
+// For rigid-compliant contact, only one of grad e_N or grad e_M will be
+// defined -- it is the field from the compliant geometry. For
+// compliant-compliant contact, both grad e_N and grad e_M will be checked --
+// they are from two two compliant geometries.
 ::testing::AssertionResult ValidateDerivatives(
     const ContactSurface<AutoDiffXd>& surface) {
   if (surface.representation() ==
@@ -312,8 +314,7 @@ class TestScene {
 TYPED_TEST_SUITE(DispatchRigidSoftCalculationTests, ScalarTypes);
 
 // Test suite for exercising DispatchRigidSoftCalculation with different scalar
-// types. (Currently only double as the hydroelastic infrastructure doesn't
-// support autodiff yet.)
+// types.
 template <typename T>
 class DispatchRigidSoftCalculationTests : public ::testing::Test {};
 
@@ -458,6 +459,68 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftHalfSpaceRigidMesh) {
   }
 }
 
+TYPED_TEST_SUITE(DispatchCompliantCompliantCalculationTests, ScalarTypes);
+
+template <typename T>
+class DispatchCompliantCompliantCalculationTests : public ::testing::Test {};
+
+TYPED_TEST(DispatchCompliantCompliantCalculationTests,
+           CompliantMeshCompliantMesh) {
+  using T = TypeParam;
+
+  const bool colliding{true};
+
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
+  const Geometries& geometries = scene.hydroelastic_geometries();
+  const GeometryId id_A = scene.id_A();
+  const GeometryId id_B = scene.id_B();
+  // Sphere A has a fixed position.
+  const RigidTransform<T>& X_WA = scene.pose_in_world(id_A);
+  scene.AddGeometry(HydroelasticType::kSoft, HydroelasticType::kSoft);
+
+  for (const auto representation :
+       {HydroelasticContactRepresentation::kTriangle,
+        HydroelasticContactRepresentation::kPolygon}) {
+    SCOPED_TRACE(
+        fmt::format("representation = {}", static_cast<int>(representation)));
+    {
+      // Case 1: Intersecting spheres.
+      scene.PoseGeometry(colliding);
+      const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+
+      unique_ptr<ContactSurface<T>> surface =
+          DispatchCompliantCompliantCalculation(
+              geometries.soft_geometry(id_A), X_WA, id_A,
+              geometries.soft_geometry(id_B), X_WB, id_B, representation);
+      EXPECT_NE(surface, nullptr);
+      EXPECT_TRUE(ValidateDerivatives(*surface));
+      switch (representation) {
+        case HydroelasticContactRepresentation::kTriangle:
+          EXPECT_EQ(12, surface->tri_mesh_W().num_triangles());
+          break;
+        case HydroelasticContactRepresentation::kPolygon:
+          EXPECT_EQ(4, surface->poly_mesh_W().num_elements());
+          break;
+      }
+    }
+  }
+
+  {
+    // Case 2: Separated spheres.
+    scene.PoseGeometry(!colliding);
+    const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+
+    // When they are not in contact, mesh representation is irrelevant; so,
+    // we'll simply pick one.
+    unique_ptr<ContactSurface<T>> surface =
+        DispatchCompliantCompliantCalculation(
+            geometries.soft_geometry(id_A), X_WA, id_A,
+            geometries.soft_geometry(id_B), X_WB, id_B,
+            HydroelasticContactRepresentation::kTriangle);
+    EXPECT_EQ(surface, nullptr);
+  }
+}
+
 TYPED_TEST_SUITE(MaybeCalcContactSurfaceTests, ScalarTypes);
 
 // Test suite for exercising MaybeCalcContactSurface with different scalar
@@ -493,7 +556,7 @@ TYPED_TEST(MaybeCalcContactSurfaceTests, UndefinedGeometry) {
   ASSERT_EQ(scene.surfaces().size(), 0u);
 }
 
-// Confirms that matching compliance (rigid) can't be evaluated.
+// Confirms that rigid-rigid contact can't be evaluated.
 TYPED_TEST(MaybeCalcContactSurfaceTests, BothRigid) {
   using T = TypeParam;
 
@@ -502,12 +565,23 @@ TYPED_TEST(MaybeCalcContactSurfaceTests, BothRigid) {
 
   CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
       &scene.shape_A(), &scene.shape_B(), &scene.data());
-  EXPECT_EQ(result, CalcContactSurfaceResult::kSameCompliance);
+  EXPECT_EQ(result, CalcContactSurfaceResult::kRigidRigid);
   EXPECT_EQ(scene.surfaces().size(), 0u);
 }
 
-// Confirms that matching compliance (soft) can't be evaluated.
-TYPED_TEST(MaybeCalcContactSurfaceTests, BothSoft) {
+TYPED_TEST(MaybeCalcContactSurfaceTests, BothCompliantOneHalfSpace) {
+  using T = TypeParam;
+
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kHalfSpace};
+  scene.ConfigureScene(HydroelasticType::kSoft, HydroelasticType::kSoft);
+
+  CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
+      &scene.shape_A(), &scene.shape_B(), &scene.data());
+  EXPECT_EQ(result, CalcContactSurfaceResult::kCompliantHalfSpaceCompliantMesh);
+  EXPECT_EQ(scene.surfaces().size(), 0u);
+}
+
+TYPED_TEST(MaybeCalcContactSurfaceTests, BothCompliantNonHalfSpace) {
   using T = TypeParam;
 
   TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
@@ -515,24 +589,36 @@ TYPED_TEST(MaybeCalcContactSurfaceTests, BothSoft) {
 
   CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
       &scene.shape_A(), &scene.shape_B(), &scene.data());
-  EXPECT_EQ(result, CalcContactSurfaceResult::kSameCompliance);
-  EXPECT_EQ(scene.surfaces().size(), 0u);
+  EXPECT_EQ(result, CalcContactSurfaceResult::kCalculated);
+  EXPECT_EQ(scene.surfaces().size(), 1u);
 }
 
-// Confirms that colliding two half spaces is detected and reported.
-TYPED_TEST(MaybeCalcContactSurfaceTests, TwoHalfSpaces) {
+TYPED_TEST(MaybeCalcContactSurfaceTests, BothHalfSpace) {
   using T = TypeParam;
 
-  TestScene<T> scene{ShapeType::kHalfSpace, ShapeType::kHalfSpace};
-  // They must have different compliance types in order to get past the same
-  // compliance type condition.
-  scene.ConfigureScene(HydroelasticType::kSoft, HydroelasticType::kRigid,
-                       false /* are_colliding */);
+  for (const HydroelasticType first_type :
+       {HydroelasticType::kRigid, HydroelasticType::kSoft}) {
+    for (const HydroelasticType second_type :
+         {HydroelasticType::kRigid, HydroelasticType::kSoft}) {
+      SCOPED_TRACE(fmt::format("Use first_type = {}, second_type = {}.",
+                               static_cast<int>(first_type),
+                               static_cast<int>(second_type)));
+      TestScene<T> scene{ShapeType::kHalfSpace, ShapeType::kHalfSpace};
+      scene.ConfigureScene(first_type, second_type, false /* are_colliding */);
 
-  CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
-      &scene.shape_A(), &scene.shape_B(), &scene.data());
-  EXPECT_EQ(result, CalcContactSurfaceResult::kHalfSpaceHalfSpace);
-  EXPECT_EQ(scene.surfaces().size(), 0u);
+      CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
+          &scene.shape_A(), &scene.shape_B(), &scene.data());
+
+      if (first_type == HydroelasticType::kRigid &&
+      second_type == HydroelasticType::kRigid) {
+        EXPECT_EQ(result, CalcContactSurfaceResult::kRigidRigid);
+        EXPECT_EQ(scene.surfaces().size(), 0u);
+      } else {
+        EXPECT_EQ(result, CalcContactSurfaceResult::kHalfSpaceHalfSpace);
+        EXPECT_EQ(scene.surfaces().size(), 0u);
+      }
+    }
+  }
 }
 
 // Confirms that a valid pair that are, nevertheless, not colliding does not
@@ -591,8 +677,6 @@ TYPED_TEST_SUITE(StrictHydroelasticCallbackTyped, ScalarTypes);
 //     ultimately percolate outward).
 //   - throw on any return value that isn't wholly successful.
 //   - respect collision filtering.
-// (Currently only double as the hydroelastic infrastructure doesn't support
-// autodiff yet.)
 template <typename T>
 class StrictHydroelasticCallbackTyped : public ::testing::Test {};
 
@@ -612,16 +696,14 @@ TYPED_TEST(StrictHydroelasticCallbackTyped,
   // configuration is representative of that set.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()),
-      std::logic_error,
       "Requested a contact surface between a pair of geometries without "
       "hydroelastic representation .+ rigid .+ undefined .+");
 }
 
-// Confirms that if the intersecting pair has the same compliance (rigid-rigid)
-// or (soft-soft), that an exception is thrown. This test applies *no* collision
-// filters to guarantee that the body of the callback gets exercised in all
-// cases.
-TYPED_TEST(StrictHydroelasticCallbackTyped, ThrowForSameComplianceType) {
+// Confirms that if the intersecting pair is rigid-rigid, an exception is
+// thrown. This test applies *no* collision filters to guarantee that the
+// body of the callback gets exercised in all cases.
+TYPED_TEST(StrictHydroelasticCallbackTyped, ThrowForRigidRigid) {
   using T = TypeParam;
 
   TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
@@ -629,11 +711,10 @@ TYPED_TEST(StrictHydroelasticCallbackTyped, ThrowForSameComplianceType) {
 
   // We test only a single "same-compliance" configuration (rigid, rigid)
   // because we rely on the tests on MaybeCalcContactSurface() to have explored
-  // all the ways that the kSameCompliance calculation result is returned. This
+  // all the ways that the calculation result is returned. This
   // configuration is representative of that set.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()),
-      std::logic_error,
       "Requested contact between two rigid objects .+");
 }
 
@@ -649,8 +730,22 @@ TYPED_TEST(StrictHydroelasticCallbackTyped, ThrowForTwoHalfSpaces) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()),
-      std::logic_error,
       "Requested contact between two half spaces .+");
+}
+
+TYPED_TEST(StrictHydroelasticCallbackTyped,
+           ThrowForCompliantHalfSpaceAndNonHalfSpace) {
+  using T = TypeParam;
+
+  TestScene<T> scene{ShapeType::kHalfSpace, ShapeType::kSphere};
+  // They must have different compliance types in order to get past the same
+  // compliance type condition.
+  scene.ConfigureScene(HydroelasticType::kSoft, HydroelasticType::kSoft);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()),
+      "Requested hydroelastic contact between two compliant geometries, one "
+      "of which is a half space .+");
 }
 
 // Confirms that if the pair contains unsupported geometry, as long as they are
@@ -739,7 +834,7 @@ TYPED_TEST(HydroelasticCallbackFallbackTyped, PointPairForSameComplianceType) {
 
   // We test only a single "same-compliance" configuration (rigid, rigid)
   // because we rely on the tests on MaybeCalcContactSurface() to have explored
-  // all the ways that the kSameCompliance calculation result is returned. This
+  // all the ways that the calculation result is returned. This
   // configuration is representative of that set.
   vector<PenetrationAsPointPair<T>> point_pairs;
   CallbackWithFallbackData<T> data{scene.data(), &point_pairs};

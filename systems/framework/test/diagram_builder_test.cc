@@ -102,7 +102,7 @@ GTEST_TEST(DiagramBuilderTest, AlgebraicLoop) {
   builder.Connect(adder->get_output_port(), pass->get_input_port());
   builder.Connect(pass->get_output_port(), adder->get_input_port(0));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      builder.Build(), std::runtime_error,
+      builder.Build(),
       fmt::format(
           "Reported algebraic loop detected in DiagramBuilder:\n"
           "  InputPort.0. .u0. of {adder} is direct-feedthrough to\n"
@@ -164,7 +164,7 @@ GTEST_TEST(DiagramBuilderTest, CycleAtLoopPortLevel) {
   auto echo = builder.AddNamedSystem<ConstAndEcho>("echo");
   builder.Connect(echo->get_echo_output_port(), echo->get_vec_input_port());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      builder.Build(), std::runtime_error,
+      builder.Build(),
       fmt::format(
           "Reported algebraic loop detected in DiagramBuilder:\n"
           "  InputPort.0. .input. of {sys} is direct-feedthrough to\n"
@@ -226,17 +226,14 @@ GTEST_TEST(DiagramBuilderTest, SystemsThatAreNotAddedThrow) {
   adder.set_name("adder");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.Connect(adder, adder),
-      std::logic_error,
       "DiagramBuilder: Cannot operate on ports of System adder "
       "until it has been registered using AddSystem");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.ExportInput(adder.get_input_port(0)),
-      std::logic_error,
       "DiagramBuilder: Cannot operate on ports of System adder "
       "until it has been registered using AddSystem");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.ExportOutput(adder.get_output_port()),
-      std::logic_error,
       "DiagramBuilder: Cannot operate on ports of System adder "
       "until it has been registered using AddSystem");
 }
@@ -251,7 +248,6 @@ GTEST_TEST(DiagramBuilderTest, ConnectVectorToAbstractThrow) {
       builder.Connect(
           vector_system->get_output_port(),
           abstract_system->get_input_port()),
-      std::logic_error,
       "DiagramBuilder::Connect: "
       "Cannot mix vector-valued and abstract-valued ports while connecting "
       "output port y of System vector_system to "
@@ -260,7 +256,6 @@ GTEST_TEST(DiagramBuilderTest, ConnectVectorToAbstractThrow) {
       builder.Connect(
           abstract_system->get_output_port(),
           vector_system->get_input_port()),
-      std::logic_error,
       "DiagramBuilder::Connect: "
       "Cannot mix vector-valued and abstract-valued ports while connecting "
       "output port y of System abstract_system to "
@@ -276,7 +271,6 @@ GTEST_TEST(DiagramBuilderTest, ExportInputVectorToAbstractThrow) {
   auto port_index = builder.ExportInput(vector_system->get_input_port());
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.ConnectInput(port_index, abstract_system->get_input_port()),
-      std::logic_error,
       "DiagramBuilder::ConnectInput: "
       "Cannot mix vector-valued and abstract-valued ports while connecting "
       "input port u of System abstract_system to "
@@ -292,7 +286,6 @@ GTEST_TEST(DiagramBuilderTest, ExportInputAbstractToVectorThrow) {
   auto port_index = builder.ExportInput(abstract_system->get_input_port());
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.ConnectInput(port_index, vector_system->get_input_port()),
-      std::logic_error,
       "DiagramBuilder::ConnectInput: "
       "Cannot mix vector-valued and abstract-valued ports while connecting "
       "input port u of System vector_system to "
@@ -309,7 +302,6 @@ GTEST_TEST(DiagramBuilderTest, ConnectVectorSizeMismatchThrow) {
       builder.Connect(
           size1_system->get_output_port(),
           size2_system->get_input_port()),
-      std::logic_error,
       "DiagramBuilder::Connect: "
       "Mismatched vector sizes while connecting "
       "output port y of System size1_system \\(size 1\\) to "
@@ -318,7 +310,6 @@ GTEST_TEST(DiagramBuilderTest, ConnectVectorSizeMismatchThrow) {
       builder.Connect(
           size2_system->get_output_port(),
           size1_system->get_input_port()),
-      std::logic_error,
       "DiagramBuilder::Connect: "
       "Mismatched vector sizes while connecting "
       "output port y of System size2_system \\(size 2\\) to "
@@ -334,7 +325,6 @@ GTEST_TEST(DiagramBuilderTest, ExportInputVectorSizeMismatchThrow) {
   auto port_index = builder.ExportInput(size1_system->get_input_port());
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.ConnectInput(port_index, size2_system->get_input_port()),
-      std::logic_error,
       "DiagramBuilder::ConnectInput: "
       "Mismatched vector sizes while connecting "
       "input port u of System size2_system \\(size 2\\) to "
@@ -351,7 +341,6 @@ GTEST_TEST(DiagramBuilderTest, ConnectAbstractTypeMismatchThrow) {
       builder.Connect(
           int_system->get_output_port(),
           char_system->get_input_port()),
-      std::logic_error,
       "DiagramBuilder::Connect: "
       "Mismatched value types while connecting "
       "output port y of System int_system \\(type int\\) to "
@@ -360,7 +349,6 @@ GTEST_TEST(DiagramBuilderTest, ConnectAbstractTypeMismatchThrow) {
       builder.Connect(
           char_system->get_output_port(),
           int_system->get_input_port()),
-      std::logic_error,
       "DiagramBuilder::Connect: "
       "Mismatched value types while connecting "
       "output port y of System char_system \\(type char\\) to "
@@ -376,7 +364,6 @@ GTEST_TEST(DiagramBuilderTest, ExportInputAbstractTypeMismatchThrow) {
   auto port_index = builder.ExportInput(int_system->get_input_port());
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.ConnectInput(port_index, char_system->get_input_port()),
-      std::logic_error,
       "DiagramBuilder::ConnectInput: "
       "Mismatched value types while connecting "
       "input port u of System char_system \\(type char\\) to "
@@ -532,7 +519,7 @@ GTEST_TEST(DiagramBuilderTest, DuplicateInputPortNamesThrow) {
   builder.ExportInput(sink1->get_input_port(0), "sink");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.ExportInput(sink2->get_input_port(0), "sink"),
-      std::logic_error, ".*already has an input port named.*");
+      ".*already has an input port named.*");
 }
 
 GTEST_TEST(DiagramBuilderTest, InputPortNamesFanout) {
@@ -586,7 +573,7 @@ GTEST_TEST(DiagramBuilderTest, DuplicateOutputPortNamesThrow) {
   builder.ExportOutput(sink1->get_output_port(0), "source");
   builder.ExportOutput(sink2->get_output_port(0), "source");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(),
                               ".*already has an output port named.*");
 }
 
@@ -620,6 +607,27 @@ TEST_F(DiagramBuilderSolePortsTest, SourceGainSink) {
   EXPECT_TRUE(builder_.IsConnectedOrExported(in1out1_->get_input_port()));
   DRAKE_EXPECT_NO_THROW(builder_.Connect(*in1out1_, *in1_));
   DRAKE_EXPECT_NO_THROW(builder_.Build());
+}
+
+// The connection map for Source->Gain->Sink is as expected.
+TEST_F(DiagramBuilderSolePortsTest, ConnectionMap) {
+  builder_.Connect(*out1_, *in1out1_);
+  builder_.Connect(*in1out1_, *in1_);
+  ASSERT_EQ(builder_.connection_map().size(), 2);
+  {
+    const DiagramBuilder<double>::OutputPortLocator out1_output{
+        out1_, OutputPortIndex{0}};
+    const DiagramBuilder<double>::InputPortLocator in1out1_input{
+        in1out1_, InputPortIndex{0}};
+    EXPECT_EQ(builder_.connection_map().at(in1out1_input), out1_output);
+  }
+  {
+    const DiagramBuilder<double>::OutputPortLocator in1out1_output{
+        in1out1_, OutputPortIndex{0}};
+    const DiagramBuilder<double>::InputPortLocator in1_input{
+        in1_, InputPortIndex{0}};
+    EXPECT_EQ(builder_.connection_map().at(in1_input), in1out1_output);
+  }
 }
 
 // The cascade synonym also works.

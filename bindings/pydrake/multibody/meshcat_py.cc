@@ -10,6 +10,7 @@
 #include "drake/multibody/meshcat/contact_visualizer.h"
 #include "drake/multibody/meshcat/contact_visualizer_params.h"
 #include "drake/multibody/meshcat/joint_sliders.h"
+#include "drake/multibody/meshcat/point_contact_visualizer.h"
 
 using drake::multibody::MultibodyPlant;
 using drake::systems::LeafSystem;
@@ -63,6 +64,30 @@ void DoScalarIndependentDefinitions(py::module m) {
                   self.newtons_per_meter, self.radius);
         });
   }
+
+  // PointContactVisualizerItem (internal)
+  {
+    using Class = multibody::meshcat::internal::PointContactVisualizerItem;
+    constexpr char doc_internal[] = "(internal use only)";
+    py::class_<Class>(
+        m, "_PointContactVisualizerItem", py::dynamic_attr(), doc_internal)
+        .def(ParamInit<Class>())
+        .def_readwrite("body_A", &Class::body_A, doc_internal)
+        .def_readwrite("body_B", &Class::body_B, doc_internal)
+        .def_readwrite("contact_force", &Class::contact_force, doc_internal)
+        .def_readwrite("contact_point", &Class::contact_point, doc_internal);
+  }
+
+  // PointContactVisualizer (internal)
+  {
+    using Class = multibody::meshcat::internal::PointContactVisualizer;
+    constexpr char doc_internal[] = "(internal use only)";
+    py::class_<Class>(m, "_PointContactVisualizer", doc_internal)
+        .def(py::init<std::shared_ptr<geometry::Meshcat>,
+                 ContactVisualizerParams>(),
+            py::arg("meshcat"), py::arg("params"), doc_internal)
+        .def("Update", &Class::Update, py::arg("items"));
+  }
 }
 
 template <typename T>
@@ -74,7 +99,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
   constexpr auto& doc = pydrake_doc.drake.multibody.meshcat;
 
   // ContactVisualizer
-  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+  {
     using Class = ContactVisualizer<T>;
     constexpr auto& cls_doc = doc.ContactVisualizer;
     auto cls = DefineTemplateClassWithDefault<Class, systems::LeafSystem<T>>(
@@ -88,6 +113,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("Delete", &Class::Delete, cls_doc.Delete.doc)
         .def("contact_results_input_port", &Class::contact_results_input_port,
             py_rvp::reference_internal, cls_doc.contact_results_input_port.doc)
+        .def("query_object_input_port", &Class::query_object_input_port,
+            py_rvp::reference_internal, cls_doc.query_object_input_port.doc)
         .def_static("AddToBuilder",
             py::overload_cast<systems::DiagramBuilder<T>*,
                 const MultibodyPlant<T>&, std::shared_ptr<geometry::Meshcat>,
@@ -99,6 +126,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
             // `meshcat` is a shared_ptr, so does not need a keep_alive.
             py_rvp::reference,
             cls_doc.AddToBuilder.doc_4args_builder_plant_meshcat_params)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<T>*,
+                const systems::OutputPort<T>&, const systems::OutputPort<T>&,
+                std::shared_ptr<geometry::Meshcat>, ContactVisualizerParams>(
+                &ContactVisualizer<T>::AddToBuilder),
+            py::arg("builder"), py::arg("contact_results_port"),
+            py::arg("query_object_port"), py::arg("meshcat"),
+            py::arg("params") = ContactVisualizerParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // `meshcat` is a shared_ptr, so does not need a keep_alive.
+            py_rvp::reference,
+            cls_doc.AddToBuilder
+                .doc_5args_builder_contact_results_port_query_object_port_meshcat_params)
         .def_static("AddToBuilder",
             py::overload_cast<systems::DiagramBuilder<T>*,
                 const systems::OutputPort<T>&,

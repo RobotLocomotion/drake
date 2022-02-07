@@ -2,6 +2,7 @@ from pydrake.multibody.meshcat import (
     ContactVisualizer_,
     ContactVisualizerParams,
     JointSliders,
+    _PointContactVisualizer,
 )
 
 import os
@@ -49,6 +50,7 @@ class TestMeshcat(unittest.TestCase):
         vis = ContactVisualizer_[T](meshcat=meshcat, params=params)
         vis.Delete()
         vis.contact_results_input_port()
+        vis.query_object_input_port()
 
         builder = DiagramBuilder_[T]()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
@@ -58,6 +60,12 @@ class TestMeshcat(unittest.TestCase):
         ContactVisualizer_[T].AddToBuilder(
             builder=builder,
             contact_results_port=plant.get_contact_results_output_port(),
+            meshcat=meshcat,
+            params=params)
+        ContactVisualizer_[T].AddToBuilder(
+            builder=builder,
+            contact_results_port=plant.get_contact_results_output_port(),
+            query_object_port=scene_graph.get_query_output_port(),
             meshcat=meshcat,
             params=params)
 
@@ -116,3 +124,11 @@ class TestMeshcat(unittest.TestCase):
         builder.AddSystem(dut)
         diagram = builder.Build()
         dut.Run(diagram=diagram, timeout=1.0)
+
+    def test_internal_point_contact_visualizer(self):
+        """A very basic existance test, since this class is internal use only.
+        The pydrake-internal user (meldis) has additional acceptance tests.
+        """
+        meshcat = Meshcat()
+        params = ContactVisualizerParams()
+        dut = _PointContactVisualizer(meshcat=meshcat, params=params)

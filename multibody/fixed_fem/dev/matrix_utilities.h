@@ -31,10 +31,23 @@ the 4th order tensor into 9*9 matrices that are organized as follows:
               -------------------------------------
 Namely the ik-th entry in the jl-th block corresponds to the value Aᵢⱼₖₗ. */
 
+/* Calculates the condition number for the given matrix A.
+ The condition number is calculated via
+     k(A) = σₘₐₓ / σₘᵢₙ
+ where σₘₐₓ and σₘᵢₙ are the largest and smallest singular values (in magnitude)
+ of A.
+ @note This function is intended to be used for testing and may be slow on large
+ matrices.
+ @pre A is invertible.
+ @tparam_nonsymbolic_scalar */
+template <typename T>
+double CalcConditionNumberOfInvertibleMatrix(
+    const Eigen::Ref<const MatrixX<T>>& A);
+
 /* Calculates the polar decomposition of a 3-by-3 matrix F = RS where R is a
  rotation matrix and S is a symmetric matrix. The decomposition is unique when F
  is non-singular.
- @tparam_nonsymbolic_scalar. */
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
                     EigenPtr<Matrix3<T>> S);
@@ -75,7 +88,7 @@ void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
  @param[in] scale        The scalar multiple of the result.
  @param[out] scaled_dRdF The variable to which scale * dR/dF is added.
  @pre tr(S)I − S is invertible.
- @tparam_nonsymbolic_scalar. */
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 void AddScaledRotationalDerivative(
     const Matrix3<T>& R, const Matrix3<T>& S, const T& scale,
@@ -90,7 +103,7 @@ void CalcCofactorMatrix(const Matrix3<T>& M, EigenPtr<Matrix3<T>> cofactor);
  @param[in] M            The input matrix.
  @param[in] scale        The scalar multiple of the result.
  @param[out] scaled_dCdF The variable to which scale * dC/dM is added.
- @tparam_nonsymbolic_scalar. */
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 void AddScaledCofactorMatrixDerivative(
     const Matrix3<T>& M, const T& scale,
@@ -109,36 +122,10 @@ permutation will be:
                               permuted block whose original index is `i`.
 @pre v.size() % 3 == 0.
 @pre block_permutation is a permutation of {0, 1, ..., v.size()/3-1}.
-@tparam_nonsymbolic_scalar. */
+@tparam_nonsymbolic_scalar */
 template <typename T>
 VectorX<T> PermuteBlockVector(const Eigen::Ref<const VectorX<T>>& v,
                               const std::vector<int>& block_permutation);
-
-/* Given a 3N-by-3N Eigen::SparseMatrix with block structure with 3x3 block
- entries Bᵢⱼ where i, j ∈ V = {0, ..., N-1} and a permutation P on V, this
- method builds the permuted matrix with 3x3 block entries C's such that
- Cₚ₍ᵢ₎ₚ₍ⱼ₎ = Bᵢⱼ.
-
- For example, suppose the input `matrix` is given by
-    B00  B01  B02
-    B10  B11  B12
-    B20  B21  B22,
- permutation {1, 2, 0} produces
-    B22  B20  B21
-    B02  B00  B01
-    B12  B10  B11.
-
- @param[in] matrix             The original block sparse matrix to be permuted.
- @param[in] block_permutation  block_permutation[i] gives the index of the
-                               permuted block whose original index is `i`.
- @pre matrix.rows() == matrix.cols().
- @pre matrix.rows() % 3 == 0.
- @pre block_permutation is a permutation of {0, 1, ..., matrix.rows()/3-1}.
- @tparam_nonsymbolic_scalar. */
-template <typename T>
-Eigen::SparseMatrix<T> PermuteBlockSparseMatrix(
-    const Eigen::SparseMatrix<T>& matrix,
-    const std::vector<int>& block_permutation);
 
 }  // namespace internal
 }  // namespace fem

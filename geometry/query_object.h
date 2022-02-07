@@ -288,12 +288,14 @@ class QueryObject {
        | Mesh      |    no     |  yes  |
        | Convex    |    no     |  yes  |
 
-     - We do not currently support contact between two geometries with
-       the *same* compliance type; one geometry *must* be compliant, and the
-       other *must* be rigid. If geometries with the same compliance type
-       collide, an exception will be thrown. More particularly, if such a
-       geometry pair *cannot be culled* an exception will be thrown. No
-       exception is thrown if the pair has been filtered.
+     - We do not support contact between two rigid geometries. One geometry
+       *must* be compliant, and the other could be rigid or compliant. If
+       two rigid geometries collide, an exception will be thrown. More
+       particularly, if such a geometry pair *cannot be culled* an exception
+       will be thrown. No exception is thrown if the pair has been filtered.
+     - If you need all combinations of rigid-rigid contact, rigid-compliant
+       contact, and compliant-compliant contact, you might consider
+       ComputeContactSurfacesWithFallback().
      - The hydroelastic modulus (N/m^2) of each compliant geometry is set in
        ProximityProperties by AddCompliantHydroelasticProperties().
      - The tessellation of the corresponding meshes is controlled by the

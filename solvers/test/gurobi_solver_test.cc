@@ -573,7 +573,7 @@ GTEST_TEST(GurobiTest, SOCPDualSolution1) {
     // By default the dual solution for second order cone is not computed.
     MathematicalProgramResult result = solver.Solve(prog);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        result.GetDualSolution(constraint1), std::invalid_argument,
+        result.GetDualSolution(constraint1),
         "You used Gurobi to solve this optimization problem.*");
     SolverOptions options;
     options.SetOption(solver.id(), "QCPDual", 1);
@@ -591,7 +591,7 @@ GTEST_TEST(GurobiTest, SOCPDualSolution1) {
     options.SetOption(solver.id(), "QCPDual", 0);
     result = solver.Solve(prog, std::nullopt, options);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        result.GetDualSolution(bb_con), std::invalid_argument,
+        result.GetDualSolution(bb_con),
         "You used Gurobi to solve this optimization problem.*");
     // Now set QCPDual = 1, we should be able to retrieve the dual solution to
     // the bounding box constraint.

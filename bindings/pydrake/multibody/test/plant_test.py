@@ -61,6 +61,7 @@ from pydrake.multibody.plant import (
     ContactResults_,
     ContactResultsToLcmSystem,
     ContactResultsToMeshcatParams,
+    ContactResultsToMeshcat,
     ContactResultsToMeshcat_,
     CoulombFriction_,
     ExternallyAppliedSpatialForce_,
@@ -226,15 +227,6 @@ class TestPlant(unittest.TestCase):
         context = diagram.CreateDefaultContext()
         with self.assertRaises(RuntimeError):
             plant.EvalBodyPoseInWorld(context, body)
-
-    def test_deprecated_register_visual_geometry(self):
-        builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
-        body = plant.AddRigidBody(name="B", M_BBo_B=SpatialInertia_[float]())
-        with catch_drake_warnings(expected_count=1):
-            plant.RegisterVisualGeometry(
-                body=body, X_BG=Isometry3(), shape=Box(1.0, 1.0, 1.0),
-                name="G", diffuse_color=[1., 0., 0., 0.])
 
     @numpy_compare.check_all_types
     def test_multibody_plant_api_via_parsing(self, T):
@@ -948,17 +940,6 @@ class TestPlant(unittest.TestCase):
         base.SetCenterOfMassInBodyFrame(context=context, com=[0.0, 0.0, 0.0])
         M = SpatialInertia_[T](1, [0, 0, 0], UnitInertia_[T](1, 1, 1))
         base.SetSpatialInertiaInBodyFrame(context=context, M_Bo_B=M)
-
-    def test_deprecated_set_free_body_pose(self):
-        plant = MultibodyPlant_[float](0.0)
-        Parser(plant).AddModelFromFile(FindResourceOrThrow(
-            "drake/bindings/pydrake/multibody/test/double_pendulum.sdf"))
-        plant.Finalize()
-        with catch_drake_warnings(expected_count=1):
-            plant.SetFreeBodyPose(
-                context=plant.CreateDefaultContext(),
-                body=plant.GetBodyByName("base"),
-                X_WB=Isometry3())
 
     @numpy_compare.check_all_types
     def test_multibody_state_access(self, T):
@@ -1767,33 +1748,6 @@ class TestPlant(unittest.TestCase):
                 loop_body(make_joint, 0.001)
 
     @numpy_compare.check_all_types
-    def test_deprecated_weld_joint(self, T):
-        plant = MultibodyPlant_[T](0.0)
-        child = plant.AddRigidBody("Child", SpatialInertia_[float]())
-        with catch_drake_warnings(expected_count=1):
-            joint = WeldJoint_[T](
-                name="weld",
-                parent_frame_P=plant.world_frame(),
-                child_frame_C=child.body_frame(),
-                X_PC=Isometry3())
-        self.assertIsInstance(joint, Joint_[T])
-
-    def test_deprecated_weld_frames(self):
-        plant = MultibodyPlant_[float](0.0)
-        parser = Parser(plant)
-        iiwa_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/"
-            "iiwa_description/sdf/iiwa14_no_collision.sdf")
-        iiwa_model = parser.AddModelFromFile(
-            file_name=iiwa_sdf_path, model_name="robot")
-        with catch_drake_warnings(expected_count=1):
-            weld = plant.WeldFrames(
-                A=plant.world_frame(),
-                B=plant.GetFrameByName("iiwa_link_0", iiwa_model),
-                X_AB=Isometry3())
-        self.assertIsInstance(weld, Joint_[float])
-
-    @numpy_compare.check_all_types
     def test_multibody_add_frame(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         FixedOffsetFrame = FixedOffsetFrame_[T]
@@ -1818,15 +1772,6 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_float_equal(
             frame.CalcPoseInBodyFrame(context).GetAsMatrix34(),
             numpy_compare.to_float(X_PF.GetAsMatrix34()))
-
-    @numpy_compare.check_all_types
-    def test_deprecated_fixed_offset_frame(self, T):
-        plant = MultibodyPlant_[T](0.0)
-        with catch_drake_warnings(expected_count=1):
-            frame = plant.AddFrame(frame=FixedOffsetFrame_[T](
-                name="frame", P=plant.world_frame(),
-                X_PF=Isometry3(), model_instance=None))
-        self.assertIsInstance(frame, Frame_[T])
 
     @numpy_compare.check_all_types
     def test_frame_context_methods(self, T):
@@ -2013,6 +1958,7 @@ class TestPlant(unittest.TestCase):
         # ContactResults
         contact_results = ContactResults()
         self.assertTrue(contact_results.num_point_pair_contacts() == 0)
+        self.assertIsNone(contact_results.plant())
         copy.copy(contact_results)
 
     def test_contact_model(self):
@@ -2273,8 +2219,25 @@ class TestPlant(unittest.TestCase):
         dut.Equal(surface=dut)
         copy.copy(dut)
 
+    def test_deprecated_contact_results_to_meshcat_default_scalar(self):
+        """Checks ContactResultsToMeshcat for deprecation."""
+        meshcat = Meshcat()
+        with catch_drake_warnings(expected_count=1):
+            params = ContactResultsToMeshcatParams()
+        self.assertIsNotNone(params)
+        with catch_drake_warnings(expected_count=1):
+            vis = ContactResultsToMeshcat(meshcat=meshcat, params=params)
+        vis.Delete()
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        plant.Finalize()
+        with catch_drake_warnings(expected_count=1):
+            ContactResultsToMeshcat.AddToBuilder(
+                builder=builder, plant=plant, meshcat=meshcat, params=params)
+
     @numpy_compare.check_nonsymbolic_types
-    def test_deprecated_contact_results_to_meshcat(self, T):
+    def test_deprecated_contact_results_to_meshcat_specific_scalar(self, T):
+        """Checks ContactResultsToMeshcat_[T] for deprecation."""
         meshcat = Meshcat()
         with catch_drake_warnings(expected_count=1):
             params = ContactResultsToMeshcatParams()
@@ -2282,6 +2245,12 @@ class TestPlant(unittest.TestCase):
         with catch_drake_warnings(expected_count=1):
             vis = ContactResultsToMeshcat_[T](meshcat=meshcat, params=params)
         vis.Delete()
+        builder = DiagramBuilder_[T]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        plant.Finalize()
+        with catch_drake_warnings(expected_count=1):
+            ContactResultsToMeshcat_[T].AddToBuilder(
+                builder=builder, plant=plant, meshcat=meshcat, params=params)
 
     def test_free_base_bodies(self):
         plant = MultibodyPlant_[float](time_step=0.01)

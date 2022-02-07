@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
       "\nconverge quadratically to the rigid limit as the time step is "
       "\ndecreased. Thus, decrease the time step for more accurately resolved "
       "\njoint limits. "
-      "\nLaunch drake-visualizer before running this example.");
+      "\nLaunch meldis before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::atlas::do_main();
 }

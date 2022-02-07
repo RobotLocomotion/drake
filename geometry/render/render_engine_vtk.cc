@@ -33,6 +33,7 @@ using Eigen::Vector2d;
 using Eigen::Vector4d;
 using math::RigidTransformd;
 using std::make_unique;
+using internal::ImageType;
 using systems::sensors::CameraInfo;
 using systems::sensors::ColorD;
 using systems::sensors::ColorI;
@@ -72,12 +73,6 @@ float CheckRangeAndConvertToMeters(float z_buffer_value, double z_near,
   if (z_buffer_value == 1) return ImageTraits<PixelType::kDepth32F>::kTooFar;
   return static_cast<float>(z_buffer_value * (z_far - z_near) + z_near);
 }
-
-enum ImageType {
-  kColor = 0,
-  kLabel = 1,
-  kDepth = 2,
-};
 
 // TODO(SeanCurtis-TRI): Add X_PG pose to this data.
 // A package of data required to register a visual geometry.

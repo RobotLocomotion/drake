@@ -524,7 +524,7 @@ TEST_F(ContactSurfaceUtilityTest, NonPlanarPolygon) {
         Vector3d{0.75, 1.25, -kEps}, Vector3d{0, 1, -kEps}};
     const vector<int> quad{0, 1, 2, 3};
     DRAKE_EXPECT_THROWS_MESSAGE(
-        CalcPolygonCentroid(quad, Mz, vertices_M), std::runtime_error,
+        CalcPolygonCentroid(quad, Mz, vertices_M),
         "CalcPolygonCentroid: input polygon is not planar");
   }
 }
@@ -543,7 +543,7 @@ TEST_F(ContactSurfaceUtilityTest, EvalNormalWithDegeneratePolygon) {
       // with the polygon's plane; it throws.
       const vector<int> quad{0, 1, 2, 3};
       DRAKE_EXPECT_THROWS_MESSAGE(
-          CalcPolygonCentroid(quad, My, vertices_M), std::runtime_error,
+          CalcPolygonCentroid(quad, My, vertices_M),
           "CalcPolygonCentroid: the given normal is not perpendicular to the "
           "polygon's plane.*");
     }
@@ -591,7 +591,7 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
     if (kDrakeAssertIsArmed) {
       // With assertions armed; we throw.
       DRAKE_EXPECT_THROWS_MESSAGE(
-          CalcPolygonCentroid(quad, kZeroVec, vertices_M), std::runtime_error,
+          CalcPolygonCentroid(quad, kZeroVec, vertices_M),
           "CalcPolygonCentroid: given normal is too small; .*");
     } else {
       // Without assertions, we compute the average vertex position.
@@ -611,7 +611,7 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
     if (kDrakeAssertIsArmed) {
       // With assertions armed; we throw.
       DRAKE_EXPECT_THROWS_MESSAGE(
-          CalcPolygonCentroid(quad, kZeroVec, vertices_M), std::runtime_error,
+          CalcPolygonCentroid(quad, kZeroVec, vertices_M),
           "CalcPolygonCentroid: given normal is too small; .*");
     } else {
       // Without assertions, we compute the triangle's centroid.
@@ -628,7 +628,6 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
       // With assertions armed; we throw.
       DRAKE_EXPECT_THROWS_MESSAGE(
           CalcPolygonCentroid(pseudo_triangle, Fy, vertices_M),
-          std::runtime_error,
           "CalcPolygonCentroid: the given normal is not perpendicular to the "
           "polygon's plane.*");
     } else {

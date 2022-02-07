@@ -51,41 +51,12 @@ namespace {
 // Add a new weld joint to @p plant from @p parent_frame as indicated by @p
 // weld (as resolved relative to @p model_namespace) and update the @p info
 // for the child model accordingly.
-//
-// If @p error_func is provided (non-empty), use it to compute an offset X_PCe
-// for the weld.
-void AddWeldWithOptionalError(
+void AddWeld(
     const Frame<double>& parent_frame,
     const Frame<double>& child_frame,
-    ModelWeldErrorFunctionToBeDeprecated error_func,
     MultibodyPlant<double>* plant,
     std::vector<ModelInstanceInfo>* added_models) {
-  // TODO(#14084): This hack really shouldn't belong in model
-  // directives. Instead, it should live externally as a transformation on
-  // ModelDirectives (either flattened or recursive).
-  std::string parent_full_name =
-      PrefixName(GetInstanceScopeName(*plant, parent_frame.model_instance()),
-                 parent_frame.name());
-  std::string child_full_name =
-      PrefixName(GetInstanceScopeName(*plant, child_frame.model_instance()),
-                 child_frame.name());
-  std::optional<RigidTransformd> X_PCe =
-      error_func ? error_func(parent_full_name, child_full_name) : std::nullopt;
-  if (X_PCe.has_value()) {
-    // N.B. Since this will belong in the child_frame's model instance, we
-    // shouldn't worry about name collisions.
-    const std::string weld_error_name =
-        parent_frame.name() + "_weld_error_to_" + child_frame.name();
-    drake::log()->debug("ProcessAddWeld adding error frame {}",
-                        weld_error_name);
-    const auto& error_frame =
-        plant->AddFrame(make_unique<FixedOffsetFrame<double>>(
-            weld_error_name, parent_frame, *X_PCe,
-            child_frame.model_instance()));
-    plant->WeldFrames(error_frame, child_frame);
-  } else {
-    plant->WeldFrames(parent_frame, child_frame);
-  }
+  plant->WeldFrames(parent_frame, child_frame);
   if (added_models) {
     // Record weld info into crappy ModelInstanceInfo struct.
     bool found = false;
@@ -104,8 +75,7 @@ void AddWeldWithOptionalError(
 void ProcessModelDirectivesImpl(
     const ModelDirectives& directives, MultibodyPlant<double>* plant,
     std::vector<ModelInstanceInfo>* added_models, Parser* parser,
-    const std::string& model_namespace,
-    ModelWeldErrorFunctionToBeDeprecated error_func) {
+    const std::string& model_namespace) {
   drake::log()->debug("ProcessModelDirectives(MultibodyPlant)");
   DRAKE_DEMAND(plant != nullptr);
   DRAKE_DEMAND(added_models != nullptr);
@@ -165,10 +135,10 @@ void ProcessModelDirectivesImpl(
       drake::log()->debug("    resolved_name: {}", resolved_name);
 
     } else if (directive.add_weld) {
-      AddWeldWithOptionalError(
+      AddWeld(
           get_scoped_frame(directive.add_weld->parent),
           get_scoped_frame(directive.add_weld->child),
-          error_func, plant, added_models);
+          plant, added_models);
 
     } else {
       // Recurse.
@@ -188,8 +158,7 @@ void ProcessModelDirectivesImpl(
           LoadModelDirectives(
               ResolveModelDirectiveUri(sub.file, parser->package_map()));
       ProcessModelDirectivesImpl(
-          sub_directives, plant, added_models, parser, new_model_namespace,
-          error_func);
+          sub_directives, plant, added_models, parser, new_model_namespace);
     }
   }
 }
@@ -234,24 +203,12 @@ void ProcessModelDirectives(
     drake::multibody::MultibodyPlant<double>* plant,
     std::vector<ModelInstanceInfo>* added_models,
     drake::multibody::Parser* parser) {
-  // Once 2022-02-01 comes around, we can fold these two overloads back down
-  // to just one function.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  ProcessModelDirectives(directives, plant, added_models, parser, {});
-#pragma GCC diagnostic pop
-}
-
-void ProcessModelDirectives(
-    const ModelDirectives& directives, MultibodyPlant<double>* plant,
-    std::vector<ModelInstanceInfo>* added_models, Parser* parser,
-    ModelWeldErrorFunctionToBeDeprecated error_func) {
   auto tmp_parser = ConstructIfNullAndReassign<Parser>(&parser, plant);
   auto tmp_added_model =
       ConstructIfNullAndReassign<std::vector<ModelInstanceInfo>>(&added_models);
   const std::string model_namespace = "";
   ProcessModelDirectivesImpl(
-      directives, plant, added_models, parser, model_namespace, error_func);
+      directives, plant, added_models, parser, model_namespace);
 }
 
 ModelDirectives LoadModelDirectives(const std::string& filename) {

@@ -9,25 +9,20 @@ The following instructions assume Drake was
 Prerequisites
 -------------
 
-Ensure that you have installed the drake visualizer with
-```
-bazel build //tools:drake_visualizer
-```
-
 All instructions assume that you are launching from the `drake`
 workspace directory.
 ```
 cd drake
 ```
 
+Open a visualizer window
+```
+bazel run //tools:meldis -- --open-window &
+```
+
 
 Basic IIWA Simulation
 ---------------------
-
-Launch the visualizer
-```
-bazel-bin/tools/drake_visualizer
-```
 
 Launch the kuka simulation
 ```

@@ -26,10 +26,10 @@ Users can navigate their browser to the hosted URL to visualize the Meshcat
 scene.  Note that, unlike many visualizers, one cannot open the visualizer until
 this server is running.
 
-In the current implementation, Meshcat methods must be called from the same
-thread where the class instance was constructed.  For example, running multiple
-simulations in parallel using the same Meshcat instance is not yet supported. We
-may generalize this in the future.
+@warning In the current implementation, Meshcat methods must be called from the
+same thread where the class instance was constructed.  For example, running
+multiple simulations in parallel using the same Meshcat instance is not yet
+supported. We may generalize this in the future.
 
 @section meshcat_path Meshcat paths and the scene tree
 
@@ -102,6 +102,9 @@ class Meshcat {
   /** (Advanced) Returns the ws:// URL for direct connection to the websocket
   interface.  Most users should connect via a browser opened to web_url(). */
   std::string ws_url() const;
+
+  /** (Advanced) Returns the number of currently-open websocket connections. */
+  int GetNumActiveConnections() const;
 
   /** Blocks the calling thread until all buffered data in the websocket thread
   has been sent to any connected clients. This can be especially useful when

@@ -142,7 +142,6 @@ GTEST_TEST(SupernodalSolver, IncompatibleJacobianAndMass) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       (SuperNodalSolver{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
-      std::runtime_error,
       "Column partition induced by mass matrix must refine the partition "
       "induced by the Jacobian.");
 }
@@ -183,7 +182,6 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
   // thrown.
   blocks_of_G.at(0) = MatrixXd::Ones(4, 4);
   DRAKE_EXPECT_THROWS_MESSAGE(solver.SetWeightMatrix(blocks_of_G),
-                              std::runtime_error,
                               "Weight matrix incompatible with Jacobian.");
 }
 
@@ -216,7 +214,6 @@ GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
-      std::runtime_error,
       "Invalid Jacobian triplets: no triplet provided for column 1.");
 }
 
@@ -248,7 +245,6 @@ GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
-      std::runtime_error,
       "Jacobian can only be nonzero on at most two column blocks.");
 }
 
@@ -282,7 +278,6 @@ GTEST_TEST(SupernodalSolver,
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       (SuperNodalSolver{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
-      std::runtime_error,
       "Column partition induced by mass matrix must refine the partition "
       "induced by the Jacobian.");
 }

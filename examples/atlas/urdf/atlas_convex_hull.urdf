@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="atlas">
+<robot xmlns:drake="http://drake.mit.edu" xmlns:xacro="http://www.ros.org/wiki/xacro" name="atlas">
   <link name="l_clav">
     <inertial>
       <mass value="4.466"/>
@@ -1022,6 +1022,12 @@
     <drake:member link="l_lfarm"/>
     <drake:member link="l_hand"/>
     <drake:ignored_collision_filter_group name="l_arm"/>
+  </drake:collision_filter_group>
+  <drake:collision_filter_group name="hokuyo_filter">
+    <drake:member link="hokuyo_link"/>
+    <drake:member link="utorso"/>
+    <drake:member link="head"/>
+    <drake:ignored_collision_filter_group name="hokuyo_filter"/>
   </drake:collision_filter_group>
   <link name="head">
     <inertial>

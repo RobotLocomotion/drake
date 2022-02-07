@@ -44,7 +44,6 @@ class BushingTester {
     RotationMatrixd R_AB_bad(Eigen::AngleAxis<double>(bad_half_angle, axis));
     DRAKE_EXPECT_THROWS_MESSAGE(LinearBushingRollPitchYaw<double>::
           ThrowIfInvalidHalfAngleAxis(R_AC, R_AB_bad),
-          std::runtime_error,
           "Error: Calculation of R_AB from quaternion differs from the "
           "R_AB_expected formed via a half-angle axis calculation.");
   }
@@ -277,19 +276,16 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     const ForceElement<double> *bushing_force_element = bushing_;
     DRAKE_EXPECT_THROWS_MESSAGE(
         bushing_force_element->CalcPotentialEnergy(context, pc),
-        std::runtime_error,
         "Error: LinearBushingRollPitchYaw::CalcPotentialEnergy().*");
 
     // Verify CalcConservativePower() throws an exception (see issue #12982).
     DRAKE_EXPECT_THROWS_MESSAGE(
         bushing_force_element->CalcConservativePower(context, pc, vc),
-        std::runtime_error,
         "Error: LinearBushingRollPitchYaw::CalcConservativePower().*");
 
     // Verify CalcConservativePower() throws an exception (see issue #12982).
     DRAKE_EXPECT_THROWS_MESSAGE(
         bushing_force_element->CalcNonConservativePower(context, pc, vc),
-        std::runtime_error,
         "Error: LinearBushingRollPitchYaw::CalcNonConservativePower().*");
   }
 
@@ -691,12 +687,12 @@ TEST_F(LinearBushingRollPitchYawTester, TestGimbalLock) {
   // Check that CalcBushingSpatialForceOnFrameA() throws near gimbal lock.
   DRAKE_EXPECT_THROWS_MESSAGE(
       bushing_->CalcBushingSpatialForceOnFrameA(context),
-      std::runtime_error, expected_message);
+      expected_message);
 
   // Check that CalcBushingSpatialForceOnFrameC() throws near gimbal lock.
   DRAKE_EXPECT_THROWS_MESSAGE(
       bushing_->CalcBushingSpatialForceOnFrameC(context),
-      std::runtime_error, expected_message);
+      expected_message);
 }
 
 // Verify algorithm that calculates rotation matrix R_AB.

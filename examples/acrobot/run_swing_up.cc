@@ -18,7 +18,7 @@ namespace {
 
 // Simple example which simulates the Acrobot, started near its stable fixed
 // point, with a Spong swing-up controller designed to reach the unstable
-// fixed point.  Run drake-visualizer to see the animated result.
+// fixed point.  Run meldis to see the animated result.
 
 DEFINE_double(simulation_sec, 10.0,
               "Number of seconds to simulate.");

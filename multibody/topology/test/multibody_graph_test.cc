@@ -40,7 +40,7 @@ GTEST_TEST(MultibodyGraph, SerialChain) {
   // We cannot register to the world model instance, unless it's the first call
   // to AddBody().
   DRAKE_EXPECT_THROWS_MESSAGE(
-      graph.AddBody("InvalidBody", world_model_instance()), std::runtime_error,
+      graph.AddBody("InvalidBody", world_model_instance()),
       fmt::format("AddBody\\(\\): Model instance index = {}.*",
                   world_model_instance()));
 
@@ -55,25 +55,22 @@ GTEST_TEST(MultibodyGraph, SerialChain) {
 
   // We cannot duplicate the name of a body or joint.
   DRAKE_EXPECT_THROWS_MESSAGE(graph.AddBody("body3", model_instance),
-                              std::runtime_error,
                               "AddBody\\(\\): Duplicate body name.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       graph.AddJoint("pin3", model_instance, kRevoluteType, BodyIndex(1),
                      BodyIndex(2)),
-      std::runtime_error, "AddJoint\\(\\): Duplicate joint name.*");
+      "AddJoint\\(\\): Duplicate joint name.*");
 
   // We cannot add a redundant joint.
   DRAKE_EXPECT_THROWS_MESSAGE(
       graph.AddJoint("other", model_instance, kRevoluteType, BodyIndex(1),
                      BodyIndex(2)),
-      std::runtime_error,
       "This MultibodyGraph already has a joint 'pin2' connecting 'body1'"
       " to 'body2'. Therefore adding joint 'other' connecting 'body1' to"
       " 'body2' is not allowed.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       graph.AddJoint("reverse", model_instance, kRevoluteType, BodyIndex(2),
                      BodyIndex(1)),
-      std::runtime_error,
       "This MultibodyGraph already has a joint 'pin2' connecting 'body1'"
       " to 'body2'. Therefore adding joint 'reverse' connecting 'body2' to"
       " 'body1' is not allowed.");
@@ -81,19 +78,16 @@ GTEST_TEST(MultibodyGraph, SerialChain) {
   // We cannot add an unregistered joint type.
   DRAKE_EXPECT_THROWS_MESSAGE(graph.AddJoint("screw1", model_instance, "screw",
                                              BodyIndex(1), BodyIndex(2)),
-                              std::runtime_error,
                               "AddJoint\\(\\): Unrecognized type.*");
 
   // Invalid parent/child body throws.
   DRAKE_EXPECT_THROWS_MESSAGE(
       graph.AddJoint("another_pin", model_instance, kRevoluteType, BodyIndex(1),
                      BodyIndex(9)),
-      std::runtime_error,
       "AddJoint\\(\\): child body index for joint '.*' is invalid.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       graph.AddJoint("another_pin", model_instance, kRevoluteType, BodyIndex(9),
                      BodyIndex(1)),
-      std::runtime_error,
       "AddJoint\\(\\): parent body index for joint '.*' is invalid.");
 
   // Verify the world's name and model instance are registered correctly.

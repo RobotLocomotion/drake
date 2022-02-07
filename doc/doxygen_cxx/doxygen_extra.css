@@ -109,3 +109,24 @@ pre.unicode-art {
   font-family: 'DejaVu Sans Mono', monospace;
   line-height: 1em;
 }
+
+/* Place the duckduckgo.com search box in the upper right. */
+
+#DDGSearch {
+    white-space : nowrap;
+    float: none;
+    margin-top: 0px;
+    top: 8px;
+    right: 20px;
+    width: 200px;
+    height: 24px;
+    z-index: 102;
+    display: inline;
+    position: absolute;
+}
+
+/* Adjust the built-in "Quick jump" search to make room for theh DDGSearch. */
+
+#MSearchBox {
+    top: 60px;
+}

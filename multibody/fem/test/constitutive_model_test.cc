@@ -39,14 +39,14 @@ GTEST_TEST(ConstitutiveModelTest, InvalidModel) {
   std::array<double, DummyData<double, kNumLocations>::num_locations>
       energy_density;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model.CalcElasticEnergyDensity(data, &energy_density), std::exception,
+      model.CalcElasticEnergyDensity(data, &energy_density),
       fmt::format("The derived class {} must provide a shadow definition of "
                   "CalcElasticEnergyDensityImpl.. to be correct.",
                   NiceTypeName::Get(model)));
 
   std::array<Matrix3d, DummyData<double, kNumLocations>::num_locations> P;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model.CalcFirstPiolaStress(data, &P), std::exception,
+      model.CalcFirstPiolaStress(data, &P),
       fmt::format("The derived class {} must provide a shadow definition of "
                   "CalcFirstPiolaStressImpl.. to be correct.",
                   NiceTypeName::Get(model)));
@@ -55,7 +55,7 @@ GTEST_TEST(ConstitutiveModelTest, InvalidModel) {
              DummyData<double, kNumLocations>::num_locations>
       dPdF;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model.CalcFirstPiolaStressDerivative(data, &dPdF), std::exception,
+      model.CalcFirstPiolaStressDerivative(data, &dPdF),
       fmt::format("The derived class {} must provide a shadow definition of "
                   "CalcFirstPiolaStressDerivativeImpl.. to be correct.",
                   NiceTypeName::Get(model)));

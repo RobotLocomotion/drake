@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version="1.6">
+<sdf xmlns:drake="http://drake.mit.edu" version="1.6">
   <model name="Particle">
     <!-- Particle of mass m = 0.5 Kg and zero size. 
     In Drake we model it as a 6DOF body, with infinite moments of inertia so

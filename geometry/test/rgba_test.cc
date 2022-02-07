@@ -37,13 +37,11 @@ GTEST_TEST(RgbaTest, Errors) {
         "\\(r={}, g={}, b={}, a={}\\)", ri, gi, bi, ai);
     DRAKE_EXPECT_THROWS_MESSAGE(
         Rgba(ri, gi, bi, ai),
-        std::runtime_error,
         expected_message);
     // Check for transaction integrity.
     Rgba color = original;
     DRAKE_EXPECT_THROWS_MESSAGE(
         color.set(ri, gi, bi, ai),
-        std::runtime_error,
         expected_message);
     EXPECT_EQ(color, original);
   };

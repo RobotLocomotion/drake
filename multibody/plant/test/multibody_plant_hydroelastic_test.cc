@@ -1,4 +1,5 @@
 #include <memory>
+#include <optional>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -48,17 +49,23 @@ class MultibodyPlantTester {
 
 namespace {
 
-// This fixture sets up a MultibodyPlant model of a compliant sphere and a rigid
-// half-space to confirm that MBP computes the correct forces due to
-// hydroelastic contact.
+// This fixture sets up a MultibodyPlant model of a compliant sphere and a
+// ground box to confirm that MBP computes the correct forces due to
+// hydroelastic contact. The box could be either rigid or compliant.
 class HydroelasticModelTests : public ::testing::Test {
  protected:
-  void SetUpModel(double mbp_dt) {
+  enum class BoxType { kRigid, kCompliant };
+
+  // @param compliant_hydroelastic_modulus is required for the compliant box
+  //                                       but not the rigid box.
+  void SetUpModel(double mbp_dt, BoxType box_type,
+                  std::optional<double> compliant_box_hydroelastic_modulus) {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) =
         AddMultibodyPlantSceneGraph(&builder, mbp_dt);
 
-    AddGround(kFrictionCoefficient, plant_);
+    AddGroundBox(kFrictionCoefficient, plant_, box_type,
+                 compliant_box_hydroelastic_modulus);
     body_ = &AddObject(plant_, kSphereRadius, kElasticModulus, kDissipation,
                        kFrictionCoefficient);
 
@@ -83,7 +90,12 @@ class HydroelasticModelTests : public ::testing::Test {
         &diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get());
   }
 
-  void AddGround(double friction_coefficient, MultibodyPlant<double>* plant) {
+  // @param compliant_hydroelastic_modulus is required for the compliant box
+  //                                       but not the rigid box.
+  void AddGroundBox(
+      double friction_coefficient, MultibodyPlant<double>* plant,
+      BoxType box_type,
+      std::optional<double> compliant_hydroelastic_modulus) {
     const double kSize = 10;
     const RigidTransformd X_WG{Vector3d{0, 0, -kSize / 2}};
     const Vector4<double> green(0.5, 1.0, 0.5, 1.0);
@@ -91,7 +103,13 @@ class HydroelasticModelTests : public ::testing::Test {
     plant->RegisterVisualGeometry(plant->world_body(), X_WG, ground,
                                   "GroundVisualGeometry", green);
     geometry::ProximityProperties props;
-    geometry::AddRigidHydroelasticProperties(kSize, &props);
+    if (box_type == BoxType::kRigid) {
+      geometry::AddRigidHydroelasticProperties(kSize, &props);
+    } else {
+      DRAKE_DEMAND(compliant_hydroelastic_modulus.has_value());
+      geometry::AddCompliantHydroelasticProperties(
+          kSize, compliant_hydroelastic_modulus.value(), &props);
+    }
     geometry::AddContactMaterial(
         {}, {},
         CoulombFriction<double>(friction_coefficient, friction_coefficient),
@@ -166,6 +184,38 @@ class HydroelasticModelTests : public ::testing::Test {
     return normal_force;
   }
 
+  // Runs the model of the sphere lying on the ground for long enough to
+  // reach a steady state in which the hydroelastic forces balance the
+  // weight of the sphere.
+  // @param[out] p_WB_W   The position of the sphere.
+  // @param[out] F_BBo_W  The contact force on the sphere balancing gravity,
+  //                      which is typically parallel to Wz direction.
+  void RunDiscreteTamsiSolver(SpatialForce<double>* F_BBo_W,
+                              Vector3<double>* p_WB_W) {
+    DRAKE_DEMAND(F_BBo_W != nullptr);
+    DRAKE_DEMAND(p_WB_W != nullptr);
+    *p_WB_W = Vector3<double>::Zero();
+    *F_BBo_W = SpatialForce<double>();
+
+    Simulator<double> simulator(*diagram_);
+    auto& diagram_context = simulator.get_mutable_context();
+    auto& plant_context = plant_->GetMyMutableContextFromRoot(&diagram_context);
+
+    // Set initial condition.
+    const RigidTransformd X_WB(Vector3d(0.0, 0.0, kSphereRadius));
+    plant_->SetFreeBodyPose(&plant_context, *body_, X_WB);
+    diagram_->Publish(diagram_context);
+
+    // Run simulation for long enough to reach the steady state.
+    simulator.AdvanceTo(0.5);
+
+    const auto& F_BBo_W_array =
+        MultibodyPlantTester::EvalHydroelasticContactForces(*plant_,
+                                                            plant_context);
+    *F_BBo_W = F_BBo_W_array[body_->node_index()];
+    *p_WB_W = plant_->GetFreeBodyPose(plant_context, *body_).translation();
+  }
+
   const double kFrictionCoefficient{0.0};  // [-]
   const double kSphereRadius{0.05};        // [m]
   const double kElasticModulus{1.e5};      // [Pa]
@@ -194,7 +244,7 @@ class HydroelasticModelTests : public ::testing::Test {
 // TODO(amcastro-tri): Extend this test to verify convergence on mesh refinement
 // once we have the capability to specify mesh refinement.
 TEST_F(HydroelasticModelTests, ContactForce) {
-  SetUpModel(0.0);
+  SetUpModel(0.0, BoxType::kRigid, std::nullopt);
   auto calc_force = [this](double penetration) -> double {
     SetPose(penetration);
     const auto& F_BBo_W_array =
@@ -240,7 +290,7 @@ TEST_F(HydroelasticModelTests, ContactForce) {
 // Therefore we only test the acceleration of the CoM and ignore angular
 // accelerations.
 TEST_F(HydroelasticModelTests, ContactDynamics) {
-  SetUpModel(0.0);
+  SetUpModel(0.0, BoxType::kRigid, std::nullopt);
   const double penetration = 0.02;
   SetPose(penetration);
   const auto& F_BBo_W_array =
@@ -266,39 +316,51 @@ TEST_F(HydroelasticModelTests, ContactDynamics) {
                               40 * std::numeric_limits<double>::epsilon()));
 }
 
-// In this test we run the model of the sphere lying on the ground for long
-// enough to reach a steady state in which the hydroelastic forces balance the
-// weight of the sphere. The purpose of this test is to verify the results of a
-// simulation using the discrete approximation of hydroelastics.
-TEST_F(HydroelasticModelTests, DiscreteTamsiSolver) {
-  SetUpModel(5.0e-3);
-  Simulator<double> simulator(*diagram_);
-  auto& diagram_context = simulator.get_mutable_context();
-  auto& plant_context = plant_->GetMyMutableContextFromRoot(&diagram_context);
+// Verify the results of a simulation using the discrete approximation of
+// hydroelastics.
+TEST_F(HydroelasticModelTests, DiscreteTamsiSolverRigidCompliant) {
+  SetUpModel(5.0e-3, BoxType::kRigid, std::nullopt);
 
-  // Set initial condition.
-  const RigidTransformd X_WB(Vector3d(0.0, 0.0, kSphereRadius));
-  plant_->SetFreeBodyPose(&plant_context, *body_, X_WB);
-  diagram_->Publish(diagram_context);
+  SpatialForce<double> F_BBo_W;
+  Vector3<double> p_WB_W;
+  RunDiscreteTamsiSolver(&F_BBo_W, &p_WB_W);
 
-  // Run simulation for long enough to reach the steady state.
-  simulator.AdvanceTo(0.5);
-
-  // In steady state, the normal hydroelastic force must match the weight of
-  // the sphere. We verify this.
-  const auto& F_BBo_W_array =
-      MultibodyPlantTester::EvalHydroelasticContactForces(*plant_,
-                                                          plant_context);
-  const SpatialForce<double>& F_BBo_W = F_BBo_W_array[body_->node_index()];
-  const Vector3<double> fz_BBo_W = F_BBo_W.translational();
-
+  // Check the force.
+  const Vector3<double> f_BBo_W = F_BBo_W.translational();
   // The contact force should match the weight of the sphere.
-  const Vector3<double> fz_BBo_W_expected =
+  const Vector3<double> f_BBo_W_expected =
       -plant_->gravity_field().gravity_vector() * kMass;
-
   // We use a tolerance value based on previous runs of this test.
   const double tolerance = 2.0e-8;
-  EXPECT_TRUE(CompareMatrices(fz_BBo_W, fz_BBo_W_expected, tolerance));
+  EXPECT_TRUE(CompareMatrices(f_BBo_W, f_BBo_W_expected, tolerance));
+}
+
+// Tests that "very stiff" compliant hydroelastics converge to rigid
+// hydroelastics. First we run a typical rigid box contacting a typical
+// compliant sphere. Then, we run a stiff compliant box (very high
+// hydroelastic modulus) contacting a typical compliant sphere. We show both
+// cases give similar result after a significant simulated time.
+TEST_F(HydroelasticModelTests,
+       DiscreteTamsiSolverCompliantCompliantConsistentWithRigidCompliant) {
+  SpatialForce<double> rigid_compliant_F_BBo_W;
+  Vector3<double> rigid_compliant_p_WB_W;
+  {
+    SetUpModel(5.0e-3, BoxType::kRigid, std::nullopt);
+    RunDiscreteTamsiSolver(&rigid_compliant_F_BBo_W, &rigid_compliant_p_WB_W);
+  }
+
+  SpatialForce<double> compliant_compliant_F_BBo_W;
+  Vector3<double> compliant_compliant_p_WB_W;
+  {
+    // Use very high hydroelastic modulus to mimic the rigid box.
+    const double box_compliant_hydroelastic_modulus = 1e14;
+    SetUpModel(5.0e-3, BoxType::kCompliant, box_compliant_hydroelastic_modulus);
+    RunDiscreteTamsiSolver(&compliant_compliant_F_BBo_W,
+                           &compliant_compliant_p_WB_W);
+  }
+
+  EXPECT_TRUE(CompareMatrices(compliant_compliant_p_WB_W,
+                              rigid_compliant_p_WB_W, 1e-8));
 }
 
 // This tests consistency across the ContactModel modes: point pair,
@@ -533,7 +595,7 @@ TEST_F(ContactModelTest, PointPairContact) {
 TEST_F(ContactModelTest, HydroelasticOnly) {
   this->Configure(ContactModel::kHydroelastic);
   // Rigid-rigid contact precludes successful evaluation.
-  DRAKE_EXPECT_THROWS_MESSAGE(GetContactResults(), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(GetContactResults(),
                               "Requested contact between two rigid objects .+");
 }
 
@@ -567,7 +629,7 @@ TEST_F(ContactModelTest, HydroelasticWithFallbackDisconnectedPorts) {
   // Plant was not connected to the SceneGraph in a diagram, so its input port
   // should be invalid.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      GetContactResults(), std::logic_error,
+      GetContactResults(),
       "The geometry query input port \\(see "
       "MultibodyPlant::get_geometry_query_input_port\\(\\)\\) "
       "of this MultibodyPlant is not connected. Please connect the"

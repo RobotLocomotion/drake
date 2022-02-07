@@ -430,6 +430,8 @@ struct UserInterfaceEvent {
 }  // namespace geometry
 }  // namespace drake
 
+#ifndef DRAKE_DOXYGEN_CXX
+
 MSGPACK_ADD_ENUM(drake::geometry::internal::ThreeSide);
 MSGPACK_ADD_ENUM(drake::geometry::MeshcatAnimation::LoopMode);
 
@@ -547,3 +549,5 @@ struct pack<drake::geometry::Meshcat::PerspectiveCamera> {
 }  // namespace adaptor
 }  // namespace MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS)
 }  // namespace msgpack
+
+#endif  // DRAKE_DOXYGEN_CXX

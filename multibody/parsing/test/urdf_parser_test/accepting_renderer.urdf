@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot name="non_conflicting_materials_1">
+<robot xmlns:drake="http://drake.mit.edu" name="non_conflicting_materials_1">
   <material name="brown">
     <color rgba="0.93333333333 0.79607843137 0.67843137254 1"/>
   </material>

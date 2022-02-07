@@ -1,6 +1,5 @@
 #include "drake/multibody/meshcat/contact_visualizer.h"
 
-#include <memory>
 #include <string>
 #include <utility>
 
@@ -8,14 +7,55 @@
 
 #include "drake/common/extract_double.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/meshcat/point_contact_visualizer.h"
 #include "drake/multibody/plant/contact_results.h"
+#include "drake/multibody/plant/internal_geometry_names.h"
 
 namespace drake {
 namespace multibody {
 namespace meshcat {
 
+using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::Meshcat;
+using geometry::QueryObject;
+using meshcat::internal::PointContactVisualizer;
+using meshcat::internal::PointContactVisualizerItem;
+using multibody::internal::GeometryNames;
+using systems::CacheEntry;
+using systems::Context;
+using systems::DiagramBuilder;
+using systems::EventStatus;
+using systems::InputPort;
+using systems::OutputPort;
+using systems::OutputPortIndex;
+using systems::System;
+using systems::ValueProducer;
+
+namespace {
+
+// TODO(jwnimmer-tri) Move this utility to some useful header file.
+//
+// Finds the SceneGraph::get_query_output_port that's associated with the
+// given plant in the given builder, or nullptr if not possible.
+template <typename T>
+const OutputPort<T>* FindSceneGraphQueryOutput(
+    const DiagramBuilder<T>& builder,
+    const MultibodyPlant<T>& plant) {
+  const typename DiagramBuilder<T>::InputPortLocator locator{
+      &plant, plant.get_geometry_query_input_port().get_index()};
+  const auto& connections = builder.connection_map();
+  const auto iter = connections.find(locator);
+  if (iter == connections.end()) {
+    return nullptr;
+  }
+  const System<T>* const scene_graph = iter->second.first;
+  const OutputPortIndex port_index = iter->second.second;
+  DRAKE_DEMAND(scene_graph != nullptr);
+  return &(scene_graph->get_output_port(port_index));
+}
+
+}  // namespace
 
 template <typename T>
 ContactVisualizer<T>::ContactVisualizer(
@@ -27,6 +67,11 @@ ContactVisualizer<T>::ContactVisualizer(
   DRAKE_DEMAND(params_.publish_period >= 0.0);
   DRAKE_DEMAND(params_.force_threshold > 0.0);  // Strictly positive.
 
+  ContactVisualizerParams point_params = params_;
+  point_params.prefix += "/point";
+  point_visualizer_ = std::make_unique<PointContactVisualizer>(
+      meshcat_, std::move(point_params));
+
   this->DeclarePeriodicPublishEvent(params_.publish_period, 0.0,
                                     &ContactVisualizer::UpdateMeshcat);
   this->DeclareForcedPublishEvent(&ContactVisualizer::UpdateMeshcat);
@@ -36,10 +81,24 @@ ContactVisualizer<T>::ContactVisualizer(
         &ContactVisualizer::OnInitialization);
   }
 
-  contact_results_input_port_ =
-      this->DeclareAbstractInputPort("contact_results",
-                                     Value<ContactResults<T>>())
-          .get_index();
+  const InputPort<T>& contact_results = this->DeclareAbstractInputPort(
+      "contact_results", Value<ContactResults<T>>());
+  contact_results_input_port_ = contact_results.get_index();
+
+  const InputPort<T>& query_object = this->DeclareAbstractInputPort(
+      "query_object", Value<QueryObject<T>>());
+  query_object_input_port_ = query_object.get_index();
+
+  const CacheEntry& geometry_names = this->DeclareCacheEntry(
+      "geometry_names", ValueProducer(
+          GeometryNames(), &ValueProducer::NoopCalc),
+      {this->nothing_ticket()});
+  geometry_names_scratch_ = geometry_names.cache_index();
+
+  const CacheEntry& point_contacts = this->DeclareCacheEntry(
+      "point_contacts", &ContactVisualizer::CalcPointContacts,
+      {contact_results.ticket()});
+  point_contacts_cache_ = point_contacts.cache_index();
 }
 
 template <typename T>
@@ -49,131 +108,117 @@ ContactVisualizer<T>::ContactVisualizer(
     : ContactVisualizer(other.meshcat_, other.params_) {}
 
 template <typename T>
+ContactVisualizer<T>::~ContactVisualizer() = default;
+
+template <typename T>
 void ContactVisualizer<T>::Delete() const {
+  point_visualizer_->Delete();
   meshcat_->Delete(params_.prefix);
-  contacts_.clear();
 }
 
 template <typename T>
 const ContactVisualizer<T>& ContactVisualizer<T>::AddToBuilder(
-    systems::DiagramBuilder<T>* builder, const MultibodyPlant<T>& plant,
+    DiagramBuilder<T>* builder, const MultibodyPlant<T>& plant,
     std::shared_ptr<Meshcat> meshcat, ContactVisualizerParams params) {
-  return AddToBuilder(builder, plant.get_contact_results_output_port(),
-                      std::move(meshcat), std::move(params));
+  DRAKE_THROW_UNLESS(builder != nullptr);
+
+  // Find the SceneGraph associated with this plant (if possible).
+  const OutputPort<T>* query_object_port =
+      FindSceneGraphQueryOutput(*builder, plant);
+
+  // Delegate to one of the port-specific overloads.
+  if (query_object_port != nullptr) {
+    return AddToBuilder(
+        builder, plant.get_contact_results_output_port(), *query_object_port,
+        std::move(meshcat), std::move(params));
+  } else {
+    return AddToBuilder(
+        builder, plant.get_contact_results_output_port(),
+        std::move(meshcat), std::move(params));
+  }
 }
 
 template <typename T>
 const ContactVisualizer<T>& ContactVisualizer<T>::AddToBuilder(
-    systems::DiagramBuilder<T>* builder,
-    const systems::OutputPort<T>& contact_results_port,
-    std::shared_ptr<Meshcat> meshcat, ContactVisualizerParams params) {
-  auto& visualizer = *builder->template AddSystem<ContactVisualizer<T>>(
+    DiagramBuilder<T>* builder, const OutputPort<T>& contact_results_port,
+    const OutputPort<T>& query_object_port, std::shared_ptr<Meshcat> meshcat,
+    ContactVisualizerParams params) {
+  DRAKE_THROW_UNLESS(builder != nullptr);
+  auto& result = *builder->template AddSystem<ContactVisualizer<T>>(
       std::move(meshcat), std::move(params));
-  builder->Connect(contact_results_port,
-                   visualizer.contact_results_input_port());
-  return visualizer;
+  builder->Connect(contact_results_port, result.contact_results_input_port());
+  builder->Connect(query_object_port, result.query_object_input_port());
+  return result;
 }
 
 template <typename T>
-systems::EventStatus ContactVisualizer<T>::UpdateMeshcat(
-    const systems::Context<T>& context) const {
-  const auto& contact_results =
+const ContactVisualizer<T>& ContactVisualizer<T>::AddToBuilder(
+    DiagramBuilder<T>* builder, const OutputPort<T>& contact_results_port,
+    std::shared_ptr<Meshcat> meshcat, ContactVisualizerParams params) {
+  DRAKE_THROW_UNLESS(builder != nullptr);
+  auto& result = *builder->template AddSystem<ContactVisualizer<T>>(
+      std::move(meshcat), std::move(params));
+  builder->Connect(contact_results_port, result.contact_results_input_port());
+  return result;
+}
+
+template <typename T>
+EventStatus ContactVisualizer<T>::UpdateMeshcat(
+    const Context<T>& context) const {
+  const auto& point_contacts =
+      this->get_cache_entry(point_contacts_cache_).
+      template Eval<std::vector<PointContactVisualizerItem>>(context);
+  point_visualizer_->Update(point_contacts);
+  return EventStatus::Succeeded();
+}
+
+template <typename T>
+void ContactVisualizer<T>::CalcPointContacts(
+    const Context<T>& context,
+    std::vector<PointContactVisualizerItem>* result) const {
+  result->clear();
+
+  // Obtain the list of contacts.
+  const ContactResults<T>& contact_results =
       contact_results_input_port().template Eval<ContactResults<T>>(context);
 
-  std::map<SortedPair<GeometryId>, bool> contacts_to_process = contacts_;
+  // Freshen the dictionary of contact names for the proximity geometries.
+  const MultibodyPlant<T>* const plant = contact_results.plant();
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  GeometryNames& geometry_names =
+      this->get_cache_entry(geometry_names_scratch_).
+      get_mutable_cache_entry_value(context).
+      template GetMutableValueOrThrow<GeometryNames>();
+  if (geometry_names.entries().empty()) {
+    if (query_object_input_port().HasValue(context)) {
+      const QueryObject<T>& query_object =
+          query_object_input_port().template Eval<QueryObject<T>>(context);
+      geometry_names.ResetFull(*plant, query_object.inspector());
+    } else {
+      geometry_names.ResetBasic(*plant);
+    }
+  }
 
+  // Update our output vector of items.
   for (int i = 0; i < contact_results.num_point_pair_contacts(); ++i) {
     const PointPairContactInfo<T>& info =
         contact_results.point_pair_contact_info(i);
     const geometry::PenetrationAsPointPair<T>& pair = info.point_pair();
-
-    const SortedPair<GeometryId> ids(pair.id_A, pair.id_B);
-    const double force_norm = ExtractDoubleOrThrow(info.contact_force()).norm();
-    // TODO(russt): Use geometry instance names once they are cleaned up
-    // or the body name convention in ContactResultsToLcmSystem.
-    const std::string path =
-        fmt::format("{}/{}+{}", params_.prefix, pair.id_A, pair.id_B);
-    const bool visible = (force_norm >= params_.force_threshold);
-
-    const double arrowhead_height = params_.radius * 2.0;
-    const double arrowhead_width = params_.radius * 2.0;
-
-    auto iter = contacts_.find(ids);
-    if (iter == contacts_.end()) {
-      // This contact hasn't been visualized yet.
-      if (!visible) {
-        // Continue without visualizing.
-        continue;
-      }
-
-      // Add the geometry to meshcat.
-      // Note: the height of the cylinder is 2 and gets scaled to twice the
-      // contact force length because I am drawing both (equal and opposite)
-      // forces.
-      meshcat_->SetObject(path + "/cylinder",
-                          geometry::Cylinder(params_.radius, 2.0),
-                          params_.color);
-      const geometry::MeshcatCone arrowhead(arrowhead_height, arrowhead_width,
-                                            arrowhead_width);
-      meshcat_->SetObject(path + "/head", arrowhead, params_.color);
-      meshcat_->SetObject(path + "/tail", arrowhead, params_.color);
-
-      contacts_[ids] = true;
-    } else {
-      // This contact has been visualized before.  We avoid setting or deleting
-      // the existing objects, as it leads to visual artifacts (flickering) in
-      // the browser, and is incompatible with animations.
-      if (visible != iter->second) {
-        meshcat_->SetProperty(path, "visible", visible);
-        iter->second = visible;
-      }
-      contacts_[ids] = visible;
-      contacts_to_process.erase(ids);
-    }
-
-    if (visible) {
-      // Set the transforms.
-      const double height = force_norm / params_.newtons_per_meter;
-      // Stretch the cylinder in z.
-      meshcat_->SetTransform(
-          path + "/cylinder",
-          Eigen::Matrix4d(Eigen::Vector4d{1, 1, height, 1}.asDiagonal()));
-      // Translate the arrowheads.
-      meshcat_->SetTransform(path + "/head",
-                             math::RigidTransformd(Eigen::Vector3d{
-                                 0, 0, -height - arrowhead_height}));
-      meshcat_->SetTransform(
-          path + "/tail",
-          math::RigidTransformd(
-              math::RotationMatrixd::MakeXRotation(M_PI),
-              Eigen::Vector3d{0, 0, height + arrowhead_height}));
-
-      meshcat_->SetTransform(
-          path, math::RigidTransformd(
-                    math::RotationMatrixd::MakeFromOneVector(
-                        ExtractDoubleOrThrow(info.contact_force()), 2),
-                    ExtractDoubleOrThrow(info.contact_point())));
-    }
+    const SortedPair<GeometryId> sorted_ids(pair.id_A, pair.id_B);
+    std::string body_A = geometry_names.GetFullName(sorted_ids.first(), ".");
+    std::string body_B = geometry_names.GetFullName(sorted_ids.second(), ".");
+    Vector3d force = ExtractDoubleOrThrow(info.contact_force());
+    Vector3d point = ExtractDoubleOrThrow(info.contact_point());
+    result->push_back({std::move(body_A), std::move(body_B), force, point});
   }
-
-  // Set visible=false for any contacts not in the current list.
-  for (const auto& [ids, visible] : contacts_to_process) {
-    if (visible) {
-      const std::string path =
-          fmt::format("{}/{}+{}", params_.prefix, ids.first(), ids.second());
-      meshcat_->SetProperty(path, "visible", false);
-    }
-    contacts_[ids] = false;
-  }
-
-  return systems::EventStatus::Succeeded();
 }
 
+// N.B. This is only called if params_.delete_on_initialization_event was true.
 template <typename T>
-systems::EventStatus ContactVisualizer<T>::OnInitialization(
-    const systems::Context<T>&) const {
+EventStatus ContactVisualizer<T>::OnInitialization(
+    const Context<T>&) const {
   Delete();
-  return systems::EventStatus::Succeeded();
+  return EventStatus::Succeeded();
 }
 
 }  // namespace meshcat

@@ -480,7 +480,7 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
 
   // Case: throws when the id doesn't refer to a valid geometry.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.UpdateRepresentationForNewProperties(sphere, {}), std::logic_error,
+      engine.UpdateRepresentationForNewProperties(sphere, {}),
       "The proximity engine does not contain a geometry with the id \\d+; its "
       "properties cannot be updated");
 
@@ -534,14 +534,14 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.UpdateRepresentationForNewProperties(sphere,
                                                     bad_props_no_elasticity),
-        std::logic_error, "Cannot create soft Sphere; missing the .+ property");
+        "Cannot create soft Sphere; missing the .+ property");
 
     ProximityProperties bad_props_no_length(hydro_trigger);
     bad_props_no_length.AddProperty(kHydroGroup, kElastic, 5e8);
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.UpdateRepresentationForNewProperties(sphere,
                                                     bad_props_no_length),
-        std::logic_error, "Cannot create soft Sphere; missing the .+ property");
+        "Cannot create soft Sphere; missing the .+ property");
   }
 }
 
@@ -617,7 +617,7 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
                   1.0};
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
-        std::runtime_error, ".*only OBJs with a single object.*");
+        ".*only OBJs with a single object.*");
   }
 
   const filesystem::path temp_dir = temp_directory();
@@ -629,7 +629,7 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
     Convex convex{file.string(), 1.0};
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
-        std::runtime_error, "The file parsed contains no objects;.+");
+        "The file parsed contains no objects;.+");
   }
 
   // The file is not an OBJ.
@@ -640,7 +640,7 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
     Convex convex{file.string(), 1.0};
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
-        std::runtime_error, "The file parsed contains no objects;.+");}
+        "The file parsed contains no objects;.+");}
 }
 
 // Tests for copy/move semantics.  ---------------------------------------------
@@ -841,7 +841,6 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
   {
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.ComputeSignedDistancePairClosestPoints(bad_id, id_B, X_WGs),
-        std::runtime_error,
         fmt::format("The geometry given by id {} does not reference .+ used in "
                     "a signed distance query", bad_id));
   }
@@ -850,7 +849,6 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
   {
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.ComputeSignedDistancePairClosestPoints(id_A, bad_id, X_WGs),
-        std::runtime_error,
         fmt::format("The geometry given by id {} does not reference .+ used in "
                     "a signed distance query", bad_id));
   }
@@ -867,7 +865,6 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
         extract_ids, false /* is_invariant */);
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs),
-        std::runtime_error,
         fmt::format("The geometry pair \\({}, {}\\) does not support a signed "
                     "distance query", id_A, id_B));
   }
@@ -1995,8 +1992,21 @@ TEST_F(ProximityEngineHydroWithFallback,
   engine_.ComputeContactSurfacesWithFallback(
       HydroelasticContactRepresentation::kTriangle, poses_, &surfaces1,
       &points1);
-  ASSERT_EQ(surfaces1.size(), N_ / 2);
-  ASSERT_EQ(points1.size(), N_ / 2);
+  // The arrangement (see MakeCollidingRing()) looks somewhat
+  // like this (R = rigid sphere, C = compliant sphere):
+  //
+  //      R  R
+  //    C      C
+  //    C      C
+  //      R  R
+  //
+  // Only two R-R (rigid-rigid) contacts are point contacts.
+  const size_t num_point_contacts = 2;
+  // The remaining contacts are either R-C (rigid-compliant) or C-C
+  // (compliant-compliant) hydroelastic contact patches.
+  const size_t num_patch_contacts = N_ - 2;
+  ASSERT_EQ(surfaces1.size(), num_patch_contacts);
+  ASSERT_EQ(points1.size(), num_point_contacts);
 
   engine_.UpdateWorldPoses(poses_);
   vector<ContactSurface<double>> surfaces2;
@@ -2004,12 +2014,14 @@ TEST_F(ProximityEngineHydroWithFallback,
   engine_.ComputeContactSurfacesWithFallback(
       HydroelasticContactRepresentation::kTriangle, poses_, &surfaces2,
       &points2);
-  ASSERT_EQ(surfaces2.size(), N_ / 2);
-  ASSERT_EQ(points2.size(), N_ / 2);
+  ASSERT_EQ(surfaces2.size(), num_patch_contacts);
+  ASSERT_EQ(points2.size(), num_point_contacts);
 
-  for (size_t i = 0; i < N_ / 2; ++i) {
+  for (size_t i = 0; i < num_patch_contacts; ++i) {
     EXPECT_EQ(surfaces1[i].id_M(), surfaces2[i].id_M());
     EXPECT_EQ(surfaces1[i].id_N(), surfaces2[i].id_N());
+  }
+  for (size_t i = 0; i < num_point_contacts; ++i) {
     EXPECT_EQ(points1[i].id_A, points2[i].id_A);
     EXPECT_EQ(points1[i].id_B, points2[i].id_B);
   }
@@ -3286,7 +3298,6 @@ GTEST_TEST(SignedDistancePairError, HalfspaceException) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
-      std::logic_error,
       "Signed distance queries between shapes .* and .* are not supported.*");
 }
 
@@ -4233,7 +4244,6 @@ GTEST_TEST(ProximityEngineTests,
       {id2, RigidTransform<AutoDiffXd>::Identity()}};
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
-      std::logic_error,
       "Signed distance queries between shapes 'Box' and 'Box' are not "
       "supported for scalar type drake::AutoDiffXd");
 }

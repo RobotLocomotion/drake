@@ -187,21 +187,18 @@ TEST_F(HydroelasticEngineTest, MissingProximityPropertiesThrows) {
   // Case: Neither have properties.
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.CalcCombinedElasticModulus(id_A, id_B, inspector()),
-      std::runtime_error,
       "Unable to get the material properties .+ it has no proximity properties "
       "assigned.*");
 
   // Case: First lacking properties.
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.CalcCombinedElasticModulus(id_A, id_C, inspector()),
-      std::runtime_error,
       "Unable to get the material properties .+ it has no proximity properties "
       "assigned.*");
 
   // Case: Second lacking properties.
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.CalcCombinedElasticModulus(id_C, id_B, inspector()),
-      std::runtime_error,
       "Unable to get the material properties .+ it has no proximity properties "
       "assigned.*");
 }

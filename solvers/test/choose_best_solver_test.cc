@@ -66,7 +66,7 @@ class ChooseBestSolverTest : public ::testing::Test {
     }
     if (!is_any_solver_available) {
       DRAKE_EXPECT_THROWS_MESSAGE(
-          ChooseBestSolver(prog_), std::invalid_argument,
+          ChooseBestSolver(prog_),
           "There is no available solver for the optimization program");
     } else {
       const SolverId solver_id = ChooseBestSolver(prog_);
@@ -164,7 +164,7 @@ TEST_F(ChooseBestSolverTest, BinaryVariable) {
     CheckBestSolver(MosekSolver::id());
   } else {
     DRAKE_EXPECT_THROWS_MESSAGE(
-        ChooseBestSolver(prog_), std::invalid_argument,
+        ChooseBestSolver(prog_),
         "There is no available solver for the optimization program, please "
         "manually instantiate MixedIntegerBranchAndBound.*");
   }
@@ -193,7 +193,6 @@ TEST_F(ChooseBestSolverTest, MakeSolver) {
   CheckMakeSolver(*nlopt_solver_);
   CheckMakeSolver(*scs_solver_);
   DRAKE_EXPECT_THROWS_MESSAGE(MakeSolver(SolverId("foo")),
-                              std::invalid_argument,
                               "MakeSolver: no matching solver foo");
 }
 
@@ -223,7 +222,6 @@ GTEST_TEST(MakeFirstAvailableSolver, Test) {
 
   if (!has_gurobi) {
     DRAKE_EXPECT_THROWS_MESSAGE(MakeFirstAvailableSolver({GurobiSolver::id()}),
-                                std::runtime_error,
                                 ".* is available and enabled.");
   }
 }

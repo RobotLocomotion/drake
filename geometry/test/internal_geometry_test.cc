@@ -70,7 +70,7 @@ GTEST_TEST(InternalGeometryTest, PropertyAssignment) {
     EXPECT_TRUE(geometry.has_perception_role());
     // Cannot yet overwrite perception properties.
     DRAKE_EXPECT_THROWS_MESSAGE(
-        geometry.SetRole(PerceptionProperties()), std::logic_error,
+        geometry.SetRole(PerceptionProperties()),
         "Geometry already has perception role assigned");
     EXPECT_TRUE(geometry.has_perception_role());
   }

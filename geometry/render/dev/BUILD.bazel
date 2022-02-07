@@ -6,6 +6,7 @@ load(
     "drake_cc_library",
     "drake_cc_test",
 )
+load("//tools/skylark:py.bzl", "py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
@@ -31,6 +32,7 @@ drake_cc_binary(
     ],
     test_rule_tags = vtk_test_tags(),
     deps = [
+        ":render_client_gltf",
         "//common:filesystem",
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
@@ -48,25 +50,87 @@ drake_cc_binary(
     ],
 )
 
+# ------------------------------------------------------------------------------
+# Render client
+drake_cc_library(
+    name = "render_client",
+    srcs = ["render_client.cc"],
+    hdrs = ["render_client.h"],
+    deps = [
+        "//common:filesystem",
+        "//common:temp_directory",
+        "//geometry/render:render_camera",
+        "//systems/sensors:image",
+        "@json",
+        "@libcurl",
+        "@picosha2",
+        "@vtk//:vtkIOImage",
+    ],
+)
+
+drake_cc_library(
+    name = "render_client_gltf",
+    srcs = [
+        "render_client_gltf.cc",
+        "render_client_gltf_factory.cc",
+    ],
+    hdrs = [
+        "render_client_gltf.h",
+        "render_client_gltf_factory.h",
+    ],
+    # render_client_gltf.h directly pulls in VTK headers; leave it out of the
+    # install.
+    install_hdrs_exclude = ["render_client_gltf.h"],
+    deps = [
+        ":render_client",
+        "//common:filesystem",
+        "//geometry/render:render_camera",
+        "//geometry/render:render_engine_vtk",
+        "//systems/sensors:image",
+        "@vtk//:vtkIOExport",
+    ],
+)
+
+# ------------------------------------------------------------------------------
+# Render server
+drake_cc_binary(
+    name = "vtk_render_server_backend",
+    srcs = ["render_server/vtk_render_server_backend.cc"],
+    deps = [
+        "//common:filesystem",
+        "//geometry/render:render_engine_vtk",
+        "//geometry/render:render_label",
+        "//geometry/render/shaders:depth_shaders",
+        "//math:geometric_transform",
+        "//systems/sensors:color_palette",
+        "//systems/sensors:image",
+        "@gflags",
+        "@vtk//:vtkIOImage",
+        "@vtk//:vtkIOImport",
+        "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOpenGL2",
+    ],
+)
+
+# NOTE: see geometry/render/dev/render_server/README.md for installation
+# instructions to run this server, the drake setup scripts do not include the
+# dependencies for this target.
+# TODO(svenevs): install the final list of dependencies when decided.
+py_binary(
+    name = "server",
+    srcs = [
+        "render_server/gltf_render_server.py",
+        "render_server/wsgi.py",
+    ],
+    # TODO(svenevs): fix this bazel rule or remove gunicorn.
+    # NOTE: developing the server?  Using gunicorn you will not see all error
+    # messages, comment out the `args` here to get the default (single
+    # threaded) flask runner with more debug information.
+    args = ["proxy_run_gunicorn"],
+    data = [":vtk_render_server_backend"],
+    main = "render_server/gltf_render_server.py",
+)
+
+# ------------------------------------------------------------------------------
+
 add_lint_tests()
-
-# TODO(svenevs): delete this json "test" after client is merged.
-drake_cc_test(
-    name = "json_compile_test",
-    srcs = ["test/json_compile_test.cc"],
-    deps = ["@json"],
-)
-
-# TODO(svenevs): delete this picosha2 "test" after client is merged.
-drake_cc_test(
-    name = "picosha2_compile_test",
-    srcs = ["test/picosha2_compile_test.cc"],
-    deps = ["@picosha2"],
-)
-
-# TODO(svenevs): delete this curl "test" after client is merged.
-drake_cc_test(
-    name = "libcurl_compile_test",
-    srcs = ["test/libcurl_compile_test.cc"],
-    deps = ["@libcurl"],
-)

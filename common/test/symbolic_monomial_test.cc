@@ -162,7 +162,7 @@ TEST_F(MonomialTest, ConstructFromVariablesAndExponents) {
 
   // [x, y, z] * [2, 0, -1] => Exception!
   DRAKE_EXPECT_THROWS_MESSAGE(Monomial(vars_xyz, Eigen::Vector3i(2, 0, -1)),
-                              std::logic_error, "The exponent is negative.");
+                              "The exponent is negative.");
 }
 
 TEST_F(MonomialTest, GetVariables) {
@@ -697,7 +697,7 @@ TEST_F(MonomialTest, ToMonomialException3) {
 TEST_F(MonomialTest, ToMonomialException4) {
   // Note: Parentheses are required around macro argument containing braced
   // initializer list.
-  DRAKE_EXPECT_THROWS_MESSAGE((Monomial{{{var_x_, -1}}}), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE((Monomial{{{var_x_, -1}}}),
                               "The exponent is negative.");
 }
 

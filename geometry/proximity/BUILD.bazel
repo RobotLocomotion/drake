@@ -205,9 +205,15 @@ drake_cc_library(
     srcs = ["field_intersection.cc"],
     hdrs = ["field_intersection.h"],
     deps = [
+        ":bvh",
+        ":contact_surface_utility",
         ":mesh_field",
+        ":mesh_intersection",
+        ":mesh_plane_intersection",
         ":plane",
+        ":posed_half_space",
         "//common:default_scalars",
+        "//geometry/query_results:contact_surface",
     ],
 )
 
@@ -241,6 +247,7 @@ drake_cc_library(
     ],
     deps = [
         ":collision_filter",
+        ":field_intersection",
         ":hydroelastic_internal",
         ":mesh_half_space_intersection",
         ":mesh_intersection",
@@ -811,8 +818,17 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "field_intersection_test",
     deps = [
+        ":contact_surface_utility",
         ":field_intersection",
+        ":make_box_field",
+        ":make_box_mesh",
+        ":make_sphere_field",
+        ":make_sphere_mesh",
+        ":triangle_surface_mesh",
+        ":volume_to_surface_mesh",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:shape_specification",
         "//math:geometric_transform",
     ],
 )

@@ -345,7 +345,7 @@ int main(int argc, char* argv[]) {
       "Demo used to exercise MultibodyPlant's contact modeling in a gripping "
       "scenario. SceneGraph is used for both visualization and contact "
       "handling. "
-      "Launch drake-visualizer before running this example.");
+      "Launch meldis before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::simple_gripper::do_main();
 }

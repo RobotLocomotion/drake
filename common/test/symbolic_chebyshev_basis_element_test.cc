@@ -63,11 +63,11 @@ TEST_F(SymbolicChebyshevBasisElementTest, Constructor) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       ChebyshevBasisElement(Vector2<Variable>(x_, x_), Eigen::Vector2i(2, 1)),
-      std::invalid_argument, ".*x is repeated");
+      ".*x is repeated");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       ChebyshevBasisElement(Vector2<Variable>(x_, y_), Eigen::Vector2i(2, -1)),
-      std::logic_error, "The exponent is negative.");
+      "The exponent is negative.");
 }
 
 TEST_F(SymbolicChebyshevBasisElementTest, Evaluate) {

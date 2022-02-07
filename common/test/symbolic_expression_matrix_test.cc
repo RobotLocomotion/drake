@@ -469,7 +469,7 @@ TEST_F(SymbolicExpressionMatrixTest, EvaluateDenseMatrix) {
   C << x_, Expression::NaN(),
        y_, z_;
   // clang-format on
-  DRAKE_EXPECT_THROWS_MESSAGE(Evaluate(C, env), std::runtime_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(Evaluate(C, env),
                               "NaN is detected during Symbolic computation.");
 }
 

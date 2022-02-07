@@ -373,6 +373,9 @@ struct Impl {
             overload_cast_explicit<unique_ptr<ContinuousState<T>>>(
                 &System<T>::AllocateTimeDerivatives),
             doc.System.AllocateTimeDerivatives.doc)
+        .def("AllocateImplicitTimeDerivativesResidual",
+            &System<T>::AllocateImplicitTimeDerivativesResidual,
+            doc.System.AllocateImplicitTimeDerivativesResidual.doc)
         .def("AllocateDiscreteVariables",
             overload_cast_explicit<unique_ptr<DiscreteValues<T>>>(
                 &System<T>::AllocateDiscreteVariables),
@@ -407,6 +410,31 @@ struct Impl {
         .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives,
             py::arg("context"), py::arg("derivatives"),
             doc.System.CalcTimeDerivatives.doc)
+        .def(
+            "CalcImplicitTimeDerivativesResidual",
+            [](const System<T>* self, const Context<T>& context,
+                const ContinuousState<T>& proposed_derivatives,
+                Eigen::Ref<VectorX<T>> residual) {
+              self->CalcImplicitTimeDerivativesResidual(
+                  context, proposed_derivatives, &residual);
+            },
+            py::arg("context"), py::arg("proposed_derivatives"),
+            py::arg("residual"),
+            doc.System.CalcImplicitTimeDerivativesResidual.doc)
+        .def(
+            "CalcImplicitTimeDerivativesResidual",
+            [](const System<T>* self, const Context<T>& context,
+                const ContinuousState<T>& proposed_derivatives) {
+              // Note: This is the only version of the method that works for
+              // dtype object.
+              VectorX<T> residual =
+                  self->AllocateImplicitTimeDerivativesResidual();
+              self->CalcImplicitTimeDerivativesResidual(
+                  context, proposed_derivatives, &residual);
+              return residual;
+            },
+            py::arg("context"), py::arg("proposed_derivatives"),
+            doc.System.CalcImplicitTimeDerivativesResidual.doc)
         .def("CalcDiscreteVariableUpdates",
             overload_cast_explicit<void, const Context<T>&, DiscreteValues<T>*>(
                 &System<T>::CalcDiscreteVariableUpdates),
@@ -473,7 +501,9 @@ Note: The above is for the C++ documentation. For Python, use
                 .c_str())
         // Cached evaluations.
         .def("EvalTimeDerivatives", &System<T>::EvalTimeDerivatives,
-            py_rvp::reference_internal, doc.System.EvalTimeDerivatives.doc)
+            py_rvp::reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 2>(), doc.System.EvalTimeDerivatives.doc)
         .def("EvalPotentialEnergy", &System<T>::EvalPotentialEnergy,
             py::arg("context"), doc.System.EvalPotentialEnergy.doc)
         .def("EvalKineticEnergy", &System<T>::EvalKineticEnergy,
@@ -926,6 +956,10 @@ Note: The above is for the C++ documentation. For Python, use
         .def(
             "connection_map",
             [](Diagram<T>* self) {
+              // N.B. This code is duplicated with DiagramBuilder's same-named
+              // function. Keep the two copies in sync. The detailed unit test
+              // is written against this copy of this function, not the
+              // DiagramBuilder one.
               py::dict out;
               py::object self_py = py::cast(self, py_rvp::reference);
               for (auto& [input_locator, output_locator] :
@@ -1069,6 +1103,16 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.num_input_ports.doc)
         .def("num_output_ports", &Class::num_output_ports,
             cls_doc.num_output_ports.doc)
+        // States.
+        .def("num_continuous_states", &Class::num_continuous_states,
+            cls_doc.num_continuous_states.doc)
+        .def("num_discrete_state_groups", &Class::num_discrete_state_groups,
+            cls_doc.num_discrete_state_groups.doc)
+        .def("num_abstract_states", &Class::num_abstract_states,
+            cls_doc.num_abstract_states.doc)
+        .def("implicit_time_derivatives_residual_size",
+            &Class::implicit_time_derivatives_residual_size,
+            cls_doc.implicit_time_derivatives_residual_size.doc)
         // Parameters.
         .def("num_abstract_parameters", &Class::num_abstract_parameters,
             cls_doc.num_abstract_parameters.doc)

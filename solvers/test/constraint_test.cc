@@ -48,7 +48,6 @@ GTEST_TEST(TestConstraint, BoundSizeCheck) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       LinearConstraint(Eigen::Matrix3d::Identity(), Eigen::Vector2d(1., 2),
                        Eigen::Vector3d(2., 3, 4.)),
-      std::invalid_argument,
       "Constraint  expects lower and upper bounds of size 3, got lower "
       "bound of size 2 and upper bound of size 3.");
 }
@@ -368,7 +367,6 @@ GTEST_TEST(testConstraint, LorentzConeConstraintUpdateCoefficients) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       constraint.UpdateCoefficients(Eigen::Matrix3d::Identity(),
                                     Eigen::Vector3d::Zero()),
-      std::exception,
       ".*UpdateCoefficients uses new_A with 3 columns to update a constraint "
       "with 2 variables.");
 }
@@ -435,7 +433,6 @@ GTEST_TEST(testConstraint, RotatedLorentzConeConstraintUpdateCoefficients) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       constraint.UpdateCoefficients(Eigen::Matrix3d::Identity(),
                                     Eigen::Vector3d::Zero()),
-      std::exception,
       ".*UpdateCoefficients uses new_A with 3 columns to update a constraint "
       "with 2 variables.");
 }

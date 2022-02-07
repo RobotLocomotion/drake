@@ -2998,10 +2998,10 @@ class MathematicalProgram {
   std::vector<Binding<Constraint>> GetAllConstraints() const;
 
   /** Getter for number of variables in the optimization program */
-  int num_vars() const { return decision_variables_.rows(); }
+  int num_vars() const { return decision_variables_.size(); }
 
   /** Gets the number of indeterminates in the optimization program */
-  int num_indeterminates() const { return indeterminates_.rows(); }
+  int num_indeterminates() const { return indeterminates_.size(); }
 
   /** Getter for the initial guess */
   const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
@@ -3183,21 +3183,29 @@ class MathematicalProgram {
       double tol = 1e-6) const;
 
   /** Getter for all decision variables in the program. */
-  const VectorXDecisionVariable& decision_variables() const {
-    return decision_variables_;
+  Eigen::Map<const VectorX<symbolic::Variable>> decision_variables() const {
+    return Eigen::Map<const VectorX<symbolic::Variable>>(
+        decision_variables_.data(), decision_variables_.size());
   }
 
   /** Getter for the decision variable with index @p i in the program. */
   const symbolic::Variable& decision_variable(int i) const {
-    return decision_variables_(i);
+    DRAKE_ASSERT(i >= 0);
+    DRAKE_ASSERT(i < static_cast<int>(decision_variables_.size()));
+    return decision_variables_[i];
   }
 
   /** Getter for all indeterminates in the program. */
-  const VectorXIndeterminate& indeterminates() const { return indeterminates_; }
+  Eigen::Map<const VectorX<symbolic::Variable>> indeterminates() const {
+    return Eigen::Map<const VectorX<symbolic::Variable>>(
+        indeterminates_.data(), indeterminates_.size());
+  }
 
   /** Getter for the indeterminate with index @p i in the program. */
   const symbolic::Variable& indeterminate(int i) const {
-    return indeterminates_(i);
+    DRAKE_ASSERT(i >= 0);
+    DRAKE_ASSERT(i < static_cast<int>(indeterminates_.size()));
+    return indeterminates_[i];
   }
 
   /// Getter for the required capability on the solver, given the
@@ -3340,10 +3348,14 @@ class MathematicalProgram {
   // in the optimization program.
   std::unordered_map<symbolic::Variable::Id, int> decision_variable_index_{};
 
-  VectorXDecisionVariable decision_variables_;
+  // Use std::vector here instead of Eigen::VectorX because std::vector performs
+  // much better when pushing new variables into the container.
+  std::vector<symbolic::Variable> decision_variables_;
 
   std::unordered_map<symbolic::Variable::Id, int> indeterminates_index_;
-  VectorXIndeterminate indeterminates_;
+  // Use std::vector here instead of Eigen::VectorX because std::vector performs
+  // much better when pushing new variables into the container.
+  std::vector<symbolic::Variable> indeterminates_;
 
   std::vector<Binding<VisualizationCallback>> visualization_callbacks_;
 
@@ -3397,18 +3409,15 @@ class MathematicalProgram {
       num_new_vars = rows * (rows + 1) / 2;
     }
     DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
-    decision_variables_.conservativeResize(num_vars() + num_new_vars,
-                                           Eigen::NoChange);
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
-      decision_variables_(num_vars() - num_new_vars + i) =
-          symbolic::Variable(names[i], type);
-      const int new_var_index = num_vars() - num_new_vars + i;
-      decision_variable_index_.insert(std::pair<int, int>(
-          decision_variables_(new_var_index).get_id(), new_var_index));
+      decision_variables_.emplace_back(names[i], type);
+      const int new_var_index = decision_variables_.size() - 1;
+      decision_variable_index_.insert(std::make_pair(
+          decision_variables_[new_var_index].get_id(), new_var_index));
       decision_variable_matrix(row_index, col_index) =
-          decision_variables_(num_vars() - num_new_vars + i);
+          decision_variables_[new_var_index];
       // If the matrix is not symmetric, then store the variable in column
       // major.
       if (!is_symmetric) {
@@ -3444,24 +3453,21 @@ class MathematicalProgram {
   template <typename T>
   void NewIndeterminates_impl(
       const T& names, Eigen::Ref<MatrixXIndeterminate> indeterminates_matrix) {
-    int rows = indeterminates_matrix.rows();
-    int cols = indeterminates_matrix.cols();
-    int num_new_vars = rows * cols;
+    const int rows = indeterminates_matrix.rows();
+    const int cols = indeterminates_matrix.cols();
+    const int num_new_vars = rows * cols;
 
     DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
-    indeterminates_.conservativeResize(indeterminates_.rows() + num_new_vars,
-                                       Eigen::NoChange);
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
-      indeterminates_(indeterminates_.rows() - num_new_vars + i) =
-          symbolic::Variable(names[i]);
+      indeterminates_.emplace_back(names[i]);
 
-      const int new_var_index = indeterminates_.rows() - num_new_vars + i;
-      indeterminates_index_.insert(std::pair<size_t, size_t>(
-          indeterminates_(new_var_index).get_id(), new_var_index));
+      const int new_var_index = indeterminates_.size() - 1;
+      indeterminates_index_.insert(std::make_pair(
+          indeterminates_[new_var_index].get_id(), new_var_index));
       indeterminates_matrix(row_index, col_index) =
-          indeterminates_(indeterminates_.rows() - num_new_vars + i);
+          indeterminates_[new_var_index];
 
       // store the indeterminate in column major.
       if (row_index + 1 < rows) {

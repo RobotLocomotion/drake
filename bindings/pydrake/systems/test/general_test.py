@@ -113,6 +113,10 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(system.GetSystemPathname(), "::adder")
         self.assertEqual(system.num_input_ports(), 3)
         self.assertEqual(system.num_output_ports(), 1)
+        self.assertEqual(system.num_continuous_states(), 0)
+        self.assertEqual(system.num_discrete_state_groups(), 0)
+        self.assertEqual(system.num_abstract_states(), 0)
+        self.assertEqual(system.implicit_time_derivatives_residual_size(), 0)
         u1 = system.GetInputPort("u1")
         self.assertEqual(u1.get_name(), "u1")
         self.assertIn("u1", u1.GetFullDescription())
@@ -936,6 +940,7 @@ class TestGeneral(unittest.TestCase):
             builder.ExportInput(adder1.get_input_port(0), "in0")
             builder.ExportInput(adder1.get_input_port(1), "in1")
             builder.ExportOutput(adder2.get_output_port(), "out")
+            self.assertEqual(len(builder.connection_map()), 1)
             diagram = builder.Build()
             return adder1, adder2, diagram
 

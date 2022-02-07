@@ -19,13 +19,15 @@ This guide describes how to set up Drake in the JetBrains CLion IDE on Ubuntu.
 First, you **must** install Bazel and build Drake with Bazel, following
 [the Drake Bazel instructions](/bazel.html).
 
-To use Drake with CLion, your Drake checkout **must** be named ``drake``.
+To use Drake with CLion, your Drake source directory (or git 
+clone) **must** be named ``drake``.
 
 ## Installing CLion
 
 
-1. Go to [https://www.jetbrains.com/clion/download/](https://www.jetbrains.com/clion/download/). Look for "Other versions"
-   and download the appropriate version of CLion (see below).
+1. Go to [https://www.jetbrains.com/clion/download/](https://www.jetbrains.com/clion/download/).
+   Look for "Other versions" and download the appropriate version of CLion
+   (see below).
 2. Install CLion. Exact steps depend on your platform, but it's
    straightforward. Just using defaults for everything is fine. You now have a
    30-day trial version of CLion. Either try it out as is, or get a free

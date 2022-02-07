@@ -8,6 +8,23 @@ namespace fem {
 namespace internal {
 
 template <typename T>
+double CalcConditionNumberOfInvertibleMatrix(
+    const Eigen::Ref<const MatrixX<T>>& A) {
+  DRAKE_THROW_UNLESS(A.rows() == A.cols());
+  Eigen::JacobiSVD<MatrixX<T>> svd(A);
+  /* Eigen::JacobiSVD::singularValues() returns sigma as positive, monotonically
+   decreasing values.
+   See https://eigen.tuxfamily.org/dox/classEigen_1_1JacobiSVD.html. */
+  const VectorX<T>& sigma = svd.singularValues();
+  /* Prevents division by zero for singular matrix. */
+  const T& sigma_min = sigma(sigma.size() - 1);
+  DRAKE_DEMAND(sigma_min > 0);
+  const T& sigma_max = sigma(0);
+  const T cond = sigma_max / sigma_min;
+  return ExtractDoubleOrThrow(cond);
+}
+
+template <typename T>
 void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
                     EigenPtr<Matrix3<T>> S) {
   /* According to https://eigen.tuxfamily.org/dox/classEigen_1_1BDCSVD.html,
@@ -124,49 +141,10 @@ VectorX<T> PermuteBlockVector(const Eigen::Ref<const VectorX<T>>& v,
   return permuted_v;
 }
 
-template <typename T>
-Eigen::SparseMatrix<T> PermuteBlockSparseMatrix(
-    const Eigen::SparseMatrix<T>& matrix,
-    const std::vector<int>& block_permutation) {
-  DRAKE_ASSERT(matrix.rows() == matrix.cols());
-  DRAKE_ASSERT(static_cast<int>(block_permutation.size()) * 3 == matrix.cols());
-  const int nv = matrix.rows();
-  Eigen::SparseMatrix<T> permuted_matrix(nv, nv);
-  std::vector<Eigen::Triplet<T>> triplets;
-  triplets.reserve(matrix.nonZeros());
-  using InnerIterator = typename Eigen::SparseMatrix<T>::InnerIterator;
-  for (int k = 0; k < matrix.outerSize(); ++k) {
-    for (InnerIterator it(matrix, k); it; ++it) {
-      /* The row/column indices of a particular value within its block. */
-      const int block_row = it.row() % 3;
-      const int block_col = it.col() % 3;
-      /* The block indices B(i, j) in which the value is located. */
-      const int i = it.row() / 3;
-      const int j = it.col() / 3;
-      /* The block indices C(p(i), p(j)) into which the value will be written.
-       */
-      const int p_i = block_permutation[i];
-      const int p_j = block_permutation[j];
-      /* The block C(p_i, p_j) is located at (p_i * 3, p_j * 3) in the
-       output matrix and the value is offset from that origin by its
-       indices within the block. */
-      const int permuted_row = p_i * 3 + block_row;
-      const int permuted_col = p_j * 3 + block_col;
-
-      triplets.emplace_back(permuted_row, permuted_col, it.value());
-    }
-  }
-  /* The permuted matrix should have the exact same number of non-zero entries
-   as the old matrix. */
-  DRAKE_DEMAND(static_cast<int>(triplets.size()) == matrix.nonZeros());
-  permuted_matrix.setFromTriplets(triplets.begin(), triplets.end());
-  return permuted_matrix;
-}
-
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&PolarDecompose<T>, &AddScaledRotationalDerivative<T>,
-     &CalcCofactorMatrix<T>, &AddScaledCofactorMatrixDerivative<T>,
-     &PermuteBlockVector<T>, &PermuteBlockSparseMatrix<T>))
+    (&CalcConditionNumberOfInvertibleMatrix<T>, &PolarDecompose<T>,
+     &AddScaledRotationalDerivative<T>, &CalcCofactorMatrix<T>,
+     &AddScaledCofactorMatrixDerivative<T>, &PermuteBlockVector<T>))
 
 }  // namespace internal
 }  // namespace fem

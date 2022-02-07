@@ -43,7 +43,7 @@ TEST_F(RenderLabelTests, Construction) {
       RenderLabel::kDontCare, RenderLabel::kEmpty};
   for (ValueType value : bad_values) {
     DRAKE_EXPECT_THROWS_MESSAGE(
-        RenderLabel{value}, std::logic_error,
+        RenderLabel{value},
         "Invalid construction of RenderLabel with invalid value: .+");
   }
 

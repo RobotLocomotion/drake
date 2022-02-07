@@ -66,13 +66,15 @@ def check_call(args, *, cwd=None):
     Args:
         args: Passed to subprocess.run(args=...).
     """
+    env = dict(os.environ)
+    env["LC_ALL"] = "en_US.UTF-8"
     echo = "+ " + " ".join([shlex.quote(x) for x in args])
     if verbose():
         print(echo, flush=True)
-        proc = subprocess.run(args, cwd=cwd, stderr=STDOUT)
+        proc = subprocess.run(args, cwd=cwd, env=env, stderr=STDOUT)
     else:
-        proc = subprocess.run(args, cwd=cwd, stderr=STDOUT, stdout=PIPE,
-                              encoding='utf-8')
+        proc = subprocess.run(args, cwd=cwd, env=env, stderr=STDOUT,
+                              stdout=PIPE, encoding='utf-8')
         if proc.returncode != 0:
             print(echo, flush=True)
             print(proc.stdout, end='', flush=True)

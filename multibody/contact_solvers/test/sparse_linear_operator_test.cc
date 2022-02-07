@@ -156,7 +156,7 @@ GTEST_TEST(SparseLinearOperator, AssembleMatrixBlockSparseThrows) {
   const SparseLinearOperator<double> Aop("A", &Asparse);
   BlockSparseMatrix<double> Ablock;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Aop.AssembleMatrix(&Ablock), std::runtime_error,
+      Aop.AssembleMatrix(&Ablock),
       "DoAssembleMatrix().*must provide an implementation.");
 }
 

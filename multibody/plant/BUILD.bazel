@@ -27,6 +27,7 @@ drake_cc_package_library(
         ":hydroelastic_contact_info",
         ":hydroelastic_quadrature_point_data",
         ":hydroelastic_traction",
+        ":internal_geometry_names",
         ":multibody_plant_config",
         ":multibody_plant_config_functions",
         ":multibody_plant_core",
@@ -238,6 +239,17 @@ drake_cc_library(
     deps = [
         ":contact_results_to_meshcat_params",
         "//multibody/meshcat:contact_visualizer",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_geometry_names",
+    srcs = ["internal_geometry_names.cc"],
+    hdrs = ["internal_geometry_names.h"],
+    deps = [
+        ":multibody_plant_core",
+        "//common:default_scalars",
+        "//geometry:scene_graph_inspector",
     ],
 )
 
@@ -639,7 +651,7 @@ drake_cc_googletest(
     name = "contact_results_to_lcm_test",
     deps = [
         ":contact_results_to_lcm",
-        "//common/test_utilities:eigen_geometry_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -682,6 +694,18 @@ drake_cc_googletest(
         "//multibody/benchmarks/inclined_plane",
         "//systems/analysis:radau_integrator",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_geometry_names_test",
+    data = [
+        "//examples/manipulation_station:models",
+        "//multibody:models",
+    ],
+    deps = [
+        ":internal_geometry_names",
+        "//multibody/parsing",
     ],
 )
 

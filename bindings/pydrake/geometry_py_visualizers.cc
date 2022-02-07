@@ -200,6 +200,8 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("web_url", &Class::web_url, cls_doc.web_url.doc)
         .def("port", &Class::port, cls_doc.port.doc)
         .def("ws_url", &Class::ws_url, cls_doc.ws_url.doc)
+        .def("GetNumActiveConnections", &Class::GetNumActiveConnections,
+            cls_doc.GetNumActiveConnections.doc)
         .def("Flush", &Class::Flush, cls_doc.Flush.doc)
         .def("SetObject",
             py::overload_cast<std::string_view, const Shape&, const Rgba&>(
@@ -283,9 +285,10 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.DeleteSlider.doc)
         .def("DeleteAddedControls", &Class::DeleteAddedControls,
             cls_doc.DeleteAddedControls.doc)
-        .def("StaticHtml", &Class::StaticHtml, cls_doc.StaticHtml.doc);
-    // Note: we intentionally do not bind the advanced methods (HasProperty and
-    // GetPacked*) which were intended primarily for testing in C++.
+        .def("StaticHtml", &Class::StaticHtml, cls_doc.StaticHtml.doc)
+        .def("HasPath", &Class::HasPath, py::arg("path"), cls_doc.HasPath.doc);
+    // Note: we intentionally do not bind the advanced methods (GetPacked...)
+    // which were intended primarily for testing in C++.
   }
 
   // MeshcatAnimation

@@ -516,7 +516,7 @@ class InvalidContext : public LeafContext<double> {
 TEST_F(LeafContextTest, BadClone) {
   InvalidContext bad_context;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      bad_context.Clone(), std::runtime_error,
+      bad_context.Clone(),
       ".*typeid.source. == typeid.clone.*");
 }
 
@@ -878,7 +878,7 @@ TEST_F(LeafContextTest, TestStateSettingSugar) {
 
   // With two groups the abbreviated signature isn't allowed.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context_.SetDiscreteState(xd0_new), std::logic_error,
+      context_.SetDiscreteState(xd0_new),
       ".*SetDiscreteState.*: expected exactly 1.*but there were 2 groups.*");
 
   // Change to just one group, then it should work.
@@ -898,7 +898,7 @@ TEST_F(LeafContextTest, TestStateSettingSugar) {
 
   // Type mismatch should be caught.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context_.SetAbstractState(0, std::string("hello")), std::logic_error,
+      context_.SetAbstractState(0, std::string("hello")),
       ".*cast to.*std::string.*failed.*static type.*int.*");
 }
 
