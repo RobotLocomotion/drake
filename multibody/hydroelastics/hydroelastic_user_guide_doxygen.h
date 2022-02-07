@@ -14,10 +14,12 @@ There are many ways to model contact between rigid bodies. Drake uses an
 approach we call “compliant” contact. In compliant contact, nominally rigid
 bodies are allowed to penetrate slightly, as if the rigid body had a slightly
 deformable layer, but whose compression has no appreciable effect on the body’s
-mass properties. The contact force between the two bodies arises from how this
-small compression at the point of contact is characterized such that,
-ultimately, we can compute the contact force (magnitude and direction) and the
-point at which it is applied to each of the colliding bodies.
+mass properties. The contact force between two deformed bodies is distributed
+over a contact patch with an uneven pressure distribution over that patch. It
+is common in robotics to model that as a single point contact or a set of point
+contacts. Hydroelastic contact instead attempts to approximate the patch and
+pressure distribution to provide much richer and more realistic contact
+behavior.
 
 Drake implements two models for resolving contact to forces: point contact and
 hydroelastic contact. See @ref hydro_appendix_a for a fuller discussion of the
@@ -50,7 +52,7 @@ There are three different options:
 - drake::multibody::ContactModel::kHydroelastic
 - drake::multibody::ContactModel::kHydroelasticWithFallback
 
-The default model is `ContactModel::kPoint` and is the implementation of the
+The default model is ContactModel::kPoint and is the implementation of the
 point contact model (see @ref hydro_appendix_a). Hydroelastic contact plays no
 role in determining the dynamics.
 
