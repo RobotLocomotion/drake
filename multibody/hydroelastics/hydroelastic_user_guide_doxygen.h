@@ -86,8 +86,7 @@ contact forces. As the implementation evolves, more and more contact will be
 captured with hydroelastic contact and the circumstances in which the
 point-contact fallback is applied will decrease.
 
-@subsubsection creating_hydro_reps Creating hydroelastic representations of
-collision geometries
+@subsubsection creating_hydro_reps Creating hydroelastic representations of collision geometries
 
 By default no geometry in drake::geometry::SceneGraph has a hydroelastic
 representation. So, enabling hydroelastic contact in `MultibodyPlant`, but
@@ -219,15 +218,13 @@ each of the properties and then discuss how they can be specified.
       - Fixing the hydroelastic modulus and decreasing the slab thickness.
       - Increasing the hydroelastic modulus and decreasing the slab thickness.
 
-@subsubsection hug_geometry_properties Assigning hydroelastic properties to
-geometries
+@subsubsection hug_geometry_properties Assigning hydroelastic properties to geometries
 
 Properties can be assigned to geometries inside a URDF or SDFormat file using
 some custom Drake XML tags. Alternatively, the properties can be assigned
 programmatically.
 
-@paragraph hug_file_specs Assigning hydroelastic properties in file
-specifications
+@paragraph hug_file_specs Assigning hydroelastic properties in file specifications
 
 Drake has introduced a number of custom tags to provide a uniform language to
 specify hydroelastic properties in both URDF and SDFormat. The tag names are
@@ -268,25 +265,26 @@ hint, its hydroelastic modulus, and its dissipation.
 
 Let’s look at the specific tags:
 
-- <drake:proximity_properties>: This is the container for all Drake-specific
-  proximity property values.
+- <@ref tag_drake_proximity_properties>: This is the container for all
+  Drake-specific proximity property values.
 - The following tags define hydroelastic properties for the collision geometry
-  and would be contained in the <drake:proximity_properties> tag.
-  - <drake:rigid_hydroelastic> or <drake:compliant_hydroelastic>
-  - <drake:mesh_resolution_hint>
-  - <drake:hydroelastic_modulus> (for compliant geometry only)
-  - <drake:hunt_crossley_dissipation>
+  and would be contained in the <@ref tag_drake_proximity_properties> tag.
+  - <@ref tag_drake_rigid_hydroelastic> or
+    <@ref tag_drake_compliant_hydroelastic>
+  - <@ref tag_drake_mesh_resolution_hint>
+  - <@ref tag_drake_hydroelastic_modulus> (for compliant geometry only)
+  - <@ref tag_drake_hunt_crossley_dissipation>
 - In the name of completeness, the following tags would be children of the
-  <drake:proximity_properties> tag as well, but are not restricted to use with
-  hydroelastic contact.
-  - <drake:point_contact_stiffness>: Only used when this geometry is for point
-    contact. Defines the compliance of the point contact. This property is
-    allowed to exist even if the geometry has been specified to be of
-    hydroelastic type, it will have no effect on hydroelastic computations.
-  - <drake:mu_static> The coefficient for static friction; this applies to both
-    point contact and hydroelastic contact.
-  - <drake:mu_dynamic> The coefficient for dynamic friction; this applies to
-    both point contact and hydroelastic contact.
+  <@ref tag_drake_proximity_properties> tag as well, but are not restricted to
+  use with hydroelastic contact.
+  - <@ref tag_drake_point_contact_stiffness>: Only used when this geometry is
+    for point contact. Defines the compliance of the point contact. This
+    property is allowed to exist even if the geometry has been specified to be
+    of hydroelastic type, it will have no effect on hydroelastic computations.
+  - <@ref tag_drake_mu_static> The coefficient for static friction; this
+    applies to both point contact and hydroelastic contact.
+  - <@ref tag_drake_mu_dynamic> The coefficient for dynamic friction; this
+    applies to both point contact and hydroelastic contact.
 
 @paragraph hug_code_properties Assigning hydroelastic properties in code
 
@@ -492,14 +490,13 @@ and closer to hydroelastic contact.
 @subsection hug_hydro_theory Hydroelastic Contact
 
 Hydroelastic Contact is another compliant contact formulation. It was
-originally introduced by @ref Elandt2019 "[Elandt 2019]" in "A pressure field
-model for fast, robust approximation of net contact force and moment between
-nominally rigid objects". Modifications and further development of the model can
-be found in @ref Masterjohn2021 "[Masterjohn 2021]". In Drake, we refer to this
-model as the “hydroelastic” model. It differs from point contact in how it
-characterizes the contact. Rather than a single point, it imagines an entire
-contact surface. This surface is an approximation of the contact surface as
-visualized in Figure 2(b).
+originally introduced by @ref Elandt2019 "[Elandt 2019]". Modifications and
+further development of the model can be found in
+@ref Masterjohn2021 "[Masterjohn 2021]". In Drake, we refer to this model as
+the “hydroelastic” model. It differs from point contact in how it characterizes
+the contact. Rather than a single point, it imagines an entire contact
+surface. This surface is an approximation of the contact surface as visualized
+in Figure 2(b).
 
 When two objects come into contact, forces are produced due to deformation
 ("strain") of the objects at the contact interface. At first touch, there are no
@@ -616,7 +613,7 @@ indicate what can and cannot be done with hydroelastic contact.
 - Drake Mesh and Convex types cannot currently serve as a compliant
   hydroelastic geometry.
 
-@section hydro_references Sources referenced within this documentation.
+@section hydro_references Sources referenced within this documentation
 
 - @anchor Elandt2019 [Elandt 2019] Elandt, R., Drumwright, E., Sherman, M.,
   & Ruina, A. (2019, November). A pressure field model for fast, robust
