@@ -135,14 +135,18 @@ const VectorX<T>& MultilayerPerceptron<T>::GetParameters(
 
 template <typename T>
 void MultilayerPerceptron<T>::SetRandomParameters(
-    const Context<T>& context, Parameters<T>* parameters,
+    const Context<T>&, Parameters<T>* parameters,
     RandomGenerator* generator) const {
-  // TODO(russt): Consider more advanced approaches, e.g. Xavier initialization.
-  unused(context);
-  std::normal_distribution<double> normal(0.0, 0.01);
+  std::uniform_real_distribution<double> uniform(-1.0, 1.0);
   BasicVector<T>& params = parameters->get_mutable_numeric_parameter(0);
-  for (int i = 0; i < num_parameters_; ++i) {
-    params[i] = normal(*generator);
+  for (int i = 0; i < num_weights_; ++i) {
+    // uniform(-m,m) has standard deviation sqrt(1/fan_in)
+    double m = std::sqrt(3.0/layers_[i]);
+    for (int n = weight_indices_[i];
+         n < weight_indices_[i] + layers_[i + 1] * layers_[i] + layers_[i + 1];
+         ++n) {
+      params[n] = m*uniform(*generator);
+    }
   }
 }
 

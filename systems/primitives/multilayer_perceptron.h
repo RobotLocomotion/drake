@@ -84,8 +84,10 @@ class MultilayerPerceptron final : public LeafSystem<T> {
   explicit MultilayerPerceptron(const MultilayerPerceptron<U>&);
 
   /** Sets all of the parameters (all weights and biases) in the `parameters`
-   from a zero-mean, 0.01*unit-covariance Gaussian distribution. This is
-   typically called via System<T>::SetRandomContext. By contrast,
+   using the "LeCun initialization": a uniform distribution with mean zero and
+   standard deviation √(1/fan-in).
+
+   This is typically called via System<T>::SetRandomContext. By contrast,
    System<T>::SetDefaultContext will set all weights and biases to zero. */
   void SetRandomParameters(const Context<T>& context, Parameters<T>* parameters,
                            RandomGenerator* generator) const override;
