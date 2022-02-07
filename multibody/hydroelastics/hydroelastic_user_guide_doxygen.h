@@ -328,10 +328,10 @@ Run a simulation with hydroelastic contact model; for example,
 
 By default, at the time of this writing, Drake Visualizer will look like this:
 
+<!-- N.B. Do not attempt to line wrap this table. -->
 |  |  |
 | :-: | :-: |
-| @image html "multibody/hydroelastics/images/drake-vis-01.png" width=90% |
-@image html "multibody/hydroelastics/images/drake-vis-02.png" width=95% |
+| @image html "multibody/hydroelastics/images/drake-vis-01.png" width=90% | @image html "multibody/hydroelastics/images/drake-vis-02.png" width=95% |
 
 In the above pictures, we see two red force vectors acting at the centroids of
 the two contact surfaces and also the blue moment vector. One contact surface
