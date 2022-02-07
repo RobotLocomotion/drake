@@ -389,7 +389,8 @@ Here are various ways that hydroelastic contact may surprise you.
     SDFormat tag <drake:rigid_hydroelastic/>.
 - Backface culling -- the visualized contact surface is not what you
   expect. Or, “Why are there holes?”
-  <!-- TODO: This should come with some illustrations to make this clear. -->
+  <!-- TODO(rpoyner-tri): This should come with some illustrations to make this
+       clear. -->
 - Hydroelastic modulus is not properly a material property; it combines
   material and geometry.
   - Make the sphere bigger, the force gets weaker for the same contact surface.
@@ -401,9 +402,9 @@ Here are various ways that hydroelastic contact may surprise you.
 - Stiff and coarse is seldom a good thing. The stiffer an object is, the more
   the details of the discrete tessellation will directly contribute to the
   dynamics.
-  <!-- TODO: Ideally, there should be a demo that shows a coarse sphere with
-  decreasing elasticity rolling would be good. One rolls like an 8-sided dice.
-  One more closely approximates a sphere. -->
+  <!-- TODO(rpoyner-tri): Ideally, there should be a demo that shows a coarse
+       sphere with decreasing elasticity rolling would be good. One rolls like
+       an 8-sided dice.  One more closely approximates a sphere. -->
 - Getting moments out of the contact depends on how many elements are in the
   contact surface. If the elements of the two contributing meshes are much
   larger than the actual contact surface, the contact can become, in essence,
