@@ -68,6 +68,16 @@ def wsg_50_description_mesh_files():
         "wsg_50_description/meshes/finger_without_tip.obj",
         "wsg_50_description/meshes/finger_with_tip.obj",
         "wsg_50_description/meshes/wsg_body.obj",
+   ]
+
+def wsg_50_hydro_bubble_description_mesh_files():
+    return [
+        "wsg_50_hydro_bubble_description/meshes/bubble_finger.obj",
+        "wsg_50_hydro_bubble_description/meshes/bubble_gripper_base.obj",
+        "wsg_50_hydro_bubble_description/meshes/ellipsoid_bubble_geometry.obj",
+        "wsg_50_hydro_bubble_description/meshes/bubble_finger.mtl",
+        "wsg_50_hydro_bubble_description/meshes/bubble_gripper_base.mtl",
+        "wsg_50_hydro_bubble_description/meshes/ellipsoid_bubble_geometry.mtl",
     ]
 
 def ycb_mesh_files():
