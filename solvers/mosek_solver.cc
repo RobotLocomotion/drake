@@ -1945,6 +1945,12 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
     // TODO(hongkai.dai@tri.global): add trmcode to the returned struct.
     MSKrescodee trmcode;  // termination code
     rescode = MSK_optimizetrm(task, &trmcode);
+    // Refer to
+    // https://docs.mosek.com/latest/capi/debugging-tutorials.html#debugging-tutorials
+    // on printing the solution summary.
+    if (print_to_console || !print_file_name.empty()) {
+      MSK_solutionsummary(task, MSK_STREAM_LOG);
+    }
   }
 
   if (rescode == MSK_RES_OK && msk_writedata.has_value()) {
