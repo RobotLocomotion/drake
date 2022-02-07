@@ -113,6 +113,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("Delete", &Class::Delete, cls_doc.Delete.doc)
         .def("contact_results_input_port", &Class::contact_results_input_port,
             py_rvp::reference_internal, cls_doc.contact_results_input_port.doc)
+        .def("query_object_input_port", &Class::query_object_input_port,
+            py_rvp::reference_internal, cls_doc.query_object_input_port.doc)
         .def_static("AddToBuilder",
             py::overload_cast<systems::DiagramBuilder<T>*,
                 const MultibodyPlant<T>&, std::shared_ptr<geometry::Meshcat>,
@@ -124,6 +126,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
             // `meshcat` is a shared_ptr, so does not need a keep_alive.
             py_rvp::reference,
             cls_doc.AddToBuilder.doc_4args_builder_plant_meshcat_params)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<T>*,
+                const systems::OutputPort<T>&, const systems::OutputPort<T>&,
+                std::shared_ptr<geometry::Meshcat>, ContactVisualizerParams>(
+                &ContactVisualizer<T>::AddToBuilder),
+            py::arg("builder"), py::arg("contact_results_port"),
+            py::arg("query_object_port"), py::arg("meshcat"),
+            py::arg("params") = ContactVisualizerParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // `meshcat` is a shared_ptr, so does not need a keep_alive.
+            py_rvp::reference,
+            cls_doc.AddToBuilder
+                .doc_5args_builder_contact_results_port_query_object_port_meshcat_params)
         .def_static("AddToBuilder",
             py::overload_cast<systems::DiagramBuilder<T>*,
                 const systems::OutputPort<T>&,
