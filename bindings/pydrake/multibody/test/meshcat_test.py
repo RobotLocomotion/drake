@@ -50,6 +50,7 @@ class TestMeshcat(unittest.TestCase):
         vis = ContactVisualizer_[T](meshcat=meshcat, params=params)
         vis.Delete()
         vis.contact_results_input_port()
+        vis.query_object_input_port()
 
         builder = DiagramBuilder_[T]()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
@@ -59,6 +60,12 @@ class TestMeshcat(unittest.TestCase):
         ContactVisualizer_[T].AddToBuilder(
             builder=builder,
             contact_results_port=plant.get_contact_results_output_port(),
+            meshcat=meshcat,
+            params=params)
+        ContactVisualizer_[T].AddToBuilder(
+            builder=builder,
+            contact_results_port=plant.get_contact_results_output_port(),
+            query_object_port=scene_graph.get_query_output_port(),
             meshcat=meshcat,
             params=params)
 
