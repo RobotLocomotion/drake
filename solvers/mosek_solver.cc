@@ -1904,10 +1904,15 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
         "MosekSolver::Solve(): cannot print to both the console and the log "
         "file.");
   } else if (print_to_console) {
-    rescode = MSK_linkfunctotaskstream(task, MSK_STREAM_LOG, nullptr, printstr);
+    if (rescode == MSK_RES_OK) {
+      rescode =
+          MSK_linkfunctotaskstream(task, MSK_STREAM_LOG, nullptr, printstr);
+    }
   } else if (!print_file_name.empty()) {
-    rescode = MSK_linkfiletotaskstream(task, MSK_STREAM_LOG,
-                                       print_file_name.c_str(), 0);
+    if (rescode == MSK_RES_OK) {
+      rescode = MSK_linkfiletotaskstream(task, MSK_STREAM_LOG,
+                                         print_file_name.c_str(), 0);
+    }
   }
 
   // Mosek can accept the initial guess on its integer/binary variables, but
@@ -1945,6 +1950,14 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
     // TODO(hongkai.dai@tri.global): add trmcode to the returned struct.
     MSKrescodee trmcode;  // termination code
     rescode = MSK_optimizetrm(task, &trmcode);
+    // Refer to
+    // https://docs.mosek.com/latest/capi/debugging-tutorials.html#debugging-tutorials
+    // on printing the solution summary.
+    if (print_to_console || !print_file_name.empty()) {
+      if (rescode == MSK_RES_OK) {
+        rescode = MSK_solutionsummary(task, MSK_STREAM_LOG);
+      }
+    }
   }
 
   if (rescode == MSK_RES_OK && msk_writedata.has_value()) {
