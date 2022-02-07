@@ -1,0 +1,30 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
+load("//tools/install:install_data.bzl", "install_data")
+load("@drake//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_binary(
+    name = "spatula_slip_control",
+    srcs = ["spatula_slip_control.cc"],
+    data = [
+        ":models",
+        "//manipulation/models/wsg_50_hydro_bubble_description:models",
+    ],
+    deps = [
+        "//geometry",
+        "//multibody/parsing",
+        "//multibody/plant:contact_results_to_lcm",
+        "//multibody/plant:multibody_plant_config_functions",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_config_functions",
+        "//systems/analysis:simulator_gflags",
+        "//systems/framework:diagram",
+        "//systems/primitives",
+        "@fmt",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()
