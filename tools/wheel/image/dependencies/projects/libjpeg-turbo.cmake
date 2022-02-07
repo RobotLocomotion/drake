@@ -5,7 +5,6 @@ endif()
 ExternalProject_Add(libjpeg-turbo
     URL ${libjpeg-turbo_url}
     URL_MD5 ${libjpeg-turbo_md5}
-    DEPENDS ${libjpeg-turbo_DEPENDS}
     ${COMMON_EP_ARGS}
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ./configure
