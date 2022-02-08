@@ -112,6 +112,11 @@ class MultilayerPerceptron final : public LeafSystem<T> {
    single vector. Use GetWeights and GetBiases to extract the components. */
   const VectorX<T>& GetParameters(const Context<T>& context) const;
 
+  /** Returns a mutable reference to all of the parameters (weights and biases)
+   as a single vector. */
+  Eigen::VectorBlock<VectorX<T>> GetMutableParameters(
+      Context<T>* context) const;
+
   /** Sets all of the parameters in the network (weights and biases) using a
    single vector. Use SetWeights and SetBiases to extract the components. */
   void SetParameters(Context<T>* context,

@@ -134,6 +134,12 @@ const VectorX<T>& MultilayerPerceptron<T>::GetParameters(
 }
 
 template <typename T>
+Eigen::VectorBlock<VectorX<T>> MultilayerPerceptron<T>::GetMutableParameters(
+    Context<T>* context) const {
+  return context->get_mutable_numeric_parameter(0).get_mutable_value();
+}
+
+template <typename T>
 void MultilayerPerceptron<T>::SetRandomParameters(
     const Context<T>&, Parameters<T>* parameters,
     RandomGenerator* generator) const {
