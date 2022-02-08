@@ -45,13 +45,23 @@ struct RenderEngineVtkParams  {
    default color is a bright orange. This default value can be changed to a
    different value at construction. <br>
  ² If no path is specified, or the file cannot be read, the diffuse rgba value
-   is used (or its default).
+   is used (or its default). <br>
  ³ %RenderEngineVtk implements a legacy feature for associating textures with
    _meshes_. If _no_ `(phong, diffuse_map)` property is provided (or it refers
    to a file that doesn't exist), for a mesh named `/path/to/mesh.obj`,
    %RenderEngineVtk will search for a file `/path/to/mesh.png` (replacing "obj"
    with "png"). If that image exists, it will be used as a texture on the mesh
    object.
+
+ @note RenderEngineVtk does not support the OBJ format `usemtl`
+ directive. Instead, it has two ways to associate a color texture with an obj
+ file:
+ - File name matching; see footnote 3 above.
+ - Explicit assignment of arbitrary texture files from within model files. In
+   SDFormat, use the tag @ref tag_drake_diffuse_map. In URDF, use
+   `//visual/material/texture`.
+
+<!-- TODO(#11949): fix material/texture handling. -->
 
  <h3>Depth images</h3>
 

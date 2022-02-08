@@ -33,7 +33,6 @@ GTEST_TEST(LcmMessagesTest, DecodeLcmMessageError) {
   corrupt_bytes.at(0) = 0;
   DRAKE_EXPECT_THROWS_MESSAGE(
       DecodeLcmMessage<lcmt_drake_signal>(corrupt_bytes),
-      std::runtime_error,
       "Error decoding message of type 'drake::lcmt_drake_signal'");
 }
 
