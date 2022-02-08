@@ -279,7 +279,7 @@ drake::geometry::CollisionFilterDeclaration::ExcludeWithin()).
 If present, this element sets the compliance type of the element being defined
 to be compliant, as opposed to rigid, in hydroelastic contact models.
 
-@see @ref tag_drake_proximity_properties, @ref MODULE_NOT_WRITTEN_YET
+@see @ref tag_drake_proximity_properties, @ref creating_hydro_reps
 
 @subsection tag_drake_damping drake:damping
 
@@ -386,7 +386,7 @@ under `(hydroelastic, hydroelastic_modulus)`.
 
 @see drake::geometry::ProximityProperties,
 @ref mbp_hydroelastic_materials_properties "Hydroelastic contact",
-@ref MODULE_NOT_WRITTEN_YET
+@ref hug_properties
 
 @subsection tag_drake_ignored_collision_filter_group drake:ignored_collision_filter_group
 
@@ -468,7 +468,7 @@ exact semantics depend on the geometry being generated. Within some practical
 limits, smaller values will select shorter edge lengths and a finer mesh, larger
 values will select longer edge lengths and a coarser mesh.
 
-@see @ref tag_drake_proximity_properties, @ref MODULE_NOT_WRITTEN_YET
+@see @ref tag_drake_proximity_properties, @ref hug_properties
 
 @subsection tag_drake_mu_dynamic drake:mu_dynamic
 
@@ -572,7 +572,7 @@ drake::geometry::ProximityProperties
 If present, this element sets the compliance type of the element being defined
 to be rigid, as opposed to compliant, in hydroelastic contact models.
 
-@see @ref tag_drake_proximity_properties, @ref MODULE_NOT_WRITTEN_YET
+@see @ref tag_drake_proximity_properties, @ref creating_hydro_reps
 
 @subsection tag_drake_rotor_inertia drake:rotor_inertia
 
