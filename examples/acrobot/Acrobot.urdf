@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot xmlns="https://drake.mit.edu" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Acrobot">
+<robot name="Acrobot">
   <link name="base_link">
     <visual>
       <geometry>
