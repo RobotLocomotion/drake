@@ -58,10 +58,10 @@ drake_cc_library(
     deps = [
         ":calc_lame_parameters",
         ":corotated_model_data",
-        ":matrix_utilities",
         "//common:autodiff",
         "//common:essential",
         "//multibody/fem:constitutive_model",
+        "//multibody/fem:matrix_utilities",
     ],
 )
 
@@ -71,10 +71,10 @@ drake_cc_library(
         "corotated_model_data.h",
     ],
     deps = [
-        ":matrix_utilities",
         "//common:autodiff",
         "//common:essential",
         "//multibody/fem:deformation_gradient_data",
+        "//multibody/fem:matrix_utilities",
     ],
 )
 
@@ -193,20 +193,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "matrix_utilities",
-    srcs = [
-        "matrix_utilities.cc",
-    ],
-    hdrs = [
-        "matrix_utilities.h",
-    ],
-    deps = [
-        "//common:default_scalars",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "mesh_utilities",
     srcs = [
         "mesh_utilities.cc",
@@ -295,17 +281,6 @@ drake_cc_googletest(
     deps = [
         ":constitutive_model_test_utilities",
         ":linear_constitutive_model",
-    ],
-)
-
-drake_cc_googletest(
-    name = "matrix_utilities_test",
-    deps = [
-        ":matrix_utilities",
-        "//common:essential",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:geometric_transform",
-        "//math:gradient",
     ],
 )
 

@@ -22,6 +22,7 @@ drake_cc_package_library(
         ":isoparametric_element",
         ":linear_constitutive_model_data",
         ":linear_simplex_element",
+        ":matrix_utilities",
         ":quadrature",
         ":simplex_gaussian_quadrature",
     ],
@@ -122,6 +123,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "matrix_utilities",
+    srcs = [
+        "matrix_utilities.cc",
+    ],
+    hdrs = [
+        "matrix_utilities.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "quadrature",
     srcs = [
         "quadrature.cc",
@@ -205,6 +220,17 @@ drake_cc_googletest(
     deps = [
         ":linear_simplex_element",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "matrix_utilities_test",
+    deps = [
+        ":matrix_utilities",
+        "//common:essential",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//math:gradient",
     ],
 )
 
