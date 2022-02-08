@@ -10,8 +10,8 @@ from pydrake.common.value import AbstractValue
 from pydrake.math import BsplineBasis_, RigidTransform_, RotationMatrix_
 from pydrake.polynomial import Polynomial_
 from pydrake.trajectories import (
-    BsplineTrajectory_, PiecewisePolynomial_, PiecewisePose_,
-    PiecewiseQuaternionSlerp_, Trajectory, Trajectory_
+    BsplineTrajectory_, PathParameterizedTrajectory_, PiecewisePolynomial_,
+    PiecewisePose_, PiecewiseQuaternionSlerp_, Trajectory, Trajectory_
 )
 
 
@@ -110,6 +110,26 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(copy.deepcopy(bspline).rows(), 3)
         assert_pickle(self, bspline,
                       lambda traj: np.array(traj.control_points()), T=T)
+
+    @numpy_compare.check_all_types
+    def test_path_parameterized_trajectory(self, T):
+        PathParameterizedTrajectory = PathParameterizedTrajectory_[T]
+        PiecewisePolynomial = PiecewisePolynomial_[T]
+
+        s = np.array([[1., 3., 5.]])
+        x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()
+        param = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], s)
+        path = PiecewisePolynomial.ZeroOrderHold(s[0], x)
+        trajectory = PathParameterizedTrajectory(path, param)
+        self.assertIsInstance(trajectory.Clone(), PathParameterizedTrajectory)
+        numpy_compare.assert_float_equal(trajectory.value(t=1.5), x[:, 1:2])
+        self.assertEqual(trajectory.rows(), 2)
+        self.assertEqual(trajectory.cols(), 1)
+        numpy_compare.assert_float_equal(trajectory.start_time(), 0.)
+        numpy_compare.assert_float_equal(trajectory.end_time(), 2.)
+        self.assertIsInstance(trajectory.path(), PiecewisePolynomial)
+        self.assertIsInstance(trajectory.time_scaling(),
+                              PiecewisePolynomial)
 
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_empty_constructor(self, T):
