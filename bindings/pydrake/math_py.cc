@@ -114,19 +114,22 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("translation_tolerance"),
             cls_doc.IsIdentityToEpsilon.doc_deprecated);
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-    cls  // BR
+    cls                     // BR
         .def("IsNearlyEqualTo", &Class::IsNearlyEqualTo, py::arg("other"),
             py::arg("tolerance"), cls_doc.IsNearlyEqualTo.doc)
         .def("inverse", &Class::inverse, cls_doc.inverse.doc)
-        .def("multiply",
+        .def(
+            "multiply",
             [](const Class* self, const Class& other) { return *self * other; },
             py::arg("other"), cls_doc.operator_mul.doc_1args_other)
-        .def("multiply",
+        .def(
+            "multiply",
             [](const Class* self, const Vector3<T>& p_BoQ_B) {
               return *self * p_BoQ_B;
             },
             py::arg("p_BoQ_B"), cls_doc.operator_mul.doc_1args_p_BoQ_B)
-        .def("multiply",
+        .def(
+            "multiply",
             [](const Class* self, const Matrix3X<T>& p_BoQ_B) {
               return *self * p_BoQ_B;
             },

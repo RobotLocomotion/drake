@@ -424,7 +424,7 @@ class RigidTransform {
   /// (e.g., the magnitude of a characteristic position vector) by an epsilon
   /// (e.g., RotationMatrix::get_internal_tolerance_for_orthonormality()).
   /// @see IsExactlyIdentity().
-  DRAKE_DEPRECATED("2022-06-01","Use RigidTransform::IsNearlyIdentity()")
+  DRAKE_DEPRECATED("2022-06-01", "Use RigidTransform::IsNearlyIdentity()")
   boolean<T> IsIdentityToEpsilon(double translation_tolerance) const {
     return IsNearlyIdentity(translation_tolerance);
   }
