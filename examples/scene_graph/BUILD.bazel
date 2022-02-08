@@ -37,7 +37,10 @@ drake_cc_binary(
     test_rule_args = [
         "--simulation_time=0.1",
     ],
-    test_rule_tags = vtk_test_tags(),
+    test_rule_tags = vtk_test_tags() + [
+        # Excluding due to data race involving swrast_dri.so. Issue #16494.
+        "no_tsan",
+    ],
     deps = [
         ":bouncing_ball_plant",
         "//geometry:drake_visualizer",

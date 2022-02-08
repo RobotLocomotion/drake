@@ -175,7 +175,10 @@ drake_cc_googletest(
     data = [
         ":test_models",
     ],
-    tags = vtk_test_tags(),
+    tags = vtk_test_tags() + [
+        # Excluding due to data race involving swrast_dri.so. Issue #16494.
+        "no_tsan",
+    ],
     deps = [
         ":render_engine_vtk",
         "//common:find_resource",
