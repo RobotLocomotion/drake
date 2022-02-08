@@ -73,16 +73,6 @@ class RenderClientGltf : public RenderEngineVtk, public RenderClient {
   glTF file, returning the path to the newly exported file. */
   std::string ExportScene(internal::ImageType image_type,
                           int64_t scene_id) const;
-
-  /* Upload and render the scene described by `scene_path` for the associated
-  camera `core` and `image_type`.  Both `min_depth` and `max_depth` must be
-  supplied with `image_type=depth`.  The returned value is the path to the image
-  file on disk ready to be loaded into a drake image buffer. */
-  std::string UploadAndRender(const RenderCameraCore& core,
-                              internal::ImageType image_type,
-                              const std::string& scene_path,
-                              double min_depth = -1.0,
-                              double max_depth = -1.0) const;
 };
 
 }  // namespace render
