@@ -15,6 +15,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/math/barycentric.h"
 #include "drake/math/bspline_basis.h"
 #include "drake/math/continuous_algebraic_riccati_equation.h"
@@ -102,23 +103,30 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetIdentity", &Class::SetIdentity, cls_doc.SetIdentity.doc)
         .def("IsExactlyIdentity", &Class::IsExactlyIdentity,
             cls_doc.IsExactlyIdentity.doc)
-        .def("IsIdentityToEpsilon", &Class::IsIdentityToEpsilon,
-            py::arg("translation_tolerance"), cls_doc.IsIdentityToEpsilon.doc)
+        .def("IsNearlyIdentity", &Class::IsNearlyIdentity,
+            py::arg("translation_tolerance"), cls_doc.IsNearlyIdentity.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("IsIdentityToEpsilon",
+            WrapDeprecated(cls_doc.IsIdentityToEpsilon.doc_deprecated,
+                &Class::IsIdentityToEpsilon),
+            py::arg("translation_tolerance"),
+            cls_doc.IsIdentityToEpsilon.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls  // BR
         .def("IsNearlyEqualTo", &Class::IsNearlyEqualTo, py::arg("other"),
             py::arg("tolerance"), cls_doc.IsNearlyEqualTo.doc)
         .def("inverse", &Class::inverse, cls_doc.inverse.doc)
-        .def(
-            "multiply",
+        .def("multiply",
             [](const Class* self, const Class& other) { return *self * other; },
             py::arg("other"), cls_doc.operator_mul.doc_1args_other)
-        .def(
-            "multiply",
+        .def("multiply",
             [](const Class* self, const Vector3<T>& p_BoQ_B) {
               return *self * p_BoQ_B;
             },
             py::arg("p_BoQ_B"), cls_doc.operator_mul.doc_1args_p_BoQ_B)
-        .def(
-            "multiply",
+        .def("multiply",
             [](const Class* self, const Matrix3X<T>& p_BoQ_B) {
               return *self * p_BoQ_B;
             },
