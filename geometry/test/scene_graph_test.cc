@@ -285,85 +285,81 @@ TEST_F(SceneGraphTest, FullPoseUpdateAnchoredOnly) {
       SceneGraphTester::FullPoseUpdate(scene_graph_, *context_));
 }
 
+template <typename T>
+class TypedSceneGraphTest : public SceneGraphTest {
+ public:
+  TypedSceneGraphTest() = default;
+};
+
+TYPED_TEST_SUITE_P(TypedSceneGraphTest);
+
 // Tests operations on a transmogrified SceneGraph. Whether a context has been
 // allocated or not, subsequent operations should be allowed.
-template <typename T>
-void TransmogrifyWithoutAllocation(SceneGraph<double>* scene_graph) {
-  SourceId s_id = scene_graph->RegisterSource();
+TYPED_TEST_P(TypedSceneGraphTest, TransmogrifyWithoutAllocation) {
+  using U = TypeParam;
+  SourceId s_id = this->scene_graph_.RegisterSource();
   // This should allow additional geometry registration.
-  std::unique_ptr<systems::System<T>> system_T = scene_graph->ToScalarType<T>();
-  SceneGraph<T>& scene_graph_T = *dynamic_cast<SceneGraph<T>*>(system_T.get());
+  auto scene_graph_U = System<double>::ToScalarType<U>(this->scene_graph_);
   DRAKE_EXPECT_NO_THROW(
-      scene_graph_T.RegisterAnchoredGeometry(s_id, make_sphere_instance()));
+      scene_graph_U->RegisterAnchoredGeometry(s_id, make_sphere_instance()));
 
   // After allocation, registration should _still_ be valid.
-  scene_graph->CreateDefaultContext();
-  system_T = scene_graph->ToScalarType<T>();
-  SceneGraph<T>& scene_graph_T2 = *dynamic_cast<SceneGraph<T>*>(system_T.get());
+  this->CreateDefaultContext();
+  auto scene_graph_U2 = System<double>::ToScalarType<U>(this->scene_graph_);
   DRAKE_EXPECT_NO_THROW(
-      scene_graph_T2.RegisterAnchoredGeometry(s_id, make_sphere_instance()));
-}
-
-TEST_F(SceneGraphTest, TransmogrifyWithoutAllocation) {
-  TransmogrifyWithoutAllocation<AutoDiffXd>(&scene_graph_);
-  TransmogrifyWithoutAllocation<Expression>(&scene_graph_);
-}
-
-template <typename T>
-void TransmogrifyPorts(SceneGraph<double>* scene_graph) {
-  SourceId s_id = scene_graph->RegisterSource();
-  scene_graph->CreateDefaultContext();
-  std::unique_ptr<systems::System<T>> system_T =
-      scene_graph->ToScalarType<T>();
-  SceneGraph<T>& scene_graph_T = *dynamic_cast<SceneGraph<T>*>(system_T.get());
-  EXPECT_EQ(scene_graph_T.num_input_ports(), scene_graph->num_input_ports());
-  EXPECT_EQ(scene_graph_T.get_source_pose_port(s_id).get_index(),
-            scene_graph->get_source_pose_port(s_id).get_index());
-  EXPECT_NO_THROW(scene_graph_T.CreateDefaultContext());
+      scene_graph_U2->RegisterAnchoredGeometry(s_id, make_sphere_instance()));
 }
 
 // Tests that the ports are correctly mapped.
-TEST_F(SceneGraphTest, TransmogrifyPorts) {
-  TransmogrifyPorts<AutoDiffXd>(&scene_graph_);
-  TransmogrifyPorts<Expression>(&scene_graph_);
+TYPED_TEST_P(TypedSceneGraphTest, TransmogrifyPorts) {
+  using U = TypeParam;
+  SourceId s_id = this->scene_graph_.RegisterSource();
+  this->CreateDefaultContext();
+  auto scene_graph_U = System<double>::ToScalarType<U>(this->scene_graph_);
+  EXPECT_EQ(scene_graph_U->num_input_ports(),
+            this->scene_graph_.num_input_ports());
+  EXPECT_EQ(scene_graph_U->get_source_pose_port(s_id).get_index(),
+            this->scene_graph_.get_source_pose_port(s_id).get_index());
+  EXPECT_NO_THROW(scene_graph_U->CreateDefaultContext());
 }
 
 // Tests that the work to "set" the context values for the transmogrified system
 // behaves correctly.
-template <typename T>
-void TransmogrifyContext() {
-  SceneGraph<double> sg;
-  SourceId s_id = sg.RegisterSource();
+TYPED_TEST_P(TypedSceneGraphTest, TransmogrifyContext) {
+  using U = TypeParam;
+  SourceId s_id = this->scene_graph_.RegisterSource();
   // Register geometry that should be successfully transmogrified.
-  GeometryId g_id = sg.RegisterAnchoredGeometry(s_id, make_sphere_instance());
-  std::unique_ptr<Context<double>> context = sg.CreateDefaultContext();
+  GeometryId g_id = this->scene_graph_.RegisterAnchoredGeometry(
+      s_id, make_sphere_instance());
+  this->CreateDefaultContext();
+  const Context<double>& context_T = *this->context_;
   // This should transmogrify the internal *model*, so when I allocate the
   // transmogrified context, I should get the "same" values (considering type
   // change).
-  std::unique_ptr<System<T>> system_T = sg.ToScalarType<T>();
-  SceneGraph<T>& scene_graph_T =
-      *dynamic_cast<SceneGraph<T>*>(system_T.get());
-  std::unique_ptr<Context<T>> context_T =
-      scene_graph_T.CreateDefaultContext();
+  auto scene_graph_U = System<double>::ToScalarType<U>(this->scene_graph_);
+  std::unique_ptr<Context<U>> context_U = scene_graph_U->CreateDefaultContext();
 
   // Extract the GeometryState and query some invariants on it directly.
-  const GeometryState<T>& geo_state_T =
-      SceneGraphTester::GetGeometryState(scene_graph_T, *context_T);
+  const GeometryState<U>& geo_state_U =
+      SceneGraphTester::GetGeometryState(*scene_graph_U, *context_U);
   // If the anchored geometry were not ported over, this would throw an
   // exception.
-  EXPECT_TRUE(geo_state_T.BelongsToSource(g_id, s_id));
-  EXPECT_THROW(geo_state_T.BelongsToSource(GeometryId::get_new_id(), s_id),
+  EXPECT_TRUE(geo_state_U.BelongsToSource(g_id, s_id));
+  EXPECT_THROW(geo_state_U.BelongsToSource(GeometryId::get_new_id(), s_id),
                std::logic_error);
 
   // Quick reality check that this is still valid although unnecessary vis a
   // vis the GeometryState.
-  DRAKE_EXPECT_NO_THROW(context_T->SetTimeStateAndParametersFrom(*context));
+  DRAKE_EXPECT_NO_THROW(context_U->SetTimeStateAndParametersFrom(context_T));
 }
 
-TEST_F(SceneGraphTest, TransmogrifyContext) {
-  TransmogrifyContext<AutoDiffXd>();
-  TransmogrifyContext<Expression>();
-}
+REGISTER_TYPED_TEST_SUITE_P(TypedSceneGraphTest,
+    TransmogrifyWithoutAllocation,
+    TransmogrifyPorts,
+    TransmogrifyContext);
+
+using NonDoubleScalarTypes = ::testing::Types<AutoDiffXd, Expression>;
+INSTANTIATE_TYPED_TEST_SUITE_P(My, TypedSceneGraphTest, NonDoubleScalarTypes);
 
 // Tests the model inspector. Exercises a token piece of functionality. The
 // inspector is a wrapper on the GeometryState. It is assumed that GeometryState
