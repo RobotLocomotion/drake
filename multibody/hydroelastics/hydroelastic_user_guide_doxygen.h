@@ -126,41 +126,26 @@ each of the properties and then discuss how they can be specified.
      - If tessellation artifacts become obvious in the simulation, either make
        the object more compliant (see hydroelastic modulus) or increase the
        resolution (as discussed for the various shapes below).
-   - Sphere
-     - TODO: Details
-   - Cylinder
-     - The resolution hint works with the cylinder’s radius and its effect is
-       defined in terms of the circumference of the cylinder’s circular cross
-       section. The resolution hint is the target length of each edge of the
-       tessellated mesh around the circular circumference. The circle will have
-       N = ⌈2πr/h⌉, where r is the capsule radius and h is the resolution
-       hint. The number N changes discontinuously as h changes. However,
-       generally, decreasing the resolution hint by some factor will increase
-       the number of edges by that same factor. The number of elements will
-       grow quadratically.
-     - No intermediate vertices are introduced along the length of the
-       cylinder’s body.
-     - The volume mesh has one tetrahedron for each triangle on the surface;
-       there are no strictly internal tetrahedra.
-   - Capsule
-     - A capsule can be considered like a cylinder with hemispherical
-       caps. The resolution hint is expressed in terms of the cylinder’s radius
-       value and, more particularly, the circumference of the circular cross
-       section. The resolution hint is the target length of each edge of the
-       tessellated mesh around the circular circumference. The circle will have
-       N = ⌈2πr/h⌉, where r is the capsule radius and h is the resolution
-       hint. The number N changes discontinuously as h changes. However,
-       generally, decreasing the resolution hint by some factor will increase
-       the number of edges around the circular circumference by that same
-       factor. The number of elements will grow quadratically.
-     - No intermediate vertices are introduced along the length of the
-       cylindrical body.
-     - The hemispherical caps are tessellated to produce regular triangles
-       based on the edge length defined by resolution hint.
-     - The volume mesh has one tetrahedron for each triangle on the surface;
-       there are no strictly internal tetrahedra.
-   - Ellipsoid
-     - TODO: Details
+   - Geometric detail:
+     - For each geometry type, the resolution hint works with some (maybe
+       abstract) choice of a representative circle, and its effect is defined
+       in terms of the circumference of that circle. The resolution hint is the
+       target length of each edge of the tessellated mesh around the
+       circle. The circle will have N = ⌈2πr/h⌉ edges, where r is the capsule
+       radius and h is the resolution hint. The number N changes
+       discontinuously as h changes. However, generally, decreasing the
+       resolution hint by some factor will increase the number of edges by that
+       same factor. The number of elements will grow quadratically.
+       - Sphere
+         - The representative circle is the great circle of the sphere.
+       - Cylinder
+         - The representative circle is the base of the cylinder.
+       - Capsule
+         - The representative circle is the base of the cylinder, which is also
+           the great circle of each hemisphere.
+       - Ellipsoid
+         - The representative circle is an abstract circle whose radius is that
+           of the largest semi-axis of the elllipsoid.
 - Hydroelastic modulus (Pa (N/m²))
   - This is the measure of how stiff the material is. It directly defines how
     much pressure is exerted given a certain amount of penetration. More
