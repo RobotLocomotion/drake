@@ -401,13 +401,14 @@ class RigidTransform {
     return is_position_zero && rotation().IsExactlyIdentity();
   }
 
-  /// Returns `true` if the RotationMatrix portion of `this` satisfies
-  /// RotationMatrix::IsIdentityToInternalTolerance() and if the position vector
-  /// portion of `this` is equal to zero vector within `translation_tolerance`.
+  /// Returns true if `this` is within tolerance of the identity RigidTransform.
   /// @param[in] translation_tolerance a non-negative number.  One way to choose
   /// `translation_tolerance` is to multiply a characteristic length
   /// (e.g., the magnitude of a characteristic position vector) by an epsilon
   /// (e.g., RotationMatrix::get_internal_tolerance_for_orthonormality()).
+  /// @returns `true` if the RotationMatrix portion of `this` satisfies
+  /// RotationMatrix::IsIdentityToInternalTolerance() and if the position vector
+  /// portion of `this` is equal to zero vector within `translation_tolerance`.
   /// @see IsExactlyIdentity().
   boolean<T> IsNearlyIdentity(double translation_tolerance) const {
     const T max_component = translation().template lpNorm<Eigen::Infinity>();
@@ -415,15 +416,6 @@ class RigidTransform {
         rotation().IsIdentityToInternalTolerance();
   }
 
-  /// Return true if `this` is within tolerance of the identity %RigidTransform.
-  /// @returns `true` if the RotationMatrix portion of `this` satisfies
-  /// RotationMatrix::IsIdentityToInternalTolerance() and if the position vector
-  /// portion of `this` is equal to zero vector within `translation_tolerance`.
-  /// @param[in] translation_tolerance a non-negative number.  One way to choose
-  /// `translation_tolerance` is to multiply a characteristic length
-  /// (e.g., the magnitude of a characteristic position vector) by an epsilon
-  /// (e.g., RotationMatrix::get_internal_tolerance_for_orthonormality()).
-  /// @see IsExactlyIdentity().
   DRAKE_DEPRECATED("2022-06-01", "Use RigidTransform::IsNearlyIdentity()")
   boolean<T> IsIdentityToEpsilon(double translation_tolerance) const {
     return IsNearlyIdentity(translation_tolerance);
