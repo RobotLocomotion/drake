@@ -1,7 +1,8 @@
+#include "drake/examples/ball_paddle/ball_paddle.h"
+
 #include <utility>
 
 #include "drake/common/default_scalars.h"
-#include "drake/examples/ball_paddle/ball_paddle.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/drake_visualizer_params.h"
 #include "drake/geometry/proximity_properties.h"
