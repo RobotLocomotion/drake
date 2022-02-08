@@ -131,14 +131,13 @@ class VolumetricModel : public FemModelImpl<Element> {
   const VectorX<T>& reference_positions() const { return reference_positions_; }
 
  private:
-  /* Implements FemModelImpl::DoMakeFemStateImpl(). Generalized positions are
+  /* Implements FemModelImpl::DoMakeFemState(). Generalized positions are
    initialized to be reference positions of the input mesh vertices. Velocities
    and accelerations are initialized to 0. */
-  FemStateImpl<Element> DoMakeFemStateImpl() const final {
+  FemState<T> DoMakeFemState() const final {
     const int num_dofs = reference_positions_.size();
-    return FemStateImpl<Element>(reference_positions_,
-                                 VectorX<T>::Zero(num_dofs),
-                                 VectorX<T>::Zero(num_dofs));
+    return FemState<T>(reference_positions_, VectorX<T>::Zero(num_dofs),
+                       VectorX<T>::Zero(num_dofs));
   }
 
   VectorX<T> reference_positions_{};

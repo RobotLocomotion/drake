@@ -54,11 +54,6 @@ class FemModelImpl : public FemModel<typename Element::Traits::T> {
 
   virtual ~FemModelImpl() = default;
 
-  /* Derived classes must override this method to create a default FemStateImpl
-   for this model, which initializes the positions, velocities, and
-   accelerations of all nodes in the model. */
-  virtual FemStateImpl<Element> DoMakeFemStateImpl() const = 0;
-
   const Element& element(ElementIndex i) const {
     DRAKE_ASSERT(i.is_valid());
     DRAKE_ASSERT(i < num_elements());
@@ -86,14 +81,6 @@ class FemModelImpl : public FemModel<typename Element::Traits::T> {
   }
 
  private:
-  /* Implements FemModel::MakeFemState(). */
-  std::unique_ptr<FemState<T>> DoMakeFemState() const final {
-    auto state = std::make_unique<FemStateImpl<Element>>(DoMakeFemStateImpl());
-    /* Initialize per-element state-dependent data. */
-    state->MakeElementData(elements_);
-    return state;
-  }
-
   /* Helper for DoCalcResidual(). */
   void CalcResidualForConcreteState(const FemStateImpl<Element>& state,
                                     EigenPtr<VectorX<T>> residual) const {
@@ -320,6 +307,15 @@ class FemModelImpl : public FemModel<typename Element::Traits::T> {
     }
   }
 
+  void DoCalcElementData(const FemState<T>& state,
+                         ElementData<T>* element_data) const final {
+    auto* concrete_data = static_cast<ElementDataImpl<Element>*>(element_data);
+    for (int i = 0; i < static_cast<int>(elements_.size()); ++i) {
+      concrete_data->set_data(element_[i].ComputeData(state));
+    }
+  }
+
+  // TODO(xuchenhan-tri): This needs to become cast_to_concrete_element_data.
   /* Statically cast the given FemState to the FemStateImpl compatible
    with `this` FemModelImpl.
    @pre The given `abstract_state` is compatible with the `this` FemModelImpl.

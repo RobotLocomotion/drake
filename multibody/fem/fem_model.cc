@@ -5,7 +5,7 @@ namespace multibody {
 namespace fem {
 
 template <typename T>
-std::unique_ptr<FemState<T>> FemModel<T>::MakeFemState() const {
+FemState<T> FemModel<T>::MakeFemState() const {
   return DoMakeFemState();
 }
 

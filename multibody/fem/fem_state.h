@@ -8,8 +8,8 @@ namespace drake {
 namespace multibody {
 namespace fem {
 
-/** An abstract class that stores the FEM states. The states include the
- generalized positions, velocities, and accelerations associated with each node.
+/** Stores the FEM states. The states include the generalized positions,
+ velocities, and accelerations associated with each node.
  @tparam_nonsymbolic_scalar */
 template <typename T>
 class FemState {
@@ -40,7 +40,6 @@ class FemState {
   /* Returns the number of generalized positions in the state. */
   int num_dofs() const { return q_.size(); }
 
- protected:
   /** Constructs an %FemState with prescribed generalized positions,
    velocities, and accelerations.
    @param[in] q  The prescribed generalized positions.
@@ -49,18 +48,14 @@ class FemState {
    @pre q.size() == v.size().
    @pre q.size() == a.size(). */
   FemState(const Eigen::Ref<const VectorX<T>>& q,
-               const Eigen::Ref<const VectorX<T>>& v,
-               const Eigen::Ref<const VectorX<T>>& a)
+           const Eigen::Ref<const VectorX<T>>& v,
+           const Eigen::Ref<const VectorX<T>>& a)
       : q_(q), v_(v), a_(a) {
     DRAKE_DEMAND(q_.size() == v_.size());
     DRAKE_DEMAND(q_.size() == a_.size());
   }
 
  private:
-  /* Invalidate state-dependent quantities. Should be called on state changes.
-   */
-  virtual void InvalidateAllCacheEntries() = 0;
-
   /* Generalized positions. */
   VectorX<T> q_{};
   /* Generalized velocities. */

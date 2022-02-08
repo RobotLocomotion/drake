@@ -418,7 +418,7 @@ class VolumetricElement
   }
 
   /* Implements FemElement::ComputeData(). */
-  Data DoComputeData(const FemStateImpl<ElementType>& state) const {
+  Data DoComputeData(const FemState<T>& state) const {
     Data data;
     data.deformation_gradient_data.UpdateData(CalcDeformationGradient(state));
     this->constitutive_model().CalcElasticEnergyDensity(
@@ -433,7 +433,7 @@ class VolumetricElement
   /* Calculates the deformation gradient at all quadrature points in this
    element. */
   std::array<Matrix3<T>, num_quadrature_points> CalcDeformationGradient(
-      const FemStateImpl<ElementType>& state) const {
+      const FemState<T>& state) const {
     std::array<Matrix3<T>, num_quadrature_points> F;
     const Vector<T, num_dofs> element_x =
         this->ExtractElementDofs(this->node_indices(), state.GetPositions());

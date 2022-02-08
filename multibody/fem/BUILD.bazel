@@ -182,6 +182,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "fem_data_manager",
+    srcs = [
+        "fem_data_manager.cc",
+    ],
+    hdrs = [
+        "fem_data_manager.h",
+    ],
+    deps = [
+        ":fem_model",
+        ":fem_state",
+        "//common:essential",
+        "//systems/framework:context",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
     name = "fem_element",
     hdrs = [
         "fem_element.h",

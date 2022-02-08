@@ -70,7 +70,7 @@ class FemElement {
 
   /* Computes the per-element, state-dependent data associated with this
    `DerivedElement` given the `state`. */
-  Data ComputeData(const FemStateImpl<DerivedElement>& state) const {
+  Data ComputeData(const FemState<>& state) const {
     return static_cast<const DerivedElement*>(this)->DoComputeData(state);
   }
 

@@ -13,6 +13,7 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
+// TODO(xuchenhan-tri): Remove me.
 /* FemStateImpl implements FemState for a particular type of FEM element.
  It is templated on the concrete FemElement type in order to allow compile time
  optimizations based on fixed sizes. It also stores the per-element
