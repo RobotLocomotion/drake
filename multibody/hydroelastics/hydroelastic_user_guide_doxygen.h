@@ -598,6 +598,9 @@ indicate what can and cannot be done with hydroelastic contact.
   with contact in these cases.
 - Drake Mesh and Convex types cannot currently serve as a compliant
   hydroelastic geometry.
+- Hydroelastics cannot model true deformations given the model does not
+  introduce state. Therefore effects such as tangential compliance or
+  short time scale waves are not captured by the model.
 
 @section hydro_references Sources referenced within this documentation
 
