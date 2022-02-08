@@ -132,7 +132,7 @@ GTEST_TEST(SampleTest, Move) {
   // Move construction.  The heap storage of `first` is stolen.
   Sample<double> second(std::move(first));
   EXPECT_EQ(first.size(), 0);
-  DRAKE_EXPECT_THROWS_MESSAGE(first.x(), std::out_of_range, ".*moved-from.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(first.x(), ".*moved-from.*");
   EXPECT_EQ(second.size(), nominal_size);
   EXPECT_EQ(second.x(), 1.0);
   EXPECT_EQ(&second.x(), original_storage);
@@ -143,7 +143,7 @@ GTEST_TEST(SampleTest, Move) {
   DRAKE_DEMAND(third.x() != 1.0);  // Prove that assignment will change this.
   third = std::move(second);
   EXPECT_EQ(second.size(), 0);
-  DRAKE_EXPECT_THROWS_MESSAGE(second.x(), std::out_of_range, ".*moved-from.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(second.x(), ".*moved-from.*");
   EXPECT_EQ(third.size(), nominal_size);
   EXPECT_EQ(third.x(), 1.0);
   EXPECT_EQ(&third.x(), original_storage);
