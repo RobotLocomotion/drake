@@ -222,7 +222,7 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
   const RollPitchYaw<double> rpyA(0.2, M_PI / 2, 0.4);
   DRAKE_EXPECT_THROWS_MESSAGE(
       rpyA.CalcMatrixRelatingRpyDtToAngularVelocityInParent(),
-      std::runtime_error, expected_messageA);
+      expected_messageA);
 
   // Now test the inverse relationship.
   const Vector3d rpyDt_calculated =
@@ -236,27 +236,27 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
       ".*gimbal-lock.*"
       "roll_pitch_yaw.h.*";
   DRAKE_EXPECT_THROWS_MESSAGE(rpyA.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-                              std::runtime_error, expected_messageB);
+                              expected_messageB);
 
   const RollPitchYaw<double> rpyB(0.2, -M_PI / 2, 0.4);
   DRAKE_EXPECT_THROWS_MESSAGE(rpyB.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-                              std::runtime_error, expected_messageB);
+                              expected_messageB);
 
   const RollPitchYaw<double> rpyC(0.2, 3 * M_PI / 2, 0.4);
   DRAKE_EXPECT_THROWS_MESSAGE(rpyC.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-                              std::runtime_error, expected_messageB);
+                              expected_messageB);
 
   const RollPitchYaw<double> rpyD(0.2, -3 * M_PI / 2, 0.4);
   DRAKE_EXPECT_THROWS_MESSAGE(rpyD.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-                              std::runtime_error, expected_messageB);
+                              expected_messageB);
 
   const RollPitchYaw<double> rpyE(0.2, 3 * M_PI / 2 + 1E-8, 0.4);
   DRAKE_EXPECT_THROWS_MESSAGE(rpyE.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-                              std::runtime_error, expected_messageB);
+                              expected_messageB);
 
   const RollPitchYaw<double> rpyF(0.2, -3 * M_PI / 2 + 1E-8, 0.4);
   DRAKE_EXPECT_THROWS_MESSAGE(rpyF.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-                              std::runtime_error, expected_messageB);
+                              expected_messageB);
 }
 
 // Test accuracy of back-and-forth conversion from angular velocity to rpyDt
@@ -284,13 +284,13 @@ GTEST_TEST(RollPitchYaw, PrecisionOfAngularVelocityFromRpyDtAndViceVersa) {
           ".*gimbal-lock.*";
       DRAKE_EXPECT_THROWS_MESSAGE(
           rpyDt = rpy.CalcRpyDtFromAngularVelocityInParent(wA),
-          std::runtime_error, expected_message);
+          expected_message);
       expected_message =
           "RollPitchYaw::CalcRpyDDtFromRpyDtAndAngularAccelInParent()"
           ".*gimbal-lock.*";
       DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
         rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alphaA),
-        std::runtime_error, expected_message);
+        expected_message);
     } else {
       ++number_of_precise_cases;
       rpyDt = rpy.CalcRpyDtFromAngularVelocityInParent(wA);
@@ -386,12 +386,12 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
               ".*gimbal-lock.*";
           DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
              rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alpha_AD_A),
-             std::runtime_error, expected_message);
+             expected_message);
           expected_message = "RollPitchYaw::CalcRpyDDtFromAngularAccelInChild()"
                              ".*gimbal-lock.*";
           DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt_verify =
              rpy.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D),
-             std::runtime_error, expected_message);
+             expected_message);
           continue;
         }
 
