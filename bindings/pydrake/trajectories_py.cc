@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/trajectories/bspline_trajectory.h"
+#include "drake/common/trajectories/path_parameterized_trajectory.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_pose.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
@@ -176,6 +177,27 @@ struct Impl {
                       args) {
                 return Class(std::get<0>(args), std::get<1>(args));
               }));
+      DefCopyAndDeepCopy(&cls);
+    }
+
+    {
+      using Class = PathParameterizedTrajectory<T>;
+      constexpr auto& cls_doc = doc.PathParameterizedTrajectory;
+      auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
+          m, "PathParameterizedTrajectory", param, cls_doc.doc);
+      cls  // BR
+          .def(py::init<const Trajectory<T>&, const Trajectory<T>&>(),
+              py::arg("path"), py::arg("parameterization"),
+              // Keep alive, reference: `self` keeps `path` alive.
+              py::keep_alive<1, 2>(),  // BR
+              // Keep alive, reference: `self` keeps `parameterization` alive.
+              py::keep_alive<1, 3>(),  // BR
+              cls_doc.ctor.doc)
+          .def("Clone", &Class::Clone, cls_doc.Clone.doc)
+          .def("path", &Class::path, py_rvp::reference_internal,
+              cls_doc.path.doc)
+          .def("parameterization", &Class::parameterization,
+              py_rvp::reference_internal, cls_doc.parameterization.doc);
       DefCopyAndDeepCopy(&cls);
     }
 
