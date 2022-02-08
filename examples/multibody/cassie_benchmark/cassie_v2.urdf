@@ -473,7 +473,7 @@ The original URDF is here:
 
   <!--
       **************************************************************
-      lumped masses for the foot crank and plantar rods--attaching them
+      lumped masses for the foot crank and plantar rods; attaching them
       to the foot at the heel location
       **************************************************************
   -->
