@@ -5,13 +5,8 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomDistribution, RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue
 from pydrake.symbolic import Expression, Variable
-from pydrake.systems.analysis import (
-    Simulator,
-    Simulator_,
-)
 from pydrake.systems.framework import (
     BasicVector,
     DiagramBuilder,
@@ -528,6 +523,10 @@ class TestGeneral(unittest.TestCase):
             mlp.GetWeights(params=params, layer=0), np.array([[1], [2]]))
         np.testing.assert_array_equal(
             mlp.GetBiases(params=params, layer=0), np.array([3, 4]))
+        mutable_params = mlp.GetMutableParameters(context=context)
+        mutable_params[:] = 3.0
+        np.testing.assert_array_equal(mlp.GetParameters(context),
+                                      np.full(mlp.num_parameters(), 3.0))
 
         global called_loss
         called_loss = False

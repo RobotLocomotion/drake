@@ -64,6 +64,10 @@ void BasicTest() {
   mlp.SetBiases(&params, 1, b);
   EXPECT_TRUE(CompareMatrices(mlp.GetWeights(params, 1), W));
   EXPECT_TRUE(CompareMatrices(mlp.GetBiases(params, 1), b));
+
+  VectorX<T> expected = VectorX<T>::Constant(mlp.num_parameters(), .3);
+  mlp.GetMutableParameters(context.get()) = expected;
+  EXPECT_TRUE(CompareMatrices(mlp.GetParameters(*context), expected));
 }
 
 GTEST_TEST(MultilayerPerceptronTest, Basic) {
