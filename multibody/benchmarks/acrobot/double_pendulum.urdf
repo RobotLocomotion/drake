@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot xmlns="https://drake.mit.edu" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="SimpleDoublePendulum">
+<robot name="SimpleDoublePendulum">
   <link name="base">
     <inertial>
       <origin xyz="0 0.0 0" rpy="0 0 0"/>

@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/matrix_utilities.h"
+#include "drake/multibody/fem/matrix_utilities.h"
 
 #include <gtest/gtest.h>
 
@@ -20,7 +20,7 @@ MatrixXd MakeMatrix(int rows, int cols) {
   MatrixXd A(rows, cols);
   for (int i = 0; i < rows; ++i) {
     for (int j = 0; j < cols; ++j) {
-      A(i, j) = cols * i + j;
+      A(i, j) = cols * i + j + 1.0;
     }
   }
   return A;

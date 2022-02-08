@@ -120,5 +120,9 @@ set(clp_md5 "f7c25af22d2f03398cbbdf38c8b4f6fd")
 set(clp_dlname "clp-${clp_version}.tar.gz")
 list(APPEND ALL_PROJECTS clp)
 
-# ipopt (TODO)
+# ipopt
+set(ipopt_version 3.11.9)
+set(ipopt_url "https://github.com/coin-or/Ipopt/archive/refs/tags/releases/${ipopt_version}.tar.gz")
+set(ipopt_md5 "55275c202072ad30db25d2b723ef9b7a")
+set(ipopt_dlname "ipopt-${ipopt_version}.tar.gz")
 list(APPEND ALL_PROJECTS ipopt)

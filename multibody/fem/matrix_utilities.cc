@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/matrix_utilities.h"
+#include "drake/multibody/fem/matrix_utilities.h"
 
 #include "drake/common/default_scalars.h"
 
@@ -7,6 +7,9 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
+// TODO(xuchenhan-tri): For T = AutoDiffXd, this function is wasting a lot of
+//  math computing the derivatives, only to throw them away at the end. Consider
+//  only accepting matrices with double as the scalar type.
 template <typename T>
 double CalcConditionNumberOfInvertibleMatrix(
     const Eigen::Ref<const MatrixX<T>>& A) {
@@ -17,6 +20,7 @@ double CalcConditionNumberOfInvertibleMatrix(
    See https://eigen.tuxfamily.org/dox/classEigen_1_1JacobiSVD.html. */
   const VectorX<T>& sigma = svd.singularValues();
   /* Prevents division by zero for singular matrix. */
+  DRAKE_DEMAND(sigma.size() > 0);
   const T& sigma_min = sigma(sigma.size() - 1);
   DRAKE_DEMAND(sigma_min > 0);
   const T& sigma_max = sigma(0);
@@ -49,6 +53,33 @@ template <typename T>
 void AddScaledRotationalDerivative(
     const Matrix3<T>& R, const Matrix3<T>& S, const T& scale,
     EigenPtr<Eigen::Matrix<T, 9, 9>> scaled_dRdF) {
+  /* Some notes on derivation on the derivative of the rotation matrix from
+   polar decomposition: we start with the result from section 2 of [McAdams,
+   2011] about the differential of the rotation matrix, which states that δR =
+   R[ε : ((tr(S)I − S)⁻¹(εᵀ : (RᵀδF)))]. (1) For simplicity of notation, we
+   define A = tr(S)I − S and B = RᵀδF In index notation, equation (1) then reads
+                 δRᵢⱼ = Rᵢₘεₘⱼₙ A⁻¹ₙₚ εₚₖₗBₖₗ. (2)
+   From there, we make use of the identity
+                 A⁻¹ₙₚ = 1/(2*det(A)) εₙₛᵣεₚₜᵤAₜₛAᵤᵣ.
+   Plugging it into (2) gives
+                 δRᵢⱼ = 1/(2*det(A)) * RᵢₘεₘⱼₙεₙₛᵣεₚₜᵤεₚₖₗAₜₛAᵤᵣBₖₗ.
+   Then, make use of the identity
+                 εₚₜᵤεₚₖₗ = δₜₖδᵤₗ − δₜₗδᵤₖ,
+   we get
+    δRᵢⱼ = 1/(2*det(A)) * Rᵢₘ(δₘₛδⱼᵣ − δₘᵣδⱼₛ)(δₜₖδᵤₗ − δₜₗδᵤₖ)AₜₛAᵤᵣBₖₗ.
+   Cleaning up deltas, we get:
+                 δRᵢⱼ = 1/det(A) * Rᵢₘ(AₖₘAₗⱼ−AₖⱼAₗₘ)Bₖₗ.
+   Finally, using ∂Bₖₗ/∂Fₐᵦ = Rₐₖδᵦₗ, we get
+                 δRᵢⱼ/∂Fₐᵦ = 1/det(A) * Rᵢₘ(AₖₘAₗⱼ−AₖⱼAₗₘ)Rₐₖδᵦₗ
+                          = 1/det(A) * Rᵢₘ(AₖₘAᵦⱼ− AₖⱼAᵦₘ)Rₐₖ
+                          = 1/det(A) * (RARᵀ)ᵢₐAⱼᵦ - (RA)ᵢᵦ(RA)ₐⱼ
+   where we used the fact that A is symmetric in the last equality.
+
+   [McAdams, 2011] McAdams, Aleka, et al. "Technical Notes for Efficient
+   elasticity for character skinning with contact and collisions." ACM SIGGRAPH
+   2011 papers. 2011. 1-12.
+   https://disneyanimation.com/publications/efficient-elasticity-for-character-skinning-with-contact-and-collisions.
+  */
   Matrix3<T> A = -S;
   A.diagonal().array() += S.trace();
   const T J = A.determinant();
@@ -142,9 +173,12 @@ VectorX<T> PermuteBlockVector(const Eigen::Ref<const VectorX<T>>& v,
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&CalcConditionNumberOfInvertibleMatrix<T>, &PolarDecompose<T>,
-     &AddScaledRotationalDerivative<T>, &CalcCofactorMatrix<T>,
-     &AddScaledCofactorMatrixDerivative<T>, &PermuteBlockVector<T>))
+    (&CalcConditionNumberOfInvertibleMatrix<T>,  // BR
+     &PolarDecompose<T>,                         // BR
+     &AddScaledRotationalDerivative<T>,          // BR
+     &CalcCofactorMatrix<T>,                     // BR
+     &AddScaledCofactorMatrixDerivative<T>,      // BR
+     &PermuteBlockVector<T>))
 
 }  // namespace internal
 }  // namespace fem

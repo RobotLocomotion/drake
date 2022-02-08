@@ -4,7 +4,7 @@ set -eu -o pipefail
 
 export DEBIAN_FRONTEND=noninteractive
 
-readonly BAZEL_VERSION=4.2.1
+readonly BAZEL_VERSION=5.0.0
 readonly BAZEL_ROOT=https://github.com/bazelbuild/bazel/releases/download
 
 # Install prerequisites.

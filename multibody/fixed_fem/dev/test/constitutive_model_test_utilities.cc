@@ -6,9 +6,9 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/fem/constitutive_model.h"
+#include "drake/multibody/fem/matrix_utilities.h"
 #include "drake/multibody/fixed_fem/dev/corotated_model.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
-#include "drake/multibody/fixed_fem/dev/matrix_utilities.h"
 
 namespace drake {
 namespace multibody {

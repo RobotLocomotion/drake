@@ -2,7 +2,7 @@
 
 set -eu -o pipefail
 
-readonly BAZEL_VERSION=4.2.1
+readonly BAZEL_VERSION=5.0.0
 readonly BAZEL_ROOT=https://github.com/bazelbuild/bazel/releases/download
 
 

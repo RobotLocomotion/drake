@@ -11,7 +11,7 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
-/* Some of the following methods involve calculations about a 4th order tensor
+/* Some of the following functions involve calculations about a 4th order tensor
 (call it A) of dimension 3*3*3*3. We follow the following convention to flatten
 the 4th order tensor into 9*9 matrices that are organized as follows:
 
@@ -36,8 +36,9 @@ Namely the ik-th entry in the jl-th block corresponds to the value Aᵢⱼₖₗ
      k(A) = σₘₐₓ / σₘᵢₙ
  where σₘₐₓ and σₘᵢₙ are the largest and smallest singular values (in magnitude)
  of A.
- @note This function is intended to be used for testing and may be slow on large
- matrices.
+ @note This function uses Eigen::JacobiSVD under the hood and may be slow on
+ large matrices. See
+ https://eigen.tuxfamily.org/dox/group__DenseDecompositionBenchmark.html.
  @pre A is invertible.
  @tparam_nonsymbolic_scalar */
 template <typename T>
@@ -52,57 +53,34 @@ template <typename T>
 void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
                     EigenPtr<Matrix3<T>> S);
 
-/* Some notes on derivation on the derivative of the rotation matrix from polar
- decomposition: we start with the result from section 2 of [McAdams, 2011] about
- the differential of the rotation matrix, which states that
-               δR = R[ε : ((tr(S)I − S)⁻¹(εᵀ : (RᵀδF)))]. (1)
- For simplicity of notation, we define A = tr(S)I − S and B = RᵀδF
- In index notation, equation (1) then reads
-               δRᵢⱼ = Rᵢₘεₘⱼₙ A⁻¹ₙₚ εₚₖₗBₖₗ. (2)
- From there, we make use of the identity
-               A⁻¹ₙₚ = 1/(2*det(A)) εₙₛᵣεₚₜᵤAₜₛAᵤᵣ.
- Plugging it into (2) gives
-               δRᵢⱼ = 1/(2*det(A)) * RᵢₘεₘⱼₙεₙₛᵣεₚₜᵤεₚₖₗAₜₛAᵤᵣBₖₗ.
- Then, make use of the identity
-               εₚₜᵤεₚₖₗ = δₜₖδᵤₗ − δₜₗδᵤₖ,
- we get
-  δRᵢⱼ = 1/(2*det(A)) * Rᵢₘ(δₘₛδⱼᵣ − δₘᵣδⱼₛ)(δₜₖδᵤₗ − δₜₗδᵤₖ)AₜₛAᵤᵣBₖₗ.
- Cleaning up deltas, we get:
-               δRᵢⱼ = 1/det(A) * Rᵢₘ(AₖₘAₗⱼ−AₖⱼAₗₘ)Bₖₗ.
- Finally, using ∂Bₖₗ/∂Fₐᵦ = Rₐₖδᵦₗ, we get
-               δRᵢⱼ/∂Fₐᵦ = 1/det(A) * Rᵢₘ(AₖₘAₗⱼ−AₖⱼAₗₘ)Rₐₖδᵦₗ
-                        = 1/det(A) * Rᵢₘ(AₖₘAᵦⱼ− AₖⱼAᵦₘ)Rₐₖ
-                        = 1/det(A) * (RARᵀ)ᵢₐAⱼᵦ - (RA)ᵢᵦ(RA)ₐⱼ
- where we used the fact that A is symmetric in the last equality.
-
- [McAdams, 2011] McAdams, Aleka, et al. "Technical Notes for Efficient
- elasticity for character skinning with contact and collisions." ACM SIGGRAPH
- 2011 papers. 2011. 1-12.
- https://disneyanimation.com/publications/efficient-elasticity-for-character-skinning-with-contact-and-collisions.
-*/
-
 /* Computes the derivative of the rotation matrix from the polar decomposition
  (see PolarDecompose()) with respect to the original matrix.
- @param[in] R            The rotation matrix in the polar decomposition F = RS.
- @param[in] S            The symmetric matrix in the polar decomposition F = RS.
- @param[in] scale        The scalar multiple of the result.
- @param[out] scaled_dRdF The variable to which scale * dR/dF is added.
+ @param[in] R               The rotation matrix in the polar decomposition
+                            F = RS.
+ @param[in] S               The symmetric matrix in the polar decomposition
+                            F = RS.
+ @param[in] scale           The scalar multiple of the result.
+ @param[in,out] scaled_dRdF The variable to which scale * dR/dF is added.
  @pre tr(S)I − S is invertible.
+ @pre scaled_dRdF != nullptr.
  @tparam_nonsymbolic_scalar */
 template <typename T>
 void AddScaledRotationalDerivative(
     const Matrix3<T>& R, const Matrix3<T>& S, const T& scale,
     EigenPtr<Eigen::Matrix<T, 9, 9>> scaled_dRdF);
 
-/* Calculates the cofactor matrix of the given input 3-by-3 matrix M. */
+/* Calculates the cofactor matrix of the given input 3-by-3 matrix M.
+ @pre cofactor != nullptr.
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 void CalcCofactorMatrix(const Matrix3<T>& M, EigenPtr<Matrix3<T>> cofactor);
 
 /* Computes the derivative of the cofactor matrix C of a 3-by-3 matrix M
  with respect to the matrix M itself.
- @param[in] M            The input matrix.
- @param[in] scale        The scalar multiple of the result.
- @param[out] scaled_dCdF The variable to which scale * dC/dM is added.
+ @param[in] M               The input matrix.
+ @param[in] scale           The scalar multiple of the result.
+ @param[in,out] scaled_dCdF The variable to which scale * dC/dM is added.
+ @pre scaled_dCdM != nullptr.
  @tparam_nonsymbolic_scalar */
 template <typename T>
 void AddScaledCofactorMatrixDerivative(
@@ -110,7 +88,7 @@ void AddScaledCofactorMatrixDerivative(
     EigenPtr<Eigen::Matrix<T, 9, 9>> scaled_dCdM);
 
 /* Given a size 3N vector with block structure with size 3 block entries Bᵢ
- where i ∈ V = {0, ..., N-1} and a permutation P on V, this method builds the
+ where i ∈ V = {0, ..., N-1} and a permutation P on V, this function builds the
  permuted vector with size 3 block entries C's such that Cₚ₍ᵢ₎ = Bᵢ.
  For example, suppose the input `v` is given by
        a a a b b b c c c
@@ -121,7 +99,7 @@ permutation will be:
 @param[in] block_permutation  block_permutation[i] gives the index of the
                               permuted block whose original index is `i`.
 @pre v.size() % 3 == 0.
-@pre block_permutation is a permutation of {0, 1, ..., v.size()/3-1}.
+@pre block_permutation is a permutation of {0, 1, ..., v.size()/3 - 1}.
 @tparam_nonsymbolic_scalar */
 template <typename T>
 VectorX<T> PermuteBlockVector(const Eigen::Ref<const VectorX<T>>& v,
