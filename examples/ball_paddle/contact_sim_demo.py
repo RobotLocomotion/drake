@@ -2,10 +2,6 @@ import pydrake.examples.ball_paddle as mut
 
 from pydrake.multibody.plant import (
     MultibodyPlant_, )
-from pydrake.autodiffutils import (
-    AutoDiffXd,
-    initializeAutoDiffGivenGradientMatrix,
-)
 
 from pydrake.geometry import (
     SceneGraph_, )
@@ -50,20 +46,12 @@ def simulate_diagram(diagram, ball_paddle, state_logger, ball_init_position,
     qv_init_val = np.concatenate((q_init_val, v_init_val))
     # Take the gradient of the initial ball position.
     q_init_gradient = np.vstack((np.zeros((4, 3)), np.eye(3)))
-    q_init_ad = initializeAutoDiffGivenGradientMatrix(q_init_val,
-                                                      q_init_gradient)
-    v_init_ad = np.array([AutoDiffXd(v_init_val[i]) for i in range(3)])
-    qv_init_ad = np.concatenate((q_init_ad, v_init_ad))
     simulator = Simulator_[T](diagram)
 
     plant_context = diagram.GetSubsystemContext(ball_paddle.plant(),
                                                 simulator.get_context())
-    if T == AutoDiffXd:
-        ball_paddle.plant().SetPositionsAndVelocities(plant_context,
-                                                      qv_init_ad)
-    elif T == float:
-        ball_paddle.plant().SetPositionsAndVelocities(plant_context,
-                                                      qv_init_val)
+    ball_paddle.plant().SetPositionsAndVelocities(plant_context,
+                                                  qv_init_val)
     simulator.get_mutable_context().SetTime(T(0.))
     state_log = state_logger.FindMutableLog(simulator.get_mutable_context())
     state_log.Clear()
