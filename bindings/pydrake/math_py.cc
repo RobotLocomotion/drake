@@ -201,10 +201,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.IsValid.doc_0args)
         .def("IsExactlyIdentity", &Class::IsExactlyIdentity,
             cls_doc.IsExactlyIdentity.doc)
+        .def("IsNearlyIdentity", &Class::IsNearlyIdentity, py::arg("tolerance"),
+            cls_doc.IsNearlyIdentity.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
         .def("IsIdentityToInternalTolerance",
-            &Class::IsIdentityToInternalTolerance,
-            cls_doc.IsIdentityToInternalTolerance.doc)
-        // Does not return the quality_factor
+            WrapDeprecated(cls_doc.IsIdentityToInternalTolerance.doc_deprecated,
+                &Class::IsIdentityToInternalTolerance),
+            cls_doc.IsIdentityToInternalTolerance.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls                     // BR
+                            // Does not return the quality_factor
         .def_static(
             "ProjectToRotationMatrix",
             [](const Matrix3<T>& M) {

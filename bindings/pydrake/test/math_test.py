@@ -268,7 +268,7 @@ class TestMath(unittest.TestCase):
         self.assertIsInstance(angle_axis, AngleAxis)
         R_AngleAxis = RotationMatrix(angle_axis)
         R_I = R.inverse().multiply(R_AngleAxis)
-        numpy_compare.assert_equal(R_I.IsIdentityToInternalTolerance(), True)
+        numpy_compare.assert_equal(R_I.IsNearlyIdentity(2E-15), True)
         # - Inverse, transpose, projection
         R_I = R.inverse().multiply(R)
         numpy_compare.assert_float_equal(R_I.matrix(), np.eye(3))
@@ -299,7 +299,10 @@ class TestMath(unittest.TestCase):
         numpy_compare.assert_equal(R.IsValid(), True)
         R = RotationMatrix()
         numpy_compare.assert_equal(R.IsExactlyIdentity(), True)
-        numpy_compare.assert_equal(R.IsIdentityToInternalTolerance(), True)
+        numpy_compare.assert_equal(R.IsNearlyIdentity(0.0), True)
+        # TODO(2022-06-01) Remove with completion of deprecation.
+        with catch_drake_warnings(expected_count=1):
+            numpy_compare.assert_equal(R.IsIdentityToInternalTolerance(), True)
         # - Repr.
         z = repr(T(0.0))
         i = repr(T(1.0))
