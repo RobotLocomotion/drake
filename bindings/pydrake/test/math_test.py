@@ -300,6 +300,7 @@ class TestMath(unittest.TestCase):
         R = RotationMatrix()
         numpy_compare.assert_equal(R.IsExactlyIdentity(), True)
         numpy_compare.assert_equal(R.IsNearlyIdentity(0.0), True)
+        numpy_compare.assert_equal(R.IsNearlyIdentity(tolerance = 1E-15), True)
         # TODO(2022-06-01) Remove with completion of deprecation.
         with catch_drake_warnings(expected_count=1):
             numpy_compare.assert_equal(R.IsIdentityToInternalTolerance(), True)
