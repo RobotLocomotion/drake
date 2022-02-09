@@ -40,6 +40,7 @@ drake_cc_package_library(
         ":model_directives",
         ":package_map",
         ":parser",
+        ":parsing_workspace",
         ":process_model_directives",
         ":scoped_names",
     ],
@@ -170,9 +171,8 @@ drake_cc_library(
     ],
     deps = [
         ":detail_misc",
-        ":package_map",
+        ":parsing_workspace",
         ":scoped_names",
-        "//multibody/plant",
         "@fmt",
         "@tinyxml2",
     ],
@@ -205,6 +205,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "parsing_workspace",
+    hdrs = [
+        "parsing_workspace.h",
+    ],
+    visibility = [
+        "//visibility:public",
+    ],
+    deps = [
+        ":package_map",
+        "//common:diagnostic_policy",
+        "//geometry:scene_graph",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
     name = "parser",
     srcs = [
         "parser.cc",
@@ -218,6 +234,8 @@ drake_cc_library(
     deps = [
         ":detail_sdf_parser",
         ":detail_urdf_parser",
+        ":parsing_workspace",
+        "//common:diagnostic_policy",
         "//common:filesystem",
     ],
 )
