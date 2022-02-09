@@ -407,13 +407,13 @@ class RigidTransform {
   /// (e.g., the magnitude of a characteristic position vector) by an epsilon
   /// (e.g., RotationMatrix::get_internal_tolerance_for_orthonormality()).
   /// @returns `true` if the RotationMatrix portion of `this` satisfies
-  /// RotationMatrix::IsIdentityToInternalTolerance() and if the position vector
-  /// portion of `this` is equal to zero vector within `translation_tolerance`.
+  /// RotationMatrix::IsNearlyIdentity() and if the position vector portion of
+  /// `this` is equal to zero vector within `translation_tolerance`.
   /// @see IsExactlyIdentity().
   boolean<T> IsNearlyIdentity(double translation_tolerance) const {
     const T max_component = translation().template lpNorm<Eigen::Infinity>();
     return max_component <= translation_tolerance &&
-        rotation().IsIdentityToInternalTolerance();
+        rotation().IsNearlyIdentity();
   }
 
   DRAKE_DEPRECATED("2022-06-01", "Use RigidTransform::IsNearlyIdentity()")

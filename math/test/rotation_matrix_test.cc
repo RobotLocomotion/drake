@@ -79,6 +79,24 @@ GTEST_TEST(RotationMatrix, RotationMatrixConstructor) {
   }
 }
 
+// Test IsIdentity() and IsNearlyIdentity().
+GTEST_TEST(RotationMatrix, IsIdentity) {
+  RotationMatrix<double> R;  // Default constructor is identity matrix.
+  EXPECT_TRUE(R.IsExactlyIdentity());
+  EXPECT_TRUE(R.IsNearlyIdentity(0.0));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_TRUE(R.IsIdentityToInternalTolerance());
+#pragma GCC diagnostic pop
+
+  // Test non-identity matrix.
+  const double theta = 256 * kEpsilon;
+  R = RotationMatrix<double>::MakeZRotation(theta);
+  EXPECT_FALSE(R.IsExactlyIdentity());
+  EXPECT_FALSE(R.IsNearlyIdentity());
+  EXPECT_TRUE(R.IsNearlyIdentity(512 * kEpsilon));
+}
+
 // Test making a RotationMatrix from three right-handed orthogonal unit vectors.
 GTEST_TEST(RotationMatrix, MakeFromOrthonormalRowsOrColumns) {
   const double cos_theta = std::cos(0.5);
@@ -196,7 +214,7 @@ GTEST_TEST(RotationMatrix, SetRotationMatrix) {
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
   if (kDrakeAssertIsArmed) {
-    EXPECT_THROW(R.set(m), std::logic_error);
+    EXPECT_THROW(R.set(m), std::exception);
   } else {
     DRAKE_EXPECT_NO_THROW(R.set(m));
   }
@@ -477,7 +495,7 @@ GTEST_TEST(RotationMatrix, IsExactlyIdentity) {
   DRAKE_EXPECT_NO_THROW(R.set(m));
   m(0, 2) = 129 * kEpsilon;
   if (kDrakeAssertIsArmed) {
-    EXPECT_THROW(R.set(m), std::logic_error);
+    EXPECT_THROW(R.set(m), std::exception);
   } else {
     DRAKE_EXPECT_NO_THROW(R.set(m));
   }
@@ -578,7 +596,7 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   EXPECT_TRUE(-64 * kEpsilon * kEpsilon * kEpsilon < m.determinant() &&
                m.determinant() < 0);
   EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
-               &quality_factor), std::logic_error);
+               &quality_factor), std::exception);
 
   // Test a 3x3 orthogonal matrix but whose determinant is negative (-1).
   // clang-format off
@@ -588,7 +606,7 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   // clang-format on
   EXPECT_TRUE(std::abs(m.determinant() + 1) < 64 * kEpsilon);
   EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
-               &quality_factor), std::logic_error);
+               &quality_factor), std::exception);
 
   // Check that an exception is thrown if the resulting rotation matrix would
   // have been improper (the resulting rotation matrix would have a determinant
@@ -605,7 +623,7 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   // clang-format on
   EXPECT_TRUE(-1600 * kEpsilon < m.determinant() && m.determinant() < 0);
   EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
-               &quality_factor), std::logic_error);
+               &quality_factor), std::exception);
 
   // Check that no exception is thrown if the resulting rotation matrix is a
   // valid rotation matrix and is proper (meaning the resulting rotation matrix
@@ -635,7 +653,7 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   // clang-format on
   EXPECT_LT(m.determinant(), 0);
   EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
-               &quality_factor), std::logic_error);
+               &quality_factor), std::exception);
 
   // Check that returned rotation matrix is orthonormal.  In other words, its
   // transpose should be equal to its inverse so  that R * Rᵀ = IdentityMatrix.
@@ -920,7 +938,7 @@ GTEST_TEST(RotationMatrixTest, OperatorMultiplyByMatrix3X) {
     Eigen::MatrixXd m_7x8(7, 8);
     m_7x8 = Eigen::MatrixXd::Identity(7, 8);
     Eigen::MatrixXd bad_matrix_multiply;
-    EXPECT_THROW(bad_matrix_multiply = R_AB * m_7x8, std::logic_error);
+    EXPECT_THROW(bad_matrix_multiply = R_AB * m_7x8, std::exception);
     DRAKE_EXPECT_THROWS_MESSAGE(
         bad_matrix_multiply = R_AB * m_7x8,
         "Error: Inner dimension for matrix multiplication is not 3.");
@@ -1036,12 +1054,12 @@ TEST_F(RotationMatrixConversionTests, QuaternionToRotationMatrix) {
   if (kDrakeAssertIsArmed) {
     // A zero quaternion should throw an exception.
     const Eigen::Quaterniond q_zero(0, 0, 0, 0);
-    EXPECT_THROW(const RotationMatrix<double> R_bad(q_zero), std::logic_error);
+    EXPECT_THROW(const RotationMatrix<double> R_bad(q_zero), std::exception);
 
     // A quaternion containing a NaN throw an exception.
     double nan = std::numeric_limits<double>::quiet_NaN();
     const Eigen::Quaterniond q_nan(nan, 0, 0, 0);
-    EXPECT_THROW(const RotationMatrix<double> R_nan(q_nan), std::logic_error);
+    EXPECT_THROW(const RotationMatrix<double> R_nan(q_nan), std::exception);
   }
 }
 
@@ -1072,12 +1090,12 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
     // An AngleAxis with a zero unit vector should throw an exception.
     const Eigen::AngleAxisd aa_zero(5, Vector3d(0, 0, 0));
     EXPECT_THROW(const RotationMatrix<double> R_zero(aa_zero),
-        std::logic_error);
+        std::exception);
 
     // An AngleAxis containing a NaN should throw an exception.
     double nan = std::numeric_limits<double>::quiet_NaN();
     const Eigen::AngleAxisd aa_nan(nan, Vector3d(1, 0, 0));
-    EXPECT_THROW(const RotationMatrix<double> R_nan(aa_nan), std::logic_error);
+    EXPECT_THROW(const RotationMatrix<double> R_nan(aa_nan), std::exception);
   }
 }
 

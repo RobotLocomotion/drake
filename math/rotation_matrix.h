@@ -12,6 +12,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
@@ -42,13 +43,12 @@ struct DoNotInitializeMemberFields {};
 /// @note This class does not store the frames associated with a rotation matrix
 /// nor does it enforce strict proper usage of this class with vectors.
 ///
-/// @note When assertions are enabled, several methods in this class
-/// do a validity check and throw an exception (std::exception) if the
-/// rotation matrix is invalid.  When assertions are disabled,
-/// many of these validity checks are skipped (which helps improve speed).
-/// In addition, these validity tests are only performed for scalar types for
-/// which drake::scalar_predicate<T>::is_bool is `true`. For instance, validity
-/// checks are not performed when T is symbolic::Expression.
+/// @note When assertions are enabled, several methods in this class perform a
+/// validity check and throw std::exception if the rotation matrix is invalid.
+/// When assertions are disabled, many of these validity checks are skipped
+/// (which helps improve speed). These validity tests are only performed for
+/// scalar types for which drake::scalar_predicate<T>::is_bool is `true`. For
+/// instance, validity checks are not performed when T is symbolic::Expression.
 ///
 /// @authors Paul Mitiguy (2018) Original author.
 /// @authors Drake team (see https://drake.mit.edu/credits).
@@ -557,15 +557,23 @@ class RotationMatrix {
   boolean<T> IsValid() const { return IsValid(matrix()); }
 
   /// Returns `true` if `this` is exactly equal to the identity matrix.
+  /// @see IsNearlyIdentity().
   boolean<T> IsExactlyIdentity() const {
     return matrix() == Matrix3<T>::Identity();
   }
 
-  /// Returns true if `this` is equal to the identity matrix to within the
-  /// threshold of get_internal_tolerance_for_orthonormality().
+  /// Returns true if `this` is within tolerance of the identity RigidTransform.
+  /// @param[in] tolerance non-negative number that is generally the default
+  /// value, namely RotationMatrix::get_internal_tolerance_for_orthonormality().
+  /// @see IsExactlyIdentity().
+  boolean<T> IsNearlyIdentity(
+      double tolerance = get_internal_tolerance_for_orthonormality()) const {
+    return IsNearlyEqualTo(matrix(), Matrix3<T>::Identity(), tolerance);
+  }
+
+  DRAKE_DEPRECATED("2022-06-01", "Use RotationMatrix::IsNearlyIdentity()")
   boolean<T> IsIdentityToInternalTolerance() const {
-    return IsNearlyEqualTo(matrix(), Matrix3<T>::Identity(),
-                           get_internal_tolerance_for_orthonormality());
+    return IsNearlyIdentity();
   }
 
   /// Compares each element of `this` to the corresponding element of `other`
@@ -574,6 +582,7 @@ class RotationMatrix {
   /// @param[in] tolerance maximum allowable absolute difference between the
   /// matrix elements in `this` and `other`.
   /// @returns `true` if `‖this - other‖∞ <= tolerance`.
+  /// @see IsExactlyEqualTo().
   boolean<T> IsNearlyEqualTo(const RotationMatrix<T>& other,
                              double tolerance) const {
     return IsNearlyEqualTo(matrix(), other.matrix(), tolerance);
@@ -584,6 +593,7 @@ class RotationMatrix {
   /// @param[in] other %RotationMatrix to compare to `this`.
   /// @returns true if each element of `this` is exactly equal to the
   /// corresponding element in `other`.
+  /// @see IsNearlyEqualTo().
   boolean<T> IsExactlyEqualTo(const RotationMatrix<T>& other) const {
     return matrix() == other.matrix();
   }
