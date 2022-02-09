@@ -1,188 +1,775 @@
 """
 A prototype glTF render server.  Users seeking to utilize their own renderer
 as a replacement for the sample VTK based C++ executable can simply change the
-implementation in the ``render_callback`` method.
+implementation in the :func:`render_callback` method.  Briefly refer to the
+class documentation of :class:`RenderRequest` to familiarize yourself with what
+attributes are parsed and made available for you.  Then replace the
+implementation of :func:`render_callback` with your own implementation to call
+your renderer of choice.
 
 The dependent package requirements for running this server::
 
     flask>=1.1
     gunicorn
 
-.. note::
-
+Note:
     If using ``apt-get`` to manage your python packages, you will want to
     ``apt-get install gunicorn`` (so that the ``gunicorn`` executable becomes
     available).
 
-Developing this file?  See ``"__main__"`` below (``devcheck``).
+Tip:
+    While developing your server, it can be helpful to wield the ``FLASK_ENV``
+    environment variable.  Its default value is ``"production"``, but setting
+    it to ``"development"`` can be helpful in iteratively developing the file.
+    This environment variable is to be set **before** launching the server,
+    examples can be found `in the flask documentation <flask_env_>`_.
+
+    .. _flask_env:
+        https://flask.palletsprojects.com/en/2.0.x/config/#environment-and-debug-features
+
+    In addition to the other benefits of a development server for testing, when
+    you make changes to this file and save to disk the ``flask`` runner will
+    automatically detect this and reload the server (this will not happen with
+    wsgi wrappers like ``gunicorn``).
+
+    Lastly, the server implemented here provides a brief html page rendering
+    when a user issues a ``GET /`` (e.g., you visit ``localhost:8000`` in your
+    browser).  When ``FLASK_ENV="development"``, this server will include the
+    path to the :data:`SERVER_CACHE` so you may easily navigate there in your
+    terminal if desired.  Information about the server directory structure
+    should not be revealed in production.
+
+Warning:
+    There are some global variables declared below, e.g., ``RENDER_ENDPOINT``.
+    It is acceptable to use simple "readonly" global variables like strings and
+    booleans, but in general global variables cannot be changed or have their
+    state shared between processes.  Do not attempt to overwrite their values
+    during server execution -- halt the server, change the values, and restart.
+
+    For example, avoid creating a list or dictionary at module scope and
+    modifying it from within one of the methods below to save any kind state.
+    This will only work in the single threaded development server provided by
+    flask, but will not be coherent when using a wsgi wrapper such as
+    ``gunicorn``.  If your needs require shared state between server processes,
+    you will want to use a proper database or implement a scheme using
+    multiprocessing.
 """
+# NOTE: Developing this file?  See ``"__main__"`` below (``devcheck``).
 import atexit
+import datetime
+from enum import Enum
+from hashlib import sha256
+from pathlib import Path
+import itertools
 import shutil
 import subprocess
 import sys
 import tempfile
-
 from textwrap import dedent
-from typing import Any, Dict, Optional, Union, Tuple
+from typing import Dict, List, Union, Tuple, TYPE_CHECKING
 
-from hashlib import sha256
-from pathlib import Path
+from flask import Flask, send_file
 
-from flask import Flask, request, send_file
+if TYPE_CHECKING:
+    from flask import Request as request
+else:
+    from flask import request
 
 
 app = Flask(__name__)
 """The main flask application."""
 
-this_file_dir = Path(__file__).parent.absolute()
+RENDER_ENDPOINT = "/render"
+"""Where the client will upload files to / wait for an image response from.
+
+If on the drake side of your application you seek to transmit files to an
+alternative location, make sure to update this value accordingly.
+
+Warning:
+    If you change this value to ``/``, then you must delete or comment out the
+    :func:`root` method below.
+"""
+
+NO_CLEANUP = False
+"""Whether or not the server should cleanup its local cache.
+
+For debugging purposes, set this to ``True`` to prevent the deletion of scene
+files / rendered images.  See also: :func:`delete_server_cache`,
+:func:`RenderRequest._delete_cache_files_older_than`.
+"""
+
+THIS_FILE_DIR = Path(__file__).parent.absolute()
 """The directory containing this file."""
 
-server_cache = this_file_dir / "cache"
+SERVER_CACHE = THIS_FILE_DIR / "cache"
 """Where to store data files during the execution of the program."""
 try:
-    server_cache.mkdir(exist_ok=True)
+    SERVER_CACHE.mkdir(exist_ok=True)
 except Exception as e:
     sys.stderr.write(
-        f"Unable to create cache directory '{str(server_cache)}': {e}\n"
+        f"Unable to create cache directory '{str(SERVER_CACHE)}': {e}\n"
     )
     sys.exit(1)
 
 
-def json_code_response(
-    *, error: bool, code: int, message: Optional[str] = None, **kwargs
-) -> Tuple[Dict[str, Any], int]:
-    """Convenience wrapper to return json data and error codes.
+###############################################################################
+# Helper classes and methods.
+###############################################################################
+def compute_hash(path: Union[str, Path], block_size: int = 1024 * 1024) -> str:
+    """Incrementally compute and return the sha256 of the specified ``path``.
 
-    Flask will let you return a tuple ``{dictionary}, int`` and will
-    automatically send a json response based off of the dictionary as well as
-    set the error code.
     Args:
-        error: ``True`` if success, ``False`` otherwise.  User is responsible
-            for making sure that ``error`` and ``code`` agree.
-        code: The HTTP response code to send.
-        message: An optional text response message to provide to the client,
-            e.g., what the error was.  Users are encouraged to always include
-            a message when ``code != 200``.
-        kwargs: Any additional key-value pairs to add to the dictionary return.
-            Example::
+        path: The file to compute the sha256 hash of.
+        block_size: Size of block in bytes to read.  Default: ``1024 * 1024``.
 
-                return json_code_response(error=False, code=200, sha256="...")
+    Raises:
+        ValueError: If the ``block_size`` is not greater than 0.
+        IOError: If the file cannot be loaded.
 
     Returns:
-        This method usually just creates this return::
-
-            return {"error": error, "code": code, "message": message}, code
-
-        If any ``kwargs`` are provided, they will be included in the return.
-        It is a convenience, so that the dictionary and code tuple does not
-        need to be replicated each time.
+        The computed sha256 sum as a string.
     """
-    ret: Dict[str, Any] = {"error": error, "code": code, **kwargs}
-    if message is not None:
-        ret["message"] = message
-    return ret, code
+    if block_size <= 0:
+        raise ValueError(
+            f"compute_hash: block_size={block_size} not valid, must be "
+            "greater than 0."
+        )
+
+    h = sha256()
+    with open(path, "rb") as f:
+        while True:
+            data = f.read(block_size)
+            if not len(data):
+                break
+
+            h.update(data)
+
+    return h.hexdigest()
 
 
-def render_callback(
-    *,
-    input_scene: str,
-    output_path: str,
-    scene_id: str,
-    image_type: str,
-    width: str,
-    height: str,
-    near: str,
-    far: str,
-    focal_x: str,
-    focal_y: str,
-    fov_x: str,
-    fov_y: str,
-    center_x: str,
-    center_y: str,
-    min_depth: str,
-    max_depth: str,
-) -> Optional[Tuple[Dict[str, Any], int]]:
+@atexit.register
+def delete_server_cache():
+    """Delete the :data:`SERVER_CACHE` folder upon exit (e.g., ``ctrl+C``).
+    See also: :data:`NO_CLEANUP`.
     """
-    Invoke the renderer to produce the specified output path.
+    if not NO_CLEANUP:
+        if SERVER_CACHE.is_dir():
+            shutil.rmtree(SERVER_CACHE, ignore_errors=True)
 
-    The ``render`` method converts inputs to ``str`` for convenient use with
-    ``subprocess.check_call`` or ``subprocess.run``.
+
+class RenderError(Exception):
+    """An exception class used for signaling to calling methods what type of
+    message and HTTP response code should be sent back to the client.  Any
+    issues that arise in the :func:`render_callback` should raise this type of
+    error populating with an informative ``message`` and ``code``.  The calling
+    code will communicate this message and code back to the client.
+
+    Attributes:
+        message (str): The exception message to communicate to the client.
+        code (int): The HTTP response code to communicate to the client.  If
+            not provided, it will be ``400``.  If a value of less than ``400``
+            is provided, it will be set to ``500`` (internal server error).
+            This exception is only to be used to indicate failure.
+    """
+
+    def __init__(self, message: str, code: int = 400):
+        super().__init__(message)
+        self.message = message
+        self.code = code
+        # Do not allow successful HTTP codes to be used, this is an Error.
+        if self.code < 400:
+            self.code = 500
+
+    def flask_json_code_response(self, **kwargs):
+        """Return a ``(json_dict, http_return_code)`` response populated with::
+
+            (
+                {
+                    error=True,
+                    message=self.message,
+                    code=self.code,
+                    **kwargs
+                },
+                self.code
+            )
+
+        Flask supports returning a (dictionary, integer http code) from a
+        request, this method simply creates this return.  Users may provide
+        additional ``**kwargs`` if needed, however generally speaking the
+        relevant information to communicate to the client should be provided
+        in ``self.message`` at the time the exception was raised.
+        """
+        return (
+            {
+                "error": True,
+                "message": self.message,
+                "code": self.code,
+                **kwargs,
+            },
+            self.code,
+        )
+
+
+class FieldType(Enum):
+    """A simple enumeration to symbolically describe the type expected in a
+    given ``<form>`` field entry.
+    """
+
+    File = 0
+    """Represents ``<input type="file" ...>``."""
+    String = 1
+    """Represents ``<input type="text" ...>``."""
+    Int = 2
+    """Represents ``<input type="number" ...>``."""
+    Float = 3
+    """Represents ``<input type="number" ...>``."""
+
+
+def html_input_type(field_type: FieldType) -> str:
+    """Return the value to use for ``type`` in an html ``<input>`` tag."""
+    if field_type == FieldType.File:
+        return "file"
+    elif field_type in {FieldType.Int, FieldType.Float}:
+        return "number"
+    else:  # field_type := FieldType.String
+        return "text"
+
+
+class RenderRequest:
+    """A ``RenderRequest`` instance wraps around the ``flask.request`` provided
+    to :func:`render_endpoint` and validates all of the data provided by the
+    client on the anticipated ``<form>`` entries.  In the
+    :func:`render_callback` method, a user may assume that the following
+    attributes have all been validated and their values are sensible.
+
+    Note:
+        When using functions such as :func:`python:subprocess.run` or
+        :func:`python:subprocess.check_call`, be sure to convert any non-string
+        attributes to a string in the list of command line arguments.  They are
+        kept as numeric types in the attributes to facilitate a user performing
+        any additional logic they need with the provided parameters before
+        issuing the call to their renderer (e.g., creating a perspective
+        projection matrix).
 
     Args:
-        input_scene: Path to the scene to render.
-        output_path: Where the ``render`` method expects a successful render to
-            store the rendered image.
-        scene_id: The sha256 sum of the scene being rendered.  This input may
-            or may not be useful depending on your server and render choices.
-        image_type: The type of image being rendered, one of ``color``,
-            ``depth``, or ``label``.  This input may or may not be useful
-            depending on your server and render choices.
-        width: The desired output width of the rendered image.  Guaranteed to
-            be greater than zero.
-        height: The desired output height of the rendered image.  Guaranteed to
-            be greater than zero.
-        near: The near plane of the camera.
-        far: The far clipping plane of the camera.
-        focal_x: The focal length x, in pixels.
-        focal_y: The focal length y, in pixels.
-        fov_x: The field of view in the x-direction (in radians).
-        fov_y: The field of view in the y-direction (in radians).
-        center_x: The principal point's x coordinate in pixels.
-        center_y: The principal point's y coordinate in pixels.
-        min_depth: The minimum depth range, only meaningful when the provided
-            image_type is ``depth``.  ``-1.0`` for non-depth renders.
-        max_depth: The maximum depth range, only meaning ful when the provided
-            image_type is ``depth``.  ``-1.0`` for non-depth renders.
+        flask_request (``flask.request``): The flask request instance provided
+            to the :func:`render_endpoint` method.
+        log_to_console: Whether or not there should be any ``print``
+            statements to the server console, e.g., to where the file uploaded
+            by the client has been saved.  Default: ``True`` (useful for
+            debugging).
 
-    Return:
-        A successful render should ``return None``.  This indicates that
-        ``output_path`` contains a valid image to respond to the client with.
+    Attributes:
+        request (``flask.request``): The input ``flask_request`` saved for
+            availability in the event a user desires to perform additional
+            validation or manipulation.
+        log_to_console (bool): The input ``log_to_console``.
+        scene_path (pathlib.Path): The path to where the uploaded file has
+            been saved.
+        scene_sha256 (str): The sha256 hash of the scene file stored at
+            ``self.scene_path``.  This value is validated after loading the
+            scene file from the ``<form>``.
+        image_type (str): The type of scene being rendered.  One of ``color``,
+            ``depth``, or ``label``.
+        min_depth (float): The minimum depth range of the sensor.  Default is
+            ``-1.0``, its value is only populated when
+            :attr:`~RenderRequest.image_type` is `"depth"`.
+        max_depth (float): The maximum depth range of the sensor.  Default is
+            ``-1.0``, its value is only populated when
+            :attr:`~RenderRequest.image_type` is `"depth"`.
+        width (int): The width of the desired rendered image in pixels.
+        height (int): The height of the desired rendered image in pixels.
+        near (float): The near clipping plane of the camera.
+        far (float): The far clipping plane of the camera.
+        focal_x (float): The focal length x, in pixels.
+        focal_y (float): The focal length y, in pixels.
+        fov_x (float): The field of view in the x-direction (in radians).
+        fov_y (float): The field of view in the y-direction (in radians).
+        center_x (float): The principal point's x coordinate in pixels.
+        center_y (float): The principal point's y coordinate in pixels.
 
-        If there is an error that needs to be returned, a user may do for
-        example::
+    Raises:
+        RenderError: If anything goes wrong during construction from the
+            provided request, such as missing ``<form>`` entries, or invalid
+            values such as ``image_type="depth"`` but no ``min_depth`` or
+            ``max_depth`` provided.  The method constructing instances of this
+            class (:func:`render_endpoint`) should check for exceptions raised
+            and provide the specified error response to the client.
+    """
 
-            return json_code_response(error=True, code=500, message="why")
+    FORM_FIELD_TO_DESCRIPTION: Dict[str, Tuple[FieldType, str]] = {
+        "scene": (
+            FieldType.File,
+            "the scene file to download from the client and render",
+        ),
+        "scene_sha256": (
+            FieldType.String,
+            "the sha256 hash of the file uploaded in form field `scene`",
+        ),
+        "image_type": (
+            FieldType.String,
+            "the type of scene being rendered, one of `color`, `depth`, or "
+            "`label`",
+        ),
+        "min_depth": (
+            FieldType.Float,
+            "the minimum depth range of the sensor, only meaningful when "
+            "image_type=depth",
+        ),
+        "max_depth": (
+            FieldType.Float,
+            "the maximum depth range of the sensor, only meaningful when "
+            "image_type=depth",
+        ),
+        "width": (FieldType.Int, "the desired width of the rendered image"),
+        "height": (FieldType.Int, "the desired height of the rendered image"),
+        "near": (
+            FieldType.Float,
+            "the near clipping plane of the render camera",
+        ),
+        "far": (
+            FieldType.Float,
+            "the far clipping plane of the render camera",
+        ),
+        "focal_x": (FieldType.Float, "the focal length x, in pixels"),
+        "focal_y": (FieldType.Float, "the focal length y, in pixels"),
+        "fov_x": (
+            FieldType.Float,
+            "the field of view in the x-direction, in radians",
+        ),
+        "fov_y": (
+            FieldType.Float,
+            "the field of view in the y-direction, in radians",
+        ),
+        "center_x": (
+            FieldType.Float,
+            "the principal point's x coordinate, in pixels",
+        ),
+        "center_y": (
+            FieldType.Float,
+            "the principal point's y coordinate, in pixels",
+        ),
+        # NOTE: this input is not actually validated.
+        "submit": (FieldType.String, "submit button"),
+    }
+    """A mapping of string form field keys to (:class:`FieldType`, string
+    descriptions) of the field.  Used in the ``_parse_*`` methods to produce
+    meaningful errors, as well as in the :func:`render_endpoint` to produce the
+    ``GET`` listing of expected entries in the ``<form>``
+    """
 
-        for which the calling method will pass forward to the client to
-        indicate failure.
+    def __init__(self, flask_request: request, log_to_console: bool = True):
+        self.request = flask_request
+        self.log_to_console = log_to_console
+
+        self._error_on_extra_form_entries()
+
+        # Cleanup any files older than 5 minutes.
+        if not NO_CLEANUP:
+            self._delete_cache_files_older_than(datetime.timedelta(minutes=5))
+
+        # Parse and validate the scene related form field entries.
+        self.scene_sha256 = self._parse_string("scene_sha256")
+        self.image_type = self._parse_string("image_type")
+        if self.image_type not in {"color", "depth", "label"}:
+            raise RenderError(
+                f"Field image_type='{self.image_type}' is not valid, must be "
+                "one of 'color', 'depth', or 'label'."
+            )
+
+        # Parse and validate the uploaded scene file.
+        self.scene_path = self._parse_scene()
+
+        # Parse and validate the provided depth range.
+        if self.image_type == "depth":
+            self.min_depth = self._parse_positive_number("min_depth")
+            self.max_depth = self._parse_positive_number("max_depth")
+            if self.min_depth >= self.max_depth:
+                raise RenderError(
+                    f"Form fields min_depth='{self.min_depth}' and max_depth="
+                    f"'{self.max_depth}' are not valid, min_depth must be "
+                    "less than max_depth."
+                )
+        else:
+            # Always make these attributes available.
+            self.min_depth = -1.0
+            self.max_depth = -1.0
+
+        # Parse and validate the provided image dimensions to render.
+        self.width = self._parse_positive_number("width")
+        self.height = self._parse_positive_number("height")
+
+        # Parse and validate the provided render camera clipping planes.
+        self.near = self._parse_positive_number("near")
+        self.far = self._parse_positive_number("far")
+        if self.near >= self.far:
+            raise RenderError(
+                f"Form fields near='{self.near}' and far='{self.far}' not"
+                "valid, the near plane must be in front of the far plane."
+            )
+
+        # Parse and validate the camera intrinsics.  Generally, the only check
+        # available is positivity (other than center_x and center_y) since the
+        # meaning of the value cannot be determined as "reasonable" here.
+        self.focal_x = self._parse_positive_number("focal_x")
+        self.focal_y = self._parse_positive_number("focal_y")
+        self.fov_x = self._parse_positive_number("fov_x")
+        self.fov_y = self._parse_positive_number("fov_y")
+        self.center_x = self._parse_positive_number("center_x")
+        self.center_y = self._parse_positive_number("center_y")
+        # NOTE: same validation as in systems/sensors/camera_info.cc.
+        if self.center_x >= self.width or self.center_y >= self.height:
+            raise RenderError(
+                f"Form fields center_x='{self.center_x}' and center_y="
+                f"'{self.center_y}' are not coherent.  center_x must be less "
+                f"than the provided width='{self.width}', and center_y must "
+                f"be less than the provided height='{self.height}'."
+            )
+
+    def _error_on_extra_form_entries(self):
+        """Error if extra form entries have been provided.  Should be done
+        immediately to help a consumer identify e.g., mis-spelled entries.
+
+        Raises:
+            RenderError: If any extra ``<form>`` entries are found.
+        """
+        expected_fields = set(
+            [field for field in self.FORM_FIELD_TO_DESCRIPTION]
+        )
+        provided_fields = set(
+            [
+                field
+                for field in itertools.chain(
+                    self.request.files, self.request.form
+                )
+            ]
+        )
+        extras = provided_fields - expected_fields
+        if extras:
+            s = "s" if len(extras) > 1 else ""
+            raise RenderError(
+                f"Extra <form> field{s} provided: {', '.join(extras)}"
+            )
+
+    def _delete_cache_files_older_than(self, duration: datetime.timedelta):
+        """Delete any files in :data:`SERVER_CACHE` older than ``duration``.
+        Deletes any files in the :data:`SERVER_CACHE` that have an mtime
+        (modified time) older than :attr:`python:datetime.datetime.now` by
+        at least ``duration``.  Any failures are ignored.
+
+        Parameters:
+            duration: The criteria for if a file is "too old", e.g.,
+                ``datetime.timedelta(minutes=5)`` implies "delete any files
+                older than five minutes.
+        """
+        try:
+            # Accumulate the list of files that are too old.
+            curr_time = datetime.datetime.now()
+            files_to_delete: List[Path] = []
+            for path in SERVER_CACHE.glob("**/*.*"):
+                if not path.is_file():
+                    continue
+                # TODO(svenevs): only delete image files instead?
+                # Do not delete scene files that may be getting rendered.
+                if path.suffix.lower() == "gltf":
+                    continue
+
+                mtime = datetime.datetime.fromtimestamp(path.stat().st_mtime)
+                if (curr_time - mtime) > duration:
+                    files_to_delete.append(path)
+
+            # If any found, delete them now.
+            if files_to_delete:
+                sep = "*" * 80  # separator to make logging obvious
+                if self.log_to_console:
+                    print(f"{sep}\n* Deleting files older than {duration}")
+                for file_path in files_to_delete:
+                    # NOTE: this happens in a threaded context, another worker
+                    # may end up deleting before us.
+                    try:
+                        file_path.unlink(missing_ok=True)
+                        if self.log_to_console:
+                            print(f"* {file_path}")
+                    except Exception:
+                        pass
+                if self.log_to_console:
+                    print(sep)
+        except Exception as e:
+            if self.log_to_console:
+                sep = "!" * 80
+                print(f"{sep}\n! Not able to cleanup files! {e}\n{sep}")
+
+    def _check_type(
+        self,
+        field: str,
+        field_type: FieldType,
+        *allowed_field_types: FieldType,
+    ):
+        """Validate if the provided ``field_type`` is in the provided
+        ``*allowed_field_types``.
+
+        Args:
+            field: the field being parsed, included for a better error message.
+            field_type: the reported FieldType of ``field``
+            allowed_field_types: the list of field types supported by the
+                 calling method trying to parse this ``field``.
+
+        Raises:
+            ValueError: if ``field_type not in allowed_field_types``.
+        """
+        if field_type not in allowed_field_types:
+            raise ValueError(
+                f"Unable to parse field {field} with type {field_type} as one "
+                f"of {','.join(str(aft) for aft in allowed_field_types)}."
+            )
+
+    def _extract_field_from_form(self, field: str, description: str) -> str:
+        """Return the field from ``self.request.form[field]`` if found.  Helper
+        method for ``_parse*`` methods to report consistent error messages.
+
+        Args:
+            field: The field to extract from the ``<form>``.
+            description: The string description of the ``field`` used in
+                reporting error messages.
+
+        Raises:
+            RenderError: If the ``field`` is not found in the form.
+        """
+        if field not in self.request.form:
+            raise RenderError(
+                f"Expected form field '{field}' ({description})."
+            )
+        return self.request.form[field]
+
+    def _parse_string(self, field: str) -> str:
+        """Parse and return the requested ``field`` from ``self.request.form``
+        as a string.
+
+        Args:
+            field: The field name to extract from ``self.request.form``.
+
+        Raises:
+            RenderError: In the event that ``field`` is not provided, not able
+                to be parsed, or any other issue arises from trying to obtain
+                the value from the ``<form>``.
+        """
+        try:
+            field_type, description = self.FORM_FIELD_TO_DESCRIPTION[field]
+            self._check_type(field, field_type, FieldType.String)
+            value = self._extract_field_from_form(field, description)
+            return value
+        except RenderError as re:
+            raise re from None  # forward the exception as is
+        except Exception as e:
+            raise RenderError(
+                f"Internal server error processing field '{field}': {e}",
+                code=500,
+            )
+
+    def _parse_positive_number(self, field: str) -> Union[int, float]:
+        """Parse and return the requested ``field`` from ``self.request.form``
+        as a positive number.
+
+        Args:
+            field: The field name to extract from ``self.request.form``.
+
+        Raises:
+            RenderError: In the event that ``field`` is not provided, not able
+                to be parsed, its value is not greater than 0, or any other
+                issue arises from trying to obtain the value from the
+                ``<form>``.
+        """
+        try:
+            field_type, description = self.FORM_FIELD_TO_DESCRIPTION[field]
+            self._check_type(field, field_type, FieldType.Int, FieldType.Float)
+            value = self._extract_field_from_form(field, description)
+            try:
+                if field_type == FieldType.Int:
+                    numeric_value: Union[int, float] = int(value)
+                else:  # field_type := FieldType.Float
+                    numeric_value = float(value)
+                if not numeric_value > 0:
+                    raise ValueError
+                return numeric_value
+            except ValueError:
+                raise RenderError(
+                    f"Form field {field} ({description}) with value `{value}` "
+                    "is not valid."
+                )
+        except RenderError as re:
+            raise re from None  # forward the exception as is
+        except Exception as e:
+            raise RenderError(
+                f"Internal server error processing field '{field}': {e}",
+                code=500,
+            )
+
+    def _parse_scene(self) -> Path:
+        """Parse and validate the uploaded scene file, returning the path to
+        where it was saved in the :data:`SERVER_CACHE`.
+
+        Warning:
+            It is assumed that :attr:`~RenderRequest.scene_sha256` and
+            :attr:`~RenderRequest.image_type` have already been parsed and
+            validated.
+
+        Raises:
+            RenderError: In the event that any of the expected entries are not
+                provided by the ``<form>``, the sha256 hash of provided is not
+                the same as what is computed from the uploaded file, or any
+                other errors that occur in trying to move the file to the
+                :data:`SERVER_CACHE`.
+        """
+        if "scene" in self.request.form:
+            raise RenderError("Form field `scene` should be a file.")
+        if "scene" not in self.request.files:
+            raise RenderError(
+                "Expected field `scene`, which should be a file."
+            )
+
+        try:
+            # This will be a werkzeug.datastructures.FileStorage, see
+            # https://werkzeug.palletsprojects.com/en/2.0.x/datastructures/
+            scene_data = self.request.files["scene"]
+            _, temp_path_str = tempfile.mkstemp(dir=SERVER_CACHE)
+            scene_data.save(temp_path_str)
+
+            # Compute the and validate the sha256 hash of the uploaded scene.
+            temp_path = Path(temp_path_str)
+            sha = compute_hash(temp_path)
+            if sha != self.scene_sha256:
+                # Delete the file before erroring out.
+                if not NO_CLEANUP:
+                    try:
+                        temp_path.unlink()
+                    except Exception:
+                        pass
+                raise RenderError(
+                    f"Provided scene_sha256='{self.scene_sha256}' does not "
+                    f"match the computed sha256 of '{sha}'.  Possible upload "
+                    "failure.",
+                    code=500,
+                )
+
+            # Create a timestamp for saving the file to avoid collisions.
+            curr_time = datetime.datetime.now()
+            curr_time_str = curr_time.strftime("%Y-%m-%d_%H-%M-%S-%f")
+            scene_description = f"{self.image_type}-{self.scene_sha256}"
+            scene_path = (
+                SERVER_CACHE / f"{curr_time_str}-{scene_description}.gltf"
+            )
+            temp_path.rename(scene_path)
+
+            # Print to the console what was just saved, including the mime type
+            # if it has been provided.  Users may choose to fail the upload in
+            # the event of an unsupported mime type being provided, however in
+            # general relying on accurate mime type reporting is not advisable.
+            if self.log_to_console:
+                message = (
+                    f"==> Scene file with image_type={self.image_type} saved "
+                    f"to '{str(scene_path)}' (sha256={sha})."
+                )
+                mime_type = getattr(scene_data, "content_type", None)
+                if mime_type is not None:
+                    message += (
+                        f"  Client reported a mime type of '{mime_type}'."
+                    )
+
+            return scene_path
+        except RenderError as re:
+            raise re from None  # forward the error
+        except Exception as e:
+            raise RenderError(f"Internal server error: {e}", code=500)
+
+
+###############################################################################
+# The main rendering call, replace with your own desired implementation.
+###############################################################################
+def render_callback(render_request: RenderRequest) -> Union[Path, str]:
+    """Invoke the renderer to produce and return an output image path.
+
+    The ``render_request`` parameter's attributes have already been validated
+    based off of the current flask request.  This method is responsible for
+    determining its final output image path and file extension.
+
+    Args:
+        render_request (RenderRequest): The validated flask request wrapped in
+            a :class:`RenderRequest` instance.
+
+    Returns:
+        A successful call should return the path to the final output rendered
+        image file.
+
+    Raises:
+        RenderError: In the event that anything goes wrong during the call to
+            the renderer, a :class:`RenderError` should be raised.  The method
+            calling this render callback will look for this specific kind of
+            exception first, and forward the corresponding error response to
+            the client.  Any other exceptions raised will result in an internal
+            server error response message to the client.
     """
     # NOTE: the path to `vtk_render_server_backend` is only valid from bazel.
     # The path to the renderer executable to call.
     backend = str(
-        (this_file_dir / ".." / "vtk_render_server_backend").resolve()
+        (THIS_FILE_DIR / ".." / "vtk_render_server_backend").resolve()
     )
+    # Determine where to store this rendering.  The render_request.scene_path
+    # will already live within the SERVER_CACHE, appending a file extension
+    # to render to is acceptable.
+    #
+    # NOTE: when NO_CLEANUP=False, this image path is deleted by the caller.
+    output_path = str(render_request.scene_path)
+    if render_request.image_type in {"color", "label"}:
+        output_path += ".png"
+    else:  # render_request.image_type := "depth"
+        output_path += ".tiff"
+
+    # Create the command-line arguments to pass to the render backend.
+    # NOTE: make sure you convert entries in the list to `str`.
     proc_args = [
         backend,
         "--input",
-        input_scene,
+        str(render_request.scene_path),
         "--output",
         output_path,
         "--image_type",
-        image_type,
+        str(render_request.image_type),
         "--width",
-        width,
+        str(render_request.width),
         "--height",
-        height,
+        str(render_request.height),
         "--near",
-        near,
+        str(render_request.near),
         "--far",
-        far,
+        str(render_request.far),
         "--focal_x",
-        focal_x,
+        str(render_request.focal_x),
         "--focal_y",
-        focal_y,
+        str(render_request.focal_y),
         "--fov_x",
-        fov_x,
+        str(render_request.fov_x),
         "--fov_y",
-        fov_y,
+        str(render_request.fov_y),
         "--center_x",
-        center_x,
+        str(render_request.center_x),
         "--center_y",
-        center_y,
+        str(render_request.center_y),
     ]
-    if image_type == "depth":
-        proc_args.extend(["--min_depth", min_depth, "--max_depth", max_depth])
-    print(f"$ {' '.join(proc_args)}")
+    if render_request.image_type == "depth":
+        proc_args.extend(
+            [
+                "--min_depth",
+                str(render_request.min_depth),
+                "--max_depth",
+                str(render_request.max_depth),
+            ]
+        )
+
+    # Log to the console what command is about to be run for debugging.
+    if render_request.log_to_console:
+        print(f"$ {' '.join(proc_args)}")
+
+    # Call the render backend, including capturing any errors.
     try:
         proc = subprocess.run(proc_args, capture_output=True)
         # Using subprocess.check_call will not provide any additional
@@ -197,69 +784,15 @@ def render_callback(
                 message += f"\nstderr:\n{stderr}"
             raise RuntimeError(message)
 
-        return None  # Indicates success
+        # Inform the calling method where the final rendering resides.
+        return output_path
     except Exception as e:
-        return json_code_response(
-            error=True,
-            code=500,
-            message=f"Failed render invocation: {e}",
-        )
+        raise RenderError(f"Failed render invocation: {e}", code=500)
 
 
-@atexit.register
-def delete_server_cache():
-    """
-    Delete ``server_cache`` upon exit.
-
-    .. note::
-
-        When developing your server it may be helpful to keep the server cache
-        around, simply add a ``return None`` at the beginning of this method
-        or comment the code deleting the folder out.
-    """
-    if server_cache.is_dir():
-        shutil.rmtree(server_cache, ignore_errors=True)
-
-
-def compute_hash(path: Union[str, Path], block_size: int = 1024 * 1024) -> str:
-    """Incrementally compute and return the sha256 of the specified path.
-
-    Args:
-        path: The path to the file to compute the sha256 hash of.
-        block_size: Size of block in bytes to read.  Default: ``1024 * 1024``.
-            Assumed to be greater than 0.
-
-    Raises:
-        IOError: If the file cannot be loaded.
-
-    Returns:
-        The computed sha256 sum as a string.
-    """
-    h = sha256()
-    with open(path, "rb") as f:
-        while True:
-            data = f.read(block_size)
-            if not len(data):
-                break
-
-            h.update(data)
-
-    return h.hexdigest()
-
-
-def gltf_path(sha256_hash: str, image_type: str) -> Path:
-    """Return the location the described file is saved.
-
-    Args:
-        sha256_hash: The identifier sha256 sum of the gltf file.
-        image_type: The pipeline, one of ``color``, ``depth``, or ``label``.
-
-    Returns:
-        The path where this file should be saved.
-    """
-    return this_file_dir / server_cache / f"{sha256_hash}-{image_type}.gltf"
-
-
+###############################################################################
+# Flask endpoint implementations.
+###############################################################################
 @app.route("/")
 def root():
     """The main listing page, renders a simple redirect page including where
@@ -267,508 +800,113 @@ def root():
     required by the drake server-client relationship and only serves to aid
     development.
     """
-    return dedent(
-        f"""
+    html_prefix = dedent(
+        f"""\
         <!doctype html>
         <html>
           <body>
             <h1>Drake Render Server</h1>
             <hr>
-            <ul>
-              <li><a href="/upload">Upload</a> a scene.</li>
-              <li><a href="/render">Render</a> a scene.</li>
-            </ul>
-
-            <h1>Server Cache</h1>
-            <hr>
-            <p>The server cache lives here: <tt>{server_cache}</tt></p>
-          </body>
-        </html>
-    """
+            <p>
+              <a href="{RENDER_ENDPOINT}">Render</a> a scene.
+            </p>
+        """
     )
-
-
-@app.route("/upload", methods=["GET", "POST"])
-def upload():
-    if request.method == "POST":
-        if "data" in request.form:
-            return json_code_response(
-                error=True,
-                code=400,
-                message="Form key `data` should be a file.",
-            )
-        if "data" not in request.files:
-            return json_code_response(
-                error=True,
-                message="Expected key `data`, which should be a file.",
-                code=400,
-            )
-
-        if "image_type" not in request.form:
-            return json_code_response(
-                error=True,
-                code=400,
-                message=(
-                    "Expected key `image_type` (`color`, `depth`, or `label`)"
-                ),
-            )
-        image_type = request.form["image_type"]
-        if image_type not in {"color", "depth", "label"}:
-            return json_code_response(
-                error=True,
-                code=400,
-                message=(
-                    f"Key image_type of {image_type} invalid.  Must be one of "
-                    "`color`, `depth`, or `label`"
-                ),
-            )
-
-        try:
-            # This will be a werkzeug.datastructures.FileStorage, see
-            # https://werkzeug.palletsprojects.com/en/2.0.x/datastructures/
-            data = request.files["data"]
-            _, temp_path = tempfile.mkstemp(dir=server_cache)
-            data.save(temp_path)
-
-            # Compute the hash and rename it.
-            temp_path = Path(temp_path)
-            sha = compute_hash(temp_path)
-            gltf_out = gltf_path(sha, image_type)
-            temp_path.rename(gltf_out)
-
-            # Print to the console what was just saved, including the mime type
-            # if it has been provided.  Users may choose to fail the upload in
-            # the event of an unsupported mime type being provided, however in
-            # general relying on accurate mime type reporting is not advisable.
-            message = (
-                f"==> Scene file with image_type={image_type} saved to "
-                f"'{str(gltf_out)}' with a sha256 hash of '{sha}'."
-            )
-            mime_type = getattr(data, "content_type", None)
-            if mime_type:
-                message += f"  Client reported a mime type of '{mime_type}'."
-            print(message)
-
-            # Report the computed sha256 back to the client.
-            return json_code_response(error=False, code=200, sha256=sha)
-        except Exception as e:
-            return json_code_response(
-                error=True, code=500, message=f"Internal server error: {e}"
-            )
-
-    # request.method := "GET"
-    return dedent(
+    html_suffix = dedent(
         """\
-        <!doctype html>
-        <html>
-          <body>
-            <h1>Upload glTF</h1>
-            <form method="post" enctype="multipart/form-data">
-              <input type="file" name="data">
-              <div>
-                <label for="image_type">
-                  Image Type
-                  (<tt>color</tt>, <tt>depth</tt>, or <tt>label</tt>)
-                </label>
-                <input type="text" name="image_type">
-              </div>
-              <input type="submit" name="submit" value="Upload">
-            </form>
           </body>
         </html>
-    """
+        """
     )
-
-
-@app.route("/render", methods=["GET", "POST"])
-def render():
-    if request.method == "POST":
-        if "id" not in request.form:
-            return json_code_response(
-                error=True,
-                code=400,
-                message="Expected key `id` (sha256 of uploaded scene).",
-            )
-        scene_id = request.form["id"]
-
-        if "image_type" not in request.form:
-            return json_code_response(
-                error=True,
-                code=400,
-                message=(
-                    "Expected key `image_type` (`color`, `depth`, or `label`)"
-                ),
-            )
-        image_type = request.form["image_type"]
-        if image_type not in {"color", "depth", "label"}:
-            return json_code_response(
-                error=True,
-                code=400,
-                message=(
-                    f"Key image_type of {image_type} invalid.  Must be one of "
-                    "`color`, `depth`, or `label`"
-                ),
-            )
-
-        gltf_in = gltf_path(request.form["id"], image_type)
-        if not gltf_in.is_file():
-            return json_code_response(
-                error=True,
-                code=400,
-                message=f"Could not find {gltf_in.name}, was it uploaded?",
-            )
-
-        if "width" not in request.form:
-            return json_code_response(
-                error=True,
-                code=400,
-                message="Expected key `width` (width of rendered image).",
-            )
-        width = request.form["width"]
-        try:
-            width = int(width)
-            if width <= 0:
-                raise ValueError
-        except ValueError:
-            return json_code_response(
-                error=True,
-                code=400,
-                message=f"Requested width `{width}` is not valid.",
-            )
-
-        if "height" not in request.form:
-            return json_code_response(
-                error=True,
-                code=400,
-                message="Expected key `height` (height of rendered image).",
-            )
-        height = request.form["height"]
-        try:
-            height = int(height)
-            if height <= 0:
-                raise ValueError
-        except ValueError:
-            return json_code_response(
-                error=True,
-                code=400,
-                message=f"Requested height `{height}` is not valid.",
-            )
-
-        if "near" not in request.form:
-            return json_code_response(
-                error=True,
-                code=400,
-                message="Expected key `near` (near plane of camera).",
-            )
-        near = request.form["near"]
-        try:
-            near = float(near)
-            if near < 0.0:
-                raise ValueError
-        except ValueError:
-            return json_code_response(
-                error=True,
-                code=400,
-                message=f"Requested near plane `{near}` is not valid.",
-            )
-
-        far = request.form["far"]
-        try:
-            far = float(far)
-            if far < 0.0:
-                raise ValueError
-            if near >= far:
-                raise ValueError
-        except ValueError:
-            return json_code_response(
-                error=True,
-                code=400,
-                message=f"Requested far plane `{far}` is not valid.",
-            )
-
-        if "focal_x" not in request.form:
-            return json_code_response(
-                error=True,
-                code=400,
-                message="Expected key `focal_x` (focal length x, in pixels).",
-            )
-        focal_x = request.form["focal_x"]
-        try:
-            focal_x = float(focal_x)
-        except ValueError:
-            return json_code_response(
-                error=True,
-                code=400,
-                message=f"Requested focal_x `{focal_x}` is not valid.",
-            )
-
-        if "focal_y" not in request.form:
-            return json_code_response(
-                error=True,
-                code=400,
-                message="Expected key `focal_y` (focal length x, in pixels).",
-            )
-        focal_y = request.form["focal_y"]
-        try:
-            focal_y = float(focal_y)
-        except ValueError:
-            return json_code_response(
-                error=True,
-                code=400,
-                message=f"Requested focal_y `{focal_y}` is not valid.",
-            )
-
-        if "fov_x" not in request.form:
-            return json_code_response(
-                error=True,
-                code=400,
-                message="Expected key `fov_x` (field of view x, radians).",
-            )
-        fov_x = request.form["fov_x"]
-        try:
-            fov_x = float(fov_x)
-        except ValueError:
-            return json_code_response(
-                error=True,
-                code=400,
-                message=f"Requested fov_x `{fov_x}` is not valid.",
-            )
-
-        if "fov_y" not in request.form:
-            return json_code_response(
-                error=True,
-                code=400,
-                message="Expected key `fov_y` (field of view y, radians).",
-            )
-        fov_y = request.form["fov_y"]
-        try:
-            fov_y = float(fov_y)
-        except ValueError:
-            return json_code_response(
-                error=True,
-                code=400,
-                message=f"Requested fov_y `{fov_y}` is not valid.",
-            )
-
-        if "center_x" not in request.form:
-            return json_code_response(
-                error=True,
-                code=400,
-                message="Expected key `center_x` (principal point x, pixels).",
-            )
-        center_x = request.form["center_x"]
-        try:
-            center_x = float(center_x)
-        except ValueError:
-            return json_code_response(
-                error=True,
-                code=400,
-                message=f"Requested center_x `{center_x}` is not valid.",
-            )
-
-        if "center_y" not in request.form:
-            return json_code_response(
-                error=True,
-                code=400,
-                message="Expected key `center_y` (principal point y, pixels).",
-            )
-        center_y = request.form["center_y"]
-        try:
-            center_y = float(center_y)
-        except ValueError:
-            return json_code_response(
-                error=True,
-                code=400,
-                message=f"Requested center_y `{center_y}` is not valid.",
-            )
-
-        min_depth = -1.0
-        max_depth = -1.0
-        if image_type == "depth":
-            if "min_depth" not in request.form:
-                return json_code_response(
-                    error=True,
-                    code=400,
-                    message="Expected key `min_depth` for depth render.",
-                )
-            min_depth = request.form["min_depth"]
-            try:
-                min_depth = float(min_depth)
-                if min_depth < 0.0:
-                    raise ValueError
-            except ValueError:
-                return json_code_response(
-                    error=True,
-                    code=400,
-                    message=f"Requested min_depth `{min_depth}` is not valid.",
-                )
-
-            if "max_depth" not in request.form:
-                return json_code_response(
-                    error=True,
-                    code=400,
-                    message="Expected key `max_depth` for depth render.",
-                )
-            max_depth = request.form["max_depth"]
-            try:
-                max_depth = float(max_depth)
-                if max_depth < 0.0:
-                    raise ValueError
-            except ValueError:
-                return json_code_response(
-                    error=True,
-                    code=400,
-                    message=f"Requested max_depth `{max_depth}` is not valid.",
-                )
-
-            if min_depth < 0.0 or max_depth < 0.0:
-                return json_code_response(
-                    error=True,
-                    code=400,
-                    message=(
-                        f"Provided min_depth={min_depth} and max_depth="
-                        f"{max_depth} are invalid.  They must be positive."
-                    ),
-                )
-            if max_depth <= min_depth:
-                return json_code_response(
-                    error=True,
-                    code=400,
-                    message=(
-                        f"Provided max_depth={max_depth} must be greater than "
-                        f"min_depth={min_depth}."
-                    ),
-                )
-
-        # TODO(svenevs): 16U PNG depth support can be tested here.
-        if image_type in {"color", "label"}:
-            out_type = "png"
-        else:  # image_type := "depth"
-            out_type = "tiff"
-        image_out = gltf_in.parent / (gltf_in.name + f".{out_type}")
-        if image_out.is_file():
-            image_out.unlink()
-
-        ret = render_callback(
-            input_scene=str(gltf_in),
-            output_path=str(image_out),
-            scene_id=scene_id,
-            image_type=image_type,
-            width=str(width),
-            height=str(height),
-            near=str(near),
-            far=str(far),
-            focal_x=str(focal_x),
-            focal_y=str(focal_y),
-            fov_x=str(fov_y),
-            fov_y=str(fov_y),
-            center_x=str(center_x),
-            center_y=str(center_y),
-            min_depth=str(min_depth),
-            max_depth=str(max_depth),
+    # Inform the developer of where the server cache lives in development mode.
+    if app.config["ENV"].lower() == "development":
+        indent = "  " * 2
+        html_interior = (
+            f"{indent}<h1>Server Cache</h1>\n"
+            f"{indent}<hr>\n"
+            f"{indent}<p>\n"
+            f"{indent}  This is a development server.  The server cache\n"
+            f"{indent}  lives here: <tt>{str(SERVER_CACHE)}</tt>\n"
+            f"{indent}</p>\n"
         )
-        if ret is not None:
-            json_dict, code = ret
-            return json_dict, code
+    else:
+        html_interior = ""
 
-        return send_file(str(image_out), mimetype=f"image/{out_type}")
+    return f"{html_prefix}{html_interior}{html_suffix}"
+
+
+@app.route(RENDER_ENDPOINT, methods=["GET", "POST"])
+def render_endpoint():
+    """The main rendering endpoint for the client to communicate with.
+
+    A client request ``<form>`` is validated and provided to
+    :func:`render_callback`, with the resultant image transmitted back to the
+    client.
+    """
+    if request.method == "POST":
+        try:
+            # Validate the request and render the image.
+            render_request = RenderRequest(request)
+            output_image = Path(render_callback(render_request))
+            if render_request.log_to_console:
+                print(f"==> Rendered image: {str(output_image)}")
+
+            # Now that the image is rendered, it is safe to delete the scene.
+            if not NO_CLEANUP:
+                if render_request.log_to_console:
+                    scene_str = str(render_request.scene_path)
+                    print(f"==> Deleting complete scene file {scene_str}.")
+                render_request.scene_path.unlink(missing_ok=True)
+
+            # The mime type response is only populated based off the file
+            # extension, implementation of render_callback is responsible for
+            # invalid file extensions / mime types being reported.
+            #
+            # NOTE: the client does *NOT* rely on the mime type.
+            mime_type = None
+            image_extension = output_image.suffix.lower()
+            if image_extension == "png":
+                mime_type = "image/png"
+            elif image_extension in {"tif", "tiff"}:
+                mime_type = "image/tiff"
+
+            # There is no way to delete the file or run code after send_file.
+            # One option would be to load the file into memory, delete it, and
+            # pass the memory buffer to send_file.  This may result in
+            # undesirable latency depending on the wsgi wrapper being used, so
+            # instead a server render request results in deleting any cache
+            # files older than five minutes.  See implementation / use of
+            # RenderRequest._delete_cache_files_older_than method.
+            #
+            # See also: flask configuration USE_X_SENDFILE
+            # https://flask.palletsprojects.com/en/2.0.x/config/#USE_X_SENDFILE
+            return send_file(output_image, mimetype=mime_type)
+        except RenderError as re:
+            return re.flask_json_code_response()
+        except Exception as e:
+            # Similar to RenderError.flask_json_code_response(), see docs.
+            return (
+                {
+                    "error": True,
+                    "message": f"Internal server error: {e}",
+                    "code": 500,
+                },
+                500,
+            )
 
     # request.method := "GET"
-    min_max = 'min="16" max="65535"'
-    return dedent(
-        f"""\
+    html_prefix = dedent(
+        """
         <!doctype html>
         <html>
           <body>
             <h1>Render Scene</h1>
             <form method="post" enctype="multipart/form-data">
               <table>
-                <tr>
-                  <td>sha256 Hash Identifier</td>
-                  <td>
-                    <input type="text" name="id">
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    Image Type
-                    (<tt>color</tt>, <tt>depth</tt>, or <tt>label</tt>)
-                  </td>
-                  <td>
-                    <input type="text" name="image_type">
-                  </td>
-                <tr>
-                  <td>Image Width</td>
-                  <td>
-                    <input type="number" name="width" {min_max}>
-                  </td>
-                </tr>
-                <tr>
-                  <td>Image Height</td>
-                  <td>
-                    <input type="number" name="height" {min_max}>
-                  </td>
-                </tr>
-                <tr>
-                  <td>Near Plane of Camera</td>
-                  <td>
-                    <input type="number" name="near">
-                  </td>
-                </tr>
-                <tr>
-                  <td>Far Plane of Camera</td>
-                  <td>
-                    <input type="number" name="far">
-                  </td>
-                </tr>
-                <tr>
-                  <td>Focal Length X in Pixels</td>
-                  <td>
-                    <input type="number" name="focal_x">
-                  </td>
-                </tr>
-                <tr>
-                  <td>Focal Length Y in Pixels</td>
-                  <td>
-                    <input type="number" name="focal_y">
-                  </td>
-                </tr>
-                <tr>
-                  <td>Field of View X in Radians</td>
-                  <td>
-                    <input type="number" name="focal_x">
-                  </td>
-                </tr>
-                <tr>
-                  <td>Field of View Y in Radians</td>
-                  <td>
-                    <input type="number" name="focal_y">
-                  </td>
-                </tr>
-                <tr>
-                  <td>Principal Point X in Pixels</td>
-                  <td>
-                    <input type="number" name="center_x">
-                  </td>
-                </tr>
-                <tr>
-                  <td>Principal Point Y in Pixels</td>
-                  <td>
-                    <input type="number" name="center_y">
-                  </td>
-                </tr>
-                <tr>
-                  <td>Depth range min_depth</td>
-                  <td>
-                    <input type="number" name="min_depth" value="-1.0">
-                  </td>
-                </tr>
-                <tr>
-                  <td>Depth range max_depth</td>
-                  <td>
-                    <input type="number" name="max_depth" value="-1.0">
-                  </td>
-                </tr>
+    """
+    )
+    html_suffix = dedent(
+        """\
               </table>
               <input type="submit" name="submit" value="Render">
             </form>
@@ -776,6 +914,22 @@ def render():
         </html>
     """
     )
+    # Generate the <table> entries indented properly.
+    tr_indent = "  " * 4
+    td_indent = "  " * 5
+    table_rows = []
+    for field, (
+        field_type,
+        description,
+    ) in RenderRequest.FORM_FIELD_TO_DESCRIPTION.items():
+        row = f"{tr_indent}<tr>\n"
+        row += f"{td_indent}<td>{description}</td>\n"
+        input_type = html_input_type(field_type)
+        row += f'{td_indent}<td><input type="{input_type}" name="{field}">\n'
+        row += f"{tr_indent}</tr>\n"
+        table_rows.append(row)
+
+    return f"{html_prefix}{''.join(table_rows)}{html_suffix}"
 
 
 if __name__ == "__main__":
@@ -793,7 +947,7 @@ if __name__ == "__main__":
                     f"{host}:{port}",
                     "wsgi:app",
                 ],
-                cwd=this_file_dir,
+                cwd=THIS_FILE_DIR,
             )
         # NOTE: this just runs the formatting and linting checks on this file.
         elif sys.argv[1] == "devcheck":

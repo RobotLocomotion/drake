@@ -28,6 +28,11 @@ int64_t GetNextSceneId() {
   return ++(global_scene_id.access());
 }
 
+/* RenderClientGltf always produces a gltf+json file.  See also:
+ https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#_media_type_registrations
+ */
+std::string MimeType() { return "model/gltf+json"; }
+
 /* Drake uses an explicit projection matrix with RenderEngineVtk to fine tune
  the displayed viewing frustum tailored to the sensor being rendered.  The
  vtkGLTFExporter, however, will be querying the renderer's vtkCamera to export
@@ -116,9 +121,8 @@ RenderClientGltf::RenderClientGltf(const RenderClientGltfParams& parameters)
                        // Same as RenderEngineVtkParams default clear color,
                        // though it's value is irrelevant for this renderer.
                        {204 / 255., 229 / 255., 255 / 255.}}),
-      RenderClient(parameters.url, parameters.port, parameters.upload_endpoint,
-                   parameters.render_endpoint, parameters.verbose,
-                   parameters.no_cleanup) {}
+      RenderClient(parameters.url, parameters.port, parameters.render_endpoint,
+                   parameters.verbose, parameters.no_cleanup) {}
 
 RenderClientGltf::RenderClientGltf(const RenderClientGltf& other)
     : RenderEngineVtk(other), RenderClient(other) {}
@@ -186,8 +190,9 @@ void RenderClientGltf::DoRenderColorImage(const ColorRenderCamera& camera,
     LogFrameGltfExportPath(internal::ImageType::kColor, scene_path);
   }
 
-  const std::string image_path =
-      UploadAndRender(camera.core(), internal::ImageType::kColor, scene_path);
+  const std::string image_path = RenderOnServer(
+      camera.core(), InternalToRenderImageType(internal::ImageType::kColor),
+      scene_path, MimeType());
   if (verbose()) {
     LogFrameServerResponsePath(internal::ImageType::kColor, image_path);
   }
@@ -219,9 +224,9 @@ void RenderClientGltf::DoRenderDepthImage(
 
   const double min_depth = camera.depth_range().min_depth();
   const double max_depth = camera.depth_range().max_depth();
-  const std::string image_path =
-      UploadAndRender(camera.core(), internal::ImageType::kDepth, scene_path,
-                      min_depth, max_depth);
+  const std::string image_path = RenderOnServer(
+      camera.core(), InternalToRenderImageType(internal::ImageType::kDepth),
+      scene_path, MimeType(), min_depth, max_depth);
   if (verbose()) {
     LogFrameServerResponsePath(internal::ImageType::kDepth, image_path);
   }
@@ -252,8 +257,9 @@ void RenderClientGltf::DoRenderLabelImage(
     LogFrameGltfExportPath(internal::ImageType::kLabel, scene_path);
   }
 
-  const std::string image_path =
-      UploadAndRender(camera.core(), internal::ImageType::kLabel, scene_path);
+  const std::string image_path = RenderOnServer(
+      camera.core(), InternalToRenderImageType(internal::ImageType::kLabel),
+      scene_path, MimeType());
   if (verbose()) {
     LogFrameServerResponsePath(internal::ImageType::kLabel, image_path);
   }
@@ -281,23 +287,6 @@ std::string RenderClientGltf::ExportScene(internal::ImageType image_type,
   gltf_exporter->SetFileName(scene_path.c_str());
   gltf_exporter->Write();
   return scene_path;
-}
-
-std::string RenderClientGltf::UploadAndRender(const RenderCameraCore& core,
-                                              internal::ImageType image_type,
-                                              const std::string& scene_path,
-                                              double min_depth,
-                                              double max_depth) const {
-  if (image_type == internal::ImageType::kDepth)
-    ValidDepthRangeOrThrow(min_depth, max_depth);
-
-  const std::string scene_sha256 = ComputeSha256(scene_path);
-  /* NOTE: for the mime type, the VTK glTF export produces base64 encoded data
-   in a single .gltf file, this is "gltf+json" (not the binary format). */
-  auto render_image_type = InternalToRenderImageType(image_type);
-  UploadScene(render_image_type, scene_path, scene_sha256, "model/gltf+json");
-  return RetrieveRender(core, render_image_type, scene_path, scene_sha256,
-                        min_depth, max_depth);
 }
 
 }  // namespace render
