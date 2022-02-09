@@ -66,8 +66,8 @@ class SapContactProblem {
   //
   // @throws if the blocks in A are not square or have zero size.
   // @throws if the size of v_star is not nv = ∑A[c].rows().
-  SapContactProblem(const T& time_step, std::vector<MatrixX<T>>&& A,
-                    VectorX<T>&& v_star);
+  SapContactProblem(const T& time_step, std::vector<MatrixX<T>> A,
+                    VectorX<T> v_star);
 
   // TODO(amcastro-tri): consider constructor API taking std::vector<VectorX<T>>
   // for v_star. It could be useful for deformables.

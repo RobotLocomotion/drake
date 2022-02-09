@@ -33,10 +33,7 @@ GTEST_TEST(ContactProblem, Construction) {
   const double time_step = 0.01;
   std::vector<MatrixXd> A{S22, S33, S44, S22};
   VectorXd v_star = VectorXd::LinSpaced(11, 1.0, 11.0);
-  // Make copies before moving.
-  const std::vector<MatrixXd> Aexpected(A);
-  const VectorXd v_star_expected(v_star);
-  SapContactProblem<double> problem(time_step, std::move(A), std::move(v_star));
+  SapContactProblem<double> problem(time_step, A, v_star);
   EXPECT_EQ(problem.time_step(), time_step);
   EXPECT_EQ(problem.num_cliques(), 4);
   EXPECT_EQ(problem.num_velocities(), 11);
@@ -44,8 +41,8 @@ GTEST_TEST(ContactProblem, Construction) {
   EXPECT_EQ(problem.num_velocities(1), 3);
   EXPECT_EQ(problem.num_velocities(2), 4);
   EXPECT_EQ(problem.num_velocities(3), 2);
-  EXPECT_EQ(problem.dynamics_matrix(), Aexpected);
-  EXPECT_EQ(problem.v_star(), v_star_expected);
+  EXPECT_EQ(problem.dynamics_matrix(), A);
+  EXPECT_EQ(problem.v_star(), v_star);
 }
 
 }  // namespace

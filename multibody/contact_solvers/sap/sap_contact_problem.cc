@@ -13,8 +13,8 @@ namespace internal {
 
 template <typename T>
 SapContactProblem<T>::SapContactProblem(const T& time_step,
-                                        std::vector<MatrixX<T>>&& A,
-                                        VectorX<T>&& v_star)
+                                        std::vector<MatrixX<T>> A,
+                                        VectorX<T> v_star)
     : time_step_(time_step), A_(std::move(A)), v_star_(std::move(v_star)) {
   DRAKE_THROW_UNLESS(time_step > 0.0);
   nv_ = 0;
