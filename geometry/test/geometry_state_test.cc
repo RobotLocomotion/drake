@@ -843,73 +843,74 @@ TEST_F(GeometryStateTest, GetOwningSourceName) {
       "Geometry id .* does not map to a registered geometry");
 }
 
-// Compares the autodiff geometry state (embedded in its tester) against the
-// double state to confirm they have the same values/topology.
+// Compares the transmogrified geometry state (embedded in its tester) against
+// the double state to confirm they have the same values/topology.
+template <typename T>
 void ExpectSuccessfulTransmogrification(
-    const GeometryStateTester<AutoDiffXd>& ad_tester,
+    const GeometryStateTester<T>& T_tester,
     const GeometryStateTester<double>& d_tester) {
 
   // 1. Test all of the identifier -> trivially testable value maps
-  EXPECT_EQ(ad_tester.get_self_source_id(), d_tester.get_self_source_id());
-  EXPECT_EQ(ad_tester.get_source_name_map(), d_tester.get_source_name_map());
-  EXPECT_EQ(ad_tester.get_source_frame_id_map(),
+  EXPECT_EQ(T_tester.get_self_source_id(), d_tester.get_self_source_id());
+  EXPECT_EQ(T_tester.get_source_name_map(), d_tester.get_source_name_map());
+  EXPECT_EQ(T_tester.get_source_frame_id_map(),
             d_tester.get_source_frame_id_map());
-  EXPECT_EQ(ad_tester.get_source_root_frame_map(),
+  EXPECT_EQ(T_tester.get_source_root_frame_map(),
             d_tester.get_source_root_frame_map());
-  EXPECT_EQ(ad_tester.get_source_anchored_geometry_map(),
+  EXPECT_EQ(T_tester.get_source_anchored_geometry_map(),
             d_tester.get_source_anchored_geometry_map());
-  EXPECT_EQ(ad_tester.get_geometries(), d_tester.get_geometries());
-  EXPECT_EQ(ad_tester.get_frames(), d_tester.get_frames());
+  EXPECT_EQ(T_tester.get_geometries(), d_tester.get_geometries());
+  EXPECT_EQ(T_tester.get_frames(), d_tester.get_frames());
 
   // 2. Confirm that the ids all made it across.
-  EXPECT_EQ(ad_tester.get_frame_index_id_map(),
+  EXPECT_EQ(T_tester.get_frame_index_id_map(),
             d_tester.get_frame_index_id_map());
 
   // 3. Compare RigidTransformd with RigidTransform<AutoDiffXd>.
-  for (const auto& id_geom_pair : ad_tester.get_geometries()) {
+  for (const auto& id_geom_pair : T_tester.get_geometries()) {
     const GeometryId id = id_geom_pair.first;
-    const auto& ad_geometry = id_geom_pair.second;
+    const auto& T_geometry = id_geom_pair.second;
     EXPECT_TRUE(CompareMatrices(
-        ad_geometry.X_FG().GetAsMatrix34(),
+        T_geometry.X_FG().GetAsMatrix34(),
         d_tester.get_geometries().at(id).X_FG().GetAsMatrix34()));
   }
 
   // 4. Compare RigidTransform<AutoDiffXd> with RigidTransformd.
-  auto test_ad_vs_double_pose = [](const RigidTransform<AutoDiffXd>& test,
-                                   const RigidTransformd& ref) {
+  auto test_T_vs_double_pose = [](const RigidTransform<T>& test,
+                                  const RigidTransformd& ref) {
     for (int row = 0; row < 3; ++row) {
       for (int col = 0; col < 4; ++col) {
-        EXPECT_EQ(test.GetAsMatrix34()(row, col).value(),
+        EXPECT_EQ(ExtractDoubleOrThrow(test.GetAsMatrix34()(row, col)),
                   ref.GetAsMatrix34()(row, col));
       }
     }
   };
 
-  auto test_ad_vs_double = [test_ad_vs_double_pose](
-                               const vector<RigidTransform<AutoDiffXd>>& test,
+  auto test_T_vs_double = [test_T_vs_double_pose](
+                               const vector<RigidTransform<T>>& test,
                                const vector<RigidTransformd>& ref) {
     EXPECT_EQ(test.size(), ref.size());
     for (size_t i = 0; i < ref.size(); ++i) {
-      test_ad_vs_double_pose(test[i], ref[i]);
+      test_T_vs_double_pose(test[i], ref[i]);
     }
   };
 
-  auto test_ad_vs_double_map = [test_ad_vs_double_pose](
-                                   const IdPoseMap<AutoDiffXd>& test,
+  auto test_T_vs_double_map = [test_T_vs_double_pose](
+                                   const IdPoseMap<T>& test,
                                    const IdPoseMap<double>& ref) {
     ASSERT_EQ(test.size(), ref.size());
     for (const auto& id_pose_pair : ref) {
       const GeometryId id = id_pose_pair.first;
       const RigidTransformd& ref_pose = id_pose_pair.second;
-      test_ad_vs_double_pose(test.at(id), ref_pose);
+      test_T_vs_double_pose(test.at(id), ref_pose);
     }
   };
 
-  test_ad_vs_double(ad_tester.get_frame_parent_poses(),
+  test_T_vs_double(T_tester.get_frame_parent_poses(),
                     d_tester.get_frame_parent_poses());
-  test_ad_vs_double_map(ad_tester.get_geometry_world_poses(),
+  test_T_vs_double_map(T_tester.get_geometry_world_poses(),
                         d_tester.get_geometry_world_poses());
-  test_ad_vs_double(ad_tester.get_frame_world_poses(),
+  test_T_vs_double(T_tester.get_frame_world_poses(),
                     d_tester.get_frame_world_poses());
 
   // 5. Engine transmogrification tested in its own test; it will *not* be done
@@ -918,13 +919,19 @@ void ExpectSuccessfulTransmogrification(
 
 // This tests the ability to assign a GeometryState<double> to a
 // GeometryState<T>. Implicitly uses transmogrification.
-TEST_F(GeometryStateTest, AssignDoubleToAutoDiff) {
+TEST_F(GeometryStateTest, AssignDoubleToScalarType) {
   SetUpSingleSourceTree();
   GeometryState<AutoDiffXd> ad_state{};
   ad_state = geometry_state_;
   GeometryStateTester<AutoDiffXd> ad_tester;
   ad_tester.set_state(&ad_state);
   ExpectSuccessfulTransmogrification(ad_tester, gs_tester_);
+
+  GeometryState<symbolic::Expression> sym_state{};
+  sym_state = geometry_state_;
+  GeometryStateTester<symbolic::Expression> sym_tester;
+  sym_tester.set_state(&sym_state);
+  ExpectSuccessfulTransmogrification(sym_tester, gs_tester_);
 }
 
 // Uses the single source tree to confirm that the data has migrated properly.

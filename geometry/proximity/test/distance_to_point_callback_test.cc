@@ -607,28 +607,24 @@ GTEST_TEST(DistanceToPoint, Cylinder) {
 }
 #endif
 
-// Helper functions to indicate expectation on whether I get a distance result
-// with a cylinder based on scalar type.
-template <typename T>
-int ExpectedCylinderResult() {
-  return 1;
-}
-
-template <>
-int ExpectedCylinderResult<AutoDiffXd>() {
-  return 0;
-}
-
-// Helper functions to indicate expectation on whether I get a distance result
-// with a ellipsoid based on scalar type.
-template <typename T>
-int ExpectedEllipsoidResult() {
-  return 1;
-}
-
-template <>
-int ExpectedEllipsoidResult<AutoDiffXd>() {
-  return 0;
+// Helper function to indicate expectation on whether I get a distance result
+// based on scalar type T and fcl shape S.
+template <typename T, typename S>
+int ExpectedResult() {
+  if constexpr (std::is_same_v<T, double>) {
+    return 1;
+  }
+  if constexpr (std::is_same_v<T, AutoDiffXd>) {
+    if (std::is_same_v<S, fcl::Cylinderd> ||
+        std::is_same_v<S, fcl::Ellipsoidd>) {
+      return 0;
+    }
+    return 1;
+  }
+  if constexpr (std::is_same_v<T, symbolic::Expression>) {
+    return 0;
+  }
+  DRAKE_UNREACHABLE();
 }
 
 template <typename T>
@@ -667,36 +663,36 @@ void TestScalarShapeSupport() {
   // Box
   {
     run_callback(make_shared<fcl::Boxd>(1.0, 2.0, 3.5));
-    EXPECT_EQ(distances.size(), 1);
+    EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Boxd>()));
   }
 
   // Capsule
   {
     run_callback(make_shared<fcl::Capsuled>(1.0, 2.0));
-    EXPECT_EQ(distances.size(), 1);
+    EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Capsuled>()));
   }
 
   // Cylinder
   {
     run_callback(make_shared<fcl::Cylinderd>(1.0, 2.0));
-    EXPECT_EQ(distances.size(), ExpectedCylinderResult<T>());
+    EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Cylinderd>()));
   }
 
   // Ellipsoid
   { run_callback(make_shared<fcl::Ellipsoidd>(1.5, 0.7, 3));
-    EXPECT_EQ(distances.size(), ExpectedEllipsoidResult<T>());
+    EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Ellipsoidd>()));
   }
 
   // HalfSpace
   {
     run_callback(make_shared<fcl::Halfspaced>(Vector3d::UnitZ(), 0));
-    EXPECT_EQ(distances.size(), 1);
+    EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Halfspaced>()));
   }
 
   // Sphere
   {
     run_callback(make_shared<fcl::Sphered>(1.0));
-    EXPECT_EQ(distances.size(), 1);
+    EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Sphered>()));
   }
 
   // Convex
@@ -715,6 +711,10 @@ GTEST_TEST(DistanceToPoint, ScalarShapeSupportDouble) {
 // The autodiff version of DistanceToPoint.ScalarShapeSupportDouble.
 GTEST_TEST(DistanceToPoint, ScalarShapeSupportAutoDiff) {
   TestScalarShapeSupport<AutoDiffXd>();
+}
+
+GTEST_TEST(DistanceToPoint, ScalarShapeSupportExpression) {
+  TestScalarShapeSupport<symbolic::Expression>();
 }
 
 }  // namespace
