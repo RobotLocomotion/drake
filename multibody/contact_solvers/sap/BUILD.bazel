@@ -13,12 +13,29 @@ package(
 )
 
 drake_cc_library(
+    name = "sap_constraint",
+    srcs = ["sap_constraint.cc"],
+    hdrs = ["sap_constraint.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "sap_contact_problem",
     srcs = ["sap_contact_problem.cc"],
     hdrs = ["sap_contact_problem.h"],
     deps = [
         "//common:default_scalars",
         "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_constraint_test",
+    deps = [
+        ":sap_constraint",
     ],
 )
 
