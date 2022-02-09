@@ -26,27 +26,6 @@ SapContactProblem<T>::SapContactProblem(const T& time_step,
   DRAKE_THROW_UNLESS(v_star_.size() == nv_);
 }
 
-template <typename T>
-int SapContactProblem<T>::num_cliques() const {
-  return A_.size();
-}
-
-template <typename T>
-int SapContactProblem<T>::num_velocities() const {
-  return nv_;
-}
-
-template <typename T>
-int SapContactProblem<T>::num_velocities(int clique_index) const {
-  DRAKE_DEMAND(0 <= clique_index && clique_index < num_cliques());
-  return A_[clique_index].rows();
-}
-
-template <typename T>
-const std::vector<MatrixX<T>>& SapContactProblem<T>::dynamics_matrix() const {
-  return A_;
-}
-
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody

@@ -13,9 +13,11 @@ namespace internal {
 /* The SAP formulation linearizes the discrete time dynamics of the mechanical
 system of interest to obtain the SAP momentum equations:
   A⋅(v−v*) = Jᵀ⋅γ                                                           (1)
-where A is an SPD approximation of the linearized discrete dynamics, v* are the
-free-motion generalized velocities (i.e. the velocities of the system when
-constraint impulses are zero), γ are the contraint's impulses and J the
+where v denotes the generalized velocities of the system, of size nv. Matrix A
+(of size nv x nv) is a symmetric positive definite (SPD) approximation of the
+linearized discrete dynamics, v* (of size nv) are the free-motion generalized
+velocities (i.e. the velocities of the system when constraint impulses are
+zero), γ (of size nk) are the constraint's impulses and J (of size nk x nv) the
 constraint's Jacobian. SAP's formulation solves a strictly convex optimization
 problem such that at optimality:
   1. the linearized momentum equation in Eq. (1) is satisfied and,
@@ -27,39 +29,14 @@ Therefore a SapContactProblem is described by:
   2. the free motion velocities v* and,
   3. the set of constraints for the problem (which will define the Jacobian J).
 
-Sparsity Structure of the Dynamics and Cliques
-==============================================
-
-The SAP formulation allows to couple an arbitrary number of mechanical systems
-by constraints. That is, we can have several Equations (1) coupled by
-constraints, each momentum equation corresponding to different mechanical
-systems. Consider, say, two robots that only interact with each other by
-contact. Unless they are in contact, their dynamics can be solved separately.
-
-Another way to say this is that the dynamics matrix A in Eq. (1) is block
-diagonal. Each block of this diagonal matrix groups DOFs together in what herein
-we call "cliques". In multibody code, we associate a clique with a tree (a full
-MultibodyPlant model is a "forest" of many trees. In particular, a single 6 DOF
-floating body is its own tree). With deformable FEM models, our cliques will be
-associated with the group of participating DOFs, each deformable body having its
-own clique. In both cases we will store A as dense blocks.
-NOTE: For FEM the contact problem we actually build only entails those DOFs that
-"participate" through contact, typically boundary DOFs. Even though the full
-volumetric FEM problem is sparse, the dynamics matrix A that only couples
-boundary DOFs is always dense.
-NOTE: For rigid body systems we could take advantage of branch induced sparsity.
-Future versions of this code will consume additional information (the array of
-parents, see [Featherstone, 2008] and [Carpentier et al., 2021]) to this end.
-
+Often times matrix A is block diagonal. This block diagonal structure of A
+induces a partition of the nv generalized velocities. Herein a subset in this
+partition is referred to as "clique". The total number of cliques in this
+partition equals the number of diagonal blocks in A.
 
 [Castro et al., 2021] Castro A., Permenter F. and Han X., 2021. An Unconstrained
 Convex Formulation of Compliant Contact. Available at
-https://arxiv.org/abs/2110.10107
-[Carpentier et al., 2021] Carpentier J., Budhiraja R. and Mansard N., 2021.
-Proximal and sparse resolution of constrained dynamic equations. In Robotics:
-Science and Systems 2021.
-[Featherstone, 2008] Featherstone, R., 2008. Rigid body dynamics algorithms.
-Springer.*/
+https://arxiv.org/abs/2110.10107 */
 template <typename T>
 class SapContactProblem {
  public:
@@ -79,8 +56,13 @@ class SapContactProblem {
   //   number of cliques is A.size() and the number of DOFs in the c-th clique
   //   is A[c].rows() (or A[c].cols() since each block is square). The total
   //   number of generalized velocities of the system is nv = ∑A[c].rows().
+  //   This class does not check for the positive definiteness of each block in
+  //   A, it is the responsability of the calling code to enforce this
+  //   invariant. Ultimately, the SAP solver can fail to converge if this
+  //   requirement is not satisfied.
   // @param[in] v_star
-  //   Free-motion velocities, of size nv.
+  //   Free-motion velocities, of size nv. DOFs in v_star must match the
+  //   ordering implicitly induced by A.
   //
   // @throws if the blocks in A are not square or have zero size.
   // @throws if the size of v_star is not nv = ∑A[c].rows().
@@ -93,19 +75,22 @@ class SapContactProblem {
   // TODO(amcastro-tri): Implement APIs to add constraints in follow up PRs.
 
   // Returns the number of cliques.
-  int num_cliques() const;
+  int num_cliques() const { return A_.size(); }
 
   // The total number of generalized velocities for this problem.
-  int num_velocities() const;
+  int num_velocities() const { return nv_; }
 
   // The number of generalized velocities for clique with index `clique_index`.
   // clique_index must be in the interval [0, num_cliques()).
-  int num_velocities(int clique_index) const;
+  int num_velocities(int clique_index) const {
+    DRAKE_DEMAND(0 <= clique_index && clique_index < num_cliques());
+    return A_[clique_index].rows();
+  }
 
   const T& time_step() const { return time_step_; }
 
   // Returns the block diagonal dynamics matrix A.
-  const std::vector<MatrixX<T>>& dynamics_matrix() const;
+  const std::vector<MatrixX<T>>& dynamics_matrix() const { return A_; }
 
   // Returns the full vector of free-motion velocities v*, of size
   // num_velocities().
