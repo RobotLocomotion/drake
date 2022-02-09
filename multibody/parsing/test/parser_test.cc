@@ -183,7 +183,7 @@ GTEST_TEST(FileParserTest, BadStringTest) {
   // Malformed URDF string is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromString("bad", "urdf"),
-      "Failed to parse XML string: XML_ERROR_PARSING_TEXT");
+      ".*Failed to parse XML string: XML_ERROR_PARSING_TEXT");
 
   // Unknown extension is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(

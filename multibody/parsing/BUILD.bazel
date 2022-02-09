@@ -34,6 +34,7 @@ drake_cc_package_library(
     ],
     deps = [
         ":detail_misc",
+        ":detail_parsing_workspace",
         ":detail_scene_graph",
         ":detail_sdf_parser",
         ":detail_urdf_parser",
@@ -121,7 +122,6 @@ drake_cc_library(
         ":detail_misc",
         ":package_map",
         "//geometry:geometry_roles",
-        "//geometry:scene_graph",
         "//multibody/plant:coulomb_friction",
         "@sdformat",
     ],
@@ -170,9 +170,8 @@ drake_cc_library(
     ],
     deps = [
         ":detail_misc",
-        ":package_map",
+        ":detail_parsing_workspace",
         ":scoped_names",
-        "//multibody/plant",
         "@fmt",
         "@tinyxml2",
     ],
@@ -205,6 +204,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "detail_parsing_workspace",
+    hdrs = [
+        "detail_parsing_workspace.h",
+    ],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        ":package_map",
+        "//common:diagnostic_policy",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
     name = "parser",
     srcs = [
         "parser.cc",
@@ -216,8 +230,10 @@ drake_cc_library(
         "//visibility:public",
     ],
     deps = [
+        ":detail_parsing_workspace",
         ":detail_sdf_parser",
         ":detail_urdf_parser",
+        "//common:diagnostic_policy",
         "//common:filesystem",
     ],
 )
