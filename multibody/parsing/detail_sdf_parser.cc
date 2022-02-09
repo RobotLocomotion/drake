@@ -1171,9 +1171,10 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   // New instances will have indices starting from cur_num_models
   int cur_num_models = plant->num_model_instances();
   if (is_urdf) {
+    ParsingWorkspace w{package_map, {}, plant};
     main_model_instance =
         AddModelFromUrdf(data_source, include.LocalModelName().value_or(""),
-                         include.AbsoluteParentName(), package_map, plant);
+                         include.AbsoluteParentName(), w);
     // Add explicit model frame to first link.
     auto body_indices = plant->GetBodyIndices(main_model_instance);
     if (body_indices.empty()) {
