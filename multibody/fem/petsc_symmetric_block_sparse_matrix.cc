@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/petsc_symmetric_block_sparse_matrix.h"
+#include "drake/multibody/fem/petsc_symmetric_block_sparse_matrix.h"
 
 #include <numeric>
 #include <string>
@@ -137,8 +137,8 @@ class PetscSymmetricBlockSparseMatrix::Impl {
       case PreconditionerType::kIncompleteCholesky:
         PCSetType(preconditioner_, PCICC);
         break;
-      case PreconditionerType::kJacobi:
-        PCSetType(preconditioner_, PCJACOBI);
+      case PreconditionerType::kNone:
+        PCSetType(preconditioner_, PCNONE);
         break;
     }
 
