@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/petsc_symmetric_block_sparse_matrix.h"
+#include "drake/multibody/fem/petsc_symmetric_block_sparse_matrix.h"
 
 #include <numeric>
 #include <string>
