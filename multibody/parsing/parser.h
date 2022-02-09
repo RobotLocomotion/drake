@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -30,6 +31,18 @@ class Parser final {
   explicit Parser(
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
+
+  /// Configuration for Parser to control diagnostics. Refer to member fields
+  /// for details.
+  struct Options {
+    /// Treat warnings as errors.
+    bool strict{false};
+
+    /// Do not report warnings.
+    bool quiet{false};
+  };
+  /// Gets a mutable reference to the Options used by this parser.
+  Options& options() {return options_; }
 
   /// Gets a mutable reference to the PackageMap used by this parser.
   PackageMap& package_map() { return package_map_; }
@@ -88,7 +101,9 @@ class Parser final {
       const std::string& model_name = {});
 
  private:
+  Options options_;
   PackageMap package_map_;
+  drake::internal::DiagnosticPolicy diagnostic_policy_;
   MultibodyPlant<double>* const plant_;
   geometry::SceneGraph<double>* const scene_graph_;
 };

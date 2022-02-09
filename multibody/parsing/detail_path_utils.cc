@@ -59,6 +59,7 @@ std::optional<string> GetPackagePath(
   if (package_map.Contains(package)) {
     return package_map.GetPath(package);
   } else {
+    // TODO(jwnimmer-tri) Use the DiagnosticPolicy here instead.
     drake::log()->warn("Couldn't find package '{}' in the supplied package"
                        "path: {}", package, package_map);
     return std::nullopt;
