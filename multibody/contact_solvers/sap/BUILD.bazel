@@ -1,0 +1,33 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
+    name = "sap_constraint",
+    srcs = ["sap_constraint.cc"],
+    hdrs = ["sap_constraint.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_constraint_test",
+    deps = [
+        ":sap_constraint",
+    ],
+)
+
+add_lint_tests()
