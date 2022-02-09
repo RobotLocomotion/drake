@@ -164,8 +164,11 @@ class TestMath(unittest.TestCase):
         self.assertIsInstance(X @ [0, 0, 0], np.ndarray)
         if T != Expression:
             self.assertTrue(X.IsExactlyIdentity())
-            self.assertTrue(X.IsIdentityToEpsilon(translation_tolerance=0))
+            self.assertTrue(X.IsNearlyIdentity(translation_tolerance=0))
             self.assertTrue(X.IsNearlyEqualTo(other=X, tolerance=0))
+            # TODO(2022-06-01) Remove with completion of deprecation.
+            with catch_drake_warnings(expected_count=1):
+                self.assertTrue(X.IsIdentityToEpsilon(translation_tolerance=0))
         # - Test shaping (#13885).
         v = np.array([0., 0., 0.])
         vs = np.array([[1., 2., 3.], [4., 5., 6.]]).T
