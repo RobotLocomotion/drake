@@ -7,6 +7,7 @@ from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import Value
 from pydrake.math import RigidTransform_
+from pydrake.symbolic import Expression
 from pydrake.systems.framework import InputPort_, OutputPort_
 from pydrake.systems.sensors import (
     CameraInfo,
@@ -22,7 +23,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
         mut.HydroelasticContactRepresentation.kTriangle
         mut.HydroelasticContactRepresentation.kPolygon
 
-    @numpy_compare.check_nonsymbolic_types
+    @numpy_compare.check_all_types
     def test_scene_graph_api(self, T):
         SceneGraph = mut.SceneGraph_[T]
         InputPort = InputPort_[T]
@@ -293,7 +294,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
                     role=role),
                 1)
 
-    @numpy_compare.check_nonsymbolic_types
+    @numpy_compare.check_all_types
     def test_frame_pose_vector_api(self, T):
         FramePoseVector = mut.FramePoseVector_[T]
         RigidTransform = RigidTransform_[T]
@@ -309,16 +310,19 @@ class TestGeometrySceneGraph(unittest.TestCase):
         obj.clear()
         self.assertEqual(obj.size(), 0)
 
-    @numpy_compare.check_nonsymbolic_types
+    @numpy_compare.check_all_types
     def test_penetration_as_point_pair_api(self, T):
         obj = mut.PenetrationAsPointPair_[T]()
         self.assertIsInstance(obj.id_A, mut.GeometryId)
         self.assertIsInstance(obj.id_B, mut.GeometryId)
         self.assertTupleEqual(obj.p_WCa.shape, (3,))
         self.assertTupleEqual(obj.p_WCb.shape, (3,))
-        self.assertEqual(obj.depth, -1.)
+        if T == Expression:
+            self.assertTrue(obj.depth.EqualTo(-1.0))
+        else:
+            self.assertEqual(obj.depth, -1.0)
 
-    @numpy_compare.check_nonsymbolic_types
+    @numpy_compare.check_all_types
     def test_signed_distance_api(self, T):
         obj = mut.SignedDistancePair_[T]()
         self.assertIsInstance(obj.id_A, mut.GeometryId)
@@ -328,7 +332,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertIsInstance(obj.distance, T)
         self.assertTupleEqual(obj.nhat_BA_W.shape, (3,))
 
-    @numpy_compare.check_nonsymbolic_types
+    @numpy_compare.check_all_types
     def test_signed_distance_to_point_api(self, T):
         obj = mut.SignedDistanceToPoint_[T]()
         self.assertIsInstance(obj.id_G, mut.GeometryId)
@@ -336,7 +340,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertIsInstance(obj.distance, T)
         self.assertTupleEqual(obj.grad_W.shape, (3,))
 
-    @numpy_compare.check_nonsymbolic_types
+    @numpy_compare.check_all_types
     def test_query_object(self, T):
         RigidTransform = RigidTransform_[float]
         SceneGraph = mut.SceneGraph_[T]
@@ -384,13 +388,15 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertEqual(len(results), 0)
         results = query_object.ComputePointPairPenetration()
         self.assertEqual(len(results), 0)
-        hydro_rep = mut.HydroelasticContactRepresentation.kTriangle
-        results = query_object.ComputeContactSurfaces(representation=hydro_rep)
-        self.assertEqual(len(results), 0)
-        surfaces, results = query_object.ComputeContactSurfacesWithFallback(
-            representation=hydro_rep)
-        self.assertEqual(len(surfaces), 0)
-        self.assertEqual(len(results), 0)
+        if T != Expression:
+            hydro_rep = mut.HydroelasticContactRepresentation.kTriangle
+            results = query_object.ComputeContactSurfaces(
+                representation=hydro_rep)
+            self.assertEqual(len(results), 0)
+            surfaces, results = query_object.ComputeContactSurfacesWithFallback(  # noqa
+                representation=hydro_rep)
+            self.assertEqual(len(surfaces), 0)
+            self.assertEqual(len(results), 0)
         results = query_object.ComputeSignedDistanceToPoint(p_WQ=(1, 2, 3))
         self.assertEqual(len(results), 0)
         results = query_object.FindCollisionCandidates()
@@ -432,7 +438,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
             X_PC=RigidTransform())
         self.assertIsInstance(image, ImageLabel16I)
 
-    @numpy_compare.check_nonsymbolic_types
+    @numpy_compare.check_all_types
     def test_value_instantiations(self, T):
         Value[mut.FramePoseVector_[T]]
         Value[mut.QueryObject_[T]]
