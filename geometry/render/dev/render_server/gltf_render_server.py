@@ -60,13 +60,14 @@ import datetime
 from enum import Enum
 from hashlib import sha256
 from pathlib import Path
+from io import BytesIO
 import itertools
 import shutil
 import subprocess
 import sys
 import tempfile
 from textwrap import dedent
-from typing import Dict, List, Union, Tuple, TYPE_CHECKING
+from typing import Dict, Union, Tuple, TYPE_CHECKING
 
 from flask import Flask, send_file
 
@@ -94,8 +95,7 @@ NO_CLEANUP = False
 """Whether or not the server should cleanup its local cache.
 
 For debugging purposes, set this to ``True`` to prevent the deletion of scene
-files / rendered images.  See also: :func:`delete_server_cache`,
-:func:`RenderRequest._delete_cache_files_older_than`.
+files / rendered images.  See also: :func:`delete_server_cache`.
 """
 
 THIS_FILE_DIR = Path(__file__).parent.absolute()
@@ -364,10 +364,6 @@ class RenderRequest:
 
         self._error_on_extra_form_entries()
 
-        # Cleanup any files older than 5 minutes.
-        if not NO_CLEANUP:
-            self._delete_cache_files_older_than(datetime.timedelta(minutes=5))
-
         # Parse and validate the scene related form field entries.
         self.scene_sha256 = self._parse_string("scene_sha256")
         self.image_type = self._parse_string("image_type")
@@ -450,54 +446,6 @@ class RenderRequest:
             raise RenderError(
                 f"Extra <form> field{s} provided: {', '.join(extras)}"
             )
-
-    def _delete_cache_files_older_than(self, duration: datetime.timedelta):
-        """Delete any files in :data:`SERVER_CACHE` older than ``duration``.
-        Deletes any files in the :data:`SERVER_CACHE` that have an mtime
-        (modified time) older than :attr:`python:datetime.datetime.now` by
-        at least ``duration``.  Any failures are ignored.
-
-        Parameters:
-            duration: The criteria for if a file is "too old", e.g.,
-                ``datetime.timedelta(minutes=5)`` implies "delete any files
-                older than five minutes.
-        """
-        try:
-            # Accumulate the list of files that are too old.
-            curr_time = datetime.datetime.now()
-            files_to_delete: List[Path] = []
-            for path in SERVER_CACHE.glob("**/*.*"):
-                if not path.is_file():
-                    continue
-                # TODO(svenevs): only delete image files instead?
-                # Do not delete scene files that may be getting rendered.
-                if path.suffix.lower() == "gltf":
-                    continue
-
-                mtime = datetime.datetime.fromtimestamp(path.stat().st_mtime)
-                if (curr_time - mtime) > duration:
-                    files_to_delete.append(path)
-
-            # If any found, delete them now.
-            if files_to_delete:
-                sep = "*" * 80  # separator to make logging obvious
-                if self.log_to_console:
-                    print(f"{sep}\n* Deleting files older than {duration}")
-                for file_path in files_to_delete:
-                    # NOTE: this happens in a threaded context, another worker
-                    # may end up deleting before us.
-                    try:
-                        file_path.unlink(missing_ok=True)
-                        if self.log_to_console:
-                            print(f"* {file_path}")
-                    except Exception:
-                        pass
-                if self.log_to_console:
-                    print(sep)
-        except Exception as e:
-            if self.log_to_console:
-                sep = "!" * 80
-                print(f"{sep}\n! Not able to cleanup files! {e}\n{sep}")
 
     def _check_type(
         self,
@@ -855,7 +803,7 @@ def render_endpoint():
             if not NO_CLEANUP:
                 if render_request.log_to_console:
                     scene_str = str(render_request.scene_path)
-                    print(f"==> Deleting complete scene file {scene_str}.")
+                    print(f"==> Deleting scene file {scene_str}.")
                 render_request.scene_path.unlink(missing_ok=True)
 
             # The mime type response is only populated based off the file
@@ -870,17 +818,35 @@ def render_endpoint():
             elif image_extension in {"tif", "tiff"}:
                 mime_type = "image/tiff"
 
-            # There is no way to delete the file or run code after send_file.
-            # One option would be to load the file into memory, delete it, and
-            # pass the memory buffer to send_file.  This may result in
-            # undesirable latency depending on the wsgi wrapper being used, so
-            # instead a server render request results in deleting any cache
-            # files older than five minutes.  See implementation / use of
-            # RenderRequest._delete_cache_files_older_than method.
+            # If we are not deleting the file, use the file path directly for
+            # simplicity.  Otherwise, we load the image into RAM, delete it,
+            # and then send that.  See the documentation:
             #
-            # See also: flask configuration USE_X_SENDFILE
-            # https://flask.palletsprojects.com/en/2.0.x/config/#USE_X_SENDFILE
-            return send_file(output_image, mimetype=mime_type)
+            # https://flask.palletsprojects.com/en/2.0.x/api/#flask.send_file
+            #
+            # There is a small concern in loading into RAM when sending files
+            # in the sense that the potential wrapping frameworks such as nginx
+            # or apache are optimized for sending files (not python buffers).
+            #
+            # However, in practice, the size of the image file will be on the
+            # order of megabytes and it is preferable to delete the image file
+            # now rather than implement a cleanup scheme on the next request
+            # (you cannot execute code after send_file).
+            if NO_CLEANUP:
+                return send_file(output_image, mimetype=mime_type)
+            else:
+                buffer = None
+                with open(output_image, "rb") as f:
+                    buffer = BytesIO(f.read())
+                if render_request.log_to_console:
+                    print(f"==> Deleting rendering {str(output_image)}.")
+                output_image.unlink(missing_ok=True)
+                return send_file(
+                    buffer,
+                    mimetype=mime_type,
+                    # NOTE: do not reveal internal details of the server.
+                    attachment_filename=f"rendering.{image_extension}",
+                )
         except RenderError as re:
             return re.flask_json_code_response()
         except Exception as e:
