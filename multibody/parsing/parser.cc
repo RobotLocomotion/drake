@@ -9,6 +9,7 @@
 namespace drake {
 namespace multibody {
 
+using drake::internal::DiagnosticDetail;
 using internal::AddModelFromSdf;
 using internal::AddModelFromUrdf;
 using internal::AddModelsFromSdf;
@@ -24,6 +25,18 @@ Parser::Parser(
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
   }
+
+  auto warnings_maybe_strict =
+      [this](const DiagnosticDetail& detail) {
+        if (is_strict_) {
+          diagnostic_policy_.Error(detail);
+        } else {
+          diagnostic_policy_.WarningDefaultAction(detail);
+        }
+      };
+  // TODO(rpoyner-tri): implement accumulated errors, as opposed to
+  // throw-on-first-error.
+  diagnostic_policy_.SetActionForWarnings(warnings_maybe_strict);
 }
 
 namespace {
@@ -36,6 +49,7 @@ FileType DetermineFileType(const std::string& file_name) {
   if ((ext == ".sdf") || (ext == ".SDF")) {
     return FileType::kSdf;
   }
+  // TODO(jwnimmer-tri) Use the DiagnosticPolicy here instead.
   throw std::runtime_error(fmt::format(
       "The file type '{}' is not supported for '{}'",
       ext, file_name));

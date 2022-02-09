@@ -290,7 +290,7 @@ TEST_F(UrdfParserTest, JointParsingTagMismatchTest) {
       "joint_parsing_test_tag_mismatch_1.urdf");
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddModelFromUrdfFile(full_name_mismatch_1, ""),
-      "ERROR: Joint fixed_joint of type fixed is a standard joint type, "
+      ".*Joint fixed_joint of type fixed is a standard joint type, "
       "and should be a <joint>");
 
   const std::string full_name_mismatch_2 = FindResourceOrThrow(
@@ -298,7 +298,7 @@ TEST_F(UrdfParserTest, JointParsingTagMismatchTest) {
       "joint_parsing_test_tag_mismatch_2.urdf");
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddModelFromUrdfFile(full_name_mismatch_2, ""),
-      "ERROR: Joint ball_joint of type ball is a custom joint type, "
+      ".*Joint ball_joint of type ball is a custom joint type, "
       "and should be a <drake:joint>");
 }
 
@@ -641,7 +641,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
     </robot>)"),
-      "Unable to find the <drake:bushing_frameC> tag on line [0-9]+");
+      ".*Unable to find the <drake:bushing_frameC> tag on line [0-9]+");
 
   // Test non-existent frame
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -661,7 +661,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
     </robot>)"),
-      "Frame: frameZ specified for <drake:bushing_frameC> does not exist in "
+      ".*Frame: frameZ specified for <drake:bushing_frameC> does not exist in "
       "the model.");
 
   // Test missing constants tag
@@ -681,7 +681,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
     </robot>)"),
-      "Unable to find the <drake:bushing_torque_damping> tag on line [0-9]+");
+      ".*Unable to find the <drake:bushing_torque_damping> tag on line [0-9]+");
 
   // Test missing `value` attribute
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -701,7 +701,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
     </robot>)"),
-      "Unable to read the 'value' attribute for the"
+      ".*Unable to read the 'value' attribute for the"
       " <drake:bushing_torque_stiffness> tag on line [0-9]+");
 }
 
@@ -851,7 +851,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest,
   </drake:collision_filter_group>
 </robot>)"""),
       ".*The tag <drake:collision_filter_group> does not specify the required "
-      "attribute \"name\" at line 5..*");
+      "attribute \"name\".*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       ParseTestString(R"""(
@@ -862,7 +862,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest,
   </drake:collision_filter_group>
 </robot>)"""),
       ".*The tag <drake:member> does not specify the required "
-      "attribute \"link\" at line 6..*");
+      "attribute \"link\".*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       ParseTestString(R"""(
@@ -873,7 +873,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest,
   </drake:collision_filter_group>
 </robot>)"""),
       ".*The tag <drake:ignored_collision_filter_group> does not specify the "
-      "required attribute \"name\" at line 6..*");
+      "required attribute \"name\".*");
 }
 
 }  // namespace

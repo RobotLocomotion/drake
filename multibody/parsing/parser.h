@@ -38,6 +38,10 @@ class Parser final {
   /// Gets a mutable reference to the PackageMap used by this parser.
   PackageMap& package_map() { return package_map_; }
 
+  /// Cause all subsequent Add*Model*() operations to use strict parsing;
+  /// warnings will be treated as errors.
+  void SetStrictParsing() { is_strict_ = true; }
+
   /// Parses the SDF or URDF file named in @p file_name and adds all of its
   /// model(s) to @p plant.
   ///
@@ -92,6 +96,7 @@ class Parser final {
       const std::string& model_name = {});
 
  private:
+  bool is_strict_{false};
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;
   MultibodyPlant<double>* const plant_;
