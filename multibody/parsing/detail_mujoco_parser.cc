@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_mujoco_parser.h"
 
+#include <limits>
 #include <map>
 #include <memory>
 #include <string>
@@ -14,6 +15,10 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
 #include "drake/multibody/parsing/scoped_names.h"
+#include "drake/multibody/tree/ball_rpy_joint.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/weld_joint.h"
 
 namespace drake {
 namespace multibody {
@@ -138,6 +143,94 @@ class MujocoParser {
     return RigidTransformd(X_default.rotation(), pos);
   }
 
+  void ParseJoint(XMLElement* node, const RigidBody<double>& parent,
+                  const RigidBody<double>& child, const RigidTransformd& X_WC,
+                  const RigidTransformd& X_PC) {
+    std::string name;
+    if (!ParseStringAttribute(node, "name", &name)) {
+      // Use "parent-body" as the default joint name.
+      name = fmt::format("{}-{}", parent.name(), child.name());
+    }
+
+    Vector3d pos = Vector3d::Zero();
+    ParseVectorAttribute(node, "pos", &pos);
+    const RigidTransformd X_PJ(pos);
+    const RigidTransformd X_CJ = X_PC.InvertAndCompose(X_PJ);
+
+    Vector3d axis = Vector3d::UnitZ();
+    ParseVectorAttribute(node, "axis", &axis);
+
+    double damping{0.0};
+    ParseScalarAttribute(node, "damping", &damping);
+
+    std::string type;
+    if (!ParseStringAttribute(node, "type", &type)) {
+      type = "hinge";
+    }
+
+    bool limited = node->BoolAttribute("limited", false);
+    Vector2d range(0.0, 0.0);
+    ParseVectorAttribute(node, "range", &range);
+
+    if (type == "free") {
+      if (damping != 0.0) {
+        drake::log()->warn(
+            "Damping was specified for the 'free' joint {}, but is not "
+            "supported for free bodies.",
+            name);
+      }
+      plant_->SetDefaultFreeBodyPose(child, X_WC);
+    } else if (type == "ball") {
+      plant_->AddJoint<BallRpyJoint>(name, parent, X_PJ, child, X_CJ, damping);
+      if (limited) {
+        WarnUnsupportedAttribute(*node, "range");
+      }
+    } else if (type == "slide") {
+      JointIndex index =
+          plant_
+              ->AddJoint<PrismaticJoint>(
+                  name, parent, X_PJ, child, X_CJ, axis,
+                  -std::numeric_limits<double>::infinity(),
+                  std::numeric_limits<double>::infinity(), damping)
+              .index();
+      if (limited) {
+        plant_->get_mutable_joint(index).set_position_limits(
+            Vector1d{range[0]}, Vector1d{range[1]});
+      }
+    } else if (type == "hinge") {
+      JointIndex index = plant_
+                             ->AddJoint<RevoluteJoint>(
+                                 name, parent, X_PJ, child, X_CJ, axis, damping)
+                             .index();
+      if (limited) {
+        if (angle_ == kDegree) {
+          range *= (M_PI / 180.0);
+        }
+        plant_->get_mutable_joint(index).set_position_limits(
+            Vector1d{range[0]}, Vector1d{range[1]});
+      }
+    } else {
+      throw std::logic_error("Unknown joint type " + type);
+    }
+
+    WarnUnsupportedAttribute(*node, "class");
+    WarnUnsupportedAttribute(*node, "group");
+    WarnUnsupportedAttribute(*node, "springdamper");
+    WarnUnsupportedAttribute(*node, "solreflimit");
+    WarnUnsupportedAttribute(*node, "solimplimit");
+    WarnUnsupportedAttribute(*node, "solreffriction");
+    WarnUnsupportedAttribute(*node, "solimpfriction");
+    WarnUnsupportedAttribute(*node, "stiffness");
+    WarnUnsupportedAttribute(*node, "margin");
+    WarnUnsupportedAttribute(*node, "ref");
+    WarnUnsupportedAttribute(*node, "springref");
+    // TODO(joemasterjohn): Parse and stash "armature" tag for the appropriate
+    // JointActuator attached to this joint.
+    WarnUnsupportedAttribute(*node, "armature");
+    WarnUnsupportedAttribute(*node, "frictionloss");
+    WarnUnsupportedAttribute(*node, "user");
+  }
+
   SpatialInertia<double> ParseInertial(XMLElement* node) {
     // We use F to denote the "inertial frame" in the MujoCo documentation.  B
     // is the body frame.
@@ -155,15 +248,14 @@ class MujocoParser {
 
     Vector3d diag;
     if (ParseVectorAttribute(node, "diaginertia", &diag)) {
-      I_BFo_B =
-          RotationalInertia<double>(diag[0], diag[1], diag[2])
-              .ReExpress(X_BF.rotation());
+      I_BFo_B = RotationalInertia<double>(diag[0], diag[1], diag[2])
+                    .ReExpress(X_BF.rotation());
     } else {
       // fullinertia is required if diaginertia is not specified.
       Vector6d full;
       if (ParseVectorAttribute(node, "fullinertia", &full)) {
         I_BFo_B = RotationalInertia<double>(full[0], full[1], full[2], full[3],
-                                           full[4], full[5]);
+                                            full[4], full[5]);
       } else {
         throw std::logic_error(
             "The inertial tag must include either the diaginertia or "
@@ -397,6 +489,7 @@ class MujocoParser {
   }
 
   void ParseBody(XMLElement* node, const RigidBody<double>& parent,
+                 const RigidTransformd& X_WP,
                  const std::string& parent_class = "") {
     std::string body_name;
     if (!ParseStringAttribute(node, "name", &body_name)) {
@@ -460,8 +553,48 @@ class MujocoParser {
     }
 
     const RigidTransformd X_PB = ParseTransform(node);
-    WarnUnsupportedElement(*node, "joint");
-    unused(parent, X_PB);  // These will be used for the joints.
+    const RigidTransformd X_WB = X_WP * X_PB;
+
+    XMLElement* joint_node = node->FirstChildElement("joint");
+    if (joint_node) {
+      // We apply joint sequentially with a dummy body inserted.  Each joint is
+      // in the coordinates of the parent body, until the last, which
+      // transforms to this body's coordinates.
+      const RigidBody<double>* last_body = &parent;
+      int dummy_bodies = 0;
+      for (; joint_node; joint_node = joint_node->NextSiblingElement("joint")) {
+        if (joint_node->NextSiblingElement("joint")) {
+          const RigidBody<double>& dummy_body = plant_->AddRigidBody(
+              fmt::format("{}{}", body_name, dummy_bodies++), model_instance_,
+              SpatialInertia<double>(0, {0, 0, 0}, {0, 0, 0}));
+          ParseJoint(joint_node, *last_body, dummy_body, X_WP,
+                     RigidTransformd());
+          last_body = &dummy_body;
+        } else {
+          ParseJoint(joint_node, *last_body, body, X_WB, X_PB);
+        }
+
+        std::string type;
+        ParseStringAttribute(joint_node, "type", &type);
+        if (type == "free") {
+          if (dummy_bodies > 0) {
+            throw std::logic_error(
+                fmt::format("No other joints can be defined in the body {} if "
+                            "a free joint is defined.",
+                            body_name));
+          }
+          break;  // No other joints are allowed if the joint is "free".
+        }
+      }
+    } else {  // no "joint" element.
+      if (XMLElement* freejoint_node = node->FirstChildElement("freejoint")) {
+        WarnUnsupportedElement(*freejoint_node, "name");
+        WarnUnsupportedElement(*freejoint_node, "group");
+        plant_->SetDefaultFreeBodyPose(body, X_WB);
+      } else {
+        plant_->WeldFrames(parent.body_frame(), body.body_frame(), X_PB);
+      }
+    }
 
     WarnUnsupportedAttribute(*node, "mocap");
     WarnUnsupportedAttribute(*node, "user");
@@ -474,7 +607,7 @@ class MujocoParser {
     // Parses child body elements.
     for (XMLElement* link_node = node->FirstChildElement("body"); link_node;
          link_node = link_node->NextSiblingElement("body")) {
-      ParseBody(link_node, body, child_class);
+      ParseBody(link_node, body, X_WB, child_class);
     }
   }
 
@@ -501,7 +634,7 @@ class MujocoParser {
     // Parses child body elements.
     for (XMLElement* link_node = node->FirstChildElement("body"); link_node;
          link_node = link_node->NextSiblingElement("body")) {
-      ParseBody(link_node, plant_->world_body());
+      ParseBody(link_node, plant_->world_body(), RigidTransformd());
     }
   }
 
@@ -537,7 +670,6 @@ class MujocoParser {
 
     WarnUnsupportedElement(*node, "mesh");
     WarnUnsupportedElement(*node, "material");
-    WarnUnsupportedElement(*node, "joint");
     WarnUnsupportedElement(*node, "site");
     WarnUnsupportedElement(*node, "camera");
     WarnUnsupportedElement(*node, "light");
@@ -590,7 +722,14 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "settotalmass");
     WarnUnsupportedAttribute(*node, "balanceinertia");
     WarnUnsupportedAttribute(*node, "strippath");
-    WarnUnsupportedAttribute(*node, "coordinate");
+    std::string coordinate;
+    if (ParseStringAttribute(node, "coordinate", &coordinate)) {
+      if (coordinate != "local") {
+        throw std::logic_error(fmt::format(
+            "Compiler attribute coordinate={} is not supported yet.",
+            coordinate));
+      }
+    }
     std::string angle;
     if (ParseStringAttribute(node, "angle", &angle)) {
       if (angle == "degree") {
@@ -683,7 +822,7 @@ class MujocoParser {
     // Parses the model's link elements.
     for (XMLElement* link_node = node->FirstChildElement("body"); link_node;
          link_node = link_node->NextSiblingElement("body")) {
-      ParseBody(link_node, plant_->world_body());
+      ParseBody(link_node, plant_->world_body(), RigidTransformd());
     }
 
     WarnUnsupportedElement(*node, "actuator");
