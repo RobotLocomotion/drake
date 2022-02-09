@@ -11,7 +11,9 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -21,6 +23,10 @@
 #include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/sine.h"
+
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a ": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a ":\n" << a << std::endl;
 
 namespace drake {
 namespace examples {
@@ -41,6 +47,8 @@ using multibody::MultibodyPlant;
 using multibody::Parser;
 using multibody::PrismaticJoint;
 using systems::Sine;
+using drake::multibody::internal::CompliantContactManager;
+using drake::multibody::contact_solvers::internal::SapSolver;
 
 // TODO(amcastro-tri): Consider moving this large set of parameters to a
 // configuration file (e.g. YAML).
@@ -99,6 +107,9 @@ DEFINE_double(amplitude, 0.15,
 DEFINE_double(frequency, 2.0,
               "The frequency of the harmonic oscillations "
               "carried out by the gripper. [Hz].");
+
+DEFINE_double(coupler_gear_ratio, -1.0,
+              "Coupler constraint gear ratio. If zero, no coupler is added.");
 
 // The pad was measured as a torus with the following major and minor radii.
 const double kPadMajorRadius = 14e-3;  // 14 mm.
@@ -211,6 +222,21 @@ int do_main() {
   // Now the model is complete.
   plant.Finalize();
 
+  auto owned_contact_manager =
+      std::make_unique<CompliantContactManager<double>>(nullptr);
+  const auto contact_manager = owned_contact_manager.get();
+  plant.SetDiscreteUpdateManager(std::move(owned_contact_manager));
+
+  // Get joints so that we can set initial conditions.
+  const PrismaticJoint<double>& left_slider =
+      plant.GetJointByName<PrismaticJoint>("left_slider");
+  const PrismaticJoint<double>& right_slider =
+      plant.GetJointByName<PrismaticJoint>("right_slider");
+  if (FLAGS_coupler_gear_ratio != 0.) {
+    contact_manager->AddCouplerConstraint(left_slider, right_slider,
+                                          FLAGS_coupler_gear_ratio, 1e4, 0.0);
+  }
+
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(FLAGS_penetration_allowance);
   plant.set_stiction_tolerance(FLAGS_v_stiction_tolerance);
@@ -235,8 +261,8 @@ int do_main() {
   // prismatic joint named "finger_sliding_joint" to actuate the left finger and
   // a second actuator on the prismatic joint named "translate_joint" to impose
   // motions of the gripper.
-  DRAKE_DEMAND(plant.num_actuators() == 2);
-  DRAKE_DEMAND(plant.num_actuated_dofs() == 2);
+  DRAKE_DEMAND(plant.num_actuators() == 3);
+  DRAKE_DEMAND(plant.num_actuated_dofs() == 3);
 
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(plant.get_source_id().has_value());
@@ -277,11 +303,16 @@ int do_main() {
   //      angular frequency omega.
   //   2. Impose a constant force to the left finger. That is, a harmonic
   //      forcing with "zero" frequency.
-  const Vector2<double> amplitudes(f0, FLAGS_gripper_force);
-  const Vector2<double> frequencies(omega, 0.0);
-  const Vector2<double> phases(0.0, M_PI_2);
+  const Vector3<double> amplitudes(f0, FLAGS_gripper_force, 0.0);
+  const Vector3<double> frequencies(omega, 0.0, 0.0);
+  const Vector3<double> phases(0.0, M_PI_2, M_PI_2);
   const auto& harmonic_force =
       *builder.AddSystem<Sine>(amplitudes, frequencies, phases);
+
+  for (multibody::JointActuatorIndex a(0); a < plant.num_actuators(); ++a)        {
+      const auto& actuator = plant.get_joint_actuator(a);
+      PRINT_VAR(actuator.name());
+  }
 
   builder.Connect(harmonic_force.get_output_port(0),
                   plant.get_actuation_input_port());
@@ -293,14 +324,12 @@ int do_main() {
       diagram->CreateDefaultContext();
   diagram->SetDefaultContext(diagram_context.get());
   systems::Context<double>& plant_context =
-      diagram->GetMutableSubsystemContext(plant, diagram_context.get());
-
-  // Get joints so that we can set initial conditions.
-  const PrismaticJoint<double>& finger_slider =
-      plant.GetJointByName<PrismaticJoint>("finger_sliding_joint");
+      diagram->GetMutableSubsystemContext(plant, diagram_context.get());  
 
   // Set initial position of the left finger.
-  finger_slider.set_translation(&plant_context, -FLAGS_grip_width);
+  const double finger_offset = (FLAGS_grip_width - 0.095) / 2.0;
+  left_slider.set_translation(&plant_context, -finger_offset);
+  right_slider.set_translation(&plant_context, finger_offset);
 
   // Initialize the mug pose to be right in the middle between the fingers.
   const Vector3d& p_WBr =

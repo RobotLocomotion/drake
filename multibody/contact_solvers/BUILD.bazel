@@ -113,6 +113,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "partial_permutation",
+    srcs = ["partial_permutation.cc"],
+    hdrs = ["partial_permutation.h"],
+    deps = [     
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "pgs_solver",
     srcs = [
         "pgs_solver.cc",
@@ -138,6 +147,36 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sap_contact_problem",
+    srcs = ["sap_contact_problem.cc"],
+    hdrs = ["sap_contact_problem.h"],
+    deps = [
+        ":block_sparse_matrix",
+        ":contact_problem_graph",
+        ":partial_permutation",
+        "//common:default_scalars",
+        "//common:essential",
+        "//common:sorted_pair",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_model",
+    srcs = ["sap_model.cc"],
+    hdrs = ["sap_model.h"],
+    deps = [
+        ":block_sparse_matrix",
+        ":contact_problem_graph",
+        ":partial_permutation",
+        ":sap_contact_problem",
+        ":point_contact_data",        
+        ":system_dynamics_data",
+        "//common:default_scalars",
+        "//common:essential",        
+    ],
+)
+
+drake_cc_library(
     name = "sap_solver",
     srcs = ["sap_solver.cc"],
     hdrs = ["sap_solver.h"],
@@ -146,6 +185,10 @@ drake_cc_library(
         ":contact_solver",
         ":contact_solver_utils",
         ":point_contact_data",
+        ":contact_problem_graph",
+        ":partial_permutation",
+        ":sap_contact_problem",
+        ":sap_model",
         ":system_dynamics_data",
         "//common:default_scalars",
         "//common:essential",
@@ -227,6 +270,15 @@ drake_cc_googletest(
         ":pgs_solver",
         ":sparse_linear_operator",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "partial_permutation_test",
+    deps = [
+        ":partial_permutation",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
