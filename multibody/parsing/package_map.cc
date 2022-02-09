@@ -222,6 +222,7 @@ bool PackageMap::AddPackageIfNew(const string& package_name,
     // Don't warn if we've found the same path with a different spelling.
     const PackageData existing_data = map_.at(package_name);
     if (!filesystem::equivalent(existing_data.path, path)) {
+      // TODO(jwnimmer-tri) Use the DiagnosticPolicy here instead.
       drake::log()->warn(
           "PackageMap is ignoring newly-found path \"{}\" for package \"{}\""
           " and will continue using the previously-known path at \"{}\".",
@@ -303,6 +304,7 @@ void PackageMap::CrawlForPackages(const string& path) {
   filesystem::directory_iterator iter(
       filesystem::path(path).lexically_normal(), ec);
   if (ec) {
+    // TODO(jwnimmer-tri) Use the DiagnosticPolicy here instead.
     log()->warn("Unable to open directory: {}", path);
     return;
   }

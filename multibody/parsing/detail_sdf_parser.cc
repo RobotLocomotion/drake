@@ -840,13 +840,16 @@ const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
   // frame name, e.g. <element_name>frame_name</element_name>
   // Throws an error if the tag does not exist or if the frame does not exist in
   // the plant.
-  auto read_frame = [node,
-                     model_instance,
-                     plant](const char* element_name) -> const Frame<double>& {
-    return ParseFrame(node, model_instance, plant, element_name);
+  auto read_frame = [node, model_instance, plant](const char* element_name)
+                    -> const Frame<double>* {
+    return &ParseFrame(node, model_instance, plant, element_name);
   };
 
-  return ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
+  auto result = ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
+  // This invariant will be true until some future time when errors are allowed
+  // to not throw.
+  DRAKE_DEMAND(result != nullptr);
+  return *result;
 }
 
 // Helper to determine if two links are welded together.

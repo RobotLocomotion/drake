@@ -11,6 +11,7 @@
 namespace drake {
 namespace multibody {
 
+using drake::internal::DiagnosticDetail;
 using internal::AddModelFromSdf;
 using internal::AddModelFromUrdf;
 using internal::AddModelsFromSdf;
@@ -26,6 +27,18 @@ Parser::Parser(
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
   }
+
+  auto warnings_maybe_strict =
+      [this](const DiagnosticDetail& detail) {
+        if (is_strict_) {
+          diagnostic_policy_.Error(detail);
+        } else {
+          diagnostic_policy_.WarningDefaultAction(detail);
+        }
+      };
+  // TODO(rpoyner-tri): implement accumulated errors, as opposed to
+  // throw-on-first-error.
+  diagnostic_policy_.SetActionForWarnings(warnings_maybe_strict);
 }
 
 namespace {
@@ -38,6 +51,8 @@ FileType DetermineFileType(const std::string& file_name) {
   if ((ext == ".sdf") || (ext == ".SDF")) {
     return FileType::kSdf;
   }
+  // TODO(rpoyner-tri) This site likely can't use diagnostic policy until the
+  // signatures of the public methods allow for a failure return.
   throw std::runtime_error(fmt::format(
       "The file type '{}' is not supported for '{}'",
       ext, file_name));
@@ -57,6 +72,9 @@ std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
     if (maybe_model.has_value()) {
       return {*maybe_model};
     } else {
+      // TODO(rpoyner-tri) This throw only is invoked if the Error policy is
+      // not 'throw'. It likely can go away once the signatures of the public
+      // methods allow for a failure return.
       throw std::runtime_error(
           fmt::format("{}: URDF model file parsing failed", file_name));
     }
@@ -77,6 +95,9 @@ ModelInstanceIndex Parser::AddModelFromFile(
     if (maybe_model.has_value()) {
       return *maybe_model;
     } else {
+      // TODO(rpoyner-tri) This throw only is invoked if the Error policy is
+      // not 'throw'. It likely can go away once the signatures of the public
+      // methods allow for a failure return.
       throw std::runtime_error(
           fmt::format("{}: URDF model file parsing failed", file_name));
     }
@@ -99,6 +120,9 @@ ModelInstanceIndex Parser::AddModelFromString(
     if (maybe_model.has_value()) {
       return *maybe_model;
     } else {
+      // TODO(rpoyner-tri) This throw only is invoked if the Error policy is
+      // not 'throw'. It likely can go away once the signatures of the public
+      // methods allow for a failure return.
       throw std::runtime_error(
           fmt::format("{}: URDF model string parsing failed", pseudo_name));
     }

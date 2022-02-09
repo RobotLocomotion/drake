@@ -6,12 +6,14 @@
 #include <string>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 
 #include <Eigen/Dense>
 #include <tinyxml2.h>
 
 #include "drake/geometry/geometry_instance.h"
-#include "drake/multibody/parsing/package_map.h"
+#include "drake/multibody/parsing/detail_common.h"
+#include "drake/multibody/parsing/detail_parsing_workspace.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 
 namespace drake {
@@ -33,7 +35,8 @@ struct UrdfMaterial {
 };
 
 /* A map from the name of a material to its definition.  */
-typedef std::map<std::string, UrdfMaterial> MaterialMap;
+using MaterialMap = std::map<std::string, UrdfMaterial>;
+using AddMaterialResult = std::variant<UrdfMaterial, std::string>;
 
 /* Adds a material to the supplied `materials` map.
 
@@ -51,12 +54,14 @@ typedef std::map<std::string, UrdfMaterial> MaterialMap;
  @param[out] materials A pointer to the map in which to store the material.
  This cannot be nullptr.
 
- @returns The material with the given name stored in @p materials.
+ @returns The material with the given name stored in @p materials, or else an
+ error message.
 */
-UrdfMaterial AddMaterialToMaterialMap(const std::string& material_name,
-                                      UrdfMaterial material,
-                                      bool abort_if_name_clash,
-                                      MaterialMap* materials);
+AddMaterialResult AddMaterialToMaterialMap(
+    const std::string& material_name,
+    UrdfMaterial material,
+    bool error_if_name_clash,
+    MaterialMap* materials);
 
 /* Returns the material specified by a <material> @p node. If the material has
  a name associated with it, the material will be reconciled with the given
@@ -88,8 +93,8 @@ UrdfMaterial AddMaterialToMaterialMap(const std::string& material_name,
        released by companies and organizations like Robotiq and ROS Industrial
        (for example, see this URDF by Robotiq: http://bit.ly/28P0pmo).  */
 UrdfMaterial ParseMaterial(const tinyxml2::XMLElement* node, bool name_required,
-                           const PackageMap& package_map,
-                           const std::string& root_dir,
+                           const DataSource& data_source,
+                           const ParsingWorkspace& workspace,
                            MaterialMap* materials);
 
 /* Parses a "visual" element in @p node.
@@ -134,8 +139,9 @@ UrdfMaterial ParseMaterial(const tinyxml2::XMLElement* node, bool name_required,
  reuse an already-used name. The name used by this geometry is added to it. */
 geometry::GeometryInstance ParseVisual(
     const std::string& parent_element_name,
-    const PackageMap& package_map,
-    const std::string& root_dir, const tinyxml2::XMLElement* node,
+    const DataSource& data_source,
+    const ParsingWorkspace& workspace,
+    const tinyxml2::XMLElement* node,
     MaterialMap* materials, std::unordered_set<std::string>* geometry_names);
 
 /* @anchor urdf_contact_material
@@ -205,8 +211,9 @@ geometry::GeometryInstance ParseVisual(
  reuse an already-used name. The name used by this geometry is added to it. */
 geometry::GeometryInstance ParseCollision(
     const std::string& parent_element_name,
-    const PackageMap& package_map,
-    const std::string& root_dir, const tinyxml2::XMLElement* node,
+    const DataSource& data_source,
+    const ParsingWorkspace& workspace,
+    const tinyxml2::XMLElement* node,
     std::unordered_set<std::string>* geometry_names);
 
 }  // namespace internal
