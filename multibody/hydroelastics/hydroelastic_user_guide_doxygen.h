@@ -53,9 +53,12 @@ There are three different options:
 - drake::multibody::ContactModel::kHydroelastic
 - drake::multibody::ContactModel::kHydroelasticWithFallback
 
-The default model is @ref drake::multibody::ContactModel::kPoint "kPoint" and is
-the implementation of the point contact model (see @ref hydro_appendix_a).
-Hydroelastic contact plays no role in determining the dynamics.
+The default model is
+@ref drake::multibody::ContactModel::kHydroelasticWithFallback
+"kHydroelasticWithFallback".
+
+@ref drake::multibody::ContactModel::kPoint "kPoint" is the implementation of
+the point contact model (see @ref hydro_appendix_a).
 
 Models @ref drake::multibody::ContactModel::kHydroelastic "kHydroelastic" and
 @ref drake::multibody::ContactModel::kHydroelasticWithFallback

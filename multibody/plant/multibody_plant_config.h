@@ -40,7 +40,7 @@ struct MultibodyPlantConfig {
   /// - "point"
   /// - "hydroelastic"
   /// - "hydroelastic_with_fallback"
-  std::string contact_model{"point"};
+  std::string contact_model{"hydroelastic_with_fallback"};
 
   /// Configures the MultibodyPlant::set_contact_surface_representation().
   /// Refer to drake::geometry::HydroelasticContactRepresentation for details.
