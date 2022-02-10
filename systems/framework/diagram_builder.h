@@ -319,6 +319,15 @@ class DiagramBuilder {
   void ConnectInput(
       InputPortIndex diagram_port_index, const InputPort<T>& input);
 
+  /// Connects whatever is already upstream of the given @p connected_input of
+  /// a constituent system the given @p input port of a constituent system.
+  /// This provides a convenient way to connect a similar kind of input on two
+  /// constituent systems to the same upstream output.
+  /// If the @p connected_input is neither connected nor exported, then this
+  /// function is a no-op and returns false.
+  /// @return True iff any connection was made.
+  bool ConnectLikewise(const InputPort<T>& src, const InputPort<T>& dest);
+
   /// Declares that the given @p output port of a constituent system is an
   /// output of the entire diagram.  @p name is an optional name for the output
   /// port; if it is unspecified, then a default name will be provided.
