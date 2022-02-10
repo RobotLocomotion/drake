@@ -22,11 +22,13 @@ drake_cc_library(
     name = "ball_paddle",
     srcs = ["ball_paddle.cc"],
     hdrs = ["ball_paddle.h"],
+    data = [":ball_paddle_files"],
     visibility = ["//visibility:public"],
     deps = [
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//geometry:shape_specification",
+        "//multibody/parsing:parser",
         "//multibody/plant",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
@@ -43,6 +45,13 @@ drake_py_binary(
     srcs = ["contact_sim_demo.py"],
     deps = [
         "//bindings/pydrake",
+    ],
+)
+
+filegroup(
+    name = "ball_paddle_files",
+    srcs = [
+        "paddle.sdf",
     ],
 )
 

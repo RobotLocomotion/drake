@@ -3,11 +3,13 @@
 #include <utility>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/find_resource.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/drake_visualizer_params.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -23,24 +25,45 @@ using drake::multibody::PrismaticJoint;
 using drake::multibody::SpatialInertia;
 using drake::multibody::UnitInertia;
 
-template <typename T>
+template <>
 void ConstructBallPaddlePlant(
     double paddle_mass, double ball_mass, double ball_radius,
     const Eigen::Vector3d& paddle_size,
     const std::optional<drake::math::RigidTransform<double>>& paddle_fixed_pose,
-    drake::multibody::MultibodyPlant<T>* plant,
+    drake::multibody::MultibodyPlant<AutoDiffXd>* plant,
     drake::multibody::BodyIndex* paddle_body_id,
     drake::multibody::BodyIndex* ball_body_id,
     drake::multibody::JointIndex* paddle_translate_y_joint_index,
     drake::multibody::JointIndex* paddle_translate_z_joint_index,
     drake::geometry::GeometryId* ball_sphere_geometry_id,
     drake::geometry::GeometryId* paddle_box_geometry_id) {
-  const SpatialInertia<double> paddle_inertia(
-      paddle_mass, Eigen::Vector3d::Zero(), UnitInertia<double>(1., 1., 1.));
-  const auto& paddle_body = plant->AddRigidBody("paddle", paddle_inertia);
+  throw std::runtime_error("ConstructBallPaddlePlant doesn't support "
+                           "AutoDiffXd yet");
+}
+
+template <>
+void ConstructBallPaddlePlant(
+    double paddle_mass, double ball_mass, double ball_radius,
+    const Eigen::Vector3d& paddle_size,
+    const std::optional<drake::math::RigidTransform<double>>& paddle_fixed_pose,
+    drake::multibody::MultibodyPlant<double>* plant,
+    drake::multibody::BodyIndex* paddle_body_id,
+    drake::multibody::BodyIndex* ball_body_id,
+    drake::multibody::JointIndex* paddle_translate_y_joint_index,
+    drake::multibody::JointIndex* paddle_translate_z_joint_index,
+    drake::geometry::GeometryId* ball_sphere_geometry_id,
+    drake::geometry::GeometryId* paddle_box_geometry_id) {
+
+  drake::multibody::Parser parser(plant);
+  const std::string paddle_sdf_file_name =
+      FindResourceOrThrow("drake/examples/ball_paddle/paddle.sdf");
+  const multibody::ModelInstanceIndex model_instance_id =
+      parser.AddModelFromFile(paddle_sdf_file_name);
+  unused(model_instance_id);
+  const multibody::RigidBody<double>& paddle_body =
+      plant->GetRigidBodyByName("paddle", model_instance_id);
   *paddle_body_id = paddle_body.index();
-  const drake::geometry::Box paddle_box(paddle_size(0), paddle_size(1),
-                                        paddle_size(2));
+
   if (paddle_fixed_pose.has_value()) {
     plant->WeldFrames(plant->world_frame(), paddle_body.body_frame(),
                       paddle_fixed_pose.value());
@@ -68,36 +91,24 @@ void ConstructBallPaddlePlant(
                             paddle_actuator_effort_limit);
   }
 
-  plant->RegisterVisualGeometry(paddle_body, RigidTransformd::Identity(),
-                                paddle_box, "paddle",
-                                Eigen::Vector4d(1, 0.64, 0, 0.5));
-  const CoulombFriction<double> paddle_friction(1., 1.);
-  drake::geometry::ProximityProperties paddle_properties;
-  drake::geometry::AddCompliantHydroelasticProperties(100, 1e6,
-                                                      &paddle_properties);
-  drake::geometry::AddContactMaterial(/* dissipation */ std::nullopt,
-                                      /* point_stiffness */ std::nullopt,
-                                      paddle_friction, &paddle_properties);
-  *paddle_box_geometry_id = plant->RegisterCollisionGeometry(
-      paddle_body, RigidTransformd::Identity(), paddle_box, "paddle_box",
-      std::move(paddle_properties));
-
   // Now add the ball.
   const SpatialInertia<double> ball_inertia(ball_mass, Eigen::Vector3d::Zero(),
                                             UnitInertia<double>(1, 1, 1));
-  const auto& ball_body = plant->AddRigidBody("ball", ball_inertia);
+  const auto& ball_body = plant->AddRigidBody(
+      "ball", multibody::ModelInstanceIndex(1), ball_inertia);
   *ball_body_id = ball_body.index();
   const drake::geometry::Sphere ball_sphere(ball_radius);
   plant->RegisterVisualGeometry(ball_body, RigidTransformd::Identity(),
                                 ball_sphere, "ball",
                                 Eigen::Vector4d(0.5, 1, 0, 0.5));
   const CoulombFriction<double> ball_friction(1., 1.);
-  const T ball_stiffness = T(980);
+  const double ball_stiffness = double(980);
   // Little dissipation means the ball can bounce off.
-  const bool hydroelastic = false;
-  const T ball_dissipation = hydroelastic ? T(0.1) : T(0.1);
+  const bool hydroelastic = true;
+  const double ball_dissipation = hydroelastic ? double(0.1) : double(0.1);
   drake::geometry::ProximityProperties ball_properties;
-  drake::geometry::AddRigidHydroelasticProperties(100, &ball_properties);
+  drake::geometry::AddRigidHydroelasticProperties(ball_radius / 4,
+                                                  &ball_properties);
   ball_properties.AddProperty(drake::geometry::internal::kMaterialGroup,
                               drake::geometry::internal::kFriction,
                               ball_friction);
@@ -184,3 +195,4 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&drake::examples::ConstructBallPaddlePlant<T>))
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::examples::BallPaddle)
+
