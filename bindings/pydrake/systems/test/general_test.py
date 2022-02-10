@@ -904,7 +904,7 @@ class TestGeneral(unittest.TestCase):
 
     def test_diagram_fan_out(self):
         builder = DiagramBuilder()
-        adder = builder.AddSystem(Adder(6, 1))
+        adder = builder.AddSystem(Adder(7, 1))
         adder.set_name("adder")
         builder.ExportOutput(adder.get_output_port())
         in0_index = builder.ExportInput(adder.get_input_port(0), "in0")
@@ -918,6 +918,8 @@ class TestGeneral(unittest.TestCase):
                              input=adder.get_input_port(4))
         builder.ConnectInput(diagram_port_index=in1_index,
                              input=adder.get_input_port(5))
+        builder.ConnectToSame(exemplar=adder.get_input_port(2),
+                              dest=adder.get_input_port(6))
 
         diagram = builder.Build()
         diagram.set_name("fan_out_diagram")
@@ -930,6 +932,7 @@ class TestGeneral(unittest.TestCase):
         self.assertRegex(graph, "_u1 -> .*:u3")
         self.assertRegex(graph, "_u0 -> .*:u4")
         self.assertRegex(graph, "_u1 -> .*:u5")
+        self.assertRegex(graph, "_u0 -> .*:u6")
 
     def test_diagram_api(self):
         def make_diagram():

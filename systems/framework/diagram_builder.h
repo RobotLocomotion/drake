@@ -319,6 +319,20 @@ class DiagramBuilder {
   void ConnectInput(
       InputPortIndex diagram_port_index, const InputPort<T>& input);
 
+  /// Connects @p dest to the same source as @p exemplar is connected to.
+  ///
+  /// If @p exemplar was connected to an output port, then @p dest is connected
+  /// to that same output. Or, if @p exemplar was exported as an input of this
+  /// diagram, then @p dest will be connected to that same diagram input. Or,
+  /// if @p exemplar was neither connected or exported, then this function is
+  /// a no-op.
+  ///
+  /// Both @p exemplar and @p dest must be ports of constituent systems that
+  /// have already been added to this diagram.
+  ///
+  /// @return True iff any connection or was made; or false when a no-op.
+  bool ConnectToSame(const InputPort<T>& exemplar, const InputPort<T>& dest);
+
   /// Declares that the given @p output port of a constituent system is an
   /// output of the entire diagram.  @p name is an optional name for the output
   /// port; if it is unspecified, then a default name will be provided.

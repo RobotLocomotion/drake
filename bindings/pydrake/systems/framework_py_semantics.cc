@@ -587,6 +587,9 @@ void DoScalarDependentDefinitions(py::module m) {
               &DiagramBuilder<T>::ConnectInput),
           py::arg("diagram_port_index"), py::arg("input"),
           doc.DiagramBuilder.ConnectInput.doc_2args_diagram_port_index_input)
+      .def("ConnectToSame", &DiagramBuilder<T>::ConnectToSame,
+          py::arg("exemplar"), py::arg("dest"),
+          doc.DiagramBuilder.ConnectToSame.doc)
       .def("ExportOutput", &DiagramBuilder<T>::ExportOutput, py::arg("output"),
           py::arg("name") = kUseDefaultName, py_rvp::reference_internal,
           doc.DiagramBuilder.ExportOutput.doc)
