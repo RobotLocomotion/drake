@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/test/constitutive_model_test_utilities.h"
+#include "drake/multibody/fem/test/constitutive_model_test_utilities.h"
 
 #include <gtest/gtest.h>
 
@@ -7,8 +7,6 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/fem/constitutive_model.h"
 #include "drake/multibody/fem/matrix_utilities.h"
-#include "drake/multibody/fixed_fem/dev/corotated_model.h"
-#include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
 
 namespace drake {
 namespace multibody {
@@ -62,19 +60,19 @@ void TestParameters() {
   EXPECT_EQ(model.lame_first_parameter(), kExpectedLambda);
 
   DRAKE_EXPECT_THROWS_MESSAGE((Model(-1.0, 0.25)),
-                              "Young's modulus must be nonnegative.");
+                              "Young's modulus must .**");
 
   DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, 0.5)),
-                              "Poisson ratio must be in \\(-1, 0.5\\).");
+                              "Poisson's ratio must be in .*");
 
   DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, 0.6)),
-                              "Poisson ratio must be in \\(-1, 0.5\\).");
+                              "Poisson's ratio must be in .*");
 
   DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, -1.0)),
-                              "Poisson ratio must be in \\(-1, 0.5\\).");
+                              "Poisson's ratio must be in .*");
 
   DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, -1.1)),
-                              "Poisson ratio must be in \\(-1, 0.5\\).");
+                              "Poisson's ratio must be in .*");
 }
 
 /* Tests that the energy density and the stress are zero at the undeformed
@@ -166,22 +164,6 @@ void TestdPdFIsDerivativeOfP() {
     }
   }
 }
-
-template void TestParameters<LinearConstitutiveModel<double, 1>>();
-template void TestParameters<CorotatedModel<double, 1>>();
-template void TestParameters<LinearConstitutiveModel<AutoDiffXd, 1>>();
-template void TestParameters<CorotatedModel<AutoDiffXd, 1>>();
-
-template void TestUndeformedState<LinearConstitutiveModel<double, 1>>();
-template void TestUndeformedState<CorotatedModel<double, 1>>();
-template void TestUndeformedState<LinearConstitutiveModel<AutoDiffXd, 1>>();
-template void TestUndeformedState<CorotatedModel<AutoDiffXd, 1>>();
-
-template void TestPIsDerivativeOfPsi<LinearConstitutiveModel<AutoDiffXd, 1>>();
-template void TestPIsDerivativeOfPsi<CorotatedModel<AutoDiffXd, 1>>();
-
-template void TestdPdFIsDerivativeOfP<LinearConstitutiveModel<AutoDiffXd, 1>>();
-template void TestdPdFIsDerivativeOfP<CorotatedModel<AutoDiffXd, 1>>();
 
 }  // namespace test
 }  // namespace internal
