@@ -4912,7 +4912,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // The model used by the plant to compute contact forces. Keep this in sync
   // with the default value in multibody_plant_config.h; there are already
   // assertions in the cc file that enforce this.
-  ContactModel contact_model_{ContactModel::kPoint};
+  ContactModel contact_model_{ContactModel::kHydroelasticWithFallback};
 
   // User's choice of the representation of contact surfaces in discrete
   // systems. The default value is dependent on whether the system is

@@ -360,8 +360,9 @@ template <typename T>
 MultibodyPlant<T>::MultibodyPlant(double time_step)
     : MultibodyPlant(nullptr, time_step) {
   // Cross-check that the Config default matches our header file default.
-  DRAKE_DEMAND(contact_model_ == ContactModel::kPoint);
-  DRAKE_DEMAND(MultibodyPlantConfig{}.contact_model == "point");
+  DRAKE_DEMAND(contact_model_ == ContactModel::kHydroelasticWithFallback);
+  DRAKE_DEMAND(MultibodyPlantConfig{}.contact_model ==
+               "hydroelastic_with_fallback");
 }
 
 template <typename T>
