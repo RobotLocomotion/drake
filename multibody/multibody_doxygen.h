@@ -328,13 +328,13 @@ Angular velocity             |  w   |@f$^B\omega^C@f$          |`w_BC`      |Fra
 Velocity                     |  v   |@f$^Bv^Q@f$               |`v_BQ`      |%Point Q's translational velocity in frame B
 Relative velocity            |  v   |@f$^Bv^{Q/P}@f$           |`v_B_PQ`    |%Point Q's translational velocity relative to point P in frame B
 Spatial velocity             |  V   |@f$^BV^{C}@f$             |`V_BC`      |Frame C's spatial velocity in frame B (for point Co)ᵇ
-Spatial velocity             |  V   |@f$^BV^{Cp}@f$            |`V_BCp`     |Frame C's spatial velocity in frame B (for point Cp)ᵇ
+Spatial velocity             |  V   |@f$^BV^{Cp}@f$            |`V_BCp`     |Frame Cp's spatial velocity in frame Bᵇ
 Relative spatial velocity    |  V   |@f$^BV^{C/D}@f$           |`V_B_DC`    |%Frame C's spatial velocity relative to frame D in frame B
 Angular acceleration         |alpha |@f$^B\alpha^C@f$          |`alpha_BC`  |Frame C's angular acceleration in frame B
 Acceleration                 |  a   |@f$^Ba^Q@f$               |`a_BQ`      |%Point Q's translational acceleration in frame B
 Relative acceleration        |  a   |@f$^Ba^{Q/P}@f$           |`a_B_PQ`    |%Point Q's translational acceleration relative to point P in frame B
 Spatial acceleration         |  A   |@f$^BA^{C}@f$             |`A_BC`      |Frame C's spatial acceleration in frame B (for point Co)ᵇ
-Spatial acceleration         |  A   |@f$^BA^{Cp}@f$            |`A_BCp`     |Frame C's spatial acceleration in frame B (for point Cp)ᵇ
+Spatial acceleration         |  A   |@f$^BA^{Cp}@f$            |`A_BCp`     |Frame Cp's spatial acceleration in frame Bᵇ
 Relative spatial acceleration|  A   |@f$^BA^{C/D}@f$           |`A_B_DC`    |%Frame C's spatial acceleration relative to frame D in frame B
 Torque                       |  t   |@f$\tau^{B}@f$            |`t_B`       |Torque on a body (or frame) B
 Force                        |  f   |@f$f^{P}@f$               |`f_P`       |Force on a point P
@@ -367,11 +367,12 @@ D's body frame), not for Dcm (D's center of mass).
 See @ref multibody_frames_and_bodies for more information.
 
 ᶜ It is often useful to <b>replace</b> a set of forces on a body or frame B by
-an equivalent set with a force @f$f^{Bp}@f$ (equal to the set's resultant)
-placed at an arbitrary point Bp that is fixed on B, together with a torque
-@f$\tau@f$ equal to the moment of the set about Bp. A spatial force Fᴮᵖ
-containing @f$\tau@f$ and @f$f^{Bp}@f$ can represent this replacement. Note: the
-spatial force Fᴮ is shorthand for Fᴮᵒ (i.e., the about-point is B's origin Bo).
+an equivalent set with a force @f$f^{Bo}@f$ (equal to the set's resultant)
+placed at Bo, together with a torque @f$\tau@f$ equal to the moment of the set
+about Bo. A spatial force Fᴮᵒ containing @f$\tau@f$ and @f$f^{Bo}@f$ represents
+this replacement. Note: the spatial force Fᴮ is shorthand for Fᴮᵒ (i.e., the
+about-point is B's origin Bo). The monogram notation F_Bcm is useful when the
+about-point is Bcm (body B's center of mass).
 
 ᵈ The Jacobian contains partial derivatives wrt (with respect to) scalars
 e.g., wrt q (generalized positions), or q̇, or v (generalized velocities).
