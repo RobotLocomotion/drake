@@ -28,24 +28,24 @@ using drake::multibody::UnitInertia;
 
 template <>
 void ConstructBallPaddlePlant(
-    double paddle_mass, double ball_mass, double ball_radius,
-    const Eigen::Vector3d& paddle_size,
-    const std::optional<drake::math::RigidTransform<double>>& paddle_fixed_pose,
-    drake::multibody::MultibodyPlant<AutoDiffXd>* plant,
-    drake::multibody::BodyIndex* paddle_body_id,
-    drake::multibody::BodyIndex* ball_body_id,
-    drake::multibody::JointIndex* paddle_translate_y_joint_index,
-    drake::multibody::JointIndex* paddle_translate_z_joint_index,
-    drake::geometry::GeometryId* ball_sphere_geometry_id,
-    drake::geometry::GeometryId* paddle_box_geometry_id) {
+    double , double , double,
+    const Eigen::Vector3d&,
+    const std::optional<drake::math::RigidTransform<double>>&,
+    drake::multibody::MultibodyPlant<AutoDiffXd>*,
+    drake::multibody::BodyIndex*,
+    drake::multibody::BodyIndex*,
+    drake::multibody::JointIndex*,
+    drake::multibody::JointIndex*,
+    drake::geometry::GeometryId*,
+    drake::geometry::GeometryId*) {
   throw std::runtime_error("ConstructBallPaddlePlant doesn't support "
                            "AutoDiffXd yet");
 }
 
 template <>
 void ConstructBallPaddlePlant(
-    double paddle_mass, double ball_mass, double ball_radius,
-    const Eigen::Vector3d& paddle_size,
+    double /*paddle_mass*/, double /*ball_mass*/, double /*ball_radius*/,
+    const Eigen::Vector3d& /*paddle_size*/,
     const std::optional<drake::math::RigidTransform<double>>& paddle_fixed_pose,
     drake::multibody::MultibodyPlant<double>* plant,
     drake::multibody::BodyIndex* paddle_body_id,
