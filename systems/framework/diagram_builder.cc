@@ -208,6 +208,41 @@ void DiagramBuilder<T>::ConnectInput(
 }
 
 template <typename T>
+bool DiagramBuilder<T>::ConnectToSame(
+      const InputPort<T>& exemplar, const InputPort<T>& dest) {
+  ThrowIfAlreadyBuilt();
+  ThrowIfSystemNotRegistered(&exemplar.get_system());
+  ThrowIfSystemNotRegistered(&dest.get_system());
+  InputPortLocator dest_id{&dest.get_system(), dest.get_index()};
+  ThrowIfInputAlreadyWired(dest_id);
+
+  // Check if `exemplar` was connected.
+  InputPortLocator exemplar_id{&exemplar.get_system(), exemplar.get_index()};
+  const auto iter = connection_map_.find(exemplar_id);
+  if (iter != connection_map_.end()) {
+    const OutputPortLocator& exemplar_loc = iter->second;
+    const OutputPort<T>& exemplar_port =
+        exemplar_loc.first->get_output_port(exemplar_loc.second);
+    Connect(exemplar_port, dest);
+    return true;
+  }
+
+  // Check if `exemplar` was exported.
+  if (diagram_input_set_.count(exemplar_id) > 0) {
+    for (size_t i = 0; i < input_port_ids_.size(); ++i) {
+      if (input_port_ids_[i] == exemplar_id) {
+        ConnectInput(input_port_names_[i], dest);
+        return true;
+      }
+    }
+    DRAKE_UNREACHABLE();
+  }
+
+  // The `exemplar` input was neither connected nor exported.
+  return false;
+}
+
+template <typename T>
 OutputPortIndex DiagramBuilder<T>::ExportOutput(
     const OutputPort<T>& output,
     std::variant<std::string, UseDefaultName> name) {
