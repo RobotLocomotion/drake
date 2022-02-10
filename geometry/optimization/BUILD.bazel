@@ -132,10 +132,23 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "iris_test",
-    shard_count = 12,
     deps = [
         ":iris",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iris_in_configuration_space_test",
+    shard_count = 8,
+    # Most of these tests take an exceptionally long time under
+    # instrumentation, resulting in timeouts, and so are excluded.
+    tags = [
+        "no_asan",
+        "no_memcheck",
+    ],
+    deps = [
+        ":iris",
         "//multibody/parsing:parser",
         "//systems/framework:diagram_builder",
     ],
