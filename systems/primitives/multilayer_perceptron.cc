@@ -32,18 +32,57 @@ std::vector<PerceptronActivationType> MakeDefaultActivations(
   return types;
 }
 
-// TODO(russt): Try to reduce the amount of scratch memory.
 template <typename T>
 struct BackPropData {
   explicit BackPropData(int n)
-      : Wx_plus_b(n), Xn(n), dloss_dXn(n), dloss_dWx_plus_b(n), dloss_dW(n) {}
+      : Wx(n),
+        Wx_plus_b(n),
+        Xn(n),
+        dXn(n),
+        dloss_dXn(n),
+        dloss_dWx_plus_b(n),
+        dloss_dW(n),
+        dloss_db(n) {}
 
+  std::vector<MatrixX<T>> Wx;
   std::vector<MatrixX<T>> Wx_plus_b;
   std::vector<MatrixX<T>> Xn;
+  std::vector<MatrixX<T>> dXn;
   std::vector<MatrixX<T>> dloss_dXn;
   std::vector<MatrixX<T>> dloss_dWx_plus_b;
   std::vector<MatrixX<T>> dloss_dW;
+  std::vector<VectorX<T>> dloss_db;
 };
+
+template <typename T, int cols>
+void Activation(
+    PerceptronActivationType type,
+    const Eigen::Ref<const Eigen::Matrix<T, Eigen::Dynamic, cols>>& X,
+    Eigen::Matrix<T, Eigen::Dynamic, cols>* Y,
+    Eigen::Matrix<T, Eigen::Dynamic, cols>* dYdX = nullptr) {
+  Y->resize(X.rows(), X.cols());
+  if (dYdX) {
+    dYdX->resize(X.rows(), X.cols());
+  }
+  if (type == kTanh) {
+    *Y = X.array().tanh().matrix();
+    if (dYdX) {
+      dYdX->noalias() = (1.0 - X.array().tanh().square()).matrix();
+    }
+  } else if (type == kReLU) {
+    *Y = X.array().max(0.0).matrix();
+    if (dYdX) {
+      dYdX->noalias() =
+          (X.array() <= 0).select(MatrixX<T>::Zero(X.rows(), X.cols()), 1);
+    }
+  } else {
+    DRAKE_DEMAND(type == kIdentity);
+    *Y = X;
+    if (dYdX) {
+      dYdX->setConstant(1.0);
+    }
+  }
+}
 
 }  // namespace
 
@@ -59,11 +98,10 @@ MultilayerPerceptron<T>::MultilayerPerceptron(
     const std::vector<int>& layers,
     const std::vector<PerceptronActivationType>& activation_types)
     : LeafSystem<T>(SystemTypeTag<MultilayerPerceptron>{}),
-      num_hidden_layers_(SubtractFromSize(layers.size(), 2)),
       num_weights_(SubtractFromSize(layers.size(), 1)),
       layers_(layers),
       activation_types_(activation_types) {
-  DRAKE_DEMAND(num_hidden_layers_ >= 1);  // Otherwise its not "multilayer"!
+  DRAKE_DEMAND(num_weights_ >= 1);
   DRAKE_DEMAND(activation_types_.size() == layers.size() - 1);
   for (int units_in_layer : layers) {
     DRAKE_DEMAND(units_in_layer > 0);
@@ -80,40 +118,20 @@ MultilayerPerceptron<T>::MultilayerPerceptron(
     num_parameters_ += layers[i + 1] * layers[i];
     bias_indices_[i] = num_parameters_;
     num_parameters_ += layers[i + 1];
-
-    if (activation_types_[i] == kTanh) {
-      sigma_.push_back([](const Eigen::Ref<const MatrixX<T>>& X) {
-        return X.array().tanh().matrix();
-      });
-      dsigma_.push_back([](const Eigen::Ref<const MatrixX<T>>& X) {
-        return (1.0 - X.array().tanh().square()).matrix();
-      });
-    } else if (activation_types_[i] == kReLU) {
-      sigma_.push_back([](const Eigen::Ref<const MatrixX<T>>& X) {
-        return X.array().max(0.0).matrix();
-      });
-      dsigma_.push_back([](const Eigen::Ref<const MatrixX<T>>& X) {
-        return (X.array() <= 0).select(MatrixX<T>::Zero(X.rows(), X.cols()), 1);
-      });
-    } else {
-      DRAKE_DEMAND(activation_types_[i] == kIdentity);
-      sigma_.push_back([](const Eigen::Ref<const MatrixX<T>>& X) { return X; });
-      dsigma_.push_back([](const Eigen::Ref<const MatrixX<T>>& X) {
-        return MatrixX<T>::Ones(X.rows(), X.cols());
-      });
-    }
   }
   this->DeclareNumericParameter(
       BasicVector<T>(VectorX<T>::Zero(num_parameters_)));
 
   // Declare cache entry for CalcOutput.
-  std::vector<VectorX<T>> hidden_layers;
-  for (int i = 0; i < num_hidden_layers_; ++i) {
-    hidden_layers.push_back(VectorX<T>::Zero(layers[i + 1]));
+  CalcLayersData calc_layers_data(num_weights_);
+  for (int i = 0; i < num_weights_; ++i) {
+    calc_layers_data.Wx[i] = VectorX<T>::Zero(layers[i + 1]);
+    calc_layers_data.Wx_plus_b[i] = VectorX<T>::Zero(layers[i + 1]);
+    calc_layers_data.Xn[i] = VectorX<T>::Zero(layers[i + 1]);
   }
-  hidden_layer_cache_ =
-      &this->DeclareCacheEntry("hidden_layer", hidden_layers,
-                               &MultilayerPerceptron<T>::CalcHiddenLayers);
+  calc_layers_cache_ =
+      &this->DeclareCacheEntry("calc_layers", calc_layers_data,
+                               &MultilayerPerceptron<T>::CalcLayers);
 
   // Declare cache entry for Backpropagation:
   BackPropData<T> backprop_data(num_weights_);
@@ -246,26 +264,25 @@ void MultilayerPerceptron<T>::SetBiases(
 template <typename T>
 T MultilayerPerceptron<T>::Backpropagation(
     const Context<T>& context, const Eigen::Ref<const MatrixX<T>>& X,
-    std::function<T(const Eigen::Ref<const MatrixX<T>>& Y,
-                    EigenPtr<MatrixX<T>> dloss_dY)>
-        loss,
+    const std::function<T(const Eigen::Ref<const MatrixX<T>>& Y,
+                          EigenPtr<MatrixX<T>> dloss_dY)>& loss,
     EigenPtr<VectorX<T>> dloss_dparams) const {
   this->ValidateContext(context);
   DRAKE_DEMAND(X.rows() == layers_[0]);
   DRAKE_DEMAND(dloss_dparams->rows() == num_parameters_);
-  // Note: Should aim for zero dynamic allocations in here (except on the
-  // first calls and whenever X changes size).
   BackPropData<T>& data =
       backprop_cache_->get_mutable_cache_entry_value(context)
           .template GetMutableValueOrThrow<BackPropData<T>>();
   // Forward pass:
-  data.Wx_plus_b[0] =
-      (GetWeights(context, 0) * X).colwise() + GetBiases(context, 0);
-  data.Xn[0] = sigma_[0](data.Wx_plus_b[0]);
+  data.Wx[0].noalias() = GetWeights(context, 0) * X;
+  data.Wx_plus_b[0].noalias() = data.Wx[0].colwise() + GetBiases(context, 0);
+  Activation<T, Eigen::Dynamic>(activation_types_[0], data.Wx_plus_b[0],
+                                &data.Xn[0], &data.dXn[0]);
   for (int i = 1; i < num_weights_; ++i) {
-    data.Wx_plus_b[i] = (GetWeights(context, i) * data.Xn[i - 1]).colwise() +
-                        GetBiases(context, i);
-    data.Xn[i] = sigma_[i](data.Wx_plus_b[i]);
+    data.Wx[i].noalias() = GetWeights(context, i) * data.Xn[i - 1];
+    data.Wx_plus_b[i].noalias() = data.Wx[i].colwise() + GetBiases(context, i);
+    Activation<T, Eigen::Dynamic>(activation_types_[i], data.Wx_plus_b[i],
+                                  &data.Xn[i], &data.dXn[i]);
   }
   data.dloss_dXn[num_weights_ - 1].resize(layers_[num_weights_], X.cols());
   data.dloss_dXn[num_weights_ - 1].setConstant(
@@ -275,23 +292,23 @@ T MultilayerPerceptron<T>::Backpropagation(
   // Backward pass:
   for (int i = num_weights_ - 1; i >= 0; --i) {
     data.dloss_dWx_plus_b[i] =
-        (data.dloss_dXn[i].array() * dsigma_[i](data.Wx_plus_b[i]).array())
-            .matrix();
+        (data.dloss_dXn[i].array() * data.dXn[i].array()).matrix();
     data.dloss_dW[i].resize(layers_[i + 1], layers_[i]);
     data.dloss_dW[i].setZero();
     for (int j = 0; j < X.cols(); ++j) {
       if (i > 0) {
-        data.dloss_dW[i] +=
+        data.dloss_dW[i].noalias() +=
             data.dloss_dWx_plus_b[i].col(j) * data.Xn[i - 1].col(j).transpose();
       } else {
-        data.dloss_dW[i] +=
+        data.dloss_dW[i].noalias() +=
             data.dloss_dWx_plus_b[i].col(j) * X.col(j).transpose();
       }
     }
     SetWeights(dloss_dparams, i, data.dloss_dW[i]);
-    SetBiases(dloss_dparams, i, data.dloss_dWx_plus_b[i].rowwise().sum());
+    data.dloss_db[i] = data.dloss_dWx_plus_b[i].rowwise().sum();
+    SetBiases(dloss_dparams, i, data.dloss_db[i]);
     if (i > 0) {
-      data.dloss_dXn[i - 1] =
+      data.dloss_dXn[i - 1].noalias() =
           GetWeights(context, i).transpose() * data.dloss_dWx_plus_b[i];
     }
   }
@@ -305,12 +322,11 @@ T MultilayerPerceptron<T>::BackpropagationMeanSquaredError(
     EigenPtr<VectorX<T>> dloss_dparams) const {
   DRAKE_DEMAND(Y_desired.rows() == layers_[num_weights_]);
   DRAKE_DEMAND(Y_desired.cols() == X.cols());
-  // tests to cover the Backpropagation method.
   DRAKE_DEMAND(Y_desired.rows() == layers_[num_weights_]);
   DRAKE_DEMAND(Y_desired.cols() == X.cols());
-  auto MSE_loss = [Y_desired](const Eigen::Ref<const MatrixX<T>>& Y,
+  auto MSE_loss = [&Y_desired](const Eigen::Ref<const MatrixX<T>>& Y,
                               EigenPtr<MatrixX<T>> dloss_dY) {
-    *dloss_dY = 2.0 * (Y - Y_desired) / Y.cols();
+    dloss_dY->noalias() = 2.0 * (Y - Y_desired) / Y.cols();
     return (Y - Y_desired).squaredNorm() / Y.cols();
   };
   return Backpropagation(context, X, MSE_loss, dloss_dparams);
@@ -324,47 +340,42 @@ void MultilayerPerceptron<T>::BatchOutput(const Context<T>& context,
   DRAKE_DEMAND(X.rows() == layers_[0]);
   DRAKE_DEMAND(Y->rows() == layers_[num_weights_]);
   DRAKE_DEMAND(Y->cols() == X.cols());
-  // Note: Should aim for zero dynamic allocations in here (except on the
-  // first calls and whenever X changes size).
   BackPropData<T>& data =
       backprop_cache_->get_mutable_cache_entry_value(context)
           .template GetMutableValueOrThrow<BackPropData<T>>();
-  // Forward pass:
-  data.Wx_plus_b[0] =
-      (GetWeights(context, 0) * X).colwise() + GetBiases(context, 0);
-  data.Xn[0] = sigma_[0](data.Wx_plus_b[0]);
+  data.Wx[0].noalias() = GetWeights(context, 0) * X;
+  data.Wx_plus_b[0].noalias() = data.Wx[0].colwise() + GetBiases(context, 0);
+  Activation<T, Eigen::Dynamic>(activation_types_[0], data.Wx_plus_b[0],
+                                &data.Xn[0]);
   for (int i = 1; i < num_weights_; ++i) {
-    data.Wx_plus_b[i] = (GetWeights(context, i) * data.Xn[i - 1]).colwise() +
-                        GetBiases(context, i);
-    if (i == num_weights_ - 1) {
-      *Y = sigma_[i](data.Wx_plus_b[i]);
-    } else {
-      data.Xn[i] = sigma_[i](data.Wx_plus_b[i]);
-    }
+    data.Wx[i].noalias() = GetWeights(context, i) * data.Xn[i - 1];
+    data.Wx_plus_b[i].noalias() = data.Wx[i].colwise() + GetBiases(context, i);
+    Activation<T, Eigen::Dynamic>(activation_types_[i], data.Wx_plus_b[i],
+                                  &data.Xn[i]);
   }
+  *Y = data.Xn[num_weights_-1];
 }
 
 template <typename T>
 void MultilayerPerceptron<T>::CalcOutput(const Context<T>& context,
                                          BasicVector<T>* y) const {
-  // TODO(russt): Test for and eliminate any dynamic allocations.
   this->ValidateContext(context);
-  y->get_mutable_value() = sigma_[num_weights_ - 1](
-      GetWeights(context, num_weights_ - 1) *
-          hidden_layer_cache_->Eval<std::vector<VectorX<T>>>(
-              context)[num_hidden_layers_ - 1] +
-      GetBiases(context, num_weights_ - 1));
+  y->get_mutable_value() =
+      calc_layers_cache_->Eval<CalcLayersData>(context).Xn[num_weights_ - 1];
 }
 
 template <typename T>
-void MultilayerPerceptron<T>::CalcHiddenLayers(
-    const Context<T>& context, std::vector<VectorX<T>>* hidden) const {
-  (*hidden)[0] =
-      sigma_[0](GetWeights(context, 0) * this->get_input_port().Eval(context) +
-                GetBiases(context, 0));
-  for (int i = 1; i < num_hidden_layers_; ++i) {
-    (*hidden)[i] = sigma_[i](GetWeights(context, i) * (*hidden)[i - 1] +
-                             GetBiases(context, i));
+void MultilayerPerceptron<T>::CalcLayers(const Context<T>& context,
+                                         CalcLayersData* data) const {
+  data->Wx[0].noalias() =
+      GetWeights(context, 0) * this->get_input_port().Eval(context);
+  data->Wx_plus_b[0].noalias() = data->Wx[0].colwise() + GetBiases(context, 0);
+  Activation<T, 1>(activation_types_[0], data->Wx_plus_b[0], &(data->Xn[0]));
+  for (int i = 1; i < num_weights_; ++i) {
+    data->Wx[i].noalias() = GetWeights(context, i) * data->Xn[i - 1];
+    data->Wx_plus_b[i].noalias() =
+        data->Wx[i].colwise() + GetBiases(context, i);
+    Activation<T, 1>(activation_types_[i], data->Wx_plus_b[i], &(data->Xn[i]));
   }
 }
 

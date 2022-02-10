@@ -189,9 +189,8 @@ class MultilayerPerceptron final : public LeafSystem<T> {
    */
   T Backpropagation(const Context<T>& context,
                     const Eigen::Ref<const MatrixX<T>>& X,
-                    std::function<T(const Eigen::Ref<const MatrixX<T>>& Y,
-                                    EigenPtr<MatrixX<T>> dloss_dY)>
-                        loss,
+                    const std::function<T(const Eigen::Ref<const MatrixX<T>>& Y,
+                                          EigenPtr<MatrixX<T>> dloss_dY)>& loss,
                     EigenPtr<VectorX<T>> dloss_dparams) const;
 
   /** Calls Backpropagation with the mean-squared error loss function:
@@ -220,11 +219,17 @@ class MultilayerPerceptron final : public LeafSystem<T> {
   // Calculates y = f(x) for the entire network.
   void CalcOutput(const Context<T>& context, BasicVector<T>* y) const;
 
-  // Calculates the cache entries for the hidden units in the network.
-  void CalcHiddenLayers(const Context<T>& context,
-                        std::vector<VectorX<T>>* hidden) const;
+  struct CalcLayersData {
+    explicit CalcLayersData(int n) : Wx(n), Wx_plus_b(n), Xn(n) {}
 
-  int num_hidden_layers_;  // The number of layers - 2.
+    std::vector<VectorX<T>> Wx;
+    std::vector<VectorX<T>> Wx_plus_b;
+    std::vector<VectorX<T>> Xn;
+  };
+
+  // Calculates the cache entries for the hidden units in the network.
+  void CalcLayers(const Context<T>& context, CalcLayersData* data) const;
+
   int num_weights_;     // The number of weight matrices (number of layers -1 ).
   int num_parameters_;  // Total number of parameters.
   std::vector<int> layers_;  // The number of neurons in each layer.
@@ -235,15 +240,7 @@ class MultilayerPerceptron final : public LeafSystem<T> {
   std::vector<int> weight_indices_;
   std::vector<int> bias_indices_;
 
-  // Functors implementing σ(x) and dσ/dx(x).
-  std::vector<std::function<MatrixX<T>(const Eigen::Ref<const MatrixX<T>>&)>>
-      sigma_{};
-  // TODO(russt): Consider returning dsigma and sigma in the same function to
-  // reuse computation (e.g. dtanh(x) = 1-tanh(x)^2).
-  std::vector<std::function<MatrixX<T>(const Eigen::Ref<const MatrixX<T>>&)>>
-      dsigma_{};
-
-  CacheEntry* hidden_layer_cache_{};
+  CacheEntry* calc_layers_cache_{};
   CacheEntry* backprop_cache_{};
 
   template <typename>

@@ -7,6 +7,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
@@ -169,6 +170,12 @@ void CalcOutputTest(
     y = y.array().tanh().matrix();
   }
 
+  if constexpr (std::is_same_v<T, double>) {
+    // CalcOutput<double> should not have any dynamic allocations.
+    drake::test::LimitMalloc guard({.max_num_allocations = 0});
+    mlp.get_output_port().Eval(*context);
+  }
+
   EXPECT_TRUE(CompareMatrices(mlp.get_output_port().Eval(*context), y, 1e-14));
 }
 
@@ -221,6 +228,12 @@ void BackpropTest(PerceptronActivationType type) {
   // Check that they give the same values.
   EXPECT_NEAR(loss, loss_ad.value(), 1e-14);
   EXPECT_TRUE(CompareMatrices(dloss_dparams, loss_ad.derivatives(), 1e-14));
+
+  { // A second call with the same size input should not allocate.
+    drake::test::LimitMalloc guard({.max_num_allocations = 0});
+    loss = mlp.BackpropagationMeanSquaredError(*context, X, Y_desired,
+                                                      &dloss_dparams);
+  }
 }
 
 GTEST_TEST(MultilayerPerceptionTest, Backprop) {
@@ -247,6 +260,11 @@ GTEST_TEST(MultilayerPereceptronTest, BatchOutput) {
     mlp.BatchOutput(*context, X, &Y);
 
     EXPECT_TRUE(CompareMatrices(Y, Y_desired, 1e-14));
+
+    { // A second call with the same size input should not allocate.
+      drake::test::LimitMalloc guard({.max_num_allocations = 0});
+      mlp.BatchOutput(*context, X, &Y);
+    }
   }
 }
 
