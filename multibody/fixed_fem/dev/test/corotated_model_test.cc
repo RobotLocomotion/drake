@@ -2,13 +2,21 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/multibody/fixed_fem/dev/test/constitutive_model_test_utilities.h"
+#include "drake/multibody/fem/test/constitutive_model_test_utilities.h"
 
 namespace drake {
 namespace multibody {
 namespace fem {
 namespace internal {
 namespace test {
+
+
+template void TestParameters<CorotatedModel<double, 1>>();
+template void TestParameters<CorotatedModel<AutoDiffXd, 1>>();
+template void TestUndeformedState<CorotatedModel<double, 1>>();
+template void TestUndeformedState<CorotatedModel<AutoDiffXd, 1>>();
+template void TestPIsDerivativeOfPsi<CorotatedModel<AutoDiffXd, 1>>();
+template void TestdPdFIsDerivativeOfP<CorotatedModel<AutoDiffXd, 1>>();
 
 constexpr int kNumLocations = 1;
 
