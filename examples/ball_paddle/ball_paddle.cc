@@ -1,5 +1,6 @@
 #include "drake/examples/ball_paddle/ball_paddle.h"
 
+#include <string>
 #include <utility>
 
 #include "drake/common/default_scalars.h"
@@ -102,10 +103,10 @@ void ConstructBallPaddlePlant(
                                 ball_sphere, "ball",
                                 Eigen::Vector4d(0.5, 1, 0, 0.5));
   const CoulombFriction<double> ball_friction(1., 1.);
-  const double ball_stiffness = double(980);
+  const double ball_stiffness = 980;
   // Little dissipation means the ball can bounce off.
   const bool hydroelastic = true;
-  const double ball_dissipation = hydroelastic ? double(0.1) : double(0.1);
+  const double ball_dissipation = 0.1;
   drake::geometry::ProximityProperties ball_properties;
   drake::geometry::AddRigidHydroelasticProperties(ball_radius / 4,
                                                   &ball_properties);
