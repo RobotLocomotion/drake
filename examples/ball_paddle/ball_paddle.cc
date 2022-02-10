@@ -60,10 +60,11 @@ void ConstructBallPaddlePlant(
       FindResourceOrThrow("drake/examples/ball_paddle/paddle.sdf");
   const multibody::ModelInstanceIndex model_instance_id =
       parser.AddModelFromFile(paddle_sdf_file_name);
-  unused(model_instance_id);
   const multibody::RigidBody<double>& paddle_body =
       plant->GetRigidBodyByName("paddle", model_instance_id);
   *paddle_body_id = paddle_body.index();
+  *paddle_box_geometry_id =
+      plant->GetCollisionGeometriesForBody(paddle_body).at(0);
 
   if (paddle_fixed_pose.has_value()) {
     plant->WeldFrames(plant->world_frame(), paddle_body.body_frame(),
@@ -93,41 +94,18 @@ void ConstructBallPaddlePlant(
   }
 
   // Now add the ball.
-  const SpatialInertia<double> ball_inertia(ball_mass, Eigen::Vector3d::Zero(),
-                                            UnitInertia<double>(1, 1, 1));
-  const auto& ball_body = plant->AddRigidBody(
-      "ball", multibody::ModelInstanceIndex(1), ball_inertia);
+  const std::string ball_sdf_file_name =
+      FindResourceOrThrow("drake/examples/ball_paddle/ball.sdf");
+  const multibody::ModelInstanceIndex ball_instance_id =
+      parser.AddModelFromFile(ball_sdf_file_name);
+  const multibody::RigidBody<double>& ball_body =
+      plant->GetRigidBodyByName("ball", ball_instance_id);
   *ball_body_id = ball_body.index();
-  const drake::geometry::Sphere ball_sphere(ball_radius);
-  plant->RegisterVisualGeometry(ball_body, RigidTransformd::Identity(),
-                                ball_sphere, "ball",
-                                Eigen::Vector4d(0.5, 1, 0, 0.5));
-  const CoulombFriction<double> ball_friction(1., 1.);
-  const double ball_stiffness = 980;
-  // Little dissipation means the ball can bounce off.
-  const bool hydroelastic = true;
-  const double ball_dissipation = 0.1;
-  drake::geometry::ProximityProperties ball_properties;
-  drake::geometry::AddRigidHydroelasticProperties(ball_radius / 4,
-                                                  &ball_properties);
-  ball_properties.AddProperty(drake::geometry::internal::kMaterialGroup,
-                              drake::geometry::internal::kFriction,
-                              ball_friction);
-  ball_properties.AddProperty(drake::geometry::internal::kMaterialGroup,
-                              drake::geometry::internal::kPointStiffness,
-                              ball_stiffness);
-  ball_properties.AddProperty(drake::geometry::internal::kMaterialGroup,
-                              drake::geometry::internal::kHcDissipation,
-                              ball_dissipation);
-  ball_properties.AddProperty(drake::geometry::internal::kMaterialGroup,
-                              drake::geometry::internal::kElastic, 1E10);
-  *ball_sphere_geometry_id = plant->RegisterCollisionGeometry(
-      ball_body, RigidTransformd::Identity(), ball_sphere, "ball_sphere",
-      std::move(ball_properties));
-  if (hydroelastic) {
-    plant->set_contact_model(
+  *ball_sphere_geometry_id =
+      plant->GetCollisionGeometriesForBody(ball_body).at(0);
+
+  plant->set_contact_model(
         drake::multibody::ContactModel::kHydroelasticsOnly);
-  }
   plant->Finalize();
 }
 
@@ -172,7 +150,6 @@ void BallPaddle<T>::AddToBuilder(drake::systems::DiagramBuilder<T>* builder) {
                                                     nullptr, params);
 
   if constexpr (std::is_same_v<T, double>) {
-    const double publish_period = 0.001;
     auto contact_results_to_lcm =
         builder
             ->template AddSystem<drake::multibody::ContactResultsToLcmSystem>(
@@ -180,7 +157,7 @@ void BallPaddle<T>::AddToBuilder(drake::systems::DiagramBuilder<T>* builder) {
     auto contact_results_publisher =
         builder->AddSystem(drake::systems::lcm::LcmPublisherSystem::Make<
                            drake::lcmt_contact_results_for_viz>(
-            "CONTACT_RESULTS", nullptr, publish_period));
+            "CONTACT_RESULTS", nullptr));
     // Contact results to lcm msg.
     builder->Connect(plant_->get_contact_results_output_port(),
                      contact_results_to_lcm->get_contact_result_input_port());

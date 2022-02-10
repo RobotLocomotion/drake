@@ -51,6 +51,7 @@ drake_py_binary(
 filegroup(
     name = "ball_paddle_files",
     srcs = [
+        "ball.sdf",
         "paddle.sdf",
     ],
 )

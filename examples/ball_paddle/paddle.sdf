@@ -22,7 +22,9 @@
             <size>1.0 1.0 0.4</size>
           </box>
         </geometry>
-      </visual>
+        <material>
+          <diffuse>0.8 0.5 0.5 0.5</diffuse>
+        </material>      </visual>
       <collision name="collision">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
@@ -32,7 +34,7 @@
         </geometry>
         <drake:proximity_properties>
           <drake:compliant_hydroelastic/>
-          <drake:hydroelastic_modulus>1e6</drake:hydroelastic_modulus>
+          <drake:hydroelastic_modulus>1e7</drake:hydroelastic_modulus>
           <drake:mesh_resolution_hint>100</drake:mesh_resolution_hint>
           <drake:mu_dynamic>1.0</drake:mu_dynamic>
           <drake:mu_static>1.0</drake:mu_static>

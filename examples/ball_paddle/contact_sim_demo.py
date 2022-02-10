@@ -20,7 +20,7 @@ from pydrake.systems.analysis import Simulator_
 
 def construct_ball_paddle_diagram():
     T = float
-    dt = 0.000
+    dt = 0.01
     p_WPaddle_fixed = RigidTransform(RollPitchYaw(0, 0, 0),
                                      np.array([0.5, 0, -0.2]))
     ball_paddle = mut.BallPaddle_[T](dt, p_WPaddle_fixed)
