@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/multibody/fixed_fem/dev/test/constitutive_model_test_utilities.h"
+#include "drake/multibody/fem/test/constitutive_model_test_utilities.h"
 
 namespace drake {
 namespace multibody {
