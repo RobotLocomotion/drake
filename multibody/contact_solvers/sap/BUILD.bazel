@@ -1,0 +1,33 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
+    name = "contact_problem_graph",
+    srcs = ["contact_problem_graph.cc"],
+    hdrs = ["contact_problem_graph.h"],
+    deps = [
+        "//common:essential",
+        "//common:sorted_pair",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_problem_graph_test",
+    deps = [
+        ":contact_problem_graph",
+    ],
+)
+
+add_lint_tests()
