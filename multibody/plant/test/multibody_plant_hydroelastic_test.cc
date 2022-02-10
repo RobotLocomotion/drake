@@ -69,8 +69,9 @@ class HydroelasticModelTests : public ::testing::Test {
     body_ = &AddObject(plant_, kSphereRadius, kElasticModulus, kDissipation,
                        kFrictionCoefficient);
 
-    // The default contact model today is point contact.
-    EXPECT_EQ(plant_->get_contact_model(), ContactModel::kPoint);
+    // The default contact model today is hydroelastic with fallback.
+    EXPECT_EQ(plant_->get_contact_model(),
+              ContactModel::kHydroelasticWithFallback);
 
     // Tell the plant to use the hydroelastic model.
     plant_->set_contact_model(ContactModel::kHydroelastic);
