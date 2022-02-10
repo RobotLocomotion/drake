@@ -32,31 +32,6 @@ using systems::OutputPortIndex;
 using systems::System;
 using systems::ValueProducer;
 
-namespace {
-
-// TODO(jwnimmer-tri) Move this utility to some useful header file.
-//
-// Finds the SceneGraph::get_query_output_port that's associated with the
-// given plant in the given builder, or nullptr if not possible.
-template <typename T>
-const OutputPort<T>* FindSceneGraphQueryOutput(
-    const DiagramBuilder<T>& builder,
-    const MultibodyPlant<T>& plant) {
-  const typename DiagramBuilder<T>::InputPortLocator locator{
-      &plant, plant.get_geometry_query_input_port().get_index()};
-  const auto& connections = builder.connection_map();
-  const auto iter = connections.find(locator);
-  if (iter == connections.end()) {
-    return nullptr;
-  }
-  const System<T>* const scene_graph = iter->second.first;
-  const OutputPortIndex port_index = iter->second.second;
-  DRAKE_DEMAND(scene_graph != nullptr);
-  return &(scene_graph->get_output_port(port_index));
-}
-
-}  // namespace
-
 template <typename T>
 ContactVisualizer<T>::ContactVisualizer(
     std::shared_ptr<Meshcat> meshcat, ContactVisualizerParams params)
@@ -122,20 +97,17 @@ const ContactVisualizer<T>& ContactVisualizer<T>::AddToBuilder(
     std::shared_ptr<Meshcat> meshcat, ContactVisualizerParams params) {
   DRAKE_THROW_UNLESS(builder != nullptr);
 
-  // Find the SceneGraph associated with this plant (if possible).
-  const OutputPort<T>* query_object_port =
-      FindSceneGraphQueryOutput(*builder, plant);
+  // Delegate to another overload.
+  const auto& result = AddToBuilder(
+      builder, plant.get_contact_results_output_port(),
+      std::move(meshcat), std::move(params));
 
-  // Delegate to one of the port-specific overloads.
-  if (query_object_port != nullptr) {
-    return AddToBuilder(
-        builder, plant.get_contact_results_output_port(), *query_object_port,
-        std::move(meshcat), std::move(params));
-  } else {
-    return AddToBuilder(
-        builder, plant.get_contact_results_output_port(),
-        std::move(meshcat), std::move(params));
-  }
+  // Add the query connection (if the plant has a SceneGraph).
+  builder->ConnectToSame(
+      plant.get_geometry_query_input_port(),
+      result.query_object_input_port());
+
+  return result;
 }
 
 template <typename T>
