@@ -160,6 +160,8 @@ class TestMath(unittest.TestCase):
         check_equality(X.inverse(), X_I_np)
         self.assertIsInstance(
             X.multiply(other=RigidTransform()), RigidTransform)
+        self.assertIsInstance(
+            X.InvertAndCompose(other=RigidTransform()), RigidTransform)
         self.assertIsInstance(X @ RigidTransform(), RigidTransform)
         self.assertIsInstance(X @ [0, 0, 0], np.ndarray)
         if T != Expression:
@@ -268,6 +270,8 @@ class TestMath(unittest.TestCase):
         self.assertIsInstance(angle_axis, AngleAxis)
         R_AngleAxis = RotationMatrix(angle_axis)
         R_I = R.inverse().multiply(R_AngleAxis)
+        numpy_compare.assert_equal(R_I.IsNearlyIdentity(2E-15), True)
+        R_I = R.InvertAndCompose(other=R_AngleAxis)
         numpy_compare.assert_equal(R_I.IsNearlyIdentity(2E-15), True)
         # - Inverse, transpose, projection
         R_I = R.inverse().multiply(R)

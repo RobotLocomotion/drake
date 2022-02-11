@@ -118,6 +118,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("IsNearlyEqualTo", &Class::IsNearlyEqualTo, py::arg("other"),
             py::arg("tolerance"), cls_doc.IsNearlyEqualTo.doc)
         .def("inverse", &Class::inverse, cls_doc.inverse.doc)
+        .def("InvertAndCompose", &Class::InvertAndCompose, py::arg("other"),
+            cls_doc.InvertAndCompose.doc)
         .def(
             "multiply",
             [](const Class* self, const Class& other) { return *self * other; },
@@ -179,6 +181,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("Identity", &Class::Identity, cls_doc.Identity.doc)
         .def("set", &Class::set, py::arg("R"), cls_doc.set.doc)
         .def("inverse", &Class::inverse, cls_doc.inverse.doc)
+        .def("InvertAndCompose", &Class::InvertAndCompose, py::arg("other"),
+            cls_doc.InvertAndCompose.doc)
         .def("transpose", &Class::transpose, cls_doc.transpose.doc)
         .def("matrix", &Class::matrix, cls_doc.matrix.doc)
         .def("row", &Class::row, py::arg("index"), cls_doc.row.doc)
