@@ -20,7 +20,6 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
-#include "drake/multibody/hydroelastics/hydroelastic_engine.h"
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
@@ -4191,19 +4190,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // MultibodyTree::Finalize() was called.
   void FinalizePlantOnly();
 
-  // MemberSceneGraph is an alias for SceneGraph<T>, except when T = Expression.
-  struct SceneGraphStub;
-  using MemberSceneGraph = typename std::conditional_t<
-      std::is_same_v<T, symbolic::Expression>,
-      SceneGraphStub, geometry::SceneGraph<T>>;
-
-  // Returns the SceneGraph that pre-Finalize geometry operations should
-  // interact with.  In most cases, that will be whatever the user has passed
-  // into RegisterAsSourceForSceneGraph.  However, when T = Expression, the
-  // result will be a stub type instead.  (We can get rid of the stub once
-  // SceneGraph supports symbolic::Expression.)
-  MemberSceneGraph& member_scene_graph();
-
   // Consolidates calls to Eval on the geometry query input port to have a
   // consistent and helpful error message in the situation where the
   // geometry_query_input_port is not connected, but is expected to be.
@@ -4230,10 +4216,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::pair<T, T> GetPointContactParameters(
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector) const {
-    if constexpr (std::is_same_v<symbolic::Expression, T>) {
-      throw std::domain_error(
-          "This method doesn't support T = symbolic::Expression.");
-    }
     const geometry::ProximityProperties* prop =
         inspector.GetProximityProperties(id);
     DRAKE_DEMAND(prop != nullptr);
@@ -4252,10 +4234,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const CoulombFriction<double>& GetCoulombFriction(
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector) const {
-    if constexpr (std::is_same_v<symbolic::Expression, T>) {
-      throw std::domain_error(
-          "This method doesn't support T = symbolic::Expression.");
-    }
     const geometry::ProximityProperties* prop =
         inspector.GetProximityProperties(id);
     DRAKE_DEMAND(prop != nullptr);
@@ -5027,8 +5005,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // (Experimental) The vector of physical models owned by MultibodyPlant.
   std::vector<std::unique_ptr<internal::PhysicalModel<T>>> physical_models_;
 
-  hydroelastics::internal::HydroelasticEngine<T> hydroelastics_engine_;
-
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;
 
@@ -5182,19 +5158,6 @@ std::pair<T, T> CombinePointContactParameters(const T& k1, const T& k2,
 #ifndef DRAKE_DOXYGEN_CXX
 // Forward-declare specializations, prior to DRAKE_DECLARE... below.
 // See the .cc file for an explanation why we specialize these methods.
-template <>
-typename MultibodyPlant<symbolic::Expression>::SceneGraphStub&
-MultibodyPlant<symbolic::Expression>::member_scene_graph();
-template <>
-void MultibodyPlant<symbolic::Expression>::CalcPointPairPenetrations(
-    const systems::Context<symbolic::Expression>&,
-    std::vector<geometry::PenetrationAsPointPair<symbolic::Expression>>*) const;
-template <>
-std::vector<CoulombFriction<double>>
-MultibodyPlant<symbolic::Expression>::CalcCombinedFrictionCoefficients(
-    const drake::systems::Context<symbolic::Expression>&,
-    const std::vector<internal::DiscreteContactPair<symbolic::Expression>>&)
-    const;
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const systems::Context<symbolic::Expression>&,
