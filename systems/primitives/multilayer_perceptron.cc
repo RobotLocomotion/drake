@@ -11,6 +11,19 @@ namespace systems {
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
+namespace internal {
+
+template <typename T>
+struct CalcLayersData {
+  explicit CalcLayersData(int n) : Wx(n), Wx_plus_b(n), Xn(n) {}
+
+  std::vector<VectorX<T>> Wx;
+  std::vector<VectorX<T>> Wx_plus_b;
+  std::vector<VectorX<T>> Xn;
+};
+
+}  // namespace internal
+
 namespace {
 
 /* Returns `vector_size - n`, or throws if it would underflow. */
@@ -72,8 +85,7 @@ void Activation(
   } else if (type == kReLU) {
     *Y = X.array().max(0.0).matrix();
     if (dYdX) {
-      dYdX->noalias() =
-          (X.array() <= 0).select(MatrixX<T>::Zero(X.rows(), X.cols()), 1);
+      dYdX->noalias() = (X.array() <= 0).select(0*X, 1);
     }
   } else {
     DRAKE_DEMAND(type == kIdentity);
@@ -123,7 +135,7 @@ MultilayerPerceptron<T>::MultilayerPerceptron(
       BasicVector<T>(VectorX<T>::Zero(num_parameters_)));
 
   // Declare cache entry for CalcOutput.
-  CalcLayersData calc_layers_data(num_weights_);
+  internal::CalcLayersData<T> calc_layers_data(num_weights_);
   for (int i = 0; i < num_weights_; ++i) {
     calc_layers_data.Wx[i] = VectorX<T>::Zero(layers[i + 1]);
     calc_layers_data.Wx_plus_b[i] = VectorX<T>::Zero(layers[i + 1]);
@@ -335,25 +347,47 @@ T MultilayerPerceptron<T>::BackpropagationMeanSquaredError(
 template <typename T>
 void MultilayerPerceptron<T>::BatchOutput(const Context<T>& context,
                                           const Eigen::Ref<const MatrixX<T>>& X,
-                                          EigenPtr<MatrixX<T>> Y) const {
+                                          EigenPtr<MatrixX<T>> Y,
+                                          EigenPtr<MatrixX<T>> dYdX) const {
   this->ValidateContext(context);
   DRAKE_DEMAND(X.rows() == layers_[0]);
   DRAKE_DEMAND(Y->rows() == layers_[num_weights_]);
   DRAKE_DEMAND(Y->cols() == X.cols());
+  bool gradients = layers_[num_weights_] == 1 && dYdX != nullptr;
+
   BackPropData<T>& data =
       backprop_cache_->get_mutable_cache_entry_value(context)
           .template GetMutableValueOrThrow<BackPropData<T>>();
+  // Forward pass:
   data.Wx[0].noalias() = GetWeights(context, 0) * X;
   data.Wx_plus_b[0].noalias() = data.Wx[0].colwise() + GetBiases(context, 0);
   Activation<T, Eigen::Dynamic>(activation_types_[0], data.Wx_plus_b[0],
-                                &data.Xn[0]);
+                                &data.Xn[0],
+                                gradients ? &data.dXn[0] : nullptr);
   for (int i = 1; i < num_weights_; ++i) {
     data.Wx[i].noalias() = GetWeights(context, i) * data.Xn[i - 1];
     data.Wx_plus_b[i].noalias() = data.Wx[i].colwise() + GetBiases(context, i);
     Activation<T, Eigen::Dynamic>(activation_types_[i], data.Wx_plus_b[i],
-                                  &data.Xn[i]);
+                                  &data.Xn[i],
+                                  gradients ? &data.dXn[i] : nullptr);
   }
   *Y = data.Xn[num_weights_-1];
+  if (gradients) {
+    // Backward pass:
+    // In order to reuse the cache from Backprop, we take loss ≡ Y.
+    data.dloss_dXn[num_weights_ -1] = RowVectorX<T>::Constant(X.cols(), 1.0);
+    for (int i = num_weights_ - 1; i >= 0; --i) {
+      data.dloss_dWx_plus_b[i] =
+          (data.dloss_dXn[i].array() * data.dXn[i].array()).matrix();
+      if (i > 0) {
+        data.dloss_dXn[i - 1].noalias() =
+            GetWeights(context, i).transpose() * data.dloss_dWx_plus_b[i];
+      } else {
+        dYdX->noalias() =
+            GetWeights(context, i).transpose() * data.dloss_dWx_plus_b[i];
+      }
+    }
+  }
 }
 
 template <typename T>
@@ -361,12 +395,13 @@ void MultilayerPerceptron<T>::CalcOutput(const Context<T>& context,
                                          BasicVector<T>* y) const {
   this->ValidateContext(context);
   y->get_mutable_value() =
-      calc_layers_cache_->Eval<CalcLayersData>(context).Xn[num_weights_ - 1];
+      calc_layers_cache_->Eval<internal::CalcLayersData<T>>(context)
+          .Xn[num_weights_ - 1];
 }
 
 template <typename T>
-void MultilayerPerceptron<T>::CalcLayers(const Context<T>& context,
-                                         CalcLayersData* data) const {
+void MultilayerPerceptron<T>::CalcLayers(
+    const Context<T>& context, internal::CalcLayersData<T>* data) const {
   data->Wx[0].noalias() =
       GetWeights(context, 0) * this->get_input_port().Eval(context);
   data->Wx_plus_b[0].noalias() = data->Wx[0].colwise() + GetBiases(context, 0);
