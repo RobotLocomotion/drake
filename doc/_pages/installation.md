@@ -61,6 +61,8 @@ For new users, we recommend using the stable releases.  New releases
 will be announced on Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page and
 documented in Drake's [Release Notes](/release_notes/release_notes.html).
+Refer to our [Drake Stability Guidelines](/stable.html) for our policy
+on API changes.
 
 Experienced users who want access to the latest features may use the
 nightly builds.
