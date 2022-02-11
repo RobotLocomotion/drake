@@ -75,7 +75,7 @@ class SapConstraint {
      SapContactProblem::num_velocities(). This condition is enforced when the
      constraint is added to the contact problem instead of during construction
      here, see SapContactProblem::AddConstraint(). */
-  SapConstraint(int clique, const VectorX<T>& g, const MatrixX<T>& J);
+  SapConstraint(int clique, VectorX<T> g, MatrixX<T> J);
 
   /* Constructor for a constraint among DOFs between two cliques.
    @param[in] first_clique
@@ -105,9 +105,8 @@ class SapConstraint {
      `second_clique`, see SapContactProblem::num_velocities(), though this
      condition is not enforced at construction but when the constraint is added
      to the contact problem, see SapContactProblem::AddConstraint(). */
-  SapConstraint(int first_clique, int second_clique, const VectorX<T>& g,
-                const MatrixX<T>& J_first_clique,
-                const MatrixX<T>& J_second_clique);
+  SapConstraint(int first_clique, int second_clique, VectorX<T> g,
+                MatrixX<T> J_first_clique, MatrixX<T> J_second_clique);
 
   virtual ~SapConstraint() = default;
 
