@@ -54,7 +54,7 @@ where ``<job-name>`` is the name of an
 For example:
 
 * ``@drake-jenkins-bot mac-big-sur-clang-bazel-experimental-release please``
-* ``@drake-jenkins-bot linux-bionic-clang-bazel-experimental-valgrind-memcheck please``
+* ``@drake-jenkins-bot linux-focal-clang-bazel-experimental-valgrind-memcheck please``
 
 ## Scheduling Builds via the Jenkins User Interface
 

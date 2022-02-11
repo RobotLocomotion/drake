@@ -26,7 +26,7 @@ valgrind \
     --show-leak-kinds=definite,possible \
     --suppressions="${mydir}/valgrind.supp" \
     --suppressions=/usr/lib/valgrind/debian.supp \
-    --suppressions=/usr/lib/valgrind/python.supp \
+    --suppressions=/usr/lib/valgrind/python3.supp \
     --tool=memcheck \
     --trace-children=yes \
     --trace-children-skip=/bin/cat,/bin/cp,/bin/ln,/bin/ls,/bin/mkdir,/bin/mv,/bin/sed,/lib/ld-linux.so.\*,/lib64/ld-linux-x86-64.so.\*,/usr/bin/clang,/usr/bin/clang-9,/usr/bin/clang-format-9,/usr/bin/diff,/usr/bin/dot,/usr/bin/fc-list,/usr/bin/file,/usr/bin/find,/usr/bin/gcc,/usr/bin/ldd,/usr/bin/patchelf,/usr/bin/strip,/usr/bin/uname,\*/external/buildifier/buildifier \
