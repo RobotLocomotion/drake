@@ -11,6 +11,8 @@ namespace contact_solvers {
 namespace internal {
 namespace {
 
+// These Jacobian matrices have arbitrary values for testing. We specify the
+// size of the matrix in the name, e.g. J32 is of size 3x2.
 // clang-format off
 const MatrixXd J32 =
     (MatrixXd(3, 2) << 2, 1,
@@ -23,13 +25,13 @@ const MatrixXd J34 =
                        2, 4, 9, 6).finished();
 // clang-format on
 
-class TestConstaint final : public SapConstraint<double> {
+class TestConstraint final : public SapConstraint<double> {
  public:
-  // These concstrutors setup an arbitrary constraint for one and two cliques.
-  explicit TestConstaint(int clique)
+  // These constructor set up an arbitrary constraint for one and two cliques.
+  explicit TestConstraint(int clique)
       : SapConstraint<double>(clique, Vector3d(1., 2., 3), J32) {}
 
-  TestConstaint(int first_clique, int second_clique)
+  TestConstraint(int first_clique, int second_clique)
       : SapConstraint<double>(first_clique, second_clique, Vector3d(1., 2., 3),
                               J32, J34) {}
 
@@ -48,22 +50,22 @@ class TestConstaint final : public SapConstraint<double> {
 };
 
 GTEST_TEST(SapConstraint, SingleCliqueConstraint) {
-  TestConstaint c(12);
-  EXPECT_EQ(c.num_constrained_dofs(), 3);
+  TestConstraint c(12);
+  EXPECT_EQ(c.num_constraint_equations(), 3);
   EXPECT_EQ(c.num_cliques(), 1);
   EXPECT_EQ(c.first_clique(), 12);
-  EXPECT_LT(c.second_clique(), 0);
+  EXPECT_THROW(c.second_clique(), std::exception);
   EXPECT_EQ(c.constraint_function(), Vector3d(1., 2., 3));
   EXPECT_EQ(c.first_clique_jacobian(), J32);
   EXPECT_THROW(c.second_clique_jacobian(), std::exception);
 }
 
 GTEST_TEST(SapConstraint, TwoCliquesConstraint) {
-  TestConstaint c(11, 3);
-  EXPECT_EQ(c.num_constrained_dofs(), 3);
+  TestConstraint c(11, 7);
+  EXPECT_EQ(c.num_constraint_equations(), 3);
   EXPECT_EQ(c.num_cliques(), 2);
   EXPECT_EQ(c.first_clique(), 11);
-  EXPECT_EQ(c.second_clique(), 3);
+  EXPECT_EQ(c.second_clique(), 7);
   EXPECT_EQ(c.constraint_function(), Vector3d(1., 2., 3));
   EXPECT_EQ(c.first_clique_jacobian(), J32);
   EXPECT_EQ(c.second_clique_jacobian(), J34);

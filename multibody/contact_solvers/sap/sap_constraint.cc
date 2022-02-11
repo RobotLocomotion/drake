@@ -32,6 +32,7 @@ SapConstraint<T>::SapConstraint(int first_clique, int second_clique,
   DRAKE_THROW_UNLESS(first_clique != second_clique);
   DRAKE_THROW_UNLESS(g.size() >= 0);
   DRAKE_THROW_UNLESS(J_first_clique.rows() == J_second_clique.rows());
+  DRAKE_THROW_UNLESS(g.size() == J_first_clique.rows());
 }
 
 }  // namespace internal
