@@ -268,6 +268,58 @@ GTEST_TEST(MultilayerPereceptronTest, BatchOutput) {
   }
 }
 
+GTEST_TEST(MultilayerPereceptronTest, BatchOutputWithGradients) {
+  for (const auto& type : {kIdentity, kReLU, kTanh}) {
+    std::vector<int> layers({2, 3, 3, 1});
+
+    MultilayerPerceptron<double> mlp(layers, type);
+    auto context = mlp.CreateDefaultContext();
+    RandomGenerator generator(243);
+    mlp.SetRandomContext(context.get(), &generator);
+
+    MultilayerPerceptron<AutoDiffXd> mlp_ad(layers, type);
+    auto context_ad = mlp_ad.CreateDefaultContext();
+    mlp_ad.SetParameters(context_ad.get(),
+                         mlp.GetParameters(*context).cast<AutoDiffXd>());
+
+    Eigen::Matrix<double, 2, 3> X, dYdX, dYdX_desired;
+    X << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6;
+    Eigen::Matrix<double, 1, 3> Y, Y_desired;
+    for (int i = 0; i < 3; ++i) {
+      mlp_ad.get_input_port().FixValue(context_ad.get(),
+                                       math::InitializeAutoDiff(X.col(i)));
+      AutoDiffXd y = mlp_ad.get_output_port().Eval(*context_ad)[0];
+      Y_desired(0, i) = y.value();
+      // Note: Have to handle the case where the autodiff gradients are not set
+      // (e.g. for ReLU the input might be truncated before reaching the
+      // output).
+      dYdX_desired.col(i) =
+          y.derivatives().size() ? y.derivatives() : Eigen::Vector2d::Zero();
+    }
+    mlp.BatchOutput(*context, X, &Y, &dYdX);
+
+    EXPECT_TRUE(CompareMatrices(Y, Y_desired, 1e-14));
+    EXPECT_TRUE(CompareMatrices(dYdX, dYdX_desired, 1e-14));
+
+    { // A second call with the same size input should not allocate.
+      drake::test::LimitMalloc guard({.max_num_allocations = 0});
+      mlp.BatchOutput(*context, X, &Y, &dYdX);
+    }
+  }
+}
+
+GTEST_TEST(MultilayerPerceptronTest, BatchOutputWithGradientsThrows) {
+  MultilayerPerceptron<double> mlp({2, 2});
+  auto context = mlp.CreateDefaultContext();
+  const Eigen::Matrix2d X;
+  Eigen::Matrix2d Y, dYdX;
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      mlp.BatchOutput(*context, X, &Y, &dYdX),
+      ".*dYdX != nullptr, but BatchOutput only supports "
+      "gradients when the output layer has size 1.");
+}
+
 GTEST_TEST(MultilayerPerceptronTest, ScalarConversion) {
   MultilayerPerceptron<double> mlp({1, 2, 3, 4}, kReLU);
 
