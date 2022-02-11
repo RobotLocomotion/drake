@@ -300,7 +300,7 @@ class MathematicalProgramResult final {
    * 2. For nonlinear solvers like IPOPT, the dual solution for Lorentz cone
    *    constraint (with EvalType::kConvex) is the shadow price for
    *    z₀ - sqrt(z₁² + ... +zₙ²) ≥ 0, where z = Ax+b.
-   * 3. For other convex conic solver such as SCS, Mosek, CSDP, etc, the dual
+   * 3. For other convex conic solver such as SCS, MOSEK™, CSDP, etc, the dual
    *    solution to the (rotated) Lorentz cone constraint doesn't have the
    *    "shadow price" interpretation, but should lie in the dual cone, and
    *    satisfy the KKT condition. For more information, refer to
@@ -310,7 +310,7 @@ class MathematicalProgramResult final {
    * The interpretation for the dual variable to conic constraint x ∈ K can be
    * different. Here K is a convex cone, including exponential cone, power
    * cone, PSD cone, etc. When the problem is solved by a convex solver (like
-   * SCS, Mosek, CSDP, etc), often it has a dual variable z ∈ K*, where K* is
+   * SCS, MOSEK™, CSDP, etc), often it has a dual variable z ∈ K*, where K* is
    * the dual cone. Here the dual variable DOESN'T have the interpretation of
    * "shadow price", but should satisfy the KKT condition, while the dual
    * variable stays inside the dual cone.

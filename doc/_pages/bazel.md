@@ -171,7 +171,7 @@ bazel build //tools/lint:buildifier
 The Drake Bazel build currently supports the following proprietary solvers:
 
 * Gurobi 9.0.2
-* MOSEK 9.2
+* MOSEK™ 9.2
 * SNOPT 7.4
 
 ## Gurobi 9.0.2
@@ -203,17 +203,17 @@ See [https://docs.bazel.build/versions/master/user-manual.html#bazelrc](https://
 
 ## MOSEK
 
-The Drake Bazel build system downloads MOSEK 9.2.33 automatically.  No manual
+The Drake Bazel build system downloads MOSEK™ 9.2.33 automatically. No manual
 installation is required.  Set the location of your license file as follows:
 
   ```export MOSEKLM_LICENSE_FILE=/path/to/mosek.lic```
 
-To confirm that your setup was successful, run the tests that require MOSEK:
+To confirm that your setup was successful, run the tests that require MOSEK™:
 
   ```bazel test --config mosek --test_tag_filters=mosek //...```
 
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
-these tests.  If you will be developing with MOSEK regularly, you may wish
+these tests.  If you will be developing with MOSEK™ regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See [https://docs.bazel.build/versions/master/user-manual.html#bazelrc](https://docs.bazel.build/versions/master/user-manual.html#bazelrc).
 

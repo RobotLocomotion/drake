@@ -1023,7 +1023,7 @@ class ExpressionConstraint : public Constraint {
  * generic nonlinear optimization. It is possible that the nonlinear solver
  * can accidentally set z₁ = 0, where the constraint is not well defined.
  * Instead, the user should consider to solve the program through conic solvers
- * that can exploit exponential cone, such as Mosek and SCS.
+ * that can exploit exponential cone, such as MOSEK™ and SCS.
  *
  * @ingroup solver_evaluators
  */
