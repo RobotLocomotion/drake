@@ -3,7 +3,9 @@
 #include <gtest/gtest.h>
 
 using Eigen::MatrixXd;
+using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace multibody {
@@ -28,12 +30,13 @@ const MatrixXd J34 =
 class TestConstraint final : public SapConstraint<double> {
  public:
   // These constructor set up an arbitrary constraint for one and two cliques.
-  explicit TestConstraint(int clique)
-      : SapConstraint<double>(clique, Vector3d(1., 2., 3), J32) {}
+  TestConstraint(int clique, VectorXd g, MatrixXd J)
+      : SapConstraint<double>(clique, g, J) {}
 
-  TestConstraint(int first_clique, int second_clique)
-      : SapConstraint<double>(first_clique, second_clique, Vector3d(1., 2., 3),
-                              J32, J34) {}
+  TestConstraint(int first_clique, int second_clique, VectorXd g,
+                 MatrixXd J_first_clique, MatrixXd J_second_clique)
+      : SapConstraint<double>(first_clique, second_clique, g, J_first_clique,
+                              J_second_clique) {}
 
   // N.B no-op overloads to allow us compile this testing constraint. These
   // methods are only tested for specific derived classes, not in this file.
@@ -50,7 +53,7 @@ class TestConstraint final : public SapConstraint<double> {
 };
 
 GTEST_TEST(SapConstraint, SingleCliqueConstraint) {
-  TestConstraint c(12);
+  TestConstraint c(12, Vector3d(1., 2., 3), J32);
   EXPECT_EQ(c.num_constraint_equations(), 3);
   EXPECT_EQ(c.num_cliques(), 1);
   EXPECT_EQ(c.first_clique(), 12);
@@ -61,7 +64,7 @@ GTEST_TEST(SapConstraint, SingleCliqueConstraint) {
 }
 
 GTEST_TEST(SapConstraint, TwoCliquesConstraint) {
-  TestConstraint c(11, 7);
+  TestConstraint c(11, 7, Vector3d(1., 2., 3), J32, J34);
   EXPECT_EQ(c.num_constraint_equations(), 3);
   EXPECT_EQ(c.num_cliques(), 2);
   EXPECT_EQ(c.first_clique(), 11);
@@ -69,6 +72,39 @@ GTEST_TEST(SapConstraint, TwoCliquesConstraint) {
   EXPECT_EQ(c.constraint_function(), Vector3d(1., 2., 3));
   EXPECT_EQ(c.first_clique_jacobian(), J32);
   EXPECT_EQ(c.second_clique_jacobian(), J34);
+}
+
+GTEST_TEST(SapConstraint, SingleCliqueConstraintWrongArguments) {
+  // Negative clique.
+  EXPECT_THROW(TestConstraint c(-1, Vector2d(1., 2.), J32), std::exception);
+  // g.size() != J.rows().
+  EXPECT_THROW(TestConstraint c(12, Vector2d(1., 2.), J32), std::exception);
+  // g.size() = 0.
+  EXPECT_THROW(TestConstraint c(12, VectorXd(), J32), std::exception);
+  // J.size() = 0.
+  EXPECT_THROW(TestConstraint c(12, Vector2d(1., 2.), MatrixXd()),
+               std::exception);
+}
+
+GTEST_TEST(SapConstraint, TwoCliquesConstraintWrongArguments) {
+  // Negative first clique.
+  EXPECT_THROW(TestConstraint c(-1, 7, Vector3d(1., 2., 3), J32, J34),
+               std::exception);
+  // Negative second clique.
+  EXPECT_THROW(TestConstraint c(1, -1, Vector3d(1., 2., 3), J32, J34),
+               std::exception);
+  // Equal cliques.
+  EXPECT_THROW(TestConstraint c(5, 5, Vector3d(1., 2., 3), J32, J34),
+               std::exception);
+  // g.size() != J.rows().
+  EXPECT_THROW(TestConstraint c(11, 7, Vector2d(1., 2.), J32, J34),
+               std::exception);
+  // g.size() = 0.
+  EXPECT_THROW(TestConstraint c(11, 7, VectorXd(), J32, J34), std::exception);
+  // J_first.rows() != J_second.rows().
+  EXPECT_THROW(
+      TestConstraint c(11, 7, Vector3d(1., 2., 3), J32, MatrixXd::Zero(1, 4)),
+      std::exception);
 }
 
 }  // namespace

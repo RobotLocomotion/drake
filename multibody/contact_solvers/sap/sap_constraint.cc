@@ -16,8 +16,9 @@ SapConstraint<T>::SapConstraint(int clique, VectorX<T> g, MatrixX<T> J)
       g_(std::move(g)),
       first_clique_jacobian_(std::move(J)) {
   DRAKE_THROW_UNLESS(clique >= 0);
-  DRAKE_THROW_UNLESS(g.size() >= 0);
-  DRAKE_THROW_UNLESS(J.rows() == g.size());
+  DRAKE_THROW_UNLESS(constraint_function().size() >= 0);
+  DRAKE_THROW_UNLESS(first_clique_jacobian().rows() ==
+                     constraint_function().size());
 }
 
 template <typename T>
@@ -32,9 +33,11 @@ SapConstraint<T>::SapConstraint(int first_clique, int second_clique,
   DRAKE_THROW_UNLESS(first_clique >= 0);
   DRAKE_THROW_UNLESS(second_clique >= 0);
   DRAKE_THROW_UNLESS(first_clique != second_clique);
-  DRAKE_THROW_UNLESS(g.size() >= 0);
-  DRAKE_THROW_UNLESS(J_first_clique.rows() == J_second_clique.rows());
-  DRAKE_THROW_UNLESS(g.size() == J_first_clique.rows());
+  DRAKE_THROW_UNLESS(constraint_function().size() >= 0);
+  DRAKE_THROW_UNLESS(first_clique_jacobian().rows() ==
+                     second_clique_jacobian().rows());
+  DRAKE_THROW_UNLESS(constraint_function().size() ==
+                     first_clique_jacobian().rows());
 }
 
 }  // namespace internal
