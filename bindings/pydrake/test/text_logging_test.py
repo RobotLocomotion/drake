@@ -1,56 +1,150 @@
+from logging import (
+    CRITICAL,
+    DEBUG,
+    ERROR,
+    INFO,
+    NOTSET,
+    WARNING,
+)
 import re
 import subprocess
+import sys
 import unittest
+
+# As a Drake convention, we use log level 5 for "TRACE" to match spdlog's
+# trace() function.  (Level 0 is "NOTSET" and Level 10 is "DEBUG".)
+DRAKE_TRACE = 5
 
 
 class TestTextLogging(unittest.TestCase):
-    def expected_message(self, spdlog_level):
-        # Expected message format:
-        # [<date> <time>] [console] [<level>] <message>
+    """Proves that Python logging is in effect, by checking all combinations of
+    log level settings for both C++ and Python.
 
-        # See bindings/pydrake/test/text_logging_test_py.cc
-        expected_messages = {"debug": "Test Debug message",
-                             "info": "Test Info message",
-                             "warn": "Test Warn message",
-                             "error": "Test Error message",
-                             "critical": "Test Critical message"}
-        level_strings = {"debug": "debug",
-                         "info": "info",
-                         "warn": "warning",
-                         "error": "error",
-                         "critical": "critical"}
+    https://drake.mit.edu/doxygen_cxx/text__logging_8h.html
+    https://docs.python.org/3/library/logging.html#levels
+    """
 
-        message = expected_messages[spdlog_level]
-        level = level_strings[spdlog_level]
-        return fr"\[[0-9,\-,\s,:,\.]*\] \[console\] \[{level}\] {message}"
+    @staticmethod
+    def _python_level_name(level):
+        """Given a Python logging integer level code, returns the corresponding
+        Python string name.
+        """
+        return dict((
+            (NOTSET, "NOTSET"),
+            (DRAKE_TRACE, "Level 5"),
+            (DEBUG, "DEBUG"),
+            (INFO, "INFO"),
+            (WARNING, "WARNING"),
+            (ERROR, "ERROR"),
+            (CRITICAL, "CRITICAL"),
+        ))[level]
 
-    def do_test(self, spdlog_level, expected_spdlog_levels):
-        output = subprocess.check_output(
-            ["bindings/pydrake/text_logging_example", spdlog_level],
-            stderr=subprocess.STDOUT).decode("utf8")
-        expected_output = ""
-        for level in expected_spdlog_levels:
-            expected_output += self.expected_message(level) + "\n"
-        if not expected_output:
-            self.assertEqual(output, expected_output)
-        else:
-            self.assertRegex(output, expected_output)
+    @staticmethod
+    def _spdlog_level_name(level):
+        """Given a Python logging integer level code, returns the corresponding
+        spdlog::level enum name (that can be passed to pydrake' set_log_level).
+        """
+        return dict((
+            (NOTSET, "unchanged"),
+            (DRAKE_TRACE, "trace"),
+            (DEBUG, "debug"),
+            (INFO, "info"),
+            (WARNING, "warn"),
+            (ERROR, "err"),
+            (CRITICAL, "critical"),
+        ))[level]
 
     def test_debug_logging(self):
-        self.do_test("debug",
-                     ["debug", "info", "warn", "error", "critical"])
+        """Checks all permutations of logging configurations, to ensure that
+        they all behave as expected. This function only iterates through the
+        permutations; the _run_one_test helper method does the actual test.
+        """
+        all_levels = [
+            NOTSET,
+            DRAKE_TRACE,
+            DEBUG,
+            INFO,
+            WARNING,
+            ERROR,
+            CRITICAL,
+        ]
+        for use_nice_format in [False, True]:
+            for python_level in all_levels:
+                if use_nice_format and python_level == NOTSET:
+                    # There is no such thing as "nice format" when we're not
+                    # configuring the Python logging in the first place.
+                    continue
+                python_level_name = self._python_level_name(python_level)
+                for spdlog_level in all_levels:
+                    spdlog_level_name = self._spdlog_level_name(spdlog_level)
+                    with self.subTest(
+                            use_nice_format=use_nice_format,
+                            python_level=python_level_name,
+                            cxx_level=spdlog_level_name):
+                        self._run_one_test(
+                            use_nice_format=use_nice_format,
+                            python_level=python_level,
+                            spdlog_level=spdlog_level)
 
-    def test_info_logging(self):
-        self.do_test("info", ["info", "warn", "error", "critical"])
+    def _run_one_test(self, *, python_level, spdlog_level, use_nice_format):
+        """Runs a singe test using the given configuration.
+        The two levels are Python integer logging levels (e.g., logging.DEBUG).
+        The use_nice_format is a bool.
+        """
+        # Invoke the test program.
+        spdlog_level_name = self._spdlog_level_name(spdlog_level)
+        try:
+            output = subprocess.check_output(
+                ["bindings/pydrake/text_logging_example",
+                 f"--python_level={python_level}",
+                 f"--spdlog_level_name={spdlog_level_name}",
+                 f"--use_nice_format={int(use_nice_format)}"],
+                stderr=subprocess.STDOUT, encoding="utf8")
+        except subprocess.CalledProcessError as e:
+            print(e.output, file=sys.stderr, flush=True)
+            raise
 
-    def test_warning_logging(self):
-        self.do_test("warn", ["warn", "error", "critical"])
+        # Parse all of its output lines, e.g., the nice format:
+        #  [2022-02-11 14:49:17,952] [drake] [error] Test Error message
+        # or the basic format:
+        #  ERROR:drake:Test Error message
+        found = []
+        if use_nice_format:
+            pattern = r"\[.{23}\] \[drake\] \[(.*?)\] (.*)"
+        else:
+            pattern = r"(.*?):drake:(.*)"
+        matcher = re.compile(pattern)
+        for line in output.splitlines():
+            match = matcher.match(line)
+            self.assertTrue(match, f"{line!r} does not match {pattern}")
+            found.append(match.groups())
 
-    def test_error_logging(self):
-        self.do_test("err", ["error", "critical"])
+        # Confirm the message bodies vs the reported level.
+        expected_messages = {
+            "Level 5": "Test Trace message",
+            "DEBUG": "Test Debug message",
+            "INFO": "Test Info message",
+            "WARNING": "Test Warn message",
+            "ERROR": "Test Error message",
+            "CRITICAL": "Test Critical message",
+        }
+        for spdlog_level_token, message in found:
+            self.assertEqual(message, expected_messages[spdlog_level_token])
 
-    def test_critical_logging(self):
-        self.do_test("critical", ["critical"])
-
-    def test_no_logging(self):
-        self.do_test("off", [])
+        # Confirm that the correct levels came out.
+        found_levels = set([k for k, _ in found])
+        expected_level = max(python_level or INFO, spdlog_level or INFO)
+        expected_levels = set()
+        if expected_level <= DRAKE_TRACE:
+            expected_levels.add("Level 5")
+        if expected_level <= DEBUG:
+            expected_levels.add("DEBUG")
+        if expected_level <= INFO:
+            expected_levels.add("INFO")
+        if expected_level <= WARNING:
+            expected_levels.add("WARNING")
+        if expected_level <= ERROR:
+            expected_levels.add("ERROR")
+        if expected_level <= CRITICAL:
+            expected_levels.add("CRITICAL")
+        self.assertSetEqual(found_levels, expected_levels)
