@@ -652,7 +652,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
     </robot>)"),
-      "Unable to find the <drake:bushing_frameC> tag on line [0-9]+");
+      ".*Unable to find the <drake:bushing_frameC> tag on line [0-9]+");
 
   // Test non-existent frame
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -672,7 +672,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
     </robot>)"),
-      "Frame: frameZ specified for <drake:bushing_frameC> does not exist in "
+      ".*Frame: frameZ specified for <drake:bushing_frameC> does not exist in "
       "the model.");
 
   // Test missing constants tag
@@ -692,7 +692,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
     </robot>)"),
-      "Unable to find the <drake:bushing_torque_damping> tag on line [0-9]+");
+      ".*Unable to find the <drake:bushing_torque_damping> tag on line [0-9]+");
 
   // Test missing `value` attribute
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -712,7 +712,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
     </robot>)"),
-      "Unable to read the 'value' attribute for the"
+      ".*Unable to read the 'value' attribute for the"
       " <drake:bushing_torque_stiffness> tag on line [0-9]+");
 }
 

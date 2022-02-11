@@ -1,12 +1,38 @@
 #include "drake/common/diagnostic_policy.h"
 
 #include <stdexcept>
+#include <sstream>
 #include <utility>
 
 #include "drake/common/text_logging.h"
 
 namespace drake {
 namespace internal {
+
+std::string DiagnosticDetail::Format(const std::string& severity) const {
+  std::stringstream ss;
+  if (filename.has_value()) {
+    ss << *filename << ":";
+    if (line.has_value()) {
+      ss << *line << ":";
+      if (column.has_value()) {
+        ss << *line << ":";
+      }
+    }
+    ss << " ";
+  }
+  ss << severity << ": ";
+  ss << message;
+  return ss.str();
+}
+
+std::string DiagnosticDetail::FormatWarning() const {
+  return Format("warning");
+}
+
+std::string DiagnosticDetail::FormatError() const {
+  return Format("error");
+}
 
 void DiagnosticPolicy::SetActionForWarnings(
     std::function<void(const DiagnosticDetail&)> functor) {
@@ -28,12 +54,12 @@ void DiagnosticPolicy::Error(std::string message) const {
 
 void DiagnosticPolicy::WarningDefaultAction(
     const DiagnosticDetail& detail) const {
-    log()->warn(detail.message);
+  log()->warn(detail.FormatWarning());
 }
 
 void DiagnosticPolicy::ErrorDefaultAction(
     const DiagnosticDetail& detail) const {
-    throw std::runtime_error(detail.message);
+  throw std::runtime_error(detail.FormatError());
 }
 
 void DiagnosticPolicy::Warning(const DiagnosticDetail& detail) const {

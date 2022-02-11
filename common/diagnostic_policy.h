@@ -11,10 +11,14 @@ namespace internal {
 /* Captures details about a warning or error condition.
 Additional member fields might be added in future revisions. */
 struct DiagnosticDetail {
+  std::optional<std::string> filename;
+  std::optional<int> line;
+  std::optional<int> column;
   std::string message;
 
-  // TODO(jwnimmer-tri) We probably should have some kind of to_string here
-  // that collects all member fields' information.
+  std::string Format(const std::string& severity) const;
+  std::string FormatWarning() const;
+  std::string FormatError() const;
 };
 
 /* A structured mechanism for functions that accept untrustworthy data to
