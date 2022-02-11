@@ -55,7 +55,7 @@ def simulate_diagram(diagram, ball_paddle, state_logger, ball_init_position,
     simulator.get_mutable_context().SetTime(T(0.))
     state_log = state_logger.FindMutableLog(simulator.get_mutable_context())
     state_log.Clear()
-    target_realtime_rate = 0.05
+    target_realtime_rate = 0.01
     simulator.set_target_realtime_rate(target_realtime_rate)
     simulator.Initialize()
     simulator.AdvanceTo(boundary_time=T(0.2))

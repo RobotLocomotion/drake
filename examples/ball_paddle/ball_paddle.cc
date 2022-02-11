@@ -145,6 +145,10 @@ void BallPaddle<T>::AddToBuilder(drake::systems::DiagramBuilder<T>* builder) {
                    plant_->get_geometry_query_input_port());
 
   drake::geometry::DrakeVisualizerParams params;
+  if (plant_->time_step() != 0.0) {
+    // Publish every time step for discrete systems.
+    params.publish_period = plant_->time_step();
+  }
   params.role = drake::geometry::Role::kIllustration;
   drake::geometry::DrakeVisualizer<T>::AddToBuilder(builder, *scene_graph_,
                                                     nullptr, params);
@@ -157,7 +161,7 @@ void BallPaddle<T>::AddToBuilder(drake::systems::DiagramBuilder<T>* builder) {
     auto contact_results_publisher =
         builder->AddSystem(drake::systems::lcm::LcmPublisherSystem::Make<
                            drake::lcmt_contact_results_for_viz>(
-            "CONTACT_RESULTS", nullptr));
+            "CONTACT_RESULTS", nullptr, /* zero for per-step publishing */ 0));
     // Contact results to lcm msg.
     builder->Connect(plant_->get_contact_results_output_port(),
                      contact_results_to_lcm->get_contact_result_input_port());
