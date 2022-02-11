@@ -192,12 +192,8 @@ drake_cc_library(
 
 drake_cc_library(
     name = "contact_results_to_lcm",
-    srcs = [
-        "contact_results_to_lcm.cc",
-    ],
-    hdrs = [
-        "contact_results_to_lcm.h",
-    ],
+    srcs = ["contact_results_to_lcm.cc"],
+    hdrs = ["contact_results_to_lcm.h"],
     tags = [
         # Don't add this library into the ":plant" package library.
         # Use of MBP doesn't imply use of contact visualization so this
@@ -206,6 +202,7 @@ drake_cc_library(
     ],
     deps = [
         ":contact_results",
+        ":internal_geometry_names",
         ":plant",
         "//geometry:geometry_ids",
         "//lcmtypes:contact_results_for_viz",
