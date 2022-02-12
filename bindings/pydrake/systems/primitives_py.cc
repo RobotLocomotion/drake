@@ -360,6 +360,15 @@ PYBIND11_MODULE(primitives, m) {
         .def(
             "BatchOutput",
             [](const MultilayerPerceptron<T>* self, const Context<T>& context,
+                const Eigen::Ref<const MatrixX<T>>& X, Eigen::Ref<MatrixX<T>> Y,
+                Eigen::Ref<MatrixX<T>> dYdX) {
+              self->BatchOutput(context, X, &Y, &dYdX);
+            },
+            py::arg("context"), py::arg("X"), py::arg("Y"), py::arg("dYdX"),
+            doc.MultilayerPerceptron.BatchOutput.doc)
+        .def(
+            "BatchOutput",
+            [](const MultilayerPerceptron<T>* self, const Context<T>& context,
                 const Eigen::Ref<const MatrixX<T>>& X) {
               MatrixX<T> Y(self->get_output_port().size(), X.cols());
               self->BatchOutput(context, X, &Y);

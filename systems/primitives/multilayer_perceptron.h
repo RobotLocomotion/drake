@@ -15,6 +15,16 @@ enum PerceptronActivationType {
   kTanh,
 };
 
+// Forward declarations.
+namespace internal {
+
+// Note: This struct is defined outside the class to avoid the ReportZeroHash
+// warning in AbstractValue.
+template <typename T>
+struct CalcLayersData;
+
+}  // namespace internal
+
 /** The MultilayerPerceptron (MLP) is one of the most common forms of neural
  networks used in reinforcement learning (RL) today. This implementation
  provides a System interface to distinguish between the network's inputs and
@@ -205,30 +215,32 @@ class MultilayerPerceptron final : public LeafSystem<T> {
    column of `X` represents an input, and each column of `Y` will be assigned
    the corresponding output.
 
-   Note: In python, use numpy.asfortranarray() to allocate the writeable matrix
-   `Y`.
+   If the output layer of the network has size 1 (scalar output), and `dYdX !=
+   nullptr`, then `dYdX` is populated with the batch gradients of the scalar
+   output `Y` relative to the input `X`: the (i,j)th element represents the
+   gradient dY(0,j) / dX(i,j).
+
+   Note: In python, use numpy.asfortranarray() to allocate the writeable
+   matrices `Y` and (if needed) `dYdX`.
 
    This methods shares the cache with Backpropagation. If the size of X changes
    here or in Backpropagation, it may force dynamic memory allocations.
+
+   @throws std::exception if dYdX != nullptr and the network has more than one
+   output.
    */
   void BatchOutput(const Context<T>& context,
                    const Eigen::Ref<const MatrixX<T>>& X,
-                   EigenPtr<MatrixX<T>> Y) const;
+                   EigenPtr<MatrixX<T>> Y,
+                   EigenPtr<MatrixX<T>> dYdX = nullptr) const;
 
  private:
   // Calculates y = f(x) for the entire network.
   void CalcOutput(const Context<T>& context, BasicVector<T>* y) const;
 
-  struct CalcLayersData {
-    explicit CalcLayersData(int n) : Wx(n), Wx_plus_b(n), Xn(n) {}
-
-    std::vector<VectorX<T>> Wx;
-    std::vector<VectorX<T>> Wx_plus_b;
-    std::vector<VectorX<T>> Xn;
-  };
-
   // Calculates the cache entries for the hidden units in the network.
-  void CalcLayers(const Context<T>& context, CalcLayersData* data) const;
+  void CalcLayers(const Context<T>& context,
+                  internal::CalcLayersData<T>* data) const;
 
   int num_weights_;     // The number of weight matrices (number of layers -1 ).
   int num_parameters_;  // Total number of parameters.

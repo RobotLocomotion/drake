@@ -564,7 +564,7 @@ class TestGeneral(unittest.TestCase):
         Y2 = mlp.BatchOutput(context=context, X=np.array([[0.1, 0.3, 0.4]]))
         np.testing.assert_array_equal(Y, Y2)
 
-        mlp2 = MultilayerPerceptron(layers=[1, 2, 3],
+        mlp2 = MultilayerPerceptron(layers=[3, 2, 1],
                                     activation_types=[
                                         PerceptronActivationType.kReLU,
                                         PerceptronActivationType.kTanh
@@ -573,6 +573,14 @@ class TestGeneral(unittest.TestCase):
                          PerceptronActivationType.kReLU)
         self.assertEqual(mlp2.activation_type(1),
                          PerceptronActivationType.kTanh)
+        Y = np.asfortranarray(np.full((1, 3), 2.4))
+        dYdX = np.asfortranarray(np.full((3, 3), 5.3))
+        context2 = mlp2.CreateDefaultContext()
+        mlp2.BatchOutput(context=context2, X=np.eye(3), Y=Y, dYdX=dYdX)
+        # The default context sets the weights and biases to zero, so the
+        # output (and gradients) should be zero.
+        np.testing.assert_array_almost_equal(Y, np.zeros((1, 3)))
+        np.testing.assert_array_almost_equal(dYdX, np.zeros((3, 3)))
 
     def test_random_source(self):
         source = RandomSource(distribution=RandomDistribution.kUniform,
