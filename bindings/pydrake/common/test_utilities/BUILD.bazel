@@ -35,6 +35,13 @@ drake_py_library(
 )
 
 drake_py_library(
+    name = "meta_py",
+    testonly = 1,
+    srcs = ["meta.py"],
+    deps = [":module_py"],
+)
+
+drake_py_library(
     name = "numpy_compare_py",
     testonly = 1,
     srcs = ["numpy_compare.py"],

@@ -11,6 +11,7 @@ import re
 import sys
 import trace
 import unittest
+from unittest.loader import defaultTestLoader
 import warnings
 import xmlrunner
 
@@ -19,6 +20,41 @@ try:
     has_pydrake = True
 except ImportError:
     has_pydrake = False
+
+
+def _unittest_main(*, module, argv, testRunner):
+    """Like unittest.main, but obeys TEST_TOTAL_SHARDS
+    """
+    # See if we should just use the vanilla unittest.main.
+    has_shard_count = "TEST_TOTAL_SHARDS" in os.environ
+    if has_shard_count and len(argv) > 1:
+        print("warning: Ignoring shard_count due to test arguments")
+        has_shard_count = False
+    if not has_shard_count:
+        # Use `warnings=False` to tell unittest to keep its hands off of our
+        # warnings settings, exploting a loophole where it checks "if warnings
+        # is None" to check if the user passed a kwarg, but "if warning" to
+        # actually apply the user's kwarg.
+        unittest.main(module=module, argv=argv, warnings=False,
+                      testRunner=testRunner)
+        return
+
+    # Run only some of the tests, per the BUILD.bazel's shard_count.
+    total_shards = int(os.environ["TEST_TOTAL_SHARDS"])
+    shard_index = int(os.environ["TEST_SHARD_INDEX"])
+    print(f"info: Shard {shard_index + 1} / {total_shards} has these tests:")
+    suites = defaultTestLoader.loadTestsFromModule(sys.modules[module])
+    tests = []
+    for suite in suites:
+        tests += list(suite)
+    assert len(tests) > 0
+    shard_tests = tests[shard_index::total_shards]
+    for shard_test in shard_tests:
+        print(f"info: - {str(shard_test)}")
+    sys.stdout.flush()
+    shard_suite = unittest.TestSuite(shard_tests)
+    result = testRunner.run(shard_suite)
+    sys.exit(0 if result.wasSuccessful() else 1)
 
 
 def main():
@@ -126,19 +162,16 @@ def main():
             print("\n`unittest` specific arguments")
 
         # Delegate the rest to unittest.
-        #
-        # Use `warnings=False` to tell unittest to keep its hands off of our
-        # warnings settings, exploting a loophole where it checks "if warnings
-        # is None" to check if the user passed a kwarg, but "if warning" to
-        # actually apply the user's kwarg.
         # N.B. Do not use the runner when `--trace={user,sys}` is enabled.
         if "XML_OUTPUT_FILE" in os.environ and args.trace == "none":
             with open(os.environ["XML_OUTPUT_FILE"], "wb") as output:
-                unittest.main(
-                    module=test_name, argv=unittest_argv, warnings=False,
+                _unittest_main(
+                    module=test_name, argv=unittest_argv,
                     testRunner=xmlrunner.XMLTestRunner(output=output))
         else:
-            unittest.main(module=test_name, argv=unittest_argv, warnings=False)
+            _unittest._main(
+                module=test_name, argv=unittest_argv,
+                testRunner=unittest.TextTestRunner)
 
     # Ensure deprecation warnings are always shown at least once.
     warnings.simplefilter(args.deprecation_action, DeprecationWarning)
