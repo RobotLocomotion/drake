@@ -3221,20 +3221,10 @@ MultibodyPlant<T>::get_reaction_forces_output_port() const {
   return this->get_output_port(reaction_forces_port_);
 }
 
-namespace {
-// A dummy, placeholder type.
-struct SymbolicGeometryValue {};
-// An alias for QueryObject<T>, except when T = Expression.
-template <typename T>
-using ModelQueryObject = typename std::conditional_t<
-    std::is_same_v<T, symbolic::Expression>,
-    SymbolicGeometryValue, geometry::QueryObject<T>>;
-}  // namespace
-
 template <typename T>
 void MultibodyPlant<T>::DeclareSceneGraphPorts() {
   geometry_query_port_ = this->DeclareAbstractInputPort(
-      "geometry_query", Value<ModelQueryObject<T>>{}).get_index();
+      "geometry_query", Value<geometry::QueryObject<T>>{}).get_index();
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
       "geometry_pose", &MultibodyPlant<T>::CalcFramePoseOutput,
       {this->configuration_ticket()}).get_index();
@@ -3549,7 +3539,7 @@ AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
                                      std::move(scene_graph));
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     /* Use static_cast to disambiguate the two different overloads. */
     static_cast<AddMultibodyPlantSceneGraphResult<T>(*)(
         systems::DiagramBuilder<T>*, double,

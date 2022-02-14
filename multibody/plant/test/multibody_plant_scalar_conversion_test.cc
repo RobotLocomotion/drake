@@ -15,16 +15,28 @@
 namespace drake {
 
 using multibody::RevoluteSpring;
+using symbolic::Expression;
 using systems::Diagram;
 using systems::DiagramBuilder;
+using systems::System;
 
 namespace multibody {
 namespace {
 
+template <typename T>
+class MultibodyPlantDefaultScalarsTest : public ::testing::Test {
+ public:
+  MultibodyPlantDefaultScalarsTest() = default;
+};
+
+TYPED_TEST_SUITE_P(MultibodyPlantDefaultScalarsTest);
+
 // We test that we can scalar convert a plant containing a revolute joint and
 // spring. In particular, we verify that the spring element correctly references
 // the joint both before and after scalar conversion.
-GTEST_TEST(ScalarConversionTest, RevoluteJointAndSpring) {
+TYPED_TEST_P(MultibodyPlantDefaultScalarsTest, RevoluteJointAndSpring) {
+  using U = TypeParam;
+
   MultibodyPlant<double> plant(0.0);
   // For this test inertia values are irrelevant.
   const RigidBody<double>& body =
@@ -47,19 +59,20 @@ GTEST_TEST(ScalarConversionTest, RevoluteJointAndSpring) {
   // RevoluteSpring.
   DRAKE_DEMAND(plant.num_force_elements() == 2);
 
-  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad;
-  EXPECT_NO_THROW(plant_ad =
-                      drake::systems::System<double>::ToAutoDiffXd(plant));
-  EXPECT_EQ(plant.num_velocities(), plant_ad->num_velocities());
-  EXPECT_EQ(plant.num_positions(), plant_ad->num_positions());
-  EXPECT_EQ(plant.num_force_elements(), plant_ad->num_force_elements());
+  std::unique_ptr<MultibodyPlant<U>> plant_u;
+  EXPECT_NO_THROW(plant_u = System<double>::ToScalarType<U>(plant));
+  EXPECT_EQ(plant.num_velocities(), plant_u->num_velocities());
+  EXPECT_EQ(plant.num_positions(), plant_u->num_positions());
+  EXPECT_EQ(plant.num_force_elements(), plant_u->num_force_elements());
 
   // We verify the correct reference to the pin joint after conversion.
-  const auto& pin_ad = plant_ad->GetJointByName<RevoluteJoint>(pin.name());
-  const auto& spring_ad =
-      plant_ad->GetForceElement<RevoluteSpring>(spring.index());
+  const auto& pin_u = plant_u->template GetJointByName<RevoluteJoint>(
+      pin.name());
+  const auto& spring_u = plant_u->template GetForceElement<RevoluteSpring>(
+      spring.index());
+
   // Verify correct cross-referencing in the scalar converted model.
-  EXPECT_EQ(&pin_ad, &spring_ad.joint());
+  EXPECT_EQ(&pin_u, &spring_u.joint());
 }
 
 // Verifies that two MultibodyPlants have the same port indices.
@@ -110,29 +123,43 @@ void CompareMultibodyPlantPortIndices(const MultibodyPlant<T>& plant_t,
 
 // This test verifies that the port indices of the input/output ports of
 // MultibodyPlant remain the same after scalar conversion.
-GTEST_TEST(ScalarConversionTest, PortIndexOrdering) {
+TYPED_TEST_P(MultibodyPlantDefaultScalarsTest, PortIndexOrdering) {
+  using U = TypeParam;
+
   systems::DiagramBuilder<double> builder;
-  std::unique_ptr<MultibodyPlant<double>> plant_unique_ptr =
-      std::make_unique<MultibodyPlant<double>>(0.0);
-  plant_unique_ptr->Finalize();
-  auto pair =
-      AddMultibodyPlantSceneGraph(&builder, std::move(plant_unique_ptr));
+  MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
 
-  std::unique_ptr<Diagram<AutoDiffXd>> autodiff_diagram =
-      systems::System<double>::ToAutoDiffXd<Diagram>(*diagram);
+  std::unique_ptr<Diagram<U>> diagram_u =
+      System<double>::ToScalarType<U>(*diagram);
+  const auto& plant_u = dynamic_cast<const MultibodyPlant<U>&>(
+      *diagram_u->GetSystems().at(0));
 
-  // Making the assumption that the system at index 0 is the plant
-  const MultibodyPlant<AutoDiffXd>* autodiff_plant =
-      dynamic_cast<const MultibodyPlant<AutoDiffXd>*>(
-          autodiff_diagram->GetSystems()[0]);
-  DRAKE_DEMAND(autodiff_plant != nullptr);
-
-  CompareMultibodyPlantPortIndices(pair.plant, *autodiff_plant);
+  CompareMultibodyPlantPortIndices(plant, plant_u);
 }
 
+// Verifies that we can AddMultibodyPlantSceneGraph, without any conversion.
+TYPED_TEST_P(MultibodyPlantDefaultScalarsTest, DirectlyAdded) {
+  using U = TypeParam;
+  systems::DiagramBuilder<U> builder;
+  MultibodyPlant<U>& plant = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
+  std::unique_ptr<Diagram<U>> diagram = builder.Build();
+  diagram->CreateDefaultContext();
+}
+
+REGISTER_TYPED_TEST_SUITE_P(MultibodyPlantDefaultScalarsTest,
+    RevoluteJointAndSpring,
+    PortIndexOrdering,
+    DirectlyAdded);
+
+using NonDoubleScalarTypes = ::testing::Types<AutoDiffXd, Expression>;
+INSTANTIATE_TYPED_TEST_SUITE_P(My, MultibodyPlantDefaultScalarsTest,
+                               NonDoubleScalarTypes);
+
 // A simple concrete DiscreteUpdateManager that does not support scalar
-// conversion to either AutoDiffXd or symbolic::Expression.
+// conversion to either AutoDiffXd or Expression.
 template <typename T>
 class DoubleOnlyDiscreteUpdateManager
     : public multibody::internal::DiscreteUpdateManager<T> {
@@ -177,22 +204,18 @@ GTEST_TEST(ScalarConversionTest, ExternalComponent) {
 
   // double -> AutoDiffXd
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff;
-  EXPECT_NO_THROW(plant_autodiff =
-                      drake::systems::System<double>::ToAutoDiffXd(plant));
+  EXPECT_NO_THROW(plant_autodiff = System<double>::ToAutoDiffXd(plant));
   // AutoDiffXd -> double
   EXPECT_NO_THROW(plant_autodiff->ToScalarType<double>());
-  // double -> symbolic::Expression
-  std::unique_ptr<MultibodyPlant<symbolic::Expression>>
-      plant_double_to_symbolic;
-  EXPECT_THROW(plant_double_to_symbolic =
-                   drake::systems::System<double>::ToSymbolic(plant),
+  // double -> Expression
+  std::unique_ptr<MultibodyPlant<Expression>> plant_double_to_symbolic;
+  EXPECT_THROW(plant_double_to_symbolic = System<double>::ToSymbolic(plant),
                std::exception);
-  // double -> symbolic::Expression
-  std::unique_ptr<MultibodyPlant<symbolic::Expression>>
-      plant_autodiff_to_symbolic;
+  // double -> Expression
+  std::unique_ptr<MultibodyPlant<Expression>> plant_autodiff_to_symbolic;
   EXPECT_THROW(
       plant_autodiff_to_symbolic =
-          drake::systems::System<AutoDiffXd>::ToSymbolic(*plant_autodiff),
+          System<AutoDiffXd>::ToSymbolic(*plant_autodiff),
       std::exception);
 
   // Verify that adding a component that doesn't allow scalar conversion to
