@@ -158,7 +158,7 @@ class TestPlant(unittest.TestCase):
         if nonzero:
             numpy_compare.assert_float_not_equal(x, 0.)
 
-    @numpy_compare.check_nonsymbolic_types
+    @numpy_compare.check_all_types
     def test_multibody_plant_construction_api(self, T):
         # SceneGraph does not support `Expression` type.
         DiagramBuilder = DiagramBuilder_[T]
@@ -185,8 +185,10 @@ class TestPlant(unittest.TestCase):
         body_X_BG = RigidTransform()
         body_friction = CoulombFriction(static_friction=0.6,
                                         dynamic_friction=0.5)
-        self.assertEqual(body_friction.static_friction(), 0.6)
-        self.assertEqual(body_friction.dynamic_friction(), 0.5)
+        self.assertEqual(numpy_compare.to_float(
+            body_friction.static_friction()), 0.6)
+        self.assertEqual(numpy_compare.to_float(
+            body_friction.dynamic_friction()), 0.5)
         body_friction2 = CoulombFriction(static_friction=0.2,
                                          dynamic_friction=0.1)
         combined_friction = CalcContactFrictionFromSurfaceProperties(
