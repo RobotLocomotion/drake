@@ -43,14 +43,14 @@ class LinearConstitutiveModel final
   /* Constructs a LinearConstitutiveModel constitutive model with the
    prescribed Young's modulus and Poisson ratio.
    @param youngs_modulus Young's modulus of the model, with unit N/m²
-   @param poisson_ratio Poisson ratio of the model, unitless.
+   @param poissons_ratio Poisson ratio of the model, unitless.
    @pre youngs_modulus >= 0.
-   @pre -1 < poisson_ratio < 0.5. */
-  LinearConstitutiveModel(const T& youngs_modulus, const T& poisson_ratio);
+   @pre -1 < poissons_ratio < 0.5. */
+  LinearConstitutiveModel(const T& youngs_modulus, const T& poissons_ratio);
 
   const T& youngs_modulus() const { return E_; }
 
-  const T& poisson_ratio() const { return nu_; }
+  const T& poissons_ratio() const { return nu_; }
 
   /* Returns the shear modulus (Lame's second parameter) which is given by
    `E/(2*(1+nu))` where `E` is the Young's modulus and `nu` is the Poisson

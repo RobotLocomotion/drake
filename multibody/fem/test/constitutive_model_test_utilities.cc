@@ -6,6 +6,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/fem/constitutive_model.h"
+#include "drake/multibody/fem/linear_constitutive_model.h"
 #include "drake/multibody/fem/matrix_utilities.h"
 
 namespace drake {
@@ -58,8 +59,7 @@ void TestParameters() {
   EXPECT_EQ(model.shear_modulus(), kExpectedMu);
   EXPECT_EQ(model.lame_first_parameter(), kExpectedLambda);
 
-  DRAKE_EXPECT_THROWS_MESSAGE((Model(-1.0, 0.25)),
-                              "Young's modulus must .*");
+  DRAKE_EXPECT_THROWS_MESSAGE((Model(-1.0, 0.25)), "Young's modulus must .*");
 
   DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, 0.5)),
                               "Poisson's ratio must be in .*");
@@ -165,6 +165,16 @@ void TestdPdFIsDerivativeOfP() {
     }
   }
 }
+
+template void TestParameters<LinearConstitutiveModel<double, 1>>();
+template void TestParameters<LinearConstitutiveModel<AutoDiffXd, 1>>();
+
+template void TestUndeformedState<LinearConstitutiveModel<double, 1>>();
+template void TestUndeformedState<LinearConstitutiveModel<AutoDiffXd, 1>>();
+
+template void TestPIsDerivativeOfPsi<LinearConstitutiveModel<AutoDiffXd, 1>>();
+
+template void TestdPdFIsDerivativeOfP<LinearConstitutiveModel<AutoDiffXd, 1>>();
 
 }  // namespace test
 }  // namespace internal

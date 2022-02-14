@@ -176,23 +176,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "linear_constitutive_model",
-    srcs = [
-        "linear_constitutive_model.cc",
-    ],
-    hdrs = [
-        "linear_constitutive_model.h",
-    ],
-    deps = [
-        ":calc_lame_parameters",
-        "//common:autodiff",
-        "//common:essential",
-        "//multibody/fem:constitutive_model",
-        "//multibody/fem:linear_constitutive_model_data",
-    ],
-)
-
-drake_cc_library(
     name = "mesh_utilities",
     srcs = [
         "mesh_utilities.cc",
