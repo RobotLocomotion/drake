@@ -212,6 +212,21 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "constitutive_model_test_utilities",
+    testonly = 1,
+    srcs = ["test/constitutive_model_test_utilities.cc"],
+    hdrs = ["test/constitutive_model_test_utilities.h"],
+    deps = [
+        ":constitutive_model",
+        ":matrix_utilities",
+        "//common:autodiff",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
+    ],
+)
+
 drake_cc_googletest(
     name = "damping_model_test",
     deps = [
