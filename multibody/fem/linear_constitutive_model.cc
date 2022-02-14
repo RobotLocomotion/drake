@@ -1,10 +1,10 @@
-#include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
+#include "drake/multibody/fem/linear_constitutive_model.h"
 
 #include <array>
 #include <utility>
 
 #include "drake/common/autodiff.h"
-#include "drake/multibody/fixed_fem/dev/calc_lame_parameters.h"
+#include "drake/multibody/fem/calc_lame_parameters.h"
 
 namespace drake {
 namespace multibody {
@@ -15,7 +15,9 @@ template <typename T, int num_locations>
 LinearConstitutiveModel<T, num_locations>::LinearConstitutiveModel(
     const T& youngs_modulus, const T& poisson_ratio)
     : E_(youngs_modulus), nu_(poisson_ratio) {
-  std::tie(lambda_, mu_) = CalcLameParameters(E_, nu_);
+  const LameParameters<T> lame_params = CalcLameParameters(E_, nu_);
+  mu_ = lame_params.mu;
+  lambda_ = lame_params.lambda;
   /* Recall that
         Pᵢⱼ = 2μ * εᵢⱼ + λ * εₐₐ * δᵢⱼ,
     So,
@@ -27,7 +29,7 @@ LinearConstitutiveModel<T, num_locations>::LinearConstitutiveModel(
     Keep in mind that the indices are laid out such that the ik-th entry in
     the jl-th block corresponds to the value dPᵢⱼ/dFₖₗ.  */
   /* First term. */
-  dPdF_ = mu_ * Eigen::Matrix<T, 9, 9>::Identity();
+  dPdF_ = lame_params.mu * Eigen::Matrix<T, 9, 9>::Identity();
   for (int k = 0; k < 3; ++k) {
     /* Second term. */
     for (int l = 0; l < 3; ++l) {
