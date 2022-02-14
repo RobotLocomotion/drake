@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
+#include "drake/multibody/fem/linear_constitutive_model.h"
 
 #include <gtest/gtest.h>
 

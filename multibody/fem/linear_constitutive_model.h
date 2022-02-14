@@ -41,25 +41,25 @@ class LinearConstitutiveModel final
   using Data = typename Base::Data;
 
   /* Constructs a LinearConstitutiveModel constitutive model with the
-   prescribed Young's modulus and Poisson ratio.
+   prescribed Young's modulus and Poisson's ratio.
    @param youngs_modulus Young's modulus of the model, with unit N/m²
-   @param poisson_ratio Poisson ratio of the model, unitless.
+   @param poissons_ratio Poisson's ratio of the model, unitless.
    @pre youngs_modulus >= 0.
-   @pre -1 < poisson_ratio < 0.5. */
-  LinearConstitutiveModel(const T& youngs_modulus, const T& poisson_ratio);
+   @pre -1 < poissons_ratio < 0.5. */
+  LinearConstitutiveModel(const T& youngs_modulus, const T& poissons_ratio);
 
   const T& youngs_modulus() const { return E_; }
 
-  const T& poisson_ratio() const { return nu_; }
+  const T& poissons_ratio() const { return nu_; }
 
   /* Returns the shear modulus (Lame's second parameter) which is given by
-   `E/(2*(1+nu))` where `E` is the Young's modulus and `nu` is the Poisson
+   `E/(2*(1+nu))` where `E` is the Young's modulus and `nu` is the Poisson's
    ratio. See `fem::internal::CalcLameParameters()`. */
   const T& shear_modulus() const { return mu_; }
 
   /* Returns the Lame's first parameter which is given by
    `E*nu/((1+nu)*(1-2*nu))` where `E` is the Young's modulus and `nu` is the
-   Poisson ratio. See `fem::internal::CalcLameParameters()`. */
+   Poisson's ratio. See `fem::internal::CalcLameParameters()`. */
   const T& lame_first_parameter() const { return lambda_; }
 
  private:
@@ -82,7 +82,7 @@ class LinearConstitutiveModel final
       std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const;
 
   T E_;       // Young's modulus, N/m².
-  T nu_;      // Poisson ratio.
+  T nu_;      // Poisson's ratio.
   T mu_;      // Lamé's second parameter/Shear modulus, N/m².
   T lambda_;  // Lamé's first parameter, N/m².
   Eigen::Matrix<T, 9, 9>
