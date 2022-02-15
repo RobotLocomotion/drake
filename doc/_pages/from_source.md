@@ -80,7 +80,7 @@ setup steps:
 
 See [above](#supported-configurations)
 for the configurations and platforms that Drake officially supports.
-All else being equal, we would recommend developers use Ubuntu Bionic.
+All else being equal, we would recommend developers use Ubuntu Focal.
 
 # Build with Bazel
 
