@@ -20,7 +20,7 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
     ],
-)        
+)
 
 drake_cc_library(
     name = "contact_problem_graph",
