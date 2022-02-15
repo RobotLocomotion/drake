@@ -1,0 +1,21 @@
+# This file tests the model namespaces of added frames, on the world level,
+# with different base_frame.
+
+directives:
+
+# Adding simple_model.
+- add_model:
+    name: simple_model
+    file: package://process_model_directives_test/simple_model.sdf
+
+# Adding frame with world as base_frame.
+- add_frame:
+    name: world_as_base_frame
+    X_PF:
+      base_frame: world
+
+# Adding frame with simple_model as base_frame.
+- add_frame:
+    name: included_as_base_frame
+    X_PF:
+      base_frame: simple_model::__model__
