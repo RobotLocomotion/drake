@@ -7,12 +7,6 @@ directives:
 # N.B. The namespacing features are only available for RBT.
 
 # No namespace.
-# N.B. If this were added after the namespaced instances, `simple_model_origin`
-# would cause a failure because it appears in multiple model instances.
-- add_frame:
-    name: simple_model_origin
-    X_PF:
-      base_frame: world
 - add_directives:
     file: package://process_model_directives_test/add_scoped_sub.yaml
 - add_frame:
@@ -20,17 +14,22 @@ directives:
     X_PF:
       base_frame: simple_model::sub_added_frame
       translation: [5, 10, 15]
+# N.B. If this were added after the namespaced instances, `simple_model_origin`
+# would cause a failure because it appears in multiple model instances.
+# TODO(aaronchongth): When a frame is added without a namespace, it will tie
+# itself to the base_frame's model instance. This is either a bug, or a desired
+# behavior in the case where frames are not allowed to be added to the world.
+# Since it is the current behavior, we will test it.
+- add_frame:
+    name: simple_model_origin
+    X_PF:
+      base_frame: simple_model::__model__
 
 # Left.
 - add_model_instance:
     # `model_namespace` requires a corresponding model instance so that frames
     # can be added to it.
     name: left
-- add_frame:
-    name: left::simple_model_origin
-    X_PF:
-      base_frame: world
-      translation: [0, 1, 0]
 - add_directives:
     file: package://process_model_directives_test/add_scoped_sub.yaml
     model_namespace: left
@@ -39,15 +38,17 @@ directives:
     X_PF:
       base_frame: left::simple_model::sub_added_frame
       translation: [5, 10, 15]
+# TODO(aaronchongth): This nested frame is injected to test for scoping and not
+# for posturing or welding. Posturing and welding will require a different set
+# of directives and tests.
+- add_frame:
+    name: left::simple_model_origin
+    X_PF:
+      base_frame: left::simple_model::__model__
 
 # Right.
 - add_model_instance:
     name: right
-- add_frame:
-    name: right::simple_model_origin
-    X_PF:
-      base_frame: world
-      translation: [0, -1, 0]
 - add_directives:
     file: package://process_model_directives_test/add_scoped_sub.yaml
     model_namespace: right
@@ -56,6 +57,13 @@ directives:
     X_PF:
       base_frame: right::simple_model::sub_added_frame
       translation: [5, 10, 15]
+# TODO(aaronchongth): This nested frame is injected to test for scoping and not
+# for posturing or welding. Posturing and welding will require a different set
+# of directives and tests.
+- add_frame:
+    name: right::simple_model_origin
+    X_PF:
+      base_frame: right::simple_model::__model__
 
 # Mid (nested).
 - add_model_instance:
