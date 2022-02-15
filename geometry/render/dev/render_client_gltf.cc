@@ -1,6 +1,7 @@
 #include "drake/geometry/render/dev/render_client_gltf.h"
 
 #include <atomic>
+#include <cstdio>
 
 #include <vtkCamera.h>
 #include <vtkGLTFExporter.h>
@@ -114,6 +115,21 @@ void LogFrameServerResponsePath(internal::ImageType image_type,
       ImageTypeToString(image_type), path);
 }
 
+// Delete the file and log if verbose, only call if no_cleanup() == false.
+void DeleteFileAndLogIfVerbose(const std::string& path, bool verbose) {
+  int failed = std::remove(path.c_str());
+  if (verbose) {
+    if (!failed) {
+      drake::log()->debug("RenderClientGltf: deleted unused file '{}'.", path);
+    } else {
+      drake::log()->debug(
+          "RenderClientGltf: unable to delete file '{}' with std::remove "
+          "returning code {}.",
+          path, failed);
+    }
+  }
+}
+
 }  // namespace
 
 RenderClientGltf::RenderClientGltf(const RenderClientGltfParams& parameters)
@@ -219,6 +235,7 @@ void RenderClientGltf::DoRenderColorImage(const ColorRenderCamera& camera,
 
   // Load the returned image back to the drake buffer.
   LoadColorImage(image_path, color_image_out);
+  if (!no_cleanup()) CleanupFrame(scene_path, image_path);
 }
 
 void RenderClientGltf::DoRenderDepthImage(
@@ -253,6 +270,7 @@ void RenderClientGltf::DoRenderDepthImage(
 
   // Load the returned image back to the drake buffer.
   LoadDepthImage(image_path, depth_image_out);
+  if (!no_cleanup()) CleanupFrame(scene_path, image_path);
 }
 
 void RenderClientGltf::DoRenderLabelImage(
@@ -286,6 +304,7 @@ void RenderClientGltf::DoRenderLabelImage(
 
   // Load the returned image back to the drake buffer.
   LoadLabelImage(image_path, label_image_out);
+  if (!no_cleanup()) CleanupFrame(scene_path, image_path);
 }
 
 std::string RenderClientGltf::ExportPathFor(internal::ImageType image_type,
@@ -307,6 +326,12 @@ std::string RenderClientGltf::ExportScene(internal::ImageType image_type,
   gltf_exporter->SetFileName(scene_path.c_str());
   gltf_exporter->Write();
   return scene_path;
+}
+
+void RenderClientGltf::CleanupFrame(const std::string& scene_path,
+                                    const std::string& image_path) const {
+  DeleteFileAndLogIfVerbose(scene_path, verbose());
+  DeleteFileAndLogIfVerbose(image_path, verbose());
 }
 
 }  // namespace render
