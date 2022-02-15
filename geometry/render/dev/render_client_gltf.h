@@ -73,6 +73,11 @@ class RenderClientGltf : public RenderEngineVtk, public RenderClient {
   glTF file, returning the path to the newly exported file. */
   std::string ExportScene(internal::ImageType image_type,
                           int64_t scene_id) const;
+
+  /* Delete the files at the paths `scene_path` and `image_path`.  Should only
+   be called when `!no_cleanup()`. */
+  void CleanupFrame(const std::string& scene_path,
+                    const std::string& image_path) const;
 };
 
 }  // namespace render
