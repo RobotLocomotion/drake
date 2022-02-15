@@ -28,23 +28,23 @@ def scipy_resample_log_interp1d(log, timestep):
     ###########################################################################
     # Copyright (c) 2001-2002 Enthought, Inc. 2003-2022, SciPy Developers.
     # All rights reserved.
-
+    #
     # Redistribution and use in source and binary forms, with or without
     # modification, are permitted provided that the following conditions
     # are met:
-
+    #
     # 1. Redistributions of source code must retain the above copyright
     # notice, this list of conditions and the following disclaimer.
-
+    #
     # 2. Redistributions in binary form must reproduce the above
     # copyright notice, this list of conditions and the following
     # disclaimer in the documentation and/or other materials provided
     # with the distribution.
-
+    #
     # 3. Neither the name of the copyright holder nor the names of its
     # contributors may be used to endorse or promote products derived
     # from this software without specific prior written permission.
-
+    #
     # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
     # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
     # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -56,12 +56,6 @@ def scipy_resample_log_interp1d(log, timestep):
     # THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
     # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-    # To resample, we may not assume that the time entries in
-    # log.sample_times() are sorted (even though this will be the
-    # average case).  After creating copies to avoid modifying the
-    # original input, we will sort the entries, resample the time
-    # input using a linear range of [0, last_time] evenly sampled
-    # on self.timestep, then recompute via linear interpolation.
     ###########################################################################
     # We may not assume that the provided sample times are sorted in general.
     # We may assume, however, that sample_times() and data() have equitable
@@ -114,8 +108,6 @@ def scipy_resample_log_interp1d(log, timestep):
         x_final = x_final.transpose(s)
 
     return t_resample, x_final
-
-
 ###############################################################################
 
 
