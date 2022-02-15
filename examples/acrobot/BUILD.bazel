@@ -21,6 +21,7 @@ load(
 load(
     "@drake//tools/performance:defs.bzl",
     "drake_cc_googlebench_binary",
+    "drake_py_experiment_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -442,11 +443,9 @@ drake_cc_googlebench_binary(
     ],
 )
 
-sh_test(
-    name = "benchmark_autodiff_test",
-    size = "small",
-    srcs = ["test/benchmark_autodiff_test.sh"],
-    data = [":benchmark_autodiff"],
+drake_py_experiment_binary(
+    name = "autodiff_experiment",
+    googlebench_binary = ":benchmark_autodiff",
 )
 
 install_data()

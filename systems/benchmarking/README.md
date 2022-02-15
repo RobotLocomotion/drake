@@ -3,8 +3,10 @@ Runtime Performance Benchmarks for Dynamical Systems
 
 ## Supported experiments
 
-TODO(jwnimmer-tri) As of now, the benchmark suite is fairly minimal.
-Check back later for additional details and instructions.
+On Ubuntu, the following command will build code and save result data
+to a user supplied directory, under relatively controlled conditions:
+
+    $ bazel run //systems/benchmarking:framework_experiment -- --output_dir=trial1
 
 ## Additional information
 
