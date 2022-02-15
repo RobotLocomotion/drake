@@ -15,6 +15,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/math/random_rotation.h"
@@ -853,6 +854,53 @@ MatrixX<T> MultibodyPlant<T>::MakeActuationMatrix() const {
     B(actuator.joint().velocity_start(), int{actuator.index()}) = 1;
   }
   return B;
+}
+
+template <typename T>
+const geometry::QueryObject<T>& MultibodyPlant<T>::EvalGeometryQueryInput(
+    const systems::Context<T>& context) const {
+  this->ValidateContext(context);
+  if (!get_geometry_query_input_port().HasValue(context)) {
+    throw std::logic_error(
+        "The geometry query input port (see "
+        "MultibodyPlant::get_geometry_query_input_port()) "
+        "of this MultibodyPlant is not connected. Please connect the"
+        "geometry query output port of a SceneGraph object "
+        "(see SceneGraph::get_query_output_port()) to this plants input "
+        "port in a Diagram.");
+  }
+  return get_geometry_query_input_port()
+      .template Eval<geometry::QueryObject<T>>(context);
+}
+
+template <typename T>
+std::pair<T, T> MultibodyPlant<T>::GetPointContactParameters(
+    geometry::GeometryId id,
+    const geometry::SceneGraphInspector<T>& inspector) const {
+  const geometry::ProximityProperties* prop =
+      inspector.GetProximityProperties(id);
+  DRAKE_DEMAND(prop != nullptr);
+  return std::pair(prop->template GetPropertyOrDefault<T>(
+                       geometry::internal::kMaterialGroup,
+                       geometry::internal::kPointStiffness,
+                       penalty_method_contact_parameters_.geometry_stiffness),
+                   prop->template GetPropertyOrDefault<T>(
+                       geometry::internal::kMaterialGroup,
+                       geometry::internal::kHcDissipation,
+                       penalty_method_contact_parameters_.dissipation));
+}
+
+template <typename T>
+const CoulombFriction<double>& MultibodyPlant<T>::GetCoulombFriction(
+    geometry::GeometryId id,
+    const geometry::SceneGraphInspector<T>& inspector) const {
+  const geometry::ProximityProperties* prop =
+      inspector.GetProximityProperties(id);
+  DRAKE_DEMAND(prop != nullptr);
+  DRAKE_THROW_UNLESS(prop->HasProperty(geometry::internal::kMaterialGroup,
+                                       geometry::internal::kFriction));
+  return prop->GetProperty<CoulombFriction<double>>(
+      geometry::internal::kMaterialGroup, geometry::internal::kFriction);
 }
 
 template <typename T>

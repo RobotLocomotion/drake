@@ -4194,20 +4194,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // consistent and helpful error message in the situation where the
   // geometry_query_input_port is not connected, but is expected to be.
   const geometry::QueryObject<T>& EvalGeometryQueryInput(
-      const systems::Context<T>& context) const {
-    this->ValidateContext(context);
-    if (!get_geometry_query_input_port().HasValue(context)) {
-      throw std::logic_error(
-          "The geometry query input port (see "
-          "MultibodyPlant::get_geometry_query_input_port()) "
-          "of this MultibodyPlant is not connected. Please connect the"
-          "geometry query output port of a SceneGraph object "
-          "(see SceneGraph::get_query_output_port()) to this plants input "
-          "port in a Diagram.");
-    }
-    return get_geometry_query_input_port()
-        .template Eval<geometry::QueryObject<T>>(context);
-  }
+      const systems::Context<T>& context) const;
 
   // Helper to acquire per-geometry contact parameters from SG.
   // Returns the pair (stiffness, dissipation)
@@ -4215,33 +4202,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // isn't assigned that parameter.
   std::pair<T, T> GetPointContactParameters(
       geometry::GeometryId id,
-      const geometry::SceneGraphInspector<T>& inspector) const {
-    const geometry::ProximityProperties* prop =
-        inspector.GetProximityProperties(id);
-    DRAKE_DEMAND(prop != nullptr);
-    return std::pair(prop->template GetPropertyOrDefault<T>(
-                         geometry::internal::kMaterialGroup,
-                         geometry::internal::kPointStiffness,
-                         penalty_method_contact_parameters_.geometry_stiffness),
-                     prop->template GetPropertyOrDefault<T>(
-                         geometry::internal::kMaterialGroup,
-                         geometry::internal::kHcDissipation,
-                         penalty_method_contact_parameters_.dissipation));
-  }
+      const geometry::SceneGraphInspector<T>& inspector) const;
 
   // Helper to acquire per-geometry Coulomb friction coefficients from
   // SceneGraph.
   const CoulombFriction<double>& GetCoulombFriction(
       geometry::GeometryId id,
-      const geometry::SceneGraphInspector<T>& inspector) const {
-    const geometry::ProximityProperties* prop =
-        inspector.GetProximityProperties(id);
-    DRAKE_DEMAND(prop != nullptr);
-    DRAKE_THROW_UNLESS(prop->HasProperty(geometry::internal::kMaterialGroup,
-                                         geometry::internal::kFriction));
-    return prop->GetProperty<CoulombFriction<double>>(
-        geometry::internal::kMaterialGroup, geometry::internal::kFriction);
-  }
+      const geometry::SceneGraphInspector<T>& inspector) const;
 
   // Helper method to apply collision filters based on body-adjacency. By
   // default, we don't consider collisions between geometries affixed to
