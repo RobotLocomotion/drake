@@ -140,6 +140,9 @@ color of the previous build.
 
 Note that CDash pages may take a minute to populate.
 
+In addition, check the [automatically generated documentation repo](https://github.com/RobotLocomotion/RobotLocomotion.github.io/commits/master)
+to confirm that the latest commit has a green circle, not a red x.
+
 ## Respond to Breakage
 
 There are various reasons the build might break. Diagnose the failure, and
@@ -264,3 +267,8 @@ Details of failures in the [drake-external-examples](https://github.com/RobotLoc
 repository, which may be denoted by red "build failing" icons at the top of the build
 dashboard on Jenkins, should be posted to the [#buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
 channel on Slack, ensuring that `@betsymcphail` is mentioned in the message.
+
+## Documentation Repo Failures
+If the [automatically generated documentation repo](https://github.com/RobotLocomotion/RobotLocomotion.github.io/commits/master)
+fails, post in [DrakeDevelopers Slack channel #buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/),
+and try to locate the offensive Drake commit. Each commit in the documentation repo is associated with a matching Drake commit.
