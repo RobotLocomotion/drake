@@ -20,11 +20,8 @@ bazel run //tutorials:mathematical_program
 We currently support running the tutorials on a number of cloud notebook services:
 
 [![Deepnote](https://deepnote.com/buttons/launch-in-deepnote-white-small.svg)](https://deepnote.com/project/Tutorials-K0_FCa7yQX2kDWBx3-2RmQ/%2Findex.ipynb)
-[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobotLocomotion/drake/blob/v0.37.0/tutorials/mathematical_program.ipynb)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?urlpath=/tree/tutorials/index.ipynb)
 [![nbviewer](https://img.shields.io/badge/view%20on-nbviewer-brightgreen.svg)](https://nbviewer.jupyter.org/github/RobotLocomotion/drake/blob/nightly-release/tutorials/index.ipynb)
-
-<!-- TODO(russt): Update colab link to index.ipynb instead of mathematical_program.ipynb once v0.38 is released. -->
 
 We include (online) platform-specific notes below.
 
@@ -34,18 +31,6 @@ We are currently transitioning to making Deepnote our preferred method of
 hosting for the tutorials.  It allows provisioning via Docker, which makes it
 more stable/maintainable than alternatives like Google Colab.  The user
 interface is also excellent for concurrent programming with your friends.
-
-### Google Colab
-
-Support for Drake on Google Colab is via `pip install drake`. The Drake pip
-wheels are only updated with the monthly releases. If the tutorials have been
-updated more recently, there could be a version mismatch. Any links to launch a
-tutorial on Google Colab should use the monthly release.  E.g.:
-`https://colab.research.google.com/github/RobotLocomotion/drake/blob/v0.37.0/tutorials/mathematical_program.ipynb`
-
-For now, users must manually add and run `!pip install drake pyngrok` in the top cell
-the notebook in order to install Drake and run the tutorial.
-<!-- TODO(russt): Add a commented out `!pip install ...` cell at the top of each notebook -->
 
 ### Binder
 
@@ -86,7 +71,7 @@ For instructions on how to run these tutorial notebooks, please see the
 [README](https://github.com/RobotLocomotion/drake/blob/nightly-release/tutorials/README.md).
 ```
 
-- Do not use `%matplotlib notebook`.  It is not supported in Deepnote nor Colab.
+- Do not use `%matplotlib notebook`.  It is not supported in Deepnote.
 https://github.com/RobotLocomotion/drake/blob/master/geometry/optimization/graph_of_convex_sets.h#L296
 
 - For the pull request that adds the notebook(s), please include a `nbviewer`

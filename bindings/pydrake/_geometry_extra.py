@@ -8,15 +8,14 @@ from pydrake.common import set_log_level
 
 def StartMeshcat():
     """
-    Constructs a Meshcat instance, with support for Deepnote and Google Colab.
+    Constructs a Meshcat instance, with support for Deepnote.
 
     On most platforms, this method is equivalent to calling `meshcat =
-    Meshcat()`. On Deepnote or Google Colab, this provides extra functionality,
-    setting Meshcat to use the appropriate ports and to use ngrok if necessary.
+    Meshcat()`. On Deepnote, this provides extra functionality, setting Meshcat
+    to use the appropriate ports and to use ngrok if necessary.
 
     Note that the free/unregistered version of ngrok only allows two
-    connections. On Google Colab, this means one can only have two viable
-    Meshcat instances running per provisioned machine. On Deepnote, we have one
+    connections. On Deepnote, we have one
     additional port available (port 8080) which does not require ngrok; you
     must "Allow incoming connections" in the environment settings to use it.
 
@@ -38,6 +37,8 @@ def StartMeshcat():
             print(f'Meshcat is now available at {web_url}')
             return meshcat
 
+    # TODO(jwnimmer-tri) Drake on Colab is deprecated. Remove this line when we
+    # drop Bionic support (on or after 2022-04-01).
     if 'google.colab' in sys.modules:
         use_ngrok = True
 
