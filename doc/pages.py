@@ -22,7 +22,7 @@ def _build(*, out_dir, temp_dir):
     """
     # Create a hermetic copy of our input.  This helps ensure that only files
     # listed in BUILD.bazel will render onto the website.
-    symlink_input("drake/doc/pages_input.txt", temp_dir)
+    symlink_input("drake/doc/pages_input.txt", temp_dir, copy=True)
 
     # Run the documentation generator.
     check_call([
