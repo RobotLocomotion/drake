@@ -10,7 +10,7 @@ response.
 ### Installation
 
 The server requirements are not currently installed via drake's `setup/` install
-scripts.  To use the server you will need to install `flask` and `gunicorn`.
+scripts.  To use the server you will need to install `flask`.
 
 #### Ubuntu
 
@@ -18,12 +18,7 @@ Option 1: use the system package manager.
 
 ```console
 # Install the prerequisites.
-# NOTE: python3-gunicorn does not provide the `gunicorn` executable.
-$ sudo apt-get install python3-flask gunicorn
-
-# Verify that `gunicorn` is in your $PATH.
-$ which gunicorn
-/usr/bin/gunicorn
+$ sudo apt-get install python3-flask
 ```
 
 Option 2: create a virtual environment.
@@ -32,46 +27,62 @@ Option 2: create a virtual environment.
 # Install the prerequisites.
 $ python3 -m venv venv
 $ source venv/bin/activate
-$ pip install flask gunicorn
-
-# Verify that `gunicorn` is in your $PATH.
-$ which gunicorn
-/path/to/venv/bin/gunicorn
+$ pip install flask
 ```
 
 #### macOS
 
 Use `pip` or a virtual environment as shown in Option 2 for Ubuntu above
-(`pip install flask gunicorn`).  Verify that `which gunicorn` produces output.
+(`pip install flask`).
 
 ### Server Use
 
-For development purposes, within the `render_server` directory you may run
-
-```console
-# A flask development server, which will only have one process
-$ export FLASK_APP=gltf_render_server.py
-$ flask run
-
-# Alternatively, specify an alternative host or port.
-$ flask run --host=x.y.z.w --port=8932
-
-# Alternatively, use the default host=127.0.0.1 and port=8000.
-$ python gltf_render_server.py
-```
+For development purposes, you may run `bazel run //geometry/render/dev:server`
+to launch a single threaded / single worker flask development server.  By
+default this will run the server on host `127.0.0.1` and port `8000`, you may
+specify `--host x.y.z.w` or `--port XYZW` to change the host or port.
 
 A single threaded worker flask server is not a good idea to run in production,
 as it will not be able to handle concurrent requests.  You may use any number
 of WSGI runners, in the example below we use [gunicorn](https://gunicorn.org/):
 
 ```console
-$ gunicorn --workers 8 wsgi:app
+$ gunicorn --timeout 0 --workers 8 --bind 127.0.0.1:8000 wsgi:app
 ```
 
-This will spawn 8 workers to receive client communications.  This is what
-`bazel run //geometry/render/dev:server` will achieve.  While developing your
-server, you may desire to use the default flask runner rather than `gunicorn`
-as you will get more logging output from the flask server runner.
+This will spawn a server with:
+
+- No timeout.  If your rendering is going to take any sizable amount of time,
+  by default `gunicorn` will kill and restart workers that have gone silent.
+  Setting the `timeout` to `0` disables this behavior, at the expense of never
+  being able to kill a worker that truly has been stuck.  If you know your
+  rendering backend will take a maximum time, choose that instead.
+- 8 workers to receive client communications.  This means that 8 requests can
+  be processed at once.  Depending on your server capabilities and expected
+  demand, adjust the number of workers accordingly.  **Note** that in the API
+  the worker does not respond until the rendering is complete -- so if 8 workers
+  are being used actively, the ninth request will not be able to be handled.
+- `--bind` to the URL and (optional) port.  What your final choice will be
+  depends on your configurations for the tool you are using to expose your
+  server (e.g., nginx or apache).
+
+For the last part, `wsgi:app`, this is assuming you have a file named `wsgi.py`
+in the same directory as where you are running the command `gunicorn` with the
+contents:
+
+```py
+# NOTE: you may need to update sys.path to import your server implementation
+# depending on your directory structure.
+from gltf_render_server import app
+
+if __name__ == "__main__":
+    app.run()
+```
+
+**Tip**: on Ubuntu, to make the `gunicorn` executable available you will want
+to `sudo apt-get install gunicorn` (not `python3-gunicorn`).  If using a virtual
+environment or `pip` directly, `pip install gunicorn` will make the `gunicorn`
+executable available.
 
 ## Server Architecture
 
