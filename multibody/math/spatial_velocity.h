@@ -67,31 +67,31 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   template <typename Derived>
   explicit SpatialVelocity(const Eigen::MatrixBase<Derived>& V) : Base(V) {}
 
-  /// In-place shift of a %SpatialVelocity from a frame Cp to a frame Cq, where
-  /// both Cp and Cq are fixed to the same rigid body or frame C.  On entry,
-  /// `this` is V_BCp_E (frame Cp's spatial velocity measured in a frame B and
-  /// expressed in a frame E). On return `this` is modified to V_BCq_E (frame
-  /// Cq's spatial velocity measured in frame B and expressed in frame E).
-  /// @param[in] p_CpCq_E position vector from frame Cp's origin to frame Cq's
-  /// origin, expressed in frame E. p_CpCq_E must have the same expressed-in
-  /// frame E as `this` spatial velocity (`this` = V_BCp_E on entry).
-  /// @retval V_BCq_E reference to `this` spatial velocity which has been
-  /// modified to be frame Cq's spatial velocity measured in frame B and
-  /// expressed in frame E. The components of V_BCq_E are calculated as: <pre>
+  /// In-place shift of a %SpatialVelocity from a frame P to a frame Q, where
+  /// both P and Q are fixed to the same rigid body or frame C. On entry, `this`
+  /// is V_BP_E (frame P's spatial velocity measured in a frame B and expressed
+  /// in a frame E). On return `this` is modified to V_BQ_E (frame Q's spatial
+  /// velocity measured in frame B and expressed in frame E).
+  /// @param[in] offset, which is the position vector p_PoQo_E from frame P's
+  /// origin to frame Q's origin, expressed in frame E. p_PoQo_E must have the
+  /// same expressed-in frame E as `this` spatial velocity.
+  /// @retval V_BQ_E reference to `this` spatial velocity which has been
+  /// modified to be frame Q's spatial velocity measured in frame B and
+  /// expressed in frame E. The components of V_BQ_E are calculated as: <pre>
   ///  ω_BC_E  = ω_BC_E               (angular velocity of `this` is unchanged).
-  ///  v_BCq_E = v_BCp_E + ω_BC_E x p_CpCq_E   (translational velocity changes).
+  ///  v_BQ_E = v_BP_E + ω_BC_E x p_PoQo_E     (translational velocity changes).
   /// </pre>
   /// @see Shift() to shift spatial velocity without modifying `this`.
-  SpatialVelocity<T>& ShiftInPlace(const Vector3<T>& p_CpCq_E) {
-    this->translational() += this->rotational().cross(p_CpCq_E);
+  SpatialVelocity<T>& ShiftInPlace(const Vector3<T>& offset) {
+    this->translational() += this->rotational().cross(offset);
     return *this;
     // Note: this operation is linear. [Jain 2010], (§1.4, page 12) uses the
     // "rigid body transformation operator" to write this as:
-    //   V_BCq = Φᵀ(p_CpCq) V_BCp  where `Φᵀ(p_CpCq)` is the linear operator:
-    //   Φᵀ(p_CpCQ) = |  I₃       0  |
-    //                | -px_CpCq  I₃ |
-    // where `px_CpCq` denotes the cross product skew-symmetric matrix such that
-    // `px_CpCq vec = p_CpCq x vec` (where vec is any vector).
+    //   V_BQ = Φᵀ(p_PoQo) V_BP  where `Φᵀ(p_PoQo)` is the linear operator:
+    //   Φᵀ(p_PoQo) = |  I₃       0  |
+    //                | -px_PoQo  I₃ |
+    // where `px_PoQo` denotes the cross product skew-symmetric matrix such that
+    // `px_PoQo vec = p_PoQo x vec` (where vec is any vector).
     // This same operator (not its transpose as for spatial velocities) allows
     // us to shift spatial forces, see SpatialForce::Shift().
     //
@@ -99,28 +99,30 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
     //               algorithms. Springer Science & Business Media, pp. 123-130.
   }
 
-  /// Shifts a %SpatialVelocity from a frame Cp to a frame Cq, where
-  /// both Cp and Cq are fixed to the same rigid body or frame C.
+  /// Shifts a %SpatialVelocity from a frame P to a frame Q, where both P and Q
+  /// are fixed to the same rigid body or frame C.
   /// This method differs from ShiftInPlace() in that this method does not
   /// modify `this` whereas ShiftInPlace() does modify `this`.
-  /// @param[in] p_CpCq_E position vector from frame Cp's origin to frame Cq's
-  /// origin, expressed in frame E. p_CpCq_E must have the same expressed-in
-  /// frame E as `this` spatial velocity (`this` = V_BCp_E).
-  /// @retval V_BCq_E which is frame Cq's spatial velocity measured in frame B
+  /// @param[in] offset, which is the position vector p_PoQo_E from frame P's
+  /// origin to frame Q's origin, expressed in frame E. p_PoQo_E must have the
+  /// same expressed-in frame E as `this` spatial velocity (`this` = V_BP_E).
+  /// @retval V_BQ_E which is frame Q's spatial velocity measured in frame B
   /// and expressed in frame E.
-  /// @see ShiftInPlace() for more information and how V_BCq_E is calculated.
-  SpatialVelocity<T> Shift(const Vector3<T>& p_CpCq_E) const {
-    return SpatialVelocity<T>(*this).ShiftInPlace(p_CpCq_E);
+  /// @see ShiftInPlace() for more information and how V_BQ_E is calculated.
+  SpatialVelocity<T> Shift(const Vector3<T>& offset) const {
+    return SpatialVelocity<T>(*this).ShiftInPlace(offset);
   }
 
   /// For a frame C that moves relative to a frame B, calculates V_WC_E (frame
   /// C's spatial velocity measured in a frame W, expressed in a frame E).
-  /// @param[in] p_BoCo_E position vector from Bo (frame B's origin) to Co
-  /// (frame C's origin), expressed in frame E.  p_BoCo_E must have the same
-  /// expressed-in frame E as `this` spatial velocity (where `this` = V_WB_E,
-  /// frame B's spatial velocity measured in frame W, expressed in frame E).
-  /// @param[in] V_BC_E frame C's spatial velocity measured in frame B,
-  /// expressed in the same frame E as `this` spatial velocity.
+  /// @param[in] position_of_moving_frame which is the position vector p_BoCo_E
+  /// from Bo (frame B's origin) to Co (frame C's origin), expressed in frame E.
+  /// p_BoCo_E must have the same expressed-in frame E as `this` spatial
+  /// velocity (`this` = V_WB_E, i.e., frame B's spatial velocity measured in
+  /// rame W, expressed in frame E).
+  /// @param[in] velocity_of_moving_frame which is V_BC_E, frame C's spatial
+  /// velocity measured in frame B, expressed in the same frame E as `this`
+  /// spatial velocity (`this` = V_WB_E).
   /// @retval V_WC_E frame C's spatial velocity measured in frame W and
   /// expressed in frame E.
   /// @note The returned spatial velocity V_WC_E contains an angular velocity
@@ -131,17 +133,19 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// If frame C is rigidly fixed to frame B, V_BC_E = 0 and this method
   /// produces a Shift() operation (albeit inefficiently).
   SpatialVelocity<T> ComposeWithMovingFrameVelocity(
-      const Vector3<T>& p_BoCo_E, const SpatialVelocity<T>& V_BC_E) const {
+      const Vector3<T>& position_of_moving_frame,
+      const SpatialVelocity<T>& velocity_of_moving_frame) const {
     // V_WC_E = V_WB_E.Shift(p_BoCo_E) + V_BC_E
-    return this->Shift(p_BoCo_E) + V_BC_E;
+    return this->Shift(/*p_BoCo_E = */ position_of_moving_frame)
+                      + /* V_BC_E = */ velocity_of_moving_frame;
   }
 
   /// For an arbitrary frame B, calculates the dot-product of V_WB_E (frame B's
   /// spatial velocity measured in frame W, expressed-in frame E, stored in
   /// `this`) with F_B_E (frame B's spatial force, expressed-in frame E). The
   /// resulting scalar is the power generated by the spatial force in frame W.
-  /// @param[in] F_B_E frame B's spatial force, expressed in the same frame E
-  /// as `this` spatial velocity V_WB_E.
+  /// @param[in] force which is F_B_E frame B's spatial force, expressed in the
+  /// same frame E as `this` spatial velocity V_WB_E.
   /// @returns Power of spatial force F_B_E in frame W, i.e., F_B_E ⋅ V_WB_E.
   /// @note Just as equating force 𝐅 to mass * acceleration as 𝐅 = m𝐚 relies
   /// on acceleration 𝐚 being measured in a world frame W (also called a
@@ -150,7 +154,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// unusual to use this method unless frame W is the world frame.
   /// @note Although the spatial vectors F_B_E and V_WB_E must have the same
   /// expressed-in frame E, the returned scalar is independent of frame E.
-  inline T dot(const SpatialForce<T>& F_B_E) const;
+  inline T dot(const SpatialForce<T>& force) const;
   // The dot() method is implemented at the end of this file, so that all of
   // the dot methods are co-located for easy understanding. We need the inline
   // keyword to ensure the method is still inlined even with `extern template`.
@@ -168,16 +172,16 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// is due to how spatial momentum and spatial velocity shift when changing
   /// from Bcm to Bp. For more information, see
   /// SpatialMomentum::Shift() and SpatialVelocity::Shift().
-  /// @param[in] L_WBp_E body B's spatial momentum measured-in frame W, about
-  /// frame Bp's origin, expressed in the same frame E as `this` spatial
-  /// velocity V_WBp_E.
+  /// @param[in] momentum which is L_WBp_E body B's spatial momentum measured-in
+  /// frame W, about frame Bp's origin, expressed in the same frame E as `this`
+  /// spatial velocity V_WBp_E.
   /// @returns twice (2x) body B's kinetic energy in frame W.
   /// @note In most situations, kinetic energy calculations are only useful when
   /// frame W is a world frame (also called a Newtonian or inertial frame).
   /// Hence, it is unusual to use this method unless frame W is the world frame.
   /// @note Although the spatial vectors V_WBp_E and L_WBp_E must have the same
   /// expressed-in frame E, the resulting scalar is independent of frame E.
-  inline T dot(const SpatialMomentum<T>& L_WBp_E) const;
+  inline T dot(const SpatialMomentum<T>& momentum) const;
   // The dot() method is implemented at the end of this file, so that all of
   // the dot methods are co-located for easy understanding. We need the inline
   // keyword to ensure the method is still inlined even with `extern template`.
@@ -237,27 +241,27 @@ inline SpatialVelocity<T> operator-(
 }
 
 template <typename T>
-T SpatialVelocity<T>::dot(const SpatialForce<T>& F_B_E) const {
-  return this->get_coeffs().dot(F_B_E.get_coeffs());
+T SpatialVelocity<T>::dot(const SpatialForce<T>& force) const {
+  return this->get_coeffs().dot(force.get_coeffs());
 }
 
 // This was declared in spatial_force.h, but must be implemented here in
 // order to break the dependency cycle.
 template <typename T>
-T SpatialForce<T>::dot(const SpatialVelocity<T>& V_WBp_E) const {
-  return V_WBp_E.dot(*this);  // dot-product is commutative.
+T SpatialForce<T>::dot(const SpatialVelocity<T>& velocity) const {
+  return velocity.dot(*this);  // dot-product is commutative.
 }
 
 // This was declared in spatial_momentum.h, but must be implemented here in
 // order to break the dependency cycle.
 template <typename T>
-T SpatialMomentum<T>::dot(const SpatialVelocity<T>& V_WBp_E) const {
-  return this->get_coeffs().dot(V_WBp_E.get_coeffs());
+T SpatialMomentum<T>::dot(const SpatialVelocity<T>& velocity) const {
+  return this->get_coeffs().dot(velocity.get_coeffs());
 }
 
 template <typename T>
-T SpatialVelocity<T>::dot(const SpatialMomentum<T>& L_WBp_E) const {
-  return L_WBp_E.dot(*this);  // dot-product is commutative.
+T SpatialVelocity<T>::dot(const SpatialMomentum<T>& momentum) const {
+  return momentum.dot(*this);  // dot-product is commutative.
 }
 
 }  // namespace multibody
