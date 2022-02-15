@@ -8,6 +8,7 @@
 
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/geometry_state.h"
 
 namespace drake {
 namespace geometry {

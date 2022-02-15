@@ -8,6 +8,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/proximity_properties.h"
 
 namespace drake {
 namespace multibody {

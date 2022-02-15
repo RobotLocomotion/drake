@@ -20,6 +20,7 @@
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/test_utilities/dummy_render_engine.h"

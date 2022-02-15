@@ -4,6 +4,8 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/volume_mesh_field.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/contact_solvers/pgs_solver.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
