@@ -78,7 +78,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// @retval V_BQ_E reference to `this` spatial velocity which has been
   /// modified to be frame Q's spatial velocity measured in frame B and
   /// expressed in frame E. The components of V_BQ_E are calculated as: <pre>
-  ///  ω_BC_E  = ω_BC_E               (angular velocity of `this` is unchanged).
+  ///  ω_BQ_E = ω_BP_E = w_BC_E       (angular velocity of `this` is unchanged).
   ///  v_BQ_E = v_BP_E + ω_BC_E x p_PoQo_E     (translational velocity changes).
   /// </pre>
   /// @see Shift() to shift spatial velocity without modifying `this`.
