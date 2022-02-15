@@ -6,17 +6,12 @@
 directives:
 - add_model_instance:
     name: nested
-- add_frame:
-    name: nested::simple_model_origin
-    X_PF:
-      base_frame: world
-      translation: [10, 0, 0]
 - add_directives:
     file: package://process_model_directives_test/add_scoped_sub.yaml
     model_namespace: nested
-
-# Include a test for model directives backreferences (which are possibly a bug;
-# see the included file for details)
-- add_directives:
-    file: package://process_model_directives_test/add_backreference.yaml
-    model_namespace: nested
+# This frame is only for testing name scoping.
+# TODO(aaronchongth): Add testing for posturing and welding.
+- add_frame:
+    name: nested::simple_model_test_frame
+    X_PF:
+      base_frame: nested::simple_model::__model__
