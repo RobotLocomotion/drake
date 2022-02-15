@@ -149,8 +149,8 @@ void CollectCollisionFilterGroup(
        std::holds_alternative<sdf::ElementPtr>(ignore_node)
            ? std::get<sdf::ElementPtr>(ignore_node) != nullptr
            : std::get<tinyxml2::XMLElement*>(ignore_node) != nullptr;
-       ignore_node =
-           next_sibling_element(ignore_node, "drake:collision_filter_group")) {
+       ignore_node = next_sibling_element(
+           ignore_node, "drake:ignored_collision_filter_group")) {
     const std::string target_name = read_tag_string(ignore_node, "name");
 
     // These two group names are allowed to be identical, which means the
