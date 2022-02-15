@@ -105,12 +105,12 @@ make -j
 Please note the additional CMake options which affect the Python bindings:
 
 * ``-DWITH_GUROBI={ON, [OFF]}`` - Build with Gurobi enabled.
-* ``-DWITH_MOSEK={ON, [OFF]}`` - Build with MOSEK enabled.
+* ``-DWITH_MOSEK={ON, [OFF]}`` - Build with MOSEK™ enabled.
 * ``-DWITH_SNOPT={ON, [OFF]}`` - Build with SNOPT enabled.
 
 ``{...}`` means a list of options, and the option surrounded by ``[...]`` is
 the default option. An example of building ``pydrake`` with both Gurobi and
-MOSEK, without building tests:
+MOSEK™, without building tests:
 
 ```bash
 cmake -DWITH_GUROBI=ON -DWITH_MOSEK=ON ../drake

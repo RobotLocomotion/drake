@@ -2,7 +2,7 @@
 # vi: set ft=python :
 
 """
-Downloads and unpacks a MOSEK archive and makes its headers and
+Downloads and unpacks a MOSEK™ archive and makes its headers and
 precompiled shared libraries available to be used as a C/C++
 dependency.
 
@@ -108,9 +108,9 @@ def _impl(repository_ctx):
         ]
     else:
         files = [
-            # N.B. We are using and installing MOSEK's copy of libcilkrts.so.5,
+            # N.B. We are using and installing the MOSEK™ copy of libcilkrts,
             # even though Ubuntu installs the same shared library by default on
-            # all systems already. For some reason, Mosek fails when used with
+            # all systems already. For some reason, MOSEK™ fails when used with
             # Ubuntu's shared library. If Drake users have other third-party
             # code that assumes use of Ubuntu's libcilkrts, there could be
             # runtime conflicts; however, this risk seems low.

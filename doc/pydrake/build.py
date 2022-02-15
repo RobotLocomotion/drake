@@ -7,7 +7,13 @@ import os
 from os.path import join
 import sys
 
-from drake.doc.defs import check_call, main, symlink_input, verbose
+from drake.doc.defs import (
+    check_call,
+    main,
+    perl_cleanup_html_output,
+    symlink_input,
+    verbose,
+)
 
 import pydrake.all
 # TODO(eric.cousineau): Make an optional `.all` module.
@@ -166,6 +172,9 @@ def _build(*, out_dir, temp_dir, modules):
         input_dir,
         out_dir,
     ])
+
+    # Tidy up.
+    perl_cleanup_html_output(out_dir=out_dir)
 
     # The filename to suggest as the starting point for preview; in this case,
     # it's an empty filename (i.e., the index page).

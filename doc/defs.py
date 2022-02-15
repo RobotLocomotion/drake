@@ -81,6 +81,35 @@ def check_call(args, *, cwd=None):
     proc.check_returncode()
 
 
+def perl_cleanup_html_output(*, out_dir, extra_perl_statements=None):
+    """Runs a cleanup pass over all HTML output files, using a set of built-in
+    fixups. Calling code may pass its own extra statements, as well.
+    """
+    # Collect the list of all HTML output files.
+    html_files = []
+    for dirpath, _, filenames in os.walk(out_dir):
+        for filename in filenames:
+            if filename.endswith(".html"):
+                html_files.append(os.path.relpath(
+                    os.path.join(dirpath, filename), out_dir))
+
+    # Figure out what to do.
+    default_perl_statements = [
+        # Add trademark hyperlink.
+        r's#™#<a href="/tm.html">™</a>#g;',
+    ]
+    perl_statements = default_perl_statements + (extra_perl_statements or [])
+    for x in perl_statements:
+        assert x.endswith(';'), x
+
+    # Do it.
+    while html_files:
+        # Work in batches of 100, so we don't overflow the argv limit.
+        first, html_files = html_files[:100], html_files[100:]
+        check_call(["perl", "-pi", "-e", "".join(perl_statements)] + first,
+                   cwd=out_dir)
+
+
 def _call_build(*, build, out_dir):
     """Calls build() into out_dir, while also supplying a temp_dir."""
     with tempfile.TemporaryDirectory(

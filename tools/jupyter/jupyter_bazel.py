@@ -54,7 +54,7 @@ def _jupyter_bazel_notebook_main(cur_dir, notebook_file, argv):
         # Execute using a preprocessor, rather than calling
         # `jupyter nbconvert`, as the latter writes an unused file to
         # `runfiles`.
-        with open(notebook_path) as f:
+        with open(notebook_path, encoding="utf-8") as f:
             nb = nbformat.read(f, as_version=4)
         # Ensure that we use the notebook's directory, since that is used for
         # interactive sessions.
