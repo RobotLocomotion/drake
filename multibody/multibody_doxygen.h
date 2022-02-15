@@ -328,13 +328,11 @@ Angular velocity             |  w   |@f$^B\omega^C@f$          |`w_BC`      |Fra
 Velocity                     |  v   |@f$^Bv^Q@f$               |`v_BQ`      |%Point Q's translational velocity in frame B
 Relative velocity            |  v   |@f$^Bv^{Q/P}@f$           |`v_B_PQ`    |%Point Q's translational velocity relative to point P in frame B
 Spatial velocity             |  V   |@f$^BV^{C}@f$             |`V_BC`      |Frame C's spatial velocity in frame B (for point Co)ᵇ
-Spatial velocity             |  V   |@f$^BV^{Cp}@f$            |`V_BCp`     |Frame Cp's spatial velocity in frame Bᵇ
 Relative spatial velocity    |  V   |@f$^BV^{C/D}@f$           |`V_B_DC`    |%Frame C's spatial velocity relative to frame D in frame B
 Angular acceleration         |alpha |@f$^B\alpha^C@f$          |`alpha_BC`  |Frame C's angular acceleration in frame B
 Acceleration                 |  a   |@f$^Ba^Q@f$               |`a_BQ`      |%Point Q's translational acceleration in frame B
 Relative acceleration        |  a   |@f$^Ba^{Q/P}@f$           |`a_B_PQ`    |%Point Q's translational acceleration relative to point P in frame B
 Spatial acceleration         |  A   |@f$^BA^{C}@f$             |`A_BC`      |Frame C's spatial acceleration in frame B (for point Co)ᵇ
-Spatial acceleration         |  A   |@f$^BA^{Cp}@f$            |`A_BCp`     |Frame Cp's spatial acceleration in frame Bᵇ
 Relative spatial acceleration|  A   |@f$^BA^{C/D}@f$           |`A_B_DC`    |%Frame C's spatial acceleration relative to frame D in frame B
 Torque                       |  t   |@f$\tau^{B}@f$            |`t_B`       |Torque on a body (or frame) B
 Force                        |  f   |@f$f^{P}@f$               |`f_P`       |Force on a point P
