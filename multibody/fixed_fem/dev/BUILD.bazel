@@ -237,6 +237,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "corotated_model_data_test",
+    deps = [
+        ":corotated_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
     name = "mesh_utilities_test",
     deps = [
         ":mesh_utilities",
