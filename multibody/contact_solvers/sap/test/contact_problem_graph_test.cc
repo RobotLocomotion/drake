@@ -8,32 +8,32 @@ namespace contact_solvers {
 namespace internal {
 namespace {
 
-// We test ContactProblemGraph with the graph setup sketched below where each
-// box corresponds to a cluster (a node in the graph) and edges correspond to a
-// cluster of constraints connecting one or more cliques.
-// As documented in ContactProblemGraph's documentation, clusters are created
-// (and assigned a non-negative incrasing index) the first time a constraint
-// between two cliques is added with a call to AddConstraint(). The graph below
-// is then the expected graph for the set of AddConstraint() calls in the order
-// listed in this test.
-//
-// The labels for the clusters below correspond to:
-//  1. The first number corresponds to the expected cluster index.
-//  2. The numbers in squared brackets corresponds to the constraint index,
-//     assigned by each call to AddConstraint in the order it was called.
-//  3. The numbers in parentheses correspond to the size of each of the
-//     constraints in the cluster, also in the order they were added.
-//
-//                         0[0](1)
-//                          ┌─┐
-//                          │ │
-// ┌───┐1[1](3)┌───┐3[3](2)┌┴─┴┐     ┌───┐
-// │ 0 ├───────┤ 1 ├───────┤ 3 │     │ 2 │
-// └─┬─┘       └───┘       └─┬─┘     └───┘
-//   │                       │
-//   └───────────────────────┘
-//         2[2, 4](6,5)
-//
+/* We test ContactProblemGraph with the graph setup sketched below where each
+ box corresponds to a cluster (a node in the graph) and edges correspond to a
+ cluster of constraints connecting one or more cliques. As documented in
+ ContactProblemGraph's documentation, clusters are created (and assigned a
+ non-negative increasing index) the first time a constraint between two cliques
+ (or just one) is added with a call to AddConstraint(). The graph below is then
+ the expected graph for the set of AddConstraint() calls in the order listed in
+ this test.
+
+ The labels for the clusters below correspond to:
+  1. The first number corresponds to the expected cluster index.
+  2. The numbers in square brackets corresponds to the constraint index,
+     assigned by each call to AddConstraint in the order it was called.
+  3. The numbers in parentheses correspond to the number of equations of each of
+     the constraints in the cluster, also in the order they were added.
+
+                         0[0](1)
+                          ┌─┐
+                          │ │
+ ┌───┐1[1](3)┌───┐3[3](2)┌┴─┴┐     ┌───┐
+ │ 0 ├───────┤ 1 ├───────┤ 3 │     │ 2 │
+ └─┬─┘       └───┘       └─┬─┘     └───┘
+   │                       │
+   └───────────────────────┘
+         2[2, 4](6,5)
+*/
 GTEST_TEST(ContactGraph, Construction) {
   ContactProblemGraph graph(4);
   EXPECT_EQ(graph.AddConstraint(3, 1), 0);     // Defines cluster 0.
@@ -56,22 +56,27 @@ GTEST_TEST(ContactGraph, Construction) {
   auto compare_clusters =
       [](const ContactProblemGraph::ConstraintCluster& a,
          const ContactProblemGraph::ConstraintCluster& b) -> bool {
-    return a.cliques == b.cliques &&
-           a.num_constraint_equations == b.num_constraint_equations &&
-           a.constraint_index == b.constraint_index &&
-           a.constraint_num_equations == b.constraint_num_equations;
+    return a.cliques() == b.cliques() &&
+           a.num_constraints() == b.num_constraints() &&
+           a.num_constraint_equations() == b.num_constraint_equations() &&
+           a.constraint_index() == b.constraint_index() &&
+           a.constraint_num_equations() == b.constraint_num_equations();
   };
 
   // Expected cliques as documented in the schematic of the graph above.
-  ContactProblemGraph::ConstraintCluster cluster0{
-      MakeSortedPair(3, 3), 1, std::vector<int>({0}), std::vector<int>({1})};
-  ContactProblemGraph::ConstraintCluster cluster1{
-      MakeSortedPair(0, 1), 3, std::vector<int>({1}), std::vector<int>({3})};
-  ContactProblemGraph::ConstraintCluster cluster2{MakeSortedPair(0, 3), 11,
-                                                  std::vector<int>({2, 4}),
-                                                  std::vector<int>({6, 5})};
-  ContactProblemGraph::ConstraintCluster cluster3{
-      MakeSortedPair(1, 3), 2, std::vector<int>({3}), std::vector<int>({2})};
+  const auto cluster0 =
+      ContactProblemGraph::ConstraintCluster(MakeSortedPair(3, 3))
+          .AddConstraint(0, 1);
+  const auto cluster1 =
+      ContactProblemGraph::ConstraintCluster(MakeSortedPair(0, 1))
+          .AddConstraint(1, 3);
+  const auto cluster2 =
+      ContactProblemGraph::ConstraintCluster(MakeSortedPair(0, 3))
+          .AddConstraint(2, 6)
+          .AddConstraint(4, 5);
+  const auto cluster3 =
+      ContactProblemGraph::ConstraintCluster(MakeSortedPair(1, 3))
+          .AddConstraint(3, 2);
 
   // Verify clusters were created as expected.
   EXPECT_TRUE(compare_clusters(graph.get_cluster(0), cluster0));
