@@ -1,12 +1,41 @@
-import sys
+import argparse
+import logging
 
 from pydrake.test.text_logging_test import do_log_test
-from pydrake.common import set_log_level
+from pydrake.common import configure_logging, set_log_level
 
 
 def main():
-    spdlog_level = sys.argv[1]
-    set_log_level(spdlog_level)
+    # Parse our arguments.
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--python_level", metavar="INT", type=int, required=True,
+        help="Set Python Drake logger to this level, or use 0 as a no-op.")
+    parser.add_argument(
+        "--spdlog_level_name", metavar="STR", type=str, required=True,
+        help="Set C++ Drake to this log level, or use 'unchanged' as a no-op.")
+    parser.add_argument(
+        "--use_nice_format", metavar="1|0", type=int, required=True,
+        help="Switch on (or off) nicely formatted Python output.")
+    args = parser.parse_args()
+
+    # Configure Python logging (if requested).
+    if args.python_level != logging.NOTSET:
+        if args.use_nice_format:
+            configure_logging()
+            logging.getLogger().setLevel(args.python_level)
+        else:
+            logging.basicConfig(level=args.python_level)
+            logging.getLogger("drake").setLevel(logging.NOTSET)
+    else:
+        assert args.use_nice_format == 0
+
+    # Configure C++ logging (if requested).
+    if args.spdlog_level_name != "unchanged":
+        set_log_level(args.spdlog_level_name)
+
+    # Emit a bunch of log messages from C++. Depending on the level filtering,
+    # not all of them will be printed.
     do_log_test()
 
 
