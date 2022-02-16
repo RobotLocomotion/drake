@@ -50,8 +50,8 @@ void ConstructBallPaddlePlant(
     drake::multibody::MultibodyPlant<double>* plant,
     drake::multibody::BodyIndex* paddle_body_id,
     drake::multibody::BodyIndex* ball_body_id,
-    drake::multibody::JointIndex* paddle_translate_y_joint_index,
-    drake::multibody::JointIndex* paddle_translate_z_joint_index,
+    drake::multibody::JointIndex*,
+    drake::multibody::JointIndex*,
     drake::geometry::GeometryId* ball_sphere_geometry_id,
     drake::geometry::GeometryId* paddle_box_geometry_id) {
 
@@ -69,28 +69,6 @@ void ConstructBallPaddlePlant(
   if (paddle_fixed_pose.has_value()) {
     plant->WeldFrames(plant->world_frame(), paddle_body.body_frame(),
                       paddle_fixed_pose.value());
-  } else {
-    // Add a massless dummy body, so that the connection from the world to
-    // paddle_body is world -> prismatic_joint_y -> paddle_dummy ->
-    // prismatic_joint_z -> paddle_body.
-    const auto& paddle_dummy = plant->AddRigidBody(
-        "paddle_dummy", SpatialInertia<double>(0., Eigen::Vector3d::Zero(),
-                                               UnitInertia<double>(0, 0, 0)));
-    const auto& paddle_translate_y_joint =
-        plant->template AddJoint<PrismaticJoint>(
-            "paddle_translate_y", plant->world_body(), std::nullopt,
-            paddle_dummy, std::nullopt, Eigen::Vector3d::UnitY());
-    *paddle_translate_y_joint_index = paddle_translate_y_joint.index();
-    const auto& paddle_translate_z_joint =
-        plant->template AddJoint<PrismaticJoint>(
-            "paddle_translate_z", paddle_dummy, std::nullopt, paddle_body,
-            std::nullopt, Eigen::Vector3d::UnitZ());
-    *paddle_translate_z_joint_index = paddle_translate_z_joint.index();
-    const double paddle_actuator_effort_limit = 20;
-    plant->AddJointActuator("paddle_y_actuactor", paddle_translate_y_joint,
-                            paddle_actuator_effort_limit);
-    plant->AddJointActuator("paddle_z_actuactor", paddle_translate_z_joint,
-                            paddle_actuator_effort_limit);
   }
 
   // Now add the ball.
