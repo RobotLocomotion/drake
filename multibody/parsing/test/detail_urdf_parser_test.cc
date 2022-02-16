@@ -42,9 +42,8 @@ ModelInstanceIndex AddModelFromUrdfFile(
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr) {
-  return AddModelFromUrdf(
-      { .file_name = &file_name },
-      model_name, {}, package_map, plant, scene_graph);
+  return AddModelFromUrdf({ .file_name = &file_name }, model_name, {},
+                          package_map, plant);
 }
 
 // Verifies that the URDF loader can leverage a specified package map.
@@ -148,29 +147,17 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAddWithQuaternionFloatingDof) {
   EXPECT_EQ(plant.num_velocities(), 6);
 }
 
-GTEST_TEST(MultibodyPlantUrdfParserTest, TestOptionalSceneGraph) {
+GTEST_TEST(MultibodyPlantUrdfParserTest, TestSceneGraph) {
+  // Test that registering with scene graph results in visual geometries.
   const std::string full_name = FindResourceOrThrow(
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
   PackageMap package_map;
-  int num_visuals_explicit{};
-  {
-    // Test explicitly specifying `scene_graph`.
-    MultibodyPlant<double> plant(0.0);
-    SceneGraph<double> scene_graph;
-    AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
-    plant.Finalize();
-    num_visuals_explicit = plant.num_visual_geometries();
-  }
-  EXPECT_NE(num_visuals_explicit, 0);
-  {
-    // Test implicitly specifying.
-    MultibodyPlant<double> plant(0.0);
-    SceneGraph<double> scene_graph;
-    plant.RegisterAsSourceForSceneGraph(&scene_graph);
-    AddModelFromUrdfFile(full_name, "", package_map, &plant);
-    plant.Finalize();
-    EXPECT_EQ(plant.num_visual_geometries(), num_visuals_explicit);
-  }
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  AddModelFromUrdfFile(full_name, "", package_map, &plant);
+  plant.Finalize();
+  EXPECT_NE(plant.num_visual_geometries(), 0);
 }
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
@@ -378,7 +365,8 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, AddingGeometriesToWorldLink) {
 
   MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
-  AddModelFromUrdf(source, "urdf", {}, {}, &plant, &scene_graph);
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  AddModelFromUrdf(source, "urdf", {}, {}, &plant);
 
   const auto& inspector = scene_graph.model_inspector();
   EXPECT_EQ(inspector.num_geometries(), 2);
@@ -820,6 +808,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, CollisionFilterGroupParsingTest) {
 
   MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
   AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
 
   // Get geometry ids for all the bodies.
