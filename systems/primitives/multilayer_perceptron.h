@@ -65,7 +65,7 @@ class MultilayerPerceptron final : public LeafSystem<T> {
    @param layers is the number of elements in each layer of the network (the
    activation function does *not* count as an additional layer). The first
    element specifies the number of inputs, and the last layer specifies the
-   number of outputs. We require at least 3 layers (to be considered an MLP).
+   number of outputs.
    @param activation_type specifies an activation function, σ(), used in
    _every_ hidden layer of the network. kIdentity will be used for the output.
 
@@ -79,7 +79,7 @@ class MultilayerPerceptron final : public LeafSystem<T> {
    @param layers is the number of elements in each layer of the network (the
    activation function does *not* count as an additional layer). The first
    element specifies the number of inputs, and the last layer specifies the
-   number of outputs. We require at least 3 layers (to be considered an MLP).
+   number of outputs.
    @param activation_type specifies the activation function, σ(), used in
    _each_ non-input layer of the network (including the last layer).
 
@@ -87,6 +87,41 @@ class MultilayerPerceptron final : public LeafSystem<T> {
    @pydrake_mkdoc_identifier{vector_activation} */
   MultilayerPerceptron(
       const std::vector<int>& layers,
+      const std::vector<PerceptronActivationType>& activation_types);
+
+  // TODO(russt): A more general form of this might look like e.g.
+  // MultilayerPerceptron(
+  //    int num_inputs, const std::vector<GradientFunction>& input_features,
+  //    const std::vector<int>& remaining_layers,
+  //    const std::vector<PerceptronActivationType>& activation_types);
+  // but I won't implement that until someone needs it, and the sin/cos for
+  // joint angles seems a particularly important case that merits its own API
+  // in Drake.
+  /** Constructs the MLP with an additional option to transform the input vector
+   so that the function is periodic in 2π.
+
+   For instance, for a rotary joint on a robot, this could be used to apply the
+   transform [x, y] => [sin x, cos x, y]. This would be accomplished by
+   passing `use_sin_cos_for_input = [true, false]`.
+
+   Note that when this transformation is applied, `num_inputs() != layers()[0]`.
+   `num_inputs() == 2 != layers()[0] == 3`.
+
+   @param use_sin_cos_for_input is a boolean vector that determines whether the
+   sin/cos transform is applied to each element.
+   @param remaining_layers is the number of elements in each layer of the
+   network (the activation function does *not* count as an additional layer).
+   The first element specifies the size of the first hidden layer, and the last
+   layer specifies the number of outputs.
+   @param activation_type specifies the activation function, σ(), used in
+   _each_ non-input layer of the network (including the last layer).
+
+   `activation_type` should have the same number of elements as
+   `remaining_layers`.
+   @pydrake_mkdoc_identifier{sin_cos_features} */
+  MultilayerPerceptron(
+      const std::vector<bool>& use_sin_cos_for_input,
+      const std::vector<int>& remaining_layers,
       const std::vector<PerceptronActivationType>& activation_types);
 
   /** Scalar-converting copy constructor. See @ref system_scalar_conversion. */
@@ -242,10 +277,18 @@ class MultilayerPerceptron final : public LeafSystem<T> {
   void CalcLayers(const Context<T>& context,
                   internal::CalcLayersData<T>* data) const;
 
+  // Calculates the (potentially batch) feature vector values.  When `X` is
+  // size `num_inputs`-by-`N`, then `Features` is set to size
+  // `layers()[0]`-by-`N`.
+  void CalcInputFeatures(const Eigen::Ref<const MatrixX<T>>& X,
+                         MatrixX<T>* input_features) const;
+
   int num_weights_;     // The number of weight matrices (number of layers -1 ).
   int num_parameters_;  // Total number of parameters.
   std::vector<int> layers_;  // The number of neurons in each layer.
   std::vector<PerceptronActivationType> activation_types_;
+  std::vector<bool> use_sin_cos_for_input_{};
+  bool has_input_features_{false};
 
   // Stores the position index of each set of weights and biases in the main
   // parameter vector.

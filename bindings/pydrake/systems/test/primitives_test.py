@@ -582,6 +582,15 @@ class TestGeneral(unittest.TestCase):
         np.testing.assert_array_almost_equal(Y, np.zeros((1, 3)))
         np.testing.assert_array_almost_equal(dYdX, np.zeros((3, 3)))
 
+        mlp = MultilayerPerceptron(use_sin_cos_for_input=[True, False],
+                                   remaining_layers=[3, 2],
+                                   activation_types=[
+                                       PerceptronActivationType.kReLU,
+                                       PerceptronActivationType.kTanh
+                                   ])
+        self.assertEqual(mlp.get_input_port().size(), 2)
+        np.testing.assert_array_equal(mlp.layers(), [3, 3, 2])
+
     def test_random_source(self):
         source = RandomSource(distribution=RandomDistribution.kUniform,
                               num_outputs=2, sampling_interval_sec=0.01)
