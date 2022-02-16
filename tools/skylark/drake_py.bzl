@@ -166,7 +166,6 @@ def drake_py_binary(
 
 def drake_py_unittest(
         name,
-        deps = None,
         **kwargs):
     """Declares a `unittest`-based python test.
 
@@ -185,7 +184,8 @@ def drake_py_unittest(
         srcs = srcs,
         main = helper,
         allow_import_unittest = True,
-        deps = (deps or []) + [
+        _drake_py_unittest_shard_count = kwargs.pop("shard_count", None),
+        deps = kwargs.pop("deps", []) + [
             "@xmlrunner_py",
         ],
         **kwargs
@@ -217,11 +217,16 @@ def drake_py_test(
 
     By default, sets test size to "small" to indicate a unit test. Adds the tag
     "py" if not already present.
+
+    This macro does not allow a shard_count; use drake_py_unittest for that.
     """
     if size == None:
         size = "small"
     if srcs == None:
         srcs = ["test/%s.py" % name]
+    if kwargs.get("shard_count") != None:
+        fail("Only drake_py_unittest can use sharding")
+    shard_count = kwargs.pop("_drake_py_unittest_shard_count", None)
 
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
     deps = deps or []
@@ -236,6 +241,7 @@ def drake_py_test(
         py_target = py_test,
         isolate = isolate,
         size = size,
+        shard_count = shard_count,
         srcs = srcs,
         deps = deps,
         tags = tags,

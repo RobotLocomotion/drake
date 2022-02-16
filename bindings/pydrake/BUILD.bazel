@@ -384,8 +384,11 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "all_each_import_test",
-    timeout = "moderate",
-    deps = [":all_py"],
+    shard_count = 8,
+    deps = [
+        ":all_py",
+        "//bindings/pydrake/common/test_utilities:meta_py",
+    ],
 )
 
 drake_py_library(
