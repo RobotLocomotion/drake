@@ -11,8 +11,8 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-/** Construction parameters for the RenderClientGltf. */
-struct RenderClientGltfParams {
+/** Construction parameters for the RenderEngineGltfClient. */
+struct RenderEngineGltfClientParams {
   /** The (optional) label to apply when none is otherwise specified.  */
   std::optional<RenderLabel> default_label{};
 
@@ -26,11 +26,11 @@ struct RenderClientGltfParams {
   /** The RenderClient::render_endpoint() to retrieve renderings from. */
   std::string render_endpoint{"render"};
 
-  /** Whether or not the RenderClientGltf should log information about which
-   files are being generated.  @sa RenderClient::verbose() */
+  /** Whether or not the RenderEngineGltfClient should log information about
+   which files are being generated.  @sa RenderClient::verbose() */
   bool verbose = false;
 
-  /** Whether or not the RenderClientGltf should cleanup files generated /
+  /** Whether or not the RenderEngineGltfClient should cleanup files generated /
    retrieved from the server.  @sa RenderClient::no_cleanup() */
   bool no_cleanup = false;
 };
@@ -39,8 +39,8 @@ struct RenderClientGltfParams {
  <a href="https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html">glTF
  </a> files to upload to a rendering server, and retrieves renderings from said
  server to copy back into drake systems::sensors::Image buffers. */
-std::unique_ptr<RenderEngine> MakeRenderClientGltf(
-    const RenderClientGltfParams& params);
+std::unique_ptr<RenderEngine> MakeRenderEngineGltfClient(
+    const RenderEngineGltfClientParams& params);
 
 }  // namespace render
 }  // namespace geometry
