@@ -14,6 +14,19 @@ package(default_visibility = ["//visibility:private"])
 # Since we never develop, use, or test this on macOS, we reflect that in the
 # build system by omitting the target entirely on macOS.
 drake_py_binary_ubuntu_only(
+    name = "repack_deb",
+    srcs = ["repack_deb.py"],
+    data = [
+        "debian/changelog.in",
+        "debian/control",
+        "debian/copyright",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+drake_py_binary_ubuntu_only(
     name = "relnotes",
     srcs = ["relnotes.py"],
     deps = [
