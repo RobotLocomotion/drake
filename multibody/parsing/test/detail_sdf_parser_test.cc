@@ -1187,7 +1187,7 @@ template <typename ShapeType>
 
 // Confirms that all supported geometries in an SDF file are registered. The
 // *details* of the geometries are ignored -- we assume that that functionality
-// is tested in detail_scene_graph_test.cc. This merely makes sure that *that*
+// is tested in detail_sdf_geometry_test.cc. This merely makes sure that *that*
 // functionality is exercised appropriately.
 void TestForParsedGeometry(const char* sdf_name, geometry::Role role) {
   const std::string full_name = FindResourceOrThrow(sdf_name);

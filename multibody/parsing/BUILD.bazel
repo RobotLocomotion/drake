@@ -34,7 +34,7 @@ drake_cc_package_library(
     ],
     deps = [
         ":detail_misc",
-        ":detail_scene_graph",
+        ":detail_sdf_geometry",
         ":detail_sdf_parser",
         ":detail_urdf_parser",
         ":model_directives",
@@ -104,15 +104,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "detail_scene_graph",
+    name = "detail_sdf_geometry",
     srcs = [
-        "detail_scene_graph.cc",
+        "detail_sdf_geometry.cc",
     ],
     hdrs = [
-        "detail_scene_graph.h",
+        "detail_sdf_geometry.h",
     ],
     install_hdrs_exclude = [
-        "detail_scene_graph.h",
+        "detail_sdf_geometry.h",
     ],
     visibility = [
         "//visibility:private",
@@ -144,7 +144,7 @@ drake_cc_library(
     ],
     deps = [
         ":detail_misc",
-        ":detail_scene_graph",
+        ":detail_sdf_geometry",
         ":detail_urdf_parser",
         ":scoped_names",
         "//multibody/plant",
@@ -411,12 +411,12 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "detail_scene_graph_test",
+    name = "detail_sdf_geometry_test",
     data = [
         ":test_models",
     ],
     deps = [
-        ":detail_scene_graph",
+        ":detail_sdf_geometry",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",

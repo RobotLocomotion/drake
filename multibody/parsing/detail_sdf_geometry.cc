@@ -1,4 +1,4 @@
-#include "drake/multibody/parsing/detail_scene_graph.h"
+#include "drake/multibody/parsing/detail_sdf_geometry.h"
 
 #include <memory>
 #include <optional>
