@@ -53,37 +53,34 @@ const double kEps = std::numeric_limits<double>::epsilon();
 
 // TODO(jwnimmer-tri) This unit test has a lot of copy-pasta, including these
 // helper functions as well as all their call sites below.  We should refactor
-// the plant, scene_graph, etc. into a test fixture for brevity.
+// the plant, etc. into a test fixture for brevity.
 ModelInstanceIndex AddModelFromSdfFile(
     const std::string& file_name,
     const std::string& model_name,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr,
     bool test_sdf_forced_nesting = false) {
   const DataSource data_source{&file_name, {}};
   return AddModelFromSdf(data_source, model_name, package_map, plant,
-                         scene_graph, test_sdf_forced_nesting);
+                         test_sdf_forced_nesting);
 }
 std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const std::string& file_name,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr,
     bool test_sdf_forced_nesting = false) {
   const DataSource data_source{&file_name, {}};
   return AddModelsFromSdf(
-      data_source, package_map, plant, scene_graph, test_sdf_forced_nesting);
+      data_source, package_map, plant, test_sdf_forced_nesting);
 }
 std::vector<ModelInstanceIndex> AddModelsFromSdfString(
     const std::string& file_contents,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr,
     bool test_sdf_forced_nesting = false) {
   const DataSource data_source{{}, &file_contents};
-  return AddModelsFromSdf(
-      data_source, package_map, plant, scene_graph, test_sdf_forced_nesting);
+  return AddModelsFromSdf(data_source, package_map, plant,
+                          test_sdf_forced_nesting);
 }
 
 const Frame<double>& GetModelFrameByName(const MultibodyPlant<double>& plant,
@@ -97,7 +94,6 @@ GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
   // We start with the world and default model instances (model_instance.h
   // explains why there are two).
   MultibodyPlant<double> plant(0.0);
-  geometry::SceneGraph<double> scene_graph;
   ASSERT_EQ(plant.num_model_instances(), 2);
 
   const std::string full_sdf_filename = FindResourceOrThrow(
@@ -111,7 +107,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
   package_map.PopulateFromFolder(package_path.string());
 
   // Read in the SDF file.
-  AddModelFromSdfFile(full_sdf_filename, "", package_map, &plant, &scene_graph);
+  AddModelFromSdfFile(full_sdf_filename, "", package_map, &plant);
   plant.Finalize();
 
   // Verify the number of model instances.
@@ -128,7 +124,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, VeryOldVersion) {
       "drake/multibody/parsing/test/sdf_parser_test/very_old_version.sdf");
 
   EXPECT_EQ(plant.num_model_instances(), 2);
-  AddModelFromSdfFile(full_sdf_filename, "", package_map, &plant, nullptr);
+  AddModelFromSdfFile(full_sdf_filename, "", package_map, &plant);
   plant.Finalize();
   EXPECT_EQ(plant.num_model_instances(), 3);
 }
@@ -726,37 +722,23 @@ GTEST_TEST(SdfParser, IncludeTags) {
   EXPECT_TRUE(plant.HasJointNamed("weld_robots", weld_model_robot2_model));
 }
 
-GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
+GTEST_TEST(SdfParser, TestSceneGraph) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/"
       "links_with_visuals_and_collisions.sdf");
   PackageMap package_map;
-
-  int num_visuals_explicit{};
-  {
-    // Test explicitly specifying `scene_graph`.
-    MultibodyPlant<double> plant(0.0);
-    SceneGraph<double> scene_graph;
-    AddModelsFromSdfFile(full_name, package_map, &plant, &scene_graph);
-    plant.Finalize();
-    num_visuals_explicit = plant.num_visual_geometries();
-  }
-  EXPECT_NE(num_visuals_explicit, 0);
-  {
-    // Test implicitly specifying.
-    MultibodyPlant<double> plant(0.0);
-    SceneGraph<double> scene_graph;
-    plant.RegisterAsSourceForSceneGraph(&scene_graph);
-    AddModelsFromSdfFile(full_name, package_map, &plant);
-    plant.Finalize();
-    EXPECT_EQ(plant.num_visual_geometries(), num_visuals_explicit);
-  }
+  // Test that having a scene graph results in visual geometries.
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  AddModelsFromSdfFile(full_name, package_map, &plant);
+  plant.Finalize();
+  EXPECT_NE(plant.num_visual_geometries(), 0);
 }
 
 // Verifies that the SDF loader can leverage a specified package map.
 GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
   MultibodyPlant<double> plant(0.0);
-  geometry::SceneGraph<double> scene_graph;
 
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/"
@@ -765,7 +747,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
 
   // Read in the SDF file.
   const std::vector<ModelInstanceIndex> instances =
-      AddModelsFromSdfFile(full_name, package_map, &plant, &scene_graph);
+      AddModelsFromSdfFile(full_name, package_map, &plant);
   const ModelInstanceIndex instance1 = instances.front();
   plant.Finalize();
 
@@ -920,7 +902,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointActuatorParsingTest) {
   PackageMap package_map;
 
   // Read in the SDF file.
-  AddModelFromSdfFile(full_name, "", package_map, &plant, nullptr);
+  AddModelFromSdfFile(full_name, "", package_map, &plant);
   plant.Finalize();
 
   // In SDF, effort limits are specified in <joint><axis><limit><effort>,
@@ -954,7 +936,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, RevoluteSpringParsingTest) {
   PackageMap package_map;
 
   // Reads in the SDF file.
-  AddModelFromSdfFile(full_name, "", package_map, &plant, nullptr);
+  AddModelFromSdfFile(full_name, "", package_map, &plant);
   plant.Finalize();
 
   // Plant should have a UniformGravityFieldElement by default.
@@ -2000,7 +1982,7 @@ GTEST_TEST(SdfParser, InterfaceAPI) {
   MultibodyPlant<double> plant(0.0);
 
   DRAKE_ASSERT_NO_THROW(AddModelFromSdfFile(sdf_file_path, "", package_map,
-                                            &plant, nullptr, true));
+                                            &plant, true));
 
   plant.Finalize();
   auto context = plant.CreateDefaultContext();
@@ -2102,10 +2084,11 @@ GTEST_TEST(SdfParser, CollisionFilterGroupParsingTest) {
       "sdf_parser_test/collision_filter_group_parsing_test.sdf");
   MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
   PackageMap package_map;
 
   // Read in the SDF file.
-  AddModelFromSdfFile(full_sdf_filename, "", package_map, &plant, &scene_graph);
+  AddModelFromSdfFile(full_sdf_filename, "", package_map, &plant);
 
   // Get geometry ids for all the bodies.
   const geometry::SceneGraphInspector<double>& inspector =
@@ -2161,8 +2144,7 @@ GTEST_TEST(SdfParser, CollisionFilterGroupParsingTest) {
   EXPECT_TRUE(inspector.CollisionFiltered(ids[5], ids[6]));
 
   // Make sure we can add the model a second time.
-  AddModelFromSdfFile(
-      full_sdf_filename, "model2", package_map, &plant, &scene_graph);
+  AddModelFromSdfFile(full_sdf_filename, "model2", package_map, &plant);
 }
 
 // TODO(marcoag) We might want to add some form of feedback for:

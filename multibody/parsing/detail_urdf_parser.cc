@@ -777,8 +777,7 @@ ModelInstanceIndex AddModelFromUrdf(
     const std::string& model_name_in,
     const std::optional<std::string>& parent_model_name,
     const PackageMap& package_map,
-    MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph) {
+    MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
   data_source.DemandExactlyOne();
@@ -815,10 +814,6 @@ ModelInstanceIndex AddModelFromUrdf(
           "Failed to parse XML string: {}",
           xml_doc.ErrorName()));
     }
-  }
-
-  if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
-    plant->RegisterAsSourceForSceneGraph(scene_graph);
   }
 
   return ParseUrdf(model_name_in, parent_model_name, package_map, root_dir,
