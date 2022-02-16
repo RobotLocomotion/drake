@@ -6,6 +6,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/fem/constitutive_model.h"
+#include "drake/multibody/fem/linear_constitutive_model.h"
 #include "drake/multibody/fem/matrix_utilities.h"
 
 namespace drake {
@@ -42,7 +43,7 @@ std::array<Matrix3<AutoDiffXd>, num_locations> MakeDeformationGradients() {
 }
 
 /* Tests the constructors correctly initializes St.Venant-Kichhoff like
-constitutive models and rejects invalid Young's modulus and poisson ratio.
+constitutive models and rejects invalid Young's modulus and Poisson's ratio.
 @tparam Model    Must be instantiations of LinearConstitutiveModel or
 CorotatedModel. */
 template <class Model>
@@ -54,12 +55,11 @@ void TestParameters() {
   const T kExpectedMu = 40.0;
   const T kExpectedLambda = 40.0;
   EXPECT_EQ(model.youngs_modulus(), kYoungsModulus);
-  EXPECT_EQ(model.poisson_ratio(), kPoissonRatio);
+  EXPECT_EQ(model.poissons_ratio(), kPoissonRatio);
   EXPECT_EQ(model.shear_modulus(), kExpectedMu);
   EXPECT_EQ(model.lame_first_parameter(), kExpectedLambda);
 
-  DRAKE_EXPECT_THROWS_MESSAGE((Model(-1.0, 0.25)),
-                              "Young's modulus must .*");
+  DRAKE_EXPECT_THROWS_MESSAGE((Model(-1.0, 0.25)), "Young's modulus must .*");
 
   DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, 0.5)),
                               "Poisson's ratio must be in .*");
@@ -165,6 +165,16 @@ void TestdPdFIsDerivativeOfP() {
     }
   }
 }
+
+template void TestParameters<LinearConstitutiveModel<double, 1>>();
+template void TestParameters<LinearConstitutiveModel<AutoDiffXd, 1>>();
+
+template void TestUndeformedState<LinearConstitutiveModel<double, 1>>();
+template void TestUndeformedState<LinearConstitutiveModel<AutoDiffXd, 1>>();
+
+template void TestPIsDerivativeOfPsi<LinearConstitutiveModel<AutoDiffXd, 1>>();
+
+template void TestdPdFIsDerivativeOfP<LinearConstitutiveModel<AutoDiffXd, 1>>();
 
 }  // namespace test
 }  // namespace internal
