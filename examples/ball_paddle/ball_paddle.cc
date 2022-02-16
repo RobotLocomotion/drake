@@ -28,14 +28,10 @@ using drake::multibody::UnitInertia;
 
 template <>
 void ConstructBallPaddlePlant(
-    double , double , double,
-    const Eigen::Vector3d&,
-    const std::optional<drake::math::RigidTransform<double>>&,
+    const drake::math::RigidTransform<double>&,
     drake::multibody::MultibodyPlant<AutoDiffXd>*,
     drake::multibody::BodyIndex*,
     drake::multibody::BodyIndex*,
-    drake::multibody::JointIndex*,
-    drake::multibody::JointIndex*,
     drake::geometry::GeometryId*,
     drake::geometry::GeometryId*) {
   throw std::runtime_error("ConstructBallPaddlePlant doesn't support "
@@ -44,14 +40,10 @@ void ConstructBallPaddlePlant(
 
 template <>
 void ConstructBallPaddlePlant(
-    double /*paddle_mass*/, double /*ball_mass*/, double /*ball_radius*/,
-    const Eigen::Vector3d& /*paddle_size*/,
-    const std::optional<drake::math::RigidTransform<double>>& paddle_fixed_pose,
+    const drake::math::RigidTransform<double>& paddle_fixed_pose,
     drake::multibody::MultibodyPlant<double>* plant,
     drake::multibody::BodyIndex* paddle_body_id,
     drake::multibody::BodyIndex* ball_body_id,
-    drake::multibody::JointIndex*,
-    drake::multibody::JointIndex*,
     drake::geometry::GeometryId* ball_sphere_geometry_id,
     drake::geometry::GeometryId* paddle_box_geometry_id) {
 
@@ -66,10 +58,8 @@ void ConstructBallPaddlePlant(
   *paddle_box_geometry_id =
       plant->GetCollisionGeometriesForBody(paddle_body).at(0);
 
-  if (paddle_fixed_pose.has_value()) {
-    plant->WeldFrames(plant->world_frame(), paddle_body.body_frame(),
-                      paddle_fixed_pose.value());
-  }
+  plant->WeldFrames(plant->world_frame(), paddle_body.body_frame(),
+                    paddle_fixed_pose);
 
   // Now add the ball.
   const std::string ball_sdf_file_name =
@@ -90,7 +80,7 @@ void ConstructBallPaddlePlant(
 template <typename T>
 BallPaddle<T>::BallPaddle(
     double time_step,
-    const std::optional<drake::math::RigidTransformd>& p_WPaddle_fixed)
+    const drake::math::RigidTransformd& p_WPaddle_fixed)
     : owned_plant_(std::make_unique<MultibodyPlant<T>>(time_step)),
       owned_scene_graph_(std::make_unique<SceneGraph<T>>()) {
   plant_ = owned_plant_.get();
@@ -103,11 +93,9 @@ BallPaddle<T>::BallPaddle(
 
 template <typename T>
 void BallPaddle<T>::SetupPlant(
-    const std::optional<drake::math::RigidTransformd>& p_WPaddle_fixed) {
-  ConstructBallPaddlePlant(paddle_mass_, ball_mass_, ball_radius_, paddle_size_,
-                           p_WPaddle_fixed, plant_, &paddle_body_id_,
-                           &ball_body_id_, &paddle_translate_y_joint_index_,
-                           &paddle_translate_z_joint_index_,
+    const drake::math::RigidTransformd& p_WPaddle_fixed) {
+  ConstructBallPaddlePlant(p_WPaddle_fixed, plant_,
+                           &paddle_body_id_, &ball_body_id_,
                            &ball_sphere_geometry_id_, &paddle_box_geometry_id_);
 }
 

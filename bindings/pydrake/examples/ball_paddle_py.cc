@@ -24,8 +24,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "BallPaddle", param);
     cls  // BR
         .def(py::init<double,
-                 const std::optional<drake::math::RigidTransformd>&>(),
-            py::arg("time_step"), py::arg("p_WPaddle_fixed") = std::nullopt)
+                 const drake::math::RigidTransformd&>(),
+            py::arg("time_step"), py::arg("p_WPaddle_fixed"))
         .def("plant", &Class::plant, drake::pydrake::py_rvp::reference_internal)
         .def("scene_graph", &Class::scene_graph,
             drake::pydrake::py_rvp::reference_internal)
@@ -35,25 +35,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             drake::pydrake::py_rvp::reference_internal)
         .def("ball_body", &Class::ball_body,
             drake::pydrake::py_rvp::reference_internal)
-        .def("paddle_translate_y_joint", &Class::paddle_translate_y_joint,
-            drake::pydrake::py_rvp::reference_internal)
-        .def("paddle_translate_z_joint", &Class::paddle_translate_z_joint,
-            drake::pydrake::py_rvp::reference_internal)
-        .def("AddToBuilder", &Class::AddToBuilder, py::arg("builder"))
-        .def("ball_mass", &Class::ball_mass)
-        .def("paddle_mass", &Class::paddle_mass)
-        .def("ball_radius", &Class::ball_radius)
-        .def("paddle_size", &Class::paddle_size);
+        .def("AddToBuilder", &Class::AddToBuilder, py::arg("builder"));
   }
 
   {
     drake::pydrake::AddTemplateFunction(m, "ConstructBallPaddlePlant",
         &ConstructBallPaddlePlant<T>, drake::pydrake::GetPyParam<T>(),
-        py::arg("paddle_mass"), py::arg("ball_mass"), py::arg("ball_radius"),
-        py::arg("paddle_size"), py::arg("paddle_fixed_pose"), py::arg("plant"),
+        py::arg("paddle_fixed_pose"), py::arg("plant"),
         py::arg("paddle_body_id"), py::arg("ball_body_id"),
-        py::arg("paddle_translate_y_joint_index"),
-        py::arg("paddle_translate_z_joint_index"),
         py::arg("ball_sphere_geometry_id"), py::arg("paddle_box_geometry_id"));
   }
 }

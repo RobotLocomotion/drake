@@ -14,14 +14,10 @@ namespace examples {
 
 template <typename T>
 void ConstructBallPaddlePlant(
-    double paddle_mass, double ball_mass, double ball_radius,
-    const Eigen::Vector3d& paddle_size,
-    const std::optional<drake::math::RigidTransform<double>>& paddle_fixed_pose,
+    const drake::math::RigidTransform<double>& paddle_fixed_pose,
     drake::multibody::MultibodyPlant<T>* plant,
     drake::multibody::BodyIndex* paddle_body_id,
     drake::multibody::BodyIndex* ball_body_id,
-    drake::multibody::JointIndex* paddle_translate_y_joint_index,
-    drake::multibody::JointIndex* paddle_translate_z_joint_index,
     drake::geometry::GeometryId* ball_sphere_geometry_id,
     drake::geometry::GeometryId* paddle_box_geometry_id);
 
@@ -38,8 +34,7 @@ class BallPaddle {
    * Default to std::nullopt, which means the paddle is not fixed.
    */
   explicit BallPaddle(double time_step,
-                      const std::optional<drake::math::RigidTransformd>&
-                          p_WPaddle_fixed = std::nullopt);
+                      const drake::math::RigidTransformd& p_WPaddle_fixed);
 
   const drake::multibody::MultibodyPlant<T>& plant() const { return *plant_; }
 
@@ -63,14 +58,6 @@ class BallPaddle {
     return plant_->get_body(ball_body_id_);
   }
 
-  const drake::multibody::Joint<T>& paddle_translate_y_joint() const {
-    return plant_->get_joint(paddle_translate_y_joint_index_);
-  }
-
-  const drake::multibody::Joint<T>& paddle_translate_z_joint() const {
-    return plant_->get_joint(paddle_translate_z_joint_index_);
-  }
-
   /**
    * Builds a diagram that contains the ball paddle MultibodyPlant and
    * SceneGraph. Note that we don't call builder.Build() inside this function,
@@ -78,22 +65,9 @@ class BallPaddle {
    */
   void AddToBuilder(drake::systems::DiagramBuilder<T>* builder);
 
-  double ball_mass() const { return ball_mass_; }
-
-  double paddle_mass() const { return paddle_mass_; }
-
-  double ball_radius() const { return ball_radius_; }
-
-  const Eigen::Vector3d& paddle_size() const { return paddle_size_; }
-
  private:
   void SetupPlant(
-      const std::optional<drake::math::RigidTransformd>& p_WPaddle_fixed);
-
-  const double paddle_mass_{5000.};
-  const double ball_mass_{0.1};
-  const double ball_radius_{0.02};
-  const Eigen::Vector3d paddle_size_{1, 1, 0.4};
+      const drake::math::RigidTransformd& p_WPaddle_fixed);
 
   std::unique_ptr<drake::multibody::MultibodyPlant<T>> owned_plant_;
   std::unique_ptr<drake::geometry::SceneGraph<T>> owned_scene_graph_;
@@ -103,9 +77,6 @@ class BallPaddle {
 
   drake::multibody::BodyIndex paddle_body_id_;
   drake::multibody::BodyIndex ball_body_id_;
-
-  drake::multibody::JointIndex paddle_translate_y_joint_index_;
-  drake::multibody::JointIndex paddle_translate_z_joint_index_;
 
   drake::geometry::GeometryId ball_sphere_geometry_id_;
   drake::geometry::GeometryId paddle_box_geometry_id_;
