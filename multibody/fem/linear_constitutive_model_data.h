@@ -16,7 +16,7 @@ namespace internal {
 
  See LinearConstitutiveModel for how the data is used. See
  DeformationGradientData for more about constitutive model data.
- @tparam_nonsymbolic_scalar.
+ @tparam_nonsymbolic_scalar
  @tparam num_locations Number of locations at which the deformation gradient
  dependent quantities are evaluated. We currently only provide one instantiation
  of this template with `num_locations = 1`, but more instantiations can easily

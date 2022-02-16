@@ -11,9 +11,11 @@
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/geometry/render/render_camera.h"
+#include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/sensors/image.h"
 
 namespace drake {
 namespace geometry {

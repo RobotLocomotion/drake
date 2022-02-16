@@ -1,6 +1,7 @@
 #include "drake/multibody/contact_solvers/test/multibody_sim_driver.h"
 
 #include "drake/geometry/drake_visualizer.h"
+#include "drake/geometry/proximity_properties.h"
 
 namespace drake {
 namespace multibody {

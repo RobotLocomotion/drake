@@ -14,6 +14,7 @@
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"

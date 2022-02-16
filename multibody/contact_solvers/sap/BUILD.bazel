@@ -32,6 +32,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "contact_problem_graph",
+    srcs = ["contact_problem_graph.cc"],
+    hdrs = ["contact_problem_graph.h"],
+    deps = [
+        "//common:essential",
+        "//common:sorted_pair",
+    ],
+)
+
 drake_cc_googletest(
     name = "sap_constraint_test",
     deps = [
@@ -43,6 +53,13 @@ drake_cc_googletest(
     name = "sap_contact_problem_test",
     deps = [
         ":sap_contact_problem",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_problem_graph_test",
+    deps = [
+        ":contact_problem_graph",
     ],
 )
 

@@ -81,7 +81,9 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
 
 template <typename T>
 SceneGraph<T>::SceneGraph()
-    : LeafSystem<T>(SystemTypeTag<SceneGraph>{}) {
+    : LeafSystem<T>(SystemTypeTag<SceneGraph>{}),
+      owned_model_(std::make_unique<GeometryState<T>>()),
+      model_(*owned_model_) {
   model_inspector_.set(&model_);
   geometry_state_index_ =
       this->DeclareAbstractParameter(GeometryStateValue<T>());
@@ -127,6 +129,9 @@ SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
     DRAKE_DEMAND(new_ports.pose_port == ref_ports.pose_port);
   }
 }
+
+template <typename T>
+SceneGraph<T>::~SceneGraph() = default;
 
 template <typename T>
 SourceId SceneGraph<T>::RegisterSource(const std::string& name) {

@@ -340,10 +340,6 @@ def _install_java_launcher_actions(
             rename,
             warn_foreign = False,
         )
-
-        # Adding double quotes around the generated scripts to avoid
-        # white-space problems when running the generated shell script. This
-        # string is used in a "for-loop" in the script.
         classpath.append(join_paths("$prefix", jar_install.dst))
 
     # Compute destination file name.
