@@ -13,6 +13,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/mesh_traits.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -80,12 +81,14 @@ inline bool operator!=(const VolumeElement& e1, const VolumeElement& e2) {
 
 namespace internal {
 // Forward declaration for friend declaration.
-template <typename> class MeshDeformer;
+template <typename>
+class MeshDeformer;
 }  // namespace internal
 
 // Forward declaration of VolumeMeshTester<T>. VolumeMesh<T> will grant
 // friend access to VolumeMeshTester<T>.
-template <typename T> class VolumeMeshTester;
+template <typename T>
+class VolumeMeshTester;
 
 /** %VolumeMesh represents a tetrahedral volume mesh.
  @tparam T  The underlying scalar type for coordinates, e.g., double or
@@ -297,6 +300,9 @@ class VolumeMesh {
     }
     return gradu_M;
   }
+
+  /* Apply the given rigid transform to all vertices in the volume mesh. */
+  void TransformVertices(const math::RigidTransform<T>& transform);
 
  private:
   // Client attorney class that provides a means to modify vertex positions.
