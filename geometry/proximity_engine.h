@@ -52,7 +52,7 @@ namespace internal {
  <h3>Geometry proximity properties</h3>
  -->
 
- @tparam_nonsymbolic_scalar
+ @tparam_default_scalar
 
  @internal Historically, this replaces the DrakeCollision::Model class.  */
 template <typename T>
@@ -75,10 +75,11 @@ class ProximityEngine {
    engine will be returned to its default-initialized state.  */
   ProximityEngine& operator=(ProximityEngine&& other) noexcept;
 
-  /* Returns an independent copy of this engine templated on the AutoDiffXd
-   scalar type. If the engine is already an AutoDiffXd engine, it is equivalent
-   to using the copy constructor to create a duplicate on the heap.  */
-  std::unique_ptr<ProximityEngine<AutoDiffXd>> ToAutoDiffXd() const;
+  /* Returns an independent copy of this engine templated on a scalar type. If
+   T=U, it is equivalent to using the copy constructor to create a duplicate on
+   the heap. */
+  template <typename U>
+  std::unique_ptr<ProximityEngine<U>> ToScalarType() const;
 
   /* Provides access to the mutable collision filter this engine uses. */
   CollisionFilter& collision_filter();
@@ -223,7 +224,10 @@ class ProximityEngine {
   /* Implementation of GeometryState::ComputeContactSurfaces().
    @param X_WGs the current poses of all geometries in World in the
                 current scalar type, keyed on each geometry's GeometryId.  */
-  std::vector<ContactSurface<T>> ComputeContactSurfaces(
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool,
+                            std::vector<ContactSurface<T>>>
+  ComputeContactSurfaces(
       HydroelasticContactRepresentation representation,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
       const;
@@ -231,7 +235,9 @@ class ProximityEngine {
   /* Implementation of GeometryState::ComputeContactSurfacesWithFallback().
    @param X_WGs the current poses of all geometries in World in the
                 current scalar type, keyed on each geometry's GeometryId.  */
-  void ComputeContactSurfacesWithFallback(
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+  ComputeContactSurfacesWithFallback(
       HydroelasticContactRepresentation representation,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       std::vector<ContactSurface<T>>* surfaces,

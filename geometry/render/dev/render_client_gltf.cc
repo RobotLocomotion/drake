@@ -1,11 +1,13 @@
 #include "drake/geometry/render/dev/render_client_gltf.h"
 
 #include <atomic>
+#include <cstdio>
 
 #include <vtkCamera.h>
 #include <vtkGLTFExporter.h>
 #include <vtkMatrix4x4.h>
 #include <vtkTransform.h>
+#include <vtkVersionMacros.h>
 
 #include "drake/common/filesystem.h"
 #include "drake/common/text_logging.h"
@@ -27,6 +29,11 @@ int64_t GetNextSceneId() {
   static drake::never_destroyed<std::atomic<int64_t>> global_scene_id;
   return ++(global_scene_id.access());
 }
+
+/* RenderClientGltf always produces a gltf+json file.  See also:
+ https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#_media_type_registrations
+ */
+std::string MimeType() { return "model/gltf+json"; }
 
 /* Drake uses an explicit projection matrix with RenderEngineVtk to fine tune
  the displayed viewing frustum tailored to the sensor being rendered.  The
@@ -108,6 +115,21 @@ void LogFrameServerResponsePath(internal::ImageType image_type,
       ImageTypeToString(image_type), path);
 }
 
+// Delete the file and log if verbose, only call if no_cleanup() == false.
+void DeleteFileAndLogIfVerbose(const std::string& path, bool verbose) {
+  int failed = std::remove(path.c_str());
+  if (verbose) {
+    if (!failed) {
+      drake::log()->debug("RenderClientGltf: deleted unused file '{}'.", path);
+    } else {
+      drake::log()->debug(
+          "RenderClientGltf: unable to delete file '{}' with std::remove "
+          "returning code {}.",
+          path, failed);
+    }
+  }
+}
+
 }  // namespace
 
 RenderClientGltf::RenderClientGltf(const RenderClientGltfParams& parameters)
@@ -116,9 +138,8 @@ RenderClientGltf::RenderClientGltf(const RenderClientGltfParams& parameters)
                        // Same as RenderEngineVtkParams default clear color,
                        // though it's value is irrelevant for this renderer.
                        {204 / 255., 229 / 255., 255 / 255.}}),
-      RenderClient(parameters.url, parameters.port, parameters.upload_endpoint,
-                   parameters.render_endpoint, parameters.verbose,
-                   parameters.no_cleanup) {}
+      RenderClient(parameters.url, parameters.port, parameters.render_endpoint,
+                   parameters.verbose, parameters.no_cleanup) {}
 
 RenderClientGltf::RenderClientGltf(const RenderClientGltf& other)
     : RenderEngineVtk(other), RenderClient(other) {}
@@ -128,40 +149,59 @@ std::unique_ptr<RenderEngine> RenderClientGltf::DoClone() const {
 }
 
 void RenderClientGltf::UpdateViewpoint(const math::RigidTransformd& X_WC) {
-  // TODO(svenevs): remove this once vtkGLTFExporter is patched to invert.
-  // The vtkGLTFExporter sends over the camera's model view transformation, but
-  // it should be sending the inverse of this matrix (bug in vtk that will be
-  // patched), the specification is vague but the matrix for the camera is its
-  // transformation matrix in the world, not transform the world into it.
-  // NOTE: use the inverse of RigidTransformd, which will transpose the rotation
-  // and invert the translation rather than doing a full matrix inverse.
-  const auto drake_transform = X_WC.inverse().GetAsMatrix4();
-  Eigen::Matrix4d coordinate_transform;
-  // clang-format off
-  coordinate_transform << 1.0,  0.0,  0.0, 0.0,
-                          0.0, -1.0,  0.0, 0.0,
-                          0.0,  0.0, -1.0, 0.0,
-                          0.0,  0.0,  0.0, 1.0;
-  // clang-format on
-  Eigen::Matrix4d final_transform =
-      coordinate_transform * drake_transform * coordinate_transform;
-  vtkNew<vtkMatrix4x4> vtk_mat;
-  for (int i = 0; i < 4; ++i) {
-    for (int j = 0; j < 4; ++j) {
-      vtk_mat->SetElement(i, j, final_transform(i, j));
-    }
-  }
-  // Essentially the same thing as RenderEngineVtk::UpdateViewpoint.
-  vtkSmartPointer<vtkTransform> vtk_transform =
-      vtkSmartPointer<vtkTransform>::New();
-  vtk_transform->SetMatrix(vtk_mat.GetPointer());
-  for (auto& pipeline : pipelines_) {
-    auto* camera = pipeline->renderer->GetActiveCamera();
-    camera->SetPosition(0, 0, 0);
-    camera->SetFocalPoint(0, 0, 1);
-    camera->SetViewUp(0, -1, 0);
-    camera->ApplyTransform(vtk_transform);
-  }
+  /* The vtkGLTFExporter populates the camera matrix in "nodes" incorrectly in
+   VTK 9.1.0.  It should be providing the inverted modelview transformation
+   matrix since the "nodes" array is to contain global transformations.  See:
+
+   https://gitlab.kitware.com/vtk/vtk/-/merge_requests/8883
+
+   When VTK is updated, RenderClientGltf::UpdateViewpoint, can be deleted as
+   RenderEngineVtk::UpdateViewpoint will correctly update the transforms on the
+   cameras. */
+#if VTK_VERSION_NUMBER > VTK_VERSION_CHECK(9, 1, 0)
+#error "UpdateViewpoint can be removed, modified transform no longer needed."
+#endif
+  /* Build the alternate transform, which consists of both an inversion of the
+   input transformation as well as a coordinate system inversion.  For the
+   coordinate inversion, we must account for:
+
+   1. VTK and drake have inverted Y axis directions.
+   2. The camera Z axis needs to be pointing in the opposite direction.
+
+   RenderEngineVtk::UpdateViewpoint will result in the vtkCamera instance's
+   SetPosition, SetFocalPoint, and SetViewUp methods being called, followed by
+   applying the transform from drake.  See implementation of vtkCamera in VTK,
+   the Set{Position,FocalPoint,ViewUp} methods result in the camera internally
+   recomputing its basis -- users do not have the ability to directly control
+   the modelview transform.  So we engineer a drake transform to pass back to
+   RenderEngineVtk::UpdateViewpoint that will result in the final vtkCamera
+   having an inverted modelview transformation than what would be needed to
+   render so that the vtkGLTFExporter will export the "correct" matrix.
+
+   When performing this coordinate-system "hand-change", we seek to invert
+   both the y and z axes.  The way to do this would be to use the identity
+   matrix with the axes being changed scaled by -1 (the "hand change") and
+   both pre and post multiply the matrix being changed:
+
+   | 1  0  0  0 |   | a  b  c  d |   | 1  0  0  0 |   |  a -b -c  d |
+   | 0 -1  0  0 | * | e  f  g  h | * | 0 -1  0  0 | = | -e  f  g -h |
+   | 0  0 -1  0 |   | i  j  k  l |   | 0  0 -1  0 |   | -i  j  k -l |
+   | 0  0  0  1 |   | m  n  o  p |   | 0  0  0  1 |   |  m -n -o  p |
+
+   which we can build directly, noting that the last row | m -n -o p | will be
+   | 0 0 0 1 | (homogeneous row) and can therefore be skipped.
+
+   NOTE: use the inverse of RigidTransformd, which will transpose the rotation
+   and negate the translation rather than doing a full matrix inverse. */
+  Eigen::Matrix4d hacked_matrix{X_WC.inverse().GetAsMatrix4()};
+  hacked_matrix(0, 1) *= -1.0;  // -b
+  hacked_matrix(0, 2) *= -1.0;  // -c
+  hacked_matrix(1, 0) *= -1.0;  // -e
+  hacked_matrix(1, 3) *= -1.0;  // -h
+  hacked_matrix(2, 0) *= -1.0;  // -i
+  hacked_matrix(2, 3) *= -1.0;  // -l
+  math::RigidTransformd X_WC_hacked{hacked_matrix};
+  RenderEngineVtk::UpdateViewpoint(X_WC_hacked);
 }
 
 void RenderClientGltf::DoRenderColorImage(const ColorRenderCamera& camera,
@@ -186,14 +226,16 @@ void RenderClientGltf::DoRenderColorImage(const ColorRenderCamera& camera,
     LogFrameGltfExportPath(internal::ImageType::kColor, scene_path);
   }
 
-  const std::string image_path =
-      UploadAndRender(camera.core(), internal::ImageType::kColor, scene_path);
+  const std::string image_path = RenderOnServer(
+      camera.core(), InternalToRenderImageType(internal::ImageType::kColor),
+      scene_path, MimeType());
   if (verbose()) {
     LogFrameServerResponsePath(internal::ImageType::kColor, image_path);
   }
 
   // Load the returned image back to the drake buffer.
   LoadColorImage(image_path, color_image_out);
+  if (!no_cleanup()) CleanupFrame(scene_path, image_path);
 }
 
 void RenderClientGltf::DoRenderDepthImage(
@@ -219,15 +261,16 @@ void RenderClientGltf::DoRenderDepthImage(
 
   const double min_depth = camera.depth_range().min_depth();
   const double max_depth = camera.depth_range().max_depth();
-  const std::string image_path =
-      UploadAndRender(camera.core(), internal::ImageType::kDepth, scene_path,
-                      min_depth, max_depth);
+  const std::string image_path = RenderOnServer(
+      camera.core(), InternalToRenderImageType(internal::ImageType::kDepth),
+      scene_path, MimeType(), min_depth, max_depth);
   if (verbose()) {
     LogFrameServerResponsePath(internal::ImageType::kDepth, image_path);
   }
 
   // Load the returned image back to the drake buffer.
   LoadDepthImage(image_path, depth_image_out);
+  if (!no_cleanup()) CleanupFrame(scene_path, image_path);
 }
 
 void RenderClientGltf::DoRenderLabelImage(
@@ -252,14 +295,16 @@ void RenderClientGltf::DoRenderLabelImage(
     LogFrameGltfExportPath(internal::ImageType::kLabel, scene_path);
   }
 
-  const std::string image_path =
-      UploadAndRender(camera.core(), internal::ImageType::kLabel, scene_path);
+  const std::string image_path = RenderOnServer(
+      camera.core(), InternalToRenderImageType(internal::ImageType::kLabel),
+      scene_path, MimeType());
   if (verbose()) {
     LogFrameServerResponsePath(internal::ImageType::kLabel, image_path);
   }
 
   // Load the returned image back to the drake buffer.
   LoadLabelImage(image_path, label_image_out);
+  if (!no_cleanup()) CleanupFrame(scene_path, image_path);
 }
 
 std::string RenderClientGltf::ExportPathFor(internal::ImageType image_type,
@@ -283,21 +328,10 @@ std::string RenderClientGltf::ExportScene(internal::ImageType image_type,
   return scene_path;
 }
 
-std::string RenderClientGltf::UploadAndRender(const RenderCameraCore& core,
-                                              internal::ImageType image_type,
-                                              const std::string& scene_path,
-                                              double min_depth,
-                                              double max_depth) const {
-  if (image_type == internal::ImageType::kDepth)
-    ValidDepthRangeOrThrow(min_depth, max_depth);
-
-  const std::string scene_sha256 = ComputeSha256(scene_path);
-  /* NOTE: for the mime type, the VTK glTF export produces base64 encoded data
-   in a single .gltf file, this is "gltf+json" (not the binary format). */
-  auto render_image_type = InternalToRenderImageType(image_type);
-  UploadScene(render_image_type, scene_path, scene_sha256, "model/gltf+json");
-  return RetrieveRender(core, render_image_type, scene_path, scene_sha256,
-                        min_depth, max_depth);
+void RenderClientGltf::CleanupFrame(const std::string& scene_path,
+                                    const std::string& image_path) const {
+  DeleteFileAndLogIfVerbose(scene_path, verbose());
+  DeleteFileAndLogIfVerbose(image_path, verbose());
 }
 
 }  // namespace render

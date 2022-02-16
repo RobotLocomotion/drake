@@ -1187,7 +1187,7 @@ class MathematicalProgram {
    * Adds an L2 norm cost min |Ax+b|₂ as a linear cost min s
    * on the slack variable s, together with a Lorentz cone constraint
    * s ≥ |Ax+b|₂
-   * Many conic optimization solvers (Gurobi, Mosek, SCS, etc) natively prefers
+   * Many conic optimization solvers (Gurobi, MOSEK™, SCS, etc) natively prefers
    * this form of linear cost + conic constraints. So if you are going to use
    * one of these conic solvers, then add the L2 norm cost using this function
    * instead of AddL2NormCost().

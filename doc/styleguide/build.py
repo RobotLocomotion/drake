@@ -36,7 +36,7 @@ def _build(*, out_dir, temp_dir):
     # Create a hermetic copy of our input.  This helps ensure that only files
     # listed in BUILD.bazel will render onto the website.
     symlink_input(
-        "drake/doc/styleguide/jekyll_input.txt", temp_dir,
+        "drake/doc/styleguide/jekyll_input.txt", temp_dir, copy=True,
         strip_prefix=[
             "drake/doc/styleguide/",
             "styleguide/",

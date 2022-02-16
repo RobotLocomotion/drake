@@ -6,6 +6,10 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/text_logging.h"
+#include "drake/multibody/tree/ball_rpy_joint.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/weld_joint.h"
 
 namespace drake {
 namespace multibody {
@@ -97,9 +101,8 @@ GTEST_TEST(MujocoParser, GeometryTypes) {
                         std::nullopt, &plant);
   const SceneGraphInspector<double>& inspector = scene_graph.model_inspector();
 
-  auto CheckShape = [&inspector](
-                        const std::string& geometry_name,
-                        const std::string& shape_name) {
+  auto CheckShape = [&inspector](const std::string& geometry_name,
+                                 const std::string& shape_name) {
     GeometryId geom_id = inspector.GetGeometryIdByName(
         inspector.world_frame_id(), Role::kProximity, geometry_name);
     EXPECT_EQ(geometry::ShapeName(inspector.GetShape(geom_id)).name(),
@@ -521,6 +524,183 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
                        1.23, Vector3d{1, 2, 3}, I_BFo_B));
 }
 
+GTEST_TEST(MujocoParser, Joint) {
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+
+  std::string xml = R"""(
+<mujoco model="test">
+  <default>
+    <geom type="sphere" size="1"/>
+  </default>
+  <worldbody>
+    <body name="freejoint" pos="1 2 3" euler="30 45 60">
+      <freejoint name="freejoint"/>
+    </body>
+    <body name="free" pos="1 2 3" euler="30 45 60">
+      <joint type="free" name="free"/>
+    </body>
+    <body name="ball" pos="1 2 3" euler="30 45 60">
+      <joint type="ball" name="ball" damping="0.1" pos=".1 .2 .3"/>
+    </body>
+    <body name="slide" pos="1 2 3" euler="30 45 60">
+      <joint type="slide" name="slide" damping="0.2" pos=".1 .2 .3" 
+             axis="1 0 0" limited="true" range="-2 1.5"/>
+    </body>
+    <body name="hinge" pos="1 2 3" euler="30 45 60">
+      <joint type="hinge" name="hinge" damping="0.3" pos=".1 .2 .3"
+             axis="0 1 0" limited="true" range="-30 60"/>
+    </body>
+    <body name="default" pos="1 2 3" euler="30 45 60">
+      <!-- without the limited=true tag -->
+      <joint name="default" damping="0.4" range="-20 15"/>
+    </body>
+    <body name="weld" pos="1 2 3" euler="30 45 60"/>
+    <body name="two_hinges" pos="1 2 3" euler="30 45 60">
+      <joint type="hinge" name="hinge1" damping="0.5" pos=".1 .2 .3"
+             axis="1 0 0"/>
+      <joint type="hinge" name="hinge2" damping="0.6" pos=".1 .2 .3"
+             axis="0 1 0"/>
+    </body>
+    <body name="default_joint"> 
+      <!-- provides code coverage for defaults logic. -->
+      <joint/>
+    </body>
+  </worldbody>
+</mujoco>
+)""";
+
+  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml}, "test",
+                        std::nullopt, &plant);
+  plant.Finalize();
+
+  auto context = plant.CreateDefaultContext();
+
+  RigidTransformd X_WB(RollPitchYawd{M_PI / 6.0, M_PI / 4.0, M_PI / 3.0},
+                       Vector3d{1.0, 2.0, 3.0});
+  Vector3d pos{.1, .2, .3};
+
+  const Body<double>& freejoint_body = plant.GetBodyByName("freejoint");
+  EXPECT_FALSE(plant.HasJointNamed("freejoint"));
+  EXPECT_TRUE(freejoint_body.is_floating());
+  EXPECT_TRUE(plant.GetFreeBodyPose(*context, freejoint_body)
+                  .IsNearlyEqualTo(X_WB, 1e-14));
+
+  const Body<double>& free_body = plant.GetBodyByName("free");
+  EXPECT_FALSE(plant.HasJointNamed("free"));
+  EXPECT_TRUE(free_body.is_floating());
+  EXPECT_TRUE(
+      plant.GetFreeBodyPose(*context, free_body).IsNearlyEqualTo(X_WB, 1e-14));
+
+  const BallRpyJoint<double>& ball_joint =
+      plant.GetJointByName<BallRpyJoint>("ball");
+  EXPECT_EQ(ball_joint.damping(), 0.1);
+  EXPECT_TRUE(ball_joint.frame_on_parent()
+                  .CalcPoseInBodyFrame(*context)
+                  .IsNearlyEqualTo(RigidTransformd(pos), 1e-14));
+  EXPECT_TRUE(
+      plant.GetBodyByName("ball").EvalPoseInWorld(*context).IsNearlyEqualTo(
+          X_WB, 1e-14));
+
+  const PrismaticJoint<double>& slide_joint =
+      plant.GetJointByName<PrismaticJoint>("slide");
+  EXPECT_EQ(slide_joint.damping(), 0.2);
+  EXPECT_TRUE(slide_joint.frame_on_parent()
+                  .CalcPoseInBodyFrame(*context)
+                  .IsNearlyEqualTo(RigidTransformd(pos), 1e-14));
+  EXPECT_TRUE(
+      CompareMatrices(slide_joint.translation_axis(), Vector3d{1, 0, 0}));
+  EXPECT_TRUE(
+      plant.GetBodyByName("slide").EvalPoseInWorld(*context).IsNearlyEqualTo(
+          X_WB, 1e-14));
+  EXPECT_TRUE(CompareMatrices(
+      plant.GetJointByName("slide").position_lower_limits(), Vector1d{-2.0}));
+  EXPECT_TRUE(CompareMatrices(
+      plant.GetJointByName("slide").position_upper_limits(), Vector1d{1.5}));
+
+  const RevoluteJoint<double>& hinge_joint =
+      plant.GetJointByName<RevoluteJoint>("hinge");
+  EXPECT_EQ(hinge_joint.damping(), 0.3);
+  EXPECT_TRUE(hinge_joint.frame_on_parent()
+                  .CalcPoseInBodyFrame(*context)
+                  .IsNearlyEqualTo(RigidTransformd(pos), 1e-14));
+  EXPECT_TRUE(CompareMatrices(hinge_joint.revolute_axis(), Vector3d{0, 1, 0}));
+  EXPECT_TRUE(
+      plant.GetBodyByName("hinge").EvalPoseInWorld(*context).IsNearlyEqualTo(
+          X_WB, 1e-14));
+  EXPECT_TRUE(
+      CompareMatrices(plant.GetJointByName("hinge").position_lower_limits(),
+                      Vector1d{-M_PI/6.0}, 1e-14));
+  EXPECT_TRUE(
+      CompareMatrices(plant.GetJointByName("hinge").position_upper_limits(),
+                      Vector1d{M_PI/3.0}, 1e-14));
+
+  const RevoluteJoint<double>& default_joint =
+      plant.GetJointByName<RevoluteJoint>("default");
+  EXPECT_EQ(default_joint.damping(), 0.4);
+  EXPECT_TRUE(default_joint.frame_on_parent()
+                  .CalcPoseInBodyFrame(*context)
+                  .IsNearlyIdentity(1e-14));
+  EXPECT_TRUE(
+      CompareMatrices(default_joint.revolute_axis(), Vector3d{0, 0, 1}));
+  EXPECT_TRUE(
+      plant.GetBodyByName("default").EvalPoseInWorld(*context).IsNearlyEqualTo(
+          X_WB, 1e-14));
+  EXPECT_TRUE(CompareMatrices(
+      plant.GetJointByName("default").position_lower_limits(),
+      Vector1d{-std::numeric_limits<double>::infinity()}));
+  EXPECT_TRUE(
+      CompareMatrices(plant.GetJointByName("default").position_upper_limits(),
+                      Vector1d{std::numeric_limits<double>::infinity()}));
+
+  const RevoluteJoint<double>& hinge1_joint =
+      plant.GetJointByName<RevoluteJoint>("hinge1");
+  EXPECT_EQ(hinge1_joint.damping(), 0.5);
+  EXPECT_TRUE(CompareMatrices(hinge1_joint.revolute_axis(), Vector3d{1, 0, 0}));
+  EXPECT_TRUE(hinge1_joint.frame_on_parent()
+                  .CalcPoseInBodyFrame(*context)
+                  .IsNearlyEqualTo(RigidTransformd(pos), 1e-14));
+  const RevoluteJoint<double>& hinge2_joint =
+      plant.GetJointByName<RevoluteJoint>("hinge2");
+  EXPECT_EQ(hinge2_joint.damping(), 0.6);
+  EXPECT_TRUE(CompareMatrices(hinge2_joint.revolute_axis(), Vector3d{0, 1, 0}));
+  EXPECT_TRUE(hinge2_joint.frame_on_parent()
+                  .CalcPoseInBodyFrame(*context)
+                  .IsNearlyEqualTo(RigidTransformd(pos), 1e-14));
+  EXPECT_TRUE(plant.GetBodyByName("two_hinges")
+                  .EvalPoseInWorld(*context)
+                  .IsNearlyEqualTo(X_WB, 1e-14));
+
+  EXPECT_TRUE(
+      plant.GetBodyByName("weld").EvalPoseInWorld(*context).IsNearlyEqualTo(
+          X_WB, 1e-14));
+  const WeldJoint<double>& weld_joint =
+      plant.GetJointByName<WeldJoint>("WorldBody_welds_to_weld");
+  EXPECT_TRUE(weld_joint.X_PC().IsNearlyEqualTo(X_WB, 1e-14));
+}
+
+GTEST_TEST(MujocoParser, JointThrows) {
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+
+  std::string xml = R"""(
+<mujoco model="test">
+  <worldbody>
+    <body name="free" pos="1 2 3" euler="30 45 60">
+      <joint type="free" name="free"/>
+      <joint type="hinge"/>
+    </body>
+  </worldbody>
+</mujoco>
+)""";
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml},
+                            "test", std::nullopt, &plant),
+      ".*a free joint is defined.*");
+}
 
 }  // namespace
 }  // namespace internal

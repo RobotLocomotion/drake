@@ -9,6 +9,7 @@ import os.path
 from os.path import join
 from socketserver import ThreadingTCPServer
 import shlex
+import shutil
 import subprocess
 from subprocess import PIPE, STDOUT
 import tempfile
@@ -24,7 +25,8 @@ def verbose():
     return _verbose
 
 
-def symlink_input(filegroup_resource_path, temp_dir, strip_prefix=None):
+def symlink_input(filegroup_resource_path, temp_dir, strip_prefix=None,
+                  copy=False):
     """Symlinks a rule's input data into a temporary directory.
 
     This is useful both to create a hermetic set of inputs to pass to a
@@ -38,6 +40,7 @@ def symlink_input(filegroup_resource_path, temp_dir, strip_prefix=None):
         strip_prefix: Optional; a list[str] of candidate strings to remove
           from the resource path when linking into temp_dir.  The first match
           wins, and it is valid for no prefixes to match.
+        copy: Optional; if True, copies rather than linking.
     """
     assert os.path.isdir(temp_dir)
     manifest = runfiles.Create()
@@ -53,7 +56,10 @@ def symlink_input(filegroup_resource_path, temp_dir, strip_prefix=None):
                 break
         temp_name = join(temp_dir, dest_name)
         os.makedirs(os.path.dirname(temp_name), exist_ok=True)
-        os.symlink(orig_name, temp_name)
+        if copy:
+            shutil.copy(orig_name, temp_name)
+        else:
+            os.symlink(orig_name, temp_name)
 
 
 def check_call(args, *, cwd=None):
@@ -79,6 +85,35 @@ def check_call(args, *, cwd=None):
             print(echo, flush=True)
             print(proc.stdout, end='', flush=True)
     proc.check_returncode()
+
+
+def perl_cleanup_html_output(*, out_dir, extra_perl_statements=None):
+    """Runs a cleanup pass over all HTML output files, using a set of built-in
+    fixups. Calling code may pass its own extra statements, as well.
+    """
+    # Collect the list of all HTML output files.
+    html_files = []
+    for dirpath, _, filenames in os.walk(out_dir):
+        for filename in filenames:
+            if filename.endswith(".html"):
+                html_files.append(os.path.relpath(
+                    os.path.join(dirpath, filename), out_dir))
+
+    # Figure out what to do.
+    default_perl_statements = [
+        # Add trademark hyperlink.
+        r's#™#<a href="/tm.html">™</a>#g;',
+    ]
+    perl_statements = default_perl_statements + (extra_perl_statements or [])
+    for x in perl_statements:
+        assert x.endswith(';'), x
+
+    # Do it.
+    while html_files:
+        # Work in batches of 100, so we don't overflow the argv limit.
+        first, html_files = html_files[:100], html_files[100:]
+        check_call(["perl", "-pi", "-e", "".join(perl_statements)] + first,
+                   cwd=out_dir)
 
 
 def _call_build(*, build, out_dir):
@@ -155,6 +190,11 @@ def _do_generate(*, build, out_dir, on_error):
     print("Generating HTML ...")
     pages = _call_build(build=build, out_dir=out_dir)
     assert len(pages) > 0
+    # Disallow symlinks in the output dir.
+    for root, dirs, _ in os.walk(out_dir):
+        for one_dir in dirs:
+            for entry in os.scandir(f"{root}/{one_dir}"):
+                assert not entry.is_symlink(), entry.path
     print("... done")
 
 

@@ -4,12 +4,12 @@ load("@drake//tools/install:install.bzl", "InstallInfo")
 
 # List of exact file names of license files
 LICENSE_LITERALS = [
-    "BSD-LICENSE",  # ccd
+    "BSD-LICENSE",  # @ccd
     "COPYING",
-    "Copyright.txt",  # vtk
-    "EULA.pdf",  # gurobi
+    "Copyright.txt",  # @vtk
+    "EULA.pdf",  # @gurobi
     "LICENSE",
-    "mosek-eula.pdf",  # mosek
+    "mosek-eula.pdf",  # @mosek
 ]
 
 # List of file name prefixes of license files

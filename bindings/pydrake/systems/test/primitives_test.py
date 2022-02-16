@@ -5,13 +5,8 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomDistribution, RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue
 from pydrake.symbolic import Expression, Variable
-from pydrake.systems.analysis import (
-    Simulator,
-    Simulator_,
-)
 from pydrake.systems.framework import (
     BasicVector,
     DiagramBuilder,
@@ -528,6 +523,10 @@ class TestGeneral(unittest.TestCase):
             mlp.GetWeights(params=params, layer=0), np.array([[1], [2]]))
         np.testing.assert_array_equal(
             mlp.GetBiases(params=params, layer=0), np.array([3, 4]))
+        mutable_params = mlp.GetMutableParameters(context=context)
+        mutable_params[:] = 3.0
+        np.testing.assert_array_equal(mlp.GetParameters(context),
+                                      np.full(mlp.num_parameters(), 3.0))
 
         global called_loss
         called_loss = False
@@ -565,7 +564,7 @@ class TestGeneral(unittest.TestCase):
         Y2 = mlp.BatchOutput(context=context, X=np.array([[0.1, 0.3, 0.4]]))
         np.testing.assert_array_equal(Y, Y2)
 
-        mlp2 = MultilayerPerceptron(layers=[1, 2, 3],
+        mlp2 = MultilayerPerceptron(layers=[3, 2, 1],
                                     activation_types=[
                                         PerceptronActivationType.kReLU,
                                         PerceptronActivationType.kTanh
@@ -574,6 +573,14 @@ class TestGeneral(unittest.TestCase):
                          PerceptronActivationType.kReLU)
         self.assertEqual(mlp2.activation_type(1),
                          PerceptronActivationType.kTanh)
+        Y = np.asfortranarray(np.full((1, 3), 2.4))
+        dYdX = np.asfortranarray(np.full((3, 3), 5.3))
+        context2 = mlp2.CreateDefaultContext()
+        mlp2.BatchOutput(context=context2, X=np.eye(3), Y=Y, dYdX=dYdX)
+        # The default context sets the weights and biases to zero, so the
+        # output (and gradients) should be zero.
+        np.testing.assert_array_almost_equal(Y, np.zeros((1, 3)))
+        np.testing.assert_array_almost_equal(dYdX, np.zeros((3, 3)))
 
     def test_random_source(self):
         source = RandomSource(distribution=RandomDistribution.kUniform,

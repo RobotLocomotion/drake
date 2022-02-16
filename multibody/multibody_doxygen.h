@@ -318,31 +318,34 @@ source file. However, each row must be specified on a single line of text. You
 can violate the 80-character style guide limit if you have to, but be
 reasonable! Alternately, use a footnote to avoid running over. -->
 
-Quantity             |Symbol|     Typeset              | Monogram   | Meaningᵃ
----------------------|:----:|:------------------------:|:----------:|----------------------------
-Rotation matrix      |  R   |@f$^BR^C@f$               |`R_BC`      |Frame C's orientation in frame B
-Position vector      |  p   |@f$^Pp^Q@f$               |`p_PQ`      |Position vector from point P to point Q
-Transform/pose       |  X   |@f$^BX^C@f$               |`X_BC`      |Frame C's *rigid* transform (pose) in frame B
-General Transform    |  T   |@f$^BT^C@f$               |`T_BC`      |The relationship between two spaces -- it may be affine, projective, isometric, etc. Every X_AB can be written as T_AB, but not every T_AB can be written as X_AB.
-Angular velocity     |  w   |@f$^B\omega^C@f$          |`w_BC`      |Frame C's angular velocity in frame Bᵃ
-Velocity             |  v   |@f$^Bv^Q@f$               |`v_BQ`      |%Point Q's translational velocity in frame B
-Spatial velocity     |  V   |@f$^BV^{C}@f$             |`V_BC`      |Frame C's spatial velocity in frame B (for point Co)ᵇ
-Spatial velocity     |  V   |@f$^BV^{Cp}@f$            |`V_BCp`     |Frame C's spatial velocity in frame B (for point Cp)ᵇ
-Angular acceleration |alpha |@f$^B\alpha^C@f$          |`alpha_BC`  |Frame C's angular acceleration in frame B
-Acceleration         |  a   |@f$^Ba^Q@f$               |`a_BQ`      |%Point Q's translational acceleration in B
-Spatial acceleration |  A   |@f$^BA^{C}@f$             |`A_BC`      |Frame C's spatial acceleration in frame B (for point Co)ᵇ
-Spatial acceleration |  A   |@f$^BA^{Cp}@f$            |`A_BCp`     |Frame C's spatial acceleration in frame B (for point Cp)ᵇ
-Torque               |  t   |@f$t^{B}@f$               |`t_B`       |Torque on a body (or frame) B
-Force                |  f   |@f$f^{P}@f$               |`f_P`       |Force on a point P
-Spatial force        |  F   |@f$F^{P}@f$               |`F_P`       |Spatial force (torque/force)ᶜ
-Inertia matrix       |  I   |@f$I^{B/Bo}@f$            |`I_BBo`     |Body B's inertia matrix about Bo
-Spatial inertia      |  M   |@f$M^{B/Bo}@f$            |`M_BBo`     |Body B's spatial inertia about Boᵃ
-Spatial momentum     |  L   |@f$^AL^{S/P}@f$           |`L_ASP`     |System S's spatial momentum about point P in frame A
-Spatial momentum     |  L   |@f$^AL^{S/Scm}@f$         |`L_AScm`    |System S's spatial momentum about point Scm in frame A
-Jacobian wrt qᵈ      | Jq   |@f$[J_{q}^{{}^Pp^Q}]_E@f$ |`Jq_p_PQ_E` |Q's position Jacobian from P <b>in</b> E wrt q
-Jacobian wrt q̇       | Jqdot|@f$J_{q̇}^{{}^Bv^Q}@f$     |`Jqdot_v_BQ`|Q's translational velocity Jacobian in B wrt q̇
-Jacobian wrt v       | Jv   |@f$J_{v}^{{}^Bv^Q}@f$     |`Jv_v_BQ`   |Q's translational velocity Jacobian in B wrt v
-Jacobian wrt v       | Jv   |@f$J_{v}^{{}^B\omega^C}@f$|`Jv_w_BC`   |C's angular velocity Jacobian in B wrt v
+Quantity                     |Symbol|     Typeset              | Monogram   | Meaningᵃ
+-----------------------------|:----:|:------------------------:|:----------:|----------------------------
+Rotation matrix              |  R   |@f$^BR^C@f$               |`R_BC`      |Frame C's orientation in frame B
+Position vector              |  p   |@f$^Pp^Q@f$               |`p_PQ`      |Position vector from point P to point Q
+Transform/pose               |  X   |@f$^BX^C@f$               |`X_BC`      |Frame C's *rigid* transform (pose) in frame B
+General Transform            |  T   |@f$^BT^C@f$               |`T_BC`      |The relationship between two spaces -- it may be affine, projective, isometric, etc. Every X_AB can be written as T_AB, but not every T_AB can be written as X_AB.
+Angular velocity             |  w   |@f$^B\omega^C@f$          |`w_BC`      |Frame C's angular velocity in frame Bᵃ
+Velocity                     |  v   |@f$^Bv^Q@f$               |`v_BQ`      |%Point Q's translational velocity in frame B
+Relative velocity            |  v   |@f$^Bv^{Q/P}@f$           |`v_B_PQ`    |%Point Q's translational velocity relative to point P in frame B
+Spatial velocity             |  V   |@f$^BV^{C}@f$             |`V_BC`      |Frame C's spatial velocity in frame B (for point Co)ᵇ
+Relative spatial velocity    |  V   |@f$^BV^{C/D}@f$           |`V_B_DC`    |%Frame C's spatial velocity relative to frame D in frame B
+Angular acceleration         |alpha |@f$^B\alpha^C@f$          |`alpha_BC`  |Frame C's angular acceleration in frame B
+Acceleration                 |  a   |@f$^Ba^Q@f$               |`a_BQ`      |%Point Q's translational acceleration in frame B
+Relative acceleration        |  a   |@f$^Ba^{Q/P}@f$           |`a_B_PQ`    |%Point Q's translational acceleration relative to point P in frame B
+Spatial acceleration         |  A   |@f$^BA^{C}@f$             |`A_BC`      |Frame C's spatial acceleration in frame B (for point Co)ᵇ
+Relative spatial acceleration|  A   |@f$^BA^{C/D}@f$           |`A_B_DC`    |%Frame C's spatial acceleration relative to frame D in frame B
+Torque                       |  t   |@f$\tau^{B}@f$            |`t_B`       |Torque on a body (or frame) B
+Force                        |  f   |@f$f^{P}@f$               |`f_P`       |Force on a point P
+Spatial force                |  F   |@f$F^{B}@f$               |`F_B`       |Spatial force (torque/force) on a body (or frame) Bᶜ
+Inertia matrix               |  I   |@f$I^{B/Bo}@f$            |`I_BBo`     |Body B's inertia matrix about Bo
+Spatial inertia              |  M   |@f$M^{B/Bo}@f$            |`M_BBo`     |Body B's spatial inertia about Boᵃ
+Spatial momentum             |  L   |@f$^BL^{S/P}@f$           |`L_BSP`     |System S's spatial momentum about point P in frame B
+Spatial momentum             |  L   |@f$^BL^{S/Scm}@f$         |`L_BScm`    |System S's spatial momentum about point Scm in frame B
+Kinetic energy               |  K   |@f$^BK^S@f$               |`K_BS`      |System S's kinetic energy in frame B
+Jacobian wrt qᵈ              | Jq   |@f$[J_{q}^{{}^Pp^Q}]_E@f$ |`Jq_p_PQ_E` |%Point Q's position Jacobian from point P <b>in</b> frame E wrt q <SMALL>(<b>in</b> means both measured-in and expressed-in)</SMALL>
+Jacobian wrt q̇               | Jqdot|@f$J_{q̇}^{{}^Bv^Q}@f$     |`Jqdot_v_BQ`|%Point Q's translational velocity Jacobian in frame B wrt q̇
+Jacobian wrt v               | Jv   |@f$J_{v}^{{}^Bv^Q}@f$     |`Jv_v_BQ`   |%Point Q's translational velocity Jacobian in frame B wrt v
+Jacobian wrt v               | Jv   |@f$J_{v}^{{}^B\omega^C}@f$|`Jv_w_BC`   |%Frame C's angular velocity Jacobian in frame B wrt v
 
 ᵃ In code, a vector has an expressed-in-frame which appears after the quantity.
 <br>Example: `w_BC_E` is C's angular velocity in B, expressed in frame E, typeset
@@ -361,11 +364,13 @@ body D's translational and spatial velocity are for point Do (the origin of
 D's body frame), not for Dcm (D's center of mass).
 See @ref multibody_frames_and_bodies for more information.
 
-ᶜ It is often useful to <b>replace</b> a set of forces by an equivalent set
-with a force @f$f^{P}@f$ (equal to the set's resultant) placed at an arbitrary
-point P, together with a torque @f$t@f$ equal to the moment of the set about
-P.  A spatial force Fᴾ containing @f$t@f$ and @f$f^P@f$ can represent this
-replacement.
+ᶜ It is often useful to <b>replace</b> a set of forces on a body or frame B by
+an equivalent set with a force @f$f^{Bo}@f$ (equal to the set's resultant)
+placed at Bo, together with a torque @f$\tau@f$ equal to the moment of the set
+about Bo. A spatial force Fᴮᵒ containing @f$\tau@f$ and @f$f^{Bo}@f$ represents
+this replacement. Note: the spatial force Fᴮ is shorthand for Fᴮᵒ (i.e., the
+about-point is B's origin Bo). The monogram notation F_Bcm is useful when the
+about-point is Bcm (body B's center of mass).
 
 ᵈ The Jacobian contains partial derivatives wrt (with respect to) scalars
 e.g., wrt q (generalized positions), or q̇, or v (generalized velocities).

@@ -17,32 +17,6 @@
 #include "drake/systems/primitives/zero_order_hold.h"
 
 namespace drake {
-namespace geometry {
-
-// Friend class provides access to the render engine in the GeometryState. This
-// is important because we need access to the render engine in the *context*
-// which is a copy of the engine that was initially instantiated and registered
-// with SceneGraph.
-template <class T>
-class GeometryStateTester {
- public:
-  // Extract a dummy render engine from the given `context` with the given
-  // `name`. Blindly assumes the context belongs to a SceneGraph and that
-  // the renderer with the given name *is* a DummyRenderEngine. (If no renderer
-  // with that name exists, it will simply throw.)
-  static const internal::DummyRenderEngine& GetDummyRenderEngine(
-      const systems::Context<T>& context, const std::string& name) {
-    // Technically brittle, but relatively safe assumption that GeometryState
-    // is abstract Parameter value 0.
-    auto& geo_state = context.get_parameters()
-                          .template get_abstract_parameter<GeometryState<T>>(0);
-    const render::RenderEngine& engine = geo_state.GetRenderEngineOrThrow(name);
-    return dynamic_cast<const internal::DummyRenderEngine&>(engine);
-  }
-};
-
-}  // namespace geometry
-
 namespace systems {
 namespace sensors {
 
@@ -51,7 +25,6 @@ using Eigen::Vector3d;
 using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
-using geometry::GeometryStateTester;
 using geometry::QueryObject;
 using geometry::SceneGraph;
 using geometry::SourceId;
@@ -106,6 +79,20 @@ class RgbdSensorTester {
 };
 
 namespace {
+
+template <typename T>
+const DummyRenderEngine* GetDummyRenderEngine(
+    const systems::Context<T>& context, const std::string& name) {
+  // Technically brittle, but relatively safe assumption that GeometryState
+  // is abstract Parameter value 0.
+  auto& geo_state =
+      context.get_parameters()
+          .template get_abstract_parameter<geometry::GeometryState<T>>(0);
+  const DummyRenderEngine* engine = dynamic_cast<const DummyRenderEngine*>(
+      geo_state.GetRenderEngineByName(name));
+  DRAKE_DEMAND(engine != nullptr);
+  return engine;
+}
 
 ::testing::AssertionResult CompareCameraInfo(const CameraInfo& test,
                                              const CameraInfo& expected) {
@@ -225,7 +212,7 @@ class RgbdSensorTest : public ::testing::Test {
     sensor_context_ =
         &diagram_->GetMutableSubsystemContext(*sensor_, context_.get());
     // Must get the render engine instance from the context itself.
-    render_engine_ = &GeometryStateTester<double>::GetDummyRenderEngine(
+    render_engine_ = GetDummyRenderEngine(
         *scene_graph_context_, kRendererName);
   }
 

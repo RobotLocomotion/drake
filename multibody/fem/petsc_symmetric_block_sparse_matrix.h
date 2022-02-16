@@ -5,7 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fixed_fem/dev/schur_complement.h"
+#include "drake/multibody/fem/schur_complement.h"
 
 namespace drake {
 namespace multibody {
@@ -32,9 +32,8 @@ class PetscSymmetricBlockSparseMatrix {
   };
 
   enum class PreconditionerType {
-    /* For generic matrix. N.B. the BlockJacobi preconditioner from PETSc by
-     default seems to assume positive definite blocks.*/
-    kJacobi,
+    /* No preconditioning. */
+    kNone,
     /* For positive definite matrix. */
     kCholesky,
     kIncompleteCholesky,
@@ -43,9 +42,9 @@ class PetscSymmetricBlockSparseMatrix {
   /* Constructs a symmetric block sparse matrix.
    @param size            The number of rows and columns of the symmetric
                           matrix.
-   @param block_size      The number rows and columns within a single non-zero
-                          block. Each non-zero block in the sparse matrix is of
-                          the same size.
+   @param block_size      The number of rows and columns within a single
+                          non-zero block. Each non-zero block in the sparse
+                          matrix is of the same size.
    @param num_upper_triangular_blocks_per_row
                           `num_upper_triangular_blocks_per_row[i]` contains the
                           number of non-zero upper triangular and diagonal

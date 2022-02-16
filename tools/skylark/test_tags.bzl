@@ -28,13 +28,13 @@ def gurobi_test_tags(gurobi_required = True):
         return nominal_tags
 
 def mosek_test_tags(mosek_required = True):
-    """Returns the test tags necessary for properly running MOSEK tests.
+    """Returns the test tags necessary for properly running MOSEK™ tests.
 
     By default, sets mosek_required=True, which will require that the supplied
     tag filters include "mosek".
 
-    MOSEK checks a license file outside the workspace, so tests that use MOSEK
-    must have the tag "no-sandbox".
+    MOSEK™ checks a license file outside the workspace, so tests that use
+    MOSEK™ must have the tag "no-sandbox".
     """
     nominal_tags = [
         "no-sandbox",

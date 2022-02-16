@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/drake_bool.h"
 
 namespace drake {
 namespace geometry {
@@ -24,7 +25,9 @@ void SphereDistanceInSphereFrame(const fcl::Sphered& sphere,
   const double tolerance = DistanceToPointRelativeTolerance(radius);
   // Unit vector in x-direction of S's frame.
   const Vector3<T> Sx = Vector3<T>::UnitX();
-  const bool non_zero_displacement = (dist_SQ > tolerance);
+  // Note: Skip the zero displacement check for non-numeric T.
+  const bool non_zero_displacement =
+      !scalar_predicate<T>::is_bool || (dist_SQ > tolerance);
   // Gradient vector expressed in S's frame.
   *grad_S = non_zero_displacement ? p_SQ / dist_SQ : Sx;
 
@@ -255,7 +258,10 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
   // stored implicitly in a 2D vector, because v_GBr(2) must be zero. If Q is
   // within a tolerance from the center line, v_GBr = <1, 0, 0> by convention.
   const T r_Q = sqrt(p_GQ(0) * p_GQ(0) + p_GQ(1) * p_GQ(1));
+
+  // Note: Skip near_center_line check for non-numeric T.
   const bool near_center_line =
+      scalar_predicate<T>::is_bool &&
       (r_Q < DistanceToPointRelativeTolerance(cylinder.radius));
   const Vector2<T> v_GBr = near_center_line
                                ? Vector2<T>(1., 0.)
@@ -570,7 +576,7 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   return false;  // Returning false tells fcl to continue to other objects.
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &Callback<T>
 ))
 
@@ -579,5 +585,5 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
 }  // namespace geometry
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::geometry::internal::point_distance::DistanceToPoint)

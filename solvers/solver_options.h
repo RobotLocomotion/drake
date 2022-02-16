@@ -41,7 +41,7 @@ namespace solvers {
  * Note that the SCS code on github master might be more up-to-date than the
  * version used in Drake.
  *
- * "MOSEK" -- Parameter name and values as specified in Mosek Reference
+ * "MOSEK™" -- Parameter name and values as specified in Mosek Reference
  * https://docs.mosek.com/9.2/capi/parameters.html
  *
  * "OSQP" -- Parameter name and values as specified in OSQP Reference

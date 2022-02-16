@@ -120,11 +120,11 @@ GTEST_TEST(RigidTransform, ConstructorAndSet) {
   // RotationMatrix class, it is here due to the bug (mentioned below) in
   // EXPECT_THROW.  Contrast the use here of EXPECT_THROW (which does not have
   // an extra set of parentheses around its first argument) with the use of
-  // EXPECT_THROW((RigidTransform<double>(isometryC)), std::logic_error); below.
+  // EXPECT_THROW((RigidTransform<double>(isometryC)), std::exception); below.
   const Matrix3d bad = GetBadRotationMatrix();
   if (kDrakeAssertIsArmed) {
     EXPECT_THROW(RigidTransform<double>(RotationMatrix<double>(bad), p),
-                 std::logic_error);
+                 std::exception);
   }
 }
 
@@ -199,7 +199,7 @@ GTEST_TEST(RigidTransform, ConstructorFromMatrix34) {
 
   if (kDrakeAssertIsArmed) {
     pose(2, 2) += 1E-5;  // Corrupt the last element of the rotation matrix.
-    EXPECT_THROW(RigidTransformd XX(pose), std::logic_error);
+    EXPECT_THROW(RigidTransformd XX(pose), std::exception);
   }
 }
 
@@ -216,13 +216,13 @@ GTEST_TEST(RigidTransform, ConstructorFromMatrix4) {
   if (kDrakeAssertIsArmed) {
     DRAKE_EXPECT_NO_THROW(RigidTransformd Xm(pose));
     pose(3, 0) = kEpsilon;
-    EXPECT_THROW(RigidTransformd Xm(pose), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(pose), std::exception);
     pose(3, 0) = 0;  pose(3, 1) = kEpsilon;
-    EXPECT_THROW(RigidTransformd Xm(pose), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(pose), std::exception);
     pose(3, 1) = 0;  pose(3, 2) = kEpsilon;
-    EXPECT_THROW(RigidTransformd Xm(pose), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(pose), std::exception);
     pose(3, 2) = 0;  pose(3, 3) = 1 + 2 * kEpsilon;
-    EXPECT_THROW(RigidTransformd Xm(pose), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(pose), std::exception);
   }
 }
 
@@ -252,19 +252,19 @@ GTEST_TEST(RigidTransform, ConstructorFromEigenExpression) {
   if (kDrakeAssertIsArmed) {
     DRAKE_EXPECT_NO_THROW(RigidTransformd Xm(pose4 * pose4));
     pose4(3, 0) = kEpsilon;
-    EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::exception);
     pose4(3, 0) = 0;  pose4(3, 1) = kEpsilon;
-    EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::exception);
     pose4(3, 1) = 0;  pose4(3, 2) = kEpsilon;
-    EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::exception);
     pose4(3, 2) = 0;  pose4(3, 3) = 1 + 2 * kEpsilon;
-    EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::exception);
   }
 
   // Ensure calling the constructor with a 3x3 matrix Eigen expression fails.
   if (kDrakeAssertIsArmed) {
     const Matrix3<double> m3 = R.matrix();  // 3x3 matrix.
-    EXPECT_THROW(RigidTransformd Xm(1.0 * m3), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(1.0 * m3), std::exception);
   }
 }
 
@@ -356,7 +356,7 @@ GTEST_TEST(RigidTransform, Isometry3) {
   // means the EXPECT_THROW fails.  The fix (credit Sherm) was to add an extra
   // set of parentheses around the first argument of EXPECT_THROW.
   if (kDrakeAssertIsArmed) {
-    EXPECT_THROW((RigidTransform<double>(isometryC)), std::logic_error);
+    EXPECT_THROW((RigidTransform<double>(isometryC)), std::exception);
   }
 }
 
@@ -380,7 +380,11 @@ GTEST_TEST(RigidTransform, IsIdentity) {
   // Test whether it is an identity matrix multiple ways.
   RigidTransform<double> X1;
   EXPECT_TRUE(X1.IsExactlyIdentity());
+  EXPECT_TRUE(X1.IsNearlyIdentity(0.0));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(X1.IsIdentityToEpsilon(0.0));
+#pragma GCC diagnostic pop
   EXPECT_TRUE(X1.rotation().IsExactlyIdentity());
   EXPECT_TRUE((X1.translation().array() == 0).all());
 
@@ -393,8 +397,13 @@ GTEST_TEST(RigidTransform, IsIdentity) {
   // Change rotation matrix to identity, but leave non-zero position vector.
   X2.set_rotation(RotationMatrix<double>::Identity());
   EXPECT_FALSE(X2.IsExactlyIdentity());
+  EXPECT_FALSE(X2.IsNearlyIdentity(3.99));
+  EXPECT_TRUE(X2.IsNearlyIdentity(4.01));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_FALSE(X2.IsIdentityToEpsilon(3.99));
   EXPECT_TRUE(X2.IsIdentityToEpsilon(4.01));
+#pragma GCC diagnostic pop
 
   // Change position vector to zero vector.
   const Vector3d zero_vector(0, 0, 0);
@@ -531,7 +540,7 @@ GTEST_TEST(RigidTransform, CastFromDoubleToAutoDiffXd) {
 
 // Verify RigidTransform is compatible with symbolic::Expression. This includes,
 // construction and methods involving Bool specialized for Expression, namely:
-// IsExactlyIdentity(), IsIdentityToEpsilon(), IsNearlyEqualTo().
+// IsExactlyIdentity(), IsNearlyIdentity(), IsNearlyEqualTo().
 GTEST_TEST(RigidTransform, SymbolicRigidTransformSimpleTests) {
   // Test RigidTransform can be constructed with Expression.
   RigidTransform<Expression> X;
@@ -540,9 +549,14 @@ GTEST_TEST(RigidTransform, SymbolicRigidTransformSimpleTests) {
   Formula test_Bool = X.IsExactlyIdentity();
   EXPECT_TRUE(test_Bool);
 
-  // Test IsIdentityToEpsilon() nominally works with Expression.
+  // Test IsNearlyIdentity() nominally works with Expression.
+  test_Bool = X.IsNearlyIdentity(kEpsilon);
+  EXPECT_TRUE(test_Bool);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   test_Bool = X.IsIdentityToEpsilon(kEpsilon);
   EXPECT_TRUE(test_Bool);
+#pragma GCC diagnostic pop
 
   // Test IsExactlyEqualTo() nominally works for Expression.
   const RigidTransform<Expression>& X_built_in_identity =
@@ -562,9 +576,14 @@ GTEST_TEST(RigidTransform, SymbolicRigidTransformSimpleTests) {
   test_Bool = X.IsExactlyIdentity();
   EXPECT_FALSE(test_Bool);
 
-  // Test IsIdentityToEpsilon() works with Expression.
+  // Test IsNearlyIdentity() works with Expression.
+  test_Bool = X.IsNearlyIdentity(kEpsilon);
+  EXPECT_FALSE(test_Bool);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   test_Bool = X.IsIdentityToEpsilon(kEpsilon);
   EXPECT_FALSE(test_Bool);
+#pragma GCC diagnostic pop
 
   // Test IsExactlyEqualTo() works for Expression.
   test_Bool = X.IsExactlyEqualTo(X_built_in_identity);
@@ -589,18 +608,23 @@ GTEST_TEST(RigidTransform, SymbolicRigidTransformThrowsExceptions) {
   // The next four tests should throw exceptions since the tests are
   // inconclusive because the value of x is unknown.
   Formula test_Bool = X_symbolic.IsExactlyIdentity();
-  EXPECT_THROW(test_Bool.Evaluate(), std::runtime_error);
+  EXPECT_THROW(test_Bool.Evaluate(), std::exception);
 
+  test_Bool = X_symbolic.IsNearlyIdentity(kEpsilon);
+  EXPECT_THROW(test_Bool.Evaluate(), std::exception);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   test_Bool = X_symbolic.IsIdentityToEpsilon(kEpsilon);
-  EXPECT_THROW(test_Bool.Evaluate(), std::runtime_error);
+  EXPECT_THROW(test_Bool.Evaluate(), std::exception);
+#pragma GCC diagnostic pop
 
   const RigidTransform<Expression>& X_identity =
       RigidTransform<Expression>::Identity();
   test_Bool = X_symbolic.IsExactlyEqualTo(X_identity);
-  EXPECT_THROW(test_Bool.Evaluate(), std::runtime_error);
+  EXPECT_THROW(test_Bool.Evaluate(), std::exception);
 
   test_Bool = X_symbolic.IsNearlyEqualTo(X_identity, kEpsilon);
-  EXPECT_THROW(test_Bool.Evaluate(), std::runtime_error);
+  EXPECT_THROW(test_Bool.Evaluate(), std::exception);
 }
 
 // Test constructing a RigidTransform constructor from an Eigen::Translation3.
@@ -760,7 +784,7 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByMatrix3X) {
     Eigen::MatrixXd m_7x8(7, 8);
     m_7x8 = Eigen::MatrixXd::Identity(7, 8);
     Eigen::MatrixXd bad_matrix_multiply;
-    EXPECT_THROW(bad_matrix_multiply = X_AB * m_7x8, std::logic_error);
+    EXPECT_THROW(bad_matrix_multiply = X_AB * m_7x8, std::exception);
   }
 }
 

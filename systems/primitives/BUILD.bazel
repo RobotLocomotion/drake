@@ -525,6 +525,7 @@ drake_cc_googletest(
         ":multilayer_perceptron",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:limit_malloc",
         "//math:gradient",
         "//systems/framework/test_utilities",
     ],

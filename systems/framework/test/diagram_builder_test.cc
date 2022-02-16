@@ -21,6 +21,9 @@ namespace drake {
 namespace systems {
 namespace {
 
+using InputPortLocator = DiagramBuilder<double>::InputPortLocator;
+using OutputPortLocator = DiagramBuilder<double>::OutputPortLocator;
+
 // Tests ::empty().
 GTEST_TEST(DiagramBuilderTest, Empty) {
   DiagramBuilder<double> builder;
@@ -529,6 +532,7 @@ GTEST_TEST(DiagramBuilderTest, InputPortNamesFanout) {
   auto sink2 = builder.AddSystem<Sink<double>>();
   auto sink3 = builder.AddSystem<Sink<double>>();
   auto sink4 = builder.AddSystem<Sink<double>>();
+  auto sink5 = builder.AddSystem<Sink<double>>();
 
   std::vector<InputPortIndex> indices;
   // Name these ports just to make comparing easier later.
@@ -550,6 +554,12 @@ GTEST_TEST(DiagramBuilderTest, InputPortNamesFanout) {
   builder.ConnectInput("in1", sink4->get_input_port(0));
   EXPECT_TRUE(builder.IsConnectedOrExported(sink4->get_input_port(0)));
 
+  // Fan-out connect likewise.
+  EXPECT_FALSE(builder.IsConnectedOrExported(sink5->get_input_port(0)));
+  EXPECT_TRUE(builder.ConnectToSame(
+      sink1->get_input_port(0), sink5->get_input_port(0)));
+  EXPECT_TRUE(builder.IsConnectedOrExported(sink5->get_input_port(0)));
+
   EXPECT_EQ(indices[0], 0);
   EXPECT_EQ(indices[1], 1);
 
@@ -559,7 +569,7 @@ GTEST_TEST(DiagramBuilderTest, InputPortNamesFanout) {
   EXPECT_EQ(diagram->get_input_port(1).get_name(), "in2");
 
   auto sink_fanout = diagram->GetInputPortLocators(InputPortIndex(0));
-  EXPECT_EQ(sink_fanout.size(), 3);
+  EXPECT_EQ(sink_fanout.size(), 4);
   auto sinkhole_fanout = diagram->GetInputPortLocators(InputPortIndex(1));
   EXPECT_EQ(sinkhole_fanout.size(), 1);
 }
@@ -615,17 +625,13 @@ TEST_F(DiagramBuilderSolePortsTest, ConnectionMap) {
   builder_.Connect(*in1out1_, *in1_);
   ASSERT_EQ(builder_.connection_map().size(), 2);
   {
-    const DiagramBuilder<double>::OutputPortLocator out1_output{
-        out1_, OutputPortIndex{0}};
-    const DiagramBuilder<double>::InputPortLocator in1out1_input{
-        in1out1_, InputPortIndex{0}};
+    const OutputPortLocator out1_output{out1_, OutputPortIndex{0}};
+    const InputPortLocator in1out1_input{in1out1_, InputPortIndex{0}};
     EXPECT_EQ(builder_.connection_map().at(in1out1_input), out1_output);
   }
   {
-    const DiagramBuilder<double>::OutputPortLocator in1out1_output{
-        in1out1_, OutputPortIndex{0}};
-    const DiagramBuilder<double>::InputPortLocator in1_input{
-        in1_, InputPortIndex{0}};
+    const OutputPortLocator in1out1_output{in1out1_, OutputPortIndex{0}};
+    const InputPortLocator in1_input{in1_, InputPortIndex{0}};
     EXPECT_EQ(builder_.connection_map().at(in1_input), in1out1_output);
   }
 }
@@ -635,6 +641,29 @@ TEST_F(DiagramBuilderSolePortsTest, SourceGainSinkCascade) {
   DRAKE_EXPECT_NO_THROW(builder_.Cascade(*out1_, *in1out1_));
   DRAKE_EXPECT_NO_THROW(builder_.Cascade(*in1out1_, *in1_));
   DRAKE_EXPECT_NO_THROW(builder_.Build());
+}
+
+// A diagram can use ConnectToSame.
+// Source-->Gain
+//       |->Sink
+TEST_F(DiagramBuilderSolePortsTest, SourceGainSink2) {
+  builder_.Connect(*out1_, *in1out1_);
+  EXPECT_TRUE(builder_.ConnectToSame(
+      in1out1_->get_input_port(), in1_->get_input_port()));
+  auto diagram = builder_.Build();
+
+  const InputPortLocator in1_input{in1_, InputPortIndex{0}};
+  const auto& connections = diagram->connection_map();
+  ASSERT_EQ(connections.count(in1_input), 1);
+  EXPECT_EQ(connections.find(in1_input)->second.first, out1_);
+}
+
+// Using ConnectToSame on a disconnected input is a no-op.
+TEST_F(DiagramBuilderSolePortsTest, ConnectToSameNothing) {
+  EXPECT_FALSE(builder_.ConnectToSame(
+      in1out1_->get_input_port(), in1_->get_input_port()));
+  auto diagram = builder_.Build();
+  EXPECT_EQ(diagram->connection_map().size(), 0);
 }
 
 // A diagram of Gain->Source is has too few dest inputs.

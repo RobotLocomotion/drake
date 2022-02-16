@@ -81,7 +81,6 @@ TEST_F(DrakeLcmInterfaceTest, DefaultErrorHandlingTest) {
   lcm_.Publish(channel_, corrupt_bytes.data(), corrupt_bytes.size(), {});
   DRAKE_EXPECT_THROWS_MESSAGE(
       lcm_.HandleSubscriptions(0),
-      std::runtime_error,
       "Error decoding message on NAME");
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received, Message{}));
   received = {};

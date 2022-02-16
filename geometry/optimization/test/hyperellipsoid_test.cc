@@ -105,7 +105,7 @@ GTEST_TEST(HyperellipsoidTest, ScaledSphereTest) {
   EXPECT_NEAR(ellipsoid->b(), radius, 1e-16);
   EXPECT_NEAR(ellipsoid->c(), radius, 1e-16);
 
-  EXPECT_TRUE(X_WS.IsIdentityToEpsilon(1e-16));
+  EXPECT_TRUE(X_WS.IsNearlyIdentity(1e-16));
 }
 
 GTEST_TEST(HyperellipsoidTest, ArbitraryEllipsoidTest) {

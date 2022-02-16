@@ -1,7 +1,7 @@
 #pragma once
 
 /** @file
- This file provides utilities that facilitates testing the subclasses of
+ This file provides utilities that facilitate testing the subclasses of
  ConstitutiveModel instead of the ConstitutiveModel class itself. */
 
 #include <array>

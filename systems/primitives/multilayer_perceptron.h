@@ -15,6 +15,16 @@ enum PerceptronActivationType {
   kTanh,
 };
 
+// Forward declarations.
+namespace internal {
+
+// Note: This struct is defined outside the class to avoid the ReportZeroHash
+// warning in AbstractValue.
+template <typename T>
+struct CalcLayersData;
+
+}  // namespace internal
+
 /** The MultilayerPerceptron (MLP) is one of the most common forms of neural
  networks used in reinforcement learning (RL) today. This implementation
  provides a System interface to distinguish between the network's inputs and
@@ -112,6 +122,11 @@ class MultilayerPerceptron final : public LeafSystem<T> {
    single vector. Use GetWeights and GetBiases to extract the components. */
   const VectorX<T>& GetParameters(const Context<T>& context) const;
 
+  /** Returns a mutable reference to all of the parameters (weights and biases)
+   as a single vector. */
+  Eigen::VectorBlock<VectorX<T>> GetMutableParameters(
+      Context<T>* context) const;
+
   /** Sets all of the parameters in the network (weights and biases) using a
    single vector. Use SetWeights and SetBiases to extract the components. */
   void SetParameters(Context<T>* context,
@@ -184,9 +199,8 @@ class MultilayerPerceptron final : public LeafSystem<T> {
    */
   T Backpropagation(const Context<T>& context,
                     const Eigen::Ref<const MatrixX<T>>& X,
-                    std::function<T(const Eigen::Ref<const MatrixX<T>>& Y,
-                                    EigenPtr<MatrixX<T>> dloss_dY)>
-                        loss,
+                    const std::function<T(const Eigen::Ref<const MatrixX<T>>& Y,
+                                          EigenPtr<MatrixX<T>> dloss_dY)>& loss,
                     EigenPtr<VectorX<T>> dloss_dparams) const;
 
   /** Calls Backpropagation with the mean-squared error loss function:
@@ -201,25 +215,33 @@ class MultilayerPerceptron final : public LeafSystem<T> {
    column of `X` represents an input, and each column of `Y` will be assigned
    the corresponding output.
 
-   Note: In python, use numpy.asfortranarray() to allocate the writeable matrix
-   `Y`.
+   If the output layer of the network has size 1 (scalar output), and `dYdX !=
+   nullptr`, then `dYdX` is populated with the batch gradients of the scalar
+   output `Y` relative to the input `X`: the (i,j)th element represents the
+   gradient dY(0,j) / dX(i,j).
+
+   Note: In python, use numpy.asfortranarray() to allocate the writeable
+   matrices `Y` and (if needed) `dYdX`.
 
    This methods shares the cache with Backpropagation. If the size of X changes
    here or in Backpropagation, it may force dynamic memory allocations.
+
+   @throws std::exception if dYdX != nullptr and the network has more than one
+   output.
    */
   void BatchOutput(const Context<T>& context,
                    const Eigen::Ref<const MatrixX<T>>& X,
-                   EigenPtr<MatrixX<T>> Y) const;
+                   EigenPtr<MatrixX<T>> Y,
+                   EigenPtr<MatrixX<T>> dYdX = nullptr) const;
 
  private:
   // Calculates y = f(x) for the entire network.
   void CalcOutput(const Context<T>& context, BasicVector<T>* y) const;
 
   // Calculates the cache entries for the hidden units in the network.
-  void CalcHiddenLayers(const Context<T>& context,
-                        std::vector<VectorX<T>>* hidden) const;
+  void CalcLayers(const Context<T>& context,
+                  internal::CalcLayersData<T>* data) const;
 
-  int num_hidden_layers_;  // The number of layers - 2.
   int num_weights_;     // The number of weight matrices (number of layers -1 ).
   int num_parameters_;  // Total number of parameters.
   std::vector<int> layers_;  // The number of neurons in each layer.
@@ -230,15 +252,7 @@ class MultilayerPerceptron final : public LeafSystem<T> {
   std::vector<int> weight_indices_;
   std::vector<int> bias_indices_;
 
-  // Functors implementing σ(x) and dσ/dx(x).
-  std::vector<std::function<MatrixX<T>(const Eigen::Ref<const MatrixX<T>>&)>>
-      sigma_{};
-  // TODO(russt): Consider returning dsigma and sigma in the same function to
-  // reuse computation (e.g. dtanh(x) = 1-tanh(x)^2).
-  std::vector<std::function<MatrixX<T>(const Eigen::Ref<const MatrixX<T>>&)>>
-      dsigma_{};
-
-  CacheEntry* hidden_layer_cache_{};
+  CacheEntry* calc_layers_cache_{};
   CacheEntry* backprop_cache_{};
 
   template <typename>

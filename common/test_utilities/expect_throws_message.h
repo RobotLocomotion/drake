@@ -11,7 +11,8 @@
 #ifdef DRAKE_DOXYGEN_CXX
 /** Unit test helper macro for "expecting" an exception to be thrown but also
 testing the error message against a provided regular expression. This is
-like GTest's `EXPECT_THROW` but is fussier about the particular error message.
+like GTest's `EXPECT_THROW` but does not allow for tested the exception subtype
+(because checking the message should suffice on its own).
 Usage example: @code
   DRAKE_EXPECT_THROWS_MESSAGE(
       StatementUnderTest(), // You expect this statement to throw ...
@@ -21,11 +22,6 @@ The regular expression must match the entire error message. If there is
 boilerplate you don't care to match at the beginning and end, surround with
 `.*` to ignore in single-line messages or `[\s\S]*` for multiline
 messages.
-
-The "exception" argument is optional and defaults to "std::exception" when
-omitted. In other words, if your test doesn't care what kind of exception
-was thrown, then call this macro as (expression, regexp) without the middle
-argument.
 
 Following GTest's conventions, failure to perform as expected here is a
 non-fatal test error. An `ASSERT` variant is provided to make it fatal. There
@@ -38,30 +34,45 @@ Debug).
 @see DRAKE_ASSERT_THROWS_MESSAGE
 @see DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED, DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED
 */
-#define DRAKE_EXPECT_THROWS_MESSAGE(expression, exception, regexp)
+#define DRAKE_EXPECT_THROWS_MESSAGE(expression, regexp)
 
 /** Fatal error version of `DRAKE_EXPECT_THROWS_MESSAGE`.
 @see DRAKE_EXPECT_THROWS_MESSAGE */
-#define DRAKE_ASSERT_THROWS_MESSAGE(expression, exception, regexp)
+#define DRAKE_ASSERT_THROWS_MESSAGE(expression, regexp)
 
 /** Same as `DRAKE_EXPECT_THROWS_MESSAGE` in Debug builds, but doesn't _require_
 a throw in Release builds. However, if the Release build does throw it must
 throw the right message. More precisely, the thrown message is required
 whenever `DRAKE_ENABLE_ASSERTS` is defined, which Debug builds do be default.
 @see DRAKE_EXPECT_THROWS_MESSAGE */
-#define DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(expression, exception, regexp)
+#define DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(expression, regexp)
 
 /** Same as `DRAKE_ASSERT_THROWS_MESSAGE` in Debug builds, but doesn't require
 a throw in Release builds. However, if the Release build does throw it must
 throw the right message. More precisely, the thrown message is required
 whenever `DRAKE_ENABLE_ASSERTS` is defined, which Debug builds do by default.
 @see DRAKE_ASSERT_THROWS_MESSAGE */
-#define DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(expression, exception, regexp)
+#define DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(expression, regexp)
 
 #else  // DRAKE_DOXYGEN_CXX
 
+namespace drake {
+namespace internal {
+template <bool>
+constexpr void DrakeExpectThrowsWasUsedWithThreeArgs() {}
+template<>
+[[deprecated("DRAKE DEPRECATED: The middle argument (exception type) of "
+"DRAKE_EXPECT_THROWS_MESSAGE is deprecated, as well as for all of the other "
+"similar macros (DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED, "
+"DRAKE_ASSERT_THROWS_MESSAGE, DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED). "
+"Remove the middle argument from the call site. "
+"The deprecated code will be removed from Drake on or after 2022-06-01.")]]
+constexpr void DrakeExpectThrowsWasUsedWithThreeArgs<true>() {}
+}  // namespace internal
+}  // namespace drake
+
 #define DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-    expression, exception, regexp, must_throw, fatal_failure) \
+    expression, exception, deprecated, regexp, must_throw, fatal_failure) \
 do { \
 try { \
   expression; \
@@ -92,46 +103,47 @@ try { \
     GTEST_NONFATAL_FAILURE_(message.c_str()); \
   } \
 } \
+::drake::internal::DrakeExpectThrowsWasUsedWithThreeArgs<deprecated>(); \
 } while (0)
 
 #define DRAKE_EXPECT_THROWS_MESSAGE_3(expression, exception, regexp) \
   DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-      expression, exception, regexp, \
+      expression, exception, true /*deprecated*/, regexp, \
       true /*must_throw*/, false /*non-fatal*/)
 
 #define DRAKE_ASSERT_THROWS_MESSAGE_3(expression, exception, regexp) \
   DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-      expression, exception, regexp, \
+      expression, exception, true /*deprecated*/, regexp, \
       true /*must_throw*/, true /*fatal*/)
 
 #define DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED_3(expression, exception, regexp) \
   DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-      expression, exception, regexp, \
+      expression, exception, true /*deprecated*/, regexp, \
       ::drake::kDrakeAssertIsArmed /*must_throw*/, false /*non-fatal*/)
 
 #define DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED_3(expression, exception, regexp) \
   DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-      expression, exception, regexp, \
+      expression, exception, true /*deprecated*/, regexp, \
       ::drake::kDrakeAssertIsArmed /*must_throw*/, true /*fatal*/)
 
 #define DRAKE_EXPECT_THROWS_MESSAGE_2(expression, regexp) \
   DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-      expression, std::exception, regexp, \
+      expression, std::exception, false /*deprecated*/, regexp, \
       true /*must_throw*/, false /*non-fatal*/)
 
 #define DRAKE_ASSERT_THROWS_MESSAGE_2(expression, regexp) \
   DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-      expression, std::exception, regexp, \
+      expression, std::exception, false /*deprecated*/, regexp, \
       true /*must_throw*/, true /*fatal*/)
 
 #define DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED_2(expression, regexp) \
   DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-      expression, std::exception, regexp, \
+      expression, std::exception, false /*deprecated*/, regexp, \
       ::drake::kDrakeAssertIsArmed /*must_throw*/, false /*non-fatal*/)
 
 #define DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED_2(expression, regexp) \
   DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-      expression, std::exception, regexp, \
+      expression, std::exception, false /*deprecated*/, regexp, \
       ::drake::kDrakeAssertIsArmed /*must_throw*/, true /*fatal*/)
 
 // Now overload the macro based on 2 vs 3 arguments.

@@ -91,9 +91,10 @@ only fix code style problems, or only affect tests or documentation.
 Commits that contain breaking changes receive special attention in the release
 notes.  To aid the human editor in making that determination, you must add the
 tag ``release notes: breaking change`` to any PR that makes a breaking change
-without a deprecation period.
+to a [Stable API](/stable.html) without a deprecation period.
 
-**release notes: newly deprecated** <br/>
+**release notes: newly deprecated**<br/>
+&nbsp;and<br/>
 **release notes: removal of deprecated**
 
 Commits that change deprecations receive special attention in the release notes.

@@ -26,7 +26,7 @@ to install Bazel.
 To build or test Drake, run **bazel build** or **bazel test** with the desired
 target label (and optional configuration options if desired).  We give some
 typical examples below; for more reading about target patterns, see:
-[https://docs.bazel.build/versions/master/user-manual.html#target-patterns](https://docs.bazel.build/versions/master/user-manual.html#target-patterns).
+[https://docs.bazel.build/versions/main/user-manual.html#target-patterns](https://docs.bazel.build/versions/main/user-manual.html#target-patterns).
 
 On Ubuntu, the default compiler is the first ``gcc`` compiler in the
 ``PATH``, usually GCC 7.5 on Bionic and GCC 9.3 on Focal. On macOS, the default
@@ -104,23 +104,32 @@ bazel test --config lint //...                       # Only run style checks; do
 
 ## Running with Flags
 
+### Example programs
+
 In general, to figure out what binary-specific arguments are available, add
-"``-- --help``" to your ``bazel run`` command. If the binary can only run via
-``bazel test``, look at [--test_arg](https://docs.bazel.build/versions/master/user-manual.html#flag--test_arg).
-
-If a C++ unittest uses ``gtest`` (e.g. using ``drake_cc_googletest``),
-you can specify gtest-specific flags. As an example:
+"``-- --help``" to your ``bazel run`` command. An an example,
 
 ```
-bazel run multibody/plant:multibody_plant_test -- --gtest_filter='*SimpleModelCreation*'
+bazel run //examples/acrobot:run_passive -- --help
 ```
 
-If a Python unittest is run via ``drake_py_unittest_main.py`` (e.g. using
-``drake_py_unittest``), you can specify flags such as ``--trace`` or
-``--deprecation_action``. As an example:
+The bare ``--`` separates Bazel arguments from the program's arguments.
+
+## Unit tests
+
+For running tests, you may pass custom arguments to the test program via
+[--test_arg](https://docs.bazel.build/versions/main/user-manual.html#flag--test_arg).
+
+For a C++ unittest that uses ``drake_cc_googletest``, for example:
 
 ```
-bazel run bindings/pydrake:py/symbolic_test -- --trace=user --deprecation_action=error
+bazel test multibody/plant:multibody_plant_test --test_output=streamed --nocache_test_results --test_arg=--gtest_filter='*SimpleModelCreation*'
+```
+
+For a Python unittest that uses ``drake_py_unittest``, for example:
+
+```
+bazel test bindings/pydrake:py/symbolic_test --test_output=streamed --nocache_test_results --test_arg=--trace=user --test_arg=TestSymbolicVariable
 ```
 
 ## Debugging and profiling on macOS
@@ -171,7 +180,7 @@ bazel build //tools/lint:buildifier
 The Drake Bazel build currently supports the following proprietary solvers:
 
 * Gurobi 9.0.2
-* MOSEK 9.2
+* MOSEK™ 9.2
 * SNOPT 7.4
 
 ## Gurobi 9.0.2
@@ -199,23 +208,23 @@ To confirm that your setup was successful, run the tests that require Gurobi:
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests.  If you will be developing with Gurobi regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
-See [https://docs.bazel.build/versions/master/user-manual.html#bazelrc](https://docs.bazel.build/versions/master/user-manual.html#bazelrc).
+See [https://docs.bazel.build/versions/main/user-manual.html#bazelrc](https://docs.bazel.build/versions/main/user-manual.html#bazelrc).
 
 ## MOSEK
 
-The Drake Bazel build system downloads MOSEK 9.2.33 automatically.  No manual
+The Drake Bazel build system downloads MOSEK™ 9.2.33 automatically. No manual
 installation is required.  Set the location of your license file as follows:
 
   ```export MOSEKLM_LICENSE_FILE=/path/to/mosek.lic```
 
-To confirm that your setup was successful, run the tests that require MOSEK:
+To confirm that your setup was successful, run the tests that require MOSEK™:
 
   ```bazel test --config mosek --test_tag_filters=mosek //...```
 
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
-these tests.  If you will be developing with MOSEK regularly, you may wish
+these tests.  If you will be developing with MOSEK™ regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
-See [https://docs.bazel.build/versions/master/user-manual.html#bazelrc](https://docs.bazel.build/versions/master/user-manual.html#bazelrc).
+See [https://docs.bazel.build/versions/main/user-manual.html#bazelrc](https://docs.bazel.build/versions/main/user-manual.html#bazelrc).
 
 ## SNOPT
 
@@ -244,7 +253,7 @@ To confirm that your setup was successful, run the tests that require SNOPT:
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests.  If you will be developing with SNOPT regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
-See [https://docs.bazel.build/versions/master/user-manual.html#bazelrc](https://docs.bazel.build/versions/master/user-manual.html#bazelrc).
+See [https://docs.bazel.build/versions/main/user-manual.html#bazelrc](https://docs.bazel.build/versions/main/user-manual.html#bazelrc).
 
 SNOPT support has some known problems on certain programs (see drake issue
 [#10422](https://github.com/RobotLocomotion/drake/issues/10422) for a summary).

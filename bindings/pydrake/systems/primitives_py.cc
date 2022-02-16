@@ -248,6 +248,16 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("context"),
             py::keep_alive<0, 2>() /* return keeps context alive */,
             py_rvp::reference, doc.MultilayerPerceptron.GetParameters.doc)
+        .def(
+            "GetMutableParameters",
+            [](const MultilayerPerceptron<T>* self,
+                Context<T>* context) -> Eigen::Ref<VectorX<T>> {
+              return self->GetMutableParameters(context);
+            },
+            py_rvp::reference, py::arg("context"),
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(),
+            doc.MultilayerPerceptron.GetMutableParameters.doc)
         .def("SetParameters", &MultilayerPerceptron<T>::SetParameters,
             py::arg("context"), py::arg("params"),
             doc.MultilayerPerceptron.SetParameters.doc)
@@ -346,6 +356,15 @@ PYBIND11_MODULE(primitives, m) {
               self->BatchOutput(context, X, &Y);
             },
             py::arg("context"), py::arg("X"), py::arg("Y"),
+            doc.MultilayerPerceptron.BatchOutput.doc)
+        .def(
+            "BatchOutput",
+            [](const MultilayerPerceptron<T>* self, const Context<T>& context,
+                const Eigen::Ref<const MatrixX<T>>& X, Eigen::Ref<MatrixX<T>> Y,
+                Eigen::Ref<MatrixX<T>> dYdX) {
+              self->BatchOutput(context, X, &Y, &dYdX);
+            },
+            py::arg("context"), py::arg("X"), py::arg("Y"), py::arg("dYdX"),
             doc.MultilayerPerceptron.BatchOutput.doc)
         .def(
             "BatchOutput",

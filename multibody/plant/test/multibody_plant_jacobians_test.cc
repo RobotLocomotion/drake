@@ -43,7 +43,7 @@ void CalcJacobianViaPartialDerivativesOfPositionWithRespectToQ(
     MatrixX<double>* p_WoEi_W_deriv_wrt_q) {
   const int num_positions = plant.num_positions();
   const int kNumPoints = p_EoEi_E_double.cols();
-  DRAKE_THROW_UNLESS(p_WoEi_W_deriv_wrt_q != nullptr);
+  ASSERT_THAT(p_WoEi_W_deriv_wrt_q, testing::NotNull());
   EXPECT_EQ(p_WoEi_W_deriv_wrt_q->rows(), 3 * kNumPoints);
   EXPECT_EQ(p_WoEi_W_deriv_wrt_q->cols(), num_positions);
   EXPECT_EQ(q_double.rows(), num_positions);
@@ -335,11 +335,11 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   }
 
   const RigidBody<double>& rigid_bodyA() const {
-    DRAKE_ASSERT(bodyA_ != nullptr);
+    DRAKE_DEMAND(bodyA_ != nullptr);
     return *bodyA_;
   }
   const RigidBody<double>& rigid_bodyB() const {
-    DRAKE_ASSERT(bodyB_ != nullptr);
+    DRAKE_DEMAND(bodyB_ != nullptr);
     return *bodyB_;
   }
 

@@ -20,8 +20,8 @@ Drake binary releases incorporate a pre-compiled version of
 [Mathematical Program toolbox](https://drake.mit.edu/doxygen_cxx/group__solvers.html).
 Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
-Drake's binary releases do not support the Mosek nor Gurobi solvers. To use
-Mosek or Gurobi, you will need to [build Drake from source](/from_source.html).
+Drake's binary releases do not support the MOSEK™ nor Gurobi solvers. To use
+MOSEK™ or Gurobi, you will need to [build Drake from source](/from_source.html).
 
 ## Stable Releases
 
@@ -30,11 +30,11 @@ Mac are available to download as attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v0.38.0](https://github.com/RobotLocomotion/drake/releases/tag/v0.38.0):
+[v0.39.0](https://github.com/RobotLocomotion/drake/releases/tag/v0.39.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v0.38.0/drake-20220114-bionic.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.38.0/drake-20220114-bionic.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v0.38.0/drake-20220114-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.38.0/drake-20220114-focal.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v0.38.0/drake-20220114-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.38.0/drake-20220114-mac.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v0.39.0/drake-20220209-bionic.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.39.0/drake-20220209-bionic.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v0.39.0/drake-20220209-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.39.0/drake-20220209-focal.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v0.39.0/drake-20220209-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v0.39.0/drake-20220209-mac.tar.gz)
 
 ### Use as a C++ library
 

@@ -134,7 +134,7 @@ the main body of the document:
 11. Re-enable CI by reverting the commit you added in step 3.
 12. Merge the release notes PR
    1. Take care when squashing not to accept github's auto-generated commit message if it is not appropriate.
-   2. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
+   2. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-focal-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
       * If you don't have "Build now" click "Log in" first in upper right.
 13. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
     a new release".  Note that this page does has neither history nor undo.  Be

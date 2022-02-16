@@ -57,13 +57,6 @@ void static_curl_cleanup() {
 
 // Write callback for libcurl, assumes `userp` points to an std::string.
 // See: https://curl.se/libcurl/c/libcurl-tutorial.html
-size_t WriteStringData(void* buffer, size_t size, size_t nmemb, void* userp) {
-  const size_t data_size = size * nmemb;
-  std::string* s = static_cast<std::string*>(userp);
-  s->append(static_cast<char*>(buffer), data_size);
-  return data_size;
-}
-
 size_t WriteFileData(void* buffer, size_t size, size_t nmemb, void* userp) {
   const size_t data_size = size * nmemb;
   std::ofstream* f = static_cast<std::ofstream*>(userp);
@@ -262,7 +255,7 @@ void AddFileField(curl_mime* form, const char* field_name,
   DRAKE_DEMAND(form != nullptr);
   DRAKE_DEMAND(field_name != nullptr);
   auto* field = curl_mime_addpart(form);
-  curl_mime_name(field, "data");
+  curl_mime_name(field, field_name);
   curl_mime_filedata(field, file_path.c_str());
   if (mime_type.has_value()) curl_mime_type(field, mime_type.value().c_str());
 }
@@ -308,13 +301,11 @@ void VerifyImportedImageDimensions(int expected_width, int expected_height,
 }  // namespace
 
 RenderClient::RenderClient(const std::string& url, int32_t port,
-                           const std::string& upload_endpoint,
                            const std::string& render_endpoint, bool verbose,
                            bool no_cleanup)
     : temp_directory_{drake::temp_directory()},
       url_{url},
       port_{port},
-      upload_endpoint_{upload_endpoint},
       render_endpoint_{render_endpoint},
       verbose_{verbose},
       no_cleanup_{no_cleanup} {
@@ -326,7 +317,6 @@ RenderClient::RenderClient(const RenderClient& other)
     : temp_directory_{other.temp_directory_},
       url_{other.url_},
       port_{other.port_},
-      upload_endpoint_{other.upload_endpoint_},
       render_endpoint_{other.render_endpoint_},
       verbose_{other.verbose_},
       no_cleanup_{other.no_cleanup_} {
@@ -362,105 +352,10 @@ RenderClient::~RenderClient() {
   static_curl_cleanup();
 }
 
-void RenderClient::UploadScene(
-    RenderImageType image_type, const std::string& scene_path,
-    const std::string& scene_sha256,
-    const std::optional<std::string>& mime_type) const {
-  CURL* curl{nullptr};
-  CURLcode result;
-  curl = curl_easy_init();
-  DRAKE_DEMAND(curl != nullptr);
-
-  // Used when verbose_, needed in scope for logging after curl_easy_perform.
-  debug_data_t debug_data;
-  if (verbose_) {
-    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-    curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &DebugCallback);
-    curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &debug_data);
-  }
-
-  // Setup the POST url.
-  const std::string upload_url = url_ + "/" + upload_endpoint_;
-  curl_easy_setopt(curl, CURLOPT_URL, upload_url.c_str());
-  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-  if (port_ > 0) curl_easy_setopt(curl, CURLOPT_PORT, port_);
-
-  // Create and fill out a <form> to POST.
-  curl_mime* form{nullptr};
-  struct curl_slist* headerlist{nullptr};
-  form = curl_mime_init(curl);
-
-  // Add the fields to the form.
-  AddFileField(form, "data", scene_path, mime_type);
-  AddField(form, "image_type", image_type);
-  AddField(form, "submit", "Upload");
-
-  curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
-
-  // Disable 100-Continue.  See:
-  // http://www.iandennismiller.com/posts/curl-http1-1-100-continue-and-multipartform-data-post.html
-  headerlist = curl_slist_append(headerlist, "Expect:");
-  curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);
-
-  // Receive json response from the server.
-  std::string post_response_text;
-  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &post_response_text);
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &WriteStringData);
-
-  // Perform the POST and drake::log() prior to any potential exceptions.
-  result = curl_easy_perform(curl);
-  if (verbose_) {
-    LogCurlDebugData(debug_data);
-  }
-
-  int64_t http_code{0};
-  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-  const bool http_code_ok = http_code >= 200 && http_code < 400;
-  if (result != CURLE_OK || !http_code_ok) {
-    std::string server_message{""};
-    if (post_response_text.length() > 0) {
-      server_message = post_response_text;
-    } else {
-      server_message = "None.";
-    }
-    throw std::runtime_error(fmt::format(
-        R"(
-        ERROR doing POST: /{}
-          Server URL:     {}
-          cURL Message:   {}
-          HTTP Code:      {}
-          Server Message: {}
-        )",
-        upload_endpoint_, url_ + (port_ ? fmt::format(":{}", port_) : ""),
-        curl_easy_strerror(result), http_code, server_message));
-  }
-  curl_slist_free_all(headerlist);
-  curl_easy_cleanup(curl);
-
-  // Validate the server response.
-  std::string server_sha256;
-  try {
-    const json post_response = json::parse(post_response_text);
-    server_sha256 = post_response["sha256"];
-  } catch (const std::exception& e) {
-    throw std::runtime_error(
-        "Error obtaining `sha256` key from anticpated json server response `" +
-        post_response_text + "`. " + e.what());
-  }
-  if (server_sha256 != scene_sha256) {
-    throw std::runtime_error(fmt::format(
-        "Error uploading scene '{}', expected sha256='{}' but the server "
-        "responded with '{}'.",
-        scene_path, scene_sha256, server_sha256));
-  }
-}
-
-std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
-                                         RenderImageType image_type,
-                                         const std::string& scene_path,
-                                         const std::string& scene_sha256,
-                                         double min_depth,
-                                         double max_depth) const {
+std::string RenderClient::RenderOnServer(
+    const RenderCameraCore& camera_core, RenderImageType image_type,
+    const std::string& scene_path, const std::optional<std::string>& mime_type,
+    double min_depth, double max_depth) const {
   if (image_type == RenderImageType::kDepthDepth32F)
     ValidDepthRangeOrThrow(min_depth, max_depth);
 
@@ -489,7 +384,9 @@ std::string RenderClient::RetrieveRender(const RenderCameraCore& camera_core,
   form = curl_mime_init(curl);
 
   // Add the fields to the form.
-  AddField(form, "id", scene_sha256);
+  AddFileField(form, "scene", scene_path, mime_type);
+  const std::string scene_sha256 = ComputeSha256(scene_path);
+  AddField(form, "scene_sha256", scene_sha256);
   AddField(form, "image_type", image_type);
   const auto& intrinsics = camera_core.intrinsics();
   AddField(form, "width", intrinsics.width());

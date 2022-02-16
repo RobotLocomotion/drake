@@ -73,7 +73,7 @@
  *    <td></td>
  *  </tr>
  * <tr><td><a href="https://www.mosek.com/products/mosek">
- *    Mosek</a> †</td>
+ *    MOSEK™</a> †</td>
  *    <td align="center">♦</td>
  *    <td align="center">♦</td>
  *    <td align="center">♦</td>
@@ -182,7 +182,7 @@
  *    <td></td>
  *  </tr>
  * <tr><td><a href="https://www.mosek.com/products/mosek">
- *    Mosek</a> †</td>
+ *    MOSEK™</a> †</td>
  *    <td align="center">♦</td>
  *    <td align="center">♦</td>
  *    <td align="center">♦</td>

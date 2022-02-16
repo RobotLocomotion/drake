@@ -68,7 +68,7 @@ def run_manipulation_example(args):
     T_VW = np.array([[1., 0., 0., 0.],
                      [0., 0., 1., 0.],
                      [0., 0., 0., 1.]])
-    ConnectPlanarSceneGraphVisualizer(
+    visualizer = ConnectPlanarSceneGraphVisualizer(
         builder, scene_graph, query_object_output_port, T_VW=T_VW,
         xlim=[-0.5, 1.0], ylim=[-1.2, 1.2], draw_period=0.1)
 

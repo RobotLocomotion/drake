@@ -41,10 +41,6 @@ class RenderClient {
    @param port
      The port to communicate with the server on, e.g., `8000`.  A value of less
      than or equal to `0` implies no port-level communication is needed.
-   @param upload_endpoint
-     The endpoint that the server expects to receive scene file uploads to,
-     e.g., `"upload"`.  Do not include a preceding `/`, communications with the
-     server are constructed as `{url}/{upload_endpoint}`.
    @param render_endpoint
      The endpoint that the server expects to receive render requests to, e.g.,
      `"render"`.  Do not include a preceding `/`, communications with the server
@@ -56,7 +52,6 @@ class RenderClient {
      Whether or not the temp_directory() should be deleted upon destruction of
      this instance. */
   explicit RenderClient(const std::string& url, int32_t port,
-                        const std::string& upload_endpoint,
                         const std::string& render_endpoint, bool verbose,
                         bool no_cleanup);
 
@@ -67,28 +62,8 @@ class RenderClient {
   /** @name Server communication */
   //@{
 
-  /** Upload the scene to the render server.
-
-   @param image_type
-     The type of scene being uploaded.
-   @param scene_path
-     The path to the scene file to upload to the server.
-   @param scene_sha256
-     The `sha256sum` of the file denoted by `scene_path`.
-   @param mime_type
-     The mime type to set for the scene file being uploaded as a file.  If not
-     provided, no mime type will be sent to the server.  No validity checks on
-     the value of the provided mime type are performed.
-   @throws std::runtime_error
-     If the file cannot be uploaded to the server successfully, or if the server
-     does not respond with the same `sha256sum` of the uploaded file. */
-  virtual void UploadScene(RenderImageType image_type,
-                           const std::string& scene_path,
-                           const std::string& scene_sha256,
-                           const std::optional<std::string>& mime_type) const;
-
-  /** Download a render from the server, returning the path to the file.  Users
-   should have already uploaded the scene to the server using UploadScene().
+  /** Upload the scene file from `scene_path` to the render server, download
+   the image file response, and return the path to the image file.
    The returned file path may be used directly with any one of the helper
    methods LoadColorImage(), LoadDepthImage(), or LoadLabelImage().  The file
    path returned will be in temp_directory(), users do not need to delete the
@@ -107,9 +82,10 @@ class RenderClient {
      saved in `{temp_directory()}/scene.gltf.png` (if the server returned a PNG
      file), regardless of whether `/some/path` is in temp_directory().  Users
      are strongly encouraged to store their scene files in temp_directory().
-   @param scene_sha256
-     The `sha256sum` of the file denoted by `scene_path`.  This is the "scene
-     identifier" that the server uses to determine which file to render.
+   @param mime_type
+     The mime type to set for the scene file being uploaded as a file.  If not
+     provided, no mime type will be sent to the server.  No validity checks on
+     the value of the provided mime type are performed.
    @param min_depth
      The minimum depth range.  Required when `image_type` is depth.  See also:
      ValidDepthRangeOrThrow().
@@ -126,12 +102,11 @@ class RenderClient {
      If a rendering cannot be obtained from the server for any reason, including
      invalid parameters supplied to this method such as not including
      `min_depth` and/or `max_depth` when `image_type` is depth. */
-  virtual std::string RetrieveRender(const RenderCameraCore& camera_core,
-                                     RenderImageType image_type,
-                                     const std::string& scene_path,
-                                     const std::string& scene_sha256,
-                                     double min_depth = -1.0,
-                                     double max_depth = -1.0) const;
+  virtual std::string RenderOnServer(
+      const RenderCameraCore& camera_core, RenderImageType image_type,
+      const std::string& scene_path,
+      const std::optional<std::string>& mime_type, double min_depth = -1.0,
+      double max_depth = -1.0) const;
 
   //@}
   /** @name Server communication helpers */
@@ -258,10 +233,6 @@ class RenderClient {
    `0` means no port level communication is required. */
   int32_t port() const { return port_; }
 
-  /** The upload endpoint of the server, used in UploadScene().  Should **not**
-   include a preceding slash. */
-  const std::string& upload_endpoint() const { return upload_endpoint_; }
-
   /** The render endpoint of the server, used in RetrieveRender().
    Should **not** include a preceding slash. */
   const std::string& render_endpoint() const { return render_endpoint_; }
@@ -279,7 +250,6 @@ class RenderClient {
   std::string temp_directory_;
   std::string url_;
   int32_t port_;
-  std::string upload_endpoint_;
   std::string render_endpoint_;
   bool verbose_;
   bool no_cleanup_;
