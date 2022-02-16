@@ -18,6 +18,7 @@ libglib2.0-0
 libglu1-mesa
 libglx0
 libhdf5-103
+libjchart2d-java
 libjpeg-turbo8
 libjsoncpp1
 liblapack3
