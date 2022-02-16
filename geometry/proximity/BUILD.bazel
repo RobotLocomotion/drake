@@ -650,6 +650,7 @@ drake_cc_library(
         ":mesh_traits",
         "//common:default_scalars",
         "//geometry:geometry_ids",
+        "//math:geometric_transform",
     ],
 )
 

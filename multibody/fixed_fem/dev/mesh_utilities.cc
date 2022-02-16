@@ -181,9 +181,8 @@ std::vector<VolumeElement> GenerateDiamondCubicElements(
 }
 
 template <typename T>
-internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
-    const Box& box, double resolution_hint,
-    const math::RigidTransform<T>& X_WB) {
+geometry::VolumeMesh<T> MakeDiamondCubicBoxVolumeMesh(const Box& box,
+                                                      double resolution_hint) {
   DRAKE_DEMAND(resolution_hint > 0.);
   /* Number of vertices in x-, y-, and z- directions.  In each direction,
    there is one more vertices than cells. */
@@ -196,9 +195,22 @@ internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
   std::vector<Vector3<T>> vertices =
       geometry::internal::GenerateVertices<T>(box, num_vertices);
 
+  std::vector<VolumeElement> elements =
+      GenerateDiamondCubicElements(num_vertices);
+
+  return {std::move(elements), std::move(vertices)};
+}
+
+template <typename T>
+internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
+    const Box& box, double resolution_hint,
+    const math::RigidTransform<T>& X_WB) {
+  auto mesh = std::make_unique<VolumeMesh<T>>(
+      MakeDiamondCubicBoxVolumeMesh<T>(box, resolution_hint));
+
   // TODO(xuchenhan-tri): This is an expedient but expensive way to calculate
-  //  the signed distance of the vertices. When moving out of dev/, come up with
-  //  a better solution.
+  //  the signed distance of the vertices. When moving out of dev/, come up
+  //  with a better solution.
   /* Generate the vertex distances to the shape. */
   geometry::SceneGraph<T> scene_graph;
   const auto& source_id = scene_graph.RegisterSource();
@@ -213,21 +225,14 @@ internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
       scene_graph.get_query_output_port()
           .template Eval<geometry::QueryObject<T>>(*context);
   std::vector<T> signed_distances;
-  for (const Vector3<T>& vertex : vertices) {
+  for (const Vector3<T>& vertex : mesh->vertices()) {
     const auto& d = query_object.ComputeSignedDistanceToPoint(vertex);
     DRAKE_DEMAND(d.size() == 1);
     signed_distances.emplace_back(d[0].distance);
   }
 
-  for (Vector3<T>& vertex : vertices) {
-    // Transform to World frame.
-    vertex = Vector3<T>(X_WB * vertex);
-  }
+  mesh->TransformVertices(X_WB);
 
-  std::vector<VolumeElement> elements =
-      GenerateDiamondCubicElements(num_vertices);
-  auto mesh =
-      std::make_unique<VolumeMesh<T>>(std::move(elements), std::move(vertices));
   auto mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
       std::move(signed_distances), mesh.get(), false);
   return {std::move(mesh), std::move(mesh_field)};

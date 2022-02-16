@@ -385,6 +385,26 @@ GTEST_TEST(VolumeMeshTest, TestCalcGradientVectorOfLinearFieldAutoDiffXd) {
   TestCalcGradientVectorOfLinearField<AutoDiffXd>();
 }
 
+template <typename T>
+void TestTransformVertices() {
+  const RigidTransform<T> X_WM(
+      RollPitchYaw<T>(M_PI / 6.0, 2.0 * M_PI / 3.0, 7.0 * M_PI / 4.0),
+      Vector3<T>(1.0, 2.0, 3.0));
+  auto volume_mesh_W = TestVolumeMesh<T>(RigidTransform<T>());
+  volume_mesh_W->TransformVertices(X_WM);
+  auto volume_mesh_W_expected = TestVolumeMesh<T>(RigidTransform<T>(X_WM));
+  EXPECT_TRUE(volume_mesh_W->Equal(*volume_mesh_W_expected,
+                                   4.0 * std::numeric_limits<T>::epsilon()));
+}
+
+GTEST_TEST(VolumeMeshTest, TestTransformVerticesDouble) {
+  TestTransformVertices<double>();
+}
+
+GTEST_TEST(VolumeMeshTest, TestTransformVerticesAutoDiffXd) {
+  TestTransformVertices<AutoDiffXd>();
+}
+
 template<typename T>
 std::unique_ptr<VolumeMeshFieldLinear<T, T>> TestVolumeMeshFieldLinear() {
   auto volume_mesh = TestVolumeMesh<T>();
