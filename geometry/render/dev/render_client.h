@@ -26,7 +26,7 @@ class RenderClient {
   //@{
 #ifdef DRAKE_DOXYGEN_CXX
   // Note: the copy constructor operator is actually protected to serve as the
-  // basis for implementing the DoClone() method.
+  // basis for implementing the DoClone() method of derived classes.
   RenderClient(const RenderClient&) = delete;
 #endif
   RenderClient& operator=(const RenderClient&) = delete;
