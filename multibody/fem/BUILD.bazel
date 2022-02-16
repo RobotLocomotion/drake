@@ -15,6 +15,7 @@ drake_cc_package_library(
     name = "fem",
     visibility = ["//multibody/fem:__subpackages__"],
     deps = [
+        ":acceleration_newmark_scheme",
         ":calc_lame_parameters",
         ":constitutive_model",
         ":corotated_model",
@@ -31,10 +32,26 @@ drake_cc_package_library(
         ":linear_constitutive_model_data",
         ":linear_simplex_element",
         ":matrix_utilities",
+        ":newmark_scheme",
         ":petsc_symmetric_block_sparse_matrix",
         ":quadrature",
         ":schur_complement",
         ":simplex_gaussian_quadrature",
+        ":velocity_newmark_scheme",
+    ],
+)
+
+drake_cc_library(
+    name = "acceleration_newmark_scheme",
+    srcs = [
+        "acceleration_newmark_scheme.cc",
+    ],
+    hdrs = [
+        "acceleration_newmark_scheme.h",
+    ],
+    deps = [
+        ":newmark_scheme",
+        "//common:default_scalars",
     ],
 )
 
@@ -272,6 +289,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "newmark_scheme",
+    hdrs = [
+        "newmark_scheme.h",
+    ],
+    deps = [
+        ":discrete_time_integrator",
+    ],
+)
+
+drake_cc_library(
     name = "petsc_symmetric_block_sparse_matrix",
     srcs = [
         "petsc_symmetric_block_sparse_matrix.cc",
@@ -325,6 +352,29 @@ drake_cc_library(
     ],
     deps = [
         ":quadrature",
+    ],
+)
+
+drake_cc_library(
+    name = "velocity_newmark_scheme",
+    srcs = [
+        "velocity_newmark_scheme.cc",
+    ],
+    hdrs = [
+        "velocity_newmark_scheme.h",
+    ],
+    deps = [
+        ":newmark_scheme",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_googletest(
+    name = "acceleration_newmark_scheme_test",
+    deps = [
+        ":acceleration_newmark_scheme",
+        ":velocity_newmark_scheme",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -509,6 +559,15 @@ drake_cc_googletest(
     name = "simplex_gaussian_quadrature_test",
     deps = [
         ":simplex_gaussian_quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "velocity_newmark_scheme_test",
+    deps = [
+        ":acceleration_newmark_scheme",
+        ":velocity_newmark_scheme",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
