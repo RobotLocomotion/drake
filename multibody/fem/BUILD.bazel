@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":corotated_model_data",
         ":damping_model",
         ":deformation_gradient_data",
+        ":discrete_time_integrator",
         ":fem_indexes",
         ":fem_state",
         ":fem_state_system",
@@ -119,6 +120,21 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:nice_type_name",
+    ],
+)
+
+drake_cc_library(
+    name = "discrete_time_integrator",
+    srcs = [
+        "discrete_time_integrator.cc",
+    ],
+    hdrs = [
+        "discrete_time_integrator.h",
+    ],
+    deps = [
+        ":fem_state",
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
@@ -359,6 +375,13 @@ drake_cc_googletest(
         ":deformation_gradient_data",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "discrete_time_integrator_test",
+    deps = [
+        ":discrete_time_integrator",
     ],
 )
 
