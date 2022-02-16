@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <!-- Note: Add a massless dummy body, so that the connection from the world to
+             paddle_body is world -> prismatic_joint_y -> paddle_dummy ->
+             prismatic_joint_z -> paddle_body.
+  -->
+  <model name="paddle_dummy">
+    <link name="paddle_dummy_link">
+      <inertial>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0</iyy>
+          <iyz>0</iyz>
+          <izz>0</izz>
+        </inertia>
+      </inertial>
+    </link>
+    <joint name="paddle_tranlate_y" type="prismatic">
+      <parent>world</parent>
+      <child></child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <effort>20</effort>
+        </limit>
+      </axis>
+    </joint>
+    <joint name="paddle_translate_z" type="prismatic">
+      <parent>"paddle_dummy"</parent>
+      <child></child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <effort>20</effort>
+        </limit>
+      </axis>
+    </joint>
+  </model>
+</sdf>
