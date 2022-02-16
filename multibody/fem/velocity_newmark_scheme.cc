@@ -25,15 +25,14 @@ void VelocityNewmarkScheme<T>::DoAdvanceOneTimeStep(
   const VectorX<T>& vn = prev_state.GetVelocities();
   const VectorX<T>& qn = prev_state.GetPositions();
   const VectorX<T>& v = z;
-  const Vector3<T> weights = this->GetWeights();
   /* Note that the partials of the next time step's (q, v, a) w.r.t. z are
    (β*δt/γ, 1, 1/(δt*γ)), and it must match the weights given by DoGetWeights().
   */
   state->SetPositions(
-      xn + dt() * (beta_over_gamma_ * v + (1.0 - beta_over_gamma_) * vn) +
+      qn + dt() * (beta_over_gamma_ * v + (1.0 - beta_over_gamma_) * vn) +
       dt() * dt() * (0.5 - beta_over_gamma_) * an);
   state->SetAccelerations(one_over_dt_gamma_ * (v - vn) -
-                          (1.0 - gamma()) / gamma() * an);
+                          (1.0 - gamma_) / gamma_ * an);
   state->SetVelocities(v);
 }
 

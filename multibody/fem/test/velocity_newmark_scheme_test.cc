@@ -103,7 +103,8 @@ TEST_F(VelocityNewmarkSchemeTest, EquivalenceWithAccelerationNewmark) {
   FemState<double> state_v(fem_state_system_.get());
   scheme_.AdvanceOneTimeStep(state0, v(), &state_v);
 
-  const AccelerationNewmarkScheme<double> acceleration_scheme{kDt, kGamma, kBeta};
+  const AccelerationNewmarkScheme<double> acceleration_scheme{kDt, kGamma,
+                                                              kBeta};
   FemState<double> state_a(fem_state_system_.get());
   acceleration_scheme.AdvanceOneTimeStep(state0, state_v.GetAccelerations(),
                                          &state_a);
