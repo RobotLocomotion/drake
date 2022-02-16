@@ -13,6 +13,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/mesh_traits.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -297,6 +298,9 @@ class VolumeMesh {
     }
     return gradu_M;
   }
+
+  /* Apply the given rigid transform to all vertices in the volume mesh. */
+  void Transform(const math::RigidTransform<T>& transform);
 
  private:
   // Client attorney class that provides a means to modify vertex positions.
