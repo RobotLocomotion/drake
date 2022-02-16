@@ -4,6 +4,7 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
+/* If possible, redirects Drake's C++ logs to Python's `logging` module. */
 void RedirectPythonLogging();
 
 }  // namespace internal
