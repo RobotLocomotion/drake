@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 
-#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
@@ -90,7 +89,6 @@ class Parser final {
  private:
   PackageMap package_map_;
   MultibodyPlant<double>* const plant_;
-  geometry::SceneGraph<double>* const scene_graph_;
 };
 
 }  // namespace multibody

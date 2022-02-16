@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 
-#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -36,9 +35,6 @@ namespace internal {
 // @param plant
 //   A pointer to a mutable MultibodyPlant object to which the model will be
 //   added.
-// @param scene_graph
-//   A pointer to a mutable SceneGraph object used for geometry registration
-//   (either to model visual or contact geometry).  May be nullptr.
 // @param test_sdf_forced_nesting
 //   If true, a custom parser for SDFormat files (but using a different file
 //   extension) will be registered when using libsdformat's Interface API. This
@@ -49,7 +45,6 @@ ModelInstanceIndex AddModelFromSdf(
     const std::string& model_name,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr,
     bool test_sdf_forced_nesting = false);
 
 // Parses all `<model>` elements from the SDF file specified by `file_name`
@@ -71,9 +66,6 @@ ModelInstanceIndex AddModelFromSdf(
 //   added.
 // @param package_map
 //   An object that maps ROS packages to their full pathnames.
-// @param scene_graph
-//   A pointer to a mutable SceneGraph object used for geometry registration
-//   (either to model visual or contact geometry).  May be nullptr.
 // @param test_sdf_forced_nesting
 //   If true, a custom parser for SDFormat files (but using a different file
 //   extension) will be registered when using libsdformat's Interface API. This
@@ -83,7 +75,6 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const DataSource& data_source,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr,
     bool test_sdf_forced_nesting = false);
 
 }  // namespace internal
