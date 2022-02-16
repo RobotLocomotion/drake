@@ -20,6 +20,7 @@ a way to model a kinematic loop. It shows:
 #include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/multibody/plant/compliant_contact_manager.h"
 
 namespace drake {
 
@@ -34,6 +35,7 @@ using multibody::RevoluteJoint;
 using systems::Context;
 using systems::DiagramBuilder;
 using systems::Simulator;
+using drake::multibody::internal::CompliantContactManager;
 
 namespace examples {
 namespace multibody {
@@ -69,12 +71,14 @@ DEFINE_double(
     "Initial velocity, q̇A, of joint_WA. Default set to 3 radians/second ≈ "
     "171.88 degrees/second so that the model has some motion.");
 
+DEFINE_double(mbp_dt, 0.01, "MultibodyPlant time step.");
+
 int do_main() {
   // Build a generic MultibodyPlant and SceneGraph.
   DiagramBuilder<double> builder;
 
   auto [four_bar, scene_graph] = AddMultibodyPlantSceneGraph(
-      &builder, std::make_unique<MultibodyPlant<double>>(0.0));
+      &builder, std::make_unique<MultibodyPlant<double>>(FLAGS_mbp_dt));
 
   // Make and add the four_bar model from an SDF model.
   const std::string relative_name =
@@ -114,13 +118,21 @@ int do_main() {
 
   // Add a bushing force element where the joint between link B and link C
   // should be in an ideal 4-bar linkage.
+#if 0  
   four_bar.AddForceElement<LinearBushingRollPitchYaw>(
       bc_bushing, cb_bushing, torque_stiffness_constants,
       torque_damping_constants, force_stiffness_constants,
       force_damping_constants);
+#endif
 
   // We are done defining the model. Finalize and build the diagram.
   four_bar.Finalize();
+
+  // Add discrete update manager.  
+  auto owned_contact_manager =
+      std::make_unique<CompliantContactManager<double>>(nullptr);
+  CompliantContactManager<double>* manager = owned_contact_manager.get();
+  four_bar.SetDiscreteUpdateManager(std::move(owned_contact_manager));  
 
   geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
   auto diagram = builder.Build();
@@ -154,6 +166,19 @@ int do_main() {
 
   // Set q̇A,the rate of change in radians/second of the angle qA.
   joint_WA.set_angular_rate(&four_bar_context, FLAGS_initial_velocity);
+
+  // Add constraint.
+  const Vector3d p_BBc = bc_bushing.GetFixedPoseInBodyFrame().translation();
+  const Vector3d p_CCb = cb_bushing.GetFixedPoseInBodyFrame().translation();
+
+  const double dissipation_time_scale =
+      FLAGS_force_damping / FLAGS_force_stiffness;
+  manager->AddDistanceConstraint(bc_bushing.body(), p_BBc, cb_bushing.body(),
+                                 p_CCb, 0.0, FLAGS_force_stiffness,
+                                 dissipation_time_scale);
+
+  //(void)bc_bushing;
+  //(void)cb_bushing;
 
   // Create a simulator and run the simulation
   std::unique_ptr<Simulator<double>> simulator =

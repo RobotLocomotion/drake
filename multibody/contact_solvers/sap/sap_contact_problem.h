@@ -1,9 +1,17 @@
 #pragma once
 
+#include <memory>
+#include <optional>
+#include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/sorted_pair.h"
+#include "drake/multibody/contact_solvers/block_sparse_matrix.h"
+#include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
+#include "drake/multibody/contact_solvers/sap/sap_constraint.h"
 
 namespace drake {
 namespace multibody {
@@ -74,7 +82,7 @@ class SapContactProblem {
   /* TODO(amcastro-tri): consider constructor API taking std::vector<VectorX<T>>
    for v_star. It could be useful for deformables. */
 
-  /* TODO(amcastro-tri): Implement APIs to add constraints in follow up PRs. */
+  void AddConstraint(std::unique_ptr<SapConstraint<T>> c);
 
   /* Returns the number of cliques. */
   int num_cliques() const { return A_.size(); }
@@ -89,6 +97,14 @@ class SapContactProblem {
     return A_[clique_index].rows();
   }
 
+  // Returns the number of constraints.
+  int num_constraints() const { return constraints_.size(); }
+
+  // Returns the total number of constrained DOFs nk. That is, nk = ∑ni where ni
+  // is the number of constraints DOFs for the i-th contraints, see
+  // SapConstraint::num_constraint_equations().
+  int num_constraint_equations() const { return num_constrained_dofs_; }
+
   const T& time_step() const { return time_step_; }
 
   /* Returns the block diagonal dynamics matrix A. */
@@ -98,11 +114,23 @@ class SapContactProblem {
    num_velocities(). */
   const VectorX<T>& v_star() const { return v_star_; }
 
+  // Access the k-th constraint.
+  const SapConstraint<T>& get_constraint(int k) const {
+    DRAKE_DEMAND(0 <= k && k < num_constraints());
+    return *constraints_[k];
+  }
+
+  ContactProblemGraph MakeGraph() const;
+
  private:
   int nv_{0};                    // Total number of generalized velocities.
   T time_step_{0.0};             // Discrete time step.
   std::vector<MatrixX<T>> A_;    // Linear dynamics matrix.
   VectorX<T> v_star_;            // Free-motion velocities.
+
+  int num_constrained_dofs_{0};  // Total number of constrained DOFs.
+  // Vector of constraints owned by this problem.
+  std::vector<std::unique_ptr<SapConstraint<T>>> constraints_;
 };
 
 }  // namespace internal
