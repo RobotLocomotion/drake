@@ -199,7 +199,7 @@ struct Warn {
   }
 };
 
-/// Invokes `drake::log()->set_level(level)`.
+/// Sets the log threshold used by Drake's C++ code.
 /// @param level Must be a string from spdlog enumerations: `trace`, `debug`,
 /// `info`, `warn`, `err`, `critical`, `off`, or `unchanged` (not an enum, but
 /// useful for command-line).
