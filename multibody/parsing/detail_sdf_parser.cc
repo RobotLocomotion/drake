@@ -40,7 +40,6 @@ using Eigen::Matrix3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using geometry::GeometryInstance;
-using geometry::SceneGraph;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using std::unique_ptr;
@@ -1314,7 +1313,6 @@ ModelInstanceIndex AddModelFromSdf(
     const std::string& model_name_in,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph,
     bool test_sdf_forced_nesting) {
   DRAKE_THROW_UNLESS(plant != nullptr);
     DRAKE_THROW_UNLESS(!plant->is_finalized());
@@ -1332,10 +1330,6 @@ ModelInstanceIndex AddModelFromSdf(
   // Get the only model in the file.
   const sdf::Model& model = *root.Model();
 
-  if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
-    plant->RegisterAsSourceForSceneGraph(scene_graph);
-  }
-
   const std::string model_name =
       model_name_in.empty() ? model.Name() : model_name_in;
 
@@ -1351,7 +1345,6 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const DataSource& data_source,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph,
     bool test_sdf_forced_nesting) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
@@ -1373,10 +1366,6 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     throw std::runtime_error(fmt::format(
         "File must have exactly one <model> or exactly one <world>, but"
         " instead has {} models and {} worlds", model_count, world_count));
-  }
-
-  if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
-    plant->RegisterAsSourceForSceneGraph(scene_graph);
   }
 
   std::vector<ModelInstanceIndex> model_instances;
