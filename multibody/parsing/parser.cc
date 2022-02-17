@@ -16,8 +16,12 @@ using internal::DataSource;
 Parser::Parser(
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph)
-    : plant_(plant), scene_graph_(scene_graph) {
+    : plant_(plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
+
+  if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
+    plant->RegisterAsSourceForSceneGraph(scene_graph);
+  }
 }
 
 namespace {
@@ -48,11 +52,10 @@ std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
 #pragma GCC diagnostic pop
   const FileType type = DetermineFileType(file_name);
   if (type == FileType::kSdf) {
-    return AddModelsFromSdf(
-        data_source, package_map_, plant_, scene_graph_);
+    return AddModelsFromSdf(data_source, package_map_, plant_);
   } else {
     return {AddModelFromUrdf(
-        data_source, {}, {}, package_map_, plant_, scene_graph_)};
+        data_source, {}, {}, package_map_, plant_)};
   }
 }
 
@@ -69,11 +72,9 @@ ModelInstanceIndex Parser::AddModelFromFile(
 #pragma GCC diagnostic pop
   const FileType type = DetermineFileType(file_name);
   if (type == FileType::kSdf) {
-    return AddModelFromSdf(
-        data_source, model_name, package_map_, plant_, scene_graph_);
+    return AddModelFromSdf(data_source, model_name, package_map_, plant_);
   } else {
-    return AddModelFromUrdf(
-        data_source, model_name, {}, package_map_, plant_, scene_graph_);
+    return AddModelFromUrdf(data_source, model_name, {}, package_map_, plant_);
   }
 }
 
@@ -85,11 +86,9 @@ ModelInstanceIndex Parser::AddModelFromString(
   data_source.file_contents = &file_contents;
   const FileType type = DetermineFileType("<literal-string>." + file_type);
   if (type == FileType::kSdf) {
-    return AddModelFromSdf(
-        data_source, model_name, package_map_, plant_, scene_graph_);
+    return AddModelFromSdf(data_source, model_name, package_map_, plant_);
   } else {
-    return AddModelFromUrdf(
-        data_source, model_name, {}, package_map_, plant_, scene_graph_);
+    return AddModelFromUrdf(data_source, model_name, {}, package_map_, plant_);
   }
 }
 
