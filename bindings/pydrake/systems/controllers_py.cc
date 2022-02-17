@@ -251,11 +251,12 @@ PYBIND11_MODULE(controllers, m) {
           const systems::Context<double>&,
           const Eigen::Ref<const Eigen::MatrixXd>&,
           const Eigen::Ref<const Eigen::MatrixXd>&,
-          const Eigen::Ref<const Eigen::MatrixXd>&, int>(
+          const Eigen::Ref<const Eigen::MatrixXd>&, systems::InputPortIndex>(
           &LinearQuadraticRegulator),
       py::arg("system"), py::arg("context"), py::arg("Q"), py::arg("R"),
       py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
-      py::arg("input_port_index") = 0, doc.LinearQuadraticRegulator.doc_6args);
+      py::arg("input_port_index") = systems::InputPortIndex(0),
+      doc.LinearQuadraticRegulator.doc_6args);
 
   py::class_<FiniteHorizonLinearQuadraticRegulatorOptions> fhlqr_options(m,
       "FiniteHorizonLinearQuadraticRegulatorOptions",

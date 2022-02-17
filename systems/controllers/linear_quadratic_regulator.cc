@@ -96,7 +96,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,
     const Eigen::Ref<const Eigen::MatrixXd>& N,
-    int input_port_index) {
+    InputPortIndex input_port_index) {
   // TODO(russt): accept optional additional argument to return the cost-to-go
   // but note that it will be a full quadratic form (x'S2x + s1'x + s0).
 
