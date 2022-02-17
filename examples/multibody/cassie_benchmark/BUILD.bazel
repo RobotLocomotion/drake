@@ -4,6 +4,7 @@
 load(
     "@drake//tools/performance:defs.bzl",
     "drake_cc_googlebench_binary",
+    "drake_py_experiment_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -23,16 +24,9 @@ drake_cc_googlebench_binary(
     ],
 )
 
-sh_test(
-    name = "record_results",
-    size = "small",
-    timeout = "moderate",
-    srcs = ["record_results.sh"],
-    data = [
-        ":cassie_bench",
-        "//tools/performance:record_results",
-    ],
-    tags = ["no_valgrind_tools"],
+drake_py_experiment_binary(
+    name = "experiment",
+    googlebench_binary = ":cassie_bench",
 )
 
 add_lint_tests()
