@@ -1,10 +1,11 @@
-#include "drake/multibody/fixed_fem/dev/corotated_model.h"
+#include "drake/multibody/fem/corotated_model.h"
 
 #include <array>
 #include <utility>
 
 #include "drake/common/autodiff.h"
-#include "drake/multibody/fixed_fem/dev/calc_lame_parameters.h"
+#include "drake/multibody/fem/calc_lame_parameters.h"
+#include "drake/multibody/fem/matrix_utilities.h"
 
 namespace drake {
 namespace multibody {
@@ -13,9 +14,11 @@ namespace internal {
 
 template <typename T, int num_locations>
 CorotatedModel<T, num_locations>::CorotatedModel(const T& youngs_modulus,
-                                                 const T& poisson_ratio)
-    : E_(youngs_modulus), nu_(poisson_ratio) {
-  std::tie(lambda_, mu_) = CalcLameParameters(E_, nu_);
+                                                 const T& poissons_ratio)
+    : E_(youngs_modulus), nu_(poissons_ratio) {
+  const LameParameters<T> lame_params = CalcLameParameters(E_, nu_);
+  mu_ = lame_params.mu;
+  lambda_ = lame_params.lambda;
 }
 
 template <typename T, int num_locations>
@@ -25,6 +28,8 @@ void CorotatedModel<T, num_locations>::CalcElasticEnergyDensityImpl(
     const T& Jm1 = data.Jm1()[i];
     const Matrix3<T>& F = data.deformation_gradient()[i];
     const Matrix3<T>& R = data.R()[i];
+    /* Note that ‖F − R‖² is equivalent to the ∑(σᵢ−1)² term used in
+     [Stomakhin, 2012]. */
     (*Psi)[i] = mu_ * (F - R).squaredNorm() + 0.5 * lambda_ * Jm1 * Jm1;
   }
 }

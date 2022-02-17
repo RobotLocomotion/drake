@@ -48,37 +48,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "corotated_model",
-    srcs = [
-        "corotated_model.cc",
-    ],
-    hdrs = [
-        "corotated_model.h",
-    ],
-    deps = [
-        ":calc_lame_parameters",
-        ":corotated_model_data",
-        "//common:autodiff",
-        "//common:essential",
-        "//multibody/fem:constitutive_model",
-        "//multibody/fem:matrix_utilities",
-    ],
-)
-
-drake_cc_library(
-    name = "corotated_model_data",
-    hdrs = [
-        "corotated_model_data.h",
-    ],
-    deps = [
-        "//common:autodiff",
-        "//common:essential",
-        "//multibody/fem:deformation_gradient_data",
-        "//multibody/fem:matrix_utilities",
-    ],
-)
-
-drake_cc_library(
     name = "deformable_body_config",
     hdrs = [
         "deformable_body_config.h",
@@ -216,15 +185,6 @@ drake_cc_googletest(
         ":collision_objects",
         "//common:find_resource",
         "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "corotated_model_data_test",
-    deps = [
-        ":corotated_model",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:geometric_transform",
     ],
 )
 
