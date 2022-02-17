@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/corotated_model_data.h"
+#include "drake/multibody/fem/corotated_model_data.h"
 
 #include <gtest/gtest.h>
 

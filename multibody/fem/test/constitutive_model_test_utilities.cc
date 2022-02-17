@@ -6,6 +6,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/fem/constitutive_model.h"
+#include "drake/multibody/fem/corotated_model.h"
 #include "drake/multibody/fem/linear_constitutive_model.h"
 #include "drake/multibody/fem/matrix_utilities.h"
 
@@ -168,13 +169,17 @@ void TestdPdFIsDerivativeOfP() {
 
 template void TestParameters<LinearConstitutiveModel<double, 1>>();
 template void TestParameters<LinearConstitutiveModel<AutoDiffXd, 1>>();
-
 template void TestUndeformedState<LinearConstitutiveModel<double, 1>>();
 template void TestUndeformedState<LinearConstitutiveModel<AutoDiffXd, 1>>();
-
 template void TestPIsDerivativeOfPsi<LinearConstitutiveModel<AutoDiffXd, 1>>();
-
 template void TestdPdFIsDerivativeOfP<LinearConstitutiveModel<AutoDiffXd, 1>>();
+
+template void TestParameters<CorotatedModel<double, 1>>();
+template void TestParameters<CorotatedModel<AutoDiffXd, 1>>();
+template void TestUndeformedState<CorotatedModel<double, 1>>();
+template void TestUndeformedState<CorotatedModel<AutoDiffXd, 1>>();
+template void TestPIsDerivativeOfPsi<CorotatedModel<AutoDiffXd, 1>>();
+template void TestdPdFIsDerivativeOfP<CorotatedModel<AutoDiffXd, 1>>();
 
 }  // namespace test
 }  // namespace internal
