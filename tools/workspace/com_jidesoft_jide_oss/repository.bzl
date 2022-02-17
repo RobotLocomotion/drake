@@ -1,19 +1,16 @@
 # -*- mode: python -*-
 
-load(
-    "@drake//tools/workspace:java.bzl",
-    "drake_java_import",
-)
+load("@bazel_tools//tools/build_defs/repo:java.bzl", "java_import_external")
 
 def com_jidesoft_jide_oss_repository(
         name,
         mirrors = None):
-    drake_java_import(
+    java_import_external(
         name = name,
         licenses = ["restricted"],  # GPL-2.0 WITH Classpath-exception-2.0
-        local_distributions = ["ubuntu"],
-        local_jar = "/usr/share/java/jide-oss.jar",
-        maven_jar = "com/jidesoft/jide-oss/2.9.7/jide-oss-2.9.7.jar",  # noqa
-        maven_jar_sha256 = "a2edc2749cf482f6b2b1331f35f0383a1a11c19b1cf6d9a8cf7c69ce4cc8e04b",  # noqa
-        mirrors = mirrors,
+        jar_urls = [
+            x.format(fulljar = "com/jidesoft/jide-oss/2.9.7/jide-oss-2.9.7.jar")  # noqa
+            for x in mirrors.get("maven")
+        ],
+        jar_sha256 = "a2edc2749cf482f6b2b1331f35f0383a1a11c19b1cf6d9a8cf7c69ce4cc8e04b",  # noqa
     )

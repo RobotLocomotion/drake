@@ -1,19 +1,16 @@
 # -*- mode: python -*-
 
-load(
-    "@drake//tools/workspace:java.bzl",
-    "drake_java_import",
-)
+load("@bazel_tools//tools/build_defs/repo:java.bzl", "java_import_external")
 
 def org_apache_xmlgraphics_commons_repository(
         name,
         mirrors = None):
-    drake_java_import(
+    java_import_external(
         name = name,
         licenses = ["notice"],  # Apache-2.0
-        local_distributions = ["ubuntu"],
-        local_jar = "/usr/share/java/xmlgraphics-commons.jar",
-        maven_jar = "org/apache/xmlgraphics/xmlgraphics-commons/1.3.1/xmlgraphics-commons-1.3.1.jar",  # noqa
-        maven_jar_sha256 = "7ce0c924c84e2710c162ae1c98f5047d64f528268792aba642d4bae5e1de7181",  # noqa
-        mirrors = mirrors,
+        jar_urls = [
+            x.format(fulljar = "org/apache/xmlgraphics/xmlgraphics-commons/1.3.1/xmlgraphics-commons-1.3.1.jar")  # noqa
+            for x in mirrors.get("maven")
+        ],
+        jar_sha256 = "7ce0c924c84e2710c162ae1c98f5047d64f528268792aba642d4bae5e1de7181",  # noqa
     )

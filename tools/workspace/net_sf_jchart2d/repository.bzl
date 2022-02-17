@@ -1,19 +1,19 @@
 # -*- mode: python -*-
 
-load(
-    "@drake//tools/workspace:java.bzl",
-    "drake_java_import",
-)
+load("@bazel_tools//tools/build_defs/repo:java.bzl", "java_import_external")
 
 def net_sf_jchart2d_repository(
         name,
         mirrors = None):
-    drake_java_import(
+    # In the unlikely event that you update the version here, verify that the
+    # licenses in tools/third_party/jchart2d/LICENSE are still applicable, and
+    # fix up the two jchart2d-*.cmake files in this directory.
+    java_import_external(
         name = name,
         licenses = ["restricted"],  # LGPL-3.0+
-        local_distributions = ["ubuntu"],
-        local_jar = "/usr/share/java/jchart2d.jar",
-        maven_jar = "net/sf/jchart2d/jchart2d/3.3.2/jchart2d-3.3.2.jar",  # noqa
-        maven_jar_sha256 = "41af674b1bb00d8b89a0649ddaa569df5750911b4e33f89b211ae82e411d16cc",  # noqa
-        mirrors = mirrors,
+        jar_urls = [
+            x.format(fulljar = "net/sf/jchart2d/jchart2d/3.3.2/jchart2d-3.3.2.jar")  # noqa
+            for x in mirrors.get("maven")
+        ],
+        jar_sha256 = "41af674b1bb00d8b89a0649ddaa569df5750911b4e33f89b211ae82e411d16cc",  # noqa
     )
