@@ -6,7 +6,7 @@
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/geometry/drake_visualizer.h"
-#include "drake/geometry/render/dev/render_client_gltf_factory.h"
+#include "drake/geometry/render/dev/render_engine_gltf_client_factory.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
@@ -279,8 +279,8 @@ int do_main() {
     scene_graph->AddRenderer(render_name,
                              MakeRenderEngineVtk(RenderEngineVtkParams()));
   } else {  // FLAGS_render_engine == "client"
-    scene_graph->AddRenderer(render_name,
-                             MakeRenderClientGltf(RenderClientGltfParams()));
+    scene_graph->AddRenderer(render_name, MakeRenderEngineGltfClient(
+                                              RenderEngineGltfClientParams()));
   }
 
   AddShapes(scene_graph);
