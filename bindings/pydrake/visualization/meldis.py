@@ -34,6 +34,9 @@ from drake import (
     lcmt_viewer_geometry_data,
     lcmt_viewer_load_robot,
 )
+from pydrake.common import (
+    configure_logging,
+)
 from pydrake.common.eigen_geometry import (
     Quaternion,
 )
@@ -59,6 +62,8 @@ from pydrake.multibody.meshcat import (
     _PointContactVisualizerItem,
     ContactVisualizerParams,
 )
+
+_logger = logging.getLogger("drake")
 
 
 class _ViewerApplet:
@@ -135,7 +140,7 @@ class _ViewerApplet:
             (radius,) = geom.float_data
             shape = Sphere(radius=radius)
         else:
-            logging.warning(f"Unknown geom.type of {geom.type}")
+            _logger.warning(f"Unknown geom.type of {geom.type}")
             return (None, None, None)
         rgba = Rgba(*geom.color)
         pose = self._to_pose(geom.position, geom.quaternion)
@@ -205,7 +210,7 @@ class Meldis:
 
         self._lcm = DrakeLcm()
         lcm_url = self._lcm.get_lcm_url()
-        logging.info(f"Meldis is listening for LCM messages at {lcm_url}")
+        _logger.info(f"Meldis is listening for LCM messages at {lcm_url}")
 
         self.meshcat = Meshcat(port=meshcat_port)
 
@@ -310,14 +315,13 @@ class Meldis:
 
         # In case we are idle for too long, exit automatically.
         if now > self._last_active + idle_timeout:
-            logging.info("Meldis is exiting now; no browser was connected for"
+            _logger.info("Meldis is exiting now; no browser was connected for"
                          f" >{idle_timeout} seconds")
             sys.exit(1)
 
 
 def _main():
-    format = "[%(asctime)s] [console] [%(levelname)s] %(message)s"
-    logging.basicConfig(level=logging.INFO, format=format)
+    configure_logging()
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-p", "--port", action="store", metavar="NUM", type=int,

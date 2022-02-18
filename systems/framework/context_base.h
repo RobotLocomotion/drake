@@ -239,10 +239,10 @@ class ContextBase : public internal::ContextMessageInterface {
   /** (Internal use only) Returns the next change event serial number that is
   unique for this entire Context tree, not just this subcontext. This number
   is not reset after a Context is copied but continues to count up. */
-  int64_t start_new_change_event() {
+  int64_t start_new_change_event() const {
     // First search up to find the root Context (typically not far).
     // TODO(sherm1) Consider precalculating this for faster access.
-    ContextBase* context = this;
+    const ContextBase* context = this;
     while (context->parent_) {
       // Only a root context has a non-negative change event value.
       DRAKE_ASSERT(context->current_change_event_ == -1);
@@ -643,15 +643,18 @@ class ContextBase : public internal::ContextMessageInterface {
   // The cache of pre-computed values owned by this subcontext.
   mutable Cache cache_;
 
-  // This is the dependency graph for values within this subcontext.
-  DependencyGraph graph_;
-
   // This is used only when this subcontext is serving as the root of a context
   // tree, in which case it will be initialized to zero as shown. In any
   // non-root context, it will be reset to -1 when the parent pointer is
   // assigned and must never change from that value.
+  // This member must be mutable to permit notification sweeps that are
+  // initiated due to a cache entry update since those can be done in a
+  // const Context.
   // Note that it does *not* get reset when copied.
-  int64_t current_change_event_{0};
+  mutable int64_t current_change_event_{0};
+
+  // This is the dependency graph for values within this subcontext.
+  DependencyGraph graph_;
 
   // The Context of the enclosing Diagram. Null/invalid when this is the root
   // context.
