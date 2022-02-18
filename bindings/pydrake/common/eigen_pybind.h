@@ -1,8 +1,11 @@
 #pragma once
 
+#include <utility>
+
 #include "pybind11/eigen.h"
 #include <Eigen/Dense>
 
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -65,5 +68,79 @@ inline py::object WrapToMatchInputShape(py::handle func) {
   return wrap(func);
 }
 
+namespace internal {
+
+// Wrapper used to implement a type_caster for drake::EigenPtr.
+// Uses `type_caster<Eigen::Ref>` internally to avoid code duplication.
+template <typename T>
+struct EigenPtrWrapper {
+  using PtrType = drake::EigenPtr<T>;
+  using RefType = Eigen::Ref<T>;
+  using InnerCaster = pybind11::detail::type_caster<RefType>;
+
+  static std::pair<bool, PtrType> load(pybind11::handle src, bool convert) {
+    PtrType value(nullptr);
+
+    if (src.ptr() == Py_None) {
+      return std::make_pair(true, value);
+    }
+
+    InnerCaster inner_caster;
+    auto success = inner_caster.load(src, convert);
+
+    if (success) {
+      RefType& ref = inner_caster;
+      value = PtrType(&ref);
+    }
+
+    return std::make_pair(success, value);
+  }
+
+  static pybind11::handle cast(PtrType src,
+      pybind11::return_value_policy policy, pybind11::handle parent) {
+    if (src == nullptr) {
+      return Py_None;
+    } else {
+      RefType ref = *src;
+      return InnerCaster::cast(ref, policy, parent);
+    }
+  }
+};
+
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
+
+namespace pybind11 {
+namespace detail {
+
+/**
+Provides pybind11 `type_caster`s for drake::EigenPtr.
+
+See http://pybind11.readthedocs.io/en/stable/advanced/cast/custom.html for
+more details on custom type casters.
+*/
+
+template <typename T>
+struct type_caster<drake::EigenPtr<T>> {
+  using Wrapper = drake::pydrake::internal::EigenPtrWrapper<T>;
+  using PtrType = typename Wrapper::PtrType;
+
+ public:
+  PYBIND11_TYPE_CASTER(
+      PtrType, _("Optional[") + Wrapper::InnerCaster::name + _("]"));
+
+  bool load(handle src, bool convert) {
+    bool success;
+    std::tie(success, value) = Wrapper::load(src, convert);
+
+    return success;
+  }
+
+  static handle cast(PtrType src, return_value_policy policy, handle parent) {
+    return Wrapper::cast(src, policy, parent);
+  }
+};
+
+}  // namespace detail
+}  // namespace pybind11
