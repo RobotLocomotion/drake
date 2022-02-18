@@ -213,6 +213,32 @@ Hyperellipsoid::DoAddPointInNonnegativeScalingConstraints(
   return constraints;
 }
 
+std::vector<Binding<Constraint>>
+Hyperellipsoid::DoAddPointInNonnegativeScalingConstraints(
+    MathematicalProgram* prog, const Eigen::Ref<const MatrixXd>& A_x,
+    const Eigen::Ref<const VectorXd>& b, const Eigen::Ref<const VectorXd>& c,
+    double d, const Eigen::Ref<const VectorXDecisionVariable>& x,
+    const Eigen::Ref<const VectorXDecisionVariable>& t) const {
+  std::vector<Binding<Constraint>> constraints;
+  // c'*t+d ≥ |A * (A_x * x + b - (c'*t+d)*center)|_2, written as
+  // z₀ ≥ |z₁...ₘ|₂ with z = A_cone * [x;t] + b_cone.
+  const int m = A_.rows();
+  const int n_x = x.size();
+  const int n_t = t.size();
+  MatrixXd A_cone = MatrixXd::Zero(m + 1, n_x + n_t);
+  VectorXd b_cone(m + 1);
+  // z₀ = c' * t + d.
+  A_cone.block(0, n_x, 1, n_t) = c.transpose();
+  b_cone(0) = d;
+  // z₁...ₘ = [A*A_x, -A*center*c'] * [x;t] + A*(b-d*center)
+  A_cone.block(1, 0, m, n_x) = A_ * A_x;
+  A_cone.block(1, n_x, m, n_t) = -A_ * center_ * c.transpose();
+  b_cone.tail(m) = A_ * (b - d * center_);
+  constraints.emplace_back(
+      prog->AddLorentzConeConstraint(A_cone, b_cone, {x, t}));
+  return constraints;
+}
+
 std::pair<std::unique_ptr<Shape>, RigidTransformd>
 Hyperellipsoid::DoToShapeWithPose() const {
   // Use {R*D*u + center | |u|₂ ≤ 1} representation, but where R is an

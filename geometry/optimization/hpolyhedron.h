@@ -126,6 +126,15 @@ class HPolyhedron final : public ConvexSet {
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
       const symbolic::Variable& t) const final;
 
+  std::vector<solvers::Binding<solvers::Constraint>>
+  DoAddPointInNonnegativeScalingConstraints(
+      solvers::MathematicalProgram* prog,
+      const Eigen::Ref<const Eigen::MatrixXd>& A_x,
+      const Eigen::Ref<const Eigen::VectorXd>& b_x,
+      const Eigen::Ref<const Eigen::VectorXd>& c, double d,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const final;
+
   // TODO(russt): Implement DoToShapeWithPose.  Currently we don't have a Shape
   // that can consume this output.  The obvious candidate is Convex, that class
   // currently only stores the filename of an .obj file, and I shouldn't need
