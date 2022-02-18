@@ -16,27 +16,25 @@ namespace ball_plate {
 /// energy is lost due to the collision.
 ///
 /// @param[in] mbp_dt
-///   The discrete update period when MultibodyPlant is modeled as a discrete
-///   system. If zero, the plant is modeled as a continuous system.
+///   The discrete update period (seconds) for MultibodyPlant modeled as a
+//    discrete system.
 /// @param[in] radius
-///   The radius of the ball.
+///   The radius (meters) of the ball.
 /// @param[in] mass
-///   The mass of the ball.
+///   The mass (kg) of the ball.
 /// @param[in] hydroelastic_modulus
-///   The modulus of elasticity for the ball. Only used when modeled with the
-///   hydroelastic model. See @ref mbp_hydroelastic_materials_properties
-///   "Hydroelastic contact" documentation for details.
+///   The hydroelastic modulus of elasticity (Pa) of the ball and the floor.
 /// @param[in] dissipation
-///   The Hunt & Crossley dissipation constant for the ball. Only used with the
-///   hydroelastic model.  See @ref mbp_hydroelastic_materials_properties
-///   "Hydroelastic contact" documentation for details.
+///   The Hunt & Crossley dissipation constant (s/m) for the ball.
 /// @param[in] surface_friction
-///   The Coulomb's law coefficients of friction.
+///   The Coulomb's law coefficients (dimensionless) of friction.
 /// @param[in] gravity_W
-///   The acceleration of gravity vector, expressed in the world frame W.
+///   The acceleration (m/s²) of gravity vector, expressed in the world frame W.
 /// @param[in] resolution_hint_factor
-///   Control the ball's mesh resolution. The smaller number gives a finer
-//    mesh with more tetrahedral elements.
+///   This scaling factor (dimensionless) multiplying the radius of the ball
+///   gives the target edge length of the mesh on the surface of the ball.
+///   It controls the ball's mesh resolution. The smaller number gives a finer
+///   mesh with more tetrahedral elements.
 /// @param scene_graph
 ///   If a SceneGraph is provided with this argument, this factory method
 ///   will register the new multibody plant to be a source for that geometry
@@ -44,6 +42,9 @@ namespace ball_plate {
 ///   If this argument is omitted, no geometry will be registered.
 /// @note The MultibodyPlant model is not finalized. You must call Finalize() on
 /// the new model once you are done creating it.
+///
+/// See also
+/// https://drake.mit.edu/doxygen_cxx/group__hydroelastic__user__guide.html
 std::unique_ptr<drake::multibody::MultibodyPlant<double>>
 MakeBallPlatePlant(
     double mbp_dt,
