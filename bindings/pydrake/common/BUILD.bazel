@@ -16,6 +16,7 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
 )
@@ -410,6 +411,37 @@ drake_py_unittest(
         ":module_py",
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "text_logging_test_py",
+    testonly = 1,
+    add_install = False,
+    cc_so_name = "test/text_logging_test",
+    cc_srcs = ["test/text_logging_test_py.cc"],
+    package_info = PACKAGE_INFO,
+    visibility = ["//visibility:private"],
+)
+
+drake_py_binary(
+    name = "text_logging_example",
+    testonly = 1,
+    srcs = ["test/text_logging_example.py"],
+    deps = [
+        ":module_py",
+        ":text_logging_test_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "text_logging_test",
+    data = [
+        ":text_logging_example",
+    ],
+    shard_count = 8,
+    deps = [
+        "//bindings/pydrake/common/test_utilities:meta_py",
     ],
 )
 

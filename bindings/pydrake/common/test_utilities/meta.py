@@ -1,10 +1,18 @@
 import collections
+import functools
 import re
 
 # TODO(jwnimmer-tri) It's probable that ValueParameterizedTest could be
 # re-implemented using a class decorator, instead of a metaclass. That
 # would likely be easier for developers to understand and maintain. We
 # should explore that next time we revisit any new features here.
+
+
+# A helper for ValueParameterizedTest that uses a subTest to display the
+# exact kwargs upon a failure.
+def _run_subtest(self, *, old_method, **kwargs):
+    with self.subTest(**kwargs):
+        old_method(self, **kwargs)
 
 
 class ValueParameterizedTest(type):
@@ -65,11 +73,13 @@ class ValueParameterizedTest(type):
                 assert new_name.startswith("test_"), new_name
                 assert new_name not in namespace, new_name
 
-                # Create a new method, using a subTest to display the exact
-                # kwargs upon a failure. Keep the same docstring.
-                def new_method(self):
-                    with self.subTest(**kwargs):
-                        old_method(self, **kwargs)
+                # Create a new method with bound kwargs.
+                new_method = functools.partialmethod(
+                    _run_subtest,
+                    old_method=old_method,
+                    **kwargs)
+
+                # Keep the same docstring.
                 new_method.__doc__ = old_method.__doc__
 
                 # Inject the new method under the new name.
