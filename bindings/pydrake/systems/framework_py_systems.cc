@@ -410,16 +410,9 @@ struct Impl {
         .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives,
             py::arg("context"), py::arg("derivatives"),
             doc.System.CalcTimeDerivatives.doc)
-        .def(
-            "CalcImplicitTimeDerivativesResidual",
-            [](const System<T>* self, const Context<T>& context,
-                const ContinuousState<T>& proposed_derivatives,
-                Eigen::Ref<VectorX<T>> residual) {
-              self->CalcImplicitTimeDerivativesResidual(
-                  context, proposed_derivatives, &residual);
-            },
-            py::arg("context"), py::arg("proposed_derivatives"),
-            py::arg("residual"),
+        .def("CalcImplicitTimeDerivativesResidual",
+            &System<T>::CalcImplicitTimeDerivativesResidual, py::arg("context"),
+            py::arg("proposed_derivatives"), py::arg("residual"),
             doc.System.CalcImplicitTimeDerivativesResidual.doc)
         .def(
             "CalcImplicitTimeDerivativesResidual",
