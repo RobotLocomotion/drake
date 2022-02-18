@@ -6,6 +6,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/text_logging.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -166,10 +167,10 @@ GTEST_TEST(MujocoParser, GeometryPose) {
   <worldbody>
     <geom name="identity" type="sphere" size="0.1" />
     <geom name="quat" quat="0 1 0 0" pos="1 2 3" type="sphere" size="0.1" />
-    <geom name="axisangle" axisangle="4 5 6 30" pos="1 2 3" type="sphere" 
+    <geom name="axisangle" axisangle="4 5 6 30" pos="1 2 3" type="sphere"
           size="0.1" />
     <geom name="euler" euler="30 45 60" pos="1 2 3" type="sphere" size="0.1" />
-    <geom name="xyaxes" xyaxes="0 1 0 -1 0 0" pos="1 2 3" type="sphere" 
+    <geom name="xyaxes" xyaxes="0 1 0 -1 0 0" pos="1 2 3" type="sphere"
           size="0.1" />
     <geom name="zaxis" zaxis="0 1 0" pos="1 2 3" type="sphere" size="0.1" />
     <geom name="fromto_capsule" fromto="-1 -3 -3 -1 -1 -3"
@@ -186,7 +187,7 @@ GTEST_TEST(MujocoParser, GeometryPose) {
 <mujoco model="test">
   <compiler angle="radian"/>
   <worldbody>
-    <geom name="axisangle_rad" axisangle="4 5 6 0.5" pos="1 2 3" type="sphere" 
+    <geom name="axisangle_rad" axisangle="4 5 6 0.5" pos="1 2 3" type="sphere"
           size="0.1" />
     <geom name="euler_rad" euler="0.5 0.7 1.05" pos="1 2 3" type="sphere"
           size="0.1" />
@@ -199,7 +200,7 @@ GTEST_TEST(MujocoParser, GeometryPose) {
 <mujoco model="test">
   <compiler angle="degree"/>
   <worldbody>
-    <geom name="axisangle_deg" axisangle="4 5 6 30" pos="1 2 3" type="sphere" 
+    <geom name="axisangle_deg" axisangle="4 5 6 30" pos="1 2 3" type="sphere"
           size="0.1" />
     <geom name="euler_deg" euler="30 45 60" pos="1 2 3" type="sphere"
           size="0.1" />
@@ -386,7 +387,7 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
 
   xml = R"""(
 <mujoco model="test_auto">
-  <compiler inertiafromgeom="auto"/> 
+  <compiler inertiafromgeom="auto"/>
   <worldbody>
     <body name="sphere_auto">
       <inertial mass="524" diaginertia="1 2 3"/>
@@ -407,7 +408,7 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
 
   xml = R"""(
 <mujoco model="test_true">
-  <compiler inertiafromgeom="true"/> 
+  <compiler inertiafromgeom="true"/>
   <default class="main">
     <geom mass="2.53"/>
   </default>
@@ -425,7 +426,7 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
 
   xml = R"""(
 <mujoco model="test_false">
-  <compiler inertiafromgeom="false"/> 
+  <compiler inertiafromgeom="false"/>
   <default class="main">
     <geom mass="2.53"/>
   </default>
@@ -545,7 +546,7 @@ GTEST_TEST(MujocoParser, Joint) {
       <joint type="ball" name="ball" damping="0.1" pos=".1 .2 .3"/>
     </body>
     <body name="slide" pos="1 2 3" euler="30 45 60">
-      <joint type="slide" name="slide" damping="0.2" pos=".1 .2 .3" 
+      <joint type="slide" name="slide" damping="0.2" pos=".1 .2 .3"
              axis="1 0 0" limited="true" range="-2 1.5"/>
     </body>
     <body name="hinge" pos="1 2 3" euler="30 45 60">
@@ -563,7 +564,7 @@ GTEST_TEST(MujocoParser, Joint) {
       <joint type="hinge" name="hinge2" damping="0.6" pos=".1 .2 .3"
              axis="0 1 0"/>
     </body>
-    <body name="default_joint"> 
+    <body name="default_joint">
       <!-- provides code coverage for defaults logic. -->
       <joint/>
     </body>

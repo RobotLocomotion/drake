@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/extract_double.h"
+#include "drake/geometry/query_object.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/meshcat/point_contact_visualizer.h"
 #include "drake/multibody/plant/contact_results.h"

@@ -1,6 +1,7 @@
 #include "drake/multibody/parsing/detail_common.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/geometry/geometry_set.h"
 
 namespace drake {
 namespace multibody {

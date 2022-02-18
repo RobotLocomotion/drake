@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
 
 namespace drake {

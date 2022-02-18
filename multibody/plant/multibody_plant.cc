@@ -18,6 +18,7 @@
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/render/render_label.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/sparse_linear_operator.h"
@@ -3555,6 +3556,14 @@ template <typename T>
 AddMultibodyPlantSceneGraphResult<T>
 AddMultibodyPlantSceneGraph(
     systems::DiagramBuilder<T>* builder,
+    std::unique_ptr<MultibodyPlant<T>> plant) {
+  return AddMultibodyPlantSceneGraph(builder, std::move(plant), {});
+}
+
+template <typename T>
+AddMultibodyPlantSceneGraphResult<T>
+AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<T>* builder,
     std::unique_ptr<MultibodyPlant<T>> plant,
     std::unique_ptr<geometry::SceneGraph<T>> scene_graph) {
   DRAKE_DEMAND(builder != nullptr);
@@ -3579,6 +3588,12 @@ AddMultibodyPlantSceneGraph(
 
 template <typename T>
 AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<T>* builder, double time_step) {
+  return AddMultibodyPlantSceneGraph(builder, time_step, {});
+}
+
+template <typename T>
+AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
     systems::DiagramBuilder<T>* builder, double time_step,
     std::unique_ptr<geometry::SceneGraph<T>> scene_graph) {
   DRAKE_DEMAND(builder != nullptr);
@@ -3589,12 +3604,21 @@ AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    /* Use static_cast to disambiguate the two different overloads. */
+    /* Use static_cast to disambiguate the different overloads. */
+    static_cast<AddMultibodyPlantSceneGraphResult<T>(*)(
+        systems::DiagramBuilder<T>*, double)>(
+            &AddMultibodyPlantSceneGraph),
+    /* Use static_cast to disambiguate the different overloads. */
     static_cast<AddMultibodyPlantSceneGraphResult<T>(*)(
         systems::DiagramBuilder<T>*, double,
         std::unique_ptr<geometry::SceneGraph<T>>)>(
             &AddMultibodyPlantSceneGraph),
-    /* Use static_cast to disambiguate the two different overloads. */
+    /* Use static_cast to disambiguate the different overloads. */
+    static_cast<AddMultibodyPlantSceneGraphResult<T>(*)(
+        systems::DiagramBuilder<T>*,
+        std::unique_ptr<MultibodyPlant<T>>)>(
+            &AddMultibodyPlantSceneGraph),
+    /* Use static_cast to disambiguate the different overloads. */
     static_cast<AddMultibodyPlantSceneGraphResult<T>(*)(
         systems::DiagramBuilder<T>*,
         std::unique_ptr<MultibodyPlant<T>>,

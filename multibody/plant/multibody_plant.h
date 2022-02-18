@@ -16,7 +16,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
-#include "drake/geometry/scene_graph.h"
+#include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
@@ -39,6 +39,16 @@
 #include "drake/systems/framework/scalar_conversion_traits.h"
 
 namespace drake {
+namespace geometry {
+class GeometrySet;
+class IllustrationProperties;
+class ProximityProperties;
+template <typename T> class QueryObject;
+template <typename T> class SceneGraph;
+template <typename T> class SceneGraphInspector;
+class Shape;
+}  // namespace geometry
+
 namespace multibody {
 namespace internal {
 
@@ -4996,6 +5006,30 @@ struct AddMultibodyPlantSceneGraphResult;
 
 /// Makes a new MultibodyPlant with discrete update period `time_step` and
 /// adds it to a diagram builder together with the provided SceneGraph instance,
+/// connecting the geometry ports.  A SceneGraph instance will be created and
+/// used automatically.
+/// @note Usage examples in @ref add_multibody_plant_scene_graph
+/// "AddMultibodyPlantSceneGraph".
+///
+/// @param[in,out] builder
+///   Builder to add to.
+/// @param[in] time_step
+///   The discrete update period for the new MultibodyPlant to be added.
+///   Please refer to the documentation provided in
+///   MultibodyPlant::MultibodyPlant(double) for further details on the
+///   parameter `time_step`.
+/// @return Pair of the registered plant and scene graph.
+/// @pre `builder` must be non-null.
+/// @tparam_default_scalar
+/// @relates MultibodyPlant
+template <typename T>
+AddMultibodyPlantSceneGraphResult<T>
+AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<T>* builder,
+    double time_step);
+
+/// Makes a new MultibodyPlant with discrete update period `time_step` and
+/// adds it to a diagram builder together with the provided SceneGraph instance,
 /// connecting the geometry ports.
 /// @note Usage examples in @ref add_multibody_plant_scene_graph
 /// "AddMultibodyPlantSceneGraph".
@@ -5007,9 +5041,9 @@ struct AddMultibodyPlantSceneGraphResult;
 ///   Please refer to the documentation provided in
 ///   MultibodyPlant::MultibodyPlant(double) for further details on the
 ///   parameter `time_step`.
-/// @param[in] scene_graph (optional)
-///   Constructed scene graph. If none is provided, one will be created and
-///   used.
+/// @param[in] scene_graph
+///   Constructed scene graph. If `nullptr` is passed, a SceneGraph instance
+///   will be created and used automatically.
 /// @return Pair of the registered plant and scene graph.
 /// @pre `builder` must be non-null.
 /// @tparam_default_scalar
@@ -5019,7 +5053,28 @@ AddMultibodyPlantSceneGraphResult<T>
 AddMultibodyPlantSceneGraph(
     systems::DiagramBuilder<T>* builder,
     double time_step,
-    std::unique_ptr<geometry::SceneGraph<T>> scene_graph = nullptr);
+    std::unique_ptr<geometry::SceneGraph<T>> scene_graph);
+
+/// Adds a MultibodyPlant and a SceneGraph instance to a diagram builder,
+/// connecting the geometry ports.  A SceneGraph instance will be created and
+/// used automatically.
+///
+/// @note Usage examples in @ref add_multibody_plant_scene_graph
+/// "AddMultibodyPlantSceneGraph".
+///
+/// @param[in,out] builder
+///   Builder to add to.
+/// @param[in] plant
+///   Plant to be added to the builder.
+/// @return Pair of the registered plant and scene graph.
+/// @pre `builder` and `plant` must be non-null.
+/// @tparam_default_scalar
+/// @relates MultibodyPlant
+template <typename T>
+AddMultibodyPlantSceneGraphResult<T>
+AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<T>* builder,
+    std::unique_ptr<MultibodyPlant<T>> plant);
 
 /// Adds a MultibodyPlant and a SceneGraph instance to a diagram
 /// builder, connecting the geometry ports.
@@ -5030,9 +5085,9 @@ AddMultibodyPlantSceneGraph(
 ///   Builder to add to.
 /// @param[in] plant
 ///   Plant to be added to the builder.
-/// @param[in] scene_graph (optional)
-///   Constructed scene graph. If none is provided, one will be created and
-///   used.
+/// @param[in] scene_graph
+///   Constructed scene graph. If `nullptr` is passed, a SceneGraph instance
+///   will be created and used automatically.
 /// @return Pair of the registered plant and scene graph.
 /// @pre `builder` and `plant` must be non-null.
 /// @tparam_default_scalar
@@ -5042,7 +5097,7 @@ AddMultibodyPlantSceneGraphResult<T>
 AddMultibodyPlantSceneGraph(
     systems::DiagramBuilder<T>* builder,
     std::unique_ptr<MultibodyPlant<T>> plant,
-    std::unique_ptr<geometry::SceneGraph<T>> scene_graph = nullptr);
+    std::unique_ptr<geometry::SceneGraph<T>> scene_graph);
 
 /// Temporary result from `AddMultibodyPlantSceneGraph`. This cannot be
 /// constructed outside of this method.

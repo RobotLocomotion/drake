@@ -5,6 +5,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 

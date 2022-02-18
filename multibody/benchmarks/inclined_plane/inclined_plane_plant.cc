@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 

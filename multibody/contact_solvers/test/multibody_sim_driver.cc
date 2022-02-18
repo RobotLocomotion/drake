@@ -2,6 +2,7 @@
 
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/proximity_properties.h"
+#include "drake/geometry/scene_graph.h"
 
 namespace drake {
 namespace multibody {

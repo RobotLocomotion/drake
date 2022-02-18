@@ -10,6 +10,7 @@
 #include <fmt/format.h>
 #include <tinyxml2.h>
 
+#include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"

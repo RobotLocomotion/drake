@@ -1,5 +1,7 @@
 #include "drake/multibody/plant/calc_distance_and_time_derivative.h"
 
+#include "drake/geometry/query_object.h"
+
 namespace drake {
 namespace multibody {
 using geometry::FrameId;
