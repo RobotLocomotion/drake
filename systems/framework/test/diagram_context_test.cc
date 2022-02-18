@@ -681,7 +681,11 @@ TEST_F(DiagramContextTest, NextChangeEventNumber) {
   const int64_t first = context_->start_new_change_event();
 
   EXPECT_EQ(context_->start_new_change_event(), first + 1);
-  EXPECT_EQ(context_->start_new_change_event(), first + 2);
+
+  // Verify that this also works on a const Context.
+  EXPECT_EQ(const_cast<const DiagramContext<double>*>(context_.get())
+                ->start_new_change_event(),
+            first + 2);
 
   // Obtain a subcontext and verify we still count up.
   Context<double>& discrete_context =
