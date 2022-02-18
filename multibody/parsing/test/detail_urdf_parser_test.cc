@@ -15,6 +15,7 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"

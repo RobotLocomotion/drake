@@ -2,6 +2,7 @@
 
 #include <limits>
 
+#include "drake/geometry/query_object.h"
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
 namespace drake {

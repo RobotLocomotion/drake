@@ -9,6 +9,7 @@ Parses and resolves manifest-relative mesh URIs in sdf/urdf.
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/systems/framework/diagram_builder.h"
 

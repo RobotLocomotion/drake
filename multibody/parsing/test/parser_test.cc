@@ -10,6 +10,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/scene_graph.h"
 
 namespace drake {
 namespace multibody {

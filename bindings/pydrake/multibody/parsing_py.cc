@@ -4,6 +4,7 @@
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/parsing/process_model_directives.h"
