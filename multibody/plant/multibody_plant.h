@@ -17,6 +17,9 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
 #include "drake/geometry/frame_kinematics_vector.h"
+#include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/geometry_set.h"
+#include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
@@ -39,14 +42,13 @@
 #include "drake/systems/framework/scalar_conversion_traits.h"
 
 namespace drake {
+
+// To reduce the burden of required header files (and compilation time) on
+// clients, forward-declare some geometry types.
 namespace geometry {
-class GeometrySet;
-class IllustrationProperties;
-class ProximityProperties;
 template <typename T> class QueryObject;
 template <typename T> class SceneGraph;
 template <typename T> class SceneGraphInspector;
-class Shape;
 }  // namespace geometry
 
 namespace multibody {
