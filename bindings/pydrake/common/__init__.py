@@ -1,6 +1,7 @@
 import collections
 import functools
 import inspect
+import logging as _logging
 
 import numpy as np
 
@@ -9,6 +10,22 @@ from ._module_py import *
 # When running from python, turn DRAKE_ASSERT and DRAKE_DEMAND failures into
 # SystemExit, instead of process aborts.  See RobotLocomotion/drake#5268.
 set_assertion_failure_to_throw_exception()
+
+
+def configure_logging():
+    """Convenience function that configures the root Python logging module in
+    a tasteful way for Drake. Using this function is totally optional; there
+    is no requirement to call it prior to using Drake or generating messages.
+    We offer it as a convenience only because Python's logging defaults are
+    more spartan than Drake's C++ logging format (e.g., Python does not show
+    message timestamps by default).
+
+    See also:
+       :py:func:`pydrake.common.set_log_level`
+    """
+    format = "[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s"
+    _logging.basicConfig(level=_logging.INFO, format=format)
+    _logging.getLogger("drake").setLevel(_logging.NOTSET)
 
 
 def _wrap_to_match_input_shape(f):

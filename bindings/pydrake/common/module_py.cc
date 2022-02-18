@@ -102,9 +102,19 @@ PYBIND11_MODULE(_module_py, m) {
   m.attr("_HAVE_SPDLOG") = logging::kHaveSpdlog;
 
   m.def("set_log_level", &logging::set_log_level, py::arg("level"),
-      doc.logging.set_log_level.doc);
+      (std::string(doc.logging.set_log_level.doc) + R"""(
+Warning:
+    When using pydrake, both the C++ level threshold and the Python logging
+    level threshold must be satisfied for a message to be displayed. This
+    function only adjusts the C++ level. Refer to the Python logging module
+    documentation for details on setting the Python level.
 
-  internal::RedirectPythonLogging();
+See also:
+   :py:func:`pydrake.common.configure_logging`
+)""")
+          .c_str());
+
+  internal::MaybeRedirectPythonLogging();
 
   py::enum_<drake::ToleranceType>(m, "ToleranceType", doc.ToleranceType.doc)
       .value("kAbsolute", drake::ToleranceType::kAbsolute,
