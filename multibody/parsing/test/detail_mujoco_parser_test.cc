@@ -631,10 +631,10 @@ GTEST_TEST(MujocoParser, Joint) {
           X_WB, 1e-14));
   EXPECT_TRUE(
       CompareMatrices(plant.GetJointByName("hinge").position_lower_limits(),
-                      Vector1d{-M_PI/6.0}, 1e-14));
+                      Vector1d{-M_PI / 6.0}, 1e-14));
   EXPECT_TRUE(
       CompareMatrices(plant.GetJointByName("hinge").position_upper_limits(),
-                      Vector1d{M_PI/3.0}, 1e-14));
+                      Vector1d{M_PI / 3.0}, 1e-14));
 
   const RevoluteJoint<double>& default_joint =
       plant.GetJointByName<RevoluteJoint>("default");
@@ -647,9 +647,9 @@ GTEST_TEST(MujocoParser, Joint) {
   EXPECT_TRUE(
       plant.GetBodyByName("default").EvalPoseInWorld(*context).IsNearlyEqualTo(
           X_WB, 1e-14));
-  EXPECT_TRUE(CompareMatrices(
-      plant.GetJointByName("default").position_lower_limits(),
-      Vector1d{-std::numeric_limits<double>::infinity()}));
+  EXPECT_TRUE(
+      CompareMatrices(plant.GetJointByName("default").position_lower_limits(),
+                      Vector1d{-std::numeric_limits<double>::infinity()}));
   EXPECT_TRUE(
       CompareMatrices(plant.GetJointByName("default").position_upper_limits(),
                       Vector1d{std::numeric_limits<double>::infinity()}));
@@ -700,6 +700,74 @@ GTEST_TEST(MujocoParser, JointThrows) {
       AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml},
                             "test", std::nullopt, &plant),
       ".*a free joint is defined.*");
+}
+
+GTEST_TEST(MujocoParser, Motor) {
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+
+  std::string xml = R"""(
+<mujoco model="test">
+  <default>
+    <geom type="sphere" size="1"/>
+  </default>
+  <worldbody>
+    <body>
+      <joint type="hinge" name="hinge0" axis="0 1 0"/>
+    </body>
+    <body>
+      <joint type="hinge" name="hinge1" axis="0 1 0"/>
+    </body>
+    <body>
+      <joint type="hinge" name="hinge2" axis="0 1 0"/>
+    </body>
+    <body>
+      <joint type="hinge" name="hinge3" axis="0 1 0"/>
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="hinge0"/>
+    <!-- intentionally asymmetric effort limits to cover the warning code -->
+    <motor name="motor1" joint="hinge1" ctrllimited="true" ctrlrange="-1 2"/>
+    <motor name="motor2" joint="hinge2" ctrllimited="true" ctrlrange="-2 2"
+           forcelimited="true" forcerange="-.5 .4"/>
+    <!-- malformed limits will be ignored -->
+    <motor name="motor3" joint="hinge3" ctrllimited="true" ctrlrange="2 1"
+           forcelimited="true" forcerange="2 1"/>
+  </actuator>
+</mujoco>
+)""";
+
+  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml}, "test",
+                        std::nullopt, &plant);
+  plant.Finalize();
+
+  EXPECT_EQ(plant.get_actuation_input_port().size(), 4);
+
+  const JointActuator<double>& motor0 =
+      plant.get_joint_actuator(JointActuatorIndex(0));
+  EXPECT_EQ(motor0.name(), "motor0");
+  EXPECT_EQ(motor0.joint().name(), "hinge0");
+  EXPECT_EQ(motor0.effort_limit(), std::numeric_limits<double>::infinity());
+
+  const JointActuator<double>& motor1 =
+      plant.get_joint_actuator(JointActuatorIndex(1));
+  EXPECT_EQ(motor1.name(), "motor1");
+  EXPECT_EQ(motor1.joint().name(), "hinge1");
+  EXPECT_EQ(motor1.effort_limit(), 2);
+
+  const JointActuator<double>& motor2 =
+      plant.get_joint_actuator(JointActuatorIndex(2));
+  EXPECT_EQ(motor2.name(), "motor2");
+  EXPECT_EQ(motor2.joint().name(), "hinge2");
+  EXPECT_EQ(motor2.effort_limit(), .5);
+
+  const JointActuator<double>& motor3 =
+      plant.get_joint_actuator(JointActuatorIndex(3));
+  EXPECT_EQ(motor3.name(), "motor3");
+  EXPECT_EQ(motor3.joint().name(), "hinge3");
+  EXPECT_EQ(motor3.effort_limit(), std::numeric_limits<double>::infinity());
 }
 
 }  // namespace

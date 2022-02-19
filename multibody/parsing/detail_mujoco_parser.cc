@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_mujoco_parser.h"
 
+#include <algorithm>
 #include <limits>
 #include <map>
 #include <memory>
@@ -43,9 +44,9 @@ namespace {
 void WarnUnsupportedElement(const XMLElement& node, const std::string& tag) {
   if (node.FirstChildElement(tag.c_str())) {
     drake::log()->warn(
-        "The tag '{}' found in MuJoCo XML is currently unsupported and will be "
-        "ignored.",
-        tag);
+        "The tag '{}' found as a child of '{}' is currently unsupported and "
+        "will be ignored.",
+        tag, node.Name());
   }
 }
 
@@ -141,6 +142,101 @@ class MujocoParser {
     }
 
     return RigidTransformd(X_default.rotation(), pos);
+  }
+
+  void ParseMotor(XMLElement* node) {
+    std::string name;
+    if (!ParseStringAttribute(node, "name", &name)) {
+      // Use "motor#" as the default actuator name.
+      name = fmt::format("motor{}", plant_->num_actuators());
+    }
+
+    std::string joint_name;
+    if (!ParseStringAttribute(node, "joint", &joint_name)) {
+      drake::log()->warn(
+          "The motor '{}' does not use the 'joint' transmission specification. "
+          "Currently only the 'joint' attribute is supported.  This motor will "
+          "be ignored.",
+          name);
+      return;
+    }
+
+    // Parse effort limits.
+    double effort_limit = std::numeric_limits<double>::infinity();
+    bool ctrl_limited = node->BoolAttribute("ctrllimited", false);
+    if (ctrl_limited) {
+      Vector2d ctrl_range;
+      if (ParseVectorAttribute(node, "ctrlrange", &ctrl_range)) {
+        if (ctrl_range[0] > ctrl_range[1]) {
+          drake::log()->warn(
+              "The motor '{}' specified a ctrlrange attribute where lower "
+              "limit > upper limit; these limits will be ignored.",
+              name);
+        } else {
+          effort_limit = std::max(ctrl_range[1], -ctrl_range[0]);
+          if (ctrl_range[0] != ctrl_range[1]) {
+            drake::log()->warn(
+                "The motor '{}' specified a ctrlrange attribute where lower "
+                "limit != upper limit.  Asymmetrical effort limits are not "
+                "supported yet, so the larger of the values {} will be used.",
+                name, effort_limit);
+          }
+        }
+      }
+    }
+    bool force_limited = node->BoolAttribute("forcelimited", false);
+    if (force_limited) {
+      // For a motor, force limits are the same as control limits, so we take
+      // the min of the two.
+      Vector2d force_range;
+      if (ParseVectorAttribute(node, "forcerange", &force_range)) {
+        if (force_range[0] > force_range[1]) {
+          drake::log()->warn(
+              "The motor '{}' specified a forcerange attribute where lower "
+              "limit > upper limit; these limits will be ignored.",
+              name);
+        } else {
+          effort_limit =
+              std::min(effort_limit, std::max(force_range[1], -force_range[0]));
+          if (force_range[0] != force_range[1]) {
+            drake::log()->warn(
+                "The motor '{}' specified a forcerange attribute where lower "
+                "limit != upper limit.  Asymmetrical effort limits are not "
+                "supported yet, so the larger of the values {} will be used.",
+                name, std::max(force_range[1], -force_range[0]));
+          }
+        }
+      }
+    }
+
+    WarnUnsupportedAttribute(*node, "jointinparent");
+    WarnUnsupportedAttribute(*node, "tendon");
+    WarnUnsupportedAttribute(*node, "site");
+
+    WarnUnsupportedAttribute(*node, "class");
+    WarnUnsupportedAttribute(*node, "group");
+    WarnUnsupportedAttribute(*node, "lengthrange");
+    WarnUnsupportedAttribute(*node, "gear");
+    WarnUnsupportedAttribute(*node, "cranklength");
+    WarnUnsupportedAttribute(*node, "cranksite");
+    WarnUnsupportedAttribute(*node, "slidersite");
+    WarnUnsupportedAttribute(*node, "user");
+
+    plant_->AddJointActuator(
+        name, plant_->GetJointByName(joint_name, model_instance_),
+        effort_limit);
+  }
+
+  void ParseActuator(XMLElement* node) {
+    for (XMLElement* motor_node = node->FirstChildElement("motor"); motor_node;
+         motor_node = motor_node->NextSiblingElement("motor")) {
+      ParseMotor(motor_node);
+    }
+    WarnUnsupportedElement(*node, "general");
+    WarnUnsupportedElement(*node, "position");
+    WarnUnsupportedElement(*node, "velocity");
+    WarnUnsupportedElement(*node, "cylinder");
+    WarnUnsupportedElement(*node, "muscle");
   }
 
   void ParseJoint(XMLElement* node, const RigidBody<double>& parent,
@@ -825,9 +921,13 @@ class MujocoParser {
       ParseBody(link_node, plant_->world_body(), RigidTransformd());
     }
 
-    WarnUnsupportedElement(*node, "actuator");
+    // Parses the model's actuator elements.
+    for (XMLElement* actuator_node = node->FirstChildElement("actuator");
+         actuator_node;
+         actuator_node = actuator_node->NextSiblingElement("actuator")) {
+      ParseActuator(actuator_node);
+    }
 
-    // These will not be supported initially.
     WarnUnsupportedElement(*node, "size");
     WarnUnsupportedElement(*node, "visual");
     WarnUnsupportedElement(*node, "statistic");
