@@ -100,6 +100,9 @@ class HPolyhedron final : public ConvexSet {
   repeated n times. */
   HPolyhedron CartesianPower(int n) const;
 
+  /** Returns the intersection of `this` and `other`. */
+  HPolyhedron Intersection(const HPolyhedron& other) const;
+
   /** Constructs a polyhedron as an axis-aligned box from the lower and upper
   corners. */
   static HPolyhedron MakeBox(const Eigen::Ref<const Eigen::VectorXd>& lb,
