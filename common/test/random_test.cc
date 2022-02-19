@@ -1,37 +1,151 @@
 #include "drake/common/random.h"
 
 #include <limits>
+#include <type_traits>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 
 namespace drake {
 namespace {
 
 const double kEps = std::numeric_limits<double>::epsilon();
 
-GTEST_TEST(RandomTest, CompareWith19337) {
+GTEST_TEST(RandomGeneratorTest, Traits) {
+  EXPECT_TRUE(std::is_default_constructible_v<RandomGenerator>);
+  EXPECT_TRUE(std::is_copy_constructible_v<RandomGenerator>);
+  EXPECT_TRUE(std::is_copy_assignable_v<RandomGenerator>);
+  EXPECT_TRUE(std::is_move_constructible_v<RandomGenerator>);
+  EXPECT_TRUE(std::is_move_assignable_v<RandomGenerator>);
+}
+
+GTEST_TEST(RandomGeneratorTest, Efficiency) {
+  // Check an insanity upper bound, to demonstrate that we don't store large
+  // random state on the stack.
+  EXPECT_LE(sizeof(RandomGenerator), 64);
+
+  {
+    // Default construction is heap-free.
+    drake::test::LimitMalloc guard;
+    RandomGenerator dut;
+  }
+}
+
+// Copying a defauled generator produces identical outputs.
+GTEST_TEST(RandomGeneratorTest, Copy0) {
+  RandomGenerator foo;
+  RandomGenerator bar(foo);
+  for (int i = 0; i < 100; ++i) {
+    ASSERT_EQ(foo(), bar()) << "with i = " << i;
+  }
+}
+
+// Copying a seeded generator produces identical outputs.
+GTEST_TEST(RandomGeneratorTest, Copy1) {
+  RandomGenerator foo(123);
+  RandomGenerator bar(foo);
+  for (int i = 0; i < 100; ++i) {
+    ASSERT_EQ(foo(), bar()) << "with i = " << i;
+  }
+}
+
+// Copy-assigning a defauled generator produces identical outputs.
+GTEST_TEST(RandomGeneratorTest, CopyAssign0) {
+  RandomGenerator foo;
+  RandomGenerator bar;
+  bar = foo;
+  for (int i = 0; i < 100; ++i) {
+    ASSERT_EQ(foo(), bar()) << "with i = " << i;
+  }
+}
+
+// Copy-assigning a seeded generator produces identical outputs.
+GTEST_TEST(RandomGeneratorTest, CopyAssign1) {
+  RandomGenerator foo(123);
+  RandomGenerator bar;
+  bar = foo;
+  for (int i = 0; i < 100; ++i) {
+    ASSERT_EQ(foo(), bar()) << "with i = " << i;
+  }
+}
+
+// Moving from a defauled generator produces identical outputs.
+GTEST_TEST(RandomGeneratorTest, Move0) {
+  RandomGenerator foo;
+  RandomGenerator bar(std::move(RandomGenerator{}));
+  for (int i = 0; i < 100; ++i) {
+    ASSERT_EQ(foo(), bar()) << "with i = " << i;
+  }
+}
+
+// Moving from a seeded generator produces identical outputs.
+GTEST_TEST(RandomGeneratorTest, Move1) {
+  RandomGenerator foo(123);
+  RandomGenerator bar(std::move(RandomGenerator{123}));
+  for (int i = 0; i < 100; ++i) {
+    ASSERT_EQ(foo(), bar()) << "with i = " << i;
+  }
+}
+
+// Move-assigning from a defauled generator produces identical outputs.
+GTEST_TEST(RandomGeneratorTest, MoveAssign0) {
+  RandomGenerator foo;
+  RandomGenerator bar;
+  bar = RandomGenerator();
+  for (int i = 0; i < 100; ++i) {
+    ASSERT_EQ(foo(), bar()) << "with i = " << i;
+  }
+}
+
+// Move-assigning from a seeded generator produces identical outputs.
+GTEST_TEST(RandomGeneratorTest, MoveAssign1) {
+  RandomGenerator foo(123);
+  RandomGenerator bar;
+  bar = RandomGenerator(123);
+  for (int i = 0; i < 100; ++i) {
+    ASSERT_EQ(foo(), bar()) << "with i = " << i;
+  }
+}
+
+// Using a moved-from defauled generator does not segfault.
+GTEST_TEST(RandomGeneratorTest, MovedFrom0) {
+  RandomGenerator foo;
+  RandomGenerator bar = std::move(foo);
+  for (int i = 0; i < 100; ++i) {
+    EXPECT_NO_THROW(bar());
+  }
+}
+
+// Using a moved-from seeded generator does not segfault.
+GTEST_TEST(RandomGeneratorTest, MovedFrom1) {
+  RandomGenerator foo(123);
+  RandomGenerator bar = std::move(foo);
+  for (int i = 0; i < 100; ++i) {
+    EXPECT_NO_THROW(bar());
+  }
+}
+
+GTEST_TEST(RandomGeneratorTest, CompareWith19337) {
   std::mt19937 oracle;
 
   RandomGenerator dut;
   EXPECT_EQ(dut.min(), oracle.min());
   EXPECT_EQ(dut.max(), oracle.max());
 
-  RandomGenerator::result_type first = dut();
-  auto oracle_first = oracle();
-  EXPECT_EQ(first, oracle_first);
-
   for (int i = 0; i < 100; ++i) {
-    EXPECT_EQ(dut(), oracle());
+    ASSERT_EQ(dut(), oracle()) << "with i = " << i;
   }
 }
 
-GTEST_TEST(RandomTest, Seed) {
-  RandomGenerator dut1;
-  RandomGenerator dut2(RandomGenerator::default_seed);
+// The sequence from a default-constructed generator is the same as explicitly
+// passing in the default seed.
+GTEST_TEST(RandomGeneratorTest, DefaultMatchesSeedConstant) {
+  RandomGenerator foo;
+  RandomGenerator bar(RandomGenerator::default_seed);
   for (int i = 0; i < 100; ++i) {
-    EXPECT_EQ(dut1(), dut2());
+    ASSERT_EQ(foo(), bar()) << "with i = " << i;
   }
 }
 
