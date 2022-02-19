@@ -335,7 +335,11 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
-            py::keep_alive<1, 8>(), ctor_doc_ad);
+            py::keep_alive<1, 8>(), ctor_doc_ad)
+        .def("set_bounds", &Class::set_bounds, py::arg("lower_bound"),
+            py::arg("upper_bound"))
+        .def("UpdateLowerBound", &Class::UpdateLowerBound, py::arg("new_lb"))
+        .def("UpdateUpperBound", &Class::UpdateUpperBound, py::arg("new_ub"));
   }
 
   {
