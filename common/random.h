@@ -11,26 +11,24 @@
 namespace drake {
 /// Defines Drake's canonical implementation of the UniformRandomBitGenerator
 /// C++ concept (as well as a few conventional extras beyond the concept, e.g.,
-/// seeds).  This uses the 32-bit Mersenne Twister mt19937 by Matsumoto and
-/// Nishimura, 1998.  For more information, see
-/// https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine
+/// seeds).
 class RandomGenerator {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RandomGenerator)
 
-  using result_type = std::mt19937::result_type;
+  using result_type = std::mt19937_64::result_type;
 
   RandomGenerator() = default;
   explicit RandomGenerator(result_type value) : generator_(value) {}
 
-  static constexpr result_type min() { return std::mt19937::min(); }
-  static constexpr result_type max() { return std::mt19937::max(); }
+  static constexpr result_type min() { return std::mt19937_64::min(); }
+  static constexpr result_type max() { return std::mt19937_64::max(); }
   result_type operator()() { return generator_(); }
 
-  static constexpr result_type default_seed = std::mt19937::default_seed;
+  static constexpr result_type default_seed = std::mt19937_64::default_seed;
 
  private:
-  std::mt19937 generator_{};
+  std::mt19937_64 generator_{};
 };
 
 /// Drake supports explicit reasoning about a few carefully chosen random

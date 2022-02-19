@@ -11,8 +11,8 @@ namespace {
 
 const double kEps = std::numeric_limits<double>::epsilon();
 
-GTEST_TEST(RandomTest, CompareWith19337) {
-  std::mt19937 oracle;
+GTEST_TEST(RandomTest, CompareWith19937_64) {
+  std::mt19937_64 oracle;
 
   RandomGenerator dut;
   EXPECT_EQ(dut.min(), oracle.min());
