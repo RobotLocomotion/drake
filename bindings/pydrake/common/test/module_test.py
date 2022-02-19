@@ -60,7 +60,7 @@ class TestCommon(unittest.TestCase):
     def test_random_generator(self):
         g1 = mut.RandomGenerator()
         self.assertEqual(g1(), 3499211612)
-        g2 = mut.RandomGenerator(10)
+        g2 = mut.RandomGenerator(seed=10)
         self.assertEqual(g2(), 3312796937)
 
     def test_random_numpy_coordination(self):
