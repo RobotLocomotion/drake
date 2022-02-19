@@ -64,6 +64,10 @@ class PositionConstraint : public solvers::Constraint {
 
   ~PositionConstraint() override {}
 
+  using Constraint::set_bounds;
+  using Constraint::UpdateLowerBound;
+  using Constraint::UpdateUpperBound;
+
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
