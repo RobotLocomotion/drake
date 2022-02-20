@@ -20,6 +20,7 @@ auto BindTypeSafeIndex(
   cls  // BR
       .def(py::init<int>(), pydrake_doc.drake.TypeSafeIndex.ctor.doc_0args)
       .def("__int__", &Class::operator int)
+      .def("__index__", &Class::operator int)
       .def(py::self == py::self)
       .def(py::self == int{})
       .def(py::self < py::self)

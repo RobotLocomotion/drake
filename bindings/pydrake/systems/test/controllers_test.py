@@ -308,7 +308,12 @@ class TestControllers(unittest.TestCase):
 
         context = double_integrator.CreateDefaultContext()
         double_integrator.get_input_port(0).FixValue(context, [0])
-        controller = LinearQuadraticRegulator(double_integrator, context, Q, R)
+        controller = LinearQuadraticRegulator(
+            double_integrator,
+            context,
+            Q,
+            R,
+            input_port_index=double_integrator.get_input_port().get_index())
         np.testing.assert_almost_equal(controller.D(), -K_expected)
 
     def test_discrete_time_linear_quadratic_regulator(self):
