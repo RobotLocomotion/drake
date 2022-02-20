@@ -150,6 +150,7 @@ drake_cc_library(
         "//common:polynomial",
         "//common:symbolic",
         "//math:autodiff",
+        "//math:gradient",
         "//math:matrix_util",
     ],
 )

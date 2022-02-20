@@ -112,10 +112,15 @@ void VerifyFunctionEvaluator(F&& f, const VectorXd& x) {
   Eigen::VectorXd y(3);
   evaluator->Eval(x, &y);
   EXPECT_TRUE(CompareMatrices(y, y_expected));
-  // Check AutoDif.
+  // Check AutoDiff.
   AutoDiffVecXd ty(3);
   evaluator->Eval(tx, &ty);
   EXPECT_TRUE(CompareAutodiff(ty, ty_expected));
+  // Check EvalWithGradients.
+  Eigen::MatrixXd dydx;
+  evaluator->Eval(x, &y, &dydx);
+  EXPECT_TRUE(CompareMatrices(y, y_expected));
+  EXPECT_TRUE(CompareMatrices(dydx, dy_expected));
 }
 
 // Store generic callable (e.g. a lambda), and assign sizes to it manually.
