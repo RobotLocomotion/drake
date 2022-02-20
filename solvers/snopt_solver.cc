@@ -21,6 +21,7 @@
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/mathematical_program.h"
 
 // TODO(jwnimmer-tri) Eventually resolve these warnings.
@@ -343,20 +344,22 @@ int SingleNonlinearConstraintSize<LinearComplementarityConstraint>(
 // LinearComplementaryConstraint, we will evaluate its nonlinear constraint
 // differently, than its Eval function.
 template <typename C>
-void EvaluateSingleNonlinearConstraint(
-    const C& constraint, const Eigen::Ref<const AutoDiffVecXd>& tx,
-    AutoDiffVecXd* ty) {
+void EvaluateSingleNonlinearConstraint(const C& constraint,
+                                       const Eigen::VectorXd& tx,
+                                       Eigen::VectorXd* ty,
+                                       Eigen::MatrixXd* dtydtx) {
   ty->resize(SingleNonlinearConstraintSize(constraint));
-  constraint.Eval(tx, ty);
+  constraint.Eval(tx, ty, dtydtx);
 }
 
 template <>
 void EvaluateSingleNonlinearConstraint<LinearComplementarityConstraint>(
     const LinearComplementarityConstraint& constraint,
-    const Eigen::Ref<const AutoDiffVecXd>& tx, AutoDiffVecXd* ty) {
+    const Eigen::VectorXd& tx, Eigen::VectorXd* ty, Eigen::MatrixXd* dtydtx) {
   ty->resize(1);
-  (*ty)(0) = tx.dot(constraint.M().cast<AutoDiffXd>() * tx +
-                    constraint.q().cast<AutoDiffXd>());
+  (*ty)(0) = tx.dot(constraint.M() * tx + constraint.q());
+  *dtydtx = tx.transpose() * (constraint.M() + constraint.M().transpose()) +
+            constraint.q().transpose();
 }
 
 /*
@@ -395,42 +398,39 @@ void EvaluateNonlinearConstraints(
     }
 
     // Scale this_x
-    auto this_x_scaled = math::InitializeAutoDiff(this_x);
     for (int i = 0; i < num_variables; i++) {
       auto it = scale_map.find(binding_var_indices[i]);
       if (it != scale_map.end()) {
-        this_x_scaled(i) *= it->second;
+        this_x(i) *= it->second;
       }
     }
 
-    AutoDiffVecXd ty;
-    ty.resize(num_constraints);
-    EvaluateSingleNonlinearConstraint(*c, this_x_scaled, &ty);
+    Eigen::VectorXd ty(num_constraints);
+    Eigen::MatrixXd dtydtx(num_constraints, num_variables);
+    EvaluateSingleNonlinearConstraint(*c, this_x, &ty, &dtydtx);
 
-    for (int i = 0; i < num_constraints; i++) {
-      F[(*constraint_index)++] = ty(i).value();
+    // Scale the gradients
+    for (int i = 0; i < num_variables; i++) {
+      auto it = scale_map.find(binding_var_indices[i]);
+      if (it != scale_map.end()) {
+        dtydtx.col(i) *= it->second;
+      }
     }
+
+    memcpy(&F[*constraint_index], ty.data(), sizeof(double) * num_constraints);
+    *constraint_index += num_constraints;
 
     const std::optional<std::vector<std::pair<int, int>>>&
         gradient_sparsity_pattern =
             binding.evaluator()->gradient_sparsity_pattern();
     if (gradient_sparsity_pattern.has_value()) {
       for (const auto& nonzero_entry : gradient_sparsity_pattern.value()) {
-        G[(*grad_index)++] =
-            ty(nonzero_entry.first).derivatives().size() > 0
-                ? ty(nonzero_entry.first).derivatives()(nonzero_entry.second)
-                : 0.0;
+        G[(*grad_index)++] = dtydtx(nonzero_entry.first, nonzero_entry.second);
       }
     } else {
       for (int i = 0; i < num_constraints; i++) {
-        if (ty(i).derivatives().size() > 0) {
-          for (int j = 0; j < num_variables; ++j) {
-            G[(*grad_index)++] = ty(i).derivatives()(j);
-          }
-        } else {
-          for (int j = 0; j < num_variables; ++j) {
-            G[(*grad_index)++] = 0.0;
-          }
+        for (int j = 0; j < num_variables; ++j) {
+          G[(*grad_index)++] = dtydtx(i, j);
         }
       }
     }
@@ -491,23 +491,28 @@ void EvaluateAndAddNonlinearCosts(
           prog.FindDecisionVariableIndex(binding.variables()(i));
       this_x(i) = x(binding_var_indices[i]);
     }
-    AutoDiffVecXd ty(1);
+    Eigen::VectorXd ty(1);
+    Eigen::MatrixXd dtydtx(1, num_variables);
     // Scale this_x
-    auto this_x_scaled = math::InitializeAutoDiff(this_x);
     for (int i = 0; i < num_variables; i++) {
       auto it = scale_map.find(binding_var_indices[i]);
       if (it != scale_map.end()) {
-        this_x_scaled(i) *= it->second;
+        this_x(i) *= it->second;
       }
     }
-    obj->Eval(this_x_scaled, &ty);
+    obj->Eval(this_x, &ty, &dtydtx);
 
-    *total_cost += ty(0).value();
-    if (ty(0).derivatives().size() > 0) {
-      for (int i = 0; i < num_variables; ++i) {
-        (*nonlinear_cost_gradients)[binding_var_indices[i]] +=
-            ty(0).derivatives()(i);
+    // Scale the gradients.
+    for (int i = 0; i < num_variables; i++) {
+      auto it = scale_map.find(binding_var_indices[i]);
+      if (it != scale_map.end()) {
+        dtydtx.col(i) *= it->second;
       }
+    }
+
+    *total_cost += ty(0);
+    for (int i = 0; i < num_variables; ++i) {
+      (*nonlinear_cost_gradients)[binding_var_indices[i]] += dtydtx(0, i);
     }
   }
 }

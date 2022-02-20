@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/math/autodiff_gradient.h"
 
 using std::make_shared;
 using std::shared_ptr;
@@ -27,6 +28,18 @@ std::ostream& EvaluatorBase::Display(std::ostream& os) const {
   }
   return this->DoDisplay(
       os, symbolic::MakeVectorContinuousVariable(this->num_vars(), "$"));
+}
+
+void EvaluatorBase::DoEvalWithGradients(
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y,
+    Eigen::MatrixXd* dydx) const {
+  // TODO(russt): InitializeAutoDiff here is doing expensive and trivial work.
+  // How can we avoid it (in a thread-safe way)?
+  AutoDiffVecXd x_ad = math::InitializeAutoDiff(x);
+  AutoDiffVecXd y_ad;
+  DoEval(x_ad, &y_ad);
+  *y = math::ExtractValue(y_ad);
+  *dydx = math::ExtractGradient(y_ad, x.size());
 }
 
 std::ostream& EvaluatorBase::DoDisplay(

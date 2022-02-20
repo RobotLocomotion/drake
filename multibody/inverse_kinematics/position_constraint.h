@@ -81,6 +81,10 @@ class PositionConstraint : public solvers::Constraint {
         "PositionConstraint::DoEval() does not work for symbolic variables.");
   }
 
+  void DoEvalWithGradients(const Eigen::Ref<const Eigen::VectorXd>& x,
+                           Eigen::VectorXd* y,
+                           Eigen::MatrixXd* dydx) const override;
+
   bool use_autodiff() const { return plant_autodiff_; }
 
   const MultibodyPlant<double>* const plant_double_;

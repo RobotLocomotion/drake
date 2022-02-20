@@ -408,6 +408,7 @@ class AutoDiffOnlyCost final : public drake::solvers::Cost {
 
   void DoEval(const Eigen::Ref<const drake::AutoDiffVecXd>& x,
               drake::AutoDiffVecXd* y) const override {
+    y->resize(1);
     (*y)(0) = x(0) * x(0) + 1;
   }
 
