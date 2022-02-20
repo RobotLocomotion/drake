@@ -1598,7 +1598,8 @@ void BindEvaluatorsAndBindings(py::module m) {
             cls_doc.SetGradientSparsityPattern.doc)
         .def("gradient_sparsity_pattern", &Class::gradient_sparsity_pattern,
             cls_doc.gradient_sparsity_pattern.doc);
-    auto bind_eval = [&cls, &cls_doc](auto dummy_x, auto dummy_y) {
+    auto bind_eval = [&cls, &cls_doc](
+                         auto dummy_x, auto dummy_y, const char* this_doc) {
       using T_x = decltype(dummy_x);
       using T_y = decltype(dummy_y);
       cls.def(
@@ -1608,11 +1609,12 @@ void BindEvaluatorsAndBindings(py::module m) {
             self.Eval(x, &y);
             return y;
           },
-          py::arg("x"), cls_doc.Eval.doc);
+          py::arg("x"), this_doc);
     };
-    bind_eval(double{}, double{});
-    bind_eval(AutoDiffXd{}, AutoDiffXd{});
-    bind_eval(symbolic::Variable{}, symbolic::Expression{});
+    bind_eval(double{}, double{}, cls_doc.Eval.doc_double);
+    bind_eval(AutoDiffXd{}, AutoDiffXd{}, cls_doc.Eval.doc_AutoDiffXd);
+    bind_eval(symbolic::Variable{}, symbolic::Expression{},
+        cls_doc.Eval.doc_Expression);
   }
 
   auto evaluator_binding = RegisterBinding<EvaluatorBase>(&m);
