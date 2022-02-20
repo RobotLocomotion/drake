@@ -64,6 +64,13 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
       plant_autodiff_->GetFrameByName(frameB.name()), p_BQ);
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, tol);
 
+  // Test EvalWithGradients variant.
+  Eigen::MatrixXd dydx;
+  constraint.Eval(q, &y, &dydx);
+  EXPECT_TRUE(CompareMatrices(y, y_expected, tol));
+  EXPECT_TRUE(
+      CompareMatrices(dydx, math::ExtractGradient(y_autodiff_expected), tol));
+
   // Test with non-identity gradient for q_autodiff.
   q_autodiff = math::InitializeAutoDiff(q, MatrixX<double>::Ones(q.size(), 2));
   plant_autodiff_->GetMutablePositions(plant_context_autodiff_.get()) =

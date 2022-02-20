@@ -37,24 +37,31 @@ class EvaluatorBase {
   // TODO(bradking): consider using a Ref for `y`.  This will require the client
   // to do allocation, but also allows it to choose stack allocation instead.
   /**
-   * Evaluates the expression.
+   * Evaluates the expression (and optionally its gradient).
    * @param[in] x A `num_vars` x 1 input vector.
    * @param[out] y A `num_outputs` x 1 output vector.
+   * @param[out] dydx A `num_outputs` x `num_vars` gradient vector, or nullptr
+   * if gradients are not requested.
+   * @pydrake_mkdoc_identifier{double}
    */
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            Eigen::VectorXd* y) const {
+            Eigen::VectorXd* y, Eigen::MatrixXd* dydx = nullptr) const {
     DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
-    DoEval(x, y);
+    if (dydx != nullptr) {
+      DoEvalWithGradients(x, y, dydx);
+      DRAKE_ASSERT(dydx->rows() == num_outputs_);
+      DRAKE_ASSERT(dydx->cols() == x.rows());
+    } else {
+      DoEval(x, y);
+    }
     DRAKE_ASSERT(y->rows() == num_outputs_);
   }
 
-  // TODO(eric.cousineau): Move this to DifferentiableConstraint derived class
-  // if/when we need to support non-differentiable functions (at least, if
-  // DifferentiableConstraint is ever implemented).
   /**
    * Evaluates the expression.
    * @param[in] x A `num_vars` x 1 input vector.
    * @param[out] y A `num_outputs` x 1 output vector.
+   * @pydrake_mkdoc_identifier{AutoDiffXd}
    */
   void Eval(const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
     DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
@@ -66,6 +73,7 @@ class EvaluatorBase {
    * Evaluates the expression.
    * @param[in] x A `num_vars` x 1 input vector.
    * @param[out] y A `num_outputs` x 1 output vector.
+   * @pydrake_mkdoc_identifier{Expression}
    */
   void Eval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
             VectorX<symbolic::Expression>* y) const {
@@ -182,6 +190,21 @@ class EvaluatorBase {
                       VectorX<symbolic::Expression>* y) const = 0;
 
   /**
+   * Implements expression evaluation with gradients. A default implementation
+   * of this method is provided, which calls DoEval() with AutoDiffXd. Derived
+   * classes can implement this method directly to avoid the speed/memory
+   * penalty of using AutoDiffXd.
+   * @param x Input vector.
+   * @param y Output vector.
+   * @pre x must be of size `num_vars` x 1.
+   * @post y will be of size `num_outputs` x 1.
+   * @post dydx will be of size `num_outputs` x `num_vars`.
+   */
+  virtual void DoEvalWithGradients(const Eigen::Ref<const Eigen::VectorXd>& x,
+                                   Eigen::VectorXd* y,
+                                   Eigen::MatrixXd* dydx) const;
+
+  /**
    * NVI implementation of Display. The default implementation will report
    * the NiceTypeName, get_description, and list the bound variables.
    * Subclasses may override to customize the message.
@@ -198,7 +221,7 @@ class EvaluatorBase {
   void set_num_outputs(int num_outputs) { num_outputs_ = num_outputs; }
 
  private:
-  int num_vars_{};
+  const int num_vars_{};
   int num_outputs_{};
   std::string description_;
   // gradient_sparsity_pattern_ records the pair (row_index, col_index) that
