@@ -17,6 +17,8 @@ drake_cc_package_library(
     deps = [
         ":calc_lame_parameters",
         ":constitutive_model",
+        ":corotated_model",
+        ":corotated_model_data",
         ":damping_model",
         ":deformation_gradient_data",
         ":isoparametric_element",
@@ -52,6 +54,40 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:nice_type_name",
+    ],
+)
+
+drake_cc_library(
+    name = "corotated_model",
+    srcs = [
+        "corotated_model.cc",
+    ],
+    hdrs = [
+        "corotated_model.h",
+    ],
+    deps = [
+        ":calc_lame_parameters",
+        ":constitutive_model",
+        ":corotated_model_data",
+        ":matrix_utilities",
+        "//common:autodiff",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "corotated_model_data",
+    srcs = [
+        "corotated_model_data.cc",
+    ],
+    hdrs = [
+        "corotated_model_data.h",
+    ],
+    deps = [
+        ":deformation_gradient_data",
+        ":matrix_utilities",
+        "//common:autodiff",
+        "//common:essential",
     ],
 )
 
@@ -237,12 +273,30 @@ drake_cc_library(
     hdrs = ["test/constitutive_model_test_utilities.h"],
     deps = [
         ":constitutive_model",
+        ":corotated_model",
         ":linear_constitutive_model",
         ":matrix_utilities",
         "//common:autodiff",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "corotated_model_test",
+    deps = [
+        ":constitutive_model_test_utilities",
+        ":corotated_model",
+    ],
+)
+
+drake_cc_googletest(
+    name = "corotated_model_data_test",
+    deps = [
+        ":corotated_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
     ],
 )
 
