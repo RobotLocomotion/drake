@@ -88,7 +88,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         draw_subscriber.clear()
 
     def test_meshcat(self):
-        meshcat = mut.Meshcat(port=7051)
+        meshcat = mut.Meshcat(port=7051, web_url_pattern="http://host:{port}")
         self.assertEqual(meshcat.port(), 7051)
         with self.assertRaises(RuntimeError):
             meshcat2 = mut.Meshcat(port=7051)
