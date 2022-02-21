@@ -948,6 +948,7 @@ class IsAffineVisitor {
   // Returns true if `e` is *not* affine in variables_ (if exists) or all
   // variables in `e`.
   [[nodiscard]] bool IsNotAffine(const Expression& e) const {
+    // TODO(#16393) This check is incorrect when variables_ is non-null.
     if (!e.is_polynomial()) {
       return true;
     }
