@@ -21,7 +21,12 @@
     viewer.set_property(['Cameras', 'default', 'rotated', '<object>'],
                         "position", [0.0, 1.0, 3.0])
     try {
-      viewer.connect();
+      url = location.toString();
+      url = url.replace("http://", "ws://")
+      url = url.replace("https://", "wss://")
+      url = url.replace("/index.html", "/")
+      url = url.replace("/meshcat.html", "/")
+      viewer.connect(url);
     } catch (e) {
       console.info("Not connected to MeshCat websocket server: ", e);
     }
