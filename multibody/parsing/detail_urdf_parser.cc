@@ -22,6 +22,7 @@
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/parsing/scoped_names.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/planar_joint.h"
@@ -776,8 +777,8 @@ ModelInstanceIndex AddModelFromUrdf(
     const DataSource& data_source,
     const std::string& model_name_in,
     const std::optional<std::string>& parent_model_name,
-    const PackageMap& package_map,
-    MultibodyPlant<double>* plant) {
+    const ParsingWorkspace& w) {
+  MultibodyPlant<double>* plant = w.plant;
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
   data_source.DemandExactlyOne();
@@ -816,7 +817,7 @@ ModelInstanceIndex AddModelFromUrdf(
     }
   }
 
-  return ParseUrdf(model_name_in, parent_model_name, package_map, root_dir,
+  return ParseUrdf(model_name_in, parent_model_name, w.package_map, root_dir,
                    &xml_doc, plant);
 }
 
