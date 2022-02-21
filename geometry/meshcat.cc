@@ -49,13 +49,20 @@ const std::string& GetUrlContent(std::string_view url_path) {
       LoadResource("drake/geometry/meshcat.ico"));
   static const drake::never_destroyed<std::string> meshcat_html(
       LoadResource("drake/geometry/meshcat.html"));
+  static const drake::never_destroyed<std::string> empty;
+  if ((url_path == "/")
+      || (url_path == "/index.html")
+      || (url_path == "/meshcat.html")) {
+    return meshcat_html.access();
+  }
   if (url_path == "/meshcat.js") {
     return meshcat_js.access();
   }
   if (url_path == "/favicon.ico") {
     return meshcat_ico.access();
   }
-  return meshcat_html.access();
+  drake::log()->warn("Ignoring Meshcat http request for {}", url_path);
+  return empty.access();
 }
 
 }  // namespace
@@ -478,8 +485,11 @@ class Meshcat::WebSocketPublisher {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WebSocketPublisher);
 
-  explicit WebSocketPublisher(const std::optional<int> port)
-      : prefix_("/drake"), main_thread_id_(std::this_thread::get_id()) {
+  explicit WebSocketPublisher(const MeshcatParams& params)
+      : prefix_("/drake"),
+        main_thread_id_(std::this_thread::get_id()),
+        web_url_pattern_(params.web_url_pattern) {
+    const std::optional<int> port = params.port;
     DRAKE_DEMAND(!port.has_value() || *port >= 1024);
     std::promise<std::tuple<uWS::Loop*, int, bool>> app_promise;
     std::future<std::tuple<uWS::Loop*, int, bool>> app_future =
@@ -509,6 +519,11 @@ class Meshcat::WebSocketPublisher {
       us_listen_socket_close(0, listen_socket_);
     });
     websocket_thread_.join();
+  }
+
+  const std::string& web_url_pattern() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    return web_url_pattern_;
   }
 
   int port() const {
@@ -1161,7 +1176,12 @@ class Meshcat::WebSocketPublisher {
     // Note: If the html code changes, the DRAKE_DEMAND will fail, and the code
     // string here will need to be updated to once again match the html.
     const std::string html_connect = R"""(try {
-      viewer.connect();
+      url = location.toString();
+      url = url.replace("http://", "ws://")
+      url = url.replace("https://", "wss://")
+      url = url.replace("/index.html", "/")
+      url = url.replace("/meshcat.html", "/")
+      viewer.connect(url);
     } catch (e) {
       console.info("Not connected to MeshCat websocket server: ", e);
     })""";
@@ -1356,12 +1376,9 @@ class Meshcat::WebSocketPublisher {
     do {
       app.listen(
           port, LIBUS_LISTEN_EXCLUSIVE_PORT,
-          [this, port](us_listen_socket_t* socket) {
+          [this](us_listen_socket_t* socket) {
             DRAKE_DEMAND(IsThread(websocket_thread_id_));
             if (socket) {
-              drake::log()->info(
-                  "Meshcat listening for connections at http://localhost:{}",
-                  port);
               listen_socket_ = socket;
             }
           });
@@ -1402,6 +1419,7 @@ class Meshcat::WebSocketPublisher {
   // These variables should only be accessed in the main thread, where "main
   // thread" is the thread in which this class was constructed.
   std::thread::id main_thread_id_{};
+  const std::string web_url_pattern_;
   int port_{};
   std::mt19937 generator_{};
 
@@ -1425,17 +1443,33 @@ class Meshcat::WebSocketPublisher {
   uWS::Loop* loop_{nullptr};
 };
 
-Meshcat::Meshcat(const std::optional<int>& port) {
+Meshcat::Meshcat(std::optional<int> port)
+    : Meshcat(MeshcatParams{.port = port}) {}
+
+Meshcat::Meshcat(const MeshcatParams& params) {
+  // Sanity-check the pattern, by passing it (along with a dummy port number)
+  // through to fmt to allow any fmt-specific exception to percolate. Then,
+  // confirm that the user's pattern started with a valid protocol.
+  const std::string url = fmt::format(
+      params.web_url_pattern, fmt::arg("port", 1));
+  if (url.substr(0, 4) != "http") {
+    throw std::logic_error("The web_url_pattern must be http:// or https://");
+  }
+
   // Fetch the index once to be sure that we preload the content.
   GetUrlContent("/");
 
-  publisher_ = std::make_unique<WebSocketPublisher>(port);
+  // Create the server thread, bind to the port, etc.
+  publisher_ = std::make_unique<WebSocketPublisher>(params);
+  drake::log()->info("Meshcat listening for connections at {}", web_url());
 }
 
 Meshcat::~Meshcat() = default;
 
 std::string Meshcat::web_url() const {
-  return fmt::format("http://localhost:{}", publisher_->port());
+  return fmt::format(
+      publisher_->web_url_pattern(),
+      fmt::arg("port", publisher_->port()));
 }
 
 int Meshcat::port() const {
@@ -1443,7 +1477,9 @@ int Meshcat::port() const {
 }
 
 std::string Meshcat::ws_url() const {
-  return fmt::format("ws://localhost:{}", publisher_->port());
+  const std::string http_url = web_url();
+  DRAKE_DEMAND(http_url.substr(0, 4) == "http");
+  return "ws" + http_url.substr(4);
 }
 
 int Meshcat::GetNumActiveConnections() const {
