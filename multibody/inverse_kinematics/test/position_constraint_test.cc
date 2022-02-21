@@ -1,5 +1,7 @@
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
@@ -9,6 +11,8 @@ using drake::systems::Context;
 namespace drake {
 namespace multibody {
 namespace {
+const double kInf = std::numeric_limits<double>::infinity();
+
 AutoDiffVecXd EvalPositionConstraintAutoDiff(
     const Context<AutoDiffXd>& context, const MultibodyPlant<AutoDiffXd>& plant,
     const Frame<AutoDiffXd>& frameA, const Frame<AutoDiffXd>& frameB,
@@ -90,6 +94,22 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
   const double gradient_tol = 4E-7;
   TestKinematicConstraintEval(constraint, constraint_from_autodiff, q, dq,
                               gradient_tol);
+
+  // Update bounds
+  Eigen::Vector3d new_lb(-0.5, -kInf, 0);
+  Eigen::Vector3d new_ub(kInf, kInf, 2);
+  constraint.set_bounds(new_lb, new_ub);
+  EXPECT_EQ(constraint.num_constraints(), 3);
+  EXPECT_TRUE(CompareMatrices(constraint.lower_bound(), new_lb));
+  EXPECT_TRUE(CompareMatrices(constraint.upper_bound(), new_ub));
+  new_lb << -0.2, 1.5, 0.5;
+  constraint.UpdateLowerBound(new_lb);
+  EXPECT_TRUE(CompareMatrices(constraint.lower_bound(), new_lb));
+  EXPECT_TRUE(CompareMatrices(constraint.upper_bound(), new_ub));
+  new_ub << 2, kInf, 3;
+  constraint.UpdateUpperBound(new_ub);
+  EXPECT_TRUE(CompareMatrices(constraint.lower_bound(), new_lb));
+  EXPECT_TRUE(CompareMatrices(constraint.upper_bound(), new_ub));
 }
 
 TEST_F(TwoFreeBodiesConstraintTest, PositionConstraint) {
