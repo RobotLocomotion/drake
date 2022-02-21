@@ -87,9 +87,14 @@ class Meshcat {
 
   /** Constructs the Meshcat instance on `port`. If no port is specified, the it
   will listen on the first available port starting at 7000 (up to 7099).
+  @param web_url_pattern may be used to change the web_url (and therefore the
+  ws_url) reported by this class. This may be useful in case this program sits
+  behind a firewall or proxy.
   @pre We require `port` >= 1024.
   @throws std::exception if no requested `port` is available. */
-  explicit Meshcat(const std::optional<int>& port = std::nullopt);
+  explicit Meshcat(
+      std::optional<int> port = std::nullopt,
+      std::string web_url_pattern = "http://localhost:{port}");
 
   ~Meshcat();
 
