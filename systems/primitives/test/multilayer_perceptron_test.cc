@@ -78,30 +78,31 @@ GTEST_TEST(MultilayerPerceptronTest, Basic) {
 }
 
 GTEST_TEST(MultilayerPerceptronTest, RandomParameters) {
-  MultilayerPerceptron<double> mlp({1, 100, 1},
+  const int N = 100;
+  MultilayerPerceptron<double> mlp({1, N, 1},
                                    PerceptronActivationType::kIdentity);
   auto context = mlp.CreateDefaultContext();
   RandomGenerator generator(243);
 
-  // Generate N sets of random parameters.
-  int N = 100;
+  // Generate K sets of random parameters.
+  const int K = 123;
   VectorXd mean = VectorXd::Zero(mlp.num_parameters());
   VectorXd var = VectorXd::Zero(mlp.num_parameters());
-  for (int i = 0; i < N; ++i) {
+  for (int i = 0; i < K; ++i) {
     mlp.SetRandomContext(context.get(), &generator);
     mean += mlp.GetParameters(*context);
     // Compute the variance with the true mean (zero) instead of the empirical
     // mean, for tighter statistics. This reduces to E[x^2].
     var += mlp.GetParameters(*context).array().square().matrix();
   }
-  mean /= N;
-  var /= N;
+  mean /= K;
+  var /= K;
   VectorXd std_dev = var.array().sqrt();
 
-  // Note: The large tolerances below are due to the small N and the fact that
-  // it is a worse-case bound over 100 parameters (each). The order of magnitude
-  // differences between the first and second layers confirms that the logic is
-  // correct.
+  // Note: The large tolerances below are due to the small K=123 and the fact
+  // that it is a worse-case bound over N=100 parameters (each). The order of
+  // magnitude differences between the first and second layers confirms that
+  // the logic is correct.
 
   // First layer should have mean≈0, std_dev≈1.
   EXPECT_TRUE(CompareMatrices(mlp.GetWeights(mean, 0), VectorXd::Zero(N), 0.3));

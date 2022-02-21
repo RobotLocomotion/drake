@@ -59,9 +59,9 @@ class TestCommon(unittest.TestCase):
 
     def test_random_generator(self):
         g1 = mut.RandomGenerator()
-        self.assertEqual(g1(), 3499211612)
+        self.assertEqual(g1(), 4143361702)
         g2 = mut.RandomGenerator(seed=10)
-        self.assertEqual(g2(), 3312796937)
+        self.assertEqual(g2(), 2863645618)
 
     def test_random_numpy_coordination(self):
         # Verify that multiple numpy generators can be seeded from
