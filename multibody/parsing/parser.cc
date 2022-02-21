@@ -2,6 +2,7 @@
 
 #include "drake/common/filesystem.h"
 #include "drake/multibody/parsing/detail_common.h"
+#include "drake/multibody/parsing/detail_parsing_workspace.h"
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 #include "drake/multibody/parsing/detail_urdf_parser.h"
 
@@ -12,6 +13,7 @@ using internal::AddModelFromSdf;
 using internal::AddModelFromUrdf;
 using internal::AddModelsFromSdf;
 using internal::DataSource;
+using internal::ParsingWorkspace;
 
 Parser::Parser(
     MultibodyPlant<double>* plant,
@@ -54,8 +56,8 @@ std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
   if (type == FileType::kSdf) {
     return AddModelsFromSdf(data_source, package_map_, plant_);
   } else {
-    return {AddModelFromUrdf(
-        data_source, {}, {}, package_map_, plant_)};
+    ParsingWorkspace workspace{package_map_, diagnostic_policy_, plant_};
+    return {AddModelFromUrdf(data_source, {}, {}, workspace)};
   }
 }
 
@@ -74,7 +76,8 @@ ModelInstanceIndex Parser::AddModelFromFile(
   if (type == FileType::kSdf) {
     return AddModelFromSdf(data_source, model_name, package_map_, plant_);
   } else {
-    return AddModelFromUrdf(data_source, model_name, {}, package_map_, plant_);
+    ParsingWorkspace workspace{package_map_, diagnostic_policy_, plant_};
+    return AddModelFromUrdf(data_source, model_name, {}, workspace);
   }
 }
 
@@ -88,7 +91,8 @@ ModelInstanceIndex Parser::AddModelFromString(
   if (type == FileType::kSdf) {
     return AddModelFromSdf(data_source, model_name, package_map_, plant_);
   } else {
-    return AddModelFromUrdf(data_source, model_name, {}, package_map_, plant_);
+    ParsingWorkspace workspace{package_map_, diagnostic_policy_, plant_};
+    return AddModelFromUrdf(data_source, model_name, {}, workspace);
   }
 }
 

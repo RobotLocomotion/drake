@@ -4,8 +4,7 @@
 #include <string>
 
 #include "drake/multibody/parsing/detail_common.h"
-#include "drake/multibody/parsing/package_map.h"
-#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/parsing/detail_parsing_workspace.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
@@ -29,16 +28,14 @@ namespace internal {
 //   name (either `model_name` or from the "name" attribute) using the SDFormat
 //   scope delimiter "::". The prefixed name will used as the name given to the
 //   newly created instance of this model.
-// @param plant
-//   A pointer to a mutable MultibodyPlant object to which the model will be
-//   added.
+// @param workspace
+//   The ParsingWorkspace.
 // @returns The model instance index for the newly added model.
 ModelInstanceIndex AddModelFromUrdf(
     const DataSource& data_source,
     const std::string& model_name,
     const std::optional<std::string>& parent_model_name,
-    const PackageMap& package_map,
-    MultibodyPlant<double>* plant);
+    const ParsingWorkspace& workspace);
 
 }  // namespace internal
 }  // namespace multibody

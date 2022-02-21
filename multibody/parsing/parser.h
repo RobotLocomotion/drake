@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
@@ -88,6 +89,7 @@ class Parser final {
 
  private:
   PackageMap package_map_;
+  drake::internal::DiagnosticPolicy diagnostic_policy_;
   MultibodyPlant<double>* const plant_;
 };
 
