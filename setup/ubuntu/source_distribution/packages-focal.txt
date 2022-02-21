@@ -1,4 +1,3 @@
-clang-9
 clang-format-9
 coinor-libclp-dev
 coinor-libcoinutils-dev
