@@ -3,7 +3,7 @@
 #include <array>
 
 #include "drake/multibody/fem/constitutive_model.h"
-#include "drake/multibody/fixed_fem/dev/corotated_model_data.h"
+#include "drake/multibody/fem/corotated_model_data.h"
 
 namespace drake {
 namespace multibody {
@@ -19,7 +19,7 @@ struct CorotatedModelTraits {
 
 /* Implements the fixed corotated hyperelastic constitutive model as
  described in [Stomakhin, 2012].
- @tparam_nonsymbolic_scalar.
+ @tparam_nonsymbolic_scalar
  @tparam num_locations Number of locations at which the constitutive
  relationship is evaluated. We currently only provide one instantiation of this
  template with `num_locations = 1`, but more instantiations can easily be added
@@ -35,34 +35,34 @@ class CorotatedModel final
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CorotatedModel)
 
-  using Base = ConstitutiveModel<CorotatedModel<T, num_locations>,
-                                 CorotatedModelTraits<T, num_locations>>;
-  using Data = typename Base::Data;
+  using Traits = CorotatedModelTraits<T, num_locations>;
+  using Data = typename Traits::Data;
 
   /* Constructs a CorotatedModel constitutive model with the
-   prescribed Young's modulus and Poisson ratio.
-   @param youngs_modulus  Young's modulus of the model, with unit N/m²
-   @param poisson_ratio   Poisson ratio of the model, unitless.
+   prescribed Young's modulus and Poisson's ratio.
+   @param youngs_modulus  Young's modulus of the model, with units of N/m².
+   @param poissons_ratio  Poisson's ratio of the model, unitless.
    @pre youngs_modulus >= 0.
-   @pre -1 < poisson_ratio < 0.5. */
-  CorotatedModel(const T& youngs_modulus, const T& poisson_ratio);
+   @pre -1 < poissons_ratio < 0.5. */
+  CorotatedModel(const T& youngs_modulus, const T& poissons_ratio);
 
   const T& youngs_modulus() const { return E_; }
 
-  const T& poisson_ratio() const { return nu_; }
+  const T& poissons_ratio() const { return nu_; }
 
   /* Returns the shear modulus (Lame's second parameter) which is given by
-   `E/(2*(1+nu))` where `E` is the Young's modulus and `nu` is the Poisson
+   `E/(2*(1+nu))` where `E` is the Young's modulus and `nu` is the Poisson's
    ratio. See `fem::internal::CalcLameParameters()`. */
   const T& shear_modulus() const { return mu_; }
 
   /* Returns the Lame's first parameter which is given by
    `E*nu/((1+nu)*(1-2*nu))` where `E` is the Young's modulus and `nu` is the
-   Poisson ratio. See `fem::internal::CalcLameParameters()`. */
+   Poisson's ratio. See `fem::internal::CalcLameParameters()`. */
   const T& lame_first_parameter() const { return lambda_; }
 
  private:
-  friend Base;
+  friend ConstitutiveModel<CorotatedModel<T, num_locations>,
+                           CorotatedModelTraits<T, num_locations>>;
 
   /* Shadows ConstitutiveModel::CalcElasticEnergyDensityImpl() as required by
    the CRTP base class. */
@@ -81,7 +81,7 @@ class CorotatedModel final
       std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const;
 
   T E_;       // Young's modulus, N/m².
-  T nu_;      // Poisson ratio.
+  T nu_;      // Poisson's ratio.
   T mu_;      // Lamé's second parameter/Shear modulus, N/m².
   T lambda_;  // Lamé's first parameter, N/m².
 };

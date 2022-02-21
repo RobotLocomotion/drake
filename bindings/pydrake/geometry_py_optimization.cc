@@ -130,7 +130,14 @@ void DefineGeometryOptimization(py::module m) {
         .def_static("MakeBox", &HPolyhedron::MakeBox, py::arg("lb"),
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &HPolyhedron::MakeUnitBox, py::arg("dim"),
-            cls_doc.MakeUnitBox.doc);
+            cls_doc.MakeUnitBox.doc)
+        .def(py::pickle(
+            [](const HPolyhedron& self) {
+              return std::make_pair(self.A(), self.b());
+            },
+            [](std::pair<Eigen::MatrixXd, Eigen::VectorXd> args) {
+              return HPolyhedron(std::get<0>(args), std::get<1>(args));
+            }));
     py::implicitly_convertible<HPolyhedron, copyable_unique_ptr<ConvexSet>>();
   }
 
@@ -156,7 +163,14 @@ void DefineGeometryOptimization(py::module m) {
         .def_static("MakeHypersphere", &Hyperellipsoid::MakeHypersphere,
             py::arg("radius"), py::arg("center"), cls_doc.MakeHypersphere.doc)
         .def_static("MakeUnitBall", &Hyperellipsoid::MakeUnitBall,
-            py::arg("dim"), cls_doc.MakeUnitBall.doc);
+            py::arg("dim"), cls_doc.MakeUnitBall.doc)
+        .def(py::pickle(
+            [](const Hyperellipsoid& self) {
+              return std::make_pair(self.A(), self.center());
+            },
+            [](std::pair<Eigen::MatrixXd, Eigen::VectorXd> args) {
+              return Hyperellipsoid(std::get<0>(args), std::get<1>(args));
+            }));
     py::implicitly_convertible<Hyperellipsoid,
         copyable_unique_ptr<ConvexSet>>();
   }
@@ -191,7 +205,9 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("reference_frame") = std::nullopt,
             py::arg("maximum_allowable_radius") = 0.0, cls_doc.ctor.doc_4args)
         .def("x", &Point::x, cls_doc.x.doc)
-        .def("set_x", &Point::set_x, py::arg("x"), cls_doc.set_x.doc);
+        .def("set_x", &Point::set_x, py::arg("x"), cls_doc.set_x.doc)
+        .def(py::pickle([](const Point& self) { return self.x(); },
+            [](Eigen::VectorXd arg) { return Point(arg); }));
     py::implicitly_convertible<Point, copyable_unique_ptr<ConvexSet>>();
   }
 
@@ -213,7 +229,9 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &VPolytope::MakeUnitBox, py::arg("dim"),
             cls_doc.MakeUnitBox.doc)
-        .def("CalcVolume", &VPolytope::CalcVolume, cls_doc.CalcVolume.doc);
+        .def("CalcVolume", &VPolytope::CalcVolume, cls_doc.CalcVolume.doc)
+        .def(py::pickle([](const VPolytope& self) { return self.vertices(); },
+            [](Eigen::MatrixXd arg) { return VPolytope(arg); }));
     py::implicitly_convertible<VPolytope, copyable_unique_ptr<ConvexSet>>();
   }
 

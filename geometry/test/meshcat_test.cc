@@ -41,10 +41,13 @@ GTEST_TEST(MeshcatTest, TestHttp) {
                         meshcat.web_url() + "/index.html"}),
             0);
   EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
-                        meshcat.web_url() + "/main.min.js"}),
+                        meshcat.web_url() + "/meshcat.js"}),
             0);
   EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
                         meshcat.web_url() + "/favicon.ico"}),
+            0);
+  EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
+                        meshcat.web_url() + "/no-such-file"}),
             0);
 }
 
@@ -71,6 +74,40 @@ GTEST_TEST(MeshcatTest, Ports) {
   Meshcat m3;
   EXPECT_GE(m3.port(), 7000);
   EXPECT_LE(m3.port(), 7099);
+}
+
+GTEST_TEST(MeshcatTest, CustomHttp) {
+  const std::string pattern = "http://127.0.0.254:{port}";
+  const Meshcat meshcat({std::nullopt, pattern});
+  const std::string port = std::to_string(meshcat.port());
+  EXPECT_EQ(meshcat.web_url(), "http://127.0.0.254:" + port);
+  EXPECT_EQ(meshcat.ws_url(), "ws://127.0.0.254:" + port);
+}
+
+GTEST_TEST(MeshcatTest, CustomNoPort) {
+  const std::string pattern = "http://example.ngrok.io";
+  const Meshcat meshcat({std::nullopt, pattern});
+  EXPECT_EQ(meshcat.web_url(), "http://example.ngrok.io");
+  EXPECT_EQ(meshcat.ws_url(), "ws://example.ngrok.io");
+}
+
+GTEST_TEST(MeshcatTest, CustomHttps) {
+  const std::string pattern = "https://localhost:{port}";
+  const Meshcat meshcat({std::nullopt, pattern});
+  const std::string port = std::to_string(meshcat.port());
+  EXPECT_EQ(meshcat.web_url(), "https://localhost:" + port);
+  EXPECT_EQ(meshcat.ws_url(), "wss://localhost:" + port);
+}
+
+GTEST_TEST(MeshcatTest, MalformedCustom) {
+  // Using a non-existent substitution is detected immediately.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Meshcat({std::nullopt, "http://localhost:{portnum}"}),
+      ".*argument.*");
+  // Only http or https are allowed.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Meshcat({std::nullopt, "file:///tmp"}),
+      ".*web_url_pattern.*http.*");
 }
 
 GTEST_TEST(MeshcatTest, NumActive) {

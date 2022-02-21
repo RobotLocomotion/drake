@@ -189,14 +189,36 @@ void DoScalarIndependentDefinitions(py::module m) {
         });
   }
 
+  // MeshcatParams
+  {
+    using Class = MeshcatParams;
+    constexpr auto& cls_doc = doc.MeshcatParams;
+    py::class_<Class, std::shared_ptr<Class>> cls(
+        m, "MeshcatParams", py::dynamic_attr(), cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>())
+        .def_readwrite("port", &MeshcatParams::port, cls_doc.port.doc)
+        .def_readwrite("web_url_pattern", &MeshcatParams::web_url_pattern,
+            cls_doc.web_url_pattern.doc)
+        .def("__repr__", [](const Class& self) {
+          return py::str(
+              "MeshcatParams("
+              "port={}, "
+              "web_url_pattern={})")
+              .format(self.port, self.web_url_pattern);
+        });
+  }
+
   // Meshcat
   {
     using Class = Meshcat;
     constexpr auto& cls_doc = doc.Meshcat;
     py::class_<Class, std::shared_ptr<Class>> cls(m, "Meshcat", cls_doc.doc);
     cls  // BR
-        .def(py::init<const std::optional<int>&>(),
-            py::arg("port") = std::nullopt, cls_doc.ctor.doc)
+        .def(py::init<std::optional<int>>(), py::arg("port") = std::nullopt,
+            cls_doc.ctor.doc_1args_port)
+        .def(py::init<const MeshcatParams&>(), py::arg("params"),
+            cls_doc.ctor.doc_1args_params)
         .def("web_url", &Class::web_url, cls_doc.web_url.doc)
         .def("port", &Class::port, cls_doc.port.doc)
         .def("ws_url", &Class::ws_url, cls_doc.ws_url.doc)

@@ -510,6 +510,7 @@ drake_py_unittest(
         ":geometry_py",
         ":math_py",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
+        "//bindings/pydrake/common/test_utilities:pickle_compare_py",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
         "//bindings/pydrake/solvers:clp_py",
