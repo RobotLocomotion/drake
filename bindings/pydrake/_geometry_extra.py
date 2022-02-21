@@ -2,8 +2,49 @@
 # rationale.
 
 import os
+import subprocess
 import sys
+
 from pydrake.common import set_log_level
+
+# Proxy http://DEEPNOTE_PROJECT_ID:8080/PORT/ to http://127.0.0.1:PORT/ so
+# that multiple notebooks can all be served via Deepnote's only open port.
+#
+# For conf documentation, see https://www.nginx.com/resources/wiki/start/.
+_NGINX_CONF = """
+# Deepnote MeshCat proxy server configuration.
+server {
+  listen 8080 default_server;
+  listen [::]:8080 default_server;
+  root /var/www/html;
+  server_name _;
+  location ~ /(7[0-9][0-9][0-9])/(.*) {
+    proxy_pass http://127.0.0.1:$1/$2;
+  }
+}
+"""
+
+
+def _run(args):
+    proc = subprocess.run(
+        args, encoding="utf-8", stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT)
+    if proc.returncode == 0:
+        return
+    print(proc.stdout, file=sys.stderr, end="")
+    proc.check_returncode()
+
+
+def _setup_deepnote_nginix():
+    print("Setting up Deepnote MeshCat NginX server...")
+    _run(["apt-get", "update"])
+    _run(["apt-get", "install", "--no-install-recommends", "nginx-light"])
+    _run(["rm", "-f", "/etc/nginx/sites-enabled/default"])
+    conf_filename = "/etc/nginx/sites-available/deepnote-meshcat-proxy"
+    with open(conf_filename, "w") as conf:
+        conf.write(_NGINX_CONF)
+    _run(["ln", "-sf", conf_filename, "/etc/nginx/sites-enabled/"])
+    _run(["service", "nginx", "start"])
 
 
 def StartMeshcat():
