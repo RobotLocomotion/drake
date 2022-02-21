@@ -19,6 +19,28 @@
 namespace drake {
 namespace geometry {
 
+/** The set of parameters for configuring Meshcat. */
+struct MeshcatParams {
+  /** Meshcat will listen on the given http `port`. If no port is specified,
+  then it will listen on the first available port starting at 7000 (up to 7099).
+  @pre We require `port` >= 1024. */
+  std::optional<int> port{std::nullopt};
+
+  /** The `web_url_pattern` may be used to change the web_url() (and therefore
+  the ws_url()) reported by Meshcat. This may be useful in case %Meshcat sits
+  behind a firewall or proxy.
+
+  The pattern follows the
+  <a href="https://en.cppreference.com/w/cpp/utility/format">std::format</a>
+  specification language, except that `arg-id` substitutions are performed
+  using named arguments instead of positional indices.
+
+  There is only a single argument available to the pattern: `{port}` will be
+  substitued with the %Meshcat server's listen port number.
+  */
+  std::string web_url_pattern{"http://localhost:{port}"};
+};
+
 /** Provides an interface to %Meshcat (https://github.com/rdeits/meshcat).
 
 Each instance of this class spawns a thread which runs an http/websocket server.
@@ -85,11 +107,14 @@ class Meshcat {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Meshcat)
 
-  /** Constructs the Meshcat instance on `port`. If no port is specified, the it
-  will listen on the first available port starting at 7000 (up to 7099).
+  /** Constructs the %Meshcat instance on `port`. If no port is specified,
+  it will listen on the first available port starting at 7000 (up to 7099).
   @pre We require `port` >= 1024.
   @throws std::exception if no requested `port` is available. */
-  explicit Meshcat(const std::optional<int>& port = std::nullopt);
+  explicit Meshcat(std::optional<int> port = std::nullopt);
+
+  /** Constructs the %Meshcat instance using the given `params`. */
+  explicit Meshcat(const MeshcatParams& params);
 
   ~Meshcat();
 

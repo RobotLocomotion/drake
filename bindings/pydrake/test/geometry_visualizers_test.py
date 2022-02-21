@@ -88,10 +88,14 @@ class TestGeometryVisualizers(unittest.TestCase):
         draw_subscriber.clear()
 
     def test_meshcat(self):
-        meshcat = mut.Meshcat(port=7051)
-        self.assertEqual(meshcat.port(), 7051)
+        port = 7051
+        params = mut.MeshcatParams(
+            port=port,
+            web_url_pattern="http://host:{port}")
+        meshcat = mut.Meshcat(params=params)
+        self.assertEqual(meshcat.port(), port)
         with self.assertRaises(RuntimeError):
-            meshcat2 = mut.Meshcat(port=7051)
+            meshcat2 = mut.Meshcat(port=port)
         self.assertIn("http", meshcat.web_url())
         self.assertIn("ws", meshcat.ws_url())
         meshcat.SetObject(path="/test/box",
