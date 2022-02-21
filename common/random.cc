@@ -3,6 +3,11 @@
 #include "drake/common/autodiff.h"
 
 namespace drake {
+std::unique_ptr<RandomGenerator::Engine> RandomGenerator::CreateEngine(
+    result_type seed) {
+  return std::make_unique<RandomGenerator::Engine>(seed);
+}
+
 template <typename T>
 T CalcProbabilityDensity(RandomDistribution distribution,
                          const Eigen::Ref<const VectorX<T>>& x) {
