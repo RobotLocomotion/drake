@@ -263,4 +263,32 @@ TEST_F(BoolTestSymbolic, NoneOf) {
       none_of(zero_m_, [](const Expression& v) { return v >= 0.0; }));
 }
 
+GTEST_TEST(IfThenElseTest, VectorX) {
+  const bool predicate = true;
+  const Eigen::VectorXd a = Eigen::Vector3d(1.0, 2.0, 3.0);
+  const Eigen::VectorXd b = Eigen::Vector3d(4.0, 5.0, 6.0);
+  const Eigen::VectorXd result = if_then_else(predicate, a, b);
+  ASSERT_EQ(result.size(), 3);
+  EXPECT_EQ(result[0], 1.0);
+  EXPECT_EQ(result[1], 2.0);
+  EXPECT_EQ(result[2], 3.0);
+}
+
+GTEST_TEST(IfThenElseTest, Vector3) {
+  const bool predicate = false;
+  const Eigen::Vector3d a = Eigen::Vector3d(1.0, 2.0, 3.0);
+  const Eigen::Vector3d b = Eigen::Vector3d(4.0, 5.0, 6.0);
+  const Eigen::Vector3d result = if_then_else(predicate, a, b);
+  EXPECT_EQ(result[0], 4.0);
+  EXPECT_EQ(result[1], 5.0);
+  EXPECT_EQ(result[2], 6.0);
+}
+
+GTEST_TEST(IfThenElseTest, VectorBad) {
+  const bool predicate = true;
+  const Eigen::VectorXd a = Eigen::VectorXd::Zero(2);
+  const Eigen::VectorXd b = Eigen::VectorXd::Zero(3);
+  EXPECT_THROW(if_then_else(predicate, a, b), std::exception);
+}
+
 }  // namespace drake

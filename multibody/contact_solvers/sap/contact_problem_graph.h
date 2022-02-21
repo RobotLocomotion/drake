@@ -117,7 +117,7 @@ class ContactProblemGraph {
   int num_constraints() const { return num_constraints_; }
 
   /* Returns the total number of constraint equations for this graph. */
-  int num_total_constraint_equations() const {
+  int num_constraint_equations() const {
     return num_constraint_equations_;
   }
 

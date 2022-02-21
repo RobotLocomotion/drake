@@ -45,7 +45,7 @@ GTEST_TEST(ContactGraph, Construction) {
   EXPECT_EQ(graph.num_cliques(), 4);
   EXPECT_EQ(graph.num_constraints(), 5);
   EXPECT_EQ(graph.num_clusters(), 4);
-  EXPECT_EQ(graph.num_total_constraint_equations(), 17);
+  EXPECT_EQ(graph.num_constraint_equations(), 17);
 
   // Verify clusters were created as expected in the diagram above:
   // Cluster | cliques pair  |  Constraints | Num. constraint equations.

@@ -3,6 +3,7 @@
 load(
     "@drake//tools/performance:defs.bzl",
     "drake_cc_googlebench_binary",
+    "drake_py_experiment_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -16,6 +17,11 @@ drake_cc_googlebench_binary(
         "//systems/primitives:pass_through",
         "//tools/performance:fixture_common",
     ],
+)
+
+drake_py_experiment_binary(
+    name = "framework_experiment",
+    googlebench_binary = ":framework_benchmarks",
 )
 
 add_lint_tests()

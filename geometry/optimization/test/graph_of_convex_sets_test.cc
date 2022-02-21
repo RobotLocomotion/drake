@@ -12,9 +12,11 @@
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/clp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/solver_options.h"
 
 namespace drake {
 namespace geometry {
@@ -33,6 +35,7 @@ using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
 using solvers::MathematicalProgramResult;
 using solvers::QuadraticCost;
+using solvers::SolverOptions;
 using symbolic::Environment;
 using symbolic::Expression;
 using symbolic::Substitution;
@@ -323,11 +326,26 @@ TEST_F(ThreePoints, LinearCost1) {
   EXPECT_TRUE(
       CompareMatrices(e_off_->GetSolutionPhiXv(result), 0 * p_sink_.x(), 1e-6));
 
-  // Alternative signature.
+  // Alternative signatures.
   auto result2 = g_.SolveShortestPath(*source_, *target_, true);
   ASSERT_TRUE(result2.is_success());
   EXPECT_NEAR(e_on_->GetSolutionCost(result2), 1.0, 1e-6);
   EXPECT_NEAR(e_off_->GetSolutionCost(result2), 0.0, 1e-6);
+
+  if (solvers::ClpSolver::is_available()) {
+    solvers::ClpSolver solver;
+    auto result3 = g_.SolveShortestPath(*source_, *target_, true, &solver);
+    ASSERT_TRUE(result3.is_success());
+    EXPECT_NEAR(e_on_->GetSolutionCost(result3), 1.0, 1e-6);
+    EXPECT_NEAR(e_off_->GetSolutionCost(result3), 0.0, 1e-6);
+  }
+
+  SolverOptions options;
+  auto result4 =
+      g_.SolveShortestPath(*source_, *target_, true, nullptr, options);
+  ASSERT_TRUE(result4.is_success());
+  EXPECT_NEAR(e_on_->GetSolutionCost(result4), 1.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result4), 0.0, 1e-6);
 }
 
 TEST_F(ThreePoints, ConvexRelaxation) {
