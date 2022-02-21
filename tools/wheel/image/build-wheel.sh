@@ -42,6 +42,8 @@ cp -r -t /wheel/pydrake/share/drake \
     /opt/drake/share/drake/geometry \
     /opt/drake/share/drake/manipulation \
 
+XXX need to copy the deepnote scripts here
+
 # TODO(mwoehlke-kitware) We need to remove these to keep the wheel from being
 # too large, but (per above), the whole of share/drake shouldn't be in the
 # wheel.

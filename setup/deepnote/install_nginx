@@ -1,0 +1,25 @@
+#!/bin/bash
+#
+# Installs and runs nginx as an Ubuntu system daemon, and adds our
+# nginx-meshcat-proxy.conf as a site to be served.
+#
+# These is intended for use by pydrake.geometry.SetupMeshcat() to configure a
+# Deepnote notebook to allow for MeshCat traffic to flow.  Refer to the
+# implementation in bindings/pydrake/_geometry_extra.py for details.
+
+set -euo pipefail
+
+[[ "${EUID}" -eq 0 ]] || (
+    echo "error: install_nginx must run as root." && exit 1)
+my_dir="$(cd "$(dirname "${BASH_SOURCE}")" && pwd)"
+
+# Install nginx; disable its default site.
+apt-get update || (sleep 30; apt-get update)
+apt-get install --no-install-recommends nginx-light
+rm -f /etc/nginx/sites-enabled/default
+
+# Enable our meshcat site.
+site="/etc/nginx/sites-available/deepnote-meshcat-proxy"
+cp "${my_dir}/nginx-meshcat-proxy.conf" "${site}"
+ln -sf "${site}" /etc/nginx/sites-enabled/
+service nginx start
