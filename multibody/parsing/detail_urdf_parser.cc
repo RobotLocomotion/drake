@@ -776,8 +776,8 @@ ModelInstanceIndex AddModelFromUrdf(
     const DataSource& data_source,
     const std::string& model_name_in,
     const std::optional<std::string>& parent_model_name,
-    const PackageMap& package_map,
-    MultibodyPlant<double>* plant) {
+    const ParsingWorkspace& w) {
+  auto plant = w.plant;
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
   data_source.DemandExactlyOne();
@@ -816,7 +816,7 @@ ModelInstanceIndex AddModelFromUrdf(
     }
   }
 
-  return ParseUrdf(model_name_in, parent_model_name, package_map, root_dir,
+  return ParseUrdf(model_name_in, parent_model_name, w.package_map, root_dir,
                    &xml_doc, plant);
 }
 
