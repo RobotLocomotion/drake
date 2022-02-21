@@ -31,6 +31,11 @@ GTEST_TEST(RandomGeneratorTest, Traits) {
   EXPECT_TRUE(std::is_move_assignable_v<RandomGenerator>);
 }
 
+GTEST_TEST(RandomGeneratorTest, Range) {
+  EXPECT_EQ(RandomGenerator::min(), 0);
+  EXPECT_EQ(RandomGenerator::max(), 4294967295ull);
+}
+
 GTEST_TEST(RandomGeneratorTest, Efficiency) {
   // Check an insanity upper bound, to demonstrate that we don't store large
   // random state on the stack.
@@ -141,18 +146,6 @@ GTEST_TEST(RandomGeneratorTest, MovedFrom1) {
   }
 }
 
-GTEST_TEST(RandomGeneratorTest, CompareWith19337) {
-  std::mt19937 oracle;
-
-  RandomGenerator dut;
-  EXPECT_EQ(dut.min(), oracle.min());
-  EXPECT_EQ(dut.max(), oracle.max());
-
-  for (int i = 0; i < kNumSteps; ++i) {
-    ASSERT_EQ(dut(), oracle()) << "with i = " << i;
-  }
-}
-
 // The sequence from a default-constructed generator is the same as explicitly
 // passing in the default seed.
 GTEST_TEST(RandomGeneratorTest, DefaultMatchesSeedConstant) {
@@ -160,6 +153,15 @@ GTEST_TEST(RandomGeneratorTest, DefaultMatchesSeedConstant) {
   RandomGenerator bar(RandomGenerator::default_seed);
   for (int i = 0; i < kNumSteps; ++i) {
     ASSERT_EQ(foo(), bar()) << "with i = " << i;
+  }
+}
+
+// Random numbers are not "4, 4, 4, 4, 4, ...".
+// https://xkcd.com/221/
+GTEST_TEST(RandomGeneratorTest, Bogosity) {
+  RandomGenerator dut;
+  for (int i = 0; i < 100; ++i) {
+    ASSERT_NE(dut(), dut()) << "with i = " << i;
   }
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <random>
 
@@ -14,14 +15,12 @@
 namespace drake {
 /// Defines Drake's canonical implementation of the UniformRandomBitGenerator
 /// C++ concept (as well as a few conventional extras beyond the concept, e.g.,
-/// seeds).  This uses the 32-bit Mersenne Twister mt19937 by Matsumoto and
-/// Nishimura, 1998.  For more information, see
-/// https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine
+/// seeds).
 class RandomGenerator {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RandomGenerator)
 
-  using result_type = std::mt19937::result_type;
+  using result_type = std::uint32_t;
 
   /// Creates a generator using the `default_seed`.  Actual creation of the
   /// generator is deferred until first use so this constructor is fast and
@@ -47,7 +46,7 @@ class RandomGenerator {
   static constexpr result_type default_seed = std::mt19937::default_seed;
 
  private:
-  using Engine = std::mt19937;
+  using Engine = std::independent_bits_engine<std::mt19937_64, 32, result_type>;
 
   static std::unique_ptr<Engine> CreateEngine(result_type seed);
 
