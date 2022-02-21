@@ -140,15 +140,15 @@ class Constraint : public EvaluatorBase {
 
   /**
    * Set the upper and lower bounds of the constraint.
-   * @param lower_bound. A `num_constraints` x 1 vector.
-   * @param upper_bound. A `num_constraints` x 1 vector.
+   * @param new_lb . A `num_constraints` x 1 vector.
+   * @param new_ub. A `num_constraints` x 1 vector.
    * @note If the users want to expose this method in a sub-class, do
    * using Constraint::set_bounds, as in LinearConstraint.
    */
-  void set_bounds(const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
-                  const Eigen::Ref<const Eigen::VectorXd>& upper_bound) {
-    UpdateLowerBound(lower_bound);
-    UpdateUpperBound(upper_bound);
+  void set_bounds(const Eigen::Ref<const Eigen::VectorXd>& new_lb,
+                  const Eigen::Ref<const Eigen::VectorXd>& new_ub) {
+    UpdateLowerBound(new_lb);
+    UpdateUpperBound(new_ub);
   }
 
   virtual bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,

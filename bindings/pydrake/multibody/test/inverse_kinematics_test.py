@@ -457,6 +457,9 @@ class TestConstraints(unittest.TestCase):
             frameB=variables.body2_frame,
             p_BQ=[0.2, 0.3, 0.5], plant_context=variables.plant_context)
         self.assertIsInstance(constraint, mp.Constraint)
+        constraint.UpdateLowerBound(new_lb=np.array([-2, -3, -0.5]))
+        constraint.UpdateUpperBound(new_ub=np.array([10., 0.5, 2.]))
+        constraint.set_bounds(new_lb=[-1, -2, -2.], new_ub=[1., 2., 3.])
 
     @check_type_variables
     def test_com_position_constraint(self, variables):
