@@ -2,8 +2,42 @@
 # rationale.
 
 import os
+import socket
+import subprocess
 import sys
-from pydrake.common import set_log_level
+
+from pydrake.common import FindResourceOrThrow, set_log_level
+
+
+def _is_listening(port):
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        return sock.connect_ex(("127.0.0.1", port)) == 0
+    finally:
+        sock.close()
+
+
+def _install_deepnote_nginx():
+    print("Installing NginX server for MeshCat on Deepnote...")
+    install_nginx = FindResourceOrThrow(
+        "drake/setup/deepnote/install_nginx")
+    proc = subprocess.run(
+        [install_nginx], encoding="utf-8", stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT)
+    if proc.returncode == 0:
+        return
+    print(proc.stdout, file=sys.stderr, end="")
+    proc.check_returncode()
+
+
+def _start_meshcat_deepnote(*, port=None, restart_nginx=False):
+    host = os.environ["DEEPNOTE_PROJECT_ID"]
+    if restart_nginx or not _is_listening(8080):
+        _install_deepnote_nginx()
+    params = MeshcatParams(
+        port=port,
+        web_url_pattern=f"https://{host}.deepnoteproject.com/{{port}}/")
+    return Meshcat(params=params)
 
 
 def StartMeshcat():
@@ -23,24 +57,13 @@ def StartMeshcat():
     If you run out of available ports, you can reset the notebook to free any
     ports that are currently used by the notebook.
     """
+    if "DEEPNOTE_PROJECT_ID" in os.environ:
+        return _start_meshcat_deepnote()
+
     prev_log_level = set_log_level("warn")
     use_ngrok = False
-    if ("DEEPNOTE_PROJECT_ID" in os.environ):
-        # Deepnote exposes port 8080 (only).  If we need multiple meshcats,
-        # then we fall back to ngrok.
-        try:
-            meshcat = Meshcat(8080)
-        except RuntimeError:
-            use_ngrok = True
-        else:
-            set_log_level(prev_log_level)
-            web_url = f"https://{os.environ['DEEPNOTE_PROJECT_ID']}.deepnoteproject.com"  # noqa
-            print(f'Meshcat is now available at {web_url}')
-            return meshcat
-
     if 'google.colab' in sys.modules:
         use_ngrok = True
-
     meshcat = Meshcat()
     web_url = meshcat.web_url()
     if use_ngrok:

@@ -146,6 +146,9 @@ drake_pybind_library(
         "geometry_py_visualizers.cc",
     ],
     package_info = PACKAGE_INFO,
+    py_data = [
+        "//setup:deepnote",
+    ],
     py_deps = [
         ":math_py",
         ":module_py",
