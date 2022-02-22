@@ -60,6 +60,7 @@ cc_library(
         "surrogatestrategy.h",
     ]),
     copts = [
+        "-fno-openmp",
         # Ignore OpenMP-related warnings.
         "-Wno-unknown-pragmas",
     ],

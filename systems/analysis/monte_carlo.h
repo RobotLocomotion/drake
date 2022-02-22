@@ -114,6 +114,7 @@ double RandomSimulation(const SimulatorFactory& make_simulator,
 struct RandomSimulationResult {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RandomSimulationResult)
 
+  RandomSimulationResult() = default;
   explicit RandomSimulationResult(const RandomGenerator& generator,
                                   double value = 0.0)
       : generator_snapshot(generator), output(value) {}
@@ -181,6 +182,29 @@ std::vector<RandomSimulationResult> MonteCarloSimulation(
 
 // The below functions are exposed for unit testing only.
 namespace internal {
+
+/* Used by MonteCarloSimulation to create and initialize and simulator.
+The simulator's context will already be randomized upon return. */
+std::unique_ptr<Simulator<double>> MakeRandomSimulator(
+    const SimulatorFactory& make_simulator,
+    RandomGenerator* generator);
+
+/* Used by MonteCarloSimulation in serial mode. */
+std::vector<RandomSimulationResult> MonteCarloSimulationSerial(
+    const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
+    double final_time, int num_samples, RandomGenerator* generator);
+
+/* Used by MonteCarloSimulation in parallel, when in std mode. */
+std::vector<RandomSimulationResult> MonteCarloSimulationParallelStd(
+    const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
+    double final_time, int num_samples, RandomGenerator* generator,
+    int num_threads);
+
+/* Used by MonteCarloSimulation in parallel, when in OpenMP mode. */
+std::vector<RandomSimulationResult> MonteCarloSimulationParallelOmp(
+    const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
+    double final_time, int num_samples, RandomGenerator* generator,
+    int num_threads);
 
 /* Used by MonteCarloSimulation to select number of threads to use. */
 int SelectNumberOfThreadsToUse(int num_parallel_executions);
