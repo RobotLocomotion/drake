@@ -1,3 +1,6 @@
+build --fission=yes
+build --features=per_object_debug_info
+
 build:_drd --extra_toolchains=//tools/py_toolchain:linux_dbg_toolchain
 build:_helgrind --extra_toolchains=//tools/py_toolchain:linux_dbg_toolchain
 
