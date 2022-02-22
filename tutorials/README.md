@@ -5,15 +5,15 @@ This provides more in-depth documentation on top of the
 
 ## Running the Tutorials Locally
 
-To run the tutorials locally, you should ensure that you have Drake available, [either via Bazel or via binary packages](https://drake.mit.edu/installation.html).
+After Drake version v0.40.0 or newer, you'll be able to run Drake's tutorials
+locally.  (Prior to that, only nightly builds will offer local tutorials.)
+In the meantime, please use "Running and Viewing the Notebooks Online", below.
 
-To run the notebooks using Bazel, please refer to the
-[Bazel-Jupyter README](../tools/jupyter/README.md#running-notebooks).
-For example:
-
-```
-bazel run //tutorials:mathematical_program
-```
+To run the tutorials locally, install Drake via one of the
+[installation methods](https://drake.mit.edu/installation.html)
+(e.g., [pip install drake](https://drake.mit.edu/pip.html)),
+be sure your `PYTHONPATH` has been set per the installation instructions,
+and then run `python3 -m pydrake.tutorials` to launch a Jupyter browser.
 
 ## Running and Viewing the Notebooks Online
 
@@ -63,6 +63,11 @@ rendering server (`render.githubusercontent.com`) such that they are unusable,
 and does not provide simple anchors for headings.
 
 ## For Developers
+
+- To rebuild from source and run tutorials using Bazel, use e.g.:
+```
+bazel run //tutorials:mathematical_program
+```
 
 - The first cell of each notebook should be a Markdown cell with the tutorial's title and
   the following preamble:
