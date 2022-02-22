@@ -22,6 +22,13 @@ def StartMeshcat():
 
     If you run out of available ports, you can reset the notebook to free any
     ports that are currently used by the notebook.
+
+    Warning:
+     Drake's support for Colab is deprecated.
+     New releases after 2022-04-01 will no longer be compatible with Colab.
+     See `drake#13391 <https://github.com/RobotLocomotion/drake/issues/13391>`_
+     or `colab#1880 <https://github.com/googlecolab/colabtools/issues/1880>`_
+     for details.
     """
     prev_log_level = set_log_level("warn")
     use_ngrok = False
