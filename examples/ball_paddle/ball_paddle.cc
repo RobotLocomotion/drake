@@ -104,7 +104,10 @@ void BallPaddle<T>::AddToBuilder(drake::systems::DiagramBuilder<double>*
 
   drake::geometry::DrakeVisualizerParams params;
   if (plant_->time_step() != 0.0) {
-    // Publish every time step for discrete systems.
+    // Publish every time step for discrete systems. The simulation is very
+    // short and fast. We publish every time step, so we can slow down the
+    // replay enough for human eyes. In a real application, you might want to
+    // use the default value instead.
     params.publish_period = plant_->time_step();
   }
   params.role = drake::geometry::Role::kIllustration;
@@ -115,10 +118,14 @@ void BallPaddle<T>::AddToBuilder(drake::systems::DiagramBuilder<double>*
       builder
           ->template AddSystem<drake::multibody::ContactResultsToLcmSystem>(
               *plant_);
+  // The simulation is very short and fast. We use 0 to publish every time
+  // step, so we can slow down the replay enough for human eyes. In a real
+  // application, you might want to use the default value instead.
+  const double contact_publish_period = 0.0;
   auto contact_results_publisher =
       builder->AddSystem(drake::systems::lcm::LcmPublisherSystem::Make<
                          drake::lcmt_contact_results_for_viz>(
-          "CONTACT_RESULTS", nullptr, /* zero for per-step publishing */ 0));
+          "CONTACT_RESULTS", nullptr, contact_publish_period));
   // Contact results to lcm msg.
   builder->Connect(plant_->get_contact_results_output_port(),
                    contact_results_to_lcm->get_contact_result_input_port());
