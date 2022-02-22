@@ -11,21 +11,27 @@
 namespace drake {
 namespace systems {
 namespace analysis {
-namespace {
-// Checks if a future has completed execution.
-template <typename T>
-bool IsFutureReady(const std::future<T>& future) {
-  // future.wait_for() is the only method to check the status of a future
-  // without waiting for it to complete.
-  const std::future_status status =
-      future.wait_for(std::chrono::milliseconds(1));
-  return (status == std::future_status::ready);
+
+double RandomSimulation(
+    const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
+    const double final_time, RandomGenerator* const generator) {
+  auto simulator = make_simulator(generator);
+
+  const System<double>& system = simulator->get_system();
+  system.SetRandomContext(&simulator->get_mutable_context(), generator);
+
+  simulator->AdvanceTo(final_time);
+
+  return output(system, simulator->get_context());
 }
+
+namespace {
 
 // Serial (single-threaded) implementation of MonteCarloSimulation.
 std::vector<RandomSimulationResult> MonteCarloSimulationSerial(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
-    double final_time, int num_samples, RandomGenerator* generator) {
+    const double final_time, const int num_samples,
+    RandomGenerator* const generator) {
   std::vector<RandomSimulationResult> simulation_results;
   simulation_results.reserve(num_samples);
 
@@ -39,11 +45,21 @@ std::vector<RandomSimulationResult> MonteCarloSimulationSerial(
   return simulation_results;
 }
 
+// Checks if a future has completed execution.
+template <typename T>
+bool IsFutureReady(const std::future<T>& future) {
+  // future.wait_for() is the only method to check the status of a future
+  // without waiting for it to complete.
+  const std::future_status status =
+      future.wait_for(std::chrono::milliseconds(1));
+  return (status == std::future_status::ready);
+}
+
 // Parallel (multi-threaded) implementation of MonteCarloSimulation.
 std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
-    double final_time, int num_samples, RandomGenerator* generator,
-    int num_parallel_executions) {
+    const double final_time, const int num_samples,
+    RandomGenerator* const generator, const int num_threads) {
   // Initialize storage for all simulation results. The full vector must be
   // constructed up front (i.e. we can't use reserve()) to avoid a race
   // condition on checking the size of the vector when the worker threads write
@@ -75,7 +91,7 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
     }
 
     // Dispatch new operations.
-    while (static_cast<int>(active_operations.size()) < num_parallel_executions
+    while (static_cast<int>(active_operations.size()) < num_threads
            && simulations_dispatched < num_samples) {
       // Create the simulation result using the current generator state.
       simulation_results.at(simulations_dispatched) =
@@ -109,9 +125,11 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
 
   return simulation_results;
 }
+
 }  // namespace
 
 namespace internal {
+
 int SelectNumberOfThreadsToUse(const int num_parallel_executions) {
   const int hardware_concurrency =
       static_cast<int>(std::thread::hardware_concurrency());
@@ -148,32 +166,22 @@ int SelectNumberOfThreadsToUse(const int num_parallel_executions) {
 
   return num_threads;
 }
+
 }  // namespace internal
-
-double RandomSimulation(const SimulatorFactory& make_simulator,
-                        const ScalarSystemFunction& output, double final_time,
-                        RandomGenerator* generator) {
-  auto simulator = make_simulator(generator);
-
-  const System<double>& system = simulator->get_system();
-  system.SetRandomContext(&simulator->get_mutable_context(), generator);
-
-  simulator->AdvanceTo(final_time);
-
-  return output(system, simulator->get_context());
-}
 
 std::vector<RandomSimulationResult> MonteCarloSimulation(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
     const double final_time, const int num_samples, RandomGenerator* generator,
     const int num_parallel_executions) {
-  std::unique_ptr<RandomGenerator> owned_generator{};
+  // Create a generator if the user didn't provide one.
+  std::unique_ptr<RandomGenerator> owned_generator;
   if (generator == nullptr) {
-    // Create a generator to be used for this set of tests.
     owned_generator = std::make_unique<RandomGenerator>();
     generator = owned_generator.get();
   }
 
+  // Check num_parallel_executions vs the available hardware concurrency.
+  // This also serves to sanity-check the num_parallel_executions argument.
   const int num_threads =
       internal::SelectNumberOfThreadsToUse(num_parallel_executions);
 
