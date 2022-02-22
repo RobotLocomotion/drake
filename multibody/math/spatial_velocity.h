@@ -158,10 +158,11 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   // keyword to ensure the method is still inlined even with `extern template`.
 
   /// Calculates twice (2x) a body B's kinetic energy measured in frame M.
-  /// For a frame Bp that is fixed to a rigid body B, calculates the dot-product
-  /// of V_MBp_E (frame Bp's spatial velocity measured in frame M, expressed in
-  /// frame E) with L_MBp_E (body B's spatial momentum measured in frame M,
-  /// about Bp's origin, expressed in frame E).
+  /// For any frame (e.g., an @ref multibody_frames_and_bodies "offset frame")
+  /// Bp that is fixed to a rigid body B, calculates the dot-product of V_MBp_E
+  /// (frame Bp's spatial velocity measured in frame M, expressed in frame E)
+  /// with L_MBp_E (body B's spatial momentum measured in frame M, about Bp's
+  /// origin, expressed in frame E).
   /// @param[in] momentum which is L_MBp_E, body B's spatial momentum measured
   /// in frame M, about frame Bp's origin, expressed in the same frame E as
   /// `this` = V_MBp_E.
