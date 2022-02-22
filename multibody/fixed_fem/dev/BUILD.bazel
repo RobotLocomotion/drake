@@ -12,42 +12,6 @@ package(
 )
 
 drake_cc_library(
-    name = "collision_objects",
-    srcs = [
-        "collision_objects.cc",
-    ],
-    hdrs = [
-        "collision_objects.h",
-    ],
-    deps = [
-        "//geometry:geometry_ids",
-        "//geometry:proximity_properties",
-        "//geometry:shape_specification",
-        "//geometry/proximity:bvh",
-        "//geometry/proximity:make_box_mesh",
-        "//geometry/proximity:make_capsule_mesh",
-        "//geometry/proximity:make_cylinder_mesh",
-        "//geometry/proximity:make_ellipsoid_mesh",
-        "//geometry/proximity:make_sphere_mesh",
-        "//geometry/proximity:obj_to_surface_mesh",
-        "//geometry/proximity:triangle_surface_mesh",
-    ],
-)
-
-drake_cc_library(
-    name = "calc_lame_parameters",
-    srcs = [
-        "calc_lame_parameters.cc",
-    ],
-    hdrs = [
-        "calc_lame_parameters.h",
-    ],
-    deps = [
-        "//common:default_scalars",
-    ],
-)
-
-drake_cc_library(
     name = "deformable_body_config",
     hdrs = [
         "deformable_body_config.h",
@@ -123,17 +87,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "element_cache_entry",
-    hdrs = [
-        "element_cache_entry.h",
-    ],
-    deps = [
-        ":fem_indexes",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "fem_indexes",
     hdrs = [
         "fem_indexes.h",
@@ -163,31 +116,7 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "schur_complement",
-    srcs = [
-        "schur_complement.cc",
-    ],
-    hdrs = [
-        "schur_complement.h",
-    ],
-    deps = [
-        "//common:default_scalars",
-        "//common:essential",
-    ],
-)
-
 # === test/ ===
-drake_cc_googletest(
-    name = "collision_objects_test",
-    data = ["//geometry:test_obj_files"],
-    deps = [
-        ":collision_objects",
-        "//common:find_resource",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
 drake_cc_googletest(
     name = "mesh_utilities_test",
     deps = [
@@ -196,14 +125,6 @@ drake_cc_googletest(
         "//geometry/proximity:make_box_mesh",
         "//geometry/proximity:mesh_to_vtk",
         "//geometry/proximity:proximity_utilities",
-    ],
-)
-
-drake_cc_googletest(
-    name = "schur_complement_test",
-    deps = [
-        ":schur_complement",
-        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
