@@ -112,7 +112,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
     return SpatialVelocity<T>(*this).ShiftInPlace(offset);
   }
 
-  /// For a frame C moving relative to a frame B, where `this` = V_MB_E
+  /// Given a frame C's velocity relative to a frame B and `this` = V_MB_E
   /// (B's spatial velocity measured-in a frame M), returns C's velocity in M.
   /// @param[in] position_of_moving_frame which is the position vector p_BoCo_E
   /// (from frame B's origin Bo to frame C's origin Co), expressed in frame E.
