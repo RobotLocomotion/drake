@@ -1,0 +1,25 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/lint:lint.bzl", "add_lint_tests")
+
+cc_library(
+    name = "spdlog",
+    hdrs = glob(["include/**"]),
+    includes = ["include"],
+    defines = [
+        "$<JOIN:$<TARGET_PROPERTY:spdlog::spdlog,INTERFACE_COMPILE_DEFINITIONS>,",
+        ">",
+        "HAVE_SPDLOG"
+    ],
+    linkopts = ["$<TARGET_LINKER_FILE:spdlog::spdlog>", "-pthread"],
+    deps = ["@fmt"],
+    visibility = ["//visibility:public"]
+)
+
+install(
+    name = "install",
+    visibility = ["//visibility:public"]
+)
+
+add_lint_tests()
