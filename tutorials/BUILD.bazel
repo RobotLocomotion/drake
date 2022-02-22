@@ -1,8 +1,10 @@
 # -*- mode: python -*-
 # vi: set ft=python :
 
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
+load("@drake//tools/install:install.bzl", "install", "install_files")
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_jupyter_py_binary(
     name = "index",
@@ -113,6 +115,35 @@ drake_jupyter_py_binary(
     add_test_rule = 1,
     deps = [
         "//bindings/pydrake",
+    ],
+)
+
+install_files(
+    name = "install_notebooks",
+    dest = "share/drake/tutorials",
+    files = [
+        "debug_mathematical_program.ipynb",
+        "dynamical_systems.ipynb",
+        "index.ipynb",
+        "linear_program.ipynb",
+        "mathematical_program.ipynb",
+        "mathematical_program_multibody_plant.ipynb",
+        "multibody_plant_autodiff_mass.ipynb",
+        "nonlinear_program.ipynb",
+        "pyplot_animation_multibody_plant.ipynb",
+        "quadratic_program.ipynb",
+        "rendering_multibody_plant.ipynb",
+        "solver_parameters.ipynb",
+        "sum_of_squares_optimization.ipynb",
+        "updating_costs_and_constraints.ipynb",
+    ],
+)
+
+install(
+    name = "install",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":install_notebooks",
     ],
 )
 
