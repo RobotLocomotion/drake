@@ -40,7 +40,11 @@ cp -r -t /wheel/pydrake/share/drake \
     /opt/drake/share/drake/package.xml \
     /opt/drake/share/drake/examples \
     /opt/drake/share/drake/geometry \
-    /opt/drake/share/drake/manipulation \
+    /opt/drake/share/drake/manipulation
+
+mkdir -p /wheel/pydrake/share/drake/setup
+cp -r -t /wheel/pydrake/share/drake/setup \
+    /opt/drake/share/drake/setup/deepnote
 
 # TODO(mwoehlke-kitware) We need to remove these to keep the wheel from being
 # too large, but (per above), the whole of share/drake shouldn't be in the
