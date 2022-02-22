@@ -10,12 +10,6 @@ your renderer of choice.
 The dependent package requirements for running this server::
 
     flask>=1.1
-    gunicorn
-
-Note:
-    If using ``apt-get`` to manage your python packages, you will want to
-    ``apt-get install gunicorn`` (so that the ``gunicorn`` executable becomes
-    available).
 
 Tip:
     While developing your server, it can be helpful to wield the ``FLASK_ENV``
@@ -54,7 +48,7 @@ Warning:
     you will want to use a proper database or implement a scheme using
     multiprocessing.
 """
-# NOTE: Developing this file?  See ``"__main__"`` below (``devcheck``).
+import argparse
 import atexit
 import datetime
 from enum import Enum
@@ -898,41 +892,28 @@ def render_endpoint():
     return f"{html_prefix}{''.join(table_rows)}{html_suffix}"
 
 
-if __name__ == "__main__":
-    host = "127.0.0.1"
-    port = 8000
-    # NOTE: see geometry/render/dev/BUILD.bazel, this is a convenience bypass.
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "proxy_run_gunicorn":
-            subprocess.run(
-                [
-                    "gunicorn",
-                    "--workers",
-                    "8",
-                    "--bind",
-                    f"{host}:{port}",
-                    "wsgi:app",
-                ],
-                cwd=THIS_FILE_DIR,
-            )
-        # NOTE: this just runs the formatting and linting checks on this file.
-        elif sys.argv[1] == "devcheck":
-            # PyPI packages to install:
-            #     black
-            #     flake8
-            #     mypy
-            #
-            # You may need to `pip install -U importlib_metadata` to satisfy
-            # mypy, or ignore warnings about importlib_metadata types.
-            # NOTE: use `run` not `check_call` so that all run.
-            def log_and_run(*args):
-                print(f"$ {' '.join(args)}")
-                subprocess.run(args)
+def main():
+    parser = argparse.ArgumentParser(
+        description="Prototype glTF Render Server"
+    )
+    parser.add_argument(
+        "--host",
+        type=str,
+        required=False,
+        default="127.0.0.1",
+        help="URL to host on, default: 127.0.0.1.  Input not validated.",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        required=False,
+        default=8000,
+        help="Port to host on, default: 8000.  Input not validated.",
+    )
 
-            this_file = str(Path(__file__).absolute())
-            # NOTE: drake uses 79 via flake8 checks.
-            log_and_run("black", "--line-length", "79", this_file)
-            log_and_run("mypy", this_file)
-            log_and_run("flake8", this_file)
-    else:
-        app.run(host=host, port=port)
+    args = parser.parse_args()
+    app.run(host=args.host, port=args.port)
+
+
+if __name__ == "__main__":
+    main()
