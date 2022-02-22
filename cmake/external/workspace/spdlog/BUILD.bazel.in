@@ -1,0 +1,25 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+
+cc_library(
+    name = "spdlog",
+    hdrs = glob(["include/**"]),
+    defines = [
+        "$<JOIN:$<TARGET_PROPERTY:spdlog::spdlog,INTERFACE_COMPILE_DEFINITIONS>,",
+        ">",
+        "HAVE_SPDLOG",
+    ],
+    includes = ["include"],
+    linkopts = [
+        "$<TARGET_LINKER_FILE:spdlog::spdlog>",
+        "-pthread",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["@fmt"],
+)
+
+install(
+    name = "install",
+    visibility = ["//visibility:public"],
+)

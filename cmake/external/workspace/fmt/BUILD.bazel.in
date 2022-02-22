@@ -1,0 +1,16 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+
+cc_library(
+    name = "fmt",
+    hdrs = glob(["include/**"]),
+    includes = ["include"],
+    linkopts = ["$<TARGET_LINKER_FILE:fmt::fmt>"],
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    visibility = ["//visibility:public"],
+)
