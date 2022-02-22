@@ -19,20 +19,19 @@ namespace multibody {
 
 /// This class represents a _spatial velocity_ (also called a _twist_) and has
 /// 6 elements with an angular (rotational) velocity ω (3-element vector) on top
-/// of a translational (linear) velocity v (3-element vector).
-/// A spatial velocity represents the rotational and translational motion of a
-/// frame C with respect to a "measured-in" frame B. This class assumes that
-/// both the angular velocity ω and translational velocity v are expressed
-/// in the same "expressed-in" frame E.  This class only stores 6 elements
-/// (namely ω and v) and does not store the underlying frames B, C, E. The user
-/// is responsible for keeping track of the underlying frames B, C, E,
-/// which is best done through @ref multibody_quantities "monogram notation".
-/// %Frame C's spatial velocity measured in a frame B, expressed in a frame E is
-/// denoted V_BC_E and contains ω_BC_E (C's angular velocity measured in B,
-/// expressed in E) and v_BCo_E (Co's translational velocity measured in B,
-/// expressed in E), where Co is frame C's origin point.
-/// For an @ref multibody_frames_and_bodies "offset frame" Cp, the monogram
-/// notation V_BCp_E denotes the spatial velocity of frame Cp measured in B,
+/// of a translational (linear) velocity v (3-element vector). Spatial velocity
+/// represents the rotational and translational motion of a frame B with respect
+/// to a "measured-in" frame M. This class assumes that both the angular
+/// velocity ω and translational velocity v are expressed in the same
+/// "expressed-in" frame E. This class only stores 6 elements (namely ω and v)
+/// and does not store the underlying frames B, M, E. The user is responsible
+/// for explicitly tracking the underlying frames with @ref multibody_quantities
+/// "monogram notation". For example, V_MB_E denotes frame B's spatial velocity
+/// measured in frame M, expressed in frame E and contains ω_MB_E (B's angular
+/// velocity measured in M, expressed in E) and v_MBo_E (Bo's translational
+/// velocity measured in M, expressed in E), where Bo is frame B's origin point.
+/// For an @ref multibody_frames_and_bodies "offset frame" Bp, the monogram
+/// notation V_MBp_E denotes the spatial velocity of frame Bp measured in M,
 /// expressed in E.  Details on spatial vectors and monogram notation are
 /// in section @ref multibody_spatial_vectors.
 ///
@@ -60,26 +59,26 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
                   const Eigen::Ref<const Vector3<T>>& v) : Base(w, v) {}
 
   /// SpatialVelocity constructor from an Eigen expression that represents a
-  /// six-dimensional vector, i.e., two 3-element vectors, namely an angular
-  /// velocity ω and a translational velocity v.  This constructor will assert
-  /// the size of V is six (6) either at compile-time for fixed sized Eigen
-  /// expressions or at run-time for dynamic sized Eigen expressions.
+  /// 6-element vector, i.e., two 3-element vectors, namely an angular velocity
+  /// ω and a translational velocity v.  This constructor will assert the size
+  /// of V is six (6) either at compile-time for fixed sized Eigen expressions
+  /// or at run-time for dynamic sized Eigen expressions.
   template <typename Derived>
   explicit SpatialVelocity(const Eigen::MatrixBase<Derived>& V) : Base(V) {}
 
-  /// In-place shift of a %SpatialVelocity from a frame P to a frame Q, where
-  /// both P and Q are fixed to the same rigid body or frame C. On entry, `this`
-  /// is V_BP_E (frame P's spatial velocity measured in a frame B and expressed
-  /// in a frame E). On return `this` is modified to V_BQ_E (frame Q's spatial
-  /// velocity measured in frame B and expressed in frame E).
-  /// @param[in] offset, which is the position vector p_PoQo_E from frame P's
-  /// origin to frame Q's origin, expressed in frame E. p_PoQo_E must have the
-  /// same expressed-in frame E as `this` spatial velocity.
-  /// @retval V_BQ_E reference to `this` spatial velocity which has been
-  /// modified to be frame Q's spatial velocity measured in frame B and
-  /// expressed in frame E. The components of V_BQ_E are calculated as: <pre>
-  ///  ω_BQ_E = ω_BP_E = w_BC_E       (angular velocity of `this` is unchanged).
-  ///  v_BQ_E = v_BP_E + ω_BC_E x p_PoQo_E     (translational velocity changes).
+  /// In-place shift of a %SpatialVelocity from a frame C to a frame D, where
+  /// both C and D are fixed to the same frame or rigid body B. On entry, `this`
+  /// is V_MC_E (frame C's spatial velocity measured in a frame M and expressed
+  /// in a frame E). On return `this` is modified to V_MD_E (frame D's spatial
+  /// velocity measured in frame M and expressed in frame E).
+  /// @param[in] offset which is the position vector p_CoDo_E from frame C's
+  /// origin to frame D's origin, expressed in frame E. p_CoDo_E must have
+  /// the same expressed-in frame E as `this` spatial velocity.
+  /// @retval V_MD_E reference to `this` spatial velocity which has been
+  /// modified to be frame D's spatial velocity measured in frame M and
+  /// expressed in frame E. The components of V_MD_E are calculated as: <pre>
+  ///  ω_MD_E = ω_MC_E = ω_MB_E       (angular velocity of `this` is unchanged).
+  ///  v_MD_E = v_MC_E + ω_MB_E x p_CoDo_E     (translational velocity changes).
   /// </pre>
   /// @see Shift() to shift spatial velocity without modifying `this`.
   SpatialVelocity<T>& ShiftInPlace(const Vector3<T>& offset) {
@@ -87,11 +86,11 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
     return *this;
     // Note: this operation is linear. [Jain 2010], (§1.4, page 12) uses the
     // "rigid body transformation operator" to write this as:
-    //   V_BQ = Φᵀ(p_PoQo) V_BP  where `Φᵀ(p_PoQo)` is the linear operator:
-    //   Φᵀ(p_PoQo) = |  I₃       0  |
-    //                | -px_PoQo  I₃ |
-    // where `px_PoQo` denotes the cross product skew-symmetric matrix such that
-    // `px_PoQo vec = p_PoQo x vec` (where vec is any vector).
+    //   V_MD = Φᵀ(p_CoDo) V_MC  where `Φᵀ(p_CoDo)` is the linear operator:
+    //   Φᵀ(p_CoDo) = |  I₃       0  |
+    //                | -px_CoDo  I₃ |
+    // where `px_CoDo` denotes the cross product skew-symmetric matrix such that
+    // `px_CoDo vec = p_CoDo x vec` (where vec is any vector).
     // This same operator (not its transpose as for spatial velocities) allows
     // us to shift spatial forces, see SpatialForce::Shift().
     //
@@ -99,88 +98,85 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
     //               algorithms. Springer Science & Business Media, pp. 123-130.
   }
 
-  /// Shifts a %SpatialVelocity from a frame P to a frame Q, where both P and Q
-  /// are fixed to the same rigid body or frame C.
+  /// Shifts a %SpatialVelocity from a frame C to a frame D, where both C and D
+  /// are fixed to the same frame or rigid body B.
   /// This method differs from ShiftInPlace() in that this method does not
   /// modify `this` whereas ShiftInPlace() does modify `this`.
-  /// @param[in] offset, which is the position vector p_PoQo_E from frame P's
-  /// origin to frame Q's origin, expressed in frame E. p_PoQo_E must have the
-  /// same expressed-in frame E as `this` spatial velocity (`this` = V_BP_E).
-  /// @retval V_BQ_E which is frame Q's spatial velocity measured in frame B
-  /// and expressed in frame E.
-  /// @see ShiftInPlace() for more information and how V_BQ_E is calculated.
+  /// @param[in] offset which is the position vector p_CoDo_E from frame C's
+  /// origin to frame D's origin, expressed in frame E. p_CoDo_E must have the
+  /// same expressed-in frame E as `this` spatial velocity (`this` = V_MC_E).
+  /// @retval V_MD_E which is frame D's spatial velocity measured in frame M,
+  /// expressed in frame E.
+  /// @see ShiftInPlace() for more information and how V_MD_E is calculated.
   SpatialVelocity<T> Shift(const Vector3<T>& offset) const {
     return SpatialVelocity<T>(*this).ShiftInPlace(offset);
   }
 
-  /// For a frame C that moves relative to a frame B, calculates V_WC_E (frame
-  /// C's spatial velocity measured in a frame W, expressed in a frame E).
+  /// For a frame C moving relative to a frame B, where `this` = V_MB_E
+  /// (B's spatial velocity measured-in a frame M), returns C's velocity in M.
   /// @param[in] position_of_moving_frame which is the position vector p_BoCo_E
-  /// from Bo (frame B's origin) to Co (frame C's origin), expressed in frame E.
-  /// p_BoCo_E must have the same expressed-in frame E as `this` spatial
-  /// velocity (`this` = V_WB_E, i.e., frame B's spatial velocity measured in
-  /// rame W, expressed in frame E).
+  /// (from frame B's origin Bo to frame C's origin Co), expressed in frame E.
+  /// p_BoCo_E must have the same expressed-in frame E as `this` = V_MB_E.
   /// @param[in] velocity_of_moving_frame which is V_BC_E, frame C's spatial
-  /// velocity measured in frame B, expressed in the same frame E as `this`
-  /// spatial velocity (`this` = V_WB_E).
-  /// @retval V_WC_E frame C's spatial velocity measured in frame W and
-  /// expressed in frame E.
-  /// @note The returned spatial velocity V_WC_E contains an angular velocity
-  /// ω_wC_E and translational velocity v_WCo_E that are calculated as: <pre>
-  ///  ω_WC_E  = ω_WB_E + ω_BC_E
-  ///  v_WCo_E = v_WBo_E + ω_WB_E x p_BoCo_E + v_BCo_E
+  /// velocity measured in frame B, expressed in the same frame E as
+  /// `this` = V_MB_E.
+  /// @retval V_MC_E frame C's spatial velocity measured in frame M, expressed
+  /// in frame E.
+  /// @note The returned spatial velocity V_MC_E contains an angular velocity
+  /// ω_MC_E and translational velocity v_MCo_E that are calculated as: <pre>
+  ///  ω_MC_E  = ω_MB_E + ω_BC_E
+  ///  v_MCo_E = v_MBo_E + ω_MB_E x p_BoCo_E + v_BCo_E
   /// </pre>
   /// If frame C is rigidly fixed to frame B, V_BC_E = 0 and this method
   /// produces a Shift() operation (albeit inefficiently).
   SpatialVelocity<T> ComposeWithMovingFrameVelocity(
       const Vector3<T>& position_of_moving_frame,
       const SpatialVelocity<T>& velocity_of_moving_frame) const {
-    // V_WC_E = V_WB_E.Shift(p_BoCo_E) + V_BC_E
-    return this->Shift(/*p_BoCo_E = */ position_of_moving_frame)
-                      + /* V_BC_E = */ velocity_of_moving_frame;
+    const Vector3<T>& p_BoCo_E = position_of_moving_frame;
+    const Vector3<T>& V_BC_E = velocity_of_moving_frame;
+    // V_MC_E = V_MB_E.Shift(p_BoCo_E) + V_BC_E
+    return this->Shift(p_BoCo_E) + V_BC_E;
   }
 
-  /// For an arbitrary frame B, calculates the dot-product of V_WB_E (frame B's
-  /// spatial velocity measured in frame W, expressed-in frame E, stored in
-  /// `this`) with F_B_E (frame B's spatial force, expressed-in frame E). The
-  /// resulting scalar is the power generated by the spatial force in frame W.
+  /// For an arbitrary frame B, calculates the dot-product of `this` = V_MB_E
+  /// (frame B's spatial velocity measured in frame M, expressed in frame E)
+  /// with F_B_E (frame B's spatial force, expressed in frame E). The
+  /// resulting scalar is the power generated by the spatial force in frame M.
   /// @param[in] force which is F_B_E frame B's spatial force, expressed in the
-  /// same frame E as `this` spatial velocity V_WB_E.
-  /// @returns Power of spatial force F_B_E in frame W, i.e., F_B_E ⋅ V_WB_E.
+  /// same frame E as `this` = V_MB_E.
+  /// @returns Power of spatial force F_B_E in frame M, i.e., F_B_E ⋅ V_MB_E.
   /// @note Just as equating force 𝐅 to mass * acceleration as 𝐅 = m𝐚 relies
-  /// on acceleration 𝐚 being measured in a world frame W (also called a
-  /// Newtonian or inertial frame), equating power = dK/dt (where K is kinetic
-  /// energy) relies on K being measured in a world frame W.  Hence, it is
-  /// unusual to use this method unless frame W is the world frame.
-  /// @note Although the spatial vectors F_B_E and V_WB_E must have the same
+  /// on acceleration 𝐚 being measured in a world frame (also called an inertial
+  /// or Newtonian frame), equating power = dK/dt (where K is kinetic energy)
+  /// relies on K being measured in a world frame.  Hence, it is unusual to use
+  /// this method unless frame M is the world frame.
+  /// @note Although the spatial vectors F_B_E and V_MB_E must have the same
   /// expressed-in frame E, the returned scalar is independent of frame E.
   inline T dot(const SpatialForce<T>& force) const;
   // The dot() method is implemented at the end of this file, so that all of
   // the dot methods are co-located for easy understanding. We need the inline
   // keyword to ensure the method is still inlined even with `extern template`.
 
-  /// For a frame Bp that is fixed to a rigid body B, uses V_WBp_E (frame Bp's
-  /// spatial velocity measured in a frame W, expressed in a frame E, which is
-  /// stored in `this`) to calculate twice (2x) body B's kinetic energy measured
-  /// in frame W as: <pre>
-  ///   K = 1/2 (L_WBp · V_WBp) = 1/2 (L_WBcm · V_WBcm)
-  /// </pre>
-  /// where L_WBp_E is body B's spatial momentum measured in frame W, about
-  /// frame Bp's origin, and expressed in the same frame E as V_WBp_E.
-  /// As shown above, kinetic energy K can be calculated from an arbitrary frame
-  /// Bp fixed on B (which may be body B's center of mass frame Bcm). This fact
-  /// is due to how spatial momentum and spatial velocity shift when changing
-  /// from Bcm to Bp. For more information, see
-  /// SpatialMomentum::Shift() and SpatialVelocity::Shift().
-  /// @param[in] momentum which is L_WBp_E body B's spatial momentum measured-in
-  /// frame W, about frame Bp's origin, expressed in the same frame E as `this`
-  /// spatial velocity V_WBp_E.
-  /// @returns twice (2x) body B's kinetic energy in frame W.
+  /// For a frame Bp that is fixed to a rigid body B, calculates the dot-product
+  /// of `this` = V_MBp_E (frame Bp's spatial velocity measured in frame M,
+  /// expressed in frame E) with L_MBp_E (body B's spatial momentum measured in
+  /// frame M, about Bp's origin, expressed in frame E). The returned scalar
+  /// is twice (2x) body B's kinetic energy measured in frame M.
+  /// @param[in] momentum which is L_MBp_E, body B's spatial momentum
+  /// measured-in frame M, about frame Bp's origin, expressed in the same
+  /// frame E as `this` = V_MBp_E.
+  /// @returns 2*K_MB, twice (2x) body B's kinetic energy measured-in frame M.
   /// @note In most situations, kinetic energy calculations are only useful when
-  /// frame W is a world frame (also called a Newtonian or inertial frame).
-  /// Hence, it is unusual to use this method unless frame W is the world frame.
-  /// @note Although the spatial vectors V_WBp_E and L_WBp_E must have the same
-  /// expressed-in frame E, the resulting scalar is independent of frame E.
+  /// frame M is a world frame (also called a Newtonian or inertial frame).
+  /// Hence, it is unusual to use this method unless frame M is the world frame.
+  /// @note Although the spatial vectors V_MBp_E and L_MBp_E must have the same
+  /// expressed-in frame E, the resulting scalar K_MB is independent of frame E.
+  /// @note As shown below, K_MB can be calculated from any frame Bp fixed on B,
+  /// including body B's center of mass frame Bcm. This is due to how spatial
+  /// momentum and spatial velocity shift from Bcm to Bp. For more information,
+  /// see SpatialMomentum::Shift() and SpatialVelocity::Shift(). <pre>
+  ///   K_MB = 1/2 (L_MBp · V_MBp) = 1/2 (L_MBcm · V_MBcm)
+  /// </pre>
   inline T dot(const SpatialMomentum<T>& momentum) const;
   // The dot() method is implemented at the end of this file, so that all of
   // the dot methods are co-located for easy understanding. We need the inline
@@ -194,12 +190,12 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
 /// another arbitrary frame S, expressed in the same frame E as V1_E.
 /// @note The general utility of this method is questionable and this method
 /// should only be used if you are sure it makes sense.  One use case is for
-/// calculating the spatial velocity V_WCp of a frame C measured-in a frame W
+/// calculating the spatial velocity V_MC of a frame C measured-in a frame M
 /// when frame C is moving relative to a frame B and one has pre-calculated
-/// V_WBc (frame Bc's spatial velocity measured-in frame W, where frame Bc is
+/// V_MBc (frame Bc's spatial velocity measured-in frame M, where frame Bc is
 /// instantaneously coincident with frame C).
-/// For this use case, this method returns V_WC_E = V_WBc_E + V_BC_E, where
-/// the precalculated V_WBc_E is equal to V_WBo_E.Shift(p_BoCo_E).
+/// For this use case, this method returns V_MC_E = V_MBc_E + V_BC_E, where
+/// the precalculated V_MBc_E is equal to V_MBo_E.Shift(p_BoCo_E).
 /// @see related methods ShiftInPlace() and ComposeWithMovingFrameVelocity().
 template <typename T>
 inline SpatialVelocity<T> operator+(
@@ -216,21 +212,21 @@ inline SpatialVelocity<T> operator+(
 /// another arbitrary frame S, expressed in the same frame E as V1_E.
 /// @note This method should only be used if you are sure it makes sense.
 /// One use case is for calculating relative spatial velocity, e.g., a frame C's
-/// spatial velocity relative to a frame B, measure in a frame W.  For this use
-/// case, this method returns V_W_BC_E = V_WC_E - V_WB_E, which contains ω_BC
-/// (C's angular velocity measured in B) and v_W_BoCo (Co's velocity relative to
-/// Bo, measured in W), where both ω_BC and v_W_BoCo are expressed in frame E.
+/// spatial velocity relative to a frame B, measure in a frame M.  For this use
+/// case, this method returns V_M_BC_E = V_MC_E - V_MB_E, which contains ω_BC
+/// (C's angular velocity measured in B) and v_M_BoCo (Co's velocity relative to
+/// Bo, measured in M), where both ω_BC and v_M_BoCo are expressed in frame E.
 /// <pre>
-///  ω_BC  = ω_WC - ω_WB
-///  v_W_BoCo = v_WCo - v_WBo = DtW(p_BoCo)
+///  ω_BC  = ω_MC - ω_MB
+///  v_M_BoCo = v_MCo - v_MBo = DtM(p_BoCo)
 /// </pre>
 ///
 /// A second use case has to do with a frame C that is moving on a frame B and
 /// calculates frame C's spatial velocity measured-in frame B. It assumes you
-/// have pre-calculated V_WBc (frame Bc's spatial velocity measured-in frame W,
+/// have pre-calculated V_MBc (frame Bc's spatial velocity measured-in frame M,
 /// where frame Bc is fixed to B and instantaneously coincident with frame C.
-/// This use case returns V_BC_E = V_WC_E - V_WBc_E, where the precalculated
-/// V_WBc_E is equal to V_WBo_E.Shift(p_BoBc_E).
+/// This use case returns V_BC_E = V_MC_E - V_MBc_E, where the precalculated
+/// V_MBc_E is equal to V_MBo_E.Shift(p_BoBc_E).
 /// @see related methods ShiftInPlace() and ComposeWithMovingFrameVelocity().
 template <typename T>
 inline SpatialVelocity<T> operator-(
