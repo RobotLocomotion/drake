@@ -58,9 +58,6 @@ filegroup(
     name = "plate_files",
     srcs = [
         "plate_8in.sdf",
-        "plate_8in_Normal.jpg",
-        "plate_8in_Roughness.jpg",
-        "plate_8in_Specular.jpg",
         "plate_8in_col.mtl",
         "plate_8in_col.obj",
     ],
