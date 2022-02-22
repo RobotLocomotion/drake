@@ -284,6 +284,16 @@ drake_pybind_library(
     ],
 )
 
+drake_py_library(
+    name = "tutorials_py",
+    srcs = [
+        "tutorials.py",
+    ],
+    deps = [
+        ":module_py",
+    ],
+)
+
 PYBIND_SUBPACKAGES_FOR_COVERAGE = [
     "//bindings/pydrake/common",
     "//bindings/pydrake/examples",
@@ -311,6 +321,7 @@ add_pybind_coverage_data(
 
 PY_LIBRARIES = [
     ":module_py",
+    ":tutorials_py",
 ]
 
 # Symbol roll-up (for user ease).

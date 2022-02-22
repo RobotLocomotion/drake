@@ -32,6 +32,7 @@ from pydrake.common import (
     cpp_param,
     cpp_template,
 )
+import pydrake.tutorials
 
 
 def _get_submodules(name):

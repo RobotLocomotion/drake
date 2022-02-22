@@ -21,6 +21,9 @@ def _impl(ctx):
         "LICENSE.TXT",
         "LICENSE.txt",
     ]
+    known_non_runfiles_dirnames = [
+        "tutorials/",
+    ]
     drake_runfiles = []
     drake_prologue = "share/drake/"
     lcmtypes_drake_py_files = []
@@ -31,6 +34,11 @@ def _impl(ctx):
             if relative_path in known_non_runfiles:
                 continue
             if basename(relative_path) in known_non_runfiles_basenames:
+                continue
+            if any([
+                relative_path.startswith(prefix)
+                for prefix in known_non_runfiles_dirnames
+            ]):
                 continue
             drake_runfiles.append(relative_path)
         elif dest.startswith(lcmtypes_drake_py_prologue):

@@ -5,26 +5,23 @@ This provides more in-depth documentation on top of the
 
 ## Running the Tutorials Locally
 
-To run the tutorials locally, you should ensure that you have Drake available, [either via Bazel or via binary packages](https://drake.mit.edu/installation.html).
+After Drake version v0.40.0 or newer, you'll be able to run Drake's tutorials
+locally.  (Prior to that, only nightly builds will offer local tutorials.)
+In the meantime, please use "Running and Viewing the Notebooks Online", below.
 
-To run the notebooks using Bazel, please refer to the
-[Bazel-Jupyter README](../tools/jupyter/README.md#running-notebooks).
-For example:
-
-```
-bazel run //tutorials:mathematical_program
-```
+To run the tutorials locally, install Drake via one of the
+[installation methods](https://drake.mit.edu/installation.html)
+(e.g., [pip install drake](https://drake.mit.edu/pip.html)),
+be sure your `PYTHONPATH` has been set per the installation instructions,
+and then run `python3 -m pydrake.tutorials` to launch a Jupyter browser.
 
 ## Running and Viewing the Notebooks Online
 
 We currently support running the tutorials on a number of cloud notebook services:
 
 [![Deepnote](https://deepnote.com/buttons/launch-in-deepnote-white-small.svg)](https://deepnote.com/project/Tutorials-K0_FCa7yQX2kDWBx3-2RmQ/%2Findex.ipynb)
-[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobotLocomotion/drake/blob/v0.37.0/tutorials/mathematical_program.ipynb)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?urlpath=/tree/tutorials/index.ipynb)
 [![nbviewer](https://img.shields.io/badge/view%20on-nbviewer-brightgreen.svg)](https://nbviewer.jupyter.org/github/RobotLocomotion/drake/blob/nightly-release/tutorials/index.ipynb)
-
-<!-- TODO(russt): Update colab link to index.ipynb instead of mathematical_program.ipynb once v0.38 is released. -->
 
 We include (online) platform-specific notes below.
 
@@ -34,18 +31,6 @@ We are currently transitioning to making Deepnote our preferred method of
 hosting for the tutorials.  It allows provisioning via Docker, which makes it
 more stable/maintainable than alternatives like Google Colab.  The user
 interface is also excellent for concurrent programming with your friends.
-
-### Google Colab
-
-Support for Drake on Google Colab is via `pip install drake`. The Drake pip
-wheels are only updated with the monthly releases. If the tutorials have been
-updated more recently, there could be a version mismatch. Any links to launch a
-tutorial on Google Colab should use the monthly release.  E.g.:
-`https://colab.research.google.com/github/RobotLocomotion/drake/blob/v0.37.0/tutorials/mathematical_program.ipynb`
-
-For now, users must manually add and run `!pip install drake pyngrok` in the top cell
-the notebook in order to install Drake and run the tutorial.
-<!-- TODO(russt): Add a commented out `!pip install ...` cell at the top of each notebook -->
 
 ### Binder
 
@@ -79,6 +64,11 @@ and does not provide simple anchors for headings.
 
 ## For Developers
 
+- To rebuild from source and run tutorials using Bazel, use e.g.:
+```
+bazel run //tutorials:mathematical_program
+```
+
 - The first cell of each notebook should be a Markdown cell with the tutorial's title and
   the following preamble:
 ```
@@ -86,7 +76,7 @@ For instructions on how to run these tutorial notebooks, please see the
 [README](https://github.com/RobotLocomotion/drake/blob/nightly-release/tutorials/README.md).
 ```
 
-- Do not use `%matplotlib notebook`.  It is not supported in Deepnote nor Colab.
+- Do not use `%matplotlib notebook`.  It is not supported in Deepnote.
 https://github.com/RobotLocomotion/drake/blob/master/geometry/optimization/graph_of_convex_sets.h#L296
 
 - For the pull request that adds the notebook(s), please include a `nbviewer`
