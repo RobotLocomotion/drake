@@ -26,19 +26,8 @@ using drake::multibody::PrismaticJoint;
 using drake::multibody::SpatialInertia;
 using drake::multibody::UnitInertia;
 
-template <>
-void ConstructBallPaddlePlant(
-    const drake::math::RigidTransform<double>&,
-    drake::multibody::MultibodyPlant<AutoDiffXd>*,
-    drake::multibody::BodyIndex*,
-    drake::multibody::BodyIndex*,
-    drake::geometry::GeometryId*,
-    drake::geometry::GeometryId*) {
-  throw std::runtime_error("ConstructBallPaddlePlant doesn't support "
-                           "AutoDiffXd yet");
-}
+namespace {
 
-template <>
 void ConstructBallPaddlePlant(
     const drake::math::RigidTransform<double>& paddle_fixed_pose,
     drake::multibody::MultibodyPlant<double>* plant,
@@ -73,16 +62,18 @@ void ConstructBallPaddlePlant(
       plant->GetCollisionGeometriesForBody(ball_body).at(0);
 
   plant->set_contact_model(
-        drake::multibody::ContactModel::kHydroelasticsOnly);
+      drake::multibody::ContactModel::kHydroelasticsOnly);
   plant->Finalize();
 }
+
+}  // namespace
 
 template <typename T>
 BallPaddle<T>::BallPaddle(
     double time_step,
     const drake::math::RigidTransformd& p_WPaddle_fixed)
-    : owned_plant_(std::make_unique<MultibodyPlant<T>>(time_step)),
-      owned_scene_graph_(std::make_unique<SceneGraph<T>>()) {
+    : owned_plant_(std::make_unique<MultibodyPlant<double>>(time_step)),
+      owned_scene_graph_(std::make_unique<SceneGraph<double>>()) {
   plant_ = owned_plant_.get();
   scene_graph_ = owned_scene_graph_.get();
   plant_->RegisterAsSourceForSceneGraph(scene_graph_);
@@ -100,7 +91,8 @@ void BallPaddle<T>::SetupPlant(
 }
 
 template <typename T>
-void BallPaddle<T>::AddToBuilder(drake::systems::DiagramBuilder<T>* builder) {
+void BallPaddle<T>::AddToBuilder(drake::systems::DiagramBuilder<double>*
+    builder) {
   builder->AddSystem(std::move(owned_plant_))->set_name("multibody_plant");
   builder->AddSystem(std::move(owned_scene_graph_))->set_name("scene_graph");
   // Connect MBP and SG.
@@ -116,31 +108,28 @@ void BallPaddle<T>::AddToBuilder(drake::systems::DiagramBuilder<T>* builder) {
     params.publish_period = plant_->time_step();
   }
   params.role = drake::geometry::Role::kIllustration;
-  drake::geometry::DrakeVisualizer<T>::AddToBuilder(builder, *scene_graph_,
-                                                    nullptr, params);
+  drake::geometry::DrakeVisualizer<double>::AddToBuilder(builder, *scene_graph_,
+                                                         nullptr, params);
 
-  if constexpr (std::is_same_v<T, double>) {
-    auto contact_results_to_lcm =
-        builder
-            ->template AddSystem<drake::multibody::ContactResultsToLcmSystem>(
-                *plant_);
-    auto contact_results_publisher =
-        builder->AddSystem(drake::systems::lcm::LcmPublisherSystem::Make<
-                           drake::lcmt_contact_results_for_viz>(
-            "CONTACT_RESULTS", nullptr, /* zero for per-step publishing */ 0));
-    // Contact results to lcm msg.
-    builder->Connect(plant_->get_contact_results_output_port(),
-                     contact_results_to_lcm->get_contact_result_input_port());
-    builder->Connect(contact_results_to_lcm->get_lcm_message_output_port(),
-                     contact_results_publisher->get_input_port());
-  }
+  auto contact_results_to_lcm =
+      builder
+          ->template AddSystem<drake::multibody::ContactResultsToLcmSystem>(
+              *plant_);
+  auto contact_results_publisher =
+      builder->AddSystem(drake::systems::lcm::LcmPublisherSystem::Make<
+                         drake::lcmt_contact_results_for_viz>(
+          "CONTACT_RESULTS", nullptr, /* zero for per-step publishing */ 0));
+  // Contact results to lcm msg.
+  builder->Connect(plant_->get_contact_results_output_port(),
+                   contact_results_to_lcm->get_contact_result_input_port());
+  builder->Connect(contact_results_to_lcm->get_lcm_message_output_port(),
+                   contact_results_publisher->get_input_port());
 }
 
 }  // namespace examples
 }  // namespace drake
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&drake::examples::ConstructBallPaddlePlant<T>))
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::examples::BallPaddle)
+
 

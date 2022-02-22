@@ -35,7 +35,7 @@
         </geometry>
         <drake:proximity_properties>
           <drake:compliant_hydroelastic/>
-          <drake:hydroelastic_modulus>1e6</drake:hydroelastic_modulus>
+          <drake:hydroelastic_modulus>5.0e6</drake:hydroelastic_modulus>
           <drake:mesh_resolution_hint>0.005</drake:mesh_resolution_hint>
           <!-- Little dissipation means the ball can bounce off. -->
           <drake:hunt_crossley_dissipation>

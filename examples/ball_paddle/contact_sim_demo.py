@@ -22,7 +22,7 @@ def construct_ball_paddle_diagram():
     T = float
     dt = 0.001
     p_WPaddle_fixed = RigidTransform(RollPitchYaw(0, 0, 0),
-                                     np.array([0.5, 0, -0.2]))
+                                     np.array([0.1, 0, -0.01]))
     ball_paddle = mut.BallPaddle_[T](dt, p_WPaddle_fixed)
     builder = DiagramBuilder_[T]()
     ball_paddle.AddToBuilder(builder)
@@ -44,8 +44,6 @@ def simulate_diagram(diagram, ball_paddle, state_logger, ball_init_position,
     ])
     v_init_val = np.hstack((np.zeros(3), ball_init_velocity))
     qv_init_val = np.concatenate((q_init_val, v_init_val))
-    # Take the gradient of the initial ball position.
-    q_init_gradient = np.vstack((np.zeros((4, 3)), np.eye(3)))
     simulator = Simulator_[T](diagram)
 
     plant_context = diagram.GetSubsystemContext(ball_paddle.plant(),
@@ -55,7 +53,7 @@ def simulate_diagram(diagram, ball_paddle, state_logger, ball_init_position,
     simulator.get_mutable_context().SetTime(T(0.))
     state_log = state_logger.FindMutableLog(simulator.get_mutable_context())
     state_log.Clear()
-    target_realtime_rate = 0.01
+    target_realtime_rate = 0.02
     simulator.set_target_realtime_rate(target_realtime_rate)
     simulator.Initialize()
     simulator.AdvanceTo(boundary_time=T(0.2))
@@ -68,14 +66,4 @@ if __name__ == "__main__":
         diagram, ball_paddle, state_logger, np.array([-5E-4, 0, 0.05]),
         np.array([0., 0., -np.sqrt(2 * 9.81 * 0.95)]))
     print(state_samples[:, -1])
-    pass
-
-# TODO remove me...
-if False:
-    num_samples = 500
-    x_init = np.linspace(-0.04, 0.04, num_samples)
-    state_trajs = [None] * num_samples
-    for i in range(num_samples):
-        time_samples, state_trajs[i] = simulate_diagram(
-            diagram, ball_paddle, state_logger, np.array([x_init[i], 0., 1.]))
     pass

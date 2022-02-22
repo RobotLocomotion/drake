@@ -37,14 +37,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             drake::pydrake::py_rvp::reference_internal)
         .def("AddToBuilder", &Class::AddToBuilder, py::arg("builder"));
   }
-
-  {
-    drake::pydrake::AddTemplateFunction(m, "ConstructBallPaddlePlant",
-        &ConstructBallPaddlePlant<T>, drake::pydrake::GetPyParam<T>(),
-        py::arg("paddle_fixed_pose"), py::arg("plant"),
-        py::arg("paddle_body_id"), py::arg("ball_body_id"),
-        py::arg("ball_sphere_geometry_id"), py::arg("paddle_box_geometry_id"));
-  }
 }
 }  // namespace
 

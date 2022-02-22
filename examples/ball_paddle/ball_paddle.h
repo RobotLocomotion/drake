@@ -13,15 +13,6 @@ namespace drake {
 namespace examples {
 
 template <typename T>
-void ConstructBallPaddlePlant(
-    const drake::math::RigidTransform<double>& paddle_fixed_pose,
-    drake::multibody::MultibodyPlant<T>* plant,
-    drake::multibody::BodyIndex* paddle_body_id,
-    drake::multibody::BodyIndex* ball_body_id,
-    drake::geometry::GeometryId* ball_sphere_geometry_id,
-    drake::geometry::GeometryId* paddle_box_geometry_id);
-
-template <typename T>
 class BallPaddle {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BallPaddle)
@@ -36,9 +27,11 @@ class BallPaddle {
   explicit BallPaddle(double time_step,
                       const drake::math::RigidTransformd& p_WPaddle_fixed);
 
-  const drake::multibody::MultibodyPlant<T>& plant() const { return *plant_; }
+  const drake::multibody::MultibodyPlant<double>& plant() const {
+    return *plant_;
+  }
 
-  const drake::geometry::SceneGraph<T>& scene_graph() const {
+  const drake::geometry::SceneGraph<double>& scene_graph() const {
     return *scene_graph_;
   }
 
@@ -50,11 +43,11 @@ class BallPaddle {
     return paddle_box_geometry_id_;
   }
 
-  const drake::multibody::Body<T>& paddle_body() const {
+  const drake::multibody::Body<double>& paddle_body() const {
     return plant_->get_body(paddle_body_id_);
   }
 
-  const drake::multibody::Body<T>& ball_body() const {
+  const drake::multibody::Body<double>& ball_body() const {
     return plant_->get_body(ball_body_id_);
   }
 
@@ -63,17 +56,17 @@ class BallPaddle {
    * SceneGraph. Note that we don't call builder.Build() inside this function,
    * since this function doesn't build the controller yet.
    */
-  void AddToBuilder(drake::systems::DiagramBuilder<T>* builder);
+  void AddToBuilder(drake::systems::DiagramBuilder<double>* builder);
 
  private:
   void SetupPlant(
       const drake::math::RigidTransformd& p_WPaddle_fixed);
 
-  std::unique_ptr<drake::multibody::MultibodyPlant<T>> owned_plant_;
-  std::unique_ptr<drake::geometry::SceneGraph<T>> owned_scene_graph_;
+  std::unique_ptr<drake::multibody::MultibodyPlant<double>> owned_plant_;
+  std::unique_ptr<drake::geometry::SceneGraph<double>> owned_scene_graph_;
 
-  drake::multibody::MultibodyPlant<T>* plant_;
-  drake::geometry::SceneGraph<T>* scene_graph_;
+  drake::multibody::MultibodyPlant<double>* plant_;
+  drake::geometry::SceneGraph<double>* scene_graph_;
 
   drake::multibody::BodyIndex paddle_body_id_;
   drake::multibody::BodyIndex ball_body_id_;
