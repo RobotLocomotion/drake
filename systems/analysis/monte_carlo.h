@@ -10,24 +10,18 @@
 namespace drake {
 namespace systems {
 namespace analysis {
+
 /**
  * Definition to specify the desired concurrency for MonteCarloSimulation.
  * Use only a single thread, equivalent to num_parallel_executions = 1.
  */
 constexpr int kNoConcurrency = 1;
+
 /**
  * Definition to specify the desired concurrency for MonteCarloSimulation.
  * Equivalent to num_parallel_executions = std::thread::hardware_concurrency().
  */
 constexpr int kUseHardwareConcurrency = -1;
-
-namespace internal {
-/*
- * Internal helper used by MonteCarloSimulation to select number of threads to
- * use.
- */
-int SelectNumberOfThreadsToUse(int num_parallel_executions);
-}  // namespace internal
 
 /***
  * Defines a factory method that constructs a Simulator (with an owned System)
@@ -49,13 +43,13 @@ typedef std::function<std::unique_ptr<Simulator<double>>(
 
 /***
  * Defines an arbitrary scalar function of the Context.  This is used in the
- * RandomSimulation and MonteCarloSimulation tools below as a way of
- * defining the output random variable of interest -- the
- * ScalarSystemFunction is evaluated with the final conditions of the
- * simulation and the double that is returned is the value of the random
- * variable.  (Although there is no randomness in the ScalarSystemFunction
- * itself, in the RandomSimulation case the final Context will be random, so
- * functions of that context will also be random).
+ * RandomSimulation and MonteCarloSimulation tools below as a way of defining
+ * the output random variable of interest -- the ScalarSystemFunction is
+ * evaluated with the final conditions of the simulation and the double that is
+ * returned is the value of the random variable.  (Although there is no
+ * randomness in the ScalarSystemFunction itself, in the RandomSimulation case
+ * the final Context will be random, so functions of that context will also be
+ * random).
  */
 typedef std::function<double(const System<double>& system,
                              const Context<double>& context)>
@@ -111,10 +105,7 @@ double RandomSimulation(const SimulatorFactory& make_simulator,
  *   RandomGenerator generator(result.generator_snapshot)
  *   RandomSimulation(make_simulator, output, final_time, &generator)
  * @endcode
- * for a deterministic playback of the sampled simulation. Use the operator<<()
- * operator>>() methods provided for the generator, which implements the
- * Standard Template Library <a href=
- *   "https://en.cppreference.com/w/cpp/named_req/RandomNumberEngine">
+ * for a deterministic playback of the sampled simulation.
  * RandomNumberEngine concept</a>, if you wish to serialize the results.
  * Note that performing any non-const operations on generator_snapshot may
  * advance the state of the generator and make it no longer capable of
@@ -132,7 +123,7 @@ struct RandomSimulationResult {
 };
 
 /**
- * Generate samples of a scalar random variable output by running many
+ * Generates samples of a scalar random variable output by running many
  * random simulations drawn from independent samples of the
  * distributions governing the stochastic simulation.
  *
@@ -188,6 +179,13 @@ std::vector<RandomSimulationResult> MonteCarloSimulation(
     double final_time, int num_samples, RandomGenerator* generator = nullptr,
     int num_parallel_executions = kNoConcurrency);
 
+// The below functions are exposed for unit testing only.
+namespace internal {
+
+/* Used by MonteCarloSimulation to select number of threads to use. */
+int SelectNumberOfThreadsToUse(int num_parallel_executions);
+
+}  // namespace internal
 }  // namespace analysis
 }  // namespace systems
 }  // namespace drake
