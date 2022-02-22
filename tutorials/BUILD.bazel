@@ -1,8 +1,9 @@
 # -*- mode: python -*-
 # vi: set ft=python :
 
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
+load("@drake//tools/install:install.bzl", "install", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_jupyter_py_binary(
     name = "index",
@@ -113,6 +114,23 @@ drake_jupyter_py_binary(
     add_test_rule = 1,
     deps = [
         "//bindings/pydrake",
+    ],
+)
+
+install_files(
+    name = "install_notebooks",
+    dest = "share/drake/tutorials",
+    files = glob(
+        ["*.ipynb"],
+        allow_empty = False,
+    ),
+)
+
+install(
+    name = "install",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":install_notebooks",
     ],
 )
 
