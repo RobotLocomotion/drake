@@ -113,7 +113,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   }
 
   /// Given a frame C's velocity relative to a frame B and `this` = V_MB_E
-  /// (B's spatial velocity measured-in a frame M), returns C's velocity in M.
+  /// (B's spatial velocity measured in a frame M), returns C's velocity in M.
   /// @param[in] position_of_moving_frame which is the position vector p_BoCo_E
   /// (from frame B's origin Bo to frame C's origin Co), expressed in frame E.
   /// p_BoCo_E must have the same expressed-in frame E as `this` = V_MB_E.
@@ -133,7 +133,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
       const Vector3<T>& position_of_moving_frame,
       const SpatialVelocity<T>& velocity_of_moving_frame) const {
     const Vector3<T>& p_BoCo_E = position_of_moving_frame;
-    const Vector3<T>& V_BC_E = velocity_of_moving_frame;
+    const SpatialVelocity<T>& V_BC_E = velocity_of_moving_frame;
     // V_MC_E = V_MB_E.Shift(p_BoCo_E) + V_BC_E
     return this->Shift(p_BoCo_E) + V_BC_E;
   }
@@ -163,9 +163,9 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// frame M, about Bp's origin, expressed in frame E). The returned scalar
   /// is twice (2x) body B's kinetic energy measured in frame M.
   /// @param[in] momentum which is L_MBp_E, body B's spatial momentum
-  /// measured-in frame M, about frame Bp's origin, expressed in the same
+  /// measured in frame M, about frame Bp's origin, expressed in the same
   /// frame E as `this` = V_MBp_E.
-  /// @returns 2*K_MB, twice (2x) body B's kinetic energy measured-in frame M.
+  /// @returns 2*K_MB, twice (2x) body B's kinetic energy measured in frame M.
   /// @note In most situations, kinetic energy calculations are only useful when
   /// frame M is a world frame (also called a Newtonian or inertial frame).
   /// Hence, it is unusual to use this method unless frame M is the world frame.
@@ -184,19 +184,18 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
 };
 
 /// Adds two spatial velocities by simply adding their 6 underlying elements.
-/// @param[in] V1_E spatial velocity of an arbitrary frame P, measured-in an
-/// another arbitrary frame Q, expressed in the same frame E as V2_E.
-/// @param[in] V2_E spatial velocity of an arbitrary frame R, measured-in an
-/// another arbitrary frame S, expressed in the same frame E as V1_E.
+/// @param[in] V1_E spatial velocity expressed in the same frame E as V2_E.
+/// @param[in] V2_E spatial velocity expressed in the same frame E as V1_E.
 /// @note The general utility of this method is questionable and this method
 /// should only be used if you are sure it makes sense.  One use case is for
-/// calculating the spatial velocity V_MC of a frame C measured-in a frame M
+/// calculating the spatial velocity V_MC of a frame C measured in a frame M
 /// when frame C is moving relative to a frame B and one has pre-calculated
-/// V_MBc (frame Bc's spatial velocity measured-in frame M, where frame Bc is
+/// V_MBc (frame Bc's spatial velocity measured in frame M, where frame Bc is
 /// instantaneously coincident with frame C).
 /// For this use case, this method returns V_MC_E = V_MBc_E + V_BC_E, where
 /// the precalculated V_MBc_E is equal to V_MBo_E.Shift(p_BoCo_E).
 /// @see related methods ShiftInPlace() and ComposeWithMovingFrameVelocity().
+/// @relates SpatialVelocity
 template <typename T>
 inline SpatialVelocity<T> operator+(
     const SpatialVelocity<T>& V1_E, const SpatialVelocity<T>& V2_E) {
@@ -206,10 +205,8 @@ inline SpatialVelocity<T> operator+(
 }
 
 /// Subtracts spatial velocities by subtracting their 6 underlying elements.
-/// @param[in] V1_E spatial velocity of an arbitrary frame P, measured-in an
-/// another arbitrary frame Q, expressed in the same frame E as V2_E.
-/// @param[in] V2_E spatial velocity of an arbitrary frame R, measured-in an
-/// another arbitrary frame S, expressed in the same frame E as V1_E.
+/// @param[in] V1_E spatial velocity expressed in the same frame E as V2_E.
+/// @param[in] V2_E spatial velocity expressed in the same frame E as V1_E.
 /// @note This method should only be used if you are sure it makes sense.
 /// One use case is for calculating relative spatial velocity, e.g., a frame C's
 /// spatial velocity relative to a frame B, measure in a frame M.  For this use
@@ -222,12 +219,13 @@ inline SpatialVelocity<T> operator+(
 /// </pre>
 ///
 /// A second use case has to do with a frame C that is moving on a frame B and
-/// calculates frame C's spatial velocity measured-in frame B. It assumes you
-/// have pre-calculated V_MBc (frame Bc's spatial velocity measured-in frame M,
+/// calculates frame C's spatial velocity measured in frame B. It assumes you
+/// have pre-calculated V_MBc (frame Bc's spatial velocity measured in frame M,
 /// where frame Bc is fixed to B and instantaneously coincident with frame C.
 /// This use case returns V_BC_E = V_MC_E - V_MBc_E, where the precalculated
 /// V_MBc_E is equal to V_MBo_E.Shift(p_BoBc_E).
 /// @see related methods ShiftInPlace() and ComposeWithMovingFrameVelocity().
+/// @relates SpatialVelocity
 template <typename T>
 inline SpatialVelocity<T> operator-(
     const SpatialVelocity<T>& V1_E, const SpatialVelocity<T>& V2_E) {
