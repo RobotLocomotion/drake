@@ -47,7 +47,9 @@ drake_py_binary(
 
 _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "ccd",
+    "com_jidesoft_jide_oss",
     "common_robotics_utilities",
+    "commons_io",
     "fcl",
     "fmt",
     "ghc_filesystem",
@@ -56,6 +58,8 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "lcm",
     "meshcat",
     "meshcat_python",
+    "net_sf_jchart2d",
+    "org_apache_xmlgraphics_commons",
     "petsc",
     "pybind11",
     "qhull",
@@ -69,7 +73,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "conex",
     "cds",
     "dreal",
-    "net_sf_jchart2d",
     "optitrack_driver",
     "picosat",
 ]] + select({
@@ -104,6 +107,16 @@ install(
     deps = _DRAKE_EXTERNAL_PACKAGE_INSTALLS,
 )
 
-check_licenses(_DRAKE_EXTERNAL_PACKAGE_INSTALLS)
+check_licenses(
+    _DRAKE_EXTERNAL_PACKAGE_INSTALLS,
+    ignore_labels = [
+        # Jar files have their license notices embedded into the jar already;
+        # there is no need for them to install a separate license file.
+        "@com_jidesoft_jide_oss//:install",
+        "@commons_io//:install",
+        "@net_sf_jchart2d//:install",
+        "@org_apache_xmlgraphics_commons//:install",
+    ],
+)
 
 add_lint_tests()

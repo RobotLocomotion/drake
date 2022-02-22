@@ -4,6 +4,9 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/double_overloads.h"
+#include "drake/common/drake_throw.h"
+
 namespace drake {
 
 /// A traits struct that describes the return type of predicates over a scalar
@@ -93,4 +96,21 @@ boolean<typename Derived::Scalar> none_of(
         const typename Derived::Scalar&)>& pred) {
   return none(m.unaryExpr(pred));
 }
+
+/// Overloads if_then_else for Eigen vectors of `m_then` and `m_else` values
+/// with with a single `f_cond` condition to toggle them all at once.
+template <typename T, int Rows>
+auto if_then_else(
+    const boolean<T>& f_cond,
+    const Eigen::Matrix<T, Rows, 1>& m_then,
+    const Eigen::Matrix<T, Rows, 1>& m_else) {
+  DRAKE_THROW_UNLESS(m_then.rows() == m_else.rows());
+  const int rows = m_then.rows();
+  Eigen::Matrix<T, Rows, 1> result(rows);
+  for (int i = 0; i < rows; ++i) {
+    result[i] = if_then_else(f_cond, m_then[i], m_else[i]);
+  }
+  return result;
+}
+
 }  // namespace drake

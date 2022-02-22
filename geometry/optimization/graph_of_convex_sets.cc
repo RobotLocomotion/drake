@@ -106,13 +106,9 @@ Binding<Constraint> Edge::AddConstraint(const Binding<Constraint>& binding) {
   return binding;
 }
 
-void Edge::AddPhiConstraint(bool phi_value) {
-  phi_value_ = phi_value;
-}
+void Edge::AddPhiConstraint(bool phi_value) { phi_value_ = phi_value; }
 
-void Edge::ClearPhiConstraints() {
-  phi_value_ = std::nullopt;
-}
+void Edge::ClearPhiConstraints() { phi_value_ = std::nullopt; }
 
 double Edge::GetSolutionCost(const MathematicalProgramResult& result) const {
   return result.GetSolution(ell_).sum();
@@ -235,8 +231,7 @@ std::string GraphOfConvexSets::GetGraphvizString(
   for (const auto& [v_id, v] : vertices_) {
     graphviz << "v" << v_id << " [label=\"" << v->name();
     if (result) {
-      graphviz << "\n x = ["
-               << result->GetSolution(v->x()).transpose();
+      graphviz << "\n x = [" << result->GetSolution(v->x()).transpose();
     }
     graphviz << "]\"]\n";
   }
@@ -249,7 +244,7 @@ std::string GraphOfConvexSets::GetGraphvizString(
       graphviz << "cost = " << e->GetSolutionCost(*result);
       if (show_slacks) {
         graphviz << ",\n";
-        graphviz << "ϕ = " << result->GetSolution(e->phi())<< ",\n";
+        graphviz << "ϕ = " << result->GetSolution(e->phi()) << ",\n";
         graphviz << "ϕ xᵤ = [" << e->GetSolutionPhiXu(*result).transpose()
                  << "],\n";
         graphviz << "ϕ xᵥ = [" << e->GetSolutionPhiXv(*result).transpose()
@@ -263,7 +258,9 @@ std::string GraphOfConvexSets::GetGraphvizString(
 }
 
 MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
-    VertexId source_id, VertexId target_id, bool convex_relaxation) const {
+    VertexId source_id, VertexId target_id, bool convex_relaxation,
+    const solvers::SolverInterface* solver,
+    const std::optional<solvers::SolverOptions>& solver_options) const {
   DRAKE_DEMAND(vertices_.find(source_id) != vertices_.end());
   DRAKE_DEMAND(vertices_.find(target_id) != vertices_.end());
 
@@ -499,10 +496,10 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
 
       // Conservation of flow: ∑ ϕ_out - ∑ ϕ_in = δ(is_source) - δ(is_target).
       int count = 0;
-      for (const auto* e : incoming) {
+      for (const Edge* e : incoming) {
         vars[count++] = convex_relaxation ? relaxed_phi.at(e->id()) : e->phi_;
       }
-      for (const auto* e : outgoing) {
+      for (const Edge* e : outgoing) {
         vars[count++] = convex_relaxation ? relaxed_phi.at(e->id()) : e->phi_;
       }
       prog.AddLinearEqualityConstraint(
@@ -512,10 +509,10 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       if (!is_source && !is_target) {
         for (int i = 0; i < v->ambient_dimension(); ++i) {
           count = 0;
-          for (const auto* e : incoming) {
+          for (const Edge* e : incoming) {
             vars[count++] = e->z_[i];
           }
-          for (const auto* e : outgoing) {
+          for (const Edge* e : outgoing) {
             vars[count++] = e->y_[i];
           }
           prog.AddLinearEqualityConstraint(a, 0, vars);
@@ -523,19 +520,66 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       }
     }
 
-    // Degree constraint: ∑ ϕ_out <= 1- δ(is_target).
     if (outgoing.size() > 0) {
+      int n_v = v->ambient_dimension();
       VectorXDecisionVariable phi_out(outgoing.size());
+      VectorXDecisionVariable yz_out(outgoing.size() * n_v);
       for (int i = 0; i < static_cast<int>(outgoing.size()); ++i) {
         phi_out[i] = convex_relaxation ? relaxed_phi.at(outgoing[i]->id())
                                        : outgoing[i]->phi_;
+        yz_out.segment(i * n_v, n_v) = outgoing[i]->y_;
       }
+      // Degree constraint: ∑ ϕ_out <= 1- δ(is_target).
       prog.AddLinearConstraint(RowVectorXd::Ones(outgoing.size()), 0.0,
                                is_target ? 0.0 : 1.0, phi_out);
+
+      if (!is_source && !is_target) {
+        RowVectorXd a = RowVectorXd::Ones(outgoing.size());
+        MatrixXd A_yz(n_v, outgoing.size() * n_v);
+        for (int i = 0; i < static_cast<int>(outgoing.size()); ++i) {
+          A_yz.block(0, i * n_v, n_v, n_v) = MatrixXd::Identity(n_v, n_v);
+        }
+        for (int i = 0; i < static_cast<int>(outgoing.size()); ++i) {
+          const Edge* e_out = outgoing[i];
+          if (source_id == e_out->v().id() || target_id == e_out->v().id()) {
+            continue;
+          }
+          for (const Edge* e_in : incoming) {
+            if (e_in->u().id() == e_out->v().id()) {
+              a[i] = -1.0;
+              phi_out[i] =
+                  convex_relaxation ? relaxed_phi.at(e_in->id()) : e_in->phi_;
+              // Two-cycle constraint: ∑ ϕ_u,out - ϕ_uv - ϕ_vu >= 0
+              prog.AddLinearConstraint(a, 0.0, 1.0, phi_out);
+              A_yz.block(0, i * n_v, n_v, n_v) = -MatrixXd::Identity(n_v, n_v);
+              yz_out.segment(i * n_v, n_v) = e_in->z_;
+              // Two-cycle spatial constraint:
+              // ∑ y_u - y_uv - z_vu ∈ (∑ ϕ_u,out - ϕ_uv - ϕ_vu) X_u
+              v->set().AddPointInNonnegativeScalingConstraints(
+                  &prog, A_yz, VectorXd::Zero(n_v), a, 0, yz_out, phi_out);
+
+              a[i] = 1.0;
+              phi_out[i] =
+                  convex_relaxation ? relaxed_phi.at(e_out->id()) : e_out->phi_;
+              A_yz.block(0, i * n_v, n_v, n_v) = MatrixXd::Identity(n_v, n_v);
+              yz_out.segment(i * n_v, n_v) = e_out->y_;
+            }
+          }
+        }
+      }
     }
   }
 
-  MathematicalProgramResult result = solvers::Solve(prog);
+  solvers::SolverOptions options;
+  if (solver_options) {
+    options = *solver_options;
+  }
+  MathematicalProgramResult result;
+  if (solver) {
+    solver->Solve(prog, {}, options, &result);
+  } else {
+    result = solvers::Solve(prog, {}, options);
+  }
 
   // Push the placeholder variables into the result, so that they can be
   // accessed as if they were real variables.
@@ -571,8 +615,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   if (convex_relaxation) {
     // Write the value of the relaxed phi into the phi placeholder.
     for (const auto& [edge_id, relaxed_phi_var] : relaxed_phi) {
-      decision_variable_index.emplace(edges_.at(edge_id)->phi_.get_id(),
-                                      count);
+      decision_variable_index.emplace(edges_.at(edge_id)->phi_.get_id(), count);
       x_val[count++] = result.GetSolution(relaxed_phi_var);
     }
   }
@@ -582,9 +625,11 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
 }
 
 MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
-    const Vertex& source, const Vertex& target,
-    bool convex_relaxation) const {
-  return SolveShortestPath(source.id(), target.id(), convex_relaxation);
+    const Vertex& source, const Vertex& target, bool convex_relaxation,
+    const solvers::SolverInterface* solver,
+    const std::optional<solvers::SolverOptions>& solver_options) const {
+  return SolveShortestPath(source.id(), target.id(), convex_relaxation, solver,
+                           solver_options);
 }
 
 }  // namespace optimization

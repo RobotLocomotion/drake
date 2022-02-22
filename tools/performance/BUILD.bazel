@@ -5,8 +5,8 @@ load(
     "drake_cc_library",
 )
 load(
-    "@drake//tools/skylark:py.bzl",
-    "py_binary",
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -21,12 +21,13 @@ drake_cc_library(
     ],
 )
 
-py_binary(
-    name = "record_results",
-    srcs = ["record_results.py"],
+drake_py_binary(
+    name = "benchmark_tool",
+    testonly = True,
+    srcs = ["benchmark_tool.py"],
     data = [
-        "//tools/workspace/cc:identify_compiler",
+        "//tools/workspace/cc:compiler.txt",
     ],
 )
 
-add_lint_tests(python_lint_extra_srcs = ["benchmark_tool.py"])
+add_lint_tests()

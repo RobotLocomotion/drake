@@ -929,33 +929,23 @@ class RotationMatrix {
     const T M10 = M(1, 0); const T M11 = M(1, 1); const T M12 = M(1, 2);
     const T M20 = M(2, 0); const T M21 = M(2, 1); const T M22 = M(2, 2);
     const T trace = M00 + M11 + M22;
-    auto if_then_else_vec4 = [](
-        const boolean<T>& f_cond,
-        const Vector4<T>& e_then,
-        const Vector4<T>& e_else) -> Vector4<T> {
-      return Vector4<T>(
-          if_then_else(f_cond, e_then[0], e_else[0]),
-          if_then_else(f_cond, e_then[1], e_else[1]),
-          if_then_else(f_cond, e_then[2], e_else[2]),
-          if_then_else(f_cond, e_then[3], e_else[3]));
-    };
     const Vector4<T> wxyz =
-        if_then_else_vec4(trace >= M00 && trace >= M11 && trace >= M22, {
+        if_then_else(trace >= M00 && trace >= M11 && trace >= M22, Vector4<T>{
           T(1) + trace,
           M21 - M12,
           M02 - M20,
           M10 - M01,
-        }, if_then_else_vec4(M00 >= M11 && M00 >= M22, {
+        }, if_then_else(M00 >= M11 && M00 >= M22, Vector4<T>{
           M21 - M12,
           T(1) - (trace - 2 * M00),
           M01 + M10,
           M02 + M20,
-        }, if_then_else_vec4(M11 >= M22, {
+        }, if_then_else(M11 >= M22, Vector4<T>{
           M02 - M20,
           M01 + M10,
           T(1) - (trace - 2 * M11),
           M12 + M21,
-        }, /* else */ {
+        }, /* else */ Vector4<T>{
           M10 - M01,
           M02 + M20,
           M12 + M21,

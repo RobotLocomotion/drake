@@ -1,31 +1,16 @@
 """Tool to help with controlled benchmark experiments.
 
-Subcommands:
+If necessary, installs software for CPU speed adjustment. Runs a bazel target,
+with CPU speed control disabled. Copies result data to a user selected output
+directory. Only supported on Ubuntu 20.04.
 
-conduct_experiment:
-  If necessary, install software for CPU speed adjustment. Run a bazel target,
-  with CPU speed control disabled. Copy result data to a user selected output
-  directory. Only supported on Ubuntu 18.04.
+The purpose of CPU speed control for benchmarking is to disable automatic CPU
+speed scaling, so that results of similar experiments will be more repeatable,
+and comparable across experiments. Performance "in the wild" with scaling
+enabled may be faster or slower, with higher variance.
 
-  The purpose of CPU speed control for benchmarking is to disable automatic CPU
-  speed scaling, so that results of similar experiments will be more
-  repeatable, and comparable across experiments. Performance "in the wild" with
-  scaling enabled may be faster or slower, with higher variance.
-
-  This operation uses `sudo` commands to install tools for CPU scaling control
-  and to actually change the CPU configuration.
-
-  It is possible to customize the bazel build and run steps by using
-  "--extra-build-args=" (a.k.a. "-b=") options:
-
-    python3 -B benchmark_tool.py conduct_experiment \\
-      -b=--copt=-mtune=haswell \\
-      -b=--copt=-g \\
-      [TARGET] [OUTPUT-DIR]
-
-copy_results:
-  Copy results of a prior run of a designated target to a user selected output
-  directory.
+This operation uses `sudo` commands to install tools for CPU scaling control
+and to actually change the CPU configuration.
 """
 
 import argparse
@@ -33,22 +18,33 @@ import contextlib
 import os
 import re
 import shlex
-import shutil
 import subprocess
 import sys
 import time
 
-WORKSPACE = os.path.dirname(os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__))))
-
 
 def is_default_ubuntu():
-    """Return True iff platform is Ubuntu 18.04."""
+    """Return True iff platform is Ubuntu 20.04."""
     if os.uname().sysname != "Linux":
         return False
     release_info = subprocess.check_output(
                 ["lsb_release", "-irs"], encoding='utf-8')
-    return ("Ubuntu\n18.04" in release_info)
+    return ("Ubuntu\n20.04" in release_info)
+
+
+def get_installed_version(package_name):
+    """Returns the installed version of a package, or None."""
+    result = subprocess.run(
+        ['dpkg-query', '--showformat=${db:Status-Abbrev} ${Version}',
+         '--show', package_name],
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        encoding='utf-8')
+    if result.returncode != 0:
+        return None
+    status, version = result.stdout.split()
+    if status != "ii":
+        return None
+    return version
 
 
 def say(*args):
@@ -56,16 +52,19 @@ def say(*args):
     print(f"\n=== {' '.join(args)} ===\n")
 
 
-def run(*args, echo=False):
-    """Run a subprocess, checking for failure. Optionally echo the command."""
-    if echo:
-        print('Running: ', ' '.join([shlex.quote(x) for x in args]))
-    subprocess.run(list(args), check=True)
-
-
-def sudo(*args):
+def sudo(*args, quiet=False):
     """Run sudo, passing all args to it."""
-    run('sudo', *args, echo=True)
+    new_args = ["sudo"] + list(args)
+    print('Running: ', shlex.join(new_args))
+    if quiet:
+        popen = subprocess.Popen(
+            new_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            encoding='utf-8')
+        if popen.wait() != 0:
+            print(popen.stdout.read())
+            raise RuntimeError("Failure during sudo()")
+    else:
+        subprocess.run(new_args, stderr=subprocess.STDOUT, check=True)
 
 
 class CpuSpeedSettings:
@@ -88,7 +87,7 @@ class CpuSpeedSettings:
 
     def set_cpu_governor(self, governor):
         """Set the CPU governor to the given name string."""
-        sudo('cpupower', 'frequency-set', '--governor', governor)
+        sudo('cpupower', 'frequency-set', '--governor', governor, quiet=True)
 
     def get_no_turbo(self):
         """Return the current no-turbo state as string, either '1' or '0'."""
@@ -117,100 +116,75 @@ class CpuSpeedSettings:
             self.set_cpu_governor(old_gov)
 
 
-def target_to_path_fragment(target):
-    """Convert a bazel target to a path fragment."""
-    target_fragment = target
-    if target_fragment.startswith('//'):
-        target_fragment = target_fragment[2:]
-    return os.path.join(*target_fragment.split(':'))
+def do_benchmark(args):
+    command_prologue = []
+    if is_default_ubuntu():
+        kernel_name = subprocess.check_output(
+            ['uname', '-r'], encoding='utf-8').strip()
+        kernel_packages = [f'linux-tools-{kernel_name}', 'linux-tools-common']
+        if not all([get_installed_version(x) for x in kernel_packages]):
+            say("Install tools for CPU speed control. [Note: sudo!]")
+            sudo('apt', 'install', *kernel_packages)
+        command_prologue = ["taskset", "--cpu-list", str(args.cputask)]
 
+    if args.sleep:
+        say(f"Wait {args.sleep} seconds for lingering activity to subside.")
+        time.sleep(args.sleep)
 
-def conduct_experiment(args):
-    """Implement the conduct_experiment sub-command."""
-    say("Validate environment.")
-    assert is_default_ubuntu(), (
-        "experiments only supported on default platform")
-    assert CpuSpeedSettings().is_supported_cpu(), (
-        "experiments only supported with Intel CPUs")
-
-    say("Install tools for CPU speed control. [Note: sudo!]")
-    kernel_name = subprocess.check_output(
-        ['uname', '-r'], encoding='utf-8').strip()
-    sudo('apt', 'install', f'linux-tools-{kernel_name}', 'linux-tools-common')
-
-    say("Build code.")
-    run('bazel', 'build', *args.extra_build_args, args.target)
-
-    sleep_seconds = 10
-    say(f"Wait {sleep_seconds} seconds for lingering activity to subside.")
-    time.sleep(sleep_seconds)
-
-    with CpuSpeedSettings().scope(governor="performance", no_turbo="1"):
-        say("Run the experiment.")
-        run('bazel', 'run',
-            *args.extra_build_args, args.target, '--', *args.extra_args)
-
-    say(f"Save data to {args.output_dir}/.")
-    copy_results(args)
-
-
-def copy_results(args):
-    """Implement the copy_results sub-command."""
-    src = os.path.join(WORKSPACE, 'bazel-testlogs',
-                       target_to_path_fragment(args.target),
-                       'test.outputs')
-    shutil.copytree(src, args.output_dir)
+    os.mkdir(args.output_dir)
+    default_args = [
+        '--benchmark_display_aggregates_only=true',
+        '--benchmark_out_format=json',
+        f'--benchmark_out={args.output_dir}/results.json',
+    ]
+    command = command_prologue + [args.binary] + default_args + args.extra_args
+    with open(f'{args.output_dir}/summary.txt', 'wb') as summary:
+        with CpuSpeedSettings().scope(governor="performance", no_turbo="1"):
+            say("Run the experiment.")
+            print('Running: ', shlex.join(command))
+            popen = subprocess.Popen(command, stdout=subprocess.PIPE)
+            for line in popen.stdout:
+                summary.write(line)
+                print(line.decode("utf-8").strip(), flush=True)
+            if popen.wait() != 0:
+                raise RuntimeError("The profiled BINARY has failed")
 
 
 def main():
-    # Don't run under bazel; this program issues bazel commands.
-    assert "runfiles" not in ':'.join(sys.path), "Don't run under bazel!"
+    # Make cwd be what the user expected, not the runfiles tree.
+    assert ".runfiles" in ':'.join(sys.path), "Always use 'bazel run'."
+    os.chdir(os.environ['BUILD_WORKING_DIRECTORY'])
 
+    # Parse and validate arguments.
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    subparsers = parser.add_subparsers(
-        help='subcommand to run', dest='subcommand')
-    subparsers.required = True
-
-    def add_common_args(parser):
-        parser.add_argument(
-            'target', metavar='TARGET',
-            help='bazel target of benchmark program')
-        parser.add_argument(
-            'output_dir', metavar='OUTPUT-DIR',
-            help='output directory for benchmark data;'
-            ' it must not already exist.')
-
-    parser_conduct_experiment = subparsers.add_parser(
-        'conduct_experiment',
-        description='run controlled experiment for TARGET,'
-        ' copying benchmark data to OUTPUT-DIR')
-    add_common_args(parser_conduct_experiment)
-    parser_conduct_experiment.add_argument(
-        '-b', '--extra-build-args', action='append', default=[],
-        help='extra arguments passed to bazel build and run')
-    parser_conduct_experiment.add_argument(
+    parser.add_argument(
+        '--binary', metavar='BINARY', required=True,
+        help='path to googlebench binary; typically this is supplied'
+             ' automatically by the drake_py_experiment_binary macro')
+    parser.add_argument(
+        '--output_dir', metavar='OUTPUT-DIR', required=True,
+        help='output directory for benchmark data; it must not already exist')
+    parser.add_argument(
+        '--sleep', type=float, default=10.0,
+        help='pause this long for lingering activity to subside (in seconds)')
+    parser.add_argument(
+        # Defaulting to processor #0 is arbitrary; it is up to experimenters to
+        # ensure it is idle during experiments or else specify a different one.
+        '--cputask', type=int, metavar='N', default=0,
+        help='pin the BINARY to vcpu number N for this experiment')
+    parser.add_argument(
         'extra_args', nargs='*',
         help='extra arguments passed to the underlying executable')
-    parser_conduct_experiment.set_defaults(func=conduct_experiment)
-
-    parser_copy_results = subparsers.add_parser(
-        'copy_results',
-        description='copy benchmark data for TARGET'
-        ' from the bazel-testlogs tree to OUTPUT-DIR')
-    add_common_args(parser_copy_results)
-    parser_copy_results.set_defaults(func=copy_results)
-
     args = parser.parse_args()
+    if not os.path.exists(args.binary):
+        parser.error("BINARY does not exist .")
+    if os.path.exists(args.output_dir):
+        parser.error("OUTPUT-DIR must not already exist.")
 
-    # Fail fast if the output directory is an empty string or already exists.
-    assert args.output_dir, \
-        "OUTPUT-DIR must not be 0-length."
-    assert not os.path.exists(args.output_dir), \
-        "OUTPUT-DIR must not already exist."
-
-    args.func(args)
+    # Run.
+    do_benchmark(args)
 
 
 if __name__ == '__main__':

@@ -4,45 +4,45 @@
 #include <string>
 
 #include "drake/geometry/render/dev/render_client.h"
-#include "drake/geometry/render/dev/render_client_gltf_factory.h"
+#include "drake/geometry/render/dev/render_engine_gltf_client_factory.h"
 #include "drake/geometry/render/render_engine_vtk.h"
 
 namespace drake {
 namespace geometry {
 namespace render {
 
-// TODO(svenevs): The RenderClientGltf class needs access to the private
+// TODO(svenevs): The RenderEngineGltfClient class needs access to the private
 // rendering pipelines of RenderEngineVtk.  We should reconsider the need for
 // private friendship prior to promoting this class out of `dev`.
 /** A RenderClient that exports
  <a href="https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html">glTF
  </a> scenes to upload to a render server. */
-class RenderClientGltf : public RenderEngineVtk, public RenderClient {
+class RenderEngineGltfClient : public RenderEngineVtk, public RenderClient {
  public:
   /** @name Does not allow copy, move, or assignment  */
   //@{
 #ifdef DRAKE_DOXYGEN_CXX
   // Note: the copy constructor operator is actually protected to serve as the
   // basis for implementing the DoClone() method.
-  RenderClientGltf(const RenderClientGltf&) = delete;
+  RenderEngineGltfClient(const RenderEngineGltfClient&) = delete;
 #endif
-  RenderClientGltf& operator=(const RenderClientGltf&) = delete;
-  RenderClientGltf(RenderClientGltf&&) = delete;
-  RenderClientGltf& operator=(RenderClientGltf&&) = delete;
+  RenderEngineGltfClient& operator=(const RenderEngineGltfClient&) = delete;
+  RenderEngineGltfClient(RenderEngineGltfClient&&) = delete;
+  RenderEngineGltfClient& operator=(RenderEngineGltfClient&&) = delete;
   //@}}
 
   /** Constructs the render engine from the given `parameters`.  By default the
-   %RenderClientGltf will communicate with a local server.
-   @sa RenderClientGltfParams */
-  RenderClientGltf(
-      const RenderClientGltfParams& parameters = RenderClientGltfParams());
+   %RenderEngineGltfClient will communicate with a local server.
+   @sa RenderEngineGltfClientParams */
+  RenderEngineGltfClient(const RenderEngineGltfClientParams& parameters =
+                             RenderEngineGltfClientParams());
 
   // TODO(svenevs): remove this once vtkGLTFExporter is patched to invert.
   void UpdateViewpoint(const math::RigidTransformd& X_WC) override;
 
  protected:
   /** Copy constructor for the purpose of cloning. */
-  RenderClientGltf(const RenderClientGltf& other);
+  RenderEngineGltfClient(const RenderEngineGltfClient& other);
 
  private:
   // @see RenderEngine::DoClone().

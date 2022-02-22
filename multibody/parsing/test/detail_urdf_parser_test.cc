@@ -35,16 +35,14 @@ using geometry::SceneGraph;
 
 // TODO(jwnimmer-tri) This unit test has a lot of copy-pasta, including this
 // helper function as well as all it's call sites below.  We should refactor
-// the plant, scene_graph, etc. into a test fixture for brevity.
+// the plant, etc. into a test fixture for brevity.
 ModelInstanceIndex AddModelFromUrdfFile(
     const std::string& file_name,
     const std::string& model_name,
     const PackageMap& package_map,
-    MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr) {
-  return AddModelFromUrdf(
-      { .file_name = &file_name },
-      model_name, {}, package_map, plant, scene_graph);
+    MultibodyPlant<double>* plant) {
+  return AddModelFromUrdf({ .file_name = &file_name }, model_name, {},
+                          package_map, plant);
 }
 
 // Verifies that the URDF loader can leverage a specified package map.
@@ -52,7 +50,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {
   // We start with the world and default model instances (model_instance.h
   // explains why there are two).
   MultibodyPlant<double> plant(0.0);
-  geometry::SceneGraph<double> scene_graph;
   ASSERT_EQ(plant.num_model_instances(), 2);
 
   const std::string full_urdf_filename = FindResourceOrThrow(
@@ -66,8 +63,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {
   package_map.PopulateFromFolder(package_path.string());
 
   // Read in the URDF file.
-  AddModelFromUrdfFile(full_urdf_filename, "", package_map, &plant,
-                       &scene_graph);
+  AddModelFromUrdfFile(full_urdf_filename, "", package_map, &plant);
   plant.Finalize();
 
   // Verify the number of model instances.
@@ -76,11 +72,10 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
   MultibodyPlant<double> plant(0.0);
-  SceneGraph<double> scene_graph;
   std::string full_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/double_pendulum.urdf");
   PackageMap package_map;
-  AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
+  AddModelFromUrdfFile(full_name, "", package_map, &plant);
   plant.Finalize();
 
   EXPECT_EQ(plant.num_bodies(), 4);
@@ -115,11 +110,12 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
 GTEST_TEST(MultibodyPlantUrdfParserTest, TestAtlasMinimalContact) {
   MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
   std::string full_name = FindResourceOrThrow(
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
   PackageMap package_map;
 
-  AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
+  AddModelFromUrdfFile(full_name, "", package_map, &plant);
   plant.Finalize();
 
   EXPECT_EQ(plant.num_positions(), 37);
@@ -141,36 +137,25 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAddWithQuaternionFloatingDof) {
 
   MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
-  AddModelFromUrdfFile(model_file, "", package_map, &plant, &scene_graph);
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  AddModelFromUrdfFile(model_file, "", package_map, &plant);
   plant.Finalize();
 
   EXPECT_EQ(plant.num_positions(), 7);
   EXPECT_EQ(plant.num_velocities(), 6);
 }
 
-GTEST_TEST(MultibodyPlantUrdfParserTest, TestOptionalSceneGraph) {
+GTEST_TEST(MultibodyPlantUrdfParserTest, TestSceneGraph) {
+  // Test that registering with scene graph results in visual geometries.
   const std::string full_name = FindResourceOrThrow(
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
   PackageMap package_map;
-  int num_visuals_explicit{};
-  {
-    // Test explicitly specifying `scene_graph`.
-    MultibodyPlant<double> plant(0.0);
-    SceneGraph<double> scene_graph;
-    AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
-    plant.Finalize();
-    num_visuals_explicit = plant.num_visual_geometries();
-  }
-  EXPECT_NE(num_visuals_explicit, 0);
-  {
-    // Test implicitly specifying.
-    MultibodyPlant<double> plant(0.0);
-    SceneGraph<double> scene_graph;
-    plant.RegisterAsSourceForSceneGraph(&scene_graph);
-    AddModelFromUrdfFile(full_name, "", package_map, &plant);
-    plant.Finalize();
-    EXPECT_EQ(plant.num_visual_geometries(), num_visuals_explicit);
-  }
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  AddModelFromUrdfFile(full_name, "", package_map, &plant);
+  plant.Finalize();
+  EXPECT_NE(plant.num_visual_geometries(), 0);
 }
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
@@ -180,8 +165,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
   PackageMap package_map;
 
   MultibodyPlant<double> plant(0.0);
-  SceneGraph<double> scene_graph;
-  AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
+  AddModelFromUrdfFile(full_name, "", package_map, &plant);
   plant.Finalize();
 
   // Revolute joint
@@ -313,7 +297,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTagMismatchTest) {
   MultibodyPlant<double> plant(0.0);
-  SceneGraph<double> scene_graph;
   PackageMap package_map;
 
   // Improperly declared joints.
@@ -321,8 +304,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTagMismatchTest) {
       "drake/multibody/parsing/test/urdf_parser_test/"
       "joint_parsing_test_tag_mismatch_1.urdf");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddModelFromUrdfFile(full_name_mismatch_1, "",
-                           package_map, &plant, &scene_graph),
+      AddModelFromUrdfFile(full_name_mismatch_1, "", package_map, &plant),
       "ERROR: Joint fixed_joint of type fixed is a standard joint type, "
       "and should be a <joint>");
 
@@ -330,8 +312,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTagMismatchTest) {
       "drake/multibody/parsing/test/urdf_parser_test/"
       "joint_parsing_test_tag_mismatch_2.urdf");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddModelFromUrdfFile(full_name_mismatch_2, "",
-                           package_map, &plant, &scene_graph),
+      AddModelFromUrdfFile(full_name_mismatch_2, "", package_map, &plant),
       "ERROR: Joint ball_joint of type ball is a custom joint type, "
       "and should be a <drake:joint>");
 }
@@ -378,7 +359,8 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, AddingGeometriesToWorldLink) {
 
   MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
-  AddModelFromUrdf(source, "urdf", {}, {}, &plant, &scene_graph);
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  AddModelFromUrdf(source, "urdf", {}, {}, &plant);
 
   const auto& inspector = scene_graph.model_inspector();
   EXPECT_EQ(inspector.num_geometries(), 2);
@@ -436,7 +418,7 @@ void TestForParsedGeometry(const char* sdf_name, geometry::Role role) {
   MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
-  AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
+  AddModelFromUrdfFile(full_name, "", package_map, &plant);
   plant.Finalize();
 
   const auto frame_id =
@@ -820,7 +802,8 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, CollisionFilterGroupParsingTest) {
 
   MultibodyPlant<double> plant(0.0);
   SceneGraph<double> scene_graph;
-  AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  AddModelFromUrdfFile(full_name, "", package_map, &plant);
 
   // Get geometry ids for all the bodies.
   const geometry::SceneGraphInspector<double>& inspector =
@@ -876,7 +859,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, CollisionFilterGroupParsingTest) {
   EXPECT_TRUE(inspector.CollisionFiltered(ids[5], ids[6]));
 
   // Make sure we can add the model a second time.
-  AddModelFromUrdfFile(full_name, "model2", package_map, &plant, &scene_graph);
+  AddModelFromUrdfFile(full_name, "model2", package_map, &plant);
 }
 
 // TODO(marcoag) We might want to add some form of feedback for:

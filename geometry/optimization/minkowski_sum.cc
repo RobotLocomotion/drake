@@ -14,6 +14,7 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+using Eigen::MatrixXd;
 using Eigen::RowVectorXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -143,6 +144,36 @@ MinkowskiSum::DoAddPointInNonnegativeScalingConstraints(
   for (int j = 0; j < num_terms(); ++j) {
     auto new_constraints =
         sets_[j]->AddPointInNonnegativeScalingConstraints(prog, X.col(j), t);
+    constraints.insert(constraints.end(),
+                       std::make_move_iterator(new_constraints.begin()),
+                       std::make_move_iterator(new_constraints.end()));
+  }
+  return constraints;
+}
+
+std::vector<Binding<Constraint>>
+MinkowskiSum::DoAddPointInNonnegativeScalingConstraints(
+    solvers::MathematicalProgram* prog, const Eigen::Ref<const MatrixXd>& A,
+    const Eigen::Ref<const VectorXd>& b, const Eigen::Ref<const VectorXd>& c,
+    double d, const Eigen::Ref<const VectorXDecisionVariable>& x,
+    const Eigen::Ref<const VectorXDecisionVariable>& t) const {
+  // We add the constraint
+  //   A*x+b in (c't+d) (S1 ⨁ ... ⨁ Sn)
+  // by enforcing
+  //   A*x+b in (c't+d) S1 ⨁ ... ⨁ (c't+d) Sn.
+  // This can be done because c't+d is nonnegative and S1,..., Sn are convex.
+  std::vector<Binding<Constraint>> constraints;
+  auto X = prog->NewContinuousVariables(x.size(), num_terms(), "x");
+  RowVectorXd a = RowVectorXd::Ones(num_terms() + 1);
+  a[0] = -1;
+  for (int i = 0; i < x.size(); ++i) {
+    // ∑ⱼ xⱼ[i] = x[i]
+    constraints.emplace_back(prog->AddLinearEqualityConstraint(
+        a, 0.0, {Vector1<Variable>(x[i]), X.row(i).transpose()}));
+  }
+  for (int j = 0; j < num_terms(); ++j) {
+    auto new_constraints = sets_[j]->AddPointInNonnegativeScalingConstraints(
+        prog, A, b, c, d, X.col(j), t);
     constraints.insert(constraints.end(),
                        std::make_move_iterator(new_constraints.begin()),
                        std::make_move_iterator(new_constraints.end()));

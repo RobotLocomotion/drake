@@ -48,37 +48,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "corotated_model",
-    srcs = [
-        "corotated_model.cc",
-    ],
-    hdrs = [
-        "corotated_model.h",
-    ],
-    deps = [
-        ":calc_lame_parameters",
-        ":corotated_model_data",
-        "//common:autodiff",
-        "//common:essential",
-        "//multibody/fem:constitutive_model",
-        "//multibody/fem:matrix_utilities",
-    ],
-)
-
-drake_cc_library(
-    name = "corotated_model_data",
-    hdrs = [
-        "corotated_model_data.h",
-    ],
-    deps = [
-        "//common:autodiff",
-        "//common:essential",
-        "//multibody/fem:deformation_gradient_data",
-        "//multibody/fem:matrix_utilities",
-    ],
-)
-
-drake_cc_library(
     name = "deformable_body_config",
     hdrs = [
         "deformable_body_config.h",
@@ -172,23 +141,6 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:type_safe_index",
-    ],
-)
-
-drake_cc_library(
-    name = "linear_constitutive_model",
-    srcs = [
-        "linear_constitutive_model.cc",
-    ],
-    hdrs = [
-        "linear_constitutive_model.h",
-    ],
-    deps = [
-        ":calc_lame_parameters",
-        "//common:autodiff",
-        "//common:essential",
-        "//multibody/fem:constitutive_model",
-        "//multibody/fem:linear_constitutive_model_data",
     ],
 )
 

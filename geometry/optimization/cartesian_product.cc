@@ -176,6 +176,50 @@ CartesianProduct::DoAddPointInNonnegativeScalingConstraints(
   return constraints;
 }
 
+std::vector<solvers::Binding<solvers::Constraint>>
+CartesianProduct::DoAddPointInNonnegativeScalingConstraints(
+    solvers::MathematicalProgram* prog, const Eigen::Ref<const MatrixXd>& A_x,
+    const Eigen::Ref<const VectorXd>& b_x, const Eigen::Ref<const VectorXd>& c,
+    double d, const Eigen::Ref<const VectorXDecisionVariable>& x,
+    const Eigen::Ref<const VectorXDecisionVariable>& t) const {
+  std::vector<Binding<Constraint>> constraints;
+  if (A_) {
+    VectorXDecisionVariable y = prog->NewContinuousVariables(A_->rows(), "y");
+    // y = A (A_x * x + b_x) + (c' * t + d) b,
+    // or [I, -A*A_x, - b*c']*[y; x; t] = A * b_x + d * b.
+    MatrixXd Aeq =
+        MatrixXd::Identity(A_->rows(), A_->rows() + x.size() + t.size());
+    Aeq.middleCols(A_->rows(), x.size()) = -(*A_) * A_x;
+    Aeq.rightCols(t.size()) = -(*b_) * c.transpose();
+    VectorXd beq = (*A_) * b_x + (*b_) * d;
+    constraints.emplace_back(
+        prog->AddLinearEqualityConstraint(Aeq, beq, {y, x, t}));
+    int index = 0;
+    for (const auto& s : sets_) {
+      int set_dim = s->ambient_dimension();
+      auto new_constraints = s->AddPointInNonnegativeScalingConstraints(
+          prog, MatrixXd::Identity(set_dim, set_dim), VectorXd::Zero(set_dim),
+          c, d, y.segment(index, set_dim), t);
+      index += set_dim;
+      constraints.insert(constraints.end(),
+                         std::make_move_iterator(new_constraints.begin()),
+                         std::make_move_iterator(new_constraints.end()));
+    }
+  } else {
+    int index = 0;
+    for (const auto& s : sets_) {
+      auto new_constraints = s->AddPointInNonnegativeScalingConstraints(
+          prog, A_x.middleRows(index, s->ambient_dimension()),
+          b_x.segment(index, s->ambient_dimension()), c, d, x, t);
+      index += s->ambient_dimension();
+      constraints.insert(constraints.end(),
+                         std::make_move_iterator(new_constraints.begin()),
+                         std::make_move_iterator(new_constraints.end()));
+    }
+  }
+  return constraints;
+}
+
 std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
 CartesianProduct::DoToShapeWithPose() const {
   // TODO(russt): Consider handling Cylinder as a (very) special case.

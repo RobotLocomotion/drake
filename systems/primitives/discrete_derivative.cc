@@ -73,21 +73,6 @@ void DiscreteDerivative<T>::DoCalcDiscreteVariableUpdates(
   }
 }
 
-namespace {
-template <typename T>
-VectorX<T> if_then_else_vector(
-  const boolean<T>& f_cond,
-  const Eigen::Ref<const VectorX<T>>& v_then,
-  const Eigen::Ref<const VectorX<T>>& v_else) {
-  DRAKE_DEMAND(v_then.size() == v_else.size());
-  VectorX<T> result(v_then.size());
-  for (int i = 0; i < result.size(); ++i) {
-    result[i] = if_then_else(f_cond, v_then[i], v_else[i]);
-  }
-  return result;
-}
-}  // namespace
-
 template <typename T>
 void DiscreteDerivative<T>::CalcOutput(
     const drake::systems::Context<T>& context,
@@ -101,8 +86,8 @@ void DiscreteDerivative<T>::CalcOutput(
     output_vector->SetFromVector(derivative);
   } else {
     const boolean<T> is_active = (context.get_discrete_state(2)[0] >= 2.0);
-    output_vector->SetFromVector(if_then_else_vector<T>(
-        is_active, derivative, VectorX<T>::Zero(n_)));
+    output_vector->SetFromVector(if_then_else(
+        is_active, derivative, VectorX<T>::Zero(n_).eval()));
   }
 }
 

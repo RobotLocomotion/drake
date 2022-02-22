@@ -4,6 +4,8 @@ functions.
 
 # Benchmark infrastructure
 
+TODO(jwnimmer-tri) Port this directory to the //tools/performance wrappers.
+
 ## Arguments
 
 One routine can be used to run a family of benchmarks by passing in a range of

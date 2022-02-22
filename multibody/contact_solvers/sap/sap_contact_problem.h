@@ -1,9 +1,12 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
+#include "drake/multibody/contact_solvers/sap/sap_constraint.h"
 
 namespace drake {
 namespace multibody {
@@ -66,27 +69,52 @@ class SapContactProblem {
      Free-motion velocities, of size nv. DOFs in v_star must match the
      ordering implicitly induced by A.
 
-   @throws if the blocks in A are not square or have zero size.
-   @throws if the size of v_star is not nv = ∑A[c].rows(). */
+   @throws exception if the blocks in A are not square or have zero size.
+   @throws exception if the size of v_star is not nv = ∑A[c].rows(). */
   SapContactProblem(const T& time_step, std::vector<MatrixX<T>> A,
                     VectorX<T> v_star);
 
   /* TODO(amcastro-tri): consider constructor API taking std::vector<VectorX<T>>
    for v_star. It could be useful for deformables. */
 
-  /* TODO(amcastro-tri): Implement APIs to add constraints in follow up PRs. */
+  /* Adds `constraint` to this problem.
+   @throws exception if the clique indexes referenced by `constraint` are not in
+   the range [0, num_cliques()).
+   @throws exception if the number of columns of the Jacobian matrices in
+   `constraint` is not consistent with the number of velocities for the cliques
+   in this problem referenced by `constraint`.
+   @returns the index to the newly added constraint. */
+  int AddConstraint(std::unique_ptr<SapConstraint<T>> constraint);
 
   /* Returns the number of cliques. */
   int num_cliques() const { return A_.size(); }
 
-  /* The total number of generalized velocities for this problem. */
+  /* Returns the total number of generalized velocities for this problem. */
   int num_velocities() const { return nv_; }
 
-  /* The number of generalized velocities for clique with index `clique_index`.
-   clique_index must be in the interval [0, num_cliques()). */
+  /* Returns the number of generalized velocities for clique with index
+   `clique_index`. clique_index must be in the interval [0, num_cliques()). */
   int num_velocities(int clique_index) const {
-    DRAKE_DEMAND(0 <= clique_index && clique_index < num_cliques());
+    DRAKE_THROW_UNLESS(0 <= clique_index && clique_index < num_cliques());
     return A_[clique_index].rows();
+  }
+
+  /* Returns the number of constraints in this problem. */
+  int num_constraints() const { return constraints_.size(); }
+
+  /* Returns the total number of constraint equations. That is, nk = ∑ni where
+   ni is the number of constraint equations for the i-th constraint, see
+   SapConstraint::num_constraint_equations(). */
+  int num_constraint_equations() const {
+    return graph_.num_constraint_equations();
+  }
+
+  /* Accesses constraint with index `constraint_index` as assigned by the call
+   to AddConstraint(). */
+  const SapConstraint<T>& get_constraint(int constraint_index) const {
+    DRAKE_THROW_UNLESS(0 <= constraint_index &&
+                       constraint_index < num_constraints());
+    return *constraints_[constraint_index];
   }
 
   const T& time_step() const { return time_step_; }
@@ -98,11 +126,16 @@ class SapContactProblem {
    num_velocities(). */
   const VectorX<T>& v_star() const { return v_star_; }
 
+  const ContactProblemGraph& graph() const { return graph_; }
+
  private:
   int nv_{0};                    // Total number of generalized velocities.
   T time_step_{0.0};             // Discrete time step.
   std::vector<MatrixX<T>> A_;    // Linear dynamics matrix.
   VectorX<T> v_star_;            // Free-motion velocities.
+  ContactProblemGraph graph_;    // Contact graph for this problem.
+  // Constraints owned by this problem.
+  std::vector<std::unique_ptr<SapConstraint<T>>> constraints_;
 };
 
 }  // namespace internal

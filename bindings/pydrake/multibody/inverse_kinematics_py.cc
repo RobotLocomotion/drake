@@ -30,6 +30,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
+  constexpr auto& constraint_doc = pydrake_doc.drake.solvers.Constraint;
 
   m.doc() = "InverseKinematics module";
 
@@ -335,7 +336,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
-            py::keep_alive<1, 8>(), ctor_doc_ad);
+            py::keep_alive<1, 8>(), ctor_doc_ad)
+        .def("set_bounds", &Class::set_bounds, py::arg("new_lb"),
+            py::arg("new_ub"), constraint_doc.set_bounds.doc)
+        .def("UpdateLowerBound", &Class::UpdateLowerBound, py::arg("new_lb"),
+            constraint_doc.UpdateLowerBound.doc)
+        .def("UpdateUpperBound", &Class::UpdateUpperBound, py::arg("new_ub"),
+            constraint_doc.UpdateUpperBound.doc);
   }
 
   {

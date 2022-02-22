@@ -32,7 +32,7 @@ drake_cc_binary(
     ],
     test_rule_tags = vtk_test_tags(),
     deps = [
-        ":render_client_gltf",
+        ":render_engine_gltf_client",
         "//common:filesystem",
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
@@ -69,18 +69,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "render_client_gltf",
+    name = "render_engine_gltf_client",
     srcs = [
-        "render_client_gltf.cc",
-        "render_client_gltf_factory.cc",
+        "render_engine_gltf_client.cc",
+        "render_engine_gltf_client_factory.cc",
     ],
     hdrs = [
-        "render_client_gltf.h",
-        "render_client_gltf_factory.h",
+        "render_engine_gltf_client.h",
+        "render_engine_gltf_client_factory.h",
     ],
-    # render_client_gltf.h directly pulls in VTK headers; leave it out of the
-    # install.
-    install_hdrs_exclude = ["render_client_gltf.h"],
+    # render_engine_gltf_client.h directly pulls in VTK headers; leave it out
+    # of the install.
+    install_hdrs_exclude = ["render_engine_gltf_client.h"],
     deps = [
         ":render_client",
         "//common:filesystem",

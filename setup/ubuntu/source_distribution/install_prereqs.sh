@@ -11,9 +11,12 @@ set -euo pipefail
 with_doc_only=0
 with_kcov=0
 with_maintainer_only=0
+with_clang=1
 with_test_only=1
 with_update=1
 with_asking=1
+
+# TODO(jwnimmer-tri) Eventually we should default to with_clang=0.
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
@@ -28,6 +31,16 @@ while [ "${1:-}" != "" ]; do
     # "universe" apt repository.
     --with-kcov)
       with_kcov=1
+      ;;
+    # Install prerequisites that are only needed to when CC=clang-9, i.e.,
+    # opts-in to the ability to compile Drake's C++ code using Clang.
+    --with-clang)
+      with_clang=1
+      ;;
+    # Do NOT install prerequisites that are only needed to when CC=clang-9,
+    # i.e., opts-out of the ability to compile Drake's C++ code using Clang.
+    --without-clang)
+      with_clang=0
       ;;
     # Install prerequisites that are only needed to run select maintainer
     # scripts. Most developers will not need to install these dependencies.
@@ -121,6 +134,11 @@ fi
 
 if [[ "${with_doc_only}" -eq 1 ]]; then
   packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-doc-only.txt")
+  apt-get install ${maybe_yes} --no-install-recommends ${packages}
+fi
+
+if [[ "${with_clang}" -eq 1 ]]; then
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-clang.txt")
   apt-get install ${maybe_yes} --no-install-recommends ${packages}
 fi
 

@@ -8,9 +8,13 @@ import unittest
 
 import pydrake.all
 from pydrake.common import temp_directory
+from pydrake.common.test_utilities.meta import (
+    ValueParameterizedTest,
+    run_with_multiple_values,
+)
 
 
-class TestAllEachImport(unittest.TestCase):
+class TestAllEachImport(unittest.TestCase, metaclass=ValueParameterizedTest):
 
     def setUp(self):
         self._expected_non_native_modules = [
@@ -21,12 +25,9 @@ class TestAllEachImport(unittest.TestCase):
         ]
         self._temp_dir = temp_directory()
 
-    def test_each_import(self):
-        """For all known pydrake modules, checks that they can be imported on
-        their own, one by one.
-        """
+    def _modules_to_test():
         names = []
-        for name in sys.modules.keys():
+        for name in sorted(sys.modules.keys()):
             if "._" in name:
                 # Private module.
                 continue
@@ -35,22 +36,19 @@ class TestAllEachImport(unittest.TestCase):
                 continue
             if name == "pydrake" or name.startswith("pydrake."):
                 names.append(name)
-        self.assertGreater(len(names), 0)
+        # Fail-fast in case we didn't find all of pydrake. We expect to have
+        # many dozens of pydrake modules; we'll check a forgiving lower limit.
+        assert len(names) > 10
+        return names
 
-        for name in sorted(names):
-            with self.subTest(name=name):
-                self._check_module(name)
-
-        for name in self._expected_non_native_modules:
-            self.assertIn(name, names)
-
-    def _check_module(self, name):
+    @run_with_multiple_values([dict(name=name) for name in _modules_to_test()])
+    def test_submodule(self, *, name):
         """Runs a new interpreter to prove that we can import the module in
         isolation. Modulo a few allowed corner-cases, also checks that the
         pydrake.common module has also been imported by side-effect (and so,
-        that it's important native-code bootstrapping logic is in effect).
+        that its important native-code bootstrapping logic is in effect).
         """
-        temp_filename = f"{self._temp_dir}/has_common_{name}"
+        temp_filename = f"{self._temp_dir}/all_each_import_test_{name}"
         script = textwrap.dedent(f"""\
             import {name}
             import pickle, sys

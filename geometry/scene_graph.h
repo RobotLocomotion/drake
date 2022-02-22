@@ -7,8 +7,9 @@
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/collision_filter_manager.h"
+#include "drake/geometry/frame_kinematics_vector.h"
+#include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_set.h"
-#include "drake/geometry/geometry_state.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph_inspector.h"
@@ -18,10 +19,13 @@
 namespace drake {
 namespace geometry {
 
+#ifndef DRAKE_DOXYGEN_CXX
 class GeometryInstance;
-
+template <typename T>
+class GeometryState;
 template <typename T>
 class QueryObject;
+#endif
 
 /** SceneGraph serves as the nexus for all geometry (and geometry-based
  operations) in a Diagram. Through SceneGraph, other systems that introduce
@@ -280,7 +284,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
   template <typename U>
   explicit SceneGraph(const SceneGraph<U>& other);
 
-  ~SceneGraph() override {}
+  ~SceneGraph() final;
 
   /** @name       Port management
    Access to SceneGraph's input/output ports. This topic includes
@@ -892,8 +896,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
   int query_port_index_{-1};
 
   // SceneGraph owns its configured model; it gets copied into the context when
-  // the context is set to its "default" state.
-  GeometryState<T> model_;
+  // the context is set to its "default" state. We use unique_ptr in support of
+  // forward-declaring GeometryState<T> to reduce our #include footprint, but
+  // initialize a model_ reference to always point to the owned_model_, as a
+  // convenient shortcut in the code to treat it as if it were a direct member.
+  std::unique_ptr<GeometryState<T>> owned_model_;
+  GeometryState<T>& model_;
 
   SceneGraphInspector<T> model_inspector_;
 

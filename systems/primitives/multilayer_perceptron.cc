@@ -17,6 +17,7 @@ template <typename T>
 struct CalcLayersData {
   explicit CalcLayersData(int n) : Wx(n), Wx_plus_b(n), Xn(n) {}
 
+  MatrixX<T> input_features;
   std::vector<VectorX<T>> Wx;
   std::vector<VectorX<T>> Wx_plus_b;
   std::vector<VectorX<T>> Xn;
@@ -26,23 +27,20 @@ struct CalcLayersData {
 
 namespace {
 
-/* Returns `vector_size - n`, or throws if it would underflow. */
-int SubtractFromSize(size_t vector_size, int n) {
-  DRAKE_DEMAND(n >= 0);
-  const size_t n_size = static_cast<size_t>(n);
-  if (vector_size >= n_size) {
-    return vector_size - n_size;
-  }
-  throw std::logic_error(
-      "The MultilayerPerceptron's layers or activations constructor argument "
-      "has too few elements.");
-}
-
 std::vector<PerceptronActivationType> MakeDefaultActivations(
     int num, PerceptronActivationType activation_type) {
   std::vector<PerceptronActivationType> types(num, activation_type);
   types[num - 1] = kIdentity;
   return types;
+}
+
+const std::vector<int>& RejectEmpty(const std::vector<int>& arg) {
+  if (arg.empty()) {
+    throw std::logic_error(
+        "The MultilayerPerceptron's layers constructor argument has too few "
+        "elements.");
+  }
+  return arg;
 }
 
 template <typename T>
@@ -65,6 +63,8 @@ struct BackPropData {
   std::vector<MatrixX<T>> dloss_dWx_plus_b;
   std::vector<MatrixX<T>> dloss_dW;
   std::vector<VectorX<T>> dloss_db;
+  MatrixX<T> input_features;
+  MatrixX<T> dloss_dinput_features;
 };
 
 template <typename T, int cols>
@@ -102,24 +102,46 @@ template <typename T>
 MultilayerPerceptron<T>::MultilayerPerceptron(
     const std::vector<int>& layers, PerceptronActivationType activation_type)
     : MultilayerPerceptron<T>(
-          layers, MakeDefaultActivations(SubtractFromSize(layers.size(), 1),
+          layers, MakeDefaultActivations(RejectEmpty(layers).size() - 1,
                                          activation_type)) {}
 
 template <typename T>
 MultilayerPerceptron<T>::MultilayerPerceptron(
     const std::vector<int>& layers,
     const std::vector<PerceptronActivationType>& activation_types)
+    : MultilayerPerceptron<T>(
+          std::vector<bool>(RejectEmpty(layers)[0], false),
+          std::vector<int>(RejectEmpty(layers).begin() + 1, layers.end()),
+          activation_types) {}
+
+template <typename T>
+MultilayerPerceptron<T>::MultilayerPerceptron(
+    const std::vector<bool>& use_sin_cos_for_input,
+    const std::vector<int>& remaining_layers,
+    const std::vector<PerceptronActivationType>& activation_types)
     : LeafSystem<T>(SystemTypeTag<MultilayerPerceptron>{}),
-      num_weights_(SubtractFromSize(layers.size(), 1)),
-      layers_(layers),
-      activation_types_(activation_types) {
+      num_weights_(remaining_layers.size()),
+      layers_(remaining_layers.size() + 1),
+      activation_types_(activation_types),
+      use_sin_cos_for_input_(use_sin_cos_for_input),
+      has_input_features_(false) {
+  layers_[0] = use_sin_cos_for_input.size();
+  for (bool use_sin_cos : use_sin_cos_for_input) {
+    if (use_sin_cos) {
+      ++layers_[0];
+      has_input_features_ = true;
+    }
+  }
+  for (int i = 0; i < static_cast<int>(remaining_layers.size()); ++i) {
+    layers_[i + 1] = remaining_layers[i];
+  }
   DRAKE_DEMAND(num_weights_ >= 1);
-  DRAKE_DEMAND(activation_types_.size() == layers.size() - 1);
-  for (int units_in_layer : layers) {
+  DRAKE_DEMAND(activation_types_.size() == layers_.size() - 1);
+  for (int units_in_layer : layers_) {
     DRAKE_DEMAND(units_in_layer > 0);
   }
-  this->DeclareVectorInputPort("x", layers[0]);
-  this->DeclareVectorOutputPort("y", layers[num_weights_],
+  this->DeclareVectorInputPort("x", use_sin_cos_for_input.size());
+  this->DeclareVectorOutputPort("y", layers_[num_weights_],
                                 &MultilayerPerceptron<T>::CalcOutput);
 
   num_parameters_ = 0;
@@ -127,9 +149,9 @@ MultilayerPerceptron<T>::MultilayerPerceptron(
   bias_indices_.reserve(num_weights_);
   for (int i = 0; i < num_weights_; ++i) {
     weight_indices_[i] = num_parameters_;
-    num_parameters_ += layers[i + 1] * layers[i];
+    num_parameters_ += layers_[i + 1] * layers_[i];
     bias_indices_[i] = num_parameters_;
-    num_parameters_ += layers[i + 1];
+    num_parameters_ += layers_[i + 1];
   }
   this->DeclareNumericParameter(
       BasicVector<T>(VectorX<T>::Zero(num_parameters_)));
@@ -137,9 +159,9 @@ MultilayerPerceptron<T>::MultilayerPerceptron(
   // Declare cache entry for CalcOutput.
   internal::CalcLayersData<T> calc_layers_data(num_weights_);
   for (int i = 0; i < num_weights_; ++i) {
-    calc_layers_data.Wx[i] = VectorX<T>::Zero(layers[i + 1]);
-    calc_layers_data.Wx_plus_b[i] = VectorX<T>::Zero(layers[i + 1]);
-    calc_layers_data.Xn[i] = VectorX<T>::Zero(layers[i + 1]);
+    calc_layers_data.Wx[i] = VectorX<T>::Zero(layers_[i + 1]);
+    calc_layers_data.Wx_plus_b[i] = VectorX<T>::Zero(layers_[i + 1]);
+    calc_layers_data.Xn[i] = VectorX<T>::Zero(layers_[i + 1]);
   }
   calc_layers_cache_ = &this->DeclareCacheEntry(
       "calc_layers", calc_layers_data, &MultilayerPerceptron<T>::CalcLayers);
@@ -154,7 +176,10 @@ template <typename T>
 template <typename U>
 MultilayerPerceptron<T>::MultilayerPerceptron(
     const MultilayerPerceptron<U>& other)
-    : MultilayerPerceptron<T>(other.layers(), other.activation_types_) {}
+    : MultilayerPerceptron<T>(
+          other.use_sin_cos_for_input_,
+          std::vector<int>(other.layers().begin() + 1, other.layers().end()),
+          other.activation_types_) {}
 
 template <typename T>
 const VectorX<T>& MultilayerPerceptron<T>::GetParameters(
@@ -279,13 +304,18 @@ T MultilayerPerceptron<T>::Backpropagation(
                           EigenPtr<MatrixX<T>> dloss_dY)>& loss,
     EigenPtr<VectorX<T>> dloss_dparams) const {
   this->ValidateContext(context);
-  DRAKE_DEMAND(X.rows() == layers_[0]);
+  DRAKE_DEMAND(X.rows() == this->get_input_port().size());
   DRAKE_DEMAND(dloss_dparams->rows() == num_parameters_);
   BackPropData<T>& data =
       backprop_cache_->get_mutable_cache_entry_value(context)
           .template GetMutableValueOrThrow<BackPropData<T>>();
   // Forward pass:
-  data.Wx[0].noalias() = GetWeights(context, 0) * X;
+  if (has_input_features_) {
+    CalcInputFeatures(X, &data.input_features);
+    data.Wx[0].noalias() = GetWeights(context, 0) * data.input_features;
+  } else {
+    data.Wx[0].noalias() = GetWeights(context, 0) * X;
+  }
   data.Wx_plus_b[0].noalias() = data.Wx[0].colwise() + GetBiases(context, 0);
   Activation<T, Eigen::Dynamic>(activation_types_[0], data.Wx_plus_b[0],
                                 &data.Xn[0], &data.dXn_dWx_plus_b[0]);
@@ -310,6 +340,9 @@ T MultilayerPerceptron<T>::Backpropagation(
       if (i > 0) {
         data.dloss_dW[i].noalias() +=
             data.dloss_dWx_plus_b[i].col(j) * data.Xn[i - 1].col(j).transpose();
+      } else if (has_input_features_) {
+        data.dloss_dW[i].noalias() += data.dloss_dWx_plus_b[i].col(j) *
+                                      data.input_features.col(j).transpose();
       } else {
         data.dloss_dW[i].noalias() +=
             data.dloss_dWx_plus_b[i].col(j) * X.col(j).transpose();
@@ -349,7 +382,7 @@ void MultilayerPerceptron<T>::BatchOutput(const Context<T>& context,
                                           EigenPtr<MatrixX<T>> Y,
                                           EigenPtr<MatrixX<T>> dYdX) const {
   this->ValidateContext(context);
-  DRAKE_DEMAND(X.rows() == layers_[0]);
+  DRAKE_DEMAND(X.rows() == this->get_input_port().size());
   DRAKE_DEMAND(Y->rows() == layers_[num_weights_]);
   DRAKE_DEMAND(Y->cols() == X.cols());
   const bool gradients = dYdX != nullptr;
@@ -363,7 +396,12 @@ void MultilayerPerceptron<T>::BatchOutput(const Context<T>& context,
       backprop_cache_->get_mutable_cache_entry_value(context)
           .template GetMutableValueOrThrow<BackPropData<T>>();
   // Forward pass:
-  data.Wx[0].noalias() = GetWeights(context, 0) * X;
+  if (has_input_features_) {
+    CalcInputFeatures(X, &data.input_features);
+    data.Wx[0].noalias() = GetWeights(context, 0) * data.input_features;
+  } else {
+    data.Wx[0].noalias() = GetWeights(context, 0) * X;
+  }
   data.Wx_plus_b[0].noalias() = data.Wx[0].colwise() + GetBiases(context, 0);
   Activation<T, Eigen::Dynamic>(activation_types_[0], data.Wx_plus_b[0],
                                 &data.Xn[0],
@@ -386,9 +424,27 @@ void MultilayerPerceptron<T>::BatchOutput(const Context<T>& context,
       if (i > 0) {
         data.dloss_dXn[i - 1].noalias() =
             GetWeights(context, i).transpose() * data.dloss_dWx_plus_b[i];
+      } else if (has_input_features_) {
+        data.dloss_dinput_features.noalias() =
+            GetWeights(context, 0).transpose() * data.dloss_dWx_plus_b[0];
+        int feature_row = 0, input_row = 0;
+        for (bool use_sin_cos : use_sin_cos_for_input_) {
+          if (use_sin_cos) {
+            dYdX->row(input_row) =
+                data.dloss_dinput_features.row(feature_row).array() *
+                    X.row(input_row).array().cos() -
+                data.dloss_dinput_features.row(feature_row + 1).array() *
+                    X.row(input_row).array().sin();
+            feature_row += 2;
+            ++input_row;
+          } else {
+            dYdX->row(input_row++) =
+                data.dloss_dinput_features.row(feature_row++);
+          }
+        }
       } else {
         dYdX->noalias() =
-            GetWeights(context, i).transpose() * data.dloss_dWx_plus_b[i];
+            GetWeights(context, 0).transpose() * data.dloss_dWx_plus_b[i];
       }
     }
   }
@@ -406,8 +462,14 @@ void MultilayerPerceptron<T>::CalcOutput(const Context<T>& context,
 template <typename T>
 void MultilayerPerceptron<T>::CalcLayers(
     const Context<T>& context, internal::CalcLayersData<T>* data) const {
-  data->Wx[0].noalias() =
-      GetWeights(context, 0) * this->get_input_port().Eval(context);
+  if (has_input_features_) {
+    CalcInputFeatures(this->get_input_port().Eval(context),
+                      &data->input_features);
+    data->Wx[0].noalias() = GetWeights(context, 0) * data->input_features;
+  } else {
+    data->Wx[0].noalias() =
+        GetWeights(context, 0) * this->get_input_port().Eval(context);
+  }
   data->Wx_plus_b[0].noalias() = data->Wx[0].colwise() + GetBiases(context, 0);
   Activation<T, 1>(activation_types_[0], data->Wx_plus_b[0], &(data->Xn[0]));
   for (int i = 1; i < num_weights_; ++i) {
@@ -415,6 +477,21 @@ void MultilayerPerceptron<T>::CalcLayers(
     data->Wx_plus_b[i].noalias() =
         data->Wx[i].colwise() + GetBiases(context, i);
     Activation<T, 1>(activation_types_[i], data->Wx_plus_b[i], &(data->Xn[i]));
+  }
+}
+
+template <typename T>
+void MultilayerPerceptron<T>::CalcInputFeatures(
+    const Eigen::Ref<const MatrixX<T>>& X, MatrixX<T>* input_features) const {
+  input_features->resize(layers_[0], X.cols());
+  int feature_row = 0, input_row = 0;
+  for (bool use_sin_cos : use_sin_cos_for_input_) {
+    if (use_sin_cos) {
+      input_features->row(feature_row++) = X.row(input_row).array().sin();
+      input_features->row(feature_row++) = X.row(input_row++).array().cos();
+    } else {
+      input_features->row(feature_row++) = X.row(input_row++);
+    }
   }
 }
 

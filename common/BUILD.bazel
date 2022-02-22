@@ -110,6 +110,7 @@ drake_cc_library(
     deps = [
         ":autodiff",
         ":cond",
+        ":double",
         ":essential",
     ],
 )
@@ -476,6 +477,7 @@ drake_cc_library(
     hdrs = ["random.h"],
     deps = [
         ":autodiff",
+        ":copyable_unique_ptr",
         ":essential",
         ":extract_double",
     ],
@@ -684,6 +686,7 @@ drake_cc_googletest(
     name = "random_test",
     deps = [
         ":random",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 

@@ -1656,6 +1656,7 @@ void BindEvaluatorsAndBindings(py::module m) {
       .def("UpdateUpperBound", &PyFunctionConstraint::UpdateUpperBound,
           py::arg("new_ub"), "Update the upper bound of the constraint.")
       .def("set_bounds", &PyFunctionConstraint::set_bounds,
+          // TODO(hongkai.dai): use new_lb and new_ub as kwargs.
           py::arg("lower_bound"), py::arg("upper_bound"),
           "Set both the lower and upper bounds of the constraint.");
 

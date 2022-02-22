@@ -5,8 +5,9 @@
 
 #include <sdf/sdf.hh>
 
+#include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/scene_graph.h"
+#include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/coulomb_friction.h"

@@ -238,6 +238,11 @@ PYBIND11_MODULE(primitives, m) {
                  const std::vector<PerceptronActivationType>&>(),
             py::arg("layers"), py::arg("activation_types"),
             doc.MultilayerPerceptron.ctor.doc_vector_activation)
+        .def(py::init<const std::vector<bool>&, const std::vector<int>&,
+                 const std::vector<PerceptronActivationType>&>(),
+            py::arg("use_sin_cos_for_input"), py::arg("remaining_layers"),
+            py::arg("activation_types"),
+            doc.MultilayerPerceptron.ctor.doc_sin_cos_features)
         .def("num_parameters", &MultilayerPerceptron<T>::num_parameters,
             doc.MultilayerPerceptron.num_parameters.doc)
         .def("layers", &MultilayerPerceptron<T>::layers,

@@ -153,6 +153,8 @@ class CacheEntry {
     return cache_value.get_abstract_value();
   }
 
+  // Keep this method as small as possible to encourage inlining; it may be
+  // called *a lot*.
   /** Returns a reference to the _known up-to-date_ value of this cache entry
   contained in the given Context. The purpose of this method is to avoid
   unexpected recomputations in circumstances where you believe the value must
@@ -165,8 +167,6 @@ class CacheEntry {
        this cache entry.
   @throws std::exception if the value is out of date or if it does not
                          actually have type `ValueType`. */
-  // Keep this method as small as possible to encourage inlining; it gets
-  // called *a lot*.
   template <typename ValueType>
   const ValueType& GetKnownUpToDate(const ContextBase& context) const {
     const CacheEntryValue& cache_value = get_cache_entry_value(context);
@@ -175,14 +175,14 @@ class CacheEntry {
                                           __func__);
   }
 
+  // Keep this method as small as possible to encourage inlining; it may be
+  // called *a lot*.
   /** Returns a reference to the _known up-to-date_ abstract value of this cache
   entry contained in the given Context. See GetKnownUpToDate() for more
   information.
   @pre `context` is a subcontext that is compatible with the subsystem that owns
        this cache entry.
   @throws std::exception if the value is not up to date. */
-  // Keep this method as small as possible to encourage inlining; it gets
-  // called *a lot*.
   const AbstractValue& GetKnownUpToDateAbstract(
       const ContextBase& context) const {
     const CacheEntryValue& cache_value = get_cache_entry_value(context);

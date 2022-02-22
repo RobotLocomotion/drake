@@ -12,9 +12,11 @@
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/clp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/solver_options.h"
 
 namespace drake {
 namespace geometry {
@@ -33,6 +35,7 @@ using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
 using solvers::MathematicalProgramResult;
 using solvers::QuadraticCost;
+using solvers::SolverOptions;
 using symbolic::Environment;
 using symbolic::Expression;
 using symbolic::Substitution;
@@ -323,11 +326,26 @@ TEST_F(ThreePoints, LinearCost1) {
   EXPECT_TRUE(
       CompareMatrices(e_off_->GetSolutionPhiXv(result), 0 * p_sink_.x(), 1e-6));
 
-  // Alternative signature.
+  // Alternative signatures.
   auto result2 = g_.SolveShortestPath(*source_, *target_, true);
   ASSERT_TRUE(result2.is_success());
   EXPECT_NEAR(e_on_->GetSolutionCost(result2), 1.0, 1e-6);
   EXPECT_NEAR(e_off_->GetSolutionCost(result2), 0.0, 1e-6);
+
+  if (solvers::ClpSolver::is_available()) {
+    solvers::ClpSolver solver;
+    auto result3 = g_.SolveShortestPath(*source_, *target_, true, &solver);
+    ASSERT_TRUE(result3.is_success());
+    EXPECT_NEAR(e_on_->GetSolutionCost(result3), 1.0, 1e-6);
+    EXPECT_NEAR(e_off_->GetSolutionCost(result3), 0.0, 1e-6);
+  }
+
+  SolverOptions options;
+  auto result4 =
+      g_.SolveShortestPath(*source_, *target_, true, nullptr, options);
+  ASSERT_TRUE(result4.is_success());
+  EXPECT_NEAR(e_on_->GetSolutionCost(result4), 1.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result4), 0.0, 1e-6);
 }
 
 TEST_F(ThreePoints, ConvexRelaxation) {
@@ -752,6 +770,66 @@ GTEST_TEST(ShortestPathTest, ClassicalShortestPath) {
     }
     EXPECT_NEAR(e->GetSolutionCost(result), expected_cost, 1e-6);
   }
+}
+
+GTEST_TEST(ShortestPathTest, TwoStepLoopConstraint) {
+  GraphOfConvexSets spp;
+
+  spp.AddVertex(Point(Vector2d(0, 0)));
+  spp.AddVertex(HPolyhedron::MakeBox(Vector2d(1.3, 1.3), Vector2d(2.7, 2.7)));
+  spp.AddVertex(HPolyhedron::MakeBox(Vector2d(3.3, 1.3), Vector2d(4.7, 2.7)));
+  spp.AddVertex(HPolyhedron::MakeBox(Vector2d(1.3, -2.7), Vector2d(2.7, -1.3)));
+  spp.AddVertex(HPolyhedron::MakeBox(Vector2d(3.3, -2.7), Vector2d(4.7, -1.3)));
+  spp.AddVertex(Point(Vector2d(6, 0)));
+
+  auto v = spp.Vertices();
+
+  // |xu - xv|₂
+  Matrix<double, 4, 4> A = Matrix<double, 4, 4>::Identity();
+  A.block(0, 2, 2, 2) = -Matrix2d::Identity();
+  A.block(2, 0, 2, 2) = -Matrix2d::Identity();
+  auto cost = std::make_shared<solvers::QuadraticCost>(A, Vector4d::Zero());
+
+  spp.AddEdge(*v[0], *v[1])
+      ->AddCost(solvers::Binding(cost, {v[0]->x(), v[1]->x()}));
+  spp.AddEdge(*v[1], *v[0])
+      ->AddCost(solvers::Binding(cost, {v[1]->x(), v[0]->x()}));
+  spp.AddEdge(*v[1], *v[2])
+      ->AddCost(solvers::Binding(cost, {v[1]->x(), v[2]->x()}));
+  spp.AddEdge(*v[2], *v[1])
+      ->AddCost(solvers::Binding(cost, {v[2]->x(), v[1]->x()}));
+  spp.AddEdge(*v[2], *v[5])
+      ->AddCost(solvers::Binding(cost, {v[2]->x(), v[5]->x()}));
+  spp.AddEdge(*v[5], *v[2])
+      ->AddCost(solvers::Binding(cost, {v[5]->x(), v[2]->x()}));
+
+  spp.AddEdge(*v[0], *v[3])
+      ->AddCost(solvers::Binding(cost, {v[0]->x(), v[3]->x()}));
+  spp.AddEdge(*v[3], *v[0])
+      ->AddCost(solvers::Binding(cost, {v[3]->x(), v[0]->x()}));
+  spp.AddEdge(*v[3], *v[4])
+      ->AddCost(solvers::Binding(cost, {v[3]->x(), v[4]->x()}));
+  spp.AddEdge(*v[4], *v[3])
+      ->AddCost(solvers::Binding(cost, {v[4]->x(), v[3]->x()}));
+  spp.AddEdge(*v[4], *v[5])
+      ->AddCost(solvers::Binding(cost, {v[4]->x(), v[5]->x()}));
+  spp.AddEdge(*v[5], *v[4])
+      ->AddCost(solvers::Binding(cost, {v[5]->x(), v[4]->x()}));
+
+  auto result = spp.SolveShortestPath(*v[0], *v[5], true);
+  if (result.get_solver_id() == solvers::IpoptSolver::id()) {
+    return;  // See IpoptTest for details.
+  }
+  EXPECT_TRUE(result.is_success());
+
+  int non_zero_edges = 0;
+  for (const auto& e : spp.Edges()) {
+    // Tuned so that off edges are below this value for all solvers
+    if (result.GetSolution(e->phi()) > 1e-5) {
+      ++non_zero_edges;
+    }
+  }
+  EXPECT_EQ(non_zero_edges, 6);
 }
 
 GTEST_TEST(ShortestPathTest, TobiasToyExample) {

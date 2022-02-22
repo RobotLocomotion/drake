@@ -9,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/scope_exit.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"

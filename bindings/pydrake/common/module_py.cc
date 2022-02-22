@@ -102,9 +102,19 @@ PYBIND11_MODULE(_module_py, m) {
   m.attr("_HAVE_SPDLOG") = logging::kHaveSpdlog;
 
   m.def("set_log_level", &logging::set_log_level, py::arg("level"),
-      doc.logging.set_log_level.doc);
+      (std::string(doc.logging.set_log_level.doc) + R"""(
+Warning:
+    When using pydrake, both the C++ level threshold and the Python logging
+    level threshold must be satisfied for a message to be displayed. This
+    function only adjusts the C++ level. Refer to the Python logging module
+    documentation for details on setting the Python level.
 
-  internal::RedirectPythonLogging();
+See also:
+   :py:func:`pydrake.common.configure_logging`
+)""")
+          .c_str());
+
+  internal::MaybeRedirectPythonLogging();
 
   py::enum_<drake::ToleranceType>(m, "ToleranceType", doc.ToleranceType.doc)
       .value("kAbsolute", drake::ToleranceType::kAbsolute,
@@ -147,12 +157,10 @@ discussion), use e.g.
 
 )""")
           .c_str());
-  random_generator_cls
-      .def(py::init<>(),
-          "Default constructor. Seeds the engine with the default_seed.")
-      .def(py::init<RandomGenerator::result_type>(),
-          "Constructs the engine and initializes the state with a given "
-          "value.")
+  random_generator_cls  // BR
+      .def(py::init<>(), doc.RandomGenerator.ctor.doc_0args)
+      .def(py::init<RandomGenerator::result_type>(), py::arg("seed"),
+          doc.RandomGenerator.ctor.doc_1args)
       .def(
           "__call__", [](RandomGenerator& self) { return self(); },
           "Generates a pseudo-random value.");
