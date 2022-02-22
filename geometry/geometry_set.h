@@ -196,7 +196,8 @@ class GeometrySet {
    // Mismatched iterable types.
    std::set<FrameId> frame_set{f_5, f_6, f_7};
    group.Add({g_7, g_8}, frame_set);
-   ```  */
+   ```
+  */
   //@{
 
   void Add(GeometryId geometry_id) { geometry_ids_.insert(geometry_id); }
