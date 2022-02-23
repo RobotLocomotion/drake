@@ -14,14 +14,10 @@ namespace examples {
 namespace ball_plate {
 
 using geometry::AddContactMaterial;
-using geometry::AddRigidHydroelasticProperties;
 using geometry::AddCompliantHydroelasticProperties;
 using geometry::ProximityProperties;
-using geometry::SceneGraph;
 using geometry::Sphere;
-using geometry::Box;
 using multibody::CoulombFriction;
-using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 using multibody::RigidBody;
 using multibody::SpatialInertia;

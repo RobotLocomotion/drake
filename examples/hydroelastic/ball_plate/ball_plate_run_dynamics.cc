@@ -88,8 +88,10 @@ int do_main() {
   AddBallPlateBodies(
       radius, mass, FLAGS_hydroelastic_modulus, FLAGS_dissipation,
       CoulombFriction<double>{
-          FLAGS_friction_coefficient /* static friction */,
-          FLAGS_friction_coefficient /* dynamic friction */},
+          // static friction (unused in discrete systems)
+          FLAGS_friction_coefficient,
+          // dynamic friction
+          FLAGS_friction_coefficient},
       FLAGS_resolution_hint_factor, &plant);
 
   plant.Finalize();
