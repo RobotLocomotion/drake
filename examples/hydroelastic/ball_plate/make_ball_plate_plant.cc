@@ -27,6 +27,7 @@ using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
 using drake::multibody::UnitInertia;
 using drake::math::RigidTransformd;
+using drake::math::RotationMatrixd;
 using Eigen::Vector3d;
 
 namespace {
@@ -49,12 +50,8 @@ void AddTinyVisualCylinders(const RigidBody<double>& ball, double radius,
   // aligned with p_SC, with Cx and Cy arbitrary.
   // @return X_SC the pose of the spot cylinder given p_SC.
   auto spot_pose = [](const Vector3<double>& p_SC) {
-    // The cylinder's z-Cz_desired is defined as the normalized vector from the
-    // sphere's origin to the cylinder's center `p_SC`.
-    const Vector3<double> Cz_desired = p_SC.normalized();
-    return RigidTransformd(Eigen::Quaterniond::FromTwoVectors(
-                               Vector3<double>::UnitZ(), Cz_desired),
-                           p_SC);
+    return RigidTransformd(
+        RotationMatrixd::MakeFromOneVector(p_SC, 2 /*z*/), p_SC);
   };
   plant->RegisterVisualGeometry(ball, spot_pose({radial_offset, 0., 0.}), spot,
                                 "sphere_x+", red);

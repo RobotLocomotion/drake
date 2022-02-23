@@ -66,11 +66,8 @@ namespace ball_plate {
 namespace {
 
 using Eigen::Vector3d;
-using drake::geometry::SceneGraph;
 using drake::math::RigidTransformd;
-using drake::multibody::ContactModel;
 using drake::multibody::CoulombFriction;
-using drake::multibody::MultibodyPlant;
 using drake::multibody::SpatialVelocity;
 
 int do_main() {
@@ -99,22 +96,17 @@ int do_main() {
 
   DRAKE_DEMAND(plant.num_velocities() == 12);
   DRAKE_DEMAND(plant.num_positions() == 14);
-  // Sanity check on the availability of the optional source id before using it.
-  DRAKE_DEMAND(plant.get_source_id().has_value());
 
   geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
   ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph,
                                          /* lcm */ nullptr);
 
   auto diagram = builder.Build();
-
-  // Create a context for this system:
-  std::unique_ptr<systems::Context<double>> diagram_context =
-      diagram->CreateDefaultContext();
-  systems::Context<double>& plant_context =
-      diagram->GetMutableSubsystemContext(plant, diagram_context.get());
+  auto simulator = systems::MakeSimulatorFromGflags(*diagram);
 
   // Set the ball's initial pose.
+  systems::Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(&simulator->get_mutable_context());
   plant.SetFreeBodyPose(
       &plant_context, plant.GetBodyByName("Ball"),
       math::RigidTransformd{Vector3d(FLAGS_x0, 0.0, FLAGS_z0)});
@@ -123,8 +115,6 @@ int do_main() {
       SpatialVelocity<double>{Vector3d(FLAGS_wx, FLAGS_wy, FLAGS_wz),
                               Vector3d(FLAGS_vx, FLAGS_vy, FLAGS_vz)});
 
-  auto simulator =
-      systems::MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
   simulator->AdvanceTo(FLAGS_simulation_time);
   systems::PrintSimulatorStatistics(*simulator);
   return 0;
