@@ -19,7 +19,7 @@ files and also calling C++ APIs.
 bazel run //tools:drake_visualizer &
 ```
 
-In `Plugins > Contacts > Configure Hydroelastic Contact Visualization` you 
+In `Plugins > Contacts > Configure Hydroelastic Contact Visualization` you
 might want to set these:
 
 - Maximum pressure = 1e4
