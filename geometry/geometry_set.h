@@ -56,9 +56,9 @@ class GeometrySet {
    ```
    // Perform operation between two frames.
    GeometrySet set1;
-   set1.add(frame1);
+   set1.Add(frame1);
    GeometrySet set2;
-   set2.add(frame2);
+   set2.Add(frame2);
    BinaryOperation(set1, set2);
    ```
 
@@ -196,7 +196,8 @@ class GeometrySet {
    // Mismatched iterable types.
    std::set<FrameId> frame_set{f_5, f_6, f_7};
    group.Add({g_7, g_8}, frame_set);
-   ```  */
+   ```
+  */
   //@{
 
   void Add(GeometryId geometry_id) { geometry_ids_.insert(geometry_id); }
