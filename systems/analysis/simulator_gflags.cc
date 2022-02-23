@@ -102,7 +102,6 @@ std::unique_ptr<Simulator<T>> MakeSimulatorFromGflags(
   };
   ApplySimulatorConfig(simulator.get(), config);
 
-  simulator->Initialize();
   return simulator;
 }
 
