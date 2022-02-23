@@ -1,5 +1,6 @@
 #include <benchmark/benchmark.h>
 
+#include "drake/common/random.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/tools/performance/fixture_common.h"
@@ -59,6 +60,17 @@ BENCHMARK_F(BasicFixture, PassThrough3)(benchmark::State& state) {
     // scenario of interest, where the inputs change on every tick.
     input.GetMutableData();
     output.Eval(*context_);
+  }
+}
+
+// NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
+BENCHMARK_F(BasicFixture, RandomGenerator)(benchmark::State& state) {
+  RandomGenerator dut;
+
+  for (auto _ : state) {
+    for (int i = 0; i < 5000; ++i) {
+      dut();
+    }
   }
 }
 
