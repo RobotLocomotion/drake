@@ -75,7 +75,7 @@ Compared to hydroelastic contact, the point contact has to pick one
 point from each contact patch.
 Since the contact patch between the dinner plate and the floor is quite large,
 the chosen point keeps oscillating on the patch.
-The option `--simulator_target_realtime_rate=1.0` slows it down enough for 
+The option `--simulator_target_realtime_rate=1.0` slows it down enough for
 human eyes to see.
 
 <h2>Other Options</h2>
