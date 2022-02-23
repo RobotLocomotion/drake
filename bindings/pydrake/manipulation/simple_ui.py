@@ -16,8 +16,12 @@ from pydrake.systems.framework import (
     PublishEvent,
     VectorSystem,
 )
+from pydrake.common.deprecation import deprecated_callable
 
 
+@deprecated_callable("pydrake.manipulation.JointSliders has been deprecated in"
+                     " favor of pydrake.multibody.meshcat.JointSliders",
+                     date="2022-02-10")
 class JointSliders(VectorSystem):
     """
     Provides a simple tcl/tk gui with one slider per joint of the
@@ -155,6 +159,8 @@ class JointSliders(VectorSystem):
             output[self._slider_position_start[i]] = self._slider[i].get()
 
 
+@deprecated_callable("pydrake.manipulation.simple_ui.SchunkWsgButtons has been"
+                     " deprecated", date="2022-02-10")
 class SchunkWsgButtons(LeafSystem):
     """
     Adds buttons to open/close the Schunk WSG gripper to an existing Tkinter
