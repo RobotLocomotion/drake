@@ -2,7 +2,7 @@
 <sdf version="1.7">
   <model name="plate_8in">
     <!--
-    This frame of the plate has its +z axis pointing up (sticking out of the
+    The frame of the plate has its +z axis pointing up (sticking out of the
     food). The origin-point of the plate-frame is along the plate's symmetry
     axis. If the plate was placed on a flat table, the origin (x=0, y=0, z=0)
     would be touching the table.  All vertices in the plate have a z-value
