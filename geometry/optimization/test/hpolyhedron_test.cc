@@ -440,6 +440,26 @@ GTEST_TEST(HPolyhedronTest, CartesianProductTest) {
   EXPECT_TRUE(H_C.PointInSet(x_C));
 }
 
+GTEST_TEST(HPolyhedronTest, IntersectionTest) {
+  HPolyhedron H_A = HPolyhedron::MakeUnitBox(2);
+  HPolyhedron H_B = HPolyhedron::MakeBox(Vector2d(0, 0), Vector2d(2, 2));
+  HPolyhedron H_C = H_A.Intersection(H_B);
+
+  Vector2d x_C(0.5, 0.5);
+  EXPECT_TRUE(H_A.PointInSet(x_C));
+  EXPECT_TRUE(H_B.PointInSet(x_C));
+  EXPECT_TRUE(H_C.PointInSet(x_C));
+
+  Vector2d x_A(-0.5, -0.5);
+  EXPECT_TRUE(H_A.PointInSet(x_A));
+  EXPECT_FALSE(H_B.PointInSet(x_A));
+  EXPECT_FALSE(H_C.PointInSet(x_A));
+
+  Vector2d x_B(1.5, 1.5);
+  EXPECT_FALSE(H_A.PointInSet(x_B));
+  EXPECT_TRUE(H_B.PointInSet(x_B));
+  EXPECT_FALSE(H_C.PointInSet(x_B));
+}
 
 }  // namespace optimization
 }  // namespace geometry

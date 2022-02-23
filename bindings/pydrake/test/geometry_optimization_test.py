@@ -90,6 +90,9 @@ class TestGeometryOptimization(unittest.TestCase):
         h3 = h_box.CartesianPower(n=3)
         self.assertIsInstance(h3, mut.HPolyhedron)
         self.assertEqual(h3.ambient_dimension(), 9)
+        h4 = h_box.Intersection(other=h_unit_box)
+        self.assertIsInstance(h4, mut.HPolyhedron)
+        self.assertEqual(h4.ambient_dimension(), 3)
 
     def test_hyper_ellipsoid(self):
         ellipsoid = mut.Hyperellipsoid(A=self.A, center=self.b)
@@ -182,6 +185,18 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(sum2.ambient_dimension(), 3)
         self.assertEqual(sum2.num_factors(), 2)
         self.assertIsInstance(sum2.factor(1), mut.HPolyhedron)
+
+    def test_intersection(self):
+        point = mut.Point(np.array([0.1, 0.2, 0.3]))
+        h_box = mut.HPolyhedron.MakeBox(
+            lb=[-1, -1, -1], ub=[1, 1, 1])
+        intersect = mut.Intersection(setA=point, setB=h_box)
+        self.assertEqual(intersect.ambient_dimension(), 3)
+        self.assertEqual(intersect.num_elements(), 2)
+        intersect2 = mut.Intersection(sets=[point, h_box])
+        self.assertEqual(intersect2.ambient_dimension(), 3)
+        self.assertEqual(intersect2.num_elements(), 2)
+        self.assertIsInstance(intersect2.element(0), mut.Point)
 
     def test_make_from_scene_graph_and_iris(self):
         """
