@@ -21,6 +21,10 @@ namespace geometry {
 
 /** The set of parameters for configuring Meshcat. */
 struct MeshcatParams {
+  /** Meshcat will listen on the given IP interface (e.g., "127.0.0.1").
+  If none is specified, then it will listen on all interfaces ("0.0.0.0"). */
+  std::string host;
+
   /** Meshcat will listen on the given http `port`. If no port is specified,
   then it will listen on the first available port starting at 7000 (up to 7099).
   @pre We require `port` >= 1024. */
@@ -35,10 +39,12 @@ struct MeshcatParams {
   specification language, except that `arg-id` substitutions are performed
   using named arguments instead of positional indices.
 
-  There is only a single argument available to the pattern: `{port}` will be
-  substitued with the %Meshcat server's listen port number.
+  There are two arguments available to the pattern:
+  - `{port}` will be substitued with the %Meshcat server's listen port number;
+  - `{host}` will be substitued with this params structure's `host` field, or
+    else with "localhost" if no host was specified.
   */
-  std::string web_url_pattern{"http://localhost:{port}"};
+  std::string web_url_pattern{"http://{host}:{port}"};
 };
 
 /** Provides an interface to %Meshcat (https://github.com/rdeits/meshcat).
