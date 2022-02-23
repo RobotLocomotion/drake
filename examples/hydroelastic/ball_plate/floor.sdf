@@ -1,6 +1,12 @@
 <?xml version="1.0"?>
 <sdf version="1.7">
   <model name="Floor">
+    <!--
+    We use a 30x30x5-cm rectangular block to represent the compliant floor on
+    which the dinner plate is placed. We set the hydroelastic modulus of the
+    floor to be rather small to showcase the contact surface from the
+    substantial penetration of the dinner plate into the floor.
+    -->
     <link name="Floor">
       <pose>0 0 0 0 0 0</pose>
       <inertial>

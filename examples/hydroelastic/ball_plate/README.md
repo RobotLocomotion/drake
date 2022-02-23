@@ -8,7 +8,7 @@ rigid-compliant, compliant-compliant, and rigid-compliant.
 Hydroelastic contact model can work with non-convex shapes accurately
 without resorting to their convex hulls.
 
-In the source code, this example shows how to set up bodies by loading SDFormat 
+In the source code, this example shows how to set up bodies by loading SDFormat
 files and also calling C++ APIs.
 
 ![ball_plate](images/ball_plate.jpg)
@@ -77,3 +77,14 @@ Since the contact patch between the dinner plate and the floor is quite large,
 the chosen point keeps oscillating on the patch.
 The option `--simulator_target_realtime_rate=1.0` slows it down enough for 
 human eyes to see.
+
+<h2>Other Options</h2>
+There are other command-line options that you can use. Use `--help` to see
+the list. For example, you can set Hunt & Crossley dissipation of the ball,
+friction coefficient of the ball, initial position and velicity of the ball,
+etc.
+
+```
+bazel run //examples/hydroelastic/ball_plate:ball_plate_run_dynamics \
+-- --help
+```

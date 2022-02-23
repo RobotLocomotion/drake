@@ -42,7 +42,10 @@
         </geometry>
         <drake:proximity_properties>
           <drake:rigid_hydroelastic/>
-          <drake:mesh_resolution_hint>0.1</drake:mesh_resolution_hint>
+          <!--
+          We do not set drake:mesh_resolution_hint here because it has no
+          effect on meshes imported from obj file.
+          -->
         </drake:proximity_properties>
       </collision>
     </link>
