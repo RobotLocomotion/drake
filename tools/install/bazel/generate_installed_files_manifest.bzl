@@ -15,6 +15,10 @@ def _impl(ctx):
         "setup/packages-bionic.txt",
         "setup/packages-focal.txt",
         "setup/requirements.txt",
+        # These are installed in share/drake and are runfiles for certain
+        # targets, but none of those targets are relevant for this use case.
+        "setup/deepnote/install_nginx",
+        "setup/deepnote/nginx-meshcat-proxy.conf",
     ]
     known_non_runfiles_basenames = [
         "LICENSE",

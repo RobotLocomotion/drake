@@ -27,6 +27,7 @@ def pybind_py_library(
         py_srcs = [],
         py_deps = [],
         py_imports = [],
+        py_data = [],
         py_library_rule = py_library,
         **kwargs):
     """Declares a pybind11 Python library with C++ and Python portions.
@@ -47,6 +48,8 @@ def pybind_py_library(
         Python dependencies.
     @param py_imports (optional)
         Additional Python import directories.
+    @param py_data (optional)
+        Python data dependencies.
     @return struct(cc_so_target = ..., py_target = ...)
     """
     py_name = name
@@ -82,7 +85,7 @@ def pybind_py_library(
     # Add Python library.
     py_library_rule(
         name = py_name,
-        data = [cc_so_target],
+        data = [cc_so_target] + py_data,
         srcs = py_srcs,
         deps = py_deps,
         imports = py_imports,
@@ -134,6 +137,7 @@ def drake_pybind_library(
         py_srcs = [],
         py_deps = [],
         py_imports = [],
+        py_data = [],
         add_install = True,
         visibility = None,
         testonly = None):
@@ -180,6 +184,7 @@ def drake_pybind_library(
         py_srcs = py_srcs,
         py_deps = py_deps,
         py_imports = package_info.py_imports + py_imports,
+        py_data = py_data,
         py_library_rule = drake_py_library,
         testonly = testonly,
         visibility = visibility,
