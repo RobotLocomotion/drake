@@ -14,7 +14,7 @@ apt-get -y update
 
 apt-get -y install --no-install-recommends \
     lib${PYTHON}-dev ${PYTHON}-venv \
-    python3-venv python3-tk \
+    python3-venv \
     libx11-6 libsm6 libxt6 libglib2.0-0
 
 ${PYTHON} -m venv /opt/python

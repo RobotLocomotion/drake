@@ -123,6 +123,7 @@ drake_py_unittest(
     ],
     deps = [
         ":simple_ui_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/multibody",
     ],
 )

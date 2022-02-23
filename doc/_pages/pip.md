@@ -64,14 +64,14 @@ For Ubuntu 18.04, install these additional libraries:
 
 ```bash
 sudo apt-get install --no-install-recommends \
-  libpython3.6 python3-tk libx11-6 libsm6 libxt6 libglib2.0-0
+  libpython3.6 libx11-6 libsm6 libxt6 libglib2.0-0
 ```
 
 For Ubuntu 20.04, install these additional libraries:
 
 ```bash
 sudo apt-get install --no-install-recommends \
-  libpython3.8 python3-tk libx11-6 libsm6 libxt6 libglib2.0-0
+  libpython3.8 libx11-6 libsm6 libxt6 libglib2.0-0
 ```
 
 Activate the virtual environment:
