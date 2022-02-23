@@ -1,0 +1,21 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/workspace:lib_util.bzl", "library_to_linkopts")
+
+FMT_LINKOPTS = library_to_linkopts(
+    "$<TARGET_LINKER_FILE:fmt::fmt>"
+)
+
+cc_library(
+    name = "fmt",
+    hdrs = glob(["include/**"]),
+    includes = ["include"],
+    linkopts = FMT_LINKOPTS,
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    visibility = ["//visibility:public"],
+)

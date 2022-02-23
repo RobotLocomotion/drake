@@ -1,0 +1,28 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/workspace:lib_util.bzl", "library_to_linkopts")
+
+SPDLOG_DEFINES = [
+    "$<JOIN:$<TARGET_PROPERTY:spdlog::spdlog,INTERFACE_COMPILE_DEFINITIONS>,",
+    ">",
+]
+
+SPDLOG_LINKOPTS = library_to_linkopts(
+    "$<TARGET_LINKER_FILE:spdlog::spdlog>"
+)
+
+cc_library(
+    name = "spdlog",
+    hdrs = glob(["include/**"]),
+    defines = SPDLOG_DEFINES + ["HAVE_SPDLOG"],
+    includes = ["include"],
+    linkopts = SPDLOG_LINKOPTS + ["-pthread"],
+    visibility = ["//visibility:public"],
+    deps = ["@fmt"],
+)
+
+install(
+    name = "install",
+    visibility = ["//visibility:public"],
+)
