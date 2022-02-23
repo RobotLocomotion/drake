@@ -34,6 +34,7 @@ GTEST_TEST(FileParserTest, BasicTest) {
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
+    EXPECT_EQ(&dut.plant(), &plant);
     EXPECT_EQ(dut.AddAllModelsFromFile(sdf_name).size(), 1);
     dut.AddModelFromFile(sdf_name, "foo");
   }

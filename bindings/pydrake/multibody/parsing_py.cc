@@ -68,6 +68,8 @@ PYBIND11_MODULE(parsing, m) {
         .def(py::init<MultibodyPlant<double>*, SceneGraph<double>*>(),
             py::arg("plant"), py::arg("scene_graph") = nullptr,
             cls_doc.ctor.doc)
+        .def("plant", &Class::plant, py_rvp::reference_internal,
+            cls_doc.plant.doc)
         .def("package_map", &Class::package_map, py_rvp::reference_internal,
             cls_doc.package_map.doc)
         .def("AddAllModelsFromFile", &Class::AddAllModelsFromFile,
