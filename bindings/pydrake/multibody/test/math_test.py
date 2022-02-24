@@ -171,8 +171,12 @@ class TestMultibodyTreeMath(unittest.TestCase):
         p = to_T(np.zeros(3))
         self.assertIsInstance(F.Shift(p_BpBq_E=p), SpatialForce_[T])
         V = SpatialVelocity_[T].Zero()
-        self.assertIsInstance(F.dot(V_WBp_E=V), T)
+        self.assertIsInstance(F.dot(velocity=V), T)
         self.assertIsInstance(F @ V, T)
+        # TODO(2022-06-01) Remove with completion of deprecation.
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsInstance(F.dot(V_IBp_E=V), T)
+            self.assertIsInstance(V @ F, T)
 
     @numpy_compare.check_all_types
     def test_spatial_momentum(self, T):
@@ -185,5 +189,9 @@ class TestMultibodyTreeMath(unittest.TestCase):
         V = SpatialVelocity_[T].Zero()
         dut = SpatialMomentum_[T].Zero()
         self.assertIsInstance(dut.Shift(p_BpBq_E=p), SpatialMomentum_[T])
-        self.assertIsInstance(dut.dot(V_WBp_E=V), T)
+        self.assertIsInstance(dut.dot(velocity=V), T)
         self.assertIsInstance(dut @ V, T)
+        # TODO(2022-06-01) Remove with completion of deprecation.
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsInstance(dut.dot(V_IBp_E=V), T)
+            self.assertIsInstance(dut @ V, T)
