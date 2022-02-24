@@ -2,6 +2,7 @@
 
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -324,6 +325,22 @@ drake_cc_googletest(
     deps = [
         ":test_loaders",
         "//common/test_utilities",
+    ],
+)
+
+drake_cc_binary(
+    name = "parser_manual_test",
+    testonly = 1,
+    srcs = ["test/parser_manual_test.cc"],
+    add_test_rule = 1,
+    data = [":test_models"],
+    test_rule_args = [
+        "multibody/parsing/test/urdf_parser_test/joint_parsing_test.urdf",
+    ],
+    deps = [
+        ":parser",
+        "//common:add_text_logging_gflags",
+        "@gflags",
     ],
 )
 
