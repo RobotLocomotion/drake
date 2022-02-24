@@ -16,40 +16,6 @@ namespace multibody {
 namespace internal {
 namespace {
 
-// Verifies that GetFullPath() promotes a relative path to an absolute path,
-// and leaves already-absolute paths alone.
-GTEST_TEST(ParserPathUtilsTest, TestGetFullPath_Relative) {
-  const string relative_path = "test_file.txt";
-  std::ofstream ostr(relative_path);
-  ASSERT_TRUE(ostr.is_open());
-  ostr.close();
-
-  // Relative path -> absolute path.
-  string full_path;
-  ASSERT_NO_THROW(full_path = GetFullPath(relative_path));
-  ASSERT_TRUE(!full_path.empty());
-  EXPECT_EQ(full_path[0], '/');
-  EXPECT_TRUE(filesystem::exists({full_path}));
-
-  // Absolute path unchanged.
-  string full_path_idempotent;
-  ASSERT_NO_THROW(full_path_idempotent = GetFullPath(full_path));
-  EXPECT_EQ(full_path_idempotent, full_path);
-}
-
-// Verifies that GetFullPath() throws when given a relative path to a
-// non-existent file.
-GTEST_TEST(ParserPathUtilsTest, TestGetFullPathToNonexistentFile) {
-  const string relative_path =
-      "drake/multibody/parsers/test/parser_common_test/nonexistent_file.txt";
-  EXPECT_THROW(GetFullPath(relative_path), std::runtime_error);
-}
-
-// Verifies that GetFullPath() throws when given an empty path.
-GTEST_TEST(ParserPathUtilsTest, TestGetFullPathOfEmptyPath) {
-  EXPECT_THROW(GetFullPath(""), std::runtime_error);
-}
-
 // Verifies that the path returned is a normalized path. This is not an
 // exhaustive list of all ways a valid path can be unnormalized. Ultimately,
 // we're relying on std::filesystem to get the job done and these are just
