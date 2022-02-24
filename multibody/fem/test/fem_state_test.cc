@@ -28,7 +28,7 @@ VectorX<T> v() {
 }
 template <typename T>
 VectorX<T> a() {
-  Vector<double, kNumDofs> a;
+  Vector<T, kNumDofs> a;
   a << 2.1, 2.2, 3.3, 3.4, 3.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2;
   return a;
 }
@@ -42,43 +42,22 @@ template <typename T>
 class FemStateTest : public ::testing::Test {
  protected:
   void SetUp() {
-    fem_state_manager_ = std::make_unique<internal::FemStateManager<T>>();
-    fem_state_info_.system = fem_state_manager_.get();
-    fem_state_info_.fem_position_index =
-        fem_state_manager_->DeclareDiscreteState(q<T>());
-    const auto q_index = fem_state_info_.fem_position_index;
-    fem_state_info_.fem_velocity_index =
-        fem_state_manager_->DeclareDiscreteState(v<T>());
-    fem_state_info_.fem_acceleration_index =
-        fem_state_manager_->DeclareDiscreteState(a<T>());
+    fem_state_manager_ =
+        std::make_unique<internal::FemStateManager<T>>(q<T>(), v<T>(), a<T>());
 
-    /* Declares the cached data to copy the first kNumElements entries of the
-     positions. */
-    const std::vector<Data> model_data(kNumElements);
-    fem_state_info_.element_data_index =
-        fem_state_manager_
-            ->DeclareCacheEntry(
-                "dummy data",
-                systems::ValueProducer(
-                    model_data,
-                    std::function<void(const systems::Context<T>&,
-                                       std::vector<Data>*)>{
-                        [q_index](const systems::Context<T>& context,
-                                  std::vector<Data>* element_data) {
-                          DRAKE_DEMAND(element_data != nullptr);
-                          const VectorX<T>& q =
-                              context.get_discrete_state(q_index).value();
-                          for (int i = 0;
-                               i < static_cast<int>(element_data->size());
-                               ++i) {
-                            (*element_data)[i].val = ExtractDoubleOrThrow(q(i));
-                          }
-                        }}),
-                {fem_state_manager_->discrete_state_ticket(q_index)})
-            .cache_index();
+    auto calc_element_data =
+        std::function<void(const VectorX<T>&, const VectorX<T>&,
+                           const VectorX<T>&, std::vector<Data>*)>{
+            [](const VectorX<T>& q, const VectorX<T>&, const VectorX<T>&,
+               std::vector<Data>* element_data) {
+              for (int i = 0; i < static_cast<int>(element_data->size()); ++i) {
+                (*element_data)[i].val = ExtractDoubleOrThrow(q(i));
+              }
+            }};
+    fem_state_manager_->DeclareElementData(kNumElements,
+                                           std::move(calc_element_data));
   }
 
-  internal::FemStateInfo<T> fem_state_info_;
   std::unique_ptr<internal::FemStateManager<T>> fem_state_manager_;
 };
 
@@ -87,7 +66,7 @@ TYPED_TEST_SUITE(FemStateTest, NonSymbolicScalars);
 
 TYPED_TEST(FemStateTest, GetStates) {
   using T = TypeParam;
-  const FemState<T> state(this->fem_state_info_);
+  const FemState<T> state(this->fem_state_manager_.get());
   EXPECT_EQ(state.num_dofs(), kNumDofs);
   EXPECT_EQ(state.GetPositions(), q<T>());
   EXPECT_EQ(state.GetVelocities(), v<T>());
@@ -96,7 +75,7 @@ TYPED_TEST(FemStateTest, GetStates) {
 
 TYPED_TEST(FemStateTest, SetStates) {
   using T = TypeParam;
-  FemState<T> state(this->fem_state_info_);
+  FemState<T> state(this->fem_state_manager_.get());
   state.SetPositions(-1.23 * q<T>());
   state.SetVelocities(3.14 * v<T>());
   state.SetAccelerations(-1.29 * a<T>());
@@ -114,7 +93,7 @@ TYPED_TEST(FemStateTest, SetStates) {
 
 TYPED_TEST(FemStateTest, ElementData) {
   using T = TypeParam;
-  const FemState<T> state(this->fem_state_info_);
+  const FemState<T> state(this->fem_state_manager_.get());
   const VectorX<T> positions = q<T>();
   for (FemElementIndex i(0); i < kNumElements; ++i) {
     EXPECT_EQ(state.template EvalElementData<Data>(i).val,
