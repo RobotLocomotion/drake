@@ -493,8 +493,9 @@ class Meshcat::WebSocketPublisher {
     std::promise<std::tuple<uWS::Loop*, int, bool>> app_promise;
     std::future<std::tuple<uWS::Loop*, int, bool>> app_future =
         app_promise.get_future();
+    websocket_thread_is_running_.store(true);
     websocket_thread_ = std::thread(
-        &WebSocketPublisher::WebSocketMain, this, std::move(app_promise),
+        &WebSocketPublisher::PreWebSocketMain, this, std::move(app_promise),
         params.host, params.port);
     bool connected;
     std::tie(loop_, port_, connected) = app_future.get();
@@ -508,17 +509,16 @@ class Meshcat::WebSocketPublisher {
   ~WebSocketPublisher() {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
-    Defer([this]() {
-      DRAKE_DEMAND(IsThread(websocket_thread_id_));
-      auto iter = websockets_.begin();
-      while (iter != websockets_.end()) {
-        // Need to advance the iterator before calling close (#15821).
-        auto* ws = *iter++;
-        ws->close();
-      }
-      us_listen_socket_close(0, listen_socket_);
-    });
+    Defer([this]() { Shutdown(); });
     websocket_thread_.join();
+  }
+
+  /* Throws an exception if the worker thread has died. */
+  void CheckWorkerThread() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    if (!websocket_thread_is_running_.load()) {
+      throw std::runtime_error("Meshcat's worker thread exited unexpectedly");
+    }
   }
 
   // This function is a file-internal helper, not public in the PIMPL.
@@ -1299,17 +1299,39 @@ class Meshcat::WebSocketPublisher {
     return f.get();
   }
 
+  void InjectWorkerFault() {
+    Defer([]() {
+      throw std::runtime_error("InjectWorkerFault was called");
+    });
+  }
+
  private:
   bool IsThread(std::thread::id thread_id) const {
     return (std::this_thread::get_id() == thread_id);
   }
 
+  // Is is the entry point for our worker thread. It's only job is as a last-
+  // resort exception catcher so that we can log it and shutdown correctly,
+  // and always maintaina the websocket_thread_is_running_ boolean precisely.
   // N.B. Our arguments must not be pass-by-reference because this function is
   // called from a new thread!
+  void PreWebSocketMain(
+      std::promise<std::tuple<uWS::Loop*, int, bool>> app_promise,
+      std::string host, std::optional<int> desired_port) {
+    try {
+      WebSocketMain(std::move(app_promise), host, desired_port);
+    } catch (const std::exception& e) {
+      drake::log()->critical(
+          "Meshcat's internal worker thread crashed via an exception: {}",
+          e.what());
+    }
+    websocket_thread_is_running_.store(false);
+  }
+
   void WebSocketMain(
       std::promise<std::tuple<uWS::Loop*, int, bool>> app_promise,
-      const std::string host,
-      const std::optional<int> desired_port) {
+      const std::string& host,
+      std::optional<int> desired_port) {
     websocket_thread_id_ = std::this_thread::get_id();
 
     // This canonicalization of the bind_host is currently redundant with what
@@ -1326,18 +1348,42 @@ class Meshcat::WebSocketPublisher {
     behavior.maxBackpressure = 0;
     behavior.open = [this](WebSocket* ws) {
       // IsThread(websocket_thread_id_) is checked by the Handle... function
-      HandleSocketOpen(ws);
+      try {
+        HandleSocketOpen(ws);
+      } catch (const std::exception& e) {
+        drake::log()->critical(
+            "Meshcat's internal HandleSocketOpen crashed via an exception: {}",
+            e.what());
+        Shutdown();
+      }
     };
     behavior.close = [this](WebSocket* ws, int, std::string_view message) {
       // IsThread(websocket_thread_id_) is checked by the Handle... function
       unused(message);
-      HandleSocketClose(ws);
+      try {
+        HandleSocketClose(ws);
+      } catch (const std::exception& e) {
+        drake::log()->critical(
+            "Meshcat's internal HandleSocketClose crashed via an exception: {}",
+            e.what());
+        // The Shutdown() function immediately closes all sockets, thus firing
+        // this close() behavior. We never want to re-entrantly shutdown during
+        // an existing shutdown, so we'll defer it.
+        loop_->defer([this]() { Shutdown(); });
+      }
     };
     behavior.message = [this](WebSocket* ws, std::string_view message,
                               uWS::OpCode op_code) {
       // IsThread(websocket_thread_id_) is checked by the Handle... function
       unused(op_code);
-      HandleMessage(ws, message);
+      try {
+        HandleMessage(ws, message);
+      } catch (const std::exception& e) {
+        drake::log()->critical(
+            "Meshcat's internal HandleMessage crashed via an exception: {}",
+            e.what());
+        Shutdown();
+      }
     };
 
     uWS::App app =
@@ -1445,13 +1491,46 @@ class Meshcat::WebSocketPublisher {
     }
   }
 
+  // This function is a private utility for use within this class. It closes
+  // all connections and schedules the worker thread to exit gracefully.
+  void Shutdown() {
+    DRAKE_DEMAND(IsThread(websocket_thread_id_));
+
+    // Stop accepting new connections. As a side-effect, this also causes the
+    // App::run to return from its internal "run forever" loop, so that we'll
+    // be able to join the worker thread.
+    us_listen_socket_close(0, listen_socket_);
+    listen_socket_ = nullptr;
+
+    // Close any existing connections. Calling ws->close() erases the WebSocket
+    // from websockets_, so we need to advance the iterator beforehand (#15821).
+    auto iter = websockets_.begin();
+    while (iter != websockets_.end()) {
+      auto* ws = *iter++;
+      ws->close();
+    }
+  }
+
   // This function is a private utility for use within this class.
   void Defer(uWS::MoveOnlyFunction<void()>&& callback) const {
-    // TODO(jwnimmer-tri) The loop_ here is a pointer to a thread_local global
+    // The loop_ used below is a pointer to a thread_local global
     // variable within the worker thread. If the worker thread has exited, then
     // it will be a dangling pointer to free'd memory. We should be guarding
     // against that condition before we post a callback into it.
-    loop_->defer(std::move(callback));
+    if (!websocket_thread_is_running_.load()) {
+      return;
+    }
+
+    loop_->defer([this, inner_callback = std::move(callback)]() mutable {
+      try {
+        inner_callback();
+      } catch (const std::exception& e) {
+        drake::log()->critical(
+            "Meshcat's internal callback crashed with an exception: {}",
+            e.what());
+        const_cast<WebSocketPublisher*>(this)->Shutdown();
+      }
+    });
   }
 
   // This function is a private utility for use within this class.
@@ -1494,8 +1573,9 @@ class Meshcat::WebSocketPublisher {
   us_listen_socket_t* listen_socket_{nullptr};
   std::set<WebSocket*> websockets_{};
 
-  // This variable may be accessed from any thread, but should only be modified
-  // in the websocket thread.
+  // These variables may be accessed from any thread, but should only be
+  // modified in the websocket thread.
+  std::atomic<bool> websocket_thread_is_running_{false};
   std::atomic<int> num_websockets_{0};
 
   // This pointer should only be accessed in the main thread, but the uWS::Loop
@@ -1538,6 +1618,7 @@ Meshcat::Meshcat(const MeshcatParams& params) {
 Meshcat::~Meshcat() = default;
 
 std::string Meshcat::web_url() const {
+  publisher_->CheckWorkerThread();
   const MeshcatParams& params = publisher_->params();
   const std::string& host = params.host;
   const bool is_localhost = host.empty() || host == "*";
@@ -1550,6 +1631,7 @@ std::string Meshcat::web_url() const {
 }
 
 int Meshcat::port() const {
+  publisher_->CheckWorkerThread();
   return publisher_->port();
 }
 
@@ -1560,21 +1642,25 @@ std::string Meshcat::ws_url() const {
 }
 
 int Meshcat::GetNumActiveConnections() const {
+  publisher_->CheckWorkerThread();
   return publisher_->GetNumActiveConnections();
 }
 
 void Meshcat::Flush() const {
+  publisher_->CheckWorkerThread();
   publisher_->Flush();
 }
 
 void Meshcat::SetObject(std::string_view path, const Shape& shape,
                         const Rgba& rgba) {
+  publisher_->CheckWorkerThread();
   publisher_->SetObject(path, shape, rgba);
 }
 
 void Meshcat::SetObject(std::string_view path,
                         const perception::PointCloud& cloud, double point_size,
                         const Rgba& rgba) {
+  publisher_->CheckWorkerThread();
   publisher_->SetObject(path, cloud, point_size, rgba);
 }
 
@@ -1582,6 +1668,7 @@ void Meshcat::SetObject(std::string_view path,
                         const TriangleSurfaceMesh<double>& mesh,
                         const Rgba& rgba, bool wireframe,
                         double wireframe_line_width) {
+  publisher_->CheckWorkerThread();
   Eigen::Matrix3Xd vertices(3, mesh.num_vertices());
   for (int i = 0; i < mesh.num_vertices(); ++i) {
     vertices.col(i) = mesh.vertex(i);
@@ -1600,6 +1687,7 @@ void Meshcat::SetObject(std::string_view path,
 void Meshcat::SetLine(std::string_view path,
                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
                       double line_width, const Rgba& rgba) {
+  publisher_->CheckWorkerThread();
   const bool kLineSegments = false;
   publisher_->SetLine(path, vertices, line_width, rgba, kLineSegments);
 }
@@ -1608,6 +1696,7 @@ void Meshcat::SetLineSegments(std::string_view path,
                               const Eigen::Ref<const Eigen::Matrix3Xd>& start,
                               const Eigen::Ref<const Eigen::Matrix3Xd>& end,
                               double line_width, const Rgba& rgba) {
+  publisher_->CheckWorkerThread();
   DRAKE_THROW_UNLESS(start.cols() == end.cols());
   // The LineSegments loader in three.js take the same data structure as Line,
   // but takes every consecutive pair of vertices as a (start, end).
@@ -1622,46 +1711,58 @@ void Meshcat::SetTriangleMesh(
     std::string_view path, const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
     const Eigen::Ref<const Eigen::Matrix3Xi>& faces, const Rgba& rgba,
     bool wireframe, double wireframe_line_width) {
+  publisher_->CheckWorkerThread();
   publisher_->SetTriangleMesh(path, vertices, faces, rgba, wireframe,
                               wireframe_line_width);
 }
 
 void Meshcat::SetCamera(PerspectiveCamera camera, std::string path) {
+  publisher_->CheckWorkerThread();
   publisher_->SetCamera(std::move(camera), std::move(path));
 }
 
 void Meshcat::SetCamera(OrthographicCamera camera, std::string path) {
+  publisher_->CheckWorkerThread();
   publisher_->SetCamera(std::move(camera), std::move(path));
 }
 
 void Meshcat::SetTransform(std::string_view path,
                            const RigidTransformd& X_ParentPath) {
+  publisher_->CheckWorkerThread();
   publisher_->SetTransform(path, X_ParentPath.GetAsMatrix4());
 }
 
 void Meshcat::SetTransform(std::string_view path,
                            const Eigen::Ref<const Eigen::Matrix4d>& matrix) {
+  publisher_->CheckWorkerThread();
   publisher_->SetTransform(path, matrix);
 }
 
-void Meshcat::Delete(std::string_view path) { publisher_->Delete(path); }
+void Meshcat::Delete(std::string_view path) {
+  publisher_->CheckWorkerThread();
+  publisher_->Delete(path);
+}
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           bool value) {
+  publisher_->CheckWorkerThread();
   publisher_->SetProperty(path, std::move(property), value);
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           double value) {
+  publisher_->CheckWorkerThread();
   publisher_->SetProperty(path, std::move(property), value);
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           const std::vector<double>& value) {
+  publisher_->CheckWorkerThread();
   publisher_->SetProperty(path, std::move(property), value);
 }
 
 void Meshcat::SetAnimation(const MeshcatAnimation& animation) {
+  publisher_->CheckWorkerThread();
   publisher_->SetAnimation(animation);
 }
 
@@ -1698,57 +1799,75 @@ void Meshcat::ResetRenderMode() {
 }
 
 void Meshcat::AddButton(std::string name) {
+  publisher_->CheckWorkerThread();
   publisher_->AddButton(std::move(name));
 }
 
 int Meshcat::GetButtonClicks(std::string_view name) {
+  publisher_->CheckWorkerThread();
   return publisher_->GetButtonClicks(name);
 }
 
 void Meshcat::DeleteButton(std::string name) {
+  publisher_->CheckWorkerThread();
   publisher_->DeleteButton(std::move(name));
 }
 
 void Meshcat::AddSlider(std::string name, double min, double max,
                                double step, double value) {
+  publisher_->CheckWorkerThread();
   publisher_->AddSlider(std::move(name), min, max, step, value);
 }
 
 void Meshcat::SetSliderValue(std::string name, double value) {
+  publisher_->CheckWorkerThread();
   publisher_->SetSliderValue(std::move(name), value);
 }
 
 double Meshcat::GetSliderValue(std::string_view name) {
+  publisher_->CheckWorkerThread();
   return publisher_->GetSliderValue(name);
 }
 
 void Meshcat::DeleteSlider(std::string name) {
+  publisher_->CheckWorkerThread();
   publisher_->DeleteSlider(std::move(name));
 }
 
 void Meshcat::DeleteAddedControls() {
+  publisher_->CheckWorkerThread();
   publisher_->DeleteAddedControls();
 }
 
 std::string Meshcat::StaticHtml() {
+  publisher_->CheckWorkerThread();
   return publisher_->StaticHtml();
 }
 
 bool Meshcat::HasPath(std::string_view path) const {
+  publisher_->CheckWorkerThread();
   return publisher_->HasPath(path);
 }
 
 std::string Meshcat::GetPackedObject(std::string_view path) const {
+  publisher_->CheckWorkerThread();
   return publisher_->GetPackedObject(path);
 }
 
 std::string Meshcat::GetPackedTransform(std::string_view path) const {
+  publisher_->CheckWorkerThread();
   return publisher_->GetPackedTransform(path);
 }
 
 std::string Meshcat::GetPackedProperty(std::string_view path,
                                        std::string property) const {
+  publisher_->CheckWorkerThread();
   return publisher_->GetPackedProperty(path, std::move(property));
+}
+
+void Meshcat::InjectWorkerFault() {
+  publisher_->CheckWorkerThread();
+  publisher_->InjectWorkerFault();
 }
 
 }  // namespace geometry
