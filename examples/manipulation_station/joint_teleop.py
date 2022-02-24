@@ -20,7 +20,6 @@ from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter, VectorLogSink
 from pydrake.systems.planar_scenegraph_visualizer import \
     ConnectPlanarSceneGraphVisualizer
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 
 def main():
@@ -90,9 +89,8 @@ def main():
         if args.setup == 'planar':
             pyplot_visualizer = ConnectPlanarSceneGraphVisualizer(
                 builder, station.get_scene_graph(), geometry_query_port)
-    with catch_drake_warnings(expected_count=1):
-        teleop = builder.AddSystem(JointSliders(station.get_controller_plant(),
-                                                length=800))
+    teleop = builder.AddSystem(JointSliders(station.get_controller_plant(),
+                                            length=800))
     if args.test:
         teleop.window.withdraw()  # Don't display the window when testing.
 

@@ -164,7 +164,6 @@ drake_py_library(
 
 drake_py_binary(
     name = "joint_teleop",
-    testonly = 1,
     srcs = ["joint_teleop.py"],
     add_test_rule = 1,
     test_rule_args = [
@@ -176,7 +175,6 @@ drake_py_binary(
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
         "//bindings/pydrake",
-        "//bindings/pydrake:test_utilities_py",
     ],
 )
 

@@ -49,8 +49,6 @@ drake_py_unittest(
     name = "geometry_inspector_test",
     data = [
         ":geometry_inspector",
-        "//bindings/pydrake",
-        "//bindings/pydrake:test_utilities_py",
         "//multibody/benchmarks/acrobot:models",
     ],
 )
