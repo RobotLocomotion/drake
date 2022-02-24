@@ -494,7 +494,7 @@ class Meshcat::WebSocketPublisher {
     std::future<std::tuple<uWS::Loop*, int, bool>> app_future =
         app_promise.get_future();
     websocket_thread_ = std::thread(
-        &WebSocketPublisher::WebSocketMain, this, std::move(app_promise),
+        &WebSocketPublisher::PreWebSocketMain, this, std::move(app_promise),
         params.host, params.port);
     bool connected;
     std::tie(loop_, port_, connected) = app_future.get();
@@ -519,6 +519,14 @@ class Meshcat::WebSocketPublisher {
       us_listen_socket_close(0, listen_socket_);
     });
     websocket_thread_.join();
+  }
+
+  /* Throws an exception if the worker thread has died. */
+  void CheckWorkerThread() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    if (websocket_thread_exited_exceptionally_.load()) {
+      throw std::runtime_error("Meshcat's worker thread exited unexpectedly");
+    }
   }
 
   const MeshcatParams& params() const {
@@ -1273,6 +1281,12 @@ class Meshcat::WebSocketPublisher {
     return f.get();
   }
 
+  void InjectWorkerFault() {
+    loop_->defer([]() {
+      throw std::runtime_error("InjectWorkerFault was called");
+    });
+  }
+
  private:
   bool IsThread(std::thread::id thread_id) const {
     return (std::this_thread::get_id() == thread_id);
@@ -1280,10 +1294,23 @@ class Meshcat::WebSocketPublisher {
 
   // N.B. Our arguments must not be pass-by-reference because this function is
   // called from a new thread!
+  void PreWebSocketMain(
+      std::promise<std::tuple<uWS::Loop*, int, bool>> app_promise,
+      std::string host, std::optional<int> desired_port) {
+    try {
+      WebSocketMain(std::move(app_promise), host, desired_port);
+    } catch (const std::exception& e) {
+      websocket_thread_exited_exceptionally_.store(true);
+      drake::log()->critical(
+          "Meshcat's worker thread crashed with an exception: {}",
+          e.what());
+    }
+  }
+
   void WebSocketMain(
       std::promise<std::tuple<uWS::Loop*, int, bool>> app_promise,
-      const std::string host,
-      const std::optional<int> desired_port) {
+      const std::string& host,
+      std::optional<int> desired_port) {
     websocket_thread_id_ = std::this_thread::get_id();
 
     // This canonicalization of the bind_host is currently redundant with what
@@ -1433,6 +1460,7 @@ class Meshcat::WebSocketPublisher {
 
   // These variables should only be accessed in the websocket thread.
   std::thread::id websocket_thread_id_{};
+  std::atomic<bool> websocket_thread_exited_exceptionally_{false};
   SceneTreeElement scene_tree_root_{};
   std::string animation_;
   uWS::App* app_{nullptr};
@@ -1483,6 +1511,7 @@ Meshcat::Meshcat(const MeshcatParams& params) {
 Meshcat::~Meshcat() = default;
 
 std::string Meshcat::web_url() const {
+  publisher_->CheckWorkerThread();
   const MeshcatParams& params = publisher_->params();
   const std::string& host = params.host;
   const bool is_localhost = host.empty() || host == "*";
@@ -1495,6 +1524,7 @@ std::string Meshcat::web_url() const {
 }
 
 int Meshcat::port() const {
+  publisher_->CheckWorkerThread();
   return publisher_->port();
 }
 
@@ -1505,21 +1535,25 @@ std::string Meshcat::ws_url() const {
 }
 
 int Meshcat::GetNumActiveConnections() const {
+  publisher_->CheckWorkerThread();
   return publisher_->GetNumActiveConnections();
 }
 
 void Meshcat::Flush() const {
+  publisher_->CheckWorkerThread();
   publisher_->Flush();
 }
 
 void Meshcat::SetObject(std::string_view path, const Shape& shape,
                         const Rgba& rgba) {
+  publisher_->CheckWorkerThread();
   publisher_->SetObject(path, shape, rgba);
 }
 
 void Meshcat::SetObject(std::string_view path,
                         const perception::PointCloud& cloud, double point_size,
                         const Rgba& rgba) {
+  publisher_->CheckWorkerThread();
   publisher_->SetObject(path, cloud, point_size, rgba);
 }
 
@@ -1527,6 +1561,7 @@ void Meshcat::SetObject(std::string_view path,
                         const TriangleSurfaceMesh<double>& mesh,
                         const Rgba& rgba, bool wireframe,
                         double wireframe_line_width) {
+  publisher_->CheckWorkerThread();
   Eigen::Matrix3Xd vertices(3, mesh.num_vertices());
   for (int i = 0; i < mesh.num_vertices(); ++i) {
     vertices.col(i) = mesh.vertex(i);
@@ -1545,6 +1580,7 @@ void Meshcat::SetObject(std::string_view path,
 void Meshcat::SetLine(std::string_view path,
                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
                       double line_width, const Rgba& rgba) {
+  publisher_->CheckWorkerThread();
   const bool kLineSegments = false;
   publisher_->SetLine(path, vertices, line_width, rgba, kLineSegments);
 }
@@ -1553,6 +1589,7 @@ void Meshcat::SetLineSegments(std::string_view path,
                               const Eigen::Ref<const Eigen::Matrix3Xd>& start,
                               const Eigen::Ref<const Eigen::Matrix3Xd>& end,
                               double line_width, const Rgba& rgba) {
+  publisher_->CheckWorkerThread();
   DRAKE_THROW_UNLESS(start.cols() == end.cols());
   // The LineSegments loader in three.js take the same data structure as Line,
   // but takes every consecutive pair of vertices as a (start, end).
@@ -1567,46 +1604,58 @@ void Meshcat::SetTriangleMesh(
     std::string_view path, const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
     const Eigen::Ref<const Eigen::Matrix3Xi>& faces, const Rgba& rgba,
     bool wireframe, double wireframe_line_width) {
+  publisher_->CheckWorkerThread();
   publisher_->SetTriangleMesh(path, vertices, faces, rgba, wireframe,
                               wireframe_line_width);
 }
 
 void Meshcat::SetCamera(PerspectiveCamera camera, std::string path) {
+  publisher_->CheckWorkerThread();
   publisher_->SetCamera(std::move(camera), std::move(path));
 }
 
 void Meshcat::SetCamera(OrthographicCamera camera, std::string path) {
+  publisher_->CheckWorkerThread();
   publisher_->SetCamera(std::move(camera), std::move(path));
 }
 
 void Meshcat::SetTransform(std::string_view path,
                            const RigidTransformd& X_ParentPath) {
+  publisher_->CheckWorkerThread();
   publisher_->SetTransform(path, X_ParentPath.GetAsMatrix4());
 }
 
 void Meshcat::SetTransform(std::string_view path,
                            const Eigen::Ref<const Eigen::Matrix4d>& matrix) {
+  publisher_->CheckWorkerThread();
   publisher_->SetTransform(path, matrix);
 }
 
-void Meshcat::Delete(std::string_view path) { publisher_->Delete(path); }
+void Meshcat::Delete(std::string_view path) {
+  publisher_->CheckWorkerThread();
+  publisher_->Delete(path);
+}
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           bool value) {
+  publisher_->CheckWorkerThread();
   publisher_->SetProperty(path, std::move(property), value);
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           double value) {
+  publisher_->CheckWorkerThread();
   publisher_->SetProperty(path, std::move(property), value);
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           const std::vector<double>& value) {
+  publisher_->CheckWorkerThread();
   publisher_->SetProperty(path, std::move(property), value);
 }
 
 void Meshcat::SetAnimation(const MeshcatAnimation& animation) {
+  publisher_->CheckWorkerThread();
   publisher_->SetAnimation(animation);
 }
 
@@ -1643,57 +1692,75 @@ void Meshcat::ResetRenderMode() {
 }
 
 void Meshcat::AddButton(std::string name) {
+  publisher_->CheckWorkerThread();
   publisher_->AddButton(std::move(name));
 }
 
 int Meshcat::GetButtonClicks(std::string_view name) {
+  publisher_->CheckWorkerThread();
   return publisher_->GetButtonClicks(name);
 }
 
 void Meshcat::DeleteButton(std::string name) {
+  publisher_->CheckWorkerThread();
   publisher_->DeleteButton(std::move(name));
 }
 
 void Meshcat::AddSlider(std::string name, double min, double max,
                                double step, double value) {
+  publisher_->CheckWorkerThread();
   publisher_->AddSlider(std::move(name), min, max, step, value);
 }
 
 void Meshcat::SetSliderValue(std::string name, double value) {
+  publisher_->CheckWorkerThread();
   publisher_->SetSliderValue(std::move(name), value);
 }
 
 double Meshcat::GetSliderValue(std::string_view name) {
+  publisher_->CheckWorkerThread();
   return publisher_->GetSliderValue(name);
 }
 
 void Meshcat::DeleteSlider(std::string name) {
+  publisher_->CheckWorkerThread();
   publisher_->DeleteSlider(std::move(name));
 }
 
 void Meshcat::DeleteAddedControls() {
+  publisher_->CheckWorkerThread();
   publisher_->DeleteAddedControls();
 }
 
 std::string Meshcat::StaticHtml() {
+  publisher_->CheckWorkerThread();
   return publisher_->StaticHtml();
 }
 
 bool Meshcat::HasPath(std::string_view path) const {
+  publisher_->CheckWorkerThread();
   return publisher_->HasPath(path);
 }
 
 std::string Meshcat::GetPackedObject(std::string_view path) const {
+  publisher_->CheckWorkerThread();
   return publisher_->GetPackedObject(path);
 }
 
 std::string Meshcat::GetPackedTransform(std::string_view path) const {
+  publisher_->CheckWorkerThread();
   return publisher_->GetPackedTransform(path);
 }
 
 std::string Meshcat::GetPackedProperty(std::string_view path,
                                        std::string property) const {
+  publisher_->CheckWorkerThread();
   return publisher_->GetPackedProperty(path, std::move(property));
+}
+
+void Meshcat::InjectWorkerFault() {
+  publisher_->CheckWorkerThread();
+  publisher_->InjectWorkerFault();
 }
 
 }  // namespace geometry

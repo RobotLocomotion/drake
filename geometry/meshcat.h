@@ -502,6 +502,11 @@ class Meshcat {
   std::string GetPackedProperty(std::string_view path,
                                 std::string property) const;
 
+#ifndef DRAKE_DOXYGEN_CXX
+  /* (Internal use only) Causes the worker thread to exit with an exception. */
+  void InjectWorkerFault();
+#endif
+
  private:
   // Provides PIMPL encapsulation of websocket types.
   class WebSocketPublisher;
