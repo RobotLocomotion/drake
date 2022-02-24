@@ -1,6 +1,7 @@
 #include "drake/geometry/meshcat.h"
 
 #include <cstdlib>
+#include <thread>
 
 #include <fmt/format.h>
 #include <gmock/gmock.h>
@@ -140,6 +141,27 @@ GTEST_TEST(MeshcatTest, MalformedCustom) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       Meshcat({"", std::nullopt, "file:///tmp"}),
       ".*web_url_pattern.*http.*");
+}
+
+// Checks that an exception from the worker thread eventually ends up as
+// exception on the main thread.
+GTEST_TEST(MeshcatTest, WorkerThreadFaultHandling) {
+  auto dut = std::make_unique<Meshcat>();
+
+  // Post an exception to the worker thread.
+  EXPECT_NO_THROW(dut->InjectWebsocketThreadFault());
+
+  // Keep checking an accessor function until the exception comes through.
+  auto checker = [&dut]() {
+    for (int i = 0; i < 1000; ++i) {
+      dut->web_url();
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+  };
+  DRAKE_EXPECT_THROWS_MESSAGE(checker(), ".*thread exited.*");
+
+  // The object can at least still be destroyed.
+  EXPECT_NO_THROW(dut.reset());
 }
 
 GTEST_TEST(MeshcatTest, NumActive) {
