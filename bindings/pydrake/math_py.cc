@@ -205,7 +205,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.IsValid.doc_0args)
         .def("IsExactlyIdentity", &Class::IsExactlyIdentity,
             cls_doc.IsExactlyIdentity.doc)
-        .def("IsNearlyIdentity", &Class::IsNearlyIdentity, py::arg("tolerance"),
+        .def("IsNearlyIdentity", &Class::IsNearlyIdentity,
+            py::arg("tolerance") =
+                Class::get_internal_tolerance_for_orthonormality(),
             cls_doc.IsNearlyIdentity.doc);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
