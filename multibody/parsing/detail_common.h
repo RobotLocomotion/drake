@@ -28,6 +28,21 @@ struct DataSource {
   const std::string* file_contents{};
 
   void DemandExactlyOne() const;
+
+  // If file_name is populated, return its absolute path. If the absolute path
+  // calculation causes errors, throw std::exception. If file_name is nullptr,
+  // return an empty string.
+  std::string GetAbsolutePath() const;
+
+  // If file_name is populated, return its parent path. If the parent path
+  // calculation causes errors, throw std::exception. If file_name is nullptr,
+  // return an empty string.
+  std::string GetRootDir() const;
+
+  // If file_name is populated, return its base name, without directory or
+  // extension. If file_contents is populated, return `"<literal-string>"`.
+  // Otherwise, return an empty string.
+  std::string GetBaseName() const;
 };
 
 // Note:

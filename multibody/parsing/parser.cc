@@ -87,7 +87,8 @@ ModelInstanceIndex Parser::AddModelFromString(
     const std::string& model_name) {
   DataSource data_source;
   data_source.file_contents = &file_contents;
-  const FileType type = DetermineFileType("<literal-string>." + file_type);
+  const FileType type = DetermineFileType(
+      data_source.GetBaseName() + "." + file_type);
   if (type == FileType::kSdf) {
     return AddModelFromSdf(data_source, model_name, package_map_, plant_);
   } else {

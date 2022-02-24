@@ -1,6 +1,7 @@
 #include "drake/multibody/parsing/detail_common.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/filesystem.h"
 
 namespace drake {
 namespace multibody {
@@ -8,6 +9,31 @@ namespace internal {
 
 void DataSource::DemandExactlyOne() const {
   DRAKE_DEMAND((file_name != nullptr) ^ (file_contents != nullptr));
+}
+
+std::string DataSource::GetAbsolutePath() const {
+  if (file_name) {
+    return filesystem::absolute(*file_name).native();
+  }
+  return "";
+}
+
+std::string DataSource::GetRootDir() const {
+  if (file_name) {
+    return filesystem::absolute(*file_name).parent_path().native();
+  }
+  return "";
+}
+
+std::string DataSource::GetBaseName() const {
+  if (file_name) {
+    filesystem::path p{*file_name};
+    return p.stem();
+  }
+  if (file_contents) {
+    return "<literal-string>";
+  }
+  return "";
 }
 
 geometry::ProximityProperties ParseProximityProperties(
