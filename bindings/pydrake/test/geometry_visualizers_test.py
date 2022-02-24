@@ -90,7 +90,7 @@ class TestGeometryVisualizers(unittest.TestCase):
     def test_meshcat(self):
         port = 7051
         params = mut.MeshcatParams(
-            host="localhost",
+            host="*",
             port=port,
             web_url_pattern="http://host:{port}")
         meshcat = mut.Meshcat(params=params)
