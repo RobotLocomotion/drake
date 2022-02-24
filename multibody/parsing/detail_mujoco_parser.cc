@@ -959,19 +959,17 @@ ModelInstanceIndex AddModelFromMujocoXml(
     MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
-  data_source.DemandExactlyOne();
 
   XMLDocument xml_doc;
-  if (data_source.file_name) {
-    xml_doc.LoadFile(data_source.file_name->c_str());
+  if (data_source.IsFilename()) {
+    xml_doc.LoadFile(data_source.filename().c_str());
     if (xml_doc.ErrorID()) {
       throw std::runtime_error(fmt::format("Failed to parse XML file {}:\n{}",
-                                           *data_source.file_name,
+                                           data_source.filename(),
                                            xml_doc.ErrorName()));
     }
   } else {
-    DRAKE_DEMAND(data_source.file_contents != nullptr);
-    xml_doc.Parse(data_source.file_contents->c_str());
+    xml_doc.Parse(data_source.contents().c_str());
     if (xml_doc.ErrorID()) {
       throw std::runtime_error(
           fmt::format("Failed to parse XML string: {}", xml_doc.ErrorName()));

@@ -224,7 +224,7 @@ class UrdfGeometryTests : public testing::Test {
   // Loads a URDF file and parses the minimal amount of it which
   // urdf_geometry.cc handles.
   void ParseUrdfGeometry(const std::string& file_name) {
-    const std::string full_path = GetFullPath(file_name);
+    const std::string full_path = filesystem::absolute(file_name).native();
 
     xml_doc_.LoadFile(full_path.c_str());
     ASSERT_FALSE(xml_doc_.ErrorID()) << xml_doc_.ErrorName();

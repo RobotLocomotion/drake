@@ -17,40 +17,6 @@ namespace internal {
 using std::string;
 
 namespace {
-bool IsAbsolutePath(const string& filename) {
-  const string prefix = "/";
-  return filename.substr(0, prefix.size()) == prefix;
-}
-}  // namespace
-
-string GetFullPath(const string& file_name) {
-  string result = file_name;
-  if (result.empty()) {
-    throw std::runtime_error("drake::parsers::GetFullPath: ERROR: file_name is "
-                             "empty.");
-  }
-
-  if (IsAbsolutePath(result)) {
-    // The specified file is already an absolute path. The following code
-    // verifies that the file exists.
-    if (!filesystem::is_regular_file({file_name})) {
-      throw std::runtime_error("drake::parsers::GetFullPath: ERROR: "
-          "file_name \"" + file_name + "\" is not a file.");
-    }
-  } else {
-    // The specified file is a relative path. The following code obtains the
-    // full path and verifies that the file exists.
-    result = (filesystem::current_path() /
-              filesystem::path(file_name)).lexically_normal().string();
-    if (!filesystem::is_regular_file({result})) {
-      throw std::runtime_error("drake::parsers::GetFullPath: ERROR: "
-          "file_name \"" + file_name + "\" is not a file or does not exist.");
-    }
-  }
-  return result;
-}
-
-namespace {
 
 // Searches for key package in package_map. If the key exists, returns the
 // associated value; else prints a warning and returns nullopt.
@@ -103,9 +69,9 @@ string ResolveUri(const string& uri, const PackageMap& package_map,
     // Strictly speaking a URI should not just be a bare filename, but we allow
     // this for backward compatibility and user convenience.
     const string& filename = uri;
-    if (IsAbsolutePath(filename)) {
+    if (filesystem::path(filename).is_absolute()) {
       result = filename;
-    } else if (IsAbsolutePath(root_dir)) {
+    } else if (filesystem::path(root_dir).is_absolute()) {
       result = root_dir;
       result.append(filename);
     } else {
