@@ -59,12 +59,6 @@ GTEST_TEST(FemStateManagerTest, StateIndexes) {
       a());
 }
 
-/* Calling element_data_index() throws if no element data has been declared. */
-GTEST_TEST(FemStateManagerTest, InvalidCacheIndex) {
-  FemStateManager<double> fem_state_manager(q(), v(), a());
-  EXPECT_THROW(fem_state_manager.element_data_index(), std::exception);
-}
-
 }  // namespace
 }  // namespace internal
 }  // namespace fem

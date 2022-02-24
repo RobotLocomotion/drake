@@ -45,20 +45,35 @@ class FemStateTest : public ::testing::Test {
     fem_state_manager_ =
         std::make_unique<internal::FemStateManager<T>>(q<T>(), v<T>(), a<T>());
 
-    auto calc_element_data =
-        std::function<void(const VectorX<T>&, const VectorX<T>&,
-                           const VectorX<T>&, std::vector<Data>*)>{
-            [](const VectorX<T>& q, const VectorX<T>&, const VectorX<T>&,
-               std::vector<Data>* element_data) {
-              for (int i = 0; i < static_cast<int>(element_data->size()); ++i) {
-                (*element_data)[i].val = ExtractDoubleOrThrow(q(i));
-              }
-            }};
-    fem_state_manager_->DeclareElementData(kNumElements,
-                                           std::move(calc_element_data));
+    auto calc_element_data = [](const FemState<T>& state,
+                                std::vector<Data>* element_data) {
+      const VectorX<T>& q = state.GetPositions();
+      element_data->resize(kNumElements);
+      for (int i = 0; i < static_cast<int>(element_data->size()); ++i) {
+        (*element_data)[i].val = ExtractDoubleOrThrow(q(i));
+      }
+    };
+
+    cache_index_ = fem_state_manager_
+                       ->DeclareCacheEntry(
+                           "dummy_data",
+                           systems::ValueProducer(
+                               std::function<void(const systems::Context<T>&,
+                                                  std::vector<Data>*)>{
+                                   [this, calc_element_data](
+                                       const systems::Context<T>& context,
+                                       std::vector<Data>* element_data) {
+                                     const FemState<T> fem_state(
+                                         fem_state_manager_.get(), &context);
+                                     calc_element_data(fem_state, element_data);
+                                   }}),
+                           {fem_state_manager_->discrete_state_ticket(
+                               fem_state_manager_->fem_position_index())})
+                       .cache_index();
   }
 
   std::unique_ptr<internal::FemStateManager<T>> fem_state_manager_;
+  systems::CacheIndex cache_index_;
 };
 
 using NonSymbolicScalars = ::testing::Types<double, AutoDiffXd>;
@@ -96,16 +111,18 @@ TYPED_TEST(FemStateTest, ElementData) {
   const FemState<T> state(this->fem_state_manager_.get());
   const VectorX<T> positions = q<T>();
   for (FemElementIndex i(0); i < kNumElements; ++i) {
-    EXPECT_EQ(state.template EvalElementData<Data>(i).val,
+    EXPECT_EQ(state.template EvalElementData<Data>(this->cache_index_, i).val,
               ExtractDoubleOrThrow(positions(i)));
     /* Verify that an exception is thrown if the wrong data type is requested.
      */
-    EXPECT_THROW(state.template EvalElementData<double>(i), std::exception);
+    EXPECT_THROW(state.template EvalElementData<double>(this->cache_index_, i),
+                 std::exception);
   }
   /* Verify that an exception is thrown if the element index is invalid. */
   const FemElementIndex invalid_index(kNumElements);
-  EXPECT_THROW(state.template EvalElementData<Data>(invalid_index),
-               std::exception);
+  EXPECT_THROW(
+      state.template EvalElementData<Data>(this->cache_index_, invalid_index),
+      std::exception);
 }
 
 }  // namespace
