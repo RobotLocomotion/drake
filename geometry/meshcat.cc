@@ -488,14 +488,14 @@ class Meshcat::WebSocketPublisher {
   explicit WebSocketPublisher(const MeshcatParams& params)
       : prefix_("/drake"),
         main_thread_id_(std::this_thread::get_id()),
-        web_url_pattern_(params.web_url_pattern) {
-    const std::optional<int> port = params.port;
-    DRAKE_DEMAND(!port.has_value() || *port >= 1024);
+        params_(params) {
+    DRAKE_DEMAND(!params.port.has_value() || *params.port >= 1024);
     std::promise<std::tuple<uWS::Loop*, int, bool>> app_promise;
     std::future<std::tuple<uWS::Loop*, int, bool>> app_future =
         app_promise.get_future();
-    websocket_thread_ = std::thread(&WebSocketPublisher::WebSocketMain, this,
-                                    std::move(app_promise), port);
+    websocket_thread_ = std::thread(
+        &WebSocketPublisher::WebSocketMain, this, std::move(app_promise),
+        params.host, params.port);
     bool connected;
     std::tie(loop_, port_, connected) = app_future.get();
 
@@ -521,9 +521,9 @@ class Meshcat::WebSocketPublisher {
     websocket_thread_.join();
   }
 
-  const std::string& web_url_pattern() const {
+  const MeshcatParams& params() const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
-    return web_url_pattern_;
+    return params_;
   }
 
   int port() const {
@@ -1278,10 +1278,18 @@ class Meshcat::WebSocketPublisher {
     return (std::this_thread::get_id() == thread_id);
   }
 
+  // N.B. Our arguments must not be pass-by-reference because this function is
+  // called from a new thread!
   void WebSocketMain(
       std::promise<std::tuple<uWS::Loop*, int, bool>> app_promise,
-      const std::optional<int>& desired_port) {
+      const std::string host,
+      const std::optional<int> desired_port) {
     websocket_thread_id_ = std::this_thread::get_id();
+
+    // This canonicalization of the bind_host is currently redundant with what
+    // uWebSockets already implements, but we'll keep it here anyway, to defend
+    // our code from potential implementation changes to uWebSockets.
+    const std::string bind_host = (host == "*") ? "" : host;
 
     int port = desired_port ? *desired_port : 7000;
     const int kMaxPort = desired_port ? *desired_port : 7099;
@@ -1375,7 +1383,7 @@ class Meshcat::WebSocketPublisher {
 
     do {
       app.listen(
-          port, LIBUS_LISTEN_EXCLUSIVE_PORT,
+          bind_host, port, LIBUS_LISTEN_EXCLUSIVE_PORT,
           [this](us_listen_socket_t* socket) {
             DRAKE_DEMAND(IsThread(websocket_thread_id_));
             if (socket) {
@@ -1419,7 +1427,7 @@ class Meshcat::WebSocketPublisher {
   // These variables should only be accessed in the main thread, where "main
   // thread" is the thread in which this class was constructed.
   std::thread::id main_thread_id_{};
-  const std::string web_url_pattern_;
+  const MeshcatParams params_;
   int port_{};
   std::mt19937 generator_{};
 
@@ -1443,15 +1451,23 @@ class Meshcat::WebSocketPublisher {
   uWS::Loop* loop_{nullptr};
 };
 
+namespace {
+MeshcatParams MakeMeshcatParamsPortOnly(std::optional<int> port) {
+  MeshcatParams result;
+  result.port = port;
+  return result;
+}
+}  // namespace
+
 Meshcat::Meshcat(std::optional<int> port)
-    : Meshcat(MeshcatParams{.port = port}) {}
+    : Meshcat(MakeMeshcatParamsPortOnly(port)) {}
 
 Meshcat::Meshcat(const MeshcatParams& params) {
-  // Sanity-check the pattern, by passing it (along with a dummy port number)
-  // through to fmt to allow any fmt-specific exception to percolate. Then,
-  // confirm that the user's pattern started with a valid protocol.
+  // Sanity-check the pattern, by passing it (along with dummy host and port
+  // values) through to fmt to allow any fmt-specific exception to percolate.
+  // Then, confirm that the user's pattern started with a valid protocol.
   const std::string url = fmt::format(
-      params.web_url_pattern, fmt::arg("port", 1));
+      params.web_url_pattern, fmt::arg("host", "foo"), fmt::arg("port", 1));
   if (url.substr(0, 4) != "http") {
     throw std::logic_error("The web_url_pattern must be http:// or https://");
   }
@@ -1467,9 +1483,15 @@ Meshcat::Meshcat(const MeshcatParams& params) {
 Meshcat::~Meshcat() = default;
 
 std::string Meshcat::web_url() const {
+  const MeshcatParams& params = publisher_->params();
+  const std::string& host = params.host;
+  const bool is_localhost = host.empty() || host == "*";
+  const std::string display_host = is_localhost ? "localhost" : host;
+  const int port = publisher_->port();
   return fmt::format(
-      publisher_->web_url_pattern(),
-      fmt::arg("port", publisher_->port()));
+      params.web_url_pattern,
+      fmt::arg("host", display_host),
+      fmt::arg("port", port));
 }
 
 int Meshcat::port() const {

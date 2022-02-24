@@ -76,37 +76,69 @@ GTEST_TEST(MeshcatTest, Ports) {
   EXPECT_LE(m3.port(), 7099);
 }
 
+// Use a basic web_url_pattern to affect web_url() and ws_url(). The pattern
+// parameter only affects those URLs getters, not the server's bind behavior.
 GTEST_TEST(MeshcatTest, CustomHttp) {
   const std::string pattern = "http://127.0.0.254:{port}";
-  const Meshcat meshcat({std::nullopt, pattern});
+  const Meshcat meshcat({"", std::nullopt, pattern});
   const std::string port = std::to_string(meshcat.port());
   EXPECT_EQ(meshcat.web_url(), "http://127.0.0.254:" + port);
   EXPECT_EQ(meshcat.ws_url(), "ws://127.0.0.254:" + port);
 }
 
+// Check a web_url_pattern that does not use any substitutions.
 GTEST_TEST(MeshcatTest, CustomNoPort) {
   const std::string pattern = "http://example.ngrok.io";
-  const Meshcat meshcat({std::nullopt, pattern});
+  const Meshcat meshcat({"", std::nullopt, pattern});
   EXPECT_EQ(meshcat.web_url(), "http://example.ngrok.io");
   EXPECT_EQ(meshcat.ws_url(), "ws://example.ngrok.io");
 }
 
+// Check a web_url_pattern that uses https instead of http.
 GTEST_TEST(MeshcatTest, CustomHttps) {
   const std::string pattern = "https://localhost:{port}";
-  const Meshcat meshcat({std::nullopt, pattern});
+  const Meshcat meshcat({"", std::nullopt, pattern});
   const std::string port = std::to_string(meshcat.port());
   EXPECT_EQ(meshcat.web_url(), "https://localhost:" + port);
   EXPECT_EQ(meshcat.ws_url(), "wss://localhost:" + port);
 }
 
+// Check that binding to the don't-care host "" does not crash.
+// It should display as "localhost".
+GTEST_TEST(MeshcatTest, CustomDefaultInterface) {
+  const Meshcat meshcat({""});
+  const std::string port = std::to_string(meshcat.port());
+  EXPECT_EQ(meshcat.web_url(), "http://localhost:" + port);
+}
+
+// Check that binding to "*" (as mentioned in Params docs) does not crash.
+// It should display as "localhost".
+GTEST_TEST(MeshcatTest, CustomAllInterfaces) {
+  const Meshcat meshcat({"*"});
+  const std::string port = std::to_string(meshcat.port());
+  EXPECT_EQ(meshcat.web_url(), "http://localhost:" + port);
+}
+
+// Check that binding to an IP does not crash.
+GTEST_TEST(MeshcatTest, CustomNumericInterface) {
+  const Meshcat meshcat({"127.0.0.1"});
+  const std::string port = std::to_string(meshcat.port());
+  EXPECT_EQ(meshcat.web_url(), "http://127.0.0.1:" + port);
+}
+
+// Check that binding to a malformed value does crash.
+GTEST_TEST(MeshcatTest, BadCustomInterface) {
+  DRAKE_EXPECT_THROWS_MESSAGE(Meshcat({"----"}), ".*failed to open.*");
+}
+
 GTEST_TEST(MeshcatTest, MalformedCustom) {
   // Using a non-existent substitution is detected immediately.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Meshcat({std::nullopt, "http://localhost:{portnum}"}),
+      Meshcat({"", std::nullopt, "http://localhost:{portnum}"}),
       ".*argument.*");
   // Only http or https are allowed.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Meshcat({std::nullopt, "file:///tmp"}),
+      Meshcat({"", std::nullopt, "file:///tmp"}),
       ".*web_url_pattern.*http.*");
 }
 
