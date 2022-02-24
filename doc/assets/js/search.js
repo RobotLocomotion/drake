@@ -6,16 +6,16 @@ const searchContainer = document.querySelector('.search')
 const searchResults = document.getElementById('results-container')
 
 searchIcon.addEventListener('click', function() {
-	navMenu.classList.add('search-open')
-	searchContainer.classList.add('open')
-	searchInput.focus()
+  navMenu.classList.add('search-open')
+  searchContainer.classList.add('open')
+  searchInput.focus()
 })
 
 
 searchClose.addEventListener('click', function() {
-	navMenu.classList.remove('search-open')
-	searchContainer.classList.remove('open')
-	
-	searchInput.value = ''
-	searchResults.innerHTML = ''
+  navMenu.classList.remove('search-open')
+  searchContainer.classList.remove('open')
+
+  searchInput.value = ''
+  searchResults.innerHTML = ''
 })
