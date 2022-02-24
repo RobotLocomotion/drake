@@ -60,7 +60,7 @@ ModelInstanceIndex AddModelFromSdfFile(
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     bool test_sdf_forced_nesting = false) {
-  const DataSource data_source{&file_name, {}};
+  const DataSource data_source{DataSource::kFilename, &file_name};
   return AddModelFromSdf(data_source, model_name, package_map, plant,
                          test_sdf_forced_nesting);
 }
@@ -69,7 +69,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     bool test_sdf_forced_nesting = false) {
-  const DataSource data_source{&file_name, {}};
+  const DataSource data_source{DataSource::kFilename, &file_name};
   return AddModelsFromSdf(
       data_source, package_map, plant, test_sdf_forced_nesting);
 }
@@ -78,7 +78,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfString(
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     bool test_sdf_forced_nesting = false) {
-  const DataSource data_source{{}, &file_contents};
+  const DataSource data_source{DataSource::kContents, &file_contents};
   return AddModelsFromSdf(data_source, package_map, plant,
                           test_sdf_forced_nesting);
 }
