@@ -16,19 +16,17 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 
 // Parameters for squeezing the spatula.
-DEFINE_double(gripper_force, 1, "The force to be applied by the gripper. [N].");
+DEFINE_double(gripper_force, 1,
+              "The baseline force to be applied by the gripper. [N].");
 DEFINE_double(amplitude, 5,
               "The amplitude of the oscillations "
               "carried out by the gripper. [N].");
-DEFINE_double(frequency, 2,
-              "The frequency of the oscillations "
-              "carried out by the gripper. [Hz].");
-DEFINE_double(pulse_width, 4.5, "Pulse width of the control signal. [s].");
-DEFINE_double(period, 6, "Period of the control signal. [s].");
+DEFINE_double(duty_cycle, 0.5, "Duty cycle of the control signal.");
+DEFINE_double(period, 3, "Period of the control signal. [s].");
 
 // DrakeVisualizer Settings.
 DEFINE_bool(visualize_collision, false,
-            "Visualize collision instead of visual geom");
+            "Visualize collision instead of visual geometries.");
 
 // MultibodyPlant settings.
 DEFINE_double(stiction_tolerance, 1e-5, "Default stiction tolerance. [m/s].");
@@ -49,6 +47,7 @@ DEFINE_double(realtime_rate, 1,
               "Desired rate of the simulation compared to realtime."
               "A value of 1 indicates real time.");
 DEFINE_double(simulation_sec, 30, "Number of seconds to simulate. [s].");
+// The following flags are only in effect in continuous mode.
 DEFINE_double(accuracy, 1.0e-3, "The integration accuracy.");
 DEFINE_double(max_time_step, 1.0e-2,
               "The maximum time step the integrator is allowed to take, [s].");
@@ -57,185 +56,80 @@ DEFINE_string(integration_scheme, "implicit_euler",
               "'semi_explicit_euler','runge_kutta2','runge_kutta3',"
               "'implicit_euler'");
 
-using drake::geometry::SceneGraph;
-using drake::math::RigidTransform;
-using drake::math::RollPitchYaw;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::MultibodyPlantConfig;
-using drake::multibody::PrismaticJoint;
-using drake::systems::ApplySimulatorConfig;
-using drake::systems::BasicVector;
-using drake::systems::Context;
-using drake::systems::SimulatorConfig;
-
 namespace drake {
+
+using geometry::SceneGraph;
+using math::RigidTransform;
+using math::RollPitchYaw;
+using multibody::MultibodyPlant;
+using multibody::MultibodyPlantConfig;
+using multibody::PrismaticJoint;
+using systems::ApplySimulatorConfig;
+using systems::BasicVector;
+using systems::Context;
+using systems::SimulatorConfig;
 namespace examples {
 namespace spatula_slip_control {
 namespace {
 
 // We create a simple leaf system that outputs a square wave signal for our
-// open loop controller. The Square system here supports an arbitraritly
+// open loop controller. The Square system here supports an arbitrarily
 // dimensional signal, but we will use a 2-dimensional signal for our gripper.
-class Square final : public drake::systems::LeafSystem<double> {
+class Square final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Square)
 
-  /// Constructs a %Square system where the amplitude, frequency, and phase is
-  /// applied to every input.
-  ///
-  /// @param[in] amplitude  the square wave amplitude.
-  /// @param[in] pulse_width the square wave pulse width.
-  /// @param[in] period the square wave frequency. (radians/second)
-  /// @param[in] phase the square wave phase. (radians)
-  /// @param[in] size number of elements in the output signal.
-  /// @param[in] is_time_based indicates whether to use the simulation time as
-  ///            the source for the square wave time variable, or use an
-  ///            external source, in which case an input port of size @p size is
-  ///            created.
-  Square(double amplitude, double pulse_width, double period, double phase,
-         int size, bool is_time_based = true)
-      : Square(Eigen::VectorXd::Ones(size) * amplitude,
-               Eigen::VectorXd::Ones(size) * pulse_width,
-               Eigen::VectorXd::Ones(size) * period,
-               Eigen::VectorXd::Ones(size) * phase, is_time_based) {}
-
-  /// Constructs a %Square system where different amplitudes, frequencies, and
-  /// phases can be applied to each square wave.
+  /// Constructs a %Square system where different amplitudes, duty cycles,
+  /// periods, and phases can be applied to each square wave.
   ///
   /// @param[in] amplitudes the square wave amplitudes.
-  /// @param[in] pulse_widths the square wave pulse widths.
-  /// @param[in] periods the square wave frequencies. (radians/second)
+  /// @param[in] duty_cycles the square wave duty_cycles.
+  /// @param[in] periods the square wave periods. (seconds)
   /// @param[in] phases the square wave phases. (radians)
-  /// @param[in] is_time_based indicates whether to use the simulation time as
-  ///            the source for the square wave time variable, or use an
-  ///            external source, in which case an input port is created.
-  explicit Square(const Eigen::VectorXd& amplitudes,
-                  const Eigen::VectorXd& pulse_widths,
-                  const Eigen::VectorXd& periods, const Eigen::VectorXd& phases,
-                  bool is_time_based = true)
+  Square(const Eigen::VectorXd& amplitudes, const Eigen::VectorXd& duty_cycles,
+         const Eigen::VectorXd& periods, const Eigen::VectorXd& phases)
       : amplitude_(amplitudes),
-        pulse_width_(pulse_widths),
+        duty_cycle_(duty_cycles),
         period_(periods),
-        phase_(phases),
-        is_time_based_(is_time_based) {
+        phase_(phases) {
     // Ensure the incoming vectors are all the same size.
-    DRAKE_THROW_UNLESS(pulse_widths.size() == amplitudes.size());
-    DRAKE_THROW_UNLESS(pulse_widths.size() == periods.size());
-    DRAKE_THROW_UNLESS(pulse_widths.size() == phases.size());
+    DRAKE_THROW_UNLESS(duty_cycles.size() == amplitudes.size());
+    DRAKE_THROW_UNLESS(duty_cycles.size() == periods.size());
+    DRAKE_THROW_UNLESS(duty_cycles.size() == phases.size());
 
-    // Check each of the incoming vectors. For each vector, set a flag if every
-    // element in that vector is the same.
-    is_const_amplitude_ = amplitude_.isConstant(amplitude_[0]);
-    is_const_pulse_width_ = pulse_width_.isConstant(pulse_width_[0]);
-    is_const_period_ = period_.isConstant(period_[0]);
-    is_const_phase_ = phase_.isConstant(phase_[0]);
-
-    // If the Square system is system time based, do not create an input port.
-    // System time is used as the time variable in this case. If the Square
-    // system is not system time based, create an input port that contains the
-    // signal to be used as the time variable.
-    if (!is_time_based) {
-      this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued,
-                             pulse_widths.size());
-    }
-    value_output_port_index_ =
-        this->DeclareVectorOutputPort(systems::kUseDefaultName,
-                                      pulse_widths.size(),
-                                      &Square::CalcValueOutput)
-            .get_index();
+    this->DeclareVectorOutputPort("Square Wave Output", duty_cycles.size(),
+                                  &Square::CalcValueOutput);
   }
-
-  double amplitude() const {
-    if (!is_const_amplitude_) {
-      std::stringstream s;
-      s << "The amplitude vector, [" << amplitude_
-        << "], cannot be represented "
-        << "as a scalar value. Please use "
-        << "drake::systems::Square::amplitude_vector() instead.";
-      throw std::logic_error(s.str());
-    }
-    return amplitude_[0];
-  }
-
-  double pulse_width() const {
-    if (!is_const_pulse_width_) {
-      std::stringstream s;
-      s << "The pulse_width vector, [" << pulse_width_
-        << "], cannot be represented "
-        << "as a scalar value. Please use "
-        << "drake::systems::Square::pulse_width_vector() instead.";
-      throw std::logic_error(s.str());
-    }
-    return pulse_width_[0];
-  }
-
-  double period() const {
-    if (!is_const_period_) {
-      std::stringstream s;
-      s << "The period vector, [" << period_ << "], cannot be represented "
-        << "as a scalar value. Please use "
-        << "drake::systems::Square::period_vector() instead.";
-      throw std::logic_error(s.str());
-    }
-    return period_[0];
-  }
-
-  double phase() const {
-    if (!is_const_phase_) {
-      std::stringstream s;
-      s << "The phase vector, [" << phase_ << "], cannot be represented as a "
-        << "scalar value. Please use "
-        << "drake::systems::Square::phase_vector() instead.";
-      throw std::logic_error(s.str().c_str());
-    }
-    return phase_[0];
-  }
-
-  bool is_time_based() const { return is_time_based_; }
-
-  const Eigen::VectorXd& amplitude_vector() const { return amplitude_; }
-
-  const Eigen::VectorXd& pulse_width_vector() const { return pulse_width_; }
-
-  const Eigen::VectorXd& period_vector() const { return period_; }
-
-  const Eigen::VectorXd& phase_vector() const { return phase_; }
 
  private:
   void CalcValueOutput(const Context<double>& context,
                        BasicVector<double>* output) const {
-    Eigen::VectorBlock<drake::VectorX<double>> output_block =
+    Eigen::VectorBlock<VectorX<double>> output_block =
         output->get_mutable_value();
 
     const double time = context.get_time();
 
-    for (int i = 0; i < pulse_width_.size(); ++i) {
-      double t = time + phase_[i];
-      if (!is_time_based_) {
-        t = this->get_input_port(0).Eval(context)[i] + phase_[i];
-      }
+    for (int i = 0; i < duty_cycle_.size(); ++i) {
+      // Add phase offset.
+      double t = time + (period_[i] * phase_[i] / (2 * M_PI));
+
       output_block[i] =
           amplitude_[i] *
-          (t - floor(t / period_[i]) * period_[i] < pulse_width_[i] ? 1 : 0);
+          (t - floor(t / period_[i]) * period_[i] < duty_cycle_[i] * period_[i]
+               ? 1
+               : 0);
     }
   }
 
   const Eigen::VectorXd amplitude_;
-  const Eigen::VectorXd pulse_width_;
+  const Eigen::VectorXd duty_cycle_;
   const Eigen::VectorXd period_;
   const Eigen::VectorXd phase_;
-  const bool is_time_based_;
-  bool is_const_amplitude_{false};
-  bool is_const_pulse_width_{false};
-  bool is_const_period_{false};
-  bool is_const_phase_{false};
-
-  int value_output_port_index_{-1};
 };
 
 int DoMain() {
   // Construct a MultibodyPlant and a SceneGraph.
-  drake::systems::DiagramBuilder<double> builder;
+  systems::DiagramBuilder<double> builder;
 
   MultibodyPlantConfig plant_config;
   plant_config.time_step = FLAGS_mbp_discrete_update_period;
@@ -252,19 +146,18 @@ int DoMain() {
       multibody::AddMultibodyPlant(plant_config, &builder);
 
   // Parse the gripper and spatula models.
-  drake::multibody::Parser parser(plant, scene_graph);
+  multibody::Parser parser(plant, scene_graph);
   const std::string gripper_file = FindResourceOrThrow(
       "drake/examples/multibody/spatula_slip_control/models/"
       "schunk_wsg_50_hydro_bubble.sdf");
   const std::string spatula_file = FindResourceOrThrow(
       "drake/examples/multibody/spatula_slip_control/models/spatula.sdf");
   parser.AddModelFromFile(gripper_file);
-  auto spatula_instance = parser.AddModelFromFile(spatula_file);
+  multibody::ModelInstanceIndex spatula_instance =
+      parser.AddModelFromFile(spatula_file);
   // Pose the gripper and weld it to the world.
-  const drake::math::RigidTransform<double> X_WF0 =
-      drake::math::RigidTransform<double>(
-          drake::math::RollPitchYaw(0.0, -1.57, 0.0),
-          Eigen::Vector3d(0, 0, 0.25));
+  const math::RigidTransform<double> X_WF0 = math::RigidTransform<double>(
+      math::RollPitchYaw(0.0, -1.57, 0.0), Eigen::Vector3d(0, 0, 0.25));
   plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("gripper"),
                     X_WF0);
   plant->Finalize();
@@ -275,16 +168,16 @@ int DoMain() {
   const double f0 = FLAGS_gripper_force;
 
   const Eigen::Vector2d amplitudes(FLAGS_amplitude, -FLAGS_amplitude);
-  const Eigen::Vector2d pulse_widths(FLAGS_pulse_width, FLAGS_pulse_width);
+  const Eigen::Vector2d duty_cycles(FLAGS_duty_cycle, FLAGS_duty_cycle);
   const Eigen::Vector2d periods(FLAGS_period, FLAGS_period);
   const Eigen::Vector2d phases(0, 0);
   const auto& square_force =
-      *builder.AddSystem<Square>(amplitudes, pulse_widths, periods, phases);
+      *builder.AddSystem<Square>(amplitudes, duty_cycles, periods, phases);
   const auto& constant_force =
-      *builder.AddSystem<drake::systems::ConstantVectorSource<double>>(
+      *builder.AddSystem<systems::ConstantVectorSource<double>>(
           Eigen::Vector2d(f0, -f0));
-  const auto& adder = *builder.AddSystem<drake::systems::Adder<double>>(2, 2);
-  builder.Connect(square_force.get_output_port(0), adder.get_input_port(0));
+  const auto& adder = *builder.AddSystem<systems::Adder<double>>(2, 2);
+  builder.Connect(square_force.get_output_port(), adder.get_input_port(0));
   builder.Connect(constant_force.get_output_port(), adder.get_input_port(1));
 
   // Connect the output of the adder to the plant's actuation input.
@@ -292,18 +185,17 @@ int DoMain() {
 
   // Create a visualizer for the system and ensure contact results are
   // visualized.
-  drake::geometry::DrakeVisualizerParams params;
-  params.role = FLAGS_visualize_collision
-                    ? drake::geometry::Role::kProximity
-                    : drake::geometry::Role::kIllustration;
-  drake::geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph,
-                                                  /* lcm */ nullptr, params);
-  drake::multibody::ConnectContactResultsToDrakeVisualizer(&builder, *plant,
-                                                           *scene_graph,
-                                                           /* lcm */ nullptr);
+  geometry::DrakeVisualizerParams params;
+  params.role = FLAGS_visualize_collision ? geometry::Role::kProximity
+                                          : geometry::Role::kIllustration;
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph,
+                                           /* lcm */ nullptr, params);
+  multibody::ConnectContactResultsToDrakeVisualizer(&builder, *plant,
+                                                    *scene_graph,
+                                                    /* lcm */ nullptr);
 
   // Construct a simulator.
-  std::unique_ptr<drake::systems::Diagram<double>> diagram = builder.Build();
+  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
   SimulatorConfig sim_config;
   sim_config.integration_scheme = FLAGS_integration_scheme;
@@ -312,8 +204,8 @@ int DoMain() {
   sim_config.target_realtime_rate = FLAGS_realtime_rate;
   sim_config.publish_every_time_step = false;
 
-  std::unique_ptr<drake::systems::Simulator<double>> simulator =
-      std::make_unique<drake::systems::Simulator<double>>(*diagram);
+  std::unique_ptr<systems::Simulator<double>> simulator =
+      std::make_unique<systems::Simulator<double>>(*diagram);
   ApplySimulatorConfig(simulator.get(), sim_config);
 
   // Set the initial conditions for the spatula pose and the gripper finger
@@ -322,11 +214,9 @@ int DoMain() {
   Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(*plant, &mutable_root_context);
 
-  // Set spatulate free body pose.
-  const drake::math::RigidTransform<double> X_WF1 =
-      drake::math::RigidTransform<double>(
-          drake::math::RollPitchYaw(-0.4, 0.0, 1.57),
-          Eigen::Vector3d(0.35, 0, 0.25));
+  // Set spatulata's free body pose.
+  const math::RigidTransform<double> X_WF1 = math::RigidTransform<double>(
+      math::RollPitchYaw(-0.4, 0.0, 1.57), Eigen::Vector3d(0.35, 0, 0.25));
   const auto& base_link = plant->GetBodyByName("spatula", spatula_instance);
   plant->SetFreeBodyPose(&plant_context, base_link, X_WF1);
 
@@ -350,7 +240,7 @@ int DoMain() {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-    gflags::SetUsageMessage(
+  gflags::SetUsageMessage(
       "This is an example of using the hydroelastic contact model with a\n"
       "robot gripper with compliant bubble fingers and a compliant spatula.\n"
       "The example poses the spatula in the closed grip of the gripper and\n"

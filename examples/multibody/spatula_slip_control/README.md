@@ -34,7 +34,14 @@ bazel run //examples/multibody/spatula_slip_control:spatula_slip_control
 
 ## Use polygon or triangle contact surfaces
 
-By default, this example uses polygon contact surfaces.
+In continuous mode, Drake computes triangulated contact surfaces. But,
+discrete mode provides the option for either triangulated or polygonal
+contact surface representation. The polygonal representation of a contact
+surface contains significantly fewer elements which in practice corresponds
+to a more efficient simulation. By default, this example uses polygonal contact
+surfaces. Refer to the
+[Hydroelastic User Guide](https://drake.mit.edu/doxygen_cxx/group__hydroelastic__user__guide.html)
+for more details about hydroelastic representations.
 
 The option `--contact_surface_representation=triangle` specifies triangle
 contact surfaces:

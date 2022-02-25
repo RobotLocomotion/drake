@@ -38,7 +38,6 @@ drake_cc_binary(
         "//systems/analysis:simulator_gflags",
         "//systems/framework:diagram",
         "//systems/primitives",
-        "@fmt",
         "@gflags",
     ],
 )
