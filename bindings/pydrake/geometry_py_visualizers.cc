@@ -197,6 +197,7 @@ void DoScalarIndependentDefinitions(py::module m) {
         m, "MeshcatParams", py::dynamic_attr(), cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>())
+        .def_readwrite("host", &MeshcatParams::host, cls_doc.host.doc)
         .def_readwrite("port", &MeshcatParams::port, cls_doc.port.doc)
         .def_readwrite("web_url_pattern", &MeshcatParams::web_url_pattern,
             cls_doc.web_url_pattern.doc)

@@ -47,6 +47,7 @@ from pydrake.geometry import (
     Ellipsoid,
     Mesh,
     Meshcat,
+    MeshcatParams,
     Rgba,
     Sphere,
 )
@@ -212,7 +213,8 @@ class Meldis:
         lcm_url = self._lcm.get_lcm_url()
         _logger.info(f"Meldis is listening for LCM messages at {lcm_url}")
 
-        self.meshcat = Meshcat(port=meshcat_port)
+        params = MeshcatParams(host="localhost", port=meshcat_port)
+        self.meshcat = Meshcat(params=params)
 
         viewer = _ViewerApplet(meshcat=self.meshcat)
         self._subscribe(channel="DRAKE_VIEWER_LOAD_ROBOT",
