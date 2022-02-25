@@ -87,7 +87,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("CopyBlock", &Class::CopyBlock, py::arg("start_row"),
             py::arg("start_col"), py::arg("block_rows"), py::arg("block_cols"),
             cls_doc.CopyBlock.doc)
-        .def("CopyHead", &Class::CopyHead, py::arg("n"), cls_doc.CopyHead.doc);
+        .def("CopyHead", &Class::CopyHead, py::arg("n"), cls_doc.CopyHead.doc)
+        .def(py::pickle(
+            [](const Class& self) {
+              return std::make_pair(self.basis(), self.control_points());
+            },
+            [](std::pair<math::BsplineBasis<T>, std::vector<MatrixX<T>>> args) {
+              return Class(std::get<0>(args), std::get<1>(args));
+            }));
     DefCopyAndDeepCopy(&cls);
   }
 
