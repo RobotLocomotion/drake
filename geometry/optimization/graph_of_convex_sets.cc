@@ -37,6 +37,7 @@ using solvers::LinearEqualityConstraint;
 using solvers::LInfNormCost;
 using solvers::MathematicalProgram;
 using solvers::MathematicalProgramResult;
+using solvers::PerspectiveQuadraticCost;
 using solvers::QuadraticCost;
 using solvers::VariableRefList;
 using solvers::VectorXDecisionVariable;
@@ -415,6 +416,16 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
         prog.AddLinearConstraint(A_linear,
                                  VectorXd::Constant(A_linear.rows(), -inf),
                                  VectorXd::Zero(A_linear.rows()), vars);
+      } else if (PerspectiveQuadraticCost* pqc =
+                     dynamic_cast<PerspectiveQuadraticCost*>(cost)) {
+        // (z_1^2 + ... + z_{n-1}^2) / z_0 for z = Ax + b becomes
+        // ℓ z_0 ≥ z_1^2 + ... + z_{n-1}^2 for z = Ax + bϕ
+        MatrixXd A_cone = MatrixXd::Zero(pqc->A().rows() + 1, vars.size());
+        A_cone(0, 1) = 1.0;
+        A_cone.block(1, 0, pqc->A().rows(), 1) = pqc->b();
+        A_cone.block(1, 2, pqc->A().rows(), pqc->A().cols()) = pqc->A();
+        prog.AddRotatedLorentzConeConstraint(
+            A_cone, VectorXd::Zero(pqc->A().rows() + 1), vars);
       } else {
         throw std::runtime_error(fmt::format(
             "GraphOfConvexSets::Edge does not support this binding type: {}",
