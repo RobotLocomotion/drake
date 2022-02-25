@@ -7,13 +7,12 @@ SHA d7cd447344.
 
 The license for these files is the Apache 2.0 license
 https://github.com/frankaemika/franka_ros/blob/kinetic-devel/LICENSE
-(also see package.xml).
+https://github.com/frankaemika/franka_ros/blob/kinetic-devel/franka_ros/package.xml
 
 The inertial properties for the arm/hand were copied from
 https://github.com/mkrizmancic/franka_gazebo which also uses the
 Apache 2.0 license.
 
-As a result, `package.xml` and `urdf/*.urdf` are covered by the Apache
-2.0 license.  The remaining files (README, unit test, BUILD, etc.) are
-covered by Drake's license terms (see LICENSE.TXT in Drake's root
-folder)
+As a result, `urdf/*.urdf` are covered by the Apache 2.0 license. The remaining
+files (README, unit test, BUILD, etc.) are covered by Drake's license terms
+(see LICENSE.TXT in Drake's root folder).
