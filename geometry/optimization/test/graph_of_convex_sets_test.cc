@@ -611,6 +611,28 @@ TEST_F(ThreePoints, LInfNormCost2) {
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
 }
 
+TEST_F(ThreePoints, PerspectiveQuadraticCost) {
+  Matrix<double, 2, 4> A;
+  // clang-format off
+  A << -1, 1, 0, 0,
+       0, 0, 1, 1;
+  // clang-format on
+  const Vector2d b{0.5, 0.3};
+  auto cost = std::make_shared<solvers::PerspectiveQuadraticCost>(A, b);
+  e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
+  e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
+  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  if (result.get_solver_id() == solvers::IpoptSolver::id()) {
+    return;  // See IpoptTest for details.
+  }
+  ASSERT_TRUE(result.is_success());
+  const double expected_cost =
+      std::pow(p_target_.x()(0) + p_target_.x()(1) + b(1), 2) /
+      (p_source_.x()(1) - p_source_.x()(0) + b(0));
+  EXPECT_NEAR(e_on_->GetSolutionCost(result), expected_cost, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
+}
+
 // Like the ThreePoints, but with boxes for each vertex instead of points.
 class ThreeBoxes : public ::testing::Test {
  protected:
