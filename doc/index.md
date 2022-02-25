@@ -30,9 +30,6 @@ purpose of the front page (HTML for layout, Markdown for content).
       <img src="{{ site.custom.hero_image | relative_url }}">
     </div>
   </div>
-
-  <div class="scroll-indicator">
-  </div>
 </section>
 
 <section id="core" class="core padding">
