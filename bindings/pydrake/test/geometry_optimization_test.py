@@ -307,10 +307,6 @@ class TestGeometryOptimization(unittest.TestCase):
         diagram = builder.Build()
         context = diagram.CreateDefaultContext()
         options = mut.IrisOptions()
-        with catch_drake_warnings(expected_count=1):
-            region = mut.IrisInConfigurationSpace(
-                plant=plant, context=plant.GetMyContextFromRoot(context),
-                sample=[0], options=options)
         plant.SetPositions(plant.GetMyMutableContextFromRoot(context), [0])
         region = mut.IrisInConfigurationSpace(
             plant=plant, context=plant.GetMyContextFromRoot(context),
