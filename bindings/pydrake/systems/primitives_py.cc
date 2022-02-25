@@ -4,6 +4,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/primitives/adder.h"
@@ -304,73 +305,31 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("params"), py::arg("layer"),
             py::keep_alive<0, 2>() /* return keeps params alive */,
             py_rvp::reference, doc.MultilayerPerceptron.GetBiases.doc_vector)
-        .def(
-            "SetWeights",
-            [](const MultilayerPerceptron<T>* self,
-                Eigen::Ref<VectorX<T>> params, int layer,
-                const Eigen::Ref<const MatrixX<T>>& W) {
-              self->SetWeights(&params, layer, W);
-            },
+        .def("SetWeights",
+            py::overload_cast<EigenPtr<VectorX<T>>, int,
+                const Eigen::Ref<const MatrixX<T>>&>(
+                &MultilayerPerceptron<T>::SetWeights, py::const_),
             py::arg("params"), py::arg("layer"), py::arg("W"),
             doc.MultilayerPerceptron.SetWeights.doc_vector)
-        .def(
-            "SetBiases",
-            [](const MultilayerPerceptron<T>* self,
-                Eigen::Ref<VectorX<T>> params, int layer,
-                const Eigen::Ref<const VectorX<T>>& b) {
-              self->SetBiases(&params, layer, b);
-            },
+        .def("SetBiases",
+            py::overload_cast<EigenPtr<VectorX<T>>, int,
+                const Eigen::Ref<const VectorX<T>>&>(
+                &MultilayerPerceptron<T>::SetBiases, py::const_),
             py::arg("params"), py::arg("layer"), py::arg("b"),
             doc.MultilayerPerceptron.SetBiases.doc_vector)
         .def("Backpropagation",
-            WrapCallbacks(
-                [](const MultilayerPerceptron<T>* self,
-                    const Context<T>& context,
-                    const Eigen::Ref<const MatrixX<T>>& X,
-                    std::function<T(const Eigen::Ref<const MatrixX<T>>& Y,
-                        Eigen::Ref<MatrixX<T>> dloss_dY)>
-                        loss,
-                    Eigen::Ref<VectorX<T>> dloss_dparams) {
-                  auto new_loss = [loss](const Eigen::Ref<const MatrixX<T>>& Y,
-                                      EigenPtr<MatrixX<T>> dloss_dY) {
-                    return loss(Y, *dloss_dY);
-                  };
-                  return self->Backpropagation(
-                      context, X, new_loss, &dloss_dparams);
-                }),
+            WrapCallbacks(&MultilayerPerceptron<T>::Backpropagation),
             py::arg("context"), py::arg("X"), py::arg("loss"),
             py::arg("dloss_dparams"),
             doc.MultilayerPerceptron.Backpropagation.doc)
-        .def(
-            "BackpropagationMeanSquaredError",
-            [](const MultilayerPerceptron<T>* self, const Context<T>& context,
-                const Eigen::Ref<const MatrixX<T>>& X,
-                const Eigen::Ref<const MatrixX<T>>& Y_desired,
-                Eigen::Ref<VectorX<T>> dloss_dparams) {
-              return self->BackpropagationMeanSquaredError(
-                  context, X, Y_desired, &dloss_dparams);
-            },
+        .def("BackpropagationMeanSquaredError",
+            &MultilayerPerceptron<T>::BackpropagationMeanSquaredError,
             py::arg("context"), py::arg("X"), py::arg("Y_desired"),
             py::arg("dloss_dparams"),
             doc.MultilayerPerceptron.BackpropagationMeanSquaredError.doc)
-        .def(
-            "BatchOutput",
-            [](const MultilayerPerceptron<T>* self, const Context<T>& context,
-                const Eigen::Ref<const MatrixX<T>>& X,
-                Eigen::Ref<MatrixX<T>> Y) {
-              self->BatchOutput(context, X, &Y);
-            },
+        .def("BatchOutput", &MultilayerPerceptron<T>::BatchOutput,
             py::arg("context"), py::arg("X"), py::arg("Y"),
-            doc.MultilayerPerceptron.BatchOutput.doc)
-        .def(
-            "BatchOutput",
-            [](const MultilayerPerceptron<T>* self, const Context<T>& context,
-                const Eigen::Ref<const MatrixX<T>>& X, Eigen::Ref<MatrixX<T>> Y,
-                Eigen::Ref<MatrixX<T>> dYdX) {
-              self->BatchOutput(context, X, &Y, &dYdX);
-            },
-            py::arg("context"), py::arg("X"), py::arg("Y"), py::arg("dYdX"),
-            doc.MultilayerPerceptron.BatchOutput.doc)
+            py::arg("dYdX") = nullptr, doc.MultilayerPerceptron.BatchOutput.doc)
         .def(
             "BatchOutput",
             [](const MultilayerPerceptron<T>* self, const Context<T>& context,
