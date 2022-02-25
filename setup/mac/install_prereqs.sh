@@ -38,13 +38,13 @@ done
 # developing with source distributions.
 
 source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh" \
-  "${binary_distribution_args[@]:-}"
+  "${binary_distribution_args[@]}"
 
 # The following additional dependencies are only needed when developing with
 # source distributions.
 
 source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh" \
-  "${source_distribution_args[@]:-}"
+  "${source_distribution_args[@]}"
 
 # The preceding only needs to be run once per machine. The following sourced
 # script should be run once per user who develops with source distributions.
