@@ -37,14 +37,17 @@ done
 # needed when developing with binary distributions are also needed when
 # developing with source distributions.
 
+# N.B. We need `${var:-}` here because mac's older version of bash does
+# not seem to be able to cope with an empty array.
+
 source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh" \
-  "${binary_distribution_args[@]}"
+  "${binary_distribution_args[@]:-}"
 
 # The following additional dependencies are only needed when developing with
 # source distributions.
 
 source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh" \
-  "${source_distribution_args[@]}"
+  "${source_distribution_args[@]:-}"
 
 # The preceding only needs to be run once per machine. The following sourced
 # script should be run once per user who develops with source distributions.
