@@ -482,11 +482,11 @@ int ToMeshcatColor(const Rgba& rgba) {
 
 }  // namespace
 
-class Meshcat::WebSocketPublisher {
+class Meshcat::Impl {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WebSocketPublisher);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Impl);
 
-  explicit WebSocketPublisher(const MeshcatParams& params)
+  explicit Impl(const MeshcatParams& params)
       : prefix_("/drake"),
         main_thread_id_(std::this_thread::get_id()),
         params_(params) {
@@ -508,7 +508,7 @@ class Meshcat::WebSocketPublisher {
     std::future<std::tuple<uWS::Loop*, int, bool>> app_future =
         app_promise.get_future();
     websocket_thread_ = std::thread(
-        &WebSocketPublisher::WebSocketMain, this, std::move(app_promise),
+        &Impl::WebSocketMain, this, std::move(app_promise),
         params.host, params.port);
     bool connected;
     std::tie(loop_, port_, connected) = app_future.get();
@@ -519,7 +519,7 @@ class Meshcat::WebSocketPublisher {
     }
   }
 
-  ~WebSocketPublisher() {
+  ~Impl() {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     Defer([this]() {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
@@ -1617,173 +1617,184 @@ Meshcat::Meshcat(std::optional<int> port)
 
 Meshcat::Meshcat(const MeshcatParams& params)
     // Creates the server thread, bind to the port, etc.
-    : publisher_{std::make_unique<WebSocketPublisher>(params)} {
+    : impl_{new Impl(params)} {
   drake::log()->info("Meshcat listening for connections at {}", web_url());
 }
 
-Meshcat::~Meshcat() = default;
+Meshcat::~Meshcat() {
+  delete static_cast<Impl*>(impl_);
+}
+
+Meshcat::Impl& Meshcat::impl() {
+  DRAKE_DEMAND(impl_ != nullptr);
+  return *static_cast<Impl*>(impl_);
+}
+
+const Meshcat::Impl& Meshcat::impl() const {
+  return const_cast<Meshcat*>(this)->impl();
+}
 
 std::string Meshcat::web_url() const {
-  return publisher_->web_url();
+  return impl().web_url();
 }
 
 int Meshcat::port() const {
-  return publisher_->port();
+  return impl().port();
 }
 
 std::string Meshcat::ws_url() const {
-  return publisher_->ws_url();
+  return impl().ws_url();
 }
 
 int Meshcat::GetNumActiveConnections() const {
-  return publisher_->GetNumActiveConnections();
+  return impl().GetNumActiveConnections();
 }
 
 void Meshcat::Flush() const {
-  publisher_->Flush();
+  impl().Flush();
 }
 
 void Meshcat::SetObject(std::string_view path, const Shape& shape,
                         const Rgba& rgba) {
-  publisher_->SetObject(path, shape, rgba);
+  impl().SetObject(path, shape, rgba);
 }
 
 void Meshcat::SetObject(std::string_view path,
                         const perception::PointCloud& cloud, double point_size,
                         const Rgba& rgba) {
-  publisher_->SetObject(path, cloud, point_size, rgba);
+  impl().SetObject(path, cloud, point_size, rgba);
 }
 
 void Meshcat::SetObject(std::string_view path,
                         const TriangleSurfaceMesh<double>& mesh,
                         const Rgba& rgba, bool wireframe,
                         double wireframe_line_width) {
-  publisher_->SetObject(path, mesh, rgba, wireframe, wireframe_line_width);
+  impl().SetObject(path, mesh, rgba, wireframe, wireframe_line_width);
 }
 
 void Meshcat::SetLine(std::string_view path,
                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
                       double line_width, const Rgba& rgba) {
-  publisher_->SetLine(path, vertices, line_width, rgba);
+  impl().SetLine(path, vertices, line_width, rgba);
 }
 
 void Meshcat::SetLineSegments(std::string_view path,
                               const Eigen::Ref<const Eigen::Matrix3Xd>& start,
                               const Eigen::Ref<const Eigen::Matrix3Xd>& end,
                               double line_width, const Rgba& rgba) {
-  publisher_->SetLineSegments(path, start, end, line_width, rgba);
+  impl().SetLineSegments(path, start, end, line_width, rgba);
 }
 
 void Meshcat::SetTriangleMesh(
     std::string_view path, const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
     const Eigen::Ref<const Eigen::Matrix3Xi>& faces, const Rgba& rgba,
     bool wireframe, double wireframe_line_width) {
-  publisher_->SetTriangleMesh(path, vertices, faces, rgba, wireframe,
+  impl().SetTriangleMesh(path, vertices, faces, rgba, wireframe,
                               wireframe_line_width);
 }
 
 void Meshcat::SetCamera(PerspectiveCamera camera, std::string path) {
-  publisher_->SetCamera(std::move(camera), std::move(path));
+  impl().SetCamera(std::move(camera), std::move(path));
 }
 
 void Meshcat::SetCamera(OrthographicCamera camera, std::string path) {
-  publisher_->SetCamera(std::move(camera), std::move(path));
+  impl().SetCamera(std::move(camera), std::move(path));
 }
 
 void Meshcat::SetTransform(std::string_view path,
                            const RigidTransformd& X_ParentPath) {
-  publisher_->SetTransform(path, X_ParentPath);
+  impl().SetTransform(path, X_ParentPath);
 }
 
 void Meshcat::SetTransform(std::string_view path,
                            const Eigen::Ref<const Eigen::Matrix4d>& matrix) {
-  publisher_->SetTransform(path, matrix);
+  impl().SetTransform(path, matrix);
 }
 
 void Meshcat::Delete(std::string_view path) {
-  publisher_->Delete(path);
+  impl().Delete(path);
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           bool value) {
-  publisher_->SetProperty(path, std::move(property), value);
+  impl().SetProperty(path, std::move(property), value);
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           double value) {
-  publisher_->SetProperty(path, std::move(property), value);
+  impl().SetProperty(path, std::move(property), value);
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           const std::vector<double>& value) {
-  publisher_->SetProperty(path, std::move(property), value);
+  impl().SetProperty(path, std::move(property), value);
 }
 
 void Meshcat::SetAnimation(const MeshcatAnimation& animation) {
-  publisher_->SetAnimation(animation);
+  impl().SetAnimation(animation);
 }
 
 void Meshcat::Set2dRenderMode(const math::RigidTransformd& X_WC, double xmin,
                               double xmax, double ymin, double ymax) {
-  publisher_->Set2dRenderMode(X_WC, xmin, xmax, ymin, ymax);
+  impl().Set2dRenderMode(X_WC, xmin, xmax, ymin, ymax);
 }
 
 void Meshcat::ResetRenderMode() {
-  publisher_->ResetRenderMode();
+  impl().ResetRenderMode();
 }
 
 void Meshcat::AddButton(std::string name) {
-  publisher_->AddButton(std::move(name));
+  impl().AddButton(std::move(name));
 }
 
 int Meshcat::GetButtonClicks(std::string_view name) {
-  return publisher_->GetButtonClicks(name);
+  return impl().GetButtonClicks(name);
 }
 
 void Meshcat::DeleteButton(std::string name) {
-  publisher_->DeleteButton(std::move(name));
+  impl().DeleteButton(std::move(name));
 }
 
 void Meshcat::AddSlider(std::string name, double min, double max,
                                double step, double value) {
-  publisher_->AddSlider(std::move(name), min, max, step, value);
+  impl().AddSlider(std::move(name), min, max, step, value);
 }
 
 void Meshcat::SetSliderValue(std::string name, double value) {
-  publisher_->SetSliderValue(std::move(name), value);
+  impl().SetSliderValue(std::move(name), value);
 }
 
 double Meshcat::GetSliderValue(std::string_view name) {
-  return publisher_->GetSliderValue(name);
+  return impl().GetSliderValue(name);
 }
 
 void Meshcat::DeleteSlider(std::string name) {
-  publisher_->DeleteSlider(std::move(name));
+  impl().DeleteSlider(std::move(name));
 }
 
 void Meshcat::DeleteAddedControls() {
-  publisher_->DeleteAddedControls();
+  impl().DeleteAddedControls();
 }
 
 std::string Meshcat::StaticHtml() {
-  return publisher_->StaticHtml();
+  return impl().StaticHtml();
 }
 
 bool Meshcat::HasPath(std::string_view path) const {
-  return publisher_->HasPath(path);
+  return impl().HasPath(path);
 }
 
 std::string Meshcat::GetPackedObject(std::string_view path) const {
-  return publisher_->GetPackedObject(path);
+  return impl().GetPackedObject(path);
 }
 
 std::string Meshcat::GetPackedTransform(std::string_view path) const {
-  return publisher_->GetPackedTransform(path);
+  return impl().GetPackedTransform(path);
 }
 
 std::string Meshcat::GetPackedProperty(std::string_view path,
                                        std::string property) const {
-  return publisher_->GetPackedProperty(path, std::move(property));
+  return impl().GetPackedProperty(path, std::move(property));
 }
 
 }  // namespace geometry
