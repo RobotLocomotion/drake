@@ -512,7 +512,14 @@ class Meshcat {
  private:
   // Provides PIMPL encapsulation of websocket types.
   class WebSocketPublisher;
-  const std::unique_ptr<WebSocketPublisher> publisher_;
+
+  // Safe accessors for the PIMPL object.
+  WebSocketPublisher& publisher();
+  const WebSocketPublisher& publisher() const;
+
+  // Always a non-nullptr WebSocketPublisher, but stored as void* to enforce
+  // that the publisher() accessors are always used.
+  void* const publisher_{};
 };
 
 }  // namespace geometry

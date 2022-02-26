@@ -1744,213 +1744,192 @@ Meshcat::Meshcat(std::optional<int> port)
 
 Meshcat::Meshcat(const MeshcatParams& params)
     // Creates the server thread, bind to the port, etc.
-    : publisher_{std::make_unique<WebSocketPublisher>(params)} {
+    : publisher_{new WebSocketPublisher(params)} {
   drake::log()->info("Meshcat listening for connections at {}", web_url());
 }
 
-Meshcat::~Meshcat() = default;
+Meshcat::~Meshcat() {
+  delete static_cast<WebSocketPublisher*>(publisher_);
+}
+
+// This overloaded function ensures that CheckWebsocketThread always happens
+// before using WebSocketPublisher.
+Meshcat::WebSocketPublisher& Meshcat::publisher() {
+  DRAKE_DEMAND(publisher_ != nullptr);
+  auto* result = static_cast<WebSocketPublisher*>(publisher_);
+  result->CheckWebsocketThread();
+  return *result;
+}
+
+const Meshcat::WebSocketPublisher& Meshcat::publisher() const {
+  return const_cast<Meshcat*>(this)->publisher();
+}
 
 std::string Meshcat::web_url() const {
-  publisher_->CheckWebsocketThread();
-  return publisher_->web_url();
+  return publisher().web_url();
 }
 
 int Meshcat::port() const {
-  publisher_->CheckWebsocketThread();
-  return publisher_->port();
+  return publisher().port();
 }
 
 std::string Meshcat::ws_url() const {
-  publisher_->CheckWebsocketThread();
-  return publisher_->ws_url();
+  return publisher().ws_url();
 }
 
 int Meshcat::GetNumActiveConnections() const {
-  publisher_->CheckWebsocketThread();
-  return publisher_->GetNumActiveConnections();
+  return publisher().GetNumActiveConnections();
 }
 
 void Meshcat::Flush() const {
-  publisher_->CheckWebsocketThread();
-  publisher_->Flush();
+  publisher().Flush();
 }
 
 void Meshcat::SetObject(std::string_view path, const Shape& shape,
                         const Rgba& rgba) {
-  publisher_->CheckWebsocketThread();
-  publisher_->SetObject(path, shape, rgba);
+  publisher().SetObject(path, shape, rgba);
 }
 
 void Meshcat::SetObject(std::string_view path,
                         const perception::PointCloud& cloud, double point_size,
                         const Rgba& rgba) {
-  publisher_->CheckWebsocketThread();
-  publisher_->SetObject(path, cloud, point_size, rgba);
+  publisher().SetObject(path, cloud, point_size, rgba);
 }
 
 void Meshcat::SetObject(std::string_view path,
                         const TriangleSurfaceMesh<double>& mesh,
                         const Rgba& rgba, bool wireframe,
                         double wireframe_line_width) {
-  publisher_->CheckWebsocketThread();
-  publisher_->SetObject(path, mesh, rgba, wireframe, wireframe_line_width);
+  publisher().SetObject(path, mesh, rgba, wireframe, wireframe_line_width);
 }
 
 void Meshcat::SetLine(std::string_view path,
                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
                       double line_width, const Rgba& rgba) {
-  publisher_->CheckWebsocketThread();
-  publisher_->SetLine(path, vertices, line_width, rgba);
+  publisher().SetLine(path, vertices, line_width, rgba);
 }
 
 void Meshcat::SetLineSegments(std::string_view path,
                               const Eigen::Ref<const Eigen::Matrix3Xd>& start,
                               const Eigen::Ref<const Eigen::Matrix3Xd>& end,
                               double line_width, const Rgba& rgba) {
-  publisher_->CheckWebsocketThread();
-  publisher_->SetLineSegments(path, start, end, line_width, rgba);
+  publisher().SetLineSegments(path, start, end, line_width, rgba);
 }
 
 void Meshcat::SetTriangleMesh(
     std::string_view path, const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
     const Eigen::Ref<const Eigen::Matrix3Xi>& faces, const Rgba& rgba,
     bool wireframe, double wireframe_line_width) {
-  publisher_->CheckWebsocketThread();
-  publisher_->SetTriangleMesh(path, vertices, faces, rgba, wireframe,
+  publisher().SetTriangleMesh(path, vertices, faces, rgba, wireframe,
                               wireframe_line_width);
 }
 
 void Meshcat::SetCamera(PerspectiveCamera camera, std::string path) {
-  publisher_->CheckWebsocketThread();
-  publisher_->SetCamera(std::move(camera), std::move(path));
+  publisher().SetCamera(std::move(camera), std::move(path));
 }
 
 void Meshcat::SetCamera(OrthographicCamera camera, std::string path) {
-  publisher_->CheckWebsocketThread();
-  publisher_->SetCamera(std::move(camera), std::move(path));
+  publisher().SetCamera(std::move(camera), std::move(path));
 }
 
 void Meshcat::SetTransform(std::string_view path,
                            const RigidTransformd& X_ParentPath) {
-  publisher_->CheckWebsocketThread();
-  publisher_->SetTransform(path, X_ParentPath);
+  publisher().SetTransform(path, X_ParentPath);
 }
 
 void Meshcat::SetTransform(std::string_view path,
                            const Eigen::Ref<const Eigen::Matrix4d>& matrix) {
-  publisher_->CheckWebsocketThread();
-  publisher_->SetTransform(path, matrix);
+  publisher().SetTransform(path, matrix);
 }
 
 void Meshcat::Delete(std::string_view path) {
-  publisher_->CheckWebsocketThread();
-  publisher_->Delete(path);
+  publisher().Delete(path);
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           bool value) {
-  publisher_->CheckWebsocketThread();
-  publisher_->SetProperty(path, std::move(property), value);
+  publisher().SetProperty(path, std::move(property), value);
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           double value) {
-  publisher_->CheckWebsocketThread();
-  publisher_->SetProperty(path, std::move(property), value);
+  publisher().SetProperty(path, std::move(property), value);
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           const std::vector<double>& value) {
-  publisher_->CheckWebsocketThread();
-  publisher_->SetProperty(path, std::move(property), value);
+  publisher().SetProperty(path, std::move(property), value);
 }
 
 void Meshcat::SetAnimation(const MeshcatAnimation& animation) {
-  publisher_->CheckWebsocketThread();
-  publisher_->SetAnimation(animation);
+  publisher().SetAnimation(animation);
 }
 
 void Meshcat::Set2dRenderMode(const math::RigidTransformd& X_WC, double xmin,
                               double xmax, double ymin, double ymax) {
-  publisher_->CheckWebsocketThread();
-  publisher_->Set2dRenderMode(X_WC, xmin, xmax, ymin, ymax);
+  publisher().Set2dRenderMode(X_WC, xmin, xmax, ymin, ymax);
 }
 
 void Meshcat::ResetRenderMode() {
-  publisher_->CheckWebsocketThread();
-  publisher_->ResetRenderMode();
+  publisher().ResetRenderMode();
 }
 
 void Meshcat::AddButton(std::string name) {
-  publisher_->CheckWebsocketThread();
-  publisher_->AddButton(std::move(name));
+  publisher().AddButton(std::move(name));
 }
 
 int Meshcat::GetButtonClicks(std::string_view name) {
-  publisher_->CheckWebsocketThread();
-  return publisher_->GetButtonClicks(name);
+  return publisher().GetButtonClicks(name);
 }
 
 void Meshcat::DeleteButton(std::string name) {
-  publisher_->CheckWebsocketThread();
-  publisher_->DeleteButton(std::move(name));
+  publisher().DeleteButton(std::move(name));
 }
 
 void Meshcat::AddSlider(std::string name, double min, double max,
                                double step, double value) {
-  publisher_->CheckWebsocketThread();
-  publisher_->AddSlider(std::move(name), min, max, step, value);
+  publisher().AddSlider(std::move(name), min, max, step, value);
 }
 
 void Meshcat::SetSliderValue(std::string name, double value) {
-  publisher_->CheckWebsocketThread();
-  publisher_->SetSliderValue(std::move(name), value);
+  publisher().SetSliderValue(std::move(name), value);
 }
 
 double Meshcat::GetSliderValue(std::string_view name) {
-  publisher_->CheckWebsocketThread();
-  return publisher_->GetSliderValue(name);
+  return publisher().GetSliderValue(name);
 }
 
 void Meshcat::DeleteSlider(std::string name) {
-  publisher_->CheckWebsocketThread();
-  publisher_->DeleteSlider(std::move(name));
+  publisher().DeleteSlider(std::move(name));
 }
 
 void Meshcat::DeleteAddedControls() {
-  publisher_->CheckWebsocketThread();
-  publisher_->DeleteAddedControls();
+  publisher().DeleteAddedControls();
 }
 
 std::string Meshcat::StaticHtml() {
-  publisher_->CheckWebsocketThread();
-  return publisher_->StaticHtml();
+  return publisher().StaticHtml();
 }
 
 bool Meshcat::HasPath(std::string_view path) const {
-  publisher_->CheckWebsocketThread();
-  return publisher_->HasPath(path);
+  return publisher().HasPath(path);
 }
 
 std::string Meshcat::GetPackedObject(std::string_view path) const {
-  publisher_->CheckWebsocketThread();
-  return publisher_->GetPackedObject(path);
+  return publisher().GetPackedObject(path);
 }
 
 std::string Meshcat::GetPackedTransform(std::string_view path) const {
-  publisher_->CheckWebsocketThread();
-  return publisher_->GetPackedTransform(path);
+  return publisher().GetPackedTransform(path);
 }
 
 std::string Meshcat::GetPackedProperty(std::string_view path,
                                        std::string property) const {
-  publisher_->CheckWebsocketThread();
-  return publisher_->GetPackedProperty(path, std::move(property));
+  return publisher().GetPackedProperty(path, std::move(property));
 }
 
 void Meshcat::InjectWebsocketThreadFault() {
-  publisher_->CheckWebsocketThread();
-  publisher_->InjectWebsocketThreadFault();
+  publisher().InjectWebsocketThreadFault();
 }
 
 }  // namespace geometry
