@@ -505,7 +505,7 @@ class Meshcat {
  private:
   // Provides PIMPL encapsulation of websocket types.
   class WebSocketPublisher;
-  std::unique_ptr<WebSocketPublisher> publisher_;
+  const std::unique_ptr<WebSocketPublisher> publisher_;
 };
 
 }  // namespace geometry

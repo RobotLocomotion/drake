@@ -23,6 +23,7 @@
 #include <msgpack.hpp>
 #include <uuid.h>
 
+#include "drake/common/drake_throw.h"
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/never_destroyed.h"
@@ -489,7 +490,20 @@ class Meshcat::WebSocketPublisher {
       : prefix_("/drake"),
         main_thread_id_(std::this_thread::get_id()),
         params_(params) {
-    DRAKE_DEMAND(!params.port.has_value() || *params.port >= 1024);
+    DRAKE_THROW_UNLESS(params.port.value_or(7000) >= 1024);
+
+    // Sanity-check the pattern, by passing it (along with dummy host and port
+    // values) through to fmt to allow any fmt-specific exception to percolate.
+    // Then, confirm that the user's pattern started with a valid protocol.
+    const std::string url = fmt::format(
+        params.web_url_pattern, fmt::arg("host", "foo"), fmt::arg("port", 1));
+    if (url.substr(0, 4) != "http") {
+      throw std::logic_error("The web_url_pattern must be http:// or https://");
+    }
+
+    // Fetch the index once to be sure that we preload the content.
+    GetUrlContent("/");
+
     std::promise<std::tuple<uWS::Loop*, int, bool>> app_promise;
     std::future<std::tuple<uWS::Loop*, int, bool>> app_future =
         app_promise.get_future();
@@ -520,10 +534,16 @@ class Meshcat::WebSocketPublisher {
     websocket_thread_.join();
   }
 
-  // This function is a file-internal helper, not public in the PIMPL.
-  const MeshcatParams& params() const {
+  // This function is public via the PIMPL.
+  std::string web_url() const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
-    return params_;
+    const std::string& host = params_.host;
+    const bool is_localhost = host.empty() || host == "*";
+    const std::string display_host = is_localhost ? "localhost" : host;
+    return fmt::format(
+        params_.web_url_pattern,
+        fmt::arg("host", display_host),
+        fmt::arg("port", port_));
   }
 
   // This function is public via the PIMPL.
@@ -533,7 +553,16 @@ class Meshcat::WebSocketPublisher {
   }
 
   // This function is public via the PIMPL.
+  std::string ws_url() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    const std::string http_url = web_url();
+    DRAKE_DEMAND(http_url.substr(0, 4) == "http");
+    return "ws" + http_url.substr(4);
+  }
+
+  // This function is public via the PIMPL.
   int GetNumActiveConnections() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     return num_websockets_.load();
   }
 
@@ -655,7 +684,7 @@ class Meshcat::WebSocketPublisher {
   // This function is public via the PIMPL.
   void SetObject(std::string_view path, const perception::PointCloud& cloud,
                  double point_size, const Rgba& rgba) {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
 
     uuids::uuid_random_generator uuid_generator{generator_};
     internal::SetObjectData data;
@@ -697,11 +726,55 @@ class Meshcat::WebSocketPublisher {
   }
 
   // This function is public via the PIMPL.
+  void SetObject(std::string_view path, const TriangleSurfaceMesh<double>& mesh,
+                 const Rgba& rgba, bool wireframe,
+                 double wireframe_line_width) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    Eigen::Matrix3Xd vertices(3, mesh.num_vertices());
+    for (int i = 0; i < mesh.num_vertices(); ++i) {
+      vertices.col(i) = mesh.vertex(i);
+    }
+    Eigen::Matrix3Xi faces(3, mesh.num_triangles());
+    for (int i = 0; i < mesh.num_triangles(); ++i) {
+      const auto& e = mesh.element(i);
+      for (int j = 0; j < 3; ++j) {
+        faces(j, i) = e.vertex(j);
+      }
+    }
+    SetTriangleMesh(path, vertices, faces, rgba, wireframe,
+                    wireframe_line_width);
+  }
+
+  // This function is public via the PIMPL.
   void SetLine(std::string_view path,
                const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
-               double line_width, const Rgba& rgba, bool line_segments) {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+               double line_width, const Rgba& rgba) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    const bool kLineSegments = false;
+    SetLineImpl(path, vertices, line_width, rgba, kLineSegments);
+  }
 
+  // This function is public via the PIMPL.
+  void SetLineSegments(std::string_view path,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& start,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& end,
+                       double line_width, const Rgba& rgba) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    DRAKE_THROW_UNLESS(start.cols() == end.cols());
+    // The LineSegments loader in three.js take the same data structure as Line,
+    // but takes every consecutive pair of vertices as a (start, end).
+    Eigen::Matrix<double, 6, Eigen::Dynamic> vstack(6, start.cols());
+    vstack << start, end;
+    Eigen::Map<Eigen::Matrix3Xd> vertices(vstack.data(), 3, 2*start.cols());
+    const bool kLineSegments = true;
+    SetLineImpl(path, vertices, line_width, rgba, kLineSegments);
+  }
+
+  // This function is internal to the PIMPL, used to implement the prior two
+  // functions (SetLine and SetLineSegments).
+  void SetLineImpl(std::string_view path,
+                   const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+                   double line_width, const Rgba& rgba, bool line_segments) {
     uuids::uuid_random_generator uuid_generator{generator_};
     internal::SetObjectData data;
     data.path = FullPath(path);
@@ -742,7 +815,7 @@ class Meshcat::WebSocketPublisher {
                        const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
                        const Rgba& rgba, bool wireframe,
                        double wireframe_line_width) {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
 
     uuids::uuid_random_generator uuid_generator{generator_};
     internal::SetObjectData data;
@@ -806,6 +879,13 @@ class Meshcat::WebSocketPublisher {
 
   // This function is public via the PIMPL.
   void SetTransform(std::string_view path,
+                    const RigidTransformd& X_ParentPath) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    SetTransform(path, X_ParentPath.GetAsMatrix4());
+  }
+
+  // This function is public via the PIMPL.
+  void SetTransform(std::string_view path,
                     const Eigen::Ref<const Eigen::Matrix4d>& matrix) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
@@ -842,7 +922,8 @@ class Meshcat::WebSocketPublisher {
     });
   }
 
-  // This function is public via the PIMPL.
+  // This function is public via the PIMPL, via overloads for a specific set of
+  // template types (not all possible T's).
   template <typename T>
   void SetProperty(std::string_view path, std::string property,
                    const T& value) {
@@ -948,6 +1029,42 @@ class Meshcat::WebSocketPublisher {
           app_->publish("all", message, uWS::OpCode::BINARY, false);
           animation_ = std::move(message);
         });
+  }
+
+  // This function is public via the PIMPL.
+  void Set2dRenderMode(const math::RigidTransformd& X_WC, double xmin,
+                      double xmax, double ymin, double ymax) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    // Set orthographic camera.
+    OrthographicCamera camera;
+    camera.left = xmin;
+    camera.right = xmax;
+    camera.bottom = ymin;
+    camera.top = ymax;
+    SetCamera(camera, "/Cameras/default/rotated");
+
+    SetTransform("/Cameras/default", X_WC);
+    // Lock orbit controls.
+    SetProperty("/Cameras/default/rotated/<object>", "position",
+                std::vector<double>{0.0, 0.0, 0.0});
+
+    SetProperty("/Background", "visible", false);
+    SetProperty("/Grid", "visible", false);
+    SetProperty("/Axes", "visible", false);
+  }
+
+  // This function is public via the PIMPL.
+  void ResetRenderMode() {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    PerspectiveCamera camera;
+    SetCamera(camera, "/Cameras/default/rotated");
+    SetTransform("/Cameras/default", math::RigidTransformd());
+    // Lock orbit controls.
+    SetProperty("/Cameras/default/rotated/<object>", "position",
+                std::vector<double>{0.0, 1.0, 3.0});
+    SetProperty("/Background", "visible", true);
+    SetProperty("/Grid", "visible", true);
+    SetProperty("/Axes", "visible", true);
   }
 
   // This function is public via the PIMPL.
@@ -1498,36 +1615,16 @@ MeshcatParams MakeMeshcatParamsPortOnly(std::optional<int> port) {
 Meshcat::Meshcat(std::optional<int> port)
     : Meshcat(MakeMeshcatParamsPortOnly(port)) {}
 
-Meshcat::Meshcat(const MeshcatParams& params) {
-  // Sanity-check the pattern, by passing it (along with dummy host and port
-  // values) through to fmt to allow any fmt-specific exception to percolate.
-  // Then, confirm that the user's pattern started with a valid protocol.
-  const std::string url = fmt::format(
-      params.web_url_pattern, fmt::arg("host", "foo"), fmt::arg("port", 1));
-  if (url.substr(0, 4) != "http") {
-    throw std::logic_error("The web_url_pattern must be http:// or https://");
-  }
-
-  // Fetch the index once to be sure that we preload the content.
-  GetUrlContent("/");
-
-  // Create the server thread, bind to the port, etc.
-  publisher_ = std::make_unique<WebSocketPublisher>(params);
+Meshcat::Meshcat(const MeshcatParams& params)
+    // Creates the server thread, bind to the port, etc.
+    : publisher_{std::make_unique<WebSocketPublisher>(params)} {
   drake::log()->info("Meshcat listening for connections at {}", web_url());
 }
 
 Meshcat::~Meshcat() = default;
 
 std::string Meshcat::web_url() const {
-  const MeshcatParams& params = publisher_->params();
-  const std::string& host = params.host;
-  const bool is_localhost = host.empty() || host == "*";
-  const std::string display_host = is_localhost ? "localhost" : host;
-  const int port = publisher_->port();
-  return fmt::format(
-      params.web_url_pattern,
-      fmt::arg("host", display_host),
-      fmt::arg("port", port));
+  return publisher_->web_url();
 }
 
 int Meshcat::port() const {
@@ -1535,9 +1632,7 @@ int Meshcat::port() const {
 }
 
 std::string Meshcat::ws_url() const {
-  const std::string http_url = web_url();
-  DRAKE_DEMAND(http_url.substr(0, 4) == "http");
-  return "ws" + http_url.substr(4);
+  return publisher_->ws_url();
 }
 
 int Meshcat::GetNumActiveConnections() const {
@@ -1563,40 +1658,20 @@ void Meshcat::SetObject(std::string_view path,
                         const TriangleSurfaceMesh<double>& mesh,
                         const Rgba& rgba, bool wireframe,
                         double wireframe_line_width) {
-  Eigen::Matrix3Xd vertices(3, mesh.num_vertices());
-  for (int i = 0; i < mesh.num_vertices(); ++i) {
-    vertices.col(i) = mesh.vertex(i);
-  }
-  Eigen::Matrix3Xi faces(3, mesh.num_triangles());
-  for (int i = 0; i < mesh.num_triangles(); ++i) {
-    const auto& e = mesh.element(i);
-    for (int j = 0; j < 3; ++j) {
-      faces(j, i) = e.vertex(j);
-    }
-  }
-  publisher_->SetTriangleMesh(path, vertices, faces, rgba, wireframe,
-                              wireframe_line_width);
+  publisher_->SetObject(path, mesh, rgba, wireframe, wireframe_line_width);
 }
 
 void Meshcat::SetLine(std::string_view path,
                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
                       double line_width, const Rgba& rgba) {
-  const bool kLineSegments = false;
-  publisher_->SetLine(path, vertices, line_width, rgba, kLineSegments);
+  publisher_->SetLine(path, vertices, line_width, rgba);
 }
 
 void Meshcat::SetLineSegments(std::string_view path,
                               const Eigen::Ref<const Eigen::Matrix3Xd>& start,
                               const Eigen::Ref<const Eigen::Matrix3Xd>& end,
                               double line_width, const Rgba& rgba) {
-  DRAKE_THROW_UNLESS(start.cols() == end.cols());
-  // The LineSegments loader in three.js take the same data structure as Line,
-  // but takes every consecutive pair of vertices as a (start, end).
-  Eigen::Matrix<double, 6, Eigen::Dynamic> vstack(6, start.cols());
-  vstack << start, end;
-  Eigen::Map<Eigen::Matrix3Xd> vertices(vstack.data(), 3, 2*start.cols());
-  const bool kLineSegments = true;
-  publisher_->SetLine(path, vertices, line_width, rgba, kLineSegments);
+  publisher_->SetLineSegments(path, start, end, line_width, rgba);
 }
 
 void Meshcat::SetTriangleMesh(
@@ -1617,7 +1692,7 @@ void Meshcat::SetCamera(OrthographicCamera camera, std::string path) {
 
 void Meshcat::SetTransform(std::string_view path,
                            const RigidTransformd& X_ParentPath) {
-  publisher_->SetTransform(path, X_ParentPath.GetAsMatrix4());
+  publisher_->SetTransform(path, X_ParentPath);
 }
 
 void Meshcat::SetTransform(std::string_view path,
@@ -1625,7 +1700,9 @@ void Meshcat::SetTransform(std::string_view path,
   publisher_->SetTransform(path, matrix);
 }
 
-void Meshcat::Delete(std::string_view path) { publisher_->Delete(path); }
+void Meshcat::Delete(std::string_view path) {
+  publisher_->Delete(path);
+}
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           bool value) {
@@ -1648,34 +1725,11 @@ void Meshcat::SetAnimation(const MeshcatAnimation& animation) {
 
 void Meshcat::Set2dRenderMode(const math::RigidTransformd& X_WC, double xmin,
                               double xmax, double ymin, double ymax) {
-  // Set orthographic camera.
-  OrthographicCamera camera;
-  camera.left = xmin;
-  camera.right = xmax;
-  camera.bottom = ymin;
-  camera.top = ymax;
-  SetCamera(camera);
-
-  SetTransform("/Cameras/default", X_WC);
-  // Lock orbit controls.
-  SetProperty("/Cameras/default/rotated/<object>", "position",
-              {0.0, 0.0, 0.0});
-
-  SetProperty("/Background", "visible", false);
-  SetProperty("/Grid", "visible", false);
-  SetProperty("/Axes", "visible", false);
+  publisher_->Set2dRenderMode(X_WC, xmin, xmax, ymin, ymax);
 }
 
 void Meshcat::ResetRenderMode() {
-  PerspectiveCamera camera;
-  SetCamera(camera);
-  SetTransform("/Cameras/default", math::RigidTransformd());
-  // Lock orbit controls.
-  SetProperty("/Cameras/default/rotated/<object>", "position",
-              {0.0, 1.0, 3.0});
-  SetProperty("/Background", "visible", true);
-  SetProperty("/Grid", "visible", true);
-  SetProperty("/Axes", "visible", true);
+  publisher_->ResetRenderMode();
 }
 
 void Meshcat::AddButton(std::string name) {
