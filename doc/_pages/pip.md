@@ -27,22 +27,28 @@ MOSEK™ or Gurobi, you will need to [build Drake from source](/from_source.html
 ## Stable Releases
 
 <div class="warning" markdown="1">
-Drake's support for pip has only just recently been introduced (as of October
-2021), so still has some known issues (see
-[issue #15954](https://github.com/RobotLocomotion/drake/issues/15954)).
-Please [let us know](/getting_help.html) if you
-experience any additional problems. To fall back to other installation methods
-in the meantime, refer to [Installation and Quickstart](/installation.html)
-for more choices.
-</div>
-
-<div class="warning" markdown="1">
 Drake's pip wheels are only published for CPython 3.6 through CPython 3.9
 running on Linux.  In the future, we intend to publish macOS wheel builds.
 </div>
 
 <div class="warning" markdown="1">
 Support for CPython 3.6 and CPython 3.7 will end on 2022-04-01.
+</div>
+
+<div class="warning" markdown="1">
+Drake does not support the Python environment supplied by Anaconda. Before
+installing or using Drake, please `conda deactivate` (repeatedly, until even
+the conda base environment has been deactivated) such that none of the paths
+reported `which -a python python3 pip pip3` refer to conda.
+</div>
+
+<div class="warning" markdown="1">
+Drake's support for pip has a few known issues (see
+[issue #15954](https://github.com/RobotLocomotion/drake/issues/15954)).
+Please [let us know](/getting_help.html) if you
+experience any additional problems. To fall back to other installation methods
+in the meantime, refer to [Installation and Quickstart](/installation.html)
+for more choices.
 </div>
 
 We recommend installing drake into a
