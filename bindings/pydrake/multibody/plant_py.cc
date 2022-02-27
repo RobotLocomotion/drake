@@ -5,6 +5,7 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
+#include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -353,13 +354,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.SetDefaultFreeBodyPose.doc)
         .def("GetDefaultFreeBodyPose", &Class::GetDefaultFreeBodyPose,
             py::arg("body"), cls_doc.GetDefaultFreeBodyPose.doc)
-        .def(
-            "SetActuationInArray",
-            [](const Class* self, multibody::ModelInstanceIndex model_instance,
-                const Eigen::Ref<const VectorX<T>> u_instance,
-                Eigen::Ref<VectorX<T>> u) -> void {
-              self->SetActuationInArray(model_instance, u_instance, &u);
-            },
+        .def("SetActuationInArray", &Class::SetActuationInArray,
             py::arg("model_instance"), py::arg("u_instance"), py::arg("u"),
             cls_doc.SetActuationInArray.doc)
         .def("GetPositionsFromArray",
@@ -368,13 +363,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::GetPositionsFromArray),
             py::arg("model_instance"), py::arg("q"),
             cls_doc.GetPositionsFromArray.doc_2args)
-        .def(
-            "SetPositionsInArray",
-            [](const Class* self, multibody::ModelInstanceIndex model_instance,
-                const Eigen::Ref<const VectorX<T>> q_instance,
-                Eigen::Ref<VectorX<T>> q) -> void {
-              self->SetPositionsInArray(model_instance, q_instance, &q);
-            },
+        .def("SetPositionsInArray", &Class::SetPositionsInArray,
             py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
             cls_doc.SetPositionsInArray.doc)
         .def("GetVelocitiesFromArray",
@@ -383,13 +372,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::GetVelocitiesFromArray),
             py::arg("model_instance"), py::arg("v"),
             cls_doc.GetVelocitiesFromArray.doc_2args)
-        .def(
-            "SetVelocitiesInArray",
-            [](const Class* self, multibody::ModelInstanceIndex model_instance,
-                const Eigen::Ref<const VectorX<T>> v_instance,
-                Eigen::Ref<VectorX<T>> v) -> void {
-              self->SetVelocitiesInArray(model_instance, v_instance, &v);
-            },
+        .def("SetVelocitiesInArray", &Class::SetVelocitiesInArray,
             py::arg("model_instance"), py::arg("v_instance"), py::arg("v"),
             cls_doc.SetVelocitiesInArray.doc)
         // TODO(eric.cousineau): Ensure all of these return either references,

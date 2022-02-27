@@ -22,28 +22,37 @@ purpose of the front page (HTML for layout, Markdown for content).
     <p class="drake-hero-intro">
       {{ page.description }}
     </p>
-    <a href="/installation.html" class="button">Install</a>
+    <div class="drake-hero-buttons">
+      <a href="/installation.html" class="button">Install</a>
+      <a href="#core" class="button grey">Learn More</a>
+    </div>
     <div class="hero-image">
       <img src="{{ site.custom.hero_image | relative_url }}">
     </div>
   </div>
 </section>
 
-<section class="core padding">
+<section id="core" class="core padding">
   <div class="contain">
     <h2>Core Library</h2>
     <div class="grid grid-3col">
       <div class="core-el">
         <h4>Modeling Dynamical<br> Systems</h4>
-        <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__systems.html" target="_blank">API</a> | <a class="button--text" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?urlpath=/tree/tutorials/dynamical_systems.ipynb&" target="_blank">TUTORIAL</a>
+        <div class="core-el-buttons">
+          <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__systems.html" target="_blank">API</a><a class="button--text" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?urlpath=/tree/tutorials/dynamical_systems.ipynb&" target="_blank">TUTORIAL</a>
+        </div>
       </div>
       <div class="core-el">
         <h4>Solving Mathematical<br> Programs</h4>
-        <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__solvers.html" target="_blank">API</a> | <a class="button--text" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?urlpath=/tree/tutorials/mathematical_program.ipynb" target="_blank">TUTORIAL</a>
+        <div class="core-el-buttons">
+          <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__solvers.html" target="_blank">API</a><a class="button--text" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?urlpath=/tree/tutorials/mathematical_program.ipynb" target="_blank">TUTORIAL</a>
+        </div>
       </div>
       <div class="core-el">
         <h4>Multibody Kinematics<br> and Dynamics</h4>
-        <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__multibody.html" target="_blank">API</a>
+        <div class="core-el-buttons">
+          <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__multibody.html" target="_blank">API</a>
+        </div>
       </div>
     </div>
   </div>
