@@ -1,3 +1,4 @@
+#define EIGEN_USE_BLAS
 #include "drake/systems/primitives/multilayer_perceptron.h"
 
 #include <limits>

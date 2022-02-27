@@ -2,6 +2,7 @@
 
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -198,8 +199,19 @@ drake_cc_library(
     name = "multilayer_perceptron",
     srcs = ["multilayer_perceptron.cc"],
     hdrs = ["multilayer_perceptron.h"],
+    linkopts = ["-lblas"],
     deps = [
         "//systems/framework",
+    ],
+)
+
+drake_cc_binary(
+    name = "multilayer_perceptron_performance",
+    srcs = ["multilayer_perceptron_performance.cc"],
+    add_test_rule = 1,
+    deps = [
+        ":multilayer_perceptron",
+        "@gflags",
     ],
 )
 
