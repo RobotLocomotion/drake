@@ -170,8 +170,8 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   /// For any frame (e.g., an @ref multibody_frames_and_bodies "offset frame")
   /// Bp that is fixed to a rigid body B, calculates the dot-product of
   /// `this` = L_MBp_E (body B's spatial momentum measured in frame M, about
-  /// origin, expressed in frame E) with V_MBp_E (frame Bp's spatial velocity
-  /// measured in frame M, expressed in frame E).
+  /// Bp's origin, expressed in frame E) with V_MBp_E (frame Bp's spatial
+  /// velocity measured in frame M, expressed in frame E).
   /// @param[in] velocity which is V_MBp_E, frame Bp's spatial velocity measured
   /// in frame M, and expressed in the same frame E as `this` = L_MBp_E.
   /// @returns 2*K_MB, twice (2x) body B's kinetic energy measured in frame M.
