@@ -171,7 +171,8 @@ GTEST_TEST(FileParserTest, ExtensionMatchTest) {
       ".*\n.*Unable to read file.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromFile("acrobot.URDF"),
-      "Failed to parse XML file .*\nXML_ERROR_FILE_NOT_FOUND");
+      "/.*/acrobot.URDF:0: error: "
+      "Failed to parse XML file: XML_ERROR_FILE_NOT_FOUND");
 }
 
 GTEST_TEST(FileParserTest, BadStringTest) {
@@ -184,6 +185,7 @@ GTEST_TEST(FileParserTest, BadStringTest) {
   // Malformed URDF string is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromString("bad", "urdf"),
+      "<literal-string>.urdf:1: error: "
       "Failed to parse XML string: XML_ERROR_PARSING_TEXT");
 
   // Unknown extension is an error.
