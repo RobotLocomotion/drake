@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 #include <Eigen/Dense>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -30,6 +31,7 @@ namespace {
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using drake::internal::DiagnosticDetail;
 using drake::internal::DiagnosticPolicy;
 using geometry::GeometryId;
 using geometry::SceneGraph;
@@ -38,22 +40,61 @@ class UrdfParserTest : public ::testing::Test {
  public:
   UrdfParserTest() {
     plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
+
+    diagnostic_.SetActionForErrors(
+        [this](const DiagnosticDetail& detail) {
+          error_records_.push_back(detail);
+        });
+    // TODO(rpoyner-tri): implement and test a warning via diagnostics.
+    diagnostic_.SetActionForWarnings(
+        [this](const DiagnosticDetail& detail) {
+          warning_records_.push_back(detail);
+        });
   }
 
-  ModelInstanceIndex AddModelFromUrdfFile(
+  std::optional<ModelInstanceIndex> AddModelFromUrdfFile(
       const std::string& file_name,
       const std::string& model_name) {
     return AddModelFromUrdf(
         {DataSource::kFilename, &file_name}, model_name, {}, w_);
   }
 
+  std::optional<ModelInstanceIndex> AddModelFromUrdfString(
+      const std::string& file_contents,
+      const std::string& model_name) {
+    return AddModelFromUrdf(
+        {DataSource::kContents, &file_contents}, model_name, {}, w_);
+  }
+
  protected:
+  std::vector<DiagnosticDetail> error_records_;
+  std::vector<DiagnosticDetail> warning_records_;
+
   PackageMap package_map_;
   DiagnosticPolicy diagnostic_;
   MultibodyPlant<double> plant_{0.0};
   SceneGraph<double> scene_graph_;
   ParsingWorkspace w_{package_map_, diagnostic_, &plant_};
 };
+
+TEST_F(UrdfParserTest, BadFilename) {
+  AddModelFromUrdfFile("nonexistent.urdf", "");
+  ASSERT_EQ(error_records_.size(), 1);
+  std::string full_message = error_records_[0].FormatError();
+  EXPECT_THAT(full_message,
+              ::testing::MatchesRegex(
+                  "/.*/nonexistent.urdf:0: error: "
+                  "Failed to parse XML file: XML_ERROR_FILE_NOT_FOUND"));
+}
+
+TEST_F(UrdfParserTest, BadXmlString) {
+  AddModelFromUrdfString("not proper xml content", "");
+  ASSERT_EQ(error_records_.size(), 1);
+  std::string full_message = error_records_[0].FormatError();
+  EXPECT_EQ(full_message,
+            "<literal-string>.urdf:1: error: "
+            "Failed to parse XML string: XML_ERROR_PARSING_TEXT");
+}
 
 // Verifies that the URDF loader can leverage a specified package map.
 TEST_F(UrdfParserTest, PackageMapSpecified) {
