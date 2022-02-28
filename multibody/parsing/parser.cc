@@ -56,7 +56,13 @@ std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
     return AddModelsFromSdf(data_source, package_map_, plant_);
   } else {
     ParsingWorkspace workspace{package_map_, diagnostic_policy_, plant_};
-    return {AddModelFromUrdf(data_source, {}, {}, workspace)};
+    const auto maybe_model = AddModelFromUrdf(data_source, {}, {}, workspace);
+    if (maybe_model.has_value()) {
+      return {*maybe_model};
+    } else {
+      throw std::runtime_error(
+          fmt::format("{}: URDF model file parsing failed", file_name));
+    }
   }
 }
 
@@ -75,7 +81,13 @@ ModelInstanceIndex Parser::AddModelFromFile(
     return AddModelFromSdf(data_source, model_name, package_map_, plant_);
   } else {
     ParsingWorkspace workspace{package_map_, diagnostic_policy_, plant_};
-    return AddModelFromUrdf(data_source, model_name, {}, workspace);
+    auto maybe_model = AddModelFromUrdf(data_source, model_name, {}, workspace);
+    if (maybe_model.has_value()) {
+      return *maybe_model;
+    } else {
+      throw std::runtime_error(
+          fmt::format("{}: URDF model file parsing failed", file_name));
+    }
   }
 }
 
@@ -84,13 +96,19 @@ ModelInstanceIndex Parser::AddModelFromString(
     const std::string& file_type,
     const std::string& model_name) {
   DataSource data_source(DataSource::kContents, &file_contents);
-  const FileType type = DetermineFileType(
-      data_source.GetStem() + "." + file_type);
+  const std::string pseudo_name(data_source.GetStem() + "." + file_type);
+  const FileType type = DetermineFileType(pseudo_name);
   if (type == FileType::kSdf) {
     return AddModelFromSdf(data_source, model_name, package_map_, plant_);
   } else {
     ParsingWorkspace workspace{package_map_, diagnostic_policy_, plant_};
-    return AddModelFromUrdf(data_source, model_name, {}, workspace);
+    auto maybe_model = AddModelFromUrdf(data_source, model_name, {}, workspace);
+    if (maybe_model.has_value()) {
+      return *maybe_model;
+    } else {
+      throw std::runtime_error(
+          fmt::format("{}: URDF model string parsing failed", pseudo_name));
+    }
   }
 }
 
