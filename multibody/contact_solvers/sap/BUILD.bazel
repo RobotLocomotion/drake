@@ -13,6 +13,15 @@ package(
 )
 
 drake_cc_library(
+    name = "partial_permutation",
+    srcs = ["partial_permutation.cc"],
+    hdrs = ["partial_permutation.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "sap_constraint",
     srcs = ["sap_constraint.cc"],
     hdrs = ["sap_constraint.h"],
@@ -41,6 +50,14 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:sorted_pair",
+    ],
+)
+
+drake_cc_googletest(
+    name = "partial_permutation_test",
+    deps = [
+        ":partial_permutation",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
