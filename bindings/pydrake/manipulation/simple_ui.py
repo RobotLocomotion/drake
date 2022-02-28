@@ -19,8 +19,9 @@ from pydrake.systems.framework import (
 from pydrake.common.deprecation import deprecated_callable
 
 
-@deprecated_callable("pydrake.manipulation.JointSliders has been deprecated in"
-                     " favor of pydrake.multibody.meshcat.JointSliders",
+@deprecated_callable("pydrake.manipulation.simple_ui.JointSliders has been"
+                     "deprecated in favor of "
+                     "pydrake.multibody.meshcat.JointSliders",
                      date="2022-06-01")
 class JointSliders(VectorSystem):
     """

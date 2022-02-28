@@ -89,6 +89,7 @@ def main():
         if args.setup == 'planar':
             pyplot_visualizer = ConnectPlanarSceneGraphVisualizer(
                 builder, station.get_scene_graph(), geometry_query_port)
+
     teleop = builder.AddSystem(JointSliders(station.get_controller_plant(),
                                             length=800))
     if args.test:
