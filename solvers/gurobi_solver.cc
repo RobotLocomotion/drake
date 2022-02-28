@@ -1171,7 +1171,7 @@ void GurobiSolver::DoSolve(
     if (optimstatus != GRB_OPTIMAL && optimstatus != GRB_SUBOPTIMAL) {
       switch (optimstatus) {
         case GRB_INF_OR_UNBD: {
-          solution_result = SolutionResult::kInfeasible_Or_Unbounded;
+          solution_result = SolutionResult::kInfeasibleOrUnbounded;
           break;
         }
         case GRB_UNBOUNDED: {
