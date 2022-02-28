@@ -40,7 +40,7 @@ class UrdfParserTest : public ::testing::Test {
     plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
   }
 
-  ModelInstanceIndex AddModelFromUrdfFile(
+  std::optional<ModelInstanceIndex> AddModelFromUrdfFile(
       const std::string& file_name,
       const std::string& model_name) {
     return AddModelFromUrdf(
