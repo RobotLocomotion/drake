@@ -92,7 +92,7 @@ TEST_F(KukaTest, ReachableTest) {
     EXPECT_TRUE(result.get_solution_result() ==
                     solvers::SolutionResult::kInfeasibleConstraints ||
                 result.get_solution_result() ==
-                    solvers::SolutionResult::kInfeasible_Or_Unbounded);
+                    solvers::SolutionResult::kInfeasibleOrUnbounded);
   }
 }
 }  // namespace
