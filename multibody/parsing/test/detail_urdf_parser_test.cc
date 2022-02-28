@@ -43,7 +43,8 @@ class UrdfParserTest : public ::testing::Test {
   ModelInstanceIndex AddModelFromUrdfFile(
       const std::string& file_name,
       const std::string& model_name) {
-    return AddModelFromUrdf({ .file_name = &file_name }, model_name, {}, w_);
+    return AddModelFromUrdf(
+        {DataSource::kFilename, &file_name}, model_name, {}, w_);
   }
 
  protected:
@@ -339,8 +340,7 @@ TEST_F(UrdfParserTest, AddingGeometriesToWorldLink) {
   </link>
 </robot>
 )""";
-  DataSource source;
-  source.file_contents = &test_urdf;
+  DataSource source{DataSource::kContents, &test_urdf};
 
   AddModelFromUrdf(source, "urdf", {}, w_);
 
@@ -452,7 +452,7 @@ void ParseTestString(const std::string& inner,
   DiagnosticPolicy diagnostic;
   ParsingWorkspace workspace{package_map, diagnostic, plant};
   drake::log()->debug("inner: {}", inner);
-  AddModelFromUrdf({ .file_name = nullptr, .file_contents = &contents },
+  AddModelFromUrdf({DataSource::kContents, &contents},
                    model_name, {}, workspace);
 }
 
