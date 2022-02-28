@@ -48,7 +48,7 @@ TEST_F(KukaTest, UnreachableTest) {
     const solvers::MathematicalProgramResult result =
         gurobi_solver.Solve(global_ik_.prog(), {}, {});
     EXPECT_TRUE(result.get_solution_result() ==
-                    SolutionResult::kInfeasible_Or_Unbounded ||
+                    SolutionResult::kInfeasibleOrUnbounded ||
                 result.get_solution_result() ==
                     SolutionResult::kInfeasibleConstraints);
   }

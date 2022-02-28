@@ -97,7 +97,7 @@ void CheckSDDMatrix(const Eigen::Ref<const Eigen::MatrixXd>& X_val,
     EXPECT_TRUE(result.get_solution_result() ==
                     SolutionResult::kInfeasibleConstraints ||
                 result.get_solution_result() ==
-                    SolutionResult::kInfeasible_Or_Unbounded);
+                    SolutionResult::kInfeasibleOrUnbounded);
   }
 }
 
@@ -232,7 +232,7 @@ GTEST_TEST(SdsosTest, NotSdsosPolynomial) {
   EXPECT_FALSE(result.is_success());
   EXPECT_TRUE(
       result.get_solution_result() == SolutionResult::kInfeasibleConstraints ||
-      result.get_solution_result() == SolutionResult::kInfeasible_Or_Unbounded);
+      result.get_solution_result() == SolutionResult::kInfeasibleOrUnbounded);
 }
 }  // namespace solvers
 }  // namespace drake
