@@ -1,6 +1,7 @@
 #include "drake/geometry/meshcat.h"
 
 #include <cstdlib>
+#include <thread>
 
 #include <fmt/format.h>
 #include <gmock/gmock.h>
@@ -140,6 +141,31 @@ GTEST_TEST(MeshcatTest, MalformedCustom) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       Meshcat({"", std::nullopt, "file:///tmp"}),
       ".*web_url_pattern.*http.*");
+}
+
+// Checks that a problem with the worker thread eventually ends up as an
+// exception on the main thread.
+GTEST_TEST(MeshcatTest, WorkerThreadFaultHandling) {
+  auto dut = std::make_unique<Meshcat>();
+
+  // Cause the websocket thread to fail.
+  EXPECT_NO_THROW(dut->InjectWebsocketThreadFault());
+
+  // Keep checking an accessor function until the websocket fault is detected
+  // and is converted into an exception on the main thread. Here we should be
+  // able to call *any* function and have it report the fault; we use web_url
+  // out of simplicity, and rely the impl() function in the cc file to prove
+  // that every public function is preceded by a ThrowIfWebsocketThreadExited.
+  auto checker = [&dut]() {
+    for (int i = 0; i < 1000; ++i) {
+      dut->web_url();
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+  };
+  DRAKE_EXPECT_THROWS_MESSAGE(checker(), ".*thread exited.*");
+
+  // The object can be destroyed with neither errors nor sanitizer leaks.
+  EXPECT_NO_THROW(dut.reset());
 }
 
 GTEST_TEST(MeshcatTest, NumActive) {

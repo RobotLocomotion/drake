@@ -27,6 +27,7 @@
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/meshcat_types.h"
@@ -486,6 +487,18 @@ class Meshcat::Impl {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Impl);
 
+  // Some implementation notes for this Impl constructor:
+  //
+  // It must not call any nontrivial class methods. In general self-calls from a
+  // constructor should always be treated with caution, but it's especially
+  // important in this case because of the complicated threading and state
+  // invariants that we need to maintain.
+  //
+  // It launches the websocket thread and waits for the thread to reply that
+  // either the application started listning successfully, or else failed.
+  // The postcondition is that either:
+  //   defer_ and loop_ are nonnull and the websocket thread is not joined, or
+  //   defer_ and loop_ are null and the websocket thread is stopped and joined.
   explicit Impl(const MeshcatParams& params)
       : prefix_("/drake"),
         main_thread_id_(std::this_thread::get_id()),
@@ -504,16 +517,17 @@ class Meshcat::Impl {
     // Fetch the index once to be sure that we preload the content.
     GetUrlContent("/");
 
-    std::promise<std::tuple<uWS::Loop*, int, bool>> app_promise;
-    std::future<std::tuple<uWS::Loop*, int, bool>> app_future =
+    std::promise<std::tuple<int, bool>> app_promise;
+    std::future<std::tuple<int, bool>> app_future =
         app_promise.get_future();
     websocket_thread_ = std::thread(
         &Impl::WebSocketMain, this, std::move(app_promise),
         params.host, params.port);
     bool connected;
-    std::tie(loop_, port_, connected) = app_future.get();
+    std::tie(port_, connected) = app_future.get();
 
     if (!connected) {
+      defer_.store(nullptr);
       websocket_thread_.join();
       throw std::runtime_error("Meshcat failed to open a websocket port.");
     }
@@ -530,8 +544,34 @@ class Meshcat::Impl {
         ws->close();
       }
       us_listen_socket_close(0, listen_socket_);
+      listen_socket_ = nullptr;
     });
+    defer_.store(nullptr);
     websocket_thread_.join();
+  }
+
+  // Throws an exception if the websocket thread has died.
+  // This function is a file-internal helper, not public in the PIMPL.
+  //
+  // This should called from every public function of the outer class (other
+  // than the destructor) before doing any other real work, so that we can pass
+  // along error conditions from the websocket thread back onto the main thread.
+  //
+  // Don't fall into a TOCTOU trap here -- just because this function returned
+  // successfully does *not* mean that the websocket thread is still running; it
+  // might have crashed immediately after this check. Calling code should not
+  // presume that success here means that additional calls into the websocket
+  // will continue to succeed.
+  void ThrowIfWebsocketThreadExited() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    // N.B. Refer to the comments on the `defer_` and `loop_` class member
+    // fields to help understand what's happening here.
+    DeferImpl discard = &DeferImplDiscard;
+    const bool was_discard = defer_.compare_exchange_strong(discard, nullptr);
+    if (was_discard) {
+      throw std::runtime_error(
+          "Meshcat's internal websocket thread exited unexpectedly");
+    }
   }
 
   // This function is public via the PIMPL.
@@ -1396,18 +1436,46 @@ class Meshcat::Impl {
     return f.get();
   }
 
+  void InjectWebsocketThreadFault() {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    Defer([this]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
+      // Closing the listen socket will cause the app.run() loop to exit.
+      us_listen_socket_close(0, listen_socket_);
+      listen_socket_ = nullptr;
+    });
+  }
+
  private:
   bool IsThread(std::thread::id thread_id) const {
     return (std::this_thread::get_id() == thread_id);
   }
 
+  // This is the entry point for our websocket thread.
   // N.B. Our arguments must not be pass-by-reference because this function is
   // called from a new thread!
   void WebSocketMain(
-      std::promise<std::tuple<uWS::Loop*, int, bool>> app_promise,
-      const std::string host,
-      const std::optional<int> desired_port) {
+      std::promise<std::tuple<int, bool>> app_promise,
+      std::string host, std::optional<int> desired_port) {
     websocket_thread_id_ = std::this_thread::get_id();
+    ScopeExit guard([this]() {
+      // N.B. Refer to the comments on the `defer_` and `loop_` class member
+      // fields to help understand what's happening here.
+      DeferImpl nominal = &DeferImplNominal;
+      DeferImpl discard = &DeferImplDiscard;
+      defer_.compare_exchange_strong(nominal, discard);
+      // We must not exit this thread (destroying the thread_local uWS::Loop)
+      // until we know that the main thread is no longer adding more callbacks.
+      // It signals that to us by nulling out the defer_ pointer.
+      while (defer_.load() != nullptr) {
+        // TODO(jwnimmer-tri) Use atomic::wait instead, once we have C++20.
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }
+      loop_ = nullptr;
+      // Given this scope guard, the post-condition upon return from
+      // WebSocketMain is that defer_ and loop_ are both null.
+    });
+    loop_ = uWS::Loop::get();
 
     // This canonicalization of the bind_host is currently redundant with what
     // uWebSockets already implements, but we'll keep it here anyway, to defend
@@ -1459,7 +1527,7 @@ class Meshcat::Impl {
     } while (listen_socket_ == nullptr && port++ < kMaxPort);
 
     bool connected = listen_socket_ != nullptr;
-    app_promise.set_value(std::make_tuple(uWS::Loop::get(), port, connected));
+    app_promise.set_value(std::make_tuple(port, connected));
 
     if (connected) {
       app.run();
@@ -1542,15 +1610,39 @@ class Meshcat::Impl {
     }
   }
 
+  // A functor object that we can post from the main thread into the websocket
+  // thread.
+  using Callback = uWS::MoveOnlyFunction<void()>;
+
+  // A function pointer to implement Defer(Callback&&).
+  using DeferImpl = void (*)(uWS::Loop*, Callback&&);
+
   // This function is a private utility for use within this class.
-  void Defer(uWS::MoveOnlyFunction<void()>&& callback) const {
-    DRAKE_DEMAND(loop_ != nullptr);
-    // TODO(jwnimmer-tri) The loop_ here is a pointer to a thread_local global
-    // variable within the worker thread. If the worker thread has exited, then
-    // it will be a dangling pointer to free'd memory. We should be guarding
-    // against that condition before we post a callback into it.
-    loop_->defer(std::move(callback));
+  // It posts the given callback into the websocket thread, safely.
+  // If the websocket thread is no longer operating, then this function will
+  // destroy the callback, without ever invoking it.
+  void Defer(Callback&& callback) const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    DeferImpl handler = defer_.load();
+    if (handler) {
+      handler(loop_, std::move(callback));
+    }
   }
+
+  // This function is a private utility for use within this class.
+  // It should only be called indirectly, via the defer_ function pointer.
+  // This is the *nominal* implementation of Defer, i.e., when the websocket
+  // thread is operating correctly.
+  static void DeferImplNominal(uWS::Loop* loop, Callback&& callback) {
+    DRAKE_DEMAND(loop != nullptr);
+    loop->defer(std::move(callback));
+  }
+
+  // This function is a private utility for use within this class.
+  // It should only be called indirectly, via the defer_ function pointer.
+  // This is the *dummy* implementation of Defer, i.e., when the websocket
+  // thread is no longer able to add new callbacks.
+  static void DeferImplDiscard(uWS::Loop*, Callback&&) {}
 
   // This function is a private utility for use within this class.
   std::string FullPath(std::string_view path) const {
@@ -1596,12 +1688,65 @@ class Meshcat::Impl {
   // in the websocket thread.
   std::atomic<int> num_websockets_{0};
 
-  // This pointer should only be accessed in the main thread, but the uWS::Loop
-  // object should be only used in the websocket thread, with one exception:
-  // our Defer() member function knows how to call loop_->defer() in a thread-
-  // safe manner. See the documentation for uWebSockets for further details:
-  // https://github.com/uNetworking/uWebSockets/blob/d94bf2cd43bed5e0de396a8412f156e15c141e98/misc/READMORE.md#threading
+  // The loop_ pointer is used to pass functors from the main thread into the
+  // websocket worker thread, via loop_->defer(...). See the documentation of
+  // uWebSockets for further details:
+  // https://github.com/uNetworking/uWebSockets/blob/d94bf2c/misc/READMORE.md#threading
+  //
+  // We must be *extremely careful* with the lifecycle of the loop_ pointer.
+  //
+  // It's initialized to nullptr. Then, our constructor launches the websocket
+  // thread and blocks on a future until the thread is ready. Before declaring
+  // itself ready via the promise, the websocket thread sets loop_ to the
+  // correct value. Therefore, when our constructor returns we can rest assured
+  // that the loop_ contains a valid value.
+  //
+  // However, the *grave danger* here is that loop_ points to uWS::Loop::get,
+  // which is a *thread_local static object*. When the thread finishes, the C++
+  // runtime will destroy the thread_local object and our loop_ will become a
+  // dangling pointer. Calling any function on it would lead to nasal demons.
+  //
+  // Therefore, we must prevent the websocket thread from exiting until it's
+  // sure that the main thread will never again use the loop_. We implement
+  // that using a scope guard within the websocket thread, where it monitors
+  // the defer_ member. Only once defer_ is set to nullptr may the thread be
+  // allowed to exit. We also encapsulate all main-thread access to loop_
+  // within the Defer() helper function, to help maintain this invariant.
+  //
+  // In short, our invariant is that: loop_ is nonnull if defer_ is nonnull.
   uWS::Loop* loop_{nullptr};
+
+  // The other half of maintaining the loop lifecycle invariant (as described
+  // on the loop_ member above) is the defer_ function pointer.
+  //
+  // The defer_ pointer is always set to one of exactly three values:
+  // - DeferImplNominal
+  // - DeferImplDiscard
+  // - nullptr
+  //
+  // It begins life set to Nominal. In this mode, calls to the Defer()
+  // helper are passed along to the websocket thread's uWS event loop.
+  //
+  // Within the websocket thread, anytime the thread is about to exit (whether
+  // through normal means or an exception), the scope guard takes over and
+  // does an atomic compare-and-swap, demoting Nominal to Discard. This is
+  // the indication to the main thread that the websocket thread is shutting
+  // down. Any *thereafter* calls to Defer() will destroy the callback functor
+  // instead of posting it into the uWS loop.
+  //
+  // Note, however, that if a call to Defer() was partway through execution
+  // (where it had done defer_.load() to obtain the function pointer, but not
+  // yet called into the pointer), then callbacks could still be placed into the
+  // uWS loop even after the compare-and-swap had completed. This is still fine.
+  // They will not be run (because the loop isn't running), but they will be
+  // correctly destroyed when the loop is destroyed.
+  //
+  // The websocket thread then spinloops until it sees that defer_ has been
+  // set to nullptr. In relevant places on the main thread (i.e., in the
+  // ThrowIfWebsocketThreadExited failure poll, or in the constructor when
+  // throwing, or during the destructor as normal), it sets defer_ to null to
+  // indicate that it will never post into the loop again.
+  mutable std::atomic<DeferImpl> defer_{&DeferImplNominal};
 };
 
 namespace {
@@ -1625,9 +1770,13 @@ Meshcat::~Meshcat() {
   delete static_cast<Impl*>(impl_);
 }
 
+// This overloaded function ensures that ThrowIfWebsocketThreadExited always
+// happens before accessing the Impl class.
 Meshcat::Impl& Meshcat::impl() {
   DRAKE_DEMAND(impl_ != nullptr);
-  return *static_cast<Impl*>(impl_);
+  Impl* result = static_cast<Impl*>(impl_);
+  result->ThrowIfWebsocketThreadExited();
+  return *result;
 }
 
 const Meshcat::Impl& Meshcat::impl() const {
@@ -1795,6 +1944,10 @@ std::string Meshcat::GetPackedTransform(std::string_view path) const {
 std::string Meshcat::GetPackedProperty(std::string_view path,
                                        std::string property) const {
   return impl().GetPackedProperty(path, std::move(property));
+}
+
+void Meshcat::InjectWebsocketThreadFault() {
+  impl().InjectWebsocketThreadFault();
 }
 
 }  // namespace geometry
