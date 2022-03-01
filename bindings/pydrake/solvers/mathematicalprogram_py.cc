@@ -541,6 +541,9 @@ void BindMathematicalProgram(py::module m) {
       .def("get_solution_result",
           &MathematicalProgramResult::get_solution_result,
           doc.MathematicalProgramResult.get_solution_result.doc)
+      .def("set_solution_result",
+          &MathematicalProgramResult::set_solution_result,
+          doc.MathematicalProgramResult.set_solution_result.doc)
       .def("get_optimal_cost", &MathematicalProgramResult::get_optimal_cost,
           doc.MathematicalProgramResult.get_optimal_cost.doc)
       .def("get_solver_id", &MathematicalProgramResult::get_solver_id,
@@ -1541,7 +1544,9 @@ for every column of ``prog_var_vals``. )""")
               .doc_deprecated);
 #pragma GCC diagnostic pop
 
-  py::enum_<SolutionResult>(m, "SolutionResult", doc.SolutionResult.doc)
+  py::enum_<SolutionResult> solution_result_enum(
+      m, "SolutionResult", doc.SolutionResult.doc);
+  solution_result_enum
       .value("kSolutionFound", SolutionResult::kSolutionFound,
           doc.SolutionResult.kSolutionFound.doc)
       .value("kInvalidInput", SolutionResult::kInvalidInput,
@@ -1552,13 +1557,26 @@ for every column of ``prog_var_vals``. )""")
           doc.SolutionResult.kUnbounded.doc)
       .value("kUnknownError", SolutionResult::kUnknownError,
           doc.SolutionResult.kUnknownError.doc)
-      .value("kInfeasible_Or_Unbounded",
-          SolutionResult::kInfeasible_Or_Unbounded,
-          doc.SolutionResult.kInfeasible_Or_Unbounded.doc)
+      .value("kInfeasibleOrUnbounded", SolutionResult::kInfeasibleOrUnbounded,
+          doc.SolutionResult.kInfeasibleOrUnbounded.doc)
       .value("kIterationLimit", SolutionResult::kIterationLimit,
           doc.SolutionResult.kIterationLimit.doc)
       .value("kDualInfeasible", SolutionResult::kDualInfeasible,
           doc.SolutionResult.kDualInfeasible.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  constexpr char deprecation[] =
+      "Deprecated:\n kInfeasible_Or_Unbounded is deprecated. Please use "
+      "kInfeasibleOrUnbounded instead. This will be removed on or "
+      "after 2022-07-01.";
+  solution_result_enum.def_property_static(
+      "kInfeasible_Or_Unbounded",
+      [deprecation](py::handle /* cls */) {
+        WarnDeprecated(deprecation);
+        return SolutionResult::kInfeasible_Or_Unbounded;
+      },
+      nullptr, deprecation);
+#pragma GCC diagnostic pop
 }  // NOLINT(readability/fn_size)
 
 void BindEvaluatorsAndBindings(py::module m) {
