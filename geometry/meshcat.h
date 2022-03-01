@@ -502,10 +502,24 @@ class Meshcat {
   std::string GetPackedProperty(std::string_view path,
                                 std::string property) const;
 
+#ifndef DRAKE_DOXYGEN_CXX
+  /* (Internal use only) Causes the websocket worker thread to exit with an
+  error, which will spit out an exception from the next Meshcat main thread
+  function that gets called. */
+  void InjectWebsocketThreadFault();
+#endif
+
  private:
   // Provides PIMPL encapsulation of websocket types.
-  class WebSocketPublisher;
-  std::unique_ptr<WebSocketPublisher> publisher_;
+  class Impl;
+
+  // Safe accessors for the PIMPL object.
+  Impl& impl();
+  const Impl& impl() const;
+
+  // Always a non-nullptr Impl, but stored as void* to enforce that the
+  // impl() accessors are always used.
+  void* const impl_{};
 };
 
 }  // namespace geometry

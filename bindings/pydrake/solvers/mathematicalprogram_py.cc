@@ -11,6 +11,7 @@
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -1254,30 +1255,21 @@ void BindMathematicalProgram(py::module m) {
             prog.SetInitialGuessForAllVariables(x0);
           },
           doc.MathematicalProgram.SetInitialGuessForAllVariables.doc)
-      .def(
-          "SetDecisionVariableValueInVector",
-          [](const MathematicalProgram& prog,
-              const symbolic::Variable& decision_variable,
-              double decision_variable_new_value,
-              Eigen::Ref<Eigen::VectorXd> values) {
-            prog.SetDecisionVariableValueInVector(
-                decision_variable, decision_variable_new_value, &values);
-          },
+      .def("SetDecisionVariableValueInVector",
+          py::overload_cast<const symbolic::Variable&, double,
+              EigenPtr<Eigen::VectorXd>>(
+              &MathematicalProgram::SetDecisionVariableValueInVector,
+              py::const_),
           py::arg("decision_variable"), py::arg("decision_variable_new_value"),
           py::arg("values"),
           doc.MathematicalProgram.SetDecisionVariableValueInVector
               .doc_3args_decision_variable_decision_variable_new_value_values)
-      .def(
-          "SetDecisionVariableValueInVector",
-          [](const MathematicalProgram& prog,
-              const Eigen::Ref<const MatrixXDecisionVariable>&
-                  decision_variables,
-              const Eigen::Ref<const Eigen::MatrixXd>&
-                  decision_variables_new_values,
-              Eigen::Ref<Eigen::VectorXd> values) {
-            prog.SetDecisionVariableValueInVector(
-                decision_variables, decision_variables_new_values, &values);
-          },
+      .def("SetDecisionVariableValueInVector",
+          py::overload_cast<const Eigen::Ref<const MatrixXDecisionVariable>&,
+              const Eigen::Ref<const Eigen::MatrixXd>&,
+              EigenPtr<Eigen::VectorXd>>(
+              &MathematicalProgram::SetDecisionVariableValueInVector,
+              py::const_),
           py::arg("decision_variables"),
           py::arg("decision_variables_new_values"), py::arg("values"),
           doc.MathematicalProgram.SetDecisionVariableValueInVector
@@ -1400,7 +1392,7 @@ void BindMathematicalProgram(py::module m) {
             return Y;
           },
           py::arg("binding"), py::arg("prog_var_vals"),
-          R"""(A "vectorized" version of EvalBinding.  It evaluates the binding 
+          R"""(A "vectorized" version of EvalBinding.  It evaluates the binding
 for every column of ``prog_var_vals``. )""")
       .def(
           "EvalBinding",

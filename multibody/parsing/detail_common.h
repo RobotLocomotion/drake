@@ -9,6 +9,7 @@
 #include <sdf/sdf.hh>
 #include <tinyxml2.h>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -20,14 +21,55 @@ namespace internal {
 
 using ElementNode = std::variant<sdf::ElementPtr, tinyxml2::XMLElement*>;
 
-// Helper struct that provides for either a file name xor file contents to be
-// passed between our various parsing functions.  Exactly one of the pointers
-// must be set to non-nullptr.
-struct DataSource {
-  const std::string* file_name{};
-  const std::string* file_contents{};
+// Helper class that provides for either a file name xor file contents to be
+// passed between our various parsing functions.
+class DataSource {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DataSource);
 
-  void DemandExactlyOne() const;
+  // The result of calling GetStem on a file-contents data source.
+  static constexpr char kContentsPseudoStem[] = "<literal-string>";
+
+  // A data source contains either a file name, or file contents.
+  enum DataSourceType {kFilename, kContents};
+
+  // Depending on the DataSourceType value supplied, @p data will be treated as
+  // either a file name or contents. The data is aliased, so the lifetime of
+  // the passed data must exceed the lifetime of the created object.
+  // @pre data cannot be nullptr.
+  DataSource(DataSourceType type, const std::string* data);
+
+  // @return true iff the data source is a file name.
+  bool IsFilename() const { return type_ == kFilename; }
+
+  // @return true iff the data source is file contents.
+  bool IsContents() const { return type_ == kContents; }
+
+  // Returns a reference to the filename.
+  // @pre IsFilename().
+  const std::string& filename() const;
+
+  // Returns a reference to the contents.
+  // @pre IsContents().
+  const std::string& contents() const;
+
+  // If the data source is a file name, returns its absolute path. If the
+  // absolute path calculation causes errors, throw std::exception. Otherwise,
+  // returns an empty string.
+  std::string GetAbsolutePath() const;
+
+  // If the data source is a file name, returns its parent path. If the parent
+  // path calculation causes errors, throw std::exception. Otherwise, returns
+  // an empty string.
+  std::string GetRootDir() const;
+
+  // If the data source is a file name, returns its base name, without
+  // directory or extension. Otherwise, returns kContentsPseudoStem.
+  std::string GetStem() const;
+
+ private:
+  DataSourceType type_{};
+  const std::string* data_{};
 };
 
 // Note:

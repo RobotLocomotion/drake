@@ -44,14 +44,7 @@ FileType DetermineFileType(const std::string& file_name) {
 
 std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
     const std::string& file_name) {
-  DataSource data_source;
-  data_source.file_name = &file_name;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // Always search for a package.xml file, starting the crawl upward from
-  // the file's path.
-  package_map_.PopulateUpstreamToDrake(file_name);
-#pragma GCC diagnostic pop
+  DataSource data_source(DataSource::kFilename, &file_name);
   const FileType type = DetermineFileType(file_name);
   if (type == FileType::kSdf) {
     return AddModelsFromSdf(data_source, package_map_, plant_);
@@ -64,14 +57,7 @@ std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
 ModelInstanceIndex Parser::AddModelFromFile(
     const std::string& file_name,
     const std::string& model_name) {
-  DataSource data_source;
-  data_source.file_name = &file_name;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // Always search for a package.xml file, starting the crawl upward from
-  // the file's path.
-  package_map_.PopulateUpstreamToDrake(file_name);
-#pragma GCC diagnostic pop
+  DataSource data_source(DataSource::kFilename, &file_name);
   const FileType type = DetermineFileType(file_name);
   if (type == FileType::kSdf) {
     return AddModelFromSdf(data_source, model_name, package_map_, plant_);
@@ -85,9 +71,9 @@ ModelInstanceIndex Parser::AddModelFromString(
     const std::string& file_contents,
     const std::string& file_type,
     const std::string& model_name) {
-  DataSource data_source;
-  data_source.file_contents = &file_contents;
-  const FileType type = DetermineFileType("<literal-string>." + file_type);
+  DataSource data_source(DataSource::kContents, &file_contents);
+  const FileType type = DetermineFileType(
+      data_source.GetStem() + "." + file_type);
   if (type == FileType::kSdf) {
     return AddModelFromSdf(data_source, model_name, package_map_, plant_);
   } else {

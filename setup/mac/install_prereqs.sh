@@ -37,6 +37,9 @@ done
 # needed when developing with binary distributions are also needed when
 # developing with source distributions.
 
+# N.B. We need `${var:-}` here because mac's older version of bash does
+# not seem to be able to cope with an empty array.
+
 source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh" \
   "${binary_distribution_args[@]:-}"
 

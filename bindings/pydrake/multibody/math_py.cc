@@ -4,10 +4,12 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/math/spatial_algebra.h"
 
 #pragma GCC diagnostic push
@@ -115,16 +117,47 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("w"), py::arg("v"), cls_doc.ctor.doc_2args)
         .def(
             py::init<const Vector6<T>&>(), py::arg("V"), cls_doc.ctor.doc_1args)
-        .def("Shift", &Class::Shift, py::arg("p_BpBq_E"), cls_doc.Shift.doc)
+        .def("Shift", &Class::Shift, py::arg("offset"), cls_doc.Shift.doc);
+    constexpr char doc_Shift_deprecatedArgName[] =
+        "Shift(p_BqBq_E) is deprecated, and will be removed on or around "
+        "2022-06-01. Please instead use Shift(offset).";
+    cls.def("Shift", WrapDeprecated(doc_Shift_deprecatedArgName, &Class::Shift),
+           py::arg("p_BpBq_E"), doc_Shift_deprecatedArgName)
         .def("ComposeWithMovingFrameVelocity",
-            &Class::ComposeWithMovingFrameVelocity, py::arg("p_PoBo_E"),
-            py::arg("V_PB_E"), cls_doc.ComposeWithMovingFrameVelocity.doc)
-        .def("dot",
-            overload_cast_explicit<T, const SpatialForce<T>&>(&Class::dot),
-            py::arg("F_Q_E"), cls_doc.dot.doc_1args_F_Q_E)
-        .def("dot",
-            overload_cast_explicit<T, const SpatialMomentum<T>&>(&Class::dot),
-            py::arg("L_NBp_E"), cls_doc.dot.doc_1args_L_NBp_E);
+            &Class::ComposeWithMovingFrameVelocity,
+            py::arg("position_of_moving_frame"),
+            py::arg("velocity_of_moving_frame"),
+            cls_doc.ComposeWithMovingFrameVelocity.doc);
+    constexpr char doc_ComposeWithMovingFrameVelocity_deprecatedArgName[] =
+        "ComposeWithMovingFrameVelocity(p_PoBo_E, V_PB_E) is deprecated,"
+        " and will be removed on or around 2022-06-01. Please instead use"
+        " ComposeWithMovingFrameVelocity(position_of_moving_frame,"
+        " velocity_of_moving_frame).";
+    cls.def("ComposeWithMovingFrameVelocity",
+        WrapDeprecated(doc_ComposeWithMovingFrameVelocity_deprecatedArgName,
+            &Class::ComposeWithMovingFrameVelocity),
+        py::arg("p_PoBo_E"), py::arg("V_PB_E"),
+        doc_ComposeWithMovingFrameVelocity_deprecatedArgName);
+    cls.def("dot",
+        overload_cast_explicit<T, const SpatialForce<T>&>(&Class::dot),
+        py::arg("force"), cls_doc.dot.doc_1args_force);
+    constexpr char doc_dot_deprecatedArgNameF_Bp_E[] =
+        "dot(F_Bp_E) is deprecated, and will be removed on or around"
+        " 2022-06-01. Please instead use dot(force).";
+    cls.def("dot",
+        WrapDeprecated(doc_dot_deprecatedArgNameF_Bp_E,
+            overload_cast_explicit<T, const SpatialForce<T>&>(&Class::dot)),
+        py::arg("F_Bp_E"), doc_dot_deprecatedArgNameF_Bp_E);
+    cls.def("dot",
+        overload_cast_explicit<T, const SpatialMomentum<T>&>(&Class::dot),
+        py::arg("momentum"), cls_doc.dot.doc_1args_momentum);
+    constexpr char doc_dot_deprecatedArgNameL_WBp_E[] =
+        "dot(L_WBp_E) is deprecated, and will be removed on or around"
+        " 2022-06-01. Please instead use dot(momentum).";
+    cls.def("dot",
+        WrapDeprecated(doc_dot_deprecatedArgNameL_WBp_E,
+            overload_cast_explicit<T, const SpatialMomentum<T>&>(&Class::dot)),
+        py::arg("L_WBp_E"), doc_dot_deprecatedArgNameL_WBp_E);
     cls.attr("__matmul__") = cls.attr("dot");
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
@@ -143,7 +176,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             py::init<const Vector6<T>&>(), py::arg("L"), cls_doc.ctor.doc_1args)
         .def("Shift", &Class::Shift, py::arg("p_BpBq_E"), cls_doc.Shift.doc)
-        .def("dot", &Class::dot, py::arg("V_IBp_E"), cls_doc.dot.doc);
+        .def("dot", &Class::dot, py::arg("velocity"), cls_doc.dot.doc);
+    constexpr char doc_dotWithArgumentNameV_IBp_E_deprecated[] =
+        "dot(V_IBp_E) is deprecated, and will be removed on or "
+        "around 2022-06-01. Please use dot(velocity) instead.";
+    cls.def("dot",
+        WrapDeprecated(doc_dotWithArgumentNameV_IBp_E_deprecated, &Class::dot),
+        py::arg("V_IBp_E"), doc_dotWithArgumentNameV_IBp_E_deprecated);
     cls.attr("__matmul__") = cls.attr("dot");
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
@@ -193,7 +232,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("p_BpBq_E"), cls_doc.Shift.doc_1args)
         .def("dot",
             overload_cast_explicit<T, const SpatialVelocity<T>&>(&Class::dot),
-            py::arg("V_IBp_E"), cls_doc.dot.doc);
+            py::arg("velocity"), cls_doc.dot.doc);
+    constexpr char doc_dot_deprecatedArgName[] =
+        "dot(V_IBp_E) is deprecated, and will be removed on or around"
+        "2022-06-01. Please use dot(velocity) instead.";
+    cls.def("dot", WrapDeprecated(doc_dot_deprecatedArgName, &Class::dot),
+        py::arg("V_IBp_E"), doc_dot_deprecatedArgName);
     cls.attr("__matmul__") = cls.attr("dot");
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.

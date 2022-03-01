@@ -1,8 +1,8 @@
 #pragma once
 
-/// @file
-/// This file defines gflags settings to control Simulator settings.
-/// Only include this from translation units that declare a `main` function.
+// @file
+// This file defines gflags settings to control Simulator settings.
+// Only include this from translation units that declare a `main` function.
 
 #include <memory>
 
@@ -23,31 +23,33 @@ DECLARE_bool(simulator_publish_every_time_step);
 
 namespace drake {
 namespace systems {
+namespace internal {
 
-/// Resets the integrator used to advanced the continuous time dynamics of the
-/// system associated with `simulator` according to the gflags declared in this
-/// file.
-/// @param[in,out] simulator
-///   On input, a valid pointer to a Simulator. On output the
-///   integrator for `simulator` is reset according to the gflags declared in
-///   this file.
-/// @tparam_nonsymbolic_scalar
-/// @returns A reference to the newly created integrator owned by `simulator`.
+// Resets the integrator used to advanced the continuous time dynamics of the
+// system associated with `simulator` according to the gflags declared in this
+// file.
+// @param[in,out] simulator
+//   On input, a valid pointer to a Simulator. On output the
+//   integrator for `simulator` is reset according to the gflags declared in
+//   this file.
+// @tparam_nonsymbolic_scalar
+// @returns A reference to the newly created integrator owned by `simulator`.
 template <typename T>
 IntegratorBase<T>& ResetIntegratorFromGflags(Simulator<T>* simulator);
 
-/// Makes a new simulator according to the gflags declared in this file.
-/// @param[in] system
-///   The System to be associated with the newly crated Simulator. You must
-///   ensure that `system` has a longer lifetime than the new Simulator.
-/// @param[in] context
-///   The Context that will be used as the initial condition for the simulation;
-///   otherwise the Simulator will obtain a default Context from `system`.
-/// @tparam_nonsymbolic_scalar
-/// @returns The newly created Simulator.
+// Makes a new simulator according to the gflags declared in this file.
+// @param[in] system
+//   The System to be associated with the newly crated Simulator. You must
+//   ensure that `system` has a longer lifetime than the new Simulator.
+// @param[in] context
+//   The Context that will be used as the initial condition for the simulation;
+//   otherwise the Simulator will obtain a default Context from `system`.
+// @tparam_nonsymbolic_scalar
+// @returns The newly created Simulator.
 template <typename T>
 std::unique_ptr<Simulator<T>> MakeSimulatorFromGflags(
     const System<T>& system, std::unique_ptr<Context<T>> context = nullptr);
 
+}  // namespace internal
 }  // namespace systems
 }  // namespace drake

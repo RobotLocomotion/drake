@@ -601,6 +601,24 @@ drake_py_unittest(
     ],
 )
 
+drake_pybind_library(
+    name = "eigen_pybind_test_util_py",
+    testonly = 1,
+    add_install = False,
+    cc_deps = [":eigen_pybind"],
+    cc_so_name = "test/eigen_pybind_test_util",
+    cc_srcs = ["test/eigen_pybind_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+    visibility = ["//visibility:private"],
+)
+
+drake_py_unittest(
+    name = "eigen_pybind_test",
+    deps = [
+        ":eigen_pybind_test_util_py",
+    ],
+)
+
 drake_pybind_cc_googletest(
     name = "type_safe_index_pybind_test",
     cc_deps = [

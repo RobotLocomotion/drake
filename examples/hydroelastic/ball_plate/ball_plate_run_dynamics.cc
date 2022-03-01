@@ -104,7 +104,7 @@ int do_main() {
                                          /* lcm */ nullptr);
 
   auto diagram = builder.Build();
-  auto simulator = systems::MakeSimulatorFromGflags(*diagram);
+  auto simulator = MakeSimulatorFromGflags(*diagram);
 
   // Set the ball's initial pose.
   systems::Context<double>& plant_context =

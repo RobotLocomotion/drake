@@ -32,14 +32,19 @@ class YamlReadArchiveTest
   // Loads a single "doc: { ... }" map from `contents` and returns the nested
   // map (i.e., just the "{ ... }" part, not the "doc" part).  It is an error
   // for the "{ ... }" part not to be a map node.
-  static YAML::Node Load(const std::string& contents) {
-    const YAML::Node loaded = YAML::Load(contents);
-    if (loaded.Type() != YAML::NodeType::Map) {
-      throw std::invalid_argument("Bad contents parse " + contents);
+  static internal::Node Load(const std::string& contents) {
+    const internal::Node loaded = YamlReadArchive::LoadStringAsNode(
+       contents, std::nullopt);
+    if (!loaded.IsMapping()) {
+      throw std::logic_error("Bad contents parse " + contents);
     }
-    const YAML::Node doc = loaded["doc"];
-    if (doc.Type() != YAML::NodeType::Map) {
-      throw std::invalid_argument("Bad doc parse " + contents);
+    const std::map<std::string, internal::Node>& mapping = loaded.GetMapping();
+    if (mapping.count("doc") != 1) {
+      throw std::logic_error("Missing doc parse " + contents);
+    }
+    const internal::Node doc = mapping.at("doc");
+    if (!doc.IsMapping()) {
+      throw std::logic_error("Bad doc parse " + contents);
     }
     return doc;
   }
@@ -47,25 +52,20 @@ class YamlReadArchiveTest
   // Loads a single "{ value: something }" map node.  If the argument is the
   // empty string, the result is a map from "value" to Null (not an empty map,
   // nor Null itself, etc.)
-  static YAML::Node LoadSingleValue(const std::string& value) {
+  static internal::Node LoadSingleValue(const std::string& value) {
     return Load("doc:\n  value: " + value + "\n");
   }
 
   // Parses root into a Serializable and returns the result of the parse.
   // Any exceptions raised are reported as errors.
   template <typename Serializable>
-  static Serializable AcceptNoThrow(const YAML::Node& root) {
+  static Serializable AcceptNoThrow(const internal::Node& root) {
     SCOPED_TRACE("for type " + NiceTypeName::Get<Serializable>());
     Serializable result{};
     bool raised = false;
     std::string what;
     try {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      // TODO(jwnimmer-tri) Once the deprecation 2022-03-01 date hits,
-      // port this to use the drake::yaml::internal::Node API instead.
       YamlReadArchive(root, GetParam()).Accept(&result);
-#pragma GCC diagnostic pop
     } catch (const std::exception& e) {
       raised = true;
       what = e.what();
@@ -78,14 +78,9 @@ class YamlReadArchiveTest
   // Parses root into a Serializable and discards the result.
   // This is usually used to check that an exception is raised.
   template <typename Serializable>
-  static void AcceptIntoDummy(const YAML::Node& root) {
+  static void AcceptIntoDummy(const internal::Node& root) {
     Serializable dummy{};
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      // TODO(jwnimmer-tri) Once the deprecation 2022-03-01 date hits,
-      // port this to use the drake::yaml::internal::Node API instead.
     YamlReadArchive(root, GetParam()).Accept(&dummy);
-#pragma GCC diagnostic pop
   }
 
   // Parses root into a Serializable and returns the result of the parse.
@@ -94,17 +89,12 @@ class YamlReadArchiveTest
   template <typename Serializable>
   static Serializable AcceptEmptyDoc() {
     SCOPED_TRACE("for type " + NiceTypeName::Get<Serializable>());
-    const YAML::Node root = Load("doc: {}");
+    const internal::Node root = Load("doc: {}");
     Serializable result{};
     bool raised = false;
     std::string what;
     try {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      // TODO(jwnimmer-tri) Once the deprecation 2022-03-01 date hits,
-      // port this to use the drake::yaml::internal::Node API instead.
       YamlReadArchive(root, GetParam()).Accept(&result);
-#pragma GCC diagnostic pop
     } catch (const std::exception& e) {
       raised = true;
       what = e.what();
@@ -419,12 +409,7 @@ doc:
   if (GetParam().allow_cpp_with_no_yaml) {
     std::map<std::string, DoubleStruct> result;
     result.emplace("pre_existing_default", DoubleStruct{.value = 0.0});
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // TODO(jwnimmer-tri) Once the deprecation 2022-03-01 date hits,
-    // port this to use the drake::yaml::internal::Node API instead.
     YamlReadArchive(node, GetParam()).Accept(&result);
-#pragma GCC diagnostic pop
     if (GetParam().retain_map_defaults) {
       EXPECT_EQ(result.size(), 3);
       EXPECT_EQ(result.at("pre_existing_default").value, 0.0);
@@ -754,7 +739,7 @@ doc:
 // This finds nothing when a scalar was wanted, because the name had a typo.
 TEST_P(YamlReadArchiveTest, VisitScalarFoundNothing) {
   // This has a "_TYPO" in a field name.
-  const YAML::Node node = Load(R"""(
+  const internal::Node node = Load(R"""(
 doc:
   outer_value: 1.0
   inner_struct:
@@ -1005,7 +990,7 @@ doc:
 
 // This finds nothing when a sub-structure was wanted.
 TEST_P(YamlReadArchiveTest, VisitStructFoundNothing) {
-  const YAML::Node node = Load(R"""(
+  const internal::Node node = Load(R"""(
   doc:
     outer_value: 1.0
   )""");

@@ -412,6 +412,7 @@ drake_cc_library(
         ":shape_specification",
         "//common:essential",
         "//common:find_resource",
+        "//common:scope_exit",
         "//common:unused",
         "//geometry/proximity:triangle_surface_mesh",
         "//math:geometric_transform",
