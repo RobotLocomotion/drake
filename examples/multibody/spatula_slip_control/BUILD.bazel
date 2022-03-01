@@ -23,10 +23,12 @@ install_data(
 )
 
 drake_cc_binary(
+    add_test_rule = True,
     name = "spatula_slip_control",
     srcs = ["spatula_slip_control.cc"],
     data = [
         ":models",
+        "//manipulation/models/wsg_50_description:models",
     ],
     deps = [
         "//geometry:drake_visualizer",
@@ -36,6 +38,7 @@ drake_cc_binary(
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_config_functions",
         "//systems/analysis:simulator_gflags",
+        "//systems/analysis:simulator_print_stats",
         "//systems/framework:diagram",
         "//systems/primitives",
         "@gflags",

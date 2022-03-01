@@ -1,11 +1,17 @@
 # Spatula Slip Control
 
 This is an example of using the hydroelastic contact model with a
-robot gripper with compliant bubble fingers and a compliant spatula.
+robot gripper with compliant bubble fingers and a compliant spatula handle.
+This example is described in the paper
+[Discrete Approximation of Pressure Field Contact Patches](https://arxiv.org/abs/2110.04157)
+and a discussion of the example can be found in
+[the accompanying video](https://youtu.be/TOsd5LAEPmU?t=85) at 1:25.
 The example poses the spatula in the closed grip of the gripper and
 uses an open loop square wave controller to perform a controlled
 rotational slip of the spatula while maintaining the spatula in
-the gripper's grasp.
+the gripper's grasp. This demonstrates that the hydroelastic contact patch
+captures important behavior missed in point contact -- in this case,
+pressure-dependent torsional friction emerges naturally.
 
 In the source code, this example shows how to set up bodies by loading SDFormat
 files and also calling C++ APIs.
@@ -16,7 +22,7 @@ files and also calling C++ APIs.
 ## Run DrakeVisualizer
 
 ```
-bazel run //tools:drake_visualizer
+bazel run //tools:drake_visualizer &
 ```
 
 In `Plugins > Contacts > Configure Hydroelastic Contact Visualization` you
@@ -34,12 +40,12 @@ bazel run //examples/multibody/spatula_slip_control:spatula_slip_control
 
 ## Use polygon or triangle contact surfaces
 
-In continuous mode, Drake computes triangulated contact surfaces. But,
-discrete mode provides the option for either triangulated or polygonal
+This example provides the option for either triangulated or polygonal
 contact surface representation. The polygonal representation of a contact
 surface contains significantly fewer elements which in practice corresponds
-to a more efficient simulation. By default, this example uses polygonal contact
-surfaces. Refer to the
+to a more efficient simulation, though may produce unwanted artifacts when
+working with very coarse meshes. By default, this example uses polygonal
+contact surfaces. Refer to the
 [Hydroelastic User Guide](https://drake.mit.edu/doxygen_cxx/group__hydroelastic__user__guide.html)
 for more details about hydroelastic representations.
 

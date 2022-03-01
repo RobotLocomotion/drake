@@ -31,14 +31,19 @@
       </inertial>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
-      <visual name="gripper_mesh">
-        <pose>0 0 0 1.5708 0 0</pose>
+      <visual name="gripper mesh">
+        <pose>0 0 -0.036 -1.5708 0 -1.5708</pose>
         <geometry>
           <mesh>
-            <uri>package://drake/examples/multibody/spatula_slip_control/meshes/bubble_gripper_base.obj</uri>
-            <scale>.001 .001 .001</scale>
+            <uri>package://drake/manipulation/models/wsg_50_description/meshes/wsg_body.obj</uri>
+            <scale>1 1 1</scale>
           </mesh>
         </geometry>
+        <material>
+          <ambient>0 0 0 0</ambient>
+          <diffuse>0.525 0.525 0.525 1</diffuse>
+          <specular>0.525 0.525 0.525 1</specular>
+        </material>
       </visual>
     </link>
     <frame name="body_frame">

@@ -10,6 +10,7 @@
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_config_functions.h"
+#include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/adder.h"
@@ -30,7 +31,7 @@ DEFINE_bool(visualize_collision, false,
 
 // MultibodyPlant settings.
 DEFINE_double(stiction_tolerance, 1e-5, "Default stiction tolerance. [m/s].");
-DEFINE_double(mbp_discrete_update_period, 1.0e-2,
+DEFINE_double(mbp_discrete_update_period, 4.0e-3,
               "If zero, the plant is modeled as a continuous system. "
               "If positive, the period (in seconds) of the discrete updates "
               "for the plant modeled as a discrete system."
@@ -82,8 +83,9 @@ class Square final : public systems::LeafSystem<double> {
   /// Constructs a %Square system where different amplitudes, duty cycles,
   /// periods, and phases can be applied to each square wave.
   ///
-  /// @param[in] amplitudes the square wave amplitudes.
-  /// @param[in] duty_cycles the square wave duty_cycles.
+  /// @param[in] amplitudes the square wave amplitudes. (unitless)
+  /// @param[in] duty_cycles the square wave duty cycles.
+  ///                        (ratio of pulse duration to period of the waveform)
   /// @param[in] periods the square wave periods. (seconds)
   /// @param[in] phases the square wave phases. (radians)
   Square(const Eigen::VectorXd& amplitudes, const Eigen::VectorXd& duty_cycles,
@@ -138,15 +140,12 @@ int DoMain() {
   plant_config.contact_surface_representation =
       FLAGS_contact_surface_representation;
 
-  MultibodyPlant<double>* plant;
-  SceneGraph<double>* scene_graph;
-
   DRAKE_DEMAND(FLAGS_mbp_discrete_update_period >= 0);
-  std::tie(plant, scene_graph) =
+  auto [plant, scene_graph] =
       multibody::AddMultibodyPlant(plant_config, &builder);
 
   // Parse the gripper and spatula models.
-  multibody::Parser parser(plant, scene_graph);
+  multibody::Parser parser(&plant, &scene_graph);
   const std::string gripper_file = FindResourceOrThrow(
       "drake/examples/multibody/spatula_slip_control/models/"
       "schunk_wsg_50_hydro_bubble.sdf");
@@ -158,9 +157,9 @@ int DoMain() {
   // Pose the gripper and weld it to the world.
   const math::RigidTransform<double> X_WF0 = math::RigidTransform<double>(
       math::RollPitchYaw(0.0, -1.57, 0.0), Eigen::Vector3d(0, 0, 0.25));
-  plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("gripper"),
+  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("gripper"),
                     X_WF0);
-  plant->Finalize();
+  plant.Finalize();
 
   // Construct the open loop square wave controller. To oscillate around a
   // constant force, we construct a ConstantVectorSource and combine it with
@@ -181,17 +180,17 @@ int DoMain() {
   builder.Connect(constant_force.get_output_port(), adder.get_input_port(1));
 
   // Connect the output of the adder to the plant's actuation input.
-  builder.Connect(adder.get_output_port(0), plant->get_actuation_input_port());
+  builder.Connect(adder.get_output_port(0), plant.get_actuation_input_port());
 
   // Create a visualizer for the system and ensure contact results are
   // visualized.
   geometry::DrakeVisualizerParams params;
   params.role = FLAGS_visualize_collision ? geometry::Role::kProximity
                                           : geometry::Role::kIllustration;
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph,
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph,
                                            /* lcm */ nullptr, params);
-  multibody::ConnectContactResultsToDrakeVisualizer(&builder, *plant,
-                                                    *scene_graph,
+  multibody::ConnectContactResultsToDrakeVisualizer(&builder, plant,
+                                                    scene_graph,
                                                     /* lcm */ nullptr);
 
   // Construct a simulator.
@@ -212,25 +211,26 @@ int DoMain() {
   // positions.
   Context<double>& mutable_root_context = simulator->get_mutable_context();
   Context<double>& plant_context =
-      diagram->GetMutableSubsystemContext(*plant, &mutable_root_context);
+      diagram->GetMutableSubsystemContext(plant, &mutable_root_context);
 
-  // Set spatulata's free body pose.
+  // Set spatula's free body pose.
   const math::RigidTransform<double> X_WF1 = math::RigidTransform<double>(
       math::RollPitchYaw(-0.4, 0.0, 1.57), Eigen::Vector3d(0.35, 0, 0.25));
-  const auto& base_link = plant->GetBodyByName("spatula", spatula_instance);
-  plant->SetFreeBodyPose(&plant_context, base_link, X_WF1);
+  const auto& base_link = plant.GetBodyByName("spatula", spatula_instance);
+  plant.SetFreeBodyPose(&plant_context, base_link, X_WF1);
 
   // Set finger joint positions.
   const PrismaticJoint<double>& left_joint =
-      plant->GetJointByName<PrismaticJoint>("left_finger_sliding_joint");
+      plant.GetJointByName<PrismaticJoint>("left_finger_sliding_joint");
   left_joint.set_translation(&plant_context, -0.01);
   const PrismaticJoint<double>& right_joint =
-      plant->GetJointByName<PrismaticJoint>("right_finger_sliding_joint");
+      plant.GetJointByName<PrismaticJoint>("right_finger_sliding_joint");
   right_joint.set_translation(&plant_context, 0.01);
 
   // Simulate.
   simulator->Initialize();
   simulator->AdvanceTo(FLAGS_simulation_sec);
+  systems::PrintSimulatorStatistics(*simulator);
   return 0;
 }
 
