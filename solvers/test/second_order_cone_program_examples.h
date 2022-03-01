@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <ostream>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -19,6 +20,8 @@ enum class EllipsoidsSeparationProblem {
   kProblem2,
   kProblem3
 };
+
+std::ostream& operator<<(std::ostream& os, EllipsoidsSeparationProblem value);
 
 std::vector<EllipsoidsSeparationProblem> GetEllipsoidsSeparationProblems();
 
@@ -59,6 +62,8 @@ class TestEllipsoidsSeparation
 };
 
 enum class QPasSOCPProblem { kProblem0, kProblem1 };
+
+std::ostream& operator<<(std::ostream& os, QPasSOCPProblem value);
 
 std::vector<QPasSOCPProblem> GetQPasSOCPProblems();
 
@@ -126,6 +131,7 @@ class TestQPasSOCP : public ::testing::TestWithParam<QPasSOCPProblem> {
 /// becomes
 /// an SOCP, with both Lorentz cone and rotated Lorentz cone constraints
 enum class FindSpringEquilibriumProblem { kProblem0 };
+std::ostream& operator<<(std::ostream& os, FindSpringEquilibriumProblem value);
 std::vector<FindSpringEquilibriumProblem> GetFindSpringEquilibriumProblems();
 class TestFindSpringEquilibrium
     : public ::testing::TestWithParam<FindSpringEquilibriumProblem> {

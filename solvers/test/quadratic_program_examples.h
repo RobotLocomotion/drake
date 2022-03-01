@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <ostream>
 #include <tuple>
 #include <vector>
 
@@ -16,6 +17,8 @@ enum class QuadraticProblems {
   kQuadraticProgram3 = 3,
   kQuadraticProgram4 = 4,
 };
+
+std::ostream& operator<<(std::ostream& os, QuadraticProblems value);
 
 class QuadraticProgramTest
     : public ::testing::TestWithParam<
