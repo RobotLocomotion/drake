@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <tuple>
 #include <vector>
 
@@ -136,6 +137,8 @@ enum class LinearProblems {
   kLinearProgram2 = 3,
   kLinearProgram3 = 4,
 };
+
+std::ostream& operator<<(std::ostream& os, LinearProblems value);
 
 class LinearProgramTest
     : public ::testing::TestWithParam<
