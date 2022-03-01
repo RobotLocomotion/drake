@@ -121,6 +121,7 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       V_HL3_E.get_coeffs(), V_HL3_E_expected.get_coeffs(),
       kTolerance, MatrixCompareType::relative));
 
+  // --------------- Start of Relative Spatial Velocity ----------------------
   // Verify the direct calculation of V_W_HE_W (frame E's spatial velocity
   // relative to frame H, measured and expressed in the world frame W).
   const SpatialVelocity<double> V_W_HE_W =
@@ -150,6 +151,31 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   EXPECT_TRUE(CompareMatrices(
       V_W_HE_E.get_coeffs(), V_W_HE_E_expected.get_coeffs(),
       kTolerance, MatrixCompareType::relative));
+
+  // Verify that the rotational part of V_L3_HE_W (frame E's spatial velocity
+  // relative to frame H, measured in L3, expressed in E) is simply ω_HE_W.
+  const SpatialVelocity<double> V_L3_HE_E = frame_E.CalcRelativeSpatialVelocity(
+      *context_, *frame_H_, L3, frame_E);
+  const SpatialVelocity<double> V_HE_E_expected = frame_E.CalcSpatialVelocity(
+      *context_, *frame_H_, frame_E);
+  const Vector3<double> w_HE_E = V_L3_HE_E.rotational();
+  const Vector3<double> w_HE_E_expected = V_HE_E_expected.rotational();
+  EXPECT_TRUE(CompareMatrices(w_HE_E, w_HE_E_expected,
+      kTolerance, MatrixCompareType::relative));
+
+  // Verify that the calculation of elongation between the origins of frame E
+  // and frame H can be calculated by the translational part of frame E's
+  // velocity relative to frame E, independent of the measured-in frame.
+  const Vector3<double> v_W_HE_E = V_W_HE_E.translational();
+  const Vector3<double> v_L3_HE_E = V_L3_HE_E.translational();
+  // Form the unit vector directed from Eo to Ho.
+  const Vector3<double> p_EoHo_E = X_EH_.translation();
+  const double distance = p_EoHo_E.norm();
+  const Vector3<double> u_EoHo_E = p_EoHo_E / distance;
+  const double elongation1 = v_W_HE_E.dot(u_EoHo_E);
+  const double elongation2 = v_L3_HE_E.dot(u_EoHo_E);
+  EXPECT_NEAR(elongation1, elongation2, kTolerance);
+  // --------------- End of Relative Spatial Velocity ----------------------
 
   // Test for a simple identity case of CalcRelativeTransform().
   const RigidTransformd X_HH =

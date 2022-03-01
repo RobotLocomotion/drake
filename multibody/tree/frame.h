@@ -213,7 +213,8 @@ class Frame : public FrameBase<T> {
   /// @see CalcSpatialVelocityInWorld().
   SpatialVelocity<T> CalcSpatialVelocity(
       const systems::Context<T>& context,
-      const Frame<T>& frame_M, const Frame<T>& frame_E) const {
+      const Frame<T>& frame_M,
+      const Frame<T>& frame_E) const {
     const math::RotationMatrix<T> R_WM =
         frame_M.CalcRotationMatrixInWorld(context);
     const Vector3<T> p_MF_M = this->CalcPose(context, frame_M).translation();
