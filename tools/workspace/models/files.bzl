@@ -74,8 +74,6 @@ def wsg_50_hydro_bubble_mesh_files():
     return [
         "wsg_50_hydro_bubble/meshes/bubble_finger.mtl",
         "wsg_50_hydro_bubble/meshes/bubble_finger.obj",
-        "wsg_50_hydro_bubble/meshes/bubble_gripper_base.mtl",
-        "wsg_50_hydro_bubble/meshes/bubble_gripper_base.obj",
         "wsg_50_hydro_bubble/meshes/ellipsoid_bubble_geometry.mtl",
         "wsg_50_hydro_bubble/meshes/ellipsoid_bubble_geometry.obj",
     ]
