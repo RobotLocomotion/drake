@@ -192,39 +192,6 @@ GTEST_TEST(FileParserTest, BadStringTest) {
       ".*file type '\\.weird-ext' is not supported .*");
 }
 
-// If a Drake URDF or SDF file uses package URIs, this confirms that the attempt
-// to add the model also loads its package.xml files by side effect.
-GTEST_TEST(FileParserTest, FindDrakePackageWhenAdding) {
-  using AddFunc = std::function<void(const std::string&, Parser*)>;
-  // Function wrappers to facilitate testing all
-  // {URDF, SDF} X {AddModel, AddAllModels} combinations.
-  AddFunc add_all_models = [](const std::string& file_name, Parser* parser) {
-    parser->AddAllModelsFromFile(file_name);
-  };
-  AddFunc add_model = [](const std::string& file_name, Parser* parser) {
-    parser->AddModelFromFile(file_name);
-  };
-
-  for (const auto& add_func : {add_all_models, add_model}) {
-    for (const auto file_name :
-         {"drake/multibody/parsing/test/box_package/sdfs/box.sdf",
-          "drake/multibody/parsing/test/box_package/urdfs/box.urdf"}) {
-      MultibodyPlant<double> plant(0.0);
-      geometry::SceneGraph<double> scene_graph;
-      Parser parser(&plant, &scene_graph);
-      const int orig_package_size = parser.package_map().size();
-
-      // Because the box.sdf references an obj via a package: URI, this would
-      // throw if the package were not found.
-      EXPECT_NO_THROW(add_func(FindResourceOrThrow(file_name), &parser));
-
-      // Now we explicitly confirm the package map has been modified.
-      EXPECT_EQ(parser.package_map().size(), orig_package_size + 1);
-      EXPECT_TRUE(parser.package_map().Contains("box_model"));
-    }
-  }
-}
-
 // If a non-Drake URDF or SDF file uses package URIs, this confirms that it is
 // necessary to explicitly include the package in order to resolve the URIs.
 GTEST_TEST(FileParserTest, PackageMapTest) {
