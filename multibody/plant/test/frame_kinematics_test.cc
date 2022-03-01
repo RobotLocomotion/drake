@@ -63,19 +63,18 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
                               MatrixCompareType::relative));
 
   const Body<double>& link3 = plant_->GetBodyByName("iiwa_link_3");
-  const RigidTransform<double> X_HL3 =
-      link3.body_frame().CalcPose(*context_, *frame_H_);
-  const RigidTransform<double> X_WL3 =
-      link3.body_frame().CalcPoseInWorld(*context_);
+  const Frame<double>& L3 = link3.body_frame();
+  const RigidTransform<double> X_HL3 = L3.CalcPose(*context_, *frame_H_);
+  const RigidTransform<double> X_WL3 = L3.CalcPoseInWorld(*context_);
   const RigidTransform<double> X_HL3_expected = X_WH.InvertAndCompose(X_WL3);
   EXPECT_TRUE(CompareMatrices(
       X_HL3.GetAsMatrix34(), X_HL3_expected.GetAsMatrix34(),
       kTolerance, MatrixCompareType::relative));
 
   const RotationMatrix<double> R_HL3 =
-      link3.body_frame().CalcRotationMatrix(*context_, *frame_H_);
+      L3.CalcRotationMatrix(*context_, *frame_H_);
   const RotationMatrix<double> R_WL3 =
-      link3.body_frame().CalcRotationMatrixInWorld(*context_);
+      L3.CalcRotationMatrixInWorld(*context_);
   const RotationMatrix<double> R_HL3_expected = R_WH.InvertAndCompose(R_WL3);
   EXPECT_TRUE(CompareMatrices(R_HL3.matrix(), R_HL3_expected.matrix(),
                               kTolerance, MatrixCompareType::relative));
@@ -105,9 +104,9 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
 
   // Spatial velocity of link 3 measured in the H frame and expressed in the
   // end-effector frame E.
+  const Frame<double>& frame_E = end_effector_link_->body_frame();
   const SpatialVelocity<double> V_HL3_E =
-      link3.body_frame().CalcSpatialVelocity(
-          *context_, *frame_H_, end_effector_link_->body_frame());
+      L3.CalcSpatialVelocity(*context_, *frame_H_, frame_E);
   // Compute V_HL3_E_expected.
   const SpatialVelocity<double> V_WH_E = R_WE.transpose() * V_WH;
   const math::RotationMatrix<double> R_EH =
@@ -120,6 +119,36 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       V_WL3_E - V_WH_E.Shift(p_HL3_E);
   EXPECT_TRUE(CompareMatrices(
       V_HL3_E.get_coeffs(), V_HL3_E_expected.get_coeffs(),
+      kTolerance, MatrixCompareType::relative));
+
+  // Verify the direct calculation of V_W_HE_W (frame E's spatial velocity
+  // relative to frame H, measured and expressed in the world frame W).
+  const SpatialVelocity<double> V_W_HE_W =
+      frame_E.CalcRelativeSpatialVelocityInWorld(*context_, *frame_H_);
+  const SpatialVelocity<double> V_W_HE_W_expected = V_WE - V_WH;
+  EXPECT_TRUE(CompareMatrices(
+      V_W_HE_W.get_coeffs(), V_W_HE_W_expected.get_coeffs(),
+      kTolerance, MatrixCompareType::relative));
+
+  // Check degenerate case of V_H_HL3_E (link 3's spatial velocity relative to
+  // frame H, measured in the H frame, expressed in the end-effector frame E) is
+  // the same as V_HL3_E (link 3's spatial velocity measured in frame H,
+  // expressed in the end-effector frame E).
+  const SpatialVelocity<double> V_H_HL3_E = L3.CalcRelativeSpatialVelocity(
+      *context_, *frame_H_, *frame_H_, frame_E);
+  EXPECT_TRUE(CompareMatrices(
+      V_H_HL3_E.get_coeffs(), V_HL3_E_expected.get_coeffs(),
+      kTolerance, MatrixCompareType::relative));
+
+  // Verify calculation of V_W_HE_E (frame E's spatial velocity relative to
+  // frame E, measured in the W frame, expressed in the end-effector frame E).
+  const Frame<double>& frame_W = plant_->world_frame();
+  const SpatialVelocity<double> V_W_HE_E = frame_E.CalcRelativeSpatialVelocity(
+      *context_, *frame_H_, frame_W, frame_E);
+  const RotationMatrix<double> R_EW = R_WE.inverse();
+  const SpatialVelocity<double> V_W_HE_E_expected = R_EW * V_W_HE_W_expected;
+  EXPECT_TRUE(CompareMatrices(
+      V_W_HE_E.get_coeffs(), V_W_HE_E_expected.get_coeffs(),
       kTolerance, MatrixCompareType::relative));
 
   // Test for a simple identity case of CalcRelativeTransform().
