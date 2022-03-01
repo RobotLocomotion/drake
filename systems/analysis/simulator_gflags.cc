@@ -60,6 +60,7 @@ DEFINE_bool(simulator_use_error_control,
 
 namespace drake {
 namespace systems {
+namespace internal {
 
 template <typename T>
 IntegratorBase<T>& ResetIntegratorFromGflags(Simulator<T>* simulator) {
@@ -109,5 +110,7 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
       &ResetIntegratorFromGflags<T>,
       &MakeSimulatorFromGflags<T>
 ))
+
+}  // namespace internal
 }  // namespace systems
 }  // namespace drake

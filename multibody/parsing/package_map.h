@@ -102,10 +102,7 @@ class PackageMap final {
   /// @param[in] model_file The model file whose directory is the start of the
   /// search for `package.xml` files. This file must be an SDF or URDF file.
   DRAKE_DEPRECATED("2022-05-01",
-      "You should remove all calls to this function. There is no replacement,"
-      " because the feature should be irrelevant. This function is a no-op"
-      " unless you are also using one of the deprecated package.xml files"
-      " internal to Drake without using Drake's multibody::Parser class.")
+      "This function is a no-op; you should remove any calls to it.")
   void PopulateUpstreamToDrake(const std::string& model_file);
 
   friend std::ostream& operator<<(std::ostream& out,

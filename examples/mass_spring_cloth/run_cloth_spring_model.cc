@@ -43,8 +43,7 @@ int DoMain() {
       &builder, *scene_graph, std::make_shared<geometry::Meshcat>());
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
-  auto simulator =
-      systems::MakeSimulatorFromGflags(*diagram, std::move(context));
+  auto simulator = MakeSimulatorFromGflags(*diagram, std::move(context));
   simulator->AdvanceTo(FLAGS_simulation_time);
   return 0;
 }

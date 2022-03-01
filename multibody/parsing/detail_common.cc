@@ -1,13 +1,48 @@
 #include "drake/multibody/parsing/detail_common.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/filesystem.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
 
-void DataSource::DemandExactlyOne() const {
-  DRAKE_DEMAND((file_name != nullptr) ^ (file_contents != nullptr));
+DataSource::DataSource(DataSourceType type, const std::string* data)
+    : type_(type), data_(data) {
+  DRAKE_DEMAND(IsFilename() != IsContents());
+  DRAKE_DEMAND(data != nullptr);
+}
+
+const std::string& DataSource::filename() const {
+  DRAKE_DEMAND(IsFilename());
+  return *data_;
+}
+
+const std::string& DataSource::contents() const {
+  DRAKE_DEMAND(IsContents());
+  return *data_;
+}
+
+std::string DataSource::GetAbsolutePath() const {
+  if (IsFilename()) {
+    return filesystem::absolute(*data_).native();
+  }
+  return "";
+}
+
+std::string DataSource::GetRootDir() const {
+  if (IsFilename()) {
+    return filesystem::absolute(*data_).parent_path().native();
+  }
+  return "";
+}
+
+std::string DataSource::GetStem() const {
+  if (IsFilename()) {
+    filesystem::path p{*data_};
+    return p.stem();
+  }
+  return kContentsPseudoStem;
 }
 
 geometry::ProximityProperties ParseProximityProperties(
