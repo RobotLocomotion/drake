@@ -32,8 +32,8 @@ drake_cc_binary(
         "//manipulation/models/wsg_50_description:models",
     ],
     test_rule_args = [
-        "--simulation_time=0.1",
-        "--target_realtime_rate=0.0",
+        "--simulation_sec=0.1",
+        "--realtime_rate=0.0",
     ],
     deps = [
         "//geometry:drake_visualizer",

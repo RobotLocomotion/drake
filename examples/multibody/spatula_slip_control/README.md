@@ -47,7 +47,9 @@ to a more efficient simulation, though may produce unwanted artifacts when
 working with very coarse meshes. By default, this example uses polygonal
 contact surfaces. Refer to the
 [Hydroelastic User Guide](https://drake.mit.edu/doxygen_cxx/group__hydroelastic__user__guide.html)
-for more details about hydroelastic representations.
+for more details about hydroelastic representations. You can also try a more
+conventional point-contact model by specifying `--contact_model=point` on the
+command line.
 
 The option `--contact_surface_representation=triangle` specifies triangle
 contact surfaces:

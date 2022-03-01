@@ -36,12 +36,9 @@ DEFINE_double(mbp_discrete_update_period, 1.0e-2,
               "If positive, the period (in seconds) of the discrete updates "
               "for the plant modeled as a discrete system."
               "This parameter must be non-negative.");
-DEFINE_string(contact_model, "hydroelastic",
-              "Contact model. Options are: 'point', 'hydroelastic', "
-              "'hydroelastic_with_fallback'.");
+DEFINE_string(contact_model, "hydroelastic", "Contact model.");
 DEFINE_string(contact_surface_representation, "polygon",
-              "Contact-surface representation for hydroelastics. "
-              "Options are: 'triangle' or 'polygon'. Default is 'polygon'.");
+              "Contact-surface representation for hydroelastics.");
 
 // Simulator settings.
 DEFINE_double(realtime_rate, 1,

@@ -29,8 +29,6 @@
         </inertia>
         <pose>0 0 0 0 0 0</pose>
       </inertial>
-      <self_collide>0</self_collide>
-      <kinematic>0</kinematic>
       <visual name="gripper mesh">
         <pose>0 0 -0.036 -1.5708 0 -1.5708</pose>
         <geometry>
@@ -67,8 +65,6 @@
         </inertia>
         <pose>0 0 0 0 0 0</pose>
       </inertial>
-      <self_collide>0</self_collide>
-      <kinematic>0</kinematic>
       <!--For mesh visualization only-->
       <visual name="left_finger_visual_mesh">
         <pose>0 0.0 0 1.5708 0 3.14159</pose>
@@ -128,8 +124,6 @@
         </inertia>
         <pose>0 0 0 0 0 0</pose>
       </inertial>
-      <self_collide>0</self_collide>
-      <kinematic>0</kinematic>
     </link>
     <link name="right_finger_bubble">
       <pose>0 0 -0.0725 0 0 0</pose>
@@ -145,8 +139,6 @@
         </inertia>
         <pose>0 0 0 0 0 0</pose>
       </inertial>
-      <self_collide>0</self_collide>
-      <kinematic>0</kinematic>
       <!-- For mesh visualization only -->
       <visual name="right_finger_visual_mesh">
         <pose>0 0 0 1.5708 0 0</pose>
@@ -206,8 +198,6 @@
         </inertia>
         <pose>0 0 0 0 0 0</pose>
       </inertial>
-      <self_collide>0</self_collide>
-      <kinematic>0</kinematic>
     </link>
     <joint name="left_finger_sliding_joint" type="prismatic">
       <parent>gripper</parent>
@@ -224,25 +214,7 @@
           <stiffness>15000</stiffness>
           <dissipation>50</dissipation>
         </limit>
-        <dynamics>
-          <spring_reference>0</spring_reference>
-          <spring_stiffness>0</spring_stiffness>
-          <damping>0</damping>
-          <friction>0</friction>
-        </dynamics>
       </axis>
-      <physics>
-        <ode>
-          <limit>
-            <cfm>0</cfm>
-            <erp>0.2</erp>
-          </limit>
-          <suspension>
-            <cfm>0</cfm>
-            <erp>0.2</erp>
-          </suspension>
-        </ode>
-      </physics>
     </joint>
     <joint name="left_finger_weld_joint" type="fixed">
       <parent>left_finger_bubble</parent>
@@ -262,25 +234,7 @@
           <stiffness>15000</stiffness>
           <dissipation>50</dissipation>
         </limit>
-        <dynamics>
-          <spring_reference>0</spring_reference>
-          <spring_stiffness>0</spring_stiffness>
-          <damping>0</damping>
-          <friction>0</friction>
-        </dynamics>
       </axis>
-      <physics>
-        <ode>
-          <limit>
-            <cfm>0</cfm>
-            <erp>0.2</erp>
-          </limit>
-          <suspension>
-            <cfm>0</cfm>
-            <erp>0.2</erp>
-          </suspension>
-        </ode>
-      </physics>
     </joint>
     <joint name="right_finger_weld_joint" type="fixed">
       <parent>right_finger_bubble</parent>
