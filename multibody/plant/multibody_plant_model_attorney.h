@@ -54,6 +54,12 @@ class MultibodyPlantModelAttorney {
                                           std::move(vector_calc_function),
                                           std::move(prerequisites_of_calc));
   }
+
+  static geometry::SceneGraph<T>& mutable_scene_graph(
+      MultibodyPlant<T>* plant) {
+    DRAKE_DEMAND(plant->geometry_source_is_registered());
+    return *(plant->scene_graph_);
+  }
 };
 }  // namespace internal
 }  // namespace multibody

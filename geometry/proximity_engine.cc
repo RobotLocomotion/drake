@@ -338,8 +338,19 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       dynamic_objects_[id]->setTransform(
           convert_to_double(X_WG).GetAsIsometry3());
       dynamic_objects_[id]->computeAABB();
+      deformable_contact_geometries_.UpdateRigidWorldPose(id, X_WG);
     }
     dynamic_tree_.update();
+  }
+
+  void UpdateDeformableVertexPositions(
+      const std::unordered_map<GeometryId, VectorX<T>>& q_MGs) {
+    for (const auto& id_position_pair : q_MGs) {
+      const GeometryId id = id_position_pair.first;
+      const VectorX<T>& q_MG = id_position_pair.second;
+      deformable_contact_geometries_.UpdateDeformableVertexPositions(
+          id, ExtractDoubleOrThrow(q_MG));
+    }
   }
 
   // Implementation of ShapeReifier interface

@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":collision_filter",
         ":collisions_exist_callback",
         ":contact_surface_utility",
+        ":deformable_contact_internal",
         ":deformable_volume_mesh",
         ":distance_to_point_callback",
         ":distance_to_shape_callback",
@@ -148,6 +149,27 @@ drake_cc_library(
         ":polygon_surface_mesh",
         ":triangle_surface_mesh",
         "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_contact_internal",
+    srcs = ["deformable_contact_internal.cc"],
+    hdrs = ["deformable_contact_internal.h"],
+    deps = [
+        ":make_sphere_mesh",
+        ":obj_to_surface_mesh",
+        ":proximity_utilities",
+        ":tessellation_strategy",
+        ":triangle_surface_mesh",
+        ":deformable_volume_mesh",
+        ":hydroelastic_internal",
+        "//common:copyable_unique_ptr",
+        "//common:essential",
+        "//geometry:geometry_ids",
+        "//geometry:proximity_properties",
+        "//geometry:shape_specification",
+        "//multibody/fem:mesh_utilities",
     ],
 )
 

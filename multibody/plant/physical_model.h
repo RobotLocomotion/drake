@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/common/default_scalars.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/scalar_convertible_component.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -143,6 +144,8 @@ class PhysicalModel : public ScalarConvertibleComponent<T> {
           vector_calc_function,
       std::set<systems::DependencyTicket> prerequisites_of_calc = {
           systems::System<T>::all_sources_ticket()});
+
+  static geometry::SceneGraph<T>& mutable_scene_graph(MultibodyPlant<T>* plant);
 
  private:
   /* Flag to track whether the system resources requested by `this`

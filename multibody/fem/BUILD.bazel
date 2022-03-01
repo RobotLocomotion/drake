@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":corotated_model",
         ":corotated_model_data",
         ":damping_model",
+        ":deformable_model",
         ":deformation_gradient_data",
         ":discrete_time_integrator",
         ":fem_element",
@@ -33,6 +34,7 @@ drake_cc_package_library(
         ":linear_constitutive_model_data",
         ":linear_simplex_element",
         ":matrix_utilities",
+        ":mesh_utilities",
         ":petsc_symmetric_block_sparse_matrix",
         ":quadrature",
         ":schur_complement",
@@ -125,6 +127,24 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_model",
+    srcs = [
+        "deformable_model.cc",
+    ],
+    hdrs = [
+        "deformable_model.h",
+    ],
+    deps = [
+        ":mesh_utilities",
+        "//common:default_scalars",
+        "//common:essential",
+        "//geometry:proximity_properties",
+        "//geometry/proximity:volume_mesh",
+        "//multibody/plant",
     ],
 )
 
@@ -304,6 +324,23 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "mesh_utilities",
+    visibility = ["//visibility:public"],
+    srcs = [
+        "mesh_utilities.cc",
+    ],
+    hdrs = [
+        "mesh_utilities.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+        "//geometry/proximity:make_box_mesh",
+        "//geometry/proximity:volume_mesh",
     ],
 )
 

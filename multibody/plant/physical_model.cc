@@ -74,6 +74,12 @@ systems::LeafOutputPort<T>& PhysicalModel<T>::DeclareVectorOutputPort(
       plant, std::move(name), model_vector, std::move(vector_calc_function),
       std::move(prerequisites_of_calc));
 }
+
+template <typename T>
+geometry::SceneGraph<T>& mutable_scene_graph(MultibodyPlant<T>* plant) {
+  return MultibodyPlantModelAttorney<T>::mutable_scene_graph(plant);
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
