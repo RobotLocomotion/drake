@@ -315,23 +315,18 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       // in MathematicalProgram::AddCost.
       Cost* cost = b.evaluator().get();
       if (LinearCost* lc = dynamic_cast<LinearCost*>(cost)) {
-        // Linear terms can lead to negative costs, which cannot be allowed.  We
-        // only support constant terms here.
         // TODO(russt): Consider setting a precision here (and exposing it to
         // the user) instead of using Eigen's dummy_precision.
-        if (!lc->a().isZero()) {
-          throw std::runtime_error(
-              fmt::format("In order to prevent negative edge lengths, linear "
-                          "costs cannot have linear terms (only constant): {}",
-                          b.to_string()));
+        if (lc->a().isZero() && lc->b() < 0.0) {
+          throw std::runtime_error(fmt::format(
+              "Constant costs must be non-negative: {}", b.to_string()));
         }
-        if (lc->b() < 0.0) {
-          throw std::runtime_error(
-              fmt::format("Costs must be non-negative: {}", b.to_string()));
-        }
-        // phi*b <= ell or [b, -1.0][phi; ell] <= 0
-        RowVector2d a{lc->b(), -1.0};
-        prog.AddLinearConstraint(a, -inf, 0.0, vars.head<2>());
+        // a*x + phi*b <= ell or [b, -1.0, a][phi; ell; x] <= 0
+        RowVectorXd a(lc->a().size() + 2);
+        a(0) = lc->b();
+        a(1) = -1.0;
+        a.tail(lc->a().size()) = lc->a();
+        prog.AddLinearConstraint(a, -inf, 0.0, vars);
       } else if (QuadraticCost* qc = dynamic_cast<QuadraticCost*>(cost)) {
         // .5 x'Qx + b'x + c is restated as a rotated Lorentz cone constraint
         // enforcing that ℓ should be lower-bounded by the perspective, with
