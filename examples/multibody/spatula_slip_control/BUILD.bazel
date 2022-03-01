@@ -19,13 +19,14 @@ _WSG_50_HYDRO_BUBBLE_MESHES = forward_files(
 )
 
 install_data(
+    extra_exclude_patterns = ["images/**/*"],
     extra_prod_models = _WSG_50_HYDRO_BUBBLE_MESHES,
 )
 
 drake_cc_binary(
-    add_test_rule = True,
     name = "spatula_slip_control",
     srcs = ["spatula_slip_control.cc"],
+    add_test_rule = True,
     data = [
         ":models",
         "//manipulation/models/wsg_50_description:models",
