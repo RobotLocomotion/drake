@@ -2,7 +2,7 @@
 <sdf version="1.7"
   xmlns:drake='drake.mit.edu'>
   <model name="spatula">
-    <pose>0 0 0.0 0 0 0</pose>
+    <pose>0 0 0 0 0 0</pose>
     <link name="spatula">
       <inertial>
         <mass>0.068</mass>

@@ -30,8 +30,8 @@ DEFINE_bool(visualize_collision, false,
             "Visualize collision instead of visual geometries.");
 
 // MultibodyPlant settings.
-DEFINE_double(stiction_tolerance, 1e-5, "Default stiction tolerance. [m/s].");
-DEFINE_double(mbp_discrete_update_period, 4.0e-3,
+DEFINE_double(stiction_tolerance, 1e-4, "Default stiction tolerance. [m/s].");
+DEFINE_double(mbp_discrete_update_period, 1.0e-2,
               "If zero, the plant is modeled as a continuous system. "
               "If positive, the period (in seconds) of the discrete updates "
               "for the plant modeled as a discrete system."

@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <sdf version="1.7">
   <model name="Schunk_Gripper">
-    <!-- This model is based off the gripper model in
-    schunk_wsg_50_bubble_collision.sdf in this same directory.
-    While schunk_wsg_50_bubble_collision.sdf uses a simplified collision model
-    for point contact modeling, the model in this file uses ellipsoidal
-    hydroelastic volumes to model the ellipsoidal caps of the bubble gripper.
-    Only these ellipsoidal volumes have collision geometry.
+    <!-- This model is based on the Schunk WSG 050-110-P gripper
+    (https://schunk.com/fileadmin/pim/docs/IM0026091.PDF) with TRI's Punyo
+    bubble fingers attached (https://punyo.tech/#instructions).The model in
+    this file uses ellipsoidal hydroelastic volumes to model the ellipsoidal
+    caps of the bubble gripper. Only these ellipsoidal volumes have collision
+    geometry.
    -->
     <!--
     Axes:
@@ -27,7 +27,7 @@
           <iyz>0</iyz>
           <izz>0.164814</izz>
         </inertia>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose>0 0 0 0 0 0</pose>
       </inertial>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
@@ -55,7 +55,7 @@
     <link name="left_finger_bubble">
       <pose>0 0 -0.0725 0 0 0</pose>
       <inertial>
-        <!-- TODO(sam-creasey) These inertial properties are bogus -->
+        <!-- TODO(joemasterjohn) These inertial properties are bogus -->
         <mass>0.05</mass>
         <inertia>
           <ixx>0.16</ixx>
@@ -168,7 +168,7 @@
         </geometry>
       </visual>
       <!-- -->
-      <!--The left finger collision ellipsoid. -->
+      <!--The right finger collision ellipsoid. -->
       <collision name="right_finger_ellipsoid">
         <!-- The pose is set from CAD drawings and it was verified that the mesh
         used for visual geometry exactly overlaps the colision ellipsoid. -->
@@ -212,7 +212,7 @@
     <joint name="left_finger_sliding_joint" type="prismatic">
       <parent>gripper</parent>
       <child>left_finger_bubble</child>
-      <pose>0 0 0 0 -0 0</pose>
+      <pose>0 0 0 0 0 0</pose>
       <axis>
         <xyz>0 1 0</xyz>
         <!-- Drake attaches an actuator to all and only joints with a nonzero
@@ -252,7 +252,7 @@
     <joint name="right_finger_sliding_joint" type="prismatic">
       <parent>gripper</parent>
       <child>right_finger_bubble</child>
-      <pose>0 0 0 0 -0 0</pose>
+      <pose>0 0 0 0 0 0</pose>
       <axis>
         <xyz>0 1 0</xyz>
         <limit>

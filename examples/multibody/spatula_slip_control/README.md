@@ -57,6 +57,14 @@ bazel run //examples/multibody/spatula_slip_control:spatula_slip_control \
 -- --contact_surface_representation=triangle
 ```
 
+**WARNING**: Using a more dense contact surface representation may cause simulation
+convergence failures. Using a smaller step size can help in convergence:
+
+```
+bazel run //examples/multibody/spatula_slip_control:spatula_slip_control \
+-- --contact_surface_representation=triangle --mbp_discrete_update_period=5e-3
+```
+
 ## Other Options
 
 There are other command-line options that you can use. Use `--help` to see
