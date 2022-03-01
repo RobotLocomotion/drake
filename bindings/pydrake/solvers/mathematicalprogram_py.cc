@@ -50,6 +50,7 @@ using solvers::MathematicalProgram;
 using solvers::MathematicalProgramResult;
 using solvers::MatrixXDecisionVariable;
 using solvers::MatrixXIndeterminate;
+using solvers::PerspectiveQuadraticCost;
 using solvers::PositiveSemidefiniteConstraint;
 using solvers::ProgramType;
 using solvers::QuadraticConstraint;
@@ -1952,6 +1953,26 @@ void BindEvaluatorsAndBindings(py::module m) {
           py::arg("new_A"), py::arg("new_b") = 0,
           doc.LInfNormCost.UpdateCoefficients.doc);
 
+  py::class_<PerspectiveQuadraticCost, Cost,
+      std::shared_ptr<PerspectiveQuadraticCost>>(
+      m, "PerspectiveQuadraticCost", doc.PerspectiveQuadraticCost.doc)
+      .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
+        return std::make_unique<PerspectiveQuadraticCost>(A, b);
+      }),
+          py::arg("A"), py::arg("b"), doc.PerspectiveQuadraticCost.ctor.doc)
+      .def(
+          "A", &PerspectiveQuadraticCost::A, doc.PerspectiveQuadraticCost.A.doc)
+      .def(
+          "b", &PerspectiveQuadraticCost::b, doc.PerspectiveQuadraticCost.b.doc)
+      .def(
+          "UpdateCoefficients",
+          [](PerspectiveQuadraticCost& self, const Eigen::MatrixXd& new_A,
+              const Eigen::VectorXd& new_b) {
+            self.UpdateCoefficients(new_A, new_b);
+          },
+          py::arg("new_A"), py::arg("new_b"),
+          doc.PerspectiveQuadraticCost.UpdateCoefficients.doc);
+
   auto cost_binding = RegisterBinding<Cost>(&m);
   DefBindingCastConstructor<Cost>(&cost_binding);
   RegisterBinding<LinearCost>(&m);
@@ -1959,6 +1980,7 @@ void BindEvaluatorsAndBindings(py::module m) {
   RegisterBinding<L1NormCost>(&m);
   RegisterBinding<L2NormCost>(&m);
   RegisterBinding<LInfNormCost>(&m);
+  RegisterBinding<PerspectiveQuadraticCost>(&m);
 
   py::class_<VisualizationCallback, EvaluatorBase,
       std::shared_ptr<VisualizationCallback>>(
