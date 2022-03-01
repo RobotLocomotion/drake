@@ -171,7 +171,7 @@ void SapConstraintBundle<T>::ProjectImpulsesAndCalcConstraintsHessian(
     const SapConstraint<T>& c = *constraints_[i];
     const int ni = c.num_constraint_equations();
     const auto R_i = R().segment(constraint_start, ni);
-    const MatrixUpTo6<T> dPdy_i = (*G)[i];
+    const MatrixX<T>& dPdy_i = (*G)[i];
     (*G)[i] = dPdy_i * R_i.cwiseInverse().asDiagonal();
     constraint_start += ni;
   }
