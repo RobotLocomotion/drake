@@ -56,6 +56,19 @@ class PartialPermutation {
   // i.e. there are holes in the permuted domain.
   explicit PartialPermutation(std::vector<int> permutation);
 
+  // Constructs a partial permutation of `domain_size` and
+  // permuted_domain_size() equal to zero. In other words, participates(i) =
+  // false for in [0, domain_size). The permutation can be updated with further
+  // calls to push().
+  // @throws exception if domain_size is negative.
+  explicit PartialPermutation(int domain_size);
+
+  // If participates(i) = false, defines P(i) = permuted_domain_size() and
+  // further increases the permuted domain size.
+  // @throws exception if i is not in [0, domain_size()).
+  // @returns P(i), ie. permuted_index(i).
+  int push(int i);
+
   // The size n of the domain.
   int domain_size() const { return permutation_.size(); }
 

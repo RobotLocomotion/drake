@@ -24,12 +24,14 @@ ContactProblemGraph::ConstraintCluster::AddConstraint(
 }
 
 ContactProblemGraph::ContactProblemGraph(int num_cliques)
-    : num_cliques_(num_cliques) {
+    : num_cliques_(num_cliques), participating_cliques_(num_cliques) {
   DRAKE_THROW_UNLESS(num_cliques >= 0);
 }
 
 int ContactProblemGraph::AddConstraint(SortedPair<int> cliques,
                                        int num_constraint_equations) {
+  participating_cliques_.push(cliques.first());
+  participating_cliques_.push(cliques.second());
   auto [iterator, new_cluster] = pair_to_cluster_index_.insert(
       std::make_pair(cliques, clusters_.size()));
   if (new_cluster) clusters_.emplace_back(std::move(cliques));
