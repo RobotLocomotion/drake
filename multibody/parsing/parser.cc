@@ -45,12 +45,6 @@ FileType DetermineFileType(const std::string& file_name) {
 std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
     const std::string& file_name) {
   DataSource data_source(DataSource::kFilename, &file_name);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // Always search for a package.xml file, starting the crawl upward from
-  // the file's path.
-  package_map_.PopulateUpstreamToDrake(file_name);
-#pragma GCC diagnostic pop
   const FileType type = DetermineFileType(file_name);
   if (type == FileType::kSdf) {
     return AddModelsFromSdf(data_source, package_map_, plant_);
@@ -64,12 +58,6 @@ ModelInstanceIndex Parser::AddModelFromFile(
     const std::string& file_name,
     const std::string& model_name) {
   DataSource data_source(DataSource::kFilename, &file_name);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // Always search for a package.xml file, starting the crawl upward from
-  // the file's path.
-  package_map_.PopulateUpstreamToDrake(file_name);
-#pragma GCC diagnostic pop
   const FileType type = DetermineFileType(file_name);
   if (type == FileType::kSdf) {
     return AddModelFromSdf(data_source, model_name, package_map_, plant_);
