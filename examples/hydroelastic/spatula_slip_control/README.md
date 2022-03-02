@@ -10,14 +10,13 @@ The example poses the spatula in the closed grip of the gripper and
 uses an open loop square wave controller to perform a controlled
 rotational slip of the spatula while maintaining the spatula in
 the gripper's grasp. This demonstrates that the hydroelastic contact patch
-captures important behavior missed in point contact -- in this case, 
+captures important behavior missed in point contact -- in this case,
 pressure-dependent torsional friction emerges naturally.
 
 In the source code, this example shows how to set up bodies by loading SDFormat
 files and also calling C++ APIs.
 
 ![spatula_1](images/spatula_1.jpg)
-
 ![spatula_2](images/spatula_2.jpg)
 
 ## Run DrakeVisualizer
