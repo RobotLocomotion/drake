@@ -5,10 +5,6 @@ This provides more in-depth documentation on top of the
 
 ## Running the Tutorials Locally
 
-After Drake version v0.40.0 or newer, you'll be able to run Drake's tutorials
-locally.  (Prior to that, only nightly builds will offer local tutorials.)
-In the meantime, please use "Running and Viewing the Notebooks Online", below.
-
 To run the tutorials locally, install Drake via one of the
 [installation methods](https://drake.mit.edu/installation.html)
 (e.g., [pip install drake](https://drake.mit.edu/pip.html)),
