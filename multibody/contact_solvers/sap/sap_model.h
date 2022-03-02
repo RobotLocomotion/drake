@@ -54,7 +54,7 @@ class SapModel {
   /* Returns permutation for participating cliques, allowing to map back and
    forth between cliques in `this` model with cliques in problem(). */
   const PartialPermutation& cliques_permutation() const {
-    return cliques_permutation_;
+    return problem().graph().participating_cliques();
   }
 
   /* Returns permutation for participating velocities, allowing to map back and
@@ -113,8 +113,6 @@ class SapModel {
  private:
   friend class SapModelTester;
 
-  PartialPermutation MakeParticipatingCliquesPermutation(
-      const ContactProblemGraph& graph) const;
   PartialPermutation MakeParticipatingVelocitiesPermutation(
       const SapContactProblem<T>& problem,
       const PartialPermutation& cliques_permutation) const;
@@ -139,7 +137,6 @@ class SapModel {
       VectorX<T>* delassus_diagonal) const;
 
   const SapContactProblem<T>* problem_{nullptr};
-  PartialPermutation cliques_permutation_;
   PartialPermutation velocities_permutation_;
   PartialPermutation impulses_permutation_;
 

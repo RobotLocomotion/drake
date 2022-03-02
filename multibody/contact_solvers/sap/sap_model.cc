@@ -21,7 +21,8 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem_ptr)
   // Permutations to map indexes from participating cliques/dofs to the original
   // set of cliques/dofs.
   // TODO: remove cliques_permutation_.
-  cliques_permutation_ = graph.participating_cliques();
+  const PartialPermutation& cliques_permutation_ =
+      graph.participating_cliques();
   velocities_permutation_ = MakeParticipatingVelocitiesPermutation(
       problem(), cliques_permutation_);
   impulses_permutation_ = MakeImpulsesPermutation(graph);
@@ -64,7 +65,7 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem_ptr)
 
 template <typename T>
 int SapModel<T>::num_cliques() const {
-  return cliques_permutation_.permuted_domain_size();
+  return cliques_permutation().permuted_domain_size();
 }
 
 template <typename T>
@@ -95,23 +96,6 @@ const VectorX<T>& SapModel<T>::v_star() const {
 template <typename T>
 const VectorX<T>& SapModel<T>::p_star() const {
   return p_star_;
-}
-
-template <typename T>
-PartialPermutation SapModel<T>::MakeParticipatingCliquesPermutation(
-    const ContactProblemGraph& graph) const {
-  std::vector<int> participating_cliques(graph.num_cliques(), -1);
-  int num_participating_cliques = 0;
-  for (const auto& e : graph.clusters()) {
-    const int c0 = e.cliques().first();
-    const int c1 = e.cliques().second();
-    if (participating_cliques[c0] < 0) {
-      participating_cliques[c0] = num_participating_cliques++;
-    }
-    if (c1 != c0 && participating_cliques[c1] < 0)
-      participating_cliques[c1] = num_participating_cliques++;
-  }  
-  return PartialPermutation(std::move(participating_cliques));
 }
 
 template <typename T>
