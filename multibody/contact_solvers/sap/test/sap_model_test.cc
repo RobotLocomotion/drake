@@ -199,7 +199,7 @@ TEST_F(SapModelTester, VerifySizes) {
   EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_constraints(), 5);
   EXPECT_EQ(model.num_velocities(), 7);
-  EXPECT_EQ(model.num_impulses(), 15);
+  EXPECT_EQ(model.num_constraint_equations(), 15);
 }
 
 // Verify participating cliques are numbered according to the order they were
@@ -260,7 +260,7 @@ TEST_F(SapModelTester, VerifyParticipatingDofsDynamics) {
   PRINT_VAR(model.num_cliques());
   PRINT_VAR(model.num_constraints());
   PRINT_VAR(model.num_velocities());
-  PRINT_VAR(model.num_impulses());
+  PRINT_VAR(model.num_constraint_equations());
 
   // Verify v_star.
   // Clique 2 with velocities (4, 5, 6) does not participate and therefore it

@@ -51,8 +51,8 @@ void SapSolver<T>::PackContactResults(const VectorX<T>& v_star,
   // For now we will assume the SapContactProblem only contains contact
   // constraints.
   DRAKE_DEMAND(v_participating.size() == model_->num_velocities());
-  DRAKE_DEMAND(vc_grouped.size() == model_->num_impulses());
-  DRAKE_DEMAND(gamma_grouped.size() == model_->num_impulses());
+  DRAKE_DEMAND(vc_grouped.size() == model_->num_constraint_equations());
+  DRAKE_DEMAND(gamma_grouped.size() == model_->num_constraint_equations());
 
   results->Resize(model_->problem().num_velocities(),
                   model_->num_constraints());
@@ -70,7 +70,7 @@ void SapSolver<T>::PackContactResults(const VectorX<T>& v_star,
   // Probably the best solution is for SapSolver results to compute
   // SapSolverResults and then let the contact manager fill in the
   // ContactSolverResults.
-  if (3 * model_->num_constraints() == model_->num_impulses()) {
+  if (3 * model_->num_constraints() == model_->num_constraint_equations()) {
     VectorX<T> vc(vc_grouped.size());
     model_->impulses_permutation().ApplyInverse(vc_grouped, &vc);
     ExtractNormal(vc, &results->vn);
@@ -142,7 +142,7 @@ ContactSolverStatus SapSolver<double>::SolveWithGuess(
   model_ = std::make_unique<SapModel<double>>(&problem);
   const int nv = model_->num_velocities();
   const int nc = model_->num_constraints();
-  const int nk = model_->num_impulses();
+  const int nk = model_->num_constraint_equations();
 
   State state(nv, nc, nk);
   stats_ = SolverStats();
@@ -366,7 +366,7 @@ void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
   // intended as an alternative for debugging and optimizing it might not be
   // worth it.
   const int nv = model_->num_velocities();
-  const int nk = model_->num_impulses();
+  const int nk = model_->num_constraint_equations();
 
   // Make dense dynamics matrix.
   const std::vector<MatrixX<T>> Acliques = model_->dynamics_matrix();

@@ -78,7 +78,7 @@ int SapModel<T>::num_constraints() const {
 }
 
 template <typename T>
-int SapModel<T>::num_impulses() const {
+int SapModel<T>::num_constraint_equations() const {
   return problem().num_constraint_equations();
 }
 
@@ -247,9 +247,9 @@ void SapModel<T>::CalcConstraintVelocities(const VectorX<T>& v,
 template <typename T>
 void SapModel<T>::CalcUnprojectedImpulses(const VectorX<T>& vc,
                                           VectorX<T>* y) const {
-  DRAKE_DEMAND(vc.size() == num_impulses());
+  DRAKE_DEMAND(vc.size() == num_constraint_equations());
   DRAKE_DEMAND(y != nullptr);
-  DRAKE_DEMAND(y->size() == num_impulses());
+  DRAKE_DEMAND(y->size() == num_constraint_equations());
   constraints_bundle_->CalcUnprojectedImpulses(vc, y);
 }
 

@@ -22,7 +22,12 @@ namespace internal {
  problem and it only includes participating cliques, that is, cliques that
  connect to a cluster (edge) in the contact graph. The solution for
  non-participating cliques is trivial (v=v*) and therefore they are excluded
- from the main (expensive) SAP computation. */
+ from the main (expensive) SAP computation. 
+ 
+ [Castro et al., 2021] Castro A., Permenter F. and Han X., 2021. An
+ Unconstrained Convex Formulation of Compliant Contact. Available at
+ https://arxiv.org/abs/2110.10107
+*/
 template <typename T>
 class SapModel {
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapModel);
@@ -37,54 +42,68 @@ class SapModel {
       return *problem_; 
   }
 
+  /* Returns the number of (participating) cliques. */
   int num_cliques() const;
-  int num_velocities() const;
-  int num_constraints() const;
-  int num_impulses() const;
 
-  // Returns permutation for participating cliques.  
+  /* Returns the number or (participating) generalized velocities.*/
+  int num_velocities() const;
+
+  int num_constraints() const;
+  int num_constraint_equations() const;
+
+  /* Returns permutation for participating cliques, allowing to map back and
+   forth between cliques in `this` model with cliques in problem(). */
   const PartialPermutation& cliques_permutation() const {
     return cliques_permutation_;
   }
 
-  // Returns permutation for participating velocities.
+  /* Returns permutation for participating velocities, allowing to map back and
+   forth between velocities in `this` model with velocities in problem(). */
   const PartialPermutation& velocities_permutation() const {
     return velocities_permutation_;
   }
 
+  /* Returns permutation for impulses, allowing to map back and
+   forth between impulses in `this` model with impulses in problem(). */
   const PartialPermutation& impulses_permutation() const {
     return impulses_permutation_;
   }
 
+  /* The time step of problem(). */
   const T& time_step() const { return problem_->time_step(); }
 
-  // Returns the system dynamics matrix A for the participating DOFs only.
+  /* Returns the system dynamics matrix A for participating velocities only. See
+   velocities_permutation(). */
   const std::vector<MatrixX<T>>& dynamics_matrix() const;
 
+  /* Returns the constraints Jacobian. Only participating velocities are
+   involved. */
   const BlockSparseMatrix<T>& J() const { return constraints_bundle_->J(); }
 
+  /* Returns diagonal of the regularization matrix R. */
   const VectorX<T>& R() const {
     return constraints_bundle_->R();
   }
 
+  /* Returns diagonal of the inverse of the regularization matrix R. */
   const VectorX<T>& Rinv() const {
     return constraints_bundle_->Rinv();
   }
 
-  // Returns free-motion velocities for participating DOFs.
+  /* Returns free-motion velocities v*, Participating velocities only. */
   const VectorX<T>& v_star() const;
 
-  // Returns free-motion generalized momenta for participating DOFs.
+  /* Returns free-motion generalized momenta. Participating momenta only. */
   const VectorX<T>& p_star() const;
 
-  // Returns diag(A)^{-1/2}. Used for scaling SAP equations and residuals.
-  // Of size num_participating_velocities().
+  /* Returns diag(A)^{-1/2}. Used for scaling SAP equations and residuals.
+   of size num_velocities(). See [Castro et al., 2021]. */
   const VectorX<T>& inv_sqrt_A() const { return inv_sqrt_A_; }
 
-  // Performs multiplication p = A * v. Only participating DOFs are
-  // considered.
-  // @pre p must be a valid pointer.
-  // @pre both v and p must be of size num_participating_velocities().
+  /* Performs multiplication p = A * v. Only participating velocities are
+   considered.
+   @pre p must be a valid pointer.
+   @pre both v and p must be of size num_participating_velocities(). */
   void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* p) const;    
 
   void CalcConstraintVelocities(const VectorX<T>& v, VectorX<T>* vc) const;
