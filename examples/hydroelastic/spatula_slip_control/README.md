@@ -10,13 +10,14 @@ The example poses the spatula in the closed grip of the gripper and
 uses an open loop square wave controller to perform a controlled
 rotational slip of the spatula while maintaining the spatula in
 the gripper's grasp. This demonstrates that the hydroelastic contact patch
-captures important behavior missed in point contact -- in this case,
+captures important behavior missed in point contact -- in this case, 
 pressure-dependent torsional friction emerges naturally.
 
 In the source code, this example shows how to set up bodies by loading SDFormat
 files and also calling C++ APIs.
 
 ![spatula_1](images/spatula_1.jpg)
+
 ![spatula_2](images/spatula_2.jpg)
 
 ## Run DrakeVisualizer
@@ -35,7 +36,7 @@ might want to set these:
 ## Run the example
 
 ```
-bazel run //examples/multibody/spatula_slip_control:spatula_slip_control
+bazel run //examples/hydroelastic/spatula_slip_control:spatula_slip_control
 ```
 
 ## Use polygon or triangle contact surfaces
@@ -55,7 +56,7 @@ The option `--contact_surface_representation=triangle` specifies triangle
 contact surfaces:
 
 ```
-bazel run //examples/multibody/spatula_slip_control:spatula_slip_control \
+bazel run //examples/hydroelastic/spatula_slip_control:spatula_slip_control \
 -- --contact_surface_representation=triangle
 ```
 
@@ -63,7 +64,7 @@ bazel run //examples/multibody/spatula_slip_control:spatula_slip_control \
 convergence failures. Using a smaller step size can help in convergence:
 
 ```
-bazel run //examples/multibody/spatula_slip_control:spatula_slip_control \
+bazel run //examples/hydroelastic/spatula_slip_control:spatula_slip_control \
 -- --contact_surface_representation=triangle --mbp_discrete_update_period=5e-3
 ```
 
@@ -79,6 +80,6 @@ MultibodyPlant running the dynamics as well as the Simulator running the
 simulation.
 
 ```
-bazel run //examples/multibody/spatula_slip_control:spatula_slip_control \
+bazel run //examples/hydroelastic/spatula_slip_control:spatula_slip_control \
 -- --help
 ```

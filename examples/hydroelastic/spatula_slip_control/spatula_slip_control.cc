@@ -147,18 +147,17 @@ int DoMain() {
   // Parse the gripper and spatula models.
   multibody::Parser parser(&plant, &scene_graph);
   const std::string gripper_file = FindResourceOrThrow(
-      "drake/examples/multibody/spatula_slip_control/models/"
+      "drake/examples/hydroelastic/spatula_slip_control/models/"
       "schunk_wsg_50_hydro_bubble.sdf");
   const std::string spatula_file = FindResourceOrThrow(
-      "drake/examples/multibody/spatula_slip_control/models/spatula.sdf");
+      "drake/examples/hydroelastic/spatula_slip_control/models/spatula.sdf");
   parser.AddModelFromFile(gripper_file);
   multibody::ModelInstanceIndex spatula_instance =
       parser.AddModelFromFile(spatula_file);
   // Pose the gripper and weld it to the world.
   const math::RigidTransform<double> X_WF0 = math::RigidTransform<double>(
       math::RollPitchYaw(0.0, -1.57, 0.0), Eigen::Vector3d(0, 0, 0.25));
-  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("gripper"),
-                    X_WF0);
+  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("gripper"), X_WF0);
   plant.Finalize();
 
   // Construct the open loop square wave controller. To oscillate around a
