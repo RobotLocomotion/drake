@@ -91,6 +91,7 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:eigen_pybind",
     ],
     cc_srcs = ["primitives_py.cc"],
     package_info = PACKAGE_INFO,
@@ -602,6 +603,7 @@ drake_py_unittest(
     deps = [
         ":primitives_py",
         ":system_sliders_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
 

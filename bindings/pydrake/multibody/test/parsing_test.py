@@ -100,6 +100,7 @@ class TestParsing(unittest.TestCase):
             sdf_contents = f.read()
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)
+        self.assertEqual(parser.plant(), plant)
         result = parser.AddModelFromString(
             file_contents=sdf_contents, file_type="sdf")
         self.assertIsInstance(result, ModelInstanceIndex)

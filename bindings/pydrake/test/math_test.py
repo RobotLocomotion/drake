@@ -270,6 +270,7 @@ class TestMath(unittest.TestCase):
         self.assertIsInstance(angle_axis, AngleAxis)
         R_AngleAxis = RotationMatrix(angle_axis)
         R_I = R.inverse().multiply(R_AngleAxis)
+        numpy_compare.assert_equal(R_I.IsNearlyIdentity(), True)
         numpy_compare.assert_equal(R_I.IsNearlyIdentity(2E-15), True)
         R_I = R.InvertAndCompose(other=R_AngleAxis)
         numpy_compare.assert_equal(R_I.IsNearlyIdentity(2E-15), True)

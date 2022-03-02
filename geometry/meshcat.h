@@ -21,6 +21,11 @@ namespace geometry {
 
 /** The set of parameters for configuring Meshcat. */
 struct MeshcatParams {
+  /** Meshcat will listen only on the given hostname (e.g., "localhost").
+  If "*" is specified, then it will listen on all interfaces.
+  If empty, an appropriate default value will be chosen (currently "*"). */
+  std::string host{"*"};
+
   /** Meshcat will listen on the given http `port`. If no port is specified,
   then it will listen on the first available port starting at 7000 (up to 7099).
   @pre We require `port` >= 1024. */
@@ -35,10 +40,13 @@ struct MeshcatParams {
   specification language, except that `arg-id` substitutions are performed
   using named arguments instead of positional indices.
 
-  There is only a single argument available to the pattern: `{port}` will be
-  substitued with the %Meshcat server's listen port number.
+  There are two arguments available to the pattern:
+  - `{port}` will be substituted with the %Meshcat server's listen port number;
+  - `{host}` will be substituted with this params structure's `host` field, or
+    else with "localhost" in case the `host` was one of the placeholders for
+    "all interfaces".
   */
-  std::string web_url_pattern{"http://localhost:{port}"};
+  std::string web_url_pattern{"http://{host}:{port}"};
 };
 
 /** Provides an interface to %Meshcat (https://github.com/rdeits/meshcat).
@@ -494,10 +502,24 @@ class Meshcat {
   std::string GetPackedProperty(std::string_view path,
                                 std::string property) const;
 
+#ifndef DRAKE_DOXYGEN_CXX
+  /* (Internal use only) Causes the websocket worker thread to exit with an
+  error, which will spit out an exception from the next Meshcat main thread
+  function that gets called. */
+  void InjectWebsocketThreadFault();
+#endif
+
  private:
   // Provides PIMPL encapsulation of websocket types.
-  class WebSocketPublisher;
-  std::unique_ptr<WebSocketPublisher> publisher_;
+  class Impl;
+
+  // Safe accessors for the PIMPL object.
+  Impl& impl();
+  const Impl& impl() const;
+
+  // Always a non-nullptr Impl, but stored as void* to enforce that the
+  // impl() accessors are always used.
+  void* const impl_{};
 };
 
 }  // namespace geometry

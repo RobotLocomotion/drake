@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="Floor">
+    <!--
+    We use a 30x30x5-cm rectangular block to represent the compliant floor on
+    which the dinner plate is placed. We set the hydroelastic modulus of the
+    floor to be rather small to showcase the contact surface from the
+    substantial penetration of the dinner plate into the floor.
+    -->
+    <link name="Floor">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.1</mass>
+        <inertia>
+          <ixx>0.000770833</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.000770833</iyy>
+          <iyz>0</iyz>
+          <izz>0.0015</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <pose>0 0 -2.5e-2 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>3.0e-1 3.0e-1 5.0e-2</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.5 0.5 0.7 0.2</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <pose>0 0 -2.5e-2 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>3.0e-1 3.0e-1 5.0e-2</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic/>
+          <drake:hydroelastic_modulus> 3.0e4 </drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint> 1.0 </drake:mesh_resolution_hint>
+          <drake:mu_dynamic> 0.3 </drake:mu_dynamic>
+          <drake:mu_static> 0.3 </drake:mu_static>
+          <drake:hunt_crossley_dissipation>
+            3.0
+          </drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>

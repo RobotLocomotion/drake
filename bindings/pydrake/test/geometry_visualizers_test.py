@@ -90,6 +90,7 @@ class TestGeometryVisualizers(unittest.TestCase):
     def test_meshcat(self):
         port = 7051
         params = mut.MeshcatParams(
+            host="*",
             port=port,
             web_url_pattern="http://host:{port}")
         meshcat = mut.Meshcat(params=params)
@@ -237,7 +238,7 @@ class TestGeometryVisualizers(unittest.TestCase):
                 ad_visualizer, mut.MeshcatPointCloudVisualizerCpp_[AutoDiffXd])
 
     def test_start_meshcat(self):
-        # StartMeshcat only performs interesting work on Deepnote or Google
-        # Colab.  Here we simply ensure that it runs.
+        # StartMeshcat only performs interesting work on cloud notebook hosts.
+        # Here we simply ensure that it runs.
         meshcat = mut.StartMeshcat()
         self.assertIsInstance(meshcat, mut.Meshcat)

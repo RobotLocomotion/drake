@@ -45,7 +45,7 @@ GTEST_TEST(MujocoParser, GymModels) {
 
     const std::string filename = FindResourceOrThrow(
         fmt::format("drake/multibody/parsing/dm_control/suite/{}.xml", f));
-    AddModelFromMujocoXml({.file_name = &filename}, f, std::nullopt, &plant);
+    AddModelFromMujocoXml({DataSource::kFilename, &filename}, f, {}, &plant);
 
     EXPECT_TRUE(plant.HasModelInstanceNamed(f));
   }
@@ -63,8 +63,7 @@ GTEST_TEST(MujocoParser, Option) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml}, "test",
-                        std::nullopt, &plant);
+  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
   EXPECT_TRUE(CompareMatrices(plant.gravity_field().gravity_vector(),
                               Vector3d{0, -9.81, 0}));
 }
@@ -97,8 +96,7 @@ GTEST_TEST(MujocoParser, GeometryTypes) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml}, "test",
-                        std::nullopt, &plant);
+  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
   const SceneGraphInspector<double>& inspector = scene_graph.model_inspector();
 
   auto CheckShape = [&inspector](const std::string& geometry_name,
@@ -147,8 +145,8 @@ GTEST_TEST(MujocoParser, UnrecognizedGeometryTypes) {
 </mujoco>
 )""";
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml},
-                            "test_unrecognized", std::nullopt, &plant),
+      AddModelFromMujocoXml({DataSource::kContents, &xml},
+                            "test_unrecognized", {}, &plant),
       ".*Unrecognized.*");
 }
 
@@ -166,10 +164,10 @@ GTEST_TEST(MujocoParser, GeometryPose) {
   <worldbody>
     <geom name="identity" type="sphere" size="0.1" />
     <geom name="quat" quat="0 1 0 0" pos="1 2 3" type="sphere" size="0.1" />
-    <geom name="axisangle" axisangle="4 5 6 30" pos="1 2 3" type="sphere" 
+    <geom name="axisangle" axisangle="4 5 6 30" pos="1 2 3" type="sphere"
           size="0.1" />
     <geom name="euler" euler="30 45 60" pos="1 2 3" type="sphere" size="0.1" />
-    <geom name="xyaxes" xyaxes="0 1 0 -1 0 0" pos="1 2 3" type="sphere" 
+    <geom name="xyaxes" xyaxes="0 1 0 -1 0 0" pos="1 2 3" type="sphere"
           size="0.1" />
     <geom name="zaxis" zaxis="0 1 0" pos="1 2 3" type="sphere" size="0.1" />
     <geom name="fromto_capsule" fromto="-1 -3 -3 -1 -1 -3"
@@ -186,7 +184,7 @@ GTEST_TEST(MujocoParser, GeometryPose) {
 <mujoco model="test">
   <compiler angle="radian"/>
   <worldbody>
-    <geom name="axisangle_rad" axisangle="4 5 6 0.5" pos="1 2 3" type="sphere" 
+    <geom name="axisangle_rad" axisangle="4 5 6 0.5" pos="1 2 3" type="sphere"
           size="0.1" />
     <geom name="euler_rad" euler="0.5 0.7 1.05" pos="1 2 3" type="sphere"
           size="0.1" />
@@ -199,7 +197,7 @@ GTEST_TEST(MujocoParser, GeometryPose) {
 <mujoco model="test">
   <compiler angle="degree"/>
   <worldbody>
-    <geom name="axisangle_deg" axisangle="4 5 6 30" pos="1 2 3" type="sphere" 
+    <geom name="axisangle_deg" axisangle="4 5 6 30" pos="1 2 3" type="sphere"
           size="0.1" />
     <geom name="euler_deg" euler="30 45 60" pos="1 2 3" type="sphere"
           size="0.1" />
@@ -207,12 +205,11 @@ GTEST_TEST(MujocoParser, GeometryPose) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml}, "test",
-                        std::nullopt, &plant);
-  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &radians_xml},
-                        "radians_test", std::nullopt, &plant);
-  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &degrees_xml},
-                        "degrees_test", std::nullopt, &plant);
+  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
+  AddModelFromMujocoXml({DataSource::kContents, &radians_xml},
+                        "radians_test", {}, &plant);
+  AddModelFromMujocoXml({DataSource::kContents, &degrees_xml},
+                        "degrees_test", {}, &plant);
 
   const SceneGraphInspector<double>& inspector = scene_graph.model_inspector();
 
@@ -282,8 +279,7 @@ GTEST_TEST(MujocoParser, GeometryProperties) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml}, "test",
-                        std::nullopt, &plant);
+  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
 
   const SceneGraphInspector<double>& inspector = scene_graph.model_inspector();
 
@@ -381,12 +377,11 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml}, "test",
-                        std::nullopt, &plant);
+  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
 
   xml = R"""(
 <mujoco model="test_auto">
-  <compiler inertiafromgeom="auto"/> 
+  <compiler inertiafromgeom="auto"/>
   <worldbody>
     <body name="sphere_auto">
       <inertial mass="524" diaginertia="1 2 3"/>
@@ -402,12 +397,11 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml},
-                        "test_auto", std::nullopt, &plant);
+  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test_auto", {}, &plant);
 
   xml = R"""(
 <mujoco model="test_true">
-  <compiler inertiafromgeom="true"/> 
+  <compiler inertiafromgeom="true"/>
   <default class="main">
     <geom mass="2.53"/>
   </default>
@@ -420,12 +414,11 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml},
-                        "test_true", std::nullopt, &plant);
+  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test_true", {}, &plant);
 
   xml = R"""(
 <mujoco model="test_false">
-  <compiler inertiafromgeom="false"/> 
+  <compiler inertiafromgeom="false"/>
   <default class="main">
     <geom mass="2.53"/>
   </default>
@@ -445,8 +438,8 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml},
-                        "test_false", std::nullopt, &plant);
+  AddModelFromMujocoXml({DataSource::kContents, &xml},
+                        "test_false", {}, &plant);
 
   plant.Finalize();
 
@@ -545,7 +538,7 @@ GTEST_TEST(MujocoParser, Joint) {
       <joint type="ball" name="ball" damping="0.1" pos=".1 .2 .3"/>
     </body>
     <body name="slide" pos="1 2 3" euler="30 45 60">
-      <joint type="slide" name="slide" damping="0.2" pos=".1 .2 .3" 
+      <joint type="slide" name="slide" damping="0.2" pos=".1 .2 .3"
              axis="1 0 0" limited="true" range="-2 1.5"/>
     </body>
     <body name="hinge" pos="1 2 3" euler="30 45 60">
@@ -563,7 +556,7 @@ GTEST_TEST(MujocoParser, Joint) {
       <joint type="hinge" name="hinge2" damping="0.6" pos=".1 .2 .3"
              axis="0 1 0"/>
     </body>
-    <body name="default_joint"> 
+    <body name="default_joint">
       <!-- provides code coverage for defaults logic. -->
       <joint/>
     </body>
@@ -571,8 +564,7 @@ GTEST_TEST(MujocoParser, Joint) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml}, "test",
-                        std::nullopt, &plant);
+  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
   plant.Finalize();
 
   auto context = plant.CreateDefaultContext();
@@ -631,10 +623,10 @@ GTEST_TEST(MujocoParser, Joint) {
           X_WB, 1e-14));
   EXPECT_TRUE(
       CompareMatrices(plant.GetJointByName("hinge").position_lower_limits(),
-                      Vector1d{-M_PI/6.0}, 1e-14));
+                      Vector1d{-M_PI / 6.0}, 1e-14));
   EXPECT_TRUE(
       CompareMatrices(plant.GetJointByName("hinge").position_upper_limits(),
-                      Vector1d{M_PI/3.0}, 1e-14));
+                      Vector1d{M_PI / 3.0}, 1e-14));
 
   const RevoluteJoint<double>& default_joint =
       plant.GetJointByName<RevoluteJoint>("default");
@@ -647,9 +639,9 @@ GTEST_TEST(MujocoParser, Joint) {
   EXPECT_TRUE(
       plant.GetBodyByName("default").EvalPoseInWorld(*context).IsNearlyEqualTo(
           X_WB, 1e-14));
-  EXPECT_TRUE(CompareMatrices(
-      plant.GetJointByName("default").position_lower_limits(),
-      Vector1d{-std::numeric_limits<double>::infinity()}));
+  EXPECT_TRUE(
+      CompareMatrices(plant.GetJointByName("default").position_lower_limits(),
+                      Vector1d{-std::numeric_limits<double>::infinity()}));
   EXPECT_TRUE(
       CompareMatrices(plant.GetJointByName("default").position_upper_limits(),
                       Vector1d{std::numeric_limits<double>::infinity()}));
@@ -697,9 +689,75 @@ GTEST_TEST(MujocoParser, JointThrows) {
 )""";
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml},
-                            "test", std::nullopt, &plant),
+      AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant),
       ".*a free joint is defined.*");
+}
+
+GTEST_TEST(MujocoParser, Motor) {
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+
+  std::string xml = R"""(
+<mujoco model="test">
+  <default>
+    <geom type="sphere" size="1"/>
+  </default>
+  <worldbody>
+    <body>
+      <joint type="hinge" name="hinge0" axis="0 1 0"/>
+    </body>
+    <body>
+      <joint type="hinge" name="hinge1" axis="0 1 0"/>
+    </body>
+    <body>
+      <joint type="hinge" name="hinge2" axis="0 1 0"/>
+    </body>
+    <body>
+      <joint type="hinge" name="hinge3" axis="0 1 0"/>
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="hinge0"/>
+    <!-- intentionally asymmetric effort limits to cover the warning code -->
+    <motor name="motor1" joint="hinge1" ctrllimited="true" ctrlrange="-1 2"/>
+    <motor name="motor2" joint="hinge2" ctrllimited="true" ctrlrange="-2 2"
+           forcelimited="true" forcerange="-.5 .4"/>
+    <!-- malformed limits will be ignored -->
+    <motor name="motor3" joint="hinge3" ctrllimited="true" ctrlrange="2 1"
+           forcelimited="true" forcerange="2 1"/>
+  </actuator>
+</mujoco>
+)""";
+
+  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
+  plant.Finalize();
+
+  EXPECT_EQ(plant.get_actuation_input_port().size(), 4);
+
+  const JointActuator<double>& motor0 =
+      plant.get_joint_actuator(JointActuatorIndex(0));
+  EXPECT_EQ(motor0.name(), "motor0");
+  EXPECT_EQ(motor0.joint().name(), "hinge0");
+  EXPECT_EQ(motor0.effort_limit(), std::numeric_limits<double>::infinity());
+
+  const JointActuator<double>& motor1 =
+      plant.get_joint_actuator(JointActuatorIndex(1));
+  EXPECT_EQ(motor1.name(), "motor1");
+  EXPECT_EQ(motor1.joint().name(), "hinge1");
+  EXPECT_EQ(motor1.effort_limit(), 2);
+
+  const JointActuator<double>& motor2 =
+      plant.get_joint_actuator(JointActuatorIndex(2));
+  EXPECT_EQ(motor2.name(), "motor2");
+  EXPECT_EQ(motor2.joint().name(), "hinge2");
+  EXPECT_EQ(motor2.effort_limit(), .5);
+
+  const JointActuator<double>& motor3 =
+      plant.get_joint_actuator(JointActuatorIndex(3));
+  EXPECT_EQ(motor3.name(), "motor3");
+  EXPECT_EQ(motor3.joint().name(), "hinge3");
+  EXPECT_EQ(motor3.effort_limit(), std::numeric_limits<double>::infinity());
 }
 
 }  // namespace

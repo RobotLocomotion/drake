@@ -9,7 +9,7 @@
     <nav class="site-menu">
       <ul>
         {% for item in site.custom.header.menu_items %}
-        <li class="site-menu-item">
+        <li class="site-menu-item site-menu-item-main">
           {% if item.url %}<a href="{{ item.url | relative_url }}" class="site-menu-item">{% endif %}{{ item.title }}{% if item.url %}</a>{% endif %}
 
           {% if item contains "subfolderitems" %}
@@ -21,6 +21,28 @@
           {% endif %}
         </li>
         {% endfor %}
+
+        <li class="search">
+          <div class="search-icon">
+              <!-- This is an inline SVG image of a magnifying glass. -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 374.9 374.84">
+              <path d="M235 270a148.74 148.74 0 1 1 35-35l97.74 97.74a24.37 24.37 0 0 1 0 34.58l-.4.4a24.47 24.47 0 0 1-34.58 0L235 270Zm-86.22-7.47A113.75 113.75 0 1 0 35 148.75 113.75 113.75 0 0 0 148.75 262.5Z"/>
+            </svg>
+          </div>
+          <div class="search-bar">
+            <form id="ddg-search-form" action="https://duckduckgo.com/" method="get">
+              <input type="text" id="search-input" name="q" placeholder="Search all of Drake…" />
+              <input type="hidden" name="sites" value="drake.mit.edu" />
+            </form>
+            <div class="search-close">
+              <!-- This is an inline SVG image of an "X". -->
+              <svg height="20" width="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 373.61 373.57">
+                <path d="M219.71 186.77 366.71 40a23.43 23.43 0 1 0-33.13-33.13l-146.77 147-146.77-147A23.43 23.43 0 0 0 6.9 40l147 146.77-147 146.77a23.43 23.43 0 1 0 33.14 33.13l146.77-147 146.77 147a23.43 23.43 0 1 0 33.13-33.13Z"/>
+              </svg>
+            </div>
+          </div>
+          <ul id="results-container"></ul>
+        </li>
 
         <li class="github-link">
           <a href="https://github.com/RobotLocomotion/drake" class="site-menu-item">GitHub <img src="{{ '/third_party/images/GitHub-Mark-Light-64px.png' | relative_url }}" /></a>

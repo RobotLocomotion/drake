@@ -6,6 +6,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -640,13 +641,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return self.get_actuation_vector(u);
             },
             py::arg("u"), cls_doc.get_actuation_vector.doc)
-        .def(
-            "set_actuation_vector",
-            [](const Class& self,
-                const Eigen::Ref<const VectorX<T>>& u_instance,
-                Eigen::Ref<VectorX<T>> u) {
-              self.set_actuation_vector(u_instance, &u);
-            },
+        .def("set_actuation_vector", &Class::set_actuation_vector,
             py::arg("u_instance"), py::arg("u"),
             cls_doc.set_actuation_vector.doc)
         .def("effort_limit", &Class::effort_limit, cls_doc.effort_limit.doc);

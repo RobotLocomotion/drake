@@ -136,6 +136,17 @@ HPolyhedron HPolyhedron::CartesianPower(int n) const {
   return {A_power, b_power};
 }
 
+HPolyhedron HPolyhedron::Intersection(const HPolyhedron& other) const {
+  DRAKE_DEMAND(ambient_dimension() == other.ambient_dimension());
+  MatrixXd A_intersect =
+      MatrixXd::Zero(A_.rows() + other.A().rows(), A_.cols());
+  A_intersect.topRows(A_.rows()) = A_;
+  A_intersect.bottomRows(other.A().rows()) = other.A();
+  VectorXd b_intersect(b_.size() + other.b().size());
+  b_intersect << b_, other.b();
+  return {A_intersect, b_intersect};
+}
+
 HPolyhedron HPolyhedron::MakeBox(const Eigen::Ref<const VectorXd>& lb,
                                  const Eigen::Ref<const VectorXd>& ub) {
   DRAKE_DEMAND(lb.size() == ub.size());

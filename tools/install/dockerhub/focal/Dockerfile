@@ -10,7 +10,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 # Make python and pip available to meet the requirements for deepnote.com:
 # https://docs.deepnote.com/environment/custom-environments#custom-image-requirements
     python3-pip python-is-python3 \
-  && rm -rf /opt/drake/share/drake/setup /var/lib/apt/lists/* \
+  && rm -rf /var/lib/apt/lists/* \
   && mv /opt/drake/bin/drake-visualizer /opt/drake/bin/drake-visualizer.image
 RUN printf '#!/bin/bash\n \
 echo "drake-visualizer is not supported on Docker containers.\n\

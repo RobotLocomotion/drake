@@ -77,12 +77,12 @@ done
 # development dependencies such as build-essential and cmake.
 
 source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh" \
-  "${binary_distribution_args[@]:-}"
+  "${binary_distribution_args[@]}"
 
 # The following additional dependencies are only needed when developing with
 # source distributions.
 source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh" \
-  "${source_distribution_args[@]:-}"
+  "${source_distribution_args[@]}"
 
 # Configure user environment, executing as user if we're under `sudo`.
 user_env_script="${BASH_SOURCE%/*}/source_distribution/install_prereqs_user_environment.sh"

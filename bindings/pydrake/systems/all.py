@@ -10,7 +10,6 @@ from .pyplot_visualizer import *
 from .rendering import *
 from .scalar_conversion import *
 from .sensors import *
-from .system_sliders import *
 from .trajectory_optimization import *
 
 try:

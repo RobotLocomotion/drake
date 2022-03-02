@@ -151,6 +151,9 @@ class GraphOfConvexSets {
     @verbatim
     min g(xu, xv) ⇒ min ℓ, s.t. ℓ ≥ g(xu,xv)
     @endverbatim
+    @note Linear costs lead to negative costs if decision variables are not
+    properly constrained. Users may want to check that the solution does not
+    contain negative costs.
     @returns the pair <ℓ, Binding<Cost>>.
     @throws std::exception if e.GetVariables() is not a subset of xu() ∪ xv().
     @pydrake_mkdoc_identifier{expression}
@@ -165,6 +168,9 @@ class GraphOfConvexSets {
     @verbatim
     min g(xu, xv) ⇒ min ℓ, s.t. ℓ ≥ g(xu,xv)
     @endverbatim
+    @note Linear costs lead to negative costs if decision variables are not
+    properly constrained. Users may want to check that the solution does not
+    contain negative costs.
     @returns the pair <ℓ, Binding<Cost>>.
     @throws std::exception if binding.variables() is not a subset of xu() ∪
     xv().

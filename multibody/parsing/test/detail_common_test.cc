@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_common.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 namespace drake {
@@ -19,6 +20,35 @@ using geometry::internal::kHydroGroup;
 using geometry::internal::kMaterialGroup;
 using geometry::internal::kRezHint;
 using std::optional;
+
+class DataSourceTest : public ::testing::Test {
+ protected:
+  const std::string relative_path_{"relative.txt"};
+  const DataSource relative_{DataSource::kFilename, &relative_path_};
+  const std::string absolute_path_{"/a/b/c/absolute.txt"};
+  const DataSource absolute_{DataSource::kFilename, &absolute_path_};
+  const std::string stuff_{"stuff"};
+  const DataSource contents_{DataSource::kContents, &stuff_};
+};
+
+TEST_F(DataSourceTest, GetAbsolutePath) {
+  EXPECT_THAT(relative_.GetAbsolutePath(),
+              ::testing::MatchesRegex("/.*/relative.txt"));
+  EXPECT_EQ(absolute_.GetAbsolutePath(), absolute_path_);  // no change.
+  EXPECT_EQ(contents_.GetAbsolutePath(), "");
+}
+
+TEST_F(DataSourceTest, GetRootDir) {
+  EXPECT_THAT(relative_.GetRootDir(), ::testing::MatchesRegex("/.*[^/]"));
+  EXPECT_EQ(absolute_.GetRootDir(), "/a/b/c");
+  EXPECT_EQ(contents_.GetRootDir(), "");
+}
+
+TEST_F(DataSourceTest, GetStem) {
+  EXPECT_EQ(relative_.GetStem(), "relative");
+  EXPECT_EQ(absolute_.GetStem(), "absolute");
+  EXPECT_EQ(contents_.GetStem(), DataSource::kContentsPseudoStem);
+}
 
 using ReadDoubleFunc = std::function<optional<double>(const char*)>;
 const bool rigid{true};

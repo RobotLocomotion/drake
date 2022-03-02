@@ -15,11 +15,18 @@ def _impl(ctx):
         "setup/packages-bionic.txt",
         "setup/packages-focal.txt",
         "setup/requirements.txt",
+        # These are installed in share/drake and are runfiles for certain
+        # targets, but none of those targets are relevant for this use case.
+        "setup/deepnote/install_nginx",
+        "setup/deepnote/nginx-meshcat-proxy.conf",
     ]
     known_non_runfiles_basenames = [
         "LICENSE",
         "LICENSE.TXT",
         "LICENSE.txt",
+    ]
+    known_non_runfiles_dirnames = [
+        "tutorials/",
     ]
     drake_runfiles = []
     drake_prologue = "share/drake/"
@@ -31,6 +38,11 @@ def _impl(ctx):
             if relative_path in known_non_runfiles:
                 continue
             if basename(relative_path) in known_non_runfiles_basenames:
+                continue
+            if any([
+                relative_path.startswith(prefix)
+                for prefix in known_non_runfiles_dirnames
+            ]):
                 continue
             drake_runfiles.append(relative_path)
         elif dest.startswith(lcmtypes_drake_py_prologue):

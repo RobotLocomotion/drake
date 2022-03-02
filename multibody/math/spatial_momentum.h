@@ -166,23 +166,27 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
     return SpatialMomentum<T>(*this).ShiftInPlace(p_PQ_E);
   }
 
-  /// Given `this` spatial momentum `L_NBp_E` of a rigid body B, about point P
-  /// and, expressed in a frame E, this method computes the dot
-  /// product with the spatial velocity `V_NBp_E` of body B frame shifted to
-  /// point P, measured in an inertial (or Newtonian) frame N and expressed in
-  /// the same frame E in which the spatial momentum is expressed.
-  /// This dot-product is twice the kinetic energy `ke_NB` of body B in
-  /// reference frame N. The kinetic energy `ke_NB` is independent of the
-  /// about-point P and so is this dot product. Therefore it is always true
-  /// that: <pre>
-  ///   ke_NB = 1/2 (L_NBp⋅V_NBp) = 1/2 (L_NBcm⋅V_NBcm)
+  /// Calculates twice (2x) a body B's kinetic energy measured in a frame M.
+  /// For any frame (e.g., an @ref multibody_frames_and_bodies "offset frame")
+  /// Bp that is fixed to a rigid body B, calculates the dot-product of
+  /// `this` = L_MBp_E (body B's spatial momentum measured in frame M, about
+  /// Bp's origin, expressed in frame E) with V_MBp_E (frame Bp's spatial
+  /// velocity measured in frame M, expressed in frame E).
+  /// @param[in] velocity which is V_MBp_E, frame Bp's spatial velocity measured
+  /// in frame M, and expressed in the same frame E as `this` = L_MBp_E.
+  /// @returns 2*K_MB, twice (2x) body B's kinetic energy measured in frame M.
+  /// @note In general, kinetic energy calculations are only useful when frame M
+  /// is a world frame (also called a Newtonian or inertial frame). Hence, it
+  /// is unusual to use this method unless frame M is the world frame W.
+  /// @note Although the spatial vectors V_MBp_E and L_MBp_E must have the same
+  /// expressed-in frame E, the resulting scalar K_MB is independent of frame E.
+  /// @note As shown below, K_MB can be calculated from any frame Bp fixed on B,
+  /// including body B's center of mass frame Bcm. This is due to how spatial
+  /// momentum and spatial velocity shift from Bcm to Bp. For more information,
+  /// see SpatialMomentum::Shift() and SpatialVelocity::Shift(). <pre>
+  ///   K_MB = 1/2 (L_MBp · V_MBp) = 1/2 (L_MBcm · V_MBcm)
   /// </pre>
-  /// where `L_NBcm` is the spatial momentum about the center of mass of body B
-  /// and `V_NBcm` is the spatial velocity of frame B shifted to its center of
-  /// mass. The above is true due to how spatial momentum and velocity shift
-  /// when changing point P, see SpatialMomentum::Shift() and
-  /// SpatialVelocity::Shift().
-  inline T dot(const SpatialVelocity<T>& V_NBp_E) const;
+  inline T dot(const SpatialVelocity<T>& velocity) const;
   // The dot() method is implemented in spatial_velocity.h. We need the inline
   // keyword to ensure the method is still inlined even with `extern template`.
 };

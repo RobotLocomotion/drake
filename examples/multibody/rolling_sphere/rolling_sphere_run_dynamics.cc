@@ -213,7 +213,7 @@ int do_main() {
       &plant_context, plant.GetBodyByName("Ball"), V_WB);
 
   auto simulator =
-      systems::MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
+      MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
 
   using clock = std::chrono::steady_clock;
   const clock::time_point start = clock::now();

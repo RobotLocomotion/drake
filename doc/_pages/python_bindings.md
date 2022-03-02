@@ -16,10 +16,10 @@ source files inside the ``bindings/pydrake`` folder. These bindings are
 installed as a single package called ``pydrake``.
 
 <div class="warning" markdown="1">
-Drake does not support the Python environment supplied by Anaconda.
-To use our supported workflow, please
-uninstall Anaconda or remove the Anaconda bin directory from the `PATH` before
-building or using the Drake Python bindings.
+Drake does not support the Python environment supplied by Anaconda. Before
+installing or using Drake, please `conda deactivate` (repeatedly, until even
+the conda base environment has been deactivated) such that none of the paths
+reported `which -a python python3 pip pip3` refer to conda.
 </div>
 
 # Installation

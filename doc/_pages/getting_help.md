@@ -60,7 +60,7 @@ When reporting an issue, please consider providing the following information
     * Download URL
     * Contents of ``drake/share/doc/drake/VERSION.TXT``
     * Building downstream project ([drake_cmake_installed](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_cmake_installed))
-* If using Binder or Google Colaboratory:
+* If using Deepnote, Google Colaboratory, or Binder:
     * A version of your notebook that we can access. Please check this by
       re-visiting your URL in a private browsing window. (You can add
       notebooks to public GitHub Gists.)

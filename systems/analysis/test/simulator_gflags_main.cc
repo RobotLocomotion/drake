@@ -10,8 +10,8 @@ namespace systems {
 template <typename T>
 void ResetIntegratorFromGflagsTest() {
   ConstantVectorSource<T> source(2);
-  auto simulator = MakeSimulatorFromGflags(source);
-  ResetIntegratorFromGflags(simulator.get());
+  auto simulator = internal::MakeSimulatorFromGflags(source);
+  internal::ResetIntegratorFromGflags(simulator.get());
   const auto simulator_config = ExtractSimulatorConfig(*simulator);
   drake::log()->info(drake::yaml::SaveYamlString(simulator_config));
 }

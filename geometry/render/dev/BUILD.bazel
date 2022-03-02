@@ -116,17 +116,11 @@ drake_cc_binary(
 # instructions to run this server, the drake setup scripts do not include the
 # dependencies for this target.
 # TODO(svenevs): install the final list of dependencies when decided.
+# Runs a flask server on 127.0.0.1:8000.  --host and --port are enabled as
+# command line overrides (e.g., if port 8000 is occupied).
 py_binary(
     name = "server",
-    srcs = [
-        "render_server/gltf_render_server.py",
-        "render_server/wsgi.py",
-    ],
-    # TODO(svenevs): fix this bazel rule or remove gunicorn.
-    # NOTE: developing the server?  Using gunicorn you will not see all error
-    # messages, comment out the `args` here to get the default (single
-    # threaded) flask runner with more debug information.
-    args = ["proxy_run_gunicorn"],
+    srcs = ["render_server/gltf_render_server.py"],
     data = [":vtk_render_server_backend"],
     main = "render_server/gltf_render_server.py",
 )

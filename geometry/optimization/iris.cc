@@ -423,20 +423,6 @@ struct GeometryPairWithDistance {
 
 }  // namespace
 
-HPolyhedron IrisInConfigurationSpace(
-    const MultibodyPlant<double>& plant, const Context<double>& context,
-    const Eigen::Ref<const Eigen::VectorXd>& sample,
-    const IrisOptions& options) {
-  const int nq = plant.num_positions();
-  DRAKE_DEMAND(sample.size() == nq);
-
-  auto sample_context = plant.CreateDefaultContext();
-  plant.FixInputPortsFrom(plant, context, sample_context.get());
-  sample_context->SetTimeStateAndParametersFrom(context);
-  plant.SetPositions(sample_context.get(), sample);
-  return IrisInConfigurationSpace(plant, *sample_context, options);
-}
-
 HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                                      const Context<double>& context,
                                      const IrisOptions& options) {

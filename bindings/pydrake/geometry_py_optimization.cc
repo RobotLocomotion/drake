@@ -3,7 +3,6 @@
  pydrake.geometry.optimization module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry_py.h"
@@ -11,6 +10,7 @@
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/intersection.h"
 #include "drake/geometry/optimization/iris.h"
 #include "drake/geometry/optimization/minkowski_sum.h"
 #include "drake/geometry/optimization/point.h"
@@ -127,6 +127,8 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("other"), cls_doc.CartesianProduct.doc)
         .def("CartesianPower", &HPolyhedron::CartesianPower, py::arg("n"),
             cls_doc.CartesianPower.doc)
+        .def("Intersection", &HPolyhedron::Intersection, py::arg("other"),
+            cls_doc.Intersection.doc)
         .def_static("MakeBox", &HPolyhedron::MakeBox, py::arg("lb"),
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &HPolyhedron::MakeUnitBox, py::arg("dim"),
@@ -173,6 +175,21 @@ void DefineGeometryOptimization(py::module m) {
             }));
     py::implicitly_convertible<Hyperellipsoid,
         copyable_unique_ptr<ConvexSet>>();
+  }
+
+  // Intersection
+  {
+    const auto& cls_doc = doc.Intersection;
+    py::class_<Intersection, ConvexSet>(m, "Intersection", cls_doc.doc)
+        .def(py::init<const ConvexSets&>(), py::arg("sets"),
+            cls_doc.ctor.doc_1args)
+        .def(py::init<const ConvexSet&, const ConvexSet&>(), py::arg("setA"),
+            py::arg("setB"), cls_doc.ctor.doc_2args)
+        .def("num_elements", &Intersection::num_elements,
+            cls_doc.num_elements.doc)
+        .def("element", &Intersection::element, py_rvp::reference_internal,
+            py::arg("index"), cls_doc.element.doc);
+    py::implicitly_convertible<Intersection, copyable_unique_ptr<ConvexSet>>();
   }
 
   // MinkowskiSum
@@ -281,21 +298,6 @@ void DefineGeometryOptimization(py::module m) {
           &IrisInConfigurationSpace),
       py::arg("plant"), py::arg("context"), py::arg("options") = IrisOptions(),
       doc.IrisInConfigurationSpace.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("IrisInConfigurationSpace",
-      WrapDeprecated(doc.IrisInConfigurationSpace.doc_deprecated,
-          [](const multibody::MultibodyPlant<double>& plant,
-              const systems::Context<double>& context,
-              const Eigen::Ref<const Eigen::VectorXd>& sample,
-              const IrisOptions& options) {
-            return IrisInConfigurationSpace(plant, context, sample, options);
-          }),
-      py::arg("plant"), py::arg("context"), py::arg("sample"),
-      py::arg("options") = IrisOptions(),
-      doc.IrisInConfigurationSpace.doc_deprecated);
-#pragma GCC diagnostic pop
 
   // GraphOfConvexSets
   {

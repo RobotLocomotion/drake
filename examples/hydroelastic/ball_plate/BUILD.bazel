@@ -1,0 +1,72 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+package(default_visibility = ["//visibility:private"])
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_library(
+    name = "make_ball_plate_plant",
+    srcs = [
+        "make_ball_plate_plant.cc",
+    ],
+    hdrs = [
+        "make_ball_plate_plant.h",
+    ],
+    data = [
+        ":floor_files",
+        ":plate_files",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//geometry:geometry_ids",
+        "//geometry:scene_graph",
+        "//math:geometric_transform",
+        "//multibody/parsing",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_binary(
+    name = "ball_plate_run_dynamics",
+    srcs = ["ball_plate_run_dynamics.cc"],
+    add_test_rule = 1,
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--simulator_target_realtime_rate=0.0",
+    ],
+    deps = [
+        ":make_ball_plate_plant",
+        "//common:add_text_logging_gflags",
+        "//geometry:drake_visualizer",
+        "//multibody/plant:contact_results_to_lcm",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_gflags",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/framework:diagram",
+        "@gflags",
+    ],
+)
+
+filegroup(
+    name = "plate_files",
+    srcs = [
+        "plate_8in.sdf",
+        "plate_8in_col.mtl",
+        "plate_8in_col.obj",
+    ],
+)
+
+filegroup(
+    name = "floor_files",
+    srcs = [
+        "floor.sdf",
+    ],
+)
+
+add_lint_tests()

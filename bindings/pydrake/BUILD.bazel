@@ -57,12 +57,6 @@ drake_py_library(
 generate_pybind_documentation_header(
     name = "generate_pybind_documentation_header",
     out = "documentation_pybind.h",
-    exclude_hdr_patterns = [
-        # TODO(jwnimmer-tri) On 2022-03-01 when the yaml deprecations retire,
-        # we can remove these exclusions.
-        "drake/common/yaml/yaml_io.h",
-        "drake/common/yaml/yaml_read_archive.h",
-    ],
     ignore_dirs_for_coverage = [
         "drake/common/proto",
         "drake/common/yaml",
@@ -128,7 +122,6 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:identifier_pybind",
         "//bindings/pydrake/common:monostate_pybind",
         "//bindings/pydrake/common:type_pack",
@@ -146,6 +139,9 @@ drake_pybind_library(
         "geometry_py_visualizers.cc",
     ],
     package_info = PACKAGE_INFO,
+    py_data = [
+        "//setup:deepnote",
+    ],
     py_deps = [
         ":math_py",
         ":module_py",
@@ -159,7 +155,6 @@ drake_pybind_library(
     name = "lcm_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["lcm_py.cc"],
     package_info = PACKAGE_INFO,
@@ -284,6 +279,16 @@ drake_pybind_library(
     ],
 )
 
+drake_py_library(
+    name = "tutorials_py",
+    srcs = [
+        "tutorials.py",
+    ],
+    deps = [
+        ":module_py",
+    ],
+)
+
 PYBIND_SUBPACKAGES_FOR_COVERAGE = [
     "//bindings/pydrake/common",
     "//bindings/pydrake/examples",
@@ -311,6 +316,7 @@ add_pybind_coverage_data(
 
 PY_LIBRARIES = [
     ":module_py",
+    ":tutorials_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -571,7 +577,6 @@ drake_py_unittest(
     name = "lcm_test",
     deps = [
         ":lcm_py",
-        "//bindings/pydrake/common/test_utilities",
         "//lcmtypes:lcmtypes_drake_py",
     ],
 )
