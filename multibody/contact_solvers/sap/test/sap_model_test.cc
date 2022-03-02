@@ -196,11 +196,9 @@ TEST_F(SapModelTester, VerifySizes) {
   PRINT_VAR(problem_->num_constraint_equations());
 
   const SapModel<double> model(problem_.get());
-  EXPECT_EQ(model.num_cliques(), 4);
-  EXPECT_EQ(model.num_participating_cliques(), 3);
-  EXPECT_EQ(model.num_velocities(), 10);
+  EXPECT_EQ(model.num_cliques(), 3);
   EXPECT_EQ(model.num_constraints(), 5);
-  EXPECT_EQ(model.num_participating_velocities(), 7);
+  EXPECT_EQ(model.num_velocities(), 7);
   EXPECT_EQ(model.num_impulses(), 15);
 }
 
@@ -260,10 +258,8 @@ TEST_F(SapModelTester, VerifyParticipatingDofsDynamics) {
   EXPECT_EQ(model.dynamics_matrix(), A_permuted_expected);
 
   PRINT_VAR(model.num_cliques());
-  PRINT_VAR(model.num_participating_cliques());
-  PRINT_VAR(model.num_velocities());
   PRINT_VAR(model.num_constraints());
-  PRINT_VAR(model.num_participating_velocities());
+  PRINT_VAR(model.num_velocities());
   PRINT_VAR(model.num_impulses());
 
   // Verify v_star.
@@ -280,12 +276,12 @@ TEST_F(SapModelTester, VerifyParticipatingDofsDynamics) {
 
   // Unit test MultiplyByDynamicsMatrix().
   const VectorXd v = VectorXd::LinSpaced(10, 1.0, 10.0);
-  VectorXd v_participating(model.num_participating_velocities());
+  VectorXd v_participating(model.num_cliques());
   model.velocities_permutation().Apply(v, &v_participating);
   PRINT_VARn(v.transpose());
   PRINT_VARn(v_participating.transpose());
 
-  VectorXd p_participating(model.num_participating_velocities());
+  VectorXd p_participating(model.num_cliques());
   model.MultiplyByDynamicsMatrix(v_participating, &p_participating);
 
   // clang-format off

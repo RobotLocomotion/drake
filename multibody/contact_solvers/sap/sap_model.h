@@ -16,29 +16,29 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+/* This class represents the underlying computational model built by the SAP
+ solver given a SapContactProblem.
+ The model re-arranges constraints to exploit the block sparse structure of the
+ problem and it only includes participating cliques, that is, cliques that
+ connect to a cluster (edge) in the contact graph. The solution for
+ non-participating cliques is trivial (v=v*) and therefore they are excluded
+ from the main (expensive) SAP computation. */
 template <typename T>
 class SapModel {
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapModel);
  public:
-  // Constructs an empty model. Needed?
-  //SapModel() = default;
-
-
-  // `problem` must outlive `this` model.  
+  /* Constructs a model of `problem` optimized to be used by the SAP solver. 
+   The input `problem` must outlive `this` model. */
   explicit SapModel(const SapContactProblem<T>* problem);
 
-  SapModel(const T& time_step, const SystemDynamicsData<T>& dynamics_data,
-           const PointContactData<T>& contact_data);
-
-  const SapContactProblem<T>& sap_problem() const { 
+  /* Returns a reference to the contact problem being modeled by this class. */
+  const SapContactProblem<T>& problem() const { 
       DRAKE_ASSERT(problem_!=nullptr);
       return *problem_; 
   }
 
   int num_cliques() const;
-  int num_participating_cliques() const;  
   int num_velocities() const;
-  int num_participating_velocities() const;
   int num_constraints() const;
   int num_impulses() const;
 
@@ -120,18 +120,9 @@ class SapModel {
   // the i-th constraint and mi = 1./wi corresponds to the mass scaling for the
   // same constraint.
   void CalcDelassusDiagonalApproximation(
-      const std::vector<MatrixX<T>>& At, const SapContactProblem<T>& problem,
-      const ContactProblemGraph& graph,
+      const std::vector<MatrixX<T>>& At,
       const PartialPermutation& cliques_permutation,
       VectorX<T>* delassus_diagonal) const;
-
-  // Overload used when a BlockSparseMatrix of the contact jacobian is
-  // available. Used when building a model from SystemDynamicsData and
-  // PointContactData.
-  void CalcDelassusDiagonalApproximation(int nc,
-                                         const std::vector<MatrixX<T>>& At,
-                                         const BlockSparseMatrix<T>& Jblock,
-                                         VectorX<T>* delassus_diagonal) const;
 
   const SapContactProblem<T>* problem_{nullptr};
   PartialPermutation cliques_permutation_;

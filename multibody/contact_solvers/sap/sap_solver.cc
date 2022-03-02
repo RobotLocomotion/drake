@@ -46,15 +46,16 @@ void SapSolver<T>::PackContactResults(const VectorX<T>& v_star,
 
   // We need the free-motion velocities for the entire system in order to fill
   // in the solution for non-participating DOFs.
-  DRAKE_DEMAND(v_star.size() == model_->num_velocities());
+  DRAKE_DEMAND(v_star.size() == model_->problem().num_velocities());
 
   // For now we will assume the SapContactProblem only contains contact
   // constraints.
-  DRAKE_DEMAND(v_participating.size() == model_->num_participating_velocities());
+  DRAKE_DEMAND(v_participating.size() == model_->num_velocities());
   DRAKE_DEMAND(vc_grouped.size() == model_->num_impulses());
   DRAKE_DEMAND(gamma_grouped.size() == model_->num_impulses());
-  
-  results->Resize(model_->num_velocities(), model_->num_constraints());
+
+  results->Resize(model_->problem().num_velocities(),
+                  model_->num_constraints());
 
   results->v_next = v_star;
   // Overwrite participating DOFs only.
@@ -139,7 +140,7 @@ ContactSolverStatus SapSolver<double>::SolveWithGuess(
   }
 
   model_ = std::make_unique<SapModel<double>>(&problem);
-  const int nv = model_->num_participating_velocities();
+  const int nv = model_->num_velocities();
   const int nc = model_->num_constraints();
   const int nk = model_->num_impulses();
 
@@ -364,7 +365,7 @@ void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
   // These matrices could be saved in the cache. However this method is only
   // intended as an alternative for debugging and optimizing it might not be
   // worth it.
-  const int nv = model_->num_participating_velocities();
+  const int nv = model_->num_velocities();
   const int nk = model_->num_impulses();
 
   // Make dense dynamics matrix.

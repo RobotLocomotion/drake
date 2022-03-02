@@ -12,26 +12,18 @@ namespace contact_solvers {
 namespace internal {
 
 template <typename T>
-SapModel<T>::SapModel(const T& time_step,
-                      const SystemDynamicsData<T>& dynamics_data,
-                      const PointContactData<T>& contact_data) {
-  (void)time_step;
-  (void)dynamics_data;
-  (void)contact_data;
-}
-
-template <typename T>
-SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
+SapModel<T>::SapModel(const SapContactProblem<T>* problem_ptr)
+    : problem_(problem_ptr) {
   // Graph for the original contact problem, including all cliques
   // (participating and non-participating).
-  const ContactProblemGraph& graph = sap_problem().graph();
+  const ContactProblemGraph& graph = problem().graph();
 
   // Permutations to map indexes from participating cliques/dofs to the original
   // set of cliques/dofs.
   // TODO: remove cliques_permutation_.
   cliques_permutation_ = graph.participating_cliques();
   velocities_permutation_ = MakeParticipatingVelocitiesPermutation(
-      sap_problem(), cliques_permutation_);
+      problem(), cliques_permutation_);
   impulses_permutation_ = MakeImpulsesPermutation(graph);
 
   // Extract momentum matrix's per-tree diagonal blocks. Compute diagonal
@@ -39,7 +31,7 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
   const int num_participating_cliques =
       cliques_permutation_.permuted_domain_size();
   A_.resize(num_participating_cliques);  
-  cliques_permutation_.Apply(sap_problem().dynamics_matrix(), &A_);  
+  cliques_permutation_.Apply(problem().dynamics_matrix(), &A_);  
 
   // Compute inv_sqrt_A_.
   const int nv_participating = velocities_permutation_.permuted_domain_size();
@@ -57,47 +49,37 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem) : problem_(problem) {
 
   p_star_.resize(nv_participating);
   v_star_.resize(nv_participating);
-  velocities_permutation_.Apply(sap_problem().v_star(), &v_star_);
+  velocities_permutation_.Apply(problem().v_star(), &v_star_);
   MultiplyByDynamicsMatrix(v_star_, &p_star_);
-  CalcDelassusDiagonalApproximation(A_, sap_problem(), graph,
-                                    cliques_permutation_, &delassus_diagonal_);
+  CalcDelassusDiagonalApproximation(A_, cliques_permutation_,
+                                    &delassus_diagonal_);
 
   // TODO: remove this DEMAND.
-  DRAKE_DEMAND(delassus_diagonal_.size() == sap_problem().num_constraints());  
+  DRAKE_DEMAND(delassus_diagonal_.size() == problem().num_constraints());  
 
   // Create constraints bundle.
   constraints_bundle_ = std::make_unique<SapConstraintBundle<T>>(
-      &sap_problem(), delassus_diagonal_);
+      &problem(), delassus_diagonal_);
 }
 
 template <typename T>
 int SapModel<T>::num_cliques() const {
-  return cliques_permutation_.domain_size();
-}
-
-template <typename T>
-int SapModel<T>::num_participating_cliques() const {
   return cliques_permutation_.permuted_domain_size();
 }
 
 template <typename T>
 int SapModel<T>::num_velocities() const {
-  return sap_problem().num_velocities();
-}
-
-template <typename T>
-int SapModel<T>::num_participating_velocities() const {
   return velocities_permutation_.permuted_domain_size();
 }
 
 template <typename T>
 int SapModel<T>::num_constraints() const {
-  return sap_problem().num_constraints();
+  return problem().num_constraints();
 }
 
 template <typename T>
 int SapModel<T>::num_impulses() const {
-  return sap_problem().num_constraint_equations();
+  return problem().num_constraint_equations();
 }
 
 template <typename T>
@@ -157,22 +139,22 @@ PartialPermutation SapModel<T>::MakeParticipatingVelocitiesPermutation(
 template <typename T>
 PartialPermutation SapModel<T>::MakeImpulsesPermutation(
     const ContactProblemGraph& graph) const {
-  std::vector<int> constraint_start(sap_problem().num_constraints());
-  if (sap_problem().num_constraints() == 0)  
+  std::vector<int> constraint_start(problem().num_constraints());
+  if (problem().num_constraints() == 0)  
     return PartialPermutation();  // empty permutation.
     
   constraint_start[0] = 0;
-  for (int i = 1; i < sap_problem().num_constraints(); ++i) {
+  for (int i = 1; i < problem().num_constraints(); ++i) {
     const int previous_constraint_size =
-        sap_problem().get_constraint(i - 1).num_constraint_equations();
+        problem().get_constraint(i - 1).num_constraint_equations();
     constraint_start[i] = constraint_start[i - 1] + previous_constraint_size;
   }
 
-  std::vector<int> impulses_permutation(sap_problem().num_constraint_equations());
+  std::vector<int> impulses_permutation(problem().num_constraint_equations());
   int group_offset = 0;  // impulse index.
   for (const ContactProblemGraph::ConstraintCluster& g : graph.clusters()) {
     for (int i : g.constraint_index()) {
-      const SapConstraint<T>& c = sap_problem().get_constraint(i);
+      const SapConstraint<T>& c = problem().get_constraint(i);
       const int ni = c.num_constraint_equations();
       const int offset = constraint_start[i];
       for (int m = 0; m < ni; ++m) {
@@ -187,8 +169,7 @@ PartialPermutation SapModel<T>::MakeImpulsesPermutation(
 
 template <typename T>
 void SapModel<T>::CalcDelassusDiagonalApproximation(
-    const std::vector<MatrixX<T>>& A, const SapContactProblem<T>& problem,
-    const ContactProblemGraph& graph, 
+    const std::vector<MatrixX<T>>& A,
     const PartialPermutation& cliques_permutation,
     VectorX<T>* delassus_diagonal) const {
   DRAKE_DEMAND(delassus_diagonal != nullptr);    
@@ -203,12 +184,13 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
   }
 
   // Scan constraints in the order specified by the graph.
-  const int num_constraints = problem.num_constraints();
+  const int num_constraints = problem().num_constraints();
   std::vector<MatrixX<T>> W(num_constraints);
 
-  for (const ContactProblemGraph::ConstraintCluster& e : graph.clusters()) {
-    for (int i : e.constraint_index()) {      
-      const SapConstraint<T>& constraint = sap_problem().get_constraint(i);
+  for (const ContactProblemGraph::ConstraintCluster& e :
+       problem().graph().clusters()) {
+    for (int i : e.constraint_index()) {
+      const SapConstraint<T>& constraint = problem().get_constraint(i);
       const int ni = constraint.num_constraint_equations();
       if (W[i].size() == 0) {
         // Resize and initialize to zero on the first time it gets accessed.
@@ -241,52 +223,10 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
 }
 
 template <typename T>
-void SapModel<T>::CalcDelassusDiagonalApproximation(
-    int nc, const std::vector<MatrixX<T>>& At, const BlockSparseMatrix<T>& J,
-    VectorX<T>* delassus_diagonal) const {
-  DRAKE_DEMAND(delassus_diagonal != nullptr);
-  DRAKE_DEMAND(delassus_diagonal->size() == nc);
-  const int nt = At.size();  // Number of trees.
-
-  // We compute a factorization of A once so we can re-use it multiple times
-  // below.
-  std::vector<Eigen::LDLT<MatrixX<T>>> A_ldlt;
-  A_ldlt.resize(nt);
-  for (int t = 0; t < nt; ++t) {
-    const auto& At_local = At[t];
-    A_ldlt[t] = At_local.ldlt();
-  }
-
-  // We compute a diagonal approximation to the Delassus operator W. We
-  // initialize it to zero and progressively add contributions in an O(n) pass.
-  std::vector<Matrix3<T>> W(nc, Matrix3<T>::Zero());
-  for (auto [p, t, Jpt] : J.get_blocks()) {
-    // Verify assumption that this indeed is a contact Jacobian.
-    // TODO: Update this to be written in terms of general constraints.
-    DRAKE_DEMAND(J.row_start(p) % 3 == 0);
-    DRAKE_DEMAND(Jpt.rows() % 3 == 0);
-    // ic_start is the first contact point of patch p.
-    const int ic_start = J.row_start(p) / 3;
-    // k-th contact within patch p.
-    for (int k = 0; k < Jpt.rows() / 3; ++k) {
-      const int ic = ic_start + k;
-      const auto& Jkt = Jpt.template middleRows<3>(3 * k);
-      // This effectively computes Jₖₜ⋅A⁻¹⋅Jₖₜᵀ.
-      W[ic] += Jkt * A_ldlt[t].solve(Jkt.transpose());
-    }
-  }
-
-  // Compute delassus_diagonal as the rms norm of k-th diagonal block.
-  for (int k = 0; k < nc; ++k) {
-    (*delassus_diagonal)[k] = W[k].norm() / 3;
-  }
-}
-
-template <typename T>
 void SapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
                                            VectorX<T>* p) const {
-  DRAKE_DEMAND(v.size() == num_participating_velocities());
-  DRAKE_DEMAND(p->size() == num_participating_velocities());
+  DRAKE_DEMAND(v.size() == num_velocities());
+  DRAKE_DEMAND(p->size() == num_velocities());
   int clique_start = 0;
   for (const auto& Ab : A_) {
     const int clique_size = Ab.rows();
@@ -299,7 +239,7 @@ void SapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
 template <typename T>
 void SapModel<T>::CalcConstraintVelocities(const VectorX<T>& v,
                                            VectorX<T>* vc) const {
-  DRAKE_DEMAND(v.size() == num_participating_velocities());
+  DRAKE_DEMAND(v.size() == num_velocities());
   DRAKE_DEMAND(vc != nullptr);
   J().Multiply(v, vc);
 }
