@@ -157,13 +157,13 @@ drake_cc_library(
     srcs = ["deformable_contact_internal.cc"],
     hdrs = ["deformable_contact_internal.h"],
     deps = [
+        ":deformable_volume_mesh",
+        ":hydroelastic_internal",
         ":make_sphere_mesh",
         ":obj_to_surface_mesh",
         ":proximity_utilities",
         ":tessellation_strategy",
         ":triangle_surface_mesh",
-        ":deformable_volume_mesh",
-        ":hydroelastic_internal",
         "//common:copyable_unique_ptr",
         "//common:essential",
         "//geometry:geometry_ids",
@@ -814,6 +814,17 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:autodiff",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_contact_internal_test",
+    deps = [
+        ":deformable_contact_internal",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+        "@fmt",
     ],
 )
 

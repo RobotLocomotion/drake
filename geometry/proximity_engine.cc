@@ -21,6 +21,7 @@
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 #include "drake/geometry/proximity/hydroelastic_callback.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
+#include "drake/geometry/proximity/deformable_contact_internal.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/penetration_as_point_pair_callback.h"
 #include "drake/geometry/read_obj.h"
@@ -338,7 +339,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       dynamic_objects_[id]->setTransform(
           convert_to_double(X_WG).GetAsIsometry3());
       dynamic_objects_[id]->computeAABB();
-      deformable_contact_geometries_.UpdateRigidWorldPose(id, X_WG);
+      deformable_contact_geometries_.UpdateRigidWorldPose(id, convert_to_double(X_WG));
     }
     dynamic_tree_.update();
   }
@@ -796,6 +797,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // All of the hydroelastic representations of supported geometries -- this
   // can get quite large based on mesh resolution.
   hydroelastic::Geometries hydroelastic_geometries_;
+
+  // All of the geometries that produce deformable contacts. This includes
+  //rigid representations as well as deformable representations. The geometries
+  // here are not included in `dynamic_objects_` and `dynamics_tree_`.
+  deformable::Geometries deformable_contact_geometries_;
 };
 
 template <typename T>
