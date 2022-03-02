@@ -1,0 +1,24 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/workspace:cmake_util.bzl", "split_cmake_list")
+
+EIGEN_DEFINES = split_cmake_list(
+    "$<TARGET_PROPERTY:Eigen3::Eigen,INTERFACE_COMPILE_DEFINITIONS>",
+)
+
+cc_library(
+    name = "eigen",
+    hdrs = glob(
+        ["include/**"],
+        allow_empty = False,
+    ),
+    defines = EIGEN_DEFINES,
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    visibility = ["//visibility:public"],
+)

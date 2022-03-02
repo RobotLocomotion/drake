@@ -396,6 +396,20 @@ endmacro()
 
 set(BAZEL_OVERRIDE_REPOS)
 
+option(WITH_USER_EIGEN "Use user-provided Eigen3" OFF)
+
+if(WITH_USER_EIGEN)
+  find_package(Eigen3 CONFIG REQUIRED)
+
+  symlink_external_repository_includes(eigen Eigen3::Eigen)
+  generate_external_repository_file(eigen/WORKSPACE)
+  generate_external_repository_file(
+    eigen/BUILD.bazel
+    eigen/BUILD.bazel.in)
+
+  override_repository(eigen)
+endif()
+
 option(WITH_USER_FMT "Use user-provided fmt" OFF)
 
 if(WITH_USER_FMT)
