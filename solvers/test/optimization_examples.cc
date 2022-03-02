@@ -130,7 +130,7 @@ double OptimizationProgram::GetSolverSolutionDefaultCompareTolerance(
     return 1E-10;
   }
   if (solver_id == ScsSolver::id()) {
-    return 3E-5;  // Scs is not very accurate.
+    return 1E-3;  // Scs is not very accurate.
   }
   throw std::runtime_error("Unsupported solver type.");
 }
