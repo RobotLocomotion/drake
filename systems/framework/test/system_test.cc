@@ -734,14 +734,6 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   EXPECT_EQ(system_.EvalAbstractInput(*context_, 1), nullptr);
   EXPECT_EQ(system_.EvalInputValue<int>(*context_, 1), nullptr);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalEigenVectorInput(*context_, 1),
-      ".*EvalEigenVectorInput.*input port 'u1' .*index 1.* is neither "
-      "connected nor fixed.*");
-#pragma GCC diagnostic pop
-
   // Assign values to all ports. All but port 0 are BasicVector ports.
   system_.AllocateFixedInputs(context_.get());
 
@@ -770,20 +762,6 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalInputValue<double>(*context_, 0),
       ".*EvalInputValue.*expected.*double.*input port.*0.*actual.*string.*");
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalEigenVectorInput(*context_, -4),
-      ".*EvalEigenVectorInput.*negative.*-4.*illegal.*");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalEigenVectorInput(*context_, 12),
-      ".*EvalEigenVectorInput.*no input port.*12.*only.*4.*");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalEigenVectorInput(*context_, 0),
-      ".*EvalEigenVectorInput.*vector port required.*input port.*0.*"
-          "was declared abstract.*");
-#pragma GCC diagnostic pop
 }
 
 // Provides values for some of the inputs and sets up for outputs.
@@ -816,14 +794,11 @@ TEST_F(SystemIOTest, SystemValueIOTest) {
   EXPECT_EQ(output_->get_vector_data(1)->get_value()(0), 4);
 
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // Connected inputs ports can be evaluated.  (Port #1 was set to [2]).
-  const auto& block = test_sys_.EvalEigenVectorInput(*context_, 1);
-  ASSERT_EQ(block.size(), 1);
-  ASSERT_EQ(block[0], 2.0);
-  EXPECT_THROW(test_sys_.EvalEigenVectorInput(*context_, 2), std::exception);
-#pragma GCC diagnostic pop
+  const auto* basic_vector = test_sys_.EvalVectorInput(*context_, 1);
+  ASSERT_NE(basic_vector, nullptr);
+  ASSERT_EQ(basic_vector->size(), 1);
+  EXPECT_EQ(basic_vector->GetAtIndex(0), 2.0);
 
   // Disconnected inputs are nullptr.
   EXPECT_EQ(test_sys_.EvalVectorInput(*context_, 2), nullptr);

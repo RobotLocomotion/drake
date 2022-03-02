@@ -3,7 +3,6 @@
  pydrake.geometry.optimization module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry_py.h"
@@ -299,21 +298,6 @@ void DefineGeometryOptimization(py::module m) {
           &IrisInConfigurationSpace),
       py::arg("plant"), py::arg("context"), py::arg("options") = IrisOptions(),
       doc.IrisInConfigurationSpace.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("IrisInConfigurationSpace",
-      WrapDeprecated(doc.IrisInConfigurationSpace.doc_deprecated,
-          [](const multibody::MultibodyPlant<double>& plant,
-              const systems::Context<double>& context,
-              const Eigen::Ref<const Eigen::VectorXd>& sample,
-              const IrisOptions& options) {
-            return IrisInConfigurationSpace(plant, context, sample, options);
-          }),
-      py::arg("plant"), py::arg("context"), py::arg("sample"),
-      py::arg("options") = IrisOptions(),
-      doc.IrisInConfigurationSpace.doc_deprecated);
-#pragma GCC diagnostic pop
 
   // GraphOfConvexSets
   {
