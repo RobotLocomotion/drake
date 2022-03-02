@@ -17,7 +17,10 @@ SPDLOG_LINKOPTS = library_to_linkopts(
 
 cc_library(
     name = "spdlog",
-    hdrs = glob(["include/**"], allow_empty=False),
+    hdrs = glob(
+        ["include/**"],
+        allow_empty = False,
+    ),
     defines = SPDLOG_DEFINES + ["HAVE_SPDLOG"],
     includes = ["include"],
     linkopts = SPDLOG_LINKOPTS + ["-pthread"],

@@ -17,7 +17,10 @@ FMT_LINKOPTS = library_to_linkopts(
 
 cc_library(
     name = "fmt",
-    hdrs = glob(["include/**"], allow_empty=False),
+    hdrs = glob(
+        ["include/**"],
+        allow_empty = False,
+    ),
     defines = FMT_DEFINES,
     includes = ["include"],
     linkopts = FMT_LINKOPTS,
