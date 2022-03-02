@@ -3,6 +3,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <set>
 #include <tuple>
 #include <vector>
@@ -17,11 +18,14 @@
 namespace drake {
 namespace solvers {
 namespace test {
+
 enum class CostForm {
   kGeneric = 0,
   kNonSymbolic = 1,
   kSymbolic = 2,
 };
+
+std::ostream& operator<<(std::ostream& os, CostForm value);
 
 enum class ConstraintForm {
   kGeneric = 0,
@@ -29,6 +33,8 @@ enum class ConstraintForm {
   kSymbolic = 2,
   kFormula = 3,
 };
+
+std::ostream& operator<<(std::ostream& os, ConstraintForm value);
 
 void ExpectSolutionCostAccurate(const MathematicalProgram& prog,
                                 const MathematicalProgramResult& result,
