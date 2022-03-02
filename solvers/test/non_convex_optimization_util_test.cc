@@ -326,7 +326,7 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion,
       Eigen::Vector2d(1, 0), 0.1);
 
   auto result = Solve(prog_).get_solution_result();
-  EXPECT_TRUE(result == SolutionResult::kInfeasible_Or_Unbounded ||
+  EXPECT_TRUE(result == SolutionResult::kInfeasibleOrUnbounded ||
               result == SolutionResult::kInfeasibleConstraints);
 }
 
@@ -350,7 +350,7 @@ GTEST_TEST(TestRelaxNonConvexQuadraticConstraintInTrustRegionInfeasible,
 
   auto result = Solve(prog1).get_solution_result();
   EXPECT_TRUE(result == SolutionResult::kInfeasibleConstraints ||
-              result == SolutionResult::kInfeasible_Or_Unbounded);
+              result == SolutionResult::kInfeasibleOrUnbounded);
 
   // If we linearize the problem at about (7, -5), then the relaxed problem has
   // a solution around the linearization point.
@@ -506,7 +506,7 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ1Test2) {
       -1, Eigen::Vector2d(0, 1), 1);
 
   auto result = Solve(prog_).get_solution_result();
-  EXPECT_TRUE(result == SolutionResult::kInfeasible_Or_Unbounded ||
+  EXPECT_TRUE(result == SolutionResult::kInfeasibleOrUnbounded ||
               result == SolutionResult::kInfeasibleConstraints);
 }
 
@@ -560,7 +560,7 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ2Test2) {
       4, Eigen::Vector2d(0, 1), 1);
 
   auto result = Solve(prog_).get_solution_result();
-  EXPECT_TRUE(result == SolutionResult::kInfeasible_Or_Unbounded ||
+  EXPECT_TRUE(result == SolutionResult::kInfeasibleOrUnbounded ||
               result == SolutionResult::kInfeasibleConstraints);
 }
 

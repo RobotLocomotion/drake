@@ -642,6 +642,9 @@ drake_cc_library(
         "solution_result.cc",
     ],
     hdrs = ["solution_result.h"],
+    deps = [
+        "//common:essential",  # For DRAKE_DEPRECATED; remove 2022-07-01
+    ],
 )
 
 drake_cc_library(

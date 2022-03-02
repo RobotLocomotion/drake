@@ -60,14 +60,14 @@ GTEST_TEST(DiagonallyDominantMatrixConstraint, FeasibilityCheck) {
   EXPECT_FALSE(result.is_success());
   EXPECT_TRUE(
       result.get_solution_result() == SolutionResult::kInfeasibleConstraints ||
-      result.get_solution_result() == SolutionResult::kInfeasible_Or_Unbounded);
+      result.get_solution_result() == SolutionResult::kInfeasibleOrUnbounded);
   // [1 -1.1; -1.1 2] is not diagonally dominant
   set_X_value(Eigen::Vector3d(1, -1.1, 2));
   result = Solve(prog);
   EXPECT_FALSE(result.is_success());
   EXPECT_TRUE(
       result.get_solution_result() == SolutionResult::kInfeasibleConstraints ||
-      result.get_solution_result() == SolutionResult::kInfeasible_Or_Unbounded);
+      result.get_solution_result() == SolutionResult::kInfeasibleOrUnbounded);
 }
 
 GTEST_TEST(DiagonallyDominantMatrixConstraint, three_by_three_vertices) {

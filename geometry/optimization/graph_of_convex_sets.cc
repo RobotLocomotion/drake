@@ -37,6 +37,7 @@ using solvers::LinearEqualityConstraint;
 using solvers::LInfNormCost;
 using solvers::MathematicalProgram;
 using solvers::MathematicalProgramResult;
+using solvers::PerspectiveQuadraticCost;
 using solvers::QuadraticCost;
 using solvers::VariableRefList;
 using solvers::VectorXDecisionVariable;
@@ -315,23 +316,18 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       // in MathematicalProgram::AddCost.
       Cost* cost = b.evaluator().get();
       if (LinearCost* lc = dynamic_cast<LinearCost*>(cost)) {
-        // Linear terms can lead to negative costs, which cannot be allowed.  We
-        // only support constant terms here.
         // TODO(russt): Consider setting a precision here (and exposing it to
         // the user) instead of using Eigen's dummy_precision.
-        if (!lc->a().isZero()) {
-          throw std::runtime_error(
-              fmt::format("In order to prevent negative edge lengths, linear "
-                          "costs cannot have linear terms (only constant): {}",
-                          b.to_string()));
+        if (lc->a().isZero() && lc->b() < 0.0) {
+          throw std::runtime_error(fmt::format(
+              "Constant costs must be non-negative: {}", b.to_string()));
         }
-        if (lc->b() < 0.0) {
-          throw std::runtime_error(
-              fmt::format("Costs must be non-negative: {}", b.to_string()));
-        }
-        // phi*b <= ell or [b, -1.0][phi; ell] <= 0
-        RowVector2d a{lc->b(), -1.0};
-        prog.AddLinearConstraint(a, -inf, 0.0, vars.head<2>());
+        // a*x + phi*b <= ell or [b, -1.0, a][phi; ell; x] <= 0
+        RowVectorXd a(lc->a().size() + 2);
+        a(0) = lc->b();
+        a(1) = -1.0;
+        a.tail(lc->a().size()) = lc->a();
+        prog.AddLinearConstraint(a, -inf, 0.0, vars);
       } else if (QuadraticCost* qc = dynamic_cast<QuadraticCost*>(cost)) {
         // .5 x'Qx + b'x + c is restated as a rotated Lorentz cone constraint
         // enforcing that ℓ should be lower-bounded by the perspective, with
@@ -415,6 +411,16 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
         prog.AddLinearConstraint(A_linear,
                                  VectorXd::Constant(A_linear.rows(), -inf),
                                  VectorXd::Zero(A_linear.rows()), vars);
+      } else if (PerspectiveQuadraticCost* pqc =
+                     dynamic_cast<PerspectiveQuadraticCost*>(cost)) {
+        // (z_1^2 + ... + z_{n-1}^2) / z_0 for z = Ax + b becomes
+        // ℓ z_0 ≥ z_1^2 + ... + z_{n-1}^2 for z = Ax + bϕ
+        MatrixXd A_cone = MatrixXd::Zero(pqc->A().rows() + 1, vars.size());
+        A_cone(0, 1) = 1.0;
+        A_cone.block(1, 0, pqc->A().rows(), 1) = pqc->b();
+        A_cone.block(1, 2, pqc->A().rows(), pqc->A().cols()) = pqc->A();
+        prog.AddRotatedLorentzConeConstraint(
+            A_cone, VectorXd::Zero(pqc->A().rows() + 1), vars);
       } else {
         throw std::runtime_error(fmt::format(
             "GraphOfConvexSets::Edge does not support this binding type: {}",

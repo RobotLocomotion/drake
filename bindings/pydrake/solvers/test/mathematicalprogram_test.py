@@ -92,6 +92,16 @@ class TestCost(unittest.TestCase):
         np.testing.assert_allclose(cost.A(), 2*A)
         np.testing.assert_allclose(cost.b(), 2*b)
 
+    def test_perspective_quadratic_cost(self):
+        A = np.array([[1., 2.], [-.4, .7]])
+        b = np.array([0.5, -.4])
+        cost = mp.PerspectiveQuadraticCost(A=A, b=b)
+        np.testing.assert_allclose(cost.A(), A)
+        np.testing.assert_allclose(cost.b(), b)
+        cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
+        np.testing.assert_allclose(cost.A(), 2*A)
+        np.testing.assert_allclose(cost.b(), 2*b)
+
 
 class TestQP:
     def __init__(self):
@@ -207,6 +217,16 @@ class TestMathematicalProgram(unittest.TestCase):
         x_val_new = np.array([1, 2])
         result.set_x_val(x_val_new)
         np.testing.assert_array_equal(x_val_new, result.get_x_val())
+
+    def test_solution_result_deprecation(self):
+        # Remove after 2022-07-01.
+        result = MathematicalProgramResult()
+        with catch_drake_warnings(expected_count=1):
+            result.set_solution_result(
+                mp.SolutionResult.kInfeasible_Or_Unbounded)
+        self.assertEqual(
+            result.get_solution_result(),
+            mp.SolutionResult.kInfeasibleOrUnbounded)
 
     def test_str(self):
         qp = TestQP()

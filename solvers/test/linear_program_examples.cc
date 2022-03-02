@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mosek_solver.h"
@@ -355,6 +356,33 @@ void LinearProgram3::CheckSolution(
   EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog(), result, cost_tol);
+}
+
+std::ostream& operator<<(std::ostream& os, LinearProblems value) {
+  os << "LinearProblems::";
+  switch (value) {
+    case LinearProblems::kLinearFeasibilityProgram: {
+      os << "kLinearFeasibilityProgram";
+      return os;
+    }
+    case LinearProblems::kLinearProgram0: {
+      os << "kLinearFeasibilityProgram0";
+      return os;
+    }
+    case LinearProblems::kLinearProgram1: {
+      os << "kLinearFeasibilityProgram1";
+      return os;
+    }
+    case LinearProblems::kLinearProgram2: {
+      os << "kLinearFeasibilityProgram2";
+      return os;
+    }
+    case LinearProblems::kLinearProgram3: {
+      os << "kLinearFeasibilityProgram3";
+      return os;
+    }
+  }
+  DRAKE_UNREACHABLE();
 }
 
 LinearProgramTest::LinearProgramTest() {

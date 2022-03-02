@@ -12,8 +12,8 @@ std::string to_string(SolutionResult solution_result) {
       return "InfeasibleConstraints";
     case SolutionResult::kUnbounded:
       return "Unbounded";
-    case SolutionResult::kInfeasible_Or_Unbounded:
-      return "Infeasible_Or_Unbounded";
+    case SolutionResult::kInfeasibleOrUnbounded:
+      return "InfeasibleOrUnbounded";
     case SolutionResult::kIterationLimit:
       return "IterationLimit";
     case SolutionResult::kUnknownError:
