@@ -12,6 +12,7 @@ template <typename T>
 SapConstraintBundle<T>::SapConstraintBundle(
     const SapContactProblem<T>* problem, const VectorX<T>& delassus_diagonal) {
   DRAKE_THROW_UNLESS(problem != nullptr);
+  DRAKE_THROW_UNLESS(delassus_diagonal.size() == problem->num_constraints());
 
   // Create vector of constraints but not in the oder they were enumerated in
   // the SapProblem, but in the computationally convenient order enumerated in
@@ -61,7 +62,8 @@ void SapConstraintBundle<T>::MakeConstraintBundleJacobian(
   const ContactProblemGraph& graph = problem.graph();
   const PartialPermutation& cliques_permutation = graph.participating_cliques();
 
-  // We have at most two blocks per row, and one row per edge in the graph.
+  // We have at most two blocks per row, and one row per cluster (edge) in the
+  // graph.
   const int non_zero_blocks_capacity = 2 * graph.num_clusters();
   BlockSparseMatrixBuilder<T> builder(
       graph.num_clusters(), cliques_permutation.permuted_domain_size(),
@@ -163,16 +165,17 @@ void SapConstraintBundle<T>::ProjectImpulsesAndCalcConstraintsHessian(
   DRAKE_DEMAND(gamma != nullptr);
   DRAKE_DEMAND(gamma->size() == num_constraint_equations());
   DRAKE_DEMAND(static_cast<int>(G->size()) == num_constraints());
-  ProjectImpulses(y, gamma, G);  // G = dPdy.
+  // G = dPdy after call to ProjectImpulses. We add in the R⁻¹ next.
+  ProjectImpulses(y, gamma, G);
 
   // The regularizer Hessian is G = d²ℓ/dvc² = dP/dy⋅R⁻¹.
   int constraint_start = 0;
   for (int i = 0; i < num_constraints(); ++i) {
     const SapConstraint<T>& c = *constraints_[i];
     const int ni = c.num_constraint_equations();
-    const auto R_i = R().segment(constraint_start, ni);
+    const auto Rinv_i = Rinv().segment(constraint_start, ni);
     const MatrixX<T>& dPdy_i = (*G)[i];
-    (*G)[i] = dPdy_i * R_i.cwiseInverse().asDiagonal();
+    (*G)[i] = dPdy_i * Rinv_i.asDiagonal();
     constraint_start += ni;
   }
 }
