@@ -14,7 +14,7 @@ SapConstraintBundle<T>::SapConstraintBundle(
   DRAKE_THROW_UNLESS(problem != nullptr);
   DRAKE_THROW_UNLESS(delassus_diagonal.size() == problem->num_constraints());
 
-  // Create vector of constraints but not in the oder they were enumerated in
+  // Create vector of constraints but not in the order they were enumerated in
   // the SapProblem, but in the computationally convenient order enumerated in
   // the ContactProblemGraph, where constraints between the same
   // pair of cliques are "clustered" together.

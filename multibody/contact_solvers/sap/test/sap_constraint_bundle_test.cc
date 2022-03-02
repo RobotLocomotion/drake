@@ -9,9 +9,7 @@
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 
-using Eigen::Matrix3d;
 using Eigen::MatrixXd;
-using Eigen::Vector3d;
 using Eigen::VectorXd;
 using Eigen::VectorXi;
 
