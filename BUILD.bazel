@@ -90,4 +90,9 @@ install_test(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    bazel_lint_extra_srcs = [
+        "cmake/external/workspace/spdlog/BUILD.bazel.in",
+        "cmake/external/workspace/fmt/BUILD.bazel.in",
+    ],
+)
