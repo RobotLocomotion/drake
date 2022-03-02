@@ -89,7 +89,7 @@
       <!--The left finger collision ellipsoid. -->
       <collision name="left_finger_ellipsoid">
         <!-- The pose is set from CAD drawings and it was verified that the mesh
-        used for visual geometry exactly overlaps the colision ellipsoid. -->
+        used for visual geometry exactly overlaps the collision ellipsoid. -->
         <pose>0 -0.041665 -0.1095 0 0 0</pose>
         <geometry>
           <!-- Ellipsoid dimensions along its principal axes set to match CAD
@@ -163,7 +163,7 @@
       <!--The right finger collision ellipsoid. -->
       <collision name="right_finger_ellipsoid">
         <!-- The pose is set from CAD drawings and it was verified that the mesh
-        used for visual geometry exactly overlaps the colision ellipsoid. -->
+        used for visual geometry exactly overlaps the collision ellipsoid. -->
         <pose>0 0.041665 -0.1095 0 0 0</pose>
         <geometry>
           <!-- Ellipsoid dimensions along its principal axes set to match CAD

@@ -31,14 +31,17 @@ DEFINE_bool(visualize_collision, false,
 
 // MultibodyPlant settings.
 DEFINE_double(stiction_tolerance, 1e-4, "Default stiction tolerance. [m/s].");
-DEFINE_double(mbp_discrete_update_period, 1.0e-2,
+DEFINE_double(mbp_discrete_update_period, 4.0e-2,
               "If zero, the plant is modeled as a continuous system. "
               "If positive, the period (in seconds) of the discrete updates "
               "for the plant modeled as a discrete system."
               "This parameter must be non-negative.");
-DEFINE_string(contact_model, "hydroelastic", "Contact model.");
+DEFINE_string(contact_model, "hydroelastic",
+              "Contact model. Options are: 'point', 'hydroelastic', "
+              "'hydroelastic_with_fallback'.");
 DEFINE_string(contact_surface_representation, "polygon",
-              "Contact-surface representation for hydroelastics.");
+              "Contact-surface representation for hydroelastics. "
+              "Options are: 'triangle' or 'polygon'.");
 
 // Simulator settings.
 DEFINE_double(realtime_rate, 1,
@@ -77,14 +80,14 @@ class Square final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Square)
 
-  /// Constructs a %Square system where different amplitudes, duty cycles,
-  /// periods, and phases can be applied to each square wave.
-  ///
-  /// @param[in] amplitudes the square wave amplitudes. (unitless)
-  /// @param[in] duty_cycles the square wave duty cycles.
-  ///                        (ratio of pulse duration to period of the waveform)
-  /// @param[in] periods the square wave periods. (seconds)
-  /// @param[in] phases the square wave phases. (radians)
+  // Constructs a %Square system where different amplitudes, duty cycles,
+  // periods, and phases can be applied to each square wave.
+  //
+  // @param[in] amplitudes the square wave amplitudes. (unitless)
+  // @param[in] duty_cycles the square wave duty cycles.
+  //                        (ratio of pulse duration to period of the waveform)
+  // @param[in] periods the square wave periods. (seconds)
+  // @param[in] phases the square wave phases. (radians)
   Square(const Eigen::VectorXd& amplitudes, const Eigen::VectorXd& duty_cycles,
          const Eigen::VectorXd& periods, const Eigen::VectorXd& phases)
       : amplitude_(amplitudes),
@@ -200,13 +203,12 @@ int DoMain() {
   sim_config.target_realtime_rate = FLAGS_realtime_rate;
   sim_config.publish_every_time_step = false;
 
-  std::unique_ptr<systems::Simulator<double>> simulator =
-      std::make_unique<systems::Simulator<double>>(*diagram);
-  ApplySimulatorConfig(simulator.get(), sim_config);
+  systems::Simulator<double> simulator(*diagram);
+  ApplySimulatorConfig(&simulator, sim_config);
 
   // Set the initial conditions for the spatula pose and the gripper finger
   // positions.
-  Context<double>& mutable_root_context = simulator->get_mutable_context();
+  Context<double>& mutable_root_context = simulator.get_mutable_context();
   Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, &mutable_root_context);
 
@@ -225,9 +227,9 @@ int DoMain() {
   right_joint.set_translation(&plant_context, 0.01);
 
   // Simulate.
-  simulator->Initialize();
-  simulator->AdvanceTo(FLAGS_simulation_sec);
-  systems::PrintSimulatorStatistics(*simulator);
+  simulator.Initialize();
+  simulator.AdvanceTo(FLAGS_simulation_sec);
+  systems::PrintSimulatorStatistics(simulator);
   return 0;
 }
 
