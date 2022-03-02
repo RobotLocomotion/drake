@@ -61,13 +61,6 @@ set(tinyxml2_md5 "03ad292c4b6454702c0cc22de0d196ad")
 set(tinyxml2_dlname "tinyXML2.zip")
 list(APPEND ALL_PROJECTS tinyxml2)
 
-# yaml-cpp
-set(yaml-cpp_version 0.6.0)
-set(yaml-cpp_url "https://github.com/jbeder/yaml-cpp/archive/refs/tags/yaml-cpp-${yaml-cpp_version}.tar.gz")
-set(yaml-cpp_md5 "8adc0ae6c2698a61ab086606cc7cf562")
-set(yaml-cpp_dlname "yaml-cpp-${yaml-cpp_version}.tar.gz")
-list(APPEND ALL_PROJECTS yaml-cpp)
-
 # msgpack
 set(msgpack_version 3.1.0)
 set(msgpack_url "https://github.com/msgpack/msgpack-c/releases/download/cpp-${msgpack_version}/msgpack-${msgpack_version}.tar.gz")

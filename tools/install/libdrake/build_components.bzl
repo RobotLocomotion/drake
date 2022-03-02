@@ -88,5 +88,4 @@ LIBDRAKE_COMPONENTS = [
     # //common:filesystem (indirectly)
     # //common:nice_type_name_override_header (indirectly)
     # //geometry/render/gl_renderer:apple_only_no_render_engine_gl_factory (indirectly)  # noqa
-    # //third_party/com_github_jbeder_yaml_cpp:emitfromevents (indirectly)
 ]

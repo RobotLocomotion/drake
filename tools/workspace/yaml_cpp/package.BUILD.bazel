@@ -1,0 +1,22 @@
+# -*- python -*-
+
+licenses(["notice"])  # MIT
+
+cc_library(
+    name = "yaml_cpp",
+    hdrs = glob([
+        "include/yaml-cpp/*.h",
+        "include/yaml-cpp/node/*.h",
+        "include/yaml-cpp/node/detail/*.h",
+    ], allow_empty = False),
+    srcs = glob([
+        "src/*.cpp",
+        "src/*.h",
+    ], allow_empty = False),
+    copts = [
+        "-fvisibility=hidden",
+    ],
+    includes = ["include"],
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+)
