@@ -12,50 +12,6 @@ namespace {
 
 using Eigen::Vector2d;
 
-// One prismatic link with joint limits.  Iris should return the joint limits.
-GTEST_TEST(DeprecatedIrisInConfigurationSpaceTest, JointLimits) {
-  const std::string limits_urdf = R"(
-<robot name="limits">
-  <link name="movable">
-    <collision>
-      <geometry><box size="1 1 1"/></geometry>
-    </collision>
-  </link>
-  <joint name="movable" type="prismatic">
-    <axis xyz="1 0 0"/>
-    <limit lower="-2" upper="2"/>
-    <parent link="world"/>
-    <child link="movable"/>
-  </joint>
-</robot>
-)";
-
-  systems::DiagramBuilder<double> builder;
-  multibody::MultibodyPlant<double>& plant =
-      multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
-  multibody::Parser(&plant).AddModelFromString(limits_urdf, "urdf");
-  plant.Finalize();
-  auto diagram = builder.Build();
-
-  const Vector1d sample = Vector1d::Zero();
-  IrisOptions options;
-  auto context = diagram->CreateDefaultContext();
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  HPolyhedron region = IrisInConfigurationSpace(
-      plant, plant.GetMyContextFromRoot(*context), sample, options);
-#pragma GCC diagnostic pop
-
-  EXPECT_EQ(region.ambient_dimension(), 1);
-
-  const double kTol = 1e-5;
-  const double qmin = -2.0, qmax = 2.0;
-  EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
-  EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
-  EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
-  EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
-}
-
 // Helper method for testing IrisInConfigurationSpace from a urdf string.
 HPolyhedron IrisFromUrdf(const std::string urdf,
                          const Eigen::Ref<const Eigen::VectorXd>& sample,
