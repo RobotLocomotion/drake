@@ -415,7 +415,7 @@ SapSolver<T>::EvalVelocitiesCache(const State& state) const {
     return state.cache().velocities_cache();
   typename Cache::VelocitiesCache& cache =
       state.mutable_cache().mutable_velocities_cache();
-  model_->CalcConstraintVelocities(state.v(), &cache.vc);  
+  model_->J().Multiply(state.v(), &cache.vc);
   cache.valid = true;
   return cache;
 }
@@ -430,8 +430,8 @@ SapSolver<T>::EvalImpulsesCache(const State& state) const {
   typename Cache::ImpulsesCache& cache =
       state.mutable_cache().mutable_impulses_cache();
   const VectorX<T>& vc = EvalVelocitiesCache(state).vc;
-  model_->CalcUnprojectedImpulses(vc, &cache.y);
-  model_->ProjectImpulses(cache.y, &cache.gamma);
+  model_->constraint_bundle().CalcUnprojectedImpulses(vc, &cache.y);
+  model_->constraint_bundle().ProjectImpulses(cache.y, &cache.gamma);
   ++stats_.num_impulses_cache_updates;
   cache.valid = true;
   return cache;
@@ -499,7 +499,8 @@ SapSolver<T>::EvalGradientsCache(const State& state) const {
   // TODO: clean this up to avoid recomputing impulses in this call.
   // Maybe a sugar method on SapModel would suffice.
   VectorX<T> dummy(y.size());
-  model_->ProjectImpulsesAndCalcConstraintsHessian(y, &dummy, &cache.G);
+  model_->constraint_bundle().ProjectImpulsesAndCalcConstraintsHessian(
+      y, &dummy, &cache.G);
   ++stats_.num_gradients_cache_updates;
   cache.valid = true;
   return cache;

@@ -106,14 +106,9 @@ class SapModel {
    @pre both v and p must be of size num_participating_velocities(). */
   void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* p) const;    
 
-  void CalcConstraintVelocities(const VectorX<T>& v, VectorX<T>* vc) const;
-
-  void CalcUnprojectedImpulses(const VectorX<T>& vc, VectorX<T>* y) const;
-
-  void ProjectImpulses(const VectorX<T>& y, VectorX<T>* gamma) const;
-
-  void ProjectImpulsesAndCalcConstraintsHessian(
-      const VectorX<T>& y, VectorX<T>* gamma, std::vector<MatrixX<T>>* G) const;
+  const SapConstraintBundle<T>& constraint_bundle() const {
+    return *constraints_bundle_;
+  }
 
  private:
   friend class SapModelTester;

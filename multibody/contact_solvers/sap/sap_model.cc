@@ -236,35 +236,6 @@ void SapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
   }
 }
 
-template <typename T>
-void SapModel<T>::CalcConstraintVelocities(const VectorX<T>& v,
-                                           VectorX<T>* vc) const {
-  DRAKE_DEMAND(v.size() == num_velocities());
-  DRAKE_DEMAND(vc != nullptr);
-  J().Multiply(v, vc);
-}
-
-template <typename T>
-void SapModel<T>::CalcUnprojectedImpulses(const VectorX<T>& vc,
-                                          VectorX<T>* y) const {
-  DRAKE_DEMAND(vc.size() == num_constraint_equations());
-  DRAKE_DEMAND(y != nullptr);
-  DRAKE_DEMAND(y->size() == num_constraint_equations());
-  constraints_bundle_->CalcUnprojectedImpulses(vc, y);
-}
-
-template <typename T>
-void SapModel<T>::ProjectImpulses(const VectorX<T>& y,
-                                  VectorX<T>* gamma) const {
-  constraints_bundle_->ProjectImpulses(y, gamma);
-}
-
-template <typename T>
-void SapModel<T>::ProjectImpulsesAndCalcConstraintsHessian(
-    const VectorX<T>& y, VectorX<T>* gamma, std::vector<MatrixX<T>>* G) const {
-  constraints_bundle_->ProjectImpulsesAndCalcConstraintsHessian(y, gamma, G);
-}
-
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
