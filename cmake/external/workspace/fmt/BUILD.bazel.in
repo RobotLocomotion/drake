@@ -1,0 +1,33 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load(
+    "@drake//tools/workspace:cmake_util.bzl",
+    "library_to_linkopts",
+    "split_cmake_list",
+)
+
+FMT_DEFINES = split_cmake_list(
+    "$<TARGET_PROPERTY:fmt::fmt,INTERFACE_COMPILE_DEFINITIONS>",
+)
+
+FMT_LINKOPTS = library_to_linkopts(
+    "$<TARGET_LINKER_FILE:fmt::fmt>",
+)
+
+cc_library(
+    name = "fmt",
+    hdrs = glob(
+        ["include/**"],
+        allow_empty = False,
+    ),
+    defines = FMT_DEFINES,
+    includes = ["include"],
+    linkopts = FMT_LINKOPTS,
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    visibility = ["//visibility:public"],
+)

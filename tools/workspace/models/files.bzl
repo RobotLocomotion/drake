@@ -70,6 +70,14 @@ def wsg_50_description_mesh_files():
         "wsg_50_description/meshes/wsg_body.obj",
     ]
 
+def wsg_50_hydro_bubble_mesh_files():
+    return [
+        "wsg_50_hydro_bubble/meshes/bubble_finger.mtl",
+        "wsg_50_hydro_bubble/meshes/bubble_finger.obj",
+        "wsg_50_hydro_bubble/meshes/ellipsoid_bubble_geometry.mtl",
+        "wsg_50_hydro_bubble/meshes/ellipsoid_bubble_geometry.obj",
+    ]
+
 def ycb_mesh_files():
     """Manual enumeration of mesh files, to avoid needing to write extra Bazel
     logic.

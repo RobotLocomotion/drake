@@ -6,7 +6,8 @@ def install_data(
         name = "models",
         prod_models_prefix = "prod_",
         test_models_prefix = "test_",
-        extra_prod_models = []):
+        extra_prod_models = [],
+        extra_exclude_patterns = []):
     """Install data
 
     This macro creates 3 filegroups:
@@ -29,6 +30,9 @@ def install_data(
     Extra files to be installed that are not in the direct subdirectories of
     the rule may be specified by using `extra_prod_models`.  One use of this is
     to install generated files alongside the static files.
+
+    Sometimes documentation files will need to be excluded from Bazel's reach;
+    use extra_exclude_patterns for that.
     """
     models_extensions = [
         "csv",
@@ -45,7 +49,7 @@ def install_data(
         "vtp",
         "xml",
     ]
-    exclude_patterns = ["**/test/*", "**/test*"]
+    exclude_patterns = ["**/test/*", "**/test*"] + extra_exclude_patterns
     prod_models_include = ["**/*.{}".format(x) for x in models_extensions]
     test_models_include = [
         p + m
