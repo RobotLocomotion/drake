@@ -19,11 +19,7 @@ _WSG_50_DESCRIPTION_MESHES = forward_files(
     visibility = ["//visibility:private"],
 )
 
-install_data(
-    extra_prod_models = _WSG_50_DESCRIPTION_MESHES + [
-        "LICENSE.TXT",
-    ],
-)
+install_data(extra_prod_models = _WSG_50_DESCRIPTION_MESHES)
 
 # === test/ ===
 
