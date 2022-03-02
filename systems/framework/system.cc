@@ -218,23 +218,6 @@ const T& System<T>::EvalNonConservativePower(const Context<T>& context) const {
   return entry.Eval<T>(context);
 }
 
-// Deprecated
-template <typename T>
-Eigen::VectorBlock<const VectorX<T>> System<T>::EvalEigenVectorInput(
-    const Context<T>& context, int port_index) const {
-  ValidateContext(context);
-  if (port_index < 0)
-    ThrowNegativePortIndex(__func__, port_index);
-  const InputPortIndex port(port_index);
-
-  const BasicVector<T>* const basic_value =
-      EvalBasicVectorInputImpl(__func__, context, port);
-  if (basic_value == nullptr)
-    ThrowCantEvaluateInputPort(__func__, port);
-
-  return basic_value->get_value();
-}
-
 template <typename T>
 SystemConstraintIndex System<T>::AddExternalConstraint(
     ExternalSystemConstraint constraint) {
