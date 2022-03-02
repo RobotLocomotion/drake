@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<sdf version="1.7"
+  xmlns:drake='drake.mit.edu'>
+  <model name="spatula">
+    <pose>0 0 0 0 0 0</pose>
+    <link name="spatula">
+      <inertial>
+        <mass>0.068</mass>
+        <inertia>
+          <ixx>0.21095403274864072</ixx>
+          <ixy>-4.264472553729218e-08</ixy>
+          <ixz>0.0</ixz>
+          <iyy>0.03710803288660893</iyy>
+          <iyz>-0.06982169738550205</iyz>
+          <izz>0.18858265237650276</izz>
+        </inertia>
+        <pose>0.0 0.115649 0.044471 0 0 0</pose>
+      </inertial>
+      <visual name="spatula_connector_visual">
+        <pose>0 0.0675 0.015 -0.94 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.002</radius>
+            <length>0.048</length>
+          </cylinder>
+        </geometry>
+      </visual>
+      <visual name="spatula_bottom_visual">
+        <geometry>
+          <box>
+            <size>0.08 0.1 0.001</size>
+          </box>
+        </geometry>
+      </visual>
+      <visual name="spatula_handle_visual">
+        <pose>0 0.135 0.052 2 0 0</pose>
+        <material>
+          <diffuse>0 0 0 0.5</diffuse>
+        </material>
+        <geometry>
+          <cylinder>
+            <radius>0.015</radius>
+            <length>0.11</length>
+          </cylinder>
+        </geometry>
+      </visual>
+      <collision name="spatula_handle_collision">
+        <pose>0 0.135 0.052 2 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.015</radius>
+            <length>0.11</length>
+          </cylinder>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mesh_resolution_hint>0.005</drake:mesh_resolution_hint>
+          <drake:compliant_hydroelastic/>
+          <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+          <drake:hunt_crossley_dissipation>5</drake:hunt_crossley_dissipation>
+          <drake:mu_dynamic>1.0</drake:mu_dynamic>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
