@@ -333,7 +333,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.ComputeActiveBasisFunctionIndices.doc_1args_parameter_value)
         .def("EvaluateBasisFunctionI", &Class::EvaluateBasisFunctionI,
             py::arg("i"), py::arg("parameter_value"),
-            cls_doc.EvaluateBasisFunctionI.doc);
+            cls_doc.EvaluateBasisFunctionI.doc)
+        .def(py::pickle(
+            [](const Class& self) {
+              return std::make_pair(self.order(), self.knots());
+            },
+            [](std::pair<int, std::vector<T>> args) {
+              return Class(std::get<0>(args), std::get<1>(args));
+            }));
   }
 
   m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
