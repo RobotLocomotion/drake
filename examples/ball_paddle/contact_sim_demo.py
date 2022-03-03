@@ -1,11 +1,3 @@
-import pydrake.examples.ball_paddle as mut
-
-from pydrake.multibody.plant import (
-    MultibodyPlant_, )
-
-from pydrake.geometry import (
-    SceneGraph_, )
-
 from pydrake.math import (
     RigidTransform,
     RollPitchYaw,
@@ -24,6 +16,7 @@ from pydrake.systems.framework import DiagramBuilder_
 from pydrake.systems.primitives import (
     VectorLogSink_, )
 from pydrake.systems.analysis import Simulator_
+
 
 def make_ball_paddle_python_only():
     dt = 0.001
@@ -66,6 +59,7 @@ def make_ball_paddle_python_only():
     diagram = builder.Build()
     return diagram, plant, state_logger
 
+
 def simulate_diagram(diagram, ball_paddle_plant, state_logger,
                      ball_init_position,
                      ball_init_velocity):
@@ -81,7 +75,7 @@ def simulate_diagram(diagram, ball_paddle_plant, state_logger,
     plant_context = diagram.GetSubsystemContext(ball_paddle_plant,
                                                 simulator.get_context())
     ball_paddle_plant.SetPositionsAndVelocities(plant_context,
-                                                  qv_init_val)
+                                                qv_init_val)
     simulator.get_mutable_context().SetTime(T(0.))
     state_log = state_logger.FindMutableLog(simulator.get_mutable_context())
     state_log.Clear()
