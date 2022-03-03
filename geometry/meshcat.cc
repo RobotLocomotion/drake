@@ -1537,6 +1537,9 @@ class Meshcat::Impl {
   // This function is a callback from a WebSocketBehavior.
   void HandleSocketOpen(WebSocket* ws) {
     DRAKE_DEMAND(IsThread(websocket_thread_id_));
+    drake::log()->debug(
+        "Meshcat connection opened from {}",
+        ws->getRemoteAddressAsText());
     websockets_.emplace(ws);
     const int new_count = ++num_websockets_;
     DRAKE_DEMAND(new_count >= 0);
@@ -1567,6 +1570,9 @@ class Meshcat::Impl {
   // This function is a callback from a WebSocketBehavior.
   void HandleSocketClose(WebSocket* ws) {
     DRAKE_DEMAND(IsThread(websocket_thread_id_));
+    drake::log()->debug(
+        "Meshcat connection closed from {}",
+        ws->getRemoteAddressAsText());
     websockets_.erase(ws);
     const int new_count = --num_websockets_;
     DRAKE_DEMAND(new_count >= 0);
@@ -1580,10 +1586,11 @@ class Meshcat::Impl {
       msgpack::object_handle o_h =
           msgpack::unpack(message.data(), message.size());
       o_h.get().convert(data);
-    } catch (const std::bad_alloc& e) {
+    } catch (const msgpack::type_error& e) {
       // Quietly ignore messages that don't match our expected message type.
       // This violates the style guide, but msgpack does not provide any other
       // mechanism for checking the message type.
+      drake::log()->debug("Meshcat ignored an unparseable message");
       return;
     }
     std::lock_guard<std::mutex> lock(controls_mutex_);
@@ -1592,7 +1599,9 @@ class Meshcat::Impl {
       if (iter != buttons_.end()) {
         iter->second.num_clicks++;
       }
-    } else if (data.type == "slider" && data.value.has_value()) {
+      return;
+    }
+    if (data.type == "slider" && data.value.has_value()) {
       auto iter = sliders_.find(data.name);
       if (iter != sliders_.end()) {
         iter->second.value = *data.value;
@@ -1607,7 +1616,9 @@ class Meshcat::Impl {
           ws->publish("all", message_stream.str(), uWS::OpCode::BINARY);
         }
       }
+      return;
     }
+    drake::log()->warn("Meshcat ignored a '{}' event", data.type);
   }
 
   // A functor object that we can post from the main thread into the websocket
