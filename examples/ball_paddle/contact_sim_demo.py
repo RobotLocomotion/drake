@@ -1,24 +1,20 @@
-from pydrake.math import (
-    RigidTransform,
-    RollPitchYaw,
-)
+import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import DrakeVisualizer
 from pydrake.geometry import DrakeVisualizerParams
+from pydrake.math import RigidTransform
+from pydrake.math import RollPitchYaw
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.multibody.plant import ConnectContactResultsToDrakeVisualizer
+from pydrake.systems.analysis import Simulator
+from pydrake.systems.analysis import PrintSimulatorStatistics
 from pydrake.systems.framework import DiagramBuilder
-
-import numpy as np
-from pydrake.systems.framework import DiagramBuilder_
-from pydrake.systems.primitives import (
-    VectorLogSink_, )
-from pydrake.systems.analysis import Simulator_
+from pydrake.systems.primitives import VectorLogSink
 
 
-def make_ball_paddle_python_only():
+def make_ball_paddle():
     dt = 0.001
     p_WPaddle_fixed = RigidTransform(RollPitchYaw(0, 0, 0),
                                      np.array([0.1, 0, -0.01]))
@@ -41,8 +37,8 @@ def make_ball_paddle_python_only():
 
     plant.Finalize()
 
-    # TODO(DamrongGuoy) Figure out why we need to publish every time step.
-    #  Otherwise, the animation looked very lagging.
+    # TODO(DamrongGuoy) Figure out why we need to set publish period to dt.
+    #  Otherwise, the animation looks very lagging.
     drake_visualizer_params = DrakeVisualizerParams()
     drake_visualizer_params.publish_period = dt
     DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
@@ -52,7 +48,7 @@ def make_ball_paddle_python_only():
                                            publish_period=dt)
 
     nx = plant.num_positions() + plant.num_velocities()
-    state_logger = builder.AddSystem(VectorLogSink_[float](nx, dt))
+    state_logger = builder.AddSystem(VectorLogSink(nx, dt))
     builder.Connect(plant.get_state_output_port(),
                     state_logger.get_input_port())
 
@@ -63,33 +59,35 @@ def make_ball_paddle_python_only():
 def simulate_diagram(diagram, ball_paddle_plant, state_logger,
                      ball_init_position,
                      ball_init_velocity):
-    T = float
     q_init_val = np.array([
         1, 0, 0, 0, ball_init_position[0], ball_init_position[1],
         ball_init_position[2]
     ])
     v_init_val = np.hstack((np.zeros(3), ball_init_velocity))
     qv_init_val = np.concatenate((q_init_val, v_init_val))
-    simulator = Simulator_[T](diagram)
+    simulator = Simulator(diagram)
 
     plant_context = diagram.GetSubsystemContext(ball_paddle_plant,
                                                 simulator.get_context())
     ball_paddle_plant.SetPositionsAndVelocities(plant_context,
                                                 qv_init_val)
-    simulator.get_mutable_context().SetTime(T(0.))
+    simulator.get_mutable_context().SetTime(0)
     state_log = state_logger.FindMutableLog(simulator.get_mutable_context())
     state_log.Clear()
     target_realtime_rate = 0.02
     simulator.set_target_realtime_rate(target_realtime_rate)
     simulator.Initialize()
-    simulator.AdvanceTo(boundary_time=T(0.2))
+    simulator.AdvanceTo(boundary_time = 0.1)
+    print()
+    PrintSimulatorStatistics(simulator)
     return state_log.sample_times(), state_log.data()
 
 
 if __name__ == "__main__":
-    diagram, ball_paddle_plant, state_logger = make_ball_paddle_python_only()
+    diagram, ball_paddle_plant, state_logger = make_ball_paddle()
     time_samples, state_samples = simulate_diagram(
         diagram, ball_paddle_plant, state_logger, np.array([-5E-4, 0, 0.05]),
         np.array([0., 0., -np.sqrt(2 * 9.81 * 0.95)]))
+    print("\nFinal state variables:")
     print(state_samples[:, -1])
     pass
