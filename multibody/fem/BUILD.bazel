@@ -8,12 +8,12 @@ load(
 )
 
 package(
-    default_visibility = ["//multibody/fixed_fem:__subpackages__"],
+    default_visibility = ["//multibody/fem:__subpackages__"],
 )
 
 drake_cc_package_library(
     name = "fem",
-    visibility = ["//multibody/fixed_fem:__subpackages__"],
+    visibility = ["//multibody/fem:__subpackages__"],
     deps = [
         ":calc_lame_parameters",
         ":constitutive_model",
@@ -22,6 +22,7 @@ drake_cc_package_library(
         ":damping_model",
         ":deformation_gradient_data",
         ":discrete_time_integrator",
+        ":fem_element",
         ":fem_indexes",
         ":fem_state",
         ":fem_state_system",
@@ -147,6 +148,23 @@ drake_cc_library(
         "//common:essential",
         "//common:identifier",
         "//common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_element",
+    srcs = [
+        "fem_element.cc",
+    ],
+    hdrs = [
+        "fem_element.h",
+    ],
+    deps = [
+        ":constitutive_model",
+        ":damping_model",
+        ":fem_indexes",
+        ":fem_state",
+        "//common:essential",
     ],
 )
 
@@ -375,6 +393,26 @@ drake_cc_googletest(
         ":deformation_gradient_data",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_library(
+    name = "dummy_element",
+    testonly = 1,
+    srcs = ["test/dummy_element.cc"],
+    hdrs = ["test/dummy_element.h"],
+    deps = [
+        ":damping_model",
+        ":fem_element",
+        ":fem_state",
+        ":linear_constitutive_model",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fem_element_test",
+    deps = [
+        ":dummy_element",
     ],
 )
 
