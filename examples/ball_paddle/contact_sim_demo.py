@@ -16,6 +16,7 @@ from pydrake.geometry import DrakeVisualizer
 from pydrake.geometry import DrakeVisualizerParams
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
+from pydrake.multibody.plant import ConnectContactResultsToDrakeVisualizer
 from pydrake.systems.framework import DiagramBuilder
 
 import numpy as np
@@ -51,11 +52,11 @@ def make_ball_paddle_python_only():
     #  Otherwise, the animation looked very lagging.
     drake_visualizer_params = DrakeVisualizerParams()
     drake_visualizer_params.publish_period = dt
-
     DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
                                  params=drake_visualizer_params)
-
-    # TODO(DamrongGuoy) Add contact results to LCM
+    ConnectContactResultsToDrakeVisualizer(builder=builder, plant=plant,
+                                           scene_graph=scene_graph,
+                                           publish_period=dt)
 
     nx = plant.num_positions() + plant.num_velocities()
     state_logger = builder.AddSystem(VectorLogSink_[float](nx, dt))
@@ -64,23 +65,6 @@ def make_ball_paddle_python_only():
 
     diagram = builder.Build()
     return diagram, plant, state_logger
-
-def construct_ball_paddle_diagram_call_CPlusPlus():
-    T = float
-    dt = 0.001
-    p_WPaddle_fixed = RigidTransform(RollPitchYaw(0, 0, 0),
-                                     np.array([0.1, 0, -0.01]))
-    ball_paddle = mut.BallPaddle_[T](dt, p_WPaddle_fixed)
-    builder = DiagramBuilder_[T]()
-    ball_paddle.AddToBuilder(builder)
-    nx = ball_paddle.plant().num_positions() + ball_paddle.plant(
-    ).num_velocities()
-    state_logger = builder.AddSystem(VectorLogSink_[T](nx, dt))
-    builder.Connect(ball_paddle.plant().get_state_output_port(),
-                    state_logger.get_input_port())
-    diagram = builder.Build()
-    return diagram, ball_paddle.plant(), state_logger
-
 
 def simulate_diagram(diagram, ball_paddle_plant, state_logger,
                      ball_init_position,
@@ -109,9 +93,7 @@ def simulate_diagram(diagram, ball_paddle_plant, state_logger,
 
 
 if __name__ == "__main__":
-    # diagram, ball_paddle_plant, state_logger = make_ball_paddle_python_only()
-    diagram, ball_paddle_plant, state_logger =\
-        construct_ball_paddle_diagram_call_CPlusPlus()
+    diagram, ball_paddle_plant, state_logger = make_ball_paddle_python_only()
     time_samples, state_samples = simulate_diagram(
         diagram, ball_paddle_plant, state_logger, np.array([-5E-4, 0, 0.05]),
         np.array([0., 0., -np.sqrt(2 * 9.81 * 0.95)]))
