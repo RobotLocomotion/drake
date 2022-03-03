@@ -115,6 +115,8 @@ drake_cc_library(
         "//multibody/contact_solvers:system_dynamics_data",
         "//common:default_scalars",
         "//common:essential",        
+        "//systems/framework:context",
+        "//systems/framework:leaf_system",
     ],
 )
 

@@ -10,6 +10,8 @@
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/system_dynamics_data.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint_bundle.h"
+#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace multibody {
@@ -110,8 +112,51 @@ class SapModel {
     return *constraints_bundle_;
   }
 
+  std::unique_ptr<systems::Context<T>> MakeContext() const;
+
+  const VectorX<T>& GetVelocities(const systems::Context<T>& context) const;
+
+  void SetVelocities(const VectorX<T>& v, systems::Context<T>* context) const;
+
+  const VectorX<T>& EvalConstraintVelocities(
+      const systems::Context<T>& context) const {
+    return system_
+        .get_cache_entry(system_.cache_indexes().constraint_velocities)
+        .template Eval<VectorX<T>>(context);
+  }
+
  private:
   friend class SapModelTester;
+
+  // System used to manage context resources.
+  class SappModelSystem : public systems::LeafSystem<T> {
+   public:
+    // Struct used to conglomerate the indexes of all cache entries declared by
+    // the model.
+    struct CacheIndexes {
+      systems::CacheIndex constraint_velocities;
+    };
+
+    SappModelSystem() = default;
+
+    /* Promote system methods so that SapModel can use them to declare state and
+     cache entries. */
+    using systems::LeafSystem<T>::DeclareDiscreteState;
+    using systems::SystemBase::DeclareCacheEntry;
+
+    systems::DiscreteStateIndex velocities_index() const {
+      return velocities_index_;
+    }
+
+    const CacheIndexes& cache_indexes() const { return cache_indexes_; }
+    CacheIndexes& mutable_cache_indexes() { return cache_indexes_; }
+
+   private:
+    systems::DiscreteStateIndex velocities_index_;
+    CacheIndexes cache_indexes_;
+  };
+
+  void DeclareStateAndCacheEntries();
 
   PartialPermutation MakeParticipatingVelocitiesPermutation(
       const SapContactProblem<T>& problem,
@@ -134,7 +179,10 @@ class SapModel {
   void CalcDelassusDiagonalApproximation(
       const std::vector<MatrixX<T>>& At,
       const PartialPermutation& cliques_permutation,
-      VectorX<T>* delassus_diagonal) const;
+      VectorX<T>* delassus_diagonal) const;  
+
+  void CalcConstraintVelocities(const systems::Context<T>& context,
+                                VectorX<T>* vc) const;
 
   const SapContactProblem<T>* problem_{nullptr};
   PartialPermutation velocities_permutation_;
@@ -155,6 +203,8 @@ class SapModel {
   VectorX<T> v_star_;  // Free motion generalized velocity v*.
   VectorX<T> p_star_;  // Free motion generalized impulse, i.e. p* = M⋅v*.
   std::unique_ptr<SapConstraintBundle<T>> constraints_bundle_;
+  
+  SappModelSystem system_;
 };
 
 }  // namespace internal

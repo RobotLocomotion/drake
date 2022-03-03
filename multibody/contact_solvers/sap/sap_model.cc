@@ -11,6 +11,8 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+using systems::Context;
+
 template <typename T>
 SapModel<T>::SapModel(const SapContactProblem<T>* problem_ptr)
     : problem_(problem_ptr) {
@@ -61,6 +63,47 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem_ptr)
   // Create constraints bundle.
   constraints_bundle_ = std::make_unique<SapConstraintBundle<T>>(
       &problem(), delassus_diagonal_);
+
+  DeclareStateAndCacheEntries();      
+}
+
+template <typename T>
+void SapModel<T>::DeclareStateAndCacheEntries() {
+  system_.DeclareDiscreteState(num_velocities());
+
+  // Cache constraint velocities vc.
+  const auto& constraint_velocities_cache_entry = system_.DeclareCacheEntry(
+      "Constraint velocities vc.",
+      systems::ValueProducer(
+          this, &SapModel<T>::CalcConstraintVelocities),
+      {systems::System<T>::xd_ticket()});
+  system_.mutable_cache_indexes().constraint_velocities =
+      constraint_velocities_cache_entry.cache_index();
+}
+
+template <typename T>
+std::unique_ptr<systems::Context<T>> SapModel<T>::MakeContext() const {
+  return system_.CreateDefaultContext();
+}
+
+template <typename T>
+const VectorX<T>& SapModel<T>::GetVelocities(const Context<T>& context) const {
+  system_.ValidateContext(context);
+  return context.get_discrete_state(system_.velocities_index()).value();
+}
+
+template <typename T>
+void SapModel<T>::SetVelocities(const VectorX<T>& v, Context<T>* context) const {
+  system_.ValidateContext(*context);
+  context->SetDiscreteState(system_.velocities_index(), v);
+}
+
+template <typename T>
+void SapModel<T>::CalcConstraintVelocities(const Context<T>& context,
+                                           VectorX<T>* vc) const {
+  system_.ValidateContext(context);                                             
+  const VectorX<T>& v = GetVelocities(context);
+  J().Multiply(v, vc);
 }
 
 template <typename T>
