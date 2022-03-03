@@ -5,6 +5,7 @@ load(
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load(
     "//tools/skylark:drake_py.bzl",
