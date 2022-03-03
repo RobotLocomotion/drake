@@ -43,6 +43,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sap_constraint_bundle",
+    srcs = ["sap_constraint_bundle.cc"],
+    hdrs = ["sap_constraint_bundle.h"],
+    deps = [
+        ":partial_permutation",
+        ":sap_contact_problem",
+        "//common:default_scalars",
+        "//common:essential",
+        "//multibody/contact_solvers:block_sparse_matrix",
+    ],
+)
+
+drake_cc_library(
     name = "sap_contact_problem",
     srcs = ["sap_contact_problem.cc"],
     hdrs = ["sap_contact_problem.h"],
@@ -66,6 +79,17 @@ drake_cc_googletest(
     name = "sap_constraint_test",
     deps = [
         ":sap_constraint",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_constraint_bundle_test",
+    deps = [
+        ":partial_permutation",
+        ":sap_constraint_bundle",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/contact_solvers:block_sparse_matrix",
     ],
 )
 
