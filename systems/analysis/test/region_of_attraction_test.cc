@@ -14,6 +14,7 @@ namespace systems {
 namespace analysis {
 namespace {
 
+using std::pow;
 using symbolic::Expression;
 using symbolic::Polynomial;
 using symbolic::Variable;
@@ -33,6 +34,12 @@ GTEST_TEST(RegionOfAttractionTest, CubicPolynomialTest) {
   // options, but I want to test this case).
   x = *V.GetVariables().begin();
   const Polynomial V_expected{x * x};
+  EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
+
+  // Solve again using the implicit form.
+  RegionOfAttractionOptions options;
+  options.use_implicit_dynamics = true;
+  const Expression V2 = RegionOfAttraction(*system, *context, options);
   EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
 }
 
@@ -83,8 +90,7 @@ GTEST_TEST(RegionOfAttractionTest, ParriloExample) {
   const double gamma = std::pow(2.66673, 2);
 
   const Polynomial V_expected{(x * x + y * y) / gamma};
-
-  EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
+  EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-5));
 
   // Run it again with the lyapunov candidate scaled by a large number to
   // test the "BalanceQuadraticForms" call (this scaling is the smallest
@@ -199,6 +205,55 @@ GTEST_TEST(RegionOfAttractionTest, SubSystem) {
   // V does not use my original variable (unless I pass it in through the
   // options, but I want to test this case).
   x = *V.GetVariables().begin();
+  const Polynomial V_expected{x * x};
+  EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
+}
+
+// ẋ = (−x+x³)/(1+x²) has a stable fixed point at the origin with a region of
+// attraction x ∈ (−1, 1).
+template <typename T>
+class RationalPolynomialSystem final : public LeafSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RationalPolynomialSystem);
+
+  RationalPolynomialSystem()
+      : LeafSystem<T>(SystemTypeTag<RationalPolynomialSystem>{}) {
+    this->DeclareContinuousState(1);
+  }
+
+  // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit RationalPolynomialSystem(const RationalPolynomialSystem<U>& other)
+      : RationalPolynomialSystem() {}
+
+ private:
+  void DoCalcTimeDerivatives(
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const override {
+    T x = context.get_continuous_state_vector()[0];
+    (*derivatives)[0] = (-x + pow(x, 3)) / (1.0 + pow(x, 2));
+  }
+
+  void DoCalcImplicitTimeDerivativesResidual(
+    const systems::Context<T>& context,
+    const systems::ContinuousState<T>& proposed_derivatives,
+    EigenPtr<VectorX<T>> residual) const override {
+    T x = context.get_continuous_state_vector()[0];
+    T xdot = proposed_derivatives[0];
+    (*residual)[0] = (1.0 + pow(x, 2)) * xdot + x - pow(x, 3);
+  }
+};
+
+// The region of attraction should be certified with V=x²<1.
+GTEST_TEST(RegionOfAttractionTest, ImplicitDynamics) {
+  RationalPolynomialSystem<double> system;
+  const auto context = system.CreateDefaultContext();
+
+  RegionOfAttractionOptions options;
+  options.use_implicit_dynamics = true;
+  const Expression V = RegionOfAttraction(system, *context, options);
+
+  Variable x = *V.GetVariables().begin();
   const Polynomial V_expected{x * x};
   EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
 }

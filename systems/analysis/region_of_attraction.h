@@ -27,6 +27,18 @@ struct RegionOfAttractionOptions {
    * system.
    */
   VectorX<symbolic::Variable> state_variables{};
+
+  /** If true, the system dynamics will be evaluated using
+   * CalcImplicitTimeDerivativesResidual instead of CalcTimeDerivatives to
+   * obtain g(x,ẋ) = 0 (instead of ẋ = f(x)).  The Lyapunov conditions will
+   * also be evaluated in the implicit form. This is more expensive than
+   * analysis in the explicit form, as it requires more indeterminates, but it
+   * enables analysis of systems with rational polynomial dynamics.
+   *
+   * See https://underactuated.csail.mit.edu/lyapunov.html#ex:implicit for more
+   * details.
+   */
+  bool use_implicit_dynamics{false};
 };
 
 /**
