@@ -21,6 +21,9 @@ drake_cc_package_library(
         ":corotated_model_data",
         ":damping_model",
         ":deformation_gradient_data",
+        ":fem_indexes",
+        ":fem_state",
+        ":fem_state_system",
         ":isoparametric_element",
         ":linear_constitutive_model",
         ":linear_constitutive_model_data",
@@ -116,6 +119,48 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:nice_type_name",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_indexes",
+    hdrs = [
+        "fem_indexes.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:identifier",
+        "//common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_state",
+    srcs = [
+        "fem_state.cc",
+    ],
+    hdrs = [
+        "fem_state.h",
+    ],
+    deps = [
+        ":fem_indexes",
+        ":fem_state_system",
+        "//common:essential",
+        "//systems/framework:context",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_state_system",
+    srcs = [
+        "fem_state_system.cc",
+    ],
+    hdrs = [
+        "fem_state_system.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -314,6 +359,22 @@ drake_cc_googletest(
         ":deformation_gradient_data",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fem_state_test",
+    deps = [
+        ":fem_state",
+        ":fem_state_system",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fem_state_system_test",
+    deps = [
+        ":fem_state_system",
     ],
 )
 
