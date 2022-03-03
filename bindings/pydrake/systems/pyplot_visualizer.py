@@ -7,7 +7,7 @@ from warnings import warn
 from pydrake.systems.framework import LeafSystem, PublishEvent, TriggerType
 from pydrake.systems.primitives import VectorLog
 from pydrake.trajectories import Trajectory
-from pydrake.systems._resample_log_interp1d import _resample_log_interp1d
+from pydrake.systems._resample_interp1d import _resample_interp1d
 
 
 class PyPlotVisualizer(LeafSystem):
@@ -136,7 +136,7 @@ class PyPlotVisualizer(LeafSystem):
             x = log.data()
 
             if resample:
-                t, x = _resample_log_interp1d(log, self.timestep)
+                t, x = _resample_interp1d(t, x, self.timestep)
         elif isinstance(log, Trajectory):
             t = np.arange(log.start_time(), log.end_time(), self.timestep)
             x = np.hstack([log.value(time) for time in t])

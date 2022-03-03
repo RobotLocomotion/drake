@@ -4,7 +4,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 
 from pydrake.systems.analysis import Simulator
-from pydrake.systems._resample_log_interp1d import _resample_log_interp1d
+from pydrake.systems._resample_interp1d import _resample_interp1d
 from pydrake.systems.framework import DiagramBuilder, VectorSystem
 from pydrake.systems.primitives import VectorLogSink
 
@@ -85,7 +85,8 @@ class TestResampleLogInterp1d(unittest.TestCase):
     def validate_resample(self, log, timestep, t_expected, x_expected,
                           tolerance):
         """Perform the resampling and validate with the provided values."""
-        t, x = _resample_log_interp1d(log, timestep)
+        t, x = log.sample_times(), log.data()
+        t, x = _resample_interp1d(t, x, timestep)
         self.assertTrue(
             t.shape[0] == x.shape[1],
             msg=f"Expected t.shape={t.shape} to match x.shape={x.shape}.")

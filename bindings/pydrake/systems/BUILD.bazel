@@ -303,7 +303,7 @@ drake_py_library(
     srcs = ["pyplot_visualizer.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
-        ":_resample_log_interp1d_py",
+        ":_resample_interp1d_py",
         ":framework_py",
         ":module_py",
         ":primitives_py",
@@ -312,8 +312,8 @@ drake_py_library(
 )
 
 drake_py_library(
-    name = "_resample_log_interp1d_py",
-    srcs = ["_resample_log_interp1d.py"],
+    name = "_resample_interp1d_py",
+    srcs = ["_resample_interp1d.py"],
     imports = PACKAGE_INFO.py_imports,
 )
 
@@ -336,7 +336,7 @@ PY_LIBRARIES_WITH_INSTALL = [
 ]
 
 PY_LIBRARIES = [
-    ":_resample_log_interp1d_py",
+    ":_resample_interp1d_py",
     ":drawing_py",
     ":jupyter_widgets_py",
     ":meshcat_visualizer_py",
@@ -578,7 +578,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "_resample_log_interp1d_test",
     deps = [
-        ":_resample_log_interp1d_py",
+        ":_resample_interp1d_py",
         ":analysis_py",
         ":framework_py",
         ":primitives_py",

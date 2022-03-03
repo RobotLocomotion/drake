@@ -32,34 +32,33 @@
 ###############################################################################
 #
 # The code in this file is an extraction of the relevant parts of code that
-# scipy.interpolate.interp1d would run in order to resample a
-# drake.systems.primitives.VectorLog and interpolate the values for the
-# purposes of animation in pydrake.systems.pyplot_visualizer.PyPlotVisualizer.
+# scipy.interpolate.interp1d for the purposes of animation in
+# pydrake.systems.pyplot_visualizer.PyPlotVisualizer.
 #
 # This function is *NOT* intended to be used externally, it should only be used
 # internally by the PyPlotVisualizer class.
 import numpy as np
 
 
-def _resample_log_interp1d(log, timestep):
+def _resample_interp1d(t, x, timestep):
     """
-    Resample the drake systems.primitives.VectorLog evenly using a reduced
-    implementation of scipy.interpolate.interp1d.  The log.sample_times() will
-    be resampled evenly according to specified timestep, and the log.data()
-    will be recalculated via linearly interpolating with the resampled times.
+    A linear interpolation only version of scipy.interpolate.interp1d.
 
     Args:
-        log: The drake systems.primitives.VectorLog to resample.
-        timestep: The simulation timestep, used to resample log.sample_times()
-            evenly between 0 and the last time with a distance of timestep
+        x : (N,) array_like
+            A 1-D array of real values.
+        y : (...,N,...) array_like
+            A N-D array of real values. The length of `y` along the
+            interpolation axis must be equal to the length of `x`.
+        timestep: The simulation timestep, used to resample t
+            evenly between min(t) and the last time with a distance of timestep
             between each unit.
 
     Note:
         In order to correctly interpolate values, the time sequence described
-        by ``log.sample_times()`` must be sorted in increasing order.  In the
-        rare event that the ``log.sample_times()`` are **not** sorted (a user
-        would have to deliberately engineer this scenario), the returned values
-        **will** be sorted.  Both ``log.sample_times()`` and ``log.data()`` are
+        by ``t`` must be sorted in increasing order.  In the
+        rare event that the ``t`` are **not** sorted, the returned values
+        **will** be sorted.  Both ``t`` and ``x`` are
         copied and sorted first, then resampled and interpolated.
 
     Returns:
@@ -68,13 +67,9 @@ def _resample_log_interp1d(log, timestep):
             of x are equivalent).
     """
     # We may not assume that the provided sample times are sorted in general.
-    # We may assume, however, that sample_times() and data() have equitable
-    # dimensions as this condition is asserted in
-    # systems::primitives::VectorLog::AddData(time, sample).  The
-    # sample_times() rows and data() cols are the same, and we will
-    # process data() on the cols (axis=1).
-    x = log.data()
-    t = log.sample_times()
+    # We may assume, however, that t and x have equitable dimensions.
+    # The number of t rows and x cols are the same, and we will
+    # process x on the cols (axis=1).
     axis = 1
     x_copy = np.array(x, copy=True)
     t_copy = np.array(t, copy=True)
@@ -83,7 +78,7 @@ def _resample_log_interp1d(log, timestep):
     x_copy = np.take(x_copy, sort_indices, axis=axis)
 
     # Now that we are sorted, resample the times and data.
-    t_resample = np.arange(0, t_copy[-1], timestep)
+    t_resample = np.arange(t_copy[0], t_copy[-1], timestep)
     t_new_indices = np.searchsorted(t_copy, t_resample)
     t_new_indices = t_new_indices.clip(1, len(t_copy) - 1).astype(int)
     lo_indices = t_new_indices - 1
@@ -113,3 +108,22 @@ def _resample_log_interp1d(log, timestep):
         x_final = x_final.transpose(s)
 
     return t_resample, x_final
+
+
+def _resample_scipy_interp1d(t, x, timestep):
+    """
+    Reference version of _resample_interp1d that uses scipy.interpolate
+
+    Note that scipy is being removed as a dependency, so this method should not
+    be invoked. It is only here as a sanity check to provide a known working
+    version of the function above.
+    """
+    raise RuntimeError(
+        "This function depends on scipy. Use _resample_interp1d instead.")
+
+    from scipy import interpolate
+    f = interpolate.interp1d(t, x, kind='linear', assume_sorted=False)
+    t_new = np.arange(np.min(t), np.max(t), timestep)
+    x_new = f(t_new)
+
+    return t_new, x_new
