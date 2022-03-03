@@ -163,6 +163,8 @@ class FrameKinematicsVector {
  */
 template <typename T>
 using FramePoseVector = FrameKinematicsVector<math::RigidTransform<T>>;
+template <typename T>
+using FrameDeformableVector = FrameKinematicsVector<VectorX<T>>;
 
 }  // namespace geometry
 }  // namespace drake

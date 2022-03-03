@@ -1075,6 +1075,25 @@ void GeometryState<T>::SetFramePoses(
 }
 
 template <typename T>
+void GeometryState<T>::SetDeformablePositions(
+    const SourceId source_id, const FrameDeformableVector<T>& positions) {
+  // TODO(SeanCurtis-TRI): Down the road, make this validation depend on
+  // ASSERT_ARMED.
+  ValidateFrameIds(source_id, poses);
+  for (auto frame_id : source_frame_id_map_[source_id]) {
+    if (positions.has_id(frame_id)){
+      const auto& frame = frames_[frame_id];
+      // A deformable geometry doesn't share its frame with other geometries.
+      DRAKE_DEMAND(frame.num_child_geometries() == 1);
+      // And the frame shouldn't have any child frame.
+      DRAKE_DEMAND(frame.child_frames().size() == 0);
+      const auto geometry_id = *(frame.child_geometries().begin());
+      q_WGs_[geometry_id] = positions.value(frame_id);
+    }
+  }
+}
+
+template <typename T>
 template <typename ValueType>
 void GeometryState<T>::ValidateFrameIds(
     const SourceId source_id,

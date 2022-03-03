@@ -167,6 +167,15 @@ class ProximityEngine {
   void UpdateWorldPoses(
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs);
 
+  /* Updates the vertex positions for all of deformable geometries in the
+   engine.
+   @param q_MGs  The vertex positions of each deformable geometry `G` measured
+                 and expressed in the the object's frame `M` (including
+   deformable geometries which may *not* be registered with the proximity
+   engine). */
+  void UpdateDeformableVertexPositions(
+      const std::unordered_map<GeometryId, VectorX<T>>& q_MGs);
+
   // ----------------------------------------------------------------------
   /* @name              Signed Distance Queries
   See @ref signed_distance_query "Signed Distance Query" for more details.  */

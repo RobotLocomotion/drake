@@ -916,6 +916,12 @@ void ProximityEngine<T>::UpdateWorldPoses(
 }
 
 template <typename T>
+void ProximityEngine<T>::UpdateDeformableVertexPositions(
+    const std::unordered_map<GeometryId, VectorX<T>>& q_MGs) {
+  impl_->UpdateDeformableVertexPositions(q_MGs);
+}
+
+template <typename T>
 std::vector<SignedDistancePair<T>>
 ProximityEngine<T>::ComputeSignedDistancePairwiseClosestPoints(
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,

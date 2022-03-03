@@ -96,6 +96,12 @@ SceneGraph<T>::SceneGraph()
       "Cache guard for pose updates", &SceneGraph::CalcPoseUpdate,
       {this->all_input_ports_ticket()});
   pose_update_index_ = pose_update_cache_entry.cache_index();
+
+  auto& deformable_update_cache_entry =
+      this->DeclareCacheEntry("Cache guard for deformable vertex updates",
+                              &SceneGraph::CalcDeformablePositionUpdate,
+                              {this->all_input_ports_ticket()});
+  deformable_update_index_ = deformable_update_cache_entry.cache_index();
 }
 
 template <typename T>
@@ -150,6 +156,14 @@ const InputPort<T>& SceneGraph<T>::get_source_pose_port(
     SourceId id) const {
   ThrowUnlessRegistered(id, "Can't acquire pose port for unknown source id: ");
   return this->get_input_port(input_source_ids_.at(id).pose_port);
+}
+
+template <typename T>
+const InputPort<T>& SceneGraph<T>::get_source_deformable_port(
+    SourceId id) const {
+  ThrowUnlessRegistered(
+      id, "Can't acquire deformable port for unknown source id: ");
+  return this->get_input_port(input_source_ids_.at(id).deformable_port);
 }
 
 template <typename T>
@@ -347,6 +361,10 @@ void SceneGraph<T>::MakeSourcePorts(SourceId source_id) {
       this->DeclareAbstractInputPort(model_.GetName(source_id) + "_pose",
                                      Value<FramePoseVector<T>>())
           .get_index();
+  source_ports.deformable_port =
+      this->DeclareAbstractInputPort(model_.GetName(source_id) + "_deformable",
+                                     Value<FrameDeformableVector<T>>())
+          .get_index();
 }
 
 template <typename T>
@@ -413,6 +431,48 @@ void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context,
         const auto& poses =
             pose_port.template Eval<FramePoseVector<T>>(context);
         mutable_state.SetFramePoses(source_id, poses);
+      }
+    }
+  }
+
+  mutable_state.FinalizePoseUpdate();
+  // TODO(SeanCurtis-TRI): Add velocity as appropriate.
+}
+
+template <typename T>
+void SceneGraph<T>::CalcDeformableUpdate(const Context<T>& context,
+                                         int*) const {
+  // TODO(SeanCurtis-TRI): Update this when the cache is available.
+  // This method is const and the context is const. Ultimately, this will pull
+  // cached entities to do the query work. For now, we have to const cast the
+  // thing so that we can update the geometry engine contained.
+
+  using std::to_string;
+
+  const GeometryState<T>& state = geometry_state(context);
+  GeometryState<T>& mutable_state = const_cast<GeometryState<T>&>(state);
+
+  // Process all sources *except*:
+  //   - the internal source and
+  //   - sources with no frames.
+  // The internal source will be included in source_frame_id_map_ but *not* in
+  // input_source_ids_.
+  for (const auto& pair : state.source_frame_id_map_) {
+    if (pair.second.size() > 0) {
+      SourceId source_id = pair.first;
+      const auto itr = input_source_ids_.find(source_id);
+      if (itr != input_source_ids_.end()) {
+        const auto& deformable_port =
+            this->get_input_port(itr->second.deformable_port);
+        if (!deformable_port.HasValue(context)) {
+          throw std::logic_error(
+              fmt::format("Source '{}' (id: {}) has registered dynamic frames "
+                          "but is not connected to the appropriate input port.",
+                          state.GetName(source_id), source_id));
+        }
+        const auto& positions =
+            deformable_port.template Eval<FrameDeformableVector<T>>(context);
+        mutable_state.SetFramePoses(source_id, positions);
       }
     }
   }

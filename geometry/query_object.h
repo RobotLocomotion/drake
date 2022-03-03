@@ -775,6 +775,12 @@ class QueryObject {
     if (scene_graph_) scene_graph_->FullPoseUpdate(*context_);
   }
 
+  // Update all deformable vertex positions. This method does no work if this is
+  // a "baked" query object (see class docs for discussion).
+  void FullDeformableUpdate() const {
+    if (scene_graph_) scene_graph_->FullDeformableUpdate(*context_);
+  }
+
   // Reports true if this object is configured so that it can support a query.
   bool is_callable() const {
     const bool live_condition = context_ != nullptr && scene_graph_ != nullptr;

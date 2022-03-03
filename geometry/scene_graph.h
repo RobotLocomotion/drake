@@ -326,6 +326,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @throws std::exception if the source_id is _not_ recognized.  */
   const systems::InputPort<T>& get_source_pose_port(SourceId id) const;
 
+  /** Given a valid source `id`, returns a deformable input port associated
+   with that `id`. This port is used to communicate deformable vertex position
+   data for registered frames.
+   @throws std::exception if the source_id is _not_ recognized.  */
+  const systems::InputPort<T>& get_source_deformable_port(SourceId id) const;
+
   /** Returns the output port which produces the QueryObject for performing
    geometric queries.  */
   const systems::OutputPort<T>& get_query_output_port() const {
@@ -864,10 +870,22 @@ class SceneGraph final : public systems::LeafSystem<T> {
     this->get_cache_entry(pose_update_index_).template Eval<int>(context);
   }
 
+  // Refreshes the deformable vertex positions  which exploits the caching
+  // infrastructure.
+  void FullDeformableUpdate(const systems::Context<T>& context) const {
+    this->get_cache_entry(deformable_update_index_).template Eval<int>(context);
+  }
+
   // Updates the state of geometry world from *all* the inputs. This is the calc
   // method for the corresponding cache entry. The entry *value* (the int) is
   // strictly a dummy -- the value is unimportant; only the side effect matters.
   void CalcPoseUpdate(const systems::Context<T>& context, int*) const;
+
+  // Updates the state of deformable geometries from *all* the inputs. This is
+  // the calc method for the corresponding cache entry. The entry *value* (the
+  // int) is strictly a dummy -- the value is unimportant; only the side effect
+  // matters.
+  void CalcDeformableUpdate(const systems::Context<T>& context, int*) const;
 
   // Asserts the given source_id is registered, throwing an exception whose
   // message is the given message with the source_id appended if not.
@@ -886,6 +904,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // TODO(SeanCurtis-TRI): Consider making these TypeSafeIndex values.
   struct SourcePorts {
     int pose_port{-1};
+    int deformable_port{-1};
   };
 
   // A mapping from added source identifier to the port indices associated with
@@ -911,6 +930,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   // The cache index for the pose update cache entry.
   systems::CacheIndex pose_update_index_{};
+  // The cache index for the deformable update cache entry.
+  systems::CacheIndex deformable_update_index_{};
 };
 
 }  // namespace geometry
