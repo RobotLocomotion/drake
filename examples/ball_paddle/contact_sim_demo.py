@@ -77,7 +77,7 @@ def simulate_diagram(diagram, ball_paddle_plant, state_logger,
     target_realtime_rate = 0.02
     simulator.set_target_realtime_rate(target_realtime_rate)
     simulator.Initialize()
-    simulator.AdvanceTo(boundary_time = 0.1)
+    simulator.AdvanceTo(boundary_time=0.1)
     print()
     PrintSimulatorStatistics(simulator)
     return state_log.sample_times(), state_log.data()
