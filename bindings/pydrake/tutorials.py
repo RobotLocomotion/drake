@@ -3,7 +3,7 @@ notebooks online with no need for local installation. To run Drake's tutorials
 online, refer to the `Drake Tutorials <https://drake.mit.edu/>`_ website.
 
 Alternatively, to run Drake's tutorials locally from an
-`installed <https://drake.mit.edu/installation.html>`_ nightly build of Drake,
+`installed <https://drake.mit.edu/installation.html>`_ copy of Drake,
 run ``python3 -m pydrake.tutorials`` to launch a Jupyter browser.
 
 Be sure your ``PYTHONPATH`` has been set per the installation instructions,
