@@ -45,7 +45,7 @@ GTEST_TEST(MujocoParser, GymModels) {
 
     const std::string filename = FindResourceOrThrow(
         fmt::format("drake/multibody/parsing/dm_control/suite/{}.xml", f));
-    AddModelFromMujocoXml({DataSource::kFilename, &filename}, f, {}, &plant);
+    AddModelFromMujocoXml({.file_name = &filename}, f, std::nullopt, &plant);
 
     EXPECT_TRUE(plant.HasModelInstanceNamed(f));
   }
@@ -63,7 +63,8 @@ GTEST_TEST(MujocoParser, Option) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
+  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml}, "test",
+                        std::nullopt, &plant);
   EXPECT_TRUE(CompareMatrices(plant.gravity_field().gravity_vector(),
                               Vector3d{0, -9.81, 0}));
 }
@@ -96,7 +97,8 @@ GTEST_TEST(MujocoParser, GeometryTypes) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
+  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml}, "test",
+                        std::nullopt, &plant);
   const SceneGraphInspector<double>& inspector = scene_graph.model_inspector();
 
   auto CheckShape = [&inspector](const std::string& geometry_name,
@@ -145,8 +147,8 @@ GTEST_TEST(MujocoParser, UnrecognizedGeometryTypes) {
 </mujoco>
 )""";
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddModelFromMujocoXml({DataSource::kContents, &xml},
-                            "test_unrecognized", {}, &plant),
+      AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml},
+                            "test_unrecognized", std::nullopt, &plant),
       ".*Unrecognized.*");
 }
 
@@ -164,10 +166,10 @@ GTEST_TEST(MujocoParser, GeometryPose) {
   <worldbody>
     <geom name="identity" type="sphere" size="0.1" />
     <geom name="quat" quat="0 1 0 0" pos="1 2 3" type="sphere" size="0.1" />
-    <geom name="axisangle" axisangle="4 5 6 30" pos="1 2 3" type="sphere"
+    <geom name="axisangle" axisangle="4 5 6 30" pos="1 2 3" type="sphere" 
           size="0.1" />
     <geom name="euler" euler="30 45 60" pos="1 2 3" type="sphere" size="0.1" />
-    <geom name="xyaxes" xyaxes="0 1 0 -1 0 0" pos="1 2 3" type="sphere"
+    <geom name="xyaxes" xyaxes="0 1 0 -1 0 0" pos="1 2 3" type="sphere" 
           size="0.1" />
     <geom name="zaxis" zaxis="0 1 0" pos="1 2 3" type="sphere" size="0.1" />
     <geom name="fromto_capsule" fromto="-1 -3 -3 -1 -1 -3"
@@ -184,7 +186,7 @@ GTEST_TEST(MujocoParser, GeometryPose) {
 <mujoco model="test">
   <compiler angle="radian"/>
   <worldbody>
-    <geom name="axisangle_rad" axisangle="4 5 6 0.5" pos="1 2 3" type="sphere"
+    <geom name="axisangle_rad" axisangle="4 5 6 0.5" pos="1 2 3" type="sphere" 
           size="0.1" />
     <geom name="euler_rad" euler="0.5 0.7 1.05" pos="1 2 3" type="sphere"
           size="0.1" />
@@ -197,7 +199,7 @@ GTEST_TEST(MujocoParser, GeometryPose) {
 <mujoco model="test">
   <compiler angle="degree"/>
   <worldbody>
-    <geom name="axisangle_deg" axisangle="4 5 6 30" pos="1 2 3" type="sphere"
+    <geom name="axisangle_deg" axisangle="4 5 6 30" pos="1 2 3" type="sphere" 
           size="0.1" />
     <geom name="euler_deg" euler="30 45 60" pos="1 2 3" type="sphere"
           size="0.1" />
@@ -205,11 +207,12 @@ GTEST_TEST(MujocoParser, GeometryPose) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
-  AddModelFromMujocoXml({DataSource::kContents, &radians_xml},
-                        "radians_test", {}, &plant);
-  AddModelFromMujocoXml({DataSource::kContents, &degrees_xml},
-                        "degrees_test", {}, &plant);
+  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml}, "test",
+                        std::nullopt, &plant);
+  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &radians_xml},
+                        "radians_test", std::nullopt, &plant);
+  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &degrees_xml},
+                        "degrees_test", std::nullopt, &plant);
 
   const SceneGraphInspector<double>& inspector = scene_graph.model_inspector();
 
@@ -279,7 +282,8 @@ GTEST_TEST(MujocoParser, GeometryProperties) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
+  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml}, "test",
+                        std::nullopt, &plant);
 
   const SceneGraphInspector<double>& inspector = scene_graph.model_inspector();
 
@@ -377,11 +381,12 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
+  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml}, "test",
+                        std::nullopt, &plant);
 
   xml = R"""(
 <mujoco model="test_auto">
-  <compiler inertiafromgeom="auto"/>
+  <compiler inertiafromgeom="auto"/> 
   <worldbody>
     <body name="sphere_auto">
       <inertial mass="524" diaginertia="1 2 3"/>
@@ -397,11 +402,12 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test_auto", {}, &plant);
+  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml},
+                        "test_auto", std::nullopt, &plant);
 
   xml = R"""(
 <mujoco model="test_true">
-  <compiler inertiafromgeom="true"/>
+  <compiler inertiafromgeom="true"/> 
   <default class="main">
     <geom mass="2.53"/>
   </default>
@@ -414,11 +420,12 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test_true", {}, &plant);
+  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml},
+                        "test_true", std::nullopt, &plant);
 
   xml = R"""(
 <mujoco model="test_false">
-  <compiler inertiafromgeom="false"/>
+  <compiler inertiafromgeom="false"/> 
   <default class="main">
     <geom mass="2.53"/>
   </default>
@@ -438,8 +445,8 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({DataSource::kContents, &xml},
-                        "test_false", {}, &plant);
+  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml},
+                        "test_false", std::nullopt, &plant);
 
   plant.Finalize();
 
@@ -538,7 +545,7 @@ GTEST_TEST(MujocoParser, Joint) {
       <joint type="ball" name="ball" damping="0.1" pos=".1 .2 .3"/>
     </body>
     <body name="slide" pos="1 2 3" euler="30 45 60">
-      <joint type="slide" name="slide" damping="0.2" pos=".1 .2 .3"
+      <joint type="slide" name="slide" damping="0.2" pos=".1 .2 .3" 
              axis="1 0 0" limited="true" range="-2 1.5"/>
     </body>
     <body name="hinge" pos="1 2 3" euler="30 45 60">
@@ -556,7 +563,7 @@ GTEST_TEST(MujocoParser, Joint) {
       <joint type="hinge" name="hinge2" damping="0.6" pos=".1 .2 .3"
              axis="0 1 0"/>
     </body>
-    <body name="default_joint">
+    <body name="default_joint"> 
       <!-- provides code coverage for defaults logic. -->
       <joint/>
     </body>
@@ -564,7 +571,8 @@ GTEST_TEST(MujocoParser, Joint) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
+  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml}, "test",
+                        std::nullopt, &plant);
   plant.Finalize();
 
   auto context = plant.CreateDefaultContext();
@@ -689,7 +697,8 @@ GTEST_TEST(MujocoParser, JointThrows) {
 )""";
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant),
+      AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml},
+                            "test", std::nullopt, &plant),
       ".*a free joint is defined.*");
 }
 
@@ -730,7 +739,8 @@ GTEST_TEST(MujocoParser, Motor) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoXml({DataSource::kContents, &xml}, "test", {}, &plant);
+  AddModelFromMujocoXml({.file_name = nullptr, .file_contents = &xml}, "test",
+                        std::nullopt, &plant);
   plant.Finalize();
 
   EXPECT_EQ(plant.get_actuation_input_port().size(), 4);

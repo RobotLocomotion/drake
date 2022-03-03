@@ -781,11 +781,26 @@ ModelInstanceIndex AddModelFromUrdf(
   MultibodyPlant<double>* plant = workspace.plant;
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
+  data_source.DemandExactlyOne();
+
+  // When the data_source is a filename, we'll use its parent directory to be
+  // the root directory to search for files referenced within the URDF file.
+  // If data_source is a string, this will remain unset and relative-path
+  // resources that would otherwise require a root directory will not be found.
+  std::string root_dir;
 
   // Opens the URDF file and feeds it into the XML parser.
   XMLDocument xml_doc;
-  if (data_source.IsFilename()) {
-    std::string full_path = data_source.GetAbsolutePath();
+  if (data_source.file_name) {
+    const std::string full_path = GetFullPath(*data_source.file_name);
+    size_t found = full_path.find_last_of("/\\");
+    if (found != std::string::npos) {
+      root_dir = full_path.substr(0, found);
+    } else {
+      // TODO(jwnimmer-tri) This is not unit tested.  In any case, we should be
+      // using drake::filesystem for path manipulation, not string searching.
+      root_dir = ".";
+    }
     xml_doc.LoadFile(full_path.c_str());
     if (xml_doc.ErrorID()) {
       throw std::runtime_error(fmt::format(
@@ -793,7 +808,8 @@ ModelInstanceIndex AddModelFromUrdf(
           full_path, xml_doc.ErrorName()));
     }
   } else {
-    xml_doc.Parse(data_source.contents().c_str());
+    DRAKE_DEMAND(data_source.file_contents != nullptr);
+    xml_doc.Parse(data_source.file_contents->c_str());
     if (xml_doc.ErrorID()) {
       throw std::runtime_error(fmt::format(
           "Failed to parse XML string: {}",
@@ -802,7 +818,7 @@ ModelInstanceIndex AddModelFromUrdf(
   }
 
   return ParseUrdf(model_name_in, parent_model_name, workspace.package_map,
-                   data_source.GetRootDir(), &xml_doc, plant);
+                   root_dir, &xml_doc, plant);
 }
 
 }  // namespace internal

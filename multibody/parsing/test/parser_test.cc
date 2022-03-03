@@ -168,10 +168,10 @@ GTEST_TEST(FileParserTest, ExtensionMatchTest) {
   // URDF parser, shown here by it generating a different exception message).
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromFile("acrobot.SDF"),
-      ".*\n.*Unable to read file.*");
+      ".*does not exist.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromFile("acrobot.URDF"),
-      "Failed to parse XML file .*\nXML_ERROR_FILE_NOT_FOUND");
+      ".*does not exist.*");
 }
 
 GTEST_TEST(FileParserTest, BadStringTest) {
