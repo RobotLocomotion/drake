@@ -62,6 +62,11 @@ void SapConstraintBundle<T>::MakeConstraintBundleJacobian(
   const ContactProblemGraph& graph = problem.graph();
   const PartialPermutation& cliques_permutation = graph.participating_cliques();
 
+  if (graph.num_constraint_equations() == 0) {
+    J_ = BlockSparseMatrix<T>();
+    return;
+  }
+
   // We have at most two blocks per row, and one row per cluster (edge) in the
   // graph.
   const int non_zero_blocks_capacity = 2 * graph.num_clusters();

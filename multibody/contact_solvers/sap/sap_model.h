@@ -100,13 +100,13 @@ class SapModel {
 
   /* Returns diag(A)^{-1/2}. Used for scaling SAP equations and residuals.
    of size num_velocities(). See [Castro et al., 2021]. */
-  const VectorX<T>& inv_sqrt_A() const { return inv_sqrt_A_; }
+  const VectorX<T>& inv_sqrt_A() const { return inv_sqrt_A_; }  
 
   /* Performs multiplication p = A * v. Only participating velocities are
    considered.
    @pre p must be a valid pointer.
    @pre both v and p must be of size num_participating_velocities(). */
-  void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* p) const;    
+  void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* p) const;
 
   const SapConstraintBundle<T>& constraint_bundle() const {
     return *constraints_bundle_;
@@ -121,8 +121,27 @@ class SapModel {
   const VectorX<T>& EvalConstraintVelocities(
       const systems::Context<T>& context) const {
     return system_
-        .get_cache_entry(system_.cache_indexes().constraint_velocities)
+        ->get_cache_entry(system_->cache_indexes().constraint_velocities)
         .template Eval<VectorX<T>>(context);
+  }
+
+  const VectorX<T>& EvalVelocityGain(
+      const systems::Context<T>& context) const {
+    return system_
+        ->get_cache_entry(system_->cache_indexes().velocity_gain)
+        .template Eval<VectorX<T>>(context);
+  }
+
+  const VectorX<T>& EvalMomentumGain(
+      const systems::Context<T>& context) const {
+    return system_
+        ->get_cache_entry(system_->cache_indexes().momentum_gain)
+        .template Eval<VectorX<T>>(context);
+  }
+
+  const T& EvalMomentumCost(const systems::Context<T>& context) const {
+    return system_->get_cache_entry(system_->cache_indexes().momentum_cost)
+        .template Eval<T>(context);
   }
 
  private:
@@ -135,9 +154,14 @@ class SapModel {
     // the model.
     struct CacheIndexes {
       systems::CacheIndex constraint_velocities;
+      systems::CacheIndex momentum_cost;
+      systems::CacheIndex momentum_gain;
+      systems::CacheIndex velocity_gain;
     };
 
-    SappModelSystem() = default;
+    explicit SappModelSystem(int num_velocities) {
+      velocities_index_ = DeclareDiscreteState(num_velocities);
+    }
 
     /* Promote system methods so that SapModel can use them to declare state and
      cache entries. */
@@ -179,10 +203,16 @@ class SapModel {
   void CalcDelassusDiagonalApproximation(
       const std::vector<MatrixX<T>>& At,
       const PartialPermutation& cliques_permutation,
-      VectorX<T>* delassus_diagonal) const;  
+      VectorX<T>* delassus_diagonal) const;
 
   void CalcConstraintVelocities(const systems::Context<T>& context,
                                 VectorX<T>* vc) const;
+  void CalcVelocityGain(const systems::Context<T>& context,
+                        VectorX<T>* velocity_gain) const;                                
+  void CalcMomentumGain(const systems::Context<T>& context,
+                        VectorX<T>* momentum_gain) const;
+  void CalcMomentumCost(const systems::Context<T>& context,
+                        T* momentum_cost) const;
 
   const SapContactProblem<T>* problem_{nullptr};
   PartialPermutation velocities_permutation_;
@@ -204,7 +234,7 @@ class SapModel {
   VectorX<T> p_star_;  // Free motion generalized impulse, i.e. p* = M⋅v*.
   std::unique_ptr<SapConstraintBundle<T>> constraints_bundle_;
   
-  SappModelSystem system_;
+  std::unique_ptr<SappModelSystem> system_;
 };
 
 }  // namespace internal

@@ -64,46 +64,97 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem_ptr)
   constraints_bundle_ = std::make_unique<SapConstraintBundle<T>>(
       &problem(), delassus_diagonal_);
 
-  DeclareStateAndCacheEntries();      
+  system_ = std::make_unique<SappModelSystem>(num_velocities());
+  DeclareStateAndCacheEntries();
 }
 
 template <typename T>
 void SapModel<T>::DeclareStateAndCacheEntries() {
-  system_.DeclareDiscreteState(num_velocities());
-
-  // Cache constraint velocities vc.
-  const auto& constraint_velocities_cache_entry = system_.DeclareCacheEntry(
-      "Constraint velocities vc.",
-      systems::ValueProducer(
-          this, &SapModel<T>::CalcConstraintVelocities),
+  const auto& constraint_velocities_cache_entry = system_->DeclareCacheEntry(
+      "Constraint velocities, vc = J⋅v.",
+      systems::ValueProducer(this, &SapModel<T>::CalcConstraintVelocities),
       {systems::System<T>::xd_ticket()});
-  system_.mutable_cache_indexes().constraint_velocities =
+  system_->mutable_cache_indexes().constraint_velocities =
       constraint_velocities_cache_entry.cache_index();
+
+  const auto& momentum_gain_cache_entry = system_->DeclareCacheEntry(
+      "Momentum gain, momentum_gain = A⋅(v-v*).",
+      systems::ValueProducer(this, &SapModel<T>::CalcMomentumGain),
+      {systems::System<T>::xd_ticket()});
+  system_->mutable_cache_indexes().momentum_gain =
+      momentum_gain_cache_entry.cache_index();
+
+  // This cache entry is not costly to compute. Having this computation in the
+  // cache however elimianates heap allocation for temporaries.
+  const auto& velocity_gain_cache_entry = system_->DeclareCacheEntry(
+      "Velocity gain, velocity_gain = v-v*.",
+      systems::ValueProducer(this, &SapModel<T>::CalcVelocityGain),
+      {systems::System<T>::xd_ticket()});
+  system_->mutable_cache_indexes().velocity_gain =
+      velocity_gain_cache_entry.cache_index();      
+
+  const auto& momentum_cost_cache_entry = system_->DeclareCacheEntry(
+      "Momentum cost, momentum_cost = 1/2⋅(v-v*)ᵀ⋅A⋅(v-v*).",
+      systems::ValueProducer(this, &SapModel<T>::CalcMomentumCost),
+      {system_->cache_entry_ticket(
+           system_->mutable_cache_indexes().velocity_gain),
+       system_->cache_entry_ticket(
+           system_->mutable_cache_indexes().momentum_gain)});
+  system_->mutable_cache_indexes().momentum_cost =
+      momentum_cost_cache_entry.cache_index();
 }
 
 template <typename T>
 std::unique_ptr<systems::Context<T>> SapModel<T>::MakeContext() const {
-  return system_.CreateDefaultContext();
+  return system_->CreateDefaultContext();
 }
 
 template <typename T>
 const VectorX<T>& SapModel<T>::GetVelocities(const Context<T>& context) const {
-  system_.ValidateContext(context);
-  return context.get_discrete_state(system_.velocities_index()).value();
+  system_->ValidateContext(context);
+  return context.get_discrete_state(system_->velocities_index()).value();
 }
 
 template <typename T>
 void SapModel<T>::SetVelocities(const VectorX<T>& v, Context<T>* context) const {
-  system_.ValidateContext(*context);
-  context->SetDiscreteState(system_.velocities_index(), v);
+  system_->ValidateContext(*context);
+  context->SetDiscreteState(system_->velocities_index(), v);
 }
 
 template <typename T>
 void SapModel<T>::CalcConstraintVelocities(const Context<T>& context,
                                            VectorX<T>* vc) const {
-  system_.ValidateContext(context);                                             
+  system_->ValidateContext(context);                                             
+  vc->resize(num_constraint_equations());
   const VectorX<T>& v = GetVelocities(context);
   J().Multiply(v, vc);
+}
+
+template <typename T>
+void SapModel<T>::CalcVelocityGain(const Context<T>& context,
+                                   VectorX<T>* velocity_gain) const {
+  system_->ValidateContext(context);
+  velocity_gain->resize(num_velocities());
+  *velocity_gain = GetVelocities(context) - v_star();
+}
+
+template <typename T>
+void SapModel<T>::CalcMomentumGain(const Context<T>& context,
+                                   VectorX<T>* momentum_gain) const {
+  system_->ValidateContext(context);
+  momentum_gain->resize(num_velocities());
+  const VectorX<T>& velocity_gain = EvalVelocityGain(context);
+  MultiplyByDynamicsMatrix(velocity_gain, momentum_gain);
+}
+
+template <typename T>
+void SapModel<T>::CalcMomentumCost(const Context<T>& context,
+                                   T* momentum_cost) const {
+  system_->ValidateContext(context);
+  // TODO(amcastro-tri): consider caching.
+  const VectorX<T> velocity_gain = GetVelocities(context) - v_star();
+  const VectorX<T>& momentum_gain = EvalMomentumGain(context);
+  (*momentum_cost) = 0.5 * velocity_gain.dot(momentum_gain);
 }
 
 template <typename T>

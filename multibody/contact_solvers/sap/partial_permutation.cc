@@ -14,6 +14,7 @@ namespace internal {
 PartialPermutation::PartialPermutation(std::vector<int> permutation)
     : permutation_(std::move(permutation)) {
   const int domain_size = permutation_.size();
+  if (domain_size == 0) return; // nothing left to do, empty permutation.
   // Determine size of the permuted domain.
   const int permuted_domain_size =
       *std::max_element(permutation_.begin(), permutation_.end()) + 1;
