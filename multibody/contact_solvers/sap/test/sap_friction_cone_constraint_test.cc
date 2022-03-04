@@ -21,8 +21,8 @@ using drake::solvers::MathematicalProgramResult;
 using drake::solvers::ScsSolver;
 using drake::solvers::SolverOptions;
 using Eigen::Matrix3d;
-using Eigen::Vector3d;
 using Eigen::MatrixXd;
+using Eigen::Vector3d;
 
 namespace drake {
 namespace multibody {
@@ -98,6 +98,66 @@ GTEST_TEST(SapFrictionConeConstraint, TwoCliquesConstraint) {
   EXPECT_EQ(c.parameters().sigma, sigma);
 }
 
+GTEST_TEST(SapFrictionConeConstraint, CalcBias) {
+  // We set parameters that we expect do not participate in the computation to a
+  // bad number. If they somehow participate in the computation we'd find out
+  // quickly.
+  const double bad_number = std::numeric_limits<double>::infinity();
+  const double mu = bad_number;
+  const double stiffness = bad_number;
+  const double dissipation_time_scale = 0.01;
+  const double beta = bad_number;
+  const double sigma = bad_number;
+  const int clique = 12;
+  const double phi0 = -2.5e-3;
+  const Matrix3d J = Matrix3d::Constant(bad_number);
+  SapFrictionConeConstraint<double>::Parameters parameters{
+      mu, stiffness, dissipation_time_scale, beta, sigma};
+  SapFrictionConeConstraint<double> c(clique, J, phi0, parameters);
+
+  const double time_step = 5e-3;
+  const double delassus_approximation = NAN;  // Does not participate.
+  const Vector3d vhat = c.CalcBiasTerm(time_step, delassus_approximation);
+  const Vector3d vhat_expected =
+      -c.constraint_function() / (time_step + dissipation_time_scale);
+  EXPECT_TRUE(CompareMatrices(vhat, vhat_expected,
+                              std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::relative));
+}
+
+GTEST_TEST(SapFrictionConeConstraint, CalcRegularization) {
+  // We set parameters that we expect do not participate in the computation to a
+  // bad number. If they somehow participate in the computation we'd find out
+  // quickly.
+  const double bad_number = std::numeric_limits<double>::infinity();
+  const double mu = 0.5;
+  const double stiffness = 1.0e5;
+  const double dissipation_time_scale = 0.01;
+  const double beta = 0.1;
+  const double sigma = 1.0e-4;
+  const int clique = 12;
+  const double phi0 = -2.5e-3;
+  const Matrix3d J = Matrix3d::Constant(bad_number);
+  SapFrictionConeConstraint<double>::Parameters parameters{
+      mu, stiffness, dissipation_time_scale, beta, sigma};
+  SapFrictionConeConstraint<double> c(clique, J, phi0, parameters);
+
+  const double time_step = 5e-3;
+  const double delassus_approximation = NAN;  // Does not participate.
+  const Vector3d R =
+      c.CalcDiagonalRegularization(time_step, delassus_approximation);
+
+  const double Rt = sigma * delassus_approximation;
+  const double Rn = std::max(
+      beta * beta / (4 * M_PI * M_PI) * delassus_approximation,
+      1. / (time_step * (time_step + dissipation_time_scale) * stiffness));
+
+  const Vector3d R_expected(Rt, Rt, Rn);
+  EXPECT_TRUE(CompareMatrices(R, R_expected,
+                              std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::relative));
+}
+
 constexpr double kTolerance = 1.0e-8;
 
 // This method solves the projection in the norm defined by R:
@@ -155,6 +215,9 @@ Vector3d SolveProjectionWithScs(double mu, const Vector3d& R,
 // To validate the analytical gradients of the projection, we use automatic
 // differentiation.
 void ValidateProjection(double mu, const Vector3d& R, const Vector3d& y) {
+  // We set parameters that we expect do not participate in the computation to a
+  // bad number. If they somehow participate in the computation we'd find out
+  // quickly.
   const double bad_number = std::numeric_limits<double>::infinity();
   SapFrictionConeConstraint<AutoDiffXd>::Parameters p{
       mu, bad_number, bad_number, bad_number, bad_number};
@@ -174,7 +237,7 @@ void ValidateProjection(double mu, const Vector3d& R, const Vector3d& y) {
   PRINT_VAR(gamma.transpose());
   PRINT_VAR(gamma_numerical.transpose());
   PRINT_VAR((gamma - gamma_numerical).norm());
-  EXPECT_TRUE(CompareMatrices(gamma, gamma_numerical, kTolerance,
+  EXPECT_TRUE(CompareMatrices(gamma, gamma_numerical, 5.0 * kTolerance,
                               MatrixCompareType::relative));
 
   // We now verify gradients using automatic differentiation.
@@ -194,28 +257,79 @@ void ValidateProjection(double mu, const Vector3d& R, const Vector3d& y) {
 // Region I corresponds to the friction cone, see [Castro et al., 2021].
 // Phisically this is the stiction region.
 GTEST_TEST(SapFrictionConeConstraint, RegionI) {
-  const double mu = 0.5;
-  const Vector3d R(0.1, 0.1, 1.0);
-  const Vector3d y(0.4, 0, 1.0);
-  ValidateProjection(mu, R, y);
+  // Below we use an arbitrary set of values so that y is in Region I
+  // (stiction).
+  {
+    const double mu = 0.5;
+    const Vector3d R(0.1, 0.1, 1.5);
+    const Vector3d y(0.4, 0, 1.0);
+    ValidateProjection(mu, R, y);
+  }
+  {
+    const double mu = 1.5;
+    const Vector3d R(0.01, 0.01, 2.0);
+    const Vector3d y(1.0, -1.0, 2.0);
+    ValidateProjection(mu, R, y);
+  }
+  {
+    const double mu = 0.3;
+    const Vector3d R(0.2, 0.2, 1.2);
+    const Vector3d y(-0.1, 0.01, 1.0);
+    ValidateProjection(mu, R, y);
+  }
 }
 
 // Region II corresponds to ℝ³ minus Regions I and II, see [Castro et al.,
 // 2021]. Physically this is the sliding region.
 GTEST_TEST(SapFrictionConeConstraint, RegionII) {
-  const double mu = 0.5;
-  const Vector3d R(0.1, 0.1, 1.0);
-  const Vector3d y(1.0, 0, 1.0);
-  ValidateProjection(mu, R, y);
+  // Below we use an arbitrary set of values so that y is in Region II
+  // (sliding).
+  {
+    const double mu = 0.5;
+    const Vector3d R(0.1, 0.1, 1.5);
+    const Vector3d y(1.0, 0, 1.0);
+    ValidateProjection(mu, R, y);
+  }
+  {
+    const double mu = 1.5;
+    const Vector3d R(0.01, 0.01, 2.0);
+    const Vector3d y(4.0, 2.5, 2.0);
+    ValidateProjection(mu, R, y);
+  }
+  {
+    const double mu = 0.3;
+    const Vector3d R(0.2, 0.2, 1.2);
+    // N.B. This is an interesting case. Since the projection is convex, not all
+    // negative values of y(2) lead to gamma = 0. However, gamma(2) is always
+    // positive.
+    const Vector3d y(-0.5, 1.8, -0.01);
+    ValidateProjection(mu, R, y);
+  }
 }
 
 // Region III corresponds to the polar cone, see [Castro et al., 2021].
 // Phisically this is the no contact region, i.e. gamma = 0.
 GTEST_TEST(SapFrictionConeConstraint, RegionIII) {
-  const double mu = 0.5;
-  const Vector3d R(0.1, 0.1, 1.0);
-  const Vector3d y(0.5, 0, -0.2);
-  ValidateProjection(mu, R, y);
+  // Below we use an arbitrary set of values so that y is in Region III (no
+  // contact).
+  {
+    const double mu = 0.5;
+    const Vector3d R(0.1, 0.1, 1.5);
+    const Vector3d y(0.5, 0, -0.2);
+    ValidateProjection(mu, R, y);
+  }
+  {
+    const double mu = 1.5;
+    const Vector3d R(0.01, 0.01, 2.0);
+    const Vector3d y(4.0, 2.5, -1.3);
+    ValidateProjection(mu, R, y);
+  }
+  {
+    const double mu = 0.3;
+    const Vector3d R(0.2, 0.2, 1.2);
+    const Vector3d y(-0.5, 1.8, -5.0);
+    ValidateProjection(mu, R, y);
+  }
 }
 
 }  // namespace
