@@ -30,22 +30,15 @@ def make_ball_paddle():
         frame_on_child_C=plant.GetFrameByName("paddle", paddle),
         X_PC=p_WPaddle_fixed
     )
-
     ball_sdf_file_name = \
         FindResourceOrThrow("drake/examples/ball_paddle/ball.sdf")
     parser.AddModelFromFile(ball_sdf_file_name)
 
     plant.Finalize()
 
-    # TODO(DamrongGuoy) Figure out why we need to set publish period to dt.
-    #  Otherwise, the animation looks very lagging.
-    drake_visualizer_params = DrakeVisualizerParams()
-    drake_visualizer_params.publish_period = dt
-    DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
-                                 params=drake_visualizer_params)
+    DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph)
     ConnectContactResultsToDrakeVisualizer(builder=builder, plant=plant,
-                                           scene_graph=scene_graph,
-                                           publish_period=dt)
+                                           scene_graph=scene_graph)
 
     nx = plant.num_positions() + plant.num_velocities()
     state_logger = builder.AddSystem(VectorLogSink(nx, dt))
@@ -57,8 +50,7 @@ def make_ball_paddle():
 
 
 def simulate_diagram(diagram, ball_paddle_plant, state_logger,
-                     ball_init_position,
-                     ball_init_velocity):
+                     ball_init_position, ball_init_velocity):
     q_init_val = np.array([
         1, 0, 0, 0, ball_init_position[0], ball_init_position[1],
         ball_init_position[2]
@@ -74,8 +66,8 @@ def simulate_diagram(diagram, ball_paddle_plant, state_logger,
     simulator.get_mutable_context().SetTime(0)
     state_log = state_logger.FindMutableLog(simulator.get_mutable_context())
     state_log.Clear()
-    target_realtime_rate = 0.02
-    simulator.set_target_realtime_rate(target_realtime_rate)
+    simulator.set_target_realtime_rate(0.01)
+    simulator.set_publish_every_time_step(True)
     simulator.Initialize()
     simulator.AdvanceTo(boundary_time=0.1)
     print()
