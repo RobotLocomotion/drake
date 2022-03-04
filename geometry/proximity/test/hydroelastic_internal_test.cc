@@ -686,6 +686,12 @@ HalfSpace make_default_shape<HalfSpace>() {
   return HalfSpace();
 }
 
+template <>
+Convex make_default_shape<Convex>() {
+  std::string file = FindResourceOrThrow("drake/geometry/test/octahedron.obj");
+  return Convex(file);
+}
+
 // Boilerplate for testing error conditions relating to properties. Its purpose
 // is to test that the `Make*Representation` (either "Rigid" or "Soft")
 // family of functions correctly validate all required properties. A property
@@ -816,8 +822,6 @@ TEST_F(HydroelasticSoftGeometryTest, UnsupportedSoftShapes) {
 
   // Note: the file name doesn't have to be valid for this (and the Mesh) test.
   const std::string obj = "drake/geometry/proximity/test/no_such_files.obj";
-  EXPECT_EQ(MakeSoftRepresentation(Convex(obj, 1.0), props), std::nullopt);
-
   EXPECT_EQ(MakeSoftRepresentation(Mesh(obj, 1.0), props), std::nullopt);
 }
 
@@ -1115,13 +1119,36 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
   }
 }
 
+// Test construction of a soft convex mesh.
+TEST_F(HydroelasticSoftGeometryTest, Convex) {
+  // Construct off of a known convex mesh.
+  std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  const Convex convex_spec(file);
+
+  ProximityProperties properties = soft_properties(0.16);
+  std::optional<SoftGeometry> convex =
+      MakeSoftRepresentation(convex_spec, properties);
+
+  // Smoke test the mesh and the pressure field. It relies on unit tests for
+  // the generators of the mesh and the pressure field.
+  const int expected_num_vertices = 9;
+  EXPECT_EQ(convex->mesh().num_vertices(), expected_num_vertices);
+  const double E =
+      properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  for (int v = 0; v < convex->mesh().num_vertices(); ++v) {
+    const double pressure = convex->pressure_field().EvaluateAtVertex(v);
+    EXPECT_GE(pressure, 0);
+    EXPECT_LE(pressure, E);
+  }
+}
+
 // Test suite for testing the common failure conditions for generating soft
 // geometry. Specifically, they need to be tessellated into a tet mesh
-// and define a pressure field. This actively excludes Convex and Mesh
-// because soft Convex and soft Mesh are not currently supported for
-// hydroelastic contact. (See the `SoftErrorShapeTypes` declaration below.)
-// It should include every *other* supported soft shape type. For HalfSpace
-// and Box, they are included in the test suite but exempt from
+// and define a pressure field. This actively excludes Mesh because soft Mesh
+// is not currently supported for hydroelastic contact.
+// (See the `SoftErrorShapeTypes` declaration below.)
+// It should include every *other* supported soft shape type. For HalfSpace,
+// Box, and Convex they are included in the test suite but exempt from
 // BadResolutionHint because they do not depend on the resolution hint
 // parameter. Only HalfSpace is tested in BadSlabThickness.
 template <typename ShapeType>
@@ -1133,7 +1160,8 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadResolutionHint) {
   using ShapeType = TypeParam;
   ShapeType shape_spec = make_default_shape<ShapeType>();
   if (ShapeName(shape_spec).name() != "HalfSpace" &&
-      ShapeName(shape_spec).name() != "Box") {
+      ShapeName(shape_spec).name() != "Box" &&
+      ShapeName(shape_spec).name() != "Convex") {
     TestPropertyErrors<ShapeType, double>(
         shape_spec, kHydroGroup, kRezHint, "soft",
         [](const ShapeType& s, const ProximityProperties& p) {
@@ -1177,7 +1205,8 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadSlabThickness) {
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticSoftGeometryErrorTests,
                             BadResolutionHint, BadElasticModulus,
                             BadSlabThickness);
-typedef ::testing::Types<Sphere, Box, Capsule, Cylinder, Ellipsoid, HalfSpace>
+typedef ::testing::Types<Sphere, Box, Capsule, Cylinder, Ellipsoid, HalfSpace,
+                         Convex>
     SoftErrorShapeTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticSoftGeometryErrorTests,
                                SoftErrorShapeTypes);
