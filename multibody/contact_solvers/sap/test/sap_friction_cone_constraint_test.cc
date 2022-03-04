@@ -95,7 +95,7 @@ void ValidateProjection(double mu, const Vector3d& R, const Vector3d& y) {
   const int clique = 0;
   const AutoDiffXd phi0 = NAN;
   const Matrix3<AutoDiffXd> J = Matrix3<AutoDiffXd>::Constant(NAN);
-  SapFrictionConeConstraint<AutoDiffXd> c(p, clique, J, phi0);
+  SapFrictionConeConstraint<AutoDiffXd> c(clique, J, phi0, p);
   Vector3<AutoDiffXd> y_ad = drake::math::InitializeAutoDiff(y);
   Vector3<AutoDiffXd> R_ad(R);
   Vector3<AutoDiffXd> gamma_ad;

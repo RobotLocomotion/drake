@@ -452,11 +452,11 @@ class PizzaSaverProblem {
     MatrixXd J;  // Full system Jacobian for the three contacts.
     CalcContactJacobian(q0(3), &J);
     problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-        parameters, 0, J.middleRows(0, 3), phi0));
+        0, J.middleRows(0, 3), phi0, parameters));
     problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-        parameters, 0, J.middleRows(3, 3), phi0));
+        0, J.middleRows(3, 3), phi0, parameters));
     problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-        parameters, 0, J.middleRows(6, 3), phi0));
+        0, J.middleRows(6, 3), phi0, parameters));
 
     return problem;
   }

@@ -30,13 +30,13 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
   };
 
   // @throws if the number of rows in J is different from three.
-  SapFrictionConeConstraint(const Parameters& p, int clique,
-                            const MatrixX<T>& J, const T& phi0);
+  SapFrictionConeConstraint(int clique,
+                            const MatrixX<T>& J, const T& phi0, const Parameters& p);
 
   // @throws if the number of rows in J0 and J1 is different from three.
-  SapFrictionConeConstraint(const Parameters& p, int clique0, int clique1,
+  SapFrictionConeConstraint(int clique0, int clique1,
                             const MatrixX<T>& J0, const MatrixX<T>& J1,
-                            const T& phi0);
+                            const T& phi0, const Parameters& p);
 
   const T& mu() const { return parameters_.mu; }
 

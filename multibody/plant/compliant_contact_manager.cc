@@ -307,14 +307,14 @@ void CompliantContactManager<T>::AddContactConstraints(
                                                  ? tree_jacobian_pair.first
                                                  : tree_jacobian_pair.second;
       problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(
-          parameters, tree_jacobian.tree, tree_jacobian.J, phi0));
+          tree_jacobian.tree, tree_jacobian.J, phi0, parameters));
     } else {
       // Contact involves two distinct trees.
       const TreeJacobian<T>& treeA_jacobian = tree_jacobian_pair.first;
       const TreeJacobian<T>& treeB_jacobian = tree_jacobian_pair.second;
       problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(
-          parameters, treeA_jacobian.tree, treeB_jacobian.tree,
-          treeA_jacobian.J, treeB_jacobian.J, phi0));
+          treeA_jacobian.tree, treeB_jacobian.tree,
+          treeA_jacobian.J, treeB_jacobian.J, phi0, parameters));
     }
   }
 }
