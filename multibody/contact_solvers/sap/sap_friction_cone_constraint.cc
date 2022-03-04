@@ -16,7 +16,12 @@ SapFrictionConeConstraint<T>::SapFrictionConeConstraint(int clique,
     : SapConstraint<T>(clique, Vector3<T>(0.0, 0.0, phi0), J),
       parameters_(p),
       phi0_(phi0) {
+  DRAKE_DEMAND(clique >= 0);
   DRAKE_DEMAND(p.mu >= 0.0);
+  DRAKE_DEMAND(p.stiffness > 0.0);
+  DRAKE_DEMAND(p.dissipation_time_scale >= 0.0);
+  DRAKE_DEMAND(p.beta > 0.0);
+  DRAKE_DEMAND(p.sigma > 0.0);
   DRAKE_DEMAND(this->first_clique_jacobian().rows() == 3);
 }
 
@@ -27,7 +32,13 @@ SapFrictionConeConstraint<T>::SapFrictionConeConstraint(
     : SapConstraint<T>(clique0, clique1, Vector3<T>(0.0, 0.0, phi0), J0, J1),
       parameters_(p),
       phi0_(phi0) {
+  DRAKE_DEMAND(clique0 >= 0);
+  DRAKE_DEMAND(clique1 >= 0);
   DRAKE_DEMAND(p.mu >= 0.0);
+  DRAKE_DEMAND(p.stiffness > 0.0);
+  DRAKE_DEMAND(p.dissipation_time_scale >= 0.0);
+  DRAKE_DEMAND(p.beta > 0.0);
+  DRAKE_DEMAND(p.sigma > 0.0);
   DRAKE_DEMAND(this->first_clique_jacobian().rows() == 3);
   DRAKE_DEMAND(this->second_clique_jacobian().rows() == 3);
 }
@@ -70,10 +81,11 @@ void SapFrictionConeConstraint<T>::Project(
   // γₜ/‖γₜ‖ₛ, which is well defined event for γₜ = 0. Also gradients are well
   // defined and follow the same equations presented in [Castro et al., 2021]
   // where regular norms are simply replaced by soft norms.
-  auto soft_norm =
-      [eps = soft_tolerance_](const Eigen::Ref<const VectorX<T>>& x) -> T {
+  auto soft_norm = [](const Eigen::Ref<const VectorX<T>>& x) -> T {
     using std::sqrt;
-    return sqrt(x.squaredNorm() + eps * eps);
+    // TODO(amcastro-tri): consider exposing this as a parameter.
+    constexpr double soft_tolerance = 1.0e-7;
+    return sqrt(x.squaredNorm() + soft_tolerance * soft_tolerance);
   };
 
   // We assume a regularization of the form R = (Rt, Rt, Rn).
@@ -106,8 +118,6 @@ void SapFrictionConeConstraint<T>::Project(
     const T gn = (yn + mu_hat * yr) * factor;
     const Vector2<T> gt = mu() * gn * that;
     *gamma << gt, gn;
-    // gamma->template head<2>() = gt;
-    //(*gamma)(2) = gn;
 
     // Gradient.
     if (dPdy) {

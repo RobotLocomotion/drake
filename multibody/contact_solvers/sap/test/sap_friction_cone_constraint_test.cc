@@ -5,12 +5,11 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
-#include "drake/math/autodiff_gradient.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/scs_solver.h"
-#include "drake/solvers/solver_interface.h"
 
 #define PRINT_VAR(a) std::cout << #a ": " << a << std::endl;
 #define PRINT_VARn(a) std::cout << #a ":\n" << a << std::endl;
@@ -19,14 +18,10 @@ using drake::solvers::Binding;
 using drake::solvers::LorentzConeConstraint;
 using drake::solvers::MathematicalProgram;
 using drake::solvers::MathematicalProgramResult;
-using drake::solvers::QuadraticCost;
 using drake::solvers::ScsSolver;
-using drake::solvers::SolverId;
 using drake::solvers::SolverOptions;
 using Eigen::Matrix3d;
-using Eigen::MatrixXd;
 using Eigen::Vector3d;
-using Eigen::VectorXd;
 
 namespace drake {
 namespace multibody {
@@ -34,7 +29,7 @@ namespace contact_solvers {
 namespace internal {
 namespace {
 
-constexpr double kTolerance = 1.0e-8;  
+constexpr double kTolerance = 1.0e-8;
 
 // This method solves the projection in the norm defined by R:
 //   min 1/2(γ−y)ᵀ⋅R⋅(γ−y)
@@ -90,18 +85,20 @@ Vector3d SolveProjectionWithScs(double mu, const Vector3d& R,
 // againthe analytical projection implemented by SapFrictionConeConstraint.
 // To validate the analytical gradients of the projection, we use automatic
 // differentiation.
-void ValidateProjection(double mu, const Vector3d& R, const Vector3d& y) {  
-  SapFrictionConeConstraint<AutoDiffXd>::Parameters p{mu, NAN, NAN, 0.0, 1e-3};
+void ValidateProjection(double mu, const Vector3d& R, const Vector3d& y) {
+  const double bad_number = std::numeric_limits<double>::infinity();
+  SapFrictionConeConstraint<AutoDiffXd>::Parameters p{
+      mu, bad_number, bad_number, bad_number, bad_number};
   const int clique = 0;
-  const AutoDiffXd phi0 = NAN;
-  const Matrix3<AutoDiffXd> J = Matrix3<AutoDiffXd>::Constant(NAN);
+  const AutoDiffXd phi0 = bad_number;
+  const Matrix3<AutoDiffXd> J = Matrix3<AutoDiffXd>::Constant(bad_number);
   SapFrictionConeConstraint<AutoDiffXd> c(clique, J, phi0, p);
   Vector3<AutoDiffXd> y_ad = drake::math::InitializeAutoDiff(y);
   Vector3<AutoDiffXd> R_ad(R);
   Vector3<AutoDiffXd> gamma_ad;
   MatrixX<AutoDiffXd> dPdy_ad;
   c.Project(y_ad, R_ad, &gamma_ad, &dPdy_ad);
-  const Vector3d gamma = math::ExtractValue(gamma_ad);  
+  const Vector3d gamma = math::ExtractValue(gamma_ad);
 
   // We first validate the result of the projection γ = P(y).
   const Vector3d gamma_numerical = SolveProjectionWithScs(mu, R, y);
