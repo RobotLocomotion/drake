@@ -22,12 +22,81 @@ using drake::solvers::ScsSolver;
 using drake::solvers::SolverOptions;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
+using Eigen::MatrixXd;
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
 namespace {
+
+// These Jacobian matrices have arbitrary values for testing. We specify the
+// size of the matrix in the name, e.g. J32 is of size 3x2.
+// clang-format off
+const MatrixXd J32 =
+    (MatrixXd(3, 2) << 2, 1,
+                       1, 2,
+                       1, 2).finished();
+
+const MatrixXd J34 =
+    (MatrixXd(3, 4) << 7, 1, 2, 3,
+                       1, 8, 4, 5,
+                       2, 4, 9, 6).finished();
+// clang-format on
+
+GTEST_TEST(SapFrictionConeConstraint, SingleCliqueConstraint) {
+  const double mu = 0.5;
+  const double stiffness = 1.0e5;
+  const double dissipation_time_scale = 0.01;
+  const double beta = 0.1;
+  const double sigma = 1.0e-4;
+  const int clique = 12;
+  const double phi0 = -2.5e-3;
+  SapFrictionConeConstraint<double>::Parameters parameters{
+      mu, stiffness, dissipation_time_scale, beta, sigma};
+  SapFrictionConeConstraint<double> c(clique, J32, phi0, parameters);
+  EXPECT_EQ(c.num_constraint_equations(), 3);
+  EXPECT_EQ(c.num_cliques(), 1);
+  EXPECT_EQ(c.first_clique(), clique);
+  EXPECT_THROW(c.second_clique(), std::exception);
+  EXPECT_EQ(c.constraint_function(), Vector3d(0., 0., phi0));
+  EXPECT_EQ(c.first_clique_jacobian(), J32);
+  EXPECT_THROW(c.second_clique_jacobian(), std::exception);
+  EXPECT_EQ(c.mu(), mu);
+  EXPECT_EQ(c.parameters().mu, mu);
+  EXPECT_EQ(c.parameters().stiffness, stiffness);
+  EXPECT_EQ(c.parameters().dissipation_time_scale, dissipation_time_scale);
+  EXPECT_EQ(c.parameters().beta, beta);
+  EXPECT_EQ(c.parameters().sigma, sigma);
+}
+
+GTEST_TEST(SapFrictionConeConstraint, TwoCliquesConstraint) {
+  const double mu = 0.5;
+  const double stiffness = 1.0e5;
+  const double dissipation_time_scale = 0.01;
+  const double beta = 0.1;
+  const double sigma = 1.0e-4;
+  const int clique0 = 12;
+  const int clique1 = 13;
+  const double phi0 = -2.5e-3;
+  SapFrictionConeConstraint<double>::Parameters parameters{
+      mu, stiffness, dissipation_time_scale, beta, sigma};
+  SapFrictionConeConstraint<double> c(clique0, clique1, J32, J34, phi0,
+                                      parameters);
+  EXPECT_EQ(c.num_constraint_equations(), 3);
+  EXPECT_EQ(c.num_cliques(), 2);
+  EXPECT_EQ(c.first_clique(), clique0);
+  EXPECT_EQ(c.second_clique(), clique1);
+  EXPECT_EQ(c.constraint_function(), Vector3d(0., 0., phi0));
+  EXPECT_EQ(c.first_clique_jacobian(), J32);
+  EXPECT_EQ(c.second_clique_jacobian(), J34);
+  EXPECT_EQ(c.mu(), mu);
+  EXPECT_EQ(c.parameters().mu, mu);
+  EXPECT_EQ(c.parameters().stiffness, stiffness);
+  EXPECT_EQ(c.parameters().dissipation_time_scale, dissipation_time_scale);
+  EXPECT_EQ(c.parameters().beta, beta);
+  EXPECT_EQ(c.parameters().sigma, sigma);
+}
 
 constexpr double kTolerance = 1.0e-8;
 
@@ -124,7 +193,7 @@ void ValidateProjection(double mu, const Vector3d& R, const Vector3d& y) {
 
 // Region I corresponds to the friction cone, see [Castro et al., 2021].
 // Phisically this is the stiction region.
-GTEST_TEST(FrictionConeConstraint, RegionI) {
+GTEST_TEST(SapFrictionConeConstraint, RegionI) {
   const double mu = 0.5;
   const Vector3d R(0.1, 0.1, 1.0);
   const Vector3d y(0.4, 0, 1.0);
@@ -133,7 +202,7 @@ GTEST_TEST(FrictionConeConstraint, RegionI) {
 
 // Region II corresponds to ℝ³ minus Regions I and II, see [Castro et al.,
 // 2021]. Physically this is the sliding region.
-GTEST_TEST(FrictionConeConstraint, RegionII) {
+GTEST_TEST(SapFrictionConeConstraint, RegionII) {
   const double mu = 0.5;
   const Vector3d R(0.1, 0.1, 1.0);
   const Vector3d y(1.0, 0, 1.0);
@@ -142,7 +211,7 @@ GTEST_TEST(FrictionConeConstraint, RegionII) {
 
 // Region III corresponds to the polar cone, see [Castro et al., 2021].
 // Phisically this is the no contact region, i.e. gamma = 0.
-GTEST_TEST(FrictionConeConstraint, RegionIII) {
+GTEST_TEST(SapFrictionConeConstraint, RegionIII) {
   const double mu = 0.5;
   const Vector3d R(0.1, 0.1, 1.0);
   const Vector3d y(0.5, 0, -0.2);

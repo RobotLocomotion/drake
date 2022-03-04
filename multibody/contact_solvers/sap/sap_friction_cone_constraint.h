@@ -113,6 +113,8 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
   /* Returns the coefficient of friction for this constraint. */
   const T& mu() const { return parameters_.mu; }
 
+  const Parameters& parameters() const { return parameters_; }
+
   /* Implements the projection operation. Refer to SapConstraint::Project() for
    details. */
   void Project(const Eigen::Ref<const VectorX<T>>& y,
