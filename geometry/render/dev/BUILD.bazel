@@ -3,6 +3,7 @@
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
+    "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_test",
 )
@@ -52,6 +53,17 @@ drake_cc_binary(
 
 # ------------------------------------------------------------------------------
 # Render client
+drake_cc_library(
+    name = "http_service",
+    srcs = ["http_service.cc"],
+    hdrs = ["http_service.h"],
+    deps = [
+        "//common:filesystem",
+        "//common:nice_type_name",
+        "@fmt",
+    ],
+)
+
 drake_cc_library(
     name = "render_client",
     srcs = ["render_client.cc"],
@@ -126,5 +138,16 @@ py_binary(
 )
 
 # ------------------------------------------------------------------------------
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "http_service_test",
+    deps = [
+        ":http_service",
+        "//common:temp_directory",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
 
 add_lint_tests()
