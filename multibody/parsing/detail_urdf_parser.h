@@ -45,6 +45,12 @@ ModelInstanceIndex AddModelFromUrdf(
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
+std::string MergeModelFromUrdf(
+    const DataSource& data_source,
+    ModelInstanceIndex model_instance,
+    const PackageMap& package_map,
+    MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr);
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
