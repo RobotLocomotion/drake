@@ -62,7 +62,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     EXPECT_EQ(result.get_solution_result(),
               SolutionResult::kInfeasibleOrUnbounded);
     // This code is defined in
-    // https://www.gurobi.com/documentation/9.0/refman/optimization_status_codes.html
+    // https://www.gurobi.com/documentation/9.5/refman/optimization_status_codes.html
     const int GRB_INF_OR_UNBD = 4;
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().optimization_status,
               GRB_INF_OR_UNBD);
@@ -72,7 +72,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
     // This code is defined in
-    // https://www.gurobi.com/documentation/9.0/refman/optimization_status_codes.html
+    // https://www.gurobi.com/documentation/9.5/refman/optimization_status_codes.html
     const int GRB_UNBOUNDED = 5;
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().optimization_status,
               GRB_UNBOUNDED);
