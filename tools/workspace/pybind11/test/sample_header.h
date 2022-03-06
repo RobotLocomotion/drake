@@ -190,6 +190,9 @@ class Class {
 /// @deprecated Begin deprecated. Est pellentesque elit ullamcorper dignissim
 /// cras tincidunt lobortis. End deprecated.
 struct Struct {
+  /// See @ref implementing_serialize "Implementing Serialize".
+  template <typename Archive>
+  void Serialize(Archive* a);
   /// Field 1. Sit amet cursus sit amet dictum sit amet. Id leo in vitae turpis
   /// massa sed elementum tempus.
   int field_1;
