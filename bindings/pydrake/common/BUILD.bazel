@@ -284,6 +284,35 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "serialize_pybind",
+    hdrs = ["serialize_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+    deps = ["//:drake_shared_library"],
+)
+
+drake_pybind_library(
+    name = "serialize_test_util_py",
+    testonly = 1,
+    add_install = False,
+    cc_deps = [":serialize_pybind"],
+    cc_so_name = "test/serialize_test_util",
+    cc_srcs = ["test/serialize_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+drake_py_unittest(
+    name = "serialize_pybind_test",
+    deps = [
+        ":serialize_test_util_py",
+    ],
+)
+
+drake_cc_library(
     name = "sorted_pair_pybind",
     hdrs = ["sorted_pair_pybind.h"],
     declare_installed_headers = 0,

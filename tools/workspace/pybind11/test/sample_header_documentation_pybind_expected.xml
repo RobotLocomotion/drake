@@ -42,6 +42,7 @@
           <Node doc_var="sample_header_doc.drake.mkdoc_test.EnumClass.EnumClassConstant.doc" file_name="drake/tools/workspace/pybind11/test/sample_header.h" full_name="drake::mkdoc_test::EnumClass::EnumClassConstant" ignore="0" kind="CursorKind.ENUM_CONSTANT_DECL" name="EnumClassConstant"/>
         </Node>
         <Node doc_var="sample_header_doc.drake.mkdoc_test.Struct.doc_deprecated" file_name="drake/tools/workspace/pybind11/test/sample_header.h" full_name="drake::mkdoc_test::Struct" ignore="0" kind="CursorKind.STRUCT_DECL" name="Struct">
+          <Node doc_var="sample_header_doc.drake.mkdoc_test.Struct.Serialize.doc" file_name="drake/tools/workspace/pybind11/test/sample_header.h" full_name="drake::mkdoc_test::Struct::Serialize" ignore="0" kind="CursorKind.FUNCTION_TEMPLATE" name="Serialize"/>
           <Node doc_var="sample_header_doc.drake.mkdoc_test.Struct.field_1.doc" file_name="drake/tools/workspace/pybind11/test/sample_header.h" full_name="drake::mkdoc_test::Struct::field_1" ignore="0" kind="CursorKind.FIELD_DECL" name="field_1"/>
           <Node doc_var="sample_header_doc.drake.mkdoc_test.Struct.field_2.doc" file_name="drake/tools/workspace/pybind11/test/sample_header.h" full_name="drake::mkdoc_test::Struct::field_2" ignore="0" kind="CursorKind.FIELD_DECL" name="field_2"/>
         </Node>
