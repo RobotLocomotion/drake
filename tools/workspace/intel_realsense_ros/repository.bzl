@@ -20,6 +20,8 @@ def intel_realsense_ros_repository(
             "sed -i -e 's|$(arg use_mesh)|true|' realsense2_description/urdf/*.xacro",  # noqa
             "sed -i -e 's|$(arg use_nominal_extrinsics)|false|' realsense2_description/urdf/*.xacro",  # noqa
             "sed -i -e 's|$(arg add_plug)|false|' realsense2_description/urdf/*.xacro",  # noqa
+            "sed -i -e 's|package://realsense2_description|package://drake/manipulation/models/realsense2_description|' realsense2_description/urdf/*.xacro",  # noqa
+            "sed -i -e 's|\\.stl|.obj|' realsense2_description/urdf/*.xacro",
         ],
         mirrors = mirrors,
     )
