@@ -331,6 +331,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::ComputeActiveBasisFunctionIndices),
             py::arg("parameter_value"),
             cls_doc.ComputeActiveBasisFunctionIndices.doc_1args_parameter_value)
+        .def(
+            "EvaluateCurve",
+            [](Class* self, const std::vector<VectorX<T>>& control_points,
+                const T& parameter_value) {
+              return self->EvaluateCurve(control_points, parameter_value);
+            },
+            py::arg("control_points"), py::arg("parameter_value"),
+            cls_doc.EvaluateCurve.doc)
         .def("EvaluateBasisFunctionI", &Class::EvaluateBasisFunctionI,
             py::arg("i"), py::arg("parameter_value"),
             cls_doc.EvaluateBasisFunctionI.doc)
