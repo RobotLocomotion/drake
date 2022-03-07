@@ -26,7 +26,6 @@ class HeaderDependencyTest(unittest.TestCase):
             re.compile(r'^(fmt|spdlog)/.*$'),
             re.compile(r'^lcm/.*$'),
             re.compile(r'^optitrack/.*$'),
-            re.compile(r'^yaml-cpp/yaml\.h$'),
         ]
 
         # The full list of matchers to measure filename validity.

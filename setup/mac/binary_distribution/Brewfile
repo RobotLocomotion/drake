@@ -36,7 +36,6 @@ brew 'tinyxml2'
 brew 'robotlocomotion/director/vtk@8.2.0'
 brew 'robotlocomotion/director/vtk@9.1.0'
 brew 'xz'
-brew 'yaml-cpp'
 brew 'zeromq'
 
 mas 'Xcode', id: 497799835 unless File.exist? '/Applications/Xcode.app'
