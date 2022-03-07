@@ -1,8 +1,8 @@
 #ifdef HAVE_SPDLOG
 #include "drake/bindings/pydrake/common/text_logging_pybind.h"
 
+#include <atomic>
 #include <memory>
-#include <mutex>
 
 // clang-format off to disable clang-format-includes
 // N.B. text-logging.h must be included before spdlog headers
@@ -24,7 +24,10 @@ namespace internal {
 
 #ifdef HAVE_SPDLOG
 namespace {
-class pylogging_sink final : public spdlog::sinks::base_sink<std::mutex> {
+class pylogging_sink final
+    // We use null_mutex below because we'll use the GIL as our *only* mutex.
+    // This is critically important to avoid deadlocks by lock order inversion.
+    : public spdlog::sinks::base_sink<spdlog::details::null_mutex> {
  public:
   pylogging_sink() {
     // Add a Python logging.Logger to be used by Drake.
@@ -42,13 +45,7 @@ class pylogging_sink final : public spdlog::sinks::base_sink<std::mutex> {
 
  protected:
   void sink_it_(const spdlog::details::log_msg& msg) final {
-    // TODO(jwnimmer-tri) Logging will originate from Drake's C++ code, which
-    // means that we might not actually hold the Python GIL at this point!
-    // If we aren't holding the GIL, then calling Python functions (i.e.,
-    // is_enabled_for_, make_record_, handle_) is unsound. In most cases
-    // the Drake C++ code would be running on behalf of the a Python call
-    // and so would hold the lock, but we should still try to do something
-    // better here.
+    py::gil_scoped_acquire acquire;
 
     // Bail out quickly in case this log level is disabled.
     const int level = to_py_level(msg.level);
@@ -130,7 +127,7 @@ void MaybeRedirectPythonLogging() {
   // drake/common/text_logging.cc configures itself by default. If the spdlog
   // configuration we observe here differs in any way, then we'll assume that
   // a user has configured it to their taste already and we won't change it.
-  const std::vector<std::shared_ptr<spdlog::sinks::sink> >& root_sinks =
+  std::vector<std::shared_ptr<spdlog::sinks::sink> >& root_sinks =
       drake::log()->sinks();
   if (root_sinks.size() != 1) {
     drake::log()->debug(
@@ -160,8 +157,9 @@ void MaybeRedirectPythonLogging() {
   // If we reach this point, then we've matched text_logging.cc exactly.
 
   // Replace the stderr sink with a python sink.
-  auto python_sink = std::make_shared<pylogging_sink>();
-  dist_sink->set_sinks({python_sink});
+  spdlog::sink_ptr& old_sink = root_sinks.at(0);
+  spdlog::sink_ptr new_sink = std::make_shared<pylogging_sink>();
+  std::atomic_exchange(&old_sink, std::move(new_sink));
   drake::log()->trace("Successfully redirected C++ logs to Python");
 }
 #else
