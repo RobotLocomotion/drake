@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <utility>
 #include <vector>
 
 #include "drake/multibody/fem/damping_model.h"
@@ -20,14 +21,17 @@ class DummyElement;
 template <>
 struct FemElementTraits<DummyElement> {
   using T = double;
-  /* See `DoComputeData` below on how this dummy data is updated. */
-  struct Data {
-    double value{0};
-  };
   static constexpr int num_quadrature_points = 1;
   static constexpr int num_natural_dimension = 2;
   static constexpr int num_nodes = 4;
   static constexpr int num_dofs = 12;
+  /* See `DoComputeData` below on how this dummy data is updated. */
+  struct Data {
+    double value{0};
+    Vector<T, num_dofs> element_q;
+    Vector<T, num_dofs> element_v;
+    Vector<T, num_dofs> element_a;
+  };
   using ConstitutiveModel = LinearConstitutiveModel<T, num_quadrature_points>;
 };
 
@@ -45,9 +49,10 @@ class DummyElement final : public FemElement<DummyElement> {
 
   DummyElement(FemElementIndex element_index,
                const std::array<FemNodeIndex, Traits::num_nodes>& node_indices,
-               const ConstitutiveModel& constitutive_model,
-               const DampingModel<T>& damping_model)
-      : Base(element_index, node_indices, constitutive_model, damping_model) {}
+               ConstitutiveModel constitutive_model,
+               DampingModel<T> damping_model)
+      : Base(element_index, node_indices, std::move(constitutive_model),
+             std::move(damping_model)) {}
 
   /* Provides a fixed return value for CalcResidual(). */
   static Vector<T, kNumDofs> residual() {
@@ -91,21 +96,26 @@ class DummyElement final : public FemElement<DummyElement> {
    in each state. */
   typename Traits::Data DoComputeData(const FemState<T>& state) const {
     const int state_dofs = state.num_dofs();
+    const auto& q = state.GetPositions();
+    const auto& v = state.GetVelocities();
+    const auto& a = state.GetAccelerations();
     typename Traits::Data data;
-    data.value = state.GetPositions()(state_dofs - 1);
-    data.value += state.GetVelocities()(state_dofs - 1);
-    data.value += state.GetAccelerations()(state_dofs - 1);
+    data.value = q(state_dofs - 1);
+    data.value += v(state_dofs - 1);
+    data.value += a(state_dofs - 1);
+    data.element_q = this->ExtractElementDofs(q);
+    data.element_v = this->ExtractElementDofs(v);
+    data.element_a = this->ExtractElementDofs(a);
     return data;
   }
 
   /* Implements FemElement::CalcResidual().
-   The residual is equal to a dummy nonzero value if the states are all zero.
-   Otherwise the residual is zero.*/
-  void DoCalcResidual(const FemState<T>& state,
+   The residual is equal to a dummy nonzero value if the element states are all
+   zero. Otherwise the residual is zero.*/
+  void DoCalcResidual(const Data& data,
                       EigenPtr<Vector<T, kNumDofs>> residual) const {
-    if (state.GetPositions().norm() == 0.0 &&
-        state.GetVelocities().norm() == 0.0 &&
-        state.GetAccelerations().norm() == 0.0) {
+    if (data.element_q.norm() == 0.0 && data.element_v.norm() == 0.0 &&
+        data.element_a.norm() == 0.0) {
       *residual = this->residual();
     } else {
       residual->setZero();
@@ -114,21 +124,21 @@ class DummyElement final : public FemElement<DummyElement> {
 
   /* Implements FemElement::AddScaledStiffnessMatrix(). */
   void DoAddScaledStiffnessMatrix(
-      const FemState<T>&, const T& scale,
+      const Data&, const T& scale,
       EigenPtr<Eigen::Matrix<T, kNumDofs, kNumDofs>> K) const {
     *K += scale * stiffness_matrix();
   }
 
   /* Implements FemElement::AddScaledDampingMatrix(). */
   void DoAddScaledDampingMatrix(
-      const FemState<T>&, const T& scale,
+      const Data&, const T& scale,
       EigenPtr<Eigen::Matrix<T, kNumDofs, kNumDofs>> D) const {
     *D += scale * damping_matrix();
   }
 
   /* Implements FemElement::AddScaledMassMatrix(). */
   void DoAddScaledMassMatrix(
-      const FemState<T>&, const T& scale,
+      const Data&, const T& scale,
       EigenPtr<Eigen::Matrix<T, kNumDofs, kNumDofs>> M) const {
     *M += scale * mass_matrix();
   }

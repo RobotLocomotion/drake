@@ -65,6 +65,14 @@ class FemElementTest : public ::testing::Test {
     fem_state_ = std::make_unique<FemState<T>>(fem_state_system_.get());
   }
 
+  /* Evaluates the element data of the element under test. */
+  const Data& EvalElementData() const {
+    const std::vector<Data>& element_data =
+        fem_state_->EvalElementData<Data>(cache_index_);
+    DRAKE_DEMAND(element_data.size() == 1);
+    return element_data[0];
+  }
+
   std::unique_ptr<internal::FemStateSystem<T>> fem_state_system_;
   std::unique_ptr<FemState<T>> fem_state_;
   /* FemElement under test. */
@@ -81,12 +89,9 @@ TEST_F(FemElementTest, Constructor) {
 /* Tests that the element data logic is correctly excecuted through
  `ComputeData`. */
 TEST_F(FemElementTest, ElementData) {
-  const std::vector<Data>& element_data =
-      fem_state_->EvalElementData<Data>(cache_index_);
-  ASSERT_EQ(element_data.size(), 1);
-  const Data& data = element_data[0];
   /* We know that dummy element's data is computed as the sum of the last
    entries in the states. */
+  const Data& data = EvalElementData();
   EXPECT_EQ(data.value,
             q()(kNumDofs - 1) + v()(kNumDofs - 1) + a()(kNumDofs - 1));
 }
@@ -112,7 +117,8 @@ TEST_F(FemElementTest, GravityAndExternalForce) {
   VectorXd scaled_gravity_force = VectorXd::Zero(kNumDofs);
   const double scale = 2.0;
   /* The only external force in FemElement is gravity. */
-  element_.AddScaledExternalForce(*fem_state_, scale, &scaled_gravity_force);
+  const Data& data = EvalElementData();
+  element_.AddScaledExternalForce(data, scale, &scaled_gravity_force);
   const VectorXd expected_scaled_gravity_force =
       scale * element_.mass_matrix() * gravity_vector_all_nodes;
   EXPECT_EQ(expected_scaled_gravity_force, scaled_gravity_force);
@@ -124,14 +130,14 @@ TEST_F(FemElementTest, GravityAndExternalForce) {
  FemElement whose implementation returns/adds a specific value. */
 TEST_F(FemElementTest, Residual) {
   Vector<T, DummyElementTraits::num_dofs> residual;
-  element_.CalcResidual(*fem_state_, &residual);
+  element_.CalcResidual(EvalElementData(), &residual);
   const Vector<T, kNumDofs> zero_vector = Vector<T, kNumDofs>::Zero();
   EXPECT_EQ(residual, zero_vector);
 
   fem_state_->SetPositions(zero_vector);
   fem_state_->SetVelocities(zero_vector);
   fem_state_->SetAccelerations(zero_vector);
-  element_.CalcResidual(*fem_state_, &residual);
+  element_.CalcResidual(EvalElementData(), &residual);
   EXPECT_EQ(residual, element_.residual());
 }
 
@@ -140,7 +146,7 @@ TEST_F(FemElementTest, StiffnessMatrix) {
       K;
   K.setZero();
   const T scale = 3.14;
-  element_.AddScaledStiffnessMatrix(*fem_state_, scale, &K);
+  element_.AddScaledStiffnessMatrix(EvalElementData(), scale, &K);
   EXPECT_EQ(K, scale * element_.stiffness_matrix());
 }
 
@@ -149,7 +155,7 @@ TEST_F(FemElementTest, DampingMatrix) {
       D;
   D.setZero();
   const T scale = 3.14;
-  element_.AddScaledDampingMatrix(*fem_state_, scale, &D);
+  element_.AddScaledDampingMatrix(EvalElementData(), scale, &D);
   EXPECT_EQ(D, scale * element_.damping_matrix());
 }
 
@@ -158,7 +164,7 @@ TEST_F(FemElementTest, MassMatrix) {
       M;
   M.setZero();
   const T scale = 3.14;
-  element_.AddScaledMassMatrix(*fem_state_, scale, &M);
+  element_.AddScaledMassMatrix(EvalElementData(), scale, &M);
   EXPECT_EQ(M, scale * element_.mass_matrix());
 }
 
