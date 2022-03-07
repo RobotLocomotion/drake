@@ -103,9 +103,12 @@ class FemElement {
       EigenPtr<Eigen::Matrix<T, num_dofs, num_dofs>> tangent_matrix) const {
     DRAKE_DEMAND(tangent_matrix != nullptr);
     tangent_matrix->setZero();
-    AddScaledStiffnessMatrix(data, weights(0), tangent_matrix);
-    AddScaledDampingMatrix(data, weights(1), tangent_matrix);
-    AddScaledMassMatrix(data, weights(2), tangent_matrix);
+    AddScaledStiffnessMatrix(
+        data, weights(0) + weights(1) * damping_model_.stiffness_coeff_beta(),
+        tangent_matrix);
+    AddScaledMassMatrix(
+        data, weights(2) + weights(1) * damping_model_.mass_coeff_alpha(),
+        tangent_matrix);
   }
 
   /* Calculates the element residual of this element evaluated at the input
@@ -147,13 +150,17 @@ class FemElement {
    @param[in] scale   The scaling factor applied to the damping matrix.
    @param[in, out] D  The matrix to which the scaled damping matrix will be
                       added.
-   @pre D != nullptr */
+   @pre D != nullptr
+   @note This function recomputes both the mass and the stiffness matrix and may
+   be expensive. */
   void AddScaledDampingMatrix(
       const Data& data, const T& scale,
       EigenPtr<Eigen::Matrix<T, num_dofs, num_dofs>> D) const {
     DRAKE_ASSERT(D != nullptr);
-    static_cast<const DerivedElement*>(this)->DoAddScaledDampingMatrix(
-        data, scale, D);
+    const T& alpha = damping_model_.mass_coeff_alpha();
+    const T& beta = damping_model_.stiffness_coeff_beta();
+    this->AddScaledMassMatrix(data, scale * alpha, D);
+    this->AddScaledStiffnessMatrix(data, scale * beta, D);
   }
 
   /* Accumulates the mass matrix (the derivative of the residual with respect
@@ -268,18 +275,6 @@ class FemElement {
   void DoAddScaledStiffnessMatrix(
       const Data& data, const T& scale,
       EigenPtr<Eigen::Matrix<T, num_dofs, num_dofs>> K) const {
-    ThrowIfNotImplemented(__func__);
-  }
-
-  /* `DerivedElement` must provide an implementation for
-   `DoAddScaledDampingMatrix()` to provide the damping matrix that is up to date
-   given the `data`. The caller guarantees that `D` is non-null; the
-   implementation in the derived class does not have to test for this.
-   @throw std::exception if `DerivedElement` does not provide an implementation
-   for `DoAddScaledDampingMatrix()`. */
-  void DoAddScaledDampingMatrix(
-      const Data& data, const T& scale,
-      EigenPtr<Eigen::Matrix<T, num_dofs, num_dofs>> D) const {
     ThrowIfNotImplemented(__func__);
   }
 
