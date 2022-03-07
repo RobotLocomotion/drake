@@ -1818,6 +1818,15 @@ class TestPlant(unittest.TestCase):
             dut.CalcSpatialVelocity(context=context, frame_M=dut, frame_E=dut),
             SpatialVelocity_[T])
         self.assertIsInstance(
+            dut.CalcRelativeSpatialVelocityInWorld(context=context,
+                                                   other_frame=dut),
+            SpatialVelocity_[T])
+        self.assertIsInstance(
+            dut.CalcRelativeSpatialVelocity(context=context, other_frame=dut,
+                                            measured_in_frame=dut,
+                                            expressed_in_frame=dut),
+            SpatialVelocity_[T])
+        self.assertIsInstance(
             dut.CalcSpatialAccelerationInWorld(context=context),
             SpatialAcceleration_[T])
 
