@@ -228,7 +228,8 @@ HttpResponse HttpServiceCurl::PostForm(
   form = curl_mime_init(curl);
 
   // Defined to make cleanup easier before throwing any possible exceptions.
-  auto cleanup_curl = [curl, headerlist]() {
+  auto cleanup_curl = [](CURL* curl, curl_mime* form, curl_slist* headerlist) {
+    if (form != nullptr) curl_mime_free(form);
     if (headerlist != nullptr) curl_slist_free_all(headerlist);
     curl_easy_cleanup(curl);
   };
@@ -281,7 +282,7 @@ HttpResponse HttpServiceCurl::PostForm(
    file buffer within our temporary directory. */
   const auto temp_bin_out = fs::path(temp_directory()) / NextTempFile();
   if (fs::exists(temp_bin_out)) {
-    cleanup_curl();
+    cleanup_curl(curl, form, headerlist);
     throw std::runtime_error(fmt::format(
         "HttpServiceCurl: refusing to overwrite temporary file '{}' that "
         "already exists, please cleanup temporary directory '{}'.",
@@ -292,7 +293,7 @@ HttpResponse HttpServiceCurl::PostForm(
   const std::string bin_out_path{temp_bin_out.string()};
   std::ofstream bin_out(bin_out_path, std::ios::binary);
   if (!bin_out.good()) {
-    cleanup_curl();
+    cleanup_curl(curl, form, headerlist);
     throw std::runtime_error(fmt::format(
         "HttpServiceCurl: unable to open temporary file '{}'.", bin_out_path));
   }
@@ -312,6 +313,9 @@ HttpResponse HttpServiceCurl::PostForm(
     ret.service_error = true;
     ret.service_error_message = std::string(curl_easy_strerror(result));
   }
+
+  // Cleanup the curl memory.
+  cleanup_curl(curl, form, headerlist);
 
   // Write callback is complete, close the file. If empty, no response, delete.
   bin_out.close();
