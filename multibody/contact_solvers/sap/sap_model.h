@@ -23,10 +23,18 @@ namespace internal {
  non-participating cliques is trivial (v=v*) and therefore they are excluded
  from the main (expensive) SAP computation.
 
+ This model is meant to be constructed once per time step, it does not persist
+ over multiple time steps. Given a multibody system with state x, this model is
+ built for a given state x₀ at time t so that we can take a discrete time step
+ of size δt and advance the state of the system to time t+δt. In other words,
+ the model is a function of state x₀ and therefore it must be updated at the
+ next time step.
+
  [Castro et al., 2021] Castro A., Permenter F. and Han X., 2021. An
  Unconstrained Convex Formulation of Compliant Contact. Available at
  https://arxiv.org/abs/2110.10107
-*/
+
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 class SapModel {
  public:
@@ -51,11 +59,19 @@ class SapModel {
   int num_constraints() const;
   int num_constraint_equations() const;
 
+  const PartialPermutation& velocities_permutation() const {
+    return velocities_permutation_;
+  }
+
   /* The time step of problem(). */
   const T& time_step() const { return problem_->time_step(); }
 
-  /* Returns the system dynamics matrix A for participating velocities only. See
-   velocities_permutation(). */
+  /* Returns the system dynamics matrix A, refer to SapContactProblem's
+   documentation for how this matrix is defined. This method returns a vector of
+   diagonal blocks in A for participating cliques only. Blocks in the returned
+   vector appear in the order specified by the permutation of participating
+   cliques in the problem's graph, see
+   SapContactProblem::graph().participating_cliques(). */
   const std::vector<MatrixX<T>>& dynamics_matrix() const;
 
   /* Returns free-motion velocities v*, Participating velocities only. */
@@ -80,12 +96,6 @@ class SapModel {
       const systems::Context<T>& context) const {
     return system_
         ->get_cache_entry(system_->cache_indexes().constraint_velocities)
-        .template Eval<VectorX<T>>(context);
-  }
-
-  /* Evaluates the velocity gain defined as velocity_gain = v - v*. */
-  const VectorX<T>& EvalVelocityGain(const systems::Context<T>& context) const {
-    return system_->get_cache_entry(system_->cache_indexes().velocity_gain)
         .template Eval<VectorX<T>>(context);
   }
 
@@ -118,12 +128,11 @@ class SapModel {
     /* Constructs a system that declares a discrete state of size
      num_velocities. */
     explicit SapModelSystem(int num_velocities) {
-      velocities_index_ = DeclareDiscreteState(num_velocities);
+      velocities_index_ = this->DeclareDiscreteState(num_velocities);
     }
 
     /* Promote system methods so that SapModel can use them to declare state and
      cache entries. */
-    using systems::LeafSystem<T>::DeclareDiscreteState;
     using systems::SystemBase::DeclareCacheEntry;
 
     /* Index of the discrete state declared by this system. */
@@ -144,8 +153,8 @@ class SapModel {
 
   /* Makes a permutation to go back and forth between dofs in the original
    contact problem and "participating dofs" in this model. */
-  PartialPermutation MakeParticipatingVelocitiesPermutation(
-      const SapContactProblem<T>& problem) const;
+  static PartialPermutation MakeParticipatingVelocitiesPermutation(
+      const SapContactProblem<T>& problem);
 
   /* Performs multiplication p = A * v. Only participating velocities are
    considered.
@@ -164,12 +173,23 @@ class SapModel {
   void CalcMomentumCost(const systems::Context<T>& context,
                         T* momentum_cost) const;
 
+  /* Evaluates the velocity gain defined as velocity_gain = v - v*. */
+  const VectorX<T>& EvalVelocityGain(const systems::Context<T>& context) const {
+    return system_->get_cache_entry(system_->cache_indexes().velocity_gain)
+        .template Eval<VectorX<T>>(context);
+  }
+
   const SapContactProblem<T>* problem_{nullptr};
+
+  // TODO(amcastro-tri): Data below is heap allocated once per time step.
+  // Consider how to pre-allocate once to minimize heap allocation.
+
   /* Permutation to map back and forth between DOFs in problem_ and DOFs in this
    model. */
   PartialPermutation velocities_permutation_;
-  /* Per-clique blocks of the momentum matrix. Only participating cliques. */
-  std::vector<MatrixX<T>> A_;
+  /* Per-clique blocks of the system's dynamic matrix A. Only participating
+  cliques. */
+  std::vector<MatrixX<T>> dynamics_matrix_;
   VectorX<T> v_star_;  // Free motion generalized velocity v*.
   VectorX<T> p_star_;  // Free motion generalized impulse, i.e. p* = A⋅v*.
   std::unique_ptr<SapConstraintBundle<T>> constraints_bundle_;

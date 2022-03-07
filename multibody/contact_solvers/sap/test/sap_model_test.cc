@@ -29,9 +29,11 @@ class SpringConstraint final : public SapConstraint<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringConstraint);
 
   // Model a spring attached to `clique`, expected to be a 3D particle.
-  explicit SpringConstraint(int clique, VectorX<T> x, T k, T tau_d)
+  explicit SpringConstraint(int clique, Vector3<T> x, T k, T tau_d)
       // N.B. For this constraint the Jacobian is the identity matrix.
-      : SapConstraint<T>(clique, std::move(x), Matrix3<T>::Identity()) {}
+      : SapConstraint<T>(clique, std::move(x), Matrix3<T>::Identity()),
+        k_(k),
+        tau_d_(tau_d) {}
 
   // Bias and regularization setup so that:
   //   γ = y = -δt⋅(k⋅x + d⋅v) = −R⁻¹⋅(v−v̂).
@@ -82,9 +84,7 @@ class SpringMassModel {
   // the first mass while q.tail<3>() and v.tail<3>() correspond to the state
   // for the second mass.
   std::unique_ptr<SapContactProblem<T>> MakeContactProblem(
-      const VectorX<T>& q, const VectorX<T>& v) {
-    DRAKE_DEMAND(q.size() == 6);
-    DRAKE_DEMAND(v.size() == 6);
+      const Vector6<T>& q, const Vector6<T>& v) {
     std::vector<MatrixX<T>> A = {mass1_ * Matrix3<T>::Identity(),
                                  mass2_ * Matrix3<T>::Identity()};
     const Vector6<T> g =
@@ -137,6 +137,17 @@ TEST_F(SpringMassTest, Sizes) {
   EXPECT_EQ(sap_model_->num_velocities(), 3);
   EXPECT_EQ(sap_model_->num_constraints(), 1);
   EXPECT_EQ(sap_model_->num_constraint_equations(), 3);
+}
+
+// Here we verify the correctness of the permutation for velocities. Since only
+// the first clique participates, we expect the permutation to only extract the
+// velocities corresponding to this first clique.
+TEST_F(SpringMassTest, VelocitiesPermutation) {
+  const Vector6d v = Vector6d::LinSpaced(6, 1.0, 6.0);
+  Vector3d v1;
+  sap_model_->velocities_permutation().Apply(v, &v1);
+  const Vector3d v1_expected(1., 2., 3.);
+  EXPECT_EQ(v1, v1_expected);
 }
 
 // Since only the first clique participates, we expect the problem data to

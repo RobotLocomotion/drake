@@ -29,8 +29,8 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem_ptr)
   // Extract momentum matrix for participating DOFs only.
   const int num_participating_cliques =
       cliques_permutation.permuted_domain_size();
-  A_.resize(num_participating_cliques);
-  cliques_permutation.Apply(problem().dynamics_matrix(), &A_);
+  dynamics_matrix_.resize(num_participating_cliques);
+  cliques_permutation.Apply(problem().dynamics_matrix(), &dynamics_matrix_);
 
   // Get v* and p* for participating DOFs only.
   const int nv_participating = velocities_permutation_.permuted_domain_size();
@@ -165,7 +165,7 @@ int SapModel<T>::num_constraint_equations() const {
 
 template <typename T>
 const std::vector<MatrixX<T>>& SapModel<T>::dynamics_matrix() const {
-  return A_;
+  return dynamics_matrix_;
 }
 
 template <typename T>
@@ -180,7 +180,7 @@ const VectorX<T>& SapModel<T>::p_star() const {
 
 template <typename T>
 PartialPermutation SapModel<T>::MakeParticipatingVelocitiesPermutation(
-    const SapContactProblem<T>& problem) const {
+    const SapContactProblem<T>& problem) {
   const PartialPermutation& cliques_permutation =
       problem.graph().participating_cliques();
   int v_first = 0;  // first velocity for a given clique.
@@ -207,7 +207,7 @@ void SapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
   DRAKE_DEMAND(v.size() == num_velocities());
   DRAKE_DEMAND(p->size() == num_velocities());
   int clique_start = 0;
-  for (const auto& Ab : A_) {
+  for (const auto& Ab : dynamics_matrix_) {
     const int clique_size = Ab.rows();
     p->segment(clique_start, clique_size) =
         Ab * v.segment(clique_start, clique_size);
