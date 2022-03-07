@@ -542,6 +542,43 @@ class MultibodyTreeTopology {
     return body_nodes_[index];
   }
 
+  // Returns the number of trees in the "forest" topology of the entire system.
+  // We refer to as "tree" to a subgraph in the topology having a structure
+  // and who's base node connects to the world. The world does not belong to any
+  // tree. In other words, the number of trees in the topology corresponds to
+  // the number of children to the world body node.
+  int num_trees() const {
+    return static_cast<int>(num_tree_velocities_.size());
+  }
+
+  // Returns the number of generalized velocities for the t-th tree.
+  // @pre t.is_valid() is true and t < num_trees().
+  int num_tree_velocities(TreeIndex t) const {
+    DRAKE_ASSERT(t < num_trees());
+    return num_tree_velocities_[t];
+  }
+
+  // Returns the number of generalized velocities for the t-th tree.
+  int tree_velocities_start(TreeIndex t) const {
+    DRAKE_ASSERT(t < num_trees());
+    return tree_velocities_start_[t];
+  }
+
+  // Returns the tree index for the b-th body. The tree index for the world
+  // body, BodyIndex(0), is invalid. Check with TreeIndex::is_valid().
+  // @pre Index b is valid and b < num_bodies().
+  TreeIndex body_to_tree_index(BodyIndex b) const {
+    DRAKE_ASSERT(b < num_bodies());
+    return body_to_tree_index_[b];
+  }
+
+  // Returns the tree index for the v-th velocity.
+  // @pre 0 <= v and v < num_velocities().
+  TreeIndex velocity_to_tree_index(int v) const {
+    DRAKE_ASSERT(0 <= v && v < num_velocities());
+    return velocity_to_tree_index_[v];
+  }
+
   // Creates and adds a new BodyTopology to this MultibodyTreeTopology.
   // The BodyTopology will be assigned a new, unique BodyIndex and FrameIndex
   // values.
@@ -885,6 +922,8 @@ class MultibodyTreeTopology {
       }
     }
 
+    ExtractForestInfo();
+
     // We are done with a successful Finalize() and we mark it as so.
     // Do not add any more code after this!
     is_valid_ = true;
@@ -1053,6 +1092,38 @@ class MultibodyTreeTopology {
     }
   }
 
+  // Helper method to be used within Finalize() to obtain the topological
+  // information that describes the multibody system as a "forest" of trees.
+  void ExtractForestInfo() {
+    const BodyNodeTopology& root = get_body_node(BodyNodeIndex(0));
+    const int num_trees_local = root.child_nodes.size();
+    num_tree_velocities_.resize(num_trees_local, 0);
+    body_to_tree_index_.resize(num_bodies());
+    velocity_to_tree_index_.resize(num_velocities());
+
+    int t = -1;  // current tree.
+    // Traverse nodes in their DFT order, skiping the world.
+    for (BodyNodeIndex node_index(1); node_index < get_num_body_nodes();
+         ++node_index) {
+      const BodyNodeTopology& node = get_body_node(node_index);
+      // Every time we reach a node that has "root" (the world) as parent (i.e.
+      // level = 1) we add a new tree (increase the tree counter).
+      if (node.level == 1) ++t;
+      num_tree_velocities_[t] += node.num_mobilizer_velocities;
+      body_to_tree_index_[node.body] = TreeIndex(t);
+      for (int i = 0; i < node.num_mobilizer_velocities; ++i) {
+        const int v = node.mobilizer_velocities_start_in_v + i;
+        velocity_to_tree_index_[v] = TreeIndex(t);
+      }
+    }
+
+    tree_velocities_start_.resize(num_trees(), 0);
+    for (t = 1; t < num_trees(); ++t) {
+      tree_velocities_start_[t] =
+          tree_velocities_start_[t - 1] + num_tree_velocities_[t - 1];
+    }
+  }
+
   // is_valid is set to `true` after a successful Finalize().
   bool is_valid_{false};
   // Number of levels (or generations) in the tree topology. After Finalize()
@@ -1073,6 +1144,20 @@ class MultibodyTreeTopology {
   int num_velocities_{0};
   int num_states_{0};
   int num_actuated_dofs_{0};
+
+  // Number of generalized velocities for the t-th tree.
+  std::vector<int> num_tree_velocities_;  
+  // Given the generalized velocities vector v for the entire model, the vector
+  // vt = {v(m) s.t. m ∈ [mₛ, mₑ)}, with mₛ = tree_velocities_start_[t] and iₑ =
+  // tree_velocities_start_[t] + num_tree_velocities_[t], corresponds to the
+  // generalized velocities for the t-th tree.
+  std::vector<int> tree_velocities_start_;
+  // t = velocity_to_tree_index_[m] corresponds to the tree index to which the
+  // m-th velocity belongs.
+  std::vector<TreeIndex> velocity_to_tree_index_;
+  // t = body_to_tree_index_[b] corresponds to the tree index to which the
+  // b-th body belongs.
+  std::vector<TreeIndex> body_to_tree_index_;
 };
 
 }  // namespace internal

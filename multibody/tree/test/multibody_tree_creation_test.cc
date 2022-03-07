@@ -420,6 +420,25 @@ class TreeTopologyTests : public ::testing::Test {
     EXPECT_EQ(topology.get_body_node(BodyNodeIndex(5)).body, 2);
     EXPECT_EQ(topology.get_body_node(BodyNodeIndex(6)).body, 1);
     EXPECT_EQ(topology.get_body_node(BodyNodeIndex(7)).body, 6);
+
+    // Verify the expected "forest" of trees.
+    EXPECT_EQ(topology.num_trees(), 3);
+    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(0)), 1);
+    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(1)), 2);
+    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(2)), 4);
+    EXPECT_EQ(topology.tree_velocities_start(TreeIndex(0)), 0);
+    EXPECT_EQ(topology.tree_velocities_start(TreeIndex(1)), 1);
+    EXPECT_EQ(topology.tree_velocities_start(TreeIndex(2)), 3);
+    // The world body does not belong to a tree. Therefore the returned index is
+    // invalid.
+    EXPECT_FALSE(topology.body_to_tree_index(world_index()).is_valid());
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(7)), TreeIndex(0));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(5)), TreeIndex(1));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(3)), TreeIndex(1));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(4)), TreeIndex(2));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(2)), TreeIndex(2));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(1)), TreeIndex(2));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(6)), TreeIndex(2));
   }
 
  protected:
