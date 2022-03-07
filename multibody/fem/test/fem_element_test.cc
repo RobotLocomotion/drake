@@ -8,12 +8,12 @@ namespace drake {
 namespace multibody {
 namespace fem {
 namespace internal {
-namespace test {
 namespace {
 
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
+using DummyElementTraits = FemElementTraits<DummyElement>;
 using T = DummyElementTraits::T;
 using Data = DummyElementTraits::Data;
 constexpr int kNumNodes = DummyElementTraits::num_nodes;
@@ -163,7 +163,6 @@ TEST_F(FemElementTest, MassMatrix) {
 }
 
 }  // namespace
-}  // namespace test
 }  // namespace internal
 }  // namespace fem
 }  // namespace multibody

@@ -17,6 +17,37 @@ namespace internal {
 
 // TODO(xuchenhan-tri) Document the definition of quantities like "natural
 //  dimension". See issue #14475.
+
+/* Traits class for FemElement(see below). Instantiations of concrete traits
+ classes must at least define the fields listed in the example below.
+
+   template <>
+   struct FemElementTraits<ExampleElement> {
+     // Define the scalar type.
+     using T = ...;
+     // Define element data for the concrete element.
+     struct Data {
+       // The Data class must be default constructible.
+       Data() {...}
+       ...
+     };
+     // The number of quadrature points in each element.
+     static constexpr int num_quadrature_points = ...;
+     // The natural dimension of the element.
+     static constexpr int num_natural_dimension = ...;
+     // The number of nodes in the element.
+     static constexpr int num_nodes = ...;
+     // The number of degrees of freedom in the element.
+     static constexpr int num_dofs = ...;
+     // The constitutive model used in the element.
+     using ConstitutiveModel = ...;
+   };
+
+ @tparam Element The concrete FEM element that inherits from FemElement
+ through CRTP. */
+template <class Element>
+struct FemElementTraits {};
+
 /* FemElement is the base class for spatially discretized FEM elements for
  dynamic elasticity problems. It computes quantities such as the residual and
  the tangent matrix on a single FEM element given the state of the FEM system.
@@ -29,30 +60,19 @@ namespace internal {
  facilitates inlining instead. The type information at compile time also helps
  eliminate all heap allocations. Derived FEM elements must inherit from this
  base class and implement the interface this class provides. The derived FEM
- elements must also be accompanied by a corresponding traits class that declares
- the compile time quantities and type declarations that this base class
- requires.
+ elements must also be accompanied by a corresponding traits class that
+ specializes FemElementTraits (see above).
 
  FemElement also comes with per-element, state-dependent data. The data
- specific to the `DerivedElement` should be declared in `DerivedTraits`, along
- with the other responsibilities of `DerivedTraits` detailed below.
+ specific to the `DerivedElement` should be declared in the traits, along
+ with the other responsibilities of the traits class detailed above.
 
- @tparam DerivedElement The concrete FEM element that inherits from %FemElement
- through CRTP.
- @tparam DerivedTraits The traits class associated with the DerivedElement. It
- needs to provide a nested class `Data` for storing the per-element,
- state-dependent data used by `DerivedElement`. In particular, the `Data` class
- needs to provide a default constructor. It also needs to provide the following
- compile time constants for the `DerivedElement`: the number of quadrature
- points in a single `DerivedElement`, `num_quadrature_points`, the number of
- nodes associated with a single `DerivedElement`, `num_nodes,` and the number of
- degrees of freedom that a single `DerivedElement` possesses, `num_dofs`. It
- also needs to provide the following type definitions: the type of the
- constitutive model the element uses, `ConstitutiveModel`.*/
-template <class DerivedElement, class DerivedTraits>
+ @tparam DerivedElement The concrete FEM element that inherits from FemElement
+ through CRTP. */
+template <class DerivedElement>
 class FemElement {
  public:
-  using Traits = DerivedTraits;
+  using Traits = FemElementTraits<DerivedElement>;
   using T = typename Traits::T;
   using Data = typename Traits::Data;
   using ConstitutiveModel = typename Traits::ConstitutiveModel;
@@ -76,7 +96,9 @@ class FemElement {
 
   /* Calculates the tangent matrix for the element by combining the stiffness
    matrix, damping matrix, and the mass matrix according to the given `weights`.
-  */
+   In particular, given a weight of (w₀, w₁, w₂), the tangent matrix is equal to
+   w₀⋅K + w₁⋅D + w₂⋅M, where K, D, and M are stiffness, damping, and mass matrix
+   respectively. */
   void CalcTangentMatrix(
       const FemState<T>& state, const Vector3<T>& weights,
       EigenPtr<Eigen::Matrix<T, num_dofs, num_dofs>> tangent_matrix) const {

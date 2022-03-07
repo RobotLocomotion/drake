@@ -11,11 +11,14 @@ namespace drake {
 namespace multibody {
 namespace fem {
 namespace internal {
-namespace test {
+
+/* Forward declaration needed for defining the Traits below. */
+class DummyElement;
 
 /* The traits for the DummyElement. In this case, all of the traits are unique
  values so we can detect that each value is used in the expected context. */
-struct DummyElementTraits {
+template <>
+struct FemElementTraits<DummyElement> {
   using T = double;
   /* See `DoComputeData` below on how this dummy data is updated. */
   struct Data {
@@ -32,10 +35,10 @@ struct DummyElementTraits {
  as returning a fixed value (which can independently be accessed by calling
  the corresponding dummy method -- e.g., CalcResidual() should return the
  value in residual(). */
-class DummyElement final : public FemElement<DummyElement, DummyElementTraits> {
+class DummyElement final : public FemElement<DummyElement> {
  public:
-  using Base = FemElement<DummyElement, DummyElementTraits>;
-  using Traits = DummyElementTraits;
+  using Base = FemElement<DummyElement>;
+  using Traits = FemElementTraits<DummyElement>;
   using ConstitutiveModel = typename Traits::ConstitutiveModel;
   using T = typename Base::T;
   static constexpr int kNumDofs = Traits::num_dofs;
@@ -131,7 +134,6 @@ class DummyElement final : public FemElement<DummyElement, DummyElementTraits> {
   }
 };
 
-}  // namespace test
 }  // namespace internal
 }  // namespace fem
 }  // namespace multibody
