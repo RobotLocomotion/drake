@@ -22,7 +22,6 @@
 #include "drake/multibody/parsing/detail_scene_graph.h"
 #include "drake/multibody/parsing/detail_urdf_parser.h"
 #include "drake/multibody/parsing/scoped_names.h"
-#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/planar_joint.h"
@@ -56,10 +55,6 @@ using ModelInstanceIndexRange =
 RigidTransformd GetDefaultFramePose(
     const MultibodyPlant<double>& plant,
     const Frame<double>& frame);
-
-std::string ComputeProxyFrameName(const std::string& model_name) {
-  return fmt::format("_merged__{}__model__", model_name);
-}
 
 // Given a @p relative_nested_name to an object, this function returns the model
 // instance that is an immediate parent of the object and the local name of the
@@ -950,10 +945,10 @@ bool CanReuseModelInstance(
 }
 
 ModelInstanceIndex AddModelInstanceIfReusable(
-    MultibodyPlant<double>& plant, const std::string& model_name,
+    MultibodyPlant<double>* plant, const std::string& model_name,
     const ModelInstanceIndexRange& reusable_model_instance_range) {
-  if (plant.HasModelInstanceNamed(model_name)) {
-    auto model_instance = plant.GetModelInstanceByName(model_name);
+  if (plant->HasModelInstanceNamed(model_name)) {
+    auto model_instance = plant->GetModelInstanceByName(model_name);
     if (!CanReuseModelInstance(model_instance, reusable_model_instance_range)) {
       throw std::logic_error(
           "This model already contains a model instance named '" + model_name +
@@ -961,7 +956,7 @@ ModelInstanceIndex AddModelInstanceIfReusable(
     }
     return model_instance;
   } else {
-    return plant.AddModelInstance(model_name);
+    return plant->AddModelInstance(model_name);
   }
 }
 
@@ -975,7 +970,7 @@ std::vector<T> GetVectorDiff(const std::vector<T>& current,
 }
 
 // Every new nested model instance is treated as though it was newly created.
-// TODO (azeey) explain ^^^
+// TODO(azeey) explain ^^^
 struct InterfaceModelHelper {
   const MultibodyPlant<double>& plant;
   bool is_merged;
@@ -990,9 +985,8 @@ struct InterfaceModelHelper {
 
   bool have_snapshot{false};
 
-  InterfaceModelHelper(const MultibodyPlant<double>& pt, bool merged):
-      plant(pt),
-      is_merged(merged) {}
+  InterfaceModelHelper(const MultibodyPlant<double>& pt, bool merged)
+      : plant(pt), is_merged(merged) {}
 
   std::vector<ModelInstanceIndex> GetChildModelInstanceIndices() const {
     std::vector<ModelInstanceIndex> output;
@@ -1017,9 +1011,8 @@ struct InterfaceModelHelper {
     have_snapshot = true;
   }
 
-  void PostProcess(ModelInstanceIndex model_instance_index)
-  {
-    if (have_snapshot){
+  void PostProcess(ModelInstanceIndex model_instance_index) {
+    if (have_snapshot) {
       body_indices =
           GetVectorDiff(plant.GetBodyIndices(model_instance), body_indices);
       frame_indices =
@@ -1028,13 +1021,11 @@ struct InterfaceModelHelper {
           GetVectorDiff(plant.GetJointIndices(model_instance), joint_indices);
       model_instance_indices =
           GetVectorDiff(GetChildModelInstanceIndices(), model_instance_indices);
-    }
-    else {
+    } else {
       TakeSnapShot(model_instance_index);
     }
-    for (const auto &model: model_instance_indices)
-    {
-      auto &nested_snapshot = nested_models.emplace_back(plant, false);
+    for (const auto& model : model_instance_indices) {
+      auto& nested_snapshot = nested_models.emplace_back(plant, false);
       nested_snapshot.TakeSnapShot(model);
     }
   }
@@ -1042,65 +1033,21 @@ struct InterfaceModelHelper {
 
 class ScopedSnapshot {
  public:
-  explicit ScopedSnapshot(InterfaceModelHelper& interface_model_helper,
+  explicit ScopedSnapshot(InterfaceModelHelper* interface_model_helper,
                           ModelInstanceIndex model_instance)
       : target_interface_model_helper(interface_model_helper),
         target_model_instance(model_instance) {
-          std::cout << "Taking snapshot" << std::endl;
-    interface_model_helper.TakeSnapShot(target_model_instance);
+    interface_model_helper->TakeSnapShot(target_model_instance);
   }
 
   ~ScopedSnapshot() {
-    std::cout << "Post process" << std::endl;
-    target_interface_model_helper.PostProcess(target_model_instance);
+    target_interface_model_helper->PostProcess(target_model_instance);
   }
 
  private:
-  InterfaceModelHelper& target_interface_model_helper;
+  InterfaceModelHelper* target_interface_model_helper;
   ModelInstanceIndex target_model_instance;
 };
-
-// class InterfaceModelBuilder {
-//   bool is_merged;
-//   std::string name;
-//   ModelCreationHierarchy models;
-//  public:
-//   InterfaceModelBuilder();
-//   sdf::InterfaceModelPtr Build() {
-
-//   }
-//  private: sdf::InterfaceModelPtr BuildNested() {}
-// };
-
-// Data needed to build a non-merged interface model:
-// - name of model. This is obtained from the model instance
-// - model_frame (this can be obtained by looking for "__model__")
-// - canonical_link_name
-// - X_PM, X_WP
-//    - we need parent_model_frame (P) (__model__ of parent) so we can get X_WP.
-//    - Computed: X_PM = X_WP ⁻¹ X_WM
-//    -
-
-// Data needed to build a merged interface model:
-// - name of model. This cannot be obtained from the model instance since no
-// model instance is created for the merged model.
-// - model_frame. This cannot be obtained by looking for __model__. We need to
-// create a "_merged__{model_name}__model__" for each merged model and look for
-// that when creating interface models.
-// - canonical_link_name
-// - X_PM, X_WP
-//   - We can't use the __model__ frame of the parent model because it will not
-//   have been created yet.
-//   - When creating nested models, we can't use the __model__ frame of their
-//   parent because the merged model won't have a __model__ frame.
-//    - Can we not just pass X_WM down as X_WP recursively when building nested
-//    models?
-//
-//  To tie them together:
-//  - Pass name of model.
-//  - Pass model_frame or model_frame_name
-//  - Canonical link can be obtained from model_frame
-//  - Pass X_WM as X_WP. Compute X_WM of nested model from the model_frame
 
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
@@ -1113,7 +1060,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     const std::string& root_dir,
     const ModelInstanceIndexRange &reusable_model_instance_range) {
   const ModelInstanceIndex model_instance = AddModelInstanceIfReusable(
-      *plant, model_name, reusable_model_instance_range);
+      plant, model_name, reusable_model_instance_range);
 
   std::vector <ModelInstanceIndex> added_model_instances{model_instance};
 
@@ -1293,7 +1240,7 @@ std::vector<ModelInstanceIndex> MergeModelFromSpecification(
   // to the plant are associated with this current model instance.
   // N.B. This follows SDFormat's convention.
   const std::string sdf_model_proxy_frame_name =
-      ComputeProxyFrameName(model_name);
+      sdf::computeMergedModelProxyFrameName(model_name);
 
   drake::log()->trace("sdf_parser: Resolve canonical link");
   const Frame<double>& model_proxy_frame = [&]() -> const Frame<double>& {
@@ -1328,7 +1275,7 @@ std::vector<ModelInstanceIndex> MergeModelFromSpecification(
        ++joint_index) {
     // Get a pointer to the SDF joint, and the joint axis information.
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
-    // TODO (azeey) Handle merge-included models where //joint/parent or
+    // TODO(azeey) Handle merge-included models where //joint/parent or
     // //joint/child is __model__
     AddJointFromSpecification(
         model, X_WM, joint, parent_model_instance, plant, &joint_types);
@@ -1381,7 +1328,7 @@ void AddFramesToInterfaceModel(const MultibodyPlant<double>& plant,
                                const sdf::InterfaceModelPtr& interface_model,
                                const std::vector<FrameIndex>& frame_indices,
                                const std::string& model_frame_name) {
-  for (auto index: frame_indices) {
+  for (auto index : frame_indices) {
     const auto& frame = plant.get_frame(index);
     if (frame.model_instance() != model_instance) {
       continue;
@@ -1395,7 +1342,6 @@ void AddFramesToInterfaceModel(const MultibodyPlant<double>& plant,
       // created using the <frame> tag).
       continue;
     }
-    std::cout << fmt::format("Adding frame {}", frame.name()) << std::endl;
     interface_model->AddFrame(
         {frame.name(), GetRelativeBodyName(frame.body(), model_instance, plant),
          ToIgnitionPose3d(frame.GetFixedPoseInBodyFrame())});
@@ -1404,8 +1350,7 @@ void AddFramesToInterfaceModel(const MultibodyPlant<double>& plant,
 
 void AddJointsToInterfaceModel(const MultibodyPlant<double>& plant,
                                const sdf::InterfaceModelPtr& interface_model,
-                               const std::vector<JointIndex>& joint_indices
-                               ) {
+                               const std::vector<JointIndex>& joint_indices) {
   for (auto index : joint_indices) {
     const auto& joint = plant.get_joint(index);
     const std::string& child_name = joint.child_body().name();
@@ -1417,11 +1362,11 @@ void AddJointsToInterfaceModel(const MultibodyPlant<double>& plant,
 }
 
 ModelInstanceIndex GetOrCreateModelInstanceByName(
-    MultibodyPlant<double>& plant, const std::string& model_name) {
-  if (plant.HasModelInstanceNamed(model_name)) {
-    return plant.GetModelInstanceByName(model_name);
+    MultibodyPlant<double>* plant, const std::string& model_name) {
+  if (plant->HasModelInstanceNamed(model_name)) {
+    return plant->GetModelInstanceByName(model_name);
   }
-  return plant.AddModelInstance(model_name);
+  return plant->AddModelInstance(model_name);
 }
 
 sdf::InterfaceModelPtr ConvertToInterfaceModel(
@@ -1433,20 +1378,19 @@ sdf::InterfaceModelPtr ConvertToInterfaceModel(
   auto model_instance = interface_model_helper.model_instance;
   sdf::RepostureFunction reposture_model =
       [plant, model_instance](const sdf::InterfaceModelPoseGraph& graph) {
-        // TODO (azeey) Pass just the body indices of the model
+        // TODO(azeey) Pass just the body indices of the model
         // N.B. This should also posture the model appropriately.
         for (auto interface_link_ind : plant->GetBodyIndices(model_instance)) {
           const auto& interface_link = plant->get_body(interface_link_ind);
 
           ignition::math::Pose3d X_WL;
-          // ThrowAnyErrors(
-          //     graph.ResolveNestedFramePose(X_WL, interface_link.name()));
-          // plant->SetDefaultFreeBodyPose(interface_link, ToRigidTransform(X_WL));
+          ThrowAnyErrors(
+              graph.ResolveNestedFramePose(X_WL, interface_link.name()));
+          plant->SetDefaultFreeBodyPose(interface_link, ToRigidTransform(X_WL));
         }
       };
 
-  if (model_name.empty())
-  {
+  if (model_name.empty()) {
     const std::string absolute_name =
       plant->GetModelInstanceName(model_instance);
     model_name = sdf::SplitName(absolute_name).second;
@@ -1457,15 +1401,6 @@ sdf::InterfaceModelPtr ConvertToInterfaceModel(
   std::string canonical_link_name =
       GetRelativeBodyName(model_frame.body(), model_instance, *plant);
   RigidTransformd X_PM = RigidTransformd::Identity();
-  // The pose of the main (non-nested) model will be updated by the reposture
-  // callback, so we can use identity as the pose. For the nested model,
-  // however, we use the pose of the model relative to the parent frame, which
-  // is the parent model's frame.
-  // if (!is_root_model)
-  // {
-    // RigidTransformd X_WM = GetDefaultFramePose(*plant, model_frame);
-    // X_PM = X_WP.inverse() * X_WM;
-  // }
   RigidTransformd X_WM = GetDefaultFramePose(*plant, model_frame);
   X_PM = X_WP.inverse() * X_WM;
 
@@ -1489,35 +1424,12 @@ sdf::InterfaceModelPtr ConvertToInterfaceModel(
   for (const auto& nested_model : interface_model_helper.nested_models) {
     const std::string absolute_name =
         plant->GetModelInstanceName(nested_model.model_instance);
-    const auto [absolute_parent_name, local_name] = sdf::SplitName(absolute_name);
+    const auto [absolute_parent_name, local_name] =
+        sdf::SplitName(absolute_name);
     interface_model->AddNestedModel(
         ConvertToInterfaceModel(plant, local_name, nested_model, X_WM, false));
   }
   return interface_model;
-}
-
-void PrintInterfaceModel(sdf::InterfaceModelConstPtr model)
-{
- std::cout << "Model: " << model->Name() << std::endl;
- std::cout << "Links:" << std::endl;
- for(const auto &link: model->Links())
- {
-   std::cout << link.Name() << std::endl;
- }
-
- std::cout << "Frames:" << std::endl;
- for(const auto &frame: model->Frames())
- {
-   std::cout << frame.Name() << std::endl;
- }
- std::cout << "Joints:" << std::endl;
- for(const auto &joint: model->Joints())
- {
-   std::cout << joint.Name() << std::endl;
- }
- for (const auto& nested_model : model->NestedModels()) {
-   PrintInterfaceModel(nested_model);
- }
 }
 
 // This assumes that parent models will have their parsing start before child
@@ -1561,16 +1473,14 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
       // Create the parent model instance if it hasn't been created already.
       // This can happen if this is the first model to be merge-included.
       const auto parent_model_instance =
-          GetOrCreateModelInstanceByName(*plant, include.AbsoluteParentName());
-
-
+          GetOrCreateModelInstanceByName(plant, include.AbsoluteParentName());
       {
-        ScopedSnapshot snapshot(interface_model_helper, parent_model_instance);
+        ScopedSnapshot snapshot(&interface_model_helper, parent_model_instance);
         model_name = MergeModelFromUrdf(data_source, parent_model_instance,
                                         package_map, plant);
       }
-      model_frame_name =
-          ComputeProxyFrameName(include.LocalModelName().value_or(model_name));
+      model_frame_name = sdf::computeMergedModelProxyFrameName(
+          include.LocalModelName().value_or(model_name));
       interface_model_helper.model_frame_name = model_frame_name;
 
       main_model_instance = parent_model_instance;
@@ -1598,16 +1508,13 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   } else {
     // N.B. Errors will just happen via thrown exceptions.
     DRAKE_DEMAND(is_forced_nesting);
-
     // Since this is just for testing, we'll assume that there wouldn't be
     // another included model that requires a custom parser.
     sdf::Root root;
 
-    std::cout << "Loading " << *data_source.file_name << std::endl;
     std::string root_dir = LoadSdf(&root, data_source, parser_config);
     DRAKE_DEMAND(nullptr != root.Model());
     const sdf::Model &model = *root.Model();
-    std::cout << "Loaded " << model.Name() << std::endl;
 
     model_name =
         include.LocalModelName().value_or(model.Name());
@@ -1615,14 +1522,14 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
       // Create the parent model instance if it hasn't been created already.
       // This can happen if this is the first model to be merge-included.
       const auto parent_model_instance =
-          GetOrCreateModelInstanceByName(*plant, include.AbsoluteParentName());
+          GetOrCreateModelInstanceByName(plant, include.AbsoluteParentName());
       interface_model_helper.TakeSnapShot(parent_model_instance);
       main_model_instance = MergeModelFromSpecification(
           model, model_name, parent_model_instance, {},
           plant, package_map, root_dir, {}).front();
       interface_model_helper.PostProcess(parent_model_instance);
-      interface_model_helper.model_frame_name = ComputeProxyFrameName(model_name);
-      std::cout << fmt::format("Merging {} as {}", model.Name(), model_name)  << std::endl;
+      interface_model_helper.model_frame_name =
+          sdf::computeMergedModelProxyFrameName(model_name);
     } else {
       main_model_instance = AddModelsFromSpecification(
           model, sdf::JoinName(include.AbsoluteParentName(), model_name), {},
@@ -1636,12 +1543,10 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 
   // This will be populated for the first model instance.
   sdf::InterfaceModelPtr main_interface_model;
-  main_interface_model = ConvertToInterfaceModel(plant, model_name, interface_model_helper);
+  main_interface_model =
+      ConvertToInterfaceModel(plant, model_name, interface_model_helper);
   main_interface_model->SetParserSupportsMergeInclude(true);
 
-  std::cout << "==========" << std::endl;
-  PrintInterfaceModel(main_interface_model);
-  std::cout << ">>>>>>>>>>" << std::endl;
   return main_interface_model;
 }
 
@@ -1695,7 +1600,6 @@ ModelInstanceIndex AddModelFromSdf(
   const auto model_index_end =
       static_cast<ModelInstanceIndex>(plant->num_model_instances());
 
-  root.PrintGraphs(sdf::Root::PrintGraphType::FRAME_ATTACHED_TO);
   ModelInstanceIndexRange reusable_model_instance_range =
       std::make_pair(model_index_begin, model_index_end);
 
@@ -1742,7 +1646,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
   const auto model_index_end =
       static_cast<ModelInstanceIndex>(plant->num_model_instances());
 
-  // TODO (azeey) Comment
+  // TODO(azeey) Comment
   ModelInstanceIndexRange reusable_model_instance_range =
       std::make_pair(model_index_begin, model_index_end);
 

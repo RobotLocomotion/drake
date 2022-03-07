@@ -14,8 +14,7 @@
     </joint>
 
     <include>
-      <!-- <pose relative_to="torso">1 0 0 0 0 0</pose> -->
-      <pose>1 0 0 0 0 0</pose>
+      <pose relative_to="torso">1 0 0 0 0 0</pose>
       <uri>package://interface_api_test/arm.forced_nesting_sdf</uri>
       <name>arm</name>
     </include>
