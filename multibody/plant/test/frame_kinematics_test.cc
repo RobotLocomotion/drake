@@ -139,6 +139,7 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   // Directly verify the calculation of V_W_L3H_W (frame H's spatial velocity
   // relative to frame L3, measured and expressed in the world frame W) is the
   // same as its definition which is V_WH_W - V_WL3_W.
+  // Note: Frame H  is a fixed offset frame, fixed to end-effector E,
   const SpatialVelocity<double> V_W_L3H_W =
       frame_H_->CalcRelativeSpatialVelocityInWorld(*context_, frame_L3);
   const SpatialVelocity<double> V_WL3_W =
