@@ -100,6 +100,21 @@ GTEST_TEST(SymbolicLatex, BasicTest) {
       R"""( \succeq 0)""");
 }
 
+GTEST_TEST(SymbolicLatex, MatrixSubscripts) {
+  const VectorX<Variable> x = MakeVectorVariable(2, "x");
+  const Vector2<Variable> y = MakeVectorVariable<2>("y");
+  const MatrixX<Variable> A = MakeMatrixVariable(2, 2, "A");
+
+  EXPECT_EQ(ToLatex(x[0]), "x_{0}");
+  EXPECT_EQ(ToLatex(x[1]), "x_{1}");
+  EXPECT_EQ(ToLatex(y[0]), "y_{0}");
+  EXPECT_EQ(ToLatex(y[1]), "y_{1}");
+  EXPECT_EQ(ToLatex(A(0, 0)), "A_{0, 0}");
+  EXPECT_EQ(ToLatex(A(0, 1)), "A_{0, 1}");
+  EXPECT_EQ(ToLatex(A(1, 0)), "A_{1, 0}");
+  EXPECT_EQ(ToLatex(A(1, 1)), "A_{1, 1}");
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
