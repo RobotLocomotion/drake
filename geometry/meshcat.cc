@@ -521,7 +521,7 @@ class Meshcat::Impl {
     std::future<std::tuple<int, bool>> app_future =
         app_promise.get_future();
     websocket_thread_ = std::thread(
-        &Impl::WebSocketMain, this, std::move(app_promise),
+        &Impl::WrappedWebSocketMain, this, std::move(app_promise),
         params.host, params.port);
     bool connected;
     std::tie(port_, connected) = app_future.get();
@@ -537,14 +537,7 @@ class Meshcat::Impl {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     Defer([this]() {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
-      auto iter = websockets_.begin();
-      while (iter != websockets_.end()) {
-        // Need to advance the iterator before calling close (#15821).
-        auto* ws = *iter++;
-        ws->close();
-      }
-      us_listen_socket_close(0, listen_socket_);
-      listen_socket_ = nullptr;
+      Shutdown();
     });
     defer_.store(nullptr);
     websocket_thread_.join();
@@ -1436,14 +1429,43 @@ class Meshcat::Impl {
     return f.get();
   }
 
-  void InjectWebsocketThreadFault() {
+  void InjectWebsocketThreadFault(int fault_number) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
-    Defer([this]() {
-      DRAKE_DEMAND(IsThread(websocket_thread_id_));
-      // Closing the listen socket will cause the app.run() loop to exit.
-      us_listen_socket_close(0, listen_socket_);
-      listen_socket_ = nullptr;
-    });
+    DRAKE_DEMAND(fault_number >= 0);
+    DRAKE_DEMAND(fault_number <= kMaxFaultNumber);
+    log()->warn("InjectWebsocketThreadFault({}) was called", fault_number);
+    switch (fault_number) {
+      case 0: {
+        Defer([this]() {
+          DRAKE_DEMAND(IsThread(websocket_thread_id_));
+          // Closing the listen socket will cause the app.run() loop to exit.
+          us_listen_socket_close(0, listen_socket_);
+          listen_socket_ = nullptr;
+        });
+        return;
+      }
+      case 1: {
+        Defer([this]() {
+          DRAKE_DEMAND(IsThread(websocket_thread_id_));
+          throw std::runtime_error("InjectWebsocketThreadFault during defer");
+        });
+        return;
+      }
+      case 2: {
+        inject_open_fault_.store(true);
+        return;
+      }
+      case 3: {
+        inject_close_fault_.store(true);
+        return;
+      }
+      case 4: {
+        inject_message_fault_.store(true);
+        return;
+      }
+    }
+    static_assert(kMaxFaultNumber == 4);
+    DRAKE_UNREACHABLE();
   }
 
  private:
@@ -1451,12 +1473,31 @@ class Meshcat::Impl {
     return (std::this_thread::get_id() == thread_id);
   }
 
-  // This is the entry point for our websocket thread.
+  // This is the entry point for our websocket thread. It's only job is as a
+  // last-resort exception catcher so that we'll always log it and never call
+  // std::terminate (an exception leaking from std::thread always terminates).
+  //
+  // Our design goal is that no exception can ever reach this function anyway
+  // (it should be caught by a more local try-catch block) but in case we've
+  // missed one of those, we want to be sure to log it here.
+  //
   // N.B. Our arguments must not be pass-by-reference because this function is
   // called from a new thread!
-  void WebSocketMain(
+  void WrappedWebSocketMain(
       std::promise<std::tuple<int, bool>> app_promise,
       std::string host, std::optional<int> desired_port) {
+    try {
+      WebSocketMain(std::move(app_promise), host, desired_port);
+    } catch (const std::exception& e) {
+      drake::log()->critical(
+          "Meshcat's internal websocket thread crashed via an exception: {}",
+          e.what());
+    }
+  }
+
+  void WebSocketMain(
+      std::promise<std::tuple<int, bool>> app_promise,
+      const std::string& host, std::optional<int> desired_port) {
     websocket_thread_id_ = std::this_thread::get_id();
     ScopeExit guard([this]() {
       // N.B. Refer to the comments on the `defer_` and `loop_` class member
@@ -1490,19 +1531,43 @@ class Meshcat::Impl {
     // back pressure.
     behavior.maxBackpressure = 0;
     behavior.open = [this](WebSocket* ws) {
-      // IsThread(websocket_thread_id_) is checked by the Handle... function
-      HandleSocketOpen(ws);
+      // IsThread(websocket_thread_id_) is checked by the Handle... function.
+      try {
+        HandleSocketOpen(ws);
+      } catch (const std::exception& e) {
+        drake::log()->critical(
+            "Meshcat's internal HandleSocketOpen crashed via an exception: {}",
+            e.what());
+        Shutdown();
+      }
     };
     behavior.close = [this](WebSocket* ws, int, std::string_view message) {
-      // IsThread(websocket_thread_id_) is checked by the Handle... function
+      // IsThread(websocket_thread_id_) is checked by the Handle... function.
       unused(message);
-      HandleSocketClose(ws);
+      try {
+        HandleSocketClose(ws);
+      } catch (const std::exception& e) {
+        drake::log()->critical(
+            "Meshcat's internal HandleSocketClose crashed via an exception: {}",
+            e.what());
+        // The Shutdown() function immediately closes all sockets, thus firing
+        // this close() behavior. We never want to re-entrantly shutdown during
+        // an existing shutdown, so we'll defer it.
+        uWS::Loop::get()->defer([this]() { Shutdown(); });
+      }
     };
     behavior.message = [this](WebSocket* ws, std::string_view message,
                               uWS::OpCode op_code) {
-      // IsThread(websocket_thread_id_) is checked by the Handle... function
+      // IsThread(websocket_thread_id_) is checked by the Handle... function.
       unused(op_code);
-      HandleMessage(ws, message);
+      try {
+        HandleMessage(ws, message);
+      } catch (const std::exception& e) {
+        drake::log()->critical(
+            "Meshcat's internal HandleMessage crashed via an exception: {}",
+            e.what());
+        Shutdown();
+      }
     };
 
     uWS::App app =
@@ -1565,6 +1630,10 @@ class Meshcat::Impl {
         ws->send(message_stream.str());
       }
     }
+    if (inject_open_fault_.load()) {
+      throw std::runtime_error(
+          "InjectWebsocketThreadFault during socket open");
+    }
   }
 
   // This function is a callback from a WebSocketBehavior.
@@ -1577,6 +1646,10 @@ class Meshcat::Impl {
     const int new_count = --num_websockets_;
     DRAKE_DEMAND(new_count >= 0);
     DRAKE_DEMAND(new_count == static_cast<int>(websockets_.size()));
+    if (inject_close_fault_.load()) {
+      throw std::runtime_error(
+         "InjectWebsocketThreadFault during socket close");
+    }
   }
 
   // This function is a callback from a WebSocketBehavior.
@@ -1619,6 +1692,30 @@ class Meshcat::Impl {
       return;
     }
     drake::log()->warn("Meshcat ignored a '{}' event", data.type);
+    if (inject_message_fault_.load()) {
+      throw std::runtime_error(
+          "InjectWebsocketThreadFault during message callback");
+    }
+  }
+
+  // This function is a private utility for use within this class. It closes
+  // all connections and schedules the websocket thread to exit gracefully.
+  void Shutdown() {
+    DRAKE_DEMAND(IsThread(websocket_thread_id_));
+
+    // Stop accepting new connections. As a side-effect, this also causes the
+    // App::run to return from its internal "run forever" loop, so that we'll
+    // be able to join the websocket thread.
+    us_listen_socket_close(0, listen_socket_);
+    listen_socket_ = nullptr;
+
+    // Close any existing connections. Calling ws->close() erases the WebSocket
+    // from websockets_, so we need to advance the iterator beforehand (#15821).
+    auto iter = websockets_.begin();
+    while (iter != websockets_.end()) {
+      auto* ws = *iter++;
+      ws->close();
+    }
   }
 
   // A functor object that we can post from the main thread into the websocket
@@ -1634,9 +1731,20 @@ class Meshcat::Impl {
   // destroy the callback, without ever invoking it.
   void Defer(Callback&& callback) const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
+    Callback callback_with_shutdown =
+        [this, inner_callback = std::move(callback)]() mutable {
+      try {
+        inner_callback();
+      } catch (const std::exception& e) {
+        drake::log()->critical(
+            "Meshcat's internal callback crashed with an exception: {}",
+            e.what());
+        const_cast<Impl*>(this)->Shutdown();
+      }
+    };
     DeferImpl handler = defer_.load();
     if (handler) {
-      handler(loop_, std::move(callback));
+      handler(loop_, std::move(callback_with_shutdown));
     }
   }
 
@@ -1758,6 +1866,12 @@ class Meshcat::Impl {
   // throwing, or during the destructor as normal), it sets defer_ to null to
   // indicate that it will never post into the loop again.
   mutable std::atomic<DeferImpl> defer_{&DeferImplNominal};
+
+  // These bools are used during unit testing to inject exceptions into various
+  // places on the websocket thread.
+  std::atomic<bool> inject_open_fault_{false};
+  std::atomic<bool> inject_close_fault_{false};
+  std::atomic<bool> inject_message_fault_{false};
 };
 
 namespace {
@@ -1957,8 +2071,8 @@ std::string Meshcat::GetPackedProperty(std::string_view path,
   return impl().GetPackedProperty(path, std::move(property));
 }
 
-void Meshcat::InjectWebsocketThreadFault() {
-  impl().InjectWebsocketThreadFault();
+void Meshcat::InjectWebsocketThreadFault(int fault_number) {
+  impl().InjectWebsocketThreadFault(fault_number);
 }
 
 }  // namespace geometry
