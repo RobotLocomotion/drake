@@ -166,6 +166,9 @@ int do_main() {
 
   // Set q̇A,the rate of change in radians/second of the angle qA.
   joint_WA.set_angular_rate(&four_bar_context, FLAGS_initial_velocity);
+  // Configuration is symmetric. Therefore w_C = w_A and w_B = 0.
+  joint_WC.set_angular_rate(&four_bar_context, FLAGS_initial_velocity);
+  joint_AB.set_angular_rate(&four_bar_context, 0.);
 
   // Add constraint.
   const Vector3d p_BBc = bc_bushing.GetFixedPoseInBodyFrame().translation();
@@ -173,9 +176,10 @@ int do_main() {
 
   const double dissipation_time_scale =
       FLAGS_force_damping / FLAGS_force_stiffness;
-  manager->AddDistanceConstraint(bc_bushing.body(), p_BBc, cb_bushing.body(),
-                                 p_CCb, 0.0, FLAGS_force_stiffness,
-                                 dissipation_time_scale);
+  const Vector3d offset(0., 0.1, 0.);
+  manager->AddDistanceConstraint(bc_bushing.body(), p_BBc + offset,
+                                 cb_bushing.body(), p_CCb, 0.0,
+                                 FLAGS_force_stiffness, dissipation_time_scale);
 
   //(void)bc_bushing;
   //(void)cb_bushing;
