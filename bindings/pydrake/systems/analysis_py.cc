@@ -2,6 +2,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -11,6 +12,7 @@
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/simulator_config.h"
 #include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
 
@@ -26,6 +28,17 @@ PYBIND11_MODULE(analysis, m) {
   m.doc() = "Bindings for the analysis portion of the Systems framework.";
 
   py::module::import("pydrake.systems.framework");
+
+  {
+    using Class = SimulatorConfig;
+    constexpr auto& cls_doc = pydrake_doc.drake.systems.SimulatorConfig;
+    py::class_<Class> cls(m, "SimulatorConfig", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>())
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefCopyAndDeepCopy(&cls);
+  }
 
   {
     constexpr auto& doc = pydrake_doc.drake.systems;
@@ -220,7 +233,18 @@ PYBIND11_MODULE(analysis, m) {
           py::keep_alive<0, 1>(),
           pydrake_doc.drake.systems.ResetIntegratorFromFlags.doc)
       .def("GetIntegrationSchemes", &GetIntegrationSchemes,
-          pydrake_doc.drake.systems.GetIntegrationSchemes.doc);
+          pydrake_doc.drake.systems.GetIntegrationSchemes.doc)
+      .def("ApplySimulatorConfig",
+          overload_cast_explicit<void, Simulator<double>*,
+              const SimulatorConfig&>(&ApplySimulatorConfig),
+          py::arg("simulator"), py::arg("config"),
+          pydrake_doc.drake.systems.ApplySimulatorConfig.doc)
+      .def("ExtractSimulatorConfig",
+          overload_cast_explicit<SimulatorConfig, const Simulator<double>&>(
+              &ExtractSimulatorConfig),
+          py::arg("simulator"),
+          pydrake_doc.drake.systems.ExtractSimulatorConfig.doc);
+
   // Print Simulator Statistics
   m  // BR
       .def("PrintSimulatorStatistics", &PrintSimulatorStatistics<double>,

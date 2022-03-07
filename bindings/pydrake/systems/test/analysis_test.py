@@ -1,3 +1,4 @@
+import copy
 import unittest
 
 from pydrake.symbolic import Variable, Expression
@@ -10,6 +11,8 @@ from pydrake.systems.primitives import (
 )
 from pydrake.systems.framework import EventStatus
 from pydrake.systems.analysis import (
+    ApplySimulatorConfig,
+    ExtractSimulatorConfig,
     PrintSimulatorStatistics,
     ResetIntegratorFromFlags,
     RungeKutta2Integrator_,
@@ -18,6 +21,7 @@ from pydrake.systems.analysis import (
     RegionOfAttractionOptions,
     Simulator,
     Simulator_,
+    SimulatorConfig,
     SimulatorStatus,
 )
 from pydrake.trajectories import PiecewisePolynomial
@@ -105,6 +109,19 @@ class TestAnalysis(unittest.TestCase):
             result = ResetIntegratorFromFlags(
                 simulator=simulator, scheme="runge_kutta2",
                 max_step_size=0.001)
+
+    def test_simulator_config(self):
+        config = SimulatorConfig(target_realtime_rate=2.0)
+        self.assertEqual(config.target_realtime_rate, 2.0)
+        copy.copy(config)
+
+    def test_simulator_config_functions(self):
+        source = ConstantVectorSource([2, 3])
+        simulator = Simulator(source)
+        config = ExtractSimulatorConfig(simulator)
+        config.target_realtime_rate = 100.0
+        ApplySimulatorConfig(simulator, config)
+        self.assertEqual(simulator.get_target_realtime_rate(), 100.0)
 
     def test_system_monitor(self):
         x = Variable("x")
