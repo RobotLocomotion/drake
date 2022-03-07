@@ -631,6 +631,27 @@ def print_symbols(f, name, node, level=0, *, tree_parser_doc,
                 "ignore_dirs_for_coverage": ignore_dirs_for_coverage
             }
         print_symbols(f, key, child, level=level + 1, **tree_parser_args)
+    if "Serialize" in keys:
+        # For classes with a Serialize function, also generate an list of the
+        # docstrings for all fields for use by DefAttributesUsingSerialize.
+        # For simplicity, we emit all field names whether or not Serialize
+        # actually uses them. The getter is oddly-named ("Serialize__fields")
+        # to avoid a naming conflict with any user-defined fields, functions,
+        # or types that are part the enclosing class. We return the list as a
+        # std::array of pairs, to avoid gratuitous heap allocations from a
+        # std::map keyed on std::string.
+        field_names = [
+            x for x in keys
+            if (node.children_map[x].first_symbol.cursor.kind
+                == CursorKind.FIELD_DECL)
+        ]
+        if field_names:
+            iprint(f'  auto Serialize__fields() const {{')
+            iprint(f'    return std::array{{')
+            for x in field_names:
+                iprint(f'      std::make_pair("{x}", {x}.doc),')
+            iprint(f'    }};')
+            iprint(f'  }}')
     iprint('}} {};'.format(name_var))
 
     tree_parser_doc.pop()
@@ -726,6 +747,9 @@ def main():
 // {0} {1}
 // This file contains docstrings for the Python bindings that were
 // automatically extracted by mkdoc.py.
+
+#include <array>
+#include <utility>
 
 #if defined(__GNUG__)
 #pragma GCC diagnostic push
