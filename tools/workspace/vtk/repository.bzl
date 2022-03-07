@@ -451,7 +451,9 @@ licenses([
         os_result,
         "vtkFiltersCore",
         hdrs = [
+            "vtkDecimatePro.h",
             "vtkFiltersCoreModule.h",
+            "vtkTriangleFilter.h",
         ],
         deps = [
             ":vtkCommonCore",
