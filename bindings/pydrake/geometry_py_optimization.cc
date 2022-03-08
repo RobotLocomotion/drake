@@ -246,6 +246,8 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &VPolytope::MakeUnitBox, py::arg("dim"),
             cls_doc.MakeUnitBox.doc)
+        .def_static("MakeFromVertices", &VPolytope::MakeFromVertices,
+            py::arg("vertices"), cls_doc.MakeFromVertices.doc)
         .def("CalcVolume", &VPolytope::CalcVolume, cls_doc.CalcVolume.doc)
         .def(py::pickle([](const VPolytope& self) { return self.vertices(); },
             [](Eigen::MatrixXd arg) { return VPolytope(arg); }));

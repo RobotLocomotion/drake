@@ -20,7 +20,7 @@ namespace optimization {
  Note: Unlike the half-space representation, this
  definition means the set is always bounded (hence the name polytope, instead of
  polyhedron).
- 
+
 @ingroup geometry_optimization
 */
 class VPolytope final : public ConvexSet {
@@ -65,6 +65,14 @@ class VPolytope final : public ConvexSet {
   /** Constructs the L∞-norm unit box in @p dim dimensions, {x | |x|∞ <= 1 }.
   This is an axis-aligned box, centered at the origin, with edge length 2. */
   static VPolytope MakeUnitBox(int dim);
+
+  /** Constructs the polytope from a d-by-n matrix, where d is the ambient
+  dimension, and n is the number of vertices.  The vertices do not have to be
+  minimal (they can contain points inside their convex hull), but they will be
+  made minimal before instantiating the VPolytope.
+  */
+  static VPolytope MakeFromVertices(
+      const Eigen::Ref<const Eigen::MatrixXd>& vertices);
 
   /**
    * Computes the volume of this V-Polytope.
