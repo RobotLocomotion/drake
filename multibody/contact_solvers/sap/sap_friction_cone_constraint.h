@@ -28,16 +28,16 @@ namespace internal {
 
  Regularized Friction:
   SAP contact constraints regularize friction. That is, in stiction the
-  tangential contact forces obeys:
+  tangential contact impulses obeys:
     γₜ = −vₜ/Rₜ
   where vₜ is the tangential velocity and Rₜ is the regularization parameter for
   the tangential direction.
-  During sliding, the friction force obeys:
+  During sliding, the friction impulse obeys:
     γₜ = −μγₙt̂
   where t̂ = vₜ/‖vₜ‖.
   Notice that:
-    1. The friction force always opposes the tangential velocity, satisfying the
-       principle of maximum dissipation.
+    1. The friction impulse always opposes the tangential velocity, satisfying
+       the principle of maximum dissipation.
     2. It obeys Coulomb's law of friction, i.e. ‖γₜ‖ ≤ μγₙ.
 
   Regularization of friction means that during stiction there might be a
@@ -65,7 +65,7 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapFrictionConeConstraint);
 
   /* Numerical parameters that define the constraint. Refer to this class's
-   documention for details. */
+   documentation for details. */
   struct Parameters {
     /* Coefficient of friction μ, dimensionless. It must be non-negative. */
     T mu{0.0};
@@ -76,7 +76,7 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
     /* Rigid approximation constant: Rₙ = β²/(4π²)⋅w when the contact frequency
      ωₙ is below the limit ωₙ⋅δt ≤ 2π. That is, the period is Tₙ = β⋅δt. w
      corresponds to a diagonal approximation of the Delassuss operator for
-     each contact. See [Castro et al., 2021. §IX.A] for details. */
+     each contact. See [Castro et al., 2021] for details. */
     double beta{1.0};
     /* Dimensionless parameterization of the regularization of friction. An
      approximation for the bound on the slip velocity is vₛ ≈ σ⋅δt⋅g.

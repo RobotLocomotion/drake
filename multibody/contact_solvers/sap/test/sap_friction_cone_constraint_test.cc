@@ -206,7 +206,7 @@ Vector3d SolveProjectionWithScs(double mu, const Vector3d& R,
 
 // This method is used to validate SapFrictionConeConstraint::Project().
 // We use MathematicalProgram to obtain numerical values that we use to compare
-// againthe analytical projection implemented by SapFrictionConeConstraint.
+// against the analytical projection implemented by SapFrictionConeConstraint.
 // To validate the analytical gradients of the projection, we use automatic
 // differentiation.
 void ValidateProjection(double mu, const Vector3d& R, const Vector3d& y) {
@@ -245,7 +245,7 @@ void ValidateProjection(double mu, const Vector3d& R, const Vector3d& y) {
 }
 
 // Region I corresponds to the friction cone, see [Castro et al., 2021].
-// Phisically this is the stiction region.
+// Physically this is the stiction region.
 GTEST_TEST(SapFrictionConeConstraint, RegionI) {
   // Below we use an arbitrary set of values so that y is in Region I
   // (stiction).
@@ -298,7 +298,7 @@ GTEST_TEST(SapFrictionConeConstraint, RegionII) {
 }
 
 // Region III corresponds to the polar cone, see [Castro et al., 2021].
-// Phisically this is the no contact region, i.e. gamma = 0.
+// Physically this is the no contact region, i.e. gamma = 0.
 GTEST_TEST(SapFrictionConeConstraint, RegionIII) {
   // Below we use an arbitrary set of values so that y is in Region III (no
   // contact).
