@@ -45,8 +45,6 @@ class ParseTest : public testing::TestWithParam<std::string> {};
 
 TEST_P(ParseTest, ParsesUrdfAndVisualizes) {
   const std::string object_name = GetParam();
-  const std::string package = FindResourceOrThrow(
-      "drake/manipulation/models/realsense2_description/package.xml");
   const std::string filename = FindResourceOrThrow(fmt::format(
       "drake/manipulation/models/realsense2_description/urdf/{}.urdf",
       object_name));
@@ -58,8 +56,6 @@ TEST_P(ParseTest, ParsesUrdfAndVisualizes) {
 
   // Check to ensure URDF is parsable.
   Parser parser(&plant);
-  // TODO(#16676) This should be using drake/package.xml, not it's own.
-  parser.package_map().AddPackageXml(package);
   EXPECT_NO_THROW(parser.AddModelFromFile(filename));
 
   // Ensure there was exactly one model instance added for the new model.

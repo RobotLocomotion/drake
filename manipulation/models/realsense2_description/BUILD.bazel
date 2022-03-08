@@ -26,8 +26,37 @@ _REALSENSE2_DESCRIPTION_FILES = forward_files(
     visibility = ["//visibility:private"],
 )
 
+_STLS = [
+    x
+    for x in _REALSENSE2_DESCRIPTION_FILES
+    if x.endswith(".stl")
+]
+
+_OBJS = [x[:-3] + "obj" for x in _STLS]
+
+[
+    genrule(
+        name = obj + "_genrule",
+        srcs = [stl],
+        outs = [obj],
+        cmd = " ".join([
+            "$(location //manipulation/util:stl2obj)",
+            "--input=$<",
+            "--output=$@",
+            "--reduction=0.98",
+        ]),
+        tools = ["//manipulation/util:stl2obj"],
+        visibility = ["//visibility:private"],
+    )
+    for stl, obj in zip(_STLS, _OBJS)
+]
+
 install_data(
-    extra_prod_models = _REALSENSE2_DESCRIPTION_FILES,
+    extra_prod_models = [
+        x
+        for x in _REALSENSE2_DESCRIPTION_FILES + _OBJS
+        if x not in _STLS
+    ],
 )
 
 drake_cc_googletest(
