@@ -477,6 +477,9 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "text_logging_gil_test",
+    tags = [
+        "cpu:2",
+    ],
     deps = [
         ":module_py",
         ":text_logging_test_py",

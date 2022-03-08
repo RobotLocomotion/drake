@@ -40,6 +40,7 @@ class Worker {
 
   void Stop() {
     DRAKE_THROW_UNLESS(thread_ != nullptr);
+    pybind11::gil_scoped_release guard;
     keep_running_.store(false);
     thread_->join();
     thread_.reset();
