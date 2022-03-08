@@ -233,6 +233,7 @@ def test_wheel(target, options):
     test_dir = os.path.join(script_dir, 'test')
 
     docker('build', '-t', container, *target_args(target), test_dir)
+    images_to_remove.append(container)
 
     docker('run', '--rm', '-t',
            '-v' f'{test_dir}:/test',

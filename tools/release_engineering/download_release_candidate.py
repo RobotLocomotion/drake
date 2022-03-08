@@ -11,7 +11,7 @@ Here's an example of how to download the archives:
 
   bazel build //tools/release_engineering:download_release_candidate
   bazel-bin/tools/release_engineering/download_release_candidate \
-    --version v0.27.0 --timestamp 20210216
+    --version v1.0.0 --timestamp 20220303
 """
 
 import argparse

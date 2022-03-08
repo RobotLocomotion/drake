@@ -28,9 +28,47 @@ int SystemCall(const std::vector<std::string>& argv) {
   for (const std::string& arg : argv) {
     // Note: Can't use ASSERT_THAT inside this subroutine.
     EXPECT_THAT(arg, ::testing::Not(HasSubstr("'")));
-    command = std::move(command) + "'" + arg + "' ";
+    command += fmt::format("'{}' ", arg);
   }
   return std::system(command.c_str());
+}
+
+// Calls a python helper program to send and receive websocket messages(s)
+// to/from the given Meshcat instance.
+//
+// @param send_json Message to send, as a json string.
+// @param expect_num_messages Expected number of messages to receive.
+// @param expect_json Expected content of the final message, as a json string.
+// @param expect_success Whether to insist that the python helper finished and
+//     the expected_json (if given) was actually received.
+void CheckWebsocketCommand(
+    const Meshcat& meshcat,
+    std::optional<std::string> send_json,
+    std::optional<int> expect_num_messages,
+    std::optional<std::string> expect_json,
+    bool expect_success = true) {
+  std::vector<std::string> argv;
+  argv.push_back(FindResourceOrThrow(
+      "drake/geometry/meshcat_websocket_client"));
+  argv.push_back(fmt::format("--ws_url={}", meshcat.ws_url()));
+  if (send_json) {
+    DRAKE_DEMAND(!send_json->empty());
+    argv.push_back(fmt::format("--send_message={}", std::move(*send_json)));
+  }
+  if (expect_num_messages) {
+    argv.push_back(fmt::format("--expect_num_messages={}",
+        *expect_num_messages));
+  }
+  if (expect_json) {
+    DRAKE_DEMAND(!expect_json->empty());
+    argv.push_back(fmt::format("--expect_message={}", std::move(*expect_json)));
+  }
+  argv.push_back(fmt::format("--expect_success={}",
+      expect_success ? "1" : "0"));
+  const int exit_code = SystemCall(argv);
+  if (expect_success) {
+    EXPECT_EQ(exit_code, 0);
+  }
 }
 
 GTEST_TEST(MeshcatTest, TestHttp) {
@@ -141,6 +179,42 @@ GTEST_TEST(MeshcatTest, MalformedCustom) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       Meshcat({"", std::nullopt, "file:///tmp"}),
       ".*web_url_pattern.*http.*");
+}
+
+// Checks that unparseable messages are ignored.
+GTEST_TEST(MeshcatTest, UnparseableMessageIgnored) {
+  auto dut = std::make_unique<Meshcat>();
+
+  // Send an unparseable message; don't expect a reply.
+  const char* const message = "0";
+  const bool expect_success = false;
+  CheckWebsocketCommand(*dut, message, {}, {}, expect_success);
+
+  // Pause to allow the websocket thread to run.
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  // The object can be destroyed with neither errors nor sanitizer leaks.
+  EXPECT_NO_THROW(dut.reset());
+}
+
+// Checks that parseable messages with unknown semantics are ignored.
+GTEST_TEST(MeshcatTest, UnknownEventIgnored) {
+  auto dut = std::make_unique<Meshcat>();
+
+  // Send a syntactically well-formed UserInterfaceEvent to tickle the
+  // stack, but don't expect a reply.
+  const char* const message = R"""({
+    "type": "no_such_type",
+    "name": "no_such_name"
+  })""";
+  const bool expect_success = false;
+  CheckWebsocketCommand(*dut, message, {}, {}, expect_success);
+
+  // Pause to allow the websocket thread to run.
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  // The object can be destroyed with neither errors nor sanitizer leaks.
+  EXPECT_NO_THROW(dut.reset());
 }
 
 // Checks that a problem with the worker thread eventually ends up as an
@@ -471,6 +545,9 @@ GTEST_TEST(MeshcatTest, Buttons) {
 
   meshcat.AddButton("button");
   EXPECT_EQ(meshcat.GetButtonClicks("button"), 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddButton("button"),
+      "Meshcat already has a button named button.");
   meshcat.DeleteButton("button");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -505,6 +582,9 @@ GTEST_TEST(MeshcatTest, Sliders) {
   EXPECT_NEAR(meshcat.GetSliderValue("slider"), 1.5, 1e-14);
   meshcat.SetSliderValue("slider", 1.245);
   EXPECT_NEAR(meshcat.GetSliderValue("slider"), 1.2, 1e-14);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddSlider("slider", 0.2, 1.5, 0.1, 0.5),
+      "Meshcat already has a slider named slider.");
 
   meshcat.DeleteSlider("slider");
 
@@ -523,20 +603,25 @@ GTEST_TEST(MeshcatTest, Sliders) {
       "Meshcat does not have any slider named slider2.");
 }
 
-void CheckWebsocketCommand(const drake::geometry::Meshcat& meshcat,
-                           int message_num,
-                           const std::string& desired_command_json) {
-  EXPECT_EQ(SystemCall(
-                {FindResourceOrThrow("drake/geometry/meshcat_websocket_client"),
-                 meshcat.ws_url(), std::to_string(message_num),
-                 desired_command_json}),
-            0);
+GTEST_TEST(MeshcatTest, DuplicateMixedControls) {
+  Meshcat meshcat;
+
+  meshcat.AddButton("button");
+  meshcat.AddSlider("slider", 0.2, 1.5, 0.1, 0.5);
+
+  // We must reject adding controls with duplicated names.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddButton("slider"),
+      "Meshcat already has a slider named slider.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddSlider("button", 0.2, 1.5, 0.1, 0.5),
+      "Meshcat already has a button named button.");
 }
 
 GTEST_TEST(MeshcatTest, SetPropertyWebSocket) {
   Meshcat meshcat;
   meshcat.SetProperty("/Background", "visible", false);
-  CheckWebsocketCommand(meshcat, 1, R"""({
+  CheckWebsocketCommand(meshcat, {}, 1, R"""({
       "type": "set_property",
       "path": "/Background",
       "property": "visible",
@@ -545,13 +630,13 @@ GTEST_TEST(MeshcatTest, SetPropertyWebSocket) {
   meshcat.SetProperty("/Grid", "visible", false);
   // Note: The order of the messages is due to "/Background" < "/Grid" in the
   // std::map, not due to the order that SetProperty was called.
-  CheckWebsocketCommand(meshcat, 1, R"""({
+  CheckWebsocketCommand(meshcat, {}, 1, R"""({
       "type": "set_property",
       "path": "/Background",
       "property": "visible",
       "value": false
     })""");
-  CheckWebsocketCommand(meshcat, 2, R"""({
+  CheckWebsocketCommand(meshcat, {}, 2, R"""({
       "type": "set_property",
       "path": "/Grid",
       "property": "visible",
@@ -569,7 +654,7 @@ GTEST_TEST(MeshcatTest, SetPerspectiveCamera) {
   perspective.fov = 82;
   perspective.aspect = 1.5;
   meshcat.SetCamera(perspective, "/my/camera");
-  CheckWebsocketCommand(meshcat, 1, R"""({
+  CheckWebsocketCommand(meshcat, {}, 1, R"""({
       "type": "set_object",
       "path": "/my/camera",
       "object": {
@@ -590,7 +675,7 @@ GTEST_TEST(MeshcatTest, SetOrthographicCamera) {
   ortho.left = -1.23;
   ortho.bottom = .84;
   meshcat.SetCamera(ortho, "/my/camera");
-  CheckWebsocketCommand(meshcat, 1, R"""({
+  CheckWebsocketCommand(meshcat, {}, 1, R"""({
       "type": "set_object",
       "path": "/my/camera",
       "object": {
@@ -633,7 +718,7 @@ GTEST_TEST(MeshcatTest, SetAnimation) {
 
   // The animations will be in lexographical order by path since we're using a
   // std::map with the path strings as the (sorted) keys.
-  CheckWebsocketCommand(meshcat, 1, R"""({
+  CheckWebsocketCommand(meshcat, {}, 1, R"""({
       "type": "set_animation",
       "animations": [{
           "path": "/drake/cylinder",

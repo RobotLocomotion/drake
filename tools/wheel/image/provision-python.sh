@@ -5,6 +5,7 @@ set -eu -o pipefail
 readonly PYTHON=python${1:-3}
 
 # Set up Python environment and install Python prerequisites.
+apt-get -y update
 apt-get -y install --no-install-recommends \
     ${PYTHON}-dev lib${PYTHON}-dev ${PYTHON}-venv
 

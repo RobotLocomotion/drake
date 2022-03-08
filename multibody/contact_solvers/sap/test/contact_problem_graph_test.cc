@@ -90,6 +90,14 @@ GTEST_TEST(ContactGraph, Construction) {
   for (int i = 0; i < graph.num_clusters(); ++i) {
     compare_clusters(graph.clusters()[i], graph.get_cluster(i));
   }
+
+  // Verify participating cliques.
+  const PartialPermutation& p = graph.participating_cliques();
+  EXPECT_EQ(p.domain_size(), graph.num_cliques());
+  EXPECT_EQ(p.permuted_domain_size(), 3);
+  // Participating cliques are indexed in the order added to the problem.
+  std::vector<int> expected_p = {1, 2, -1, 0};
+  EXPECT_EQ(p.permutation(), expected_p);
 }
 
 }  // namespace

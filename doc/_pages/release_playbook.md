@@ -7,7 +7,7 @@ binary release.  It is intended only for use by the few Drake Developer experts
 who regularly handle the release process.
 
 We publish a minor release approximately once per month in the middle of the
-calendar month, with version number is ``v0.N.0`` where ``N`` is monotonically
+calendar month, with version number is ``v1.N.0`` where ``N`` is monotonically
 increasing.
 
 # Minor releases
@@ -17,7 +17,7 @@ Begin this process around 1 week prior to the intended release date.
 ## Prior to release
 
 1. Choose the next version number.
-2. Create a local Drake branch named ``release_notes-v0.N.0`` (so that others
+2. Create a local Drake branch named ``release_notes-v1.N.0`` (so that others
    can easily find and push to it after the PR is opened).
 3. As the first commit on the branch, mimic the commit
    ([link](https://github.com/RobotLocomotion/drake/pull/14208/commits/674b84877bc08448b59a2243f3b910a7b6dbab43)
@@ -29,7 +29,7 @@ Begin this process around 1 week prior to the intended release date.
    ```
 4. Push that branch and then open a new pull request titled:
    ```
-   [doc] Add release notes v0.N.0
+   [doc] Add release notes v1.N.0
    ```
    Make sure that "Allow edits from maintainers" on the GitHub PR page is
    enabled (the checkbox is checked).
@@ -37,7 +37,7 @@ Begin this process around 1 week prior to the intended release date.
    release notes draft using the ``tools/release_engineering/relnotes`` tooling.
    (Instructions can be found atop its source code: [``relnotes.py``](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/relnotes.py))
     1. On the first run, use ``--action=create`` to bootstrap the file.
-       * The output is draft release notes in ``doc/_release-notes/v0.N.0.md``.
+       * The output is draft release notes in ``doc/_release-notes/v1.N.0.md``.
     2. On the subsequent runs, use ``--action=update`` to refresh the file.
        * Try to avoid updating the release notes to refer to changes newer than
        the likely release, i.e., if you run ``--update`` on the morning you're
@@ -47,7 +47,7 @@ Begin this process around 1 week prior to the intended release date.
    notes to properly organized and wordsmithed bullet points. See [Polishing
    the release notes](#polishing-the-release-notes).
 7. From time to time, merge ``upstream/master`` into your
-   ``origin/release_notes-v0.N.0`` branch (so that it doesn't go stale).
+   ``origin/release_notes-v1.N.0`` branch (so that it doesn't go stale).
    Never rebase or force-push to the branch.  We expect that several people
    will clone and push to it concurrently.
 8. As the release is nearly ready, post a call for action for feature teams to
@@ -130,7 +130,7 @@ the main body of the document:
     are YYYYMMDD format, some are YYYY-MM-DD format; be sure to manually fix
     them all.
    1. Update the github links within doc/_pages/from_binary.md to reflect the
-      upcoming v0.N.0 and YYYYMMDD.
+      upcoming v1.N.0 and YYYYMMDD.
 11. Re-enable CI by reverting the commit you added in step 3.
 12. Merge the release notes PR
    1. Take care when squashing not to accept github's auto-generated commit message if it is not appropriate.
@@ -139,11 +139,11 @@ the main body of the document:
 13. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
     a new release".  Note that this page does has neither history nor undo.  Be
     slow and careful!
-    1. Tag version is: v0.N.0
+    1. Tag version is: v1.N.0
     2. Target is: [the git sha from above]
       *  You should select the commit from Target > Recent Commits. The search
          via commit does not work if you don't use the correct length.
-    3. Release title is: Drake v0.N.0
+    3. Release title is: Drake v1.N.0
     4. The body of the release should be forked from the prior release (open the
        prior release's web page and click "Edit" to get the markdown), with
        appropriate edits as follows:
@@ -164,7 +164,7 @@ the main body of the document:
 
 ## Post-release follow up
 
-1. Open the [tagged workspace](https://github.com/RobotLocomotion/drake/tree/v0.N.0/tools/workspace)
+1. Open the [tagged workspace](https://github.com/RobotLocomotion/drake/tree/v1.N.0/tools/workspace)
    (editing that URL to have the correct value for ``N``) and ensure that
    certain Drake-owned externals have sufficient tags:
    1. Open ``common_robotics_utilities/repository.bzl`` and find the ``commit =`` used.
@@ -212,9 +212,12 @@ instructions to obtain a username and password.
    2. If Docker still doesn't work, you might need to logout and/or reboot first.
 4. Run ``git clone --filter=blob:none https://github.com/RobotLocomotion/drake.git``
 5. Run ``cd drake``
-6. Run ``git checkout v0.N.0``
+6. Run ``git checkout v1.N.0``
 7. Run ``cd tools/wheel``
-8. Run ``./build-wheels --test 0.N.0``
-9. Wait a long time for it to finish (around 60 minutes on a beefy workstation). It will take over all of your computer's resources, so don't plan to do much else concurrently.
-10. There should have been exactly four whl files created. Run ``twine upload <...>``, replacing the ``<...>`` placeholder with the path to each of the wheels to be uploaded (e.g., ``drake-0.35.0b1-cp36-cp36m-manylinux_2_27_x86_64``, etc.)
+8. To remove any cached images:
+   1. Run ``docker rmi $(docker image ls --filter=reference='pip-drake:*' -q)``
+   1. Run ``docker builder prune -f``
+9. Run ``./build-wheels --test 1.N.0``
+10. Wait a long time for it to finish (around 60 minutes on a beefy workstation). It will take over all of your computer's resources, so don't plan to do much else concurrently.
+11. There should have been exactly four whl files created. Run ``twine upload <...>``, replacing the ``<...>`` placeholder with the path to each of the wheels to be uploaded (e.g., ``drake-0.35.0b1-cp36-cp36m-manylinux_2_27_x86_64``, etc.)
     1. You will need your PyPI username and password for this. (Do not use drake-robot.)

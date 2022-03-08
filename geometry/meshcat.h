@@ -420,7 +420,8 @@ class Meshcat {
   //@{
 
   /** Adds a button with the label `name` to the meshcat browser controls GUI.
-   */
+   @throws std::exception if `name` has already been added as any type of
+   control (e.g., either button or slider). */
   void AddButton(std::string name);
 
   /** Returns the number of times the button `name` has been clicked in the
@@ -437,7 +438,9 @@ class Meshcat {
    The slider range is given by [`min`, `max`]. `step` is the smallest
    increment by which the slider can change values (and therefore send updates
    back to this Meshcat instance). `value` specifies the initial value; it will
-   be truncated to the slider range and rounded to the nearest increment. */
+   be truncated to the slider range and rounded to the nearest increment.
+   @throws std::exception if `name` has already been added as any type of
+   control (e.g., either button or slider). */
   void AddSlider(std::string name, double min, double max, double step,
                  double value);
 

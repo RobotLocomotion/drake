@@ -14,6 +14,7 @@
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/common/symbolic_decompose.h"
 #include "drake/common/symbolic_latex.h"
+#include "drake/common/symbolic_trigonometric_polynomial.h"
 
 #pragma GCC diagnostic push
 // Apple LLVM version 10.0.1 (clang-1001.0.46.3) and Clang version 7.0.0 add
@@ -524,6 +525,26 @@ PYBIND11_MODULE(symbolic, m) {
       [](const MatrixX<Expression>& M, const Variable& var,
           const Expression& e) { return Substitute(M, var, e); },
       py::arg("m"), py::arg("var"), py::arg("e"), doc.Substitute.doc_3args);
+
+  py::class_<SinCos>(m, "SinCos", doc.SinCos.doc)
+      .def(py::init<const Variable&, const Variable&>(), py::arg("s"),
+          py::arg("c"), doc.SinCos.ctor.doc)
+      .def_readwrite("s", &SinCos::s, doc.SinCos.s.doc)
+      .def_readwrite("c", &SinCos::c, doc.SinCos.c.doc);
+
+  m.def(
+      "Substitute",
+      [](const Expression& e, const SinCosSubstitution& subs) {
+        return Substitute(e, subs);
+      },
+      py::arg("e"), py::arg("subs"), doc.Substitute.doc_sincos);
+
+  m.def(
+      "Substitute",
+      [](const MatrixX<Expression>& M, const SinCosSubstitution& subs) {
+        return Substitute(M, subs);
+      },
+      py::arg("m"), py::arg("subs"), doc.Substitute.doc_sincos_matrix);
 
   {
     constexpr auto& cls_doc = doc.FormulaKind;

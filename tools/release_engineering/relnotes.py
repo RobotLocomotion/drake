@@ -32,9 +32,9 @@ document:
 
   bazel build //tools/release_engineering:relnotes
   bazel-bin/tools/release_engineering/relnotes --action=create \
-    --version=v0.26.0 --prior_version=v0.25.0
+    --version=v1.2.0 --prior_version=v1.1.0
   bazel-bin/tools/release_engineering/relnotes --action=update \
-    --version=v0.26.0
+    --version=v1.2.0
 """
 
 import argparse
@@ -319,7 +319,7 @@ def main():
         help="Whether to create a new notes file or update an existing one")
     parser.add_argument(
         "--version", type=str, required=True,
-        help="Notes file to create or edit, e.g., v0.22.0")
+        help="Notes file to create or edit, e.g., v1.2.0")
     parser.add_argument(
         "--prior_version", type=str,
         help="Prior revision (required iff creating new notes)")

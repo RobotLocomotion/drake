@@ -226,6 +226,7 @@ drake_cc_library(
         "//solvers:mathematical_program",
         "//solvers:solve",
         "//systems/framework",
+        "//systems/primitives:linear_system",
     ],
 )
 

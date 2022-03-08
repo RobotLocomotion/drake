@@ -3,13 +3,19 @@
 #include <algorithm>
 
 #include "drake/math/continuous_lyapunov_equation.h"
+#include "drake/math/matrix_util.h"
 #include "drake/math/quadratic_form.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
+#include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
 namespace systems {
 namespace analysis {
+
+using Eigen::MatrixXd;
+
+using math::IsPositiveDefinite;
 
 using solvers::MathematicalProgram;
 using solvers::Solve;
@@ -27,7 +33,7 @@ namespace {
 // If the Hessian of Vdot is negative definite at the origin, then we use
 // Vdot = 0 => V >= rho (or x=0) via
 //   maximize   rho
-//   subject to (V-rho)*x'*x - Lambda*Vdot is SOS.
+//   subject to (V-rho)*(x'*x)^d - Lambda*Vdot is SOS.
 // If we cannot confirm negative definiteness, then we must ask instead for
 // Vdot >=0 => V >= rho (or x=0).
 Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
@@ -37,31 +43,16 @@ Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
   for (int i = 0; i < x.size(); i++) {
     env.insert(x(i), 0.0);
   }
-  const Eigen::MatrixXd S =
-      symbolic::Evaluate(symbolic::Jacobian(V.Jacobian(x), x), env);
   const Eigen::MatrixXd P =
       symbolic::Evaluate(symbolic::Jacobian(Vdot.Jacobian(x), x), env);
-  // Eigen's recommended way of getting the Eigenvalues.
-  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigensolver(P);
-  DRAKE_THROW_UNLESS(eigensolver.info() == Eigen::Success);
-
-  // A positive max eigenvalue indicates the system is locally unstable.
-  const double max_eigenvalue = eigensolver.eigenvalues().maxCoeff();
-  // According to the Lapack manual, the absolute accuracy of eigenvalues is
-  // eps*max(|eigenvalues|), so I will write my thresholds in those units.
-  // Anderson et al., Lapack User's Guide, 3rd ed. section 4.7, 1999.
   const double tolerance = 1e-8;
-  const double max_abs_eigenvalue =
-      eigensolver.eigenvalues().cwiseAbs().maxCoeff();
-  DRAKE_THROW_UNLESS(max_eigenvalue <=
-                     tolerance * std::max(1., max_abs_eigenvalue));
-
-  bool Vdot_is_locally_negative_definite =
-      (max_eigenvalue <= -tolerance * std::max(1., max_abs_eigenvalue));
+  bool Vdot_is_locally_negative_definite = IsPositiveDefinite(-P, tolerance);
 
   Polynomial V_balanced, Vdot_balanced;
   if (Vdot_is_locally_negative_definite) {
     // Then "balance" V and Vdot.
+    const Eigen::MatrixXd S =
+      symbolic::Evaluate(symbolic::Jacobian(V.Jacobian(x), x), env);
     const Eigen::MatrixXd T = math::BalanceQuadraticForms(S, -P);
     const VectorX<Expression> Tx = T*x;
     Substitution subs;
@@ -81,9 +72,10 @@ Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
   const int V_degree = V_balanced.TotalDegree();
   const int Vdot_degree = Vdot_balanced.TotalDegree();
 
-  // TODO(russt): Add this as an argument once I have an example that needs it.
-  // This is a reasonable guess.
-  const int lambda_degree = Vdot_degree;
+  // TODO(russt): Add this as an option once I have an example that needs it.
+  // This is a reasonable guess: we want the multiplier to be able to compete
+  // with terms in Vdot, and to be even (since it may be SOS below).
+  const int lambda_degree = std::ceil(Vdot_degree/2.0) * 2;
   const auto lambda = prog.NewFreePolynomial(Variables(x), lambda_degree);
 
   const auto rho = prog.NewContinuousVariables<1>("rho")[0];
@@ -108,6 +100,89 @@ Expression FixedLyapunovConvex(const solvers::VectorXIndeterminate& x,
   DRAKE_THROW_UNLESS(result.GetSolution(rho) > 0.0);
   return V / result.GetSolution(rho);
 }
+
+// Variant of FixedLyapunovConvex which takes Vdot(x,xdot), and certifies the
+// condition on the variety defined by the residuals g(x,xdot)=0.
+// Vdot(x,z) = 0, g(x,z)=0 => V(x) >= rho (or x=0) via
+//   maximize   rho
+//   subject to (V-rho)*(x'*x)^d - Lambda*Vdot + Lambda_g*g is SOS.
+// If we cannot confirm negative definiteness, then we must ask instead for
+// Vdot(x,z) >=0, g(x,z)=0 => V >= rho (or x=0).
+Expression FixedLyapunovConvexImplicit(
+    const solvers::VectorXIndeterminate& x,
+    const solvers::VectorXIndeterminate& xdot, const Expression& V,
+    const Expression& Vdot, const VectorX<Expression>& g) {
+  // Check if the Hessian of Vdot is negative definite on the tangent space.
+  // Given Vdot(x,z) and g(x,z)=0, we wish to test whether yᵀQy ≤ 0 for all
+  // y where Gy=0, where y=[x,z], P = Hessian(Vdot,y), and G=dgdy.  To do this,
+  // we find N as an orthonormal basis for the nullspace of G, and confirm that
+  // NᵀPN is negative definite.
+  Environment env;
+  for (int i = 0; i < x.size(); i++) {
+    env.insert(x(i), 0.0);
+  }
+  for (int i = 0; i < xdot.size(); i++) {
+    env.insert(xdot(i), 0.0);
+  }
+  solvers::VectorXIndeterminate y(x.size() + xdot.size());
+  y << x, xdot;
+  const Eigen::MatrixXd P =
+      symbolic::Evaluate(symbolic::Jacobian(Vdot.Jacobian(y), y), env);
+  const Eigen::MatrixXd G =
+      symbolic::Evaluate(symbolic::Jacobian(g, y), env);
+  Eigen::FullPivLU<MatrixXd> lu(G);
+  MatrixXd N = lu.kernel();
+  const double tolerance = 1e-8;
+  bool Vdot_is_locally_negative_definite =
+      IsPositiveDefinite(-N.transpose() * P * N, tolerance);
+
+  Polynomial V_poly(V);
+  Polynomial Vdot_poly(Vdot);
+  // TODO(russt): implement balancing.
+
+  MathematicalProgram prog;
+  prog.AddIndeterminates(x);
+  prog.AddIndeterminates(xdot);
+
+  const int V_degree = V_poly.TotalDegree();
+  const int Vdot_degree = Vdot_poly.TotalDegree();
+
+  // TODO(russt): Add this as an option once I have an example that needs it.
+  // This is a reasonable guess: we want the multiplier to be able to compete
+  // with terms in Vdot, and to be even (since it may be SOS below).
+  const int lambda_degree = std::ceil(Vdot_degree/2.0) * 2;
+  const Polynomial lambda = prog.NewFreePolynomial(Variables(y), lambda_degree);
+  VectorX<Polynomial> lambda_g(g.size());
+  VectorX<Polynomial> g_poly(g.size());
+  for (int i = 0; i < g.size(); ++i) {
+    // Want λ_g[i] * g[i] to have the same degree as λ * Vdot.
+    const int lambda_gi_degree = std::max(
+        lambda_degree + Vdot_degree - Polynomial(g[0]).TotalDegree(), 0);
+    lambda_g[i] = prog.NewFreePolynomial(Variables(y), lambda_gi_degree);
+    g_poly[i] = Polynomial(g[i]);
+  }
+
+  const auto rho = prog.NewContinuousVariables<1>("rho")[0];
+
+  // Want (V-rho)(x'x)^d and Lambda*Vdot to be the same degree.
+  const int d = std::floor((lambda_degree + Vdot_degree - V_degree) / 2);
+  prog.AddSosConstraint(
+      ((V_poly - rho) * Polynomial(pow((x.transpose() * x)[0], d)) -
+       lambda * Vdot_poly + lambda_g.dot(g_poly)));
+
+  // If Vdot is indefinite, then the linearization does not inform us about the
+  // local stability.  Add "lambda(x) is SOS" to confirm this local stability.
+  if (!Vdot_is_locally_negative_definite) {
+    prog.AddSosConstraint(lambda);
+  }
+
+  prog.AddCost(-rho);
+  const auto result = Solve(prog);
+
+  DRAKE_THROW_UNLESS(result.is_success());
+
+  DRAKE_THROW_UNLESS(result.GetSolution(rho) > 0.0);
+  return V / result.GetSolution(rho);}
 
 }  // namespace
 
@@ -136,18 +211,6 @@ Expression RegionOfAttraction(const System<double>& system,
   MathematicalProgram prog;
   // Define the relative coordinates: x_bar = x - x0
   const auto x_bar = prog.NewIndeterminates(num_states, "x");
-
-  Environment x0env;
-  for (int i = 0; i < num_states; i++) {
-    x0env.insert(x_bar(i), 0.0);
-  }
-
-  // Evaluate the dynamics (in relative coordinates).
-  symbolic_context->SetContinuousState(x0 + x_bar);
-  const VectorX<Expression> f =
-      symbolic_system->EvalTimeDerivatives(*symbolic_context)
-          .get_vector()
-          .CopyToVector();
 
   Expression V;
   bool user_provided_lyapunov_candidate =
@@ -180,15 +243,37 @@ Expression RegionOfAttraction(const System<double>& system,
     DRAKE_THROW_UNLESS(result.is_success());
   } else {
     // Solve a Lyapunov equation to find a candidate.
-    const Eigen::MatrixXd A = Evaluate(Jacobian(f, x_bar), x0env);
+    const auto linearized_system =
+        Linearize(system, context, InputPortSelection::kNoInput,
+                  OutputPortSelection::kNoOutput);
     const Eigen::MatrixXd Q = Eigen::MatrixXd::Identity(num_states, num_states);
-    const Eigen::MatrixXd P = math::RealContinuousLyapunovEquation(A, Q);
+    const Eigen::MatrixXd P =
+        math::RealContinuousLyapunovEquation(linearized_system->A(), Q);
     V = x_bar.dot(P * x_bar);
   }
 
-  const Expression Vdot = V.Jacobian(x_bar).dot(f);
+  // Evaluate the dynamics (in relative coordinates).
+  symbolic_context->SetContinuousState(x0 + x_bar);
 
-  V = FixedLyapunovConvex(x_bar, V, Vdot);
+  if (options.use_implicit_dynamics) {
+    const auto derivatives = symbolic_system->AllocateTimeDerivatives();
+    const solvers::VectorXIndeterminate xdot =
+        prog.NewIndeterminates(derivatives->size(), "xdot");
+    const Expression Vdot = V.Jacobian(x_bar).dot(xdot);
+    derivatives->SetFromVector(xdot.cast<Expression>());
+    VectorX<Expression> g(
+        symbolic_system->implicit_time_derivatives_residual_size());
+    symbolic_system->CalcImplicitTimeDerivativesResidual(*symbolic_context,
+                                                         *derivatives, &g);
+    V = FixedLyapunovConvexImplicit(x_bar, xdot, V, Vdot, g);
+  } else {
+    const VectorX<Expression> f =
+        symbolic_system->EvalTimeDerivatives(*symbolic_context)
+            .get_vector()
+            .CopyToVector();
+    const Expression Vdot = V.Jacobian(x_bar).dot(f);
+    V = FixedLyapunovConvex(x_bar, V, Vdot);
+  }
 
   // Put V back into global coordinates.
   Substitution subs;

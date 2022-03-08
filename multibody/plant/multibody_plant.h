@@ -1641,7 +1641,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Sets the contact model to be used by `this` %MultibodyPlant, see
   /// ContactModel for available options.
-  /// The default contact model is ContactModel::kPoint.
+  /// The default contact model is ContactModel::kHydroelasticWithFallback.
   /// @throws std::exception iff called post-finalize.
   void set_contact_model(ContactModel model);
 

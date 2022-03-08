@@ -20,7 +20,7 @@ namespace {
 
 // Our ScsSolver binding uses `eps = 1e-5` by default.  For testing, we'll
 // allow for some small cumulative error beyond that.
-constexpr double kTol = 1e-4;
+constexpr double kTol = 1e-3;
 
 }  // namespace
 

@@ -58,6 +58,19 @@ PartialPermutation::PartialPermutation(std::vector<int> permutation)
   }
 }
 
+PartialPermutation::PartialPermutation(int domain_size) {
+  permutation_.resize(domain_size, -1);
+}
+
+int PartialPermutation::push(int i) {
+  DRAKE_THROW_UNLESS(0 <= i && i < domain_size());
+  if (!participates(i)) {
+    permutation_[i] = permuted_domain_size();
+    inverse_permutation_.push_back(i);
+  }
+  return permuted_index(i);
+}
+
 int PartialPermutation::permuted_index(int i) const {
   DRAKE_THROW_UNLESS(0 <= i && i < domain_size());
   if (permutation_[i] < 0) {

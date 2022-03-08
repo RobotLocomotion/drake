@@ -30,7 +30,17 @@ class LatexVisitor {
 
  private:
   [[nodiscard]] std::string VisitVariable(const Expression& e) const {
-    return get_variable(e).to_string();
+    std::string s = get_variable(e).to_string();
+    // Use subscripts for variable indices.
+    // x(a) => x_{a}, x(a,b) => x_{a,b}, etc.
+    const auto start_paren = s.find_first_of('(');
+    const auto end_paren = s.find_last_of(')');
+    if (start_paren != std::string::npos && end_paren != std::string::npos &&
+        end_paren > start_paren) {
+      s.replace(end_paren, 1, "}");
+      s.replace(start_paren, 1, "_{");
+    }
+    return s;
   }
 
   [[nodiscard]] std::string VisitConstant(const Expression& e) const {

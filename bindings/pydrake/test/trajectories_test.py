@@ -5,6 +5,7 @@ import unittest
 from pydrake.common import ToleranceType
 from pydrake.common.eigen_geometry import AngleAxis_, Quaternion_
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue
 from pydrake.math import BsplineBasis_, RigidTransform_, RotationMatrix_
 from pydrake.polynomial import Polynomial_
@@ -107,6 +108,8 @@ class TestTrajectories(unittest.TestCase):
         # Ensure we can copy.
         self.assertEqual(copy.copy(bspline).rows(), 3)
         self.assertEqual(copy.deepcopy(bspline).rows(), 3)
+        assert_pickle(self, bspline,
+                      lambda traj: np.array(traj.control_points()), T=T)
 
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_empty_constructor(self, T):
