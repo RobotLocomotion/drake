@@ -477,6 +477,22 @@ GTEST_TEST(VPolytopeTest, CalcVolume) {
   EXPECT_NEAR(VPolytope(vertices_3d_planar).CalcVolume(), 0., tol);
 }
 
+double CalcPerimeter(const Eigen::MatrixXd& vertices) {
+  DRAKE_ASSERT(vertices.rows() == 2);
+
+  size_t n = vertices.cols();
+  double perimeter = 0;
+
+  for (size_t i = 0; i < n; ++i) {
+    auto j = (i + 1) % n;
+
+    auto diff = vertices.col(i) - vertices.col(j);
+    perimeter += sqrt(diff.dot(diff));
+  }
+
+  return perimeter;
+}
+
 GTEST_TEST(VPolytopeTest, GetMinimalRepresentationTest) {
   const double tol{1E-6};
 
@@ -491,6 +507,8 @@ GTEST_TEST(VPolytopeTest, GetMinimalRepresentationTest) {
     auto vpoly = VPolytope(vertices).GetMinimalRepresentation();
     EXPECT_EQ(vpoly.vertices().cols(), 4);
     EXPECT_NEAR(vpoly.CalcVolume(), l*l, tol);
+    // Check ordering of the resulting vertices
+    EXPECT_EQ(CalcPerimeter(vpoly.vertices()), l * 4);
 
     // Test PointInSet with points nearby the four edges.
     const double d = 10 * tol;

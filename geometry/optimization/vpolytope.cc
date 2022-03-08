@@ -1,5 +1,6 @@
 #include "drake/geometry/optimization/vpolytope.h"
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 
@@ -134,6 +135,47 @@ VPolytope VPolytope::MakeUnitBox(int dim) {
   return MakeBox(VectorXd::Constant(dim, -1.0), VectorXd::Constant(dim, 1.0));
 }
 
+Eigen::MatrixXd OrderCounterClockwise(const Eigen::MatrixXd& vertices) {
+  size_t dim = vertices.rows();
+  size_t n = vertices.cols();
+
+  DRAKE_ASSERT(dim == 2);
+
+  std::vector<size_t> indices(n);
+  std::vector<double> angles(n);
+
+  double center_x = 0;
+  double center_y = 0;
+
+  std::iota(indices.begin(), indices.end(), 0);
+
+  for (auto& i : indices) {
+    center_x += vertices.col(i)[0];
+    center_y += vertices.col(i)[1];
+  }
+
+  center_x /= n;
+  center_y /= n;
+
+  for (auto& i : indices) {
+    auto x = vertices.col(i)[0] - center_x;
+    auto y = vertices.col(i)[1] - center_y;
+    angles[i] = std::atan2(y, x);
+  }
+
+  std::sort(indices.begin(), indices.end(), [&angles](size_t a, size_t b){
+    return angles[a] > angles[b];
+  });
+
+  Eigen::MatrixXd sorted_vertices(dim, n);
+
+  for (size_t i = 0; i < n; ++i) {
+    sorted_vertices.col(i) = vertices.col(indices[i]);
+  }
+
+  return sorted_vertices;
+}
+
 VPolytope VPolytope::GetMinimalRepresentation() const {
   orgQhull::Qhull qhull;
   qhull.runQhull("", vertices_.rows(), vertices_.cols(), vertices_.data(), "");
@@ -152,6 +194,10 @@ VPolytope VPolytope::GetMinimalRepresentation() const {
       ++i;
     }
     ++j;
+  }
+
+  if (vertices_.rows() == 2) {
+    minimal_vertices = OrderCounterClockwise(minimal_vertices);
   }
 
   return VPolytope(minimal_vertices);
