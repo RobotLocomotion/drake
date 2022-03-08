@@ -20,7 +20,7 @@ class HttpServiceCurl : public HttpService {
   /** Constructs a libcurl based HttpService.  @sa HttpService::HttpService */
   explicit HttpServiceCurl(const std::string& temp_directory,
                            const std::string& url, int32_t port, bool verbose);
-  ~HttpServiceCurl();
+  ~HttpServiceCurl() override;
 
   /** @see HttpService::PostForm */
   HttpResponse PostForm(
