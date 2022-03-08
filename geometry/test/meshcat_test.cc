@@ -545,6 +545,9 @@ GTEST_TEST(MeshcatTest, Buttons) {
 
   meshcat.AddButton("button");
   EXPECT_EQ(meshcat.GetButtonClicks("button"), 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddButton("button"),
+      "Meshcat already has a button named button.");
   meshcat.DeleteButton("button");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -579,6 +582,9 @@ GTEST_TEST(MeshcatTest, Sliders) {
   EXPECT_NEAR(meshcat.GetSliderValue("slider"), 1.5, 1e-14);
   meshcat.SetSliderValue("slider", 1.245);
   EXPECT_NEAR(meshcat.GetSliderValue("slider"), 1.2, 1e-14);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddSlider("slider", 0.2, 1.5, 0.1, 0.5),
+      "Meshcat already has a slider named slider.");
 
   meshcat.DeleteSlider("slider");
 
@@ -595,6 +601,21 @@ GTEST_TEST(MeshcatTest, Sliders) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetSliderValue("slider2"),
       "Meshcat does not have any slider named slider2.");
+}
+
+GTEST_TEST(MeshcatTest, DuplicateMixedControls) {
+  Meshcat meshcat;
+
+  meshcat.AddButton("button");
+  meshcat.AddSlider("slider", 0.2, 1.5, 0.1, 0.5);
+
+  // We must reject adding controls with duplicated names.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddButton("slider"),
+      "Meshcat already has a slider named slider.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddSlider("button", 0.2, 1.5, 0.1, 0.5),
+      "Meshcat already has a button named button.");
 }
 
 GTEST_TEST(MeshcatTest, SetPropertyWebSocket) {
