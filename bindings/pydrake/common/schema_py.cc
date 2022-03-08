@@ -5,6 +5,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -43,8 +44,8 @@ PYBIND11_MODULE(schema, m) {
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"))
-        .def(py::init<double>(), py::arg("value"), cls_doc.ctor.doc)
-        .def_readwrite("value", &Class::value, cls_doc.value.doc);
+        .def(py::init<double>(), py::arg("value"), cls_doc.ctor.doc);
+    DefAttributesUsingSerialize(&cls, cls_doc);
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -56,9 +57,8 @@ PYBIND11_MODULE(schema, m) {
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<double, double>(), py::arg("mean"), py::arg("stddev"),
-            cls_doc.ctor.doc)
-        .def_readwrite("mean", &Class::mean, cls_doc.mean.doc)
-        .def_readwrite("stddev", &Class::stddev, cls_doc.stddev.doc);
+            cls_doc.ctor.doc);
+    DefAttributesUsingSerialize(&cls, cls_doc);
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -70,9 +70,8 @@ PYBIND11_MODULE(schema, m) {
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<double, double>(), py::arg("min"), py::arg("max"),
-            cls_doc.ctor.doc)
-        .def_readwrite("min", &Class::min, cls_doc.min.doc)
-        .def_readwrite("max", &Class::max, cls_doc.max.doc);
+            cls_doc.ctor.doc);
+    DefAttributesUsingSerialize(&cls, cls_doc);
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -84,8 +83,8 @@ PYBIND11_MODULE(schema, m) {
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<std::vector<double>>(), py::arg("values"),
-            cls_doc.ctor.doc)
-        .def_readwrite("values", &Class::values, cls_doc.values.doc);
+            cls_doc.ctor.doc);
+    DefAttributesUsingSerialize(&cls, cls_doc);
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -144,8 +143,8 @@ PYBIND11_MODULE(schema, m) {
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<const drake::Vector<double, size>&>(), py::arg("value"),
-            cls_doc.ctor.doc)
-        .def_readwrite("value", &Class::value, cls_doc.value.doc);
+            cls_doc.ctor.doc);
+    DefAttributesUsingSerialize(&cls, cls_doc);
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -160,9 +159,8 @@ PYBIND11_MODULE(schema, m) {
         .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<const drake::Vector<double, size>&,
                  const drake::VectorX<double>&>(),
-            py::arg("mean"), py::arg("stddev"), cls_doc.ctor.doc)
-        .def_readwrite("mean", &Class::mean, cls_doc.mean.doc)
-        .def_readwrite("stddev", &Class::stddev, cls_doc.stddev.doc);
+            py::arg("mean"), py::arg("stddev"), cls_doc.ctor.doc);
+    DefAttributesUsingSerialize(&cls, cls_doc);
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -176,9 +174,8 @@ PYBIND11_MODULE(schema, m) {
         .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<const drake::Vector<double, size>&,
                  const drake::Vector<double, size>&>(),
-            py::arg("min"), py::arg("max"), cls_doc.ctor.doc)
-        .def_readwrite("min", &Class::min, cls_doc.min.doc)
-        .def_readwrite("max", &Class::max, cls_doc.max.doc);
+            py::arg("min"), py::arg("max"), cls_doc.ctor.doc);
+    DefAttributesUsingSerialize(&cls, cls_doc);
     DefCopyAndDeepCopy(&cls);
   }
 

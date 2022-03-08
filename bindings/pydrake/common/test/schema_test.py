@@ -22,12 +22,14 @@ class TestSchema(unittest.TestCase):
 
     def test_deterministic(self):
         mut.Deterministic()
-        dut = mut.Deterministic(1.0)
+        mut.Deterministic(0.5)
+        dut = mut.Deterministic(value=1.0)
         dut.value = 2.0
         self._check_distribution(dut)
 
     def test_gaussian(self):
         mut.Gaussian()
+        mut.Gaussian(0.5, 0.2)
         dut = mut.Gaussian(mean=1.0, stddev=0.1)
         dut.mean = 2.0
         dut.stddev = 0.2
@@ -35,6 +37,7 @@ class TestSchema(unittest.TestCase):
 
     def test_uniform(self):
         mut.Uniform()
+        mut.Uniform(-0.5, 0.5)
         dut = mut.Uniform(min=-1.0, max=1.0)
         dut.min = -2.0
         dut.max = 2.0
@@ -42,6 +45,7 @@ class TestSchema(unittest.TestCase):
 
     def test_uniform_discrete(self):
         mut.UniformDiscrete()
+        mut.UniformDiscrete([0.0, 1.0])
         dut = mut.UniformDiscrete(values=[0.0, 0.1])
         dut.values = [0.0, 0.2]
         self._check_distribution(dut)
@@ -78,12 +82,14 @@ class TestSchema(unittest.TestCase):
 
     def test_deterministic_vector(self):
         mut.DeterministicVectorX()
+        mut.DeterministicVectorX([0.1, 0.2])
         dut = mut.DeterministicVectorX(value=[0.0, 1.0])
         dut.value = [0.0, 2.0]
         self._check_distribution_vector(dut)
 
     def test_gaussian_vector(self):
         mut.GaussianVectorX()
+        mut.GaussianVectorX([-0.5, 0.5], [0.2, 0.2])
         dut = mut.GaussianVectorX(mean=[-1.0, 1.0], stddev=[0.1, 0.1])
         dut.mean = [-2.0, 2.0]
         dut.stddev = [0.2, 0.2]
@@ -91,6 +97,7 @@ class TestSchema(unittest.TestCase):
 
     def test_uniform_vector(self):
         mut.UniformVectorX()
+        mut.UniformVectorX([-0.5, -5.0], [0.5, 5.0])
         dut = mut.UniformVectorX(min=[-1.0, -10.0], max=[1.0, 10.0])
         dut.min = [-2.0, -20.0]
         dut.max = [2.0, 20.0]
