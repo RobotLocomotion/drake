@@ -1127,11 +1127,11 @@ class Meshcat::Impl {
     {
       std::lock_guard<std::mutex> lock(controls_mutex_);
       if (buttons_.find(data.name) != buttons_.end()) {
-        throw std::out_of_range(
+        throw std::logic_error(
             fmt::format("Meshcat already has a button named {}.", data.name));
       }
       if (sliders_.find(data.name) != sliders_.end()) {
-        throw std::out_of_range(
+        throw std::logic_error(
             fmt::format("Meshcat already has a slider named {}.", data.name));
       }
       controls_.emplace_back(data.name);
@@ -1153,7 +1153,7 @@ class Meshcat::Impl {
     std::lock_guard<std::mutex> lock(controls_mutex_);
     auto iter = buttons_.find(name);
     if (iter == buttons_.end()) {
-      throw std::out_of_range(
+      throw std::logic_error(
           fmt::format("Meshcat does not have any button named {}.", name));
     }
     return iter->second.num_clicks;
@@ -1168,7 +1168,7 @@ class Meshcat::Impl {
       std::lock_guard<std::mutex> lock(controls_mutex_);
       auto iter = buttons_.find(name);
       if (iter == buttons_.end()) {
-        throw std::out_of_range(
+        throw std::logic_error(
             fmt::format("Meshcat does not have any button named {}.", name));
       }
       buttons_.erase(iter);
@@ -1214,11 +1214,11 @@ class Meshcat::Impl {
     {
       std::lock_guard<std::mutex> lock(controls_mutex_);
       if (buttons_.find(data.name) != buttons_.end()) {
-        throw std::out_of_range(
+        throw std::logic_error(
             fmt::format("Meshcat already has a button named {}.", data.name));
       }
       if (sliders_.find(data.name) != sliders_.end()) {
-        throw std::out_of_range(
+        throw std::logic_error(
             fmt::format("Meshcat already has a slider named {}.", data.name));
       }
       controls_.emplace_back(data.name);
@@ -1243,7 +1243,7 @@ class Meshcat::Impl {
       std::lock_guard<std::mutex> lock(controls_mutex_);
       auto iter = sliders_.find(name);
       if (iter == sliders_.end()) {
-        throw std::out_of_range(
+        throw std::logic_error(
             fmt::format("Meshcat does not have any slider named {}.", name));
       }
       internal::SetSliderControl& s = iter->second;
@@ -1274,7 +1274,7 @@ class Meshcat::Impl {
     std::lock_guard<std::mutex> lock(controls_mutex_);
     auto iter = sliders_.find(name);
     if (iter == sliders_.end()) {
-      throw std::out_of_range(
+      throw std::logic_error(
           fmt::format("Meshcat does not have any slider named {}.", name));
     }
     return iter->second.value;
@@ -1289,7 +1289,7 @@ class Meshcat::Impl {
       std::lock_guard<std::mutex> lock(controls_mutex_);
       auto iter = sliders_.find(name);
       if (iter == sliders_.end()) {
-        throw std::out_of_range(
+        throw std::logic_error(
             fmt::format("Meshcat does not have any slider named {}.", name));
       }
       sliders_.erase(iter);
