@@ -7,13 +7,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-with warnings.catch_warnings():  # noqa
-    # N.B. We must suppress this to appease `all_test`.
-    # TODO(eric.cousineau): Remove this once all supported platform ships
-    # `scipy>=1.0.0` by default.
-    warnings.simplefilter("ignore", ImportWarning)
-    import scipy as sp
-    from scipy import spatial
 
 from pydrake.common.deprecation import _warn_deprecated
 from pydrake.common.value import AbstractValue
@@ -28,6 +21,7 @@ from pydrake.geometry import (
     Rgba,
     Role,
     Sphere,
+    optimization,
 )
 from pydrake.math import RigidTransform
 from pydrake.systems.pyplot_visualizer import PyPlotVisualizer
@@ -271,13 +265,13 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                     scale = shape.scale()
                     mesh = ReadObjToTriangleSurfaceMesh(filename, scale)
                     patch_G = np.vstack(mesh.vertices())
+
                     # Only store the vertices of the (3D) convex hull of the
                     # mesh, as any interior vertices will still be interior
                     # vertices after projection, and will therefore be removed
                     # in _update_body_fill_verts().
-                    hull = spatial.ConvexHull(patch_G)
-                    patch_G = np.vstack(
-                        [patch_G[v, :] for v in hull.vertices]).T
+                    vpoly = optimization.VPolytope(patch_G.T)
+                    patch_G = vpoly.GetMinimalRepresentation().vertices()
 
                 elif isinstance(shape, HalfSpace):
                     # For a half space, we'll simply create a large box with
@@ -370,8 +364,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         # Take a convex hull to get an accurate shape for drawing, with verts
         # coming out in ccw order.
         if patch_V.shape[1] > 3:
-            hull = spatial.ConvexHull(patch_V.T)
-            patch_V = np.vstack([patch_V[:, v] for v in hull.vertices]).T
+            vpoly = optimization.VPolytope(patch_V)
+            patch_V = vpoly.GetMinimalRepresentation().vertices()
 
         # Update the verts, padding out to the appropriate full # of verts by
         # replicating the final vertex.
