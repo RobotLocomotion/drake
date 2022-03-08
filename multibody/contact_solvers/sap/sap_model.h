@@ -30,6 +30,14 @@ namespace internal {
  the model is a function of state x₀ and therefore it must be updated at the
  next time step.
 
+ Our SAP solver will create an instance of a SapModel to solve a given
+ SapContactProblem per discrete time step. The model remains "const" after
+ creation and only (const) state dependent queries on this model can be
+ performed. The state of the model is stored as a systems::Context. This Context
+ is created by the SAP solver invoking the method SapModel::MakeContext(). Once
+ a context is available, the solver can perform queries on this model; e.g.
+ SapModel::EvalMomentumCost(context).
+
  [Castro et al., 2021] Castro A., Permenter F. and Han X., 2021. An
  Unconstrained Convex Formulation of Compliant Contact. Available at
  https://arxiv.org/abs/2110.10107
