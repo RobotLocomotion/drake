@@ -48,7 +48,9 @@ class VPolytope final : public ConvexSet {
 
   /** Creates a new VPolytope whose vertices are guaranteed to be minimal,
   i.e. if we remove any point from its vertices, then the convex hull of the
-  remaining vertices is a strict subset of the polytope.
+  remaining vertices is a strict subset of the polytope. In the 2D case
+  the vertices of the new VPolytope are ordered counter-clockwise from
+  the negative X axis. For all other cases an order is not guaranteed.
   */
   VPolytope GetMinimalRepresentation() const;
 

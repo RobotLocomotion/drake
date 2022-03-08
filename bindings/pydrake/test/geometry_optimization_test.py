@@ -174,15 +174,23 @@ class TestGeometryOptimization(unittest.TestCase):
         n = 400
         vertices = np.zeros((2, n + 4))
         theta = np.linspace(0, 2 * np.pi, n, endpoint=False)
-        vertices[0, 0:n] = r * np.cos(theta) + 0.5 * r
-        vertices[1, 0:n] = r * np.sin(theta) + 0.5 * r
+        vertices[0, 0:n] = r * np.cos(theta)
+        vertices[1, 0:n] = r * np.sin(theta)
         vertices[:, n:] = np.array([
             [r/2, r/3, r/4, r/5],
             [r/2, r/3, r/4, r/5]
         ])
+
         vpoly = mut.VPolytope(vertices=vertices).GetMinimalRepresentation()
         self.assertAlmostEqual(vpoly.CalcVolume(), np.pi * r * r, delta=1e-3)
         self.assertEqual(vpoly.vertices().shape[1], n)
+        # Calculate the length of the path that visits all the vertices
+        # sequentially.
+        # If the vertices are in clockwise/counter-clockwise order,
+        # the length of the path will coincide with the perimeter of a
+        # circle.
+        self.assertAlmostEqual(self._calculate_path_length(vpoly.vertices()),
+                               2 * np.pi * r, delta=1e-3)
         # 3D: Random points inside a box
         a = 2.0
         vertices = np.array([
@@ -193,6 +201,17 @@ class TestGeometryOptimization(unittest.TestCase):
         vpoly = mut.VPolytope(vertices=vertices).GetMinimalRepresentation()
         self.assertAlmostEqual(vpoly.CalcVolume(), a * a * a)
         self.assertEqual(vpoly.vertices().shape[1], 8)
+
+    def _calculate_path_length(self, vertices):
+        n = vertices.shape[1]
+        length = 0
+
+        for i in range(n):
+            j = (i + 1) % n
+            diff = vertices[:, i] - vertices[:, j]
+            length += np.sqrt(np.dot(diff, diff))
+
+        return length
 
     def test_cartesian_product(self):
         point = mut.Point(np.array([11.1, 12.2, 13.3]))
