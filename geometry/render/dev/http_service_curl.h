@@ -32,7 +32,7 @@ class HttpServiceCurl : public HttpService {
 
  protected:
   /** Copy constructor for the purpose of cloning. */
-  HttpServiceCurl(const HttpServiceCurl& other);
+  HttpServiceCurl(const HttpServiceCurl& other) override;
 
   /** Clones this %HttpServiceCurl. */
   std::unique_ptr<HttpService> DoClone() const override;
