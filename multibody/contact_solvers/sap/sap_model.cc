@@ -55,6 +55,9 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem_ptr)
 
 template <typename T>
 void SapModel<T>::DeclareCacheEntries() {
+  // Sanity check a system to manage cache resources has been created.
+  DRAKE_DEMAND(system_ != nullptr);
+
   const auto& constraint_velocities_cache_entry = system_->DeclareCacheEntry(
       "Constraint velocities, vc = J⋅v.",
       systems::ValueProducer(this, &SapModel<T>::CalcConstraintVelocities),

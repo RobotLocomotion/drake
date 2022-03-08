@@ -157,6 +157,19 @@ class SapModel {
     CacheIndexes cache_indexes_;
   };
 
+  /* N.B. on the use of systems::Context and caching to future developers.
+   The SapModel class uses systems::Context to store its state and make use of
+   the very well tested caching system. To accomplish this, SapModel privately
+   owns a SapModelSystem used to manage this resources in the context, even
+   though SapModel is NOT a systems::System. A few important notes on
+   DeclareCacheEntries():
+     1. This method is intended to be called ONLY from the model's constructor,
+        AFTER the SapModelSystem used to manage its resources is created.
+        Calling this method before the SapModelSystem is created will trigger an
+        exception.
+     2. The Calc() and Eval() methods for these cache entries belong to
+        SapModel, not to the system used to declare them. This is required by
+        the fact that model data belongs to SapModel. */
   void DeclareCacheEntries();
 
   /* Makes a permutation to go back and forth between dofs in the original
