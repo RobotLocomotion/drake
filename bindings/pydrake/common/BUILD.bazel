@@ -376,6 +376,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
     ],
     cc_srcs = ["schema_py.cc"],
     package_info = PACKAGE_INFO,
