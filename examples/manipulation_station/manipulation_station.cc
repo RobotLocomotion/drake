@@ -935,6 +935,11 @@ void ManipulationStation<T>::RegisterRgbdSensor(
   info.color_camera = color_camera;
 
   camera_information_[name] = info;
+
+  const std::string urdf_path = FindResourceOrThrow(
+      "drake/manipulation/models/realsense2_description/urdf/d415.urdf");
+  internal::AddAndWeldModelFrom(
+      urdf_path, name, parent_frame, "base_link", X_PC, plant_);
 }
 
 template <typename T>
