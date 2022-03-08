@@ -26,6 +26,14 @@ On successful completion, the requested set of wheels will be written to the
 specified output directory (by default, the current working directory, unless
 overridden by ``--output-dir``), unless ``--no-extract`` was specified.
 
+Cleanup
+-------
+
+To reclaim disk space used by wheel builds, run the following commands::
+
+  docker rmi $(docker image ls --filter=reference='pip-drake:*' -q)
+  docker builder prune -f
+
 Optional Arguments
 ------------------
 
