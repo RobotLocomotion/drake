@@ -74,7 +74,7 @@ class FemStateTest : public ::testing::Test {
 using NonSymbolicScalars = ::testing::Types<double, AutoDiffXd>;
 TYPED_TEST_SUITE(FemStateTest, NonSymbolicScalars);
 
-TYPED_TEST(FemStateTest, LiveFemState) {
+TYPED_TEST(FemStateTest, SharedFemState) {
   using T = TypeParam;
   auto context = this->fem_state_system_->CreateDefaultContext();
   FemState<T> state(this->fem_state_system_.get(), context.get());
