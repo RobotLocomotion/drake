@@ -208,9 +208,22 @@ void DoScalarDependentDefinitions(py::module m, T) {
             overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift),
             py::arg("p_PoQ_E"), cls_doc.Shift.doc_1args)
         .def("ComposeWithMovingFrameAcceleration",
+            &Class::ComposeWithMovingFrameAcceleration,
+            py::arg("position_of_moving_frame"), py::arg("omega"),
+            py::arg("velocity_of_moving_frame"),
+            py::arg("acceleration_of_moving_frame"),
+            cls_doc.ComposeWithMovingFrameAcceleration.doc);
+    constexpr char doc_ComposeMovingFrameAccel_deprecatedArgName[] =
+        "ComposeWithMovingFrameAcceleration(p_PB_E, w_WP_E, V_PB_E, A_PB_E)"
+        " is deprecated, and will be removed on or around 2022-07-01. "
+        "Please instead use ComposeWithMovingFrameAcceleration("
+        "position_of_moving_frame, omega, velocity_of_moving_frame,"
+        " acceleration_of_moving_frame)";
+        cls.def("ComposeWithMovingFrameAcceleration",
+            WrapDeprecated(doc_ComposeMovingFrameAccel_deprecatedArgName,
             &Class::ComposeWithMovingFrameAcceleration, py::arg("p_PB_E"),
             py::arg("w_WP_E"), py::arg("V_PB_E"), py::arg("A_PB_E"),
-            cls_doc.ComposeWithMovingFrameAcceleration.doc);
+            doc_ComposeMovingFrameAccel_deprecatedArgName);
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
     AddValueInstantiation<std::vector<Class>>(m);
