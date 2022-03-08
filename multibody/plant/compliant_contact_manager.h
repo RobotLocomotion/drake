@@ -26,7 +26,7 @@ template <typename T>
 struct TreeJacobian {
   // Index of the tree participating in this Jacobian. Negative for an invalid
   // non-participating Jacobian.
-  int tree{-1};
+  TreeIndex tree;
 
   // J.cols() must equal the number of generalized velocities for
   // the corresponding tree. J.rows() will equal the size of the constraint.
@@ -159,9 +159,12 @@ class CompliantContactManager final
   // Provide private access for unit testing only.
   friend class CompliantContactManagerTest;
 
-  void ExtractModelInfo() final;
+  // thus far no-op.
+  void ExtractModelInfo() final {}
 
-  int num_trees() const { return num_tree_velocities_.size(); }
+  const MultibodyTreeTopology& tree_topology() const {
+    return internal::GetInternalTree(this->plant()).get_topology();
+  }
 
   // TODO(amcastro-tri): Implement these methods in future PRs.  
   void DoCalcAccelerationKinematicsCache(
@@ -296,13 +299,6 @@ class CompliantContactManager final
 
   std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver_;
   CacheIndexes cache_indexes_;
-  // Number of generalized velocities for the t-th tree.
-  std::vector<int> num_tree_velocities_;
-  // Offset in the full vector of velocities for the t-th tree.
-  std::vector<int> tree_velocities_start_;
-  // Body index to tree index map.
-  std::vector<int> body_to_tree_index_;
-  std::vector<int> dof_to_tree_index_;
 
   std::vector<CouplerConstraintInfo> coupler_constraints_info_;
   std::vector<DistanceConstraintInfo> distance_constraints_info_;

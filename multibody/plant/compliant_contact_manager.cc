@@ -108,9 +108,9 @@ void CompliantContactManager<T>::DeclareCacheEntries() {
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.contact_jacobian = contact_jacobian_cache_entry.cache_index();
 
-  std::vector<MatrixX<T>> Amodel(num_trees());
-  for (int t = 0; t < num_trees(); ++t) {
-    const int nt = num_tree_velocities_[t];
+  std::vector<MatrixX<T>> Amodel(tree_topology().num_trees());
+  for (TreeIndex t(0); t < tree_topology().num_trees(); ++t) {
+    const int nt = tree_topology().num_tree_velocities(t);
     Amodel[t].resize(nt, nt);
   }
   auto& linear_dynamics_matrix_cache_entry = this->DeclareCacheEntry(
@@ -237,18 +237,20 @@ void CompliantContactManager<T>::CalcContactJacobianCache(
     R_WC_set.push_back(R_WC);
     Jv_W_AcBc_C.noalias() = R_WC.matrix().transpose() * Jv_AcBc_W;
 
-    const int treeA_index = body_to_tree_index_[bodyA_index];
-    const int treeB_index = body_to_tree_index_[bodyB_index];
+    const TreeIndex treeA_index =
+        tree_topology().body_to_tree_index(bodyA_index);
+    const TreeIndex treeB_index =
+        tree_topology().body_to_tree_index(bodyB_index);
 
     // Sanity check, at least one must be positive.
-    DRAKE_DEMAND(treeA_index >= 0 || treeB_index >= 0);
+    DRAKE_DEMAND(treeA_index.is_valid() || treeB_index.is_valid());
 
-    if (treeA_index >= 0) {
+    if (treeA_index.is_valid()) {
       TreeJacobian<T>& tree_jacobian = tree_blocks[icontact].first;
       tree_jacobian.tree = treeA_index;
-      tree_jacobian.J =
-          Jv_W_AcBc_C.middleCols(tree_velocities_start_[treeA_index],
-                                 num_tree_velocities_[treeA_index]);
+      tree_jacobian.J = Jv_W_AcBc_C.middleCols(
+          tree_topology().tree_velocities_start(treeA_index),
+          tree_topology().num_tree_velocities(treeA_index));
     }
 
     // N.B. For self contact, when treeA_index = treeB_index, we only need to
@@ -257,9 +259,9 @@ void CompliantContactManager<T>::CalcContactJacobianCache(
     if (treeB_index >= 0 && treeB_index != treeA_index) {
       TreeJacobian<T>& tree_jacobian = tree_blocks[icontact].second;
       tree_jacobian.tree = treeB_index;
-      tree_jacobian.J =
-          Jv_W_AcBc_C.middleCols(tree_velocities_start_[treeB_index],
-                                 num_tree_velocities_[treeB_index]);
+      tree_jacobian.J = Jv_W_AcBc_C.middleCols(
+          tree_topology().tree_velocities_start(treeB_index),
+          tree_topology().num_tree_velocities(treeB_index));
     }
 
     Jc.template middleRows<3>(3 * icontact) = Jv_W_AcBc_C;
@@ -328,8 +330,11 @@ void CompliantContactManager<T>::AddCouplerConstraints(
   const VectorX<T> q0 = plant().GetPositions(context);  
 
   for (const CouplerConstraintInfo& info : coupler_constraints_info_) {
-    const int c0 = dof_to_tree_index_[info.q0];
-    const int c1 = dof_to_tree_index_[info.q1];
+    const TreeIndex c0 = tree_topology().velocity_to_tree_index(info.q0);
+    const TreeIndex c1 = tree_topology().velocity_to_tree_index(info.q1);
+
+    // Sanity check.
+    DRAKE_DEMAND(c0.is_valid() && c1.is_valid());
 
     // Constraint function.
     const T g0 = q0[info.q0] - info.gear_ratio * q0[info.q1];
@@ -341,7 +346,7 @@ void CompliantContactManager<T>::AddCouplerConstraints(
         info.gear_ratio, info.stiffness, info.dissipation_time_scale, beta};
 
     if (c0 == c1) {
-      const int nv = num_tree_velocities_[c0];
+      const int nv = tree_topology().num_tree_velocities(c0);
       MatrixX<T> J = MatrixX<T>::Zero(1, nv);
       // J = dg/dv
       J(0, info.q0) = 1.0;
@@ -350,8 +355,8 @@ void CompliantContactManager<T>::AddCouplerConstraints(
       problem->AddConstraint(std::make_unique<SapCouplerConstraint<T>>(
           parameters, c0, J, g0));
     } else {
-      const int nv0 = num_tree_velocities_[c0];
-      const int nv1 = num_tree_velocities_[c1];
+      const int nv0 = tree_topology().num_tree_velocities(c0);
+      const int nv1 = tree_topology().num_tree_velocities(c1);
       MatrixX<T> J0 = MatrixX<T>::Zero(1, nv0);
       MatrixX<T> J1 = MatrixX<T>::Zero(1, nv1);
       J0(0, info.q0) = 1.0;
@@ -423,8 +428,10 @@ void CompliantContactManager<T>::AddDistanceConstraints(
     PRINT_VAR(info.body_A);
     PRINT_VAR(info.body_B);
 
-    const int treeA_index = body_to_tree_index_[info.body_A];
-    const int treeB_index = body_to_tree_index_[info.body_B];
+    const TreeIndex treeA_index =
+        tree_topology().body_to_tree_index(info.body_A);
+    const TreeIndex treeB_index =
+        tree_topology().body_to_tree_index(info.body_B);
 
     PRINT_VAR(treeA_index);
     PRINT_VAR(treeB_index);
@@ -433,20 +440,23 @@ void CompliantContactManager<T>::AddDistanceConstraints(
     DRAKE_DEMAND(treeA_index >= 0 || treeB_index >= 0);
 
     // Self constraint or with the world.
-    if (treeA_index < 0 || treeB_index < 0 || treeA_index == treeB_index) {
-      const int tree_index = treeA_index >= 0 ? treeA_index : treeB_index;
-      const MatrixX<T> J = Jddot.middleCols(tree_velocities_start_[tree_index],
-                                            num_tree_velocities_[tree_index]);
-      PRINT_VARn(J);      
+    if (!treeA_index.is_valid() || !treeB_index.is_valid() ||
+        treeA_index == treeB_index) {
+      const TreeIndex tree_index =
+          treeA_index.is_valid() ? treeA_index : treeB_index;
+      const MatrixX<T> J =
+          Jddot.middleCols(tree_topology().tree_velocities_start(tree_index),
+                           tree_topology().num_tree_velocities(tree_index));
+      PRINT_VARn(J);
       problem->AddConstraint(std::make_unique<SapDistanceConstraint<T>>(
           parameters, tree_index, J, d0));
     } else {
       const MatrixX<T> JA =
-          Jddot.middleCols(tree_velocities_start_[treeA_index],
-                           num_tree_velocities_[treeA_index]);
+          Jddot.middleCols(tree_topology().tree_velocities_start(treeA_index),
+                           tree_topology().num_tree_velocities(treeA_index));
       const MatrixX<T> JB =
-          Jddot.middleCols(tree_velocities_start_[treeB_index],
-                           num_tree_velocities_[treeB_index]);
+          Jddot.middleCols(tree_topology().tree_velocities_start(treeB_index),
+                           tree_topology().num_tree_velocities(treeB_index));
       problem->AddConstraint(std::make_unique<SapDistanceConstraint<T>>(
           parameters, treeA_index, treeB_index, JA, JB, d0));
     }
@@ -802,7 +812,7 @@ template <typename T>
 void CompliantContactManager<T>::CalcLinearDynamicsMatrix(
     const systems::Context<T>& context, std::vector<MatrixX<T>>* A) const {
   DRAKE_DEMAND(A != nullptr);  
-  A->resize(num_trees());
+  A->resize(tree_topology().num_trees());
   const int nv = plant().num_velocities();
 
   // TODO(amcastro-tri): implicitly include force elements such as joint
@@ -814,8 +824,8 @@ void CompliantContactManager<T>::CalcLinearDynamicsMatrix(
   plant().CalcMassMatrix(context, &M);
 
   int v = 0;
-  for (int t = 0; t < num_trees(); ++t) {
-    const int nt = num_tree_velocities_[t];
+  for (TreeIndex t(0); t < tree_topology().num_trees(); ++t) {
+    const int nt = tree_topology().num_tree_velocities(t);
     (*A)[t].resize(nt, nt);
     (*A)[t] = M.block(v, v, nt, nt);
     v += nt;
@@ -949,63 +959,6 @@ void CompliantContactManager<T>::DoCalcDiscreteValues(
   VectorX<T> x_next(plant().num_multibody_states());
   x_next << q_next, v_next;
   updates->set_value(this->multibody_state_index(), x_next);
-}
-
-template <typename T>
-void CompliantContactManager<T>::ExtractModelInfo() {
-  const MultibodyTreeTopology& topology =  
-      internal::GetInternalTree(this->plant()).get_topology();
-
-  // Sanity check: I expect always the first node to be connected to the world.
-  // Otherwise something went terribly wrong.
-  // TODO: remove. Note that the check assumes at least one tree and therefore
-  // not work for empty models.
-  //const BodyNodeTopology& first_tree_base =
-  //    topology.get_body_node(BodyNodeIndex(1));
-  //DRAKE_DEMAND(first_tree_base.level == 1);
-
-  const BodyNodeTopology& root = topology.get_body_node(BodyNodeIndex(0));
-  const int num_trees = root.child_nodes.size();
-  num_tree_velocities_.resize(num_trees, 0);
-  body_to_tree_index_.resize(plant().num_bodies(), -1);
-  dof_to_tree_index_.resize(plant().num_velocities(), -1);
-
-  int t = -1;  // current tree.
-  // Traverse nodes in their DFT order, skiping the world.
-  for (BodyNodeIndex node_index(1); node_index < topology.get_num_body_nodes();
-       ++node_index) {
-    const BodyNodeTopology& node = topology.get_body_node(node_index);    
-    if (node.level == 1) ++t;
-    num_tree_velocities_[t] += node.num_mobilizer_velocities;
-    body_to_tree_index_[node.body] = t;
-    for (int i = 0; i < node.num_mobilizer_velocities; ++i) {
-      const int v = node.mobilizer_velocities_start_in_v + i;
-      dof_to_tree_index_[v] = t;
-    }
-  }
-
-  // When I'm done t should point at the last tree.
-  // TODO: remove.
-  DRAKE_DEMAND(t == (num_trees - 1));  // sanity check.
-
-  PRINT_VAR(num_tree_velocities_.size());
-  for (int nt : num_tree_velocities_) {
-    PRINT_VAR(nt);
-  }
-
-  tree_velocities_start_.resize(num_trees, 0);
-  for (t = 1; t < num_trees; ++t) {
-    tree_velocities_start_[t] =
-        tree_velocities_start_[t - 1] + num_tree_velocities_[t - 1];
-  }
-
-  // Double check all dofs were assigned a tree.
-  PRINT_VAR(dof_to_tree_index_.size());
-  for (auto ti : dof_to_tree_index_) {
-    PRINT_VAR(ti);
-    DRAKE_DEMAND(ti >= 0);
-  }
-
 }
 
 }  // namespace internal
