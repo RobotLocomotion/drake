@@ -326,7 +326,9 @@ HttpResponse HttpServiceCurl::PostForm(
   } else {
     try {
       fs::remove(bin_out_path);
-    } catch (...) {
+    } catch (const std::exception& e) {
+      drake::log()->debug("HttpServiceCurl unable to delete '{}'. {}",
+                          bin_out_path, e.what());
     }
   }
 
