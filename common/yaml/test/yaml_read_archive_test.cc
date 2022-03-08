@@ -4,6 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <yaml-cpp/yaml.h>
 
 #include "drake/common/name_value.h"
 #include "drake/common/nice_type_name.h"

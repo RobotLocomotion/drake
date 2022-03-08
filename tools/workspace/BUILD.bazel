@@ -69,7 +69,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "usockets",
     "uwebsockets",
     "vtk",
-    "yaml_cpp",
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "conex",
     "cds",

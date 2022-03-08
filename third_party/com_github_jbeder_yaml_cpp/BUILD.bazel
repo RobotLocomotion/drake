@@ -1,0 +1,33 @@
+# -*- python -*-
+
+load("//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+licenses(["notice"])  # MIT
+
+# YAML::EmitForEvents is not decorated with the YAML_CPP_API macro and so is
+# hidden on Ubuntu 20.04 (Focal) where, due to a quilt patch, the default
+# visibility is "hidden" and only declarations decorated with YAML_CPP_API have
+# "default" (i.e., external) visibility.
+#
+# Furthermore, we need to tweak the YAML tag output so we've applied a 1-line
+# patch to our vendored copy.
+cc_library(
+    name = "emitfromevents",
+    srcs = ["src/emitfromevents.cpp"],
+    hdrs = ["include/yaml-cpp/emitfromevents.h"],
+    copts = ["-fvisibility=hidden"],
+    linkstatic = True,
+    tags = ["nolint"],
+    visibility = ["//common/yaml:__pkg__"],
+    deps = ["@yaml_cpp"],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+    doc_dest = "share/doc/yaml-cpp",
+    visibility = ["//visibility:public"],
+)
+
+add_lint_tests()
