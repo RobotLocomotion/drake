@@ -239,6 +239,7 @@ cc_library(
         "@lcm",
         "@spdlog",
         "@tinyxml2",
+        "@yaml_cpp",
     ],
 )
 
