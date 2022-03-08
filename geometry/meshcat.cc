@@ -1117,24 +1117,26 @@ class Meshcat::Impl {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     internal::SetButtonControl data;
+    data.name = std::move(name);
     data.callback = fmt::format(R"""(
 () => this.connection.send(msgpack.encode({{
   'type': 'button',
   'name': '{}'
-}})))""",
-                                name);
-    data.name = std::move(name);
+}})))""", data.name);
 
     {
       std::lock_guard<std::mutex> lock(controls_mutex_);
-      if (buttons_.find(name) != buttons_.end()) {
-        DeleteButton(name);
+      if (buttons_.find(data.name) != buttons_.end()) {
+        throw std::out_of_range(
+            fmt::format("Meshcat already has a button named {}.", data.name));
       }
-      if (sliders_.find(name) != sliders_.end()) {
-        DeleteSlider(name);
+      if (sliders_.find(data.name) != sliders_.end()) {
+        throw std::out_of_range(
+            fmt::format("Meshcat already has a slider named {}.", data.name));
       }
       controls_.emplace_back(data.name);
       buttons_[data.name] = data;
+      DRAKE_DEMAND(controls_.size() == (buttons_.size() + sliders_.size()));
     }
 
     Defer([this, data = std::move(data)]() {
@@ -1174,6 +1176,7 @@ class Meshcat::Impl {
       DRAKE_DEMAND(c_iter != controls_.end());
       controls_.erase(c_iter);
       data.name = std::move(name);
+      DRAKE_DEMAND(controls_.size() == (buttons_.size() + sliders_.size()));
     }
 
     Defer([this, data = std::move(data)]() {
@@ -1191,14 +1194,13 @@ class Meshcat::Impl {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     internal::SetSliderControl data;
+    data.name = std::move(name);
     data.callback = fmt::format(R"""(
 (value) => this.connection.send(msgpack.encode({{
   'type': 'slider',
   'name': '{}',
   'value': value
-}})))""",
-                                name);
-    data.name = std::move(name);
+}})))""", data.name);
     data.min = min;
     data.max = max;
     data.step = step;
@@ -1211,14 +1213,17 @@ class Meshcat::Impl {
 
     {
       std::lock_guard<std::mutex> lock(controls_mutex_);
-      if (buttons_.find(name) != buttons_.end()) {
-        DeleteButton(name);
+      if (buttons_.find(data.name) != buttons_.end()) {
+        throw std::out_of_range(
+            fmt::format("Meshcat already has a button named {}.", data.name));
       }
-      if (sliders_.find(name) != sliders_.end()) {
-        DeleteSlider(name);
+      if (sliders_.find(data.name) != sliders_.end()) {
+        throw std::out_of_range(
+            fmt::format("Meshcat already has a slider named {}.", data.name));
       }
       controls_.emplace_back(data.name);
       sliders_[data.name] = data;
+      DRAKE_DEMAND(controls_.size() == (buttons_.size() + sliders_.size()));
     }
 
     Defer([this, data = std::move(data)]() {
@@ -1292,6 +1297,7 @@ class Meshcat::Impl {
       DRAKE_DEMAND(c_iter != controls_.end());
       controls_.erase(c_iter);
       data.name = std::move(name);
+      DRAKE_DEMAND(controls_.size() == (buttons_.size() + sliders_.size()));
     }
 
     Defer([this, data = std::move(data)]() {
