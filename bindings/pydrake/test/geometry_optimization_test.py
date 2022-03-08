@@ -168,6 +168,31 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(v_unit_box.PointInSet([0, 0, 0]))
         v_from_h = mut.VPolytope(H=mut.HPolyhedron.MakeUnitBox(dim=3))
         self.assertTrue(v_from_h.PointInSet([0, 0, 0]))
+        # Test creating a vpolytope from a non-minimal set of vertices
+        # 2D: Random points inside a circle
+        r = 2.0
+        n = 400
+        vertices = np.zeros((2, n + 4))
+        theta = np.linspace(0, 2 * np.pi, n, endpoint=False)
+        vertices[0, 0:n] = r * np.cos(theta) + 0.5 * r
+        vertices[1, 0:n] = r * np.sin(theta) + 0.5 * r
+        vertices[:, n:] = np.array([
+            [r/2, r/3, r/4, r/5],
+            [r/2, r/3, r/4, r/5]
+        ])
+        vpoly = mut.VPolytope(vertices=vertices).GetMinimalRepresentation()
+        self.assertAlmostEqual(vpoly.CalcVolume(), np.pi * r * r, delta=1e-3)
+        self.assertEqual(vpoly.vertices().shape[1], n)
+        # 3D: Random points inside a box
+        a = 2.0
+        vertices = np.array([
+            [0, a, 0, a, 0, a, 0, a, a/2, a/3, a/4, a/5],
+            [0, 0, a, a, 0, 0, a, a, a/2, a/3, a/4, a/5],
+            [0, 0, 0, 0, a, a, a, a, a/2, a/3, a/4, a/5]
+        ])
+        vpoly = mut.VPolytope(vertices=vertices).GetMinimalRepresentation()
+        self.assertAlmostEqual(vpoly.CalcVolume(), a * a * a)
+        self.assertEqual(vpoly.vertices().shape[1], 8)
 
     def test_cartesian_product(self):
         point = mut.Point(np.array([11.1, 12.2, 13.3]))

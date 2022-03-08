@@ -20,7 +20,7 @@ namespace optimization {
  Note: Unlike the half-space representation, this
  definition means the set is always bounded (hence the name polytope, instead of
  polyhedron).
- 
+
 @ingroup geometry_optimization
 */
 class VPolytope final : public ConvexSet {
@@ -45,6 +45,11 @@ class VPolytope final : public ConvexSet {
             std::optional<FrameId> reference_frame = std::nullopt);
 
   ~VPolytope() final;
+
+  /** Creates a new VPolytope whose vertices are guaranteed to be minimal,
+  i.e. its vertices are the convex hull.
+  */
+  VPolytope GetMinimalRepresentation() const;
 
   /** Returns true if the point is within @p tol of the set under the L∞-norm.
    Note: This requires the solution of a linear program; the achievable
