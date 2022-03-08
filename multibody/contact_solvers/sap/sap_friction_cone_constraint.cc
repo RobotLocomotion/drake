@@ -85,7 +85,8 @@ void SapFrictionConeConstraint<T>::Project(
     using std::sqrt;
     // TODO(amcastro-tri): consider exposing this as a parameter.
     constexpr double soft_tolerance = 1.0e-7;
-    return sqrt(x.squaredNorm() + soft_tolerance * soft_tolerance);
+    constexpr double soft_tolerance_squared = soft_tolerance * soft_tolerance;
+    return sqrt(x.squaredNorm() + soft_tolerance_squared);
   };
 
   // We assume a regularization of the form R = (Rt, Rt, Rn).
