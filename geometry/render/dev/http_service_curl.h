@@ -18,8 +18,8 @@ namespace internal {
 class HttpServiceCurl : public HttpService {
  public:
   /** Constructs a libcurl based HttpService.  @sa HttpService::HttpService */
-  explicit HttpServiceCurl(const std::string& temp_directory,
-                           const std::string& url, int32_t port, bool verbose);
+  HttpServiceCurl(const std::string& temp_directory, const std::string& url,
+                  int32_t port, bool verbose);
   ~HttpServiceCurl() override;
 
   /** @see HttpService::PostForm */
