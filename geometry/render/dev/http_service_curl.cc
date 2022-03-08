@@ -227,11 +227,12 @@ HttpResponse HttpServiceCurl::PostForm(
   struct curl_slist* headerlist{nullptr};
   form = curl_mime_init(curl);
 
-  // Defined to make cleanup easier before throwing any possible exceptions.
-  auto cleanup_curl = [](CURL* curl, curl_mime* form, curl_slist* headerlist) {
-    if (form != nullptr) curl_mime_free(form);
-    if (headerlist != nullptr) curl_slist_free_all(headerlist);
-    curl_easy_cleanup(curl);
+  /* Defined to make cleanup easier before throwing any possible exceptions.
+   Frees resources for `curl`, `form`, and `headerlist`. */
+  auto cleanup_curl = [](CURL* c, curl_mime* f, curl_slist* h_list) {
+    if (f != nullptr) curl_mime_free(f);
+    if (h_list != nullptr) curl_slist_free_all(h_list);
+    curl_easy_cleanup(c);
   };
 
   // Used when verbose(), needed in scope for logging after curl_easy_perform.
