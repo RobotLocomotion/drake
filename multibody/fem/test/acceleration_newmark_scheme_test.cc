@@ -14,7 +14,7 @@ namespace {
 const double kDt = 1e-3;
 const double kGamma = 0.6;
 const double kBeta = 0.3;
-const double kTolerance = 8.0 * std::numeric_limits<double>::epsilon();
+const double kTolerance = 16.0 * std::numeric_limits<double>::epsilon();
 
 /* Arbitrary initial states. */
 Vector4<double> q() { return Vector4<double>(1.23, 2.34, 3.45, 4.56); }
@@ -36,6 +36,12 @@ TEST_F(AccelerationNewmarkSchemeTest, Weights) {
   EXPECT_TRUE(CompareMatrices(
       scheme_.GetWeights(),
       Vector3<double>(kBeta * kDt * kDt, kGamma * kDt, 1.0), 0));
+}
+
+/* Verify that the unknowns are the accelerations. */
+TEST_F(AccelerationNewmarkSchemeTest, Unknowns) {
+  FemState<double> state(fem_state_system_.get());
+  EXPECT_EQ(scheme_.GetUnknowns(state), a());
 }
 
 /* Verify that the result of
@@ -65,8 +71,8 @@ TEST_F(AccelerationNewmarkSchemeTest, AdvanceOneTimeStep) {
   const int kTimeSteps = 10;
   for (int i = 0; i < kTimeSteps; ++i) {
     scheme_.AdvanceOneTimeStep(state_n, a(), &state_np1);
-    // TODO(xuchenhan-tri): We need a FemState::SetFrom method or an assignment
-    // operator.
+    // TODO(xuchenhan-tri): We need a FemState::SetFrom method or an
+    // assignment operator.
     state_n.SetAccelerations(state_np1.GetAccelerations());
     state_n.SetVelocities(state_np1.GetVelocities());
     state_n.SetPositions(state_np1.GetPositions());
@@ -85,10 +91,10 @@ TEST_F(AccelerationNewmarkSchemeTest, AdvanceOneTimeStep) {
       kTimeSteps * kTolerance));
 }
 
-/* Tests that `AccelerationNewmarkScheme` is equivalent with
+/* Tests that `AccelerationNewmarkScheme` is equivalent to
  `VelocityNewmarkScheme` by advancing one time step with each integration
- scheme using the same initial state and verifying that the resulting new states
- are the same. */
+ scheme using the same initial state and verifying that the resulting new
+ states are the same. */
 TEST_F(AccelerationNewmarkSchemeTest, EquivalenceWithVelocityNewmark) {
   FemState<double> state0(fem_state_system_.get());
   FemState<double> state_a(fem_state_system_.get());
@@ -97,8 +103,8 @@ TEST_F(AccelerationNewmarkSchemeTest, EquivalenceWithVelocityNewmark) {
   VelocityNewmarkScheme<double> velocity_scheme{kDt, kGamma, kBeta};
   FemState<double> state_v(fem_state_system_.get());
   velocity_scheme.AdvanceOneTimeStep(state0, state_a.GetVelocities(), &state_v);
-  /* Set a larger error tolerance to accomodate the division by `dt` used in the
-   VelocityNewmarkScheme. */
+  /* Set a larger error tolerance to accomodate the division by `dt` used in
+   the VelocityNewmarkScheme. */
   EXPECT_TRUE(CompareMatrices(state_v.GetAccelerations(),
                               state_a.GetAccelerations(), kTolerance / kDt));
   EXPECT_TRUE(CompareMatrices(state_v.GetVelocities(), state_a.GetVelocities(),
