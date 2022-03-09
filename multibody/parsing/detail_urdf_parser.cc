@@ -35,20 +35,67 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+using drake::internal::DiagnosticDetail;
+using drake::internal::DiagnosticPolicy;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using math::RigidTransformd;
+using tinyxml2::XMLNode;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 namespace {
 
+// Helper class to format diagnostic messages for a TinyXML2 data source.
+class TinyXml2Diagnostic {
+ public:
+  // Both @p diagnostic and @p data_source are aliased; their lifetime must
+  // exceed that of this object.
+  // @pre diagnostic cannot be nullptr.
+  // @pre data_source cannot be nullptr.
+  TinyXml2Diagnostic(
+      const drake::internal::DiagnosticPolicy* diagnostic,
+      const DataSource* data_source)
+      : diagnostic_(diagnostic), data_source_(data_source) {
+    DRAKE_DEMAND(diagnostic != nullptr);
+    DRAKE_DEMAND(data_source != nullptr);
+  }
+
+  // Makes a diagnostic detail record based on an XMLNode.
+  // @pre location cannot be nullptr.
+  DiagnosticDetail MakeDetail(const XMLNode& location,
+                              const std::string& message) const {
+    DiagnosticDetail detail;
+    if (data_source_->IsFilename()) {
+      detail.filename = data_source_->GetAbsolutePath();
+    } else {
+      detail.filename = data_source_->GetStem() + ".urdf";
+    }
+    detail.line = location.GetLineNum();
+    detail.message = message;
+    return detail;
+  }
+
+  // Issues a warning for an XMLNode.
+  void Warning(const XMLNode& location, const std::string& message) const {
+    diagnostic_->Warning(MakeDetail(location, message));
+  }
+
+  // Issues an error for an XMLNode.
+  void Error(const XMLNode& location, const std::string& message) const {
+    diagnostic_->Error(MakeDetail(location, message));
+  }
+
+ private:
+  const drake::internal::DiagnosticPolicy* diagnostic_{};
+  const DataSource* data_source_{};
+};
+
 const char* kWorldName = "world";
 
 SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
     XMLElement* node) {
-
   RigidTransformd X_BBi;
 
   XMLElement* origin = node->FirstChildElement("origin");
@@ -773,7 +820,7 @@ ModelInstanceIndex ParseUrdf(
 
 }  // namespace
 
-ModelInstanceIndex AddModelFromUrdf(
+std::optional<ModelInstanceIndex> AddModelFromUrdf(
     const DataSource& data_source,
     const std::string& model_name_in,
     const std::optional<std::string>& parent_model_name,
@@ -781,23 +828,25 @@ ModelInstanceIndex AddModelFromUrdf(
   MultibodyPlant<double>* plant = workspace.plant;
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
+  TinyXml2Diagnostic diag(&workspace.diagnostic, &data_source);
 
   // Opens the URDF file and feeds it into the XML parser.
   XMLDocument xml_doc;
   if (data_source.IsFilename()) {
-    std::string full_path = data_source.GetAbsolutePath();
-    xml_doc.LoadFile(full_path.c_str());
+    xml_doc.LoadFile(data_source.filename().c_str());
     if (xml_doc.ErrorID()) {
-      throw std::runtime_error(fmt::format(
-          "Failed to parse XML file {}:\n{}",
-          full_path, xml_doc.ErrorName()));
+      diag.Error(xml_doc, fmt::format(
+                     "Failed to parse XML file: {}",
+                     xml_doc.ErrorName()));
+      return std::nullopt;
     }
   } else {
     xml_doc.Parse(data_source.contents().c_str());
     if (xml_doc.ErrorID()) {
-      throw std::runtime_error(fmt::format(
-          "Failed to parse XML string: {}",
-          xml_doc.ErrorName()));
+      diag.Error(xml_doc, fmt::format(
+                     "Failed to parse XML string: {}",
+                     xml_doc.ErrorName()));
+      return std::nullopt;
     }
   }
 
