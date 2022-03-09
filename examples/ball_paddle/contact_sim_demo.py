@@ -17,7 +17,7 @@ from pydrake.systems.primitives import VectorLogSink
 
 
 def make_ball_paddle():
-    multibody_plant_config = MultibodyPlantConfig(time_step = 0.001)
+    multibody_plant_config = MultibodyPlantConfig(time_step=0.001)
     p_WPaddle_fixed = RigidTransform(RollPitchYaw(0, 0, 0),
                                      np.array([0.1, 0, -0.01]))
     builder = DiagramBuilder()
@@ -60,8 +60,8 @@ def simulate_diagram(diagram, ball_paddle_plant, state_logger,
     v_init_val = np.hstack((np.zeros(3), ball_init_velocity))
     qv_init_val = np.concatenate((q_init_val, v_init_val))
 
-    simulator_config = SimulatorConfig(target_realtime_rate = 0.01,
-                                       publish_every_time_step = True)
+    simulator_config = SimulatorConfig(target_realtime_rate=0.01,
+                                       publish_every_time_step=True)
     simulator = Simulator(diagram)
     ApplySimulatorConfig(simulator, simulator_config)
 
