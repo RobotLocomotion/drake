@@ -6,8 +6,8 @@ namespace fem {
 namespace internal {
 
 template <typename T>
-Vector3<T> DiscreteTimeIntegrator<T>::weights() const {
-  return do_get_weights();
+Vector3<T> DiscreteTimeIntegrator<T>::GetWeights() const {
+  return DoGetWeights();
 }
 
 template <typename T>
@@ -26,12 +26,12 @@ void DiscreteTimeIntegrator<T>::UpdateStateFromChangeInUnknowns(
 
 template <typename T>
 void DiscreteTimeIntegrator<T>::AdvanceOneTimeStep(
-    const FemState<T>& prev_state, const VectorX<T>& unknown_variable,
+    const FemState<T>& prev_state, const VectorX<T>& z,
     FemState<T>* next_state) const {
   DRAKE_DEMAND(next_state != nullptr);
   DRAKE_DEMAND(prev_state.num_dofs() == next_state->num_dofs());
-  DRAKE_DEMAND(prev_state.num_dofs() == unknown_variable.size());
-  DoAdvanceOneTimeStep(prev_state, unknown_variable, next_state);
+  DRAKE_DEMAND(prev_state.num_dofs() == z.size());
+  DoAdvanceOneTimeStep(prev_state, z, next_state);
 }
 
 }  // namespace internal
