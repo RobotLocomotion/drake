@@ -24,21 +24,21 @@ constexpr int kSpatialDimension = 3;
 constexpr int kQuadratureOrder = 1;
 constexpr double kEpsilon = 1e-14;
 const FemElementIndex kZeroIndex(0);
-using T = AutoDiffXd;
+using AD = AutoDiffXd;
 using QuadratureType =
     internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
 static constexpr int kNumQuads = QuadratureType::num_quadrature_points;
 using IsoparametricElementType =
-    internal::LinearSimplexElement<T, kNaturalDimension, kSpatialDimension,
+    internal::LinearSimplexElement<AD, kNaturalDimension, kSpatialDimension,
                                    kNumQuads>;
-using ConstitutiveModelType = CorotatedModel<T, kNumQuads>;
-using DeformationGradientDataType = CorotatedModelData<T, kNumQuads>;
+using ConstitutiveModelType = CorotatedModel<AD, kNumQuads>;
+using DeformationGradientDataType = CorotatedModelData<AD, kNumQuads>;
 
-const T kYoungsModulus{1};
-const T kPoissonRatio{0.25};
-const T kDensity{1.23};
-const T kMassDamping{1e-4};
-const T kStiffnessDamping{1e-3};
+const AD kYoungsModulus{1};
+const AD kPoissonRatio{0.25};
+const AD kDensity{1.23};
+const AD kMassDamping{1e-4};
+const AD kStiffnessDamping{1e-3};
 
 class VolumetricElementTest : public ::testing::Test {
  protected:
@@ -52,16 +52,16 @@ class VolumetricElementTest : public ::testing::Test {
 
   void SetUp() override {
     SetupElement();
-    fem_state_system_ = make_unique<internal::FemStateSystem<T>>(
-        VectorX<T>::Zero(kNumDofs), VectorX<T>::Zero(kNumDofs),
-        VectorX<T>::Zero(kNumDofs));
+    fem_state_system_ = make_unique<internal::FemStateSystem<AD>>(
+        VectorX<AD>::Zero(kNumDofs), VectorX<AD>::Zero(kNumDofs),
+        VectorX<AD>::Zero(kNumDofs));
     /* Set up element data. */
-    std::function<void(const systems::Context<T>&, std::vector<Data>*)>
-        calc_element_data = [this](const systems::Context<T>& context,
+    std::function<void(const systems::Context<AD>&, std::vector<Data>*)>
+        calc_element_data = [this](const systems::Context<AD>& context,
                                    std::vector<Data>* element_data) {
           /* There's only one element in the system. */
           element_data->resize(1);
-          const FemState<T> fem_state(fem_state_system_.get(), &context);
+          const FemState<AD> fem_state(fem_state_system_.get(), &context);
           (*element_data)[0] = (this->elements_)[0].ComputeData(fem_state);
         };
 
@@ -73,9 +73,9 @@ class VolumetricElementTest : public ::testing::Test {
   }
 
   void SetupElement() {
-    Eigen::Matrix<T, kSpatialDimension, kNumNodes> X = reference_positions();
+    Eigen::Matrix<AD, kSpatialDimension, kNumNodes> X = reference_positions();
     ConstitutiveModelType constitutive_model(kYoungsModulus, kPoissonRatio);
-    DampingModel<T> damping_model(0, 0);
+    DampingModel<AD> damping_model(0, 0);
     elements_.emplace_back(kZeroIndex, kNodeIndices,
                            std::move(constitutive_model), X, kDensity,
                            std::move(damping_model));
@@ -83,50 +83,54 @@ class VolumetricElementTest : public ::testing::Test {
 
   /* Makes an FemState to be consumed by the unit tests with the given q, v, and
    a as the state values. */
-  unique_ptr<FemState<T>> MakeFemState(const VectorX<T>& q, const VectorX<T>& v,
-                                       const VectorX<T>& a) {
-    auto fem_state = make_unique<FemState<T>>(fem_state_system_.get());
+  unique_ptr<FemState<AD>> MakeFemState(const VectorX<AD>& q,
+                                        const VectorX<AD>& v,
+                                        const VectorX<AD>& a) {
+    auto fem_state = make_unique<FemState<AD>>(fem_state_system_.get());
     fem_state->SetPositions(q);
     fem_state->SetVelocities(v);
     fem_state->SetAccelerations(a);
     return fem_state;
   }
 
-  /* Set up the state and data of a deformed element. */
-  unique_ptr<FemState<T>> MakeDeformedState() {
+  /* Set up the state and data of a deformed element. This makes the positions
+   the independent variables of the problem when we take gradients. */
+  unique_ptr<FemState<AD>> MakeDeformedState() {
     Vector<double, kNumDofs> perturbation;
     perturbation << 0.18, 0.63, 0.54, 0.13, 0.92, 0.17, 0.03, 0.86, 0.85, 0.25,
         0.53, 0.67;
-    Eigen::Matrix<T, kSpatialDimension, kNumNodes> X = reference_positions();
+    Eigen::Matrix<AD, kSpatialDimension, kNumNodes> X = reference_positions();
     Vector<double, kNumDofs> x =
         Eigen::Map<Vector<double, kNumDofs>>(math::DiscardGradient(X).data(),
                                              reference_positions().size()) +
         perturbation;
-    Vector<T, kNumDofs> x_autodiff;
+    Vector<AD, kNumDofs> x_autodiff;
     math::InitializeAutoDiff(x, &x_autodiff);
     /* Set up arbitrary velocity and acceleration. */
-    const Vector<T, kNumDofs> v_autodiff = -1.23 * perturbation;
-    const Vector<T, kNumDofs> a_autodiff = 4.56 * perturbation;
+    const Vector<AD, kNumDofs> v_autodiff = -1.23 * perturbation;
+    const Vector<AD, kNumDofs> a_autodiff = 4.56 * perturbation;
     return MakeFemState(x_autodiff, v_autodiff, a_autodiff);
   }
 
-  /* Set up a state where the positions are the same as reference positions. */
-  unique_ptr<FemState<T>> MakeReferenceState() {
-    Eigen::Matrix<T, kSpatialDimension, kNumNodes> X = reference_positions();
+  /* Set up a state where the positions are the same as reference positions.
+   This makes the positions the independent variables of the problem when we
+   take gradients.*/
+  unique_ptr<FemState<AD>> MakeReferenceState() {
+    Eigen::Matrix<AD, kSpatialDimension, kNumNodes> X = reference_positions();
     Vector<double, kNumDofs> x(Eigen::Map<Vector<double, kNumDofs>>(
         math::DiscardGradient(X).data(), reference_positions().size()));
-    Vector<T, kNumDofs> x_autodiff;
+    Vector<AD, kNumDofs> x_autodiff;
     math::InitializeAutoDiff(x, &x_autodiff);
-    const Vector<T, kNumDofs> v_autodiff = Vector<T, kNumDofs>::Zero();
-    const Vector<T, kNumDofs> a_autodiff = Vector<T, kNumDofs>::Zero();
+    const Vector<AD, kNumDofs> v_autodiff = Vector<AD, kNumDofs>::Zero();
+    const Vector<AD, kNumDofs> a_autodiff = Vector<AD, kNumDofs>::Zero();
     return MakeFemState(x_autodiff, v_autodiff, a_autodiff);
   }
 
   /* Set arbitrary reference positions with the requirement that the tetrahedron
    is not inverted. */
-  Eigen::Matrix<T, kSpatialDimension, kNumNodes> reference_positions() const {
-    Eigen::Matrix<T, kSpatialDimension, kNumNodes> X(kSpatialDimension,
-                                                     kNumNodes);
+  Eigen::Matrix<AD, kSpatialDimension, kNumNodes> reference_positions() const {
+    Eigen::Matrix<AD, kSpatialDimension, kNumNodes> X(kSpatialDimension,
+                                                      kNumNodes);
     // clang-format off
     X << -0.10, 0.90, 0.02, 0.10,
          1.33,  0.23, 0.04, 0.01,
@@ -142,7 +146,7 @@ class VolumetricElementTest : public ::testing::Test {
   }
 
   /* Evaluates the element data of the sole element. */
-  const Data& EvalElementData(const FemState<T>& state) const {
+  const Data& EvalElementData(const FemState<AD>& state) const {
     const std::vector<Data>& all_data =
         state.EvalElementData<Data>(cache_index_);
     DRAKE_DEMAND(all_data.size() == 1);
@@ -151,19 +155,19 @@ class VolumetricElementTest : public ::testing::Test {
 
   /* Calculates the negative elastic force acting on the nodes of the only
    element evaluated with the given `fem_state`. */
-  Vector<T, kNumDofs> CalcNegativeElasticForce(
-      const FemState<T>& fem_state) const {
-    Vector<T, kNumDofs> neg_force = Vector<T, kNumDofs>::Zero();
+  Vector<AD, kNumDofs> CalcNegativeElasticForce(
+      const FemState<AD>& fem_state) const {
+    Vector<AD, kNumDofs> neg_force = Vector<AD, kNumDofs>::Zero();
     element().AddNegativeElasticForce(EvalElementData(fem_state), &neg_force);
     return neg_force;
   }
 
   /* Calculates the negative elastic force derivative with respect to positions
    for the only element evaluated with the given `fem_state`. */
-  Eigen::Matrix<T, kNumDofs, kNumDofs> CalcNegativeElasticForceDerivative(
-      const FemState<T>& fem_state) const {
-    Eigen::Matrix<T, kNumDofs, kNumDofs> neg_force_derivative =
-        Eigen::Matrix<T, kNumDofs, kNumDofs>::Zero();
+  Eigen::Matrix<AD, kNumDofs, kNumDofs> CalcNegativeElasticForceDerivative(
+      const FemState<AD>& fem_state) const {
+    Eigen::Matrix<AD, kNumDofs, kNumDofs> neg_force_derivative =
+        Eigen::Matrix<AD, kNumDofs, kNumDofs>::Zero();
     element().AddScaledElasticForceDerivative(EvalElementData(fem_state), -1,
                                               &neg_force_derivative);
     return neg_force_derivative;
@@ -172,8 +176,8 @@ class VolumetricElementTest : public ::testing::Test {
   /* Calculates the DeformationGradientData for the only element evaluated with
    the given node positions. */
   DeformationGradientDataType CalcDeformationGradientData(
-      const VectorX<T>& q) const {
-    const std::array<Matrix3<T>, kNumQuads> F =
+      const VectorX<AD>& q) const {
+    const std::array<Matrix3<AD>, kNumQuads> F =
         element().CalcDeformationGradient(q);
     DeformationGradientDataType deformation_gradient_data;
     deformation_gradient_data.UpdateData(F);
@@ -182,12 +186,13 @@ class VolumetricElementTest : public ::testing::Test {
 
   /* Calculates and verifies the energy and elastic forces evaluated with the
    given `data` are zero. */
-  void VerifyEnergyAndForceAreZero(const FemState<T>& fem_state) const {
-    T energy = element().CalcElasticEnergy(EvalElementData(fem_state));
-    EXPECT_NEAR(energy.value(), 0, std::numeric_limits<double>::epsilon());
-    Vector<T, kNumDofs> neg_elastic_force = CalcNegativeElasticForce(fem_state);
-    EXPECT_TRUE(CompareMatrices(Vector<T, kNumDofs>::Zero(), neg_elastic_force,
-                                std::numeric_limits<double>::epsilon()));
+  void VerifyEnergyAndForceAreZero(const FemState<AD>& fem_state) const {
+    AD energy = element().CalcElasticEnergy(EvalElementData(fem_state));
+    EXPECT_NEAR(energy.value(), 0, kEpsilon);
+    Vector<AD, kNumDofs> neg_elastic_force =
+        CalcNegativeElasticForce(fem_state);
+    EXPECT_TRUE(CompareMatrices(Vector<AD, kNumDofs>::Zero(), neg_elastic_force,
+                                kEpsilon));
   }
 
   /* Returns the constitutive model of the only element. */
@@ -196,29 +201,33 @@ class VolumetricElementTest : public ::testing::Test {
   }
 
   /* Returns the density of the only element. */
-  const T& density(const ElementType& e) const { return e.density_; }
+  const AD& density(const ElementType& e) const { return e.density_; }
 
   /* Returns the volume evaluated at each quadrature point in the reference
    configuration of the only element. */
-  const std::array<T, kNumQuads>& reference_volume() const {
+  const std::array<AD, kNumQuads>& reference_volume() const {
     return element().reference_volume_;
   }
 
-  /* Returns the mass matrix of the only element. */
-  const Eigen::Matrix<T, kNumDofs, kNumDofs>& get_mass_matrix() const {
-    return element().mass_matrix_;
+  /* Calculates the mass matrix of the only element. */
+  Eigen::Matrix<AD, kNumDofs, kNumDofs> CalcMassMatrix(
+      const FemState<AD>& fem_state) const {
+    Eigen::Matrix<AD, kNumDofs, kNumDofs> mass_matrix =
+        Eigen::Matrix<AD, kNumDofs, kNumDofs>::Zero();
+    element().AddScaledMassMatrix(EvalElementData(fem_state), 1, &mass_matrix);
+    return mass_matrix;
   }
 
   /* Returns the gravity force acting on the nodes of the only element with
    the given `fem_state`. */
-  Vector<T, kNumDofs> CalcGravityForce(const FemState<T>& fem_state) const {
-    Vector<T, kNumDofs> gravity_force = Vector<T, kNumDofs>::Zero();
+  Vector<AD, kNumDofs> CalcGravityForce(const FemState<AD>& fem_state) const {
+    Vector<AD, kNumDofs> gravity_force = Vector<AD, kNumDofs>::Zero();
     element().AddScaledGravityForce(EvalElementData(fem_state), 1.0,
                                     &gravity_force);
     return gravity_force;
   }
 
-  unique_ptr<FemStateSystem<T>> fem_state_system_;
+  unique_ptr<FemStateSystem<AD>> fem_state_system_;
   systems::CacheIndex cache_index_;
   std::vector<ElementType> elements_;
 };
@@ -239,18 +248,18 @@ TEST_F(VolumetricElementTest, Constructor) {
 TEST_F(VolumetricElementTest, UndeformedState) {
   /* The initial state where the current position is equal to reference
    position is undeformed. */
-  unique_ptr<FemState<T>> fem_state = MakeReferenceState();
+  unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
   VerifyEnergyAndForceAreZero(*fem_state);
 
   /* Any rigid transformation of a undeformed state is undeformed. */
-  math::RigidTransform<T> transform(math::RollPitchYaw<T>(1, 2, 3),
-                                    Vector3<T>(0.314, 0.159, 0.265));
-  Eigen::Matrix<T, kSpatialDimension, kNumNodes> X = reference_positions();
-  Eigen::Matrix<T, kSpatialDimension, kNumNodes> rigid_transformed_X;
+  math::RigidTransform<AD> transform(math::RollPitchYaw<AD>(1, 2, 3),
+                                     Vector3<AD>(0.314, 0.159, 0.265));
+  Eigen::Matrix<AD, kSpatialDimension, kNumNodes> X = reference_positions();
+  Eigen::Matrix<AD, kSpatialDimension, kNumNodes> rigid_transformed_X;
   for (int i = 0; i < kNumNodes; ++i) {
     rigid_transformed_X.col(i) = transform * X.col(i);
   }
-  fem_state->SetPositions(Eigen::Map<Vector<T, kNumDofs>>(
+  fem_state->SetPositions(Eigen::Map<Vector<AD, kNumDofs>>(
       rigid_transformed_X.data(), rigid_transformed_X.size()));
   VerifyEnergyAndForceAreZero(*fem_state);
 }
@@ -258,12 +267,12 @@ TEST_F(VolumetricElementTest, UndeformedState) {
 /* Tests that in a deformed state, the energy and forces agrees with
  hand-calculated results. */
 TEST_F(VolumetricElementTest, DeformedState) {
-  unique_ptr<FemState<T>> fem_state = MakeReferenceState();
+  unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
   /* Deform the element by scaling the initial position by a factor of 2. */
   fem_state->SetPositions(fem_state->GetPositions() * 2.0);
   const auto deformation_gradient_data =
       CalcDeformationGradientData(fem_state->GetPositions());
-  std::array<T, kNumQuads> energy_density_array;
+  std::array<AD, kNumQuads> energy_density_array;
   constitutive_model().CalcElasticEnergyDensity(deformation_gradient_data,
                                                 &energy_density_array);
   const double energy_density = ExtractDoubleOrThrow(energy_density_array[0]);
@@ -286,13 +295,13 @@ TEST_F(VolumetricElementTest, DeformedState) {
   /* Force on node 0. */
   const Vector3<double> force0 = -neg_elastic_force.head<3>();
   /* The first piola stress. */
-  std::array<Matrix3<T>, kNumQuads> P_array;
+  std::array<Matrix3<AD>, kNumQuads> P_array;
   constitutive_model().CalcFirstPiolaStress(deformation_gradient_data,
                                             &P_array);
   const Matrix3<double>& P = math::DiscardGradient(P_array[0]);
-  /* The directional face area of the face formed by node 0, 1, and 2 in the
-   reference configuration. The indices are carefully ordered so that the
-   direction is pointing to the inward face normal. */
+  /* The directional face area of each face in the reference configuration. The
+   indices are carefully ordered so that the direction is pointing to the inward
+   face normal. */
   const Vector3<double> face012 =
       0.5 * (X_double.col(1) - X_double.col(0))
                 .cross(X_double.col(2) - X_double.col(0));
@@ -303,7 +312,7 @@ TEST_F(VolumetricElementTest, DeformedState) {
       0.5 * (X_double.col(2) - X_double.col(0))
                 .cross(X_double.col(3) - X_double.col(0));
   /* The analytic force exerted on node 0 is the average of the total force
-   exerted the faces incidenting node 0. */
+   exerted on the faces incidenting node 0. */
   const Vector3<double> force0_expected =
       P * (face012 + face013 + face023) / 3.0;
   EXPECT_TRUE(CompareMatrices(force0, force0_expected, kEpsilon));
@@ -312,19 +321,19 @@ TEST_F(VolumetricElementTest, DeformedState) {
 /* Tests that at any given state, the negative elastic force is the derivative
  elastic energy with respect to the generalized positions. */
 TEST_F(VolumetricElementTest, NegativeElasticForceIsEnergyDerivative) {
-  unique_ptr<FemState<T>> fem_state = MakeDeformedState();
-  T energy = element().CalcElasticEnergy(EvalElementData(*fem_state));
-  Vector<T, kNumDofs> neg_elastic_force = CalcNegativeElasticForce(*fem_state);
+  unique_ptr<FemState<AD>> fem_state = MakeDeformedState();
+  AD energy = element().CalcElasticEnergy(EvalElementData(*fem_state));
+  Vector<AD, kNumDofs> neg_elastic_force = CalcNegativeElasticForce(*fem_state);
   EXPECT_TRUE(
       CompareMatrices(energy.derivatives(), neg_elastic_force, kEpsilon));
 }
 
 /* Tests that at any given state, CalcNegativeElasticForceDerivative() does in
- fact calculates the derivative of the negative elastic force. */
+ fact calculate the derivative of the negative elastic force. */
 TEST_F(VolumetricElementTest, ElasticForceCompatibleWithItsDerivative) {
-  unique_ptr<FemState<T>> fem_state = MakeDeformedState();
-  Vector<T, kNumDofs> neg_elastic_force = CalcNegativeElasticForce(*fem_state);
-  Eigen::Matrix<T, kNumDofs, kNumDofs> neg_elastic_force_derivative =
+  unique_ptr<FemState<AD>> fem_state = MakeDeformedState();
+  Vector<AD, kNumDofs> neg_elastic_force = CalcNegativeElasticForce(*fem_state);
+  Eigen::Matrix<AD, kNumDofs, kNumDofs> neg_elastic_force_derivative =
       CalcNegativeElasticForceDerivative(*fem_state);
   for (int i = 0; i < kNumDofs; ++i) {
     EXPECT_TRUE(CompareMatrices(neg_elastic_force(i).derivatives().transpose(),
@@ -335,7 +344,9 @@ TEST_F(VolumetricElementTest, ElasticForceCompatibleWithItsDerivative) {
 /* In each dimension, the entries of the mass matrix should sum up to the
  total mass assigned to the element. */
 TEST_F(VolumetricElementTest, MassMatrixSumUpToTotalMass) {
-  const Eigen::Matrix<T, kNumDofs, kNumDofs>& mass_matrix = get_mass_matrix();
+  unique_ptr<FemState<AD>> deformed_fem_state = MakeDeformedState();
+  const Eigen::Matrix<AD, kNumDofs, kNumDofs>& mass_matrix =
+      CalcMassMatrix(*deformed_fem_state);
   const double mass_matrix_sum = mass_matrix.sum().value();
   double total_mass = 0;
   for (int q = 0; q < kNumQuads; ++q) {
@@ -343,24 +354,25 @@ TEST_F(VolumetricElementTest, MassMatrixSumUpToTotalMass) {
   }
   /* The mass matrix repeats the mass in each spatial dimension and needs to
    be scaled accordingly. */
-  EXPECT_EQ(mass_matrix_sum, total_mass * kSpatialDimension);
+  EXPECT_NEAR(mass_matrix_sum, total_mass * kSpatialDimension, kEpsilon);
 }
 
 /* Tests that the gravity forces match the expected value. */
 TEST_F(VolumetricElementTest, Gravity) {
-  const Eigen::Matrix<T, kNumDofs, kNumDofs>& mass_matrix = get_mass_matrix();
-  Vector<T, kNumDofs> element_gravity_acceleration;
+  unique_ptr<FemState<AD>> reference_fem_state = MakeReferenceState();
+  const Eigen::Matrix<AD, kNumDofs, kNumDofs>& mass_matrix =
+      CalcMassMatrix(*reference_fem_state);
+  Vector<AD, kNumDofs> element_gravity_acceleration;
   for (int i = 0; i < kNumNodes; ++i) {
     element_gravity_acceleration.template segment<kSpatialDimension>(
         i * kSpatialDimension) = element().gravity_vector();
   }
-  const Vector<T, kNumDofs> expected_gravity_force =
+  const Vector<AD, kNumDofs> expected_gravity_force =
       mass_matrix * element_gravity_acceleration;
 
-  unique_ptr<FemState<T>> reference_fem_state = MakeReferenceState();
   EXPECT_TRUE(CompareMatrices(expected_gravity_force,
                               CalcGravityForce(*reference_fem_state)));
-  unique_ptr<FemState<T>> deformed_fem_state = MakeDeformedState();
+  unique_ptr<FemState<AD>> deformed_fem_state = MakeDeformedState();
   EXPECT_TRUE(CompareMatrices(expected_gravity_force,
                               CalcGravityForce(*deformed_fem_state)));
 }
