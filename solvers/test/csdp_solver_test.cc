@@ -362,6 +362,18 @@ TEST_F(TrivialSDP1, SolveVerbose) {
     solver.Solve(*prog_, {}, options);
   }
 }
+
+GTEST_TEST(CsdpSolverTest, BogusProgram16732) {
+  MathematicalProgram prog;
+  auto x = prog.NewIndeterminates(1, "x");
+  auto u = prog.NewIndeterminates(1, "u");
+  symbolic::Polynomial V_sym(pow(u[0], 4) - 2*x[0]*u[0]);
+  prog.AddSosConstraint(V_sym);
+  CsdpSolver solver;
+  if (solver.available()) {
+    solver.Solve(prog);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

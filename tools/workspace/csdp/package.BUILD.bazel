@@ -68,6 +68,7 @@ cc_library(
     copts = [
         "-Wno-unknown-pragmas",
         "-Wno-unused-variable",
+        "-Dexit=drake_csdp_exit"
     ],
     includes = ["include"],
     linkstatic = 1,
