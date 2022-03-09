@@ -1,7 +1,5 @@
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 
-#include <iostream>
-
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
@@ -10,9 +8,6 @@
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/scs_solver.h"
-
-#define PRINT_VAR(a) std::cout << #a ": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a ":\n" << a << std::endl;
 
 using drake::solvers::Binding;
 using drake::solvers::LorentzConeConstraint;
@@ -234,9 +229,6 @@ void ValidateProjection(double mu, const Vector3d& R, const Vector3d& y) {
 
   // We first validate the result of the projection γ = P(y).
   const Vector3d gamma_numerical = SolveProjectionWithScs(mu, R, y);
-  PRINT_VAR(gamma.transpose());
-  PRINT_VAR(gamma_numerical.transpose());
-  PRINT_VAR((gamma - gamma_numerical).norm());
   EXPECT_TRUE(CompareMatrices(gamma, gamma_numerical, 5.0 * kTolerance,
                               MatrixCompareType::relative));
 
@@ -247,8 +239,6 @@ void ValidateProjection(double mu, const Vector3d& R, const Vector3d& y) {
   const int num_derivatives = 3;
   const Matrix3d gamma_ad_gradient =
       math::ExtractGradient(gamma_ad, num_derivatives);
-  PRINT_VARn(dPdy);
-  PRINT_VARn(gamma_ad_gradient);
   EXPECT_TRUE(CompareMatrices(dPdy, gamma_ad_gradient,
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::relative));

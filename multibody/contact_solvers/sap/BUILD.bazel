@@ -19,7 +19,7 @@ drake_cc_library(
     deps = [
         ":partial_permutation",
         "//common:essential",
-        "//common:sorted_pair",        
+        "//common:sorted_pair",
     ],
 )
 
@@ -75,7 +75,7 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
+drake_cc_library(    
     name = "sap_friction_cone_constraint",
     srcs = ["sap_friction_cone_constraint.cc"],
     hdrs = ["sap_friction_cone_constraint.h"],
@@ -140,23 +140,6 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "sap_constraint_bundle_test",
-    deps = [
-        ":sap_constraint_bundle",
-        "//multibody/contact_solvers:block_sparse_matrix",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "contact_problem_graph_test",
-    deps = [
-        ":contact_problem_graph",
-    ],
-)
-
-drake_cc_googletest(
     name = "partial_permutation_test",
     deps = [
         ":partial_permutation",
@@ -168,6 +151,17 @@ drake_cc_googletest(
     name = "sap_constraint_test",
     deps = [
         ":sap_constraint",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_constraint_bundle_test",
+    deps = [
+        ":partial_permutation",
+        ":sap_constraint_bundle",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/contact_solvers:block_sparse_matrix",
     ],
 )
 
@@ -201,6 +195,13 @@ drake_cc_googletest(
         "//multibody/contact_solvers:block_sparse_matrix",
         "//common/test_utilities:eigen_matrix_compare", 
         "//common/test_utilities:expect_throws_message",       
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_problem_graph_test",
+    deps = [
+        ":contact_problem_graph",
     ],
 )
 

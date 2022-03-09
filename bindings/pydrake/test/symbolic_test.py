@@ -1878,3 +1878,20 @@ class TestToLatex(unittest.TestCase):
             sym.ToLatex(positive_semidefinite(Me), 1),
             R"\begin{bmatrix} x & 2.3 y \\ 2.3 y & (x + y) \end{bmatrix}"
             R" \succeq 0")
+
+
+class TestSinCosSubstitution(unittest.TestCase):
+    def basic_test(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        sx = sym.Variable("sx")
+        sy = sym.Variable("sy")
+        cx = sym.Variable("cx")
+        cy = sym.Variable("cy")
+        subs = {x: sym.SinCos(s=sx, c=cx), y: sym.SinCos(s=sy, c=cy)}
+
+        self.assert_equal(sym.Substitute(e=np.sin(x + y), subs=subs),
+                          sx * cy + cx * sy)
+        m = np.array([np.sin(x), np.cos(y), 1, np.sin(2*x)])
+        me = np.array([sx, cy, 1, 2*sx*cx])
+        np.testing.assert_equal(sym.Substitute(m=m, subs=subs), me)

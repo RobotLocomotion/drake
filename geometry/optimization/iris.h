@@ -4,7 +4,6 @@
 #include <optional>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
@@ -129,20 +128,6 @@ algorithm.
 HPolyhedron IrisInConfigurationSpace(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
-    const IrisOptions& options = IrisOptions());
-
-/** A deprecated variation of the IrisInConfigurationSpace method where the
-initial Iris seed configuration is provided explicitly instead of via the
-context.
-
-@ingroup geometry_optimization
-*/
-DRAKE_DEPRECATED("2022-03-01",
-                 "Use IrisInConfigurationSpace() with sample set in context.")
-HPolyhedron IrisInConfigurationSpace(
-    const multibody::MultibodyPlant<double>& plant,
-    const systems::Context<double>& context,
-    const Eigen::Ref<const Eigen::VectorXd>& sample,
     const IrisOptions& options = IrisOptions());
 
 }  // namespace optimization

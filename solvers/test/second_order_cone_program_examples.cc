@@ -14,6 +14,29 @@ namespace solvers {
 namespace test {
 const double kInf = std::numeric_limits<double>::infinity();
 
+std::ostream& operator<<(std::ostream& os, EllipsoidsSeparationProblem value) {
+  os << "EllipsoidsSeparationProblem::";
+  switch (value) {
+    case EllipsoidsSeparationProblem::kProblem0: {
+      os << "kProblem0";
+      return os;
+    }
+    case EllipsoidsSeparationProblem::kProblem1: {
+      os << "kProblem1";
+      return os;
+    }
+    case EllipsoidsSeparationProblem::kProblem2: {
+      os << "kProblem2";
+      return os;
+    }
+    case EllipsoidsSeparationProblem::kProblem3: {
+      os << "kProblem3";
+      return os;
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
+
 std::vector<EllipsoidsSeparationProblem> GetEllipsoidsSeparationProblems() {
   return {EllipsoidsSeparationProblem::kProblem0,
           EllipsoidsSeparationProblem::kProblem1,
@@ -169,6 +192,21 @@ void TestEllipsoidsSeparation::SolveAndCheckSolution(
   }
 }
 
+std::ostream& operator<<(std::ostream& os, QPasSOCPProblem value) {
+  os << "QPasSOCPProblem::";
+  switch (value) {
+    case QPasSOCPProblem::kProblem0: {
+      os << "kProblem0";
+      return os;
+    }
+    case QPasSOCPProblem::kProblem1: {
+      os << "kProblem1";
+      return os;
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
+
 std::vector<QPasSOCPProblem> GetQPasSOCPProblems() {
   return {QPasSOCPProblem::kProblem0, QPasSOCPProblem::kProblem1};
 }
@@ -253,6 +291,17 @@ void TestQPasSOCP::SolveAndCheckSolution(
   EXPECT_TRUE(CompareMatrices(x_qp_value, x_socp_value, 200 * tol,
                               MatrixCompareType::absolute));
   EXPECT_NEAR(objective_value_qp, objective_value_socp, tol);
+}
+
+std::ostream& operator<<(std::ostream& os, FindSpringEquilibriumProblem value) {
+  os << "FindSpringEquilibriumProblem::";
+  switch (value) {
+    case FindSpringEquilibriumProblem::kProblem0: {
+      os << "kProblem0";
+      return os;
+    }
+  }
+  DRAKE_UNREACHABLE();
 }
 
 std::vector<FindSpringEquilibriumProblem> GetFindSpringEquilibriumProblems() {

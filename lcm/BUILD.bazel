@@ -24,7 +24,6 @@ drake_cc_package_library(
         ":interface",
         ":lcm_log",
         ":lcm_messages",
-        ":mock",
     ],
 )
 
@@ -45,29 +44,6 @@ drake_cc_library(
     deps = [
         ":lcm_messages",
         "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "mock",
-    srcs = ["drake_mock_lcm.cc"],
-    hdrs = ["drake_mock_lcm.h"],
-    # copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":drake_lcm",
-    ],
-)
-
-drake_cc_library(
-    name = "real",
-    deprecation = "Spell this as @drake//lcm:drake_lcm instead.  The @drake//lcm:real spelling is deprecated and will be removed from Drake on or after 2022-03-01.",  # noqa
-    tags = [
-        "exclude_from_libdrake",
-        "exclude_from_package",
-        "manual",
-    ],
-    deps = [
-        ":drake_lcm",
     ],
 )
 
@@ -121,8 +97,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "drake_lcm_interface_test",
     deps = [
+        ":drake_lcm",
         ":lcmt_drake_signal_utils",
-        ":real",
         "//common/test_utilities",
     ],
 )
@@ -173,15 +149,6 @@ drake_cc_googletest(
     deps = [
         ":lcm_log",
         ":lcmt_drake_signal_utils",
-    ],
-)
-
-drake_cc_googletest(
-    name = "drake_mock_lcm_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":lcmt_drake_signal_utils",
-        ":mock",
     ],
 )
 

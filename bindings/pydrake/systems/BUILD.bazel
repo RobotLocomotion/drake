@@ -107,6 +107,7 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = ["analysis_py.cc"],
@@ -304,11 +305,18 @@ drake_py_library(
     srcs = ["pyplot_visualizer.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
+        ":_resample_interp1d_py",
         ":framework_py",
         ":module_py",
         ":primitives_py",
         "//bindings/pydrake:trajectories_py",
     ],
+)
+
+drake_py_library(
+    name = "_resample_interp1d_py",
+    srcs = ["_resample_interp1d.py"],
+    imports = PACKAGE_INFO.py_imports,
 )
 
 drake_py_library(
@@ -330,6 +338,7 @@ PY_LIBRARIES_WITH_INSTALL = [
 ]
 
 PY_LIBRARIES = [
+    ":_resample_interp1d_py",
     ":drawing_py",
     ":jupyter_widgets_py",
     ":meshcat_visualizer_py",
@@ -565,6 +574,16 @@ drake_py_unittest(
         ":primitives_py",
         ":pyplot_visualizer_py",
         "//bindings/pydrake:trajectories_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "_resample_log_interp1d_test",
+    deps = [
+        ":_resample_interp1d_py",
+        ":analysis_py",
+        ":framework_py",
+        ":primitives_py",
     ],
 )
 

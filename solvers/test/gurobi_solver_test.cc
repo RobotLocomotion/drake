@@ -39,7 +39,7 @@ TEST_F(InfeasibleLinearProgramTest0, TestGurobiInfeasible) {
     prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 1);
     auto result = solver.Solve(*prog_, {}, {});
     EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kInfeasible_Or_Unbounded);
+              SolutionResult::kInfeasibleOrUnbounded);
     EXPECT_TRUE(std::isnan(result.get_optimal_cost()));
     prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 0);
     result = solver.Solve(*prog_, {}, {});
@@ -60,7 +60,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     auto result = solver.Solve(*prog_, {}, solver_options);
     EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kInfeasible_Or_Unbounded);
+              SolutionResult::kInfeasibleOrUnbounded);
     // This code is defined in
     // https://www.gurobi.com/documentation/9.0/refman/optimization_status_codes.html
     const int GRB_INF_OR_UNBD = 4;

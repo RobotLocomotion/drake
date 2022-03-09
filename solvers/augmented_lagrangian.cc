@@ -12,15 +12,17 @@ namespace solvers {
 // This function psi is defined as equation 17.55 of Numerical Optimization by
 // Jorge Nocedal and Stephen Wright, Edition 1, 1999. (Note this equation is not
 // presented in Edition 2). Mathematically it equals psi(c, λ, μ) = -λc +
-// 1/(2μ)c² if c - λμ <= 0 otherwise psi(c, λ, μ) = -0.5*μλ² The meaning of this
-// function psi(c, λ, μ) is psi(c,λ, μ)= −λ(c−s) + 1/(2μ)(c−s)² where s = max(c
-// − μλ, 0)
+// μ/2*c² if c - λ/μ <= 0 otherwise psi(c, λ, μ) = -0.5*λ²/μ The meaning of this
+// function psi(c, λ, μ) is psi(c,λ, μ)= −λ(c−s) + μ/2*(c−s)² where s = max(c
+// − λ/μ, 0)
+// Note that in equation 17.55 of Numerical Optimization, Edition 1, what they
+// use for μ is actually 1/μ in our formulation.
 template <typename T>
 T psi(const T& c, double lambda_val, double mu) {
-  if (ExtractDoubleOrThrow(c - lambda_val * mu) < 0) {
-    return -lambda_val * c + 1 / (2 * mu) * c * c;
+  if (ExtractDoubleOrThrow(c - lambda_val / mu) < 0) {
+    return -lambda_val * c + mu / 2 * c * c;
   } else {
-    return T(-0.5 * mu * lambda_val * lambda_val);
+    return T(-0.5 * lambda_val * lambda_val / mu);
   }
 }
 
@@ -138,10 +140,9 @@ T NonsmoothAugmentedLagrangian::Eval(const Eigen::Ref<const VectorX<T>>& x,
         }
         if (lb == ub) {
           // We have one Lagrangian multiplier for the equality constraint. Add
-          // −λ h(x) + 1/(2μ)h(x)² to the augmented Lagrangian.
+          // −λ h(x) + μ/2*h(x)² to the augmented Lagrangian.
           al += -lambda_val(lagrangian_count) * (constraint_val(i) - lb) +
-                1. / (2 * mu) * (constraint_val(i) - lb) *
-                    (constraint_val(i) - lb);
+                (mu / 2) * (constraint_val(i) - lb) * (constraint_val(i) - lb);
           (*constraint_residue)(lagrangian_count) = constraint_val(i) - lb;
           lagrangian_count++;
         } else {
@@ -165,7 +166,7 @@ T NonsmoothAugmentedLagrangian::Eval(const Eigen::Ref<const VectorX<T>>& x,
     for (int i = 0; i < prog_->num_vars(); ++i) {
       if (x_lo_(i) == x_up_(i)) {
         al += -lambda_val(lagrangian_count) * (x(i) - x_lo_(i)) +
-              1. / (2 * mu) * (x(i) - x_lo_(i)) * (x(i) - x_lo_(i));
+              (mu / 2) * (x(i) - x_lo_(i)) * (x(i) - x_lo_(i));
         (*constraint_residue)(lagrangian_count) = x(i) - x_lo_(i);
         lagrangian_count++;
       } else {

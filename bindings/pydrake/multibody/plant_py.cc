@@ -6,6 +6,7 @@
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -18,6 +19,8 @@
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant_config.h"
+#include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/multibody/plant/point_pair_contact_info.h"
 #include "drake/multibody/plant/propeller.h"
 #include "drake/multibody/tree/spatial_inertia.h"
@@ -1051,6 +1054,27 @@ void DoScalarDependentDefinitions(py::module m, T) {
         py::arg("scene_graph") = nullptr,
         doc.AddMultibodyPlantSceneGraph
             .doc_3args_systemsDiagramBuilder_double_stduniqueptr);
+
+    // In C++ this function is only defined for double, not AutoDiffXd.
+    if constexpr (std::is_same_v<T, double>) {
+      m.def(
+          "AddMultibodyPlant",
+          [](const MultibodyPlantConfig& config,
+              systems::DiagramBuilder<T>* builder) {
+            auto pair = AddMultibodyPlant(config, builder);
+            // Must do manual keep alive to dig into tuple.
+            py::object builder_py = py::cast(builder, py_rvp::reference);
+            py::object plant_py = py::cast(pair.plant, py_rvp::reference);
+            py::object scene_graph_py =
+                py::cast(pair.scene_graph, py_rvp::reference);
+            return py::make_tuple(
+                // Keep alive, ownership: `plant` keeps `builder` alive.
+                py_keep_alive(plant_py, builder_py),
+                // Keep alive, ownership: `scene_graph` keeps `builder` alive.
+                py_keep_alive(scene_graph_py, builder_py));
+          },
+          py::arg("config"), py::arg("builder"), doc.AddMultibodyPlant.doc);
+    }
   }
 
   // ExternallyAppliedSpatialForce
@@ -1190,6 +1214,17 @@ PYBIND11_MODULE(plant, m) {
         // Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.
         .value("kPointContactOnly", Class::kPointContactOnly,
             cls_doc.kPointContactOnly.doc);
+  }
+
+  {
+    using Class = MultibodyPlantConfig;
+    constexpr auto& cls_doc = doc.MultibodyPlantConfig;
+    py::class_<Class> cls(m, "MultibodyPlantConfig", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>())
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },

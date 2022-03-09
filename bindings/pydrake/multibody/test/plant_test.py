@@ -54,6 +54,7 @@ from pydrake.multibody.math import (
     SpatialAcceleration_,
 )
 from pydrake.multibody.plant import (
+    AddMultibodyPlant,
     AddMultibodyPlantSceneGraph,
     CalcContactFrictionFromSurfaceProperties,
     ConnectContactResultsToDrakeVisualizer,
@@ -66,6 +67,7 @@ from pydrake.multibody.plant import (
     CoulombFriction_,
     ExternallyAppliedSpatialForce_,
     MultibodyPlant_,
+    MultibodyPlantConfig,
     PointPairContactInfo_,
     PropellerInfo,
     Propeller_,
@@ -229,6 +231,17 @@ class TestPlant(unittest.TestCase):
         context = diagram.CreateDefaultContext()
         with self.assertRaises(RuntimeError):
             plant.EvalBodyPoseInWorld(context, body)
+
+    def test_multibody_plant_config(self):
+        MultibodyPlantConfig()
+        config = MultibodyPlantConfig(time_step=0.01)
+        self.assertEqual(config.time_step, 0.01)
+        copy.copy(config)
+
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlant(config, builder)
+        self.assertIsNotNone(plant)
+        self.assertIsNotNone(scene_graph)
 
     @numpy_compare.check_all_types
     def test_multibody_plant_api_via_parsing(self, T):
@@ -1816,6 +1829,15 @@ class TestPlant(unittest.TestCase):
             SpatialVelocity_[T])
         self.assertIsInstance(
             dut.CalcSpatialVelocity(context=context, frame_M=dut, frame_E=dut),
+            SpatialVelocity_[T])
+        self.assertIsInstance(
+            dut.CalcRelativeSpatialVelocityInWorld(context=context,
+                                                   other_frame=dut),
+            SpatialVelocity_[T])
+        self.assertIsInstance(
+            dut.CalcRelativeSpatialVelocity(context=context, other_frame=dut,
+                                            measured_in_frame=dut,
+                                            expressed_in_frame=dut),
             SpatialVelocity_[T])
         self.assertIsInstance(
             dut.CalcSpatialAccelerationInWorld(context=context),

@@ -64,9 +64,10 @@ class PartialPermutation {
   explicit PartialPermutation(int domain_size);
 
   // If participates(i) = false, defines P(i) = permuted_domain_size() and
-  // further increases the permuted domain size.
+  // further increases the permuted domain size. If participates(i) = true, the
+  // permutation does not change and this method simply returns P(i).
   // @throws exception if i is not in [0, domain_size()).
-  // @returns P(i), ie. permuted_index(i).
+  // @returns P(i), i.e. permuted_index(i).
   int push(int i);
 
   // The size n of the domain.

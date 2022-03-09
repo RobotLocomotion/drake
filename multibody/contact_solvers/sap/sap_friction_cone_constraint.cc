@@ -1,5 +1,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 
+#include <algorithm>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 

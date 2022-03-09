@@ -407,8 +407,12 @@ class TestMath(unittest.TestCase):
         self.assertEqual(
             bspline.ComputeActiveBasisFunctionIndices(parameter_value=5.4),
             [0, 1])
+        val = bspline.EvaluateCurve(control_points=[[1, 2], [2, 3], [3, 4]],
+                                    parameter_value=5.7)
+        self.assertEqual(val.shape, (2,))
         numpy_compare.assert_float_equal(
             bspline.EvaluateBasisFunctionI(i=0, parameter_value=5.7), 0.)
+        assert_pickle(self, bspline, BsplineBasis.knots, T=T)
 
     @numpy_compare.check_all_types
     def test_wrap_to(self, T):

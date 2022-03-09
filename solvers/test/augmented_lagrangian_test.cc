@@ -158,7 +158,7 @@ void CheckAugmentedLagrangianEqualityConstraint(
     const auto constraint_val = prog.EvalBinding(constraint, x_val);
     const auto& constraint_bound = constraint.evaluator()->lower_bound();
     const T al_expected = -lambda_val.dot(constraint_val - constraint_bound) +
-                          1. / (2 * mu_val) *
+                          mu_val / 2 *
                               (constraint_val - constraint_bound)
                                   .dot(constraint_val - constraint_bound);
     EXPECT_EQ(constraint_residue.rows(), lambda_val.rows());
@@ -189,14 +189,15 @@ GTEST_TEST(AugmentedLagrangian, EqualityConstraints) {
 
 // Refer to equation 17.55 of Numerical Optimization by Jorge Nocedal and
 // Stephen Wright, Edition 1, 1999 (This equation is not presented in Edition
-// 2). We use the alternative way to compute s first, and then compute psi.
+// 2). We use the alternative way to compute s first, and then compute psi. Note
+// that what we use for mu here is 1/μ in equation 17.55.
 template <typename T>
 T psi(const T& c, double lambda, double mu) {
-  T s = c - mu * lambda;
+  T s = c - lambda / mu;
   if (ExtractDoubleOrThrow(s) < 0) {
     s = T(0);
   }
-  return -lambda * (c - s) + 1 / (2 * mu) * (c - s) * (c - s);
+  return -lambda * (c - s) + mu / 2 * (c - s) * (c - s);
 }
 
 template <typename T>
@@ -219,7 +220,7 @@ void CheckAugmentedLagrangianInequalityConstraint(
     const auto& ub = constraint.evaluator()->upper_bound();
     using std::pow;
     T al_expected = -lambda_val(0) * (constraint_val(0) - lb(0)) +
-                    1. / (2 * mu_val) * pow(constraint_val(0) - lb(0), 2) +
+                    mu_val / 2 * pow(constraint_val(0) - lb(0), 2) +
                     psi(constraint_val(1) - lb(1), lambda_val(1), mu_val) +
                     psi(ub(1) - constraint_val(1), lambda_val(2), mu_val) +
                     psi(ub(2) - constraint_val(2), lambda_val(3), mu_val) +
@@ -272,13 +273,12 @@ void CheckAugmentedLagrangianBoundingBoxConstraint(
   EXPECT_EQ(constraint_residue.rows(), lambda.rows());
   Eigen::VectorXd x_lb, x_ub;
   AggregateBoundingBoxConstraints(prog, &x_lb, &x_ub);
-  const T al_expected =
-      -lambda(0) * (x_val(0) - x_lb(0)) +
-      1. / (2 * mu) * (x_val(0) - x_lb(0)) * (x_val(0) - x_lb(0)) +
-      psi(x_val(1) - x_lb(1), lambda(1), mu) +
-      psi(x_ub(2) - x_val(2), lambda(2), mu) +
-      psi(x_val(3) - x_lb(3), lambda(3), mu) +
-      psi(x_ub(3) - x_val(3), lambda(4), mu);
+  const T al_expected = -lambda(0) * (x_val(0) - x_lb(0)) +
+                        mu / 2 * (x_val(0) - x_lb(0)) * (x_val(0) - x_lb(0)) +
+                        psi(x_val(1) - x_lb(1), lambda(1), mu) +
+                        psi(x_ub(2) - x_val(2), lambda(2), mu) +
+                        psi(x_val(3) - x_lb(3), lambda(3), mu) +
+                        psi(x_ub(3) - x_val(3), lambda(4), mu);
   Eigen::Matrix<T, 5, 1> constraint_residue_expected;
   constraint_residue_expected << x_val(0) - x_lb(0), x_val(1) - x_lb(1),
       x_ub(2) - x_val(2), x_val(3) - x_lb(3), x_ub(3) - x_val(3);

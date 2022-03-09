@@ -5,13 +5,46 @@ import unittest
 from pydrake.common import ToleranceType
 from pydrake.common.eigen_geometry import AngleAxis_, Quaternion_
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue
 from pydrake.math import BsplineBasis_, RigidTransform_, RotationMatrix_
 from pydrake.polynomial import Polynomial_
 from pydrake.trajectories import (
     BsplineTrajectory_, PiecewisePolynomial_, PiecewisePose_,
-    PiecewiseQuaternionSlerp_, Trajectory_
+    PiecewiseQuaternionSlerp_, Trajectory, Trajectory_
 )
+
+
+# Custom trajectory class used to test Trajectory subclassing in python.
+class CustomTrajectory(Trajectory):
+    def __init__(self):
+        Trajectory.__init__(self)
+
+    def rows(self):
+        return 1
+
+    def cols(self):
+        return 2
+
+    def start_time(self):
+        return 3.0
+
+    def end_time(self):
+        return 4.0
+
+    def value(self, t):
+        return np.array([[t + 1.0, t + 2.0]])
+
+    def do_has_derivative(self):
+        return True
+
+    def DoEvalDerivative(self, t, derivative_order):
+        if derivative_order >= 2:
+            return np.zeros((1, 2))
+        elif derivative_order == 1:
+            return np.ones((1, 2))
+        elif derivative_order == 0:
+            return self.value(t)
 
 
 class TestTrajectories(unittest.TestCase):
@@ -20,6 +53,22 @@ class TestTrajectories(unittest.TestCase):
         # Acceptance check to ensure we have these base methods exposed.
         Trajectory_[T].start_time
         Trajectory_[T].end_time
+
+    def test_custom_trajectory(self):
+        trajectory = CustomTrajectory()
+        self.assertEqual(trajectory.rows(), 1)
+        self.assertEqual(trajectory.cols(), 2)
+        self.assertEqual(trajectory.start_time(), 3.0)
+        self.assertEqual(trajectory.end_time(), 4.0)
+        self.assertTrue(trajectory.has_derivative())
+        numpy_compare.assert_float_equal(trajectory.value(t=1.5),
+                                         np.array([[2.5, 3.5]]))
+        numpy_compare.assert_float_equal(
+            trajectory.EvalDerivative(t=2.3, derivative_order=1),
+            np.ones((1, 2)))
+        numpy_compare.assert_float_equal(
+            trajectory.EvalDerivative(t=2.3, derivative_order=2),
+            np.zeros((1, 2)))
 
     @numpy_compare.check_all_types
     def test_bspline_trajectory(self, T):
@@ -59,6 +108,8 @@ class TestTrajectories(unittest.TestCase):
         # Ensure we can copy.
         self.assertEqual(copy.copy(bspline).rows(), 3)
         self.assertEqual(copy.deepcopy(bspline).rows(), 3)
+        assert_pickle(self, bspline,
+                      lambda traj: np.array(traj.control_points()), T=T)
 
     @numpy_compare.check_all_types
     def test_piecewise_polynomial_empty_constructor(self, T):

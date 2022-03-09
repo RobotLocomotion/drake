@@ -284,6 +284,35 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "serialize_pybind",
+    hdrs = ["serialize_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+    deps = ["//:drake_shared_library"],
+)
+
+drake_pybind_library(
+    name = "serialize_test_util_py",
+    testonly = 1,
+    add_install = False,
+    cc_deps = [":serialize_pybind"],
+    cc_so_name = "test/serialize_test_util",
+    cc_srcs = ["test/serialize_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+drake_py_unittest(
+    name = "serialize_pybind_test",
+    deps = [
+        ":serialize_test_util_py",
+    ],
+)
+
+drake_cc_library(
     name = "sorted_pair_pybind",
     hdrs = ["sorted_pair_pybind.h"],
     declare_installed_headers = 0,
@@ -347,6 +376,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
     ],
     cc_srcs = ["schema_py.cc"],
     package_info = PACKAGE_INFO,
@@ -442,6 +472,17 @@ drake_py_unittest(
     shard_count = 8,
     deps = [
         "//bindings/pydrake/common/test_utilities:meta_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "text_logging_gil_test",
+    tags = [
+        "cpu:2",
+    ],
+    deps = [
+        ":module_py",
+        ":text_logging_test_py",
     ],
 )
 

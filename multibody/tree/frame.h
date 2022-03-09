@@ -213,7 +213,8 @@ class Frame : public FrameBase<T> {
   /// @see CalcSpatialVelocityInWorld().
   SpatialVelocity<T> CalcSpatialVelocity(
       const systems::Context<T>& context,
-      const Frame<T>& frame_M, const Frame<T>& frame_E) const {
+      const Frame<T>& frame_M,
+      const Frame<T>& frame_E) const {
     const math::RotationMatrix<T> R_WM =
         frame_M.CalcRotationMatrixInWorld(context);
     const Vector3<T> p_MF_M = this->CalcPose(context, frame_M).translation();
@@ -228,6 +229,61 @@ class Frame : public FrameBase<T> {
     const math::RotationMatrix<T> R_WE =
         frame_E.CalcRotationMatrixInWorld(context);
     return R_WE.inverse() * V_MF_W;
+  }
+
+  /// Calculates `this` frame C's spatial velocity relative to another frame B,
+  /// measured and expressed in the world frame W.
+  /// @param[in] context contains the state of the multibody system.
+  /// @param[in] other_frame which is frame B.
+  /// @return V_W_BC_W = V_WC_W - V_WB_W, frame C's spatial velocity relative to
+  /// frame B, measured and expressed in the world frame W. The rotational part
+  /// of the returned quantity is ω_BC_W (C's angular velocity measured in B and
+  /// expressed in W). The translational part is v_W_BoCo_W (Co's translational
+  /// velocity relative to Bo, measured and expressed in world frame W). <pre>
+  ///     ω_BC_W  = ω_WC_W - ω_WB_W
+  ///  v_W_BoCo_W = v_WCo_W - v_WBo_W = DtW(p_BoCo)
+  /// </pre>
+  /// where DtW(p_BoCo) is the time-derivative in frame W of p_BoCo (position
+  /// vector from Bo to Co), and this vector is expressed in frame W.
+  SpatialVelocity<T> CalcRelativeSpatialVelocityInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& other_frame) const {
+    const Frame<T>& frame_B = other_frame;
+    const SpatialVelocity<T> V_WB_W =
+        frame_B.CalcSpatialVelocityInWorld(context);
+    const SpatialVelocity<T> V_WC_W = CalcSpatialVelocityInWorld(context);
+    return V_WC_W - V_WB_W;
+  }
+
+  /// Calculates `this` frame C's spatial velocity relative to another frame B,
+  /// measured in a frame M, expressed in a frame E.
+  /// @param[in] context contains the state of the multibody system.
+  /// @param[in] other_frame which is frame B.
+  /// @param[in] measured_in_frame which is frame M.
+  /// @param[in] expressed_in_frame which is frame E.
+  /// @return V_M_BC_E = V_MC_E - V_MB_E, frame C's spatial velocity relative to
+  /// frame B, measured in frame M, expressed in frame E. The rotational part
+  /// of the returned quantity is ω_BC_E (C's angular velocity measured in B and
+  /// expressed in E). The translational part is v_M_BoCo_E (Co's translational
+  /// velocity relative to Bo, measured in M, and expressed in E). <pre>
+  ///  ω_BC_E  = ω_MC_E - ω_MB_E
+  ///  v_M_BoCo_E = v_MCo_E - v_MBo_E = DtM(p_BoCo)
+  /// </pre>
+  /// where DtM(p_BoCo) is the time-derivative in frame M of p_BoCo (position
+  /// vector from Bo to Co), and this vector is expressed in frame E.
+  SpatialVelocity<T> CalcRelativeSpatialVelocity(
+      const systems::Context<T>& context,
+      const Frame<T>& other_frame,
+      const Frame<T>& measured_in_frame,
+      const Frame<T>& expressed_in_frame) const {
+    const Frame<T>& frame_B = other_frame;
+    const Frame<T>& frame_M = measured_in_frame;
+    const Frame<T>& frame_E = expressed_in_frame;
+    const SpatialVelocity<T> V_MB_E =
+        frame_B.CalcSpatialVelocity(context, frame_M, frame_E);
+    const SpatialVelocity<T> V_MC_E =
+        CalcSpatialVelocity(context, frame_M, frame_E);
+    return V_MC_E - V_MB_E;
   }
 
   /// Computes and returns the spatial acceleration A_WF_W of `this` frame F in

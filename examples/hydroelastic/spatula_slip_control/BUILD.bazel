@@ -1,0 +1,53 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
+load("@drake//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/install:install_data.bzl", "install_data")
+load("@drake//tools/workspace:forward_files.bzl", "forward_files")
+load(
+    "//tools/workspace/models:files.bzl",
+    "wsg_50_hydro_bubble_mesh_files",
+)
+
+_WSG_50_HYDRO_BUBBLE_MESHES = forward_files(
+    srcs = ["@models//:" +
+            x for x in wsg_50_hydro_bubble_mesh_files()],
+    dest_prefix = "",
+    strip_prefix = "@models//:wsg_50_hydro_bubble/",
+    visibility = ["//visibility:private"],
+)
+
+install_data(
+    extra_exclude_patterns = ["images/**/*"],
+    extra_prod_models = _WSG_50_HYDRO_BUBBLE_MESHES,
+)
+
+drake_cc_binary(
+    name = "spatula_slip_control",
+    srcs = ["spatula_slip_control.cc"],
+    add_test_rule = True,
+    data = [
+        ":models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    test_rule_args = [
+        "--simulation_sec=0.1",
+        "--realtime_rate=0.0",
+    ],
+    deps = [
+        "//geometry:drake_visualizer",
+        "//multibody/parsing",
+        "//multibody/plant:contact_results_to_lcm",
+        "//multibody/plant:multibody_plant_config_functions",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_config_functions",
+        "//systems/analysis:simulator_gflags",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/framework:diagram",
+        "//systems/primitives",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()
