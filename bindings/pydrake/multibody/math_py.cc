@@ -206,7 +206,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         "Shift(p_PoQ_E) is deprecated, and will be removed on or around"
         " 2022-07-01. Please instead use Shift(offset, omega)";
     cls.def("Shift",
-        WrapDeprecated(doc_ShiftOneArg_deprecatedArgName, &Class::Shift),
+        WrapDeprecated(doc_ShiftOneArg_deprecatedArgName,
+            overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift)),
         py::arg("p_PoQ_E"), doc_ShiftOneArg_deprecatedArgName);
 #pragma GCC diagnostic pop
     cls.def("Shift",
@@ -217,7 +218,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         "Shift(p_PoQ_E, w_WP_E) is deprecated, and will be removed on or around"
         " 2022-07-01. Please instead use Shift(offset, omega)";
     cls.def("Shift",
-        WrapDeprecated(doc_ShiftTwoArg_deprecatedArgName, &Class::Shift),
+        WrapDeprecated(doc_ShiftTwoArg_deprecatedArgName,
+            overload_cast_explicit<Class, const Vector3<T>&, const Vector3<T>&>(
+                &Class::Shift)),
         py::arg("p_PoQ_E"), py::arg("w_WP_E"),
         doc_ShiftTwoArg_deprecatedArgName);
     cls.def("ComposeWithMovingFrameAcceleration",
