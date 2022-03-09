@@ -88,6 +88,7 @@ def _vtk_cc_library(
             linkopts = linkopts + [
                 "-L{}".format(lib_dir),
                 "-l{}-{}".format(name, VTK_MAJOR_MINOR_VERSION),
+                "-Wl,-rpath,{}".format(lib_dir),
             ]
     else:
         fail("Unknown os_result {}".format(os_result))
