@@ -11,6 +11,9 @@ namespace drake {
 namespace util {
 namespace {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 typedef std::map<TrigPolyd::VarType, double> MapType;
 const double kPi = 3.1415926535897;
 
@@ -132,6 +135,8 @@ GTEST_TEST(TrigPolyTest, EvaluatePartialTest) {
   EXPECT_EQ(multivariate.EvaluatePartial(MapType {{phi_var, 1}}),
             theta + cos(theta) + sin(theta + 1));
 }
+
+#pragma GCC diagnostic pop
 
 }  // anonymous namespace
 }  // namespace util
