@@ -14,6 +14,8 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
+// TODO(xuchenhan-tri): Encapsulate the the memory layout of 4th order tensors
+//  and the contraction operation in a FourthOrderTensor class.
 /* Helper function that performs a contraction between a 4th order tensor A
  and two vectors u and v and returns a matrix B. In Einstein notation, the
  contraction is: Bᵢₖ = uⱼ Aᵢⱼₖₗ vₗ. The 4th order tensor A of dimension
@@ -98,20 +100,16 @@ struct FemElementTraits<VolumetricElement<
                 "for volumetric FEM elements.");
 
   using T = typename ConstitutiveModelType::T;
-  using IsoparametricElement = IsoparametricElementType;
-  using Quadrature = QuadratureType;
   using ConstitutiveModel = ConstitutiveModelType;
 
   static constexpr int num_nodes = IsoparametricElementType::num_nodes;
   static constexpr int num_quadrature_points =
       QuadratureType::num_quadrature_points;
   static constexpr int natural_dimension = QuadratureType::natural_dimension;
-  static constexpr int kSpatialDimension =
-      IsoparametricElementType::spatial_dimension;
   /* The number of degrees of freedom is equal to the spatial dimension (which
    gives the number of degrees of freedom for a single node) times the number of
    nodes. */
-  static constexpr int num_dofs = kSpatialDimension * num_nodes;
+  static constexpr int num_dofs = 3 * num_nodes;
 
   struct Data {
     /* The states evaluated at nodes of the element. */
@@ -119,7 +117,8 @@ struct FemElementTraits<VolumetricElement<
     Vector<T, num_dofs> element_v;
     Vector<T, num_dofs> element_a;
     typename ConstitutiveModelType::Data deformation_gradient_data;
-    /* The elastic energy density evaluated at quadrature points. */
+    /* The elastic energy density evaluated at quadrature points. Note that this
+     is energy per unit of "reference" volume. */
     std::array<T, num_quadrature_points> Psi;
     /* The first Piola stress evaluated at quadrature points. */
     std::array<Matrix3<T>, num_quadrature_points> P;
@@ -129,7 +128,9 @@ struct FemElementTraits<VolumetricElement<
   };
 };
 
-/* This class models a single 3D elasticity FEM element.
+/* This class models a single 3D elasticity FEM element in which the
+ displacement of the material can be interpolated from that of the element nodes
+ using the isoparametric shape function.
  @tparam IsoparametricElementType  The type of isoparametric element used in
                                    this VolumetricElement.
                                    IsoparametricElementType must derived
@@ -166,11 +167,13 @@ class VolumetricElement
                                    element.
    @param[in] reference_positions  The positions (in world frame) of the nodes
                                    of this element in the reference
-                                   configuration.
+                                   configuration. The positions must be such
+                                   that the element in not degenerate or
+                                   inverted.
    @param[in] denstiy              The mass density of the element with unit
                                    kg/m³.
    @param[in] damping_model        The DampingModel to be used for this element.
-   @pre element_index must be valid.
+   @pre element_index and node_indices are valid.
    @pre density > 0. */
   VolumetricElement(FemElementIndex element_index,
                     const std::array<FemNodeIndex, num_nodes>& node_indices,
@@ -190,15 +193,15 @@ class VolumetricElement
     /* Record the quadrature point volume in reference configuration for each
      quadrature location. */
     for (int q = 0; q < num_quadrature_points; ++q) {
+      // TODO(xuchenhan-tri): The volume scale calculation should be in
+      // IsoparametricElement.
       /* The scale to transform quadrature weight in parent coordinates to
        reference coordinates. */
       T volume_scale;
       if constexpr (natural_dimension == 3) {
         volume_scale = dXdxi[q].determinant();
-        /* Degenerate tetrahedron in the initial configuration is not allowed.
-         */
+        /* Degenerate element in the initial configuration is not allowed. */
         DRAKE_DEMAND(volume_scale > 0);
-        // NOLINTNEXTLINE(readability/braces) false positive
       } else if constexpr (natural_dimension == 2) {
         /* Given the QR decomposition of the Jacobian matrix J = QR, where Q is
          unitary and R is upper triangular, the 2x2 top left corner of R gives
@@ -209,10 +212,10 @@ class VolumetricElement
             Eigen::Matrix<T, kSpatialDimension, natural_dimension>>
             qr(dXdxi[q]);
         volume_scale =
-            abs(qr.matrixR()
-                    .topLeftCorner(natural_dimension, natural_dimension)
-                    .template triangularView<Eigen::Upper>()
-                    .determinant());
+            std::abs(qr.matrixR()
+                         .topLeftCorner(natural_dimension, natural_dimension)
+                         .template triangularView<Eigen::Upper>()
+                         .determinant());
       } else if constexpr (natural_dimension == 1) {
         volume_scale = dXdxi[q].norm();
       } else {
@@ -236,7 +239,8 @@ class VolumetricElement
   }
 
   /* Assignment and copy constructions are prohibited. Move constructor is
-   allowed so that elasticity elements can be stored in `std::vector`. */
+   allowed so that elasticity elements can be push_back/emplace_back into an
+   `std::vector`. */
   VolumetricElement(const VolumetricElement&) = delete;
   VolumetricElement(VolumetricElement&&) = default;
   const VolumetricElement& operator=(const VolumetricElement&) = delete;
@@ -274,9 +278,9 @@ class VolumetricElement
     for (int q = 0; q < num_quadrature_points; ++q) {
       /* Negative force is the gradient of energy.
        -f = ∫dΨ/dx = ∫dΨ/dF : dF/dx dX.
-       Notice that Fᵢⱼ = xₐᵢdSₐ/dXⱼ, so dFᵢⱼ/dxᵦₖ = δₐᵦδᵢₖdSₐ/dXⱼ,
+       Notice that Fᵢⱼ = xᵃᵢdSᵃ/dXⱼ, so dFᵢⱼ/dxᵇₖ = δᵃᵇδᵢₖdSᵃ/dXⱼ,
        and dΨ/dFᵢⱼ = Pᵢⱼ, so the integrand becomes
-       PᵢⱼδₐᵦδᵢₖdSₐ/dXⱼ = PₖⱼdSᵦ/dXⱼ = P * dSdX.transpose() */
+       PᵢⱼδᵃᵇδᵢₖdSᵃ/dXⱼ = PₖⱼdSᵇ/dXⱼ = P * dSdX.transpose() */
       neg_force_matrix += reference_volume_[q] * data.P[q] * dSdX_transpose_[q];
     }
   }
@@ -338,9 +342,14 @@ class VolumetricElement
       EigenPtr<Eigen::Matrix<T, num_dofs, num_dofs>> K) const {
     DRAKE_ASSERT(K != nullptr);
     // clang-format off
-    /* Let e be the elastic energy, then the ab-th block of the stiffness
-     matrix K is given by:
-     Kᵃᵇᵢⱼ = d²e/dxᵃᵢdxᵇⱼ = ∫dF/dxᵇⱼ:d²ψ/dF²:dF/dxᵃᵢ + dψ/dF:d²F/dxᵃᵢdxᵇⱼ dX.
+    /* Let e be the elastic energy, then the elastic force f is given by
+
+     fᵃᵢ = -de/dxᵃᵢ = -∫dψ/dxᵃᵢ dX = -∫dψ/dF:dF/dxᵃᵢ dX.
+
+     and the ab-th block of the stiffness matrix K is given by:
+     Kᵃᵇᵢⱼ = dfᵃᵢ/dxᵇⱼ
+           = d²e/dxᵃᵢdxᵇⱼ = ∫dF/dxᵇⱼ:d²ψ/dF²:dF/dxᵃᵢ + dψ/dF:d²F/dxᵃᵢdxᵇⱼ dX.
+
      The second term vanishes because Fₖₗ = xᵃₖdSᵃ/dXₗ is linear in x.
      We calculate the first term:
      dF/dxᵇⱼ : d²ψ/dF² : dF/dxᵃᵢ = dFₘₙ/dxᵃᵢ dPₘₙ/dFₖₗ dFₖₗ/dxᵇⱼ.  */
@@ -455,7 +464,7 @@ class VolumetricElement
   }
 
   Eigen::Matrix<T, num_dofs, num_dofs> PrecomputeMassMatrix() const {
-    Eigen::Matrix<T, num_dofs, num_dofs> mass =
+    Eigen::Matrix<T, num_dofs, num_dofs> mass_matrix =
         Eigen::Matrix<T, num_dofs, num_dofs>::Zero();
     const std::array<Vector<T, num_nodes>, num_quadrature_points>& S =
         isoparametric_element_.GetShapeFunctions();
@@ -475,14 +484,14 @@ class VolumetricElement
     const Eigen::Matrix<T, num_nodes, num_nodes> weighted_SST =
         weighted_S * S_mat.transpose();
     constexpr int kDim = 3;
-    for (int i = 0; i < num_nodes; ++i) {
-      for (int j = 0; j < num_nodes; ++j) {
-        mass.template block<kDim, kDim>(kDim * i, kDim * j) =
-            Eigen::Matrix<T, kDim, kDim>::Identity() * weighted_SST(i, j) *
+    for (int a = 0; a < num_nodes; ++a) {
+      for (int b = 0; b < num_nodes; ++b) {
+        mass_matrix.template block<kDim, kDim>(kDim * a, kDim * b) =
+            Eigen::Matrix<T, kDim, kDim>::Identity() * weighted_SST(a, b) *
             density_;
       }
     }
-    return mass;
+    return mass_matrix;
   }
 
   /* Computes the gravity force on each node in the element using the stored
@@ -490,11 +499,11 @@ class VolumetricElement
   void AddScaledGravityForce(const Data&, const T& scale,
                              EigenPtr<Vector<T, num_dofs>> force) const {
     constexpr int kDim = 3;
-    for (int i = 0; i < num_nodes; ++i) {
+    for (int a = 0; a < num_nodes; ++a) {
       /* The following computation is equivalent to performing the matrix-vector
        multiplication of the mass matrix and the stacked gravity vector. */
-      force->template segment<kDim>(kDim * i) +=
-          scale * lumped_mass_.template segment<kDim>(kDim * i).cwiseProduct(
+      force->template segment<kDim>(kDim * a) +=
+          scale * lumped_mass_.template segment<kDim>(kDim * a).cwiseProduct(
                       this->gravity_vector());
     }
   }
@@ -523,7 +532,8 @@ class VolumetricElement
   T density_;
   /* Precomputed mass matrix. */
   Eigen::Matrix<T, num_dofs, num_dofs> mass_matrix_;
-  /* The diagonal of the lumped mass matrix (sum over each row). */
+  /* The diagonal of the lumped mass matrix (sum over each row). Only used for
+   calculating gravity forces at the moment. */
   Vector<T, num_dofs> lumped_mass_;
 };
 
