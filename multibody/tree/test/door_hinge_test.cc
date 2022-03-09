@@ -121,15 +121,14 @@ class DoorHingeTest : public ::testing::Test {
     const VectorX<double> init_state =
         (VectorX<double>(3) << 0.0, 0.0, angular_rate).finished();
 
-    const systems::InitialValueProblem<double>::OdeContext default_values(
-        kInitialTime, init_state, kDefaultParameters);
-    systems::InitialValueProblem<double> ivp(energy_ode, default_values);
+    systems::InitialValueProblem<double> ivp(energy_ode, init_state,
+                                             kDefaultParameters);
     ivp.get_mutable_integrator().set_target_accuracy(kIntegrationAccuracy);
 
     // Get the integration time.
     DRAKE_THROW_UNLESS(angular_rate != 0);
     const double integration_time = std::abs(target_angle / angular_rate);
-    const VectorX<double> result = ivp.Solve(integration_time);
+    const VectorX<double> result = ivp.Solve(kInitialTime, integration_time);
 
     // Confirm the velocity is not changed.
     DRAKE_THROW_UNLESS(result[2] == angular_rate);
