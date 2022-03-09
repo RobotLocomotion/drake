@@ -38,6 +38,12 @@ TEST_F(VelocityNewmarkSchemeTest, Weights) {
       Vector3<double>(kBeta / kGamma * kDt, 1.0, 1.0 / (kGamma * kDt))));
 }
 
+/* Verify that the unknowns are the accelerations. */
+TEST_F(VelocityNewmarkSchemeTest, Unknowns) {
+  FemState<double> state(fem_state_system_.get());
+  EXPECT_EQ(scheme_.GetUnknowns(state), v());
+}
+
 /* Verify that the result of
  `VelocityNewmarkScheme::UpdateStateFromChangeInUnknowns()` is consistent with
  the weights. */
@@ -53,7 +59,7 @@ TEST_F(VelocityNewmarkSchemeTest, UpdateStateFromChangeInUnknowns) {
                               weights(1) * dz, kTolerance));
   EXPECT_TRUE(
       CompareMatrices(state.GetAccelerations() - state0.GetAccelerations(),
-                      weights(2) * dz, kTolerance / kDt));
+                      weights(2) * dz, kTolerance));
 }
 
 /* Tests that VelocityNewmarkScheme reproduces analytical solutions with
@@ -88,7 +94,7 @@ TEST_F(VelocityNewmarkSchemeTest, AdvanceOneTimeStep) {
       kTimeSteps * kTolerance));
 }
 
-/* Tests that `VelocityNewmarkScheme` is equivalent with
+/* Tests that `VelocityNewmarkScheme` is equivalent to
  `AccelerationNewmarkScheme` by advancing one time step with each integration
  scheme using the same initial state and verifying that the resulting new states
  are the same. */

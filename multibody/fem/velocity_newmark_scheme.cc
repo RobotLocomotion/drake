@@ -11,9 +11,10 @@ void VelocityNewmarkScheme<T>::DoUpdateStateFromChangeInUnknowns(
   const VectorX<T>& a = state->GetAccelerations();
   const VectorX<T>& v = state->GetVelocities();
   const VectorX<T>& x = state->GetPositions();
-  state->SetAccelerations(a + one_over_dt_gamma_ * dz);
-  state->SetVelocities(v + dz);
-  state->SetPositions(x + dt() * beta_over_gamma_ * dz);
+  const Vector3<T> weights = this->GetWeights();
+  state->SetPositions(x + weights(0) * dz);
+  state->SetVelocities(v + weights(1) * dz);
+  state->SetAccelerations(a + weights(2) * dz);
 }
 
 template <typename T>
@@ -28,7 +29,7 @@ void VelocityNewmarkScheme<T>::DoAdvanceOneTimeStep(
       xn + dt() * (beta_over_gamma_ * v + (1.0 - beta_over_gamma_) * vn) +
       dt() * dt() * (0.5 - beta_over_gamma_) * an);
   state->SetAccelerations(one_over_dt_gamma_ * (v - vn) -
-                          (1.0 - gamma()) / gamma() * an);
+                          (1.0 - gamma_) / gamma_ * an);
   state->SetVelocities(v);
 }
 

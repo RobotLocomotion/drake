@@ -32,7 +32,6 @@ drake_cc_package_library(
         ":linear_constitutive_model_data",
         ":linear_simplex_element",
         ":matrix_utilities",
-        ":newmark_scheme",
         ":petsc_symmetric_block_sparse_matrix",
         ":quadrature",
         ":schur_complement",
@@ -50,7 +49,7 @@ drake_cc_library(
         "acceleration_newmark_scheme.h",
     ],
     deps = [
-        ":newmark_scheme",
+        ":discrete_time_integrator",
         "//common:default_scalars",
     ],
 )
@@ -289,16 +288,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "newmark_scheme",
-    hdrs = [
-        "newmark_scheme.h",
-    ],
-    deps = [
-        ":discrete_time_integrator",
-    ],
-)
-
-drake_cc_library(
     name = "petsc_symmetric_block_sparse_matrix",
     srcs = [
         "petsc_symmetric_block_sparse_matrix.cc",
@@ -364,7 +353,7 @@ drake_cc_library(
         "velocity_newmark_scheme.h",
     ],
     deps = [
-        ":newmark_scheme",
+        ":discrete_time_integrator",
         "//common:default_scalars",
     ],
 )

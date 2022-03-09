@@ -10,23 +10,24 @@ void AccelerationNewmarkScheme<T>::DoUpdateStateFromChangeInUnknowns(
     const VectorX<T>& dz, FemState<T>* state) const {
   const VectorX<T>& a = state->GetAccelerations();
   const VectorX<T>& v = state->GetVelocities();
-  const VectorX<T>& x = state->GetPositions();
-  state->SetAccelerations(a + dz);
-  state->SetVelocities(v + dt() * gamma() * dz);
-  state->SetPositions(x + dt() * dt() * beta() * dz);
+  const VectorX<T>& q = state->GetPositions();
+  const Vector3<T> weights = this->GetWeights();
+  state->SetPositions(q + weights(0) * dz);
+  state->SetVelocities(v + weights(1) * dz);
+  state->SetAccelerations(a + weights(2) * dz);
 }
 
 template <typename T>
 void AccelerationNewmarkScheme<T>::DoAdvanceOneTimeStep(
-    const FemState<T>& prev_state, const VectorX<T>& unknown_variable,
+    const FemState<T>& prev_state, const VectorX<T>& z,
     FemState<T>* state) const {
   const VectorX<T>& an = prev_state.GetAccelerations();
   const VectorX<T>& vn = prev_state.GetVelocities();
-  const VectorX<T>& xn = prev_state.GetPositions();
-  const VectorX<T>& a = unknown_variable;
-  state->SetPositions(xn + dt() * vn +
-                      dt() * dt() * (beta() * a + (0.5 - beta()) * an));
-  state->SetVelocities(vn + dt() * (gamma() * a + (1.0 - gamma()) * an));
+  const VectorX<T>& qn = prev_state.GetPositions();
+  const VectorX<T>& a = z;
+  state->SetPositions(qn + dt() * vn +
+                      dt() * dt() * (beta_ * a + (0.5 - beta_) * an));
+  state->SetVelocities(vn + dt() * (gamma_ * a + (1.0 - gamma_) * an));
   state->SetAccelerations(a);
 }
 
