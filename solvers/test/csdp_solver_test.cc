@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/test/csdp_test_examples.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
@@ -360,6 +361,18 @@ TEST_F(TrivialSDP1, SolveVerbose) {
   CsdpSolver solver;
   if (solver.available()) {
     solver.Solve(*prog_, {}, options);
+  }
+}
+
+GTEST_TEST(CsdpSolverTest, BogusProgram16732) {
+  MathematicalProgram prog;
+  auto x = prog.NewIndeterminates(1, "x");
+  auto u = prog.NewIndeterminates(1, "u");
+  symbolic::Polynomial V_sym(pow(u[0], 4) - 2*x[0]*u[0]);
+  prog.AddSosConstraint(V_sym);
+  CsdpSolver solver;
+  if (solver.available()) {
+    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog), ".*fatal exception");
   }
 }
 }  // namespace test

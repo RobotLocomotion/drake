@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <csetjmp>
 #include <cstdlib>
 #include <limits>
 #include <stdexcept>
@@ -23,6 +24,31 @@
 // filename, but that feature is a Drake-specific patch added to the CSDP
 // headers and source; refer to drake/tools/workspace/csdp/repository.bzl
 // for details.
+
+namespace {
+// Provides for a thread-local setjmp buffer.
+jmp_buf& get_thread_jmp_buf() {
+  static thread_local jmp_buf per_thread_buffer;
+  return per_thread_buffer;
+}
+// We must call this function immediately prior to *any* call into CSDP.
+void CheckpointBeforeCallingCsdp() {
+  jmp_buf& env = get_thread_jmp_buf();
+  if (setjmp(env) > 0) {
+    throw std::runtime_error(
+        "CsdpSolver: the CSDP library exited via a fatal exception");
+  }
+}
+}  // namespace
+extern "C" {
+// The library code in CSDP calls the C exit() function. Since no library
+// should ever do that, our BUILD rule uses the preprocessor to re-route
+// that call into this function instead.
+void drake_csdp_exit(int) {
+  jmp_buf& env = get_thread_jmp_buf();
+  std::longjmp(env, 1);
+}
+}  // extern C
 
 namespace drake {
 namespace solvers {
@@ -131,9 +157,11 @@ void SolveProgramWithNoFreeVariables(
 
   struct csdp::blockmatrix X, Z;
   double* y;
+  CheckpointBeforeCallingCsdp();
   csdp::initsoln(sdpa_free_format.num_X_rows(), sdpa_free_format.g().rows(), C,
                  rhs, constraints, &X, &y, &Z);
   double pobj, dobj;
+  CheckpointBeforeCallingCsdp();
   const int ret = csdp::easy_sdp(
       csdp_params_pathname.c_str(),
       sdpa_free_format.num_X_rows(), sdpa_free_format.g().rows(), C, rhs,
@@ -157,6 +185,7 @@ void SolveProgramWithNoFreeVariables(
   SetProgramSolution(sdpa_free_format, X, Eigen::VectorXd::Zero(0), &prog_sol);
   result->set_x_val(prog_sol);
 
+  CheckpointBeforeCallingCsdp();
   csdp::free_prob(sdpa_free_format.num_X_rows(), sdpa_free_format.g().rows(), C,
                   rhs, constraints, X, y, Z);
 }
@@ -187,10 +216,12 @@ void SolveProgramThroughNullspaceApproach(
                                               &rhs_csdp, &constraints_csdp);
   struct csdp::blockmatrix X_csdp, Z;
   double* y{nullptr};
+  CheckpointBeforeCallingCsdp();
   csdp::initsoln(sdpa_free_format.num_X_rows(), rhs_hat.rows(), C_csdp,
                  rhs_csdp, constraints_csdp, &X_csdp, &y, &Z);
   double pobj{0};
   double dobj{0};
+  CheckpointBeforeCallingCsdp();
   const int ret = csdp::easy_sdp(
       csdp_params_pathname.c_str(),
       sdpa_free_format.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp,
@@ -225,6 +256,7 @@ void SolveProgramThroughNullspaceApproach(
   SetProgramSolution(sdpa_free_format, X_csdp, s_val, &prog_sol);
   result->set_x_val(prog_sol);
 
+  CheckpointBeforeCallingCsdp();
   csdp::free_prob(sdpa_free_format.num_X_rows(), rhs_hat.rows(), C_csdp,
                   rhs_csdp, constraints_csdp, X_csdp, y, Z);
 }
@@ -272,10 +304,12 @@ void SolveProgramThroughTwoSlackVariablesApproach(
                                               &rhs_csdp, &constraints_csdp);
   struct csdp::blockmatrix X_csdp, Z;
   double* y{nullptr};
+  CheckpointBeforeCallingCsdp();
   csdp::initsoln(num_X_hat_rows, sdpa_free_format.g().rows(), C_csdp, rhs_csdp,
                  constraints_csdp, &X_csdp, &y, &Z);
   double pobj{0};
   double dobj{0};
+  CheckpointBeforeCallingCsdp();
   const int ret = csdp::easy_sdp(
       csdp_params_pathname.c_str(),
       num_X_hat_rows, sdpa_free_format.g().rows(), C_csdp, rhs_csdp,
@@ -318,6 +352,7 @@ void SolveProgramThroughTwoSlackVariablesApproach(
   SetProgramSolution(sdpa_free_format, X_csdp, s_val, &prog_sol);
   result->set_x_val(prog_sol);
 
+  CheckpointBeforeCallingCsdp();
   csdp::free_prob(num_X_hat_rows, sdpa_free_format.g().rows(), C_csdp, rhs_csdp,
                   constraints_csdp, X_csdp, y, Z);
 }
@@ -365,10 +400,12 @@ void SolveProgramThroughLorentzConeSlackApproach(
                                              &constraints_csdp);
   struct csdp::blockmatrix X_csdp, Z;
   double* y{nullptr};
+  CheckpointBeforeCallingCsdp();
   csdp::initsoln(num_X_hat_rows, rhs_hat.rows(), C_csdp, rhs_csdp,
                  constraints_csdp, &X_csdp, &y, &Z);
   double pobj{0};
   double dobj{0};
+  CheckpointBeforeCallingCsdp();
   const int ret = csdp::easy_sdp(
       csdp_params_pathname.c_str(),
       num_X_hat_rows, rhs_hat.rows(), C_csdp, rhs_csdp, constraints_csdp,
@@ -406,6 +443,7 @@ void SolveProgramThroughLorentzConeSlackApproach(
   SetProgramSolution(sdpa_free_format, X_csdp, s_val, &prog_sol);
   result->set_x_val(prog_sol);
 
+  CheckpointBeforeCallingCsdp();
   csdp::free_prob(num_X_hat_rows, rhs_hat.rows(), C_csdp, rhs_csdp,
                   constraints_csdp, X_csdp, y, Z);
 }
