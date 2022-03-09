@@ -1,14 +1,17 @@
 #pragma once
 
+#include <memory>
 #include <optional>
 #include <string>
 
+#include "drake/geometry/render/dev/http_service.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/systems/sensors/image.h"
 
 namespace drake {
 namespace geometry {
 namespace render {
+namespace internal {
 
 /** The type of image being rendered. */
 enum RenderImageType {
@@ -32,32 +35,39 @@ class RenderClient {
   RenderClient& operator=(const RenderClient&) = delete;
   RenderClient(RenderClient&&) = delete;
   RenderClient& operator=(RenderClient&&) = delete;
-  virtual ~RenderClient();
   //@}}
 
   /** Constructs the render engine from the given parameters.
    @param url
-     The url of the server to communicate with, e.g., `"http://127.0.0.1"`.
+     The url of the server to communicate with, e.g., `"http://127.0.0.1"`.  May
+     **not** have a trailing `/`.
    @param port
      The port to communicate with the server on, e.g., `8000`.  A value of less
      than or equal to `0` implies no port-level communication is needed.
    @param render_endpoint
      The endpoint that the server expects to receive render requests to, e.g.,
-     `"render"`.  Do not include a preceding `/`, communications with the server
-     are constructed as `{url}/{render_endpoint}`.
+     `"render"`.  May **not** have a leading or trailing `/`, communications
+     with the server are constructed as `{url}/{render_endpoint}`.
    @param verbose
      Whether or not the client should be verbose in logging its communications
      with the server.
    @param no_cleanup
      Whether or not the temp_directory() should be deleted upon destruction of
-     this instance. */
-  explicit RenderClient(const std::string& url, int32_t port,
-                        const std::string& render_endpoint, bool verbose,
-                        bool no_cleanup);
+     this instance.
+   @throws std::logic_error
+     If the provided `url` is empty or ends with a `/`, via
+     HttpService::HttpService.
+   @throws std::runtime_error
+     If the provided `render_endpoint` has any leading or trailing slashes. */
+  RenderClient(const std::string& url, int32_t port,
+               const std::string& render_endpoint, bool verbose,
+               bool no_cleanup);
 
- protected:
-  /** Copy constructor for the purpose of cloning. */
-  RenderClient(const RenderClient& other);
+  virtual ~RenderClient();
+
+  /** Clones the render client -- making the %RenderClient compatible with
+   copyable_unique_ptr. */
+  std::unique_ptr<RenderClient> Clone() const;
 
   /** @name Server communication */
   //@{
@@ -101,7 +111,10 @@ class RenderClient {
    @throws std::runtime_error
      If a rendering cannot be obtained from the server for any reason, including
      invalid parameters supplied to this method such as not including
-     `min_depth` and/or `max_depth` when `image_type` is depth. */
+     `min_depth` and/or `max_depth` when `image_type` is depth.
+   @throws std::logic_error
+     If `min_depth` and/or `max_depth` are provided, but the `image_type` is not
+     RenderImageType::kDepth32F. */
   virtual std::string RenderOnServer(
       const RenderCameraCore& camera_core, RenderImageType image_type,
       const std::string& scene_path,
@@ -129,22 +142,40 @@ class RenderClient {
      `max_depth <= min_depth`. */
   void ValidDepthRangeOrThrow(double min_depth, double max_depth) const;
 
-  /** Rename the specified file with the provided extension.  Helper method for
-   RetrieveRender() which will download files as
-   `{temp_directory()}/{scene_path}.bin` and then rename the file depending on
-   the type of image that was downloaded.
+  /** Rename the specified file `path` to have the same name as `input_scene`,
+   with the provided extension `ext`.  Helper method for RetrieveRender() which
+   will download files as `{temp_directory()}/{path}` and then rename the file
+   depending on the type of image that was downloaded.  Examples:
 
+   @code{.cpp}
+    const auto renamed_1 = RenameToSceneWithExtension(
+        "/some/input/XYZ.gltf",
+        "/some/other/ABC.curl",
+        ".png");
+    // renamed_1: "/some/input/XYZ.png"
+    const auto renamed_2 = RenameToSceneWithExtension(
+        "/a/folder/123.gltf",
+        "/a/folder/999.bin",
+        ".tiff");
+    // renamed_2: "/a/folder/123.tiff"
+   @endcode
+
+   @param input_scene
+     The original input scene file path to match, with a different extension,
+     e.g., `"scene.gltf"`.
    @param path
-     The input path to change the file extension for, e.g., `"file.bin"`.
+     The input path to change the file extension for, e.g., `"file.curl"`.
    @param ext
      The new file extension, e.g., `".png"`.  Uses
      `std::filesystem::path::replace_extension()` internally.
    @return
      The path to the new file after renaming it.
    @throws std::exception
-     When any errors arise from renaming the file. */
-  std::string RenameFileExtension(const std::string& path,
-                                  const std::string& ext) const;
+     If `input_scene` or `path` do not exist, or any errors arise from renaming
+     the file. */
+  std::string RenameToSceneWithExtension(const std::string& input_scene,
+                                         const std::string& path,
+                                         const std::string& ext) const;
 
   //@}
 
@@ -246,15 +277,30 @@ class RenderClient {
 
   //@}
 
+  /** (Internal use only) for testing. */
+  void SetHttpService(std::unique_ptr<HttpService> service);
+
+ protected:
+  /** Copy constructor for the purpose of cloning. */
+  RenderClient(const RenderClient& other);
+
+  /** The NVI-function for cloning this http service. */
+  virtual std::unique_ptr<RenderClient> DoClone() const;
+
  private:
+  friend class RenderClientTester;
   std::string temp_directory_;
   std::string url_;
   int32_t port_;
   std::string render_endpoint_;
   bool verbose_;
   bool no_cleanup_;
+  // Only set to true in Clone(), last clone deleted removes temp directory.
+  bool this_was_cloned_;
+  std::unique_ptr<HttpService> http_service_;
 };
 
+}  // namespace internal
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

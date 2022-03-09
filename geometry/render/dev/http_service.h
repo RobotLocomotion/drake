@@ -245,15 +245,15 @@ class HttpService {
   bool verbose() const { return verbose_; }
   //@}
 
+  /** Throws `std::runtime_error` if `endpoint` starts or ends with a '/'. */
+  void ThrowIfEndpointInvalid(const std::string& endpoint) const;
+
  protected:
   /** Copy constructor for the purpose of cloning. */
   HttpService(const HttpService& other);
 
   /** The NVI-function for cloning this http service. */
   virtual std::unique_ptr<HttpService> DoClone() const = 0;
-
-  /** Throws `std::runtime_error` if `endpoint` starts or ends with a '/'. */
-  void ThrowIfEndpointInvalid(const std::string& endpoint) const;
 
   /** Verify that all file paths provided are regular files, throw if not.
 
