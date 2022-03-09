@@ -77,11 +77,6 @@ class DummyElement final : public FemElement<DummyElement> {
     return 1.23 * MakeSpdMatrix();
   }
 
-  /* Provides a fixed return value for CalcDampingMatrix(). */
-  static Eigen::Matrix<T, kNumDofs, kNumDofs> damping_matrix() {
-    return 4.56 * MakeSpdMatrix();
-  }
-
   /* Provides a fixed return value for CalcMassMatrix(). */
   static Eigen::Matrix<T, kNumDofs, kNumDofs> mass_matrix() {
     return 7.89 * MakeSpdMatrix();
@@ -127,13 +122,6 @@ class DummyElement final : public FemElement<DummyElement> {
       const Data&, const T& scale,
       EigenPtr<Eigen::Matrix<T, kNumDofs, kNumDofs>> K) const {
     *K += scale * stiffness_matrix();
-  }
-
-  /* Implements FemElement::AddScaledDampingMatrix(). */
-  void DoAddScaledDampingMatrix(
-      const Data&, const T& scale,
-      EigenPtr<Eigen::Matrix<T, kNumDofs, kNumDofs>> D) const {
-    *D += scale * damping_matrix();
   }
 
   /* Implements FemElement::AddScaledMassMatrix(). */
