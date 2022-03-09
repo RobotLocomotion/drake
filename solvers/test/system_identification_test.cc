@@ -12,6 +12,9 @@ namespace drake {
 namespace solvers {
 namespace {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 typedef SystemIdentification<double> SID;
 
 GTEST_TEST(SystemIdentificationTest, LumpedSingle) {
@@ -465,6 +468,7 @@ GTEST_TEST(SystemIdentificationTest, PendulaIdentification) {
   }
 }
 
+#pragma GCC diagnostic pop
 ///@}
 
 }  // anonymous namespace
