@@ -545,9 +545,10 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
                                                   V_PB_W, A_PB_W);
     } else {
       const SpatialAcceleration<T> A_PB_W =
-          R_WF * A_FM.Shift(p_MB_F);  // Eq. (4), with w_FM = 0.
+          R_WF * A_FM.ShiftWithOmegaZero(p_MB_F);  // Eq. (4), with w_FM = 0.
       // Velocities are zero. No need to compute terms that become zero.
-      get_mutable_A_WB_from_array(&A_WB_array) = A_WP.Shift(p_PB_W) + A_PB_W;
+      get_mutable_A_WB_from_array(&A_WB_array) =
+          A_WP.ShiftWithOmegaZero(p_PB_W) + A_PB_W;
     }
   }
 

@@ -9,6 +9,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/convert_time_derivative.h"
 #include "drake/multibody/math/spatial_vector.h"
@@ -36,14 +37,14 @@ namespace multibody {
 /// expressed in E.  Details on spatial vectors and monogram notation are
 /// in section @ref multibody_spatial_vectors.
 ///
-/// The typeset of A_MB_E is @f$\,{^MA^B}@f$ and its definition is
+/// The typeset for A_MB_E is @f$\,{^MA^B}@f$ and its definition is
 /// @f$^MA^B = \frac{^Md}{dt}\,{^MV^B}\,@f$, where @f${^MV^B}@f$ is frame B's
 /// spatial velocity in frame M and @f$\frac{^Md}{dt}@f$ denotes the time
 /// derivative taken in frame M. To differentiate a vector, we need to
 /// specify in what frame the time derivative is taken, see [Mitiguy 2016, §6.1]
-/// for an in depth discussion. Time derivatives can be taken in different
-/// frames and they are related by the "Transport Theorem", which in Drake is
-/// implemented in drake::math::ConvertTimeDerivativeToOtherFrame().
+/// for an in-depth discussion. Time derivatives in different frames are related
+/// by the "Transport Theorem", which in Drake is implemented in
+/// drake::math::ConvertTimeDerivativeToOtherFrame().
 /// In source code (monogram) notation, we write `A_MB = DtM(V_MB)`, where
 /// `DtM()` denotes the time derivative in frame M. Details on vector
 /// differentiation is in section @ref Dt_multibody_quantities.
@@ -105,6 +106,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   ///
   /// Frame B and frame C are fixed (e.g., welded) to the same rigid object.
   /// Hence frames B and C always rotate together at the same rate and: <pre>
+  ///   ω_MC_E = ω_MB_E
   ///   α_MC_E = α_MB_E
   /// </pre>
   ///
@@ -152,10 +154,9 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// @retval A_MC_E which is frame C's spatial acceleration measured in
   /// frame M, expressed in frame E.
   /// @see ShiftInPlace() for more information and how A_MC_E is calculated.
-  SpatialAcceleration<T> Shift(const Vector3<T>& p_PoQ_E,
-                               const Vector3<T>& w_WP_E) const {
-    // Paul change arguments to offset and omega when ready for Python binding
-    return SpatialAcceleration<T>(*this).ShiftInPlace(p_PoQ_E, w_WP_E);
+  SpatialAcceleration<T> Shift(const Vector3<T>& offset,
+                               const Vector3<T>& omega) const {
+    return SpatialAcceleration<T>(*this).ShiftInPlace(offset, omega);
   }
 
   /// (Advanced) Given `this` spatial acceleration `A_MB` of a frame B measured
@@ -171,17 +172,22 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// @see ShiftInPlace() for more information and how A_MC_E is calculated.
   /// @note This method speeds the Shift() computation when ω_MB = 0, even if
   /// α_MB ≠ 0 (α_MB is stored in `this`).
-  SpatialAcceleration<T> Shift(const Vector3<T>& p_PoQ_E) const {
-    // PAUL: Change argument to offset when ready for Python bindings.
-    const Vector3<T>& p_BoCo_E = p_PoQ_E;  // offset;
+  SpatialAcceleration<T> ShiftWithOmegaZero(const Vector3<T>& offset) const {
+    const Vector3<T>& p_BoCo_E = offset;
     const Vector3<T>& alpha_MB_E = this->rotational();
     const Vector3<T>& a_MBo_E = this->translational();
     return SpatialAcceleration<T>(alpha_MB_E,
                                   a_MBo_E + alpha_MB_E.cross(p_BoCo_E));
   }
 
-  /// Given a frame C's acceleration relative to a frame B, and frame B's
-  /// acceleration measured in a frame M, returns C's acceleration in M.
+  DRAKE_DEPRECATED("2022-07-01",
+      "Use SpatialAcceleration::ShiftWithOmegaZero()")
+  SpatialAcceleration<T> Shift(const Vector3<T>& p_PoQ_E) const {
+    return ShiftWithOmegaZero(p_PoQ_E);
+  }
+
+  /// Given a frame B's acceleration measured in a frame M and a frame C's
+  /// acceleration relative to frame B, returns frame C's acceleration in M.
   /// @param[in] position_of_moving_frame which is the position vector p_BoCo_E
   /// from Bo (frame B's origin) to Co (frame C's origin), expressed in frame E.
   /// p_BoCo_E must have the same expressed-in frame E as `this`, where `this`
@@ -189,11 +195,9 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// @param[in] omega which is ω_MB_E, frame B's angular velocity measured in
   /// frame W and expressed in frame E.
   /// @param[in] velocity_of_moving_frame which is V_BC_E, frame C's spatial
-  /// velocity measured in frame B, expressed in the same frame E as
-  /// `this` = A_MB_E.
+  /// velocity measured in frame B, expressed in frame E.
   /// @param[in] acceleration_of_moving_frame which is A_BC_E, frame C's
-  /// spatial acceleration measured in frame B, expressed in the same frame E
-  /// as `this` = A_MB_E.
+  /// spatial acceleration measured in frame B, expressed in frame E.
   /// @retval A_MC_E frame C's spatial acceleration measured in frame M,
   /// expressed in frame E.
   /// @note The returned spatial acceleration A_MC_E contains an angular
@@ -205,11 +209,13 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// </pre>
   /// If frame C is rigidly fixed to frame B, A_BC_E = 0 and V_BC_E = 0 and
   /// this method produces a Shift() operation (albeit inefficiently).
-  /// The equation above shows composing spatial accelerations is not simply
-  /// adding `A_MB + A_BC` and differs significantly from composing spatial
-  /// velocities. For example, angular velocities simply add as
-  /// `ω_MC = ω_MB + ω_BC`, but 3D angular acceleration is more complicated as
-  /// `α_MC = α_MB + α_BC + ω_MB x ω_BC`.
+  /// The previous equations show composing spatial acceleration is not simply
+  /// adding `A_MB + A_BC` and these equations differ significantly from their
+  /// spatial velocity counterparts. For example, angular velocities simply add
+  /// as <pre>
+  ///   ω_MC = ω_MB + ω_BC,   but 3D angular acceleration is more complicated as
+  ///   α_MC = α_MB + α_BC + ω_MB x ω_BC
+  /// </pre>
   /// @see %SpatialVelocity::ComposeWithMovingFrameVelocity() for the related
   /// %SpatialVelocity method and calculations.
   ///
@@ -224,37 +230,37 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// α_MC (frame C's angular acceleration measured in frame M) is defined as
   /// the time-derivative in frame M of ω_MC, and can be calculated using the
   /// "Transport Theorem" (Golden rule for vector differentation) which converts
-  /// the time-derivative of any vector in frame M to frame B, e.g., as
+  /// the time-derivative of a vector in frame M to frame B, e.g., as
   /// DtM(ω_BC) = DtB(ω_BC) + ω_MB x ω_BC, as <pre>
   ///   α_MC = DtM(ω_MC) = DtM(ω_MB) + DtM(ω_BC)
   ///                    =     α_MB  + DtB(ω_BC) + ω_MB x ω_BC
-  ///                    =     α_MB  +     α_BC  + ω_MB x ω_BC
+  ///                    =     α_MB  +     α_BC  + ω_MB x ω_BC   (End of proof).
   /// </pre>
   ///
   /// <h4> Translational acceleration component </h4>
   ///
-  /// v_MCo (frame C's translational velocity in frame M) is calculated shown
-  /// in SpatialVelocity::ComposeWithMovingFrameVelocity) as
+  /// v_MCo (frame C's translational velocity in frame M) is calculated in
+  /// SpatialVelocity::ComposeWithMovingFrameVelocity) as <pre>
   ///   v_MCo = v_MBo + ω_MB x p_BoCo + v_BCo
-  /// <pre>
+  /// </pre>
   /// a_MCo (frame C's translational acceleration measured in frame M) is
   /// defined as the time-derivative in frame M of v_MCo, calculated as <pre>
-  ///  a_MCo = DtM(v_MCo)
-  ///        = DtM(v_MBo + ω_MB x p_BoCo + v_BCo)
+  ///  a_MCo = DtM(v_MCo)                             Definition.
+  ///        = DtM(v_MBo + ω_MB x p_BoCo + v_BCo)     Substitution.
   ///        = DtM(v_MBo) + DtM(ω_MB) x p_BoCo + ω_MB x DtM(p_BoCo) + DtM(v_BCo)
   ///        =     a_MBo  +     α_MB  x p_BoCo + ω_MB x DtM(p_BoCo) + DtM(v_BCo)
   /// </pre>
   /// The last two terms are modified using the "Transport Theorem" (Golden rule
   /// for vector differentation) which converts time-derivatives of vectors in
-  /// frame M to frame B as DtM(vec) = DtB(vec) + ω_MB x vec, as <pre>
+  /// frame M to frame B via DtM(vec) = DtB(vec) + ω_MB x vec. <pre>
   ///  DtM(p_BoCo) = DtB(p_BoCo) + ω_MB x p_BoCo
   ///              =     v_BCo   + ω_MB x p_BoCo
   ///  DtM(v_BCo)  = DtB(v_BCo)  + ω_MB x v_BCo
   ///              =     a_BCo   + ω_MB x v_BCo
   /// </pre>
-  /// Combining the last few equations gives <pre>
+  /// Combining the last few equations proves the formula for a_MCo as <pre>
   ///   a_MCo = a_MBo + α_MB x p_BoCo + ω_MB x (ω_MB x p_BoCo)
-  ///         + 2 ω_MB x v_BCo + a_BCo
+  ///         + 2 ω_MB x v_BCo + a_BCo                           (End of proof).
   /// </pre>
   /// Some terms in the previous equation have names, e.g., <pre>
   ///   centripetal acceleration   ω_MB x (ω_MB x p_BoCo)
@@ -264,15 +270,14 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// </pre>
   /// Note: The coincident point acceleration can be calculated with a Shift().
   ///
-  /// Note: The three cross products in the following expression (which appears
-  /// in the previous calculation of a_MCo) can be reduced to one cross product,
-  /// possibly improving numerical efficiency as <pre>
+  /// Note: The three cross products appearing in the previous calculation of
+  /// a_MCo can be reduced to one, possibly improving efficiency via <pre>
   ///   ω_MB x (ω_MB x p_BoCo) + 2 ω_MB x v_BCo = ω_MB x (v_MCo - v_MBo + v_BCo)
   /// </pre>
   /// To show this, we rearrange and substitute our expression for v_MCo. <pre>
-  ///           v_MCo = v_MBo + ω_MB x p_BoCo + v_BCo   rearranges to
-  ///   ω_MB x p_BoCo = v_MCo - v_MBo - v_BCo
-  ///   ω_MB x (ω_MB x p_BoCo) = ω_MB x (v_MCo - v_MBo - v_BCo)
+  ///           v_MCo = v_MBo + ω_MB x p_BoCo + v_BCo        which rearranges to
+  ///   ω_MB x p_BoCo = v_MCo - v_MBo - v_BCo.             Substitution produces
+  ///   ω_MB x (ω_MB x p_BoCo) = ω_MB x (v_MCo - v_MBo - v_BCo)           Hence,
   ///   ω_MB x (ω_MB x p_BoCo) + 2 ω_MB x v_BCo = ω_MB x (v_MCo - v_MBo + v_BCo)
   /// </pre>
   SpatialAcceleration<T> ComposeWithMovingFrameAcceleration(
@@ -295,15 +300,19 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
     const Vector3<T>& w_PB_E = V_PB_E.rotational();
     const Vector3<T>& v_PB_E = V_PB_E.translational();
 
-    // Compute all the terms within curly brackets in the derivation above
-    // which correspond to the Shift() operation:
+    // Use Shift() to calculate the coincident point acceleration, i.e.,
+    // acceleration of the point of frame B coincident with Co as
+    // a_MBo + α_MB x p_BoCo + ω_MB x (ω_MB x p_BoCo).
     SpatialAcceleration<T> A_WB_E = this->Shift(p_PB_E, w_WP_E);
-    // Adds non-linear coupling of angular velocities:
-    A_WB_E.rotational() += (A_PB_E.rotational() + w_WP_E.cross(w_PB_E));
+    // Adds additional term in angular acceleration calculation, i.e.,
+    // α_MC = α_MB + α_BC + ω_MB x ω_BC.
+    const Vector3<T>& alpha_PB_E = A_PB_E.rotational();
+    A_WB_E.rotational() += (alpha_PB_E + w_WP_E.cross(w_PB_E));
 
     // Adds Coriolis and translational acceleration of B in P.
-    A_WB_E.translational() +=
-        (A_PB_E.translational() + 2.0 * w_WP_E.cross(v_PB_E));
+    // a_MCo = ...  a_BCo + 2 ω_MB x v_BCo
+    const Vector3<T>& a_PB_E = A_PB_E.translational();
+    A_WB_E.translational() += (a_PB_E + 2.0 * w_WP_E.cross(v_PB_E));
     return A_WB_E;
   }
 };
