@@ -2,24 +2,26 @@ import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import DrakeVisualizer
-from pydrake.geometry import DrakeVisualizerParams
 from pydrake.math import RigidTransform
 from pydrake.math import RollPitchYaw
 from pydrake.multibody.parsing import Parser
-from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
+from pydrake.multibody.plant import AddMultibodyPlant
 from pydrake.multibody.plant import ConnectContactResultsToDrakeVisualizer
+from pydrake.multibody.plant import MultibodyPlantConfig
+from pydrake.systems.analysis import ApplySimulatorConfig
 from pydrake.systems.analysis import Simulator
+from pydrake.systems.analysis import SimulatorConfig
 from pydrake.systems.analysis import PrintSimulatorStatistics
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.primitives import VectorLogSink
 
 
 def make_ball_paddle():
-    dt = 0.001
+    multibody_plant_config = MultibodyPlantConfig(time_step = 0.001)
     p_WPaddle_fixed = RigidTransform(RollPitchYaw(0, 0, 0),
                                      np.array([0.1, 0, -0.01]))
     builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, dt)
+    plant, scene_graph = AddMultibodyPlant(multibody_plant_config, builder)
 
     parser = Parser(plant)
     paddle_sdf_file_name = \
@@ -41,7 +43,7 @@ def make_ball_paddle():
                                            scene_graph=scene_graph)
 
     nx = plant.num_positions() + plant.num_velocities()
-    state_logger = builder.AddSystem(VectorLogSink(nx, dt))
+    state_logger = builder.AddSystem(VectorLogSink(nx))
     builder.Connect(plant.get_state_output_port(),
                     state_logger.get_input_port())
 
@@ -57,7 +59,11 @@ def simulate_diagram(diagram, ball_paddle_plant, state_logger,
     ])
     v_init_val = np.hstack((np.zeros(3), ball_init_velocity))
     qv_init_val = np.concatenate((q_init_val, v_init_val))
+
+    simulator_config = SimulatorConfig(target_realtime_rate = 0.01,
+                                       publish_every_time_step = True)
     simulator = Simulator(diagram)
+    ApplySimulatorConfig(simulator, simulator_config)
 
     plant_context = diagram.GetSubsystemContext(ball_paddle_plant,
                                                 simulator.get_context())
@@ -66,8 +72,6 @@ def simulate_diagram(diagram, ball_paddle_plant, state_logger,
     simulator.get_mutable_context().SetTime(0)
     state_log = state_logger.FindMutableLog(simulator.get_mutable_context())
     state_log.Clear()
-    simulator.set_target_realtime_rate(0.01)
-    simulator.set_publish_every_time_step(True)
     simulator.Initialize()
     simulator.AdvanceTo(boundary_time=0.1)
     print()
