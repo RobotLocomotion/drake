@@ -65,6 +65,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "http_service_curl",
+    srcs = ["http_service_curl.cc"],
+    hdrs = ["http_service_curl.h"],
+    deps = [
+        ":http_service",
+        "//common:filesystem",
+        "//common:unused",
+        "@fmt",
+        "@libcurl",
+    ],
+)
+
+drake_cc_library(
     name = "render_client",
     srcs = ["render_client.cc"],
     hdrs = ["render_client.h"],
@@ -145,6 +158,15 @@ drake_cc_googletest(
     name = "http_service_test",
     deps = [
         ":http_service",
+        "//common:temp_directory",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "http_service_curl_test",
+    deps = [
+        ":http_service_curl",
         "//common:temp_directory",
         "//common/test_utilities:expect_throws_message",
     ],
