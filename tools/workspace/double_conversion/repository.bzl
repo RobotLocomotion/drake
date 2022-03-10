@@ -10,7 +10,7 @@ def _impl(repository_ctx):
 
     if os_result.is_macos:
         libdir = "{}/opt/double-conversion/lib".format(
-            os_result.homebrew_prefix
+            os_result.homebrew_prefix,
         )
         repository_ctx.symlink(
             "{}/opt/double-conversion/include".format(
