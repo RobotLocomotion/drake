@@ -1,3 +1,10 @@
+"""
+This is an example for using hydroelastic contact model through pydrake.
+It reads two simple SDFormat files of a compliant hydroelastic ball and
+a compliant hydroelastic box.
+The ball is dropped on an edge of the box and bounces off.
+"""
+import argparse
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
@@ -80,6 +87,9 @@ def simulate_diagram(diagram, ball_paddle_plant, state_logger,
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument()
+    args = parser.parse_args()
     diagram, ball_paddle_plant, state_logger = make_ball_paddle()
     time_samples, state_samples = simulate_diagram(
         diagram, ball_paddle_plant, state_logger, np.array([-5E-4, 0, 0.05]),
