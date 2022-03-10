@@ -60,6 +60,9 @@ def main():
     parser = argparse.ArgumentParser(
         description="Test utility for Meshcat websockets")
     parser.add_argument(
+        "--no-valgrind", action='count',
+        help="an ignored, dummy argument")
+    parser.add_argument(
         "--ws_url", type=str, required=True,
         help="websocket URL")
     parser.add_argument(
