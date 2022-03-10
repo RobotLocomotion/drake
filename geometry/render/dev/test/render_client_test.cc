@@ -245,11 +245,14 @@ class FailService : public HttpService {
               int32_t port, bool verbose)
       : HttpService(temp_directory, url, port, verbose) {}
 
+  // no cover: the service should implement cloning, but it is not used.
+  // LCOV_EXCL_START
   FailService(const FailService& other) : HttpService(other) {}
 
   std::unique_ptr<HttpService> DoClone() const override {
     return std::unique_ptr<FailService>(new FailService(*this));
   }
+  // LCOV_EXCL_STOP
 
   HttpResponse PostForm(const std::string& /* endpoint */,
                         const data_map_t& /* data_fields */,
@@ -292,6 +295,8 @@ class FieldCheckService : public HttpService {
         min_depth_{min_depth},
         max_depth_{max_depth} {}
 
+  // no cover: the service should implement cloning, but it is not used.
+  // LCOV_EXCL_START
   FieldCheckService(const FieldCheckService& other)
       : HttpService(other),
         camera_core_{other.camera_core_},
@@ -305,6 +310,7 @@ class FieldCheckService : public HttpService {
   std::unique_ptr<HttpService> DoClone() const override {
     return std::unique_ptr<FieldCheckService>(new FieldCheckService(*this));
   }
+  // LCOV_EXCL_STOP
 
   /* Check all of the <form> fields.  Always respond with failure (http 500). */
   HttpResponse PostForm(const std::string& endpoint,
@@ -361,11 +367,14 @@ class FieldCheckService : public HttpService {
     for (const auto& pair : data_fields) {
       const auto& key = pair.first;
       if (data_fields_keys.find(key) == data_fields_keys.end()) {
+        // no cover: these only execute if a test is failing.
+        // LCOV_EXCL_START
         if (unexpected_keys.empty()) {
           unexpected_keys = "Unexpected key(s) in data_fields: " + key;
         } else {
           unexpected_keys += ", " + key;
         }
+        // LCOV_EXCL_STOP
       }
     }
     EXPECT_EQ(unexpected_keys, "");
@@ -407,11 +416,14 @@ class ProxyService : public HttpService {
       : HttpService(temp_directory, url, port, verbose),
         post_form_callback_{callback} {}
 
+  // no cover: the service should implement cloning, but it is not used.
+  // LCOV_EXCL_START
   ProxyService(const ProxyService& other) : HttpService(other) {}
 
   std::unique_ptr<HttpService> DoClone() const override {
     return std::unique_ptr<ProxyService>(new ProxyService(*this));
   }
+  // LCOV_EXCL_STOP
 
   HttpResponse PostForm(
       const std::string& endpoint,
@@ -577,8 +589,11 @@ GTEST_TEST(RenderClient, RenderOnServer) {
     // Delete the response file if it exists to start clean on each test.
     try {
       fs::remove(response_path);
+      // no cover: this does not ever fail.
+      // LCOV_EXCL_START
     } catch (...) {
     }
+    // LCOV_EXCL_STOP
     // Set the service with the provided callback.
     client.SetHttpService(std::make_unique<ProxyService>(
         temp_dir_path, url, port, verbose, callback));
@@ -881,8 +896,9 @@ GTEST_TEST(RenderClient, RenameToSceneWithExtension) {
   const std::string url{"127.0.0.1"};
   const int32_t port{8000};
   const std::string render_endpoint{"render"};
-  const bool verbose = false;
-  const bool no_cleanup = false;
+  // Keep verbose and no_cleanup `true` to get coverage on log() calls.
+  const bool verbose = true;
+  const bool no_cleanup = true;
   const RenderClient client{url, port, render_endpoint, verbose, no_cleanup};
   const fs::path temp_dir = fs::path(client.temp_directory());
   const std::string scene = temp_dir / "scene.gltf";
@@ -1080,29 +1096,38 @@ class Png {
     /* See the docs:
      http://www.libpng.org/pub/png/libpng-1.0.3-manual.html
 
-     If something goes wrong, throw an exception to fail the test. */
+     If something goes wrong, throw an exception to fail the test.  Each is
+     marked to exclude coverage as they do not happen in normal tests. */
     FILE* fp = fopen(path.c_str(), "wb");
     if (fp == nullptr) {
+      // LCOV_EXCL_START
       throw std::runtime_error("Could not create FILE* for png.");
+      // LCOV_EXCL_STOP
     }
     png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
                                                   nullptr, nullptr, nullptr);
     if (png_ptr == nullptr) {
+      // LCOV_EXCL_START
       fclose(fp);
       throw std::runtime_error("Could not create png_ptr for png.");
+      // LCOV_EXCL_STOP
     }
     png_infop info_ptr = png_create_info_struct(png_ptr);
     if (!info_ptr) {
+      // LCOV_EXCL_START
       png_destroy_write_struct(&png_ptr, static_cast<png_infopp>(nullptr));
       fclose(fp);
       throw std::runtime_error("Error creating info_ptr for png.");
+      // LCOV_EXCL_STOP
     }
 
     // Error callback for libpng.
     if (setjmp(png_jmpbuf(png_ptr))) {
+      // LCOV_EXCL_START
       png_destroy_write_struct(&png_ptr, &info_ptr);
       fclose(fp);
       throw std::runtime_error("Critical error trying to write png.");
+      // LCOV_EXCL_STOP
     }
 
     // Setup and write out the header information.

@@ -74,11 +74,14 @@ void AddField<RenderImageType>(data_map_t* data_map,
     AddField(data_map, field_name, "depth");
   } else if (field_data == RenderImageType::kLabel16I) {
     AddField(data_map, field_name, "label");
+    // no cover: will only execute with a breaking change to RenderImageType.
+    // LCOV_EXCL_START
   } else {
     throw std::runtime_error(fmt::format(
         "RenderClient: unsupported RenderImageType of {} requested.",
         field_data));
   }
+  // LCOV_EXCL_STOP
 }
 
 /** Verify the loaded image has the correct dimensions.
@@ -112,10 +115,15 @@ void VerifyImportedImageDimensions(int expected_width, int expected_height,
    dimension is 1. */
   const int image_depth = extent[5] - extent[4] + 1;
   if (image_depth != 1) {
+    /* no cover: no callers ever use a 3D image, but the check is important to
+     maintain since the loops in LoadColorImage can only work for the 2D image
+     layout in vtk. */
+    // LCOV_EXCL_START
     throw std::runtime_error(fmt::format(
         "RenderClient: expected two dimensional image, but loaded image from "
         "'{}' has a z dimension of {}.",
         path, image_depth));
+    // LCOV_EXCL_STOP
   }
 }
 
@@ -159,10 +167,13 @@ RenderClient::~RenderClient() {
   if (!no_cleanup_ && !this_was_cloned_) {
     try {
       fs::remove_all(temp_dir);
+      // no cover: OS dependent exceptions for fs::remove_all not known.
+      // LCOV_EXCL_START
     } catch (const std::exception& e) {
       drake::log()->debug("RenderClient: could not delete '{}'. {}",
                           temp_directory_, e.what());
     }
+    // LCOV_EXCL_STOP
   } else if (verbose_) {
     // NOTE: this gets printed twice because of cloning, cannot be avoided.
     drake::log()->debug(
