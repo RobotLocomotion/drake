@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load(":vars.bzl", "LIBDIR")
+
 licenses(["notice"])  # IJG
 
 cc_library(
@@ -7,7 +9,8 @@ cc_library(
     hdrs = glob(["include/*.h"]),
     includes = ["include"],
     linkopts = [
-        "-L/usr/lib/x86_64-linux-gnu",
+        "-L" + LIBDIR,
+        "-Wl,-rpath," + LIBDIR,
         "-ljpeg",
     ],
     visibility = ["//visibility:public"],
