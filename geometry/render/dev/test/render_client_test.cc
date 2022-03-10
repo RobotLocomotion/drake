@@ -1231,7 +1231,7 @@ GTEST_TEST(RenderClient, LoadColorImage) {
   const int32_t port{8000};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
-  const bool no_cleanup = true;
+  const bool no_cleanup = false;
   const RenderClient client{url, port, render_endpoint, verbose, no_cleanup};
   const fs::path temp_dir = fs::path(client.temp_directory());
 
@@ -1322,7 +1322,7 @@ GTEST_TEST(RenderClient, LoadColorImage) {
     const auto drake_rgb_png_path = temp_dir / "drake_rgb.png";
     EvaluatePng<SourceRgb>::CornerCheck(drake_image);
     EvaluatePng<SourceRgb>::FullImageCheck(drake_image);
-    // fs::remove(rgb_png_path);
+    fs::remove(rgb_png_path);
   }
 
   {
@@ -1334,7 +1334,7 @@ GTEST_TEST(RenderClient, LoadColorImage) {
     const auto drake_rgba_png_path = temp_dir / "drake_rgba.png";
     EvaluatePng<SourceRgba>::CornerCheck(drake_image);
     EvaluatePng<SourceRgba>::FullImageCheck(drake_image);
-    // fs::remove(rgba_png_path);
+    fs::remove(rgba_png_path);
   }
 }
 
