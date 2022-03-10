@@ -358,7 +358,8 @@ class FieldCheckService : public HttpService {
       data_fields_keys.insert("max_depth");
     }
     std::string unexpected_keys{""};
-    for (const auto& [key, val] : data_fields) {
+    for (const auto& pair : data_fields) {
+      const auto& key = pair.first;
       if (data_fields_keys.find(key) == data_fields_keys.end()) {
         if (unexpected_keys.empty()) {
           unexpected_keys = "Unexpected key(s) in data_fields: " + key;
