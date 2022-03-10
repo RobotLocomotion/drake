@@ -1214,7 +1214,7 @@ struct EvaluatePng {
     if constexpr (source_had_alpha) {
       EXPECT_EQ(image.at(0, 0)[3], kAlphaStart);
     } else {
-      EXPECT_EQ(image.at(0, 0)[3], static_cast<ChannelType>(255));
+      EXPECT_EQ(image.at(0, 0)[3], kAlphaPad);
     }
   }
 
