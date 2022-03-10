@@ -548,6 +548,29 @@ GTEST_TEST(RenderClient, RenderOnServer) {
         expected_message);
   }
 
+  {
+    /* These tests confirm the error reporting format from UrlWithPort without a
+     port and alternative urls. */
+    const std::vector<std::pair<std::string, int32_t>> url_port{
+        {"some_url", 0}, {"another_url", -1}, {"url_with_port", 200}};
+    for (const auto& [u, p] : url_port) {
+      const auto expected_message = fmt::format(
+          "\\s*ERROR doing POST:\\s*/{0}\\s*"
+          "Server URL:\\s*{1}\\s*"
+          "Service Message:\\s*FailService always fails\\.\\s*"
+          "HTTP Code:\\s*500\\s*"
+          "Server Message:\\s*None\\.\\s*",
+          render_endpoint, p > 0 ? fmt::format("{}:{}", u, p) : u);
+      RenderClient c{u, p, render_endpoint, verbose, no_cleanup};
+      const auto temp = fs::path(c.temp_directory());
+      c.SetHttpService(std::make_unique<FailService>(temp, u, p, verbose));
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          c.RenderOnServer(color_camera.core(), RenderImageType::kColorRgba8U,
+                           fake_scene_path, std::nullopt),
+          expected_message);
+    }
+  }
+
   // Trampoline helper to set the client HttpService.
   const auto response_path = (temp_dir_path / "response.file").string();
   auto set_proxy = [&](const PostFormCallback_t& callback) {
