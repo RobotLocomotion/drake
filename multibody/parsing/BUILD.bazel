@@ -34,6 +34,7 @@ drake_cc_package_library(
     ],
     deps = [
         ":detail_misc",
+        ":detail_multibody_plant_subgraph",
         ":detail_scene_graph",
         ":detail_sdf_parser",
         ":detail_urdf_parser",
@@ -128,6 +129,27 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "detail_multibody_plant_subgraph",
+    srcs = [
+        "detail_multibody_plant_subgraph.cc",
+    ],
+    hdrs = [
+        "detail_multibody_plant_subgraph.h",
+    ],
+    install_hdrs_exclude = [
+        "detail_multibody_plant_subgraph.h",
+    ],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        ":detail_misc",
+        ":scoped_names",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
     name = "detail_sdf_parser",
     srcs = [
         "detail_sdf_parser.cc",
@@ -143,6 +165,7 @@ drake_cc_library(
     ],
     deps = [
         ":detail_misc",
+        ":detail_multibody_plant_subgraph",
         ":detail_scene_graph",
         ":detail_urdf_parser",
         ":scoped_names",

@@ -672,10 +672,15 @@ void ParseBushing(ModelInstanceIndex model_instance,
   ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
 }
 
-std::string GetModelName(
+ModelInstanceIndex ParseUrdf(
     const std::string& model_name_in,
-    const XMLDocument& xml_doc) {
-  const XMLElement* node = xml_doc.FirstChildElement("robot");
+    const std::optional<std::string>& parent_model_name,
+    const multibody::PackageMap& package_map,
+    const std::string& root_dir,
+    XMLDocument* xml_doc,
+    MultibodyPlant<double>* plant) {
+
+  XMLElement* node = xml_doc->FirstChildElement("robot");
   if (!node) {
     throw std::runtime_error("ERROR: URDF does not contain a robot tag.");
   }
@@ -687,17 +692,8 @@ std::string GetModelName(
           "must be specified.");
   }
 
-  return model_name;
-}
+  model_name = parsing::PrefixName(parent_model_name.value_or(""), model_name);
 
-void ParseUrdf(
-    ModelInstanceIndex model_instance,
-    const multibody::PackageMap& package_map,
-    const std::string& root_dir,
-    XMLDocument* xml_doc,
-    MultibodyPlant<double>* plant) {
-
-  XMLElement* node = xml_doc->FirstChildElement("robot");
   // Parses the model's material elements. Throws an exception if there's a
   // material name clash regardless of whether the associated RGBA values are
   // the same.
@@ -708,6 +704,9 @@ void ParseUrdf(
     ParseMaterial(material_node, true /* name_required */, package_map,
                   root_dir, &materials);
   }
+
+  const ModelInstanceIndex model_instance =
+      plant->AddModelInstance(model_name);
 
   // Parses the model's link elements.
   for (XMLElement* link_node = node->FirstChildElement("link");
@@ -767,6 +766,8 @@ void ParseUrdf(
                          "drake:linear_bushing_rpy")) {
     ParseBushing(model_instance, bushing_node, plant);
   }
+
+  return model_instance;
 }
 
 }  // namespace
@@ -820,65 +821,8 @@ ModelInstanceIndex AddModelFromUrdf(
     plant->RegisterAsSourceForSceneGraph(scene_graph);
   }
 
-  auto full_model_name = parsing::PrefixName(
-      parent_model_name.value_or(""), GetModelName(model_name_in, xml_doc));
-  ModelInstanceIndex model_instance = plant->AddModelInstance(full_model_name);
-
-  ParseUrdf(model_instance, package_map, root_dir, &xml_doc, plant);
-  return model_instance;
-}
-
-std::string MergeModelFromUrdf(
-    const DataSource& data_source,
-    ModelInstanceIndex model_instance,
-    const PackageMap& package_map,
-    MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph) {
-  DRAKE_THROW_UNLESS(plant != nullptr);
-  DRAKE_THROW_UNLESS(!plant->is_finalized());
-  data_source.DemandExactlyOne();
-
-  // When the data_source is a filename, we'll use its parent directory to be
-  // the root directory to search for files referenced within the URDF file.
-  // If data_source is a string, this will remain unset and relative-path
-  // resources that would otherwise require a root directory will not be found.
-  std::string root_dir;
-
-  // Opens the URDF file and feeds it into the XML parser.
-  XMLDocument xml_doc;
-  if (data_source.file_name) {
-    const std::string full_path = GetFullPath(*data_source.file_name);
-    size_t found = full_path.find_last_of("/\\");
-    if (found != std::string::npos) {
-      root_dir = full_path.substr(0, found);
-    } else {
-      // TODO(jwnimmer-tri) This is not unit tested.  In any case, we should be
-      // using drake::filesystem for path manipulation, not string searching.
-      root_dir = ".";
-    }
-    xml_doc.LoadFile(full_path.c_str());
-    if (xml_doc.ErrorID()) {
-      throw std::runtime_error(fmt::format(
-          "Failed to parse XML file {}:\n{}",
-          full_path, xml_doc.ErrorName()));
-    }
-  } else {
-    DRAKE_DEMAND(data_source.file_contents != nullptr);
-    xml_doc.Parse(data_source.file_contents->c_str());
-    if (xml_doc.ErrorID()) {
-      throw std::runtime_error(fmt::format(
-          "Failed to parse XML string: {}",
-          xml_doc.ErrorName()));
-    }
-  }
-
-  if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
-    plant->RegisterAsSourceForSceneGraph(scene_graph);
-  }
-
-  std::string model_name = GetModelName("", xml_doc);
-  ParseUrdf(model_instance, package_map, root_dir, &xml_doc, plant);
-  return model_name;
+  return ParseUrdf(model_name_in, parent_model_name, package_map, root_dir,
+                   &xml_doc, plant);
 }
 
 }  // namespace internal
