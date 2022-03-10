@@ -1,5 +1,10 @@
 # -*- python -*-
 
+# TODO(jwnimmer-tri) Remove this entire directory on or after 2022-07-01, as
+# well as removing yaml from our setup text files:
+# setup/mac/binary_distribution/Brewfile
+# setup/ubuntu/binary_distribution/packages-*.txt
+
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
 def _impl(repository_ctx):

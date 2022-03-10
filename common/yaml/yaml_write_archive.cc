@@ -4,8 +4,8 @@
 #include <utility>
 #include <vector>
 
-#include "third_party/com_github_jbeder_yaml_cpp/include/yaml-cpp/emitfromevents.h"  // NOLINT
-#include <yaml-cpp/yaml.h>
+#include <drake-yaml-cpp/emitfromevents.h>
+#include <drake-yaml-cpp/yaml.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/unused.h"
