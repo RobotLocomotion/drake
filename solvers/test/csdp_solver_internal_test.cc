@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/test/csdp_test_examples.h"
 
 namespace drake {
@@ -239,13 +240,12 @@ TEST_F(SDPwithOverlappingVariables1, Solve) {
 
   struct csdp::blockmatrix X, Z;
   double* y;
-  csdp::initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, &X, &y,
-                 &Z);
+  csdp::cpp_initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
+                     &X, &y, &Z);
   double pobj, dobj;
-  const int ret =
-      csdp::easy_sdp(nullptr,
-                     dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
-                     -dut.constant_min_cost_term(), &X, &y, &Z, &pobj, &dobj);
+  const int ret = csdp::cpp_easy_sdp(
+      nullptr, dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
+      -dut.constant_min_cost_term(), &X, &y, &Z, &pobj, &dobj);
   EXPECT_EQ(ret, 0 /* 0 is for success */);
   const double tol = 1E-7;
   EXPECT_NEAR(pobj, -1, tol);
@@ -256,8 +256,8 @@ TEST_F(SDPwithOverlappingVariables1, Solve) {
   CompareBlockrec(X.blocks[2], csdp::MATRIX, 2, {1, -1, -1, 1}, tol);
   CompareBlockrec(X.blocks[3], csdp::DIAG, 2, {0.5, 3}, tol);
 
-  csdp::free_prob(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, X, y,
-                  Z);
+  csdp::cpp_free_prob(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, X,
+                      y, Z);
 }
 
 TEST_F(SDPwithOverlappingVariables2, Solve) {
@@ -269,13 +269,12 @@ TEST_F(SDPwithOverlappingVariables2, Solve) {
 
   struct csdp::blockmatrix X, Z;
   double* y;
-  csdp::initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, &X, &y,
-                 &Z);
+  csdp::cpp_initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
+                     &X, &y, &Z);
   double pobj, dobj;
-  const int ret =
-      csdp::easy_sdp(nullptr,
-                     dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
-                     -dut.constant_min_cost_term(), &X, &y, &Z, &pobj, &dobj);
+  const int ret = csdp::cpp_easy_sdp(
+      nullptr, dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
+      -dut.constant_min_cost_term(), &X, &y, &Z, &pobj, &dobj);
   EXPECT_EQ(ret, 0 /* 0 is for success */);
   const double tol = 1E-7;
   EXPECT_NEAR(pobj, -5, tol);
@@ -285,8 +284,8 @@ TEST_F(SDPwithOverlappingVariables2, Solve) {
   CompareBlockrec(X.blocks[1], csdp::MATRIX, 2, {2, 1, 1, 2}, tol);
   CompareBlockrec(X.blocks[2], csdp::DIAG, 3, {0, 1, 0}, tol);
 
-  csdp::free_prob(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, X, y,
-                  Z);
+  csdp::cpp_free_prob(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, X,
+                      y, Z);
 }
 
 TEST_F(CsdpDocExample, Solve) {
@@ -298,13 +297,12 @@ TEST_F(CsdpDocExample, Solve) {
 
   struct csdp::blockmatrix X, Z;
   double* y;
-  csdp::initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, &X, &y,
-                 &Z);
+  csdp::cpp_initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
+                     &X, &y, &Z);
   double pobj, dobj;
-  const int ret =
-      csdp::easy_sdp(nullptr,
-                     dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
-                     -dut.constant_min_cost_term(), &X, &y, &Z, &pobj, &dobj);
+  const int ret = csdp::cpp_easy_sdp(
+      nullptr, dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
+      -dut.constant_min_cost_term(), &X, &y, &Z, &pobj, &dobj);
   EXPECT_EQ(ret, 0 /* 0 is for success */);
 
   const double tol = 5E-7;
@@ -326,8 +324,8 @@ TEST_F(CsdpDocExample, Solve) {
                   tol);
   CompareBlockrec(Z.blocks[3], csdp::DIAG, 2, {0.75, 1}, tol);
 
-  csdp::free_prob(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, X, y,
-                  Z);
+  csdp::cpp_free_prob(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, X,
+                      y, Z);
 }
 
 TEST_F(TrivialSDP1, Solve) {
@@ -339,17 +337,29 @@ TEST_F(TrivialSDP1, Solve) {
 
   struct csdp::blockmatrix X, Z;
   double* y;
-  csdp::initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, &X, &y,
-                 &Z);
+  csdp::cpp_initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
+                     &X, &y, &Z);
   double pobj, dobj;
-  const int ret =
-      csdp::easy_sdp(nullptr,
-                     dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
-                     -dut.constant_min_cost_term(), &X, &y, &Z, &pobj, &dobj);
+  const int ret = csdp::cpp_easy_sdp(
+      nullptr, dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
+      -dut.constant_min_cost_term(), &X, &y, &Z, &pobj, &dobj);
   EXPECT_EQ(ret, 0 /* 0 is for success */);
 
-  csdp::free_prob(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, X, y,
-                  Z);
+  csdp::cpp_free_prob(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, X,
+                      y, Z);
+}
+
+// Try to solve a malformed program (k==0), expect an exception.
+// This is a test for exit/setjmp/longjmp handling. See #16732.
+GTEST_TEST(CsdpSolverInterrnalTest, ExitHandling) {
+  csdp::blockmatrix C{};
+  struct csdp::blockmatrix X, Z;
+  double* y{};
+  double pobj{}, dobj{};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      csdp::cpp_easy_sdp(
+          nullptr, 0, 0, C, nullptr, nullptr, 0, &X, &y, &Z, &pobj, &dobj),
+      ".*CSDP.*fatal exception.*");
 }
 }  // namespace internal
 }  // namespace solvers
