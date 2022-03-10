@@ -1031,7 +1031,7 @@ ChannelType PixelValue(ChannelType* current) {
                     std::is_same_v<ChannelType, uint16_t> ||
                     std::is_same_v<ChannelType, int16_t>,
                 "Only uint8_t, uint16_t, and int16_t are supported.");
-  ChannelType ret = *current;
+  const ChannelType ret = *current;
   *current = static_cast<ChannelType>(
       (static_cast<uint32_t>(*current) + static_cast<uint32_t>(1)) %
       static_cast<uint32_t>(std::numeric_limits<ChannelType>::max()));
@@ -1261,8 +1261,7 @@ struct EvaluatePng {
         if (source_had_alpha) {
           n_good += static_cast<int>(image.at(i, j)[3] == PixelValue(&alpha));
         } else {
-          n_good += static_cast<int>(image.at(i, j)[3] ==
-                                     static_cast<ChannelType>(255));
+          n_good += static_cast<int>(image.at(i, j)[3] == kAlphaPad);
         }
       }
     }
@@ -1367,7 +1366,6 @@ GTEST_TEST(RenderClient, LoadColorImage) {
     const auto rgb_png_path = temp_dir / "rgb.png";
     PngRgb rgb{rgb_png_path, width, height};
     client.LoadColorImage(rgb_png_path, &drake_image);
-    const auto drake_rgb_png_path = temp_dir / "drake_rgb.png";
     EvaluatePng<SourceRgb>::CornerCheck(drake_image);
     EvaluatePng<SourceRgb>::FullImageCheck(drake_image);
     fs::remove(rgb_png_path);
@@ -1379,7 +1377,6 @@ GTEST_TEST(RenderClient, LoadColorImage) {
     const auto rgba_png_path = temp_dir / "rgba.png";
     PngRgba rgba{rgba_png_path, width, height};
     client.LoadColorImage(rgba_png_path, &drake_image);
-    const auto drake_rgba_png_path = temp_dir / "drake_rgba.png";
     EvaluatePng<SourceRgba>::CornerCheck(drake_image);
     EvaluatePng<SourceRgba>::FullImageCheck(drake_image);
     fs::remove(rgba_png_path);
