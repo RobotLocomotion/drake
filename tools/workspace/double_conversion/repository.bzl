@@ -9,29 +9,38 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
-        build_flavor = "macos"
+        lib = "{}/opt/double-conversion/lib".format(os_result.homebrew_prefix)
         repository_ctx.symlink(
-            "{}/double-conversion/include".format(os_result.homebrew_prefix),
+            "{}/opt/double-conversion/include".format(
+                os_result.homebrew_prefix,
+            ),
             "include",
         )
     elif os_result.is_ubuntu:
-        build_flavor = "ubuntu"
+        lib = "/usr/lib/x86_64-linux-gnu"
         repository_ctx.symlink(
             "/usr/include/double-conversion",
             "include/double-conversion",
         )
     elif os_result.is_manylinux:
-        build_flavor = "ubuntu"
+        lib = "/opt/drake-dependencies/lib"
+        repository_ctx.symlink(
+            "/opt/drake-dependencies/include/double-conversion",
+            "include/double-conversion",
+        )
     else:
         fail("Operating system is NOT supported {}".format(os_result))
 
+    # Declare the libdir.
+    repository_ctx.file(
+        "vars.bzl",
+        content = "LIBDIR = \"{}\"\n".format(lib),
+        executable = False,
+    )
+
+    # Add the BUILD file.
     repository_ctx.symlink(
-        Label(
-            "@drake//tools/workspace/double_conversion:" +
-            "package-{}.BUILD.bazel".format(
-                build_flavor,
-            ),
-        ),
+        Label("@drake//tools/workspace/double_conversion:package.BUILD.bazel"),
         "BUILD.bazel",
     )
 
