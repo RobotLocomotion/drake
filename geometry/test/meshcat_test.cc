@@ -50,6 +50,10 @@ void CheckWebsocketCommand(
   std::vector<std::string> argv;
   argv.push_back(FindResourceOrThrow(
       "drake/geometry/meshcat_websocket_client"));
+  // Even when this unit test is itself running under valgrind, we don't want to
+  // instrument the helper process. Our valgrind configuration recognizes this
+  // argument and skips instrumentation of the child process.
+  argv.push_back("--disable-drake-valgrind-tracing");
   argv.push_back(fmt::format("--ws_url={}", meshcat.ws_url()));
   if (send_json) {
     DRAKE_DEMAND(!send_json->empty());

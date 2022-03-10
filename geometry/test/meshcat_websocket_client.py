@@ -60,6 +60,9 @@ def main():
     parser = argparse.ArgumentParser(
         description="Test utility for Meshcat websockets")
     parser.add_argument(
+        "--disable-drake-valgrind-tracing", action='count',
+        help="ignored by this program; see valgrind.sh for details")
+    parser.add_argument(
         "--ws_url", type=str, required=True,
         help="websocket URL")
     parser.add_argument(
