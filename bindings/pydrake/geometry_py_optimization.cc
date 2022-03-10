@@ -241,6 +241,8 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("query_object"), py::arg("geometry_id"),
             py::arg("reference_frame") = std::nullopt,
             cls_doc.ctor.doc_scenegraph)
+        .def("GetMinimalRepresentation", &VPolytope::GetMinimalRepresentation,
+            cls_doc.GetMinimalRepresentation.doc)
         .def("vertices", &VPolytope::vertices, cls_doc.vertices.doc)
         .def_static("MakeBox", &VPolytope::MakeBox, py::arg("lb"),
             py::arg("ub"), cls_doc.MakeBox.doc)
