@@ -41,7 +41,7 @@ drake_cc_library(
         "//common:name_value",
         "//common:nice_type_name",
         "//common:unused",
-        "@yaml_cpp",
+        "@yaml_cpp_internal//:yaml_cpp",
     ],
 )
 
@@ -55,8 +55,7 @@ drake_cc_library(
         "//common:name_value",
         "//common:nice_type_name",
         "//common:unused",
-        "//third_party/com_github_jbeder_yaml_cpp:emitfromevents",
-        "@yaml_cpp",
+        "@yaml_cpp_internal//:yaml_cpp",
     ],
 )
 
