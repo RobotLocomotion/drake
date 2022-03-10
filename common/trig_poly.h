@@ -10,6 +10,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/polynomial.h"
 
 namespace drake {
@@ -46,7 +47,10 @@ namespace drake {
  * <!-- TODO(ggould-tri): Fix this in the future. -->
  */
 template <typename T = double>
-class TrigPoly final {
+class DRAKE_DEPRECATED(
+    "2022-07-01",
+    "TrigPoly is deprecated. Please use symbolic::Expression and the "
+    "SinCosSubstitution instead.") TrigPoly final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TrigPoly)
 
@@ -287,6 +291,8 @@ class TrigPoly final {
    * all base variables only; supplying values for sin/cos variables is an
    * error.
    */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   virtual TrigPoly<T> EvaluatePartial(
       const std::map<VarType, T>& var_values) const {
     std::map<VarType, T> var_values_with_sincos = var_values;
@@ -304,6 +310,7 @@ class TrigPoly final {
     return TrigPoly(poly_.EvaluatePartial(var_values_with_sincos),
                     sin_cos_map_);
   }
+#pragma GCC diagnostic pop
 
   /// Compares two TrigPolys for equality.
   /**
@@ -428,6 +435,8 @@ class TrigPoly final {
     return ret;
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   friend std::ostream& operator<<(std::ostream& os,
                                   const TrigPoly<T>& tp) {
     os << tp.poly_;
@@ -443,12 +452,15 @@ class TrigPoly final {
     }
     return os;
   }
+#pragma GCC diagnostic pop
 
  private:
   PolyType poly_;
   SinCosMap sin_cos_map_;
 };
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename T, int Rows, int Cols>
 std::ostream& operator<<(
     std::ostream& os,
@@ -466,5 +478,7 @@ typedef TrigPoly<double> TrigPolyd;
 
 /// A column vector of TrigPoly; used in several optimization classes.
 typedef Eigen::Matrix<TrigPolyd, Eigen::Dynamic, 1> VectorXTrigPoly;
+
+#pragma GCC diagnostic pop
 
 }  // namespace drake
