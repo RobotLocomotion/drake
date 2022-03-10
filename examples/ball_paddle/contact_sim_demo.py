@@ -23,8 +23,13 @@ from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.primitives import VectorLogSink
 
 
-def make_ball_paddle():
-    multibody_plant_config = MultibodyPlantConfig(time_step=0.001)
+def make_ball_paddle(contact_model, contact_surface_representation,
+                     time_step):
+    multibody_plant_config = \
+        MultibodyPlantConfig(
+            time_step=time_step,
+            contact_model=contact_model,
+            contact_surface_representation=contact_surface_representation)
     p_WPaddle_fixed = RigidTransform(RollPitchYaw(0, 0, 0),
                                      np.array([0.1, 0, -0.01]))
     builder = DiagramBuilder()
@@ -59,7 +64,8 @@ def make_ball_paddle():
 
 
 def simulate_diagram(diagram, ball_paddle_plant, state_logger,
-                     ball_init_position, ball_init_velocity):
+                     ball_init_position, ball_init_velocity,
+                     simulation_time):
     q_init_val = np.array([
         1, 0, 0, 0, ball_init_position[0], ball_init_position[1],
         ball_init_position[2]
@@ -80,7 +86,7 @@ def simulate_diagram(diagram, ball_paddle_plant, state_logger,
     state_log = state_logger.FindMutableLog(simulator.get_mutable_context())
     state_log.Clear()
     simulator.Initialize()
-    simulator.AdvanceTo(boundary_time=0.1)
+    simulator.AdvanceTo(boundary_time=simulation_time)
     print()
     PrintSimulatorStatistics(simulator)
     return state_log.sample_times(), state_log.data()
@@ -88,12 +94,35 @@ def simulate_diagram(diagram, ball_paddle_plant, state_logger,
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument()
+    parser.add_argument(
+        "--simulation_time", type=float, default=0.1,
+        help="Desired duration of the simulation in seconds. "
+             "Default 0.1."
+    )
+    parser.add_argument(
+        "--contact_model", type=str, default="hydroelastic_with_fallback",
+        help="Contact model. Options are: 'point', 'hydroelastic', "
+             "'hydroelastic_with_fallback'. "
+             "Default 'hydroelastic_with_fallback'")
+    parser.add_argument(
+        "--contact_surface_representation", type=str, default="polygon",
+        help="Contact-surface representation for hydroelastics. "
+             "Options are: 'triangle' or 'polygon'. Default 'polygon'.")
+    parser.add_argument(
+        "--time_step", type=float, default=0.001,
+        help="The fixed time step period (in seconds) of discrete updates "
+             "for the multibody plant modeled as a discrete system. "
+             "If zero, we will use an integrator for a continuous system. "
+             "Strictly non-negative. Default 0.001.")
     args = parser.parse_args()
-    diagram, ball_paddle_plant, state_logger = make_ball_paddle()
+
+    diagram, ball_paddle_plant, state_logger = make_ball_paddle(
+        args.contact_model, args.contact_surface_representation,
+        args.time_step)
     time_samples, state_samples = simulate_diagram(
         diagram, ball_paddle_plant, state_logger, np.array([-5E-4, 0, 0.05]),
-        np.array([0., 0., -np.sqrt(2 * 9.81 * 0.95)]))
+        np.array([0., 0., -np.sqrt(2 * 9.81 * 0.95)]),
+        args.simulation_time)
     print("\nFinal state variables:")
     print(state_samples[:, -1])
     pass
