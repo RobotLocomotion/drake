@@ -177,8 +177,7 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.set_publish_every_time_step.doc)
         .def("set_publish_at_initialization",
             &Simulator<T>::set_publish_at_initialization,
-            doc.Simulator.set_publish_at_initialization.doc,
-            py::arg("publish"))
+            doc.Simulator.set_publish_at_initialization.doc, py::arg("publish"))
         .def("set_target_realtime_rate",
             &Simulator<T>::set_target_realtime_rate,
             doc.Simulator.set_target_realtime_rate.doc)

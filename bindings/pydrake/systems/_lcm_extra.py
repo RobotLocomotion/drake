@@ -54,7 +54,7 @@ def _make_lcm_subscriber(channel, lcm_type, lcm, use_cpp_serializer=False):
 @staticmethod
 def _make_lcm_publisher(
         channel, lcm_type, lcm, publish_period=0.0, use_cpp_serializer=False,
-         publish_triggers=None):
+        publish_triggers=None):
     """Convenience to create an LCM publisher system with a concrete type.
 
     Args:
@@ -71,10 +71,11 @@ def _make_lcm_publisher(
     else:
         serializer = _Serializer_[lcm_type]()
     if publish_triggers is not None:
-        return LcmPublisherSystem(channel, serializer, lcm, publish_triggers,
-                              publish_period)
+        return LcmPublisherSystem(
+            channel, serializer, lcm, publish_triggers, publish_period)
     else:
         return LcmPublisherSystem(channel, serializer, lcm, publish_period)
+
 
 LcmSubscriberSystem.Make = _make_lcm_subscriber
 LcmPublisherSystem.Make = _make_lcm_publisher
