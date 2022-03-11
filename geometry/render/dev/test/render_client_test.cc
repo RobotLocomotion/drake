@@ -10,15 +10,14 @@
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>
-#include <libpng/png.h>
-#include <tiffio.h>
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/common/unused.h"
 #include "drake/geometry/render/dev/http_service.h"
+#include "drake/geometry/render/dev/test_utilities/test_png.h"
+#include "drake/geometry/render/dev/test_utilities/test_tiff.h"
 
 namespace drake {
 namespace geometry {
@@ -760,27 +759,10 @@ GTEST_TEST(RenderClient, RenderOnServer) {
   }
 
   {
-    // Manufacture a "valid" TIFF file and check that it is renamed.
+    /* Manufacture a "valid" (not the same width and height) TIFF file and check
+     that it is renamed. */
     set_proxy([&](const std::string&, const data_map_t&, const file_map_t&) {
-      TIFF* tiff = TIFFOpen(response_path.c_str(), "w");
-      DRAKE_DEMAND(tiff != nullptr);
-      constexpr int width = 4;
-      constexpr int height = 1;
-      // The data being used is irrelevant, just need to dump 32 bits to file.
-      float data[width] = {1.0f, 2.0f, 3.0f, 4.0f};
-      /* NOTE: if this assertion ever becomes false, this test can be
-       conditionally compiled rather than asserted, however libtiff is being
-       promised that it is getting 32 bit data. */
-      static_assert(sizeof(float) == 4, "Expected 32 bit floats...");
-
-      TIFFSetField(tiff, TIFFTAG_IMAGEWIDTH, width);
-      TIFFSetField(tiff, TIFFTAG_IMAGELENGTH, height);
-      TIFFSetField(tiff, TIFFTAG_SAMPLESPERPIXEL, 1);
-      TIFFSetField(tiff, TIFFTAG_BITSPERSAMPLE, 32);
-
-      TIFFWriteScanline(tiff, static_cast<void*>(data), 0, 0);
-      TIFFClose(tiff);
-
+      TestTiffGray32 gray_32{response_path, 16, 4};
       HttpResponse ret;
       ret.http_code = 200;
       ret.data_path = response_path;
@@ -1002,463 +984,6 @@ GTEST_TEST(RenderClient, RenameToSceneWithExtension) {
   fs::remove_all(temp_dir);
 }
 
-// LoadColorImage, LoadDepthImage, LoadLabelImage ------------------------------
-// Type trait for Png image data underlying type, similar to ImageTraits.
-template <int bit_depth>
-struct PngTraits {
-  // Compile error for unspecialized use.
-};
-
-template <>
-struct PngTraits<8> {
-  using ChannelType = uint8_t;
-};
-
-template <>
-struct PngTraits<16> {
-  using ChannelType = uint16_t;
-};
-
-/* Returns `current` value, but also increments `current` by 1.  If increasing
- by 1 would put `current` out of bounds for the numeric limits of ChannelType,
- current will be reset to 0.
-
- Convenience method for loop bodies so that the increase and bounds check do not
- need to be repeated in every case (e.g., red, green, blue, alpha). */
-template <typename ChannelType>
-ChannelType PngValue(ChannelType* current) {
-  static_assert(std::is_same_v<ChannelType, uint8_t> ||
-                    std::is_same_v<ChannelType, uint16_t> ||
-                    std::is_same_v<ChannelType, int16_t>,
-                "Only uint8_t, uint16_t, and int16_t are supported.");
-  const ChannelType ret = *current;
-  *current = static_cast<ChannelType>(
-      (static_cast<uint32_t>(*current) + static_cast<uint32_t>(1)) %
-      static_cast<uint32_t>(std::numeric_limits<ChannelType>::max()));
-  return ret;
-}
-
-/* On construction, create a PNG with some arbitrary but non-zero values.  Only
- supports creating single channel, three channel (RGB), or 4 channel (RGBA) PNG
- images.  To help validate that the image coordinate system is being set
- correctly (which corner is "lower left") we create an "image" that has
- "increasing values" (modulo the maximum value for ChannelType) by pixel
- channel.  For example, with an RGB image, the pixels start as:
-
- - (0, 0): [kRedStart, kGreenStart, kBlueStart]
- - (0, 1): [(kRedStart+1) % 255, (kGreenStart+1) % 255, (kBlueStart+1) % 255]
-
- For a 16 bit gray image,
-
- - (0, 0): kGrayStart
- - (0, 1): (kGrayStart+1) % 65535
-
- This enables testing below to always know what the first pixel value should be
- at coordinate (0, 0).  The tests for image load verification rely on the
- pattern created in the constructor here, changing the pattern requires
- updating the tests as well.
-
- Tip: if a test image is desired to be viewed, run tests with --sandbox_debug
- so that the temporary files are not deleted.  Note that `no_cleanup` needs to
- be set to `true` for a test case, and each test usually removes the image
- with `fs::remove` so these will need to be updated to keep the image. */
-template <int channels, int bit_depth>
-class Png {
- public:
-  static_assert(channels == 1 || channels == 3 || channels == 4,
-                "Png <channels> must be 1, 3, or 4");
-  static_assert(bit_depth == 8 || bit_depth == 16,
-                "Png <bit_depth> must be 8 or 16");
-  static_assert((channels == 1 && bit_depth == 16) ||      // 16 bit gray
-                    (channels == 3 && bit_depth == 8) ||   // 8 bit RGB
-                    (channels == 4 && bit_depth == 8) ||   // 8 bit RGBA
-                    (channels == 3 && bit_depth == 16) ||  // 16 bit RGB
-                    (channels == 1 && bit_depth == 8),     // 8 bit gray
-                "Png: unsupported <channels, bit_depth> combination.");
-
-  // Data type to allocate for memory, either uint8_t or uint16_t.
-  using ChannelType = typename PngTraits<bit_depth>::ChannelType;
-  static_assert(std::is_same_v<ChannelType, uint8_t> ||
-                    std::is_same_v<ChannelType, uint16_t>,
-                "Png: only uint8_t and uint16_t channel types are supported.");
-
-  // For when writing a color image.
-  static constexpr ChannelType kRedStart = static_cast<ChannelType>(50);
-  static constexpr ChannelType kGreenStart = static_cast<ChannelType>(100);
-  static constexpr ChannelType kBlueStart = static_cast<ChannelType>(150);
-  static constexpr ChannelType kAlphaStart = static_cast<ChannelType>(0);
-
-  // For when writing a single channel image.
-  static constexpr ChannelType kGrayStart = static_cast<ChannelType>(0);
-
-  Png(const std::string& path, int width, int height)
-      : path_{path}, width_{width}, height_{height} {
-    /* See the docs:
-     http://www.libpng.org/pub/png/libpng-1.0.3-manual.html
-
-     If something goes wrong, throw an exception to fail the test.  Each is
-     marked to exclude coverage as they do not happen in normal tests. */
-    FILE* fp = fopen(path.c_str(), "wb");
-    if (fp == nullptr) {
-      // LCOV_EXCL_START
-      throw std::runtime_error("Could not create FILE* for png.");
-      // LCOV_EXCL_STOP
-    }
-    png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
-                                                  nullptr, nullptr, nullptr);
-    if (png_ptr == nullptr) {
-      // LCOV_EXCL_START
-      fclose(fp);
-      throw std::runtime_error("Could not create png_ptr for png.");
-      // LCOV_EXCL_STOP
-    }
-    png_infop info_ptr = png_create_info_struct(png_ptr);
-    if (!info_ptr) {
-      // LCOV_EXCL_START
-      png_destroy_write_struct(&png_ptr, static_cast<png_infopp>(nullptr));
-      fclose(fp);
-      throw std::runtime_error("Error creating info_ptr for png.");
-      // LCOV_EXCL_STOP
-    }
-
-    // Error callback for libpng.
-    if (setjmp(png_jmpbuf(png_ptr))) {
-      // LCOV_EXCL_START
-      png_destroy_write_struct(&png_ptr, &info_ptr);
-      fclose(fp);
-      throw std::runtime_error("Critical error trying to write png.");
-      // LCOV_EXCL_STOP
-    }
-
-    // Setup and write out the header information.
-    png_init_io(png_ptr, fp);
-    png_set_IHDR(png_ptr, info_ptr, width_, height_, bit_depth, ColorType(),
-                 PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
-                 PNG_FILTER_TYPE_DEFAULT);
-    png_write_info(png_ptr, info_ptr);
-
-    /* Populate the pixel data.  See constructor comments.
-     NOTE: do not use png_set_filler! */
-    if (bit_depth > 8) png_set_swap(png_ptr);
-    ChannelType* row_data[height_];
-    ChannelType gray = static_cast<ChannelType>(kGrayStart);
-    ChannelType red = static_cast<ChannelType>(kRedStart);
-    ChannelType green = static_cast<ChannelType>(kGreenStart);
-    ChannelType blue = static_cast<ChannelType>(kBlueStart);
-    ChannelType alpha = static_cast<ChannelType>(kAlphaStart);
-    /* Due to the template, and this method supporting gray, RGB, and RGBA, we
-     must mark them as "unused" since depending on the template a given variable
-     may not be used in the loop. */
-    unused(gray);
-    unused(red);
-    unused(green);
-    unused(blue);
-    unused(alpha);
-    for (int j = 0; j < height_; ++j) {
-      row_data[j] = static_cast<ChannelType*>(
-          png_malloc(png_ptr, png_get_rowbytes(png_ptr, info_ptr)));
-      ChannelType* row_ptr = row_data[j];
-      for (int i = 0; i < width_; ++i) {
-        for (int k = 0; k < channels; ++k) {
-          if constexpr (channels == 1) {
-            *row_ptr++ = PngValue(&gray);
-          } else if constexpr (channels == 3 || channels == 4) {
-            if (k == 0) {
-              *row_ptr++ = PngValue(&red);
-            } else if (k == 1) {
-              *row_ptr++ = PngValue(&green);
-            } else if (k == 2) {
-              *row_ptr++ = PngValue(&blue);
-            } else if (k == 3) {
-              *row_ptr++ = PngValue(&alpha);
-            }
-          }
-        }
-      }
-    }
-    // NOTE: reinterpret_cast is needed for uint16_t data.
-    png_write_rows(png_ptr, reinterpret_cast<png_bytepp>(row_data), height);
-
-    // Finalize the png image.
-    png_write_end(png_ptr, info_ptr);
-    for (int j = 0; j < height_; ++j) {
-      png_free(png_ptr, row_data[j]);
-    }
-    png_destroy_write_struct(&png_ptr, &info_ptr);
-    fclose(fp);
-  }
-
-  // Return the `color_type` for `png_set_IHDR`.
-  constexpr int ColorType() const {
-    if constexpr (channels == 1) {
-      return PNG_COLOR_TYPE_GRAY;
-    } else if constexpr (channels == 3) {
-      return PNG_COLOR_TYPE_RGB;
-    } else {  // channels := 4
-      return PNG_COLOR_TYPE_RGB_ALPHA;
-    }
-  }
-
-  const std::string path_;
-  const int width_;
-  const int height_;
-};
-
-// Convenience class definitions for the tests below.
-using PngRgb = Png<3, 8>;
-using PngRgba = Png<4, 8>;
-using PngGray16 = Png<1, 16>;
-/* NOTE: these image types do not generate the same expected patterns that can
- be validated using EvaluateColorPng.  They are used to check that RenderClient
- loading functions reject png images that have the wrong channel width. */
-using PngRgb16 = Png<3, 16>;  // LoadColorImage is 8 bit only.
-using PngGray8 = Png<1, 8>;   // LoadLabelImage is 16 bit only.
-
-/* Used to evaluate color PNG images loaded from a file match the expected
- pattern created in the constructor of the Png class.  The source_had_alpha
- template parameter distinguishes whether the test should be expecting to read
- actual alpha values (test loaded RGBA) or if the source image should have had
- its alpha padded with 255 (RGB). */
-template <bool source_had_alpha>
-struct EvaluateColorPng {
-  // Convenience definitions.
-  using ChannelType = typename ImageRgba8U::T;
-  static constexpr ChannelType kRedStart = PngRgba::kRedStart;
-  static constexpr ChannelType kGreenStart = PngRgba::kGreenStart;
-  static constexpr ChannelType kBlueStart = PngRgba::kBlueStart;
-  static constexpr ChannelType kAlphaStart = PngRgba::kAlphaStart;
-  static constexpr ChannelType kAlphaPad = static_cast<ChannelType>(255);
-
-  /* If the image coordinates are wrong for loading, this test will fail with
-   actual test information being reported in the failure. */
-  static void CornerCheck(const ImageRgba8U& image) {
-    EXPECT_EQ(image.at(0, 0)[0], kRedStart);
-    EXPECT_EQ(image.at(0, 0)[1], kGreenStart);
-    EXPECT_EQ(image.at(0, 0)[2], kBlueStart);
-    // For RGBA, use the expected value.  RGB, alpha is padded with 255.
-    if constexpr (source_had_alpha) {
-      EXPECT_EQ(image.at(0, 0)[3], kAlphaStart);
-    } else {
-      EXPECT_EQ(image.at(0, 0)[3], kAlphaPad);
-    }
-  }
-
-  /* Tests all the pixels in the test image, but error reporting is not helpful
-   in identifying what was wrong where. */
-  static void FullImageCheck(const ImageRgba8U& image) {
-    int n_good{0};
-    const int n_expected = image.width() * image.height() * 4;
-    ChannelType red = PngRgba::kRedStart;
-    ChannelType green = PngRgba::kGreenStart;
-    ChannelType blue = PngRgba::kBlueStart;
-    ChannelType alpha = PngRgba::kAlphaStart;
-    for (int j = 0; j < image.height(); ++j) {
-      for (int i = 0; i < image.width(); ++i) {
-        n_good += static_cast<int>(image.at(i, j)[0] == PngValue(&red));
-        n_good += static_cast<int>(image.at(i, j)[1] == PngValue(&green));
-        n_good += static_cast<int>(image.at(i, j)[2] == PngValue(&blue));
-        // For RGBA, use the expected value.  RGB, alpha is padded with 255.
-        if (source_had_alpha) {
-          n_good += static_cast<int>(image.at(i, j)[3] == PngValue(&alpha));
-        } else {
-          n_good += static_cast<int>(image.at(i, j)[3] == kAlphaPad);
-        }
-      }
-    }
-    EXPECT_EQ(n_good, n_expected);
-  }
-};
-
-// Readability definitions for `source_had_alpha` template parameter.
-constexpr bool SourceRgba = true;
-constexpr bool SourceRgb = false;
-
-/* Used to evaluate gray PNG images loaded from a file match the expected
- pattern created in the constructor of the Png class. */
-template <class PngImage, class DrakeImage>
-struct EvaluateGrayPng {
-  // TODO(svenevs): support for ImageDepth32f can be added.
-  static_assert(std::is_same_v<DrakeImage, ImageLabel16I>,
-                "Unexpected drake image type for EvaluateGrayPng.");
-
-  // Convenience definitions.
-  using SourceType = typename PngImage::ChannelType;
-  static constexpr SourceType kGrayStart = PngImage::kGrayStart;
-  using DestType = typename DrakeImage::T;
-
-  /* If the image coordinates are wrong for loading, this test will fail with
-   actual test information being reported in the failure. */
-  static void CornerCheck(const DrakeImage& image) {
-    EXPECT_EQ(image.at(0, 0)[0], static_cast<DestType>(kGrayStart));
-  }
-
-  /* Tests all the pixels in the test image, but error reporting is not helpful
-   in identifying what was wrong where. */
-  static void FullImageCheck(const DrakeImage& image) {
-    int n_good{0};
-    const int n_expected = image.width() * image.height();
-    SourceType gray = kGrayStart;
-    for (int j = 0; j < image.height(); ++j) {
-      for (int i = 0; i < image.width(); ++i) {
-        n_good += static_cast<int>(image.at(i, j)[0] ==
-                                   static_cast<DestType>(PngValue(&gray)));
-      }
-    }
-    EXPECT_EQ(n_good, n_expected);
-  }
-};
-
-// Type trait for Tiff image data underlying type, similar to ImageTraits.
-template <int bit_depth>
-struct TiffTraits {
-  // Compile error for unspecialized use.
-};
-
-template <>
-struct TiffTraits<8> {
-  using ChannelType = uint8_t;
-};
-
-template <>
-struct TiffTraits<16> {
-  using ChannelType = uint16_t;
-};
-
-template <>
-struct TiffTraits<32> {
-  using ChannelType = float;
-  static_assert(sizeof(ChannelType) == 4, "Expected float to be 4 bytes.");
-};
-
-/* On construction, create a TIFF with some arbitrary but non-zero values.  This
- class is primarily used for generating fake depth images, so a simple scheme
- of increasing each pixel / channel value by one is used.  For example, with
- an RGB image, the pixels start as:
-
- - (0, 0): [0, 1, 2]
- - (0, 1): [3, 4, 5]
-
- For a gray image,
-
- - (0, 0): 0
- - (0, 1): 1
-
- For uint8_t and uint16_t, the value inserted will roll back to 0 via a modulus
- with the maximum value for the ChannelType (e.g., % 255 for uint8_t).  For
- float, no bounds checking is enforced as the size of image being generated
- will not overflow pas the range of float unless unreasonably large images
- are requrested to be generated. */
-template <int channels, int bit_depth>
-class Tiff {
- public:
-  static_assert(channels == 1 || channels == 3,
-                "Tiff <channels> must be 1 (gray) or 3 (RGB).");
-  static_assert(bit_depth == 8 || bit_depth == 16 || bit_depth == 32,
-                "Tiff <bit_depth> must be 8, 16, or 32");
-  static_assert((channels == 1 && bit_depth == 16) ||      // 16 bit gray
-                    (channels == 1 && bit_depth == 32) ||  // 32 bit gray
-                    (channels == 3 && bit_depth == 32) ||  // 32 bit RGB
-                    (channels == 1 && bit_depth == 8),     // 8 bit gray
-                "Tiff: unsupported <channels, bit_depth> combination.");
-
-  // Data type to allocate for memory, either uint8_t or uint16_t.
-  using ChannelType = typename TiffTraits<bit_depth>::ChannelType;
-  static_assert(std::is_same_v<ChannelType, uint8_t> ||
-                    std::is_same_v<ChannelType, uint16_t> ||
-                    std::is_same_v<ChannelType, float>,
-                "Tiff: only uint8_t, uint16_t, and 32 bit float supported.");
-
-  Tiff(const std::string& path, int width, int height)
-      : path_{path}, width_{width}, height_{height} {
-    /* See the docs:
-     http://www.libtiff.org/libtiff.html
-
-     If something goes wrong, throw an exception to fail the test.  Each is
-     marked to exclude coverage as they do not happen in normal tests. */
-    TIFF* tiff = TIFFOpen(path_.c_str(), "w");
-    if (tiff == nullptr) {
-      // LCOV_EXCL_START
-      throw std::runtime_error("Could not create TIFF* for tiff.");
-      // LCOV_EXCL_STOP
-    }
-
-    TIFFSetField(tiff, TIFFTAG_IMAGEWIDTH, width_);
-    TIFFSetField(tiff, TIFFTAG_IMAGELENGTH, height_);
-    TIFFSetField(tiff, TIFFTAG_SAMPLESPERPIXEL, channels);
-    TIFFSetField(tiff, TIFFTAG_BITSPERSAMPLE, sizeof(ChannelType) * 8);
-    TIFFSetField(tiff, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
-    /* Extra fields by trial and error using `tiffinfo` and `gimp` to read the
-     file after writing.  Useful table with links to the field meanings:
-     https://www.loc.gov/preservation/digital/formats/content/tiff_tags.shtml */
-    if constexpr (channels == 1) {
-      TIFFSetField(tiff, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
-    } else if constexpr (channels == 3) {
-      TIFFSetField(tiff, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-      TIFFSetField(tiff, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
-    }
-    if constexpr (std::is_same_v<ChannelType, uint8_t> ||
-                  std::is_same_v<ChannelType, uint16_t>) {
-      TIFFSetField(tiff, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT);
-    } else if constexpr (std::is_same_v<ChannelType, float>) {
-      TIFFSetField(tiff, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
-    }
-
-    // First, populate an image buffer.  Then use libtiff to write to disk.
-    std::vector<ChannelType> image;
-    for (int idx = 0; idx < width_ * height_ * channels; ++idx) {
-      if constexpr (std::is_same_v<ChannelType, uint8_t> ||
-                    std::is_same_v<ChannelType, uint16_t>) {
-        image.emplace_back(static_cast<ChannelType>(
-            idx % std::numeric_limits<ChannelType>::max()));
-      } else {
-        image.emplace_back(static_cast<float>(idx));
-      }
-    }
-    for (int j = 0; j < height_; ++j) {
-      const int scan_id = j * width_ * channels;
-      TIFFWriteScanline(tiff, static_cast<void*>(&image[scan_id]), j, 0);
-    }
-    TIFFClose(tiff);
-  }
-
-  const std::string path_;
-  const int width_;
-  const int height_;
-};
-
-// Convenience class definitions for the tests below.
-using TiffGray8 = Tiff<1, 8>;
-using TiffGray16 = Tiff<1, 16>;
-using TiffGray32 = Tiff<1, 32>;
-using TiffRgb32 = Tiff<3, 32>;
-
-/* Used to evaluate gray TIFF images loaded from a file match the expected
- pattern created in the constructor of the Tiff class.  Only the 32 bit version
- is enabled here since that is the one we care about, the other Tiff image
- classes only exist for stress testing LoadDepthImage with a valid TIFF, but the
- wrong number of channels or underlying data type. */
-struct EvaluateGrayTiff {
-  /* If the image coordinates are wrong for loading, this test will fail with
-   actual test information being reported in the failure. */
-  static void CornerCheck(const ImageDepth32F& image) {
-    EXPECT_EQ(image.at(0, 0)[0], 0.0f);
-  }
-
-  /* Tests all the pixels in the test image, but error reporting is not helpful
-   in identifying what was wrong where. */
-  static void FullImageCheck(const ImageDepth32F& image) {
-    int n_good{0};
-    const int n_expected = image.width() * image.height();
-    float idx = 0.0f;
-    for (int j = 0; j < image.height(); ++j) {
-      for (int i = 0; i < image.width(); ++i) {
-        n_good += static_cast<int>(image.at(i, j)[0] == idx++);
-      }
-    }
-    EXPECT_EQ(n_good, n_expected);
-  }
-};
-
 GTEST_TEST(RenderClient, LoadColorImage) {
   const std::string url{"127.0.0.1"};
   const int32_t port{8000};
@@ -1507,7 +1032,7 @@ GTEST_TEST(RenderClient, LoadColorImage) {
         {width, height / 2}, {width + 12, height}, {width * 2, height * 2}};
     for (const auto& [w, h] : width_height) {
       const std::string path = temp_dir / fmt::format("rgb_{}_{}.png", w, h);
-      PngRgb rgb{path, w, h};
+      TestPngRgb8 rgb{path, w, h};
       DRAKE_EXPECT_THROWS_MESSAGE(
           client.LoadColorImage(path, &drake_image),
           fmt::format("RenderClient: expected to import "
@@ -1521,7 +1046,7 @@ GTEST_TEST(RenderClient, LoadColorImage) {
   {
     // Failure case 3: number of channels not equal to 3 or 4.
     const std::string path = temp_dir / "gray.png";
-    PngGray16 gray{path, width, height};
+    TestPngGray16 gray{path, width, height};
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.LoadColorImage(path, &drake_image),
         fmt::format(
@@ -1535,7 +1060,7 @@ GTEST_TEST(RenderClient, LoadColorImage) {
   {
     // Failure case 4: right number of channels, but 16 bit color.
     const std::string path = temp_dir / "rgb_16_bit.png";
-    PngRgb16 rgb_16{path, width, height};
+    TestPngRgb16 rgb_16{path, width, height};
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.LoadColorImage(path, &drake_image),
         fmt::format(
@@ -1550,10 +1075,10 @@ GTEST_TEST(RenderClient, LoadColorImage) {
     // Loading a three channel (RGB) png file should work as expected.
     zero_drake_image();
     const auto rgb_png_path = temp_dir / "rgb.png";
-    PngRgb rgb{rgb_png_path, width, height};
+    TestPngRgb8 rgb{rgb_png_path, width, height};
     DRAKE_EXPECT_NO_THROW(client.LoadColorImage(rgb_png_path, &drake_image));
-    EvaluateColorPng<SourceRgb>::CornerCheck(drake_image);
-    EvaluateColorPng<SourceRgb>::FullImageCheck(drake_image);
+    TestPngRgb8::CornerCheckColor(drake_image);
+    TestPngRgb8::FullImageCheckColor(drake_image);
     fs::remove(rgb_png_path);
   }
 
@@ -1561,10 +1086,10 @@ GTEST_TEST(RenderClient, LoadColorImage) {
     // Loading a four channel (RGBA) png file should work as expected.
     zero_drake_image();
     const auto rgba_png_path = temp_dir / "rgba.png";
-    PngRgba rgba{rgba_png_path, width, height};
+    TestPngRgba8 rgba{rgba_png_path, width, height};
     DRAKE_EXPECT_NO_THROW(client.LoadColorImage(rgba_png_path, &drake_image));
-    EvaluateColorPng<SourceRgba>::CornerCheck(drake_image);
-    EvaluateColorPng<SourceRgba>::FullImageCheck(drake_image);
+    TestPngRgba8::CornerCheckColor(drake_image);
+    TestPngRgba8::FullImageCheckColor(drake_image);
     fs::remove(rgba_png_path);
   }
 }
@@ -1615,7 +1140,7 @@ GTEST_TEST(RenderClient, LoadDepthImage) {
     for (const auto& [w, h] : width_height) {
       const std::string path =
           temp_dir / fmt::format("gray_16_{}_{}.tiff", w, h);
-      TiffGray16 gray{path, w, h};
+      TestTiffGray16 gray{path, w, h};
       DRAKE_EXPECT_THROWS_MESSAGE(
           client.LoadDepthImage(path, &drake_image),
           fmt::format("RenderClient: expected to import "
@@ -1629,7 +1154,7 @@ GTEST_TEST(RenderClient, LoadDepthImage) {
   {
     // Failure case 3: number of channels not equal to 1.
     const std::string path = temp_dir / "rgb.tiff";
-    TiffRgb32 rgb{path, width, height};
+    TestTiffRgb32 rgb{path, width, height};
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.LoadDepthImage(path, &drake_image),
         fmt::format(
@@ -1642,7 +1167,7 @@ GTEST_TEST(RenderClient, LoadDepthImage) {
   {
     // Failure case 4: right number of channels, but wrong bit depth.
     const std::string path = temp_dir / "gray_8.tiff";
-    TiffGray8 gray_8{path, width, height};
+    TestTiffGray8 gray_8{path, width, height};
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.LoadDepthImage(path, &drake_image),
         fmt::format(
@@ -1656,11 +1181,11 @@ GTEST_TEST(RenderClient, LoadDepthImage) {
     // Loading a single channel 32 bit tiff file should work as expected.
     zero_drake_image();
     const auto gray_32_tiff_path = temp_dir / "gray_32.tiff";
-    TiffGray32 gray_32{gray_32_tiff_path, width, height};
+    TestTiffGray32 gray_32{gray_32_tiff_path, width, height};
     DRAKE_EXPECT_NO_THROW(
         client.LoadDepthImage(gray_32_tiff_path, &drake_image));
-    EvaluateGrayTiff::CornerCheck(drake_image);
-    EvaluateGrayTiff::FullImageCheck(drake_image);
+    TestTiffGray32::CornerCheck(drake_image);
+    TestTiffGray32::FullImageCheck(drake_image);
     fs::remove(gray_32_tiff_path);
   }
 }
@@ -1710,7 +1235,7 @@ GTEST_TEST(RenderClient, LoadLabelImage) {
         {width, height / 2}, {width + 12, height}, {width * 2, height * 2}};
     for (const auto& [w, h] : width_height) {
       const std::string path = temp_dir / fmt::format("label_{}_{}.png", w, h);
-      PngGray16 rgb{path, w, h};
+      TestPngGray16 rgb{path, w, h};
       DRAKE_EXPECT_THROWS_MESSAGE(
           client.LoadLabelImage(path, &drake_image),
           fmt::format("RenderClient: expected to import "
@@ -1724,7 +1249,7 @@ GTEST_TEST(RenderClient, LoadLabelImage) {
   {
     // Failure case 3: number of channels not equal to 1.
     const std::string path = temp_dir / "rgb.png";
-    PngRgb rgb{path, width, height};
+    TestPngRgb8 rgb{path, width, height};
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.LoadLabelImage(path, &drake_image),
         fmt::format(
@@ -1737,7 +1262,7 @@ GTEST_TEST(RenderClient, LoadLabelImage) {
   {
     // Failure case 4: right number of channels, but 16 bit color.
     const std::string path = temp_dir / "gray_8_bit.png";
-    PngGray8 gray_8{path, width, height};
+    TestPngGray8 gray_8{path, width, height};
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.LoadLabelImage(path, &drake_image),
         fmt::format(
@@ -1751,10 +1276,10 @@ GTEST_TEST(RenderClient, LoadLabelImage) {
     // Loading a 16 bit label image file should work as expected.
     zero_drake_image();
     const auto label_path = temp_dir / "label.png";
-    PngGray16 label_image{label_path, width, height};
+    TestPngGray16 label_image{label_path, width, height};
     DRAKE_EXPECT_NO_THROW(client.LoadLabelImage(label_path, &drake_image));
-    EvaluateGrayPng<PngGray16, ImageLabel16I>::CornerCheck(drake_image);
-    EvaluateGrayPng<PngGray16, ImageLabel16I>::FullImageCheck(drake_image);
+    TestPngGray16::CornerCheckGray(drake_image);
+    TestPngGray16::FullImageCheckGray(drake_image);
   }
 }
 
