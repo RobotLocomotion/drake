@@ -19,6 +19,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
+#include "drake/multibody/parsing/detail_tinyxml2_diagnostic.h"
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/parsing/scoped_names.h"
@@ -35,8 +36,6 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-using drake::internal::DiagnosticDetail;
-using drake::internal::DiagnosticPolicy;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -46,51 +45,6 @@ using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 namespace {
-
-// Helper class to format diagnostic messages for a TinyXML2 data source.
-class TinyXml2Diagnostic {
- public:
-  // Both @p diagnostic and @p data_source are aliased; their lifetime must
-  // exceed that of this object.
-  // @pre diagnostic cannot be nullptr.
-  // @pre data_source cannot be nullptr.
-  TinyXml2Diagnostic(
-      const drake::internal::DiagnosticPolicy* diagnostic,
-      const DataSource* data_source)
-      : diagnostic_(diagnostic), data_source_(data_source) {
-    DRAKE_DEMAND(diagnostic != nullptr);
-    DRAKE_DEMAND(data_source != nullptr);
-  }
-
-  // Makes a diagnostic detail record based on an XMLNode.
-  // @pre location cannot be nullptr.
-  DiagnosticDetail MakeDetail(const XMLNode& location,
-                              const std::string& message) const {
-    DiagnosticDetail detail;
-    if (data_source_->IsFilename()) {
-      detail.filename = data_source_->GetAbsolutePath();
-    } else {
-      detail.filename = data_source_->GetStem() + ".urdf";
-    }
-    detail.line = location.GetLineNum();
-    detail.message = message;
-    return detail;
-  }
-
-  // Issues a warning for an XMLNode.
-  void Warning(const XMLNode& location, const std::string& message) const {
-    diagnostic_->Warning(MakeDetail(location, message));
-  }
-
-  // Issues an error for an XMLNode.
-  void Error(const XMLNode& location, const std::string& message) const {
-    diagnostic_->Error(MakeDetail(location, message));
-  }
-
- private:
-  const drake::internal::DiagnosticPolicy* diagnostic_{};
-  const DataSource* data_source_{};
-};
 
 const char* kWorldName = "world";
 
