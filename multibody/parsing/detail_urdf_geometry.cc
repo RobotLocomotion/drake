@@ -27,157 +27,6 @@ using Eigen::Vector4d;
 using math::RigidTransformd;
 using tinyxml2::XMLElement;
 
-UrdfMaterial AddMaterialToMaterialMap(const std::string& material_name,
-                                      UrdfMaterial material,
-                                      bool abort_if_name_clash,
-                                      MaterialMap* materials) {
-  DRAKE_DEMAND(materials != nullptr);
-  // Determines if the material is already in the map.
-  auto material_iter = materials->find(material_name);
-  if (material_iter != materials->end()) {
-    const UrdfMaterial& cached_material = material_iter->second;
-
-    // Given a value (either rgba or diffuse_map) the following table indicates
-    // the possible configurations and results:
-    //
-    //   Cached  |  Input  | Cached != Input |Desired Result
-    //  ---------|---------|-----------------|----------------
-    //   nullopt | nullopt |     false       | No error, They match
-    //   nullopt |  val1   |      true       | ERROR
-    //    val1   | nullopt |      true       | No error, not defining a value is
-    //           |         |                 | compatible with a previous value.
-    //    val1   |  val1   |     false       | No error, they match
-    //    val1   |  val2   |      true       | ERROR, they don't match
-
-    bool error = abort_if_name_clash;
-    if (!error) {
-      // Evaluate for diffuse map.
-
-      // Note: Comparing two optional objects is convenient because it will
-      // handle the case of one or the other being nullopt, both being nullopt,
-      // and both being defined (using default operator== on the contained
-      // type -- which we can use for diffuse map). However, the logic doesn't
-      // exactly align with error modes. So, we use the optional comparison test
-      // as the initial classification but "subtract" the one case that isn't
-      // really an error (cached.has_value() and !input.has_value()).
-      const std::optional<std::string> cached = cached_material.diffuse_map;
-      const std::optional<std::string> input = material.diffuse_map;
-      error = cached != input && !(cached.has_value() && !input.has_value());
-    }
-    if (!error) {
-      // Evaluate for rgba. However, colors are equal to within a tolerance.
-      const std::optional<Vector4d> cached = cached_material.rgba;
-      const std::optional<Vector4d> input = material.rgba;
-      if (cached.has_value() && input.has_value()) {
-        if (cached.has_value()) {
-          DRAKE_DEMAND(material.rgba.has_value());
-          const Vector4d delta = *(cached_material.rgba) - *(material.rgba);
-          error = delta.norm() > 1e-10;
-        }
-      } else {
-        error = !cached.has_value() && input.has_value();
-      }
-    }
-
-    if (error) {
-      auto mat_descrip = [](const UrdfMaterial& mat) {
-        std::string rgb_string =
-            mat.rgba.has_value()
-                ? fmt::format("RGBA: {}", mat.rgba->transpose())
-                : "RGBA: None";
-        std::string map_string =
-            mat.diffuse_map.has_value()
-                ? fmt::format("Diffuse map: {}", *(mat.diffuse_map))
-                : "Diffuse map: None";
-        return fmt::format("{}, {}", rgb_string, map_string);
-      };
-      throw std::runtime_error(fmt::format(
-          "Material '{}' was previously defined.\n  - existing definition: "
-          "{}\n  - new definition:      {}",
-          material_name, mat_descrip(cached_material), mat_descrip(material)));
-    }
-  } else {
-    // If no rgba color was defined, it defaults to *transparent* black.
-    if (!material.rgba.has_value()) material.rgba = Vector4d(Vector4d::Zero());
-    (*materials)[material_name] = std::move(material);
-  }
-  return (*materials)[material_name];
-}
-
-UrdfMaterial ParseMaterial(const XMLElement* node, bool name_required,
-                           const PackageMap& package_map,
-                           const std::string& root_dir,
-                           MaterialMap* materials) {
-  DRAKE_DEMAND(materials != nullptr);
-
-  if (std::string(node->Name()) != "material") {
-    throw std::runtime_error(std::string(
-        fmt::format("Expected material element, got <{}>", node->Name())));
-  }
-
-  std::string name;
-  ParseStringAttribute(node, "name", &name);
-  if (name.empty() && name_required) {
-    // Error condition: #1: name is required.
-    throw std::runtime_error(
-        fmt::format("Material tag on line {} is missing a required name",
-                    node->GetLineNum()));
-  }
-
-  // Test for texture information.
-  std::optional<std::string> texture_path;
-  const XMLElement* texture_node = node->FirstChildElement("texture");
-  if (texture_node) {
-    std::string texture_name;
-    if (ParseStringAttribute(texture_node, "filename", &texture_name) &&
-        !texture_name.empty()) {
-      texture_path = ResolveUri(texture_name, package_map, root_dir);
-      if (texture_path->empty()) {
-        // Error condition: #4. File specified, but the resource is not
-        // available.
-        throw std::runtime_error(fmt::format(
-            "Unable to locate the texture file defined on line {}: {}",
-            texture_node->GetLineNum(), texture_name));
-      }
-    }
-  }
-
-  // Now test for color information.
-  std::optional<Vector4d> rgba = std::nullopt;
-  const XMLElement* color_node = node->FirstChildElement("color");
-  if (color_node) {
-    Vector4d rgba_value;
-    if (!ParseVectorAttribute(color_node, "rgba", &rgba_value)) {
-      throw std::runtime_error(
-          fmt::format("Failed to parse 'rgba' attribute of <color> on line {}",
-                      color_node->GetLineNum()));
-    }
-    rgba = rgba_value;
-  }
-
-  if (!rgba && !texture_path) {
-    if (!name.empty() && materials->find(name) == materials->end()) {
-      // Error condition: #2: name with no properties has not been previously
-      // defined.
-      throw std::runtime_error(
-          fmt::format("Material '{}' defined on line {} not previously "
-                      "defined, but has no color or texture information.",
-                      name, node->GetLineNum()));
-    }
-  }
-
-  UrdfMaterial material{rgba, texture_path};
-
-  if (!name.empty()) {
-    // Error condition: #3.
-    // If a name is *required*, then simply matching names should lead to an
-    // error.
-    material = AddMaterialToMaterialMap(name, material,
-        name_required /* abort_if_name_clash */, materials);
-  }
-  return material;
-}
-
 namespace {
 
 std::unique_ptr<geometry::Shape> ParseBox(const XMLElement* shape_node) {
@@ -343,7 +192,228 @@ std::string MakeDefaultGeometryName(
   throw std::runtime_error("Too may identical geometries with default names.");
 }
 
+// TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on
+//  issue #12598.
+
+// This is the backwards-compatible fallback for defining friction; it reads
+// the soon-to-be-deprecated <drake_compliance> tag for data. It throws errors
+// for malformed values or returns a friction (either the valid friction
+// defined in the tag or the default).
+//
+// It incidentally propagates some warnings about unused tags from the rigid
+// body tree days.
+CoulombFriction<double> ParseCoulombFrictionFromDrakeCompliance(
+    const std::string& parent_element_name, const XMLElement* node) {
+  const XMLElement* compliant_node =
+      node->FirstChildElement("drake_compliance");
+  if (compliant_node) {
+    // TODO(SeanCurtis-TRI): Ultimately, we want to kill <drake_compliance>
+    //  and these will go along with it. These values are only used in rigid
+    //  body tree; with no real expectation we'll re-use them in MBP.
+    if (compliant_node->FirstChildElement("youngs_modulus")) {
+      static const logging::Warn log_once(
+          "At least one of your URDF files has specified the <youngs_modulus> "
+          "tag under the <drake_compliance> tag. Drake no longer makes use of "
+          "that tag and all instances will be ignored.");
+    }
+
+    if (compliant_node->FirstChildElement("dissipation")) {
+      static const logging::Warn log_once(
+          "At least one of your URDF files has specified the <dissipation> "
+          "tag under the <drake_compliance> tag. Drake no longer makes use of "
+          "that tag and all instances will be ignored.");
+    }
+
+    double static_friction{-1};
+    double dynamic_friction{-1};
+    bool static_friction_present{false};
+    bool dynamic_friction_present{false};
+
+    const XMLElement* friction_node =
+        compliant_node->FirstChildElement("static_friction");
+    if (friction_node) {
+      static_friction_present = true;
+      if (friction_node->QueryDoubleText(&static_friction)) {
+        throw std::runtime_error("Unable to parse static_friction for link " +
+                                 parent_element_name);
+      }
+    }
+
+    friction_node = compliant_node->FirstChildElement("dynamic_friction");
+    if (friction_node) {
+      dynamic_friction_present = true;
+      if (friction_node->QueryDoubleText(&dynamic_friction)) {
+        throw std::runtime_error("Unable to parse dynamic_friction for link " +
+                                 parent_element_name);
+      }
+    }
+
+    if (static_friction_present != dynamic_friction_present) {
+      throw std::runtime_error(
+          fmt::format("Link '{}': When specifying coefficient of friction, "
+                      "both static and dynamic coefficients must be defined",
+                      parent_element_name));
+    }
+
+    if (static_friction_present) {
+      return CoulombFriction<double>(static_friction, dynamic_friction);
+    }
+  }
+  return default_friction();
+}
+
 }  // namespace
+
+UrdfMaterial AddMaterialToMaterialMap(const std::string& material_name,
+                                      UrdfMaterial material,
+                                      bool abort_if_name_clash,
+                                      MaterialMap* materials) {
+  DRAKE_DEMAND(materials != nullptr);
+  // Determines if the material is already in the map.
+  auto material_iter = materials->find(material_name);
+  if (material_iter != materials->end()) {
+    const UrdfMaterial& cached_material = material_iter->second;
+
+    // Given a value (either rgba or diffuse_map) the following table indicates
+    // the possible configurations and results:
+    //
+    //   Cached  |  Input  | Cached != Input |Desired Result
+    //  ---------|---------|-----------------|----------------
+    //   nullopt | nullopt |     false       | No error, They match
+    //   nullopt |  val1   |      true       | ERROR
+    //    val1   | nullopt |      true       | No error, not defining a value is
+    //           |         |                 | compatible with a previous value.
+    //    val1   |  val1   |     false       | No error, they match
+    //    val1   |  val2   |      true       | ERROR, they don't match
+
+    bool error = abort_if_name_clash;
+    if (!error) {
+      // Evaluate for diffuse map.
+
+      // Note: Comparing two optional objects is convenient because it will
+      // handle the case of one or the other being nullopt, both being nullopt,
+      // and both being defined (using default operator== on the contained
+      // type -- which we can use for diffuse map). However, the logic doesn't
+      // exactly align with error modes. So, we use the optional comparison test
+      // as the initial classification but "subtract" the one case that isn't
+      // really an error (cached.has_value() and !input.has_value()).
+      const std::optional<std::string> cached = cached_material.diffuse_map;
+      const std::optional<std::string> input = material.diffuse_map;
+      error = cached != input && !(cached.has_value() && !input.has_value());
+    }
+    if (!error) {
+      // Evaluate for rgba. However, colors are equal to within a tolerance.
+      const std::optional<Vector4d> cached = cached_material.rgba;
+      const std::optional<Vector4d> input = material.rgba;
+      if (cached.has_value() && input.has_value()) {
+        if (cached.has_value()) {
+          DRAKE_DEMAND(material.rgba.has_value());
+          const Vector4d delta = *(cached_material.rgba) - *(material.rgba);
+          error = delta.norm() > 1e-10;
+        }
+      } else {
+        error = !cached.has_value() && input.has_value();
+      }
+    }
+
+    if (error) {
+      auto mat_descrip = [](const UrdfMaterial& mat) {
+        std::string rgb_string =
+            mat.rgba.has_value()
+                ? fmt::format("RGBA: {}", mat.rgba->transpose())
+                : "RGBA: None";
+        std::string map_string =
+            mat.diffuse_map.has_value()
+                ? fmt::format("Diffuse map: {}", *(mat.diffuse_map))
+                : "Diffuse map: None";
+        return fmt::format("{}, {}", rgb_string, map_string);
+      };
+      throw std::runtime_error(fmt::format(
+          "Material '{}' was previously defined.\n  - existing definition: "
+          "{}\n  - new definition:      {}",
+          material_name, mat_descrip(cached_material), mat_descrip(material)));
+    }
+  } else {
+    // If no rgba color was defined, it defaults to *transparent* black.
+    if (!material.rgba.has_value()) material.rgba = Vector4d(Vector4d::Zero());
+    (*materials)[material_name] = std::move(material);
+  }
+  return (*materials)[material_name];
+}
+
+UrdfMaterial ParseMaterial(const XMLElement* node, bool name_required,
+                           const PackageMap& package_map,
+                           const std::string& root_dir,
+                           MaterialMap* materials) {
+  DRAKE_DEMAND(materials != nullptr);
+
+  if (std::string(node->Name()) != "material") {
+    throw std::runtime_error(std::string(
+        fmt::format("Expected material element, got <{}>", node->Name())));
+  }
+
+  std::string name;
+  ParseStringAttribute(node, "name", &name);
+  if (name.empty() && name_required) {
+    // Error condition: #1: name is required.
+    throw std::runtime_error(
+        fmt::format("Material tag on line {} is missing a required name",
+                    node->GetLineNum()));
+  }
+
+  // Test for texture information.
+  std::optional<std::string> texture_path;
+  const XMLElement* texture_node = node->FirstChildElement("texture");
+  if (texture_node) {
+    std::string texture_name;
+    if (ParseStringAttribute(texture_node, "filename", &texture_name) &&
+        !texture_name.empty()) {
+      texture_path = ResolveUri(texture_name, package_map, root_dir);
+      if (texture_path->empty()) {
+        // Error condition: #4. File specified, but the resource is not
+        // available.
+        throw std::runtime_error(fmt::format(
+            "Unable to locate the texture file defined on line {}: {}",
+            texture_node->GetLineNum(), texture_name));
+      }
+    }
+  }
+
+  // Now test for color information.
+  std::optional<Vector4d> rgba = std::nullopt;
+  const XMLElement* color_node = node->FirstChildElement("color");
+  if (color_node) {
+    Vector4d rgba_value;
+    if (!ParseVectorAttribute(color_node, "rgba", &rgba_value)) {
+      throw std::runtime_error(
+          fmt::format("Failed to parse 'rgba' attribute of <color> on line {}",
+                      color_node->GetLineNum()));
+    }
+    rgba = rgba_value;
+  }
+
+  if (!rgba && !texture_path) {
+    if (!name.empty() && materials->find(name) == materials->end()) {
+      // Error condition: #2: name with no properties has not been previously
+      // defined.
+      throw std::runtime_error(
+          fmt::format("Material '{}' defined on line {} not previously "
+                      "defined, but has no color or texture information.",
+                      name, node->GetLineNum()));
+    }
+  }
+
+  UrdfMaterial material{rgba, texture_path};
+
+  if (!name.empty()) {
+    // Error condition: #3.
+    // If a name is *required*, then simply matching names should lead to an
+    // error.
+    material = AddMaterialToMaterialMap(name, material,
+        name_required /* abort_if_name_clash */, materials);
+  }
+  return material;
+}
 
 // Parses a "visual" element in @p node.
 geometry::GeometryInstance ParseVisual(
@@ -425,76 +495,6 @@ geometry::GeometryInstance ParseVisual(
                                              std::move(shape), geometry_name);
   instance.set_illustration_properties(properties);
   return instance;
-}
-
-// TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on
-//  issue #12598.
-
-// This is the backwards-compatible fallback for defining friction; it reads
-// the soon-to-be-deprecated <drake_compliance> tag for data. It throws errors
-// for malformed values or returns a friction (either the valid friction
-// defined in the tag or the default).
-//
-// It incidentally propagates some warnings about unused tags from the rigid
-// body tree days.
-CoulombFriction<double> ParseCoulombFrictionFromDrakeCompliance(
-    const std::string& parent_element_name, const XMLElement* node) {
-  const XMLElement* compliant_node =
-      node->FirstChildElement("drake_compliance");
-  if (compliant_node) {
-    // TODO(SeanCurtis-TRI): Ultimately, we want to kill <drake_compliance>
-    //  and these will go along with it. These values are only used in rigid
-    //  body tree; with no real expectation we'll re-use them in MBP.
-    if (compliant_node->FirstChildElement("youngs_modulus")) {
-      static const logging::Warn log_once(
-          "At least one of your URDF files has specified the <youngs_modulus> "
-          "tag under the <drake_compliance> tag. Drake no longer makes use of "
-          "that tag and all instances will be ignored.");
-    }
-
-    if (compliant_node->FirstChildElement("dissipation")) {
-      static const logging::Warn log_once(
-          "At least one of your URDF files has specified the <dissipation> "
-          "tag under the <drake_compliance> tag. Drake no longer makes use of "
-          "that tag and all instances will be ignored.");
-    }
-
-    double static_friction{-1};
-    double dynamic_friction{-1};
-    bool static_friction_present{false};
-    bool dynamic_friction_present{false};
-
-    const XMLElement* friction_node =
-        compliant_node->FirstChildElement("static_friction");
-    if (friction_node) {
-      static_friction_present = true;
-      if (friction_node->QueryDoubleText(&static_friction)) {
-        throw std::runtime_error("Unable to parse static_friction for link " +
-                                 parent_element_name);
-      }
-    }
-
-    friction_node = compliant_node->FirstChildElement("dynamic_friction");
-    if (friction_node) {
-      dynamic_friction_present = true;
-      if (friction_node->QueryDoubleText(&dynamic_friction)) {
-        throw std::runtime_error("Unable to parse dynamic_friction for link " +
-                                 parent_element_name);
-      }
-    }
-
-    if (static_friction_present != dynamic_friction_present) {
-      throw std::runtime_error(
-          fmt::format("Link '{}': When specifying coefficient of friction, "
-                      "both static and dynamic coefficients must be defined",
-                      parent_element_name));
-    }
-
-    if (static_friction_present) {
-      return CoulombFriction<double>(static_friction, dynamic_friction);
-    }
-  }
-  return default_friction();
 }
 
 // Parses a "collision" element in @p node.
