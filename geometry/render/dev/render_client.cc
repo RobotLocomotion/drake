@@ -211,13 +211,19 @@ std::unique_ptr<RenderClient> RenderClient::DoClone() const {
 std::string RenderClient::RenderOnServer(
     const RenderCameraCore& camera_core, RenderImageType image_type,
     const std::string& scene_path, const std::optional<std::string>& mime_type,
-    double min_depth, double max_depth) const {
-  if (image_type == RenderImageType::kDepthDepth32F) {
-    ValidDepthRangeOrThrow(min_depth, max_depth);
-  } else if (min_depth != -1.0 || max_depth != -1.0) {
+    const std::optional<DepthRange>& depth_range) const {
+  // Make sure depth_range is only provided for depth images.
+  if (image_type == RenderImageType::kDepthDepth32F &&
+      !depth_range.has_value()) {
     throw std::logic_error(
-        "min_depth and max_depth are only allowed with a depth "
-        "RenderImageType.");
+        "RenderOnServer: depth image render requested, but no depth_range was "
+        "provided.");
+  } else if (depth_range.has_value() &&
+             (image_type == RenderImageType::kColorRgba8U ||
+              image_type == RenderImageType::kLabel16I)) {
+    throw std::logic_error(
+        "RenderOnServer: the depth_range parameter may only be provided when "
+        "the image_type is a depth image.");
   }
 
   // Add the fields to the form.
@@ -241,8 +247,9 @@ std::string RenderClient::RenderOnServer(
   // depth range of the sensor (the range sensor's clipping range for valid
   // measuremeants, not the perspective clipping of the sensor's curvature).
   if (image_type == RenderImageType::kDepthDepth32F) {
-    AddField(&field_map, "min_depth", min_depth);
-    AddField(&field_map, "max_depth", max_depth);
+    const auto& range = depth_range.value();  // has_value checked above.
+    AddField(&field_map, "min_depth", range.min_depth());
+    AddField(&field_map, "max_depth", range.max_depth());
   }
   AddField(&field_map, "submit", "Render");
 
@@ -362,18 +369,6 @@ std::string RenderClient::ComputeSha256(const std::string& path) const {
     throw std::runtime_error("ComputeSha256: unable to compute hash: " +
                              std::string(e.what()));
   }
-}
-
-void RenderClient::ValidDepthRangeOrThrow(double min_depth,
-                                          double max_depth) const {
-  // Make sure min_depth/max_depth are provided and make sense for depth images.
-  if (min_depth < 0.0 || max_depth < 0.0)
-    throw std::logic_error(
-        "min_depth and max_depth must be provided for "
-        "depth images, and be positive.");
-  if (max_depth <= min_depth)
-    throw std::logic_error(
-        "max_depth cannot be less than or equal to min_depth.");
 }
 
 std::string RenderClient::RenameToSceneWithExtension(

@@ -284,15 +284,14 @@ class FieldCheckService : public HttpService {
                     RenderImageType image_type, const std::string& scene_path,
                     const std::string& scene_sha256,
                     const std::optional<std::string>& mime_type,
-                    double min_depth = -1.0, double max_depth = -1.0)
+                    const std::optional<DepthRange>& depth_range)
       : HttpService(temp_directory, url, port, verbose),
         camera_core_{camera_core},
         image_type_{image_type},
         scene_path_{scene_path},
         scene_sha256_{scene_sha256},
         mime_type_{mime_type},
-        min_depth_{min_depth},
-        max_depth_{max_depth} {}
+        depth_range_{depth_range} {}
 
   // no cover: the service should implement cloning, but it is not used.
   // LCOV_EXCL_START
@@ -303,8 +302,7 @@ class FieldCheckService : public HttpService {
         scene_path_{other.scene_path_},
         scene_sha256_{other.scene_sha256_},
         mime_type_{other.mime_type_},
-        min_depth_{other.min_depth_},
-        max_depth_{other.max_depth_} {}
+        depth_range_{other.depth_range_} {}
 
   std::unique_ptr<HttpService> DoClone() const override {
     return std::unique_ptr<FieldCheckService>(new FieldCheckService(*this));
@@ -345,8 +343,9 @@ class FieldCheckService : public HttpService {
               std::to_string(intrinsics.center_y()));
     // min_depth and max_depth should only be provided for depth renders.
     if (image_type_ == RenderImageType::kDepthDepth32F) {
-      EXPECT_EQ(data_fields.at("min_depth"), std::to_string(min_depth_));
-      EXPECT_EQ(data_fields.at("max_depth"), std::to_string(max_depth_));
+      const auto& range = depth_range_.value();
+      EXPECT_EQ(data_fields.at("min_depth"), std::to_string(range.min_depth()));
+      EXPECT_EQ(data_fields.at("max_depth"), std::to_string(range.max_depth()));
     } else {
       EXPECT_EQ(data_fields.find("min_depth"), data_fields.end());
       EXPECT_EQ(data_fields.find("max_depth"), data_fields.end());
@@ -399,8 +398,7 @@ class FieldCheckService : public HttpService {
   const std::string scene_path_;
   const std::string scene_sha256_;
   const std::optional<std::string> mime_type_;
-  const double min_depth_;
-  const double max_depth_;
+  const std::optional<DepthRange> depth_range_;
 };
 
 using PostFormCallback_t = typename std::function<HttpResponse(
@@ -476,35 +474,30 @@ GTEST_TEST(RenderClient, RenderOnServer) {
   const DepthRenderCamera depth_camera{color_camera.core(), {0.12, 21.12}};
 
   {
-    /* Invalid depth range should raise an exception.  Exhaustive testing of
-     ValidDepthRangeOrThrow happens elsewhere. */
+    // Forgetting to include the depth_range for a depth render should raise.
     client.SetHttpService(
         std::make_unique<FailService>(temp_dir_path, url, port, verbose));
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(depth_camera.core(),
                               RenderImageType::kDepthDepth32F, fake_scene_path,
-                              std::nullopt, /* min_depth */ 10.0,
-                              /* max_depth */ 1.0),
-        "max_depth cannot be less than or equal to min_depth\\.");
+                              std::nullopt),
+        "RenderOnServer: depth image render requested, but no depth_range was "
+        "provided.");
 
-    // Providing min_depth / max_depth for non-depth should raise.
+    // Providing depth_range for non-depth should raise.
     const auto expected_message =
-        "min_depth and max_depth are only allowed with a depth "
-        "RenderImageType.";
-    const std::vector<std::pair<double, double>> min_max{
-        {1.0, -1.0}, {1.0, 10.0}, {-1.0, 10.0}};
-    for (const auto& [min_depth, max_depth] : min_max) {
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          client.RenderOnServer(color_camera.core(),
-                                RenderImageType::kColorRgba8U, fake_scene_path,
-                                std::nullopt, min_depth, max_depth),
-          expected_message);
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          client.RenderOnServer(color_camera.core(), RenderImageType::kLabel16I,
-                                fake_scene_path, std::nullopt, min_depth,
-                                max_depth),
-          expected_message);
-    }
+        "RenderOnServer: the depth_range parameter may only be provided when "
+        "the image_type is a depth image.";
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        client.RenderOnServer(color_camera.core(),
+                              RenderImageType::kColorRgba8U, fake_scene_path,
+                              std::nullopt, depth_camera.depth_range()),
+        expected_message);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        client.RenderOnServer(color_camera.core(), RenderImageType::kLabel16I,
+                              fake_scene_path, std::nullopt,
+                              depth_camera.depth_range()),
+        expected_message);
   }
 
   {
@@ -525,7 +518,7 @@ GTEST_TEST(RenderClient, RenderOnServer) {
     client.SetHttpService(std::make_unique<FieldCheckService>(
         temp_dir_path, url, port, verbose, color_camera.core(),
         RenderImageType::kColorRgba8U, fake_scene_path, fake_scene_sha256,
-        std::nullopt));
+        std::nullopt, std::nullopt));
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(),
                               RenderImageType::kColorRgba8U, fake_scene_path,
@@ -536,23 +529,21 @@ GTEST_TEST(RenderClient, RenderOnServer) {
      that the provided mime_type is propagated correctly.  There is no special
      reason for this to be checked with the depth render, it is just convenient
      since a new HttpService is being set for the client. */
-    const auto& depth_range = depth_camera.depth_range();
     client.SetHttpService(std::make_unique<FieldCheckService>(
         temp_dir_path, url, port, verbose, depth_camera.core(),
         RenderImageType::kDepthDepth32F, fake_scene_path, fake_scene_sha256,
-        "test/mime_type", depth_range.min_depth(), depth_range.max_depth()));
+        "test/mime_type", depth_camera.depth_range()));
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(depth_camera.core(),
                               RenderImageType::kDepthDepth32F, fake_scene_path,
-                              "test/mime_type", depth_range.min_depth(),
-                              depth_range.max_depth()),
+                              "test/mime_type", depth_camera.depth_range()),
         expected_message);
 
     // Check fields for a label render.
     client.SetHttpService(std::make_unique<FieldCheckService>(
         temp_dir_path, url, port, verbose, color_camera.core(),
         RenderImageType::kLabel16I, fake_scene_path, fake_scene_sha256,
-        std::nullopt));
+        std::nullopt, std::nullopt));
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(), RenderImageType::kLabel16I,
                               fake_scene_path, std::nullopt),
@@ -833,44 +824,6 @@ GTEST_TEST(RenderClient, ComputeSha256) {
         "d40433c78b8f35adf78d25bcc374ea9dbf42f96d85ff29a8d726fe37178878fe",
         client.ComputeSha256(f2_path));
     fs::remove(f2_path);
-  }
-}
-
-GTEST_TEST(RenderClient, ValidDepthRangeOrThrow) {
-  const std::string url{"127.0.0.1"};
-  const int32_t port{8000};
-  const std::string render_endpoint{"render"};
-  const bool verbose = false;
-  const bool no_cleanup = false;
-  RenderClient client{url, port, render_endpoint, verbose, no_cleanup};
-
-  {
-    // Valid depth ranges should not throw.  0.0 is allowed for min_depth.
-    DRAKE_EXPECT_NO_THROW(client.ValidDepthRangeOrThrow(0.0, 1.0));
-    DRAKE_EXPECT_NO_THROW(client.ValidDepthRangeOrThrow(10.0, 1000.0));
-  }
-
-  {
-    // Case 1: min_depth or max_depth are less than 0.
-    const auto expected_message =
-        "min_depth and max_depth must be provided for depth images, and be "
-        "positive.";
-    const std::vector<std::pair<double, double>> min_max{
-        {-1.0, 1.0}, {1.0, -1.0}, {-1.0, -1.0}};
-    for (const auto& [min, max] : min_max) {
-      DRAKE_EXPECT_THROWS_MESSAGE(client.ValidDepthRangeOrThrow(min, max),
-                                  expected_message);
-    }
-  }
-
-  {
-    // Case 2: max_depth <= min_depth.
-    const auto expected_message =
-        "max_depth cannot be less than or equal to min_depth.";
-    DRAKE_EXPECT_THROWS_MESSAGE(client.ValidDepthRangeOrThrow(10.0, 1.0),
-                                expected_message);
-    DRAKE_EXPECT_THROWS_MESSAGE(client.ValidDepthRangeOrThrow(10.0, 10.0),
-                                expected_message);
   }
 }
 

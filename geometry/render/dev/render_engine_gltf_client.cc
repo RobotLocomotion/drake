@@ -269,11 +269,9 @@ void RenderEngineGltfClient::DoRenderDepthImage(
     LogFrameGltfExportPath(internal::ImageType::kDepth, scene_path);
   }
 
-  const double min_depth = camera.depth_range().min_depth();
-  const double max_depth = camera.depth_range().max_depth();
   const std::string image_path = render_client_->RenderOnServer(
       camera.core(), VtkToClientRenderImageType(internal::ImageType::kDepth),
-      scene_path, MimeType(), min_depth, max_depth);
+      scene_path, MimeType(), camera.depth_range());
   if (render_client_->verbose()) {
     LogFrameServerResponsePath(internal::ImageType::kDepth, image_path);
   }

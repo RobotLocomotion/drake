@@ -96,12 +96,10 @@ class RenderClient {
      The mime type to set for the scene file being uploaded as a file.  If not
      provided, no mime type will be sent to the server.  No validity checks on
      the value of the provided mime type are performed.
-   @param min_depth
-     The minimum depth range.  Required when `image_type` is depth.  See also:
-     ValidDepthRangeOrThrow().
-   @param max_depth
-     The maximum depth range.  Required when `image_type` is depth.  See also:
-     ValidDepthRangeOrThrow().
+   @param depth_range
+     When `image_type` describes a depth render, this parameter must be provided
+     from the DepthRenderCamera::depth_range().  May not have a value for color
+     or label image renders.
    @return
      A successful download of a rendering from the server will return the path
      to the downloaded file, which will be exactly
@@ -109,17 +107,15 @@ class RenderClient {
      `extension` will depend on what the server returns, e.g., `.png` or
      `.tiff`.
    @throws std::runtime_error
-     If a rendering cannot be obtained from the server for any reason, including
-     invalid parameters supplied to this method such as not including
-     `min_depth` and/or `max_depth` when `image_type` is depth.
+     If a rendering cannot be obtained from the server for any reason.
    @throws std::logic_error
-     If `min_depth` and/or `max_depth` are provided, but the `image_type` is not
-     RenderImageType::kDepth32F. */
+     If `image_type` is a depth image but `depth_range` was not provided, or
+     `depth_range` was provided but `image_type` is color or label. */
   virtual std::string RenderOnServer(
       const RenderCameraCore& camera_core, RenderImageType image_type,
       const std::string& scene_path,
-      const std::optional<std::string>& mime_type, double min_depth = -1.0,
-      double max_depth = -1.0) const;
+      const std::optional<std::string>& mime_type,
+      const std::optional<DepthRange>& depth_range = std::nullopt) const;
 
   //@}
   /** @name Server communication helpers */
@@ -130,17 +126,6 @@ class RenderClient {
      If the `path` cannot be opened or the hash fails to compute.
    */
   std::string ComputeSha256(const std::string& path) const;
-
-  /** Validates the specified depth range.  Helper method used in
-   RetrieveRender() when the `image_type` is depth.
-
-   @sa DepthRange
-   @param min_depth The minimum depth range.
-   @param max_depth The maximum depth range.
-   @throws std::logic_error
-     If `min_depth` or `max_depth` are less than `0.0`, or if
-     `max_depth <= min_depth`. */
-  void ValidDepthRangeOrThrow(double min_depth, double max_depth) const;
 
   /** Rename the specified file `path` to have the same name as `input_scene`,
    with the provided extension `ext`.  Helper method for RetrieveRender() which
