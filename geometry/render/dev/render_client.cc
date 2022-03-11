@@ -45,7 +45,7 @@ void AddField(data_map_t* data_map, const std::string& field_name,
   (*data_map)[field_name] = field_data;
 }
 
-/* Template overload so that we do not have to std::to_string ever member of
+/* Template overload so that we do not have to std::to_string every member of
  the intrinsics() below. */
 template <typename T>
 void AddField(data_map_t* data_map, const std::string& field_name,
