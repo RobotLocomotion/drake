@@ -301,35 +301,38 @@ void FindBound(const Expression& e1, const Expression& e2, Expression* const e,
 
 Binding<Constraint> ParseConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Formula>>& formulas) {
-  const int n = formulas.rows() * formulas.cols();
-
   // Decomposes 2D-array of formulas into 1D-vector of expression, `v`, and two
   // 1D-vector of double `lb` and `ub`.
-  VectorX<Expression> v{n};
-  Eigen::VectorXd lb{n};
-  Eigen::VectorXd ub{n};
-  int k{0};  // index variable for 1D components.
+  std::vector<Expression> v;
+  std::vector<double> lb;
+  std::vector<double> ub;
   for (int j{0}; j < formulas.cols(); ++j) {
     for (int i{0}; i < formulas.rows(); ++i) {
       const symbolic::Formula& f{formulas(i, j)};
-      if (is_equal_to(f)) {
+      if (symbolic::is_true(f)) {
+        // Only add the constraint if the formula is not always True or False.
+        continue;
+      } else if (symbolic::is_false(f)) {
+        throw std::runtime_error(
+            "ParseConstraint is called with a formula False.");
+      } else if (is_equal_to(f)) {
         // f(i) := (lhs == rhs)
         //         (lhs - rhs == 0)
-        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
-        lb(k) = 0.0;
-        ub(k) = 0.0;
+        v.push_back(get_lhs_expression(f) - get_rhs_expression(f));
+        lb.push_back(0.0);
+        ub.push_back(0.0);
       } else if (is_less_than_or_equal_to(f)) {
         // f(i) := (lhs <= rhs)
         //         (-∞ <= lhs - rhs <= 0)
-        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
-        lb(k) = -std::numeric_limits<double>::infinity();
-        ub(k) = 0.0;
+        v.push_back(get_lhs_expression(f) - get_rhs_expression(f));
+        lb.push_back(-std::numeric_limits<double>::infinity());
+        ub.push_back(0.0);
       } else if (is_greater_than_or_equal_to(f)) {
         // f(i) := (lhs >= rhs)
         //         (∞ >= lhs - rhs >= 0)
-        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
-        lb(k) = 0.0;
-        ub(k) = std::numeric_limits<double>::infinity();
+        v.push_back(get_lhs_expression(f) - get_rhs_expression(f));
+        lb.push_back(0.0);
+        ub.push_back(std::numeric_limits<double>::infinity());
       } else {
         std::ostringstream oss;
         oss << "ParseConstraint is called with an "
@@ -339,10 +342,16 @@ Binding<Constraint> ParseConstraint(
                "operators.";
         throw std::runtime_error(oss.str());
       }
-      ++k;
     }
   }
-  return ParseConstraint(v, lb, ub);
+  if (v.empty()) {
+    throw std::runtime_error(
+        "ParseConstraint is called with all formulas being always true.");
+  }
+  const Eigen::Map<VectorX<symbolic::Expression>> v_map(v.data(), v.size());
+  const Eigen::Map<Eigen::VectorXd> lb_map(lb.data(), lb.size());
+  const Eigen::Map<Eigen::VectorXd> ub_map(ub.data(), ub.size());
+  return ParseConstraint(v_map, lb_map, ub_map);
 }
 
 Binding<Constraint> ParseConstraint(const Formula& f) {

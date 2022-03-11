@@ -1408,6 +1408,55 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormula7) {
   }
 }
 
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormula8) {
+  // Some of the formula evaluates to True (like 1 == 1) or False (1 == 0). We
+  // need to ignore the formula that is always True, and throw the Formula that
+  // is always False.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>();
+  auto binding1 = prog.AddLinearConstraint(1 + 0 * x[0] == 1);
+  EXPECT_EQ(binding1.variables().size(), 0);
+  EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
+  EXPECT_EQ(prog.linear_constraints().size(), 0);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddLinearConstraint(2 + 0 * x[0] == 1),
+                              "MathematicalProgram::AddLinearConstraint with a "
+                              "symbolic::Formula always being false.*");
+}
+
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormula9) {
+  // Add several constraints as formulas. Some of the formula evaluates to true
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  Eigen::Array<symbolic::Formula, 2, 2> formulas;
+  formulas(0, 0) = (symbolic::Expression(1) == 1);
+  formulas(0, 1) = (x(0) + 1 >= 1);
+  formulas(1, 0) = (symbolic::Expression(2) >= 1);
+  formulas(1, 1) = (2 + x(0) + x(1) >= 1);
+  const auto binding = prog.AddConstraint(formulas);
+  EXPECT_EQ(binding.evaluator()->num_constraints(), 2);
+  // x=0 satisfies the constraint
+  EXPECT_TRUE(binding.evaluator()->CheckSatisfied(Vector2d(0, 0)));
+  // x=1 satisfies the constraint
+  EXPECT_TRUE(binding.evaluator()->CheckSatisfied(Vector2d(1, 1)));
+  // x=-1 doesn't satisfy the constraint
+  EXPECT_FALSE(binding.evaluator()->CheckSatisfied(Vector2d(-1, -1)));
+
+  // Test with all formulas being true.
+  const Vector2<symbolic::Formula> all_true_formulas(
+      symbolic::Expression(1) == 1, symbolic::Expression(2) == 2);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddConstraint(all_true_formulas),
+      "ParseConstraint is called with all formulas being always true.");
+
+  // Test with one formula being false.
+  const Vector2<symbolic::Formula> with_false_formulas(
+      symbolic::Expression(1) == 2, x(0) >= 1);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddConstraint(with_false_formulas),
+      "ParseConstraint is called with a formula False.");
+}
+
 GTEST_TEST(TestMathematicalProgram,
            AddLinearConstraintSymbolicFormulaException1) {
   MathematicalProgram prog;
