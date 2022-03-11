@@ -793,6 +793,18 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Formula& f) {
+  if (symbolic::is_true(f)) {
+    return Binding<LinearConstraint>(
+        std::make_shared<LinearConstraint>(Eigen::Matrix<double, 0, 0>(),
+                                           Eigen::Matrix<double, 0, 1>(),
+                                           Eigen::Matrix<double, 0, 1>()),
+        Eigen::Matrix<symbolic::Variable, 0, 1>());
+  } else if (symbolic::is_false(f)) {
+    throw std::runtime_error(
+        "MathematicalProgram::AddLinearConstraint with a symbolic::Formula "
+        "always being false, "
+        "please check the added constraint");
+  }
   Binding<Constraint> binding = internal::ParseConstraint(f);
   Constraint* constraint = binding.evaluator().get();
   if (dynamic_cast<LinearConstraint*>(constraint)) {
