@@ -1325,12 +1325,12 @@ bool MathematicalProgram::CheckSatisfied(
 
 bool MathematicalProgram::CheckSatisfiedAtInitialGuess(
     const Binding<Constraint>& binding, double tol) const {
-  return CheckSatisfied(binding, x_initial_guess_, tol);
+  return CheckSatisfied(binding, initial_guess(), tol);
 }
 
 bool MathematicalProgram::CheckSatisfiedAtInitialGuess(
     const std::vector<Binding<Constraint>>& bindings, double tol) const {
-  return CheckSatisfied(bindings, x_initial_guess_, tol);
+  return CheckSatisfied(bindings, initial_guess(), tol);
 }
 
 namespace {
@@ -1430,7 +1430,7 @@ double MathematicalProgram::GetInitialGuess(
 
 void MathematicalProgram::SetInitialGuess(
     const symbolic::Variable& decision_variable, double variable_guess_value) {
-  x_initial_guess_(FindDecisionVariableIndex(decision_variable)) =
+  x_initial_guess_[FindDecisionVariableIndex(decision_variable)] =
       variable_guess_value;
 }
 
@@ -1462,9 +1462,12 @@ void MathematicalProgram::SetDecisionVariableValueInVector(
   }
 }
 
-void MathematicalProgram::AppendNanToEnd(int new_var_size, Eigen::VectorXd* v) {
-  v->conservativeResize(v->rows() + new_var_size);
-  v->tail(new_var_size).fill(std::numeric_limits<double>::quiet_NaN());
+void MathematicalProgram::AppendNanToEnd(int new_var_size,
+                                         std::vector<double>* v) {
+  v->reserve(v->size() + new_var_size);
+  for (int i = 0; i < new_var_size; ++i) {
+    v->push_back(std::numeric_limits<double>::quiet_NaN());
+  }
 }
 
 void MathematicalProgram::EvalVisualizationCallbacks(

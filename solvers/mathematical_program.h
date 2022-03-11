@@ -2784,9 +2784,10 @@ class MathematicalProgram {
    * @param x0 A vector of appropriate size (num_vars() x 1).
    */
   template <typename Derived>
-  void SetInitialGuessForAllVariables(const Eigen::MatrixBase<Derived>& x0) {
-    DRAKE_ASSERT(x0.rows() == num_vars() && x0.cols() == 1);
-    x_initial_guess_ = x0;
+  std::enable_if_t<Derived::ColsAtCompileTime == 1>
+  SetInitialGuessForAllVariables(const Eigen::MatrixBase<Derived>& x0) {
+    DRAKE_ASSERT(x0.rows() == num_vars());
+    Eigen::VectorXd::Map(&x_initial_guess_[0], num_vars()) = x0;
   }
 
   /**
@@ -3004,7 +3005,10 @@ class MathematicalProgram {
   int num_indeterminates() const { return indeterminates_.size(); }
 
   /** Getter for the initial guess */
-  const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
+  Eigen::Map<const Eigen::VectorXd> initial_guess() const {
+    return Eigen::Map<const Eigen::VectorXd>(x_initial_guess_.data(),
+                                             num_vars());
+  }
 
   /** Returns the index of the decision variable. Internally the solvers thinks
    * all variables are stored in an array, and it accesses each individual
@@ -3142,7 +3146,7 @@ class MathematicalProgram {
    */
   template <typename C>
   Eigen::VectorXd EvalBindingAtInitialGuess(const Binding<C>& binding) const {
-    return EvalBinding(binding, x_initial_guess_);
+    return EvalBinding(binding, initial_guess());
   }
 
   /**
@@ -3323,7 +3327,7 @@ class MathematicalProgram {
   //@}
 
  private:
-  static void AppendNanToEnd(int new_var_size, Eigen::VectorXd* vector);
+  static void AppendNanToEnd(int new_var_size, std::vector<double>* v);
 
   // Removes a binding of a constraint/constraint, @p removal, from a given
   // vector of bindings, @p existings. If @p removal does not belong to @p
@@ -3387,7 +3391,7 @@ class MathematicalProgram {
   std::vector<Binding<LinearComplementarityConstraint>>
       linear_complementarity_constraints_;
 
-  Eigen::VectorXd x_initial_guess_;
+  std::vector<double> x_initial_guess_;
 
   // The actual per-solver customization options.
   SolverOptions solver_options_;
