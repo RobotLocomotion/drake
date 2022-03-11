@@ -65,7 +65,7 @@ def make_ball_paddle(contact_model, contact_surface_representation,
 
 def simulate_diagram(diagram, ball_paddle_plant, state_logger,
                      ball_init_position, ball_init_velocity,
-                     simulation_time):
+                     simulation_time, target_realtime_rate):
     q_init_val = np.array([
         1, 0, 0, 0, ball_init_position[0], ball_init_position[1],
         ball_init_position[2]
@@ -73,8 +73,9 @@ def simulate_diagram(diagram, ball_paddle_plant, state_logger,
     v_init_val = np.hstack((np.zeros(3), ball_init_velocity))
     qv_init_val = np.concatenate((q_init_val, v_init_val))
 
-    simulator_config = SimulatorConfig(target_realtime_rate=0.01,
-                                       publish_every_time_step=True)
+    simulator_config = SimulatorConfig(
+                           target_realtime_rate=target_realtime_rate,
+                           publish_every_time_step=True)
     simulator = Simulator(diagram)
     ApplySimulatorConfig(simulator, simulator_config)
 
@@ -97,8 +98,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--simulation_time", type=float, default=0.1,
         help="Desired duration of the simulation in seconds. "
-             "Default 0.1."
-    )
+             "Default 0.1.")
     parser.add_argument(
         "--contact_model", type=str, default="hydroelastic_with_fallback",
         help="Contact model. Options are: 'point', 'hydroelastic', "
@@ -114,15 +114,24 @@ if __name__ == "__main__":
              "for the multibody plant modeled as a discrete system. "
              "If zero, we will use an integrator for a continuous system. "
              "Strictly non-negative. Default 0.001.")
+    parser.add_argument(
+        "--ball_initial_position", nargs=3, metavar=('x', 'y', 'z'),
+        default=[-0.0005, 0, 0.05],
+        help="Ball's initial position: x, y, z (in meters) in World frame. "
+             "Default: -0.0005 0 0.05.")
+    parser.add_argument(
+        "--target_realtime_rate", type=float, default=0.01,
+        help="Target realtime rate. Default 0.01.")
     args = parser.parse_args()
 
     diagram, ball_paddle_plant, state_logger = make_ball_paddle(
         args.contact_model, args.contact_surface_representation,
         args.time_step)
     time_samples, state_samples = simulate_diagram(
-        diagram, ball_paddle_plant, state_logger, np.array([-5E-4, 0, 0.05]),
+        diagram, ball_paddle_plant, state_logger,
+        np.array(args.ball_initial_position),
         np.array([0., 0., -np.sqrt(2 * 9.81 * 0.95)]),
-        args.simulation_time)
+        args.simulation_time, args.target_realtime_rate)
     print("\nFinal state variables:")
     print(state_samples[:, -1])
     pass
