@@ -284,6 +284,7 @@ class Frame : public FrameBase<T> {
   /// Calculates `this` frame C's spatial velocity relative to another frame B,
   /// measured in a frame M, expressed in a frame E.
   /// @param[in] context contains the state of the multibody system.
+  /// @param[in] other_frame which is frame B.
   /// @param[in] measured_in_frame which is frame M.
   /// @param[in] expressed_in_frame which is frame E.
   /// @return V_M_BC_E = V_MC_E - V_MB_E, frame C's spatial velocity relative to
@@ -355,7 +356,7 @@ class Frame : public FrameBase<T> {
   /// frame F's origin point Fo, measured in frame M, expressed in frame E).
   /// Although α_MF is defined below in terms of DtM(ω_MF), the time-derivative
   /// in frame M of ω_MF, the actual calculation of α_MF avoids differentiation.
-  /// Similarly for the definition vs. calculation a_MFo. <pre>
+  /// Similarly for the definition vs. calculation for a_MFo. <pre>
   ///  α_MF = DtM(ω_MF)           ω_MF is frame F's angular velocity in frame M.
   ///  a_MFo = DtM(v_MFo)    v_MF is Fo's translational acceleration in frame M.
   /// </pre>
