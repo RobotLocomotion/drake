@@ -1500,17 +1500,17 @@ class Meshcat::Impl {
     // back pressure.
     behavior.maxBackpressure = 0;
     behavior.open = [this](WebSocket* ws) {
-      // IsThread(websocket_thread_id_) is checked by the Handle... function
+      // IsThread(websocket_thread_id_) is checked by the Handle... function.
       HandleSocketOpen(ws);
     };
     behavior.close = [this](WebSocket* ws, int, std::string_view message) {
-      // IsThread(websocket_thread_id_) is checked by the Handle... function
+      // IsThread(websocket_thread_id_) is checked by the Handle... function.
       unused(message);
       HandleSocketClose(ws);
     };
     behavior.message = [this](WebSocket* ws, std::string_view message,
                               uWS::OpCode op_code) {
-      // IsThread(websocket_thread_id_) is checked by the Handle... function
+      // IsThread(websocket_thread_id_) is checked by the Handle... function.
       unused(op_code);
       HandleMessage(ws, message);
     };
