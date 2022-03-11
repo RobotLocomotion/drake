@@ -157,6 +157,14 @@ PYBIND11_MODULE(lcm, m) {
             // Keep alive, ownership: `serializer` keeps `self` alive.
             py::keep_alive<3, 1>(),
             // Keep alive, reference: `self` keeps `lcm` alive.
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc_4args)
+        .def(py::init<const std::string&, std::unique_ptr<SerializerInterface>,
+                 DrakeLcmInterface*, const systems::TriggerTypeSet&, double>(),
+            py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
+            py::arg("publish_triggers"), py::arg("publish_period") = 0.0,
+            // Keep alive, ownership: `serializer` keeps `self` alive.
+            py::keep_alive<3, 1>(),
+            // Keep alive, reference: `self` keeps `lcm` alive.
             py::keep_alive<1, 4>(), cls_doc.ctor.doc_4args);
   }
 
