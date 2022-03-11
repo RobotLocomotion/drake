@@ -71,6 +71,7 @@ def _make_lcm_publisher(
         serializer = _Serializer_[lcm_type]()
     return LcmPublisherSystem(channel, serializer, lcm, publish_period)
 
+
 @staticmethod
 def _make_lcm_publisher_with_triggers(
         channel, lcm_type, lcm, publish_triggers, publish_period=0.0,
@@ -93,7 +94,8 @@ def _make_lcm_publisher_with_triggers(
     else:
         serializer = _Serializer_[lcm_type]()
     return LcmPublisherSystem(channel, serializer, lcm, publish_triggers,
-                             publish_period)
+                              publish_period)
+
 
 LcmSubscriberSystem.Make = _make_lcm_subscriber
 LcmPublisherSystem.Make = _make_lcm_publisher
