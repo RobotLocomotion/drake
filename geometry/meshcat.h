@@ -506,10 +506,16 @@ class Meshcat {
                                 std::string property) const;
 
 #ifndef DRAKE_DOXYGEN_CXX
-  /* (Internal use only) Causes the websocket worker thread to exit with an
-  error, which will spit out an exception from the next Meshcat main thread
-  function that gets called. */
-  void InjectWebsocketThreadFault();
+  /* (Internal use for unit testing only) Causes the websocket worker thread to
+  exit with an error, which will spit out an exception from the next Meshcat
+  main thread function that gets called. The fault_number selects which fault to
+  inject, between 0 and kMaxFaultNumber inclusive; refer to the implementation
+  for details on meaning of each number. */
+  void InjectWebsocketThreadFault(int fault_number);
+
+  /* (Internal use for unit testing only) The max value (inclusive) for
+  fault_number, above. */
+  static constexpr int kMaxFaultNumber = 3;
 #endif
 
  private:
