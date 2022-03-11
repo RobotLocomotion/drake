@@ -73,48 +73,65 @@ typename std::enable_if_t<
     is_eigen_scalar_same<Derived, symbolic::Formula>::value,
     Binding<Constraint>>
 ParseConstraint(const Eigen::ArrayBase<Derived>& formulas) {
-  const auto n = formulas.rows() * formulas.cols();
+  // Count
+  // We only count the valid formula (that is not always true or always false).
+  int num_valid_formulas = 0;
+  for (int i = 0; i < formulas.rows(); ++i) {
+    for (int j = 0; j < formulas.cols(); ++j) {
+      if (symbolic::is_true(formulas(i, j))) {
+        continue;
+      } else if (symbolic::is_false(formulas(i, j))) {
+        throw std::runtime_error(
+            "ParseConstraint is called with a formula False.");
+      } else {
+        num_valid_formulas++;
+      }
+    }
+  }
+  if (num_valid_formulas == 0) {
+    throw std::runtime_error(
+        "ParseConstraint is called with all formulas being always true.");
+  }
 
   // Decomposes 2D-array of formulas into 1D-vector of expression, `v`, and
   // two 1D-vector of double `lb` and `ub`.
-  constexpr int flat_vector_size{
-      MultiplyEigenSizes<Derived::RowsAtCompileTime,
-                         Derived::ColsAtCompileTime>::value};
-  Eigen::Matrix<symbolic::Expression, flat_vector_size, 1> v{n};
-  Eigen::Matrix<double, flat_vector_size, 1> lb{n};
-  Eigen::Matrix<double, flat_vector_size, 1> ub{n};
+  VectorX<symbolic::Expression> v{num_valid_formulas};
+  Eigen::VectorXd lb{num_valid_formulas};
+  Eigen::VectorXd ub{num_valid_formulas};
   int k{0};  // index variable for 1D components.
   for (int j{0}; j < formulas.cols(); ++j) {
     for (int i{0}; i < formulas.rows(); ++i) {
       const symbolic::Formula& f{formulas(i, j)};
-      if (is_equal_to(f)) {
-        // f(i) := (lhs == rhs)
-        //         (lhs - rhs == 0)
-        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
-        lb(k) = 0.0;
-        ub(k) = 0.0;
-      } else if (is_less_than_or_equal_to(f)) {
-        // f(i) := (lhs <= rhs)
-        //         (-∞ <= lhs - rhs <= 0)
-        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
-        lb(k) = -std::numeric_limits<double>::infinity();
-        ub(k) = 0.0;
-      } else if (is_greater_than_or_equal_to(f)) {
-        // f(i) := (lhs >= rhs)
-        //         (∞ >= lhs - rhs >= 0)
-        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
-        lb(k) = 0.0;
-        ub(k) = std::numeric_limits<double>::infinity();
-      } else {
-        std::ostringstream oss;
-        oss << "ParseConstraint is called with an "
-               "array of formulas which includes a formula "
-            << f
-            << " which is not a relational formula using one of {==, <=, >=} "
-               "operators.";
-        throw std::runtime_error(oss.str());
+      if (!symbolic::is_true(f)) {
+        if (is_equal_to(f)) {
+          // f(i) := (lhs == rhs)
+          //         (lhs - rhs == 0)
+          v(k) = get_lhs_expression(f) - get_rhs_expression(f);
+          lb(k) = 0.0;
+          ub(k) = 0.0;
+        } else if (is_less_than_or_equal_to(f)) {
+          // f(i) := (lhs <= rhs)
+          //         (-∞ <= lhs - rhs <= 0)
+          v(k) = get_lhs_expression(f) - get_rhs_expression(f);
+          lb(k) = -std::numeric_limits<double>::infinity();
+          ub(k) = 0.0;
+        } else if (is_greater_than_or_equal_to(f)) {
+          // f(i) := (lhs >= rhs)
+          //         (∞ >= lhs - rhs >= 0)
+          v(k) = get_lhs_expression(f) - get_rhs_expression(f);
+          lb(k) = 0.0;
+          ub(k) = std::numeric_limits<double>::infinity();
+        } else {
+          std::ostringstream oss;
+          oss << "ParseConstraint is called with an "
+                 "array of formulas which includes a formula "
+              << f
+              << " which is not a relational formula using one of {==, <=, >=} "
+                 "operators.";
+          throw std::runtime_error(oss.str());
+        }
+        k++;
       }
-      k++;
     }
   }
   return ParseConstraint(v, lb, ub);

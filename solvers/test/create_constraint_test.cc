@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
 using drake::symbolic::Expression;
@@ -402,6 +403,31 @@ TEST_F(MaybeParseLinearConstraintTest, NonlinearConstraint) {
             nullptr);
   EXPECT_EQ(internal::MaybeParseLinearConstraint(sin(x_(0)), 1, 2).get(),
             nullptr);
+}
+
+GTEST_TEST(ParseConstraintTest, Formula1) {
+  // Call ParseConstraint(set<Formula>), some formulas are either always false
+  // or always true.
+  const symbolic::Variable x("x");
+  std::set<symbolic::Formula> formulas;
+  formulas.emplace(symbolic::Expression(1) == 1);
+  formulas.emplace(1 + x >= 0);
+  const auto binding = internal::ParseConstraint(formulas);
+  EXPECT_EQ(binding.evaluator()->num_constraints(), 1);
+  EXPECT_TRUE(binding.evaluator()->CheckSatisfied(Vector1d(2)));
+  EXPECT_FALSE(binding.evaluator()->CheckSatisfied(Vector1d(-1.1)));
+
+  std::set<symbolic::Formula> all_true_formulas;
+  all_true_formulas.emplace(symbolic::Expression(1) >= 1);
+  all_true_formulas.emplace(symbolic::Expression(2) >= 1);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::ParseConstraint(all_true_formulas),
+      "ParseConstraint is called with all formulas being always true.");
+  std::set<symbolic::Formula> with_false_formulas;
+  with_false_formulas.emplace(symbolic::Expression(1) >= 2);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::ParseConstraint(with_false_formulas),
+      "ParseConstraint is called with a formula False.");
 }
 }  // namespace
 }  // namespace solvers

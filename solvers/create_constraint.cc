@@ -300,13 +300,28 @@ void FindBound(const Expression& e1, const Expression& e2, Expression* const e,
 }  // namespace
 
 Binding<Constraint> ParseConstraint(const set<Formula>& formulas) {
-  const auto n = formulas.size();
+  int num_valid_formulas = 0;
+  // Only add the constraint is formula is not True or False
+  for (const auto& formula : formulas) {
+    if (symbolic::is_true(formula)) {
+      continue;
+    } else if (symbolic::is_false(formula)) {
+      throw std::runtime_error(
+          "ParseConstraint is called with a formula False.");
+    } else {
+      num_valid_formulas++;
+    }
+  }
+  if (num_valid_formulas == 0) {
+    throw std::runtime_error(
+        "ParseConstraint is called with all formulas being always true.");
+  }
 
   // Decomposes a set of formulas into a 1D-vector of expressions, `v`, and two
   // 1D-vector of double `lb` and `ub`.
-  VectorX<Expression> v{n};
-  Eigen::VectorXd lb{n};
-  Eigen::VectorXd ub{n};
+  VectorX<Expression> v{num_valid_formulas};
+  Eigen::VectorXd lb{num_valid_formulas};
+  Eigen::VectorXd ub{num_valid_formulas};
   int i{0};  // index variable used in the loop
   // After the following loop, we call `ParseLinearEqualityConstraint`
   // if `are_all_formulas_equal` is still true. Otherwise, we call
@@ -314,48 +329,51 @@ Binding<Constraint> ParseConstraint(const set<Formula>& formulas) {
   bool are_all_formulas_equal{true};
   bool is_linear{true};
   for (const Formula& f : formulas) {
-    if (is_equal_to(f)) {
-      // f := (lhs == rhs)
-      //      (lhs - rhs == 0)
-      v(i) = get_lhs_expression(f) - get_rhs_expression(f);
-      lb(i) = 0.0;
-      ub(i) = 0.0;
-    } else if (is_less_than_or_equal_to(f)) {
-      // f := (lhs <= rhs)
-      const Expression& lhs = get_lhs_expression(f);
-      const Expression& rhs = get_rhs_expression(f);
-      lb(i) = -numeric_limits<double>::infinity();
-      FindBound(lhs, rhs, &v(i), &ub(i));
-      are_all_formulas_equal = false;
-    } else if (is_greater_than_or_equal_to(f)) {
-      // f := (lhs >= rhs)
-      const Expression& lhs = get_lhs_expression(f);
-      const Expression& rhs = get_rhs_expression(f);
-      lb(i) = -numeric_limits<double>::infinity();
-      FindBound(rhs, lhs, &v(i), &ub(i));
-      are_all_formulas_equal = false;
-    } else {
-      ostringstream oss;
-      oss << "ParseConstraint(const set<Formula>& "
-          << "formulas) is called while its argument 'formulas' includes "
-          << "a formula " << f
-          << " which is not a relational formula using one of {==, <=, >=} "
-          << "operators.";
-      throw runtime_error(oss.str());
-    }
-
-    // Check that elements are linear.
-    if (is_linear) {
-      if (!v(i).is_polynomial()) {
-        is_linear = false;
+    if (!symbolic::is_true(f)) {
+      if (is_equal_to(f)) {
+        // f := (lhs == rhs)
+        //      (lhs - rhs == 0)
+        v(i) = get_lhs_expression(f) - get_rhs_expression(f);
+        lb(i) = 0.0;
+        ub(i) = 0.0;
+      } else if (is_less_than_or_equal_to(f)) {
+        // f := (lhs <= rhs)
+        const Expression& lhs = get_lhs_expression(f);
+        const Expression& rhs = get_rhs_expression(f);
+        lb(i) = -numeric_limits<double>::infinity();
+        FindBound(lhs, rhs, &v(i), &ub(i));
+        are_all_formulas_equal = false;
+      } else if (is_greater_than_or_equal_to(f)) {
+        // f := (lhs >= rhs)
+        const Expression& lhs = get_lhs_expression(f);
+        const Expression& rhs = get_rhs_expression(f);
+        lb(i) = -numeric_limits<double>::infinity();
+        FindBound(rhs, lhs, &v(i), &ub(i));
+        are_all_formulas_equal = false;
       } else {
-        const Polynomial p{v(i)};
-        if (p.TotalDegree() > 1) {
+        ostringstream oss;
+        oss << "ParseConstraint(const set<Formula>& "
+            << "formulas) is called while its argument 'formulas' includes "
+            << "a formula " << f
+            << " which is not a relational formula using one of {==, <=, >=} "
+            << "operators.";
+        throw runtime_error(oss.str());
+      }
+
+      // Check that elements are linear.
+      if (is_linear) {
+        if (!v(i).is_polynomial()) {
           is_linear = false;
+        } else {
+          const Polynomial p{v(i)};
+          if (p.TotalDegree() > 1) {
+            is_linear = false;
+          }
         }
       }
+
+      ++i;
     }
-    ++i;
   }
   if (are_all_formulas_equal && is_linear) {
     return ParseLinearEqualityConstraint(v, lb);
