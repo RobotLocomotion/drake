@@ -54,23 +54,29 @@ def _make_result(
         error = None,
         ubuntu_release = None,
         macos_release = None,
-        is_manylinux = False,
+        is_wheel = False,
         homebrew_prefix = None):
     """Return a fully-populated struct result for determine_os, below."""
     if ubuntu_release != None:
         distribution = "ubuntu"
     elif macos_release != None:
         distribution = "macos"
-    elif is_manylinux:
-        distribution = "manylinux"
+    elif is_wheel:
+        if ubuntu_release != None:
+            distribution = "manylinux"
+        elif macos_release != None:
+            distribution = "macos_wheel"
+        else:
+            distribution = None
     else:
         distribution = None
     return struct(
         error = error,
         distribution = distribution,
-        is_macos = (macos_release != None),
-        is_ubuntu = (ubuntu_release != None and not is_manylinux),
-        is_manylinux = is_manylinux,
+        is_macos = (macos_release != None and not is_wheel),
+        is_ubuntu = (ubuntu_release != None and not is_wheel),
+        is_manylinux = (ubuntu_release != None and is_wheel),
+        is_macos_wheel = (macos_release != None and is_wheel),
         ubuntu_release = ubuntu_release,
         macos_release = macos_release,
         homebrew_prefix = homebrew_prefix,
@@ -112,7 +118,7 @@ def _determine_linux(repository_ctx):
         if ubuntu_release in ["18.04", "20.04"]:
             return _make_result(
                 ubuntu_release = ubuntu_release,
-                is_manylinux = is_manylinux,
+                is_wheel = is_manylinux,
             )
 
         # Nothing matched.
@@ -129,6 +135,19 @@ def _determine_linux(repository_ctx):
 
 def _determine_macos(repository_ctx):
     """Handle determine_os on macOS."""
+
+    # Allow the user to override the OS selection.
+    drake_os = repository_ctx.os.environ.get("DRAKE_OS", "")
+    is_macos_wheel = False
+    if len(drake_os) > 0:
+        if drake_os == "macos_wheel":
+            is_macos_wheel = True
+        else:
+            return _make_result(error = "{}{} DRAKE_OS={}".format(
+                error_prologue,
+                "unknown value for environment variable",
+                drake_os,
+            ))
 
     # Shared error message text across different failure cases.
     error_prologue = "could not determine macOS version: "
@@ -159,6 +178,7 @@ def _determine_macos(repository_ctx):
         return _make_result(
             macos_release = macos_release,
             homebrew_prefix = homebrew_prefix,
+            is_wheel = is_macos_wheel,
         )
 
     # Nothing matched.
@@ -194,6 +214,8 @@ def determine_os(repository_ctx):
         - is_manylinux: True iff this build will be packaged into a Python
                         wheel that confirms to a "manylinux" standard such as
                         manylinux_2_27; see https://github.com/pypa/manylinux.
+        - is_macos_wheel: True iff this build will be packaged into a Python
+                          wheel that confirms to the "macosx" standard.
     """
 
     os_name = repository_ctx.os.name
