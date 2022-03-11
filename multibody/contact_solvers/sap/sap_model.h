@@ -15,6 +15,47 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+// Struct used to store the the result of updating impulses.
+template <typename T>
+struct ImpulsesCache {
+  void Resize(int num_constraint_equations) {
+    y.resize(num_constraint_equations);
+    gamma.resize(num_constraint_equations);
+  }
+  VectorX<T> y;      // The (unprojected) impulse y = −R⁻¹⋅(vc − v̂).
+  VectorX<T> gamma;  // Impulse γ = P(y), with P(y) the projection operator.
+};
+
+// Struct used to store the result of updating the momentum gain A⋅(v−v*).
+template <typename T>
+struct MomentumGainCache {
+  void Resize(int nv) {
+    velocity_gain.resize(nv);
+    momentum_gain.resize(nv);
+  }
+  VectorX<T> velocity_gain;
+  VectorX<T> momentum_gain;
+};
+
+// Struct used to store the cost update.
+template <typename T>
+struct CostCache {
+  T cost{NAN};  // Total primal cost, = momentum_cost + regularizer_cost.
+  T momentum_cost{NAN};  // Momentum cost, = 1/2⋅(v−v*)ᵀ⋅A⋅(v−v*).
+  T regularizer_cost{NAN};  // Regularizer cost, = 1/2⋅γᵀ⋅R⋅γ.
+};
+
+// Struct used to store the result of updating the gradient of the cost.
+template <typename T>
+struct GradientsCache {
+  void Resize(int nv) {
+    j.resize(nv);
+    cost_gradient.resize(nv);
+  }
+  VectorX<T> j;              // Generalized impulses, j = Jᵀ⋅γ.
+  VectorX<T> cost_gradient;  // Gradient of the cost in v.
+};
+
 /* This class represents the underlying computational model built by the SAP
  solver given a SapContactProblem.
  The model re-arranges constraints to exploit the block sparse structure of the
@@ -97,6 +138,12 @@ class SapModel {
   /* Returns free-motion generalized momenta. Participating momenta only. */
   const VectorX<T>& p_star() const;
 
+  // Inverse of the diagonal matrix formed with the square root of the diagonal
+  // entries of the momentum matrix, i.e. diag(A)^{-1/2}, of size
+  // num_velocities(). This matrix is used to compute a scaled momentum
+  // residual, see [Castro et al. 2021].
+  const VectorX<T>& inv_sqrt_dynamics_matrix() const;
+
   /* Makes a context to be used on queries with this model. */
   std::unique_ptr<systems::Context<T>> MakeContext() const;
 
@@ -116,20 +163,54 @@ class SapModel {
         .template Eval<VectorX<T>>(context);
   }
 
+  /* Evaluates the contact impulses γ(v) according to the analytical inverse
+   dynamics, see [Castro et al. 2021]. */
+  const VectorX<T>& EvalImpulses(const systems::Context<T>& context) const {
+    return EvalImpulsesCache(context).gamma;
+  }
+
   /* Evaluates the momentum gain defined as momentum_gain = A⋅(v - v*). */
   const VectorX<T>& EvalMomentumGain(const systems::Context<T>& context) const {
-    return system_->get_cache_entry(system_->cache_indexes().momentum_gain)
-        .template Eval<VectorX<T>>(context);
+    return EvalMomentumGainCache(context).momentum_gain;
   }
 
   /* Evaluates the momentum cost defined as
    momentum_cost = 1/2⋅(v-v*)ᵀ⋅A⋅(v-v*). */
   const T& EvalMomentumCost(const systems::Context<T>& context) const {
-    return system_->get_cache_entry(system_->cache_indexes().momentum_cost)
-        .template Eval<T>(context);
+    return system_->get_cache_entry(system_->cache_indexes().cost)
+        .template Eval<CostCache<T>>(context)
+        .momentum_cost;
+  }
+
+  /* Evaluates the primal cost ℓₚ(v) = 1/2⋅(v-v*)ᵀ⋅A⋅(v-v*) + 1/2⋅γᵀ⋅R⋅γ. */
+  const T& EvalCost(const systems::Context<T>& context) const {
+    return system_->get_cache_entry(system_->cache_indexes().cost)
+        .template Eval<CostCache<T>>(context)
+        .cost;
+  }
+
+  /* Evaluates the gradient w.r.t. generalized velocities of the cost. */
+  const VectorX<T>& EvalCostGradient(const systems::Context<T>& context) const {
+    return system_->get_cache_entry(system_->cache_indexes().gradients)
+        .template Eval<GradientsCache<T>>(context)
+        .cost_gradient;
+  }
+
+  /* Evaluates the constraints's Hessian G, a vector of size num_constraints().
+   For the i-th constraint, its Hessian is defined as Gᵢ(v) = d²ℓᵢ/dvcᵢ², where
+   ℓᵢ is the regularizer's cost ℓᵢ = 1/2⋅γᵢᵀ⋅Rᵢ⋅γᵢ and vcᵢ is the constraint's
+   velocity. Gᵢ is an SPD matrix. It turns out that the Hessian of SAP's cost is
+   H = A + Jᵀ⋅G⋅J, see [Castro et al. 2021]. */
+  const std::vector<MatrixX<T>>& EvalConstraintsHessian(
+      const systems::Context<T>& context) const {
+    return system_->get_cache_entry(system_->cache_indexes().hessian)
+        .template Eval<std::vector<MatrixX<T>>>(context);
   }
 
  private:
+  // Facilitate testing.
+  friend class SapModelTester;
+
   /* System used to manage context resources. */
   class SapModelSystem : public systems::LeafSystem<T> {
    public:
@@ -137,9 +218,11 @@ class SapModel {
      the model. */
     struct CacheIndexes {
       systems::CacheIndex constraint_velocities;
-      systems::CacheIndex momentum_cost;
+      systems::CacheIndex cost;
+      systems::CacheIndex gradients;
+      systems::CacheIndex hessian;
+      systems::CacheIndex impulses;
       systems::CacheIndex momentum_gain;
-      systems::CacheIndex velocity_gain;
     };
 
     /* Constructs a system that declares a discrete state of size
@@ -178,6 +261,10 @@ class SapModel {
     std::vector<MatrixX<T>> dynamics_matrix;
     VectorX<T> v_star;  // Free motion generalized velocity v*.
     VectorX<T> p_star;  // Free motion generalized impulse, i.e. p* = A⋅v*.
+    // Inverse of the diagonal matrix formed with the square root of the
+    // diagonal entries of the momentum matrix, i.e. diag(A)^{-1/2}.
+    VectorX<T> inv_sqrt_A;
+    VectorX<T> delassus_diagonal;  // Delassus operator diagonal approximation.
     std::unique_ptr<SapConstraintBundle<T>> constraints_bundle;
   };
 
@@ -204,6 +291,23 @@ class SapModel {
   static PartialPermutation MakeParticipatingVelocitiesPermutation(
       const SapContactProblem<T>& problem);
 
+  // Computes a diagonal approximation of the Delassus operator used to compute
+  // a per constraint diagonal scaling into delassus_diagonal. Given an
+  // approximation Wᵢᵢ of the block diagonal element corresponding to the i-th
+  // constraint, the scaling is computed as delassus_diagonal[i] = ‖Wᵢᵢ‖ᵣₘₛ =
+  // ‖Wᵢᵢ‖/nᵢ, where nᵢ is the number of equations for the i-th constraint (and
+  // the size of Wᵢᵢ). See [Castro et al. 2021] for details.
+  //
+  // @param[out] delassus_diagonal On output an array of size nc (number of
+  // constraints) where each entry stores the Delassus operator constraint
+  // scaling. That is, wi = delassus_diagonal[i] corresponds to the scaling for
+  // the i-th constraint.
+  //
+  // @pre delassus_diagonal is not nullptr.
+  // @pre Matrix entries stored in `A` are SPD.
+  void CalcDelassusDiagonalApproximation(const std::vector<MatrixX<T>>& A,
+                                         VectorX<T>* delassus_diagonal) const;
+
   /* Performs multiplication p = A * v. Only participating velocities are
    considered.
    @pre p must be a valid pointer.
@@ -214,17 +318,39 @@ class SapModel {
   corresponding Eval methods for details. */
   void CalcConstraintVelocities(const systems::Context<T>& context,
                                 VectorX<T>* vc) const;
-  void CalcVelocityGain(const systems::Context<T>& context,
-                        VectorX<T>* velocity_gain) const;
-  void CalcMomentumGain(const systems::Context<T>& context,
-                        VectorX<T>* momentum_gain) const;
-  void CalcMomentumCost(const systems::Context<T>& context,
-                        T* momentum_cost) const;
+  void CalcImpulsesCache(const systems::Context<T>& context,
+                         ImpulsesCache<T>* cache) const;
+  void CalcMomentumGainCache(const systems::Context<T>& context,
+                             MomentumGainCache<T>* cache) const;
+  void CalcCostCache(const systems::Context<T>& context,
+                     CostCache<T>* cache) const;
+  void CalcGradientsCache(const systems::Context<T>& context,
+                          GradientsCache<T>* cache) const;
+  // This Calc method is used to update the constraints Hessian G, see
+  // EvalConstraintsHessian(). Since this computes the impulses as a side
+  // effect, we go ahead and update the ImpulsesCache while at it. The impulses
+  // cache are marked up-to-date and the change is properly propagated to its
+  // dependents.
+  void CalcHessianCacheAlongWithImpulsesCache(
+      const systems::Context<T>& context, std::vector<MatrixX<T>>* G) const;
 
   /* Evaluates the velocity gain defined as velocity_gain = v - v*. */
   const VectorX<T>& EvalVelocityGain(const systems::Context<T>& context) const {
-    return system_->get_cache_entry(system_->cache_indexes().velocity_gain)
-        .template Eval<VectorX<T>>(context);
+    return EvalMomentumGainCache(context).velocity_gain;
+  }
+
+  /* Evaluates the momentum gain A⋅(v−v*). */
+  const MomentumGainCache<T>& EvalMomentumGainCache(
+      const systems::Context<T>& context) const {
+    return system_->get_cache_entry(system_->cache_indexes().momentum_gain)
+        .template Eval<MomentumGainCache<T>>(context);
+  }
+
+  /* Helper to evaluate the impulses cache entry. */
+  const ImpulsesCache<T>& EvalImpulsesCache(
+      const systems::Context<T>& context) const {
+    return system_->get_cache_entry(system_->cache_indexes().impulses)
+        .template Eval<ImpulsesCache<T>>(context);
   }
 
   const SapContactProblem<T>* problem_{nullptr};
