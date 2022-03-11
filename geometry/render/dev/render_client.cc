@@ -84,7 +84,8 @@ void AddField<RenderImageType>(data_map_t* data_map,
   // LCOV_EXCL_STOP
 }
 
-/** Verify the loaded image has the correct dimensions.
+/** Verify the loaded image has the correct dimensions.  This includes verifying
+ that the image is 2D (depth=1).
 
  @param expected_width
    The expected width of the loaded image.
@@ -96,7 +97,8 @@ void AddField<RenderImageType>(data_map_t* data_map,
    The filename of the path that image_exporter has data from.  Used to populate
    the exception message.
  @throws std::runtime_error
-   If the expected_width or expected_height are not the same as image_exporter.
+   If the expected_width or expected_height are not the same as image_exporter,
+   or if a 3D image was provided (depth > 1).
  */
 void VerifyImportedImageDimensions(int expected_width, int expected_height,
                                    vtkImageExport* image_exporter,
@@ -112,12 +114,12 @@ void VerifyImportedImageDimensions(int expected_width, int expected_height,
   }
   /* This method should only be getting called for loading two dimensional
    images; VTK supports 3D images so we additionally check that the depth
-   dimension is 1. */
+   dimension is 1.  A TIFF image, for example, can have multiple layers. */
   const int image_depth = extent[5] - extent[4] + 1;
   if (image_depth != 1) {
-    /* no cover: no callers ever use a 3D image, but the check is important to
-     maintain since the loops in LoadColorImage can only work for the 2D image
-     layout in vtk. */
+    /* no cover: no tests ever use a 3D image, but the check is important to
+     keep in order to guarantee the loops in LoadColorImage, as well as calls
+     to image_exporter->Export are safe. */
     // LCOV_EXCL_START
     throw std::runtime_error(fmt::format(
         "RenderClient: expected two dimensional image, but loaded image from "
