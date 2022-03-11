@@ -15,6 +15,7 @@ drake_cc_package_library(
     name = "fem",
     visibility = ["//multibody/fem:__subpackages__"],
     deps = [
+        ":acceleration_newmark_scheme",
         ":calc_lame_parameters",
         ":constitutive_model",
         ":corotated_model",
@@ -35,7 +36,22 @@ drake_cc_package_library(
         ":quadrature",
         ":schur_complement",
         ":simplex_gaussian_quadrature",
+        ":velocity_newmark_scheme",
         ":volumetric_element",
+    ],
+)
+
+drake_cc_library(
+    name = "acceleration_newmark_scheme",
+    srcs = [
+        "acceleration_newmark_scheme.cc",
+    ],
+    hdrs = [
+        "acceleration_newmark_scheme.h",
+    ],
+    deps = [
+        ":discrete_time_integrator",
+        "//common:default_scalars",
     ],
 )
 
@@ -330,6 +346,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "velocity_newmark_scheme",
+    srcs = [
+        "velocity_newmark_scheme.cc",
+    ],
+    hdrs = [
+        "velocity_newmark_scheme.h",
+    ],
+    deps = [
+        ":discrete_time_integrator",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
     name = "volumetric_element",
     srcs = [
         "volumetric_element.cc",
@@ -342,6 +372,15 @@ drake_cc_library(
         ":isoparametric_element",
         ":quadrature",
         "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "acceleration_newmark_scheme_test",
+    deps = [
+        ":acceleration_newmark_scheme",
+        ":velocity_newmark_scheme",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -539,6 +578,15 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "velocity_newmark_scheme_test",
+    deps = [
+        ":acceleration_newmark_scheme",
+        ":velocity_newmark_scheme",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
