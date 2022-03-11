@@ -458,6 +458,9 @@ drake_cc_googletest(
         ":meshcat_websocket_client",
         "//geometry/render:test_models",
     ],
+    tags = [
+        "cpu:2",
+    ],
     deps = [
         ":meshcat",
         "//common/test_utilities:eigen_matrix_compare",
