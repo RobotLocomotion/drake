@@ -225,7 +225,7 @@ void FreeCsdpProblemData(int num_constraints, csdp::blockmatrix C_csdp,
                          csdp::constraintmatrix* constraints) {
   // This function is copied from the source code in csdp/lib/freeprob.c
   free(rhs_csdp);
-  csdp::free_mat(C_csdp);
+  csdp::cpp_free_mat(C_csdp);
   csdp::sparseblock* ptr;
   csdp::sparseblock* oldptr;
   if (constraints != nullptr) {
