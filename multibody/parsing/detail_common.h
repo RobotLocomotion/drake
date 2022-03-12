@@ -6,7 +6,7 @@
 #include <string>
 #include <variant>
 
-#include <sdf/sdf.hh>
+#include <sdf/Element.hh>
 #include <tinyxml2.h>
 
 #include "drake/common/drake_copyable.h"

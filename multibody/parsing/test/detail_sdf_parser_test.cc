@@ -6,7 +6,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <sdf/sdf.hh>
+#include <sdf/parser.hh>
 #include <spdlog/sinks/dist_sink.h>
 #include <spdlog/sinks/ostream_sink.h>
 

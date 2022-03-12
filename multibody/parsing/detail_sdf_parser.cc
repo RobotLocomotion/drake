@@ -10,8 +10,15 @@
 #include <variant>
 #include <vector>
 
-#include <sdf/sdf.hh>
-#include <tinyxml2.h>
+#include <sdf/Error.hh>
+#include <sdf/Frame.hh>
+#include <sdf/Joint.hh>
+#include <sdf/JointAxis.hh>
+#include <sdf/Link.hh>
+#include <sdf/Model.hh>
+#include <sdf/ParserConfig.hh>
+#include <sdf/Root.hh>
+#include <sdf/World.hh>
 
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/rigid_transform.h"

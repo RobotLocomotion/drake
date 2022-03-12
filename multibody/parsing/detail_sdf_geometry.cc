@@ -7,7 +7,13 @@
 #include <string>
 #include <utility>
 
-#include <sdf/sdf.hh>
+#include <sdf/Box.hh>
+#include <sdf/Capsule.hh>
+#include <sdf/Cylinder.hh>
+#include <sdf/Element.hh>
+#include <sdf/Ellipsoid.hh>
+#include <sdf/Plane.hh>
+#include <sdf/Sphere.hh>
 
 #include "drake/common/filesystem.h"
 #include "drake/geometry/geometry_instance.h"
