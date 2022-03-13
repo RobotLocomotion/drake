@@ -553,6 +553,7 @@ drake_cc_library(
         "//common:essential",
         "//common:pointer_cast",
         "//common:unused",
+        "@abseil_cpp_internal//absl/container:inlined_vector",
     ],
 )
 
@@ -872,6 +873,7 @@ drake_cc_googletest(
         ":leaf_system",
         "//common:essential",
         "//common/test_utilities",
+        "//common/test_utilities:limit_malloc",
         "//systems/framework/test_utilities",
     ],
 )

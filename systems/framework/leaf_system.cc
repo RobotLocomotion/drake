@@ -3,6 +3,8 @@
 #include <cmath>
 #include <limits>
 
+#include "absl/container/inlined_vector.h"
+
 #include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/system_symbolic_inspector.h"
 #include "drake/systems/framework/value_checker.h"
@@ -308,7 +310,10 @@ namespace {
 // this storage is responsible for resetting any values prior to their use.
 template <typename T>
 struct Scratch {
-  std::vector<const Event<T>*> next_events;
+  using NextEventsVector = absl::InlinedVector<
+      const Event<T>*, LeafEventCollection<PublishEvent<T>>::kDefaultCapacity>;
+
+  NextEventsVector next_events;
 };
 }  // namespace
 
@@ -380,7 +385,7 @@ void LeafSystem<T>::DoCalcNextUpdateTime(
       this->get_cache_entry(scratch_cache_index_)
       .get_mutable_cache_entry_value(context)
       .template GetMutableValueOrThrow<Scratch<T>>();
-  std::vector<const Event<T>*>& next_events = scratch.next_events;
+  typename Scratch<T>::NextEventsVector& next_events = scratch.next_events;
   next_events.clear();
 
   // Find the minimum next sample time across all declared periodic events,
