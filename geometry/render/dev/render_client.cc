@@ -1,15 +1,15 @@
 #include "drake/geometry/render/dev/render_client.h"
 
 #include <atomic>
+#include <map>
+#include <memory>
 #include <regex>
 #include <string>
 #include <type_traits>
 #include <utility>  // std::pair
 #include <vector>
 
-#include <curl/curl.h>
 #include <fmt/format.h>
-#include <nlohmann/json.hpp>
 #include <picosha2.h>
 #include <vtkImageData.h>
 #include <vtkImageExport.h>
@@ -18,249 +18,74 @@
 #include <vtkTIFFReader.h>
 
 #include "drake/common/filesystem.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
+#include "drake/geometry/render/dev/http_service_curl.h"
 
 namespace drake {
 namespace geometry {
 namespace render {
+namespace internal {
 
 namespace {
 
-using json = nlohmann::json;
 using drake::systems::sensors::ImageDepth32F;
 using drake::systems::sensors::ImageLabel16I;
 using drake::systems::sensors::ImageRgba8U;
+namespace fs = drake::filesystem;
 
-// Curl setup / teardown -------------------------------------------------------
+// Convenience definitions for interacting with HttpService.
+using data_map_t = std::map<std::string, std::string>;
 
-// Render client constructor increases, destructor decreases num_clients.
-std::atomic<int> num_clients{0};
-// is_initialized should only be modified in static_curl_{init,cleanup}.
-std::atomic<bool> is_initialized{false};
-
-void static_curl_init() {
-  if (!is_initialized) {
-    curl_global_init(CURL_GLOBAL_ALL);
-    is_initialized = true;
-  }
-}
-
-void static_curl_cleanup() {
-  if (num_clients == 0) {
-    curl_global_cleanup();
-    is_initialized = false;
-  }
-}
-
-// Curl callbacks --------------------------------------------------------------
-
-// Write callback for libcurl, assumes `userp` points to an std::string.
-// See: https://curl.se/libcurl/c/libcurl-tutorial.html
-size_t WriteFileData(void* buffer, size_t size, size_t nmemb, void* userp) {
-  const size_t data_size = size * nmemb;
-  std::ofstream* f = static_cast<std::ofstream*>(userp);
-  f->write(static_cast<char*>(buffer), data_size);
-  return data_size;
-}
-
-using debug_data_t =
-    std::vector<std::pair<const curl_infotype, const std::string>>;
-/* Used with CURLOPT_VERBOSE in order to add to drake::log(), see also:
- https://curl.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
-
- `userp` is assumed to be debug_data_t defined above, this method simply
- accumulates the incoming messages from curl, LogCurlDebugData below combines
- and adds them to the drake log.  The following types are skipped, as these
- items should be handled by the write / read callback (binary data should not be
- logged to drake::log()):
-
- - CURLINFO_DATA_IN
- - CURLINFO_DATA_OUT
- - CURLINFO_SSL_DATA_IN
- - CURLINFO_SSL_DATA_OUT */
-int DebugCallback(CURL* /* handle */, curl_infotype type, char* data,
-                  size_t size, void* userp) {
-  if (type != CURLINFO_DATA_IN && type != CURLINFO_DATA_OUT &&
-      type != CURLINFO_SSL_DATA_IN && type != CURLINFO_SSL_DATA_OUT) {
-    debug_data_t* debug_data = static_cast<debug_data_t*>(userp);
-    debug_data->emplace_back(type, std::string(data, data + size));
-  }
-
-  return 0;  // See docs, return of 0 is always required.
-}
-
-// Used in logging curl data, returns a human friendly string.
-std::string CurlInfoTypeAsString(curl_infotype type) {
-  if (type == CURLINFO_TEXT)
-    return "CURLINFO_TEXT";
-  else if (type == CURLINFO_HEADER_IN)
-    return "CURLINFO_HEADER_IN";
-  else if (type == CURLINFO_HEADER_OUT)
-    return "CURLINFO_HEADER_OUT";
-  else if (type == CURLINFO_DATA_IN)
-    return "CURLINFO_DATA_IN";
-  else if (type == CURLINFO_DATA_OUT)
-    return "CURLINFO_DATA_OUT";
-  else if (type == CURLINFO_SSL_DATA_IN)
-    return "CURLINFO_SSL_DATA_IN";
-  else if (type == CURLINFO_SSL_DATA_OUT)
-    return "CURLINFO_SSL_DATA_OUT";
-  else if (type == CURLINFO_END)
-    return "CURLINFO_END";
-  return fmt::format("UNKNOWN_CURLINFO_TYPE={}", type);
-}
-
-/* Remove leading / trailing whitespace from message before logging.  Curl
- includes newline characters in its entries, which are desirable for the
- accumulated interior message parts but the trailing whitespace in particular
- leads to cluttered logs (drake::log() adds a trailing newline). */
-void LogIfTrimmedWhitespaceNonEmpty(curl_infotype type,
-                                    const std::string& message) {
-  const auto trimmed =
-      std::regex_replace(message, std::regex(R"(^\s+|\s+$)"), "");
-  // Some curl messages were just the \n character, don't log "nothing".
-  if (!trimmed.empty()) {
-    drake::log()->debug("[{}] {}", CurlInfoTypeAsString(type), trimmed);
-  }
-}
-
-/* Log the combined messages added to `debug_data` by the DebugCallback.
- When curl calls the DebugCallback, it will do so with piecemeal components.  In
- the below walk-through, the "Accept: ..." statement was modified to add spaces
- between * and / to avoid ending the comment.
-
- Call 1: type=CURLINFO_HEADER_OUT
-         data="  Trying 127.0.0.1:8000...\n"
- Call 2: type=CURLINFO_HEADER_OUT
-         data="TCP_NODELAY set\n"
- Call 3: type=CURLINFO_HEADER_OUT
-         data="Connected to 127.0.0.1 (127.0.0.1) port 8000 (#0)\n"
- Call 4: type=CURLINFO_TEXT
-         data="POST /render HTTP/1.1
-         Host: 127.0.0.1:8000
-         Accept: * / *
-         Content-Length: 1448
-         Content-Type: multipart/form-data; boundary=--...---c13a866cb4280bc1\n"
- Call 5: type=CURLINFO_HEADER_IN
-         data="We are completely uploaded and fine\n"
- ...
-
- Unlike after CURLINFO_HEADER_OUT, the CURLINFO_TEXT included after
- CURLINFO_HEADER_IN is provided one line at a time.  As a result, the
- drake::log() if added to directly in DebugCallback can become somewhat
- cluttered and inconsistent.  This method combines any sequential messages that
- were appended into a single accumulated log call, trimming preceding and
- trailing whitespace to keep the log as orderly as possible.  In the example
- above, the input vector would look something like:
-
- {
-   {CURLINFO_HEADER_OUT, "  Trying 127.0.0.1:8000...\n"},
-   {CURLINFO_HEADER_OUT, "TCP_NODELAY set\n"},
-   {CURLINFO_HEADER_OUT, "Connected to 127.0.0.1 (127.0.0.1) port 8000 (#0)\n"},
-   {CURLINFO_TEXT, "POST /render HTTP/1.1\n...\n...\n"},
-   {CURLINFO_HEADER_IN, "We are completely uploaded and fine\n"},
- }
-
- and the drake::log() will have three total combined calls, the first three
- CURLINFO_HEADER_OUT will be combined into one log call, then CURLINFO_TEXT,
- then CURLINFO_HEADER_IN.
- */
-void LogCurlDebugData(const debug_data_t& debug_data) {
-  // NOTE: not very efficient in terms of copies, but messages are small.
-  std::string accumulator;
-  /* The value must be initialized for compiler warnings, prev_type gets set on
-   the first iteration. Initialize to intentionally invalid value. */
-  curl_infotype prev_type = static_cast<curl_infotype>(-1);
-  auto counter = 0;
-  for (const auto& pair : debug_data) {
-    // On the first iteration, initialize the previous type and accumulator.
-    if (counter++ == 0) {
-      prev_type = pair.first;
-      accumulator += pair.second;
-    } else {
-      /* If the current and previous type are the same, accumulate and continue.
-       Otherwise, log the now complete accumulator and reset for the newly
-       encountered curl_infotype. */
-      if (pair.first == prev_type) {
-        accumulator += pair.second;
-      } else {
-        LogIfTrimmedWhitespaceNonEmpty(pair.first, accumulator);
-        prev_type = pair.first;
-        accumulator = pair.second;
-      }
-    }
-  }
-  // Log final results (loop will have accumulated at least the last element).
-  if (counter > 0) {
-    LogIfTrimmedWhitespaceNonEmpty(prev_type, accumulator);
-  }
-}
-
-// Additional helper utilities -------------------------------------------------
-
-/* Helper method to add a field of `field_name` with value `field_data` to the
- specified curl `form` instance reducing code redundancy.  Only to be used for
- "simple fields" using `curl_mime_data`.  For files, use AddFileField.
- NOTE: the created curl_mimepart* is freed via curl_easy_cleanup. */
-void AddField(curl_mime* form, const char* field_name,
+/* Add field_name = field_data to the map, assumes data_map does **not** already
+ have the key `field_name`. */
+void AddField(data_map_t* data_map, const std::string& field_name,
               const std::string& field_data) {
-  DRAKE_DEMAND(form != nullptr);
-  DRAKE_DEMAND(field_name != nullptr);
-  curl_mimepart* field = curl_mime_addpart(form);
-  curl_mime_name(field, field_name);
-  curl_mime_data(field, field_data.c_str(), CURL_ZERO_TERMINATED);
+  (*data_map)[field_name] = field_data;
 }
 
-/* Template overload so that we do not have to std::to_string ever member of
+/* Template overload so that we do not have to std::to_string every member of
  the intrinsics() below. */
 template <typename T>
-void AddField(curl_mime* form, const char* field_name, T field_data) {
+void AddField(data_map_t* data_map, const std::string& field_name,
+              T field_data) {
   static_assert(
       std::is_arithmetic_v<T> && !std::is_enum_v<T>,
       "Manually convert field_data to a string, or specialize this function.");
-  AddField(form, field_name, std::to_string(field_data));
+  AddField(data_map, field_name, std::to_string(field_data));
 }
 
 // Overload required to prevent bad conversions between const char* and long.
 template <>
-void AddField<const char*>(curl_mime* form, const char* field_name,
+void AddField<const char*>(data_map_t* data_map, const std::string& field_name,
                            const char* field_data) {
-  AddField(form, field_name, std::string(field_data));
+  AddField(data_map, field_name, std::string(field_data));
 }
 
 // Overload for RenderImageType, to avoid bad conversion via std::to_string.
 template <>
-void AddField<RenderImageType>(curl_mime* form, const char* field_name,
+void AddField<RenderImageType>(data_map_t* data_map,
+                               const std::string& field_name,
                                RenderImageType field_data) {
   if (field_data == RenderImageType::kColorRgba8U) {
-    AddField(form, field_name, "color");
+    AddField(data_map, field_name, "color");
   } else if (field_data == RenderImageType::kDepthDepth32F) {
-    AddField(form, field_name, "depth");
+    AddField(data_map, field_name, "depth");
   } else if (field_data == RenderImageType::kLabel16I) {
-    AddField(form, field_name, "label");
+    AddField(data_map, field_name, "label");
+    // no cover: will only execute with a breaking change to RenderImageType.
+    // LCOV_EXCL_START
   } else {
     throw std::runtime_error(fmt::format(
         "RenderClient: unsupported RenderImageType of {} requested.",
         field_data));
   }
+  // LCOV_EXCL_STOP
 }
 
-/* Same as AddField, only for files using curl_mime_filedata, informing curl of
- the `file_path` to upload under the specified `field_name`.  The optional
- mime_type will be added to the form when provided. */
-void AddFileField(curl_mime* form, const char* field_name,
-                  const std::string& file_path,
-                  const std::optional<std::string>& mime_type) {
-  DRAKE_DEMAND(form != nullptr);
-  DRAKE_DEMAND(field_name != nullptr);
-  auto* field = curl_mime_addpart(form);
-  curl_mime_name(field, field_name);
-  curl_mime_filedata(field, file_path.c_str());
-  if (mime_type.has_value()) curl_mime_type(field, mime_type.value().c_str());
-}
-
-/** Verify the loaded image has the correct dimensions.
+/** Verify the loaded image has the correct dimensions.  This includes verifying
+ that the image is 2D (depth=1).
 
  @param expected_width
    The expected width of the loaded image.
@@ -272,7 +97,8 @@ void AddFileField(curl_mime* form, const char* field_name,
    The filename of the path that image_exporter has data from.  Used to populate
    the exception message.
  @throws std::runtime_error
-   If the expected_width or expected_height are not the same as image_exporter.
+   If the expected_width or expected_height are not the same as image_exporter,
+   or if a 3D image was provided (depth > 1).
  */
 void VerifyImportedImageDimensions(int expected_width, int expected_height,
                                    vtkImageExport* image_exporter,
@@ -288,14 +114,26 @@ void VerifyImportedImageDimensions(int expected_width, int expected_height,
   }
   /* This method should only be getting called for loading two dimensional
    images; VTK supports 3D images so we additionally check that the depth
-   dimension is 1. */
+   dimension is 1.  A TIFF image, for example, can have multiple layers. */
   const int image_depth = extent[5] - extent[4] + 1;
   if (image_depth != 1) {
+    /* no cover: no tests ever use a 3D image, but the check is important to
+     keep in order to guarantee the loops in LoadColorImage, as well as calls
+     to image_exporter->Export are safe. */
+    // LCOV_EXCL_START
     throw std::runtime_error(fmt::format(
         "RenderClient: expected two dimensional image, but loaded image from "
         "'{}' has a z dimension of {}.",
         path, image_depth));
+    // LCOV_EXCL_STOP
   }
+}
+
+/* Return '{url}' if port is <= 0, '{url}:{port}' otherwise.  Used for
+ populating error messages. */
+std::string UrlWithPort(const std::string& url, int32_t port) {
+  if (port > 0) return fmt::format("{}:{}", url, port);
+  return url;
 }
 
 }  // namespace
@@ -308,214 +146,144 @@ RenderClient::RenderClient(const std::string& url, int32_t port,
       port_{port},
       render_endpoint_{render_endpoint},
       verbose_{verbose},
-      no_cleanup_{no_cleanup} {
-  static_curl_init();
-  ++num_clients;
-}
-
-RenderClient::RenderClient(const RenderClient& other)
-    : temp_directory_{other.temp_directory_},
-      url_{other.url_},
-      port_{other.port_},
-      render_endpoint_{other.render_endpoint_},
-      verbose_{other.verbose_},
-      no_cleanup_{other.no_cleanup_} {
-  // Clone + no_cleanup may result in this being deleted.
-  const drake::filesystem::path temp_dir{temp_directory_};
-  if (!drake::filesystem::is_directory(temp_dir)) {
-    temp_directory_ = drake::temp_directory();
-  }
-  static_curl_init();
-  ++num_clients;
+      no_cleanup_{no_cleanup},
+      http_service_{std::make_unique<HttpServiceCurl>()} {
+  // Verify url and endpoint now rather than waiting until PostForm.
+  http_service_->ThrowIfUrlInvalid(url_);
+  http_service_->ThrowIfEndpointInvalid(render_endpoint_);
 }
 
 RenderClient::~RenderClient() {
-  const drake::filesystem::path temp_dir{temp_directory_};
+  const fs::path temp_dir{temp_directory_};
   if (!no_cleanup_) {
-    if (drake::filesystem::is_directory(temp_dir)) {
-      try {
-        drake::filesystem::remove_all(temp_dir);
-      } catch (const std::exception& e) {
-        // TODO(svenevs): what is the right thing to do if we cannot delete?
-        drake::log()->debug("RenderClient: could not delete '{}'. {}",
-                            temp_directory_, e.what());
-      }
+    try {
+      fs::remove_all(temp_dir);
+      // no cover: OS dependent exceptions for fs::remove_all not known.
+      // LCOV_EXCL_START
+    } catch (const std::exception& e) {
+      drake::log()->debug("RenderClient: could not delete '{}'. {}",
+                          temp_directory_, e.what());
     }
-  } else {
-    // TODO(svenevs): make this `else if (verbose_)` instead?  This gets printed
-    // twice because of cloning.
+    // LCOV_EXCL_STOP
+  } else if (verbose_) {
+    // NOTE: this gets printed twice because of cloning, cannot be avoided.
     drake::log()->debug(
         "RenderClient: temporary directory '{}' was *NOT* deleted.",
         temp_directory_);
   }
-  --num_clients;
-  static_curl_cleanup();
 }
 
 std::string RenderClient::RenderOnServer(
     const RenderCameraCore& camera_core, RenderImageType image_type,
     const std::string& scene_path, const std::optional<std::string>& mime_type,
-    double min_depth, double max_depth) const {
-  if (image_type == RenderImageType::kDepthDepth32F)
-    ValidDepthRangeOrThrow(min_depth, max_depth);
-
-  CURL* curl{nullptr};
-  CURLcode result;
-  curl = curl_easy_init();
-  DRAKE_DEMAND(curl != nullptr);
-
-  // Used when verbose_, needed in scope for logging after curl_easy_perform.
-  debug_data_t debug_data;
-  if (verbose_) {
-    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-    curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &DebugCallback);
-    curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &debug_data);
+    const std::optional<DepthRange>& depth_range) const {
+  // Make sure depth_range is only provided for depth images.
+  if (image_type == RenderImageType::kDepthDepth32F &&
+      !depth_range.has_value()) {
+    throw std::logic_error(
+        "RenderOnServer: depth image render requested, but no depth_range was "
+        "provided.");
+  } else if (depth_range.has_value() &&
+             (image_type == RenderImageType::kColorRgba8U ||
+              image_type == RenderImageType::kLabel16I)) {
+    throw std::logic_error(
+        "RenderOnServer: the depth_range parameter may only be provided when "
+        "the image_type is a depth image.");
   }
 
-  // Setup the POST url.
-  const std::string post_url = url_ + "/" + render_endpoint_;
-  curl_easy_setopt(curl, CURLOPT_URL, post_url.c_str());
-  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-  if (port_ > 0) curl_easy_setopt(curl, CURLOPT_PORT, port_);
-
-  // Create and fill out a <form> to POST.
-  curl_mime* form{nullptr};
-  struct curl_slist* headerlist{nullptr};
-  form = curl_mime_init(curl);
-
   // Add the fields to the form.
-  AddFileField(form, "scene", scene_path, mime_type);
+  data_map_t field_map;
   const std::string scene_sha256 = ComputeSha256(scene_path);
-  AddField(form, "scene_sha256", scene_sha256);
-  AddField(form, "image_type", image_type);
+  AddField(&field_map, "scene_sha256", scene_sha256);
+  AddField(&field_map, "image_type", image_type);
   const auto& intrinsics = camera_core.intrinsics();
-  AddField(form, "width", intrinsics.width());
-  AddField(form, "height", intrinsics.height());
+  AddField(&field_map, "width", intrinsics.width());
+  AddField(&field_map, "height", intrinsics.height());
   const auto& clipping = camera_core.clipping();
-  AddField(form, "near", clipping.near());
-  AddField(form, "far", clipping.far());
-  AddField(form, "focal_x", intrinsics.focal_x());
-  AddField(form, "focal_y", intrinsics.focal_y());
-  AddField(form, "fov_x", intrinsics.fov_x());
-  AddField(form, "fov_y", intrinsics.fov_y());
-  AddField(form, "center_x", intrinsics.center_x());
-  AddField(form, "center_y", intrinsics.center_y());
+  AddField(&field_map, "near", clipping.near());
+  AddField(&field_map, "far", clipping.far());
+  AddField(&field_map, "focal_x", intrinsics.focal_x());
+  AddField(&field_map, "focal_y", intrinsics.focal_y());
+  AddField(&field_map, "fov_x", intrinsics.fov_x());
+  AddField(&field_map, "fov_y", intrinsics.fov_y());
+  AddField(&field_map, "center_x", intrinsics.center_x());
+  AddField(&field_map, "center_y", intrinsics.center_y());
   // For depth images, an additional min_depth and max_depth are sent for the
   // depth range of the sensor (the range sensor's clipping range for valid
   // measuremeants, not the perspective clipping of the sensor's curvature).
   if (image_type == RenderImageType::kDepthDepth32F) {
-    AddField(form, "min_depth", min_depth);
-    AddField(form, "max_depth", max_depth);
+    const auto& range = depth_range.value();  // has_value checked above.
+    AddField(&field_map, "min_depth", range.min_depth());
+    AddField(&field_map, "max_depth", range.max_depth());
   }
-  AddField(form, "submit", "Render");
+  AddField(&field_map, "submit", "Render");
 
-  curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
-
-  // Disable 100-Continue.  See:
-  // http://www.iandennismiller.com/posts/curl-http1-1-100-continue-and-multipartform-data-post.html
-  headerlist = curl_slist_append(headerlist, "Expect:");
-  curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);
-
-  /* Have curl write directly to a file.  The provided scene_path does not
-   necessarily reside in temp_directory_, construct a path that is safe for this
-   RenderClient to write to. */
-  const drake::filesystem::path fs_scene_path{scene_path};
-  const drake::filesystem::path temp_bin_out =
-      drake::filesystem::path(temp_directory_) /
-      (drake::filesystem::path{fs_scene_path.filename().string() + ".bin"});
-  // Start with a clean file each time.
-  if (drake::filesystem::exists(temp_bin_out)) {
-    try {
-      if (!drake::filesystem::remove(temp_bin_out)) {
-        throw std::runtime_error("unable to remove file.");
-      }
-    } catch (const std::exception& e) {
-      throw std::runtime_error(fmt::format(
-          "RenderClient: error reusing '{}' to retrieve a new render, consider "
-          "calling RetrieveRender with unique scene_path arguments to receive "
-          "a unique temporary file each time: {}",
-          temp_bin_out.string(), e.what()));
-    }
-  }
-  // Open the file for writing, pass it off to curl.
-  const std::string bin_out_path{temp_bin_out.string()};
-  std::ofstream bin_out(bin_out_path, std::ios::binary);
-  if (!bin_out.good()) {
-    const auto state = bin_out.rdstate();
-    std::string why{""};
-    if (state == std::ios_base::badbit) {
-      why = "badbit was set.";
-    } else if (state == std::ios_base::failbit) {
-      why = "failbit was set.";
-    } else {
-      why = "unknown error.";
-    }
-
-    throw std::runtime_error(fmt::format(
-        "RenderClient: unable to open '{}' for writing results from server to: "
-        "{}",
-        bin_out_path, why));
-  }
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &WriteFileData);
-  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &bin_out);
-
-  // Perform the POST and drake::log() prior to any potential exceptions.
-  result = curl_easy_perform(curl);
-  if (verbose_) {
-    LogCurlDebugData(debug_data);
-  }
-
-  // Write callback is complete, close the file.
-  bin_out.close();
-
-  int64_t http_code{0};
-  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-  const bool http_code_ok = http_code >= 200 && http_code < 400;
-  if (result != CURLE_OK || !http_code_ok) {
-    // Server may have responded with meaningful text, try and load the file
-    // as a string.
-    std::string server_message = "Server Message: ";
-    try {
-      // See if the file is "small enough" to be json rather than an image.
-      // Anything larger than 4096 bytes is considered too large.
-      auto bin_size = drake::filesystem::file_size(bin_out_path);
-      bool added_message = false;
-      if (bin_size > 0 && bin_size < 4096) {
-        std::streampos bin_in_size{0};
-        std::ifstream bin_in(bin_out_path, std::ios::binary);
-        if (bin_in.is_open()) {
-          std::stringstream buff;
-          buff << bin_in.rdbuf();
-          server_message += buff.str();
-          added_message = true;
+  // Post the form and validate the results.
+  auto response = http_service_->PostForm(
+      temp_directory_, url_, port_, render_endpoint_, field_map,
+      {{"scene", {scene_path, mime_type}}}, verbose_);
+  if (!response.Good()) {
+    /* Server may have responded with meaningful text, try and load the file
+     as a string. */
+    std::string server_message = "None.";
+    if (response.data_path.has_value()) {
+      try {
+        /* See if the file is "small enough" to be json rather than an image.
+         Anything larger than 8192 bytes is considered too large. */
+        const auto& data_path = response.data_path.value();
+        auto bin_size = fs::file_size(data_path);
+        if (bin_size > 0 && bin_size < 8192) {
+          std::ifstream bin_in(data_path, std::ios::binary);
+          if (bin_in.is_open()) {
+            std::stringstream buff;
+            buff << bin_in.rdbuf();
+            server_message = buff.str();
+          }
         }
+        // no cover: no known way to generate this error path.
+        // LCOV_EXCL_START
+      } catch (...) {
+        server_message = "None.";
       }
-      if (!added_message) {
-        server_message += "None.";
-      }
-    } catch (...) {
-      server_message += "None.";
+      // LCOV_EXCL_STOP
     }
     throw std::runtime_error(fmt::format(
         R"(
-        ERROR doing POST: /{}
-          Server URL:     {}
-          cURL Message:   {}
-          HTTP Code:      {}
-          {}
+        ERROR doing POST:  /{}
+          Server URL:      {}
+          Service Message: {}
+          HTTP Code:       {}
+          Server Message:  {}
         )",
-        render_endpoint_, url_ + (port_ ? fmt::format(":{}", port_) : ""),
-        curl_easy_strerror(result), http_code, server_message));
+        render_endpoint_, UrlWithPort(url_, port_),
+        (response.service_error_message.has_value()
+             ? response.service_error_message.value()
+             : "None."),
+        response.http_code, server_message));
   }
-  curl_slist_free_all(headerlist);
-  curl_easy_cleanup(curl);
+
+  // If the server did not respond with a file, there is nothing to load.
+  if (!response.data_path.has_value()) {
+    throw std::runtime_error(fmt::format(
+        "ERROR with POST /{} response from server, url={}, HTTP code={}: the "
+        "server was supposed to respond with a file but did not.",
+        render_endpoint_, UrlWithPort(url_, port_), response.http_code));
+  }
+  const std::string bin_out_path = response.data_path.value();
+  if (!fs::is_regular_file(bin_out_path)) {
+    throw std::runtime_error(fmt::format(
+        "ERROR with POST /{} response from service, url={}, HTTP code={}: the "
+        "service responded with a file path '{}' but the file does not exist.",
+        render_endpoint_, UrlWithPort(url_, port_), response.http_code,
+        bin_out_path));
+  }
 
   /* At this point we have a seemingly valid return file from the server, see
    if it can be loaded as one of the supported image types.  We do not check for
    the validity (e.g., underlying type or number of channels), the Load*Image
    methods are responsible for this.  However, this method will rename the file
-   from ".bin" to the correct image file extension for better housekeeping in
-   the temp_directory_.
+   from e.g., "XYZ.curl" to the correct image file extension for better
+   housekeeping in the temp_directory.
 
    If the server did not return one of the kinds of files that are supported,
    error out now.
@@ -527,29 +295,37 @@ std::string RenderClient::RenderOnServer(
 
   vtkNew<vtkPNGReader> png_reader;
   if (png_reader->CanReadFile(bin_out_path.c_str())) {
-    return RenameFileExtension(bin_out_path, ".png");
+    return RenameHttpServiceResponse(bin_out_path, scene_path, ".png");
   }
   image_types_tried += "PNG";
 
   vtkNew<vtkTIFFReader> tiff_reader;
   if (tiff_reader->CanReadFile(bin_out_path.c_str())) {
-    return RenameFileExtension(bin_out_path, ".tiff");
+    return RenameHttpServiceResponse(bin_out_path, scene_path, ".tiff");
   }
   image_types_tried += ", TIFF";
 
   throw std::runtime_error(fmt::format(
-      "RenderClient: while trying to render the scene_id={} with provided "
-      "scene_path='{}', the file returned by the server saved in '{}' is not "
+      "RenderClient: while trying to render the scene '{}' with a sha256 hash "
+      "of '{}', the file returned by the server saved in '{}' is not "
       "understood as an image type that is supported.  Image types attempted "
       "loading as: {}.",
-      scene_sha256, scene_path, bin_out_path, image_types_tried));
+      scene_path, scene_sha256, bin_out_path, image_types_tried));
 }
 
 std::string RenderClient::ComputeSha256(const std::string& path) const {
+  if (!fs::is_regular_file(path)) {
+    throw std::runtime_error(
+        fmt::format("ComputeSha256: input file '{}' does not exist.", path));
+  }
   try {
     std::ifstream f_in(path, std::ios::binary);
+    if (!f_in.good()) {
+      throw std::runtime_error(fmt::format("cannot open file '{}'.", path));
+    }
     std::vector<unsigned char> hash(picosha2::k_digest_size);
     picosha2::hash256(f_in, hash.begin(), hash.end());
+    f_in.close();
     return picosha2::bytes_to_hex_string(hash.begin(), hash.end());
   } catch (const std::exception& e) {
     throw std::runtime_error("ComputeSha256: unable to compute hash: " +
@@ -557,25 +333,36 @@ std::string RenderClient::ComputeSha256(const std::string& path) const {
   }
 }
 
-void RenderClient::ValidDepthRangeOrThrow(double min_depth,
-                                          double max_depth) const {
-  // Make sure min_depth/max_depth are provided and make sense for depth images.
-  if (min_depth < 0.0 || max_depth < 0.0)
-    throw std::logic_error(
-        "min_depth and max_depth must be provided for "
-        "depth images, and be positive.");
-  if (max_depth <= min_depth)
-    throw std::logic_error(
-        "max_depth cannot be less than or equal to min_depth.");
-}
+std::string RenderClient::RenameHttpServiceResponse(
+    const std::string& response_data_path, const std::string& reference_path,
+    const std::string& extension) const {
+  const fs::path origin{response_data_path};
+  if (!fs::is_regular_file(origin)) {
+    throw std::runtime_error(
+        fmt::format("RenderClient: cannot rename '{}', file does not exist.",
+                    response_data_path));
+  }
 
-std::string RenderClient::RenameFileExtension(const std::string& path,
-                                              const std::string& ext) const {
-  const drake::filesystem::path origin{path};
-  drake::filesystem::path destination{path};
-  destination.replace_extension(drake::filesystem::path{ext});
-  drake::filesystem::rename(origin, destination);
+  // Require that input path to match is valid.
+  if (!fs::exists(reference_path)) {
+    throw std::runtime_error(
+        fmt::format("RenderClient: cannot rename '{0}' to '{1}' with extension "
+                    "'{2}': '{1}' "
+                    "does not exist.",
+                    response_data_path, reference_path, extension));
+  }
 
+  fs::path destination{reference_path};
+  destination.replace_extension(fs::path{extension});
+  // Do not overwrite files blindly, require a clean directory.
+  if (fs::exists(destination)) {
+    throw std::runtime_error(fmt::format(
+        "RenderClient: refusing to rename '{}' to '{}', file already exists!",
+        origin.string(), destination.string()));
+  }
+
+  // Rename and log what changed.
+  fs::rename(origin, destination);
   if (verbose_) {
     drake::log()->debug("RenderClient: renamed '{}' to '{}'.", origin.string(),
                         destination.string());
@@ -610,8 +397,8 @@ void RenderClient::LoadColorImage(const std::string& path,
   const int channels = image_data->GetNumberOfScalarComponents();
   if (channels != 3 && channels != 4) {
     throw std::runtime_error(fmt::format(
-        "RenderClient: loaded PNG image from '{}' has {} channels, but either "
-        "3 (RGB) or 4 (RGBA) are required for color images.",
+        "RenderClient: loaded PNG image from '{}' has {} channel(s), but "
+        "either 3 (RGB) or 4 (RGBA) are required for color images.",
         path, channels));
   }
 
@@ -641,7 +428,7 @@ void RenderClient::LoadColorImage(const std::string& path,
     for (int y = 0; y < height; ++y) {
       for (int x = 0; x < width; ++x) {
         const int out_idx = (x + y * width) * kNumChannels;
-        const int in_idx = (x + (height - y) * width) * kNumChannels;
+        const int in_idx = (x + (height - y - 1) * width) * kNumChannels;
         out_data[out_idx + 0] = in_data[in_idx + 0];  // Red channel.
         out_data[out_idx + 1] = in_data[in_idx + 1];  // Blue channel.
         out_data[out_idx + 2] = in_data[in_idx + 2];  // Green channel.
@@ -653,7 +440,7 @@ void RenderClient::LoadColorImage(const std::string& path,
     for (int y = 0; y < height; ++y) {
       for (int x = 0; x < width; ++x) {
         const int out_idx = (x + y * width) * kNumChannels;
-        const int in_idx = (x + (height - y) * width) * 3;
+        const int in_idx = (x + (height - y - 1) * width) * 3;
         out_data[out_idx + 0] = in_data[in_idx + 0];  // Red channel.
         out_data[out_idx + 1] = in_data[in_idx + 1];  // Blue channel.
         out_data[out_idx + 2] = in_data[in_idx + 2];  // Green channel.
@@ -752,6 +539,11 @@ void RenderClient::LoadLabelImage(const std::string& path,
   image_exporter->Export(label_image_out->at(0, 0));
 }
 
+void RenderClient::SetHttpService(std::unique_ptr<HttpService> service) {
+  http_service_ = std::move(service);
+}
+
+}  // namespace internal
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake
