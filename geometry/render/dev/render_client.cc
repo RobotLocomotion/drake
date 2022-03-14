@@ -147,26 +147,15 @@ RenderClient::RenderClient(const std::string& url, int32_t port,
       render_endpoint_{render_endpoint},
       verbose_{verbose},
       no_cleanup_{no_cleanup},
-      this_was_cloned_{false},
-      http_service_{std::make_unique<HttpServiceCurl>(temp_directory_, url_,
-                                                      port_, verbose_)} {
-  // Verify endpoint now rather than waiting until PostForm.
+      http_service_{std::make_unique<HttpServiceCurl>()} {
+  // Verify url and endpoint now rather than waiting until PostForm.
+  http_service_->ThrowIfUrlInvalid(url_);
   http_service_->ThrowIfEndpointInvalid(render_endpoint_);
 }
 
-RenderClient::RenderClient(const RenderClient& other)
-    : temp_directory_{other.temp_directory_},
-      url_{other.url_},
-      port_{other.port_},
-      render_endpoint_{other.render_endpoint_},
-      verbose_{other.verbose_},
-      no_cleanup_{other.no_cleanup_},
-      this_was_cloned_{false},
-      http_service_{other.http_service_->Clone()} {}
-
 RenderClient::~RenderClient() {
   const fs::path temp_dir{temp_directory_};
-  if (!no_cleanup_ && !this_was_cloned_) {
+  if (!no_cleanup_) {
     try {
       fs::remove_all(temp_dir);
       // no cover: OS dependent exceptions for fs::remove_all not known.
@@ -182,30 +171,6 @@ RenderClient::~RenderClient() {
         "RenderClient: temporary directory '{}' was *NOT* deleted.",
         temp_directory_);
   }
-}
-
-std::unique_ptr<RenderClient> RenderClient::Clone() const {
-  std::unique_ptr<RenderClient> clone(DoClone());
-  // Make sure that derived classes have actually overridden DoClone().
-  // Particularly important for derivations of derivations.
-  // Note: clang considers typeid(*clone) to be an expression with side effects.
-  // So, we capture a reference to the polymorphic type and provide that to
-  // typeid to make both clang and gcc happy.
-  const RenderClient& clone_ref = *clone;
-  if (typeid(*this) != typeid(clone_ref)) {
-    throw std::logic_error(fmt::format(
-        "Error in cloning RenderClient class of type {}; the clone returns "
-        "type {}. {}::DoClone() was probably not implemented",
-        NiceTypeName::Get(*this), NiceTypeName::Get(clone_ref),
-        NiceTypeName::Get(*this)));
-  }
-  // TODO(svenevs): it's either const_cast, or make this method non-const.
-  const_cast<RenderClient*>(this)->this_was_cloned_ = true;
-  return clone;
-}
-
-std::unique_ptr<RenderClient> RenderClient::DoClone() const {
-  return std::unique_ptr<RenderClient>(new RenderClient(*this));
 }
 
 std::string RenderClient::RenderOnServer(
@@ -254,7 +219,8 @@ std::string RenderClient::RenderOnServer(
   AddField(&field_map, "submit", "Render");
 
   // Post the form and validate the results.
-  auto response = http_service_->PostForm(render_endpoint_, field_map,
+  auto response = http_service_->PostForm(temp_directory_, url_, port_,
+                                          verbose_, render_endpoint_, field_map,
                                           {{"scene", {scene_path, mime_type}}});
   if (!response.Good()) {
     /* Server may have responded with meaningful text, try and load the file

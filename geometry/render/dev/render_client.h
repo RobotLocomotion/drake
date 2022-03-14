@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/geometry/render/dev/http_service.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/systems/sensors/image.h"
@@ -25,18 +26,6 @@ enum RenderImageType {
 /** The client which communicates with a render server. */
 class RenderClient {
  public:
-  /** @name Does not allow copy, move, or assignment  */
-  //@{
-#ifdef DRAKE_DOXYGEN_CXX
-  // Note: the copy constructor operator is actually protected to serve as the
-  // basis for implementing the DoClone() method of derived classes.
-  RenderClient(const RenderClient&) = delete;
-#endif
-  RenderClient& operator=(const RenderClient&) = delete;
-  RenderClient(RenderClient&&) = delete;
-  RenderClient& operator=(RenderClient&&) = delete;
-  //@}}
-
   /** Constructs the render engine from the given parameters.
    @param url
      The url of the server to communicate with, e.g., `"http://127.0.0.1"`.  May
@@ -65,9 +54,7 @@ class RenderClient {
 
   virtual ~RenderClient();
 
-  /** Clones the render client -- making the %RenderClient compatible with
-   copyable_unique_ptr. */
-  std::unique_ptr<RenderClient> Clone() const;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RenderClient);
 
   /** @name Server communication */
   //@{
@@ -265,13 +252,6 @@ class RenderClient {
   /** (Internal use only) for testing. */
   void SetHttpService(std::unique_ptr<HttpService> service);
 
- protected:
-  /** Copy constructor for the purpose of cloning. */
-  RenderClient(const RenderClient& other);
-
-  /** The NVI-function for cloning this http service. */
-  virtual std::unique_ptr<RenderClient> DoClone() const;
-
  private:
   friend class RenderClientTester;
   std::string temp_directory_;
@@ -280,8 +260,6 @@ class RenderClient {
   std::string render_endpoint_;
   bool verbose_;
   bool no_cleanup_;
-  // Only set to true in Clone(), last clone deleted removes temp directory.
-  bool this_was_cloned_;
   std::unique_ptr<HttpService> http_service_;
 };
 

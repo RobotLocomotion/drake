@@ -40,20 +40,12 @@ class RenderClientTester {
     EXPECT_EQ(client_.render_endpoint(), render_endpoint);
     EXPECT_EQ(client_.verbose(), verbose);
     EXPECT_EQ(client_.no_cleanup(), no_cleanup);
-
-    EXPECT_EQ(client_.temp_directory(),
-              client_.http_service_->temp_directory());
-    EXPECT_EQ(client_.http_service_->url(), url);
-    EXPECT_EQ(client_.http_service_->port(), port);
-    EXPECT_EQ(client_.http_service_->verbose(), verbose);
   }
 
   void CompareAttributes(const RenderClient& other) {
     ValidateAttributes(other.url(), other.port(), other.render_endpoint(),
                        other.verbose(), other.no_cleanup());
   }
-
-  bool ClientWasCloned() const { return client_.this_was_cloned_; }
 
  private:
   const RenderClient& client_;
@@ -103,7 +95,6 @@ GTEST_TEST(RenderClient, Constructor) {
         EXPECT_TRUE(fs::is_directory(client.temp_directory()));
         tester.ValidateAttributes(url, port, render_endpoint, verbose,
                                   p_no_cleanup);
-        EXPECT_FALSE(tester.ClientWasCloned());
       }  // Client is deleted.
       if (p_no_cleanup) {
         EXPECT_TRUE(fs::is_directory(temp_directory));
@@ -125,7 +116,7 @@ GTEST_TEST(RenderClient, Destructor) {
   std::string temp_dir_path;
   // Construction with no_cleanup=false: temp_directory should be gone.
   {
-    RenderClient client{url, port, render_endpoint, verbose, false};
+    const RenderClient client{url, port, render_endpoint, verbose, false};
     temp_dir_path = client.temp_directory();
     EXPECT_TRUE(fs::is_directory(temp_dir_path));
   }  // Client is deleted.
@@ -133,102 +124,12 @@ GTEST_TEST(RenderClient, Destructor) {
 
   // Construction with no_cleanup=true: temp_directory should remain.
   {
-    RenderClient client{url, port, render_endpoint, verbose, true};
+    const RenderClient client{url, port, render_endpoint, verbose, true};
     temp_dir_path = client.temp_directory();
     EXPECT_TRUE(fs::is_directory(temp_dir_path));
   }  // Client is deleted.
   EXPECT_TRUE(fs::is_directory(temp_dir_path));
   fs::remove(temp_dir_path);
-}
-
-// Cloning ---------------------------------------------------------------------
-/* RenderClient is a concrete implementation, but it also supports inheritance.
- Derived classes must override DoClone to be considered valid. */
-class RenderClientGoodClone : public RenderClient {
- public:
-  RenderClientGoodClone(const std::string& url, int32_t port,
-                        const std::string& render_endpoint, bool verbose,
-                        bool no_cleanup)
-      : RenderClient(url, port, render_endpoint, verbose, no_cleanup) {}
-  RenderClientGoodClone(const RenderClientGoodClone& other)
-      : RenderClient(other) {}
-  std::unique_ptr<RenderClient> DoClone() const override {
-    return std::unique_ptr<RenderClientGoodClone>(
-        new RenderClientGoodClone(*this));
-  }
-};
-
-// Derived-derived class that forgets to implement DoClone() will raise.
-class RenderClientBadClone : public RenderClientGoodClone {
- public:
-  RenderClientBadClone(const std::string& url, int32_t port,
-                       const std::string& render_endpoint, bool verbose,
-                       bool no_cleanup)
-      : RenderClientGoodClone(url, port, render_endpoint, verbose, no_cleanup) {
-  }
-  RenderClientBadClone(const RenderClientBadClone& other)
-      : RenderClientGoodClone(other) {}
-};
-
-GTEST_TEST(RenderClient, Clone) {
-  const std::string url{"localhost"};
-  const int32_t port{8888};
-  const std::string render_endpoint{"speed_render"};
-  const bool verbose{false};
-  const bool no_cleanup{false};
-
-  /* Clone verification requires making sure that after deletion, if a
-   RenderClient was cloned it does not delete it's temporary directory when
-   no_cleanup=true -- the last lived clone will delete it. */
-  std::string client_temp_directory;
-  {
-    std::unique_ptr<RenderClient> clone = nullptr;
-    {
-      // Clone of a RenderClient should work as expected.
-      RenderClient client{url, port, render_endpoint, verbose, no_cleanup};
-      RenderClientTester client_tester{&client};
-      client_temp_directory = client.temp_directory();
-      clone = client.Clone();
-      RenderClientTester clone_tester{clone.get()};
-
-      client_tester.CompareAttributes(*clone);
-      EXPECT_TRUE(client_tester.ClientWasCloned());
-      EXPECT_FALSE(clone_tester.ClientWasCloned());
-    }  // Client deleted, clone is still in scope.
-    EXPECT_TRUE(fs::is_directory(client_temp_directory));
-  }  // All instances are deleted, temp directory removed.
-  EXPECT_FALSE(fs::is_directory(client_temp_directory));
-
-  {
-    // Verify that Clone() works the same for derived classes.
-    std::unique_ptr<RenderClient> clone = nullptr;
-    {
-      // Clone of a RenderClientGoodClone should work as expected.
-      RenderClientGoodClone client{url, port, render_endpoint, verbose,
-                                   no_cleanup};
-      RenderClientTester client_tester{&client};
-      client_temp_directory = client.temp_directory();
-      clone = client.Clone();
-      RenderClientTester clone_tester{clone.get()};
-
-      client_tester.CompareAttributes(*clone);
-      EXPECT_TRUE(client_tester.ClientWasCloned());
-      EXPECT_FALSE(clone_tester.ClientWasCloned());
-    }  // Client deleted, clone is still in scope.
-    EXPECT_TRUE(fs::is_directory(client_temp_directory));
-  }  // All instances are deleted, temp directory removed.
-  EXPECT_FALSE(fs::is_directory(client_temp_directory));
-
-  {
-    // Clone() on a class that did not override DoClone() should raise.
-    RenderClientBadClone client{url, port, render_endpoint, verbose,
-                                no_cleanup};
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.Clone(),
-        "Error in cloning RenderClient class of type.*RenderClientBadClone; "
-        "the clone returns type .*RenderClientGoodClone\\..*"
-        "RenderClientBadClone::DoClone\\(\\) was probably not implemented");
-  }
 }
 
 // RenderOnServer --------------------------------------------------------------
@@ -240,20 +141,11 @@ using file_map_t =
 // A simple HttpService that always fails.
 class FailService : public HttpService {
  public:
-  FailService(const std::string& temp_directory, const std::string& url,
-              int32_t port, bool verbose)
-      : HttpService(temp_directory, url, port, verbose) {}
+  FailService() : HttpService() {}
 
-  // no cover: the service should implement cloning, but it is not used.
-  // LCOV_EXCL_START
-  FailService(const FailService& other) : HttpService(other) {}
-
-  std::unique_ptr<HttpService> DoClone() const override {
-    return std::unique_ptr<FailService>(new FailService(*this));
-  }
-  // LCOV_EXCL_STOP
-
-  HttpResponse PostForm(const std::string& /* endpoint */,
+  HttpResponse PostForm(const std::string& /* temp_directory */,
+                        const std::string& /* url */, int32_t /* port */,
+                        bool /* verbose */, const std::string& /* endpoint */,
                         const data_map_t& /* data_fields */,
                         const file_map_t& /* file_fields */) override {
     HttpResponse ret;
@@ -278,14 +170,12 @@ class FieldCheckService : public HttpService {
  public:
   /* All parameters for HttpService, followed by RenderClient::RenderOnServer
    with the addition of the sha256. */
-  FieldCheckService(const std::string& temp_directory, const std::string& url,
-                    int32_t port, bool verbose,
-                    const RenderCameraCore& camera_core,
+  FieldCheckService(const RenderCameraCore& camera_core,
                     RenderImageType image_type, const std::string& scene_path,
                     const std::string& scene_sha256,
                     const std::optional<std::string>& mime_type,
                     const std::optional<DepthRange>& depth_range)
-      : HttpService(temp_directory, url, port, verbose),
+      : HttpService(),
         camera_core_{camera_core},
         image_type_{image_type},
         scene_path_{scene_path},
@@ -293,26 +183,13 @@ class FieldCheckService : public HttpService {
         mime_type_{mime_type},
         depth_range_{depth_range} {}
 
-  // no cover: the service should implement cloning, but it is not used.
-  // LCOV_EXCL_START
-  FieldCheckService(const FieldCheckService& other)
-      : HttpService(other),
-        camera_core_{other.camera_core_},
-        image_type_{other.image_type_},
-        scene_path_{other.scene_path_},
-        scene_sha256_{other.scene_sha256_},
-        mime_type_{other.mime_type_},
-        depth_range_{other.depth_range_} {}
-
-  std::unique_ptr<HttpService> DoClone() const override {
-    return std::unique_ptr<FieldCheckService>(new FieldCheckService(*this));
-  }
-  // LCOV_EXCL_STOP
-
   /* Check all of the <form> fields.  Always respond with failure (http 500). */
-  HttpResponse PostForm(const std::string& endpoint,
+  HttpResponse PostForm(const std::string& /* temp_directory */,
+                        const std::string& url, int32_t /* port */,
+                        bool /* verbose */, const std::string& endpoint,
                         const data_map_t& data_fields,
                         const file_map_t& file_fields) override {
+    ThrowIfUrlInvalid(url);
     ThrowIfEndpointInvalid(endpoint);
     ThrowIfFilesMissing(file_fields);
 
@@ -408,26 +285,17 @@ using PostFormCallback_t = typename std::function<HttpResponse(
  the behavior of PostForm. */
 class ProxyService : public HttpService {
  public:
-  ProxyService(const std::string& temp_directory, const std::string& url,
-               int32_t port, bool verbose, const PostFormCallback_t& callback)
-      : HttpService(temp_directory, url, port, verbose),
-        post_form_callback_{callback} {}
-
-  // no cover: the service should implement cloning, but it is not used.
-  // LCOV_EXCL_START
-  ProxyService(const ProxyService& other) : HttpService(other) {}
-
-  std::unique_ptr<HttpService> DoClone() const override {
-    return std::unique_ptr<ProxyService>(new ProxyService(*this));
-  }
-  // LCOV_EXCL_STOP
+  explicit ProxyService(const PostFormCallback_t& callback)
+      : HttpService(), post_form_callback_{callback} {}
 
   HttpResponse PostForm(
-      const std::string& endpoint,
+      const std::string& /* temp_directory */, const std::string& url,
+      int32_t /* port */, bool /* verbose */, const std::string& endpoint,
       const std::map<std::string, std::string>& data_fields,
       const std::map<std::string,
                      std::pair<std::string, std::optional<std::string>>>&
           file_fields) override {
+    ThrowIfUrlInvalid(url);
     ThrowIfEndpointInvalid(endpoint);
     ThrowIfFilesMissing(file_fields);
     return post_form_callback_(endpoint, data_fields, file_fields);
@@ -475,8 +343,7 @@ GTEST_TEST(RenderClient, RenderOnServer) {
 
   {
     // Forgetting to include the depth_range for a depth render should raise.
-    client.SetHttpService(
-        std::make_unique<FailService>(temp_dir_path, url, port, verbose));
+    client.SetHttpService(std::make_unique<FailService>());
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(depth_camera.core(),
                               RenderImageType::kDepthDepth32F, fake_scene_path,
@@ -516,9 +383,8 @@ GTEST_TEST(RenderClient, RenderOnServer) {
 
     // Check fields for a color render.
     client.SetHttpService(std::make_unique<FieldCheckService>(
-        temp_dir_path, url, port, verbose, color_camera.core(),
-        RenderImageType::kColorRgba8U, fake_scene_path, fake_scene_sha256,
-        std::nullopt, std::nullopt));
+        color_camera.core(), RenderImageType::kColorRgba8U, fake_scene_path,
+        fake_scene_sha256, std::nullopt, std::nullopt));
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(),
                               RenderImageType::kColorRgba8U, fake_scene_path,
@@ -530,9 +396,8 @@ GTEST_TEST(RenderClient, RenderOnServer) {
      reason for this to be checked with the depth render, it is just convenient
      since a new HttpService is being set for the client. */
     client.SetHttpService(std::make_unique<FieldCheckService>(
-        temp_dir_path, url, port, verbose, depth_camera.core(),
-        RenderImageType::kDepthDepth32F, fake_scene_path, fake_scene_sha256,
-        "test/mime_type", depth_camera.depth_range()));
+        depth_camera.core(), RenderImageType::kDepthDepth32F, fake_scene_path,
+        fake_scene_sha256, "test/mime_type", depth_camera.depth_range()));
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(depth_camera.core(),
                               RenderImageType::kDepthDepth32F, fake_scene_path,
@@ -541,9 +406,8 @@ GTEST_TEST(RenderClient, RenderOnServer) {
 
     // Check fields for a label render.
     client.SetHttpService(std::make_unique<FieldCheckService>(
-        temp_dir_path, url, port, verbose, color_camera.core(),
-        RenderImageType::kLabel16I, fake_scene_path, fake_scene_sha256,
-        std::nullopt, std::nullopt));
+        color_camera.core(), RenderImageType::kLabel16I, fake_scene_path,
+        fake_scene_sha256, std::nullopt, std::nullopt));
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(), RenderImageType::kLabel16I,
                               fake_scene_path, std::nullopt),
@@ -565,7 +429,7 @@ GTEST_TEST(RenderClient, RenderOnServer) {
           render_endpoint, p > 0 ? fmt::format("{}:{}", u, p) : u);
       RenderClient c{u, p, render_endpoint, verbose, no_cleanup};
       const auto temp = fs::path(c.temp_directory());
-      c.SetHttpService(std::make_unique<FailService>(temp, u, p, verbose));
+      c.SetHttpService(std::make_unique<FailService>());
       DRAKE_EXPECT_THROWS_MESSAGE(
           c.RenderOnServer(color_camera.core(), RenderImageType::kColorRgba8U,
                            fake_scene_path, std::nullopt),
@@ -585,8 +449,7 @@ GTEST_TEST(RenderClient, RenderOnServer) {
     }
     // LCOV_EXCL_STOP
     // Set the service with the provided callback.
-    client.SetHttpService(std::make_unique<ProxyService>(
-        temp_dir_path, url, port, verbose, callback));
+    client.SetHttpService(std::make_unique<ProxyService>(callback));
   };
 
   {
