@@ -64,7 +64,7 @@ def repository_python_info(repository_ctx):
     os_result = determine_os(repository_ctx)
     if os_result.error != None:
         fail(os_result.error)
-    if os_result.is_macos:
+    if os_result.is_macos or os_result.is_macos_wheel:
         os_key = os_result.distribution
     elif os_result.is_ubuntu:
         os_key = os_result.distribution + ":" + os_result.ubuntu_release
@@ -72,7 +72,7 @@ def repository_python_info(repository_ctx):
         os_key = "manylinux"
     versions_supported = _VERSION_SUPPORT_MATRIX[os_key]
 
-    if os_result.is_macos:
+    if os_result.is_macos or os_result.is_macos_wheel:
         # This value must match the interpreter_path in
         # @drake//tools/py_toolchain:macos_py3_runtime
         python = repository_ctx.attr.macos_interpreter_path
