@@ -1,4 +1,6 @@
+/* clang-format off to disable clang-format-includes */
 #include "drake/systems/analysis/scalar_initial_value_problem.h"
+/* clang-format on */
 
 #include <gtest/gtest.h>
 
