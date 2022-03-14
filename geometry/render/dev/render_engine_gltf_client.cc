@@ -150,7 +150,12 @@ RenderEngineGltfClient::RenderEngineGltfClient(
 
 RenderEngineGltfClient::RenderEngineGltfClient(
     const RenderEngineGltfClient& other)
-    : RenderEngineVtk(other), render_client_{other.render_client_->Clone()} {}
+    : RenderEngineVtk(other),
+      render_client_{std::make_unique<internal::RenderClient>(
+          other.render_client_->url(), other.render_client_->port(),
+          other.render_client_->render_endpoint(),
+          other.render_client_->verbose(),
+          other.render_client_->no_cleanup())} {}
 
 std::unique_ptr<RenderEngine> RenderEngineGltfClient::DoClone() const {
   return std::unique_ptr<RenderEngineGltfClient>(
