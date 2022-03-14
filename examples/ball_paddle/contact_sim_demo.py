@@ -88,7 +88,6 @@ def simulate_diagram(diagram, ball_paddle_plant, state_logger,
     state_log.Clear()
     simulator.Initialize()
     simulator.AdvanceTo(boundary_time=simulation_time)
-    print()
     PrintSimulatorStatistics(simulator)
     return state_log.sample_times(), state_log.data()
 
@@ -113,7 +112,7 @@ if __name__ == "__main__":
         help="The fixed time step period (in seconds) of discrete updates "
              "for the multibody plant modeled as a discrete system. "
              "If zero, we will use an integrator for a continuous system. "
-             "Strictly non-negative. Default 0.001.")
+             "Non-negative. Default 0.001.")
     parser.add_argument(
         "--ball_initial_position", nargs=3, metavar=('x', 'y', 'z'),
         default=[-0.0005, 0, 0.05],
@@ -134,4 +133,3 @@ if __name__ == "__main__":
         args.simulation_time, args.target_realtime_rate)
     print("\nFinal state variables:")
     print(state_samples[:, -1])
-    pass
