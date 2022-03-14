@@ -44,7 +44,7 @@ def print_recursive_comparison(d1, d2, level='root'):
 
 async def socket_operations_async(args):
     logger.info("Connecting...")
-    async with websockets.connect(args.ws_url) as websocket:
+    async with websockets.connect(args.ws_url, timeout=1) as websocket:
         logger.info("... connected")
         if args.send_message is not None:
             logger.info("Sending...")
