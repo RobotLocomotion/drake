@@ -80,7 +80,7 @@ def _vtk_cc_library(
     elif os_result.is_ubuntu:
         if not header_only:
             srcs = ["lib/lib{}-{}.so.1".format(name, VTK_MAJOR_MINOR_VERSION)]
-    elif os_result.is_manylinux:
+    elif os_result.is_manylinux or os_result.is_macos_wheel:
         if not header_only:
             # TODO(jwnimmer-tri) Ideally, we wouldn't be hard-coding paths when
             # using manylinux.
@@ -138,7 +138,7 @@ def _impl(repository_ctx):
             sha256 = sha256,
             type = "tar.gz",
         )
-    elif os_result.is_manylinux:
+    elif os_result.is_manylinux or os_result.is_macos_wheel:
         repository_ctx.symlink("/opt/vtk/include", "include")
     else:
         fail("Operating system is NOT supported {}".format(os_result))
@@ -837,7 +837,7 @@ licenses([
         "vtkGenericRenderWindowInteractor.h",
         "vtkRenderingUIModule.h",
     ]
-    if not os_result.is_macos:
+    if not os_result.is_macos and not os_result.is_macos_wheel:
         vtk_rendering_ui_hdrs.append("vtkXRenderWindowInteractor.h")
     file_content += _vtk_cc_library(
         os_result,
@@ -871,7 +871,7 @@ licenses([
         "vtkShader.h",
         "vtkShaderProgram.h",
     ]
-    if not os_result.is_macos:
+    if not os_result.is_macos and not os_result.is_macos_wheel:
         vtk_rendering_opengl2_hdrs.append("vtkXOpenGLRenderWindow.h")
 
     if os_result.is_manylinux:
