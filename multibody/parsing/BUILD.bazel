@@ -78,18 +78,21 @@ drake_cc_library(
         "detail_ignition.cc",
         "detail_path_utils.cc",
         "detail_tinyxml.cc",
+        "detail_tinyxml2_diagnostic.cc",
     ],
     hdrs = [
         "detail_common.h",
         "detail_ignition.h",
         "detail_path_utils.h",
         "detail_tinyxml.h",
+        "detail_tinyxml2_diagnostic.h",
     ],
     install_hdrs_exclude = [
         "detail_common.h",
         "detail_ignition.h",
         "detail_path_utils.h",
         "detail_tinyxml.h",
+        "detail_tinyxml2_diagnostic.h",
     ],
     visibility = [
         "//visibility:private",
@@ -511,6 +514,13 @@ drake_cc_googletest(
     deps = [
         ":detail_misc",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_tinyxml2_diagnostic_test",
+    deps = [
+        ":detail_misc",
     ],
 )
 
