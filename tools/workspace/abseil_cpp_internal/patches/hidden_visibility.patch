@@ -1,0 +1,15 @@
+Use hidden symbol visibility for Abseil's C++ code.
+
+This probably improves linker and loader throughput.
+
+--- absl/base/config.h.orig	2022-03-08 13:01:16.000000000 -0800
++++ absl/base/config.h	2022-03-13 13:46:02.698469827 -0700
+@@ -153,7 +153,7 @@
+ #define ABSL_INTERNAL_C_SYMBOL(x) x
+ #elif ABSL_OPTION_USE_INLINE_NAMESPACE == 1
+ #define ABSL_NAMESPACE_BEGIN \
+-  inline namespace ABSL_OPTION_INLINE_NAMESPACE_NAME {
++  inline namespace ABSL_OPTION_INLINE_NAMESPACE_NAME __attribute__ ((visibility ("hidden"))) {
+ #define ABSL_NAMESPACE_END }
+ #define ABSL_INTERNAL_C_SYMBOL_HELPER_2(x, v) x##_##v
+ #define ABSL_INTERNAL_C_SYMBOL_HELPER_1(x, v) \

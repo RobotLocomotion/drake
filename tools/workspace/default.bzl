@@ -2,6 +2,7 @@
 
 load("@drake//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
 load("@drake//tools/workspace:os.bzl", "os_repository")
+load("@drake//tools/workspace/abseil_cpp_internal:repository.bzl", "abseil_cpp_internal_repository")  # noqa
 load("@drake//tools/workspace/bazel_skylib:repository.bzl", "bazel_skylib_repository")  # noqa
 load("@drake//tools/workspace/blas:repository.bzl", "blas_repository")
 load("@drake//tools/workspace/boost:repository.bzl", "boost_repository")
@@ -107,6 +108,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
           be useful if a WORKSPACE file has already supplied its own external
           of a given name.
     """
+    if "abseil_cpp_internal" not in excludes:
+        abseil_cpp_internal_repository(name = "abseil_cpp_internal", mirrors = mirrors)  # noqa
     if "bazel_skylib" not in excludes:
         bazel_skylib_repository(name = "bazel_skylib", mirrors = mirrors)
     if "blas" not in excludes:
