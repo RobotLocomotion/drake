@@ -288,6 +288,32 @@ class CompliantContactManagerTest : public ::testing::Test {
     return v_star;
   }
 
+  // Helper method to unit test EvalContactJacobianCache().
+  // This method takes the Jacobian blocks evaluated with
+  // EvalContactJacobianCache() and assembles them into a dense Jacobian matrix.
+  MatrixXd CalcDenseJacobianMatrix(
+      const internal::ContactJacobianCache<double>& cache) const {
+    const auto& contact_kinematics = cache.contact_kinematics;
+    const auto& topology = contact_manager_->tree_topology();
+    const int nc = contact_kinematics.size();
+    MatrixXd J_AcBc_W(3 * nc, contact_manager_->plant().num_velocities());
+    J_AcBc_W.setZero();
+    for (int i = 0; i < nc; ++i) {
+      const int row_offset = 3 * i;
+      auto& pair_kinematics = contact_kinematics[i];
+      for (const auto& tree_jacobian : pair_kinematics.jacobian) {
+        // If added to the Jacobian, it must have a valid index.
+        EXPECT_TRUE(tree_jacobian.tree.is_valid());
+        const int col_offset =
+            topology.tree_velocities_start(tree_jacobian.tree);
+        const int tree_nv = topology.num_tree_velocities(tree_jacobian.tree);
+        J_AcBc_W.block(row_offset, col_offset, 3, tree_nv) =
+            pair_kinematics.R_WC.matrix() * tree_jacobian.J;
+      }
+    }
+    return J_AcBc_W;
+  }
+
  protected:
   // Arbitrary positive value so that the model is discrete.
   double time_step_{0.001};
@@ -405,10 +431,9 @@ TEST_F(CompliantContactManagerTest, EvalContactJacobianCache) {
 
   const std::vector<DiscreteContactPair<double>>& pairs =
       EvalDiscreteContactPairs(*plant_context_);
-  const auto& cache = EvalContactJacobianCache(*plant_context_);
-  const auto& Jc = cache.Jc;
-  EXPECT_EQ(Jc.cols(), plant_->num_velocities());
-  EXPECT_EQ(Jc.rows(), 3 * pairs.size());
+  const internal::ContactJacobianCache<double>& jacobian_cache =
+      EvalContactJacobianCache(*plant_context_);
+  const auto& J_AcBc_W = CalcDenseJacobianMatrix(jacobian_cache);
 
   // Arbitrary velocity of sphere 1.
   const Vector3d v_WS1(1, 2, 3);
@@ -442,12 +467,13 @@ TEST_F(CompliantContactManagerTest, EvalContactJacobianCache) {
     const Vector3d expected_v_S1cS2c_W = v_WS2c - v_WS1c;
 
     const int sign = pairs[0].id_A == sphere1_geometry ? 1 : -1;
-    const MatrixXd J_S1cS2c_C = sign * Jc.topRows(3);
-    const RotationMatrixd& R_WC = cache.R_WC_list[0];
-    const MatrixXd J_S1cS2c_W = R_WC.matrix() * J_S1cS2c_C;
+    const MatrixXd J_S1cS2c_W = sign * J_AcBc_W.topRows(3);
     const Vector3d v_S1cS2c_W = J_S1cS2c_W * v;
     EXPECT_TRUE(CompareMatrices(v_S1cS2c_W, expected_v_S1cS2c_W, kTolerance,
                                 MatrixCompareType::relative));
+
+    // Verify we loaded phi correctly.
+    EXPECT_EQ(pairs[0].phi0, jacobian_cache.contact_kinematics[0].phi);
   }
 
   // Verify contact Jacobian for hydroelastic pairs.
@@ -459,13 +485,14 @@ TEST_F(CompliantContactManagerTest, EvalContactJacobianCache) {
       const Vector3d p_S1C_W = p_WC - p_WS1;
       const Vector3d expected_v_WS1c = V_WS1.Shift(p_S1C_W).translational();
       const int sign = pairs[q].id_B == sphere1_geometry ? 1 : -1;
-      const MatrixXd J_WS1c_C =
-          sign * Jc.block(3 * q, 0, 3, plant_->num_velocities());
-      const RotationMatrixd& R_WC = cache.R_WC_list[q];
-      const MatrixXd J_WS1c_W = R_WC.matrix() * J_WS1c_C;
+      const MatrixXd J_WS1c_W =
+          sign * J_AcBc_W.block(3 * q, 0, 3, plant_->num_velocities());
       const Vector3d v_WS1c_W = J_WS1c_W * v;
       EXPECT_TRUE(CompareMatrices(v_WS1c_W, expected_v_WS1c, kTolerance,
                                   MatrixCompareType::relative));
+
+      // Verify we loaded phi correctly.
+      EXPECT_EQ(pairs[q].phi0, jacobian_cache.contact_kinematics[q].phi);
     }
   }
 }
