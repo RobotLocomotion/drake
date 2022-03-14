@@ -37,7 +37,8 @@ def make_ball_paddle(contact_model, contact_surface_representation,
 
     parser = Parser(plant)
     paddle_sdf_file_name = \
-        FindResourceOrThrow("drake/examples/ball_paddle/paddle.sdf")
+        FindResourceOrThrow("drake/examples/hydroelastic/python_ball_paddle"
+                            "/paddle.sdf")
     paddle = parser.AddModelFromFile(paddle_sdf_file_name, model_name="paddle")
     plant.WeldFrames(
         frame_on_parent_P=plant.world_frame(),
@@ -45,7 +46,8 @@ def make_ball_paddle(contact_model, contact_surface_representation,
         X_PC=p_WPaddle_fixed
     )
     ball_sdf_file_name = \
-        FindResourceOrThrow("drake/examples/ball_paddle/ball.sdf")
+        FindResourceOrThrow("drake/examples/hydroelastic/python_ball_paddle"
+                            "/ball.sdf")
     parser.AddModelFromFile(ball_sdf_file_name)
 
     plant.Finalize()
