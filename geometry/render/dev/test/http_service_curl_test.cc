@@ -17,28 +17,15 @@ namespace {
 
 namespace fs = drake::filesystem;
 
-GTEST_TEST(HttpServiceCurlTest, Clone) {
-  const auto temp_dir = drake::temp_directory();
-  const std::string url{"127.0.0.1"};
-  const int32_t port{7777};
-  const bool verbose{true};
-
-  const HttpServiceCurl service{temp_dir, url, port, verbose};
-  auto clone = service.Clone();
-  EXPECT_EQ(clone->temp_directory(), temp_dir);
-  EXPECT_EQ(clone->url(), url);
-  EXPECT_EQ(clone->port(), port);
-  EXPECT_EQ(clone->verbose(), verbose);
-
-  fs::remove(temp_dir);
-}
-
 // NOTE: we do not have a server, can only test failure scenarios.
 GTEST_TEST(HttpServiceCurlTest, PostForm) {
-  const auto temp_dir = drake::temp_directory();
   /* NOTE: do not use a URL / port that may be active...
    Use verbose=true (last parameter) to increase coverage via curl callbacks. */
-  HttpServiceCurl service{temp_dir, "notawebsite", 1, true};
+  const std::string temp_dir = drake::temp_directory();
+  const std::string url{"notawebsite"};
+  const int32_t port{1};
+  const bool verbose{true};
+  HttpServiceCurl service;
 
   {
     /* Case 1: tries to setup temporary file for server writeback, but it
@@ -49,7 +36,7 @@ GTEST_TEST(HttpServiceCurlTest, PostForm) {
     temp_file << "this file exists\n";
     temp_file.close();
     DRAKE_EXPECT_THROWS_MESSAGE(
-        service.PostForm("render", {}, {}),
+        service.PostForm(temp_dir, url, port, "render", {}, {}, verbose),
         fmt::format(
             "HttpServiceCurl: refusing to overwrite temporary file '{}' that "
             "already exists, please cleanup temporary directory '{}'.",
@@ -64,7 +51,7 @@ GTEST_TEST(HttpServiceCurlTest, PostForm) {
                            fs::perms::others_write;
     fs::permissions(temp_dir, all_write, fs::perm_options::remove);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        service.PostForm("render", {}, {}),
+        service.PostForm(temp_dir, url, port, "render", {}, {}, verbose),
         fmt::format(
             "HttpServiceCurl: unable to open temporary file '{}.*\\.curl'.",
             temp_dir));
@@ -73,7 +60,8 @@ GTEST_TEST(HttpServiceCurlTest, PostForm) {
 
   {
     // Validate that the response indicates failure in absence of server.
-    const auto res_1 = service.PostForm("render", {}, {});
+    const auto res_1 =
+        service.PostForm(temp_dir, url, port, "render", {}, {}, verbose);
     EXPECT_FALSE(res_1.Good());
     EXPECT_FALSE(res_1.data_path.has_value());
     EXPECT_TRUE(res_1.service_error);
@@ -96,10 +84,11 @@ GTEST_TEST(HttpServiceCurlTest, PostForm) {
     test_binary << 111.111 << 222.222 << 333.333;
     test_binary.close();
 
-    const auto res_2 =
-        service.PostForm("render", {{"width", "640"}, {"height", "480"}},
-                         {{"json", {test_json_path, test_json_mime}},
-                          {"binary", {test_binary_path, test_binary_mime}}});
+    const auto res_2 = service.PostForm(
+        temp_dir, url, port, "render", {{"width", "640"}, {"height", "480"}},
+        {{"json", {test_json_path, test_json_mime}},
+         {"binary", {test_binary_path, test_binary_mime}}},
+        verbose);
     EXPECT_FALSE(res_2.Good());
     EXPECT_FALSE(res_2.data_path.has_value());
     EXPECT_TRUE(res_2.service_error);
