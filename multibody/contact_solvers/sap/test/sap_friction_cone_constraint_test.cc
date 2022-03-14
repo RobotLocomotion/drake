@@ -185,8 +185,7 @@ Vector3d SolveProjectionWithScs(double mu, const Vector3d& R,
   const Matrix3d A =
       (Matrix3d() << 0., 0., mu, 1., 0., 0., 0., 1., 0.).finished();
   const Vector3d b = Vector3d::Zero();
-  auto cone_constraint = std::make_shared<LorentzConeConstraint>(
-      A, b, LorentzConeConstraint::EvalType::kConvexSmooth);  // kConvexSmooth
+  auto cone_constraint = std::make_shared<LorentzConeConstraint>(A, b);
   Binding<LorentzConeConstraint> binding(cone_constraint, gamma);
   prog.AddConstraint(binding);
 
