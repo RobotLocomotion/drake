@@ -159,7 +159,6 @@ drake_cc_binary(
         "//systems/analysis:simulator",
         "//systems/framework:diagram_builder",
         "//systems/primitives:vector_log_sink",
-        "@yaml_cpp",
     ],
 )
 

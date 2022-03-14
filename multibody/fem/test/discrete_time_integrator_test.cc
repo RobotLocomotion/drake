@@ -22,7 +22,7 @@ class DummyScheme final : public DiscreteTimeIntegrator<double> {
   ~DummyScheme() = default;
 
  private:
-  Vector3d do_get_weights() const final { return {1, 2, 3}; }
+  Vector3d DoGetWeights() const final { return {1, 2, 3}; }
 
   const VectorXd& DoGetUnknowns(const FemState<double>& state) const final {
     return state.GetPositions();
@@ -37,10 +37,9 @@ class DummyScheme final : public DiscreteTimeIntegrator<double> {
   // Dummy implementation to set the position of the next state to the
   // entry-wise product of previous state's position and the unknown variable.
   void DoAdvanceOneTimeStep(const FemState<double>& prev_state,
-                            const VectorXd& unknown_variable,
+                            const VectorXd& z,
                             FemState<double>* state) const final {
-    state->SetPositions(
-        prev_state.GetPositions().cwiseProduct(unknown_variable));
+    state->SetPositions(prev_state.GetPositions().cwiseProduct(z));
   }
 };
 
@@ -67,7 +66,7 @@ class DiscreteTimeIntegratorTest : public ::testing::Test {
 TEST_F(DiscreteTimeIntegratorTest, Dt) { EXPECT_EQ(scheme_.dt(), kDt); }
 
 TEST_F(DiscreteTimeIntegratorTest, Weights) {
-  EXPECT_EQ(scheme_.weights(), Vector3d(1, 2, 3));
+  EXPECT_EQ(scheme_.GetWeights(), Vector3d(1, 2, 3));
 }
 
 TEST_F(DiscreteTimeIntegratorTest, GetUnknowns) {

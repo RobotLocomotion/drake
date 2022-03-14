@@ -9,6 +9,9 @@
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 namespace drake {
 namespace solvers {
 
@@ -475,3 +478,5 @@ SystemIdentification<T>::ClassifyVars(
 }  // namespace drake
 
 template class drake::solvers::SystemIdentification<double>;
+
+#pragma GCC diagnostic pop

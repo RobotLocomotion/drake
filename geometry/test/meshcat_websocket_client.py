@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import json
+import logging
 import sys
 import umsgpack
 import websockets
@@ -42,23 +43,34 @@ def print_recursive_comparison(d1, d2, level='root'):
 
 
 async def socket_operations_async(args):
-    async with websockets.connect(args.ws_url) as websocket:
+    logger.info("Connecting...")
+    async with websockets.connect(args.ws_url, timeout=1) as websocket:
+        logger.info("... connected")
         if args.send_message is not None:
+            logger.info("Sending...")
             await websocket.send(umsgpack.packb(args.send_message))
+            logger.info("... sent")
         message = None
         for n in range(args.expect_num_messages):
+            logger.info(f"Receiving {n+1}...")
             message = await asyncio.wait_for(websocket.recv(), timeout=10)
+            logger.info("... received")
         if args.expect_message:
             parsed = umsgpack.unpackb(message)
             if parsed != args.expect_message:
                 print("FAILED")
                 print_recursive_comparison(parsed, args.expect_message)
                 sys.exit(1)
+        logger.info("Disconnecting...")
+    logger.info("... disconnected")
 
 
 def main():
     parser = argparse.ArgumentParser(
         description="Test utility for Meshcat websockets")
+    parser.add_argument(
+        "--disable-drake-valgrind-tracing", action='count',
+        help="ignored by this program; see valgrind.sh for details")
     parser.add_argument(
         "--ws_url", type=str, required=True,
         help="websocket URL")
@@ -87,4 +99,8 @@ def main():
 
 
 assert __name__ == "__main__"
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s")
+logger = logging.getLogger("meshcat_websocket_client")
 main()

@@ -20,17 +20,23 @@ namespace internal {
         vₙ₊₁ = αᵥ z + bᵥ
         aₙ₊₁ = αₐ z + bₐ
 
- For example, for the Newmark-beta scheme, if one chooses z = a, we get
+ For example, for the Newmark-beta scheme, where
 
-        qₙ₊₁ = qₙ + dt ⋅ vₙ + dt² ⋅ [β ⋅ z + (0.5−β) ⋅ aₙ].
-        vₙ₊₁ = vₙ + dt ⋅ (γ ⋅ z + (1−γ) ⋅ aₙ)
+        qₙ₊₁ = qₙ + δt ⋅ vₙ + δt² ⋅ ((½ − β) ⋅ aₙ + β ⋅ aₙ₊₁)
+        vₙ₊₁ = vₙ + δt ⋅ ((1 − γ) ⋅ aₙ + γ ⋅ aₙ₊₁)
+        aₙ₊₁ = f(qₙ₊₁,vₙ₊₁),
+
+ if one chooses z = a, we get
+
+        qₙ₊₁ = qₙ + δt ⋅ vₙ + δt² ⋅ [β ⋅ z + (½ - β) ⋅ aₙ].
+        vₙ₊₁ = vₙ + δt ⋅ (γ ⋅ z + (1−γ) ⋅ aₙ)
         aₙ₊₁ = z;
 
  On the other hand, if one chooses z = v instead for the same scheme, we get
 
-        qₙ₊₁ = xₙ + dt ⋅ (β/γ ⋅ z +  (1 - β/γ) ⋅ vₙ) + dt² ⋅ (0.5 − β/γ) ⋅ aₙ.
+        qₙ₊₁ = qₙ + δt ⋅ (β/γ ⋅ z +  (1 - β/γ) ⋅ vₙ) + δt² ⋅ (½ − β/γ) ⋅ aₙ.
         vₙ₊₁ = z
-        aₙ₊₁ = (z - vₙ) / (dt ⋅ γ) - (1 − γ) / γ ⋅ aₙ
+        aₙ₊₁ = (z - vₙ) / (δt ⋅ γ) - (1 − γ) / γ ⋅ aₙ
 
  DiscreteTimeIntegrator provides the interface to query the relationship between
  the states (`q`, `v`, and `a`) and the unknown variable `z`.
@@ -46,7 +52,7 @@ class DiscreteTimeIntegrator {
    unknown variable z (See class documentation). These weights can be used to
    combine stiffness, damping, and mass matrices to form the tangent
    matrix (see FemModel::CalcTangentMatrix). */
-  Vector3<T> weights() const;
+  Vector3<T> GetWeights() const;
 
   /* Extracts the unknown variable `z` from the given FEM `state`. */
   const VectorX<T>& GetUnknowns(const FemState<T>& state) const;
@@ -65,14 +71,12 @@ class DiscreteTimeIntegrator {
 
   /* Advances `prev_state` by one time step to the `next_state` with the given
    value of the unknown variable z.
-   @param[in]  prev_state        The state at the previous time step.
-   @param[in]  unknown_variable  The unknown variable z.
-   @param[out] next_state        The state at the next time step.
+   @param[in]  prev_state  The state at the previous time step.
+   @param[in]  z           The value of the unknown variable z.
+   @param[out] next_state  The state at the next time step.
    @pre next_state != nullptr.
-   @pre The sizes of `prev_state`, `unknown_variable`, and `next_state` are
-   compatible. */
-  void AdvanceOneTimeStep(const FemState<T>& prev_state,
-                          const VectorX<T>& unknown_variable,
+   @pre The sizes of `prev_state`, `z`, and `next_state` are compatible. */
+  void AdvanceOneTimeStep(const FemState<T>& prev_state, const VectorX<T>& z,
                           FemState<T>* next_state) const;
 
   /* Returns the discrete time step of the integration scheme. */
@@ -84,8 +88,8 @@ class DiscreteTimeIntegrator {
   }
 
   /* Derived classes must override this method to implement the NVI
-   get_weights(). */
-  virtual Vector3<T> do_get_weights() const = 0;
+   GetWeights(). */
+  virtual Vector3<T> DoGetWeights() const = 0;
 
   /* Derived classes must override this method to implement the NVI
    GetUnknowns(). */
@@ -99,7 +103,7 @@ class DiscreteTimeIntegrator {
   /* Derived classes must override this method to implement the NVI
    AdvanceOneTimeStep(). */
   virtual void DoAdvanceOneTimeStep(const FemState<T>& prev_state,
-                                    const VectorX<T>& unknowns,
+                                    const VectorX<T>& z,
                                     FemState<T>* next_state) const = 0;
 
   double dt_{0.0};

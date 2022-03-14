@@ -50,6 +50,10 @@ void CheckWebsocketCommand(
   std::vector<std::string> argv;
   argv.push_back(FindResourceOrThrow(
       "drake/geometry/meshcat_websocket_client"));
+  // Even when this unit test is itself running under valgrind, we don't want to
+  // instrument the helper process. Our valgrind configuration recognizes this
+  // argument and skips instrumentation of the child process.
+  argv.push_back("--disable-drake-valgrind-tracing");
   argv.push_back(fmt::format("--ws_url={}", meshcat.ws_url()));
   if (send_json) {
     DRAKE_DEMAND(!send_json->empty());
@@ -217,13 +221,17 @@ GTEST_TEST(MeshcatTest, UnknownEventIgnored) {
   EXPECT_NO_THROW(dut.reset());
 }
 
+class MeshcatFaultTest : public testing::TestWithParam<int> {};
+
 // Checks that a problem with the worker thread eventually ends up as an
 // exception on the main thread.
-GTEST_TEST(MeshcatTest, WorkerThreadFaultHandling) {
+TEST_P(MeshcatFaultTest, WorkerThreadFault) {
+  const int fault_number = GetParam();
+
   auto dut = std::make_unique<Meshcat>();
 
   // Cause the websocket thread to fail.
-  EXPECT_NO_THROW(dut->InjectWebsocketThreadFault());
+  EXPECT_NO_THROW(dut->InjectWebsocketThreadFault(fault_number));
 
   // Keep checking an accessor function until the websocket fault is detected
   // and is converted into an exception on the main thread. Here we should be
@@ -231,9 +239,21 @@ GTEST_TEST(MeshcatTest, WorkerThreadFaultHandling) {
   // out of simplicity, and rely the impl() function in the cc file to prove
   // that every public function is preceded by a ThrowIfWebsocketThreadExited.
   auto checker = [&dut]() {
-    for (int i = 0; i < 1000; ++i) {
+    for (int i = 0; i < 10; ++i) {
+      // Send a syntactically well-formed UserInterfaceEvent to tickle the
+      // stack, but don't expect a reply.
+      const char* const message = R"""({
+        "type": "no_such_type",
+        "name": "no_such_name"
+      })""";
+      const bool expect_success = false;
+      CheckWebsocketCommand(*dut, message, {}, {}, expect_success);
+
+      // Poll the accessor function.
       dut->web_url();
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+      // Pause to allow the websocket thread to run.
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
   };
   DRAKE_EXPECT_THROWS_MESSAGE(checker(), ".*thread exited.*");
@@ -241,6 +261,9 @@ GTEST_TEST(MeshcatTest, WorkerThreadFaultHandling) {
   // The object can be destroyed with neither errors nor sanitizer leaks.
   EXPECT_NO_THROW(dut.reset());
 }
+
+INSTANTIATE_TEST_SUITE_P(AllFaults, MeshcatFaultTest,
+    testing::Range(0, Meshcat::kMaxFaultNumber + 1));
 
 GTEST_TEST(MeshcatTest, NumActive) {
   Meshcat meshcat;

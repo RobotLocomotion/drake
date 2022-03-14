@@ -5,22 +5,19 @@ load(
     "drake_py_test",
 )
 
-# Generate file, because we wish to bake the file directly in, and not require
-# it be passed as an argument.
+# Generate file to bake file path in rather than require it as an argument.
 _JUPYTER_PY_TEMPLATE = """
-import os
 import sys
+
+from bazel_tools.tools.python.runfiles import runfiles
 
 from drake.tools.jupyter.jupyter_bazel import _jupyter_bazel_notebook_main
 
 
 def main():
-    # Work around kcov#368 by consuming DRAKE_KCOV_LINK_PATH.
-    # TODO(rpoyner-tri): remove DRAKE_KCOV_LINK_PATH when newer kcov is ready.
-    cur_dir = os.path.dirname(os.environ.get('DRAKE_KCOV_LINK_PATH', __file__))
-    os.environ.pop('DRAKE_KCOV_LINK_PATH', None)
-    notebook = {notebook}
-    _jupyter_bazel_notebook_main(cur_dir, notebook, sys.argv[1:])
+    manifest = runfiles.Create()
+    notebook_path = manifest.Rlocation({notebook_respath})
+    _jupyter_bazel_notebook_main(notebook_path, sys.argv[1:])
 
 
 if __name__ == "__main__":
@@ -55,12 +52,17 @@ def drake_jupyter_py_binary(
         notebook = name + ".ipynb"
     main = "{}_jupyter_py_main.py".format(name)
 
+    notebook_respath = "drake/{}/{}".format(
+        native.package_name(),
+        notebook,
+    ).replace("//", "/")
+
     # Do not lint these generated targets.
     jupyter_tags = tags + ["jupyter", "nolint"]
     generate_file(
         name = main,
         content = _JUPYTER_PY_TEMPLATE.format(
-            notebook = repr(notebook),
+            notebook_respath = repr(notebook_respath),
         ),
         is_executable = False,
     )
@@ -69,9 +71,10 @@ def drake_jupyter_py_binary(
         srcs = [main],
         main = main,
         data = data + [notebook],
-        deps = deps + [
+        deps = depset(deps + [
+            "@bazel_tools//tools/python/runfiles",
             "@drake//tools/jupyter:jupyter_bazel_py",
-        ],
+        ]).to_list(),
         # `generate_file` output is still marked as executable :(
         tags = jupyter_tags,
         **kwargs

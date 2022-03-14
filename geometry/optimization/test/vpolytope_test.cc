@@ -477,6 +477,69 @@ GTEST_TEST(VPolytopeTest, CalcVolume) {
   EXPECT_NEAR(VPolytope(vertices_3d_planar).CalcVolume(), 0., tol);
 }
 
+GTEST_TEST(VPolytopeTest, GetMinimalRepresentationTest) {
+  const double tol{1E-6};
+
+  // 2D: Square plus some points inside
+  {
+    Eigen::Matrix<double, 2, 6> vertices;
+    const double l = 2.0;
+    // clang-format off
+    vertices << 0, l, 0, l, l/4, l/2,
+                0, 0, l, l, l/5, l/3;
+    // clang-format on
+    auto vpoly = VPolytope(vertices).GetMinimalRepresentation();
+    EXPECT_EQ(vpoly.vertices().cols(), 4);
+    EXPECT_NEAR(vpoly.CalcVolume(), l*l, tol);
+
+    // Test PointInSet with points nearby the four edges.
+    const double d = 10 * tol;
+    for (int axis = 0; axis < 2; ++axis) {
+      for (int face = 0; face < 2; ++face) {
+        for (int side = 0; side < 2; ++side) {
+          Vector2d point(l/2, l/2);
+          point[axis] = l * face + d * (side * 2 - 1);
+          if (face + side == 1) {
+            EXPECT_TRUE(vpoly.PointInSet(point, tol));
+          } else {
+            EXPECT_FALSE(vpoly.PointInSet(point, tol));
+          }
+        }
+      }
+    }
+  }
+
+  // 3D: Box plus some points inside
+  {
+    Eigen::Matrix<double, 3, 10> vertices;
+    const double l = 2.0;
+    // clang-format off
+    vertices << 0, l, 0, l, 0, l, 0, l, l/4, l/2,
+                0, 0, l, l, 0, 0, l, l, l/5, l/3,
+                0, 0, 0, 0, l, l, l, l, l/6, l/4;
+    // clang-format on
+    auto vpoly = VPolytope(vertices).GetMinimalRepresentation();
+    EXPECT_EQ(vpoly.vertices().cols(), 8);
+    EXPECT_NEAR(vpoly.CalcVolume(), l*l*l, tol);
+
+    // Test PointInSet with points nearby the six faces.
+    const double d = 10 * tol;
+    for (int axis = 0; axis < 3; ++axis) {
+      for (int face = 0; face < 2; ++face) {
+        for (int side = 0; side < 2; ++side) {
+          Vector3d point(l/2, l/2, l/2);
+          point[axis] = l * face + d * (side * 2 - 1);
+          if (face + side == 1) {
+            EXPECT_TRUE(vpoly.PointInSet(point, tol));
+          } else {
+            EXPECT_FALSE(vpoly.PointInSet(point, tol));
+          }
+        }
+      }
+    }
+  }
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

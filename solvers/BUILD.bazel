@@ -33,6 +33,7 @@ drake_cc_package_library(
         ":create_constraint",
         ":create_cost",
         ":csdp_solver",
+        ":csdp_solver_error_handling",
         ":decision_variable",
         ":dreal_solver",
         ":equality_constrained_qp_solver",
@@ -1032,11 +1033,28 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "csdp_solver_error_handling",
+    srcs = select({
+        "//conditions:default": ["csdp_solver_error_handling.cc"],
+        "//tools:no_csdp": [],
+    }),
+    hdrs = select({
+        "//conditions:default": ["csdp_solver_error_handling.h"],
+        "//tools:no_csdp": [],
+    }),
+    copts = ["-fvisibility=hidden"],
+    visibility = [
+        "@csdp//:__pkg__",
+    ],
+)
+
+drake_cc_library(
     name = "csdp_solver",
     srcs = [
         "csdp_solver_common.cc",
     ] + select({
         "//conditions:default": [
+            "csdp_cpp_wrapper.cc",
             "csdp_solver.cc",
             "csdp_solver_internal.cc",
         ],
@@ -1048,13 +1066,17 @@ drake_cc_library(
         "csdp_solver.h",
     ] + select({
         "//conditions:default": [
+            "csdp_cpp_wrapper.h",
             "csdp_solver_internal.h",
         ],
         "//tools:no_csdp": [
         ],
     }),
     install_hdrs_exclude = select({
-        "//conditions:default": ["csdp_solver_internal.h"],
+        "//conditions:default": [
+            "csdp_cpp_wrapper.h",
+            "csdp_solver_internal.h",
+        ],
         "//tools:no_csdp": [],
     }),
     deps = [
@@ -1216,6 +1238,23 @@ drake_cc_googletest(
         ":csdp_solver",
         ":csdp_test_examples",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "csdp_cpp_wrapper_test",
+    tags = [
+        # The longjmp handling definitely leaks memory, and we've decided to
+        # just live with that. If we see the longjmp handler triggering when
+        # called by CsdpSolver, we should fix MathematicalProgram or CsdpSolver
+        # to do more sanity checking before calling into CSDP. The longjmp
+        # handler should only serve as a last resort.
+        "no_lsan",
+        "no_memcheck",
+    ],
+    deps = [
+        ":csdp_solver",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

@@ -458,9 +458,9 @@ drake_cc_googletest(
         ":meshcat_websocket_client",
         "//geometry/render:test_models",
     ],
-    # Disable valgrind because it currently fails on the system call to python.
-    # TODO(russt): Make it possible to pass --trace-children=no to valgrind.sh.
-    tags = ["no_memcheck"],
+    tags = [
+        "cpu:2",
+    ],
     deps = [
         ":meshcat",
         "//common/test_utilities:eigen_matrix_compare",

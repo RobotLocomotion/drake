@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/trig_poly.h"
 
@@ -38,7 +39,11 @@ namespace solvers {
  * those parameters based on empirical data.
  */
 template <typename T>
-class SystemIdentification {
+class DRAKE_DEPRECATED(
+    "2022-07-01",
+    "SystemIdentification is deprecated.  The preferred toolchain uses "
+    "symbolic::Expression to do this work now, as demonstrated in "
+    "http://underactuated.mit.edu/sysid.html .") SystemIdentification {
  public:
   typedef Polynomial<T> PolyType;
   typedef typename PolyType::Monomial MonomialType;

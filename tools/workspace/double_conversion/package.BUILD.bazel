@@ -1,9 +1,6 @@
 # -*- python -*-
 
-load(
-    "@drake_detected_os//:os.bzl",
-    "HOMEBREW_PREFIX",
-)
+load(":vars.bzl", "LIBDIR")
 
 licenses(["notice"])  # BSD-3-Clause
 
@@ -12,8 +9,8 @@ cc_library(
     hdrs = glob(["include/double-conversion/*.h"]),
     includes = ["include"],
     linkopts = [
-        "-L{}/opt/double-conversion/lib".format(HOMEBREW_PREFIX),
-        "-Wl,-rpath,{}/opt/double-conversion/lib".format(HOMEBREW_PREFIX),
+        "-L" + LIBDIR,
+        "-Wl,-rpath," + LIBDIR,
         "-ldouble-conversion",
     ],
     visibility = ["//visibility:public"],

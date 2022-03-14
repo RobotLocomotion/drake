@@ -134,6 +134,29 @@ VPolytope VPolytope::MakeUnitBox(int dim) {
   return MakeBox(VectorXd::Constant(dim, -1.0), VectorXd::Constant(dim, 1.0));
 }
 
+VPolytope VPolytope::GetMinimalRepresentation() const {
+  orgQhull::Qhull qhull;
+  qhull.runQhull("", vertices_.rows(), vertices_.cols(), vertices_.data(), "");
+  if (qhull.qhullStatus() != 0) {
+    throw std::runtime_error(
+        fmt::format("Qhull terminated with status {} and  message:\n{}",
+                    qhull.qhullStatus(), qhull.qhullMessage()));
+  }
+
+  Eigen::MatrixXd minimal_vertices(vertices_.rows(), qhull.vertexCount());
+  size_t j = 0;
+  for (const auto& qhull_vertex : qhull.vertexList()) {
+    size_t i = 0;
+    for (const auto& val : qhull_vertex.point()) {
+      minimal_vertices(i, j) = val;
+      ++i;
+    }
+    ++j;
+  }
+
+  return VPolytope(minimal_vertices);
+}
+
 double VPolytope::CalcVolume() const {
   orgQhull::Qhull qhull;
   try {

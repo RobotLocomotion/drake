@@ -36,6 +36,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+using drake::internal::DiagnosticDetail;
 using Eigen::Matrix3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
@@ -1155,10 +1156,21 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   if (is_urdf) {
     // TODO(rpoyner-tri): integrate with overall diagnostic policy.
     drake::internal::DiagnosticPolicy diagnostic;
+    diagnostic.SetActionForErrors(
+        [&errors](const DiagnosticDetail& detail) {
+          errors->emplace_back(sdf::ErrorCode::ELEMENT_INVALID,
+                               detail.FormatError());
+        });
     ParsingWorkspace workspace{package_map, diagnostic, plant};
-    main_model_instance =
+    const std::optional<ModelInstanceIndex> maybe_model =
         AddModelFromUrdf(data_source, include.LocalModelName().value_or(""),
                          include.AbsoluteParentName(), workspace);
+    if (maybe_model.has_value()) {
+      main_model_instance = *maybe_model;
+    } else {
+      return nullptr;
+    }
+
     // Add explicit model frame to first link.
     auto body_indices = plant->GetBodyIndices(main_model_instance);
     if (body_indices.empty()) {

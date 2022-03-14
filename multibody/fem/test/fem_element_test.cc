@@ -156,7 +156,16 @@ TEST_F(FemElementTest, DampingMatrix) {
   D.setZero();
   const T scale = 3.14;
   element_.AddScaledDampingMatrix(EvalElementData(), scale, &D);
-  EXPECT_EQ(D, scale * element_.damping_matrix());
+
+  Eigen::Matrix<T, DummyElementTraits::num_dofs, DummyElementTraits::num_dofs>
+      expected_D;
+  expected_D.setZero();
+  element_.AddScaledMassMatrix(
+      EvalElementData(), scale * kDampingModel.mass_coeff_alpha(), &expected_D);
+  element_.AddScaledStiffnessMatrix(
+      EvalElementData(), scale * kDampingModel.stiffness_coeff_beta(),
+      &expected_D);
+  EXPECT_EQ(D, expected_D);
 }
 
 TEST_F(FemElementTest, MassMatrix) {

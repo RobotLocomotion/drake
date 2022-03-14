@@ -575,6 +575,9 @@ if(CMAKE_CONFIGURATION_TYPES OR BUILD_TYPE_LOWER MATCHES "^(debug|relwithdebinfo
       "symbols because support for SNOPT is enabled"
     )
   else()
+    list(INSERT BAZEL_ARGS 0
+      "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:--fission=no>"
+    )
     list(INSERT BAZEL_TARGETS_ARGS 0
       "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:--no_strip>"
     )

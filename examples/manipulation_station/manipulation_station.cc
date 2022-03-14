@@ -938,8 +938,22 @@ void ManipulationStation<T>::RegisterRgbdSensor(
 
   const std::string urdf_path = FindResourceOrThrow(
       "drake/manipulation/models/realsense2_description/urdf/d415.urdf");
-  internal::AddAndWeldModelFrom(
+  multibody::ModelInstanceIndex model_index = internal::AddAndWeldModelFrom(
       urdf_path, name, parent_frame, "base_link", X_PC, plant_);
+
+  // Remove the perception properties -- the camera should not be visible to
+  // itself or else it obscures its own view. We only want the illustration
+  // properties so that the camera shows up in the visualizer.
+  const geometry::SourceId source_id = plant_->get_source_id().value();
+  for (const multibody::BodyIndex& body_index :
+           plant_->GetBodyIndices(model_index)) {
+    const multibody::Body<T>& body = plant_->get_body(body_index);
+    for (const geometry::GeometryId& geometry_id :
+             plant_->GetVisualGeometriesForBody(body)) {
+      scene_graph_->RemoveRole(source_id, geometry_id,
+          geometry::Role::kPerception);
+    }
+  }
 }
 
 template <typename T>

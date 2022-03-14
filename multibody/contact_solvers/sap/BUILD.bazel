@@ -67,6 +67,34 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "sap_friction_cone_constraint",
+    srcs = ["sap_friction_cone_constraint.cc"],
+    hdrs = ["sap_friction_cone_constraint.h"],
+    deps = [
+        ":sap_constraint",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_model",
+    srcs = ["sap_model.cc"],
+    hdrs = ["sap_model.h"],
+    deps = [
+        ":contact_problem_graph",
+        ":partial_permutation",
+        ":sap_constraint_bundle",
+        ":sap_contact_problem",
+        "//common:default_scalars",
+        "//common:essential",
+        "//multibody/contact_solvers:block_sparse_matrix",
+        "//systems/framework:context",
+        "//systems/framework:leaf_system",
+    ],
+)
+
 drake_cc_googletest(
     name = "partial_permutation_test",
     deps = [
@@ -103,9 +131,30 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "sap_friction_cone_constraint_test",
+    deps = [
+        ":sap_friction_cone_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
+        "//solvers:constraint",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
+    ],
+)
+
+drake_cc_googletest(
     name = "contact_problem_graph_test",
     deps = [
         ":contact_problem_graph",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_model_test",
+    deps = [
+        ":sap_constraint",
+        ":sap_contact_problem",
+        ":sap_model",
     ],
 )
 
