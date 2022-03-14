@@ -1,6 +1,10 @@
 # -*- python -*-
 
 load("@cc//:compiler.bzl", "COMPILER_ID", "COMPILER_VERSION_MAJOR")
+load(
+    "@drake//third_party:com_github_bazelbuild_rules_cc/linkonly.bzl",
+    "cc_linkonly_library",
+)
 
 # The CXX_FLAGS will be enabled for all C++ rules in the project
 # building with any compiler.
@@ -326,6 +330,8 @@ def _raw_drake_cc_library(
         hdrs = [],
         srcs = [],  # Cannot list any headers here.
         deps = [],
+        visibility = None,
+        implementation_deps = [],
         declare_installed_headers = 0,
         install_hdrs_exclude = [],
         **kwargs):
@@ -339,19 +345,7 @@ def _raw_drake_cc_library(
     if private_hdrs:
         fail("private_hdrs = " + private_hdrs)
 
-    # Require include paths like "drake/foo/bar.h", not "foo/bar.h".
-    strip_include_prefix = kwargs.pop("strip_include_prefix", "") or "/"
-    include_prefix = kwargs.pop("include_prefix", "") or "drake"
-
-    native.cc_library(
-        name = name,
-        hdrs = hdrs,
-        srcs = srcs,
-        deps = deps,
-        strip_include_prefix = strip_include_prefix,
-        include_prefix = include_prefix,
-        **kwargs
-    )
+    # Add the installed header tracking, unless we've opted-out.
     if declare_installed_headers:
         drake_installed_headers(
             name = name + ".installed_headers",
@@ -360,6 +354,57 @@ def _raw_drake_cc_library(
             deps = installed_headers_for_drake_deps(deps),
             tags = ["nolint"],
             visibility = ["//visibility:public"],
+        )
+
+    # If we're using implementation_deps, then the result of compiling our srcs
+    # needs to use an intermediate label name.
+    compiled_name = name
+    compiled_visibility = visibility
+    if implementation_deps:
+        compiled_name = "_{}_compiled_cc_impl".format(name)
+        compiled_visibility = ["//visibility:private"]
+
+    # Require include paths like "drake/foo/bar.h", not "foo/bar.h".
+    strip_include_prefix = kwargs.pop("strip_include_prefix", "") or "/"
+    include_prefix = kwargs.pop("include_prefix", "") or "drake"
+    native.cc_library(
+        name = compiled_name,
+        hdrs = hdrs,
+        srcs = srcs,
+        deps = deps + (implementation_deps or []),
+        strip_include_prefix = strip_include_prefix,
+        include_prefix = include_prefix,
+        visibility = compiled_visibility,
+        **kwargs
+    )
+
+    # If we're using implementation_deps, then make me a sandwich.
+    if implementation_deps:
+        headers_name = "_{}_headers_cc_impl".format(name)
+        native.cc_library(
+            name = headers_name,
+            hdrs = hdrs,
+            srcs = [],
+            deps = deps,  # N.B. No implementation_deps!
+            strip_include_prefix = strip_include_prefix,
+            include_prefix = include_prefix,
+            visibility = ["//visibility:private"],
+            **kwargs
+        )
+        archive_name = "_{}_archive_cc_impl".format(name)
+        cc_linkonly_library(
+            name = archive_name,
+            deps = [":" + compiled_name],
+            visibility = ["//visibility:private"],
+        )
+        native.cc_library(
+            name = name,
+            deps = [
+                ":" + headers_name,
+                ":" + archive_name,
+            ],
+            visibility = visibility,
+            **kwargs
         )
 
 def _maybe_add_pruned_private_hdrs_dep(
@@ -377,7 +422,7 @@ def _maybe_add_pruned_private_hdrs_dep(
     """
     new_srcs, private_hdrs = _prune_private_hdrs(srcs)
     if private_hdrs:
-        name = "_" + base_name + "_private_headers_impl"
+        name = "_" + base_name + "_private_headers_cc_impl"
         kwargs.pop("linkshared", "")
         kwargs.pop("linkstatic", "")
         kwargs.pop("visibility", "")
@@ -400,6 +445,7 @@ def drake_cc_library(
         hdrs = [],
         srcs = [],
         deps = [],
+        implementation_deps = [],
         copts = [],
         clang_copts = [],
         gcc_copts = [],
@@ -417,6 +463,19 @@ def drake_cc_library(
     be named like "@something//etc..." (i.e., come from the workspace, not part
     of Drake).  In other words, all of Drake's C++ libraries must be declared
     using the drake_cc_library macro.
+
+    The implementation_deps= may be used for dependencies that are only used by
+    the srcs of this library, not the hdrs. It retains the linker flags from
+    the dependent library, but does not propagate the compiler flags. This is
+    useful to help firewall off the preprocessor footprint (macro definitions
+    and include paths) from the implementation_deps libraries.
+
+    Note that in future Bazel versions (newer than 5.0), the native.cc_library
+    will gain support for this distinction but Bazel will use "interface_deps"
+    to refer to hdrs' dependencies and "deps" to refer to srcs' dependencies,
+    which is the opposite of what we've done here. At some point we'll want to
+    buildozer our spellings to the new form, but there's no rush at the moment.
+    See https://github.com/bazelbuild/bazel/issues/14950 for discussion.
     """
     new_copts = _platform_copts(copts, gcc_copts, clang_copts)
 
@@ -439,6 +498,7 @@ def drake_cc_library(
         hdrs = hdrs,
         srcs = new_srcs,
         deps = new_deps,
+        implementation_deps = implementation_deps,
         copts = new_copts,
         linkstatic = linkstatic,
         declare_installed_headers = declare_installed_headers,

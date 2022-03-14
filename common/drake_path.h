@@ -3,8 +3,6 @@
 #include <optional>
 #include <string>
 
-#include "drake/common/drake_deprecated.h"
-
 namespace drake {
 
 /// (Advanced) Returns the fully-qualified path to the first folder containing

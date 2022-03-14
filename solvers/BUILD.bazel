@@ -1079,11 +1079,13 @@ drake_cc_library(
         ],
         "//tools:no_csdp": [],
     }),
+    implementation_deps = [
+        "//common:filesystem",
+    ],
     deps = [
         ":mathematical_program",
         ":solver_base",
         ":sdpa_free_format",
-        "//common:filesystem",
         "//common:scope_exit",
     ] + select({
         "//conditions:default": [

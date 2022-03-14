@@ -14,6 +14,7 @@ exports_files(
 
 add_lint_tests(
     bazel_lint_extra_srcs = [
+        "com_github_bazelbuild_rules_cc/linkonly.bzl",
         "com_github_bazelbuild_rules_cc/whole_archive.bzl",
     ],
 )

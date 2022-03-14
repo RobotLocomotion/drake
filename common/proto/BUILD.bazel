@@ -60,9 +60,11 @@ drake_cc_library(
     srcs = ["rpc_pipe_temp_directory.cc"],
     hdrs = ["rpc_pipe_temp_directory.h"],
     visibility = ["//visibility:private"],
+    implementation_deps = [
+        "//common:filesystem",
+    ],
     deps = [
         "//common:essential",
-        "//common:filesystem",
     ],
 )
 

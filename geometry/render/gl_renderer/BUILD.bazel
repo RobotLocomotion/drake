@@ -194,9 +194,11 @@ drake_cc_library_ubuntu_only(
     name = "texture_library",
     srcs = ["texture_library.cc"],
     hdrs = ["texture_library.h"],
+    implementation_deps = [
+        "//common:filesystem",
+    ],
     deps = [
         "//common:essential",
-        "//common:filesystem",
         "//geometry/render/gl_renderer:opengl_context",
         "@vtk//:vtkIOImage",
     ],

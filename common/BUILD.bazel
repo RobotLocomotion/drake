@@ -393,7 +393,7 @@ drake_cc_library(
     name = "find_runfiles",
     srcs = ["find_runfiles.cc"],
     hdrs = ["find_runfiles.h"],
-    deps = [
+    implementation_deps = [
         ":essential",
         ":filesystem",
         "@bazel_tools//tools/cpp/runfiles",
@@ -418,11 +418,13 @@ drake_cc_library(
         "//tools/cc_toolchain:linux": ["-ldl"],
         "//conditions:default": [],
     }),
-    deps = [
+    implementation_deps = [
         ":drake_marker_shared_library",
-        ":essential",
         ":filesystem",
         ":find_runfiles",
+    ],
+    deps = [
+        ":essential",
     ],
 )
 
@@ -434,8 +436,7 @@ drake_cc_library(
         DRAKE_RESOURCE_SENTINEL,
     ],
     visibility = ["//tools/install/libdrake:__pkg__"],
-    deps = [
-        ":essential",
+    implementation_deps = [
         ":filesystem",
         ":find_resource",
     ],
@@ -530,9 +531,11 @@ drake_cc_library(
     name = "temp_directory",
     srcs = ["temp_directory.cc"],
     hdrs = ["temp_directory.h"],
+    implementation_deps = [
+        ":filesystem",
+    ],
     deps = [
         ":essential",
-        ":filesystem",
     ],
 )
 
@@ -942,6 +945,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":drake_path",
+        ":filesystem",
         ":find_resource",
         "//common/test_utilities:expect_no_throw",
     ],
@@ -975,6 +979,7 @@ drake_cc_googletest(
         "test/find_resource_test_data.txt",
     ],
     deps = [
+        ":filesystem",
         ":find_runfiles",
         ":temp_directory",
         "//common/test_utilities:expect_throws_message",

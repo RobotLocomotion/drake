@@ -232,12 +232,14 @@ drake_cc_library(
     visibility = [
         "//visibility:public",
     ],
+    implementation_deps = [
+        "//common:filesystem",
+    ],
     deps = [
         ":detail_parsing_workspace",
         ":detail_sdf_parser",
         ":detail_urdf_parser",
         "//common:diagnostic_policy",
-        "//common:filesystem",
     ],
 )
 
@@ -264,11 +266,13 @@ drake_cc_library(
     visibility = [
         "//visibility:public",
     ],
+    implementation_deps = [
+        "//common:filesystem",
+    ],
     deps = [
         ":model_directives",
         ":parser",
         ":scoped_names",
-        "//common:filesystem",
         "//common:find_resource",
         "//common/yaml",
         "//multibody/plant",
