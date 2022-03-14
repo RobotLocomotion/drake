@@ -7,6 +7,8 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 namespace geometry {
 namespace render {
@@ -60,50 +62,9 @@ struct HttpResponse {
  RenderClient, is responsible for adhering to the server API. */
 class HttpService {
  public:
-  /** @name Does not allow copy, move, or assignment  */
-  //@{
-#ifdef DRAKE_DOXYGEN_CXX
-  // Note: the copy constructor operator is actually protected to serve as the
-  // basis for implementing the DoClone() method.
-  HttpService(const HttpService&) = delete;
-#endif
-  HttpService& operator=(const HttpService&) = delete;
-  HttpService(HttpService&&) = delete;
-  HttpService& operator=(HttpService&&) = delete;
-  //@}
-  /** Constructs an %HttpService to be used throughout the duration of a client
-   server relationship.
-
-   @param temp_directory
-     The (shared) temporary directory, e.g., as created from
-     drake::temp_directory().  File responses from a server will be stored here.
-     The %HttpService does **not** own this directory, and is not responsible
-     for deleting it.  No validity checks on this directory are performed,
-     concrete derived classes are responsible for verifying that any temporary
-     files needed can be created.
-   @param url
-     The url this HTTP service will communicate with.  May **not** be the empty
-     string.  May **not** have any trailing slashes.  Helper methods such as
-     PostForm() construct their communications as
-     `temp_directory() + "/" + endpoint`.  For example, `https://drake.mit.edu`
-     will be accepted, but `https://drake.mit.edu/` will not be.  No other url
-     validation is performed (e.g., there is no initial transaction to verify
-     the server exists).
-   @param port
-     The TCP port this HTTP service will communicate on.  A value less than or
-     equal to `0` implies no port level communication is needed.
-   @param verbose
-     Whether or not client/server communications should be logged.
-   @throws std::logic_error
-     If the provided `url` is empty, or has any trailing slashes. */
-  HttpService(const std::string& temp_directory, const std::string& url,
-              int32_t port, bool verbose);
-
-  virtual ~HttpService() = default;
-
-  /** Clones the http service -- making the %HttpService compatible with
-   copyable_unique_ptr. */
-  std::unique_ptr<HttpService> Clone() const;
+  HttpService();
+  virtual ~HttpService();
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HttpService);
 
   /** @name Server Interaction Interface */
   //@{
@@ -175,6 +136,22 @@ class HttpService {
    Make sure to check HttpResponse::Good() before continuing, or trying to load
    the HttpResponse::data_path as any specific kind of file.
 
+   @param temp_directory
+     The (shared) temporary directory, e.g., as created from
+     drake::temp_directory().  File responses from a server will be stored here.
+     The %HttpService does **not** own this directory, and is not responsible
+     for deleting it.  No validity checks on this directory are performed,
+     caller is responsible for providing a directory that can be used as scratch
+     space (e.g., from drake::temp_directory()).
+   @param url
+     The url this HTTP service will communicate with.  May **not** be the empty
+     string.  May **not** have any trailing slashes.  Communications are
+     typically constructed as  `temp_directory() + "/" + endpoint`.  For
+     example, `https://drake.mit.edu` is acceptable, but
+     `https://drake.mit.edu/` is not.
+   @param port
+     The TCP port this HTTP service will communicate on.  A value less than or
+     equal to `0` implies no port level communication is needed.
    @param endpoint
      The endpoint the `<form>` should be posted to, e.g., `render`.  May **not**
      have a leading or trailing `/`, the post is sent to
@@ -206,6 +183,8 @@ class HttpService {
      file_fields["id"] = {"/path/to/id.bin", std::nullopt};
      @endcode
      Supply the empty map if no files are to be uploaded with the `<form>`.
+   @param verbose
+     Whether or not client/server communications should be logged.
    @return HttpResponse
      The response from the server, including an HTTP code, and any potential
      additional server response text or data in HttpResponse::data_path.
@@ -218,39 +197,20 @@ class HttpService {
      produce an exception but rather encode this information in the
      returned HttpResponse for the caller to determine how to proceed. */
   virtual HttpResponse PostForm(
+      const std::string& temp_directory, const std::string& url, int32_t port,
       const std::string& endpoint,
       const std::map<std::string, std::string>& data_fields,
       const std::map<std::string,
                      std::pair<std::string, std::optional<std::string>>>&
-          file_fields) = 0;
+          file_fields,
+      bool verbose = false) = 0;
   //@}
-  /** @name Access the default properties
 
-   Provides access to the default values of this instance.  These values must be
-   set at construction. */
+  /** @name Server Parameter Validation Helpers */
   //@{
-  /** The folder where server file responses are stored.
-   @sa HttpResponse::data_path */
-  const std::string& temp_directory() const { return temp_directory_; }
-
-  /** The url of the server to communicate with. */
-  const std::string& url() const { return url_; }
-
-  /** The port of the server to communicate on.  A value less than or equal to
-   `0` means no port level communication is required. */
-  int32_t port() const { return port_; }
-
-  /** Wether or not client/server communications should be logged to
-   drake::log(). */
-  bool verbose() const { return verbose_; }
-  //@}
-
- protected:
-  /** Copy constructor for the purpose of cloning. */
-  HttpService(const HttpService& other);
-
-  /** The NVI-function for cloning this http service. */
-  virtual std::unique_ptr<HttpService> DoClone() const = 0;
+  /** Throws `std::logic_error` if the provided url is empty or has trailing
+   slashes. */
+  void ThrowIfUrlInvalid(const std::string& url) const;
 
   /** Throws `std::runtime_error` if `endpoint` starts or ends with a '/'. */
   void ThrowIfEndpointInvalid(const std::string& endpoint) const;
@@ -265,12 +225,7 @@ class HttpService {
       const std::map<std::string,
                      std::pair<std::string, std::optional<std::string>>>&
           file_fields) const;
-
- private:
-  std::string temp_directory_;
-  std::string url_;
-  int32_t port_;
-  bool verbose_;
+  //@}
 };
 
 }  // namespace internal

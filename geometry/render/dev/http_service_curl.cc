@@ -187,10 +187,7 @@ std::string NextTempFile() {
 
 }  // namespace
 
-HttpServiceCurl::HttpServiceCurl(const std::string& temp_directory,
-                                 const std::string& url, int32_t port,
-                                 bool verbose)
-    : HttpService(temp_directory, url, port, verbose) {
+HttpServiceCurl::HttpServiceCurl() : HttpService() {
   /* libcurl should be initialized exactly once per process, this initialization
    is not threadsafe and must be done before potential threads using curl begin
    (e.g., threaded renderings).  See also: MakeRenderEngineGltfClient
@@ -200,21 +197,17 @@ HttpServiceCurl::HttpServiceCurl(const std::string& temp_directory,
   unused(ignored);
 }
 
-HttpServiceCurl::HttpServiceCurl(const HttpServiceCurl& other)
-    : HttpService(other) {}
-
-std::unique_ptr<HttpService> HttpServiceCurl::DoClone() const {
-  return std::unique_ptr<HttpServiceCurl>(new HttpServiceCurl(*this));
-}
-
 HttpServiceCurl::~HttpServiceCurl() {}
 
 HttpResponse HttpServiceCurl::PostForm(
+    const std::string& temp_directory, const std::string& url, int32_t port,
     const std::string& endpoint,
     const std::map<std::string, std::string>& data_fields,
     const std::map<std::string,
                    std::pair<std::string, std::optional<std::string>>>&
-        file_fields) {
+        file_fields,
+    bool verbose) {
+  ThrowIfUrlInvalid(url);
   ThrowIfEndpointInvalid(endpoint);
   ThrowIfFilesMissing(file_fields);
 
@@ -235,19 +228,19 @@ HttpResponse HttpServiceCurl::PostForm(
     curl_easy_cleanup(c);
   };
 
-  // Used when verbose(), needed in scope for logging after curl_easy_perform.
+  // Used when verbose, needed in scope for logging after curl_easy_perform.
   debug_data_t debug_data;
-  if (verbose()) {
+  if (verbose) {
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
     curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &DebugCallback);
     curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &debug_data);
   }
 
   // Setup the POST url.
-  const std::string post_url = url() + "/" + endpoint;
+  const std::string post_url = url + "/" + endpoint;
   curl_easy_setopt(curl, CURLOPT_URL, post_url.c_str());
   curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-  if (port() > 0) curl_easy_setopt(curl, CURLOPT_PORT, port());
+  if (port > 0) curl_easy_setopt(curl, CURLOPT_PORT, port);
 
   // Add all of the data fields.
   for (const auto& [field_name, field_data] : data_fields) {
@@ -281,13 +274,13 @@ HttpResponse HttpServiceCurl::PostForm(
   /* We do not know if the server is going to respond with anything, and if it
    does if it will be e.g., json or image file response.  Write directly to a
    file buffer within our temporary directory. */
-  const auto temp_bin_out = fs::path(temp_directory()) / NextTempFile();
+  const auto temp_bin_out = fs::path(temp_directory) / NextTempFile();
   if (fs::exists(temp_bin_out)) {
     cleanup_curl(curl, form, headerlist);
     throw std::runtime_error(fmt::format(
         "HttpServiceCurl: refusing to overwrite temporary file '{}' that "
         "already exists, please cleanup temporary directory '{}'.",
-        temp_bin_out.string(), temp_directory()));
+        temp_bin_out.string(), temp_directory));
   }
 
   // Open the file for writing, pass it off to curl.
@@ -303,7 +296,7 @@ HttpResponse HttpServiceCurl::PostForm(
 
   // Perform the POST and drake::log() prior to any potential exceptions.
   result = curl_easy_perform(curl);
-  if (verbose()) {
+  if (verbose) {
     LogCurlDebugData(debug_data);
   }
 

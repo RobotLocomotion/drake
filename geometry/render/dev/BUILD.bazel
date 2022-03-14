@@ -159,6 +159,7 @@ drake_cc_googletest(
     deps = [
         ":http_service",
         "//common:temp_directory",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
 )
