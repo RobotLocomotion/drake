@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -15,19 +16,56 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+template <typename T>
+struct ContactPairKinematics {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactPairKinematics);
+
+  // Struct to store the block contribution from a given tree to the contact
+  // Jacobian for a contact pair.
+  struct JacobianTreeBlock {
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(JacobianTreeBlock);
+
+    JacobianTreeBlock(TreeIndex tree_in, Matrix3X<T> J_in)
+        : tree(tree_in), J(std::move(J_in)) {}
+
+    // Index of the tree for this block.
+    TreeIndex tree;
+
+    // J.cols() must equal the number of generalized velocities for
+    // the corresponding tree.
+    Matrix3X<T> J;
+  };
+
+  ContactPairKinematics(T phi_in, std::vector<JacobianTreeBlock> jacobian_in,
+                        drake::math::RotationMatrix<T> R_WC_in)
+      : phi(std::move(phi_in)),
+        jacobian(std::move(jacobian_in)),
+        R_WC(std::move(R_WC_in)) {}
+
+  // Signed distance for the given pair. Defined negative for overlapping
+  // bodies.
+  T phi{};
+
+  // TODO(amcastro-tri): consider using absl::InlinedVector since here we know
+  // this has a size of at most 2.
+  // Jacobian for a discrete contact pair stored as individual blocks for each
+  // of the trees participating in the contact. Only one or two trees can
+  // participate in a given contact.
+  std::vector<JacobianTreeBlock> jacobian;
+
+  // Rotation matrix to re-express between contact frame C and world frame W.
+  drake::math::RotationMatrix<T> R_WC;
+};
+
 // CompliantContactManager computes the contact Jacobian J_AcBc_C for the
 // relative velocity at a contact point Co between two geometries A and B,
 // expressed in a contact frame C with Cz coincident with the contact normal.
-// This structure is used to cache J_AcBc_C and rotation R_WC.
+// This structure is used to cache the kinematics associated with the contact
+// pairs for a given configuration.
 template <typename T>
 struct ContactJacobianCache {
-  // Contact Jacobian J_AcBc_C. Jc.middleRows<3>(3*i), corresponds to J_AcBc_C
-  // for the i-th contact pair.
-  MatrixX<T> Jc;
-
-  // Rotation matrix to re-express between contact frame C and world frame W.
-  // R_WC_list[i] corresponds to rotation R_WC for the i-th contact pair.
-  std::vector<drake::math::RotationMatrix<T>> R_WC_list;
+  // Vector to store the kinematics for each of the discrete contact pairs.
+  std::vector<ContactPairKinematics<T>> contact_kinematics;
 };
 
 // To compute accelerations due to external forces (in particular non-contact
@@ -98,6 +136,10 @@ class CompliantContactManager final
 
   // Provide private access for unit testing only.
   friend class CompliantContactManagerTest;
+
+  const MultibodyTreeTopology& tree_topology() const {
+    return internal::GetInternalTree(this->plant()).get_topology();
+  }
 
   // TODO(amcastro-tri): Implement these methods in future PRs.
   void DoCalcDiscreteValues(const drake::systems::Context<T>&,
