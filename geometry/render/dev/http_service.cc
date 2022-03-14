@@ -15,11 +15,11 @@ namespace internal {
 
 namespace fs = drake::filesystem;
 
-namespace {
+HttpService::HttpService() {}
 
-/* Throw an std::logic_error if the provided url is empty or has trailing
- slashes. */
-void ThrowIfInvalidUrl(const std::string& url) {
+HttpService::~HttpService() {}
+
+void HttpService::ThrowIfUrlInvalid(const std::string& url) const {
   // Validate what can be validated about the provided url.
   if (url.empty()) {
     throw std::logic_error("HttpService: url parameter may not be empty.");
@@ -27,41 +27,6 @@ void ThrowIfInvalidUrl(const std::string& url) {
   if (url.back() == '/') {
     throw std::logic_error("HttpService: url may not end with '/'.");
   }
-}
-
-}  // namespace
-
-HttpService::HttpService(const std::string& temp_directory,
-                         const std::string& url, int32_t port, bool verbose)
-    : temp_directory_{temp_directory},
-      url_{url},
-      port_{port},
-      verbose_{verbose} {
-  ThrowIfInvalidUrl(url_);
-}
-
-HttpService::HttpService(const HttpService& other)
-    : temp_directory_{other.temp_directory_},
-      url_{other.url_},
-      port_{other.port_},
-      verbose_{other.verbose_} {}
-
-std::unique_ptr<HttpService> HttpService::Clone() const {
-  std::unique_ptr<HttpService> clone(DoClone());
-  // Make sure that derived classes have actually overridden DoClone().
-  // Particularly important for derivations of derivations.
-  // Note: clang considers typeid(*clone) to be an expression with side effects.
-  // So, we capture a reference to the polymorphic type and provide that to
-  // typeid to make both clang and gcc happy.
-  const HttpService& clone_ref = *clone;
-  if (typeid(*this) != typeid(clone_ref)) {
-    throw std::logic_error(fmt::format(
-        "Error in cloning HttpService class of type {}; the clone returns "
-        "type {}. {}::DoClone() was probably not implemented",
-        NiceTypeName::Get(*this), NiceTypeName::Get(clone_ref),
-        NiceTypeName::Get(*this)));
-  }
-  return clone;
 }
 
 void HttpService::ThrowIfEndpointInvalid(const std::string& endpoint) const {
