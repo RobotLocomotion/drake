@@ -63,62 +63,7 @@ Binding<Constraint> ParseConstraint(const symbolic::Formula& f);
  * Assist MathematicalProgram::AddLinearConstraint(...).
  */
 Binding<Constraint> ParseConstraint(
-    const std::set<symbolic::Formula>& formulas);
-
-/*
- * Assist MathematicalProgram::AddLinearConstraint(...).
- */
-template <typename Derived>
-typename std::enable_if_t<
-    is_eigen_scalar_same<Derived, symbolic::Formula>::value,
-    Binding<Constraint>>
-ParseConstraint(const Eigen::ArrayBase<Derived>& formulas) {
-  const auto n = formulas.rows() * formulas.cols();
-
-  // Decomposes 2D-array of formulas into 1D-vector of expression, `v`, and
-  // two 1D-vector of double `lb` and `ub`.
-  constexpr int flat_vector_size{
-      MultiplyEigenSizes<Derived::RowsAtCompileTime,
-                         Derived::ColsAtCompileTime>::value};
-  Eigen::Matrix<symbolic::Expression, flat_vector_size, 1> v{n};
-  Eigen::Matrix<double, flat_vector_size, 1> lb{n};
-  Eigen::Matrix<double, flat_vector_size, 1> ub{n};
-  int k{0};  // index variable for 1D components.
-  for (int j{0}; j < formulas.cols(); ++j) {
-    for (int i{0}; i < formulas.rows(); ++i) {
-      const symbolic::Formula& f{formulas(i, j)};
-      if (is_equal_to(f)) {
-        // f(i) := (lhs == rhs)
-        //         (lhs - rhs == 0)
-        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
-        lb(k) = 0.0;
-        ub(k) = 0.0;
-      } else if (is_less_than_or_equal_to(f)) {
-        // f(i) := (lhs <= rhs)
-        //         (-∞ <= lhs - rhs <= 0)
-        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
-        lb(k) = -std::numeric_limits<double>::infinity();
-        ub(k) = 0.0;
-      } else if (is_greater_than_or_equal_to(f)) {
-        // f(i) := (lhs >= rhs)
-        //         (∞ >= lhs - rhs >= 0)
-        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
-        lb(k) = 0.0;
-        ub(k) = std::numeric_limits<double>::infinity();
-      } else {
-        std::ostringstream oss;
-        oss << "ParseConstraint is called with an "
-               "array of formulas which includes a formula "
-            << f
-            << " which is not a relational formula using one of {==, <=, >=} "
-               "operators.";
-        throw std::runtime_error(oss.str());
-      }
-      k++;
-    }
-  }
-  return ParseConstraint(v, lb, ub);
-}
+    const Eigen::Ref<const MatrixX<symbolic::Formula>>& formulas);
 
 /*
  * Assist functionality for ParseLinearEqualityConstraint(...).
@@ -276,14 +221,6 @@ Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
 //   // ...
 //   return std::make_tuple(linear_binding, psd_binding);
 // }
-
-template <typename Derived>
-typename std::enable_if_t<is_eigen_vector_of<Derived, symbolic::Formula>::value,
-                          Binding<Constraint>>
-ParseConstraint(const Eigen::MatrixBase<Derived>&) {
-  // TODO(eric.cousineau): Implement this.
-  throw std::runtime_error("Not implemented");
-}
 
 }  // namespace internal
 }  // namespace solvers

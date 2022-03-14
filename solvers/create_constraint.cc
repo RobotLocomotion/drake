@@ -299,69 +299,50 @@ void FindBound(const Expression& e1, const Expression& e2, Expression* const e,
 }
 }  // namespace
 
-Binding<Constraint> ParseConstraint(const set<Formula>& formulas) {
-  const auto n = formulas.size();
+Binding<Constraint> ParseConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Formula>>& formulas) {
+  const int n = formulas.rows() * formulas.cols();
 
-  // Decomposes a set of formulas into a 1D-vector of expressions, `v`, and two
+  // Decomposes 2D-array of formulas into 1D-vector of expression, `v`, and two
   // 1D-vector of double `lb` and `ub`.
   VectorX<Expression> v{n};
   Eigen::VectorXd lb{n};
   Eigen::VectorXd ub{n};
-  int i{0};  // index variable used in the loop
-  // After the following loop, we call `ParseLinearEqualityConstraint`
-  // if `are_all_formulas_equal` is still true. Otherwise, we call
-  // `ParseLinearConstraint`.  on the value of this Boolean flag.
-  bool are_all_formulas_equal{true};
-  bool is_linear{true};
-  for (const Formula& f : formulas) {
-    if (is_equal_to(f)) {
-      // f := (lhs == rhs)
-      //      (lhs - rhs == 0)
-      v(i) = get_lhs_expression(f) - get_rhs_expression(f);
-      lb(i) = 0.0;
-      ub(i) = 0.0;
-    } else if (is_less_than_or_equal_to(f)) {
-      // f := (lhs <= rhs)
-      const Expression& lhs = get_lhs_expression(f);
-      const Expression& rhs = get_rhs_expression(f);
-      lb(i) = -numeric_limits<double>::infinity();
-      FindBound(lhs, rhs, &v(i), &ub(i));
-      are_all_formulas_equal = false;
-    } else if (is_greater_than_or_equal_to(f)) {
-      // f := (lhs >= rhs)
-      const Expression& lhs = get_lhs_expression(f);
-      const Expression& rhs = get_rhs_expression(f);
-      lb(i) = -numeric_limits<double>::infinity();
-      FindBound(rhs, lhs, &v(i), &ub(i));
-      are_all_formulas_equal = false;
-    } else {
-      ostringstream oss;
-      oss << "ParseConstraint(const set<Formula>& "
-          << "formulas) is called while its argument 'formulas' includes "
-          << "a formula " << f
-          << " which is not a relational formula using one of {==, <=, >=} "
-          << "operators.";
-      throw runtime_error(oss.str());
-    }
-
-    // Check that elements are linear.
-    if (is_linear) {
-      if (!v(i).is_polynomial()) {
-        is_linear = false;
+  int k{0};  // index variable for 1D components.
+  for (int j{0}; j < formulas.cols(); ++j) {
+    for (int i{0}; i < formulas.rows(); ++i) {
+      const symbolic::Formula& f{formulas(i, j)};
+      if (is_equal_to(f)) {
+        // f(i) := (lhs == rhs)
+        //         (lhs - rhs == 0)
+        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
+        lb(k) = 0.0;
+        ub(k) = 0.0;
+      } else if (is_less_than_or_equal_to(f)) {
+        // f(i) := (lhs <= rhs)
+        //         (-∞ <= lhs - rhs <= 0)
+        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
+        lb(k) = -std::numeric_limits<double>::infinity();
+        ub(k) = 0.0;
+      } else if (is_greater_than_or_equal_to(f)) {
+        // f(i) := (lhs >= rhs)
+        //         (∞ >= lhs - rhs >= 0)
+        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
+        lb(k) = 0.0;
+        ub(k) = std::numeric_limits<double>::infinity();
       } else {
-        const Polynomial p{v(i)};
-        if (p.TotalDegree() > 1) {
-          is_linear = false;
-        }
+        std::ostringstream oss;
+        oss << "ParseConstraint is called with an "
+               "array of formulas which includes a formula "
+            << f
+            << " which is not a relational formula using one of {==, <=, >=} "
+               "operators.";
+        throw std::runtime_error(oss.str());
       }
+      ++k;
     }
-    ++i;
   }
-  if (are_all_formulas_equal && is_linear) {
-    return ParseLinearEqualityConstraint(v, lb);
-  } else {
-    return ParseConstraint(v, lb, ub);
-  }
+  return ParseConstraint(v, lb, ub);
 }
 
 Binding<Constraint> ParseConstraint(const Formula& f) {
@@ -386,9 +367,13 @@ Binding<Constraint> ParseConstraint(const Formula& f) {
     double ub = 0.0;
     FindBound(e1, e2, &e, &ub);
     return ParseConstraint(e, -numeric_limits<double>::infinity(), ub);
-  }
-  if (is_conjunction(f)) {
-    return ParseConstraint(get_operands(f));
+  } else if (is_conjunction(f)) {
+    const std::set<Formula>& operands = get_operands(f);
+    // TODO(jwnimmer-tri) We should use an absl::InlinedVector here.
+    const std::vector<Formula> vec_operands(operands.begin(), operands.end());
+    const Eigen::Map<const VectorX<Formula>> map_operands(
+        vec_operands.data(), vec_operands.size());
+    return ParseConstraint(map_operands);
   }
   ostringstream oss;
   oss << "ParseConstraint is called with a formula " << f
