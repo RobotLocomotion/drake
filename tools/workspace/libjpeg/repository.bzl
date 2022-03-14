@@ -16,7 +16,7 @@ def _impl(repository_ctx):
             "{}/opt/jpeg/include".format(os_result.homebrew_prefix),
             "include",
         )
-    elif os_result.is_manylinux:
+    elif os_result.is_manylinux or os_result.is_macos_wheel:
         libdir = "/opt/drake-dependencies/lib"
         for hdr in noarch_hdrs + ["jconfig.h"]:
             repository_ctx.symlink(
