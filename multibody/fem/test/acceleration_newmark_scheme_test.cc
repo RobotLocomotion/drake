@@ -17,9 +17,9 @@ const double kBeta = 0.3;
 const double kTolerance = 16.0 * std::numeric_limits<double>::epsilon();
 
 /* Arbitrary initial states. */
-Vector4<double> q() { return Vector4<double>(1.23, 2.34, 3.45, 4.56); }
-Vector4<double> v() { return Vector4<double>(5.67, 6.78, 7.89, 9.10); }
-Vector4<double> a() { return Vector4<double>(0.1011, 0.1112, 0.1213, 0.1314); }
+Vector3<double> q() { return Vector3<double>(1.23, 2.34, 3.45); }
+Vector3<double> v() { return Vector3<double>(5.67, 6.78, 7.89); }
+Vector3<double> a() { return Vector3<double>(0.1011, 0.1112, 0.1213); }
 
 class AccelerationNewmarkSchemeTest : public ::testing::Test {
  protected:
@@ -50,7 +50,7 @@ TEST_F(AccelerationNewmarkSchemeTest, Unknowns) {
 TEST_F(AccelerationNewmarkSchemeTest, UpdateStateFromChangeInUnknowns) {
   const FemState<double> state0(fem_state_system_.get());
   FemState<double> state(fem_state_system_.get());
-  const Vector4<double> dz(1.234, 4.567, 7.890, 0.123);
+  const Vector3<double> dz(1.234, 4.567, 7.890);
   const Vector3<double>& weights = scheme_.GetWeights();
   scheme_.UpdateStateFromChangeInUnknowns(dz, &state);
   EXPECT_TRUE(CompareMatrices(state.GetPositions() - state0.GetPositions(),
