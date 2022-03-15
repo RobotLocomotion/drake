@@ -105,7 +105,7 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasMomentum) {
        mu += kGasViscosityStep) {
     for (double m = kLowestParticleMass; m <= kHighestParticleMass;
          m += kParticleMassStep) {
-      const Eigen::Vector2d kParameters{mu, m};
+      const Eigen::Vector2d parameters{mu, m};
       // Instantiates the particle momentum IVP.
       InitialValueProblem<double> particle_momentum_ivp(
           [](const double& t, const VectorX<double>& p,
@@ -114,7 +114,7 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasMomentum) {
             const double m_ = k[1];
             return -mu_ * p / m_;
           },
-          kInitialParticleMomentum, kParameters);
+          kInitialParticleMomentum, parameters);
 
       IntegratorBase<double>& inner_integrator =
           particle_momentum_ivp.get_mutable_integrator();
@@ -181,7 +181,7 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasForcedVelocity) {
        mu += kGasViscosityStep) {
     for (double m = kLowestParticleMass; m <= kHighestParticleMass;
          m += kParticleMassStep) {
-      const Eigen::Vector2d kParameters{mu, m};
+      const Eigen::Vector2d parameters{mu, m};
 
       // Instantiates the particle velocity IVP.
       InitialValueProblem<double> particle_velocity_ivp(
@@ -192,7 +192,7 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasForcedVelocity) {
             const VectorX<double>& F_ = kPushingForce;
             return (F_ - mu_ * v) / m_;
           },
-          kInitialParticleVelocity, kParameters);
+          kInitialParticleVelocity, parameters);
 
       IntegratorBase<double>& inner_integrator =
           particle_velocity_ivp.get_mutable_integrator();

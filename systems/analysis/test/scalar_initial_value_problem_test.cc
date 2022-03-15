@@ -111,7 +111,7 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
        Rs += kResistanceStep) {
     for (double Cs = kLowestCapacitance; Cs <= kHighestCapacitance ;
          Cs += kCapacitanceStep) {
-      const Eigen::Vector2d kParameters{Rs, Cs};
+      const Eigen::Vector2d parameters{Rs, Cs};
 
       // Instantiates the stored charge scalar IVP.
       ScalarInitialValueProblem<double> stored_charge_ivp(
@@ -120,7 +120,7 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
             const double Rs_ = k[0];
             const double Cs_ = k[1];
             return (std::sin(t) - q / Cs_) / Rs_;
-          }, kInitialStoredCharge, kParameters);
+          }, kInitialStoredCharge, parameters);
 
       IntegratorBase<double>& inner_integrator =
           stored_charge_ivp.get_mutable_integrator();

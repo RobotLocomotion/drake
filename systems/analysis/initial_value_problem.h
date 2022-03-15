@@ -7,6 +7,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/analysis/dense_output.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -184,8 +185,8 @@ class InitialValueProblem {
 
 #pragma GCC diagnostic pop
 
-  /// Constructs an IVP described by the given @p ode_function, using given @p
-  /// t0 and @p x0 as initial conditions, and parameterized with @p k.
+  /// Constructs an IVP described by the given @p ode_function, using @p x0 as
+  /// initial conditions, and parameterized with @p k.
   ///
   /// @param ode_function The ODE function f(t, 𝐱; 𝐤) that describes the state
   ///                     evolution over time.
@@ -197,13 +198,14 @@ class InitialValueProblem {
 
   /// Solves the IVP from the initial time @p t0 up to time @p tf, using the
   /// initial state vector 𝐱₀ and parameter vector 𝐤 provided in the
-  /// constructor.  We require that tf ≥ t0.
+  /// constructor.
+  /// @throws std::exception if t0 > tf.
   VectorX<T> Solve(const T& t0, const T& tf) const;
 
   /// Solves and yields an approximation of the IVP solution x(t; 𝐤) for the
-  /// closed time interval between the initial time @p t0 and the given final
-  /// time @p tf, using initial state 𝐱₀ and parameter vector 𝐤 provided in
-  /// the constructor.
+  /// closed time interval between the given initial time @p t0 and the given
+  /// final time @p tf, using initial state 𝐱₀ and parameter vector 𝐤 provided
+  /// in the constructor.
   ///
   /// To this end, the wrapped IntegratorBase instance solves this IVP,
   /// advancing time and state from t₀ and 𝐱₀ = 𝐱(t₀) to @p tf and 𝐱(@p tf),
@@ -217,6 +219,7 @@ class InitialValueProblem {
   ///       interval will be. See documentation of the specific dense output
   ///       technique in use for reference on performance impact as this
   ///       interval grows.
+  /// @throws std::exception if t0 > tf.
   std::unique_ptr<DenseOutput<T>> DenseSolve(const T& t0, const T& tf) const;
 
   /// Resets the internal integrator instance by in-place

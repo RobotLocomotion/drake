@@ -7,6 +7,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/systems/analysis/scalar_dense_output.h"
@@ -128,6 +129,12 @@ class AntiderivativeFunction {
         scalar_ode_function, scalar_ivp_default_values);
   }
 
+  /// Constructs the antiderivative function of the given
+  /// @p integrable_function, parameterized with @p k.
+  ///
+  /// @param integrable_function The function f(x; 𝐤) to be integrated.
+  /// @param 𝐤 ∈ ℝᵐ is the vector of parameters.  The default is the empty
+  /// vector (indicating no parameters).
   AntiderivativeFunction(const IntegrableFunction& integrable_function,
                          const Eigen::Ref<const VectorX<T>>& k = Vector0<T>{});
 
@@ -201,8 +208,7 @@ class AntiderivativeFunction {
   /// @param v The lower integration bound.
   /// @param u The upper integration bound.
   /// @returns The value of the definite integral.
-  /// @pre The given upper integration bound @p u must be larger than or equal
-  ///      to the lower integration bound v.
+  /// @throws std::exception if v > u.
   T Evaluate(const T& v, const T& u) const;
 
   /// Evaluates and yields an approximation of the definite integral
@@ -217,7 +223,7 @@ class AntiderivativeFunction {
   /// that [@p v, @p w] interval along the way.
   ///
   /// @param v The lower integration bound.
-  /// @param w The uppermost integration bound. Usually, v < @p w as an empty
+  /// @param w The uppermost integration bound. Usually, @p v < @p w as an empty
   ///          dense output would result if @p v = @p w.
   /// @returns A dense approximation to F(u; 𝐤) (that is, a function), defined
   ///          for @p v ≤ u ≤ @p w.
@@ -225,8 +231,7 @@ class AntiderivativeFunction {
   ///       interval will be. See documentation of the specific dense output
   ///       technique used by the internally held IntegratorBase subclass
   ///       instance for more details.
-  /// @pre The given uppermost integration bound @p w must be larger than or
-  ///      equal to the lower integration bound @p v.
+  /// @throws std::exception if v > w.
   std::unique_ptr<ScalarDenseOutput<T>> MakeDenseEvalFunction(const T& v,
                                                               const T& w) const;
 

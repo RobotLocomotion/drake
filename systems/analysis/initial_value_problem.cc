@@ -135,28 +135,6 @@ InitialValueProblem<T>::InitialValueProblem(const OdeFunction& ode_function,
 }
 
 template <typename T>
-InitialValueProblem<T>::InitialValueProblem(
-    const OdeFunction& ode_function, const Eigen::Ref<const VectorX<T>>& x0,
-    const Eigen::Ref<const VectorX<T>>& k) {
-  // Instantiates the system using the given defaults as models.
-  system_ = std::make_unique<OdeSystem<T>>(ode_function, x0, k);
-
-  // Allocates a new default integration context with the
-  // given default initial time.
-  context_ = system_->CreateDefaultContext();
-
-  // Instantiates an explicit RK3 integrator by default.
-  integrator_ =
-      std::make_unique<RungeKutta3Integrator<T>>(*system_, context_.get());
-
-  // Sets step size and accuracy defaults.
-  integrator_->request_initial_step_size_target(
-      InitialValueProblem<T>::kInitialStepSize);
-  integrator_->set_maximum_step_size(InitialValueProblem<T>::kMaxStepSize);
-  integrator_->set_target_accuracy(InitialValueProblem<T>::kDefaultAccuracy);
-}
-
-template <typename T>
 VectorX<T> InitialValueProblem<T>::Solve(const T& tf,
                                          const OdeContext& values) const {
   // Gets all values to solve with, either given or default, while
@@ -290,8 +268,29 @@ std::unique_ptr<DenseOutput<T>> InitialValueProblem<T>::DenseSolve(
 #pragma GCC diagnostic pop
 
 template <typename T>
+InitialValueProblem<T>::InitialValueProblem(
+    const OdeFunction& ode_function, const Eigen::Ref<const VectorX<T>>& x0,
+    const Eigen::Ref<const VectorX<T>>& k) {
+  // Instantiates the system using the given initial conditions and parameters.
+  system_ = std::make_unique<OdeSystem<T>>(ode_function, x0, k);
+
+  // Allocates a new default integration context.
+  context_ = system_->CreateDefaultContext();
+
+  // Instantiates an explicit RK3 integrator by default.
+  integrator_ =
+      std::make_unique<RungeKutta3Integrator<T>>(*system_, context_.get());
+
+  // Sets step size and accuracy defaults.
+  integrator_->request_initial_step_size_target(
+      InitialValueProblem<T>::kInitialStepSize);
+  integrator_->set_maximum_step_size(InitialValueProblem<T>::kMaxStepSize);
+  integrator_->set_target_accuracy(InitialValueProblem<T>::kDefaultAccuracy);
+}
+
+template <typename T>
 VectorX<T> InitialValueProblem<T>::Solve(const T& t0, const T& tf) const {
-  DRAKE_DEMAND(tf >= t0);
+  DRAKE_THROW_UNLESS(tf >= t0);
   context_->SetTime(t0);
 
   ResetState();
@@ -338,7 +337,7 @@ void InitialValueProblem<T>::ResetState() const {
 template <typename T>
 std::unique_ptr<DenseOutput<T>> InitialValueProblem<T>::DenseSolve(
     const T& t0, const T& tf) const {
-  DRAKE_DEMAND(tf >= t0);
+  DRAKE_THROW_UNLESS(tf >= t0);
   context_->SetTime(t0);
   ResetState();
 
