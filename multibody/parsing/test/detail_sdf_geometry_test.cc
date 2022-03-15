@@ -56,6 +56,33 @@ using std::unique_ptr;
 using systems::Context;
 using systems::LeafSystem;
 
+sdf::ParserConfig MakeStrictConfig() {
+  sdf::ParserConfig result;
+  result.SetWarningsPolicy(sdf::EnforcementPolicy::ERR);
+  result.SetDeprecatedElementsPolicy(sdf::EnforcementPolicy::ERR);
+  result.SetUnrecognizedElementsPolicy(sdf::EnforcementPolicy::ERR);
+  return result;
+}
+
+sdf::SDFPtr ReadString(const std::string& input) {
+  sdf::SDFPtr result(new sdf::SDF());
+  sdf::init(result);
+
+  sdf::ParserConfig config = MakeStrictConfig();
+  sdf::Errors errors;
+  const bool success = sdf::readString(input, config, result, errors);
+  if (!success) {
+    for (const auto& error : errors) {
+      drake::log()->error("Parse error: {}", error);
+    }
+    // Note that we don't throw here, we just spam the console.  This is not
+    // great, but it matches the pre-existing behavior which wants this helper
+    // to return a default-constructed value in the case of syntax errors.
+  }
+
+  return result;
+}
+
 // Helper to create an sdf::Geometry object from its SDF specification given
 // as a string. Example of what the string should contain:
 //   <cylinder>
@@ -78,18 +105,7 @@ unique_ptr<sdf::Geometry> MakeSdfGeometryFromString(
       "    </link>"
       "  </model>"
       "</sdf>";
-  sdf::SDFPtr sdf_parsed(new sdf::SDF());
-  sdf::init(sdf_parsed);
-  sdf::Errors errors;
-  const bool success = sdf::readString(sdf_str, sdf_parsed, errors);
-  if (!success) {
-    for (const auto& error : errors) {
-      drake::log()->error("MakeSdfGeometryFromString parse error: {}", error);
-    }
-    // Note that we don't throw here, we just spam the console.  This is not
-    // great, but it matches the pre-existing behavior which wants this helper
-    // to return a default-constructed value in the case of syntax errors.
-  }
+  sdf::SDFPtr sdf_parsed = ReadString(sdf_str);
   sdf::ElementPtr geometry_element =
       sdf_parsed->Root()->GetElement("model")->
           GetElement("link")->GetElement("visual")->GetElement("geometry");
@@ -120,18 +136,7 @@ unique_ptr<sdf::Visual> MakeSdfVisualFromString(
       "    </link>"
       "  </model>"
       "</sdf>";
-  sdf::SDFPtr sdf_parsed(new sdf::SDF());
-  sdf::init(sdf_parsed);
-  sdf::Errors errors;
-  const bool success = sdf::readString(sdf_str, sdf_parsed, errors);
-  if (!success) {
-    for (const auto& error : errors) {
-      drake::log()->error("MakeSdfVisualFromString parse error: {}", error);
-    }
-    // Note that we don't throw here, we just spam the console.  This is not
-    // great, but it matches the pre-existing behavior which wants this helper
-    // to return a default-constructed value in the case of syntax errors.
-  }
+  sdf::SDFPtr sdf_parsed = ReadString(sdf_str);
   sdf::ElementPtr visual_element =
       sdf_parsed->Root()->GetElement("model")->
           GetElement("link")->GetElement("visual");
@@ -166,9 +171,7 @@ unique_ptr<sdf::Collision> MakeSdfCollisionFromString(
           "    </link>"
           "  </model>"
           "</sdf>";
-  sdf::SDFPtr sdf_parsed(new sdf::SDF());
-  sdf::init(sdf_parsed);
-  sdf::readString(sdf_str, sdf_parsed);
+  sdf::SDFPtr sdf_parsed = ReadString(sdf_str);
   sdf::ElementPtr collision_element =
       sdf_parsed->Root()->GetElement("model")->
           GetElement("link")->GetElement("collision");
@@ -482,7 +485,8 @@ GTEST_TEST(SceneGraphParserDetail, VisualGeometryNameRequirements) {
         "</sdf>",
         visual_str);
     sdf::Root root;
-    auto errors = root.LoadSdfString(sdf_str);
+    sdf::ParserConfig config = MakeStrictConfig();
+    auto errors = root.LoadSdfString(sdf_str, config);
     return errors.empty();
   };
 

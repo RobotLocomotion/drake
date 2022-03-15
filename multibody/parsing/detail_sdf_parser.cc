@@ -1290,7 +1290,6 @@ sdf::ParserConfig MakeSdfParserConfig(
     MultibodyPlant<double>* plant,
     bool test_sdf_forced_nesting) {
 
-  // TODO(marcoag) ensure that we propagate the right ParserConfig instance.
   sdf::ParserConfig parser_config;
   parser_config.SetWarningsPolicy(sdf::EnforcementPolicy::ERR);
   parser_config.SetDeprecatedElementsPolicy(sdf::EnforcementPolicy::WARN);
