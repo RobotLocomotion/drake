@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <regex>
+#include <sstream>
 #include <stdexcept>
 
 #include <gmock/gmock.h>
@@ -40,6 +41,8 @@ namespace {
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using drake::internal::DiagnosticDetail;
+using drake::internal::DiagnosticPolicy;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
@@ -53,7 +56,20 @@ const double kEps = std::numeric_limits<double>::epsilon();
 
 class SdfParserTest : public ::testing::Test {
  public:
-  SdfParserTest() {}
+  SdfParserTest() {
+    diagnostic_.SetActionForErrors(
+        [this](const DiagnosticDetail& detail) {
+          error_records_.push_back(detail);
+        });
+    diagnostic_.SetActionForWarnings(
+        [this](const DiagnosticDetail& detail) {
+          warning_records_.push_back(detail);
+        });
+  }
+
+  ~SdfParserTest() override {
+    FlushDiagnostics();
+  }
 
   void AddSceneGraph() {
     plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
@@ -64,9 +80,10 @@ class SdfParserTest : public ::testing::Test {
       const std::string& model_name,
       bool test_sdf_forced_nesting = false) {
     const DataSource data_source{DataSource::kFilename, &file_name};
-    return AddModelFromSdf(
-        data_source, model_name, package_map_, &plant_,
-        test_sdf_forced_nesting);
+    std::optional<ModelInstanceIndex> result = AddModelFromSdf(
+        data_source, model_name, w_, test_sdf_forced_nesting);
+    EXPECT_TRUE(result.has_value());
+    return result.value_or(ModelInstanceIndex{});
   }
 
   std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
@@ -74,29 +91,61 @@ class SdfParserTest : public ::testing::Test {
       bool test_sdf_forced_nesting = false) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     return AddModelsFromSdf(
-        data_source, package_map_, &plant_, test_sdf_forced_nesting);
+        data_source, w_, test_sdf_forced_nesting);
   }
 
   std::vector<ModelInstanceIndex> AddModelsFromSdfString(
       const std::string& file_contents,
       bool test_sdf_forced_nesting = false) {
     const DataSource data_source{DataSource::kContents, &file_contents};
-    return AddModelsFromSdf(
-        data_source, package_map_, &plant_, test_sdf_forced_nesting);
+    return AddModelsFromSdf(data_source, w_, test_sdf_forced_nesting);
   }
 
   void ParseTestString(const std::string& inner,
                        const std::string& sdf_version = "1.6") {
-    drake::log()->debug("inner: {}", inner);
+    SCOPED_TRACE(inner);
+    FlushDiagnostics();
     const std::string file_contents =
         "<sdf version='" + sdf_version + "'>" + inner + "\n</sdf>\n";
     AddModelsFromSdfString(file_contents);
   }
 
+  // Returns the first error as a string (or else fails the test case,
+  // if there were no errors).
+  std::string FormatFirstError() {
+    if (error_records_.empty()) {
+      EXPECT_TRUE(error_records_.size() > 0)
+          << "FormatFirstError did not get any errors";
+      return {};
+    }
+    return error_records_[0].FormatError();
+  }
+
+  // This will trip on unexpected errors or warnings that remain after the
+  // test logic has finished. It also resets the collections so lingering
+  // reports to not pollute additional testing.
+  void FlushDiagnostics() {
+    EXPECT_TRUE(error_records_.empty());
+    EXPECT_TRUE(warning_records_.empty());
+    ClearDiagnostics();
+  }
+
+  // This resets the diagnostic collections so that lingering reports to not
+  // pollute additional testing. All current reports are silently discarded.
+  void ClearDiagnostics() {
+    error_records_.clear();
+    warning_records_.clear();
+  }
+
  protected:
   PackageMap package_map_;
+  DiagnosticPolicy diagnostic_;
   MultibodyPlant<double> plant_{0.0};
   SceneGraph<double> scene_graph_;
+  ParsingWorkspace w_{package_map_, diagnostic_, &plant_};
+
+  std::vector<DiagnosticDetail> error_records_;
+  std::vector<DiagnosticDetail> warning_records_;
 };
 
 const Frame<double>& GetModelFrameByName(const MultibodyPlant<double>& plant,
@@ -1002,87 +1051,94 @@ TEST_F(SdfParserTest, TestSupportedFrames4) {
 
 TEST_F(SdfParserTest, TestUnsupportedFrames) {
   // Model frames cannot attach to / nor be relative to the world frame.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(R"""(
+  ParseTestString(R"""(
 <model name='bad'>
   <link name='dont_crash_plz'/>  <!-- Need at least one link -->
   <frame name='model_scope_world_frame' attached_to='world'>
     <pose>0 0 0 0 0 0</pose>
   </frame>
 </model>
-)"""),
-      R"([\s\S]*(attached_to|relative_to) name\[world\] specified by frame )"
+)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      R"(.*(attached_to|relative_to) name\[world\] specified by frame )"
       R"(with name\[.*\] does not match a nested model, link, joint, or )"
-      R"(frame name in model with name\[bad\][\s\S]*)");
+      R"(frame name in model with name\[bad\].*)"));
+  ClearDiagnostics();
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(R"""(
+  ParseTestString(R"""(
 <model name='bad'>
   <link name='dont_crash_plz'/>  <!-- Need at least one link -->
   <frame name='model_scope_world_relative_frame'>
     <pose relative_to='world'>0 0 0 0 0 0</pose>
   </frame>
 </model>
-)"""),
-      R"([\s\S]*(attached_to|relative_to) name\[world\] specified by frame )"
+)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      R"(.*(attached_to|relative_to) name\[world\] specified by frame )"
       R"(with name\[.*\] does not match a nested model, link, joint, or )"
-      R"(frame name in model with name\[bad\][\s\S]*)");
+      R"(frame name in model with name\[bad\].*)"));
+  ClearDiagnostics();
 
   for (std::string bad_name : {"world", "__model__", "__anything__"}) {
     SCOPED_TRACE(bad_name);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        ParseTestString(fmt::format(R"""(
+    ParseTestString(fmt::format(R"""(
 <model name='bad'>
   <link name='dont_crash_plz'/>  <!-- Need at least one link -->
   <frame name='{}'/>  <!-- Invalid name -->
 </model>
-)""", bad_name)),
-        R"([\s\S]*The supplied frame name \[.*\] is reserved.[\s\S]*)");
+)""", bad_name));
+    EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+        R"(.*The supplied frame name \[.*\] is reserved..*)"));
+    ClearDiagnostics();
   }
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(R"""(
+  ParseTestString(R"""(
 <model name='bad'>
   <pose relative_to='invalid_usage'/>
   <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
-</model>)"""),
-      R"([\s\S]*Attribute //pose\[@relative_to\] of top level model )"
-      R"(must be left empty[\s\S]*)");
+</model>)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      R"(.*Attribute //pose\[@relative_to\] of top level model )"
+      R"(must be left empty.*)"));
+  ClearDiagnostics();
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(R"""(
+  ParseTestString(R"""(
 <model name='bad'>
   <frame name='my_frame'/>
   <link name='a'>
     <inertial><pose relative_to='my_frame'/></inertial>
   </link>
-</model>)"""),
-      R"([\s\S]*XML Attribute\[relative_to\] in element\[pose\] not )"
-      R"(defined in SDF.\n)");
+</model>)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      R"(.*XML Attribute\[relative_to\] in element\[pose\] not )"
+      R"(defined in SDF.*)"));
+  ClearDiagnostics();
 }
 
 // Tests Drake's usage of sdf::EnforcementPolicy.
 TEST_F(SdfParserTest, TestSdformatParserPolicies) {
   AddSceneGraph();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(R"""(
+  ParseTestString(R"""(
 <model name='model_with_bad_attribute' bad_attribute="junk">
   <link name='a'/>
 </model>
-)"""),
-      R"([\s\S]*XML Attribute\[bad_attribute\] in element\[model\] not )"
-      R"(defined in SDF.[\s\S]*)");
+)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      R"(.*XML Attribute\[bad_attribute\] in element\[model\] not )"
+      R"(defined in SDF.*)"));
+  ClearDiagnostics();
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(R"""(
+  ParseTestString(R"""(
 <model name='model_with_too_many_top_level_elements'>
   <link name='a'/>
 </model>
 <model name='two_models_too_many'>
   <link name='b'/>
 </model>
-)"""),
-    R"([\s\S]*Root object can only contain one model.*)");
+)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      R"(.*Root object can only contain one model.*)"));
+  ClearDiagnostics();
 
   // Temporarily append new log messages into a memory stream.
   std::ostringstream buffer;
@@ -2062,6 +2118,45 @@ TEST_F(SdfParserTest, InterfaceAPI) {
     EXPECT_TRUE(CompareMatrices(X_WT_expected.GetAsMatrix4(),
                                 X_WT.GetAsMatrix4(), kEps));
   }
+}
+
+// Verifies that parser diagnostics from URDF files included by SDFormat files
+// make it through the entire call stack.
+TEST_F(SdfParserTest, ErrorsFromIncludedUrdf) {
+  ParseTestString(R"""(
+<model name="top">
+  <link name="torso"/>
+  <include>
+    <pose relative_to="torso">1 0 0 0 0 0</pose>
+    <uri>package://drake/multibody/parsing/test/sdf_parser_test/bad.urdf</uri>
+    <name>arm</name>
+ </include>
+</model>)""", "1.8");
+
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*bad.urdf.*XML_ERROR.*"));
+  ClearDiagnostics();
+}
+
+// Verifies that parser diagnostics from SDFormat files included by SDFormat
+// files make it through the entire call stack.
+TEST_F(SdfParserTest, ErrorsFromIncludedNestingSdf) {
+  const std::string file_contents = R"""(
+<sdf version='1.8'>
+  <model name="top">
+    <link name="torso"/>
+    <include>
+      <pose relative_to="torso">1 0 0 0 0 0</pose>
+      <uri>package://drake/multibody/parsing/test/sdf_parser_test/bad.forced_nesting_sdf</uri>
+      <name>arm</name>
+    </include>
+  </model>
+</sdf>)""";
+  const DataSource data_source{DataSource::kContents, &file_contents};
+  AddModelFromSdf(data_source, "", w_, true);
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*Unable to read.*bad.forced_nesting.*"));
+  ClearDiagnostics();
 }
 
 // TODO(SeanCurtis-TRI) The logic testing for collision filter group parsing
