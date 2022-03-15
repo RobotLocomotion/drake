@@ -5,11 +5,26 @@ load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
+)
+
+drake_cc_package_library(
+    name = "sap",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":contact_problem_graph",
+        ":partial_permutation",
+        ":sap_constraint",
+        ":sap_constraint_bundle",
+        ":sap_contact_problem",
+        ":sap_friction_cone_constraint",
+        ":sap_model",
+    ],
 )
 
 drake_cc_library(
