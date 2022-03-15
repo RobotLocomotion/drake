@@ -33,6 +33,7 @@ VectorXd a() {
 
 GTEST_TEST(FemStateSystemTest, Constructor) {
   FemStateSystem<double> fem_state_system(q(), v(), a());
+  EXPECT_EQ(fem_state_system.num_dofs(), kNumDofs);
   EXPECT_THROW(FemStateSystem<double>(Vector3d::Zero(), v(), a()),
                std::exception);
   EXPECT_THROW(FemStateSystem<double>(q(), Vector3d::Zero(), v()),
