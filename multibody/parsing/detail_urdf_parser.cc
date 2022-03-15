@@ -218,29 +218,31 @@ void UrdfParser::ParseBody(XMLElement* node,
     for (XMLElement* visual_node = node->FirstChildElement("visual");
          visual_node;
          visual_node = visual_node->NextSiblingElement("visual")) {
-      geometry::GeometryInstance geometry_instance =
+      std::optional<geometry::GeometryInstance> geometry_instance =
           ParseVisual(body_name, *data_source_, w_, visual_node,
                       materials, &geometry_names);
+      if (!geometry_instance) { return; }
       // The parsing should *always* produce an IllustrationProperties
       // instance, even if it is empty.
-      DRAKE_DEMAND(geometry_instance.illustration_properties() != nullptr);
+      DRAKE_DEMAND(geometry_instance->illustration_properties() != nullptr);
       plant->RegisterVisualGeometry(
-          body, geometry_instance.pose(), geometry_instance.shape(),
-          geometry_instance.name(),
-          *geometry_instance.illustration_properties());
+          body, geometry_instance->pose(), geometry_instance->shape(),
+          geometry_instance->name(),
+          *geometry_instance->illustration_properties());
     }
 
     for (XMLElement* collision_node = node->FirstChildElement("collision");
          collision_node;
          collision_node = collision_node->NextSiblingElement("collision")) {
-      geometry::GeometryInstance geometry_instance =
+      std::optional<geometry::GeometryInstance> geometry_instance =
           ParseCollision(body_name, *data_source_, w_, collision_node,
           &geometry_names);
-      DRAKE_DEMAND(geometry_instance.proximity_properties() != nullptr);
+      if (!geometry_instance) { return; }
+      DRAKE_DEMAND(geometry_instance->proximity_properties() != nullptr);
       plant->RegisterCollisionGeometry(
-          body, geometry_instance.pose(), geometry_instance.shape(),
-          geometry_instance.name(),
-          std::move(*geometry_instance.mutable_proximity_properties()));
+          body, geometry_instance->pose(), geometry_instance->shape(),
+          geometry_instance->name(),
+          std::move(*geometry_instance->mutable_proximity_properties()));
     }
   }
 }

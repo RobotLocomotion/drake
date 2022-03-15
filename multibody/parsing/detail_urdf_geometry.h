@@ -137,7 +137,7 @@ UrdfMaterial ParseMaterial(const tinyxml2::XMLElement* node, bool name_required,
  @param[in,out] geometry_names The list of geometry names already used within
  the current MbP body (i.e., link), so that this function can be sure not to
  reuse an already-used name. The name used by this geometry is added to it. */
-geometry::GeometryInstance ParseVisual(
+std::optional<geometry::GeometryInstance> ParseVisual(
     const std::string& parent_element_name,
     const DataSource& data_source,
     const ParsingWorkspace& workspace,
@@ -209,7 +209,7 @@ geometry::GeometryInstance ParseVisual(
  @param[in,out] geometry_names The list of geometry names already used within
  the current MbP body (i.e., link), so that this function can be sure not to
  reuse an already-used name. The name used by this geometry is added to it. */
-geometry::GeometryInstance ParseCollision(
+std::optional<geometry::GeometryInstance> ParseCollision(
     const std::string& parent_element_name,
     const DataSource& data_source,
     const ParsingWorkspace& workspace,

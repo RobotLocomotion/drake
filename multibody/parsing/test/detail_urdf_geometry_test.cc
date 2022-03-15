@@ -250,20 +250,22 @@ class UrdfGeometryTests : public testing::Test {
                link_node->FirstChildElement("visual");
            visual_node;
            visual_node = visual_node->NextSiblingElement("visual")) {
-        geometry::GeometryInstance geometry_instance =
+        std::optional<geometry::GeometryInstance> geometry_instance =
             internal::ParseVisual(body_name, source, workspace_,
                                   visual_node, &materials_, &geometry_names);
-        visual_instances_.push_back(geometry_instance);
+        if (!geometry_instance) { return;}
+        visual_instances_.push_back(*geometry_instance);
       }
 
       for (const XMLElement* collision_node =
                link_node->FirstChildElement("collision");
            collision_node;
            collision_node = collision_node->NextSiblingElement("collision")) {
-        geometry::GeometryInstance geometry_instance =
+        std::optional<geometry::GeometryInstance> geometry_instance =
             internal::ParseCollision(body_name, source, workspace_,
                                      collision_node, &geometry_names);
-        collision_instances_.push_back(geometry_instance);
+        if (!geometry_instance) { return; }
+        collision_instances_.push_back(*geometry_instance);
       }
     }
   }
@@ -587,11 +589,12 @@ TEST_F(UrdfCollisionDocTests, BasicTags) {
   const XMLElement* collision_node = xml_doc_.FirstChildElement("collision");
   ASSERT_NE(collision_node, nullptr);
   std::unordered_set<std::string> geometry_names;
-  GeometryInstance instance =
+  std::optional<GeometryInstance> instance =
       ParseCollision("link_name", source_, workspace_, collision_node,
                      &geometry_names);
-  ASSERT_NE(instance.proximity_properties(), nullptr);
-  const ProximityProperties& properties = *instance.proximity_properties();
+  ASSERT_TRUE(instance.has_value());
+  ASSERT_NE(instance->proximity_properties(), nullptr);
+  const ProximityProperties& properties = *instance->proximity_properties();
   VerifySingleProperty(properties, geometry::internal::kHydroGroup,
                        geometry::internal::kRezHint, 2.5);
   VerifySingleProperty(properties, geometry::internal::kHydroGroup,
@@ -609,11 +612,12 @@ TEST_F(UrdfCollisionDocTests, RigidHydroelastic) {
   const XMLElement* collision_node = xml_doc_.FirstChildElement("collision");
   ASSERT_NE(collision_node, nullptr);
   std::unordered_set<std::string> geometry_names;
-  GeometryInstance instance =
+  std::optional<GeometryInstance> instance =
       ParseCollision("link_name", source_, workspace_, collision_node,
                      &geometry_names);
-  ASSERT_NE(instance.proximity_properties(), nullptr);
-  const ProximityProperties& properties = *instance.proximity_properties();
+  ASSERT_TRUE(instance.has_value());
+  ASSERT_NE(instance->proximity_properties(), nullptr);
+  const ProximityProperties& properties = *instance->proximity_properties();
   ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
                                      geometry::internal::kComplianceType));
   auto prop = properties.GetProperty<geometry::internal::HydroelasticType>(
@@ -629,11 +633,12 @@ TEST_F(UrdfCollisionDocTests, CompliantHydroelastic) {
   const XMLElement* collision_node = xml_doc_.FirstChildElement("collision");
   ASSERT_NE(collision_node, nullptr);
   std::unordered_set<std::string> geometry_names;
-  GeometryInstance instance =
+  std::optional<GeometryInstance> instance =
       ParseCollision("link_name", source_, workspace_, collision_node,
                      &geometry_names);
-  ASSERT_NE(instance.proximity_properties(), nullptr);
-  const ProximityProperties& properties = *instance.proximity_properties();
+  ASSERT_TRUE(instance.has_value());
+  ASSERT_NE(instance->proximity_properties(), nullptr);
+  const ProximityProperties& properties = *instance->proximity_properties();
   ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
                                      geometry::internal::kComplianceType));
   auto prop = properties.GetProperty<geometry::internal::HydroelasticType>(
@@ -690,11 +695,12 @@ TEST_F(UrdfCollisionDocTests, LegacyCompliance) {
   const XMLElement* collision_node = xml_doc_.FirstChildElement("collision");
   ASSERT_NE(collision_node, nullptr);
   std::unordered_set<std::string> geometry_names;
-  GeometryInstance instance =
+  std::optional<GeometryInstance> instance =
       ParseCollision("link_name", source_, workspace_, collision_node,
                      &geometry_names);
-  ASSERT_NE(instance.proximity_properties(), nullptr);
-  const ProximityProperties& properties = *instance.proximity_properties();
+  ASSERT_TRUE(instance.has_value());
+  ASSERT_NE(instance->proximity_properties(), nullptr);
+  const ProximityProperties& properties = *instance->proximity_properties();
   VerifyFriction(properties, {3.5, 2.5});
 }
 
@@ -712,11 +718,12 @@ TEST_F(UrdfCollisionDocTests, NewBeatsOld) {
   const XMLElement* collision_node = xml_doc_.FirstChildElement("collision");
   ASSERT_NE(collision_node, nullptr);
   std::unordered_set<std::string> geometry_names;
-  GeometryInstance instance =
+  std::optional<GeometryInstance> instance =
       ParseCollision("link_name", source_, workspace_, collision_node,
                      &geometry_names);
-  ASSERT_NE(instance.proximity_properties(), nullptr);
-  const ProximityProperties& properties = *instance.proximity_properties();
+  ASSERT_TRUE(instance.has_value());
+  ASSERT_NE(instance->proximity_properties(), nullptr);
+  const ProximityProperties& properties = *instance->proximity_properties();
   VerifyFriction(properties, {4.5, 4.5});
 }
 
