@@ -129,7 +129,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// </pre>
   /// If frame C is rigidly fixed to frame B, V_BC_E = 0 and this method
   /// produces a Shift() operation (albeit inefficiently).
-  /// @see %SpatialAcceleration::ComposeWithMovingFrameVelocity() for the
+  /// @see %SpatialAcceleration::ComposeWithMovingFrameAcceleration() for the
   /// related %SpatialAcceleration method and calculations.
   SpatialVelocity<T> ComposeWithMovingFrameVelocity(
       const Vector3<T>& position_of_moving_frame,
