@@ -149,6 +149,7 @@ each of the properties and then discuss how they can be specified.
        - Ellipsoid
          - The representative circle is an abstract circle whose radius is that
            of the largest semi-axis of the elllipsoid.
+     - Resolution hint has no effect on Box.
 - Hydroelastic modulus (Pa (N/m²))
   - This is the measure of how stiff the material is. It directly defines how
     much pressure is exerted given a certain amount of penetration. More
@@ -400,7 +401,6 @@ Here are various ways that hydroelastic contact may surprise you.
 - Half spaces are not represented by meshes. They don’t contribute *any*
   geometry to the resultant contact surface. The contact surface’s refinement
   will depend on the other geometry’s level of refinement.
-- Resolution hint (`drake:mesh_resolution_hint`) has no effect on Box.
 
 @subsubsection hug_tips Tips and Tricks
 
