@@ -3,7 +3,9 @@
 #include <memory>
 #include <string>
 
-#include <sdf/sdf.hh>
+#include <sdf/Collision.hh>
+#include <sdf/Geometry.hh>
+#include <sdf/Visual.hh>
 
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
