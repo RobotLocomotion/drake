@@ -252,6 +252,14 @@ class ProximityEngine {
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
 
+  /* Implementation of GeometryState::ComputeDeformableContactData(). Assumes
+   the poses of rigid bodies and the vertex positions of the deformable bodies
+   are up-to-date. */
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+  ComputeDeformableContactData(
+      std::vector<DeformableContactData<T>>* deformable_contact_data) const;
+
   /* Implementation of GeometryState::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
 

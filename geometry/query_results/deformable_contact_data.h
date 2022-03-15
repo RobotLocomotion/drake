@@ -2,13 +2,11 @@
 
 #include <vector>
 
-#include "drake/multibody/fixed_fem/dev/deformable_rigid_contact_pair.h"
-#include "drake/multibody/fixed_fem/dev/reference_deformable_geometry.h"
+#include "drake/geometry/proximity/deformable_contact_geometries.h"
+#include "drake/geometry/proximity/deformable_rigid_contact_pair.h"
 
 namespace drake {
-namespace multibody {
-namespace fem {
-namespace internal {
+namespace geometry {
 
 /* DeformbaleContactData stores all the contact query information related to a
  particular deformable body. In addition, it stores information about the
@@ -22,8 +20,9 @@ class DeformableContactData {
    deformable-rigid contact pairs involving the deformable body and the
    deformable geometry at reference configuration. */
   DeformableContactData(
-      std::vector<DeformableRigidContactPair<T>> contact_pairs,
-      const ReferenceDeformableGeometry<T>& deformable_geometry);
+      std::vector<internal::deformable::DeformableRigidContactPair<T>>
+          contact_pairs,
+      const internal::deformable::DeformableGeometry& deformable_geometry);
 
   /* A 2D anologue of a deformable mesh D in contact with a rigid body R. The
    deformable mesh has 6 vertices with indexes v0-v5. Vertices v1, v2, and v5
@@ -104,24 +103,24 @@ class DeformableContactData {
 
   /* Returns all deformable-rigid contact pairs that involve this deformable
    body with no particular order. */
-  const std::vector<DeformableRigidContactPair<T>>& contact_pairs() const {
+  const std::vector<internal::deformable::DeformableRigidContactPair<T>>&
+  contact_pairs() const {
     return contact_pairs_;
   }
 
-  /* Returns the index of the deformable body in contact. For an empty contact
-   data, returns an invalid index. */
-  DeformableBodyIndex deformable_body_index() const {
-    return deformable_body_index_;
-  }
+  /* Returns the id of the deformable geometry in contact. For an empty contact
+   data, returns an invalid id. */
+  GeometryId deformable_geometry_id() const { return deformable_geometry_id_; }
 
  private:
   /* Populates the data member `permuted_vertex_indexes_`. Only called by the
    constructor when there exists at least one contact pair. */
   void CalcParticipatingVertices(
-      const geometry::VolumeMesh<T>& deformable_mesh);
+      const geometry::VolumeMesh<double>& deformable_mesh);
 
   /* All contact pairs involving the deformable body of interest. */
-  std::vector<DeformableRigidContactPair<T>> contact_pairs_{};
+  std::vector<internal::deformable::DeformableRigidContactPair<T>>
+      contact_pairs_{};
   /* signed_distances_[i][j] gives an *approximate* signed distance for the j-th
    contact point in the i-th contact pair. */
   std::vector<std::vector<T>> signed_distances_{};
@@ -131,12 +130,11 @@ class DeformableContactData {
   std::vector<int> permuted_to_original_indexes_{};
   int num_contact_points_{0};
   int num_vertices_in_contact_{0};
-  DeformableBodyIndex deformable_body_index_;
+  GeometryId deformable_geometry_id_;
 };
 
-}  // namespace internal
-}  // namespace fem
-}  // namespace multibody
+}  // namespace geometry
 }  // namespace drake
+
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fem::internal::DeformableContactData)
+    class ::drake::geometry::DeformableContactData)

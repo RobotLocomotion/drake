@@ -136,6 +136,21 @@ QueryObject<T>::ComputeContactSurfacesWithFallback(
 }
 
 template <typename T>
+template <typename T1>
+typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+QueryObject<T>::ComputeDeformableContactData(
+    std::vector<DeformableContactData<T>>* deformable_contact_data) const {
+  DRAKE_DEMAND(deformable_contact_data != nullptr);
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  FullDeformableUpdate();
+
+  const GeometryState<T>& state = geometry_state();
+  state.ComputeDeformableContactData(deformable_contact_data);
+}
+
+template <typename T>
 std::vector<SignedDistancePair<T>>
 QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints(
     const double max_distance) const {

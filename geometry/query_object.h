@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/query_results/contact_surface.h"
+#include "drake/geometry/query_results/deformable_contact_data.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
@@ -381,6 +382,11 @@ class QueryObject {
       HydroelasticContactRepresentation representation,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
+
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+  ComputeDeformableContactData(
+      std::vector<DeformableContactData<T>>* deformable_contact_data) const;
 
   /** Applies a conservative culling mechanism to create a subset of all
    possible geometry pairs based on non-zero intersections. A geometry pair

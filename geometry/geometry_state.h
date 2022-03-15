@@ -424,6 +424,17 @@ class GeometryState {
         representation, X_WGs_, surfaces, point_pairs);
   }
 
+  /** Implementation of QueryObject::ComputeDeformableContactData(). Assumes
+   * poses of the rigid bodies and the vertex positions of the deformable bodies
+   * are up-to-date.  */
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+  ComputeDeformableContactData(
+      std::vector<DeformableContactData<T>>* deformable_contact_data) const {
+    return geometry_engine_->ComputeDeformableContactData(
+        deformable_contact_data);
+  }
+
   /** Implementation of QueryObject::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const {
     return geometry_engine_->FindCollisionCandidates();
@@ -635,6 +646,10 @@ class GeometryState {
   // Method that performs any final book-keeping/updating on the state after
   // _all_ of the state's frames have had their poses updated.
   void FinalizePoseUpdate();
+
+  // Method that performs any final book-keeping/updating on the state after
+  // _all_ of the deformable objects have had their positions updated.
+  void FinalizeDeformableUpdate();
 
   // Gets the source id for the given frame id. Throws std::exception if the
   // frame belongs to no registered source.

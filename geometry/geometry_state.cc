@@ -1077,8 +1077,6 @@ void GeometryState<T>::SetFramePoses(
 template <typename T>
 void GeometryState<T>::SetDeformablePositions(
     const SourceId source_id, const FrameDeformableVector<T>& positions) {
-  // TODO(SeanCurtis-TRI): Down the road, make this validation depend on
-  // ASSERT_ARMED.
   ValidateFrameIds(source_id, poses);
   for (auto frame_id : source_frame_id_map_[source_id]) {
     if (positions.has_id(frame_id)){
@@ -1124,6 +1122,10 @@ void GeometryState<T>::FinalizePoseUpdate() {
   for (auto& pair : render_engines_) {
     pair.second->UpdatePoses(X_WGs_);
   }
+}
+
+void GeometryState<T>::FinalizeDeformableUpdate() {
+  geometry_engine_->UpdateDeformableVertexPositions(q_WGs_);
 }
 
 template <typename T>

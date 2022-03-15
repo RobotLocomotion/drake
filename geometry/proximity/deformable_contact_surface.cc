@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/deformable_contact.h"
+#include "drake/geometry/proximity/deformable_contact_surface.h"
 
 #include <array>
 #include <utility>
@@ -9,8 +9,9 @@
 #include "drake/geometry/utilities.h"
 
 namespace drake {
-namespace multibody {
-namespace fem {
+namespace geometry {
+namespace internal {
+namespace deformable {
 
 using geometry::TriangleSurfaceMesh;
 using geometry::VolumeMesh;
@@ -487,10 +488,10 @@ DeformableContactSurface<T> ComputeTetMeshTriMeshContact(
   return Intersector<T>().Intersect(tet_mesh_D, tri_mesh_R, bvh_R, X_DR);
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-    &ComputeTetMeshTriMeshContact<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&ComputeTetMeshTriMeshContact<T>))
 
-}  // namespace fem
-}  // namespace multibody
+}  // namespace deformable
+}  // namespace internal
+}  // namespace geometry
 }  // namespace drake

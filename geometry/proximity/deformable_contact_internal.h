@@ -6,137 +6,19 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/deformable_volume_mesh.h"
-#include "drake/geometry/proximity/hydroelastic_internal.h"
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
-#include "drake/geometry/proximity/volume_mesh_field.h"
+#include "drake/geometry/proximity/deformable_contact_geometries.h"
+#include "drake/geometry/proximity/deformable_contact_surface.h"
+#include "drake/geometry/proximity/deformable_rigid_contact_pair.h"
 #include "drake/geometry/proximity_properties.h"
+#include "drake/geometry/query_results/deformable_contact_data.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 namespace deformable {
-
-/* Definition of a deformable body's geometry at the reference configuration.
- It includes a volume mesh and a scalar field approximating the signed distance
- to the surface of the mesh defined on the interior of the geometry. */
-class ReferenceDeformableGeometry : public ShapeReifier {
-  /* This class is similar to geometry::internal::hydroelastic::SoftMesh
-    but it doesn't provide a bounding volume hierarchy. */
- public:
-  /* Constructs a deformable geometry at reference configuration with the
-   provided mesh and piece-wise linear approximation of the signed distance
-   field within the volume mesh.
-   @pre The signed_distance approximation is exact at mesh vertices, evaluates
-   to zero on the boundary vertices, and evaluates to non-positive values on all
-   vertices. */
-  ReferenceDeformableGeometry(const Shape& shape,
-                              geometry::VolumeMesh<double> mesh);
-
-  /* Custom copy assign and construct. */
-  ReferenceDeformableGeometry& operator=(const ReferenceDeformableGeometry& s);
-  ReferenceDeformableGeometry(const ReferenceDeformableGeometry& s);
-
-  ReferenceDeformableGeometry(ReferenceDeformableGeometry&&) = default;
-  ReferenceDeformableGeometry& operator=(ReferenceDeformableGeometry&&) =
-      default;
-
-  /* Returns the approximate signed distance field with which `this` is
-   constructed. */
-  const geometry::VolumeMeshFieldLinear<double, double>& signed_distance_field()
-      const {
-    return *signed_distance_field_;
-  }
-
- private:
-  struct ReifyData {
-    std::vector<double> signed_distance;
-  };
-
-  std::vector<double> ComputeSignedDistanceOfVertices(const Shape& shape);
-
-  using ShapeReifier::ImplementGeometry;
-  void ImplementGeometry(const Sphere& sphere, void* user_data) override;
-  void ImplementGeometry(const Box& box, void* user_data) override;
-
-  geometry::VolumeMesh<double> mesh_;
-  std::unique_ptr<geometry::VolumeMeshFieldLinear<double, double>>
-      signed_distance_field_;
-};
-
-/* Definition of a deformable geometry for contact implementations. To be a
- deformable geometry, a shape must be associated with both:
-   - a deformable volume mesh, and
-   - an approximate signed distance field in the interior of the mesh. */
-class DeformableGeometry {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableGeometry)
-
-  /* Constructs a deformable geometry. */
-  DeformableGeometry(const Shape& shape, VolumeMesh<double> mesh)
-      : mesh_(mesh), reference_geometry_(shape, std::move(mesh)) {}
-
-  /* Returns the volume mesh representation of the deformable geometry at
-   current configuration. */
-  const internal::DeformableVolumeMesh<double>& deformable_volume_mesh() const {
-    return mesh_;
-  }
-
-  /* Updates the vertex positions of the underlying deformable mesh.
-  @param q  A vector of 3N values (where this mesh has N vertices). The iᵗʰ
-            vertex gets values <q(3i), q(3i + 1), q(3i + 2>. Each vertex is
-            assumed to be measured and expressed in the mesh's frame M.
-  @pre q.size == 3 * mesh().num_vertices(). */
-  void UpdateVertexPositions(const Eigen::Ref<const VectorX<double>>& q) {
-    mesh_.UpdateVertexPositions(q);
-  }
-
-  /* Returns the approximate signed distance field with which `this` is
-   constructed. */
-  const VolumeMeshFieldLinear<double, double>& signed_distance() const {
-    return reference_geometry_.signed_distance_field();
-  }
-
- private:
-  internal::DeformableVolumeMesh<double> mesh_;
-  ReferenceDeformableGeometry reference_geometry_;
-};
-
-/* Defines a rigid geometry -- a rigid hydroelastic mesh repurposed to compute
- deformable vs. rigid contact, along with local data to keep track of the pose
- of the mesh. We need to locally store the pose of the
- mesh because right now we aren't relying on FCL's broadphase. */
-class RigidGeometry {
- public:
-  explicit RigidGeometry(
-      std::unique_ptr<internal::hydroelastic::RigidMesh> rigid_mesh)
-      : rigid_mesh_(std::move(rigid_mesh)) {}
-
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidGeometry)
-
-  const internal::hydroelastic::RigidMesh& rigid_mesh() const {
-    DRAKE_DEMAND(rigid_mesh_ != nullptr);
-    return *rigid_mesh_;
-  }
-
-  /* Updates the pose of the geometry in the world frame to the given pose,
-   X_WG. */
-  void set_pose_in_world(const math::RigidTransform<double>& X_WG) {
-    X_WG_ = X_WG;
-  }
-
-  /* Returns the pose of the geometry in the world frame, X_WG. */
-  const math::RigidTransform<double>& pose_in_world() const { return X_WG_; }
-
- private:
-  copyable_unique_ptr<internal::hydroelastic::RigidMesh> rigid_mesh_;
-  math::RigidTransform<double> X_WG_;
-};
 
 /* This class stores all instantiated representations of declared geometries for
  deformabe contact. They are keyed by the geometry's global GeometryId.
@@ -182,6 +64,8 @@ class Geometries final : public ShapeReifier {
     return deformable_geometries_.count(id) != 0;
   }
 
+  int num_deformable_geometry() const { return deformable_geometries_.size(); }
+
   /* Removes the geometry (if it has a deformable contact representation).  */
   void RemoveGeometry(GeometryId id);
 
@@ -219,6 +103,20 @@ class Geometries final : public ShapeReifier {
     }
   }
 
+  /* For all registered deformable bodies, computes the contact data of that
+   deformable body with all registered rigid bodies. Assumes the vertex
+   positions and poses of all registered deformable and rigid bodies are up to
+   date. */
+  void ComputeDeformableContactData(std::vector<DeformableContactData<double>>*
+                                        deformable_contact_data) const {
+    deformable_contact_data->clear();
+    deformable_contact_data->reserve(num_deformable_geometry());
+    for (const auto& it : deformable_geometries_) {
+      deformable_contact_data->emplace_back(
+          CalcDeformableContactData(it.first));
+    }
+  }
+
  private:
   // Data to be used during reification. It is passed as the `user_data`
   // parameter in the ImplementGeometry API.
@@ -242,66 +140,49 @@ class Geometries final : public ShapeReifier {
   template <typename ShapeType>
   void MakeShape(const ShapeType& shape, const ReifyData& data);
 
+  /* Calculates the contact data for the deforamble body with the given id.
+   @pre A deformable geometry with `deformable_id` exists. */
+  DeformableContactData<double> CalcDeformableContactData(
+      GeometryId deformable_id) const {
+    DRAKE_DEMAND(is_deformable(deformable_id));
+    std::vector<internal::deformable::DeformableRigidContactPair<double>>
+        deformable_rigid_contact_pairs;
+    for (const auto& it : rigid_geometries_) {
+      DeformableRigidContactPair<double> contact_pair =
+          CalcDeformableRigidContactPair(it.first, deformable_id);
+      if (contact_pair.num_contact_points() != 0) {
+        deformable_rigid_contact_pairs.emplace_back(std::move(contact_pair));
+      }
+    }
+    return {std::move(deformable_rigid_contact_pairs),
+            deformable_geometries_[deformable_id]};
+  }
+
+  DeformableRigidContactPair<double> CalcDeformableRigidContactPair(
+      GeometryId rigid_id, GeometryId deformable_id) const {
+    DRAKE_DEMAND(is_deformable(deforamble_id));
+    DRAKE_DEMAND(is_rigid(rigid_id));
+
+    const DeformableVolumeMesh<double>& deformable_tet_mesh =
+        deformable_geometries_[deformable_id].deformable_volume_mesh();
+    const RigidGeometry& rigid_geometry = rigid_geometries_[rigid_id];
+    const math::RigidTransform<double>& X_WR = rigid_geometry.pose_in_world();
+    const auto& rigid_bvh = rigid_geometry.rigid_mesh().bvh();
+    const auto& rigid_tri_mesh = rigid_geometry.rigid_mesh().mesh();
+
+    DeformableContactSurface<double> contact_surface =
+        ComputeTetMeshTriMeshContact(deformable_tet_mesh, rigid_tri_mesh,
+                                     rigid_bvh, X_WR);
+    return internal::DeformableRigidContactPair<double>(
+        std::move(contact_surface), rigid_id, deformable_id);
+  }
+
   // The representations of all deformable geometries.
   std::unordered_map<GeometryId, DeformableGeometry> deformable_geometries_;
 
   // The representations of all rigid geometries.
   std::unordered_map<GeometryId, RigidGeometry> rigid_geometries_;
 };
-
-/* Generic interface for handling rigid Shapes. By default, we support all
- shapes that are supported by rigid hydroelastic. Unsupported geometries will
- return a std::nullopt.  */
-template <typename Shape>
-std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Shape& shape, const ProximityProperties& props) {
-  std::optional<internal::hydroelastic::RigidGeometry> hydro_rigid_geometry =
-      internal::hydroelastic::MakeRigidRepresentation(shape, props);
-  if (!hydro_rigid_geometry) {
-    static const logging::Warn log_once(
-        "Rigid {} shapes are not currently supported for deformable "
-        "contact; registration is allowed, but an error will be thrown "
-        "during contact.",
-        ShapeName(shape));
-    return {};
-  }
-  auto surface_mesh = std::make_unique<TriangleSurfaceMesh<double>>(
-      (*hydro_rigid_geometry).mesh());
-  auto rigid_mesh = std::make_unique<internal::hydroelastic::RigidMesh>(
-      std::move(surface_mesh));
-  return RigidGeometry(std::move(rigid_mesh));
-}
-
-/* Half space is not supported for deformable contact at the moment as we
- require a surface mesh. */
-std::optional<RigidGeometry> MakeRigidRepresentation(
-    const HalfSpace&, const ProximityProperties&);
-
-/* Generic interface for handling unsupported deformable Shapes. Unsupported
- geometries will return a std::nullopt.  */
-template <typename Shape>
-std::optional<DeformableGeometry> MakeDeformableRepresentation(
-    const Shape& shape, const ProximityProperties&) {
-  static const logging::Warn log_once(
-      "Deformable {} shapes are not currently supported for deformable "
-      "contact; registration is allowed, but an error will be thrown during "
-      "contact.",
-      ShapeName(shape));
-  return {};
-}
-
-// TODO(xuchenhan-tri): Find a way to ensure that the mesh used for proximity
-//  queries are the same as that used in the FEM model.
-/* Creates a deformable sphere (assuming the proximity properties have
- sufficient information). Requires the ('hydroelastic', 'resolution_hint')
- property. */
-std::optional<DeformableGeometry> MakeDeformableRepresentation(
-    const Sphere& sphere, const ProximityProperties& props);
-
-/* Creates a deformable box (assuming the proximity properties have sufficient
- information). Requires the ('hydroelastic', 'resolution_hint') property. */
-std::optional<DeformableGeometry> MakeDeformableRepresentation(
-    const Box& box, const ProximityProperties& props);
 
 }  // namespace deformable
 }  // namespace internal

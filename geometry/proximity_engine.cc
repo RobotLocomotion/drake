@@ -640,6 +640,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::sort(point_pairs->begin(), point_pairs->end(), OrderPointPair<T>);
   }
 
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+  ComputeDeformableContactData(
+      std::vector<DeformableContactData<T>>* deformable_contact_data) const {
+    deformable_contact_geometries.ComputeDeformableContactData(
+        deformable_contact_data);
+  }
+
   // Testing utilities
 
   bool IsDeepCopy(const Impl& other) const {
@@ -980,6 +988,14 @@ ProximityEngine<T>::ComputeContactSurfacesWithFallback(
     std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
   return impl_->ComputeContactSurfacesWithFallback(representation, X_WGs,
                                                    surfaces, point_pairs);
+}
+
+template <typename T>
+template <typename T1>
+typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+ProximityEngine<T>::ComputeDeformableContactData(
+    std::vector<DeformableContactData<T>>* deformable_contact_data) const {
+  return impl_->ComputeDeformableContactData(deformable_contact_data);
 }
 
 template <typename T>

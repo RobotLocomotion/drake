@@ -12,8 +12,9 @@
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
-namespace multibody {
-namespace fem {
+namespace geometry {
+namespace internal {
+namespace deformable {
 
 // TODO(SeanCurtis-TRI) The application of the template parameter T is *not*
 //  well reasoned. Currently, we're assuming that *all* quantities can and
@@ -77,11 +78,6 @@ class DeformableContactSurface {
   std::vector<ContactPolygonData<T>> polygon_data_;
 };
 
-// TODO(SeanCurtis-TRI) This needs some acceleration; we need an OBB BVH for
-//  the triangle mesh and an AABB BVH for the tet mesh (one that updates
-//  based on deformations). The Obb BVH exists and we could use it assuming
-//  we add the OBB-Tet intersection test.
-
 /** Computes the contact between a deformable tet mesh and a rigid tri mesh. The
  contact is characterized by a collection of per-polygon quantities (see
  DeformableContactSurface) associated with an implicit underlying polygon mesh.
@@ -106,6 +102,8 @@ DeformableContactSurface<T> ComputeTetMeshTriMeshContact(
     const geometry::internal::Bvh<geometry::internal::Obb,
                                   geometry::TriangleSurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_DR);
-}  // namespace fem
-}  // namespace multibody
+
+}  // namespace deformable
+}  // namespace internal
+}  // namespace geometry
 }  // namespace drake

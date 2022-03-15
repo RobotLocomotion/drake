@@ -97,10 +97,9 @@ SceneGraph<T>::SceneGraph()
       {this->all_input_ports_ticket()});
   pose_update_index_ = pose_update_cache_entry.cache_index();
 
-  auto& deformable_update_cache_entry =
-      this->DeclareCacheEntry("Cache guard for deformable vertex updates",
-                              &SceneGraph::CalcDeformablePositionUpdate,
-                              {this->all_input_ports_ticket()});
+  auto& deformable_update_cache_entry = this->DeclareCacheEntry(
+      "Cache guard for deformable vertex updates",
+      &SceneGraph::CalcDeformableUpdate, {this->all_input_ports_ticket()});
   deformable_update_index_ = deformable_update_cache_entry.cache_index();
 }
 
@@ -442,7 +441,7 @@ void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context,
 template <typename T>
 void SceneGraph<T>::CalcDeformableUpdate(const Context<T>& context,
                                          int*) const {
-  // TODO(SeanCurtis-TRI): Update this when the cache is available.
+  // TODO(xuchenhan-tri): Update this when the cache is available.
   // This method is const and the context is const. Ultimately, this will pull
   // cached entities to do the query work. For now, we have to const cast the
   // thing so that we can update the geometry engine contained.
@@ -465,20 +464,19 @@ void SceneGraph<T>::CalcDeformableUpdate(const Context<T>& context,
         const auto& deformable_port =
             this->get_input_port(itr->second.deformable_port);
         if (!deformable_port.HasValue(context)) {
-          throw std::logic_error(
-              fmt::format("Source '{}' (id: {}) has registered dynamic frames "
-                          "but is not connected to the appropriate input port.",
-                          state.GetName(source_id), source_id));
+          throw std::logic_error(fmt::format(
+              "Source '{}' (id: {}) has registered deformable objects "
+              "but is not connected to the appropriate input port.",
+              state.GetName(source_id), source_id));
         }
         const auto& positions =
             deformable_port.template Eval<FrameDeformableVector<T>>(context);
-        mutable_state.SetFramePoses(source_id, positions);
+        mutable_state.SetDeformablePositions(source_id, positions);
       }
     }
   }
-
-  mutable_state.FinalizePoseUpdate();
-  // TODO(SeanCurtis-TRI): Add velocity as appropriate.
+  // Propagate the deformable update to various engines.
+  mutable_state.FinalizeDeformbleUpdate();
 }
 
 template <typename T>

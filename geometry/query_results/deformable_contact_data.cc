@@ -1,31 +1,37 @@
-#include "drake/multibody/fixed_fem/dev/deformable_contact_data.h"
+#include "drake/geometry/query_results/deformable_contact_data.h"
 
 #include <algorithm>
 #include <set>
 #include <utility>
 
 namespace drake {
-namespace multibody {
-namespace fem {
-namespace internal {
+namespace geometry {
+
+using internal::deformable::ContactPolygonData;
+using internal::deformable::DeformableContactSurface;
+using internal::deformable::DeformableRigidContactPair;
 
 template <typename T>
 DeformableContactData<T>::DeformableContactData(
     std::vector<DeformableRigidContactPair<T>> contact_pairs,
-    const ReferenceDeformableGeometry<T>& deformable_geometry)
+    const internal::deformable::DeformableGeometry& deformable_geometry)
     : contact_pairs_(std::move(contact_pairs)),
       signed_distances_(contact_pairs_.size()),
-      permuted_vertex_indexes_(deformable_geometry.mesh().num_vertices(), -1),
-      permuted_to_original_indexes_(deformable_geometry.mesh().num_vertices()) {
+      permuted_vertex_indexes_(
+          deformable_geometry.deformable_volume_mesh().mesh().num_vertices(),
+          -1),
+      permuted_to_original_indexes_(
+          deformable_geometry.deformable_volume_mesh().mesh().num_vertices()) {
   num_contact_points_ = 0;
   if (!contact_pairs_.empty()) {
     /* All contact pairs should involve the same deformable body. */
-    deformable_body_index_ = contact_pairs_[0].deformable_id;
+    deformable_geometry_id_ = contact_pairs_[0].deformable_id;
     for (const auto& contact_pair : contact_pairs_) {
-      DRAKE_DEMAND(deformable_body_index_ == contact_pair.deformable_id);
+      DRAKE_DEMAND(deformable_geometry_id_ == contact_pair.deformable_id);
     }
 
-    CalcParticipatingVertices(deformable_geometry.mesh());
+    CalcParticipatingVertices(
+        deformable_geometry.deformable_volume_mesh().mesh());
     for (const auto& contact_pair : contact_pairs_) {
       num_contact_points_ += contact_pair.num_contact_points();
     }
@@ -55,9 +61,9 @@ DeformableContactData<T>::DeformableContactData(
 
 template <typename T>
 void DeformableContactData<T>::CalcParticipatingVertices(
-    const geometry::VolumeMesh<T>& deformable_mesh) {
+    const geometry::VolumeMesh<double>& mesh) {
   constexpr int kNumVerticesInTetrahedron =
-      geometry::VolumeMesh<T>::kVertexPerElement;
+      geometry::VolumeMesh<double>::kVertexPerElement;
 
   /* Build the permutation for vertices in contact first. */
   num_vertices_in_contact_ = 0;
@@ -67,7 +73,7 @@ void DeformableContactData<T>::CalcParticipatingVertices(
     for (int j = 0; j < contact_surface.num_polygons(); ++j) {
       const int tet_in_contact = contact_surface.polygon_data(j).tet_index;
       for (int k = 0; k < kNumVerticesInTetrahedron; ++k) {
-        const int v = deformable_mesh.element(tet_in_contact).vertex(k);
+        const int v = mesh.element(tet_in_contact).vertex(k);
         if (permuted_vertex_indexes_[v] == -1) {
           permuted_vertex_indexes_[v] = num_vertices_in_contact_;
           permuted_to_original_indexes_[num_vertices_in_contact_] = v;
@@ -99,9 +105,8 @@ void DeformableContactData<T>::CalcParticipatingVertices(
   DRAKE_DEMAND(index == static_cast<int>(permuted_to_original_indexes_.size()));
 }
 
-}  // namespace internal
-}  // namespace fem
-}  // namespace multibody
+}  // namespace geometry
 }  // namespace drake
+
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fem::internal::DeformableContactData)
+    class ::drake::geometry::DeformableContactData)

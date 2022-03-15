@@ -15,9 +15,21 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":contact_surface",
+        ":deformable_contact_data",
         ":penetration_as_point_pair",
         ":signed_distance_pair",
         ":signed_distance_to_point",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_contact_data",
+    srcs = ["deformable_contact_data.cc"],
+    hdrs = ["deformable_contact_data.h"],
+    deps = [
+        "//common:default_scalars",
+        "//geometry/proximity:deformable_contact_geometries",
+        "//geometry/proximity:deformable_rigid_contact_pair",
     ],
 )
 
