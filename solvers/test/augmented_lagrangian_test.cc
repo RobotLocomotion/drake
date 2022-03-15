@@ -18,7 +18,7 @@ GTEST_TEST(AugmentedLagrangian, TestObjective1) {
   // Construct an un-constrained program.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
-  const NonsmoothAugmentedLagrangian dut(&prog, false);
+  const AugmentedLagrangianNonsmooth dut(&prog, false);
   EXPECT_EQ(dut.lagrangian_size(), 0);
   EXPECT_TRUE(dut.is_equality().empty());
 
@@ -36,7 +36,7 @@ GTEST_TEST(AugmentedLagrangian, TestObjective1) {
   EXPECT_TRUE(CompareMatrices(dut.x_up(), Eigen::Vector2d::Constant(kInf)));
 }
 
-GTEST_TEST(NonsmoothAugmentedLagrangian, TestObjective2) {
+GTEST_TEST(AugmentedLagrangianNonsmooth, TestObjective2) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
 
@@ -44,7 +44,7 @@ GTEST_TEST(NonsmoothAugmentedLagrangian, TestObjective2) {
   auto cost1 = prog.AddQuadraticCost(x[0] * x[0] + 2 * x[1] + 3);
   auto cost2 = prog.AddLinearCost(x[0] * 3 + 4);
   for (bool include_x_bounds : {false, true}) {
-    const NonsmoothAugmentedLagrangian dut(&prog, include_x_bounds);
+    const AugmentedLagrangianNonsmooth dut(&prog, include_x_bounds);
 
     EXPECT_EQ(dut.lagrangian_size(), 0);
     EXPECT_TRUE(dut.is_equality().empty());
@@ -139,7 +139,7 @@ void CompareAlResult(const T& al, const T& al_expected,
 }
 
 // This function is only used inside the test
-// NonsmoothAugmentedLagrangian.EqualityConstraints. Ideally I want to put it
+// AugmentedLagrangianNonsmooth.EqualityConstraints. Ideally I want to put it
 // inside the test as a templated lambda, but our current compiler on Bionic
 // doesn't support this feature yet.
 template <typename T>
@@ -150,7 +150,7 @@ void CheckAugmentedLagrangianEqualityConstraint(
   VectorX<T> constraint_residue;
   T cost;
   for (bool include_x_bounds : {false, true}) {
-    const NonsmoothAugmentedLagrangian dut(&prog, include_x_bounds);
+    const AugmentedLagrangianNonsmooth dut(&prog, include_x_bounds);
     EXPECT_EQ(dut.lagrangian_size(), 4);
     EXPECT_EQ(dut.is_equality(), std::vector<bool>({true, true, true, true}));
     const T al =
@@ -208,7 +208,7 @@ void CheckAugmentedLagrangianInequalityConstraint(
   VectorX<T> constraint_residue;
   T cost;
   for (const bool include_x_bounds : {false, true}) {
-    const NonsmoothAugmentedLagrangian dut(&prog, include_x_bounds);
+    const AugmentedLagrangianNonsmooth dut(&prog, include_x_bounds);
     EXPECT_EQ(dut.lagrangian_size(), 5);
     EXPECT_EQ(dut.is_equality(),
               std::vector<bool>({true, false, false, false, false}));
@@ -263,7 +263,7 @@ template <typename T>
 void CheckAugmentedLagrangianBoundingBoxConstraint(
     const MathematicalProgram& prog, const Vector4<T>& x_val,
     const Eigen::Matrix<double, 5, 1>& lambda, double mu, double tol_val) {
-  const NonsmoothAugmentedLagrangian dut(&prog, true);
+  const AugmentedLagrangianNonsmooth dut(&prog, true);
   EXPECT_EQ(dut.lagrangian_size(), 5);
   EXPECT_EQ(dut.is_equality(),
             std::vector<bool>({true, false, false, false, false}));
@@ -310,7 +310,7 @@ GTEST_TEST(EvalAugmentedLagrangian, BoundingBoxConstraint) {
       tol);
 
   // Test include_x_bounds = false, the augmented lagrangian is 0.
-  const NonsmoothAugmentedLagrangian dut(&prog, false);
+  const AugmentedLagrangianNonsmooth dut(&prog, false);
   EXPECT_EQ(dut.lagrangian_size(), 0);
   EXPECT_TRUE(dut.is_equality().empty());
   VectorX<double> constraint_residue;

@@ -26,7 +26,7 @@ T psi(const T& c, double lambda_val, double mu) {
   }
 }
 
-NonsmoothAugmentedLagrangian::NonsmoothAugmentedLagrangian(
+AugmentedLagrangianNonsmooth::AugmentedLagrangianNonsmooth(
     const MathematicalProgram* prog, bool include_x_bounds)
     : prog_{prog}, include_x_bounds_{include_x_bounds} {
   lagrangian_size_ = 0;
@@ -110,7 +110,7 @@ NonsmoothAugmentedLagrangian::NonsmoothAugmentedLagrangian(
 }
 
 template <typename T>
-T NonsmoothAugmentedLagrangian::Eval(const Eigen::Ref<const VectorX<T>>& x,
+T AugmentedLagrangianNonsmooth::Eval(const Eigen::Ref<const VectorX<T>>& x,
                                      const Eigen::VectorXd& lambda_val,
                                      double mu, VectorX<T>* constraint_residue,
                                      T* cost) const {
@@ -188,6 +188,6 @@ T NonsmoothAugmentedLagrangian::Eval(const Eigen::Ref<const VectorX<T>>& x,
 
 // Explicit instantiation.
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&NonsmoothAugmentedLagrangian::Eval<T>))
+    (&AugmentedLagrangianNonsmooth::Eval<T>))
 }  // namespace solvers
 }  // namespace drake
