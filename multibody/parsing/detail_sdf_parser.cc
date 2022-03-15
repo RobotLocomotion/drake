@@ -1294,10 +1294,12 @@ sdf::ParserConfig CreateNewSdfParserConfig(
     });
 
   parser_config.RegisterCustomModelParser(
-      [plant, &package_map, &parser_config, test_sdf_forced_nesting](
+      [&package_map, plant, test_sdf_forced_nesting](
           const sdf::NestedInclude& include, sdf::Errors& errors) {
+        sdf::ParserConfig inner_parser_config = CreateNewSdfParserConfig(
+            package_map, plant, test_sdf_forced_nesting);
         return ParseNestedInterfaceModel(plant, package_map, include, &errors,
-                                         parser_config,
+                                         inner_parser_config,
                                          test_sdf_forced_nesting);
       });
 
