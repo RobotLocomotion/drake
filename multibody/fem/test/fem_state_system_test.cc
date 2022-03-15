@@ -9,35 +9,43 @@ namespace internal {
 namespace {
 
 using Eigen::Vector3d;
+using Eigen::Vector4d;
 using Eigen::VectorXd;
 
-constexpr int kNumDofs = 4;
+constexpr int kNumDofs = 3;
 
 VectorXd q() {
   Vector<double, kNumDofs> q;
-  q << 0.1, 0.2, 0.3, 0.4;
+  q << 0.1, 0.2, 0.3;
   return q;
 }
 
 VectorXd v() {
   Vector<double, kNumDofs> v;
-  v << 1.1, 1.2, 2.3, 2.4;
+  v << 1.1, 1.2, 2.3;
   return v;
 }
 
 VectorXd a() {
   Vector<double, kNumDofs> a;
-  a << 2.1, 2.2, 3.3, 3.4;
+  a << 2.1, 2.2, 3.3;
   return a;
 }
 
 GTEST_TEST(FemStateSystemTest, Constructor) {
   FemStateSystem<double> fem_state_system(q(), v(), a());
-  EXPECT_THROW(FemStateSystem<double>(Vector3d::Zero(), v(), a()),
+  EXPECT_EQ(fem_state_system.num_dofs(), kNumDofs);
+  /* An exception is thrown if the number of dofs isn't consistent across
+   * states. */
+  EXPECT_THROW(FemStateSystem<double>(Vector4d::Zero(), v(), a()),
                std::exception);
-  EXPECT_THROW(FemStateSystem<double>(q(), Vector3d::Zero(), v()),
+  EXPECT_THROW(FemStateSystem<double>(q(), Vector4d::Zero(), v()),
                std::exception);
-  EXPECT_THROW(FemStateSystem<double>(q(), v(), Vector3d::Zero()),
+  EXPECT_THROW(FemStateSystem<double>(q(), v(), Vector4d::Zero()),
+               std::exception);
+  /* An exception is thrown if the number of dofs isn't a multiple of 3. */
+  EXPECT_THROW(FemStateSystem<double>(Vector4d::Zero(), Vector4d::Zero(),
+                                      Vector4d::Zero()),
                std::exception);
 }
 
