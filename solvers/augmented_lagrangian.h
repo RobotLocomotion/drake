@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -40,9 +41,9 @@ namespace solvers {
  * Note that the augmented Lagrangian L(x, λ, μ) is NOT a smooth function of x,
  * since s = max(c(x) - λ₂/μ, 0) is non-smooth at c(x) - λ₂/μ = 0.
  */
-class NonsmoothAugmentedLagrangian {
+class AugmentedLagrangianNonsmooth {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(NonsmoothAugmentedLagrangian)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AugmentedLagrangianNonsmooth)
 
   /**
    * @param prog The mathematical program we will evaluate.
@@ -50,7 +51,7 @@ class NonsmoothAugmentedLagrangian {
    * bounds x_lo <= x <= x_up are included in the augmented Lagrangian L(x, λ,
    * μ) or not.
    */
-  NonsmoothAugmentedLagrangian(const MathematicalProgram* prog,
+  AugmentedLagrangianNonsmooth(const MathematicalProgram* prog,
                                bool include_x_bounds);
 
   /**
@@ -118,6 +119,17 @@ class NonsmoothAugmentedLagrangian {
   std::vector<bool> is_equality_;
   Eigen::VectorXd x_lo_;
   Eigen::VectorXd x_up_;
+};
+
+class DRAKE_DEPRECATED(
+    "2022-07-01",
+    "Use NonsmoothAugmentedLagrangian is an alias of "
+    "AugmentedLagrangianNonsmooth. Use AugmentedLagrangianNonsmooth instead.")
+    NonsmoothAugmentedLagrangian : public AugmentedLagrangianNonsmooth {
+ public:
+  NonsmoothAugmentedLagrangian(const MathematicalProgram* prog,
+                               bool include_x_bounds)
+      : AugmentedLagrangianNonsmooth(prog, include_x_bounds) {}
 };
 
 // TODO(hongkai.dai): add the alternative augmented Lagrangian using Lancelot

@@ -3,6 +3,7 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/solvers/augmented_lagrangian.h"
@@ -20,14 +21,14 @@ PYBIND11_MODULE(augmented_lagrangian, m) {
   py::module::import("pydrake.solvers.mathematicalprogram");
   py::module::import("pydrake.autodiffutils");
 
-  py::class_<NonsmoothAugmentedLagrangian>(
-      m, "NonsmoothAugmentedLagrangian", doc.NonsmoothAugmentedLagrangian.doc)
+  py::class_<AugmentedLagrangianNonsmooth>(
+      m, "AugmentedLagrangianNonsmooth", doc.AugmentedLagrangianNonsmooth.doc)
       .def(py::init<const MathematicalProgram*, bool>(), py::arg("prog"),
           py::arg("include_x_bounds"),
-          doc.NonsmoothAugmentedLagrangian.ctor.doc)
+          doc.AugmentedLagrangianNonsmooth.ctor.doc)
       .def(
           "Eval",
-          [](const NonsmoothAugmentedLagrangian* self,
+          [](const AugmentedLagrangianNonsmooth* self,
               const Eigen::Ref<const Eigen::VectorXd>& x,
               const Eigen::VectorXd& lambda_val, double mu) {
             Eigen::VectorXd constraint_residue;
@@ -37,10 +38,10 @@ PYBIND11_MODULE(augmented_lagrangian, m) {
             return std::make_tuple(al_val, constraint_residue, cost);
           },
           py::arg("x"), py::arg("lambda_val"), py::arg("mu"),
-          doc.NonsmoothAugmentedLagrangian.Eval.doc)
+          doc.AugmentedLagrangianNonsmooth.Eval.doc)
       .def(
           "Eval",
-          [](const NonsmoothAugmentedLagrangian* self,
+          [](const AugmentedLagrangianNonsmooth* self,
               const Eigen::Ref<const VectorX<AutoDiffXd>>& x,
               const Eigen::VectorXd& lambda_val, double mu) {
             VectorX<AutoDiffXd> constraint_residue;
@@ -50,20 +51,36 @@ PYBIND11_MODULE(augmented_lagrangian, m) {
             return std::make_tuple(al_val, constraint_residue, cost);
           },
           py::arg("x"), py::arg("lambda_val"), py::arg("mu"),
-          doc.NonsmoothAugmentedLagrangian.Eval.doc)
-      .def("prog", &NonsmoothAugmentedLagrangian::prog, py_rvp::reference,
-          doc.NonsmoothAugmentedLagrangian.prog.doc)
-      .def("include_x_bounds", &NonsmoothAugmentedLagrangian::include_x_bounds,
-          doc.NonsmoothAugmentedLagrangian.include_x_bounds.doc)
-      .def("lagrangian_size", &NonsmoothAugmentedLagrangian::lagrangian_size,
-          doc.NonsmoothAugmentedLagrangian.lagrangian_size.doc)
-      .def("is_equality", &NonsmoothAugmentedLagrangian::is_equality,
-          doc.NonsmoothAugmentedLagrangian.is_equality.doc)
-      .def("x_lo", &NonsmoothAugmentedLagrangian::x_lo,
-          py_rvp::reference_internal, doc.NonsmoothAugmentedLagrangian.x_lo.doc)
-      .def("x_up", &NonsmoothAugmentedLagrangian::x_up,
+          doc.AugmentedLagrangianNonsmooth.Eval.doc)
+      .def("prog", &AugmentedLagrangianNonsmooth::prog, py_rvp::reference,
+          doc.AugmentedLagrangianNonsmooth.prog.doc)
+      .def("include_x_bounds", &AugmentedLagrangianNonsmooth::include_x_bounds,
+          doc.AugmentedLagrangianNonsmooth.include_x_bounds.doc)
+      .def("lagrangian_size", &AugmentedLagrangianNonsmooth::lagrangian_size,
+          doc.AugmentedLagrangianNonsmooth.lagrangian_size.doc)
+      .def("is_equality", &AugmentedLagrangianNonsmooth::is_equality,
+          doc.AugmentedLagrangianNonsmooth.is_equality.doc)
+      .def("x_lo", &AugmentedLagrangianNonsmooth::x_lo,
+          py_rvp::reference_internal, doc.AugmentedLagrangianNonsmooth.x_lo.doc)
+      .def("x_up", &AugmentedLagrangianNonsmooth::x_up,
           py_rvp::reference_internal,
-          doc.NonsmoothAugmentedLagrangian.x_up.doc);
+          doc.AugmentedLagrangianNonsmooth.x_up.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  {
+    using Class = NonsmoothAugmentedLagrangian;
+    constexpr const char* deprecation =
+        "NonsmoothAugmentedLagrangian is deprecated and will be removed from "
+        "Drake on or after 2022-07-01. Use AugmentedLagrangianNonsmooth "
+        "instead.";
+    py::class_<Class>(m, "NonsmoothAugmentedLagrangian", deprecation)
+        .def(py_init_deprecated<Class, const solvers::MathematicalProgram*,
+                 bool>(py::str(deprecation)),
+            deprecation);
+  }
+#pragma GCC diagnostic pop
 }
+
 }  // namespace pydrake
 }  // namespace drake
