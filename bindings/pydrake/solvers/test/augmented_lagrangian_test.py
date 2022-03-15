@@ -7,8 +7,10 @@ from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers import augmented_lagrangian as al
 from pydrake.autodiffutils import InitializeAutoDiff, AutoDiffXd
 
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
-class TestNonsmoothAugmentedLagrangian(unittest.TestCase):
+
+class TestAugmentedLagrangianNonsmooth(unittest.TestCase):
     def setUp(self):
         self.prog = mp.MathematicalProgram()
         x = self.prog.NewContinuousVariables(2)
@@ -16,7 +18,7 @@ class TestNonsmoothAugmentedLagrangian(unittest.TestCase):
         self.prog.AddLinearConstraint(x[0] + x[1] <= 3)
 
     def test_eval_double(self):
-        dut = al.NonsmoothAugmentedLagrangian(prog=self.prog,
+        dut = al.AugmentedLagrangianNonsmooth(prog=self.prog,
                                               include_x_bounds=True)
         x_val = np.array([1., 3])
         lambda_val = np.array([0.5])
@@ -28,7 +30,7 @@ class TestNonsmoothAugmentedLagrangian(unittest.TestCase):
         self.assertIsInstance(cost, float)
 
     def test_eval_ad(self):
-        dut = al.NonsmoothAugmentedLagrangian(prog=self.prog,
+        dut = al.AugmentedLagrangianNonsmooth(prog=self.prog,
                                               include_x_bounds=True)
         x_val = InitializeAutoDiff(np.array([1., 3]))
         al_val, constraint_residue, cost = dut.Eval(x=x_val,
@@ -40,13 +42,20 @@ class TestNonsmoothAugmentedLagrangian(unittest.TestCase):
 
     def test_lagrangian_size(self):
         self.assertEqual(
-            al.NonsmoothAugmentedLagrangian(
+            al.AugmentedLagrangianNonsmooth(
                 prog=self.prog, include_x_bounds=True).lagrangian_size(), 1)
         self.assertEqual(
-            al.NonsmoothAugmentedLagrangian(
+            al.AugmentedLagrangianNonsmooth(
                 prog=self.prog, include_x_bounds=False).lagrangian_size(), 1)
 
     def test_is_equality(self):
         self.assertEqual(
-            al.NonsmoothAugmentedLagrangian(
+            al.AugmentedLagrangianNonsmooth(
                 prog=self.prog, include_x_bounds=True).is_equality(), [False])
+
+    def test_nonsmooth_augmented_lagrangian_deprecation(self):
+        # Remove after 2022-07-01.
+        with catch_drake_warnings(expected_count=1):
+            dut = al.NonsmoothAugmentedLagrangian(prog=self.prog,
+                                                  include_x_bounds=True)
+            self.assertEqual(dut.lagrangian_size(), 1)
