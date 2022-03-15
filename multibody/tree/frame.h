@@ -195,12 +195,11 @@ class Frame : public FrameBase<T> {
   /// Calculates `this` frame F's spatial velocity measured and expressed in
   /// the world frame W.
   /// @param[in] context contains the state of the multibody system.
-  /// @return V_WF_W, `this` frame F's spatial velocity measured in the world
-  /// frame W and expressed in the world frame W.  The rotational part of the
-  /// returned quantity is ω_WF_W (frame F's angular acceleration measured and
-  /// expressed in the world frame W).  The translational part is v_WFo_W
-  /// (translational velocity of frame F's origin point Fo, measured and
-  /// expressed in the world frame W).
+  /// @return V_WF_W, `this` frame F's spatial velocity measured and expressed
+  /// in the world frame W. The rotational part of the returned quantity is
+  /// ω_WF_W (frame F's angular velocity ω measured and expressed in the world
+  /// frame W). The translational part is v_WFo_W (translational velocity v of
+  /// frame F's origin point Fo, measured and expressed in the world frame W).
   /// @note Body::EvalSpatialVelocityInWorld() provides a more efficient way to
   /// obtain a body frame's spatial velocity measured in the world frame.
   /// @see CalcSpatialVelocity(), CalcRelativeSpatialVelocityInWorld(), and
@@ -223,8 +222,8 @@ class Frame : public FrameBase<T> {
   /// @param[in] frame_E which is the expressed_in_frame.
   /// @return V_MF_E, `this` frame F's spatial velocity measured in frame M,
   /// expressed in frame E. The rotational part of the returned quantity is
-  /// ω_MF_E (frame F's angular velocity measured in frame M, expressed in
-  /// frame E). The translational part is v_MFo_E (translational velocity of
+  /// ω_MF_E (frame F's angular velocity ω measured in frame M, expressed in
+  /// frame E). The translational part is v_MFo_E (translational velocity v of
   /// frame F's origin point Fo, measured in frame M, expressed in frame E).
   /// @see CalcSpatialVelocityInWorld(), CalcRelativeSpatialVelocity(), and
   /// CalcSpatialAcceleration().
@@ -240,14 +239,16 @@ class Frame : public FrameBase<T> {
         frame_M.CalcSpatialVelocityInWorld(context);
     const SpatialVelocity<T> V_WF_W = this->CalcSpatialVelocityInWorld(context);
     // V_MF is calculated from a rearranged "composition" of spatial velocities.
-    // The angular velocity addition theorem: ω_WF = ω_WM + ω_MF
+    // The angular velocity addition theorem  ω_WF = ω_WM + ω_MF
     // rearranges to                          ω_MF = ω_WF - ω_WM
     // The translational velocity formula for a point Fo moving on frame M is
     // v_WFo = v_WMo + ω_WM x p_MoFo + v_MFo   which rearranges to
     // v_MFo = V_WFo - (v_WMo + ω_WM x p_MoFo).
     const SpatialVelocity<T> V_MF_W = V_WF_W - V_WM_W.Shift(p_MF_W);
-    // If expressed-in frame E is the world, no need to re-express results.
+
+    // If the expressed-in frame E is the world, no need to re-express results.
     if (frame_E.index() == FrameIndex(0)) return V_MF_W;
+
     // Othwerwise re-express results from world frame W to frame E.
     const math::RotationMatrix<T> R_WE =
         frame_E.CalcRotationMatrixInWorld(context);
@@ -299,8 +300,14 @@ class Frame : public FrameBase<T> {
   /// vector from Bo to Co), and this vector is expressed in frame E.
   /// @note The method CalcSpatialVelocity() is more efficient and coherent
   /// if any of `this`, other_frame, or measured_in_frame are the same.
+  /// Also, the value of V_M_BoCo does not depend on the measured_in_frame if
+  /// Bo and Co are coincident (i.e., p_BoCo = 0), in which case consider the
+  /// more efficient method CalcRelativeSpatialVelocityInWorld().
+  /// Lastly, the calculation of elongation between Bo and Co can be done with
+  /// relative translational velocity, but elongation does not depend on the
+  /// measured-in-frame (hence consider CalcRelativeSpatialVelocityInWorld()).
   /// @see CalcSpatialVelocityInWorld(), CalcSpatialVelocity(), and
-  /// CalcRelativeSpatialVelocity().
+  /// CalcRelativeSpatialVelocityInWorld().
   SpatialVelocity<T> CalcRelativeSpatialVelocity(
       const systems::Context<T>& context,
       const Frame<T>& other_frame,
@@ -351,7 +358,7 @@ class Frame : public FrameBase<T> {
   /// @param[in] expressed_in_frame which is frame E.
   /// @return A_MF_E, `this` frame F's spatial acceleration measured in frame M,
   /// expressed in frame E. The rotational part of the returned quantity is
-  /// α_MF_E (frame F's angular acceleration measured in frame M, expressed in
+  /// α_MF_E (frame F's angular acceleration α measured in frame M, expressed in
   /// frame E). The translational part is a_MFo_E (translational acceleration of
   /// frame F's origin point Fo, measured in frame M, expressed in frame E).
   /// Although α_MF is defined below in terms of DtM(ω_MF), the time-derivative
@@ -382,14 +389,13 @@ class Frame : public FrameBase<T> {
     // a_MFo = a_WFo - a_WCoincidentPoint - 2 ω_WM x v_MFo,  where
     // a_WCoincidentPoint = a_WMo + α_WM x p_MoFo + ω_WM x (ω_WM x p_MoFo).
     // Avoid inefficient unnecessary calculations if frame M is the world frame.
-    if (frame_E.index() != FrameIndex(0)) {
+    if (frame_M.index() != FrameIndex(0)) {
       // Add additional terms to the rotational part of A_MF_W.
       const SpatialAcceleration<T> A_WM_W =
           frame_M.CalcSpatialAccelerationInWorld(context);
       const Vector3<T>& alpha_WM_W = A_WM_W.rotational();
       const Vector3<T> w_WM_W =
-          frame_M.CalcSpatialVelocityInWorld(context).rotational();
-      // const MultibodyPlant<T>& parent_plant = this->GetParentPlant();
+          frame_M.CalcSpatialVelocityInWorld(context).rotational();;
       const Frame<T>& frame_W = this->get_parent_tree().world_frame();
       const SpatialVelocity<T> V_MF_W =
           CalcSpatialVelocity(context, frame_M, frame_W);
@@ -399,10 +405,10 @@ class Frame : public FrameBase<T> {
       // Add additional terms to the translational part of A_MF_W.
       const math::RotationMatrix<T> R_WM =
           frame_M.CalcRotationMatrixInWorld(context);
-      const Vector3<T> p_MF_M = this->CalcPose(context, frame_M).translation();
-      const Vector3<T> p_MF_W = R_WM * p_MF_M;
+      const Vector3<T> p_MoFo_M = CalcPose(context, frame_M).translation();
+      const Vector3<T> p_MoFo_W = R_WM * p_MoFo_M;
       const Vector3<T> a_WcoincidentPoint_W =
-          A_WM_W.Shift(p_MF_W).translational();
+          A_WM_W.Shift(p_MoFo_W, w_WM_W).translational();
       const Vector3<T>& v_MFo_W = V_MF_W.translational();
       const Vector3<T> Coriolis = 2 * w_MF_W.cross(v_MFo_W);
       A_MF_W.translational() -= (a_WcoincidentPoint_W + Coriolis);
@@ -414,7 +420,7 @@ class Frame : public FrameBase<T> {
     // Othwerwise re-express results from world frame W to frame E.
     const math::RotationMatrix<T> R_WE =
         frame_E.CalcRotationMatrixInWorld(context);
-    return R_WE.inverse() * A_MF_W;
+    return R_WE.inverse() * A_MF_W;  // returns A_MF_E.
   }
 
   /// (Advanced) NVI to DoCloneToScalar() templated on the scalar type of the
