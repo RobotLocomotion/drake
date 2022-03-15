@@ -570,12 +570,6 @@ void AddJointFromSpecification(
   joint_types->insert(joint_spec.Type());
 }
 
-sdf::InterfaceModelPtr ParseNestedInterfaceModel(
-    MultibodyPlant<double>* plant, const PackageMap& package_map,
-    const sdf::NestedInclude& include, sdf::Errors* errors,
-    const sdf::ParserConfig& parser_config,
-    bool test_sdf_forced_nesting = false);
-
 // Helper method to load an SDF file and read the contents into an sdf::Root
 // object.
 void LoadSdf(
@@ -1123,6 +1117,11 @@ void AddJointsToInterfaceModel(const MultibodyPlant<double>& plant,
   }
 }
 
+// This is a forward-declaration of an anonymous helper that's defined later
+// in this file.
+sdf::ParserConfig MakeSdfParserConfig(
+    const PackageMap&, MultibodyPlant<double>*, bool test_sdf_forced_nesting);
+
 // This assumes that parent models will have their parsing start before child
 // models! This is a safe assumption because we only encounter nested models
 // when force testing SDFormat files and libsdformat parses models in a top-down
@@ -1131,7 +1130,10 @@ void AddJointsToInterfaceModel(const MultibodyPlant<double>& plant,
 sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     MultibodyPlant<double>* plant, const PackageMap& package_map,
     const sdf::NestedInclude& include, sdf::Errors* errors,
-    const sdf::ParserConfig& parser_config, bool test_sdf_forced_nesting) {
+    bool test_sdf_forced_nesting) {
+  const sdf::ParserConfig parser_config = MakeSdfParserConfig(
+      package_map, plant, test_sdf_forced_nesting);
+
   // Do not attempt to parse anything other than URDF or forced nesting files.
   const bool is_urdf = EndsWith(include.ResolvedFileName(), kExtUrdf);
   const bool is_forced_nesting =
@@ -1276,7 +1278,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   return main_interface_model;
 }
 
-sdf::ParserConfig CreateNewSdfParserConfig(
+sdf::ParserConfig MakeSdfParserConfig(
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     bool test_sdf_forced_nesting) {
@@ -1294,10 +1296,9 @@ sdf::ParserConfig CreateNewSdfParserConfig(
     });
 
   parser_config.RegisterCustomModelParser(
-      [plant, &package_map, &parser_config, test_sdf_forced_nesting](
+      [&package_map, plant, test_sdf_forced_nesting](
           const sdf::NestedInclude& include, sdf::Errors& errors) {
         return ParseNestedInterfaceModel(plant, package_map, include, &errors,
-                                         parser_config,
                                          test_sdf_forced_nesting);
       });
 
@@ -1315,7 +1316,7 @@ ModelInstanceIndex AddModelFromSdf(
     DRAKE_THROW_UNLESS(!plant->is_finalized());
 
   sdf::ParserConfig parser_config =
-      CreateNewSdfParserConfig(package_map, plant, test_sdf_forced_nesting);
+      MakeSdfParserConfig(package_map, plant, test_sdf_forced_nesting);
 
   sdf::Root root;
 
@@ -1347,7 +1348,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
   sdf::ParserConfig parser_config =
-      CreateNewSdfParserConfig(package_map, plant, test_sdf_forced_nesting);
+      MakeSdfParserConfig(package_map, plant, test_sdf_forced_nesting);
 
   sdf::Root root;
 
