@@ -19,7 +19,7 @@ using MinimumValuePenaltyFunction =
     std::function<void(double x, double* penalty, double* dpenalty_dx)>;
 
 /** A hinge loss function smoothed by exponential function. This loss
-function is differentiable everywhere. The fomulation is described in
+function is differentiable everywhere. The formulation is described in
 section II.C of [2].
 The penalty is
 <pre class="unicode-art">
@@ -43,7 +43,7 @@ The penalty is
 </pre>
 [1] "Loss Functions for Preference Levels: Regression with Discrete Ordered
 Labels." by Jason Rennie and Nathan Srebro, Proceedings of IJCAI
-multidisciplinary workshop on Advances in preference handling. */
+multidisciplinary workshop on Advances in Preference Handling. */
 void QuadraticallySmoothedHingeLoss(double x, double* penalty,
                                     double* dpenalty_dx);
 
