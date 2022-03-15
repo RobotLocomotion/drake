@@ -946,7 +946,7 @@ void BindMathematicalProgram(py::module m) {
             return self->AddConstraint(formulas);
           },
           py::arg("formulas"),
-          doc.MathematicalProgram.AddConstraint.doc_matrix_formula)
+          doc.MathematicalProgram.AddConstraint.doc_1args_constEigenDenseBase)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -981,8 +981,7 @@ void BindMathematicalProgram(py::module m) {
             return self->AddLinearConstraint(formulas.array());
           },
           py::arg("formulas"),
-          doc.MathematicalProgram.AddLinearConstraint
-              .doc_1args_constEigenArrayBase)
+          doc.MathematicalProgram.AddLinearConstraint.doc_1args_formulas)
       .def("AddLinearEqualityConstraint",
           static_cast<Binding<LinearEqualityConstraint> (
               MathematicalProgram::*)(const Eigen::Ref<const Eigen::MatrixXd>&,

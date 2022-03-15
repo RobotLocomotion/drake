@@ -1414,17 +1414,17 @@ class MathematicalProgram {
   Binding<Constraint> AddConstraint(const symbolic::Formula& f);
 
   /**
-   * Add a constraint represented by an Eigen::Array<symbolic::Formula>
-   * to the program. A common use-case of this function is to add a constraint
-   * with the element-wise comparison between two Eigen matrices,
-   * using `A.array() <= B.array()`. See the following example.
+   * Adds a constraint represented by an Eigen::Matrix<symbolic::Formula> or
+   * Eigen::Array<symbolic::Formula> to the program. A common use-case of this
+   * function is to add a constraint with the element-wise comparison between
+   * two Eigen matrices, using `A.array() <= B.array()`. See the following
+   * example.
    *
    * @code
    *   MathematicalProgram prog;
-   *   Eigen::Matrix<double, 2, 2> A;
+   *   Eigen::Matrix<double, 2, 2> A = ...;
+   *   Eigen::Vector2d b = ...;
    *   auto x = prog.NewContinuousVariables(2, "x");
-   *   Eigen::Vector2d b;
-   *   ... // set up A and b
    *   prog.AddConstraint((A * x).array() <= b.array());
    * @endcode
    *
@@ -1439,41 +1439,14 @@ class MathematicalProgram {
    *
    * @overload Binding<Constraint> AddConstraint(const symbolic::Formula& f)
    *
-   * @tparam Derived An Eigen Array type of Formula.
-   *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   * @tparam Derived Eigen::Matrix or Eigen::Array with Formula as the Scalar.
    */
   template <typename Derived>
   typename std::enable_if_t<
       is_eigen_scalar_same<Derived, symbolic::Formula>::value,
       Binding<Constraint>>
-  AddConstraint(const Eigen::ArrayBase<Derived>& formulas) {
+  AddConstraint(const Eigen::DenseBase<Derived>& formulas) {
     return AddConstraint(internal::ParseConstraint(formulas));
-  }
-
-  /**
-   * Add a constraint represented by an Eigen::Matrix<symbolic::Formula>
-   * to the program.
-   *
-   * A formula in @p formulas can be of the following forms:
-   *
-   * 1. e1 <= e2
-   * 2. e1 >= e2
-   * 3. e1 == e2
-   *
-   * It throws an exception if AddConstraint(const symbolic::Formula& f)
-   * throws an exception for any f ∈ formulas.
-   *
-   * @tparam Derived An Eigen Matrix type of Formula.
-   *
-   * @pydrake_mkdoc_identifier{matrix_formula}
-   */
-  template <typename Derived>
-  typename std::enable_if_t<
-      is_eigen_scalar_same<Derived, symbolic::Formula>::value,
-      Binding<Constraint>>
-  AddConstraint(const Eigen::MatrixBase<Derived>& formulas) {
-    return AddConstraint(formulas.array());
   }
 
   /**
@@ -1643,23 +1616,9 @@ class MathematicalProgram {
    * throws an exception for f ∈ @p formulas.
    * @tparam Derived An Eigen Array type of Formula.
    */
-  template <typename Derived>
-  typename std::enable_if_t<
-      is_eigen_scalar_same<Derived, symbolic::Formula>::value,
-      Binding<LinearConstraint>>
-  AddLinearConstraint(const Eigen::ArrayBase<Derived>& formulas) {
-    Binding<Constraint> binding = internal::ParseConstraint(formulas);
-    Constraint* constraint = binding.evaluator().get();
-    if (dynamic_cast<LinearConstraint*>(constraint)) {
-      return AddConstraint(
-          internal::BindingDynamicCast<LinearConstraint>(binding));
-    } else {
-      std::stringstream oss;
-      oss << "Formulas are non-linear.";
-      throw std::runtime_error(
-          "AddLinearConstraint called but formulas are non-linear");
-    }
-  }
+  Binding<LinearConstraint> AddLinearConstraint(
+      const Eigen::Ref<const Eigen::Array<
+          symbolic::Formula, Eigen::Dynamic, Eigen::Dynamic>>& formulas);
 
   /**
    * Adds linear equality constraints referencing potentially a
@@ -3517,20 +3476,6 @@ class MathematicalProgram {
     // retrofitting `description`), ensure that they have unique names.
     CheckIsDecisionVariable(binding.variables());
   }
-
-  // Adds a constraint represented by a set of symbolic formulas to the
-  // program.
-  //
-  // Precondition: ∀ f ∈ formulas, is_relational(f).
-  Binding<Constraint> AddConstraint(
-      const std::set<symbolic::Formula>& formulas);
-
-  // Adds a linear-equality constraint represented by a set of symbolic formulas
-  // to the program.
-  //
-  // Precondition: ∀ f ∈ formulas, is_equal_to(f).
-  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
-      const std::set<symbolic::Formula>& formulas);
 
   /*
    * Adds new variables to MathematicalProgram.
