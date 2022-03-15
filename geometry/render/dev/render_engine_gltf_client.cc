@@ -10,6 +10,7 @@
 #include <vtkVersionMacros.h>
 
 #include "drake/common/filesystem.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
@@ -69,16 +70,17 @@ void SetGltfCameraPerspective(const RenderCameraCore& core, vtkCamera* camera) {
   camera->SetViewAngle(fy);
 }
 
-// Convert the RenderEngineVtk internal::ImageType to a RenderImageType.
-// NOTE: if RenderImageType expands to have more image types, this logic will
-// have to be revisited (e.g., two kinds of depth images supported).
-RenderImageType InternalToRenderImageType(internal::ImageType image_type) {
+/* Convert the RenderEngineVtk ImageType to a RenderClient RenderImageType.
+ NOTE: if RenderImageType expands to have more image types, this logic will
+ have to be revisited (e.g., two kinds of depth images supported). */
+internal::RenderImageType VtkToClientRenderImageType(
+    internal::ImageType image_type) {
   if (image_type == internal::ImageType::kColor)
-    return RenderImageType::kColorRgba8U;
+    return internal::RenderImageType::kColorRgba8U;
   else if (image_type == internal::ImageType::kDepth)
-    return RenderImageType::kDepthDepth32F;
+    return internal::RenderImageType::kDepthDepth32F;
   else if (image_type == internal::ImageType::kLabel)
-    return RenderImageType::kLabel16I;
+    return internal::RenderImageType::kLabel16I;
 
   throw std::runtime_error(fmt::format(
       "RenderEngineGltfClient: unspported internal ImageType of '{}'.",
@@ -142,12 +144,18 @@ RenderEngineGltfClient::RenderEngineGltfClient(
                        // Same as RenderEngineVtkParams default clear color,
                        // though it's value is irrelevant for this renderer.
                        {204 / 255., 229 / 255., 255 / 255.}}),
-      RenderClient(parameters.url, parameters.port, parameters.render_endpoint,
-                   parameters.verbose, parameters.no_cleanup) {}
+      render_client_{std::make_unique<internal::RenderClient>(
+          parameters.url, parameters.port, parameters.render_endpoint,
+          parameters.verbose, parameters.no_cleanup)} {}
 
 RenderEngineGltfClient::RenderEngineGltfClient(
     const RenderEngineGltfClient& other)
-    : RenderEngineVtk(other), RenderClient(other) {}
+    : RenderEngineVtk(other),
+      render_client_{std::make_unique<internal::RenderClient>(
+          other.render_client_->url(), other.render_client_->port(),
+          other.render_client_->render_endpoint(),
+          other.render_client_->verbose(),
+          other.render_client_->no_cleanup())} {}
 
 std::unique_ptr<RenderEngine> RenderEngineGltfClient::DoClone() const {
   return std::unique_ptr<RenderEngineGltfClient>(
@@ -214,7 +222,7 @@ void RenderEngineGltfClient::UpdateViewpoint(
 void RenderEngineGltfClient::DoRenderColorImage(
     const ColorRenderCamera& camera, ImageRgba8U* color_image_out) const {
   const auto color_scene_id = GetNextSceneId();
-  if (verbose()) {
+  if (render_client_->verbose()) {
     LogFrameStart(internal::ImageType::kColor, color_scene_id);
   }
 
@@ -229,26 +237,26 @@ void RenderEngineGltfClient::DoRenderColorImage(
       pipelines_[internal::ImageType::kColor]->renderer->GetActiveCamera());
   const std::string scene_path =
       ExportScene(internal::ImageType::kColor, color_scene_id);
-  if (verbose()) {
+  if (render_client_->verbose()) {
     LogFrameGltfExportPath(internal::ImageType::kColor, scene_path);
   }
 
-  const std::string image_path = RenderOnServer(
-      camera.core(), InternalToRenderImageType(internal::ImageType::kColor),
+  const std::string image_path = render_client_->RenderOnServer(
+      camera.core(), VtkToClientRenderImageType(internal::ImageType::kColor),
       scene_path, MimeType());
-  if (verbose()) {
+  if (render_client_->verbose()) {
     LogFrameServerResponsePath(internal::ImageType::kColor, image_path);
   }
 
   // Load the returned image back to the drake buffer.
-  LoadColorImage(image_path, color_image_out);
-  if (!no_cleanup()) CleanupFrame(scene_path, image_path);
+  render_client_->LoadColorImage(image_path, color_image_out);
+  if (!render_client_->no_cleanup()) CleanupFrame(scene_path, image_path);
 }
 
 void RenderEngineGltfClient::DoRenderDepthImage(
     const DepthRenderCamera& camera, ImageDepth32F* depth_image_out) const {
   const auto depth_scene_id = GetNextSceneId();
-  if (verbose()) {
+  if (render_client_->verbose()) {
     LogFrameStart(internal::ImageType::kDepth, depth_scene_id);
   }
 
@@ -262,28 +270,26 @@ void RenderEngineGltfClient::DoRenderDepthImage(
       pipelines_[internal::ImageType::kDepth]->renderer->GetActiveCamera());
   const std::string scene_path =
       ExportScene(internal::ImageType::kDepth, depth_scene_id);
-  if (verbose()) {
+  if (render_client_->verbose()) {
     LogFrameGltfExportPath(internal::ImageType::kDepth, scene_path);
   }
 
-  const double min_depth = camera.depth_range().min_depth();
-  const double max_depth = camera.depth_range().max_depth();
-  const std::string image_path = RenderOnServer(
-      camera.core(), InternalToRenderImageType(internal::ImageType::kDepth),
-      scene_path, MimeType(), min_depth, max_depth);
-  if (verbose()) {
+  const std::string image_path = render_client_->RenderOnServer(
+      camera.core(), VtkToClientRenderImageType(internal::ImageType::kDepth),
+      scene_path, MimeType(), camera.depth_range());
+  if (render_client_->verbose()) {
     LogFrameServerResponsePath(internal::ImageType::kDepth, image_path);
   }
 
   // Load the returned image back to the drake buffer.
-  LoadDepthImage(image_path, depth_image_out);
-  if (!no_cleanup()) CleanupFrame(scene_path, image_path);
+  render_client_->LoadDepthImage(image_path, depth_image_out);
+  if (!render_client_->no_cleanup()) CleanupFrame(scene_path, image_path);
 }
 
 void RenderEngineGltfClient::DoRenderLabelImage(
     const ColorRenderCamera& camera, ImageLabel16I* label_image_out) const {
   const auto label_scene_id = GetNextSceneId();
-  if (verbose()) {
+  if (render_client_->verbose()) {
     LogFrameStart(internal::ImageType::kLabel, label_scene_id);
   }
 
@@ -298,26 +304,26 @@ void RenderEngineGltfClient::DoRenderLabelImage(
       pipelines_[internal::ImageType::kLabel]->renderer->GetActiveCamera());
   const std::string scene_path =
       ExportScene(internal::ImageType::kLabel, label_scene_id);
-  if (verbose()) {
+  if (render_client_->verbose()) {
     LogFrameGltfExportPath(internal::ImageType::kLabel, scene_path);
   }
 
-  const std::string image_path = RenderOnServer(
-      camera.core(), InternalToRenderImageType(internal::ImageType::kLabel),
+  const std::string image_path = render_client_->RenderOnServer(
+      camera.core(), VtkToClientRenderImageType(internal::ImageType::kLabel),
       scene_path, MimeType());
-  if (verbose()) {
+  if (render_client_->verbose()) {
     LogFrameServerResponsePath(internal::ImageType::kLabel, image_path);
   }
 
   // Load the returned image back to the drake buffer.
-  LoadLabelImage(image_path, label_image_out);
-  if (!no_cleanup()) CleanupFrame(scene_path, image_path);
+  render_client_->LoadLabelImage(image_path, label_image_out);
+  if (!render_client_->no_cleanup()) CleanupFrame(scene_path, image_path);
 }
 
 std::string RenderEngineGltfClient::ExportPathFor(
     internal::ImageType image_type, int64_t scene_id) const {
   // Create e.g., {temp_directory()}/0000000000000000XYZ-color.gltf
-  const drake::filesystem::path base{temp_directory()};
+  const drake::filesystem::path base{render_client_->temp_directory()};
   // NOTE: the maximum number of digits in a int64_t is 19.
   const std::string scene{
       fmt::format("{:0>19}-{}.gltf", scene_id, ImageTypeToString(image_type))};
@@ -337,8 +343,8 @@ std::string RenderEngineGltfClient::ExportScene(internal::ImageType image_type,
 
 void RenderEngineGltfClient::CleanupFrame(const std::string& scene_path,
                                           const std::string& image_path) const {
-  DeleteFileAndLogIfVerbose(scene_path, verbose());
-  DeleteFileAndLogIfVerbose(image_path, verbose());
+  DeleteFileAndLogIfVerbose(scene_path, render_client_->verbose());
+  DeleteFileAndLogIfVerbose(image_path, render_client_->verbose());
 }
 
 }  // namespace render

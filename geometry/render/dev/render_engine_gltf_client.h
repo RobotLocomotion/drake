@@ -17,7 +17,7 @@ namespace render {
 /** A RenderClient that exports
  <a href="https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html">glTF
  </a> scenes to upload to a render server. */
-class RenderEngineGltfClient : public RenderEngineVtk, public RenderClient {
+class RenderEngineGltfClient : public RenderEngineVtk {
  public:
   /** @name Does not allow copy, move, or assignment  */
   //@{
@@ -78,6 +78,9 @@ class RenderEngineGltfClient : public RenderEngineVtk, public RenderClient {
    be called when `!no_cleanup()`. */
   void CleanupFrame(const std::string& scene_path,
                     const std::string& image_path) const;
+
+ private:
+  std::unique_ptr<internal::RenderClient> render_client_;
 };
 
 }  // namespace render
