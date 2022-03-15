@@ -7,6 +7,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/analysis/dense_output.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -80,7 +81,10 @@ class InitialValueProblem {
   /// and parameters vector 𝐤.to further specify the ODE system (in order
   /// to become an initial value problem).  This places the same role as
   /// systems::Context, but is intentionally much simpler.
-  struct OdeContext {
+  struct DRAKE_DEPRECATED(
+      "2022-07-01",
+      "OdeContext is deprecated. InitialValueProblem now has a "
+      "complete API which does not depend on it.") OdeContext {
     /// Default constructor, leaving all values unspecified.
     OdeContext() = default;
 
@@ -105,6 +109,8 @@ class InitialValueProblem {
     std::optional<VectorX<T>> k;  ///< The parameter vector 𝐤 for the IVP.
   };
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /// Constructs an IVP described by the given @p ode_function, using
   /// given @p default_values.t0 and @p default_values.x0 as initial
   /// conditions, and parameterized with @p default_values.k by default.
@@ -118,6 +124,9 @@ class InitialValueProblem {
   /// @pre An initial state vector @p default_values.x0 is given.
   /// @pre A parameter vector @p default_values.k is given.
   /// @throws std::exception if preconditions are not met.
+  DRAKE_DEPRECATED("2022-07-01",
+                   "OdeContext is deprecated. Use the constructor that takes "
+                   "x0, and k as arguments directly.")
   InitialValueProblem(const OdeFunction& ode_function,
                       const OdeContext& default_values);
 
@@ -137,6 +146,8 @@ class InitialValueProblem {
   ///      must match that of the parameter vector in the default specified
   ///      values given on construction.
   /// @throws std::exception if preconditions are not met.
+  DRAKE_DEPRECATED("2022-07-01",
+                   "OdeContext is deprecated. Use Solve(t0, tf) instead.")
   VectorX<T> Solve(const T& tf, const OdeContext& values = {}) const;
 
   /// Solves and yields an approximation of the IVP solution x(t; 𝐤) for
@@ -166,8 +177,50 @@ class InitialValueProblem {
   ///      must match that of the parameter vector in the default specified
   ///      values given on construction.
   /// @throws std::exception if any of the preconditions is not met.
+  DRAKE_DEPRECATED(
+      "2022-07-01",
+      "OdeContext is deprecated. Use DenseSolve(t0, tf) instead.")
   std::unique_ptr<DenseOutput<T>> DenseSolve(
       const T& tf, const OdeContext& values = {}) const;
+
+#pragma GCC diagnostic pop
+
+  /// Constructs an IVP described by the given @p ode_function, using @p x0 as
+  /// initial conditions, and parameterized with @p k.
+  ///
+  /// @param ode_function The ODE function f(t, 𝐱; 𝐤) that describes the state
+  ///                     evolution over time.
+  /// @param x0 The initial state vector 𝐱₀ ∈ ℝⁿ.
+  /// @param k The parameter vector 𝐤 ∈ ℝᵐ.  By default m=0 (no parameters).
+  InitialValueProblem(const OdeFunction& ode_function,
+                      const Eigen::Ref<const VectorX<T>>& x0,
+                      const Eigen::Ref<const VectorX<T>>& k = Vector0<T>{});
+
+  /// Solves the IVP from the initial time @p t0 up to time @p tf, using the
+  /// initial state vector 𝐱₀ and parameter vector 𝐤 provided in the
+  /// constructor.
+  /// @throws std::exception if t0 > tf.
+  VectorX<T> Solve(const T& t0, const T& tf) const;
+
+  /// Solves and yields an approximation of the IVP solution x(t; 𝐤) for the
+  /// closed time interval between the given initial time @p t0 and the given
+  /// final time @p tf, using initial state 𝐱₀ and parameter vector 𝐤 provided
+  /// in the constructor.
+  ///
+  /// To this end, the wrapped IntegratorBase instance solves this IVP,
+  /// advancing time and state from t₀ and 𝐱₀ = 𝐱(t₀) to @p tf and 𝐱(@p tf),
+  /// creating a dense output over that [t₀, @p tf] interval along the way.
+  ///
+  /// @param tf The IVP will be solved up to this time, which must be ≥ t₀.
+  /// Usually, t₀ < @p tf as an empty dense output would result if t₀ = @p tf.
+  /// @returns A dense approximation to 𝐱(t; 𝐤) with 𝐱(t₀; 𝐤) = 𝐱₀,
+  /// defined for t₀ ≤ t ≤ tf.
+  /// @note The larger the given @p tf value is, the larger the approximated
+  ///       interval will be. See documentation of the specific dense output
+  ///       technique in use for reference on performance impact as this
+  ///       interval grows.
+  /// @throws std::exception if t0 > tf.
+  std::unique_ptr<DenseOutput<T>> DenseSolve(const T& t0, const T& tf) const;
 
   /// Resets the internal integrator instance by in-place
   /// construction of the given integrator type.
@@ -206,6 +259,8 @@ class InitialValueProblem {
   }
 
  private:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // Sanitizes given @p values to solve for @p tf, i.e. sets defaults
   // when values are missing and validates that all preconditions specified
   // for InitialValueProblem::Solve() and InitialValueProblem::DenseSolve()
@@ -244,6 +299,10 @@ class InitialValueProblem {
 
   // IVP current specified values (for caching).
   mutable OdeContext current_values_;
+#pragma GCC diagnostic pop
+
+  // Resets the context / integrator between multiple solves.
+  void ResetState() const;
 
   // IVP ODE solver integration context.
   std::unique_ptr<Context<T>> context_;

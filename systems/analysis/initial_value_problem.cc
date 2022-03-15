@@ -96,10 +96,14 @@ const T InitialValueProblem<T>::kInitialStepSize = static_cast<T>(1e-4);
 template <typename T>
 const T InitialValueProblem<T>::kMaxStepSize = static_cast<T>(1e-1);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 template <typename T>
 InitialValueProblem<T>::InitialValueProblem(const OdeFunction& ode_function,
                                             const OdeContext& default_values)
-    : default_values_(default_values), current_values_(default_values) {
+    : default_values_(default_values),
+      current_values_(default_values) {
   // Checks that preconditions are met.
   if (!default_values_.t0) {
     throw std::logic_error("No default initial time t0 was given.");
@@ -246,6 +250,98 @@ std::unique_ptr<DenseOutput<T>> InitialValueProblem<T>::DenseSolve(
   ResetCachedState(safe_values);
 
   // Re-initialize integrator after cache invalidation.
+  integrator_->Initialize();
+
+  // Starts dense integration to build a dense output.
+  integrator_->StartDenseIntegration();
+
+  // Steps the integrator through the entire interval.
+  integrator_->IntegrateWithMultipleStepsToTime(tf);
+
+  // Stops dense integration to prevent future updates to
+  // the dense output just built and yields it to the caller.
+  const std::unique_ptr<trajectories::PiecewisePolynomial<T>> traj =
+      integrator_->StopDenseIntegration();
+
+  return std::make_unique<HermitianDenseOutput<T>>(*traj);
+}
+#pragma GCC diagnostic pop
+
+template <typename T>
+InitialValueProblem<T>::InitialValueProblem(
+    const OdeFunction& ode_function, const Eigen::Ref<const VectorX<T>>& x0,
+    const Eigen::Ref<const VectorX<T>>& k) {
+  // Instantiates the system using the given initial conditions and parameters.
+  system_ = std::make_unique<OdeSystem<T>>(ode_function, x0, k);
+
+  // Allocates a new default integration context.
+  context_ = system_->CreateDefaultContext();
+
+  // Instantiates an explicit RK3 integrator by default.
+  integrator_ =
+      std::make_unique<RungeKutta3Integrator<T>>(*system_, context_.get());
+
+  // Sets step size and accuracy defaults.
+  integrator_->request_initial_step_size_target(
+      InitialValueProblem<T>::kInitialStepSize);
+  integrator_->set_maximum_step_size(InitialValueProblem<T>::kMaxStepSize);
+  integrator_->set_target_accuracy(InitialValueProblem<T>::kDefaultAccuracy);
+}
+
+template <typename T>
+VectorX<T> InitialValueProblem<T>::Solve(const T& t0, const T& tf) const {
+  DRAKE_THROW_UNLESS(tf >= t0);
+  context_->SetTime(t0);
+
+  ResetState();
+
+  // Initializes integrator if necessary.
+  if (!integrator_->is_initialized()) {
+    integrator_->Initialize();
+  }
+
+  // Integrates up to the requested time.
+  integrator_->IntegrateWithMultipleStepsToTime(tf);
+
+  // Retrieves the state vector. This cast is safe because the
+  // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just
+  // a BasicVector<T>, and the implementation deals with LeafSystem<T>
+  // instances only by design.
+  const BasicVector<T>& state_vector = dynamic_cast<const BasicVector<T>&>(
+      context_->get_continuous_state_vector());
+  return state_vector.get_value();
+}
+
+template <typename T>
+void InitialValueProblem<T>::ResetState() const {
+  system_->SetDefaultContext(context_.get());
+
+  // Keeps track of current step size and accuracy settings (regardless
+  // of whether these are actually used by the integrator instance or not).
+  const T max_step_size = integrator_->get_maximum_step_size();
+  const T initial_step_size = integrator_->get_initial_step_size_target();
+  const double target_accuracy = integrator_->get_target_accuracy();
+
+  // Resets the integrator internal state.
+  integrator_->Reset();
+
+  // Sets integrator settings again.
+  integrator_->set_maximum_step_size(max_step_size);
+  if (integrator_->supports_error_estimation()) {
+    // Specifies initial step and accuracy setting only if necessary.
+    integrator_->request_initial_step_size_target(initial_step_size);
+    integrator_->set_target_accuracy(target_accuracy);
+  }
+}
+
+template <typename T>
+std::unique_ptr<DenseOutput<T>> InitialValueProblem<T>::DenseSolve(
+    const T& t0, const T& tf) const {
+  DRAKE_THROW_UNLESS(tf >= t0);
+  context_->SetTime(t0);
+  ResetState();
+
+  // Unconditionally re-initialize integrator.
   integrator_->Initialize();
 
   // Starts dense integration to build a dense output.
