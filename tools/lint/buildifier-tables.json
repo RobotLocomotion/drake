@@ -19,6 +19,8 @@
     "install_files.files": true
   },
   "NamePriority": {
+    "drake_cc_library.interface_deps": 3,
+
     "git_repository.remote": 300,
     "git_repository.commit": 310,
 

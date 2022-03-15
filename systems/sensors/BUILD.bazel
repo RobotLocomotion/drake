@@ -237,11 +237,13 @@ drake_cc_library(
     name = "image_writer",
     srcs = ["image_writer.cc"],
     hdrs = ["image_writer.h"],
-    deps = [
+    interface_deps = [
         ":image",
         "//common:essential",
-        "//common:filesystem",
         "//systems/framework",
+    ],
+    deps = [
+        "//common:filesystem",
         "@vtk//:vtkIOImage",
     ],
 )
