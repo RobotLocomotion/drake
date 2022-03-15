@@ -1,18 +1,14 @@
 #pragma once
 
-#include <memory>
 #include <optional>
 #include <string>
 
-#include "drake/common/drake_copyable.h"
-#include "drake/geometry/render/dev/http_service.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/systems/sensors/image.h"
 
 namespace drake {
 namespace geometry {
 namespace render {
-namespace internal {
 
 /** The type of image being rendered. */
 enum RenderImageType {
@@ -26,35 +22,42 @@ enum RenderImageType {
 /** The client which communicates with a render server. */
 class RenderClient {
  public:
+  /** @name Does not allow copy, move, or assignment  */
+  //@{
+#ifdef DRAKE_DOXYGEN_CXX
+  // Note: the copy constructor operator is actually protected to serve as the
+  // basis for implementing the DoClone() method of derived classes.
+  RenderClient(const RenderClient&) = delete;
+#endif
+  RenderClient& operator=(const RenderClient&) = delete;
+  RenderClient(RenderClient&&) = delete;
+  RenderClient& operator=(RenderClient&&) = delete;
+  virtual ~RenderClient();
+  //@}}
+
   /** Constructs the render engine from the given parameters.
    @param url
-     The url of the server to communicate with, e.g., `"http://127.0.0.1"`.  May
-     **not** have a trailing `/`.
+     The url of the server to communicate with, e.g., `"http://127.0.0.1"`.
    @param port
      The port to communicate with the server on, e.g., `8000`.  A value of less
      than or equal to `0` implies no port-level communication is needed.
    @param render_endpoint
      The endpoint that the server expects to receive render requests to, e.g.,
-     `"render"`.  May **not** have a leading or trailing `/`, communications
-     with the server are constructed as `{url}/{render_endpoint}`.
+     `"render"`.  Do not include a preceding `/`, communications with the server
+     are constructed as `{url}/{render_endpoint}`.
    @param verbose
      Whether or not the client should be verbose in logging its communications
      with the server.
    @param no_cleanup
      Whether or not the temp_directory() should be deleted upon destruction of
-     this instance.
-   @throws std::logic_error
-     If the provided `url` is empty or ends with a `/`, via
-     HttpService::HttpService.
-   @throws std::runtime_error
-     If the provided `render_endpoint` has any leading or trailing slashes. */
-  RenderClient(const std::string& url, int32_t port,
-               const std::string& render_endpoint, bool verbose,
-               bool no_cleanup);
+     this instance. */
+  explicit RenderClient(const std::string& url, int32_t port,
+                        const std::string& render_endpoint, bool verbose,
+                        bool no_cleanup);
 
-  virtual ~RenderClient();
-
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RenderClient);
+ protected:
+  /** Copy constructor for the purpose of cloning. */
+  RenderClient(const RenderClient& other);
 
   /** @name Server communication */
   //@{
@@ -83,10 +86,12 @@ class RenderClient {
      The mime type to set for the scene file being uploaded as a file.  If not
      provided, no mime type will be sent to the server.  No validity checks on
      the value of the provided mime type are performed.
-   @param depth_range
-     When `image_type` describes a depth render, this parameter must be provided
-     from the DepthRenderCamera::depth_range().  May not have a value for color
-     or label image renders.
+   @param min_depth
+     The minimum depth range.  Required when `image_type` is depth.  See also:
+     ValidDepthRangeOrThrow().
+   @param max_depth
+     The maximum depth range.  Required when `image_type` is depth.  See also:
+     ValidDepthRangeOrThrow().
    @return
      A successful download of a rendering from the server will return the path
      to the downloaded file, which will be exactly
@@ -94,15 +99,14 @@ class RenderClient {
      `extension` will depend on what the server returns, e.g., `.png` or
      `.tiff`.
    @throws std::runtime_error
-     If a rendering cannot be obtained from the server for any reason.
-   @throws std::logic_error
-     If `image_type` is a depth image but `depth_range` was not provided, or
-     `depth_range` was provided but `image_type` is color or label. */
+     If a rendering cannot be obtained from the server for any reason, including
+     invalid parameters supplied to this method such as not including
+     `min_depth` and/or `max_depth` when `image_type` is depth. */
   virtual std::string RenderOnServer(
       const RenderCameraCore& camera_core, RenderImageType image_type,
       const std::string& scene_path,
-      const std::optional<std::string>& mime_type = std::nullopt,
-      const std::optional<DepthRange>& depth_range = std::nullopt) const;
+      const std::optional<std::string>& mime_type, double min_depth = -1.0,
+      double max_depth = -1.0) const;
 
   //@}
   /** @name Server communication helpers */
@@ -114,42 +118,33 @@ class RenderClient {
    */
   std::string ComputeSha256(const std::string& path) const;
 
-  /** Rename the specified file `response_data_path` to have the same name as
-   `reference_path`, with a new file extension provided by `extension`.
-   Helper method for RetrieveRender() which will download files as
-   `{temp_directory()}/{response_data_path}` and then rename the file
-   depending on the type of image that was downloaded.  Examples:
+  /** Validates the specified depth range.  Helper method used in
+   RetrieveRender() when the `image_type` is depth.
 
-   @code{.cpp}
-    const auto renamed_1 = RenameHttpServiceResponse(
-        "/some/other/ABC.curl",
-        "/some/input/XYZ.gltf",
-        ".png");
-    // renamed_1: "/some/input/XYZ.png"
-    const auto renamed_2 = RenameHttpServiceResponse(
-        "/a/folder/999.bin",
-        "/a/folder/123.gltf",
-        ".tiff");
-    // renamed_2: "/a/folder/123.tiff"
-   @endcode
+   @sa DepthRange
+   @param min_depth The minimum depth range.
+   @param max_depth The maximum depth range.
+   @throws std::logic_error
+     If `min_depth` or `max_depth` are less than `0.0`, or if
+     `max_depth <= min_depth`. */
+  void ValidDepthRangeOrThrow(double min_depth, double max_depth) const;
 
-   @param response_data_path
-     The input path to change the file extension for, e.g., `"file.curl"`.
-     Should be the value of HttpResponse::data_path.
-   @param reference_path
-     The reference path to be renaming `response_data_path` to, with a different
-     file extension, e.g., `"scene.gltf"`.
-   @param extension
+  /** Rename the specified file with the provided extension.  Helper method for
+   RetrieveRender() which will download files as
+   `{temp_directory()}/{scene_path}.bin` and then rename the file depending on
+   the type of image that was downloaded.
+
+   @param path
+     The input path to change the file extension for, e.g., `"file.bin"`.
+   @param ext
      The new file extension, e.g., `".png"`.  Uses
      `std::filesystem::path::replace_extension()` internally.
    @return
      The path to the new file after renaming it.
    @throws std::exception
-     If `input_scene` or `path` do not exist, or any errors arise from renaming
-     the file. */
-  std::string RenameHttpServiceResponse(const std::string& response_data_path,
-                                        const std::string& reference_path,
-                                        const std::string& extension) const;
+     When any errors arise from renaming the file. */
+  std::string RenameFileExtension(const std::string& path,
+                                  const std::string& ext) const;
 
   //@}
 
@@ -251,21 +246,15 @@ class RenderClient {
 
   //@}
 
-  /** (Internal use only) for testing. */
-  void SetHttpService(std::unique_ptr<HttpService> service);
-
  private:
-  friend class RenderClientTester;
   std::string temp_directory_;
   std::string url_;
   int32_t port_;
   std::string render_endpoint_;
   bool verbose_;
   bool no_cleanup_;
-  std::unique_ptr<HttpService> http_service_;
 };
 
-}  // namespace internal
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake
