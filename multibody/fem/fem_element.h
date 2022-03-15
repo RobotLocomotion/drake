@@ -71,6 +71,8 @@ struct FemElementTraits {};
 template <class DerivedElement>
 class FemElement {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FemElement);
+
   using Traits = FemElementTraits<DerivedElement>;
   using T = typename Traits::T;
   using Data = typename Traits::Data;
@@ -82,6 +84,14 @@ class FemElement {
   /* Indices of the nodes of this element within the model. */
   const std::array<FemNodeIndex, num_nodes>& node_indices() const {
     return node_indices_;
+  }
+
+  /* Increments the node indexes of all nodes in this element by the given
+   `offset`. */
+  void OffsetNodeIndex(FemNodeIndex offset) {
+    for (int a = 0; a < num_nodes; ++a) {
+      node_indices_[a] += offset;
+    }
   }
 
   /* The FemElementIndex of this element within the model. */
@@ -218,14 +228,6 @@ class FemElement {
   const Vector3<T>& gravity_vector() const { return gravity_; }
 
  protected:
-  /* Assignment and copy constructions are prohibited.
-   Move constructor is allowed so that FemElement can be stored in
-   `std::vector`. */
-  FemElement(const FemElement&) = delete;
-  FemElement(FemElement&&) = default;
-  const FemElement& operator=(const FemElement&) = delete;
-  FemElement&& operator=(const FemElement&&) = delete;
-
   /* Constructs a new FEM element. The constructor is made protected because
    FemElement should not be constructed directly. Use the constructor of the
    derived classes instead.

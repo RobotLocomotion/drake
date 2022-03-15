@@ -25,6 +25,7 @@ drake_cc_package_library(
         ":discrete_time_integrator",
         ":fem_element",
         ":fem_indexes",
+        ":fem_model",
         ":fem_state",
         ":fem_state_system",
         ":isoparametric_element",
@@ -181,6 +182,24 @@ drake_cc_library(
         ":damping_model",
         ":fem_indexes",
         ":fem_state",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_model",
+    srcs = [
+        "fem_model.cc",
+        "fem_model_impl.cc",
+    ],
+    hdrs = [
+        "fem_model.h",
+        "fem_model_impl.h",
+    ],
+    deps = [
+        ":fem_element",
+        ":fem_state",
+        ":petsc_symmetric_block_sparse_matrix",
         "//common:essential",
     ],
 )
@@ -452,6 +471,13 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "discrete_time_integrator_test",
+    deps = [
+        ":discrete_time_integrator",
+    ],
+)
+
 drake_cc_library(
     name = "dummy_element",
     testonly = 1,
@@ -465,6 +491,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "dummy_model",
+    testonly = 1,
+    srcs = ["test/dummy_model.cc"],
+    hdrs = ["test/dummy_model.h"],
+    deps = [
+        ":dummy_element",
+        ":fem_model",
+    ],
+)
+
 drake_cc_googletest(
     name = "fem_element_test",
     deps = [
@@ -473,9 +510,11 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "discrete_time_integrator_test",
+    name = "fem_model_test",
     deps = [
-        ":discrete_time_integrator",
+        ":dummy_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
