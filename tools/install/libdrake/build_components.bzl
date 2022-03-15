@@ -60,6 +60,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/pendulum",
     "//multibody/constraint",
     "//multibody/contact_solvers",
+    "//multibody/contact_solvers/sap",
     "//multibody/hydroelastics",
     "//multibody/inverse_kinematics",
     "//multibody/math",
@@ -68,6 +69,8 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/parsing",
     "//multibody/plant",
     "//multibody/plant:contact_results_to_lcm",  # unpackaged
+    "//multibody/plant:contact_results_to_meshcat",  # unpackaged
+    "//multibody/plant:contact_results_to_meshcat_params",  # unpackaged
     "//multibody/topology:multibody_graph",  # unpackaged
     "//multibody/tree",
     "//multibody/triangle_quadrature",
