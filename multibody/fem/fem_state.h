@@ -33,7 +33,7 @@ class FemState {
    @pre system != nullptr. */
   explicit FemState(const internal::FemStateSystem<T>* system);
 
-  /** Creates a  "shared" version of %FemState that accesses states and cached
+  /** Creates a "shared" version of %FemState that accesses states and cached
    data in the given `context`. The %FemState created with this constructor
    doesn't own the states and data.
    @pre system != nullptr.
@@ -75,6 +75,11 @@ class FemState {
     return get_context()
         .get_discrete_state(system_->fem_position_index())
         .size();
+  }
+
+  /** Returns true if this FemState is constructed from the given system. */
+  bool is_created_from_system(const internal::FemStateSystem<T>& system) const {
+    return &system == system_;
   }
 
  private:
