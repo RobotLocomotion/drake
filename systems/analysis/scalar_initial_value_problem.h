@@ -120,20 +120,18 @@ class ScalarInitialValueProblem {
         ode_function, ToVectorIVPOdeContext(default_values));
   }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /// Constructs a scalar IVP described by the given @p scalar_ode_function,
-  /// using given @p t0 and @p x0 as initial conditions, and parameterized with
-  /// @p k.
+  /// using given @p x0 as initial conditions, and parameterized with @p k.
   ///
   /// @param scalar_ode_function The ODE function f(t, 𝐱; 𝐤) that describes
-  /// the state evolution over time.
-  /// @param x0 The initial state 𝐱₀ ∈ ℝ.
+  /// the state evolution over time. @param x0 The initial state 𝐱₀ ∈ ℝ.
   /// @param k The parameter vector 𝐤 ∈ ℝᵐ.  By default m=0 (no parameters).
   ScalarInitialValueProblem(
       const ScalarOdeFunction& scalar_ode_function, const T& x0,
       const Eigen::Ref<const VectorX<T>>& k = Vector0<T>{});
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /// Solves the IVP for time @p tf, using the initial time t₀, initial state
   /// x₀ and parameter vector 𝐤 present in @p values, falling back to the ones
   /// given on construction if not given.
@@ -198,27 +196,30 @@ class ScalarInitialValueProblem {
 #pragma GCC diagnostic pop
 
   /// Solves the IVP from time @p t0 up to time @p tf, using the initial state
-  /// 𝐱₀ and parameter vector 𝐤 provided in the constructor.  We require that tf
-  /// ≥ t₀.
+  /// 𝐱₀ and parameter vector 𝐤 provided in the constructor.
+  /// @throws std::exception if t0 > tf.
   T Solve(const T& t0, const T& tf) const;
 
   /// Solves and yields an approximation of the IVP solution x(t; 𝐤) for the
-  /// closed time interval between the initial time @p t0 and the final time
-  /// @p tf, using initial state 𝐱₀ and parameter vector 𝐤 provided in the
+  /// closed time interval between the initial time @p t0 and the final time @p
+  /// tf, using initial state 𝐱₀ and parameter vector 𝐤 provided in the
   /// constructor.
   ///
   /// To this end, the wrapped IntegratorBase instance solves this IVP,
-  /// advancing time and state from t₀ and 𝐱₀ = 𝐱(t₀) to @p tf and 𝐱(@p tf),
-  /// creating a dense output over that [t₀, @p tf] interval along the way.
+  /// advancing time and state from t₀ and 𝐱₀ = 𝐱(@p t0) to @p tf and 𝐱(@p
+  /// tf), creating a dense output over that [@p t0, @p tf] interval along the
+  /// way.
   ///
-  /// @param tf The IVP will be solved up to this time, which must be ≥ t₀.
-  /// Usually, t₀ < @p tf as an empty dense output would result if t₀ = @p tf.
-  /// @returns A dense approximation to 𝐱(t; 𝐤) with 𝐱(t₀; 𝐤) = 𝐱₀,
-  /// defined for t₀ ≤ t ≤ tf.
+  /// @param tf The IVP will be solved up to this time, which must be ≥ @p t0.
+  /// Usually, @p t0 < @p tf as an empty dense output would result if @p t0 =
+  /// @p tf.
+  /// @returns A dense approximation to 𝐱(t; 𝐤) with 𝐱(t0; 𝐤) = 𝐱₀,
+  /// defined for t0 ≤ t ≤ tf.
   /// @note The larger the given @p tf value is, the larger the approximated
   ///       interval will be. See documentation of the specific dense output
   ///       technique in use for reference on performance impact as this
   ///       interval grows.
+  /// @throws std::exception if t0 > tf.
   std::unique_ptr<ScalarDenseOutput<T>> DenseSolve(const T& t0,
                                                    const T& tf) const;
 
