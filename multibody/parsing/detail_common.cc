@@ -71,19 +71,6 @@ geometry::ProximityProperties ParseProximityProperties(
 
   std::optional<double> hydroelastic_modulus =
       read_double("drake:hydroelastic_modulus");
-  {
-    std::optional<double> elastic_modulus =
-        read_double("drake:elastic_modulus");
-    if (elastic_modulus.has_value()) {
-      static const logging::Warn log_once(
-          "The tag drake:elastic_modulus is deprecated, and will be removed on"
-          " or around 2022-02-01. Please use drake:hydroelastic_modulus"
-          " instead.");
-    }
-    if (!hydroelastic_modulus.has_value()) {
-      hydroelastic_modulus = elastic_modulus;
-    }
-  }
   if (hydroelastic_modulus) {
     if (is_rigid) {
       static const logging::Warn log_once(

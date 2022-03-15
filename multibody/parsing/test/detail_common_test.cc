@@ -207,21 +207,6 @@ GTEST_TEST(ParseProximityPropertiesTest, RigidHydroelasticModulusIgnored) {
   EXPECT_EQ(properties.num_groups(), 2);  // Hydro and default groups.
 }
 
-// TODO(DamrongGuoy): Remove this test when we remove the support of the tag
-//  drake:elastic_modulus. See ParseProximityProperties().
-
-// Confirms the tag drake:elastic_modulus is still working.
-// The tag drake:elastic_modulus is deprecated, and will be removed on or
-// around 2022-02-01.
-GTEST_TEST(ParseProximityPropertiesTest, DeprecateElasticModulus) {
-  const double kValue = 1.75;
-  ProximityProperties properties = ParseProximityProperties(
-      param_read_double("drake:elastic_modulus", kValue), !rigid, !compliant);
-  EXPECT_TRUE(ExpectScalar(kHydroGroup, kElastic, kValue, properties));
-  EXPECT_EQ(properties.GetPropertiesInGroup(kHydroGroup).size(), 1u);
-  EXPECT_EQ(properties.num_groups(), 2);  // Hydro and default groups.
-}
-
 // Confirms successful parsing of dissipation.
 GTEST_TEST(ParseProximityPropertiesTest, Dissipation) {
   const double kValue = 1.25;
