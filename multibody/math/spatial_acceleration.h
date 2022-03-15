@@ -37,11 +37,11 @@ namespace multibody {
 /// expressed in E.  Details on spatial vectors and monogram notation are
 /// in section @ref multibody_spatial_vectors.
 ///
-/// The typeset for A_MB_E is @f$\,{^MA^B}@f$ and its definition is
+/// The typeset for A_MB is @f$\,{^MA^B}@f$ and its definition is
 /// @f$^MA^B = \frac{^Md}{dt}\,{^MV^B}\,@f$, where @f${^MV^B}@f$ is frame B's
 /// spatial velocity in frame M and @f$\frac{^Md}{dt}@f$ denotes the time
 /// derivative taken in frame M. To differentiate a vector, we need to
-/// specify in what frame the time derivative is taken, see [Mitiguy 2016, §6.1]
+/// specify in what frame the time derivative is taken, see [Mitiguy 2022, §7.2]
 /// for an in-depth discussion. Time derivatives in different frames are related
 /// by the "Transport Theorem", which in Drake is implemented in
 /// drake::math::ConvertTimeDerivativeToOtherFrame().
@@ -49,7 +49,7 @@ namespace multibody {
 /// `DtM()` denotes the time derivative in frame M. Details on vector
 /// differentiation is in section @ref Dt_multibody_quantities.
 ///
-/// [Mitiguy 2016] Mitiguy, P., 2016. Advanced Dynamics & Motion Simulation.
+/// [Mitiguy 2022] Mitiguy, P., 2022. Advanced Dynamics & Motion Simulation.
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -69,8 +69,8 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// uninitialized spatial acceleration fail fast (fast bug detection).
   SpatialAcceleration() : Base() {}
 
-  /// Constructs a spatial acceleration from an angular acceleration @p `alpha`
-  /// and a translational acceleration @p `a`.
+  /// Constructs a spatial acceleration from an angular acceleration α (alpha)
+  /// and a translational acceleration 𝐚.
   SpatialAcceleration(const Eigen::Ref<const Vector3<T>>& alpha,
                       const Eigen::Ref<const Vector3<T>>& a) : Base(alpha, a) {}
 
@@ -172,7 +172,8 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// @see ShiftInPlace() for more information and how A_MC_E is calculated.
   /// @note This method speeds the Shift() computation when ω_MB = 0, even if
   /// α_MB ≠ 0 (α_MB is stored in `this`).
-  SpatialAcceleration<T> ShiftWithOmegaZero(const Vector3<T>& offset) const {
+  SpatialAcceleration<T> ShiftWithZeroAngularVelocity(
+      const Vector3<T>& offset) const {
     const Vector3<T>& p_BoCo_E = offset;
     const Vector3<T>& alpha_MB_E = this->rotational();
     const Vector3<T>& a_MBo_E = this->translational();
@@ -181,9 +182,9 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   }
 
   DRAKE_DEPRECATED("2022-07-01",
-      "Use SpatialAcceleration::ShiftWithOmegaZero()")
+      "Use SpatialAcceleration::ShiftWithZeroAngularVelocity()")
   SpatialAcceleration<T> Shift(const Vector3<T>& p_PoQ_E) const {
-    return ShiftWithOmegaZero(p_PoQ_E);
+    return ShiftWithZeroAngularVelocity(p_PoQ_E);
   }
 
   /// Given a frame B's acceleration measured in a frame M and a frame C's
