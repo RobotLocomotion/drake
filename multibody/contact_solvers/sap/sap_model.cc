@@ -175,7 +175,7 @@ template <typename T>
 void SapModel<T>::CalcCostCache(const Context<T>& context,
                                 CostCache<T>* cache) const {
   system_->ValidateContext(context);
-  const MomentumGainCache<T> gain_cache = EvalMomentumGainCache(context);
+  const MomentumGainCache<T>& gain_cache = EvalMomentumGainCache(context);
   const VectorX<T>& velocity_gain = gain_cache.velocity_gain;
   const VectorX<T>& momentum_gain = gain_cache.momentum_gain;
   cache->momentum_cost = 0.5 * velocity_gain.dot(momentum_gain);
@@ -315,6 +315,7 @@ template <typename T>
 void SapModel<T>::CalcDelassusDiagonalApproximation(
     const std::vector<MatrixX<T>>& A, VectorX<T>* delassus_diagonal) const {
   DRAKE_DEMAND(delassus_diagonal != nullptr);
+  DRAKE_DEMAND(static_cast<int>(A.size()) == num_cliques());
 
   // We compute a factorization of A once so we can re-use it multiple times
   // below.
@@ -323,6 +324,7 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
   A_ldlt.resize(num_cliques);
   for (int c = 0; c < num_cliques; ++c) {
     A_ldlt[c] = A[c].ldlt();
+    DRAKE_DEMAND(A_ldlt[c].isPositive());
   }
 
   // Scan constraints in the order specified by the graph.

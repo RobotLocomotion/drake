@@ -15,6 +15,12 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+// N.B. Ideally we'd like to nest the caching structs below into SapModel.
+// The structs below used for caching computations are stored by our systems::
+// framework as `Value<{}>` types. Value<{}> suffers from impaired performance
+// if these structs are nested within a templated class such as SapModel. To
+// avoid this issue, we opt for not using nested definitions.
+
 // Struct used to store the the result of updating impulses.
 template <typename T>
 struct ImpulsesCache {
@@ -102,7 +108,7 @@ class SapModel {
   /* Returns the number of (participating) cliques. */
   int num_cliques() const;
 
-  /* Returns the number or (participating) generalized velocities.*/
+  /* Returns the number of (participating) generalized velocities. */
   int num_velocities() const;
 
   int num_constraints() const;
@@ -148,14 +154,17 @@ class SapModel {
   std::unique_ptr<systems::Context<T>> MakeContext() const;
 
   /* Retrieves the generalized velocities stored in `context`. Of size
-   num_velocities(). */
+   num_velocities().
+   @pre `context` is created with a call to MakeContext(). */
   const VectorX<T>& GetVelocities(const systems::Context<T>& context) const;
 
   /* Stores generalized velocities `v` in `context`.
-   @throws exception if v.size() is not num_velocities(). */
+   @throws exception if v.size() is not num_velocities().
+   @pre `context` is created with a call to MakeContext(). */
   void SetVelocities(const VectorX<T>& v, systems::Context<T>* context) const;
 
-  /* Evaluates the constraint velocities vc = J⋅v. */
+  /* Evaluates the constraint velocities vc = J⋅v.
+   @pre `context` is created with a call to MakeContext(). */
   const VectorX<T>& EvalConstraintVelocities(
       const systems::Context<T>& context) const {
     return system_
@@ -164,32 +173,38 @@ class SapModel {
   }
 
   /* Evaluates the contact impulses γ(v) according to the analytical inverse
-   dynamics, see [Castro et al. 2021]. */
+   dynamics, see [Castro et al. 2021].
+   @pre `context` is created with a call to MakeContext(). */
   const VectorX<T>& EvalImpulses(const systems::Context<T>& context) const {
     return EvalImpulsesCache(context).gamma;
   }
 
-  /* Evaluates the momentum gain defined as momentum_gain = A⋅(v - v*). */
+  /* Evaluates the momentum gain defined as momentum_gain = A⋅(v - v*).
+   @pre `context` is created with a call to MakeContext(). */
   const VectorX<T>& EvalMomentumGain(const systems::Context<T>& context) const {
     return EvalMomentumGainCache(context).momentum_gain;
   }
 
   /* Evaluates the momentum cost defined as
-   momentum_cost = 1/2⋅(v-v*)ᵀ⋅A⋅(v-v*). */
+   momentum_cost = 1/2⋅(v-v*)ᵀ⋅A⋅(v-v*).
+   @pre `context` is created with a call to MakeContext(). */
   const T& EvalMomentumCost(const systems::Context<T>& context) const {
     return system_->get_cache_entry(system_->cache_indexes().cost)
         .template Eval<CostCache<T>>(context)
         .momentum_cost;
   }
 
-  /* Evaluates the primal cost ℓₚ(v) = 1/2⋅(v-v*)ᵀ⋅A⋅(v-v*) + 1/2⋅γᵀ⋅R⋅γ. */
+  /* Evaluates the primal cost ℓₚ(v) = 1/2⋅(v-v*)ᵀ⋅A⋅(v-v*) + 1/2⋅γᵀ⋅R⋅γ.
+   @pre `context` is created with a call to MakeContext(). */
   const T& EvalCost(const systems::Context<T>& context) const {
     return system_->get_cache_entry(system_->cache_indexes().cost)
         .template Eval<CostCache<T>>(context)
         .cost;
   }
 
-  /* Evaluates the gradient w.r.t. generalized velocities of the cost. */
+  /* Evaluates the gradient w.r.t. participating generalized velocities of the
+   cost.
+   @pre `context` is created with a call to MakeContext(). */
   const VectorX<T>& EvalCostGradient(const systems::Context<T>& context) const {
     return system_->get_cache_entry(system_->cache_indexes().gradients)
         .template Eval<GradientsCache<T>>(context)
@@ -200,7 +215,8 @@ class SapModel {
    For the i-th constraint, its Hessian is defined as Gᵢ(v) = d²ℓᵢ/dvcᵢ², where
    ℓᵢ is the regularizer's cost ℓᵢ = 1/2⋅γᵢᵀ⋅Rᵢ⋅γᵢ and vcᵢ is the constraint's
    velocity. Gᵢ is an SPD matrix. It turns out that the Hessian of SAP's cost is
-   H = A + Jᵀ⋅G⋅J, see [Castro et al. 2021]. */
+   H = A + Jᵀ⋅G⋅J, see [Castro et al. 2021].
+   @pre `context` is created with a call to MakeContext(). */
   const std::vector<MatrixX<T>>& EvalConstraintsHessian(
       const systems::Context<T>& context) const {
     return system_->get_cache_entry(system_->cache_indexes().hessian)
@@ -298,12 +314,15 @@ class SapModel {
   // ‖Wᵢᵢ‖/nᵢ, where nᵢ is the number of equations for the i-th constraint (and
   // the size of Wᵢᵢ). See [Castro et al. 2021] for details.
   //
+  // @param[in]  A linear dynamics matrix for each participating clique in the
+  // model.
   // @param[out] delassus_diagonal On output an array of size nc (number of
   // constraints) where each entry stores the Delassus operator constraint
   // scaling. That is, wi = delassus_diagonal[i] corresponds to the scaling for
   // the i-th constraint.
   //
   // @pre delassus_diagonal is not nullptr.
+  // @pre A.size() equals num_cliques().
   // @pre Matrix entries stored in `A` are SPD.
   void CalcDelassusDiagonalApproximation(const std::vector<MatrixX<T>>& A,
                                          VectorX<T>* delassus_diagonal) const;

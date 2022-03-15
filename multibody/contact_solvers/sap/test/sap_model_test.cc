@@ -267,7 +267,7 @@ class DummyConstraint final : public SapConstraint<T> {
 
   // Dummy projection for testing. γ = P(y) = max(0, y), where max() is applied
   // componentwise. dγ/dy = H(y), where H() is the Heaviside function, also
-  // appcomponentwise.
+  // applied componentwise.
   void Project(const Eigen::Ref<const VectorX<T>>& y,
                const Eigen::Ref<const VectorX<T>>&, EigenPtr<VectorX<T>> gamma,
                MatrixX<T>* dPdy) const final {
@@ -275,6 +275,7 @@ class DummyConstraint final : public SapConstraint<T> {
     if (dPdy != nullptr) {
       dPdy->resize(this->num_constraint_equations(),
                    this->num_constraint_equations());
+      dPdy->setZero();
       dPdy->diagonal() =
           y.unaryExpr([](const T& x) { return x >= 0. ? 1.0 : 0.0; });
     }
@@ -334,8 +335,8 @@ class DummyModel {
       const MatrixX<T> J = MakeJacobian(3, 2);
       const VectorX<T> R = VectorX<T>::LinSpaced(3, 1., 3.);
       const VectorX<T> v_hat = Vector3d(1., 2., 0.2);
-      problem->AddConstraint(
-          std::make_unique<DummyConstraint<T>>(0, J, R, v_hat));
+      problem->AddConstraint(std::make_unique<DummyConstraint<T>>(
+          0, std::move(J), std::move(R), std::move(v_hat)));
     }
 
     {
@@ -343,8 +344,8 @@ class DummyModel {
       const MatrixX<T> J2 = MakeJacobian(5, 4);
       const VectorX<T> R = VectorX<T>::LinSpaced(5, 1., 5.);
       const VectorX<T> v_hat = 100.0 * R;
-      problem->AddConstraint(
-          std::make_unique<DummyConstraint<T>>(1, J1, 2, J2, R, v_hat));
+      problem->AddConstraint(std::make_unique<DummyConstraint<T>>(
+          1, std::move(J1), 2, std::move(J2), std::move(R), std::move(v_hat)));
     }
     return problem;
   }
@@ -412,10 +413,6 @@ class DummyModelTest : public ::testing::Test {
         .finished();
   }
 
-  void SetArbitraryNonZeroState() {
-    sap_model_->SetVelocities(arbitrary_v(), context_.get());
-  }
-
   // Computes the Hessian of the model for the state currently stored in
   // context_. This method helps us unit test
   // SapModel::EvalConstraintsHessian().
@@ -431,8 +428,6 @@ class DummyModelTest : public ::testing::Test {
     }
 
     // Add regularizer contribution, Jᵀ⋅G⋅J.
-    const MatrixXd J =
-        SapModelTester::constraints_bundle(*sap_model_).J().MakeDenseMatrix();
     const std::vector<MatrixXd>& G =
         sap_model_->EvalConstraintsHessian(*context_);
     MatrixXd GJ(sap_model_->num_constraint_equations(),
@@ -441,35 +436,42 @@ class DummyModelTest : public ::testing::Test {
     for (int i = 0; i < sap_model_->num_constraints(); ++i) {
       const MatrixXd& Gi = G[i];
       const int ni = Gi.rows();
-      GJ.middleRows(offset, ni) = Gi * J.middleRows(offset, ni);
+      GJ.middleRows(offset, ni) = Gi * J_.middleRows(offset, ni);
       offset += ni;
     }
     // H = A + Jᵀ⋅G⋅J.
-    H += J.transpose() * GJ;
+    H += J_.transpose() * GJ;
 
     return H;
   }
 
   // Compute diagonal approximation of the Delassus operator for the
-  // SapContactProin this test.
+  // SapContactProblem in this test. We use a slightly different implementation
+  // from that in SapModel. While SapModel computes the Delassus operator
+  // approximation with the constraints ordering dictated by the contact graph,
+  // this implementation computes it with the ordering dictated by the
+  // SapProblem and permutes the result towards the end. These differences in
+  // the implementations are believed to be enough to consider these two results
+  // independent of each other. Only a bug in one of them could make the results
+  // missmatch.
   VectorXd CalcDelassusDiagonalApproximation() const {
     // First compute the block diagonal approximation of the Delassus operator.
-    std::vector<MatrixXd> Wapproximation(sap_problem_->num_constraints());
+    std::vector<MatrixXd> W_approximation(sap_problem_->num_constraints());
     for (int i = 0; i < sap_problem_->num_constraints(); ++i) {
       const SapConstraint<double>& constraint = sap_problem_->get_constraint(i);
       const int ni = constraint.num_constraint_equations();
-      Wapproximation[i].setZero(ni, ni);
+      W_approximation[i].setZero(ni, ni);
       {
         const int c = constraint.first_clique();
         const MatrixXd& A = sap_problem_->dynamics_matrix()[c];
         const MatrixXd& J = constraint.first_clique_jacobian();
-        Wapproximation[i] += J * A.ldlt().solve(J.transpose());
+        W_approximation[i] += J * A.ldlt().solve(J.transpose());
       }
       if (constraint.num_cliques() == 2) {
         const int c = constraint.second_clique();
         const MatrixXd& A = sap_problem_->dynamics_matrix()[c];
         const MatrixXd& J = constraint.second_clique_jacobian();
-        Wapproximation[i] += J * A.ldlt().solve(J.transpose());
+        W_approximation[i] += J * A.ldlt().solve(J.transpose());
       }
     }
 
@@ -479,22 +481,22 @@ class DummyModelTest : public ::testing::Test {
         VectorXd::Zero(sap_problem_->num_constraints());
     for (int i = 0; i < sap_problem_->num_constraints(); ++i) {
       W_diagonal_approximation[i] =
-          Wapproximation[i].norm() / Wapproximation[i].rows();
+          W_approximation[i].norm() / W_approximation[i].rows();
     }
 
     // Since SapModel permutes the constraints, we must ensure the result is in
     // the same ordering.
     const ContactProblemGraph& graph = sap_problem_->graph();
-    VectorXd Wdiag_expected(sap_problem_->num_constraints());
+    VectorXd W_diag_expected(sap_problem_->num_constraints());
     int i_permuted = 0;
     for (const auto& cluster : graph.clusters()) {
       for (int i : cluster.constraint_index()) {
-        Wdiag_expected[i_permuted] = W_diagonal_approximation[i];
+        W_diag_expected[i_permuted] = W_diagonal_approximation[i];
         ++i_permuted;
       }
     }
 
-    return Wdiag_expected;
+    return W_diag_expected;
   }
 
  protected:
@@ -520,9 +522,9 @@ TEST_F(DummyModelTest, VerifyData) {
   const VectorXd Ainv_sqrt = A_.diagonal().cwiseInverse().cwiseSqrt();
   EXPECT_TRUE(CompareMatrices(sap_model_->inv_sqrt_dynamics_matrix(), Ainv_sqrt,
                               kEpsilon, MatrixCompareType::relative));
-  VectorXd Wdiag_expected = CalcDelassusDiagonalApproximation();
+  VectorXd W_diag_expected = CalcDelassusDiagonalApproximation();
   const VectorXd Wdiag = SapModelTester::delassus_diagonal(*sap_model_);
-  EXPECT_TRUE(CompareMatrices(Wdiag, Wdiag_expected, kEpsilon,
+  EXPECT_TRUE(CompareMatrices(Wdiag, W_diag_expected, kEpsilon,
                               MatrixCompareType::relative));
 }
 
