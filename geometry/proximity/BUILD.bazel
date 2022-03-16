@@ -399,10 +399,12 @@ drake_cc_library(
     srcs = ["make_convex_mesh.cc"],
     hdrs = ["make_convex_mesh.h"],
     deps = [
+        ":obj_to_surface_mesh",
         ":triangle_surface_mesh",
         ":volume_mesh",
         "//common:default_scalars",
         "//common:essential",
+        "//geometry:shape_specification",
     ],
 )
 

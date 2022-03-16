@@ -70,10 +70,8 @@ TEST_P(MakeConvexFieldTest, CheckMinMaxBoundaryValue) {
 
   std::string mesh_file = FindResourceOrThrow(filename);
 
-  TriangleSurfaceMesh<double> surface_mesh =
-      ReadObjToTriangleSurfaceMesh(mesh_file);
-
-  VolumeMesh<double> volume_mesh = MakeConvexVolumeMesh<double>(surface_mesh);
+  VolumeMesh<double> volume_mesh =
+      MakeConvexVolumeMesh<double>(Convex(mesh_file));
   const double kElasticModulus = 1.0e5;
   VolumeMeshFieldLinear<double, double> pressure_field =
       MakeConvexPressureField<double>(&volume_mesh, kElasticModulus);

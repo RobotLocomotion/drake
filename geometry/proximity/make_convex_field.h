@@ -13,13 +13,13 @@ namespace internal {
 
 /*
  @pre This pressure field generation is highly dependent on the implementation
- of the capsule mesh in MakeConvexVolumeMesh(). In particular it depends on the
- last vertex in its vertex list being the sole internal vertex  and the rest of
- the vertices being boundary. If the implementation in MakeConvexVolumeMesh()
+ of the convex mesh in MakeConvexVolumeMesh(). In particular it assumes the
+ last vertex in its vertex list is the sole internal vertex  and the rest of
+ the vertices are boundary. If the implementation in MakeConvexVolumeMesh()
  were to change, this pressure field generation would also need to change.
 
- @param[in,out] mesh_C   A pointer to a tetrahedral mesh of the convex triangle
-                         mesh. It is aliased in the returned pressure field and
+ @param[in,out] mesh_C   A pointer to a tetrahedral mesh of a convex shape.
+                         It is aliased in the returned pressure field and
                          must remain alive as long as the field.
  @param[in] hydroelastic_modulus  Scale extent to pressure.
  @return                 The pressure field defined on the tetrahedral mesh.

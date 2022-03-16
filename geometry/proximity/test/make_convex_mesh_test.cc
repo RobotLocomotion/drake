@@ -31,9 +31,9 @@ class MakeConvexMeshTest : public ::testing::Test {
         ReadObjToTriangleSurfaceMesh(convex_file));
 
     cube_mesh_ = std::make_unique<VolumeMesh<double>>(
-        MakeConvexVolumeMesh<double>(*cube_tri_mesh_));
+        MakeConvexVolumeMesh<double>(Convex(cube_file)));
     convex_mesh_ = std::make_unique<VolumeMesh<double>>(
-        MakeConvexVolumeMesh<double>(*convex_tri_mesh_));
+        MakeConvexVolumeMesh<double>(Convex(convex_file)));
   }
 
  protected:

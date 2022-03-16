@@ -373,11 +373,8 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
     const Convex& convex_spec, const ProximityProperties& props) {
   PositiveDouble validator("Convex", "soft");
 
-  auto surface_mesh = ReadObjToTriangleSurfaceMesh(
-          convex_spec.filename(), convex_spec.scale());
-
   auto mesh = make_unique<VolumeMesh<double>>(
-      MakeConvexVolumeMesh<double>(surface_mesh));
+      MakeConvexVolumeMesh<double>(convex_spec));
 
   const double hydroelastic_modulus =
       validator.Extract(props, kHydroGroup, kElastic);
