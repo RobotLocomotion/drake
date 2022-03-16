@@ -73,7 +73,7 @@ extra_junk: will_be_ignored
 )""";
   const std::optional<std::string> no_child_name;
   const std::optional<StringStruct> no_defaults;
-  YamlReadArchive::Options options;
+  LoadYamlOptions options;
   options.allow_yaml_with_no_cpp = true;
   const auto result = LoadYamlString<StringStruct>(
       data, no_child_name, no_defaults, options);
@@ -94,7 +94,7 @@ extra_junk:
 )""";
   const std::optional<std::string> no_child_name;
   const MapStruct defaults;  // The defaults contains kNominalDouble already.
-  YamlReadArchive::Options options;
+  LoadYamlOptions options;
   options.allow_yaml_with_no_cpp = true;
   const auto result = LoadYamlString<MapStruct>(
       data, no_child_name, defaults, options);

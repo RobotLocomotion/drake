@@ -16,10 +16,17 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":yaml_io",
+        ":yaml_io_options",
         ":yaml_node",
         ":yaml_read_archive",
         ":yaml_write_archive",
     ],
+)
+
+drake_cc_library(
+    name = "yaml_io_options",
+    srcs = ["yaml_io_options.cc"],
+    hdrs = ["yaml_io_options.h"],
 )
 
 drake_cc_library(
@@ -36,6 +43,7 @@ drake_cc_library(
     srcs = ["yaml_read_archive.cc"],
     hdrs = ["yaml_read_archive.h"],
     deps = [
+        ":yaml_io_options",
         ":yaml_node",
         "//common:essential",
         "//common:name_value",
@@ -64,6 +72,7 @@ drake_cc_library(
     srcs = ["yaml_io.cc"],
     hdrs = ["yaml_io.h"],
     deps = [
+        ":yaml_io_options",
         ":yaml_read_archive",
         ":yaml_write_archive",
     ],

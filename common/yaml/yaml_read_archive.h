@@ -22,6 +22,7 @@
 #include "drake/common/name_value.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/unused.h"
+#include "drake/common/yaml/yaml_io_options.h"
 #include "drake/common/yaml/yaml_node.h"
 
 namespace drake {
@@ -33,32 +34,12 @@ class YamlReadArchive final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(YamlReadArchive)
 
-  /// Configuration for YamlReadArchive to govern when certain conditions are
-  /// errors or not.  Refer to the member fields for details.
-  struct Options {
-    friend std::ostream& operator<<(std::ostream& os, const Options& x);
-
-    /// Allows yaml Maps to have extra key-value pairs that are not Visited by
-    /// the Serializable being parsed into.  In other words, the Serializable
-    /// types provide an incomplete schema for the YAML data.  This allows for
-    /// parsing only a subset of the YAML data.
-    bool allow_yaml_with_no_cpp{false};
-
-    /// Allows Serializables to provide more key-value pairs than are present
-    /// in the YAML data.  In other words, the structs have default values that
-    /// are left intact unless the YAML data provides a value.
-    bool allow_cpp_with_no_yaml{false};
-
-    /// If set to true, when parsing a std::map the Archive will merge the YAML
-    /// data into the destination, instead of replacing the std::map contents
-    /// entirely.  In other words, a visited std::map can have default values
-    /// that are left intact unless the YAML data provides a value *for that
-    /// specific key*.
-    bool retain_map_defaults{false};
-  };
+  /// (To be marked deprecated as of 2022-05-01)
+  /// Compatibility alias; do not use.
+  using Options = LoadYamlOptions;
 
   /// (Internal use only.)
-  YamlReadArchive(internal::Node root, const Options& options);
+  YamlReadArchive(internal::Node root, const LoadYamlOptions& options);
 
   /// (Internal use only.)
   static internal::Node LoadFileAsNode(
@@ -568,7 +549,7 @@ class YamlReadArchive final {
 
   // When the C++ structure and YAML structure disagree, these options govern
   // which mismatches are permitted without an error.
-  const Options options_;
+  const LoadYamlOptions options_;
 
   // The set of NameValue::name keys that have been Visited by the current
   // Serializable's Accept method so far.

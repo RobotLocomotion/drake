@@ -85,7 +85,7 @@ GTEST_TEST(YamlPerformanceTest, VectorNesting) {
     // We'll set the hard limit ~20x higher than currently observed to allow
     // some flux as library implementations evolve, etc.
     test::LimitMalloc guard({.max_num_allocations = 1'000'000});
-    const YamlReadArchive::Options default_options;
+    const LoadYamlOptions default_options;
     YamlReadArchive archive(std::move(yaml_root), default_options);
     archive.Accept(&new_data);
   }
@@ -182,7 +182,7 @@ GTEST_TEST(YamlPerformanceTest, EigenMatrix) {
     // We'll set the hard limit ~20x higher than currently observed to allow
     // some flux as library implementations evolve, etc.
     test::LimitMalloc guard({.max_num_allocations = 250000});
-    const YamlReadArchive::Options default_options;
+    const LoadYamlOptions default_options;
     YamlReadArchive archive(std::move(yaml_root), default_options);
     archive.Accept(&new_data);
   }

@@ -146,7 +146,9 @@ internal::Node ConvertJbederYamlNodeToDrakeYamlNode(
 
 }  // namespace
 
-YamlReadArchive::YamlReadArchive(internal::Node root, const Options& options)
+YamlReadArchive::YamlReadArchive(
+    internal::Node root,
+    const LoadYamlOptions& options)
     : owned_root_(std::move(root)),
       root_(&owned_root_.value()),
       mapish_item_key_(nullptr),
@@ -379,15 +381,6 @@ void YamlReadArchive::PrintVisitNameType(std::ostream& s) const {
   fmt::print(s, "{} {}",
              drake::NiceTypeName::Get(*debug_visit_type_),
              debug_visit_name_);
-}
-
-std::ostream& operator<<(std::ostream& os, const YamlReadArchive::Options& x) {
-  return os << "{.allow_yaml_with_no_cpp = "
-            << x.allow_yaml_with_no_cpp
-            << ", .allow_cpp_with_no_yaml = "
-            << x.allow_cpp_with_no_yaml
-            << ", .retain_map_defaults = "
-            << x.retain_map_defaults << "}";
 }
 
 }  // namespace yaml
