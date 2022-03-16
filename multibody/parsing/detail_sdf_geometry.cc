@@ -33,6 +33,7 @@ using std::move;
 using std::set;
 using std::string;
 
+using drake::internal::DiagnosticPolicy;
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
 using geometry::ProximityProperties;
@@ -404,6 +405,7 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
 }
 
 ProximityProperties MakeProximityPropertiesForCollision(
+    const DiagnosticPolicy& diagnostic,
     const sdf::Collision& sdf_collision) {
   const sdf::ElementPtr collision_element = sdf_collision.Element();
   DRAKE_DEMAND(collision_element != nullptr);
@@ -444,7 +446,8 @@ ProximityProperties MakeProximityPropertiesForCollision(
           "one can be provided.");
     }
 
-    properties = ParseProximityProperties(read_double, is_rigid, is_compliant);
+    properties = ParseProximityProperties(
+        diagnostic, read_double, is_rigid, is_compliant);
   }
 
   // TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on
@@ -466,13 +469,13 @@ ProximityProperties MakeProximityPropertiesForCollision(
         const sdf::Element* ode_element =
             MaybeGetChildElement(*friction_element, "ode");
         if (MaybeGetChildElement(*ode_element, "mu") ||
-        MaybeGetChildElement(*ode_element, "mu2")) {
-          logging::Warn one_time(
+            MaybeGetChildElement(*ode_element, "mu2")) {
+          diagnostic.Warning(fmt::format(
+              "In <collision name='{}'>: "
               "When drake contact parameters are fully specified in the "
               "<drake:proximity_properties> tag, the <surface><friction><ode>"
-              "<mu*> tags are ignored. While parsing, there was at least one "
-              "instance where friction coefficients were defined in both "
-              "locations.");
+              "<mu*> tags are ignored.",
+              sdf_collision.Name()));
         }
       }
     }

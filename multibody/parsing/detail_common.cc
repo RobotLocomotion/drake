@@ -7,6 +7,8 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+using drake::internal::DiagnosticPolicy;
+
 DataSource::DataSource(DataSourceType type, const std::string* data)
     : type_(type), data_(data) {
   DRAKE_DEMAND(IsFilename() != IsContents());
@@ -46,6 +48,7 @@ std::string DataSource::GetStem() const {
 }
 
 geometry::ProximityProperties ParseProximityProperties(
+    const DiagnosticPolicy& diagnostic,
     const std::function<std::optional<double>(const char*)>& read_double,
     bool is_rigid, bool is_compliant) {
   using HT = geometry::internal::HydroelasticType;
@@ -73,10 +76,11 @@ geometry::ProximityProperties ParseProximityProperties(
       read_double("drake:hydroelastic_modulus");
   if (hydroelastic_modulus) {
     if (is_rigid) {
-      static const logging::Warn log_once(
-        "Rigid geometries defined with the tag drake:rigid_hydroelastic should"
-        " not contain the tag drake:hydroelastic_modulus. Any values will be"
-        " ignored.");
+      diagnostic.Warning(fmt::format(
+          "Rigid geometries defined with the tag drake:rigid_hydroelastic"
+          " should not contain the tag drake:hydroelastic_modulus. The"
+          " specified value ({}) will be ignored.",
+          *hydroelastic_modulus));
     } else {
       properties.AddProperty(kHydroGroup, kElastic, *hydroelastic_modulus);
     }

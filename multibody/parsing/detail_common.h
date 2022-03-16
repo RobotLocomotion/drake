@@ -9,6 +9,7 @@
 #include <sdf/Element.hh>
 #include <tinyxml2.h>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/plant/coulomb_friction.h"
@@ -102,6 +103,7 @@ inline CoulombFriction<double> default_friction() {
 // properties. Downstream consumers of those properties are responsible for
 // confirming that all required properties are present and well formed.
 //
+// @param diagnostic   The error-reporting channel.
 // @param read_double  The function for extracting double values for specific
 //                     named tags.
 // @param is_rigid     True if the caller detected the presence of the
@@ -111,6 +113,7 @@ inline CoulombFriction<double> default_friction() {
 // @return All proximity properties discovered via the `read_double` function.
 // @pre At most one of `is_rigid` and `is_compliant` is true.
 geometry::ProximityProperties ParseProximityProperties(
+    const drake::internal::DiagnosticPolicy& diagnostic,
     const std::function<std::optional<double>(const char*)>& read_double,
     bool is_rigid, bool is_compliant);
 

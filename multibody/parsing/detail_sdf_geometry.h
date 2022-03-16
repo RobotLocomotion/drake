@@ -7,6 +7,7 @@
 #include <sdf/Geometry.hh>
 #include <sdf/Visual.hh>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/shape_specification.h"
@@ -180,7 +181,8 @@ math::RigidTransformd MakeGeometryPoseFromSdfCollision(
  As long as no exception is thrown, the resulting ProximityProperties will have
  the ('material', 'coulomb_friction') property.  */
 geometry::ProximityProperties MakeProximityPropertiesForCollision(
-        const sdf::Collision& sdf_collision);
+    const drake::internal::DiagnosticPolicy& diagnostic,
+    const sdf::Collision& sdf_collision);
 
 /* Parses friction coefficients from `sdf_collision`.
  This method looks for the definitions specific to ODE, as given by the SDF
