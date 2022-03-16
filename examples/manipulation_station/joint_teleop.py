@@ -16,7 +16,8 @@ from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.meshcat_visualizer import \
+    ConnectMeshcatVisualizer, MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter, VectorLogSink
 from pydrake.systems.planar_scenegraph_visualizer import \
     ConnectPlanarSceneGraphVisualizer
