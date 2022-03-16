@@ -38,8 +38,7 @@ v1─────────────────────v2    v1──�
       That is:
         - The closure of the interior of the mesh is a convex set.
         - The mesh is closed and watertight.
-        - The surface normals of all faces are consistently oriented, either
-          inwardly or outwardly.
+        - The surface normals of all faces are consistently outwardly oreiented.
  @retval volume_mesh
  @tparam_nonsymbolic_scalar
  */

@@ -73,36 +73,12 @@ VolumeMesh<T> MakeConvexVolumeMesh(const Convex& convex) {
   //     - Convexity
   //     - Closure
   //     - Non-repeated vertices
-  //     - Consistently oriented face normals
-
-  // Determine the orientation of the surface face normals. Since we have the
-  // precondition that all orientations are consistent, we need only to check
-  // the orientation of one triangle.
-
-  // Bail out early for an empty mesh.
-  if (surface_mesh.num_elements() == 0) {
-    return {std::move(volume_mesh_elements), std::move(volume_mesh_vertices)};
-  }
-
-  const SurfaceTriangle& tri = surface_mesh.triangles()[0];
-
-  const Vector3d& p = surface_mesh.vertices()[tri.vertex(0)];
-  const Vector3d& q = surface_mesh.vertices()[tri.vertex(1)];
-  const Vector3d& r = surface_mesh.vertices()[tri.vertex(2)];
-
-  // Triangle pqr's normal vector.
-  const Vector3d n = (q - p).cross(r - p);
-  const bool outwardly_oriented = n.dot(p - centroid) > 0;
-
+  //     - Consistently outwardly oriented face normals
   for (const SurfaceTriangle& e : surface_mesh.triangles()) {
-    // Orient the tetrahedron such that it has positive signed volume.
-    if (outwardly_oriented) {
-      volume_mesh_elements.push_back(
-          {centroid_index, e.vertex(0), e.vertex(1), e.vertex(2)});
-    } else {
-      volume_mesh_elements.push_back(
-          {centroid_index, e.vertex(0), e.vertex(2), e.vertex(1)});
-    }
+    // Orient the tetrahedron such that it has positive signed volume (assuming
+    // outward facing normal for the surface triangle).
+    volume_mesh_elements.push_back(
+        {centroid_index, e.vertex(0), e.vertex(1), e.vertex(2)});
   }
 
   return {std::move(volume_mesh_elements), std::move(volume_mesh_vertices)};

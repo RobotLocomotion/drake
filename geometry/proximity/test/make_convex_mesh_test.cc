@@ -16,7 +16,7 @@ namespace internal {
 namespace {
 
 // Fixture to create a compliant mesh type from a simple cube mesh obj file
-// and a more compliacated general convex mesh obj.
+// and a more complicated general convex mesh obj.
 class MakeConvexMeshTest : public ::testing::Test {
  public:
   void SetUp() override {
@@ -46,49 +46,55 @@ class MakeConvexMeshTest : public ::testing::Test {
 // Tests that two triangle surface meshes are "equal" in the sense that their
 // exists a bijection between the vertices of the two meshes and a bijection
 // between the faces of the meshes (with consistent face normal orientation).
+// TODO(DamrongGuoy): Refactor to make this available outside this unit test.
+//
+// @pre Vertices in each mesh are unique. Each mesh has no duplicated vertices.
 void TestSurfaceMeshEquality(const TriangleSurfaceMesh<double>& mesh_A,
                              const TriangleSurfaceMesh<double>& mesh_B) {
   // Firstly the meshes must contain the same number of vertices and elements.
-  EXPECT_EQ(mesh_A.num_vertices(), mesh_B.num_vertices());
-  EXPECT_EQ(mesh_A.num_elements(), mesh_B.num_elements());
+  ASSERT_EQ(mesh_A.num_vertices(), mesh_B.num_vertices());
+  ASSERT_EQ(mesh_A.num_elements(), mesh_B.num_elements());
 
-  {
-    // Construct a mapping between the vertices of mesh_A and mesh_B ensure
-    // the mapping is a bijection.
+  // Construct a mapping between the vertices of mesh_A and mesh_B ensure
+  // the mapping is a bijection.
 
-    // Vertex equivalence is just numerical equivalence of coordinates.
-    auto find_vertex = [mesh_B](const Eigen::Vector3d& v) {
-      for (int i = 0; i < mesh_B.num_vertices(); ++i) {
-        if (v == mesh_B.vertex(i)) return i;
-      }
-      return -1;
-    };
-
-    std::vector<int> vertex_mapping(mesh_A.num_vertices(), -1);
-    for (int i = 0; i < mesh_A.num_vertices(); ++i) {
-      vertex_mapping[i] = find_vertex(mesh_A.vertex(i));
+  // Vertex equivalence is just numerical equivalence of coordinates.
+  auto find_vertex = [&mesh_B](const Eigen::Vector3d& vertex_coordinates) {
+    for (int i = 0; i < mesh_B.num_vertices(); ++i) {
+      if (vertex_coordinates == mesh_B.vertex(i)) return i;
     }
+    return -1;
+  };
 
-    // All vertices of mesh_A should match to some vertex of mesh_B
-    EXPECT_TRUE(std::find(vertex_mapping.begin(), vertex_mapping.end(), -1) ==
-                vertex_mapping.end());
-
-    // If the mapping is equivalent to its unique elements and doesn't contain
-    // -1, then the mapping is a bijection.
-    auto unique_it = std::unique(vertex_mapping.begin(), vertex_mapping.end());
-    int unique_size = static_cast<int>(unique_it - vertex_mapping.begin());
-    EXPECT_EQ(mesh_A.num_vertices(), unique_size);
+  std::vector<int> vertex_mapping(mesh_A.num_vertices(), -1);
+  for (int i = 0; i < mesh_A.num_vertices(); ++i) {
+    vertex_mapping[i] = find_vertex(mesh_A.vertex(i));
   }
 
-  {
-    // Construct a mapping between the elements of mesh_A and mesh_B ensure
-    // the mapping is a bijection.
+  // All vertices of mesh_A should match to some vertex of mesh_B
+  ASSERT_TRUE(std::find(vertex_mapping.begin(), vertex_mapping.end(), -1) ==
+              vertex_mapping.end());
 
-    // Two elements are equal if they contain the same vertex indices and have
-    // the same winding order (face normals are in the same direction).
-    auto find_element = [mesh_A, mesh_B](int index) {
-      SurfaceTriangle t = mesh_A.element(index);
-      SortedTriplet t_sorted(t.vertex(0), t.vertex(1), t.vertex(2));
+  // If the mapping is equivalent to its unique elements and doesn't contain
+  // -1, then the mapping is a bijection.
+  std::vector<int> sorted_vertex_mapping(vertex_mapping);
+  std::sort(sorted_vertex_mapping.begin(), sorted_vertex_mapping.end());
+  auto unique_vertex_it =
+      std::unique(sorted_vertex_mapping.begin(), sorted_vertex_mapping.end());
+  int unique_vertex_size =
+      static_cast<int>(unique_vertex_it - sorted_vertex_mapping.begin());
+  ASSERT_EQ(mesh_A.num_vertices(), unique_vertex_size);
+
+  // Construct a mapping between the elements of mesh_A and mesh_B ensure
+  // the mapping is a bijection.
+
+  // Two elements are equal if they contain the same vertex indices and have
+  // the same winding order (face normals are in the same direction).
+  auto find_element = [&mesh_A, &mesh_B, &vertex_mapping](int index) {
+    SurfaceTriangle t = mesh_A.element(index);
+      SortedTriplet t_sorted(vertex_mapping[t.vertex(0)],
+                             vertex_mapping[t.vertex(1)],
+                             vertex_mapping[t.vertex(2)]);
       for (int i = 0; i < mesh_B.num_elements(); ++i) {
         const SurfaceTriangle& u = mesh_B.element(i);
         SortedTriplet u_sorted(u.vertex(0), u.vertex(1), u.vertex(2));
@@ -98,25 +104,27 @@ void TestSurfaceMeshEquality(const TriangleSurfaceMesh<double>& mesh_A,
         }
       }
       return -1;
-    };
+  };
 
-    std::vector<int> element_mapping(mesh_A.num_elements(), -1);
+  std::vector<int> element_mapping(mesh_A.num_elements(), -1);
 
-    for (int i = 0; i < mesh_A.num_elements(); ++i) {
-      element_mapping[i] = find_element(i);
-    }
-
-    // All faces of mesh_A should match to some face of mesh_B
-    EXPECT_TRUE(std::find(element_mapping.begin(), element_mapping.end(), -1) ==
-                element_mapping.end());
-
-    // If the mapping is equivalent to its unique elements and doesn't contain
-    // -1, then the mapping is a bijection.
-    auto unique_it =
-        std::unique(element_mapping.begin(), element_mapping.end());
-    int unique_size = static_cast<int>(unique_it - element_mapping.begin());
-    EXPECT_EQ(mesh_A.num_elements(), unique_size);
+  for (int i = 0; i < mesh_A.num_elements(); ++i) {
+    element_mapping[i] = find_element(i);
   }
+
+  // All faces of mesh_A should match to some face of mesh_B
+  ASSERT_TRUE(std::find(element_mapping.begin(), element_mapping.end(), -1) ==
+              element_mapping.end());
+
+  // If the mapping is equivalent to its unique elements and doesn't contain
+  // -1, then the mapping is a bijection.
+  std::vector<int> sorted_element_mapping(element_mapping);
+  std::sort(element_mapping.begin(), element_mapping.end());
+  auto unique_element_it =
+      std::unique(sorted_element_mapping.begin(), sorted_element_mapping.end());
+  int unique_element_size =
+      static_cast<int>(unique_element_it - sorted_element_mapping.begin());
+  ASSERT_EQ(mesh_A.num_elements(), unique_element_size);
 }
 
 // Tests that the vertices of the produced volume mesh are coherent with the
@@ -125,11 +133,13 @@ void TestSurfaceMeshEquality(const TriangleSurfaceMesh<double>& mesh_A,
 // one internal vertex that closes the volume. This tests that all vertices
 // except the final vertex of the created volume mesh exist in the triangle
 // mesh as well as testing that the single internal vertex is indeed internal.
+//
+// @pre The input `tri_mesh` has outward face normals.
 void TestCoherentVertices(const TriangleSurfaceMesh<double>& tri_mesh,
                           const VolumeMesh<double>& vol_mesh) {
   const Eigen::Vector3d& internal_vertex = vol_mesh.vertices().back();
 
-  auto find_vertex = [tri_mesh](const Eigen::Vector3d& v) {
+  auto find_vertex = [&tri_mesh](const Eigen::Vector3d& v) {
     for (int i = 0; i < tri_mesh.num_vertices(); ++i) {
       if (v == tri_mesh.vertex(i)) {
         return i;
@@ -140,16 +150,16 @@ void TestCoherentVertices(const TriangleSurfaceMesh<double>& tri_mesh,
 
   // All but the last vertex should exist in the triangle mesh.
   for (int i = 0; i < vol_mesh.num_vertices() - 1; ++i) {
-    EXPECT_NE(find_vertex(vol_mesh.vertex(i)), -1);
+    ASSERT_NE(find_vertex(vol_mesh.vertex(i)), -1);
   }
 
-  EXPECT_EQ(find_vertex(internal_vertex), -1);
+  ASSERT_EQ(find_vertex(internal_vertex), -1);
 
-  // The last vertex should be on the interior of the triangle mesh.
+  // The last vertex should be in the interior of the triangle mesh.
   for (int i = 0; i < tri_mesh.num_elements(); ++i) {
     const Eigen::Vector3d p =
         tri_mesh.vertex(tri_mesh.element(i).vertex(0)) - internal_vertex;
-    EXPECT_GE(tri_mesh.face_normal(i).dot(p), 0);
+    ASSERT_GE(tri_mesh.face_normal(i).dot(p), 0);
   }
 }
 
