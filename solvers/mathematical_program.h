@@ -3218,8 +3218,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Setter for the scaling of decision variables starting from index @p
-   * idx_start to @p idx_end (including @p idx_end).
+   * Setter for the scaling @p s of decision variable @p var.
    * @param var the decision variable to be scaled.
    * @param s scaling factor (must be positive).
    *
