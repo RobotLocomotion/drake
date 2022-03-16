@@ -46,6 +46,25 @@ template <typename T>
 geometry::VolumeMesh<T> MakeDiamondCubicBoxVolumeMesh(const geometry::Box& box,
                                                       double resolution_hint);
 
+/* Generates a volume mesh of an octahedron comprising of eight tetrahedral
+ elements with vertices on the coordinate axes and the origin like this:
+
+                +Z   -X
+                 |   /
+              v5 ●  ● v3
+                 | /
+       v4     v0 |/
+  -Y----●--------●------●----+Y
+                /|      v2
+               / |
+           v1 ●  ● v6
+             /   |
+           +X    |
+                -Z
+ @tparam_nonsymbolic_scalar */
+template <typename T>
+geometry::VolumeMesh<T> MakeOctahedronVolumeMesh();
+
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake
