@@ -44,6 +44,7 @@ namespace multibody {
 namespace internal {
 
 using drake::internal::DiagnosticDetail;
+using drake::internal::DiagnosticPolicy;
 using Eigen::Matrix3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
@@ -157,67 +158,90 @@ RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
                                    I(1, 0), I(2, 0), I(2, 1));
 }
 
-void EmitError(std::ostream& out, const sdf::Error& e) {
-  // Adapted from: https://github.com/ignitionrobotics/sdformat/blob/sdformat12_12.3.0/src/Utils.cc#L110-L134
-  // N.B. This provides slightly different information than the nominal
-  // operator<< for sdf::Error.
-  if (!e.XmlPath().has_value()) {
-    out << e.Message();
-  } else if (!e.FilePath().has_value()) {
-    out
-        << "[" << e.XmlPath().value()
-        << "]: " << e.Message();
-  } else if (!e.LineNumber().has_value()) {
-    out
-        << "[" << e.XmlPath().value()
-        << ":" << e.FilePath().value()
-        << "]: " << e.Message();
-  } else {
-    out
-        << "[" << e.XmlPath().value()
-        << ":" << e.FilePath().value()
-        << ":L" << e.LineNumber().value()
-        << "]: " << e.Message();
+// Copies all `errors` into `diagnostic`.
+// Returns true if there were any errors.
+bool PropagateErrors(
+    const sdf::Errors& errors,
+    const DiagnosticPolicy& diagnostic) {
+  if (errors.empty()) {
+    return false;
   }
+  for (const auto& e : errors) {
+    DiagnosticDetail detail;
+    detail.filename = e.FilePath();
+    detail.line = e.LineNumber();
+    if (e.XmlPath().has_value()) {
+      detail.message = fmt::format(
+          "At XML path {}: {}", e.XmlPath().value(), e.Message());
+    } else {
+      detail.message = e.Message();
+    }
+    switch (e.Code()) {
+      case sdf::ErrorCode::NONE: {
+        // TODO(jwnimmer-tri) Not covered by unit tests, because our
+        // URDF parser doesn't ever emit any warnings yet.
+        diagnostic.Warning(detail);
+        break;
+      }
+      default: {
+        diagnostic.Error(detail);
+        break;
+      }
+    }
+  }
+  return true;
 }
 
-// Throws an exception if there are any errors present in the `errors` list.
-void ThrowAnyErrors(const sdf::Errors& errors) {
-  if (!errors.empty()) {
-    std::ostringstream os;
-    os << "From AddModelFromSdfFile():";
-    for (const auto& e : errors) {
-      os << "\nError: ";
-      EmitError(os, e);
-    }
-    throw std::runtime_error(os.str());
+// Move-appends all `input_errors` onto `output_errors`.
+// Returns true if there were any errors.
+bool PropagateErrors(
+    sdf::Errors&& input_errors,
+    sdf::Errors* output_errors) {
+  if (input_errors.empty()) {
+    return false;
   }
+  for (auto& e : input_errors) {
+    output_errors->push_back(std::move(e));
+  }
+  return true;
 }
 
 // This takes an `sdf::SemanticPose`, which defines a pose relative to a frame,
 // and resolves its value with respect to another frame.
 math::RigidTransformd ResolveRigidTransform(
+    const DiagnosticPolicy& diagnostic,
     const sdf::SemanticPose& semantic_pose,
     const std::string& relative_to = "") {
   ignition::math::Pose3d pose;
-  ThrowAnyErrors(semantic_pose.Resolve(pose, relative_to));
+  sdf::Errors errors = semantic_pose.Resolve(pose, relative_to);
+  PropagateErrors(errors, diagnostic);
   return ToRigidTransform(pose);
 }
 
-Eigen::Vector3d ResolveAxisXyz(const sdf::JointAxis& axis) {
+Eigen::Vector3d ResolveAxisXyz(
+    const DiagnosticPolicy& diagnostic,
+    const sdf::JointAxis& axis) {
   ignition::math::Vector3d xyz;
-  ThrowAnyErrors(axis.ResolveXyz(xyz));
+  sdf::Errors errors = axis.ResolveXyz(xyz);
+  PropagateErrors(errors, diagnostic);
   return ToVector3(xyz);
 }
 
-std::string ResolveJointParentLinkName(const sdf::Joint& joint) {
+std::string ResolveJointParentLinkName(
+    const DiagnosticPolicy& diagnostic,
+    const sdf::Joint& joint) {
   std::string link;
-  ThrowAnyErrors(joint.ResolveParentLink(link));
+  sdf::Errors errors = joint.ResolveParentLink(link);
+  PropagateErrors(errors, diagnostic);
   return link;
 }
-std::string ResolveJointChildLinkName(const sdf::Joint& joint) {
+
+std::string ResolveJointChildLinkName(
+    const DiagnosticPolicy& diagnostic,
+    const sdf::Joint& joint) {
   std::string link;
-  ThrowAnyErrors(joint.ResolveChildLink(link));
+  sdf::Errors errors = joint.ResolveChildLink(link);
+  PropagateErrors(errors, diagnostic);
   return link;
 }
 
@@ -280,8 +304,10 @@ const Body<double>& GetBodyByLinkSpecificationName(
 }
 
 // Extracts a Vector3d representation of the joint axis for joints with an axis.
-Vector3d ExtractJointAxis(const sdf::Model& model_spec,
-                          const sdf::Joint& joint_spec) {
+Vector3d ExtractJointAxis(
+    const DiagnosticPolicy& diagnostic,
+    const sdf::Model& model_spec,
+    const sdf::Joint& joint_spec) {
   unused(model_spec);
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
       joint_spec.Type() == sdf::JointType::PRISMATIC);
@@ -294,7 +320,7 @@ Vector3d ExtractJointAxis(const sdf::Model& model_spec,
   }
 
   // Joint axis in the joint frame J.
-  Vector3d axis_J = ResolveAxisXyz(*axis);
+  Vector3d axis_J = ResolveAxisXyz(diagnostic, *axis);
   return axis_J;
 }
 
@@ -470,20 +496,23 @@ std::tuple<double, double, double, double> ParseJointLimits(
 // Helper method to add joints to a MultibodyPlant given an sdf::Joint
 // specification object.
 void AddJointFromSpecification(
+    const DiagnosticPolicy& diagnostic,
     const sdf::Model& model_spec, const RigidTransformd& X_WM,
     const sdf::Joint& joint_spec, ModelInstanceIndex model_instance,
     MultibodyPlant<double>* plant,
     std::set<sdf::JointType>* joint_types) {
   const Body<double>& parent_body = GetBodyByLinkSpecificationName(
-      ResolveJointParentLinkName(joint_spec), model_instance, *plant);
+      ResolveJointParentLinkName(diagnostic, joint_spec), model_instance,
+      *plant);
   const Body<double>& child_body = GetBodyByLinkSpecificationName(
-      ResolveJointChildLinkName(joint_spec), model_instance, *plant);
+      ResolveJointChildLinkName(diagnostic, joint_spec), model_instance,
+      *plant);
 
   // Get the pose of frame J in the frame of the child link C, as specified in
   // <joint> <pose> ... </pose></joint>. The default `relative_to` pose of a
   // joint will be the child link.
   const RigidTransformd X_CJ = ResolveRigidTransform(
-      joint_spec.SemanticPose(),
+      diagnostic, joint_spec.SemanticPose(),
       GetRelativeBodyName(child_body, model_instance, *plant));
 
   // Pose of the frame J in the parent body frame P.
@@ -492,12 +521,12 @@ void AddJointFromSpecification(
   // a "world" link from which we can request its pose (which in that case would
   // be the identity).
   if (parent_body.index() == world_index()) {
-    const RigidTransformd X_MJ =
-        ResolveRigidTransform(joint_spec.SemanticPose(), "__model__");
+    const RigidTransformd X_MJ = ResolveRigidTransform(
+        diagnostic, joint_spec.SemanticPose(), "__model__");
     X_PJ = X_WM * X_MJ;  // Since P == W.
   } else {
     X_PJ = ResolveRigidTransform(
-        joint_spec.SemanticPose(),
+        diagnostic, joint_spec.SemanticPose(),
         GetRelativeBodyName(parent_body, model_instance, *plant));
   }
 
@@ -522,7 +551,7 @@ void AddJointFromSpecification(
     }
     case sdf::JointType::PRISMATIC: {
       const double damping = ParseJointDamping(joint_spec);
-      Vector3d axis_J = ExtractJointAxis(model_spec, joint_spec);
+      Vector3d axis_J = ExtractJointAxis(diagnostic, model_spec, joint_spec);
       std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
           ParseJointLimits(joint_spec);
       const auto& joint = plant->AddJoint<PrismaticJoint>(
@@ -538,7 +567,7 @@ void AddJointFromSpecification(
     }
     case sdf::JointType::REVOLUTE: {
       const double damping = ParseJointDamping(joint_spec);
-      Vector3d axis_J = ExtractJointAxis(model_spec, joint_spec);
+      Vector3d axis_J = ExtractJointAxis(diagnostic, model_spec, joint_spec);
       std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
           ParseJointLimits(joint_spec);
       const auto& joint = plant->AddJoint<RevoluteJoint>(
@@ -579,15 +608,15 @@ void AddJointFromSpecification(
 
 // Helper method to load an SDF file and read the contents into an sdf::Root
 // object.
-void LoadSdf(
+[[nodiscard]] sdf::Errors LoadSdf(
     sdf::Root* root,
     const DataSource& data_source,
     const sdf::ParserConfig& parser_config) {
   if (data_source.IsFilename()) {
     const std::string full_path = data_source.GetAbsolutePath();
-    ThrowAnyErrors(root->Load(full_path, parser_config));
+    return root->Load(full_path, parser_config);
   } else {
-    ThrowAnyErrors(root->LoadSdfString(data_source.contents(), parser_config));
+    return root->LoadSdfString(data_source.contents(), parser_config);
   }
 }
 
@@ -599,6 +628,7 @@ struct LinkInfo {
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 std::vector<LinkInfo> AddLinksFromSpecification(
+    const DiagnosticPolicy& diagnostic,
     const ModelInstanceIndex model_instance,
     const sdf::Model& model,
     const RigidTransformd& X_WM,
@@ -627,7 +657,8 @@ std::vector<LinkInfo> AddLinksFromSpecification(
         plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
 
     // Register information.
-    const RigidTransformd X_ML = ResolveRigidTransform(link.SemanticPose());
+    const RigidTransformd X_ML = ResolveRigidTransform(
+        diagnostic, link.SemanticPose());
     const RigidTransformd X_WL = X_WM * X_ML;
     link_infos.push_back(LinkInfo{&body, X_WL});
 
@@ -652,7 +683,7 @@ std::vector<LinkInfo> AddLinksFromSpecification(
            ++visual_index) {
         const sdf::Visual& sdf_visual = *link.VisualByIndex(visual_index);
         const RigidTransformd X_LG = ResolveRigidTransform(
-            sdf_visual.SemanticPose());
+            diagnostic, sdf_visual.SemanticPose());
         unique_ptr<GeometryInstance> geometry_instance =
             MakeGeometryInstanceFromSdfVisual(
                 sdf_visual, resolve_filename, X_LG);
@@ -681,7 +712,7 @@ std::vector<LinkInfo> AddLinksFromSpecification(
             MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename);
         if (shape != nullptr) {
           const RigidTransformd X_LG = ResolveRigidTransform(
-              sdf_collision.SemanticPose());
+              diagnostic, sdf_collision.SemanticPose());
           const RigidTransformd X_LC =
               MakeGeometryPoseFromSdfCollision(sdf_collision, X_LG);
           geometry::ProximityProperties props =
@@ -697,11 +728,12 @@ std::vector<LinkInfo> AddLinksFromSpecification(
 }
 
 const Frame<double>& AddFrameFromSpecification(
+    const DiagnosticPolicy& diagnostic,
     const sdf::Frame& frame_spec, ModelInstanceIndex model_instance,
     const Frame<double>& default_frame, MultibodyPlant<double>* plant) {
   const Frame<double>* parent_frame{};
   const RigidTransformd X_PF = ResolveRigidTransform(
-      frame_spec.SemanticPose(), frame_spec.AttachedTo());
+      diagnostic, frame_spec.SemanticPose(), frame_spec.AttachedTo());
   if (frame_spec.AttachedTo().empty()) {
     parent_frame = &default_frame;
   } else {
@@ -734,18 +766,22 @@ const Frame<double>& AddFrameFromSpecification(
         // whatever is referenced by the `attached_to` attribute. Since this is
         // a body, we're assured that its implicit frame exists in the plant.
         std::string resolved_attached_to_body_name;
-        ThrowAnyErrors(
-            frame_spec.ResolveAttachedToBody(resolved_attached_to_body_name));
-
+        sdf::Errors errors = frame_spec.ResolveAttachedToBody(
+            resolved_attached_to_body_name);
+        PropagateErrors(errors, diagnostic);
         const std::string resolved_attached_to_body_absolute_name =
             parsing::PrefixName(
                 parsing::GetInstanceScopeName(*plant, model_instance),
                 resolved_attached_to_body_name);
         parent_frame = parsing::GetScopedFrameByNameMaybe(
             *plant, resolved_attached_to_body_absolute_name);
-        DRAKE_DEMAND(nullptr != parent_frame);
       }
     }
+  }
+  if (parent_frame == nullptr) {
+    // TODO(jwnimmer-tri) Not covered by unit tests.
+    diagnostic.Error("Could not find parent frame");
+    parent_frame = &plant->world_frame();
   }
   const Frame<double>& frame =
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
@@ -916,6 +952,7 @@ void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 std::vector<ModelInstanceIndex> AddModelsFromSpecification(
+    const DiagnosticPolicy& diagnostic,
     const sdf::Model& model,
     const std::string& model_name,
     const RigidTransformd& X_WP,
@@ -929,7 +966,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
   // "P" is the parent frame. If the model is in a child of //world or //sdf,
   // this will be the world frame. Otherwise, this will be the parent model
   // frame.
-  const RigidTransformd X_PM = ResolveRigidTransform(model.SemanticPose());
+  const RigidTransformd X_PM = ResolveRigidTransform(
+      diagnostic, model.SemanticPose());
   const RigidTransformd X_WM = X_WP * X_PM;
 
   // Add nested models at root-level of <model>.
@@ -941,7 +979,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     const sdf::Model& nested_model = *model.ModelByIndex(model_index);
     std::vector<ModelInstanceIndex> nested_model_instances =
         AddModelsFromSpecification(
-            nested_model, sdf::JoinName(model_name, nested_model.Name()), X_WM,
+            diagnostic, nested_model,
+            sdf::JoinName(model_name, nested_model.Name()), X_WM,
             plant, package_map, root_dir);
 
     added_model_instances.insert(added_model_instances.end(),
@@ -951,7 +990,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
 
   drake::log()->trace("sdf_parser: Add links");
   std::vector<LinkInfo> added_link_infos = AddLinksFromSpecification(
-      model_instance, model, X_WM, plant, package_map, root_dir);
+      diagnostic, model_instance, model, X_WM, plant, package_map, root_dir);
 
   // Add the SDF "model frame" given the model name so that way any frames added
   // to the plant are associated with this current model instance.
@@ -970,7 +1009,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
       const Frame<double>& canonical_link_frame =
           plant->GetFrameByName(local_name, parent_model_instance);
       const RigidTransformd X_LcM = ResolveRigidTransform(
-          model.SemanticPose(),
+          diagnostic, model.SemanticPose(),
           sdf::JoinName(model.Name(), canonical_link_name));
 
       return plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
@@ -990,7 +1029,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     // Get a pointer to the SDF joint, and the joint axis information.
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
     AddJointFromSpecification(
-        model, X_WM, joint, model_instance, plant, &joint_types);
+        diagnostic, model, X_WM, joint, model_instance, plant, &joint_types);
   }
 
   drake::log()->trace("sdf_parser: Add explicit frames");
@@ -998,7 +1037,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
   for (uint64_t frame_index = 0; frame_index < model.FrameCount();
        ++frame_index) {
     const sdf::Frame& frame = *model.FrameByIndex(frame_index);
-    AddFrameFromSpecification(frame, model_instance, model_frame, plant);
+    AddFrameFromSpecification(
+        diagnostic, frame, model_instance, model_frame, plant);
   }
 
   drake::log()->trace("sdf_parser: Add drake custom joints");
@@ -1129,6 +1169,17 @@ void AddJointsToInterfaceModel(const MultibodyPlant<double>& plant,
 sdf::ParserConfig MakeSdfParserConfig(
     const PackageMap&, MultibodyPlant<double>*, bool test_sdf_forced_nesting);
 
+sdf::Error MakeSdfError(sdf::ErrorCode code, const DiagnosticDetail& detail) {
+  sdf::Error result(code, detail.message);
+  if (detail.filename.has_value()) {
+    result.SetFilePath(*detail.filename);
+  }
+  if (detail.line.has_value()) {
+    result.SetLineNumber(*detail.line);
+  }
+  return result;
+}
+
 // This assumes that parent models will have their parsing start before child
 // models! This is a safe assumption because we only encounter nested models
 // when force testing SDFormat files and libsdformat parses models in a top-down
@@ -1158,18 +1209,22 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   }
 
   DataSource data_source(DataSource::kFilename, &include.ResolvedFileName());
+  drake::internal::DiagnosticPolicy diagnostic;
+  diagnostic.SetActionForWarnings(
+      [&errors](const DiagnosticDetail& detail) {
+        errors->emplace_back(MakeSdfError(
+            sdf::ErrorCode::NONE, detail));
+      });
+  diagnostic.SetActionForErrors(
+      [&errors](const DiagnosticDetail& detail) {
+        errors->emplace_back(MakeSdfError(
+            sdf::ErrorCode::ELEMENT_INVALID, detail));
+      });
 
   ModelInstanceIndex main_model_instance;
   // New instances will have indices starting from cur_num_models
   int cur_num_models = plant->num_model_instances();
   if (is_urdf) {
-    // TODO(rpoyner-tri): integrate with overall diagnostic policy.
-    drake::internal::DiagnosticPolicy diagnostic;
-    diagnostic.SetActionForErrors(
-        [&errors](const DiagnosticDetail& detail) {
-          errors->emplace_back(sdf::ErrorCode::ELEMENT_INVALID,
-                               detail.FormatError());
-        });
     ParsingWorkspace workspace{package_map, diagnostic, plant};
     const std::optional<ModelInstanceIndex> maybe_model =
         AddModelFromUrdf(data_source, include.LocalModelName().value_or(""),
@@ -1195,20 +1250,23 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
         "__model__", canonical_link_frame, RigidTransformd::Identity(),
         main_model_instance));
   } else {
-    // N.B. Errors will just happen via thrown exceptions.
     DRAKE_DEMAND(is_forced_nesting);
     // Since this is just for testing, we'll assume that there wouldn't be
     // another included model that requires a custom parser.
     sdf::Root root;
 
-    LoadSdf(&root, data_source, parser_config);
+    sdf::Errors inner_errors = LoadSdf(&root, data_source, parser_config);
+    if (PropagateErrors(std::move(inner_errors), errors)) {
+      return nullptr;
+    }
     DRAKE_DEMAND(nullptr != root.Model());
     const sdf::Model &model = *root.Model();
 
     const std::string model_name =
         include.LocalModelName().value_or(model.Name());
     main_model_instance = AddModelsFromSpecification(
-        model, sdf::JoinName(include.AbsoluteParentName(), model_name), {},
+        diagnostic, model,
+        sdf::JoinName(include.AbsoluteParentName(), model_name), {},
         plant, package_map, data_source.GetRootDir()).front();
   }
 
@@ -1226,15 +1284,16 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   // their "child" models.
   for (ModelInstanceIndex model_instance(cur_num_models);
        model_instance < plant->num_model_instances(); ++model_instance) {
-    sdf::RepostureFunction reposture_model = [plant, model_instance](
+    sdf::RepostureFunction reposture_model = [plant, model_instance, errors](
         const sdf::InterfaceModelPoseGraph &graph) {
       // N.B. This should also posture the model appropriately.
       for (auto interface_link_ind : plant->GetBodyIndices(model_instance)) {
         const auto& interface_link = plant->get_body(interface_link_ind);
 
         ignition::math::Pose3d X_WL;
-        ThrowAnyErrors(
-            graph.ResolveNestedFramePose(X_WL, interface_link.name()));
+        sdf::Errors inner_errors = graph.ResolveNestedFramePose(
+            X_WL, interface_link.name());
+        PropagateErrors(std::move(inner_errors), errors);
         plant->SetDefaultFreeBodyPose(interface_link, ToRigidTransform(X_WL));
       }
     };
@@ -1312,21 +1371,22 @@ sdf::ParserConfig MakeSdfParserConfig(
 }
 }  // namespace
 
-ModelInstanceIndex AddModelFromSdf(
+std::optional<ModelInstanceIndex> AddModelFromSdf(
     const DataSource& data_source,
     const std::string& model_name_in,
-    const PackageMap& package_map,
-    MultibodyPlant<double>* plant,
+    const ParsingWorkspace& workspace,
     bool test_sdf_forced_nesting) {
-  DRAKE_THROW_UNLESS(plant != nullptr);
-    DRAKE_THROW_UNLESS(!plant->is_finalized());
+  DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
-  sdf::ParserConfig parser_config =
-      MakeSdfParserConfig(package_map, plant, test_sdf_forced_nesting);
+  sdf::ParserConfig parser_config = MakeSdfParserConfig(
+      workspace.package_map, workspace.plant, test_sdf_forced_nesting);
 
   sdf::Root root;
 
-  LoadSdf(&root, data_source, parser_config);
+  sdf::Errors errors = LoadSdf(&root, data_source, parser_config);
+  if (PropagateErrors(errors, workspace.diagnostic)) {
+    return std::nullopt;
+  }
 
   if (root.Model() == nullptr) {
     throw std::runtime_error("File must have a single <model> element.");
@@ -1338,8 +1398,9 @@ ModelInstanceIndex AddModelFromSdf(
       model_name_in.empty() ? model.Name() : model_name_in;
 
   std::vector<ModelInstanceIndex> added_model_instances =
-      AddModelsFromSpecification(model, model_name, {}, plant, package_map,
-                                 data_source.GetRootDir());
+      AddModelsFromSpecification(
+          workspace.diagnostic, model, model_name, {}, workspace.plant,
+          workspace.package_map, data_source.GetRootDir());
 
   DRAKE_DEMAND(!added_model_instances.empty());
   return added_model_instances.front();
@@ -1347,18 +1408,19 @@ ModelInstanceIndex AddModelFromSdf(
 
 std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const DataSource& data_source,
-    const PackageMap& package_map,
-    MultibodyPlant<double>* plant,
+    const ParsingWorkspace& workspace,
     bool test_sdf_forced_nesting) {
-  DRAKE_THROW_UNLESS(plant != nullptr);
-  DRAKE_THROW_UNLESS(!plant->is_finalized());
+  DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
-  sdf::ParserConfig parser_config =
-      MakeSdfParserConfig(package_map, plant, test_sdf_forced_nesting);
+  sdf::ParserConfig parser_config = MakeSdfParserConfig(
+      workspace.package_map, workspace.plant, test_sdf_forced_nesting);
 
   sdf::Root root;
 
-  LoadSdf(&root, data_source, parser_config);
+  sdf::Errors errors = LoadSdf(&root, data_source, parser_config);
+  if (PropagateErrors(errors, workspace.diagnostic)) {
+    return {};
+  }
 
   // There either must be exactly one model, or exactly one world.
 #pragma GCC diagnostic push
@@ -1383,8 +1445,9 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const sdf::Model& model = *root.Model();
 
     std::vector<ModelInstanceIndex> added_model_instances =
-        AddModelsFromSpecification(model, model.Name(), {}, plant,
-                                   package_map, data_source.GetRootDir());
+        AddModelsFromSpecification(
+            workspace.diagnostic, model, model.Name(), {}, workspace.plant,
+            workspace.package_map, data_source.GetRootDir());
     model_instances.insert(model_instances.end(),
                            added_model_instances.begin(),
                            added_model_instances.end());
@@ -1402,8 +1465,9 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
       // Get the model.
       const sdf::Model& model = *world.ModelByIndex(model_index);
       std::vector<ModelInstanceIndex> added_model_instances =
-          AddModelsFromSpecification(model, model.Name(), {}, plant,
-                                     package_map, data_source.GetRootDir());
+          AddModelsFromSpecification(
+              workspace.diagnostic, model, model.Name(), {}, workspace.plant,
+              workspace.package_map, data_source.GetRootDir());
       model_instances.insert(model_instances.end(),
                              added_model_instances.begin(),
                              added_model_instances.end());
@@ -1413,7 +1477,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
         ++frame_index) {
       const sdf::Frame& frame = *world.FrameByIndex(frame_index);
       AddFrameFromSpecification(
-          frame, world_model_instance(), plant->world_frame(), plant);
+          workspace.diagnostic, frame, world_model_instance(),
+          workspace.plant->world_frame(), workspace.plant);
     }
   }
 
