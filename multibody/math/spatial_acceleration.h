@@ -90,8 +90,8 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// @param[in] offset which is the position vector p_BoCo_E from Bo (frame B's
   /// origin) to Co (frame C's origin), expressed in frame E. p_BoCo_E must have
   /// the same expressed-in frame E as `this` spatial acceleration.
-  /// @param[in] omega which is ω_MB_E, frame B's angular velocity measured in
-  /// frame W and expressed in frame E.
+  /// @param[in] angular_velocity_of_this_frame which is ω_MB_E, frame B's
+  /// angular velocity measured in frame W and expressed in frame E.
   /// @retval A_MC_E reference to `this` spatial acceleration which has been
   /// modified to be frame C's spatial acceleration measured in frame M and
   /// expressed in frame E. The components of A_MC_E are calculated as: <pre>
@@ -128,10 +128,11 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   ///   DtM(p_BoCo) = DtB(p_BoCo) + ω_MB x p_BoCo
   ///               =          0  + ω_MB x p_BoCo
   /// </pre>
-  SpatialAcceleration<T>& ShiftInPlace(const Vector3<T>& offset,
-                                       const Vector3<T>& omega) {
+  SpatialAcceleration<T>& ShiftInPlace(
+      const Vector3<T>& offset,
+      const Vector3<T>& angular_velocity_of_this_frame) {
     const Vector3<T>& p_BoCo_E = offset;
-    const Vector3<T>& w_MB_E = omega;
+    const Vector3<T>& w_MB_E = angular_velocity_of_this_frame;
     // Frame B's angular acceleration measured in frame M, expressed in frame M.
     const Vector3<T>& alpha_MB_E = this->rotational();
     // Calculate point Co's translational acceleration measured in M.
@@ -149,14 +150,16 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// origin) to Co (frame C's origin), expressed in frame E. p_BoCo_E must have
   /// the same expressed-in frame E as `this` spatial acceleration, where `this`
   /// is A_MB_E (frame B's spatial acceleration measured in M, expressed in E).
-  /// @param[in] omega which is ω_MB_E, frame B's angular velocity measured in
-  /// frame W and expressed in frame E.
+  /// @param[in] angular_velocity_of_this_frame which is ω_MB_E, frame B's
+  /// angular velocity measured in frame M and expressed in frame E.
   /// @retval A_MC_E which is frame C's spatial acceleration measured in
   /// frame M, expressed in frame E.
   /// @see ShiftInPlace() for more information and how A_MC_E is calculated.
-  SpatialAcceleration<T> Shift(const Vector3<T>& offset,
-                               const Vector3<T>& omega) const {
-    return SpatialAcceleration<T>(*this).ShiftInPlace(offset, omega);
+  SpatialAcceleration<T> Shift(
+      const Vector3<T>& offset,
+      const Vector3<T>& angular_velocity_of_this_frame) const {
+    return SpatialAcceleration<T>(*this).ShiftInPlace(
+        offset, angular_velocity_of_this_frame);
   }
 
   /// (Advanced) Given `this` spatial acceleration `A_MB` of a frame B measured
@@ -193,8 +196,8 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// from Bo (frame B's origin) to Co (frame C's origin), expressed in frame E.
   /// p_BoCo_E must have the same expressed-in frame E as `this`, where `this`
   /// is A_MB_E (frame B's spatial acceleration measured in M, expressed in E).
-  /// @param[in] omega which is ω_MB_E, frame B's angular velocity measured in
-  /// frame W and expressed in frame E.
+  /// @param[in] angular_velocity_of_this_frame which is ω_MB_E, frame B's
+  /// angular velocity measured in frame W and expressed in frame E.
   /// @param[in] velocity_of_moving_frame which is V_BC_E, frame C's spatial
   /// velocity measured in frame B, expressed in frame E.
   /// @param[in] acceleration_of_moving_frame which is A_BC_E, frame C's
@@ -259,7 +262,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   ///  DtM(v_BCo)  = DtB(v_BCo)  + ω_MB x v_BCo
   ///              =     a_BCo   + ω_MB x v_BCo
   /// </pre>
-  /// Combining the last few equations proves the formula for a_MCo as <pre>
+  /// Combining the last few equations proves the formula for a_MCo as: <pre>
   ///   a_MCo = a_MBo + α_MB x p_BoCo + ω_MB x (ω_MB x p_BoCo)
   ///         + 2 ω_MB x v_BCo + a_BCo                           (End of proof).
   /// </pre>
@@ -283,7 +286,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// </pre>
   SpatialAcceleration<T> ComposeWithMovingFrameAcceleration(
       const Vector3<T>& position_of_moving_frame,
-      const Vector3<T>& omega,
+      const Vector3<T>& angular_velocity_of_this_frame,
       const SpatialVelocity<T>& velocity_of_moving_frame,
       const SpatialAcceleration<T>& acceleration_of_moving_frame) const {
     // This operation can be written in a compact form using the rigid shift
@@ -295,7 +298,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
     //                               ^^^^^^^^^^^          ^^^^^^^^
     //                               centrifugal          Coriolis
     const Vector3<T>& p_PB_E = position_of_moving_frame;
-    const Vector3<T>& w_WP_E = omega;
+    const Vector3<T>& w_WP_E = angular_velocity_of_this_frame;
     const SpatialVelocity<T>& V_PB_E = velocity_of_moving_frame;
     const SpatialAcceleration<T>& A_PB_E = acceleration_of_moving_frame;
     const Vector3<T>& w_PB_E = V_PB_E.rotational();

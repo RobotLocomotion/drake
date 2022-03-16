@@ -204,25 +204,32 @@ void DoScalarDependentDefinitions(py::module m, T) {
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     constexpr char doc_ShiftOneArg_deprecatedArgName[] =
         "Shift(p_PoQ_E) is deprecated, and will be removed on or around"
-        " 2022-07-01. Please instead use Shift(offset, omega)";
+        " 2022-07-01. Please instead use "
+        "Shift(offset, angular_velocity_of_this_frame)";
     cls.def("Shift",
-        WrapDeprecated(doc_ShiftOneArg_deprecatedArgName, &Class::Shift),
+        WrapDeprecated(doc_ShiftOneArg_deprecatedArgName,
+            overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift)),
         py::arg("p_PoQ_E"), doc_ShiftOneArg_deprecatedArgName);
 #pragma GCC diagnostic pop
     cls.def("Shift",
         overload_cast_explicit<Class, const Vector3<T>&, const Vector3<T>&>(
             &Class::Shift),
-        py::arg("offset"), py::arg("omega"), cls_doc.Shift.doc);
+        py::arg("offset"), py::arg("angular_velocity_of_this_frame"),
+        cls_doc.Shift.doc);
     constexpr char doc_ShiftTwoArg_deprecatedArgName[] =
         "Shift(p_PoQ_E, w_WP_E) is deprecated, and will be removed on or around"
-        " 2022-07-01. Please instead use Shift(offset, omega)";
+        " 2022-07-01. Please instead use "
+        "Shift(offset, angular_velocity_of_this_frame)";
     cls.def("Shift",
-        WrapDeprecated(doc_ShiftTwoArg_deprecatedArgName, &Class::Shift),
+        WrapDeprecated(doc_ShiftTwoArg_deprecatedArgName,
+            overload_cast_explicit<Class, const Vector3<T>&, const Vector3<T>&>(
+                &Class::Shift)),
         py::arg("p_PoQ_E"), py::arg("w_WP_E"),
         doc_ShiftTwoArg_deprecatedArgName);
     cls.def("ComposeWithMovingFrameAcceleration",
         &Class::ComposeWithMovingFrameAcceleration,
-        py::arg("position_of_moving_frame"), py::arg("omega"),
+        py::arg("position_of_moving_frame"),
+        py::arg("angular_velocity_of_this_frame"),
         py::arg("velocity_of_moving_frame"),
         py::arg("acceleration_of_moving_frame"),
         cls_doc.ComposeWithMovingFrameAcceleration.doc);
@@ -230,8 +237,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         "ComposeWithMovingFrameAcceleration(p_PB_E, w_WP_E, V_PB_E, A_PB_E)"
         " is deprecated, and will be removed on or around 2022-07-01. "
         "Please instead use ComposeWithMovingFrameAcceleration("
-        "position_of_moving_frame, omega, velocity_of_moving_frame,"
-        " acceleration_of_moving_frame)";
+        "position_of_moving_frame, "
+        "angular_velocity_of_this_frame, "
+        "velocity_of_moving_frame, "
+        "acceleration_of_moving_frame)";
     cls.def("ComposeWithMovingFrameAcceleration",
         WrapDeprecated(doc_ComposeMovingFrameAccel_deprecatedArgName,
             &Class::ComposeWithMovingFrameAcceleration),
