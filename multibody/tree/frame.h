@@ -247,7 +247,7 @@ class Frame : public FrameBase<T> {
     const SpatialVelocity<T> V_MF_W = V_WF_W - V_WM_W.Shift(p_MF_W);
 
     // If the expressed-in frame E is the world, no need to re-express results.
-    if (frame_E.index() == FrameIndex(0)) return V_MF_W;
+    if (frame_E.is_world_frame()) return V_MF_W;
 
     // Othwerwise re-express results from world frame W to frame E.
     const math::RotationMatrix<T> R_WE =
@@ -323,13 +323,21 @@ class Frame : public FrameBase<T> {
     return V_MC_E - V_MB_E;
   }
 
-  /// Computes and returns the spatial acceleration A_WF_W of `this` frame F in
-  /// world frame W expressed in W as a function of the state stored in context.
+  /// Calculates `this` frame F's spatial acceleration measured and expressed in
+  /// the world frame W.
+  /// @param[in] context contains the state of the multibody system.
+  /// @return A_WF_W, `this` frame F's spatial acceleration measured and
+  /// expressed in the world frame W. The rotational part of the returned
+  /// quantity is α_MF_E (frame F's angular acceleration α measured in the world
+  /// frame W and expressed in frame W).  The translational part is a_WFo_W
+  /// (translational acceleration of frame F's origin point Fo, measured and
+  /// expressed in the world frame W).
   /// @note Body::EvalSpatialAccelerationInWorld() provides a more efficient way
-  /// to obtain the spatial acceleration for a body frame.
+  /// to obtain a body frame's spatial acceleration measured in the world frame.
   /// @note When cached values are out of sync with the state stored in context,
   /// this method performs an expensive forward dynamics computation, whereas
   /// once evaluated, successive calls to this method are inexpensive.
+  /// @see CalcSpatialAcceleration() and CalcSpatialVelocityInWorld().
   SpatialAcceleration<T> CalcSpatialAccelerationInWorld(
       const systems::Context<T>& context) const {
     // `this` frame_F is fixed to a body B.  Calculate A_WB_W, body B's spatial
@@ -375,12 +383,6 @@ class Frame : public FrameBase<T> {
     const Frame<T> &frame_M = measured_in_frame;
     const Frame<T> &frame_E = expressed_in_frame;
 
-    // Calculate an essential part of the return value to A_WF_W (frame F's
-    // spatial acceleration in the world frame W, expressed in world frame W).
-    // Modify return value below if frame M or E differ from world frame W.
-    SpatialAcceleration<T> A_MF_W =
-        this->CalcSpatialAccelerationInWorld(context);  // A_WF_W.
-
     // A_MF is calculated from a rearranged composition of spatial acceleration.
     // Angular acceleration addition theorem: α_WF = α_WM + α_MF + ω_WM x ω_MF
     // rearranges to                          α_MF = α_WF - α_WM - ω_WM x ω_MF
@@ -388,8 +390,15 @@ class Frame : public FrameBase<T> {
     // a_WFo = a_WCoincidentPoint + 2 ω_WM x v_MFo + a_MFo   which rearranges to
     // a_MFo = a_WFo - a_WCoincidentPoint - 2 ω_WM x v_MFo,  where
     // a_WCoincidentPoint = a_WMo + α_WM x p_MoFo + ω_WM x (ω_WM x p_MoFo).
+
+    // The first term in the calculated quantity A_MF_W is always A_WF_W (frame
+    // F's spatial acceleration measured and expressed in the world frame W).
+    const SpatialAcceleration<T> A_WF_W =
+        this->CalcSpatialAccelerationInWorld(context);
+
     // Avoid inefficient unnecessary calculations if frame M is the world frame.
-    if (frame_M.index() != FrameIndex(0)) {
+    SpatialAcceleration<T> A_MF_W = A_WF_W;
+    if (!frame_M.is_world_frame()) {
       // Add additional terms to the rotational part of A_MF_W.
       const SpatialAcceleration<T> A_WM_W =
           frame_M.CalcSpatialAccelerationInWorld(context);
@@ -410,12 +419,12 @@ class Frame : public FrameBase<T> {
       const Vector3<T> a_WcoincidentPoint_W =
           A_WM_W.Shift(p_MoFo_W, w_WM_W).translational();
       const Vector3<T>& v_MFo_W = V_MF_W.translational();
-      const Vector3<T> Coriolis = 2 * w_MF_W.cross(v_MFo_W);
-      A_MF_W.translational() -= (a_WcoincidentPoint_W + Coriolis);
+      const Vector3<T> coriolis_W = 2 * w_MF_W.cross(v_MFo_W);
+      A_MF_W.translational() -= (a_WcoincidentPoint_W + coriolis_W);
     }
 
     // If expressed-in frame E is the world, no need to re-express results.
-    if (frame_E.index() == FrameIndex(0)) return A_MF_W;
+    if (frame_E.is_world_frame()) return A_MF_W;
 
     // Othwerwise re-express results from world frame W to frame E.
     const math::RotationMatrix<T> R_WE =
