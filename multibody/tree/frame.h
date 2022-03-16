@@ -328,8 +328,8 @@ class Frame : public FrameBase<T> {
   /// @param[in] context contains the state of the multibody system.
   /// @return A_WF_W, `this` frame F's spatial acceleration measured and
   /// expressed in the world frame W. The rotational part of the returned
-  /// quantity is α_MF_E (frame F's angular acceleration α measured in the world
-  /// frame W and expressed in frame W).  The translational part is a_WFo_W
+  /// quantity is α_MF_E (frame F's angular acceleration α measured and
+  /// expressed in the world frame W).  The translational part is a_WFo_W
   /// (translational acceleration of frame F's origin point Fo, measured and
   /// expressed in the world frame W).
   /// @note Body::EvalSpatialAccelerationInWorld() provides a more efficient way
