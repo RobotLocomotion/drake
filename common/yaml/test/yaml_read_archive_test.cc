@@ -26,7 +26,7 @@ namespace {
 
 // A test fixture with common helpers.
 class YamlReadArchiveTest
-    : public ::testing::TestWithParam<YamlReadArchive::Options> {
+    : public ::testing::TestWithParam<LoadYamlOptions> {
  public:
   // Loads a single "doc: { ... }" map from `contents` and returns the nested
   // map (i.e., just the "{ ... }" part, not the "doc" part).  It is an error
@@ -1033,12 +1033,12 @@ doc:
       " [^ ]*InnerStruct inner_struct\\.");
 }
 
-std::vector<YamlReadArchive::Options> MakeAllPossibleOptions() {
-  std::vector<YamlReadArchive::Options> all;
+std::vector<LoadYamlOptions> MakeAllPossibleOptions() {
+  std::vector<LoadYamlOptions> all;
   for (const bool i : {false, true}) {
     for (const bool j : {false, true}) {
       for (const bool k : {false, true}) {
-        all.push_back(YamlReadArchive::Options{i, j, k});
+        all.push_back(LoadYamlOptions{i, j, k});
       }
     }
   }
