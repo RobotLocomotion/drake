@@ -22,6 +22,7 @@ drake_cc_package_library(
         ":corotated_model_data",
         ":damping_model",
         ":deformation_gradient_data",
+        ":dirichlet_boundary_condition",
         ":discrete_time_integrator",
         ":fem_element",
         ":fem_indexes",
@@ -139,6 +140,21 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:nice_type_name",
+    ],
+)
+
+drake_cc_library(
+    name = "dirichlet_boundary_condition",
+    srcs = [
+        "dirichlet_boundary_condition.cc",
+    ],
+    hdrs = [
+        "dirichlet_boundary_condition.h",
+    ],
+    deps = [
+        ":fem_state",
+        ":petsc_symmetric_block_sparse_matrix",
+        "//common:essential",
     ],
 )
 
@@ -466,6 +482,16 @@ drake_cc_googletest(
     name = "deformation_gradient_data_test",
     deps = [
         ":deformation_gradient_data",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "dirichlet_boundary_condition_test",
+    deps = [
+        ":dirichlet_boundary_condition",
+        ":fem_state",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
