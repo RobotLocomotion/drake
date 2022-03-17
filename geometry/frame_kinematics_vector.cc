@@ -114,5 +114,9 @@ template class FrameKinematicsVector<math::RigidTransform<AutoDiffXd>>;
 template class FrameKinematicsVector<
     math::RigidTransform<symbolic::Expression>>;
 
+template class FrameKinematicsVector<VectorX<double>>;
+template class FrameKinematicsVector<VectorX<AutoDiffXd>>;
+template class FrameKinematicsVector<VectorX<symbolic::Expression>>;
+
 }  // namespace geometry
 }  // namespace drake

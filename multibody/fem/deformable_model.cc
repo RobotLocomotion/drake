@@ -21,6 +21,8 @@ void DeformableModel<T>::RegisterDeformableBody(
                                             geometry::internal::kFriction));
   const double resolution_hint = properties.GetProperty<double>(
       geometry::internal::kHydroGroup, geometry::internal::kRezHint);
+  properties->AddProperty(internal::kHydroGroup, internal::kComplianceType,
+                          internal::DeformableContactGeometryType::kDeformable);
   const geometry::VolumeMesh<double> geometry =
       MakeDiamondCubicBoxVolumeMesh<double>(box, resolution_hint);
   const std::vector<Vector3<double>>& vertices = geometry.vertices();

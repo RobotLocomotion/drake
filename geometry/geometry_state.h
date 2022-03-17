@@ -627,12 +627,14 @@ class GeometryState {
   // ValidateFrameIds().
   void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses);
 
-  // Sets the vertex positions of a deformable geometries in the frames indicated by the given ids.
+  // Sets the vertex positions of a deformable geometries in the frames
+  // indicated by the given ids.
   // @param positions The frame id and vertex positions values.
   // @pre source_id is a registered source.
   // @throws std::exception  If the ids are invalid as defined by
   // ValidateFrameIds().
-  void SetDeformablePositions(SourceId source_id, const FrameDeformableVector<T>& positions);
+  void SetDeformablePositions(SourceId source_id,
+                              const FrameDeformableVector<T>& positions);
 
   // Confirms that the set of ids provided include _all_ of the frames
   // registered to the set's source id and that no extra frames are included.
@@ -831,7 +833,7 @@ class GeometryState {
   // geometry to the world frame.
   std::unordered_map<GeometryId, math::RigidTransform<T>> X_WGs_;
 
-  // The vertex positions of every deformable geometry in the _world_ frame 
+  // The vertex positions of every deformable geometry in the _world_ frame
   // keyed by the corresponding geometry's id.
   std::unordered_map<GeometryId, VectorX<T>> q_WGs_;
 

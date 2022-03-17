@@ -38,11 +38,11 @@ void Geometries::MaybeAddGeometry(const Shape& shape, GeometryId id,
   const HydroelasticType type = properties.GetPropertyOrDefault(
       kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
   ReifyData data{true, id, properties};
-  if (type == HydroelasticType::kRigid) {
-    data.is_rigid = true;
+  if (type == HydroelasticType::kRigid || type == HydroelasticType::kSoft) {
+    data.is_deformable = false;
     shape.Reify(this, &data);
-  } else if (type == HydroelasticType::kSoft) {
-    data.is_rigid = false;
+  } else if (type == HydroelasticType::kDeformable) {
+    data.is_deformable = true;
     shape.Reify(this, &data);
   }
 }
@@ -65,7 +65,7 @@ void Geometries::ComputeAllDeformableContactData(
     std::vector<DeformableContactData<double>>* deformable_contact_data) const {
   DRAKE_DEMAND(deformable_contact_data != nullptr);
   deformable_contact_data->clear();
-  deformable_contact_data->reserve(num_deformable_geometry());
+  deformable_contact_data->reserve(num_deformable_geometries());
   for (const auto& it : deformable_geometries_) {
     deformable_contact_data->emplace_back(CalcDeformableContactData(it.first));
   }
@@ -107,12 +107,12 @@ void Geometries::ImplementGeometry(const Convex& convex, void* user_data) {
 
 template <typename ShapeType>
 void Geometries::MakeShape(const ShapeType& shape, const ReifyData& data) {
-  if (data.is_rigid) {
-    auto geometry = MakeRigidRepresentation(shape, data.properties);
-    if (geometry) rigid_geometries_.insert({data.id, move(*geometry)});
-  } else {
+  if (data.is_deformable) {
     auto geometry = MakeDeformableRepresentation(shape, data.properties);
     if (geometry) deformable_geometries_.insert({data.id, move(*geometry)});
+  } else {
+    auto geometry = MakeRigidRepresentation(shape, data.properties);
+    if (geometry) rigid_geometries_.insert({data.id, move(*geometry)});
   }
 }
 

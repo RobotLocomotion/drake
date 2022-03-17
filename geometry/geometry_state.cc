@@ -413,6 +413,8 @@ GeometryState<T>::maybe_get_hydroelastic_mesh(GeometryId geometry_id) const {
   switch (hydro_geometries.hydroelastic_type(geometry_id)) {
     case HydroelasticType::kUndefined:
       break;
+    case HydroelasticType::kDeformable:
+      break;
     case HydroelasticType::kRigid: {
       const auto& rigid = hydro_geometries.rigid_geometry(geometry_id);
       if (!rigid.is_half_space()) {
@@ -1079,7 +1081,7 @@ void GeometryState<T>::SetDeformablePositions(
     const SourceId source_id, const FrameDeformableVector<T>& positions) {
   ValidateFrameIds(source_id, positions);
   for (auto frame_id : source_frame_id_map_[source_id]) {
-    if (positions.has_id(frame_id)){
+    if (positions.has_id(frame_id)) {
       const auto& frame = frames_[frame_id];
       // A deformable geometry doesn't share its frame with other geometries.
       DRAKE_DEMAND(frame.num_child_geometries() == 1);

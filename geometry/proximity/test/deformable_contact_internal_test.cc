@@ -50,7 +50,7 @@ ProximityProperties MakeProximityPropsWithRezHint(GeometryType type,
                       internal::HydroelasticType::kRigid);
   } else if (type == GeometryType::kDeformable) {
     props.AddProperty(internal::kHydroGroup, internal::kComplianceType,
-                      internal::HydroelasticType::kSoft);
+                      internal::HydroelasticType::kDeformable);
   } else {
     DRAKE_UNREACHABLE();
   }

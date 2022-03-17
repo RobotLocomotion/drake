@@ -102,7 +102,9 @@ class ProximityEngine {
    @param X_WG    The pose of the shape in the world frame.
    @param id      The id of the geometry in SceneGraph to which this shape
                   belongs.
-   @param props   The proximity properties for the shape.  */
+   @param props   The proximity properties for the shape.
+   @throws exception if the intended operation is to add a deformable geometry
+   as an anchored geometry.  */
   void AddAnchoredGeometry(const Shape& shape,
                            const math::RigidTransformd& X_WG, GeometryId id,
                            const ProximityProperties& props = {});
@@ -172,8 +174,8 @@ class ProximityEngine {
    engine.
    @param q_MGs  The vertex positions of each deformable geometry `G` measured
                  and expressed in the the object's frame `M` (including
-   deformable geometries which may *not* be registered with the proximity
-   engine). */
+                 deformable geometries which may *not* be registered with the
+                 proximity engine). */
   void UpdateDeformableVertexPositions(
       const std::unordered_map<GeometryId, VectorX<T>>& q_MGs);
 

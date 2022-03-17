@@ -102,8 +102,8 @@ DeformableContactData<double> MakeDeformableContactData(
       move(contact_surface), kRigidGeometryId, kDeformableGeometryId);
   vector<DeformableRigidContactPair<double>> contact_pairs;
   contact_pairs.push_back(move(contact_pair));
-  return DeformableContactData<double>(move(contact_pairs),
-                                       deformable_geometry);
+  return DeformableContactData<double>(move(contact_pairs), deformable_geometry,
+                                       kDeformableGeometryId);
 }
 
 DeformableGeometry MakeOctahedronDeformableGeometry() {

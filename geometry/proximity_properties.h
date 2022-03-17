@@ -75,13 +75,11 @@ extern const char* const kSlabThickness;    ///< Slab thickness property name
 //  very stiff and one very compliant object interact, it might make sense to
 //  consider the stiff object as effectively rigid and simplify the computation.
 //  In this case, the object would get two representations.
+// TODO(xuchenhan-tri): Update doc and the name `HydroelasticType` to reflect
+// the fact that we support deformable geometries as well.
 /* Classification of the type of representation a shape has for the
  hydroelastic contact model: rigid or soft.  */
-enum class HydroelasticType {
-  kUndefined,
-  kRigid,
-  kSoft
-};
+enum class HydroelasticType { kUndefined, kRigid, kSoft, kDeformable };
 
 /* Streaming operator for writing hydroelastic type to output stream.  */
 std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);

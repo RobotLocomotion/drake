@@ -4311,6 +4311,55 @@ GTEST_TEST(ProximityEngineTests, ExpressionUnsupported) {
       "for scalar type drake::symbolic::Expression");
 }
 
+// Deformable geometries and rigid representations for deformable contact is
+// currently an odd fit in ProximityEngine. We test them separately in this
+// fixture.
+class ProximityEngineDeformable : public testing::Test {
+ protected:
+  enum class GeometryType { kRigid, kDeformable };
+
+  /* Makes a ProximityProperties with two properties in the hydro group.
+   1. A compliance type property that is set to `kSoft` if the input `type` is
+     `kDeformable` and to `kRigid` otherwise.
+   2. A resolution hint property set to the given resolution hint. */
+  ProximityProperties MakeProximityPropsWithRezHint(GeometryType type,
+                                                    double resolution_hint) {
+    ProximityProperties props;
+    props.AddProperty(internal::kHydroGroup, internal::kRezHint,
+                      resolution_hint);
+    if (type == GeometryType::kRigid) {
+      props.AddProperty(internal::kHydroGroup, internal::kComplianceType,
+                        internal::HydroelasticType::kRigid);
+    } else if (type == GeometryType::kDeformable) {
+      props.AddProperty(internal::kHydroGroup, internal::kComplianceType,
+                        internal::HydroelasticType::kDeformable);
+    } else {
+      DRAKE_UNREACHABLE();
+    }
+    return props;
+  }
+
+  ProximityEngine<double> engine_;
+  unordered_map<GeometryId, RigidTransformd> poses_;
+};
+
+TEST_F(ProximityEngineDeformable, AddGeometry) {
+  Sphere sphere{0.5};
+  const GeometryId id = GeometryId::get_new_id();
+  ProximityProperties props =
+      MakeProximityPropsWithRezHint(GeometryType::kDeformable, 1.0);
+  // Adding a deformable geometry as anchored throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine_.AddAnchoredGeometry(sphere, {}, id, props),
+      "Deformable.* cannot .* anchor.*");
+
+  // Adding a deformable geometry as dynamic is ok.
+  engine_.AddDynamicGeometry(sphere, {}, id, props);
+  EXPECT_EQ(engine_.num_geometries(), 1);
+  EXPECT_EQ(engine_.num_anchored(), 0);
+  EXPECT_EQ(engine_.num_dynamic(), 1);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry

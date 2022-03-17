@@ -54,7 +54,9 @@ class Geometries final : public ShapeReifier {
     return deformable_geometries_.count(id) != 0;
   }
 
-  int num_deformable_geometry() const { return deformable_geometries_.size(); }
+  int num_deformable_geometries() const {
+    return deformable_geometries_.size();
+  }
 
   /* Removes the geometry (if it has a deformable contact representation).  */
   void RemoveGeometry(GeometryId id);
@@ -100,7 +102,7 @@ class Geometries final : public ShapeReifier {
   // Data to be used during reification. It is passed as the `user_data`
   // parameter in the ImplementGeometry API.
   struct ReifyData {
-    bool is_rigid{false};
+    bool is_deformable{false};
     GeometryId id;
     const ProximityProperties& properties;
   };

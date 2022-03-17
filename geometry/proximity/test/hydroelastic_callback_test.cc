@@ -118,6 +118,9 @@ class TestScene {
       case HydroelasticType::kUndefined:
         // Note: HydroelasticType::kUndefined will not be added.
         break;
+      case HydroelasticType::kDeformable:
+        // Note: HydroelasticType::kDeformable will not be added.
+        break;
     }
   }
 
