@@ -148,9 +148,14 @@ geometry::ProximityProperties ParseProximityProperties(
 //   <drake:bushing_force_stiffness  value="0 0 0"/>
 //   <drake:bushing_force_damping    value="0 0 0"/>
 // </drake:linear_bushing_rpy>
-const LinearBushingRollPitchYaw<double>& ParseLinearBushingRollPitchYaw(
+//
+// The @p read_frame functor may (at its option) throw std:exception, or return
+// nullptr when frame parsing fails. Similarly,
+// ParseLinearBushingRollPitchYaw() may return nullptr when read_frame has
+// returned nullptr.
+const LinearBushingRollPitchYaw<double>* ParseLinearBushingRollPitchYaw(
     const std::function<Eigen::Vector3d(const char*)>& read_vector,
-    const std::function<const Frame<double>&(const char*)>& read_frame,
+    const std::function<const Frame<double>*(const char*)>& read_frame,
     MultibodyPlant<double>* plant);
 
 // TODO(@SeanCurtis-TRI): The real solution here is to create a wrapper

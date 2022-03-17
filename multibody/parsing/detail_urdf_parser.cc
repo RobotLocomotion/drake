@@ -642,9 +642,8 @@ void ParseBushing(ModelInstanceIndex model_instance,
   // Functor to read a child element with a string valued `name` attribute.
   // Throws an error if unable to find the tag of if the name attribute is
   // improperly formed.
-  auto read_frame = [model_instance,
-                     node,
-                     plant](const char* element_name) -> const Frame<double>& {
+  auto read_frame = [model_instance, node, plant]
+                    (const char* element_name) -> const Frame<double>* {
     XMLElement* value_node = node->FirstChildElement(element_name);
 
     if (value_node != nullptr) {
@@ -655,7 +654,7 @@ void ParseBushing(ModelInstanceIndex model_instance,
               "Frame: {} specified for <{}> does not exist in the model.",
               frame_name, element_name));
         }
-        return plant->GetFrameByName(frame_name, model_instance);
+        return &plant->GetFrameByName(frame_name, model_instance);
 
       } else {
         throw std::runtime_error(
