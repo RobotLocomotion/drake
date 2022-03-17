@@ -67,6 +67,14 @@ struct FiniteHorizonLinearQuadraticRegulatorOptions {
   */
   std::variant<systems::InputPortSelection, InputPortIndex> input_port_index{
       systems::InputPortSelection::kUseFirstInputIfItExists};
+
+  /**
+  Enables the "square-root" method solution to the Ricatti equation. This is
+  slightly more expensive and potentially less numerically accurate (errors are
+  bounded on the square root), but is more numerically robust. When `true`,
+  then you must also set a (positive definite and symmetric) Qf in this options
+  struct. */
+  bool use_square_root_method{false};
 };
 
 /**

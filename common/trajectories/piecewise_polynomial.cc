@@ -513,6 +513,17 @@ void PiecewisePolynomial<T>::Reshape(int rows, int cols) {
 }
 
 template <typename T>
+PiecewisePolynomial<T> PiecewisePolynomial<T>::Transpose() const {
+  std::vector<PolynomialMatrix> transposed;
+  std::transform(polynomials_.begin(), polynomials_.end(),
+                 std::back_inserter(transposed),
+                 [](const PolynomialMatrix& matrix) {
+                   return matrix.transpose();
+                 });
+  return PiecewisePolynomial<T>(transposed, this->breaks());
+}
+
+template <typename T>
 PiecewisePolynomial<T> PiecewisePolynomial<T>::Block(int start_row,
                                                      int start_col,
                                                      int block_rows,

@@ -270,14 +270,20 @@ PYBIND11_MODULE(controllers, m) {
       .def_readwrite("input_port_index",
           &FiniteHorizonLinearQuadraticRegulatorOptions::input_port_index,
           doc.FiniteHorizonLinearQuadraticRegulatorOptions.input_port_index.doc)
+      .def_readwrite("use_square_root_method",
+          &FiniteHorizonLinearQuadraticRegulatorOptions::use_square_root_method,
+          doc.FiniteHorizonLinearQuadraticRegulatorOptions
+              .use_square_root_method.doc)
       .def("__repr__",
           [](const FiniteHorizonLinearQuadraticRegulatorOptions& self) {
             return py::str(
                 "FiniteHorizonLinearQuadraticRegulatorOptions("
                 "Qf={}, "
                 "N={}, "
-                "input_port_index={})")
-                .format(self.Qf, self.N, self.input_port_index);
+                "input_port_index={}, "
+                "use_square_root_method={})")
+                .format(self.Qf, self.N, self.input_port_index,
+                    self.use_square_root_method);
           });
 
   DefReadWriteKeepAlive(&fhlqr_options, "x0",

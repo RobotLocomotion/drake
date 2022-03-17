@@ -393,7 +393,7 @@ GTEST_TEST(testPiecewisePolynomial, ReverseAndScaleTimeTest) {
   TestScaling(spline, 4.3);
 }
 
-GTEST_TEST(testPiecewisePolynomial, ReshapeAndBlockTest) {
+GTEST_TEST(testPiecewisePolynomial, ReshapeBlockAndTranspose) {
   std::vector<double> breaks = {0, .5, 1.};
   std::vector<Eigen::MatrixXd> samples(3);
   samples[0].resize(2, 3);
@@ -427,6 +427,12 @@ GTEST_TEST(testPiecewisePolynomial, ReshapeAndBlockTest) {
   EXPECT_EQ(zoh.Block(0, 0, 1, 1).value(0.25), samples[0].block(0, 0, 1, 1));
   EXPECT_EQ(zoh.Block(2, 1, 1, 1).value(0.75), samples[1].block(2, 1, 1, 1));
   EXPECT_EQ(zoh.Block(1, 1, 2, 1).value(0.75), samples[1].block(1, 1, 2, 1));
+
+  PiecewisePolynomial<double> transposed = zoh.Transpose();
+  EXPECT_EQ(transposed.rows(), 2);
+  EXPECT_EQ(transposed.cols(), 3);
+  EXPECT_TRUE(CompareMatrices(transposed.value(0.25), samples[0].transpose()));
+  EXPECT_TRUE(CompareMatrices(transposed.value(0.75), samples[1].transpose()));
 }
 
 GTEST_TEST(testPiecewisePolynomial, IsApproxTest) {

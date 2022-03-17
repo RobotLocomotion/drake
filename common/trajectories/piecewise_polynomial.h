@@ -574,6 +574,10 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   void Reshape(int rows, int cols);
 
+  /** Constructs a new PiecewisePolynomial for which value(t) ==
+   * this.value(t).transpose(). */
+  PiecewisePolynomial Transpose() const;
+
   /**
    * Extracts a trajectory representing a block of size (block_rows, block_cols)
    * starting at (start_row, start_col) from the PiecewisePolynomial.
