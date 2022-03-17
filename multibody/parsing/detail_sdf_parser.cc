@@ -669,8 +669,9 @@ std::vector<LinkInfo> AddLinksFromSpecification(
     if (plant->geometry_source_is_registered()) {
       ResolveFilename resolve_filename =
         [&package_map, &root_dir](std::string uri) {
+          drake::internal::DiagnosticPolicy policy;
           const std::string resolved_name =
-              ResolveUri(uri, package_map, root_dir);
+              ResolveUri(policy, uri, package_map, root_dir);
           if (resolved_name.empty()) {
             throw std::runtime_error(
                 "ERROR: Mesh file name could not be resolved from the "
@@ -877,13 +878,16 @@ const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
   // frame name, e.g. <element_name>frame_name</element_name>
   // Throws an error if the tag does not exist or if the frame does not exist in
   // the plant.
-  auto read_frame = [node,
-                     model_instance,
-                     plant](const char* element_name) -> const Frame<double>& {
-    return ParseFrame(node, model_instance, plant, element_name);
+  auto read_frame = [node, model_instance, plant](const char* element_name)
+                    -> const Frame<double>* {
+    return &ParseFrame(node, model_instance, plant, element_name);
   };
 
-  return ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
+  auto result = ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
+  // This invariant will be true until some future time when errors are allowed
+  // to not throw.
+  DRAKE_DEMAND(result != nullptr);
+  return *result;
 }
 
 // Helper to determine if two links are welded together.
@@ -1357,7 +1361,8 @@ sdf::ParserConfig MakeSdfParserConfig(
   parser_config.SetUnrecognizedElementsPolicy(sdf::EnforcementPolicy::WARN);
   parser_config.SetFindCallback(
     [=](const std::string &_input) {
-      return ResolveUri(_input, package_map, ".");
+      drake::internal::DiagnosticPolicy p;
+      return ResolveUri(p, _input, package_map, ".");
     });
 
   parser_config.RegisterCustomModelParser(

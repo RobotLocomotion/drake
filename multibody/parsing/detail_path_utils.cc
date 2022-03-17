@@ -14,26 +14,27 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-using std::string;
-
 namespace {
 
 // Searches for key package in package_map. If the key exists, returns the
 // associated value; else prints a warning and returns nullopt.
-std::optional<string> GetPackagePath(
-    const string& package, const PackageMap& package_map) {
+std::optional<std::string> GetPackagePath(
+    const drake::internal::DiagnosticPolicy& policy,
+    const std::string& package, const PackageMap& package_map) {
   if (package_map.Contains(package)) {
     return package_map.GetPath(package);
-  } else {
-    drake::log()->warn("Couldn't find package '{}' in the supplied package"
-                       "path: {}", package, package_map);
-    return std::nullopt;
   }
+  policy.Error("Couldn't find package '{}' in the supplied package path: {}",
+               package, package_map);
+  return std::nullopt;
 }
+
 }  // namespace
 
-string ResolveUri(const string& uri, const PackageMap& package_map,
-                  const string& root_dir) {
+std::string ResolveUri(
+    const drake::internal::DiagnosticPolicy& policy,
+    const std::string& uri, const PackageMap& package_map,
+    const std::string& root_dir) {
   filesystem::path result;
 
   // Parse the given URI into pieces.
@@ -49,26 +50,24 @@ string ResolveUri(const string& uri, const PackageMap& package_map,
     if (uri_scheme == "file") {
       result = "/" + uri_path.str();
     } else if ((uri_scheme == "model") || (uri_scheme == "package")) {
-      std::optional<string> package_path =
-          GetPackagePath(uri_package, package_map);
+      std::optional<std::string> package_path =
+          GetPackagePath(policy, uri_package, package_map);
       if (!package_path) { return {}; }
       result = filesystem::path(*package_path) / std::string(uri_path);
     } else {
-      drake::log()->warn(
-          "URI '{}' specifies an unsupported scheme; supported schemes are "
-          "'file://', 'model://', and 'package://'.", uri);
+      policy.Error("URI '{}' specifies an unsupported scheme; supported schemes"
+                   " are 'file://', 'model://', and 'package://'.", uri);
       return {};
     }
   } else {
     if (root_dir.empty()) {
-      drake::log()->warn(
-          "URI '{}' is invalid when parsing a string instead of a filename.",
-          uri);
+      policy.Error("URI '{}' is invalid when parsing a std::string instead of"
+                   " a filename.", uri);
       return {};
     }
     // Strictly speaking a URI should not just be a bare filename, but we allow
     // this for backward compatibility and user convenience.
-    const string& filename = uri;
+    const std::string& filename = uri;
     if (filesystem::path(filename).is_absolute()) {
       result = filename;
     } else if (filesystem::path(root_dir).is_absolute()) {
@@ -82,8 +81,8 @@ string ResolveUri(const string& uri, const PackageMap& package_map,
   result = result.lexically_normal();
 
   if (!filesystem::exists(result)) {
-    drake::log()->warn("URI '{}' resolved to '{}' which could not be found.",
-                       uri, result.string());
+    policy.Error("URI '{}' resolved to '{}' which could not be found.",
+                 uri, result.string());
     return {};
   }
 

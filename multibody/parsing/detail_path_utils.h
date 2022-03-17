@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/multibody/parsing/package_map.h"
 
 namespace drake {
@@ -30,7 +31,8 @@ namespace internal {
 //
 // @return The file's full path, lexically normalized, or an empty string if
 // the file is not found or does not exist.
-std::string ResolveUri(const std::string& uri,
+std::string ResolveUri(const drake::internal::DiagnosticPolicy& policy,
+                       const std::string& uri,
                        const PackageMap& package_map,
                        const std::string& root_dir);
 

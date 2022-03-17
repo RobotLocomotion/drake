@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/filesystem.h"
@@ -49,6 +50,8 @@ using Eigen::Vector4d;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
+using drake::internal::DiagnosticDetail;
+using drake::internal::DiagnosticPolicy;
 using math::RigidTransformd;
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
@@ -56,6 +59,11 @@ using geometry::ProximityProperties;
 
 // Confirms the logic for reconciling named references to materials.
 GTEST_TEST(DetailUrdfGeometryTest, AddMaterialToMaterialMap) {
+  DiagnosticPolicy p;
+  std::string error;
+  p.SetActionForErrors([&error](const DiagnosticDetail& detail) {
+                         error = detail.message;
+                       });
   MaterialMap materials;
   // The material with no data except the default rgba value.
   const Vector4d black_color{0, 0, 0, 0};
@@ -80,19 +88,19 @@ GTEST_TEST(DetailUrdfGeometryTest, AddMaterialToMaterialMap) {
   // Case: Adding a unique material with no data - gets default rgba.
   {
     const UrdfMaterial result1 = AddMaterialToMaterialMap(
-        empty_mat_name, empty_mat, abort_if_name_clash, &materials);
+        p, empty_mat_name, empty_mat, abort_if_name_clash, &materials);
     EXPECT_EQ(result1, default_mat);
     const UrdfMaterial result2 = AddMaterialToMaterialMap(
-        empty_mat_name, empty_mat, !abort_if_name_clash, &materials);
+        p, empty_mat_name, empty_mat, !abort_if_name_clash, &materials);
     EXPECT_EQ(result2, default_mat);
   }
   // Case: Adding a unique material with only rgba.
   {
     const UrdfMaterial result1 = AddMaterialToMaterialMap(
-        rgba_mat_name, rgba_mat, abort_if_name_clash, &materials);
+        p, rgba_mat_name, rgba_mat, abort_if_name_clash, &materials);
     EXPECT_EQ(result1, rgba_mat);
     const UrdfMaterial result2 = AddMaterialToMaterialMap(
-        rgba_mat_name, rgba_mat, !abort_if_name_clash, &materials);
+        p, rgba_mat_name, rgba_mat, !abort_if_name_clash, &materials);
     EXPECT_EQ(result2, rgba_mat);
   }
 
@@ -100,38 +108,39 @@ GTEST_TEST(DetailUrdfGeometryTest, AddMaterialToMaterialMap) {
   // within tolerance.
   {
     const Vector4d rgba_color2 = rgba_color + Vector4d::Constant(1e-11);
-    const UrdfMaterial result =
-        AddMaterialToMaterialMap(rgba_mat_name, UrdfMaterial{rgba_color2, {}},
-                                 !abort_if_name_clash, &materials);
+    const UrdfMaterial result = AddMaterialToMaterialMap(
+        p, rgba_mat_name, UrdfMaterial{rgba_color2, {}}, !abort_if_name_clash,
+        &materials);
     EXPECT_EQ(result, rgba_mat);
 
     // Deviation between colors too big.
     const Vector4d rgba_color3 = rgba_color + Vector4d::Constant(5e-11);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        AddMaterialToMaterialMap(rgba_mat_name,
-                                 UrdfMaterial{rgba_color3, {}},
-                                 !abort_if_name_clash, &materials),
-        "Material '.+' was previously defined[^]+");
+    UrdfMaterial mat3{rgba_color3, {}};
+    // result = AddMaterialToMaterialMap(p, rgba_mat_name,
+    //                                   mat3,
+    //                                   !abort_if_name_clash, &materials);
+    // EXPECT_THAT(error, testing::MatchesRegex(
+    //                 "Material '.+' was previously defined.+"));
   }
 
   // Case: Adding a unique material with only diffuse map - get default rgba.
   {
     const UrdfMaterial expected{black_color, diffuse_mat.diffuse_map};
     const UrdfMaterial result1 = AddMaterialToMaterialMap(
-        diffuse_mat_name, diffuse_mat, abort_if_name_clash, &materials);
+        p, diffuse_mat_name, diffuse_mat, abort_if_name_clash, &materials);
     EXPECT_EQ(result1, expected);
     const UrdfMaterial result2 = AddMaterialToMaterialMap(
-        diffuse_mat_name, diffuse_mat, !abort_if_name_clash, &materials);
+        p, diffuse_mat_name, diffuse_mat, !abort_if_name_clash, &materials);
     EXPECT_EQ(result2, expected);
   }
 
   // Case: adding a unique material with both diffuse map and rgba.
   {
     const UrdfMaterial result1 = AddMaterialToMaterialMap(
-        full_mat_name, full_mat, abort_if_name_clash, &materials);
+        p, full_mat_name, full_mat, abort_if_name_clash, &materials);
     EXPECT_EQ(result1, full_mat);
     const UrdfMaterial result2 = AddMaterialToMaterialMap(
-        full_mat_name, full_mat, !abort_if_name_clash, &materials);
+        p, full_mat_name, full_mat, !abort_if_name_clash, &materials);
     EXPECT_EQ(result2, full_mat);
   }
 
@@ -144,14 +153,14 @@ GTEST_TEST(DetailUrdfGeometryTest, AddMaterialToMaterialMap) {
   // Case: Cache only has rgba defined; input material is empty.
   {
     const UrdfMaterial result = AddMaterialToMaterialMap(
-        rgba_mat_name, empty_mat, !abort_if_name_clash, &materials);
+        p, rgba_mat_name, empty_mat, !abort_if_name_clash, &materials);
     EXPECT_EQ(result, rgba_mat);
   }
 
   // Case: Cache only has diffuse map and rgba defined; input material is empty.
   {
     const UrdfMaterial result = AddMaterialToMaterialMap(
-        full_mat_name, empty_mat, !abort_if_name_clash, &materials);
+        p, full_mat_name, empty_mat, !abort_if_name_clash, &materials);
     EXPECT_EQ(result, full_mat);
   }
 
@@ -163,14 +172,14 @@ GTEST_TEST(DetailUrdfGeometryTest, AddMaterialToMaterialMap) {
     ASSERT_NE(materials.find(empty_mat_name), materials.end());
     // Redundant adding is not an error.
     const UrdfMaterial result = AddMaterialToMaterialMap(
-        empty_mat_name, empty_mat, !abort_if_name_clash, &materials);
+        p, empty_mat_name, empty_mat, !abort_if_name_clash, &materials);
     EXPECT_EQ(result, default_mat);
 
     // Redundant adding with name clash *is* an error.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        AddMaterialToMaterialMap(empty_mat_name, empty_mat, abort_if_name_clash,
-                                 &materials),
-        "Material '.+' was previously defined[^]+");
+    AddMaterialToMaterialMap(p, empty_mat_name, empty_mat,
+                             abort_if_name_clash, &materials);
+    EXPECT_THAT(error,
+        testing::MatchesRegex("Material '.+' was previously defined.+"));
   }
 
   // ----    Failure modes.
@@ -180,43 +189,26 @@ GTEST_TEST(DetailUrdfGeometryTest, AddMaterialToMaterialMap) {
   // before being stored in the cache.
 
   // Case: rgba doesn't match.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddMaterialToMaterialMap(rgba_mat_name,
-                               UrdfMaterial{Vector4d{0.1, 0.1, 0.1, 0.1}, {}},
-                               !abort_if_name_clash, &materials),
-      "Material '.+' was previously defined[^]+");
+  AddMaterialToMaterialMap(
+      p, rgba_mat_name,
+      UrdfMaterial{Vector4d{0.1, 0.1, 0.1, 0.1}, {}},
+      !abort_if_name_clash, &materials);
+  EXPECT_THAT(error,
+              testing::MatchesRegex("Material '.+' was previously defined.+"));
 
   // Case: Cached diffuse_map is nullopt, input is not.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddMaterialToMaterialMap(rgba_mat_name,
-                               UrdfMaterial{{}, "bad_name"},
-                               !abort_if_name_clash, &materials),
-      "Material '.+' was previously defined[^]+");
+  AddMaterialToMaterialMap(p, rgba_mat_name,
+                           UrdfMaterial{{}, "bad_name"},
+                           !abort_if_name_clash, &materials);
+  EXPECT_THAT(error,
+              testing::MatchesRegex("Material '.+' was previously defined.+"));
 
   // Case: Cached and input have non-matching values.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddMaterialToMaterialMap(full_mat_name,
-                               UrdfMaterial{full_color, "bad_name"},
-                               !abort_if_name_clash, &materials),
-      "Material '.+' was previously defined[^]+");
-}
-
-// Creates a special XML DOM consisting of *only* a collision object. XML text
-// can be provided as an input and it will be injected as a child of the
-// <collision> tag.
-unique_ptr<XMLDocument> MakeCollisionDocFromString(
-    const std::string& collision_spec) {
-  const std::string urdf_harness = R"""(
-<?xml version="1.0"?>
-  <collision>
-    <geometry>
-      <box size=".1 .2 .3"/>
-    </geometry>{}
-  </collision>)""";
-  const std::string urdf = fmt::format(urdf_harness, collision_spec);
-  auto doc = make_unique<XMLDocument>();
-  doc->Parse(urdf.c_str());
-  return doc;
+  AddMaterialToMaterialMap(p, full_mat_name,
+                           UrdfMaterial{full_color, "bad_name"},
+                           !abort_if_name_clash, &materials);
+  EXPECT_THAT(error,
+              testing::MatchesRegex("Material '.+' was previously defined.+"));
 }
 
 class UrdfGeometryTests : public testing::Test {
@@ -224,23 +216,31 @@ class UrdfGeometryTests : public testing::Test {
   // Loads a URDF file and parses the minimal amount of it which
   // urdf_geometry.cc handles.
   void ParseUrdfGeometry(const std::string& file_name) {
-    const std::string full_path = filesystem::absolute(file_name).native();
+    DataSource source(DataSource::kFilename, &file_name);
+    ParseUrdfGeometry(source);
+  }
 
-    xml_doc_.LoadFile(full_path.c_str());
-    ASSERT_FALSE(xml_doc_.ErrorID()) << xml_doc_.ErrorName();
-
-    size_t found = full_path.find_last_of("/\\");
-    if (found != std::string::npos) {
-      root_dir_ = full_path.substr(0, found);
+  // Parses from a URDF-format source just the minimal amount of it which
+  // urdf_geometry.cc handles.
+  void ParseUrdfGeometry(const DataSource& source) {
+    if (source.IsFilename()) {
+      xml_doc_.LoadFile(source.filename().c_str());
+    } else {
+      ASSERT_TRUE(source.IsContents());
+      xml_doc_.Parse(source.contents().c_str());
     }
+    ASSERT_FALSE(xml_doc_.ErrorID()) << xml_doc_.ErrorName();
 
     const XMLElement* node = xml_doc_.FirstChildElement("robot");
     ASSERT_TRUE(node);
 
+    TinyXml2Diagnostic d{&policy_, &source};
+    std::string root_dir = source.GetRootDir();
     for (const XMLElement* material_node = node->FirstChildElement("material");
          material_node;
          material_node = material_node->NextSiblingElement("material")) {
-      ParseMaterial(material_node, true, package_map_, root_dir_, &materials_);
+      ParseMaterial(d, material_node, true, package_map_, root_dir,
+                    &materials_);
     }
 
     // Parses geometry out of the model's link elements.
@@ -256,28 +256,33 @@ class UrdfGeometryTests : public testing::Test {
                link_node->FirstChildElement("visual");
            visual_node;
            visual_node = visual_node->NextSiblingElement("visual")) {
-        geometry::GeometryInstance geometry_instance =
-            internal::ParseVisual(body_name, package_map_, root_dir_,
-                                  visual_node, &materials_, &geometry_names);
-        visual_instances_.push_back(geometry_instance);
+        std::optional<geometry::GeometryInstance> geometry_instance =
+            ParseVisual(d, body_name, package_map_, root_dir,
+                        visual_node, &materials_, &geometry_names);
+        if (!geometry_instance) { return;}
+        visual_instances_.push_back(*geometry_instance);
       }
 
       for (const XMLElement* collision_node =
                link_node->FirstChildElement("collision");
            collision_node;
            collision_node = collision_node->NextSiblingElement("collision")) {
-        geometry::GeometryInstance geometry_instance =
-            internal::ParseCollision(body_name, package_map_, root_dir_,
+        std::optional<geometry::GeometryInstance> geometry_instance =
+            internal::ParseCollision(d, body_name, package_map_, root_dir,
                                      collision_node, &geometry_names);
-        collision_instances_.push_back(geometry_instance);
+        if (!geometry_instance) { return; }
+        collision_instances_.push_back(*geometry_instance);
       }
     }
   }
 
  protected:
   XMLDocument xml_doc_;
-  std::string root_dir_{"."};
+
   multibody::PackageMap package_map_;
+  drake::internal::DiagnosticPolicy policy_;
+  MultibodyPlant<double> plant_{0.0};
+
   MaterialMap materials_;
 
   std::vector<GeometryInstance> visual_instances_;
@@ -475,28 +480,29 @@ TEST_F(UrdfGeometryTests, TestWrongElementType) {
   const std::string file_no_conflict_1 = FindResourceOrThrow(
       resource_dir + "non_conflicting_materials_1.urdf");
 
-  DRAKE_EXPECT_NO_THROW(ParseUrdfGeometry(file_no_conflict_1));
+  DataSource source(DataSource::kFilename, &file_no_conflict_1);
+  DRAKE_EXPECT_NO_THROW(ParseUrdfGeometry(source));
 
   const XMLElement* node = xml_doc_.FirstChildElement("robot");
   ASSERT_TRUE(node);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(internal::ParseMaterial(node, false, package_map_,
-                                                      root_dir_, &materials_),
-                              "Expected material element, got <robot>");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::ParseMaterial(node, false, source, workspace_, &materials_),
+      ".*Expected material element, got <robot>");
 
   const XMLElement* material_node = node->FirstChildElement("material");
   ASSERT_TRUE(material_node);
 
   std::unordered_set<std::string> geometry_names;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      internal::ParseVisual("fake_name", package_map_, root_dir_, material_node,
+      internal::ParseVisual("fake_name", source, workspace_, material_node,
                             &materials_, &geometry_names),
-      "In link fake_name expected visual element, got material");
+      ".*In link fake_name expected visual element, got material");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      internal::ParseCollision("fake_name", package_map_, root_dir_,
+      internal::ParseCollision("fake_name", source, workspace_,
                                material_node, &geometry_names),
-      "In link 'fake_name' expected collision element, got material");
+      ".*In link 'fake_name' expected collision element, got material");
 }
 
 TEST_F(UrdfGeometryTests, TestParseConvexMesh) {
@@ -524,37 +530,60 @@ TEST_F(UrdfGeometryTests, TestParseConvexMesh) {
   }
 }
 
-// Verify we can parse drake collision properties from a <collision> element.
-TEST_F(UrdfGeometryTests, CollisionProperties) {
-  // Verifies that the property exists with the given double-typed value.
-  auto verify_single_property = [](const ProximityProperties& properties,
-                                   const char* group, const char* property,
-                                   double value) {
-    ASSERT_TRUE(properties.HasProperty(group, property))
-        << fmt::format("  for property: ('{}', '{}')", group, property);
-    EXPECT_EQ(properties.GetProperty<double>(group, property), value);
-  };
+class UrdfCollisionDocTests : public testing::Test {
+ public:
+  // Creates a special XML DOM consisting of *only* a collision object. XML text
+  // can be provided as an input and it will be injected as a child of the
+  // <collision> tag.
+  void MakeCollisionDocFromString(const std::string& collision_spec) {
+    const std::string urdf_harness = R"""(
+<?xml version="1.0"?>
+  <collision>
+    <geometry>
+      <box size=".1 .2 .3"/>
+    </geometry>{}
+  </collision>)""";
+    data_ = fmt::format(urdf_harness, collision_spec);
+    xml_doc_.Parse(data_.c_str());
+  }
 
   // Verifies that the properties has friction and it matches the given values.
-  auto verify_friction = [](const ProximityProperties& properties,
-                            const CoulombFriction<double>& expected_friction) {
+  void VerifyFriction(const ProximityProperties& properties,
+                      const CoulombFriction<double>& expected_friction) {
     ASSERT_TRUE(properties.HasProperty("material", "coulomb_friction"));
     const auto& friction = properties.GetProperty<CoulombFriction<double>>(
         "material", "coulomb_friction");
     EXPECT_EQ(friction.static_friction(), expected_friction.static_friction());
     EXPECT_EQ(friction.dynamic_friction(),
               expected_friction.dynamic_friction());
-  };
+  }
 
-  const PackageMap package_map;     // An empty package map.
-  const std::string root_dir(".");  // Arbitrary, un-used root directory.
+  // Verifies that the property exists with the given double-typed value.
+  void VerifySingleProperty(const ProximityProperties& properties,
+                            const char* group, const char* property,
+                            double value) {
+    ASSERT_TRUE(properties.HasProperty(group, property))
+        << fmt::format("  for property: ('{}', '{}')", group, property);
+    EXPECT_EQ(properties.GetProperty<double>(group, property), value);
+  }
 
+ protected:
+  std::string data_;
+  DataSource source_{DataSource::kContents, &data_};
+  XMLDocument xml_doc_;
+
+  multibody::PackageMap package_map_;
+  drake::internal::DiagnosticPolicy policy_;
+  MultibodyPlant<double> plant_{0.0};
+  ParsingWorkspace workspace_{package_map_, policy_, &plant_};
+};
+
+TEST_F(UrdfCollisionDocTests, BasicTags) {
   // This parser uses the ParseProximityProperties found in detail_common
   // (which already has exhaustive tests). So, we'll put in a smoke test to
   // confirm that all of the basic tags get parsed and focus on the logic that
   // is unique to `ParseCollision()`.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
+  MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
     <drake:mesh_resolution_hint value="2.5"/>
     <drake:hydroelastic_modulus value="3.5" />
@@ -562,125 +591,128 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
     <drake:mu_dynamic value="3.25" />
     <drake:mu_static value="3.5" />
   </drake:proximity_properties>)""");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    std::unordered_set<std::string> geometry_names;
-    GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node,
-                       &geometry_names);
-    ASSERT_NE(instance.proximity_properties(), nullptr);
-    const ProximityProperties& properties = *instance.proximity_properties();
-    verify_single_property(properties, geometry::internal::kHydroGroup,
-                           geometry::internal::kRezHint, 2.5);
-    verify_single_property(properties, geometry::internal::kHydroGroup,
-                           geometry::internal::kElastic, 3.5);
-    verify_single_property(properties, geometry::internal::kMaterialGroup,
-                           geometry::internal::kHcDissipation, 3.5);
-    verify_friction(properties, {3.5, 3.25});
-  }
+  const XMLElement* collision_node = xml_doc_.FirstChildElement("collision");
+  ASSERT_NE(collision_node, nullptr);
+  std::unordered_set<std::string> geometry_names;
+  std::optional<GeometryInstance> instance =
+      ParseCollision("link_name", source_, workspace_, collision_node,
+                     &geometry_names);
+  ASSERT_TRUE(instance.has_value());
+  ASSERT_NE(instance->proximity_properties(), nullptr);
+  const ProximityProperties& properties = *instance->proximity_properties();
+  VerifySingleProperty(properties, geometry::internal::kHydroGroup,
+                       geometry::internal::kRezHint, 2.5);
+  VerifySingleProperty(properties, geometry::internal::kHydroGroup,
+                       geometry::internal::kElastic, 3.5);
+  VerifySingleProperty(properties, geometry::internal::kMaterialGroup,
+                       geometry::internal::kHcDissipation, 3.5);
+  VerifyFriction(properties, {3.5, 3.25});
+}
 
-  // Case: specifies rigid hydroelastic.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
+TEST_F(UrdfCollisionDocTests, RigidHydroelastic) {
+  MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
     <drake:rigid_hydroelastic/>
   </drake:proximity_properties>)""");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    std::unordered_set<std::string> geometry_names;
-    GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node,
-                       &geometry_names);
-    ASSERT_NE(instance.proximity_properties(), nullptr);
-    const ProximityProperties& properties = *instance.proximity_properties();
-    ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
-                                       geometry::internal::kComplianceType));
-    EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
-        geometry::internal::kHydroGroup, geometry::internal::kComplianceType),
-            geometry::internal::HydroelasticType::kRigid);
-  }
+  const XMLElement* collision_node = xml_doc_.FirstChildElement("collision");
+  ASSERT_NE(collision_node, nullptr);
+  std::unordered_set<std::string> geometry_names;
+  std::optional<GeometryInstance> instance =
+      ParseCollision("link_name", source_, workspace_, collision_node,
+                     &geometry_names);
+  ASSERT_TRUE(instance.has_value());
+  ASSERT_NE(instance->proximity_properties(), nullptr);
+  const ProximityProperties& properties = *instance->proximity_properties();
+  ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
+                                     geometry::internal::kComplianceType));
+  auto prop = properties.GetProperty<geometry::internal::HydroelasticType>(
+      geometry::internal::kHydroGroup, geometry::internal::kComplianceType);
+  EXPECT_EQ(prop, geometry::internal::HydroelasticType::kRigid);
+}
 
-  // Case: specifies compliant hydroelastic.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
+TEST_F(UrdfCollisionDocTests, CompliantHydroelastic) {
+  MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
     <drake:compliant_hydroelastic/>
   </drake:proximity_properties>)""");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    std::unordered_set<std::string> geometry_names;
-    GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node,
-                       &geometry_names);
-    ASSERT_NE(instance.proximity_properties(), nullptr);
-    const ProximityProperties& properties = *instance.proximity_properties();
-    ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
-                                       geometry::internal::kComplianceType));
-    EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
-        geometry::internal::kHydroGroup, geometry::internal::kComplianceType),
-              geometry::internal::HydroelasticType::kSoft);
-  }
+  const XMLElement* collision_node = xml_doc_.FirstChildElement("collision");
+  ASSERT_NE(collision_node, nullptr);
+  std::unordered_set<std::string> geometry_names;
+  std::optional<GeometryInstance> instance =
+      ParseCollision("link_name", source_, workspace_, collision_node,
+                     &geometry_names);
+  ASSERT_TRUE(instance.has_value());
+  ASSERT_NE(instance->proximity_properties(), nullptr);
+  const ProximityProperties& properties = *instance->proximity_properties();
+  ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
+                                     geometry::internal::kComplianceType));
+  auto prop = properties.GetProperty<geometry::internal::HydroelasticType>(
+      geometry::internal::kHydroGroup, geometry::internal::kComplianceType);
+  EXPECT_EQ(prop, geometry::internal::HydroelasticType::kSoft);
+}
 
+TEST_F(UrdfCollisionDocTests, LegacySoftError) {
   // TODO(16229): Remove this ad-hoc input sanitization when we resolve
   //  issue 16229 "Diagnostics for unsupported SDFormat and URDF stanzas."
   // Case: specifies unsupported drake:soft_hydroelastic -- should be an error.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
+  MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
     <drake:soft_hydroelastic/>
   </drake:proximity_properties>)""");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    std::unordered_set<std::string> geometry_names;
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        ParseCollision("link_name", package_map, root_dir, collision_node,
-                       &geometry_names),
-        "Collision geometry uses the tag <drake:soft_hydroelastic> .* "
-        "which is no longer supported. Please change it to "
-        "<drake:compliant_hydroelastic>.");
-  }
+  const XMLElement* collision_node = xml_doc_.FirstChildElement("collision");
+  ASSERT_NE(collision_node, nullptr);
+  std::unordered_set<std::string> geometry_names;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseCollision("link_name", source_, workspace_, collision_node,
+                     &geometry_names),
+      ".*Collision geometry uses the tag <drake:soft_hydroelastic>, "
+      "which is no longer supported. Please change it to "
+      "<drake:compliant_hydroelastic>.");
+}
 
-  // Case: specifies both -- should be an error.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
+TEST_F(UrdfCollisionDocTests, BothTypesError) {
+  MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
     <drake:compliant_hydroelastic/>
     <drake:rigid_hydroelastic/>
   </drake:proximity_properties>)""");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
+  const XMLElement* collision_node = xml_doc_.FirstChildElement("collision");
+  ASSERT_NE(collision_node, nullptr);
   std::unordered_set<std::string> geometry_names;
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        ParseCollision("link_name", package_map, root_dir, collision_node,
-                       &geometry_names),
-        "Collision geometry has defined mutually-exclusive tags .*rigid.* and "
-        ".*compliant.*");
-  }
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseCollision("link_name", source_, workspace_, collision_node,
+                     &geometry_names),
+      ".*Collision geometry has defined mutually-exclusive tags .*rigid.* and "
+      ".*compliant.*");
+}
 
+
+TEST_F(UrdfCollisionDocTests, LegacyCompliance) {
   // TODO(SeanCurtis-TRI): This is the *old* interface; the new
   //  drake::proximity_properties should supplant it. Deprecate and remove this.
   // Case: has no drake:proximity_properties coefficients, only drake_compliance
   // coeffs.
-  {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
+  MakeCollisionDocFromString(R"""(
   <drake_compliance>
     <static_friction>3.5</static_friction>
     <dynamic_friction>2.5</dynamic_friction>
   </drake_compliance>)""");
-    const XMLElement* collision_node = doc->FirstChildElement("collision");
-    ASSERT_NE(collision_node, nullptr);
-    std::unordered_set<std::string> geometry_names;
-    GeometryInstance instance =
-        ParseCollision("link_name", package_map, root_dir, collision_node,
-                       &geometry_names);
-    ASSERT_NE(instance.proximity_properties(), nullptr);
-    const ProximityProperties& properties = *instance.proximity_properties();
-    verify_friction(properties, {3.5, 2.5});
-  }
+  const XMLElement* collision_node = xml_doc_.FirstChildElement("collision");
+  ASSERT_NE(collision_node, nullptr);
+  std::unordered_set<std::string> geometry_names;
+  std::optional<GeometryInstance> instance =
+      ParseCollision("link_name", source_, workspace_, collision_node,
+                     &geometry_names);
+  ASSERT_TRUE(instance.has_value());
+  ASSERT_NE(instance->proximity_properties(), nullptr);
+  const ProximityProperties& properties = *instance->proximity_properties();
+  VerifyFriction(properties, {3.5, 2.5});
+}
 
+TEST_F(UrdfCollisionDocTests, NewBeatsOld) {
   // Case: has both drake_compliance and drake:proximity_properties;
   // drake:proximity_properties wins.
-  unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
+  MakeCollisionDocFromString(R"""(
   <drake_compliance>
     <static_friction>3.5</static_friction>
     <dynamic_friction>2.5</dynamic_friction>
@@ -688,15 +720,16 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
   <drake:proximity_properties>
     <drake:mu_dynamic value="4.5" />
   </drake:proximity_properties>)""");
-  const XMLElement* collision_node = doc->FirstChildElement("collision");
+  const XMLElement* collision_node = xml_doc_.FirstChildElement("collision");
   ASSERT_NE(collision_node, nullptr);
   std::unordered_set<std::string> geometry_names;
-  GeometryInstance instance =
-      ParseCollision("link_name", package_map, root_dir, collision_node,
+  std::optional<GeometryInstance> instance =
+      ParseCollision("link_name", source_, workspace_, collision_node,
                      &geometry_names);
-  ASSERT_NE(instance.proximity_properties(), nullptr);
-  const ProximityProperties& properties = *instance.proximity_properties();
-  verify_friction(properties, {4.5, 4.5});
+  ASSERT_TRUE(instance.has_value());
+  ASSERT_NE(instance->proximity_properties(), nullptr);
+  const ProximityProperties& properties = *instance->proximity_properties();
+  VerifyFriction(properties, {4.5, 4.5});
 }
 
 // Confirms that the <drake:accepting_renderer> tag gets properly parsed.
