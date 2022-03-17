@@ -1,8 +1,5 @@
 #pragma once
 
-#include <vector>
-
-#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -38,7 +35,7 @@ v1─────────────────────v2    v1──�
       That is:
         - The closure of the interior of the mesh is a convex set.
         - The mesh is closed and watertight.
-        - The surface normals of all faces are consistently outwardly oreiented.
+        - The surface normals of all faces are consistently outwardly oriented.
  @retval volume_mesh
  @tparam_nonsymbolic_scalar
  */

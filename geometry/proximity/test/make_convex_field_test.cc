@@ -21,11 +21,10 @@ namespace {
 
 // Checks that the pressure values evaluated at each vertex of the underlying
 // mesh of `pressure_field` are within the range [0, hydroelastic_modulus]. Also
-// checks that the pressure values evaluate at boundary vertices are 0.
+// checks that the pressure values evaluated at boundary vertices are 0.
 void CheckMinMaxBoundaryValue(
     const VolumeMeshFieldLinear<double, double>& pressure_field,
-    double hydroelastic_modulus_in) {
-  const double hydroelastic_modulus = hydroelastic_modulus_in;
+    const double hydroelastic_modulus) {
   // Check that all vertices have their pressure values within the range of
   // zero to hydroelastic_modulus, and their minimum and maximum values are
   // indeed zero and hydroelastic_modulus respectively.

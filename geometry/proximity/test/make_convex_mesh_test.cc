@@ -49,6 +49,9 @@ class MakeConvexMeshTest : public ::testing::Test {
 // TODO(DamrongGuoy): Refactor to make this available outside this unit test.
 //
 // @pre Vertices in each mesh are unique. Each mesh has no duplicated vertices.
+//
+// TODO(joemasterjohn): Consider using gtest's container-matchers to make this
+// helper function more concise.
 void TestSurfaceMeshEquality(const TriangleSurfaceMesh<double>& mesh_A,
                              const TriangleSurfaceMesh<double>& mesh_B) {
   // Firstly the meshes must contain the same number of vertices and elements.
@@ -92,18 +95,18 @@ void TestSurfaceMeshEquality(const TriangleSurfaceMesh<double>& mesh_A,
   // the same winding order (face normals are in the same direction).
   auto find_element = [&mesh_A, &mesh_B, &vertex_mapping](int index) {
     SurfaceTriangle t = mesh_A.element(index);
-      SortedTriplet t_sorted(vertex_mapping[t.vertex(0)],
-                             vertex_mapping[t.vertex(1)],
-                             vertex_mapping[t.vertex(2)]);
-      for (int i = 0; i < mesh_B.num_elements(); ++i) {
-        const SurfaceTriangle& u = mesh_B.element(i);
-        SortedTriplet u_sorted(u.vertex(0), u.vertex(1), u.vertex(2));
-        if (t_sorted == u_sorted &&
-            mesh_A.face_normal(index).dot(mesh_B.face_normal(i)) > 0) {
-          return i;
-        }
+    SortedTriplet t_sorted(vertex_mapping[t.vertex(0)],
+                           vertex_mapping[t.vertex(1)],
+                           vertex_mapping[t.vertex(2)]);
+    for (int i = 0; i < mesh_B.num_elements(); ++i) {
+      const SurfaceTriangle& u = mesh_B.element(i);
+      SortedTriplet u_sorted(u.vertex(0), u.vertex(1), u.vertex(2));
+      if (t_sorted == u_sorted &&
+          mesh_A.face_normal(index).dot(mesh_B.face_normal(i)) > 0) {
+        return i;
       }
-      return -1;
+    }
+    return -1;
   };
 
   std::vector<int> element_mapping(mesh_A.num_elements(), -1);

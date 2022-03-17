@@ -2,16 +2,20 @@
 
 #include <cmath>
 #include <utility>
+#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 
 using Eigen::Vector3d;
+
+namespace {
 
 /* Returns the centroid of the volume enclosed by the surface mesh.
    It is not necessarily the same as the centroid of the enclosing surface. */
@@ -26,7 +30,7 @@ Vector3d CalcCentroidOfEnclosedVolume(
 
   // For convenience we tetrahedralize each triangle (p,q,r) about the
   // origin o = (0,0,0) in the mesh's frame. The centroid is then the
-  // signed volume weighted sum of the centroids of the tetraheda. The
+  // signed volume weighted sum of the centroids of the tetrahedra. The
   // choice of o is arbitrary and need not be on the interior of surface_mesh.
   // For efficiency we compute 6*Vi for the signed volume Vi of the ith element
   // and 6*V for the signed volume V of the region.
@@ -46,6 +50,8 @@ Vector3d CalcCentroidOfEnclosedVolume(
 
   return centroid / (4 * six_total_volume);
 }
+
+}  // namespace
 
 template <typename T>
 VolumeMesh<T> MakeConvexVolumeMesh(const Convex& convex) {

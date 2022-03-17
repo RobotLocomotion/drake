@@ -14,11 +14,11 @@ namespace internal {
 /*
  @pre This pressure field generation is highly dependent on the implementation
  of the convex mesh in MakeConvexVolumeMesh(). In particular it assumes the
- last vertex in its vertex list is the sole internal vertex  and the rest of
+ last vertex in its vertex list is the sole internal vertex and the rest of
  the vertices are boundary. If the implementation in MakeConvexVolumeMesh()
  were to change, this pressure field generation would also need to change.
 
- @param[in,out] mesh_C   A pointer to a tetrahedral mesh of a convex shape.
+ @param[in] mesh_C       A pointer to a tetrahedral mesh of a convex shape.
                          It is aliased in the returned pressure field and
                          must remain alive as long as the field.
  @param[in] hydroelastic_modulus  Scale extent to pressure.
@@ -30,7 +30,7 @@ namespace internal {
  */
 template <typename T>
 VolumeMeshFieldLinear<T, T> MakeConvexPressureField(
-    const VolumeMesh<T>* mesh_C, const T hydroelastic_modulus) {
+    const VolumeMesh<T>* mesh_C, const T& hydroelastic_modulus) {
   DRAKE_DEMAND(hydroelastic_modulus > T(0));
   DRAKE_DEMAND(mesh_C != nullptr);
 
