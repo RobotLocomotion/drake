@@ -37,7 +37,7 @@ class RenderEngineGltfClient : public RenderEngineVtk {
   RenderEngineGltfClient(const RenderEngineGltfClientParams& parameters =
                              RenderEngineGltfClientParams());
 
-  // TODO(svenevs): remove this once vtkGLTFExporter is patched to invert.
+  // TODO(svenevs): remove when VTK is updated, see implementation for details.
   void UpdateViewpoint(const math::RigidTransformd& X_WC) override;
 
  protected:
@@ -79,7 +79,13 @@ class RenderEngineGltfClient : public RenderEngineVtk {
   void CleanupFrame(const std::string& scene_path,
                     const std::string& image_path) const;
 
+  /* Helper access method for testing UpdateViewpoint matrix inversion for the
+   specified image_type.  Only used for testing. */
+  Eigen::Matrix4d CameraModelViewTransformMatrix(
+      internal::ImageType image_type) const;
+
  private:
+  friend class RenderEngineGltfClientTester;
   std::unique_ptr<internal::RenderClient> render_client_;
 };
 
