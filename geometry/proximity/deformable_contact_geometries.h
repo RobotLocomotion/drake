@@ -36,7 +36,7 @@ class ReferenceDeformableGeometry : public ShapeReifier {
    to zero on the boundary vertices, and evaluates to non-positive values on all
    vertices. */
   ReferenceDeformableGeometry(const Shape& shape,
-                              geometry::VolumeMesh<double> mesh);
+                              std::unique_ptr<VolumeMesh<double>> mesh);
 
   /* Custom copy assign and construct. */
   ReferenceDeformableGeometry& operator=(const ReferenceDeformableGeometry& s);
@@ -48,8 +48,7 @@ class ReferenceDeformableGeometry : public ShapeReifier {
 
   /* Returns the approximate signed distance field with which `this` is
    constructed. */
-  const geometry::VolumeMeshFieldLinear<double, double>& signed_distance_field()
-      const {
+  const VolumeMeshFieldLinear<double, double>& signed_distance_field() const {
     return *signed_distance_field_;
   }
 
@@ -64,9 +63,8 @@ class ReferenceDeformableGeometry : public ShapeReifier {
   void ImplementGeometry(const Sphere& sphere, void* user_data) override;
   void ImplementGeometry(const Box& box, void* user_data) override;
 
-  geometry::VolumeMesh<double> mesh_;
-  std::unique_ptr<geometry::VolumeMeshFieldLinear<double, double>>
-      signed_distance_field_;
+  std::unique_ptr<VolumeMesh<double>> mesh_;
+  std::unique_ptr<VolumeMeshFieldLinear<double, double>> signed_distance_field_;
 };
 
 /* Definition of a deformable geometry for contact implementations. To be a
@@ -79,11 +77,12 @@ class DeformableGeometry {
 
   /* Constructs a deformable geometry. */
   DeformableGeometry(const Shape& shape, VolumeMesh<double> mesh)
-      : mesh_(mesh), reference_geometry_(shape, std::move(mesh)) {}
+      : reference_geometry_(shape, std::make_unique<VolumeMesh<double>>(mesh)),
+        mesh_(std::move(mesh)) {}
 
   /* Returns the volume mesh representation of the deformable geometry at
    current configuration. */
-  const internal::DeformableVolumeMesh<double>& deformable_volume_mesh() const {
+  const DeformableVolumeMesh<double>& deformable_volume_mesh() const {
     return mesh_;
   }
 
@@ -103,8 +102,8 @@ class DeformableGeometry {
   }
 
  private:
-  internal::DeformableVolumeMesh<double> mesh_;
   ReferenceDeformableGeometry reference_geometry_;
+  DeformableVolumeMesh<double> mesh_;
 };
 
 /* Defines a rigid geometry -- a rigid hydroelastic mesh repurposed to compute

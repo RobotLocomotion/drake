@@ -22,7 +22,8 @@ class DeformableContactData {
   DeformableContactData(
       std::vector<internal::deformable::DeformableRigidContactPair<T>>
           contact_pairs,
-      const internal::deformable::DeformableGeometry& deformable_geometry);
+      const internal::deformable::DeformableGeometry& deformable_geometry,
+      GeometryId deformable_geometry_id);
 
   /* A 2D anologue of a deformable mesh D in contact with a rigid body R. The
    deformable mesh has 6 vertices with indexes v0-v5. Vertices v1, v2, and v5

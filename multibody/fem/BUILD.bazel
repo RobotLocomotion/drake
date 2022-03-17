@@ -329,13 +329,13 @@ drake_cc_library(
 
 drake_cc_library(
     name = "mesh_utilities",
-    visibility = ["//visibility:public"],
     srcs = [
         "mesh_utilities.cc",
     ],
     hdrs = [
         "mesh_utilities.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//common:default_scalars",
         "//common:essential",

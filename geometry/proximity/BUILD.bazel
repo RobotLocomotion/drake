@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":collision_filter",
         ":collisions_exist_callback",
         ":contact_surface_utility",
+        ":deformable_contact_geometries",
         ":deformable_contact_internal",
         ":deformable_contact_surface",
         ":deformable_rigid_contact_pair",
@@ -179,7 +180,6 @@ drake_cc_library(
     srcs = ["deformable_contact_internal.cc"],
     hdrs = ["deformable_contact_internal.h"],
     deps = [
-        "//geometry/query_results:deformable_contact_data",
         ":deformable_contact_geometries",
         ":deformable_rigid_contact_pair",
         ":proximity_utilities",
@@ -187,9 +187,9 @@ drake_cc_library(
         "//geometry:geometry_ids",
         "//geometry:proximity_properties",
         "//geometry:shape_specification",
+        "//geometry/query_results:deformable_contact_data",
     ],
 )
-
 
 drake_cc_library(
     name = "deformable_contact_surface",
@@ -865,7 +865,13 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
-        "@fmt",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_contact_geometries_test",
+    deps = [
+        ":deformable_contact_geometries",
     ],
 )
 
@@ -877,6 +883,7 @@ drake_cc_googletest(
         "//geometry/proximity:triangle_surface_mesh",
         "//geometry/proximity:volume_mesh",
         "//math:autodiff",
+        "//multibody/fem:mesh_utilities",
     ],
 )
 

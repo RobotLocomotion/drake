@@ -1077,7 +1077,7 @@ void GeometryState<T>::SetFramePoses(
 template <typename T>
 void GeometryState<T>::SetDeformablePositions(
     const SourceId source_id, const FrameDeformableVector<T>& positions) {
-  ValidateFrameIds(source_id, poses);
+  ValidateFrameIds(source_id, positions);
   for (auto frame_id : source_frame_id_map_[source_id]) {
     if (positions.has_id(frame_id)){
       const auto& frame = frames_[frame_id];
@@ -1124,6 +1124,7 @@ void GeometryState<T>::FinalizePoseUpdate() {
   }
 }
 
+template <typename T>
 void GeometryState<T>::FinalizeDeformableUpdate() {
   geometry_engine_->UpdateDeformableVertexPositions(q_WGs_);
 }

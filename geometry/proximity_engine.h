@@ -15,6 +15,7 @@
 #include "drake/geometry/proximity/collision_filter.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/query_results/contact_surface.h"
+#include "drake/geometry/query_results/deformable_contact_data.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"

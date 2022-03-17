@@ -644,7 +644,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
   ComputeDeformableContactData(
       std::vector<DeformableContactData<T>>* deformable_contact_data) const {
-    deformable_contact_geometries.ComputeDeformableContactData(
+    deformable_contact_geometries_.ComputeAllDeformableContactData(
         deformable_contact_data);
   }
 

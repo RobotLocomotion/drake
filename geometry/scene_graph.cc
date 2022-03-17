@@ -476,7 +476,7 @@ void SceneGraph<T>::CalcDeformableUpdate(const Context<T>& context,
     }
   }
   // Propagate the deformable update to various engines.
-  mutable_state.FinalizeDeformbleUpdate();
+  mutable_state.FinalizeDeformableUpdate();
 }
 
 template <typename T>

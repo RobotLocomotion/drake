@@ -1,15 +1,9 @@
 #pragma once
 
-#include <memory>
-#include <optional>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
-#include "drake/common/drake_assert.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/deformable_contact_geometries.h"
-#include "drake/geometry/proximity/deformable_contact_surface.h"
 #include "drake/geometry/proximity/deformable_rigid_contact_pair.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_results/deformable_contact_data.h"
@@ -21,7 +15,7 @@ namespace internal {
 namespace deformable {
 
 /* This class stores all instantiated representations of declared geometries for
- deformabe contact. They are keyed by the geometry's global GeometryId.
+ deformable contact. They are keyed by the geometry's global GeometryId.
 
  In order for a geometry with id `g_id` to have a representation in this
  collection, it must:
@@ -33,8 +27,10 @@ namespace deformable {
    - the geometry cannot have been subsequently removed via a call to
      RemoveGeometry().
 
- If two geometries are in contact, in order to produce the corresponding
- ContactSurface, both ids must have a valid representation in this set.  */
+ If a geometry satisfies the requirements above, we say that the geometry has a
+ "deformable contact representation". If two geometries are in contact, in order
+ to produce the corresponding DeformableContactData, both ids must have a valid
+ representation in this data structure. */
 class Geometries final : public ShapeReifier {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Geometries);
@@ -42,19 +38,13 @@ class Geometries final : public ShapeReifier {
   Geometries() = default;
 
   /* Returns the representation of the deformable geometry with the given `id`.
-   */
-  const DeformableGeometry& deformable_geometry(GeometryId id) const {
-    if (is_deformable(id)) return deformable_geometries_.at(id);
-    throw std::runtime_error(
-        fmt::format("There is no deformable geometry with GeometryId {}", id));
-  }
+   @throws exception if the a deformable geomtry with the given `id` doesn't
+   exist. */
+  const DeformableGeometry& deformable_geometry(GeometryId id) const;
 
-  /* Returns the representation of the rigid geometry with the given `id`. */
-  const RigidGeometry& rigid_geometry(GeometryId id) const {
-    if (is_rigid(id)) return rigid_geometries_.at(id);
-    throw std::runtime_error(
-        fmt::format("There is no rigid geometry with GeometryId {}", id));
-  }
+  /* Returns the representation of the rigid geometry with the given `id`.
+  @throws exception if the a righd geomtry with the given `id` doesn't exist. */
+  const RigidGeometry& rigid_geometry(GeometryId id) const;
 
   bool is_rigid(GeometryId id) const {
     return rigid_geometries_.count(id) != 0;
@@ -88,36 +78,25 @@ class Geometries final : public ShapeReifier {
   /* Updates the world pose of the rigid geometry with the given id, if it
    exists, to `X_WG`. */
   void UpdateRigidWorldPose(GeometryId id,
-                            const math::RigidTransform<double>& X_WG) {
-    if (is_rigid(id)) {
-      rigid_geometries_.at(id).set_pose_in_world(X_WG);
-    }
-  }
+                            const math::RigidTransform<double>& X_WG);
 
   /* If the deformable geometry with `id` exists, updates the vertex positions
    of the geometry (in the mesh frame M) to `q_MG`. */
   void UpdateDeformableVertexPositions(
-      GeometryId id, const Eigen::Ref<const VectorX<double>>& q_MG) {
-    if (is_deformable(id)) {
-      deformable_geometries_.at(id).UpdateVertexPositions(q_MG);
-    }
-  }
+      GeometryId id, const Eigen::Ref<const VectorX<double>>& q_MG);
 
   /* For all registered deformable bodies, computes the contact data of that
    deformable body with all registered rigid bodies. Assumes the vertex
    positions and poses of all registered deformable and rigid bodies are up to
-   date. */
-  void ComputeDeformableContactData(std::vector<DeformableContactData<double>>*
-                                        deformable_contact_data) const {
-    deformable_contact_data->clear();
-    deformable_contact_data->reserve(num_deformable_geometry());
-    for (const auto& it : deformable_geometries_) {
-      deformable_contact_data->emplace_back(
-          CalcDeformableContactData(it.first));
-    }
-  }
+   date.
+   @pre deformable_contact_data != nullptr. */
+  void ComputeAllDeformableContactData(
+      std::vector<DeformableContactData<double>>* deformable_contact_data)
+      const;
 
  private:
+  friend class GeometriesTester;
+
   // Data to be used during reification. It is passed as the `user_data`
   // parameter in the ImplementGeometry API.
   struct ReifyData {
@@ -137,45 +116,25 @@ class Geometries final : public ShapeReifier {
   void ImplementGeometry(const Mesh&, void*) override;
   void ImplementGeometry(const Convex& convex, void* user_data) override;
 
+  /* Makes a rigid or deformable representation of the `shape` for deformable
+  contact depending on `data.is_rigid`. If the shape with the desired
+  representation type is supported, add its deformable contact representation to
+  this. Otherwise, log a warning that the shape with the desired representation
+  is not supported. */
   template <typename ShapeType>
   void MakeShape(const ShapeType& shape, const ReifyData& data);
 
-  /* Calculates the contact data for the deforamble body with the given id.
-   @pre A deformable geometry with `deformable_id` exists. */
+  /* Calculates the contact data for the deformable body with the given id.
+   @pre A deformable representation with `deformable_id` exists. */
   DeformableContactData<double> CalcDeformableContactData(
-      GeometryId deformable_id) const {
-    DRAKE_DEMAND(is_deformable(deformable_id));
-    std::vector<internal::deformable::DeformableRigidContactPair<double>>
-        deformable_rigid_contact_pairs;
-    for (const auto& it : rigid_geometries_) {
-      DeformableRigidContactPair<double> contact_pair =
-          CalcDeformableRigidContactPair(it.first, deformable_id);
-      if (contact_pair.num_contact_points() != 0) {
-        deformable_rigid_contact_pairs.emplace_back(std::move(contact_pair));
-      }
-    }
-    return {std::move(deformable_rigid_contact_pairs),
-            deformable_geometries_[deformable_id]};
-  }
+      GeometryId deformable_id) const;
 
+  /* Calculates the contact data between the deformable geometry with
+   `deformable_id` and the rigid geometry with `rigid_id`.
+   @pre A rigid representation with `rigid_id` exists.
+   @pre A deformable representation with `deformable_id` exists. */
   DeformableRigidContactPair<double> CalcDeformableRigidContactPair(
-      GeometryId rigid_id, GeometryId deformable_id) const {
-    DRAKE_DEMAND(is_deformable(deforamble_id));
-    DRAKE_DEMAND(is_rigid(rigid_id));
-
-    const DeformableVolumeMesh<double>& deformable_tet_mesh =
-        deformable_geometries_[deformable_id].deformable_volume_mesh();
-    const RigidGeometry& rigid_geometry = rigid_geometries_[rigid_id];
-    const math::RigidTransform<double>& X_WR = rigid_geometry.pose_in_world();
-    const auto& rigid_bvh = rigid_geometry.rigid_mesh().bvh();
-    const auto& rigid_tri_mesh = rigid_geometry.rigid_mesh().mesh();
-
-    DeformableContactSurface<double> contact_surface =
-        ComputeTetMeshTriMeshContact(deformable_tet_mesh, rigid_tri_mesh,
-                                     rigid_bvh, X_WR);
-    return internal::DeformableRigidContactPair<double>(
-        std::move(contact_surface), rigid_id, deformable_id);
-  }
+      GeometryId rigid_id, GeometryId deformable_id) const;
 
   // The representations of all deformable geometries.
   std::unordered_map<GeometryId, DeformableGeometry> deformable_geometries_;

@@ -105,8 +105,45 @@ geometry::VolumeMesh<T> MakeDiamondCubicBoxVolumeMesh(const Box& box,
   return {std::move(elements), std::move(vertices)};
 }
 
+template <typename T>
+VolumeMesh<T> MakeOctahedronVolumeMesh() {
+  // Eight tetrahedra in the octahedron mesh. Order the vertices to follow the
+  // convention in geometry::VolumeMesh. See geometry::VolumeMesh for more
+  // details.
+  const int element_data[8][4] = {
+      // The top four tetrahedrons share the top vertex v5.
+      {0, 1, 2, 5},
+      {0, 2, 3, 5},
+      {0, 3, 4, 5},
+      {0, 4, 1, 5},
+      // The bottom four tetrahedrons share the bottom vertex v6.
+      {0, 2, 1, 6},
+      {0, 3, 2, 6},
+      {0, 4, 3, 6},
+      {0, 1, 4, 6}};
+  std::vector<VolumeElement> elements;
+  for (const auto& element : element_data) {
+    elements.emplace_back(element);
+  }
+  // clang-format off
+  const Vector3<T> vertex_data[7] = {
+      { 0,  0,  0},
+      { 1,  0,  0},
+      { 0,  1,  0},
+      {-1,  0,  0},
+      { 0, -1,  0},
+      { 0,  0,  1},
+      { 0,  0, -1}};
+  // clang-format on
+  std::vector<Vector3<T>> vertices;
+  for (const auto& vertex : vertex_data) {
+    vertices.emplace_back(vertex);
+  }
+  return VolumeMesh<T>(std::move(elements), std::move(vertices));
+}
+
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&MakeDiamondCubicBoxVolumeMesh<T>))
+    (&MakeDiamondCubicBoxVolumeMesh<T>, &MakeOctahedronVolumeMesh<T>))
 
 }  // namespace fem
 }  // namespace multibody

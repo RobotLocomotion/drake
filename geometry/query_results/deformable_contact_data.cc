@@ -14,18 +14,19 @@ using internal::deformable::DeformableRigidContactPair;
 template <typename T>
 DeformableContactData<T>::DeformableContactData(
     std::vector<DeformableRigidContactPair<T>> contact_pairs,
-    const internal::deformable::DeformableGeometry& deformable_geometry)
+    const internal::deformable::DeformableGeometry& deformable_geometry,
+    GeometryId deformable_geometry_id)
     : contact_pairs_(std::move(contact_pairs)),
       signed_distances_(contact_pairs_.size()),
       permuted_vertex_indexes_(
           deformable_geometry.deformable_volume_mesh().mesh().num_vertices(),
           -1),
       permuted_to_original_indexes_(
-          deformable_geometry.deformable_volume_mesh().mesh().num_vertices()) {
+          deformable_geometry.deformable_volume_mesh().mesh().num_vertices()),
+      deformable_geometry_id_(deformable_geometry_id) {
   num_contact_points_ = 0;
   if (!contact_pairs_.empty()) {
     /* All contact pairs should involve the same deformable body. */
-    deformable_geometry_id_ = contact_pairs_[0].deformable_id;
     for (const auto& contact_pair : contact_pairs_) {
       DRAKE_DEMAND(deformable_geometry_id_ == contact_pair.deformable_id);
     }

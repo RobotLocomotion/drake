@@ -12,7 +12,7 @@
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-// #include "drake/multibody/fixed_fem/dev/mesh_utilities.h"
+#include "drake/multibody/fem/mesh_utilities.h"
 
 namespace drake {
 namespace geometry {
@@ -27,6 +27,7 @@ using geometry::VolumeMesh;
 using geometry::internal::Bvh;
 using geometry::internal::DeformableVolumeMesh;
 using geometry::internal::Obb;
+using multibody::fem::MakeOctahedronVolumeMesh;
 using std::vector;
 
 /* The MakePyramidSurface() method is stolen from mesh_intersection_test.cc. */
