@@ -17,6 +17,7 @@ namespace drake {
 namespace geometry {
 namespace render {
 
+namespace fs = drake::filesystem;
 using geometry::render::RenderCameraCore;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
@@ -82,9 +83,12 @@ internal::RenderImageType VtkToClientRenderImageType(
   else if (image_type == internal::ImageType::kLabel)
     return internal::RenderImageType::kLabel16I;
 
+  // no cover: will only execute with a breaking change to RenderImageType.
+  // LCOV_EXCL_START
   throw std::runtime_error(fmt::format(
       "RenderEngineGltfClient: unspported internal ImageType of '{}'.",
       image_type));
+  // LCOV_EXCL_STOP
 }
 
 std::string ImageTypeToString(internal::ImageType image_type) {
@@ -96,9 +100,12 @@ std::string ImageTypeToString(internal::ImageType image_type) {
     return "label";
   }
 
+  // no cover: will only execute with a breaking change to RenderImageType.
+  // LCOV_EXCL_START
   throw std::runtime_error(fmt::format(
       "RenderEngineGltfClient: unspported internal ImageType of '{}'.",
       image_type));
+  // LCOV_EXCL_STOP
 }
 
 void LogFrameStart(internal::ImageType image_type, int64_t scene_id) {
@@ -121,16 +128,17 @@ void LogFrameServerResponsePath(internal::ImageType image_type,
 
 // Delete the file and log if verbose, only call if no_cleanup() == false.
 void DeleteFileAndLogIfVerbose(const std::string& path, bool verbose) {
-  int failed = std::remove(path.c_str());
-  if (verbose) {
-    if (!failed) {
+  try {
+    fs::remove(path);
+    if (verbose) {
       drake::log()->debug("RenderEngineGltfClient: deleted unused file '{}'.",
                           path);
-    } else {
+    }
+  } catch (const std::exception& e) {
+    if (verbose) {
       drake::log()->debug(
-          "RenderEngineGltfClient: unable to delete file '{}' with std::remove "
-          "returning code {}.",
-          path, failed);
+          "RenderEngineGltfClient: unable to delete file '{}'.  {}", path,
+          e.what());
     }
   }
 }
@@ -323,7 +331,7 @@ void RenderEngineGltfClient::DoRenderLabelImage(
 std::string RenderEngineGltfClient::ExportPathFor(
     internal::ImageType image_type, int64_t scene_id) const {
   // Create e.g., {temp_directory()}/0000000000000000XYZ-color.gltf
-  const drake::filesystem::path base{render_client_->temp_directory()};
+  const fs::path base{render_client_->temp_directory()};
   // NOTE: the maximum number of digits in a int64_t is 19.
   const std::string scene{
       fmt::format("{:0>19}-{}.gltf", scene_id, ImageTypeToString(image_type))};
@@ -345,6 +353,19 @@ void RenderEngineGltfClient::CleanupFrame(const std::string& scene_path,
                                           const std::string& image_path) const {
   DeleteFileAndLogIfVerbose(scene_path, render_client_->verbose());
   DeleteFileAndLogIfVerbose(image_path, render_client_->verbose());
+}
+
+Eigen::Matrix4d RenderEngineGltfClient::CameraModelViewTransformMatrix(
+    internal::ImageType image_type) const {
+  auto* cam = pipelines_[image_type]->renderer->GetActiveCamera();
+  const auto* vtk_mat = cam->GetModelViewTransformMatrix();
+  Eigen::Matrix4d ret;
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      ret(i, j) = vtk_mat->GetElement(i, j);
+    }
+  }
+  return ret;
 }
 
 }  // namespace render
