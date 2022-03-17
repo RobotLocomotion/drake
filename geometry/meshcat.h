@@ -420,8 +420,9 @@ class Meshcat {
   //@{
 
   /** Adds a button with the label `name` to the meshcat browser controls GUI.
-   @throws std::exception if `name` has already been added as any type of
-   control (e.g., either button or slider). */
+   If the button already existed, then resets its click count to zero instead.
+   @throws std::exception if `name` has already been added as any other type
+   of control (e.g., slider). */
   void AddButton(std::string name);
 
   /** Returns the number of times the button `name` has been clicked in the
