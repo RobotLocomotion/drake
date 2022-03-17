@@ -365,6 +365,7 @@ drake_cc_library(
     name = "drake_marker_shared_library",
     srcs = ["libdrake_marker.so"],
     hdrs = ["drake_marker.h"],
+    install_hdrs_exclude = ["drake_marker.h"],
     tags = ["exclude_from_package"],
     visibility = ["//tools/install/libdrake:__pkg__"],
 )
@@ -393,6 +394,7 @@ drake_cc_library(
     name = "find_runfiles",
     srcs = ["find_runfiles.cc"],
     hdrs = ["find_runfiles.h"],
+    interface_deps = [],
     deps = [
         ":essential",
         ":filesystem",
@@ -418,9 +420,11 @@ drake_cc_library(
         "//tools/cc_toolchain:linux": ["-ldl"],
         "//conditions:default": [],
     }),
+    interface_deps = [
+        ":essential",
+    ],
     deps = [
         ":drake_marker_shared_library",
-        ":essential",
         ":filesystem",
         ":find_runfiles",
     ],
@@ -434,8 +438,8 @@ drake_cc_library(
         DRAKE_RESOURCE_SENTINEL,
     ],
     visibility = ["//tools/install/libdrake:__pkg__"],
+    interface_deps = [],
     deps = [
-        ":essential",
         ":filesystem",
         ":find_resource",
     ],
@@ -478,8 +482,10 @@ drake_cc_library(
     hdrs = [
         "nice_type_name.h",
     ],
-    deps = [
+    interface_deps = [
         ":essential",
+    ],
+    deps = [
         ":nice_type_name_override_header",
     ],
 )
@@ -499,11 +505,13 @@ drake_cc_library(
     name = "random",
     srcs = ["random.cc"],
     hdrs = ["random.h"],
-    deps = [
-        ":autodiff",
+    interface_deps = [
         ":copyable_unique_ptr",
         ":essential",
         ":extract_double",
+    ],
+    deps = [
+        ":autodiff",
     ],
 )
 
@@ -530,8 +538,10 @@ drake_cc_library(
     name = "temp_directory",
     srcs = ["temp_directory.cc"],
     hdrs = ["temp_directory.h"],
-    deps = [
+    interface_deps = [
         ":essential",
+    ],
+    deps = [
         ":filesystem",
     ],
 )
@@ -709,6 +719,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "random_test",
     deps = [
+        ":autodiff",
         ":random",
         "//common/test_utilities:limit_malloc",
     ],
@@ -942,6 +953,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":drake_path",
+        ":filesystem",
         ":find_resource",
         "//common/test_utilities:expect_no_throw",
     ],
@@ -975,6 +987,7 @@ drake_cc_googletest(
         "test/find_resource_test_data.txt",
     ],
     deps = [
+        ":filesystem",
         ":find_runfiles",
         ":temp_directory",
         "//common/test_utilities:expect_throws_message",
@@ -1088,6 +1101,7 @@ drake_cc_googletest(
         ":autodiff",
         ":essential",
         ":nice_type_name",
+        ":nice_type_name_override_header",
     ],
 )
 

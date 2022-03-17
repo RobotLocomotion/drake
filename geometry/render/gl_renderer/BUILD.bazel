@@ -93,18 +93,18 @@ drake_cc_library_ubuntu_only(
         "buffer_dim.h",
         "render_engine_gl.h",
     ],
-    deps = [
+    interface_deps = [
         ":opengl_context",
         ":opengl_geometry",
         ":render_engine_gl_params",
         ":shader_program",
-        ":shader_program_data",
         ":shape_meshes",
         ":texture_library",
-        "//common:essential",
         "//geometry/render:render_engine",
-        "//geometry/render:render_label",
         "//systems/sensors:image",
+    ],
+    deps = [
+        "//common:filesystem",
     ],
 )
 
@@ -194,10 +194,12 @@ drake_cc_library_ubuntu_only(
     name = "texture_library",
     srcs = ["texture_library.cc"],
     hdrs = ["texture_library.h"],
-    deps = [
+    interface_deps = [
         "//common:essential",
-        "//common:filesystem",
         "//geometry/render/gl_renderer:opengl_context",
+    ],
+    deps = [
+        "//common:filesystem",
         "@vtk//:vtkIOImage",
     ],
 )
