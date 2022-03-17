@@ -716,7 +716,7 @@ std::vector<LinkInfo> AddLinksFromSpecification(
           const RigidTransformd X_LC =
               MakeGeometryPoseFromSdfCollision(sdf_collision, X_LG);
           geometry::ProximityProperties props =
-              MakeProximityPropertiesForCollision(sdf_collision);
+              MakeProximityPropertiesForCollision(diagnostic, sdf_collision);
           plant->RegisterCollisionGeometry(body, X_LC, *shape,
                                            sdf_collision.Name(),
                                            std::move(props));

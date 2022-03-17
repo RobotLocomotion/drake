@@ -9,6 +9,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/filesystem.h"
 #include "drake/common/text_logging.h"
@@ -26,6 +27,8 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using math::RigidTransformd;
 using tinyxml2::XMLElement;
+
+using drake::internal::DiagnosticPolicy;
 
 UrdfMaterial AddMaterialToMaterialMap(const std::string& material_name,
                                       UrdfMaterial material,
@@ -590,8 +593,12 @@ geometry::GeometryInstance ParseCollision(
           rigid_element->GetLineNum(), compliant_element->GetLineNum()));
     }
 
-    props = ParseProximityProperties(read_double, rigid_element != nullptr,
-                                     compliant_element != nullptr);
+    // TODO(jwnimmer-tri) ParseCollision should accept a policy as an argument
+    // and pass it along here, instead of making a temporary one.
+    const DiagnosticPolicy diagnostic;
+    props = ParseProximityProperties(
+        diagnostic, read_double, rigid_element != nullptr,
+        compliant_element != nullptr);
   }
 
   // TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on
