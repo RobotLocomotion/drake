@@ -128,7 +128,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   ///  v_MCo_E = v_MBo_E + ω_MB_E x p_BoCo_E + v_BCo_E
   /// </pre>
   /// If frame C is rigidly fixed to frame B, V_BC_E = 0 and this method
-  /// produces a Shift() operation (albeit inefficient). In other words, use
+  /// produces a Shift() operation (albeit inefficiently). In other words, use
   /// Shift() if velocity_of_moving_frame = 0.
   /// @see SpatialAcceleration::ComposeWithMovingFrameAcceleration().
   SpatialVelocity<T> ComposeWithMovingFrameVelocity(
