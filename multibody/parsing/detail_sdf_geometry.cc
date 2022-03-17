@@ -89,6 +89,7 @@ T GetChildElementValue(const sdf::Element& element,
 }  // namespace
 
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
+    const DiagnosticPolicy& diagnostic,
     const sdf::Geometry& sdf_geometry, ResolveFilename resolve_filename) {
   // TODO(amcastro-tri): unit tests for different error paths are needed.
 
@@ -153,6 +154,7 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       DRAKE_DEMAND(mesh_element != nullptr);
       const std::string file_name =
           resolve_filename(
+              diagnostic,
               GetChildElementValue<std::string>(*mesh_element, "uri"));
       double scale = 1.0;
       if (mesh_element->HasElement("scale")) {
@@ -195,6 +197,7 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
 }
 
 std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
+    const DiagnosticPolicy& diagnostic,
     const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
     const math::RigidTransformd& X_LG) {
   const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
@@ -253,18 +256,21 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     }
   }
 
-  auto shape = MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename);
+  auto shape = MakeShapeFromSdfGeometry(
+      diagnostic, sdf_geometry, resolve_filename);
   if (shape == nullptr) {
     return nullptr;
   }
   auto instance =
       make_unique<GeometryInstance>(X_LC, move(shape), sdf_visual.Name());
   instance->set_illustration_properties(
-      MakeVisualPropertiesFromSdfVisual(sdf_visual, resolve_filename));
+      MakeVisualPropertiesFromSdfVisual(
+          diagnostic, sdf_visual, resolve_filename));
   return instance;
 }
 
 IllustrationProperties MakeVisualPropertiesFromSdfVisual(
+    const DiagnosticPolicy& diagnostic,
     const sdf::Visual& sdf_visual, ResolveFilename resolve_filename) {
   // This doesn't directly use the sdf::Material API on purpose. In the current
   // version, if a parameter (e.g., diffuse) is missing it will *not* be
@@ -295,7 +301,7 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
           material_element->Get<std::string>("drake:diffuse_map", {});
       if (has_value) {
         const std::string resolved_path =
-            resolve_filename(texture_name);
+            resolve_filename(diagnostic, texture_name);
         if (resolved_path.empty()) {
           throw std::runtime_error(fmt::format(
               "Unable to locate the texture file: {}", texture_name));
