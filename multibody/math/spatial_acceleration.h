@@ -99,6 +99,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   ///  a_MCo_E = a_MBo_E + α_MB_E x p_BoCo_E + ω_MB_E x (ω_MB_E x p_BoCo_E)
   /// </pre>
   /// @see Shift() to shift spatial acceleration without modifying `this`.
+  /// Use ComposeWithMovingFrameAcceleration() if frame C is moving on frame B.
   ///
   /// <h3> Derivation </h3>
   ///
@@ -144,8 +145,6 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
 
   /// Shifts a %SpatialAcceleration from a frame B to a frame C, where both
   /// B and C are fixed to the same frame or rigid body.
-  /// This method differs from ShiftInPlace() in that this method does not
-  /// modify `this` whereas ShiftInPlace() does modify `this`.
   /// @param[in] offset which is the position vector p_BoCo_E from Bo (frame B's
   /// origin) to Co (frame C's origin), expressed in frame E. p_BoCo_E must have
   /// the same expressed-in frame E as `this` spatial acceleration, where `this`
@@ -154,7 +153,10 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// angular velocity measured in frame M and expressed in frame E.
   /// @retval A_MC_E which is frame C's spatial acceleration measured in
   /// frame M, expressed in frame E.
+  /// @note Shift() differs from ShiftInPlace() in that Shift() does not modify
+  /// `this` whereas ShiftInPlace() does modify `this`.
   /// @see ShiftInPlace() for more information and how A_MC_E is calculated.
+  /// Use ComposeWithMovingFrameAcceleration() if frame C is moving on frame B.
   SpatialAcceleration<T> Shift(
       const Vector3<T>& offset,
       const Vector3<T>& angular_velocity_of_this_frame) const {
@@ -173,8 +175,8 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// @retval A_MC_E which is frame C's spatial acceleration measured in
   /// frame M, expressed in frame E.
   /// @see ShiftInPlace() for more information and how A_MC_E is calculated.
-  /// @note This method speeds the Shift() computation when ω_MB = 0, even if
-  /// α_MB ≠ 0 (α_MB is stored in `this`).
+  /// @note ShiftWithZeroAngularVelocity() speeds the Shift() computation when
+  /// ω_MB = 0, even if α_MB ≠ 0 (α_MB is stored in `this`).
   SpatialAcceleration<T> ShiftWithZeroAngularVelocity(
       const Vector3<T>& offset) const {
     const Vector3<T>& p_BoCo_E = offset;
@@ -204,6 +206,9 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// spatial acceleration measured in frame B, expressed in frame E.
   /// @retval A_MC_E frame C's spatial acceleration measured in frame M,
   /// expressed in frame E.
+  /// @see SpatialVelocity::ComposeWithMovingFrameVelocity().
+  /// Use Shift() if frames B and C are both fixed to the same frame or body,
+  /// i.e., velocity_of_moving_frame = 0 and acceleration_of_moving_frame = 0.
   /// @note The returned spatial acceleration A_MC_E contains an angular
   /// acceleration α_MC_E and translational acceleration a_MCo_E that are
   /// calculated as: <pre>
@@ -220,8 +225,6 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   ///   ω_MC = ω_MB + ω_BC,   but 3D angular acceleration is more complicated as
   ///   α_MC = α_MB + α_BC + ω_MB x ω_BC
   /// </pre>
-  /// @see %SpatialVelocity::ComposeWithMovingFrameVelocity() for the related
-  /// %SpatialVelocity method and calculations.
   ///
   /// <h3> Derivation </h3>
   ///
@@ -324,15 +327,15 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
 /// Adds two spatial accelerations by simply adding their 6 underlying elements.
 /// @param[in] A1_E spatial acceleration expressed in the same frame E as A2_E.
 /// @param[in] A2_E spatial acceleration expressed in the same frame E as A1_E.
-/// @note The general utility of this method is questionable and this method
-/// should only be used if you are sure it makes sense. .
-/// @see related methods ShiftInPlace() and ComposeWithMovingFrameVelocity().
-/// @relates SpatialVelocity
+/// @note The general utility of this operator+() function is questionable and
+/// it should only be used if you are sure it makes sense.
+/// @see Shift(), ShiftInPlace(), and ComposeWithMovingFrameAcceleration().
+/// @relates SpatialAcceleration
 template <typename T>
 inline SpatialAcceleration<T> operator+(const SpatialAcceleration<T>& A1_E,
                                         const SpatialAcceleration<T>& A2_E) {
-  // N.B. We use SpatialVector's implementation, though we provide the overload
-  // for specific documentation purposes.
+  // Although this operator+() function simply calls an associated
+  // SpatialVector operator+=() function, it is needed for documentation.
   return SpatialAcceleration<T>(A1_E) += A2_E;
 }
 
@@ -340,14 +343,15 @@ inline SpatialAcceleration<T> operator+(const SpatialAcceleration<T>& A1_E,
 /// elements.
 /// @param[in] A1_E spatial acceleration expressed in the same frame E as A2_E.
 /// @param[in] A2_E spatial acceleration expressed in the same frame E as A1_E.
-/// @note This method should only be used if you are sure it makes sense.
-/// @see related methods ShiftInPlace() and ComposeWithMovingFrameVelocity().
-/// @relates SpatialVelocity
+/// @note The general utility of this operator-() function is questionable and
+/// it should only be used if you are sure it makes sense.
+/// @see Shift(), ShiftInPlace(), and ComposeWithMovingFrameAcceleration().
+/// @relates SpatialAcceleration
 template <typename T>
 inline SpatialAcceleration<T> operator-(const SpatialAcceleration<T>& A1_E,
                                         const SpatialAcceleration<T>& A2_E) {
-  // N.B. We use SpatialVector's implementation, though we provide the overload
-  // for specific documentation purposes.
+  // Although this operator-() function simply calls an associated
+  // SpatialVector operator-=() function, it is needed for documentation.
   return SpatialAcceleration<T>(A1_E) -= A2_E;
 }
 
