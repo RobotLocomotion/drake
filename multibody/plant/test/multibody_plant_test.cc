@@ -127,6 +127,12 @@ class MultibodyPlantTester {
       const systems::Context<double>& context) {
     return plant.EvalGeometryQueryInput(context);
   }
+
+  static const std::vector<int>& EvalJointLockingIndices(
+      const MultibodyPlant<double>& plant,
+      const systems::Context<double>& context) {
+    return plant.EvalJointLockingIndices(context);
+  }
 };
 
 namespace {
@@ -143,6 +149,121 @@ GTEST_TEST(MultibodyPlant, GetDefaultContactSurfaceRepresentation) {
             GetDefaultContactSurfaceRepresentation(time_step));
   }
 }
+
+// Set up a plant with 2 trees, one tree having a single body with one revolute
+// joint attached to world, the second tree a serial chain of two bodies
+// attached to each other and world by revolute joints.
+class JointLockingTest : public ::testing::TestWithParam<int> {
+ public:
+  void SetUp() {
+    plant_ = std::make_unique<MultibodyPlant<double>>(0.1);
+    const RigidBody<double>& joint_body1 =
+        plant_->AddRigidBody("joint_body1", SpatialInertia<double>());
+    const RigidBody<double>& joint_body2 =
+        plant_->AddRigidBody("joint_body2", SpatialInertia<double>());
+    const RigidBody<double>& joint_body3 =
+        plant_->AddRigidBody("joint_body3", SpatialInertia<double>());
+
+    std::unique_ptr<RevoluteJoint<double>> joint_w_1 =
+        std::make_unique<RevoluteJoint<double>>(
+            "joint_w_1", plant_->world_frame(), joint_body1.body_frame(),
+            Vector3d::UnitZ());
+    std::unique_ptr<RevoluteJoint<double>> joint_w_2 =
+        std::make_unique<RevoluteJoint<double>>(
+            "joint_w_2", plant_->world_frame(), joint_body2.body_frame(),
+            Vector3d::UnitZ());
+    std::unique_ptr<RevoluteJoint<double>> joint_2_3 =
+        std::make_unique<RevoluteJoint<double>>(
+            "joint_2_3", joint_body2.body_frame(), joint_body3.body_frame(),
+            Vector3d::UnitZ());
+
+    // Each permutation of adding joints to the plant.
+    // In some cases the joint indices will coincide with assigned velocity
+    // indices, but in the general case they will not.
+    switch (GetParam()) {
+      case 0:
+        plant_->AddJoint(std::move(joint_w_1));
+        plant_->AddJoint(std::move(joint_w_2));
+        plant_->AddJoint(std::move(joint_2_3));
+        break;
+      case 1:
+        plant_->AddJoint(std::move(joint_w_1));
+        plant_->AddJoint(std::move(joint_2_3));
+        plant_->AddJoint(std::move(joint_w_2));
+        break;
+      case 2:
+        plant_->AddJoint(std::move(joint_w_2));
+        plant_->AddJoint(std::move(joint_2_3));
+        plant_->AddJoint(std::move(joint_w_1));
+        break;
+      case 3:
+        plant_->AddJoint(std::move(joint_w_2));
+        plant_->AddJoint(std::move(joint_w_1));
+        plant_->AddJoint(std::move(joint_2_3));
+        break;
+      case 4:
+        plant_->AddJoint(std::move(joint_2_3));
+        plant_->AddJoint(std::move(joint_w_1));
+        plant_->AddJoint(std::move(joint_w_2));
+        break;
+      case 5:
+        plant_->AddJoint(std::move(joint_2_3));
+        plant_->AddJoint(std::move(joint_w_2));
+        plant_->AddJoint(std::move(joint_w_1));
+        break;
+    }
+
+    plant_->Finalize();
+    context_ = plant_->CreateDefaultContext();
+  }
+
+ protected:
+  std::unique_ptr<MultibodyPlant<double>> plant_;
+  std::unique_ptr<Context<double>> context_;
+};
+
+// Test that regardless of the order the joints were added to the plant (i.e.
+// different joint indexing orders), the established joint locking velocity
+// indexing remains correct.
+TEST_P(JointLockingTest, JointLockingIndicesTest) {
+  const RevoluteJoint<double>& joint_w_1 =
+      plant_->GetJointByName<RevoluteJoint>("joint_w_1");
+  const RevoluteJoint<double>& joint_w_2 =
+      plant_->GetJointByName<RevoluteJoint>("joint_w_2");
+  RevoluteJoint<double>& joint_2_3 =
+      plant_->GetMutableJointByName<RevoluteJoint>("joint_2_3");
+
+  // No joints are locked, all joint velocity indices should exist.
+  const std::vector<int>& joint_locking_indices_unlocked =
+      MultibodyPlantTester::EvalJointLockingIndices(*plant_, *context_);
+
+  EXPECT_EQ(joint_locking_indices_unlocked.size(), 3);
+
+  const std::vector<int>& expected_joint_locking_indices_unlocked = {
+      joint_w_1.velocity_start(), joint_w_2.velocity_start(),
+      joint_2_3.velocity_start()};
+
+  EXPECT_THAT(joint_locking_indices_unlocked,
+              testing::UnorderedElementsAreArray(
+                  expected_joint_locking_indices_unlocked));
+
+  // Lock joint_2_3 and re-evaluate joint locking indices
+  joint_2_3.Lock(context_.get());
+  const std::vector<int>& joint_locking_indices_locked =
+      MultibodyPlantTester::EvalJointLockingIndices(*plant_, *context_);
+
+  EXPECT_EQ(joint_locking_indices_locked.size(), 2);
+
+  const std::vector<int>& expected_joint_locking_indices_locked = {
+      joint_w_1.velocity_start(), joint_w_2.velocity_start()};
+
+  EXPECT_THAT(joint_locking_indices_locked,
+              testing::UnorderedElementsAreArray(
+                  expected_joint_locking_indices_locked));
+}
+
+INSTANTIATE_TEST_SUITE_P(IndexPermutations, JointLockingTest,
+                         ::testing::Values(0, 1, 2, 3, 4, 5));
 
 // This test creates a simple model for an acrobot using MultibodyPlant and
 // verifies a number of invariants such as that body and joint models were
