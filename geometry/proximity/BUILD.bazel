@@ -31,6 +31,8 @@ drake_cc_package_library(
         ":make_box_mesh",
         ":make_capsule_field",
         ":make_capsule_mesh",
+        ":make_convex_field",
+        ":make_convex_mesh",
         ":make_cylinder_field",
         ":make_cylinder_mesh",
         ":make_ellipsoid_field",
@@ -275,6 +277,8 @@ drake_cc_library(
         ":make_box_mesh",
         ":make_capsule_field",
         ":make_capsule_mesh",
+        ":make_convex_field",
+        ":make_convex_mesh",
         ":make_cylinder_field",
         ":make_cylinder_mesh",
         ":make_ellipsoid_field",
@@ -351,6 +355,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "make_convex_field",
+    hdrs = ["make_convex_field.h"],
+    deps = [
+        ":mesh_field",
+    ],
+)
+
+drake_cc_library(
     name = "make_cylinder_mesh",
     srcs = ["make_cylinder_mesh.cc"],
     hdrs = ["make_cylinder_mesh.h"],
@@ -376,6 +388,20 @@ drake_cc_library(
         ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
+        "//common:default_scalars",
+        "//common:essential",
+        "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_library(
+    name = "make_convex_mesh",
+    srcs = ["make_convex_mesh.cc"],
+    hdrs = ["make_convex_mesh.h"],
+    deps = [
+        ":obj_to_surface_mesh",
+        ":triangle_surface_mesh",
+        ":volume_mesh",
         "//common:default_scalars",
         "//common:essential",
         "//geometry:shape_specification",
@@ -949,6 +975,35 @@ drake_cc_googletest(
         ":make_sphere_mesh",
         "//common:sorted_pair",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_convex_field_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
+    deps = [
+        ":make_convex_field",
+        ":make_convex_mesh",
+        ":obj_to_surface_mesh",
+        ":proximity_utilities",
+        ":volume_to_surface_mesh",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_convex_mesh_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
+    deps = [
+        ":make_convex_mesh",
+        ":obj_to_surface_mesh",
+        ":proximity_utilities",
+        ":volume_to_surface_mesh",
+        "//common:find_resource",
     ],
 )
 

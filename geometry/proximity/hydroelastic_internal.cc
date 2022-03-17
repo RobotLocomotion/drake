@@ -8,6 +8,8 @@
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/make_capsule_field.h"
 #include "drake/geometry/proximity/make_capsule_mesh.h"
+#include "drake/geometry/proximity/make_convex_field.h"
+#include "drake/geometry/proximity/make_convex_mesh.h"
 #include "drake/geometry/proximity/make_cylinder_field.h"
 #include "drake/geometry/proximity/make_cylinder_mesh.h"
 #include "drake/geometry/proximity/make_ellipsoid_field.h"
@@ -365,6 +367,22 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
       validator.Extract(props, kHydroGroup, kElastic);
 
   return SoftGeometry(SoftHalfSpace{hydroelastic_modulus / thickness});
+}
+
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Convex& convex_spec, const ProximityProperties& props) {
+  PositiveDouble validator("Convex", "soft");
+
+  auto mesh = make_unique<VolumeMesh<double>>(
+      MakeConvexVolumeMesh<double>(convex_spec));
+
+  const double hydroelastic_modulus =
+      validator.Extract(props, kHydroGroup, kElastic);
+
+  auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
+      MakeConvexPressureField(mesh.get(), hydroelastic_modulus));
+
+  return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
 }
 
 }  // namespace hydroelastic

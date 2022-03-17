@@ -469,6 +469,12 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const HalfSpace& half_space, const ProximityProperties& props);
 
+/* Creates a compliant convex volume mesh (assuming the proximity properties
+have sufficient information). Requires the
+('hydroelastic','hydroelastic_modulus') property. */
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Convex& convex_spec, const ProximityProperties& props);
+
 //@}
 
 }  // namespace hydroelastic

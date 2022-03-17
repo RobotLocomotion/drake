@@ -302,7 +302,7 @@ class QueryObject {
        | Ellipsoid |    yes    |  yes  |
        | HalfSpace |    yes    |  yes  |
        | Mesh      |    no     |  yes  |
-       | Convex    |    no     |  yes  |
+       | Convex    |    yes    |  yes  |
 
      - We do not support contact between two rigid geometries. One geometry
        *must* be compliant, and the other could be rigid or compliant. If
