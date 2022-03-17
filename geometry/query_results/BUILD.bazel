@@ -79,4 +79,11 @@ drake_cc_library(
     ],
 )
 
+drake_cc_googletest(
+    name = "deformable_contact_data_test",
+    deps = [
+        ":deformable_contact_data",
+    ],
+)
+
 add_lint_tests()
