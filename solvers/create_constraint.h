@@ -24,7 +24,7 @@ namespace internal {
 /**
  * The resulting constraint may be a BoundingBoxConstraint, LinearConstraint,
  * LinearEqualityConstraint, or ExpressionConstraint, depending on the
- * arguments.  Constraints of the form x == 1 (which could be created as a
+ * arguments. Constraints of the form x == 1 (which could be created as a
  * BoundingBoxConstraint or LinearEqualityConstraint) will be
  * constructed as a LinearEqualityConstraint.
  */
@@ -56,11 +56,13 @@ std::unique_ptr<Binding<Constraint>> MaybeParseLinearConstraint(
 
 /*
  * Assist MathematicalProgram::AddLinearConstraint(...).
+ * @throws exception if `f` is always false (for example 1 >= 2).
  */
 Binding<Constraint> ParseConstraint(const symbolic::Formula& f);
 
 /*
  * Assist MathematicalProgram::AddLinearConstraint(...).
+ * @throws exception if any of `formulas` is always false (for example 1 >= 2).
  */
 Binding<Constraint> ParseConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Formula>>& formulas);
@@ -83,12 +85,16 @@ inline Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
 
 /*
  * Assist MathematicalProgram::AddLinearEqualityConstraint(...).
+ *
+ * @throws exception if any of `formulas` is always false (for example 1 == 2)
  */
 Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
     const std::set<symbolic::Formula>& formulas);
 
 /*
  * Assist MathematicalProgram::AddLinearEqualityConstraint(...).
+ *
+ * @throws exception if `f` is always false (for example 1 == 2)
  */
 Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
     const symbolic::Formula& f);
