@@ -1129,9 +1129,10 @@ class Meshcat::Impl {
 
     {
       std::lock_guard<std::mutex> lock(controls_mutex_);
-      if (buttons_.find(data.name) != buttons_.end()) {
-        throw std::logic_error(
-            fmt::format("Meshcat already has a button named {}.", data.name));
+      auto iter = buttons_.find(data.name);
+      if (iter != buttons_.end()) {
+        iter->second.num_clicks = 0;
+        return;
       }
       if (sliders_.find(data.name) != sliders_.end()) {
         throw std::logic_error(
