@@ -220,8 +220,12 @@ can look into the question.
 * [GitHub PR Interaction with Jenkins](/jenkins.html)
 * [Build Cop](/buildcop.html)
 
-# Documentation Instructions
+# Programming Tools
 
+* [Profiling Tools](/profiling.html)
+* [Coverage Tools](/bazel.html#kcov)
+
+# Documentation Instructions
 
 * [Documentation Generation Instructions](/documentation_instructions.html)
 * [Doxygen Instructions](/doxygen_instructions.html)
