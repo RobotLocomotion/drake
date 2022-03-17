@@ -8,8 +8,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <sdf/parser.hh>
-#include <spdlog/sinks/dist_sink.h>
-#include <spdlog/sinks/ostream_sink.h>
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
@@ -114,11 +112,29 @@ class SdfParserTest : public ::testing::Test {
   // if there were no errors).
   std::string FormatFirstError() {
     if (error_records_.empty()) {
+      for (const auto& warning : warning_records_) {
+        drake::log()->warn(warning.FormatWarning());
+      }
       EXPECT_TRUE(error_records_.size() > 0)
           << "FormatFirstError did not get any errors";
       return {};
     }
     return error_records_[0].FormatError();
+  }
+
+  // Returns the first warning as a string (or else fails the test case,
+  // if there were no warnings). Also fails if there were any errors.
+  std::string FormatFirstWarning() {
+    for (const auto& error : error_records_) {
+      drake::log()->error(error.FormatError());
+    }
+    EXPECT_TRUE(error_records_.empty());
+    if (warning_records_.empty()) {
+      EXPECT_TRUE(warning_records_.size() > 0)
+          << "FormatFirstWarning did not get any warnings";
+      return {};
+    }
+    return warning_records_[0].FormatWarning();
   }
 
   // This will trip on unexpected errors or warnings that remain after the
@@ -1140,19 +1156,6 @@ TEST_F(SdfParserTest, TestSdformatParserPolicies) {
       R"(.*Root object can only contain one model.*)"));
   ClearDiagnostics();
 
-  // Temporarily append new log messages into a memory stream.
-  std::ostringstream buffer;
-  drake::logging::sink* const sink_base = drake::logging::get_dist_sink();
-  ASSERT_NE(sink_base, nullptr);
-  auto* const sink = dynamic_cast<spdlog::sinks::dist_sink_mt*>(sink_base);
-  ASSERT_NE(sink, nullptr);
-  auto buffer_sink = std::make_shared<spdlog::sinks::ostream_sink_st>(
-      buffer, true /* flush */);
-  sink->add_sink(buffer_sink);
-  ScopeExit revert_buffer_sink(
-      [&sink, &buffer_sink]()
-      { sink->remove_sink(buffer_sink); });
-
   // TODO(#15018): This throws a warning, make this an error.
   ParseTestString(R"""(
 <model name='model_with_bad_element'>
@@ -1160,14 +1163,13 @@ TEST_F(SdfParserTest, TestSdformatParserPolicies) {
   <bad_element/>
 </model>
 )""");
-
-  EXPECT_THAT(buffer.str(), testing::MatchesRegex(
-      ".*Warning.*XML Element\\[bad_element\\], child of"
+  EXPECT_THAT(FormatFirstWarning(), testing::MatchesRegex(
+      ".*XML Element\\[bad_element\\], child of"
       " element\\[model\\], not defined in SDF.*"));
+  ClearDiagnostics();
 
-  buffer.str("");  // Reset the buffer to be empty.
   ParseTestString(R"""(
-<model name='a'>
+<model name='model_with_initial_position'>
   <link name='l1'/>
   <link name='l2'/>
   <joint name='b' type="revolute">
@@ -1178,10 +1180,20 @@ TEST_F(SdfParserTest, TestSdformatParserPolicies) {
     </axis>
   </joint>
 </model>)""", "1.9");
-
-  EXPECT_THAT(buffer.str(), testing::MatchesRegex(
-      ".*Warning.*XML Element\\[initial_position\\], child of element"
+  EXPECT_THAT(FormatFirstWarning(), testing::MatchesRegex(
+      ".*XML Element\\[initial_position\\], child of element"
       "\\[axis\\], not defined in SDF.*"));
+  ClearDiagnostics();
+
+  ParseTestString(R"""(
+<model name='deprecation_test'>
+  <link name='l1'/>
+</model>
+<_drake_deprecation_unit_test_element/>
+)""", "1.9");
+  EXPECT_THAT(FormatFirstWarning(), testing::MatchesRegex(
+      ".*drake_deprecation_unit_test_element.*is deprecated.*"));
+  ClearDiagnostics();
 }
 
 // Reports if the frame with the given id has a geometry with the given role
