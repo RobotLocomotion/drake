@@ -99,6 +99,7 @@ drake_cc_library(
     ],
     deps = [
         ":package_map",
+        "//common:diagnostic_policy",
         "//common:essential",
         "//geometry:proximity_properties",
         "//math:geometric_transform",
@@ -125,6 +126,7 @@ drake_cc_library(
     deps = [
         ":detail_misc",
         ":package_map",
+        "//common:diagnostic_policy",
         "//geometry:geometry_instance",
         "//geometry:geometry_roles",
         "//geometry:shape_specification",

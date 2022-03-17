@@ -8,6 +8,8 @@ namespace multibody {
 namespace internal {
 namespace {
 
+using drake::internal::DiagnosticDetail;
+using drake::internal::DiagnosticPolicy;
 using geometry::GeometryProperties;
 using geometry::ProximityProperties;
 using geometry::internal::HydroelasticType;
@@ -85,9 +87,30 @@ template<typename T>
   return ::testing::AssertionSuccess();
 }
 
+class ParseProximityPropertiesTest : public ::testing::Test {
+ public:
+  ParseProximityPropertiesTest() {
+    // Don't let warnings leak into spdlog; tests should always specifically
+    // handle any warnings that apppear.
+    diagnostic_.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
+  }
+
+  // This shadows the namespace-scoped free function under test in order to
+  // bind the `diagnostic` argument.
+  geometry::ProximityProperties ParseProximityProperties(
+    const std::function<std::optional<double>(const char*)>& read_double,
+    bool is_rigid, bool is_compliant) {
+    return internal::ParseProximityProperties(
+        diagnostic_, read_double, is_rigid, is_compliant);
+  }
+
+ protected:
+  DiagnosticPolicy diagnostic_;
+};
+
 // Confirms that an "empty" <drake:proximity_properties> tag produces an empty
 // instance of ProximityProperties.
-GTEST_TEST(ParseProximityPropertiesTest, NoProperties) {
+TEST_F(ParseProximityPropertiesTest, NoProperties) {
   ProximityProperties properties =
       ParseProximityProperties(empty_read_double, !rigid, !compliant);
   // It is empty if there is a single group: the default group with no
@@ -101,7 +124,7 @@ GTEST_TEST(ParseProximityPropertiesTest, NoProperties) {
 }
 
 // Confirms successful parsing of hydroelastic properties.
-GTEST_TEST(ParseProximityPropertiesTest, HydroelasticProperties) {
+TEST_F(ParseProximityPropertiesTest, HydroelasticProperties) {
   const char* kTag = "drake:mesh_resolution_hint";
   const double kRezHintValue{0.25};
 
@@ -181,7 +204,7 @@ GTEST_TEST(ParseProximityPropertiesTest, HydroelasticProperties) {
 }
 
 // Confirms successful parsing of hydroelastic modulus.
-GTEST_TEST(ParseProximityPropertiesTest, HydroelasticModulus) {
+TEST_F(ParseProximityPropertiesTest, HydroelasticModulus) {
   const double kValue = 1.75;
   ProximityProperties properties = ParseProximityProperties(
       param_read_double("drake:hydroelastic_modulus", kValue), !rigid,
@@ -193,11 +216,17 @@ GTEST_TEST(ParseProximityPropertiesTest, HydroelasticModulus) {
 }
 
 // Confirms ignored parsing of hydroelastic modulus for explicit rigid geometry.
-GTEST_TEST(ParseProximityPropertiesTest, RigidHydroelasticModulusIgnored) {
+TEST_F(ParseProximityPropertiesTest, RigidHydroelasticModulusIgnored) {
+  DiagnosticDetail warning;
+  diagnostic_.SetActionForWarnings([&](const DiagnosticDetail& detail) {
+    warning = detail;
+  });
   const double kValue = 1.75;
   ProximityProperties properties = ParseProximityProperties(
       param_read_double("drake:hydroelastic_modulus", kValue), rigid,
       !compliant);
+  EXPECT_THAT(warning.message, ::testing::MatchesRegex(
+      ".*hydroelastic_modulus.*value.*1.75.*ignored.*"));
   EXPECT_FALSE(ExpectScalar(kHydroGroup, kElastic, kValue, properties));
   EXPECT_TRUE(ExpectScalar(kHydroGroup, kComplianceType,
                            geometry::internal::HydroelasticType::kRigid,
@@ -208,7 +237,7 @@ GTEST_TEST(ParseProximityPropertiesTest, RigidHydroelasticModulusIgnored) {
 }
 
 // Confirms successful parsing of dissipation.
-GTEST_TEST(ParseProximityPropertiesTest, Dissipation) {
+TEST_F(ParseProximityPropertiesTest, Dissipation) {
   const double kValue = 1.25;
   ProximityProperties properties = ParseProximityProperties(
       param_read_double("drake:hunt_crossley_dissipation", kValue), !rigid,
@@ -220,7 +249,7 @@ GTEST_TEST(ParseProximityPropertiesTest, Dissipation) {
 }
 
 // Confirms successful parsing of stiffness.
-GTEST_TEST(ParseProximityPropertiesTest, Stiffness) {
+TEST_F(ParseProximityPropertiesTest, Stiffness) {
   const double kValue = 300.0;
   ProximityProperties properties = ParseProximityProperties(
       param_read_double("drake:point_contact_stiffness", kValue), !rigid,
@@ -233,7 +262,7 @@ GTEST_TEST(ParseProximityPropertiesTest, Stiffness) {
 }
 
 // Confirms successful parsing of friction.
-GTEST_TEST(ParseProximityPropertiesTest, Friction) {
+TEST_F(ParseProximityPropertiesTest, Friction) {
   // We're not testing the case where *no* coefficients are provided; that's
   // covered in the NoProperties test.
   auto friction_read_double = [](optional<double> mu_d,

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "fmt/ostream.h"
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <sdf/Root.hh>
 #include <sdf/parser.hh>
@@ -30,6 +31,8 @@ namespace {
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
+using drake::internal::DiagnosticDetail;
+using drake::internal::DiagnosticPolicy;
 using geometry::Box;
 using geometry::Capsule;
 using geometry::Convex;
@@ -1050,6 +1053,15 @@ GTEST_TEST(SceneGraphParserDetail,
 
 // Verify we can parse drake collision properties from a <collision> element.
 GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
+  // Bind a `diagnostic` argument into the function under test.
+  auto dut = [](const sdf::Collision& sdf_collision) {
+    // Don't let warnings leak into spdlog; tests should always specifically
+    // handle any warnings that apppear.
+    DiagnosticPolicy diagnostic;
+    diagnostic.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
+    return MakeProximityPropertiesForCollision(diagnostic, sdf_collision);
+  };
+
   // This string represents the generic XML spelling of a <collision> element.
   // It contains a `{}` place holder such that child tags of <collision> can be
   // injected to test various expressions of collision properties --
@@ -1103,8 +1115,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:mu_dynamic>4.5</drake:mu_dynamic>
     <drake:mu_static>4.75</drake:mu_static>
   </drake:proximity_properties>)""");
-    ProximityProperties properties =
-        MakeProximityPropertiesForCollision(*sdf_collision);
+    ProximityProperties properties = dut(*sdf_collision);
     assert_single_property(properties, geometry::internal::kHydroGroup,
                            geometry::internal::kRezHint, 2.5);
     assert_single_property(properties, geometry::internal::kHydroGroup,
@@ -1120,8 +1131,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   <drake:proximity_properties>
     <drake:rigid_hydroelastic/>
   </drake:proximity_properties>)""");
-    ProximityProperties properties =
-        MakeProximityPropertiesForCollision(*sdf_collision);
+    ProximityProperties properties = dut(*sdf_collision);
     ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
                                        geometry::internal::kComplianceType));
     EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
@@ -1135,8 +1145,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   <drake:proximity_properties>
     <drake:compliant_hydroelastic/>
   </drake:proximity_properties>)""");
-    ProximityProperties properties =
-        MakeProximityPropertiesForCollision(*sdf_collision);
+    ProximityProperties properties = dut(*sdf_collision);
     ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
                                        geometry::internal::kComplianceType));
     EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
@@ -1153,7 +1162,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:soft_hydroelastic/>
   </drake:proximity_properties>)""");
     DRAKE_EXPECT_THROWS_MESSAGE(
-        MakeProximityPropertiesForCollision(*sdf_collision),
+        dut(*sdf_collision),
         "A <collision> geometry has defined the unsupported tag "
         "<drake:soft_hydroelastic>. Please change it to "
         "<drake:compliant_hydroelastic>.");
@@ -1167,7 +1176,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:compliant_hydroelastic/>
   </drake:proximity_properties>)""");
     DRAKE_EXPECT_THROWS_MESSAGE(
-        MakeProximityPropertiesForCollision(*sdf_collision),
+        dut(*sdf_collision),
         "A <collision> geometry has defined mutually-exclusive tags .*rigid.* "
         "and .*compliant.*");
   }
@@ -1184,8 +1193,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
       </ode>
     </friction>
   </surface>)""");
-    ProximityProperties properties =
-        MakeProximityPropertiesForCollision(*sdf_collision);
+    ProximityProperties properties = dut(*sdf_collision);
     assert_friction(properties, {0.8, 0.3});
   }
 
@@ -1204,8 +1212,15 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
       </ode>
     </friction>
   </surface>)""");
+    DiagnosticPolicy diagnostic;
+    DiagnosticDetail warning;
+    diagnostic.SetActionForWarnings([&](const DiagnosticDetail& detail) {
+      warning = detail;
+    });
     ProximityProperties properties =
-        MakeProximityPropertiesForCollision(*sdf_collision);
+        MakeProximityPropertiesForCollision(diagnostic, *sdf_collision);
+    EXPECT_THAT(warning.message, ::testing::MatchesRegex(
+        ".*collision.*some_geo.*ode.*ignored.*"));
     assert_friction(properties, {0.3, 0.3});
   }
 
