@@ -312,7 +312,12 @@ Binding<Constraint> ParseConstraint(
   for (int j{0}; j < formulas.cols(); ++j) {
     for (int i{0}; i < formulas.rows(); ++i) {
       const symbolic::Formula& f{formulas(i, j)};
-      if (is_equal_to(f)) {
+      if (symbolic::is_false(f)) {
+        throw std::runtime_error(
+            fmt::format("ParseConstraint is called with formulas({}, {}) being "
+                        "always false",
+                        i, j));
+      } else if (is_equal_to(f)) {
         // f(i) := (lhs == rhs)
         //         (lhs - rhs == 0)
         v(k) = get_lhs_expression(f) - get_rhs_expression(f);
@@ -346,7 +351,10 @@ Binding<Constraint> ParseConstraint(
 }
 
 Binding<Constraint> ParseConstraint(const Formula& f) {
-  if (is_equal_to(f)) {
+  if (symbolic::is_false(f)) {
+    throw std::runtime_error(
+        "ParseConstraint is called with a formula being always false.");
+  } else if (is_equal_to(f)) {
     // e1 == e2
     const Expression& e1{get_lhs_expression(f)};
     const Expression& e2{get_rhs_expression(f)};
@@ -390,7 +398,11 @@ Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
   VectorX<symbolic::Expression> v{n};
   int i{0};  // index variable used in the loop
   for (const symbolic::Formula& f : formulas) {
-    if (is_equal_to(f)) {
+    if (symbolic::is_false(f)) {
+      throw std::runtime_error(
+          "ParseLinearEqualityConstraint is called with one of formulas being "
+          "always false.");
+    } else if (is_equal_to(f)) {
       // f := (lhs == rhs)
       //      (lhs - rhs == 0)
       v(i) = get_lhs_expression(f) - get_rhs_expression(f);
@@ -408,7 +420,11 @@ Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
 
 Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
     const Formula& f) {
-  if (is_equal_to(f)) {
+  if (symbolic::is_false(f)) {
+    throw std::runtime_error(
+        "ParseLinearEqualityConstraint is called with a formula being always "
+        "false.");
+  } else if (is_equal_to(f)) {
     // e1 == e2
     const Expression& e1{get_lhs_expression(f)};
     const Expression& e2{get_rhs_expression(f)};
