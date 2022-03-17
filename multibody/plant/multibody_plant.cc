@@ -2387,7 +2387,8 @@ void MultibodyPlant<T>::CalcJointLockingIndices(
       velocity_cursor += 6;
     } else {
       for (int k = 0; k < 6; ++k) {
-        indices[unlocked_cursor++] = body.floating_velocities_start() - num_positions() + k;
+        indices[unlocked_cursor++] =
+            body.floating_velocities_start() - num_positions() + k;
         velocity_cursor++;
       }
     }
