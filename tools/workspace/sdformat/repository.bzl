@@ -13,6 +13,7 @@ def sdformat_repository(
         build_file = "@drake//tools/workspace/sdformat:package.BUILD.bazel",
         patches = [
             "@drake//tools/workspace/sdformat:patches/console.patch",
+            "@drake//tools/workspace/sdformat:patches/deprecation_unit_testing.patch",  # noqa
             "@drake//tools/workspace/sdformat:patches/fix_broken_config.patch",
             "@drake//tools/workspace/sdformat:patches/no_global_config.patch",
             "@drake//tools/workspace/sdformat:patches/no_urdf.patch",
