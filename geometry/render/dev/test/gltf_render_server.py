@@ -57,6 +57,7 @@ from hashlib import sha256
 from pathlib import Path
 from io import BytesIO
 import itertools
+import os
 import shutil
 import subprocess
 import sys
@@ -75,7 +76,7 @@ else:
 app = Flask(__name__)
 """The main flask application."""
 
-RENDER_ENDPOINT = "/render"
+RENDER_ENDPOINT = os.environ.get("RENDER_ENDPOINT", "render")
 """Where the client will upload files to / wait for an image response from.
 
 If on the drake side of your application you seek to transmit files to an
@@ -84,6 +85,14 @@ alternative location, make sure to update this value accordingly.
 Warning:
     If you change this value to ``/``, then you must delete or comment out the
     :func:`root` method below.
+
+Note:
+    Tests will configure the environment variable "RENDER_ENDPOINT", otherwise
+    default to using ``/render``.  The environment variable should **NOT** have
+    a leading slash, this will be added in the definition of the flask route.
+    In your own server, just choose the endpoint and set it without any
+    variables e.g., ``app.route("/render")``, configurable endpoints is
+    generally bad practice but is useful for the tests.
 """
 
 NO_CLEANUP = False
@@ -736,49 +745,56 @@ def render_callback(render_request: RenderRequest) -> Union[Path, str]:
 ###############################################################################
 # Flask endpoint implementations.
 ###############################################################################
-@app.route("/")
-def root():
-    """The main listing page, renders a simple redirect page including where
-    the server cache lives for development.  This endpoint (``/``) is not
-    required by the drake server-client relationship and only serves to aid
-    development.
-    """
-    html_prefix = dedent(
-        f"""\
-        <!doctype html>
-        <html>
-          <body>
-            <h1>Drake Render Server</h1>
-            <hr>
-            <p>
-              <a href="{RENDER_ENDPOINT}">Render</a> a scene.
-            </p>
+# NOTE: one test verifies that the render endpoint being the empty string,
+# implying to send requests to `/`, works as expected.  In your own server, you
+# should just choose rather than conditionally defining things!
+if RENDER_ENDPOINT != "":
+
+    @app.route("/")
+    def root():
+        """The main listing page, render a simple redirect page including where
+        the server cache lives for development.  This endpoint (``/``) is not
+        required by the drake server-client relationship and only serves to aid
+        development.
         """
-    )
-    html_suffix = dedent(
-        """\
-          </body>
-        </html>
-        """
-    )
-    # Inform the developer of where the server cache lives in development mode.
-    if app.config["ENV"].lower() == "development":
-        indent = "  " * 2
-        html_interior = (
-            f"{indent}<h1>Server Cache</h1>\n"
-            f"{indent}<hr>\n"
-            f"{indent}<p>\n"
-            f"{indent}  This is a development server.  The server cache\n"
-            f"{indent}  lives here: <tt>{str(SERVER_CACHE)}</tt>\n"
-            f"{indent}</p>\n"
+        html_prefix = dedent(
+            f"""\
+            <!doctype html>
+            <html>
+            <body>
+                <h1>Drake Render Server</h1>
+                <hr>
+                <p>
+                <a href="{RENDER_ENDPOINT}">Render</a> a scene.
+                </p>
+            """
         )
-    else:
-        html_interior = ""
+        html_suffix = dedent(
+            """\
+            </body>
+            </html>
+            """
+        )
+        # Inform the developer of where the server cache lives in dev mode.
+        if app.config["ENV"].lower() == "development":
+            indent = "  " * 2
+            html_interior = (
+                f"{indent}<h1>Server Cache</h1>\n"
+                f"{indent}<hr>\n"
+                f"{indent}<p>\n"
+                f"{indent}  This is a development server.  The server cache\n"
+                f"{indent}  lives here: <tt>{str(SERVER_CACHE)}</tt>\n"
+                f"{indent}</p>\n"
+            )
+        else:
+            html_interior = ""
 
-    return f"{html_prefix}{html_interior}{html_suffix}"
+        return f"{html_prefix}{html_interior}{html_suffix}"
 
 
-@app.route(RENDER_ENDPOINT, methods=["GET", "POST"])
+# NOTE: as stated above on the documentation for RENDER_ENDPOINT, configurable
+# endpoints are only done for the tests.  You should not do this in practice.
+@app.route(f"/{RENDER_ENDPOINT}", methods=["GET", "POST"])
 def render_endpoint():
     """The main rendering endpoint for the client to communicate with.
 

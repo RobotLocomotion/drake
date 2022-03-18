@@ -29,6 +29,8 @@ DEFINE_bool(render_on, true, "Sets rendering generally enabled (or not)");
 DEFINE_bool(color, true, "Sets the enabled camera to render color");
 DEFINE_bool(depth, true, "Sets the enabled camera to render depth");
 DEFINE_bool(label, true, "Sets the enabled camera to render label");
+// TODO(zachfang): disable drake visualizer when this is false.
+DEFINE_bool(drake_visualizer, true, "Attach to drake-visualizer publisher.");
 DEFINE_double(render_fps, 10, "Frames per simulation second to render");
 /* Helpful viewpoints:
  Top: "0.0, 0.0, 1.5, -3.14, 0.0, 1.57"
@@ -55,6 +57,13 @@ static bool valid_render_engine(const char* flagname, const std::string& val) {
 DEFINE_string(render_engine, "vtk",
               "Renderer choice, options: 'vtk', 'client'.");
 DEFINE_validator(render_engine, &valid_render_engine);
+
+// Server parameters, defaults are the same as RenderClientGltfParams.
+DEFINE_string(url, "http://127.0.0.1", "Url the server is running on.");
+DEFINE_int32(port, 8000, "Port the server is running on, <=0 means no port.");
+DEFINE_string(render_endpoint, "render", "The render endpoint of the server.");
+DEFINE_int32(width, 640, "Image width to render.");
+DEFINE_int32(height, 480, "Image height to render.");
 
 namespace drake {
 namespace geometry {
@@ -279,8 +288,11 @@ int do_main() {
     scene_graph->AddRenderer(render_name,
                              MakeRenderEngineVtk(RenderEngineVtkParams()));
   } else {  // FLAGS_render_engine == "client"
-    scene_graph->AddRenderer(render_name, MakeRenderEngineGltfClient(
-                                              RenderEngineGltfClientParams()));
+    RenderEngineGltfClientParams params;
+    params.url = FLAGS_url;
+    params.port = FLAGS_port;
+    params.render_endpoint = FLAGS_render_endpoint;
+    scene_graph->AddRenderer(render_name, MakeRenderEngineGltfClient(params));
   }
 
   AddShapes(scene_graph);
@@ -300,7 +312,8 @@ int do_main() {
   if (FLAGS_render_on) {
     // Create the camera and pose it to face the objects.
     const ColorRenderCamera color_camera{
-        {render_name, {640, 480, M_PI_4}, {0.01, 10.0}, {}}, false};
+        {render_name, {FLAGS_width, FLAGS_height, M_PI_4}, {0.01, 10.0}, {}},
+        false};
     const DepthRenderCamera depth_camera{color_camera.core(), {0.01, 10.0}};
     const RigidTransformd X_WB = ParseCameraPose(FLAGS_camera_xyz_rpy);
 

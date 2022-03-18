@@ -7,6 +7,7 @@ load(
     "drake_cc_library",
     "drake_cc_test",
 )
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load("//tools/skylark:py.bzl", "py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
@@ -205,6 +206,28 @@ drake_cc_binary(
         "//systems/sensors:image_writer",
         "//systems/sensors:rgbd_sensor",
         "@gflags",
+    ],
+)
+
+drake_cc_binary(
+    name = "image_difference",
+    testonly = 1,
+    srcs = ["test/image_difference.cc"],
+    deps = [
+        "//common:filesystem",
+        "@fmt",
+        "@gflags",
+        "@vtk//:vtkIOImage",
+        "@vtk//:vtkImagingCore",
+    ],
+)
+
+drake_py_unittest(
+    name = "client_server_round_trip_test",
+    data = [
+        ":gltf_render_server",
+        ":image_difference",
+        ":run_simulation_and_render",
     ],
 )
 
