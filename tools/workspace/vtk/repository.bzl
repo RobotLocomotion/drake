@@ -296,6 +296,7 @@ licenses([
             "vtkSmartPointerBase.h",
             "vtkStdString.h",
             "vtkSystemIncludes.h",
+            "vtkThreads.h",
             "vtkTimeStamp.h",
             "vtkType.h",
             "vtkTypeInt32Array.h",
@@ -379,6 +380,7 @@ licenses([
             "vtkImageAlgorithm.h",
             "vtkPolyDataAlgorithm.h",
             "vtkStreamingDemandDrivenPipeline.h",
+            "vtkThreadedImageAlgorithm.h",
         ],
         deps = [
             ":vtkCommonCore",
@@ -544,10 +546,14 @@ licenses([
         ],
     )
 
-    # Indirect dependency: omit headers.
     file_content += _vtk_cc_library(
         os_result,
         "vtkImagingCore",
+        hdrs = [
+            "vtkImagingCoreModule.h",
+            "vtkImageDifference.h",
+            "vtkImageExtractComponents.h",
+        ],
         deps = [
             ":vtkCommonCore",
             ":vtkCommonDataModel",
