@@ -300,6 +300,53 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
   EXPECT_TRUE(CompareMatrices(
       A_WL3_E.get_coeffs(), A_WL3_E_expected.get_coeffs(),
       kTolerance, MatrixCompareType::relative));
+
+  // Verify the odd calculation of V_HW_E which is the world frame V's spatial
+  // velocity in frame H, expressed in the end-effector frame E.
+  // Note: This is a "warm-up" for the CalcSpatialAcceleration() that follows.
+  const SpatialVelocity<double> V_HW_E =
+      frame_W.CalcSpatialVelocity(*context_, *frame_H_, frame_E);
+
+  // To verify rotational part, use known relationship ω_WH = -ω_HW.
+  const SpatialVelocity<double> V_WH_W =
+      frame_H_->CalcSpatialVelocityInWorld(*context_);
+  const Vector3<double>& w_WH_W = V_WH_W.rotational();
+  EXPECT_TRUE(CompareMatrices(V_HW_E.rotational(), R_EW * (-w_WH_W),
+      kTolerance, MatrixCompareType::relative));
+
+  // Verify translational part with by-hand calculations.
+  const Vector3<double> v_WHo_W = V_WH_W.translational();
+  const RigidTransform<double> X_WH = frame_H_->CalcPoseInWorld(*context_);
+  const Vector3<double>& p_WoHo_W = X_WH.translation();
+  const Vector3<double> v_HWo_W_expected = -v_WHo_W + w_WH_W.cross(p_WoHo_W);
+  EXPECT_TRUE(CompareMatrices(V_HW_E.translational(), R_EW * v_HWo_W_expected,
+      kTolerance, MatrixCompareType::relative));
+
+  // Verify the odd calculation of A_HW_E which is the world frame W's spatial
+  // acceleration in frame H, expressed in the end-effector frame E.
+  // Reminder: frame_H is an offset frame fixed to the end-effector E.
+  const SpatialAcceleration<double> A_HW_E =
+      frame_W.CalcSpatialAcceleration(*context_, *frame_H_, frame_W);
+
+  // To verify rotational part, use known relationship alpha_WH = -alpha_HW.
+  const Vector3<double>& alpha_WH_W = A_WH_W.rotational();
+  EXPECT_TRUE(CompareMatrices(A_HW_E.rotational(), -alpha_WH_W,
+      kTolerance, MatrixCompareType::relative));
+
+#if 0
+  // Verify translational part with by-hand calculations.
+  const Vector3<double>& a_WHo_W = A_WH_W.translational();
+  const Vector3<double> alf_r = alpha_WH_W.cross(p_WoHo_W);
+  const Vector3<double> wwr = w_WH_W.cross(w_WH_W.cross(p_WoHo_W));
+  const Vector3<double> twowv = 2 * w_WH_W.cross(v_WHo_W);
+  const Vector3<double> a_HWo_W_expected = -a_WHo_W + alf_r - wwr + twowv;
+  std::cout << "\n\nna_WHo_W = \n" << a_WHo_W << "\n";
+  std::cout << "\nalf_r = \n" << alf_r << "\n";
+  std::cout << "\nwwr = \n" << wwr << "\n";
+  std::cout << "\ntwowv = \n" << twowv << "\n\n";
+  EXPECT_TRUE(CompareMatrices(A_HW_E.translational(), a_HWo_W_expected,
+      kTolerance, MatrixCompareType::relative));
+#endif
 }
 
 GTEST_TEST(MultibodyPlantTest, FixedWorldKinematics) {
