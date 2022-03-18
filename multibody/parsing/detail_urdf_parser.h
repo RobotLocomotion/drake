@@ -30,8 +30,19 @@ namespace internal {
 //   newly created instance of this model.
 // @param workspace
 //   The ParsingWorkspace.
-// @returns The model instance index for the newly added model, std::nullopt if
-//          the parse was incomplete.
+// @returns The model instance index for the newly added model, or std::nullopt
+//          if no model instance was allocated. An instance will be allocated
+//          as long as a valid model name can be constructed, by consulting the
+//          supplied name parameters, and the <robot> tag (if any) in the @p
+//          data_source.
+// @throws std::exception on parse errors.
+//
+// TODO(rpoyner-tri): Eventually, all errors and warnings will flow through the
+// diagnostic policy object supplied as part of @p workspace. At that point,
+// the parse may or may not throw on error, at the discretion of the supplied
+// policy. Also, many incomplete or erroneous parses may return a valid (though
+// unfinished) model instance. It will be up to the supplier of the policy to
+// indicate the overall parse result via public interfaces.
 std::optional<ModelInstanceIndex> AddModelFromUrdf(
     const DataSource& data_source,
     const std::string& model_name,
