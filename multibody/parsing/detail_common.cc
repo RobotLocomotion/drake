@@ -157,6 +157,7 @@ void CollectCollisionFilterGroup(
     }
   }
   const std::string group_name = read_string_attribute(group_node, "name");
+  if (group_name.empty()) { return; }
 
   geometry::GeometrySet collision_filter_geometry_set;
   for (auto member_node = next_child_element(group_node, "drake:member");
@@ -165,6 +166,7 @@ void CollectCollisionFilterGroup(
            : std::get<tinyxml2::XMLElement*>(member_node) != nullptr;
        member_node = next_sibling_element(member_node, "drake:member")) {
     const std::string body_name = read_tag_string(member_node, "link");
+    if (body_name.empty()) { continue; }
 
     const auto& body = plant.GetBodyByName(body_name.c_str(), model_instance);
     collision_filter_geometry_set.Add(
@@ -180,6 +182,7 @@ void CollectCollisionFilterGroup(
        ignore_node = next_sibling_element(
            ignore_node, "drake:ignored_collision_filter_group")) {
     const std::string target_name = read_tag_string(ignore_node, "name");
+    if (target_name.empty()) { continue; }
 
     // These two group names are allowed to be identical, which means the
     // bodies inside this collision filter group should be collision excluded
