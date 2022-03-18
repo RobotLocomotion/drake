@@ -30,8 +30,9 @@ namespace internal {
 //   newly created instance of this model.
 // @param workspace
 //   The ParsingWorkspace.
-// @returns The model instance index for the newly added model, std::nullopt if
-//          the parse was incomplete.
+// @returns The model instance index for the newly added model, or std::nullopt
+//          if no model instance was allocated. If the parse found errors, the
+//          model may be inconsistent or incomplete.
 std::optional<ModelInstanceIndex> AddModelFromUrdf(
     const DataSource& data_source,
     const std::string& model_name,

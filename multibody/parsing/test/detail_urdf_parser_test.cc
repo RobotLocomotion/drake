@@ -66,6 +66,10 @@ class UrdfParserTest : public ::testing::Test {
         {DataSource::kContents, &file_contents}, model_name, {}, w_);
   }
 
+  std::string FormatError(int index) {
+    return error_records_.at(index).FormatError();
+  }
+
  protected:
   std::vector<DiagnosticDetail> error_records_;
   std::vector<DiagnosticDetail> warning_records_;
@@ -78,22 +82,63 @@ class UrdfParserTest : public ::testing::Test {
 };
 
 TEST_F(UrdfParserTest, BadFilename) {
-  AddModelFromUrdfFile("nonexistent.urdf", "");
-  ASSERT_EQ(error_records_.size(), 1);
-  std::string full_message = error_records_[0].FormatError();
-  EXPECT_THAT(full_message,
-              ::testing::MatchesRegex(
+  EXPECT_EQ(AddModelFromUrdfFile("nonexistent.urdf", ""), std::nullopt);
+  EXPECT_THAT(FormatError(0), ::testing::MatchesRegex(
                   "/.*/nonexistent.urdf:0: error: "
                   "Failed to parse XML file: XML_ERROR_FILE_NOT_FOUND"));
 }
 
 TEST_F(UrdfParserTest, BadXmlString) {
-  AddModelFromUrdfString("not proper xml content", "");
-  ASSERT_EQ(error_records_.size(), 1);
-  std::string full_message = error_records_[0].FormatError();
-  EXPECT_EQ(full_message,
-            "<literal-string>.urdf:1: error: "
-            "Failed to parse XML string: XML_ERROR_PARSING_TEXT");
+  EXPECT_EQ(AddModelFromUrdfString("not proper xml content", ""), std::nullopt);
+  EXPECT_THAT(FormatError(0), ::testing::MatchesRegex(
+                  "<literal-string>.urdf:1: error: "
+                  "Failed to parse XML string: XML_ERROR_PARSING_TEXT"));
+  EXPECT_TRUE(warning_records_.empty());
+}
+
+TEST_F(UrdfParserTest, NoRobot) {
+  EXPECT_EQ(AddModelFromUrdfString("<empty/>", ""), std::nullopt);
+  EXPECT_THAT(FormatError(0), ::testing::MatchesRegex(
+                  ".*URDF does not contain a robot tag."));
+  EXPECT_TRUE(warning_records_.empty());
+}
+
+TEST_F(UrdfParserTest, NoName) {
+  EXPECT_EQ(AddModelFromUrdfString("<robot/>", ""), std::nullopt);
+  EXPECT_THAT(FormatError(0), ::testing::MatchesRegex(
+                  ".*Your robot must have a name attribute or a model name must"
+                  " be specified."));
+  EXPECT_TRUE(warning_records_.empty());
+}
+
+TEST_F(UrdfParserTest, ObsoleteLoopJoint) {
+  EXPECT_NE(AddModelFromUrdfString("<robot name='a'><loop_joint/></robot>", ""),
+            std::nullopt);
+  EXPECT_THAT(FormatError(0), ::testing::MatchesRegex(
+                  ".*loop joints are not supported in MultibodyPlant"));
+  EXPECT_TRUE(warning_records_.empty());
+}
+
+TEST_F(UrdfParserTest, Material) {
+  // Material parsing is tested fully elsewhere (see ParseMaterial()). This
+  // test is just proof-of-life that top-level material stanzas are recognized.
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='a'>
+     <material name='black'>
+      <color rgba='0 0 0 0'/>
+     </material>
+     <link name="base_link">
+      <visual>
+       <geometry>
+        <cylinder length="0.6" radius="0.2"/>
+       </geometry>
+       <!-- use the named material! -->
+       <material name='black'/>
+      </visual>
+     </link>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_TRUE(error_records_.empty());
+  EXPECT_TRUE(warning_records_.empty());
 }
 
 // Verifies that the URDF loader can leverage a specified package map.
