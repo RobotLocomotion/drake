@@ -710,7 +710,9 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
   // Check constraints types in reverse order, such that classes that inherit
   // from other classes will not be prematurely added to less specific (or
   // incorrect) container.
-  if (dynamic_cast<LinearMatrixInequalityConstraint*>(constraint)) {
+  if (binding.evaluator()->num_constraints() == 0) {
+    return binding;
+  } else if (dynamic_cast<LinearMatrixInequalityConstraint*>(constraint)) {
     return AddConstraint(
         internal::BindingDynamicCast<LinearMatrixInequalityConstraint>(
             binding));
@@ -827,7 +829,9 @@ Binding<LinearConstraint> MathematicalProgram::AddConstraint(
   // LinearEqualityConstraint or BoundingBoxConstraint, do a dynamic check
   // here.
   LinearConstraint* constraint = binding.evaluator().get();
-  if (dynamic_cast<BoundingBoxConstraint*>(constraint)) {
+  if (constraint->num_constraints() == 0) {
+    return binding;
+  } else if (dynamic_cast<BoundingBoxConstraint*>(constraint)) {
     return AddConstraint(
         internal::BindingDynamicCast<BoundingBoxConstraint>(binding));
   } else if (dynamic_cast<LinearEqualityConstraint*>(constraint)) {
@@ -855,6 +859,9 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 
 Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearEqualityConstraint>& binding) {
+  if (binding.evaluator()->num_constraints() == 0) {
+    return binding;
+  }
   DRAKE_ASSERT(binding.evaluator()->A().cols() ==
                static_cast<int>(binding.GetNumElements()));
   CheckBinding(binding);
@@ -884,6 +891,9 @@ MathematicalProgram::AddLinearEqualityConstraint(
 
 Binding<BoundingBoxConstraint> MathematicalProgram::AddConstraint(
     const Binding<BoundingBoxConstraint>& binding) {
+  if (binding.evaluator()->num_constraints() == 0) {
+    return binding;
+  }
   CheckBinding(binding);
   DRAKE_ASSERT(binding.evaluator()->num_outputs() ==
                static_cast<int>(binding.GetNumElements()));
@@ -977,6 +987,9 @@ Binding<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
 
 Binding<LinearComplementarityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearComplementarityConstraint>& binding) {
+  if (binding.evaluator()->num_constraints() == 0) {
+    return binding;
+  }
   CheckBinding(binding);
 
   required_capabilities_.insert(
@@ -1013,6 +1026,9 @@ Binding<Constraint> MathematicalProgram::AddPolynomialConstraint(
 
 Binding<PositiveSemidefiniteConstraint> MathematicalProgram::AddConstraint(
     const Binding<PositiveSemidefiniteConstraint>& binding) {
+  if (binding.evaluator()->num_constraints() == 0) {
+    return binding;
+  }
   CheckBinding(binding);
   DRAKE_ASSERT(math::IsSymmetric(Eigen::Map<const MatrixXDecisionVariable>(
       binding.variables().data(), binding.evaluator()->matrix_rows(),
@@ -1040,6 +1056,9 @@ MathematicalProgram::AddPositiveSemidefiniteConstraint(
 
 Binding<LinearMatrixInequalityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearMatrixInequalityConstraint>& binding) {
+  if (binding.evaluator()->num_constraints() == 0) {
+    return binding;
+  }
   CheckBinding(binding);
   DRAKE_ASSERT(static_cast<int>(binding.evaluator()->F().size()) ==
                static_cast<int>(binding.GetNumElements()) + 1);
