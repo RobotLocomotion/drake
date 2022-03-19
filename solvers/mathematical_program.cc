@@ -429,7 +429,7 @@ Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
   } else if (dynamic_cast<L2NormCost*>(cost)) {
     return AddCost(internal::BindingDynamicCast<L2NormCost>(binding));
   } else {
-    CheckBinding(binding);
+    DRAKE_DEMAND(CheckBinding(binding));
     required_capabilities_.insert(ProgramAttribute::kGenericCost);
     generic_costs_.push_back(binding);
     return generic_costs_.back();
@@ -438,7 +438,7 @@ Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
 
 Binding<LinearCost> MathematicalProgram::AddCost(
     const Binding<LinearCost>& binding) {
-  CheckBinding(binding);
+  DRAKE_DEMAND(CheckBinding(binding));
   required_capabilities_.insert(ProgramAttribute::kLinearCost);
   linear_costs_.push_back(binding);
   return linear_costs_.back();
@@ -456,7 +456,7 @@ Binding<LinearCost> MathematicalProgram::AddLinearCost(
 
 Binding<QuadraticCost> MathematicalProgram::AddCost(
     const Binding<QuadraticCost>& binding) {
-  CheckBinding(binding);
+  DRAKE_DEMAND(CheckBinding(binding));
   required_capabilities_.insert(ProgramAttribute::kQuadraticCost);
   DRAKE_ASSERT(binding.evaluator()->Q().rows() ==
                    static_cast<int>(binding.GetNumElements()) &&
@@ -496,7 +496,7 @@ Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
 
 Binding<L2NormCost> MathematicalProgram::AddCost(
     const Binding<L2NormCost>& binding) {
-  CheckBinding(binding);
+  DRAKE_DEMAND(CheckBinding(binding));
   required_capabilities_.insert(ProgramAttribute::kL2NormCost);
   l2norm_costs_.push_back(binding);
   return l2norm_costs_.back();
@@ -727,7 +727,9 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
     return AddConstraint(
         internal::BindingDynamicCast<LinearConstraint>(binding));
   } else {
-    CheckBinding(binding);
+    if (!CheckBinding(binding)) {
+      return binding;
+    }
     required_capabilities_.insert(ProgramAttribute::kGenericConstraint);
     generic_constraints_.push_back(binding);
     return generic_constraints_.back();
@@ -838,7 +840,9 @@ Binding<LinearConstraint> MathematicalProgram::AddConstraint(
     // possibly redundant w.r.t. the binding infrastructure.
     DRAKE_ASSERT(binding.evaluator()->A().cols() ==
                  static_cast<int>(binding.GetNumElements()));
-    CheckBinding(binding);
+    if (!CheckBinding(binding)) {
+      return binding;
+    }
     required_capabilities_.insert(ProgramAttribute::kLinearConstraint);
     linear_constraints_.push_back(binding);
     return linear_constraints_.back();
@@ -857,7 +861,9 @@ Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearEqualityConstraint>& binding) {
   DRAKE_ASSERT(binding.evaluator()->A().cols() ==
                static_cast<int>(binding.GetNumElements()));
-  CheckBinding(binding);
+  if (!CheckBinding(binding)) {
+    return binding;
+  }
   required_capabilities_.insert(ProgramAttribute::kLinearEqualityConstraint);
   linear_equality_constraints_.push_back(binding);
   return linear_equality_constraints_.back();
@@ -884,7 +890,9 @@ MathematicalProgram::AddLinearEqualityConstraint(
 
 Binding<BoundingBoxConstraint> MathematicalProgram::AddConstraint(
     const Binding<BoundingBoxConstraint>& binding) {
-  CheckBinding(binding);
+  if (!CheckBinding(binding)) {
+    return binding;
+  }
   DRAKE_ASSERT(binding.evaluator()->num_outputs() ==
                static_cast<int>(binding.GetNumElements()));
   required_capabilities_.insert(ProgramAttribute::kLinearConstraint);
@@ -894,7 +902,7 @@ Binding<BoundingBoxConstraint> MathematicalProgram::AddConstraint(
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddConstraint(
     const Binding<LorentzConeConstraint>& binding) {
-  CheckBinding(binding);
+  DRAKE_DEMAND(CheckBinding(binding));
   required_capabilities_.insert(ProgramAttribute::kLorentzConeConstraint);
   lorentz_cone_constraint_.push_back(binding);
   return lorentz_cone_constraint_.back();
@@ -925,7 +933,7 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
 
 Binding<RotatedLorentzConeConstraint> MathematicalProgram::AddConstraint(
     const Binding<RotatedLorentzConeConstraint>& binding) {
-  CheckBinding(binding);
+  DRAKE_DEMAND(CheckBinding(binding));
   required_capabilities_.insert(
       ProgramAttribute::kRotatedLorentzConeConstraint);
   rotated_lorentz_cone_constraint_.push_back(binding);
@@ -977,7 +985,9 @@ Binding<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
 
 Binding<LinearComplementarityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearComplementarityConstraint>& binding) {
-  CheckBinding(binding);
+  if (!CheckBinding(binding)) {
+    return binding;
+  }
 
   required_capabilities_.insert(
       ProgramAttribute::kLinearComplementarityConstraint);
@@ -1013,7 +1023,9 @@ Binding<Constraint> MathematicalProgram::AddPolynomialConstraint(
 
 Binding<PositiveSemidefiniteConstraint> MathematicalProgram::AddConstraint(
     const Binding<PositiveSemidefiniteConstraint>& binding) {
-  CheckBinding(binding);
+  if (!CheckBinding(binding)) {
+    return binding;
+  }
   DRAKE_ASSERT(math::IsSymmetric(Eigen::Map<const MatrixXDecisionVariable>(
       binding.variables().data(), binding.evaluator()->matrix_rows(),
       binding.evaluator()->matrix_rows())));
@@ -1040,7 +1052,9 @@ MathematicalProgram::AddPositiveSemidefiniteConstraint(
 
 Binding<LinearMatrixInequalityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearMatrixInequalityConstraint>& binding) {
-  CheckBinding(binding);
+  if (!CheckBinding(binding)) {
+    return binding;
+  }
   DRAKE_ASSERT(static_cast<int>(binding.evaluator()->F().size()) ==
                static_cast<int>(binding.GetNumElements()) + 1);
   required_capabilities_.insert(
@@ -1218,7 +1232,7 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
 
 Binding<ExponentialConeConstraint> MathematicalProgram::AddConstraint(
     const Binding<ExponentialConeConstraint>& binding) {
-  CheckBinding(binding);
+  DRAKE_DEMAND(CheckBinding(binding));
   required_capabilities_.insert(ProgramAttribute::kExponentialConeConstraint);
   exponential_cone_constraints_.push_back(binding);
   return exponential_cone_constraints_.back();
@@ -1781,12 +1795,13 @@ void MathematicalProgram::CheckIsDecisionVariable(
 }
 
 template <typename C>
-void MathematicalProgram::CheckBinding(const Binding<C>& binding) const {
+bool MathematicalProgram::CheckBinding(const Binding<C>& binding) const {
   // TODO(eric.cousineau): In addition to identifiers, hash bindings by
   // their constraints and their variables, to prevent duplicates.
   // TODO(eric.cousineau): Once bindings have identifiers (perhaps
   // retrofitting `description`), ensure that they have unique names.
   CheckIsDecisionVariable(binding.variables());
+  return (binding.evaluator()->num_outputs() > 0);
 }
 
 std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog) {
