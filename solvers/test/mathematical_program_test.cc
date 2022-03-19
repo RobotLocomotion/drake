@@ -28,6 +28,7 @@
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
+#include "drake/solvers/decision_variable.h"
 #include "drake/solvers/program_attribute.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
@@ -931,6 +932,70 @@ GTEST_TEST(TestMathematicalProgram, AddCostTest) {
   ++num_generic_costs;
   VerifyAddedCost2(prog, generic_trivial_cost2, returned_cost4,
                    Eigen::Vector2d(1, 2), num_generic_costs);
+}
+
+class EmptyConstraint final : public Constraint {
+ public:
+  EmptyConstraint()
+      : Constraint(0, 2, Eigen::VectorXd(0), Eigen::VectorXd(0),
+                   "empty_constraint") {}
+
+  ~EmptyConstraint() {}
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>&, VectorXd*) const {}
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>&, AutoDiffVecXd*) const {}
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>*) const {}
+};
+
+GTEST_TEST(TestMathematicalProgram, AddEmptyConstraint) {
+  // MathematicalProgram::AddFooConstraint with empty constraint.
+  solvers::MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto binding1 = prog.AddConstraint(std::make_shared<EmptyConstraint>(), x);
+  EXPECT_TRUE(prog.GetAllConstraints().empty());
+  EXPECT_EQ(binding1.evaluator()->get_description(), "empty_constraint");
+
+  auto binding2 = prog.AddConstraint(
+      std::make_shared<LinearConstraint>(
+          Eigen::MatrixXd(0, 2), Eigen::VectorXd(0), Eigen::VectorXd(0)),
+      x);
+  EXPECT_TRUE(prog.GetAllConstraints().empty());
+  EXPECT_EQ(binding2.evaluator()->num_constraints(), 0);
+
+  auto binding3 =
+      prog.AddConstraint(std::make_shared<LinearEqualityConstraint>(
+                             Eigen::MatrixXd(0, 2), Eigen::VectorXd(0)),
+                         x);
+  EXPECT_TRUE(prog.GetAllConstraints().empty());
+  EXPECT_EQ(binding3.evaluator()->num_constraints(), 0);
+
+  auto binding4 =
+      prog.AddConstraint(std::make_shared<BoundingBoxConstraint>(
+                             Eigen::VectorXd(0), Eigen::VectorXd(0)),
+                         VectorX<symbolic::Variable>(0));
+  EXPECT_TRUE(prog.GetAllConstraints().empty());
+  EXPECT_EQ(binding4.evaluator()->num_constraints(), 0);
+
+  auto binding5 =
+      prog.AddConstraint(std::make_shared<LinearComplementarityConstraint>(
+                             Eigen::MatrixXd(0, 0), Eigen::VectorXd(0)),
+                         VectorX<symbolic::Variable>(0));
+  EXPECT_TRUE(prog.GetAllConstraints().empty());
+
+  auto binding6 = prog.AddConstraint(internal::CreateBinding(
+      std::make_shared<PositiveSemidefiniteConstraint>(0),
+      VectorXDecisionVariable(0)));
+  EXPECT_TRUE(prog.GetAllConstraints().empty());
+
+  auto binding7 =
+      prog.AddConstraint(std::make_shared<LinearMatrixInequalityConstraint>(
+                             std::vector<Eigen::Ref<const Eigen::MatrixXd>>(
+                                 {Eigen::MatrixXd(0, 0), Eigen::MatrixXd(0, 0),
+                                  Eigen::MatrixXd(0, 0)})),
+                         x);
+  EXPECT_TRUE(prog.GetAllConstraints().empty());
 }
 
 void CheckAddedSymbolicLinearCostUserFun(const MathematicalProgram& prog,
