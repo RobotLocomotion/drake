@@ -1,0 +1,5 @@
+drake ({debian_version}-1) experimental; urgency=low
+
+  * New upstream version, built from git sha {git_sha}
+
+ -- Drake Development Team <drake-users@mit.edu>  {date}
