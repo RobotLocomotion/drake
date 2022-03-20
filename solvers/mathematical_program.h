@@ -3441,25 +3441,9 @@ class MathematicalProgram {
    * Given a matrix of decision variables, checks if every entry in the
    * matrix is a decision variable in the program; throws a runtime
    * error if any variable is not a decision variable in the program.
-   * @tparam Derived An Eigen::Matrix type of symbolic Variable.
-   * @param vars A matrix of variables.
+   * @param vars A vector of variables.
    */
-  template <typename Derived>
-  typename std::enable_if_t<
-      std::is_same_v<typename Derived::Scalar, symbolic::Variable>>
-  CheckIsDecisionVariable(const Eigen::MatrixBase<Derived>& vars) const {
-    for (int i = 0; i < vars.rows(); ++i) {
-      for (int j = 0; j < vars.cols(); ++j) {
-        if (decision_variable_index_.find(vars(i, j).get_id()) ==
-            decision_variable_index_.end()) {
-          std::ostringstream oss;
-          oss << vars(i, j)
-              << " is not a decision variable of the mathematical program.\n";
-          throw std::runtime_error(oss.str());
-        }
-      }
-    }
-  }
+  void CheckIsDecisionVariable(const VectorXDecisionVariable& vars) const;
 
   /*
    * Ensure a binding is valid *before* adding it to the program.
@@ -3468,13 +3452,7 @@ class MathematicalProgram {
    * @throws std::exception if the binding is invalid.
    */
   template <typename C>
-  void CheckBinding(const Binding<C>& binding) const {
-    // TODO(eric.cousineau): In addition to identifiers, hash bindings by
-    // their constraints and their variables, to prevent duplicates.
-    // TODO(eric.cousineau): Once bindings have identifiers (perhaps
-    // retrofitting `description`), ensure that they have unique names.
-    CheckIsDecisionVariable(binding.variables());
-  }
+  void CheckBinding(const Binding<C>& binding) const;
 
   /*
    * Adds new variables to MathematicalProgram.

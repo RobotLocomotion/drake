@@ -198,20 +198,20 @@ GTEST_TEST(MultipleShootingTest, DeprecatedPlaceholderVariableTest) {
   const solvers::VectorXDecisionVariable& u = prog.input();
   const solvers::VectorXDecisionVariable& x = prog.state();
 
-  EXPECT_THROW(prog.AddCost(t(0)), std::runtime_error);
-  EXPECT_THROW(prog.AddLinearCost(Vector1d(1.0), 0.0, u), std::runtime_error);
+  EXPECT_THROW(prog.AddCost(t(0)), std::exception);
+  EXPECT_THROW(prog.AddLinearCost(Vector1d(1.0), 0.0, u), std::exception);
   EXPECT_THROW(prog.AddQuadraticErrorCost(Eigen::Matrix2d::Identity(),
                                           Eigen::Vector2d::Zero(), x),
-               std::runtime_error);
+               std::exception);
 
-  EXPECT_THROW(prog.AddLinearConstraint(t(0) <= 1.0), std::runtime_error);
+  EXPECT_THROW(prog.AddLinearConstraint(t(0) <= 1.0), std::exception);
   EXPECT_THROW(prog.AddLinearConstraint(u <= Vector1d(1.0)),
-               std::runtime_error);
+               std::exception);
 
   EXPECT_THROW(prog.AddLinearConstraint(Eigen::Matrix2d::Identity(),
                                         Eigen::Vector2d::Zero(),
                                         Eigen::Vector2d::Zero(), x),
-               std::runtime_error);
+               std::exception);
 
   solvers::MathematicalProgramResult result;
   // Arbitrarily set the decision variable values to 0.
@@ -732,20 +732,20 @@ GTEST_TEST(MultipleShootingTest, PlaceholderVariableTest) {
   const solvers::VectorXDecisionVariable& u = trajopt.input();
   const solvers::VectorXDecisionVariable& x = trajopt.state();
 
-  EXPECT_THROW(prog.AddCost(t(0)), std::runtime_error);
-  EXPECT_THROW(prog.AddLinearCost(Vector1d(1.0), 0.0, u), std::runtime_error);
+  EXPECT_THROW(prog.AddCost(t(0)), std::exception);
+  EXPECT_THROW(prog.AddLinearCost(Vector1d(1.0), 0.0, u), std::exception);
   EXPECT_THROW(prog.AddQuadraticErrorCost(Eigen::Matrix2d::Identity(),
                                           Eigen::Vector2d::Zero(), x),
-               std::runtime_error);
+               std::exception);
 
-  EXPECT_THROW(prog.AddLinearConstraint(t(0) <= 1.0), std::runtime_error);
+  EXPECT_THROW(prog.AddLinearConstraint(t(0) <= 1.0), std::exception);
   EXPECT_THROW(prog.AddLinearConstraint(u <= Vector1d(1.0)),
-               std::runtime_error);
+               std::exception);
 
   EXPECT_THROW(prog.AddLinearConstraint(Eigen::Matrix2d::Identity(),
                                         Eigen::Vector2d::Zero(),
                                         Eigen::Vector2d::Zero(), x),
-               std::runtime_error);
+               std::exception);
 
   solvers::MathematicalProgramResult result;
   // Arbitrarily set the decision variable values to 0.
