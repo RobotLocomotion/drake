@@ -17,7 +17,9 @@ from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import BasicVector, DiagramBuilder, LeafSystem
+from pydrake.systems.framework import (
+    BasicVector, DiagramBuilder, LeafSystem, TriggerType,
+)
 from pydrake.systems.primitives import ConstantVectorSource
 
 
@@ -181,6 +183,10 @@ class TestSystemsLcm(unittest.TestCase):
         self._fix_and_publish(dut, AbstractValue.Make(model_message))
         lcm.HandleSubscriptions(0)
         self.assert_lcm_equal(subscriber.message, model_message)
+        # Test `publish_triggers` overload.
+        mut.LcmPublisherSystem.Make(
+            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
+            publish_period=0.1, publish_triggers={TriggerType.kPeriodic})
 
     def test_publisher_cpp(self):
         lcm = DrakeLcm()

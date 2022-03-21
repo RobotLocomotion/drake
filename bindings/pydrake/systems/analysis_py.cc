@@ -186,10 +186,13 @@ PYBIND11_MODULE(analysis, m) {
         // TODO(eric.cousineau): Bind `release_context` once some form of the
         // PR RobotLocomotion/pybind11#33 lands. Presently, it fails.
         .def("set_publish_every_time_step",
-            &Simulator<T>::set_publish_every_time_step,
+            &Simulator<T>::set_publish_every_time_step, py::arg("publish"),
             doc.Simulator.set_publish_every_time_step.doc)
+        .def("set_publish_at_initialization",
+            &Simulator<T>::set_publish_at_initialization, py::arg("publish"),
+            doc.Simulator.set_publish_at_initialization.doc)
         .def("set_target_realtime_rate",
-            &Simulator<T>::set_target_realtime_rate,
+            &Simulator<T>::set_target_realtime_rate, py::arg("realtime_rate"),
             doc.Simulator.set_target_realtime_rate.doc)
         .def("get_target_realtime_rate",
             &Simulator<T>::get_target_realtime_rate,

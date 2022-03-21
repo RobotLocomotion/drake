@@ -79,6 +79,9 @@ class TestAnalysis(unittest.TestCase):
         system = ConstantVectorSource([1.])
         simulator = Simulator(system)
         self.assertIs(simulator.get_system(), system)
+        simulator.set_publish_every_time_step(publish=True)
+        simulator.set_publish_at_initialization(publish=True)
+        simulator.set_target_realtime_rate(realtime_rate=1.0)
 
     def test_simulator_status(self):
         SimulatorStatus.ReturnReason.kReachedBoundaryTime
