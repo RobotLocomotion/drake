@@ -3454,9 +3454,11 @@ class MathematicalProgram {
    * @pre The binding has not yet been registered.
    * @pre The decision variables have been registered.
    * @throws std::exception if the binding is invalid.
+   * @returns true if the binding is non-trivial (>= 1 output); when false,
+   *   this program should avoid adding the binding to its internal state.
    */
   template <typename C>
-  void CheckBinding(const Binding<C>& binding) const;
+  [[nodiscard]] bool CheckBinding(const Binding<C>& binding) const;
 
   /*
    * Adds new variables to MathematicalProgram.
