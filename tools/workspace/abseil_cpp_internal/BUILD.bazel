@@ -1,0 +1,19 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+install_files(
+    name = "install",
+    dest = "share/doc/abseil_cpp",
+    files = [
+        "@abseil_cpp_internal//:AUTHORS",
+        "@abseil_cpp_internal//:LICENSE",
+    ],
+    allowed_externals = [
+        "@abseil_cpp_internal//:LICENSE",
+    ],
+    visibility = ["//tools/workspace:__pkg__"],
+)
+
+add_lint_tests()

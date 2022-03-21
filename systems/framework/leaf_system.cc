@@ -3,6 +3,8 @@
 #include <cmath>
 #include <limits>
 
+#include "absl/container/inlined_vector.h"
+
 #include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/system_symbolic_inspector.h"
 #include "drake/systems/framework/value_checker.h"
@@ -303,15 +305,6 @@ std::multimap<int, int> LeafSystem<T>::GetDirectFeedthroughs() const {
   return feedthrough;
 }
 
-namespace {
-// The type of our cache entry for temporary storage.  Any function that uses
-// this storage is responsible for resetting any values prior to their use.
-template <typename T>
-struct Scratch {
-  std::vector<const Event<T>*> next_events;
-};
-}  // namespace
-
 template <typename T>
 LeafSystem<T>::LeafSystem() : LeafSystem(SystemScalarConverter{}) {}
 
@@ -324,16 +317,6 @@ LeafSystem<T>::LeafSystem(SystemScalarConverter converter)
       AllocateForcedDiscreteUpdateEventCollection());
   this->set_forced_unrestricted_update_events(
       AllocateForcedUnrestrictedUpdateEventCollection());
-
-  // This cache entry maintains temporary storage. Since this declaration
-  // invokes no invalidation support from the cache system, code that uses
-  // this storage is responsible for ensuring that no stale data is used.
-  scratch_cache_index_ =
-      this->DeclareCacheEntry(
-          "scratch", ValueProducer(
-              Scratch<T>{}, &ValueProducer::NoopCalc),
-          {this->nothing_ticket()}).cache_index();
-
   per_step_events_.set_system_id(this->get_system_id());
   initialization_events_.set_system_id(this->get_system_id());
   model_discrete_state_.set_system_id(this->get_system_id());
@@ -374,14 +357,13 @@ void LeafSystem<T>::DoCalcNextUpdateTime(
     return;
   }
 
-  // Use a cached vector to calculate which events to fire. Clear it to ensure
-  // that no data values leak between invocations.
-  Scratch<T>& scratch =
-      this->get_cache_entry(scratch_cache_index_)
-      .get_mutable_cache_entry_value(context)
-      .template GetMutableValueOrThrow<Scratch<T>>();
-  std::vector<const Event<T>*>& next_events = scratch.next_events;
-  next_events.clear();
+  // Calculate which events to fire. Use an InlinedVector so that small-ish
+  // numbers events can be processed without heap allocations. Our threshold
+  // for "small" is the same amount that would cause an EventCollection to
+  // grow beyond its pre-allocated size.
+  using NextEventsVector = absl::InlinedVector<
+      const Event<T>*, LeafEventCollection<PublishEvent<T>>::kDefaultCapacity>;
+  NextEventsVector next_events;
 
   // Find the minimum next sample time across all declared periodic events,
   // and store the set of declared events that will occur at that time.
