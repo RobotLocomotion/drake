@@ -71,6 +71,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "vtk",
     "yaml_cpp_internal",
 ]] + ["//tools/workspace/%s:install" % p for p in [
+    "abseil_cpp_internal",
     "conex",
     "cds",
     "dreal",
