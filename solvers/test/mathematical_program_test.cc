@@ -647,7 +647,9 @@ void ExpectBadVar(MathematicalProgram* prog, int num_var, Args&&... args) {
   // Use minimal call site (directly on adding Binding<C>).
   // TODO(eric.cousineau): Check if there is a way to parse the error text to
   // ensure that we are capturing the correct error.
-  EXPECT_THROW(AddItem(prog, CreateBinding(c, x)), std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AddItem(prog, CreateBinding(c, x)),
+      ".*is not a decision variable.*");
 }
 
 }  // namespace
@@ -2879,8 +2881,12 @@ GTEST_TEST(TestMathematicalProgram, TestAddCostThrowError) {
 
   // Add a cost containing variable not included in the mathematical program.
   Variable y("y");
-  EXPECT_THROW(prog.AddCost(x(0) + y), runtime_error);
-  EXPECT_THROW(prog.AddCost(x(0) * x(0) + y), runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddCost(x(0) + y),
+      ".*is not a decision variable.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddCost(x(0) * x(0) + y),
+      ".*is not a decision variable.*");
 }
 
 GTEST_TEST(TestMathematicalProgram, TestAddGenericCost) {
@@ -3359,9 +3365,10 @@ GTEST_TEST(TestMathematicalProgram, AddEqualityConstraintBetweenPolynomials) {
   // Test with a polynomial whose coefficients depend on variables that are not
   // decision variables of prog.
   symbolic::Variable b("b");
-  EXPECT_THROW(prog.AddEqualityConstraintBetweenPolynomials(
-                   p1, symbolic::Polynomial(b * x, {x})),
-               std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddEqualityConstraintBetweenPolynomials(
+          p1, symbolic::Polynomial(b * x, {x})),
+      ".*is not a decision variable.*");
   // If we add `b` to prog as decision variable, then the code throws no
   // exceptions.
   prog.AddDecisionVariables(Vector1<symbolic::Variable>(b));
