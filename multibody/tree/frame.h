@@ -346,7 +346,7 @@ class Frame : public FrameBase<T> {
         body().EvalSpatialAccelerationInWorld(context);
 
     // Optimize for the common case that `this` is body B's frame.
-    if (body().body_frame().index() == this->index()) return A_WB_W;
+    if (is_body_frame()) return A_WB_W;
 
     // Shift spatial acceleration A_WB_W from Bo to Fp.
     const math::RotationMatrix<T>& R_WB =
@@ -419,7 +419,7 @@ class Frame : public FrameBase<T> {
       const Vector3<T> a_WcoincidentPoint_W =
           A_WM_W.Shift(p_MoFo_W, w_WM_W).translational();
       const Vector3<T>& v_MFo_W = V_MF_W.translational();
-      const Vector3<T> coriolis_W = 2 * w_MF_W.cross(v_MFo_W);
+      const Vector3<T> coriolis_W = 2 * w_WM_W.cross(v_MFo_W);
       A_MF_W.translational() -= (a_WcoincidentPoint_W + coriolis_W);
     }
 

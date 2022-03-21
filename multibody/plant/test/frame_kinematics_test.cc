@@ -333,20 +333,14 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
   EXPECT_TRUE(CompareMatrices(A_HW_E.rotational(), -alpha_WH_W,
       kTolerance, MatrixCompareType::relative));
 
-#if 0
   // Verify translational part with by-hand calculations.
   const Vector3<double>& a_WHo_W = A_WH_W.translational();
   const Vector3<double> alf_r = alpha_WH_W.cross(p_WoHo_W);
   const Vector3<double> wwr = w_WH_W.cross(w_WH_W.cross(p_WoHo_W));
   const Vector3<double> twowv = 2 * w_WH_W.cross(v_WHo_W);
   const Vector3<double> a_HWo_W_expected = -a_WHo_W + alf_r - wwr + twowv;
-  std::cout << "\n\nna_WHo_W = \n" << a_WHo_W << "\n";
-  std::cout << "\nalf_r = \n" << alf_r << "\n";
-  std::cout << "\nwwr = \n" << wwr << "\n";
-  std::cout << "\ntwowv = \n" << twowv << "\n\n";
   EXPECT_TRUE(CompareMatrices(A_HW_E.translational(), a_HWo_W_expected,
       kTolerance, MatrixCompareType::relative));
-#endif
 }
 
 GTEST_TEST(MultibodyPlantTest, FixedWorldKinematics) {
