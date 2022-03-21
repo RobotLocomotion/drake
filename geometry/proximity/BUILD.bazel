@@ -561,8 +561,10 @@ drake_cc_library(
     name = "obj_to_surface_mesh",
     srcs = ["obj_to_surface_mesh.cc"],
     hdrs = ["obj_to_surface_mesh.h"],
-    deps = [
+    interface_deps = [
         ":triangle_surface_mesh",
+    ],
+    deps = [
         "//common:essential",
         "//common:filesystem",
         "@fmt",

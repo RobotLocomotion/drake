@@ -74,7 +74,7 @@ kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
     # will mention these with a comment, to highlight them to reviewers.
     indirects = _bazel_query([(
         "kind('cc_library', deps(set({components})) intersect //..."
-        " except filter('_private_headers_impl$', //...)"
+        " except filter('_cc_impl$', //...)"
         " except //lcmtypes/..."
         " except deps(set({package_libs}), 1)"
         " except set({misc_libs}))"
