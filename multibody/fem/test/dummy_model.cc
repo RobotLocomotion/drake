@@ -6,7 +6,6 @@ namespace fem {
 namespace internal {
 
 DummyModel::DummyModel() {
-  std::cout << 3 << std::endl;
   const FemElementIndex kElementIndex0 = FemElementIndex(0);
   const FemElementIndex kElementIndex1 = FemElementIndex(1);
   const std::array<FemNodeIndex, Traits::num_nodes> kNodeIndices0 = {

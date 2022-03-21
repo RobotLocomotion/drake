@@ -13,6 +13,7 @@ template <typename T>
 void FemModel<T>::CalcResidual(const FemState<T>& fem_state,
                                EigenPtr<VectorX<T>> residual) const {
   DRAKE_DEMAND(residual != nullptr);
+  DRAKE_DEMAND(residual->size() == num_dofs());
   ThrowIfModelDataIncompatible(__func__, fem_state);
   DoCalcResidual(fem_state, residual);
 }
@@ -36,9 +37,8 @@ FemModel<T>::MakePetscSymmetricBlockSparseTangentMatrix() const {
 
 template <typename T>
 FemModel<T>::FemModel() {
-  using Eigen::VectorXd;
   fem_state_system_ = std::make_unique<internal::FemStateSystem<T>>(
-      VectorXd(0), VectorXd(0), VectorXd(0));
+      VectorX<T>(0), VectorX<T>(0), VectorX<T>(0));
 }
 
 template <typename T>

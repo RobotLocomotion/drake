@@ -58,14 +58,6 @@ class FemModelImpl : public FemModel<typename Element::T> {
     elements_.emplace_back(std::move(element));
   }
 
-  /* Alternative signature for adding a new element to this FemModelImpl.
-   Forwards the arguments `args` to the constructor of the Element and
-   potentially creates the new element in place. */
-  template <typename... Args>
-  void AddElement(Args&&... args) {
-    elements_.emplace_back(std::forward<Args>(args)...);
-  }
-
  private:
   void DoCalcResidual(const FemState<T>& fem_state,
                       EigenPtr<VectorX<T>> residual) const final {
@@ -85,10 +77,10 @@ class FemModelImpl : public FemModel<typename Element::T> {
       elements_[e].CalcResidual(element_data[e], &element_residual);
       const std::array<FemNodeIndex, element_num_nodes>& element_node_indices =
           elements_[e].node_indices();
-      for (int i = 0; i < element_num_nodes; ++i) {
-        const int ei = element_node_indices[i];
-        residual->template segment<kDim>(ei * kDim) +=
-            element_residual.template segment<kDim>(i * kDim);
+      for (int a = 0; a < element_num_nodes; ++a) {
+        const int global_node = element_node_indices[a];
+        residual->template segment<kDim>(global_node * kDim) +=
+            element_residual.template segment<kDim>(a * kDim);
       }
     }
   }
@@ -136,6 +128,11 @@ class FemModelImpl : public FemModel<typename Element::T> {
           elements_[e].node_indices();
       for (int a = 0; a < element_num_nodes; ++a) {
         for (int b = a; b < element_num_nodes; ++b) {
+          /* PetscSymmetricBlockSparseMatrix only needs to allocate for the
+           upper triangular part of the matrix. So instead of allocating for
+           both (element_node_indices[a], element_node_indices[b]) and
+           (element_node_indices[b], element_node_indices[a]) blocks, we only
+           allocate for one of them. See PetscSymmetricBlockSparseMatrix. */
           const int block_row =
               std::min(element_node_indices[a], element_node_indices[b]);
           const int block_col =

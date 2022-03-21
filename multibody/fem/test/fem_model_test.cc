@@ -114,7 +114,6 @@ GTEST_TEST(FemModelTest, IncompatibleModelState) {
       model.MakePetscSymmetricBlockSparseTangentMatrix();
   ASSERT_EQ(tangent_matrix->rows(), model.num_dofs());
   ASSERT_EQ(tangent_matrix->cols(), model.num_dofs());
-  std::cout << "HAHA" << std::endl;
   const Vector3d weights(0.1, 0.2, 0.3);
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.CalcTangentMatrix(*fem_state, weights, tangent_matrix.get()),
