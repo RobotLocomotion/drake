@@ -52,8 +52,6 @@ using math::RotationMatrix;
 using multibody::internal::MakeCoulombFrictionFromSdfCollisionOde;
 using multibody::internal::MakeGeometryInstanceFromSdfVisual;
 using multibody::internal::MakeGeometryPoseFromSdfCollision;
-using multibody::internal::MakeShapeFromSdfGeometry;
-using multibody::internal::MakeVisualPropertiesFromSdfVisual;
 using std::make_unique;
 using std::unique_ptr;
 using systems::Context;
@@ -184,26 +182,54 @@ unique_ptr<sdf::Collision> MakeSdfCollisionFromString(
 }
 
 // Define a pass-through functor for testing.
-std::string NoopResolveFilename(std::string filename) { return filename; }
+std::string NoopResolveFilename(const DiagnosticPolicy&, std::string filename) {
+  return filename;
+}
+
+class SceneGraphParserDetail : public ::testing::Test {
+ public:
+  SceneGraphParserDetail() {
+    // Don't let warnings leak into spdlog; tests should always specifically
+    // handle any warnings that apppear.
+    diagnostic_.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
+  }
+
+  // Wraps a function under test with helpful defaults.
+  std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
+      const sdf::Geometry& sdf_geometry,
+      const ResolveFilename& resolve_filename = &NoopResolveFilename) {
+    return internal::MakeShapeFromSdfGeometry(
+        diagnostic_, sdf_geometry, resolve_filename);
+  }
+
+  // Wraps a function under test with helpful defaults.
+  geometry::IllustrationProperties MakeVisualPropertiesFromSdfVisual(
+      const sdf::Visual& sdf_visual,
+      const ResolveFilename& resolve_filename = &NoopResolveFilename) {
+    return internal::MakeVisualPropertiesFromSdfVisual(
+        diagnostic_, sdf_visual, resolve_filename);
+  }
+
+ protected:
+  DiagnosticPolicy diagnostic_;
+};
 
 // Verify MakeShapeFromSdfGeometry returns nullptr when we specify an <empty>
 // sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetail, MakeEmptyFromSdfGeometry) {
+TEST_F(SceneGraphParserDetail, MakeEmptyFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry =
       MakeSdfGeometryFromString("<empty/>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
-      *sdf_geometry, NoopResolveFilename);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   EXPECT_EQ(shape, nullptr);
 }
 
 // Verify MakeShapeFromSdfGeometry can make a box from an sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetail, MakeBoxFromSdfGeometry) {
+TEST_F(SceneGraphParserDetail, MakeBoxFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<box>"
       "  <size>1.0 2.0 3.0</size>"
       "</box>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
-      *sdf_geometry, NoopResolveFilename);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   const Box* box = dynamic_cast<const Box*>(shape.get());
   ASSERT_NE(box, nullptr);
   EXPECT_EQ(box->size(), Vector3d(1.0, 2.0, 3.0));
@@ -213,14 +239,13 @@ GTEST_TEST(SceneGraphParserDetail, MakeBoxFromSdfGeometry) {
 // sdf::Geometry.
 // TODO(azeey): We should deprecate use of <drake:capsule> per
 // https://github.com/RobotLocomotion/drake/issues/14837
-GTEST_TEST(SceneGraphParserDetail, MakeDrakeCapsuleFromSdfGeometry) {
+TEST_F(SceneGraphParserDetail, MakeDrakeCapsuleFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<drake:capsule>"
       "  <radius>0.5</radius>"
       "  <length>1.2</length>"
       "</drake:capsule>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
-      *sdf_geometry, NoopResolveFilename);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   const Capsule* capsule = dynamic_cast<const Capsule*>(shape.get());
   ASSERT_NE(capsule, nullptr);
   EXPECT_EQ(capsule->radius(), 0.5);
@@ -230,32 +255,31 @@ GTEST_TEST(SceneGraphParserDetail, MakeDrakeCapsuleFromSdfGeometry) {
 // Verify MakeShapeFromSdfGeometry checks for invalid capsules.
 // TODO(azeey): We should deprecate use of <drake:capsule> per
 // https://github.com/RobotLocomotion/drake/issues/14837
-GTEST_TEST(SceneGraphParserDetail, CheckInvalidDrakeCapsules) {
+TEST_F(SceneGraphParserDetail, CheckInvalidDrakeCapsules) {
   unique_ptr<sdf::Geometry> no_radius_geometry = MakeSdfGeometryFromString(
       "<drake:capsule>"
       "  <length>1.2</length>"
       "</drake:capsule>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_radius_geometry, NoopResolveFilename),
+      MakeShapeFromSdfGeometry(*no_radius_geometry),
       "Element <radius> is required within element <drake:capsule>.");
   unique_ptr<sdf::Geometry> no_length_geometry = MakeSdfGeometryFromString(
       "<drake:capsule>"
       "  <radius>0.5</radius>"
       "</drake:capsule>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_length_geometry, NoopResolveFilename),
+      MakeShapeFromSdfGeometry(*no_length_geometry),
       "Element <length> is required within element <drake:capsule>.");
 }
 
 // Verify MakeShapeFromSdfGeometry can make a capsule from an sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetail, MakeCapsuleFromSdfGeometry) {
+TEST_F(SceneGraphParserDetail, MakeCapsuleFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<capsule>"
       "  <radius>0.5</radius>"
       "  <length>1.2</length>"
       "</capsule>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
-      *sdf_geometry, NoopResolveFilename);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   const Capsule* capsule = dynamic_cast<const Capsule*>(shape.get());
   ASSERT_NE(capsule, nullptr);
   EXPECT_EQ(capsule->radius(), 0.5);
@@ -263,14 +287,13 @@ GTEST_TEST(SceneGraphParserDetail, MakeCapsuleFromSdfGeometry) {
 }
 
 // Verify MakeShapeFromSdfGeometry can make a cylinder from an sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
+TEST_F(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<cylinder>"
       "  <radius>0.5</radius>"
       "  <length>1.2</length>"
       "</cylinder>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
-      *sdf_geometry, NoopResolveFilename);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   const Cylinder* cylinder = dynamic_cast<const Cylinder*>(shape.get());
   ASSERT_NE(cylinder, nullptr);
   EXPECT_EQ(cylinder->radius(), 0.5);
@@ -281,15 +304,14 @@ GTEST_TEST(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
 // sdf::Geometry.
 // TODO(azeey): We should deprecate use of <drake:ellipsoid> per
 // https://github.com/RobotLocomotion/drake/issues/14837
-GTEST_TEST(SceneGraphParserDetail, MakeDrakeEllipsoidFromSdfGeometry) {
+TEST_F(SceneGraphParserDetail, MakeDrakeEllipsoidFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
       "  <a>0.5</a>"
       "  <b>1.2</b>"
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
-      *sdf_geometry, NoopResolveFilename);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape.get());
   ASSERT_NE(ellipsoid, nullptr);
   EXPECT_EQ(ellipsoid->a(), 0.5);
@@ -300,14 +322,14 @@ GTEST_TEST(SceneGraphParserDetail, MakeDrakeEllipsoidFromSdfGeometry) {
 // Verify MakeShapeFromSdfGeometry checks for invalid ellispoids.
 // TODO(azeey): We should deprecate use of <drake:ellipsoid> per
 // https://github.com/RobotLocomotion/drake/issues/14837
-GTEST_TEST(SceneGraphParserDetail, CheckInvalidEllipsoids) {
+TEST_F(SceneGraphParserDetail, CheckInvalidEllipsoids) {
   unique_ptr<sdf::Geometry> no_a_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
       "  <b>1.2</b>"
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_a_geometry, NoopResolveFilename),
+      MakeShapeFromSdfGeometry(*no_a_geometry),
       "Element <a> is required within element <drake:ellipsoid>.");
   unique_ptr<sdf::Geometry> no_b_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
@@ -315,7 +337,7 @@ GTEST_TEST(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_b_geometry, NoopResolveFilename),
+      MakeShapeFromSdfGeometry(*no_b_geometry),
       "Element <b> is required within element <drake:ellipsoid>.");
   unique_ptr<sdf::Geometry> no_c_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
@@ -323,19 +345,18 @@ GTEST_TEST(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "  <b>1.2</b>"
       "</drake:ellipsoid>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_c_geometry, NoopResolveFilename),
+      MakeShapeFromSdfGeometry(*no_c_geometry),
       "Element <c> is required within element <drake:ellipsoid>.");
 }
 
 
 // Verify MakeShapeFromSdfGeometry can make an ellipsoid from an sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetail, MakeEllipsoidFromSdfGeometry) {
+TEST_F(SceneGraphParserDetail, MakeEllipsoidFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<ellipsoid>"
       "  <radii>0.5 1.2 0.9</radii>"
       "</ellipsoid>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
-      *sdf_geometry, NoopResolveFilename);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape.get());
   ASSERT_NE(ellipsoid, nullptr);
   EXPECT_EQ(ellipsoid->a(), 0.5);
@@ -344,20 +365,19 @@ GTEST_TEST(SceneGraphParserDetail, MakeEllipsoidFromSdfGeometry) {
 }
 
 // Verify MakeShapeFromSdfGeometry can make a sphere from an sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetail, MakeSphereFromSdfGeometry) {
+TEST_F(SceneGraphParserDetail, MakeSphereFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<sphere>"
       "  <radius>0.5</radius>"
       "</sphere>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
-      *sdf_geometry, NoopResolveFilename);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   const Sphere* sphere = dynamic_cast<const Sphere*>(shape.get());
   ASSERT_NE(sphere, nullptr);
   EXPECT_EQ(sphere->radius(), 0.5);
 }
 
 // Verify MakeShapeFromSdfGeometry can make a half space from an sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceFromSdfGeometry) {
+TEST_F(SceneGraphParserDetail, MakeHalfSpaceFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<plane>"
       "  <normal>1.0 0.0 0.0</normal>"
@@ -365,13 +385,12 @@ GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceFromSdfGeometry) {
       "</plane>");
   // MakeShapeFromSdfGeometry() ignores <normal> and <size> to create the
   // HalfSpace. Therefore we only verify it created the right object.
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
-      *sdf_geometry, NoopResolveFilename);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   EXPECT_TRUE(dynamic_cast<const HalfSpace*>(shape.get()) != nullptr);
 }
 
 // Verify MakeShapeFromSdfGeometry can make a mesh from an sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
+TEST_F(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
   // TODO(amcastro-tri): Be warned, the result of this test might (should)
   // change as we add support allowing to specify paths relative to the SDF file
   // location.
@@ -381,8 +400,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
       "  <uri>" + absolute_file_path + "</uri>"
       "  <scale> 3 3 3 </scale>"
       "</mesh>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
-      *sdf_geometry, NoopResolveFilename);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   const Mesh* mesh = dynamic_cast<const Mesh*>(shape.get());
   ASSERT_NE(mesh, nullptr);
   EXPECT_EQ(mesh->filename(), absolute_file_path);
@@ -390,7 +408,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
 }
 
 // Verify MakeShapeFromSdfGeometry can make a convex mesh from an sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetail, MakeConvexFromSdfGeometry) {
+TEST_F(SceneGraphParserDetail, MakeConvexFromSdfGeometry) {
   const std::string absolute_file_path = "path/to/some/mesh.obj";
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<mesh xmlns:drake='http://drake.mit.edu'>"
@@ -398,8 +416,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeConvexFromSdfGeometry) {
       "  <uri>" + absolute_file_path + "</uri>"
       "  <scale> 3 3 3 </scale>"
       "</mesh>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
-      *sdf_geometry, NoopResolveFilename);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   const Convex* convex = dynamic_cast<const Convex*>(shape.get());
   ASSERT_NE(convex, nullptr);
   EXPECT_EQ(convex->filename(), absolute_file_path);
@@ -407,13 +424,12 @@ GTEST_TEST(SceneGraphParserDetail, MakeConvexFromSdfGeometry) {
 }
 
 // Verify that MakeShapeFromSdfGeometry does nothing with a heightmap.
-GTEST_TEST(SceneGraphParserDetail, MakeHeightmapFromSdfGeometry) {
+TEST_F(SceneGraphParserDetail, MakeHeightmapFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<heightmap>"
       "  <uri>/path/to/some/heightmap.png</uri>"
       "</heightmap>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
-      *sdf_geometry, NoopResolveFilename);
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   EXPECT_EQ(shape, nullptr);
 }
 
@@ -421,7 +437,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeHeightmapFromSdfGeometry) {
 // sdf::Visual.
 // Since we test MakeShapeFromSdfGeometry separately, there is no need to unit
 // test every combination of a <visual> with a different <geometry>.
-GTEST_TEST(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
+TEST_F(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
   unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
       "<visual name = 'some_link_visual'>"
       "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
@@ -435,7 +451,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
 
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
-          *sdf_visual, NoopResolveFilename,
+          diagnostic_, *sdf_visual, NoopResolveFilename,
           ToRigidTransform(sdf_visual->RawPose()));
 
   const RigidTransformd X_LC(geometry_instance->pose());
@@ -460,7 +476,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
 // GeometryInstace).
 // Note: This is only tested for visual geometries, but the same requirements
 // are assumed for collision geometries.
-GTEST_TEST(SceneGraphParserDetail, VisualGeometryNameRequirements) {
+TEST_F(SceneGraphParserDetail, VisualGeometryNameRequirements) {
   // It is necessary to do a full, deep parse from the root to reveal *all*
   // of the failure modes.
 
@@ -566,7 +582,7 @@ GTEST_TEST(SceneGraphParserDetail, VisualGeometryNameRequirements) {
 // canonical frame C whose pose needs to be specified at a GeometryInstance
 // level, the SDF specification does not define this pose at the <geometry>
 // level but at the <visual> (or <collision>) level.
-GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
+TEST_F(SceneGraphParserDetail, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
   unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
       "<visual name = 'some_link_visual'>"
       "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
@@ -579,7 +595,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
 
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
-          *sdf_visual, NoopResolveFilename,
+          diagnostic_, *sdf_visual, NoopResolveFilename,
           ToRigidTransform(sdf_visual->RawPose()));
 
   // Verify we do have a plane geometry.
@@ -608,7 +624,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
 
 // Verify MakeSdfVisualFromString() returns nullptr when the visual specifies
 // an <empty/> geometry.
-GTEST_TEST(SceneGraphParserDetail, MakeEmptyGeometryInstanceFromSdfVisual) {
+TEST_F(SceneGraphParserDetail, MakeEmptyGeometryInstanceFromSdfVisual) {
   unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
       "<visual name = 'some_link_visual'>"
       "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
@@ -619,14 +635,14 @@ GTEST_TEST(SceneGraphParserDetail, MakeEmptyGeometryInstanceFromSdfVisual) {
 
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
-          *sdf_visual, NoopResolveFilename,
+          diagnostic_, *sdf_visual, NoopResolveFilename,
           ToRigidTransform(sdf_visual->RawPose()));
   EXPECT_EQ(geometry_instance, nullptr);
 }
 
 
 // Verify that MakeGeometryInstanceFromSdfVisual does nothing with a heightmap.
-GTEST_TEST(SceneGraphParserDetail, MakeHeightmapGeometryInstanceFromSdfVisual) {
+TEST_F(SceneGraphParserDetail, MakeHeightmapGeometryInstanceFromSdfVisual) {
   unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
     "<visual name='some_link_visual'>"
     "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
@@ -638,7 +654,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeHeightmapGeometryInstanceFromSdfVisual) {
     "</visual>");
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
-          *sdf_visual, NoopResolveFilename,
+          diagnostic_, *sdf_visual, NoopResolveFilename,
           ToRigidTransform(sdf_visual->RawPose()));
   EXPECT_EQ(geometry_instance, nullptr);
 }
@@ -680,7 +696,7 @@ template <typename T, typename Compare>
 
 // Verify visual material parsing: default for unspecified, and diffuse color
 // given where specified in the SDF.
-GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
+TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
   using Eigen::Vector4d;
 
   // Searches the illustration properties for an optional phong material
@@ -788,7 +804,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(false, nullptr, nullptr, nullptr, nullptr, ""));
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
     EXPECT_TRUE(expect_phong(material, false, {}, {}, {}, {}, {}));
   }
 
@@ -798,7 +814,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, nullptr, nullptr, nullptr, nullptr, ""));
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
     EXPECT_TRUE(expect_phong(material, false, {}, {}, {}, {}, {}));
   }
 
@@ -812,7 +828,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, &diffuse, nullptr, nullptr, nullptr, ""));
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
     EXPECT_TRUE(expect_phong(material, true, diffuse, {}, {}, {}, {}));
   }
 
@@ -821,7 +837,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, nullptr, &specular, nullptr, nullptr, ""));
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
     EXPECT_TRUE(expect_phong(material, true, {}, specular, {}, {}, {}));
   }
 
@@ -830,7 +846,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, nullptr, nullptr, &ambient, nullptr, ""));
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
     EXPECT_TRUE(expect_phong(material, true, {}, {}, ambient, {}, {}));
   }
 
@@ -839,7 +855,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, nullptr, nullptr, nullptr, &emissive, ""));
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
     EXPECT_TRUE(expect_phong(material, true, {}, {}, {}, emissive, {}));
   }
 
@@ -848,7 +864,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, &diffuse, &specular, &ambient, &emissive, ""));
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
     EXPECT_TRUE(
         expect_phong(material, true, diffuse, specular, ambient, emissive, {}));
   }
@@ -863,7 +879,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, &diffuse, &specular, &ambient, &emissive, kLocalMap));
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
     // Note: The "no-op" filename resolver will just return kLocalMap as the
     // property name.
     EXPECT_TRUE(expect_phong(material, true, diffuse, specular, ambient,
@@ -891,13 +907,13 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
         "  </material>"
         "</visual>");
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
     EXPECT_TRUE(expect_phong(material, false, {}, {}, {}, {}, {}));
   }
 }
 
 // Confirms that the <drake:accepting_renderer> tag gets properly parsed.
-GTEST_TEST(SceneGraphParseDetail, AcceptingRenderers) {
+TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
   const std::string group = "renderer";
   const std::string property = "accepting";
 
@@ -916,7 +932,7 @@ GTEST_TEST(SceneGraphParseDetail, AcceptingRenderers) {
         "  </material>"
         "</visual>");
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
     EXPECT_FALSE(material.HasProperty(group, property));
   }
 
@@ -936,7 +952,7 @@ GTEST_TEST(SceneGraphParseDetail, AcceptingRenderers) {
         "  <drake:accepting_renderer>renderer1</drake:accepting_renderer>"
         "</visual>");
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
     EXPECT_TRUE(material.HasProperty(group, property));
     const auto& names =
         material.GetProperty<std::set<std::string>>(group, property);
@@ -961,7 +977,7 @@ GTEST_TEST(SceneGraphParseDetail, AcceptingRenderers) {
         "  <drake:accepting_renderer>renderer2</drake:accepting_renderer>"
         "</visual>");
     IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual);
     EXPECT_TRUE(material.HasProperty(group, property));
     const auto& names =
         material.GetProperty<std::set<std::string>>(group, property);
@@ -985,7 +1001,7 @@ GTEST_TEST(SceneGraphParseDetail, AcceptingRenderers) {
         "  <drake:accepting_renderer> </drake:accepting_renderer>"
         "</visual>");
     DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename),
+      MakeVisualPropertiesFromSdfVisual(*sdf_visual),
       "<drake:accepting_renderer> tag given without any name");
 }
 
@@ -993,7 +1009,7 @@ GTEST_TEST(SceneGraphParseDetail, AcceptingRenderers) {
 // frame G in the link frame L.
 // Since we test MakeShapeFromSdfGeometry separately, there is no need to unit
 // test every combination of a <collision> with a different <geometry>.
-GTEST_TEST(SceneGraphParserDetail, MakeGeometryPoseFromSdfCollision) {
+TEST_F(SceneGraphParserDetail, MakeGeometryPoseFromSdfCollision) {
   unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
       "<collision name = 'some_link_collision'>"
       "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
@@ -1022,7 +1038,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryPoseFromSdfCollision) {
 // canonical frame C whose pose needs to be specified at a GeometryInstance
 // level, the SDF specification does not define this pose at the <geometry>
 // level but at the <collision> level.
-GTEST_TEST(SceneGraphParserDetail,
+TEST_F(SceneGraphParserDetail,
            MakeGeometryPoseFromSdfCollisionForHalfSpace) {
   unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
       "<collision name = 'some_link_collision'>"
@@ -1052,16 +1068,7 @@ GTEST_TEST(SceneGraphParserDetail,
 }
 
 // Verify we can parse drake collision properties from a <collision> element.
-GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
-  // Bind a `diagnostic` argument into the function under test.
-  auto dut = [](const sdf::Collision& sdf_collision) {
-    // Don't let warnings leak into spdlog; tests should always specifically
-    // handle any warnings that apppear.
-    DiagnosticPolicy diagnostic;
-    diagnostic.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
-    return MakeProximityPropertiesForCollision(diagnostic, sdf_collision);
-  };
-
+TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   // This string represents the generic XML spelling of a <collision> element.
   // It contains a `{}` place holder such that child tags of <collision> can be
   // injected to test various expressions of collision properties --
@@ -1115,7 +1122,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:mu_dynamic>4.5</drake:mu_dynamic>
     <drake:mu_static>4.75</drake:mu_static>
   </drake:proximity_properties>)""");
-    ProximityProperties properties = dut(*sdf_collision);
+    ProximityProperties properties = MakeProximityPropertiesForCollision(
+        diagnostic_, *sdf_collision);
     assert_single_property(properties, geometry::internal::kHydroGroup,
                            geometry::internal::kRezHint, 2.5);
     assert_single_property(properties, geometry::internal::kHydroGroup,
@@ -1131,7 +1139,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   <drake:proximity_properties>
     <drake:rigid_hydroelastic/>
   </drake:proximity_properties>)""");
-    ProximityProperties properties = dut(*sdf_collision);
+    ProximityProperties properties = MakeProximityPropertiesForCollision(
+        diagnostic_, *sdf_collision);
     ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
                                        geometry::internal::kComplianceType));
     EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
@@ -1145,7 +1154,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   <drake:proximity_properties>
     <drake:compliant_hydroelastic/>
   </drake:proximity_properties>)""");
-    ProximityProperties properties = dut(*sdf_collision);
+    ProximityProperties properties = MakeProximityPropertiesForCollision(
+        diagnostic_, *sdf_collision);
     ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
                                        geometry::internal::kComplianceType));
     EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
@@ -1162,7 +1172,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:soft_hydroelastic/>
   </drake:proximity_properties>)""");
     DRAKE_EXPECT_THROWS_MESSAGE(
-        dut(*sdf_collision),
+        MakeProximityPropertiesForCollision(diagnostic_, *sdf_collision),
         "A <collision> geometry has defined the unsupported tag "
         "<drake:soft_hydroelastic>. Please change it to "
         "<drake:compliant_hydroelastic>.");
@@ -1176,7 +1186,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:compliant_hydroelastic/>
   </drake:proximity_properties>)""");
     DRAKE_EXPECT_THROWS_MESSAGE(
-        dut(*sdf_collision),
+        MakeProximityPropertiesForCollision(diagnostic_, *sdf_collision),
         "A <collision> geometry has defined mutually-exclusive tags .*rigid.* "
         "and .*compliant.*");
   }
@@ -1193,7 +1203,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
       </ode>
     </friction>
   </surface>)""");
-    ProximityProperties properties = dut(*sdf_collision);
+    ProximityProperties properties = MakeProximityPropertiesForCollision(
+        diagnostic_, *sdf_collision);
     assert_friction(properties, {0.8, 0.3});
   }
 
@@ -1232,7 +1243,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
 // Verify we can parse friction coefficients from an <ode> element in
 // <collision><surface><friction>. Drake understands <mu> to be the static
 // coefficient and <mu2> the dynamic coefficient of friction.
-GTEST_TEST(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollisionOde) {
+TEST_F(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollisionOde) {
   unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
       "<collision name = 'some_link_collision'>"
       "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
@@ -1258,7 +1269,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollisionOde) {
 
 // Verify that if no <surface> tag is present, we return default friction
 // coefficients.
-GTEST_TEST(SceneGraphParserDetail,
+TEST_F(SceneGraphParserDetail,
            MakeCoulombFrictionFromSdfCollisionOde_NoSurface) {
   unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
       "<collision name = 'some_link_collision'>"
@@ -1288,7 +1299,7 @@ GTEST_TEST(SceneGraphParserDetail,
 // test is not needed but we provide it just to show how the exception message
 // thrown from CoulombFriction gets concatenated and re-thrown by
 // MakeCoulombFrictionFromSdfCollisionOde().
-GTEST_TEST(SceneGraphParserDetail,
+TEST_F(SceneGraphParserDetail,
            MakeCoulombFrictionFromSdfCollisionOde_DynamicLargerThanStatic) {
   unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
       "<collision name = 'some_link_collision'>"
@@ -1314,7 +1325,7 @@ GTEST_TEST(SceneGraphParserDetail,
       "static friction.");
 }
 
-GTEST_TEST(SceneGraphParserDetail,
+TEST_F(SceneGraphParserDetail,
            MakeCoulombFrictionFromSdfCollisionOde_MuMissing) {
   unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
       "<collision name = 'some_link_collision'>"
@@ -1337,7 +1348,7 @@ GTEST_TEST(SceneGraphParserDetail,
       CoulombFriction<double>(default_friction().static_friction(), 0.8));
 }
 
-GTEST_TEST(SceneGraphParserDetail,
+TEST_F(SceneGraphParserDetail,
            MakeCoulombFrictionFromSdfCollisionOde_Mu2Missing) {
   unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
       "<collision name = 'some_link_collision'>"
@@ -1360,7 +1371,7 @@ GTEST_TEST(SceneGraphParserDetail,
       CoulombFriction<double>(1.1, default_friction().dynamic_friction()));
 }
 
-GTEST_TEST(SceneGraphParserDetail,
+TEST_F(SceneGraphParserDetail,
            MakeCoulombFrictionFromSdfCollisionOde_FrictionMissing) {
   unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
       "<collision name = 'some_link_collision'>"
@@ -1385,7 +1396,7 @@ GTEST_TEST(SceneGraphParserDetail,
       default_friction());
 }
 
-GTEST_TEST(SceneGraphParserDetail,
+TEST_F(SceneGraphParserDetail,
            MakeCoulombFrictionFromSdfCollisionOde_OdeMissing) {
   unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
       "<collision name = 'some_link_collision'>"
