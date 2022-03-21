@@ -10,7 +10,6 @@ import sys
 import tempfile
 
 import numpy as np
-from scipy.optimize import fmin
 
 from pydrake.common import FindResourceOrThrow
 
@@ -19,6 +18,22 @@ from drake.examples.acrobot.acrobot_io import (
 
 from drake.examples.acrobot.metrics import (
     ensemble_cost, success_rate)
+
+try:
+    from scipy.optimize import fmin
+except ImportError:
+    print("WARNING: scipy not installed, using stubbed non-minimizing "
+          "version of fmin.", file=sys.stderr)
+
+    def fmin(func, x0, func_args=(), full_output=False, *args, **kwargs):
+        """Dummy version of scipy.optimize.fmin.
+        It allows scipy to be an optional dependency."""
+        if full_output:
+            fopt = func(x0, *func_args)
+
+            return x0, fopt, 1, 1, 0
+        else:
+            return x0
 
 
 METRICS = {"ensemble_cost": ensemble_cost,
