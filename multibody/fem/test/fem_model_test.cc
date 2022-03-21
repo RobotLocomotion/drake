@@ -19,7 +19,7 @@ using std::unique_ptr;
 
 GTEST_TEST(FemModelTest, Constructor) {
   const DummyModel model;
-  constexpr int kNumNodes = 8;
+  constexpr int kNumNodes = 6;
   constexpr int kNumElements = 2;
   EXPECT_EQ(model.num_elements(), kNumElements);
   EXPECT_EQ(model.num_nodes(), kNumNodes);
@@ -38,9 +38,9 @@ GTEST_TEST(FemModelTest, CalcResidual) {
   fem_state->SetPositions(VectorXd::Zero(model.num_dofs()));
   fem_state->SetVelocities(VectorXd::Zero(model.num_dofs()));
   fem_state->SetAccelerations(VectorXd::Zero(model.num_dofs()));
-  VectorXd expected_residual(model.num_dofs());
-  expected_residual.head<DummyElement::kNumDofs>() = DummyElement::residual();
-  expected_residual.tail<DummyElement::kNumDofs>() = DummyElement::residual();
+  VectorXd expected_residual  = VectorXd::Zero(model.num_dofs());
+  expected_residual.head<DummyElement::kNumDofs>() += DummyElement::residual();
+  expected_residual.tail<DummyElement::kNumDofs>() += DummyElement::residual();
 
   model.CalcResidual(*fem_state, &residual);
   /* The residual for each element is set to a dummy value if all states are
@@ -63,18 +63,18 @@ GTEST_TEST(FemModelTest, CalcTangentMatrix) {
   MatrixXd expected_mass_matrix =
       MatrixXd::Zero(model.num_dofs(), model.num_dofs());
   expected_mass_matrix.topLeftCorner(DummyElement::kNumDofs,
-                                     DummyElement::kNumDofs) =
+                                     DummyElement::kNumDofs) +=
       DummyElement::mass_matrix();
   expected_mass_matrix.bottomRightCorner(DummyElement::kNumDofs,
-                                         DummyElement::kNumDofs) =
+                                         DummyElement::kNumDofs) +=
       DummyElement::mass_matrix();
   MatrixXd expected_stiffness_matrix =
       MatrixXd::Zero(model.num_dofs(), model.num_dofs());
   expected_stiffness_matrix.topLeftCorner(DummyElement::kNumDofs,
-                                          DummyElement::kNumDofs) =
+                                          DummyElement::kNumDofs) +=
       DummyElement::stiffness_matrix();
   expected_stiffness_matrix.bottomRightCorner(DummyElement::kNumDofs,
-                                              DummyElement::kNumDofs) =
+                                              DummyElement::kNumDofs) +=
       DummyElement::stiffness_matrix();
 
   const MatrixXd expected_damping_matrix =
@@ -96,8 +96,8 @@ GTEST_TEST(FemModelTest, IncompatibleModelState) {
   /* Add another element into the model. */
   const FemElementIndex kElementIndex2 = FemElementIndex(2);
   const std::array<FemNodeIndex, DummyElement::Traits::num_nodes>
-      kNodeIndices2 = {FemNodeIndex(8), FemNodeIndex(9), FemNodeIndex(10),
-                       FemNodeIndex(11)};
+      kNodeIndices2 = {FemNodeIndex(6), FemNodeIndex(7), FemNodeIndex(8),
+                       FemNodeIndex(9)};
   const DummyElement::Traits::ConstitutiveModel constitutive_model(5e4, 0.4);
   const DampingModel<double> damping_model(0.1, 0.2);
   model.AddElementWithDistinctNodes(DummyElement(
@@ -114,7 +114,6 @@ GTEST_TEST(FemModelTest, IncompatibleModelState) {
       model.MakePetscSymmetricBlockSparseTangentMatrix();
   ASSERT_EQ(tangent_matrix->rows(), model.num_dofs());
   ASSERT_EQ(tangent_matrix->cols(), model.num_dofs());
-  std::cout << "HAHA" << std::endl;
   const Vector3d weights(0.1, 0.2, 0.3);
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.CalcTangentMatrix(*fem_state, weights, tangent_matrix.get()),

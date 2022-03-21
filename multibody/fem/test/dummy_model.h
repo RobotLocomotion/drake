@@ -32,6 +32,10 @@ class DummyModel final : public FemModelImpl<DummyElement> {
   /* Returns a dummy reference position where all nodes are positioned at
    (1, 2, 3). */
   VectorX<T> MakeReferencePositions() const final;
+
+ private:
+  /* Number of nodes in the FEM model. */
+  int num_nodes_{0};
 };
 
 }  // namespace internal
