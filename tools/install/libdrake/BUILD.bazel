@@ -18,6 +18,7 @@ load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
+load(":header_lint.bzl", "cc_check_allowed_headers")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
 load(
@@ -28,6 +29,14 @@ load(
 install_cmake_config(
     package = "drake",
     versioned = False,
+)
+
+# Verify that extra include paths are not leaking into our interface deps.
+cc_check_allowed_headers(
+    name = "allowed_headers_lint",
+    testonly = True,
+    tags = ["lint"],
+    deps = LIBDRAKE_COMPONENTS,
 )
 
 # Annotate all of the LIBDRAKE_COMPONENTS as `alwayslink = True`, so that we

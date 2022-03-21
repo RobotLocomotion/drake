@@ -539,20 +539,23 @@ drake_cc_library(
     name = "leaf_system",
     srcs = ["leaf_system.cc"],
     hdrs = ["leaf_system.h"],
-    deps = [
+    interface_deps = [
         ":abstract_value_cloner",
         ":leaf_context",
         ":leaf_output_port",
         ":model_values",
         ":system",
         ":system_scalar_converter",
-        ":system_symbolic_inspector",
-        ":value_checker",
         ":value_producer",
         "//common:default_scalars",
         "//common:essential",
-        "//common:pointer_cast",
         "//common:unused",
+    ],
+    deps = [
+        ":system_symbolic_inspector",
+        ":value_checker",
+        "//common:pointer_cast",
+        "@abseil_cpp_internal//absl/container:inlined_vector",
     ],
 )
 
@@ -872,6 +875,7 @@ drake_cc_googletest(
         ":leaf_system",
         "//common:essential",
         "//common/test_utilities",
+        "//common/test_utilities:limit_malloc",
         "//systems/framework/test_utilities",
     ],
 )
