@@ -15,7 +15,6 @@
 #include <sdf/Plane.hh>
 #include <sdf/Sphere.hh>
 
-#include "drake/common/filesystem.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/parsing/detail_common.h"

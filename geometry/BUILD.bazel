@@ -406,17 +406,20 @@ drake_cc_library(
     ],
     data = [":meshcat_resources"],
     install_hdrs_exclude = ["meshcat_types.h"],
-    deps = [
+    interface_deps = [
         ":meshcat_animation",
         ":rgba",
         ":shape_specification",
         "//common:essential",
-        "//common:find_resource",
-        "//common:scope_exit",
-        "//common:unused",
         "//geometry/proximity:triangle_surface_mesh",
         "//math:geometric_transform",
         "//perception:point_cloud",
+    ],
+    deps = [
+        "//common:filesystem",
+        "//common:find_resource",
+        "//common:scope_exit",
+        "//common:unused",
         "@common_robotics_utilities",
         "@msgpack",
         "@stduuid",
@@ -584,6 +587,7 @@ drake_cc_googletest(
     deps = [
         ":proximity_engine",
         ":shape_specification",
+        "//common:filesystem",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
