@@ -21,7 +21,7 @@ struct RenderEngineGltfClientParams {
 
   /** The RenderClient::port() to communicate on.  A value less than or equal to
    `0` implies no port level communication is needed. */
-  int32_t port{8000};
+  int port{8000};
 
   /** The RenderClient::render_endpoint() to retrieve renderings from. */
   std::string render_endpoint{"render"};

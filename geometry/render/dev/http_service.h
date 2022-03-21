@@ -14,15 +14,15 @@ namespace geometry {
 namespace render {
 namespace internal {
 
-/** A simple wrapper struct to encapsulate an HTTP server response. */
+/* A simple wrapper struct to encapsulate an HTTP server response. */
 struct HttpResponse {
-  /** The HTTP response code from the server.  Note that in the special case of
+  /* The HTTP response code from the server.  Note that in the special case of
    an HttpService not being able to connect to a server (e.g., the wrong url
    was provided or the server is not running), this field will often have a
    value of `0`.  Use HttpResponse::Good() to validate server responses. */
-  int32_t http_code{0};
+  int http_code{0};
 
-  /** In the event that the server has provided a text or binary response in
+  /* In the event that the server has provided a text or binary response in
    addition to its HTTP response code, the file path described by this attribute
    will contain the response.  An HttpService will populate this field with a
    non-optional value if and only if a response from the server was provided.
@@ -33,17 +33,17 @@ struct HttpResponse {
      the file when it is no longer needed. */
   std::optional<std::string> data_path{std::nullopt};
 
-  /** If the underlying HttpService encountered an error, this will be set to
+  /* If the underlying HttpService encountered an error, this will be set to
    true and any additional information provided in
    HttpResponse::service_error_message. */
   bool service_error{false};
 
-  /** In the event that there was an error with the HttpService processing the
+  /* In the event that there was an error with the HttpService processing the
    request, HttpResponse::service_error will be set to `true` and any additional
    information that can be provided will be in this string. */
   std::optional<std::string> service_error_message{std::nullopt};
 
-  /** Whether or not the HTTP transaction was successful.  This includes
+  /* Whether or not the HTTP transaction was successful.  This includes
    verifying that the HttpResponse::http_code indicates success, but also
    whether or not the underlying HttpService marked it for failure via
    HttpResponse::service_error.  Note that if a server has not been
@@ -55,7 +55,7 @@ struct HttpResponse {
   }
 };
 
-/** An HTTP service API, used by a RenderClient to facilitate server
+/* An HTTP service API, used by a RenderClient to facilitate server
  communications.  This class is not intended to be used on its own, it is a
  helper class to perform server communications, but does not have any specific
  knowledge of a given client-server API.  The owning entity, such as
@@ -66,9 +66,9 @@ class HttpService {
   virtual ~HttpService();
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HttpService);
 
-  /** @name Server Interaction Interface */
+  /* @name Server Interaction Interface */
   //@{
-  /** Post an HTML `<form>` to the specified `endpoint`.
+  /* Post an HTML `<form>` to the specified `endpoint`.
 
    An HTML `<form>` may allow for a wide range of different kinds of `<input>`
    data.  For the full listing of available input `type`'s, see the
@@ -197,7 +197,7 @@ class HttpService {
      produce an exception but rather encode this information in the
      returned HttpResponse for the caller to determine how to proceed. */
   virtual HttpResponse PostForm(
-      const std::string& temp_directory, const std::string& url, int32_t port,
+      const std::string& temp_directory, const std::string& url, int port,
       const std::string& endpoint,
       const std::map<std::string, std::string>& data_fields,
       const std::map<std::string,
@@ -206,16 +206,16 @@ class HttpService {
       bool verbose = false) = 0;
   //@}
 
-  /** @name Server Parameter Validation Helpers */
+  /* @name Server Parameter Validation Helpers */
   //@{
-  /** Throws `std::logic_error` if the provided url is empty or has trailing
+  /* Throws `std::logic_error` if the provided url is empty or has trailing
    slashes. */
   void ThrowIfUrlInvalid(const std::string& url) const;
 
-  /** Throws `std::runtime_error` if `endpoint` starts or ends with a '/'. */
+  /* Throws `std::runtime_error` if `endpoint` starts or ends with a '/'. */
   void ThrowIfEndpointInvalid(const std::string& endpoint) const;
 
-  /** Verify that all file paths provided are regular files, throw if not.
+  /* Verify that all file paths provided are regular files, throw if not.
 
    @param file_fields See HttpService::PostForm.
    @throws std::runtime_error

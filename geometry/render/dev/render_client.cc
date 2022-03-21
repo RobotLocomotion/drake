@@ -84,7 +84,7 @@ void AddField<RenderImageType>(data_map_t* data_map,
   // LCOV_EXCL_STOP
 }
 
-/** Verify the loaded image has the correct dimensions.  This includes verifying
+/* Verify the loaded image has the correct dimensions.  This includes verifying
  that the image is 2D (depth=1).
 
  @param expected_width

@@ -14,7 +14,7 @@ namespace geometry {
 namespace render {
 namespace internal {
 
-/** The type of image being rendered. */
+/* The type of image being rendered. */
 enum RenderImageType {
   kColorRgba8U = 0,    ///< The color frame.
   kLabel16I = 1,       ///< The label frame.
@@ -23,10 +23,10 @@ enum RenderImageType {
 
 /* TODO(svenevs): link to the render-client specification document once we
  decide where in the documentation it will live. */
-/** The client which communicates with a render server. */
+/* The client which communicates with a render server. */
 class RenderClient {
  public:
-  /** Constructs the render engine from the given parameters.
+  /* Constructs the render engine from the given parameters.
    @param url
      The url of the server to communicate with, e.g., `"http://127.0.0.1"`.  May
      **not** have a trailing `/`.
@@ -48,7 +48,7 @@ class RenderClient {
      HttpService::HttpService.
    @throws std::runtime_error
      If the provided `render_endpoint` has any leading or trailing slashes. */
-  RenderClient(const std::string& url, int32_t port,
+  RenderClient(const std::string& url, int port,
                const std::string& render_endpoint, bool verbose,
                bool no_cleanup);
 
@@ -56,10 +56,10 @@ class RenderClient {
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RenderClient);
 
-  /** @name Server communication */
+  /* @name Server communication */
   //@{
 
-  /** Upload the scene file from `scene_path` to the render server, download
+  /* Upload the scene file from `scene_path` to the render server, download
    the image file response, and return the path to the image file.
    The returned file path may be used directly with any one of the helper
    methods LoadColorImage(), LoadDepthImage(), or LoadLabelImage().  The file
@@ -105,16 +105,16 @@ class RenderClient {
       const std::optional<DepthRange>& depth_range = std::nullopt) const;
 
   //@}
-  /** @name Server communication helpers */
+  /* @name Server communication helpers */
   //@{
 
-  /** Compute and return the `sha256sum` of the specified `path`.
+  /* Compute and return the `sha256sum` of the specified `path`.
    @throws std::runtime_error
      If the `path` cannot be opened or the hash fails to compute.
    */
   std::string ComputeSha256(const std::string& path) const;
 
-  /** Rename the specified file `response_data_path` to have the same name as
+  /* Rename the specified file `response_data_path` to have the same name as
    `reference_path`, with a new file extension provided by `extension`.
    Helper method for RetrieveRender() which will download files as
    `{temp_directory()}/{response_data_path}` and then rename the file
@@ -153,10 +153,10 @@ class RenderClient {
 
   //@}
 
-  /** @name Image loading helpers */
+  /* @name Image loading helpers */
   //@{
 
-  /** Load the specified image file to a drake output buffer.
+  /* Load the specified image file to a drake output buffer.
 
    This method only supports loading unsigned char PNG images with either three
    (RGB) or four (RGBA) channels.
@@ -175,7 +175,7 @@ class RenderClient {
       const std::string& path,
       drake::systems::sensors::ImageRgba8U* color_image_out) const;
 
-  /** Load the specified image file to a drake output buffer.
+  /* Load the specified image file to a drake output buffer.
 
    This method supports loading:
 
@@ -198,7 +198,7 @@ class RenderClient {
       const std::string& path,
       drake::systems::sensors::ImageDepth32F* depth_image_out) const;
 
-  /** Load the specified image file to a drake output buffer.
+  /* Load the specified image file to a drake output buffer.
 
    This method only supports loading single channel unsigned short PNG images.
 
@@ -217,13 +217,13 @@ class RenderClient {
 
   //@}
 
-  /** @name Access the default properties
+  /* @name Access the default properties
 
    Provides access to the default values of this instance.  These values must be
    set at construction. */
   //@{
 
-  /** The temporary directory used for scratch space, including but not limited
+  /* The temporary directory used for scratch space, including but not limited
    to where downloaded images are saved.  Child classes are permitted (and
    encouraged) to utilize this directory to create any additional files needed
    to communicate with the server such as scene files to upload.  The temporary
@@ -231,34 +231,34 @@ class RenderClient {
    no_cleanup() is true. */
   const std::string& temp_directory() const { return temp_directory_; }
 
-  /** The url of the server to communicate with. */
+  /* The url of the server to communicate with. */
   const std::string& url() const { return url_; }
 
-  /** The port of the server to communicate on.  A value of less than or equal
+  /* The port of the server to communicate on.  A value of less than or equal
    `0` means no port level communication is required. */
-  int32_t port() const { return port_; }
+  int port() const { return port_; }
 
-  /** The render endpoint of the server, used in RetrieveRender().
+  /* The render endpoint of the server, used in RetrieveRender().
    Should **not** include a preceding slash. */
   const std::string& render_endpoint() const { return render_endpoint_; }
 
-  /** Whether or not the client should be verbose including logging all curl
+  /* Whether or not the client should be verbose including logging all curl
    communications. */
   bool verbose() const { return verbose_; }
 
-  /** Whether or not the client should cleanup its temp_directory(). */
+  /* Whether or not the client should cleanup its temp_directory(). */
   bool no_cleanup() const { return no_cleanup_; }
 
   //@}
 
-  /** (Internal use only) for testing. */
+  /* (Internal use only) for testing. */
   void SetHttpService(std::unique_ptr<HttpService> service);
 
  private:
   friend class RenderClientTester;
   std::string temp_directory_;
   std::string url_;
-  int32_t port_;
+  int port_;
   std::string render_endpoint_;
   bool verbose_;
   bool no_cleanup_;

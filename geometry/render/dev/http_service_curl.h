@@ -23,7 +23,7 @@ class HttpServiceCurl : public HttpService {
 
   /** @see HttpService::PostForm */
   HttpResponse PostForm(
-      const std::string& temp_directory, const std::string& url, int32_t port,
+      const std::string& temp_directory, const std::string& url, int port,
       const std::string& endpoint,
       const std::map<std::string, std::string>& data_fields,
       const std::map<std::string,
