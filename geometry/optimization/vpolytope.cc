@@ -1,7 +1,10 @@
 #include "drake/geometry/optimization/vpolytope.h"
 
+#include <algorithm>
+#include <cmath>
 #include <limits>
 #include <memory>
+#include <numeric>
 
 #include <fmt/format.h>
 #include <libqhullcpp/Qhull.h>
@@ -25,6 +28,54 @@ using solvers::Constraint;
 using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
 using symbolic::Variable;
+
+namespace {
+
+/* Given a matrix containing a set of 2D vertices, return a copy
+of the matrix where the vertices are ordered counter-clockwise
+from the negative X axis. */
+Eigen::MatrixXd OrderCounterClockwise(const Eigen::MatrixXd& vertices) {
+  const size_t dim = vertices.rows();
+  const size_t num_vertices = vertices.cols();
+
+  DRAKE_DEMAND(dim == 2);
+
+  std::vector<size_t> indices(num_vertices);
+  std::vector<double> angles(num_vertices);
+
+  double center_x = 0;
+  double center_y = 0;
+
+  std::iota(indices.begin(), indices.end(), 0);
+
+  for (const auto& i : indices) {
+    center_x += vertices.col(i)[0];
+    center_y += vertices.col(i)[1];
+  }
+
+  center_x /= num_vertices;
+  center_y /= num_vertices;
+
+  for (const auto& i : indices) {
+    const double x = vertices.col(i)[0] - center_x;
+    const double y = vertices.col(i)[1] - center_y;
+    angles[i] = std::atan2(y, x);
+  }
+
+  std::sort(indices.begin(), indices.end(), [&angles](size_t a, size_t b){
+      return angles[a] > angles[b];
+    });
+
+  Eigen::MatrixXd sorted_vertices(dim, num_vertices);
+
+  for (size_t i = 0; i < num_vertices; ++i) {
+    sorted_vertices.col(i) = vertices.col(indices[i]);
+  }
+
+  return sorted_vertices;
+}
+
+}  // namespace
 
 VPolytope::VPolytope(const Eigen::Ref<const Eigen::MatrixXd>& vertices)
     : ConvexSet(&ConvexSetCloner<VPolytope>, vertices.rows()),
@@ -152,6 +203,13 @@ VPolytope VPolytope::GetMinimalRepresentation() const {
       ++i;
     }
     ++j;
+  }
+
+  // The qhull C++ interface iterates over the vertices in no specific order.
+  // For the 2D case, reorder the vertices according to the counter-clockwise
+  // convention.
+  if (vertices_.rows() == 2) {
+    minimal_vertices = OrderCounterClockwise(minimal_vertices);
   }
 
   return VPolytope(minimal_vertices);
