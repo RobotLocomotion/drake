@@ -150,6 +150,9 @@ class TestMultibodyTreeMath(unittest.TestCase):
         V = SpatialVelocity_[T].Zero()
         dut = SpatialAcceleration_[T].Zero()
         self.assertIsInstance(
+            dut.ShiftWithZeroAngularVelocity(offset=z),
+            SpatialAcceleration_[T])
+        self.assertIsInstance(
             dut.Shift(offset=z, angular_velocity_of_this_frame=z),
             SpatialAcceleration_[T])
         # TODO(2022-07-01) Remove with completion of deprecation.

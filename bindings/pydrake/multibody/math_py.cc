@@ -209,12 +209,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("alpha"), py::arg("a"), cls_doc.ctor.doc_2args)
         .def(py::init<const Vector6<T>&>(), py::arg("A"),
             cls_doc.ctor.doc_1args);
+    cls.def("ShiftWithZeroAngularVelocity",
+        &Class::ShiftWithZeroAngularVelocity, py::arg("offset"),
+        cls_doc.ShiftWithZeroAngularVelocity.doc);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     constexpr char doc_ShiftOneArg_deprecatedArgName[] =
         "Shift(p_PoQ_E) is deprecated, and will be removed on or around"
         " 2022-07-01. Please instead use "
-        "Shift(offset, angular_velocity_of_this_frame)";
+        "ShiftWithZeroAngularVelocity(offset)";
     cls.def("Shift",
         WrapDeprecated(doc_ShiftOneArg_deprecatedArgName,
             overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift)),
