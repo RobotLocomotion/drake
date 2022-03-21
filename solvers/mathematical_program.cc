@@ -1767,6 +1767,28 @@ void MathematicalProgram::CheckVariableType(VarType var_type) {
   }
 }
 
+void MathematicalProgram::CheckIsDecisionVariable(
+    const VectorXDecisionVariable& vars) const {
+  for (int i = 0; i < vars.rows(); ++i) {
+    for (int j = 0; j < vars.cols(); ++j) {
+      if (decision_variable_index_.count(vars(i, j).get_id()) == 0) {
+        throw std::logic_error(fmt::format(
+            "{} is not a decision variable of the mathematical program.",
+            vars(i, j)));
+      }
+    }
+  }
+}
+
+template <typename C>
+void MathematicalProgram::CheckBinding(const Binding<C>& binding) const {
+  // TODO(eric.cousineau): In addition to identifiers, hash bindings by
+  // their constraints and their variables, to prevent duplicates.
+  // TODO(eric.cousineau): Once bindings have identifiers (perhaps
+  // retrofitting `description`), ensure that they have unique names.
+  CheckIsDecisionVariable(binding.variables());
+}
+
 std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog) {
   if (prog.num_vars() > 0) {
     os << "Decision variables:" << prog.decision_variables().transpose()
