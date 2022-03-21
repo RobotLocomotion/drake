@@ -544,10 +544,11 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
           A_WP.ComposeWithMovingFrameAcceleration(p_PB_W, V_WP.rotational(),
                                                   V_PB_W, A_PB_W);
     } else {
-      const SpatialAcceleration<T> A_PB_W =
-          R_WF * A_FM.Shift(p_MB_F);  // Eq. (4), with w_FM = 0.
+      const SpatialAcceleration<T> A_PB_W =   // Eq. (4), with w_FM = 0.
+          R_WF * A_FM.ShiftWithZeroAngularVelocity(p_MB_F);
       // Velocities are zero. No need to compute terms that become zero.
-      get_mutable_A_WB_from_array(&A_WB_array) = A_WP.Shift(p_PB_W) + A_PB_W;
+      get_mutable_A_WB_from_array(&A_WB_array) =
+          A_WP.ShiftWithZeroAngularVelocity(p_PB_W) + A_PB_W;
     }
   }
 

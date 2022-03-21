@@ -119,8 +119,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::init<const Vector6<T>&>(), py::arg("V"), cls_doc.ctor.doc_1args)
         .def("Shift", &Class::Shift, py::arg("offset"), cls_doc.Shift.doc);
     constexpr char doc_Shift_deprecatedArgName[] =
-        "Shift(p_BqBq_E) is deprecated, and will be removed on or around "
-        "2022-06-01. Please instead use Shift(offset).";
+        "The keyword argument (kwarg) has been renamed from"
+        " Shift(p_BqBq_E) to"
+        " Shift(offset)."
+        " Deprecated kwarg will be unavailable after 2022-06-01.";
     cls.def("Shift", WrapDeprecated(doc_Shift_deprecatedArgName, &Class::Shift),
            py::arg("p_BpBq_E"), doc_Shift_deprecatedArgName)
         .def("ComposeWithMovingFrameVelocity",
@@ -129,10 +131,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("velocity_of_moving_frame"),
             cls_doc.ComposeWithMovingFrameVelocity.doc);
     constexpr char doc_ComposeWithMovingFrameVelocity_deprecatedArgName[] =
-        "ComposeWithMovingFrameVelocity(p_PoBo_E, V_PB_E) is deprecated,"
-        " and will be removed on or around 2022-06-01. Please instead use"
+        "The keyword arguments (kwargs) have been renamed from"
+        " ComposeWithMovingFrameVelocity(p_PoBo_E, V_PB_E) to"
         " ComposeWithMovingFrameVelocity(position_of_moving_frame,"
-        " velocity_of_moving_frame).";
+        " velocity_of_moving_frame)."
+        " Deprecated kwargs will be unavailable after 2022-06-01.";
     cls.def("ComposeWithMovingFrameVelocity",
         WrapDeprecated(doc_ComposeWithMovingFrameVelocity_deprecatedArgName,
             &Class::ComposeWithMovingFrameVelocity),
@@ -142,8 +145,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         overload_cast_explicit<T, const SpatialForce<T>&>(&Class::dot),
         py::arg("force"), cls_doc.dot.doc_1args_force);
     constexpr char doc_dot_deprecatedArgNameF_Bp_E[] =
-        "dot(F_Bp_E) is deprecated, and will be removed on or around"
-        " 2022-06-01. Please instead use dot(force).";
+        "The keyword argument (kwarg) has been renamed from"
+        " dot(F_Bp_E) to"
+        " dot(force)."
+        " Deprecated kwarg will be unavailable after 2022-06-01.";
     cls.def("dot",
         WrapDeprecated(doc_dot_deprecatedArgNameF_Bp_E,
             overload_cast_explicit<T, const SpatialForce<T>&>(&Class::dot)),
@@ -152,8 +157,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         overload_cast_explicit<T, const SpatialMomentum<T>&>(&Class::dot),
         py::arg("momentum"), cls_doc.dot.doc_1args_momentum);
     constexpr char doc_dot_deprecatedArgNameL_WBp_E[] =
-        "dot(L_WBp_E) is deprecated, and will be removed on or around"
-        " 2022-06-01. Please instead use dot(momentum).";
+        "The keyword argument (kwarg) has been renamed from"
+        " dot(L_WBp_E) to"
+        " dot(momentum)."
+        " Deprecated kwarg will be unavailable after 2022-06-01.";
     cls.def("dot",
         WrapDeprecated(doc_dot_deprecatedArgNameL_WBp_E,
             overload_cast_explicit<T, const SpatialMomentum<T>&>(&Class::dot)),
@@ -178,8 +185,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("Shift", &Class::Shift, py::arg("p_BpBq_E"), cls_doc.Shift.doc)
         .def("dot", &Class::dot, py::arg("velocity"), cls_doc.dot.doc);
     constexpr char doc_dotWithArgumentNameV_IBp_E_deprecated[] =
-        "dot(V_IBp_E) is deprecated, and will be removed on or "
-        "around 2022-06-01. Please use dot(velocity) instead.";
+        "The keyword argument (kwarg) has been renamed from"
+        " dot(V_IBp_E) to"
+        " dot(velocity)."
+        " Deprecated kwarg will be unavailable after 2022-06-01.";
     cls.def("dot",
         WrapDeprecated(doc_dotWithArgumentNameV_IBp_E_deprecated, &Class::dot),
         py::arg("V_IBp_E"), doc_dotWithArgumentNameV_IBp_E_deprecated);
@@ -198,19 +207,58 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
                  const Eigen::Ref<const Vector3<T>>&>(),
             py::arg("alpha"), py::arg("a"), cls_doc.ctor.doc_2args)
-        .def(
-            py::init<const Vector6<T>&>(), py::arg("A"), cls_doc.ctor.doc_1args)
-        .def("Shift",
+        .def(py::init<const Vector6<T>&>(), py::arg("A"),
+            cls_doc.ctor.doc_1args);
+    cls.def("ShiftWithZeroAngularVelocity",
+        &Class::ShiftWithZeroAngularVelocity, py::arg("offset"),
+        cls_doc.ShiftWithZeroAngularVelocity.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    constexpr char doc_ShiftOneArg_deprecatedArgName[] =
+        "Shift(p_PoQ_E) is deprecated, and will be removed on or around"
+        " 2022-07-01. Please instead use "
+        "ShiftWithZeroAngularVelocity(offset)";
+    cls.def("Shift",
+        WrapDeprecated(doc_ShiftOneArg_deprecatedArgName,
+            overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift)),
+        py::arg("p_PoQ_E"), doc_ShiftOneArg_deprecatedArgName);
+#pragma GCC diagnostic pop
+    cls.def("Shift",
+        overload_cast_explicit<Class, const Vector3<T>&, const Vector3<T>&>(
+            &Class::Shift),
+        py::arg("offset"), py::arg("angular_velocity_of_this_frame"),
+        cls_doc.Shift.doc);
+    constexpr char doc_ShiftTwoArg_deprecatedArgName[] =
+        "The keyword arguments (kwargs) have been renamed from"
+        " Shift(p_PoQ_E, w_WP_E) to"
+        " Shift(offset, angular_velocity_of_this_frame)."
+        " The old kwargs are deprecated and unavailable after 2022-07-01.";
+    cls.def("Shift",
+        WrapDeprecated(doc_ShiftTwoArg_deprecatedArgName,
             overload_cast_explicit<Class, const Vector3<T>&, const Vector3<T>&>(
-                &Class::Shift),
-            py::arg("p_PoQ_E"), py::arg("w_WP_E"), cls_doc.Shift.doc_2args)
-        .def("Shift",
-            overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift),
-            py::arg("p_PoQ_E"), cls_doc.Shift.doc_1args)
-        .def("ComposeWithMovingFrameAcceleration",
-            &Class::ComposeWithMovingFrameAcceleration, py::arg("p_PB_E"),
-            py::arg("w_WP_E"), py::arg("V_PB_E"), py::arg("A_PB_E"),
-            cls_doc.ComposeWithMovingFrameAcceleration.doc);
+                &Class::Shift)),
+        py::arg("p_PoQ_E"), py::arg("w_WP_E"),
+        doc_ShiftTwoArg_deprecatedArgName);
+    cls.def("ComposeWithMovingFrameAcceleration",
+        &Class::ComposeWithMovingFrameAcceleration,
+        py::arg("position_of_moving_frame"),
+        py::arg("angular_velocity_of_this_frame"),
+        py::arg("velocity_of_moving_frame"),
+        py::arg("acceleration_of_moving_frame"),
+        cls_doc.ComposeWithMovingFrameAcceleration.doc);
+    constexpr char doc_ComposeMovingFrameAccel_deprecatedArgName[] =
+        "The keyword arguments (kwargs) have been renamed from"
+        " ComposeWithMovingFrameAcceleration(p_PB_E, w_WP_E, V_PB_E, A_PB_E) to"
+        " ComposeWithMovingFrameAcceleration(position_of_moving_frame,"
+        " angular_velocity_of_this_frame,"
+        " velocity_of_moving_frame,"
+        " acceleration_of_moving_frame)"
+        " The old kwargs are deprecated and unavailable after 2022-07-01.";
+    cls.def("ComposeWithMovingFrameAcceleration",
+        WrapDeprecated(doc_ComposeMovingFrameAccel_deprecatedArgName,
+            &Class::ComposeWithMovingFrameAcceleration),
+        py::arg("p_PB_E"), py::arg("w_WP_E"), py::arg("V_PB_E"),
+        py::arg("A_PB_E"), doc_ComposeMovingFrameAccel_deprecatedArgName);
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
     AddValueInstantiation<std::vector<Class>>(m);
@@ -234,8 +282,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             overload_cast_explicit<T, const SpatialVelocity<T>&>(&Class::dot),
             py::arg("velocity"), cls_doc.dot.doc);
     constexpr char doc_dot_deprecatedArgName[] =
-        "dot(V_IBp_E) is deprecated, and will be removed on or around"
-        "2022-06-01. Please use dot(velocity) instead.";
+        "The keyword argument (kwarg) has been renamed from"
+        " dot(V_IBp_E) to"
+        " dot(velocity)."
+        " Deprecated kwarg will be unavailable after 2022-06-01.";
     cls.def("dot", WrapDeprecated(doc_dot_deprecatedArgName, &Class::dot),
         py::arg("V_IBp_E"), doc_dot_deprecatedArgName);
     cls.attr("__matmul__") = cls.attr("dot");
