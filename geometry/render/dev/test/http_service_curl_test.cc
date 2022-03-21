@@ -23,7 +23,7 @@ GTEST_TEST(HttpServiceCurlTest, PostForm) {
    Use verbose=true (last parameter) to increase coverage via curl callbacks. */
   const std::string temp_dir = drake::temp_directory();
   const std::string url{"notawebsite"};
-  const int32_t port{1};
+  const int port{1};
   const bool verbose{true};
   HttpServiceCurl service;
 

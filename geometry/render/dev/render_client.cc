@@ -84,7 +84,7 @@ void AddField<RenderImageType>(data_map_t* data_map,
   // LCOV_EXCL_STOP
 }
 
-/** Verify the loaded image has the correct dimensions.  This includes verifying
+/* Verify the loaded image has the correct dimensions.  This includes verifying
  that the image is 2D (depth=1).
 
  @param expected_width
@@ -131,14 +131,14 @@ void VerifyImportedImageDimensions(int expected_width, int expected_height,
 
 /* Return '{url}' if port is <= 0, '{url}:{port}' otherwise.  Used for
  populating error messages. */
-std::string UrlWithPort(const std::string& url, int32_t port) {
+std::string UrlWithPort(const std::string& url, int port) {
   if (port > 0) return fmt::format("{}:{}", url, port);
   return url;
 }
 
 }  // namespace
 
-RenderClient::RenderClient(const std::string& url, int32_t port,
+RenderClient::RenderClient(const std::string& url, int port,
                            const std::string& render_endpoint, bool verbose,
                            bool no_cleanup)
     : temp_directory_{drake::temp_directory()},

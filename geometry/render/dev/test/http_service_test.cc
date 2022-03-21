@@ -25,7 +25,7 @@ class EmptyService : public HttpService {
 
   HttpResponse PostForm(
       const std::string& /* temp_directory */, const std::string& url,
-      int32_t /* port */, const std::string& endpoint,
+      int /* port */, const std::string& endpoint,
       const std::map<std::string, std::string>& /* data_fields */,
       const std::map<std::string,
                      std::pair<std::string, std::optional<std::string>>>&

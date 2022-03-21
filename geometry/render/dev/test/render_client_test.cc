@@ -32,7 +32,7 @@ class RenderClientTester {
  public:
   explicit RenderClientTester(const RenderClient* client) : client_(*client) {}
 
-  void ValidateAttributes(const std::string& url, int32_t port,
+  void ValidateAttributes(const std::string& url, int port,
                           const std::string& render_endpoint, bool verbose,
                           bool no_cleanup) const {
     EXPECT_EQ(client_.url(), url);
@@ -58,7 +58,7 @@ namespace fs = drake::filesystem;
 // Constructor / destructor ----------------------------------------------------
 GTEST_TEST(RenderClient, Constructor) {
   const std::string url{"127.0.0.1"};
-  const int32_t port{8000};
+  const int port{8000};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = false;
@@ -109,7 +109,7 @@ GTEST_TEST(RenderClient, Constructor) {
 
 GTEST_TEST(RenderClient, Destructor) {
   const std::string url{"127.0.0.1"};
-  const int32_t port{8000};
+  const int port{8000};
   const std::string render_endpoint = "render";
   const bool verbose = false;
 
@@ -144,7 +144,7 @@ class FailService : public HttpService {
   FailService() : HttpService() {}
 
   HttpResponse PostForm(const std::string& /* temp_directory */,
-                        const std::string& /* url */, int32_t /* port */,
+                        const std::string& /* url */, int /* port */,
                         const std::string& /* endpoint */,
                         const data_map_t& /* data_fields */,
                         const file_map_t& /* file_fields */,
@@ -186,7 +186,7 @@ class FieldCheckService : public HttpService {
 
   /* Check all of the <form> fields.  Always respond with failure (http 500). */
   HttpResponse PostForm(const std::string& /* temp_directory */,
-                        const std::string& url, int32_t /* port */,
+                        const std::string& url, int /* port */,
                         const std::string& endpoint,
                         const data_map_t& data_fields,
                         const file_map_t& file_fields,
@@ -291,7 +291,7 @@ class ProxyService : public HttpService {
       : HttpService(), post_form_callback_{callback} {}
 
   HttpResponse PostForm(const std::string& /* temp_directory */,
-                        const std::string& url, int32_t /* port */,
+                        const std::string& url, int /* port */,
                         const std::string& endpoint,
                         const data_map_t& data_fields,
                         const file_map_t& file_fields,
@@ -317,7 +317,7 @@ GTEST_TEST(RenderClient, RenderOnServer) {
    test should proceed with the default HttpServiceCurl, the HttpService backend
    should be changed using client.SetHttpService before doing anything. */
   const std::string url{"notarealserver"};
-  const int32_t port{8192};
+  const int port{8192};
   const std::string render_endpoint{"no_render"};
   const bool verbose{false};
   const bool no_cleanup{false};
@@ -416,7 +416,7 @@ GTEST_TEST(RenderClient, RenderOnServer) {
   {
     /* These tests confirm the error reporting format from UrlWithPort without a
      port and alternative urls. */
-    const std::vector<std::pair<std::string, int32_t>> url_port{
+    const std::vector<std::pair<std::string, int>> url_port{
         {"some_url", 0}, {"another_url", -1}, {"url_with_port", 200}};
     for (const auto& [u, p] : url_port) {
       const auto expected_message = fmt::format(
@@ -628,7 +628,7 @@ GTEST_TEST(RenderClient, RenderOnServer) {
 
 GTEST_TEST(RenderClient, ComputeSha256) {
   const std::string url{"127.0.0.1"};
-  const int32_t port{8000};
+  const int port{8000};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = false;
@@ -685,7 +685,7 @@ GTEST_TEST(RenderClient, ComputeSha256) {
 
 GTEST_TEST(RenderClient, RenameHttpServiceResponse) {
   const std::string url{"127.0.0.1"};
-  const int32_t port{8000};
+  const int port{8000};
   const std::string render_endpoint{"render"};
   // Keep verbose and no_cleanup `true` to get coverage on log() calls.
   const bool verbose = true;
@@ -798,7 +798,7 @@ GTEST_TEST(RenderClient, RenameHttpServiceResponse) {
 
 GTEST_TEST(RenderClient, LoadColorImage) {
   const std::string url{"127.0.0.1"};
-  const int32_t port{8000};
+  const int port{8000};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = false;
@@ -908,7 +908,7 @@ GTEST_TEST(RenderClient, LoadColorImage) {
 
 GTEST_TEST(RenderClient, LoadDepthImage) {
   const std::string url{"127.0.0.1"};
-  const int32_t port{8000};
+  const int port{8000};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = false;
@@ -1004,7 +1004,7 @@ GTEST_TEST(RenderClient, LoadDepthImage) {
 
 GTEST_TEST(RenderClient, LoadLabelImage) {
   const std::string url{"127.0.0.1"};
-  const int32_t port{8000};
+  const int port{8000};
   const std::string render_endpoint{"render"};
   const bool verbose = false;
   const bool no_cleanup = true;

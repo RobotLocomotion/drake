@@ -28,7 +28,7 @@ class RenderEngineGltfClientTester {
 
   // RenderClient access methods.
   const std::string& url() const { return engine_->render_client_->url(); }
-  int32_t port() const { return engine_->render_client_->port(); }
+  int port() const { return engine_->render_client_->port(); }
   const std::string& render_endpoint() const {
     return engine_->render_client_->render_endpoint();
   }
@@ -241,7 +241,7 @@ class FakeServer : public HttpService {
    depth.response, or label.response.  It will overwrite the file if it already
    exists. */
   HttpResponse PostForm(const std::string& temp_directory,
-                        const std::string& url, int32_t /* port */,
+                        const std::string& url, int /* port */,
                         const std::string& endpoint,
                         const data_map_t& data_fields,
                         const file_map_t& file_fields,

@@ -14,16 +14,16 @@ namespace geometry {
 namespace render {
 namespace internal {
 
-/** An HttpService that uses libcurl to communicate with the server. */
+/* An HttpService that uses libcurl to communicate with the server. */
 class HttpServiceCurl : public HttpService {
  public:
   HttpServiceCurl();
   ~HttpServiceCurl() override;
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HttpServiceCurl);
 
-  /** @see HttpService::PostForm */
+  /* @see HttpService::PostForm */
   HttpResponse PostForm(
-      const std::string& temp_directory, const std::string& url, int32_t port,
+      const std::string& temp_directory, const std::string& url, int port,
       const std::string& endpoint,
       const std::map<std::string, std::string>& data_fields,
       const std::map<std::string,
