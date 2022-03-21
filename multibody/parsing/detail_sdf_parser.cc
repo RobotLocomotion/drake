@@ -158,14 +158,37 @@ RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
                                    I(1, 0), I(2, 0), I(2, 1));
 }
 
+// Returns true iff the given report indicates an error, or false for warnings.
+bool IsError(const sdf::Error& report) {
+  switch (report.Code()) {
+    case sdf::ErrorCode::ELEMENT_INCORRECT_TYPE: {
+      // TODO(#15018): Change unrecognized elements to become an error ASAP.
+      // There is no error code dedicated solely to such elements, so we'll
+      // need to match the UnrecognizedElementsPolicy message output for its
+      // enforceConfigurablePolicyCondition.
+      const std::string& message = report.Message();
+      if (message.find("not defined in SDF. Copying") != std::string::npos) {
+        return false;
+      }
+      return true;
+    }
+    case sdf::ErrorCode::ELEMENT_DEPRECATED:
+    case sdf::ErrorCode::VERSION_DEPRECATED:
+    case sdf::ErrorCode::NONE: {
+      return false;
+    }
+    default: {
+      return true;
+    }
+  }
+}
+
 // Copies all `errors` into `diagnostic`.
 // Returns true if there were any errors.
 bool PropagateErrors(
     const sdf::Errors& errors,
     const DiagnosticPolicy& diagnostic) {
-  if (errors.empty()) {
-    return false;
-  }
+  bool result = false;
   for (const auto& e : errors) {
     DiagnosticDetail detail;
     detail.filename = e.FilePath();
@@ -176,20 +199,14 @@ bool PropagateErrors(
     } else {
       detail.message = e.Message();
     }
-    switch (e.Code()) {
-      case sdf::ErrorCode::NONE: {
-        // TODO(jwnimmer-tri) Not covered by unit tests, because our
-        // URDF parser doesn't ever emit any warnings yet.
-        diagnostic.Warning(detail);
-        break;
-      }
-      default: {
-        diagnostic.Error(detail);
-        break;
-      }
+    if (IsError(e)) {
+      diagnostic.Error(detail);
+      result = true;
+    } else {
+      diagnostic.Warning(detail);
     }
   }
-  return true;
+  return result;
 }
 
 // Move-appends all `input_errors` onto `output_errors`.
@@ -197,13 +214,14 @@ bool PropagateErrors(
 bool PropagateErrors(
     sdf::Errors&& input_errors,
     sdf::Errors* output_errors) {
-  if (input_errors.empty()) {
-    return false;
-  }
+  bool result = false;
   for (auto& e : input_errors) {
+    if (IsError(e)) {
+      result = true;
+    }
     output_errors->push_back(std::move(e));
   }
-  return true;
+  return result;
 }
 
 // This takes an `sdf::SemanticPose`, which defines a pose relative to a frame,
@@ -1353,12 +1371,16 @@ sdf::ParserConfig MakeSdfParserConfig(
     MultibodyPlant<double>* plant,
     bool test_sdf_forced_nesting) {
 
+  // The error severity settings here are somewhat subtle. We set all of them
+  // to ERR so that reports will append into an sdf::Errors collection instead
+  // of spamming into spdlog. However, when grabbing the reports out of the
+  // sdf::Errors collection later, we will categorize certain kinds of reports
+  // (e.g., deprecations) back to a DiagnosticPolicy::Warning instead of Error.
+  // That filter is specified in our IsError() helper, above.
   sdf::ParserConfig parser_config;
   parser_config.SetWarningsPolicy(sdf::EnforcementPolicy::ERR);
-  parser_config.SetDeprecatedElementsPolicy(sdf::EnforcementPolicy::WARN);
-  // TODO(#15018): Change unrecognized elements policy to become an error on
-  // or after 2022-02-01.
-  parser_config.SetUnrecognizedElementsPolicy(sdf::EnforcementPolicy::WARN);
+  parser_config.SetDeprecatedElementsPolicy(sdf::EnforcementPolicy::ERR);
+  parser_config.SetUnrecognizedElementsPolicy(sdf::EnforcementPolicy::ERR);
   parser_config.SetFindCallback(
     [=](const std::string &_input) {
       return ResolveUri(_input, package_map, ".");
