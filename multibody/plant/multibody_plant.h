@@ -4082,6 +4082,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetAccelerationUpperLimits();
   }
 
+  /// Returns a vector of size `num_actuators()` containing the lower effort
+  /// limits for every actuator. Any unbounded or unspecified limits will be
+  /// -infinity.
+  /// @throws std::exception if called pre-finalize.
+  VectorX<double> GetEffortLowerLimits() const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return internal_tree().GetEffortLowerLimits();
+  }
+
+  /// Upper limit analog of GetAccelerationsLowerLimits(), where any unbounded
+  /// or unspecified limits will be +infinity.
+  /// @see GetEffortLowerLimits() for more information.
+  VectorX<double> GetEffortUpperLimits() const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return internal_tree().GetEffortUpperLimits();
+  }
+
   /// Returns the model used for contact. See documentation for ContactModel.
   ContactModel get_contact_model() const;
 

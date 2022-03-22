@@ -960,6 +960,10 @@ TEST_F(SdfParserTest, JointActuatorParsingTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.GetJointActuatorByName("prismatic_joint_zero_limit"),
       ".*There is no JointActuator named.*");
+
+  Vector2d effort_limits{100, kInf};
+  EXPECT_TRUE(CompareMatrices(plant_.GetEffortLowerLimits(), -effort_limits));
+  EXPECT_TRUE(CompareMatrices(plant_.GetEffortUpperLimits(), effort_limits));
 }
 
 // Verifies that the SDF parser parses the revolute spring parameters correctly.

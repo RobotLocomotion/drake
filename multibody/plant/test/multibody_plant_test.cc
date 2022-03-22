@@ -2756,6 +2756,11 @@ TEST_P(KukaArmTest, StateAccess) {
     plant_->SetVelocities(context_.get(), v_block);
     plant_->SetPositionsAndVelocities(context_.get(), qv_block);
   }
+
+  Eigen::VectorXd effort_limits(7);
+  effort_limits << 320, 320, 176, 176, 110, 40, 40;
+  EXPECT_TRUE(CompareMatrices(plant_->GetEffortLowerLimits(), -effort_limits));
+  EXPECT_TRUE(CompareMatrices(plant_->GetEffortUpperLimits(), effort_limits));
 }
 
 TEST_P(KukaArmTest, InstanceStateAccess) {
