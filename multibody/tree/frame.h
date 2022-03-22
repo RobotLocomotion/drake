@@ -397,7 +397,7 @@ class Frame : public FrameBase<T> {
         this->CalcSpatialAccelerationInWorld(context);
 
     // Form a Lambda function.
-    auto CalcHelper = [this, &context, &frame_M, &frame_E, &A_WF_W]() {
+    auto CalcHelper = [this, &context, &frame_M, &A_WF_W]() {
       // Form additional terms for the rotational part of A_MF_W.
       const SpatialAcceleration<T> A_WM_W =
           frame_M.CalcSpatialAccelerationInWorld(context);
