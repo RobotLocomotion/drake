@@ -17,6 +17,7 @@
 namespace drake {
 namespace geometry {
 namespace render {
+namespace internal {
 
 // Exposes various private access methods and data members for validation.
 class RenderEngineGltfClientTester {
@@ -476,6 +477,7 @@ GTEST_TEST(RenderEngineGltfClient, CleanupFrame) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

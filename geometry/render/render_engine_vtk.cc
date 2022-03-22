@@ -571,6 +571,13 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
   actors_.insert({data.id, std::move(actors)});
 }
 
+RenderEngineVtk::RenderingPipeline& RenderEngineVtk::get_mutable_pipeline(
+    internal::ImageType image_type) const {
+  DRAKE_DEMAND(image_type >= ImageType::kColor &&
+               image_type <= ImageType::kDepth);
+  return *pipelines_[image_type];
+}
+
 void RenderEngineVtk::SetDefaultLightPosition(const Vector3<double>& X_DL) {
   light_->SetPosition(X_DL[0], X_DL[1], X_DL[2]);
 }
