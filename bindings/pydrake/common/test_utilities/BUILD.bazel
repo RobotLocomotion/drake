@@ -72,6 +72,19 @@ drake_py_library(
     ],
 )
 
+# A minimal implementation scipy.sparse that's just barely functional enough
+# to support unit testing the Drake APIs that return Eigen::Sparse matrices.
+drake_py_library(
+    name = "scipy_stub_py",
+    testonly = 1,
+    srcs = [
+        "scipy_stub/scipy/__init__.py",
+        "scipy_stub/scipy/sparse/__init__.py",
+    ],
+    # N.B. We do not depend on ":module_py".
+    imports = ["scipy_stub"],
+)
+
 # Package roll-up (for Bazel dependencies).
 drake_py_library(
     name = "test_utilities",
@@ -81,6 +94,7 @@ drake_py_library(
         ":module_py",
         ":numpy_compare_py",
         ":pickle_compare_py",
+        # N.B. Do not add scipy_stub_py here; it pollutes.
     ],
 )
 
