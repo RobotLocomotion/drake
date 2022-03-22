@@ -59,7 +59,10 @@ def _start_meshcat_deepnote(*, params=None, restart_nginx=False):
 def _start_meshcat_ngrok():
     from IPython.display import display, HTML
     from pyngrok import ngrok
+    from pydrake.common import set_log_level
+    prev_log_level = set_log_level("warn")
     meshcat = Meshcat()
+    set_log_level(prev_log_level)
     http_tunnel = ngrok.connect(meshcat.port(), bind_tls=False)
     url = http_tunnel.public_url
     display(HTML(f"Meshcat URL: <a href='{url}' target='_blank'>{url}</a>"))
@@ -93,7 +96,4 @@ def StartMeshcat():
         return _start_meshcat_deepnote()
     if "google.colab" in sys.modules:
         return _start_meshcat_ngrok()
-    meshcat = Meshcat()
-    url = meshcat.web_url()
-    print("Meshcat URL: {url}")
-    return meshcat
+    return Meshcat()
