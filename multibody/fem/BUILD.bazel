@@ -40,6 +40,7 @@ drake_cc_package_library(
         ":simplex_gaussian_quadrature",
         ":velocity_newmark_scheme",
         ":volumetric_element",
+        ":volumetric_model",
     ],
 )
 
@@ -410,6 +411,19 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "volumetric_model",
+    hdrs = [
+        "volumetric_model.h",
+    ],
+    deps = [
+        ":damping_model",
+        ":fem_model",
+        ":volumetric_element",
+        "//geometry/proximity:volume_mesh",
+    ],
+)
+
 drake_cc_googletest(
     name = "acceleration_newmark_scheme_test",
     deps = [
@@ -652,6 +666,20 @@ drake_cc_googletest(
         ":acceleration_newmark_scheme",
         ":velocity_newmark_scheme",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "volumetric_model_test",
+    deps = [
+        ":acceleration_newmark_scheme",
+        ":linear_constitutive_model",
+        ":volumetric_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:make_box_mesh",
+        "//math:gradient",
+        "//multibody/fem:linear_simplex_element",
+        "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
 
