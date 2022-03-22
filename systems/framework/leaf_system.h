@@ -2028,9 +2028,6 @@ class LeafSystem : public System<T> {
 
   // Model abstract parameters to be used during Context allocation.
   internal::ModelValues model_abstract_parameters_;
-
-  // The index of a cache entry for scratch storage.
-  CacheIndex scratch_cache_index_{};
 };
 
 }  // namespace systems
