@@ -23,7 +23,6 @@ constexpr int kNaturalDimension = 3;
 constexpr int kSpatialDimension = 3;
 constexpr int kQuadratureOrder = 1;
 constexpr double kEpsilon = 1e-14;
-const FemElementIndex kZeroIndex(0);
 using AD = AutoDiffXd;
 using QuadratureType =
     internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
@@ -76,9 +75,8 @@ class VolumetricElementTest : public ::testing::Test {
     Eigen::Matrix<AD, kSpatialDimension, kNumNodes> X = reference_positions();
     ConstitutiveModelType constitutive_model(kYoungsModulus, kPoissonRatio);
     DampingModel<AD> damping_model(0, 0);
-    elements_.emplace_back(kZeroIndex, kNodeIndices,
-                           std::move(constitutive_model), X, kDensity,
-                           std::move(damping_model));
+    elements_.emplace_back(kNodeIndices, std::move(constitutive_model), X,
+                           kDensity, std::move(damping_model));
   }
 
   /* Makes an FemState to be consumed by the unit tests with the given q, v, and
@@ -236,11 +234,9 @@ namespace {
 
 TEST_F(VolumetricElementTest, Constructor) {
   EXPECT_EQ(element().node_indices(), kNodeIndices);
-  EXPECT_EQ(element().element_index(), kZeroIndex);
   EXPECT_EQ(density(element()), kDensity);
   ElementType move_constructed_element(std::move(elements_[0]));
   EXPECT_EQ(move_constructed_element.node_indices(), kNodeIndices);
-  EXPECT_EQ(move_constructed_element.element_index(), kZeroIndex);
   EXPECT_EQ(density(move_constructed_element), kDensity);
 }
 

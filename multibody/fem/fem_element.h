@@ -94,9 +94,6 @@ class FemElement {
     }
   }
 
-  /* The FemElementIndex of this element within the model. */
-  FemElementIndex element_index() const { return element_index_; }
-
   /* Computes the per-element, state-dependent data associated with this
    `DerivedElement` given the `state`. */
   Data ComputeData(const FemState<T>& state) const {
@@ -231,20 +228,15 @@ class FemElement {
   /* Constructs a new FEM element. The constructor is made protected because
    FemElement should not be constructed directly. Use the constructor of the
    derived classes instead.
-   @param[in] element_index  The index of the new element within the model.
    @param[in] node_indices   The node indices of the nodes of this element
                              within the model.
-   @pre element_index is valid.
    @pre Entries in node_indices are valid. */
-  FemElement(FemElementIndex element_index,
-             const std::array<FemNodeIndex, num_nodes>& node_indices,
+  FemElement(const std::array<FemNodeIndex, num_nodes>& node_indices,
              ConstitutiveModel constitutive_model,
              DampingModel<T> damping_model)
-      : element_index_(element_index),
-        node_indices_(node_indices),
+      : node_indices_(node_indices),
         constitutive_model_(std::move(constitutive_model)),
         damping_model_(std::move(damping_model)) {
-    DRAKE_ASSERT(element_index.is_valid());
     for (int i = 0; i < num_nodes; ++i) {
       DRAKE_ASSERT(node_indices[i].is_valid());
     }
@@ -331,8 +323,6 @@ class FemElement {
                              std::string(source_method) + "().");
   }
 
-  /* The index of this element within the model. */
-  FemElementIndex element_index_;
   /* The node indices of this element within the model. */
   std::array<FemNodeIndex, num_nodes> node_indices_;
   /* The constitutive model that describes the stress-strain relationship

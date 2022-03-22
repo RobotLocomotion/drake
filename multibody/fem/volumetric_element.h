@@ -165,7 +165,6 @@ class VolumetricElement
 
   /* Constructs a new VolumetricElement. In that process, precomputes the mass
    matrix and the gravity force acting on the element.
-   @param[in] element_index        The index of the new element.
    @param[in] node_indices         The node indices of the nodes of this
                                    element.
    @param[in] constitutive_model   The ConstitutiveModel to be used for this
@@ -180,14 +179,12 @@ class VolumetricElement
    @param[in] damping_model        The DampingModel to be used for this element.
    @pre element_index and node_indices are valid.
    @pre density > 0. */
-  VolumetricElement(FemElementIndex element_index,
-                    const std::array<FemNodeIndex, num_nodes>& node_indices,
+  VolumetricElement(const std::array<FemNodeIndex, num_nodes>& node_indices,
                     ConstitutiveModelType constitutive_model,
                     const Eigen::Ref<const Eigen::Matrix<T, 3, num_nodes>>&
                         reference_positions,
                     T density, DampingModel<T> damping_model)
-      : FemElement<ElementType>(element_index, node_indices,
-                                std::move(constitutive_model),
+      : FemElement<ElementType>(node_indices, std::move(constitutive_model),
                                 std::move(damping_model)),
         density_(std::move(density)) {
     DRAKE_DEMAND(density_ > 0);
