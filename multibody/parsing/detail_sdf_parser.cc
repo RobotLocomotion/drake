@@ -685,16 +685,9 @@ std::vector<LinkInfo> AddLinksFromSpecification(
     plant->SetDefaultFreeBodyPose(body, X_WL);
 
     if (plant->geometry_source_is_registered()) {
-      ResolveFilename resolve_filename =
-        [&package_map, &root_dir](std::string uri) {
-          const std::string resolved_name =
-              ResolveUri(uri, package_map, root_dir);
-          if (resolved_name.empty()) {
-            throw std::runtime_error(
-                "ERROR: Mesh file name could not be resolved from the "
-                "provided uri \"" + uri + "\".");
-          }
-          return resolved_name;
+      ResolveFilename resolve_filename = [&package_map, &root_dir](
+          const DiagnosticPolicy& inner_diagnostic, std::string uri) {
+        return ResolveUri(inner_diagnostic, uri, package_map, root_dir);
       };
 
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
@@ -704,7 +697,7 @@ std::vector<LinkInfo> AddLinksFromSpecification(
             diagnostic, sdf_visual.SemanticPose());
         unique_ptr<GeometryInstance> geometry_instance =
             MakeGeometryInstanceFromSdfVisual(
-                sdf_visual, resolve_filename, X_LG);
+                diagnostic, sdf_visual, resolve_filename, X_LG);
         // We check for nullptr in case someone decided to specify an SDF
         // <empty/> geometry.
         if (geometry_instance) {
@@ -727,7 +720,8 @@ std::vector<LinkInfo> AddLinksFromSpecification(
         const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
 
         std::unique_ptr<geometry::Shape> shape =
-            MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename);
+            MakeShapeFromSdfGeometry(
+                diagnostic, sdf_geometry, resolve_filename);
         if (shape != nullptr) {
           const RigidTransformd X_LG = ResolveRigidTransform(
               diagnostic, sdf_collision.SemanticPose());
@@ -1383,7 +1377,18 @@ sdf::ParserConfig MakeSdfParserConfig(
   parser_config.SetUnrecognizedElementsPolicy(sdf::EnforcementPolicy::ERR);
   parser_config.SetFindCallback(
     [=](const std::string &_input) {
-      return ResolveUri(_input, package_map, ".");
+      // This callback uses an empty return value to denote errors, and then its
+      // caller reports its own "no such file" error directly. We'll route
+      // Drake's specific messages about *why* the file wasn't found into a
+      // debug-only log.
+      DiagnosticPolicy debug_log;
+      debug_log.SetActionForWarnings([](const DiagnosticDetail& detail) {
+        drake::log()->debug(detail.FormatWarning());
+      });
+      debug_log.SetActionForErrors([](const DiagnosticDetail& detail) {
+        drake::log()->debug(detail.FormatError());
+      });
+      return ResolveUri(debug_log, _input, package_map, ".");
     });
 
   parser_config.RegisterCustomModelParser(
