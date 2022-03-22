@@ -72,7 +72,7 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
 
   const RotationMatrix<double> R_WH =
       frame_H_->CalcRotationMatrixInWorld(*context_);
-  const RotationMatrix<double> R_WH_expected = X_WH_expected.rotation();
+  const RotationMatrix<double>& R_WH_expected = X_WH_expected.rotation();
   EXPECT_TRUE(CompareMatrices(R_WH.matrix(), R_WH_expected.matrix(), kTolerance,
                               MatrixCompareType::relative));
 
@@ -168,7 +168,7 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       kTolerance, MatrixCompareType::relative));
 
   // Also verify that the rotational part of V_W_L3H_W is simply ω_L3H_W.
-  const Vector3<double> w_L3H_W = V_W_L3H_W.rotational();
+  const Vector3<double>& w_L3H_W = V_W_L3H_W.rotational();
   const Vector3<double> w_L3H_W_expected =
       frame_H_->CalcSpatialVelocity(*context_, frame_L3, frame_W).rotational();
   EXPECT_TRUE(CompareMatrices(w_L3H_W, w_L3H_W_expected,
@@ -214,8 +214,8 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   // Verify that the calculation of elongation between Ho (frame H's origin) and
   // L3o (frame L3's origin) can be calculated by point Ho's translational
   // velocity relative to L3o, independent of the measured-in frame.
-  const Vector3<double> v_W_L3H_W = V_W_L3H_W.translational();
-  const Vector3<double> v_L3_L3H_W = V_L3_L3H_W.translational();
+  const Vector3<double>& v_W_L3H_W = V_W_L3H_W.translational();
+  const Vector3<double>& v_L3_L3H_W = V_L3_L3H_W.translational();
   // Form the unit vector directed from L3o to Ho.
   const Vector3<double> p_L3oHo_L3 =
       frame_H_->CalcPose(*context_, frame_L3).translation();
@@ -301,45 +301,69 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
       A_WL3_E.get_coeffs(), A_WL3_E_expected.get_coeffs(),
       kTolerance, MatrixCompareType::relative));
 
-  // Verify the odd calculation of V_HW_E which is the world frame V's spatial
-  // velocity in frame H, expressed in the end-effector frame E.
-  // Note: This is a "warm-up" for the CalcSpatialAcceleration() that follows.
+  // ------- Start of weird/useful CalcSpatialVelocity() test for V_HW_E ------
+  // This is a "warm-up" for the CalcSpatialAcceleration() test for A_HW_E that
+  // follows and it generates useful ingredients for that test of A_HW_E.
+  // Use CalcSpatialVelocity() to form V_HW_E which is the world frame W's
+  // spatial velocity in frame H, expressed in the end-effector frame E.
   const SpatialVelocity<double> V_HW_E =
       frame_W.CalcSpatialVelocity(*context_, *frame_H_, frame_E);
 
-  // To verify rotational part, use known relationship ω_WH = -ω_HW.
+  // Verify the rotational part of V_HW_E via the familiar formula ω_WH = -ω_HW.
   const SpatialVelocity<double> V_WH_W =
       frame_H_->CalcSpatialVelocityInWorld(*context_);
   const Vector3<double>& w_WH_W = V_WH_W.rotational();
   EXPECT_TRUE(CompareMatrices(V_HW_E.rotational(), R_EW * (-w_WH_W),
       kTolerance, MatrixCompareType::relative));
 
-  // Verify translational part with by-hand calculations.
-  const Vector3<double> v_WHo_W = V_WH_W.translational();
+  // Verify the translational part of V_HW_E via the following calculations.
+  //   v_WHo =  DtW(p_WoHo)                    Definition of Ho's velocity in W.
+  //         =  DtH(p_WoHo) + ω_WH x p_WoHo   Golden rule vector differentation.
+  //         = -DtH(p_HoWo) + ω_WH x p_WoHo     Use fact that p_HoWo = - p_WoHo.
+  //         =      -v_HWo  + ω_WH x p_WoHo    Definition of Wo's velocity in H.
+  //   v_HWo = v_WHo + ω_WH x p_WoHo                    Rearrange previous line.
+  const Vector3<double>& v_WHo_W = V_WH_W.translational();
   const RigidTransform<double> X_WH = frame_H_->CalcPoseInWorld(*context_);
   const Vector3<double>& p_WoHo_W = X_WH.translation();
   const Vector3<double> v_HWo_W_expected = -v_WHo_W + w_WH_W.cross(p_WoHo_W);
   EXPECT_TRUE(CompareMatrices(V_HW_E.translational(), R_EW * v_HWo_W_expected,
       kTolerance, MatrixCompareType::relative));
+  // -------- End of weird/useful CalcSpatialVelocity() test for V_HW_E -------
 
-  // Verify the odd calculation of A_HW_E which is the world frame W's spatial
-  // acceleration in frame H, expressed in the end-effector frame E.
+  // Verify the weird/useful calculation of A_HW_E, which is the world frame W's
+  // spatial acceleration in frame H, expressed in the end-effector frame E.
   // Reminder: frame_H is an offset frame fixed to the end-effector E.
-  const SpatialAcceleration<double> A_HW_E =
-      frame_W.CalcSpatialAcceleration(*context_, *frame_H_, frame_W);
 
-  // To verify rotational part, use known relationship alpha_WH = -alpha_HW.
+  // Use CalcSpatialAcceleration() to form V_HW_E which is the world frame W's
+  // spatial acceleration in frame H, expressed in the end-effector frame E.
+  const SpatialAcceleration<double> A_HW_E =
+      frame_W.CalcSpatialAcceleration(*context_, *frame_H_, frame_E);
+
+  // Verify the rotational part of A_HW_E via the relationship α_HW = -α_WH.
   const Vector3<double>& alpha_WH_W = A_WH_W.rotational();
-  EXPECT_TRUE(CompareMatrices(A_HW_E.rotational(), -alpha_WH_W,
+  EXPECT_TRUE(CompareMatrices(A_HW_E.rotational(), R_EW * (-alpha_WH_W),
       kTolerance, MatrixCompareType::relative));
 
   // Verify translational part with by-hand calculations.
+  // Verify the translational part of A_HW_E via the following calculations.
+  //   a_WHo =  DtW(v_WHo)                 Definition of Ho's acceleration in W.
+  //         =  DtW(-v_HWo + ω_WH x p_WoHo)      Substitute from previous v_WHo.
+  //         = -DtW(v_HWo) + DtW(ω_WH x p_WoHo)  Distribute DtW() to both terms.
+  // DtW(v_HWo) = DtH(v_Hwo) + ω_WH x v_HWo   Golden rule vector differentation.
+  //            =     a_HWo  + ω_WH x v_HWo  Definition: Wo's acceleration in H.
+  //            =     a_HWo  + ω_WH x (-v_WHo + ω_WH x p_WoHo)
+  //            =     a_HWo  - ω_WH x   v_WHo + ω_WH x (ω_WH x p_WoHo)
+  // DtW(ω_WH x p_WoHo) = DtW(ω_WH) x p_WoHo + ω_WH x DtW(p_WoHo)  Product rule.
+  //                    =      α_WH x p_WoHo + ω_WH x v_WH          Definitions.
+  //   a_WHo = -a_Hwo + ω_WH x v_HWo - ω_WH x (ω_WH x p_WoHo)
+  //         +  α_WH x p_WoHo + ω_WH x v_WHo        Combine terms and rearrange.
+  //   a_Hwo = -a_WHo + α_WH x p_WoHo - ω_WH x (ω_WH x p_WoHo) + 2ω_WH x v_WHo
   const Vector3<double>& a_WHo_W = A_WH_W.translational();
   const Vector3<double> alf_r = alpha_WH_W.cross(p_WoHo_W);
   const Vector3<double> wwr = w_WH_W.cross(w_WH_W.cross(p_WoHo_W));
   const Vector3<double> twowv = 2 * w_WH_W.cross(v_WHo_W);
   const Vector3<double> a_HWo_W_expected = -a_WHo_W + alf_r - wwr + twowv;
-  EXPECT_TRUE(CompareMatrices(A_HW_E.translational(), a_HWo_W_expected,
+  EXPECT_TRUE(CompareMatrices(A_HW_E.translational(), R_EW * a_HWo_W_expected,
       kTolerance, MatrixCompareType::relative));
 }
 

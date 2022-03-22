@@ -328,7 +328,7 @@ class Frame : public FrameBase<T> {
   /// @param[in] context contains the state of the multibody system.
   /// @return A_WF_W, `this` frame F's spatial acceleration measured and
   /// expressed in the world frame W. The rotational part of the returned
-  /// quantity is α_MF_E (frame F's angular acceleration α measured and
+  /// quantity is α_WF_E (frame F's angular acceleration α measured and
   /// expressed in the world frame W).  The translational part is a_WFo_W
   /// (translational acceleration of frame F's origin point Fo, measured and
   /// expressed in the world frame W).
@@ -396,10 +396,9 @@ class Frame : public FrameBase<T> {
     const SpatialAcceleration<T> A_WF_W =
         this->CalcSpatialAccelerationInWorld(context);
 
-    // Avoid inefficient unnecessary calculations if frame M is the world frame.
-    SpatialAcceleration<T> A_MF_W = A_WF_W;
-    if (!frame_M.is_world_frame()) {
-      // Add additional terms to the rotational part of A_MF_W.
+    // Form a Lambda function.
+    auto CalcHelper = [this, &context, &frame_M, &frame_E, &A_WF_W]() {
+      // Form additional terms for the rotational part of A_MF_W.
       const SpatialAcceleration<T> A_WM_W =
           frame_M.CalcSpatialAccelerationInWorld(context);
       const Vector3<T>& alpha_WM_W = A_WM_W.rotational();
@@ -409,9 +408,10 @@ class Frame : public FrameBase<T> {
       const SpatialVelocity<T> V_MF_W =
           CalcSpatialVelocity(context, frame_M, frame_W);
       const Vector3<T>& w_MF_W = V_MF_W.rotational();
-      A_MF_W.rotational() -= (alpha_WM_W + w_WM_W.cross(w_MF_W));
+      const Vector3<T> alpha_MF_W =  // α_MF = α_WF - α_WM - ω_WM x ω_MF
+          A_WF_W.rotational() - alpha_WM_W - w_WM_W.cross(w_MF_W);
 
-      // Add additional terms to the translational part of A_MF_W.
+      // Form additional terms for the translational part of A_MF_W.
       const math::RotationMatrix<T> R_WM =
           frame_M.CalcRotationMatrixInWorld(context);
       const Vector3<T> p_MoFo_M = CalcPose(context, frame_M).translation();
@@ -420,8 +420,16 @@ class Frame : public FrameBase<T> {
           A_WM_W.Shift(p_MoFo_W, w_WM_W).translational();
       const Vector3<T>& v_MFo_W = V_MF_W.translational();
       const Vector3<T> coriolis_W = 2 * w_WM_W.cross(v_MFo_W);
-      A_MF_W.translational() -= (a_WcoincidentPoint_W + coriolis_W);
-    }
+      const Vector3<T> a_MFo =  // a_WFo - a_WCoincidentPoint - 2 ω_WM x v_MFo
+          A_WF_W.translational() - a_WcoincidentPoint_W - coriolis_W;
+
+      // Form A_MF_W (frame F's spatial acceleration in frame M, measured in W).
+      return SpatialAcceleration<T>(alpha_MF_W, a_MFo);
+    };
+
+    // Avoid inefficient unnecessary calculations if frame M is the world frame.
+    const SpatialAcceleration<T> A_MF_W =
+        frame_M.is_world_frame() ? A_WF_W : CalcHelper();
 
     // If expressed-in frame E is the world, no need to re-express results.
     if (frame_E.is_world_frame()) return A_MF_W;
