@@ -11,7 +11,9 @@ apt-get -y install --no-install-recommends \
 
 ${PYTHON} -m venv /usr/local
 
-pip install \
+pip install --upgrade pip
+
+pip install --upgrade \
     pyyaml \
     semantic-version \
     setuptools \
