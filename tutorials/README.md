@@ -60,41 +60,5 @@ and does not provide simple anchors for headings.
 
 ## For Developers
 
-- To rebuild from source and run tutorials using Bazel, use e.g.:
-```
-bazel run //tutorials:mathematical_program
-```
-
-- The first cell of each notebook should be a Markdown cell with the tutorial's title and
-  the following preamble:
-```
-For instructions on how to run these tutorial notebooks, please see the
-[README](https://github.com/RobotLocomotion/drake/blob/nightly-release/tutorials/README.md).
-```
-
-- Do not use `%matplotlib notebook`.  It is not supported in Deepnote.
-https://github.com/RobotLocomotion/drake/blob/master/geometry/optimization/graph_of_convex_sets.h#L296
-
-- For the pull request that adds the notebook(s), please include a `nbviewer`
-link to the directory on your fork and branch, e.g.,
-`https://nbviewer.jupyter.org/github/{user}/drake/blob/{branch}/tutorials/`
-
-- When you add a new notebook, add a link to the notebook in `index.ipynb`.
-  
-- If appropriate, add a Binder link to the notebook (in the `nightly-release-binder`
-branch) in the relevant documentation in `/doc`, e.g.,
-`https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?urlpath=/tree/tutorials/{notebook}.ipynb`
-<!-- TODO(russt): Update this recommendation to have links go to Deepnote instead of Binder -->
-
-- Once your PR has landed, use this [maintainers
-  notebook](https://deepnote.com/project/Tutorials-K0_FCa7yQX2kDWBx3-2RmQ/%2F.for_maintainers.ipynb)
-  to update Deepnote.  Drake developers should request "Edit" access through the
-  Deepnote interface if they do not have it.  Note: If your updates depend on
-  changes to Drake outside of the tutorials directory, then you will have to
-  wait for the updated nightly binaries to update Deepnote.
-
-### Notes on formatting
-
-- Deepnote (and others) use KaTeX for Latex. $\begin{aligned}math here \end{aligned}$ works.
-`gathered` also works; the more typical `gather` and `align` do not.
-
+For instructions related to improving the tutorials or adding new ones,
+refer to [_developers.md](_developers.md).
