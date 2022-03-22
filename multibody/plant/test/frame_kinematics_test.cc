@@ -319,10 +319,10 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
 
   // Verify the translational part of V_HW_E via the following calculations.
   //   v_WHo =  DtW(p_WoHo)                    Definition of Ho's velocity in W.
-  //         =  DtH(p_WoHo) + ω_WH x p_WoHo   Golden rule vector differentation.
+  //         =  DtH(p_WoHo) + ω_WH x p_WoHo  Golden rule vector differentiation.
   //         = -DtH(p_HoWo) + ω_WH x p_WoHo     Use fact that p_HoWo = - p_WoHo.
   //         =      -v_HWo  + ω_WH x p_WoHo    Definition of Wo's velocity in H.
-  //   v_HWo = v_WHo + ω_WH x p_WoHo                    Rearrange previous line.
+  //   v_HWo = -v_WHo + ω_WH x p_WoHo                   Rearrange previous line.
   const Vector3<double>& v_WHo_W = V_WH_W.translational();
   const RigidTransform<double> X_WH = frame_H_->CalcPoseInWorld(*context_);
   const Vector3<double>& p_WoHo_W = X_WH.translation();
@@ -350,15 +350,15 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
   //   a_WHo =  DtW(v_WHo)                 Definition of Ho's acceleration in W.
   //         =  DtW(-v_HWo + ω_WH x p_WoHo)      Substitute from previous v_WHo.
   //         = -DtW(v_HWo) + DtW(ω_WH x p_WoHo)  Distribute DtW() to both terms.
-  // DtW(v_HWo) = DtH(v_Hwo) + ω_WH x v_HWo   Golden rule vector differentation.
+  // DtW(v_HWo) = DtH(v_HWo) + ω_WH x v_HWo  Golden rule vector differentiation.
   //            =     a_HWo  + ω_WH x v_HWo  Definition: Wo's acceleration in H.
   //            =     a_HWo  + ω_WH x (-v_WHo + ω_WH x p_WoHo)
   //            =     a_HWo  - ω_WH x   v_WHo + ω_WH x (ω_WH x p_WoHo)
   // DtW(ω_WH x p_WoHo) = DtW(ω_WH) x p_WoHo + ω_WH x DtW(p_WoHo)  Product rule.
   //                    =      α_WH x p_WoHo + ω_WH x v_WH          Definitions.
-  //   a_WHo = -a_Hwo + ω_WH x v_HWo - ω_WH x (ω_WH x p_WoHo)
+  //   a_WHo = -a_HWo + ω_WH x v_HWo - ω_WH x (ω_WH x p_WoHo)
   //         +  α_WH x p_WoHo + ω_WH x v_WHo        Combine terms and rearrange.
-  //   a_Hwo = -a_WHo + α_WH x p_WoHo - ω_WH x (ω_WH x p_WoHo) + 2ω_WH x v_WHo
+  //   a_HWo = -a_WHo + α_WH x p_WoHo - ω_WH x (ω_WH x p_WoHo) + 2ω_WH x v_WHo
   const Vector3<double>& a_WHo_W = A_WH_W.translational();
   const Vector3<double> alf_r = alpha_WH_W.cross(p_WoHo_W);
   const Vector3<double> wwr = w_WH_W.cross(w_WH_W.cross(p_WoHo_W));

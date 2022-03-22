@@ -249,7 +249,7 @@ class Frame : public FrameBase<T> {
     // If the expressed-in frame E is the world, no need to re-express results.
     if (frame_E.is_world_frame()) return V_MF_W;
 
-    // Othwerwise re-express results from world frame W to frame E.
+    // Otherwise re-express results from world frame W to frame E.
     const math::RotationMatrix<T> R_WE =
         frame_E.CalcRotationMatrixInWorld(context);
     return R_WE.inverse() * V_MF_W;
@@ -341,7 +341,7 @@ class Frame : public FrameBase<T> {
   SpatialAcceleration<T> CalcSpatialAccelerationInWorld(
       const systems::Context<T>& context) const {
     // `this` frame_F is fixed to a body B.  Calculate A_WB_W, body B's spatial
-    // acceleration in thw world frame W, expressed in W.
+    // acceleration in the world frame W, expressed in W.
     const SpatialAcceleration<T>& A_WB_W =
         body().EvalSpatialAccelerationInWorld(context);
 
@@ -396,8 +396,8 @@ class Frame : public FrameBase<T> {
     const SpatialAcceleration<T> A_WF_W =
         this->CalcSpatialAccelerationInWorld(context);
 
-    // Form a Lambda function.
-    auto CalcHelper = [this, &context, &frame_M, &A_WF_W]() {
+    // Helper function to calculate A_MF_W when frame M ≠ frame W.
+    auto calc_A_MF_W = [this, &context, &frame_M, &A_WF_W]() {
       // Form additional terms for the rotational part of A_MF_W.
       const SpatialAcceleration<T> A_WM_W =
           frame_M.CalcSpatialAccelerationInWorld(context);
@@ -429,12 +429,12 @@ class Frame : public FrameBase<T> {
 
     // Avoid inefficient unnecessary calculations if frame M is the world frame.
     const SpatialAcceleration<T> A_MF_W =
-        frame_M.is_world_frame() ? A_WF_W : CalcHelper();
+        frame_M.is_world_frame() ? A_WF_W : calc_A_MF_W();
 
     // If expressed-in frame E is the world, no need to re-express results.
     if (frame_E.is_world_frame()) return A_MF_W;
 
-    // Othwerwise re-express results from world frame W to frame E.
+    // Otherwise re-express results from world frame W to frame E.
     const math::RotationMatrix<T> R_WE =
         frame_E.CalcRotationMatrixInWorld(context);
     return R_WE.inverse() * A_MF_W;  // returns A_MF_E.
