@@ -39,17 +39,28 @@ template <typename T>
 void FemModel<T>::CalcTangentMatrix(
     const FemState<T>& fem_state, const Vector3<T>& weights,
     internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const {
-  DRAKE_DEMAND(tangent_matrix != nullptr);
-  DRAKE_DEMAND(tangent_matrix->rows() == num_dofs());
-  DRAKE_DEMAND(tangent_matrix->cols() == num_dofs());
-  ThrowIfModelStateIncompatible(__func__, fem_state);
-  DoCalcTangentMatrix(fem_state, weights, tangent_matrix);
+  if constexpr (std::is_same_v<T, double>) {
+    DRAKE_DEMAND(tangent_matrix != nullptr);
+    DRAKE_DEMAND(tangent_matrix->rows() == num_dofs());
+    DRAKE_DEMAND(tangent_matrix->cols() == num_dofs());
+    ThrowIfModelStateIncompatible(__func__, fem_state);
+    DoCalcTangentMatrix(fem_state, weights, tangent_matrix);
+  } else {
+    throw std::logic_error(
+        "FemModel::CalcTangentMatrix() only supports double at the moment.");
+  }
 }
 
 template <typename T>
 std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix>
 FemModel<T>::MakePetscSymmetricBlockSparseTangentMatrix() const {
-  return DoMakePetscSymmetricBlockSparseTangentMatrix();
+  if constexpr (std::is_same_v<T, double>) {
+    return DoMakePetscSymmetricBlockSparseTangentMatrix();
+  } else {
+    throw std::logic_error(
+        "FemModel::MakePetscSymmetricBlockSparseTangentMatrix() only supports "
+        "double at the moment.");
+  }
 }
 
 template <typename T>
@@ -81,3 +92,4 @@ void FemModel<T>::UpdateFemStateSystem() {
 }  // namespace drake
 
 template class drake::multibody::fem::FemModel<double>;
+template class drake::multibody::fem::FemModel<drake::AutoDiffXd>;
