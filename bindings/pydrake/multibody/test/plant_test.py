@@ -496,6 +496,8 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(joint_actuator.name(), str)
         self.assertIsInstance(joint_actuator.joint(), Joint)
         self.assertIsInstance(joint_actuator.effort_limit(), float)
+        self.assertGreaterEqual(joint_actuator.input_start(), 0)
+        self.assertEqual(joint_actuator.num_inputs(), 1)
 
     def _test_rotational_inertia_or_unit_inertia_api(self, T, Class):
         """
@@ -971,8 +973,10 @@ class TestPlant(unittest.TestCase):
 
         nq = 2
         nv = 2
+        nu = 1
         self.assertEqual(plant.num_positions(), nq)
         self.assertEqual(plant.num_velocities(), nv)
+        self.assertEqual(plant.num_actuators(), nu)
 
         q0 = np.array([3.14, 2.])
         v0 = np.array([-0.5, 1.])
@@ -1046,6 +1050,8 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(plant.GetVelocityUpperLimits().shape, (nv,))
         self.assertEqual(plant.GetAccelerationLowerLimits().shape, (nv,))
         self.assertEqual(plant.GetAccelerationUpperLimits().shape, (nv,))
+        self.assertEqual(plant.GetEffortLowerLimits().shape, (nu,))
+        self.assertEqual(plant.GetEffortUpperLimits().shape, (nu,))
 
     @numpy_compare.check_all_types
     def test_port_access(self, T):

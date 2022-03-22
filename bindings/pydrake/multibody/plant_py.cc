@@ -522,6 +522,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.GetAccelerationLowerLimits.doc)
         .def("GetAccelerationUpperLimits", &Class::GetAccelerationUpperLimits,
             cls_doc.GetAccelerationUpperLimits.doc)
+        .def("GetEffortLowerLimits", &Class::GetEffortLowerLimits,
+            cls_doc.GetEffortLowerLimits.doc)
+        .def("GetEffortUpperLimits", &Class::GetEffortUpperLimits,
+            cls_doc.GetEffortUpperLimits.doc)
         .def(
             "CalcMassMatrixViaInverseDynamics",
             [](const Class* self, const Context<T>& context) {
