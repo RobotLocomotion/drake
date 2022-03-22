@@ -68,6 +68,29 @@ class FemModel {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemModel);
 
+  /* Builder that handles building the FEM model. Each concrete FemModel must
+   define its own builder subclassing this class to add new elements to the
+   model. */
+  class Builder {
+   public:
+    explicit Builder(FemModel<T>* model) : model_{model} {
+      DRAKE_DEMAND(model_ != nullptr);
+    }
+
+    virtual ~Builder() = default;
+
+    void Build() {
+      DoBuild();
+      model_->UpdateFemStateSystem();
+    }
+
+   protected:
+    virtual void DoBuild() = 0;
+
+   private:
+    FemModel<T>* model_{};
+  };
+
   virtual ~FemModel() = default;
 
   /** The number of nodes that are associated with this model. */

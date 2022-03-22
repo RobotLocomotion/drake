@@ -58,6 +58,14 @@ class FemModelImpl : public FemModel<typename Element::T> {
     elements_.emplace_back(std::move(element));
   }
 
+  /* Moves the input `elements` into the vector of elements held by this
+   FemModelImpl. */
+  void AddElements(std::vector<Element>&& elements_in) {
+    for (int e = 0; e < static_cast<int>(elements_in.size()); ++e) {
+      elements_.push_back(std::move(elements_in[e]));
+    }
+  }
+
  private:
   void DoCalcResidual(const FemState<T>& fem_state,
                       EigenPtr<VectorX<T>> residual) const final {

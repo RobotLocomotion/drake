@@ -93,15 +93,9 @@ GTEST_TEST(FemModelTest, CalcTangentMatrix) {
 GTEST_TEST(FemModelTest, IncompatibleModelState) {
   DummyModel model;
   unique_ptr<FemState<DummyModel::T>> fem_state = model.MakeFemState();
-  /* Add another element into the model. */
-  const FemElementIndex kElementIndex2 = FemElementIndex(2);
-  const std::array<FemNodeIndex, DummyElement::Traits::num_nodes>
-      kNodeIndices2 = {FemNodeIndex(6), FemNodeIndex(7), FemNodeIndex(8),
-                       FemNodeIndex(9)};
-  const DummyElement::Traits::ConstitutiveModel constitutive_model(5e4, 0.4);
-  const DampingModel<double> damping_model(0.1, 0.2);
-  model.AddElementWithDistinctNodes(DummyElement(
-      kElementIndex2, kNodeIndices2, constitutive_model, damping_model));
+  auto builder = model.MakeBuilder();
+  builder->AddElementWithDistinctNodes();
+  builder->Build();
   /* Trying to calculate residual with the old state causes an exception. */
   VectorXd residual(model.num_dofs());
   DRAKE_EXPECT_THROWS_MESSAGE(

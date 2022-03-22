@@ -5,40 +5,77 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
-DummyModel::DummyModel() {
+DummyModel::DummyBuilder::DummyBuilder(DummyModel* model)
+    : FemModel<T>::Builder(model), model_(model) {
+  DRAKE_DEMAND(model_ != nullptr);
+}
+
+void DummyModel::DummyBuilder::DoBuild() {
+  const FemNodeIndex num_existing_nodes(model_->num_nodes());
+  for (auto& e : elements_) {
+    e.ShiftNodeIndex(num_existing_nodes);
+  }
+  model_->AddElements(std::move(elements_));
+  const int num_old_dofs = model_->reference_positions_.size();
+  const int num_new_dofs = reference_positions_.size();
+  model_->reference_positions_.conservativeResize(num_old_dofs + num_new_dofs);
+  model_->reference_positions_.tail(num_new_dofs) = reference_positions_;
+}
+
+void DummyModel::DummyBuilder::AddTwoElementWithSharedNodes() {
   const FemElementIndex kElementIndex0 = FemElementIndex(0);
   const FemElementIndex kElementIndex1 = FemElementIndex(1);
   const std::array<FemNodeIndex, Traits::num_nodes> kNodeIndices0 = {
       FemNodeIndex(0), FemNodeIndex(1), FemNodeIndex(2), FemNodeIndex(3)};
   const std::array<FemNodeIndex, Traits::num_nodes> kNodeIndices1 = {
       FemNodeIndex(2), FemNodeIndex(3), FemNodeIndex(4), FemNodeIndex(5)};
-  const Traits::ConstitutiveModel kConstitutiveModel(5e4, 0.4);
+  const Traits::ConstitutiveModel kConstitutiveModel(kYoungsModulus,
+                                                     kPoissonsRatio);
   const DampingModel<T> kDampingModel(kMassDamping, kStiffnessDamping);
-
   DummyElement element0(kElementIndex0, kNodeIndices0, kConstitutiveModel,
                         kDampingModel);
   DummyElement element1(kElementIndex1, kNodeIndices1, kConstitutiveModel,
                         kDampingModel);
-  AddElement(std::move(element0));
-  AddElement(std::move(element1));
-  num_nodes_ = 6;
-  this->UpdateFemStateSystem();
+  elements_.emplace_back(element0);
+  elements_.emplace_back(element1);
+  constexpr int num_new_nodes = 6;
+  VectorX<T> new_reference_positions(3 * num_new_nodes);
+  for (int a = 0; a < num_new_nodes; ++a) {
+    new_reference_positions.segment<3>(3 * a) = DummyModel::dummy_position();
+  }
+  reference_positions_.conservativeResize(reference_positions_.size() +
+                                          3 * num_new_nodes);
+  reference_positions_.tail<3 * num_new_nodes>() = new_reference_positions;
 }
 
-void DummyModel::AddElementWithDistinctNodes(DummyElement&& element) {
-  AddElement(std::move(element));
-  num_nodes_ += DummyElement::Traits::num_nodes;
-  this->UpdateFemStateSystem();
+void DummyModel::DummyBuilder::AddElementWithDistinctNodes() {
+  const FemElementIndex kElementIndex0 = FemElementIndex(0);
+  const std::array<FemNodeIndex, Traits::num_nodes> kNodeIndices0 = {
+      FemNodeIndex(0), FemNodeIndex(1), FemNodeIndex(2), FemNodeIndex(3)};
+  const Traits::ConstitutiveModel kConstitutiveModel(kYoungsModulus,
+                                                     kPoissonsRatio);
+  const DampingModel<T> kDampingModel(kMassDamping, kStiffnessDamping);
+  DummyElement element0(kElementIndex0, kNodeIndices0, kConstitutiveModel,
+                        kDampingModel);
+  elements_.emplace_back(element0);
+  constexpr int num_new_nodes = 4;
+  VectorX<T> new_reference_positions(3 * num_new_nodes);
+  for (int a = 0; a < num_new_nodes; ++a) {
+    new_reference_positions.segment<3>(3 * a) = DummyModel::dummy_position();
+  }
+  reference_positions_.conservativeResize(reference_positions_.size() +
+                                          3 * num_new_nodes);
+  reference_positions_.tail<3 * num_new_nodes>() = new_reference_positions;
+}
+
+DummyModel::DummyModel() {
+  DummyBuilder builder(this);
+  builder.AddTwoElementWithSharedNodes();
+  builder.Build();
 }
 
 VectorX<DummyModel::T> DummyModel::MakeReferencePositions() const {
-  /* The number of nodes is equal to the number of elements times the number of
-   nodes per element since no element shares nodes. */
-  VectorX<T> reference_positions(3 * num_nodes_);
-  for (int i = 0; i < num_nodes_; ++i) {
-    reference_positions.segment<3>(3 * i) = Vector3<T>(1, 2, 3);
-  }
-  return reference_positions;
+  return reference_positions_;
 }
 
 }  // namespace internal
