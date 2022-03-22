@@ -93,7 +93,4 @@ def StartMeshcat():
         return _start_meshcat_deepnote()
     if "google.colab" in sys.modules:
         return _start_meshcat_ngrok()
-    meshcat = Meshcat()
-    url = meshcat.web_url()
-    print("Meshcat URL: {url}")
-    return meshcat
+    return Meshcat()
