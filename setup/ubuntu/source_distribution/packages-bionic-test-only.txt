@@ -12,7 +12,6 @@ python3-numpy-dbg
 python3-pandas
 python3-psutil
 python3-requests
-python3-scipy-dbg
 python3-six
 python3-tk-dbg
 python3-uritemplate

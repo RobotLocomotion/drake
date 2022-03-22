@@ -16,7 +16,6 @@ python_required = [
     'pydot',
     'pygame',
     'PyYAML',
-    'scipy',
 ]
 
 
