@@ -5,35 +5,22 @@
 #include <string>
 #include <vector>
 
+#include <fmt/format.h>
+#include <fmt/ostream.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/filesystem.h"
 #include "drake/common/never_destroyed.h"
-#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
 
 using std::string;
+using drake::internal::DiagnosticPolicy;
 
-namespace {
-
-// Searches for key package in package_map. If the key exists, returns the
-// associated value; else prints a warning and returns nullopt.
-std::optional<string> GetPackagePath(
-    const string& package, const PackageMap& package_map) {
-  if (package_map.Contains(package)) {
-    return package_map.GetPath(package);
-  } else {
-    drake::log()->warn("Couldn't find package '{}' in the supplied package"
-                       "path: {}", package, package_map);
-    return std::nullopt;
-  }
-}
-}  // namespace
-
-string ResolveUri(const string& uri, const PackageMap& package_map,
-                  const string& root_dir) {
+string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
+                  const PackageMap& package_map, const string& root_dir) {
   filesystem::path result;
 
   // Parse the given URI into pieces.
@@ -49,21 +36,24 @@ string ResolveUri(const string& uri, const PackageMap& package_map,
     if (uri_scheme == "file") {
       result = "/" + uri_path.str();
     } else if ((uri_scheme == "model") || (uri_scheme == "package")) {
-      std::optional<string> package_path =
-          GetPackagePath(uri_package, package_map);
-      if (!package_path) { return {}; }
-      result = filesystem::path(*package_path) / std::string(uri_path);
+      if (!package_map.Contains(uri_package)) {
+        diagnostic.Error(fmt::format(
+            "URI '{}' refers to unknown package '{}'", uri, uri_package));
+        return {};
+      }
+      const std::string& package_path = package_map.GetPath(uri_package);
+      result = filesystem::path(package_path) / std::string(uri_path);
     } else {
-      drake::log()->warn(
+      diagnostic.Error(fmt::format(
           "URI '{}' specifies an unsupported scheme; supported schemes are "
-          "'file://', 'model://', and 'package://'.", uri);
+          "'file://', 'model://', and 'package://'.", uri));
       return {};
     }
   } else {
     if (root_dir.empty()) {
-      drake::log()->warn(
+      diagnostic.Error(fmt::format(
           "URI '{}' is invalid when parsing a string instead of a filename.",
-          uri);
+          uri));
       return {};
     }
     // Strictly speaking a URI should not just be a bare filename, but we allow
@@ -82,8 +72,9 @@ string ResolveUri(const string& uri, const PackageMap& package_map,
   result = result.lexically_normal();
 
   if (!filesystem::exists(result)) {
-    drake::log()->warn("URI '{}' resolved to '{}' which could not be found.",
-                       uri, result.string());
+      diagnostic.Error(fmt::format(
+          "URI '{}' resolved to '{}' which does not exist.",
+          uri, result.string()));
     return {};
   }
 

@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/filesystem.h"
@@ -15,6 +16,44 @@ namespace drake {
 namespace multibody {
 namespace internal {
 namespace {
+
+using drake::internal::DiagnosticDetail;
+using drake::internal::DiagnosticPolicy;
+
+// This wraps the "ResolveUri()" device under test to throw for bad URIs.
+std::string ResolveGoodUri(
+    const std::string& uri,
+    const PackageMap& package_map,
+    const std::string& root_dir) {
+  DiagnosticPolicy diagnostic;
+  // Don't let warnings leak into spdlog; tests should always specifically
+  // handle any warnings that apppear.
+  diagnostic.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
+  const std::string result = ResolveUri(
+      diagnostic, uri, package_map, root_dir);
+  EXPECT_NE(result, "");
+  return result;
+}
+
+// This wraps the "ResolveUri()" device under test to return the error message
+// for bad URIs.
+std::string ResolveBadUri(
+    const std::string& uri,
+    const PackageMap& package_map,
+    const std::string& root_dir) {
+  DiagnosticPolicy diagnostic;
+  DiagnosticDetail error;
+  diagnostic.SetActionForErrors([&error](const DiagnosticDetail& detail) {
+    error = detail;
+  });
+  // Don't let warnings leak into spdlog; tests should always specifically
+  // handle any warnings that apppear.
+  diagnostic.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
+  const std::string result = ResolveUri(
+      diagnostic, uri, package_map, root_dir);
+  EXPECT_EQ(result, "");
+  return error.FormatError();
+}
 
 // Verifies that the path returned is a normalized path. This is not an
 // exhaustive list of all ways a valid path can be unnormalized. Ultimately,
@@ -33,24 +72,17 @@ GTEST_TEST(ResoluveUriUncheckedTest, NormalizedPath) {
   const string root_dir = filesystem::path(target_file).parent_path().string();
 
   // Case: Simple concatenation would produce /fake/root/./file.txt.
-  {
-    std::string path = ResolveUri("./test_model.sdf", package_map, root_dir);
-    EXPECT_EQ(path, target_file);
-  }
+  EXPECT_EQ(ResolveGoodUri("./test_model.sdf", package_map, root_dir),
+            target_file);
 
   // Case: Moving up one directory.
-  {
-    const std::string fake_root = root_dir + "/fake";
-    std::string path = ResolveUri("../test_model.sdf", package_map, fake_root);
-    EXPECT_EQ(path, target_file);
-  }
+  const std::string fake_root = root_dir + "/fake";
+  EXPECT_EQ(ResolveGoodUri("../test_model.sdf", package_map, fake_root),
+            target_file);
 
   // Case: Redundant directory dividers.
-
-  {
-    std::string path = ResolveUri(".//test_model.sdf", package_map, root_dir);
-    EXPECT_EQ(path, target_file);
-  }
+  EXPECT_EQ(ResolveGoodUri(".//test_model.sdf", package_map, root_dir),
+            target_file);
 }
 
 // Verifies that ResolveUri() resolves the proper file using the scheme
@@ -69,7 +101,7 @@ GTEST_TEST(ResolveUriTest, TestFile) {
   const std::string root_dir = ".";
 
   const auto uri = std::string("file://") + absolute_path;
-  string path = ResolveUri(uri, package_map, root_dir);
+  string path = ResolveGoodUri(uri, package_map, root_dir);
   EXPECT_EQ(path, absolute_path);
 }
 
@@ -87,7 +119,7 @@ GTEST_TEST(ResolveUriTest, TestAbsolutePath) {
   // Set the root directory.
   const std::string root_dir = "/";
 
-  string path = ResolveUri(absolute_path, package_map, root_dir);
+  string path = ResolveGoodUri(absolute_path, package_map, root_dir);
   EXPECT_EQ(path, absolute_path);
 }
 
@@ -103,8 +135,7 @@ GTEST_TEST(ResolveUriTest, TestRelativePath) {
   // Set the root directory.
   const std::string root_dir = "multibody/parsing/test/";
 
-  string path = ResolveUri(relative_path, package_map, root_dir);
-  EXPECT_NE(path, "");
+  ResolveGoodUri(relative_path, package_map, root_dir);
 }
 
 // Verifies that ResolveUri() does not resolve relative paths when root_dir is
@@ -121,8 +152,10 @@ GTEST_TEST(ResolveUriTest, TestNoRoot) {
   unused(FindResourceOrThrow("drake/" + rel_path));
   const PackageMap package_map;
   const std::string root_dir;
-  string path = ResolveUri(rel_path, package_map, root_dir);
-  EXPECT_EQ(path, "");
+  EXPECT_THAT(
+      ResolveBadUri(rel_path, package_map, root_dir),
+      ::testing::MatchesRegex(
+          ".*URI 'multibody/parsing/.*invalid when parsing a string.*"));
 }
 
 // Verifies that ResolveUri() resolves to the proper file using the scheme
@@ -146,12 +179,12 @@ GTEST_TEST(ResolveUriTest, TestModel) {
   // Create the URI.
   const string uri_model =
       "model://package_map_test_package_a/sdf/test_model.sdf";
-  EXPECT_EQ(ResolveUri(uri_model, package_map, root_dir), sdf_file_name);
+  EXPECT_EQ(ResolveGoodUri(uri_model, package_map, root_dir), sdf_file_name);
 
   // Create another URI using "package":
   const string uri_package =
       "package://package_map_test_package_a/sdf/test_model.sdf";
-  EXPECT_EQ(ResolveUri(uri_package, package_map, root_dir), sdf_file_name);
+  EXPECT_EQ(ResolveGoodUri(uri_package, package_map, root_dir), sdf_file_name);
 }
 
 // Verifies that ResolveUri() chokes on an unsupported scheme (like http://)
@@ -159,7 +192,8 @@ GTEST_TEST(ResolveUriTest, TestUnsupported) {
   PackageMap package_map;
   const std::string root_dir = ".";
   const string uri = "http://localhost/filename.sdf";
-  EXPECT_EQ(ResolveUri(uri, package_map, root_dir), "");
+  EXPECT_THAT(ResolveBadUri(uri, package_map, root_dir),
+              ::testing::MatchesRegex(".*unsupported scheme.*"));
 }
 
 }  // namespace

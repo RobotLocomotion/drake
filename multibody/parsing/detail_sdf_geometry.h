@@ -20,7 +20,8 @@ namespace multibody {
 namespace internal {
 
 /* Used for resolving URIs / filenames.  */
-using ResolveFilename = std::function<std::string (std::string)>;
+using ResolveFilename = std::function<std::string (
+    const drake::internal::DiagnosticPolicy&, std::string)>;
 
 /* Given an sdf::Geometry object representing a <geometry> element from an SDF
  file, this method makes a new drake::geometry::Shape object from this
@@ -28,6 +29,7 @@ using ResolveFilename = std::function<std::string (std::string)>;
  If no recognizable geometry is specified, nullptr is returned. If the geometry
  is recognized, but malformed, an exception is thrown.  */
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
+    const drake::internal::DiagnosticPolicy& diagnostic,
     const sdf::Geometry& sdf_geometry, ResolveFilename resolve_filename);
 
 /* Given an sdf::Visual object representing a <visual> element from an SDF
@@ -67,6 +69,7 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
  This feature is one way to provide multiple visual representations of a body.
  */
 std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
+    const drake::internal::DiagnosticPolicy& diagnostic,
     const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
     const math::RigidTransformd& X_LG);
 
@@ -119,6 +122,7 @@ std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
  there is no material tag, no material property tags, or no successfully
  parsed material property tags, the property set will be empty.  */
 geometry::IllustrationProperties MakeVisualPropertiesFromSdfVisual(
+    const drake::internal::DiagnosticPolicy& diagnostic,
     const sdf::Visual& sdf_visual, ResolveFilename resolve_filename);
 
 /* Computes the pose `X_LC` of frame C (the "canonical frame" of the geometry)
