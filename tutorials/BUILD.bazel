@@ -1,6 +1,7 @@
 # -*- mode: python -*-
 # vi: set ft=python :
 
+load("//tools/skylark:drake_py.bzl", "drake_py_test")
 load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 load("@drake//tools/install:install.bzl", "install", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -117,13 +118,25 @@ drake_jupyter_py_binary(
     ],
 )
 
+_NOTEBOOKS = glob(
+    ["*.ipynb"],
+    allow_empty = False,
+)
+
+drake_py_test(
+    name = "notebook_lint_test",
+    args = _NOTEBOOKS,
+    data = _NOTEBOOKS,
+    tags = ["lint"],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
 install_files(
     name = "install_notebooks",
     dest = "share/drake/tutorials",
-    files = glob(
-        ["*.ipynb"],
-        allow_empty = False,
-    ),
+    files = _NOTEBOOKS,
 )
 
 install(

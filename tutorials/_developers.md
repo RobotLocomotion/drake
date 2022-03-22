@@ -8,22 +8,6 @@ To rebuild from source and run tutorials using Bazel, use e.g.:
 bazel run //tutorials:mathematical_program
 ```
 
-# Style Guide
-
-- The first cell of each notebook should be a Markdown cell with the tutorial's title and
-  the following preamble:
-```
-For instructions on how to run these tutorial notebooks, please see the
-[README](https://github.com/RobotLocomotion/drake/blob/nightly-release/tutorials/README.md).
-```
-
-- Do not use `%matplotlib notebook`. It is not supported in Deepnote.
-
-- Deepnote (and others) use KaTeX for Latex. $\begin{aligned}math here \end{aligned}$ works.
-`gathered` also works; the more typical `gather` and `align` do not.
-
-- Clear the cell outputs prior to pushing your changes to git.
-
 # Adding a New Tutorial
 
 - Add a link to the notebook in `tutorials/index.ipynb`.
