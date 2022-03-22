@@ -15,7 +15,6 @@ python_required = [
     'numpy',
     'pydot',
     'PyYAML',
-    'scipy',
 ]
 
 if os.uname()[0].lower() == 'linux':
