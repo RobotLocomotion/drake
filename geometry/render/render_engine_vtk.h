@@ -152,13 +152,38 @@ class RenderEngineVtk : public RenderEngine,
   /** Copy constructor for the purpose of cloning. */
   RenderEngineVtk(const RenderEngineVtk& other);
 
- private:
-  // TODO(svenevs): The RenderEngineGltfClient class from the work-in-progress
-  // `dev` folder needs access to the rendering pipelines.  We should reconsider
-  // the need for private friendship prior to promoting the
-  // RenderEngineGltfClient class out of `dev`.
-  friend class RenderEngineGltfClient;
+  /** The rendering pipeline for a single image type (color, depth, or label).
+   */
+  struct RenderingPipeline {
+    vtkNew<vtkRenderer> renderer;
+    vtkNew<vtkRenderWindow> window;
+    vtkNew<vtkWindowToImageFilter> filter;
+    vtkNew<vtkImageExport> exporter;
+  };
 
+  /** Configures the VTK model to reflect the given `camera`, this includes
+   render size camera intrinsics, visible windows, etc. If `show_window` is set
+   to true, a named VTK window will be displayed. */
+  void UpdateWindow(const RenderCameraCore& camera,
+                    bool show_window, const RenderingPipeline& p,
+                    const char* name) const;
+
+  /** Variant of configuring the VTK model (see previous function) that *also*
+   configures the depth range. */
+  void UpdateWindow(const DepthRenderCamera& camera,
+                    const RenderingPipeline& p) const;
+
+  /** Updates VTK rendering related objects including vtkRenderWindow,
+   vtkWindowToImageFilter and vtkImageExporter, so that VTK reflects
+   vtkActors' pose update for rendering. */
+  static void PerformVtkUpdate(const RenderingPipeline& p);
+
+  /** Provides access to the private data member pipelines_ by returning a
+   mutable RenderingPipeline reference. Only image types in internal::ImageType
+   enum are valid. */
+  RenderingPipeline& get_mutable_pipeline(internal::ImageType image_type) const;
+
+ private:
   // @see RenderEngine::DoRegisterVisual().
   bool DoRegisterVisual(GeometryId id, const Shape& shape,
                         const PerceptionProperties& properties,
@@ -199,30 +224,6 @@ class RenderEngineVtk : public RenderEngine,
 
   // Performs the common setup for all shape types.
   void ImplementGeometry(vtkPolyDataAlgorithm* source, void* user_data);
-
-  // The rendering pipeline for a single image type (color, depth, or label).
-  struct RenderingPipeline {
-    vtkNew<vtkRenderer> renderer;
-    vtkNew<vtkRenderWindow> window;
-    vtkNew<vtkWindowToImageFilter> filter;
-    vtkNew<vtkImageExport> exporter;
-  };
-
-  // Updates VTK rendering related objects including vtkRenderWindow,
-  // vtkWindowToImageFilter and vtkImageExporter, so that VTK reflects
-  // vtkActors' pose update for rendering.
-  static void PerformVtkUpdate(const RenderingPipeline& p);
-
-  // Configures the VTK model to reflect the given `camera`, this includes
-  // render size camera intrinsics, visible windows, etc.
-  void UpdateWindow(const RenderCameraCore& camera,
-                    bool show_window, const RenderingPipeline* p,
-                    const char* name) const;
-
-  // Variant of configuring the VTK model (see previous method) that *also*
-  // configures the depth range.
-  void UpdateWindow(const DepthRenderCamera& camera,
-                    const RenderingPipeline* p) const;
 
   void SetDefaultLightPosition(const Vector3<double>& X_DL) override;
 

@@ -8,7 +8,7 @@ namespace render {
 
 std::unique_ptr<RenderEngine> MakeRenderEngineGltfClient(
     const RenderEngineGltfClientParams& params) {
-  return std::make_unique<RenderEngineGltfClient>(params);
+  return std::make_unique<internal::RenderEngineGltfClient>(params);
 }
 
 }  // namespace render

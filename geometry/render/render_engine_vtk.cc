@@ -226,7 +226,7 @@ void RenderEngineVtk::DoRenderColorImage(
     const ColorRenderCamera& camera,
     ImageRgba8U* color_image_out) const {
   UpdateWindow(camera.core(), camera.show_window(),
-               pipelines_[ImageType::kColor].get(), "Color Image");
+               *pipelines_[ImageType::kColor], "Color Image");
   PerformVtkUpdate(*pipelines_[ImageType::kColor]);
 
   // TODO(SeanCurtis-TRI): Determine if this copies memory (and find some way
@@ -237,7 +237,7 @@ void RenderEngineVtk::DoRenderColorImage(
 void RenderEngineVtk::DoRenderDepthImage(
     const DepthRenderCamera& camera,
       ImageDepth32F* depth_image_out) const {
-  UpdateWindow(camera, pipelines_[ImageType::kDepth].get());
+  UpdateWindow(camera, *pipelines_[ImageType::kDepth]);
   PerformVtkUpdate(*pipelines_[ImageType::kDepth]);
 
   const CameraInfo& intrinsics = camera.core().intrinsics();
@@ -278,7 +278,7 @@ void RenderEngineVtk::DoRenderLabelImage(
     const ColorRenderCamera& camera,
     ImageLabel16I* label_image_out) const {
   UpdateWindow(camera.core(), camera.show_window(),
-               pipelines_[ImageType::kLabel].get(), "Label Image");
+               *pipelines_[ImageType::kLabel], "Label Image");
   PerformVtkUpdate(*pipelines_[ImageType::kLabel]);
 
   // TODO(SeanCurtis-TRI): This copies the image and *that's* a tragedy. It
@@ -571,6 +571,14 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
   actors_.insert({data.id, std::move(actors)});
 }
 
+RenderEngineVtk::RenderingPipeline& RenderEngineVtk::get_mutable_pipeline(
+    internal::ImageType image_type) const {
+  DRAKE_DEMAND(image_type == ImageType::kColor ||
+               image_type == ImageType::kLabel ||
+               image_type == ImageType::kDepth);
+  return *pipelines_[image_type];
+}
+
 void RenderEngineVtk::SetDefaultLightPosition(const Vector3<double>& X_DL) {
   light_->SetPosition(X_DL[0], X_DL[1], X_DL[2]);
 }
@@ -582,18 +590,18 @@ void RenderEngineVtk::PerformVtkUpdate(const RenderingPipeline& p) {
 }
 
 void RenderEngineVtk::UpdateWindow(const RenderCameraCore& camera,
-                                   bool show_window, const RenderingPipeline* p,
+                                   bool show_window, const RenderingPipeline& p,
                                    const char* name) const {
   // NOTE: Although declared const, this method modifies VTK entities. The
   // conflict between ostensibly const operations and invocation of black-box
   // entities that need state mutated should be more formally handled.
 
   const CameraInfo& intrinsics = camera.intrinsics();
-  p->window->SetSize(intrinsics.width(), intrinsics.height());
-  p->window->SetOffScreenRendering(!show_window);
-  if (show_window) p->window->SetWindowName(name);
+  p.window->SetSize(intrinsics.width(), intrinsics.height());
+  p.window->SetOffScreenRendering(!show_window);
+  if (show_window) p.window->SetWindowName(name);
 
-  vtkCamera* vtk_camera = p->renderer->GetActiveCamera();
+  vtkCamera* vtk_camera = p.renderer->GetActiveCamera();
   DRAKE_DEMAND(vtk_camera->GetUseExplicitProjectionTransformMatrix());
   vtkMatrix4x4* proj_mat = vtk_camera->GetExplicitProjectionTransformMatrix();
   DRAKE_DEMAND(proj_mat != nullptr);
@@ -607,7 +615,7 @@ void RenderEngineVtk::UpdateWindow(const RenderCameraCore& camera,
 }
 
 void RenderEngineVtk::UpdateWindow(const DepthRenderCamera& camera,
-                                   const RenderingPipeline* p) const {
+                                   const RenderingPipeline& p) const {
   uniform_setting_callback_->set_z_near(
       static_cast<float>(camera.depth_range().min_depth()));
   uniform_setting_callback_->set_z_far(
