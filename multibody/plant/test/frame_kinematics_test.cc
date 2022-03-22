@@ -301,9 +301,10 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
       A_WL3_E.get_coeffs(), A_WL3_E_expected.get_coeffs(),
       kTolerance, MatrixCompareType::relative));
 
-  // ------- Start of weird/useful CalcSpatialVelocity() test for V_HW_E ------
+  // ------ Start of weird/useful CalcSpatialVelocity() test for V_HW_E. ------
   // This is a "warm-up" for the CalcSpatialAcceleration() test for A_HW_E that
   // follows and it generates useful ingredients for that test of A_HW_E.
+
   // Use CalcSpatialVelocity() to form V_HW_E which is the world frame W's
   // spatial velocity in frame H, expressed in the end-effector frame E.
   const SpatialVelocity<double> V_HW_E =
@@ -328,7 +329,7 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
   const Vector3<double> v_HWo_W_expected = -v_WHo_W + w_WH_W.cross(p_WoHo_W);
   EXPECT_TRUE(CompareMatrices(V_HW_E.translational(), R_EW * v_HWo_W_expected,
       kTolerance, MatrixCompareType::relative));
-  // -------- End of weird/useful CalcSpatialVelocity() test for V_HW_E -------
+  // ------ End of weird/useful CalcSpatialVelocity() test for V_HW_E. --------
 
   // Verify the weird/useful calculation of A_HW_E, which is the world frame W's
   // spatial acceleration in frame H, expressed in the end-effector frame E.
