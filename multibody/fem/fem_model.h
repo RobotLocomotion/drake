@@ -72,7 +72,7 @@ namespace fem {
  deformable solids." Synthesis Lectures on Visual Computing: Computer Graphics,
  Animation, Computational Photography, and Imaging 1.1 (2015): 1-69.
 
- @tparam_double_only */
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 class FemModel {
  public:
@@ -154,7 +154,8 @@ class FemModel {
    @warning This function sometimes makes simplifying approximations to avoid
    taking overly complicated derivatives. As such, the resulting tangent
    matrix is usually an approximation of the actual value.
-   @throws std::exception if the FEM state is incompatible with this model. */
+   @throws std::exception if the FEM state is incompatible with this model.
+   @throws std::exception if T is not double. */
   void CalcTangentMatrix(
       const FemState<T>& fem_state, const Vector3<T>& weights,
       internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const;
@@ -162,7 +163,8 @@ class FemModel {
   /** Creates a PetscSymmetricBlockSparseMatrix that has the sparsity pattern
    of the tangent matrix of this FEM model. In particular, the size of the
    tangent matrix is `num_dofs()` by `num_dofs()`. All entries are initialized
-   to zero. */
+   to zero.
+   @throws std::exception if T is not double. */
   std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix>
   MakePetscSymmetricBlockSparseTangentMatrix() const;
 

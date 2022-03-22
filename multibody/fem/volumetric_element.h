@@ -152,8 +152,13 @@ class VolumetricElement
     : public FemElement<VolumetricElement<
           IsoparametricElementType, QuadratureType, ConstitutiveModelType>> {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumetricElement);
+
   using ElementType = VolumetricElement<IsoparametricElementType,
                                         QuadratureType, ConstitutiveModelType>;
+  using IsoparametricElement = IsoparametricElementType;
+  using Quadrature = QuadratureType;
+
   using Traits = FemElementTraits<ElementType>;
   using Data = typename Traits::Data;
   using T = typename Traits::T;
@@ -219,14 +224,6 @@ class VolumetricElement
     mass_matrix_ = PrecomputeMassMatrix();
     lumped_mass_ = mass_matrix_.rowwise().sum().eval();
   }
-
-  /* Assignment and copy constructions are prohibited. Move constructor is
-   allowed so that elasticity elements can be push_back/emplace_back into an
-   `std::vector`. */
-  VolumetricElement(const VolumetricElement&) = delete;
-  VolumetricElement(VolumetricElement&&) = default;
-  const VolumetricElement& operator=(const VolumetricElement&) = delete;
-  VolumetricElement&& operator=(const VolumetricElement&&) = delete;
 
   /* Calculates the elastic potential energy (in joules) stored in this element
    using the given `data`. */
@@ -372,8 +369,8 @@ class VolumetricElement
     }
   }
 
-  /* Implements FemElement::CalcInternalResidual(). */
-  void DoCalcInternalResidual(const Data& data,
+  /* Implements FemElement::CalcInverseDynamics(). */
+  void DoCalcInverseDynamics(const Data& data,
                               EigenPtr<Vector<T, num_dofs>> residual) const {
     /* residual = Ma-fₑ(x)-fᵥ(x, v), where M is the mass matrix, fₑ(x) is
      the elastic force, and fᵥ(x, v) is the damping force. */
