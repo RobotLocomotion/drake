@@ -1,5 +1,10 @@
 #pragma once
 
+// This file is derived from the python prototype at
+// https://github.com/EricCousineau-TRI/repro/blob/master/drake_stuff/multibody_plant_prototypes/multibody_plant_subgraph.py.
+// Only a subset of the functionality that is necessary for handling custom
+// parsed models included via SDFormat's merge-include has been ported.
+
 #include <algorithm>
 #include <map>
 #include <memory>
@@ -20,14 +25,14 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
-std::vector<T> indices_to_vector(int num_items) {
+std::vector<T> IndicesToVector(int num_items) {
   std::vector<T> items(num_items);
   std::iota(items.begin(), items.end(), T(0));
   return items;
 }
 
 template <typename T, typename GetFuncT>
-std::vector<const T*> get_plant_aggregate(int num_items, GetFuncT get_func) {
+std::vector<const T*> GetPlantAggregate(int num_items, GetFuncT get_func) {
   using IndexType = decltype(std::declval<T>().index());
   std::vector<const T*> items(num_items);
   for (IndexType index(0); index < num_items; ++index) {
@@ -36,22 +41,22 @@ std::vector<const T*> get_plant_aggregate(int num_items, GetFuncT get_func) {
   return items;
 }
 
-std::vector<const Body<double>*> get_bodies(
+std::vector<const Body<double>*> GetBodies(
     const MultibodyPlant<double>& plant) {
-  return get_plant_aggregate<Body<double>>(
+  return GetPlantAggregate<Body<double>>(
       plant.num_bodies(), [&](auto i) { return &plant.get_body(i); });
 }
 
-std::vector<const Frame<double>*> get_frames(
+std::vector<const Frame<double>*> GetFrames(
     const MultibodyPlant<double>& plant) {
-  return get_plant_aggregate<Frame<double>>(
+  return GetPlantAggregate<Frame<double>>(
       plant.num_frames(), [&](auto i) { return &plant.get_frame(i); });
 }
 
-std::vector<const Frame<double>*> get_frames_attached_to(
+std::vector<const Frame<double>*> GetFramesAttachedTo(
     const MultibodyPlant<double>& plant,
     const std::set<const Body<double>*>& bodies) {
-  auto frames = get_frames(plant);
+  auto frames = GetFrames(plant);
   auto new_end = std::remove_if(frames.begin(), frames.end(), [&](auto frame) {
     return bodies.find(&frame->body()) == bodies.end();
   });
@@ -59,39 +64,38 @@ std::vector<const Frame<double>*> get_frames_attached_to(
   return frames;
 }
 
-std::vector<const Joint<double>*> get_joints(
+std::vector<const Joint<double>*> GetJoints(
     const MultibodyPlant<double>& plant) {
-  return get_plant_aggregate<Joint<double>>(
+  return GetPlantAggregate<Joint<double>>(
       plant.num_joints(), [&](auto i) { return &plant.get_joint(i); });
 }
-std::vector<const JointActuator<double>*> get_joint_actuators(
+std::vector<const JointActuator<double>*> GetJointActuators(
     const MultibodyPlant<double>& plant) {
-  return get_plant_aggregate<JointActuator<double>>(
+  return GetPlantAggregate<JointActuator<double>>(
       plant.num_actuators(),
       [&](auto i) { return &plant.get_joint_actuator(i); });
 }
 
-bool is_joint_solely_connected_to(const Joint<double>* joint,
-                                  const std::set<const Body<double>*>& bodies) {
+bool IsJointSolelyConnectedTo(const Joint<double>* joint,
+                              const std::set<const Body<double>*>& bodies) {
   auto parent = bodies.find(&joint->parent_body());
   auto child = bodies.find(&joint->child_body());
   return (parent != bodies.end()) && (child != bodies.end());
 }
 
-auto get_joints_solely_connected_to(
-    const MultibodyPlant<double>& plant,
-    const std::set<const Body<double>*>& bodies) {
-  auto joints = get_joints(plant);
+auto GetJointsSolelyConnectedTo(const MultibodyPlant<double>& plant,
+                                const std::set<const Body<double>*>& bodies) {
+  auto joints = GetJoints(plant);
   auto new_end = std::remove_if(joints.begin(), joints.end(), [&](auto joint) {
-    return !is_joint_solely_connected_to(joint, bodies);
+    return !IsJointSolelyConnectedTo(joint, bodies);
   });
   joints.erase(new_end, joints.end());
   return joints;
 }
-auto get_joint_actuators_affecting_joints(
+auto GetJointActuatorsAffectingJoints(
     const MultibodyPlant<double>& plant,
     const std::set<const Joint<double>*>& joints) {
-  auto joint_actuators = get_joint_actuators(plant);
+  auto joint_actuators = GetJointActuators(plant);
   auto new_end = std::remove_if(
       joint_actuators.begin(), joint_actuators.end(), [&](auto joint_actuator) {
         return joints.find(&joint_actuator->joint()) == joints.end();
@@ -111,7 +115,7 @@ class MultibodyPlantElements {
 
   static MultibodyPlantElements FromPlant(MultibodyPlant<double>* plant) {
     auto model_instances =
-        indices_to_vector<ModelInstanceIndex>(plant->num_model_instances());
+        IndicesToVector<ModelInstanceIndex>(plant->num_model_instances());
 
     std::vector<const Body<double>*> bodies;
 
@@ -182,15 +186,15 @@ class MultibodyPlantElements {
       elem.model_instances_.insert(body->model_instance());
     }
 
-    auto joints = get_joints_solely_connected_to(*plant, elem.bodies_);
+    auto joints = GetJointsSolelyConnectedTo(*plant, elem.bodies_);
     elem.joints_.insert(joints.begin(), joints.end());
 
     auto joint_actuators =
-        get_joint_actuators_affecting_joints(*plant, elem.joints_);
+        GetJointActuatorsAffectingJoints(*plant, elem.joints_);
     elem.joint_actuators_.insert(joint_actuators.begin(),
                                  joint_actuators.end());
 
-    auto frames = get_frames_attached_to(*plant, elem.bodies_);
+    auto frames = GetFramesAttachedTo(*plant, elem.bodies_);
     elem.frames_.insert(frames.begin(), frames.end());
 
     for (const auto& frame : elem.frames_) {
@@ -367,7 +371,7 @@ class MultibodyPlantElementsMap {
 };
 
 // TODO(azeey) implement this.
-void check_subgraph_invariants(const MultibodyPlantElements&) {}
+void CheckSubgraphInvariants(const MultibodyPlantElements&) {}
 
 ModelInstanceIndex GetOrCreateModelInstanceByName(
     MultibodyPlant<double>* plant, const std::string& model_name) {
@@ -394,7 +398,7 @@ class MultibodyPlantSubgraph {
   MultibodyPlantSubgraph() = default;
   explicit MultibodyPlantSubgraph(MultibodyPlantElements elem)
       : elem_src_(std::move(elem)) {
-    check_subgraph_invariants(elem_src_);
+    CheckSubgraphInvariants(elem_src_);
   }
 
   using RemapFuncT = std::function<ModelInstanceIndex(
