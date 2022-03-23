@@ -31,8 +31,8 @@ std::vector<T> IndicesToVector(int num_items) {
   return items;
 }
 
-template <typename T, typename GetFuncT>
-std::vector<const T*> GetPlantAggregate(int num_items, GetFuncT get_func) {
+template <typename T, typename GetFunction>
+std::vector<const T*> GetPlantAggregate(int num_items, GetFunction get_func) {
   using IndexType = decltype(std::declval<T>().index());
   std::vector<const T*> items(num_items);
   for (IndexType index(0); index < num_items; ++index) {
@@ -228,7 +228,7 @@ class MultibodyPlantElements {
   std::set<ModelInstanceIndex> model_instances_;
 };
 
-using FrameNameRemapFuncT = std::function<std::string(
+using FrameNameRemapFunction = std::function<std::string(
     const MultibodyPlant<double>& plant_src, const Frame<double>&)>;
 
 class MultibodyPlantElementsMap {
@@ -284,7 +284,7 @@ class MultibodyPlantElementsMap {
   }
 
   void CopyFrame(const Frame<double>* src,
-                 FrameNameRemapFuncT frame_name_remap) {
+                 FrameNameRemapFunction frame_name_remap) {
     if (builtins_src_.frames().find(src) != builtins_src_.frames().end()) {
       return;
     }
@@ -313,6 +313,8 @@ class MultibodyPlantElementsMap {
 
     std::unique_ptr<Joint<double>> joint;
     // TODO(azeey) Not sure if this matches the python prototype.
+    // TODO(azeey) It would be nice if could use double dispatch for handling
+    // the following conditionals instead of using dynamic_casts.
     if (auto ball_joint_src = dynamic_cast<const BallRpyJoint<double>*>(src);
         ball_joint_src != nullptr) {
       joint = std::make_unique<BallRpyJoint<double>>(
@@ -417,14 +419,14 @@ class MultibodyPlantSubgraph {
     CheckSubgraphInvariants(elem_src_);
   }
 
-  using RemapFuncT = std::function<ModelInstanceIndex(
+  using RemapFunction = std::function<ModelInstanceIndex(
       const MultibodyPlant<double>&, ModelInstanceIndex,
       MultibodyPlant<double>*)>;
 
   MultibodyPlantElementsMap AddTo(
       MultibodyPlant<double>* plant_dest,
-      RemapFuncT model_instance_remap = ModelInstanceRemapSameName,
-      FrameNameRemapFuncT frame_name_remap = FrameNameRenamSameName) const {
+      RemapFunction model_instance_remap = ModelInstanceRemapSameName,
+      FrameNameRemapFunction frame_name_remap = FrameNameRenamSameName) const {
     const auto *plant_src = &elem_src_.plant();
     MultibodyPlantElementsMap src_to_dest(plant_src, plant_dest);
 
@@ -461,7 +463,7 @@ class MultibodyPlantSubgraph {
       src_to_dest.CopyJointActuator(joint_actuator_src);
     }
 
-    // TODO(azeey) Copy geometries (if applicable).
+    // TODO(azeey) Copy geometries
     // TODO(azeey) Apply policies
     return src_to_dest;
   }
