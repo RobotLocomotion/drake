@@ -692,6 +692,8 @@ class _BodyContact:
 
     def clear(self):
         """Clears this body contact."""
+        for contact in self._contacts.values():
+            contact.clear()
         # Recursively remove all of the model items.
         om.removeFromObjectModel(self._folder)
         self._folder = None
@@ -1137,9 +1139,7 @@ class HydroelasticContactVisualizer:
 
         lcmUtils.removeSubscriber(self._contact_sub)
         self._contact_sub = None
-        om.removeFromObjectModel(om.findObjectByName(self._folder_name))
         print(self._name + ' subscriber removed.')
-
         lcmUtils.removeSubscriber(self._load_sub)
         self._load_sub = None
 
@@ -1148,9 +1148,13 @@ class HydroelasticContactVisualizer:
 
     def set_enabled(self, enable):
         self._enabled = enable
+
         if enable:
             self.add_subscriber()
         else:
+            if self.visual_model is not None:
+                self.visual_model.clear()
+                self.message = None
             self.remove_subscriber()
 
     def clear_on_load(self, msg):
