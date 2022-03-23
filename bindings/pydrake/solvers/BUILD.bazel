@@ -377,6 +377,7 @@ drake_py_unittest(
     deps = [
         ":csdp_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
     ],
 )
 
@@ -482,6 +483,7 @@ drake_py_unittest(
         ":snopt_py",
         "//bindings/pydrake:math_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
     ],
 )
 

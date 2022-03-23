@@ -50,7 +50,7 @@ class TestCsdpSolver(unittest.TestCase):
         z_expected[1, :2] = [-0.25, 0.25]
         z_expected[3:, 3:] = np.diag([2., 2., 0.75, 1.])
         np.testing.assert_allclose(
-            result.get_solver_details().Z_val.toarray(), z_expected, atol=1e-8)
+            result.get_solver_details().Z_val.todense(), z_expected, atol=1e-8)
 
         # Test removing free variables with a non-default method.
         solver = CsdpSolver(
