@@ -167,7 +167,7 @@ class RenderEngineVtk : public RenderEngine,
                     bool show_window, const RenderingPipeline* p,
                     const char* name) const;
 
-  /** Variant of configuring the VTK model (see previous method) that *also*
+  /** Variant of configuring the VTK model (see previous function) that *also*
    configures the depth range. */
   void UpdateWindow(const DepthRenderCamera& camera,
                     const RenderingPipeline* p) const;

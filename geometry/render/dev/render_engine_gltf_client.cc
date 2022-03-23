@@ -75,8 +75,7 @@ void SetGltfCameraPerspective(const RenderCameraCore& core, vtkCamera* camera) {
 /* Convert the RenderEngineVtk ImageType to a RenderClient RenderImageType.
  NOTE: if RenderImageType expands to have more image types, this logic will
  have to be revisited (e.g., two kinds of depth images supported). */
-RenderImageType VtkToClientRenderImageType(
-    ImageType image_type) {
+RenderImageType VtkToClientRenderImageType(ImageType image_type) {
   if (image_type == ImageType::kColor)
     return RenderImageType::kColorRgba8U;
   else if (image_type == ImageType::kDepth)
@@ -114,14 +113,12 @@ void LogFrameStart(ImageType image_type, int64_t scene_id) {
                       ImageTypeToString(image_type), scene_id);
 }
 
-void LogFrameGltfExportPath(ImageType image_type,
-                            const std::string& path) {
+void LogFrameGltfExportPath(ImageType image_type, const std::string& path) {
   drake::log()->debug("RenderEngineGltfClient: {} scene exported to '{}'.",
                       ImageTypeToString(image_type), path);
 }
 
-void LogFrameServerResponsePath(ImageType image_type,
-                                const std::string& path) {
+void LogFrameServerResponsePath(ImageType image_type, const std::string& path) {
   drake::log()->debug(
       "RenderEngineGltfClient: {} server response image saved to '{}'.",
       ImageTypeToString(image_type), path);
@@ -235,25 +232,24 @@ void RenderEngineGltfClient::DoRenderColorImage(
     LogFrameStart(ImageType::kColor, color_scene_id);
   }
 
-  const auto& color_pipeline = get_mutable_pipeline(ImageType::kColor);
+  const RenderingPipeline& color_pipeline =
+      get_mutable_pipeline(ImageType::kColor);
   // Update the VTK scene before exporting to glTF.
-  UpdateWindow(camera.core(), camera.show_window(),
-               &color_pipeline, "Color Image");
+  UpdateWindow(camera.core(), camera.show_window(), &color_pipeline,
+               "Color Image");
   PerformVtkUpdate(color_pipeline);
 
   // Export and render the glTF scene.
-  SetGltfCameraPerspective(
-      camera.core(),
-      color_pipeline.renderer->GetActiveCamera());
-  const std::string scene_path =
-      ExportScene(ImageType::kColor, color_scene_id);
+  SetGltfCameraPerspective(camera.core(),
+                           color_pipeline.renderer->GetActiveCamera());
+  const std::string scene_path = ExportScene(ImageType::kColor, color_scene_id);
   if (render_client_->verbose()) {
     LogFrameGltfExportPath(ImageType::kColor, scene_path);
   }
 
   const std::string image_path = render_client_->RenderOnServer(
-      camera.core(), VtkToClientRenderImageType(ImageType::kColor),
-      scene_path, MimeType());
+      camera.core(), VtkToClientRenderImageType(ImageType::kColor), scene_path,
+      MimeType());
   if (render_client_->verbose()) {
     LogFrameServerResponsePath(ImageType::kColor, image_path);
   }
@@ -270,24 +266,23 @@ void RenderEngineGltfClient::DoRenderDepthImage(
     LogFrameStart(ImageType::kDepth, depth_scene_id);
   }
 
-  const auto& depth_pipeline = get_mutable_pipeline(ImageType::kDepth);
+  const RenderingPipeline& depth_pipeline =
+      get_mutable_pipeline(ImageType::kDepth);
   // Update the VTK scene before exporting to glTF.
   UpdateWindow(camera, &depth_pipeline);
   PerformVtkUpdate(depth_pipeline);
 
   // Export and render the glTF scene.
-  SetGltfCameraPerspective(
-      camera.core(),
-      depth_pipeline.renderer->GetActiveCamera());
-  const std::string scene_path =
-      ExportScene(ImageType::kDepth, depth_scene_id);
+  SetGltfCameraPerspective(camera.core(),
+                           depth_pipeline.renderer->GetActiveCamera());
+  const std::string scene_path = ExportScene(ImageType::kDepth, depth_scene_id);
   if (render_client_->verbose()) {
     LogFrameGltfExportPath(ImageType::kDepth, scene_path);
   }
 
   const std::string image_path = render_client_->RenderOnServer(
-      camera.core(), VtkToClientRenderImageType(ImageType::kDepth),
-      scene_path, MimeType(), camera.depth_range());
+      camera.core(), VtkToClientRenderImageType(ImageType::kDepth), scene_path,
+      MimeType(), camera.depth_range());
   if (render_client_->verbose()) {
     LogFrameServerResponsePath(ImageType::kDepth, image_path);
   }
@@ -304,25 +299,24 @@ void RenderEngineGltfClient::DoRenderLabelImage(
     LogFrameStart(ImageType::kLabel, label_scene_id);
   }
 
-  const auto& label_pipeline = get_mutable_pipeline(ImageType::kLabel);
+  const RenderingPipeline& label_pipeline =
+      get_mutable_pipeline(ImageType::kLabel);
   // Update the VTK scene before exporting to glTF.
-  UpdateWindow(camera.core(), camera.show_window(),
-               &label_pipeline, "Label Image");
+  UpdateWindow(camera.core(), camera.show_window(), &label_pipeline,
+               "Label Image");
   PerformVtkUpdate(label_pipeline);
 
   // Export and render the glTF scene.
-  SetGltfCameraPerspective(
-      camera.core(),
-      label_pipeline.renderer->GetActiveCamera());
-  const std::string scene_path =
-      ExportScene(ImageType::kLabel, label_scene_id);
+  SetGltfCameraPerspective(camera.core(),
+                           label_pipeline.renderer->GetActiveCamera());
+  const std::string scene_path = ExportScene(ImageType::kLabel, label_scene_id);
   if (render_client_->verbose()) {
     LogFrameGltfExportPath(ImageType::kLabel, scene_path);
   }
 
   const std::string image_path = render_client_->RenderOnServer(
-      camera.core(), VtkToClientRenderImageType(ImageType::kLabel),
-      scene_path, MimeType());
+      camera.core(), VtkToClientRenderImageType(ImageType::kLabel), scene_path,
+      MimeType());
   if (render_client_->verbose()) {
     LogFrameServerResponsePath(ImageType::kLabel, image_path);
   }
@@ -332,8 +326,8 @@ void RenderEngineGltfClient::DoRenderLabelImage(
   if (!render_client_->no_cleanup()) CleanupFrame(scene_path, image_path);
 }
 
-std::string RenderEngineGltfClient::ExportPathFor(
-    ImageType image_type, int64_t scene_id) const {
+std::string RenderEngineGltfClient::ExportPathFor(ImageType image_type,
+                                                  int64_t scene_id) const {
   // Create e.g., {temp_directory()}/0000000000000000XYZ-color.gltf
   const fs::path base{render_client_->temp_directory()};
   // NOTE: the maximum number of digits in a int64_t is 19.

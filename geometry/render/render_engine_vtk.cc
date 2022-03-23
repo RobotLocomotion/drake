@@ -573,8 +573,9 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
 
 RenderEngineVtk::RenderingPipeline& RenderEngineVtk::get_mutable_pipeline(
     internal::ImageType image_type) const {
-  DRAKE_DEMAND(image_type >= ImageType::kColor &&
-               image_type <= ImageType::kDepth);
+  DRAKE_DEMAND(image_type == ImageType::kColor ||
+               image_type == ImageType::kLabel ||
+               image_type == ImageType::kDepth);
   return *pipelines_[image_type];
 }
 
