@@ -5,6 +5,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
 namespace systems {
@@ -154,6 +155,35 @@ TEST_F(SequentialExpressionManagerTests, GetSequentialExpressionNamesTest) {
       EXPECT_TRUE(check_name(seq_variable_names, fmt::format("x_{}_{}", i, j)));
     }
   }
+}
+
+TEST_F(SequentialExpressionManagerTests, GetVariables) {
+  MatrixX<Variable> x_sequential =
+      MakeVariableMatrix(num_variables_, num_samples_);
+  VectorX<Variable> x_placeholder = dut_.RegisterSequentialExpressions(
+      Eigen::Map<MatrixX<Variable>>(x_sequential.data(), num_variables_,
+                                    num_samples_)
+          .cast<Expression>(),
+      "x");
+
+  EXPECT_EQ(dut_.GetVariables(x_placeholder, 1), x_sequential.col(1));
+
+  Vector2<Variable> y{x_placeholder(2), x_placeholder(1)};
+  Vector2<Variable> y_expected{x_sequential(2, 2), x_sequential(1, 2)};
+  EXPECT_EQ(dut_.GetVariables(y, 2), y_expected);
+
+  Variable z("z");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_.GetVariables(Vector1<Variable>{z}, 0),
+      ".*does not appear to be a placeholder variable.*");
+
+  // When the expressions are not variables, it throws.
+  MatrixX<Expression> non_variable =
+      Eigen::MatrixXd::Ones(num_variables_, num_samples_);
+  VectorX<Variable> nv_placeholder =
+      dut_.RegisterSequentialExpressions(non_variable, "nv");
+  DRAKE_EXPECT_THROWS_MESSAGE(dut_.GetVariables(nv_placeholder, 0),
+                              ".*is not a variable.*");
 }
 
 }  // namespace internal
