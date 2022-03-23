@@ -31,6 +31,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:symbolic",
+        "//common:unused",
     ],
 )
 
@@ -137,6 +138,7 @@ drake_cc_googletest(
     name = "sequential_expression_manager_test",
     deps = [
         ":sequential_expression_manager",
+        "//common/test_utilities:expect_throws_message",
         "@fmt",
     ],
 )
