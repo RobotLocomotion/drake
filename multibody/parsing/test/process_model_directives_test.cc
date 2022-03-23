@@ -18,6 +18,7 @@ namespace parsing {
 namespace {
 
 using std::optional;
+using Eigen::Vector3d;
 using drake::math::RigidTransformd;
 using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::Frame;
@@ -76,21 +77,15 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTest) {
   plant.Finalize();
   auto diagram = builder.Build();
 
-  // Query information and ensure we have expected results.
-  // - Manually spell out one example.
-  ASSERT_EQ(
-      &GetScopedFrameByName(plant, "left::simple_model::frame"),
-      &plant.GetFrameByName(
-          "frame", plant.GetModelInstanceByName("left::simple_model")));
-  // - Automate other stuff.
+  // Helper lambda for checking existence of frame in model scope.
   auto check_frame = [&plant](
       const std::string instance, const std::string frame) {
     const std::string scoped_frame = instance + "::" + frame;
     drake::log()->debug("Check: {}", scoped_frame);
-    ASSERT_EQ(
-        &GetScopedFrameByName(plant, scoped_frame),
-        &plant.GetFrameByName(frame, plant.GetModelInstanceByName(instance)));
+    EXPECT_TRUE(
+        plant.HasFrameNamed(frame, plant.GetModelInstanceByName(instance)));
   };
+  // Query information and ensure we have expected results.
   for (const std::string prefix : {"", "left::", "right::", "mid::nested::"}) {
     const std::string simple_model = prefix + "simple_model";
     check_frame(simple_model, "base");
@@ -101,6 +96,104 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTest) {
     check_frame(extra_model, "base");
     check_frame(extra_model, "frame");
   }
+  // - Checking simple_model_test_frame frames that have model namespaces.
+  for (const std::string model_namespace : {"left", "right", "mid::nested"}) {
+    check_frame(model_namespace, "simple_model_test_frame");
+  }
+  // - Checking for simple_model_test_frame that was added without a model
+  // namespace. This frame was added without a model namespace, but ties itself
+  // to the model namespace of its base frame instead of the world. See next
+  // test, AddFrameWithoutScope, for a more concrete example.
+  check_frame("simple_model", "simple_model_test_frame");
+}
+
+// Tests for frames added without a model name, but different base_frame.
+GTEST_TEST(ProcessModelDirectivesTest, AddFrameWithoutScope) {
+  ModelDirectives directives = LoadModelDirectives(
+      FindResourceOrThrow(
+          std::string(kTestDir) + "/add_frame_without_model_namespace.yaml"));
+
+  // Ensure that we have a SceneGraph present so that we test relevant visual
+  // pieces.
+  DiagramBuilder<double> builder;
+  MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, 0.);
+  ProcessModelDirectives(directives, &plant,
+                         nullptr, make_parser(&plant).get());
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  // When a frame is added without a namespace, it will scope itself under the
+  // base_frame's model instance.
+
+  // Frame added with world as base frame.
+  EXPECT_TRUE(
+      plant.HasFrameNamed("world_as_base_frame", world_model_instance()));
+
+  // Frame added with included model as base frame.
+  auto simple_model_instance = plant.GetModelInstanceByName("simple_model");
+  EXPECT_TRUE(
+      plant.HasFrameNamed("included_as_base_frame", simple_model_instance));
+}
+
+// Test backreference behavior in ModelDirectives.
+GTEST_TEST(ProcessModelDirectivesTest, TestBackreferences) {
+  ModelDirectives directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) + "/test_backreferences.yaml"));
+
+  // Ensure that we have a SceneGraph present so that we test relevant visual
+  // pieces.
+  DiagramBuilder<double> builder;
+  MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, 0.);
+  ProcessModelDirectives(directives, &plant,
+                         nullptr, make_parser(&plant).get());
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  // Weld joint for the model without a namespace is placed under simple_model
+  // instead of world.
+  EXPECT_TRUE(plant.HasJointNamed(
+      "simple_model_origin_welds_to_base",
+      plant.GetModelInstanceByName("simple_model")));
+
+  // Weld joint for the nested model.
+  EXPECT_TRUE(plant.HasJointNamed(
+      "simple_model_origin_welds_to_base",
+      plant.GetModelInstanceByName("nested::simple_model")));
+}
+
+// Test frame injection in ModelDirectives.
+GTEST_TEST(ProcessModelDirectivesTest, InjectFrames) {
+  ModelDirectives directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) + "/inject_frames.yaml"));
+
+  // Ensure that we have a SceneGraph present so that we test relevant visual
+  // pieces.
+  DiagramBuilder<double> builder;
+  MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, 0.);
+  ProcessModelDirectives(directives, &plant,
+                         nullptr, make_parser(&plant).get());
+  plant.Finalize();
+  auto diagram = builder.Build();
+  auto context = plant.CreateDefaultContext();
+
+  // Check that injected frames exist.
+  EXPECT_TRUE(plant.HasFrameNamed(
+      "top_injected_frame", plant.GetModelInstanceByName("top_level_model")));
+  EXPECT_TRUE(plant.HasFrameNamed(
+      "base", plant.GetModelInstanceByName("mid_level_model")));
+
+  // Check for pose of welded models' base.
+  EXPECT_TRUE(plant
+      .GetFrameByName("base", plant.GetModelInstanceByName("mid_level_model"))
+      .CalcPoseInWorld(*context)
+      .translation()
+      .isApprox(Vector3d(1, 2, 3)));
+  EXPECT_TRUE(plant
+      .GetFrameByName("base",
+                      plant.GetModelInstanceByName("bottom_level_model"))
+      .CalcPoseInWorld(*context)
+      .translation()
+      .isApprox(Vector3d(2, 4, 6)));
 }
 
 // Make sure we have good error messages.

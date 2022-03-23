@@ -399,6 +399,20 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "scoped_names_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":parser",
+        ":scoped_names",
+        "//common:filesystem",
+        "//common:find_resource",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "model_directives_test",
     deps = [
         ":model_directives",
