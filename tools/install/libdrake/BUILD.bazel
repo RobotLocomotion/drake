@@ -34,8 +34,6 @@ install_cmake_config(
 # Verify that extra include paths are not leaking into our interface deps.
 cc_check_allowed_headers(
     name = "allowed_headers_lint",
-    testonly = True,
-    tags = ["lint"],
     deps = LIBDRAKE_COMPONENTS,
 )
 

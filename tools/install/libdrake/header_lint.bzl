@@ -109,23 +109,44 @@ def _cc_check_allowed_headers_impl(ctx):
             if repo not in _ALLOWED_EXTERNALS:
                 failures.append("@{}".format(repo))
     if failures:
-        fail("\n".join([
+        error_messages = [
             "Dependency pollution has leaked into Drake's public headers:",
         ] + [
             "{} is not allowed in interface_deps".format(item)
             for item in depset(failures).to_list()
-        ]))
+        ]
+        content = "echo 'ERROR: The header_lint test has failed!'\n"
+        content += "cat <<EOF\n" + "\n".join(error_messages) + "\nEOF\n"
+        content += "exit 1\n"
+    else:
+        content = "echo 'PASS: The header_lint test has passed.'\n"
+    ctx.actions.write(output = ctx.outputs.sh_src, content = content)
 
-cc_check_allowed_headers = rule(
+_generate_error_messages = rule(
     implementation = _cc_check_allowed_headers_impl,
-    doc = """
-Ensures that only our allowed set of third-party dependencies are used as
-"interface deps". In almost all cases, we should be using "implementation deps"
-when using third-party libraries.  Refer to drake_cc_library documentation for
-details.
-""",
     attrs = {
         "deps": attr.label_list(providers = [CcInfo]),
+        "sh_src": attr.output(mandatory = True),
     },
     fragments = ["cpp"],
 )
+
+def cc_check_allowed_headers(name, deps = []):
+    """Ensures that only an allowed set of third-party dependencies are used as
+    'interface deps'. In almost all cases, we should be using 'implementation
+    deps' when using third-party libraries.  Refer to drake_cc_library docs for
+    details.
+    """
+    sh_src = name + ".sh"
+    _generate_error_messages(
+        name = name + ".genrule",
+        sh_src = sh_src,
+        testonly = True,
+        tags = ["manual"],
+        deps = deps,
+    )
+    native.sh_test(
+        name = name,
+        tags = ["lint"],
+        srcs = [":" + sh_src],
+    )
