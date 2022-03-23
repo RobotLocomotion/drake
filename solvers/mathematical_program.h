@@ -1343,10 +1343,14 @@ class MathematicalProgram {
   //@}
 
   /**
-   * Adds a generic constraint to the program.  This should
+   * Adds a generic constraint to the program. This should
    * only be used if a more specific type of constraint is not
    * available, as it may require the use of a significantly more
    * expensive solver.
+   *
+   * @note If @p binding.evaluator()->num_constraints() == 0, then this
+   * constraint is not added into the MathematicalProgram. We return @p binding
+   * directly.
    */
   Binding<Constraint> AddConstraint(const Binding<Constraint>& binding);
 
@@ -3450,9 +3454,11 @@ class MathematicalProgram {
    * @pre The binding has not yet been registered.
    * @pre The decision variables have been registered.
    * @throws std::exception if the binding is invalid.
+   * @returns true if the binding is non-trivial (>= 1 output); when false,
+   *   this program should avoid adding the binding to its internal state.
    */
   template <typename C>
-  void CheckBinding(const Binding<C>& binding) const;
+  [[nodiscard]] bool CheckBinding(const Binding<C>& binding) const;
 
   /*
    * Adds new variables to MathematicalProgram.
