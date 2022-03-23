@@ -110,10 +110,10 @@ class MultibodyPlantSubgraph;
 class MultibodyPlantElements {
  public:
   MultibodyPlantElements() = default;
-  explicit MultibodyPlantElements(MultibodyPlant<double>* plant)
+  explicit MultibodyPlantElements(const MultibodyPlant<double>* plant)
       : plant_(plant) {}
 
-  static MultibodyPlantElements FromPlant(MultibodyPlant<double>* plant) {
+  static MultibodyPlantElements FromPlant(const MultibodyPlant<double>* plant) {
     auto model_instances =
         IndicesToVector<ModelInstanceIndex>(plant->num_model_instances());
 
@@ -165,19 +165,35 @@ class MultibodyPlantElements {
   }
 
   const MultibodyPlant<double>& plant() const { return *plant_; }
+
   const std::set<const Body<double>*>& bodies() const { return bodies_; }
+
+  std::set<const Body<double>*>& bodies() { return bodies_; }
+
   const std::set<const Frame<double>*>& frames() const { return frames_; }
+
+  std::set<const Frame<double>*>& frames() { return frames_; }
+
   const std::set<const Joint<double>*>& joints() const { return joints_; }
+
+  std::set<const Joint<double>*>& joints() { return joints_; }
+
   const std::set<const JointActuator<double>*>& joint_actuators() const {
     return joint_actuators_;
   }
+
+  std::set<const JointActuator<double>*>& joint_actuators() {
+    return joint_actuators_;
+  }
+
   const std::set<ModelInstanceIndex>& model_instances() const {
     return model_instances_;
   }
+  std::set<ModelInstanceIndex>& model_instances() { return model_instances_; }
 
  private:
   static MultibodyPlantElements GetElementsFromBodies(
-      MultibodyPlant<double>* plant,
+      const MultibodyPlant<double>* plant,
       const std::vector<const Body<double>*>& bodies) {
     MultibodyPlantElements elem(plant);
     elem.bodies_.insert(bodies.begin(), bodies.end());
@@ -203,16 +219,13 @@ class MultibodyPlantElements {
     return elem;
   }
 
-  MultibodyPlant<double>* plant_{nullptr};
+  const MultibodyPlant<double>* plant_{nullptr};
 
   std::set<const Body<double>*> bodies_;
   std::set<const Frame<double>*> frames_;
   std::set<const Joint<double>*> joints_;
   std::set<const JointActuator<double>*> joint_actuators_;
   std::set<ModelInstanceIndex> model_instances_;
-
-  friend MultibodyPlantElementsMap;
-  friend MultibodyPlantSubgraph;
 };
 
 using FrameNameRemapFuncT = std::function<std::string(
@@ -220,7 +233,7 @@ using FrameNameRemapFuncT = std::function<std::string(
 
 class MultibodyPlantElementsMap {
  public:
-  MultibodyPlantElementsMap(MultibodyPlant<double>* src,
+  MultibodyPlantElementsMap(const MultibodyPlant<double>* src,
                             MultibodyPlant<double>* dest)
       : plant_src_(src),
         plant_dest_(dest),
@@ -235,10 +248,10 @@ class MultibodyPlantElementsMap {
 
   void RegisterWorldBodyAndFrame() {
     bodies_.insert({&plant_src_->world_body(), &plant_dest_->world_body()});
-    builtins_src_.bodies_.insert(&plant_src_->world_body());
+    builtins_src_.bodies().insert(&plant_src_->world_body());
 
     frames_.insert({&plant_src_->world_frame(), &plant_dest_->world_frame()});
-    builtins_src_.frames_.insert(&plant_src_->world_frame());
+    builtins_src_.frames().insert(&plant_src_->world_frame());
   }
 
   void RegisterModelInstance(ModelInstanceIndex src, ModelInstanceIndex dest) {
@@ -246,7 +259,7 @@ class MultibodyPlantElementsMap {
   }
 
   void CopyBody(const Body<double>* src) {
-    if (builtins_src_.bodies_.find(src) != builtins_src_.bodies_.end()) {
+    if (builtins_src_.bodies().find(src) != builtins_src_.bodies().end()) {
       return;
     }
     auto body_src = dynamic_cast<const RigidBody<double>*>(src);
@@ -266,13 +279,13 @@ class MultibodyPlantElementsMap {
     // Register body frame as a builtin.
     const Frame<double>* frame_src = &body_src->body_frame();
     const Frame<double>* frame_dest = &body_dest->body_frame();
-    builtins_src_.frames_.insert(frame_src);
+    builtins_src_.frames().insert(frame_src);
     frames_.insert({frame_src, frame_dest});
   }
 
   void CopyFrame(const Frame<double>* src,
                  FrameNameRemapFuncT frame_name_remap) {
-    if (builtins_src_.frames_.find(src) != builtins_src_.frames_.end()) {
+    if (builtins_src_.frames().find(src) != builtins_src_.frames().end()) {
       return;
     }
     // BodyFrame's are handled by `CopyBody`, and are ignored by this method.
@@ -356,8 +369,13 @@ class MultibodyPlantElementsMap {
     joint_actuators_.insert({src, joint_actuator_dest});
   }
 
+  const std::map<ModelInstanceIndex, ModelInstanceIndex>& model_instances()
+      const {
+    return model_instances_;
+  }
+
  private:
-  MultibodyPlant<double>* plant_src_;
+  const MultibodyPlant<double>* plant_src_;
   MultibodyPlant<double>* plant_dest_;
   MultibodyPlantElements builtins_src_;
   std::map<const Body<double>*, const Body<double>*> bodies_;
@@ -366,8 +384,6 @@ class MultibodyPlantElementsMap {
   std::map<const JointActuator<double>*, const JointActuator<double>*>
       joint_actuators_;
   std::map<ModelInstanceIndex, ModelInstanceIndex> model_instances_;
-
-  friend MultibodyPlantSubgraph;
 };
 
 // TODO(azeey) implement this.
@@ -409,11 +425,11 @@ class MultibodyPlantSubgraph {
       MultibodyPlant<double>* plant_dest,
       RemapFuncT model_instance_remap = ModelInstanceRemapSameName,
       FrameNameRemapFuncT frame_name_remap = FrameNameRenamSameName) const {
-    auto plant_src = elem_src_.plant_;
+    const auto *plant_src = &elem_src_.plant();
     MultibodyPlantElementsMap src_to_dest(plant_src, plant_dest);
 
     // Remap and register model instances.
-    for (const auto& model_instance_src : elem_src_.model_instances_) {
+    for (const auto& model_instance_src : elem_src_.model_instances()) {
       auto model_instance_dest =
           model_instance_remap(*plant_src, model_instance_src, plant_dest);
       src_to_dest.RegisterModelInstance(model_instance_src,
@@ -422,26 +438,26 @@ class MultibodyPlantSubgraph {
 
     // Register world body and frame if we're using that source model
     // instance.
-    if (src_to_dest.model_instances_.find(world_model_instance()) !=
-        src_to_dest.model_instances_.end()) {
+    if (src_to_dest.model_instances().find(world_model_instance()) !=
+        src_to_dest.model_instances().end()) {
       src_to_dest.RegisterWorldBodyAndFrame();
     }
 
     // Copy bodies
-    for (const auto& body_src : elem_src_.bodies_) {
+    for (const auto& body_src : elem_src_.bodies()) {
       src_to_dest.CopyBody(body_src);
     }
 
     // Copy frames
-    for (const auto& frame_src : elem_src_.frames_) {
+    for (const auto& frame_src : elem_src_.frames()) {
       src_to_dest.CopyFrame(frame_src, frame_name_remap);
     }
 
-    for (const auto& joint_src : elem_src_.joints_) {
+    for (const auto& joint_src : elem_src_.joints()) {
       src_to_dest.CopyJoint(joint_src);
     }
 
-    for (const auto& joint_actuator_src : elem_src_.joint_actuators_) {
+    for (const auto& joint_actuator_src : elem_src_.joint_actuators()) {
       src_to_dest.CopyJointActuator(joint_actuator_src);
     }
 
