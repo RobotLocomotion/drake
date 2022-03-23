@@ -83,6 +83,10 @@ class SequentialExpressionManager {
   symbolic::Substitution ConstructPlaceholderVariableSubstitution(
       int index) const;
 
+  VectorX<symbolic::Variable> GetVariables(
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
+      int index) const;
+
   /**
    * Returns the `index`-th vector of expressions for `name`.
    * @pre `name` is associated with a registered sequential expression vector.
@@ -109,9 +113,10 @@ class SequentialExpressionManager {
 
  private:
   int num_samples_{};
-  std::unordered_map<std::string, std::pair<VectorX<symbolic::Variable>,
-                                            MatrixX<symbolic::Expression>>>
-      name_to_placeholders_and_sequential_expressions_;
+  std::unordered_map<std::string, VectorX<symbolic::Variable>>
+      name_to_placeholders_;
+  std::unordered_map<symbolic::Variable, RowVectorX<symbolic::Expression>>
+      expressions_;
 };
 }  // namespace internal
 }  // namespace trajectory_optimization

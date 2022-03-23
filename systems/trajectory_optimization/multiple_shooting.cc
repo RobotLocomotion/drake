@@ -147,6 +147,18 @@ solvers::VectorXDecisionVariable MultipleShooting::GetSequentialVariableAtIndex(
                                                                     index));
 }
 
+std::vector<solvers::Binding<solvers::Constraint>>
+MultipleShooting::AddConstraintToAllKnotPoints(
+    const Eigen::Ref<const VectorX<symbolic::Formula>>& f) {
+  std::vector<solvers::Binding<solvers::Constraint>> bindings;
+  for (int i = 0; i < f.size(); ++i) {
+    std::vector<solvers::Binding<solvers::Constraint>> b =
+        AddConstraintToAllKnotPoints(f[i]);
+    bindings.insert(bindings.end(), b.begin(), b.end());
+  }
+  return bindings;
+}
+
 solvers::Binding<solvers::BoundingBoxConstraint>
 MultipleShooting::AddTimeIntervalBounds(double lower_bound,
                                         double upper_bound) {
