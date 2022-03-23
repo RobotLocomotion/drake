@@ -235,7 +235,7 @@ void RenderEngineGltfClient::DoRenderColorImage(
   const RenderingPipeline& color_pipeline =
       get_mutable_pipeline(ImageType::kColor);
   // Update the VTK scene before exporting to glTF.
-  UpdateWindow(camera.core(), camera.show_window(), &color_pipeline,
+  UpdateWindow(camera.core(), camera.show_window(), color_pipeline,
                "Color Image");
   PerformVtkUpdate(color_pipeline);
 
@@ -269,7 +269,7 @@ void RenderEngineGltfClient::DoRenderDepthImage(
   const RenderingPipeline& depth_pipeline =
       get_mutable_pipeline(ImageType::kDepth);
   // Update the VTK scene before exporting to glTF.
-  UpdateWindow(camera, &depth_pipeline);
+  UpdateWindow(camera, depth_pipeline);
   PerformVtkUpdate(depth_pipeline);
 
   // Export and render the glTF scene.
@@ -302,7 +302,7 @@ void RenderEngineGltfClient::DoRenderLabelImage(
   const RenderingPipeline& label_pipeline =
       get_mutable_pipeline(ImageType::kLabel);
   // Update the VTK scene before exporting to glTF.
-  UpdateWindow(camera.core(), camera.show_window(), &label_pipeline,
+  UpdateWindow(camera.core(), camera.show_window(), label_pipeline,
                "Label Image");
   PerformVtkUpdate(label_pipeline);
 

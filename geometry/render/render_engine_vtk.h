@@ -164,13 +164,13 @@ class RenderEngineVtk : public RenderEngine,
   /** Configures the VTK model to reflect the given `camera`, this includes
    render size camera intrinsics, visible windows, etc. */
   void UpdateWindow(const RenderCameraCore& camera,
-                    bool show_window, const RenderingPipeline* p,
+                    bool show_window, const RenderingPipeline& p,
                     const char* name) const;
 
   /** Variant of configuring the VTK model (see previous function) that *also*
    configures the depth range. */
   void UpdateWindow(const DepthRenderCamera& camera,
-                    const RenderingPipeline* p) const;
+                    const RenderingPipeline& p) const;
 
   /** Updates VTK rendering related objects including vtkRenderWindow,
    vtkWindowToImageFilter and vtkImageExporter, so that VTK reflects
