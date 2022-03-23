@@ -34,8 +34,8 @@ namespace multibody {
 /// where Bo is frame B's origin point.
 /// For an @ref multibody_frames_and_bodies "offset frame" Bp, the monogram
 /// notation A_MBp_E denotes frame Bp's spatial acceleration measured in M,
-/// expressed in E.  Details on spatial vectors and monogram notation are
-/// in section @ref multibody_spatial_vectors.
+/// expressed in E. Details on spatial vectors and monogram notation are in
+/// sections @ref multibody_spatial_vectors and @ref multibody_quantities.
 ///
 /// The typeset for A_MB is @f$\,{^MA^B}@f$ and its definition is
 /// @f$^MA^B = \frac{^Md}{dt}\,{^MV^B}\,@f$, where @f${^MV^B}@f$ is frame B's

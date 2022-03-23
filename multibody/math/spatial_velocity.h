@@ -32,8 +32,8 @@ namespace multibody {
 /// velocity measured in M, expressed in E), where Bo is frame B's origin point.
 /// For an @ref multibody_frames_and_bodies "offset frame" Bp, the monogram
 /// notation V_MBp_E denotes the spatial velocity of frame Bp measured in M,
-/// expressed in E.  Details on spatial vectors and monogram notation are
-/// in section @ref multibody_spatial_vectors.
+/// expressed in E. Details on spatial vectors and monogram notation are in
+/// sections @ref multibody_spatial_vectors and @ref multibody_quantities.
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -91,8 +91,8 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
     //                | -px_BoCo  I₃ |
     // where `px_BoCo` denotes the cross product skew-symmetric matrix such that
     // `px_BoCo vec = p_BoCo x vec` (where vec is any vector).
-    // This same operator (not its transpose as for spatial velocities) allows
-    // us to shift spatial forces, see SpatialForce::Shift().
+    // The transpose of this operator shifts spatial force or spatial momentum
+    // (see SpatialForce::Shift() or SpatialMomentum::Shift()).
     //
     // - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
     //               algorithms. Springer Science & Business Media, pp. 123-130.
