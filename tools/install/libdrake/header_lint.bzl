@@ -16,6 +16,7 @@ _ALLOWED_EXTERNALS = [
     "spdlog",
 
     # The entries that follow are defects; we should work to remove them.
+    "blas",
     "ccd",
     "cds",
     "clp",
@@ -33,8 +34,11 @@ _ALLOWED_EXTERNALS = [
     "ignition_math",
     "ignition_utils",
     "ipopt",
+    "lapack",
     "lcm",
+    "libblas",
     "libjpeg",
+    "liblapack",
     "liblz4",
     "liblzma",
     "libpng",
