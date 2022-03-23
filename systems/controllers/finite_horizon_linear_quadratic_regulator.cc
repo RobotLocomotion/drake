@@ -1,5 +1,6 @@
 #include "drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h"
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <utility>
@@ -65,7 +66,9 @@ class RiccatiSystem : public LeafSystem<double> {
     DRAKE_DEMAND(x0_.rows() == num_states_ && x0_.cols() == 1);
     DRAKE_DEMAND(u0_.rows() == num_inputs_ && u0_.cols() == 1);
 
-    // State is Sxx (vectorized), followed by sx, then s0.
+    // If use_square_root_method = true, then the state is P (vectorized), then
+    // sx, then s0, where Sxx = PP'.  Otherwise, the state is Sxx (vectorized),
+    // followed by sx, then s0.
     this->DeclareContinuousState(num_states_ * num_states_ + num_states_ + 1);
 
     // Initialize autodiff.
@@ -81,15 +84,11 @@ class RiccatiSystem : public LeafSystem<double> {
     // Unpack the state.
     const Eigen::VectorXd S_vectorized =
         context.get_continuous_state_vector().CopyToVector();
-    const Eigen::Map<const Eigen::MatrixXd> Sxx(S_vectorized.data(),
-                                                num_states_, num_states_);
     const Eigen::VectorBlock<const Eigen::VectorXd> sx =
         S_vectorized.segment(num_states_ * num_states_, num_states_);
 
     // Allocate a vectorized version of the derivatives, and map into it.
     Eigen::VectorXd minus_Sdot_vectorized = S_vectorized;
-    Eigen::Map<Eigen::MatrixXd> minus_Sxxdot(minus_Sdot_vectorized.data(),
-                                             num_states_, num_states_);
     Eigen::VectorBlock<Eigen::VectorXd> minus_sxdot =
         minus_Sdot_vectorized.segment(num_states_ * num_states_, num_states_);
     double& minus_s0dot = minus_Sdot_vectorized[S_vectorized.size() - 1];
@@ -119,9 +118,27 @@ class RiccatiSystem : public LeafSystem<double> {
             ? (options_.ud->value(system_time) - u0_.value(system_time)).eval()
             : Eigen::VectorXd::Zero(num_inputs_);
 
-    // Compute the Riccati dynamics
-    minus_Sxxdot = Sxx * A + A.transpose() * Sxx -
-                   (N_ + Sxx * B) * Rinv_ * (N_ + Sxx * B).transpose() + Q_;
+    // Compute the Riccati dynamics.
+    Eigen::MatrixXd Sxx;
+    if (options_.use_square_root_method) {
+      const Eigen::Map<const Eigen::MatrixXd> P(S_vectorized.data(),
+                                                num_states_, num_states_);
+      Sxx = P * P.transpose();
+      const Eigen::MatrixXd PinvT = P.inverse().transpose();
+      Eigen::Map<Eigen::MatrixXd> minus_Pdot(minus_Sdot_vectorized.data(),
+                                             num_states_, num_states_);
+      minus_Pdot = A.transpose() * P -
+                   0.5 * (N_ + Sxx * B) * Rinv_ *
+                       (B.transpose() * P + N_.transpose() * PinvT) +
+                   0.5 * Q_ * PinvT;
+    } else {
+      Sxx = Eigen::Map<const Eigen::MatrixXd>(S_vectorized.data(), num_states_,
+                                              num_states_);
+      Eigen::Map<Eigen::MatrixXd> minus_Sxxdot(
+          minus_Sdot_vectorized.data(), num_states_, num_states_);
+      minus_Sxxdot = Sxx * A + A.transpose() * Sxx -
+                     (N_ + Sxx * B) * Rinv_ * (N_ + Sxx * B).transpose() + Q_;
+    }
 
     const Eigen::VectorXd qx = -Q_ * xd0 - N_ * ud0;
     const Eigen::VectorXd ru_plus_BTsx =
@@ -135,9 +152,31 @@ class RiccatiSystem : public LeafSystem<double> {
     derivatives->SetFromVector(minus_Sdot_vectorized);
   }
 
-  // TODO(russt): It would be more elegant to think of K as an output of the
-  // RiccatiSystem, but we don't (yet) have a way to get the dense integration
-  // results of an output port.
+  // TODO(russt): It would be more elegant to think of S and K as an output of
+  // the RiccatiSystem, but we don't (yet) have a way to get the dense
+  // integration results of an output port.
+
+  // Takes a time-reversed dense solution for this Riccati system, applies the
+  // time-reversal, and unwraps the vectorized solution into its matrix
+  // components.
+  void MakeSTrajectories(
+      const PiecewisePolynomial<double>& riccati_solution,
+      FiniteHorizonLinearQuadraticRegulatorResult* result) const {
+    auto Sxx = std::make_unique<PiecewisePolynomial<double>>(
+        riccati_solution.Block(0, 0, num_states_ * num_states_, 1));
+    Sxx->Reshape(num_states_, num_states_);
+    if (options_.use_square_root_method) {
+      result->S = std::make_unique<PiecewisePolynomial<double>>(
+          *Sxx * (Sxx->Transpose()));
+    } else {
+      result->S = std::move(Sxx);
+    }
+    result->sx = std::make_unique<PiecewisePolynomial<double>>(
+        riccati_solution.Block(num_states_ * num_states_, 0, num_states_, 1));
+    result->s0 =
+        std::make_unique<PiecewisePolynomial<double>>(riccati_solution.Block(
+            num_states_ * num_states_ + num_states_, 0, 1, 1));
+  }
 
   // Given a result structure already populated with the S and sx trajectories
   // (already time-reversed and reshaped), constructs the K and k0 trajectories.
@@ -261,6 +300,11 @@ FiniteHorizonLinearQuadraticRegulator(
     x0 = std::make_unique<PiecewisePolynomial<double>>(
         context.get_continuous_state_vector().CopyToVector());
   }
+  if (options.use_square_root_method && !options.Qf) {
+    throw std::logic_error(
+        "options.Qf is required when options.use_square_root_method is set to "
+        "'true'.");
+  }
 
   std::unique_ptr<PiecewisePolynomial<double>> u0;
   if (options.u0) {
@@ -286,13 +330,37 @@ FiniteHorizonLinearQuadraticRegulator(
     const double kSymmetryTolerance = 1e-8;
     DRAKE_DEMAND(options.Qf->rows() == num_states &&
                  options.Qf->cols() == num_states);
-    DRAKE_DEMAND(
-        math::IsPositiveDefinite(*options.Qf, 0.0, kSymmetryTolerance));
     Eigen::VectorXd S_vectorized =
         Eigen::VectorXd::Zero(num_states * num_states + num_states + 1);
-    Eigen::Map<Eigen::MatrixXd> Sxx(S_vectorized.data(), num_states,
+    if (options.use_square_root_method) {
+      // We require Qf = Qfᵀ ≻ 0.
+      DRAKE_DEMAND(math::IsSymmetric(*options.Qf, kSymmetryTolerance));
+      const double kEigenvalueTolerance = 1e-8;
+
+      // We use the SelfAdjointEigenSolver both to check PSD and to get the
+      // sqrt. The eigenvalue check is adopted from math::IsPositiveDefinite.
+      Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigensolver(*options.Qf);
+      DRAKE_THROW_UNLESS(eigensolver.info() == Eigen::Success);
+      const double max_abs_eigenvalue =
+          eigensolver.eigenvalues().cwiseAbs().maxCoeff();
+      if (eigensolver.eigenvalues().minCoeff() <
+          kEigenvalueTolerance * std::max(1., max_abs_eigenvalue)) {
+        throw std::logic_error(
+            "The SQRT method solution to the Riccati equation requires that Qf "
+            "is strictly positive definite.  To use a positive semi-definite "
+            "Qf, set `options.use_square_root_method` to `false`.");
+      }
+      Eigen::Map<Eigen::MatrixXd> P(S_vectorized.data(), num_states,
                                     num_states);
-    Sxx = *options.Qf;
+      P = eigensolver.operatorSqrt();
+    } else {
+      // Qf = Qfᵀ ≽ 0 is sufficient.
+      DRAKE_DEMAND(
+          math::IsPositiveDefinite(*options.Qf, 0.0, kSymmetryTolerance));
+      Eigen::Map<Eigen::MatrixXd> Sxx(S_vectorized.data(), num_states,
+                                      num_states);
+      Sxx = *options.Qf;
+    }
     if (options.xd) {
       Eigen::VectorBlock<Eigen::VectorXd> sx =
           S_vectorized.segment(num_states * num_states, num_states);
@@ -311,19 +379,12 @@ FiniteHorizonLinearQuadraticRegulator(
   simulator.AdvanceTo(-t0);
 
   FiniteHorizonLinearQuadraticRegulatorResult result;
-  std::unique_ptr<PiecewisePolynomial<double>> S =
-      integrator.StopDenseIntegration();
-  S->ReverseTime();
-  auto Sxx = std::make_unique<PiecewisePolynomial<double>>(
-      S->Block(0, 0, num_states * num_states, 1));
-  Sxx->Reshape(num_states, num_states);
-  result.S = std::move(Sxx);
-  result.sx = std::make_unique<PiecewisePolynomial<double>>(
-      S->Block(num_states * num_states, 0, num_states, 1));
-  result.s0 = std::make_unique<PiecewisePolynomial<double>>(
-      S->Block(num_states * num_states + num_states, 0, 1, 1));
   result.x0 = options.x0 ? options.x0->Clone() : std::move(x0);
   result.u0 = options.u0 ? options.u0->Clone() : std::move(u0);
+  std::unique_ptr<PiecewisePolynomial<double>> riccati_solution =
+      integrator.StopDenseIntegration();
+  riccati_solution->ReverseTime();
+  riccati.MakeSTrajectories(*riccati_solution, &result);
   riccati.MakeKTrajectories(&result);
 
   return result;

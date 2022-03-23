@@ -362,6 +362,7 @@ struct Impl {
               cls_doc.isApprox.doc)
           .def("Reshape", &Class::Reshape, py::arg("rows"), py::arg("cols"),
               cls_doc.Reshape.doc)
+          .def("Transpose", &Class::Transpose, cls_doc.Transpose.doc)
           .def("Block", &Class::Block, py::arg("start_row"),
               py::arg("start_col"), py::arg("block_rows"),
               py::arg("block_cols"), cls_doc.Block.doc)
