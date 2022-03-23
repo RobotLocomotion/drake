@@ -464,7 +464,7 @@ TEST_F(UrdfParserTest, TransmissionJointZeroEffortLimit) {
     </robot>)""", ""), std::nullopt);
   EXPECT_THAT(TakeWarning(), MatchesRegex(
                   ".*Skipping transmission since it's attached to joint \"a\""
-                  " which has a zero effort limit 0.0."));
+                  " which has a zero effort limit 0.*"));
 }
 
 TEST_F(UrdfParserTest, TransmissionJointNegativeEffortLimit) {
