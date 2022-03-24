@@ -7,6 +7,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/symbolic_decompose.h"
 #include "drake/math/quadratic_form.h"
+#include "drake/solvers/decision_variable.h"
 
 namespace drake {
 namespace solvers {
@@ -317,6 +318,8 @@ Binding<Constraint> ParseConstraint(
             fmt::format("ParseConstraint is called with formulas({}, {}) being "
                         "always false",
                         i, j));
+      } else if (symbolic::is_true(f)) {
+        continue;
       } else if (is_equal_to(f)) {
         // f(i) := (lhs == rhs)
         //         (lhs - rhs == 0)
@@ -347,13 +350,23 @@ Binding<Constraint> ParseConstraint(
       ++k;
     }
   }
-  return ParseConstraint(v, lb, ub);
+  if (k == 0) {
+    // All formulas are always True, return an empty bounding box constraint.
+    return internal::CreateBinding(std::make_shared<BoundingBoxConstraint>(
+                                       Eigen::VectorXd(0), Eigen::VectorXd(0)),
+                                   VectorXDecisionVariable(0));
+  }
+  return ParseConstraint(v.head(k), lb.head(k), ub.head(k));
 }
 
 Binding<Constraint> ParseConstraint(const Formula& f) {
   if (symbolic::is_false(f)) {
     throw std::runtime_error(
         "ParseConstraint is called with a formula being always false.");
+  } else if (symbolic::is_true(f)) {
+    return internal::CreateBinding(std::make_shared<BoundingBoxConstraint>(
+                                       Eigen::VectorXd(0), Eigen::VectorXd(0)),
+                                   VectorXDecisionVariable(0));
   } else if (is_equal_to(f)) {
     // e1 == e2
     const Expression& e1{get_lhs_expression(f)};
@@ -402,6 +415,8 @@ Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
       throw std::runtime_error(
           "ParseLinearEqualityConstraint is called with one of formulas being "
           "always false.");
+    } else if (symbolic::is_true(f)) {
+      continue;
     } else if (is_equal_to(f)) {
       // f := (lhs == rhs)
       //      (lhs - rhs == 0)
@@ -415,7 +430,14 @@ Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
     }
     ++i;
   }
-  return ParseLinearEqualityConstraint(v, Eigen::VectorXd::Zero(n));
+  if (i == 0) {
+    // All formulas are always true, return an empty linear equality constraint.
+    return internal::CreateBinding(
+        std::make_shared<LinearEqualityConstraint>(
+            Eigen::Matrix<double, 0, 0>(), Eigen::Matrix<double, 0, 1>()),
+        Eigen::Matrix<symbolic::Variable, 0, 1>());
+  }
+  return ParseLinearEqualityConstraint(v.head(i), Eigen::VectorXd::Zero(i));
 }
 
 Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
@@ -424,6 +446,13 @@ Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
     throw std::runtime_error(
         "ParseLinearEqualityConstraint is called with a formula being always "
         "false.");
+  }
+  if (symbolic::is_true(f)) {
+    // The formula is always true, return an empty linear equality constraint.
+    return internal::CreateBinding(
+        std::make_shared<LinearEqualityConstraint>(
+            Eigen::Matrix<double, 0, 0>(), Eigen::Matrix<double, 0, 1>()),
+        Eigen::Matrix<symbolic::Variable, 0, 1>());
   } else if (is_equal_to(f)) {
     // e1 == e2
     const Expression& e1{get_lhs_expression(f)};
