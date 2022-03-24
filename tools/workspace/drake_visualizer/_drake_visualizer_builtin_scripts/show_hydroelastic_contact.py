@@ -1138,7 +1138,7 @@ class HydroelasticContactVisualizer:
             callback=self.clear_on_load)
 
         # Reload the previous message if it exists.
-        if self.message is None:
+        if self.message is not None:
             self.handle_message(self.message)
 
     def remove_subscriber(self):
