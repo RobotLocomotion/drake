@@ -657,6 +657,13 @@ TEST_F(KukaIiwaModelTests, StateAccess) {
   tree().get_mutable_state_segment(&context_->get_mutable_state(), 8, 3) << -1,
       -2, -3;
   check_segments();
+
+  EXPECT_TRUE(CompareMatrices(
+      tree().GetEffortLowerLimits(),
+      Eigen::VectorXd::Constant(7, -std::numeric_limits<double>::infinity())));
+  EXPECT_TRUE(CompareMatrices(
+      tree().GetEffortUpperLimits(),
+      Eigen::VectorXd::Constant(7, std::numeric_limits<double>::infinity())));
 }
 
 // This test helps verify MultibodyTree::CalcJacobianTranslationalVelocity()

@@ -48,6 +48,27 @@ void JointActuator<T>::set_actuation_vector(
 }
 
 template <typename T>
+int JointActuator<T>::input_start() const {
+  if (topology_.actuator_index_start < 0) {
+    throw std::runtime_error(
+        "JointActuator::input_start() must be called after the MultibodyPlant "
+        "is finalized.");
+  }
+  return topology_.actuator_index_start;
+}
+
+template <typename T>
+int JointActuator<T>::num_inputs() const {
+  if (topology_.actuator_index_start < 0) {
+    throw std::runtime_error(
+        "JointActuator::num_inputs() must be called after the MultibodyPlant "
+        "is finalized.");
+  }
+  DRAKE_ASSERT(joint().num_velocities() == topology_.num_dofs);
+  return joint().num_velocities();
+}
+
+template <typename T>
 void JointActuator<T>::DoSetTopology(
     const internal::MultibodyTreeTopology& mbt_topology) {
   topology_ = mbt_topology.get_joint_actuator(this->index());

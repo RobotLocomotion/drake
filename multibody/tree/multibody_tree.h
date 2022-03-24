@@ -2005,6 +2005,12 @@ class MultibodyTree {
   // See MultibodyPlant method.
   VectorX<double> GetAccelerationUpperLimits() const;
 
+  // See MultibodyPlant method.
+  VectorX<double> GetEffortLowerLimits() const;
+
+  // See MultibodyPlant method.
+  VectorX<double> GetEffortUpperLimits() const;
+
   // @name Methods to retrieve multibody element variants
   //
   // Given two variants of the same %MultibodyTree, these methods map an

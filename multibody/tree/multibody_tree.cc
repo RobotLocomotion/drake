@@ -3163,6 +3163,38 @@ VectorX<double> MultibodyTree<T>::GetAccelerationUpperLimits() const {
 }
 
 template <typename T>
+VectorX<double> MultibodyTree<T>::GetEffortLowerLimits() const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  Eigen::VectorXd lower = Eigen::VectorXd::Constant(
+      num_actuated_dofs(), -std::numeric_limits<double>::infinity());
+  for (JointActuatorIndex i{0}; i < num_actuators(); ++i) {
+    const auto& actuator = get_joint_actuator(i);
+    for (int j = actuator.input_start();
+         j < actuator.input_start() + actuator.num_inputs(); ++j) {
+      DRAKE_ASSERT(j < num_actuated_dofs());
+      lower[j] = -actuator.effort_limit();
+    }
+  }
+  return lower;
+}
+
+template <typename T>
+VectorX<double> MultibodyTree<T>::GetEffortUpperLimits() const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  Eigen::VectorXd upper = Eigen::VectorXd::Constant(
+      num_actuated_dofs(), std::numeric_limits<double>::infinity());
+  for (JointActuatorIndex i{0}; i < num_actuators(); ++i) {
+    const auto& actuator = get_joint_actuator(i);
+    for (int j = actuator.input_start();
+         j < actuator.input_start() + actuator.num_inputs(); ++j) {
+      DRAKE_ASSERT(j < num_actuated_dofs());
+      upper[j] = actuator.effort_limit();
+    }
+  }
+  return upper;
+}
+
+template <typename T>
 std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
     ModelInstanceIndex model_instance) const {
   DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
