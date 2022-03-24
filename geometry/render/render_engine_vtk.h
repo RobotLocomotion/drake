@@ -162,7 +162,8 @@ class RenderEngineVtk : public RenderEngine,
   };
 
   /** Configures the VTK model to reflect the given `camera`, this includes
-   render size camera intrinsics, visible windows, etc. */
+   render size camera intrinsics, visible windows, etc. If `show_window` is set
+   to true, a named VTK window will be displayed. */
   void UpdateWindow(const RenderCameraCore& camera,
                     bool show_window, const RenderingPipeline& p,
                     const char* name) const;
@@ -177,8 +178,9 @@ class RenderEngineVtk : public RenderEngine,
    vtkActors' pose update for rendering. */
   static void PerformVtkUpdate(const RenderingPipeline& p);
 
-  /** Provides access to the private data member pipeline_ by returning a
-   mutable RenderingPipeline reference. */
+  /** Provides access to the private data member pipelines_ by returning a
+   mutable RenderingPipeline reference. Only image types in internal::ImageType
+   enum are valid. */
   RenderingPipeline& get_mutable_pipeline(internal::ImageType image_type) const;
 
  private:
