@@ -45,7 +45,7 @@ inline Binding<Constraint> ParseConstraint(
 /**
  * Parses the constraint lb <= e <= ub to linear constraint types, including
  * BoundingBoxConstraint, LinearEqualityConstraint, and LinearConstraint. If @p
- * e is not a linear expression, then return a null pointer.
+ * e is not a linear expression, then returns a null pointer.
  * If the constraint lb <= e <= ub can be parsed as a BoundingBoxConstraint,
  * then we return a BoundingBoxConstraint pointer. For example, the constraint
  * 1 <= 2 * x + 3 <= 4 is equivalent to the bounding box constraint -1 <= x <=
@@ -55,14 +55,19 @@ std::unique_ptr<Binding<Constraint>> MaybeParseLinearConstraint(
     const symbolic::Expression& e, double lb, double ub);
 
 /*
- * Assist MathematicalProgram::AddLinearConstraint(...).
+ * Creates a constraint that should satisfy the formula `f`.
  * @throws exception if `f` is always false (for example 1 >= 2).
+ * @note if `f` is always true, then returns an empty BoundingBoxConstraint
+ * binding.
  */
 Binding<Constraint> ParseConstraint(const symbolic::Formula& f);
 
 /*
- * Assist MathematicalProgram::AddLinearConstraint(...).
+ * Creates a constraint that enforces all `formulas` to be satisfied.
  * @throws exception if any of `formulas` is always false (for example 1 >= 2).
+ * @note If any entry in `formulas` is always true, then that entry is ignored.
+ * If all entries in `formulas` are true, then returns an empty
+ * BoundingBoxConstraint binding.
  */
 Binding<Constraint> ParseConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Formula>>& formulas);
@@ -84,17 +89,21 @@ inline Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
 }
 
 /*
- * Assist MathematicalProgram::AddLinearEqualityConstraint(...).
- *
+ * Creates a constraint to satisfy all entries in `formulas`.
  * @throws exception if any of `formulas` is always false (for example 1 == 2)
+ * @note If any entry in `formulas` is always true, then that entry is ignored;
+ * if all entries in `formulas` are always true, then returns an empty linear
+ * equality constraint binding.
  */
 Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
     const std::set<symbolic::Formula>& formulas);
 
 /*
- * Assist MathematicalProgram::AddLinearEqualityConstraint(...).
  *
+ * Creates a linear equality constraint satisfying the formula `f`.
  * @throws exception if `f` is always false (for example 1 == 2)
+ * @note if `f` is always true, then returns an empty linear equality constraint
+ * binding.
  */
 Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
     const symbolic::Formula& f);

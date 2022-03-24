@@ -436,6 +436,56 @@ GTEST_TEST(ParseLinearEqualityConstraintTest, FalseFormula) {
       "ParseLinearEqualityConstraint is called with a formula being always "
       "false.");
 }
+
+GTEST_TEST(ParseConstraintTest, TrueFormula) {
+  // Call ParseConstraint with a formula being always True.
+  auto binding1 = internal::ParseConstraint(symbolic::Expression(1) >= 0);
+  EXPECT_NE(dynamic_cast<BoundingBoxConstraint*>(binding1.evaluator().get()),
+            nullptr);
+  EXPECT_EQ(binding1.evaluator()->num_constraints(), 0);
+  EXPECT_EQ(binding1.variables().rows(), 0);
+
+  // Call ParseConstraint with a vector of formulas, some of the formulas being
+  // alwyas True.
+  symbolic::Variable x("x");
+  auto binding2 = internal::ParseConstraint(
+      Vector2<symbolic::Formula>(x >= 1, symbolic::Expression(1) >= 0));
+  EXPECT_EQ(binding2.evaluator()->num_constraints(), 1);
+  EXPECT_TRUE(
+      binding2.evaluator()->CheckSatisfied((Vector1d() << 2).finished()));
+  EXPECT_FALSE(
+      binding2.evaluator()->CheckSatisfied((Vector1d() << 0).finished()));
+
+  // Call ParseConstraint with a vector of formulas all being True.
+  auto binding3 = internal::ParseConstraint(Vector2<symbolic::Formula>(
+      symbolic::Expression(1) >= 0, symbolic::Expression(2) >= 1));
+  EXPECT_NE(dynamic_cast<BoundingBoxConstraint*>(binding3.evaluator().get()),
+            nullptr);
+  EXPECT_EQ(binding3.evaluator()->num_constraints(), 0);
+  EXPECT_EQ(binding3.variables().rows(), 0);
+
+  // Call ParseLinearEqualityConstraint with a set of formulas, while some
+  // formulas being always true.
+  auto binding4 = internal::ParseLinearEqualityConstraint(
+      std::set<symbolic::Formula>({2 * x == 1, symbolic::Expression(1) == 1}));
+  EXPECT_EQ(binding4.evaluator()->num_constraints(), 1);
+  EXPECT_TRUE(
+      binding4.evaluator()->CheckSatisfied((Vector1d() << 0.5).finished()));
+  EXPECT_FALSE(
+      binding4.evaluator()->CheckSatisfied((Vector1d() << 1).finished()));
+
+  // Call ParseLinearEqualityConstraint with a set of formulas all being True.
+  auto binding5 =
+      internal::ParseLinearEqualityConstraint(std::set<symbolic::Formula>(
+          {symbolic::Expression(1) == 1, symbolic::Expression(2) == 2}));
+  EXPECT_EQ(binding5.evaluator()->num_constraints(), 0);
+
+  // Call ParseLinearEqualityConstraint with a single formula being always true.
+  auto binding6 =
+      internal::ParseLinearEqualityConstraint(symbolic::Expression(1) == 1);
+  EXPECT_EQ(binding6.evaluator()->num_constraints(), 0);
+  EXPECT_EQ(binding6.variables().rows(), 0);
+}
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
