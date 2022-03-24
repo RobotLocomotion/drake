@@ -170,6 +170,8 @@ drake_cc_googletest(
         ":sap_constraint",
         ":sap_contact_problem",
         ":sap_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
     ],
 )
 
