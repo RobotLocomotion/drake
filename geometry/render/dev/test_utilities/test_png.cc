@@ -15,7 +15,7 @@ namespace {
 
 using systems::sensors::ImageRgba8U;
 
-// Return the `color_type` for `png_set_IHDR`.
+// Returns the `color_type` for `png_set_IHDR`.
 template <int channels>
 int ColorType() {
   static_assert(channels == 1 || channels == 3 || channels == 4,

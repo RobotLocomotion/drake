@@ -85,7 +85,7 @@ class TestPng {
   // For when writing a single channel image.
   static constexpr ChannelType kGrayStart = static_cast<ChannelType>(0);
 
-  /* Create a TIFF image at the specified path with dimensions width x height,
+  /* Creates a PNG image at the specified path with dimensions width x height,
    generating the pattern described on the class documentation.  User is
    responsible for deleting the file after it is created. */
   TestPng(const std::string& path, int width, int height);

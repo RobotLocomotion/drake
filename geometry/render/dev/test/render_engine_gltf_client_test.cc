@@ -39,7 +39,7 @@ class RenderEngineGltfClientTester {
     return engine_->render_client_->temp_directory();
   }
 
-  // Allow the HttpService backend to be swapped out.
+  // Allows the HttpService backend to be swapped out.
   void SetHttpService(std::unique_ptr<HttpService> service) {
     engine_->render_client_->SetHttpService(std::move(service));
   }
@@ -267,7 +267,7 @@ class FakeServer : public HttpService {
   }
 };
 
-/* Return all regular files found in directory (*NOT* recursive). */
+/* Returns all regular files found in directory (*NOT* recursive). */
 std::vector<fs::path> FindRegularFiles(const std::string& directory) {
   std::vector<fs::path> files;
   for (const auto& item : fs::directory_iterator(directory)) {

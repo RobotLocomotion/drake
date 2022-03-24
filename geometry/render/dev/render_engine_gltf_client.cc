@@ -72,7 +72,7 @@ void SetGltfCameraPerspective(const RenderCameraCore& core, vtkCamera* camera) {
   camera->SetViewAngle(fy);
 }
 
-/* Convert the RenderEngineVtk ImageType to a RenderClient RenderImageType.
+/* Converts the RenderEngineVtk ImageType to a RenderClient RenderImageType.
  NOTE: if RenderImageType expands to have more image types, this logic will
  have to be revisited (e.g., two kinds of depth images supported). */
 RenderImageType VtkToClientRenderImageType(ImageType image_type) {
@@ -124,7 +124,8 @@ void LogFrameServerResponsePath(ImageType image_type, const std::string& path) {
       ImageTypeToString(image_type), path);
 }
 
-// Delete the file and log if verbose, only call if no_cleanup() == false.
+// Deletes the file and log if verbose. This function is called only when
+// no_cleanup() == false.
 void DeleteFileAndLogIfVerbose(const std::string& path, bool verbose) {
   try {
     fs::remove(path);

@@ -144,7 +144,7 @@ RigidTransformd ParseCameraPose(const std::string& raw_input_str) {
   return X_WB;
 }
 
-// Make an instance of the given shape, at the given position, with the given
+// Makes an instance of the given shape, at the given position, with the given
 // material (named as indicated).
 std::unique_ptr<GeometryInstance> MakeInstance(const Shape& shape,
                                                const Vector3d& p_WS,

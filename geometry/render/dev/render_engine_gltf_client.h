@@ -61,7 +61,7 @@ class RenderEngineGltfClient : public RenderEngineVtk {
       const ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const override;
 
-  /* Return the path to export a glTF scene file to for the specified
+  /* Returns the path to export a glTF scene file to for the specified
   `image_type` and `scene_id`.  The returned path is constructed as
   `{RenderClient::temp_directory()}/{scene_id}-{image_type}.gltf`. */
   std::string ExportPathFor(ImageType image_type, int64_t scene_id) const;
@@ -70,7 +70,7 @@ class RenderEngineGltfClient : public RenderEngineVtk {
   glTF file, returning the path to the newly exported file. */
   std::string ExportScene(ImageType image_type, int64_t scene_id) const;
 
-  /* Delete the files at the paths `scene_path` and `image_path`.  Should only
+  /* Deletes the files at the paths `scene_path` and `image_path`.  Should only
    be called when `!no_cleanup()`. */
   void CleanupFrame(const std::string& scene_path,
                     const std::string& image_path) const;

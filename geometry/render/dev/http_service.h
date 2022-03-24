@@ -68,7 +68,7 @@ class HttpService {
 
   /* @name Server Interaction Interface */
   //@{
-  /* Post an HTML `<form>` to the specified `endpoint`.
+  /* Posts an HTML `<form>` to the specified `endpoint`.
 
    An HTML `<form>` may allow for a wide range of different kinds of `<input>`
    data.  For the full listing of available input `type`'s, see the
@@ -215,7 +215,7 @@ class HttpService {
   /* Throws `std::runtime_error` if `endpoint` starts or ends with a '/'. */
   void ThrowIfEndpointInvalid(const std::string& endpoint) const;
 
-  /* Verify that all file paths provided are regular files, throw if not.
+  /* Verifies that all file paths provided are regular files, throw if not.
 
    @param file_fields See HttpService::PostForm.
    @throws std::runtime_error
