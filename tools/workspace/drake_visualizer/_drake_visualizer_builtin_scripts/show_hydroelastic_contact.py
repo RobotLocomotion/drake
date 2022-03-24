@@ -692,6 +692,8 @@ class _BodyContact:
 
     def clear(self):
         """Clears this body contact."""
+        for contact in self._contacts.values():
+            contact.clear()
         # Recursively remove all of the model items.
         om.removeFromObjectModel(self._folder)
         self._folder = None
@@ -876,8 +878,6 @@ class HydroelasticContactVisualizer:
         # Subscriber to the DRAKE_VIEWER_LOAD_ROBOT messages.
         self._load_sub = None
 
-        self.set_enabled(True)
-
         # Visualization parameters
         # TODO(SeanCurtis-TRI): Find some way to persist these settings across
         #  invocations of drake visualizer. Config file, environment settings,
@@ -900,6 +900,8 @@ class HydroelasticContactVisualizer:
         # Persist the state so we can update without messages.
         self.visual_model = VisualModel(self._folder_name)
         self.message = None
+
+        self.set_enabled(True)
 
         menu_bar = applogic.getMainWindow().menuBar()
         plugin_menu = get_sub_menu_or_make(menu_bar, '&Plugins')
@@ -1121,6 +1123,10 @@ class HydroelasticContactVisualizer:
         if self._contact_sub is not None:
             return
 
+        # Reinitialize the visual model if it was removed by disabling.
+        if self.visual_model is None:
+            self.visual_model = VisualModel(self._folder_name)
+
         self._contact_sub = lcmUtils.addSubscriber(
             'CONTACT_RESULTS',
             messageClass=lcmt_contact_results_for_viz,
@@ -1131,15 +1137,24 @@ class HydroelasticContactVisualizer:
             messageClass=lcmt_viewer_load_robot,
             callback=self.clear_on_load)
 
+        # Reload the previous message if it exists.
+        if self.message is None:
+            self.handle_message(self.message)
+
     def remove_subscriber(self):
         if self._contact_sub is None:
             return
 
         lcmUtils.removeSubscriber(self._contact_sub)
         self._contact_sub = None
-        om.removeFromObjectModel(om.findObjectByName(self._folder_name))
-        print(self._name + ' subscriber removed.')
 
+        # Clear the visual model and all contact data from the object model.
+        if self.visual_model is not None:
+            self.visual_model.clear()
+            om.removeFromObjectModel(self.visual_model._root_folder)
+            self.visual_model = None
+
+        print(self._name + ' subscriber removed.')
         lcmUtils.removeSubscriber(self._load_sub)
         self._load_sub = None
 
@@ -1148,6 +1163,7 @@ class HydroelasticContactVisualizer:
 
     def set_enabled(self, enable):
         self._enabled = enable
+
         if enable:
             self.add_subscriber()
         else:
