@@ -37,17 +37,20 @@ Use `pip` or a virtual environment as shown in Option 2 for Ubuntu above
 
 ### Server Use
 
-For development purposes, you may run `bazel run //geometry/render/dev:server`
-to launch a single threaded / single worker flask development server.  By
-default this will run the server on host `127.0.0.1` and port `8000`, you may
-specify `--host x.y.z.w` or `--port XYZW` to change the host or port.
+For development purposes, you may run
+`bazel run //geometry/render/dev:gltf_render_server` to launch a single threaded
+/ single worker flask development server.  By default this will run the server
+on host `127.0.0.1` and port `8000`, you may specify `--host x.y.z.w` or
+`--port XYZW` to change the host or port.  There is also a `--debug` option
+available to support reloading the server automatically, see the documentation
+in `gltf_render_server.py` for more information on flask debug targets.
 
 ```console
 # Run on the default host and port.
-$ bazel run //geometry/render/dev:server
+$ bazel run //geometry/render/dev:gltf_render_server
 
 # Run on custom host and port.
-$ bazel run //geometry/render/dev:server -- --host 0.0.0.0 --port 8192
+$ bazel run //geometry/render/dev:gltf_render_server -- --host 0.0.0.0 --port 8192
 ```
 
 A single threaded worker flask server is not a good idea to run in production,

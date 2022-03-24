@@ -12,19 +12,20 @@ The dependent package requirements for running this server::
     flask>=1.1
 
 Tip:
-    While developing your server, it can be helpful to wield the ``FLASK_ENV``
-    environment variable.  Its default value is ``"production"``, but setting
-    it to ``"development"`` can be helpful in iteratively developing the file.
-    This environment variable is to be set **before** launching the server,
-    examples can be found `in the flask documentation <flask_env_>`_.
+    While developing your server, it can be helpful to provide the ``--debug``
+    flag which will result in the server reloading any time the file changes.
+    See also the documentation on the ``FLASK_ENV`` environment variable.  Its
+    default value is ``"production"``, but setting it to ``"development"`` can
+    be helpful in iteratively developing the file.  This server does not use
+    any additional flask plugins, so the ``--debug`` flag will work reliably.
+    However, the environment variable is to be set **before** launching the
+    server, and any extensions you may be using could have already initialized
+    before ``app.run(..., debug=True)`` so you may get unreliable behavior
+    and should instead prefer using the environment variable.  Examples can be
+    found `in the flask documentation <flask_env_>`_.
 
     .. _flask_env:
         https://flask.palletsprojects.com/en/2.0.x/config/#environment-and-debug-features
-
-    In addition to the other benefits of a development server for testing, when
-    you make changes to this file and save to disk the ``flask`` runner will
-    automatically detect this and reload the server (this will not happen with
-    wsgi wrappers like ``gunicorn``).
 
     Lastly, the server implemented here provides a brief html page rendering
     when a user issues a ``GET /`` (e.g., you visit ``localhost:8000`` in your
@@ -650,10 +651,10 @@ def render_callback(render_request: RenderRequest) -> Union[Path, str]:
             the client.  Any other exceptions raised will result in an internal
             server error response message to the client.
     """
-    # NOTE: the path to `vtk_render_server_backend` is only valid from bazel.
+    # NOTE: the path to `gltf_render_server_backend` is only valid from bazel.
     # The path to the renderer executable to call.
     backend = str(
-        (THIS_FILE_DIR / ".." / "vtk_render_server_backend").resolve()
+        (THIS_FILE_DIR / ".." / "gltf_render_server_backend").resolve()
     )
     # Determine where to store this rendering.  The render_request.scene_path
     # will already live within the SERVER_CACHE, appending a file extension
@@ -910,9 +911,15 @@ def main():
         default=8000,
         help="Port to host on, default: 8000.  Input not validated.",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        default=False,
+        help="Run in debug mode, flask reloads the server when file changes.",
+    )
 
     args = parser.parse_args()
-    app.run(host=args.host, port=args.port)
+    app.run(host=args.host, port=args.port, debug=args.debug)
 
 
 if __name__ == "__main__":
