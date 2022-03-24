@@ -417,7 +417,7 @@ Next topic: @ref contact_engineering
  with an explicit integrator, or use of a more-stable implicit integrator.
 
  @note When modeling the multibody system as discrete (refer to the @ref
- time_advancement_strategy "Choice of Time Advancement Strategy" section), we
- regularize Coulomb friction and only use the static coefficient of friction μₛ
- for better numerical stability.
+ time_advancement_strategy "Choice of Time Advancement Strategy" section), the
+ model assumes both static and kinetic coefficients of friction to be equal and
+ the kinetic coefficient of friction is ignored.
 */
