@@ -13,6 +13,7 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/proximity/collision_filter.h"
+#include "drake/geometry/proximity/deformable_contact_internal.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/deformable_contact_data.h"
@@ -274,6 +275,10 @@ class ProximityEngine {
   /* The representation of every geometry that was successfully requested for
    use for hydroelastic contact surface computation. */
   const hydroelastic::Geometries& hydroelastic_geometries() const;
+
+  /* The representation of every geometry that was successfully requested for
+   use for deformable contact surface computation. */
+  const deformable::Geometries& deformable_contact_geometries() const;
 
  private:
   // Testing utilities:

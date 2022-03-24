@@ -88,9 +88,10 @@ class Geometries final : public ShapeReifier {
       GeometryId id, const Eigen::Ref<const VectorX<double>>& q_MG);
 
   /* For all registered deformable bodies, computes the contact data of that
-   deformable body with all registered rigid bodies. Assumes the vertex
-   positions and poses of all registered deformable and rigid bodies are up to
-   date.
+   deformable body with all registered rigid bodies; if a contact exist, adds
+   the contact results to `deformable_contact_data`.
+   Assumes the vertex positions and poses of all registered deformable and rigid
+   bodies are up to date.
    @pre deformable_contact_data != nullptr. */
   void ComputeAllDeformableContactData(
       std::vector<DeformableContactData<double>>* deformable_contact_data)

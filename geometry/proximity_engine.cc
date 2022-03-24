@@ -31,9 +31,9 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+using drake::geometry::internal::HydroelasticType;
 using Eigen::Vector3d;
 using fcl::CollisionObjectd;
-using drake::geometry::internal::HydroelasticType;
 using math::RigidTransform;
 using math::RigidTransformd;
 using std::make_shared;
@@ -137,8 +137,8 @@ void CopyFclObjectsOrThrow(
 // collision objects (the map populated by CopyFclObjectsOrThrow()).
 void BuildTreeFromReference(
     const fcl::DynamicAABBTreeCollisionManager<double>& other,
-    const std::unordered_map<const CollisionObjectd*,
-                             CollisionObjectd*>& copy_map,
+    const std::unordered_map<const CollisionObjectd*, CollisionObjectd*>&
+        copy_map,
     fcl::DynamicAABBTreeCollisionManager<double>* target) {
   std::vector<CollisionObjectd*> other_objects;
   other.getObjects(other_objects);
@@ -164,18 +164,16 @@ template <typename T, typename DataType>
 void FclCollide(const fcl::DynamicAABBTreeCollisionManager<double>& tree1,
                 const fcl::DynamicAABBTreeCollisionManager<double>& tree2,
                 DataType* data, fcl::CollisionCallBack<T> callback) {
-  tree1.collide(
-      const_cast<fcl::DynamicAABBTreeCollisionManager<T>*>(&tree2), data,
-      callback);
+  tree1.collide(const_cast<fcl::DynamicAABBTreeCollisionManager<T>*>(&tree2),
+                data, callback);
 }
 
 template <typename T, typename DataType>
 void FclDistance(const fcl::DynamicAABBTreeCollisionManager<double>& tree1,
                  const fcl::DynamicAABBTreeCollisionManager<double>& tree2,
                  DataType* data, fcl::DistanceCallBack<T> callback) {
-  tree1.distance(
-      const_cast<fcl::DynamicAABBTreeCollisionManager<T>*>(&tree2), data,
-      callback);
+  tree1.distance(const_cast<fcl::DynamicAABBTreeCollisionManager<T>*>(&tree2),
+                 data, callback);
 }
 
 // Compare function to use with ordering PenetrationAsPointPairs.
@@ -213,8 +211,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     anchored_objects_.clear();
 
     // Copy all of the geometry.
-    std::unordered_map<const CollisionObjectd*, CollisionObjectd*>
-        object_map;
+    std::unordered_map<const CollisionObjectd*, CollisionObjectd*> object_map;
     CopyFclObjectsOrThrow(other.anchored_objects_, &anchored_objects_,
                           &object_map);
     CopyFclObjectsOrThrow(other.dynamic_objects_, &dynamic_objects_,
@@ -241,8 +238,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // types, modify this map to the appropriate scalar and modify consuming
     // functions accordingly.
     // Copy all of the geometry.
-    std::unordered_map<const CollisionObjectd*, CollisionObjectd*>
-        object_map;
+    std::unordered_map<const CollisionObjectd*, CollisionObjectd*> object_map;
     CopyFclObjectsOrThrow(anchored_objects_, &engine->anchored_objects_,
                           &object_map);
     CopyFclObjectsOrThrow(dynamic_objects_, &engine->dynamic_objects_,
@@ -316,10 +312,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   void RemoveGeometry(GeometryId id, bool is_dynamic) {
     if (deformable_contact_geometries_.is_deformable(id)) {
       deformable_contact_geometries_.RemoveGeometry(id);
-      // Deforamble geometries is handled completely by
+      // Deforamble geometries are handled completely by
       // `deformable_contact_geometries`. We must not try to remove deformable
-      // geometry from FCL trees which would result in an exception being thrown
-      // in the case of a successful removal.
+      // geometry from FCL trees which would result in an exception being
+      // thrown.
       return;
     }
     if (is_dynamic) {
@@ -330,9 +326,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     hydroelastic_geometries_.RemoveGeometry(id);
   }
 
-  int num_geometries() const {
-    return num_dynamic() + num_anchored();
-  }
+  int num_geometries() const { return num_dynamic() + num_anchored(); }
 
   int num_dynamic() const {
     return static_cast<int>(dynamic_objects_.size()) +
@@ -407,8 +401,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
-    auto fcl_cylinder = make_shared<fcl::Cylinderd>(cylinder.radius(),
-                                                    cylinder.length());
+    auto fcl_cylinder =
+        make_shared<fcl::Cylinderd>(cylinder.radius(), cylinder.length());
     TakeShapeOwnership(fcl_cylinder, user_data);
     ProcessHydroelastic(cylinder, user_data);
     ProcessDeformableContact(cylinder, user_data);
@@ -560,8 +554,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     std::vector<SignedDistanceToPoint<T>> distances;
 
-    point_distance::CallbackData<T> data{
-        &query_point, threshold, p_WQ, &X_WGs, &distances};
+    point_distance::CallbackData<T> data{&query_point, threshold, p_WQ, &X_WGs,
+                                         &distances};
 
     // Perform query of point vs dynamic objects.
     dynamic_tree_.distance(&query_point, &data, point_distance::Callback<T>);
@@ -684,8 +678,15 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
   ComputeDeformableContactData(
       std::vector<DeformableContactData<T>>* deformable_contact_data) const {
-    deformable_contact_geometries_.ComputeAllDeformableContactData(
-        deformable_contact_data);
+    if constexpr (std::is_same_v<T, double>) {
+      deformable_contact_geometries_.ComputeAllDeformableContactData(
+          deformable_contact_data);
+    } else {
+      unused(deformable_contact_data);
+      throw std::logic_error(
+          "ComputeDeformableContactData() only supports scalar type double at "
+          "the moment.");
+    }
   }
 
   // Testing utilities
@@ -749,6 +750,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   const hydroelastic::Geometries& hydroelastic_geometries() const {
     return hydroelastic_geometries_;
+  }
+
+  const deformable::Geometries& deformable_contact_geometries() const {
+    return deformable_contact_geometries_;
   }
 
   bool IsFclConvexType(GeometryId id) const {
@@ -911,9 +916,10 @@ void ProximityEngine<T>::AddDynamicGeometry(const Shape& shape,
 }
 
 template <typename T>
-void ProximityEngine<T>::AddAnchoredGeometry(
-    const Shape& shape, const RigidTransformd& X_WG, GeometryId id,
-    const ProximityProperties& props) {
+void ProximityEngine<T>::AddAnchoredGeometry(const Shape& shape,
+                                             const RigidTransformd& X_WG,
+                                             GeometryId id,
+                                             const ProximityProperties& props) {
   impl_->AddAnchoredGeometry(shape, X_WG, id, props);
 }
 
@@ -1073,6 +1079,12 @@ const hydroelastic::Geometries& ProximityEngine<T>::hydroelastic_geometries()
 }
 
 template <typename T>
+const deformable::Geometries&
+ProximityEngine<T>::deformable_contact_geometries() const {
+  return impl_->deformable_contact_geometries();
+}
+
+template <typename T>
 bool ProximityEngine<T>::IsFclConvexType(GeometryId id) const {
   return impl_->IsFclConvexType(id);
 }
@@ -1082,7 +1094,8 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&ProximityEngine<T>::template ComputeContactSurfaces<T>,
-     &ProximityEngine<T>::template ComputeContactSurfacesWithFallback<T>))
+     &ProximityEngine<T>::template ComputeContactSurfacesWithFallback<T>,
+     &ProximityEngine<T>::template ComputeDeformableContactData<T>))
 
 }  // namespace internal
 }  // namespace geometry

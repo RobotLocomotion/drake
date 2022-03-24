@@ -15,8 +15,10 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/deformable_contact_geometries.h"
 #include "drake/geometry/proximity/hydroelastic_callback.h"
 #include "drake/geometry/proximity_properties.h"
+#include "drake/geometry/query_results/deformable_contact_data.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -70,6 +72,27 @@ class ProximityEngineTester {
     return engine.IsFclConvexType(id);
   }
 };
+
+namespace deformable {
+class GeometriesTester {
+ public:
+  /* Returns the deformable geometry with `deformable_id` registered in
+   `geometries`.
+   @pre a deformable representatino with `deformable_id` exists in `geometries`.
+  */
+  static const DeformableGeometry& get_deformable_geometry(
+      const Geometries& geometries, GeometryId deformable_id) {
+    return geometries.deformable_geometries_.at(deformable_id);
+  }
+
+  /* Returns the rigid geometry with `rigid_id` registered in `geometries`.
+   @pre a rigid representatino with `rigid_id` exists in `geometries`. */
+  static const RigidGeometry& get_rigid_geometry(const Geometries& geometries,
+                                                 GeometryId rigid_id) {
+    return geometries.rigid_geometries_.at(rigid_id);
+  }
+};
+}  // namespace deformable
 
 namespace {
 
@@ -4310,6 +4333,7 @@ GTEST_TEST(ProximityEngineTests, ExpressionUnsupported) {
       "Penetration queries between shapes 'Box' and 'Box' are not supported "
       "for scalar type drake::symbolic::Expression");
 }
+}  // namespace
 
 // Deformable geometries and rigid representations for deformable contact is
 // currently an odd fit in ProximityEngine. We test them separately in this
@@ -4339,10 +4363,17 @@ class ProximityEngineDeformable : public testing::Test {
     return props;
   }
 
+  const drake::geometry::internal::deformable::DeformableGeometry&
+  GetDeformableGeometry(GeometryId id) {
+    return internal::deformable::GeometriesTester::get_deformable_geometry(
+        engine_.deformable_contact_geometries(), id);
+  }
+
   ProximityEngine<double> engine_;
   unordered_map<GeometryId, RigidTransformd> poses_;
 };
 
+namespace {
 TEST_F(ProximityEngineDeformable, AddGeometry) {
   Sphere sphere{0.5};
   const GeometryId id = GeometryId::get_new_id();
@@ -4358,6 +4389,58 @@ TEST_F(ProximityEngineDeformable, AddGeometry) {
   EXPECT_EQ(engine_.num_geometries(), 1);
   EXPECT_EQ(engine_.num_anchored(), 0);
   EXPECT_EQ(engine_.num_dynamic(), 1);
+
+  // Verifies the deformable geometry can be successfully removed.
+  engine_.RemoveGeometry(id, true);
+  EXPECT_EQ(engine_.num_geometries(), 0);
+  EXPECT_EQ(engine_.num_anchored(), 0);
+  EXPECT_EQ(engine_.num_dynamic(), 0);
+}
+
+TEST_F(ProximityEngineDeformable, ComputeDeformableContactData) {
+  // Add a deformable box.
+  const Box box{1.0, 1.0, 1.0};
+  const GeometryId deformable_id = GeometryId::get_new_id();
+  ProximityProperties deformable_props =
+      MakeProximityPropsWithRezHint(GeometryType::kDeformable, 1.0);
+  engine_.AddDynamicGeometry(box, {}, deformable_id, deformable_props);
+
+  // Add a rigid box partially overlapping the deformable box.
+  const GeometryId rigid_id = GeometryId::get_new_id();
+  ProximityProperties rigid_props =
+      MakeProximityPropsWithRezHint(GeometryType::kRigid, 1.0);
+  RigidTransformd X_WR(Vector3d(0, 0, 0.25));
+  engine_.AddDynamicGeometry(box, {}, rigid_id, rigid_props);
+
+  // The two boxes are in contact.
+  std::vector<DeformableContactData<double>> contact_data;
+  engine_.ComputeDeformableContactData(&contact_data);
+  EXPECT_EQ(contact_data.size(), 1);
+
+  // Shift the deformable geometry so that the two geometries are no longer in
+  // contact.
+  // The translation from the original frame M to the new frame N.
+  const Vector3d p_MN(10, 0, 0);
+  const auto& deformable_geometry = GetDeformableGeometry(deformable_id);
+  const VolumeMesh<double>& mesh =
+      deformable_geometry.deformable_volume_mesh().mesh();
+  Eigen::VectorXd q_WD(3 * mesh.num_vertices());
+  for (int i = 0; i < mesh.num_vertices(); ++i) {
+    q_WD.segment<3>(3 * i) = mesh.vertex(i) + p_MN;
+  }
+  std::unordered_map<GeometryId, Eigen::VectorXd>
+      geometry_id_to_vertex_positions;
+  geometry_id_to_vertex_positions.insert({deformable_id, q_WD});
+  engine_.UpdateDeformableVertexPositions(geometry_id_to_vertex_positions);
+  engine_.ComputeDeformableContactData(&contact_data);
+  EXPECT_EQ(contact_data.size(), 0);
+
+  // Shift the rigid geometry by the same vector and they are again in contact.
+  std::unordered_map<GeometryId, RigidTransformd> geometry_id_to_world_poses;
+  geometry_id_to_world_poses.insert({rigid_id, RigidTransformd(p_MN)});
+  engine_.UpdateWorldPoses(geometry_id_to_world_poses);
+  engine_.ComputeDeformableContactData(&contact_data);
+  EXPECT_EQ(contact_data.size(), 1);
 }
 
 }  // namespace

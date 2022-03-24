@@ -170,11 +170,7 @@ GTEST_TEST(DeformableContactInternalTest, CalcDeformableContactData) {
 
   // There is no rigid geometry to collide with the deformable geometry yet.
   geometries.ComputeAllDeformableContactData(&contact_data);
-  ASSERT_EQ(contact_data.size(), 1);
-  EXPECT_EQ(contact_data[0].deformable_geometry_id(), deformable_id);
-  EXPECT_EQ(contact_data[0].num_contact_pairs(), 0);
-  EXPECT_EQ(contact_data[0].num_contact_points(), 0);
-  EXPECT_EQ(contact_data[0].num_vertices_in_contact(), 0);
+  EXPECT_EQ(contact_data.size(), 0);
 
   // Add a rigid unit cube.
   GeometryId rigid_id = GeometryId::get_new_id();
@@ -186,11 +182,7 @@ GTEST_TEST(DeformableContactInternalTest, CalcDeformableContactData) {
 
   // The deformable box and the rigid box are not in contact yet.
   geometries.ComputeAllDeformableContactData(&contact_data);
-  ASSERT_EQ(contact_data.size(), 1);
-  EXPECT_EQ(contact_data[0].deformable_geometry_id(), deformable_id);
-  EXPECT_EQ(contact_data[0].num_contact_pairs(), 0);
-  EXPECT_EQ(contact_data[0].num_contact_points(), 0);
-  EXPECT_EQ(contact_data[0].num_vertices_in_contact(), 0);
+  EXPECT_EQ(contact_data.size(), 0);
 
   /* Now shift the rigid geometry closer to the deformable geometry.
                                     +Z

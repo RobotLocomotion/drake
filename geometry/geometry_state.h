@@ -823,7 +823,7 @@ class GeometryState {
   // TODO(SeanCurtis-TRI): Rename this to X_PFs_ to reflect multiplicity.
   std::vector<math::RigidTransform<T>> X_PF_;
 
-  // The pose of every geometry relative to the _world_ frame (regardless of
+  // The pose of every rigid geometry relative to the _world_ frame (regardless of
   // roles) keyed by the corresponding geometry's id. After a complete state
   // update from input poses,
   //   X_WGs_[i] == X_WFₙ · X_FₙFₙ₋₁ · ... · X_F₁F · G_i.X_FG()

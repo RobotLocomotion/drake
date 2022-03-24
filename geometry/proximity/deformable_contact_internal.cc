@@ -67,7 +67,11 @@ void Geometries::ComputeAllDeformableContactData(
   deformable_contact_data->clear();
   deformable_contact_data->reserve(num_deformable_geometries());
   for (const auto& it : deformable_geometries_) {
-    deformable_contact_data->emplace_back(CalcDeformableContactData(it.first));
+    DeformableContactData<double> contact_data =
+        CalcDeformableContactData(it.first);
+    if (contact_data.num_contact_points() > 0) {
+      deformable_contact_data->emplace_back(std::move(contact_data));
+    }
   }
 }
 
