@@ -69,15 +69,15 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// uninitialized spatial acceleration fail fast (fast bug detection).
   SpatialAcceleration() : Base() {}
 
-  /// Constructs a spatial acceleration from an angular acceleration α (alpha)
+  /// Constructs a spatial acceleration A from an angular acceleration α (alpha)
   /// and a translational acceleration 𝐚.
   SpatialAcceleration(const Eigen::Ref<const Vector3<T>>& alpha,
                       const Eigen::Ref<const Vector3<T>>& a) : Base(alpha, a) {}
 
-  /// Constructs a spatial acceleration from an Eigen expression that represents
-  /// a 6-element vector, i.e., a 3-element angular acceleration α and a
-  /// 3-element translational acceleration 𝐚. This constructor will assert the
-  /// size of `A` is six (6) either at compile-time for fixed sized Eigen
+  /// Constructs a spatial acceleration `A` from an Eigen expression that
+  /// represents a 6-element vector, i.e., a 3-element angular acceleration α
+  /// and a 3-element translational acceleration 𝐚. This constructor will assert
+  /// the size of `A` is six (6) either at compile-time for fixed sized Eigen
   /// expressions or at run-time for dynamic sized Eigen expressions.
   template <typename Derived>
   explicit SpatialAcceleration(const Eigen::MatrixBase<Derived>& A) : Base(A) {}

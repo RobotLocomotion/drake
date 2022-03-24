@@ -74,15 +74,15 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   /// uninitialized spatial momentum fail fast (fast bug detection).
   SpatialMomentum() : Base() {}
 
-  /// Constructs a spatial momentum from an angular momentum 𝐡
+  /// Constructs a spatial momentum L from an angular momentum 𝐡
   /// and a translational momentum 𝐥.
   SpatialMomentum(const Eigen::Ref<const Vector3<T>>& h,
                   const Eigen::Ref<const Vector3<T>>& l) : Base(h, l) {}
 
-  /// Constructs a spatial momentum from an Eigen expression that represents
+  /// Constructs a spatial momentum L from an Eigen expression that represents
   /// a 6-element vector, i.e., a 3-element angular momentum 𝐡 and a
   /// 3-element translational momentum 𝐥. This constructor will assert the
-  /// size of `A` is six (6) either at compile-time for fixed sized Eigen
+  /// size of `L` is six (6) either at compile-time for fixed sized Eigen
   /// expressions or at run-time for dynamic sized Eigen expressions.
   template <typename Derived>
   explicit SpatialMomentum(const Eigen::MatrixBase<Derived>& L) : Base(L) {}
@@ -102,22 +102,21 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   ///          = h_MSP_E - p_PQ_E x l_MS_E
   /// </pre>
   /// Note: Spatial momenta shift similar to spatial force (see SpatialForce)
-  /// and in a transpose way to spatial velocity (see SpatialVelocity).
+  /// and in a related/different way for spatial velocity (see SpatialVelocity).
   /// @see Shift() to shift spatial momentum without modifying `this`.
   SpatialMomentum<T>& ShiftInPlace(const Vector3<T>& offset) {
     this->rotational() -= offset.cross(this->translational());
     return *this;
     // Note: this operation is linear. [Jain 2010], (§2.1, page 22) uses the
     // "rigid body transformation operator" to write this as:
-    //   L_MSQ = Φ(-p_PQ)L_MSP
-    //         = Φ(p_QP)L_MSP     where Φᵀ(p_QP) is the linear operator:
+    //   L_MSQ = Φ(-p_PQ) L_MSP
+    //         =  Φ(p_QP) L_MSP    where Φ(p_QP) is the linear operator:
     //   Φ(p_PQ) = | I₃  p_PQx |
     //             | 0      I₃ |
     // where `p_PQx` denotes the cross product skew-symmetric matrix such that
     // `p_PQx vec = p_PQ x vec` (where vec is any vector).
-    // This same operator shifts spatial force in an analogous way (see
-    // SpatialForce::Shift()) whereas the transpose of this operator shifts
-    // spatial velocity (see SpatialVelocity::Shift()).
+    // Related Φ operators shift spatial force and spatial velocity
+    // (see SpatialForce::Shift() and SpatialVelocity:Shift()).
     //
     // - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
     //               algorithms. Springer Science & Business Media, pp. 123-130.

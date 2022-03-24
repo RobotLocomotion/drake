@@ -53,12 +53,12 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// uninitialized spatial velocity fail fast (fast bug detection).
   SpatialVelocity() : Base() {}
 
-  /// Constructs a spatial velocity from an angular velocity @p ω and a
-  /// translational velocity @p v.
+  /// Constructs a spatial velocity V from an angular velocity ω and a
+  /// translational velocity v.
   SpatialVelocity(const Eigen::Ref<const Vector3<T>>& w,
                   const Eigen::Ref<const Vector3<T>>& v) : Base(w, v) {}
 
-  /// Constructs a spatial velocity from an Eigen expression that represents a
+  /// Constructs a spatial velocity V from an Eigen expression that represents a
   /// 6-element vector, i.e., two 3-element vectors, namely an angular velocity
   /// ω and a translational velocity v.  This constructor will assert the size
   /// of V is six (6) either at compile-time for fixed sized Eigen expressions
@@ -91,8 +91,8 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
     //                | -px_BoCo  I₃ |
     // where `px_BoCo` denotes the cross product skew-symmetric matrix such that
     // `px_BoCo vec = p_BoCo x vec` (where vec is any vector).
-    // The transpose of this operator shifts spatial force or spatial momentum
-    // (see SpatialForce::Shift() or SpatialMomentum::Shift()).
+    // Related Φ operators shift spatial force and spatial momentum
+    // (see SpatialForce::Shift() and SpatialMomentum:Shift()).
     //
     // - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
     //               algorithms. Springer Science & Business Media, pp. 123-130.
