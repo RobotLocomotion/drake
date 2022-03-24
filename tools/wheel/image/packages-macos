@@ -1,0 +1,6 @@
+# Install anything needed to build the wheel that is NOT also needed to build
+# Drake itself. We assume that Drake's own prerequisites are already installed.
+brew 'bash'
+brew 'coreutils'
+brew 'ninja'
+brew 'yasm'
