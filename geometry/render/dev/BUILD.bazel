@@ -207,4 +207,17 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "image_difference",
+    testonly = 1,
+    srcs = ["test/image_difference.cc"],
+    deps = [
+        "//common:filesystem",
+        "@fmt",
+        "@gflags",
+        "@vtk//:vtkIOImage",
+        "@vtk//:vtkImagingCore",
+    ],
+)
+
 add_lint_tests()
