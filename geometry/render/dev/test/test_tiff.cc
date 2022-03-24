@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/test_utilities/test_tiff.h"
+#include "drake/geometry/render/dev/test/test_tiff.h"
 
 #include <limits>
 #include <vector>

@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/test_utilities/test_png.h"
+#include "drake/geometry/render/dev/test/test_png.h"
 
 #include <limits>
 

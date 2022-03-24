@@ -98,15 +98,41 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "test_png",
+    testonly = 1,
+    srcs = ["test/test_png.cc"],
+    hdrs = ["test/test_png.h"],
+    deps = [
+        "//common:unused",
+        "//systems/sensors:image",
+        "@gtest//:without_main",
+        "@libpng",
+    ],
+)
+
+drake_cc_library(
+    name = "test_tiff",
+    testonly = 1,
+    srcs = ["test/test_tiff.cc"],
+    hdrs = ["test/test_tiff.h"],
+    deps = [
+        "//systems/sensors:image",
+        "@gtest//:without_main",
+        "@libtiff",
+    ],
+)
+
 drake_cc_googletest(
     name = "render_client_test",
     data = ["//geometry/render:test_models"],
     deps = [
         ":render_client",
+        ":test_png",
+        ":test_tiff",
         "//common:find_resource",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
-        "//geometry/render/dev/test_utilities",
     ],
 )
 
@@ -128,10 +154,11 @@ drake_cc_googletest(
     tags = vtk_test_tags(),
     deps = [
         ":render_engine_gltf_client",
+        ":test_png",
+        ":test_tiff",
         "//common:filesystem",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
-        "//geometry/render/dev/test_utilities",
     ],
 )
 

@@ -16,8 +16,8 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/render/dev/http_service.h"
-#include "drake/geometry/render/dev/test_utilities/test_png.h"
-#include "drake/geometry/render/dev/test_utilities/test_tiff.h"
+#include "drake/geometry/render/dev/test/test_png.h"
+#include "drake/geometry/render/dev/test/test_tiff.h"
 
 namespace drake {
 namespace geometry {
