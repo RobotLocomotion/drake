@@ -91,8 +91,8 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
     //                | -px_BoCo  I₃ |
     // where `px_BoCo` denotes the cross product skew-symmetric matrix such that
     // `px_BoCo vec = p_BoCo x vec` (where vec is any vector).
-    // Related Φ operators shift spatial force and spatial momentum
-    // (see SpatialForce::Shift() and SpatialMomentum:Shift()).
+    // Note: There are related Φ operators that shift spatial force and spatial
+    // momentum (see SpatialForce::Shift() and SpatialMomentum:Shift()).
     //
     // - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
     //               algorithms. Springer Science & Business Media, pp. 123-130.

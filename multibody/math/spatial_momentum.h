@@ -115,8 +115,8 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
     //             | 0      I₃ |
     // where `p_PQx` denotes the cross product skew-symmetric matrix such that
     // `p_PQx vec = p_PQ x vec` (where vec is any vector).
-    // Related Φ operators shift spatial force and spatial velocity
-    // (see SpatialForce::Shift() and SpatialVelocity:Shift()).
+    // Note: There are related Φ operators that shift spatial force and spatial
+    // velocity (see SpatialForce::Shift() and SpatialVelocity:Shift()).
     //
     // - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
     //               algorithms. Springer Science & Business Media, pp. 123-130.
