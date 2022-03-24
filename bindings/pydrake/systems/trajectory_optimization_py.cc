@@ -12,6 +12,22 @@
 namespace drake {
 namespace pydrake {
 
+template <typename C>
+void RegisterAddConstraintToAllKnotPoints(
+    py::class_<systems::trajectory_optimization::MultipleShooting>* cls) {
+  using drake::systems::trajectory_optimization::MultipleShooting;
+  constexpr auto& doc = pydrake_doc.drake.systems.trajectory_optimization;
+  cls->def(
+      "AddConstraintToAllKnotPoints",
+      [](MultipleShooting* self, std::shared_ptr<C> constraint,
+          const Eigen::Ref<const VectorX<symbolic::Variable>>& vars)
+          -> std::vector<solvers::Binding<C>> {
+        return self->AddConstraintToAllKnotPoints<C>(constraint, vars);
+      },
+      py::arg("constraint"), py::arg("vars"),
+      doc.MultipleShooting.AddConstraintToAllKnotPoints.doc_shared_ptr);
+}
+
 PYBIND11_MODULE(trajectory_optimization, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::trajectory_optimization;
@@ -25,8 +41,9 @@ PYBIND11_MODULE(trajectory_optimization, m) {
   py::module::import("pydrake.systems.primitives");
   py::module::import("pydrake.solvers.mathematicalprogram");
 
-  py::class_<MultipleShooting>(m, "MultipleShooting", doc.MultipleShooting.doc)
-      .def("time", &MultipleShooting::time, doc.MultipleShooting.time.doc)
+  py::class_<MultipleShooting> cls(
+      m, "MultipleShooting", doc.MultipleShooting.doc);
+  cls.def("time", &MultipleShooting::time, doc.MultipleShooting.time.doc)
       .def("prog",
           overload_cast_explicit<MathematicalProgram&>(&MultipleShooting::prog),
           py_rvp::reference_internal, doc.MultipleShooting.prog.doc)
@@ -101,9 +118,20 @@ PYBIND11_MODULE(trajectory_optimization, m) {
           },
           py::arg("g"),
           doc.MultipleShooting.AddRunningCost.doc_1args_constEigenMatrixBase)
-      .def("AddConstraintToAllKnotPoints",
-          &MultipleShooting::AddConstraintToAllKnotPoints, py::arg("f"),
-          doc.MultipleShooting.AddConstraintToAllKnotPoints.doc)
+      .def(
+          "AddConstraintToAllKnotPoints",
+          [](MultipleShooting* self, const symbolic::Formula& f) {
+            return self->AddConstraintToAllKnotPoints(f);
+          },
+          py::arg("f"), doc.MultipleShooting.AddConstraintToAllKnotPoints.doc)
+      .def(
+          "AddConstraintToAllKnotPoints",
+          [](MultipleShooting* self,
+              const Eigen::Ref<const VectorX<symbolic::Formula>>& f) {
+            return self->AddConstraintToAllKnotPoints(f);
+          },
+          py::arg("f"),
+          doc.MultipleShooting.AddConstraintToAllKnotPoints.doc_formulas)
       .def("AddTimeIntervalBounds", &MultipleShooting::AddTimeIntervalBounds,
           py::arg("lower_bound"), py::arg("upper_bound"),
           doc.MultipleShooting.AddTimeIntervalBounds.doc)
@@ -169,6 +197,10 @@ PYBIND11_MODULE(trajectory_optimization, m) {
               &MultipleShooting::ReconstructStateTrajectory),
           py::arg("result"),
           doc.MultipleShooting.ReconstructStateTrajectory.doc);
+  RegisterAddConstraintToAllKnotPoints<solvers::BoundingBoxConstraint>(&cls);
+  RegisterAddConstraintToAllKnotPoints<solvers::LinearEqualityConstraint>(&cls);
+  RegisterAddConstraintToAllKnotPoints<solvers::LinearConstraint>(&cls);
+  RegisterAddConstraintToAllKnotPoints<solvers::Constraint>(&cls);
 
   py::class_<DirectCollocation, MultipleShooting>(
       m, "DirectCollocation", doc.DirectCollocation.doc)

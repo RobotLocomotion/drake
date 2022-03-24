@@ -881,6 +881,21 @@ GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
   // u(2) = h(0)+h(1).
   EXPECT_NEAR(result.GetSolution(trajopt.input(2).coeff(0)),
               result.GetSolution(trajopt.h_vars()).sum(), 1e-6);
+
+  // Add the same constraint again using the shared_ptr variant.
+  std::vector<solvers::Binding<solvers::BoundingBoxConstraint>> c =
+      trajopt.AddConstraintToAllKnotPoints(
+          std::make_shared<solvers::BoundingBoxConstraint>(state_value,
+                                                           state_value),
+          trajopt.state());
+  EXPECT_EQ(c.size(), kNumSampleTimes);
+
+  // Add the same constraint again using the vector of formulas variant.
+  std::vector<solvers::Binding<solvers::Constraint>> c2 =
+      trajopt.AddConstraintToAllKnotPoints(
+          Vector2<symbolic::Formula>{trajopt.state()[0] == state_value[0],
+                                     trajopt.state()[1] == state_value[1]});
+  EXPECT_EQ(c2.size(), 2*kNumSampleTimes);
 }
 
 GTEST_TEST(MultipleShootingTest, FinalCostTest) {

@@ -2,6 +2,8 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/unused.h"
+
 namespace drake {
 namespace systems {
 namespace trajectory_optimization {
@@ -37,9 +39,11 @@ void SequentialExpressionManager::RegisterSequentialExpressions(
     const string& name) {
   DRAKE_THROW_UNLESS(sequential_expressions.rows() == placeholders.size());
   DRAKE_THROW_UNLESS(sequential_expressions.cols() == num_samples_);
-  const auto pair = name_to_placeholders_and_sequential_expressions_.insert(
-      {name, {placeholders, sequential_expressions}});
-  DRAKE_THROW_UNLESS(pair.second);
+  name_to_placeholders_.emplace(std::make_pair(name, placeholders));
+  for (int i = 0; i < placeholders.size(); ++i) {
+    placeholders_to_expressions_.emplace(
+        std::make_pair(placeholders[i], sequential_expressions.row(i)));
+  }
 }
 
 Substitution
@@ -47,47 +51,62 @@ SequentialExpressionManager::ConstructPlaceholderVariableSubstitution(
     int index) const {
   DRAKE_THROW_UNLESS(0 <= index && index < num_samples_);
   Substitution substitution;
-  for (const auto& pair : name_to_placeholders_and_sequential_expressions_) {
-    // pair.first is the name, which we don't need here.
-    const VectorX<Variable>& placeholders = pair.second.first;
-    const MatrixX<Expression>& sequential_expressions = pair.second.second;
-    const int rows = placeholders.rows();
-    for (int row = 0; row < rows; ++row) {
-      substitution.emplace(placeholders(row),
-                           sequential_expressions(row, index));
-    }
+  for (const auto& [p, e] : placeholders_to_expressions_) {
+    substitution.emplace(p, e(index));
   }
   return substitution;
+}
+
+VectorX<symbolic::Variable> SequentialExpressionManager::GetVariables(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
+    int index) const {
+  DRAKE_THROW_UNLESS(0 <= index && index < num_samples_);
+  VectorX<symbolic::Variable> vars_at_index(vars.size());
+  for (int i = 0; i < vars.size(); ++i) {
+    const auto it = placeholders_to_expressions_.find(vars[i]);
+    if (it == placeholders_to_expressions_.end()) {
+      throw std::runtime_error(
+          vars[i].get_name() +
+          " does not appear to be a placeholder variable in this program.");
+    }
+    if (!symbolic::is_variable(it->second[index])) {
+      throw std::runtime_error(
+          fmt::format("The placeholder variable {} is associated with {} which "
+                      "is not a variable.",
+                      vars[i].get_name(), it->second[index].to_string()));
+    }
+    vars_at_index[i] = symbolic::get_variable(it->second[index]);
+  }
+  return vars_at_index;
 }
 
 VectorX<Expression> SequentialExpressionManager::GetSequentialExpressionsByName(
     const string& name, int index) const {
   DRAKE_THROW_UNLESS(0 <= index && index < num_samples_);
-  const auto it = name_to_placeholders_and_sequential_expressions_.find(name);
-  DRAKE_THROW_UNLESS(it !=
-                     name_to_placeholders_and_sequential_expressions_.end());
-  const MatrixX<Expression>& sequential_expressions = it->second.second;
-  return sequential_expressions.col(index);
+  const auto it = name_to_placeholders_.find(name);
+  DRAKE_THROW_UNLESS(it != name_to_placeholders_.end());
+  VectorX<Expression> e(it->second.size());
+  for (int i = 0; i < it->second.size(); ++i) {
+    const auto e_it = placeholders_to_expressions_.find(it->second[i]);
+    DRAKE_THROW_UNLESS(e_it != placeholders_to_expressions_.end());
+    e[i] = e_it->second[index];
+  }
+  return e;
 }
 
 int SequentialExpressionManager::num_rows(const string& name) const {
-  const auto it = name_to_placeholders_and_sequential_expressions_.find(name);
-  DRAKE_THROW_UNLESS(it !=
-                     name_to_placeholders_and_sequential_expressions_.end());
-  return it->second.first.size();
+  const auto it = name_to_placeholders_.find(name);
+  DRAKE_THROW_UNLESS(it != name_to_placeholders_.end());
+  return it->second.size();
 }
 
 vector<string> SequentialExpressionManager::GetSequentialExpressionNames()
     const {
   vector<string> ret;
-  for (const auto& item : name_to_placeholders_and_sequential_expressions_) {
-    const MatrixX<symbolic::Expression>& sequential_expressions{
-        item.second.second};
-    for (int i = 0; i < static_cast<int>(sequential_expressions.rows()); ++i) {
-      for (int j = 0; j < static_cast<int>(sequential_expressions.cols());
-           ++j) {
-        ret.emplace_back(sequential_expressions(i, j).to_string());
-      }
+  for (const auto& [p, e] : placeholders_to_expressions_) {
+    unused(p);
+    for (int i = 0; i < static_cast<int>(e.size()); ++i) {
+      ret.emplace_back(e(i).to_string());
     }
   }
   return ret;

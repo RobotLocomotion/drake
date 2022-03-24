@@ -6,6 +6,7 @@ import numpy as np
 
 from pydrake.common.deprecation import DrakeDeprecationWarning
 from pydrake.examples.pendulum import PendulumPlant
+from pydrake.math import eq
 from pydrake.trajectories import PiecewisePolynomial
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.systems.framework import InputPortSelection
@@ -22,11 +23,16 @@ class TestTrajectoryOptimization(unittest.TestCase):
         plant = PendulumPlant()
         context = plant.CreateDefaultContext()
 
+        num_time_samples = 21
         dircol = DirectCollocation(
-            plant, context, num_time_samples=21, minimum_timestep=0.2,
+            plant,
+            context,
+            num_time_samples=num_time_samples,
+            minimum_timestep=0.2,
             maximum_timestep=0.5,
             input_port_index=InputPortSelection.kUseFirstInputIfItExists,
             assume_non_continuous_states_are_fixed=False)
+        prog = dircol.prog()
 
         # Spell out most of the methods, regardless of whether they make sense
         # as a consistent optimization.  The goal is to check the bindings,
@@ -88,19 +94,43 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertTrue(was_called["state"])
         self.assertTrue(was_called["complete"])
 
-        times = dircol.GetSampleTimes(result=result)
-        inputs = dircol.GetInputSamples(result=result)
-        states = dircol.GetStateSamples(result=result)
-        variables = dircol.GetSequentialVariableSamples(result=result,
-                                                        name="test")
-        input_traj = dircol.ReconstructInputTrajectory(result=result)
-        state_traj = dircol.ReconstructStateTrajectory(result=result)
+        dircol.GetSampleTimes(result=result)
+        dircol.GetInputSamples(result=result)
+        dircol.GetStateSamples(result=result)
+        dircol.GetSequentialVariableSamples(result=result, name="test")
+        dircol.ReconstructInputTrajectory(result=result)
+        dircol.ReconstructStateTrajectory(result=result)
 
         constraint = DirectCollocationConstraint(plant, context)
         AddDirectCollocationConstraint(constraint, dircol.timestep(0),
                                        dircol.state(0), dircol.state(1),
                                        dircol.input(0), dircol.input(1),
-                                       dircol.prog())
+                                       prog)
+
+        # Test AddConstraintToAllKnotPoints variants.
+        nc = len(prog.bounding_box_constraints())
+        c = dircol.AddConstraintToAllKnotPoints(
+            constraint=mp.BoundingBoxConstraint([0], [1]), vars=u)
+        self.assertIsInstance(c[0], mp.Binding[mp.BoundingBoxConstraint])
+        self.assertEqual(len(prog.bounding_box_constraints()),
+                         nc + num_time_samples)
+        nc = len(prog.linear_equality_constraints())
+        c = dircol.AddConstraintToAllKnotPoints(
+            constraint=mp.LinearEqualityConstraint([1], [0]), vars=u)
+        self.assertIsInstance(c[0], mp.Binding[mp.LinearEqualityConstraint])
+        self.assertEqual(len(prog.linear_equality_constraints()),
+                         nc + num_time_samples)
+        nc = len(prog.linear_constraints())
+        c = dircol.AddConstraintToAllKnotPoints(
+            constraint=mp.LinearConstraint([1], [0], [1]), vars=u)
+        self.assertIsInstance(c[0], mp.Binding[mp.LinearConstraint])
+        self.assertEqual(len(prog.linear_constraints()), nc + num_time_samples)
+        nc = len(prog.linear_equality_constraints())
+        # eq(x, 2) produces a 2-dimensional vector of Formula.
+        c = dircol.AddConstraintToAllKnotPoints(eq(x, 2))
+        self.assertIsInstance(c[0].evaluator(), mp.LinearEqualityConstraint)
+        self.assertEqual(len(prog.linear_equality_constraints()),
+                         nc + 2*num_time_samples)
 
     def test_direct_transcription(self):
         # Integrator.
@@ -143,7 +173,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
         context = plant.CreateDefaultContext()
         dirtran = DirectTranscription(plant, context, num_time_samples=3,
                                       fixed_timestep=TimeStep(0.1))
-        with warnings.catch_warnings():
+        with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("once", DrakeDeprecationWarning)
             self.assertEqual(len(dirtran.linear_equality_constraints()), 3)
         self.assertEqual(len(dirtran.prog().linear_equality_constraints()), 3)
