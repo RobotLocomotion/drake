@@ -38,8 +38,8 @@ namespace fs = drake::filesystem;
 // Convenience definitions for interacting with HttpService.
 using data_map_t = std::map<std::string, std::string>;
 
-/* Add field_name = field_data to the map, assumes data_map does **not** already
- have the key `field_name`. */
+/* Adds field_name = field_data to the map, assumes data_map does **not**
+ already have the key `field_name`. */
 void AddField(data_map_t* data_map, const std::string& field_name,
               const std::string& field_data) {
   (*data_map)[field_name] = field_data;
@@ -84,8 +84,8 @@ void AddField<RenderImageType>(data_map_t* data_map,
   // LCOV_EXCL_STOP
 }
 
-/* Verify the loaded image has the correct dimensions.  This includes verifying
- that the image is 2D (depth=1).
+/* Verifies the loaded image has the correct dimensions.  This includes
+ verifying that the image is 2D (depth=1).
 
  @param expected_width
    The expected width of the loaded image.
@@ -129,7 +129,7 @@ void VerifyImportedImageDimensions(int expected_width, int expected_height,
   }
 }
 
-/* Return '{url}' if port is <= 0, '{url}:{port}' otherwise.  Used for
+/* Returns '{url}' if port is <= 0, '{url}:{port}' otherwise.  Used for
  populating error messages. */
 std::string UrlWithPort(const std::string& url, int port) {
   if (port > 0) return fmt::format("{}:{}", url, port);

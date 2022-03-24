@@ -73,7 +73,7 @@ class TestTiff {
           std::is_same_v<ChannelType, float>,
       "TestTiff: only uint8_t, uint16_t, and 32 bit float supported.");
 
-  /* Create a TIFF image at the specified path with dimensions width x height,
+  /* Creates a TIFF image at the specified path with dimensions width x height,
    generating the pattern described on the class documentation.  User is
    responsible for deleting the file after it is created. */
   TestTiff(const std::string& path, int width, int height);

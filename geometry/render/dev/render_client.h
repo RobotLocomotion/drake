@@ -59,8 +59,8 @@ class RenderClient {
   /* @name Server communication */
   //@{
 
-  /* Upload the scene file from `scene_path` to the render server, download
-   the image file response, and return the path to the image file.
+  /* Uploads the scene file from `scene_path` to the render server, downloads
+   the image file response, and returns the path to the image file.
    The returned file path may be used directly with any one of the helper
    methods LoadColorImage(), LoadDepthImage(), or LoadLabelImage().  The file
    path returned will be in temp_directory(), users do not need to delete the
@@ -108,13 +108,13 @@ class RenderClient {
   /* @name Server communication helpers */
   //@{
 
-  /* Compute and return the `sha256sum` of the specified `path`.
+  /* Computes and returns the `sha256sum` of the specified `path`.
    @throws std::runtime_error
      If the `path` cannot be opened or the hash fails to compute.
    */
   std::string ComputeSha256(const std::string& path) const;
 
-  /* Rename the specified file `response_data_path` to have the same name as
+  /* Renames the specified file `response_data_path` to have the same name as
    `reference_path`, with a new file extension provided by `extension`.
    Helper method for RetrieveRender() which will download files as
    `{temp_directory()}/{response_data_path}` and then rename the file
@@ -156,7 +156,7 @@ class RenderClient {
   /* @name Image loading helpers */
   //@{
 
-  /* Load the specified image file to a drake output buffer.
+  /* Loads the specified image file to a drake output buffer.
 
    This method only supports loading unsigned char PNG images with either three
    (RGB) or four (RGBA) channels.
@@ -175,7 +175,7 @@ class RenderClient {
       const std::string& path,
       drake::systems::sensors::ImageRgba8U* color_image_out) const;
 
-  /* Load the specified image file to a drake output buffer.
+  /* Loads the specified image file to a drake output buffer.
 
    This method supports loading:
 
@@ -198,7 +198,7 @@ class RenderClient {
       const std::string& path,
       drake::systems::sensors::ImageDepth32F* depth_image_out) const;
 
-  /* Load the specified image file to a drake output buffer.
+  /* Loads the specified image file to a drake output buffer.
 
    This method only supports loading single channel unsigned short PNG images.
 

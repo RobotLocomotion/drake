@@ -28,7 +28,7 @@ namespace fs = drake::filesystem;
 
 // Curl callbacks --------------------------------------------------------------
 
-// Write callback for libcurl, assumes `userp` points to an std::ofstream.
+// Writes callback for libcurl, assumes `userp` points to an std::ofstream.
 // See: https://curl.se/libcurl/c/libcurl-tutorial.html
 size_t WriteFileData(void* buffer, size_t size, size_t nmemb, void* userp) {
   const size_t data_size = size * nmemb;
@@ -84,7 +84,7 @@ std::string CurlInfoTypeAsString(curl_infotype type) {
   return fmt::format("UNKNOWN_CURLINFO_TYPE={}", type);
 }
 
-/* Remove leading / trailing whitespace from message before logging.  Curl
+/* Removes leading / trailing whitespace from message before logging.  Curl
  includes newline characters in its entries, which are desirable for the
  accumulated interior message parts but the trailing whitespace in particular
  leads to cluttered logs (drake::log() adds a trailing newline). */
@@ -98,7 +98,7 @@ void LogIfTrimmedWhitespaceNonEmpty(curl_infotype type,
   }
 }
 
-/* Log the combined messages added to `debug_data` by the DebugCallback.
+/* Logs the combined messages added to `debug_data` by the DebugCallback.
  When curl calls the DebugCallback, it will do so with piecemeal components.  In
  the below walk-through, the "Accept: ..." statement was modified to add spaces
  between * and / to avoid ending the comment.
