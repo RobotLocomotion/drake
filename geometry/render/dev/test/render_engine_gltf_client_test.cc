@@ -17,6 +17,7 @@
 namespace drake {
 namespace geometry {
 namespace render {
+namespace internal {
 
 // Exposes various private access methods and data members for validation.
 class RenderEngineGltfClientTester {
@@ -39,18 +40,16 @@ class RenderEngineGltfClientTester {
   }
 
   // Allow the HttpService backend to be swapped out.
-  void SetHttpService(std::unique_ptr<internal::HttpService> service) {
+  void SetHttpService(std::unique_ptr<HttpService> service) {
     engine_->render_client_->SetHttpService(std::move(service));
   }
 
   // RenderEngineGltfClient private method access.
-  std::string ExportPathFor(internal::ImageType image_type,
-                            int64_t scene_id) const {
+  std::string ExportPathFor(ImageType image_type, int64_t scene_id) const {
     return engine_->ExportPathFor(image_type, scene_id);
   }
 
-  std::string ExportScene(internal::ImageType image_type,
-                          int64_t scene_id) const {
+  std::string ExportScene(ImageType image_type, int64_t scene_id) const {
     return engine_->ExportScene(image_type, scene_id);
   }
 
@@ -59,8 +58,7 @@ class RenderEngineGltfClientTester {
     engine_->CleanupFrame(scene_path, image_path);
   }
 
-  Eigen::Matrix4d CameraModelViewTransformMatrix(
-      internal::ImageType image_type) const {
+  Eigen::Matrix4d CameraModelViewTransformMatrix(ImageType image_type) const {
     return engine_->CameraModelViewTransformMatrix(image_type);
   }
 
@@ -77,11 +75,6 @@ using Eigen::Matrix4d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 
-using internal::HttpResponse;
-using internal::HttpService;
-using internal::TestPngGray16;
-using internal::TestPngRgb8;
-using internal::TestTiffGray32;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using systems::sensors::ImageDepth32F;
@@ -162,20 +155,20 @@ GTEST_TEST(RenderEngineGltfClient, UpdateViewpoint) {
   // First, use the RenderEngineVtk::UpdateViewpoint and gather matrices.
   engine.RenderEngineVtk::UpdateViewpoint(X_WB);
   Matrix4d vtk_color_mat =
-      tester.CameraModelViewTransformMatrix(internal::ImageType::kColor);
+      tester.CameraModelViewTransformMatrix(ImageType::kColor);
   Matrix4d vtk_depth_mat =
-      tester.CameraModelViewTransformMatrix(internal::ImageType::kDepth);
+      tester.CameraModelViewTransformMatrix(ImageType::kDepth);
   Matrix4d vtk_label_mat =
-      tester.CameraModelViewTransformMatrix(internal::ImageType::kLabel);
+      tester.CameraModelViewTransformMatrix(ImageType::kLabel);
 
   // Use the RenderEngineGltfClient::UpdateViewpoint and gather new matrices.
   engine.UpdateViewpoint(X_WB);
   Matrix4d gltf_color_mat =
-      tester.CameraModelViewTransformMatrix(internal::ImageType::kColor);
+      tester.CameraModelViewTransformMatrix(ImageType::kColor);
   Matrix4d gltf_depth_mat =
-      tester.CameraModelViewTransformMatrix(internal::ImageType::kDepth);
+      tester.CameraModelViewTransformMatrix(ImageType::kDepth);
   Matrix4d gltf_label_mat =
-      tester.CameraModelViewTransformMatrix(internal::ImageType::kLabel);
+      tester.CameraModelViewTransformMatrix(ImageType::kLabel);
 
   /* A ModelView transform can be inverted directly by inverting the rotation
    via transpose, and using this inverted rotation to rotate the negated
@@ -401,16 +394,15 @@ GTEST_TEST(RenderEngineGltfClient, Export) {
   Tester tester{&engine};
 
   for (const auto image_type :
-       {internal::ImageType::kColor, internal::ImageType::kDepth,
-        internal::ImageType::kLabel}) {
+       {ImageType::kColor, ImageType::kDepth, ImageType::kLabel}) {
     for (const int64_t scene_id : {1, 11, 111}) {  // validate name formatting
       // Reconstruct the expected export path.
       std::string image_type_str;
-      if (image_type == internal::ImageType::kColor) {
+      if (image_type == ImageType::kColor) {
         image_type_str = "color";
-      } else if (image_type == internal::ImageType::kDepth) {
+      } else if (image_type == ImageType::kDepth) {
         image_type_str = "depth";
-      } else {  // image_type := internal::ImageType::kLabel
+      } else {  // image_type := ImageType::kLabel
         image_type_str = "label";
       }
       const std::string basename =
@@ -476,6 +468,7 @@ GTEST_TEST(RenderEngineGltfClient, CleanupFrame) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake
