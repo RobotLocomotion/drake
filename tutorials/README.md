@@ -1,62 +1,29 @@
 # Drake Tutorials
 
-This provides more in-depth documentation on top of the
-[Drake Documentation's Tutorials](https://drake.mit.edu/#tutorials) section.
+Drake offers Python-based tutorials using Jupyter notebooks.
+
+The tutorials can be run online without any local installation, or are also
+available via `pip` for running locally.
+
+## Running the Tutorials Online
+
+To host the tutorials online, we use Deepnote.  You may view a tutorial
+without creating an account:
+
+[![Deepnote](https://deepnote.com/buttons/launch-in-deepnote-white-small.svg)](https://deepnote.com/project/Tutorials-K0_FCa7yQX2kDWBx3-2RmQ/%2Findex.ipynb)
+
+To run a tutorial interactively or to experiment with editing the code, click
+the "Duplicate" button in the upper right while viewing. You'll be prompted to
+create an account using Google, GitHub, or SSO. The button will duplicate the
+entire suite of tutorials into your own personal Deepnote project.
 
 ## Running the Tutorials Locally
 
-To run the tutorials locally, install Drake via one of the
-[installation methods](https://drake.mit.edu/installation.html)
-(e.g., [pip install drake](https://drake.mit.edu/pip.html)),
-be sure your `PYTHONPATH` has been set per the installation instructions,
-and then run `python3 -m pydrake.tutorials` to launch a Jupyter browser.
-
-## Running and Viewing the Notebooks Online
-
-We currently support running the tutorials on a number of cloud notebook services:
-
-[![Deepnote](https://deepnote.com/buttons/launch-in-deepnote-white-small.svg)](https://deepnote.com/project/Tutorials-K0_FCa7yQX2kDWBx3-2RmQ/%2Findex.ipynb)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?urlpath=/tree/tutorials/index.ipynb)
-[![nbviewer](https://img.shields.io/badge/view%20on-nbviewer-brightgreen.svg)](https://nbviewer.jupyter.org/github/RobotLocomotion/drake/blob/nightly-release/tutorials/index.ipynb)
-
-We include (online) platform-specific notes below.
-
-### Deepnote
-
-We are currently transitioning to making Deepnote our preferred method of
-hosting for the tutorials.  It allows provisioning via Docker, which makes it
-more stable/maintainable than alternatives like Google Colab.  The user
-interface is also excellent for concurrent programming with your friends.
-
-### Binder
-
-Since Binder uses the `robotlocomotion/drake:latest` image on
-[Docker Hub](https://hub.docker.com/r/robotlocomotion/drake) that is published
-once a day from the `nightly-release-binder` branch, it may be missing features
-used by notebooks on `master`. These will be available the next day when the
-`nightly-release-binder` branch is automatically updated.
-
-Binder lets you browse notebooks, but you must wait for about 10-20s for
-it to provision a kernel and let you see the notebook.
-
-Note: Meshcat is not currently supported on Binder, since it does not expose the relevant network ports.
-<!-- TODO(russt) -- this would almost certainly work with ngrok, if we want to handle Binder in the StartMeshcat logic.  But Binder support will likely be dropped soon. -->
-
-### nbviewer
-
-If you are looking to browse among the notebooks with minimal wait time,
-nbviewer is highly recommended, as you can also launch Binder directly from
-nbviewer using the
-<img width="15px" height="15px"
-    src="https://nbviewer.jupyter.org/static/img/icon-binder-color.png"/>
-button at the top-right.
-
-### Github notebook preview
-
-GitHub's interface lets you render notebooks,
-but there may be a significant delay, it tends to obfuscate links with its
-rendering server (`render.githubusercontent.com`) such that they are unusable,
-and does not provide simple anchors for headings.
+To run the tutorials locally, install Drake via one of the [installation
+methods](https://drake.mit.edu/installation.html) (e.g., [pip install
+drake](https://drake.mit.edu/pip.html)), be sure your `PYTHONPATH` has been set
+per the installation instructions, and then run `python3 -m pydrake.tutorials`
+to launch a Jupyter browser.
 
 ## For Developers
 
