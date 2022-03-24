@@ -150,66 +150,23 @@ GTEST_TEST(MultibodyPlant, GetDefaultContactSurfaceRepresentation) {
   }
 }
 
-// Set up a plant with 2 trees, one tree having a single body with one revolute
-// joint attached to world, the second tree a serial chain of two bodies
-// attached to each other and world by revolute joints.
+// Set up a plant with 2 trees, one tree having a single floating body, the
+// second tree a serial chain of two bodies attached to each other and world by
+// revolute joints.
 class JointLockingTest : public ::testing::TestWithParam<int> {
  public:
   void SetUp() {
     plant_ = std::make_unique<MultibodyPlant<double>>(0.1);
-    const RigidBody<double>& joint_body1 =
-        plant_->AddRigidBody("joint_body1", SpatialInertia<double>());
-    const RigidBody<double>& joint_body2 =
-        plant_->AddRigidBody("joint_body2", SpatialInertia<double>());
-    const RigidBody<double>& joint_body3 =
-        plant_->AddRigidBody("joint_body3", SpatialInertia<double>());
 
-    std::unique_ptr<RevoluteJoint<double>> joint_w_1 =
-        std::make_unique<RevoluteJoint<double>>(
-            "joint_w_1", plant_->world_frame(), joint_body1.body_frame(),
-            Vector3d::UnitZ());
-    std::unique_ptr<RevoluteJoint<double>> joint_w_2 =
-        std::make_unique<RevoluteJoint<double>>(
-            "joint_w_2", plant_->world_frame(), joint_body2.body_frame(),
-            Vector3d::UnitZ());
-    std::unique_ptr<RevoluteJoint<double>> joint_2_3 =
-        std::make_unique<RevoluteJoint<double>>(
-            "joint_2_3", joint_body2.body_frame(), joint_body3.body_frame(),
-            Vector3d::UnitZ());
-
-    // Each permutation of adding joints to the plant.
-    // In some cases the joint indices will coincide with assigned velocity
-    // indices, but in the general case they will not.
+    // Each permutation of adding trees (children of world body) to the plant.
     switch (GetParam()) {
       case 0:
-        plant_->AddJoint(std::move(joint_w_1));
-        plant_->AddJoint(std::move(joint_w_2));
-        plant_->AddJoint(std::move(joint_2_3));
+        AddFloatingPendulum();
+        AddDoublePendulum();
         break;
       case 1:
-        plant_->AddJoint(std::move(joint_w_1));
-        plant_->AddJoint(std::move(joint_2_3));
-        plant_->AddJoint(std::move(joint_w_2));
-        break;
-      case 2:
-        plant_->AddJoint(std::move(joint_w_2));
-        plant_->AddJoint(std::move(joint_2_3));
-        plant_->AddJoint(std::move(joint_w_1));
-        break;
-      case 3:
-        plant_->AddJoint(std::move(joint_w_2));
-        plant_->AddJoint(std::move(joint_w_1));
-        plant_->AddJoint(std::move(joint_2_3));
-        break;
-      case 4:
-        plant_->AddJoint(std::move(joint_2_3));
-        plant_->AddJoint(std::move(joint_w_1));
-        plant_->AddJoint(std::move(joint_w_2));
-        break;
-      case 5:
-        plant_->AddJoint(std::move(joint_2_3));
-        plant_->AddJoint(std::move(joint_w_2));
-        plant_->AddJoint(std::move(joint_w_1));
+        AddDoublePendulum();
+        AddFloatingPendulum();
         break;
     }
 
@@ -220,50 +177,107 @@ class JointLockingTest : public ::testing::TestWithParam<int> {
  protected:
   std::unique_ptr<MultibodyPlant<double>> plant_;
   std::unique_ptr<Context<double>> context_;
+
+ private:
+  void AddFloatingPendulum() {
+    plant_->AddRigidBody("body1", SpatialInertia<double>());
+    plant_->AddRigidBody("body2", SpatialInertia<double>());
+
+    std::unique_ptr<RevoluteJoint<double>> body1_body2 =
+        std::make_unique<RevoluteJoint<double>>(
+            "body1_body2", plant_->GetRigidBodyByName("body1").body_frame(),
+            plant_->GetRigidBodyByName("body2").body_frame(),
+            Vector3d::UnitZ());
+    plant_->AddJoint(std::move(body1_body2));
+  }
+
+  void AddDoublePendulum() {
+    plant_->AddRigidBody("body3", SpatialInertia<double>());
+    plant_->AddRigidBody("body4", SpatialInertia<double>());
+
+    std::unique_ptr<RevoluteJoint<double>> world_body3 =
+        std::make_unique<RevoluteJoint<double>>(
+            "world_body3", plant_->world_frame(),
+            plant_->GetRigidBodyByName("body3").body_frame(),
+            Vector3d::UnitZ());
+    std::unique_ptr<RevoluteJoint<double>> body3_body4 =
+        std::make_unique<RevoluteJoint<double>>(
+            "body3_body4", plant_->GetRigidBodyByName("body3").body_frame(),
+            plant_->GetRigidBodyByName("body4").body_frame(),
+            Vector3d::UnitZ());
+
+    plant_->AddJoint(std::move(world_body3));
+    plant_->AddJoint(std::move(body3_body4));
+  }
 };
 
 // Test that regardless of the order the joints were added to the plant (i.e.
 // different joint indexing orders), the established joint locking velocity
 // indexing remains correct.
 TEST_P(JointLockingTest, JointLockingIndicesTest) {
-  const RevoluteJoint<double>& joint_w_1 =
-      plant_->GetJointByName<RevoluteJoint>("joint_w_1");
-  const RevoluteJoint<double>& joint_w_2 =
-      plant_->GetJointByName<RevoluteJoint>("joint_w_2");
-  RevoluteJoint<double>& joint_2_3 =
-      plant_->GetMutableJointByName<RevoluteJoint>("joint_2_3");
+  const RigidBody<double>& body1 = plant_->GetRigidBodyByName("body1");
 
-  // No joints are locked, all joint velocity indices should exist.
-  const std::vector<int>& joint_locking_indices_unlocked =
+  const RevoluteJoint<double>& body1_body2 =
+      plant_->GetJointByName<RevoluteJoint>("body1_body2");
+  const RevoluteJoint<double>& world_body3 =
+      plant_->GetJointByName<RevoluteJoint>("world_body3");
+  RevoluteJoint<double>& body3_body4 =
+      plant_->GetMutableJointByName<RevoluteJoint>("body3_body4");
+
+  const int body1_velocity_start =
+      body1.floating_velocities_start() - plant_->num_positions();
+
+  // No joints/bodies are locked, all joint/body velocity indices should exist.
+  const std::vector<int>& unlocked_indices =
       MultibodyPlantTester::EvalJointLockingIndices(*plant_, *context_);
 
-  EXPECT_EQ(joint_locking_indices_unlocked.size(), 3);
+  EXPECT_EQ(unlocked_indices.size(), 9);
 
-  const std::vector<int>& expected_joint_locking_indices_unlocked = {
-      joint_w_1.velocity_start(), joint_w_2.velocity_start(),
-      joint_2_3.velocity_start()};
+  const std::vector<int>& expected_unlocked_indices = {
+      body1_velocity_start,         body1_velocity_start + 1,
+      body1_velocity_start + 2,     body1_velocity_start + 3,
+      body1_velocity_start + 4,     body1_velocity_start + 5,
+      body1_body2.velocity_start(), world_body3.velocity_start(),
+      body3_body4.velocity_start()};
 
-  EXPECT_THAT(joint_locking_indices_unlocked,
-              testing::UnorderedElementsAreArray(
-                  expected_joint_locking_indices_unlocked));
+  EXPECT_THAT(unlocked_indices,
+              testing::UnorderedElementsAreArray(expected_unlocked_indices));
 
-  // Lock joint_2_3 and re-evaluate joint locking indices
-  joint_2_3.Lock(context_.get());
-  const std::vector<int>& joint_locking_indices_locked =
+  // Lock body3_body4 and re-evaluate joint locking indices
+  body3_body4.Lock(context_.get());
+  const std::vector<int>& one_joint_locked_indices =
       MultibodyPlantTester::EvalJointLockingIndices(*plant_, *context_);
 
-  EXPECT_EQ(joint_locking_indices_locked.size(), 2);
+  EXPECT_EQ(one_joint_locked_indices.size(), 8);
 
-  const std::vector<int>& expected_joint_locking_indices_locked = {
-      joint_w_1.velocity_start(), joint_w_2.velocity_start()};
+  const std::vector<int>& expected_one_joint_locked_indices = {
+      body1_velocity_start,         body1_velocity_start + 1,
+      body1_velocity_start + 2,     body1_velocity_start + 3,
+      body1_velocity_start + 4,     body1_velocity_start + 5,
+      body1_body2.velocity_start(), world_body3.velocity_start()};
 
-  EXPECT_THAT(joint_locking_indices_locked,
-              testing::UnorderedElementsAreArray(
-                  expected_joint_locking_indices_locked));
+  EXPECT_THAT(one_joint_locked_indices, testing::UnorderedElementsAreArray(
+                                            expected_one_joint_locked_indices));
+
+  // Unlock body3_body4 and lock body1 and re-evaluate joint locking indices.
+  body3_body4.Unlock(context_.get());
+  body1.Lock(context_.get());
+
+  const std::vector<int>& one_body_locked_indices =
+      MultibodyPlantTester::EvalJointLockingIndices(*plant_, *context_);
+
+  EXPECT_EQ(one_body_locked_indices.size(), 3);
+
+  const std::vector<int>& expected_one_body_locked_indices = {
+      body1_body2.velocity_start(), world_body3.velocity_start(),
+      body3_body4.velocity_start()};
+
+  EXPECT_THAT(one_body_locked_indices, testing::UnorderedElementsAreArray(
+                                           expected_one_body_locked_indices));
 }
 
 INSTANTIATE_TEST_SUITE_P(IndexPermutations, JointLockingTest,
-                         ::testing::Values(0, 1, 2, 3, 4, 5));
+                         ::testing::Values(0, 1));
 
 // This test creates a simple model for an acrobot using MultibodyPlant and
 // verifies a number of invariants such as that body and joint models were
