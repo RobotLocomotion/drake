@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# This script builds a wheel on macOS. It can be run directly, but using the
+# accompanying build-wheels script adds functionality.
+#
+# Beware that this requires write permission to /opt and will nuke various
+# things therein. (Shouldn't affect ARM Homebrew, though.)
+
 set -eu -o pipefail
 
 readonly pip_root="$(cd "$(dirname "${BASH_SOURCE}")" && realpath .)"
