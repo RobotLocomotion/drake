@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
@@ -62,7 +64,7 @@ namespace internal {
 template <typename T>
 class SapFrictionConeConstraint final : public SapConstraint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapFrictionConeConstraint);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapFrictionConeConstraint);
 
   /* Numerical parameters that define the constraint. Refer to this class's
    documentation for details. */
@@ -132,6 +134,10 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
    Refer to [Castro et al., 2021] for details. */
   VectorX<T> CalcDiagonalRegularization(const T& time_step,
                                         const T& wi) const final;
+
+  std::unique_ptr<SapConstraint<T>> Clone() const final {
+    return std::make_unique<SapFrictionConeConstraint<T>>(*this);
+  }
 
  private:
   Parameters parameters_;

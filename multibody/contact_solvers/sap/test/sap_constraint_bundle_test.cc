@@ -40,7 +40,7 @@ MatrixXd MakeJacobian(int rows, int cols) {
 // projection function within Project() as gamma = param * R * y.
 class TestConstraint final : public SapConstraint<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestConstraint);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestConstraint);
 
   TestConstraint(int clique, int size, double param)
       : SapConstraint<double>(clique, VectorXd::Zero(size),
@@ -81,6 +81,10 @@ class TestConstraint final : public SapConstraint<double> {
                                              const double& wi) const final {
     return VectorX<double>::LinSpaced(num_constraint_equations(), 1.0,
                                       num_constraint_equations());
+  }
+
+  std::unique_ptr<SapConstraint<double>> Clone() const final {
+    return std::make_unique<TestConstraint>(*this);
   }
 
  private:
