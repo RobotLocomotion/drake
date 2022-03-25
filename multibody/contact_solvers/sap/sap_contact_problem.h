@@ -45,7 +45,16 @@ https://arxiv.org/abs/2110.10107 */
 template <typename T>
 class SapContactProblem {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapContactProblem);
+  /* Constructs an empty contact problem. This constructor is meant to be used
+   as a way to cheaply instantiate a problem that will be updated later with
+   calls to SetDynamics() and AddConstraint(). */
+  SapContactProblem() = default;
+
+  /* We allow move semantics and forbid copy semantics. */
+  SapContactProblem(const SapContactProblem&) = delete;
+  SapContactProblem& operator=(const SapContactProblem&) = delete;
+  SapContactProblem(SapContactProblem&&) = default;
+  SapContactProblem& operator=(SapContactProblem&&) = default;
 
   /* Constructs a SAP contact problem for a system of equations discretized with
    a given `time_step` provided its linear dynamics matrix A and free motion
@@ -73,6 +82,22 @@ class SapContactProblem {
    @throws exception if the size of v_star is not nv = ∑A[c].rows(). */
   SapContactProblem(const T& time_step, std::vector<MatrixX<T>> A,
                     VectorX<T> v_star);
+
+  /* Sets data related to the dynamics of the contact problem. This call resets
+   the problem and effectively removes any existing constraints. */
+  void SetDynamics(const T& time_step, std::vector<MatrixX<T>> A,
+                   VectorX<T> v_star);
+
+  /* Returns a deep-copy of `this` instance. */
+  std::unique_ptr<SapContactProblem<T>> Clone() const {
+    auto clone =
+        std::make_unique<SapContactProblem<T>>(time_step_, A_, v_star_);
+    for (int i = 0; i < num_constraints(); ++i) {
+      const SapConstraint<T>& c = get_constraint(i);
+      clone->AddConstraint(c.Clone());
+    }
+    return clone;
+  }
 
   /* TODO(amcastro-tri): consider constructor API taking std::vector<VectorX<T>>
    for v_star. It could be useful for deformables. */
