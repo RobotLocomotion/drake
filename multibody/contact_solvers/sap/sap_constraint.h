@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
@@ -56,7 +58,7 @@ two cliques, see issue #16575.
 template <typename T>
 class SapConstraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapConstraint);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapConstraint);
 
   /* Constructor for a constraint among DOFs within a single `clique`.
    @param[in] clique
@@ -190,6 +192,10 @@ class SapConstraint {
    TODO(amcastro-tri): Consider making wi a vector quantity. */
   virtual VectorX<T> CalcDiagonalRegularization(const T& time_step,
                                                 const T& wi) const = 0;
+
+  /* Derived classes must override to provide polymorphic deep-copy into a new
+   instance. */
+  virtual std::unique_ptr<SapConstraint<T>> Clone() const = 0;
 
  private:
   int first_clique_{-1};

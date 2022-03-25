@@ -149,6 +149,7 @@ drake_cc_googletest(
     name = "sap_friction_cone_constraint_test",
     deps = [
         ":sap_friction_cone_constraint",
+        "//common:pointer_cast",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",
         "//solvers:constraint",
