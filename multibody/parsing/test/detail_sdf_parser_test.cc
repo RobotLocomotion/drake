@@ -2438,6 +2438,162 @@ TEST_F(SdfParserTest, MergeInclude) {
   EXPECT_TRUE(plant_.HasBodyNamed("tool", robot1_model));
   EXPECT_TRUE(plant_.HasJointNamed("tool_joint", robot1_model));
 }
+
+// Verify merge-include works with Interface API.
+// Two models are merge-included in the model loaded by this test.
+// 1. In top_merge_include.sdf: arm_merge_include.forced_nesting_sdf is merge
+//    included. The merged model is contained in a parent model named
+//    "arm_urdf". The contents of arm.urdf are moved to "arm_urdf" such that
+//    "arm_urdf::L1" now references link "L1" from arm.urdf.
+// 2. In arm_merge_include.forced_nesting_sdf: gripper.sdf is merge included
+//    whith puts "gripper_link" and "gripper_frame" in the scope of the parent
+//    model "arm". So instead of "arm::gripper::gripper_frame", we now have
+//    "arm::gripper_frame".
+// 2. In top_merge_include.sdf: arm.urdf is merge included. The merged model is
+//    contained in a parent model named "arm_urdf". The contents of arm.urdf are
+//    moved to "arm_urdf" such that "arm_urdf::L1" now references link "L1" from
+//    arm.urdf.
+void TestMergeInclude(const MultibodyPlant<double>& plant,
+                      const std::string model_prefix) {
+  auto context = plant.CreateDefaultContext();
+  EXPECT_FALSE(
+      plant.HasModelInstanceNamed(sdf::JoinName(model_prefix, "arm::gripper")));
+  EXPECT_FALSE(plant.HasModelInstanceNamed(
+      sdf::JoinName(model_prefix, "arm_sdf::test_arm_sdf_name")));
+  EXPECT_FALSE(plant.HasModelInstanceNamed(
+      sdf::JoinName(model_prefix, "arm_urdf::test_arm_urdf_name")));
+
+  EXPECT_FALSE(plant.HasModelInstanceNamed(
+      sdf::JoinName(model_prefix, "arm_sdf_name_override::test_arm_sdf_name")));
+  EXPECT_FALSE(plant.HasModelInstanceNamed(sdf::JoinName(
+      model_prefix, "arm_urdf_name_override::test_arm_urdf_name")));
+
+  ASSERT_TRUE(
+      plant.HasModelInstanceNamed(sdf::JoinName(model_prefix, "arm_sdf")));
+  // Check that a proxy frame is created for each merged model.
+  const auto arm_sdf_model_instance =
+      plant.GetModelInstanceByName(sdf::JoinName(model_prefix, "arm_sdf"));
+  EXPECT_TRUE(plant.HasFrameNamed(sdf::computeMergedModelProxyFrameName("arm"),
+                                  arm_sdf_model_instance));
+
+  ASSERT_TRUE(
+      plant.HasModelInstanceNamed(sdf::JoinName(model_prefix, "arm_sdf")));
+  const auto arm_urdf_model_instance =
+      plant.GetModelInstanceByName(sdf::JoinName(model_prefix, "arm_urdf"));
+  EXPECT_TRUE(plant.HasFrameNamed(sdf::computeMergedModelProxyFrameName("arm"),
+                                  arm_urdf_model_instance));
+
+  const auto arm_sdf_name_override_model_instance =
+      plant.GetModelInstanceByName(
+          sdf::JoinName(model_prefix, "arm_sdf_name_override"));
+
+  const auto arm_urdf_name_override_model_instance =
+      plant.GetModelInstanceByName(
+          sdf::JoinName(model_prefix, "arm_urdf_name_override"));
+
+  EXPECT_TRUE(plant.HasFrameNamed(
+      sdf::computeMergedModelProxyFrameName("test_arm_sdf_name"),
+      arm_sdf_name_override_model_instance));
+  EXPECT_TRUE(plant.HasFrameNamed(
+      sdf::computeMergedModelProxyFrameName("test_arm_urdf_name"),
+      arm_urdf_name_override_model_instance));
+
+  // Pose of torso link
+  const RigidTransformd X_WT(RollPitchYawd(0, 0, 0), Vector3d(0, 0, 1));
+
+  {
+    // Frame G represents the frame of model top::arm_sdf::gripper_frame
+    const RigidTransformd X_WG_expected(RollPitchYawd(0.1, 0.2, 0.3),
+                                        Vector3d(1, 2, 4));
+    const auto& grasp_frame =
+        plant.GetFrameByName("grasp_frame", arm_sdf_model_instance);
+
+    const RigidTransformd X_WG = grasp_frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WG_expected.GetAsMatrix4(),
+                                X_WG.GetAsMatrix4(), kEps));
+  }
+  {
+    // Frame A represents the model frame of model top::arm_sdf
+    const auto& arm_sdf_model_frame =
+        plant.GetFrameByName("__model__", arm_sdf_model_instance);
+    const RigidTransformd X_WA = arm_sdf_model_frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(
+        CompareMatrices(X_WT.GetAsMatrix4(), X_WA.GetAsMatrix4(), kEps));
+    const RigidTransformd X_WL1_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                         Vector3d(1, 0, 1));
+    const auto& arm_L1 = plant.GetFrameByName("L1", arm_sdf_model_instance);
+    const RigidTransformd X_WL1 = arm_L1.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WL1_expected.GetAsMatrix4(),
+                                X_WL1.GetAsMatrix4(), kEps));
+  }
+
+  {
+    // Frame E represents the model frame of model top::arm_urdf
+    const auto& arm_urdf_model_frame =
+        plant.GetFrameByName("__model__", arm_urdf_model_instance);
+    const RigidTransformd X_WE = arm_urdf_model_frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(
+        CompareMatrices(X_WT.GetAsMatrix4(), X_WE.GetAsMatrix4(), kEps));
+
+    const RigidTransformd X_WL2_expected(RollPitchYawd(0.1, 0.2, 0.3),
+                                         Vector3d(1, 4, 4));
+    const auto& arm_L2 = plant.GetFrameByName("L2", arm_urdf_model_instance);
+    const RigidTransformd X_WL2 = arm_L2.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WL2_expected.GetAsMatrix4(),
+                                X_WL2.GetAsMatrix4(), kEps));
+  }
+  {
+    // Frame F represents the model frame of model top::arm_sdf::flange
+    const RigidTransformd X_WF_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                        Vector3d(1, 2, 2));
+    const auto flange_model_instance = plant.GetModelInstanceByName(
+        sdf::JoinName(model_prefix, "arm_sdf::flange"));
+    const auto& flange_model_frame =
+        plant.GetFrameByName("__model__", flange_model_instance);
+    const RigidTransformd X_WF = flange_model_frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WF_expected.GetAsMatrix4(),
+                                X_WF.GetAsMatrix4(), kEps));
+
+    // Frame M represents the frame of model top::arm::flange::gripper_mount
+    const RigidTransformd X_WM_expected(RollPitchYawd(0.1, 0.2, 0.3),
+                                        Vector3d(1, 2, 4));
+    const auto& gripper_mount_frame =
+        plant.GetFrameByName("gripper_mount", flange_model_instance);
+    const RigidTransformd X_WM = gripper_mount_frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WM_expected.GetAsMatrix4(),
+                                X_WM.GetAsMatrix4(), kEps));
+  }
+}
+
+TEST_F(SdfParserTest, MergeIncludeInterfaceAPI1) {
+  package_map_.AddPackageXml(FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
+      "package.xml"));
+  const std::string sdf_file_path = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
+      "top_merge_include.sdf");
+
+  AddModelFromSdfFile(sdf_file_path, "", true);
+
+  plant_.Finalize();
+  TestMergeInclude(plant_, "top");
+}
+
+TEST_F(SdfParserTest, MergeIncludeInterfaceAPI2) {
+  package_map_.AddPackageXml(FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
+      "package.xml"));
+  // Use AddModelsFromSdfFile (note the plural Models)
+  const std::string sdf_file_path = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
+      "top_merge_include_world.sdf");
+
+  AddModelsFromSdfFile(sdf_file_path, true);
+
+  plant_.Finalize();
+  TestMergeInclude(plant_, "top");
+  TestMergeInclude(plant_, "another_top");
+}
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
