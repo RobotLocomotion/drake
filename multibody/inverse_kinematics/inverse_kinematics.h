@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include "drake/common/sorted_pair.h"
 #include "drake/math/rotation_matrix.h"
@@ -97,6 +98,30 @@ class InverseKinematics {
       const Frame<double>& frameB,
       const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
       const Frame<double>& frameA,
+      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
+      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper);
+
+  /** Adds the kinematic constraint that a point Q, fixed in frame B, should lie
+   * within a bounding box expressed in another frame A as p_AQ_lower <= p_AQ <=
+   * p_AQ_upper, where p_AQ is the position of point Q measured and expressed
+   * in frame A.
+   * @param frameB The frame in which point Q is fixed.
+   * @param p_BQ The position of the point Q, rigidly attached to frame B,
+   * measured and expressed in frame B.
+   * @param frameAbar We will compute frame A from frame Abar. The bounding box
+   * p_AQ_lower <= p_AQ <= p_AQ_upper is expressed in frame A.
+   * @param X_AbarAThe relative transform between frame Abar and A. If empty,
+   * then we use the identity transform.
+   * @param p_AQ_lower The lower bound on the position of point Q, measured and
+   * expressed in frame A.
+   * @param p_AQ_upper The upper bound on the position of point Q, measured and
+   * expressed in frame A.
+   */
+  solvers::Binding<solvers::Constraint> AddPositionConstraint(
+      const Frame<double>& frameB,
+      const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+      const Frame<double>& frameAbar,
+      const std::optional<math::RigidTransformd>& X_AbarA,
       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper);
 
