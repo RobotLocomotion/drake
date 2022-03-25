@@ -9,31 +9,17 @@ response.
 
 ### Installation
 
-The server requirements are not currently installed via drake's `setup/` install
-scripts.  To use the server you will need to install `flask`.
+The prototype test server dependencies may or may not have been installed
+depending on how you ran drake's `setup/` scripts and which platform you are on.
+`flask` is required to run the test server, and is a "test-only" requirement
+for drake.
 
-#### Ubuntu
-
-Option 1: use the system package manager.
-
-```console
-# Install the prerequisites.
-$ sudo apt-get install python3-flask
-```
-
-Option 2: create a virtual environment.
-
-```console
-# Install the prerequisites.
-$ python3 -m venv venv
-$ source venv/bin/activate
-$ pip install flask
-```
-
-#### macOS
-
-Use `pip` or a virtual environment as shown in Option 2 for Ubuntu above
-(`pip install flask`).
+The easiest way to install the requirements is to run
+`setup/ubuntu/install_prereqs.sh` (or `setup/mac/install_prereqs.sh`) making
+sure that you do **not** provide the flag `--without-test-only` (which will
+skip installing the testing requirements).  Alternatively, install the `flask`
+python package on your own with however you manage your python installation
+(e.g., `sudo apt-get install python3-flask` or `pip install flask`).
 
 ### Server Use
 
