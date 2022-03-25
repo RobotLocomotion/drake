@@ -1,7 +1,7 @@
 #!/usr/bin/env python3 -B
 
-# This script uses Docker to build the PyPI wheels; run with --help for
-# more details.
+# This script builds the PyPI wheels; run with --help for more details. On
+# Linux, wheels are build using Docker. On macOS, the host environment is used.
 
 import argparse
 import atexit
@@ -251,54 +251,7 @@ def check_version(version):
         version) is not None
 
 
-def main(args):
-    atexit.register(cleanup)
-
-    # Set up argument parser.
-    parser = argparse.ArgumentParser(
-        description='Build the Drake PyPI wheel(s).')
-    parser.add_argument(
-        'version',
-        help='PEP 440 version number with which to label the wheels')
-    parser.add_argument(
-        '-o', '--output-dir', metavar='DIR', default=os.path.realpath('.'),
-        help='directory into which to extract wheels (default: .)')
-    parser.add_argument(
-        '-n', '--no-extract', dest='extract', action='store_false',
-        help='build images but do not extract wheels')
-    parser.add_argument(
-        '-k', '--keep-containers', action='store_true',
-        help='do not delete intermediate containers')
-    parser.add_argument(
-        '-s', '--tag-stages', action='store_true',
-        help='permanently tag individual stages')
-    parser.add_argument(
-        '-t', '--test', action='store_true',
-        help='run tests on wheels')
-    parser.add_argument(
-        '--platform', dest='platforms',
-        default=','.join(set([t.platform_name for t in targets])),
-        help='platform(s) to build; separate with \',\''
-             ' (default: %(default)s)')
-    parser.add_argument(
-        '--python', dest='python_versions', metavar='VERSIONS',
-        default=','.join(sorted(set([t.python_version for t in targets]))),
-        help='python version(s) to build; separate with \',\''
-             ' (default: %(default)s)')
-
-    # Parse arguments.
-    options = parser.parse_args(args)
-    options.python_versions = set(options.python_versions.split(','))
-    options.platforms = set(options.platforms.split(','))
-
-    if options.test and not options.extract:
-        gripe('Testing wheels requires wheels to be extracted')
-        sys.exit(1)
-
-    if not check_version(options.version):
-        gripe(f'Version {options.version} does not conform to PEP 440')
-        sys.exit(1)
-
+def build_linux(options):
     # Collect set of wheels to be built.
     targets_to_build = []
     for t in targets:
@@ -331,6 +284,88 @@ def main(args):
 
         if options.test:
             test_wheel(t, options)
+
+
+def build_macos(options):
+    if not os.path.isdir(options.build_root):
+        gripe(f'Build root \'{options.build_root}\' is not a valid directory')
+        sys.exit(1)
+
+    build_script = os.path.join(script_dir, 'macos-build-wheel.sh')
+    environment = os.environ.copy()
+    environment['DRAKE_WHEELBUILD_PREFIX'] = options.build_root
+
+    subprocess.check_call(['bash', build_script, options.version],
+                          env=environment)
+
+    # TODO extract (copy) and test wheel if requested
+
+
+def main(args):
+    apple = (sys.platform == 'darwin')
+    atexit.register(cleanup)
+
+    # Set up argument parser.
+    parser = argparse.ArgumentParser(
+        description='Build the Drake PyPI wheel(s).')
+
+    parser.add_argument(
+        'version',
+        help='PEP 440 version number with which to label the wheels')
+
+    parser.add_argument(
+        '-o', '--output-dir', metavar='DIR', default=os.path.realpath('.'),
+        help='directory into which to extract wheels (default: .)')
+    parser.add_argument(
+        '-n', '--no-extract', dest='extract', action='store_false',
+        help='build images but do not extract wheels')
+
+    if apple:
+        parser.add_argument(
+            '-r', '--build-root', metavar='DIR', default='/',
+            help='root directory for build trees (default: /)')
+    else:
+        parser.add_argument(
+            '-k', '--keep-containers', action='store_true',
+            help='do not delete intermediate containers')
+        parser.add_argument(
+            '-s', '--tag-stages', action='store_true',
+            help='permanently tag individual stages')
+
+    parser.add_argument(
+        '-t', '--test', action='store_true',
+        help='run tests on wheels')
+
+    if not apple:
+        parser.add_argument(
+            '--platform', dest='platforms',
+            default=','.join(set([t.platform_name for t in targets])),
+            help='platform(s) to build; separate with \',\''
+                 ' (default: %(default)s)')
+        parser.add_argument(
+            '--python', dest='python_versions', metavar='VERSIONS',
+            default=','.join(sorted(set([t.python_version for t in targets]))),
+            help='python version(s) to build; separate with \',\''
+                 ' (default: %(default)s)')
+
+    # Parse arguments.
+    options = parser.parse_args(args)
+    if not apple:
+        options.python_versions = set(options.python_versions.split(','))
+        options.platforms = set(options.platforms.split(','))
+
+    if options.test and not apple and not options.extract:
+        gripe('Testing wheels requires wheels to be extracted')
+        sys.exit(1)
+
+    if not check_version(options.version):
+        gripe(f'Version \'{options.version}\' does not conform to PEP 440')
+        sys.exit(1)
+
+    if apple:
+        build_macos(options)
+    else:
+        build_linux(options)
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
