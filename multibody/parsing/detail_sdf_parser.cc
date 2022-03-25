@@ -24,6 +24,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_ignition.h"
+#include "drake/multibody/parsing/detail_multibody_plant_subgraph.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_sdf_geometry.h"
 #include "drake/multibody/parsing/detail_urdf_parser.h"
@@ -55,6 +56,13 @@ using std::unique_ptr;
 
 // Unnamed namespace for free functions local to this file.
 namespace {
+
+struct MultibodyPlantSubgraphInfo {
+  MultibodyPlantSubgraph subgraph;
+  std::unique_ptr<MultibodyPlant<double>> plant;
+  bool is_merged{false};
+  ModelInstanceIndex main_model_instance;
+};
 
 // Given a @p relative_nested_name to an object, this function returns the model
 // instance that is an immediate parent of the object and the local name of the
@@ -965,6 +973,30 @@ void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
                                   get_bool_attribute, read_tag_string);
 }
 
+bool CanReuseModelInstance(
+    const ModelInstanceIndex& model_instance,
+    const std::vector<ModelInstanceIndex> reusable_model_instances) {
+  return std::find(reusable_model_instances.begin(),
+                   reusable_model_instances.end(),
+                   model_instance) != reusable_model_instances.end();
+}
+
+ModelInstanceIndex AddModelInstanceIfReusable(
+    MultibodyPlant<double>* plant, const std::string& model_name,
+    const std::vector<ModelInstanceIndex>& reusable_model_instances) {
+  if (plant->HasModelInstanceNamed(model_name)) {
+    auto model_instance = plant->GetModelInstanceByName(model_name);
+    if (!CanReuseModelInstance(model_instance, reusable_model_instances)) {
+      throw std::logic_error(
+          "This model already contains a model instance named '" + model_name +
+          "'. Model instance names must be unique within a given model.");
+    }
+    return model_instance;
+  } else {
+    return plant->AddModelInstance(model_name);
+  }
+}
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 std::vector<ModelInstanceIndex> AddModelsFromSpecification(
@@ -974,9 +1006,10 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     const RigidTransformd& X_WP,
     MultibodyPlant<double>* plant,
     const PackageMap& package_map,
-    const std::string& root_dir) {
-  const ModelInstanceIndex model_instance =
-    plant->AddModelInstance(model_name);
+    const std::string& root_dir,
+    const std::vector<ModelInstanceIndex> &reusable_model_instances) {
+  const ModelInstanceIndex model_instance = AddModelInstanceIfReusable(
+      plant, model_name, reusable_model_instances);
   std::vector <ModelInstanceIndex> added_model_instances{model_instance};
 
   // "P" is the parent frame. If the model is in a child of //world or //sdf,
@@ -997,7 +1030,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
         AddModelsFromSpecification(
             diagnostic, nested_model,
             sdf::JoinName(model_name, nested_model.Name()), X_WM,
-            plant, package_map, root_dir);
+            plant, package_map, root_dir, reusable_model_instances);
 
     added_model_instances.insert(added_model_instances.end(),
                                  nested_model_instances.begin(),
@@ -1183,7 +1216,8 @@ void AddJointsToInterfaceModel(const MultibodyPlant<double>& plant,
 // This is a forward-declaration of an anonymous helper that's defined later
 // in this file.
 sdf::ParserConfig MakeSdfParserConfig(
-    const PackageMap&, MultibodyPlant<double>*, bool test_sdf_forced_nesting);
+    const PackageMap&, std::vector<MultibodyPlantSubgraphInfo>* subgraph_infos,
+    bool test_sdf_forced_nesting);
 
 sdf::Error MakeSdfError(sdf::ErrorCode code, const DiagnosticDetail& detail) {
   sdf::Error result(code, detail.message);
@@ -1202,12 +1236,15 @@ sdf::Error MakeSdfError(sdf::ErrorCode code, const DiagnosticDetail& detail) {
 // order. If we add support for other file formats, we should ensure that the
 // parsers comply with this assumption.
 sdf::InterfaceModelPtr ParseNestedInterfaceModel(
-    MultibodyPlant<double>* plant, const PackageMap& package_map,
+    MultibodyPlantSubgraphInfo *subgraph_info, const PackageMap& package_map,
     const sdf::NestedInclude& include, sdf::Errors* errors,
     bool test_sdf_forced_nesting) {
-  const sdf::ParserConfig parser_config = MakeSdfParserConfig(
-      package_map, plant, test_sdf_forced_nesting);
 
+  std::vector<MultibodyPlantSubgraphInfo> nested_subgraph_infos;
+  const sdf::ParserConfig parser_config = MakeSdfParserConfig(
+      package_map, &nested_subgraph_infos, test_sdf_forced_nesting);
+
+  auto plant = subgraph_info->plant.get();
   // Do not attempt to parse anything other than URDF or forced nesting files.
   const bool is_urdf = EndsWith(include.ResolvedFileName(), kExtUrdf);
   const bool is_forced_nesting =
@@ -1238,8 +1275,8 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
       });
 
   ModelInstanceIndex main_model_instance;
-  // New instances will have indices starting from cur_num_models
-  int cur_num_models = plant->num_model_instances();
+  const bool is_merged = include.IsMerge().value_or(false);
+
   if (is_urdf) {
     ParsingWorkspace workspace{package_map, diagnostic, plant};
     const std::optional<ModelInstanceIndex> maybe_model =
@@ -1283,11 +1320,15 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     main_model_instance = AddModelsFromSpecification(
         diagnostic, model,
         sdf::JoinName(include.AbsoluteParentName(), model_name), {},
-        plant, package_map, data_source.GetRootDir()).front();
+        plant, package_map, data_source.GetRootDir(), {}).front();
   }
 
   // Now that the model is parsed, we create interface elements to send to
   // libsdformat.
+  subgraph_info->subgraph = MultibodyPlantSubgraph(
+      MultibodyPlantElements::FromPlant(subgraph_info->plant.get()));
+  subgraph_info->is_merged = is_merged;
+  subgraph_info->main_model_instance = main_model_instance;
 
   // This will be populated for the first model instance.
   sdf::InterfaceModelPtr main_interface_model;
@@ -1298,8 +1339,14 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 
   // N.B. For hierarchy, this assumes that "parent" models are defined before
   // their "child" models.
-  for (ModelInstanceIndex model_instance(cur_num_models);
-       model_instance < plant->num_model_instances(); ++model_instance) {
+  for (ModelInstanceIndex model_instance :
+       subgraph_info->subgraph.elements().model_instances()) {
+    // Skip the world and default model instances
+    if (model_instance == world_model_instance() ||
+        model_instance == default_model_instance()) {
+      continue;
+    }
+
     sdf::RepostureFunction reposture_model = [plant, model_instance, errors](
         const sdf::InterfaceModelPoseGraph &graph) {
       // N.B. This should also posture the model appropriately.
@@ -1357,12 +1404,14 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     }
   }
 
+  main_interface_model->SetParserSupportsMergeInclude(true);
+
   return main_interface_model;
 }
 
 sdf::ParserConfig MakeSdfParserConfig(
     const PackageMap& package_map,
-    MultibodyPlant<double>* plant,
+    std::vector<MultibodyPlantSubgraphInfo> *subgraph_infos,
     bool test_sdf_forced_nesting) {
 
   // The error severity settings here are somewhat subtle. We set all of them
@@ -1392,13 +1441,83 @@ sdf::ParserConfig MakeSdfParserConfig(
     });
 
   parser_config.RegisterCustomModelParser(
-      [&package_map, plant, test_sdf_forced_nesting](
+      [subgraph_infos, &package_map, test_sdf_forced_nesting](
           const sdf::NestedInclude& include, sdf::Errors& errors) {
-        return ParseNestedInterfaceModel(plant, package_map, include, &errors,
-                                         test_sdf_forced_nesting);
+        auto& subgraph_info = subgraph_infos->emplace_back();
+        const double kArbitraryDt = 0.1;
+        subgraph_info.plant =
+            std::make_unique<MultibodyPlant<double>>(kArbitraryDt);
+        return ParseNestedInterfaceModel(&subgraph_info, package_map, include,
+                                         &errors, test_sdf_forced_nesting);
       });
 
   return parser_config;
+}
+
+std::vector<ModelInstanceIndex> AddMultibodyPlantSubgraphsToPlant(
+    const std::vector<MultibodyPlantSubgraphInfo>& subgraph_infos,
+    MultibodyPlant<double>* plant) {
+
+  std::vector<ModelInstanceIndex> remapped_main_model_instances;
+  for (auto& subgraph_info : subgraph_infos) {
+    const auto main_model_name = subgraph_info.plant->GetModelInstanceName(
+        subgraph_info.main_model_instance);
+    const auto main_model_scoped_name =
+        parsing::ParseScopedName(main_model_name);
+
+    auto model_name_remap = [&main_model_name, &main_model_scoped_name,
+                             &remapped_main_model_instances](
+                                const MultibodyPlant<double>& plant_src,
+                                ModelInstanceIndex model_instance_src,
+                                MultibodyPlant<double>* plant_dest) {
+      ModelInstanceIndex model_instance_dest;
+      const std::string name =
+          plant_src.GetModelInstanceName(model_instance_src);
+
+      auto merged_model_name_prefix = name.find(main_model_name);
+      if (merged_model_name_prefix == std::string::npos) {
+        model_instance_dest = GetOrCreateModelInstanceByName(plant_dest, name);
+      } else {
+        // If the prefix was found, it has to be at position 0 since all the
+        // model instances we are processing are nested in the main model
+        // instance.
+        DRAKE_DEMAND(merged_model_name_prefix == 0);
+
+        const std::string new_name =
+            sdf::JoinName(main_model_scoped_name.instance_name,
+                          name.substr(main_model_name.size()));
+
+        model_instance_dest =
+            GetOrCreateModelInstanceByName(plant_dest, new_name);
+      }
+      remapped_main_model_instances.push_back(model_instance_dest);
+      return model_instance_dest;
+    };
+
+    auto frame_name_remap = [&subgraph_info](
+                                const MultibodyPlant<double>& plant_src,
+                                const Frame<double>& frame) {
+      DRAKE_DEMAND(subgraph_info.main_model_instance.is_valid());
+
+      if (frame.model_instance() == subgraph_info.main_model_instance &&
+          frame.name() == "__model__") {
+        const std::string model_name =
+            plant_src.GetModelInstanceName(frame.model_instance());
+        std::string new_name = sdf::computeMergedModelProxyFrameName(
+            parsing::ParseScopedName(model_name).name);
+        return new_name;
+      }
+      return frame.name();
+    };
+
+    if (subgraph_info.is_merged) {
+      subgraph_info.subgraph.AddTo(plant, model_name_remap, frame_name_remap);
+    } else {
+      subgraph_info.subgraph.AddTo(plant);
+    }
+  }
+
+  return remapped_main_model_instances;
 }
 }  // namespace
 
@@ -1409,8 +1528,9 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
     bool test_sdf_forced_nesting) {
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
+  std::vector<MultibodyPlantSubgraphInfo> subgraph_infos;
   sdf::ParserConfig parser_config = MakeSdfParserConfig(
-      workspace.package_map, workspace.plant, test_sdf_forced_nesting);
+      workspace.package_map, &subgraph_infos, test_sdf_forced_nesting);
 
   sdf::Root root;
 
@@ -1425,13 +1545,16 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
   // Get the only model in the file.
   const sdf::Model& model = *root.Model();
 
+  const std::vector<ModelInstanceIndex> reusable_model_instances =
+      AddMultibodyPlantSubgraphsToPlant(subgraph_infos, workspace.plant);
+
   const std::string model_name =
       model_name_in.empty() ? model.Name() : model_name_in;
 
   std::vector<ModelInstanceIndex> added_model_instances =
       AddModelsFromSpecification(
           workspace.diagnostic, model, model_name, {}, workspace.plant,
-          workspace.package_map, data_source.GetRootDir());
+          workspace.package_map, data_source.GetRootDir(), reusable_model_instances);
 
   DRAKE_DEMAND(!added_model_instances.empty());
   return added_model_instances.front();
@@ -1443,8 +1566,9 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     bool test_sdf_forced_nesting) {
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
+  std::vector<MultibodyPlantSubgraphInfo> subgraph_infos;
   sdf::ParserConfig parser_config = MakeSdfParserConfig(
-      workspace.package_map, workspace.plant, test_sdf_forced_nesting);
+      workspace.package_map, &subgraph_infos, test_sdf_forced_nesting);
 
   sdf::Root root;
 
@@ -1465,6 +1589,9 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
         " instead has {} models and {} worlds", model_count, world_count));
   }
 
+  const std::vector<ModelInstanceIndex> reusable_model_instances =
+      AddMultibodyPlantSubgraphsToPlant(subgraph_infos, workspace.plant);
+
   std::vector<ModelInstanceIndex> model_instances;
 
   // At this point there should be only Models or a single World at the Root
@@ -1476,9 +1603,10 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const sdf::Model& model = *root.Model();
 
     std::vector<ModelInstanceIndex> added_model_instances =
-        AddModelsFromSpecification(
-            workspace.diagnostic, model, model.Name(), {}, workspace.plant,
-            workspace.package_map, data_source.GetRootDir());
+        AddModelsFromSpecification(workspace.diagnostic, model, model.Name(),
+                                   {}, workspace.plant, workspace.package_map,
+                                   data_source.GetRootDir(),
+                                   reusable_model_instances);
     model_instances.insert(model_instances.end(),
                            added_model_instances.begin(),
                            added_model_instances.end());
@@ -1496,9 +1624,10 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
       // Get the model.
       const sdf::Model& model = *world.ModelByIndex(model_index);
       std::vector<ModelInstanceIndex> added_model_instances =
-          AddModelsFromSpecification(
-              workspace.diagnostic, model, model.Name(), {}, workspace.plant,
-              workspace.package_map, data_source.GetRootDir());
+          AddModelsFromSpecification(workspace.diagnostic, model, model.Name(),
+                                     {}, workspace.plant, workspace.package_map,
+                                     data_source.GetRootDir(),
+                                     reusable_model_instances);
       model_instances.insert(model_instances.end(),
                              added_model_instances.begin(),
                              added_model_instances.end());
