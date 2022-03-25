@@ -91,9 +91,16 @@ class ContactProblemGraph {
     std::vector<int> constraint_num_equations_;
   };
 
+  /* Constructs an empty graph. */
+  ContactProblemGraph() = default;
+
   /* Constructor for a graph with `num_cliques` nodes.
    @throws if `num_cliques` is negative. */
   explicit ContactProblemGraph(int num_cliques);
+
+  /* Resets this graph to store `num_cliques` and zero constraints.
+   @throws if `num_cliques` is negative. */
+  void ResetNumCliques(int num_cliques);
 
   /* Add constraint within a single clique with `num_constraint_equations`. An
    exception is thrown if `clique` is not in [0, num_cliques()) or if

@@ -1,5 +1,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 using Eigen::MatrixXd;
@@ -29,6 +31,8 @@ const MatrixXd J34 =
 
 class TestConstraint final : public SapConstraint<double> {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestConstraint);
+
   // These constructor set up an arbitrary constraint for one and two cliques.
   TestConstraint(int clique, VectorXd g, MatrixXd J)
       : SapConstraint<double>(clique, std::move(g), std::move(J)) {}
@@ -50,6 +54,9 @@ class TestConstraint final : public SapConstraint<double> {
   VectorX<double> CalcDiagonalRegularization(const double&,
                                              const double&) const final {
     return Vector3d::Zero();
+  }
+  std::unique_ptr<SapConstraint<double>> Clone() const final {
+    return std::make_unique<TestConstraint>(*this);
   }
 };
 
@@ -106,6 +113,30 @@ GTEST_TEST(SapConstraint, TwoCliquesConstraintWrongArguments) {
   EXPECT_THROW(
       TestConstraint c(11, 7, Vector3d(1., 2., 3), J32, MatrixXd::Zero(1, 4)),
       std::exception);
+}
+
+GTEST_TEST(SapConstraint, SingleCliqueConstraintClone) {
+  TestConstraint c(12, Vector3d(1., 2., 3), J32);
+  std::unique_ptr<SapConstraint<double>> clone = c.Clone();
+  EXPECT_EQ(clone->num_constraint_equations(), 3);
+  EXPECT_EQ(clone->num_cliques(), 1);
+  EXPECT_EQ(clone->first_clique(), 12);
+  EXPECT_THROW(clone->second_clique(), std::exception);
+  EXPECT_EQ(clone->constraint_function(), Vector3d(1., 2., 3));
+  EXPECT_EQ(clone->first_clique_jacobian(), J32);
+  EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
+}
+
+GTEST_TEST(SapConstraint, TwoCliquesConstraintClone) {
+  TestConstraint c(11, 7, Vector3d(1., 2., 3), J32, J34);
+  std::unique_ptr<SapConstraint<double>> clone = c.Clone();
+  EXPECT_EQ(clone->num_constraint_equations(), 3);
+  EXPECT_EQ(clone->num_cliques(), 2);
+  EXPECT_EQ(clone->first_clique(), 11);
+  EXPECT_EQ(clone->second_clique(), 7);
+  EXPECT_EQ(clone->constraint_function(), Vector3d(1., 2., 3));
+  EXPECT_EQ(clone->first_clique_jacobian(), J32);
+  EXPECT_EQ(clone->second_clique_jacobian(), J34);
 }
 
 }  // namespace

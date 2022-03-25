@@ -13,6 +13,12 @@ namespace contact_solvers {
 namespace internal {
 
 template <typename T>
+SapContactProblem<T>::SapContactProblem(const T& time_step)
+    : time_step_(time_step) {
+  DRAKE_THROW_UNLESS(time_step > 0.0);
+}
+
+template <typename T>
 SapContactProblem<T>::SapContactProblem(const T& time_step,
                                         std::vector<MatrixX<T>> A,
                                         VectorX<T> v_star)
@@ -28,6 +34,31 @@ SapContactProblem<T>::SapContactProblem(const T& time_step,
     nv_ += Ac.rows();
   }
   DRAKE_THROW_UNLESS(v_star_.size() == nv_);
+}
+
+template <typename T>
+void SapContactProblem<T>::Reset(std::vector<MatrixX<T>> A, VectorX<T> v_star) {
+  A_ = std::move(A);
+  v_star_ = std::move(v_star);
+  graph_.ResetNumCliques(num_cliques());
+  nv_ = 0;
+  for (const auto& Ac : A_) {
+    DRAKE_THROW_UNLESS(Ac.size() > 0);
+    DRAKE_THROW_UNLESS(Ac.rows() == Ac.cols());
+    nv_ += Ac.rows();
+  }
+  DRAKE_THROW_UNLESS(v_star_.size() == nv_);
+  constraints_.clear();
+}
+
+template <typename T>
+std::unique_ptr<SapContactProblem<T>> SapContactProblem<T>::Clone() const {
+  auto clone = std::make_unique<SapContactProblem<T>>(time_step_, A_, v_star_);
+  for (int i = 0; i < num_constraints(); ++i) {
+    const SapConstraint<T>& c = get_constraint(i);
+    clone->AddConstraint(c.Clone());
+  }
+  return clone;
 }
 
 template <typename T>

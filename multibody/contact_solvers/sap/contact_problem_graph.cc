@@ -28,6 +28,16 @@ ContactProblemGraph::ContactProblemGraph(int num_cliques)
   DRAKE_THROW_UNLESS(num_cliques >= 0);
 }
 
+void ContactProblemGraph::ResetNumCliques(int num_cliques) {
+  DRAKE_THROW_UNLESS(num_cliques >= 0);
+  num_cliques_ = num_cliques;
+  num_constraints_ = 0;
+  num_constraint_equations_ = 0;
+  clusters_.clear();
+  pair_to_cluster_index_.clear();
+  participating_cliques_ = PartialPermutation(num_cliques);
+}
+
 int ContactProblemGraph::AddConstraint(SortedPair<int> cliques,
                                        int num_constraint_equations) {
   participating_cliques_.push(cliques.first());
