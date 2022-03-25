@@ -126,12 +126,10 @@ void CompliantContactManager<T>::CalcContactJacobianCache(
       EvalDiscreteContactPairs(context);
   const int num_contacts = contact_pairs.size();
 
-  MatrixX<T>& Jc = cache->Jc;
-  Jc.resize(3 * num_contacts, plant().num_velocities());
-
-  std::vector<drake::math::RotationMatrix<T>>& R_WC_set = cache->R_WC_list;
-  R_WC_set.clear();
-  R_WC_set.reserve(num_contacts);
+  std::vector<ContactPairKinematics<T>>& contact_kinematics =
+      cache->contact_kinematics;
+  contact_kinematics.clear();
+  contact_kinematics.reserve(num_contacts);
 
   // Quick no-op exit.
   if (num_contacts == 0) return;
@@ -175,10 +173,41 @@ void CompliantContactManager<T>::CalcContactJacobianCache(
     // requirement being that they form a valid right handed basis with nhat_W.
     const math::RotationMatrix<T> R_WC =
         math::RotationMatrix<T>::MakeFromOneVector(nhat_W, 2);
-    R_WC_set.push_back(R_WC);
 
-    Jc.template middleRows<3>(3 * icontact).noalias() =
-        R_WC.matrix().transpose() * Jv_AcBc_W;
+    const TreeIndex& treeA_index =
+        tree_topology().body_to_tree_index(bodyA_index);
+    const TreeIndex& treeB_index =
+        tree_topology().body_to_tree_index(bodyB_index);
+    // Sanity check, at least one must be valid.
+    DRAKE_DEMAND(treeA_index.is_valid() || treeB_index.is_valid());
+
+    // We have at most two blocks per contact.
+    std::vector<typename ContactPairKinematics<T>::JacobianTreeBlock>
+        jacobian_blocks;
+    jacobian_blocks.reserve(2);
+
+    // Tree A contribution to contact Jacobian Jv_W_AcBc_C.
+    if (treeA_index.is_valid()) {
+      Matrix3X<T> J = R_WC.matrix().transpose() *
+                      Jv_AcBc_W.middleCols(
+                          tree_topology().tree_velocities_start(treeA_index),
+                          tree_topology().num_tree_velocities(treeA_index));
+      jacobian_blocks.emplace_back(treeA_index, std::move(J));
+    }
+
+    // Tree B contribution to contact Jacobian Jv_W_AcBc_C.
+    // This contribution must be added only if B is different from A.
+    if ((treeB_index.is_valid() && !treeA_index.is_valid()) ||
+        (treeB_index.is_valid() && treeB_index != treeA_index)) {
+      Matrix3X<T> J = R_WC.matrix().transpose() *
+                      Jv_AcBc_W.middleCols(
+                          tree_topology().tree_velocities_start(treeB_index),
+                          tree_topology().num_tree_velocities(treeB_index));
+      jacobian_blocks.emplace_back(treeB_index, std::move(J));
+    }
+
+    contact_kinematics.emplace_back(point_pair.phi0, std::move(jacobian_blocks),
+                                    std::move(R_WC));
   }
 }
 
