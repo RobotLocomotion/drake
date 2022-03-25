@@ -26,15 +26,16 @@ template <typename T> class SpatialVelocity;
 /// Bp of B together with a force 𝐟 applied to Bp, where 𝐟 is equal to set S's
 /// resultant force.  This class assumes that both the torque 𝛕 and force 𝐟 have
 /// the same _expressed-in_ frame E. This class only stores 6 elements (namely
-/// 𝛕 and 𝐟) and does not store the underlying frame B, expressed-in frame E, or
-/// application point Bp. The user is responsible for explicitly tracking these
+/// 𝛕 and 𝐟) and does not store the underlying frame B, application point Bp, or
+/// expressed-in frame E. The user is responsible for explicitly tracking these
 /// underlying quantities with @ref multibody_quantities "monogram notation".
-/// For example, F_B_E denotes a spatial force on frame B, expressed in frame E
-/// and contains tau_B_E (torque applied to frame B, expressed in frame E) and
-/// f_Bo_E (force applied frame B's origin point Bo, expressed in E).
+/// For example, F_B_E denotes a spatial force on frame B with application point
+/// Bo (frame B's origin), expressed in frame E and contains tau_B_E (torque 𝛕
+/// applied to frame B, expressed in frame E) and f_Bo_E (force 𝐟 applied to Bo,
+/// expressed in frame E).
 ///
 /// The monogram notation F_Bp has a typeset equivalent @f${F^{Bp}}@f$ which
-/// denotes the spatial force applied to point Bp of frame B.  F_Bp contains a
+/// denotes the spatial force applied to point Bp of frame B. F_Bp contains a
 /// torque tau_B (@f${\tau^B}@f$) applied to frame B and a force f_Bp
 /// (@f${f^{Bp}}@f$) applied to point Bp of frame B.
 /// Details on spatial vectors and monogram notation are in sections
@@ -58,13 +59,13 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// uninitialized spatial force fail fast (fast bug detection).
   SpatialForce() : Base() {}
 
-  /// Constructs a spatial force from a torque 𝛕 (tau) and a force 𝐟.
+  /// Constructs a spatial force F from a torque 𝛕 (tau) and a force 𝐟.
   SpatialForce(const Eigen::Ref<const Vector3<T>>& tau,
                const Eigen::Ref<const Vector3<T>>& f) : Base(tau, f) {}
 
-  /// Constructs a spatial force from an Eigen expression that represents a
+  /// Constructs a spatial force F from an Eigen expression that represents a
   /// 6-element vector, i.e., a 3-element torque 𝛕 and a 3-element force 𝐟.
-  /// This constructor will assert the size of `A` is six (6) either at
+  /// This constructor will assert the size of `F` is six (6) either at
   /// compile-time for fixed sized Eigen expressions or at run-time for
   /// dynamic sized Eigen expressions.
   template <typename Derived>
@@ -73,35 +74,34 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// In-place shift of a %SpatialForce from one point of frame B to another
   /// point of frame B.  On entry, `this` is F_Bp_E (spatial force on point Bp
   /// of frame B, expressed in a frame E). On return `this` is modified to
-  /// F_Bq_E (spatial force on point Bq of frame B, expressed in a frame E).
+  /// F_Bq_E (spatial force on point Bq of frame B, expressed in frame E).
   /// @param[in] offset which is the position vector p_BpBq_E from point Bp
   /// (fixed on frame B) to point Bq (fixed on frame B), expressed in frame E.
   /// p_BpBq_E must have the same expressed-in frame E as `this` spatial force.
   /// @retval F_Bq_E reference to `this` spatial velocity which has been
-  /// modified to be the spatial force on Bq, expressed in frame E.
+  /// modified to be the spatial force on point Bq of B, expressed in frame E.
   /// The components of F_Bq_E are calculated as: <pre>
   ///    τ_B  = τ_B -  p_BpBq x f_Bp    (the torque 𝛕 stored in `this` changes).
   ///  f_Bq_E = f_Bp_E              (the force 𝐟 stored in `this` is unchanged).
   /// </pre>
-  /// Note: Spatial force shift similar to SpatialMomentum and in a transpose
-  /// way to SpatialVelocity.
-  /// @see the alternative ShiftInPlace() function and its related Shift()
-  /// function to shift multiple spatial forces. Use the other Shift() function
-  /// to shift only one spatial force without modifying `this`.
-  SpatialForce<T>& ShiftInPlace(const Vector3<T>& p_BpBq_E) {
-    this->rotational() -= p_BpBq_E.cross(this->translational());
+  /// Note: There are related functions to shift spatial momentum and spatial
+  /// velocity (see SpatialMomentum::Shift() and SpatialVelocity:Shift()).
+  /// @see This classes static ShiftInPlace() and Shift() functions shift
+  /// multiple spatial forces whereas its member ShiftInPlace() and Shift()
+  /// functions shift one spatial force (with or without modifying `this`).
+  SpatialForce<T>& ShiftInPlace(const Vector3<T>& offset) {
+    this->rotational() -= offset.cross(this->translational());
     return *this;
     // Note: this operation is linear. [Jain 2010], (§1.5, page 15) uses the
     // "rigid body transformation operator" to write this as:
-    //   F_Bq = Φ(p_BqBp)F_Bp = Φ(-p_BpBq)F_Bp
-    //   where Φ(p_BpBq) is the linear operator:
+    //   F_Bq =  Φ(p_BqBp) F_Bp
+    //        = Φ(-p_BpBq) F_Bp    where Φ(p_BpBq) is the linear operator:
     //   Φ(p_BpBq) = | I₃  p_BpBqx |
     //               | 0        I₃ |
-    // where `p_BpBqx` denotes the cross product skew-symmetric matrix such that
-    // `p_BpBqx vec = p_BpBq x vec` (where vec is any vector).
-    // This same operator shifts spatial momentum in an analogous way (see
-    // SpatialMomentum::Shift()) whereas the transpose of this operator shifts
-    // spatial velocity (see SpatialVelocity::Shift()).
+    // where p_BpBqx denotes the cross product skew-symmetric matrix such that
+    // p_BpBqx vec = p_BpBq x vec (where vec is any vector).
+    // Note: There are related Φ operators to shift spatial momentum and spatial
+    // velocity (see SpatialMomentum::Shift() and SpatialVelocity:Shift()).
     //
     // - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
     //               algorithms. Springer Science & Business Media, pp. 123-130.
@@ -113,15 +113,15 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// regarded as a spatial force. On input, each spatial force is applied to a
   /// point Bp of frame B.  On output, each spatial force has been shifted to
   /// a point Bq of frame B (i.e., F_Bq_E_All on output).
-  /// @param[in] p_BpBq_E is the position vector p_BpBq_E from point Bp
+  /// @param[in] offset which is the position vector p_BpBq_E from point Bp
   /// (fixed on frame B) to point Bq (fixed on frame B), expressed in frame E.
   /// p_BpBq_E must have the same expressed-in frame E as the spatial forces
   /// stored in F_Bp_E_All (spatial forces on Bp, expressed in frame E).
-  /// @see the alternative ShiftInPlace() function to shift only one spatial
-  /// force and for details on how F_Bq_E is calculated.  See the related
-  /// Shift() functions to shift one spatial force or multiple spatial forces.
+  /// @see This classes static ShiftInPlace() and Shift() functions shift
+  /// multiple spatial forces whereas its member ShiftInPlace() and Shift()
+  /// functions shift one spatial force (with or without modifying `this`).
   static void ShiftInPlace(EigenPtr<Matrix6X<T>> F_Bp_E_all,
-                           const Vector3<T>& p_BpBq_E) {
+                           const Vector3<T>& offset) {
     DRAKE_ASSERT(F_Bp_E_all != nullptr);  // ASSERT because inner loop method.
     const int ncol = F_Bp_E_all->cols();
     for (int j = 0; j < ncol; ++j) {
@@ -129,7 +129,7 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
       auto F_Bp_E = F_Bp_E_all->col(j);
       auto torque = F_Bp_E.template head<3>();
       const auto force = F_Bp_E.template tail<3>();
-      torque -= p_BpBq_E.cross(force);
+      torque -= offset.cross(force);  // offset = p_BpBq_E
     }
     // F_Bp_E_all should now be called F_Bq_E_all.
   }
@@ -141,11 +141,11 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// p_BpBq_E must have the same expressed-in frame E as `this` spatial force,
   /// where `this` is F_Bp_E (spatial force on Bp, expressed in frame E).
   /// @retval F_Bq_E which is the spatial force on Bq, expressed in frame E.
-  /// @see the alternative Shift() function and its related ShiftInPlace()
-  /// function to shift multiple spatial forces. There is another ShiftInPlace()
-  /// function that shifts only one spatial force and which modifies `this`.
-  SpatialForce<T> Shift(const Vector3<T>& p_BpBq_E) const {
-    return SpatialForce<T>(*this).ShiftInPlace(p_BpBq_E);
+  /// @see This classes static ShiftInPlace() and Shift() functions shift
+  /// multiple spatial forces whereas its member ShiftInPlace() and Shift()
+  /// functions shift one spatial force (with or without modifying `this`).
+  SpatialForce<T> Shift(const Vector3<T>& offset) const {
+    return SpatialForce<T>(*this).ShiftInPlace(offset);  // offset = p_BpBq_E
   }
 
   /// Shifts a matrix of spatial forces from one point of frame B to another
@@ -153,28 +153,28 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// @param[in] F_Bp_E_all 6 x n matrix where each of the n columns is regarded
   /// as a spatial force applied to a point Bp of frame B and where each
   /// spatial force has an expressed-in frame E.
-  /// @param[in] p_BpBq_E is the position vector p_BpBq_E from point Bp
+  /// @param[in] offset which is the position vector p_BpBq_E from point Bp
   /// (fixed on frame B) to point Bq (fixed on frame B), expressed in frame E.
   /// p_BpBq_E must have the same expressed-in frame E as that in F_Bp_E_All.
   /// @param[out] F_Bq_E_all 6 x n matrix where each of the n column is regarded
   /// as a spatial force. On output, each contains a spatial force which was
   /// shifted from point Bp (fixed on frame B) to point Bq (fixed on frame B).
   /// Each of spatial forces contained in F_Bq_E_all are expressed in frame E.
-  /// @see the alternative Shift() function and its related ShiftInPlace()
-  /// function to shift only one spatial force. There is another ShiftInPlace()
-  /// function that shifts multiple spatial forces.
   /// @pre F_Bq_E_all must be non-null and must point to a 6 x n matrix (i.e.,
   /// it must be the same size as the input matrix F_Bp_E_all).
+  /// @see This classes static ShiftInPlace() and Shift() functions shift
+  /// multiple spatial forces whereas its member ShiftInPlace() and Shift()
+  /// functions shift one spatial force (with or without modifying `this`).
   /// @note Although this Shift() function will work properly if the input and
   /// output matrices are the same (i.e., F_Bp_E_all = F_Bq_E_all), it is faster
   /// and more efficient if these are the same to avoid needless copying.
   static void Shift(const Eigen::Ref<const Matrix6X<T>>& F_Bp_E_all,
-                    const Vector3<T>& p_BpBq_E,
+                    const Vector3<T>& offset,
                     EigenPtr<Matrix6X<T>> F_Bq_E_all) {
     DRAKE_DEMAND(F_Bq_E_all != nullptr);
     DRAKE_DEMAND(F_Bq_E_all->cols() == F_Bp_E_all.cols());
     *F_Bq_E_all = F_Bp_E_all;
-    ShiftInPlace(F_Bq_E_all, p_BpBq_E);
+    ShiftInPlace(F_Bq_E_all, offset);  // offset = p_BpBq_E
   }
 
   /// Calculates the power generated by a spatial force.
