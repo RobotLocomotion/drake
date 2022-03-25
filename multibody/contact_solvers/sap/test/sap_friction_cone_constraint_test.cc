@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/pointer_cast.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/constraint.h"
@@ -319,6 +320,67 @@ GTEST_TEST(SapFrictionConeConstraint, RegionIII) {
     const Vector3d y(-0.5, 1.8, -5.0);
     ValidateProjection(mu, R, y);
   }
+}
+
+GTEST_TEST(SapFrictionConeConstraint, SingleCliqueConstraintClone) {
+  const double mu = 0.5;
+  const double stiffness = 1.0e5;
+  const double dissipation_time_scale = 0.01;
+  const double beta = 0.1;
+  const double sigma = 1.0e-4;
+  const int clique = 12;
+  const double phi0 = -2.5e-3;
+  SapFrictionConeConstraint<double>::Parameters parameters{
+      mu, stiffness, dissipation_time_scale, beta, sigma};
+  SapFrictionConeConstraint<double> c(clique, J32, phi0, parameters);
+  // N.B. Here we dynamic cast to the derived type so that we can test that the
+  // clone is a deep-copy of the original constraint.
+  auto clone =
+      dynamic_pointer_cast<SapFrictionConeConstraint<double>>(c.Clone());
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->num_constraint_equations(), 3);
+  EXPECT_EQ(clone->num_cliques(), 1);
+  EXPECT_EQ(clone->first_clique(), clique);
+  EXPECT_THROW(clone->second_clique(), std::exception);
+  EXPECT_EQ(clone->constraint_function(), Vector3d(0., 0., phi0));
+  EXPECT_EQ(clone->first_clique_jacobian(), J32);
+  EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
+  EXPECT_EQ(clone->mu(), mu);
+  EXPECT_EQ(clone->parameters().mu, mu);
+  EXPECT_EQ(clone->parameters().stiffness, stiffness);
+  EXPECT_EQ(clone->parameters().dissipation_time_scale, dissipation_time_scale);
+  EXPECT_EQ(clone->parameters().beta, beta);
+  EXPECT_EQ(clone->parameters().sigma, sigma);
+}
+
+GTEST_TEST(SapFrictionConeConstraint, TwoCliquesConstraintClone) {
+  const double mu = 0.5;
+  const double stiffness = 1.0e5;
+  const double dissipation_time_scale = 0.01;
+  const double beta = 0.1;
+  const double sigma = 1.0e-4;
+  const int clique0 = 12;
+  const int clique1 = 13;
+  const double phi0 = -2.5e-3;
+  SapFrictionConeConstraint<double>::Parameters parameters{
+      mu, stiffness, dissipation_time_scale, beta, sigma};
+  SapFrictionConeConstraint<double> c(clique0, clique1, J32, J34, phi0,
+                                      parameters);
+  auto clone =
+      dynamic_pointer_cast<SapFrictionConeConstraint<double>>(c.Clone());
+  EXPECT_EQ(clone->num_constraint_equations(), 3);
+  EXPECT_EQ(clone->num_cliques(), 2);
+  EXPECT_EQ(clone->first_clique(), clique0);
+  EXPECT_EQ(clone->second_clique(), clique1);
+  EXPECT_EQ(clone->constraint_function(), Vector3d(0., 0., phi0));
+  EXPECT_EQ(clone->first_clique_jacobian(), J32);
+  EXPECT_EQ(clone->second_clique_jacobian(), J34);
+  EXPECT_EQ(clone->mu(), mu);
+  EXPECT_EQ(clone->parameters().mu, mu);
+  EXPECT_EQ(clone->parameters().stiffness, stiffness);
+  EXPECT_EQ(clone->parameters().dissipation_time_scale, dissipation_time_scale);
+  EXPECT_EQ(clone->parameters().beta, beta);
+  EXPECT_EQ(clone->parameters().sigma, sigma);
 }
 
 }  // namespace

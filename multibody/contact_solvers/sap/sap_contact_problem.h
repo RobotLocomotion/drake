@@ -45,7 +45,23 @@ https://arxiv.org/abs/2110.10107 */
 template <typename T>
 class SapContactProblem {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapContactProblem);
+  /* We allow move semantics and forbid copy semantics. */
+  SapContactProblem(const SapContactProblem&) = delete;
+  SapContactProblem& operator=(const SapContactProblem&) = delete;
+  SapContactProblem(SapContactProblem&&) = default;
+  SapContactProblem& operator=(SapContactProblem&&) = default;
+
+  /* Constructs an empty contact problem. Typically used to cheaply instantiate
+   a problem within a container. Since `this` problem does not yet store any
+   data, it is in an invalid state until Reset() is called.
+
+   @param[in] time_step
+     The time step used to discretize the dynamics in time, it must be
+     strictly positive. E.g. the time step used to write an implicit Euler
+     scheme of the dynamics.
+
+   @throws exception if time_step is not strictly positive. */
+  explicit SapContactProblem(const T& time_step);
 
   /* Constructs a SAP contact problem for a system of equations discretized with
    a given `time_step` provided its linear dynamics matrix A and free motion
@@ -69,10 +85,37 @@ class SapContactProblem {
      Free-motion velocities, of size nv. DOFs in v_star must match the
      ordering implicitly induced by A.
 
+   @throws exception if time_step is not strictly positive.
    @throws exception if the blocks in A are not square or have zero size.
    @throws exception if the size of v_star is not nv = ∑A[c].rows(). */
   SapContactProblem(const T& time_step, std::vector<MatrixX<T>> A,
                     VectorX<T> v_star);
+
+  /* A call to this member function resets the contact problem and effectively
+   removes any existing constraints. The problem will have a new number of
+   cliques and generalized velocities according to the sizes of `A` and `v_star`
+   and no constraints. The time step is preserved, see time_step().
+
+   @param[in] A
+     SPD approximation of the linearized dynamics, [Castro et al., 2021]. This
+     matrix is block diagonal with each block corresponding to a "clique". The
+     number of cliques is A.size() and the number of DOFs in the c-th clique
+     is A[c].rows() (or A[c].cols() since each block is square). The total
+     number of generalized velocities of the system is nv = ∑A[c].rows().
+     This class does not check for the positive definiteness of each block in
+     A, it is the responsability of the calling code to enforce this
+     invariant. Ultimately, the SAP solver can fail to converge if this
+     requirement is not satisfied.
+   @param[in] v_star
+     Free-motion velocities, of size nv. DOFs in v_star must match the
+     ordering implicitly induced by A.
+
+   @throws exception if the blocks in A are not square or have zero size.
+   @throws exception if the size of v_star is not nv = ∑A[c].rows(). */
+  void Reset(std::vector<MatrixX<T>> A, VectorX<T> v_star);
+
+  /* Returns a deep-copy of `this` instance. */
+  std::unique_ptr<SapContactProblem<T>> Clone() const;
 
   /* TODO(amcastro-tri): consider constructor API taking std::vector<VectorX<T>>
    for v_star. It could be useful for deformables. */
