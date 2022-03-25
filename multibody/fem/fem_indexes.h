@@ -7,9 +7,6 @@ namespace drake {
 namespace multibody {
 namespace fem {
 
-/** Type used to index FEM elements. */
-using FemElementIndex = TypeSafeIndex<class FemElementTag>;
-
 /** Type used to index FEM nodes. */
 using FemNodeIndex = TypeSafeIndex<class FemNodeTag>;
 

@@ -26,8 +26,6 @@ void DummyModel::DummyBuilder::DoBuild() {
 
 void DummyModel::DummyBuilder::AddTwoElementsWithSharedNodes() {
   ThrowIfBuilt();
-  const FemElementIndex kElementIndex0 = FemElementIndex(0);
-  const FemElementIndex kElementIndex1 = FemElementIndex(1);
   const std::array<FemNodeIndex, Traits::num_nodes> kNodeIndices0 = {
       FemNodeIndex(0), FemNodeIndex(1), FemNodeIndex(2), FemNodeIndex(3)};
   const std::array<FemNodeIndex, Traits::num_nodes> kNodeIndices1 = {
@@ -35,10 +33,8 @@ void DummyModel::DummyBuilder::AddTwoElementsWithSharedNodes() {
   const Traits::ConstitutiveModel kConstitutiveModel(kYoungsModulus,
                                                      kPoissonsRatio);
   const DampingModel<T> kDampingModel(kMassDamping, kStiffnessDamping);
-  DummyElement element0(kElementIndex0, kNodeIndices0, kConstitutiveModel,
-                        kDampingModel);
-  DummyElement element1(kElementIndex1, kNodeIndices1, kConstitutiveModel,
-                        kDampingModel);
+  DummyElement element0(kNodeIndices0, kConstitutiveModel, kDampingModel);
+  DummyElement element1(kNodeIndices1, kConstitutiveModel, kDampingModel);
 
   const int num_existing_nodes = reference_positions_.size() / 3;
   element0.OffsetNodeIndex(FemNodeIndex(num_existing_nodes));
@@ -59,14 +55,12 @@ void DummyModel::DummyBuilder::AddTwoElementsWithSharedNodes() {
 
 void DummyModel::DummyBuilder::AddElementWithDistinctNodes() {
   ThrowIfBuilt();
-  const FemElementIndex kElementIndex0 = FemElementIndex(0);
   const std::array<FemNodeIndex, Traits::num_nodes> kNodeIndices0 = {
       FemNodeIndex(0), FemNodeIndex(1), FemNodeIndex(2), FemNodeIndex(3)};
   const Traits::ConstitutiveModel kConstitutiveModel(kYoungsModulus,
                                                      kPoissonsRatio);
   const DampingModel<T> kDampingModel(kMassDamping, kStiffnessDamping);
-  DummyElement element0(kElementIndex0, kNodeIndices0, kConstitutiveModel,
-                        kDampingModel);
+  DummyElement element0(kNodeIndices0, kConstitutiveModel, kDampingModel);
 
   const int num_existing_nodes = reference_positions_.size() / 3;
   element0.OffsetNodeIndex(FemNodeIndex(num_existing_nodes));

@@ -17,7 +17,6 @@ using DummyElementTraits = FemElementTraits<DummyElement>;
 using T = DummyElementTraits::T;
 using Data = DummyElementTraits::Data;
 constexpr int kNumNodes = DummyElementTraits::num_nodes;
-const FemElementIndex kZeroIndex = FemElementIndex(0);
 const std::array<FemNodeIndex, kNumNodes> kNodeIndices = {
     {FemNodeIndex(0), FemNodeIndex(1), FemNodeIndex(3), FemNodeIndex(2)}};
 const DummyElementTraits::ConstitutiveModel kConstitutiveModel(5e4, 0.4);
@@ -76,14 +75,12 @@ class FemElementTest : public ::testing::Test {
   std::unique_ptr<internal::FemStateSystem<T>> fem_state_system_;
   std::unique_ptr<FemState<T>> fem_state_;
   /* FemElement under test. */
-  DummyElement element_{kZeroIndex, kNodeIndices, kConstitutiveModel,
-                        kDampingModel};
+  DummyElement element_{kNodeIndices, kConstitutiveModel, kDampingModel};
   systems::CacheIndex cache_index_;
 };
 
 TEST_F(FemElementTest, Constructor) {
   EXPECT_EQ(element_.node_indices(), kNodeIndices);
-  EXPECT_EQ(element_.element_index(), kZeroIndex);
 }
 
 /* Tests that the element data logic is correctly executed through

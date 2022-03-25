@@ -47,11 +47,10 @@ class DummyElement final : public FemElement<DummyElement> {
   using T = typename Base::T;
   static constexpr int kNumDofs = Traits::num_dofs;
 
-  DummyElement(FemElementIndex element_index,
-               const std::array<FemNodeIndex, Traits::num_nodes>& node_indices,
+  DummyElement(const std::array<FemNodeIndex, Traits::num_nodes>& node_indices,
                ConstitutiveModel constitutive_model,
                DampingModel<T> damping_model)
-      : Base(element_index, node_indices, std::move(constitutive_model),
+      : Base(node_indices, std::move(constitutive_model),
              std::move(damping_model)) {}
 
   /* Provides a fixed return value for CalcResidual(). */
