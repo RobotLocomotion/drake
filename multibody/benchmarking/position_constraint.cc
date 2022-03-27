@@ -24,10 +24,15 @@ using systems::Context;
 class IiwaPositionConstraintFixture : public benchmark::Fixture {
  public:
   using benchmark::Fixture::SetUp;
+
+  IiwaPositionConstraintFixture() {
+    Iterations(1000);
+  }
+
   void SetUp(const ::benchmark::State&) override {
     tools::performance::AddMinMaxStatistics(this);
 
-    const int kNumIiwas = 10;
+    const int kNumIiwas = 1;
 
     const std::string iiwa_path = FindResourceOrThrow(
         "drake/manipulation/models/iiwa_description/sdf/"
