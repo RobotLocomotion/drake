@@ -25,6 +25,55 @@ namespace internal {
 // This is used to select a non-initializing constructor for use by
 // RigidTransform.
 struct DoNotInitializeMemberFields {};
+
+// TODO(russt): Consider making this public, generalizing it, and moving it to
+// common.
+class Matrix3dWithDerivatives {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Matrix3dWithDerivatives)
+
+  Matrix3dWithDerivatives() = default;
+
+  explicit Matrix3dWithDerivatives(const Matrix3<AutoDiffXd>& M);
+
+  Matrix3<AutoDiffXd> ToAutoDiffXd() const;
+
+  Matrix3dWithDerivatives transpose() const;
+
+  Matrix3dWithDerivatives operator*(
+      const Matrix3dWithDerivatives& other) const;
+
+  Vector3<AutoDiffXd> operator*(const Vector3<AutoDiffXd>& v_B) const;
+
+  bool IsExactlyIdentity() const;
+
+  static Matrix3dWithDerivatives Identity() {
+    Matrix3dWithDerivatives M;
+    M.value_ = Eigen::Matrix3d::Identity();
+    return M;
+  }
+
+  void operator=(const MatrixX<AutoDiffXd>& M) {
+    *this = Matrix3dWithDerivatives(M);
+  }
+
+  const Eigen::Matrix3d& value() const { return value_; }
+
+ private:
+  friend class Matrix3dWithDerivatives;
+  friend bool IsNearlyEqualTo(const Matrix3dWithDerivatives& m1,
+                              const Matrix3dWithDerivatives& m2,
+                              double tolerance);
+  Eigen::Matrix3d value_;
+  std::vector<std::optional<Eigen::Matrix3d>> derivatives_;
+};
+
+bool IsNearlyEqualTo(const Matrix3dWithDerivatives& m1,
+                     const Matrix3dWithDerivatives& m2,
+                     double tolerance = 0.0);
+bool operator==(const Matrix3dWithDerivatives& m1,
+                const Matrix3dWithDerivatives& m2);
+
 }
 
 /// This class represents a 3x3 rotation matrix between two arbitrary frames
@@ -366,19 +415,29 @@ class RotationMatrix {
   /// @note For a valid rotation matrix `R_BA = R_AB⁻¹ = R_ABᵀ`.
   // @internal This method's name was chosen to mimic Eigen's inverse().
   RotationMatrix<T> inverse() const {
-    return RotationMatrix<T>(R_AB_.transpose());
+    return RotationMatrix<T>(R_AB_.transpose(), true);
   }
 
   /// Returns `R_BA = R_AB⁻¹`, the transpose of this %RotationMatrix.
   /// @note For a valid rotation matrix `R_BA = R_AB⁻¹ = R_ABᵀ`.
   // @internal This method's name was chosen to mimic Eigen's transpose().
   RotationMatrix<T> transpose() const {
-    return RotationMatrix<T>(R_AB_.transpose());
+    return RotationMatrix<T>(R_AB_.transpose(), true);
   }
 
   /// Returns the Matrix3 underlying a %RotationMatrix.
   /// @see col(), row()
-  const Matrix3<T>& matrix() const { return R_AB_; }
+  template <typename T1=T>
+  std::enable_if_t<!std::is_same_v<T1, AutoDiffXd>, const Matrix3<T>&> matrix()
+      const {
+    return R_AB_;
+  }
+
+  template <typename T1=T>
+  std::enable_if_t<std::is_same_v<T1, AutoDiffXd>, const Matrix3<T>> matrix()
+      const {
+    return R_AB_.ToAutoDiffXd();
+  }
 
   /// Returns `this` rotation matrix's iᵗʰ row (i = 0, 1, 2).
   /// For `this` rotation matrix R_AB (which relates right-handed
@@ -393,13 +452,25 @@ class RotationMatrix {
   /// the same quantity returned by Eigen's row() operator.
   /// The returned quantity can be assigned in various ways, e.g., as
   /// `const auto& Az_B = row(2);` or `RowVector3<T> Az_B = row(2);`
-  const Eigen::Block<const Matrix3<T>, 1, 3, false> row(int index) const {
+  template <typename T1=T>
+  std::enable_if_t<!std::is_same_v<T1, AutoDiffXd>,
+                 const Eigen::Block<const Matrix3<T>, 1, 3, false>>
+  row(int index) const {
     // The returned value from this method mimics Eigen's row() method which was
     // found in  Eigen/src/plugins/BlockMethods.h.  The Eigen Matrix3 R_AB_ that
     // underlies this class is a column major matrix.  To return a row,
     // InnerPanel = false is passed as the last template parameter above.
     DRAKE_ASSERT(0 <= index && index <= 2);
     return R_AB_.row(index);
+  }
+
+  template <typename T1=T>
+  std::enable_if_t<std::is_same_v<T1, AutoDiffXd>,
+                 const Eigen::RowVector3<AutoDiffXd>>
+  row(int index) const {
+    DRAKE_ASSERT(0 <= index && index <= 2);
+    // TODO(russt): Make this more efficient!
+    return R_AB_.ToAutoDiffXd().row(index);
   }
 
   /// Returns `this` rotation matrix's iᵗʰ column (i = 0, 1, 2).
@@ -415,13 +486,25 @@ class RotationMatrix {
   /// the same quantity returned by Eigen's col() operator.
   /// The returned quantity can be assigned in various ways, e.g., as
   /// `const auto& Bz_A = col(2);` or `Vector3<T> Bz_A = col(2);`
-  const Eigen::Block<const Matrix3<T>, 3, 1, true> col(int index) const {
+  template <typename T1=T>
+  std::enable_if_t<!std::is_same_v<T1, AutoDiffXd>,
+                 const Eigen::Block<const Matrix3<T>, 3, 1, true>>
+  col(int index) const {
     // The returned value from this method mimics Eigen's col() method which was
     // found in  Eigen/src/plugins/BlockMethods.h.  The Eigen Matrix3 R_AB_ that
     // underlies this class is a column major matrix.  To return a column,
     // InnerPanel = true is passed as the last template parameter above.
     DRAKE_ASSERT(0 <= index && index <= 2);
     return R_AB_.col(index);
+  }
+
+  template <typename T1=T>
+  std::enable_if_t<std::is_same_v<T1, AutoDiffXd>,
+                 const Eigen::Vector3<AutoDiffXd>>
+  col(int index) const {
+    DRAKE_ASSERT(0 <= index && index <= 2);
+    // TODO(russt): Make this more efficient!
+    return R_AB_.ToAutoDiffXd().col(index);
   }
 
   /// In-place multiply of `this` rotation matrix `R_AB` by `other` rotation
@@ -434,7 +517,7 @@ class RotationMatrix {
     if constexpr (std::is_same_v<T, double>) {
       internal::ComposeRR(*this, other, this);
     } else {
-      SetUnchecked(matrix() * other.matrix());
+      SetUnchecked(R_AB_ * other.R_AB_);
     }
     return *this;
   }
@@ -450,7 +533,7 @@ class RotationMatrix {
     if constexpr (std::is_same_v<T, double>) {
       internal::ComposeRR(*this, other, &R_AC);
     } else {
-      R_AC.R_AB_ = matrix() * other.matrix();
+      R_AC.R_AB_ = R_AB_ * other.R_AB_;
     }
     return R_AC;
   }
@@ -483,7 +566,7 @@ class RotationMatrix {
   /// @param[in] v_B 3x1 vector that post-multiplies `this`.
   /// @returns 3x1 vector `v_A = R_AB * v_B`.
   Vector3<T> operator*(const Vector3<T>& v_B) const {
-    return Vector3<T>(matrix() * v_B);
+    return Vector3<T>(R_AB_ * v_B);
   }
 
   /// Multiplies `this` %RotationMatrix `R_AB` by the n vectors `v1`, ... `vn`,
@@ -552,12 +635,22 @@ class RotationMatrix {
   /// Tests if `this` rotation matrix R is a proper orthonormal rotation matrix
   /// to within the threshold of get_internal_tolerance_for_orthonormality().
   /// @returns `true` if `this` is a valid rotation matrix.
-  boolean<T> IsValid() const { return IsValid(matrix()); }
+  boolean<T> IsValid() const { 
+    if constexpr (std::is_same_v<T, AutoDiffXd>) {
+      return IsValid(R_AB_.value());
+    } else {
+      return IsValid(R_AB_);
+    }
+  }
 
   /// Returns `true` if `this` is exactly equal to the identity matrix.
   /// @see IsNearlyIdentity().
   boolean<T> IsExactlyIdentity() const {
-    return matrix() == Matrix3<T>::Identity();
+    if constexpr (std::is_same_v<T, AutoDiffXd>) {
+      return R_AB_.IsExactlyIdentity();
+    } else {
+      return R_AB_ == Matrix3<T>::Identity();
+    }
   }
 
   /// Returns true if `this` is within tolerance of the identity RigidTransform.
@@ -566,7 +659,12 @@ class RotationMatrix {
   /// @see IsExactlyIdentity().
   boolean<T> IsNearlyIdentity(
       double tolerance = get_internal_tolerance_for_orthonormality()) const {
-    return IsNearlyEqualTo(matrix(), Matrix3<T>::Identity(), tolerance);
+    if constexpr (std::is_same_v<T, AutoDiffXd>) {
+      return internal::IsNearlyEqualTo(
+          R_AB_, internal::Matrix3dWithDerivatives::Identity(), tolerance);
+    } else {
+      return IsNearlyEqualTo(R_AB_, Matrix3<T>::Identity(), tolerance);
+    }
   }
 
   /// Compares each element of `this` to the corresponding element of `other`
@@ -578,7 +676,11 @@ class RotationMatrix {
   /// @see IsExactlyEqualTo().
   boolean<T> IsNearlyEqualTo(const RotationMatrix<T>& other,
                              double tolerance) const {
-    return IsNearlyEqualTo(matrix(), other.matrix(), tolerance);
+    if constexpr (std::is_same_v<T, AutoDiffXd>) {
+      return internal::IsNearlyEqualTo(R_AB_, other.R_AB_, tolerance);
+    } else {
+      return IsNearlyEqualTo(R_AB_, other.R_AB_, tolerance);
+    }
   }
 
   /// Compares each element of `this` to the corresponding element of `other`
@@ -588,7 +690,7 @@ class RotationMatrix {
   /// corresponding element in `other`.
   /// @see IsNearlyEqualTo().
   boolean<T> IsExactlyEqualTo(const RotationMatrix<T>& other) const {
-    return matrix() == other.matrix();
+    return R_AB_ == other.R_AB_;
   }
 
   /// Computes the infinity norm of `this` - `other` (i.e., the maximum absolute
@@ -596,7 +698,13 @@ class RotationMatrix {
   /// @param[in] other %RotationMatrix to subtract from `this`.
   /// @returns `‖this - other‖∞`
   T GetMaximumAbsoluteDifference(const RotationMatrix<T>& other) const {
-    return GetMaximumAbsoluteDifference(matrix(), other.matrix());
+    if constexpr (std::is_same_v<T, AutoDiffXd>) {
+      // TODO(russt): This can be MUCH more efficient.
+      return GetMaximumAbsoluteDifference(R_AB_.ToAutoDiffXd(),
+                                          other.R_AB_.ToAutoDiffXd());
+    } else {
+      return GetMaximumAbsoluteDifference(R_AB_, other.R_AB_);
+    }
   }
 
   /// Given an approximate rotation matrix M, finds the %RotationMatrix R
@@ -654,7 +762,13 @@ class RotationMatrix {
   /// chooses to return a canonical quaternion, i.e., with q(0) >= 0.
   /// @note There is a constructor in the RollPitchYaw class that converts
   /// a rotation matrix to roll-pitch-yaw angles.
-  Eigen::Quaternion<T> ToQuaternion() const { return ToQuaternion(R_AB_); }
+  Eigen::Quaternion<T> ToQuaternion() const { 
+    if constexpr (std::is_same_v<T, AutoDiffXd>) {
+      return ToQuaternion(R_AB_.ToAutoDiffXd());
+    } else {
+      return ToQuaternion(R_AB_);
+    }
+  }
 
   /// Returns a unit quaternion q associated with the 3x3 matrix M.  Since the
   /// quaternion `q` and `-q` represent the same %RotationMatrix, this method
@@ -686,7 +800,8 @@ class RotationMatrix {
   /// Utility method to return the Vector4 associated with ToQuaternion().
   /// @see ToQuaternion().
   Vector4<T> ToQuaternionAsVector4() const {
-    return ToQuaternionAsVector4(R_AB_);
+    const Eigen::Quaternion<T> q = ToQuaternion();
+    return Vector4<T>(q.w(), q.x(), q.y(), q.z());
   }
 
   /// Utility method to return the Vector4 associated with ToQuaternion(M).
@@ -704,8 +819,13 @@ class RotationMatrix {
   /// this method chooses to have `0 <= theta <= pi`.
   /// @returns an AngleAxis with `0 <= theta <= pi` and a unit vector `lambda`.
   Eigen::AngleAxis<T> ToAngleAxis() const {
-    const Eigen::AngleAxis<T> theta_lambda(this->matrix());
-    return theta_lambda;
+    if constexpr (std::is_same_v<T, AutoDiffXd>) {
+      const Eigen::AngleAxis<T> theta_lambda(this->R_AB_.ToAutoDiffXd());
+      return theta_lambda;
+    } else {
+      const Eigen::AngleAxis<T> theta_lambda(this->R_AB_);
+      return theta_lambda;
+    }
   }
 
   /// (Internal use only) Constructs a RotationMatrix without initializing the
@@ -720,6 +840,10 @@ class RotationMatrix {
   template <typename U>
   friend class RotationMatrix;
 
+  typedef typename std::conditional<std::is_same_v<T, AutoDiffXd>,
+                                    internal::Matrix3dWithDerivatives,
+                                    Matrix3<T>>::type MatrixType;
+
   // Declares the allowable tolerance (small multiplier of double-precision
   // epsilon) used to check whether or not a rotation matrix is orthonormal.
   static constexpr double kInternalToleranceForOrthonormality{
@@ -733,10 +857,21 @@ class RotationMatrix {
   // from one of the public constructors.
   RotationMatrix(const Matrix3<T>& R, bool) : R_AB_(R) {}
 
+  template <typename T1 = T>
+  RotationMatrix(const internal::Matrix3dWithDerivatives& R,
+                 std::enable_if_t<std::is_same_v<T1, AutoDiffXd>, bool>)
+      : R_AB_(R) {}
+
   // Sets `this` %RotationMatrix from a Matrix3.  No check is performed to
   // test whether or not the parameter R is a valid rotation matrix.
   // @param[in] R an allegedly valid rotation matrix.
   void SetUnchecked(const Matrix3<T>& R) { R_AB_ = R; }
+
+  template <typename T1 = T>
+  std::enable_if_t<std::is_same_v<T1, AutoDiffXd>, void> SetUnchecked(
+      const internal::Matrix3dWithDerivatives& R) {
+    R_AB_ = R;
+  }
 
   // Sets `this` %RotationMatrix `R_AB` from right-handed orthogonal unit
   // vectors `Bx`, `By`, `Bz` so that the columns of `this` are `[Bx, By, Bz]`.
@@ -751,10 +886,19 @@ class RotationMatrix {
   void SetFromOrthonormalColumns(const Vector3<T>& Bx,
                                  const Vector3<T>& By,
                                  const Vector3<T>& Bz) {
-    R_AB_.col(0) = Bx;
-    R_AB_.col(1) = By;
-    R_AB_.col(2) = Bz;
-    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+    if constexpr (std::is_same_v<T, AutoDiffXd>) {
+      Matrix3<AutoDiffXd> R_AB;
+      R_AB.col(0) = Bx;
+      R_AB.col(1) = By;
+      R_AB.col(2) = Bz;
+      DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB));
+      R_AB_ = internal::Matrix3dWithDerivatives(R_AB);
+    } else {
+      R_AB_.col(0) = Bx;
+      R_AB_.col(1) = By;
+      R_AB_.col(2) = Bz;
+      DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+    }    
   }
 
   // Sets `this` %RotationMatrix `R_AB` from right-handed orthogonal unit
@@ -767,10 +911,19 @@ class RotationMatrix {
   void SetFromOrthonormalRows(const Vector3<T>& Ax,
                               const Vector3<T>& Ay,
                               const Vector3<T>& Az) {
-    R_AB_.row(0) = Ax;
-    R_AB_.row(1) = Ay;
-    R_AB_.row(2) = Az;
-    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+    if constexpr (std::is_same_v<T, AutoDiffXd>) {
+      Matrix3<AutoDiffXd> R_AB;
+      R_AB.row(0) = Ax;
+      R_AB.row(1) = Ay;
+      R_AB.row(2) = Az;
+      DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB));
+      R_AB_ = internal::Matrix3dWithDerivatives(R_AB);
+    } else {
+      R_AB_.row(0) = Ax;
+      R_AB_.row(1) = Ay;
+      R_AB_.row(2) = Az;
+      DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+    }
   }
 
   // Computes the infinity norm of R - `other` (i.e., the maximum absolute
@@ -975,7 +1128,7 @@ class RotationMatrix {
   // For speed, `R_AB_` is uninitialized (public constructors set its value).
   // The elements are stored in column-major order, per Eigen's default,
   // see https://eigen.tuxfamily.org/dox/group__TopicStorageOrders.html.
-  Matrix3<T> R_AB_;
+  MatrixType R_AB_;
 };
 
 // To enable low-level optimizations we insist that RotationMatrix<double> is
