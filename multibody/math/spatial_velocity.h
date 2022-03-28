@@ -17,7 +17,7 @@
 namespace drake {
 namespace multibody {
 
-/// This class represents a _spatial velocity_ (also called a _twist_) and has
+/// This class represents a _spatial velocity_ V (also called a _twist_) and has
 /// 6 elements with an angular (rotational) velocity ω (3-element vector) on top
 /// of a translational (linear) velocity v (3-element vector). Spatial velocity
 /// represents the rotational and translational motion of a frame B with respect

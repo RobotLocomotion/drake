@@ -18,7 +18,7 @@
 namespace drake {
 namespace multibody {
 
-/// This class represents a _spatial acceleration_ and has 6 elements with
+/// This class represents a _spatial acceleration_ A and has 6 elements with
 /// an angular (rotational) acceleration α (3-element vector) on top of a
 /// translational (linear) acceleration 𝐚 (3-element vector). Spatial
 /// acceleration represents the rotational and translational acceleration of a

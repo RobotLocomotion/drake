@@ -18,7 +18,7 @@ namespace multibody {
 // Forward declaration to define dot product with a spatial velocity.
 template <typename T> class SpatialVelocity;
 
-/// This class represents a _spatial momentum_ and has 6 elements with an
+/// This class represents a _spatial momentum_ L and has 6 elements with an
 /// angular (rotational) momentum 𝐡 (3-element vector) on top of a translational
 /// (linear) momentum 𝐥 (3-element vector). A spatial momentum L stores the
 /// angular momentum 𝐡 and translational momentum 𝐥 of a system S about a point
