@@ -104,7 +104,7 @@ def main():
     builder.Connect(filter.get_output_port(0),
                     station.GetInputPort("iiwa_position"))
 
-    wsg_buttons = builder.AddSystem(SchunkWsgButtons(teleop.window))
+    wsg_buttons = builder.AddSystem(SchunkWsgButtons())
     builder.Connect(wsg_buttons.GetOutputPort("position"),
                     station.GetInputPort("wsg_position"))
     builder.Connect(wsg_buttons.GetOutputPort("force_limit"),

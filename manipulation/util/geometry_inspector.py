@@ -40,13 +40,6 @@ Example usage (meshcat):
         --find_resource \
         drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
 
-Example usage (pyplot):
-
-    ./bazel-bin/manipulation/util/geometry_inspector \
-        --pyplot \
-        --find_resource \
-        drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
-
 Optional argument examples:
     ./bazel-bin/manipulation/util/geometry_inspector \
         --position 0.1 0.2 \
@@ -119,10 +112,6 @@ def main():
     args_parser.add_argument(
         "--test", action='store_true',
         help="Disable opening the slider gui window for testing.")
-    args_parser.add_argument(
-        "--pyplot", action="store_true",
-        help="Opens a pyplot figure for rendering using "
-             "PlanarSceneGraphVisualizer.")
     # TODO(russt): Consider supporting the PlanarSceneGraphVisualizer
     #  options as additional arguments.
     args_parser.add_argument(
@@ -145,7 +134,6 @@ def main():
     # Add the model from the file and finalize the plant.
     parser.AddModelFromFile(args.filename)
     plant.Finalize()
-    diagram = builder.Build()
 
     # Add sliders to set positions of the joints.
     sliders = builder.AddSystem(JointSliders(meshcat=meshcat, plant=plant))
