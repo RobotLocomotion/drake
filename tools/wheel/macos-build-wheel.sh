@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 # This script builds a wheel on macOS. It can be run directly, but using the
-# accompanying build-wheels script adds functionality.
+# accompanying build-wheels script adds functionality. Running this script
+# directly also requires an already-provisioned host.
 #
 # Beware that this requires write permission to /opt and will nuke various
 # things therein. (Shouldn't affect ARM Homebrew, though.)
@@ -26,8 +27,6 @@ rm -rf \
     "${DRAKE_WHEELBUILD_PREFIX}/dependencies" \
     /opt/drake-dependencies \
     /opt/drake
-
-brew bundle --file="$pip_root/image/packages-macos" --no-lock
 
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
