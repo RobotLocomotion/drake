@@ -26,6 +26,7 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem_ptr)
   const PartialPermutation& cliques_permutation = graph.participating_cliques();
   PartialPermutation velocities_permutation =
       MakeParticipatingVelocitiesPermutation(problem());
+  PartialPermutation impulses_permutation = MakeImpulsesPermutation(graph);
 
   // Extract momentum matrix for participating DOFs only.
   const int num_participating_cliques =
@@ -59,6 +60,7 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem_ptr)
   // N.B. const_model_data_ is meant to be created once at construction and
   // remain const afterwards.
   const_model_data_.velocities_permutation = std::move(velocities_permutation);
+  const_model_data_.impulses_permutation = std::move(impulses_permutation);
   const_model_data_.dynamics_matrix = std::move(dynamics_matrix);
   const_model_data_.constraints_bundle = std::move(constraints_bundle);
   // N.B. We must extract p* after the dynamics matrix has been moved into
@@ -135,6 +137,15 @@ const VectorX<T>& SapModel<T>::GetVelocities(const Context<T>& context) const {
 }
 
 template <typename T>
+Eigen::VectorBlock<VectorX<T>> SapModel<T>::GetMutableVelocities(
+    Context<T>* context) const {
+  DRAKE_DEMAND(context != nullptr);
+  system_->ValidateContext(*context);
+  return context->get_mutable_discrete_state(system_->velocities_index())
+      .get_mutable_value();
+}
+
+template <typename T>
 void SapModel<T>::SetVelocities(const VectorX<T>& v,
                                 Context<T>* context) const {
   DRAKE_DEMAND(v.size() == num_velocities());
@@ -180,8 +191,10 @@ void SapModel<T>::CalcMomentumGainCache(const Context<T>& context,
                                         MomentumGainCache<T>* cache) const {
   system_->ValidateContext(context);
   cache->Resize(num_velocities());
-  cache->velocity_gain = GetVelocities(context) - v_star();
-  MultiplyByDynamicsMatrix(cache->velocity_gain, &cache->momentum_gain);
+  const VectorX<T>& v = GetVelocities(context);
+  cache->velocity_gain = v - v_star();
+  MultiplyByDynamicsMatrix(v, &cache->p);
+  cache->momentum_gain = cache->p - p_star();
 }
 
 template <typename T>
@@ -290,6 +303,37 @@ PartialPermutation SapModel<T>::MakeParticipatingVelocitiesPermutation(
 }
 
 template <typename T>
+PartialPermutation SapModel<T>::MakeImpulsesPermutation(
+    const ContactProblemGraph& graph) const {
+  if (problem().num_constraints() == 0)
+    return PartialPermutation();  // empty permutation.
+
+  std::vector<int> constraint_start(problem().num_constraints());
+  constraint_start[0] = 0;
+  for (int i = 1; i < problem().num_constraints(); ++i) {
+    const int previous_constraint_size =
+        problem().get_constraint(i - 1).num_constraint_equations();
+    constraint_start[i] = constraint_start[i - 1] + previous_constraint_size;
+  }
+
+  std::vector<int> impulses_permutation(problem().num_constraint_equations());
+  int group_offset = 0;  // impulse index.
+  for (const ContactProblemGraph::ConstraintCluster& g : graph.clusters()) {
+    for (int i : g.constraint_index()) {
+      const SapConstraint<T>& c = problem().get_constraint(i);
+      const int ni = c.num_constraint_equations();
+      const int offset = constraint_start[i];
+      for (int m = 0; m < ni; ++m) {
+        impulses_permutation[offset + m] = group_offset + m;
+      }
+      group_offset += ni;
+    }
+  }
+
+  return PartialPermutation(std::move(impulses_permutation));
+}
+
+template <typename T>
 void SapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
                                            VectorX<T>* p) const {
   DRAKE_DEMAND(v.size() == num_velocities());
@@ -358,8 +402,13 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
   // Compute Delassus_diagonal as the rms norm of the diagonal block for the
   // i-th constraint.
   delassus_diagonal->resize(num_constraints);
-  for (int i = 0; i < num_constraints; ++i) {
-    (*delassus_diagonal)[i] = W[i].norm() / W[i].rows();
+  int permuted_constraint_index = 0;
+  for (const ContactProblemGraph::ConstraintCluster& e :
+       problem().graph().clusters()) {
+    for (int i : e.constraint_index()) {
+      (*delassus_diagonal)[permuted_constraint_index++] =
+          W[i].norm() / W[i].rows();
+    }
   }
 }
 
