@@ -26,6 +26,7 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem_ptr)
   const PartialPermutation& cliques_permutation = graph.participating_cliques();
   PartialPermutation velocities_permutation =
       MakeParticipatingVelocitiesPermutation(problem());
+  PartialPermutation impulses_permutation = MakeImpulsesPermutation(graph);      
 
   // Extract momentum matrix for participating DOFs only.
   const int num_participating_cliques =
@@ -59,6 +60,7 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem_ptr)
   // N.B. const_model_data_ is meant to be created once at construction and
   // remain const afterwards.
   const_model_data_.velocities_permutation = std::move(velocities_permutation);
+  const_model_data_.impulses_permutation = std::move(impulses_permutation);
   const_model_data_.dynamics_matrix = std::move(dynamics_matrix);
   const_model_data_.constraints_bundle = std::move(constraints_bundle);
   // N.B. We must extract p* after the dynamics matrix has been moved into
@@ -132,6 +134,15 @@ template <typename T>
 const VectorX<T>& SapModel<T>::GetVelocities(const Context<T>& context) const {
   system_->ValidateContext(context);
   return context.get_discrete_state(system_->velocities_index()).value();
+}
+
+template <typename T>
+Eigen::VectorBlock<VectorX<T>> SapModel<T>::GetMutableVelocities(
+    Context<T>* context) const {
+  DRAKE_DEMAND(context != nullptr);
+  system_->ValidateContext(*context);
+  return context->get_mutable_discrete_state(system_->velocities_index())
+      .get_mutable_value();
 }
 
 template <typename T>

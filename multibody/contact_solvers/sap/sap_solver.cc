@@ -17,14 +17,7 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-template <typename T>
-void SapSolver<T>::Cache::Resize(int nv, int nc, int nk) {
-  velocities_cache_.Resize(nk);
-  momentum_cache_.Resize(nv);
-  impulses_cache_.Resize(nk);
-  gradients_cache_.Resize(nv, nc);
-  search_direction_cache_.Resize(nv, nk);
-}
+using drake::systems::Context;
 
 template <typename T>
 void SapSolver<T>::set_parameters(const SapSolverParameters& parameters) {
@@ -96,15 +89,14 @@ void SapSolver<T>::PackContactResults(const VectorX<T>& v_star,
 }
 
 template <typename T>
-void SapSolver<T>::CalcStoppingCriteriaResidual(const State& state,
+void SapSolver<T>::CalcStoppingCriteriaResidual(const Context<T>& context,
                                                 T* momentum_residual,
                                                 T* momentum_scale) const {
   using std::max;
-  const VectorX<T>& inv_sqrt_A = model_->inv_sqrt_A();
-  const auto& momentum_cache = EvalMomentumCache(state);
-  const VectorX<T>& p = momentum_cache.p;
-  const VectorX<T>& jc = momentum_cache.jc;
-  const VectorX<T>& ell_grad = EvalGradientsCache(state).ell_grad_v;
+  const VectorX<T>& inv_sqrt_A = model_->inv_sqrt_dynamics_matrix();
+  const VectorX<T>& p = model_->EvalMomentum(context);
+  const VectorX<T>& jc = model_->EvalGeneralizedImpulses(context);
+  const VectorX<T>& ell_grad = model_->EvalCostGradient(context);
 
   // Scale generalized momentum quantities using inv_sqrt_A so that all entries
   // have the same units and we can weigh them equally.
@@ -141,23 +133,30 @@ ContactSolverStatus SapSolver<double>::SolveWithGuess(
 
   model_ = std::make_unique<SapModel<double>>(&problem);
   const int nv = model_->num_velocities();
-  const int nc = model_->num_constraints();
   const int nk = model_->num_constraint_equations();
 
-  State state(nv, nc, nk);
+  auto context = model_->MakeContext();
+  auto scratch = model_->MakeContext();
+  SearchDirectionData search_direction_data(nv, nk);
   stats_ = SolverStats();
 
-  model_->velocities_permutation().Apply(v_guess, &state.mutable_v());
+  {
+    // We limit the lifetime of this reference, v, to within this scope where we
+    // immediately need it.
+    Eigen::VectorBlock<VectorX<double>> v =
+        model_->GetMutableVelocities(context.get());
+    model_->velocities_permutation().Apply(v_guess, &v);
+  }
 
   // Start Newton iterations.
   int k = 0;
-  double ell_previous = EvalCostCache(state).ell;
+  double ell_previous = model_->EvalCost(*context);
   bool converged = false;
   for (;; ++k) {
     // We first verify the stopping criteria. If satisfied, we skip expensive
     // factorizations.
     double momentum_residual, momentum_scale;
-    CalcStoppingCriteriaResidual(state, &momentum_residual, &momentum_scale);
+    CalcStoppingCriteriaResidual(*context, &momentum_residual, &momentum_scale);
     stats_.optimality_criterion_reached =
         momentum_residual <=
         parameters_.abs_tolerance + parameters_.rel_tolerance * momentum_scale;
@@ -178,15 +177,17 @@ ContactSolverStatus SapSolver<double>::SolveWithGuess(
 
     // This is the most expensive update: it performs the factorization of H to
     // solve for the search direction dv.
-    const VectorX<double>& dv = EvalSearchDirectionCache(state).dv;
+    CalcSearchDirectionData(*context, &search_direction_data);
+    const VectorX<double>& dv = search_direction_data.dv;
 
-    const auto [alpha, ls_iters] = PerformBackTrackingLineSearch(state, dv);
+    const auto [alpha, ls_iters] = PerformBackTrackingLineSearch(
+        *context, search_direction_data, scratch.get());
     stats_.num_line_search_iters += ls_iters;
 
     // Update state.
-    state.mutable_v() += alpha * dv;
+    model_->GetMutableVelocities(context.get()) += alpha * dv;
 
-    const double ell = EvalCostCache(state).ell;
+    const double ell = model_->EvalCost(*context);
     const double ell_scale = (ell + ell_previous) / 2.0;
     // N.B. Even though theoretically we expect ell < ell_previous, round-off
     // errors might make the difference ell_previous - ell negative, within
@@ -215,9 +216,10 @@ ContactSolverStatus SapSolver<double>::SolveWithGuess(
 
   if (!converged) return ContactSolverStatus::kFailure;
 
-  const VectorX<double>& vc = EvalVelocitiesCache(state).vc;
-  const VectorX<double>& gamma = EvalImpulsesCache(state).gamma;
-  PackContactResults(problem.v_star(), state.v(), vc, gamma, results);
+  const VectorX<double>& vc = model_->EvalConstraintVelocities(*context);
+  const VectorX<double>& gamma = model_->EvalImpulses(*context);
+  const VectorX<double>& v = model_->GetVelocities(*context);
+  PackContactResults(problem.v_star(), v, vc, gamma, results);
 
   // N.B. If the stopping criteria is satisfied for k = 0, the solver is not
   // even instantiated and no factorizations are performed (the expensive part
@@ -228,24 +230,26 @@ ContactSolverStatus SapSolver<double>::SolveWithGuess(
 }
 
 template <typename T>
-T SapSolver<T>::CalcLineSearchCost(const State& state_v, const T& alpha,
-                                   State* state_alpha) const {
+T SapSolver<T>::CalcCostAlongLine(
+    const systems::Context<T>& context,
+    const SearchDirectionData& search_direction_data, const T& alpha,
+    systems::Context<T>* scratch) const {
   // Data.
-  const VectorX<T>& R = model_->R();
+  const VectorX<T>& R = model_->constraints_bundle().R();
   const VectorX<T>& v_star = model_->v_star();
 
-  // Cached quantities at state v.
-  const typename Cache::SearchDirectionCache& search_direction_cache =
-      EvalSearchDirectionCache(state_v);
-  const VectorX<T>& dv = search_direction_cache.dv;
-  const VectorX<T>& dp = search_direction_cache.dp;
-  const T& d2ellA_dalpha2 = search_direction_cache.d2ellA_dalpha2;
+  // Search direction quantities at state v.
+  const VectorX<T>& dv = search_direction_data.dv;
+  const VectorX<T>& dp = search_direction_data.dp;
+  const T& d2ellA_dalpha2 = search_direction_data.d2ellA_dalpha2;
 
   // State at v(alpha).
-  state_alpha->mutable_v() = state_v.v() + alpha * dv;
+  Context<T>& context_alpha = *scratch;
+  const VectorX<T>& v = model_->GetVelocities(context);
+  model_->GetMutableVelocities(&context_alpha) = v + alpha * dv;
 
   // Update velocities and impulses at v(alpha).
-  const VectorX<T>& gamma = EvalImpulsesCache(*state_alpha).gamma;
+  const VectorX<T>& gamma = model_->EvalImpulses(context_alpha);
 
   // Regularizer cost.
   const T ellR = 0.5 * gamma.dot(R.asDiagonal() * gamma);
@@ -259,8 +263,8 @@ T SapSolver<T>::CalcLineSearchCost(const State& state_v, const T& alpha,
   //  - dpᵀ = Δvᵀ⋅A
   //  - ellA(v) = 0.5‖v−v*‖²
   //  - d2ellA_dalpha2 = 0.5‖Δv‖²α², see [Castro et al., 2021; §VIII.C].
-  T ellA = EvalCostCache(state_v).ellA;
-  ellA += alpha * dp.dot(state_v.v() - v_star);
+  T ellA = model_->EvalMomentumCost(context);
+  ellA += alpha * dp.dot(v - v_star);
   ellA += 0.5 * alpha * alpha * d2ellA_dalpha2;
   const T ell = ellA + ellR;
 
@@ -269,7 +273,9 @@ T SapSolver<T>::CalcLineSearchCost(const State& state_v, const T& alpha,
 
 template <typename T>
 std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
-    const State& state, const VectorX<T>& dv) const {
+    const systems::Context<T>& context,
+    const SearchDirectionData& search_direction_data, 
+    systems::Context<T>* scratch) const {
   using std::abs;
   // Line search parameters.
   const double rho = parameters_.ls_rho;
@@ -277,16 +283,15 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
   const int max_iterations = parameters_.ls_max_iterations;
 
   // Quantities at alpha = 0.
-  const T& ell0 = EvalCostCache(state).ell;
-  const auto& ell_grad_v0 = EvalGradientsCache(state).ell_grad_v;
+  const T& ell0 = model_->EvalCost(context);
+  const VectorX<T>& ell_grad_v0 = model_->EvalCostGradient(context);
 
   // dℓ/dα(α = 0) = ∇ᵥℓ(α = 0)⋅Δv.
+  const VectorX<T>& dv = search_direction_data.dv;
   const T dell_dalpha0 = ell_grad_v0.dot(dv);
 
   T alpha = parameters_.ls_alpha_max;
-  // TODO(amcastro-tri): Consider removing this heap allocation from this scope.
-  State state_aux(state);  // Auxiliary workspace.
-  T ell = CalcLineSearchCost(state, alpha, &state_aux);
+  T ell = CalcCostAlongLine(context, search_direction_data, alpha, scratch);
 
   const double kTolerance = 50 * std::numeric_limits<double>::epsilon();
   // N.B. We expect ell_scale != 0 since otherwise SAP's optimality condition
@@ -328,7 +333,7 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
   int iteration = 1;
   for (; iteration <= max_iterations; ++iteration) {
     alpha *= rho;
-    ell = CalcLineSearchCost(state, alpha, &state_aux);
+    ell = CalcCostAlongLine(context, search_direction_data, alpha, scratch);
     // We scan discrete values of alpha from alpha_max to zero and seek for the
     // minimum value of the cost evaluated at those discrete values. Since we
     // know the cost is convex, we detect this minimum by checking the condition
@@ -359,8 +364,7 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
 }
 
 template <typename T>
-void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
-  const auto& gradients_cache = EvalGradientsCache(state);
+void SapSolver<T>::CallDenseSolver(const Context<T>& context, VectorX<T>* dv) const {  
   // Explicitly build dense Hessian.
   // These matrices could be saved in the cache. However this method is only
   // intended as an alternative for debugging and optimizing it might not be
@@ -382,9 +386,10 @@ void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
   const MatrixX<T> Jdense = model_->J().MakeDenseMatrix();
 
   // Make dense Hessian matrix G.
+  const std::vector<MatrixX<T>>& G = model_->EvalConstraintsHessian(context);
   MatrixX<T> Gdense = MatrixX<T>::Zero(nk, nk);
   offset = 0;
-  for (const auto& Gi : gradients_cache.G) {
+  for (const auto& Gi : G) {
     const int ni = Gi.rows();
     Gdense.block(offset, offset, ni, ni) = Gi;
     offset += ni;
@@ -402,130 +407,21 @@ void SapSolver<T>::CallDenseSolver(const State& state, VectorX<T>* dv) const {
   }
 
   // Compute search direction.
-  const VectorX<T> rhs = -gradients_cache.ell_grad_v;
+  const VectorX<T> rhs = -model_->EvalCostGradient(context);
   *dv = Hldlt.solve(rhs);
 }
 
 template <typename T>
-const typename SapSolver<T>::Cache::VelocitiesCache&
-SapSolver<T>::EvalVelocitiesCache(const State& state) const {
-  // This method must not depend on any other eval method. If you change it, you
-  // must update the Cache dependency diagram and matching code.
-  if (state.cache().velocities_cache().valid)
-    return state.cache().velocities_cache();
-  typename Cache::VelocitiesCache& cache =
-      state.mutable_cache().mutable_velocities_cache();
-  model_->J().Multiply(state.v(), &cache.vc);
-  cache.valid = true;
-  return cache;
-}
-
-template <typename T>
-const typename SapSolver<T>::Cache::ImpulsesCache&
-SapSolver<T>::EvalImpulsesCache(const State& state) const {
-  // This method must only depend on EvalVelocitiesCache(). If you change it,
-  // you must update the Cache dependency diagram and matching code.
-  if (state.cache().impulses_cache().valid)
-    return state.cache().impulses_cache();
-  typename Cache::ImpulsesCache& cache =
-      state.mutable_cache().mutable_impulses_cache();
-  const VectorX<T>& vc = EvalVelocitiesCache(state).vc;
-  model_->constraint_bundle().CalcUnprojectedImpulses(vc, &cache.y);
-  model_->constraint_bundle().ProjectImpulses(cache.y, &cache.gamma);
-  ++stats_.num_impulses_cache_updates;
-  cache.valid = true;
-  return cache;
-}
-
-template <typename T>
-const typename SapSolver<T>::Cache::MomentumCache&
-SapSolver<T>::EvalMomentumCache(const State& state) const {
-  // This method must only depend on EvalImpulsesCache(). If you change it,
-  // you must update the Cache dependency diagram and matching code.
-  if (state.cache().momentum_cache().valid)
-    return state.cache().momentum_cache();
-  typename Cache::MomentumCache& cache =
-      state.mutable_cache().mutable_momentum_cache();
-  model_->MultiplyByDynamicsMatrix(state.v(), &cache.p);  // p = A⋅v.
-  const VectorX<T>& gamma = EvalImpulsesCache(state).gamma;
-  model_->J().MultiplyByTranspose(gamma, &cache.jc);
-  // = p - p* = A⋅(v−v*).
-  cache.momentum_change = cache.p - model_->p_star();
-  cache.valid = true;
-  return cache;
-}
-
-template <typename T>
-const typename SapSolver<T>::Cache::CostCache& SapSolver<T>::EvalCostCache(
-    const State& state) const {
-  // This method must only depend on EvalImpulsesCache() and
-  // EvalMomentumCache(). If you change it, you must update the Cache dependency
-  // diagram and matching code.
-  if (state.cache().cost_cache().valid) return state.cache().cost_cache();
-  typename Cache::CostCache& cache =
-      state.mutable_cache().mutable_cost_cache();
-  const auto& R = model_->R();
-  const auto& v_star = model_->v_star();
-  const VectorX<T>& v = state.v();
-  const VectorX<T>& gamma = EvalImpulsesCache(state).gamma;
-  const auto& Adv = EvalMomentumCache(state).momentum_change;
-  cache.ellA = 0.5 * Adv.dot(v - v_star);
-  cache.ellR = 0.5 * gamma.dot(R.asDiagonal() * gamma);
-  cache.ell = cache.ellA + cache.ellR;
-  cache.valid = true;
-  return cache;
-}
-
-template <typename T>
-const typename SapSolver<T>::Cache::GradientsCache&
-SapSolver<T>::EvalGradientsCache(const State& state) const {
-  // This method must only depend on EvalImpulsesCache() and
-  // EvalMomentumCache(). If you change it, you must update the Cache dependency
-  // diagram and matching code.
-  if (state.cache().gradients_cache().valid)
-    return state.cache().gradients_cache();
-  typename Cache::GradientsCache& cache =
-      state.mutable_cache().mutable_gradients_cache();
-
-  // Update ∇ᵥℓ = A⋅(v−v*) - Jᵀ⋅γ
-  const auto& momentum_cache = EvalMomentumCache(state);
-  const VectorX<T>& Adv = momentum_cache.momentum_change;  // = A⋅(v−v*)
-  const VectorX<T>& jc = momentum_cache.jc;  // = Jᵀ⋅γ
-  cache.ell_grad_v = Adv - jc;
-
-  // Update dPdy and G. G = -∂γ/∂vc = dP/dy⋅R⁻¹.
-  const VectorX<T>& y = EvalImpulsesCache(state).y;
-
-  // TODO: clean this up to avoid recomputing impulses in this call.
-  // Maybe a sugar method on SapModel would suffice.
-  VectorX<T> dummy(y.size());
-  model_->constraint_bundle().ProjectImpulsesAndCalcConstraintsHessian(
-      y, &dummy, &cache.G);
-  ++stats_.num_gradients_cache_updates;
-  cache.valid = true;
-  return cache;
-}
-
-template <typename T>
-const typename SapSolver<T>::Cache::SearchDirectionCache&
-SapSolver<T>::EvalSearchDirectionCache(const State& state) const {
-  // This method must only depend on EvalGradientsCache(). If you change it, you
-  // must update the Cache dependency diagram and matching code.
-  if (state.cache().search_direction_cache().valid)
-    return state.cache().search_direction_cache();
-  typename Cache::SearchDirectionCache& cache =
-      state.mutable_cache().mutable_search_direction_cache();
-
+void SapSolver<T>::CalcSearchDirectionData(
+    const systems::Context<T>& context,
+    SapSolver<T>::SearchDirectionData* data) const {
   // Update search direction dv.
-  CallDenseSolver(state, &cache.dv);
+  CallDenseSolver(context, &data->dv);
 
   // Update Δp, Δvc and d²ellA/dα².
-  model_->J().Multiply(cache.dv, &cache.dvc);
-  model_->MultiplyByDynamicsMatrix(cache.dv, &cache.dp);
-  cache.d2ellA_dalpha2 = cache.dv.dot(cache.dp);
-
-  cache.valid = true;
-  return cache;
+  model_->J().Multiply(data->dv, &data->dvc);
+  model_->MultiplyByDynamicsMatrix(data->dv, &data->dp);
+  data->d2ellA_dalpha2 = data->dv.dot(data->dp);
 }
 
 }  // namespace internal

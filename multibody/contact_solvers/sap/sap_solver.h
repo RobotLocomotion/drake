@@ -6,6 +6,7 @@
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_model.h"
+#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
@@ -190,251 +191,17 @@ class SapSolver {
  private:
   friend class SapSolverTester;
 
-  // This class is used to store quantities that are a function of the
-  // generalized velocities in the State of the solver. This class does not
-  // provide a generic caching mechanism, but the dependencies are harcoded into
-  // the implementation. These dependencies are sketched below:
-  //
-  //      ┌───┐   ┌──┐   ┌────────┐   ┌───┐   ┌────┐   ┌────────────────┐
-  //      │ v │◄──┤vc│◄──┤Impulses│◄──┤Mom│◄──┤Grad│◄──┤Search Direction│
-  //      └───┘   └──┘   └────────┘   └───┘   └────┘   └────────────────┘
-  //                                    ▲
-  //                                    │     ┌────┐
-  //                                    └─────┤Cost│
-  //                                          └────┘
-  // Entries in the schematic correspond to cache entries with type:
-  //  - vc: VelocitiesCache
-  //  - Impulses: ImpulsesCache
-  //  - Mom: MomentumCache
-  //  - Grad: GradientsCache
-  //  - Search Direction: SearchDirectionCache
-  //
-  // The SapSolver class provides methods to "evaluate" these cache entries and
-  // always return an up-to-date reference (the computation is performed only if
-  // the cache entry is not up-to-date.) As an example, consider the evaluation
-  // of the constraints velocity vc. This is accomplished with:
-  //   const VectorX<T>& vc = EvalVelocitiesCache(state).vc;
-  // Notice that the call site does not mention the cache directly but it uses
-  // the corresponding Eval method.
-  // An eval method will always return a reference to an up-to-date cache entry.
-  // When a cache entry is not up-to-date, then the eval method will perform the
-  // necessary computation to update it. When this update computation takes
-  // place, downstream cache entries are invalidated in accordance to the
-  // diagram above. In the example above, calling EvalVelocitiesCache() on a
-  // valid velocities cache entry simply returns a reference to that entry. When
-  // the entry is invalid, stored values are updated (computed), downstream
-  // dependents marked invalid, the updated entry is marked valid, and finally a
-  // reference to the updated entry is returned. Mutating the state's velocity
-  // with State::mutable_v() will invalidate all cache entries.
-  //
-  // N.B. The schematic above must be kept in sync with the implementation.
-  //
-  // For mathematical quantities, we attempt follow the notation introduced in
-  // [Castro et al., 2021] as best as we can, though with ASCII and Unicode
-  // characters.
-  class Cache {
-   public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Cache);
-    Cache() = default;
-
-    // Each of these cache entries must know who depends on it and must make
-    // sure those get invalidated when it does.
-
-    struct VelocitiesCache {
-      void Resize(int nk) { vc.resize(nk); }
-      void Invalidate(Cache* cache) {
-        valid = false;
-        cache->mutable_impulses_cache();
-      }
-      bool valid{false};
-      VectorX<T> vc;  // constraint velocities vc = J⋅v.
-    };
-
-    struct ImpulsesCache {
-      void Resize(int nk) {
-        y.resize(nk);
-        gamma.resize(nk);
-      }
-      void Invalidate(Cache* cache) {
-        valid = false;
-        cache->mutable_momentum_cache();
-      }
-      bool valid{false};
-      VectorX<T> y;      // The (unprojected) impulse y = −R⁻¹⋅(vc − v̂).
-      VectorX<T> gamma;  // Impulse γ = P(y), with P(y) the projection operator.
-    };
-
-    struct MomentumCache {
-      void Resize(int nv) {
-        p.resize(nv);
-        jc.resize(nv);
-        momentum_change.resize(nv);
-      }
-      void Invalidate(Cache* cache) {
-        valid = false;
-        cache->mutable_cost_cache();
-        cache->mutable_gradients_cache();
-      }
-      bool valid{false};
-      VectorX<T> p;                // Generalized momentum p = A⋅v
-      VectorX<T> jc;               // Generalized impulse jc = Jᵀ⋅γ
-      VectorX<T> momentum_change;  // = A⋅(v−v*)
-    };
-
-    struct CostCache {
-      void Invalidate(Cache*) { valid = false; }
-      bool valid{false};
-      T ell{NAN};   // Total primal cost, = ellA + ellR.
-      T ellA{NAN};  // Velocities cost, = 1/2⋅(v−v*)ᵀ⋅A⋅(v−v*).
-      T ellR{NAN};  // Regularizer cost, = 1/2⋅γᵀ⋅R⋅γ.
-    };
-
-    struct GradientsCache {
-      void Resize(int nv, int nc) {
-        ell_grad_v.resize(nv);
-        dPdy.resize(nc);
-        G.resize(nc);
-      }
-      void Invalidate(Cache* cache) {
-        valid = false;
-        cache->mutable_search_direction_cache();
-      }
-      bool valid{false};
-      VectorX<T> ell_grad_v;         // Gradient of the cost in v.
-      std::vector<MatrixX<T>> dPdy;  // Gradient of the projection, ∂P/∂y.
-      std::vector<MatrixX<T>> G;     // G = -∂γ/∂vc = dP/dy⋅R⁻¹.
-    };
-
-    struct SearchDirectionCache {
-      void Resize(int nv, int nk) {
-        dv.resize(nv);
-        dp.resize(nv);
-        dvc.resize(nk);
-        d2ellA_dalpha2 = NAN;
-      }
-      void Invalidate(Cache*) { valid = false; }
-      bool valid{false};
-      VectorX<T> dv;          // Search direction.
-      VectorX<T> dp;          // Momentum update Δp = A⋅Δv.
-      VectorX<T> dvc;         // Constraints velocities update, Δvc=J⋅Δv.
-      T d2ellA_dalpha2{NAN};  // d²ellA/dα² = Δvᵀ⋅A⋅Δv.
-    };
-
-    // Resizes all the cache entries to store quantities for a problem with nv
-    // generalized velocities and nc contact constraints. All existing
-    // data is lost.
-    void Resize(int nv, int nc, int nk);
-
-    // Marks the cache as invalid. This is meant to be called by State when
-    // mutating its internal state.
-    void Invalidate() {
-      velocities_cache_.Invalidate(this);
+  struct SearchDirectionData {
+    SearchDirectionData(int num_velocities, int num_constraint_equations) {
+      dv.resize(num_velocities);
+      dp.resize(num_velocities);
+      dvc.resize(num_constraint_equations);
+      d2ellA_dalpha2 = NAN;
     }
-
-   private:
-    friend class SapSolver<T>;
-
-    // Dangerous methods for const access of cache entries; you must check the
-    // valid bit before using. These methods are meant to be used only within
-    // SapSolver's Eval methods. Cache entries must be accessed through the
-    // corresponding Eval.
-    const VelocitiesCache& velocities_cache() const {
-      return velocities_cache_;
-    }
-    const ImpulsesCache& impulses_cache() const { return impulses_cache_; }
-    const MomentumCache& momentum_cache() const { return momentum_cache_; }
-    const CostCache& cost_cache() const { return cost_cache_; }
-    const GradientsCache& gradients_cache() const { return gradients_cache_; }
-    const SearchDirectionCache& search_direction_cache() const {
-      return search_direction_cache_;
-    }
-
-    // Methods for mutable access of cache entries. The specific cache entry and
-    // its dependents are marked invalid before it is returned. External use of
-    // these methods must be only within SapSolver's Eval methods. (Internally
-    // we use them for the invalidation side effect.)
-    VelocitiesCache& mutable_velocities_cache() {
-      velocities_cache_.Invalidate(this);
-      return velocities_cache_;
-    }
-    ImpulsesCache& mutable_impulses_cache() {
-      impulses_cache_.Invalidate(this);
-      return impulses_cache_;
-    }
-    MomentumCache& mutable_momentum_cache() {
-      momentum_cache_.Invalidate(this);
-      return momentum_cache_;
-    }
-    CostCache& mutable_cost_cache() {
-      cost_cache_.Invalidate(this);
-      return cost_cache_;
-    }
-    GradientsCache& mutable_gradients_cache() {
-      gradients_cache_.Invalidate(this);
-      return gradients_cache_;
-    }
-    SearchDirectionCache& mutable_search_direction_cache() {
-      search_direction_cache_.Invalidate(this);
-      return search_direction_cache_;
-    }
-
-    // SapSolver must never access these members directly.
-    VelocitiesCache velocities_cache_;
-    ImpulsesCache impulses_cache_;
-    MomentumCache momentum_cache_;
-    CostCache cost_cache_;
-    GradientsCache gradients_cache_;
-    SearchDirectionCache search_direction_cache_;
-  };
-
-  // Everything in this solver is a function of the generalized velocities v;
-  // cost ℓ(v), gradient ∇ℓ(v), Hessian H(v), intermediate quantities used for
-  // their computation and even search direction Δv(v) and Hessian
-  // factorization. State stores generalized velocities v and cached quantities
-  // that are functions of v. The purpose of cached quantities is twofold; 1) to
-  // allow reusing already computed quantities and 2) to centralize and
-  // minimize (costly) heap allocations.
-  class State {
-   public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(State);
-
-    State() = default;
-
-    // Constructs a state for a problem with nv generalized velocities and nc
-    // contact constraints.
-    State(int nv, int nc, int nk) { Resize(nv, nc, nk); }
-
-    // Resizes the state for a problem with nv generalized velocities and nc
-    // contact constraints.
-    void Resize(int nv, int nc, int nk) {
-      v_.resize(nv);
-      cache_.Resize(nv, nc, nk);
-    }
-
-    const VectorX<T>& v() const { return v_; }
-
-    VectorX<T>& mutable_v() {
-      // Mark all cache quantities as invalid since they all are a function of
-      // velocity.
-      cache_.Invalidate();
-      return v_;
-    }
-
-    const Cache& cache() const { return cache_; }
-
-    // The state of the solver is fully described by the generalized velocities
-    // v. Therefore mutating the cache does not change the state of the solver
-    // and we mark this method "const". Mutable access to the cache is provided
-    // to allow updating expensive quantities that are reused in multiple
-    // places.
-    Cache& mutable_cache() const { return cache_; }
-
-   private:
-    VectorX<T> v_;
-    // N.B. State objects are only created within the scope of SolveWithGuess()
-    // and therefore the implementation is thread safe. That is, SapSolver does
-    // not have State members.
-    mutable Cache cache_;
+    VectorX<T> dv;          // Search direction.
+    VectorX<T> dp;          // Momentum update Δp = A⋅Δv.
+    VectorX<T> dvc;         // Constraints velocities update, Δvc=J⋅Δv.
+    T d2ellA_dalpha2{NAN};  // d²ellA/dα² = Δvᵀ⋅A⋅Δv.
   };
 
   // Pack solution into ContactSolverResults. Where v is the vector of
@@ -451,7 +218,8 @@ class SapSolver {
   // the same units (square root of Joules).
   // This method computes momentum_residual = ‖∇ℓ‖ and momentum_scale =
   // max(‖p‖,‖j‖). See [Castro et al., 2021] for further details.
-  void CalcStoppingCriteriaResidual(const State& state, T* momentum_residual,
+  void CalcStoppingCriteriaResidual(const systems::Context<T>& context,
+                                    T* momentum_residual,
                                     T* momentum_scale) const;
 
   // Solves the contact problem from initial guess `v_guess` into `result`.
@@ -463,8 +231,9 @@ class SapSolver {
   // the last Newton iteration values of generalized velocities and search
   // direction, respectively. This methods uses the O(n) strategy described in
   // [Castro et al., 2021].
-  T CalcLineSearchCost(const State& state_v, const T& alpha,
-                       State* state_alpha) const;
+  T CalcCostAlongLine(const systems::Context<T>& context,
+                      const SearchDirectionData& search_direction_data,
+                      const T& alpha, systems::Context<T>* scratch) const;
 
   // Approximation to the 1D minimization problem α = argmin ℓ(α) = ℓ(v + αΔv)
   // over α. We define ϕ(α) = ℓ₀ + α c ℓ₀', where ℓ₀ = ℓ(0), ℓ₀' = dℓ/dα(0) and
@@ -480,25 +249,18 @@ class SapSolver {
   //
   // @returns A pair (α, num_iterations) where α satisfies Armijo's criterion
   // and num_iterations is the number of backtracking iterations performed.
-  std::pair<T, int> PerformBackTrackingLineSearch(const State& state,
-                                                  const VectorX<T>& dv) const;
+  std::pair<T, int> PerformBackTrackingLineSearch(
+      const systems::Context<T>& context,
+      const SearchDirectionData& search_direction_data,
+      systems::Context<T>* scratch_workspace) const;
 
   // Solves for dv using dense algebra, for debugging.
   // TODO(amcastro-tri): Add AutoDiffXd support.
-  void CallDenseSolver(const State& s, VectorX<T>* dv) const;
+  void CallDenseSolver(const systems::Context<T>& context,
+                       VectorX<T>* dv) const;
 
-  // Methods used to evaluate cached quantities.
-  const typename Cache::VelocitiesCache& EvalVelocitiesCache(
-      const State& state) const;
-  const typename Cache::ImpulsesCache& EvalImpulsesCache(
-      const State& state) const;
-  const typename Cache::CostCache& EvalCostCache(const State& state) const;
-  const typename Cache::MomentumCache& EvalMomentumCache(
-      const State& state) const;
-  const typename Cache::GradientsCache& EvalGradientsCache(
-      const State& state) const;
-  const typename Cache::SearchDirectionCache& EvalSearchDirectionCache(
-      const State& state) const;
+  void CalcSearchDirectionData(const systems::Context<T>& context,
+                                SearchDirectionData* data) const;
 
   SapSolverParameters parameters_;
   // Stats are mutable so we can update them from within const methods (e.g.
