@@ -7,6 +7,7 @@ load(
     "drake_cc_library",
     "drake_cc_test",
 )
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load("//tools/skylark:py.bzl", "py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
@@ -165,9 +166,11 @@ drake_cc_googletest(
 # - Server integration test targets. ------------------------------------------
 
 # NOTE: see geometry/render/dev/render_server/README.md for installation
-# instructions to run this server, the drake setup scripts do not include the
-# dependencies for this target.
-# TODO(svenevs): install the final list of dependencies when decided.
+# instructions to run this server, flask is only installed for testing.
+# TODO(#16822): this test confirms `flask` can be imported, not run.  Remove in
+# the round trip tests.
+drake_py_unittest(name = "flask_import_test")
+
 # Runs a flask server on 127.0.0.1:8000.  --host and --port are enabled as
 # command line overrides (e.g., if port 8000 is occupied).
 py_binary(
