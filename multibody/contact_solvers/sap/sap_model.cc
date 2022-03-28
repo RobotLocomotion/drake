@@ -1,10 +1,11 @@
 #include "drake/multibody/contact_solvers/sap/sap_model.h"
 
-#include "drake/common/default_scalars.h"
+#include <memory>
+#include <utility>
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a ": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a ":\n" << a << std::endl;
+#include "drake/common/default_scalars.h"
+#include "drake/multibody/contact_solvers/block_sparse_matrix.h"
+#include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 
 namespace drake {
 namespace multibody {
@@ -16,60 +17,68 @@ using systems::Context;
 template <typename T>
 SapModel<T>::SapModel(const SapContactProblem<T>* problem_ptr)
     : problem_(problem_ptr) {
-  // Graph for the original contact problem, including all cliques
+  // Graph to the original contact problem, including all cliques
   // (participating and non-participating).
   const ContactProblemGraph& graph = problem().graph();
 
   // Permutations to map indexes from participating cliques/dofs to the original
   // set of cliques/dofs.
-  // TODO: remove cliques_permutation_.
-  const PartialPermutation& cliques_permutation_ =
-      graph.participating_cliques();
-  velocities_permutation_ = MakeParticipatingVelocitiesPermutation(
-      problem(), cliques_permutation_);
-  impulses_permutation_ = MakeImpulsesPermutation(graph);
+  const PartialPermutation& cliques_permutation = graph.participating_cliques();
+  PartialPermutation velocities_permutation =
+      MakeParticipatingVelocitiesPermutation(problem());
 
-  // Extract momentum matrix's per-tree diagonal blocks. Compute diagonal
-  // scaling inv_sqrt_A.
+  // Extract momentum matrix for participating DOFs only.
   const int num_participating_cliques =
-      cliques_permutation_.permuted_domain_size();
-  A_.resize(num_participating_cliques);  
-  cliques_permutation_.Apply(problem().dynamics_matrix(), &A_);  
+      cliques_permutation.permuted_domain_size();
+  std::vector<MatrixX<T>> dynamics_matrix(num_participating_cliques);
+  cliques_permutation.Apply(problem().dynamics_matrix(), &dynamics_matrix);
 
-  // Compute inv_sqrt_A_.
-  const int nv_participating = velocities_permutation_.permuted_domain_size();
-  inv_sqrt_A_.resize(nv_participating);
-  int offset = 0;
-  for (int clique = 0; clique < num_participating_cliques; ++clique) {
-    const MatrixX<T>& Aclique = A_[clique];
-    // Each block must be square.
-    DRAKE_DEMAND(Aclique.rows() == Aclique.cols());
-    const int nv = Aclique.rows();  // Number of DOFs in the clique.
-    inv_sqrt_A_.segment(offset, nv) =
-        Aclique.diagonal().cwiseInverse().cwiseSqrt();
-    offset += nv;
+  // Get v* for participating DOFs only.
+  const int nv_participating = velocities_permutation.permuted_domain_size();
+  VectorX<T> v_star(nv_participating);
+  velocities_permutation.Apply(problem().v_star(), &v_star);
+
+  // Compute diagonal scaling inv_sqrt_A.
+  VectorX<T> inv_sqrt_A(nv_participating);
+  int clique_offset = 0;
+  for (const auto& Ac : dynamics_matrix) {
+    const int clique_nv = Ac.rows();
+    inv_sqrt_A.segment(clique_offset, clique_nv) =
+        Ac.diagonal().cwiseInverse().cwiseSqrt();
+    clique_offset += clique_nv;
   }
 
-  p_star_.resize(nv_participating);
-  v_star_.resize(nv_participating);
-  velocities_permutation_.Apply(problem().v_star(), &v_star_);
-  MultiplyByDynamicsMatrix(v_star_, &p_star_);
-  CalcDelassusDiagonalApproximation(A_, cliques_permutation_,
-                                    &delassus_diagonal_);
-
-  // TODO: remove this DEMAND.
-  DRAKE_DEMAND(delassus_diagonal_.size() == problem().num_constraints());  
+  // Computation of a diagonal approximation to the Delassus operator.
+  VectorX<T> delassus_diagonal(num_constraints());
+  CalcDelassusDiagonalApproximation(dynamics_matrix, &delassus_diagonal);
 
   // Create constraints bundle.
-  constraints_bundle_ = std::make_unique<SapConstraintBundle<T>>(
-      &problem(), delassus_diagonal_);
+  std::unique_ptr<SapConstraintBundle<T>> constraints_bundle =
+      std::make_unique<SapConstraintBundle<T>>(&problem(), delassus_diagonal);
 
-  system_ = std::make_unique<SappModelSystem>(num_velocities());
-  DeclareStateAndCacheEntries();
+  // N.B. const_model_data_ is meant to be created once at construction and
+  // remain const afterwards.
+  const_model_data_.velocities_permutation = std::move(velocities_permutation);
+  const_model_data_.dynamics_matrix = std::move(dynamics_matrix);
+  const_model_data_.constraints_bundle = std::move(constraints_bundle);
+  // N.B. We must extract p* after the dynamics matrix has been moved into
+  // const_model_data_.
+  VectorX<T> p_star(nv_participating);
+  MultiplyByDynamicsMatrix(v_star, &p_star);
+  const_model_data_.v_star = std::move(v_star);
+  const_model_data_.p_star = std::move(p_star);
+  const_model_data_.inv_sqrt_A = std::move(inv_sqrt_A);
+  const_model_data_.delassus_diagonal = std::move(delassus_diagonal);
+
+  system_ = std::make_unique<SapModelSystem>(num_velocities());
+  DeclareCacheEntries();
 }
 
 template <typename T>
-void SapModel<T>::DeclareStateAndCacheEntries() {
+void SapModel<T>::DeclareCacheEntries() {
+  // Sanity check a system to manage cache resources has been created.
+  DRAKE_DEMAND(system_ != nullptr);
+
   const auto& constraint_velocities_cache_entry = system_->DeclareCacheEntry(
       "Constraint velocities, vc = J⋅v.",
       systems::ValueProducer(this, &SapModel<T>::CalcConstraintVelocities),
@@ -77,31 +86,41 @@ void SapModel<T>::DeclareStateAndCacheEntries() {
   system_->mutable_cache_indexes().constraint_velocities =
       constraint_velocities_cache_entry.cache_index();
 
+  const auto& impulses_cache_entry = system_->DeclareCacheEntry(
+      "Impulses, γ = P(−R⁻¹(vc − v̂)).",
+      systems::ValueProducer(this, &SapModel<T>::CalcImpulsesCache),
+      {system_->cache_entry_ticket(
+          system_->cache_indexes().constraint_velocities)});
+  system_->mutable_cache_indexes().impulses =
+      impulses_cache_entry.cache_index();
+
   const auto& momentum_gain_cache_entry = system_->DeclareCacheEntry(
-      "Momentum gain, momentum_gain = A⋅(v-v*).",
-      systems::ValueProducer(this, &SapModel<T>::CalcMomentumGain),
+      "Momentum gain. Δv = v - v*, Δp = A⋅Δv.",
+      systems::ValueProducer(this, &SapModel<T>::CalcMomentumGainCache),
       {systems::System<T>::xd_ticket()});
   system_->mutable_cache_indexes().momentum_gain =
       momentum_gain_cache_entry.cache_index();
 
-  // This cache entry is not costly to compute. Having this computation in the
-  // cache however elimianates heap allocation for temporaries.
-  const auto& velocity_gain_cache_entry = system_->DeclareCacheEntry(
-      "Velocity gain, velocity_gain = v-v*.",
-      systems::ValueProducer(this, &SapModel<T>::CalcVelocityGain),
-      {systems::System<T>::xd_ticket()});
-  system_->mutable_cache_indexes().velocity_gain =
-      velocity_gain_cache_entry.cache_index();      
+  const auto& cost_cache_entry = system_->DeclareCacheEntry(
+      "Cost cache.", systems::ValueProducer(this, &SapModel<T>::CalcCostCache),
+      {system_->cache_entry_ticket(system_->cache_indexes().momentum_gain),
+       system_->cache_entry_ticket(system_->cache_indexes().impulses)});
+  system_->mutable_cache_indexes().cost = cost_cache_entry.cache_index();
 
-  const auto& momentum_cost_cache_entry = system_->DeclareCacheEntry(
-      "Momentum cost, momentum_cost = 1/2⋅(v-v*)ᵀ⋅A⋅(v-v*).",
-      systems::ValueProducer(this, &SapModel<T>::CalcMomentumCost),
+  const auto& gradients_cache_entry = system_->DeclareCacheEntry(
+      "Gradients cache.",
+      systems::ValueProducer(this, &SapModel<T>::CalcGradientsCache),
+      {system_->cache_entry_ticket(system_->cache_indexes().momentum_gain),
+       system_->cache_entry_ticket(system_->cache_indexes().impulses)});
+  system_->mutable_cache_indexes().gradients =
+      gradients_cache_entry.cache_index();
+
+  const auto& hessian_cache_entry = system_->DeclareCacheEntry(
+      "Hessian cache.",
+      systems::ValueProducer(this, &SapModel<T>::CalcHessianCache),
       {system_->cache_entry_ticket(
-           system_->mutable_cache_indexes().velocity_gain),
-       system_->cache_entry_ticket(
-           system_->mutable_cache_indexes().momentum_gain)});
-  system_->mutable_cache_indexes().momentum_cost =
-      momentum_cost_cache_entry.cache_index();
+          system_->cache_indexes().constraint_velocities)});
+  system_->mutable_cache_indexes().hessian = hessian_cache_entry.cache_index();
 }
 
 template <typename T>
@@ -116,7 +135,9 @@ const VectorX<T>& SapModel<T>::GetVelocities(const Context<T>& context) const {
 }
 
 template <typename T>
-void SapModel<T>::SetVelocities(const VectorX<T>& v, Context<T>* context) const {
+void SapModel<T>::SetVelocities(const VectorX<T>& v,
+                                Context<T>* context) const {
+  DRAKE_DEMAND(v.size() == num_velocities());
   system_->ValidateContext(*context);
   context->SetDiscreteState(system_->velocities_index(), v);
 }
@@ -124,47 +145,91 @@ void SapModel<T>::SetVelocities(const VectorX<T>& v, Context<T>* context) const 
 template <typename T>
 void SapModel<T>::CalcConstraintVelocities(const Context<T>& context,
                                            VectorX<T>* vc) const {
-  system_->ValidateContext(context);                                             
+  system_->ValidateContext(context);
   vc->resize(num_constraint_equations());
   const VectorX<T>& v = GetVelocities(context);
-  J().Multiply(v, vc);
+  constraints_bundle().J().Multiply(v, vc);
 }
 
 template <typename T>
-void SapModel<T>::CalcVelocityGain(const Context<T>& context,
-                                   VectorX<T>* velocity_gain) const {
+void SapModel<T>::CalcImpulsesCache(const Context<T>& context,
+                                    ImpulsesCache<T>* cache) const {
+  // Impulses are computed as a side effect of updating the Hessian cache.
+  // Therefore if the Hessian cache is up to date we do not need to recompute
+  // the impulses but simply make a copy into the impulses cache.
+  const systems::CacheEntry& hessian_cache_entry =
+      system_->get_cache_entry(system_->cache_indexes().hessian);
+  const systems::CacheEntryValue& hessian_value =
+      hessian_cache_entry.get_cache_entry_value(context);
+  if (!hessian_value.is_out_of_date()) {
+    const auto& hessian_cache =
+        hessian_value.template get_value<HessianCache<T>>();
+    *cache = hessian_cache.impulses;
+    return;
+  }
+
   system_->ValidateContext(context);
-  velocity_gain->resize(num_velocities());
-  *velocity_gain = GetVelocities(context) - v_star();
+  cache->Resize(num_constraint_equations());
+  const VectorX<T>& vc = EvalConstraintVelocities(context);
+  constraints_bundle().CalcUnprojectedImpulses(vc, &cache->y);
+  constraints_bundle().ProjectImpulses(cache->y, &cache->gamma);
 }
 
 template <typename T>
-void SapModel<T>::CalcMomentumGain(const Context<T>& context,
-                                   VectorX<T>* momentum_gain) const {
+void SapModel<T>::CalcMomentumGainCache(const Context<T>& context,
+                                        MomentumGainCache<T>* cache) const {
   system_->ValidateContext(context);
-  momentum_gain->resize(num_velocities());
-  const VectorX<T>& velocity_gain = EvalVelocityGain(context);
-  MultiplyByDynamicsMatrix(velocity_gain, momentum_gain);
+  cache->Resize(num_velocities());
+  const VectorX<T>& v = GetVelocities(context);
+  cache->velocity_gain = v - v_star();
+  MultiplyByDynamicsMatrix(v, &cache->p);
+  cache->momentum_gain = cache->p - p_star();
 }
 
 template <typename T>
-void SapModel<T>::CalcMomentumCost(const Context<T>& context,
-                                   T* momentum_cost) const {
+void SapModel<T>::CalcCostCache(const Context<T>& context,
+                                CostCache<T>* cache) const {
   system_->ValidateContext(context);
-  // TODO(amcastro-tri): consider caching.
-  const VectorX<T> velocity_gain = GetVelocities(context) - v_star();
-  const VectorX<T>& momentum_gain = EvalMomentumGain(context);
-  (*momentum_cost) = 0.5 * velocity_gain.dot(momentum_gain);
+  const MomentumGainCache<T>& gain_cache = EvalMomentumGainCache(context);
+  const VectorX<T>& velocity_gain = gain_cache.velocity_gain;
+  const VectorX<T>& momentum_gain = gain_cache.momentum_gain;
+  cache->momentum_cost = 0.5 * velocity_gain.dot(momentum_gain);
+  const VectorX<T>& gamma = EvalImpulses(context);
+  const VectorX<T>& R = constraints_bundle().R();
+  cache->regularizer_cost = 0.5 * T(gamma.transpose() * R.asDiagonal() * gamma);
+  cache->cost = cache->momentum_cost + cache->regularizer_cost;
+}
+
+template <typename T>
+void SapModel<T>::CalcGradientsCache(const systems::Context<T>& context,
+                                     GradientsCache<T>* cache) const {
+  cache->Resize(num_velocities());
+  const VectorX<T>& momentum_gain = EvalMomentumGain(context);  // = A⋅(v−v*)
+  const VectorX<T>& gamma = EvalImpulses(context);
+  constraints_bundle().J().MultiplyByTranspose(gamma, &cache->j);  // = Jᵀ⋅γ
+  // Update ∇ᵥℓ = A⋅(v−v*) - Jᵀ⋅γ
+  cache->cost_gradient = momentum_gain - cache->j;
+}
+
+template <typename T>
+void SapModel<T>::CalcHessianCache(const systems::Context<T>& context,
+                                   HessianCache<T>* cache) const {
+  system_->ValidateContext(context);
+  cache->Resize(num_constraints(), num_constraint_equations());
+  const VectorX<T>& vc = EvalConstraintVelocities(context);
+  constraints_bundle().CalcUnprojectedImpulses(vc, &cache->impulses.y);
+  constraints_bundle().ProjectImpulsesAndCalcConstraintsHessian(
+      cache->impulses.y, &cache->impulses.gamma, &cache->G);
 }
 
 template <typename T>
 int SapModel<T>::num_cliques() const {
-  return cliques_permutation().permuted_domain_size();
+  return problem().graph().participating_cliques().permuted_domain_size();
 }
 
 template <typename T>
 int SapModel<T>::num_velocities() const {
-  return velocities_permutation_.permuted_domain_size();
+  return velocities_permutation().permuted_domain_size();
 }
 
 template <typename T>
@@ -179,23 +244,35 @@ int SapModel<T>::num_constraint_equations() const {
 
 template <typename T>
 const std::vector<MatrixX<T>>& SapModel<T>::dynamics_matrix() const {
-  return A_;
+  return const_model_data_.dynamics_matrix;
 }
 
 template <typename T>
 const VectorX<T>& SapModel<T>::v_star() const {
-  return v_star_;
+  return const_model_data_.v_star;
 }
 
 template <typename T>
 const VectorX<T>& SapModel<T>::p_star() const {
-  return p_star_;
+  return const_model_data_.p_star;
+}
+
+template <typename T>
+const VectorX<T>& SapModel<T>::inv_sqrt_dynamics_matrix() const {
+  return const_model_data_.inv_sqrt_A;
+}
+
+template <typename T>
+const SapConstraintBundle<T>& SapModel<T>::constraints_bundle() const {
+  DRAKE_DEMAND(const_model_data_.constraints_bundle != nullptr);
+  return *const_model_data_.constraints_bundle;
 }
 
 template <typename T>
 PartialPermutation SapModel<T>::MakeParticipatingVelocitiesPermutation(
-    const SapContactProblem<T>& problem,
-    const PartialPermutation& cliques_permutation) const {
+    const SapContactProblem<T>& problem) {
+  const PartialPermutation& cliques_permutation =
+      problem.graph().participating_cliques();
   int v_first = 0;  // first velocity for a given clique.
   int num_participating_velocities = 0;
   std::vector<int> participating_velocities(problem.num_velocities(), -1);
@@ -210,17 +287,17 @@ PartialPermutation SapModel<T>::MakeParticipatingVelocitiesPermutation(
       }
     }
     v_first += nv;
-  }  
+  }
   return PartialPermutation(std::move(participating_velocities));
 }
 
 template <typename T>
 PartialPermutation SapModel<T>::MakeImpulsesPermutation(
     const ContactProblemGraph& graph) const {
-  std::vector<int> constraint_start(problem().num_constraints());
-  if (problem().num_constraints() == 0)  
+  if (problem().num_constraints() == 0)
     return PartialPermutation();  // empty permutation.
-    
+
+  std::vector<int> constraint_start(problem().num_constraints());
   constraint_start[0] = 0;
   for (int i = 1; i < problem().num_constraints(); ++i) {
     const int previous_constraint_size =
@@ -246,11 +323,24 @@ PartialPermutation SapModel<T>::MakeImpulsesPermutation(
 }
 
 template <typename T>
+void SapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
+                                           VectorX<T>* p) const {
+  DRAKE_DEMAND(v.size() == num_velocities());
+  DRAKE_DEMAND(p->size() == num_velocities());
+  int clique_start = 0;
+  for (const auto& Ab : dynamics_matrix()) {
+    const int clique_size = Ab.rows();
+    p->segment(clique_start, clique_size) =
+        Ab * v.segment(clique_start, clique_size);
+    clique_start += clique_size;
+  }
+}
+
+template <typename T>
 void SapModel<T>::CalcDelassusDiagonalApproximation(
-    const std::vector<MatrixX<T>>& A,
-    const PartialPermutation& cliques_permutation,
-    VectorX<T>* delassus_diagonal) const {
-  DRAKE_DEMAND(delassus_diagonal != nullptr);    
+    const std::vector<MatrixX<T>>& A, VectorX<T>* delassus_diagonal) const {
+  DRAKE_DEMAND(delassus_diagonal != nullptr);
+  DRAKE_DEMAND(static_cast<int>(A.size()) == num_cliques());
 
   // We compute a factorization of A once so we can re-use it multiple times
   // below.
@@ -259,11 +349,15 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
   A_ldlt.resize(num_cliques);
   for (int c = 0; c < num_cliques; ++c) {
     A_ldlt[c] = A[c].ldlt();
+    DRAKE_DEMAND(A_ldlt[c].isPositive());
   }
 
   // Scan constraints in the order specified by the graph.
   const int num_constraints = problem().num_constraints();
   std::vector<MatrixX<T>> W(num_constraints);
+
+  const ContactProblemGraph& graph = problem().graph();
+  const PartialPermutation& cliques_permutation = graph.participating_cliques();
 
   for (const ContactProblemGraph::ConstraintCluster& e :
        problem().graph().clusters()) {
@@ -278,39 +372,27 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
 
       // Clique 0 is always present. Add its contribution.
       {
-        const int c = cliques_permutation.permuted_index(constraint.first_clique());
+        const int c =
+            cliques_permutation.permuted_index(constraint.first_clique());
         const MatrixX<T>& Jic = constraint.first_clique_jacobian();
         W[i] += Jic * A_ldlt[c].solve(Jic.transpose());
       }
 
       // Adds clique 1 contribution, if present.
       if (constraint.num_cliques() == 2) {
-        const int c = cliques_permutation.permuted_index(constraint.second_clique());
+        const int c =
+            cliques_permutation.permuted_index(constraint.second_clique());
         const MatrixX<T>& Jic = constraint.second_clique_jacobian();
         W[i] += Jic * A_ldlt[c].solve(Jic.transpose());
       }
     }
   }
 
-  // Compute delassus_diagonal as the rms norm of the diagonal block for the
+  // Compute Delassus_diagonal as the rms norm of the diagonal block for the
   // i-th constraint.
   delassus_diagonal->resize(num_constraints);
   for (int i = 0; i < num_constraints; ++i) {
     (*delassus_diagonal)[i] = W[i].norm() / W[i].rows();
-  }
-}
-
-template <typename T>
-void SapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
-                                           VectorX<T>* p) const {
-  DRAKE_DEMAND(v.size() == num_velocities());
-  DRAKE_DEMAND(p->size() == num_velocities());
-  int clique_start = 0;
-  for (const auto& Ab : A_) {
-    const int clique_size = Ab.rows();
-    p->segment(clique_start, clique_size) =
-        Ab * v.segment(clique_start, clique_size);
-    clique_start += clique_size;
   }
 }
 
@@ -320,4 +402,4 @@ void SapModel<T>::MultiplyByDynamicsMatrix(const VectorX<T>& v,
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::internal::SapModel)    
+    class ::drake::multibody::contact_solvers::internal::SapModel)

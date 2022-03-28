@@ -105,16 +105,14 @@ drake_cc_library(
     name = "sap_model",
     srcs = ["sap_model.cc"],
     hdrs = ["sap_model.h"],
-    deps = [        
-        ":contact_problem_graph",        
+    deps = [
+        ":contact_problem_graph",
+        ":partial_permutation",
         ":sap_constraint_bundle",
         ":sap_contact_problem",
-        "//multibody/contact_solvers:block_sparse_matrix",
-        ":partial_permutation",
-        "//multibody/contact_solvers:point_contact_data",        
-        "//multibody/contact_solvers:system_dynamics_data",
         "//common:default_scalars",
-        "//common:essential",        
+        "//common:essential",
+        "//multibody/contact_solvers:block_sparse_matrix",
         "//systems/framework:context",
         "//systems/framework:leaf_system",
     ],
@@ -129,6 +127,7 @@ drake_cc_library(
         "//multibody/contact_solvers:contact_solver",
         "//multibody/contact_solvers:contact_solver_utils",
         "//multibody/contact_solvers:point_contact_data",
+        "//systems/framework:context",
         ":contact_problem_graph",
         ":partial_permutation",
         ":sap_contact_problem",
@@ -183,6 +182,7 @@ drake_cc_googletest(
         "//multibody/contact_solvers:block_sparse_matrix",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
     ],
 )
 
