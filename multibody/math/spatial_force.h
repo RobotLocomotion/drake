@@ -18,7 +18,7 @@ namespace multibody {
 // Forward declaration to define dot product with a spatial velocity.
 template <typename T> class SpatialVelocity;
 
-/// This class is used to represent a _spatial force_ F (also called a _wrench_)
+/// This class is used to represent a _spatial force_ (also called a _wrench_)
 /// that combines both rotational (torque) and translational force components.
 /// Spatial forces are 6-element quantities that are pairs of ordinary
 /// 3-vectors. Elements 0-2 are the torque component while elements 3-5 are the
