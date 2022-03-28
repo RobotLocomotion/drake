@@ -51,7 +51,7 @@ template <typename T> class SpatialVelocity;
 /// measured in frame M, h_MQᵢP is Qᵢ's angular momentum about point P
 /// measured in frame M, and p_PQᵢ is the position vector from point P to Qᵢ.
 /// These definitions extend to a body (continuum of particles) by using the
-/// density ρ(r) of the body at each material location `r` as: <pre>
+/// density ρ(r) of the body at each material location r as: <pre>
 ///   h_MSP = ∫p_PQ(r) x v_MQ(r) ρ(r) d³r
 ///   l_MS  = ∫v_MQ(r) ρ(r) d³r
 /// </pre>
@@ -82,7 +82,7 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   /// Constructs a spatial momentum L from an Eigen expression that represents
   /// a 6-element vector, i.e., a 3-element angular momentum 𝐡 and a
   /// 3-element translational momentum 𝐥. This constructor will assert the
-  /// size of `L` is six (6) either at compile-time for fixed sized Eigen
+  /// size of L is six (6) either at compile-time for fixed sized Eigen
   /// expressions or at run-time for dynamic sized Eigen expressions.
   template <typename Derived>
   explicit SpatialMomentum(const Eigen::MatrixBase<Derived>& L) : Base(L) {}
@@ -109,14 +109,15 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
     return *this;
     // Note: this operation is linear. [Jain 2010], (§2.1, page 22) uses the
     // "rigid body transformation operator" to write this as:
-    //   L_MSQ = Φ(-p_PQ) L_MSP
-    //         =  Φ(p_QP) L_MSP    where Φ(p_QP) is the linear operator:
-    //   Φ(p_PQ) = | I₃  p_PQx |
-    //             | 0      I₃ |
-    // where `p_PQx` denotes the cross product skew-symmetric matrix such that
-    // `p_PQx vec = p_PQ x vec` (where vec is any vector).
-    // Note: There are related Φ operators that shift spatial force and spatial
-    // velocity (see SpatialForce::Shift() and SpatialVelocity:Shift()).
+    //  L_MSQ = Φ(-p_PQ) L_MSP
+    //        =  Φ(p_QP) L_MSP    where Φ(p) is the linear operator:
+    //   Φ(p) = | I₃   pₓ |
+    //          | 0    I₃ |       where I₃ is the 3x3 identity matrix and
+    // pₓ denotes the skew-symmetric cross product matrix such that
+    // pₓvec = p x vec (where vec is any vector).
+    // This same Φ operator shifts spatial force in an analogous way (see
+    // SpatialForce::Shift()) whereas Φᵀ (the transpose of this operator)
+    // shifts spatial velocity (see SpatialVelocity::Shift()).
     //
     // - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
     //               algorithms. Springer Science & Business Media, pp. 123-130.
