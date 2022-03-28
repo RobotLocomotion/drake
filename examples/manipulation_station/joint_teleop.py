@@ -22,6 +22,8 @@ from pydrake.geometry import (
     MeshcatVisualizerCpp,
     SceneGraph
 )
+from drake.examples.manipulation_station.schunk_wsg_buttons import (
+    SchunkWsgButtons)
 
 
 def main():
@@ -102,6 +104,11 @@ def main():
     builder.Connect(filter.get_output_port(0),
                     station.GetInputPort("iiwa_position"))
 
+    wsg_buttons = builder.AddSystem(SchunkWsgButtons(teleop.window))
+    builder.Connect(wsg_buttons.GetOutputPort("position"),
+                    station.GetInputPort("wsg_position"))
+    builder.Connect(wsg_buttons.GetOutputPort("force_limit"),
+                    station.GetInputPort("wsg_force_limit"))
 
     # When in regression test mode, log our joint velocities to later check
     # that they were sufficiently quiet.
@@ -113,7 +120,6 @@ def main():
         iiwa_velocities = None
 
     diagram = builder.Build()
-    teleop.Run(diagram, timeout=1.0)
     simulator = Simulator(diagram)
     iiwa_velocities_log = iiwa_velocities.FindLog(simulator.get_context())
 
