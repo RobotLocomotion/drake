@@ -25,8 +25,17 @@ rm -rf \
     "${DRAKE_WHEELBUILD_PREFIX}/wheel" \
     "${DRAKE_WHEELBUILD_PREFIX}/vtk" \
     "${DRAKE_WHEELBUILD_PREFIX}/dependencies" \
-    /opt/drake-dependencies \
-    /opt/drake
+    /opt/drake-dependencies
+
+if [ -d /opt/drake ]; then
+    # We need to ensure there are no remnants of a prior build, but CI creates
+    # a wheel output directory here that we don't have permission to remove.
+    # Thus, we have to get a little creative...
+    find /opt/drake \
+        \! -path /opt/drake/wheelhouse \
+        \! -path /opt/drake \
+        -delete
+fi
 
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
