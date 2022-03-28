@@ -36,11 +36,13 @@ struct ImpulsesCache {
 template <typename T>
 struct MomentumGainCache {
   void Resize(int nv) {
+    p.resize(nv);
     velocity_gain.resize(nv);
     momentum_gain.resize(nv);
   }
-  VectorX<T> velocity_gain;
-  VectorX<T> momentum_gain;
+  VectorX<T> p;  // = A⋅v
+  VectorX<T> velocity_gain;  // = v-v*
+  VectorX<T> momentum_gain;  // = A⋅(v-v*)
 };
 
 // Struct used to store the cost update.
@@ -141,6 +143,15 @@ class SapModel {
     return const_model_data_.velocities_permutation;
   }
 
+  /* Returns permutation to go back and forth between constraint equations in
+   the original contact problem and constraint equations as ordered in this
+   model for computational efficiency. This mapping can be used on impulses,
+   constraint velocities or any other quantity indexed with constraint equations
+   indexes. */
+  const PartialPermutation& impulses_permutation() const {
+    return const_model_data_.impulses_permutation;
+  }
+
   /* The time step of problem(). */
   const T& time_step() const { return problem_->time_step(); }
 
@@ -164,6 +175,15 @@ class SapModel {
   // residual, see [Castro et al. 2021].
   const VectorX<T>& inv_sqrt_dynamics_matrix() const;
 
+  /* Const access to the bundle for this model. */
+  const SapConstraintBundle<T>& constraints_bundle() const;
+
+  /* Performs multiplication p = A⋅v. Only participating velocities are
+   considered.
+   @pre p must be a valid pointer.
+   @pre both v and p must be of size num_participating_velocities(). */
+  void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* p) const;
+
   /* Makes a context to be used on queries with this model. */
   std::unique_ptr<systems::Context<T>> MakeContext() const;
 
@@ -171,6 +191,14 @@ class SapModel {
    num_velocities().
    @pre `context` is created with a call to MakeContext(). */
   const VectorX<T>& GetVelocities(const systems::Context<T>& context) const;
+
+  /* Mutable version of GetVelocities().
+   @pre `context` is created with a call to MakeContext().
+   @warning Holding onto this mutable reference and modifying it repeatedly can
+   lead to wrong answers from Eval methods. Use with care and when possible use
+   SetVelocities() instead. */
+  Eigen::VectorBlock<VectorX<T>> GetMutableVelocities(
+      systems::Context<T>* context) const;
 
   /* Stores generalized velocities `v` in `context`.
    @pre v.size() equals num_velocities().
@@ -191,6 +219,23 @@ class SapModel {
    @pre `context` is created with a call to MakeContext(). */
   const VectorX<T>& EvalImpulses(const systems::Context<T>& context) const {
     return EvalImpulsesCache(context).gamma;
+  }
+
+  /* Evaluates the generalized impulses j = Jᵀ⋅γ, where J is the constraints'
+   Jacobian and γ is the vector of impulses, see EvalImpulses(). The size of the
+   generalized impulses j is num_velocities().
+   @pre `context` is created with a call to MakeContext(). */
+  const VectorX<T>& EvalGeneralizedImpulses(
+      const systems::Context<T>& context) const {
+    return system_->get_cache_entry(system_->cache_indexes().gradients)
+        .template Eval<GradientsCache<T>>(context)
+        .j;
+  }
+
+  /* Evaluates the generalized momentum p = A⋅v as a function of the generalized
+   velocities stored in `context`. */
+  const VectorX<T>& EvalMomentum(const systems::Context<T>& context) const {
+    return EvalMomentumGainCache(context).p;
   }
 
   /* Evaluates the momentum gain defined as momentum_gain = A⋅(v - v*).
@@ -286,6 +331,9 @@ class SapModel {
     /* Permutation to map back and forth between DOFs in problem_ and DOFs in
      this model. */
     PartialPermutation velocities_permutation;
+    /* Permutation to map back and forth between impulses in problem_ and
+     impulses as ordered according to the contact graph in this model. */
+    PartialPermutation impulses_permutation;
     /* Per-clique blocks of the system's dynamic matrix A. Only participating
      cliques. */
     std::vector<MatrixX<T>> dynamics_matrix;
@@ -297,9 +345,6 @@ class SapModel {
     VectorX<T> delassus_diagonal;  // Delassus operator diagonal approximation.
     std::unique_ptr<SapConstraintBundle<T>> constraints_bundle;
   };
-
-  /* Const access to the bundle for this model. */
-  const SapConstraintBundle<T>& constraints_bundle() const;
 
   /* N.B. on the use of systems::Context and caching to future developers.
    The SapModel class uses systems::Context to store its state and make use of
@@ -321,6 +366,14 @@ class SapModel {
   static PartialPermutation MakeParticipatingVelocitiesPermutation(
       const SapContactProblem<T>& problem);
 
+  /* Makes a permutation to go back and forth between constraint equations in
+   the original contact problem and constraint equations as ordered in this
+   model for computational efficiency. This mapping can be used on impulses,
+   constraint velocities or any other quantity indexed as constraint equations.
+   */
+  PartialPermutation MakeImpulsesPermutation(
+      const ContactProblemGraph& graph) const;
+
   // Computes a diagonal approximation of the Delassus operator used to compute
   // a per constraint diagonal scaling into delassus_diagonal. Given an
   // approximation Wᵢᵢ of the block diagonal element corresponding to the i-th
@@ -340,12 +393,6 @@ class SapModel {
   // @pre Matrix entries stored in `A` are SPD.
   void CalcDelassusDiagonalApproximation(const std::vector<MatrixX<T>>& A,
                                          VectorX<T>* delassus_diagonal) const;
-
-  /* Performs multiplication p = A * v. Only participating velocities are
-   considered.
-   @pre p must be a valid pointer.
-   @pre both v and p must be of size num_participating_velocities(). */
-  void MultiplyByDynamicsMatrix(const VectorX<T>& v, VectorX<T>* p) const;
 
   /* Calc methods to update cache entries. See the documentation for the
   corresponding Eval methods for details. */
