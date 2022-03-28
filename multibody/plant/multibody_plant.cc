@@ -2364,36 +2364,25 @@ void MultibodyPlant<T>::CalcJointLockingIndices(
   auto& indices = *unlocked_velocity_indices;
   indices.resize(num_velocities());
 
-  int velocity_cursor = 0;
   int unlocked_cursor = 0;
   for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
     const Joint<T>& joint = get_joint(joint_index);
-    if (joint.is_locked(context)) {
-      velocity_cursor += joint.num_velocities();
-    } else {
+    if (!joint.is_locked(context)) {
       for (int k = 0; k < joint.num_velocities(); ++k) {
         indices[unlocked_cursor++] = joint.velocity_start() + k;
-        velocity_cursor++;
       }
     }
   }
 
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
-    if (!body.is_floating()) {
-      continue;
-    }
-    if (body.is_locked(context)) {
-      velocity_cursor += 6;
-    } else {
+    if (body.is_floating() && !body.is_locked(context)) {
       for (int k = 0; k < 6; ++k) {
         indices[unlocked_cursor++] =
             body.floating_velocities_start() - num_positions() + k;
-        velocity_cursor++;
       }
     }
   }
-  DRAKE_ASSERT(velocity_cursor == num_velocities());
   DRAKE_ASSERT(unlocked_cursor <= num_velocities());
 
   // Use size to indicate exactly how many velocities are unlocked.

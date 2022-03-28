@@ -107,52 +107,58 @@ TEST_P(JointLockingTest, JointLockingIndicesTest) {
       body1.floating_velocities_start() - plant_->num_positions();
 
   // No joints/bodies are locked, all joint/body velocity indices should exist.
-  const std::vector<int>& unlocked_indices =
-      MultibodyPlantTester::EvalJointLockingIndices(*plant_, *context_);
+  {
+    const std::vector<int>& unlocked_indices =
+        MultibodyPlantTester::EvalJointLockingIndices(*plant_, *context_);
 
-  EXPECT_EQ(unlocked_indices.size(), 9);
+    EXPECT_EQ(unlocked_indices.size(), 9);
 
-  const std::vector<int>& expected_unlocked_indices = {
-      body1_velocity_start,         body1_velocity_start + 1,
-      body1_velocity_start + 2,     body1_velocity_start + 3,
-      body1_velocity_start + 4,     body1_velocity_start + 5,
-      body1_body2.velocity_start(), world_body3.velocity_start(),
-      body3_body4.velocity_start()};
+    const std::vector<int>& expected_unlocked_indices = {
+        body1_velocity_start,         body1_velocity_start + 1,
+        body1_velocity_start + 2,     body1_velocity_start + 3,
+        body1_velocity_start + 4,     body1_velocity_start + 5,
+        body1_body2.velocity_start(), world_body3.velocity_start(),
+        body3_body4.velocity_start()};
 
-  EXPECT_THAT(unlocked_indices,
-              testing::UnorderedElementsAreArray(expected_unlocked_indices));
+    EXPECT_THAT(unlocked_indices,
+                testing::UnorderedElementsAreArray(expected_unlocked_indices));
+  }
 
   // Lock body3_body4 and re-evaluate joint locking indices
-  body3_body4.Lock(context_.get());
-  const std::vector<int>& one_joint_locked_indices =
-      MultibodyPlantTester::EvalJointLockingIndices(*plant_, *context_);
+  {
+    body3_body4.Lock(context_.get());
+    const std::vector<int>& unlocked_indices =
+        MultibodyPlantTester::EvalJointLockingIndices(*plant_, *context_);
 
-  EXPECT_EQ(one_joint_locked_indices.size(), 8);
+    EXPECT_EQ(unlocked_indices.size(), 8);
 
-  const std::vector<int>& expected_one_joint_locked_indices = {
-      body1_velocity_start,         body1_velocity_start + 1,
-      body1_velocity_start + 2,     body1_velocity_start + 3,
-      body1_velocity_start + 4,     body1_velocity_start + 5,
-      body1_body2.velocity_start(), world_body3.velocity_start()};
+    const std::vector<int>& expected_unlocked_indices = {
+        body1_velocity_start,         body1_velocity_start + 1,
+        body1_velocity_start + 2,     body1_velocity_start + 3,
+        body1_velocity_start + 4,     body1_velocity_start + 5,
+        body1_body2.velocity_start(), world_body3.velocity_start()};
 
-  EXPECT_THAT(one_joint_locked_indices, testing::UnorderedElementsAreArray(
-                                            expected_one_joint_locked_indices));
+    EXPECT_THAT(unlocked_indices,
+                testing::UnorderedElementsAreArray(expected_unlocked_indices));
+  }
 
   // Unlock body3_body4 and lock body1 and re-evaluate joint locking indices.
-  body3_body4.Unlock(context_.get());
-  body1.Lock(context_.get());
+  {
+    body3_body4.Unlock(context_.get());
+    body1.Lock(context_.get());
 
-  const std::vector<int>& one_body_locked_indices =
-      MultibodyPlantTester::EvalJointLockingIndices(*plant_, *context_);
+    const std::vector<int>& unlocked_indices =
+        MultibodyPlantTester::EvalJointLockingIndices(*plant_, *context_);
 
-  EXPECT_EQ(one_body_locked_indices.size(), 3);
+    EXPECT_EQ(unlocked_indices.size(), 3);
 
-  const std::vector<int>& expected_one_body_locked_indices = {
-      body1_body2.velocity_start(), world_body3.velocity_start(),
-      body3_body4.velocity_start()};
+    const std::vector<int>& expected_unlocked_indices = {
+        body1_body2.velocity_start(), world_body3.velocity_start(),
+        body3_body4.velocity_start()};
 
-  EXPECT_THAT(one_body_locked_indices, testing::UnorderedElementsAreArray(
-                                           expected_one_body_locked_indices));
+    EXPECT_THAT(unlocked_indices,
+                testing::UnorderedElementsAreArray(expected_unlocked_indices));
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(IndexPermutations, JointLockingTest,
