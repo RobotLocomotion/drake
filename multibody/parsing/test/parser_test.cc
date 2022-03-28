@@ -234,6 +234,29 @@ GTEST_TEST(FileParserTest, PackageMapTest) {
   parser.AddModelFromFile(new_sdf_filename, "dummy" /* model name */);
 }
 
+GTEST_TEST(FileParserTest, StrictParsing) {
+  // If the choice of what causes warnings changes, this test data will need to
+  // be updated. In this incarnation, the /robot/@version attribute provokes a
+  // warning because it is ignored.
+  std::string model_provokes_warning = R"""(
+    <robot name='robot' version='0.99'>
+      <link name='a'/>
+    </robot>)""";
+  std::string warning_pattern = ".*version.*ignored.*";
+
+  MultibodyPlant<double> plant(0.0);
+  geometry::SceneGraph<double> scene_graph;
+  Parser parser(&plant, &scene_graph);
+
+  EXPECT_NO_THROW(
+      parser.AddModelFromString(model_provokes_warning, "urdf", "lax"));
+
+  parser.SetStrictParsing();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      parser.AddModelFromString(model_provokes_warning, "urdf", "strict"),
+      warning_pattern);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
