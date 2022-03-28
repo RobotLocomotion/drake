@@ -14,6 +14,12 @@ resource_root = None
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+def provision():
+    packages_path = os.path.join(resource_root, 'image', 'packages-macos')
+    command = ['brew', 'bundle', f'--file={packages_path}', '--no-lock']
+    subprocess.check_call(command)
+
+
 def test_wheel(path):
     pass  # TODO
 
@@ -21,6 +27,8 @@ def test_wheel(path):
 def build(options):
     if not os.path.isdir(options.build_root):
         die(f'Build root \'{options.build_root}\' is not a valid directory')
+
+    provision()
 
     build_script = os.path.join(resource_root, 'macos-build-wheel.sh')
     environment = os.environ.copy()
