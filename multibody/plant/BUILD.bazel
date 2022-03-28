@@ -726,6 +726,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "joint_locking_test",
+    deps = [
+        ":plant",
+    ],
+)
+
+drake_cc_googletest(
     name = "spring_mass_system_test",
     timeout = "moderate",
     deps = [
