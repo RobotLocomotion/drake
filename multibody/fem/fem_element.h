@@ -118,20 +118,23 @@ class FemElement {
         tangent_matrix);
   }
 
-  /* Calculates the element residual of this element evaluated at the input
-   state. The residual equals Ma-fₑ(x)-fᵥ(x, v)-fₑₓₜ, where M is the mass
-   matrix, fₑ(x) is the elastic force, fᵥ(x, v) is the damping force, and fₑₓₜ
-   is the external force on the nodes of the element. Notice that the residual
-   is "discrete" in space and "continuous" in time.
-   @param[in]  data      The per-element FEM data to evaluate the residual.
-   @param[out] residual  The residual vector. All values in `residual` will be
-                         overwritten.
-   @pre residual != nullptr */
-  void CalcResidual(const Data& data,
-                    EigenPtr<Vector<T, num_dofs>> residual) const {
-    DRAKE_ASSERT(residual != nullptr);
-    residual->setZero();
-    static_cast<const DerivedElement*>(this)->DoCalcResidual(data, residual);
+  /* Calculates the force required to induce the acceleration `a` given the
+   configuration `x` and velocities `v`, with `x`, `v`, and `a` stored in
+   `data`. The required force equals is ID(a, x, v) = Ma-fₑ(x)-fᵥ(x, v), where M
+   is the mass matrix, fₑ(x) is the elastic force, fᵥ(x, v) is the damping
+   force. The residual is then given by ID(a, x, v) - fₑₓₜ. Notice that the
+   result is "discrete" in space and "continuous" in time.
+   @param[in]  data            The per-element FEM data to evaluate the external
+                               force.
+   @param[out] external_force  The resulting external force. All values in
+                               `external_force` will be overwritten.
+   @pre external_force != nullptr */
+  void CalcInverseDynamics(const Data& data,
+                           EigenPtr<Vector<T, num_dofs>> external_force) const {
+    DRAKE_ASSERT(external_force != nullptr);
+    external_force->setZero();
+    static_cast<const DerivedElement*>(this)->DoCalcInverseDynamics(
+        data, external_force);
   }
 
   /* Accumulates the stiffness matrix (the derivative, or an approximation
@@ -185,19 +188,6 @@ class FemElement {
                                                                     M);
   }
 
-  /* Accumulates the total external force exerted on this element at the given
-   `data` scaled by `scale` into the output parameter `external_force`.
-   @pre external_force != nullptr. */
-  void AddScaledExternalForce(
-      const Data& data, const T& scale,
-      EigenPtr<Vector<T, num_dofs>> external_force) const {
-    DRAKE_ASSERT(external_force != nullptr);
-    // The gravity force is always accounted for in the external forces.
-    AddScaledGravityForce(data, scale, external_force);
-    // Add element specific external forces.
-    DoAddScaledExternalForce(data, scale, external_force);
-  }
-
   /* Extracts the dofs corresponding to the nodes given by `node_indices` from
    the given `state_dofs`. */
   static Vector<T, 3 * num_nodes> ExtractElementDofs(
@@ -220,9 +210,19 @@ class FemElement {
     return ExtractElementDofs(this->node_indices(), state_dofs);
   }
 
-  void set_gravity_vector(const Vector3<T>& gravity) { gravity_ = gravity; }
-
-  const Vector3<T>& gravity_vector() const { return gravity_; }
+  /* Adds the gravity force acting on each node in the element scaled by
+   `scale` into `force`. Derived elements may choose to override this method
+   to provide a more efficient implementation for specific elements. */
+  void AddScaledGravityForce(const Data& data, const T& scale,
+                             const Vector3<T>& gravity_vector,
+                             EigenPtr<Vector<T, num_dofs>> force) const {
+    Eigen::Matrix<T, num_dofs, num_dofs> mass_matrix =
+        Eigen::Matrix<T, num_dofs, num_dofs>::Zero();
+    AddScaledMassMatrix(data, 1.0, &mass_matrix);
+    const Vector<T, num_dofs> stacked_gravity =
+        gravity_vector.template replicate<num_nodes, 1>();
+    *force += scale * mass_matrix * stacked_gravity;
+  }
 
  protected:
   /* Constructs a new FEM element. The constructor is made protected because
@@ -249,14 +249,15 @@ class FemElement {
     ThrowIfNotImplemented(__func__);
   }
 
-  /* `DerivedElement` must provide an implementation for `DoCalcResidual()` to
-   provide the residual that is up to date given the `data`. The caller
-   guarantees that `residual` is non-null and contains all zeros; the
-   implementation in the derived class does not have to test for this.
+  /* `DerivedElement` must provide an implementation for
+   `DoCalcInverseDynamics()` to provide the external force required to keep the
+   element's state given by `data` in equilibrium. The caller guarantees that
+   `external_force` is non-null and contains all zeros; the implementation in
+   the derived class does not have to test for this.
    @throw std::exception if `DerivedElement` does not provide an implementation
-   for `DoCalcResidual()`. */
-  void DoCalcResidual(const Data& data,
-                      EigenPtr<Vector<T, num_dofs>> residual) const {
+   for `DoCalcInverseDynamics()`. */
+  void DoCalcInverseDynamics(
+      const Data& data, EigenPtr<Vector<T, num_dofs>> external_force) const {
     ThrowIfNotImplemented(__func__);
   }
 
@@ -284,29 +285,6 @@ class FemElement {
     ThrowIfNotImplemented(__func__);
   }
 
-  /* `DerivedElement` may override this method to include _non-gravity_
-   external forces specific to the derived element. Default implementation is
-   no-op. */
-  void DoAddScaledExternalForce(
-      const Data& data, const T& scale,
-      EigenPtr<Vector<T, num_dofs>> external_force) const {}
-
-  /* Adds the gravity force acting on each node in the element scaled by
-   `scale` into `force`. Derived elements may choose to override this method
-   to provide a more efficient implementation for specific elements. */
-  void AddScaledGravityForce(const Data& data, const T& scale,
-                             EigenPtr<Vector<T, num_dofs>> force) const {
-    Eigen::Matrix<T, num_dofs, num_dofs> mass_matrix =
-        Eigen::Matrix<T, num_dofs, num_dofs>::Zero();
-    AddScaledMassMatrix(data, 1, &mass_matrix);
-    constexpr int kDim = 3;
-    Vector<T, num_dofs> stacked_gravity;
-    for (int i = 0; i < num_nodes; ++i) {
-      stacked_gravity.template segment<kDim>(kDim * i) = gravity_;
-    }
-    *force += scale * mass_matrix * stacked_gravity;
-  }
-
   const ConstitutiveModel& constitutive_model() const {
     return constitutive_model_;
   }
@@ -329,8 +307,6 @@ class FemElement {
    for this element. */
   ConstitutiveModel constitutive_model_;
   DampingModel<T> damping_model_;
-  /* Gravity vector. */
-  Vector3<T> gravity_{0, 0, -9.81};
 };
 
 }  // namespace internal

@@ -37,8 +37,8 @@ struct FemElementTraits<DummyElement> {
 
 /* A simple FemElement implementation. The calculation methods are implemented
  as returning a fixed value (which can independently be accessed by calling
- the corresponding dummy method -- e.g., CalcResidual() should return the
- value in residual(). */
+ the corresponding dummy method -- e.g., CalcInverseDynamics() should return
+ the value in inverse_dynamics_force(). */
 class DummyElement final : public FemElement<DummyElement> {
  public:
   using Base = FemElement<DummyElement>;
@@ -53,8 +53,8 @@ class DummyElement final : public FemElement<DummyElement> {
       : Base(node_indices, std::move(constitutive_model),
              std::move(damping_model)) {}
 
-  /* Provides a fixed return value for CalcResidual(). */
-  static Vector<T, kNumDofs> residual() {
+  /* Provides a fixed return value for CalcInverseDynamics(). */
+  static Vector<T, kNumDofs> inverse_dynamics_force() {
     return Vector<T, kNumDofs>::Constant(1.23456);
   }
 
@@ -81,6 +81,11 @@ class DummyElement final : public FemElement<DummyElement> {
     return 7.89 * MakeSpdMatrix();
   }
 
+  /* Dummy element provides zero gravity force so that we have complete control
+   over what the residual is. */
+  void AddScaledGravityForce(const Data&, const T&, const Vector3<T>&,
+                             EigenPtr<Vector<T, num_dofs>>) const {}
+
  private:
   /* Friend the base class so that the interface in the CRTP base class can
    access the private implementations of this class. */
@@ -103,16 +108,16 @@ class DummyElement final : public FemElement<DummyElement> {
     return data;
   }
 
-  /* Implements FemElement::CalcResidual().
-   The residual is equal to a dummy nonzero value if the element states are all
-   zero. Otherwise the residual is zero.*/
-  void DoCalcResidual(const Data& data,
-                      EigenPtr<Vector<T, kNumDofs>> residual) const {
+  /* Implements FemElement::CalcInverseDynamics().
+   The inverse dynamics force is equal to a dummy nonzero value if the element
+   states are all zero. Otherwise the force is zero.*/
+  void DoCalcInverseDynamics(
+      const Data& data, EigenPtr<Vector<T, kNumDofs>> external_force) const {
     if (data.element_q.norm() == 0.0 && data.element_v.norm() == 0.0 &&
         data.element_a.norm() == 0.0) {
-      *residual = this->residual();
+      *external_force = this->inverse_dynamics_force();
     } else {
-      residual->setZero();
+      external_force->setZero();
     }
   }
 
