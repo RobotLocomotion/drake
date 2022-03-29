@@ -26,8 +26,8 @@ class SchunkWsgButtons(LeafSystem):
             force_limit:     Force limit to send to Schunk WSG controller.
         """
         LeafSystem.__init__(self)
-        self.DeclareVectorOutputPort("position", 1, meshcat,
-                                     self.CalcPositionOutput)
+        self.meshcat = meshcat
+        self.DeclareVectorOutputPort("position", 1, self.CalcPositionOutput)
         self.DeclareVectorOutputPort("force_limit", 1,
                                      self.CalcForceLimitOutput)
 
@@ -45,8 +45,8 @@ class SchunkWsgButtons(LeafSystem):
         else:
             self.open()
 
-    def CalcPositionOutput(self, context, meshcat, output):
-        if meshcat.GetButtonClicks(name="Open/Close Gripper") % 2 == 0:
+    def CalcPositionOutput(self, context, output):
+        if self.meshcat.GetButtonClicks(name="Open/Close Gripper") % 2 == 0:
             # Push to joint limit specified in schunk_wsg_50.sdf.
             output.SetAtIndex(0, self._open_position)
         else:
