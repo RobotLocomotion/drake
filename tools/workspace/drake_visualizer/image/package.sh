@@ -59,7 +59,7 @@ readonly platform=$(lsb_release --codename --short)-$(uname --processor)
 #     -<build_number>.tar.gz
 #
 # The <build_number> was introduced to distinguish VTK-8/VTK-9 director split.
-readonly archive=${dv_tag}-${py_tag}-${qt_tag}-${vtk_tag}-${platform}-2.tar.gz
+readonly archive=${dv_tag}-${py_tag}-${qt_tag}-${vtk_tag}-${platform}-3.tar.gz
 
 cd /opt/director
 
