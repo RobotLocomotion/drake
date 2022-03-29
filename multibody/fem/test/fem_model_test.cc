@@ -149,6 +149,13 @@ GTEST_TEST(FemModelTest, MultipleBuilders) {
                               "Build.* has been called.*");
 }
 
+GTEST_TEST(FemModelTest, Gravity) {
+  DummyModel model;
+  EXPECT_EQ(model.gravity_vector(), Vector3<double>(0, 0, -9.81));
+  model.set_gravity_vector(Vector3<double>(1, 2, 3));
+  EXPECT_EQ(model.gravity_vector(), Vector3<double>(1, 2, 3));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace fem

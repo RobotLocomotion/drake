@@ -165,6 +165,12 @@ class FemModel {
   std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix>
   MakePetscSymmetricBlockSparseTangentMatrix() const;
 
+  /** Sets the gravity vector for all elements in this model. */
+  void set_gravity_vector(const Vector3<T>& gravity) { gravity_ = gravity; }
+
+  /** Returns the gravity vector for all elements in this model. */
+  const Vector3<T>& gravity_vector() const { return gravity_; }
+
  protected:
   /** Constructs an empty FEM model. */
   FemModel();
@@ -180,7 +186,7 @@ class FemModel {
   /** FemModelImpl must override this method to provide an implementation
    for the NVI CalcResidual(). The input `fem_state` is guaranteed to be
    compatible with `this` FEM model, and the input `residual` is guaranteed to
-   be non-null. */
+   be non-null and properly sized. */
   virtual void DoCalcResidual(const FemState<T>& fem_state,
                               EigenPtr<VectorX<T>> residual) const = 0;
 
@@ -217,6 +223,7 @@ class FemModel {
   /* The system that manages the states and cache entries of this FEM model.
    */
   std::unique_ptr<internal::FemStateSystem<T>> fem_state_system_;
+  Vector3<T> gravity_{0, 0, -9.81};
 };
 
 }  // namespace fem
