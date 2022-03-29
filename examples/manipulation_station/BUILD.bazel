@@ -184,7 +184,7 @@ drake_py_binary(
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
         ":schunk_wsg_buttons",
-        "//bindings/pydrake"
+        "//bindings/pydrake",
     ],
 )
 
