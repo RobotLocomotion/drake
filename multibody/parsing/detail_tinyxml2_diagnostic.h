@@ -33,6 +33,12 @@ class TinyXml2Diagnostic {
   void Error(const tinyxml2::XMLNode& location,
              const std::string& message) const;
 
+  // Make a temporary policy that can be passed to a node-unaware parsing
+  // function. The lifetime of this object, and the @p location should be
+  // greater than the lifetime of the returned policy.
+  drake::internal::DiagnosticPolicy MakePolicyForNode(
+      const tinyxml2::XMLNode* location) const;
+
  private:
   // Makes a diagnostic detail record based on an XMLNode.
   drake::internal::DiagnosticDetail MakeDetail(

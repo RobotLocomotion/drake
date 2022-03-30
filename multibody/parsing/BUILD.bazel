@@ -321,6 +321,21 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "diagnostic_policy_test_base",
+    testonly = 1,
+    hdrs = [
+        "test/diagnostic_policy_test_base.h",
+    ],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        "//common:diagnostic_policy",
+        "@gtest//:without_main",
+    ],
+)
+
 drake_cc_googletest(
     name = "acrobot_parser_test",
     data = [
@@ -452,6 +467,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_urdf_parser",
+        ":diagnostic_policy_test_base",
         "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
@@ -553,6 +569,7 @@ drake_cc_googletest(
     name = "detail_tinyxml2_diagnostic_test",
     deps = [
         ":detail_misc",
+        ":diagnostic_policy_test_base",
     ],
 )
 

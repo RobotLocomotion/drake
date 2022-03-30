@@ -7,10 +7,11 @@ namespace multibody {
 namespace internal {
 
 using drake::internal::DiagnosticDetail;
+using drake::internal::DiagnosticPolicy;
 using tinyxml2::XMLNode;
 
 TinyXml2Diagnostic::TinyXml2Diagnostic(
-    const drake::internal::DiagnosticPolicy* diagnostic,
+    const DiagnosticPolicy* diagnostic,
     const DataSource* data_source,
     const std::string& file_extension)
     : diagnostic_(diagnostic), data_source_(data_source),
@@ -40,6 +41,20 @@ void TinyXml2Diagnostic::Warning(
 void TinyXml2Diagnostic::Error(
     const XMLNode& location, const std::string& message) const {
   diagnostic_->Error(MakeDetail(location, message));
+}
+
+DiagnosticPolicy TinyXml2Diagnostic::MakePolicyForNode(
+    const XMLNode* location) const {
+  DiagnosticPolicy result;
+  result.SetActionForWarnings(
+      [this, location](const DiagnosticDetail& detail) {
+        diagnostic_->Warning(MakeDetail(*location, detail.message));
+      });
+  result.SetActionForErrors(
+      [this, location](const DiagnosticDetail& detail) {
+        diagnostic_->Error(MakeDetail(*location, detail.message));
+      });
+  return result;
 }
 
 }  // namespace internal
