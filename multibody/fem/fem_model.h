@@ -171,7 +171,7 @@ class FemModel {
 
   /** (Internal use only) Throws std::exception to report a mismatch between
   the FEM model and state that were passed to API method `func`. */
-  void ThrowIfModelDataIncompatible(const char* func,
+  void ThrowIfModelStateIncompatible(const char* func,
                                     const FemState<T>& fem_state) const;
 
   /** Returns the reference positions of this model. */
