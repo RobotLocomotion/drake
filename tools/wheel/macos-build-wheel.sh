@@ -84,11 +84,11 @@ bazel run \
 # Set up a Python virtual environment with the latest setuptools.
 # -----------------------------------------------------------------------------
 
-rm -rf  /opt/python
+rm -rf  "${DRAKE_WHEELBUILD_PREFIX}/python"
 
-python3 -m venv /opt/python
+python3 -m venv "${DRAKE_WHEELBUILD_PREFIX}/python"
 
-. /opt/python/bin/activate
+. "${DRAKE_WHEELBUILD_PREFIX}/python/bin/activate"
 
 pip install --upgrade pip
 pip install --upgrade setuptools
@@ -96,11 +96,11 @@ pip install --upgrade wheel
 
 cp \
     "$pip_root/image/strip_rpath.py" \
-    /opt/python/bin/strip_rpath
+    "${DRAKE_WHEELBUILD_PREFIX}/python/bin/strip_rpath"
 
 cp \
     "$pip_root/image/change_lpath.py" \
-    /opt/python/bin/change_lpath
+    "${DRAKE_WHEELBUILD_PREFIX}/python/bin/change_lpath"
 
 # -----------------------------------------------------------------------------
 # Build the Drake wheel.

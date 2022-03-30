@@ -5,6 +5,7 @@ import distutils
 import os
 import platform
 import re
+import shutil
 import subprocess
 
 from .common import die, wheel_name
@@ -14,6 +15,11 @@ resource_root = None
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+def assert_isdir(path, name):
+    if not os.path.isdir(path):
+        die(f'{name} \'{path}\' is not a valid directory')
+
+
 def provision():
     packages_path = os.path.join(resource_root, 'image', 'packages-macos')
     command = ['brew', 'bundle', f'--file={packages_path}', '--no-lock']
@@ -21,12 +27,15 @@ def provision():
 
 
 def test_wheel(path):
-    pass  # TODO
+    test_script = os.path.join(resource_root, 'macos-test-wheel.sh')
+    subprocess.check_call(['bash', test_script, path])
 
 
 def build(options):
-    if not os.path.isdir(options.build_root):
-        die(f'Build root \'{options.build_root}\' is not a valid directory')
+    if options.extract:
+        assert_isdir(options.output_dir, 'Output location')
+
+    assert_isdir(options.build_root, 'Build root')
 
     provision()
 
@@ -47,7 +56,8 @@ def build(options):
     if options.test:
         test_wheel(wheel_path)
 
-    # TODO extract (copy) wheel if requested
+    if options.extract:
+        shutil.copy2(wheel_path, options.output_dir)
 
 
 def add_build_arguments(parser):
