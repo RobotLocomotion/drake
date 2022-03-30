@@ -31,7 +31,7 @@ void FemModel<T>::CalcResidual(const FemState<T>& fem_state,
                                EigenPtr<VectorX<T>> residual) const {
   DRAKE_DEMAND(residual != nullptr);
   DRAKE_DEMAND(residual->size() == num_dofs());
-  ThrowIfModelDataIncompatible(__func__, fem_state);
+  ThrowIfModelStateIncompatible(__func__, fem_state);
   DoCalcResidual(fem_state, residual);
 }
 
@@ -42,7 +42,7 @@ void FemModel<T>::CalcTangentMatrix(
   DRAKE_DEMAND(tangent_matrix != nullptr);
   DRAKE_DEMAND(tangent_matrix->rows() == num_dofs());
   DRAKE_DEMAND(tangent_matrix->cols() == num_dofs());
-  ThrowIfModelDataIncompatible(__func__, fem_state);
+  ThrowIfModelStateIncompatible(__func__, fem_state);
   DoCalcTangentMatrix(fem_state, weights, tangent_matrix);
 }
 
@@ -58,7 +58,7 @@ FemModel<T>::FemModel()
           VectorX<T>(0), VectorX<T>(0), VectorX<T>(0))) {}
 
 template <typename T>
-void FemModel<T>::ThrowIfModelDataIncompatible(
+void FemModel<T>::ThrowIfModelStateIncompatible(
     const char* func, const FemState<T>& fem_state) const {
   if (!fem_state.is_created_from_system(*fem_state_system_)) {
     throw std::logic_error(std::string(func) +
