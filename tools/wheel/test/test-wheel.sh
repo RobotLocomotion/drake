@@ -16,8 +16,6 @@ fi
 
 . /opt/python/bin/activate
 
-pip install --upgrade pip
-
 pip install "$1"
 
 python << EOF
