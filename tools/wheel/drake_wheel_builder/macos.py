@@ -1,7 +1,6 @@
 # This file contains macOS-specific logic used to build the PyPI wheels. See
 # build-wheels for the user interface.
 
-import distutils
 import os
 import platform
 import re
@@ -13,6 +12,12 @@ from .common import die, wheel_name
 resource_root = None
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+def get_macos_platform():
+    arch = platform.machine()
+    version_info = platform.mac_ver()[0].split('.')
+    return f'macosx-{version_info[0]}.{version_info[1]}-{arch}'
 
 
 def assert_isdir(path, name):
@@ -48,7 +53,7 @@ def build(options):
 
     wheel = wheel_name(
         python_version=''.join(platform.python_version_tuple()[:2]),
-        wheel_platform=re.sub('[.-]', '_', distutils.util.get_platform()),
+        wheel_platform=re.sub('[.-]', '_', get_macos_platform()),
         wheel_version=options.version)
     wheel_path = os.path.join(
         options.build_root, 'wheel', 'dist', wheel)
