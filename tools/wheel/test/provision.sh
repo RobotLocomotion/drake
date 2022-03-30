@@ -18,3 +18,7 @@ apt-get -y install --no-install-recommends \
     libx11-6 libsm6 libxt6 libglib2.0-0
 
 ${PYTHON} -m venv /opt/python
+
+. /opt/python/bin/activate
+
+pip install --upgrade pip
