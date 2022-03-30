@@ -25,11 +25,3 @@ bazel run \
     --linkopt=-Wl,-z,now \
     --linkopt=-Wl,-z,relro \
     @lcm//:install -- /opt/drake
-
-bazel run \
-    --copt=-fstack-protector-strong \
-    --host_copt=-fstack-protector-strong \
-    --linkopt=-Wl,-Bsymbolic-functions \
-    --linkopt=-Wl,-z,now \
-    --linkopt=-Wl,-z,relro \
-    //tools/workspace/net_sf_jchart2d:install -- /opt/drake

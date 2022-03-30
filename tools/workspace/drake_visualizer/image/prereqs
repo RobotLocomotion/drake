@@ -15,6 +15,7 @@ libglib2.0-dev
 libglu1-mesa-dev
 libglvnd-dev
 libhdf5-dev
+libjchart2d-java
 libjpeg-turbo8-dev
 libjpeg8-dev
 libjsoncpp-dev
