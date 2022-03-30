@@ -122,9 +122,9 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// modifying the input parameter F_Bp_E_all and member functions
   /// ShiftInPlace() and Shift() to shift one spatial force (with or without
   /// modifying `this`).
-  static void ShiftInPlace(EigenPtr<Matrix6X<T>> F_Bp_E_all,
+  static void ShiftInPlace(EigenPtr<Matrix6X<T>> spatial_forces,
                            const Vector3<T>& offset) {
-    // ToDo: EigenPtr<Matrix6X<T>> F_Bp_E_all = spatial_forces;
+    auto& F_Bp_E_all = spatial_forces;    // Use auto to avoid Eigen types.
     DRAKE_ASSERT(F_Bp_E_all != nullptr);  // ASSERT because inner loop method.
     const int ncol = F_Bp_E_all->cols();
     for (int j = 0; j < ncol; ++j) {
@@ -172,11 +172,11 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// @note Although this Shift() function will work properly if the input and
   /// output matrices are the same (i.e., spatial_forces = shifted_forces), it
   /// is faster and more efficient (avoids copying) to use ShiftInPlace().
-  static void Shift(const Eigen::Ref<const Matrix6X<T>>& F_Bp_E_all,
+  static void Shift(const Eigen::Ref<const Matrix6X<T>>& spatial_forces,
                     const Vector3<T>& offset,
-                    EigenPtr<Matrix6X<T>> F_Bq_E_all) {
-    // ToDo const Eigen::Ref<const Matrix6X<T>>& F_Bp_E_all = spatial_forces;
-    // ToDo EigenPtr<Matrix6X<T>> F_Bq_E_all = shifted_forces;
+                    EigenPtr<Matrix6X<T>> shifted_forces) {
+    const auto& F_Bp_E_all = spatial_forces;  // Use auto to avoid Eigen types.
+    auto& F_Bq_E_all = shifted_forces;        // Use auto to avoid Eigen types.
     DRAKE_DEMAND(F_Bq_E_all != nullptr);
     DRAKE_DEMAND(F_Bq_E_all->cols() == F_Bp_E_all.cols());
     *F_Bq_E_all = F_Bp_E_all;
