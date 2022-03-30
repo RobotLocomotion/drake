@@ -420,10 +420,12 @@ class TestGeometryOptimization(unittest.TestCase):
         var, binding = edge0.AddCost(binding=binding)
         self.assertIsInstance(var, Variable)
         self.assertIsInstance(binding, Binding[Cost])
+        self.assertEqual(len(edge0.GetCosts()), 2)
         binding = edge0.AddConstraint(f=(edge0.xu()[0] == edge0.xv()[0]))
         self.assertIsInstance(binding, Binding[Constraint])
         binding = edge0.AddConstraint(binding=binding)
         self.assertIsInstance(binding, Binding[Constraint])
+        self.assertEqual(len(edge0.GetConstraints()), 2)
         edge0.AddPhiConstraint(phi_value=False)
         edge0.ClearPhiConstraints()
 

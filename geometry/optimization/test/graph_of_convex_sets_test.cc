@@ -234,6 +234,11 @@ TEST_F(TwoPoints, AddCost) {
   auto linear = dynamic_cast<LinearCost*>(b1.evaluator().get());
   EXPECT_TRUE(linear != nullptr);
 
+  // Confirm that they are all accessible.
+  const auto& edge_costs = e_->GetCosts();
+  EXPECT_EQ(edge_costs[0], b0);
+  EXPECT_EQ(edge_costs[1], b1);
+
   MathematicalProgramResult result;
   std::unordered_map<symbolic::Variable::Id, int> map;
   map.emplace(ell0.get_id(), 0);
@@ -263,6 +268,11 @@ TEST_F(TwoPoints, AddConstraint) {
   EXPECT_TRUE(linear_equality != nullptr);
   auto linear = dynamic_cast<LinearConstraint*>(b1.evaluator().get());
   EXPECT_TRUE(linear != nullptr);
+
+  // Confirm that they are all accessible.
+  const auto& edge_constraints = e_->GetConstraints();
+  EXPECT_EQ(edge_constraints[0], b0);
+  EXPECT_EQ(edge_constraints[1], b1);
 
   symbolic::Variable other_var("x");
   DRAKE_EXPECT_THROWS_MESSAGE(e_->AddConstraint(other_var == 1),

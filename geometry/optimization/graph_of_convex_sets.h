@@ -206,6 +206,17 @@ class GraphOfConvexSets {
     /** Removes any constraints added with AddPhiConstraint. */
     void ClearPhiConstraints();
 
+    /** Returns all costs on this edge. */
+    const std::vector<solvers::Binding<solvers::Cost>>& GetCosts() const {
+      return costs_;
+    }
+
+    /** Returns all constraints on this edge. */
+    const std::vector<solvers::Binding<solvers::Constraint>>& GetConstraints()
+        const {
+      return constraints_;
+    }
+
     /** Returns the sum of the costs associated with this edge in a
     solvers::MathematicalProgramResult. */
     double GetSolutionCost(
