@@ -465,6 +465,10 @@ void DefineGeometryOptimization(py::module m) {
         .def("ClearPhiConstraints",
             &GraphOfConvexSets::Edge::ClearPhiConstraints,
             edge_doc.ClearPhiConstraints.doc)
+        .def("GetCosts", &GraphOfConvexSets::Edge::GetCosts,
+            edge_doc.GetCosts.doc)
+        .def("GetConstraints", &GraphOfConvexSets::Edge::GetConstraints,
+            edge_doc.GetConstraints.doc)
         .def("GetSolutionCost", &GraphOfConvexSets::Edge::GetSolutionCost,
             py::arg("result"), edge_doc.GetSolutionCost.doc)
         .def("GetSolutionPhiXu", &GraphOfConvexSets::Edge::GetSolutionPhiXu,
