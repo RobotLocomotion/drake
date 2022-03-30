@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/temp_directory.h"
+#include "drake/multibody/parsing/test/diagnostic_policy_test_base.h"
 
 namespace drake {
 namespace multibody {
@@ -17,18 +18,9 @@ using tinyxml2::XMLElement;
 using drake::internal::DiagnosticDetail;
 using drake::internal::DiagnosticPolicy;
 
-class TinyXml2DiagnosticTest : public ::testing::Test {
+class TinyXml2DiagnosticTest : public test::DiagnosticPolicyTestBase {
  public:
   TinyXml2DiagnosticTest() {
-    policy_.SetActionForErrors(
-        [this](const DiagnosticDetail& detail) {
-          error_records_.push_back(detail);
-        });
-    policy_.SetActionForWarnings(
-        [this](const DiagnosticDetail& detail) {
-          warning_records_.push_back(detail);
-        });
-
     data_ = R"""(
 <?xml version="1.0"?>
 <stuff>
@@ -38,15 +30,18 @@ class TinyXml2DiagnosticTest : public ::testing::Test {
 )""";
   }
 
+  const XMLElement& GetFirstChildNamed(const char* name) {
+    DRAKE_DEMAND(root_ != nullptr);
+    const XMLElement* element = root_->FirstChildElement(name);
+    DRAKE_DEMAND(element != nullptr);
+    return *element;
+  }
+
  protected:
   std::string data_;
-  DiagnosticPolicy policy_;
 
   XMLDocument xml_doc_;
   XMLElement* root_{};
-
-  std::vector<DiagnosticDetail> error_records_;
-  std::vector<DiagnosticDetail> warning_records_;
 };
 
 class TinyXml2DiagnosticContentsTest : public TinyXml2DiagnosticTest {
@@ -59,7 +54,7 @@ class TinyXml2DiagnosticContentsTest : public TinyXml2DiagnosticTest {
 
  protected:
   DataSource source_{DataSource::kContents, &data_};
-  TinyXml2Diagnostic diagnostic_{&policy_, &source_, "stuff"};
+  TinyXml2Diagnostic diagnostic_{&diagnostic_policy_, &source_, "stuff"};
 };
 
 class TinyXml2DiagnosticFilenameTest : public TinyXml2DiagnosticTest {
@@ -77,45 +72,50 @@ class TinyXml2DiagnosticFilenameTest : public TinyXml2DiagnosticTest {
  protected:
   std::string filename_;
   DataSource source_{DataSource::kFilename, &filename_};
-  TinyXml2Diagnostic diagnostic_{&policy_, &source_, "stuff"};
+  TinyXml2Diagnostic diagnostic_{&diagnostic_policy_, &source_, "stuff"};
 };
 
 TEST_F(TinyXml2DiagnosticContentsTest, Error) {
-  const XMLElement* error_node = root_->FirstChildElement("error");
-  ASSERT_NE(error_node, nullptr);
-  diagnostic_.Error(*error_node, "badness");
-  ASSERT_EQ(error_records_.size(), 1);
-  const std::string full_message = error_records_[0].FormatError();
-  EXPECT_EQ(full_message, "<literal-string>.stuff:4: error: badness");
+  diagnostic_.Error(GetFirstChildNamed("error"), "badness");
+  EXPECT_EQ(TakeError(), "<literal-string>.stuff:4: error: badness");
 }
 
 TEST_F(TinyXml2DiagnosticContentsTest, Warning) {
-  const XMLElement* warning_node = root_->FirstChildElement("warning");
-  ASSERT_NE(warning_node, nullptr);
-  diagnostic_.Warning(*warning_node, "regret");
-  ASSERT_EQ(warning_records_.size(), 1);
-  const std::string full_message = warning_records_[0].FormatWarning();
-  EXPECT_EQ(full_message, "<literal-string>.stuff:5: warning: regret");
+  diagnostic_.Warning(GetFirstChildNamed("warning"), "regret");
+  EXPECT_EQ(TakeWarning(), "<literal-string>.stuff:5: warning: regret");
 }
 
 TEST_F(TinyXml2DiagnosticFilenameTest, Error) {
-  const XMLElement* error_node = root_->FirstChildElement("error");
-  ASSERT_NE(error_node, nullptr);
-  diagnostic_.Error(*error_node, "badness");
-  ASSERT_EQ(error_records_.size(), 1);
-  const std::string full_message = error_records_[0].FormatError();
-  EXPECT_THAT(full_message,
+  diagnostic_.Error(GetFirstChildNamed("error"), "badness");
+  EXPECT_THAT(TakeError(),
               testing::MatchesRegex("/.*/test_data.stuff:4: error: badness"));
 }
 
 TEST_F(TinyXml2DiagnosticFilenameTest, Warning) {
-  const XMLElement* warning_node = root_->FirstChildElement("warning");
-  ASSERT_NE(warning_node, nullptr);
-  diagnostic_.Warning(*warning_node, "regret");
-  ASSERT_EQ(warning_records_.size(), 1);
-  const std::string full_message = warning_records_[0].FormatWarning();
-  EXPECT_THAT(full_message,
+  diagnostic_.Warning(GetFirstChildNamed("warning"), "regret");
+  EXPECT_THAT(TakeWarning(),
               testing::MatchesRegex("/.*/test_data.stuff:5: warning: regret"));
+}
+
+TEST_F(TinyXml2DiagnosticContentsTest, PolicyForNode) {
+  // Policies for different nodes pass messages through to the
+  // TinyXml2Diagnostic that made them, with location information for their
+  // respective nodes.
+  auto root_policy = diagnostic_.MakePolicyForNode(root_);
+  root_policy.Warning("root rot");
+  EXPECT_EQ(TakeWarning(), "<literal-string>.stuff:3: warning: root rot");
+  root_policy.Error("root gone");
+  EXPECT_EQ(TakeError(), "<literal-string>.stuff:3: error: root gone");
+
+  auto error_policy =
+      diagnostic_.MakePolicyForNode(&GetFirstChildNamed("error"));
+  error_policy.Error("bad");
+  EXPECT_EQ(TakeError(), "<literal-string>.stuff:4: error: bad");
+
+  auto warning_policy =
+      diagnostic_.MakePolicyForNode(&GetFirstChildNamed("warning"));
+  warning_policy.Warning("meh");
+  EXPECT_EQ(TakeWarning(), "<literal-string>.stuff:5: warning: meh");
 }
 
 }  // namespace

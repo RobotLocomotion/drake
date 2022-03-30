@@ -17,6 +17,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
+#include "drake/multibody/parsing/test/diagnostic_policy_test_base.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 #include "drake/multibody/tree/planar_joint.h"
@@ -38,25 +39,10 @@ using drake::internal::DiagnosticPolicy;
 using geometry::GeometryId;
 using geometry::SceneGraph;
 
-class UrdfParserTest : public ::testing::Test {
+class UrdfParserTest : public test::DiagnosticPolicyTestBase {
  public:
   UrdfParserTest() {
     plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
-
-    diagnostic_.SetActionForErrors(
-        [this](const DiagnosticDetail& detail) {
-          error_records_.push_back(detail);
-        });
-    // TODO(rpoyner-tri): implement and test a warning via diagnostics.
-    diagnostic_.SetActionForWarnings(
-        [this](const DiagnosticDetail& detail) {
-          warning_records_.push_back(detail);
-        });
-  }
-
-  ~UrdfParserTest() {
-    EXPECT_TRUE(error_records_.empty());
-    EXPECT_TRUE(warning_records_.empty());
   }
 
   std::optional<ModelInstanceIndex> AddModelFromUrdfFile(
@@ -72,33 +58,11 @@ class UrdfParserTest : public ::testing::Test {
     return AddModelFromUrdf(
         {DataSource::kContents, &file_contents}, model_name, {}, w_);
   }
-
-  std::string TakeError() {
-    EXPECT_FALSE(error_records_.empty());
-    return Take(&error_records_).FormatError();
-  }
-
-  std::string TakeWarning() {
-    EXPECT_FALSE(warning_records_.empty());
-    return Take(&warning_records_).FormatWarning();
-  }
-
  protected:
-  template <typename T>
-  T Take(std::deque<T>* c) {
-    T result = c->at(0);
-    c->pop_front();
-    return result;
-  }
-
-  std::deque<DiagnosticDetail> error_records_;
-  std::deque<DiagnosticDetail> warning_records_;
-
   PackageMap package_map_;
-  DiagnosticPolicy diagnostic_;
   MultibodyPlant<double> plant_{0.0};
   SceneGraph<double> scene_graph_;
-  ParsingWorkspace w_{package_map_, diagnostic_, &plant_};
+  ParsingWorkspace w_{package_map_, diagnostic_policy_, &plant_};
 };
 
 // Some tests contain deliberate typos to provoke parser errors or warnings. In
