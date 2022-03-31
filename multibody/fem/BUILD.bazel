@@ -214,6 +214,7 @@ drake_cc_library(
         "fem_model_impl.h",
     ],
     deps = [
+        ":dirichlet_boundary_condition",
         ":fem_element",
         ":fem_state",
         ":petsc_symmetric_block_sparse_matrix",

@@ -33,6 +33,7 @@ void FemModel<T>::CalcResidual(const FemState<T>& fem_state,
   DRAKE_DEMAND(residual->size() == num_dofs());
   ThrowIfModelStateIncompatible(__func__, fem_state);
   DoCalcResidual(fem_state, residual);
+  dirichlet_bc_.ApplyHomogeneousBoundaryCondition(residual);
 }
 
 template <typename T>
@@ -45,6 +46,7 @@ void FemModel<T>::CalcTangentMatrix(
     DRAKE_DEMAND(tangent_matrix->cols() == num_dofs());
     ThrowIfModelStateIncompatible(__func__, fem_state);
     DoCalcTangentMatrix(fem_state, weights, tangent_matrix);
+    dirichlet_bc_.ApplyBoundaryConditionToTangentMatrix(tangent_matrix);
   } else {
     throw std::logic_error(
         "FemModel::CalcTangentMatrix() only supports double at the moment.");
@@ -61,6 +63,13 @@ FemModel<T>::MakePetscSymmetricBlockSparseTangentMatrix() const {
         "FemModel::MakePetscSymmetricBlockSparseTangentMatrix() only supports "
         "double at the moment.");
   }
+}
+
+template <typename T>
+void FemModel<T>::ApplyBoundaryCondition(FemState<T>* fem_state) const {
+  DRAKE_DEMAND(fem_state != nullptr);
+  ThrowIfModelStateIncompatible(__func__, *fem_state);
+  dirichlet_bc_.ApplyBoundaryConditionToState(fem_state);
 }
 
 template <typename T>
