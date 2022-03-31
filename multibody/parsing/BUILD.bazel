@@ -562,6 +562,7 @@ drake_cc_googletest(
     name = "detail_tinyxml_test",
     deps = [
         ":detail_misc",
+        ":diagnostic_policy_test_base",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )

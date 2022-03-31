@@ -40,18 +40,25 @@ bool ParseStringAttribute(const tinyxml2::XMLElement* node,
   return false;
 }
 
-bool ParseScalarAttribute(const tinyxml2::XMLElement* node,
-                          const char* attribute_name, double* val) {
+bool ParseScalarAttribute(
+    const tinyxml2::XMLElement* node,
+    const char* attribute_name, double* val,
+    std::optional<const drake::internal::DiagnosticPolicy> policy) {
+  if (!policy.has_value()) {
+    policy.emplace();
+  }
   const char* attr = node->Attribute(attribute_name);
   if (attr) {
     std::vector<double> vals = ConvertToDoubles(attr);
     if (vals.size() != 1) {
-      throw std::invalid_argument(
-          std::string("Expected single value for attribute ") + attribute_name +
-          " got " + attr);
+      policy->Error(
+          fmt::format("Expected single value for attribute '{}' got '{}'",
+                      attribute_name, attr));
     }
-    *val = vals[0];
-    return true;
+    if (!vals.empty()) {
+      *val = vals[0];
+    }
+    return !vals.empty();
   }
   return false;
 }

@@ -96,6 +96,16 @@ class UrdfParser {
   SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
       XMLElement* node);
 
+  // A work-alike for internal::ParseScalarAttribute() that uses the local
+  // diagnostic policy.
+  bool ParseScalarAttribute(
+    const tinyxml2::XMLElement* node,
+    const char* attribute_name, double* val) {
+    return internal::ParseScalarAttribute(
+        node, attribute_name, val,
+        diagnostic_.MakePolicyForNode(node));
+  }
+
   void Warning(const XMLNode& location, std::string message) const {
     diagnostic_.Warning(location, std::move(message));
   }

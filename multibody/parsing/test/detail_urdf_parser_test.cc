@@ -199,6 +199,29 @@ TEST_F(UrdfParserTest, JointChildLinkBroken) {
                   ".*joint a's child does not have a link attribute!"));
 }
 
+TEST_F(UrdfParserTest, JointBadDynamicsAttributes) {
+  std::string base = R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+        <dynamics {}/>
+      </joint>
+    </robot>)""";
+  const auto attrs = std::array<std::string, 3>{"damping", "friction",
+                                                "coulomb_window"};
+  for (const auto& attr : attrs) {
+    EXPECT_NE(AddModelFromUrdfString(fmt::format(base, attr + "='1 2'"), attr),
+              std::nullopt);
+    EXPECT_THAT(TakeError(), MatchesRegex(
+                    ".*Expected single value.*" + attr + ".*"));
+  }
+  // Dynamics warnings are tested elsewhere in this file.
+  warning_records_.clear();
+}
+
 TEST_F(UrdfParserTest, DrakeFrictionWarning) {
   EXPECT_NE(AddModelFromUrdfString(R"""(
     <robot name='a'>
@@ -411,44 +434,41 @@ TEST_F(UrdfParserTest, TransmissionJointNotExist) {
                                            " 'nowhere' which does not exist."));
 }
 
-TEST_F(UrdfParserTest, TransmissionJointZeroEffortLimit) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
+TEST_F(UrdfParserTest, TransmissionJointBadLimits) {
+  std::string base = R"""(
     <robot name='a'>
       <link name='parent'/>
       <link name='child'/>
       <joint name='a' type='revolute'>
         <parent link='parent'/>
         <child link='child'/>
-        <limit effort='0'/>
+        <limit {}/>
       </joint>
       <transmission type='SimpleTransmission'>
         <actuator name='a'/>
         <joint name='a'/>
       </transmission>
-    </robot>)""", ""), std::nullopt);
+    </robot>)""";
+  EXPECT_NE(AddModelFromUrdfString(fmt::format(base, "effort='0'"), ""),
+            std::nullopt);
   EXPECT_THAT(TakeWarning(), MatchesRegex(
                   ".*Skipping transmission since it's attached to joint \"a\""
                   " which has a zero effort limit 0.*"));
-}
 
-TEST_F(UrdfParserTest, TransmissionJointNegativeEffortLimit) {
-  EXPECT_NE(AddModelFromUrdfString(R"""(
-    <robot name='a'>
-      <link name='parent'/>
-      <link name='child'/>
-      <joint name='a' type='revolute'>
-        <parent link='parent'/>
-        <child link='child'/>
-        <limit effort='-3'/>
-      </joint>
-      <transmission type='SimpleTransmission'>
-        <actuator name='a'/>
-        <joint name='a'/>
-      </transmission>
-    </robot>)""", ""), std::nullopt);
+  EXPECT_NE(AddModelFromUrdfString(fmt::format(base, "effort='-3'"), "b"),
+            std::nullopt);
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*Transmission specifies joint 'a' which has a negative"
                   " effort limit."));
+
+  const auto attrs = std::array<std::string, 5>{"lower", "upper", "velocity",
+                                                "drake:acceleration", "effort"};
+  for (const auto& attr : attrs) {
+    EXPECT_NE(AddModelFromUrdfString(fmt::format(base, attr + "='1 2'"), attr),
+              std::nullopt);
+    EXPECT_THAT(TakeError(), MatchesRegex(
+                    ".*Expected single value.*" + attr + ".*"));
+  }
 }
 
 // Verifies that the URDF loader can leverage a specified package map.
@@ -929,6 +949,47 @@ TEST_F(UrdfParserTest, PointMass) {
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
 
+TEST_F(UrdfParserTest, BadInertia) {
+  // Test various mis-formatted inputs.
+  std::string base = R"""(
+    <robot name='point_mass'>
+      <link name='point_mass'>
+        <inertial>
+          <mass {}/>
+          <inertia {}/>
+        </inertial>
+      </link>
+    </robot>)""";
+  AddModelFromUrdfString(
+      fmt::format(base, "value='1 2 3'",
+                  "ixx='0' ixy='0' ixz='0' iyy='0' iyz='0' izz='0'"), "");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*value.*"));
+  AddModelFromUrdfString(
+      fmt::format(base, "value='1'",
+                  "ixx='0 2 3' ixy='0' ixz='0' iyy='0' iyz='0' izz='0'"), "a");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*ixx.*"));
+  AddModelFromUrdfString(
+      fmt::format(base, "value='1'",
+                  "ixx='0' ixy='0 2 3' ixz='0' iyy='0' iyz='0' izz='0'"), "b");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*ixy.*"));
+  AddModelFromUrdfString(
+      fmt::format(base, "value='1'",
+                  "ixx='0' ixy='0' ixz='0 2 3' iyy='0' iyz='0' izz='0'"), "c");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*ixz.*"));
+  AddModelFromUrdfString(
+      fmt::format(base, "value='1'",
+                  "ixx='0' ixy='0' ixz='0' iyy='0 2 3' iyz='0' izz='0'"), "d");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*iyy.*"));
+  AddModelFromUrdfString(
+      fmt::format(base, "value='1'",
+                  "ixx='0' ixy='0' ixz='0' iyy='0' iyz='0 2 3' izz='0'"), "e");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*iyz.*"));
+  AddModelFromUrdfString(
+      fmt::format(base, "value='1'",
+                  "ixx='0' ixy='0' ixz='0' iyy='0' iyz='0' izz='0 2 3'"), "f");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*izz.*"));
+}
+
 // TODO(rpoyner-tri): these tests don't test the parser but rather error
 // behavior of underlying implementation components. Consider moving or
 // removing them.
@@ -1183,6 +1244,11 @@ TEST_F(ReflectedInertiaTest, RotorInertiaNoValue) {
                " have a \"value\" attribute!");
 }
 
+TEST_F(ReflectedInertiaTest, RotorInertiaManyValues) {
+  ProvokeError("<drake:rotor_inertia value='1 2 3'/>", "",
+               ".*Expected single value.*value.*");
+}
+
 TEST_F(ReflectedInertiaTest, DefaultRotorInertia) {
   // Test successful parsing of gear_ratio and default value for rotor_inertia.
   VerifyParameters("", "<drake:gear_ratio value='300.0' />", 0.0, 300.0);
@@ -1192,6 +1258,11 @@ TEST_F(ReflectedInertiaTest, GearRatioNoValue) {
   ProvokeError("", "<drake:gear_ratio />",
                ".*joint actuator revolute_AB's drake:gear_ratio does not have"
                " a \"value\" attribute!");
+}
+
+TEST_F(ReflectedInertiaTest, GearRatioManyValues) {
+  ProvokeError("<drake:gear_ratio value='1 2 3'/>", "",
+               ".*Expected single value.*value.*");
 }
 
 // TODO(SeanCurtis-TRI) The logic testing for collision filter group parsing
