@@ -45,6 +45,27 @@ bazel run //examples/hydroelastic/ball_plate:ball_plate_run_dynamics \
 -- --simulator_target_realtime_rate=0.01
 ```
 
+<h2>Spin the ball</h2>
+
+We want to see dynamics of the ball-plate and the plate-floor contacts.
+We use zero for the friction coefficients (`--friction_coefficient`) to make
+it very slippery.
+We use a very large initial angular velocity of the ball (`--wz`; `w` for `ω`)
+around its Z-axis to make it spin very fast.
+
+```
+bazel run //examples/hydroelastic/ball_plate:ball_plate_run_dynamics \
+-- --friction_coefficient=0 --simulation_time=2.5 \
+--simulator_target_realtime_rate=0.1 \
+--wz=10000
+```
+
+![ball_plate](images/ball_plate_spin_the_ball.jpg)
+
+The example command above intentionally specifies very low real-time rate of
+0.1, so we can see it easier.
+On a good computer, it can run at real-time rate about 1.0.
+
 <h2>Use polygon or triangle contact surfaces</h2>
 By default, this example uses polygon contact surfaces that look like this:
 
