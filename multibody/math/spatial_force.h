@@ -88,7 +88,8 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// velocity (see SpatialMomentum::Shift() and SpatialVelocity:Shift()).
   /// @see Member function Shift() to shift one spatial force without modifying
   /// `this` and static functions ShiftInPlace() and Shift() to shift multiple
-  /// spatial forces (with or without modifying the input parameter F_Bp_E_all).
+  /// spatial forces (with or without modifying the input parameter
+  /// spatial_forces).
   SpatialForce<T>& ShiftInPlace(const Vector3<T>& offset) {
     this->rotational() -= offset.cross(this->translational());
     return *this;
@@ -97,9 +98,9 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
     //   F_Bq = Φ(-p_BpBq) F_Bp
     //        =  Φ(p_BqBp) F_Bp    where Φ(p) is the linear operator:
     //   Φ(p) = | I₃   pₓ |
-    //          | 0    I₃ |       where I₃ is the 3x3 identity matrix and
-    // pₓ denotes the skew-symmetric cross product matrix such that
-    // pₓvec = p x vec (where vec is any vector).
+    //          | 0₃   I₃ |       I₃ is the 3x3 identity matrix, 0₃ is the 3x3
+    // zero matrix and pₓ denotes the skew-symmetric cross product matrix such
+    // that pₓvec = p x vec (where vec is any vector).
     // This same Φ operator shifts spatial momentum in an analogous way (see
     // SpatialMomentum::Shift()) whereas Φᵀ (the transpose of this operator)
     // shifts spatial velocity (see SpatialVelocity::Shift()).
@@ -114,12 +115,12 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// each of the n columns is a spatial force expressed in a frame E. On input,
   /// each spatial force is applied to a point Bp of frame B. On output, each
   /// spatial force has been shifted to a point Bq of frame B. In other words,
-  /// on output, spatial_forces = F_Bq_E_All.
+  /// on output, spatial_forces = F_Bq_E_all.
   /// @param[in] offset which is the position vector p_BpBq_E from point Bp
   /// (fixed on frame B) to a point Bq (fixed on frame B), expressed in frame E.
   /// p_BpBq_E must have the same expressed-in frame E as in spatial_forces.
   /// @see Static function Shift() to shift multiple spatial forces without
-  /// modifying the input parameter F_Bp_E_all and member functions
+  /// modifying the input parameter spatial_forces and member functions
   /// ShiftInPlace() and Shift() to shift one spatial force (with or without
   /// modifying `this`).
   static void ShiftInPlace(EigenPtr<Matrix6X<T>> spatial_forces,
@@ -134,7 +135,9 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
       const auto force = F_Bp_E.template tail<3>();
       torque -= offset.cross(force);  // offset = p_BpBq_E
     }
-    // F_Bp_E_all should now be called F_Bq_E_all.
+    // On entry to this function, the input parameter spatial_forces is regarded
+    // as F_Bp_E_all. On completion of this function, spatial_forces is regarded
+    // as F_Bq_E_all.
   }
 
   /// Shifts a %SpatialForce from one point fixed on frame B to another point
@@ -146,7 +149,8 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// @retval F_Bq_E which is the spatial force on Bq, expressed in frame E.
   /// @see Member function ShiftInPlace() to shift one spatial force (modifying
   /// `this`) and static functions ShiftInPlace() and Shift() to shift multiple
-  /// spatial forces (with or without modifying the input parameter F_Bp_E_all).
+  /// spatial forces (with or without modifying the input parameter
+  /// spatial_forces).
   SpatialForce<T> Shift(const Vector3<T>& offset) const {
     return SpatialForce<T>(*this).ShiftInPlace(offset);  // offset = p_BpBq_E
   }
@@ -166,7 +170,7 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// @pre shifted_forces must be non-null and must point to a 6 x n matrix
   /// (i.e., it must be the same size as the input matrix spatial_forces).
   /// @see Static function ShiftInPlace() to shift multiple spatial forces with
-  /// modification to the input parameter F_Bp_E_all and member functions
+  /// modification to the input parameter spatial_forces and member functions
   /// ShiftInPlace() and Shift() to shift one spatial force (with or without
   /// modifying `this`).
   /// @note Although this Shift() function will work properly if the input and
