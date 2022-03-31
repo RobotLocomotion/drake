@@ -515,6 +515,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_urdf_parser",
+        ":diagnostic_policy_test_base",
         "//common:find_resource",
         "//common/test_utilities",
     ],
