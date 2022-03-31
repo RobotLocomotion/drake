@@ -112,9 +112,9 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
     //  L_MSQ = Φ(-p_PQ) L_MSP
     //        =  Φ(p_QP) L_MSP    where Φ(p) is the linear operator:
     //   Φ(p) = | I₃   pₓ |
-    //          | 0    I₃ |       where I₃ is the 3x3 identity matrix and
-    // pₓ denotes the skew-symmetric cross product matrix such that
-    // pₓvec = p x vec (where vec is any vector).
+    //          | 0₃   I₃ |       I₃ is the 3x3 identity matrix, 0₃ is the 3x3
+    // zero matrix and pₓ denotes the skew-symmetric cross product matrix such
+    // that pₓvec = p x vec (where vec is any vector).
     // This same Φ operator shifts spatial force in an analogous way (see
     // SpatialForce::Shift()) whereas Φᵀ (the transpose of this operator)
     // shifts spatial velocity (see SpatialVelocity::Shift()).

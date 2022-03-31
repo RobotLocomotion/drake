@@ -86,12 +86,11 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
     return *this;
     // Note: this operation is linear. [Jain 2010], (§1.4, page 12) uses the
     // "rigid body transformation operator" to write this as:
-    //    V_MC = Φᵀ(-p_BoCo) V_MB
-    //         =  Φᵀ(p_CoBo) V_MB  where Φᵀ(p) is the linear operator:
-    //   Φᵀ(p) = | I₃   0  |
-    //           | pₓ   I₃ |       where I₃ is the 3x3 identity matrix and
-    // pₓ denotes the skew-symmetric cross product matrix such that
-    // pₓvec = p x vec (where vec is any vector). This Φᵀ operator shifts
+    //    V_MC = Φᵀ(p_BoCo) V_MB    where Φᵀ(p) is the linear operator:
+    //   Φᵀ(p) = | I₃   0₃ |
+    //           | -pₓ  I₃ |       I₃ is the 3x3 identity matrix, 0₃ is the 3x3
+    // zero matrix, and pₓ denotes the skew-symmetric cross product matrix such
+    // that pₓvec = p x vec (where vec is any vector). This Φᵀ operator shifts
     // spatial velocity whereas the Φ operator shifts spatial force and spatial
     // momentum (see SpatialForce::Shift() and SpatialMomentum:Shift()).
     //
