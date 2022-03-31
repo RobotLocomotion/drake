@@ -1,0 +1,25 @@
+# -*- python -*-
+
+load("//tools/skylark:drake_py.bzl", "drake_py_binary")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+drake_py_binary(
+    name = "contact_sim_demo_py",
+    srcs = ["contact_sim_demo.py"],
+    data = [":ball_paddle_files"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+filegroup(
+    name = "ball_paddle_files",
+    srcs = [
+        "ball.sdf",
+        "paddle.sdf",
+    ],
+)
+
+add_lint_tests()
