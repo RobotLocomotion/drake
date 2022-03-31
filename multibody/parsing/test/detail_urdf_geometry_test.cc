@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/filesystem.h"
@@ -46,159 +47,188 @@ using std::make_unique;
 using std::unique_ptr;
 
 using Eigen::Vector4d;
+using testing::MatchesRegex;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
+using drake::internal::DiagnosticDetail;
+using drake::internal::DiagnosticPolicy;
 using math::RigidTransformd;
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
 using geometry::ProximityProperties;
 
-// Confirms the logic for reconciling named references to materials.
-GTEST_TEST(DetailUrdfGeometryTest, AddMaterialToMaterialMap) {
-  MaterialMap materials;
-  // The material with no data except the default rgba value.
-  const Vector4d black_color{0, 0, 0, 0};
-  const Vector4d full_color{0.3, 0.6, 0.9, 0.99};
-  const Vector4d rgba_color{0.25, 0.5, 0.75, 1.0};
-  const UrdfMaterial default_mat{black_color, {}};
-  const UrdfMaterial empty_mat{{}, {}};
-  const UrdfMaterial rgba_mat{rgba_color, {}};
-  const UrdfMaterial diffuse_mat{{}, "arbitrary_diffuse"};
-  const UrdfMaterial full_mat{full_color, "full"};
+class UrdfMaterialTest : public testing::Test {
+ public:
+  UrdfMaterialTest() {
+    policy_.SetActionForErrors(
+        [this](const DiagnosticDetail& detail) {
+          EXPECT_TRUE(error_.empty());
+          error_ = detail.message;
+        });
+  }
 
-  const std::string empty_mat_name{"empty"};
-  const std::string rgba_mat_name{"just_rgba"};
-  const std::string diffuse_mat_name{"just_diffuse"};
-  const std::string full_mat_name{"full"};
+  // Call the function under test, taking care of repetitive details.
+  UrdfMaterial AddMaterial(const std::string& material_name,
+                           UrdfMaterial material,
+                           bool error_if_name_clash) {
+    return AddMaterialToMaterialMap(
+        policy_, material_name, material, error_if_name_clash, &materials_);
+  }
 
-  const bool abort_if_name_clash{true};
+  // Call the function under test, expect no error.
+  UrdfMaterial AddMaterialGood(const std::string& material_name,
+                               UrdfMaterial material,
+                               bool error_if_name_clash,
+                               UrdfMaterial expected) {
+    auto result = AddMaterial(material_name, material, error_if_name_clash);
+    EXPECT_TRUE(error_.empty());
+    EXPECT_EQ(result, expected);
+    return result;
+  }
 
-  // ----   Simple addition of new materials and redundant addition of identical
-  //        material.
+  // Call the function under test, expect an error matching a pattern.
+  UrdfMaterial AddMaterialBad(const std::string& material_name,
+                              UrdfMaterial material,
+                              bool error_if_name_clash,
+                              const std::string& error_pattern) {
+    auto result = AddMaterial(material_name, material, error_if_name_clash);
+    EXPECT_THAT(error_, MatchesRegex(error_pattern));
+    return result;
+  }
 
+ protected:
+  MaterialMap materials_;
+  DiagnosticPolicy policy_;
+  std::string error_;
+
+  const bool error_if_name_clash_{true};
+
+  const Vector4d black_color_{0, 0, 0, 0};
+  const Vector4d full_color_{0.3, 0.6, 0.9, 0.99};
+  const Vector4d rgba_color_{0.25, 0.5, 0.75, 1.0};
+  const UrdfMaterial default_mat_{black_color_, {}};
+  const UrdfMaterial empty_mat_{{}, {}};
+  const UrdfMaterial rgba_mat_{rgba_color_, {}};
+  const UrdfMaterial full_mat_{full_color_, "full"};
+
+  const std::string empty_mat_name_{"empty"};
+  const std::string rgba_mat_name_{"just_rgba"};
+  const std::string full_mat_name_{"full"};
+};
+
+// ----   Simple addition of new materials and redundant addition of identical
+//        material.
+
+TEST_F(UrdfMaterialTest, UniqueNoData) {
   // Case: Adding a unique material with no data - gets default rgba.
-  {
-    const UrdfMaterial result1 = AddMaterialToMaterialMap(
-        empty_mat_name, empty_mat, abort_if_name_clash, &materials);
-    EXPECT_EQ(result1, default_mat);
-    const UrdfMaterial result2 = AddMaterialToMaterialMap(
-        empty_mat_name, empty_mat, !abort_if_name_clash, &materials);
-    EXPECT_EQ(result2, default_mat);
-  }
-  // Case: Adding a unique material with only rgba.
-  {
-    const UrdfMaterial result1 = AddMaterialToMaterialMap(
-        rgba_mat_name, rgba_mat, abort_if_name_clash, &materials);
-    EXPECT_EQ(result1, rgba_mat);
-    const UrdfMaterial result2 = AddMaterialToMaterialMap(
-        rgba_mat_name, rgba_mat, !abort_if_name_clash, &materials);
-    EXPECT_EQ(result2, rgba_mat);
-  }
+  AddMaterialGood(empty_mat_name_, empty_mat_, error_if_name_clash_,
+                  default_mat_);
+  AddMaterialGood(empty_mat_name_, empty_mat_, !error_if_name_clash_,
+                  default_mat_);
+}
 
+TEST_F(UrdfMaterialTest, UniqueOnlyRgba) {
+  // Case: Adding a unique material with only rgba.
+  AddMaterialGood(rgba_mat_name_, rgba_mat_, error_if_name_clash_, rgba_mat_);
+  AddMaterialGood(rgba_mat_name_, rgba_mat_, !error_if_name_clash_, rgba_mat_);
+}
+
+TEST_F(UrdfMaterialTest, RedundantDifferentColor) {
   // Case: Adding a redundant material whose rgba values are different, but
   // within tolerance.
-  {
-    const Vector4d rgba_color2 = rgba_color + Vector4d::Constant(1e-11);
-    const UrdfMaterial result =
-        AddMaterialToMaterialMap(rgba_mat_name, UrdfMaterial{rgba_color2, {}},
-                                 !abort_if_name_clash, &materials);
-    EXPECT_EQ(result, rgba_mat);
+  AddMaterialGood(rgba_mat_name_, rgba_mat_, error_if_name_clash_, rgba_mat_);
+  const Vector4d rgba_color2 = rgba_color_ + Vector4d::Constant(1e-11);
+  AddMaterialGood(rgba_mat_name_, UrdfMaterial{rgba_color2, {}},
+                  !error_if_name_clash_, rgba_mat_);
 
-    // Deviation between colors too big.
-    const Vector4d rgba_color3 = rgba_color + Vector4d::Constant(5e-11);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        AddMaterialToMaterialMap(rgba_mat_name,
-                                 UrdfMaterial{rgba_color3, {}},
-                                 !abort_if_name_clash, &materials),
-        "Material '.+' was previously defined[^]+");
-  }
+  // Deviation between colors too big.
+  const Vector4d rgba_color3 = rgba_color_ + Vector4d::Constant(5e-11);
+  AddMaterialBad(rgba_mat_name_, UrdfMaterial{rgba_color3, {}},
+                 !error_if_name_clash_,
+                 "Material '.+' was previously defined.+");
+}
 
+TEST_F(UrdfMaterialTest, UniqueDiffuse) {
   // Case: Adding a unique material with only diffuse map - get default rgba.
-  {
-    const UrdfMaterial expected{black_color, diffuse_mat.diffuse_map};
-    const UrdfMaterial result1 = AddMaterialToMaterialMap(
-        diffuse_mat_name, diffuse_mat, abort_if_name_clash, &materials);
-    EXPECT_EQ(result1, expected);
-    const UrdfMaterial result2 = AddMaterialToMaterialMap(
-        diffuse_mat_name, diffuse_mat, !abort_if_name_clash, &materials);
-    EXPECT_EQ(result2, expected);
-  }
+  const UrdfMaterial diffuse_mat{{}, "arbitrary_diffuse"};
+  const std::string diffuse_mat_name{"just_diffuse"};
+  const UrdfMaterial expected{black_color_, diffuse_mat.diffuse_map};
+  AddMaterialGood(diffuse_mat_name, diffuse_mat, error_if_name_clash_,
+                  expected);
+  AddMaterialGood(diffuse_mat_name, diffuse_mat, !error_if_name_clash_,
+                  expected);
+}
 
+TEST_F(UrdfMaterialTest, UniqueBoth) {
   // Case: adding a unique material with both diffuse map and rgba.
-  {
-    const UrdfMaterial result1 = AddMaterialToMaterialMap(
-        full_mat_name, full_mat, abort_if_name_clash, &materials);
-    EXPECT_EQ(result1, full_mat);
-    const UrdfMaterial result2 = AddMaterialToMaterialMap(
-        full_mat_name, full_mat, !abort_if_name_clash, &materials);
-    EXPECT_EQ(result2, full_mat);
-  }
+  AddMaterialGood(full_mat_name_, full_mat_, error_if_name_clash_, full_mat_);
+  AddMaterialGood(full_mat_name_, full_mat_, !error_if_name_clash_, full_mat_);
+}
 
-  // ----    Name matches to cached value, but new material is nullopt.
+// ----    Name matches to cached value, but new material is nullopt.
 
-  // Note: There is no case where cached has *only* diffuse map because any
-  // material missing rgba is assigned default black before being stored in the
-  // cache.
+// Note: There is no case where cached has *only* diffuse map because any
+// material missing rgba is assigned default black before being stored in the
+// cache.
 
+TEST_F(UrdfMaterialTest, CacheRgbaInputEmpty) {
   // Case: Cache only has rgba defined; input material is empty.
-  {
-    const UrdfMaterial result = AddMaterialToMaterialMap(
-        rgba_mat_name, empty_mat, !abort_if_name_clash, &materials);
-    EXPECT_EQ(result, rgba_mat);
-  }
+  AddMaterialGood(rgba_mat_name_, rgba_mat_, error_if_name_clash_, rgba_mat_);
+  AddMaterialGood(rgba_mat_name_, empty_mat_, !error_if_name_clash_, rgba_mat_);
+}
 
+TEST_F(UrdfMaterialTest, CacheBothInputEmpty) {
   // Case: Cache only has diffuse map and rgba defined; input material is empty.
-  {
-    const UrdfMaterial result = AddMaterialToMaterialMap(
-        full_mat_name, empty_mat, !abort_if_name_clash, &materials);
-    EXPECT_EQ(result, full_mat);
-  }
+  AddMaterialGood(full_mat_name_, full_mat_, error_if_name_clash_, full_mat_);
+  AddMaterialGood(full_mat_name_, empty_mat_, !error_if_name_clash_, full_mat_);
+}
 
-  // ----    Name clashes.
+// ----    Name clashes.
 
+TEST_F(UrdfMaterialTest, NameClashParameter) {
   // Case: Adding an identical material is/isn't an error based on name clash
   // parameter.
-  {
-    ASSERT_NE(materials.find(empty_mat_name), materials.end());
-    // Redundant adding is not an error.
-    const UrdfMaterial result = AddMaterialToMaterialMap(
-        empty_mat_name, empty_mat, !abort_if_name_clash, &materials);
-    EXPECT_EQ(result, default_mat);
+  AddMaterialGood(empty_mat_name_, empty_mat_, error_if_name_clash_,
+                  default_mat_);
+  ASSERT_NE(materials_.find(empty_mat_name_), materials_.end());
+  // Redundant adding is not an error.
+  AddMaterialGood(empty_mat_name_, empty_mat_, !error_if_name_clash_,
+                  default_mat_);
 
-    // Redundant adding with name clash *is* an error.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        AddMaterialToMaterialMap(empty_mat_name, empty_mat, abort_if_name_clash,
-                                 &materials),
-        "Material '.+' was previously defined[^]+");
-  }
+  // Redundant adding with name clash *is* an error.
+  AddMaterialBad(empty_mat_name_, empty_mat_, error_if_name_clash_,
+                 "Material '.+' was previously defined.+");
+}
 
-  // ----    Failure modes.
+// ----    Failure modes.
 
-  // The failure mode where cached rgba is nullopt and new material is *not* is
-  // not possible because any material missing rgba is assigned default black
-  // before being stored in the cache.
-
+TEST_F(UrdfMaterialTest, RgbaMismatch) {
   // Case: rgba doesn't match.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddMaterialToMaterialMap(rgba_mat_name,
-                               UrdfMaterial{Vector4d{0.1, 0.1, 0.1, 0.1}, {}},
-                               !abort_if_name_clash, &materials),
-      "Material '.+' was previously defined[^]+");
+  AddMaterialGood(rgba_mat_name_, rgba_mat_, error_if_name_clash_, rgba_mat_);
+  AddMaterialBad(rgba_mat_name_, UrdfMaterial{Vector4d{0.1, 0.1, 0.1, 0.1}, {}},
+                 !error_if_name_clash_,
+                 "Material '.+' was previously defined.+");
+}
 
+TEST_F(UrdfMaterialTest, DiffuseMismatch) {
   // Case: Cached diffuse_map is nullopt, input is not.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddMaterialToMaterialMap(rgba_mat_name,
-                               UrdfMaterial{{}, "bad_name"},
-                               !abort_if_name_clash, &materials),
-      "Material '.+' was previously defined[^]+");
+  AddMaterialGood(rgba_mat_name_, rgba_mat_, error_if_name_clash_, rgba_mat_);
+  AddMaterialBad(rgba_mat_name_, UrdfMaterial{{}, "bad_name"},
+                 !error_if_name_clash_,
+                 "Material '.+' was previously defined.+");
+}
 
+// The failure mode where cached rgba is nullopt and new material is *not* is
+// not possible because any material missing rgba is assigned default black
+// before being stored in the cache.
+
+TEST_F(UrdfMaterialTest, ValueMismatch) {
   // Case: Cached and input have non-matching values.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddMaterialToMaterialMap(full_mat_name,
-                               UrdfMaterial{full_color, "bad_name"},
-                               !abort_if_name_clash, &materials),
-      "Material '.+' was previously defined[^]+");
+  AddMaterialGood(full_mat_name_, full_mat_, error_if_name_clash_, full_mat_);
+  AddMaterialBad(full_mat_name_, UrdfMaterial{full_color_, "bad_name"},
+                 !error_if_name_clash_,
+                 "Material '.+' was previously defined.+");
 }
 
 // Creates a special XML DOM consisting of *only* a collision object. XML text
