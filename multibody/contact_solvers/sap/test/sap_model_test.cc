@@ -23,12 +23,6 @@ namespace internal {
 class SapModelTester {
  public:
   template <typename T>
-  static const SapConstraintBundle<T>& constraints_bundle(
-      const SapModel<T>& model) {
-    return model.constraints_bundle();
-  }
-
-  template <typename T>
   static const VectorX<T>& delassus_diagonal(const SapModel<T>& model) {
     return model.const_model_data_.delassus_diagonal;
   }
@@ -329,23 +323,52 @@ class DummyModel {
     auto problem = std::make_unique<SapContactProblem<T>>(
         time_step_, dynamics_matrix_, v_star_);
 
+    // This will lead to cluster 0, constraining clique 0 with itself.
     {
-      const MatrixX<T> J = MakeJacobian(3, 2);
-      const VectorX<T> R = VectorX<T>::LinSpaced(3, 1., 3.);
-      const VectorX<T> v_hat = Vector3d(1., 2., 0.2);
+      MatrixX<T> J = MakeJacobian(3, 2);
+      VectorX<T> R = VectorX<T>::LinSpaced(3, 1., 3.);
+      VectorX<T> v_hat = Vector3d(1., 2., 0.2);
       problem->AddConstraint(std::make_unique<DummyConstraint<T>>(
           0, std::move(J), std::move(R), std::move(v_hat)));
     }
 
+    // This will lead to cluster 1, constraining cliques 1 and 2.
     {
-      const MatrixX<T> J1 = MakeJacobian(5, 3);
-      const MatrixX<T> J2 = MakeJacobian(5, 4);
-      const VectorX<T> R = VectorX<T>::LinSpaced(5, 1., 5.);
-      const VectorX<T> v_hat = 100.0 * R;
+      MatrixX<T> J1 = MakeJacobian(5, 3);
+      MatrixX<T> J2 = MakeJacobian(5, 4);
+      VectorX<T> R = VectorX<T>::LinSpaced(5, 1., 5.);
+      VectorX<T> v_hat = 100.0 * R;
       problem->AddConstraint(std::make_unique<DummyConstraint<T>>(
           1, std::move(J1), 2, std::move(J2), std::move(R), std::move(v_hat)));
     }
+
+    // This constraint will get added to the already created cluster 0 above.
+    {
+      MatrixX<T> J = MakeJacobian(3, 2);
+      VectorX<T> R = VectorX<T>::LinSpaced(3, 1., 3.);
+      VectorX<T> v_hat = Vector3d(1., 2., 0.2);
+      problem->AddConstraint(std::make_unique<DummyConstraint<T>>(
+          0, std::move(J), std::move(R), std::move(v_hat)));
+    }
+
     return problem;
+  }
+
+  // Makes the constraints Jacobian J. The order of the velocities and impulses
+  // is given as in the original model (not as permuted in SapModel later on).
+  MatrixXd MakeModelJacobian() const {
+    MatrixXd J = MatrixXd::Zero(11, 9);
+    // Constraint 0. Within clique 0, cluster 0.
+    J.block<3, 2>(0, 0) = MakeJacobian(3, 2);
+
+    // Constraint 1. Between clique 1 and 2, cluster 1.
+    J.block<5, 3>(3, 2) = MakeJacobian(5, 3);
+    J.block<5, 4>(3, 5) = MakeJacobian(5, 4);
+
+    // Constraint 2. Within clique 0, cluster 0.
+    J.block<3, 2>(8, 0) = MakeJacobian(3, 2);
+
+    return J;
   }
 
  private:
@@ -357,7 +380,7 @@ class DummyModel {
   //  |3 6|
   // MakeJacobian(1, 3) returns:
   //  |1 2 3|
-  MatrixXd MakeJacobian(int rows, int cols) {
+  MatrixXd MakeJacobian(int rows, int cols) const {
     const int size = rows * cols;
     MatrixXd J1d = VectorXd::LinSpaced(size, 1., 1. * size);
     J1d.resize(rows, cols);
@@ -385,8 +408,8 @@ class DummyModelTest : public ::testing::Test {
     // Sanity check problem sizes.
     EXPECT_EQ(sap_problem_->num_cliques(), 3);
     EXPECT_EQ(sap_problem_->num_velocities(), 9);
-    EXPECT_EQ(sap_problem_->num_constraints(), 2);
-    EXPECT_EQ(sap_problem_->num_constraint_equations(), 8);
+    EXPECT_EQ(sap_problem_->num_constraints(), 3);
+    EXPECT_EQ(sap_problem_->num_constraint_equations(), 11);
     sap_model_ = std::make_unique<SapModel<double>>(sap_problem_.get());
     context_ = sap_model_->MakeContext();
 
@@ -409,8 +432,12 @@ class DummyModelTest : public ::testing::Test {
 
     // The constraint bundle is tested elsewhere. Therefore we use it here to
     // obtain the data we need for this test.
-    J_ = SapModelTester::constraints_bundle(*sap_model_).J().MakeDenseMatrix();
-    R_ = SapModelTester::constraints_bundle(*sap_model_).R();
+    J_ = sap_model_->constraints_bundle().J().MakeDenseMatrix();
+    R_ = sap_model_->constraints_bundle().R();
+
+    // For testing, we make the Jacobian matrix with indexes as specified in the
+    // original model.
+    J_not_permuted_ = dummy_model_.MakeModelJacobian();
   }
 
   static VectorXd arbitrary_v() {
@@ -516,6 +543,7 @@ class DummyModelTest : public ::testing::Test {
   MatrixXd A_;
   MatrixXd J_;
   VectorXd R_;
+  MatrixXd J_not_permuted_;
 };
 
 // Verifies model data.
@@ -531,6 +559,70 @@ TEST_F(DummyModelTest, VerifyData) {
   const VectorXd W_diag = SapModelTester::delassus_diagonal(*sap_model_);
   EXPECT_TRUE(CompareMatrices(W_diag, W_diag_expected, kEpsilon,
                               MatrixCompareType::relative));
+}
+
+// To test the permutation on impulses, in this test we compute the constraints
+// velocities vc by two different methods:
+//  1. vc is computed with EvalConstraintVelocities(), the "expected" value.
+//  2. vc is computed with the test Jacobian J_not_permuted_ with velocities and
+//     impulses indexes as ordered in the original problem, and the we apply the
+//     permutation on impulses.
+// We expect these two methods to lead to the same result when the permutation
+// is correct.
+TEST_F(DummyModelTest, ImpulsesPermutation) {
+  const VectorXd v_permuted = arbitrary_v();
+  sap_model_->SetVelocities(v_permuted, context_.get());
+  // We need velocities v in the original ordering to be consistent with the
+  // ordering in J_not_permuted_.
+  VectorXd v(v_permuted.size());
+  sap_model_->velocities_permutation().ApplyInverse(v_permuted, &v);
+
+  // We generate the expected result with a call to EvalConstraintVelocities().
+  const VectorXd& vc_expected = sap_model_->EvalConstraintVelocities(*context_);
+
+  // Constraints velocities in the original order specified in the model.
+  const VectorXd vc = J_not_permuted_ * v;
+
+  // To make things more interesting, we verify we are not working with the
+  // identity permutation.
+  EXPECT_FALSE(
+      CompareMatrices(vc, vc_expected, kEpsilon, MatrixCompareType::relative));
+
+  // We now verify the result of applying the permutation.
+  VectorXd vc_permuted(vc.size());
+  sap_model_->impulses_permutation().Apply(vc, &vc_permuted);
+  EXPECT_TRUE(CompareMatrices(vc_permuted, vc_expected, kEpsilon,
+                              MatrixCompareType::relative));
+}
+
+TEST_F(DummyModelTest, GetMutableVelocities) {
+  // Arbitrary velocity value set with SetVelocities().
+  const VectorXd v1 = arbitrary_v();
+  sap_model_->SetVelocities(v1, context_.get());
+  EXPECT_TRUE(CompareMatrices(sap_model_->GetVelocities(*context_), v1));
+
+  // Arbitrary velocity value set with GetMutableVelocities().
+  const VectorXd v2 = -3.14 * arbitrary_v();
+  sap_model_->GetMutableVelocities(context_.get()) = v2;
+  EXPECT_TRUE(CompareMatrices(sap_model_->GetVelocities(*context_), v2));
+}
+
+TEST_F(DummyModelTest, EvalMomentum) {
+  const VectorXd v = arbitrary_v();
+  sap_model_->SetVelocities(v, context_.get());
+  const VectorXd& p = sap_model_->EvalMomentum(*context_);
+  const VectorXd p_expected = A_ * v;
+  EXPECT_TRUE(
+      CompareMatrices(p, p_expected, kEpsilon, MatrixCompareType::relative));
+}
+
+TEST_F(DummyModelTest, MultiplyByDynamicsMatrix) {
+  const VectorXd v = arbitrary_v();
+  VectorXd p(sap_model_->num_velocities());
+  sap_model_->MultiplyByDynamicsMatrix(v, &p);
+  const VectorXd p_expected = A_ * v;
+  EXPECT_TRUE(
+      CompareMatrices(p, p_expected, kEpsilon, MatrixCompareType::relative));
 }
 
 TEST_F(DummyModelTest, MomentumCost) {
@@ -556,16 +648,23 @@ TEST_F(DummyModelTest, Impulses) {
   // use it here to obtain the expected values.
   const VectorXd v = arbitrary_v();
   sap_model_->SetVelocities(v, context_.get());
-  const auto& bundle = SapModelTester::constraints_bundle(*sap_model_);
+  const auto& bundle = sap_model_->constraints_bundle();
   const VectorXd& vc = sap_model_->EvalConstraintVelocities(*context_);
   VectorXd y(sap_model_->num_constraint_equations());
   bundle.CalcUnprojectedImpulses(vc, &y);
   VectorXd gamma_expected(sap_model_->num_constraint_equations());
   bundle.ProjectImpulses(y, &gamma_expected);
 
+  // Impulses.
   const VectorXd& gamma = sap_model_->EvalImpulses(*context_);
   EXPECT_TRUE(CompareMatrices(gamma, gamma_expected, kEpsilon,
                               MatrixCompareType::relative));
+
+  // Generalized impulses.
+  const VectorXd& j = sap_model_->EvalGeneralizedImpulses(*context_);
+  const VectorXd j_expected = J_.transpose() * gamma_expected;
+  EXPECT_TRUE(
+      CompareMatrices(j, j_expected, kEpsilon, MatrixCompareType::relative));
 }
 
 TEST_F(DummyModelTest, PrimalCost) {
@@ -587,8 +686,8 @@ TEST_F(DummyModelTest, CostGradients) {
   // Sanity check problem sizes.
   EXPECT_EQ(sap_problem_ad->num_cliques(), 3);
   EXPECT_EQ(sap_problem_ad->num_velocities(), 9);
-  EXPECT_EQ(sap_problem_ad->num_constraints(), 2);
-  EXPECT_EQ(sap_problem_ad->num_constraint_equations(), 8);
+  EXPECT_EQ(sap_problem_ad->num_constraints(), 3);
+  EXPECT_EQ(sap_problem_ad->num_constraint_equations(), 11);
   auto sap_model_ad =
       std::make_unique<SapModel<AutoDiffXd>>(sap_problem_ad.get());
   auto context_ad = sap_model_ad->MakeContext();
