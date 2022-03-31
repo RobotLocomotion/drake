@@ -66,16 +66,16 @@ class SpatialVector {
   }
 
   /// Constructs a spatial vector V from an Eigen expression that represents a
-  /// 6-element vector (two 3-element vectors), namely a rotational component w
-  /// and a translational component v.  This constructor will assert the size of
-  /// V is six (6) either at compile-time for fixed sized Eigen expressions or
-  /// at run-time for dynamic sized Eigen expressions.
+  /// 6-element vector (3-element rotational vector on top of a 3-element
+  /// translational vector). This constructor asserts the size of V is six (6)
+  /// either at compile-time for fixed sized Eigen expressions or at run-time
+  /// for dynamic sized Eigen expressions.
   template <typename OtherDerived>
   explicit SpatialVector(const Eigen::MatrixBase<OtherDerived>& V) : V_(V) {}
 
   /// For 3D (three-dimensional) analysis, the total size of the concatenated
-  /// rotational component and translational component is six (6),
-  /// which is known at compile time.
+  /// rotational vector (3 elements) and translational vector (3 elements) is
+  /// six (6), which is known at compile time.
   int size() const { return kSpatialVectorSize; }
 
   /// Const access to the i-th element of this spatial vector. In Debug
@@ -136,7 +136,7 @@ class SpatialVector {
   /// and translational components of `this` and `other` (i.e., the infinity
   /// norms of the difference in rotational and translational components).
   /// @param[in] other spatial vector to subtract from `this` spatial vector.
-  /// @returns The following quantities returned in a tuple, in the order below.
+  /// @returns The following quantities in a tuple, in the order below.
   /// std::tuple       | Description
   /// -----------------|-------------------------------------------------
   /// w_max_difference | Maximum absolute difference in rotation components
@@ -161,9 +161,9 @@ class SpatialVector {
   /// between the translational parts of `this` and `other`.  The units depend
   /// on the underlying class.  For example, spatial velocity, acceleration, and
   /// force have units of meter/sec, meter/sec^2, and Newton, respectively.
-  /// @returns `true` if all three rotational elements of `this` and `other` are
-  /// equal within @p rotational_tolerance and all three translational elements
-  /// of `this` and `other` are equal within @p translational_tolerance.
+  /// @returns true if all three rotational elements of `this` and `other` are
+  /// equal within rotational_tolerance and all three translational elements of
+  /// `this` and `other` are equal within translational_tolerance.
   decltype(T() < T()) IsNearlyEqualWithinAbsoluteTolerance(
       const SpatialQuantity& other, double rotational_tolerance,
       double translational_tolerance) const {
@@ -178,7 +178,7 @@ class SpatialVector {
   /// are equal to each other to within a specified tolerance epsilon.
   /// @param[in] other spatial vector to compare to `this` spatial vector.
   /// @param[in] epsilon specified tolerance for this test.
-  /// @returns `true` if `‖this - other‖∞ < epsilon`, otherwise returns `false`.
+  /// @returns true if ‖this - other‖∞ < epsilon, otherwise returns false.
   /// Note: the infinity norm ‖this - other‖∞ is simply the maximum of the six
   /// absolute values in (this - other).
   decltype(T() < T()) IsApprox(
