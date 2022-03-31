@@ -9,6 +9,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/fem/dirichlet_boundary_condition.h"
 #include "drake/multibody/fem/fem_state.h"
 #include "drake/multibody/fem/petsc_symmetric_block_sparse_matrix.h"
 
@@ -174,6 +175,26 @@ class FemModel {
   /** Returns the gravity vector for all elements in this model. */
   const Vector3<T>& gravity_vector() const { return gravity_; }
 
+  /** Applies boundary condition set for this %FemModel to the input `state`.
+   No-op if no boundary condition is set.
+   @pre fem_state != nullptr.
+   @throws std::exception if the FEM state is incompatible with this model. */
+  void ApplyBoundaryCondition(FemState<T>* fem_state) const;
+
+  // TODO(xuchenhan-tri): Internal object in public signature in non-internal
+  //  class.
+  /** Sets the Dirichlet boundary condition that this model is subject to. */
+  void SetDirichletBoundaryCondition(
+      internal::DirichletBoundaryCondition<T> dirichlet_bc) {
+    dirichlet_bc_ = std::move(dirichlet_bc);
+  }
+
+  /** Returns the Dirichlet boundary condition that this model is subject to. */
+  const internal::DirichletBoundaryCondition<T>& dirichlet_boundary_condition()
+      const {
+    return dirichlet_bc_;
+  }
+
  protected:
   /** Constructs an empty FEM model. */
   FemModel();
@@ -227,6 +248,8 @@ class FemModel {
    */
   std::unique_ptr<internal::FemStateSystem<T>> fem_state_system_;
   Vector3<T> gravity_{0, 0, -9.81};
+  /* The Dirichlet boundary condition that the model is subject to. */
+  internal::DirichletBoundaryCondition<T> dirichlet_bc_;
 };
 
 }  // namespace fem
