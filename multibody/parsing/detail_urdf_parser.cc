@@ -220,7 +220,7 @@ void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
          visual_node;
          visual_node = visual_node->NextSiblingElement("visual")) {
       std::optional<geometry::GeometryInstance> geometry_instance =
-          ParseVisual(body_name, w_.package_map, root_dir_,
+          ParseVisual(diagnostic_, body_name, w_.package_map, root_dir_,
                       visual_node, materials, &geometry_names);
       if (!geometry_instance) { continue; }
       // The parsing should *always* produce an IllustrationProperties
@@ -236,7 +236,7 @@ void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
          collision_node;
          collision_node = collision_node->NextSiblingElement("collision")) {
       std::optional<geometry::GeometryInstance> geometry_instance =
-          ParseCollision(body_name, w_.package_map, root_dir_,
+          ParseCollision(diagnostic_, body_name, w_.package_map, root_dir_,
                          collision_node, &geometry_names);
       if (!geometry_instance) { continue; }
       DRAKE_DEMAND(geometry_instance->proximity_properties() != nullptr);
@@ -761,7 +761,7 @@ std::optional<ModelInstanceIndex> UrdfParser::Parse() {
   for (XMLElement* material_node = node->FirstChildElement("material");
        material_node;
        material_node = material_node->NextSiblingElement("material")) {
-    ParseMaterial(material_node, true /* name_required */,
+    ParseMaterial(diagnostic_, material_node, true /* name_required */,
                   w_.package_map, root_dir_, &materials);
   }
 
