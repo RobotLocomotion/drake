@@ -2,11 +2,13 @@
 
 #include <locale>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/parsing/test/diagnostic_policy_test_base.h"
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -40,11 +42,11 @@ GTEST_TEST(TinyxmlUtilTest, ParseAttributeTest) {
   EXPECT_EQ(scalar, 1.);
   EXPECT_FALSE(ParseScalarAttribute(element, "missing", &scalar));
   EXPECT_THROW(ParseScalarAttribute(element, "vec3", &scalar),
-               std::invalid_argument);
+               std::exception);
   EXPECT_THROW(ParseScalarAttribute(element, "empty", &scalar),
-               std::invalid_argument);
+               std::exception);
   EXPECT_THROW(ParseScalarAttribute(element, "bad", &scalar),
-               std::invalid_argument);
+               std::exception);
 
 
   Vector3d vec3 = Vector3d::Zero();
@@ -64,6 +66,43 @@ GTEST_TEST(TinyxmlUtilTest, ParseAttributeTest) {
                std::invalid_argument);
   EXPECT_THROW(ParseVectorAttribute(element, "scalar", &vec4),
                std::invalid_argument);
+}
+
+class TinyxmlUtilDiagnosticTest : public test::DiagnosticPolicyTestBase {
+ public:
+  // A work-alike for internal::ParseScalarAttribute() that uses the test
+  // fixture's local diagnostic policy.
+  bool ParseScalarAttribute(
+    const tinyxml2::XMLElement* node,
+    const char* attribute_name, double* val) {
+    return internal::ParseScalarAttribute(
+        node, attribute_name, val,
+        diagnostic_policy_);
+  }
+};
+
+TEST_F(TinyxmlUtilDiagnosticTest, ParseScalarAttributeDiagnosticTest) {
+  const std::string test_xml =
+      "<element scalar='1' empty='' bad='one' vec3='2.1 3.2 4.3'/>";
+
+  XMLDocument xml_doc;
+  xml_doc.Parse(test_xml.c_str());
+  XMLElement* element = xml_doc.FirstChildElement("element");
+  ASSERT_TRUE(element != nullptr);
+
+  double scalar{};
+  EXPECT_TRUE(ParseScalarAttribute(element, "scalar", &scalar));
+  EXPECT_EQ(scalar, 1.);
+  EXPECT_FALSE(ParseScalarAttribute(element, "missing", &scalar));
+  EXPECT_TRUE(ParseScalarAttribute(element, "vec3", &scalar));
+  EXPECT_THAT(TakeError(), testing::MatchesRegex(
+                  ".*Expected single value.*vec3.*"));
+  EXPECT_FALSE(ParseScalarAttribute(element, "empty", &scalar));
+  EXPECT_THAT(TakeError(), testing::MatchesRegex(
+                  ".*Expected single value.*empty.*"));
+  EXPECT_FALSE(ParseScalarAttribute(element, "bad", &scalar));
+  EXPECT_THAT(TakeError(), testing::MatchesRegex(
+                  ".*Expected single value.*bad.*"));
 }
 
 GTEST_TEST(TinyxmlUtilTest, OriginAttributesTest) {
