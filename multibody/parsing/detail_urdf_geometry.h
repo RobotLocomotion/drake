@@ -12,6 +12,7 @@
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/multibody/parsing/detail_tinyxml2_diagnostic.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 
@@ -90,10 +91,14 @@ UrdfMaterial AddMaterialToMaterialMap(
        http://wiki.ros.org/urdf/XML/link), but is needed by certain URDFs
        released by companies and organizations like Robotiq and ROS Industrial
        (for example, see this URDF by Robotiq: http://bit.ly/28P0pmo).  */
-UrdfMaterial ParseMaterial(const tinyxml2::XMLElement* node, bool name_required,
+UrdfMaterial ParseMaterial(const TinyXml2Diagnostic& diagnostic,
+                           const tinyxml2::XMLElement* node, bool name_required,
                            const PackageMap& package_map,
                            const std::string& root_dir,
                            MaterialMap* materials);
+
+/* Default value of numeric suffix limit for generation of geometry names.*/
+constexpr int kDefaultNumericSuffixLimit = 10000;
 
 /* Parses a "visual" element in @p node.
 
@@ -134,12 +139,17 @@ UrdfMaterial ParseMaterial(const tinyxml2::XMLElement* node, bool name_required,
  repeated if the material properties are identical.
  @param[in,out] geometry_names The list of geometry names already used within
  the current MbP body (i.e., link), so that this function can be sure not to
- reuse an already-used name. The name used by this geometry is added to it. */
-geometry::GeometryInstance ParseVisual(
+ reuse an already-used name. The name used by this geometry is added to it.
+ @param[in] numeric_name_suffix_limit (optional) The upper bound for choosing
+                                      numeric suffixes.
+*/
+std::optional<geometry::GeometryInstance> ParseVisual(
+    const TinyXml2Diagnostic& diagnostic,
     const std::string& parent_element_name,
     const PackageMap& package_map,
     const std::string& root_dir, const tinyxml2::XMLElement* node,
-    MaterialMap* materials, std::unordered_set<std::string>* geometry_names);
+    MaterialMap* materials, std::unordered_set<std::string>* geometry_names,
+    int numeric_name_suffix_limit = kDefaultNumericSuffixLimit);
 
 /* @anchor urdf_contact_material
  Parses a <collision> element in @p node.
@@ -205,12 +215,17 @@ geometry::GeometryInstance ParseVisual(
  @param[in] node The node corresponding to the <collision> tag.
  @param[in,out] geometry_names The list of geometry names already used within
  the current MbP body (i.e., link), so that this function can be sure not to
- reuse an already-used name. The name used by this geometry is added to it. */
-geometry::GeometryInstance ParseCollision(
+ reuse an already-used name. The name used by this geometry is added to it.
+ @param[in] numeric_name_suffix_limit (optional) The upper bound for choosing
+                                      numeric suffixes.
+*/
+std::optional<geometry::GeometryInstance> ParseCollision(
+    const TinyXml2Diagnostic& diagnostic,
     const std::string& parent_element_name,
     const PackageMap& package_map,
     const std::string& root_dir, const tinyxml2::XMLElement* node,
-    std::unordered_set<std::string>* geometry_names);
+    std::unordered_set<std::string>* geometry_names,
+    int numeric_name_suffix_limit = kDefaultNumericSuffixLimit);
 
 }  // namespace internal
 }  // namespace multibody
