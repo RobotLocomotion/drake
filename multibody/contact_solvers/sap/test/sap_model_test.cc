@@ -46,7 +46,7 @@ namespace {
 template <typename T>
 class SpringConstraint final : public SapConstraint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringConstraint);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpringConstraint);
 
   // Model a spring attached to `clique`, expected to be a 3D particle.
   explicit SpringConstraint(int clique, Vector3<T> x, T k, T tau_d)
@@ -74,6 +74,10 @@ class SpringConstraint final : public SapConstraint<T> {
     (*gamma) = y;
     if (dPdy != nullptr) dPdy->setIdentity(3, 3);
   };
+
+  std::unique_ptr<SapConstraint<T>> Clone() const final {
+    return std::make_unique<SpringConstraint<T>>(*this);
+  }
 
  private:
   T k_{0.0};      // Stiffness, in N/m.
@@ -232,7 +236,7 @@ TEST_F(SpringMassTest, EvalMomentumCost) {
 template <typename T>
 class DummyConstraint final : public SapConstraint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyConstraint);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DummyConstraint);
 
   DummyConstraint(int clique, MatrixX<T> J, VectorX<T> R, VectorX<T> v_hat)
       // N.B. For this constraint the Jacobian is the identity matrix.
@@ -270,6 +274,10 @@ class DummyConstraint final : public SapConstraint<T> {
           y.unaryExpr([](const T& x) { return x >= 0. ? 1.0 : 0.0; });
     }
   };
+
+  std::unique_ptr<SapConstraint<T>> Clone() const final {
+    return std::make_unique<DummyConstraint<T>>(*this);
+  }
 
  private:
   VectorX<T> R_;

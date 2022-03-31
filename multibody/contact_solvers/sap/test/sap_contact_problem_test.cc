@@ -35,6 +35,8 @@ const Eigen::Matrix4d S44 =
 // Only indexes and constraint sizes matter for the unit tests in this file.
 class TestConstraint final : public SapConstraint<double> {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestConstraint);
+
   // Constructor for a constraint on a single clique.
   TestConstraint(int num_constraint_equations, int clique, int clique_nv)
       : SapConstraint<double>(
@@ -62,7 +64,21 @@ class TestConstraint final : public SapConstraint<double> {
                                              const double&) const final {
     return VectorXd::Zero(this->num_constraint_equations());
   }
+  std::unique_ptr<SapConstraint<double>> Clone() const final {
+    return std::make_unique<TestConstraint>(*this);
+  }
 };
+
+// Test construction of an empty problem.
+GTEST_TEST(ContactProblem, EmptyProblem) {
+  const double dt = 2.5e-4;
+  SapContactProblem<double> problem(dt);
+  EXPECT_EQ(problem.time_step(), dt);
+  EXPECT_EQ(problem.num_cliques(), 0);
+  EXPECT_EQ(problem.num_velocities(), 0);
+  EXPECT_EQ(problem.num_constraints(), 0);
+  EXPECT_EQ(problem.num_constraint_equations(), 0);
+}
 
 // Unit test the construction of a SapContactProblem.
 GTEST_TEST(ContactProblem, Construction) {
@@ -141,19 +157,14 @@ GTEST_TEST(ContactProblem, AddConstraintWithWrongArguments) {
    └───────────────────────┘
          2[2, 4](6,5)
 */
-GTEST_TEST(ContactProblem, AddConstraint) {
-  const double time_step = 0.01;
-  const std::vector<MatrixXd> A{S22, S33, S44, S22};
-  const VectorXd v_star = VectorXd::LinSpaced(11, 1.0, 11.0);
-  SapContactProblem<double> problem(time_step, A, v_star);
-
+void AddConstraints(SapContactProblem<double>* problem) {
   auto add_and_verify_access =
-      [&problem](std::unique_ptr<TestConstraint> owned_constraint) {
-        const int expected_index = problem.num_constraints();
+      [problem](std::unique_ptr<TestConstraint> owned_constraint) {
+        const int expected_index = problem->num_constraints();
         const TestConstraint& constraint = *owned_constraint;
-        EXPECT_EQ(problem.AddConstraint(std::move(owned_constraint)),
+        EXPECT_EQ(problem->AddConstraint(std::move(owned_constraint)),
                   expected_index);
-        EXPECT_EQ(&problem.get_constraint(expected_index), &constraint);
+        EXPECT_EQ(&problem->get_constraint(expected_index), &constraint);
       };
 
   add_and_verify_access(std::make_unique<TestConstraint>(
@@ -170,12 +181,72 @@ GTEST_TEST(ContactProblem, AddConstraint) {
   add_and_verify_access(std::make_unique<TestConstraint>(
       5 /* num_equations */, 0 /* first_clique */, 2 /* first_clique_nv */,
       3 /* second_clique */, 2 /* second_clique_nv */));
+}
+
+GTEST_TEST(ContactProblem, AddConstraints) {
+  const double time_step = 0.01;
+  const std::vector<MatrixXd> A{S22, S33, S44, S22};
+  const VectorXd v_star = VectorXd::LinSpaced(11, 1.0, 11.0);
+  SapContactProblem<double> problem(time_step, std::move(A), std::move(v_star));
+  AddConstraints(&problem);
 
   EXPECT_EQ(problem.num_constraints(), 5);
   EXPECT_EQ(problem.num_constraint_equations(), 17);
 
   // Verify graph for this problem.
   const ContactProblemGraph& graph = problem.graph();
+  EXPECT_EQ(graph.num_cliques(), 4);
+  EXPECT_EQ(graph.num_constraints(), 5);
+  EXPECT_EQ(graph.num_clusters(), 4);
+  EXPECT_EQ(graph.num_constraint_equations(), 17);
+}
+
+GTEST_TEST(ContactProblem, Reset) {
+  // Instantiate empty problem.
+  const double dt = 2.5e-4;
+  SapContactProblem<double> problem(dt);
+  EXPECT_EQ(problem.time_step(), dt);
+  EXPECT_EQ(problem.num_cliques(), 0);
+  EXPECT_EQ(problem.num_velocities(), 0);
+  EXPECT_EQ(problem.num_constraints(), 0);
+  EXPECT_EQ(problem.num_constraint_equations(), 0);
+
+  // Tests we can set dynamics and add constraints on an already instantiated
+  // problem.
+  const std::vector<MatrixXd> A{S22, S33, S44, S22};
+  const VectorXd v_star = VectorXd::LinSpaced(11, 1.0, 11.0);
+  problem.Reset(std::move(A), std::move(v_star));
+  AddConstraints(&problem);
+  EXPECT_EQ(problem.num_cliques(), 4);
+  EXPECT_EQ(problem.num_velocities(), 11);
+  EXPECT_EQ(problem.num_constraints(), 5);
+  EXPECT_EQ(problem.num_constraint_equations(), 17);
+
+  // We test the call to Reset on a non-empty problem.
+  problem.Reset({S22, S33}, v_star.segment(0, 5));
+  EXPECT_EQ(problem.num_cliques(), 2);
+  EXPECT_EQ(problem.num_velocities(), 5);
+  EXPECT_EQ(problem.num_constraints(), 0);
+  EXPECT_EQ(problem.num_constraint_equations(), 0);
+  // The time step remains the same after calling Reset().
+  EXPECT_EQ(problem.time_step(), dt);
+}
+
+GTEST_TEST(ContactProblem, Clone) {
+  const double time_step = 0.01;
+  const std::vector<MatrixXd> A{S22, S33, S44, S22};
+  const VectorXd v_star = VectorXd::LinSpaced(11, 1.0, 11.0);
+  SapContactProblem<double> problem(time_step, std::move(A), std::move(v_star));
+  AddConstraints(&problem);
+
+  std::unique_ptr<SapContactProblem<double>> clone = problem.Clone();
+  EXPECT_EQ(clone->num_cliques(), problem.num_cliques());
+  EXPECT_EQ(clone->num_constraints(), problem.num_constraints());
+  EXPECT_EQ(clone->num_constraint_equations(),
+            problem.num_constraint_equations());
+
+  // Verify graph for this problem.
+  const ContactProblemGraph& graph = clone->graph();
   EXPECT_EQ(graph.num_cliques(), 4);
   EXPECT_EQ(graph.num_constraints(), 5);
   EXPECT_EQ(graph.num_clusters(), 4);
