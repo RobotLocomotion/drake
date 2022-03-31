@@ -30,10 +30,12 @@ using tinyxml2::XMLElement;
 
 using drake::internal::DiagnosticPolicy;
 
-UrdfMaterial AddMaterialToMaterialMap(const std::string& material_name,
-                                      UrdfMaterial material,
-                                      bool abort_if_name_clash,
-                                      MaterialMap* materials) {
+UrdfMaterial AddMaterialToMaterialMap(
+    const drake::internal::DiagnosticPolicy& policy,
+    const std::string& material_name,
+    UrdfMaterial material,
+    bool error_if_name_clash,
+    MaterialMap* materials) {
   DRAKE_DEMAND(materials != nullptr);
   // Determines if the material is already in the map.
   auto material_iter = materials->find(material_name);
@@ -52,7 +54,7 @@ UrdfMaterial AddMaterialToMaterialMap(const std::string& material_name,
     //    val1   |  val1   |     false       | No error, they match
     //    val1   |  val2   |      true       | ERROR, they don't match
 
-    bool error = abort_if_name_clash;
+    bool error = error_if_name_clash;
     if (!error) {
       // Evaluate for diffuse map.
 
@@ -94,10 +96,13 @@ UrdfMaterial AddMaterialToMaterialMap(const std::string& material_name,
                 : "Diffuse map: None";
         return fmt::format("{}, {}", rgb_string, map_string);
       };
-      throw std::runtime_error(fmt::format(
-          "Material '{}' was previously defined.\n  - existing definition: "
-          "{}\n  - new definition:      {}",
-          material_name, mat_descrip(cached_material), mat_descrip(material)));
+      policy.Error(
+          fmt::format("Material '{}' was previously defined.\n"
+                      "  - existing definition: {}\n"
+                      "  - new definition:      {}",
+                      material_name, mat_descrip(cached_material),
+                      mat_descrip(material)));
+      return {};
     }
   } else {
     // If no rgba color was defined, it defaults to *transparent* black.
@@ -173,8 +178,11 @@ UrdfMaterial ParseMaterial(const XMLElement* node, bool name_required,
     // Error condition: #3.
     // If a name is *required*, then simply matching names should lead to an
     // error.
-    material = AddMaterialToMaterialMap(name, material,
-        name_required /* abort_if_name_clash */, materials);
+    // TODO(rpoyner-tri): integrate this with wider policy when available.
+    drake::internal::DiagnosticPolicy policy;
+    material = AddMaterialToMaterialMap(
+        policy, name, material,
+        name_required /* error_if_name_clash */, materials);
   }
   return material;
 }
