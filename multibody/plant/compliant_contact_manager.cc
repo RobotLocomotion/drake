@@ -815,6 +815,8 @@ void CompliantContactManager<T>::CalcLinearDynamicsMatrix(
   A->resize(tree_topology().num_trees());
   const int nv = plant().num_velocities();
 
+  PRINT_VAR(tree_topology().num_trees());
+
   // TODO(amcastro-tri): implicitly include force elements such as joint
   // dissipation and/or stiffness.
   // TODO(amcastro-tri): consider placing the computation of the dense mass
@@ -826,6 +828,7 @@ void CompliantContactManager<T>::CalcLinearDynamicsMatrix(
   int v = 0;
   for (TreeIndex t(0); t < tree_topology().num_trees(); ++t) {
     const int nt = tree_topology().num_tree_velocities(t);
+    PRINT_VAR(nt);
     (*A)[t].resize(nt, nt);
     (*A)[t] = M.block(v, v, nt, nt);
     v += nt;
@@ -901,6 +904,14 @@ void CompliantContactManager<T>::DoCalcContactSolverResults(
   // In the absence of contact, v_next = v*.
   VectorX<T> v_star = EvalFreeMotionVelocities(context);
   std::vector<MatrixX<T>> A = EvalLinearDynamicsMatrix(context);
+
+  PRINT_VAR(context.get_time());
+  PRINT_VAR(v_star.size());
+  PRINT_VAR(A.size());
+  for (const auto& At : A) {
+    PRINT_VAR(At.rows());
+    PRINT_VAR(At.cols());
+  }
 
   const double time_step = plant().time_step();
   // TODO: notice that above this (move) constructor requires making a copy
