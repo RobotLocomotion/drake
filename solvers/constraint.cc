@@ -286,11 +286,62 @@ std::ostream& RotatedLorentzConeConstraint::DoDisplay(
                            false);
 }
 
+LinearConstraint::LinearConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                                   const Eigen::Ref<const Eigen::VectorXd>& lb,
+                                   const Eigen::Ref<const Eigen::VectorXd>& ub)
+    : Constraint(A.rows(), A.cols(), lb, ub), A_(A) {
+  DRAKE_DEMAND(A.rows() == lb.rows());
+  DRAKE_DEMAND(A.array().isFinite().all());
+}
+
+LinearConstraint::LinearConstraint(const Eigen::SparseMatrix<double>& A,
+                                   const Eigen::Ref<const Eigen::VectorXd>& lb,
+                                   const Eigen::Ref<const Eigen::VectorXd>& ub)
+    : Constraint(A.rows(), A.cols(), lb, ub), A_(A) {
+  DRAKE_DEMAND(A.rows() == lb.rows());
+  DRAKE_DEMAND(A_.IsFinite());
+}
+
+void LinearConstraint::UpdateCoefficients(
+    const Eigen::Ref<const Eigen::MatrixXd>& new_A,
+    const Eigen::Ref<const Eigen::VectorXd>& new_lb,
+    const Eigen::Ref<const Eigen::VectorXd>& new_ub) {
+  if (new_A.rows() != new_lb.rows() || new_lb.rows() != new_ub.rows()) {
+    throw std::runtime_error("New constraints have invalid dimensions");
+  }
+
+  if (new_A.cols() != A_.get_as_sparse().cols()) {
+    throw std::runtime_error("Can't change the number of decision variables");
+  }
+
+  A_ = new_A;
+  DRAKE_DEMAND(A_.IsFinite());
+  set_num_outputs(A_.get_as_sparse().rows());
+  set_bounds(new_lb, new_ub);
+}
+
+void LinearConstraint::UpdateCoefficients(
+    const Eigen::SparseMatrix<double>& new_A,
+    const Eigen::Ref<const Eigen::VectorXd>& new_lb,
+    const Eigen::Ref<const Eigen::VectorXd>& new_ub) {
+  if (new_A.rows() != new_lb.rows() || new_lb.rows() != new_ub.rows()) {
+    throw std::runtime_error("New constraints have invalid dimensions");
+  }
+
+  if (new_A.cols() != A_.get_as_sparse().cols()) {
+    throw std::runtime_error("Can't change the number of decision variables");
+  }
+  A_ = new_A;
+  DRAKE_DEMAND(A_.IsFinite());
+  set_num_outputs(A_.get_as_sparse().rows());
+  set_bounds(new_lb, new_ub);
+}
+
 template <typename DerivedX, typename ScalarY>
 void LinearConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                      VectorX<ScalarY>* y) const {
   y->resize(num_constraints());
-  (*y) = A_ * x.template cast<ScalarY>();
+  (*y) = A_.get_as_sparse() * x.template cast<ScalarY>();
 }
 
 void LinearConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -318,6 +369,19 @@ std::ostream& LinearEqualityConstraint::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayConstraint(*this, os, "LinearEqualityConstraint", vars, true);
 }
+
+namespace internal {
+Eigen::SparseMatrix<double> ConstructSparseIdentity(int rows) {
+  Eigen::SparseMatrix<double> mat(rows, rows);
+  mat.setIdentity();
+  return mat;
+}
+}  // namespace internal
+
+BoundingBoxConstraint::BoundingBoxConstraint(
+    const Eigen::Ref<const Eigen::VectorXd>& lb,
+    const Eigen::Ref<const Eigen::VectorXd>& ub)
+    : LinearConstraint(internal::ConstructSparseIdentity(lb.rows()), lb, ub) {}
 
 template <typename DerivedX, typename ScalarY>
 void BoundingBoxConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,

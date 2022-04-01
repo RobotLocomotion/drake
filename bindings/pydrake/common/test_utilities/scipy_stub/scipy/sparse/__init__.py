@@ -12,21 +12,26 @@ class csc_matrix:
     """
 
     def __init__(self, arg1, shape):
-        (self._data, self._indices, self._indptr) = arg1
-        self._shape = shape
+        (self.data, self.indices, self.indptr) = arg1
+        self.shape = shape
 
         # To sanity-check our arguments, convert the data to triplets.
         self._triplets = []
-        for col in range(len(self._indptr) - 1):
-            start = self._indptr[col]
-            end = self._indptr[col+1]
-            rows = self._indices[start:end]
-            values = self._data[start:end]
+        for col in range(len(self.indptr) - 1):
+            start = self.indptr[col]
+            end = self.indptr[col+1]
+            rows = self.indices[start:end]
+            values = self.data[start:end]
             for row, value in zip(rows, values):
                 self._triplets.append((row, col, value))
 
+        self.nnz = 0
+        for _, _, value in self._triplets:
+            if value:
+                self.nnz += 1
+
     def todense(self):
-        result = np.zeros(shape=self._shape)
+        result = np.zeros(shape=self.shape)
         for row, col, value in self._triplets:
             result[row, col] = value
         return result

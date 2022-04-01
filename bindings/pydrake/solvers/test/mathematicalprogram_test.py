@@ -22,6 +22,7 @@ import unittest
 import warnings
 
 import numpy as np
+import scipy.sparse
 
 import pydrake
 from pydrake.common import kDrakeAssertIsArmed
@@ -545,6 +546,31 @@ class TestMathematicalProgram(unittest.TestCase):
                 self.assertEqual(xval[i, j], result.GetSolution(x[i, j]))
         # Just check spelling.
         y = prog.NewIndeterminates(2, 2, "y")
+
+    def test_linear_constraint(self):
+        A = np.array([[1, 3, 4], [2., 4., 5]])
+        lb = np.array([1, 2.])
+        ub = np.array([3., 4.])
+        # Constructor with dense A.
+        dut = mp.LinearConstraint(A=A, lb=lb, ub=ub)
+        self.assertEqual(dut.num_constraints(), 2)
+        self.assertEqual(dut.num_vars(), 3)
+        np.testing.assert_array_equal(dut.get_sparse_A().todense(), A)
+
+        A_sparse = scipy.sparse.csc_matrix(
+            (np.array([2, 1.]), np.array([0, 1]), np.array([0, 2])),
+            shape=(2, 3))
+        dut = mp.LinearConstraint(
+            A=A_sparse, lb=np.array([1., 2.]), ub=np.array([2., 3.]))
+        self.assertEqual(dut.num_constraints(), 2)
+        self.assertEqual(dut.num_vars(), 3)
+        self.assertEqual(dut.get_sparse_A().nnz, 2)
+
+        dut.UpdateCoefficients(
+            new_A=A_sparse, new_lb=np.array([2, 3.]),
+            new_ub=np.array([3., 4.]))
+        np.testing.assert_array_equal(
+            dut.get_sparse_A().todense(), A_sparse.todense())
 
     def test_linear_equality_constraint(self):
         Aeq = np.array([[2, 3.], [1., 2.], [3, 4]])
