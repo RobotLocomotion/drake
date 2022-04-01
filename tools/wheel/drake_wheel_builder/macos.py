@@ -1,10 +1,9 @@
 # This file contains macOS-specific logic used to build the PyPI wheels. See
 # build-wheels for the user interface.
 
-import distutils
+import glob
 import os
 import platform
-import re
 import shutil
 import subprocess
 
@@ -13,6 +12,14 @@ from .common import die, wheel_name
 resource_root = None
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+def find_wheel(path, version):
+    pattern = wheel_name(
+        python_version=''.join(platform.python_version_tuple()[:2]),
+        wheel_version=version,
+        wheel_platform='*')
+    return glob.glob(os.path.join(path, pattern))[0]
 
 
 def assert_isdir(path, name):
@@ -46,18 +53,15 @@ def build(options):
     subprocess.check_call(['bash', build_script, options.version],
                           env=environment)
 
-    wheel = wheel_name(
-        python_version=''.join(platform.python_version_tuple()[:2]),
-        wheel_platform=re.sub('[.-]', '_', distutils.util.get_platform()),
-        wheel_version=options.version)
-    wheel_path = os.path.join(
-        options.build_root, 'wheel', 'dist', wheel)
+    wheel = find_wheel(
+        path=os.path.join(options.build_root, 'wheel', 'dist'),
+        version=options.version)
 
     if options.test:
-        test_wheel(wheel_path)
+        test_wheel(wheel)
 
     if options.extract:
-        shutil.copy2(wheel_path, options.output_dir)
+        shutil.copy2(wheel, options.output_dir)
 
 
 def add_build_arguments(parser):
