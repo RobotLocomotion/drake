@@ -928,9 +928,20 @@ PYBIND11_MODULE(symbolic, m) {
           },
           py::arg("expressions"), py::arg("vars"),
           doc.DecomposeAffineExpressions.doc_4args_expressions_vars_M_v)
-      .def("ExtractVariablesFromExpression",
-          &symbolic::ExtractVariablesFromExpression, py::arg("e"),
-          doc.ExtractVariablesFromExpression.doc)
+      .def(
+          "ExtractVariablesFromExpression",
+          [](const symbolic::Expression& e) {
+            return symbolic::ExtractVariablesFromExpression(e);
+          },
+          py::arg("e"), doc.ExtractVariablesFromExpression.doc_1args_e)
+      .def(
+          "ExtractVariablesFromExpression",
+          [](const Eigen::Ref<const VectorX<symbolic::Expression>>&
+                  expressions) {
+            return symbolic::ExtractVariablesFromExpression(expressions);
+          },
+          py::arg("expressions"),
+          doc.ExtractVariablesFromExpression.doc_1args_expressions)
       .def(
           "DecomposeQuadraticPolynomial",
           [](const symbolic::Polynomial& poly,

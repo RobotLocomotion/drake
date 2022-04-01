@@ -190,15 +190,16 @@ void ExpectValidMapVarToIndex(const VectorX<Variable>& vars,
   }
 }
 
-GTEST_TEST(SymbolicExtraction, ExtractVariables) {
+GTEST_TEST(SymbolicExtraction, ExtractVariables1) {
+  // Test ExtractVariablesFromExpression with a single expression.
   const Variable x("x");
   const Variable y("y");
   Expression e = x + y;
   VectorX<Variable> vars_expected(2);
   vars_expected << x, y;
 
-  MapVarToIndex map_var_to_index;
   VectorX<Variable> vars;
+  MapVarToIndex map_var_to_index;
   std::tie(vars, map_var_to_index) = ExtractVariablesFromExpression(e);
   EXPECT_EQ(vars_expected, vars);
   ExpectValidMapVarToIndex(vars, map_var_to_index);
@@ -211,6 +212,30 @@ GTEST_TEST(SymbolicExtraction, ExtractVariables) {
 
   ExtractAndAppendVariablesFromExpression(e, &vars, &map_var_to_index);
   EXPECT_EQ(vars_expected, vars);
+  ExpectValidMapVarToIndex(vars, map_var_to_index);
+}
+
+GTEST_TEST(SymbolicExtraction, ExtractVariables2) {
+  // TestExtractVariablesFromExpression with a vector of expressions.
+  const Variable x("x");
+  const Variable y("y");
+  const Variable z("z");
+  Vector3<symbolic::Expression> expressions(x + y, y + 1, x + z);
+  VectorX<Variable> vars;
+  MapVarToIndex map_var_to_index;
+  std::tie(vars, map_var_to_index) =
+      ExtractVariablesFromExpression(expressions);
+  EXPECT_EQ(symbolic::Variables(vars), symbolic::Variables({x, y, z}));
+  ExpectValidMapVarToIndex(vars, map_var_to_index);
+
+  std::tie(vars, map_var_to_index) =
+      ExtractVariablesFromExpression(expressions.tail<2>());
+  EXPECT_EQ(symbolic::Variables(vars), symbolic::Variables({x, y, z}));
+  ExpectValidMapVarToIndex(vars, map_var_to_index);
+
+  std::tie(vars, map_var_to_index) =
+      ExtractVariablesFromExpression(expressions.head<2>());
+  EXPECT_EQ(symbolic::Variables(vars), symbolic::Variables({x, y}));
   ExpectValidMapVarToIndex(vars, map_var_to_index);
 }
 
