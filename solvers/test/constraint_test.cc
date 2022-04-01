@@ -52,7 +52,46 @@ GTEST_TEST(TestConstraint, BoundSizeCheck) {
       "bound of size 2 and upper bound of size 3.");
 }
 
-GTEST_TEST(testConstraint, testLinearConstraintUpdate) {
+GTEST_TEST(TestConstraint, LinearConstraintSparse) {
+  // Construct LinearConstraint with sparse A matrix.
+  std::vector<Eigen::Triplet<double>> A_triplets;
+  A_triplets.emplace_back(0, 1, 0.5);
+  A_triplets.emplace_back(1, 0, 1.5);
+  Eigen::SparseMatrix<double> A_sparse(2, 3);
+  A_sparse.setFromTriplets(A_triplets.begin(), A_triplets.end());
+  LinearConstraint dut(A_sparse, Eigen::Vector2d(0, 1), Eigen::Vector2d(1, 2));
+  EXPECT_EQ(dut.num_vars(), 3);
+  EXPECT_EQ(dut.num_constraints(), 2);
+  EXPECT_EQ(dut.get_sparse_A().nonZeros(), A_sparse.nonZeros());
+  EXPECT_TRUE(
+      CompareMatrices(dut.get_sparse_A().toDense(), A_sparse.toDense()));
+  EXPECT_TRUE(CompareMatrices(dut.A(), A_sparse.toDense()));
+
+  // Call UpdateCoefficients with sparse A;
+  A_triplets.emplace_back(1, 2, 2.5);
+  Eigen::SparseMatrix<double> A_sparse_new(2, 3);
+  A_sparse_new.setFromTriplets(A_triplets.begin(), A_triplets.end());
+  dut.UpdateCoefficients(A_sparse_new, dut.lower_bound(), dut.upper_bound());
+  EXPECT_EQ(dut.get_sparse_A().nonZeros(), A_sparse_new.nonZeros());
+  EXPECT_TRUE(
+      CompareMatrices(dut.get_sparse_A().toDense(), A_sparse_new.toDense()));
+  EXPECT_TRUE(CompareMatrices(dut.A(), A_sparse_new.toDense()));
+}
+
+GTEST_TEST(TestConstraint, LinearEqualityConstraintSparse) {
+  std::vector<Eigen::Triplet<double>> A_triplets;
+  A_triplets.emplace_back(0, 1, 0.5);
+  A_triplets.emplace_back(1, 0, 1.5);
+  Eigen::SparseMatrix<double> A_sparse(2, 3);
+  A_sparse.setFromTriplets(A_triplets.begin(), A_triplets.end());
+  LinearEqualityConstraint dut(A_sparse, Eigen::Vector2d(0, 1));
+  EXPECT_EQ(dut.get_sparse_A().nonZeros(), A_sparse.nonZeros());
+  EXPECT_TRUE(
+      CompareMatrices(dut.get_sparse_A().toDense(), A_sparse.toDense()));
+  EXPECT_TRUE(CompareMatrices(dut.A(), A_sparse.toDense()));
+}
+
+GTEST_TEST(TestConstraint, testLinearConstraintUpdate) {
   // Update the coefficients or the bound of the linear constraint, and check
   // the updated constraint.
   const Eigen::Matrix2d A = Eigen::Matrix2d::Identity();
@@ -86,8 +125,10 @@ GTEST_TEST(testConstraint, testLinearConstraintUpdate) {
   EXPECT_TRUE(CompareMatrices(constraint.lower_bound(), b3));
   EXPECT_TRUE(CompareMatrices(constraint.upper_bound(), b3));
   EXPECT_TRUE(CompareMatrices(constraint.A(), A3));
+  EXPECT_TRUE(CompareMatrices(constraint.get_sparse_A().toDense(), A3));
   EXPECT_EQ(constraint.num_constraints(), 3);
 }
+
 GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
   // Check if the getters in the QuadraticConstraint are right.
   Eigen::Matrix2d Q;

@@ -220,8 +220,8 @@ void ParseLinearEqualityConstraint(
   // A x + s = b. s in zero cone.
   for (const auto& linear_equality_constraint :
        prog.linear_equality_constraints()) {
-    const Eigen::SparseMatrix<double> Ai =
-        linear_equality_constraint.evaluator()->GetSparseMatrix();
+    const Eigen::SparseMatrix<double>& Ai =
+        linear_equality_constraint.evaluator()->get_sparse_A();
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
         math::SparseMatrixToTriplets(Ai);
     A_triplets->reserve(A_triplets->size() + Ai_triplets.size());

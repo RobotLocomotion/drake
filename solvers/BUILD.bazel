@@ -162,6 +162,7 @@ drake_cc_library(
     deps = [
         ":decision_variable",
         ":evaluator_base",
+        ":sparse_and_dense_matrix",
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
