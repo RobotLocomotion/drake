@@ -6,8 +6,6 @@ import os
 import re
 import sys
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 def gripe(message):
     """
@@ -25,6 +23,10 @@ def die(message, result=1):
 
 
 def wheel_name(python_version, wheel_version, wheel_platform):
+    """
+    Determine the complete name of the Drake wheel, given various individual
+    bits such as the Drake version, Python version, and Python wheel platform.
+    """
     vm = f'cp{python_version}'
     if python_version < '38':
         abi = f'{vm}m'
@@ -33,8 +35,10 @@ def wheel_name(python_version, wheel_version, wheel_platform):
     return f'drake-{wheel_version}-{vm}-{abi}-{wheel_platform}.whl'
 
 
-def check_version(version):
-    """Returns True iff the given version string matches PEP 440."""
+def _check_version(version):
+    """
+    Returns True iff the given version string matches PEP 440.
+    """
     return re.match(
         r'^([1-9][0-9]*!)?(0|[1-9][0-9]*)'
         r'(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?'
@@ -44,6 +48,17 @@ def check_version(version):
 
 
 def entry(args, platform, resource_root):
+    """
+    Entry point; performs the build using the given CLI arguments, platform,
+    and resource root.
+
+    The `platform` must be either a `linux` or `macos` object which provides
+    platform-specific implementations of various operations necessary to
+    complete the build.
+
+    The resource root provides the location of various scripts and other
+    artifacts used to complete the build.
+    """
     platform.resource_root = resource_root
 
     # Set up argument parser.
