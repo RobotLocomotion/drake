@@ -94,14 +94,10 @@ DEFINE_bool(tamsi, false, "Use TAMSI (true) or MpConvexSolver (false).");
 // If using Gurobi, compile with: bazel run --config gurobi ...
 // If using Mosek, compile with: bazel test --config mosek ...
 // To have both, simply do: bazel run --config=gurobi --config=mosek ...
-DEFINE_string(solver, "primal",
-              "Underlying solver. 'gurobi', 'mosek', 'scs', 'conex', 'primal'");
-DEFINE_bool(mp_primal_formulation, true,
-            "For MpConvexSolver. Use primal formulation if true, otherwise use "
-            "dual formulation.");
-DEFINE_bool(use_geodesic_solver, false, "Use supernodal solver or dense solver.");
-DEFINE_bool(use_supernodal, true,
-            "Use supernodal algebra (true) or dense algebra (false).");
+//DEFINE_string(solver, "primal",
+//  "Underlying solver. 'gurobi', 'mosek', 'scs', 'conex', 'primal'");
+//DEFINE_bool(use_supernodal, true,
+//            "Use supernodal algebra (true) or dense algebra (false).");
 DEFINE_int32(verbosity_level, 0,
              "Verbosity level of the new primal solver. See "
              "UnconstrainedPrimalSolverParameters.");
@@ -378,7 +374,10 @@ std::vector<BodyIndex> AddObjects(double scale_factor,
   std::mt19937 generator(seed);
   std::uniform_int_distribution<int> distribution(0, 1);
 
-  auto roll_shape = [&]() { return distribution(generator); };
+  auto roll_shape = [&]() { 
+    return 0;
+    //return distribution(generator); 
+    };
 
   const int num_objects = FLAGS_objects_per_pile;
   const int num_bodies = plant->num_bodies();
@@ -466,7 +465,6 @@ int do_main() {
   // Only box-sphere and sphere-sphere are allowed.
   if (!FLAGS_enable_box_box_collision) {
     geometry::GeometrySet all_boxes(box_geometry_ids);
-    //scene_graph.ExcludeCollisionsWithin(all_boxes);
     scene_graph.collision_filter_manager().Apply(
         CollisionFilterDeclaration().ExcludeWithin(all_boxes));
   }
