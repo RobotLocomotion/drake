@@ -4,7 +4,9 @@
 #include <tuple>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 
@@ -43,8 +45,25 @@ included in `vars`, will be appended to the end of `vars`.
 @param[in,out] map_var_to_index. map_var_to_index is of the same size as
 `vars`, and map_var_to_index[vars(i).get_id()] = i. This invariance holds for
 map_var_to_index both as the input and as the output. */
+DRAKE_DEPRECATED("2022-08-01",
+                 "Use the overloaded function with "
+                 "std::vector<symbolic::Variable> instead of VectorX<Variable>")
 void ExtractAndAppendVariablesFromExpression(
     const symbolic::Expression& e, VectorX<Variable>* vars,
+    std::unordered_map<symbolic::Variable::Id, int>* map_var_to_index);
+
+/** Given an expression `e`, extract all variables inside `e`, append these
+variables to `vars` if they are not included in `vars` yet.
+
+@param[in] e  A symbolic expression.
+@param[in,out] vars  As an input, `vars` contain the variables before
+extracting expression `e`. As an output, the variables in `e` that were not
+included in `vars`, will be appended to the end of `vars`.
+@param[in,out] map_var_to_index. map_var_to_index is of the same size as
+`vars`, and map_var_to_index[vars(i).get_id()] = i. This invariance holds for
+map_var_to_index both as the input and as the output. */
+void ExtractAndAppendVariablesFromExpression(
+    const symbolic::Expression& e, std::vector<symbolic::Variable>* vars,
     std::unordered_map<symbolic::Variable::Id, int>* map_var_to_index);
 
 /** Given an expression `e`, extracts all variables inside `e`.

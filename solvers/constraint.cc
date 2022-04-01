@@ -487,10 +487,13 @@ ExpressionConstraint::ExpressionConstraint(
       expressions_(v) {
   // Setup map_var_to_index_ and vars_ so that
   //   map_var_to_index_[vars_(i).get_id()] = i.
+  std::vector<symbolic::Variable> vars_vec;
   for (int i = 0; i < expressions_.size(); ++i) {
-    symbolic::ExtractAndAppendVariablesFromExpression(expressions_(i), &vars_,
-                                                      &map_var_to_index_);
+    symbolic::ExtractAndAppendVariablesFromExpression(
+        expressions_(i), &vars_vec, &map_var_to_index_);
   }
+  vars_ =
+      Eigen::Map<VectorX<symbolic::Variable>>(vars_vec.data(), vars_vec.size());
 
   derivatives_ = symbolic::Jacobian(expressions_, vars_);
 

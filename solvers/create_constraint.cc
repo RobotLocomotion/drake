@@ -48,11 +48,13 @@ Binding<Constraint> ParseConstraint(
   // Setup map_var_to_index and var_vec.
   // such that map_var_to_index[var(i)] = i
   unordered_map<Variable::Id, int> map_var_to_index;
-  VectorXDecisionVariable vars(0);
+  std::vector<symbolic::Variable> vars_vec;
   for (int i = 0; i < v.size(); ++i) {
-    symbolic::ExtractAndAppendVariablesFromExpression(v(i), &vars,
+    symbolic::ExtractAndAppendVariablesFromExpression(v(i), &vars_vec,
                                                       &map_var_to_index);
   }
+  const VectorXDecisionVariable vars =
+      Eigen::Map<VectorX<symbolic::Variable>>(vars_vec.data(), vars_vec.size());
 
   // Construct A, new_lb, new_ub. map_var_to_index is used here.
   Eigen::MatrixXd A{Eigen::MatrixXd::Zero(v.size(), vars.size())};
@@ -473,12 +475,14 @@ Binding<LinearEqualityConstraint> DoParseLinearEqualityConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& b) {
   DRAKE_DEMAND(v.rows() == b.rows());
-  VectorXDecisionVariable vars(0);
   unordered_map<Variable::Id, int> map_var_to_index;
+  std::vector<symbolic::Variable> vars_vec;
   for (int i = 0; i < v.rows(); ++i) {
-    symbolic::ExtractAndAppendVariablesFromExpression(v(i), &vars,
+    symbolic::ExtractAndAppendVariablesFromExpression(v(i), &vars_vec,
                                                       &map_var_to_index);
   }
+  const VectorX<symbolic::Variable> vars =
+      Eigen::Map<VectorX<symbolic::Variable>>(vars_vec.data(), vars_vec.size());
   // TODO(hongkai.dai): use sparse matrix.
   Eigen::MatrixXd A = Eigen::MatrixXd::Zero(v.rows(), vars.rows());
   Eigen::VectorXd beq = Eigen::VectorXd::Zero(v.rows());

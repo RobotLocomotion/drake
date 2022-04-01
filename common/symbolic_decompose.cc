@@ -115,6 +115,19 @@ void ExtractAndAppendVariablesFromExpression(
   }
 }
 
+void ExtractAndAppendVariablesFromExpression(
+    const Expression& e, std::vector<Variable>* vars,
+    std::unordered_map<Variable::Id, int>* map_var_to_index) {
+  DRAKE_DEMAND(static_cast<int>(map_var_to_index->size()) ==
+               static_cast<int>(vars->size()));
+  for (const Variable& var : e.GetVariables()) {
+    if (map_var_to_index->find(var.get_id()) == map_var_to_index->end()) {
+      map_var_to_index->emplace(var.get_id(), vars->size());
+      vars->push_back(var);
+    }
+  }
+}
+
 std::pair<VectorX<Variable>, std::unordered_map<Variable::Id, int>>
 ExtractVariablesFromExpression(const Expression& e) {
   int var_count = 0;
@@ -188,11 +201,15 @@ void DecomposeQuadraticPolynomial(
 void DecomposeAffineExpressions(const Eigen::Ref<const VectorX<Expression>>& v,
                                 Eigen::MatrixXd* A, Eigen::VectorXd* b,
                                 VectorX<Variable>* vars) {
+  DRAKE_DEMAND(vars->rows() == 0);
   // 0. Setup map_var_to_index and var_vec.
   std::unordered_map<Variable::Id, int> map_var_to_index;
+  std::vector<Variable> vars_vec;
   for (int i = 0; i < v.size(); ++i) {
-    ExtractAndAppendVariablesFromExpression(v(i), vars, &map_var_to_index);
+    ExtractAndAppendVariablesFromExpression(v(i), &vars_vec, &map_var_to_index);
   }
+  *vars =
+      Eigen::Map<VectorX<symbolic::Variable>>(vars_vec.data(), vars_vec.size());
 
   // 1. Construct decompose v as
   // v = A * vars + b

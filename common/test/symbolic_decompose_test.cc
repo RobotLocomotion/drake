@@ -190,7 +190,9 @@ void ExpectValidMapVarToIndex(const VectorX<Variable>& vars,
   }
 }
 
-GTEST_TEST(SymbolicExtraction, ExtractVariables) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+GTEST_TEST(SymbolicExtraction, ExtractVariablesDeprecate) {
   const Variable x("x");
   const Variable y("y");
   Expression e = x + y;
@@ -212,6 +214,38 @@ GTEST_TEST(SymbolicExtraction, ExtractVariables) {
   ExtractAndAppendVariablesFromExpression(e, &vars, &map_var_to_index);
   EXPECT_EQ(vars_expected, vars);
   ExpectValidMapVarToIndex(vars, map_var_to_index);
+}
+#pragma GCC diagnostic pop
+
+GTEST_TEST(SymbolicExtraction, ExtractVariables) {
+  const Variable x("x");
+  const Variable y("y");
+  Expression e = x + y;
+  VectorX<Variable> vars_expected(2);
+  vars_expected << x, y;
+
+  MapVarToIndex map_var_to_index;
+  VectorX<Variable> vars;
+  std::tie(vars, map_var_to_index) = ExtractVariablesFromExpression(e);
+  EXPECT_EQ(vars_expected, vars);
+  ExpectValidMapVarToIndex(vars, map_var_to_index);
+
+  const Variable z("z");
+  e += x * (z - y);
+  const int vars_size = vars_expected.rows();
+  vars_expected.conservativeResize(vars_size + 1, Eigen::NoChange);
+  vars_expected(vars_size) = z;
+
+  // Copy vars to vars_vec
+  std::vector<symbolic::Variable> vars_vec(vars.size());
+  VectorX<symbolic::Variable>::Map(&vars_vec[0], vars_vec.size()) = vars;
+
+  ExtractAndAppendVariablesFromExpression(e, &vars_vec, &map_var_to_index);
+  const Eigen::Map<VectorX<symbolic::Variable>> vars_appended(vars_vec.data(),
+                                                              vars_vec.size());
+
+  EXPECT_EQ(vars_expected, vars_appended);
+  ExpectValidMapVarToIndex(vars_appended, map_var_to_index);
 }
 
 // Make off-diagonal terms symmetric for a given input matrix
