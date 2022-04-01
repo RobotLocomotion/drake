@@ -1678,7 +1678,16 @@ void BindEvaluatorsAndBindings(py::module m) {
       }),
           py::arg("A"), py::arg("lb"), py::arg("ub"),
           doc.LinearConstraint.ctor.doc)
+      .def(py::init([](const Eigen::SparseMatrix<double>& A,
+                        const Eigen::Ref<const Eigen::VectorXd>& lb,
+                        const Eigen::Ref<const Eigen::VectorXd>& ub) {
+        return std::make_unique<LinearConstraint>(A, lb, ub);
+      }),
+          py::arg("A"), py::arg("lb"), py::arg("ub"),
+          doc.LinearConstraint.ctor.doc)
       .def("A", &LinearConstraint::A, doc.LinearConstraint.A.doc)
+      .def("get_sparse_A", &LinearConstraint::get_sparse_A,
+          doc.LinearConstraint.get_sparse_A.doc)
       .def(
           "UpdateCoefficients",
           [](LinearConstraint& self, const Eigen::MatrixXd& new_A,
@@ -1686,7 +1695,15 @@ void BindEvaluatorsAndBindings(py::module m) {
             self.UpdateCoefficients(new_A, new_lb, new_ub);
           },
           py::arg("new_A"), py::arg("new_lb"), py::arg("new_ub"),
-          doc.LinearConstraint.UpdateCoefficients.doc)
+          doc.LinearConstraint.UpdateCoefficients.doc_dense_A)
+      .def(
+          "UpdateCoefficients",
+          [](LinearConstraint& self, const Eigen::SparseMatrix<double>& new_A,
+              const Eigen::VectorXd& new_lb, const Eigen::VectorXd& new_ub) {
+            self.UpdateCoefficients(new_A, new_lb, new_ub);
+          },
+          py::arg("new_A"), py::arg("new_lb"), py::arg("new_ub"),
+          doc.LinearConstraint.UpdateCoefficients.doc_sparse_A)
       .def(
           "UpdateLowerBound",
           [](LinearConstraint& self, const Eigen::VectorXd& new_lb) {
