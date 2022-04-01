@@ -110,11 +110,10 @@ class DummyElement final : public FemElement<DummyElement> {
 
   /* Implements FemElement::CalcInverseDynamics().
    The inverse dynamics force is equal to a dummy nonzero value if the element
-   states are all zero. Otherwise the force is zero.*/
+   has zero velocity and zero acceleration. Otherwise the force is zero.*/
   void DoCalcInverseDynamics(
       const Data& data, EigenPtr<Vector<T, kNumDofs>> external_force) const {
-    if (data.element_q.norm() == 0.0 && data.element_v.norm() == 0.0 &&
-        data.element_a.norm() == 0.0) {
+    if (data.element_v.norm() == 0.0 && data.element_a.norm() == 0.0) {
       *external_force = this->inverse_dynamics_force();
     } else {
       external_force->setZero();
