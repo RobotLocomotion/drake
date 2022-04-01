@@ -22,6 +22,7 @@ import unittest
 import warnings
 
 import numpy as np
+import scipy.sparse
 
 import pydrake
 from pydrake.common import kDrakeAssertIsArmed

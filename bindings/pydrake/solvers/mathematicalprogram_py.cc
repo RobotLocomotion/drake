@@ -1686,7 +1686,7 @@ void BindEvaluatorsAndBindings(py::module m) {
             self.UpdateCoefficients(new_A, new_lb, new_ub);
           },
           py::arg("new_A"), py::arg("new_lb"), py::arg("new_ub"),
-          doc.LinearConstraint.UpdateCoefficients.doc)
+          doc.LinearConstraint.UpdateCoefficients.doc_dense_A)
       .def(
           "UpdateLowerBound",
           [](LinearConstraint& self, const Eigen::VectorXd& new_lb) {

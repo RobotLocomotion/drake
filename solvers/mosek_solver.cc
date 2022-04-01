@@ -407,10 +407,10 @@ MSKrescodee AddLinearConstraintsFromBindings(
   MSKrescodee rescode{MSK_RES_OK};
   for (const auto& binding : constraint_list) {
     const auto& constraint = binding.evaluator();
-    const Eigen::MatrixXd& A = constraint->A();
+    const Eigen::SparseMatrix<double>& A = constraint->A_sparse();
     const Eigen::VectorXd& lb = constraint->lower_bound();
     const Eigen::VectorXd& ub = constraint->upper_bound();
-    Eigen::SparseMatrix<double> B_zero(A.rows(), 0);
+    Eigen::SparseMatrix<double> B_zero(A_sparse.rows(), 0);
     B_zero.setZero();
     int num_linear_constraints{-1};
     rescode = MSK_getnumcon(*task, &num_linear_constraints);
@@ -418,8 +418,8 @@ MSKrescodee AddLinearConstraintsFromBindings(
       return rescode;
     }
     rescode = AddLinearConstraintToMosek(
-        prog, A.sparseView(), B_zero, lb, ub, binding.variables(), {},
-        bound_type, decision_variable_index_to_mosek_matrix_variable,
+        prog, A, B_zero, lb, ub, binding.variables(), {}, bound_type,
+        decision_variable_index_to_mosek_matrix_variable,
         decision_variable_index_to_mosek_nonmatrix_variable,
         matrix_variable_entry_to_selection_matrix_id, *task);
     if (rescode != MSK_RES_OK) {
