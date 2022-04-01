@@ -256,7 +256,8 @@ void CompliantContactManager<T>::CalcContactJacobianCache(
     // N.B. For self contact, when treeA_index = treeB_index, we only need to
     // extract the block once. Therefore we ignore this block of code for the
     // self-contact case.
-    if (treeB_index >= 0 && treeB_index != treeA_index) {
+    if ((treeB_index.is_valid() && !treeA_index.is_valid()) ||
+        (treeB_index.is_valid() && treeB_index != treeA_index)) {
       TreeJacobian<T>& tree_jacobian = tree_blocks[icontact].second;
       tree_jacobian.tree = treeB_index;
       tree_jacobian.J = Jv_W_AcBc_C.middleCols(
@@ -301,13 +302,14 @@ void CompliantContactManager<T>::AddContactConstraints(
     const typename SapFrictionConeConstraint<T>::Parameters parameters{
         friction, stiffness, dissipation_time_scale, beta, sigma};
 
-    if (tree_jacobian_pair.first.tree < 0 ||
-        tree_jacobian_pair.second.tree < 0) {
+    if (!tree_jacobian_pair.first.tree.is_valid() ||
+        !tree_jacobian_pair.second.tree.is_valid() ||
+        tree_jacobian_pair.first.tree == tree_jacobian_pair.second.tree) {
       // Contat only involves a single tree (contact with the world or
       // self-contact.)
-      const TreeJacobian<T>& tree_jacobian = tree_jacobian_pair.first.tree >= 0
-                                                 ? tree_jacobian_pair.first
-                                                 : tree_jacobian_pair.second;
+      const TreeJacobian<T>& tree_jacobian =
+          tree_jacobian_pair.first.tree.is_valid() ? tree_jacobian_pair.first
+                                                   : tree_jacobian_pair.second;
       problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(
           tree_jacobian.tree, tree_jacobian.J, phi0, parameters));
     } else {
@@ -407,8 +409,6 @@ void CompliantContactManager<T>::AddDistanceConstraints(
     const T d0 = soft_norm(p_PQ_W);
     const Vector3<T> p_hat_W = p_PQ_W / d0;  // (soft) unit vector.
 
-    PRINT_VAR(d0);
-
     // Dense Jacobian.
     this->internal_tree().CalcJacobianTranslationalVelocity(
         context, JacobianWrtVariable::kV, body_A.body_frame(), frame_W, p_WP,
@@ -418,23 +418,15 @@ void CompliantContactManager<T>::AddDistanceConstraints(
         frame_W, frame_W, &Jv_WBq_W);
     Jddot = p_hat_W.transpose() * (Jv_WBq_W - Jv_WAp_W);  // ddot = Jddot * v.
 
-    PRINT_VAR(Jddot);
-
     // TODO: expose this parameter.
     const double beta = 0.1;
     const typename SapDistanceConstraint<T>::Parameters parameters{
         info.distance, info.stiffness, info.dissipation_time_scale, beta};
 
-    PRINT_VAR(info.body_A);
-    PRINT_VAR(info.body_B);
-
     const TreeIndex treeA_index =
         tree_topology().body_to_tree_index(info.body_A);
     const TreeIndex treeB_index =
         tree_topology().body_to_tree_index(info.body_B);
-
-    PRINT_VAR(treeA_index);
-    PRINT_VAR(treeB_index);
 
     // Sanity check, at least one must be positive.
     DRAKE_DEMAND(treeA_index >= 0 || treeB_index >= 0);
@@ -447,7 +439,6 @@ void CompliantContactManager<T>::AddDistanceConstraints(
       const MatrixX<T> J =
           Jddot.middleCols(tree_topology().tree_velocities_start(tree_index),
                            tree_topology().num_tree_velocities(tree_index));
-      PRINT_VARn(J);
       problem->AddConstraint(std::make_unique<SapDistanceConstraint<T>>(
           parameters, tree_index, J, d0));
     } else {
@@ -815,8 +806,6 @@ void CompliantContactManager<T>::CalcLinearDynamicsMatrix(
   A->resize(tree_topology().num_trees());
   const int nv = plant().num_velocities();
 
-  PRINT_VAR(tree_topology().num_trees());
-
   // TODO(amcastro-tri): implicitly include force elements such as joint
   // dissipation and/or stiffness.
   // TODO(amcastro-tri): consider placing the computation of the dense mass
@@ -828,7 +817,6 @@ void CompliantContactManager<T>::CalcLinearDynamicsMatrix(
   int v = 0;
   for (TreeIndex t(0); t < tree_topology().num_trees(); ++t) {
     const int nt = tree_topology().num_tree_velocities(t);
-    PRINT_VAR(nt);
     (*A)[t].resize(nt, nt);
     (*A)[t] = M.block(v, v, nt, nt);
     v += nt;
@@ -904,14 +892,6 @@ void CompliantContactManager<T>::DoCalcContactSolverResults(
   // In the absence of contact, v_next = v*.
   VectorX<T> v_star = EvalFreeMotionVelocities(context);
   std::vector<MatrixX<T>> A = EvalLinearDynamicsMatrix(context);
-
-  PRINT_VAR(context.get_time());
-  PRINT_VAR(v_star.size());
-  PRINT_VAR(A.size());
-  for (const auto& At : A) {
-    PRINT_VAR(At.rows());
-    PRINT_VAR(At.cols());
-  }
 
   const double time_step = plant().time_step();
   // TODO: notice that above this (move) constructor requires making a copy
