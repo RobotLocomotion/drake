@@ -9,12 +9,19 @@ import subprocess
 
 from .common import die, wheel_name
 
+# Location of various scripts and other artifacts used to complete the build.
+# Must be set; normally by common.entry.
 resource_root = None
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-def find_wheel(path, version):
+def _find_wheel(path, version):
+    """
+    Return name of built wheel. Uses `glob` to find it, since trying to
+    replicate the logic which determines the macOS platform name is not
+    accessible and is very non-trivial to replicate.
+    """
     pattern = wheel_name(
         python_version=''.join(platform.python_version_tuple()[:2]),
         wheel_version=version,
@@ -22,29 +29,42 @@ def find_wheel(path, version):
     return glob.glob(os.path.join(path, pattern))[0]
 
 
-def assert_isdir(path, name):
+def _assert_isdir(path, name):
+    """
+    Assert that `path` is a directory. Show an error otherwise, where `name`
+    describes what path is being asserted.
+    """
     if not os.path.isdir(path):
         die(f'{name} \'{path}\' is not a valid directory')
 
 
-def provision():
+def _provision():
+    """
+    Prepare wheel build environment.
+    """
     packages_path = os.path.join(resource_root, 'image', 'packages-macos')
     command = ['brew', 'bundle', f'--file={packages_path}', '--no-lock']
     subprocess.check_call(command)
 
 
-def test_wheel(path):
+def _test_wheel(path):
+    """
+    Run tests on the wheel at `path`.
+    """
     test_script = os.path.join(resource_root, 'macos-test-wheel.sh')
     subprocess.check_call(['bash', test_script, path])
 
 
 def build(options):
+    """
+    Build wheel(s) with the provided options.
+    """
     if options.extract:
-        assert_isdir(options.output_dir, 'Output location')
+        _assert_isdir(options.output_dir, 'Output location')
 
-    assert_isdir(options.build_root, 'Build root')
+    _assert_isdir(options.build_root, 'Build root')
 
-    provision()
+    _provision()
 
     build_script = os.path.join(resource_root, 'macos-build-wheel.sh')
     environment = os.environ.copy()
@@ -53,26 +73,37 @@ def build(options):
     subprocess.check_call(['bash', build_script, options.version],
                           env=environment)
 
-    wheel = find_wheel(
+    wheel = _find_wheel(
         path=os.path.join(options.build_root, 'wheel', 'dist'),
         version=options.version)
 
     if options.test:
-        test_wheel(wheel)
+        _test_wheel(wheel)
 
     if options.extract:
         shutil.copy2(wheel, options.output_dir)
 
 
 def add_build_arguments(parser):
+    """
+    Add arguments that control the build.
+    """
     parser.add_argument(
         '-r', '--build-root', metavar='DIR', default='/',
         help='root directory for build trees (default: /)')
 
 
 def add_selection_arguments(parser):
+    """
+    Add arguments that control which wheel(s) to build.
+    (No-op on macOS.)
+    """
     pass  # macOS can only build one wheel.
 
 
 def fixup_options(options):
+    """
+    Validate options and apply any necessary transformations.
+    (No-op on macOS.)
+    """
     pass  # Not needed on macOS.
