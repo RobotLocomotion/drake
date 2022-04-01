@@ -222,6 +222,9 @@ GTEST_TEST(MultibodyTree, MultibodyElementChecks) {
 // below, node (1) is created before node (2) because mobilizer m2 was added
 // before m4. Similarly, node (7) is created before (8) because mobilizer m1 was
 // added before m6.
+// Notice that bodies 8 and 9 are anchored to the world. Therefore they do not
+// belong to any tree and the full model has three trees, with bases at body 7,
+// 5 and 4.
 //
 //                 ┌───┐
 //                 │ 0 │(0)                              Level 0 (root, world)
@@ -438,36 +441,34 @@ class TreeTopologyTests : public ::testing::Test {
     EXPECT_EQ(topology.get_body_node(BodyNodeIndex(9)).body, 6);
 
     // Verify the expected "forest" of trees.
-    EXPECT_EQ(topology.num_trees(), 4);
+    EXPECT_EQ(topology.num_trees(), 3);
     EXPECT_EQ(topology.num_tree_velocities(TreeIndex(0)), 1);
     EXPECT_EQ(topology.num_tree_velocities(TreeIndex(1)), 2);
-    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(2)), 0);
-    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(3)), 4);
+    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(2)), 4);
     EXPECT_EQ(topology.tree_velocities_start(TreeIndex(0)), 0);
     EXPECT_EQ(topology.tree_velocities_start(TreeIndex(1)), 1);
     EXPECT_EQ(topology.tree_velocities_start(TreeIndex(2)), 3);
-    EXPECT_EQ(topology.tree_velocities_start(TreeIndex(3)), 3);
     // The world body does not belong to a tree. Therefore the returned index is
     // invalid.
     EXPECT_FALSE(topology.body_to_tree_index(world_index()).is_valid());
     EXPECT_EQ(topology.body_to_tree_index(BodyIndex(7)), TreeIndex(0));
     EXPECT_EQ(topology.body_to_tree_index(BodyIndex(5)), TreeIndex(1));
     EXPECT_EQ(topology.body_to_tree_index(BodyIndex(3)), TreeIndex(1));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(9)), TreeIndex(2));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(8)), TreeIndex(2));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(4)), TreeIndex(3));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(2)), TreeIndex(3));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(1)), TreeIndex(3));
-    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(6)), TreeIndex(3));
+    EXPECT_FALSE(topology.body_to_tree_index(BodyIndex(9)).is_valid());
+    EXPECT_FALSE(topology.body_to_tree_index(BodyIndex(8)).is_valid());
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(4)), TreeIndex(2));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(2)), TreeIndex(2));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(1)), TreeIndex(2));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(6)), TreeIndex(2));
 
     EXPECT_EQ(topology.num_velocities(), 7);
     EXPECT_EQ(topology.velocity_to_tree_index(0), TreeIndex(0));
     EXPECT_EQ(topology.velocity_to_tree_index(1), TreeIndex(1));
     EXPECT_EQ(topology.velocity_to_tree_index(2), TreeIndex(1));
-    EXPECT_EQ(topology.velocity_to_tree_index(3), TreeIndex(3));
-    EXPECT_EQ(topology.velocity_to_tree_index(4), TreeIndex(3));
-    EXPECT_EQ(topology.velocity_to_tree_index(5), TreeIndex(3));
-    EXPECT_EQ(topology.velocity_to_tree_index(6), TreeIndex(3));
+    EXPECT_EQ(topology.velocity_to_tree_index(3), TreeIndex(2));
+    EXPECT_EQ(topology.velocity_to_tree_index(4), TreeIndex(2));
+    EXPECT_EQ(topology.velocity_to_tree_index(5), TreeIndex(2));
+    EXPECT_EQ(topology.velocity_to_tree_index(6), TreeIndex(2));
   }
 
  protected:
