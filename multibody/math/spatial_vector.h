@@ -19,7 +19,7 @@ namespace multibody {
 /// 3-element rotational vector on top of a 3-element translational vector.
 /// Important subclasses of %SpatialVector include SpatialVelocity,
 /// SpatialAcceleration, SpatialForce, and SpatialMomentum.
-/// Each of the 3-element vectors are assumed to be expressed in the same
+/// Each of the 3-element vectors is assumed to be expressed in the same
 /// _expressed-in_ frame E. This class only stores 6 elements and does not store
 /// the underlying expressed-in frame E or other information. The user is
 /// responsible for explicitly tracking the underlying frames with
@@ -79,7 +79,7 @@ class SpatialVector {
   int size() const { return kSpatialVectorSize; }
 
   /// Const access to the i-th element of this spatial vector. In Debug
-  /// builds, this function throws an exception if i is out-of-bounds whereas
+  /// builds, this function asserts that i is out-of-bounds whereas
   /// for release builds, no bounds-check on i is performed (for speed).
   const T& operator[](int i) const {
     DRAKE_ASSERT(0 <= i && i < kSpatialVectorSize);
@@ -87,7 +87,7 @@ class SpatialVector {
   }
 
   /// Mutable access to the i-th element of this spatial vector. In Debug
-  /// builds, this function throws an exception if i is out-of-bounds whereas
+  /// builds, this function asserts that i is out-of-bounds whereas
   /// for release builds, no bounds-check on i is performed (for speed).
   T& operator[](int i) {
     DRAKE_ASSERT(0 <= i && i < kSpatialVectorSize);
@@ -269,7 +269,7 @@ class SpatialVector {
   }
 
   /// Expresses a spatial vector in another frame.
-  /// @param[in] RF_E RotationMatrix relating a frame F to a frame E.
+  /// @param[in] R_FE RotationMatrix relating a frame F to a frame E.
   /// @param[in] V_E spatial vector expressed in frame E.
   /// @returns V_F spatial vector expressed in frame F, calculated from: <pre>
   ///   V_F.rotational()    = R_FE * V_E.rotational(),
