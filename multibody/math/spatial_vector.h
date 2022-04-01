@@ -79,16 +79,16 @@ class SpatialVector {
   int size() const { return kSpatialVectorSize; }
 
   /// Const access to the i-th element of this spatial vector. In Debug
-  /// builds, this function asserts that i is out-of-bounds whereas
-  /// for release builds, no bounds-check on i is performed (for speed).
+  /// builds, this function asserts that i is in bounds whereas for
+  /// release builds, no bounds-check on i is performed (for speed).
   const T& operator[](int i) const {
     DRAKE_ASSERT(0 <= i && i < kSpatialVectorSize);
     return V_[i];
   }
 
   /// Mutable access to the i-th element of this spatial vector. In Debug
-  /// builds, this function asserts that i is out-of-bounds whereas
-  /// for release builds, no bounds-check on i is performed (for speed).
+  /// builds, this function asserts that i is in bounds whereas for
+  /// release builds, no bounds-check on i is performed (for speed).
   T& operator[](int i) {
     DRAKE_ASSERT(0 <= i && i < kSpatialVectorSize);
     return V_[i];
