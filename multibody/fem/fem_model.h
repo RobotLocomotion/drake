@@ -200,14 +200,14 @@ class FemModel {
     return dirichlet_bc_;
   }
 
- protected:
-  /** Constructs an empty FEM model. */
-  FemModel();
-
   /** (Internal use only) Throws std::exception to report a mismatch between
   the FEM model and state that were passed to API method `func`. */
   void ThrowIfModelStateIncompatible(const char* func,
                                      const FemState<T>& fem_state) const;
+
+ protected:
+  /** Constructs an empty FEM model. */
+  FemModel();
 
   /** Returns the reference positions of this model. */
   virtual VectorX<T> MakeReferencePositions() const = 0;
