@@ -4,7 +4,9 @@
 #include <tuple>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 
@@ -42,7 +44,11 @@ extracting expression `e`. As an output, the variables in `e` that were not
 included in `vars`, will be appended to the end of `vars`.
 @param[in,out] map_var_to_index. map_var_to_index is of the same size as
 `vars`, and map_var_to_index[vars(i).get_id()] = i. This invariance holds for
-map_var_to_index both as the input and as the output. */
+map_var_to_index both as the input and as the output.
+@note This function is very slow if you call this function within a loop as it
+involves repeated heap memory allocation. Consider using
+ExtractVariablesFromExpression.
+*/
 void ExtractAndAppendVariablesFromExpression(
     const symbolic::Expression& e, VectorX<Variable>* vars,
     std::unordered_map<symbolic::Variable::Id, int>* map_var_to_index);
@@ -54,6 +60,13 @@ void ExtractAndAppendVariablesFromExpression(
 pair.first, such that pair.second[pair.first(i).get_id()] = i */
 std::pair<VectorX<Variable>, std::unordered_map<symbolic::Variable::Id, int>>
 ExtractVariablesFromExpression(const symbolic::Expression& e);
+
+/**
+ * Overloads ExtractVariablesFromExpression but with a vector of expressions.
+ */
+std::pair<VectorX<Variable>, std::unordered_map<Variable::Id, int>>
+ExtractVariablesFromExpression(
+    const Eigen::Ref<const VectorX<Expression>>& expressions);
 
 /** Given a quadratic polynomial @p poly, decomposes it into the form 0.5 * x'
 * Q * x + b' * x + c
