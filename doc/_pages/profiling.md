@@ -72,3 +72,11 @@ Run `kcachegrind` to analyze profiling data. For example:
 ```
 kcachegrind callgrind.out.19482
 ```
+
+# Profiling Google Benchmark executables
+
+[Google Benchmark](https://github.com/google/benchmark) throttles the number of
+iterations it runs on each benchmark, which will skew the performance metrics
+you see in the profiler. [You may want to manually specify the number of
+iterations to run on each
+benchmark](https://stackoverflow.com/questions/61843343/how-to-special-case-the-number-of-iterations-in-google-benchmark).
