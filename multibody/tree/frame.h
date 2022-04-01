@@ -19,20 +19,23 @@ template<typename T> class Body;
 
 /// %Frame is an abstract class representing a _material frame_ (also called a
 /// _physical frame_), meaning that it is associated with a material point of a
-/// Body. A material frame can be used to apply forces and torques to a
-/// multibody system, and can be used as an attachment point for force-producing
-/// elements like joints, actuators, and constraints. Despite its name, %Frame
-/// is not the most general frame representation in Drake; see FrameBase for a
-/// more-general discussion.
+/// Body. Every %Frame object can report the Body to which it is attached.
+/// Two subclasses of %Frame are FixedOffsetFrame and BodyFrame.
+/// Two important characteristics of a %Frame are that forces or torques applied
+/// to a %Frame are applied to the %Frame's underlying Body and the %Frame's
+/// rotational/translational velocity (or acceleration) measured in its
+/// underlying Body is zero (no motion relative to its Body). A %Frame can be
+/// used to connection with force-producing elements like joints, actuators,
+/// and constraints. Despite its name, %Frame is not the most general frame
+/// representation in Drake; see FrameBase for a more-general discussion.
 ///
-/// The pose and motion of a %Frame object is always calculated relative to the
-/// BodyFrame of the body with which it is associated, and every %Frame object
-/// can report which Body object that is. Concrete classes derived from %Frame
-/// differ only in how those kinematic properties are calculated. For soft
-/// bodies that calculation may depend on the body's deformation state
-/// variables. A %Frame on a rigid body will usually have a fixed offset from
-/// its BodyFrame, but that is not required -- a frame that moves with respect
-/// to its BodyFrame can still be a material frame on that rigid body.
+/// A %Frame's pose in World (or relative to other frames) is always calculated
+/// starting with its pose relative to its underlying body's BodyFrame.
+/// Subclasses derived from %Frame differ in how kinematic calculations are
+/// performed.  For example, the translational velocity of a BodyFrame
+/// in World differ slightly from those of a FixedOffsetFrame. If a %Frame is
+/// has an underlying soft body, kinematic calculations may depend on the body's
+/// deformation state variables.
 ///
 /// As always in Drake, runtime numerical quantities are stored in a Context.
 /// A %Frame object does not store runtime values, but provides methods for
@@ -190,6 +193,47 @@ class Frame : public FrameBase<T> {
       const systems::Context<T>& context) const {
     return this->get_parent_tree().CalcRelativeRotationMatrix(
         context, this->get_parent_tree().world_frame(), *this);
+  }
+
+  /// Calculates `this` frame F's angular velocity ω measured and expressed in
+  /// the world frame W.
+  /// @param[in] context contains the state of the multibody system.
+  /// @return ω_WF_W (frame F's angular velocity ω measured and expressed in
+  /// the world frame W).
+  /// @see CalcAngularVelocity() to calculate `this` frame F's angular velocity
+  /// measured in a generic frame M and expressed in a frame E.
+  const Vector3<T>& EvalAngularVelocityInWorld(
+      const systems::Context<T>& context) const {
+    const SpatialVelocity<T>& V_WB = body().EvalSpatialVelocityInWorld(context);
+    const Vector3<T>& w_WF_W = V_WB.rotational();
+    return w_WF_W;
+  }
+
+  /// Calculates `this` frame F's angular velocity measured in a frame M,
+  /// expressed in a frame E.
+  /// @param[in] context contains the state of the multibody system.
+  /// @param[in] measured_in_frame which is frame M.
+  /// @param[in] expressed_in_frame which is frame E.
+  /// @return ω_WF_W, `this` frame F's angular velocity ω measured in frame M,
+  /// expressed in frame E.
+  /// @see EvalAngularVelocityInWorld() to form `this` frame F's angular
+  /// velocity measured and expressed in the world frame.
+  Vector3<T> CalcAngularVelocity(
+      const systems::Context<T>& context,
+      const Frame<T>& measured_in_frame,
+      const Frame<T>& expressed_in_frame) const {
+    const Frame<T>& frame_M = measured_in_frame;
+    const Frame<T>& frame_E = expressed_in_frame;
+    const Vector3<T>& w_WF_W = EvalAngularVelocityInWorld(context);
+    const Vector3<T> w_WM_W = frame_M.EvalAngularVelocityInWorld(context);
+    const Vector3<T> w_MF_W = w_WF_W - w_WM_W;
+
+    // If the expressed-in frame E is the world, no need to re-express results.
+    if (frame_E.is_world_frame()) return w_MF_W;
+
+    const math::RotationMatrix<T> R_WE =
+        frame_E.CalcRotationMatrixInWorld(context);
+    return R_WE * w_MF_W;  // Calculate and return w_MF_E.
   }
 
   /// Calculates `this` frame F's spatial velocity measured and expressed in
@@ -353,8 +397,7 @@ class Frame : public FrameBase<T> {
         body().EvalPoseInWorld(context).rotation();
     const Vector3<T> p_BoFo_B = CalcPoseInBodyFrame(context).translation();
     const Vector3<T> p_BoFo_W = R_WB * p_BoFo_B;
-    const Vector3<T>& w_WB_W =
-        body().EvalSpatialVelocityInWorld(context).rotational();
+    const Vector3<T>& w_WB_W = EvalAngularVelocityInWorld(context);
     const SpatialAcceleration<T> A_WF_W = A_WB_W.Shift(p_BoFo_W, w_WB_W);
     return A_WF_W;
   }
@@ -402,8 +445,7 @@ class Frame : public FrameBase<T> {
       const SpatialAcceleration<T> A_WM_W =
           frame_M.CalcSpatialAccelerationInWorld(context);
       const Vector3<T>& alpha_WM_W = A_WM_W.rotational();
-      const Vector3<T> w_WM_W =
-          frame_M.CalcSpatialVelocityInWorld(context).rotational();;
+      const Vector3<T>& w_WM_W = frame_M.EvalAngularVelocityInWorld(context);
       const Frame<T>& frame_W = this->get_parent_tree().world_frame();
       const SpatialVelocity<T> V_MF_W =
           CalcSpatialVelocity(context, frame_M, frame_W);
