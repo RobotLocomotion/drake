@@ -290,7 +290,7 @@ template <typename DerivedX, typename ScalarY>
 void LinearConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                      VectorX<ScalarY>* y) const {
   y->resize(num_constraints());
-  (*y) = A_ * x.template cast<ScalarY>();
+  (*y) = A_sparse_ * x.template cast<ScalarY>();
 }
 
 void LinearConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -318,6 +318,14 @@ std::ostream& LinearEqualityConstraint::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayConstraint(*this, os, "LinearEqualityConstraint", vars, true);
 }
+
+namespace internal {
+Eigen::SparseMatrix<double> ConstructSparseIdentity(int rows) {
+  Eigen::SparseMatrix<double> mat(rows, rows);
+  mat.setIdentity();
+  return mat;
+}
+}  // namespace internal
 
 template <typename DerivedX, typename ScalarY>
 void BoundingBoxConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,

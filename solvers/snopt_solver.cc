@@ -702,7 +702,11 @@ void UpdateConstraintBoundsAndGradients<LinearComplementarityConstraint>(
 
 template <typename C>
 Eigen::SparseMatrix<double> LinearEvaluatorA(const C& evaluator) {
-  return evaluator.GetSparseMatrix();
+  if constexpr (std::is_same_v<C, LinearComplementarityConstraint>) {
+    return evaluator.M().sparseView();
+  } else {
+    return evaluator.A_sparse();
+  }
 }
 
 // Return the number of rows in the linear constraint
@@ -719,12 +723,6 @@ template <>
 int LinearConstraintSize<LinearComplementarityConstraint>(
     const LinearComplementarityConstraint& constraint) {
   return constraint.M().rows();
-}
-
-template <>
-Eigen::SparseMatrix<double> LinearEvaluatorA<LinearComplementarityConstraint>(
-    const LinearComplementarityConstraint& constraint) {
-  return constraint.M().sparseView();
 }
 
 template <typename C>
