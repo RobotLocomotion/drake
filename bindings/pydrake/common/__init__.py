@@ -20,6 +20,11 @@ def configure_logging():
     more spartan than Drake's C++ logging format (e.g., Python does not show
     message timestamps by default).
 
+    This will ensure that the format is similar to spdlog C++ logging and
+    will also ensure that the Python logger will always emit message, meaning
+    users only need to configure log levels using
+    ``pydrake.common.set_log_level``.
+
     See also:
        :py:func:`pydrake.common.set_log_level`
     """

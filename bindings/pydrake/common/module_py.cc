@@ -109,6 +109,17 @@ Warning:
     function only adjusts the C++ level. Refer to the Python logging module
     documentation for details on setting the Python level.
 
+    For simplicity, consider using ``pydrake.common.configure_logging`` in
+    conjunction with this function.
+
+    .. code-block:: python
+
+        import logging
+        from pydrake.common import configure_logging, set_log_level
+        ...
+        configure_logging()
+        set_log_level("debug")
+
 See also:
    :py:func:`pydrake.common.configure_logging`
 )""")
