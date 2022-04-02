@@ -13,6 +13,11 @@ load(
     "gurobi_test_tags",
     "mosek_test_tags",
 )
+load(
+    "@drake//tools/performance:defs.bzl",
+    "drake_cc_googlebench_binary",
+    "drake_py_experiment_binary",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -1858,6 +1863,20 @@ drake_cc_googletest(
         ":augmented_lagrangian",
         "//common/test_utilities:eigen_matrix_compare",
     ],
+)
+
+drake_cc_googlebench_binary(
+    name = "benchmark_mathematical_program",
+    srcs = ["benchmarking/benchmark_mathematical_program.cc"],
+    deps = [
+        ":mathematical_program",
+        "//tools/performance:fixture_common",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "mathematical_program_experiment",
+    googlebench_binary = ":benchmark_mathematical_program",
 )
 
 # The extra_srcs are required here because add_lint_tests() doesn't understand
