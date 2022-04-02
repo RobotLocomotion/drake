@@ -109,6 +109,16 @@ Warning:
     function only adjusts the C++ level. Refer to the Python logging module
     documentation for details on setting the Python level.
 
+Example:
+
+    import logging
+    from pydrake.common import set_log_level
+    ...
+    TRACE = 5  # Our convention.
+    set_log_level("trace")  # For C++
+    logging.getLogger("drake").setLevel(TRACE)  # For Python
+
+
 See also:
    :py:func:`pydrake.common.configure_logging`
 )""")
