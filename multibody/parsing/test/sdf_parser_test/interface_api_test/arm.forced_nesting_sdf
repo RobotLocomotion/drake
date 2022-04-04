@@ -1,7 +1,22 @@
 <?xml version="1.0"?>
 <sdf version="1.8">
   <model name="arm">
-    <link name="L1"/>
+    <link name="L1">
+      <visual name="Box">
+        <geometry>
+          <box>
+            <size>0.1 0.1 0.1</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name="Sphere">
+        <geometry>
+          <sphere>
+            <radius>0.2</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
     <joint name="J1" type="revolute">
       <pose relative_to="L1">0 0 1 0 0 0</pose>
       <parent>L1</parent>

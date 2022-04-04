@@ -60,6 +60,7 @@ namespace {
 struct MultibodyPlantSubgraphInfo {
   MultibodyPlantSubgraph subgraph;
   std::unique_ptr<MultibodyPlant<double>> plant;
+  std::unique_ptr<geometry::SceneGraph<double>> scene_graph;
   bool is_merged{false};
   ModelInstanceIndex main_model_instance;
 };
@@ -1325,8 +1326,9 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 
   // Now that the model is parsed, we create interface elements to send to
   // libsdformat.
-  subgraph_info->subgraph = MultibodyPlantSubgraph(
-      MultibodyPlantElements::FromPlant(subgraph_info->plant.get()));
+  subgraph_info->subgraph =
+      MultibodyPlantSubgraph(MultibodyPlantElements::FromPlant(
+          subgraph_info->plant.get(), subgraph_info->scene_graph.get()));
   subgraph_info->is_merged = is_merged;
   subgraph_info->main_model_instance = main_model_instance;
 
@@ -1447,6 +1449,10 @@ sdf::ParserConfig MakeSdfParserConfig(
         const double kArbitraryDt = 0.1;
         subgraph_info.plant =
             std::make_unique<MultibodyPlant<double>>(kArbitraryDt);
+        subgraph_info.scene_graph =
+            std::make_unique<geometry::SceneGraph<double>>();
+        subgraph_info.plant->RegisterAsSourceForSceneGraph(
+            subgraph_info.scene_graph.get());
         return ParseNestedInterfaceModel(&subgraph_info, package_map, include,
                                          &errors, test_sdf_forced_nesting);
       });
@@ -1457,7 +1463,6 @@ sdf::ParserConfig MakeSdfParserConfig(
 std::vector<ModelInstanceIndex> AddMultibodyPlantSubgraphsToPlant(
     const std::vector<MultibodyPlantSubgraphInfo>& subgraph_infos,
     MultibodyPlant<double>* plant) {
-
   std::vector<ModelInstanceIndex> remapped_main_model_instances;
   for (auto& subgraph_info : subgraph_infos) {
     const auto main_model_name = subgraph_info.plant->GetModelInstanceName(

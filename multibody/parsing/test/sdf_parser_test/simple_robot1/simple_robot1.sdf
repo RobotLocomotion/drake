@@ -1,7 +1,22 @@
 <?xml version="1.0"?>
 <sdf version="1.7">
   <model name="robot1">
-    <link name="base_link"/>
+    <link name="base_link">
+      <visual name="Box">
+        <geometry>
+          <box>
+            <size>0.1 0.1 0.1</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name="Sphere">
+        <geometry>
+          <sphere>
+            <radius>0.2</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
     <link name="moving_link"/>
     <joint name="slider" type="prismatic">
       <parent>base_link</parent>
