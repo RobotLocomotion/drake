@@ -282,7 +282,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         "The keyword argument (kwarg) has been renamed from"
         " Shift(p_BqBq_E) to"
         " Shift(offset)."
-        " Deprecated kwarg will be unavailable after 2022-07-01.";
+        " Deprecated kwarg will be unavailable after 2022-08-01.";
     cls.def("Shift",
         WrapDeprecated(doc_Shift_deprecatedArgName,
             overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift)),

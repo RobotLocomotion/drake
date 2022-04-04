@@ -189,7 +189,7 @@ class TestMultibodyTreeMath(unittest.TestCase):
         to_T = np.vectorize(T)
         p = to_T(np.zeros(3))
         self.assertIsInstance(F.Shift(offset=p), SpatialForce_[T])
-        # TODO(2022-07-01) Remove with completion of deprecation.
+        # TODO(2022-08-01) Remove with completion of deprecation.
         with catch_drake_warnings(expected_count=1):
             self.assertIsInstance(F.Shift(p_BpBq_E=p), SpatialForce_[T])
         V = SpatialVelocity_[T].Zero()
