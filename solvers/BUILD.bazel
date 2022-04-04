@@ -488,6 +488,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sparse_and_dense_matrix",
+    srcs = ["sparse_and_dense_matrix.cc"],
+    hdrs = ["sparse_and_dense_matrix.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "rotation_constraint_visualization",
     testonly = 1,
     srcs = [
