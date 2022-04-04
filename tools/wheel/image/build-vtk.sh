@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Internal script to build VTK for use in a Drake wheel.
+#
 # NOTE: If you need to update this file, please refer to
 #       tools/workspace/vtk/README for important details.
 

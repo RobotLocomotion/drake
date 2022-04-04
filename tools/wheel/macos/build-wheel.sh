@@ -9,7 +9,7 @@
 
 set -eu -o pipefail
 
-readonly pip_root="$(cd "$(dirname "${BASH_SOURCE}")" && realpath .)"
+readonly pip_root="$(cd "$(dirname "${BASH_SOURCE}")" && realpath ..)"
 readonly git_root="$(cd "$pip_root" && realpath ./$(git rev-parse --show-cdup))"
 
 if [ $# -lt 1 ]; then
@@ -98,11 +98,11 @@ pip install --upgrade setuptools
 pip install --upgrade wheel
 
 cp \
-    "$pip_root/image/strip_rpath.py" \
+    "$pip_root/macos/strip_rpath.py" \
     "${DRAKE_WHEELBUILD_PREFIX}/python/bin/strip_rpath"
 
 cp \
-    "$pip_root/image/change_lpath.py" \
+    "$pip_root/macos/change_lpath.py" \
     "${DRAKE_WHEELBUILD_PREFIX}/python/bin/change_lpath"
 
 # -----------------------------------------------------------------------------

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Internal script to build a wheel from a Drake installation.
+
 set -eu -o pipefail
 
 # Use GNU 'cp' on macOS so we have a consistent CLI.

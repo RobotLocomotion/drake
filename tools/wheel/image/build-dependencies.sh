@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Internal script to build dependencies for a Drake wheel.
+
 set -eu -o pipefail
 
 mkdir -p ${DRAKE_WHEELBUILD_PREFIX}/dependencies/build

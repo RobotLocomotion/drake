@@ -51,7 +51,7 @@ def _test_wheel(path):
     """
     Run tests on the wheel at `path`.
     """
-    test_script = os.path.join(resource_root, 'macos-test-wheel.sh')
+    test_script = os.path.join(resource_root, 'macos', 'test-wheel.sh')
     subprocess.check_call(['bash', test_script, path])
 
 
@@ -66,7 +66,7 @@ def build(options):
 
     _provision()
 
-    build_script = os.path.join(resource_root, 'macos-build-wheel.sh')
+    build_script = os.path.join(resource_root, 'macos', 'build-wheel.sh')
     environment = os.environ.copy()
     environment['DRAKE_WHEELBUILD_PREFIX'] = options.build_root
 

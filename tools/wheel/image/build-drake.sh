@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Internal script to build a Drake from which a wheel will be created.
+
 set -eu -o pipefail
 
 cd /drake
