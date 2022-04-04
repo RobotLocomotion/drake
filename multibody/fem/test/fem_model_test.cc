@@ -46,8 +46,10 @@ GTEST_TEST(FemModelTest, CalcResidual) {
   fem_state->SetVelocities(VectorXd::Zero(model.num_dofs()));
   fem_state->SetAccelerations(VectorXd::Zero(model.num_dofs()));
   VectorXd expected_residual = VectorXd::Zero(model.num_dofs());
-  expected_residual.head<DummyElement::kNumDofs>() += DummyElement::residual();
-  expected_residual.tail<DummyElement::kNumDofs>() += DummyElement::residual();
+  expected_residual.head<DummyElement::kNumDofs>() +=
+      DummyElement::inverse_dynamics_force();
+  expected_residual.tail<DummyElement::kNumDofs>() +=
+      DummyElement::inverse_dynamics_force();
 
   model.CalcResidual(*fem_state, &residual);
   /* The residual for each element is set to a dummy value if all states are
@@ -147,6 +149,13 @@ GTEST_TEST(FemModelTest, MultipleBuilders) {
   /* Reusing builder throws an exception. */
   DRAKE_EXPECT_THROWS_MESSAGE(builder0.AddElementWithDistinctNodes(),
                               "Build.* has been called.*");
+}
+
+GTEST_TEST(FemModelTest, Gravity) {
+  DummyModel model;
+  EXPECT_EQ(model.gravity_vector(), Vector3<double>(0, 0, -9.81));
+  model.set_gravity_vector(Vector3<double>(1, 2, 3));
+  EXPECT_EQ(model.gravity_vector(), Vector3<double>(1, 2, 3));
 }
 
 }  // namespace

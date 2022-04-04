@@ -102,40 +102,22 @@ TEST_F(FemElementTest, ExtractElementDofs) {
             expected_element_q);
 }
 
-TEST_F(FemElementTest, GravityAndExternalForce) {
-  EXPECT_EQ(element_.gravity_vector(), Vector3d(0, 0, -9.81));
-  const Vector3d g(1, 2, 3);
-  element_.set_gravity_vector(g);
-  EXPECT_EQ(element_.gravity_vector(), g);
-  VectorXd gravity_vector_all_nodes(kNumDofs);
-  for (int i = 0; i < kNumNodes; ++i) {
-    gravity_vector_all_nodes.segment<3>(3 * i) = g;
-  }
-  VectorXd scaled_gravity_force = VectorXd::Zero(kNumDofs);
-  const double scale = 2.0;
-  /* The only external force in FemElement is gravity. */
-  const Data& data = EvalElementData();
-  element_.AddScaledExternalForce(data, scale, &scaled_gravity_force);
-  const VectorXd expected_scaled_gravity_force =
-      scale * element_.mass_matrix() * gravity_vector_all_nodes;
-  EXPECT_EQ(expected_scaled_gravity_force, scaled_gravity_force);
-}
-
-/* The following tests confirm that CalcResidual(), AddScaledStiffnessMatrix,
- AddScaledDampingMatrix(), AddScaledMassMatrix(), correctly invoke their
- DoCalc and DoAdd counterparts. We confirm this with a custom subclass of
- FemElement whose implementation returns/adds a specific value. */
-TEST_F(FemElementTest, Residual) {
-  Vector<T, DummyElementTraits::num_dofs> residual;
-  element_.CalcResidual(EvalElementData(), &residual);
+/* The following tests confirm that CalcInverseDynamics(),
+ AddScaledStiffnessMatrix, AddScaledDampingMatrix(), AddScaledMassMatrix(),
+ correctly invoke their DoCalc and DoAdd counterparts. We confirm this with a
+ custom subclass of FemElement whose implementation returns/adds a specific
+ value. */
+TEST_F(FemElementTest, InverseDynamics) {
+  Vector<T, DummyElementTraits::num_dofs> external_force;
+  element_.CalcInverseDynamics(EvalElementData(), &external_force);
   const Vector<T, kNumDofs> zero_vector = Vector<T, kNumDofs>::Zero();
-  EXPECT_EQ(residual, zero_vector);
+  EXPECT_EQ(external_force, zero_vector);
 
   fem_state_->SetPositions(zero_vector);
   fem_state_->SetVelocities(zero_vector);
   fem_state_->SetAccelerations(zero_vector);
-  element_.CalcResidual(EvalElementData(), &residual);
-  EXPECT_EQ(residual, element_.residual());
+  element_.CalcInverseDynamics(EvalElementData(), &external_force);
+  EXPECT_EQ(external_force, element_.inverse_dynamics_force());
 }
 
 TEST_F(FemElementTest, StiffnessMatrix) {
@@ -172,6 +154,26 @@ TEST_F(FemElementTest, MassMatrix) {
   const T scale = 3.14;
   element_.AddScaledMassMatrix(EvalElementData(), scale, &M);
   EXPECT_EQ(M, scale * element_.mass_matrix());
+}
+
+TEST_F(FemElementTest, AddScaledGravityForce) {
+  const Vector3d gravity_vector(1, 2, 3);
+  VectorXd gravity_vector_all_nodes(kNumDofs);
+  for (int i = 0; i < kNumNodes; ++i) {
+    gravity_vector_all_nodes.segment<3>(3 * i) = gravity_vector;
+  }
+  VectorXd scaled_gravity_force = VectorXd::Zero(kNumDofs);
+  const double scale = 2.0;
+  /* The only external force in FemElement is gravity. */
+  const Data& data = EvalElementData();
+  /* We explicitly test the gravity force calculation implementation in
+   FemElement (instead of the specific one in DummyElement). */
+  const FemElement<DummyElement>& base_fem_element = element_;
+  base_fem_element.AddScaledGravityForce(data, scale, gravity_vector,
+                                         &scaled_gravity_force);
+  const VectorXd expected_scaled_gravity_force =
+      scale * element_.mass_matrix() * gravity_vector_all_nodes;
+  EXPECT_EQ(expected_scaled_gravity_force, scaled_gravity_force);
 }
 
 }  // namespace

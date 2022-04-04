@@ -75,7 +75,13 @@ class FemModelImpl : public FemModel<typename Element::T> {
     const std::vector<Data>& element_data =
         fem_state.template EvalElementData<Data>(element_data_index_);
     for (int e = 0; e < num_elements(); ++e) {
-      elements_[e].CalcResidual(element_data[e], &element_residual);
+      /* residual = Ma-fₑ(x)-fᵥ(x, v)-fₑₓₜ. */
+      /* The Ma-fₑ(x)-fᵥ(x, v) term. */
+      elements_[e].CalcInverseDynamics(element_data[e], &element_residual);
+      /* The -fₑₓₜ term. Currently the only type of external force is gravity.
+       */
+      elements_[e].AddScaledGravityForce(
+          element_data[e], -1.0, this->gravity_vector(), &element_residual);
       const std::array<FemNodeIndex, Element::num_nodes>& element_node_indices =
           elements_[e].node_indices();
       for (int a = 0; a < Element::num_nodes; ++a) {
@@ -104,7 +110,6 @@ class FemModelImpl : public FemModel<typename Element::T> {
                                      &element_tangent_matrix);
       const std::array<FemNodeIndex, Element::num_nodes>& element_node_indices =
           elements_[e].node_indices();
-      // TODO(xuchenhan-tri): Avoid this index copy.
       for (int a = 0; a < Element::num_nodes; ++a) {
         block_indices(a) = element_node_indices[a];
       }
@@ -156,7 +161,6 @@ class FemModelImpl : public FemModel<typename Element::T> {
       //  that all node indices are contiguous from 0 to the number of nodes. We
       //  should at least verify this assumption and abort if this assumption is
       //  violated.
-      // TODO(xuchenhan-tri): Avoid this index copy.
       for (int a = 0; a < Element::num_nodes; ++a) {
         block_indices(a) = element_node_indices[a];
       }
