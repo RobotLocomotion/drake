@@ -23,10 +23,10 @@ namespace kinova_jaco {
 ///
 /// It has one required input port, "lcmt_jaco_command".
 ///
-/// This system has a single output port which contains the commanded position
-/// and velocity for each joint.  Finger velocities will be translated from
-/// the values used by the Kinova SDK to values appropriate for the finger
-/// joints in the Jaco description (see jaco_constants.h).
+/// This system has two output ports: one each for the commanded position and
+/// velocity of the arm+finger joints.  Finger velocities will be translated
+/// from the values used by the Kinova SDK to values appropriate for the
+/// finger joints in the Jaco description (see jaco_constants.h).
 ///
 /// @system
 /// name: JacoCommandReceiver
@@ -34,10 +34,11 @@ namespace kinova_jaco {
 /// - lcmt_jaco_command
 /// - position_measured (optional)
 /// output_ports:
-/// - state
+/// - position
+/// - velocity
 ///
-/// @par Output prior to receiving a valid lcmt_jaco_command message:
-/// The "position" output initially feeds through from the "position_measured"
+/// @par Output prior to receiving a valid lcmt_jaco_command message: The
+/// "position" output initially feeds through from the "position_measured"
 /// input port -- or if not connected, outputs zero.  When discrete update
 /// events are enabled (e.g., during a simulation), the system latches the
 /// "position_measured" input into state during the first event, and the
@@ -67,9 +68,17 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
     return *message_input_;
   }
   const systems::InputPort<double>& get_position_measured_input_port() const {
-      return *position_measured_input_;
+    return *position_measured_input_;
   }
-  //@}
+  const systems::OutputPort<double>& get_commanded_position_output_port()
+      const {
+    return *commanded_position_output_;
+  }
+  const systems::OutputPort<double>& get_commanded_velocity_output_port()
+      const {
+    return *commanded_velocity_output_;
+  }
+//@}
 
   DRAKE_DEPRECATED("2022-06-01",
      "To provide position commands prior to receiving the first message, "
@@ -82,6 +91,11 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
   DRAKE_DEPRECATED("2022-06-01", "Use get_message_input_port() instead.")
   const systems::InputPort<double>& get_input_port() const {
     return get_message_input_port();
+  }
+
+  DRAKE_DEPRECATED("2022-08-01", "Use the other output ports instead.")
+  const systems::OutputPort<double>& get_output_port() const {
+    return *state_output_;
   }
 
  private:
@@ -98,7 +112,11 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
   // into the @p result.
   void LatchInitialPosition(
       const systems::Context<double>&,
-      systems::DiscreteValues<double>* result) const;
+      systems::DiscreteValues<double>*) const;
+  void CalcPositionOutput(
+      const systems::Context<double>&, systems::BasicVector<double>*) const;
+  void CalcVelocityOutput(
+      const systems::Context<double>&, systems::BasicVector<double>*) const;
 
   const int num_joints_;
   const int num_fingers_;
@@ -108,6 +126,9 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
   systems::DiscreteStateIndex latched_position_measured_is_set_;
   systems::DiscreteStateIndex latched_position_measured_;
   const systems::CacheEntry* groomed_input_{};
+  const systems::OutputPort<double>* state_output_{};
+  const systems::OutputPort<double>* commanded_position_output_{};
+  const systems::OutputPort<double>* commanded_velocity_output_{};
 };
 
 }  // namespace kinova_jaco
