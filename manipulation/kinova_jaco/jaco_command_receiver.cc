@@ -20,7 +20,6 @@ using systems::kVectorValued;
 JacoCommandReceiver::JacoCommandReceiver(int num_joints, int num_fingers)
     : num_joints_(num_joints),
       num_fingers_(num_fingers) {
-
   message_input_ = &DeclareAbstractInputPort(
       "lcmt_jaco_command", Value<lcmt_jaco_command>());
   position_measured_input_ = &DeclareInputPort(
@@ -47,11 +46,22 @@ JacoCommandReceiver::JacoCommandReceiver(int num_joints, int num_fingers)
        discrete_state_ticket(latched_position_measured_),
        position_measured_or_zero_->ticket()});
 
-  DeclareVectorOutputPort(
+  state_output_ = &DeclareVectorOutputPort(
       "state", (num_joints + num_fingers) * 2,
       [this](const Context<double>& context, BasicVector<double>* output) {
         output->SetFromVector(this->input_state(context));
-      });
+      },
+      {groomed_input_->ticket()});
+
+  commanded_position_output_ = &DeclareVectorOutputPort(
+      "position", num_joints + num_fingers,
+      &JacoCommandReceiver::CalcPositionOutput,
+      {groomed_input_->ticket()});
+
+  commanded_velocity_output_ = &DeclareVectorOutputPort(
+      "velocity", num_joints + num_fingers,
+      &JacoCommandReceiver::CalcVelocityOutput,
+      {groomed_input_->ticket()});
 }
 
 void JacoCommandReceiver::CalcPositionMeasuredOrZero(
@@ -120,7 +130,7 @@ void JacoCommandReceiver::DoCalcNextUpdateTime(
 
 // Returns (in "result") the command message input, or if a message has not
 // been received yet returns the initial command (as optionally set by the
-// user).  The result will always have num_joints_ positions and torques.
+// user).  The result will always have num_joints_ positions and velocities.
 void JacoCommandReceiver::CalcInput(
   const Context<double>& context, lcmt_jaco_command* result) const {
   if (!get_message_input_port().HasValue(context)) {
@@ -195,6 +205,56 @@ Eigen::VectorXd JacoCommandReceiver::input_state(
       message.finger_velocity.data(), message.finger_velocity.size());
   }
   return state;
+}
+
+void JacoCommandReceiver::CalcPositionOutput(
+    const Context<double>& context, BasicVector<double>* output) const {
+  const auto& message = groomed_input_->Eval<lcmt_jaco_command>(context);
+  if (message.num_joints != num_joints_) {
+    throw std::runtime_error(fmt::format(
+        "JacoCommandReceiver expected num_joints = {}, but received {}",
+        num_joints_, message.num_joints));
+  }
+  if (message.num_fingers != num_fingers_) {
+    throw std::runtime_error(fmt::format(
+        "JacoCommandReceiver expected num_fingers = {}, but received {}",
+        num_fingers_, message.num_fingers));
+  }
+
+  Eigen::VectorXd position(num_joints_ + num_fingers_);
+  position.head(num_joints_) = Eigen::Map<const VectorXd>(
+      message.joint_position.data(), message.joint_position.size());
+  if (num_fingers_) {
+    position.segment(num_joints_, num_fingers_) = Eigen::Map<const VectorXd>(
+        message.finger_position.data(), message.finger_position.size());
+  }
+
+  output->SetFromVector(position);
+}
+
+void JacoCommandReceiver::CalcVelocityOutput(
+    const Context<double>& context, BasicVector<double>* output) const {
+  const auto& message = groomed_input_->Eval<lcmt_jaco_command>(context);
+  if (message.num_joints != num_joints_) {
+    throw std::runtime_error(fmt::format(
+        "JacoCommandReceiver expected num_joints = {}, but received {}",
+        num_joints_, message.num_joints));
+  }
+  if (message.num_fingers != num_fingers_) {
+    throw std::runtime_error(fmt::format(
+        "JacoCommandReceiver expected num_fingers = {}, but received {}",
+        num_fingers_, message.num_fingers));
+  }
+
+  Eigen::VectorXd velocity(num_joints_ + num_fingers_);
+  velocity.head(num_joints_) = Eigen::Map<const VectorXd>(
+      message.joint_velocity.data(), message.joint_velocity.size());
+  if (num_fingers_) {
+    velocity.segment(num_joints_, num_fingers_) = Eigen::Map<const VectorXd>(
+        message.finger_velocity.data(), message.finger_velocity.size());
+  }
+
+  output->SetFromVector(velocity);
 }
 
 }  // namespace kinova_jaco
