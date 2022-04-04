@@ -207,7 +207,7 @@ class TestMultibodyTreeMath(unittest.TestCase):
         V = SpatialVelocity_[T].Zero()
         dut = SpatialMomentum_[T].Zero()
         self.assertIsInstance(dut.Shift(offset=p), SpatialMomentum_[T])
-        # TODO(2022-07-01) Remove with completion of deprecation.
+        # TODO(2022-08-01) Remove with completion of deprecation.
         with catch_drake_warnings(expected_count=1):
             self.assertIsInstance(dut.Shift(p_BpBq_E=p), SpatialMomentum_[T])
         self.assertIsInstance(dut.dot(velocity=V), T)
