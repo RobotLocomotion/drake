@@ -1,7 +1,7 @@
 #pragma once
 
 // This file is derived from the python prototype at
-// https://github.com/EricCousineau-TRI/repro/blob/master/drake_stuff/multibody_plant_prototypes/multibody_plant_subgraph.py.
+// https://github.com/EricCousineau-TRI/repro/blob/c44615ee725b9c5498cd5b1d706ccfec6c3bd203/drake_stuff/multibody_plant_prototypes/multibody_plant_subgraph.py.
 // Only a subset of the functionality that is necessary for handling custom
 // parsed models included via SDFormat's merge-include has been ported.
 
@@ -13,6 +13,8 @@
 #include <utility>
 #include <vector>
 
+#include "drake/geometry/scene_graph.h"
+#include "drake/multibody/parsing/scoped_names.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -104,16 +106,49 @@ auto GetJointActuatorsAffectingJoints(
   return joint_actuators;
 }
 
+std::vector<geometry::GeometryId> GetGeometries(
+    const MultibodyPlant<double>& plant,
+    const geometry::SceneGraph<double>& scene_graph,
+    const std::set<const Body<double>*>& bodies) {
+  std::vector<geometry::GeometryId> geometry_ids;
+  auto& inspector = scene_graph.model_inspector();
+  for (auto* body : bodies) {
+    auto frame_id = plant.GetBodyFrameIdOrThrow(body->index());
+    auto body_geometry_ids = inspector.GetGeometries(frame_id);
+    geometry_ids.insert(
+        geometry_ids.end(), body_geometry_ids.begin(),
+        body_geometry_ids.end());
+  }
+  // N.B. `inspector.GetGeometries` returns the ids in a consistent (sorted)
+  // order, but we re-sort here just in case the geometries have been mutated.
+  std::sort(geometry_ids.begin(), geometry_ids.end());
+  return geometry_ids;
+}
+
+void RemoveRoleFromGeometries(
+    const MultibodyPlant<double>& plant,
+    geometry::SceneGraph<double>* scene_graph,
+    const geometry::Role role,
+    const std::set<const Body<double>*>& bodies) {
+  for (auto geometry_id : GetGeometries(plant, *scene_graph, bodies)) {
+    scene_graph->RemoveRole(*plant.get_source_id(), geometry_id, role);
+  }
+}
+
 class MultibodyPlantElementsMap;
 class MultibodyPlantSubgraph;
 
 class MultibodyPlantElements {
  public:
   MultibodyPlantElements() = default;
-  explicit MultibodyPlantElements(const MultibodyPlant<double>* plant)
-      : plant_(plant) {}
+  explicit MultibodyPlantElements(
+      const MultibodyPlant<double>* plant,
+      const geometry::SceneGraph<double>* scene_graph = nullptr)
+      : plant_(plant), scene_graph_(scene_graph) {}
 
-  static MultibodyPlantElements FromPlant(const MultibodyPlant<double>* plant) {
+  static MultibodyPlantElements FromPlant(
+      const MultibodyPlant<double>* plant,
+      const geometry::SceneGraph<double>* scene_graph = nullptr) {
     auto model_instances =
         IndicesToVector<ModelInstanceIndex>(plant->num_model_instances());
 
@@ -126,45 +161,48 @@ class MultibodyPlantElements {
                      [&](auto bi) { return &plant->get_body(bi); });
     }
 
-    return GetElementsFromBodies(plant, bodies);
+    return GetElementsFromBodies(plant, bodies, scene_graph);
   }
 
-  void PrintBodies() const {
+  void PrintBodies(std::ostream& out) const {
     for (const auto& body : bodies()) {
-      std::cout << "Body: " << body << " " << body->name()
-                << " model: " << body->model_instance() << std::endl;
+      out << "Body: " << body << " " << body->name()
+          << " model: " << body->model_instance() << std::endl;
     }
   }
-  void PrintFrames() const {
+  void PrintFrames(std::ostream& out) const {
     for (const auto& frame : frames()) {
-      std::cout << "Frame: " << frame << " " << frame->name()
-                << " model: " << frame->model_instance()
-                << " attached_to: " << frame->body().name() << std::endl;
+      out << "Frame: " << frame << " " << frame->name()
+          << " model: " << frame->model_instance()
+          << " attached_to: " << frame->body().name() << std::endl;
     }
   }
-  void PrintJoints() const {
+  void PrintJoints(std::ostream& out) const {
     for (const auto& joint : joints()) {
-      std::cout << "Joint: " << joint << " " << joint->name()
-                << " model: " << joint->model_instance()
-                << " child: " << joint->child_body().name()
-                << " parent: " << joint->parent_body().name() << std::endl;
+      out << "Joint: " << joint << " " << joint->name()
+          << " model: " << joint->model_instance()
+          << " child: " << joint->child_body().name()
+          << " parent: " << joint->parent_body().name() << std::endl;
     }
   }
-  void PrintModels() const {
+  void PrintModels(std::ostream& out) const {
     for (const auto& model : model_instances()) {
-      std::cout << "Model: " << model << " "
-                << plant().GetModelInstanceName(model) << std::endl;
+      out << "Model: " << model << " " << plant().GetModelInstanceName(model)
+          << std::endl;
     }
   }
 
-  void PrintAll() const {
-    PrintModels();
-    PrintBodies();
-    PrintFrames();
-    PrintJoints();
+  void PrintAll(std::ostream& out) const {
+    PrintModels(out);
+    PrintBodies(out);
+    PrintFrames(out);
+    PrintJoints(out);
   }
 
   const MultibodyPlant<double>& plant() const { return *plant_; }
+  const geometry::SceneGraph<double>& scene_graph() const {
+    return *scene_graph_;
+  }
 
   const std::set<const Body<double>*>& bodies() const { return bodies_; }
 
@@ -191,11 +229,14 @@ class MultibodyPlantElements {
   }
   std::set<ModelInstanceIndex>& model_instances() { return model_instances_; }
 
+  std::set<geometry::GeometryId> geometry_ids() const { return geometry_ids_; }
+
  private:
   static MultibodyPlantElements GetElementsFromBodies(
       const MultibodyPlant<double>* plant,
-      const std::vector<const Body<double>*>& bodies) {
-    MultibodyPlantElements elem(plant);
+      const std::vector<const Body<double>*>& bodies,
+      const geometry::SceneGraph<double>* scene_graph) {
+    MultibodyPlantElements elem(plant, scene_graph);
     elem.bodies_.insert(bodies.begin(), bodies.end());
 
     for (const auto& body : elem.bodies_) {
@@ -216,16 +257,24 @@ class MultibodyPlantElements {
     for (const auto& frame : elem.frames_) {
       elem.model_instances_.insert(frame->model_instance());
     }
+
+    if (scene_graph != nullptr) {
+      auto geometries = GetGeometries(*plant, *scene_graph, elem.bodies_);
+      elem.geometry_ids_.insert(geometries.begin(), geometries.end());
+    }
     return elem;
   }
 
   const MultibodyPlant<double>* plant_{nullptr};
+  const geometry::SceneGraph<double>* scene_graph_{nullptr};
 
+  std::set<ModelInstanceIndex> model_instances_;
   std::set<const Body<double>*> bodies_;
   std::set<const Frame<double>*> frames_;
   std::set<const Joint<double>*> joints_;
   std::set<const JointActuator<double>*> joint_actuators_;
-  std::set<ModelInstanceIndex> model_instances_;
+  std::set<geometry::GeometryId> geometry_ids_;
+
 };
 
 using FrameNameRemapFunction = std::function<std::string(
@@ -234,16 +283,15 @@ using FrameNameRemapFunction = std::function<std::string(
 class MultibodyPlantElementsMap {
  public:
   MultibodyPlantElementsMap(const MultibodyPlant<double>* src,
-                            MultibodyPlant<double>* dest)
+                            MultibodyPlant<double>* dest,
+                            const geometry::SceneGraph<double>* scene_graph_src)
       : plant_src_(src),
         plant_dest_(dest),
+        scene_graph_src_(scene_graph_src),
         builtins_src_(MakeEmptyElementsSrc()) {}
 
   MultibodyPlantElements MakeEmptyElementsSrc() {
-    return MultibodyPlantElements(plant_src_);
-  }
-  MultibodyPlantElements MakeEmptyElementsDest() {
-    return MultibodyPlantElements(plant_dest_);
+    return MultibodyPlantElements(plant_src_, scene_graph_src_);
   }
 
   void RegisterWorldBodyAndFrame() {
@@ -312,7 +360,9 @@ class MultibodyPlantElementsMap {
     const Frame<double>* frame_on_child_dest = frames_[&src->frame_on_child()];
 
     std::unique_ptr<Joint<double>> joint;
-    // TODO(azeey) Not sure if this matches the python prototype.
+    // It is safe to use `dynamic_cast` here because all the joint classes used
+    // here are final, i.e., we don't run the risk of creating a joint of type
+    // A when the `src` joint is of type B derived from A.
     // TODO(azeey) It would be nice if could use double dispatch for handling
     // the following conditionals instead of using dynamic_casts.
     if (auto ball_joint_src = dynamic_cast<const BallRpyJoint<double>*>(src);
@@ -371,6 +421,66 @@ class MultibodyPlantElementsMap {
     joint_actuators_.insert({src, joint_actuator_dest});
   }
 
+  void CopyGeometryById(const geometry::GeometryId& geometry_id_src){
+    DRAKE_DEMAND(scene_graph_src_ != nullptr);
+
+    const auto &inspector_src = scene_graph_src_->model_inspector();
+    const auto frame_id_src = inspector_src.GetFrameId(geometry_id_src);
+    const auto *body_src = plant_src_->GetBodyFromFrameId(frame_id_src);
+    DRAKE_DEMAND(body_src != nullptr);
+    const auto *body_dest = bodies_.at(body_src);
+    // const auto frame_id_dest =
+    //     plant_dest_->GetBodyFrameIdOrThrow(body_dest->index());
+    auto geometry_instance_dest = inspector_src.CloneGeometryInstance(
+        geometry_id_src);
+
+    // Use new "scoped" name.
+    std::string prefix_src;
+    if (body_src->model_instance() != world_model_instance()){
+      prefix_src =
+          plant_src_->GetModelInstanceName(body_src->model_instance());
+    }
+
+    std::string prefix_dest;
+    if (body_dest->model_instance() != world_model_instance()){
+      prefix_dest =
+          plant_src_->GetModelInstanceName(body_src->model_instance());
+    }
+
+    auto scoped_name_src =
+        parsing::ParseScopedName(geometry_instance_dest->name());
+    DRAKE_DEMAND(scoped_name_src.instance_name == prefix_src);
+
+    auto scoped_name_dest =
+        parsing::PrefixName(prefix_dest, scoped_name_src.name);
+    geometry_instance_dest->set_name(scoped_name_dest);
+    const auto* proximity_properties =
+        geometry_instance_dest->proximity_properties();
+    geometry::GeometryId geometry_id_dest;
+    if (proximity_properties != nullptr){
+      DRAKE_DEMAND(geometry_instance_dest->perception_properties() == nullptr);
+      DRAKE_DEMAND(geometry_instance_dest->illustration_properties() ==
+                   nullptr);
+      geometry_id_dest = plant_dest_->RegisterCollisionGeometry(
+          *body_dest, geometry_instance_dest->pose(),
+          geometry_instance_dest->shape(), scoped_name_src.name,
+          *proximity_properties);
+    } else if (geometry_instance_dest->illustration_properties() != nullptr){
+      geometry_id_dest = plant_dest_->RegisterVisualGeometry(
+          *body_dest, geometry_instance_dest->pose(),
+          geometry_instance_dest->shape(), scoped_name_src.name,
+          *geometry_instance_dest->illustration_properties());
+    }
+    else{
+      // Currently, RegisterVisualGeometry also assigns the Perception role to a
+      // geometry, thus, the common use case of geometries that have both
+      // Illustration and Preception roles is covered by the `else if` branch
+      // above.
+      // TODO(azeey) Handle geometries with Perception as their only role.
+    }
+    geometry_ids_.insert({geometry_id_src, geometry_id_dest});
+  }
+
   const std::map<ModelInstanceIndex, ModelInstanceIndex>& model_instances()
       const {
     return model_instances_;
@@ -379,6 +489,7 @@ class MultibodyPlantElementsMap {
  private:
   const MultibodyPlant<double>* plant_src_;
   MultibodyPlant<double>* plant_dest_;
+  const geometry::SceneGraph<double>* scene_graph_src_;
   MultibodyPlantElements builtins_src_;
   std::map<const Body<double>*, const Body<double>*> bodies_;
   std::map<const Frame<double>*, const Frame<double>*> frames_;
@@ -386,6 +497,7 @@ class MultibodyPlantElementsMap {
   std::map<const JointActuator<double>*, const JointActuator<double>*>
       joint_actuators_;
   std::map<ModelInstanceIndex, ModelInstanceIndex> model_instances_;
+  std::map<geometry::GeometryId, geometry::GeometryId> geometry_ids_;
 };
 
 // TODO(azeey) implement this.
@@ -428,7 +540,10 @@ class MultibodyPlantSubgraph {
       RemapFunction model_instance_remap = ModelInstanceRemapSameName,
       FrameNameRemapFunction frame_name_remap = FrameNameRenamSameName) const {
     const auto *plant_src = &elem_src_.plant();
-    MultibodyPlantElementsMap src_to_dest(plant_src, plant_dest);
+    const auto *scene_graph_src = &elem_src_.scene_graph();
+
+    MultibodyPlantElementsMap src_to_dest(plant_src, plant_dest,
+                                          scene_graph_src);
 
     // Remap and register model instances.
     for (const auto& model_instance_src : elem_src_.model_instances()) {
@@ -463,7 +578,13 @@ class MultibodyPlantSubgraph {
       src_to_dest.CopyJointActuator(joint_actuator_src);
     }
 
-    // TODO(azeey) Copy geometries
+    // Copy geometries (if applicable)
+    if (plant_dest->geometry_source_is_registered()) {
+      for (const auto& geometry_id_src : elem_src_.geometry_ids()) {
+        src_to_dest.CopyGeometryById(geometry_id_src);
+      }
+    }
+
     // TODO(azeey) Apply policies
     return src_to_dest;
   }
