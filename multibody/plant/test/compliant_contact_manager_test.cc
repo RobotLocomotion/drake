@@ -7,6 +7,8 @@
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/contact_solvers/pgs_solver.h"
+#include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
+#include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/systems/primitives/pass_through.h"
@@ -22,6 +24,8 @@ using drake::geometry::VolumeMeshFieldLinear;
 using drake::math::RigidTransformd;
 using drake::math::RotationMatrixd;
 using drake::multibody::contact_solvers::internal::PgsSolver;
+using drake::multibody::contact_solvers::internal::SapContactProblem;
+using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
 using drake::multibody::internal::DiscreteContactPair;
 using drake::systems::Context;
 using drake::systems::PassThrough;
@@ -178,7 +182,7 @@ class CompliantContactManagerTest : public ::testing::Test {
   // hydroelastic contact model.
   // Point contact stiffness must be provided for both spheres in
   // sphere1_point_params and sphere2_point_params.
-  void VerifyDiscreteContactPairsFromPointContact(
+  void VerifyDiscreteContactPairs(
       const ContactParameters& sphere1_point_params,
       const ContactParameters& sphere2_point_params) {
     // This test is specific to point contact. Both spheres must have point
@@ -213,53 +217,68 @@ class CompliantContactManagerTest : public ::testing::Test {
 
     constexpr double kEps = std::numeric_limits<double>::epsilon();
 
-    // Here we use our knowledge that we always place point contact pairs
-    // followed by hydroelastic contact pairs.
-    const DiscreteContactPair<double>& point_pair = pairs[0];
-
     const GeometryId sphere2_geometry =
         plant_->GetCollisionGeometriesForBody(*sphere2_)[0];
 
-    const int sign = point_pair.id_A == sphere2_geometry ? 1 : -1;
-    const Vector3d normal_expected = sign * Vector3d::UnitZ();
-    EXPECT_TRUE(CompareMatrices(point_pair.nhat_BA_W, normal_expected));
+    for (int i = 0; i < static_cast<int>(pairs.size()); ++i) {
+      const DiscreteContactPair<double>& point_pair = pairs[i];
 
-    const double phi_expected = -penetration_distance_;
-    // The geometry engine computes absolute values of penetration to machine
-    // epsilon (at least for sphere vs. sphere contact).
-    EXPECT_NEAR(point_pair.phi0, phi_expected, kEps);
+      if (i == 0) {
+        // Unit tests for point contact only.
+        // Here we use our knowledge that we always place point contact pairs
+        // followed by hydroelastic contact pairs.
+        const double phi_expected = -penetration_distance_;
+        // The geometry engine computes absolute values of penetration to
+        // machine epsilon (at least for sphere vs. sphere contact).
+        EXPECT_NEAR(point_pair.phi0, phi_expected, kEps);
 
-    const double k1 = *sphere1_contact_params.point_stiffness;
-    const double k2 = *sphere2_contact_params.point_stiffness;
-    const double stiffness_expected = (k1 * k2) / (k1 + k2);
-    EXPECT_NEAR(point_pair.stiffness, stiffness_expected,
-                kEps * stiffness_expected);
+        const double k1 = *sphere1_contact_params.point_stiffness;
+        const double k2 = *sphere2_contact_params.point_stiffness;
+        const double stiffness_expected = (k1 * k2) / (k1 + k2);
+        EXPECT_NEAR(point_pair.stiffness, stiffness_expected,
+                    kEps * stiffness_expected);
 
-    const double tau1 = sphere1_contact_params.dissipation_time_constant;
-    const double tau2 = sphere2_contact_params.dissipation_time_constant;
-    const double dissipation_expected = stiffness_expected * (tau1 + tau2);
-    EXPECT_NEAR(point_pair.damping, dissipation_expected,
-                kEps * dissipation_expected);
+        // Verify contact location.
+        const double pz_WS1 =
+            plant_->GetFreeBodyPose(*plant_context_, *sphere1_)
+                .translation()
+                .z();
+        const double pz_WC = -k2 / (k1 + k2) * penetration_distance_ + pz_WS1 +
+                             sphere1_params.radius;
+        EXPECT_NEAR(point_pair.p_WC.z(), pz_WC, 1.0e-14);
+      }
 
-    const double pz_WS1 =
-        plant_->GetFreeBodyPose(*plant_context_, *sphere1_).translation().z();
-    const double pz_WC = -k2 / (k1 + k2) * penetration_distance_ + pz_WS1 +
-                         sphere1_params.radius;
-    EXPECT_NEAR(point_pair.p_WC.z(), pz_WC, 1.0e-14);
+      // Unit tests for both point and hydroelastic discrete pairs.
+      const int sign = point_pair.id_A == sphere2_geometry ? 1 : -1;
+      const Vector3d normal_expected = sign * Vector3d::UnitZ();
+      EXPECT_TRUE(CompareMatrices(point_pair.nhat_BA_W, normal_expected));
 
-    // A little error propagation here. The expected relative error in fn0 is:
-    //   |Δfₙ₀/fₙ₀| = |Δϕ/ϕ| + |Δk/k|
-    // In this case the error in ϕ dominates, since Δϕ is computed to machine
-    // epsilon by the geometry engine and ϕ = 10⁻³. Then we expect |Δfₙ₀/fₙ₀| ≈
-    // 10⁻¹³.
-    constexpr double fn0_tolerance = 1.0e-13;
-    const double fn0_expected = -stiffness_expected * phi_expected;
-    EXPECT_NEAR(point_pair.fn0, fn0_expected, fn0_tolerance * fn0_expected);
+      // Verify dissipation.
+      const double tau1 = sphere1_contact_params.dissipation_time_constant;
+      const double tau2 = i == 0
+                              ? sphere2_contact_params.dissipation_time_constant
+                              : hard_hydro_contact.dissipation_time_constant;
+      const double tau_expected = tau1 + tau2;
+      EXPECT_NEAR(point_pair.dissipation_time_scale, tau_expected,
+                  kEps * tau_expected);
+
+      // Verify friction.
+      const double mu1 = sphere1_contact_params.friction_coefficient;
+      const double mu2 = i == 0 ? sphere2_contact_params.friction_coefficient
+                                : hard_hydro_contact.friction_coefficient;
+      const double mu_expected = 2.0 * (mu1 * mu2) / (mu1 + mu2);
+      EXPECT_NEAR(point_pair.friction_coefficient, mu_expected,
+                  kEps * mu_expected);
+    }
   }
 
   // In the functions below we use CompliantContactManagerTest's friendship with
   // CompliantContactManager to provide access to private functions for unit
   // testing.
+
+  const internal::MultibodyTreeTopology& topology() const {
+    return contact_manager_->tree_topology();
+  }
 
   const std::vector<PenetrationAsPointPair<double>>& EvalPointPairPenetrations(
       const Context<double>& context) const {
@@ -276,9 +295,14 @@ class CompliantContactManagerTest : public ::testing::Test {
     return contact_manager_->EvalDiscreteContactPairs(context);
   }
 
-  const internal::ContactJacobianCache<double>& EvalContactJacobianCache(
-      const systems::Context<double>& context) const {
-    return contact_manager_->EvalContactJacobianCache(context);
+  std::vector<ContactPairKinematics<double>> CalcContactKinematics(
+      const Context<double>& context) const {
+    return contact_manager_->CalcContactKinematics(context);
+  }
+
+  const ContactProblemCache<double>& EvalContactProblemCache(
+      const Context<double>& context) const {
+    return contact_manager_->EvalContactProblemCache(context);
   }
 
   VectorXd CalcFreeMotionVelocities(
@@ -288,28 +312,34 @@ class CompliantContactManagerTest : public ::testing::Test {
     return v_star;
   }
 
-  // Helper function to unit test EvalContactJacobianCache().
-  // This function takes the Jacobian blocks evaluated with
+  const std::vector<MatrixXd>& EvalLinearDynamicsMatrix(
+      const systems::Context<double>& context) const {
+    return contact_manager_->EvalLinearDynamicsMatrix(context);
+  }
+
+  const VectorXd& EvalFreeMotionVelocities(
+      const systems::Context<double>& context) const {
+    return contact_manager_->EvalFreeMotionVelocities(context);
+  }
+
+  // Helper method to unit test EvalContactJacobianCache().
+  // This method takes the Jacobian blocks evaluated with
   // EvalContactJacobianCache() and assembles them into a dense Jacobian matrix.
   MatrixXd CalcDenseJacobianMatrix(
-      const internal::ContactJacobianCache<double>& cache) const {
-    const std::vector<ContactPairKinematics<double>>& contact_kinematics =
-        cache.contact_kinematics;
-    const MultibodyTreeTopology& topology = contact_manager_->tree_topology();
+      const std::vector<ContactPairKinematics<double>>& contact_kinematics)
+      const {
     const int nc = contact_kinematics.size();
     MatrixXd J_AcBc_W(3 * nc, contact_manager_->plant().num_velocities());
     J_AcBc_W.setZero();
     for (int i = 0; i < nc; ++i) {
       const int row_offset = 3 * i;
-      const ContactPairKinematics<double>& pair_kinematics =
-          contact_kinematics[i];
-      for (const ContactPairKinematics<double>::JacobianTreeBlock&
-               tree_jacobian : pair_kinematics.jacobian) {
+      const auto& pair_kinematics = contact_kinematics[i];
+      for (const auto& tree_jacobian : pair_kinematics.jacobian) {
         // If added to the Jacobian, it must have a valid index.
         EXPECT_TRUE(tree_jacobian.tree.is_valid());
         const int col_offset =
-            topology.tree_velocities_start(tree_jacobian.tree);
-        const int tree_nv = topology.num_tree_velocities(tree_jacobian.tree);
+            topology().tree_velocities_start(tree_jacobian.tree);
+        const int tree_nv = topology().num_tree_velocities(tree_jacobian.tree);
         J_AcBc_W.block(row_offset, col_offset, 3, tree_nv) =
             pair_kinematics.R_WC.matrix() * tree_jacobian.J;
       }
@@ -389,22 +419,18 @@ class CompliantContactManagerTest : public ::testing::Test {
 
 // Unit test to verify discrete contact pairs computed by the manager for
 // different combinations of compliance.
-TEST_F(CompliantContactManagerTest,
-       VerifyDiscreteContactPairsFromPointContact) {
+TEST_F(CompliantContactManagerTest, VerifyDiscreteContactPairs) {
   ContactParameters soft_point_contact{1.0e3, std::nullopt, 0.01, 1.0};
   ContactParameters hard_point_contact{1.0e40, std::nullopt, 0.0, 1.0};
 
   // Hard sphere 1/soft sphere 2.
-  VerifyDiscreteContactPairsFromPointContact(hard_point_contact,
-                                             soft_point_contact);
+  VerifyDiscreteContactPairs(hard_point_contact, soft_point_contact);
 
   // Equally soft spheres.
-  VerifyDiscreteContactPairsFromPointContact(soft_point_contact,
-                                             soft_point_contact);
+  VerifyDiscreteContactPairs(soft_point_contact, soft_point_contact);
 
   // Soft sphere 1/hard sphere 2.
-  VerifyDiscreteContactPairsFromPointContact(soft_point_contact,
-                                             hard_point_contact);
+  VerifyDiscreteContactPairs(soft_point_contact, hard_point_contact);
 }
 
 // Unit test to verify discrete contact pairs computed by the manager for
@@ -427,16 +453,16 @@ TEST_F(CompliantContactManagerTest,
 }
 
 // Unit test to verify the computation of the contact Jacobian.
-TEST_F(CompliantContactManagerTest, EvalContactJacobianCache) {
+TEST_F(CompliantContactManagerTest, CalcContactKinematics) {
   SetupRigidGroundCompliantSphereAndNonHydroSphere();
   const double radius = 0.2;  // Spheres's radii in the default setup.
   const double kTolerance = std::numeric_limits<double>::epsilon();
 
   const std::vector<DiscreteContactPair<double>>& pairs =
       EvalDiscreteContactPairs(*plant_context_);
-  const internal::ContactJacobianCache<double>& jacobian_cache =
-      EvalContactJacobianCache(*plant_context_);
-  const MatrixXd& J_AcBc_W = CalcDenseJacobianMatrix(jacobian_cache);
+  const std::vector<ContactPairKinematics<double>> contact_kinematics =
+      CalcContactKinematics(*plant_context_);
+  const auto& J_AcBc_W = CalcDenseJacobianMatrix(contact_kinematics);
 
   // Arbitrary velocity of sphere 1.
   const Vector3d v_WS1(1, 2, 3);
@@ -476,7 +502,7 @@ TEST_F(CompliantContactManagerTest, EvalContactJacobianCache) {
                                 MatrixCompareType::relative));
 
     // Verify we loaded phi correctly.
-    EXPECT_EQ(pairs[0].phi0, jacobian_cache.contact_kinematics[0].phi);
+    EXPECT_EQ(pairs[0].phi0, contact_kinematics[0].phi);
   }
 
   // Verify contact Jacobian for hydroelastic pairs.
@@ -495,8 +521,74 @@ TEST_F(CompliantContactManagerTest, EvalContactJacobianCache) {
                                   MatrixCompareType::relative));
 
       // Verify we loaded phi correctly.
-      EXPECT_EQ(pairs[q].phi0, jacobian_cache.contact_kinematics[q].phi);
+      EXPECT_EQ(pairs[q].phi0, contact_kinematics[q].phi);
     }
+  }
+}
+
+// This test verifies that the SapContactProblem build by the manager is
+// consistent with the contact kinematics computed with CalcContactKinematics().
+TEST_F(CompliantContactManagerTest, EvalContactProblemCache) {
+  SetupRigidGroundCompliantSphereAndNonHydroSphere();
+  const ContactProblemCache<double>& problem_cache =
+      EvalContactProblemCache(*plant_context_);
+  const SapContactProblem<double>& problem = *problem_cache.sap_problem;
+  const std::vector<drake::math::RotationMatrix<double>>& R_WC =
+      problem_cache.R_WC;
+
+  const std::vector<DiscreteContactPair<double>>& pairs =
+      EvalDiscreteContactPairs(*plant_context_);
+  const int num_contacts = pairs.size();
+
+  // Verify sizes.
+  EXPECT_EQ(problem.num_cliques(), topology().num_trees());
+  EXPECT_EQ(problem.num_velocities(), plant_->num_velocities());
+  EXPECT_EQ(problem.num_constraints(), num_contacts);
+  EXPECT_EQ(problem.num_constraint_equations(), 3 * num_contacts);
+  EXPECT_EQ(problem.time_step(), plant_->time_step());
+  ASSERT_EQ(R_WC.size(), num_contacts);
+
+  // Verify dynamics data.
+  const VectorXd& v_star = EvalFreeMotionVelocities(*plant_context_);
+  const std::vector<MatrixXd>& A = EvalLinearDynamicsMatrix(*plant_context_);
+  EXPECT_EQ(problem.v_star(), v_star);
+  EXPECT_EQ(problem.dynamics_matrix(), A);
+
+  // Verify each of the contact constraints.
+  const std::vector<ContactPairKinematics<double>> contact_kinematics =
+      CalcContactKinematics(*plant_context_);
+  for (size_t i = 0; i < contact_kinematics.size(); ++i) {
+    const DiscreteContactPair<double>& discrete_pair = pairs[i];
+    const ContactPairKinematics<double>& pair_kinematics =
+        contact_kinematics[i];
+    const auto* constraint =
+        dynamic_cast<const SapFrictionConeConstraint<double>*>(
+            &problem.get_constraint(i));
+    // In this test we do know all constraints are contact constraints.
+    ASSERT_NE(constraint, nullptr);
+    EXPECT_EQ(constraint->constraint_function(),
+              Vector3d(0., 0., pair_kinematics.phi));
+    EXPECT_EQ(constraint->num_cliques(), pair_kinematics.jacobian.size());
+    EXPECT_EQ(constraint->first_clique(), pair_kinematics.jacobian[0].tree);
+    EXPECT_EQ(constraint->first_clique_jacobian(),
+              pair_kinematics.jacobian[0].J);
+    if (constraint->num_cliques() == 2) {
+      EXPECT_EQ(constraint->second_clique(), pair_kinematics.jacobian[1].tree);
+      EXPECT_EQ(constraint->second_clique_jacobian(),
+                pair_kinematics.jacobian[1].J);
+    }
+    EXPECT_EQ(constraint->parameters().mu, discrete_pair.friction_coefficient);
+    EXPECT_EQ(constraint->parameters().stiffness, discrete_pair.stiffness);
+    EXPECT_EQ(constraint->parameters().dissipation_time_scale,
+              discrete_pair.dissipation_time_scale);
+    // These two parameters, beta and sigma, are for now hard-code in the
+    // manager to these values. Here we simply tests they are consistent with
+    // those hard-coded values.
+    EXPECT_EQ(constraint->parameters().beta, 1.0);
+    EXPECT_EQ(constraint->parameters().sigma, 1.0e-3);
+
+    // Verify contact frame orientation matrix R_WC.
+    EXPECT_EQ(R_WC[i].matrix(), pair_kinematics.R_WC.matrix());
   }
 }
 
@@ -540,8 +632,7 @@ TEST_F(CompliantContactManagerTest, CalcFreeMotionVelocitiesWithJointLimits) {
   // In this model sphere 1 is attached to the world by a prismatic joint with
   // lower limit z = 0.
   const bool sphere1_on_prismatic_joint = true;
-  SetupRigidGroundCompliantSphereAndNonHydroSphere(
-      sphere1_on_prismatic_joint);
+  SetupRigidGroundCompliantSphereAndNonHydroSphere(sphere1_on_prismatic_joint);
 
   const int nv = plant_->num_velocities();
 
@@ -581,6 +672,23 @@ TEST_F(CompliantContactManagerTest, CalcFreeMotionVelocitiesWithJointLimits) {
   // Therefore we only check the force limits have the effect of making the
   // slider velocity larger than if not present.
   EXPECT_GT(v_slider_star, v_slider_no_limits);
+}
+
+TEST_F(CompliantContactManagerTest, EvalLinearDynamicsMatrix) {
+  SetupRigidGroundCompliantSphereAndNonHydroSphere();
+  const std::vector<MatrixXd> A = EvalLinearDynamicsMatrix(*plant_context_);
+  const int nv = plant_->num_velocities();
+  MatrixXd Adense = MatrixXd::Zero(nv, nv);
+  for (TreeIndex t(0); t < topology().num_trees(); ++t) {
+    const int tree_start = topology().tree_velocities_start(t);
+    const int tree_nv = topology().num_tree_velocities(t);
+    Adense.block(tree_start, tree_start, tree_nv, tree_nv) = A[t];
+  }
+  MatrixXd Aexpected(nv, nv);
+  plant_->CalcMassMatrix(*plant_context_, &Aexpected);
+  EXPECT_TRUE(CompareMatrices(Adense, Aexpected,
+                              std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::relative));
 }
 
 // CompliantContactManager implements a workaround for issue #12786 which might
