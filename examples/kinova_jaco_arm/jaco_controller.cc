@@ -35,12 +35,16 @@ DEFINE_int32(num_joints,
 DEFINE_int32(num_fingers,
              drake::manipulation::kinova_jaco::kJacoDefaultArmNumFingers,
              "Number of fingers on the arm");
+DEFINE_bool(build_only, false,
+            "Build the diagram, but exit before processing messages.");
 
 namespace drake {
 namespace examples {
 namespace kinova_jaco_arm {
 namespace {
 using manipulation::kinova_jaco::JacoCommandSender;
+using manipulation::kinova_jaco::kJacoDefaultArmNumJoints;
+using manipulation::kinova_jaco::kJacoDefaultArmNumFingers;
 using manipulation::kinova_jaco::JacoStatusReceiver;
 using manipulation::planner::RobotPlanInterpolator;
 
@@ -96,8 +100,14 @@ int DoMain() {
   // subscriber.
   auto status_receiver = builder.AddSystem<JacoStatusReceiver>(
       num_joints, num_fingers);
-
-  builder.Connect(status_receiver->get_state_output_port(),
+  auto status_mux = builder.AddSystem<systems::Multiplexer>(
+      std::vector<int>({kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers,
+              kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers}));
+  builder.Connect(status_receiver->get_position_measured_output_port(),
+                  status_mux->get_input_port(0));
+  builder.Connect(status_receiver->get_velocity_measured_output_port(),
+                  status_mux->get_input_port(1));
+  builder.Connect(status_mux->get_output_port(),
                   pid_controller->get_input_port_estimated_state());
   builder.Connect(plan_source->get_output_port(0),
                   pid_controller->get_input_port_desired_state());
@@ -108,7 +118,7 @@ int DoMain() {
       builder.AddSystem<systems::Demultiplexer>(
           (num_joints + num_fingers) * 2, num_joints + num_fingers);
   builder.Connect(plan_source->get_output_port(0),
-                  target_demux->get_input_port(0));
+                  target_demux->get_input_port());
 
   // Sum the outputs of the pid controller and v_d.
   auto adder = builder.AddSystem<systems::Adder>(2, num_joints + num_fingers);
@@ -117,27 +127,25 @@ int DoMain() {
   builder.Connect(target_demux->get_output_port(1),
                   adder->get_input_port(1));
 
-  // Multiplex the q_d and velocity command streams back into a single
-  // port.
-  std::vector<int> mux_sizes(2, num_joints + num_fingers);
-  auto command_mux = builder.AddSystem<systems::Multiplexer>(mux_sizes);
-  builder.Connect(target_demux->get_output_port(0),
-                  command_mux->get_input_port(0));
-  builder.Connect(adder->get_output_port(),
-                  command_mux->get_input_port(1));
-
   auto command_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_jaco_command>(
           kLcmCommandChannel, &lcm, {systems::TriggerType::kForced}));
   auto command_sender = builder.AddSystem<JacoCommandSender>(num_joints);
-  builder.Connect(command_mux->get_output_port(0),
-                  command_sender->get_input_port());
+  builder.Connect(target_demux->get_output_port(0),
+                  command_sender->get_position_input_port());
+  builder.Connect(adder->get_output_port(),
+                  command_sender->get_velocity_input_port());
   builder.Connect(command_sender->get_output_port(),
                   command_pub->get_input_port());
 
   auto owned_diagram = builder.Build();
   const systems::Diagram<double>* diagram = owned_diagram.get();
   systems::Simulator<double> simulator(std::move(owned_diagram));
+
+  // If we're just testing diagram creation, exit here.
+  if (FLAGS_build_only) {
+    return EXIT_SUCCESS;
+  }
 
   // Wait for the first message.
   drake::log()->info("Waiting for first lcmt_jaco_status");
@@ -161,9 +169,10 @@ int DoMain() {
 
   auto& plan_source_context =
       diagram->GetMutableSubsystemContext(*plan_source, &diagram_context);
+
   plan_source->Initialize(
-      t0, status_receiver->get_state_output_port().Eval(
-          status_context).head(num_joints + num_fingers),
+      t0,
+      status_receiver->get_position_measured_output_port().Eval(status_context),
       &plan_source_context.get_mutable_state());
 
   // Run forever, using the lcmt_jaco_status message to dictate when simulation

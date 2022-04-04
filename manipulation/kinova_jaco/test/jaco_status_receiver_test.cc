@@ -11,15 +11,23 @@ namespace kinova_jaco {
 namespace {
 
 using Eigen::VectorXd;
+constexpr int N = kJacoDefaultArmNumJoints;
+constexpr int N_F = kJacoDefaultArmNumFingers;
 
-class JacoStatusReceiverTest : public testing::Test {
+class JacoStatusReceiverTestBase : public testing::Test {
  public:
-  JacoStatusReceiverTest()
-      : dut_(),
+  JacoStatusReceiverTestBase(int num_joints, int num_fingers)
+      : dut_(num_joints, num_fingers),
         context_ptr_(dut_.CreateDefaultContext()),
         context_(*context_ptr_),
         fixed_input_(
             dut_.get_input_port().FixValue(&context_, lcmt_jaco_status{})) {}
+
+  // Test cases should call this to set the DUT's input value.
+  void SetInput() {
+    fixed_input_.GetMutableData()->
+        template get_mutable_value<lcmt_jaco_status>() = status_;
+  }
 
   void Copy(const Eigen::VectorXd& from, std::vector<double>* to) {
     *to = {from.data(), from.data() + from.size()};
@@ -33,37 +41,35 @@ class JacoStatusReceiverTest : public testing::Test {
   lcmt_jaco_status status_{};
 };
 
-TEST_F(JacoStatusReceiverTest, AcceptanceTest) {
-  // Confirm that output is zero for uninitialized lcm input.
-  const int num_output_ports = dut_.num_output_ports();
-  ASSERT_EQ(num_output_ports, 4);
+class JacoStatusReceiverTest : public JacoStatusReceiverTestBase {
+ public:
+  JacoStatusReceiverTest()
+      : JacoStatusReceiverTestBase(
+            kJacoDefaultArmNumJoints, kJacoDefaultArmNumFingers) {}
+};
 
-  constexpr int total_dof =
-      kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers;
+class JacoStatusReceiverNoFingersTest : public JacoStatusReceiverTestBase {
+ public:
+  JacoStatusReceiverNoFingersTest()
+      : JacoStatusReceiverTestBase(
+            kJacoDefaultArmNumJoints, 0) {}
+};
 
-  for (int i = 0; i < num_output_ports; ++i) {
-    const systems::LeafSystem<double>& leaf = dut_;
-    const auto& port = leaf.get_output_port(i);
-    if (i == 0) {
-      EXPECT_TRUE(
-          CompareMatrices(port.Eval(context_), VectorXd::Zero(total_dof * 2)));
-    } else {
-      EXPECT_TRUE(CompareMatrices(
-          port.Eval(context_), VectorXd::Zero(total_dof)));
-    }
-  }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
+TEST_F(JacoStatusReceiverTest, DeprecatedAcceptanceTest) {
   // Populate the status message with distinct values.
-  const VectorXd state = VectorXd::LinSpaced(total_dof * 2, 0.0, 1.0);
-  const VectorXd torque = VectorXd::LinSpaced(total_dof, 2.0, 3.0);
-  const VectorXd torque_external = VectorXd::LinSpaced(total_dof, 4.0, 5.0);
-  const VectorXd current = VectorXd::LinSpaced(total_dof, 6.0, 7.0);
+  const VectorXd state = VectorXd::LinSpaced((N + N_F) * 2, 0.0, 1.0);
+  const VectorXd torque = VectorXd::LinSpaced(N + N_F, 2.0, 3.0);
+  const VectorXd torque_external = VectorXd::LinSpaced(N + N_F, 4.0, 5.0);
+  const VectorXd current = VectorXd::LinSpaced(N + N_F, 6.0, 7.0);
 
   status_.utime = 1;
   status_.num_joints = kJacoDefaultArmNumJoints;
   status_.num_fingers = kJacoDefaultArmNumFingers;
   Copy(state.head(kJacoDefaultArmNumJoints), &status_.joint_position);
-  Copy(state.segment(total_dof, kJacoDefaultArmNumJoints) / 2,
+  Copy(state.segment(N + N_F, kJacoDefaultArmNumJoints) / 2,
        &status_.joint_velocity);
   Copy(state.segment(kJacoDefaultArmNumJoints, kJacoDefaultArmNumFingers) *
        kFingerUrdfToSdk,
@@ -79,9 +85,7 @@ TEST_F(JacoStatusReceiverTest, AcceptanceTest) {
   Copy(current.head(kJacoDefaultArmNumJoints), &status_.joint_current);
   Copy(current.tail(kJacoDefaultArmNumFingers), &status_.finger_current);
 
-  // TODO(jwnimmer-tri) This systems framework API is not very ergonomic.
-  fixed_input_.GetMutableData()->
-      template get_mutable_value<lcmt_jaco_status>() = status_;
+  SetInput();
 
   // Confirm that real message values are output correctly.
   EXPECT_TRUE(CompareMatrices(
@@ -93,6 +97,106 @@ TEST_F(JacoStatusReceiverTest, AcceptanceTest) {
       torque_external));
   EXPECT_TRUE(CompareMatrices(
       dut_.get_current_output_port().Eval(context_), current));
+}
+
+#pragma GCC diagnostic pop
+
+TEST_F(JacoStatusReceiverTest, ZeroOutputTest) {
+  // Confirm that output is zero for uninitialized lcm input.
+  const int num_output_ports = dut_.num_output_ports();
+  for (int i = 0; i < num_output_ports; ++i) {
+    const systems::LeafSystem<double>& leaf = dut_;
+    const auto& port = leaf.get_output_port(i);
+    EXPECT_TRUE(CompareMatrices(
+        port.Eval(context_), VectorXd::Zero(port.size())));
+  }
+}
+
+TEST_F(JacoStatusReceiverTest, AcceptanceTest) {
+  const VectorXd q0 = VectorXd::LinSpaced(N, 0.2, 0.3);
+  const VectorXd v0 = VectorXd::LinSpaced(N, 0.3, 0.4);
+  const VectorXd f_q0 = VectorXd::LinSpaced(N_F, 1.2, 1.3);
+  const VectorXd f_v0 = VectorXd::LinSpaced(N_F, 1.3, 1.4);
+  const VectorXd t0 = VectorXd::LinSpaced(N, 0.4, 0.5);
+  const VectorXd t_ext0 = VectorXd::LinSpaced(N, 0.5, 0.6);
+  const VectorXd current0 = VectorXd::LinSpaced(N, 0.6, 0.7);
+  const VectorXd f_t0 = VectorXd::LinSpaced(N_F, 1.4, 1.5);
+  const VectorXd f_t_ext0 = VectorXd::LinSpaced(N_F, 1.5, 1.6);
+  const VectorXd f_current0 = VectorXd::LinSpaced(N_F, 1.6, 1.7);
+
+  status_.utime = 1;
+  status_.num_joints = N;
+  status_.num_fingers = N_F;
+  Copy(q0, &status_.joint_position);
+  Copy(v0, &status_.joint_velocity);
+  Copy(f_q0, &status_.finger_position);
+  Copy(f_v0, &status_.finger_velocity);
+  Copy(t0, &status_.joint_torque);
+  Copy(t_ext0, &status_.joint_torque_external);
+  Copy(current0, &status_.joint_current);
+  Copy(f_t0, &status_.finger_torque);
+  Copy(f_t_ext0, &status_.finger_torque_external);
+  Copy(f_current0, &status_.finger_current);
+
+  SetInput();
+
+  VectorXd position_expected(N + N_F);
+  position_expected.head(N) = q0;
+  position_expected.tail(N_F) = f_q0 * kFingerSdkToUrdf;
+
+  VectorXd velocity_expected(N + N_F);
+  velocity_expected.head(N) = v0;
+  velocity_expected.tail(N_F) = f_v0 * kFingerSdkToUrdf;
+
+  EXPECT_TRUE(CompareMatrices(
+      dut_.get_position_measured_output_port().Eval(context_),
+      position_expected));
+  EXPECT_TRUE(CompareMatrices(
+      dut_.get_velocity_measured_output_port().Eval(context_),
+      velocity_expected));
+  EXPECT_TRUE(CompareMatrices(
+      dut_.get_torque_measured_output_port().Eval(context_).head(N), t0));
+  EXPECT_TRUE(CompareMatrices(
+      dut_.get_torque_measured_output_port().Eval(context_).tail(N_F), f_t0));
+  EXPECT_TRUE(CompareMatrices(
+      dut_.get_torque_external_output_port().Eval(context_).head(N), t_ext0));
+  EXPECT_TRUE(CompareMatrices(
+      dut_.get_torque_external_output_port().Eval(context_).tail(N_F),
+      f_t_ext0));
+  EXPECT_TRUE(CompareMatrices(
+      dut_.get_current_output_port().Eval(context_).head(N), current0));
+  EXPECT_TRUE(CompareMatrices(
+      dut_.get_current_output_port().Eval(context_).tail(N_F), f_current0));
+}
+
+TEST_F(JacoStatusReceiverNoFingersTest, AcceptanceTestNoFingers) {
+  const VectorXd q0 = VectorXd::LinSpaced(N, 0.2, 0.3);
+  const VectorXd v0 = VectorXd::LinSpaced(N, 0.3, 0.4);
+  const VectorXd t0 = VectorXd::LinSpaced(N, 0.4, 0.5);
+  const VectorXd t_ext0 = VectorXd::LinSpaced(N, 0.5, 0.6);
+  const VectorXd current0 = VectorXd::LinSpaced(N, 0.6, 0.7);
+
+  status_.utime = 1;
+  status_.num_joints = N;
+  status_.num_fingers = 0;
+  Copy(q0, &status_.joint_position);
+  Copy(v0, &status_.joint_velocity);
+  Copy(t0, &status_.joint_torque);
+  Copy(t_ext0, &status_.joint_torque_external);
+  Copy(current0, &status_.joint_current);
+
+  SetInput();
+
+  EXPECT_TRUE(CompareMatrices(
+      dut_.get_position_measured_output_port().Eval(context_), q0));
+  EXPECT_TRUE(CompareMatrices(
+      dut_.get_velocity_measured_output_port().Eval(context_), v0));
+  EXPECT_TRUE(CompareMatrices(
+      dut_.get_torque_measured_output_port().Eval(context_), t0));
+  EXPECT_TRUE(CompareMatrices(
+      dut_.get_torque_external_output_port().Eval(context_), t_ext0));
+  EXPECT_TRUE(CompareMatrices(
+      dut_.get_current_output_port().Eval(context_), current0));
 }
 
 }  // namespace
