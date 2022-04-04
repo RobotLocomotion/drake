@@ -4,11 +4,14 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
+#include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/systems/framework/context.h"
 
@@ -81,6 +84,20 @@ struct AccelerationsDueToExternalForcesCache {
   multibody::internal::AccelerationKinematicsCache<T> ac;  // Accelerations.
 };
 
+template <typename T>
+struct ContactProblemCache {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactProblemCache);
+  explicit ContactProblemCache(double time_step) {
+    sap_problem = std::make_unique<
+        drake::multibody::contact_solvers::internal::SapContactProblem<T>>(
+        time_step);
+  }
+  copyable_unique_ptr<
+      drake::multibody::contact_solvers::internal::SapContactProblem<T>>
+      sap_problem;
+  std::vector<drake::math::RotationMatrix<T>> R_WC;
+};
+
 // This class implements the interface given by DiscreteUpdateManager so that
 // contact computations can be consumed by MultibodyPlant.
 //
@@ -125,9 +142,10 @@ class CompliantContactManager final
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
   struct CacheIndexes {
-    systems::CacheIndex contact_jacobian;
+    systems::CacheIndex contact_problem;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex free_motion_velocities;
+    systems::CacheIndex linear_dynamics_matrix;
     systems::CacheIndex non_contact_forces_accelerations;
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
   };
@@ -179,6 +197,15 @@ class CompliantContactManager final
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector) const;
 
+  // Helper to acquire per-geometry Coulomb friction coefficients from
+  // SceneGraph. Discrete models cannot make a distinction between static and
+  // dynamic coefficients of frition. Therefore this method returns the
+  // coefficient of dynamic friction stored by SceneGraph while the coefficient
+  // of static friction is ignored.
+  double GetCoulombFriction(
+      geometry::GeometryId id,
+      const geometry::SceneGraphInspector<T>& inspector) const;
+
   // Utility to combine stiffnesses k1 and k2 according to the rule:
   //   k  = k₁⋅k₂/(k₁+k₂)
   // In other words, the combined compliance (the inverse of stiffness) is the
@@ -221,11 +248,7 @@ class CompliantContactManager final
 
   // Given the configuration stored in `context`, this method computes the
   // contact Jacobian cache. See ContactJacobianCache for details.
-  void CalcContactJacobianCache(const systems::Context<T>& context,
-                                internal::ContactJacobianCache<T>* cache) const;
-
-  // Eval version of CalcContactJacobianCache().
-  const internal::ContactJacobianCache<T>& EvalContactJacobianCache(
+  std::vector<ContactPairKinematics<T>> CalcContactKinematics(
       const systems::Context<T>& context) const;
 
   // Given the previous state x0 stored in `context`, this method computes the
@@ -235,6 +258,16 @@ class CompliantContactManager final
 
   // Eval version of CalcFreeMotionVelocities().
   const VectorX<T>& EvalFreeMotionVelocities(
+      const systems::Context<T>& context) const;
+
+  // Computes the linearized moementum equation matrix A to build the SAP
+  // contact problem. Refer to SapContactProblem's class documentation for
+  // details.
+  void CalcLinearDynamicsMatrix(const systems::Context<T>& context,
+                                std::vector<MatrixX<T>>* A) const;
+
+  // Eval version of CalcLinearDynamicsMatrix().
+  const std::vector<MatrixX<T>>& EvalLinearDynamicsMatrix(
       const systems::Context<T>& context) const;
 
   // Calc non-contact forces and the accelerations they induce.
@@ -247,6 +280,20 @@ class CompliantContactManager final
   const multibody::internal::AccelerationKinematicsCache<T>&
   EvalAccelerationsDueToNonContactForcesCache(
       const systems::Context<T>& context) const;
+
+  // Computes the necessary data to describe the SAP contact problem. Additional
+  // information such as R_WC is also computed here so that it can be used at a
+  // later stage to compute contact results.
+  void CalcContactProblemCache(const systems::Context<T>& context,
+                               ContactProblemCache<T>* cache) const;
+
+  // Eval version of CalcContactProblemCache().
+  const ContactProblemCache<T>& EvalContactProblemCache(
+      const systems::Context<T>& context) const;
+
+  std::vector<drake::math::RotationMatrix<T>> AddContactConstraints(
+      const systems::Context<T>& context,
+      contact_solvers::internal::SapContactProblem<T>* problem) const;
 
   std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver_;
   CacheIndexes cache_indexes_;

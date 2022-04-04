@@ -38,6 +38,11 @@ struct DiscreteContactPair {
   T stiffness{0.0};
   /* The effective damping of the contact pair. */
   T damping{0.0};
+  /* Dissipation time scale. For linear models of dissipation. Initialized to
+   NAN when unused. */
+  T dissipation_time_scale{NAN};
+  /* Coefficient of friction. Initialized to NAN when unused. */
+  T friction_coefficient{NAN};
 };
 
 }  // namespace internal
