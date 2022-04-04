@@ -182,7 +182,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("h"), py::arg("l"), cls_doc.ctor.doc_2args)
         .def(
             py::init<const Vector6<T>&>(), py::arg("L"), cls_doc.ctor.doc_1args)
-        .def("Shift", &Class::Shift, py::arg("p_BpBq_E"), cls_doc.Shift.doc)
+        .def("Shift", &Class::Shift, py::arg("offset"), cls_doc.Shift.doc);
+    constexpr char doc_Shift_deprecatedArgName[] =
+        "The keyword argument (kwarg) has been renamed from"
+        " Shift(p_BpBq_E) to"
+        " Shift(offset)."
+        " Deprecated kwarg will be unavailable after 2022-08-01.";
+    cls.def("Shift", WrapDeprecated(doc_Shift_deprecatedArgName, &Class::Shift),
+           py::arg("p_BpBq_E"), doc_Shift_deprecatedArgName)
         .def("dot", &Class::dot, py::arg("velocity"), cls_doc.dot.doc);
     constexpr char doc_dotWithArgumentNameV_IBp_E_deprecated[] =
         "The keyword argument (kwarg) has been renamed from"

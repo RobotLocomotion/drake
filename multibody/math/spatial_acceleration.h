@@ -18,7 +18,7 @@
 namespace drake {
 namespace multibody {
 
-/// This class represents a _spatial acceleration_ and has 6 elements with
+/// This class represents a _spatial acceleration_ A and has 6 elements with
 /// an angular (rotational) acceleration α (3-element vector) on top of a
 /// translational (linear) acceleration 𝐚 (3-element vector). Spatial
 /// acceleration represents the rotational and translational acceleration of a
@@ -34,8 +34,8 @@ namespace multibody {
 /// where Bo is frame B's origin point.
 /// For an @ref multibody_frames_and_bodies "offset frame" Bp, the monogram
 /// notation A_MBp_E denotes frame Bp's spatial acceleration measured in M,
-/// expressed in E.  Details on spatial vectors and monogram notation are
-/// in section @ref multibody_spatial_vectors.
+/// expressed in E. Details on spatial vectors and monogram notation are in
+/// sections @ref multibody_spatial_vectors and @ref multibody_quantities.
 ///
 /// The typeset for A_MB is @f$\,{^MA^B}@f$ and its definition is
 /// @f$^MA^B = \frac{^Md}{dt}\,{^MV^B}\,@f$, where @f${^MV^B}@f$ is frame B's
@@ -45,8 +45,8 @@ namespace multibody {
 /// for an in-depth discussion. Time derivatives in different frames are related
 /// by the "Transport Theorem", which in Drake is implemented in
 /// drake::math::ConvertTimeDerivativeToOtherFrame().
-/// In source code (monogram) notation, we write `A_MB = DtM(V_MB)`, where
-/// `DtM()` denotes the time derivative in frame M. Details on vector
+/// In source code (monogram) notation, we write A_MB = DtM(V_MB), where
+/// DtM() denotes the time derivative in frame M. Details on vector
 /// differentiation is in section @ref Dt_multibody_quantities.
 ///
 /// [Mitiguy 2022] Mitiguy, P., 2022. Advanced Dynamics & Motion Simulation.
@@ -69,15 +69,15 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// uninitialized spatial acceleration fail fast (fast bug detection).
   SpatialAcceleration() : Base() {}
 
-  /// Constructs a spatial acceleration from an angular acceleration α (alpha)
+  /// Constructs a spatial acceleration A from an angular acceleration α (alpha)
   /// and a translational acceleration 𝐚.
   SpatialAcceleration(const Eigen::Ref<const Vector3<T>>& alpha,
                       const Eigen::Ref<const Vector3<T>>& a) : Base(alpha, a) {}
 
-  /// Constructs a spatial acceleration from an Eigen expression that represents
-  /// a 6-element vector, i.e., a 3-element angular acceleration α and a
-  /// 3-element translational acceleration 𝐚. This constructor will assert the
-  /// size of `A` is six (6) either at compile-time for fixed sized Eigen
+  /// Constructs a spatial acceleration A from an Eigen expression that
+  /// represents a 6-element vector, i.e., a 3-element angular acceleration α
+  /// and a 3-element translational acceleration 𝐚. This constructor will assert
+  /// the size of A is six (6) either at compile-time for fixed sized Eigen
   /// expressions or at run-time for dynamic sized Eigen expressions.
   template <typename Derived>
   explicit SpatialAcceleration(const Eigen::MatrixBase<Derived>& A) : Base(A) {}
@@ -164,7 +164,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
         offset, angular_velocity_of_this_frame);
   }
 
-  /// (Advanced) Given `this` spatial acceleration `A_MB` of a frame B measured
+  /// (Advanced) Given `this` spatial acceleration A_MB of a frame B measured
   /// in a frame M, shifts %SpatialAcceleration from frame B to a frame C (i.e.,
   /// A_MB to A_MC), where both B and C are fixed to the same frame or rigid
   /// body and where ω_MB = 0 (frame B's angular velocity in frame M is zero).
@@ -219,7 +219,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// If frame C is rigidly fixed to frame B, A_BC_E = 0 and V_BC_E = 0 and
   /// this method produces a Shift() operation (albeit inefficiently).
   /// The previous equations show composing spatial acceleration is not simply
-  /// adding `A_MB + A_BC` and these equations differ significantly from their
+  /// adding A_MB + A_BC and these equations differ significantly from their
   /// spatial velocity counterparts. For example, angular velocities simply add
   /// as <pre>
   ///   ω_MC = ω_MB + ω_BC,   but 3D angular acceleration is more complicated as
@@ -293,8 +293,8 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
       const SpatialVelocity<T>& velocity_of_moving_frame,
       const SpatialAcceleration<T>& acceleration_of_moving_frame) const {
     // This operation can be written in a compact form using the rigid shift
-    // operator `Φᵀ(p_BoCo)` (documented in SpatialVelocity::Shift()) and
-    // `Ac_MC(ω_MB, V_BC)` which contains the centrifugal and Coriolis terms:
+    // operator Φᵀ(p_BoCo) (documented in SpatialVelocity::Shift()) and
+    //   Ac_MC(ω_MB, V_BC) which contains the centrifugal and Coriolis terms:
     //   A_MC = Φᵀ(p_BoCo) A_MB + Ac_MC(ω_MB, V_BC) + A_BC
     //   Ac_MC(ω_MB, V_BC) = | ω_MB x ω_BC                             |
     //                       | ω_MB x (ω_MB x p_BoCo) + 2 ω_MB x v_BCo |

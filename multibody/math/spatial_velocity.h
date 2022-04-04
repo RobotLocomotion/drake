@@ -17,7 +17,7 @@
 namespace drake {
 namespace multibody {
 
-/// This class represents a _spatial velocity_ (also called a _twist_) and has
+/// This class represents a _spatial velocity_ V (also called a _twist_) and has
 /// 6 elements with an angular (rotational) velocity ω (3-element vector) on top
 /// of a translational (linear) velocity v (3-element vector). Spatial velocity
 /// represents the rotational and translational motion of a frame B with respect
@@ -32,8 +32,8 @@ namespace multibody {
 /// velocity measured in M, expressed in E), where Bo is frame B's origin point.
 /// For an @ref multibody_frames_and_bodies "offset frame" Bp, the monogram
 /// notation V_MBp_E denotes the spatial velocity of frame Bp measured in M,
-/// expressed in E.  Details on spatial vectors and monogram notation are
-/// in section @ref multibody_spatial_vectors.
+/// expressed in E. Details on spatial vectors and monogram notation are in
+/// sections @ref multibody_spatial_vectors and @ref multibody_quantities.
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -53,12 +53,12 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// uninitialized spatial velocity fail fast (fast bug detection).
   SpatialVelocity() : Base() {}
 
-  /// Constructs a spatial velocity from an angular velocity @p ω and a
-  /// translational velocity @p v.
+  /// Constructs a spatial velocity V from an angular velocity ω and a
+  /// translational velocity v.
   SpatialVelocity(const Eigen::Ref<const Vector3<T>>& w,
                   const Eigen::Ref<const Vector3<T>>& v) : Base(w, v) {}
 
-  /// Constructs a spatial velocity from an Eigen expression that represents a
+  /// Constructs a spatial velocity V from an Eigen expression that represents a
   /// 6-element vector, i.e., two 3-element vectors, namely an angular velocity
   /// ω and a translational velocity v.  This constructor will assert the size
   /// of V is six (6) either at compile-time for fixed sized Eigen expressions
@@ -86,13 +86,13 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
     return *this;
     // Note: this operation is linear. [Jain 2010], (§1.4, page 12) uses the
     // "rigid body transformation operator" to write this as:
-    //   V_MC = Φᵀ(p_BoCo) V_MB  where `Φᵀ(p_BoCo)` is the linear operator:
-    //   Φᵀ(p_BoCo) = |  I₃       0  |
-    //                | -px_BoCo  I₃ |
-    // where `px_BoCo` denotes the cross product skew-symmetric matrix such that
-    // `px_BoCo vec = p_BoCo x vec` (where vec is any vector).
-    // This same operator (not its transpose as for spatial velocities) allows
-    // us to shift spatial forces, see SpatialForce::Shift().
+    //    V_MC = Φᵀ(p_BoCo) V_MB    where Φᵀ(p) is the linear operator:
+    //   Φᵀ(p) = | I₃   0₃ |
+    //           | -pₓ  I₃ |       I₃ is the 3x3 identity matrix, 0₃ is the 3x3
+    // zero matrix, and pₓ denotes the skew-symmetric cross product matrix such
+    // that pₓvec = p x vec (where vec is any vector). This Φᵀ operator shifts
+    // spatial velocity whereas the Φ operator shifts spatial force and spatial
+    // momentum (see SpatialForce::Shift() and SpatialMomentum:Shift()).
     //
     // - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
     //               algorithms. Springer Science & Business Media, pp. 123-130.
