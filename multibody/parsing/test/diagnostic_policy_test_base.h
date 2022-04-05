@@ -53,7 +53,7 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
  protected:
   std::string DumpErrors() {
     std::stringstream stream;
-    for (const DiagnosticDetail record : error_records_) {
+    for (const DiagnosticDetail& record : error_records_) {
       stream << record.FormatError() << '\n';
     }
     return stream.str();
@@ -61,7 +61,7 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
 
   std::string DumpWarnings() {
     std::stringstream stream;
-    for (const DiagnosticDetail record : warning_records_) {
+    for (const DiagnosticDetail& record : warning_records_) {
       stream << record.FormatWarning() << '\n';
     }
     return stream.str();
