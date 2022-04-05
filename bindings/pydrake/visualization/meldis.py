@@ -59,6 +59,8 @@ from pydrake.math import (
     RotationMatrix,
 )
 from pydrake.multibody.meshcat import (
+    _HydroelasticContactVisualizer,
+    _HydroelasticContactVisualizerItem,
     _PointContactVisualizer,
     _PointContactVisualizerItem,
     ContactVisualizerParams,
@@ -175,11 +177,18 @@ class _ContactApplet:
         # Add point visualization.
         params = ContactVisualizerParams()
         params.prefix = "/CONTACT_RESULTS/point"
-        self._helper = _PointContactVisualizer(meshcat, params)
+        self._point_helper = _PointContactVisualizer(meshcat, params)
+
+        # Add hydroelastic visualization.
+        params = ContactVisualizerParams()
+        params.prefix = "/CONTACT_RESULTS/hydroelastic"
+        self._hydro_helper = _HydroelasticContactVisualizer(meshcat, params)
 
     def on_contact_results(self, message):
         """Handler for lcmt_contact_results_for_viz. Note that only point
-        contacts are shown so far; hydroelastic contacts are not shown."""
+        hydroelastic contact force and moment vectors are shown; contact surface and pressure are not shown."""
+
+        # Handle point contact pairs
         viz_items = []
         for lcm_item in message.point_pair_contact_info:
             viz_items.append(_PointContactVisualizerItem(
@@ -187,7 +196,18 @@ class _ContactApplet:
                 body_B=lcm_item.body2_name,
                 contact_force=lcm_item.contact_force,
                 contact_point=lcm_item.contact_point))
-        self._helper.Update(viz_items)
+        self._point_helper.Update(viz_items)
+
+        # Handle hydroelastic contact pairs
+        viz_items = []
+        for lcm_item in message.hydroelastic_contacts:
+            viz_items.append(_HydroelasticContactVisualizerItem(
+                body_A=lcm_item.body1_name,
+                body_B=lcm_item.body2_name,
+                centroid_W=lcm_item.centroid_W,
+                force_C_W=lcm_item.force_C_W,
+                moment_C_W=lcm_item.moment_C_W))
+        self._hydro_helper.Update(viz_items);
 
 
 class Meldis:

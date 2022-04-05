@@ -11,6 +11,7 @@
 #include "drake/multibody/meshcat/contact_visualizer_params.h"
 #include "drake/multibody/meshcat/joint_sliders.h"
 #include "drake/multibody/meshcat/point_contact_visualizer.h"
+#include "drake/multibody/meshcat/hydroelastic_contact_visualizer.h"
 
 using drake::multibody::MultibodyPlant;
 using drake::systems::LeafSystem;
@@ -87,6 +88,33 @@ void DoScalarIndependentDefinitions(py::module m) {
                  ContactVisualizerParams>(),
             py::arg("meshcat"), py::arg("params"), doc_internal)
         .def("Update", &Class::Update, py::arg("items"));
+  }
+
+  // HydroelasticContactVisualizerItem (internal)
+  {
+    using Class =
+        multibody::meshcat::internal::HydroelasticContactVisualizerItem;
+    constexpr char doc_internal[] = "(internal use only)";
+    py::class_<Class>(m, "_HydroelasticContactVisualizerItem",
+        py::dynamic_attr(), doc_internal)
+        .def(ParamInit<Class>())
+        .def_readwrite("body_A", &Class::body_A, doc_internal)
+        .def_readwrite("body_B", &Class::body_B, doc_internal)
+        .def_readwrite("centroid_W", &Class::centroid_W, doc_internal)
+        .def_readwrite("force_C_W", &Class::force_C_W, doc_internal)
+        .def_readwrite("moment_C_W", &Class::moment_C_W, doc_internal);
+  }
+
+  // HydroelasticContactVisualizer (internal)
+  {
+    using Class = multibody::meshcat::internal::HydroelasticContactVisualizer;
+    constexpr char doc_internal[] = "(internal use only)";
+    py::class_<Class>(m, "_HydroelasticContactVisualizer", doc_internal)
+        .def(py::init<std::shared_ptr<geometry::Meshcat>,
+                 ContactVisualizerParams>(),
+            py::arg("meshcat"), py::arg("params"), doc_internal)
+        .def("Update", &Class::Update, py::arg("items"))
+        .def("Delete", &Class::Delete);
   }
 }
 

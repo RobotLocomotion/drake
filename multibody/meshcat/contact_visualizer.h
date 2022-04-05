@@ -17,6 +17,9 @@ namespace internal {
 // Defined in point_contact_visualizer.h.
 class PointContactVisualizer;
 struct PointContactVisualizerItem;
+// Defined in hydroelastic_contact_visualizer.h
+class HydroelasticContactVisualizer;
+struct HydroelasticContactVisualizerItem;
 }  // namespace internal
 
 /** ContactVisualizer is a system that publishes a ContactResults to
@@ -123,6 +126,11 @@ class ContactVisualizer final : public systems::LeafSystem<T> {
       const systems::Context<T>&,
       std::vector<internal::PointContactVisualizerItem>*) const;
 
+  /* Calc function for the cache entry of visualized hydroelastic contacts. */
+  void CalcHydroelasticContacts(
+      const systems::Context<T>&,
+      std::vector<internal::HydroelasticContactVisualizerItem>*) const;
+
   /* Handles the initialization event. */
   systems::EventStatus OnInitialization(const systems::Context<T>&) const;
 
@@ -140,10 +148,16 @@ class ContactVisualizer final : public systems::LeafSystem<T> {
   operation) from a const System (e.g., during simulation). */
   std::unique_ptr<internal::PointContactVisualizer> point_visualizer_;
 
+  /* This helper class is mutable because we must update it (a non-const
+  operation) from a const System (e.g., during simulation). */
+  std::unique_ptr<internal::HydroelasticContactVisualizer>
+      hydroelastic_visualizer_;
+
   systems::InputPortIndex contact_results_input_port_;
   systems::InputPortIndex query_object_input_port_;
   systems::CacheIndex geometry_names_scratch_;
   systems::CacheIndex point_contacts_cache_;
+  systems::CacheIndex hydroelastic_contacts_cache_;
 };
 
 /** A convenient alias for the ContactVisualizer class when using

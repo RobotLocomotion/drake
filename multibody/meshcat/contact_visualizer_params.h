@@ -19,6 +19,12 @@ struct ContactVisualizerParams {
   /** The color used to draw the contact force arrows. */
   geometry::Rgba color{0, 1, 0, 1};
 
+  /** The color used to draw the hydrelastic contact force arrows. */
+  geometry::Rgba hydro_force_color{1, 0, 0, 1};
+
+  /** The color used to draw the hydroelastic contact moment arrows. */
+  geometry::Rgba hydro_moment_color{0, 0, 1, 1};
+
   /** A prefix to add to the path for all objects and transforms curated by the
    ContactVisualizer. It can be an absolute path or relative path.
    If relative, this `prefix` will be appended to the geometry::Meshcat `prefix`
