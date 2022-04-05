@@ -34,7 +34,7 @@ namespace internal {
      // The number of quadrature points in each element.
      static constexpr int num_quadrature_points = ...;
      // The natural dimension of the element.
-     static constexpr int num_natural_dimension = ...;
+     static constexpr int natural_dimension = ...;
      // The number of nodes in the element.
      static constexpr int num_nodes = ...;
      // The number of degrees of freedom in the element.
