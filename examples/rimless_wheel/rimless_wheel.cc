@@ -179,6 +179,7 @@ void RimlessWheel<T>::FloatingBaseStateOut(
       get_continuous_state(context);
   const RimlessWheelParams<T>& params = get_parameters(context);
   const T toe = get_toe_position(context);
+  const T alpha = calc_alpha(params);
 
   // x, y, z.
   output->SetAtIndex(
@@ -189,7 +190,11 @@ void RimlessWheel<T>::FloatingBaseStateOut(
 
   // roll, pitch, yaw.
   output->SetAtIndex(3, 0.);
-  output->SetAtIndex(4, rw_state.theta());
+  // Unroll theta (add 2 alpha * number of steps, where number of steps = toe /
+  // stance length)
+  const T theta =
+      rw_state.theta() + alpha * toe / (params.length() * sin(alpha));
+  output->SetAtIndex(4, theta);
   output->SetAtIndex(5, 0.);
 
   // x, y, z derivatives.

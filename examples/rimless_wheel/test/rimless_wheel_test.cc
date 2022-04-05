@@ -74,6 +74,10 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
   // Should still have the same energy (dissipation energy lost = potential
   // energy gained). The error tolerance below seems to work well.
   EXPECT_NEAR(rw.CalcTotalEnergy(context), steady_state_energy, 1e-5);
+  // Floating-base state should unroll theta (pitch).
+  Eigen::VectorXd floating_base_state =
+      rw.get_floating_base_state_output_port().Eval(context);
+  EXPECT_GT(floating_base_state[4], params.slope() + alpha);
 
   // Lose at least this much energy (chosen as an arbitrary small positive
   // number).
