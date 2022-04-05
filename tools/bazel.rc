@@ -13,6 +13,7 @@ build -c opt
 build --force_pic
 build --strip=never
 build --strict_system_includes
+build --fission=yes
 
 # Default test options.
 test --test_output=errors
