@@ -54,7 +54,7 @@ class RimlessWheel final : public systems::LeafSystem<T> {
 
   /// Return reference to the output port that publishes only [theta,
   /// thetatdot].
-  const systems::OutputPort<T>& get_minimal_state_output_port() {
+  const systems::OutputPort<T>& get_minimal_state_output_port() const {
     return this->get_output_port(0);
   }
 
@@ -64,7 +64,7 @@ class RimlessWheel final : public systems::LeafSystem<T> {
   /// of the floating base (rotation around global y), and downhill moves toward
   /// positive x.  As always, we use vehicle coordinates (x-y on the ground, z
   /// is up).
-  const systems::OutputPort<T>& get_floating_base_state_output_port() {
+  const systems::OutputPort<T>& get_floating_base_state_output_port() const {
     return this->get_output_port(1);
   }
 
