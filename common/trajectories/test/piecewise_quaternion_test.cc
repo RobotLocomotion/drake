@@ -239,6 +239,9 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp, TestDerivatives) {
   const auto second_derivative = rot_spline.MakeDerivative(2);
 
   for (double t = -1.0; t < 4.0; t += 0.234) {
+    // Test that value() and rows() and cols() are compatible.
+    EXPECT_EQ(rot_spline.value(t).rows(), rot_spline.rows());
+    EXPECT_EQ(rot_spline.value(t).cols(), rot_spline.cols());
     // Test zeroth derivative.
     EXPECT_TRUE(CompareMatrices(
       rot_spline.value(t), zeroth_derivative->value(t), 1e-14));

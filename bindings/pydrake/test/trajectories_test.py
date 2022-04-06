@@ -379,22 +379,26 @@ class TestTrajectories(unittest.TestCase):
         # Test quaternion constructor.
         pq = PiecewiseQuaternionSlerp(breaks=t, quaternions=[q, q, q])
         self.assertEqual(pq.get_number_of_segments(), 2)
-        numpy_compare.assert_float_equal(pq.value(0.5), np.eye(3))
+        numpy_compare.assert_float_equal(pq.value(0.5),
+                                         [[1.], [0.], [0.], [0.]])
 
         # Test matrix constructor.
         pq = PiecewiseQuaternionSlerp(breaks=t, rotation_matrices=[m, m, m])
         self.assertEqual(pq.get_number_of_segments(), 2)
-        numpy_compare.assert_float_equal(pq.value(0.5), np.eye(3))
+        numpy_compare.assert_float_equal(pq.value(0.5),
+                                         [[1.], [0.], [0.], [0.]])
 
         # Test axis angle constructor.
         pq = PiecewiseQuaternionSlerp(breaks=t, angle_axes=[a, a, a])
         self.assertEqual(pq.get_number_of_segments(), 2)
-        numpy_compare.assert_float_equal(pq.value(0.5), np.eye(3))
+        numpy_compare.assert_float_equal(pq.value(0.5),
+                                         [[1.], [0.], [0.], [0.]])
 
         # Test rotation matrix constructor.
         pq = PiecewiseQuaternionSlerp(breaks=t, rotation_matrices=[R, R, R])
         self.assertEqual(pq.get_number_of_segments(), 2)
-        numpy_compare.assert_float_equal(pq.value(0.5), np.eye(3))
+        numpy_compare.assert_float_equal(pq.value(0.5),
+                                         [[1.], [0.], [0.], [0.]])
 
         # Test append operations.
         pq.Append(time=3., quaternion=q)
