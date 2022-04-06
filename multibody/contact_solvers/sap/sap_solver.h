@@ -4,12 +4,24 @@
 #include <vector>
 
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
-#include "drake/multibody/contact_solvers/contact_solver.h"
+#include "drake/multibody/contact_solvers/point_contact_data.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
+#include "drake/multibody/contact_solvers/system_dynamics_data.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
+
+// The result from SapSolver::SolveWithGuess() used to report the success or
+// failure of the solver.
+enum class SapSolverStatus {
+  // Successful computation.
+  kSuccess = 0,
+
+  // The solver could not find a solution at the specified tolerances.
+  kFailure = 1,
+};
 
 // SAP solver parameters such as tolerances, maximum number of iterations and
 // regularization parameters.
@@ -135,7 +147,7 @@ struct SapSolverParameters {
 // that we can test the long term performant solution.
 // @tparam_double_only
 template <typename T>
-class SapSolver final : public ContactSolver<T> {
+class SapSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapSolver);
 
@@ -166,7 +178,6 @@ class SapSolver final : public ContactSolver<T> {
   };
 
   SapSolver() = default;
-  ~SapSolver() final = default;
 
   // Solve the contact problem specified by the input data. See
   // ContactSolver::SolveWithGuess() for details. Currently, only `T = double`
@@ -184,11 +195,11 @@ class SapSolver final : public ContactSolver<T> {
   // solver in MultibodyPlant (or a DiscreteUpdateManager), it must either be
   // instantiated locally or stored within a Context cache entry to ensure
   // thread safety.
-  ContactSolverStatus SolveWithGuess(const T& time_step,
+  SapSolverStatus SolveWithGuess(const T& time_step,
                                      const SystemDynamicsData<T>& dynamics_data,
                                      const PointContactData<T>& contact_data,
                                      const VectorX<T>& v_guess,
-                                     ContactSolverResults<T>* result) final;
+                                     SapSolverResults<T>* result);
 
   // New parameters will affect the next call to SolveWithGuess().
   void set_parameters(const SapSolverParameters& parameters) {
@@ -552,13 +563,11 @@ class SapSolver final : public ContactSolver<T> {
   void CalcAllProjectionsGradients(const VectorX<T>& y,
                                    std::vector<Matrix3<T>>* dPdy) const;
 
-  // Pack solution into ContactSolverResults. Where v is the vector of
+  // Pack solution into SapSolverResults. Where v is the vector of
   // generalized velocities, vc is the vector of contact velocities and gamma is
   // the vector of generalized contact impulses.
-  static void PackContactResults(const PreProcessedData& data,
-                                 const VectorX<T>& v, const VectorX<T>& vc,
-                                 const VectorX<T>& gamma,
-                                 ContactSolverResults<T>* result);
+  void PackSapSolverResults(const State& state,
+                            SapSolverResults<T>* results) const;
 
   // We monitor the optimality condition (for SAP, balance of momentum), i.e.
   // ‖∇ℓ‖ < εₐ + εᵣ max(‖p‖,‖j‖), where ∇ℓ = A⋅(v−v*)−Jᵀγ is the momentum
@@ -572,8 +581,8 @@ class SapSolver final : public ContactSolver<T> {
 
   // Solves the contact problem from initial guess `v_guess` into `result`.
   // @pre PreProcessData() has already been called.
-  ContactSolverStatus DoSolveWithGuess(const VectorX<T>& v_guess,
-                                       ContactSolverResults<T>* result);
+  SapSolverStatus DoSolveWithGuess(const VectorX<T>& v_guess,
+                                       SapSolverResults<T>* result);
 
   // Computes the cost ℓ(α) = ℓ(vᵐ + αΔvᵐ) for line search, where vᵐ and Δvᵐ are
   // the last Newton iteration values of generalized velocities and search
@@ -626,8 +635,8 @@ class SapSolver final : public ContactSolver<T> {
 };
 
 template <>
-ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
-    const VectorX<double>&, ContactSolverResults<double>*);
+SapSolverStatus SapSolver<double>::DoSolveWithGuess(
+    const VectorX<double>&, SapSolverResults<double>*);
 
 }  // namespace internal
 }  // namespace contact_solvers
