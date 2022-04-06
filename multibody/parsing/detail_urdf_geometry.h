@@ -10,6 +10,7 @@
 #include <Eigen/Dense>
 #include <tinyxml2.h>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/coulomb_friction.h"
@@ -40,23 +41,25 @@ typedef std::map<std::string, UrdfMaterial> MaterialMap;
  If the input material is missing an rgba value, a default rgba value will be
  assigned (a fully transparent black).
 
+ @param[in] policy A DiagnosticPolicy to handle errors and warnings, if any.
  @param[in] material_name A human-understandable name of the material.
  @param[in] material The definition of the URDF material to associate with the
  name.
- @param[in] abort_if_name_clash If true, this method will abort if
- @p material_name is already in @p materials regardless of whether the
- material values are the same. If false, this method will abort if
- @p material_name is already in @p materials and material values don't
- match.
+ @param[in] error_if_name_clash If true, this method will emit an error if @p
+ material_name is already in @p materials regardless of whether the material
+ values are the same. If false, this method will emit an error if @p
+ material_name is already in @p materials and material values don't match.
  @param[out] materials A pointer to the map in which to store the material.
  This cannot be nullptr.
 
  @returns The material with the given name stored in @p materials.
 */
-UrdfMaterial AddMaterialToMaterialMap(const std::string& material_name,
-                                      UrdfMaterial material,
-                                      bool abort_if_name_clash,
-                                      MaterialMap* materials);
+UrdfMaterial AddMaterialToMaterialMap(
+    const drake::internal::DiagnosticPolicy& policy,
+    const std::string& material_name,
+    UrdfMaterial material,
+    bool error_if_name_clash,
+    MaterialMap* materials);
 
 /* Returns the material specified by a <material> @p node. If the material has
  a name associated with it, the material will be reconciled with the given
