@@ -1,4 +1,4 @@
-#include "drake/multibody/contact_solvers/sap_solver.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver.h"
 
 #include <algorithm>
 #include <limits>
@@ -22,10 +22,10 @@ void SapSolver<T>::Cache::Resize(int nv, int nc) {
 }
 
 template <typename T>
-ContactSolverStatus SapSolver<T>::SolveWithGuess(
+SapSolverStatus SapSolver<T>::SolveWithGuess(
     const T& time_step, const SystemDynamicsData<T>& dynamics_data,
     const PointContactData<T>& contact_data, const VectorX<T>& v_guess,
-    ContactSolverResults<T>* results) {
+    SapSolverResults<T>* results) {
   // The primal method needs the inverse dynamics data.
   DRAKE_DEMAND(dynamics_data.has_inverse_dynamics());
   // User code should only call the solver for problems with constraints.
@@ -294,23 +294,14 @@ void SapSolver<T>::PreProcessData(const T& time_step,
 }
 
 template <typename T>
-void SapSolver<T>::PackContactResults(const PreProcessedData& data,
-                                      const VectorX<T>& v, const VectorX<T>& vc,
-                                      const VectorX<T>& gamma,
-                                      ContactSolverResults<T>* results) {
+void SapSolver<T>::PackSapSolverResults(const State& state,
+                                        SapSolverResults<T>* results) const {
   DRAKE_DEMAND(results != nullptr);
-  results->Resize(data.nv, data.nc);
-  results->v_next = v;
-  ExtractNormal(vc, &results->vn);
-  ExtractTangent(vc, &results->vt);
-  ExtractNormal(gamma, &results->fn);
-  ExtractTangent(gamma, &results->ft);
-  // N.B. While contact solver works with impulses, results are reported as
-  // forces.
-  results->fn /= data.time_step;
-  results->ft /= data.time_step;
-  data.J.MultiplyByTranspose(gamma, &results->tau_contact);
-  results->tau_contact /= data.time_step;
+  results->Resize(data_.nv, 3 * data_.nc);
+  results->v = state.v();
+  results->gamma = EvalImpulsesCache(state).gamma;
+  results->vc = EvalVelocitiesCache(state).vc;
+  data_.J.MultiplyByTranspose(results->gamma, &results->j);
 }
 
 template <typename T>
@@ -335,15 +326,15 @@ void SapSolver<T>::CalcStoppingCriteriaResidual(const State& state,
 }
 
 template <typename T>
-ContactSolverStatus SapSolver<T>::DoSolveWithGuess(
-    const VectorX<T>& v_guess, ContactSolverResults<T>* result) {
+SapSolverStatus SapSolver<T>::DoSolveWithGuess(
+    const VectorX<T>& v_guess, SapSolverResults<T>* result) {
   throw std::logic_error(
       "SapSolver::DoSolveWithGuess(): Only T = double is supported.");
 }
 
 template <>
-ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
-    const VectorX<double>& v_guess, ContactSolverResults<double>* results) {
+SapSolverStatus SapSolver<double>::DoSolveWithGuess(
+    const VectorX<double>& v_guess, SapSolverResults<double>* results) {
   using std::abs;
   using std::max;
 
@@ -418,18 +409,16 @@ ContactSolverStatus SapSolver<double>::DoSolveWithGuess(
     ell_previous = ell;
   }
 
-  if (!converged) return ContactSolverStatus::kFailure;
+  if (!converged) return SapSolverStatus::kFailure;
 
-  const VectorX<double>& vc = EvalVelocitiesCache(state).vc;
-  const VectorX<double>& gamma = EvalImpulsesCache(state).gamma;
-  PackContactResults(data_, state.v(), vc, gamma, results);
+  PackSapSolverResults(state, results);
 
   // N.B. If the stopping criteria is satisfied for k = 0, the solver is not
   // even instantiated and no factorizations are performed (the expensive part
   // of the computation). We report zero number of iterations.
   stats_.num_iters = k;
 
-  return ContactSolverStatus::kSuccess;
+  return SapSolverStatus::kSuccess;
 }
 
 template <typename T>
