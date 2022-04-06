@@ -513,7 +513,7 @@ call to Finalize() must be performed. This call will:
 - declare the plant's input and output ports,
 - declare collision filters to ignore collisions:
   - between bodies connected by a joint,
-  - between bodies welded (directly or transitively) to the world.
+  - within subgraphs of welded bodies.
 
 <!-- TODO(#16422): ignore collisions within all groups of welded-together
      bodies -->
