@@ -1,10 +1,11 @@
+#include "drake/multibody/meshcat/hydroelastic_contact_visualizer.h"
+
 #include <utility>
 
 #include <fmt/format.h>
 
 #include "drake/common/unused.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/meshcat/hydroelastic_contact_visualizer.h"
 
 namespace drake {
 namespace multibody {

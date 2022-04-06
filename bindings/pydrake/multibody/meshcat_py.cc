@@ -9,9 +9,9 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/meshcat/contact_visualizer.h"
 #include "drake/multibody/meshcat/contact_visualizer_params.h"
+#include "drake/multibody/meshcat/hydroelastic_contact_visualizer.h"
 #include "drake/multibody/meshcat/joint_sliders.h"
 #include "drake/multibody/meshcat/point_contact_visualizer.h"
-#include "drake/multibody/meshcat/hydroelastic_contact_visualizer.h"
 
 using drake::multibody::MultibodyPlant;
 using drake::systems::LeafSystem;

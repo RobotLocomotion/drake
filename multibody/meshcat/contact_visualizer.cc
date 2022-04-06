@@ -7,8 +7,8 @@
 
 #include "drake/common/extract_double.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/meshcat/point_contact_visualizer.h"
 #include "drake/multibody/meshcat/hydroelastic_contact_visualizer.h"
+#include "drake/multibody/meshcat/point_contact_visualizer.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/internal_geometry_names.h"
 

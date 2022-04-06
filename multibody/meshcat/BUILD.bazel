@@ -23,6 +23,7 @@ drake_cc_package_library(
     deps = [
         ":contact_visualizer",
         ":contact_visualizer_params",
+        ":hydroelastic_contact_visualizer",
         ":joint_sliders",
         ":point_contact_visualizer",
     ],
@@ -49,8 +50,8 @@ drake_cc_library(
 drake_cc_googletest(
     name = "contact_visualizer_test",
     data = [
-        "//examples/manipulation_station:models",
         ":models",
+        "//examples/manipulation_station:models",
     ],
     deps = [
         ":contact_visualizer",

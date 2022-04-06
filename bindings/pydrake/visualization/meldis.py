@@ -186,7 +186,8 @@ class _ContactApplet:
 
     def on_contact_results(self, message):
         """Handler for lcmt_contact_results_for_viz. Note that only point
-        hydroelastic contact force and moment vectors are shown; contact surface and pressure are not shown."""
+           hydroelastic contact force and moment vectors are shown; contact
+           surface and pressure are not shown."""
 
         # Handle point contact pairs
         viz_items = []
@@ -207,7 +208,7 @@ class _ContactApplet:
                 centroid_W=lcm_item.centroid_W,
                 force_C_W=lcm_item.force_C_W,
                 moment_C_W=lcm_item.moment_C_W))
-        self._hydro_helper.Update(viz_items);
+        self._hydro_helper.Update(viz_items)
 
 
 class Meldis:
