@@ -91,7 +91,8 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
   Quaternion<T> orientation(const T& time) const;
 
   MatrixX<T> value(const T& time) const override {
-    return orientation(time).matrix();
+    const Quaternion<T> quat = orientation(time);
+    return Vector4<T>(quat.w(), quat.x(), quat.y(), quat.z());
   }
 
   /**

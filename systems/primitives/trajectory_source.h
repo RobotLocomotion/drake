@@ -34,6 +34,8 @@ class TrajectorySource final : public SingleOutputVectorSource<T> {
   /// Must be greater than or equal to zero.
   /// @param zero_derivatives_beyond_limits All derivatives will be zero before
   /// the start time or after the end time of @p trajectory.
+  /// @pre The value of `trajectory` is a column vector. More precisely,
+  /// trajectory.cols() == 1.
   explicit TrajectorySource(const trajectories::Trajectory<T>& trajectory,
                             int output_derivative_order = 0,
                             bool zero_derivatives_beyond_limits = true);
