@@ -48,7 +48,7 @@ struct ContactVisualizerParams {
   double newtons_per_meter{10};
 
   /** The radius of cylinder geometry used in the force vector . */
-  double radius{0.01};
+  double radius{0.002};
 };
 
 }  // namespace meshcat

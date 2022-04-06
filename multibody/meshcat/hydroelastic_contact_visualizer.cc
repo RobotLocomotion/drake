@@ -73,15 +73,17 @@ void HydroelasticContactVisualizer::Update(
 
       // Stretch the cylinder in z.
       const double height = force_norm / params_.newtons_per_meter;
+      // clang-format off
       meshcat_->SetTransform(path + "/force_C_W/cylinder",
-                             Matrix4d(Vector4d{1, 1, height, 1}.asDiagonal()));
+          (Matrix4d() <<  1, 0, 0, 0,
+                          0, 1, 0, 0,
+                          0, 0, height, 0.5*height,
+                          0, 0, 0, 1).finished());
+      // clang-format on
       // Translate the arrowheads.
       const double arrowhead_height = params_.radius * 2.0;
       meshcat_->SetTransform(
           path + "/force_C_W/head",
-          RigidTransformd(Vector3d{0, 0, -height - arrowhead_height}));
-      meshcat_->SetTransform(
-          path + "/force_C_W/tail",
           RigidTransformd(RotationMatrixd::MakeXRotation(M_PI),
                           Vector3d{0, 0, height + arrowhead_height}));
     }
@@ -93,15 +95,17 @@ void HydroelasticContactVisualizer::Update(
 
       // Stretch the cylinder in z.
       const double height = std::sqrt(moment_norm / params_.newtons_per_meter);
+      // clang-format off
       meshcat_->SetTransform(path + "/moment_C_W/cylinder",
-                             Matrix4d(Vector4d{1, 1, height, 1}.asDiagonal()));
+          (Matrix4d() <<  1, 0, 0, 0,
+                          0, 1, 0, 0,
+                          0, 0, height, 0.5*height,
+                          0, 0, 0, 1).finished());
+      // clang-format on
       // Translate the arrowheads.
       const double arrowhead_height = params_.radius * 2.0;
       meshcat_->SetTransform(
           path + "/moment_C_W/head",
-          RigidTransformd(Vector3d{0, 0, -height - arrowhead_height}));
-      meshcat_->SetTransform(
-          path + "/moment_C_W/tail",
           RigidTransformd(RotationMatrixd::MakeXRotation(M_PI),
                           Vector3d{0, 0, height + arrowhead_height}));
     }
@@ -127,10 +131,8 @@ HydroelasticContactVisualizer::FindOrAdd(const std::string& path) {
   iter = path_visibility_status_.insert({path, {false, false}}).first;
   meshcat_->SetProperty(path, "visible", false);
 
-  // Add the geometry to meshcat. The height of the cylinder is 2 and gets
-  // scaled to twice the contact force length because we draw both (equal
-  // and opposite) forces.
-  const Cylinder cylinder(params_.radius, 2.0);
+  // Add the geometry to meshcat.
+  const Cylinder cylinder(params_.radius, 1.0);
   const double arrowhead_height = params_.radius * 2.0;
   const double arrowhead_width = params_.radius * 2.0;
   const MeshcatCone arrowhead(arrowhead_height, arrowhead_width,
@@ -140,15 +142,10 @@ HydroelasticContactVisualizer::FindOrAdd(const std::string& path) {
                       params_.hydro_force_color);
   meshcat_->SetObject(path + "/force_C_W/head", arrowhead,
                       params_.hydro_force_color);
-  meshcat_->SetObject(path + "/force_C_W/tail", arrowhead,
-                      params_.hydro_force_color);
   meshcat_->SetObject(path + "/moment_C_W/cylinder", cylinder,
                       params_.hydro_moment_color);
   meshcat_->SetObject(path + "/moment_C_W/head", arrowhead,
                       params_.hydro_moment_color);
-  meshcat_->SetObject(path + "/moment_C_W/tail", arrowhead,
-                      params_.hydro_moment_color);
-
   return iter->second;
 }
 
