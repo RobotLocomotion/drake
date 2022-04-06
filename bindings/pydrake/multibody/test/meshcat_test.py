@@ -2,6 +2,7 @@ from pydrake.multibody.meshcat import (
     ContactVisualizer_,
     ContactVisualizerParams,
     JointSliders,
+    _HydroelasticContactVisualizer,
     _PointContactVisualizer,
 )
 
@@ -132,3 +133,11 @@ class TestMeshcat(unittest.TestCase):
         meshcat = Meshcat()
         params = ContactVisualizerParams()
         dut = _PointContactVisualizer(meshcat=meshcat, params=params)
+
+    def test_internal_hydroelastic_contact_visualizer(self):
+        """A very basic existance test, since this class is internal use only.
+        The pydrake-internal user (meldis) has additional acceptance tests.
+        """
+        meshcat = Meshcat()
+        params = ContactVisualizerParams()
+        dut = _HydroelasticContactVisualizer(meshcat=meshcat, params=params)

@@ -10,6 +10,13 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+filegroup(
+    name = "models",
+    srcs = glob([
+        "**/*.sdf",
+    ]),
+)
+
 drake_cc_package_library(
     name = "meshcat",
     visibility = ["//visibility:public"],
@@ -43,6 +50,7 @@ drake_cc_googletest(
     name = "contact_visualizer_test",
     data = [
         "//examples/manipulation_station:models",
+        ":models",
     ],
     deps = [
         ":contact_visualizer",
