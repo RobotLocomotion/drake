@@ -140,8 +140,7 @@ class TestMeldis(unittest.TestCase):
         hydro_path = "/CONTACT_RESULTS/hydroelastic/body1+body2"
         self.assertEqual(meshcat.HasPath(hydro_path), False)
 
-        # Process the load + draw; contact message should still not exist
-        # as geometries are not in contact.
+        # Process the load + draw; contact results should now exist.
         lcm.HandleSubscriptions(timeout_millis=0)
         dut._invoke_subscriptions()
         self.assertEqual(meshcat.HasPath(hydro_path), True)
