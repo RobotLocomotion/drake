@@ -64,7 +64,7 @@ class MultibodyPlantElements {
   }
   void PrintModels(std::ostream& out) const {
     for (const auto& model : model_instances()) {
-      out << "Model: " << model << " " << plant().GetModelInstanceName(model)
+      out << "Model: " << model << " " << plant()->GetModelInstanceName(model)
           << std::endl;
     }
   }
@@ -76,9 +76,9 @@ class MultibodyPlantElements {
     PrintJoints(out);
   }
 
-  const MultibodyPlant<double>& plant() const { return *plant_; }
-  const geometry::SceneGraph<double>& scene_graph() const {
-    return *scene_graph_;
+  const MultibodyPlant<double>* plant() const { return plant_; }
+  const geometry::SceneGraph<double>* scene_graph() const {
+    return scene_graph_;
   }
 
   const std::set<const Body<double>*>& bodies() const { return bodies_; }
@@ -185,7 +185,11 @@ class MultibodyPlantElementsMap {
   std::map<geometry::GeometryId, geometry::GeometryId> geometry_ids_;
 };
 
-void CheckSubgraphInvariants(const MultibodyPlantElements&);
+// Ensures that current elements / topology satisifes subgraph invariants.
+// @param elem
+//   The MultibodyPlantElements object to be checked.
+// @throws std::exception if any of the invariant checks fails.
+void CheckSubgraphInvariants(const MultibodyPlantElements& elem);
 
 ModelInstanceIndex GetOrCreateModelInstanceByName(
     MultibodyPlant<double>* plant, const std::string& model_name);
