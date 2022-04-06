@@ -513,7 +513,7 @@ call to Finalize() must be performed. This call will:
 - declare the plant's input and output ports,
 - declare collision filters to ignore collisions:
   - between bodies connected by a joint,
-  - between bodies welded (directly or transitively) to the world.
+  - within subgraphs of welded bodies.
 
 <!-- TODO(#16422): ignore collisions within all groups of welded-together
      bodies -->
@@ -4227,10 +4227,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector) const;
 
-  // Helper method to apply collision filters based on body-adjacency. By
-  // default, we don't consider collisions between geometries affixed to
-  // bodies connected by a joint.
-  void FilterAdjacentBodies();
+  // Helper method to apply default collision filters. By default, we don't
+  // consider collisions:
+  // * between geometries affixed to bodies connected by a joint
+  // * within subgraphs of welded-together bodies
+  void ApplyDefaultCollisionFilters();
 
   // For discrete models, MultibodyPlant uses a penalty method to impose joint
   // limits. In this penalty method a force law of the form:

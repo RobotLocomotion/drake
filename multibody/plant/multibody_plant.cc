@@ -738,7 +738,7 @@ void MultibodyPlant<T>::Finalize() {
   // After finalizing the base class, tree is read-only.
   internal::MultibodyTreeSystem<T>::Finalize();
   if (geometry_source_is_registered()) {
-    FilterAdjacentBodies();
+    ApplyDefaultCollisionFilters();
     ExcludeCollisionsWithVisualGeometry();
   }
   FinalizePlantOnly();
@@ -905,7 +905,7 @@ const CoulombFriction<double>& MultibodyPlant<T>::GetCoulombFriction(
 }
 
 template <typename T>
-void MultibodyPlant<T>::FilterAdjacentBodies() {
+void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
   DRAKE_DEMAND(geometry_source_is_registered());
   // Disallow collisions between adjacent bodies. Adjacency is implied by the
   // existence of a joint between bodies.
@@ -924,12 +924,21 @@ void MultibodyPlant<T>::FilterAdjacentBodies() {
           geometry::GeometrySet(*parent_id)));
     }
   }
-  // We must explicitly exclude collisions between all geometries registered
-  // against the world.
-  // TODO(eric.cousineau): Do this in a better fashion (#11117).
-  auto g_world = CollectRegisteredGeometries(GetBodiesWeldedTo(world_body()));
-  scene_graph_->collision_filter_manager().Apply(
-      CollisionFilterDeclaration().ExcludeWithin(g_world));
+  // We explicitly exclude collisions within welded subgraphs.
+  std::vector<std::set<BodyIndex>> subgraphs =
+      multibody_graph_.FindSubgraphsOfWeldedBodies();
+  for (const auto& subgraph : subgraphs) {
+    // Only operate on non-trivial weld subgraphs.
+    if (subgraph.size() <= 1) { continue; }
+    // Map body indices to pointers.
+    std::vector<const Body<T>*> subgraph_bodies;
+    for (BodyIndex body_index : subgraph) {
+      subgraph_bodies.push_back(&get_body(body_index));
+    }
+    auto geometries = CollectRegisteredGeometries(subgraph_bodies);
+    scene_graph_->collision_filter_manager().Apply(
+        CollisionFilterDeclaration().ExcludeWithin(geometries));
+  }
 }
 
 template <typename T>
