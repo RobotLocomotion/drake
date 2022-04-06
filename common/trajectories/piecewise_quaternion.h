@@ -26,6 +26,8 @@ namespace trajectories {
  * quaternion representations ensure that q_n.dot(q_{n+1}) >= 0.
  * Another intuitive way to think about this is that consecutive quaternions
  * have the shortest geodesic distance on the unit sphere.
+ * Note that the quarternion value is in w, x, y, z order when represented as
+ * a Vector4.
  *
  * @tparam_default_scalars
  */
@@ -91,7 +93,8 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
   Quaternion<T> orientation(const T& time) const;
 
   MatrixX<T> value(const T& time) const override {
-    return orientation(time).matrix();
+    const Quaternion<T> quat = orientation(time);
+    return Vector4<T>(quat.w(), quat.x(), quat.y(), quat.z());
   }
 
   /**
