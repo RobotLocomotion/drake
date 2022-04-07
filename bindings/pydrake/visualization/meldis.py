@@ -7,16 +7,16 @@ by listing for LCM messages that are broadcast by the simulation.
 This can stand in for the legacy ``drake-visualizer`` application of
 days past.
 
-From a Drake source build, run this as:
+From a Drake source build, run this as::
 
   bazel run //tools:meldis &
 
-From a Drake binary release, run this as:
+From a Drake binary release (including pip releases), run this as::
 
   python3 -m pydrake.visualization.meldis
 
 In many cases, passing ``-w`` (i.e., ``--open-window``) to the program will be
-convenient.
+convenient::
 
   bazel run //tools:meldis -- -w &
 """
