@@ -333,11 +333,11 @@ void CheckPlantAggregate(GetFunction get_func, const T* item) {
 }
 
 template <typename Item>
-bool ContainsItem(const std::set<Item>& container, const Item& item){
+bool ContainsItem(const std::set<Item>& container, const Item& item) {
   return std::find(container.begin(), container.end(), item) != container.end();
 }
 
-void CheckSubgraphInvariants(const MultibodyPlantElements& elem){
+void CheckSubgraphInvariants(const MultibodyPlantElements& elem) {
   auto plant_model_instances = GetModelInstances(*elem.plant());
   DRAKE_DEMAND(std::includes(
       plant_model_instances.begin(), plant_model_instances.end(),
@@ -345,27 +345,27 @@ void CheckSubgraphInvariants(const MultibodyPlantElements& elem){
 
   const MultibodyPlant<double> *plant = elem.plant();
   // Check bodies.
-  for (const auto *body : elem.bodies()){
+  for (const auto* body : elem.bodies()) {
     CheckPlantAggregate([&](auto i) { return &plant->get_body(i); }, body);
     DRAKE_DEMAND(ContainsItem(elem.model_instances(), body->model_instance()));
   }
 
   // Check frames.
-  for (const auto *frame : elem.frames()){
+  for (const auto* frame : elem.frames()) {
     CheckPlantAggregate([&](auto i) { return &plant->get_frame(i); }, frame);
     DRAKE_DEMAND(ContainsItem(elem.bodies(), &frame->body()));
     DRAKE_DEMAND(ContainsItem(elem.model_instances(), frame->model_instance()));
   }
 
   // Check joints.
-  for (const auto *joint : elem.joints()){
+  for (const auto* joint : elem.joints()) {
     CheckPlantAggregate([&](auto i) { return &plant->get_joint(i); }, joint);
     IsJointSolelyConnectedTo(joint, elem.bodies());
     DRAKE_DEMAND(ContainsItem(elem.model_instances(), joint->model_instance()));
   }
 
   // Check actuators.
-  for (const auto *joint_actuator : elem.joint_actuators()){
+  for (const auto* joint_actuator : elem.joint_actuators()) {
     CheckPlantAggregate([&](auto i) { return &plant->get_joint_actuator(i); },
                         joint_actuator);
     DRAKE_DEMAND(ContainsItem(elem.joints(), &joint_actuator->joint()));
@@ -373,22 +373,11 @@ void CheckSubgraphInvariants(const MultibodyPlantElements& elem){
         ContainsItem(elem.model_instances(), joint_actuator->model_instance()));
   }
 
-    // # Check geometries.
-    // if scene_graph is not None:
-    //     assert plant.geometry_source_is_registered()
-    //     inspector = scene_graph.model_inspector()
-    //     for geometry_id in elem.geometry_ids:
-    //         assert isinstance(geometry_id, GeometryId)
-    //         frame_id = inspector.GetFrameId(geometry_id)
-    //         body = plant.GetBodyFromFrameId(frame_id)
-    //         assert body in elem.bodies
-    // else:
-    //     assert elem.geometry_ids == set(), elem.geometry_ids
   // Check geometries.
   if (elem.scene_graph() != nullptr) {
     DRAKE_DEMAND(plant->geometry_source_is_registered());
     const auto &inspector = elem.scene_graph()->model_inspector();
-    for (const auto geometry_id: elem.geometry_ids()){
+    for (const auto geometry_id : elem.geometry_ids()) {
       auto frame_id = inspector.GetFrameId(geometry_id);
       auto body = plant->GetBodyFromFrameId(frame_id);
       DRAKE_DEMAND(ContainsItem(elem.bodies(), body));
