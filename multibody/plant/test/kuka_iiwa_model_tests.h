@@ -151,7 +151,7 @@ class KukaIiwaModelTests : public ::testing::Test {
       RollPitchYaw<double>{M_PI_2, 0, M_PI_2}.ToRotationMatrix(),
       Vector3<double>{0, 0, 0.081}};
   const Body<double>* end_effector_link_{nullptr};
-  const Frame<double>* frame_H_{nullptr};
+  const FixedOffsetFrame<double>* frame_H_{nullptr};
 
   // AutoDiffXd model to compute automatic derivatives:
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff_;
