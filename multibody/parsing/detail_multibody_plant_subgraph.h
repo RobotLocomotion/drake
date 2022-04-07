@@ -123,7 +123,6 @@ class MultibodyPlantElements {
   std::set<const Joint<double>*> joints_;
   std::set<const JointActuator<double>*> joint_actuators_;
   std::set<geometry::GeometryId> geometry_ids_;
-
 };
 
 using FrameNameRemapFunction = std::function<std::string(

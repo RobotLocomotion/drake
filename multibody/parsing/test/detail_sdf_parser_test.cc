@@ -2492,12 +2492,12 @@ void TestMergeIncludeWithInterfaceAPI(const MultibodyPlant<double>& plant,
     // Check that geometries have been created properly.
     const auto frame_id = plant.GetBodyFrameIdOrThrow(
         plant.GetBodyByName("L1", arm_urdf_model_instance).index());
-    EXPECT_TRUE(FrameHasShape(frame_id, geometry::Role::kPerception, scene_graph,
-          geometry::Box{0.1, 0.1, 0.1},
-          sdf::JoinName(model_prefix, "arm_urdf")));
+    EXPECT_TRUE(FrameHasShape(frame_id, geometry::Role::kPerception,
+                              scene_graph, geometry::Box{0.1, 0.1, 0.1},
+                              sdf::JoinName(model_prefix, "arm_urdf")));
     EXPECT_TRUE(FrameHasShape(frame_id, geometry::Role::kProximity, scene_graph,
-          geometry::Sphere{0.2},
-          sdf::JoinName(model_prefix, "arm_urdf")));
+                              geometry::Sphere{0.2},
+                              sdf::JoinName(model_prefix, "arm_urdf")));
   }
   {
     // Frame F represents the model frame of model top::arm_sdf::flange
