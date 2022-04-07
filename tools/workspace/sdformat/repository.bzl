@@ -8,11 +8,12 @@ def sdformat_repository(
     github_archive(
         name = name,
         repository = "ignitionrobotics/sdformat",
-        commit = "sdf12",
+        commit = "sdformat12_12.4.0",
         build_file = "@drake//tools/workspace/sdformat:package.BUILD.bazel",
-        sha256 = "af34d335c19b3dab62708d988e28d19bb041cff881c66627b8816a14be8b722f",  # noqa
+        sha256 = "1feaa2c8867f3dbb3ddc9de34218a27cda0b881432057744b9ef12d4f26604b4",  # noqa
         patches = [
             "@drake//tools/workspace/sdformat:patches/console.patch",
+            "@drake//tools/workspace/sdformat:patches/deprecation_unit_testing.patch",  # noqa
             "@drake//tools/workspace/sdformat:patches/no_urdf.patch",
         ],
         mirrors = mirrors,

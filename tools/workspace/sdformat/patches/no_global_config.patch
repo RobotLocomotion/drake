@@ -3,9 +3,11 @@ Change the global singleton into a bomb.
 Use the default config when parsing the built-in root.sdf, and
 in the ign_sdf command-line tool.
 
---- src/ParserConfig.cc.orig	2021-09-30 15:33:35.000000000 -0700
-+++ src/ParserConfig.cc	2022-03-14 22:49:17.262811731 -0700
-@@ -57,8 +57,7 @@
+diff --git src/ParserConfig.cc src/ParserConfig.cc
+index f0253eef..0db1110a 100644
+--- src/ParserConfig.cc
++++ src/ParserConfig.cc
+@@ -57,8 +57,7 @@ ParserConfig::ParserConfig()
  /////////////////////////////////////////////////
  ParserConfig &ParserConfig::GlobalConfig()
  {
@@ -15,21 +17,11 @@ in the ign_sdf command-line tool.
  }
  
  /////////////////////////////////////////////////
-
---- src/parser.cc.orig	2021-09-30 15:33:35.000000000 -0700
-+++ src/parser.cc	2022-03-14 23:16:20.973451521 -0700
-@@ -597,7 +597,7 @@
- 
-     ElementPtr element(new Element);
- 
--    initFile(filename, element);
-+    initFile(filename, ParserConfig{}, element);
- 
-     // override description for include elements
-     tinyxml2::XMLElement *description = child->FirstChildElement("description");
---- src/ign.cc.orig	2021-09-30 15:33:35.000000000 -0700
-+++ src/ign.cc	2022-03-15 00:13:58.609410856 -0700
-@@ -36,7 +36,7 @@
+diff --git src/ign.cc src/ign.cc
+index e046d6fc..fe3ce959 100644
+--- src/ign.cc
++++ src/ign.cc
+@@ -36,7 +36,7 @@ extern "C" SDFORMAT_VISIBLE int cmdCheck(const char *_path)
    int result = 0;
  
    sdf::Root root;
@@ -38,7 +30,7 @@ in the ign_sdf command-line tool.
    if (!errors.empty())
    {
      for (auto &error : errors)
-@@ -85,8 +85,12 @@
+@@ -85,8 +85,12 @@ extern "C" SDFORMAT_VISIBLE int cmdCheck(const char *_path)
      return -1;
    }
  
@@ -52,7 +44,7 @@ in the ign_sdf command-line tool.
      std::cerr << "Error: SDF parsing the xml failed.\n";
      return -1;
    }
-@@ -147,8 +152,13 @@
+@@ -147,8 +151,13 @@ extern "C" SDFORMAT_VISIBLE int cmdPrint(const char *_path)
      return -1;
    }
  
@@ -67,7 +59,7 @@ in the ign_sdf command-line tool.
      std::cerr << "Error: SDF parsing the xml failed.\n";
      return -1;
    }
-@@ -170,7 +180,7 @@
+@@ -170,7 +179,7 @@ extern "C" SDFORMAT_VISIBLE int cmdGraph(
    }
  
    sdf::Root root;
@@ -76,3 +68,17 @@ in the ign_sdf command-line tool.
    if (!errors.empty())
    {
      std::cerr << errors << std::endl;
+diff --git src/parser.cc src/parser.cc
+index 5f29f93d..11c07f9a 100644
+--- src/parser.cc
++++ src/parser.cc
+@@ -597,7 +597,7 @@ bool initXml(tinyxml2::XMLElement *_xml, ElementPtr _sdf)
+ 
+     ElementPtr element(new Element);
+ 
+-    initFile(filename, element);
++    initFile(filename, ParserConfig{}, element);
+ 
+     // override description for include elements
+     tinyxml2::XMLElement *description = child->FirstChildElement("description");
+
