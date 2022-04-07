@@ -12,6 +12,7 @@
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/multibody/parsing/detail_tinyxml2_diagnostic.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 
@@ -65,7 +66,7 @@ UrdfMaterial AddMaterialToMaterialMap(
  a name associated with it, the material will be reconciled with the given
  set of @p materials (and added to the set as appropriate).
 
- It has the following error-throwing conditions:
+ It has the following error-emitting conditions:
     1. `name_required` is true, but the tag has no name attribute.
     2. a material with a new name (i.e. it does not appear in @p materials)
        has no color or texture information.
@@ -76,24 +77,29 @@ UrdfMaterial AddMaterialToMaterialMap(
  If none of the error conditions apply, and the material has no color or
  texture information, it is defined as fully transparent black.
 
+ @param[in] diagnostic The diagnostic handler.
  @param[in] node The <material> XML node.
- @param[in] name_required If true, throws if the tag doesn't have the name
+ @param[in] name_required If true, emits error if the tag doesn't have the name
  attribute.
  @param[in] package_map A map where the keys are ROS package names and the
  values are the paths to the packages. This is only used if @p filename
  starts with "package:"or "model:".
  @param[in] root_dir The absolute path to the root directory of the URDF.
  @param[in|out] materials The set of parsed materials; a *new* material will
- be conditionally added (throwing if not possible).
+ be conditionally added (emitting error if not possible).
  @pre @p node is a <material> node.
  @note This capability is not specified by the official URDF specification (see:
        http://wiki.ros.org/urdf/XML/link), but is needed by certain URDFs
        released by companies and organizations like Robotiq and ROS Industrial
        (for example, see this URDF by Robotiq: http://bit.ly/28P0pmo).  */
-UrdfMaterial ParseMaterial(const tinyxml2::XMLElement* node, bool name_required,
+UrdfMaterial ParseMaterial(const TinyXml2Diagnostic& diagnostic,
+                           const tinyxml2::XMLElement* node, bool name_required,
                            const PackageMap& package_map,
                            const std::string& root_dir,
                            MaterialMap* materials);
+
+/* Default value of numeric suffix limit for generation of geometry names.*/
+constexpr int kDefaultNumericSuffixLimit = 10000;
 
 /* Parses a "visual" element in @p node.
 
@@ -125,6 +131,7 @@ UrdfMaterial ParseMaterial(const tinyxml2::XMLElement* node, bool name_required,
 
  This feature is one way to provide multiple visual representations of a body.
 
+ @param[in] diagnostic The diagnostic handler.
  @param[in] parent_element_name The name of the parent link element, used
  for error reporting.
  @param[in,out] materials The MaterialMap is used to look up materials
@@ -134,12 +141,17 @@ UrdfMaterial ParseMaterial(const tinyxml2::XMLElement* node, bool name_required,
  repeated if the material properties are identical.
  @param[in,out] geometry_names The list of geometry names already used within
  the current MbP body (i.e., link), so that this function can be sure not to
- reuse an already-used name. The name used by this geometry is added to it. */
-geometry::GeometryInstance ParseVisual(
+ reuse an already-used name. The name used by this geometry is added to it.
+ @param[in] numeric_name_suffix_limit (optional) The upper bound for choosing
+                                      numeric suffixes.
+*/
+std::optional<geometry::GeometryInstance> ParseVisual(
+    const TinyXml2Diagnostic& diagnostic,
     const std::string& parent_element_name,
     const PackageMap& package_map,
     const std::string& root_dir, const tinyxml2::XMLElement* node,
-    MaterialMap* materials, std::unordered_set<std::string>* geometry_names);
+    MaterialMap* materials, std::unordered_set<std::string>* geometry_names,
+    int numeric_name_suffix_limit = kDefaultNumericSuffixLimit);
 
 /* @anchor urdf_contact_material
  Parses a <collision> element in @p node.
@@ -181,11 +193,11 @@ geometry::GeometryInstance ParseVisual(
 
    1. If one of `<drake:mu_dynamic>` *or* `<drake:mu_static>` is present, the
       property of type CoulombFriction<double> will be instantiated with both
-      values initialized to the single value. An exception will be thrown
+      values initialized to the single value. An error will be emitted
         - if the value is negative.
    2. If both `<drake:mu_dynamic>` and `<drake:mu_static>` tags are present, the
-      CoulombFriction<double> will contain both values. An exception will be
-      thrown if:
+      CoulombFriction<double> will contain both values. An error will be
+      emitted if:
         - either value is negative, or
         - `mu_dynamic` is greater than `mu_static`.
    3. If *both* tags are missing, the parser will look for two tags:
@@ -194,10 +206,11 @@ geometry::GeometryInstance ParseVisual(
       values.
    4. If no meaningful friction coefficients are found, a default value will be
       created (see default_friction()).
- As long as no exception is thrown, the returned geometry::GeometryInstance
+ As long as no error is emitted, the returned geometry::GeometryInstance
  will contain a valid instance of geometry::ProximityProperties with (at least)
  the ('material', 'coulomb_friction') property.
 
+ @param[in] diagnostic The diagnostic handler.
  @param[in] parent_element_name The name of the parent link element, used
  for error reporting.
  @param[in] package_map The map used to resolve paths.
@@ -205,12 +218,17 @@ geometry::GeometryInstance ParseVisual(
  @param[in] node The node corresponding to the <collision> tag.
  @param[in,out] geometry_names The list of geometry names already used within
  the current MbP body (i.e., link), so that this function can be sure not to
- reuse an already-used name. The name used by this geometry is added to it. */
-geometry::GeometryInstance ParseCollision(
+ reuse an already-used name. The name used by this geometry is added to it.
+ @param[in] numeric_name_suffix_limit (optional) The upper bound for choosing
+                                      numeric suffixes.
+*/
+std::optional<geometry::GeometryInstance> ParseCollision(
+    const TinyXml2Diagnostic& diagnostic,
     const std::string& parent_element_name,
     const PackageMap& package_map,
     const std::string& root_dir, const tinyxml2::XMLElement* node,
-    std::unordered_set<std::string>* geometry_names);
+    std::unordered_set<std::string>* geometry_names,
+    int numeric_name_suffix_limit = kDefaultNumericSuffixLimit);
 
 }  // namespace internal
 }  // namespace multibody
