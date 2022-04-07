@@ -1580,9 +1580,10 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
       model_name_in.empty() ? model.Name() : model_name_in;
 
   std::vector<ModelInstanceIndex> added_model_instances =
-      AddModelsFromSpecification(
-          workspace.diagnostic, model, model_name, {}, workspace.plant,
-          workspace.package_map, data_source.GetRootDir(), reusable_model_instances);
+      AddModelsFromSpecification(workspace.diagnostic, model, model_name, {},
+                                 workspace.plant, workspace.package_map,
+                                 data_source.GetRootDir(),
+                                 reusable_model_instances);
 
   DRAKE_DEMAND(!added_model_instances.empty());
   return added_model_instances.front();

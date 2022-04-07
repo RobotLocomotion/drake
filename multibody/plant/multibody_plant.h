@@ -4501,12 +4501,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // 2. RegisterAsSourceForSceneGraph() was called on `this` plant.
   // 3. `scene_graph` points to the same SceneGraph instance previously
   //    passed to RegisterAsSourceForSceneGraph().
-  public: geometry::GeometryId RegisterGeometry(
+  geometry::GeometryId RegisterGeometry(
       const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape,
       const std::string& name);
 
-  private:
   // Registers a geometry frame for every body. If the body already has a
   // geometry frame, it is unchanged. This registration is part of finalization.
   // This requires RegisterAsSourceForSceneGraph() was called on `this` plant.
