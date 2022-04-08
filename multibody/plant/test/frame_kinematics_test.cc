@@ -163,8 +163,10 @@ TEST_F(KukaIiwaModelTests, FrameAngularVelocity) {
   // Verify the fast/direct calculation of ω_WE_W (frame H's angular velocity in
   // world W, expressed in W) by comparing to the rotational part of V_WE_W
   // (frame H's spatial velocity in world W, expressed in W).
-  // Note: For this calculation, SpatialVelocity() is slow/inefficient as it has
-  // computational costs for an additional/unnecessary translational velocity.
+  // Note: For calculating a FixedOffsetFrame's angular velocity (e.g., fixed-
+  // offset frame H's angular velocity in world), CalcSpatialVelocityInWorld()
+  // is less efficient than EvalAngularVelocityInWorld() due to computational
+  // costs for calculating an additional/unnecessary translational velocity.
   const Vector3<double>& w_WH_W =
       frame_H.EvalAngularVelocityInWorld(*context_);
   const SpatialVelocity<double> V_WH_W =
