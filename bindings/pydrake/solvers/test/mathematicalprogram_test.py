@@ -1272,6 +1272,16 @@ class TestMathematicalProgram(unittest.TestCase):
             linear_expression1=x[0]+1, linear_expression2=x[0]+x[1],
             quadratic_expression=x[0]*x[0] + 2*x[0] + x[1]*x[1] + 5)
 
+    def test_add_quadratic_as_rotated_lorentz_cone_constraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        dut = prog.AddQuadraticAsRotatedLorentzConeConstraint(
+            Q=np.array([[1, 2.], [2., 10.]]),
+            b=np.array([1., 3.]),
+            c=0.5,
+            vars=x)
+        self.assertIsInstance(dut.evaluator(), mp.RotatedLorentzConeConstraint)
+
     def test_add_linear_matrix_inequality_constraint(self):
         prog = mp.MathematicalProgram()
         F = [np.eye(2), np.array([[0, 1], [1., 0.]])]

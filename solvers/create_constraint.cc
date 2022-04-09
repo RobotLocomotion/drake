@@ -643,6 +643,70 @@ Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
   expr.tail(C.rows()) = C * quadratic_vars + d;
   return ParseRotatedLorentzConeConstraint(expr);
 }
+
+std::shared_ptr<RotatedLorentzConeConstraint>
+ParseQuadraticAsRotatedLorentzConeConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& b, double c) {
+  // [rᵀx+s, 1, Px+q] is in the rotated Lorentz cone means that
+  // rᵀx+s >= (Px+q)ᵀ(Px+q), namely xᵀPᵀPx + (2qᵀP−rᵀ)x + qᵀq−s≤ 0. To match
+  // with the quadratic constraint 0.5xᵀQx + bᵀx + c <= 0, we consider the
+  // following process
+  // 1. Decompose 0.5 *Q = PᵀP
+  // 2. Compute q = 0.5*pseudo_inverse(Pᵀ) * b
+  // 3. Compute r = 2Pᵀq − b. Note that r might be non-zero if b is not in the
+  // range space of Pᵀ
+  // 4. Compute s = qᵀq−c
+
+  Eigen::MatrixXd P;
+  Eigen::VectorXd q, r;
+  // First try Cholesky decomposition
+  Eigen::LLT<Eigen::MatrixXd> llt((Q + Q.transpose()) / 4.);
+  if (llt.info() == Eigen::Success) {
+    P = llt.matrixU();
+    // Since Q is strictly positive definite, Pᵀ is invertible.
+    // q = 0.5P⁻ᵀb = 0.5 P(PᵀP)⁻¹b = 0.5P*(Q⁻¹b)
+    q = 0.5 * P * llt.solve(b);
+    // Pᵀ being invertible means thar r = 0.
+    r = Eigen::VectorXd::Zero(q.rows());
+  } else {
+    Eigen::LDLT<Eigen::MatrixXd> ldlt((Q + Q.transpose()) / 4.);
+    if (ldlt.info() == Eigen::Success) {
+      if (!ldlt.isPositive()) {
+        throw std::runtime_error(
+            "ParseQuadraticAsRotatedLorentzConeConstraint: ldlt.isPositive() "
+            "is false. The matrix Q is not positive semidefinite.");
+      }
+      const Eigen::MatrixXd D_sqrt =
+          ldlt.vectorD().array().sqrt().matrix().asDiagonal();
+      P = D_sqrt * ldlt.matrixL().transpose() * ldlt.transpositionsP();
+      // Only need to keep the top rank(Q) rows of P.
+      int rank_Q = 0;
+      for (int i = 0; i < Q.rows(); ++i) {
+        if (ldlt.vectorD()(i) > 0) {
+          ++rank_Q;
+        }
+      }
+      P.conservativeResize(rank_Q, P.cols());
+      // q = 0.5P⁻ᵀb = 0.5 P(PᵀP)⁻¹b = 0.5P*(Q⁻¹b)
+      q = 0.5 * P * ldlt.solve(b);
+      r = 2 * P.transpose() * q - b;
+    } else {
+      throw std::runtime_error(
+          "ParseQuadraticAsRotatedLorentzConeConstraint: ldlt fails.");
+    }
+  }
+  const double s = q.dot(q) - c;
+  // A_lorentz * x + b_lorentz = [rᵀx+s, 1, Px+q]
+  Eigen::MatrixXd A_lorentz = Eigen::MatrixXd::Zero(2 + P.rows(), P.cols());
+  Eigen::VectorXd b_lorentz = Eigen::VectorXd::Zero(2 + P.rows());
+  A_lorentz.row(0) = r.transpose();
+  b_lorentz(0) = s;
+  b_lorentz(1) = 1;
+  A_lorentz.bottomRows(P.rows()) = P;
+  b_lorentz.tail(q.rows()) = q;
+  return std::make_shared<RotatedLorentzConeConstraint>(A_lorentz, b_lorentz);
+}
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake
