@@ -2398,6 +2398,35 @@ GTEST_TEST(TestMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint5) {
       symbolic::Polynomial(z.tail(z.rows() - 2).squaredNorm()), tol));
 }
 
+GTEST_TEST(TestMathematicalProgram,
+           TestAddQuadraticAsRotatedLorentzConeConstraint) {
+  solvers::MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  auto check = [&prog, &x](const Eigen::Matrix2d& Q, const Eigen::Vector2d& b,
+                           double c) {
+    auto dut = prog.AddQuadraticAsRotatedLorentzConeConstraint(Q, b, c, x);
+    auto z = dut.evaluator()->A() * x + dut.evaluator()->b();
+    double tol = 1E-10;
+    // Make sure that the rotated Lorentz cone constraint is the same as the
+    // quadratic constraint expression.
+    EXPECT_TRUE(symbolic::test::PolynomialEqual(
+        symbolic::Polynomial(z.tail(z.rows() - 2).squaredNorm() - z(0) * z(1)),
+        symbolic::Polynomial(0.5 * x.cast<symbolic::Expression>().dot(Q * x) +
+                             b.dot(x) + c),
+        tol));
+    EXPECT_EQ(prog.rotated_lorentz_cone_constraints().back().evaluator().get(),
+              dut.evaluator().get());
+  };
+  Eigen::Matrix2d Q;
+  Q << 2, 1, 3, 2;
+  Eigen::Vector2d b(2, 3);
+  double c = -0.5;
+  check(Q, b, c);
+  Q << 2, 2, 2, 6;
+  check(Q, b, c);
+}
+
 namespace {
 template <typename Derived>
 typename std::enable_if_t<is_same_v<typename Derived::Scalar, Expression>>

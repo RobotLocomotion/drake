@@ -229,6 +229,20 @@ Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
     const symbolic::Expression& linear_expr2,
     const symbolic::Expression& quadratic_expr, double tol = 0);
 
+/** For a convex quadratic constraint 0.5xᵀQx + bᵀx + c <= 0, we parse it as a
+ * rotated Lorentz cone constraint [-bᵀx-c, 1, Fx] is in the rotated Lorentz
+ * cone where FᵀF = Q
+ * @throw exception if this quadratic constraint is not convex (Q is not
+ * positive semidefinite)
+ *
+ * You could refer to
+ * https://docs.mosek.com/latest/pythonapi/advanced-toconic.html for derivation.
+ */
+std::shared_ptr<RotatedLorentzConeConstraint>
+ParseQuadraticAsRotatedLorentzConeConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& b, double c);
+
 // TODO(eric.cousineau): Implement this if variable creation is separated.
 // Format would be (tuple(linear_binding, psd_binding), new_vars)
 // ParsePositiveSemidefiniteConstraint(

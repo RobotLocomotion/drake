@@ -7,6 +7,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/solvers/constraint.h"
 
 using drake::symbolic::Expression;
 
@@ -485,6 +486,64 @@ GTEST_TEST(ParseConstraintTest, TrueFormula) {
       internal::ParseLinearEqualityConstraint(symbolic::Expression(1) == 1);
   EXPECT_EQ(binding6.evaluator()->num_constraints(), 0);
   EXPECT_EQ(binding6.variables().rows(), 0);
+}
+
+std::shared_ptr<RotatedLorentzConeConstraint>
+CheckParseQuadraticAsRotatedLorentzConeConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& b, double c) {
+  const auto dut =
+      internal::ParseQuadraticAsRotatedLorentzConeConstraint(Q, b, c);
+  // Make sure that dut.A() * x + dub.t() in rotated Lorentz cone is the same
+  // expression as 0.5xᵀQx + bᵀx + c<=0.
+  const Eigen::MatrixXd A_dense = dut->A_dense();
+  EXPECT_TRUE(
+      CompareMatrices(A_dense.row(1), Eigen::RowVectorXd::Zero(Q.rows())));
+  EXPECT_EQ(dut->b()(1), 1);
+  const double tol = 1E-12;
+  // Check the Hessian.
+  EXPECT_TRUE(
+      CompareMatrices(A_dense.bottomRows(A_dense.rows() - 2).transpose() *
+                      A_dense.bottomRows(A_dense.rows() - 2),
+                      0.25 * (Q + Q.transpose()), tol));
+  // Check the linear coefficient.
+  EXPECT_TRUE(
+      CompareMatrices(2 * A_dense.bottomRows(A_dense.rows() - 2).transpose() *
+                      dut->b().tail(dut->b().rows() - 2) -
+                      A_dense.row(0).transpose(),
+                      b, tol));
+  EXPECT_NEAR(dut->b().tail(dut->b().rows() - 2).squaredNorm() - dut->b()(0), c,
+              tol);
+  return dut;
+}
+
+GTEST_TEST(ParseQuadraticAsRotatedLorentzConeConstraint, Test) {
+  CheckParseQuadraticAsRotatedLorentzConeConstraint(
+      (Vector1d() << 1).finished(), Vector1d::Zero(), 1);
+  CheckParseQuadraticAsRotatedLorentzConeConstraint(
+      (Vector1d() << 1).finished(), (Vector1d() << 2).finished(), 1);
+  // Strictly positive Hessian.
+  CheckParseQuadraticAsRotatedLorentzConeConstraint(Eigen::Matrix2d::Identity(),
+                                                    Eigen::Vector2d(1, 3), 2);
+  // Hessian is positive semidefinite but not positive definite. b is in the
+  // range space of F.
+  auto dut = CheckParseQuadraticAsRotatedLorentzConeConstraint(
+      2 * Eigen::Matrix2d::Ones(), Eigen::Vector2d(2, 2), 0.5);
+  EXPECT_EQ(dut->A().rows(), 3);
+
+  // Hessian is positive semidefinite but not positive definite, b is not in the
+  // range space of F.
+  dut = CheckParseQuadraticAsRotatedLorentzConeConstraint(
+      2 * Eigen::Matrix2d::Ones(), Eigen::Vector2d(2, 3), -0.5);
+  EXPECT_EQ(dut->A().rows(), 3);
+}
+
+GTEST_TEST(ParseQuadraticAsRotatedLorentzConeConstraint, TestException) {
+  const Eigen::MatrixXd Q = Eigen::Vector2d(1, -2).asDiagonal();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::ParseQuadraticAsRotatedLorentzConeConstraint(
+          Q, Eigen::Vector2d(1, 3), -2),
+      ".* The matrix Q is not positive semidefinite.");
 }
 }  // namespace
 }  // namespace solvers

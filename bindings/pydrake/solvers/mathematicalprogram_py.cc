@@ -1101,6 +1101,18 @@ void BindMathematicalProgram(py::module m) {
           py::arg("A"), py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddRotatedLorentzConeConstraint
               .doc_3args_A_b_vars)
+      .def(
+          "AddQuadraticAsRotatedLorentzConeConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const Eigen::MatrixXd>& Q,
+              const Eigen::Ref<const Eigen::VectorXd>& b, double c,
+              const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+            return self->AddQuadraticAsRotatedLorentzConeConstraint(
+                Q, b, c, vars);
+          },
+          py::arg("Q"), py::arg("b"), py::arg("c"), py::arg("vars"),
+          doc.MathematicalProgram.AddQuadraticAsRotatedLorentzConeConstraint
+              .doc)
       .def("AddLinearComplementarityConstraint",
           static_cast<Binding<LinearComplementarityConstraint> (
               MathematicalProgram::*)(const Eigen::Ref<const Eigen::MatrixXd>&,
