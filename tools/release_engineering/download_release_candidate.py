@@ -84,7 +84,6 @@ def main():
     os.chdir(release_dir)
 
     tar_file_list = [
-        f"drake-{timestamp}-bionic.tar.gz",
         f"drake-{timestamp}-focal.tar.gz",
         f"drake-{timestamp}-mac.tar.gz",
     ]

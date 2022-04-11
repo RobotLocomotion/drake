@@ -108,8 +108,8 @@ def _determine_linux(repository_ctx):
         ubuntu_release = lsb.stdout.strip()
 
         # Match supported Ubuntu release(s). These should match those listed in
-        # both doc/developers.rst the root CMakeLists.txt.
-        if ubuntu_release in ["18.04", "20.04"]:
+        # both doc/_pages/from_source.md and the root CMakeLists.txt.
+        if ubuntu_release in ["20.04"]:
             return _make_result(
                 ubuntu_release = ubuntu_release,
                 is_manylinux = is_manylinux,
@@ -190,7 +190,7 @@ def determine_os(repository_ctx):
         - homebrew_prefix: str "/usr/local" or "/opt/homebrew" iff is_macos,
                            else None.
         - is_ubuntu: True iff on a supported Ubuntu version, else False
-        - ubuntu_release: str like "18.04" iff on a supported ubuntu, else None
+        - ubuntu_release: str like "20.04" iff on a supported ubuntu, else None
         - is_manylinux: True iff this build will be packaged into a Python
                         wheel that confirms to a "manylinux" standard such as
                         manylinux_2_27; see https://github.com/pypa/manylinux.
@@ -215,7 +215,7 @@ def os_specific_alias(repository_ctx, mapping):
             of values are of the form name=actual as in alias(name, actual).
 
     The keys of mapping are searched in the following preferential order:
-    - Exact release, via e.g., "Ubuntu 18.04" or "macOS 11"
+    - Exact release, via e.g., "Ubuntu 20.04" or "macOS 11"
     - Any release, via "Ubuntu default" or "macOS default"
     - Anything else, via "default"
     """
