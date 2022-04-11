@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/render_client.h"
+#include "drake/geometry/render/dev/render_gltf_client/render_client.h"
 
 #include <cstdio>
 #include <fstream>
@@ -15,13 +15,13 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/render/dev/http_service.h"
-#include "drake/geometry/render/dev/test/test_png.h"
-#include "drake/geometry/render/dev/test/test_tiff.h"
+#include "drake/geometry/render/dev/render_gltf_client/http_service.h"
+#include "drake/geometry/render/dev/render_gltf_client/test/test_png.h"
+#include "drake/geometry/render/dev/render_gltf_client/test/test_tiff.h"
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gltf_client {
 namespace internal {
 
 using systems::sensors::ImageDepth32F;
@@ -171,11 +171,11 @@ class FieldCheckService : public HttpService {
  public:
   /* All parameters for HttpService, followed by RenderClient::RenderOnServer
    with the addition of the sha256. */
-  FieldCheckService(const RenderCameraCore& camera_core,
+  FieldCheckService(const render::RenderCameraCore& camera_core,
                     RenderImageType image_type, const std::string& scene_path,
                     const std::string& scene_sha256,
                     const std::optional<std::string>& mime_type = std::nullopt,
-                    const std::optional<DepthRange>& depth_range = std::nullopt)
+                    const std::optional<render::DepthRange>& depth_range = std::nullopt)
       : HttpService(),
         camera_core_{camera_core},
         image_type_{image_type},
@@ -270,14 +270,14 @@ class FieldCheckService : public HttpService {
     return ret;
   }
 
-  const RenderCameraCore& camera_core_;
+  const render::RenderCameraCore& camera_core_;
   /* NOTE: do not store references for the data fields, EXPECT_EQ may not work
    correctly for value comparisons. */
   const RenderImageType image_type_;
   const std::string scene_path_;
   const std::string scene_sha256_;
   const std::optional<std::string> mime_type_;
-  const std::optional<DepthRange> depth_range_;
+  const std::optional<render::DepthRange> depth_range_;
 };
 
 using PostFormCallback_t = typename std::function<HttpResponse(
@@ -338,9 +338,9 @@ GTEST_TEST(RenderClient, RenderOnServer) {
   /* Create some render camera instances to validate against.  Note that the
    atypical values chosen for e.g., clipping or depth ranges is to ensure there
    are no hard-coded or default values leaking in anywhere. */
-  const ColorRenderCamera color_camera{
+  const render::ColorRenderCamera color_camera{
       {"proxy_render", {798, 247, M_PI_4}, {0.11, 111.111}, {}}, false};
-  const DepthRenderCamera depth_camera{color_camera.core(), {0.12, 21.12}};
+  const render::DepthRenderCamera depth_camera{color_camera.core(), {0.12, 21.12}};
 
   {
     // Forgetting to include the depth_range for a depth render should raise.
@@ -1097,6 +1097,6 @@ GTEST_TEST(RenderClient, LoadLabelImage) {
 
 }  // namespace
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake

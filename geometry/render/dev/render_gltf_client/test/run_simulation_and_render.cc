@@ -6,7 +6,7 @@
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/geometry/drake_visualizer.h"
-#include "drake/geometry/render/dev/render_engine_gltf_client_factory.h"
+#include "drake/geometry/render/dev/render_gltf_client/render_engine_gltf_client_factory.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
@@ -176,7 +176,7 @@ void AddShapes(SceneGraph<double>* scene_graph) {
 
   const SourceId source_id = scene_graph->RegisterSource("main");
   const std::string texture_path =
-      FindResourceOrThrow("drake/geometry/render/dev/test/4_color_texture.png");
+      FindResourceOrThrow("drake/geometry/render/dev/render_gltf_client/test/4_color_texture.png");
   double x = 0.4;
   double dx = -0.15;
   int label_value = 0;

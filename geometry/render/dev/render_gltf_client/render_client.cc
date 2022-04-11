@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/render_client.h"
+#include "drake/geometry/render/dev/render_gltf_client/render_client.h"
 
 #include <atomic>
 #include <map>
@@ -21,11 +21,11 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
-#include "drake/geometry/render/dev/http_service_curl.h"
+#include "drake/geometry/render/dev/render_gltf_client/http_service_curl.h"
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gltf_client {
 namespace internal {
 
 namespace {
@@ -174,9 +174,9 @@ RenderClient::~RenderClient() {
 }
 
 std::string RenderClient::RenderOnServer(
-    const RenderCameraCore& camera_core, RenderImageType image_type,
+    const render::RenderCameraCore& camera_core, RenderImageType image_type,
     const std::string& scene_path, const std::optional<std::string>& mime_type,
-    const std::optional<DepthRange>& depth_range) const {
+    const std::optional<render::DepthRange>& depth_range) const {
   // Make sure depth_range is only provided for depth images.
   if (image_type == RenderImageType::kDepthDepth32F &&
       !depth_range.has_value()) {
@@ -544,6 +544,6 @@ void RenderClient::SetHttpService(std::unique_ptr<HttpService> service) {
 }
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake
