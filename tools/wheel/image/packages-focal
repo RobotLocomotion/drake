@@ -15,6 +15,7 @@ yasm
 libclang-9-dev
 clang-format-9
 # Other code tools.
+cmake
 git
 make
 ninja-build
