@@ -1,4 +1,4 @@
-#include "drake/multibody/contact_solvers/sap_solver.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver.h"
 
 // TODO(amcastro-tri): While many of tests in this file verify the correctness
 // of the solution, it might not be enough to ensure the entire implementation
@@ -14,8 +14,8 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/contact_solvers/block_sparse_linear_operator.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
-#include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/contact_solvers/system_dynamics_data.h"
 
 using Eigen::Matrix3d;
@@ -34,13 +34,6 @@ class SapSolverTester {
  public:
   using PreProcessedData = SapSolver<double>::PreProcessedData;
 
-  static void PackContactResults(const PreProcessedData& data,
-                                 const VectorXd& v, const VectorXd& vc,
-                                 const VectorXd& gamma,
-                                 ContactSolverResults<double>* result) {
-    SapSolver<double>::PackContactResults(data, v, vc, gamma, result);
-  }
-
   static PreProcessedData PreProcessData(
       const SapSolver<double>& solver, double time_step,
       const SystemDynamicsData<double>& dynamics_data,
@@ -50,37 +43,6 @@ class SapSolverTester {
     return data;
   }
 };
-
-GTEST_TEST(SapSolver, PackContactResults) {
-  // Setup minimum problem data.
-  const int nv = 6;
-  const int nc = 3;
-  SapSolverTester::PreProcessedData data(1.0e-3, nv, nc);
-  MatrixXd Jdense = MatrixXd::Ones(3 * nc, nv);
-  BlockSparseMatrixBuilder<double> builder(1, 1, 1);
-  builder.PushBlock(0, 0, Jdense);
-  data.J = builder.Build();
-
-  // Arbitrary solution vectors.
-  const VectorXd v = VectorXd::LinSpaced(nv, 0, nv - 1);
-  const VectorXd vc = VectorXd::LinSpaced(3 * nc, 0, 3 * nc - 1);
-  const VectorXd gamma = -VectorXd::LinSpaced(3 * nc, 0, 3 * nc - 1);
-  ContactSolverResults<double> results;
-  SapSolverTester::PackContactResults(data, v, vc, gamma, &results);
-
-  // Verify results were properly packed.
-  EXPECT_EQ(results.v_next, v);
-  const VectorXd fc_expected = gamma / data.time_step;
-  VectorXd results_fc(3 * nc);
-  MergeNormalAndTangent(results.fn, results.ft, &results_fc);
-  EXPECT_EQ(results_fc, fc_expected);
-  VectorXd results_vc(3 * nc);
-  MergeNormalAndTangent(results.vn, results.vt, &results_vc);
-  EXPECT_EQ(results_vc, vc);
-  const VectorXd tauc_expected = Jdense.transpose() * gamma / data.time_step;
-  EXPECT_TRUE(CompareMatrices(results.tau_contact, tauc_expected,
-                              std::numeric_limits<double>::epsilon()));
-}
 
 // We place data consumed by the contact solver in a single struct.
 struct ProblemData {
@@ -433,9 +395,9 @@ class PizzaSaverProblem {
   double time_step_{nan()};  // Discrete time step.
 
   // Pizza saver parameters.
-  double m_{nan()};  // Mass of the pizza saver.
+  double m_{nan()};       // Mass of the pizza saver.
   double radius_{nan()};  // Distance from COM to any contact point.
-  double I_{nan()};  // Rotational inertia about the z axis.
+  double I_{nan()};       // Rotational inertia about the z axis.
 
   // Contact parameters:
   double mu_{nan()};         // Friction coefficient.
@@ -445,12 +407,13 @@ class PizzaSaverProblem {
   const double g_{10.0};  // Acceleration of gravity.
 };
 
-ContactSolverResults<double> AdvanceNumSteps(
-    const PizzaSaverProblem& problem, const VectorXd& tau, int num_steps,
-    const SapSolverParameters& params, bool cost_criterion_reached = false) {
+SapSolverResults<double> AdvanceNumSteps(const PizzaSaverProblem& problem,
+                                         const VectorXd& tau, int num_steps,
+                                         const SapSolverParameters& params,
+                                         bool cost_criterion_reached = false) {
   SapSolver<double> sap;
   sap.set_parameters(params);
-  ContactSolverResults<double> result;
+  SapSolverResults<double> result;
   // Arbitrary non-zero guess to stress the solver.
   // N.B. We need non-zero values when cost_criterion_reached = true since
   // v_guess = 0 would be close to the steady state solution and SAP would
@@ -464,11 +427,11 @@ ContactSolverResults<double> AdvanceNumSteps(
 
   for (int i = 0; i < num_steps; ++i) {
     const auto data = problem.MakeProblemData(q, v, tau);
-    const ContactSolverStatus status =
+    const SapSolverStatus status =
         sap.SolveWithGuess(problem.time_step(), *data->dynamics_data,
                            *data->contact_data, v_guess, &result);
-    EXPECT_EQ(status, ContactSolverStatus::kSuccess);
-    v = result.v_next;
+    EXPECT_EQ(status, SapSolverStatus::kSuccess);
+    v = result.v;
     q += problem.time_step() * v;
 
     // Verify the number of times cache entries were updated.
@@ -515,32 +478,28 @@ GTEST_TEST(PizzaSaver, NoAppliedTorque) {
   params.ls_max_iterations = 40;
 
   const Vector4d tau(0.0, 0.0, -problem.mass() * problem.g(), 0.0);
-  const ContactSolverResults<double> result =
+  const SapSolverResults<double> result =
       AdvanceNumSteps(problem, tau, 30, params);
 
   // N.B. The accuracy of the solutions is significantly higher when using exact
   // line search.
   // TODO(amcastro-tri): Tighten tolerances for runs with exact line search.
 
-  // Expected generalized force.
-  Vector4d tau_expected(0.0, 0.0, problem.mass() * problem.g(), 0.0);
+  // Expected generalized impulse.
+  const Vector3d per_contact_impulse =
+      dt * problem.mass() * problem.g() * Vector3d::UnitZ() / 3.0;
+  const Vector4d j_expected(0.0, 0.0, dt * problem.mass() * problem.g(), 0.0);
 
-  EXPECT_TRUE(CompareMatrices(result.v_next,
-                              VectorXd::Zero(problem.kNumVelocities),
+  EXPECT_TRUE(CompareMatrices(result.v, VectorXd::Zero(problem.kNumVelocities),
                               params.rel_tolerance));
-  EXPECT_TRUE((result.tau_contact - tau_expected).norm() / tau_expected.norm() <
+  EXPECT_TRUE((result.j - j_expected).norm() / j_expected.norm() <
               params.rel_tolerance);
-  EXPECT_TRUE(CompareMatrices(result.ft,
-                              VectorXd::Zero(2 * problem.kNumContacts),
+  const VectorXd gamma_expected =
+      per_contact_impulse.replicate(problem.kNumContacts, 1);
+  EXPECT_TRUE(CompareMatrices(result.gamma, gamma_expected,
                               2.0 * params.rel_tolerance));
-  EXPECT_TRUE(CompareMatrices(
-      result.fn,
-      VectorXd::Constant(problem.kNumContacts, tau_expected(2) / 3.0),
-      params.rel_tolerance, MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(result.vt,
-                              VectorXd::Zero(2 * problem.kNumContacts),
-                              params.rel_tolerance));
-  EXPECT_TRUE(CompareMatrices(result.vn, VectorXd::Zero(problem.kNumContacts),
+  EXPECT_TRUE(CompareMatrices(result.vc,
+                              VectorXd::Zero(3 * problem.kNumContacts),
                               params.rel_tolerance));
 }
 
@@ -573,18 +532,18 @@ GTEST_TEST(PizzaSaver, ConvergenceWithExactGuess) {
   const auto data = problem.MakeProblemData(q, v, tau);
   SapSolver<double> sap;
   sap.set_parameters(params);
-  ContactSolverResults<double> result;
-  const ContactSolverStatus status =
+  SapSolverResults<double> result;
+  const SapSolverStatus status =
       sap.SolveWithGuess(problem.time_step(), *data->dynamics_data,
                          *data->contact_data, v, &result);
-  EXPECT_EQ(status, ContactSolverStatus::kSuccess);
+  EXPECT_EQ(status, SapSolverStatus::kSuccess);
 
   // Verify no iterations were performed.
   const SapSolver<double>::SolverStats& stats = sap.get_statistics();
   EXPECT_EQ(stats.num_iters, 0);
 
   // The guess was not even touched but directly copied into the results.
-  EXPECT_EQ(result.v_next, v);
+  EXPECT_EQ(result.v, v);
 }
 
 // Makes a problem for which we know the solution will be in stiction. If Mz <
@@ -611,34 +570,45 @@ void VerifyStictionSolution(const SapSolverParameters& params,
 
   const double Mz = 20.0;
   const Vector4d tau(0.0, 0.0, -problem.mass() * problem.g(), Mz);
-  const ContactSolverResults<double> result =
+  const SapSolverResults<double> result =
       AdvanceNumSteps(problem, tau, 40, params, cost_criterion_reached);
 
-  // Expected generalized force.
-  const Vector4d tau_expected(0.0, 0.0, problem.mass() * problem.g(), -Mz);
+  // Expected generalized impulse.
+  const Vector4d j_expected =
+      problem.time_step() *
+      Vector4d(0.0, 0.0, problem.mass() * problem.g(), -Mz);
 
   // Maximum expected slip. See Castro et al. 2021 for details (Eq. 22).
   const double max_slip_expected =
       params.sigma * problem.time_step() * problem.g();
 
-  EXPECT_TRUE(
-      CompareMatrices(result.v_next.head<3>(), Vector3d::Zero(), 1.0e-10));
-  EXPECT_TRUE((result.tau_contact - tau_expected).norm() / tau_expected.norm() <
+  EXPECT_TRUE(CompareMatrices(result.v.head<3>(), Vector3d::Zero(), 1.0e-10));
+  EXPECT_TRUE((result.j - j_expected).norm() / j_expected.norm() <
               relative_tolerance);
+  VectorXd gamma_normal(problem.kNumContacts);
+  ExtractNormal(result.gamma, &gamma_normal);
   EXPECT_TRUE(CompareMatrices(
-      result.fn,
-      VectorXd::Constant(problem.kNumContacts, tau_expected(2) / 3.0),
+      gamma_normal,
+      VectorXd::Constant(problem.kNumContacts, j_expected(2) / 3.0),
       relative_tolerance, MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(result.vn, VectorXd::Zero(problem.kNumContacts),
+  VectorXd vc_normal(problem.kNumContacts);
+  ExtractNormal(result.vc, &vc_normal);
+  EXPECT_TRUE(CompareMatrices(vc_normal, VectorXd::Zero(problem.kNumContacts),
                               1.0e-10));
-  const double friction_force_expected = Mz / problem.radius() / 3.0;
+  const double friction_impulse_expected =
+      problem.time_step() * Mz / problem.radius() / 3.0;
+
+  VectorXd gamma_friction(2 * problem.kNumContacts);
+  ExtractTangent(result.gamma, &gamma_friction);
+  VectorXd vc_tangent(2 * problem.kNumContacts);
+  ExtractTangent(result.vc, &vc_tangent);
   for (int i = 0; i < 3; ++i) {
-    const double slip = result.vt.segment<2>(2 * i).norm();
-    const double friction_force = result.ft.segment<2>(2 * i).norm();
-    const double normal_force = result.fn(i);
-    EXPECT_LE(friction_force, problem.mu() * normal_force);
-    EXPECT_NEAR(friction_force, friction_force_expected,
-                relative_tolerance * friction_force_expected);
+    const double slip = vc_tangent.segment<2>(2 * i).norm();
+    const double friction_impulse = gamma_friction.segment<2>(2 * i).norm();
+    const double normal_impulse = gamma_normal(i);
+    EXPECT_LE(friction_impulse, problem.mu() * normal_impulse);
+    EXPECT_NEAR(friction_impulse, friction_impulse_expected,
+                relative_tolerance * friction_impulse_expected);
     EXPECT_LE(slip, max_slip_expected);
   }
 }
@@ -700,35 +670,32 @@ GTEST_TEST(PizzaSaver, NoFriction) {
 
   const double fx = 1.0;
   const Vector4d tau(fx, 0.0, -problem.mass() * problem.g(), 0.0);
-  const ContactSolverResults<double> result =
+  const SapSolverResults<double> result =
       AdvanceNumSteps(problem, tau, num_steps, params);
 
-  // Expected generalized force.
-  const Vector4d tau_expected(0.0, 0.0, problem.mass() * problem.g(), 0.0);
+  // Expected generalized impulse.
+  const Vector4d j_expected(0.0, 0.0, dt * problem.mass() * problem.g(), 0.0);
 
   const double vx_expected = num_steps * dt * fx / problem.mass();
 
-  EXPECT_TRUE(CompareMatrices(result.v_next,
-                              Vector4d(vx_expected, 0.0, 0.0, 0.0),
+  EXPECT_TRUE(CompareMatrices(result.v, Vector4d(vx_expected, 0.0, 0.0, 0.0),
                               2.0 * params.rel_tolerance));
-  EXPECT_TRUE(CompareMatrices(result.tau_contact, tau_expected,
+  EXPECT_TRUE(CompareMatrices(result.j, j_expected, 2.0 * params.rel_tolerance,
+                              MatrixCompareType::relative));
+
+  const Vector3d per_contact_impulse =
+      dt * problem.mass() * problem.g() * Vector3d::UnitZ() / 3.0;
+  const VectorXd gamma_expected =
+      per_contact_impulse.replicate(problem.kNumContacts, 1);
+  EXPECT_TRUE(CompareMatrices(result.gamma, gamma_expected,
                               2.0 * params.rel_tolerance,
                               MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(result.ft,
-                              VectorXd::Zero(2 * problem.kNumContacts),
-                              std::numeric_limits<double>::epsilon()));
-  EXPECT_TRUE(CompareMatrices(
-      result.fn,
-      VectorXd::Constant(problem.kNumContacts, tau_expected(2) / 3.0),
-      2.0 * params.rel_tolerance, MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(result.vn, VectorXd::Zero(problem.kNumContacts),
-                              1.0e-13));
-  for (int i = 0; i < 3; ++i) {
-    const auto vt = result.vt.segment<2>(2 * i);
-    EXPECT_TRUE(CompareMatrices(vt, Vector2d(vx_expected, 0.0),
-                                2.0 * params.rel_tolerance,
-                                MatrixCompareType::relative));
-  }
+  const Vector3d per_contact_velocity = Vector3d::UnitX() * vx_expected;
+  const VectorXd vc_expected =
+      per_contact_velocity.replicate(problem.kNumContacts, 1);
+  EXPECT_TRUE(CompareMatrices(result.vc, vc_expected,
+                              2.0 * params.rel_tolerance,
+                              MatrixCompareType::relative));
 }
 
 // This tests the solver when we apply a moment Mz about COM to the pizza
@@ -750,15 +717,15 @@ GTEST_TEST(PizzaSaver, Sliding) {
   const double weight = problem.mass() * problem.g();
   const Vector4d tau(0.0, 0.0, -weight, Mz);
 
-  const ContactSolverResults<double> result =
+  const SapSolverResults<double> result =
       AdvanceNumSteps(problem, tau, 10, params);
 
-  EXPECT_GT(result.v_next(3), 0.0);  // It's accelerating.
+  EXPECT_GT(result.v(3), 0.0);  // It's accelerating.
   for (int i = 0; i < 3; ++i) {
-    const double friction_force = result.ft.segment<2>(2 * i).norm();
-    const double normal_force = result.fn(i);
-    EXPECT_NEAR(friction_force, mu * normal_force,
-                std::numeric_limits<double>::epsilon() * normal_force);
+    const double friction_impulse = result.gamma.segment<2>(3 * i).norm();
+    const double normal_impulse = result.gamma(3 * i + 2);
+    EXPECT_NEAR(friction_impulse, mu * normal_impulse,
+                std::numeric_limits<double>::epsilon() * normal_impulse);
   }
 
   // To verify the line search throws when it doesn't converge, we set a low
@@ -799,33 +766,39 @@ GTEST_TEST(PizzaSaver, NearRigidStiction) {
   // impossible that results from the previous computation affect this new
   // computation.
   params.beta = 1.0;  // Enable near-rigid regime with default value of beta.
-  const ContactSolverResults<double> result =
+  const SapSolverResults<double> result =
       AdvanceNumSteps(problem, tau, 30, params);
 
   // Expected generalized force.
-  const Vector4d tau_expected(0.0, 0.0, problem.mass() * problem.g(), -Mz);
+  const Vector4d j_expected(0.0, 0.0, dt * problem.mass() * problem.g(),
+                             -dt * Mz);
 
   // Maximum expected slip. See Castro et al. 2021 for details (Eq. 22).
   const double max_slip_expected = params.sigma * dt * problem.g();
 
-  EXPECT_TRUE(
-      CompareMatrices(result.v_next.head<3>(), Vector3d::Zero(), 1.0e-9));
-  EXPECT_TRUE((result.tau_contact - tau_expected).norm() / tau_expected.norm() <
+  EXPECT_TRUE(CompareMatrices(result.v.head<3>(), Vector3d::Zero(), 1.0e-9));
+  EXPECT_TRUE((result.j - j_expected).norm() / j_expected.norm() <
               params.rel_tolerance);
+
+  VectorXd gamma_normal(problem.kNumContacts);
+  ExtractNormal(result.gamma, &gamma_normal);
   EXPECT_TRUE(CompareMatrices(
-      result.fn,
-      VectorXd::Constant(problem.kNumContacts, tau_expected(2) / 3.0),
+      gamma_normal,
+      VectorXd::Constant(problem.kNumContacts, j_expected(2) / 3.0),
       params.rel_tolerance, MatrixCompareType::relative));
+
+  VectorXd vc_normal(problem.kNumContacts);
+  ExtractNormal(result.vc, &vc_normal);
   EXPECT_TRUE(
-      CompareMatrices(result.vn, VectorXd::Zero(problem.kNumContacts), 1.0e-9));
-  const double friction_force_expected = Mz / problem.radius() / 3.0;
+      CompareMatrices(vc_normal, VectorXd::Zero(problem.kNumContacts), 1.0e-9));
+  const double friction_impulse_expected = dt * Mz / problem.radius() / 3.0;
   for (int i = 0; i < 3; ++i) {
-    const double slip = result.vt.segment<2>(2 * i).norm();
-    const double friction_force = result.ft.segment<2>(2 * i).norm();
-    const double normal_force = result.fn(i);
-    EXPECT_LE(friction_force, mu * normal_force);
-    EXPECT_NEAR(friction_force, friction_force_expected,
-                params.rel_tolerance * friction_force_expected);
+    const double slip = result.vc.segment<2>(3 * i).norm();
+    const double friction_impulse = result.gamma.segment<2>(3 * i).norm();
+    const double normal_impulse = result.gamma(3 * i + 2);
+    EXPECT_LE(friction_impulse, mu * normal_impulse);
+    EXPECT_NEAR(friction_impulse, friction_impulse_expected,
+                params.rel_tolerance * friction_impulse_expected);
     EXPECT_LE(slip, max_slip_expected);
   }
 }
