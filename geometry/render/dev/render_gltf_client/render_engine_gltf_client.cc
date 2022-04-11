@@ -145,7 +145,7 @@ void DeleteFileAndLogIfVerbose(const std::string& path, bool verbose) {
 }  // namespace
 
 RenderEngineGltfClient::RenderEngineGltfClient(
-    const render::RenderEngineGltfClientParams& parameters)
+    const RenderEngineGltfClientParams& parameters)
     : render::RenderEngineVtk({parameters.default_label,
                        std::nullopt,
                        // Same as RenderEngineVtkParams default clear color,

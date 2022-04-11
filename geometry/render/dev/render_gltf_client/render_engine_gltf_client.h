@@ -32,8 +32,8 @@ class RenderEngineGltfClient : public render::RenderEngineVtk {
   /* Constructs the render engine from the given `parameters`.  By default the
    %RenderEngineGltfClient will communicate with a local server.
    @sa RenderEngineGltfClientParams */
-  RenderEngineGltfClient(const render::RenderEngineGltfClientParams& parameters =
-                             render::RenderEngineGltfClientParams());
+  RenderEngineGltfClient(const RenderEngineGltfClientParams& parameters =
+                             RenderEngineGltfClientParams());
 
   // TODO(svenevs): remove when VTK is updated, see implementation for details.
   void UpdateViewpoint(const math::RigidTransformd& X_WC) override;

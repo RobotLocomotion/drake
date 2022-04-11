@@ -83,13 +83,13 @@ using systems::sensors::ImageRgba8U;
 
 using Tester = RenderEngineGltfClientTester;
 using Engine = RenderEngineGltfClient;
-using Params = render::RenderEngineGltfClientParams;
+using Params = RenderEngineGltfClientParams;
 
 GTEST_TEST(RenderEngineGltfClient, Constructor) {
   std::string temp_dir;
   {
     // Test the default construction values via the factory function.
-    const auto engine = render::MakeRenderEngineGltfClient({});
+    const auto engine = MakeRenderEngineGltfClient({});
     auto* actual_engine = dynamic_cast<RenderEngineGltfClient*>(engine.get());
     EXPECT_NE(actual_engine, nullptr);
     Tester tester{actual_engine};
