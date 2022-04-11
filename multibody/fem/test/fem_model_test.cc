@@ -158,6 +158,100 @@ GTEST_TEST(FemModelTest, Gravity) {
   EXPECT_EQ(model.gravity_vector(), Vector3<double>(1, 2, 3));
 }
 
+/* Verifies we can add a Dirichlet boundary condition to FEM models, and it is
+ correctly invoked on the state, residual, and tangent matrix. */
+GTEST_TEST(FemModelTest, DirichletBoundaryCondition) {
+  DummyModel model;
+  DummyModel::DummyBuilder builder(&model);
+  builder.AddElementWithDistinctNodes();
+  builder.Build();
+
+  using T = DummyModel::T;
+
+  auto are_same_states = [](const FemState<T>& a, const FemState<T>& b) {
+    return a.GetAccelerations() == b.GetAccelerations() &&
+           a.GetVelocities() == b.GetVelocities() &&
+           a.GetPositions() == b.GetPositions();
+  };
+
+  /* ApplyBoundaryCondition() is a no-op if no BC is prescribed. */
+  {
+    unique_ptr<FemState<T>> state0 = model.MakeFemState();
+    unique_ptr<FemState<T>> state1 = model.MakeFemState();
+    model.ApplyBoundaryCondition(state1.get());
+    EXPECT_TRUE(are_same_states(*state0, *state1));
+  }
+
+  /* Create a BC and add it to the model. */
+  DirichletBoundaryCondition<double> bc;
+  bc.AddBoundaryCondition(0, Vector3<double>(3, 2, 1));
+  model.SetDirichletBoundaryCondition(bc);
+  /* Verify that BC is applied to the state, but it doesn't matter whether BC is
+   applied from the model or directly from the BC.*/
+  {
+    unique_ptr<FemState<T>> state0 = model.MakeFemState();
+    unique_ptr<FemState<T>> state1 = model.MakeFemState();
+    model.ApplyBoundaryCondition(state1.get());
+    unique_ptr<FemState<T>> state2 = model.MakeFemState();
+    bc.ApplyBoundaryConditionToState(state2.get());
+    EXPECT_FALSE(are_same_states(*state0, *state1));
+    EXPECT_TRUE(are_same_states(*state1, *state2));
+  }
+
+  DummyModel model_without_bc;
+  DummyModel::DummyBuilder builder1(&model_without_bc);
+  builder1.AddElementWithDistinctNodes();
+  builder1.Build();
+  /* Verify that BC is applied to the residual, but it doesn't matter whether BC
+   is applied from the model or directly from the BC.*/
+  {
+    unique_ptr<FemState<T>> state0 = model.MakeFemState();
+    /* DummyModel gives all zero residual for nonzero state, so we set to the
+     zero state so that we have a non-zero residual. */
+    state0->SetPositions(VectorX<T>::Zero(model.num_dofs()));
+    state0->SetVelocities(VectorX<T>::Zero(model.num_dofs()));
+    state0->SetAccelerations(VectorX<T>::Zero(model.num_dofs()));
+    VectorXd residual0(model.num_dofs());
+    model.CalcResidual(*state0, &residual0);
+
+    unique_ptr<FemState<T>> state1 = model_without_bc.MakeFemState();
+    state1->SetPositions(VectorX<T>::Zero(model.num_dofs()));
+    state1->SetVelocities(VectorX<T>::Zero(model.num_dofs()));
+    state1->SetAccelerations(VectorX<T>::Zero(model.num_dofs()));
+    VectorXd residual1(model_without_bc.num_dofs());
+    model_without_bc.CalcResidual(*state1, &residual1);
+    EXPECT_FALSE(CompareMatrices(residual0, residual1));
+
+    bc.ApplyHomogeneousBoundaryCondition(&residual1);
+    EXPECT_TRUE(CompareMatrices(residual0, residual1));
+  }
+
+  /* Verify that BC is applied to the tangent matrix, but it doesn't matter
+   whether BC is applied from the model or directly from the BC.*/
+  {
+    const Vector3d weights(0.1, 0.2, 0.3);
+
+    unique_ptr<FemState<T>> state0 = model.MakeFemState();
+    unique_ptr<internal::PetscSymmetricBlockSparseMatrix> tangent_matrix0 =
+        model.MakePetscSymmetricBlockSparseTangentMatrix();
+    model.CalcTangentMatrix(*state0, weights, tangent_matrix0.get());
+    tangent_matrix0->AssembleIfNecessary();
+    const MatrixX<T> dense_tangent_matrix0 = tangent_matrix0->MakeDenseMatrix();
+
+    unique_ptr<FemState<T>> state1 = model_without_bc.MakeFemState();
+    unique_ptr<internal::PetscSymmetricBlockSparseMatrix> tangent_matrix1 =
+        model.MakePetscSymmetricBlockSparseTangentMatrix();
+    model_without_bc.CalcTangentMatrix(*state1, weights, tangent_matrix1.get());
+    tangent_matrix1->AssembleIfNecessary();
+    MatrixX<T> dense_tangent_matrix1 = tangent_matrix1->MakeDenseMatrix();
+    EXPECT_FALSE(CompareMatrices(dense_tangent_matrix0, dense_tangent_matrix1));
+
+    bc.ApplyBoundaryConditionToTangentMatrix(tangent_matrix1.get());
+    dense_tangent_matrix1 = tangent_matrix1->MakeDenseMatrix();
+    EXPECT_TRUE(CompareMatrices(dense_tangent_matrix0, dense_tangent_matrix1));
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace fem
