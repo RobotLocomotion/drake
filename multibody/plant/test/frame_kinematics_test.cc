@@ -25,9 +25,11 @@ using test::KukaIiwaModelTests;
 
 namespace {
 
+// Numerical tolerance used to verify numerical results.
+constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
 TEST_F(KukaIiwaModelTests, FramesKinematics) {
   // Numerical tolerance used to verify numerical results.
-  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
   SetArbitraryConfiguration();
 
   // Test for a simple identity case of CalcRelativeTransform().
@@ -148,7 +150,6 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
 
 TEST_F(KukaIiwaModelTests, FrameAngularVelocity) {
   // Numerical tolerance used to verify numerical results.
-  const double kTolerance = 16 * std::numeric_limits<double>::epsilon();
   SetArbitraryConfiguration();
 
   // Verify that fixed-offset Frame_H (which is fixed to end-effector frame_E)
@@ -160,13 +161,9 @@ TEST_F(KukaIiwaModelTests, FrameAngularVelocity) {
   EXPECT_TRUE(CompareMatrices(w_EH_E, Vector3<double>::Zero(),
       kTolerance, MatrixCompareType::relative));
 
-  // Verify the fast/direct calculation of ω_WE_W (frame H's angular velocity in
-  // world W, expressed in W) by comparing to the rotational part of V_WE_W
+  // Verify the direct calculation of ω_WE_W (frame H's angular velocity in
+  // world W, expressed in W) by comparing it to the rotational part of V_WE_W
   // (frame H's spatial velocity in world W, expressed in W).
-  // Note: For calculating a FixedOffsetFrame's angular velocity (e.g., fixed-
-  // offset frame H's angular velocity in world), CalcSpatialVelocityInWorld()
-  // is less efficient than EvalAngularVelocityInWorld() due to computational
-  // costs for calculating an additional/unnecessary translational velocity.
   const Vector3<double>& w_WH_W =
       frame_H.EvalAngularVelocityInWorld(*context_);
   const SpatialVelocity<double> V_WH_W =
@@ -208,8 +205,6 @@ TEST_F(KukaIiwaModelTests, FrameAngularVelocity) {
 }
 
 TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialVelocity) {
-  // Numerical tolerance used to verify numerical results.
-  const double kTolerance = 16 * std::numeric_limits<double>::epsilon();
   SetArbitraryConfiguration();
 
   // Directly verify the calculation of V_W_L3H_W (frame H's spatial velocity
@@ -304,8 +299,6 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialVelocity) {
 }
 
 TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
-  // Numerical tolerance used to verify numerical results.
-  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
   SetArbitraryConfiguration();
 
   // Verify a short-cut return from Frame::CalcSpatialAccelerationInWorld()
@@ -445,9 +438,6 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
 }
 
 GTEST_TEST(MultibodyPlantTest, FixedWorldKinematics) {
-  // Numerical tolerance used to verify numerical results.
-  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-
   MultibodyPlant<double> plant(0.0);
   test::AddFixedObjectsToPlant(&plant);
   plant.Finalize();

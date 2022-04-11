@@ -201,6 +201,11 @@ class Frame : public FrameBase<T> {
   /// velocity ω measured in a frame M and expressed in a frame E).
   const Vector3<T>& EvalAngularVelocityInWorld(
       const systems::Context<T>& context) const {
+    // For calculating the angular velocity of a FixedOffsetFrame or a BodyFrame
+    // in the world, it is more efficient to use EvalAngularVelocityInWorld()
+    // than Frame::CalcSpatialVelocityInWorld() due to computational overhead
+    // for calculating the additional/unnecessary frame translational velocity.
+    // The next line of code avoids Frame::CalcSpatialVelocityInWorld(context);
     const SpatialVelocity<T>& V_WB = body().EvalSpatialVelocityInWorld(context);
     const Vector3<T>& w_WF_W = V_WB.rotational();
     return w_WF_W;
@@ -250,9 +255,11 @@ class Frame : public FrameBase<T> {
   /// CalcSpatialAccelerationInWorld().
   SpatialVelocity<T> CalcSpatialVelocityInWorld(
       const systems::Context<T>& context) const {
+    // TODO(Mitiguy) The calculation below assumes "this" frame is attached to a
+    //  rigid body (not a soft body). Modify if soft bodies are possible.
     const math::RotationMatrix<T>& R_WB =
         body().EvalPoseInWorld(context).rotation();
-    const Vector3<T> p_BF_B = CalcPoseInBodyFrame(context).translation();
+    const Vector3<T> p_BF_B = GetFixedPoseInBodyFrame(context).translation();
     const Vector3<T> p_BF_W = R_WB * p_BF_B;
     const SpatialVelocity<T>& V_WB = body().EvalSpatialVelocityInWorld(context);
     const SpatialVelocity<T> V_WF = V_WB.Shift(p_BF_W);
@@ -384,6 +391,9 @@ class Frame : public FrameBase<T> {
   /// @see CalcSpatialAcceleration() and CalcSpatialVelocityInWorld().
   SpatialAcceleration<T> CalcSpatialAccelerationInWorld(
       const systems::Context<T>& context) const {
+    // TODO(Mitiguy) The calculation below assumes "this" frame is attached to a
+    //  rigid body (not a soft body). Modify if soft bodies are possible.
+
     // `this` frame_F is fixed to a body B.  Calculate A_WB_W, body B's spatial
     // acceleration in the world frame W, expressed in W.
     const SpatialAcceleration<T>& A_WB_W =
@@ -395,7 +405,7 @@ class Frame : public FrameBase<T> {
     // Shift spatial acceleration A_WB_W from Bo to Fp.
     const math::RotationMatrix<T>& R_WB =
         body().EvalPoseInWorld(context).rotation();
-    const Vector3<T> p_BoFo_B = CalcPoseInBodyFrame(context).translation();
+    const Vector3<T> p_BoFo_B = GetFixedPoseInBodyFrame(context).translation();
     const Vector3<T> p_BoFo_W = R_WB * p_BoFo_B;
     const Vector3<T>& w_WB_W = EvalAngularVelocityInWorld(context);
     const SpatialAcceleration<T> A_WF_W = A_WB_W.Shift(p_BoFo_W, w_WB_W);
