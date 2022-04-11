@@ -12,7 +12,6 @@ def _impl(ctx):
         "manipulation/models/iiwa_description/iiwa_stack.LICENSE.txt",
         "setup/Brewfile",
         "setup/install_prereqs",
-        "setup/packages-bionic.txt",
         "setup/packages-focal.txt",
         "setup/requirements.txt",
         # These are installed in share/drake and are runfiles for certain

@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Install development prerequisites for source distributions of Drake on
-# Ubuntu 18.04 (Bionic) or 20.04 (Focal).
+# Ubuntu 20.04 (Focal).
 #
 # The development and runtime prerequisites for binary distributions should be
 # installed before running this script.
@@ -111,11 +111,11 @@ fi
 packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
 apt-get install ${maybe_yes} --no-install-recommends ${packages}
 
-# TODO(svenevs): when bionic is dropped, satisfy can be used unconditionally.
-if  [[ "${codename}" != 'bionic' ]]; then
-  apt-get satisfy  ${maybe_yes} --no-install-recommends \
-    'libcurl4-gnutls-dev | libcurl4-dev'
-fi
+
+# TODO(svenevs): Ideally we would have `packages-${codename}-satisfy.txt`,
+# an example workflow is in #16233 but xargs needs work (see #16280).
+apt-get satisfy  ${maybe_yes} --no-install-recommends \
+  'libcurl4-gnutls-dev | libcurl4-dev'
 
 # Ensure that we have available a locale that supports UTF-8 for generating a
 # C++ header containing Python API documentation during the build.
@@ -123,8 +123,8 @@ apt-get install ${maybe_yes} --no-install-recommends locales
 locale-gen en_US.UTF-8
 
 if [[ "${codename}" == 'focal' ]]; then
-  # We need a working /usr/bin/python (of any version).  On Bionic it's there
-  # by default, but on Focal we have to ask for it.
+  # We need a working /usr/bin/python (of any version).
+  # On Focal we have to ask for it.
   if [[ ! -e /usr/bin/python ]]; then
     apt-get install ${maybe_yes} --no-install-recommends python-is-python3
   else

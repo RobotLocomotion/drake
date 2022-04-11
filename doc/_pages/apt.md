@@ -5,7 +5,7 @@ title: Installation via APT (Ubuntu)
 # APT Packages
 
 Drake publishes pre-compiled binaries as APT packages (``*.deb``) for the
-Ubuntu 18.04 (Bionic) and Ubuntu 20.04 (Focal) operating systems. Refer to
+Ubuntu 20.04 (Focal) operating system. Refer to
 [Supported Configurations](/installation.html#supported-configurations)
 for additional compatibility details.
 
