@@ -108,12 +108,10 @@ def _impl(repository_ctx):
         ]
     else:
         files = [
-            # N.B. We are using and installing the MOSEK™ copy of libcilkrts,
-            # even though Ubuntu installs the same shared library by default on
-            # all systems already. For some reason, MOSEK™ fails when used with
-            # Ubuntu's shared library. If Drake users have other third-party
-            # code that assumes use of Ubuntu's libcilkrts, there could be
-            # runtime conflicts; however, this risk seems low.
+            # We unconditionally use the the MOSEK™ copy of libcilkrts. Even
+            # though Ubuntu 20 offers a cilk shared library for legacy support,
+            # Ubuntu 22 has dropped it, and it's simplest for us to just use
+            # the MOSEK™ copy of the library everywhere.
             "bin/libcilkrts.so.5",
             "bin/libmosek64.so.{}.{}".format(
                 mosek_major_version,
