@@ -25,7 +25,7 @@ package(default_visibility = ["//visibility:public"])
 
 PROJECT_MAJOR = 12
 
-PROJECT_MINOR = 3
+PROJECT_MINOR = 4
 
 PROJECT_PATCH = 0
 
