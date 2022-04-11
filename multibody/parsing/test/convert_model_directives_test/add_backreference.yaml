@@ -1,0 +1,10 @@
+directives:
+
+# Add a weld that references a frame in another model directives file
+# TODO(ggould-tri) this violates the scoping principle discussed in
+#  https://github.com/RobotLocomotion/drake/issues/13282#issuecomment-627687411
+# and is arguably a bug, but as long as it is current behaviour we test it.
+- add_weld:
+    parent: simple_model_origin
+    # N.B. Implicitly added to current model instance.
+    child: simple_model::base
