@@ -14,5 +14,6 @@ bazel run \
     --repo_env=DRAKE_OS=manylinux \
     --define NO_DRAKE_VISUALIZER=ON \
     --define NO_DREAL=ON \
+    --define WITH_MOSEK=ON \
     --define WITH_SNOPT=ON \
     //:install -- /opt/drake
