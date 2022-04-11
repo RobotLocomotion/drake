@@ -3,8 +3,8 @@
 #include <memory>
 #include <string>
 
+#include "drake/geometry/render/dev/render_gltf_client/factory.h"
 #include "drake/geometry/render/dev/render_gltf_client/render_client.h"
-#include "drake/geometry/render/dev/render_gltf_client/render_engine_gltf_client_factory.h"
 #include "drake/geometry/render/render_engine_vtk.h"
 
 namespace drake {

@@ -9,8 +9,8 @@
 
 #include "drake/common/filesystem.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/geometry/render/dev/render_gltf_client/factory.h"
 #include "drake/geometry/render/dev/render_gltf_client/http_service.h"
-#include "drake/geometry/render/dev/render_gltf_client/render_engine_gltf_client_factory.h"
 #include "drake/geometry/render/dev/render_gltf_client/test/test_png.h"
 #include "drake/geometry/render/dev/render_gltf_client/test/test_tiff.h"
 

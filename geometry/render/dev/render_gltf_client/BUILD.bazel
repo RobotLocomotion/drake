@@ -58,12 +58,12 @@ drake_cc_library(
 drake_cc_library(
     name = "render_engine_gltf_client",
     srcs = [
+        "factory.cc",
         "render_engine_gltf_client.cc",
-        "render_engine_gltf_client_factory.cc",
     ],
     hdrs = [
+        "factory.h",
         "render_engine_gltf_client.h",
-        "render_engine_gltf_client_factory.h",
     ],
     # render_engine_gltf_client.h directly pulls in VTK headers; leave it out
     # of the install.

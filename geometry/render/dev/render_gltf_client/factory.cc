@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/render_gltf_client/render_engine_gltf_client_factory.h"
+#include "drake/geometry/render/dev/render_gltf_client/factory.h"
 
 #include "drake/geometry/render/dev/render_gltf_client/render_engine_gltf_client.h"
 
