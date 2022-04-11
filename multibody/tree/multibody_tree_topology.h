@@ -1099,28 +1099,68 @@ class MultibodyTreeTopology {
     }
   }
 
+  // This traverses the tree of nodes outboard of `base` and applies `operation`
+  // on each of them, starting with `base`. The traversal is performed in depth
+  // first order.
+  // @pre Body nodes were already created and therefore they are indexed in
+  // depth first order.
+  void TraverseOutboardNodes(
+      const BodyNodeTopology& base,
+      std::function<void(const BodyNodeTopology&)> operation) const {
+    DRAKE_DEMAND(get_num_body_nodes() != 0);
+    operation(base);
+    // We are done if the base has no more children.
+    if (base.get_num_children() == 0) return;
+    // Traverse outboard nodes. Since the tree is finalized, we know nodes are
+    // in DFT order.
+    const int base_level = base.level;
+    for (BodyNodeIndex node_index(base.index + 1);
+         /* Reached the last node in the model. */
+         node_index < num_bodies() &&
+         /* Reached next tree in the multibody forest */
+         get_body_node(node_index).level > base_level;
+         ++node_index) {
+      operation(get_body_node(node_index));
+    }
+  }
+
+  // Computes the number of generalized velocities in the tree composed of the
+  // nodes outboard of `base`, including the generalized velocities of `base`.
+  // @pre Body nodes were already created.
+  int CalcNumberOfOutboardVelocities(const BodyNodeTopology& base) {
+    DRAKE_DEMAND(get_num_body_nodes() != 0);
+    int nv = 0;
+    TraverseOutboardNodes(base, [&nv](const BodyNodeTopology& node) {
+      nv += node.num_mobilizer_velocities;
+    });
+    return nv;
+  }
+
   // Helper method to be used within Finalize() to obtain the topological
   // information that describes the multibody system as a "forest" of trees.
   void ExtractForestInfo() {
     const BodyNodeTopology& root = get_body_node(BodyNodeIndex(0));
-    const int num_trees_local = root.child_nodes.size();
-    num_tree_velocities_.resize(num_trees_local, 0);
+    const int max_num_trees = root.child_nodes.size();
+    num_tree_velocities_.reserve(max_num_trees);
     body_to_tree_index_.resize(num_bodies());
     velocity_to_tree_index_.resize(num_velocities());
 
-    int t = -1;  // current tree.
-    // Traverse nodes in their DFT order, skipping the world.
-    for (BodyNodeIndex node_index(1); node_index < get_num_body_nodes();
-         ++node_index) {
-      const BodyNodeTopology& node = get_body_node(node_index);
-      // Every time we reach a node that has "root" (the world) as parent (i.e.
-      // level = 1) we add a new tree (increase the tree counter).
-      if (node.level == 1) ++t;
-      num_tree_velocities_[t] += node.num_mobilizer_velocities;
-      body_to_tree_index_[node.body] = TreeIndex(t);
-      for (int i = 0; i < node.num_mobilizer_velocities; ++i) {
-        const int v = node.mobilizer_velocities_start_in_v + i;
-        velocity_to_tree_index_[v] = TreeIndex(t);
+    for (const BodyNodeIndex& root_child_index : root.child_nodes) {
+      const BodyNodeTopology& root_child = get_body_node(root_child_index);
+      const int nt = CalcNumberOfOutboardVelocities(root_child);
+      if (nt > 0) {
+        const TreeIndex tree_index(num_trees());
+        num_tree_velocities_.push_back(nt);
+        TraverseOutboardNodes(root_child, [&](const BodyNodeTopology& node) {
+          // We recurse all bodies in this tree (with tree_index) to fill in the
+          // maps from body index to tree index and from velocity index to tree
+          // index.
+          body_to_tree_index_[node.body] = tree_index;
+          for (int i = 0; i < node.num_mobilizer_velocities; ++i) {
+            const int v = node.mobilizer_velocities_start_in_v + i;
+            velocity_to_tree_index_[v] = tree_index;
+          }
+        });
       }
     }
 
@@ -1141,7 +1181,7 @@ class MultibodyTreeTopology {
     // generalized velocities for the full model that corresponds to the m-th
     // mobility for the t-th tree.
     tree_velocities_start_.resize(num_trees(), 0);
-    for (t = 1; t < num_trees(); ++t) {
+    for (int t = 1; t < num_trees(); ++t) {
       tree_velocities_start_[t] =
           tree_velocities_start_[t - 1] + num_tree_velocities_[t - 1];
     }
