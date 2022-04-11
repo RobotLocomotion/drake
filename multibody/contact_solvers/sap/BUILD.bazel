@@ -117,11 +117,11 @@ drake_cc_library(
     srcs = ["sap_solver.cc"],
     hdrs = ["sap_solver.h"],
     deps = [
+        ":sap_model",
         ":sap_solver_results",
         "//common:default_scalars",
         "//common:essential",
         "//multibody/contact_solvers:block_sparse_matrix",
-        "//multibody/contact_solvers:contact_solver_utils",
         "//multibody/contact_solvers:point_contact_data",
         "//multibody/contact_solvers:system_dynamics_data",
     ],
@@ -203,12 +203,14 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sap_solver_test",
     deps = [
+        ":sap_friction_cone_constraint",
         ":sap_solver",
         ":sap_solver_results",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//multibody/contact_solvers:block_sparse_linear_operator",
         "//multibody/contact_solvers:block_sparse_matrix",
+        "//multibody/contact_solvers:contact_solver_utils",
     ],
 )
 
