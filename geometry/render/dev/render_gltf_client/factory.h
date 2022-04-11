@@ -9,13 +9,12 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
 
 /** Construction parameters for the MakeRenderEngineGltfClient() to create a
  client as part of the @ref render_engine_gltf_client_server_api. */
 struct RenderEngineGltfClientParams {
   /** The (optional) label to apply when none is otherwise specified.  */
-  std::optional<RenderLabel> default_label{};
+  std::optional<render::RenderLabel> default_label{};
 
   /** The url of the server communicate with.  Should **not** include a trailing
    `/` character.  For example, `https://drake.mit.edu` is acceptable while
@@ -114,9 +113,8 @@ struct RenderEngineGltfClientParams {
  [libcurl_init]: https://curl.se/libcurl/c/curl_global_init.html
  [libcurl_cleanup]: https://curl.se/libcurl/c/curl_global_cleanup.html
  */
-std::unique_ptr<RenderEngine> MakeRenderEngineGltfClient(
+std::unique_ptr<render::RenderEngine> MakeRenderEngineGltfClient(
     const RenderEngineGltfClientParams& params);
 
-}  // namespace render
 }  // namespace geometry
 }  // namespace drake

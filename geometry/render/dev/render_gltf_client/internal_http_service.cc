@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/http_service.h"
+#include "drake/geometry/render/dev/render_gltf_client/internal_http_service.h"
 
 #include <fstream>
 #include <vector>
@@ -10,7 +10,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gltf_client {
 namespace internal {
 
 namespace fs = drake::filesystem;
@@ -63,6 +63,6 @@ void HttpService::ThrowIfFilesMissing(
 }
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake

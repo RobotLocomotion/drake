@@ -5,13 +5,13 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/geometry/render/dev/http_service.h"
+#include "drake/geometry/render/dev/render_gltf_client/internal_http_service.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/systems/sensors/image.h"
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gltf_client {
 namespace internal {
 
 /* The type of image being rendered. */
@@ -99,10 +99,11 @@ class RenderClient {
      If `image_type` is a depth image but `depth_range` was not provided, or
      `depth_range` was provided but `image_type` is color or label. */
   virtual std::string RenderOnServer(
-      const RenderCameraCore& camera_core, RenderImageType image_type,
-      const std::string& scene_path,
+      const drake::geometry::render::RenderCameraCore& camera_core,
+      RenderImageType image_type, const std::string& scene_path,
       const std::optional<std::string>& mime_type = std::nullopt,
-      const std::optional<DepthRange>& depth_range = std::nullopt) const;
+      const std::optional<drake::geometry::render::DepthRange>& depth_range =
+          std::nullopt) const;
 
   //@}
   /* @name Server communication helpers */
@@ -266,6 +267,6 @@ class RenderClient {
 };
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake

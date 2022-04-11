@@ -6,7 +6,7 @@
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/geometry/drake_visualizer.h"
-#include "drake/geometry/render/dev/render_engine_gltf_client_factory.h"
+#include "drake/geometry/render/dev/render_gltf_client/factory.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
@@ -41,15 +41,18 @@ DEFINE_double(render_fps, 10, "Frames per simulation second to render");
    Textured: "0.0, 0.0, 0.0, -1.57, 0.0, 0.0"
  */
 DEFINE_string(camera_xyz_rpy, "0.8, 0.0, 0.5, -2.2, 0.0, 1.57",
-    "Sets the camera pose by xyz (meters) and rpy (radians) values.");
-DEFINE_string(save_dir, "",
+              "Sets the camera pose by xyz (meters) and rpy (radians) values.");
+DEFINE_string(
+    save_dir, "",
     "If specified, the rendered images will be saved to this directory.");
 
 static bool valid_render_engine(const char* flagname, const std::string& val) {
-  if (val == "vtk") return true;
-  else if (val == "client") return true;
+  if (val == "vtk")
+    return true;
+  else if (val == "client")
+    return true;
   printf("Invalid value for --%s: '%s'; choices: 'vtk' or 'client'.\n",
-      flagname, val.c_str());
+         flagname, val.c_str());
   return false;
 }
 DEFINE_string(render_engine, "vtk",
@@ -58,8 +61,7 @@ DEFINE_validator(render_engine, &valid_render_engine);
 
 namespace drake {
 namespace geometry {
-namespace render {
-namespace minimal_example {
+namespace render_gltf_client {
 namespace {
 
 /** This example serves as the baseline demonstration of all the features
@@ -98,6 +100,9 @@ namespace {
      same. */
 
 using Eigen::Vector3d;
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRenderCamera;
+using geometry::render::RenderLabel;
 using lcm::DrakeLcm;
 using math::RigidTransformd;
 using math::RollPitchYawd;
@@ -175,8 +180,8 @@ void AddShapes(SceneGraph<double>* scene_graph) {
   DRAKE_DEMAND(scene_graph != nullptr);
 
   const SourceId source_id = scene_graph->RegisterSource("main");
-  const std::string texture_path =
-      FindResourceOrThrow("drake/geometry/render/dev/test/4_color_texture.png");
+  const std::string texture_path = FindResourceOrThrow(
+      "drake/geometry/render/dev/render_gltf_client/test/4_color_texture.png");
   double x = 0.4;
   double dx = -0.15;
   int label_value = 0;
@@ -235,7 +240,7 @@ void AddShapes(SceneGraph<double>* scene_graph) {
       source_id,
       MakeInstance(
           ellipsoid, Vector3d(x, -0.25, 0),
-          Material(Rgba(0.25, 1.0, 1.0), label_value),  "rgba_ellipsoid"));
+          Material(Rgba(0.25, 1.0, 1.0), label_value), "rgba_ellipsoid"));
 
   ++label_value;
   scene_graph->RegisterAnchoredGeometry(
@@ -277,10 +282,12 @@ int do_main() {
   const std::string render_name("renderer");
   if (FLAGS_render_engine == "vtk") {
     scene_graph->AddRenderer(render_name,
-                             MakeRenderEngineVtk(RenderEngineVtkParams()));
+                             geometry::render::MakeRenderEngineVtk(
+                                 geometry::render::RenderEngineVtkParams()));
   } else {  // FLAGS_render_engine == "client"
-    scene_graph->AddRenderer(render_name, MakeRenderEngineGltfClient(
-                                              RenderEngineGltfClientParams()));
+    scene_graph->AddRenderer(render_name,
+                             geometry::MakeRenderEngineGltfClient(
+                                 geometry::RenderEngineGltfClientParams()));
   }
 
   AddShapes(scene_graph);
@@ -305,8 +312,8 @@ int do_main() {
     const RigidTransformd X_WB = ParseCameraPose(FLAGS_camera_xyz_rpy);
 
     auto world_id = plant->GetBodyFrameIdOrThrow(plant->world_body().index());
-    auto camera = builder.AddSystem<RgbdSensor>(
-        world_id, X_WB, color_camera, depth_camera);
+    auto camera = builder.AddSystem<RgbdSensor>(world_id, X_WB, color_camera,
+                                                depth_camera);
     builder.Connect(scene_graph->get_query_output_port(),
                     camera->query_object_input_port());
 
@@ -319,16 +326,14 @@ int do_main() {
     systems::lcm::LcmPublisherSystem* image_array_lcm_publisher{nullptr};
     systems::sensors::ImageWriter* image_writer{nullptr};
     if ((FLAGS_color || FLAGS_depth || FLAGS_label)) {
-      image_array_lcm_publisher =
-          builder.template AddSystem(systems::lcm::LcmPublisherSystem::Make<
-              lcmt_image_array>(
+      image_array_lcm_publisher = builder.template AddSystem(
+          systems::lcm::LcmPublisherSystem::Make<lcmt_image_array>(
               "DRAKE_RGBD_CAMERA_IMAGES", &lcm,
               1. / FLAGS_render_fps /* publish period */));
       image_array_lcm_publisher->set_name("publisher");
 
-      builder.Connect(
-          image_to_lcm_image_array->image_array_t_msg_output_port(),
-          image_array_lcm_publisher->get_input_port());
+      builder.Connect(image_to_lcm_image_array->image_array_t_msg_output_port(),
+                      image_array_lcm_publisher->get_input_port());
 
       image_writer =
           builder.template AddSystem<systems::sensors::ImageWriter>();
@@ -356,8 +361,8 @@ int do_main() {
 
     if (FLAGS_depth) {
       const auto& port =
-          image_to_lcm_image_array
-              ->DeclareImageInputPort<PixelType::kDepth32F>("depth");
+          image_to_lcm_image_array->DeclareImageInputPort<PixelType::kDepth32F>(
+              "depth");
       builder.Connect(camera->depth_image_32F_output_port(), port);
 
       if (!FLAGS_save_dir.empty()) {
@@ -373,8 +378,8 @@ int do_main() {
 
     if (FLAGS_label) {
       const auto& port =
-          image_to_lcm_image_array
-              ->DeclareImageInputPort<PixelType::kLabel16I>("label");
+          image_to_lcm_image_array->DeclareImageInputPort<PixelType::kLabel16I>(
+              "label");
       builder.Connect(camera->label_image_output_port(), port);
 
       if (!FLAGS_save_dir.empty()) {
@@ -420,12 +425,11 @@ int do_main() {
 }
 
 }  // namespace
-}  // namespace minimal_example
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::geometry::render::minimal_example::do_main();
+  return drake::geometry::render_gltf_client::do_main();
 }

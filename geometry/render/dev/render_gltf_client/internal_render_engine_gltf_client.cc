@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/render_engine_gltf_client.h"
+#include "drake/geometry/render/dev/render_gltf_client/internal_render_engine_gltf_client.h"
 
 #include <atomic>
 #include <cstdio>
@@ -15,11 +15,16 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gltf_client {
 namespace internal {
 
 namespace fs = drake::filesystem;
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRenderCamera;
 using geometry::render::RenderCameraCore;
+using geometry::render::RenderEngine;
+using geometry::render::RenderEngineVtk;
+using geometry::render::internal::ImageType;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
@@ -368,6 +373,6 @@ Eigen::Matrix4d RenderEngineGltfClient::CameraModelViewTransformMatrix(
 }
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake
