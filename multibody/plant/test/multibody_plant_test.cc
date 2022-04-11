@@ -1157,16 +1157,21 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
 // The chain terminates with one additional body with no geometry.  It has no
 // bearing on collision tests but is used for geometry collection testing.
 //
-// Also accepts a filtering function that is applied between geometry
-// registration and context compilation.
+// The optional constructor parameter @p weld_to_next will cause selected
+// joints to be welds instead of revolute joints. The parameter is a bitmap
+// where weld_to_next[k] specifies a weld between sphere(k) and sphere(k+1) if
+// true. Otherwise, it specifies a revolute joint between those
+// bodies. Regardless of the size of vector passed to @p weld_to_next, it will
+// be resized internally, filled with zeros (revolute joint requests) if
+// necessary.
+//
+// Specifying welds joints will reduce the number of collisions, thanks to
+// automatic filtering of welded subgraphs.
 class SphereChainScenario {
  public:
   SphereChainScenario(
-      int sphere_count,
-      std::function<void(SphereChainScenario*)> apply_filters = nullptr,
-      bool finalize = true)
-      : sphere_count_(sphere_count),
-        apply_filters_(apply_filters) {
+      int sphere_count, std::vector<bool> weld_to_next = {})
+      : sphere_count_(sphere_count) {
     using std::to_string;
     std::tie(plant_, scene_graph_) =
         AddMultibodyPlantSceneGraph(&builder_, 0.0);
@@ -1194,35 +1199,31 @@ class SphereChainScenario {
 
     // Add sphere bodies.
     for (int i = 0; i < sphere_count_; ++i) {
-      // TODO(SeanCurtis-TRI): Make this prettier when C++17 is available.
-      // E.g., auto [id, geometry] = make_sphere(i);
-      GeometryId id{};
-      const RigidBody<double>* body{};
-      std::tie(body, id) = make_sphere(i);
+      const auto& [body, id] = make_sphere(i);
       spheres_.push_back(body);
       sphere_ids_.push_back(id);
     }
-    // Add hinges between spheres.
+    // Add hinges xor welds between spheres.
+    weld_to_next.resize(sphere_count_ - 1);
     for (int i = 0; i < sphere_count_ - 1; ++i) {
-      plant_->AddJoint<RevoluteJoint>(
-          "hinge" + to_string(i) + "_" + to_string(i + 1), *spheres_[i],
-          std::nullopt, *spheres_[i + 1], std::nullopt, Vector3d::UnitY());
+      if (weld_to_next[i]) {
+        plant_->WeldFrames(spheres_[i]->body_frame(),
+                           spheres_[i + 1]->body_frame());
+      } else {
+        plant_->AddJoint<RevoluteJoint>(
+            "hinge" + to_string(i) + "_" + to_string(i + 1), *spheres_[i],
+            std::nullopt, *spheres_[i + 1], std::nullopt, Vector3d::UnitY());
+      }
     }
 
     // Body with no registered frame.
     no_geometry_body_ = &plant_->AddRigidBody("NothingRegistered",
                                               SpatialInertia<double>());
-
-    if (finalize) {
-      Finalize();
-    }
   }
 
   void Finalize() {
     // We are done defining the model.
     plant_->Finalize();
-
-    if (apply_filters_) apply_filters_(this);
 
     diagram_ = builder_.Build();
     context_ = diagram_->CreateDefaultContext();
@@ -1281,7 +1282,6 @@ class SphereChainScenario {
   // For plant and scene graph construction.
   int sphere_count_{};
   systems::DiagramBuilder<double> builder_;
-  std::function<void(SphereChainScenario*)> apply_filters_;
 
   // The diagram components.
   std::unique_ptr<Diagram<double>> diagram_{};
@@ -1340,6 +1340,7 @@ GTEST_TEST(MultibodyPlantTest, AutoBodySceneGraphRegistration) {
 // geometries.
 GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodies) {
   SphereChainScenario scenario(3);
+  scenario.Finalize();
   std::vector<geometry::PenetrationAsPointPair<double>> contacts =
       scenario.ComputePointPairPenetration();
 
@@ -1360,6 +1361,42 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodies) {
     const auto& point_pair = contacts[i];
     expect_pair_in_set(point_pair.id_A, point_pair.id_B);
   }
+}
+
+// Ensure world-welded bodies are collision filtered; see also #11116.
+GTEST_TEST(MultibodyPlantTest, FilterWorldWelds) {
+  SphereChainScenario scenario(3, {1, 1, 1});
+  scenario.mutable_plant()->WeldFrames(
+      scenario.mutable_plant()->world_body().body_frame(),
+      scenario.sphere(0).body_frame());
+  scenario.Finalize();
+  std::vector<geometry::PenetrationAsPointPair<double>> contacts =
+      scenario.ComputePointPairPenetration();
+
+  // The actual collisions should be 0; everything is welded to the world.
+  ASSERT_EQ(contacts.size(), 0);
+}
+
+// Ensure that all welded subgraphs are collision filtered.
+GTEST_TEST(MultibodyPlantTest, FilterWeldedSubgraphs) {
+  // Build a chain with two welded subgraphs; a chain of 3, followed later by a
+  // chain of 4.
+  SphereChainScenario scenario(12, {0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1});
+  scenario.Finalize();
+  std::vector<geometry::PenetrationAsPointPair<double>> contacts =
+      scenario.ComputePointPairPenetration();
+
+  // The actual collisions should be fewer than the expected collisions, by
+  // exactly the number of edges within the welded subgraphs.
+  const std::set<std::pair<GeometryId, GeometryId>>& expected_pairs =
+      scenario.unfiltered_collisions();
+  // The numbers of collisions filtered within each subgroup, which are just
+  // the binomial coefficients C(3,2) = 3 and C(4,2) = 6.
+  constexpr int filtered_in_first_subgraph = 3;
+  constexpr int filtered_in_second_subgraph = 6;
+  constexpr int filtered =
+      filtered_in_first_subgraph + filtered_in_second_subgraph;
+  ASSERT_EQ(contacts.size(), expected_pairs.size() - filtered);
 }
 
 // Tests the error conditions for CollectRegisteredGeometries.
@@ -1393,8 +1430,7 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
   using geometry::GeometrySet;
   using geometry::GeometrySetTester;
 
-  const bool finalize = false;
-  SphereChainScenario scenario(5, nullptr, finalize);
+  SphereChainScenario scenario(5);
 
   const MultibodyPlant<double>& plant = *scenario.mutable_plant();
 
