@@ -20,11 +20,6 @@ def _impl(repo_ctx):
     elif os_result.is_manylinux:
         # Compile from downloaded github sources.
         error = setup_github_repository(repo_ctx).error
-    elif os_result.ubuntu_release == "18.04":
-        # On Ubuntu 18.04, the host-provided spdlog is way too old so we can't
-        # use its bundled fmt, and there is no other fmt package available, so
-        # we'll recompile it from downloaded github sources.
-        error = setup_github_repository(repo_ctx).error
     elif os_result.ubuntu_release == "20.04":
         # On Ubuntu 20.04 we're using the host-provided spdlog which uses a
         # bundled fmt, so we'll have to reuse that same bundle for ourselves.

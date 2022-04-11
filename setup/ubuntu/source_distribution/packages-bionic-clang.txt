@@ -1,2 +1,0 @@
-clang-9
-libomp-9-dev
