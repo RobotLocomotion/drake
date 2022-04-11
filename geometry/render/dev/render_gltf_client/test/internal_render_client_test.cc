@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/render_gltf_client/render_client.h"
+#include "drake/geometry/render/dev/render_gltf_client/internal_render_client.h"
 
 #include <cstdio>
 #include <fstream>
@@ -15,9 +15,9 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/render/dev/render_gltf_client/http_service.h"
-#include "drake/geometry/render/dev/render_gltf_client/test/test_png.h"
-#include "drake/geometry/render/dev/render_gltf_client/test/test_tiff.h"
+#include "drake/geometry/render/dev/render_gltf_client/internal_http_service.h"
+#include "drake/geometry/render/dev/render_gltf_client/test/internal_test_png.h"
+#include "drake/geometry/render/dev/render_gltf_client/test/internal_test_tiff.h"
 
 namespace drake {
 namespace geometry {

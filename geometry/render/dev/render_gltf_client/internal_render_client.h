@@ -5,7 +5,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/geometry/render/dev/render_gltf_client/http_service.h"
+#include "drake/geometry/render/dev/render_gltf_client/internal_http_service.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/systems/sensors/image.h"
 

@@ -7,7 +7,7 @@
 #include <string>
 #include <utility>
 
-#include "drake/geometry/render/dev/render_gltf_client/http_service.h"
+#include "drake/geometry/render/dev/render_gltf_client/internal_http_service.h"
 
 namespace drake {
 namespace geometry {

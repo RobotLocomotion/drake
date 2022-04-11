@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/render_gltf_client/http_service.h"
+#include "drake/geometry/render/dev/render_gltf_client/internal_http_service.h"
 
 #include <fstream>
 

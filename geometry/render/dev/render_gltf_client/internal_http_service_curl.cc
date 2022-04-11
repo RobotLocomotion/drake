@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/render_gltf_client/http_service_curl.h"
+#include "drake/geometry/render/dev/render_gltf_client/internal_http_service_curl.h"
 
 #include <atomic>
 #include <chrono>
