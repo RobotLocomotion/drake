@@ -19,6 +19,22 @@ namespace geometry {
 namespace render_gltf_client {
 namespace internal {
 
+namespace fs = drake::filesystem;
+
+using Eigen::Matrix3d;
+using Eigen::Matrix4d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRenderCamera;
+using geometry::render::internal::ImageType;
+using math::RigidTransformd;
+using math::RollPitchYawd;
+using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageLabel16I;
+using systems::sensors::ImageRgba8U;
+
 // Exposes various private access methods and data members for validation.
 class RenderEngineGltfClientTester {
  public:
@@ -45,13 +61,11 @@ class RenderEngineGltfClientTester {
   }
 
   // RenderEngineGltfClient private method access.
-  std::string ExportPathFor(geometry::render::internal::ImageType image_type,
-                            int64_t scene_id) const {
+  std::string ExportPathFor(ImageType image_type, int64_t scene_id) const {
     return engine_->ExportPathFor(image_type, scene_id);
   }
 
-  std::string ExportScene(geometry::render::internal::ImageType image_type,
-                          int64_t scene_id) const {
+  std::string ExportScene(ImageType image_type, int64_t scene_id) const {
     return engine_->ExportScene(image_type, scene_id);
   }
 
@@ -60,8 +74,7 @@ class RenderEngineGltfClientTester {
     engine_->CleanupFrame(scene_path, image_path);
   }
 
-  Eigen::Matrix4d CameraModelViewTransformMatrix(
-      geometry::render::internal::ImageType image_type) const {
+  Eigen::Matrix4d CameraModelViewTransformMatrix(ImageType image_type) const {
     return engine_->CameraModelViewTransformMatrix(image_type);
   }
 
@@ -70,22 +83,6 @@ class RenderEngineGltfClientTester {
 };
 
 namespace {
-
-namespace fs = drake::filesystem;
-
-using Eigen::Matrix3d;
-using Eigen::Matrix4d;
-using Eigen::Vector3d;
-using Eigen::Vector4d;
-
-using geometry::render::ColorRenderCamera;
-using geometry::render::DepthRenderCamera;
-using geometry::render::internal::ImageType;
-using math::RigidTransformd;
-using math::RollPitchYawd;
-using systems::sensors::ImageDepth32F;
-using systems::sensors::ImageLabel16I;
-using systems::sensors::ImageRgba8U;
 
 using Tester = RenderEngineGltfClientTester;
 using Engine = RenderEngineGltfClient;
