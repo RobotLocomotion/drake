@@ -32,13 +32,10 @@ Target = namedtuple('Target', [
     'platform_alias',
 ])
 targets = (
-    Target('36', 'ubuntu', '18.04', 'bionic'),
-    Target('37', 'ubuntu', '18.04', 'bionic'),
-    Target('38', 'ubuntu', '18.04', 'bionic'),
+    Target('38', 'ubuntu', '20.04', 'focal'),
     Target('39', 'ubuntu', '20.04', 'focal'),
 )
 glibc_versions = {
-    'bionic': '2_27',
     'focal': '2_31',
 }
 
