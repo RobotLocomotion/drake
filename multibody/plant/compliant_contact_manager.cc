@@ -13,6 +13,7 @@
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
+#include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_coupler_constraint.h"
@@ -34,6 +35,8 @@ using drake::multibody::internal::MultibodyTreeTopology;
 using drake::multibody::Body;
 using drake::multibody::Joint;
 using drake::systems::Context;
+using drake::multibody::contact_solvers::internal::ExtractNormal;
+using drake::multibody::contact_solvers::internal::ExtractTangent;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverResults;
@@ -904,6 +907,7 @@ void CompliantContactManager<T>::DoCalcContactSolverResults(
 
   // Setup constraints.  
   AddContactConstraints(context, problem.get());
+  const int num_contacts = problem->num_constraints();
   AddCouplerConstraints(context, problem.get());
   AddDistanceConstraints(context, problem.get());
 
@@ -926,13 +930,41 @@ void CompliantContactManager<T>::DoCalcContactSolverResults(
   }
 
   // Pack contact results.
-  // TODO: pack contact forces for viz.
-  results->Resize(plant().num_velocities(), 0);
-  results->v_next = sap_results.v;
-  results->tau_contact.setZero();
+  const double dt = plant().time_step();
+  results->Resize(plant().num_velocities(), num_contacts);
+  results->v_next = sap_results.v;  
+  // We added all contact constraints first and therefore we know the head of
+  // the impulses corresponds to contact impulses.
+  const VectorX<T> contact_forces =
+      sap_results.gamma.head(3 * num_contacts) / dt;
+  const VectorX<T> contact_velocities = sap_results.vc.head(3 * num_contacts);
+  ExtractNormal(contact_forces, &results->fn);
+  ExtractTangent(contact_forces, &results->ft);
+  ExtractNormal(contact_velocities, &results->vn);
+  ExtractTangent(contact_velocities, &results->vt);
 
-  //const typename SapSolver<T>::SolverStats& stats = sap.get_statistics();
-  //PRINT_VAR(stats.num_iters);
+  auto& tau_contact = results->tau_contact;
+  tau_contact.setZero();
+  for (int i = 0; i < num_contacts; ++i) {
+    const auto& c = problem->get_constraint(i);
+    {
+      const TreeIndex t(c.first_clique());
+      const MatrixX<T>& Jic = c.first_clique_jacobian();
+      const int v_start = tree_topology().tree_velocities_start(t);
+      const int nv = tree_topology().num_tree_velocities(t);
+      const auto fi = contact_forces.template segment<3>(3 * i);
+      tau_contact.segment(v_start, nv) += Jic.transpose() * fi;
+    }
+
+    if (c.num_cliques() == 2) {
+      const TreeIndex t(c.second_clique());
+      const MatrixX<T>& Jic = c.second_clique_jacobian();
+      const int v_start = tree_topology().tree_velocities_start(t);
+      const int nv = tree_topology().num_tree_velocities(t);
+      const auto fi = contact_forces.template segment<3>(3 * i);
+      tau_contact.segment(v_start, nv) += Jic.transpose() * fi;
+    }
+  }
 }
 
 template <typename T>
