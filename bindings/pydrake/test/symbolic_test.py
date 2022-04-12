@@ -1531,6 +1531,10 @@ class TestExtractVariablesFromExpression(unittest.TestCase):
         for i in range(2):
             self.assertEqual(map_var_to_index[variables[i].get_id()], i)
 
+        variables, map_var_to_index = sym.ExtractVariablesFromExpression(
+            expressions=np.array([x + x * y, y+1]))
+        self.assertEqual(variables.shape, (2,))
+
 
 class TestDecomposeAffineExpression(unittest.TestCase):
     def test(self):
