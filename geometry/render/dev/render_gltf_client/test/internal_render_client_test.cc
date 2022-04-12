@@ -171,11 +171,11 @@ class FieldCheckService : public HttpService {
  public:
   /* All parameters for HttpService, followed by RenderClient::RenderOnServer
    with the addition of the sha256. */
-  FieldCheckService(const render::RenderCameraCore& camera_core,
-                    RenderImageType image_type, const std::string& scene_path,
-                    const std::string& scene_sha256,
-                    const std::optional<std::string>& mime_type = std::nullopt,
-                    const std::optional<render::DepthRange>& depth_range = std::nullopt)
+  FieldCheckService(
+      const render::RenderCameraCore& camera_core, RenderImageType image_type,
+      const std::string& scene_path, const std::string& scene_sha256,
+      const std::optional<std::string>& mime_type = std::nullopt,
+      const std::optional<render::DepthRange>& depth_range = std::nullopt)
       : HttpService(),
         camera_core_{camera_core},
         image_type_{image_type},
@@ -340,7 +340,8 @@ GTEST_TEST(RenderClient, RenderOnServer) {
    are no hard-coded or default values leaking in anywhere. */
   const render::ColorRenderCamera color_camera{
       {"proxy_render", {798, 247, M_PI_4}, {0.11, 111.111}, {}}, false};
-  const render::DepthRenderCamera depth_camera{color_camera.core(), {0.12, 21.12}};
+  const render::DepthRenderCamera depth_camera{color_camera.core(),
+                                               {0.12, 21.12}};
 
   {
     // Forgetting to include the depth_range for a depth render should raise.

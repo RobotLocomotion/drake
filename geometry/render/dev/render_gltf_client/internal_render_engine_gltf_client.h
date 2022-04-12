@@ -64,11 +64,13 @@ class RenderEngineGltfClient : public render::RenderEngineVtk {
   /* Returns the path to export a glTF scene file to for the specified
   `image_type` and `scene_id`.  The returned path is constructed as
   `{RenderClient::temp_directory()}/{scene_id}-{image_type}.gltf`. */
-  std::string ExportPathFor(render::internal::ImageType image_type, int64_t scene_id) const;
+  std::string ExportPathFor(render::internal::ImageType image_type,
+                            int64_t scene_id) const;
 
   /* Exports the `RenderEngineVtk::pipelines_[image_type]` VTK scene to a
   glTF file, returning the path to the newly exported file. */
-  std::string ExportScene(render::internal::ImageType image_type, int64_t scene_id) const;
+  std::string ExportScene(render::internal::ImageType image_type,
+                          int64_t scene_id) const;
 
   /* Deletes the files at the paths `scene_path` and `image_path`.  Should only
    be called when `!no_cleanup()`. */
@@ -77,7 +79,8 @@ class RenderEngineGltfClient : public render::RenderEngineVtk {
 
   /* Helper access method for testing UpdateViewpoint matrix inversion for the
    specified image_type.  Only used for testing. */
-  Eigen::Matrix4d CameraModelViewTransformMatrix(render::internal::ImageType image_type) const;
+  Eigen::Matrix4d CameraModelViewTransformMatrix(
+      render::internal::ImageType image_type) const;
 
  private:
   friend class RenderEngineGltfClientTester;

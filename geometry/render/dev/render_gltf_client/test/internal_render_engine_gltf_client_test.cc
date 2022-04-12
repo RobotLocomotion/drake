@@ -45,11 +45,13 @@ class RenderEngineGltfClientTester {
   }
 
   // RenderEngineGltfClient private method access.
-  std::string ExportPathFor(render::internal::ImageType image_type, int64_t scene_id) const {
+  std::string ExportPathFor(render::internal::ImageType image_type,
+                            int64_t scene_id) const {
     return engine_->ExportPathFor(image_type, scene_id);
   }
 
-  std::string ExportScene(render::internal::ImageType image_type, int64_t scene_id) const {
+  std::string ExportScene(render::internal::ImageType image_type,
+                          int64_t scene_id) const {
     return engine_->ExportScene(image_type, scene_id);
   }
 
@@ -58,7 +60,8 @@ class RenderEngineGltfClientTester {
     engine_->CleanupFrame(scene_path, image_path);
   }
 
-  Eigen::Matrix4d CameraModelViewTransformMatrix(render::internal::ImageType image_type) const {
+  Eigen::Matrix4d CameraModelViewTransformMatrix(
+      render::internal::ImageType image_type) const {
     return engine_->CameraModelViewTransformMatrix(image_type);
   }
 
@@ -154,21 +157,21 @@ GTEST_TEST(RenderEngineGltfClient, UpdateViewpoint) {
 
   // First, use the RenderEngineVtk::UpdateViewpoint and gather matrices.
   engine.RenderEngineVtk::UpdateViewpoint(X_WB);
-  Matrix4d vtk_color_mat =
-      tester.CameraModelViewTransformMatrix(render::internal::ImageType::kColor);
-  Matrix4d vtk_depth_mat =
-      tester.CameraModelViewTransformMatrix(render::internal::ImageType::kDepth);
-  Matrix4d vtk_label_mat =
-      tester.CameraModelViewTransformMatrix(render::internal::ImageType::kLabel);
+  Matrix4d vtk_color_mat = tester.CameraModelViewTransformMatrix(
+      render::internal::ImageType::kColor);
+  Matrix4d vtk_depth_mat = tester.CameraModelViewTransformMatrix(
+      render::internal::ImageType::kDepth);
+  Matrix4d vtk_label_mat = tester.CameraModelViewTransformMatrix(
+      render::internal::ImageType::kLabel);
 
   // Use the RenderEngineGltfClient::UpdateViewpoint and gather new matrices.
   engine.UpdateViewpoint(X_WB);
-  Matrix4d gltf_color_mat =
-      tester.CameraModelViewTransformMatrix(render::internal::ImageType::kColor);
-  Matrix4d gltf_depth_mat =
-      tester.CameraModelViewTransformMatrix(render::internal::ImageType::kDepth);
-  Matrix4d gltf_label_mat =
-      tester.CameraModelViewTransformMatrix(render::internal::ImageType::kLabel);
+  Matrix4d gltf_color_mat = tester.CameraModelViewTransformMatrix(
+      render::internal::ImageType::kColor);
+  Matrix4d gltf_depth_mat = tester.CameraModelViewTransformMatrix(
+      render::internal::ImageType::kDepth);
+  Matrix4d gltf_label_mat = tester.CameraModelViewTransformMatrix(
+      render::internal::ImageType::kLabel);
 
   /* A ModelView transform can be inverted directly by inverting the rotation
    via transpose, and using this inverted rotation to rotate the negated
@@ -393,8 +396,9 @@ GTEST_TEST(RenderEngineGltfClient, Export) {
   Engine engine{params};
   Tester tester{&engine};
 
-  for (const auto image_type :
-       {render::internal::ImageType::kColor, render::internal::ImageType::kDepth, render::internal::ImageType::kLabel}) {
+  for (const auto image_type : {render::internal::ImageType::kColor,
+                                render::internal::ImageType::kDepth,
+                                render::internal::ImageType::kLabel}) {
     for (const int64_t scene_id : {1, 11, 111}) {  // validate name formatting
       // Reconstruct the expected export path.
       std::string image_type_str;

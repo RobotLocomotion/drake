@@ -175,8 +175,8 @@ void AddShapes(SceneGraph<double>* scene_graph) {
   DRAKE_DEMAND(scene_graph != nullptr);
 
   const SourceId source_id = scene_graph->RegisterSource("main");
-  const std::string texture_path =
-      FindResourceOrThrow("drake/geometry/render/dev/render_gltf_client/test/4_color_texture.png");
+  const std::string texture_path = FindResourceOrThrow(
+      "drake/geometry/render/dev/render_gltf_client/test/4_color_texture.png");
   double x = 0.4;
   double dx = -0.15;
   int label_value = 0;

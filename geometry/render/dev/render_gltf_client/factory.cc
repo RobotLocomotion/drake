@@ -7,7 +7,8 @@ namespace geometry {
 
 std::unique_ptr<render::RenderEngine> MakeRenderEngineGltfClient(
     const RenderEngineGltfClientParams& params) {
-  return std::make_unique<render_gltf_client::internal::RenderEngineGltfClient>(params);
+  return std::make_unique<render_gltf_client::internal::RenderEngineGltfClient>(
+      params);
 }
 
 }  // namespace geometry

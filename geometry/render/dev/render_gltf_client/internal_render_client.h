@@ -102,7 +102,8 @@ class RenderClient {
       const render::RenderCameraCore& camera_core, RenderImageType image_type,
       const std::string& scene_path,
       const std::optional<std::string>& mime_type = std::nullopt,
-      const std::optional<render::DepthRange>& depth_range = std::nullopt) const;
+      const std::optional<render::DepthRange>& depth_range =
+          std::nullopt) const;
 
   //@}
   /* @name Server communication helpers */
