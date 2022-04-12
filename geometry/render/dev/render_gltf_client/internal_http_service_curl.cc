@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/http_service_curl.h"
+#include "drake/geometry/render/dev/render_gltf_client/internal_http_service_curl.h"
 
 #include <atomic>
 #include <chrono>
@@ -19,7 +19,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gltf_client {
 namespace internal {
 
 namespace {
@@ -329,6 +329,6 @@ HttpResponse HttpServiceCurl::PostForm(
 }
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake

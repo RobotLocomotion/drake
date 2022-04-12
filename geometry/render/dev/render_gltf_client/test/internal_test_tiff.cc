@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/test/test_tiff.h"
+#include "drake/geometry/render/dev/render_gltf_client/test/internal_test_tiff.h"
 
 #include <limits>
 #include <vector>
@@ -7,7 +7,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gltf_client {
 namespace internal {
 
 template <int channels, int bit_depth>
@@ -78,6 +78,6 @@ template class TestTiff<1, 32>;  // TestTiffGray32
 template class TestTiff<3, 32>;  // TestTiffRgb32
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake

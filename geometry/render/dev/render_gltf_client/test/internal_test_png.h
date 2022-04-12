@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gltf_client {
 namespace internal {
 
 // Type trait for TestPng image data underlying type, similar to ImageTraits.
@@ -169,6 +169,6 @@ using TestPngRgb16 = TestPng<3, 16>;
 using TestPngGray8 = TestPng<1, 8>;
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake

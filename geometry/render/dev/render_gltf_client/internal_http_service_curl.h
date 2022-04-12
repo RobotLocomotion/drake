@@ -7,11 +7,11 @@
 #include <string>
 #include <utility>
 
-#include "drake/geometry/render/dev/http_service.h"
+#include "drake/geometry/render/dev/render_gltf_client/internal_http_service.h"
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gltf_client {
 namespace internal {
 
 /* An HttpService that uses libcurl to communicate with the server. */
@@ -33,6 +33,6 @@ class HttpServiceCurl : public HttpService {
 };
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake
