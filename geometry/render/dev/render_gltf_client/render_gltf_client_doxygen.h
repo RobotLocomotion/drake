@@ -3,7 +3,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gltf_client {
 
 /** @defgroup render_engine_gltf_client_server_api glTF Render Client-Server API
     @ingroup render_engines
@@ -443,6 +443,6 @@ if __name__ == "__main__":
   `gunicorn` executable available.
 */
 
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake
