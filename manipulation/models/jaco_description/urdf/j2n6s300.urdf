@@ -42,12 +42,6 @@
   <!-- Director seems to really want a link named "base", so this is
        renamed from "root" -->
   <link name="base"/>
-  <gazebo>
-    <plugin filename="libgazebo_ros_control.so" name="gazebo_ros_control">
-      <robotNamespace>j2n6s300</robotNamespace>
-      <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
-    </plugin>
-  </gazebo>
   <link name="j2n6s300_link_base">
     <visual>
       <geometry>
@@ -114,11 +108,8 @@
   <transmission name="j2n6s300_joint_1_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="j2n6s300_joint_1">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
     <actuator name="j2n6s300_joint_1_actuator">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2n6s300_link_2">
@@ -158,11 +149,8 @@
   <transmission name="j2n6s300_joint_2_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="j2n6s300_joint_2">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
     <actuator name="j2n6s300_joint_2_actuator">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2n6s300_link_3">
@@ -202,11 +190,8 @@
   <transmission name="j2n6s300_joint_3_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="j2n6s300_joint_3">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
     <actuator name="j2n6s300_joint_3_actuator">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2n6s300_link_4">
@@ -246,11 +231,8 @@
   <transmission name="j2n6s300_joint_4_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="j2n6s300_joint_4">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
     <actuator name="j2n6s300_joint_4_actuator">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2n6s300_link_5">
@@ -289,11 +271,8 @@
   <transmission name="j2n6s300_joint_5_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="j2n6s300_joint_5">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
     <actuator name="j2n6s300_joint_5_actuator">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2n6s300_link_6">
@@ -332,11 +311,8 @@
   <transmission name="j2n6s300_joint_6_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="j2n6s300_joint_6">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
     <actuator name="j2n6s300_joint_6_actuator">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2n6s300_end_effector">
@@ -378,10 +354,8 @@
   <transmission name="j2n6s300_joint_finger_1_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="j2n6s300_joint_finger_1">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
     <actuator name="j2n6s300_joint_finger_1_actuator">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
@@ -442,10 +416,8 @@
   <transmission name="j2n6s300_joint_finger_2_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="j2n6s300_joint_finger_2">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
     <actuator name="j2n6s300_joint_finger_2_actuator">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
@@ -506,10 +478,8 @@
   <transmission name="j2n6s300_joint_finger_3_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="j2n6s300_joint_finger_3">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
     <actuator name="j2n6s300_joint_finger_3_actuator">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
