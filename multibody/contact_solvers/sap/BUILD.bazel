@@ -132,6 +132,18 @@ drake_cc_library(
         ":partial_permutation",
         ":sap_contact_problem",
         ":sap_model",
+        ":sap_solver_results",
+        "//multibody/contact_solvers:system_dynamics_data",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_solver_results",
+    srcs = ["sap_solver_results.cc"],
+    hdrs = ["sap_solver_results.h"],
+    deps = [        
         "//multibody/contact_solvers:system_dynamics_data",
         "//common:default_scalars",
         "//common:essential",

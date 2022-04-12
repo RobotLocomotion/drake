@@ -6,11 +6,6 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
-#include "drake/multibody/contact_solvers/contact_solver_utils.h"
-
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a ": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a ":\n" << a << std::endl;
 
 namespace drake {
 namespace multibody {
@@ -30,62 +25,36 @@ const typename SapSolver<T>::SolverStats& SapSolver<T>::get_statistics() const {
 }
 
 template <typename T>
-void SapSolver<T>::PackContactResults(const VectorX<T>& v_star,
-                                      const VectorX<T>& v_participating,
-                                      const VectorX<T>& vc_grouped,
-                                      const VectorX<T>& gamma_grouped,
-                                      ContactSolverResults<T>* results) const {
+void SapSolver<T>::PackSapSolverResults(const systems::Context<T>& context,
+                                        SapSolverResults<T>* results) const {
   DRAKE_DEMAND(results != nullptr);
-
-  // We need the free-motion velocities for the entire system in order to fill
-  // in the solution for non-participating DOFs.
-  DRAKE_DEMAND(v_star.size() == model_->problem().num_velocities());
-
-  // For now we will assume the SapContactProblem only contains contact
-  // constraints.
-  DRAKE_DEMAND(v_participating.size() == model_->num_velocities());
-  DRAKE_DEMAND(vc_grouped.size() == model_->num_constraint_equations());
-  DRAKE_DEMAND(gamma_grouped.size() == model_->num_constraint_equations());
-
   results->Resize(model_->problem().num_velocities(),
-                  model_->num_constraints());
+                  model_->num_constraint_equations());
 
-  results->v_next = v_star;
-  // Overwrite participating DOFs only.
-  model_->velocities_permutation().ApplyInverse(v_participating,
-                                                &results->v_next);  
+  // For non-participating velocities the solutions is v = v*. Therefore we
+  // first initialize to v = v* and overwrite with the non-trivial participating
+  // values in the following line.
+  results->v = model_->problem().v_star();
+  const VectorX<T>& v_participating = model_->GetVelocities(context);
+  model_->velocities_permutation().ApplyInverse(v_participating, &results->v);
 
-  VectorX<T> gamma(gamma_grouped.size());
-  model_->impulses_permutation().ApplyInverse(gamma_grouped, &gamma);
+  // Constraints equations are clustered (essentially their order is permuted
+  // for a better sparsity structure). Therefore constraint velocities and
+  // impulses are evaluated in this clustered order and permuted into the
+  // original order described by the model right after.
+  const VectorX<T>& vc_clustered = model_->EvalConstraintVelocities(context);
+  model_->impulses_permutation().ApplyInverse(vc_clustered, &results->vc);
+  const VectorX<T>& gamma_clustered = model_->EvalImpulses(context);
+  model_->impulses_permutation().ApplyInverse(gamma_clustered, &results->gamma);
 
-  // TODO: Enable for when there are mixed constraints.
-  // This is just a quick hack to enable the testing of the prototype.
-  // Probably the best solution is for SapSolver results to compute
-  // SapSolverResults and then let the contact manager fill in the
-  // ContactSolverResults.
-  if (3 * model_->num_constraints() == model_->num_constraint_equations()) {
-    VectorX<T> vc(vc_grouped.size());
-    model_->impulses_permutation().ApplyInverse(vc_grouped, &vc);
-    ExtractNormal(vc, &results->vn);
-    ExtractTangent(vc, &results->vt);
-
-    ExtractNormal(gamma, &results->fn);
-    ExtractTangent(gamma, &results->ft);
-    results->fn /= model_->time_step();
-    results->ft /= model_->time_step();
-  } else {
-    results->fn.setZero();
-    results->ft.setZero();
-  }
-
-  // N.B. While contact solver works with impulses, results are reported as
-  // forces.  
-  VectorX<T> tau_contact_participating(v_participating.size());  
-  model_->J().MultiplyByTranspose(gamma_grouped, &tau_contact_participating);
-  tau_contact_participating /= model_->time_step();
-  results->tau_contact.setZero();
-  model_->velocities_permutation().ApplyInverse(tau_contact_participating,
-                                                &results->tau_contact);
+  // For non-participating velocities we have v=v* and the generalized impulses
+  // are zero. Therefore we first zero-out all generalized impulses and
+  // overwrite with the non-trivial non-zero values for the participating DOFs
+  // right after.
+  const VectorX<T>& tau_participating =
+      model_->EvalGeneralizedImpulses(context);
+  results->j.setZero();
+  model_->velocities_permutation().ApplyInverse(tau_participating, &results->j);
 }
 
 template <typename T>
@@ -109,32 +78,35 @@ void SapSolver<T>::CalcStoppingCriteriaResidual(const Context<T>& context,
 }
 
 template <typename T>
-ContactSolverStatus SapSolver<T>::SolveWithGuess(
-    const SapContactProblem<T>&, const VectorX<T>&,
-    ContactSolverResults<T>*) {
+SapSolverStatus SapSolver<T>::SolveWithGuess(const SapContactProblem<T>&,
+                                             const VectorX<T>&,
+                                             SapSolverResults<T>*) {
   throw std::logic_error(
       "SapSolver::SolveWithGuess(): Only T = double is supported.");
 }
 
 template <>
-ContactSolverStatus SapSolver<double>::SolveWithGuess(
-    const SapContactProblem<double>& problem,
-    const VectorX<double>& v_guess,
-    ContactSolverResults<double>* results) {
+SapSolverStatus SapSolver<double>::SolveWithGuess(
+    const SapContactProblem<double>& problem, const VectorX<double>& v_guess,
+    SapSolverResults<double>* results) {
   using std::abs;
   using std::max;
 
   if (problem.num_constraints() == 0) {
-    results->Resize(problem.num_velocities(), problem.num_constraints());
-    results->v_next = problem.v_star();
-    results->tau_contact.setZero();
-    return ContactSolverStatus::kSuccess;
+    // In the absence of constraints the solution is trivially v = v*.
+    results->Resize(problem.num_velocities(),
+                    problem.num_constraint_equations());
+    results->v = problem.v_star();
+    results->j.setZero();
+    return SapSolverStatus::kSuccess;
   }
 
+  // Make model for the given contact problem.
   model_ = std::make_unique<SapModel<double>>(&problem);
   const int nv = model_->num_velocities();
   const int nk = model_->num_constraint_equations();
 
+  // Allocate the necessary memory to work with.
   auto context = model_->MakeContext();
   auto scratch = model_->MakeContext();
   SearchDirectionData search_direction_data(nv, nk);
@@ -208,25 +180,22 @@ ContactSolverStatus SapSolver<double>::SolveWithGuess(
     // parameter.
     stats_.cost_criterion_reached =
         ell_decrement < parameters_.cost_abs_tolerance +
-                        parameters_.cost_rel_tolerance * ell_scale &&
+                            parameters_.cost_rel_tolerance * ell_scale &&
         alpha > 0.5;
 
     ell_previous = ell;
   }
 
-  if (!converged) return ContactSolverStatus::kFailure;
+  if (!converged) return SapSolverStatus::kFailure;
 
-  const VectorX<double>& vc = model_->EvalConstraintVelocities(*context);
-  const VectorX<double>& gamma = model_->EvalImpulses(*context);
-  const VectorX<double>& v = model_->GetVelocities(*context);
-  PackContactResults(problem.v_star(), v, vc, gamma, results);
+  PackSapSolverResults(*context, results);
 
   // N.B. If the stopping criteria is satisfied for k = 0, the solver is not
   // even instantiated and no factorizations are performed (the expensive part
   // of the computation). We report zero number of iterations.
   stats_.num_iters = k;
 
-  return ContactSolverStatus::kSuccess;
+  return SapSolverStatus::kSuccess;
 }
 
 template <typename T>
@@ -274,7 +243,7 @@ T SapSolver<T>::CalcCostAlongLine(
 template <typename T>
 std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
     const systems::Context<T>& context,
-    const SearchDirectionData& search_direction_data, 
+    const SearchDirectionData& search_direction_data,
     systems::Context<T>* scratch) const {
   using std::abs;
   // Line search parameters.
@@ -364,7 +333,8 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
 }
 
 template <typename T>
-void SapSolver<T>::CallDenseSolver(const Context<T>& context, VectorX<T>* dv) const {  
+void SapSolver<T>::CallDenseSolver(const Context<T>& context,
+                                   VectorX<T>* dv) const {
   // Explicitly build dense Hessian.
   // These matrices could be saved in the cache. However this method is only
   // intended as an alternative for debugging and optimizing it might not be
@@ -373,7 +343,7 @@ void SapSolver<T>::CallDenseSolver(const Context<T>& context, VectorX<T>* dv) co
   const int nk = model_->num_constraint_equations();
 
   // Make dense dynamics matrix.
-  const std::vector<MatrixX<T>> Acliques = model_->dynamics_matrix();
+  const std::vector<MatrixX<T>>& Acliques = model_->dynamics_matrix();
   MatrixX<T> Adense = MatrixX<T>::Zero(nv, nv);
   int offset = 0;
   for (const auto& Ac : Acliques) {
@@ -383,7 +353,7 @@ void SapSolver<T>::CallDenseSolver(const Context<T>& context, VectorX<T>* dv) co
   }
 
   // Make dense Jacobian matrix.
-  const MatrixX<T> Jdense = model_->J().MakeDenseMatrix();
+  const MatrixX<T> Jdense = model_->constraints_bundle().J().MakeDenseMatrix();
 
   // Make dense Hessian matrix G.
   const std::vector<MatrixX<T>>& G = model_->EvalConstraintsHessian(context);
@@ -395,7 +365,7 @@ void SapSolver<T>::CallDenseSolver(const Context<T>& context, VectorX<T>* dv) co
     offset += ni;
   }
 
-  const MatrixX<T> H = Adense + Jdense.transpose() * Gdense * Jdense;  
+  const MatrixX<T> H = Adense + Jdense.transpose() * Gdense * Jdense;
 
   // Factorize Hessian.
   // TODO(amcastro-tri): Make use of mat::SolveLinearSystem() for a quick and
@@ -419,7 +389,7 @@ void SapSolver<T>::CalcSearchDirectionData(
   CallDenseSolver(context, &data->dv);
 
   // Update Δp, Δvc and d²ellA/dα².
-  model_->J().Multiply(data->dv, &data->dvc);
+  model_->constraints_bundle().J().Multiply(data->dv, &data->dvc);
   model_->MultiplyByDynamicsMatrix(data->dv, &data->dp);
   data->d2ellA_dalpha2 = data->dv.dot(data->dp);
 }

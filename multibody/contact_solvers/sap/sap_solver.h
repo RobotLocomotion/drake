@@ -1,17 +1,27 @@
 #pragma once
 
+#include <memory>
 #include <utility>
 #include <vector>
 
-#include "drake/multibody/contact_solvers/block_sparse_matrix.h"
-#include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_model.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
+
+// The result from SapSolver::SolveWithGuess() used to report the success or
+// failure of the solver.
+enum class SapSolverStatus {
+  // Successful computation.
+  kSuccess = 0,
+
+  // The solver could not find a solution at the specified tolerances.
+  kFailure = 1,
+};
 
 // SAP solver parameters such as tolerances, maximum number of iterations and
 // regularization parameters.
@@ -58,7 +68,7 @@ struct SapSolverParameters {
   // SolverStats::optimality_condition_reached indicates if this condition was
   // reached.
   double abs_tolerance{1.e-14};  // Absolute tolerance εₐ, square root of Joule.
-  double rel_tolerance{1.e-6};   // Relative tolerance εᵣ.
+  double rel_tolerance{1.e-6};  // Relative tolerance εᵣ.
 
   // Cost condition criterion: We monitor the decrease of the cost on each
   // iteration. It is not worth it to keep iterating if round-off errors do not
@@ -88,13 +98,13 @@ struct SapSolverParameters {
   //    square root of Joule) squared.
   double cost_abs_tolerance{1.e-30};  // Absolute tolerance εₐ, in Joules.
   double cost_rel_tolerance{1.e-15};  // Relative tolerance εᵣ.
-  int max_iterations{100};  // Maximum number of Newton iterations.
+  int max_iterations{100};            // Maximum number of Newton iterations.
 
   // Line-search parameters.
   double ls_alpha_max{1.5};   // Maximum line search parameter allowed.
   int ls_max_iterations{40};  // Maximum number of line search iterations.
   double ls_c{1.0e-4};        // Armijo's criterion parameter.
-  double ls_rho{0.8};         // Backtracking search parameter.  
+  double ls_rho{0.8};         // Backtracking search parameter.
 
   // Tolerance used in impulse soft norms. In Ns.
   double soft_tolerance{1.0e-7};
@@ -125,7 +135,7 @@ struct SapSolverParameters {
 //
 // TODO(amcastro-tri): enable AutoDiffXd support, if only for dense matrices so
 // that we can test the long term performant solution.
-// @tparam_double_only
+// @tparam_nonsymbolic_scalar
 template <typename T>
 class SapSolver {
  public:
@@ -137,18 +147,11 @@ class SapSolver {
     void Reset() {
       num_iters = 0;
       num_line_search_iters = 0;
-      num_impulses_cache_updates = 0;
-      num_gradients_cache_updates = 0;
+      optimality_criterion_reached = false;
+      cost_criterion_reached = false;
     }
     int num_iters{0};              // Number of Newton iterations.
     int num_line_search_iters{0};  // Total number of line search iterations.
-
-    // Number of impulse updates. This also includes dP/dy updates, when
-    // gradients are updated.
-    int num_impulses_cache_updates{0};
-
-    // Number of times the gradients cache is updated.
-    int num_gradients_cache_updates{0};
 
     // Indicates if the optimality condition was reached.
     bool optimality_criterion_reached{false};
@@ -158,27 +161,21 @@ class SapSolver {
   };
 
   SapSolver() = default;
-  ~SapSolver() = default;
 
-  // Solve the contact problem specified by the input data. See
-  // ContactSolver::SolveWithGuess() for details. Currently, only `T = double`
-  // is supported. An exception is thrown if `T != double`.
-  //
-  // @pre dynamics_data must contain data for inverse dynamics, i.e.
-  // dynamics_data.has_inverse_dynamics() is true.
-  // @pre contact_data Must contain a non-zero number of contact constraints.
+  // Solve the contact problem specified by the input data. Currently, only `T =
+  // double` is supported. An exception is thrown if `T != double`.
   //
   // Convergence of the solver is controlled by set_parameters(). Refer to
   // SapSolverParameters for details on the convergence conditions.
   //
-  // N.B. SolveWithGuess() is a non-const method and thefore changes to the
+  // N.B. SolveWithGuess() is a non-const method and therefore changes to the
   // state of the SapSolver object are allowed. This means that when using this
   // solver in MultibodyPlant (or a DiscreteUpdateManager), it must either be
   // instantiated locally or stored within a Context cache entry to ensure
   // thread safety.
-  ContactSolverStatus SolveWithGuess(const SapContactProblem<T>& problem,
-                                     const VectorX<T>& v_guess,
-                                     ContactSolverResults<T>* result);
+  SapSolverStatus SolveWithGuess(const SapContactProblem<T>& problem,
+                                 const VectorX<T>& v_guess,
+                                 SapSolverResults<T>* result);
 
   // New parameters will affect the next call to SolveWithGuess().
   void set_parameters(const SapSolverParameters& parameters);
@@ -191,6 +188,10 @@ class SapSolver {
  private:
   friend class SapSolverTester;
 
+  // Struct used to store the result of computing the search direction. We store
+  // the search direction in the generalized velocities, dv, as well as
+  // additional derived quantities such as the generalized momentum update dp
+  // and the constraints' velocities update dvc.
   struct SearchDirectionData {
     SearchDirectionData(int num_velocities, int num_constraint_equations) {
       dv.resize(num_velocities);
@@ -204,12 +205,12 @@ class SapSolver {
     T d2ellA_dalpha2{NAN};  // d²ellA/dα² = Δvᵀ⋅A⋅Δv.
   };
 
-  // Pack solution into ContactSolverResults. Where v is the vector of
+  // Pack solution into SapSolverResults. Where v is the vector of
   // generalized velocities, vc is the vector of contact velocities and gamma is
   // the vector of generalized contact impulses.
-  void PackContactResults(const VectorX<T>& v_star, const VectorX<T>& v,
-                          const VectorX<T>& vc, const VectorX<T>& gamma,
-                          ContactSolverResults<T>* result) const;
+  // @pre context was created by the underlying SapModel.
+  void PackSapSolverResults(const systems::Context<T>& context,
+                            SapSolverResults<T>* results) const;
 
   // We monitor the optimality condition (for SAP, balance of momentum), i.e.
   // ‖∇ℓ‖ < εₐ + εᵣ max(‖p‖,‖j‖), where ∇ℓ = A⋅(v−v*)−Jᵀγ is the momentum
@@ -218,19 +219,16 @@ class SapSolver {
   // the same units (square root of Joules).
   // This method computes momentum_residual = ‖∇ℓ‖ and momentum_scale =
   // max(‖p‖,‖j‖). See [Castro et al., 2021] for further details.
+  // @pre context was created by the underlying SapModel.
   void CalcStoppingCriteriaResidual(const systems::Context<T>& context,
                                     T* momentum_residual,
                                     T* momentum_scale) const;
-
-  // Solves the contact problem from initial guess `v_guess` into `result`.
-  // @pre PreProcessData() has already been called.
-  ContactSolverStatus DoSolveWithGuess(const VectorX<T>& v_guess,
-                                       ContactSolverResults<T>* result);
 
   // Computes the cost ℓ(α) = ℓ(vᵐ + αΔvᵐ) for line search, where vᵐ and Δvᵐ are
   // the last Newton iteration values of generalized velocities and search
   // direction, respectively. This methods uses the O(n) strategy described in
   // [Castro et al., 2021].
+  // @pre context was created by the underlying SapModel.
   T CalcCostAlongLine(const systems::Context<T>& context,
                       const SearchDirectionData& search_direction_data,
                       const T& alpha, systems::Context<T>* scratch) const;
@@ -249,38 +247,48 @@ class SapSolver {
   //
   // @returns A pair (α, num_iterations) where α satisfies Armijo's criterion
   // and num_iterations is the number of backtracking iterations performed.
+  // @pre both context and scratch_workspace were created by the underlying
+  // SapModel.
   std::pair<T, int> PerformBackTrackingLineSearch(
       const systems::Context<T>& context,
       const SearchDirectionData& search_direction_data,
       systems::Context<T>* scratch_workspace) const;
 
   // Solves for dv using dense algebra, for debugging.
+  // @pre context was created by the underlying SapModel.
   // TODO(amcastro-tri): Add AutoDiffXd support.
   void CallDenseSolver(const systems::Context<T>& context,
                        VectorX<T>* dv) const;
 
+  // This method performs one iteration of the SAP solver. It updates gradient
+  // of the primal cost ∇ℓₚ, the cost's Hessian H and solves for the velocity
+  // search direction dv = −H⁻¹⋅∇ℓₚ. The result is stored in `data` along with
+  // additional derived quantities from dv.
+  // @pre context was created by the underlying SapModel.
   void CalcSearchDirectionData(const systems::Context<T>& context,
-                                SearchDirectionData* data) const;
+                               SearchDirectionData* data) const;
 
+  std::unique_ptr<SapModel<T>> model_;
   SapSolverParameters parameters_;
   // Stats are mutable so we can update them from within const methods (e.g.
   // Eval() methods). Nothing in stats is allowed to affect the computation; it
   // is purely a passive observer.
-  // TODO(amcastro-tri): Consider moving stats into the State.
+  // TODO(amcastro-tri): Consider moving stats into the solver's state stored as
+  // part of the model's context.
   mutable SolverStats stats_;
-
-  std::unique_ptr<SapModel<T>> model_;
 };
 
+// Forward-declare specializations, prior to DRAKE_DECLARE... below.
 template <>
-ContactSolverStatus SapSolver<double>::SolveWithGuess(
+SapSolverStatus SapSolver<double>::SolveWithGuess(
     const SapContactProblem<double>&, const VectorX<double>&,
-    ContactSolverResults<double>*);
+    SapSolverResults<double>*);
 
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
-extern template class ::drake::multibody::contact_solvers::internal::SapSolver<
-    double>;
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::contact_solvers::internal::SapSolver);
+

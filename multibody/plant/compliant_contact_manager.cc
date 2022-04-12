@@ -18,6 +18,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_coupler_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_distance_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 #include "drake/systems/framework/context.h"
@@ -35,6 +36,7 @@ using drake::multibody::Joint;
 using drake::systems::Context;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapSolver;
+using drake::multibody::contact_solvers::internal::SapSolverResults;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
 using drake::multibody::contact_solvers::internal::SapCouplerConstraint;
 using drake::multibody::contact_solvers::internal::SapDistanceConstraint;
@@ -915,12 +917,19 @@ void CompliantContactManager<T>::DoCalcContactSolverResults(
   //params.rel_tolerance = 1.0e-6;
   SapSolver<T> sap;
   sap.set_parameters(params);
-  const drake::multibody::contact_solvers::internal::ContactSolverStatus
-      status = sap.SolveWithGuess(*problem, v0, results);
+  SapSolverResults<T> sap_results;
+  const drake::multibody::contact_solvers::internal::SapSolverStatus
+      status = sap.SolveWithGuess(*problem, v0, &sap_results);
   if (status != drake::multibody::contact_solvers::internal::
-                    ContactSolverStatus::kSuccess) {
+                    SapSolverStatus::kSuccess) {
     throw std::runtime_error("SAP solver failed.");
   }
+
+  // Pack contact results.
+  // TODO: pack contact forces for viz.
+  results->Resize(plant().num_velocities(), 0);
+  results->v_next = sap_results.v;
+  results->tau_contact.setZero();
 
   //const typename SapSolver<T>::SolverStats& stats = sap.get_statistics();
   //PRINT_VAR(stats.num_iters);
