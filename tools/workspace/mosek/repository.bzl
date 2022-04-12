@@ -161,6 +161,7 @@ install(
    docs = [
        "mosek-eula.pdf",
        "@drake//tools/workspace/mosek:LICENSE_CilkPlus",
+       "@drake//tools/workspace/mosek:drake_mosek_redistribution.txt",
    ],
    allowed_externals = [
        "@drake//tools/workspace/mosek:LICENSE_CilkPlus",
