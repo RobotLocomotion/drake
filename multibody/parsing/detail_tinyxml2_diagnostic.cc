@@ -8,6 +8,7 @@ namespace internal {
 
 using drake::internal::DiagnosticDetail;
 using drake::internal::DiagnosticPolicy;
+using tinyxml2::XMLElement;
 using tinyxml2::XMLNode;
 
 TinyXml2Diagnostic::TinyXml2Diagnostic(
@@ -55,6 +56,25 @@ DiagnosticPolicy TinyXml2Diagnostic::MakePolicyForNode(
         diagnostic_->Error(MakeDetail(*location, detail.message));
       });
   return result;
+}
+
+void TinyXml2Diagnostic::WarnUnsupportedElement(
+    const XMLElement& node, const std::string& tag) const {
+  const XMLElement* subnode = node.FirstChildElement(tag.c_str());
+  if (subnode) {
+    Warning(*subnode, fmt::format(
+                "The tag '{}' found as a child of '{}' is currently"
+                " unsupported and will be ignored.", tag, node.Name()));
+  }
+}
+
+void TinyXml2Diagnostic::WarnUnsupportedAttribute(
+    const XMLElement& node, const std::string& attribute) const {
+  if (node.Attribute(attribute.c_str())) {
+    Warning(node, fmt::format(
+                "The attribute '{}' found in a '{}' tag is currently"
+                " unsupported and will be ignored.", attribute, node.Name()));
+  }
 }
 
 }  // namespace internal

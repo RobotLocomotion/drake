@@ -79,10 +79,8 @@
   <transmission name="j2s7s300_joint_finger_1_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="j2s7s300_joint_finger_1">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
     <actuator name="j2s7s300_joint_finger_1_actuator">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
@@ -143,10 +141,8 @@
   <transmission name="j2s7s300_joint_finger_2_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="j2s7s300_joint_finger_2">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
     <actuator name="j2s7s300_joint_finger_2_actuator">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
@@ -207,10 +203,8 @@
   <transmission name="j2s7s300_joint_finger_3_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="j2s7s300_joint_finger_3">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
     <actuator name="j2s7s300_joint_finger_3_actuator">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
