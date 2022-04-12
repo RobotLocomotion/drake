@@ -2336,6 +2336,26 @@ class MathematicalProgram {
     return AddRotatedLorentzConeConstraint(A, b, vars);
   }
 
+  /** Add the convex quadratic constraint 0.5xᵀQx + bᵀx + c <= 0 as a
+   * rotated Lorentz cone constraint [rᵀx+s, 1, Px+q] is in the rotated Lorentz
+   * cone. When solving the optimization problem using conic solvers (like
+   * Mosek, Gurobi, SCS, etc), it is numerically preferrable to impose the
+   * convex quadratic constraint as rotated Lorentz cone constraint. See
+   * https://docs.mosek.com/latest/capi/prob-def-quadratic.html#a-recommendation
+   * @throw exception if this quadratic constraint is not convex (Q is not
+   * positive semidefinite)
+   * @param Q The Hessian of the quadratic constraint. Should be positive
+   * semidefinite.
+   * @param b The linear coefficient of the quadratic constraint.
+   * @param c The constant term of the quadratic constraint.
+   * @param vars x in the documentation above.
+   */
+  Binding<RotatedLorentzConeConstraint>
+  AddQuadraticAsRotatedLorentzConeConstraint(
+      const Eigen::Ref<const Eigen::MatrixXd>& Q,
+      const Eigen::Ref<const Eigen::VectorXd>& b, double c,
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& vars);
+
   /**
    * Adds a linear complementarity constraints referencing a subset of
    * the decision variables.
