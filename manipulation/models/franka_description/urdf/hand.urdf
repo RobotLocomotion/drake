@@ -104,7 +104,6 @@
     <origin rpy="0 0 0" xyz="0 0 0.0584"/>
     <axis xyz="0 -1 0"/>
     <limit effort="20" lower="0.0" upper="0.04" velocity="0.2"/>
-    <mimic joint="panda_finger_joint1"/>
   </joint>
   <transmission name="panda_finger_tran1">
     <type>transmission_interface/SimpleTransmission</type>
