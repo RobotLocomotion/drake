@@ -24,13 +24,6 @@ while [ "${1:-}" != "" ]; do
     --with-doc-only)
       source_distribution_args+=(--with-doc-only)
       ;;
-    # Install the kcov code coverage analysis tool from the
-    # drake-apt.csail.mit.edu apt repository on Ubuntu 18.04 (Bionic). Ignored
-    # on Ubuntu 20.04 (Focal) where kcov is always installed from the Ubuntu
-    # "universe" apt repository.
-    --with-kcov)
-      source_distribution_args+=(--with-kcov)
-      ;;
     # Install prerequisites that are only needed to when CC=clang-9, i.e.,
     # opts-in to the ability to compile Drake's C++ code using Clang.
     --with-clang)
