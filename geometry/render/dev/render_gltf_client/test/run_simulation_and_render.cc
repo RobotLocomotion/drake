@@ -62,7 +62,6 @@ DEFINE_validator(render_engine, &valid_render_engine);
 namespace drake {
 namespace geometry {
 namespace render_gltf_client {
-namespace minimal_example {
 namespace {
 
 /** This example serves as the baseline demonstration of all the features
@@ -190,37 +189,42 @@ void AddShapes(SceneGraph<double>* scene_graph) {
   const Box box(0.1, 0.075, 0.05);
   scene_graph->RegisterAnchoredGeometry(
       source_id,
-      MakeInstance(box, Vector3d(x, -0.25, 0),
-                   Material(Rgba(1.0, 0.25, 0.25), label_value), "rgba_box"));
+      MakeInstance(
+          box, Vector3d(x, -0.25, 0),
+          Material(Rgba(1.0, 0.25, 0.25), label_value), "rgba_box"));
 
   ++label_value;
   scene_graph->RegisterAnchoredGeometry(
       source_id,
-      MakeInstance(box, Vector3d(x, 0.25, 0),
-                   Material(texture_path, label_value), "texture_box"));
+      MakeInstance(
+          box, Vector3d(x, 0.25, 0),
+          Material(texture_path, label_value), "texture_box"));
   x += dx;
 
   const Capsule capsule(0.05, 0.1);
   ++label_value;
   scene_graph->RegisterAnchoredGeometry(
-      source_id, MakeInstance(capsule, Vector3d(x, -0.25, 0),
-                              Material(Rgba(1.0, 1.0, 0.25), label_value),
-                              "rgba_capsule"));
+      source_id,
+      MakeInstance(
+          capsule, Vector3d(x, -0.25, 0),
+          Material(Rgba(1.0, 1.0, 0.25), label_value), "rgba_capsule"));
 
   ++label_value;
   // NOTE: Apparently we don't have texture coordinates for capsules.
   scene_graph->RegisterAnchoredGeometry(
       source_id,
-      MakeInstance(capsule, Vector3d(x, 0.25, 0),
-                   Material(texture_path, label_value), "texture_capsule"));
+      MakeInstance(
+          capsule, Vector3d(x, 0.25, 0),
+          Material(texture_path, label_value), "texture_capsule"));
   x += dx;
 
   const Cylinder cylinder(0.05, 0.1);
   ++label_value;
   scene_graph->RegisterAnchoredGeometry(
-      source_id, MakeInstance(cylinder, Vector3d(x, -0.25, 0),
-                              Material(Rgba(0.25, 1.0, 0.25), label_value),
-                              "rgba_cylinder"));
+      source_id,
+      MakeInstance(
+          cylinder, Vector3d(x, -0.25, 0),
+          Material(Rgba(0.25, 1.0, 0.25), label_value), "rgba_cylinder"));
 
   ++label_value;
   scene_graph->RegisterAnchoredGeometry(
@@ -232,29 +236,33 @@ void AddShapes(SceneGraph<double>* scene_graph) {
   const Ellipsoid ellipsoid(0.05, 0.025, 0.0375);
   ++label_value;
   scene_graph->RegisterAnchoredGeometry(
-      source_id, MakeInstance(ellipsoid, Vector3d(x, -0.25, 0),
-                              Material(Rgba(0.25, 1.0, 1.0), label_value),
-                              "rgba_ellipsoid"));
+      source_id,
+      MakeInstance(
+          ellipsoid, Vector3d(x, -0.25, 0),
+          Material(Rgba(0.25, 1.0, 1.0), label_value), "rgba_ellipsoid"));
 
   ++label_value;
   scene_graph->RegisterAnchoredGeometry(
       source_id,
-      MakeInstance(ellipsoid, Vector3d(x, 0.25, 0),
-                   Material(texture_path, label_value), "texture_ellipsoid"));
+      MakeInstance(
+          ellipsoid, Vector3d(x, 0.25, 0),
+          Material(texture_path, label_value), "texture_ellipsoid"));
   x += dx;
 
   const Sphere sphere(0.05);
   ++label_value;
   scene_graph->RegisterAnchoredGeometry(
-      source_id, MakeInstance(sphere, Vector3d(x, -0.25, 0),
-                              Material(Rgba(0.25, 0.25, 1.0), label_value),
-                              "rgba_sphere"));
+      source_id,
+      MakeInstance(
+          sphere, Vector3d(x, -0.25, 0),
+          Material(Rgba(0.25, 0.25, 1.0), label_value), "rgba_sphere"));
 
   ++label_value;
   scene_graph->RegisterAnchoredGeometry(
       source_id,
-      MakeInstance(sphere, Vector3d(x, 0.25, 0),
-                   Material(texture_path, label_value), "texture_sphere"));
+      MakeInstance(
+          sphere, Vector3d(x, 0.25, 0),
+          Material(texture_path, label_value), "texture_sphere"));
 
   // We also need to add Mesh, Convex, and HalfSpace.
 }
@@ -342,7 +350,8 @@ int do_main() {
       if (!FLAGS_save_dir.empty()) {
         const auto& writer_port =
             image_writer->DeclareImageInputPort<PixelType::kRgba8U>(
-                "color", filename, 1. / FLAGS_render_fps /* publish period */,
+                "color",
+                filename, 1. / FLAGS_render_fps /* publish period */,
                 0.);
         builder.Connect(camera->color_image_output_port(), writer_port);
       }
@@ -357,7 +366,8 @@ int do_main() {
       if (!FLAGS_save_dir.empty()) {
         const auto& writer_port =
             image_writer->DeclareImageInputPort<PixelType::kDepth32F>(
-                "depth", filename, 1. / FLAGS_render_fps /* publish period */,
+                "depth",
+                filename, 1. / FLAGS_render_fps /* publish period */,
                 0.);
         builder.Connect(camera->depth_image_32F_output_port(), writer_port);
       }
@@ -372,7 +382,8 @@ int do_main() {
       if (!FLAGS_save_dir.empty()) {
         const auto& writer_port =
             image_writer->DeclareImageInputPort<PixelType::kLabel16I>(
-                "label", filename, 1. / FLAGS_render_fps /* publish period */,
+                "label",
+                filename, 1. / FLAGS_render_fps /* publish period */,
                 0.);
         builder.Connect(camera->label_image_output_port(), writer_port);
       }
@@ -410,12 +421,11 @@ int do_main() {
 }
 
 }  // namespace
-}  // namespace minimal_example
 }  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::geometry::render_gltf_client::minimal_example::do_main();
+  return drake::geometry::render_gltf_client::do_main();
 }

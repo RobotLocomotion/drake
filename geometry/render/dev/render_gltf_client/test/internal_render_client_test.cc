@@ -59,8 +59,6 @@ class RenderClientTester {
 
 namespace {
 
-namespace fs = drake::filesystem;
-
 // Constructor / destructor ----------------------------------------------------
 GTEST_TEST(RenderClient, Constructor) {
   const std::string url{"127.0.0.1"};
