@@ -109,6 +109,17 @@ Warning:
     function only adjusts the C++ level. Refer to the Python logging module
     documentation for details on setting the Python level.
 
+    For simplicity, consider using ``pydrake.common.configure_logging`` rather
+    than this function:
+
+    .. code-block:: python
+
+        from pydrake.common import configure_logging
+        ...
+        configure_logging(verbose=True)
+
+    That function takes care of both the C++ and Python levels.
+
 See also:
    :py:func:`pydrake.common.configure_logging`
 )""")
