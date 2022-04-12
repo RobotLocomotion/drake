@@ -22,10 +22,10 @@ def _impl(repo_ctx):
         # dummy binary.
         repo_ctx.file("doxygen", "# Doxygen is not supported on macOS")
     elif os_result.is_ubuntu:
+        # TODO(#16217): build and add 22.04: jammy.
         # On Ubuntu, download and extract Drake's pre-compiled Doxygen binary.
         archive = "doxygen-1.8.15-{codename}-x86_64.tar.gz".format(
             codename = {
-                "18.04": "bionic",
                 "20.04": "focal",
             }[os_result.ubuntu_release],
         )
@@ -34,7 +34,6 @@ def _impl(repo_ctx):
             for pattern in repo_ctx.attr.mirrors.get("doxygen")
         ]
         sha256 = {
-            "18.04": "16b4ce1fcee27495c0de23dc4a2ab9bd24ee218800a2fb0db17a9c5bf8955e4e",  # noqa
             "20.04": "3c4886763ec27e1797b0fd5bfe576602f5e408649c0e282936e17bde5c7ed7e6",  # noqa
         }[os_result.ubuntu_release]
         repo_ctx.download_and_extract(
