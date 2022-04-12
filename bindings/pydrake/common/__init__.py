@@ -12,7 +12,7 @@ from ._module_py import *
 set_assertion_failure_to_throw_exception()
 
 
-def configure_logging():
+def configure_logging(spammy=False):
     """Convenience function that configures the root Python logging module in
     a tasteful way for Drake. Using this function is totally optional; there
     is no requirement to call it prior to using Drake or generating messages.
@@ -20,12 +20,22 @@ def configure_logging():
     more spartan than Drake's C++ logging format (e.g., Python does not show
     message timestamps by default).
 
+    Parameter ``spammy``:
+        When False (the default), only INFO level messages (or above) will be
+        emitted. When True, Drake will be configured to emit messages at any
+        and all levels (i.e., including low-level debugging messages).
+
     See also:
        :py:func:`pydrake.common.set_log_level`
     """
     format = "[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s"
     _logging.basicConfig(level=_logging.INFO, format=format)
-    _logging.getLogger("drake").setLevel(_logging.NOTSET)
+    logger = _logging.getLogger("drake")
+    if spammy:
+        set_log_level("trace")
+        logger.setLevel(5)
+    else:
+        logger.setLevel(_logging.NOTSET)
 
 
 def _wrap_to_match_input_shape(f):
