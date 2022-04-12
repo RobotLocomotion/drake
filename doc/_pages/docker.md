@@ -38,9 +38,9 @@ published X.Y.Z version numbers.
 
 The docker tags for Drake's stable releases are spelled like:
 
-* ``bionic-X.Y.Z`` for the Ubuntu 18.04 image of Drake vX.Y.Z.
 * ``focal-X.Y.Z`` for the Ubuntu 20.04 image of Drake vX.Y.Z.
-* ``X.Y.Z`` is a synonym for one of the above, currently bionic-X.Y.Z.
+* ``X.Y.Z`` is a synonym for some arbitrary Ubuntu base version
+  (currently 20.04 "Focal").
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
