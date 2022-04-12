@@ -155,7 +155,6 @@
     </joint>
     <actuator name="j2s7s300_joint_1_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_2">
@@ -253,7 +252,6 @@
     </joint>
     <actuator name="j2s7s300_joint_2_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_3">
@@ -357,7 +355,6 @@
     </joint>
     <actuator name="j2s7s300_joint_3_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_4">
@@ -467,7 +464,6 @@
     </joint>
     <actuator name="j2s7s300_joint_4_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_5">
@@ -523,7 +519,6 @@
     </joint>
     <actuator name="j2s7s300_joint_5_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_6">
@@ -579,7 +574,6 @@
     </joint>
     <actuator name="j2s7s300_joint_6_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_7">
@@ -605,7 +599,6 @@
     </joint>
     <actuator name="j2s7s300_joint_7_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
 </robot>

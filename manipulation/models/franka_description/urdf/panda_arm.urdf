@@ -151,7 +151,6 @@
     </collision>
   </link>
   <joint name="panda_joint1" type="revolute">
-    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973"/>
     <origin rpy="0 0 0" xyz="0 0 0.333"/>
     <parent link="panda_link0"/>
     <child link="panda_link1"/>
@@ -208,7 +207,6 @@
     </collision>
   </link>
   <joint name="panda_joint2" type="revolute">
-    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-1.7628" soft_upper_limit="1.7628"/>
     <origin rpy="-1.57079632679 0 0" xyz="0 0 0"/>
     <parent link="panda_link1"/>
     <child link="panda_link2"/>
@@ -259,7 +257,6 @@
     </collision>
   </link>
   <joint name="panda_joint3" type="revolute">
-    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973"/>
     <origin rpy="1.57079632679 0 0" xyz="0 -0.316 0"/>
     <parent link="panda_link2"/>
     <child link="panda_link3"/>
@@ -322,7 +319,6 @@
     </collision>
   </link>
   <joint name="panda_joint4" type="revolute">
-    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-3.0718" soft_upper_limit="-0.0698"/>
     <origin rpy="1.57079632679 0 0" xyz="0.0825 0 0"/>
     <parent link="panda_link3"/>
     <child link="panda_link4"/>
@@ -415,7 +411,6 @@
     </collision>
   </link>
   <joint name="panda_joint5" type="revolute">
-    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973"/>
     <origin rpy="-1.57079632679 0 0" xyz="-0.0825 0.384 0"/>
     <parent link="panda_link4"/>
     <child link="panda_link5"/>
@@ -466,7 +461,6 @@
     </collision>
   </link>
   <joint name="panda_joint6" type="revolute">
-    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-0.0175" soft_upper_limit="3.7525"/>
     <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
     <parent link="panda_link5"/>
     <child link="panda_link6"/>
@@ -499,7 +493,6 @@
     </collision>
   </link>
   <joint name="panda_joint7" type="revolute">
-    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973"/>
     <origin rpy="1.57079632679 0 0" xyz="0.088 0 0"/>
     <parent link="panda_link6"/>
     <child link="panda_link7"/>

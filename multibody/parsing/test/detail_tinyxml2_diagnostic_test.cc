@@ -25,7 +25,9 @@ class TinyXml2DiagnosticTest : public test::DiagnosticPolicyTestBase {
 <?xml version="1.0"?>
 <stuff>
   <error/>
-  <warning/>
+  <warning unsupported_attribute='10'>
+    <unsupported_element/>
+  </warning>
 </stuff>
 )""";
   }
@@ -116,6 +118,22 @@ TEST_F(TinyXml2DiagnosticContentsTest, PolicyForNode) {
       diagnostic_.MakePolicyForNode(&GetFirstChildNamed("warning"));
   warning_policy.Warning("meh");
   EXPECT_EQ(TakeWarning(), "<literal-string>.stuff:5: warning: meh");
+}
+
+TEST_F(TinyXml2DiagnosticContentsTest, Unsuppported) {
+  diagnostic_.WarnUnsupportedElement(
+      GetFirstChildNamed("warning"), "unsupported_element");
+  EXPECT_EQ(TakeWarning(),
+            "<literal-string>.stuff:6: warning: The tag 'unsupported_element'"
+            " found as a child of 'warning' is currently unsupported and will"
+            " be ignored.");
+
+  diagnostic_.WarnUnsupportedAttribute(
+      GetFirstChildNamed("warning"), "unsupported_attribute");
+  EXPECT_EQ(TakeWarning(),
+            "<literal-string>.stuff:5: warning: The attribute"
+            " 'unsupported_attribute' found in a 'warning' tag is currently"
+            " unsupported and will be ignored.");
 }
 
 }  // namespace

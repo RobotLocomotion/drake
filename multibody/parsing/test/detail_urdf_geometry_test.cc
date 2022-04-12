@@ -1031,6 +1031,15 @@ TEST_F(UrdfGeometryTest, LegacyDrakeComplianceVsProxProperties) {
   VerifyFriction(properties, {4.5, 4.5});
 }
 
+TEST_F(UrdfGeometryTest, UnsupportedRosUrfdomStuff) {
+  // Not observed in the wild, but seen in the ROS urdfdom XSD Schema.  If
+  // anyone expects this to do something, the warning should make clear that
+  // Drake ignores it.
+  // See https://github.com/ros/urdfdom/blob/dbecca0/xsd/urdf.xsd
+  ParseCollisionDocGood("<verbose value='unknown'/>");
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*verbose.*ignored.*"));
+}
+
 // Confirms that the <drake:accepting_renderer> tag gets properly parsed.
 TEST_F(UrdfGeometryTest, AcceptingRenderers) {
   const std::string file_no_conflict_1 =

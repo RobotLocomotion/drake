@@ -37,8 +37,47 @@ Drake supports URDF files as described here: http://wiki.ros.org/urdf/XML.
 For Drake extensions to URDF format files, see
 @ref multibody_parsing_drake_extensions.
 
-Drake's parser does not implement all of the features of URDF. In the future,
-we intend to update this documentation to itemize what isn't supported.
+@subsection multbody_parsing_urdf_unsupported URDF not supported by Drake
+
+Drake's parser does not implement all of the features of URDF. Here is a list
+of known URDF features that Drake does not use. For each, the parser applies
+one of several treaments:
+
+- Issue a warning that the tag is unsued.
+- Ignore silently, as documented below.
+- Apply special treatment, as documented below.
+
+@subsubsection urdf_ignored_warning Tags that provoke a warning
+
+- `/robot/@version`
+- `/robot/joint/calibration`
+- `/robot/joint/mimic`
+- `/robot/joint/safety_controller`
+- `/robot/link/@type`
+- `/robot/link/collision/verbose`
+- `/robot/transmission/@name`
+- `/robot/transmission/flexJoint`
+- `/robot/transmission/gap_joint`
+- `/robot/transmission/leftActuator`
+- `/robot/transmission/passive_joint`
+- `/robot/transmission/rightActuator`
+- `/robot/transmission/rollJoint`
+- `/robot/transmission/use_simulated_gripper_joint`
+
+@subsubsection urdf_ignored_silent Tags ignored silently
+
+- `/robot/gazebo`
+- `/robot/transmission/actuator/hardwareInterface`
+- `/robot/transmission/joint/hardwareInterface`
+
+@subsubsection urdf_ignored_special Tags given special treatment.
+
+- `/robot/transmission/actuator/mechanicalReduction`
+- `/robot/transmission/mechanicalReduction`
+
+Both versions of `mechanicalReduction` will be silently ignored if the supplied
+value is 1; otherwise the they will provoke a warning that the value is being
+ignored.
 
 @section multibody_parsing_drake_extensions Drake Extensions
 

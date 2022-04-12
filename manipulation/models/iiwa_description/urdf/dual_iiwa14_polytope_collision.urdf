@@ -78,7 +78,6 @@
     <origin rpy="0 0 0" xyz="0 0 0.1575"/>
     <axis xyz="0 0 1"/>
     <limit drake:acceleration="8.57" effort="320" lower="-2.96705972839" upper="2.96705972839" velocity="1.4835298641951802"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.93215314335" soft_upper_limit="2.93215314335"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="left_iiwa_link_1">
@@ -102,7 +101,6 @@
     <origin rpy="1.570796326794897   0 3.141592653589793" xyz="0 0 0.2025"/>
     <axis xyz="0 0 1"/>
     <limit drake:acceleration="8.57" effort="320" lower="-2.09439510239" upper="2.09439510239" velocity="1.4835298641951802"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="left_iiwa_link_2">
@@ -135,7 +133,6 @@
     <origin rpy="1.570796326794897 0 3.141592653589793" xyz="0 0.2045 0"/>
     <axis xyz="0 0 1"/>
     <limit drake:acceleration="8.74" effort="176" lower="-2.96705972839" upper="2.96705972839" velocity="1.7453292519943295"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="left_iiwa_link_3">
@@ -175,7 +172,6 @@
     <origin rpy="1.570796326794897 0 0" xyz="0 0 0.2155"/>
     <axis xyz="0 0 1"/>
     <limit drake:acceleration="11.36" effort="176" lower="-2.09439510239" upper="2.09439510239" velocity="1.3089969389957472"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="left_iiwa_link_4">
@@ -208,7 +204,6 @@
     <origin rpy="-1.570796326794897 3.141592653589793 0" xyz="0 0.1845 0"/>
     <axis xyz="0 0 1"/>
     <limit drake:acceleration="12.23" effort="110" lower="-2.96705972839" upper="2.96705972839" velocity="2.2689280275926285"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="left_iiwa_link_5">
@@ -248,7 +243,6 @@
     <origin rpy="1.570796326794897 0 0" xyz="0 0 0.2155"/>
     <axis xyz="0 0 1"/>
     <limit drake:acceleration="15.72" effort="40" lower="-2.09439510239" upper="2.09439510239" velocity="2.356194490192345"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="left_iiwa_link_6">
@@ -281,7 +275,6 @@
     <origin rpy="-1.570796326794897 3.141592653589793 0" xyz="0 0.081 0"/>
     <axis xyz="0 0 1"/>
     <limit drake:acceleration="15.72" effort="40" lower="-3.05432619099" upper="3.05432619099" velocity="2.356194490192345"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-3.01941960595" soft_upper_limit="3.01941960595"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="left_iiwa_link_7">
@@ -487,7 +480,6 @@
     <origin rpy="0 0 0" xyz="0 0 0.1575"/>
     <axis xyz="0 0 1"/>
     <limit drake:acceleration="8.57" effort="320" lower="-2.96705972839" upper="2.96705972839" velocity="1.4835298641951802"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.93215314335" soft_upper_limit="2.93215314335"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="right_iiwa_link_1">
@@ -511,7 +503,6 @@
     <origin rpy="1.570796326794897   0 3.141592653589793" xyz="0 0 0.2025"/>
     <axis xyz="0 0 1"/>
     <limit drake:acceleration="8.57" effort="320" lower="-2.09439510239" upper="2.09439510239" velocity="1.4835298641951802"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="right_iiwa_link_2">
@@ -544,7 +535,6 @@
     <origin rpy="1.570796326794897 0 3.141592653589793" xyz="0 0.2045 0"/>
     <axis xyz="0 0 1"/>
     <limit drake:acceleration="8.74" effort="176" lower="-2.96705972839" upper="2.96705972839" velocity="1.7453292519943295"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="right_iiwa_link_3">
@@ -584,7 +574,6 @@
     <origin rpy="1.570796326794897 0 0" xyz="0 0 0.2155"/>
     <axis xyz="0 0 1"/>
     <limit drake:acceleration="11.36" effort="176" lower="-2.09439510239" upper="2.09439510239" velocity="1.3089969389957472"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="right_iiwa_link_4">
@@ -617,7 +606,6 @@
     <origin rpy="-1.570796326794897 3.141592653589793 0" xyz="0 0.1845 0"/>
     <axis xyz="0 0 1"/>
     <limit drake:acceleration="12.23" effort="110" lower="-2.96705972839" upper="2.96705972839" velocity="2.2689280275926285"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="right_iiwa_link_5">
@@ -657,7 +645,6 @@
     <origin rpy="1.570796326794897 0 0" xyz="0 0 0.2155"/>
     <axis xyz="0 0 1"/>
     <limit drake:acceleration="15.72" effort="40" lower="-2.09439510239" upper="2.09439510239" velocity="2.356194490192345"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="right_iiwa_link_6">
@@ -690,7 +677,6 @@
     <origin rpy="-1.570796326794897 3.141592653589793 0" xyz="0 0.081 0"/>
     <axis xyz="0 0 1"/>
     <limit drake:acceleration="15.72" effort="40" lower="-3.05432619099" upper="3.05432619099" velocity="2.356194490192345"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-3.01941960595" soft_upper_limit="3.01941960595"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="right_iiwa_link_7">
