@@ -65,8 +65,8 @@ drake_cc_library(
         "factory.h",
         "internal_render_engine_gltf_client.h",
     ],
-    # render_engine_gltf_client.h directly pulls in VTK headers; leave it out
-    # of the install.
+    # internal_render_engine_gltf_client.h directly pulls in VTK headers; leave
+    # it out of the install.
     install_hdrs_exclude = ["internal_render_engine_gltf_client.h"],
     deps = [
         ":internal_render_client",
@@ -100,7 +100,7 @@ drake_cc_googletest(
 )
 
 drake_cc_library(
-    name = "test_png",
+    name = "internal_test_png",
     testonly = 1,
     srcs = ["test/internal_test_png.cc"],
     hdrs = ["test/internal_test_png.h"],
@@ -113,7 +113,7 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "test_tiff",
+    name = "internal_test_tiff",
     testonly = 1,
     srcs = ["test/internal_test_tiff.cc"],
     hdrs = ["test/internal_test_tiff.h"],
@@ -129,8 +129,8 @@ drake_cc_googletest(
     data = ["//geometry/render:test_models"],
     deps = [
         ":internal_render_client",
-        ":test_png",
-        ":test_tiff",
+        ":internal_test_png",
+        ":internal_test_tiff",
         "//common:find_resource",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
@@ -155,8 +155,8 @@ drake_cc_googletest(
     tags = vtk_test_tags(),
     deps = [
         ":internal_render_engine_gltf_client",
-        ":test_png",
-        ":test_tiff",
+        ":internal_test_png",
+        ":internal_test_tiff",
         "//common:filesystem",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",

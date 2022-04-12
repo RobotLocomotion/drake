@@ -99,10 +99,10 @@ class RenderClient {
      If `image_type` is a depth image but `depth_range` was not provided, or
      `depth_range` was provided but `image_type` is color or label. */
   virtual std::string RenderOnServer(
-      const render::RenderCameraCore& camera_core, RenderImageType image_type,
-      const std::string& scene_path,
+      const drake::geometry::render::RenderCameraCore& camera_core,
+      RenderImageType image_type, const std::string& scene_path,
       const std::optional<std::string>& mime_type = std::nullopt,
-      const std::optional<render::DepthRange>& depth_range =
+      const std::optional<drake::geometry::render::DepthRange>& depth_range =
           std::nullopt) const;
 
   //@}

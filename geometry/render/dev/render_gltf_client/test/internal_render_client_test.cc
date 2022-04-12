@@ -24,6 +24,12 @@ namespace geometry {
 namespace render_gltf_client {
 namespace internal {
 
+namespace fs = drake::filesystem;
+
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRange;
+using geometry::render::DepthRenderCamera;
+using geometry::render::RenderCameraCore;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
@@ -171,11 +177,11 @@ class FieldCheckService : public HttpService {
  public:
   /* All parameters for HttpService, followed by RenderClient::RenderOnServer
    with the addition of the sha256. */
-  FieldCheckService(
-      const render::RenderCameraCore& camera_core, RenderImageType image_type,
-      const std::string& scene_path, const std::string& scene_sha256,
-      const std::optional<std::string>& mime_type = std::nullopt,
-      const std::optional<render::DepthRange>& depth_range = std::nullopt)
+  FieldCheckService(const RenderCameraCore& camera_core,
+                    RenderImageType image_type, const std::string& scene_path,
+                    const std::string& scene_sha256,
+                    const std::optional<std::string>& mime_type = std::nullopt,
+                    const std::optional<DepthRange>& depth_range = std::nullopt)
       : HttpService(),
         camera_core_{camera_core},
         image_type_{image_type},
@@ -270,14 +276,14 @@ class FieldCheckService : public HttpService {
     return ret;
   }
 
-  const render::RenderCameraCore& camera_core_;
+  const RenderCameraCore& camera_core_;
   /* NOTE: do not store references for the data fields, EXPECT_EQ may not work
    correctly for value comparisons. */
   const RenderImageType image_type_;
   const std::string scene_path_;
   const std::string scene_sha256_;
   const std::optional<std::string> mime_type_;
-  const std::optional<render::DepthRange> depth_range_;
+  const std::optional<DepthRange> depth_range_;
 };
 
 using PostFormCallback_t = typename std::function<HttpResponse(
@@ -338,10 +344,9 @@ GTEST_TEST(RenderClient, RenderOnServer) {
   /* Create some render camera instances to validate against.  Note that the
    atypical values chosen for e.g., clipping or depth ranges is to ensure there
    are no hard-coded or default values leaking in anywhere. */
-  const render::ColorRenderCamera color_camera{
+  const ColorRenderCamera color_camera{
       {"proxy_render", {798, 247, M_PI_4}, {0.11, 111.111}, {}}, false};
-  const render::DepthRenderCamera depth_camera{color_camera.core(),
-                                               {0.12, 21.12}};
+  const DepthRenderCamera depth_camera{color_camera.core(), {0.12, 21.12}};
 
   {
     // Forgetting to include the depth_range for a depth render should raise.

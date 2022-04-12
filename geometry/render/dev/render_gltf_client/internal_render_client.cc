@@ -30,6 +30,8 @@ namespace internal {
 
 namespace {
 
+using drake::geometry::render::DepthRange;
+using drake::geometry::render::RenderCameraCore;
 using drake::systems::sensors::ImageDepth32F;
 using drake::systems::sensors::ImageLabel16I;
 using drake::systems::sensors::ImageRgba8U;
@@ -174,9 +176,9 @@ RenderClient::~RenderClient() {
 }
 
 std::string RenderClient::RenderOnServer(
-    const render::RenderCameraCore& camera_core, RenderImageType image_type,
+    const RenderCameraCore& camera_core, RenderImageType image_type,
     const std::string& scene_path, const std::optional<std::string>& mime_type,
-    const std::optional<render::DepthRange>& depth_range) const {
+    const std::optional<DepthRange>& depth_range) const {
   // Make sure depth_range is only provided for depth images.
   if (image_type == RenderImageType::kDepthDepth32F &&
       !depth_range.has_value()) {

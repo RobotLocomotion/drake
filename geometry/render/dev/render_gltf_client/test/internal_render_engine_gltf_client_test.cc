@@ -45,12 +45,12 @@ class RenderEngineGltfClientTester {
   }
 
   // RenderEngineGltfClient private method access.
-  std::string ExportPathFor(render::internal::ImageType image_type,
+  std::string ExportPathFor(geometry::render::internal::ImageType image_type,
                             int64_t scene_id) const {
     return engine_->ExportPathFor(image_type, scene_id);
   }
 
-  std::string ExportScene(render::internal::ImageType image_type,
+  std::string ExportScene(geometry::render::internal::ImageType image_type,
                           int64_t scene_id) const {
     return engine_->ExportScene(image_type, scene_id);
   }
@@ -61,7 +61,7 @@ class RenderEngineGltfClientTester {
   }
 
   Eigen::Matrix4d CameraModelViewTransformMatrix(
-      render::internal::ImageType image_type) const {
+      geometry::render::internal::ImageType image_type) const {
     return engine_->CameraModelViewTransformMatrix(image_type);
   }
 
@@ -78,6 +78,9 @@ using Eigen::Matrix4d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRenderCamera;
+using geometry::render::internal::ImageType;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using systems::sensors::ImageDepth32F;
@@ -157,21 +160,21 @@ GTEST_TEST(RenderEngineGltfClient, UpdateViewpoint) {
 
   // First, use the RenderEngineVtk::UpdateViewpoint and gather matrices.
   engine.RenderEngineVtk::UpdateViewpoint(X_WB);
-  Matrix4d vtk_color_mat = tester.CameraModelViewTransformMatrix(
-      render::internal::ImageType::kColor);
-  Matrix4d vtk_depth_mat = tester.CameraModelViewTransformMatrix(
-      render::internal::ImageType::kDepth);
-  Matrix4d vtk_label_mat = tester.CameraModelViewTransformMatrix(
-      render::internal::ImageType::kLabel);
+  Matrix4d vtk_color_mat =
+      tester.CameraModelViewTransformMatrix(ImageType::kColor);
+  Matrix4d vtk_depth_mat =
+      tester.CameraModelViewTransformMatrix(ImageType::kDepth);
+  Matrix4d vtk_label_mat =
+      tester.CameraModelViewTransformMatrix(ImageType::kLabel);
 
   // Use the RenderEngineGltfClient::UpdateViewpoint and gather new matrices.
   engine.UpdateViewpoint(X_WB);
-  Matrix4d gltf_color_mat = tester.CameraModelViewTransformMatrix(
-      render::internal::ImageType::kColor);
-  Matrix4d gltf_depth_mat = tester.CameraModelViewTransformMatrix(
-      render::internal::ImageType::kDepth);
-  Matrix4d gltf_label_mat = tester.CameraModelViewTransformMatrix(
-      render::internal::ImageType::kLabel);
+  Matrix4d gltf_color_mat =
+      tester.CameraModelViewTransformMatrix(ImageType::kColor);
+  Matrix4d gltf_depth_mat =
+      tester.CameraModelViewTransformMatrix(ImageType::kDepth);
+  Matrix4d gltf_label_mat =
+      tester.CameraModelViewTransformMatrix(ImageType::kLabel);
 
   /* A ModelView transform can be inverted directly by inverting the rotation
    via transpose, and using this inverted rotation to rotate the negated
@@ -312,7 +315,7 @@ GTEST_TEST(RenderEngineGltfClient, DoRenderColorImage) {
   const int width = 320;
   const int height = 240;
   ImageRgba8U color_image{width, height};
-  const render::ColorRenderCamera color_camera{
+  const ColorRenderCamera color_camera{
       {"proxy_render", {width, height, M_PI_4}, {0.11, 111.111}, {}}, false};
 
   for (const bool no_cleanup : {true, false}) {
@@ -339,7 +342,7 @@ GTEST_TEST(RenderEngineGltfClient, DoRenderDepthImage) {
   const int width = 320;
   const int height = 240;
   ImageDepth32F depth_image{width, height};
-  const render::DepthRenderCamera depth_camera{
+  const DepthRenderCamera depth_camera{
       {"proxy_render", {width, height, M_PI_4}, {0.11, 111.111}, {}},
       {0.12, 10.0}};
 
@@ -367,7 +370,7 @@ GTEST_TEST(RenderEngineGltfClient, DoRenderLabelImage) {
   const int width = 320;
   const int height = 240;
   ImageLabel16I label_image{width, height};
-  const render::ColorRenderCamera color_camera{
+  const ColorRenderCamera color_camera{
       {"proxy_render", {width, height, M_PI_4}, {0.11, 111.111}, {}}, false};
 
   for (const bool no_cleanup : {true, false}) {
@@ -396,17 +399,16 @@ GTEST_TEST(RenderEngineGltfClient, Export) {
   Engine engine{params};
   Tester tester{&engine};
 
-  for (const auto image_type : {render::internal::ImageType::kColor,
-                                render::internal::ImageType::kDepth,
-                                render::internal::ImageType::kLabel}) {
+  for (const auto image_type :
+       {ImageType::kColor, ImageType::kDepth, ImageType::kLabel}) {
     for (const int64_t scene_id : {1, 11, 111}) {  // validate name formatting
       // Reconstruct the expected export path.
       std::string image_type_str;
-      if (image_type == render::internal::ImageType::kColor) {
+      if (image_type == ImageType::kColor) {
         image_type_str = "color";
-      } else if (image_type == render::internal::ImageType::kDepth) {
+      } else if (image_type == ImageType::kDepth) {
         image_type_str = "depth";
-      } else {  // image_type := render::internal::ImageType::kLabel
+      } else {  // image_type := ImageType::kLabel
         image_type_str = "label";
       }
       const std::string basename =

@@ -19,7 +19,12 @@ namespace render_gltf_client {
 namespace internal {
 
 namespace fs = drake::filesystem;
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRenderCamera;
 using geometry::render::RenderCameraCore;
+using geometry::render::RenderEngine;
+using geometry::render::RenderEngineVtk;
+using geometry::render::internal::ImageType;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
@@ -49,8 +54,7 @@ std::string MimeType() { return "model/gltf+json"; }
  NOTE: the modifications on the vtkCamera do *NOT* need to be undone, the camera
  is modified on every frame.
  */
-void SetGltfCameraPerspective(const render::RenderCameraCore& core,
-                              vtkCamera* camera) {
+void SetGltfCameraPerspective(const RenderCameraCore& core, vtkCamera* camera) {
   /* Exported parameters:
    https://gitlab.kitware.com/vtk/vtk/-/blob/v9.1.0/IO/Export/vtkGLTFExporter.cxx#L352
 
@@ -76,13 +80,12 @@ void SetGltfCameraPerspective(const render::RenderCameraCore& core,
 /* Converts the RenderEngineVtk ImageType to a RenderClient RenderImageType.
  NOTE: if RenderImageType expands to have more image types, this logic will
  have to be revisited (e.g., two kinds of depth images supported). */
-RenderImageType VtkToClientRenderImageType(
-    render::internal::ImageType image_type) {
-  if (image_type == render::internal::ImageType::kColor)
+RenderImageType VtkToClientRenderImageType(ImageType image_type) {
+  if (image_type == ImageType::kColor)
     return RenderImageType::kColorRgba8U;
-  else if (image_type == render::internal::ImageType::kDepth)
+  else if (image_type == ImageType::kDepth)
     return RenderImageType::kDepthDepth32F;
-  else if (image_type == render::internal::ImageType::kLabel)
+  else if (image_type == ImageType::kLabel)
     return RenderImageType::kLabel16I;
 
   // no cover: will only execute with a breaking change to RenderImageType.
@@ -93,12 +96,12 @@ RenderImageType VtkToClientRenderImageType(
   // LCOV_EXCL_STOP
 }
 
-std::string ImageTypeToString(render::internal::ImageType image_type) {
-  if (image_type == render::internal::ImageType::kColor) {
+std::string ImageTypeToString(ImageType image_type) {
+  if (image_type == ImageType::kColor) {
     return "color";
-  } else if (image_type == render::internal::ImageType::kDepth) {
+  } else if (image_type == ImageType::kDepth) {
     return "depth";
-  } else if (image_type == render::internal::ImageType::kLabel) {
+  } else if (image_type == ImageType::kLabel) {
     return "label";
   }
 
@@ -110,19 +113,17 @@ std::string ImageTypeToString(render::internal::ImageType image_type) {
   // LCOV_EXCL_STOP
 }
 
-void LogFrameStart(render::internal::ImageType image_type, int64_t scene_id) {
+void LogFrameStart(ImageType image_type, int64_t scene_id) {
   drake::log()->debug("RenderEngineGltfClient: rendering {} scene id {}.",
                       ImageTypeToString(image_type), scene_id);
 }
 
-void LogFrameGltfExportPath(render::internal::ImageType image_type,
-                            const std::string& path) {
+void LogFrameGltfExportPath(ImageType image_type, const std::string& path) {
   drake::log()->debug("RenderEngineGltfClient: {} scene exported to '{}'.",
                       ImageTypeToString(image_type), path);
 }
 
-void LogFrameServerResponsePath(render::internal::ImageType image_type,
-                                const std::string& path) {
+void LogFrameServerResponsePath(ImageType image_type, const std::string& path) {
   drake::log()->debug(
       "RenderEngineGltfClient: {} server response image saved to '{}'.",
       ImageTypeToString(image_type), path);
@@ -150,26 +151,25 @@ void DeleteFileAndLogIfVerbose(const std::string& path, bool verbose) {
 
 RenderEngineGltfClient::RenderEngineGltfClient(
     const RenderEngineGltfClientParams& parameters)
-    : render::RenderEngineVtk(
-          {parameters.default_label,
-           std::nullopt,
-           // Same as RenderEngineVtkParams default clear color,
-           // though it's value is irrelevant for this renderer.
-           {204 / 255., 229 / 255., 255 / 255.}}),
+    : RenderEngineVtk({parameters.default_label,
+                       std::nullopt,
+                       // Same as RenderEngineVtkParams default clear color,
+                       // though it's value is irrelevant for this renderer.
+                       {204 / 255., 229 / 255., 255 / 255.}}),
       render_client_{std::make_unique<RenderClient>(
           parameters.url, parameters.port, parameters.render_endpoint,
           parameters.verbose, parameters.no_cleanup)} {}
 
 RenderEngineGltfClient::RenderEngineGltfClient(
     const RenderEngineGltfClient& other)
-    : render::RenderEngineVtk(other),
+    : RenderEngineVtk(other),
       render_client_{std::make_unique<RenderClient>(
           other.render_client_->url(), other.render_client_->port(),
           other.render_client_->render_endpoint(),
           other.render_client_->verbose(),
           other.render_client_->no_cleanup())} {}
 
-std::unique_ptr<render::RenderEngine> RenderEngineGltfClient::DoClone() const {
+std::unique_ptr<RenderEngine> RenderEngineGltfClient::DoClone() const {
   return std::unique_ptr<RenderEngineGltfClient>(
       new RenderEngineGltfClient(*this));
 }
@@ -228,19 +228,18 @@ void RenderEngineGltfClient::UpdateViewpoint(
   hacked_matrix(2, 0) *= -1.0;  // -i
   hacked_matrix(2, 3) *= -1.0;  // -l
   math::RigidTransformd X_WC_hacked{hacked_matrix};
-  render::RenderEngineVtk::UpdateViewpoint(X_WC_hacked);
+  RenderEngineVtk::UpdateViewpoint(X_WC_hacked);
 }
 
 void RenderEngineGltfClient::DoRenderColorImage(
-    const render::ColorRenderCamera& camera,
-    ImageRgba8U* color_image_out) const {
+    const ColorRenderCamera& camera, ImageRgba8U* color_image_out) const {
   const auto color_scene_id = GetNextSceneId();
   if (render_client_->verbose()) {
-    LogFrameStart(render::internal::ImageType::kColor, color_scene_id);
+    LogFrameStart(ImageType::kColor, color_scene_id);
   }
 
   const RenderingPipeline& color_pipeline =
-      get_mutable_pipeline(render::internal::ImageType::kColor);
+      get_mutable_pipeline(ImageType::kColor);
   // Update the VTK scene before exporting to glTF.
   UpdateWindow(camera.core(), camera.show_window(), color_pipeline,
                "Color Image");
@@ -249,18 +248,16 @@ void RenderEngineGltfClient::DoRenderColorImage(
   // Export and render the glTF scene.
   SetGltfCameraPerspective(camera.core(),
                            color_pipeline.renderer->GetActiveCamera());
-  const std::string scene_path =
-      ExportScene(render::internal::ImageType::kColor, color_scene_id);
+  const std::string scene_path = ExportScene(ImageType::kColor, color_scene_id);
   if (render_client_->verbose()) {
-    LogFrameGltfExportPath(render::internal::ImageType::kColor, scene_path);
+    LogFrameGltfExportPath(ImageType::kColor, scene_path);
   }
 
   const std::string image_path = render_client_->RenderOnServer(
-      camera.core(),
-      VtkToClientRenderImageType(render::internal::ImageType::kColor),
-      scene_path, MimeType());
+      camera.core(), VtkToClientRenderImageType(ImageType::kColor), scene_path,
+      MimeType());
   if (render_client_->verbose()) {
-    LogFrameServerResponsePath(render::internal::ImageType::kColor, image_path);
+    LogFrameServerResponsePath(ImageType::kColor, image_path);
   }
 
   // Load the returned image back to the drake buffer.
@@ -269,15 +266,14 @@ void RenderEngineGltfClient::DoRenderColorImage(
 }
 
 void RenderEngineGltfClient::DoRenderDepthImage(
-    const render::DepthRenderCamera& camera,
-    ImageDepth32F* depth_image_out) const {
+    const DepthRenderCamera& camera, ImageDepth32F* depth_image_out) const {
   const auto depth_scene_id = GetNextSceneId();
   if (render_client_->verbose()) {
-    LogFrameStart(render::internal::ImageType::kDepth, depth_scene_id);
+    LogFrameStart(ImageType::kDepth, depth_scene_id);
   }
 
   const RenderingPipeline& depth_pipeline =
-      get_mutable_pipeline(render::internal::ImageType::kDepth);
+      get_mutable_pipeline(ImageType::kDepth);
   // Update the VTK scene before exporting to glTF.
   UpdateWindow(camera, depth_pipeline);
   PerformVtkUpdate(depth_pipeline);
@@ -285,18 +281,16 @@ void RenderEngineGltfClient::DoRenderDepthImage(
   // Export and render the glTF scene.
   SetGltfCameraPerspective(camera.core(),
                            depth_pipeline.renderer->GetActiveCamera());
-  const std::string scene_path =
-      ExportScene(render::internal::ImageType::kDepth, depth_scene_id);
+  const std::string scene_path = ExportScene(ImageType::kDepth, depth_scene_id);
   if (render_client_->verbose()) {
-    LogFrameGltfExportPath(render::internal::ImageType::kDepth, scene_path);
+    LogFrameGltfExportPath(ImageType::kDepth, scene_path);
   }
 
   const std::string image_path = render_client_->RenderOnServer(
-      camera.core(),
-      VtkToClientRenderImageType(render::internal::ImageType::kDepth),
-      scene_path, MimeType(), camera.depth_range());
+      camera.core(), VtkToClientRenderImageType(ImageType::kDepth), scene_path,
+      MimeType(), camera.depth_range());
   if (render_client_->verbose()) {
-    LogFrameServerResponsePath(render::internal::ImageType::kDepth, image_path);
+    LogFrameServerResponsePath(ImageType::kDepth, image_path);
   }
 
   // Load the returned image back to the drake buffer.
@@ -305,15 +299,14 @@ void RenderEngineGltfClient::DoRenderDepthImage(
 }
 
 void RenderEngineGltfClient::DoRenderLabelImage(
-    const render::ColorRenderCamera& camera,
-    ImageLabel16I* label_image_out) const {
+    const ColorRenderCamera& camera, ImageLabel16I* label_image_out) const {
   const auto label_scene_id = GetNextSceneId();
   if (render_client_->verbose()) {
-    LogFrameStart(render::internal::ImageType::kLabel, label_scene_id);
+    LogFrameStart(ImageType::kLabel, label_scene_id);
   }
 
   const RenderingPipeline& label_pipeline =
-      get_mutable_pipeline(render::internal::ImageType::kLabel);
+      get_mutable_pipeline(ImageType::kLabel);
   // Update the VTK scene before exporting to glTF.
   UpdateWindow(camera.core(), camera.show_window(), label_pipeline,
                "Label Image");
@@ -322,18 +315,16 @@ void RenderEngineGltfClient::DoRenderLabelImage(
   // Export and render the glTF scene.
   SetGltfCameraPerspective(camera.core(),
                            label_pipeline.renderer->GetActiveCamera());
-  const std::string scene_path =
-      ExportScene(render::internal::ImageType::kLabel, label_scene_id);
+  const std::string scene_path = ExportScene(ImageType::kLabel, label_scene_id);
   if (render_client_->verbose()) {
-    LogFrameGltfExportPath(render::internal::ImageType::kLabel, scene_path);
+    LogFrameGltfExportPath(ImageType::kLabel, scene_path);
   }
 
   const std::string image_path = render_client_->RenderOnServer(
-      camera.core(),
-      VtkToClientRenderImageType(render::internal::ImageType::kLabel),
-      scene_path, MimeType());
+      camera.core(), VtkToClientRenderImageType(ImageType::kLabel), scene_path,
+      MimeType());
   if (render_client_->verbose()) {
-    LogFrameServerResponsePath(render::internal::ImageType::kLabel, image_path);
+    LogFrameServerResponsePath(ImageType::kLabel, image_path);
   }
 
   // Load the returned image back to the drake buffer.
@@ -341,8 +332,8 @@ void RenderEngineGltfClient::DoRenderLabelImage(
   if (!render_client_->no_cleanup()) CleanupFrame(scene_path, image_path);
 }
 
-std::string RenderEngineGltfClient::ExportPathFor(
-    render::internal::ImageType image_type, int64_t scene_id) const {
+std::string RenderEngineGltfClient::ExportPathFor(ImageType image_type,
+                                                  int64_t scene_id) const {
   // Create e.g., {temp_directory()}/0000000000000000XYZ-color.gltf
   const fs::path base{render_client_->temp_directory()};
   // NOTE: the maximum number of digits in a int64_t is 19.
@@ -351,8 +342,8 @@ std::string RenderEngineGltfClient::ExportPathFor(
   return base / scene;
 }
 
-std::string RenderEngineGltfClient::ExportScene(
-    render::internal::ImageType image_type, int64_t scene_id) const {
+std::string RenderEngineGltfClient::ExportScene(ImageType image_type,
+                                                int64_t scene_id) const {
   vtkNew<vtkGLTFExporter> gltf_exporter;
   gltf_exporter->InlineDataOn();
   gltf_exporter->SetRenderWindow(get_mutable_pipeline(image_type).window);
@@ -369,7 +360,7 @@ void RenderEngineGltfClient::CleanupFrame(const std::string& scene_path,
 }
 
 Eigen::Matrix4d RenderEngineGltfClient::CameraModelViewTransformMatrix(
-    render::internal::ImageType image_type) const {
+    ImageType image_type) const {
   auto* cam = get_mutable_pipeline(image_type).renderer->GetActiveCamera();
   const auto* vtk_mat = cam->GetModelViewTransformMatrix();
   Eigen::Matrix4d ret;
