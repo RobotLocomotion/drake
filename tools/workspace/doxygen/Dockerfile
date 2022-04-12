@@ -3,7 +3,7 @@
 # during the build. They are neither called during the build nor expected to be
 # called by most developers or users of the project.
 
-ARG UBUNTU_CODENAME=bionic
+ARG UBUNTU_CODENAME=focal
 FROM ubuntu:${UBUNTU_CODENAME}
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update --quiet --quiet \
@@ -18,7 +18,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     graphviz \
     libc6-dev \
     lsb-release \
-    ninja-build \
+    make \
     python3 \
     wget \
   && rm -rf /var/lib/apt/lists/*
@@ -31,15 +31,12 @@ RUN wget --quiet "https://drake-mirror.csail.mit.edu/other/doxygen/doxygen-${DOX
   && cd doxygen-build \
   && cmake \
     -DCMAKE_BUILD_TYPE:STRING=Release \
-    -DCMAKE_C_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-return-local-addr -Wno-return-type -Wno-unused-result -Wno-stringop-overflow' \
-    -DCMAKE_CXX_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-return-local-addr -Wno-return-type -Wno-unused-result -Wno-stringop-overflow' \
-    -DCMAKE_EXE_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
     -DCMAKE_INSTALL_PREFIX:PATH=/opt/doxygen \
     -DPYTHON_EXECUTABLE:PATH=/usr/bin/python3 \
-    -GNinja \
+    -G "Unix Makefiles" \
     -Wno-dev \
     "../doxygen-${DOXYGEN_VERSION}" \
-  && ninja -w dupbuild=warn install/strip \
+  && make -j install/strip \
   && cd .. \
   && cp -f "doxygen-${DOXYGEN_VERSION}/LICENSE" /opt/doxygen/bin \
   && rm -rf doxygen-*
