@@ -9,6 +9,7 @@
 set -euo pipefail
 
 with_doc_only=0
+# TODO(betsymcphail): Remove this deprecated option on or after 2022-08-01
 with_kcov=0
 with_maintainer_only=0
 with_clang=1
@@ -25,10 +26,7 @@ while [ "${1:-}" != "" ]; do
     --with-doc-only)
       with_doc_only=1
       ;;
-    # Install the kcov code coverage analysis tool from the
-    # drake-apt.csail.mit.edu apt repository on Ubuntu 18.04 (Bionic). Ignored
-    # on Ubuntu 20.04 (Focal) where kcov is always installed from the Ubuntu
-    # "universe" apt repository.
+    # TODO(betsymcphail): Remove this deprecated option on or after 2022-08-01
     --with-kcov)
       with_kcov=1
       ;;
@@ -90,23 +88,6 @@ EOF
 )
 
 codename=$(lsb_release -sc)
-
-# On Bionic, developers must opt-in to kcov support; it comes in with the
-# non-standard package name kcov-35 via a Drake-specific apt repository. If
-# --without-update is passed to this script, then the gpg public key must
-# already be trusted, the apt repository must already have been added to the
-# list of sources, and apt-get update must have been called.
-if [[ "${codename}" == 'bionic' ]] && [[ "${with_kcov}" -eq 1 ]]; then
-  apt-get install ${maybe_yes} --no-install-recommends gnupg
-  wget -q -O- https://drake-apt.csail.mit.edu/drake.asc \
-    | apt-key --keyring /etc/apt/trusted.gpg.d/drake.gpg add
-  if [[ "${with_update}" -eq 1 ]]; then
-    echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/${codename} ${codename} main" \
-      > /etc/apt/sources.list.d/drake.list
-    apt-get update || (sleep 30; apt-get update)
-  fi
-  apt-get install ${maybe_yes} --no-install-recommends kcov-35
-fi
 
 packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
 apt-get install ${maybe_yes} --no-install-recommends ${packages}
@@ -206,3 +187,8 @@ dpkg_install_from_wget \
   bazel 5.1.0 \
   https://releases.bazel.build/5.1.0/release/bazel_5.1.0-linux-x86_64.deb \
   3d54055f764cfb61b5416f0a45d2d3df19c30d301d4da81565595cbe2e36a220
+
+# TODO(betsymcphail): Remove this deprecated option on or after 2022-08-01
+if [[ "${with_kcov}" -eq 1 ]]; then
+  echo 'WARNING: The --with-kcov option is deprecated and should no longer be used.' >&2
+fi
