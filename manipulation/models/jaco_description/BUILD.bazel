@@ -36,6 +36,7 @@ drake_cc_googletest(
 install_data(
     extra_prod_models = _JACO_DESCRIPTION_MESHES + [
         "LICENSE.TXT",
+        "README.md",
     ],
 )
 
