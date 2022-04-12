@@ -104,6 +104,17 @@ class UrdfParser {
     diagnostic_.Error(location, std::move(message));
   }
 
+  // Warn about documented URDF elements ignored by Drake.
+  void WarnUnsupportedElement(const XMLElement& node, const std::string& tag) {
+    diagnostic_.WarnUnsupportedElement(node, tag);
+  }
+
+  // Warn about documented URDF attributes ignored by Drake.
+  void WarnUnsupportedAttribute(const XMLElement& node,
+                                const std::string& attribute) {
+    diagnostic_.WarnUnsupportedAttribute(node, attribute);
+  }
+
  private:
   const std::string model_name_;
   const std::optional<std::string> parent_model_name_;
@@ -177,6 +188,9 @@ void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
       drake_ignore == std::string("true")) {
     return;
   }
+  // Not observed in the wild, but seen in the ROS urdfdom XSD Schema.
+  // See https://github.com/ros/urdfdom/blob/master/xsd/urdf.xsd
+  WarnUnsupportedAttribute(*node, "type");
 
   std::string body_name;
   if (!ParseStringAttribute(node, "name", &body_name)) {
@@ -411,6 +425,9 @@ void UrdfParser::ParseJoint(
       drake_ignore == std::string("true")) {
     return;
   }
+  WarnUnsupportedElement(*node, "calibration");
+  WarnUnsupportedElement(*node, "mimic");
+  WarnUnsupportedElement(*node, "safety_controller");
 
   // Parses the parent and child link names.
   std::string name, type, parent_name, child_name;
@@ -542,6 +559,15 @@ void UrdfParser::ParseJoint(
 void UrdfParser::ParseTransmission(
     const JointEffortLimits& joint_effort_limits,
     XMLElement* node) {
+  WarnUnsupportedElement(*node, "leftActuator");
+  WarnUnsupportedElement(*node, "rightActuator");
+  WarnUnsupportedElement(*node, "flexJoint");
+  WarnUnsupportedElement(*node, "rollJoint");
+  WarnUnsupportedElement(*node, "gap_joint");
+  WarnUnsupportedElement(*node, "passive_joint");
+  WarnUnsupportedElement(*node, "use_simulated_gripper_joint");
+  WarnUnsupportedElement(*node, "mechanicalReduction");
+
   // Determines the transmission type.
   std::string type;
   XMLElement* type_node = node->FirstChildElement("type");
@@ -741,6 +767,9 @@ std::optional<ModelInstanceIndex> UrdfParser::Parse() {
     Error(*xml_doc_, "URDF does not contain a robot tag.");
     return {};
   }
+  WarnUnsupportedElement(*node, "gazebo");
+  // See https://github.com/ros/urdfdom/blob/master/urdf_parser/src/model.cpp#L124-L131=
+  WarnUnsupportedAttribute(*node, "version");
 
   std::string model_name = model_name_;
   if (model_name.empty() && !ParseStringAttribute(node, "name", &model_name)) {

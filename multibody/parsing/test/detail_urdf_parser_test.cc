@@ -513,7 +513,16 @@ TEST_F(UrdfParserTest, TestAtlasMinimalContact) {
   std::string full_name = FindResourceOrThrow(
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
   AddModelFromUrdfFile(full_name, "");
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*gazebo.*ignored.*"));
+  for (int k = 0; k < 30; k++) {
+    EXPECT_THAT(TakeWarning(), MatchesRegex(".*safety_controller.*ignored.*"));
+  }
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*mechanicalReduction.*ignored.*"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*attached to a fixed joint.*"));
+  for (int k = 0; k < 30; k++) {
+    EXPECT_THAT(TakeWarning(),
+                MatchesRegex(".*mechanicalReduction.*ignored.*"));
+  }
   plant_.Finalize();
 
   EXPECT_EQ(plant_.num_positions(), 37);
@@ -543,7 +552,9 @@ TEST_F(UrdfParserTest, TestRegisteredSceneGraph) {
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
   // Test that registration with scene graph results in visual geometries.
   AddModelFromUrdfFile(full_name, "");
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*attached to a fixed joint.*"));
+  // Mostly ignore warnings here; they are tested in detail elsewhere.
+  EXPECT_GT(warning_records_.size(), 60);
+  warning_records_.clear();
   plant_.Finalize();
   EXPECT_NE(plant_.num_visual_geometries(), 0);
 }
@@ -1301,6 +1312,75 @@ TEST_F(UrdfParserTest, IgnoredCollisionFilterGroupMissingName) {
                   " specify the required attribute \"name\"."));
 }
 
+// Here follow tests to verify that Drake issues a warning when it ignores
+// something thought to be a documented URDF element or attribute.
+
+TEST_F(UrdfParserTest, UnsupportedGazeboIgnored) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='robot'>
+      <link name='a'/>
+      <gazebo/>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*gazebo.*ignored.*"));
+}
+
+TEST_F(UrdfParserTest, UnsupportedVersionIgnored) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='robot' version='0.99'>
+      <link name='a'/>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*version.*ignored.*"));
+}
+
+TEST_F(UrdfParserTest, UnsupportedLinkTypeIgnored) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='robot'>
+      <link name='a' type='unknown'/>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*type.*link.*ignored.*"));
+}
+
+TEST_F(UrdfParserTest, UnsupportedJointStuffIgnored) {
+  std::array<std::string, 3> tags{"calibration", "mimic", "safety_controller"};
+  for (const auto& tag : tags) {
+    EXPECT_NE(AddModelFromUrdfString(fmt::format(R"""(
+    <robot>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+        <{}/>
+      </joint>
+    </robot>)""", tag), tag), std::nullopt);
+    EXPECT_THAT(TakeWarning(),
+                MatchesRegex(fmt::format(".*{}.*ignored.*", tag)));
+  }
+}
+
+TEST_F(UrdfParserTest, UnsupportedTransmissionStuffIgnored) {
+  std::array<std::string, 8> tags{
+    "leftActuator", "rightActuator", "flexJoint", "rollJoint", "gap_joint",
+    "passive_joint", "use_simulated_gripper_joint", "mechanicalReduction"};
+  for (const auto& tag : tags) {
+    EXPECT_NE(AddModelFromUrdfString(fmt::format(R"""(
+    <robot>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='a' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+      </joint>
+      <transmission type='SimpleTransmission'>
+        <actuator name='a'/>
+        <joint name='a'/>
+        <{}/>
+      </transmission>
+    </robot>)""", tag), tag), std::nullopt);
+    EXPECT_THAT(TakeWarning(),
+                MatchesRegex(fmt::format(".*{}.*ignored.*", tag)));
+  }
+}
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
