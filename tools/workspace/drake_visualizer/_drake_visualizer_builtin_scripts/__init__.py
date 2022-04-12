@@ -75,13 +75,6 @@ def _exec_drake_visualizer_with_plugins(drake_visualizer_real, arg0):
     use_builtin_scripts_file = os.path.join(
         os.path.dirname(__file__), "use_builtin_scripts.py")
 
-    # Warn about macOS deprecation.
-    if sys.platform == "darwin":
-        print("\nWARNING: On macOS, drake-visualizer is deprecated and will be"
-              " removed from Drake on or after 2022-04-01. For details, see"
-              " https://github.com/RobotLocomotion/drake/issues/16215.",
-              file=sys.stderr)
-
     if "-h" in argv or "--help" in argv:
         # Show real help, followed by our wrapper help.
         # TODO(eric.cousineau): Fix indentation if it ever matters.
