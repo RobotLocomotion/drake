@@ -151,6 +151,12 @@ def _do_preview(*, build, subdir, port):
             out_dir = scratch
         pages = _call_build(build=build, out_dir=out_dir)
         assert len(pages) > 0
+        if subdir:
+            # The C++ and Python API guides re-use images from the main site.
+            symlink_input(
+                "drake/doc/header_and_footer_images.txt",
+                strip_prefix=["drake/doc/"],
+                temp_dir=scratch)
         os.chdir(scratch)
         print(f"The files have temporarily been generated into {scratch}")
         print()

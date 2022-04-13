@@ -22,6 +22,10 @@ exports_files([
 drake_py_library(
     name = "defs",
     srcs = ["defs.py"],
+    data = [
+        ":header_and_footer_images",
+        ":header_and_footer_images.txt",
+    ],
     visibility = ["//doc:__subpackages__"],
     deps = [
         "@bazel_tools//tools/python/runfiles",
@@ -59,6 +63,21 @@ filegroup(
         # https://developer.mozilla.org/en-US/docs/Web/Manifest
         "site.webmanifest",
     ],
+)
+
+filegroup(
+    name = "header_and_footer_images",
+    srcs = [
+        "images/drake-logo.svg",
+        "images/drake-logo-white.svg",
+        "third_party/images/GitHub-Mark-64px.png",
+        "third_party/images/GitHub-Mark-Light-64px.png",
+    ],
+)
+
+enumerate_filegroup(
+    name = "header_and_footer_images.txt",
+    data = [":header_and_footer_images"],
 )
 
 filegroup(
