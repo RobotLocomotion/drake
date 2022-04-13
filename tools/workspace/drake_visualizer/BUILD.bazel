@@ -10,6 +10,10 @@ load(
     "cmake_configure_file",
 )
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
+load(
+    "@drake_visualizer//:defs.bzl",
+    _DRAKE_VISUALIZER_ENABLED = "ENABLED",
+)
 
 exports_files(
     # To be consumed by `//tools:drake_visualizer_py`.
@@ -86,12 +90,9 @@ install(
 
 drake_py_unittest(
     name = "drake_visualizer_bazel_test",
-    args = select({
-        "//conditions:default": [],
-        "//tools:no_drake_visualizer": [
-            "TestDrakeVisualizerBazel.test_help_basic",
-        ],
-    }),
+    args = [] if _DRAKE_VISUALIZER_ENABLED else [
+        "TestDrakeVisualizerBazel.test_help_basic",
+    ],
     data = [
         "//tools:drake_visualizer",
     ],
@@ -100,6 +101,8 @@ drake_py_unittest(
 
 add_lint_tests(
     python_lint_extra_srcs = [
+        "drake_visualizer_bazel.py",
+        "drake_visualizer_disabled.py",
         "drake_visualizer_installed.py",
     ],
 )
