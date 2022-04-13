@@ -79,12 +79,12 @@ else()
     )
   endif()
 
-  # The supported releases should match those listed in both doc/developers.rst
-  # and tools/workspace/os.bzl.
-  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(bionic|focal)$")
+  # The supported releases should match those listed in both
+  # doc/_pages/from_source.md and tools/workspace/os.bzl.
+  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(focal)$")
     message(FATAL_ERROR
       "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported. Please use "
-      "Ubuntu 18.04 (Bionic) or 20.04 (Focal)."
+      "Ubuntu 20.04 (Focal)."
     )
   endif()
 endif()
@@ -206,11 +206,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
 # The supported Python major/minor versions should match those listed in both
-# doc/developers.rst and tools/workspace/python/repository.bzl.
+# doc/_pages/from_source.md and tools/workspace/python/repository.bzl.
 if(APPLE)
   set(SUPPORTED_PYTHON_VERSION 3.9)
-elseif(UNIX_DISTRIBUTION_CODENAME STREQUAL bionic)
-  set(SUPPORTED_PYTHON_VERSION 3.6)
 else()
   set(SUPPORTED_PYTHON_VERSION 3.8)
 endif()

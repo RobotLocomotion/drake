@@ -304,7 +304,7 @@ To view the documentation rendered in Sphinx:
 
     bazel run //doc/pydrake:serve_sphinx [-- --browser=false]
 
-@note Drake's online Python documentation is generated on Ubuntu Bionic, and it
+@note Drake's online Python documentation is generated on Ubuntu Focal, and it
 is suggested to preview documentation using this platform. Other platforms may
 have slightly different generated documentation.
 

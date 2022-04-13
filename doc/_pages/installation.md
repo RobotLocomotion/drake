@@ -16,7 +16,6 @@ officially supports:
 
 | Operating System ⁽⁴⁾             | Architecture | Python  |
 |----------------------------------|--------------|---------|
-| Ubuntu 18.04 LTS (Bionic Beaver) | x86_64 ⁽¹⁾   | 3.6 ⁽³⁾ |
 | Ubuntu 20.04 LTS (Focal Fossa)   | x86_64 ⁽¹⁾   | 3.8 ⁽³⁾ |
 | macOS Big Sur (11)               | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ |
 | macOS Monterey (12)              | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ |
@@ -51,7 +50,6 @@ compiler as our releases:
 
 | Operating System                 | C/C++ Compiler                 |
 |----------------------------------|--------------------------------|
-| Ubuntu 18.04 LTS (Bionic Beaver) | GCC 7.5                        |
 | Ubuntu 20.04 LTS (Focal Fossa)   | GCC 9.3                        |
 | macOS Big Sur (11)               | Apple LLVM 12.0.0 (Xcode 12.4) |
 | macOS Monterey (12)              | Apple LLVM 12.0.0 (Xcode 12.4) |
