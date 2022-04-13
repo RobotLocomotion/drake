@@ -1,5 +1,3 @@
-#include "drake/multibody/fixed_fem/dev/deformable_contact.h"
-
 #include <utility>
 #include <vector>
 
@@ -13,7 +11,9 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/fixed_fem/dev/deformable_contact_data.h"
+#include "drake/multibody/fixed_fem/dev/deformable_contact_surface.h"
 #include "drake/multibody/fixed_fem/dev/deformable_rigid_contact_pair.h"
+#include "drake/multibody/fixed_fem/dev/deformable_rigid_mesh_intersection.h"
 #include "drake/multibody/fixed_fem/dev/mesh_utilities.h"
 
 namespace drake {

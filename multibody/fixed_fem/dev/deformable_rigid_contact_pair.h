@@ -4,7 +4,7 @@
 
 #include "drake/geometry/geometry_ids.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/fixed_fem/dev/deformable_contact.h"
+#include "drake/multibody/fixed_fem/dev/deformable_contact_surface.h"
 #include "drake/multibody/fixed_fem/dev/fem_indexes.h"
 
 namespace drake {
