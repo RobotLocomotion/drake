@@ -1,4 +1,5 @@
 ca-certificates
+cmake
 g++
 gcc
 git
@@ -27,5 +28,6 @@ libxml2-dev
 libxt-dev
 lsb-release
 ninja-build
+python-is-python3
 wget
 zlib1g-dev

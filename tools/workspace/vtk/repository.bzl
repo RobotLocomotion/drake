@@ -117,12 +117,10 @@ def _impl(repository_ctx):
             VTK_MAJOR_MINOR_PATCH_VERSION,
         ), "include")
     elif os_result.is_ubuntu:
-        if os_result.ubuntu_release == "18.04":
-            archive = "vtk-9.1.0-1-bionic-x86_64.tar.gz"
-            sha256 = "1b51691d09c9fa77a74ad237fe320fed606e071f732f10645efeffa859352bb6"  # noqa
-        elif os_result.ubuntu_release == "20.04":
-            archive = "vtk-9.1.0-1-focal-x86_64.tar.gz"
-            sha256 = "b21e8b98ad71da205305bc074d8e3d4208e9dff307ae716384cefb4d1e606d2f"  # noqa
+        # TODO(#16217): package and distribute 22.04 when released.
+        if os_result.ubuntu_release == "20.04":
+            archive = "vtk-9.1.0-2-focal-x86_64.tar.gz"
+            sha256 = "cd46df9032b67b3bb0c5e1af5c184b2986273911f11b13b08b6222cabff80693"  # noqa
         else:
             fail("Operating system is NOT supported {}".format(os_result))
 
