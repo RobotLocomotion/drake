@@ -1,0 +1,17 @@
+#!/bin/bash
+#
+# Installs and runs Xvfb as an Ubuntu system daemon at DISPLAY=:1.
+#
+# This is intended for use only on Deepnote, to allow VTK and GL rendering.
+
+set -euo pipefail
+
+# Install Xvfb.
+if [[ $(dpkg-query -W -f'${db:Status-Abbrev}' xvfb) != "ii " ]]; then
+  apt-get update
+  apt-get install -y --no-install-recommends xvfb
+fi
+
+# Run it as a service.
+ln -sf /opt/drake/share/drake/setup/deepnote/xvfb /etc/init.d/
+service xvfb start
