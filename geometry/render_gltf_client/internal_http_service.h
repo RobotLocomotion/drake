@@ -1,8 +1,6 @@
 #pragma once
 
-#include <cstdint>
 #include <map>
-#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
@@ -13,6 +11,12 @@ namespace drake {
 namespace geometry {
 namespace render_gltf_client {
 namespace internal {
+
+/* Three type aliases to interact with HttpService. */
+using DataFieldsMap = std::map<std::string, std::string>;
+using FileFieldPayload = std::pair<std::string, std::optional<std::string>>;
+using FileFieldsMap =
+    std::map<std::string, std::pair<std::string, std::optional<std::string>>>;
 
 /* A simple wrapper struct to encapsulate an HTTP server response. */
 struct HttpResponse {
@@ -25,7 +29,7 @@ struct HttpResponse {
   /* In the event that the server has provided a text or binary response in
    addition to its HTTP response code, the file path described by this attribute
    will contain the response.  An HttpService will populate this field with a
-   non-optional value if and only if a response from the server was provided.
+   non-null value if and only if a response from the server was provided.
    @note
      This is **not** a response loaded into a string, it is a path to a
      non-empty file that contains the response.  The **caller** is responsible
@@ -33,42 +37,45 @@ struct HttpResponse {
      the file when it is no longer needed. */
   std::optional<std::string> data_path{std::nullopt};
 
-  /* If the underlying HttpService encountered an error, this will be set to
-   true and any additional information provided in
-   HttpResponse::service_error_message. */
-  bool service_error{false};
-
   /* In the event that there was an error with the HttpService processing the
-   request, HttpResponse::service_error will be set to `true` and any additional
-   information that can be provided will be in this string. */
+   request, a non-nullopt service_error_message will be provided.
+   @note
+     Any forms of std::string, including the empty string, will be treated as
+     a service error when checking via HttpResponse::Good().
+   */
   std::optional<std::string> service_error_message{std::nullopt};
 
   /* Whether or not the HTTP transaction was successful.  This includes
    verifying that the HttpResponse::http_code indicates success, but also
    whether or not the underlying HttpService marked it for failure via
-   HttpResponse::service_error.  Note that if a server has not been
-   properly implemented, it may always return `200` even if the response text
-   indicates failure.  This is an error with the server, there is nothing this
-   framework can do to validate such a scenario. */
+   a null check in HttpResponse::service_error_message.  Note that if a server
+   has not been properly implemented, it may always return `200` even if the
+   response text indicates failure.  This is an error with the server, and there
+   is nothing this framework can do to validate such a scenario.
+   @note
+     A redirection response code (300-399) is currently considered a successful
+     transaction.  When and how a server should return a 3xx code is out of the
+     scope of Drake. */
   bool Good() const {
-    return !service_error && (http_code >= 200 && http_code < 400);
+    return !service_error_message.has_value() &&
+           (http_code >= 200 && http_code < 400);
   }
 };
 
-/* An HTTP service API, used by a RenderClient to facilitate server
- communications.  This class is not intended to be used on its own, it is a
+/* An HTTP service API, used by a RenderClient, to facilitate server
+ communications.  This class is not intended to be used on its own. It is a
  helper class to perform server communications, but does not have any specific
  knowledge of a given client-server API.  The owning entity, such as
  RenderClient, is responsible for adhering to the server API. */
 class HttpService {
  public:
-  HttpService();
-  virtual ~HttpService();
+  HttpService() {}
+  virtual ~HttpService() {}
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HttpService);
 
   /* @name Server Interaction Interface */
   //@{
-  /* Posts an HTML `<form>` to the specified `endpoint`.
+  /* Posts an HTML `<form>` to the specified `url`.
 
    An HTML `<form>` may allow for a wide range of different kinds of `<input>`
    data.  For the full listing of available input `type`'s, see the
@@ -77,9 +84,9 @@ class HttpService {
    an %HttpService will actually POST the data to the server will be the same, a
    `name` and `value` are provided and the server takes care of validating the
    `type`.  For example, an `<input type="number" name="age" min="0" max="150">`
-   on the server will be posted to with simply `number={value}`.  If the
-   `{value}` is invalid, the server will respond indicating so.  Similarly,
-   an `<input type="checkbox" name="check">` would have a submission of just
+   on the server will be posted to with simply `age={value}`.  If the `{value}`
+   is invalid, the server will respond indicating so.  Similarly, an
+   `<input type="checkbox" name="check">` would have a submission of just
    `check=on` or `check=off`.  Implementations are allowed to make the following
    assumptions:
 
@@ -121,13 +128,13 @@ class HttpService {
    // <form>
    // Submit form to /hello:
    auto response_1 = http_service_->PostForm(
-       "hello",
+       temp_dir, "/hello", port,
        {{"name", "Sue"}, {"age", "34"}, {"submit", "Submit"}},
        {});  // No file fields.
    // Suppose `<input type="file" name="photo">` and
    // `<input type="file" name="id">` were added.
    auto response_2 = http_service->PostForm(
-       "hello",
+       temp_dir, "/hello", port,
        {{"name", "Bo"}, {"age", "49"}, {"submit", "Submit"}},
        {{"photo", {"/path/to/bo-profile.jpg", "image/jpeg"}},
         // No mime-type for this file, std::nullopt indicates this.
@@ -140,26 +147,16 @@ class HttpService {
      The (shared) temporary directory, e.g., as created from
      drake::temp_directory().  File responses from a server will be stored here.
      The %HttpService does **not** own this directory, and is not responsible
-     for deleting it.  No validity checks on this directory are performed,
-     caller is responsible for providing a directory that can be used as scratch
-     space (e.g., from drake::temp_directory()).
+     for deleting it.  No validity checks on this directory are performed.
    @param url
-     The url this HTTP service will communicate with.  May **not** be the empty
-     string.  May **not** have any trailing slashes.  Communications are
-     typically constructed as  `temp_directory() + "/" + endpoint`.  For
-     example, `https://drake.mit.edu` is acceptable, but
-     `https://drake.mit.edu/` is not.
+     The url this HTTP service will communicate with.
    @param port
-     The TCP port this HTTP service will communicate on.  A value less than or
-     equal to `0` implies no port level communication is needed.
-   @param endpoint
-     The endpoint the `<form>` should be posted to, e.g., `render`.  May **not**
-     have a leading or trailing `/`, the post is sent to
-     `{url() + "/" + endpoint}`.  If the `<form>` should be posted to the server
-     root, then `endpoint` should be the empty string `""`.
+     The port to communicate on.  A value less than or equal to `0` will let
+     `url` to decide which port to use.  If a different port is needed instead,
+     specify `port` to override that.
    @param data_fields
      The entries for the `<input>` elements of the form.  Keys are the field
-     name, values are the field values.  For example:
+     name, and values are the field values.  For example:
      @code{.cpp}
      std::map<std::string, std::string> data_fields;
      // <input type="text" name="scene_sha256">
@@ -172,11 +169,10 @@ class HttpService {
      should be posted.
    @param file_fields
      Any entries for `<input type="file">` elements of the form.  Keys are the
-     field name, values are the (file path, optional mimetype) pair.  For
+     field name, and values are the (file path, optional mimetype) pair.  For
      example:
      @code{.cpp}
-     std::map<std::string,
-              std::pair<std::string, std::optional<std::string>>> file_fields;
+     FileFieldsMap file_fields;
      // <input type="file" name="scene">, known mimetype
      file_fields["scene"] = {"/path/to/scene_file.gltf", "model/gltf+json"};
      // <input type="file" name="id">, unknown mimetype
@@ -184,48 +180,33 @@ class HttpService {
      @endcode
      Supply the empty map if no files are to be uploaded with the `<form>`.
    @param verbose
-     Whether or not client/server communications should be logged.
+     Whether or not client/server communications should be logged to the
+     console.
    @return HttpResponse
      The response from the server, including an HTTP code, and any potential
      additional server response text or data in HttpResponse::data_path.
-   @throws std::runtime_error
-     An exception may be thrown in the event that the provided `endpoint` starts
-     or ends with a `/` character.  An exception may also be thrown if an
-     irrecoverable error is encountered, e.g., a file path provided in one of
-     the values of `file_fields` does not exist.  Failed communications such as
-     an inability to connect, or an invalid HTTP response code, should **not**
-     produce an exception but rather encode this information in the
-     returned HttpResponse for the caller to determine how to proceed. */
-  virtual HttpResponse PostForm(
+   @throws std::exception
+     An exception may also be thrown if an irrecoverable error is encountered,
+     e.g., a file path provided in one of the values of `file_fields` does not
+     exist.  Failed communications such as an inability to connect, or an
+     invalid HTTP response code, should **not** produce an exception but rather
+     encode this information in the returned HttpResponse for the caller to
+     determine how to proceed. */
+  HttpResponse PostForm(
       const std::string& temp_directory, const std::string& url, int port,
-      const std::string& endpoint,
-      const std::map<std::string, std::string>& data_fields,
-      const std::map<std::string,
-                     std::pair<std::string, std::optional<std::string>>>&
-          file_fields,
-      bool verbose = false) = 0;
-  //@}
+      const DataFieldsMap& data_fields,
+      const FileFieldsMap& file_fields,
+      bool verbose = false);
 
-  /* @name Server Parameter Validation Helpers */
-  //@{
-  /* Throws `std::logic_error` if the provided url is empty or has trailing
-   slashes. */
-  void ThrowIfUrlInvalid(const std::string& url) const;
-
-  /* Throws `std::runtime_error` if `endpoint` starts or ends with a '/'. */
-  void ThrowIfEndpointInvalid(const std::string& endpoint) const;
-
-  /* Verifies that all file paths provided are regular files, throw if not.
-
-   @param file_fields See HttpService::PostForm.
-   @throws std::runtime_error
-     If any of the file paths provided are not regular files, an exception with
-     the list of all missing files is thrown. */
-  void ThrowIfFilesMissing(
-      const std::map<std::string,
-                     std::pair<std::string, std::optional<std::string>>>&
-          file_fields) const;
-  //@}
+ protected:
+  /* The NVI-function for posting an HTML form to a render server. When
+   PostForm calls this, it has already validated the url, and the existence of
+   the files in `file_fields`. */
+  virtual HttpResponse DoPostForm(
+      const std::string& temp_directory, const std::string& url, int port,
+      const DataFieldsMap& data_fields,
+      const FileFieldsMap& file_fields,
+      bool verbose) = 0;
 };
 
 }  // namespace internal

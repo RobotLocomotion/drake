@@ -1,0 +1,47 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "render_gltf_client",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":internal_http_service",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_http_service",
+    srcs = ["internal_http_service.cc"],
+    hdrs = ["internal_http_service.h"],
+    interface_deps = [
+        "//common:essential",
+    ],
+    deps = [
+        "//common:filesystem",
+        "@fmt",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "internal_http_service_test",
+    deps = [
+        ":internal_http_service",
+        "//common:filesystem",
+        "//common:temp_directory",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+add_lint_tests()
