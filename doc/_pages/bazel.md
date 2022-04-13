@@ -273,11 +273,6 @@ debugging symbols, and produce nicely formatted browse-able coverage reports.
 Drake's ``kcov`` build system integration is only supported on Ubuntu, not
 macOS.
 
-To use kcov on Ubuntu 18.04 (Bionic), you must first run Drake's
-``install_prereqs`` setup script using the ``--with-kcov`` option. On Ubuntu
-20.04 (Focal), the option is ignored. The macOS ``install_prereqs`` setup
-script does not install kcov, and passing a ``--with-kcov`` option is an error.
-
 In some cases, running kcov builds and regular builds from the same source
 tree will lead to Bazel error messages like "this rule is missing dependency
 declarations".  To resolve that problem, either run the kcov build from a
