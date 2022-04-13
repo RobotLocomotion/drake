@@ -1,0 +1,27 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/performance:defs.bzl",
+    "drake_cc_googlebench_binary",
+    "drake_py_experiment_binary",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_googlebench_binary(
+    name = "benchmark_mathematical_program",
+    srcs = ["benchmark_mathematical_program.cc"],
+    test_timeout = "moderate",
+    deps = [
+        "//solvers:mathematical_program",
+        "//tools/performance:fixture_common",
+    ],
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_py_experiment_binary(
+    name = "mathematical_program_experiment",
+    googlebench_binary = ":benchmark_mathematical_program",
+)
+
+add_lint_tests()
