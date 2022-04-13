@@ -35,6 +35,7 @@ drake_cc_package_library(
         ":geometry_version",
         ":internal_frame",
         ":internal_geometry",
+        ":make_mesh_for_deformable",
         ":meshcat",
         ":meshcat_animation",
         ":meshcat_point_cloud_visualizer",
@@ -229,6 +230,17 @@ drake_cc_library(
         ":proximity_engine",
         ":utilities",
         "//geometry/render:render_engine",
+    ],
+)
+
+drake_cc_library(
+    name = "make_mesh_for_deformable",
+    srcs = ["make_mesh_for_deformable.cc"],
+    hdrs = ["make_mesh_for_deformable.h"],
+    deps = [
+        ":shape_specification",
+        "//geometry/proximity:make_sphere_mesh",
+        "//geometry/proximity:volume_mesh",
     ],
 )
 
@@ -654,6 +666,14 @@ drake_cc_googletest(
         ":geometry_state",
         "//common/test_utilities",
         "//geometry/test_utilities:dummy_render_engine",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_mesh_for_deformable_test",
+    deps = [
+        ":make_mesh_for_deformable",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
