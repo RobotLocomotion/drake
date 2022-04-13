@@ -87,8 +87,8 @@ All other packages support both C++ and/or Python.
 Alternatively, you can skip the pre-compiled binaries and
 [build Drake from source](/from_source.html).
 
-Drake's binary releases do not support the MOSEK™ nor Gurobi solvers.
-To use MOSEK™ or Gurobi, you must build Drake from source.
+Drake's binary releases do not support the Gurobi solver.
+To use Gurobi, you must build Drake from source.
 
 We're considering adding macOS support for Homebrew, i.e., ``brew install
 drake``.  Please upvote or comment on
