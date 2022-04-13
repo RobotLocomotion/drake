@@ -107,13 +107,13 @@ PointContactVisualizer::VisibilityStatus& PointContactVisualizer::FindOrAdd(
   // scaled to twice the contact force length because we draw both (equal
   // and opposite) forces.
   const Cylinder cylinder(params_.radius, 2.0);
-  meshcat_->SetObject(path + "/cylinder", cylinder, params_.color);
+  meshcat_->SetObject(path + "/cylinder", cylinder, params_.point_color);
   const double arrowhead_height = params_.radius * 2.0;
   const double arrowhead_width = params_.radius * 2.0;
   const MeshcatCone arrowhead(
       arrowhead_height, arrowhead_width, arrowhead_width);
-  meshcat_->SetObject(path + "/head", arrowhead, params_.color);
-  meshcat_->SetObject(path + "/tail", arrowhead, params_.color);
+  meshcat_->SetObject(path + "/head", arrowhead, params_.point_color);
+  meshcat_->SetObject(path + "/tail", arrowhead, params_.point_color);
 
   return iter->second;
 }
