@@ -27,11 +27,18 @@ cp -r -t /wheel/pydrake \
     /opt/drake/lib/python*/site-packages/pydrake/*
 
 cp -r -t /wheel/pydrake/lib \
-    /opt/drake/lib/libdrake*.so
+    /opt/drake/lib/libdrake*.so \
 
 # NOTE: build-vtk.sh also puts licenses in /opt/drake-dependencies/licenses.
 cp -r -t /wheel/pydrake/doc \
     /opt/drake-dependencies/licenses/*
+
+# MOSEK is "sort of" third party, but is procured as part of Drake's build and
+# ends up in /opt/drake. It needs to be copied somewhere where auditwheel can
+# find it.
+cp -r -t /opt/drake-dependencies/lib \
+    /opt/drake/lib/libmosek*.so* \
+    /opt/drake/lib/libcilkrts*.so*
 
 # TODO(mwoehlke-kitware) We need a different way of shipping non-arch files
 # (examples, models).
