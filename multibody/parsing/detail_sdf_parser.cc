@@ -1365,7 +1365,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   // N.B. For hierarchy, this assumes that "parent" models are defined before
   // their "child" models.
   for (ModelInstanceIndex model_instance :
-       subgraph_info->subgraph.elements().model_instances()) {
+       subgraph_info->subgraph.elements_src().model_instances()) {
     // Skip the world and default model instances
     if (model_instance == world_model_instance() ||
         model_instance == default_model_instance()) {

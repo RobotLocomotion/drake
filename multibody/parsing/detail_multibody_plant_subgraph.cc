@@ -3,45 +3,49 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+namespace {
 
-template <typename T>
-std::vector<T> IndicesToVector(int num_items) {
-  std::vector<T> items(num_items);
-  std::iota(items.begin(), items.end(), T(0));
-  return items;
+template <typename Item, typename Container>
+bool ContainedIn(const Item& item, const Container& container) {
+  return std::find(container.begin(), container.end(), item) != container.end();
+}
+
+template <typename T, typename S, typename UnaryPredicate>
+std::vector<T> CopyElementIf(const std::set<T, S>& c, UnaryPredicate pred) {
+  std::vector<T> out;
+  std::copy_if(c.begin(), c.end(), std::back_inserter(out), pred);
+  return out;
 }
 
 template <typename T, typename GetFunction>
-std::vector<const T*> GetPlantAggregate(int num_items, GetFunction get_func) {
+std::vector<const T*> GetPlantAggregate(
+    int num_items, GetFunction get_func,
+    std::optional<std::vector<ModelInstanceIndex>> model_instances =
+        std::nullopt) {
   using IndexType = decltype(std::declval<T>().index());
-  std::vector<const T*> items(num_items);
+  std::vector<const T*> items;
+  items.reserve(num_items);
   for (IndexType index(0); index < num_items; ++index) {
-    items[index] = get_func(index);
+    auto *item = get_func(index);
+    if (!model_instances.has_value() ||
+        ContainedIn(item->model_instance(), *model_instances)) {
+      items.push_back(item);
+    }
   }
   return items;
 }
-std::vector<ModelInstanceIndex> GetModelInstances(
-    const MultibodyPlant<double>& plant) {
-  std::vector<ModelInstanceIndex> items(plant.num_model_instances());
-  std::iota(items.begin(), items.end(), ModelInstanceIndex(0));
-  return items;
-}
-
-std::vector<const Body<double>*> GetBodies(
-    const MultibodyPlant<double>& plant) {
-  return GetPlantAggregate<Body<double>>(
-      plant.num_bodies(), [&](auto i) { return &plant.get_body(i); });
-}
-
 std::vector<const Frame<double>*> GetFrames(
-    const MultibodyPlant<double>& plant) {
+    const MultibodyPlant<double>& plant,
+    std::optional<std::vector<ModelInstanceIndex>> model_instances =
+        std::nullopt) {
   return GetPlantAggregate<Frame<double>>(
-      plant.num_frames(), [&](auto i) { return &plant.get_frame(i); });
+      plant.num_frames(), [&](auto i) { return &plant.get_frame(i); },
+      model_instances);
 }
 
 std::vector<const Frame<double>*> GetFramesAttachedTo(
     const MultibodyPlant<double>& plant,
-    const std::set<const Body<double>*>& bodies) {
+    const SortedSet<const Body<double>*>& bodies) {
   auto frames = GetFrames(plant);
   auto new_end = std::remove_if(frames.begin(), frames.end(), [&](auto frame) {
     return bodies.find(&frame->body()) == bodies.end();
@@ -50,26 +54,24 @@ std::vector<const Frame<double>*> GetFramesAttachedTo(
   return frames;
 }
 
-std::vector<const Joint<double>*> GetJoints(
-    const MultibodyPlant<double>& plant) {
-  return GetPlantAggregate<Joint<double>>(
-      plant.num_joints(), [&](auto i) { return &plant.get_joint(i); });
-}
 std::vector<const JointActuator<double>*> GetJointActuators(
-    const MultibodyPlant<double>& plant) {
+    const MultibodyPlant<double>& plant,
+    std::optional<std::vector<ModelInstanceIndex>> model_instances =
+        std::nullopt) {
   return GetPlantAggregate<JointActuator<double>>(
       plant.num_actuators(),
-      [&](auto i) { return &plant.get_joint_actuator(i); });
+      [&](auto i) { return &plant.get_joint_actuator(i); }, model_instances);
 }
+
 bool IsJointSolelyConnectedTo(const Joint<double>* joint,
-                              const std::set<const Body<double>*>& bodies) {
+                              const SortedSet<const Body<double>*>& bodies) {
   auto parent = bodies.find(&joint->parent_body());
   auto child = bodies.find(&joint->child_body());
   return (parent != bodies.end()) && (child != bodies.end());
 }
 std::vector<const Joint<double>*> GetJointsSolelyConnectedTo(
     const MultibodyPlant<double>& plant,
-    const std::set<const Body<double>*>& bodies) {
+    const SortedSet<const Body<double>*>& bodies) {
   auto joints = GetJoints(plant);
   auto new_end = std::remove_if(joints.begin(), joints.end(), [&](auto joint) {
     return !IsJointSolelyConnectedTo(joint, bodies);
@@ -80,7 +82,7 @@ std::vector<const Joint<double>*> GetJointsSolelyConnectedTo(
 
 std::vector<const JointActuator<double>*> GetJointActuatorsAffectingJoints(
     const MultibodyPlant<double>& plant,
-    const std::set<const Joint<double>*>& joints) {
+    const SortedSet<const Joint<double>*>& joints) {
   auto joint_actuators = GetJointActuators(plant);
   auto new_end = std::remove_if(
       joint_actuators.begin(), joint_actuators.end(), [&](auto joint_actuator) {
@@ -93,7 +95,7 @@ std::vector<const JointActuator<double>*> GetJointActuatorsAffectingJoints(
 std::vector<geometry::GeometryId> GetGeometries(
     const MultibodyPlant<double>& plant,
     const geometry::SceneGraph<double>& scene_graph,
-    const std::set<const Body<double>*>& bodies) {
+    const SortedSet<const Body<double>*>& bodies) {
   std::vector<geometry::GeometryId> geometry_ids;
   auto& inspector = scene_graph.model_inspector();
   for (auto* body : bodies) {
@@ -108,33 +110,99 @@ std::vector<geometry::GeometryId> GetGeometries(
   std::sort(geometry_ids.begin(), geometry_ids.end());
   return geometry_ids;
 }
+}  // namespace
+
+std::vector<ModelInstanceIndex> GetModelInstances(
+    const MultibodyPlant<double>& plant) {
+  std::vector<ModelInstanceIndex> items(plant.num_model_instances());
+  std::iota(items.begin(), items.end(), ModelInstanceIndex(0));
+  return items;
+}
+
+std::vector<const Body<double>*> GetBodies(
+    const MultibodyPlant<double>& plant,
+    std::optional<std::vector<ModelInstanceIndex>> model_instances) {
+  return GetPlantAggregate<Body<double>>(
+      plant.num_bodies(), [&](auto i) { return &plant.get_body(i); },
+      model_instances);
+}
+
+std::vector<const Joint<double>*> GetJoints(
+    const MultibodyPlant<double>& plant,
+    std::optional<std::vector<ModelInstanceIndex>> model_instances) {
+  return GetPlantAggregate<Joint<double>>(
+      plant.num_joints(), [&](auto i) { return &plant.get_joint(i); },
+      model_instances);
+}
+
+Eigen::VectorXd GetJointPositions(const MultibodyPlant<double>& plant,
+                                  const systems::Context<double>& context,
+                                  const Joint<double>& joint) {
+  const Eigen::VectorXd& q = plant.GetPositions(context);
+  auto start = joint.position_start();
+  auto count = joint.num_positions();
+  return q.segment(start, count);
+}
+
+void SetJointPositions(MultibodyPlant<double>* plant,
+                       systems::Context<double>* context,
+                       const Joint<double>& joint,
+                       const Eigen::Ref<const VectorX<double>>& qj) {
+  Eigen::VectorXd q = plant->GetPositions(*context);
+  auto start = joint.position_start();
+  auto count = joint.num_positions();
+  q.segment(start, count) = qj;
+  plant->SetPositions(context, q);
+}
+
+Eigen::VectorXd GetJointVelocities(const MultibodyPlant<double>& plant,
+                                   const systems::Context<double>& context,
+                                   const Joint<double>& joint) {
+  const Eigen::VectorXd& q = plant.GetVelocities(context);
+  auto start = joint.velocity_start();
+  auto count = joint.num_velocities();
+  return q.segment(start, count);
+}
+
+void SetJointVelocities(MultibodyPlant<double>* plant,
+                       systems::Context<double>* context,
+                       const Joint<double>& joint,
+                       const Eigen::Ref<const VectorX<double>>& vj) {
+  Eigen::VectorXd q = plant->GetVelocities(*context);
+  auto start = joint.velocity_start();
+  auto count = joint.num_velocities();
+  q.segment(start, count) = vj;
+  plant->SetVelocities(context, q);
+}
+
+
 
 MultibodyPlantElements MultibodyPlantElements::FromPlant(
     const MultibodyPlant<double>* plant,
     const geometry::SceneGraph<double>* scene_graph) {
-  auto model_instances =
-      IndicesToVector<ModelInstanceIndex>(plant->num_model_instances());
+  auto model_instances = GetModelInstances(*plant);
 
-  std::vector<const Body<double>*> bodies;
-
-  for (auto mi : model_instances) {
-    auto tmp = plant->GetBodyIndices(mi);
-    bodies.reserve(bodies.size() + tmp.size());
-    std::transform(tmp.begin(), tmp.end(), std::back_inserter(bodies),
-                   [&](auto bi) { return &plant->get_body(bi); });
-  }
-  return GetElementsFromBodies(plant, bodies, scene_graph);
+  return GetElementsFromBodies(plant, GetBodies(*plant), scene_graph,
+                               model_instances);
 }
 
 MultibodyPlantElements MultibodyPlantElements::GetElementsFromBodies(
     const MultibodyPlant<double>* plant,
     const std::vector<const Body<double>*>& bodies,
-    const geometry::SceneGraph<double>* scene_graph) {
+    const geometry::SceneGraph<double>* scene_graph,
+    std::optional<std::vector<ModelInstanceIndex>> model_instances) {
   MultibodyPlantElements elem(plant, scene_graph);
   elem.bodies_.insert(bodies.begin(), bodies.end());
 
-  for (const auto& body : elem.bodies_) {
-    elem.model_instances_.insert(body->model_instance());
+  if (!model_instances.has_value()) {
+    std::set<ModelInstanceIndex> model_instances_from_bodies;
+    for (const auto& body : elem.bodies_) {
+      model_instances_from_bodies.insert(body->model_instance());
+    }
+    elem.model_instances_ = model_instances_from_bodies;
+  } else {
+    elem.model_instances_.insert(model_instances->begin(),
+                                 model_instances->end());
   }
 
   auto joints = GetJointsSolelyConnectedTo(*plant, elem.bodies_);
@@ -313,6 +381,9 @@ void MultibodyPlantElementsMap::CopyGeometryById(
         geometry_instance_dest->shape(), scoped_name_src.name,
         *proximity_properties);
   } else if (geometry_instance_dest->illustration_properties() != nullptr) {
+    // illustration and perception are currently mutually required roles.
+    // TODO(azeey) This might mean that we lose perception-specific roles.
+    DRAKE_DEMAND(geometry_instance_dest->perception_properties() != nullptr);
     geometry_id_dest = plant_dest_->RegisterVisualGeometry(
         *body_dest, geometry_instance_dest->pose(),
         geometry_instance_dest->shape(), scoped_name_src.name,
@@ -327,63 +398,91 @@ void MultibodyPlantElementsMap::CopyGeometryById(
   geometry_ids_.insert({geometry_id_src, geometry_id_dest});
 }
 
+void MultibodyPlantElementsMap::CopyState(
+    const systems::Context<double>& context_src,
+    systems::Context<double>* context_dest) {
+  for (const auto& [body_src, body_dest] : bodies_) {
+    if (body_dest->is_floating()) {
+      const auto X_WB = plant_src_->CalcRelativeTransform(
+          context_src, plant_src_->world_frame(), body_src->body_frame());
+      const auto V_WB =
+          plant_src_->EvalBodySpatialVelocityInWorld(context_src, *body_src);
+      plant_dest_->SetFreeBodyPose(context_dest, *body_dest, X_WB);
+      plant_dest_->SetFreeBodySpatialVelocity(context_dest, *body_dest, V_WB);
+    }
+  }
+
+  for (const auto& [joint_src, joint_dest] : joints_) {
+    if (joint_src->type_name() != joint_dest->type_name()) {
+      // This joint may have been welded (and part of a inverse map).
+      // Skip.
+      continue;
+    }
+    const auto qj = GetJointPositions(*plant_src_, context_src, *joint_src);
+    SetJointPositions(plant_dest_, context_dest, *joint_dest, qj);
+    const auto vj = GetJointVelocities(*plant_src_, context_src, *joint_src);
+    SetJointVelocities(plant_dest_, context_dest, *joint_dest, vj);
+  }
+}
+
 template <typename T, typename GetFunction>
 void CheckPlantAggregate(GetFunction get_func, const T* item) {
-  DRAKE_DEMAND(get_func(item->index()) == item);
+  const T* other_item = get_func(item->index());
+  DRAKE_THROW_UNLESS(other_item == item);
 }
 
-template <typename Item>
-bool ContainsItem(const std::set<Item>& container, const Item& item) {
-  return std::find(container.begin(), container.end(), item) != container.end();
-}
-
+// Ensures that current elements / topology satisifes subgraph invariants.
 void CheckSubgraphInvariants(const MultibodyPlantElements& elem) {
-  auto plant_model_instances = GetModelInstances(*elem.plant());
-  DRAKE_DEMAND(std::includes(
+  const auto &plant = *elem.plant();
+
+  auto plant_model_instances = GetModelInstances(plant);
+  DRAKE_THROW_UNLESS(std::includes(
       plant_model_instances.begin(), plant_model_instances.end(),
       elem.model_instances().begin(), elem.model_instances().end()));
 
-  const MultibodyPlant<double> *plant = elem.plant();
   // Check bodies.
   for (const auto* body : elem.bodies()) {
-    CheckPlantAggregate([&](auto i) { return &plant->get_body(i); }, body);
-    DRAKE_DEMAND(ContainsItem(elem.model_instances(), body->model_instance()));
+    CheckPlantAggregate([&](auto i) { return &plant.get_body(i); }, body);
+    DRAKE_THROW_UNLESS(
+        ContainedIn(body->model_instance(), elem.model_instances()));
   }
 
   // Check frames.
   for (const auto* frame : elem.frames()) {
-    CheckPlantAggregate([&](auto i) { return &plant->get_frame(i); }, frame);
-    DRAKE_DEMAND(ContainsItem(elem.bodies(), &frame->body()));
-    DRAKE_DEMAND(ContainsItem(elem.model_instances(), frame->model_instance()));
+    CheckPlantAggregate([&](auto i) { return &plant.get_frame(i); }, frame);
+    DRAKE_THROW_UNLESS(ContainedIn(&frame->body(), elem.bodies()));
+    DRAKE_THROW_UNLESS(
+        ContainedIn(frame->model_instance(), elem.model_instances()));
   }
 
   // Check joints.
   for (const auto* joint : elem.joints()) {
-    CheckPlantAggregate([&](auto i) { return &plant->get_joint(i); }, joint);
+    CheckPlantAggregate([&](auto i) { return &plant.get_joint(i); }, joint);
     IsJointSolelyConnectedTo(joint, elem.bodies());
-    DRAKE_DEMAND(ContainsItem(elem.model_instances(), joint->model_instance()));
+    DRAKE_THROW_UNLESS(
+        ContainedIn(joint->model_instance(), elem.model_instances()));
   }
 
   // Check actuators.
   for (const auto* joint_actuator : elem.joint_actuators()) {
-    CheckPlantAggregate([&](auto i) { return &plant->get_joint_actuator(i); },
+    CheckPlantAggregate([&](auto i) { return &plant.get_joint_actuator(i); },
                         joint_actuator);
-    DRAKE_DEMAND(ContainsItem(elem.joints(), &joint_actuator->joint()));
-    DRAKE_DEMAND(
-        ContainsItem(elem.model_instances(), joint_actuator->model_instance()));
+    DRAKE_THROW_UNLESS(ContainedIn(&joint_actuator->joint(), elem.joints()));
+    DRAKE_THROW_UNLESS(
+        ContainedIn(joint_actuator->model_instance(), elem.model_instances()));
   }
 
   // Check geometries.
   if (elem.scene_graph() != nullptr) {
-    DRAKE_DEMAND(plant->geometry_source_is_registered());
+    DRAKE_THROW_UNLESS(plant.geometry_source_is_registered());
     const auto &inspector = elem.scene_graph()->model_inspector();
     for (const auto geometry_id : elem.geometry_ids()) {
       auto frame_id = inspector.GetFrameId(geometry_id);
-      auto body = plant->GetBodyFromFrameId(frame_id);
-      DRAKE_DEMAND(ContainsItem(elem.bodies(), body));
+      auto body = plant.GetBodyFromFrameId(frame_id);
+      DRAKE_THROW_UNLESS(ContainedIn(body, elem.bodies()));
     }
   } else {
-    DRAKE_DEMAND(elem.geometry_ids().empty());
+    DRAKE_THROW_UNLESS(elem.geometry_ids().empty());
   }
 }
 
@@ -456,6 +555,112 @@ MultibodyPlantElementsMap MultibodyPlantSubgraph::AddTo(
 
   // TODO(azeey) Apply policies
   return src_to_dest;
+}
+
+MultibodyPlantElementsMap MultibodyPlantSubgraph::AddTo(
+    MultibodyPlant<double>* plant_dest, const std::string& model_instance_remap,
+    FrameNameRemapFunction frame_name_remap) const {
+  auto model_name_remap = [&model_instance_remap](const auto&, auto,
+                                                  auto* dest) {
+    return GetOrCreateModelInstanceByName(dest, model_instance_remap);
+  };
+  return AddTo(plant_dest, model_name_remap, frame_name_remap);
+}
+
+MultibodyPlantElements MultibodyPlantSubgraph::MakeEmptyElements() {
+  return MultibodyPlantElements(elem_src_.plant(), elem_src_.scene_graph());
+}
+
+MultibodyPlantElements MultibodyPlantSubgraph::RemoveModelInstance(
+    ModelInstanceIndex model_instance) {
+  MultibodyPlantElements elem_removed = MakeEmptyElements();
+  elem_src_.model_instances().erase(model_instance);
+  elem_removed.model_instances().insert(model_instance);
+  for (const auto& body : GetBodies(*elem_src_.plant())) {
+    if (body->model_instance() == model_instance) {
+      elem_removed += RemoveBody(body);
+    }
+  }
+  return elem_removed;
+}
+
+MultibodyPlantElements MultibodyPlantSubgraph::RemoveBody(
+    const Body<double>* body, bool include_welded_bodies) {
+  MultibodyPlantElements elem_removed = MakeEmptyElements();
+  elem_src_.bodies().erase(body);
+  elem_removed.bodies().insert(body);
+  const auto frames = CopyElementIf(
+      elem_src_.frames(), [&](auto& frame) { return &frame->body() == body; });
+
+  for (const auto& frame : frames) {
+    elem_removed += RemoveFrame(frame);
+  }
+
+  const auto joints = CopyElementIf(elem_src_.joints(), [&](auto& joint) {
+    return &joint->parent_body() == body || &joint->child_body() == body;
+  });
+  for (const auto& joint : joints) {
+    elem_removed += RemoveJoint(joint);
+  }
+
+  if (elem_src_.scene_graph() != nullptr) {
+    const auto geometry_ids =
+        GetGeometries(*elem_src_.plant(), *elem_src_.scene_graph(), {body});
+    for (const auto& x : geometry_ids) {
+      elem_removed += RemoveGeometryId(x);
+    }
+  }
+  if (include_welded_bodies) {
+    for (const auto& welded_body :
+         elem_src_.plant()->GetBodiesWeldedTo(*body)) {
+      if (ContainedIn(welded_body, elem_src_.bodies())) {
+        elem_removed += RemoveBody(welded_body);
+      }
+    }
+  }
+  return elem_removed;
+}
+
+MultibodyPlantElements MultibodyPlantSubgraph::RemoveFrame(
+    const Frame<double>* frame) {
+  // N.B. Since most elements interface with bodies, not frames, then it is OK
+  // to remove a frame and not really have other dependent elements.
+  MultibodyPlantElements elem_removed = MakeEmptyElements();
+  elem_src_.frames().erase(frame);
+  elem_removed.frames().insert(frame);
+  return elem_removed;
+}
+
+MultibodyPlantElements MultibodyPlantSubgraph::RemoveJoint(
+    const Joint<double>* joint) {
+  MultibodyPlantElements elem_removed = MakeEmptyElements();
+  elem_src_.joints().erase(joint);
+  elem_removed.joints().insert(joint);
+
+  const auto joint_actuators =
+      CopyElementIf(elem_src_.joint_actuators(),
+                    [&](auto& x) { return &x->joint() == joint; });
+
+  for (const auto x : joint_actuators) {
+    elem_removed += RemoveJointActuator(x);
+  }
+  return elem_removed;
+}
+
+MultibodyPlantElements MultibodyPlantSubgraph::RemoveJointActuator(
+    const JointActuator<double>* joint_actuator) {
+  MultibodyPlantElements elem_removed = MakeEmptyElements();
+  elem_src_.joint_actuators().erase(joint_actuator);
+  elem_removed.joint_actuators().insert(joint_actuator);
+  return elem_removed;
+}
+
+MultibodyPlantElements MultibodyPlantSubgraph::RemoveGeometryId(
+    geometry::GeometryId geometry_id) {
+  MultibodyPlantElements elem_removed = MakeEmptyElements();
+  elem_src_.geometry_ids().erase(geometry_id);
+  elem_removed.geometry_ids().insert(geometry_id);
+  return elem_removed;
 }
 }  // namespace internal
 }  // namespace multibody
