@@ -77,35 +77,6 @@ class DeformableContactSurface {
   std::vector<ContactPolygonData<T>> polygon_data_;
 };
 
-// TODO(SeanCurtis-TRI) This needs some acceleration; we need an OBB BVH for
-//  the triangle mesh and an AABB BVH for the tet mesh (one that updates
-//  based on deformations). The Obb BVH exists and we could use it assuming
-//  we add the OBB-Tet intersection test.
-
-/** Computes the contact between a deformable tet mesh and a rigid tri mesh. The
- contact is characterized by a collection of per-polygon quantities (see
- DeformableContactSurface) associated with an implicit underlying polygon mesh.
-
- If there is no contact, the result will be empty.
-
- @param tet_mesh_D   The deformable tetrahedral mesh, with vertex positions
-                     measured and expressed in the *deformable* mesh's frame D.
- @param tri_mesh_R   The triangle mesh, with vertex positions measured and
-                     expressed in the *rigid* mesh's frame R.
- @param bvh_R        The bounding volume hierarchy for the triangle mesh,
-                     measured and expressed in the *rigid* mesh's frame R.
- @param X_DR         The pose of the triangle mesh in the volume mesh's frame.
- @returns The collection of contact data associated with an implicit contact
-          surface formed by the intersection of the volume and surface meshes.
-          If there is no intersection, the resulting surface will report as
-          "empty".  */
-template <typename T>
-DeformableContactSurface<T> ComputeTetMeshTriMeshContact(
-    const geometry::internal::DeformableVolumeMesh<T>& tet_mesh_D,
-    const geometry::TriangleSurfaceMesh<double>& tri_mesh_R,
-    const geometry::internal::Bvh<geometry::internal::Obb,
-                                  geometry::TriangleSurfaceMesh<double>>& bvh_R,
-    const math::RigidTransform<T>& X_DR);
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake

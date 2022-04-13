@@ -23,8 +23,11 @@ drake_cc_library(
 
 drake_cc_library(
     name = "deformable_contact",
-    srcs = ["deformable_contact.cc"],
-    hdrs = ["deformable_contact.h"],
+    srcs = ["deformable_rigid_mesh_intersection.cc"],
+    hdrs = [
+        "deformable_contact_surface.h",
+        "deformable_rigid_mesh_intersection.h",
+    ],
     deps = [
         "//common:default_scalars",
         "//geometry/proximity:bvh",
@@ -125,6 +128,16 @@ drake_cc_googletest(
         "//geometry/proximity:make_box_mesh",
         "//geometry/proximity:mesh_to_vtk",
         "//geometry/proximity:proximity_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_contact_test",
+    deps = [
+        ":deformable_contact",
+        ":deformable_contact_data",
+        ":mesh_utilities",
+        "//common/test_utilities",
     ],
 )
 

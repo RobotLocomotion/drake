@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/deformable_contact.h"
+#include "drake/multibody/fixed_fem/dev/deformable_rigid_mesh_intersection.h"
 
 #include <array>
 #include <utility>
@@ -7,6 +7,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/posed_half_space.h"
 #include "drake/geometry/utilities.h"
+#include "drake/multibody/fixed_fem/dev/deformable_contact_surface.h"
 
 namespace drake {
 namespace multibody {
