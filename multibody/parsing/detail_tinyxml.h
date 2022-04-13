@@ -1,11 +1,13 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 
 #include <Eigen/Dense>
 #include <tinyxml2.h>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -25,12 +27,19 @@ bool ParseStringAttribute(const tinyxml2::XMLElement* node,
 
 // Parses a scalar attribute of @p node named @p attribute_name into @p val.
 //
-// @returns false if the attribute is not present
+// @returns false if the attribute is not present, or if no numeric values were
+// found. Otherwise, returns true and sets @p val to the first value obtained.
 //
-// @throws std::exception if the attribute doesn't contain a
-// single numeric value.
-bool ParseScalarAttribute(const tinyxml2::XMLElement* node,
-                          const char* attribute_name, double* val);
+// If the attribute doesn't contain exactly one numeric value, the function
+// emits an error on @p policy, which may result in the policy throwing.
+//
+// If @p policy is empty, then the default policy will be used, which results
+// in a `throw` on error.
+bool ParseScalarAttribute(
+    const tinyxml2::XMLElement* node,
+    const char* attribute_name, double* val,
+    std::optional<const drake::internal::DiagnosticPolicy> policy =
+    std::nullopt);
 
 // Parses an attribute of @p node named @p attribute_name consisting of scalar
 // values into @p val.
