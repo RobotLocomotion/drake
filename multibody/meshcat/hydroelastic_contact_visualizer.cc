@@ -56,7 +56,7 @@ void HydroelasticContactVisualizer::Update(
     const double force_norm = item.force_C_W.norm();
     const double moment_norm = item.moment_C_W.norm();
     status.active = (force_norm >= params_.force_threshold) ||
-                    (moment_norm >= params_.force_threshold);
+                    (moment_norm >= params_.moment_threshold);
     if (!status.active) {
       continue;
     }
@@ -94,7 +94,7 @@ void HydroelasticContactVisualizer::Update(
                                  item.moment_C_W, 2)));
 
       // Stretch the cylinder in z.
-      const double height = std::sqrt(moment_norm / params_.newtons_per_meter);
+      const double height = moment_norm / params_.newton_meters_per_meter;
       // clang-format off
       meshcat_->SetTransform(path + "/moment_C_W/cylinder",
           (Matrix4d() <<  1, 0, 0, 0,
@@ -111,7 +111,7 @@ void HydroelasticContactVisualizer::Update(
     }
   }
 
-  // Update meshcat visiblity to match the active status.
+  // Update meshcat visibility to match the active status.
   for (auto& [path, status] : path_visibility_status_) {
     if (status.visible != status.active) {
       meshcat_->SetProperty(path, "visible", status.active);
@@ -127,11 +127,13 @@ HydroelasticContactVisualizer::FindOrAdd(const std::string& path) {
     return iter->second;
   }
 
-  // Start with it invisible, to prevent flickering at the origin.
+  // Start with it being invisible, to prevent flickering at the origin.
   iter = path_visibility_status_.insert({path, {false, false}}).first;
   meshcat_->SetProperty(path, "visible", false);
 
   // Add the geometry to meshcat.
+  // Set radisu 1.0 so that it can be scaled later by the force/moment norm in
+  // the path transform.
   const Cylinder cylinder(params_.radius, 1.0);
   const double arrowhead_height = params_.radius * 2.0;
   const double arrowhead_width = params_.radius * 2.0;

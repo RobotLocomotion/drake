@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "drake/geometry/meshcat.h"
@@ -16,6 +17,16 @@ namespace internal {
 /* Like multibody::HydroelasticContactInfo, but only the visualization info.
    TODO(joemasterjohn): Add the mesh geometry and pressure values. */
 struct HydroelasticContactVisualizerItem {
+  HydroelasticContactVisualizerItem(std::string body_A_, std::string body_B_,
+                                    Eigen::Vector3d centroid_W_,
+                                    Eigen::Vector3d force_C_W_,
+                                    Eigen::Vector3d moment_C_W_)
+      : body_A(std::move(body_A_)),
+        body_B(std::move(body_B_)),
+        centroid_W(centroid_W_),
+        force_C_W(force_C_W_),
+        moment_C_W(moment_C_W_) {}
+
   std::string body_A;
   std::string body_B;
   Eigen::Vector3d centroid_W;
@@ -23,9 +34,10 @@ struct HydroelasticContactVisualizerItem {
   Eigen::Vector3d moment_C_W;
 };
 
-/* HydroelasticContactVisualizer publishes hydroelastic contact results in
-MeshCat. It draws double-sided arrows at the location of the contact force with
-length scaled by the magnitude of the contact force.
+/* HydroelasticContactVisualizer publishes hydroelastic contact results for
+MeshCat. It draws two single-sided arrows, one for force and one for moment, at
+the centroid of the contact patch. The length of each vector is scaled by the
+magnitude of the contact force/moment.
 
 This is unit tested via contact_visualizer_test overall; there is currently no
 hydroelastic-contact-specific unit test.
@@ -35,9 +47,12 @@ class HydroelasticContactVisualizer {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HydroelasticContactVisualizer)
 
   /* Creates an instance of HydroelasticContactVisualizer.
-  Note that not all fields of `params` are relevant nor used. */
+  Note that not all fields of `params` are relevant nor used.
+
+  @pre meshcat != nullptr
+  */
   HydroelasticContactVisualizer(std::shared_ptr<geometry::Meshcat> meshcat,
-                         ContactVisualizerParams params);
+                                ContactVisualizerParams params);
 
   ~HydroelasticContactVisualizer();
 
@@ -53,7 +68,7 @@ class HydroelasticContactVisualizer {
 
  private:
   /* When a contact disappears, we mark it invisible rather than deleting it
-  (to improve resposiveness). This struct tracks that state. */
+  (to improve responsiveness). This struct tracks that state. */
   struct VisibilityStatus {
     /* Whether this path is currently visible in meshcat. */
     bool visible{false};
@@ -63,7 +78,7 @@ class HydroelasticContactVisualizer {
 
   /* Find an entry in path_visibility_status_, or else add one and return it.
   When an entry is added by this function, the arrow geometry is also added to
-  meshcat (with visible=false) as a side-effect. */
+  meshcat (with visible=false and active=false) as a side-effect. */
   VisibilityStatus& FindOrAdd(const std::string& path);
 
   const std::shared_ptr<geometry::Meshcat> meshcat_;

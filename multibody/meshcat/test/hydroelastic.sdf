@@ -1,13 +1,14 @@
 <?xml version="1.0"?>
+<!-- A simple hydroelastic model with two bodies each with sphere geometry. The first sphere is of type "rigid_hydroelastic" and the second sphere is of type "compliant_hydroelastic". -->
 <sdf xmlns:drake="http://drake.mit.edu" version="1.7">
   <model name="two_bodies">
     <link name="body1">
       <inertial>
         <mass>1</mass>
         <inertia>
-          <ixx>0.001</ixx>
-          <iyy>0.001</iyy>
-          <izz>0.001</izz>
+          <ixx>0.016</ixx>
+          <iyy>0.016</iyy>
+          <izz>0.016</izz>
           <ixy>0</ixy>
           <ixz>0</ixz>
           <iyz>0</iyz>
@@ -31,9 +32,9 @@
       <inertial>
         <mass>1</mass>
         <inertia>
-          <ixx>0.001</ixx>
-          <iyy>0.001</iyy>
-          <izz>0.001</izz>
+          <ixx>0.016</ixx>
+          <iyy>0.016</iyy>
+          <izz>0.016</izz>
           <ixy>0</ixy>
           <ixz>0</ixz>
           <iyz>0</iyz>

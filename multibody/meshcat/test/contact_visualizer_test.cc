@@ -56,7 +56,7 @@ class ContactVisualizerTest : public ::testing::Test {
           multibody::CoulombFriction<double>());
     }
 
-    // Add the hydroelastic spheres and joints.
+    // Add the hydroelastic spheres and joints between them.
     const std::string hydro_sdf = FindResourceOrThrow(
         "drake/multibody/meshcat/test/hydroelastic.sdf");
     parser.AddModelFromFile(hydro_sdf);

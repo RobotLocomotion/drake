@@ -10,7 +10,6 @@
 #include "drake/multibody/meshcat/hydroelastic_contact_visualizer.h"
 #include "drake/multibody/meshcat/point_contact_visualizer.h"
 #include "drake/multibody/plant/contact_results.h"
-#include "drake/multibody/plant/internal_geometry_names.h"
 
 namespace drake {
 namespace multibody {
@@ -165,22 +164,14 @@ EventStatus ContactVisualizer<T>::UpdateMeshcat(
 }
 
 template <typename T>
-void ContactVisualizer<T>::CalcHydroelasticContacts(
-    const Context<T>& context,
-    std::vector<HydroelasticContactVisualizerItem>* result) const {
-        result->clear();
-
-  // Obtain the list of contacts.
-  const ContactResults<T>& contact_results =
-      contact_results_input_port().template Eval<ContactResults<T>>(context);
-
-  // Freshen the dictionary of contact names for the proximity geometries.
-  const MultibodyPlant<T>* const plant = contact_results.plant();
-  DRAKE_THROW_UNLESS(plant != nullptr);
+const GeometryNames& ContactVisualizer<T>::GetGeometryNames(
+    const Context<T>& context, const MultibodyPlant<T>* plant) const {
+  // TODO(joemasterjohn): Upgrade `geometry_names` to a real cache entry if/when
+  // MultibodyPlant adds the capbility to add/remove geometries after finalize.
   GeometryNames& geometry_names =
-      this->get_cache_entry(geometry_names_scratch_).
-      get_mutable_cache_entry_value(context).
-      template GetMutableValueOrThrow<GeometryNames>();
+      this->get_cache_entry(geometry_names_scratch_)
+          .get_mutable_cache_entry_value(context)
+          .template GetMutableValueOrThrow<GeometryNames>();
   if (geometry_names.entries().empty()) {
     if (query_object_input_port().HasValue(context)) {
       const QueryObject<T>& query_object =
@@ -190,6 +181,26 @@ void ContactVisualizer<T>::CalcHydroelasticContacts(
       geometry_names.ResetBasic(*plant);
     }
   }
+
+  return geometry_names;
+}
+
+template <typename T>
+void ContactVisualizer<T>::CalcHydroelasticContacts(
+    const Context<T>& context,
+    std::vector<HydroelasticContactVisualizerItem>* result) const {
+  result->clear();
+
+  // Obtain the list of contacts.
+  const ContactResults<T>& contact_results =
+      contact_results_input_port().template Eval<ContactResults<T>>(context);
+
+  // Freshen the dictionary of contact names for the proximity geometries.
+  const MultibodyPlant<T>* const plant = contact_results.plant();
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  const GeometryNames& geometry_names = this->GetGeometryNames(context, plant);
+
+  result->reserve(contact_results.num_hydroelastic_contacts());
 
   // Update our output vector of items.
   for (int i = 0; i < contact_results.num_hydroelastic_contacts(); ++i) {
@@ -206,8 +217,8 @@ void ContactVisualizer<T>::CalcHydroelasticContacts(
     Vector3d centroid_W = ExtractDoubleOrThrow(contact_surface.centroid());
     Vector3d force_C_W = ExtractDoubleOrThrow(info.F_Ac_W().translational());
     Vector3d moment_C_W = ExtractDoubleOrThrow(info.F_Ac_W().rotational());
-    result->push_back({std::move(body_A), std::move(body_B), centroid_W,
-                       force_C_W, moment_C_W});
+    result->emplace_back(std::move(body_A), std::move(body_B), centroid_W,
+                       force_C_W, moment_C_W);
   }
 }
 
@@ -224,19 +235,9 @@ void ContactVisualizer<T>::CalcPointContacts(
   // Freshen the dictionary of contact names for the proximity geometries.
   const MultibodyPlant<T>* const plant = contact_results.plant();
   DRAKE_THROW_UNLESS(plant != nullptr);
-  GeometryNames& geometry_names =
-      this->get_cache_entry(geometry_names_scratch_).
-      get_mutable_cache_entry_value(context).
-      template GetMutableValueOrThrow<GeometryNames>();
-  if (geometry_names.entries().empty()) {
-    if (query_object_input_port().HasValue(context)) {
-      const QueryObject<T>& query_object =
-          query_object_input_port().template Eval<QueryObject<T>>(context);
-      geometry_names.ResetFull(*plant, query_object.inspector());
-    } else {
-      geometry_names.ResetBasic(*plant);
-    }
-  }
+  const GeometryNames& geometry_names = this->GetGeometryNames(context, plant);
+
+  result->reserve(contact_results.num_point_pair_contacts());
 
   // Update our output vector of items.
   for (int i = 0; i < contact_results.num_point_pair_contacts(); ++i) {
@@ -248,7 +249,7 @@ void ContactVisualizer<T>::CalcPointContacts(
     std::string body_B = geometry_names.GetFullName(sorted_ids.second(), ".");
     Vector3d force = ExtractDoubleOrThrow(info.contact_force());
     Vector3d point = ExtractDoubleOrThrow(info.contact_point());
-    result->push_back({std::move(body_A), std::move(body_B), force, point});
+    result->emplace_back(std::move(body_A), std::move(body_B), force, point);
   }
 }
 
