@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Install development and runtime prerequisites for binary distributions of
-# Drake on Ubuntu 18.04 (Bionic) or 20.04 (Focal).
+# Drake on Ubuntu 20.04 (Focal).
 
 set -euo pipefail
 
@@ -66,8 +66,8 @@ apt-get install ${maybe_yes} --no-install-recommends lsb-release
 
 codename=$(lsb_release -sc)
 
-if [[ "${codename}" != 'bionic' && "${codename}" != 'focal' ]]; then
-  echo 'ERROR: This script requires Ubuntu 18.04 (Bionic) or 20.04 (Focal)' >&2
+if [[ "${codename}" != 'focal' ]]; then
+  echo 'ERROR: This script requires Ubuntu 20.04 (Focal)' >&2
   exit 2
 fi
 

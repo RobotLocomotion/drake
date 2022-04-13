@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gltf_client {
 namespace internal {
 
 /* A simple wrapper struct to encapsulate an HTTP server response. */
@@ -229,6 +229,6 @@ class HttpService {
 };
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake

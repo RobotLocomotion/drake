@@ -3,19 +3,19 @@
 #include <memory>
 #include <string>
 
-#include "drake/geometry/render/dev/render_client.h"
-#include "drake/geometry/render/dev/render_engine_gltf_client_factory.h"
+#include "drake/geometry/render/dev/render_gltf_client/factory.h"
+#include "drake/geometry/render/dev/render_gltf_client/internal_render_client.h"
 #include "drake/geometry/render/render_engine_vtk.h"
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gltf_client {
 namespace internal {
 
 /* A RenderClient that exports
  <a href="https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html">glTF
  </a> scenes to upload to a render server. */
-class RenderEngineGltfClient : public RenderEngineVtk {
+class RenderEngineGltfClient : public geometry::render::RenderEngineVtk {
  public:
   /* @name Does not allow copy, move, or assignment  */
   //@{
@@ -44,31 +44,33 @@ class RenderEngineGltfClient : public RenderEngineVtk {
 
  private:
   // @see RenderEngine::DoClone().
-  std::unique_ptr<RenderEngine> DoClone() const override;
+  std::unique_ptr<geometry::render::RenderEngine> DoClone() const override;
 
   // @see RenderEngine::DoRenderColorImage().
   void DoRenderColorImage(
-      const ColorRenderCamera& camera,
+      const geometry::render::ColorRenderCamera& camera,
       systems::sensors::ImageRgba8U* color_image_out) const override;
 
   // @see RenderEngine::DoRenderDepthImage().
   void DoRenderDepthImage(
-      const DepthRenderCamera& render_camera,
+      const geometry::render::DepthRenderCamera& render_camera,
       systems::sensors::ImageDepth32F* depth_image_out) const override;
 
   // @see RenderEngine::DoRenderLabelImage().
   void DoRenderLabelImage(
-      const ColorRenderCamera& camera,
+      const geometry::render::ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const override;
 
   /* Returns the path to export a glTF scene file to for the specified
   `image_type` and `scene_id`.  The returned path is constructed as
   `{RenderClient::temp_directory()}/{scene_id}-{image_type}.gltf`. */
-  std::string ExportPathFor(ImageType image_type, int64_t scene_id) const;
+  std::string ExportPathFor(geometry::render::internal::ImageType image_type,
+                            int64_t scene_id) const;
 
   /* Exports the `RenderEngineVtk::pipelines_[image_type]` VTK scene to a
   glTF file, returning the path to the newly exported file. */
-  std::string ExportScene(ImageType image_type, int64_t scene_id) const;
+  std::string ExportScene(geometry::render::internal::ImageType image_type,
+                          int64_t scene_id) const;
 
   /* Deletes the files at the paths `scene_path` and `image_path`.  Should only
    be called when `!no_cleanup()`. */
@@ -77,7 +79,8 @@ class RenderEngineGltfClient : public RenderEngineVtk {
 
   /* Helper access method for testing UpdateViewpoint matrix inversion for the
    specified image_type.  Only used for testing. */
-  Eigen::Matrix4d CameraModelViewTransformMatrix(ImageType image_type) const;
+  Eigen::Matrix4d CameraModelViewTransformMatrix(
+      geometry::render::internal::ImageType image_type) const;
 
  private:
   friend class RenderEngineGltfClientTester;
@@ -85,6 +88,6 @@ class RenderEngineGltfClient : public RenderEngineVtk {
 };
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake

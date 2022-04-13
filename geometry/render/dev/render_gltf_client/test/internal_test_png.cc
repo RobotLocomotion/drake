@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/test/test_png.h"
+#include "drake/geometry/render/dev/render_gltf_client/test/internal_test_png.h"
 
 #include <limits>
 
@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gltf_client {
 namespace internal {
 
 namespace {
@@ -195,6 +195,6 @@ template class TestPng<3, 16>;
 template class TestPng<1, 8>;
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake

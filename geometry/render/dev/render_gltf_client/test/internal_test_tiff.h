@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gltf_client {
 namespace internal {
 
 // Type trait for TestTiff image data underlying type, similar to ImageTraits.
@@ -122,6 +122,6 @@ using TestTiffGray32 = TestTiff<1, 32>;
 using TestTiffRgb32 = TestTiff<3, 32>;
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake

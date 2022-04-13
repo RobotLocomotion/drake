@@ -29,7 +29,7 @@ typical examples below; for more reading about target patterns, see:
 [https://docs.bazel.build/versions/main/user-manual.html#target-patterns](https://docs.bazel.build/versions/main/user-manual.html#target-patterns).
 
 On Ubuntu, the default compiler is the first ``gcc`` compiler in the
-``PATH``, usually GCC 7.5 on Bionic and GCC 9.3 on Focal. On macOS, the default
+``PATH``, usually GCC 9.3 on Focal. On macOS, the default
 compiler is the Apple LLVM compiler. To use Clang 9 on Ubuntu, set the ``CC``
 and ``CXX`` environment variables before running **bazel build**, **bazel test**
 or any other **bazel** commands.
@@ -272,11 +272,6 @@ debugging symbols, and produce nicely formatted browse-able coverage reports.
 
 Drake's ``kcov`` build system integration is only supported on Ubuntu, not
 macOS.
-
-To use kcov on Ubuntu 18.04 (Bionic), you must first run Drake's
-``install_prereqs`` setup script using the ``--with-kcov`` option. On Ubuntu
-20.04 (Focal), the option is ignored. The macOS ``install_prereqs`` setup
-script does not install kcov, and passing a ``--with-kcov`` option is an error.
 
 In some cases, running kcov builds and regular builds from the same source
 tree will lead to Bazel error messages like "this rule is missing dependency

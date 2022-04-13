@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/render_client.h"
+#include "drake/geometry/render/dev/render_gltf_client/internal_render_client.h"
 
 #include <atomic>
 #include <map>
@@ -21,15 +21,17 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
-#include "drake/geometry/render/dev/http_service_curl.h"
+#include "drake/geometry/render/dev/render_gltf_client/internal_http_service_curl.h"
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gltf_client {
 namespace internal {
 
 namespace {
 
+using drake::geometry::render::DepthRange;
+using drake::geometry::render::RenderCameraCore;
 using drake::systems::sensors::ImageDepth32F;
 using drake::systems::sensors::ImageLabel16I;
 using drake::systems::sensors::ImageRgba8U;
@@ -544,6 +546,6 @@ void RenderClient::SetHttpService(std::unique_ptr<HttpService> service) {
 }
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake

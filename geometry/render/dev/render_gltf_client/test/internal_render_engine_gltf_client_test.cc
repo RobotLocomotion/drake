@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/render_engine_gltf_client.h"
+#include "drake/geometry/render/dev/render_gltf_client/internal_render_engine_gltf_client.h"
 
 #include <fstream>
 
@@ -9,15 +9,31 @@
 
 #include "drake/common/filesystem.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
-#include "drake/geometry/render/dev/http_service.h"
-#include "drake/geometry/render/dev/render_engine_gltf_client_factory.h"
-#include "drake/geometry/render/dev/test/test_png.h"
-#include "drake/geometry/render/dev/test/test_tiff.h"
+#include "drake/geometry/render/dev/render_gltf_client/factory.h"
+#include "drake/geometry/render/dev/render_gltf_client/internal_http_service.h"
+#include "drake/geometry/render/dev/render_gltf_client/test/internal_test_png.h"
+#include "drake/geometry/render/dev/render_gltf_client/test/internal_test_tiff.h"
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gltf_client {
 namespace internal {
+
+namespace fs = drake::filesystem;
+
+using Eigen::Matrix3d;
+using Eigen::Matrix4d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRenderCamera;
+using geometry::render::internal::ImageType;
+using math::RigidTransformd;
+using math::RollPitchYawd;
+using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageLabel16I;
+using systems::sensors::ImageRgba8U;
 
 // Exposes various private access methods and data members for validation.
 class RenderEngineGltfClientTester {
@@ -67,19 +83,6 @@ class RenderEngineGltfClientTester {
 };
 
 namespace {
-
-namespace fs = drake::filesystem;
-
-using Eigen::Matrix3d;
-using Eigen::Matrix4d;
-using Eigen::Vector3d;
-using Eigen::Vector4d;
-
-using math::RigidTransformd;
-using math::RollPitchYawd;
-using systems::sensors::ImageDepth32F;
-using systems::sensors::ImageLabel16I;
-using systems::sensors::ImageRgba8U;
 
 using Tester = RenderEngineGltfClientTester;
 using Engine = RenderEngineGltfClient;
@@ -469,6 +472,6 @@ GTEST_TEST(RenderEngineGltfClient, CleanupFrame) {
 
 }  // namespace
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gltf_client
 }  // namespace geometry
 }  // namespace drake
