@@ -132,7 +132,7 @@ For a Python unittest that uses ``drake_py_unittest``, for example:
 bazel test bindings/pydrake:py/symbolic_test --test_output=streamed --nocache_test_results --test_arg=--trace=user --test_arg=TestSymbolicVariable
 ```
 
-## Debugging and profiling on macOS
+## Debugging on macOS
 
 On macOS, DWARF debug symbols are emitted to a ``.dSYM`` file.  The Bazel
 ``cc_binary`` and ``cc_test`` rules do not natively generate or expose this
@@ -143,15 +143,6 @@ This config turns off sandboxing, which allows a ``genrule`` to access the
 ```
 bazel build --config=apple_debug path/to/my:binary_or_test_dsym
 lldb ./bazel-bin/path/to/my/binary_or_test
-```
-
-Profiling on macOS can be done by building with the debug symbols and then running
-```
-xcrun xctrace record -t "Time Profiler" --launch ./bazel-bin/path/to/my/binary_or_test
-```
-This will generate a `.trace` file that can be opened in the Instruments app:
-```
-open -a Instruments myfile.trace
 ```
 
 For more information, see [https://github.com/bazelbuild/bazel/issues/2537](https://github.com/bazelbuild/bazel/issues/2537).
