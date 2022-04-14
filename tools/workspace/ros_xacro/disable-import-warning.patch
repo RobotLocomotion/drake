@@ -1,8 +1,8 @@
 Disable an 'import rosgraph' console warning.
 
---- src/xacro/cli.py	2019-12-08 06:12:25.000000000 -0500
-+++ src/xacro/cli.py	2020-05-13 18:48:20.772385121 -0400
-@@ -97,7 +97,7 @@
+--- src/xacro/cli.py
++++ src/xacro/cli.py
+@@ -92,7 +92,7 @@ def process_args(argv, require_input=True):
          mappings = load_mappings(argv)
          filtered_args = [a for a in argv if REMAP not in a]  # filter-out REMAP args
      except ImportError as e:
@@ -10,4 +10,4 @@ Disable an 'import rosgraph' console warning.
 +        # warning(e)
          mappings = {}
          filtered_args = argv
- 
+
