@@ -7,6 +7,10 @@ load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
 )
+load(
+    "@drake_visualizer//:defs.bzl",
+    _DRAKE_VISUALIZER_ENABLED = "ENABLED",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 py_library(
@@ -74,13 +78,11 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "abseil_cpp_internal",
     "conex",
     "cds",
+    "drake_visualizer",
     "dreal",
     "optitrack_driver",
     "picosat",
 ]] + select({
-    "//conditions:default": ["//tools/workspace/drake_visualizer:install"],
-    "//tools:no_drake_visualizer": [],
-}) + select({
     "//conditions:default": ["@csdp//:install"],
     "//tools:no_csdp": [],
 }) + select({
@@ -118,7 +120,11 @@ check_licenses(
         "@commons_io//:install",
         "@net_sf_jchart2d//:install",
         "@org_apache_xmlgraphics_commons//:install",
-    ],
+    ] + ([
+        # When disabled, this installs only a stub program under Drake's
+        # license; no other LICENSE file is relevant.
+        "//tools/workspace/drake_visualizer:install",
+    ] if not _DRAKE_VISUALIZER_ENABLED else []),
 )
 
 add_lint_tests()

@@ -746,15 +746,20 @@ TEST_F(UrdfGeometryTest, TestBadBox) {
 }
 
 TEST_F(UrdfGeometryTest, TestBadSphere) {
-  ParseUrdfGeometryString(R"""(
+  std::string base = R"""(
     <robot name='a'>
       <link name='b'>
         <collision>
-          <geometry><sphere/></geometry>
+          <geometry><sphere {}/></geometry>
         </collision>
       </link>
-    </robot>)""");
+    </robot>)""";
+
+  ParseUrdfGeometryString(fmt::format(base, ""));
   EXPECT_THAT(TakeError(), MatchesRegex(".*Missing sphere attribute.*"));
+
+  ParseUrdfGeometryString(fmt::format(base, "radius='1 2 3'"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*"));
 }
 
 TEST_F(UrdfGeometryTest, TestBadCylinder) {
@@ -774,6 +779,12 @@ TEST_F(UrdfGeometryTest, TestBadCylinder) {
   ParseUrdfGeometryString(fmt::format(base, "radius='1'"));
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*Missing cylinder attribute.*length.*"));
+
+  ParseUrdfGeometryString(fmt::format(base, "radius='1 2 3' length='1'"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*radius.*"));
+
+  ParseUrdfGeometryString(fmt::format(base, "radius='1' length='1 2 3'"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*length.*"));
 }
 
 TEST_F(UrdfGeometryTest, TestBadCapsule) {
@@ -788,21 +799,22 @@ TEST_F(UrdfGeometryTest, TestBadCapsule) {
       </link>
     </robot>)""";
 
-  // capsule
-  ParseUrdfGeometryString(fmt::format(base, "", ""));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Missing capsule attribute.*radius.*"));
-  ParseUrdfGeometryString(fmt::format(base, "", "radius='1'"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Missing capsule attribute.*length.*"));
-
-  // drake:capsule
-  ParseUrdfGeometryString(fmt::format(base, "drake:", ""));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Missing capsule attribute.*radius.*"));
-  ParseUrdfGeometryString(fmt::format(base, "drake:", "radius='1'"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Missing capsule attribute.*length.*"));
+  // Loop over capsule, drake:capsule.
+  for (const auto& prefix : std::array<std::string, 2>{"", "drake:"}) {
+    SCOPED_TRACE(prefix + "capsule");
+    ParseUrdfGeometryString(fmt::format(base, prefix, ""));
+    EXPECT_THAT(TakeError(), MatchesRegex(
+                    ".*Missing capsule attribute.*radius.*"));
+    ParseUrdfGeometryString(fmt::format(base, prefix, "radius='1'"));
+    EXPECT_THAT(TakeError(), MatchesRegex(
+                    ".*Missing capsule attribute.*length.*"));
+    ParseUrdfGeometryString(fmt::format(base, prefix,
+                                        "radius='1 2 3' length='1'"));
+    EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*radius.*"));
+    ParseUrdfGeometryString(fmt::format(base, prefix,
+                                        "radius='1' length='1 2 3'"));
+    EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*length.*"));
+  }
 }
 
 TEST_F(UrdfGeometryTest, TestBadEllipsoid) {
@@ -827,6 +839,15 @@ TEST_F(UrdfGeometryTest, TestBadEllipsoid) {
   ParseUrdfGeometryString(fmt::format(base, "a='1' b='2'"));
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*Missing ellipsoid attribute.*'c'.*"));
+
+  ParseUrdfGeometryString(fmt::format(base, "a='1 1 1' b='2' c='3'"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*'a'.*"));
+
+  ParseUrdfGeometryString(fmt::format(base, "a='1' b='2 1 1' c='3'"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*'b'.*"));
+
+  ParseUrdfGeometryString(fmt::format(base, "a='1' b='2' c='3 1 1'"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*'c'.*"));
 }
 
 TEST_F(UrdfGeometryTest, TestBadMesh) {
@@ -914,12 +935,15 @@ TEST_F(UrdfGeometryTest, TestBadShapeVisual) {
 }
 
 TEST_F(UrdfGeometryTest, TestBadProperty) {
-  ParseCollisionDoc(R"""(
+  std::string base = R"""(
   <drake:proximity_properties>
-    <drake:mu_dynamic/>
-  </drake:proximity_properties>)""");
+    <drake:mu_dynamic {}/>
+  </drake:proximity_properties>)""";
+  ParseCollisionDoc(fmt::format(base, ""));
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*Unable to read.*attribute.*mu_dynamic.*"));
+  ParseCollisionDoc(fmt::format(base, "value='1 2 3'"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*"));
 }
 
 TEST_F(UrdfGeometryTest, RigidHydroelastic) {
