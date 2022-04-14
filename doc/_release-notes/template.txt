@@ -10,10 +10,10 @@ released: YYYY-MM-DD
 
 # Breaking changes since {prior_version}
 
+* TBD
+
 Refer to our [Drake Stability Guidelines](/stable.html) for our policy
 on API changes.
-
-* TBD
 
 # Changes since {prior_version}
 
