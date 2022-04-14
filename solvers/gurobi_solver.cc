@@ -669,7 +669,7 @@ int ProcessLinearConstraints(
     constraint_dual_start_row->emplace(binding, *num_gurobi_linear_constraints);
 
     const int error = AddLinearConstraint(
-        prog, model, constraint->A(), constraint->lower_bound(),
+        prog, model, constraint->GetDenseA(), constraint->lower_bound(),
         constraint->upper_bound(), binding.variables(), true,
         sparseness_threshold, num_gurobi_linear_constraints);
     if (error) {
@@ -683,7 +683,7 @@ int ProcessLinearConstraints(
     constraint_dual_start_row->emplace(binding, *num_gurobi_linear_constraints);
 
     const int error = AddLinearConstraint(
-        prog, model, constraint->A(), constraint->lower_bound(),
+        prog, model, constraint->GetDenseA(), constraint->lower_bound(),
         constraint->upper_bound(), binding.variables(), false,
         sparseness_threshold, num_gurobi_linear_constraints);
     if (error) {
