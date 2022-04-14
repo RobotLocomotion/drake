@@ -8,7 +8,6 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/common/unused.h"
 
 namespace drake {
 namespace multibody {
@@ -138,44 +137,34 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, MinresSolve) {
   const MatrixXd A_eigen = MakeEigenDenseMatrix();
   const VectorXd b = MakeVector9d();
   const VectorXd x_expected = A_eigen.lu().solve(b);
-  VectorXd x(b.size());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      unused(A->Solve(
-          PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-          PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone, b, &x)),
+      A->Solve(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+               PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone, b),
       "PetscSymmetricBlockSparseMatrix::Solve.*: matrix is not yet "
       "assembled.*");
   A->AssembleIfNecessary();
   A->set_relative_tolerance(kEps);
 
-  x.setZero();
-  PetscSolverStatus status = A->Solve(
+  VectorXd x = A->Solve(
       PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
       PetscSymmetricBlockSparseMatrix::PreconditionerType::kIncompleteCholesky,
-      b, &x);
-  EXPECT_EQ(status, PetscSolverStatus::kSuccess);
+      b);
   EXPECT_TRUE(CompareMatrices(x, x_expected, b.norm() * kEps));
 
-  x.setZero();
-  status = A->Solve(
-      PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kCholesky, b, &x);
-  EXPECT_EQ(status, PetscSolverStatus::kSuccess);
+  x = A->Solve(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+               PetscSymmetricBlockSparseMatrix::PreconditionerType::kCholesky,
+               b);
   EXPECT_TRUE(CompareMatrices(x, x_expected, b.norm() * kEps));
 
-  x.setZero();
-  status = A->Solve(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-                    PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone,
-                    b, &x);
-  EXPECT_EQ(status, PetscSolverStatus::kSuccess);
+  x = A->Solve(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+               PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone, b);
   EXPECT_TRUE(CompareMatrices(x, x_expected, b.norm() * kEps));
 
   /* Test that the result of Solve and SolveInPlace agree with each other. */
   VectorXd x_in_place = b;
-  status = A->SolveInPlace(
-      PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone, &x_in_place);
-  EXPECT_EQ(status, PetscSolverStatus::kSuccess);
+  A->SolveInPlace(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+                  PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone,
+                  &x_in_place);
   EXPECT_EQ(x, x_in_place);
 }
 
@@ -187,28 +176,22 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, CgSolve) {
   const VectorXd x_expected = A_eigen.lu().solve(b);
   A->set_relative_tolerance(kEps);
   /* No preconditioning. */
-  VectorXd x(b.size());
-  PetscSolverStatus status = A->Solve(
-      PetscSymmetricBlockSparseMatrix::SolverType::kConjugateGradient,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone, b, &x);
-  EXPECT_EQ(status, PetscSolverStatus::kSuccess);
+  VectorXd x =
+      A->Solve(PetscSymmetricBlockSparseMatrix::SolverType::kConjugateGradient,
+               PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone, b);
   EXPECT_TRUE(CompareMatrices(x, x_expected, b.norm() * kEps));
 
   /* Cholesky preconditioning. */
-  x.setZero();
-  status = A->Solve(
-      PetscSymmetricBlockSparseMatrix::SolverType::kConjugateGradient,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kCholesky, b, &x);
-  EXPECT_EQ(status, PetscSolverStatus::kSuccess);
+  x = A->Solve(PetscSymmetricBlockSparseMatrix::SolverType::kConjugateGradient,
+               PetscSymmetricBlockSparseMatrix::PreconditionerType::kCholesky,
+               b);
   EXPECT_TRUE(CompareMatrices(x, x_expected, b.norm() * kEps));
 
   /* Incomplete Cholesky preconditioning. */
-  x.setZero();
-  status = A->Solve(
+  x = A->Solve(
       PetscSymmetricBlockSparseMatrix::SolverType::kConjugateGradient,
       PetscSymmetricBlockSparseMatrix::PreconditionerType::kIncompleteCholesky,
-      b, &x);
-  EXPECT_EQ(status, PetscSolverStatus::kSuccess);
+      b);
   EXPECT_TRUE(CompareMatrices(x, x_expected, b.norm() * kEps));
 }
 
@@ -220,27 +203,10 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, DirectSolve) {
   const MatrixXd A_eigen = A->MakeDenseMatrix();
   const VectorXd x_expected = A_eigen.lu().solve(b);
   /* No preconditioning. */
-  VectorXd x(b.size());
-  PetscSolverStatus status = A->Solve(
+  VectorXd x = A->Solve(
       PetscSymmetricBlockSparseMatrix::SolverType::kDirect,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kCholesky, b, &x);
-  EXPECT_EQ(status, PetscSolverStatus::kSuccess);
+      PetscSymmetricBlockSparseMatrix::PreconditionerType::kCholesky, b);
   EXPECT_TRUE(CompareMatrices(x, x_expected, b.norm() * kEps));
-}
-
-GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, FailedSolve) {
-  /* Make a non-SPD matrix. */
-  unique_ptr<PetscSymmetricBlockSparseMatrix> A = MakeBlockSparseMatrix();
-  A->set_relative_tolerance(kEps);
-  const VectorXd b = MakeVector3d();
-  A->AssembleIfNecessary();
-  VectorXd x(b.size());
-  PetscSolverStatus status = A->Solve(
-      PetscSymmetricBlockSparseMatrix::SolverType::kConjugateGradient,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kIncompleteCholesky,
-      b, &x);
-  /* We expect CG to fail to converge on a non-spd matrix. */
-  EXPECT_EQ(status, PetscSolverStatus::kFailure);
 }
 
 GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, ZeroRowsAndColumns) {
@@ -268,16 +234,13 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Clone) {
   A_clone->set_relative_tolerance(kEps);
   EXPECT_EQ(A->MakeDenseMatrix(), A_clone->MakeDenseMatrix());
   const VectorXd b = MakeVector9d();
-  VectorXd x(b.size());
-  PetscSolverStatus status = A->Solve(
+  const VectorXd x =
+      A->Solve(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+               PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone, b);
+  const VectorXd x_clone = A_clone->Solve(
       PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone, b, &x);
-  VectorXd x_clone(b.size());
-  PetscSolverStatus status_clone = A_clone->Solve(
-      PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone, b, &x_clone);
+      PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone, b);
   EXPECT_TRUE(CompareMatrices(x, x_clone, b.norm() * kEps));
-  EXPECT_EQ(status, status_clone);
 }
 
 /* Test if we can run several PETSc solves simultaneously on multiple threads.
@@ -295,11 +258,9 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, MultiThreadTest) {
   auto run_solver = [](const VectorXd& b, VectorXd* x) {
     unique_ptr<PetscSymmetricBlockSparseMatrix> A = MakeBlockSparseMatrix();
     A->AssembleIfNecessary();
-    x->resize(b.size());
-    PetscSolverStatus status = A->Solve(
-        PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-        PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone, b, x);
-    EXPECT_EQ(status, PetscSolverStatus::kSuccess);
+    *x =
+        A->Solve(PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+                 PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone, b);
   };
 
   /* Solve without using threads. */
