@@ -631,6 +631,267 @@ GTEST_TEST(PizzaSaver, NoConstraints) {
   EXPECT_EQ(result.vc.size(), 0);
 }
 
+// Constraint to keep velocities within given bounds vl (lower) and vu (upper).
+// Recall that SAP constraints are compliant and therefore non-zero impulses
+// result when velocities are slightly outside of these bounds. This constraint
+// applies bounds to the velocities that belong to a given clique. Both vl and
+// vu have the same size, equal to the number of generalized velocities nc for
+// the specified clique.
+// This constraint models impulses as: γ = max(0, −R⁻¹⋅(vc−v̂)), where
+// regularization R is given and bias v̂ = [vl, -vu], of size 2⋅nc.
+template <typename T>
+class LimitConstraint final : public SapConstraint<T> {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LimitConstraint);
+
+  // Constructs a limit constraint on `clique` with lower limit vl, upper
+  // limit vu and regularization R.
+  LimitConstraint(int clique, const VectorX<T>& vl, const VectorX<T>& vu,
+                  const VectorX<T> R)
+      : SapConstraint<T>(
+            clique,
+            ConcatenateVectors(vl, vu) /* Dummy vector of the right size. */,
+            CalcConstraintJacobian(vl.size())),
+        R_(std::move(R)),
+        vhat_(ConcatenateVectors(vl, -vu)) {
+    DRAKE_DEMAND(vl.size() == vu.size());
+    DRAKE_DEMAND(R_.size() == 2 * vl.size());
+  }
+
+  VectorX<T> CalcBiasTerm(const T&, const T&) const final { return vhat_; }
+  VectorX<T> CalcDiagonalRegularization(const T&, const T&) const final {
+    return R_;
+  }
+
+  // For this constraint the projection is the identity operation.
+  void Project(const Eigen::Ref<const VectorX<double>>& y,
+               const Eigen::Ref<const VectorX<double>>& R,
+               EigenPtr<VectorX<double>> gamma,
+               MatrixX<double>* dPdy) const final {
+    // For this constrain the number of equations equals the number of
+    // velocities in the constrained clique.
+    const int nv = this->num_constraint_equations();
+    if (dPdy != nullptr) {
+      dPdy->resize(nv, nv);
+      dPdy->setZero(nv, nv);
+    }
+    for (int i = 0; i < nv; ++i) {
+      if (y(i) > 0) {
+        (*gamma)(i) = y(i);
+        if (dPdy != nullptr) {
+          (*dPdy)(i, i) = 1.0;
+        }
+      } else {
+        (*gamma)(i) = 0.0;
+      }
+    }
+  };
+
+  std::unique_ptr<SapConstraint<T>> Clone() const final {
+    return std::make_unique<LimitConstraint<T>>(*this);
+  }
+
+ private:
+  static VectorX<T> ConcatenateVectors(const VectorX<T>& v1,
+                                       const VectorX<T>& v2) {
+    VectorX<T> v(v1.size() + v2.size());
+    v << v1, v2;
+    return v;
+  }
+
+  VectorX<T> CalcConstraintFunction(const VectorX<T>& ql, const VectorX<T>& qu,
+                                    const VectorX<T>& q) const {
+    DRAKE_DEMAND(ql.size() == q.size());
+    DRAKE_DEMAND(qu.size() == q.size());
+    const int nq = q.size();
+    const VectorX<T> g = (VectorX<T>(2 * nq) << q - ql, qu - q).finished();
+    return g;
+  }
+
+  MatrixX<T> CalcConstraintJacobian(int nq) const {
+    MatrixX<T> J = MatrixX<T>::Identity(2 * nq, nq);
+    J.topRows(nq) = MatrixX<T>::Identity(nq, nq);
+    J.bottomRows(nq) = -MatrixX<T>::Identity(nq, nq);
+    return J;
+  }
+
+  VectorX<T> R_;     // Regularization.
+  VectorX<T> vhat_;  // Bias.
+};
+
+// This fixture is used to test the number of iterations performed by SAP's
+// Newton solver. We setup a contact problem for which the solution is v = v*,
+// the "free-motion" velocities. The problem has three cliques and a single
+// LimitConstraint on the first clique. We can test how the Newton iterations
+// perform by changing the initial guess. For instance, when the initial guess
+// is whithin the contraint's bounds, the cost is quadratic and we expect SAP to
+// converge in a single Newton iteration.
+class SapNewtonIterationTest : public ::testing::Test {
+ public:
+  void SetUp() override {
+    const double time_step = 0.01;
+    sap_problem_ = std::make_unique<SapContactProblem<double>>(time_step);
+
+    // Arbitrary non-identity SPD matrices to build the dynamics matrix A.
+    // clang-format off
+    const int num_velocities{9};
+    const Eigen::Matrix2d S22 =
+      (Eigen::Matrix2d() << 2, 1,
+                            1, 2).finished();
+    const Eigen::Matrix3d S33 =
+      (Eigen::Matrix3d() << 4, 1, 2,
+                            1, 5, 3,
+                            2, 3, 6).finished();
+    const Eigen::Matrix4d S44 =
+      (Eigen::Matrix4d() << 7, 1, 2, 3,
+                            1, 8, 4, 5,
+                            2, 4, 9, 6,
+                            3, 5, 6, 10).finished();
+    // clang-format on
+
+    // Velocity limits on clique 1.
+    vl_ = Vector3d(-3., -2, -1.);
+    vu_ = Vector3d(1., 2, 3.);
+
+    // We make a v* that is inside the "box" specified by vl and vu.
+    VectorXd v_star =
+        VectorXd::LinSpaced(num_velocities, 1., 1. * num_velocities);
+    v_star.segment<3>(2) = 0.5 * (vl_ + vu_);
+    v_star_.resize(num_velocities);
+    v_star_ = v_star;
+
+    std::vector<MatrixXd> A = {S22, S33, S44};
+    sap_problem_->Reset(std::move(A), std::move(v_star));
+
+    const VectorXd R = VectorXd::Constant(6, 1.0e-3);
+    sap_problem_->AddConstraint(
+        std::make_unique<LimitConstraint<double>>(1, vl_, vu_, std::move(R)));
+  }
+
+ protected:
+  VectorXd vl_;
+  VectorXd vu_;
+  VectorXd v_star_;
+  std::unique_ptr<SapContactProblem<double>> sap_problem_;
+};
+
+// Unit test that SAP performs no computation when provided with an initial
+// guess that satisfies optimality condition.
+TEST_F(SapNewtonIterationTest, GuessIsTheSolution) {
+  SapSolver<double> sap;
+  const VectorXd v_guess = v_star_;
+  SapSolverResults<double> result;
+  const SapSolverStatus status =
+      sap.SolveWithGuess(*sap_problem_, v_guess, &result);
+  EXPECT_EQ(status, SapSolverStatus::kSuccess);
+
+  // Verify optimality is satisfied but no iterations were performed.
+  const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+  EXPECT_EQ(stats.num_iters, 0);
+  EXPECT_TRUE(stats.optimality_criterion_reached);
+
+  // Since the initial guess is the solution to this problem, we exepct the
+  // result ot be an exact copy of it. Constraints are not active and therefore
+  // impulses are zero.
+  EXPECT_EQ(result.v, v_guess);
+  EXPECT_EQ(result.j, VectorXd::Zero(sap_problem_->num_velocities()));
+  EXPECT_EQ(result.gamma,
+            VectorXd::Zero(sap_problem_->num_constraint_equations()));
+}
+
+// For this particular problem, the cost is quadratic for velocities within the
+// bounds of the limits imposed by the constraint. Therefore we expect the
+// Newton solver to achieve convergence in just a single iteration, to machine
+// precision when a full step (alpha=1) is taken by the line search.
+TEST_F(SapNewtonIterationTest, GuessWithinLimits) {
+  SapSolver<double> sap;
+  SapSolverParameters params;
+  // We setup the line search parameters so that the backtracking line-search
+  // tries alpha = ls_alpha_max = 1.0 / 0.8 = 1.25 and alpha = ls_alpha_max *
+  // ls_rho = 1.0. Since in this case the guess is withing the constraint
+  // limits, where th cost is exactly quadratic, one Newton iteration with alpha
+  // = 1 will achieve convergence within machine precision.
+  params.ls_alpha_max = 1.0 / params.ls_rho;
+  sap.set_parameters(params);
+
+  // Arbitrary initial guess within the velocity limits but different from the
+  // solution v_star_.
+  VectorXd v_guess = v_star_;
+  v_guess.segment<3>(2) = 0.9 * vl_ + 0.1 * vu_;
+  SapSolverResults<double> result;
+  const SapSolverStatus status =
+      sap.SolveWithGuess(*sap_problem_, v_guess, &result);
+  EXPECT_EQ(status, SapSolverStatus::kSuccess);
+
+  // Since we provide the guess to be within the limits, and we know the
+  // solution is v = v*, then we expect the solver achieve convergence in a
+  // single Newton iteration.
+  const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+  EXPECT_EQ(stats.num_iters, 1);
+  // We expect two backtracking line search iterations given ls_alpha_max != 1.
+  EXPECT_EQ(stats.num_line_search_iters, 2);
+  // This problem is very well conditioned, we expect convergence on the
+  // optimality condition.
+  EXPECT_TRUE(stats.optimality_criterion_reached);
+
+  // The solution exactly equals the initial guess v* within machine epsilon
+  // given in this case the problem is linear.
+  EXPECT_TRUE(CompareMatrices(result.v, v_star_, 3.0 * kEps,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(result.j,
+                              VectorXd::Zero(sap_problem_->num_velocities()),
+                              3.0 * kEps, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(
+      result.gamma, VectorXd::Zero(sap_problem_->num_constraint_equations()),
+      3.0 * kEps, MatrixCompareType::absolute));
+}
+
+// For this problem when the initial guess is outside the constraint's limits
+// the cost is non-linear and we need several Newton iterations to achieve
+// convergence.
+TEST_F(SapNewtonIterationTest, GuessOutsideLimits) {
+  SapSolver<double> sap;
+  SapSolverParameters params;
+  // We use the same parameters as in the unit test
+  // SapNewtonIterationTest__GuessWithinLimits so that the only difference
+  // between the two tests is the initial guess given to the solver.
+  params.ls_alpha_max = 1.0 / params.ls_rho;
+  sap.set_parameters(params);
+
+  // Arbitrary initial guess outside the constraint bounds to force several
+  // Newton iterations.
+  VectorXd v_guess = v_star_;
+  v_guess.segment<3>(2) = Vector3d(0.8 * vl_(0) /* below lower limit */,
+                                   v_star_(1) /* within limits */,
+                                   1.1 * vu_(2) /* above upper limit */);
+  SapSolverResults<double> result;
+  const SapSolverStatus status =
+      sap.SolveWithGuess(*sap_problem_, v_guess, &result);
+  EXPECT_EQ(status, SapSolverStatus::kSuccess);
+
+  // Since the initial guess is outside the constraint's bounds, and we know the
+  // solution is v = v* inside the bounds, we expect several Newton iterations
+  // to achieve convergence.
+  const SapSolver<double>::SolverStats& stats = sap.get_statistics();
+  EXPECT_GT(stats.num_iters, 1);
+  EXPECT_GT(stats.num_line_search_iters, 1);
+  // This problem is very well conditioned, we expect convergence on the
+  // optimality condition.
+  EXPECT_TRUE(stats.optimality_criterion_reached);
+
+  // Even though the initial guess is outside the constraint limits, once a SAP
+  // iteration reaches a solution within the constraint's bounds, it will
+  // converge in a single iteration within machine epsilon.
+  EXPECT_TRUE(CompareMatrices(result.v, v_star_, 3.0 * kEps,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(result.j,
+                              VectorXd::Zero(sap_problem_->num_velocities()),
+                              3.0 * kEps, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(
+      result.gamma, VectorXd::Zero(sap_problem_->num_constraint_equations()),
+      3.0 * kEps, MatrixCompareType::absolute));
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
