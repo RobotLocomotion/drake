@@ -10,15 +10,15 @@ def get_clang_format_path(version=None):
     Otherwise, pass the desired major version as an int.
     """
     if version is None:
-        version = 9
+        version = 12
     if platform.system() == "Darwin":
         if platform.machine() == "arm64":
             homebrew = "/opt/homebrew"
         else:
             homebrew = "/usr/local"
 
-        if version == 9:
-            path = f"{homebrew}/opt/clang-format@9/bin/clang-format-9"
+        if version == 12:
+            path = f"{homebrew}/opt/clang-format@12/bin/clang-format-12"
         elif version < 6:
             raise RuntimeError(
                 f"Could not find required clang-format {version}")
