@@ -201,11 +201,11 @@ class Frame : public FrameBase<T> {
   /// velocity ω measured in a frame M and expressed in a frame E).
   const Vector3<T>& EvalAngularVelocityInWorld(
       const systems::Context<T>& context) const {
-    // For calculating the angular velocity of a FixedOffsetFrame or a BodyFrame
-    // in the world, it is more efficient to use EvalAngularVelocityInWorld()
-    // than Frame::CalcSpatialVelocityInWorld() due to computational overhead
-    // for calculating the additional/unnecessary frame translational velocity.
-    // The next line of code avoids Frame::CalcSpatialVelocityInWorld(context);
+    // TODO(Mitiguy) The calculation below assumes "this" frame is attached to a
+    //  rigid body (not a soft body). Modify if soft bodies are possible.
+    // Note: For a FixedOffsetFrame or BodyFrame, EvalAngularVelocityInWorld()
+    // is more efficient than CalcSpatialVelocityInWorld().rotational() as the
+    // latter method carries computational costs for translational velocity.
     const SpatialVelocity<T>& V_WB = body().EvalSpatialVelocityInWorld(context);
     const Vector3<T>& w_WF_W = V_WB.rotational();
     return w_WF_W;
@@ -218,11 +218,13 @@ class Frame : public FrameBase<T> {
   /// angular velocity is to be measured).
   /// @param[in] expressed_in_frame which is frame E (the frame in which the
   /// returned angular velocity is to be expressed).
-  /// @return ω_WF_E, `this` frame F's angular velocity ω measured in frame M,
+  /// @return ω_MF_E, `this` frame F's angular velocity ω measured in frame M,
   /// expressed in frame E.
   /// @see EvalAngularVelocityInWorld() to evaluate ω_WF_W (`this` frame F's
   /// angular velocity ω measured and expressed in the world frame W).
   Vector3<T> CalcAngularVelocity(
+    // TODO(Mitiguy) The calculation below assumes "this" frame is attached to a
+    //  rigid body (not a soft body). Modify if soft bodies are possible.
       const systems::Context<T>& context,
       const Frame<T>& measured_in_frame,
       const Frame<T>& expressed_in_frame) const {
@@ -237,7 +239,8 @@ class Frame : public FrameBase<T> {
 
     const math::RotationMatrix<T> R_WE =
         frame_E.CalcRotationMatrixInWorld(context);
-    const Vector3<T> w_MF_E = R_WE * w_MF_W;
+    const math::RotationMatrix<T> R_EW = R_WE.inverse();
+    const Vector3<T> w_MF_E = R_EW * w_MF_W;
     return w_MF_E;
   }
 

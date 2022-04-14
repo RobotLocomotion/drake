@@ -29,7 +29,6 @@ namespace {
 constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
 TEST_F(KukaIiwaModelTests, FramesKinematics) {
-  // Numerical tolerance used to verify numerical results.
   SetArbitraryConfiguration();
 
   // Test for a simple identity case of CalcRelativeTransform().
@@ -149,7 +148,6 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
 }
 
 TEST_F(KukaIiwaModelTests, FrameAngularVelocity) {
-  // Numerical tolerance used to verify numerical results.
   SetArbitraryConfiguration();
 
   // Verify that fixed-offset Frame_H (which is fixed to end-effector frame_E)
@@ -192,15 +190,36 @@ TEST_F(KukaIiwaModelTests, FrameAngularVelocity) {
   EXPECT_TRUE(CompareMatrices(w_L3E_H, -w_EL3_H,
       kTolerance, MatrixCompareType::relative));
 
+  // Verify CalcAngularVelocity() produces the same results as
+  // CalcSpatialVelocity().rotational() and handles the expressed-in frame.
+  const Vector3<double> w_L3W_E_expected =
+      frame_W.CalcSpatialVelocity(*context_, frame_L3, frame_E).rotational();
+  const Vector3<double> w_L3W_E =
+      frame_W.CalcAngularVelocity(*context_, frame_L3, frame_E);
+  EXPECT_TRUE(CompareMatrices(w_L3W_E_expected, w_L3W_E, kTolerance,
+                              MatrixCompareType::relative));
+
+  // Verify CalcAngularVelocity() produces the same results as
+  // CalcRelativeSpatialVelocity().rotational().
+  const Vector3<double> w_L3E_E_expected =
+      frame_E.CalcRelativeSpatialVelocity(*context_, frame_L3, frame_H, frame_E)
+          .rotational();
+  const Vector3<double> w_L3E_E =
+      frame_E.CalcAngularVelocity(*context_, frame_L3, frame_E);
+  EXPECT_TRUE(CompareMatrices(w_L3E_E_expected, w_L3E_E, kTolerance,
+                              MatrixCompareType::relative));
+
   // Verify CalcAngularVelocity() is consistent with the angular velocity
-  // addition theorem ω_WE = ω_WH + ω_HL3 + ω_L3E.
-  const Vector3<double>& w_WE_W =
-      frame_E.EvalAngularVelocityInWorld(*context_);
+  // addition theorem ω_WE = ω_WH + ω_HL3 + ω_L3E, where all these vectors are
+  // expressed in the world frame W.
+  const Vector3<double> w_WE_W_expected =
+      frame_E.CalcSpatialVelocityInWorld(*context_).rotational();
   const Vector3<double> w_HL3_W =
       frame_L3.CalcAngularVelocity(*context_, frame_H, frame_W);
   const Vector3<double> w_L3E_W =
       frame_E.CalcAngularVelocity(*context_, frame_L3, frame_W);
-  EXPECT_TRUE(CompareMatrices(w_WE_W, w_WH_W + w_HL3_W + w_L3E_W,
+  const Vector3<double> w_WE_W = w_WH_W + w_HL3_W + w_L3E_W;
+  EXPECT_TRUE(CompareMatrices(w_WE_W_expected, w_WE_W,
       kTolerance, MatrixCompareType::relative));
 }
 
@@ -274,7 +293,7 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialVelocity) {
                               MatrixCompareType::relative));
   const Vector3<double>& p_EoHo_E = X_EH_.translation();
   const Vector3<double>& w_WE_W = frame_E.EvalAngularVelocityInWorld(*context_);
-  const RotationMatrix<double>& R_WE =
+  const RotationMatrix<double> R_WE =
       frame_E.CalcRotationMatrixInWorld(*context_);
   const Vector3<double> p_EoHo_W = R_WE * p_EoHo_E;
   const Vector3<double> w_cross_p = w_WE_W.cross(p_EoHo_W);
