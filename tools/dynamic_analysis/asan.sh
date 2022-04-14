@@ -6,5 +6,5 @@ export ASAN_OPTIONS="$ASAN_OPTIONS:check_initialization_order=1:detect_container
 # errors
 export LSAN_OPTIONS="$LSAN_OPTIONS:strip_path_prefix=/proc/self/cwd/:suppressions=$mydir/lsan.supp"
 # Ensure executable named llvm-symbolizer is on the PATH.
-export PATH="$PATH:/usr/lib/llvm-9/bin:/usr/local/opt/llvm/bin"
+export PATH="$PATH:/usr/lib/llvm-12/bin:/usr/local/opt/llvm/bin"
 "$@"
