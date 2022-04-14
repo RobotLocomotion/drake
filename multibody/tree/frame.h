@@ -203,9 +203,6 @@ class Frame : public FrameBase<T> {
       const systems::Context<T>& context) const {
     // TODO(Mitiguy) The calculation below assumes "this" frame is attached to a
     //  rigid body (not a soft body). Modify if soft bodies are possible.
-    // Note: For a FixedOffsetFrame or BodyFrame, EvalAngularVelocityInWorld()
-    // is more efficient than CalcSpatialVelocityInWorld().rotational() as the
-    // latter method carries computational costs for translational velocity.
     const SpatialVelocity<T>& V_WB = body().EvalSpatialVelocityInWorld(context);
     const Vector3<T>& w_WF_W = V_WB.rotational();
     return w_WF_W;

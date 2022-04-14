@@ -221,6 +221,16 @@ TEST_F(KukaIiwaModelTests, FrameAngularVelocity) {
   const Vector3<double> w_WE_W = w_WH_W + w_HL3_W + w_L3E_W;
   EXPECT_TRUE(CompareMatrices(w_WE_W_expected, w_WE_W,
       kTolerance, MatrixCompareType::relative));
+
+  // Verify CalcAngularVelocity() handles the expressed-in frame.
+  const RotationMatrix<double> R_WE =
+      frame_E.CalcRotationMatrixInWorld(*context_);
+  const RotationMatrix<double> R_EW = R_WE.inverse();
+  const Vector3<double> w_WE_E_expected = R_EW * w_WE_W_expected;
+  const Vector3<double> w_WE_E =
+      frame_E.CalcAngularVelocity(*context_, frame_W, frame_E);
+  EXPECT_TRUE(CompareMatrices(w_WE_E_expected, w_WE_E,
+      kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialVelocity) {
