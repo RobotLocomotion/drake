@@ -38,7 +38,7 @@ void LinearSystemSolver::DoSolve(
   unused(initial_guess, merged_options);
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
-    num_constraints += binding.evaluator()->A().rows();
+    num_constraints += binding.evaluator()->GetDenseA().rows();
   }
 
   DRAKE_ASSERT(prog.generic_constraints().empty());
@@ -55,11 +55,11 @@ void LinearSystemSolver::DoSolve(
   size_t constraint_index = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
     auto const& c = binding.evaluator();
-    size_t n = c->A().rows();
+    size_t n = c->GetDenseA().rows();
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
       size_t variable_index =
           prog.FindDecisionVariableIndex(binding.variables()(i));
-      Aeq.block(constraint_index, variable_index, n, 1) = c->A().col(i);
+      Aeq.block(constraint_index, variable_index, n, 1) = c->GetDenseA().col(i);
     }
     beq.segment(constraint_index, n) =
         c->lower_bound();  // = c->upper_bound() since it's an equality

@@ -169,7 +169,7 @@ void ParseLinearConstraint(const MathematicalProgram& prog,
     const Eigen::VectorXd& ub = linear_constraint.evaluator()->upper_bound();
     const Eigen::VectorXd& lb = linear_constraint.evaluator()->lower_bound();
     const VectorXDecisionVariable& x = linear_constraint.variables();
-    const Eigen::MatrixXd& Ai = linear_constraint.evaluator()->A();
+    const Eigen::MatrixXd& Ai = linear_constraint.evaluator()->GetDenseA();
     for (int i = 0; i < linear_constraint.evaluator()->num_constraints();
          ++i) {
       const bool is_ub_finite{!std::isinf(ub(i))};
