@@ -9,8 +9,10 @@ def intel_realsense_ros_repository(
         name = name,
         repository = "IntelRealSense/realsense-ros",
         # N.B. Even though 2.3.x series is not the highest-numbered release, we
-        # are using it here because it aligns with the ROS Melodic version
-        # released for Ubuntu 18.04.
+        # are using it here because it aligns with the ROS Noetic version
+        # released for Ubuntu 20.04.  See:
+        # https://index.ros.org/p/realsense2_camera/github-IntelRealSense-realsense-ros/#noetic
+        # https://github.com/IntelRealSense/realsense-ros/releases
         commit = "2.3.2",
         sha256 = "18c0f90eeea2b64889388e2e441221931e220d1fea06fe6eff8d70442c456459",  # noqa
         build_file = "@drake//tools/workspace/intel_realsense_ros:package.BUILD.bazel",  # noqa
