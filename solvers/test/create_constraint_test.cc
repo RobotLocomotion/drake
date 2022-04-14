@@ -338,7 +338,8 @@ TEST_F(MaybeParseLinearConstraintTest, TestLinearEqualityConstraint) {
       EXPECT_EQ(linear_eq_constraint.variables().size(), 0);
     }
     EXPECT_EQ(linear_eq_constraint.evaluator()->num_constraints(), 1);
-    EXPECT_TRUE(CompareMatrices(linear_eq_constraint.evaluator()->A(), a, tol));
+    EXPECT_TRUE(
+        CompareMatrices(linear_eq_constraint.evaluator()->GetDenseA(), a, tol));
     EXPECT_NEAR(linear_eq_constraint.evaluator()->lower_bound()(0), bound, tol);
   };
 
@@ -373,7 +374,8 @@ TEST_F(MaybeParseLinearConstraintTest, TestLinearConstraint) {
       EXPECT_EQ(linear_constraint.variables().size(), 0);
     }
     EXPECT_EQ(linear_constraint.evaluator()->num_constraints(), 1);
-    EXPECT_TRUE(CompareMatrices(linear_constraint.evaluator()->A(), a, tol));
+    EXPECT_TRUE(
+        CompareMatrices(linear_constraint.evaluator()->GetDenseA(), a, tol));
     EXPECT_NEAR(linear_constraint.evaluator()->lower_bound()(0), lb, tol);
     EXPECT_NEAR(linear_constraint.evaluator()->upper_bound()(0), ub, tol);
   };

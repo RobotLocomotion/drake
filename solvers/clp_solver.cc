@@ -60,10 +60,10 @@ void AddLinearConstraint(
   for (int i = 0; i < linear_constraint.evaluator()->num_constraints(); ++i) {
     for (int j = 0; j < linear_constraint.variables().rows(); ++j) {
       const int var_index = variable_indices[j];
-      if (linear_constraint.evaluator()->A()(i, j) != 0) {
+      if (linear_constraint.evaluator()->GetDenseA()(i, j) != 0) {
         constraint_coeffs->emplace_back(
             i + *constraint_count, var_index,
-            linear_constraint.evaluator()->A()(i, j));
+            linear_constraint.evaluator()->GetDenseA()(i, j));
       }
     }
     (*constraint_lower)[*constraint_count + i] =

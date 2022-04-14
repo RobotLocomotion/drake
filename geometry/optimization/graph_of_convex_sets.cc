@@ -446,11 +446,11 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       if (LinearEqualityConstraint* lec =
               dynamic_cast<LinearEqualityConstraint*>(constraint)) {
         // A*x = b becomes A*x = phi*b.
-        MatrixXd Aeq(lec->A().rows(), lec->A().cols() + 1);
+        MatrixXd Aeq(lec->GetDenseA().rows(), lec->GetDenseA().cols() + 1);
         Aeq.col(0) = -lec->lower_bound();
-        Aeq.rightCols(lec->A().cols()) = lec->A();
-        prog.AddLinearEqualityConstraint(Aeq, VectorXd::Zero(lec->A().rows()),
-                                         vars);
+        Aeq.rightCols(lec->GetDenseA().cols()) = lec->GetDenseA();
+        prog.AddLinearEqualityConstraint(
+            Aeq, VectorXd::Zero(lec->GetDenseA().rows()), vars);
         // Note that LinearEqualityConstraint must come before LinearConstraint,
         // because LinearEqualityConstraint isa LinearConstraint.
       } else if (LinearConstraint* lc =
@@ -459,15 +459,15 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
         // A*x <= phi*ub and phi*lb <= A*x, which can be spelled
         // [-ub, A][phi; x] <= 0, and 0 <= [-lb, A][phi; x].
         RowVectorXd a(vars.size());
-        for (int i = 0; i < lc->A().rows(); ++i) {
+        for (int i = 0; i < lc->GetDenseA().rows(); ++i) {
           if (std::isfinite(lc->upper_bound()[i])) {
             a[0] = -lc->upper_bound()[i];
-            a.tail(lc->A().cols()) = lc->A().row(i);
+            a.tail(lc->GetDenseA().cols()) = lc->GetDenseA().row(i);
             prog.AddLinearConstraint(a, -inf, 0, vars);
           }
           if (std::isfinite(lc->lower_bound()[i])) {
             a[0] = -lc->lower_bound()[i];
-            a.tail(lc->A().cols()) = lc->A().row(i);
+            a.tail(lc->GetDenseA().cols()) = lc->GetDenseA().row(i);
             prog.AddLinearConstraint(a, 0, inf, vars);
           }
         }

@@ -305,7 +305,8 @@ void CheckLinearConstraint(
       solvers::internal::BindingDynamicCast<solvers::LinearConstraint>(
           constraint);
   EXPECT_EQ(linear_constraint.variables(), vars);
-  EXPECT_TRUE(CompareMatrices(linear_constraint.evaluator()->A(), A, tol));
+  EXPECT_TRUE(
+      CompareMatrices(linear_constraint.evaluator()->GetDenseA(), A, tol));
   EXPECT_TRUE(CompareMatrices(linear_constraint.evaluator()->lower_bound(),
                               lower, tol));
   EXPECT_TRUE(CompareMatrices(linear_constraint.evaluator()->upper_bound(),
@@ -321,7 +322,8 @@ void CheckLinearEqualityConstraint(
       solvers::internal::BindingDynamicCast<solvers::LinearEqualityConstraint>(
           constraint);
   EXPECT_EQ(linear_eq_constraint.variables(), vars);
-  EXPECT_TRUE(CompareMatrices(linear_eq_constraint.evaluator()->A(), A, tol));
+  EXPECT_TRUE(
+      CompareMatrices(linear_eq_constraint.evaluator()->GetDenseA(), A, tol));
   EXPECT_TRUE(CompareMatrices(linear_eq_constraint.evaluator()->lower_bound(),
                               rhs, tol));
 }
