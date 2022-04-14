@@ -19,7 +19,7 @@
 // triggered on `py::self -= py::self` for some reason.
 // It is fine to use this at a file-wide scope since in practice we only
 // encounter these warnings in bindings due to pybind11's operators.
-#if (__clang__) && (__clang_major__ >= 9)
+#if (__clang__)
 #pragma GCC diagnostic ignored "-Wself-assign-overloaded"
 #endif
 
