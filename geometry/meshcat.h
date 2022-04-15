@@ -159,6 +159,12 @@ class Meshcat {
   void SetObject(std::string_view path, const Shape& shape,
                  const Rgba& rgba = Rgba(.9, .9, .9, 1.));
 
+  /** Sets the realtime that is displayed in the meshcat visualizer strip chart.
+   * @param rate the realtime rate value to be displayed, will be converted to
+   *             a percentage (multiplied by 100)
+   */
+  void SetRealtimeRate(const double& rate);
+
   // TODO(russt): SetObject with texture map.
 
   /** Sets the "object" at a given `path` in the scene tree to be

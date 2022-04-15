@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <chrono>
 
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/meshcat.h"
@@ -213,6 +214,13 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   frame in the animation. */
   bool recording_{false};
   bool set_transforms_while_recording_{true};
+
+  /* Calculate latest realtime rate and send to meshcat */
+  void UpdateRealtimeRate(const double& sim_time) const;
+
+  mutable double prev_sim_time{0};
+  mutable std::chrono::time_point<std::chrono::steady_clock> prev_wall_time{
+      std::chrono::steady_clock::now()};
 };
 
 /** A convenient alias for the MeshcatVisualizer class when using the `double`
