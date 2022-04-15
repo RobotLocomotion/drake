@@ -206,6 +206,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.CalcRotationMatrix.doc)
         .def("CalcRotationMatrixInWorld", &Class::CalcRotationMatrixInWorld,
             py::arg("context"), cls_doc.CalcRotationMatrixInWorld.doc)
+        .def("EvalAngularVelocityInWorld", &Class::EvalAngularVelocityInWorld,
+            py::arg("context"), cls_doc.EvalAngularVelocityInWorld.doc)
+        .def("CalcAngularVelocity", &Class::CalcAngularVelocity,
+            py::arg("context"), py::arg("measured_in_frame"),
+            py::arg("expressed_in_frame"), cls_doc.CalcAngularVelocity.doc)
         .def("CalcSpatialVelocityInWorld", &Class::CalcSpatialVelocityInWorld,
             py::arg("context"), cls_doc.CalcSpatialVelocityInWorld.doc)
         .def("CalcSpatialVelocity", &Class::CalcSpatialVelocity,
