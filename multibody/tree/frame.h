@@ -18,26 +18,30 @@ namespace multibody {
 template<typename T> class Body;
 
 /// %Frame is an abstract class representing a _material frame_ (also called a
-/// _physical frame_), meaning that it is associated with a material point of a
-/// Body. A material frame can be used to apply forces and torques to a
-/// multibody system, and can be used as an attachment point for force-producing
-/// elements like joints, actuators, and constraints. Despite its name, %Frame
-/// is not the most general frame representation in Drake; see FrameBase for a
-/// more-general discussion.
+/// _physical frame_), meaning that the %Frame's origin is a material point of
+/// a Body.
 ///
-/// The pose and motion of a %Frame object is always calculated relative to the
-/// BodyFrame of the body with which it is associated, and every %Frame object
-/// can report which Body object that is. Concrete classes derived from %Frame
-/// differ only in how those kinematic properties are calculated. For soft
-/// bodies that calculation may depend on the body's deformation state
-/// variables. A %Frame on a rigid body will usually have a fixed offset from
-/// its BodyFrame, but that is not required -- a frame that moves with respect
-/// to its BodyFrame can still be a material frame on that rigid body.
+/// An important characteristic of a %Frame is that forces or torques applied
+/// to a %Frame are applied to the %Frame's underlying Body. Force-producing
+/// elements like joints, actuators, and constraints usually employ two %Frames,
+/// with one %Frame connected to one body and the other connected to a different
+/// Body. Every %Frame object can report the Body to which it is attached.
+/// Despite its name, %Frame is not the most general frame in Drake
+/// (see FrameBase for more information).
 ///
-/// As always in Drake, runtime numerical quantities are stored in a Context.
-/// A %Frame object does not store runtime values, but provides methods for
-/// extracting frame-associated values (such as the %Frame object's kinematics)
-/// from a given Context.
+/// A %Frame's pose in World (or relative to other frames) is always calculated
+/// starting with its pose relative to its underlying %Body's BodyFrame.
+/// Subclasses derived from %Frame differ in how kinematic calculations are
+/// performed. For example, the angular velocity of a FixedOffsetFrame or
+/// BodyFrame is identical to the angular velocity of its underlying body,
+/// whereas the translational velocity of a FixedOffsetFrame differs from that
+/// of a BodyFrame. If a %Frame is associated with a soft body, kinematic
+/// calculations can depend on the soft body's deformation state variables.
+///
+/// A %Frame object does _not_ store a Context (where Context means state that
+/// contains the %Frame's current orientation, position, motion, etc.).
+/// Instead, %Frame provides methods for calculating these %Frame-properties
+/// from a Context passed to %Frame methods.
 ///
 /// @tparam_default_scalar
 template <typename T>
