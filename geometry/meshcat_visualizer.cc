@@ -6,6 +6,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/extract_double.h"
 #include "drake/geometry/utilities.h"
 
 namespace drake {
@@ -83,20 +84,33 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
     version_ = current_version;
   }
   SetTransforms(query_object);
+  UpdateRealtimeRate(ExtractDoubleOrThrow(context.get_time()));
 
   return systems::EventStatus::Succeeded();
+}
+
+template <typename T>
+void MeshcatVisualizer<T>::UpdateRealtimeRate(const double& sim_time) const {
+  const auto current_wall_time = std::chrono::steady_clock::now();
+  std::chrono::duration<double> delta_wall_dur =
+      current_wall_time - prev_wall_time;
+  if (const auto delta_wall_sec = delta_wall_dur.count()) {
+    meshcat_->SetRealtimeRate((sim_time - prev_sim_time) / delta_wall_sec);
+  }
+  prev_sim_time = sim_time;
+  prev_wall_time = current_wall_time;
 }
 
 template <typename T>
 void MeshcatVisualizer<T>::SetObjects(
     const SceneGraphInspector<T>& inspector) const {
   // Frames registered previously that are not set again here should be deleted.
-  std::map <FrameId, std::string> frames_to_delete{};
+  std::map<FrameId, std::string> frames_to_delete{};
   dynamic_frames_.swap(frames_to_delete);
 
   // Geometries registered previously that are not set again here should be
   // deleted.
-  std::map <GeometryId, std::string> geometries_to_delete{};
+  std::map<GeometryId, std::string> geometries_to_delete{};
   geometries_.swap(geometries_to_delete);
 
   // TODO(SeanCurtis-TRI): Mimic the full tree structure in SceneGraph.
@@ -127,8 +141,9 @@ void MeshcatVisualizer<T>::SetObjects(
       // TODO(russt): Use the geometry names if/when they are cleaned up.
       const std::string path =
           fmt::format("{}/{}", frame_path, geom_id.get_value());
-      const Rgba rgba = inspector.GetProperties(geom_id, params_.role)
-          ->GetPropertyOrDefault("phong", "diffuse", params_.default_color);
+      const Rgba rgba =
+          inspector.GetProperties(geom_id, params_.role)
+              ->GetPropertyOrDefault("phong", "diffuse", params_.default_color);
 
       meshcat_->SetObject(path, inspector.GetShape(geom_id), rgba);
       meshcat_->SetTransform(path, inspector.GetPoseInFrame(geom_id));

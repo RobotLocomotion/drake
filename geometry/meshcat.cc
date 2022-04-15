@@ -44,12 +44,22 @@ std::string LoadResource(const std::string& resource_name) {
 const std::string& GetUrlContent(std::string_view url_path) {
   static const drake::never_destroyed<std::string> meshcat_js(
       LoadResource("drake/geometry/meshcat.js"));
+  static const drake::never_destroyed<std::string> stats_js(
+      LoadResource("drake/geometry/stats.min.js"));
+  static const drake::never_destroyed<std::string> msgpack_lite_js(
+      LoadResource("drake/geometry/msgpack.min.js"));
   static const drake::never_destroyed<std::string> meshcat_ico(
       LoadResource("drake/geometry/meshcat.ico"));
   static const drake::never_destroyed<std::string> meshcat_html(
       LoadResource("drake/geometry/meshcat.html"));
   if (url_path == "/meshcat.js") {
     return meshcat_js.access();
+  }
+  if (url_path == "/stats.min.js") {
+    return stats_js.access();
+  }
+  if (url_path == "/msgpack.min.js") {
+    return msgpack_lite_js.access();
   }
   if (url_path == "/favicon.ico") {
     return meshcat_ico.access();
@@ -366,8 +376,8 @@ class MeshcatShapeReifier : public ShapeReifier {
                             std::istreambuf_iterator<char>());
             meshfile_object.resources.try_emplace(
                 map, std::string("data:image/png;base64,") +
-                          common_robotics_utilities::base64_helpers::Encode(
-                              map_data));
+                         common_robotics_utilities::base64_helpers::Encode(
+                             map_data));
           } else {
             drake::log()->warn(
                 "Meshcat: Failed to load texture. {} references {}, but "
@@ -398,7 +408,7 @@ class MeshcatShapeReifier : public ShapeReifier {
       matrix(1, 1) = mesh.scale();
       matrix(2, 2) = mesh.scale();
     }
-    }
+  }
 
   void ImplementGeometry(const Mesh& mesh, void* data) override {
     ImplementMesh(mesh, data);
@@ -478,6 +488,23 @@ class Meshcat::WebSocketPublisher {
     return port_;
   }
 
+  void SetRealtimeRate(const double& rate) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    DRAKE_DEMAND(loop_ != nullptr);
+
+    internal::RealtimerateData data;
+    data.rate = rate;
+
+    loop_->defer([this, data = std::move(data)]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
+      DRAKE_DEMAND(app_ != nullptr);
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      std::string message = message_stream.str();
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+    });
+  }
+
   void SetObject(std::string_view path, const Shape& shape, const Rgba& rgba) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
@@ -508,8 +535,8 @@ class Meshcat::WebSocketPublisher {
       material->uuid = uuids::to_string(uuid_generator());
       material->type = "MeshPhongMaterial";
       material->color = (static_cast<int>(255 * rgba.r()) << 16) +
-                      (static_cast<int>(255 * rgba.g()) << 8) +
-                      static_cast<int>(255 * rgba.b());
+                        (static_cast<int>(255 * rgba.g()) << 8) +
+                        static_cast<int>(255 * rgba.b());
       // TODO(russt): Most values are taken verbatim from meshcat-python.
       material->reflectivity = 0.5;
       material->side = internal::kDoubleSide;
@@ -567,7 +594,7 @@ class Meshcat::WebSocketPublisher {
     geometry->uuid = uuids::to_string(uuid_generator());
     geometry->position = cloud.xyzs();
     if (cloud.has_rgbs()) {
-      geometry->color = cloud.rgbs().cast<float>()/255.0;
+      geometry->color = cloud.rgbs().cast<float>() / 255.0;
     }
     data.object.geometry = std::move(geometry);
 
@@ -717,38 +744,38 @@ class Meshcat::WebSocketPublisher {
         o.pack(FullPath(path_track.first));
         o.pack("clip");
         {
-            o.pack_map(3);
-            o.pack("fps");
-            o.pack(animation.frames_per_second());
-            o.pack("name");
-            o.pack("default");
-            o.pack("tracks");
-            {
-              o.pack_array(path_track.second.size());
-              for (const auto& property_track : path_track.second) {
-                o.pack_map(3);
-                o.pack("name");
-                o.pack("." + property_track.first);
-                o.pack("type");
-                o.pack(property_track.second.js_type);
-                o.pack("keys");
-                std::visit(
-                    [&o](const auto& track) {
-                      using T = std::decay_t<decltype(track)>;
-                      if constexpr (!std::is_same_v<T, std::monostate>) {
-                        o.pack_array(track.size());
-                        for (const auto& key : track) {
-                          o.pack_map(2);
-                          o.pack("time");
-                          o.pack(key.first);
-                          o.pack("value");
-                          o.pack(key.second);
-                        }
+          o.pack_map(3);
+          o.pack("fps");
+          o.pack(animation.frames_per_second());
+          o.pack("name");
+          o.pack("default");
+          o.pack("tracks");
+          {
+            o.pack_array(path_track.second.size());
+            for (const auto& property_track : path_track.second) {
+              o.pack_map(3);
+              o.pack("name");
+              o.pack("." + property_track.first);
+              o.pack("type");
+              o.pack(property_track.second.js_type);
+              o.pack("keys");
+              std::visit(
+                  [&o](const auto& track) {
+                    using T = std::decay_t<decltype(track)>;
+                    if constexpr (!std::is_same_v<T, std::monostate>) {
+                      o.pack_array(track.size());
+                      for (const auto& key : track) {
+                        o.pack_map(2);
+                        o.pack("time");
+                        o.pack(key.first);
+                        o.pack("value");
+                        o.pack(key.second);
                       }
-                    },
-                    property_track.second.track);
-              }
+                    }
+                  },
+                  property_track.second.track);
             }
+          }
         }
       }
     }
@@ -765,13 +792,12 @@ class Meshcat::WebSocketPublisher {
       o.pack(animation.clamp_when_finished());
     }
 
-    loop_->defer(
-        [this, message = message_stream.str()]() {
-          DRAKE_DEMAND(IsThread(websocket_thread_id_));
-          DRAKE_DEMAND(app_ != nullptr);
-          app_->publish("all", message, uWS::OpCode::BINARY, false);
-          animation_ = std::move(message);
-        });
+    loop_->defer([this, message = message_stream.str()]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
+      DRAKE_DEMAND(app_ != nullptr);
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+      animation_ = std::move(message);
+    });
   }
 
   void AddButton(std::string name) {
@@ -846,8 +872,8 @@ class Meshcat::WebSocketPublisher {
     });
   }
 
-  void AddSlider(std::string name, double min, double max,
-                               double step, double value) {
+  void AddSlider(std::string name, double min, double max, double step,
+                 double value) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
@@ -867,7 +893,7 @@ class Meshcat::WebSocketPublisher {
     // https://github.com/dataarts/dat.gui/blob/f720c729deca5d5c79da8464f8a05500d38b140c/src/dat/controllers/NumberController.js#L62
     value = std::max(value, min);
     value = std::min(value, max);
-    value = std::round(value/step)*step;
+    value = std::round(value / step) * step;
     data.value = value;
 
     {
@@ -906,7 +932,7 @@ class Meshcat::WebSocketPublisher {
       // Match setValue in NumberController.js from dat.GUI.
       value = std::max(value, s.min);
       value = std::min(value, s.max);
-      value = std::round(value/s.step)*s.step;
+      value = std::round(value / s.step) * s.step;
       s.value = value;
     }
 
@@ -1238,9 +1264,7 @@ std::string Meshcat::web_url() const {
   return fmt::format("http://localhost:{}", publisher_->port());
 }
 
-int Meshcat::port() const {
-  return publisher_->port();
-}
+int Meshcat::port() const { return publisher_->port(); }
 
 std::string Meshcat::ws_url() const {
   return fmt::format("ws://localhost:{}", publisher_->port());
@@ -1268,6 +1292,10 @@ void Meshcat::SetCamera(OrthographicCamera camera, std::string path) {
 void Meshcat::SetTransform(std::string_view path,
                            const RigidTransformd& X_ParentPath) {
   publisher_->SetTransform(path, X_ParentPath);
+}
+
+void Meshcat::SetRealtimeRate(const double& rate) {
+  publisher_->SetRealtimeRate(rate);
 }
 
 void Meshcat::Delete(std::string_view path) { publisher_->Delete(path); }
@@ -1303,8 +1331,7 @@ void Meshcat::Set2dRenderMode(const math::RigidTransformd& X_WC, double xmin,
 
   SetTransform("/Cameras/default", X_WC);
   // Lock orbit controls.
-  SetProperty("/Cameras/default/rotated/<object>", "position",
-              {0.0, 0.0, 0.0});
+  SetProperty("/Cameras/default/rotated/<object>", "position", {0.0, 0.0, 0.0});
 
   SetProperty("/Background", "visible", false);
   SetProperty("/Grid", "visible", false);
@@ -1316,8 +1343,7 @@ void Meshcat::ResetRenderMode() {
   SetCamera(camera);
   SetTransform("/Cameras/default", math::RigidTransformd());
   // Lock orbit controls.
-  SetProperty("/Cameras/default/rotated/<object>", "position",
-              {0.0, 1.0, 3.0});
+  SetProperty("/Cameras/default/rotated/<object>", "position", {0.0, 1.0, 3.0});
   SetProperty("/Background", "visible", true);
   SetProperty("/Grid", "visible", true);
   SetProperty("/Axes", "visible", true);
@@ -1335,8 +1361,8 @@ void Meshcat::DeleteButton(std::string name) {
   publisher_->DeleteButton(std::move(name));
 }
 
-void Meshcat::AddSlider(std::string name, double min, double max,
-                               double step, double value) {
+void Meshcat::AddSlider(std::string name, double min, double max, double step,
+                        double value) {
   publisher_->AddSlider(std::move(name), min, max, step, value);
 }
 
@@ -1352,9 +1378,7 @@ void Meshcat::DeleteSlider(std::string name) {
   publisher_->DeleteSlider(std::move(name));
 }
 
-void Meshcat::DeleteAddedControls() {
-  publisher_->DeleteAddedControls();
-}
+void Meshcat::DeleteAddedControls() { publisher_->DeleteAddedControls(); }
 
 bool Meshcat::HasPath(std::string_view path) const {
   return publisher_->HasPath(path);

@@ -23,7 +23,7 @@ namespace internal {
 // This macro not only makes the code shorter, but it also helps avoid spelling
 // mistakes by ensuring that the string name matches the variable name.
 #define PACK_MAP_VAR(packer, var) \
-  packer.pack(#var);           \
+  packer.pack(#var);              \
   packer.pack(var);
 
 // The fields in these structures are chosen to match the serialized names in
@@ -153,8 +153,7 @@ struct MaterialData {
   // This method must be defined, but the implementation is not needed in the
   // current workflows.
   void msgpack_unpack(msgpack::object const&) {
-    throw std::runtime_error(
-        "unpack is not implemented for MaterialData.");
+    throw std::runtime_error("unpack is not implemented for MaterialData.");
   }
 };
 
@@ -360,6 +359,12 @@ struct SetTransformData {
   MSGPACK_DEFINE_MAP(type, path, matrix);
 };
 
+struct RealtimerateData {
+  std::string type{"realtime_rate"};
+  double rate;
+  MSGPACK_DEFINE_MAP(type, rate);
+};
+
 struct DeleteData {
   std::string type{"delete"};
   std::string path;
@@ -430,108 +435,108 @@ MSGPACK_ADD_ENUM(drake::geometry::MeshcatAnimation::LoopMode);
 // public interface. https://github.com/msgpack/msgpack-c/wiki/v2_0_cpp_adaptor
 namespace msgpack {
 MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
-namespace adaptor {
+  namespace adaptor {
 
-
-template <typename Scalar, int RowsAtCompileTime, int ColsAtCompileTime,
-          int Options, int MaxRowsAtCompileTime, int MaxColsAtCompileTime>
-struct pack<Eigen::Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime, Options,
-                          MaxRowsAtCompileTime, MaxColsAtCompileTime> > {
-  template <typename Stream>
-  packer<Stream>& operator()(
-      // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack.
-      msgpack::packer<Stream>& o,
+  template <typename Scalar, int RowsAtCompileTime, int ColsAtCompileTime,
+            int Options, int MaxRowsAtCompileTime, int MaxColsAtCompileTime>
+  struct pack<
+      Eigen::Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime, Options,
+                    MaxRowsAtCompileTime, MaxColsAtCompileTime> > {
+    template <typename Stream>
+    packer<Stream>& operator()(
+        // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack.
+        msgpack::packer<Stream>& o,
       const Eigen::Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime, Options,
                           MaxRowsAtCompileTime, MaxColsAtCompileTime>& mat)
       const {
-    o.pack_map(4);
-    o.pack("itemSize");
-    o.pack(mat.rows());
-    o.pack("type");
-    int8_t ext;
+      o.pack_map(4);
+      o.pack("itemSize");
+      o.pack(mat.rows());
+      o.pack("type");
+      int8_t ext;
     // Based on pack_numpy_array method in meshcat-python geometry.py. See also
-    // https://github.com/msgpack/msgpack/blob/master/spec.md#extension-types
-    if (std::is_floating_point_v<Scalar>) {
-      o.pack("Float32Array");
-      ext = 0x17;
-    } else if (std::is_same_v<Scalar, uint8_t>) {
-      o.pack("Uint8Array");
-      ext = 0x12;
-    } else {
-      throw std::runtime_error("Unsupported Scalar " +
-                               drake::NiceTypeName::Get(typeid(Scalar)));
+      // https://github.com/msgpack/msgpack/blob/master/spec.md#extension-types
+      if (std::is_floating_point_v<Scalar>) {
+        o.pack("Float32Array");
+        ext = 0x17;
+      } else if (std::is_same_v<Scalar, uint8_t>) {
+        o.pack("Uint8Array");
+        ext = 0x12;
+      } else {
+        throw std::runtime_error("Unsupported Scalar " +
+                                 drake::NiceTypeName::Get(typeid(Scalar)));
+      }
+      o.pack("array");
+      if (std::is_same_v<std::remove_cv<Scalar>, double>) {
+        // Three.js only uses float, and meshcat only parses Float32Array (not
+        // doubles).
+        size_t s = mat.size() * sizeof(float);
+        o.pack_ext(s, ext);
+        auto mat_float = mat.template cast<float>().eval();
+        o.pack_ext_body(reinterpret_cast<const char*>(mat_float.data()), s);
+      } else {
+        size_t s = mat.size() * sizeof(Scalar);
+        o.pack_ext(s, ext);
+        o.pack_ext_body(reinterpret_cast<const char*>(mat.data()), s);
+      }
+      o.pack("normalized");
+      o.pack(false);
+      return o;
     }
-    o.pack("array");
-    if (std::is_same_v<std::remove_cv<Scalar>, double>) {
-      // Three.js only uses float, and meshcat only parses Float32Array (not
-      // doubles).
-      size_t s = mat.size() * sizeof(float);
-      o.pack_ext(s, ext);
-      auto mat_float = mat.template cast<float>().eval();
-      o.pack_ext_body(reinterpret_cast<const char*>(mat_float.data()), s);
-    } else {
-      size_t s = mat.size() * sizeof(Scalar);
-      o.pack_ext(s, ext);
-      o.pack_ext_body(reinterpret_cast<const char*>(mat.data()), s);
+  };
+
+  template <>
+  struct pack<drake::geometry::Meshcat::OrthographicCamera> {
+    template <typename Stream>
+    packer<Stream>& operator()(
+        // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack.
+        msgpack::packer<Stream>& o,
+        const drake::geometry::Meshcat::OrthographicCamera& v) const {
+      o.pack_map(8);
+      o.pack("type");
+      o.pack("OrthographicCamera");
+      o.pack("left");
+      o.pack(v.left);
+      o.pack("right");
+      o.pack(v.right);
+      o.pack("top");
+      o.pack(v.top);
+      o.pack("bottom");
+      o.pack(v.bottom);
+      o.pack("near");
+      o.pack(v.near);
+      o.pack("far");
+      o.pack(v.far);
+      o.pack("zoom");
+      o.pack(v.zoom);
+      return o;
     }
-    o.pack("normalized");
-    o.pack(false);
-    return o;
-  }
-};
+  };
 
-template <>
-struct pack<drake::geometry::Meshcat::OrthographicCamera> {
-  template <typename Stream>
-  packer<Stream>& operator()(
-      // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack.
-      msgpack::packer<Stream>& o,
-      const drake::geometry::Meshcat::OrthographicCamera& v) const {
-    o.pack_map(8);
-    o.pack("type");
-    o.pack("OrthographicCamera");
-    o.pack("left");
-    o.pack(v.left);
-    o.pack("right");
-    o.pack(v.right);
-    o.pack("top");
-    o.pack(v.top);
-    o.pack("bottom");
-    o.pack(v.bottom);
-    o.pack("near");
-    o.pack(v.near);
-    o.pack("far");
-    o.pack(v.far);
-    o.pack("zoom");
-    o.pack(v.zoom);
-    return o;
-  }
-};
-
-template<>
-struct pack<drake::geometry::Meshcat::PerspectiveCamera> {
-  template <typename Stream>
-  packer<Stream>& operator()(
+  template <>
+  struct pack<drake::geometry::Meshcat::PerspectiveCamera> {
+    template <typename Stream>
+    packer<Stream>& operator()(
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
-      msgpack::packer<Stream>& o,
-      const drake::geometry::Meshcat::PerspectiveCamera& v) const {
-    o.pack_map(5);
-    o.pack("type");
-    o.pack("PerspectiveCamera");
-    o.pack("fov");
-    o.pack(v.fov);
-    o.pack("aspect");
-    o.pack(v.aspect);
-    o.pack("near");
-    o.pack(v.near);
-    o.pack("far");
-    o.pack(v.far);
-    o.pack("zoom");
-    o.pack(v.zoom);
-    return o;
-  }
-};
+        msgpack::packer<Stream>& o,
+        const drake::geometry::Meshcat::PerspectiveCamera& v) const {
+      o.pack_map(5);
+      o.pack("type");
+      o.pack("PerspectiveCamera");
+      o.pack("fov");
+      o.pack(v.fov);
+      o.pack("aspect");
+      o.pack(v.aspect);
+      o.pack("near");
+      o.pack(v.near);
+      o.pack("far");
+      o.pack(v.far);
+      o.pack("zoom");
+      o.pack(v.zoom);
+      return o;
+    }
+  };
 
-}  // namespace adaptor
+  }  // namespace adaptor
 }  // namespace MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS)
 }  // namespace msgpack
