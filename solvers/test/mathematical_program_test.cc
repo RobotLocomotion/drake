@@ -3318,6 +3318,31 @@ GTEST_TEST(TestMathematicalProgram, NewSosPolynomial) {
   CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial::kSos);
   CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial::kSdsos);
   CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial::kDsos);
+
+  // Check NewSosPolynomial with degree = 0
+  for (const auto type : {MathematicalProgram::NonnegativePolynomial::kSos,
+                          MathematicalProgram::NonnegativePolynomial::kSdsos,
+                          MathematicalProgram::NonnegativePolynomial::kDsos}) {
+    solvers::MathematicalProgram prog;
+    const auto x = prog.NewIndeterminates<2>();
+    symbolic::Polynomial p;
+    MatrixXDecisionVariable gram;
+    std::tie(p, gram) = prog.NewSosPolynomial(symbolic::Variables(x), 0, type);
+    EXPECT_EQ(prog.bounding_box_constraints().size(), 1u);
+    EXPECT_TRUE(CompareMatrices(
+        prog.bounding_box_constraints()[0].evaluator()->lower_bound(),
+        Vector1d::Constant(0)));
+    EXPECT_TRUE(CompareMatrices(
+        prog.bounding_box_constraints()[0].evaluator()->upper_bound(),
+        Vector1d::Constant(kInf)));
+    EXPECT_EQ(prog.bounding_box_constraints()[0].variables(), gram);
+    EXPECT_EQ(p.TotalDegree(), 0);
+    EXPECT_EQ(p.monomial_to_coefficient_map().size(), 1u);
+    EXPECT_EQ(gram.rows(), 1);
+    EXPECT_EQ(gram.cols(), 1);
+    EXPECT_EQ(p.monomial_to_coefficient_map().at(symbolic::Monomial()),
+              gram(0, 0));
+  }
 }
 
 void CheckNewEvenDegreeNonnegativePolynomial(
