@@ -8,11 +8,12 @@ def ros_xacro_repository(
     github_archive(
         name = name,
         repository = "ros/xacro",
-        # N.B. Even though 1.13.x series is not the highst-numbered release, we
-        # are using it here because it aligns with the ROS Melodic version
-        # released for Ubuntu 18.04.
-        commit = "1.13.17",
-        sha256 = "041cb63db114c7a40331bd639645e785b1092983b58a5029c01a22f20a3b49f0",  # noqa
+        # N.B. Even though 1.14.x series might not be the highest-numbered
+        # release, we are using it here because it aligns with the ROS Noetic
+        # version released for Ubuntu 20.04.  See:
+        # https://index.ros.org/p/xacro/github-ros-xacro/#noetic
+        commit = "1.14.13",
+        sha256 = "e210b1e9c478d53350ef565b502ff5e53f29fd2f78eff04bb16fd465b43f4143",  # noqa
         build_file = "@drake//tools/workspace/ros_xacro:package.BUILD.bazel",
         patches = [
             "@drake//tools/workspace/ros_xacro:disable-console-print.patch",

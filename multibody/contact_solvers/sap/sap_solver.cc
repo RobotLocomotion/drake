@@ -370,6 +370,11 @@ void SapSolver<T>::CallDenseSolver(const Context<T>& context,
   // Factorize Hessian.
   // TODO(amcastro-tri): Make use of mat::SolveLinearSystem() for a quick and
   // dirty way to support AutoDiffXd, at least to build unit tests.
+  // N.B. The support for dense algebra is mostly for testing purposes, even
+  // though the computation of the dense H (and in particular of the Jᵀ⋅G⋅J
+  // term) is very costly. Therefore below we decided to trade off speed for
+  // stability when choosing to use an LDLT decomposition instead of a slightly
+  // faster, though less stable, LLT decomposition.
   const Eigen::LDLT<MatrixX<T>> Hldlt(H);
   if (Hldlt.info() != Eigen::Success) {
     // TODO(amcastro-tri): Unit test this condition.

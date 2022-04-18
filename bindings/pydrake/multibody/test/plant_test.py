@@ -1831,6 +1831,11 @@ class TestPlant(unittest.TestCase):
             dut.CalcRotationMatrixInWorld(context=context),
             RotationMatrix_[T])
         self.assertIsInstance(
+            dut.EvalAngularVelocityInWorld(context=context), np.ndarray)
+        self.assertIsInstance(
+            dut.CalcAngularVelocity(context=context, measured_in_frame=dut,
+                                    expressed_in_frame=dut), np.ndarray)
+        self.assertIsInstance(
             dut.CalcSpatialVelocityInWorld(context=context),
             SpatialVelocity_[T])
         self.assertIsInstance(

@@ -50,7 +50,7 @@ load("@drake//tools/workspace:os.bzl", "determine_os")
 _VERSION_SUPPORT_MATRIX = {
     "ubuntu:20.04": ["3.8"],
     "macos": ["3.9"],
-    "manylinux": ["3.6", "3.7", "3.8", "3.9"],
+    "manylinux": ["3.8", "3.9"],
 }
 
 def repository_python_info(repository_ctx):
