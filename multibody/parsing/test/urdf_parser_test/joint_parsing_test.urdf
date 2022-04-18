@@ -94,22 +94,16 @@ Defines a URDF model with various types of joints.
   <transmission>
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="revolute_joint">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
     </joint>
     <actuator name="revolute_actuator">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
   <!-- Joint defined with zero effort, actuator should be skipped. -->
   <transmission>
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="prismatic_joint">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
     </joint>
     <actuator name="prismatic_actuator">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
   <!-- Joint defined with no effort limit, actuator should be created
@@ -117,11 +111,8 @@ Defines a URDF model with various types of joints.
   <transmission>
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="revolute_joint_no_limits">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
     </joint>
     <actuator name="revolute_actuator_no_limits">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
 </robot>

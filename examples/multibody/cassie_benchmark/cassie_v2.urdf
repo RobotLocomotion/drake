@@ -826,61 +826,51 @@ The original URDF is here:
   <transmission name="hip_roll_left_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="hip_roll_left_motor"/>
     <joint name="hip_roll_left"/>
-    <mechanicalReduction>1</mechanicalReduction>
   </transmission>
 
   <transmission name="hip_roll_right_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="hip_roll_right_motor"/>
     <joint name="hip_roll_right"/>
-    <mechanicalReduction>1</mechanicalReduction>
   </transmission>
 
   <transmission name="hip_yaw_left_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="hip_yaw_left_motor"/>
     <joint name="hip_yaw_left"/>
-    <mechanicalReduction>1</mechanicalReduction>
   </transmission>
 
   <transmission name="hip_yaw_right_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="hip_yaw_right_motor"/>
     <joint name="hip_yaw_right"/>
-    <mechanicalReduction>1</mechanicalReduction>
   </transmission>
 
   <transmission name="hip_pitch_left_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="hip_pitch_left_motor"/>
     <joint name="hip_pitch_left"/>
-    <mechanicalReduction>1</mechanicalReduction>
   </transmission>
 
   <transmission name="hip_pitch_right_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="hip_pitch_right_motor"/>
     <joint name="hip_pitch_right"/>
-    <mechanicalReduction>1</mechanicalReduction>
   </transmission>
 
   <transmission name="knee_left_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="knee_left_motor"/>
     <joint name="knee_left"/>
-    <mechanicalReduction>1</mechanicalReduction>
   </transmission>
 
   <transmission name="knee_right_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="knee_right_motor"/>
     <joint name="knee_right"/>
-    <mechanicalReduction>1</mechanicalReduction>
   </transmission>
 
   <transmission name="toe_left_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="toe_left_motor"/>
     <joint name="toe_left"/>
-    <mechanicalReduction>1</mechanicalReduction>
   </transmission>
 
   <transmission name="toe_right_trans" type="transmission_interface/SimpleTransmission">
     <actuator name="toe_right_motor"/>
     <joint name="toe_right"/>
-    <mechanicalReduction>1</mechanicalReduction>
   </transmission>
 
  <!-- SPRINGS ||| SPRINGS ||| SPRINGS ||| SPRINGS ||| SPRINGS |||-->

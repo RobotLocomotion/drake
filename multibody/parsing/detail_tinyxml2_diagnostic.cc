@@ -60,8 +60,9 @@ DiagnosticPolicy TinyXml2Diagnostic::MakePolicyForNode(
 
 void TinyXml2Diagnostic::WarnUnsupportedElement(
     const XMLElement& node, const std::string& tag) const {
-  if (node.FirstChildElement(tag.c_str())) {
-    Warning(node, fmt::format(
+  const XMLElement* subnode = node.FirstChildElement(tag.c_str());
+  if (subnode) {
+    Warning(*subnode, fmt::format(
                 "The tag '{}' found as a child of '{}' is currently"
                 " unsupported and will be ignored.", tag, node.Name()));
   }

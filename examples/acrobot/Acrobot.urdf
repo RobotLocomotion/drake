@@ -80,7 +80,6 @@
   <transmission type="SimpleTransmission" name="elbow_trans">
     <actuator name="elbow"/>
     <joint name="elbow"/>
-    <mechanicalReduction>1</mechanicalReduction>
   </transmission>
   <frame name="hand" link="lower_link" xyz="0 0 -2.1" rpy="0 0 0"/>
 </robot>

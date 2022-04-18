@@ -60,7 +60,7 @@
     <parent link="base_part2"/>
     <child link="arm"/>
     <axis xyz="0 1 0"/>
-    <dynamics damping="0.5" friction="20"/>
+    <dynamics damping="0.5"/>
   </joint>
   <link name="arm_com">
     <inertial>
@@ -89,22 +89,5 @@
   <transmission name="elbow_trans" type="SimpleTransmission">
     <actuator name="tau"/>
     <joint name="theta"/>
-    <mechanicalReduction>1</mechanicalReduction>
   </transmission>
-  <gazebo reference="base_part2">
-    <material>Gazebo/Green</material>
-  </gazebo>
-  <gazebo reference="arm">
-    <material>Gazebo/Red</material>
-  </gazebo>
-  <gazebo reference="arm_com">
-    <material>Gazebo/Blue</material>
-  </gazebo>
-  <gazebo>
-    <plugin filename="libgazebo_ros_pub_robot_state.so" name="gazebo_ros_pub_robot_controller">
-      <alwaysOn>true</alwaysOn>
-      <updateRate>100.0</updateRate>
-      <topicName>true_robot_state</topicName>
-    </plugin>
-  </gazebo>
 </robot>

@@ -69,7 +69,6 @@
   <transmission name="crossbar_crank_transmission" type="pr2_mechanism_model/SimpleTransmission">
     <joint name="joint_crossbar_crank"/>
     <actuator name="crossbar_crank_motor"/>
-    <mechanicalReduction>1</mechanicalReduction>
   </transmission>
   <!-- Macro to define a pair of legs at an offset along the crank shaft -->
   <xacro:macro name="positioned_leg_pair" params="name offset angle">

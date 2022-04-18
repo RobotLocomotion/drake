@@ -70,6 +70,5 @@
   <transmission type="SimpleTransmission" name="elbow_trans">
     <actuator name="ElbowJoint"/>
     <joint name="ElbowJoint"/>
-    <mechanicalReduction>1</mechanicalReduction>
   </transmission>
 </robot>
