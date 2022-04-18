@@ -1157,6 +1157,12 @@ class TestSymbolicMonomial(unittest.TestCase):
         self.assertEqual(m.Evaluate(env=env),
                          env[x] ** 3 * env[y])
 
+    def test_evaluate_batch(self):
+        m = sym.Monomial(x, 3) * sym.Monomial(y)
+        monomial_vals = m.Evaluate(
+            vars=[x, y], vars_val=[[1, 2, 3], [4, 5, 6]])
+        np.testing.assert_array_equal(monomial_vals, [4, 40, 27 * 6])
+
     def test_evaluate_exception_np_nan(self):
         m = sym.Monomial(x, 3)
         env = {x: np.nan}
