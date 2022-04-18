@@ -122,41 +122,6 @@ void Geometries::MakeShape(const ShapeType& shape, const ReifyData& data) {
   }
 }
 
-DeformableContactData<double> Geometries::CalcDeformableContactData(
-    GeometryId deformable_id) const {
-  DRAKE_DEMAND(is_deformable(deformable_id));
-  std::vector<DeformableRigidContactPair<double>>
-      deformable_rigid_contact_pairs;
-  for (const auto& it : rigid_geometries_) {
-    DeformableRigidContactPair<double> contact_pair =
-        CalcDeformableRigidContactPair(it.first, deformable_id);
-    if (contact_pair.num_contact_points() != 0) {
-      deformable_rigid_contact_pairs.emplace_back(move(contact_pair));
-    }
-  }
-  return {move(deformable_rigid_contact_pairs),
-          deformable_geometries_.at(deformable_id), deformable_id};
-}
-
-DeformableRigidContactPair<double> Geometries::CalcDeformableRigidContactPair(
-    GeometryId rigid_id, GeometryId deformable_id) const {
-  DRAKE_DEMAND(is_deformable(deformable_id));
-  DRAKE_DEMAND(is_rigid(rigid_id));
-
-  const DeformableVolumeMesh<double>& deformable_tet_mesh =
-      deformable_geometries_.at(deformable_id).deformable_volume_mesh();
-  const RigidGeometry& rigid_geometry = rigid_geometries_.at(rigid_id);
-  const math::RigidTransform<double>& X_WR = rigid_geometry.pose_in_world();
-  const auto& rigid_bvh = rigid_geometry.rigid_mesh().bvh();
-  const auto& rigid_tri_mesh = rigid_geometry.rigid_mesh().mesh();
-
-  DeformableContactSurface<double> contact_surface =
-      ComputeTetMeshTriMeshContact(deformable_tet_mesh, rigid_tri_mesh,
-                                   rigid_bvh, X_WR);
-  return DeformableRigidContactPair<double>(move(contact_surface), rigid_id,
-                                            deformable_id);
-}
-
 }  // namespace deformable
 }  // namespace internal
 }  // namespace geometry
