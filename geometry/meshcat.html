@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- This file is forked from dist/index.html in rdeits/meshcat. -->
+<!-- This file is forked from dist/index.html in rdeits/meshcat.-->
 <html>
 
 <head>
@@ -12,8 +12,45 @@
   </div>
 
   <script type="text/javascript" src="meshcat.js"></script>
+  <script type="text/javascript" src="stats.min.js"></script>
+  <script type="text/javascript" src="msgpack.min.js"></script>
   <script>
+    var stats = new Stats();
+    var rtrPanel = stats.addPanel( new Stats.Panel( 'rtr%', '#ff8', '#221' ) );
+    document.body.appendChild( stats.dom );
+    if ( self.performance && self.performance.memory ) {
+      // some browsers support performance.memory panel so our index becomes 3
+      stats.showPanel(3);
+    } else {
+      stats.showPanel(2);
+    }
+    var rtr = 0;
     var viewer = new MeshCat.Viewer(document.getElementById("meshcat-pane"));
+    viewer.animate = function () {
+      viewer.animator.update();
+        if (viewer.needs_render) {
+          viewer.render();
+        }
+    }
+
+    function animate() {
+      stats.begin();
+      rtrPanel.update(rtr*100, 100); // easier to read as percentage
+      viewer.animate()
+      stats.end();
+      requestAnimationFrame(animate);
+    }
+
+    function handle_message(ws_message) {
+      let decoded = msgpack.decode(new Uint8Array(ws_message.data));
+      if (decoded.type == "realtime_rate") {
+        rtr = decoded.rate;
+      } else {
+        viewer.handle_command(decoded)
+      }
+    }
+
+    requestAnimationFrame( animate );
     // Set background to match Drake Visualizer.
     viewer.set_property(['Background'], "top_color", [.95, .95, 1.0])
     viewer.set_property(['Background'], "bottom_color", [.32, .32, .35])
@@ -26,7 +63,13 @@
       url = url.replace("https://", "wss://")
       url = url.replace("/index.html", "/")
       url = url.replace("/meshcat.html", "/")
-      viewer.connect(url);
+      connection = new WebSocket(url);
+      connection.binaryType = "arraybuffer";
+      connection.onmessage = (msg) => handle_message(msg);
+      connection.onclose = function(evt) {
+        console.log("onclose:", evt);
+      }
+      viewer.connection = connection
     } catch (e) {
       console.info("Not connected to MeshCat websocket server: ", e);
     }

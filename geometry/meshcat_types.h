@@ -367,6 +367,12 @@ struct SetTransformData {
   MSGPACK_DEFINE_MAP(type, path, matrix);
 };
 
+struct RealtimerateData {
+  std::string type{"realtime_rate"};
+  double rate;
+  MSGPACK_DEFINE_MAP(type, rate);
+};
+
 struct DeleteData {
   std::string type{"delete"};
   std::string path;

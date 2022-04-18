@@ -1,0 +1,18 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # MIT
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["dist/msgpack.min.js"])
+
+# Install the license file.
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)

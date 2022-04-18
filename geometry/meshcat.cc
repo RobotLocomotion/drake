@@ -52,6 +52,10 @@ std::string LoadResource(const std::string& resource_name) {
 const std::string& GetUrlContent(std::string_view url_path) {
   static const drake::never_destroyed<std::string> meshcat_js(
       LoadResource("drake/geometry/meshcat.js"));
+  static const drake::never_destroyed<std::string> stats_js(
+      LoadResource("drake/geometry/stats.min.js"));
+  static const drake::never_destroyed<std::string> msgpack_lite_js(
+      LoadResource("drake/geometry/msgpack.min.js"));
   static const drake::never_destroyed<std::string> meshcat_ico(
       LoadResource("drake/geometry/meshcat.ico"));
   static const drake::never_destroyed<std::string> meshcat_html(
@@ -64,6 +68,12 @@ const std::string& GetUrlContent(std::string_view url_path) {
   }
   if (url_path == "/meshcat.js") {
     return meshcat_js.access();
+  }
+  if (url_path == "/stats.min.js") {
+    return stats_js.access();
+  }
+  if (url_path == "/msgpack.min.js") {
+    return msgpack_lite_js.access();
   }
   if (url_path == "/favicon.ico") {
     return meshcat_ico.access();
@@ -598,6 +608,23 @@ class Meshcat::Impl {
   int port() const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     return port_;
+  }
+
+  void SetRealtimeRate(const double& rate) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    DRAKE_DEMAND(loop_ != nullptr);
+
+    internal::RealtimerateData data;
+    data.rate = rate;
+
+    Defer([this, data = std::move(data)]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
+      DRAKE_DEMAND(app_ != nullptr);
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      std::string message = message_stream.str();
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+    });
   }
 
   // This function is public via the PIMPL.
@@ -1359,7 +1386,13 @@ class Meshcat::Impl {
       url = url.replace("https://", "wss://")
       url = url.replace("/index.html", "/")
       url = url.replace("/meshcat.html", "/")
-      viewer.connect(url);
+      connection = new WebSocket(url);
+      connection.binaryType = "arraybuffer";
+      connection.onmessage = (msg) => handle_message(msg);
+      connection.onclose = function(evt) {
+        console.log("onclose:", evt);
+      }
+      viewer.connection = connection
     } catch (e) {
       console.info("Not connected to MeshCat websocket server: ", e);
     })""";
@@ -1368,11 +1401,18 @@ class Meshcat::Impl {
     html.replace(pos, html_connect.size(), std::move(f.get()));
 
     // Insert the javascript directly into the html.
-    const std::string meshcat_src_link(" src=\"meshcat.js\"");
-    pos = html.find(meshcat_src_link);
-    DRAKE_DEMAND(pos != std::string::npos);
-    html.erase(pos, meshcat_src_link.size());
-    html.insert(pos+1, GetUrlContent("/meshcat.js"));
+    std::vector<std::pair<std::string, std::string>> js_paths{
+        {" src=\"meshcat.js\"", "/meshcat.js"},
+        {" src=\"stats.min.js\"", "/stats.min.js"},
+        {" src=\"msgpack.min.js\"", "/msgpack.min.js"},
+    };
+    for (const auto& js_pair : js_paths) {
+      const std::string src_link(js_pair.first);
+      pos = html.find(src_link);
+      DRAKE_DEMAND(pos != std::string::npos);
+      html.erase(pos, src_link.size());
+      html.insert(pos+1, GetUrlContent(js_pair.second));
+    }
 
     return html;
   }
@@ -1990,6 +2030,10 @@ void Meshcat::SetTransform(std::string_view path,
 
 void Meshcat::Delete(std::string_view path) {
   impl().Delete(path);
+}
+
+void Meshcat::SetRealtimeRate(const double& rate) {
+  impl().SetRealtimeRate(rate);
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,

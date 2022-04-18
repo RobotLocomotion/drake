@@ -6,6 +6,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/extract_double.h"
 #include "drake/geometry/utilities.h"
 
 namespace drake {
@@ -95,8 +96,21 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
     version_ = current_version;
   }
   SetTransforms(context, query_object);
+  UpdateRealtimeRate(ExtractDoubleOrThrow(context.get_time()));
 
   return systems::EventStatus::Succeeded();
+}
+
+template <typename T>
+void MeshcatVisualizer<T>::UpdateRealtimeRate(const double& sim_time) const {
+  const auto current_wall_time = std::chrono::steady_clock::now();
+  std::chrono::duration<double> delta_wall_dur =
+      current_wall_time - prev_wall_time;
+  if (const auto delta_wall_sec = delta_wall_dur.count()) {
+    meshcat_->SetRealtimeRate((sim_time - prev_sim_time) / delta_wall_sec);
+  }
+  prev_sim_time = sim_time;
+  prev_wall_time = current_wall_time;
 }
 
 template <typename T>

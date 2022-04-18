@@ -54,6 +54,8 @@ load("@drake//tools/workspace/liblzma:repository.bzl", "liblzma_repository")
 load("@drake//tools/workspace/libpng:repository.bzl", "libpng_repository")
 load("@drake//tools/workspace/libtiff:repository.bzl", "libtiff_repository")
 load("@drake//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
+load("@drake//tools/workspace/statsjs:repository.bzl", "statsjs_repository")
+load("@drake//tools/workspace/msgpack_lite_js:repository.bzl", "msgpack_lite_js_repository")  # noqa
 load("@drake//tools/workspace/meshcat_python:repository.bzl", "meshcat_python_repository")  # noqa
 load("@drake//tools/workspace/models:repository.bzl", "models_repository")
 load("@drake//tools/workspace/mosek:repository.bzl", "mosek_repository")
@@ -214,6 +216,10 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         libtiff_repository(name = "libtiff")
     if "meshcat" not in excludes:
         meshcat_repository(name = "meshcat", mirrors = mirrors)
+    if "statsjs" not in excludes:
+        statsjs_repository(name = "statsjs", mirrors = mirrors)
+    if "msgpack_lite_js" not in excludes:
+        msgpack_lite_js_repository(name = "msgpack_lite_js", mirrors = mirrors)
     if "meshcat_python" not in excludes:
         meshcat_python_repository(name = "meshcat_python", mirrors = mirrors)
     if "models" not in excludes:

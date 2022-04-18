@@ -903,8 +903,10 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
   // Confirm that I have some base64 content.
   EXPECT_THAT(html, HasSubstr("data:application/octet-binary;base64"));
 
-  // Confirm that the meshcat.js link was replaced.
+  // Confirm that the js source links were replaced.
   EXPECT_THAT(html, ::testing::Not(HasSubstr("meshcat.js")));
+  EXPECT_THAT(html, ::testing::Not(HasSubstr("stats.min.js")));
+  EXPECT_THAT(html, ::testing::Not(HasSubstr("msgpack.min.js")));
 }
 
 }  // namespace
