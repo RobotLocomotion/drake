@@ -704,7 +704,16 @@ PYBIND11_MODULE(symbolic, m) {
           [](const Monomial& self, const Environment::map& env) {
             return self.Evaluate(Environment{env});
           },
-          py::arg("env"), doc.Monomial.Evaluate.doc)
+          py::arg("env"), doc.Monomial.Evaluate.doc_1args)
+      .def(
+          "Evaluate",
+          [](const Monomial& self,
+              const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
+              const Eigen::Ref<const Eigen::MatrixXd>& vars_values) {
+            return self.Evaluate(vars, vars_values);
+          },
+          py::arg("vars"), py::arg("vars_values"),
+          doc.Monomial.Evaluate.doc_2args)
       .def(
           "EvaluatePartial",
           [](const Monomial& self, const Environment::map& env) {

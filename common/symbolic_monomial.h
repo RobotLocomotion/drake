@@ -83,6 +83,24 @@ class Monomial {
    */
   double Evaluate(const Environment& env) const;
 
+  /**
+   * Evaluates the monomial for a batch of data.
+   * We return monomial_vals such that monomial_vals(j) is obtained by
+   * substituting `vars(i)` with `vars_values(i, j)`, note that
+   * vars_values.rows() == vars.rows() and vars_values.cols() ==
+   * monomial_vals.rows().
+   * @param vars The variables whose value will be substituted. `vars` must
+   * contain all variables in this->GetVariables(). Also `vars` cannot contain
+   * any duplicate variables, namely vars(i) != vars(j) if i != j.
+   * @param vars_values The i'th column of `vars_values` is the i'th data for
+   * `vars`.
+   * @throw an exception if `vars` doesn't contain all the variables in
+   * this->GetVariables.
+   */
+  Eigen::VectorXd Evaluate(
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
+      const Eigen::Ref<const Eigen::MatrixXd>& vars_values) const;
+
   /** Partially evaluates using a given environment @p env. The evaluation
    * result is of type pair<double, Monomial>. The first component (: double)
    * represents the coefficient part while the second component represents the
