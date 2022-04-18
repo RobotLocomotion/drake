@@ -106,6 +106,14 @@ class ProximityEngine {
                            const math::RigidTransformd& X_WG, GeometryId id,
                            const ProximityProperties& props = {});
 
+  /* Adds the given `shape` to the engine's deformable geometries.
+   @param shape   The shape to add.
+   @param mesh    The volume mesh of representation of the collision geometry.
+   @param id      The id of the geometry in SceneGraph to which this shape
+                  belongs. */
+  void AddDeformableGeometry(const Shape& shape, const VolumeMesh<double>& mesh,
+                             GeometryId id);
+
   /* Possibly updates the proximity representation of the given `geometry`
    based on the relationship between its _current_ proximity properties and the
    given _new_ proximity properties. The underlying representation may not
@@ -166,6 +174,15 @@ class ProximityEngine {
   //    a vector and the caller sets values there directly.
   void UpdateWorldPoses(
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs);
+
+  /* Updates the vertex positions for all of deformable geometries in the
+   engine.
+   @param q_WGs  The vertex positions of each deformable geometry `G` measured
+                 and expressed in the the world frame `W` (including
+                 deformable geometries which may *not* be registered with the
+                 proximity engine). */
+  void UpdateDeformableVertexPositions(
+      const std::unordered_map<GeometryId, VectorX<T>>& q_WGs);
 
   // ----------------------------------------------------------------------
   /* @name              Signed Distance Queries
@@ -242,6 +259,14 @@ class ProximityEngine {
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
+    
+  /* Implementation of GeometryState::ComputeDeformableContactData(). Assumes
+   the poses of rigid bodies and the vertex positions of the deformable bodies
+   are up-to-date. */
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+  ComputeDeformableContactData(
+      std::vector<DeformableContactData<T>>* deformable_contact_data) const;
 
   /* Implementation of GeometryState::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
