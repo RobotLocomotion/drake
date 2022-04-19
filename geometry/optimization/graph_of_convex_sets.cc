@@ -269,11 +269,24 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
 
   std::map<VertexId, std::vector<Edge*>> incoming_edges;
   std::map<VertexId, std::vector<Edge*>> outgoing_edges;
+  std::vector<Edge*> excluded_edges;
   const double inf = std::numeric_limits<double>::infinity();
 
   std::map<EdgeId, Variable> relaxed_phi;
+  std::vector<Variable> excluded_phi;
 
   for (const auto& [edge_id, e] : edges_) {
+    // If an edge is turned off (ϕ = 0), don't include it in the optimization.
+    if (!e->phi_value_.value_or(true)) {
+      // Track excluded edges (ϕ = 0) so that their variables can be set in the
+      // optimization result.
+      excluded_edges.emplace_back(e.get());
+      if (convex_relaxation) {
+        Variable phi("phi_excluded");
+        excluded_phi.push_back(phi);
+      }
+      continue;
+    }
     outgoing_edges[e->u().id()].emplace_back(e.get());
     incoming_edges[e->v().id()].emplace_back(e.get());
 
@@ -287,6 +300,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       prog.AddDecisionVariables(Vector1<Variable>(phi));
     }
     if (e->phi_value_.has_value()) {
+      DRAKE_DEMAND(*e->phi_value_);
       double phi_value = *e->phi_value_ ? 1.0 : 0.0;
       prog.AddBoundingBoxConstraint(phi_value, phi_value, phi);
     }
@@ -590,18 +604,43 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     result = solvers::Solve(prog, {}, options);
   }
 
-  // Push the placeholder variables into the result, so that they can be
-  // accessed as if they were real variables.
+  // Push the placeholder variables and excluded edge variables into the result,
+  // so that they can be accessed as if they were variables included in the
+  // optimization.
   int num_placeholder_vars = relaxed_phi.size();
   for (const std::pair<const VertexId, std::unique_ptr<Vertex>>& vpair :
        vertices_) {
     num_placeholder_vars += vpair.second->ambient_dimension();
   }
+  for (const Edge* e : excluded_edges) {
+    num_placeholder_vars += e->y_.size() + e->z_.size() + e->ell_.size() + 1;
+  }
+  num_placeholder_vars += excluded_phi.size();
   std::unordered_map<symbolic::Variable::Id, int> decision_variable_index =
       prog.decision_variable_index();
   int count = result.get_x_val().size();
   Eigen::VectorXd x_val(count + num_placeholder_vars);
   x_val.head(count) = result.get_x_val();
+  for (const Edge* e : excluded_edges) {
+    for (int i = 0; i < e->y_.size(); ++i) {
+      decision_variable_index.emplace(e->y_[i].get_id(), count);
+      x_val[count++] = 0;
+    }
+    for (int i = 0; i < e->z_.size(); ++i) {
+      decision_variable_index.emplace(e->z_[i].get_id(), count);
+      x_val[count++] = 0;
+    }
+    for (int i = 0; i < e->ell_.size(); ++i) {
+      decision_variable_index.emplace(e->ell_[i].get_id(), count);
+      x_val[count++] = 0;
+    }
+    decision_variable_index.emplace(e->phi_.get_id(), count);
+    x_val[count++] = 0;
+  }
+  for (const Variable& phi : excluded_phi) {
+    decision_variable_index.emplace(phi.get_id(), count);
+    x_val[count++] = 0;
+  }
   for (const std::pair<const VertexId, std::unique_ptr<Vertex>>& vpair :
        vertices_) {
     const Vertex* v = vpair.second.get();
