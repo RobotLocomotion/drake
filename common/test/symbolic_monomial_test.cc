@@ -788,6 +788,57 @@ TEST_F(MonomialTest, EvaluateException) {
   EXPECT_THROW(m.Evaluate(env), runtime_error);
 }
 
+void CheckEvaluateBatch(
+    const Monomial& dut,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
+    const Eigen::Ref<const Eigen::MatrixXd>& vars_val) {
+  const Eigen::VectorXd monomial_vals = dut.Evaluate(vars, vars_val);
+  EXPECT_EQ(monomial_vals.rows(), vars_val.cols());
+  for (int i = 0; i < vars_val.cols(); ++i) {
+    symbolic::Environment env;
+    env.insert(vars, vars_val.col(i));
+    EXPECT_EQ(monomial_vals(i), dut.Evaluate(env));
+  }
+}
+
+TEST_F(MonomialTest, EvaluateBatch) {
+  // Test Evaluate for a batch of data.
+  const symbolic::Monomial monomial({{var_x_, 2}, {var_y_, 3}});
+  // vars1 contains exactly the same variables as in monomial.
+  Vector2<symbolic::Variable> vars1(var_y_, var_x_);
+  Eigen::Matrix<double, 2, 3> vars1_val;
+  // clang-format off
+  vars1_val << 2, 3, 4,
+               5, 6, 7;
+  // clang-format on
+  CheckEvaluateBatch(monomial, vars1, vars1_val);
+  CheckEvaluateBatch(monomial, vars1, Eigen::Vector2d(2, 3));
+
+  // vars2 contains more variables than monomial.
+  Vector3<symbolic::Variable> vars2(var_y_, var_x_, var_z_);
+  Eigen::Matrix<double, 3, 4> vars2_val;
+  // clang-format off
+  vars2_val << 2, 3, 4, 5,
+               -6, -7, 8, 9,
+               -1, -3, 2, 4;
+  // clang-format on
+  CheckEvaluateBatch(monomial, vars2, vars2_val);
+}
+
+TEST_F(MonomialTest, EvaluateBatchException) {
+  // Test Evaluate for a batch of data with exception.
+  const symbolic::Monomial monomial({{var_x_, 2}, {var_y_, 3}});
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      monomial.Evaluate(Vector3<symbolic::Variable>(var_x_, var_x_, var_y_),
+                        Eigen::Vector3d(1, 2, 3)),
+      ".* vars contains repeated variables.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      monomial.Evaluate(Vector2<symbolic::Variable>(var_x_, var_z_),
+                        Eigen::Vector2d(2, 3)),
+      ".* y is not present in vars");
+}
+
 TEST_F(MonomialTest, EvaluatePartial) {
   const vector<Environment> environments{
       {{var_x_, 2.0}},
