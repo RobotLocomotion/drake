@@ -588,10 +588,19 @@ class LinearConstraint : public Constraint {
   }
 
   /**
+   * Get the matrix A as a dense matrix.
+   * @note this might involve memory allocation to convert a sparse matrix to a
+   * dense one, for better performance you should call get_sparse_A() which
+   * returns a sparse matrix.
+   */
+  const Eigen::MatrixXd& GetDenseA() const;
+
+  /**
    * Gets the coefficient matrix A as a dense matrix.
    * @note This function will allocate new memory on the heap. For better
    * performance you should call get_sparse_A() which returns a sparse matrix.
    */
+  DRAKE_DEPRECATED("2022-08-01", "Use GetDenseA() instead of A()")
   virtual const Eigen::MatrixXd& A() const { return A_.GetAsDense(); }
 
   /**

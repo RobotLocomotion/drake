@@ -339,11 +339,11 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertIsNone(constraint.gradient_sparsity_pattern())
             num_constraints = constraint.num_constraints()
             if num_constraints == 1:
-                self.assertEqual(constraint.A(), 1)
+                self.assertEqual(constraint.GetDenseA(), 1)
                 self.assertEqual(constraint.lower_bound(), 1)
                 self.assertEqual(constraint.upper_bound(), np.inf)
             else:
-                self.assertTrue(np.allclose(constraint.A(), np.eye(2)))
+                self.assertTrue(np.allclose(constraint.GetDenseA(), np.eye(2)))
                 self.assertTrue(np.allclose(constraint.lower_bound(),
                                             [1, -np.inf]))
                 self.assertTrue(np.allclose(constraint.upper_bound(),
@@ -359,7 +359,9 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertEqual(
                 prog.FindDecisionVariableIndex(var=binding.variables()[1]),
                 prog.FindDecisionVariableIndex(var=x[1]))
-            self.assertTrue(np.allclose(constraint.A(), [3, -1]))
+            self.assertTrue(np.allclose(constraint.GetDenseA(), [3, -1]))
+            with catch_drake_warnings(expected_count=1):
+                self.assertTrue(np.allclose(constraint.A(), [3, -1]))
             self.assertTrue(constraint.lower_bound(), -2)
             self.assertTrue(constraint.upper_bound(), np.inf)
 
@@ -373,7 +375,7 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertEqual(
                 prog.FindDecisionVariableIndex(var=binding.variables()[1]),
                 prog.FindDecisionVariableIndex(var=x[1]))
-            self.assertTrue(np.allclose(constraint.A(), [1, 2]))
+            self.assertTrue(np.allclose(constraint.GetDenseA(), [1, 2]))
             self.assertTrue(constraint.lower_bound(), 3)
             self.assertTrue(constraint.upper_bound(), 3)
 
@@ -400,7 +402,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(ce.get_description(), "my favorite constraint")
 
         def check_bounds(c, A, lb, ub):
-            self.assertTrue(np.allclose(c.A(), A))
+            self.assertTrue(np.allclose(c.GetDenseA(), A))
             self.assertTrue(np.allclose(c.lower_bound(), lb))
             self.assertTrue(np.allclose(c.upper_bound(), ub))
 
@@ -576,12 +578,13 @@ class TestMathematicalProgram(unittest.TestCase):
         Aeq = np.array([[2, 3.], [1., 2.], [3, 4]])
         beq = np.array([1., 2., 3.])
         constraint = mp.LinearEqualityConstraint(Aeq=Aeq, beq=beq)
-        np.testing.assert_array_equal(constraint.A(), Aeq)
+        np.testing.assert_array_equal(constraint.GetDenseA(), Aeq)
         np.testing.assert_array_equal(constraint.upper_bound(), beq)
 
         constraint = mp.LinearEqualityConstraint(
             a=np.array([1., 2., 3.]), beq=1)
-        np.testing.assert_array_equal(constraint.A(), np.array([[1., 2., 3.]]))
+        np.testing.assert_array_equal(
+            constraint.GetDenseA(), np.array([[1., 2., 3.]]))
         np.testing.assert_array_equal(constraint.upper_bound(), np.array([1.]))
 
         A_sparse = scipy.sparse.csc_matrix(

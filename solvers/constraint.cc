@@ -302,6 +302,10 @@ LinearConstraint::LinearConstraint(const Eigen::SparseMatrix<double>& A,
   DRAKE_DEMAND(A_.IsFinite());
 }
 
+const Eigen::MatrixXd& LinearConstraint::GetDenseA() const {
+  return A_.GetAsDense();
+}
+
 void LinearConstraint::UpdateCoefficients(
     const Eigen::Ref<const Eigen::MatrixXd>& new_A,
     const Eigen::Ref<const Eigen::VectorXd>& new_lb,

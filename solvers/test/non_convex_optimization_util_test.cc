@@ -96,7 +96,8 @@ void CheckRelaxNonConvexQuadraticConstraintInTrustRegion(
       std::get<1>(result)[1];
   VectorDecisionVariable<2> z = std::get<2>(result);
   Vector3<symbolic::Expression> linear_constraint_expr =
-      linear_constraint.evaluator()->A() * linear_constraint.variables();
+      linear_constraint.evaluator()->GetDenseA() *
+      linear_constraint.variables();
   Vector3<symbolic::Expression> linear_constraint_expr_expected;
   linear_constraint_expr_expected << z(0) - z(1) + p.dot(y),
       z(0) - 2 * x0.dot(Q1 * x), z(1) - 2 * x0.dot(Q2 * x);
@@ -418,8 +419,8 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1orQ2(
       std::get<1>(relaxed_constraints)[0];
   const VectorDecisionVariable<1> z = std::get<2>(relaxed_constraints);
   Vector2<symbolic::Expression> linear_expr, linear_expr_expected;
-  linear_expr =
-      linear_constraint.evaluator()->A() * linear_constraint.variables();
+  linear_expr = linear_constraint.evaluator()->GetDenseA() *
+                linear_constraint.variables();
   Eigen::Vector2d linear_lb_expected, linear_ub_expected;
   linear_lb_expected << x0.dot(Q * x0) - trust_region_gap, lb;
   linear_ub_expected << std::numeric_limits<double>::infinity(), ub;

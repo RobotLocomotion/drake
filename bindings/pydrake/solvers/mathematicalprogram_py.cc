@@ -1682,8 +1682,9 @@ void BindEvaluatorsAndBindings(py::module m) {
           py::arg("lower_bound"), py::arg("upper_bound"),
           "Set both the lower and upper bounds of the constraint.");
 
-  py::class_<LinearConstraint, Constraint, std::shared_ptr<LinearConstraint>>(
-      m, "LinearConstraint", doc.LinearConstraint.doc)
+  py::class_<LinearConstraint, Constraint, std::shared_ptr<LinearConstraint>>
+      linear_constraint_cls(m, "LinearConstraint", doc.LinearConstraint.doc);
+  linear_constraint_cls
       .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& lb,
                         const Eigen::VectorXd& ub) {
         return std::make_unique<LinearConstraint>(A, lb, ub);
@@ -1697,7 +1698,8 @@ void BindEvaluatorsAndBindings(py::module m) {
       }),
           py::arg("A"), py::arg("lb"), py::arg("ub"),
           doc.LinearConstraint.ctor.doc_sparse_A)
-      .def("A", &LinearConstraint::A, doc.LinearConstraint.A.doc)
+      .def("GetDenseA", &LinearConstraint::GetDenseA,
+          doc.LinearConstraint.GetDenseA.doc)
       .def("get_sparse_A", &LinearConstraint::get_sparse_A,
           doc.LinearConstraint.get_sparse_A.doc)
       .def(
@@ -1735,6 +1737,14 @@ void BindEvaluatorsAndBindings(py::module m) {
             self.set_bounds(new_lb, new_ub);
           },
           py::arg("new_lb"), py::arg("new_ub"), doc.Constraint.set_bounds.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  linear_constraint_cls.def("A",
+      WrapDeprecated(
+          doc.LinearConstraint.A.doc_deprecated, &LinearConstraint::A),
+      doc.LinearConstraint.A.doc_deprecated);
+#pragma GCC diagnostic pop
 
   py::class_<LorentzConeConstraint, Constraint,
       std::shared_ptr<LorentzConeConstraint>>
