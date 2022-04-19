@@ -269,216 +269,233 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
 
   std::map<VertexId, std::vector<Edge*>> incoming_edges;
   std::map<VertexId, std::vector<Edge*>> outgoing_edges;
+  std::vector<Edge*> excluded_edges;
   const double inf = std::numeric_limits<double>::infinity();
 
   std::map<EdgeId, Variable> relaxed_phi;
+  std::vector<Variable> excluded_phi;
 
   for (const auto& [edge_id, e] : edges_) {
-    outgoing_edges[e->u().id()].emplace_back(e.get());
-    incoming_edges[e->v().id()].emplace_back(e.get());
+    // If an edge is turned off (ϕ = 0), don't include it in the optimization.
+    if (e->phi_value_.value_or(true)) {
+      outgoing_edges[e->u().id()].emplace_back(e.get());
+      incoming_edges[e->v().id()].emplace_back(e.get());
 
-    Variable phi;
-    if (convex_relaxation) {
-      phi = prog.NewContinuousVariables<1>("phi")[0];
-      prog.AddBoundingBoxConstraint(0, 1, phi);
-      relaxed_phi.emplace(edge_id, phi);
+      Variable phi;
+      if (convex_relaxation) {
+        phi = prog.NewContinuousVariables<1>("phi")[0];
+        prog.AddBoundingBoxConstraint(0, 1, phi);
+        relaxed_phi.emplace(edge_id, phi);
+      } else {
+        phi = e->phi_;
+        prog.AddDecisionVariables(Vector1<Variable>(phi));
+      }
+      if (e->phi_value_.has_value()) {
+        DRAKE_DEMAND(*e->phi_value_);
+        double phi_value = *e->phi_value_ ? 1.0 : 0.0;
+        prog.AddBoundingBoxConstraint(phi_value, phi_value, phi);
+      }
+      prog.AddDecisionVariables(e->y_);
+      prog.AddDecisionVariables(e->z_);
+      prog.AddDecisionVariables(e->ell_);
+      prog.AddLinearCost(VectorXd::Ones(e->ell_.size()), e->ell_);
+
+      // Spatial non-negativity: y ∈ ϕX, z ∈ ϕX.
+      e->u().set().AddPointInNonnegativeScalingConstraints(&prog, e->y_, phi);
+      e->v().set().AddPointInNonnegativeScalingConstraints(&prog, e->z_, phi);
+
+      // Edge costs.
+      for (int i = 0; i < e->ell_.size(); ++i) {
+        const Binding<Cost>& b = e->costs_[i];
+
+        const VectorXDecisionVariable& old_vars = b.variables();
+        VectorXDecisionVariable vars(old_vars.size() + 2);
+        // vars = [phi; ell; yz_vars]
+        vars[0] = phi;
+        vars[1] = e->ell_[i];
+        for (int j = 0; j < old_vars.size(); ++j) {
+          vars[j + 2] = e->x_to_yz_.at(old_vars[j]);
+        }
+
+        // TODO(russt): Avoid this use of RTTI, which mirrors the current
+        // pattern in MathematicalProgram::AddCost.
+        Cost* cost = b.evaluator().get();
+        if (LinearCost* lc = dynamic_cast<LinearCost*>(cost)) {
+          // TODO(russt): Consider setting a precision here (and exposing it to
+          // the user) instead of using Eigen's dummy_precision.
+          if (lc->a().isZero() && lc->b() < 0.0) {
+            throw std::runtime_error(fmt::format(
+                "Constant costs must be non-negative: {}", b.to_string()));
+          }
+          // a*x + phi*b <= ell or [b, -1.0, a][phi; ell; x] <= 0
+          RowVectorXd a(lc->a().size() + 2);
+          a(0) = lc->b();
+          a(1) = -1.0;
+          a.tail(lc->a().size()) = lc->a();
+          prog.AddLinearConstraint(a, -inf, 0.0, vars);
+        } else if (QuadraticCost* qc = dynamic_cast<QuadraticCost*>(cost)) {
+          // .5 x'Qx + b'x + c is restated as a rotated Lorentz cone constraint
+          // enforcing that ℓ should be lower-bounded by the perspective, with
+          // coefficient ϕ, of the quadratic form:
+          // slack ≥ 0, and  slack ϕ ≥ .5x'Qx, with slack := ℓ - b'x - ϕ c.
+
+          // TODO(russt): Allow users to set this tolerance.  (Probably in
+          // solvers::QuadraticCost instead of here).
+          const double tol = 1e-10;
+          Eigen::MatrixXd R =
+              math::DecomposePSDmatrixIntoXtransposeTimesX(.5 * qc->Q(), tol);
+          // Note: QuadraticCost guarantees that Q() is symmetric.
+          const VectorXd xmin = -qc->Q().ldlt().solve(qc->b());
+          VectorXd minimum(1);
+          qc->Eval(xmin, &minimum);
+          if (minimum[0] < -tol) {
+            throw std::runtime_error(fmt::format(
+                "In order to prevent negative edge lengths, quadratic "
+                "costs must be strictly non-negative: {} obtains a minimum of "
+                "{}.",
+                b.to_string(), minimum[0]));
+          }
+          MatrixXd A_cone = MatrixXd::Zero(R.rows() + 2, vars.size());
+          A_cone(0, 0) = 1.0;  // z₀ = ϕ.
+          // z₁ = ℓ - b'x - ϕ c.
+          A_cone(1, 1) = 1.0;
+          A_cone.block(1, 2, 1, qc->b().rows()) = -qc->b().transpose();
+          A_cone(1, 0) = -qc->c();
+          // z₂ ... z_{n+1} = R x.
+          A_cone.block(2, 2, R.rows(), R.cols()) = R;
+          prog.AddRotatedLorentzConeConstraint(
+              A_cone, VectorXd::Zero(A_cone.rows()), vars);
+        } else if (L1NormCost* l1c = dynamic_cast<L1NormCost*>(cost)) {
+          // |Ax + b|₁ becomes ℓ ≥ Σᵢ δᵢ and δᵢ ≥ |Aᵢx+bᵢϕ|.
+          int A_rows = l1c->A().rows();
+          int A_cols = l1c->A().cols();
+          auto l1c_slack = prog.NewContinuousVariables(
+              A_rows, fmt::format("l1c_slack{}", i));
+          VectorXDecisionVariable cost_vars(vars.size() + l1c_slack.size());
+          cost_vars << vars, l1c_slack;
+          MatrixXd A_linear = MatrixXd::Zero(2 * A_rows + 1, cost_vars.size());
+
+          // δᵢ ≥ Aᵢx+bᵢϕ
+          A_linear.block(0, 0, A_rows, 1) = l1c->b();       // bϕ.
+          A_linear.block(0, 2, A_rows, A_cols) = l1c->A();  // Ax.
+          A_linear.block(0, A_cols + 2, A_rows, l1c_slack.size()) =
+              -MatrixXd::Identity(A_rows, A_rows);  // -δ.
+
+          // -δᵢ ≤ Aᵢx+bᵢϕ
+          A_linear.block(A_rows, 0, A_rows, 1) = -l1c->b();       // -bϕ.
+          A_linear.block(A_rows, 2, A_rows, A_cols) = -l1c->A();  // -Ax.
+          A_linear.block(A_rows, A_cols + 2, A_rows, l1c_slack.size()) =
+              -MatrixXd::Identity(A_rows, A_rows);  // -δ.
+
+          // ℓ ≥ Σᵢ δᵢ
+          A_linear(2 * A_rows, 1) = -1;
+          A_linear.block(2 * A_rows, A_cols + 2, 1, l1c_slack.size()) =
+              RowVectorXd::Ones(l1c_slack.size());
+          prog.AddLinearConstraint(A_linear,
+                                   VectorXd::Constant(A_linear.rows(), -inf),
+                                   VectorXd::Zero(A_linear.rows()), cost_vars);
+        } else if (L2NormCost* l2c = dynamic_cast<L2NormCost*>(cost)) {
+          // |Ax + b|₂ becomes ℓ ≥ |Ax+bϕ|₂.
+          MatrixXd A_cone = MatrixXd::Zero(l2c->A().rows() + 1, vars.size());
+          A_cone(0, 1) = 1.0;                                 // z₀ = ℓ.
+          A_cone.block(1, 0, l2c->A().rows(), 1) = l2c->b();  // bϕ.
+          A_cone.block(1, 2, l2c->A().rows(), l2c->A().cols()) =
+              l2c->A();  // Ax.
+          prog.AddLorentzConeConstraint(A_cone, VectorXd::Zero(A_cone.rows()),
+                                        vars);
+        } else if (LInfNormCost* linfc = dynamic_cast<LInfNormCost*>(cost)) {
+          // |Ax + b|∞ becomes ℓ ≥ |Aᵢx+bᵢϕ| ∀ i.
+          int A_rows = linfc->A().rows();
+          MatrixXd A_linear(2 * A_rows, vars.size());
+          A_linear.block(0, 0, A_rows, 1) = linfc->b();               // bϕ.
+          A_linear.block(0, 1, A_rows, 1) = -VectorXd::Ones(A_rows);  // -ℓ.
+          A_linear.block(0, 2, A_rows, linfc->A().cols()) = linfc->A();  // Ax.
+          A_linear.block(A_rows, 0, A_rows, 1) = -linfc->b();  // -bϕ.
+          A_linear.block(A_rows, 1, A_rows, 1) =
+              -VectorXd::Ones(A_rows);  // -ℓ.
+          A_linear.block(A_rows, 2, A_rows, linfc->A().cols()) =
+              -linfc->A();  // -Ax.
+          prog.AddLinearConstraint(A_linear,
+                                   VectorXd::Constant(A_linear.rows(), -inf),
+                                   VectorXd::Zero(A_linear.rows()), vars);
+        } else if (PerspectiveQuadraticCost* pqc =
+                       dynamic_cast<PerspectiveQuadraticCost*>(cost)) {
+          // (z_1^2 + ... + z_{n-1}^2) / z_0 for z = Ax + b becomes
+          // ℓ z_0 ≥ z_1^2 + ... + z_{n-1}^2 for z = Ax + bϕ
+          MatrixXd A_cone = MatrixXd::Zero(pqc->A().rows() + 1, vars.size());
+          A_cone(0, 1) = 1.0;
+          A_cone.block(1, 0, pqc->A().rows(), 1) = pqc->b();
+          A_cone.block(1, 2, pqc->A().rows(), pqc->A().cols()) = pqc->A();
+          prog.AddRotatedLorentzConeConstraint(
+              A_cone, VectorXd::Zero(pqc->A().rows() + 1), vars);
+        } else {
+          throw std::runtime_error(fmt::format(
+              "GraphOfConvexSets::Edge does not support this binding type: {}",
+              b.to_string()));
+        }
+      }
+
+      // Edge constraints.
+      for (const Binding<Constraint>& b : e->constraints_) {
+        const VectorXDecisionVariable& old_vars = b.variables();
+        VectorXDecisionVariable vars(old_vars.size() + 1);
+        // vars = [phi; yz_vars]
+        vars[0] = phi;
+        for (int j = 0; j < old_vars.size(); ++j) {
+          vars[j + 1] = e->x_to_yz_.at(old_vars[j]);
+        }
+
+        // Note: The use of perspective functions here does not check (nor
+        // assume) that the constraints describe a bounded set.  The boundedness
+        // is ensured by the intersection of these constraints with the convex
+        // sets (on the vertices).
+        Constraint* constraint = b.evaluator().get();
+        if (LinearEqualityConstraint* lec =
+                dynamic_cast<LinearEqualityConstraint*>(constraint)) {
+          // A*x = b becomes A*x = phi*b.
+          // TODO(hongkai.dai): use sparse version of Aeq.
+          const Eigen::MatrixXd& A = lec->GetDenseA();
+          MatrixXd Aeq(A.rows(), A.cols() + 1);
+          Aeq.col(0) = -lec->lower_bound();
+          Aeq.rightCols(A.cols()) = A;
+          prog.AddLinearEqualityConstraint(Aeq, VectorXd::Zero(A.rows()), vars);
+          // Note that LinearEqualityConstraint must come before
+          // LinearConstraint, because LinearEqualityConstraint isa
+          // LinearConstraint.
+        } else if (LinearConstraint* lc =
+                      dynamic_cast<LinearConstraint*>(constraint)) {
+          // lb <= A*x <= ub becomes
+          // A*x <= phi*ub and phi*lb <= A*x, which can be spelled
+          // [-ub, A][phi; x] <= 0, and 0 <= [-lb, A][phi; x].
+          // TODO(hongkai.dai): use a sparse version of a matrix.
+          const Eigen::MatrixXd& A = lc->GetDenseA();
+          RowVectorXd a(vars.size());
+          for (int i = 0; i < A.rows(); ++i) {
+            if (std::isfinite(lc->upper_bound()[i])) {
+              a[0] = -lc->upper_bound()[i];
+              a.tail(A.cols()) = A.row(i);
+              prog.AddLinearConstraint(a, -inf, 0, vars);
+            }
+            if (std::isfinite(lc->lower_bound()[i])) {
+              a[0] = -lc->lower_bound()[i];
+              a.tail(A.cols()) = A.row(i);
+              prog.AddLinearConstraint(a, 0, inf, vars);
+            }
+          }
+        } else {
+          throw std::runtime_error(
+              fmt::format("ShortestPathProblem::Edge does not support this "
+                          "binding type: {}",
+                          b.to_string()));
+        }
+      }
     } else {
-      phi = e->phi_;
-      prog.AddDecisionVariables(Vector1<Variable>(phi));
-    }
-    if (e->phi_value_.has_value()) {
-      double phi_value = *e->phi_value_ ? 1.0 : 0.0;
-      prog.AddBoundingBoxConstraint(phi_value, phi_value, phi);
-    }
-    prog.AddDecisionVariables(e->y_);
-    prog.AddDecisionVariables(e->z_);
-    prog.AddDecisionVariables(e->ell_);
-    prog.AddLinearCost(VectorXd::Ones(e->ell_.size()), e->ell_);
-
-    // Spatial non-negativity: y ∈ ϕX, z ∈ ϕX.
-    e->u().set().AddPointInNonnegativeScalingConstraints(&prog, e->y_, phi);
-    e->v().set().AddPointInNonnegativeScalingConstraints(&prog, e->z_, phi);
-
-    // Edge costs.
-    for (int i = 0; i < e->ell_.size(); ++i) {
-      const Binding<Cost>& b = e->costs_[i];
-
-      const VectorXDecisionVariable& old_vars = b.variables();
-      VectorXDecisionVariable vars(old_vars.size() + 2);
-      // vars = [phi; ell; yz_vars]
-      vars[0] = phi;
-      vars[1] = e->ell_[i];
-      for (int j = 0; j < old_vars.size(); ++j) {
-        vars[j + 2] = e->x_to_yz_.at(old_vars[j]);
-      }
-
-      // TODO(russt): Avoid this use of RTTI, which mirrors the current pattern
-      // in MathematicalProgram::AddCost.
-      Cost* cost = b.evaluator().get();
-      if (LinearCost* lc = dynamic_cast<LinearCost*>(cost)) {
-        // TODO(russt): Consider setting a precision here (and exposing it to
-        // the user) instead of using Eigen's dummy_precision.
-        if (lc->a().isZero() && lc->b() < 0.0) {
-          throw std::runtime_error(fmt::format(
-              "Constant costs must be non-negative: {}", b.to_string()));
-        }
-        // a*x + phi*b <= ell or [b, -1.0, a][phi; ell; x] <= 0
-        RowVectorXd a(lc->a().size() + 2);
-        a(0) = lc->b();
-        a(1) = -1.0;
-        a.tail(lc->a().size()) = lc->a();
-        prog.AddLinearConstraint(a, -inf, 0.0, vars);
-      } else if (QuadraticCost* qc = dynamic_cast<QuadraticCost*>(cost)) {
-        // .5 x'Qx + b'x + c is restated as a rotated Lorentz cone constraint
-        // enforcing that ℓ should be lower-bounded by the perspective, with
-        // coefficient ϕ, of the quadratic form:
-        // slack ≥ 0, and  slack ϕ ≥ .5x'Qx, with slack := ℓ - b'x - ϕ c.
-
-        // TODO(russt): Allow users to set this tolerance.  (Probably in
-        // solvers::QuadraticCost instead of here).
-        const double tol = 1e-10;
-        Eigen::MatrixXd R =
-            math::DecomposePSDmatrixIntoXtransposeTimesX(.5 * qc->Q(), tol);
-        // Note: QuadraticCost guarantees that Q() is symmetric.
-        const VectorXd xmin = -qc->Q().ldlt().solve(qc->b());
-        VectorXd minimum(1);
-        qc->Eval(xmin, &minimum);
-        if (minimum[0] < -tol) {
-          throw std::runtime_error(fmt::format(
-              "In order to prevent negative edge lengths, quadratic "
-              "costs must be strictly non-negative: {} obtains a minimum of "
-              "{}.",
-              b.to_string(), minimum[0]));
-        }
-        MatrixXd A_cone = MatrixXd::Zero(R.rows() + 2, vars.size());
-        A_cone(0, 0) = 1.0;  // z₀ = ϕ.
-        // z₁ = ℓ - b'x - ϕ c.
-        A_cone(1, 1) = 1.0;
-        A_cone.block(1, 2, 1, qc->b().rows()) = -qc->b().transpose();
-        A_cone(1, 0) = -qc->c();
-        // z₂ ... z_{n+1} = R x.
-        A_cone.block(2, 2, R.rows(), R.cols()) = R;
-        prog.AddRotatedLorentzConeConstraint(
-            A_cone, VectorXd::Zero(A_cone.rows()), vars);
-      } else if (L1NormCost* l1c = dynamic_cast<L1NormCost*>(cost)) {
-        // |Ax + b|₁ becomes ℓ ≥ Σᵢ δᵢ and δᵢ ≥ |Aᵢx+bᵢϕ|.
-        int A_rows = l1c->A().rows();
-        int A_cols = l1c->A().cols();
-        auto l1c_slack =
-            prog.NewContinuousVariables(A_rows, fmt::format("l1c_slack{}", i));
-        VectorXDecisionVariable cost_vars(vars.size() + l1c_slack.size());
-        cost_vars << vars, l1c_slack;
-        MatrixXd A_linear = MatrixXd::Zero(2 * A_rows + 1, cost_vars.size());
-
-        // δᵢ ≥ Aᵢx+bᵢϕ
-        A_linear.block(0, 0, A_rows, 1) = l1c->b();       // bϕ.
-        A_linear.block(0, 2, A_rows, A_cols) = l1c->A();  // Ax.
-        A_linear.block(0, A_cols + 2, A_rows, l1c_slack.size()) =
-            -MatrixXd::Identity(A_rows, A_rows);  // -δ.
-
-        // -δᵢ ≤ Aᵢx+bᵢϕ
-        A_linear.block(A_rows, 0, A_rows, 1) = -l1c->b();       // -bϕ.
-        A_linear.block(A_rows, 2, A_rows, A_cols) = -l1c->A();  // -Ax.
-        A_linear.block(A_rows, A_cols + 2, A_rows, l1c_slack.size()) =
-            -MatrixXd::Identity(A_rows, A_rows);  // -δ.
-
-        // ℓ ≥ Σᵢ δᵢ
-        A_linear(2 * A_rows, 1) = -1;
-        A_linear.block(2 * A_rows, A_cols + 2, 1, l1c_slack.size()) =
-            RowVectorXd::Ones(l1c_slack.size());
-        prog.AddLinearConstraint(A_linear,
-                                 VectorXd::Constant(A_linear.rows(), -inf),
-                                 VectorXd::Zero(A_linear.rows()), cost_vars);
-      } else if (L2NormCost* l2c = dynamic_cast<L2NormCost*>(cost)) {
-        // |Ax + b|₂ becomes ℓ ≥ |Ax+bϕ|₂.
-        MatrixXd A_cone = MatrixXd::Zero(l2c->A().rows() + 1, vars.size());
-        A_cone(0, 1) = 1.0;                                 // z₀ = ℓ.
-        A_cone.block(1, 0, l2c->A().rows(), 1) = l2c->b();  // bϕ.
-        A_cone.block(1, 2, l2c->A().rows(), l2c->A().cols()) = l2c->A();  // Ax.
-        prog.AddLorentzConeConstraint(A_cone, VectorXd::Zero(A_cone.rows()),
-                                      vars);
-      } else if (LInfNormCost* linfc = dynamic_cast<LInfNormCost*>(cost)) {
-        // |Ax + b|∞ becomes ℓ ≥ |Aᵢx+bᵢϕ| ∀ i.
-        int A_rows = linfc->A().rows();
-        MatrixXd A_linear(2 * A_rows, vars.size());
-        A_linear.block(0, 0, A_rows, 1) = linfc->b();                  // bϕ.
-        A_linear.block(0, 1, A_rows, 1) = -VectorXd::Ones(A_rows);     // -ℓ.
-        A_linear.block(0, 2, A_rows, linfc->A().cols()) = linfc->A();  // Ax.
-        A_linear.block(A_rows, 0, A_rows, 1) = -linfc->b();            // -bϕ.
-        A_linear.block(A_rows, 1, A_rows, 1) = -VectorXd::Ones(A_rows);  // -ℓ.
-        A_linear.block(A_rows, 2, A_rows, linfc->A().cols()) =
-            -linfc->A();  // -Ax.
-        prog.AddLinearConstraint(A_linear,
-                                 VectorXd::Constant(A_linear.rows(), -inf),
-                                 VectorXd::Zero(A_linear.rows()), vars);
-      } else if (PerspectiveQuadraticCost* pqc =
-                     dynamic_cast<PerspectiveQuadraticCost*>(cost)) {
-        // (z_1^2 + ... + z_{n-1}^2) / z_0 for z = Ax + b becomes
-        // ℓ z_0 ≥ z_1^2 + ... + z_{n-1}^2 for z = Ax + bϕ
-        MatrixXd A_cone = MatrixXd::Zero(pqc->A().rows() + 1, vars.size());
-        A_cone(0, 1) = 1.0;
-        A_cone.block(1, 0, pqc->A().rows(), 1) = pqc->b();
-        A_cone.block(1, 2, pqc->A().rows(), pqc->A().cols()) = pqc->A();
-        prog.AddRotatedLorentzConeConstraint(
-            A_cone, VectorXd::Zero(pqc->A().rows() + 1), vars);
-      } else {
-        throw std::runtime_error(fmt::format(
-            "GraphOfConvexSets::Edge does not support this binding type: {}",
-            b.to_string()));
-      }
-    }
-
-    // Edge constraints.
-    for (const Binding<Constraint>& b : e->constraints_) {
-      const VectorXDecisionVariable& old_vars = b.variables();
-      VectorXDecisionVariable vars(old_vars.size() + 1);
-      // vars = [phi; yz_vars]
-      vars[0] = phi;
-      for (int j = 0; j < old_vars.size(); ++j) {
-        vars[j + 1] = e->x_to_yz_.at(old_vars[j]);
-      }
-
-      // Note: The use of perspective functions here does not check (nor assume)
-      // that the constraints describe a bounded set.  The boundedness is
-      // ensured by the intersection of these constraints with the convex sets
-      // (on the vertices).
-      Constraint* constraint = b.evaluator().get();
-      if (LinearEqualityConstraint* lec =
-              dynamic_cast<LinearEqualityConstraint*>(constraint)) {
-        // A*x = b becomes A*x = phi*b.
-        // TODO(hongkai.dai): use sparse version of Aeq.
-        const Eigen::MatrixXd& A = lec->GetDenseA();
-        MatrixXd Aeq(A.rows(), A.cols() + 1);
-        Aeq.col(0) = -lec->lower_bound();
-        Aeq.rightCols(A.cols()) = A;
-        prog.AddLinearEqualityConstraint(Aeq, VectorXd::Zero(A.rows()), vars);
-        // Note that LinearEqualityConstraint must come before LinearConstraint,
-        // because LinearEqualityConstraint isa LinearConstraint.
-      } else if (LinearConstraint* lc =
-                     dynamic_cast<LinearConstraint*>(constraint)) {
-        // lb <= A*x <= ub becomes
-        // A*x <= phi*ub and phi*lb <= A*x, which can be spelled
-        // [-ub, A][phi; x] <= 0, and 0 <= [-lb, A][phi; x].
-        // TODO(hongkai.dai): use a sparse version of a matrix.
-        const Eigen::MatrixXd& A = lc->GetDenseA();
-        RowVectorXd a(vars.size());
-        for (int i = 0; i < A.rows(); ++i) {
-          if (std::isfinite(lc->upper_bound()[i])) {
-            a[0] = -lc->upper_bound()[i];
-            a.tail(A.cols()) = A.row(i);
-            prog.AddLinearConstraint(a, -inf, 0, vars);
-          }
-          if (std::isfinite(lc->lower_bound()[i])) {
-            a[0] = -lc->lower_bound()[i];
-            a.tail(A.cols()) = A.row(i);
-            prog.AddLinearConstraint(a, 0, inf, vars);
-          }
-        }
-      } else {
-        throw std::runtime_error(
-            fmt::format("ShortestPathProblem::Edge does not support this "
-                        "binding type: {}",
-                        b.to_string()));
+      // Track excluded edges (ϕ = 0) so that their variables can be set in the
+      // optimization result.
+      excluded_edges.emplace_back(e.get());
+      if (convex_relaxation) {
+        Variable phi("phi_excluded");
+        excluded_phi.push_back(phi);
       }
     }
   }
@@ -590,18 +607,45 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     result = solvers::Solve(prog, {}, options);
   }
 
-  // Push the placeholder variables into the result, so that they can be
-  // accessed as if they were real variables.
+  // Push the placeholder variables and excluded edge variables into the result,
+  // so that they can be accessed as if they were variables included in the
+  // optimization.
   int num_placeholder_vars = relaxed_phi.size();
   for (const std::pair<const VertexId, std::unique_ptr<Vertex>>& vpair :
        vertices_) {
     num_placeholder_vars += vpair.second->ambient_dimension();
   }
+  for (const Edge* e : excluded_edges) {
+    if (e->phi_value_.has_value() && !*e->phi_value_) {
+      num_placeholder_vars += e->y_.size() + e->z_.size() + e->ell_.size() + 1;
+    }
+  }
+  num_placeholder_vars += excluded_phi.size();
   std::unordered_map<symbolic::Variable::Id, int> decision_variable_index =
       prog.decision_variable_index();
   int count = result.get_x_val().size();
   Eigen::VectorXd x_val(count + num_placeholder_vars);
   x_val.head(count) = result.get_x_val();
+  for (const Edge* e : excluded_edges) {
+    for (int i = 0; i < e->y_.size(); ++i) {
+      decision_variable_index.emplace(e->y_[i].get_id(), count);
+      x_val[count++] = 0;
+    }
+    for (int i = 0; i < e->z_.size(); ++i) {
+      decision_variable_index.emplace(e->z_[i].get_id(), count);
+      x_val[count++] = 0;
+    }
+    for (int i = 0; i < e->ell_.size(); ++i) {
+      decision_variable_index.emplace(e->ell_[i].get_id(), count);
+      x_val[count++] = 0;
+    }
+    decision_variable_index.emplace(e->phi_.get_id(), count);
+    x_val[count++] = 0;
+  }
+  for (const Variable& phi : excluded_phi) {
+    decision_variable_index.emplace(phi.get_id(), count);
+    x_val[count++] = 0;
+  }
   for (const std::pair<const VertexId, std::unique_ptr<Vertex>>& vpair :
        vertices_) {
     const Vertex* v = vpair.second.get();
