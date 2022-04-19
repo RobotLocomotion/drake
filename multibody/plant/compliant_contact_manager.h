@@ -11,6 +11,8 @@
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/systems/framework/context.h"
 
@@ -127,14 +129,15 @@ class CompliantContactManager final
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompliantContactManager)
 
-  // Constructs a contact manager that takes ownership of the supplied
-  // `contact_solver` to solve the underlying contact problem.
-  // @pre contact_solver != nullptr.
-  explicit CompliantContactManager(
-      std::unique_ptr<contact_solvers::internal::ContactSolver<T>>
-          contact_solver);
+  CompliantContactManager() = default;
 
   ~CompliantContactManager() final;
+
+  // Sets the parameters to be used by the SAP solver.
+  void set_sap_solver_parameters(
+      const contact_solvers::internal::SapSolverParameters& parameters) {
+    sap_parameters_ = parameters;
+  }
 
  private:
   // Struct used to conglomerate the indexes of cache entries declared by the
@@ -155,13 +158,7 @@ class CompliantContactManager final
     return internal::GetInternalTree(this->plant()).get_topology();
   }
 
-  // TODO(amcastro-tri): Implement these methods in future PRs.
-  void DoCalcDiscreteValues(const systems::Context<T>&,
-                            systems::DiscreteValues<T>*) const final {
-    throw std::runtime_error(
-        "CompliantContactManager::DoCalcDiscreteValues() must be "
-        "implemented.");
-  }
+  // TODO(amcastro-tri): Either implement in future PR or resolve with 16955.
   void DoCalcAccelerationKinematicsCache(
       const systems::Context<T>&,
       multibody::internal::AccelerationKinematicsCache<T>*) const final {
@@ -174,6 +171,8 @@ class CompliantContactManager final
   void DoCalcContactSolverResults(
       const systems::Context<T>&,
       contact_solvers::internal::ContactSolverResults<T>*) const final;
+  void DoCalcDiscreteValues(const systems::Context<T>&,
+                            systems::DiscreteValues<T>*) const final;
 
   // Returns the point contact stiffness stored in group
   // geometry::internal::kMaterialGroup with property
@@ -274,6 +273,9 @@ class CompliantContactManager final
   // information such as the orientation of each contact frame in the world is
   // also computed here so that it can be used at a later stage to compute
   // contact results.
+  // All contact constraints are added before any other constraint types. This
+  // manager assumes this ordering of the constraints in order to extract
+  // contact impulses for reporting contact results.
   void CalcContactProblemCache(const systems::Context<T>& context,
                                ContactProblemCache<T>* cache) const;
 
@@ -291,8 +293,25 @@ class CompliantContactManager final
       const systems::Context<T>& context,
       contact_solvers::internal::SapContactProblem<T>* problem) const;
 
-  std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver_;
+  // This method takes SAP results for a given `problem` and loads forces due to
+  // contact only into `contact_results`. `contact_results` is properly resized
+  // on output.
+  // @pre contact_results is not nullptr.
+  // @pre All `num_contacts` contact constraints in `problem` were added before
+  // any other SAP constraint. This requirement is imposed by this manager which
+  // adds constraints (with AddContactConstraints()) to the contact problem
+  // before any other constraints are added. See the implementation of
+  // CalcContactProblemCache(), who is responsible for adding constraints in
+  // this particular order.
+  void PackContactSolverResults(
+      const contact_solvers::internal::SapContactProblem<T>& problem,
+      int num_contacts,
+      const contact_solvers::internal::SapSolverResults<T>& sap_results,
+      contact_solvers::internal::ContactSolverResults<T>* contact_results)
+      const;
+
   CacheIndexes cache_indexes_;
+  contact_solvers::internal::SapSolverParameters sap_parameters_;
 };
 
 }  // namespace internal

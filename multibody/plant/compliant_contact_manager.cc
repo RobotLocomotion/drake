@@ -12,9 +12,11 @@
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/contact_solvers/contact_solver.h"
+#include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 #include "drake/systems/framework/context.h"
@@ -22,8 +24,16 @@
 using drake::geometry::GeometryId;
 using drake::geometry::PenetrationAsPointPair;
 using drake::math::RotationMatrix;
+using drake::multibody::contact_solvers::internal::ContactSolverResults;
+using drake::multibody::contact_solvers::internal::ExtractNormal;
+using drake::multibody::contact_solvers::internal::ExtractTangent;
+using drake::multibody::contact_solvers::internal::SapConstraint;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
+using drake::multibody::contact_solvers::internal::SapSolver;
+using drake::multibody::contact_solvers::internal::SapSolverResults;
+using drake::multibody::contact_solvers::internal::SapSolverStatus;
+using drake::multibody::internal::DiscreteContactPair;
 using drake::multibody::internal::MultibodyTreeTopology;
 using drake::systems::Context;
 
@@ -37,13 +47,6 @@ AccelerationsDueToExternalForcesCache<T>::AccelerationsDueToExternalForcesCache(
     : forces(topology.num_bodies(), topology.num_velocities()),
       aba_forces(topology),
       ac(topology) {}
-
-template <typename T>
-CompliantContactManager<T>::CompliantContactManager(
-    std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver)
-    : contact_solver_(std::move(contact_solver)) {
-  DRAKE_DEMAND(contact_solver_ != nullptr);
-}
 
 template <typename T>
 CompliantContactManager<T>::~CompliantContactManager() {}
@@ -115,7 +118,7 @@ template <typename T>
 std::vector<ContactPairKinematics<T>>
 CompliantContactManager<T>::CalcContactKinematics(
     const systems::Context<T>& context) const {
-  const std::vector<internal::DiscreteContactPair<T>>& contact_pairs =
+  const std::vector<DiscreteContactPair<T>>& contact_pairs =
       EvalDiscreteContactPairs(context);
   const int num_contacts = contact_pairs.size();
   std::vector<ContactPairKinematics<T>> contact_kinematics;
@@ -266,7 +269,7 @@ T CompliantContactManager<T>::CombineDissipationTimeConstant(const T& tau1,
 template <typename T>
 void CompliantContactManager<T>::CalcDiscreteContactPairs(
     const systems::Context<T>& context,
-    std::vector<internal::DiscreteContactPair<T>>* contact_pairs) const {
+    std::vector<DiscreteContactPair<T>>* contact_pairs) const {
   plant().ValidateContext(context);
   DRAKE_DEMAND(contact_pairs != nullptr);
 
@@ -318,8 +321,8 @@ void CompliantContactManager<T>::CalcDiscreteContactPairs(
 template <typename T>
 void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
     const systems::Context<T>& context,
-    std::vector<internal::DiscreteContactPair<T>>* result) const {
-  std::vector<internal::DiscreteContactPair<T>>& contact_pairs = *result;
+    std::vector<DiscreteContactPair<T>>* result) const {
+  std::vector<DiscreteContactPair<T>>& contact_pairs = *result;
 
   const geometry::QueryObject<T>& query_object =
       this->plant()
@@ -370,8 +373,8 @@ template <typename T>
 void CompliantContactManager<T>::
     AppendDiscreteContactPairsForHydroelasticContact(
         const systems::Context<T>& context,
-        std::vector<internal::DiscreteContactPair<T>>* result) const {
-  std::vector<internal::DiscreteContactPair<T>>& contact_pairs = *result;
+        std::vector<DiscreteContactPair<T>>* result) const {
+  std::vector<DiscreteContactPair<T>>& contact_pairs = *result;
 
   // Simple utility to detect 0 / 0. As it is used in this method, denom
   // can only be zero if num is also zero, so we'll simply return zero.
@@ -580,12 +583,12 @@ void CompliantContactManager<T>::CalcLinearDynamicsMatrix(
 }
 
 template <typename T>
-const std::vector<internal::DiscreteContactPair<T>>&
+const std::vector<DiscreteContactPair<T>>&
 CompliantContactManager<T>::EvalDiscreteContactPairs(
     const systems::Context<T>& context) const {
   return plant()
       .get_cache_entry(cache_indexes_.discrete_contact_pairs)
-      .template Eval<std::vector<internal::DiscreteContactPair<T>>>(context);
+      .template Eval<std::vector<DiscreteContactPair<T>>>(context);
 }
 
 template <typename T>
@@ -601,21 +604,94 @@ CompliantContactManager<T>::EvalAccelerationsDueToNonContactForcesCache(
 template <typename T>
 void CompliantContactManager<T>::DoCalcContactSolverResults(
     const systems::Context<T>& context,
-    contact_solvers::internal::ContactSolverResults<T>* results) const {
-  results->Resize(plant().num_velocities(), 0);
-
-  // N.B. For now this update is only valid for problems without contact.
-  const std::vector<internal::DiscreteContactPair<T>>& discrete_pairs =
-      EvalDiscreteContactPairs(context);
-  DRAKE_DEMAND(discrete_pairs.size() == 0u);
-
+    ContactSolverResults<T>* contact_results) const {
   const ContactProblemCache<T>& contact_problem_cache =
       EvalContactProblemCache(context);
   const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
 
-  // In the absence of contact, v_next = v*.
-  results->v_next = sap_problem.v_star();
-  results->tau_contact.setZero();
+  // We use the velocity stored in the current context as initial guess.
+  const VectorX<T>& x0 =
+      context.get_discrete_state(this->multibody_state_index()).value();
+  const auto v0 = x0.bottomRows(this->plant().num_velocities());
+
+  // Solve contact problem.
+  SapSolver<T> sap;
+  sap.set_parameters(sap_parameters_);
+  SapSolverResults<T> sap_results;
+  const SapSolverStatus status =
+      sap.SolveWithGuess(sap_problem, v0, &sap_results);
+  if (status != SapSolverStatus::kSuccess) {
+    const std::string msg = fmt::format(
+        "The SAP solver failed to converge at simulation time = {:7.3g}. "
+        "Reasons for divergence and possible solutions include:\n"
+        "  1. Externally applied actuation values diverged due to external "
+        "     reasons to the solver. Revise your control logic.\n"
+        "  2. External force elements such as spring or bushing elements can "
+        "     lead to unstable temporal dynamics if too stiff. Revise your "
+        "     model and consider whether these forces can be better modeled "
+        "     using one of SAP's compliant constraints. E.g., use a distance "
+        "     constraint instead of a spring element.\n"
+        "  3. Numerical ill conditioning of the model caused by, for instance, "
+        "     extremely large mass ratios. Revise your model and consider "
+        "     whether very small objects can be removed or welded to larger "
+        "     objects in the model.",
+        context.get_time());
+    throw std::runtime_error(msg);
+  }
+
+  const std::vector<DiscreteContactPair<T>>& discrete_pairs =
+      EvalDiscreteContactPairs(context);
+  const int num_contacts = discrete_pairs.size();
+
+  PackContactSolverResults(sap_problem, num_contacts, sap_results,
+                           contact_results);
+}
+
+template <typename T>
+void CompliantContactManager<T>::PackContactSolverResults(
+    const SapContactProblem<T>& problem, int num_contacts,
+    const SapSolverResults<T>& sap_results,
+    ContactSolverResults<T>* contact_results) const {
+  DRAKE_DEMAND(contact_results != nullptr);
+  contact_results->Resize(plant().num_velocities(), num_contacts);
+  contact_results->v_next = sap_results.v;
+  // The manager adds all contact constraints first and therefore we know the
+  // head of the impulses corresponds to contact impulses.
+  const Eigen::VectorBlock<const VectorX<T>> contact_impulses =
+      sap_results.gamma.head(3 * num_contacts);
+  const Eigen::VectorBlock<const VectorX<T>> contact_velocities =
+      sap_results.vc.head(3 * num_contacts);
+  const double time_step = plant().time_step();
+  ExtractNormal(contact_impulses, &contact_results->fn);
+  ExtractTangent(contact_impulses, &contact_results->ft);
+  contact_results->fn /= time_step;
+  contact_results->ft /= time_step;
+  ExtractNormal(contact_velocities, &contact_results->vn);
+  ExtractTangent(contact_velocities, &contact_results->vt);
+
+  auto& tau_contact = contact_results->tau_contact;
+  tau_contact.setZero();
+  for (int i = 0; i < num_contacts; ++i) {
+    const SapConstraint<T>& c = problem.get_constraint(i);
+    {
+      const TreeIndex t(c.first_clique());
+      const MatrixX<T>& Jic = c.first_clique_jacobian();
+      const int v_start = tree_topology().tree_velocities_start(t);
+      const int nv = tree_topology().num_tree_velocities(t);
+      const auto impulse = contact_impulses.template segment<3>(3 * i);
+      tau_contact.segment(v_start, nv) += Jic.transpose() * impulse;
+    }
+
+    if (c.num_cliques() == 2) {
+      const TreeIndex t(c.second_clique());
+      const MatrixX<T>& Jic = c.second_clique_jacobian();
+      const int v_start = tree_topology().tree_velocities_start(t);
+      const int nv = tree_topology().num_tree_velocities(t);
+      const auto impulse = contact_impulses.template segment<3>(3 * i);
+      tau_contact.segment(v_start, nv) += Jic.transpose() * impulse;
+    }
+  }
+  tau_contact /= time_step;
 }
 
 template <typename T>
@@ -630,7 +706,7 @@ CompliantContactManager<T>::AddContactConstraints(
   constexpr double beta = 1.0;
   constexpr double sigma = 1.0e-3;
 
-  const std::vector<internal::DiscreteContactPair<T>>& contact_pairs =
+  const std::vector<DiscreteContactPair<T>>& contact_pairs =
       EvalDiscreteContactPairs(context);
   const int num_contacts = contact_pairs.size();
 
@@ -678,6 +754,10 @@ void CompliantContactManager<T>::CalcContactProblemCache(
   VectorX<T> v_star;
   CalcFreeMotionVelocities(context, &v_star);
   problem.Reset(std::move(A), std::move(v_star));
+  // N.B. All contact constraints must be added before any other constraint
+  // types. This manager assumes this ordering of the constraints in order to
+  // extract contact impulses for reporting contact results.
+  // Do not change this order here!
   cache->R_WC = AddContactConstraints(context, &problem);
 }
 
@@ -688,6 +768,32 @@ CompliantContactManager<T>::EvalContactProblemCache(
   return plant()
       .get_cache_entry(cache_indexes_.contact_problem)
       .template Eval<ContactProblemCache<T>>(context);
+}
+
+template <typename T>
+void CompliantContactManager<T>::DoCalcDiscreteValues(
+    const drake::systems::Context<T>& context,
+    drake::systems::DiscreteValues<T>* updates) const {
+  const ContactSolverResults<T>& results =
+      this->EvalContactSolverResults(context);
+
+  // Previous time step positions.
+  const int nq = plant().num_positions();
+  const VectorX<T>& x0 =
+      context.get_discrete_state(this->multibody_state_index()).value();
+  const auto q0 = x0.topRows(nq);
+
+  // Retrieve the solution velocity for the next time step.
+  const VectorX<T>& v_next = results.v_next;
+
+  // Update generalized positions.
+  VectorX<T> qdot_next(plant().num_positions());
+  plant().MapVelocityToQDot(context, v_next, &qdot_next);
+  const VectorX<T> q_next = q0 + plant().time_step() * qdot_next;
+
+  VectorX<T> x_next(plant().num_multibody_states());
+  x_next << q_next, v_next;
+  updates->set_value(this->multibody_state_index(), x_next);
 }
 
 }  // namespace internal

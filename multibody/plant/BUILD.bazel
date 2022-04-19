@@ -43,9 +43,10 @@ drake_cc_library(
     hdrs = ["compliant_contact_manager.h"],
     deps = [
         ":multibody_plant_core",
-        "//multibody/contact_solvers:contact_solver",
+        "//multibody/contact_solvers:contact_solver_utils",
         "//multibody/contact_solvers/sap:sap_contact_problem",
         "//multibody/contact_solvers/sap:sap_friction_cone_constraint",
+        "//multibody/contact_solvers/sap:sap_solver",
         "//multibody/triangle_quadrature",
     ],
 )
@@ -354,7 +355,6 @@ drake_cc_googletest(
         ":compliant_contact_manager",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "//multibody/contact_solvers:pgs_solver",
         "//systems/primitives:pass_through",
         "//systems/primitives:zero_order_hold",
     ],
