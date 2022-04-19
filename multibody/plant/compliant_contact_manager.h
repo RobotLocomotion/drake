@@ -129,9 +129,6 @@ class CompliantContactManager final
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompliantContactManager)
 
-  // Constructs a contact manager that takes ownership of the supplied
-  // `contact_solver` to solve the underlying contact problem.
-  // @pre contact_solver != nullptr.
   CompliantContactManager() = default;
 
   ~CompliantContactManager() final;
@@ -155,7 +152,7 @@ class CompliantContactManager final
     return internal::GetInternalTree(this->plant()).get_topology();
   }
 
-  // TODO(amcastro-tri): Implement these methods in future PRs.
+  // TODO(amcastro-tri): Either implement in future PR or resolve with 16955.
   void DoCalcAccelerationKinematicsCache(
       const systems::Context<T>&,
       multibody::internal::AccelerationKinematicsCache<T>*) const final {
@@ -292,7 +289,11 @@ class CompliantContactManager final
   // on output.
   // @pre contact_results is not nullptr.
   // @pre All `num_contacts` contact constraints in `problem` were added before
-  // any other SAP constraint.
+  // any other SAP constraint. This requirement is imposed by this manager which
+  // adds constraints (with AddContactConstraints()) to the contact problem
+  // before any other constraints are added. See the implementation of
+  // CalcContactProblemCache(), who is responsible for adding constraints in
+  // this particular order.
   void PackContactSolverResults(
       const contact_solvers::internal::SapContactProblem<T>& problem,
       int num_contacts,

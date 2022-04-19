@@ -328,11 +328,9 @@ class CompliantContactManagerTest : public ::testing::Test {
   }
 
   void PackContactSolverResults(
-      const contact_solvers::internal::SapContactProblem<double>& problem,
-      int num_contacts,
-      const contact_solvers::internal::SapSolverResults<double>& sap_results,
-      contact_solvers::internal::ContactSolverResults<double>* contact_results)
-      const {
+      const SapContactProblem<double>& problem, int num_contacts,
+      const SapSolverResults<double>& sap_results,
+      ContactSolverResults<double>* contact_results) const {
     contact_manager_->PackContactSolverResults(problem, num_contacts,
                                                sap_results, contact_results);
   }
@@ -727,6 +725,9 @@ TEST_F(CompliantContactManagerTest, CalcLinearDynamicsMatrix) {
 // Here we test the function CompliantContactManager::PackContactSolverResults()
 // which takes SapSolverResults and packs them into ContactSolverResults as
 // consumed by MultibodyPlant.
+// TODO(amcastro-tri): write unit test that includes other constraints besides
+// contact constraints to stress test the implementation of
+// PackContactSolverResults().
 TEST_F(CompliantContactManagerTest, PackContactSolverResults) {
   SetupRigidGroundCompliantSphereAndNonHydroSphere();
 
