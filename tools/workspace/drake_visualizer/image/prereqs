@@ -1,4 +1,5 @@
 ca-certificates
+cmake
 default-jdk
 file
 g++
@@ -36,6 +37,7 @@ libxt-dev
 lsb-release
 ninja-build
 patchelf
+python-is-python3
 python3-dev
 python3-lxml
 python3-numpy

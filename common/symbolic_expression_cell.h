@@ -317,6 +317,7 @@ class ExpressionAddFactory {
    * methods. */
   void AddMap(const std::map<Expression, double>& expr_to_coeff_map);
 
+  bool is_expanded_{true};
   double constant_{0.0};
   std::map<Expression, double> expr_to_coeff_map_;
 };
@@ -420,6 +421,7 @@ class ExpressionMulFactory {
   /* Sets to represent a zero expression. */
   void SetZero();
 
+  bool is_expanded_{true};
   double constant_{1.0};
   std::map<Expression, Expression> base_to_exponent_map_;
 };

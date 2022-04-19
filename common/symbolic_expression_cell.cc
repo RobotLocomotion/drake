@@ -606,11 +606,18 @@ ostream& ExpressionAdd::DisplayTerm(ostream& os, const bool print_plus,
 
 ExpressionAddFactory::ExpressionAddFactory(
     const double constant, map<Expression, double> expr_to_coeff_map)
-    : constant_{constant}, expr_to_coeff_map_{std::move(expr_to_coeff_map)} {}
+    : is_expanded_(false), constant_{constant},
+      expr_to_coeff_map_{std::move(expr_to_coeff_map)} {
+  // Note that we set is_expanded_ to false to be conservative. We could imagine
+  // inspecting the expr_to_coeff_map to compute a more precise value, but it's
+  // not clear that doing so would improve our overall performance.
+}
 
 ExpressionAddFactory::ExpressionAddFactory(
     const ExpressionAdd& add)
-    : ExpressionAddFactory{add.get_constant(), add.get_expr_to_coeff_map()} {}
+    : ExpressionAddFactory{add.get_constant(), add.get_expr_to_coeff_map()} {
+  is_expanded_ = add.is_expanded();
+}
 
 void ExpressionAddFactory::AddExpression(const Expression& e) {
   if (is_constant(e)) {
@@ -643,6 +650,7 @@ void ExpressionAddFactory::Add(const ExpressionAdd& add) {
 
 ExpressionAddFactory& ExpressionAddFactory::operator=(
     const ExpressionAdd& add) {
+  is_expanded_ = add.is_expanded();
   constant_ = add.get_constant();
   expr_to_coeff_map_ = add.get_expr_to_coeff_map();
   return *this;
@@ -665,7 +673,11 @@ Expression ExpressionAddFactory::GetExpression() const {
     const auto it(expr_to_coeff_map_.cbegin());
     return it->first * it->second;
   }
-  return Expression{make_shared<ExpressionAdd>(constant_, expr_to_coeff_map_)};
+  auto result = make_shared<ExpressionAdd>(constant_, expr_to_coeff_map_);
+  if (is_expanded_) {
+    result->set_expanded();
+  }
+  return Expression{std::move(result)};
 }
 
 void ExpressionAddFactory::AddConstant(const double constant) {
@@ -686,11 +698,22 @@ void ExpressionAddFactory::AddTerm(const double coeff, const Expression& term) {
       // TODO(soonho-tri): The following operation is not sound since it cancels
       // `term` which might contain 0/0 problems.
       expr_to_coeff_map_.erase(it);
+     // Note that we leave is_expanded_ unchanged here. We could imagine
+     // inspecting the new expr_to_coeff_map_ to compute a more precise value,
+     // but it's not clear that doing so would improve our overall performance.
     }
   } else {
     // Case2: term is not found in expr_to_coeff_map_.
     // Add the entry (term, coeff).
     expr_to_coeff_map_.emplace(term, coeff);
+    // If the addend is not a leaf cell (i.e., if it's a cell type that nests
+    // another Expression inside of itself), then conservatively we can no
+    // longer be sure that our ExpressionAdd remains in expanded form. For
+    // example calling `AddTerm(5, 2 + 3 * y)` produces a non-expanded result
+    // `5 * (2 + 3 * y)`, i.e., `{2 + 3 * y} => 5` in the expr_to_coeff_map_.
+    if (!is_variable(term)) {
+      is_expanded_ = false;
+    }
   }
 }
 
@@ -897,12 +920,14 @@ ostream& ExpressionMul::DisplayTerm(ostream& os, const bool print_mul,
 
 ExpressionMulFactory::ExpressionMulFactory(
     const double constant, map<Expression, Expression> base_to_exponent_map)
-    : constant_{constant},
+    : is_expanded_{false}, constant_{constant},
       base_to_exponent_map_{std::move(base_to_exponent_map)} {}
 
 ExpressionMulFactory::ExpressionMulFactory(const ExpressionMul& mul)
     : ExpressionMulFactory{mul.get_constant(),
-                           mul.get_base_to_exponent_map()} {}
+                           mul.get_base_to_exponent_map()} {
+  is_expanded_ = mul.is_expanded();
+}
 
 void ExpressionMulFactory::AddExpression(const Expression& e) {
   if (constant_ == 0.0) {
@@ -932,12 +957,14 @@ void ExpressionMulFactory::Add(const ExpressionMul& mul) {
 }
 
 void ExpressionMulFactory::SetZero() {
+  is_expanded_ = true;
   constant_ = 0.0;
   base_to_exponent_map_.clear();
 }
 
 ExpressionMulFactory& ExpressionMulFactory::operator=(
     const ExpressionMul& mul) {
+  is_expanded_ = mul.is_expanded();
   constant_ = mul.get_constant();
   base_to_exponent_map_ = mul.get_base_to_exponent_map();
   return *this;
@@ -957,8 +984,11 @@ Expression ExpressionMulFactory::GetExpression() const {
     const auto it(base_to_exponent_map_.cbegin());
     return pow(it->first, it->second);
   }
-  return Expression{
-      make_shared<ExpressionMul>(constant_, base_to_exponent_map_)};
+  auto result = make_shared<ExpressionMul>(constant_, base_to_exponent_map_);
+  if (is_expanded_) {
+    result->set_expanded();
+  }
+  return Expression{result};
 }
 
 void ExpressionMulFactory::AddConstant(const double constant) {
@@ -994,11 +1024,28 @@ void ExpressionMulFactory::AddTerm(const Expression& base,
       // TODO(soonho-tri): The following operation is not sound since it can
       // cancels `base` which might include 0/0 problems.
       base_to_exponent_map_.erase(it);
+    } else {
+      // Conservatively, when adjusting an exponent we can no longer be sure
+      // that our ExpressionMul remains in expanded form. Note that it's very
+      // difficult to find a unit test where this line matters (is_expanded_
+      // is almost always "false" here already), but in any case setting this
+      // to false here is conservative (at worst, a performance loss).
+      is_expanded_ = false;
     }
   } else {
     // Product is not found in base_to_exponent_map_. Add the entry (base,
     // exponent).
     base_to_exponent_map_.emplace(base, exponent);
+    // Conservatively, unless the new term is a simple exponentiation between
+    // leaf expressions (i.e., constants or variables, not any cell type that
+    // nests another Expression inside of itself), we can no longer be sure
+    // that our ExpressionMul remains in expanded form.
+    const auto is_leaf_expression = [](const Expression& e) {
+      return is_constant(e) || is_variable(e);
+    };
+    if (!(is_leaf_expression(base) && is_leaf_expression(exponent))) {
+      is_expanded_ = false;
+    }
   }
 }
 
