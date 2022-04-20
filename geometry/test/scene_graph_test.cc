@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_state.h"
+#include "drake/geometry/make_mesh_for_deformable.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
@@ -284,6 +285,37 @@ TEST_F(SceneGraphTest, FullPoseUpdateAnchoredOnly) {
   CreateDefaultContext();
   DRAKE_EXPECT_NO_THROW(
       SceneGraphTester::FullPoseUpdate(scene_graph_, *context_));
+}
+
+// Smoke test for registering a deformable geometry
+TEST_F(SceneGraphTest, RegisterDeformableGeometry) {
+  SourceId s_id = scene_graph_.RegisterSource();
+  // Register a rigid and a deformable geometry.
+  GeometryId rigid_id = scene_graph_.RegisterGeometry(
+      s_id, scene_graph_.world_frame_id(), make_sphere_instance());
+  constexpr double kRezHint = 0.5;
+  std::unique_ptr<GeometryInstance> geometry_instance = make_sphere_instance();
+  const RigidTransformd X_WG = geometry_instance->pose();
+  GeometryId deformable_id = scene_graph_.RegisterDeformableGeometry(
+      s_id, scene_graph_.world_frame_id(), std::move(geometry_instance),
+      kRezHint);
+
+  const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
+  EXPECT_EQ(nullptr, inspector.GetReferenceMesh(rigid_id));
+  const VolumeMesh<double>* mesh_ptr =
+      inspector.GetReferenceMesh(deformable_id);
+  ASSERT_NE(mesh_ptr, nullptr);
+
+  CreateDefaultContext();
+  const QueryObject<double>& query_object = this->query_object();
+  const VectorX<double>& q_WG = query_object.GetPositionsInWorld(deformable_id);
+  VectorX<double> expected_q_WG(3 * mesh_ptr->num_vertices());
+  for (int v = 0; v < mesh_ptr->num_vertices(); ++v) {
+    expected_q_WG.segment<3>(3 * v) = X_WG * mesh_ptr->vertex(v);
+  }
+  EXPECT_EQ(q_WG, expected_q_WG);
+  DRAKE_EXPECT_THROWS_MESSAGE(query_object.GetPositionsInWorld(rigid_id),
+                              "Rigid geometries.*Use get_pose_in_world().*.");
 }
 
 template <typename T>
