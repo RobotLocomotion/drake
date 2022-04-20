@@ -169,40 +169,56 @@ void ParseLinearConstraint(const MathematicalProgram& prog,
     const Eigen::VectorXd& ub = linear_constraint.evaluator()->upper_bound();
     const Eigen::VectorXd& lb = linear_constraint.evaluator()->lower_bound();
     const VectorXDecisionVariable& x = linear_constraint.variables();
-    const Eigen::MatrixXd& Ai = linear_constraint.evaluator()->GetDenseA();
-    for (int i = 0; i < linear_constraint.evaluator()->num_constraints();
-         ++i) {
+    const Eigen::SparseMatrix<double>& Ai =
+        linear_constraint.evaluator()->get_sparse_A();
+    // We store the starting row index in A_triplets for each row of
+    // linear_constraint. Namely the constraint lb(i) <= A.row(i)*x <= ub(i) is
+    // stored in A_triplets with starting_row_indices[i] (or
+    // starting_row_indices[i]+1 if both lb(i) and ub(i) are finite).
+    std::vector<int> starting_row_indices(
+        linear_constraint.evaluator()->num_constraints());
+    for (int i = 0; i < linear_constraint.evaluator()->num_constraints(); ++i) {
       const bool is_ub_finite{!std::isinf(ub(i))};
       const bool is_lb_finite{!std::isinf(lb(i))};
-      if (is_ub_finite || is_lb_finite) {
-        // If lb != -∞, then the constraint -aᵀx + s = lb will be added to the
-        // matrix A, in the row lower_bound_row_index.
-        const int lower_bound_row_index =
-            *A_row_count + num_linear_constraint_rows;
-        // If ub != ∞, then the constraint aᵀx + s = ub will be added to the
-        // matrix A, in the row upper_bound_row_index.
-        const int upper_bound_row_index =
-            *A_row_count + num_linear_constraint_rows + (is_lb_finite ? 1 : 0);
-        for (int j = 0; j < x.rows(); ++j) {
-          if (Ai(i, j) != 0) {
-            const int xj_index = prog.FindDecisionVariableIndex(x(j));
-            if (is_ub_finite) {
-              A_triplets->emplace_back(upper_bound_row_index, xj_index,
-                                       Ai(i, j));
-            }
-            if (is_lb_finite) {
-              A_triplets->emplace_back(lower_bound_row_index, xj_index,
-                                       -Ai(i, j));
-            }
-          }
-        }
+      if (!is_ub_finite && !is_lb_finite) {
+        // We use -1 to indicate that we won't add linear constraint when both
+        // bounds are infinity.
+        starting_row_indices[i] = -1;
+      } else {
+        starting_row_indices[i] = *A_row_count + num_linear_constraint_rows;
+        // I first add the constraint for lower bound, and then add the
+        // constraint for upper bound. This is consistent with the loop below
+        // when we modify A_triplets.
         if (is_lb_finite) {
           b->push_back(-lb(i));
-          ++num_linear_constraint_rows;
+          num_linear_constraint_rows++;
         }
         if (is_ub_finite) {
           b->push_back(ub(i));
-          ++num_linear_constraint_rows;
+          num_linear_constraint_rows++;
+        }
+      }
+    }
+    for (int j = 0; j < Ai.cols(); ++j) {
+      const int xj_index = prog.FindDecisionVariableIndex(x(j));
+      for (Eigen::SparseMatrix<double>::InnerIterator it(Ai, j); it; ++it) {
+        const int Ai_row_count = it.row();
+        const bool is_ub_finite{!std::isinf(ub(Ai_row_count))};
+        const bool is_lb_finite{!std::isinf(lb(Ai_row_count))};
+        if (is_lb_finite) {
+          // If lb != -∞, then the constraint -aᵀx + s = lb will be added to
+          // the matrix A, in the row lower_bound_row_index.
+          const int lower_bound_row_index = starting_row_indices[Ai_row_count];
+          A_triplets->emplace_back(lower_bound_row_index, xj_index,
+                                   -it.value());
+        }
+        if (is_ub_finite) {
+          // If ub != ∞, then the constraint aᵀx + s = ub will be added to the
+          // matrix A, in the row upper_bound_row_index.
+          const int upper_bound_row_index =
+              is_lb_finite ? starting_row_indices[Ai_row_count] + 1
+                           : starting_row_indices[Ai_row_count];
+          A_triplets->emplace_back(upper_bound_row_index, xj_index, it.value());
         }
       }
     }
