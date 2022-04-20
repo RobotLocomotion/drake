@@ -284,21 +284,49 @@ PartialPermutation SapModel<T>::MakeParticipatingVelocitiesPermutation(
     const SapContactProblem<T>& problem) {
   const PartialPermutation& cliques_permutation =
       problem.graph().participating_cliques();
-  int v_first = 0;  // first velocity for a given clique.
-  int num_participating_velocities = 0;
+
+  const int num_participating_cliques =
+      cliques_permutation.permuted_domain_size();
+  // Compute v_participating_start such that
+  // v_participating_start[participating_clique] stores the index to the first
+  // participating velocity for participating_clique in `this` SapModel.
+  std::vector<int> v_participating_start(num_participating_cliques);
+  v_participating_start[0] = 0;
+  for (int participating_clique = 1;
+       participating_clique < num_participating_cliques;
+       ++participating_clique) {
+    const int previous_participating_clique =
+        cliques_permutation.domain_index(participating_clique - 1);
+    const int previous_clique_nv =
+        problem.num_velocities(previous_participating_clique);
+    v_participating_start[participating_clique] =
+        v_participating_start[participating_clique - 1] + previous_clique_nv;
+  }
+
+  // Compute participating_velocities such that v_participating =
+  // participating_velocities[v] maps velocity index v in the original `problem`
+  // to participating velocity index v_participating in `this` SapModel.
   std::vector<int> participating_velocities(problem.num_velocities(), -1);
-  for (int c = 0; c < problem.num_cliques(); ++c) {
-    const int nv = problem.num_velocities(c);
-    if (cliques_permutation.participates(c)) {
+  int v_start = 0;  // First velocity for a given clique in the original model.
+  for (int clique = 0; clique < problem.num_cliques(); ++clique) {
+    const int nv = problem.num_velocities(clique);
+    if (cliques_permutation.participates(clique)) {
+      const int clique_participating =
+          cliques_permutation.permuted_index(clique);
       // Add participating dofs to the list.
       for (int i = 0; i < nv; ++i) {
-        const int v = v_first + i;
-        const int v_participating = num_participating_velocities++;
+        const int v = v_start + i;
+        const int v_participating =
+            v_participating_start[clique_participating] + i;
         participating_velocities[v] = v_participating;
       }
     }
-    v_first += nv;
+    v_start += nv;
   }
+
+  // Sanity check.
+  DRAKE_DEMAND(v_start == problem.num_velocities());
+
   return PartialPermutation(std::move(participating_velocities));
 }
 
