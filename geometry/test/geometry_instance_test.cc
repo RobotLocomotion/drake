@@ -6,6 +6,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/make_mesh_for_deformable.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -21,8 +22,12 @@ GTEST_TEST(GeometryInstanceTest, IsCopyable) {
   // Verify that this is copyable as defined by copyable_unique_ptr. We don't
   // have a runtime check available but this will fail to compile if the class
   // is not copyable.
-  copyable_unique_ptr<GeometryInstance> geometry(make_unique<GeometryInstance>
-      (RigidTransformd(), make_unique<Sphere>(1), "sphere"));
+  Sphere sphere(1.0);
+  constexpr double kRezHint = 0.5;
+  VolumeMesh<double> mesh = internal::MakeMeshForDeformable(sphere, kRezHint);
+  copyable_unique_ptr<GeometryInstance> geometry(make_unique<GeometryInstance>(
+      RigidTransformd(), make_unique<Sphere>(move(sphere)), "sphere",
+      make_unique<VolumeMesh<double>>(move(mesh))));
   EXPECT_TRUE(geometry->id().is_valid());
 }
 
@@ -76,6 +81,21 @@ GTEST_TEST(GeometryInstanceTest, CanonicalName) {
   DRAKE_EXPECT_THROWS_MESSAGE(to_rename.set_name(" "),
                               "GeometryInstance given the name '.*' which is "
                               "an empty canonical string");
+}
+
+GTEST_TEST(GeometryInstanceTest, MeshRepresentation) {
+  const Sphere sphere(1.0);
+  constexpr double kRezHint = 0.5;
+  VolumeMesh<double> mesh = internal::MakeMeshForDeformable(sphere, kRezHint);
+
+  const GeometryInstance meshed_geometry(
+      RigidTransformd(), make_unique<Sphere>(sphere), "meshed_sphere",
+      make_unique<VolumeMesh<double>>(move(mesh)));
+  EXPECT_TRUE(meshed_geometry.has_mesh_representation());
+
+  const GeometryInstance non_meshed_geometry(
+      RigidTransformd(), make_unique<Sphere>(sphere), "plain_sphere");
+  EXPECT_FALSE(non_meshed_geometry.has_mesh_representation());
 }
 
 }  // namespace

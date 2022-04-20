@@ -6,11 +6,16 @@
 
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/make_mesh_for_deformable.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 namespace {
+
+using math::RigidTransformd;
+using std::make_unique;
+using std::move;
 
 // Create two instances of the given Properties type with different properties:
 // ('group1', 'value') in the first, ('group2', 'value') in the second.
@@ -129,6 +134,25 @@ GTEST_TEST(InternalGeometryTest, RemoveRole) {
   EXPECT_FALSE(geometry.has_role(Role::kProximity));
   EXPECT_FALSE(geometry.has_role(Role::kIllustration));
   EXPECT_FALSE(geometry.has_role(Role::kPerception));
+}
+
+// Confirms that a deformable geometry can be constructed.
+GTEST_TEST(InternalGeometryTest, DeformableGeometry) {
+  SourceId source_id;
+  Sphere sphere(1.0);
+  constexpr double kRezHint = .5;
+  FrameId frame_id;
+  GeometryId geometry_id;
+  std::string name = "sphere";
+  RigidTransformd X_FG;
+  VolumeMesh<double> mesh = MakeMeshForDeformable(sphere, kRezHint);
+
+  InternalGeometry geometry(source_id, make_unique<Sphere>(move(sphere)),
+                            frame_id, geometry_id, move(name), move(X_FG),
+                            make_unique<VolumeMesh<double>>(mesh));
+  const VolumeMesh<double>* internal_mesh = geometry.mesh();
+  ASSERT_NE(internal_mesh, nullptr);
+  EXPECT_TRUE(mesh.Equal(*internal_mesh));
 }
 
 }  // namespace

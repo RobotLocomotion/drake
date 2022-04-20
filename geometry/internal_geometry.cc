@@ -11,9 +11,12 @@ namespace internal {
 using math::RigidTransform;
 using std::move;
 
-InternalGeometry::InternalGeometry(
-    SourceId source_id, std::unique_ptr<Shape> shape, FrameId frame_id,
-    GeometryId geometry_id, std::string name, RigidTransform<double> X_FG)
+InternalGeometry::InternalGeometry(SourceId source_id,
+                                   std::unique_ptr<Shape> shape,
+                                   FrameId frame_id, GeometryId geometry_id,
+                                   std::string name,
+                                   RigidTransform<double> X_FG,
+                                   std::unique_ptr<VolumeMesh<double>> mesh)
     : shape_spec_(std::move(shape)),
       id_(geometry_id),
       name_(std::move(name)),
@@ -21,7 +24,8 @@ InternalGeometry::InternalGeometry(
       frame_id_(frame_id),
       X_PG_(move(X_FG)),
       X_FG_(X_PG_),
-      parent_geometry_id_(std::nullopt) {}
+      parent_geometry_id_(std::nullopt),
+      mesh_(std::move(mesh)) {}
 
 bool InternalGeometry::has_role(Role role) const {
   switch (role) {
@@ -33,7 +37,7 @@ bool InternalGeometry::has_role(Role role) const {
       return has_perception_role();
     case Role::kUnassigned:
       return !(has_proximity_role() || has_perception_role() ||
-          has_illustration_role());
+               has_illustration_role());
   }
   DRAKE_UNREACHABLE();
 }

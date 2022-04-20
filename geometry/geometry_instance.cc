@@ -7,10 +7,12 @@ namespace geometry {
 
 GeometryInstance::GeometryInstance(const math::RigidTransform<double>& X_PG,
                                    std::unique_ptr<Shape> shape,
-                                   const std::string& name)
+                                   const std::string& name,
+                                   std::unique_ptr<VolumeMesh<double>> mesh)
     : id_(GeometryId::get_new_id()),
       X_PG_(X_PG),
-      shape_(std::move(shape)) {
+      shape_(std::move(shape)),
+      mesh_(std::move(mesh)) {
   set_name(name);
 }
 

@@ -171,6 +171,7 @@ drake_cc_library(
         ":utilities",
         "//common:copyable_unique_ptr",
         "//common:essential",
+        "//geometry/proximity:volume_mesh",
     ],
 )
 
@@ -304,6 +305,7 @@ drake_cc_library(
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
+        "//geometry/proximity:volume_mesh",
         "//math:geometric_transform",
     ],
 )
@@ -631,6 +633,7 @@ drake_cc_googletest(
     name = "geometry_instance_test",
     deps = [
         ":geometry_instance",
+        ":make_mesh_for_deformable",
         "//common/test_utilities",
     ],
 )
@@ -690,6 +693,7 @@ drake_cc_googletest(
     name = "internal_geometry_test",
     deps = [
         ":internal_geometry",
+        ":make_mesh_for_deformable",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -698,6 +702,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "scene_graph_test",
     deps = [
+        ":make_mesh_for_deformable",
         ":scene_graph",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",

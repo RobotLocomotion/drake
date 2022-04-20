@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/internal_frame.h"
+#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 
@@ -35,6 +36,9 @@ class InternalGeometry {
    be nullptr, and the pose will be uninitialized.  */
   InternalGeometry() {}
 
+  // TODO(xuchenhan-tri): Internal only needs the connectivity of the mesh. The
+  // vertex positions are immaterial and unused. We should have an abstraction
+  // for just the connectivity of a mesh.
   /* Constructs the internal geometry without any assigned roles defined as an
    *immediate* child of the frame. Therefore, it is assumed that X_FG = X_PG.
    @param source_id     The id for the source that registered this geometry.
@@ -42,10 +46,14 @@ class InternalGeometry {
    @param frame_id      The id of the frame this belongs to.
    @param geometry_id   The identifier for _this_ geometry.
    @param name          The name of the geometry.
-   @param X_FG          The pose of the geometry G in the parent frame F.  */
+   @param X_FG          The pose of the geometry G in the parent frame F.
+   @param mesh          The mesh representation of the geometry. The geometry is
+                        considered as deformable if a mesh is specified at
+                        construction.  */
   InternalGeometry(SourceId source_id, std::unique_ptr<Shape> shape,
                    FrameId frame_id, GeometryId geometry_id, std::string name,
-                   math::RigidTransform<double> X_FG);
+                   math::RigidTransform<double> X_FG,
+                   std::unique_ptr<VolumeMesh<double>> mesh = nullptr);
 
   /* Compares two %InternalGeometry instances for "equality". Two internal
    geometries are considered equal if they have the same geometry identifier.
@@ -151,12 +159,14 @@ class InternalGeometry {
     child_geometry_ids_.erase(geometry_id);
   }
 
-  /* Returns true if the geometry is *not* attached to the world frame -- or,
-   in other words, it *is* attached to a movable frame.  */
+  /* Returns true if
+   1. the geometry is rigid and is *not* attached to the world frame -- or, in
+      other words, it *is* attached to a movable frame, or,
+   2. the geometry is deformable. */
   bool is_dynamic() const {
     // NOTE: If I allow non-dynamic frames welded to the world, this will not
     // be sufficient.
-    return frame_id_ != InternalFrame::world_frame_id();
+    return (frame_id_ != InternalFrame::world_frame_id() || mesh_!= nullptr);
   }
 
   //@}
@@ -226,6 +236,10 @@ class InternalGeometry {
     return nullptr;
   }
 
+  /* Returns a pointer to the geometry's mesh representation if one exists, or
+   nullptr otherwise.  */
+  const VolumeMesh<double>* mesh() const { return mesh_.get(); }
+
   /* Removes the proximity role assigned to this geometry -- if there was
    no proximity role previously, this has no effect.  */
   void RemoveProximityRole() {
@@ -284,6 +298,9 @@ class InternalGeometry {
   std::optional<ProximityProperties> proximity_props_{};
   std::optional<IllustrationProperties> illustration_props_{};
   std::optional<PerceptionProperties> perception_props_{};
+
+  // Optional mesh representation.
+  copyable_unique_ptr<VolumeMesh<double>> mesh_;
 };
 
 }  // namespace internal

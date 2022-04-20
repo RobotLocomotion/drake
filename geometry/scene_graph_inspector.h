@@ -382,6 +382,15 @@ class SceneGraphInspector {
   const PerceptionProperties* GetPerceptionProperties(
       GeometryId geometry_id) const;
 
+  /** Returns a pointer to the const mesh representation of the geometry with
+   the given `geometry_id`.
+   @param geometry_id   The identifier for the queried geometry.
+   @return A pointer to the mesh representation of the geometry (or `nullptr`
+           if the geometry is rigid).
+   @throws std::exception if `geometry_id` does not map to a registered
+           geometry.  */
+  const VolumeMesh<double>* GetMesh(GeometryId geometry_id) const;
+
   /** Reports true if the two geometries with given ids `geometry_id1` and
    `geometry_id2`, define a collision pair that has been filtered out.
    @throws std::exception if either id does not map to a registered geometry
@@ -398,6 +407,7 @@ class SceneGraphInspector {
    geometry.  */
   void Reify(GeometryId geometry_id, ShapeReifier* reifier) const;
 
+  // TODO(xuchenhan-tri): test missing.
   /** Obtains a new GeometryInstance that copies the geometry indicated by the
    given `geometry_id`.
    @return A new GeometryInstance that is ready to be added as a new geometry.

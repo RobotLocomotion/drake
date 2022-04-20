@@ -459,6 +459,14 @@ const PerceptionProperties* GeometryState<T>::GetPerceptionProperties(
 }
 
 template <typename T>
+const VolumeMesh<double>* GeometryState<T>::GetMesh(GeometryId id) const {
+  const InternalGeometry* geometry = GetGeometry(id);
+  if (geometry) return geometry->mesh();
+  throw std::logic_error(
+      fmt::format("Referenced geometry {} has not been registered", id));
+}
+
+template <typename T>
 bool GeometryState<T>::CollisionFiltered(GeometryId id1, GeometryId id2) const {
   std::string base_message =
       "Can't report collision filter status between geometries " +
@@ -518,6 +526,21 @@ const math::RigidTransform<T>& GeometryState<T>::get_pose_in_parent(
     return "No pose available for invalid frame id: " + to_string(frame_id);
   });
   return X_PF_[frames_.at(frame_id).index()];
+}
+
+template <typename T>
+const VectorX<T>& GeometryState<T>::get_positions_in_world(
+    GeometryId geometry_id) const {
+  FindOrThrow(geometry_id, geometries_, [geometry_id]() {
+    return "No world positions available for invalid geometry id: " +
+           to_string(geometry_id);
+  });
+  const InternalGeometry& geometry = geometries_.at(geometry_id);
+  if (geometry.mesh() == nullptr) {
+    throw std::logic_error("The geometry with id: " + to_string(geometry_id) +
+                           " is rigid.");
+  }
+  return q_WGs_.at(geometry_id);
 }
 
 template <typename T>
@@ -617,6 +640,13 @@ GeometryId GeometryState<T>::RegisterGeometry(
         ", but the frame doesn't belong to the source.";
   });
 
+  if (frame_id != InternalFrame::world_frame_id() &&
+      geometry->has_mesh_representation()) {
+    throw std::logic_error(
+        "Registering deformable geometry to a non-world frame: " +
+        to_string(geometry_id));
+  }
+
   // Configure topology.
   // NOTE: Names are not validated here -- there are no roles. The names are
   // validated when roles are assigned.
@@ -631,7 +661,15 @@ GeometryId GeometryState<T>::RegisterGeometry(
   geometries_.emplace(
       geometry_id,
       InternalGeometry(source_id, geometry->release_shape(), frame_id,
-                       geometry_id, geometry->name(), geometry->pose()));
+                       geometry_id, geometry->name(), geometry->pose(),
+                       geometry->release_mesh()));
+
+  // Record new position states if the geometry is deformable.
+  const InternalGeometry& new_geometry = geometries_[geometry_id];
+  if (new_geometry.mesh() != nullptr) {
+    const VolumeMesh<double>& reference_mesh = *new_geometry.mesh();
+    q_WGs_[geometry_id] = VectorX<T>::Zero(reference_mesh.num_vertices() * 3);
+  }
 
   // Any roles defined on the geometry instance propagate through automatically.
   if (geometry->illustration_properties()) {
@@ -670,6 +708,12 @@ GeometryId GeometryState<T>::RegisterGeometryWithParent(
             ", on source " + to_string(source_id) + ".");
   }
 
+  if (geometry->has_mesh_representation()) {
+    throw std::logic_error(
+        "Registering deformable geometry to a parent geometry: " +
+        to_string(parent_id));
+  }
+
   // This confirms that parent_id exists at all.
   InternalGeometry& parent_geometry =
       GetMutableValueOrThrow(parent_id, &geometries_);
@@ -701,6 +745,10 @@ template <typename T>
 GeometryId GeometryState<T>::RegisterAnchoredGeometry(
     SourceId source_id,
     std::unique_ptr<GeometryInstance> geometry) {
+  if (geometry != nullptr && geometry->has_mesh_representation()) {
+    throw std::logic_error(
+        "Registering deformable geometry as an anchored geometry.");
+  }
   return RegisterGeometry(source_id, InternalFrame::world_frame_id(),
                           std::move(geometry));
 }
@@ -1160,6 +1208,7 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
 
   // Clean up state collections.
   X_WGs_.erase(geometry_id);
+  q_WGs_.erase(geometry_id);
 
   // Remove from the geometries.
   geometries_.erase(geometry_id);

@@ -76,6 +76,16 @@ const RigidTransform<T>& QueryObject<T>::GetPoseInWorld(
 }
 
 template <typename T>
+const VectorX<T>& QueryObject<T>::GetPositionsInWorld(
+    GeometryId geometry_id) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.get_positions_in_world(geometry_id);
+}
+
+template <typename T>
 std::vector<PenetrationAsPointPair<T>>
 QueryObject<T>::ComputePointPairPenetration() const {
   ThrowIfNotCallable();

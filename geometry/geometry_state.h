@@ -246,15 +246,19 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetPerceptionProperties().  */
   const PerceptionProperties* GetPerceptionProperties(GeometryId id) const;
 
+  // TODO(xuchenhan-tri): test missing.
+  /** Implementation of SceneGraphInspector::GetMesh().  */
+  const VolumeMesh<double>* GetMesh(GeometryId id) const;
+
   /** Implementation of SceneGraphInspector::CollisionFiltered().  */
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const;
 
   //@}
 
-  /** @name                Pose-dependent queries
+  /** @name                State-dependent queries
 
    These quantities all depend on the most recent pose values assigned to the
-   registered frames.  */
+   registered frames and positions values assigned to deformable geometries.  */
   //@{
 
   /** Implementation of QueryObject::GetPoseInWorld(FrameId).  */
@@ -267,6 +271,8 @@ class GeometryState {
   /** Implementation of QueryObject::GetPoseInParent().  */
   const math::RigidTransform<T>& get_pose_in_parent(FrameId frame_id) const;
 
+  /** Implementation of QueryObject::GetPositionsInWorld().  */
+  const VectorX<T>& get_positions_in_world(GeometryId geometry_id) const;
   //@}
 
   /** @name        State management
@@ -581,13 +587,26 @@ class GeometryState {
     convert_pose_vector(source.X_WF_, &X_WF_);
 
     // Now convert the id -> pose map.
-    std::unordered_map<GeometryId, math::RigidTransform<T>>& dest = X_WGs_;
-    const std::unordered_map<GeometryId, math::RigidTransform<U>>& s =
-        source.X_WGs_;
-    for (const auto& id_pose_pair : s) {
-      const GeometryId id = id_pose_pair.first;
-      const math::RigidTransform<U>& X_WG_source = id_pose_pair.second;
-      dest.insert({id, X_WG_source.template cast<T>()});
+    {
+      std::unordered_map<GeometryId, math::RigidTransform<T>>& dest = X_WGs_;
+      const std::unordered_map<GeometryId, math::RigidTransform<U>>& s =
+          source.X_WGs_;
+      for (const auto& id_pose_pair : s) {
+        const GeometryId id = id_pose_pair.first;
+        const math::RigidTransform<U>& X_WG_source = id_pose_pair.second;
+        dest.insert({id, X_WG_source.template cast<T>()});
+      }
+    }
+
+    // Now convert the id -> position map.
+    {
+      std::unordered_map<GeometryId, VectorX<T>>& dest = q_WGs_;
+      const std::unordered_map<GeometryId, VectorX<U>>& s = source.q_WGs_;
+      for (const auto& id_position_pair : s) {
+        const GeometryId id = id_position_pair.first;
+        const VectorX<U>& q_WG_source = id_position_pair.second;
+        dest.insert({id, q_WG_source.template cast<T>()});
+      }
     }
   }
 
@@ -808,6 +827,10 @@ class GeometryState {
   // In other words, it is the full evaluation of the kinematic chain from the
   // geometry to the world frame.
   std::unordered_map<GeometryId, math::RigidTransform<T>> X_WGs_;
+
+  // The position of every deformable geometry relative to the _world_ frame
+  // (regardless of roles) keyed by the corresponding geometry's id.
+  std::unordered_map<GeometryId, VectorX<T>> q_WGs_;
 
   // The pose of each frame relative to the _world_ frame.
   // frames_.size() == X_WF_.size() is an invariant. Furthermore, after a

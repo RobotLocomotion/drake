@@ -255,6 +255,13 @@ const PerceptionProperties* SceneGraphInspector<T>::GetPerceptionProperties(
 }
 
 template <typename T>
+const VolumeMesh<double>* SceneGraphInspector<T>::GetMesh(
+    GeometryId geometry_id) const {
+  DRAKE_DEMAND(state_ != nullptr);
+  return state_->GetMesh(geometry_id);
+}
+
+template <typename T>
 bool SceneGraphInspector<T>::CollisionFiltered(GeometryId geometry_id1,
                                                GeometryId geometry_id2) const {
   DRAKE_DEMAND(state_ != nullptr);
@@ -274,8 +281,11 @@ std::unique_ptr<GeometryInstance> SceneGraphInspector<T>::CloneGeometryInstance(
   const std::string name = GetName(id);
   const math::RigidTransformd X_PG = GetPoseInFrame(id);
   std::unique_ptr<Shape> shape = GetShape(id).Clone();
+  const VolumeMesh<double>* mesh = GetMesh(id);
+  std::unique_ptr<VolumeMesh<double>> mesh_clone =
+      mesh == nullptr ? nullptr : std::make_unique<VolumeMesh<double>>(*mesh);
   auto geometry_instance = std::make_unique<GeometryInstance>(
-      X_PG, std::move(shape), name);
+      X_PG, std::move(shape), name, std::move(mesh_clone));
   if (const auto* props = GetProximityProperties(id)) {
     geometry_instance->set_proximity_properties(*props);
   }

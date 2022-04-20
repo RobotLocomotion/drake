@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_state.h"
+#include "drake/geometry/make_mesh_for_deformable.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
@@ -94,6 +95,17 @@ std::unique_ptr<GeometryInstance> make_sphere_instance(
     double radius = 1.0) {
   return make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                        make_unique<Sphere>(radius), "sphere");
+}
+
+// Convenience function for making a deformable geometry instance.
+std::unique_ptr<GeometryInstance> make_deformable_sphere_instance(
+    double radius = 1.0) {
+  const Sphere sphere(radius);
+  const double kRezHint = radius / 2.0;
+  return make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere",
+      make_unique<VolumeMesh<double>>(
+          internal::MakeMeshForDeformable(sphere, kRezHint)));
 }
 
 // Testing harness to facilitate working with/testing the SceneGraph. Before
@@ -284,6 +296,28 @@ TEST_F(SceneGraphTest, FullPoseUpdateAnchoredOnly) {
   CreateDefaultContext();
   DRAKE_EXPECT_NO_THROW(
       SceneGraphTester::FullPoseUpdate(scene_graph_, *context_));
+}
+
+// Smoke test for registering a deformable geometry
+TEST_F(SceneGraphTest, RegisterDeformableGeometry) {
+  SourceId s_id = scene_graph_.RegisterSource();
+  // Register a rigid and a deformable geometry.
+  GeometryId rigid_id = scene_graph_.RegisterGeometry(
+      s_id, scene_graph_.world_frame_id(), make_sphere_instance());
+  GeometryId deformable_id = scene_graph_.RegisterGeometry(
+      s_id, scene_graph_.world_frame_id(), make_deformable_sphere_instance());
+
+  const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
+  EXPECT_EQ(nullptr, inspector.GetMesh(rigid_id));
+  const VolumeMesh<double>* mesh_ptr = inspector.GetMesh(deformable_id);
+  ASSERT_NE(mesh_ptr, nullptr);
+
+  CreateDefaultContext();
+  const QueryObject<double>& query_object = this->query_object();
+  const VectorX<double>& q_WG = query_object.GetPositionsInWorld(deformable_id);
+  EXPECT_EQ(q_WG, VectorX<double>::Zero(3 * mesh_ptr->num_vertices()));
+  DRAKE_EXPECT_THROWS_MESSAGE(query_object.GetPositionsInWorld(rigid_id),
+                              "The geometry.*is rigid.");
 }
 
 template <typename T>

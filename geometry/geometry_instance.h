@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 
@@ -17,9 +18,9 @@ namespace drake {
 namespace geometry {
 
 /** A geometry instance combines a geometry definition (i.e., a shape of some
- sort), a pose (relative to a parent "frame" P), material information, and an
- opaque collection of metadata. The parent frame can be a registered frame or
- another registered geometry.
+ sort and an optional mesh representation of the shape), a pose (relative to a
+ parent "frame" P), material information, and an opaque collection of metadata.
+ The parent frame can be a registered frame or another registered geometry.
 
  Every %GeometryInstance must be named. The naming convention mirrors that of
  valid names in SDF files. Specifically, any user-specified name will have
@@ -82,14 +83,19 @@ class GeometryInstance {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryInstance)
 
+  // TODO(xuchenhan-tri): GeometryInstance only needs the connectivity of the
+  //  mesh. The vertex positions are immaterial and unused. We should have an
+  //  abstraction for just the connectivity of a mesh.
   /** Constructs a geometry instance specification.
    @param X_PG   The pose of this geometry (`G`) in its parent's frame (`P`).
    @param shape  The underlying shape for this geometry instance.
    @param name   The name of the geometry (must satisfy the name requirements).
+   @param mesh   The (optional) mesh representation of the shape.
    @throws std::exception if the canonicalized version of `name` is empty.
    */
   GeometryInstance(const math::RigidTransform<double>& X_PG,
-      std::unique_ptr<Shape> shape, const std::string& name);
+                   std::unique_ptr<Shape> shape, const std::string& name,
+                   std::unique_ptr<VolumeMesh<double>> mesh = nullptr);
 
   /** Returns the globally unique id for this geometry specification. Every
    instantiation of %GeometryInstance will contain a unique id value. The id
@@ -104,6 +110,8 @@ class GeometryInstance {
   /** Sets the pose of this instance in its parent's frame.  */
   void set_pose(const math::RigidTransformd& X_PG) { X_PG_ = X_PG; }
 
+  /** Returns the underlying shape for this geometry instance.
+   @pre release_shape() has not been called. */
   const Shape& shape() const {
     DRAKE_DEMAND(shape_ != nullptr);
     return *shape_;
@@ -111,6 +119,16 @@ class GeometryInstance {
 
   /** Releases the shape from the instance.  */
   std::unique_ptr<Shape> release_shape() { return std::move(shape_); }
+
+  /** Releases the mesh representation from the instance (if one exists).
+   Otherwise, returns a nullptr.  */
+  std::unique_ptr<VolumeMesh<double>> release_mesh() {
+    return std::move(mesh_);
+  }
+
+  /** Returns true if the geometry has a mesh representation.
+   @pre release_mesh() has not been called on this geometry yet. */
+  bool has_mesh_representation() const { return mesh_ != nullptr; }
 
   /** Returns the *canonicalized* name for the instance.
    @sa @ref canonicalized_geometry_names "Canonicalized names"  */
@@ -196,6 +214,9 @@ class GeometryInstance {
   std::optional<ProximityProperties> proximity_properties_{};
   std::optional<IllustrationProperties> illustration_properties_{};
   std::optional<PerceptionProperties> perception_properties_{};
+
+  // Optional mesh representation.
+  copyable_unique_ptr<VolumeMesh<double>> mesh_{nullptr};
 };
 
 }  // namespace geometry
