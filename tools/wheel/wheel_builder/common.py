@@ -23,7 +23,9 @@ def die(message, result=1):
 
 
 def _check_version(version):
-    """Returns True iff the given version string matches PEP 440."""
+    """
+    Returns True iff the given version string matches PEP 440.
+    """
     return re.match(
         r'^([1-9][0-9]*!)?(0|[1-9][0-9]*)'
         r'(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?'
@@ -33,6 +35,18 @@ def _check_version(version):
 
 
 def entry(args, platform):
+    """
+    Entry point; performs the build using the given CLI arguments, platform,
+    and resource root.
+
+    The `platform` must be either a `linux` or `macos` object which provides
+    platform-specific implementations of various operations necessary to
+    complete the build.
+
+    The environment variable DRAKE_WHEEL_RESOURCE_ROOT provides the location of
+    various scripts and other artifacts used to complete the build. It must be
+    set prior to running the builder.
+    """
     resource_root = os.environ.get('DRAKE_WHEEL_RESOURCE_ROOT')
 
     if resource_root is None:
