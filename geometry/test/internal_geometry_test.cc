@@ -6,11 +6,16 @@
 
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/make_mesh_for_deformable.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 namespace {
+
+using math::RigidTransformd;
+using std::make_unique;
+using std::move;
 
 // Create two instances of the given Properties type with different properties:
 // ('group1', 'value') in the first, ('group2', 'value') in the second.
@@ -129,6 +134,35 @@ GTEST_TEST(InternalGeometryTest, RemoveRole) {
   EXPECT_FALSE(geometry.has_role(Role::kProximity));
   EXPECT_FALSE(geometry.has_role(Role::kIllustration));
   EXPECT_FALSE(geometry.has_role(Role::kPerception));
+}
+
+GTEST_TEST(InternalGeometryTest, MeshedGeometry) {
+  SourceId source_id;
+  Sphere sphere(1.0);
+  constexpr double kRezHint = .5;
+  FrameId frame_id;
+  GeometryId geometry_id;
+  std::string name = "sphere";
+  VolumeMesh<double> mesh = MakeMeshForDeformable(sphere, kRezHint);
+
+  // Confirms that a meshed geometry can be constructed.
+  InternalGeometry geometry(source_id, make_unique<Sphere>(sphere), frame_id,
+                            geometry_id, name, kRezHint);
+  const VolumeMesh<double>* internal_mesh = geometry.mesh();
+  ASSERT_NE(internal_mesh, nullptr);
+  EXPECT_TRUE(mesh.Equal(*internal_mesh));
+
+  // Meshed geometry is never anchored.
+  EXPECT_TRUE(geometry.is_dynamic());
+  // Meshed geometry is always deformable.
+  EXPECT_TRUE(geometry.is_deformable());
+
+  InternalGeometry rigid_geometry(source_id, make_unique<Sphere>(sphere),
+                                  frame_id, geometry_id, name,
+                                  RigidTransformd());
+  EXPECT_EQ(rigid_geometry.mesh(), nullptr);
+  // Non-meshed geometry is not deformable.
+  EXPECT_FALSE(rigid_geometry.is_deformable());
 }
 
 }  // namespace

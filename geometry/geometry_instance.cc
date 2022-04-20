@@ -8,9 +8,7 @@ namespace geometry {
 GeometryInstance::GeometryInstance(const math::RigidTransform<double>& X_PG,
                                    std::unique_ptr<Shape> shape,
                                    const std::string& name)
-    : id_(GeometryId::get_new_id()),
-      X_PG_(X_PG),
-      shape_(std::move(shape)) {
+    : id_(GeometryId::get_new_id()), X_PG_(X_PG), shape_(std::move(shape)) {
   set_name(name);
 }
 
