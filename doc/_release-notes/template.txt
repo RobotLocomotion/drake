@@ -12,6 +12,9 @@ released: YYYY-MM-DD
 
 * TBD
 
+Refer to our [Drake Stability Guidelines](/stable.html) for our policy
+on API changes.
+
 # Changes since {prior_version}
 
 ## Dynamical Systems
