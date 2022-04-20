@@ -55,7 +55,7 @@ GTEST_TEST(PartialPermutation, Construction) {
       p.permuted_index(0),
       "Index .* does not participate in this permutation.");
   EXPECT_TRUE(p.participates(1));
-  EXPECT_EQ(p.permuted_index(1), 0);
+  EXPECT_EQ(p.permuted_index(1), 0);  
   EXPECT_TRUE(p.participates(2));
   EXPECT_EQ(p.permuted_index(2), 2);
   EXPECT_TRUE(p.participates(1));
@@ -65,6 +65,13 @@ GTEST_TEST(PartialPermutation, Construction) {
       p.permuted_index(4),
       "Index .* does not participate in this permutation.");
   EXPECT_EQ(p.permuted_index(5), 3);
+
+  // Unit test inverse mapping from the domain of permuted indexes to the domain
+  // of original indexes.
+  EXPECT_EQ(p.domain_index(0), 1);
+  EXPECT_EQ(p.domain_index(1), 3);
+  EXPECT_EQ(p.domain_index(2), 2);
+  EXPECT_EQ(p.domain_index(3), 5);
 
   // Argument index out of bounds.
   EXPECT_THROW(p.participates(6), std::exception);
