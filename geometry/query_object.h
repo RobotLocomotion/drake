@@ -141,12 +141,13 @@ class QueryObject {
     return inspector_;
   }
 
-  /** @name                Pose-dependent Introspection
+  /** @name                Configuration-dependent Introspection
 
    These methods provide access to introspect geometry and frame quantities that
-   directly depend on the poses of the frames.  For geometry and frame
-   quantities that do not depend on the poses of frames, such as  X_FG, use
-   inspector() to access the SceneGraphInspector.  */
+   directly depend on the poses of the frames or configurations of deformable
+   geometries. For geometry and frame quantities that do not depend on the poses
+   of frames, such as  X_FG, use inspector() to access the SceneGraphInspector.
+  */
   //@{
 
   /** Reports the position of the frame indicated by `frame_id` relative to the
@@ -165,8 +166,18 @@ class QueryObject {
 
   /** Reports the position of the geometry indicated by `geometry_id` relative
    to the world frame.
-   @throws std::exception if the geometry `geometry_id` is not valid.  */
+   @sa GetConfigurationsInWorld().
+   @throws std::exception if the geometry `geometry_id` is not valid or if it
+   exists but is deformable.  */
   const math::RigidTransform<T>& GetPoseInWorld(GeometryId geometry_id) const;
+
+  /** Reports the configuration of the deformable geometry indicated by
+   `geometry_id` relative to the world frame.
+   @sa GetPoseInWorld().
+   @throws std::exception if the geometry `geometry_id` is not valid or is not
+   a deformable geometry.  */
+  const VectorX<T>& GetConfigurationsInWorld(
+      GeometryId deformable_geometry_id) const;
 
   //@}
 
