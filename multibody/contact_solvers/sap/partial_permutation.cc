@@ -80,6 +80,11 @@ int PartialPermutation::permuted_index(int i) const {
   return permutation_[i];
 }
 
+int PartialPermutation::domain_index(int i_permuted) const {
+  DRAKE_THROW_UNLESS(0 <= i_permuted && i_permuted < permuted_domain_size());
+  return inverse_permutation_[i_permuted];
+}
+
 bool PartialPermutation::participates(int i) const {
   DRAKE_THROW_UNLESS(0 <= i && i < domain_size());
   return permutation_[i] >= 0;
