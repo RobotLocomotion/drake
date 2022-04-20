@@ -43,8 +43,8 @@ class QueryObject;
  - query
  @endsystem
 
-For each registered "geometry source", there is an input port whose name begins
-with <em style="color:gray">(source name)</em>.
+ For each registered "geometry source", there is an input port whose name begins
+ with <em style="color:gray">(source name)</em>.
 
 
  Only registered "geometry sources" can introduce geometry into %SceneGraph.
@@ -52,9 +52,10 @@ with <em style="color:gray">(source name)</em>.
  _anchored_ (i.e., stationary) geometry, it could also be some other block of
  code (e.g., adding a common ground plane with which all systems' geometries
  interact). For dynamic geometry (geometry whose pose depends on a Context), the
- geometry source must also provide pose values for all of the geometries the
- source owns, via a port connection on %SceneGraph. For N geometry sources,
- the %SceneGraph instance will have N pose input ports.
+ geometry source must also provide pose/configuration values for all of the
+ geometries the source owns, via a port connection on %SceneGraph. For N
+ geometry sources, the %SceneGraph instance will have N pose/configuration input
+ ports.
 
  The basic workflow for interacting with %SceneGraph is:
 
@@ -73,11 +74,13 @@ with <em style="color:gray">(source name)</em>.
  // types.
  @endcond
 
- For each registered geometry source, there is one input port for each
- order of kinematics values (e.g., pose, velocity, and acceleration).
- If a source registers a frame, it must connect to these ports (although, in the
- current version, only pose is supported). Failure to connect to the port (or
- to provide valid kinematics values) will lead to runtime exceptions.
+ <!-- TODO(xuchenhan-tri): Modify this section when position ports are added.
+ -->
+ For each registered geometry source, there is one input port for each order
+ of kinematics values (e.g., pose, velocity, and acceleration). If a source
+ registers a frame, it must connect to these ports (although, in the current
+ version, only pose is supported). Failure to connect to the port (or to provide
+ valid kinematics values) will lead to runtime exceptions.
 
  __pose port__: An abstract-valued port providing an instance of
  FramePoseVector. For each registered frame, this "pose vector" maps the
@@ -142,26 +145,32 @@ with <em style="color:gray">(source name)</em>.
  _anchored_ or _dynamic_.
 
  Dynamic geometry can move; more specifically, its kinematics (e.g., pose)
- depends on a system's Context. Particularly, dynamic geometry is
- _fixed_ to a _frame_ whose kinematics values depend on a context. As the frame
- moves, the geometries fixed to it move with it. Therefore, to register dynamic
- geometry a frame must be registered first. These registered frames serve as the
- basis for repositioning geometry in the shared world. The geometry source is
- responsible for providing up-to-date kinematics values for those registered
- frames upon request (via an appropriate output port on the source LeafSystem
- connecting to the appropriate input port on %SceneGraph). The work flow is
- as follows:
+ depends on a system's Context. Particularly, a non-deformable dynamic geometry
+ is _fixed_ to a _frame_ whose kinematics values depend on a context. As the
+ frame moves, the geometries fixed to it move with it. On the other hand, a
+ deformable dynamic geometry has a mesh representation whose vertices' positions
+ can change and are expressed in the frame it is registered in. Therefore, to
+ register dynamic geometry a frame must be registered first. These registered
+ frames serve as the basis for repositioning geometry in the shared world. The
+ geometry source is responsible for providing up-to-date kinematics values for
+ those registered frames upon request (via an appropriate output port on the
+ source LeafSystem connecting to the appropriate input port on %SceneGraph). The
+ geometry source that registers deformable geometry is also responsible to
+ provide the positions of the mesh vertices of the deformable geometry in the
+ registered-in frame. The work flow is as follows:
    1. A LeafSystem registers itself as a geometry source, acquiring a SourceId
       (RegisterSource()).
    2. The source registers a frame (GeometrySource::RegisterFrame()).
      - A frame always has a "parent" frame. It can implicitly be the world
      frame, _or_ another frame registered by the source.
-   3. Register one or more geometries to a frame
-   (GeometrySource::RegisterGeometry()).
-     - The registered geometry is posed relative to the frame to which it is
-     fixed.
-     - The geometry can also be posed relative to another registered geometry.
-     It will be affixed to _that_ geometry's frame.
+   3. Register one or more non-deformable geometries to a frame
+      (RegisterGeometry()), and/or one or more deformable geometries to a frame
+      (RegisterDeformableGeometry()).
+     - A non-deformable geometry's pose is relative to the frame to which the
+     geometry is fixed. For deformable geometries, the positions of their mesh
+     vertices are expressed in the registered-in frame.
+     - Rigid geometries can also be posed relative to another registered
+     geometry. It will be affixed to _that_ geometry's frame.
 
  Anchored geometry is _independent_ of the context (i.e., it doesn't move).
  Anchored geometries are always affixed to the immobile world frame. As such,
@@ -169,6 +178,9 @@ with <em style="color:gray">(source name)</em>.
  (see GeometrySource::RegisterAnchoredGeometry()). However, the source still
  "owns" the anchored geometry.
 
+ <!-- TODO(xuchenhan-tri): Modify this section when configuration ports are
+added.
+ -->
  _Updating Kinematics_
 
  Registering _dynamic_ geometry implies a contract between the geometry source
@@ -302,6 +314,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
    the returned SourceId; it is the token by which all other operations on the
    geometry world are conducted.
 
+   <!-- TODO(xuchenhan-tri): Modify this section when configuration ports are
+   added.
+   -->
    This source id can be used to register arbitrary _anchored_ geometry. But if
    dynamic geometry is registered (via RegisterGeometry/RegisterFrame), then
    the context-dependent pose values must be provided on an input port.
@@ -345,15 +360,21 @@ class SceneGraph final : public systems::LeafSystem<T> {
    - The geometry source can then immediately register "anchored" geometry --
      geometry that is affixed to the world frame. These geometries will never
      move.
-   - For geometries that need to move based on the source's state, the
-     geometry source must first register a GeometryFrame. In fact, geometries
-     never move directly; it is the frames to which they are affixed that move.
-     A geometry source can register a frame via the RegisterFrame() methods.
+   - For non-deformable geometries that need to move based on the source's
+     state, the geometry source must first register a GeometryFrame. In fact,
+     non-deformable geometries never move directly; it is the frames to which
+     they are affixed that move. A geometry source can register a frame via the
+     RegisterFrame() methods.
    - Once a frame has been registered, the geometry source can register
      geometries that are rigidly affixed to that frame (or, figuratively
      speaking, "hung" on that frame). The geometry is immovably posed in that
      frame and assigned various properties. The geometry is registered via calls
      to the RegisterGeometry() methods.
+   - (Experimental): Deformable geometries differ from non-deformable geometries
+     in that it must have a meshed representation, and the vertices of the mesh
+     can be moved in the frame the geometry is registered-in. Deformable
+     geometries can be registered via calls to the (experimental)
+     RegisterDeformableGeometry() methods.
 
    %SceneGraph has a concept of "ownership" that is separate from the C++
    notion of ownership. In this case, %SceneGraph protects geometry and frames
@@ -410,8 +431,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
   FrameId RegisterFrame(SourceId source_id, FrameId parent_id,
                         const GeometryFrame& frame);
 
-  /** Registers a new geometry G for this source. This hangs geometry G on a
-   previously registered frame F (indicated by `frame_id`). The pose of the
+  /** Registers a new rigid geometry G for this source. This hangs geometry G on
+   a previously registered frame F (indicated by `frame_id`). The pose of the
    geometry is defined in a fixed pose relative to F (i.e., `X_FG`).
    Returns the corresponding unique geometry id.
 
@@ -443,8 +464,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
                               FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry) const;
 
-  /** Registers a new geometry G for this source. This hangs geometry G on a
-   previously registered geometry P (indicated by `geometry_id`). The pose of
+  /** Registers a new rigid geometry G for this source. This hangs geometry G on
+   a previously registered geometry P (indicated by `geometry_id`). The pose of
    the geometry is defined in a fixed pose relative to geometry P (i.e.,
    `X_PG`). By induction, this geometry is effectively rigidly affixed to the
    frame that P is affixed to. Returns the corresponding unique geometry id.
@@ -498,6 +519,51 @@ class SceneGraph final : public systems::LeafSystem<T> {
                            requirements outlined in GeometryInstance.  */
   GeometryId RegisterAnchoredGeometry(
       SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
+
+  // TODO(xuchenhan-tri): Consider allowing registering deformable geometries to
+  // non-world frames.
+  /** Registers a new deformable geometry G for this source. This registers
+   geometry G on a frame F (indicated by `frame_id`). The registered geometry
+   has a meshed representation. The positions of the vertices of this mesh
+   representation are defined in the frame F (i.e., `q_FG`). Returns the
+   corresponding unique geometry id.
+
+   Roles will be assigned to the registered geometry if the corresponding
+   GeometryInstance `geometry` has had properties assigned.
+
+   This method modifies the underlying model and requires a new Context to be
+   allocated. Potentially modifies proximity, perception, and illustration
+   versions based on the roles assigned to the geometry (see @ref
+   scene_graph_versioning).
+
+   @experimental
+   @param source_id        The id for the source registering the geometry.
+   @param frame_id         The id for the frame F to put the geometry in.
+   @param geometry         The geometry G to to be represented in frame F.
+   @param resolution_hint  The parameter that guides the level of mesh
+                           refinement of the deformable geometry. It has length
+                           units (in meters) and roughly corresponds to a
+                           typical edge length in the resulting mesh for a
+                           primitive shape.
+   @return A unique identifier for the added geometry.
+   @pre resolution_hint > 0.
+   @throws std::exception  if a) the `source_id` does _not_ map to a
+                           registered source,
+                           b) frame_id != world_frame_id(),
+                           c) the `geometry` is equal to `nullptr`,
+                           d) the geometry's name doesn't satisfy the
+                           requirements outlined in GeometryInstance.  */
+  GeometryId RegisterDeformableGeometry(
+      SourceId source_id, FrameId frame_id,
+      std::unique_ptr<GeometryInstance> geometry, double resolution_hint);
+
+  /** systems::Context-modifying variant of RegisterDeformableGeometry(). Rather
+   than modifying %SceneGraph's model, it modifies the copy of the model stored
+   in the provided context.
+   @experimental  */
+  GeometryId RegisterDeformableGeometry(
+      systems::Context<T>* context, SourceId source_id, FrameId frame_id,
+      std::unique_ptr<GeometryInstance> geometry, double resolution_hint) const;
 
   /** Removes the given geometry G (indicated by `geometry_id`) from the given
    source's registered geometries. All registered geometries hanging from

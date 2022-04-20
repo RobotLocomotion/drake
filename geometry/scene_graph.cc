@@ -203,6 +203,23 @@ GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
 }
 
 template <typename T>
+GeometryId SceneGraph<T>::RegisterDeformableGeometry(
+    SourceId source_id, FrameId frame_id,
+    std::unique_ptr<GeometryInstance> geometry, double resolution_hint) {
+  return model_.RegisterDeformableGeometry(
+      source_id, frame_id, std::move(geometry), resolution_hint);
+}
+
+template <typename T>
+GeometryId SceneGraph<T>::RegisterDeformableGeometry(
+    Context<T>* context, SourceId source_id, FrameId frame_id,
+    std::unique_ptr<GeometryInstance> geometry, double resolution_hint) const {
+  auto& g_state = mutable_geometry_state(context);
+  return g_state.RegisterDeformableGeometry(
+      source_id, frame_id, std::move(geometry), resolution_hint);
+}
+
+template <typename T>
 void SceneGraph<T>::RemoveGeometry(SourceId source_id, GeometryId geometry_id) {
   model_.RemoveGeometry(source_id, geometry_id);
 }
