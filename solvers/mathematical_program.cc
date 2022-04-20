@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <memory>
 #include <ostream>
 #include <set>
@@ -50,6 +51,8 @@ using symbolic::Variable;
 using symbolic::Variables;
 
 using internal::CreateBinding;
+
+const double kInf = std::numeric_limits<double>::infinity();
 
 MathematicalProgram::MathematicalProgram() = default;
 
@@ -268,10 +271,21 @@ symbolic::Polynomial MathematicalProgram::NewSosPolynomial(
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
 MathematicalProgram::NewSosPolynomial(const symbolic::Variables& indeterminates,
                                       int degree, NonnegativePolynomial type) {
-  DRAKE_DEMAND(degree > 0 && degree % 2 == 0);
-  const drake::VectorX<symbolic::Monomial> x{
-      MonomialBasis(indeterminates, degree / 2)};
-  return NewSosPolynomial(x, type);
+  DRAKE_DEMAND(degree >= 0 && degree % 2 == 0);
+  if (degree == 0) {
+    // The polynomial only has a non-negative constant term.
+    const symbolic::Variable poly_constant =
+        NewContinuousVariables<1>("poly_constant")(0);
+    AddBoundingBoxConstraint(0, kInf, poly_constant);
+    MatrixXDecisionVariable gram(1, 1);
+    gram(0, 0) = poly_constant;
+    return std::make_pair(
+        symbolic::Polynomial({{symbolic::Monomial(), poly_constant}}), gram);
+  } else {
+    const drake::VectorX<symbolic::Monomial> x{
+        MonomialBasis(indeterminates, degree / 2)};
+    return NewSosPolynomial(x, type);
+  }
 }
 
 std::pair<symbolic::Polynomial, MatrixXDecisionVariable>
@@ -838,7 +852,7 @@ Binding<LinearConstraint> MathematicalProgram::AddConstraint(
   } else {
     // TODO(eric.cousineau): This is a good assertion... But seems out of place,
     // possibly redundant w.r.t. the binding infrastructure.
-    DRAKE_ASSERT(binding.evaluator()->A().cols() ==
+    DRAKE_ASSERT(binding.evaluator()->GetDenseA().cols() ==
                  static_cast<int>(binding.GetNumElements()));
     if (!CheckBinding(binding)) {
       return binding;
@@ -859,7 +873,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 
 Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearEqualityConstraint>& binding) {
-  DRAKE_ASSERT(binding.evaluator()->A().cols() ==
+  DRAKE_ASSERT(binding.evaluator()->GetDenseA().cols() ==
                static_cast<int>(binding.GetNumElements()));
   if (!CheckBinding(binding)) {
     return binding;

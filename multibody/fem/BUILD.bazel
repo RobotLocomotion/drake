@@ -27,6 +27,7 @@ drake_cc_package_library(
         ":fem_element",
         ":fem_indexes",
         ":fem_model",
+        ":fem_solver",
         ":fem_state",
         ":fem_state_system",
         ":isoparametric_element",
@@ -218,6 +219,21 @@ drake_cc_library(
         ":fem_element",
         ":fem_state",
         ":petsc_symmetric_block_sparse_matrix",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_solver",
+    srcs = [
+        "fem_solver.cc",
+    ],
+    hdrs = [
+        "fem_solver.h",
+    ],
+    deps = [
+        ":discrete_time_integrator",
+        ":fem_model",
         "//common:essential",
     ],
 )
@@ -554,6 +570,17 @@ drake_cc_googletest(
     name = "fem_model_test",
     deps = [
         ":dummy_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fem_solver_test",
+    deps = [
+        ":acceleration_newmark_scheme",
+        ":dummy_model",
+        ":fem_solver",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],

@@ -69,6 +69,24 @@ def is_relative_link(filepath):
         return None
 
 
+def is_relative_path(path):
+    """Test if a linker path is "relative".
+
+    When fixing linker paths, there are two types of paths we want to rewrite:
+    - Paths starting with `@loader_path`.
+    - Paths into Bazel's private build areas.
+
+    This function tries to identify both. Unfortunately, there does not appear
+    to be a great, reliable way to identify "Bazel's private build areas", so
+    we consider any path containing `/_bazel_` to be such a location.
+    """
+    if path.startswith("@loader_path"):
+        return True
+    if "/_bazel_" in path:
+        return True
+    return False
+
+
 def find_binary_executables():
     """Finds installed files that are binary executables to fix them up later.
 
@@ -218,7 +236,7 @@ def macos_fix_rpaths(basename, dst_full):
         # keep only file path, remove version information.
         relative_path = line.split(' (')[0].strip()
         # If path is relative, it needs to be replaced by absolute path.
-        if "@loader_path" not in relative_path:
+        if not is_relative_path(relative_path):
             continue
         dep_basename = os.path.basename(relative_path)
         # Look for the absolute path in the dictionary of fixup files to

@@ -38,20 +38,13 @@ GTEST_TEST(FemModelTest, CalcResidual) {
   unique_ptr<FemState<double>> fem_state = model.MakeFemState();
   VectorXd residual(model.num_dofs());
   model.CalcResidual(*fem_state, &residual);
-  /* The residual is expected to be zero if the state is not all zero (see
-   DummyElement::CalcResidual). */
-  EXPECT_EQ(residual, VectorXd::Zero(model.num_dofs()));
 
-  fem_state->SetPositions(VectorXd::Zero(model.num_dofs()));
-  fem_state->SetVelocities(VectorXd::Zero(model.num_dofs()));
-  fem_state->SetAccelerations(VectorXd::Zero(model.num_dofs()));
   VectorXd expected_residual = VectorXd::Zero(model.num_dofs());
   expected_residual.head<DummyElement::kNumDofs>() +=
       DummyElement::inverse_dynamics_force();
   expected_residual.tail<DummyElement::kNumDofs>() +=
       DummyElement::inverse_dynamics_force();
 
-  model.CalcResidual(*fem_state, &residual);
   /* The residual for each element is set to a dummy value if all states are
    zero (see DummyElement::CalcResidual). */
   EXPECT_EQ(residual, expected_residual);
