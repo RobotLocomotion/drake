@@ -89,7 +89,7 @@ class GeometryInstance {
    @throws std::exception if the canonicalized version of `name` is empty.
    */
   GeometryInstance(const math::RigidTransform<double>& X_PG,
-      std::unique_ptr<Shape> shape, const std::string& name);
+                   std::unique_ptr<Shape> shape, const std::string& name);
 
   /** Returns the globally unique id for this geometry specification. Every
    instantiation of %GeometryInstance will contain a unique id value. The id
@@ -104,6 +104,8 @@ class GeometryInstance {
   /** Sets the pose of this instance in its parent's frame.  */
   void set_pose(const math::RigidTransformd& X_PG) { X_PG_ = X_PG; }
 
+  /** Returns the underlying shape specification for this geometry instance.
+   @pre release_shape() has not been called. */
   const Shape& shape() const {
     DRAKE_DEMAND(shape_ != nullptr);
     return *shape_;

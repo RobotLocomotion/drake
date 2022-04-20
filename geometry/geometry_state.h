@@ -58,8 +58,8 @@ using FrameIdSet = std::unordered_set<FrameId>;
  The context-dependent state of SceneGraph. This serves as an AbstractValue
  in the context. SceneGraph's time-dependent state includes more than just
  values; objects can be added to or removed from the world over time. Therefore,
- SceneGraph's context-dependent state includes values (the poses) and
- structure (the topology of the world).
+ SceneGraph's context-dependent state includes values (the poses/configurations)
+ and structure (the topology of the world).
 
  @note This is intended as an internal class only.
 
@@ -246,15 +246,19 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetPerceptionProperties().  */
   const PerceptionProperties* GetPerceptionProperties(GeometryId id) const;
 
+  /** Implementation of SceneGraphInspector::GetReferenceMesh().  */
+  const VolumeMesh<double>* GetReferenceMesh(GeometryId id) const;
+
   /** Implementation of SceneGraphInspector::CollisionFiltered().  */
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const;
 
   //@}
 
-  /** @name                Pose-dependent queries
+  /** @name                Configuration-dependent queries
 
    These quantities all depend on the most recent pose values assigned to the
-   registered frames.  */
+   registered frames and configuration values assigned to deformable geometries.
+  */
   //@{
 
   /** Implementation of QueryObject::GetPoseInWorld(FrameId).  */
@@ -267,6 +271,8 @@ class GeometryState {
   /** Implementation of QueryObject::GetPoseInParent().  */
   const math::RigidTransform<T>& get_pose_in_parent(FrameId frame_id) const;
 
+  /** Implementation of QueryObject::GetConfigurationsInWorld().  */
+  const VectorX<T>& get_configurations_in_world(GeometryId geometry_id) const;
   //@}
 
   /** @name        State management
@@ -309,6 +315,11 @@ class GeometryState {
   /** Implementation of SceneGraph::RegisterAnchoredGeometry().  */
   GeometryId RegisterAnchoredGeometry(
       SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
+
+  /** Implementation of @ref SceneGraph::RegisterDeformableGeometry() */
+  GeometryId RegisterDeformableGeometry(
+      SourceId source_id, FrameId frame_id,
+      std::unique_ptr<GeometryInstance> geometry, double resolution_hint);
 
   /** Implementation of SceneGraph::RemoveGeometry().  */
   void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
@@ -581,13 +592,26 @@ class GeometryState {
     convert_pose_vector(source.X_WF_, &X_WF_);
 
     // Now convert the id -> pose map.
-    std::unordered_map<GeometryId, math::RigidTransform<T>>& dest = X_WGs_;
-    const std::unordered_map<GeometryId, math::RigidTransform<U>>& s =
-        source.X_WGs_;
-    for (const auto& id_pose_pair : s) {
-      const GeometryId id = id_pose_pair.first;
-      const math::RigidTransform<U>& X_WG_source = id_pose_pair.second;
-      dest.insert({id, X_WG_source.template cast<T>()});
+    {
+      std::unordered_map<GeometryId, math::RigidTransform<T>>& dest = X_WGs_;
+      const std::unordered_map<GeometryId, math::RigidTransform<U>>& s =
+          source.X_WGs_;
+      for (const auto& id_pose_pair : s) {
+        const GeometryId id = id_pose_pair.first;
+        const math::RigidTransform<U>& X_WG_source = id_pose_pair.second;
+        dest.insert({id, X_WG_source.template cast<T>()});
+      }
+    }
+
+    // Now convert the id -> configuration map.
+    {
+      std::unordered_map<GeometryId, VectorX<T>>& dest = q_WGs_;
+      const std::unordered_map<GeometryId, VectorX<U>>& s = source.q_WGs_;
+      for (const auto& id_configuration_pair : s) {
+        const GeometryId id = id_configuration_pair.first;
+        const VectorX<U>& q_WG_source = id_configuration_pair.second;
+        dest.insert({id, q_WG_source.template cast<T>()});
+      }
     }
   }
 
@@ -624,6 +648,13 @@ class GeometryState {
   template <typename ValueType>
   void ValidateFrameIds(SourceId source_id,
                         const FrameKinematicsVector<ValueType>& values) const;
+
+  // Helper for RegisterGeometry() and RegisterDeformableGeometry() that
+  // validates the the source and frame ids (that they are registered) and
+  // geometry id (that there are no duplicates), and configures the topology of
+  // the geometry "tree".
+  void ValidateRegistrationAndSetTopology(SourceId source_id, FrameId frame_id,
+                                          GeometryId geometry_id);
 
   // Method that performs any final book-keeping/updating on the state after
   // _all_ of the state's frames have had their poses updated.
@@ -686,6 +717,10 @@ class GeometryState {
   // for the given role, throws an exception.
   void ThrowIfNameExistsInRole(FrameId id, Role role,
                                const std::string& name) const;
+
+  // Propagate all roles defined in geometry instance to `this` geometry state.
+  void AssignAllRoles(SourceId source_id, GeometryId geometry_id,
+                      std::unique_ptr<GeometryInstance> geometry);
 
   // Confirms that the given role assignment is valid and return the geometry
   // if valid. Throws if not.
@@ -808,6 +843,10 @@ class GeometryState {
   // In other words, it is the full evaluation of the kinematic chain from the
   // geometry to the world frame.
   std::unordered_map<GeometryId, math::RigidTransform<T>> X_WGs_;
+
+  // The configuration of every deformable geometry relative to the _world_
+  // frame (regardless of roles) keyed by the corresponding geometry's id.
+  std::unordered_map<GeometryId, VectorX<T>> q_WGs_;
 
   // The pose of each frame relative to the _world_ frame.
   // frames_.size() == X_WF_.size() is an invariant. Furthermore, after a

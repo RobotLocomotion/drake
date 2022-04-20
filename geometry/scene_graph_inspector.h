@@ -299,7 +299,7 @@ class SceneGraphInspector {
    then `X_PG = X_FG`.
    @sa GetPoseInFrame()
    @throws std::exception if `geometry_id` does not map to a registered
-   geometry.  */
+   geometry or if it maps to a deformable geometry.  */
   const math::RigidTransform<double>& GetPoseInParent(
       GeometryId geometry_id) const;
 
@@ -309,7 +309,7 @@ class SceneGraphInspector {
    then `X_PG = X_FG`.
    @sa GetPoseInParent()
    @throws std::exception if `geometry_id` does not map to a registered
-   geometry.  */
+   geometry or if it maps to a deformable geometry.  */
   const math::RigidTransform<double>& GetPoseInFrame(
       GeometryId geometry_id) const;
 
@@ -381,6 +381,14 @@ class SceneGraphInspector {
            geometry.  */
   const PerceptionProperties* GetPerceptionProperties(
       GeometryId geometry_id) const;
+
+  /** Returns a the reference mesh of the geometry with the given `geometry_id`.
+   @param geometry_id   The identifier for the queried geometry.
+   @return A pointer to the reference mesh of the geometry if the geometry is
+           deformable, or `nullptr` if the geometry is rigid.
+   @throws std::exception if `geometry_id` does not map to a registered
+           geometry.  */
+  const VolumeMesh<double>* GetReferenceMesh(GeometryId geometry_id) const;
 
   /** Reports true if the two geometries with given ids `geometry_id1` and
    `geometry_id2`, define a collision pair that has been filtered out.
