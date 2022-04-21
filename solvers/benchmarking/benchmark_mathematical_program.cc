@@ -78,8 +78,19 @@ static void BenchmarkSosProgram2(benchmark::State& state) {  // NOLINT
   }
 }
 
+static void BenchmarkSosProgram3(benchmark::State& state) {  // NOLINT
+  for (auto _ : state) {
+    MathematicalProgram prog;
+    const auto x = prog.NewIndeterminates<12>();
+    const symbolic::Polynomial p =
+        prog.NewFreePolynomial(symbolic::Variables(x), 6);
+  }
+}
+
 BENCHMARK(BenchmarkSosProgram1);
 BENCHMARK(BenchmarkSosProgram2);
+BENCHMARK(BenchmarkSosProgram3);
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

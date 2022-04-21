@@ -342,7 +342,7 @@ Variables GetIndeterminates(const Polynomial::MapType& m) {
   Variables vars;
   for (const pair<const Monomial, Expression>& p : m) {
     const Monomial& m_i{p.first};
-    vars += m_i.GetVariables();
+    vars.insert(m_i.GetVariables());
   }
   return vars;
 }
@@ -351,7 +351,7 @@ Variables GetDecisionVariables(const Polynomial::MapType& m) {
   Variables vars;
   for (const pair<const Monomial, Expression>& p : m) {
     const Expression& e_i{p.second};
-    vars += e_i.GetVariables();
+    vars.insert(e_i.GetVariables());
   }
   return vars;
 }
