@@ -180,11 +180,13 @@ symbolic::Polynomial MathematicalProgram::NewFreePolynomialImpl(
           indeterminates, degree, degree_type);
   const VectorXDecisionVariable coeffs{
       this->NewContinuousVariables(m.size(), coeff_name)};
-  symbolic::Polynomial p;
-  for (int i = 0; i < m.size(); ++i) {
-    p.AddProduct(coeffs(i), m(i));  // p += coeffs(i) * m(i);
+  symbolic::Polynomial::MapType p_map;
+  // Since each entry in m is unique, we construct the polynomial using a map
+  // with m(i) being the map key.
+  for (int i = 0; i < coeffs.rows(); ++i) {
+    p_map.emplace(m(i), coeffs(i));
   }
-  return p;
+  return symbolic::Polynomial(std::move(p_map));
 }
 
 symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
