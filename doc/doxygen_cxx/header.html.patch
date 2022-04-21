@@ -1,21 +1,83 @@
---- header.html.orig	2022-01-28 16:27:47.441718384 -0800
-+++ header.html	2022-01-28 16:54:08.058606102 -0800
-@@ -47,6 +47,18 @@
-    <!--BEGIN SEARCHENGINE-->
-    <td>$searchbox</td>
-+   <td>
-+    <div id="DDGSearch">
-+     <form id="ddg-search-form" class="wy_form" action="https://duckduckgo.com/" method="get">
-+      <input type="text" name="q" placeholder="Search C++ API only…" />
-+      <input type="hidden" name="sites" value="drake.mit.edu/doxygen_cxx" />
-+     </form>
-+     <form id="ddg-search-form" class="wy_form" action="https://duckduckgo.com/" method="get">
-+      <input type="text" name="q" placeholder="Search all of Drake…" />
-+      <input type="hidden" name="sites" value="drake.mit.edu" />
-+     </form>
-+    </div">
-+   </td>
-    <!--END SEARCHENGINE-->
+--- header.html.orig	2022-04-13 15:16:12.583092808 -0700
++++ header.html.new	2022-04-13 15:29:17.385355977 -0700
+@@ -20,6 +20,46 @@
+ <body>
+ <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+ 
++<header class="site-header">
++ <div class="site-header-inner contain">
++  <a class="drake-logo" href="/"><img src="/images/drake-logo-white.svg"></a>
++  <div class="menu-mobile-toggle">
++   <span></span>
++  </div>
++  <nav class="site-menu">
++   <ul>
++    <li class="site-menu-item site-menu-item-main">
++     <a class="site-menu-item" href="/">Home</a>
++    </li>
++    <li class="site-menu-item site-menu-item-main">
++     <a class="site-menu-item" href="/installation.html">Installation</a>
++    </li>
++    <li class="site-menu-item site-menu-item-main">
++     <a class="site-menu-item" href="/gallery.html">Gallery</a>
++    </li>
++    <li class="site-menu-item site-menu-item-main">API Documentation
++     <div class="sub">
++      <a class="site-menu-item" href="https://drake.mit.edu/doxygen_cxx/index.html">C++</a>
++      <a class="site-menu-item" href="https://drake.mit.edu/pydrake/index.html">Python</a>
++     </div>
++    </li>
++    <li class="site-menu-item site-menu-item-main">Resources
++     <div class="sub">
++      <a class="site-menu-item" href="/getting_help.html">Getting Help</a>
++      <a class="site-menu-item" href="https://github.com/RobotLocomotion/drake/tree/master/tutorials">Tutorials</a>
++      <a class="site-menu-item" href="/python_bindings.html">Python Bindings</a>
++      <a class="site-menu-item" href="/developers.html">For Developers</a>
++      <a class="site-menu-item" href="/credits.html">Credits</a>
++     </div>
++    </li>
++    <li class="github-link">
++     <a class="site-menu-item" href="https://github.com/RobotLocomotion/drake">GitHub <img src="/third_party/images/GitHub-Mark-Light-64px.png"></a>
++    </li>
++   </ul>
++  </nav>
++ </div>
++</header>
++
+ <!--BEGIN TITLEAREA-->
+ <div id="titlearea">
+ <table cellspacing="0" cellpadding="0">
+@@ -44,13 +84,30 @@
+    <!--END PROJECT_BRIEF-->
+   <!--END !PROJECT_NAME-->
+   <!--BEGIN DISABLE_INDEX-->
+-   <!--BEGIN SEARCHENGINE-->
+-   <td>$searchbox</td>
+-   <!--END SEARCHENGINE-->
    <!--END DISABLE_INDEX-->
   </tr>
   </tbody>
+ </table>
++<div class="title-banner">
++ <div class="title-banner__title">
++  Drake C++ Documentation
++ </div>
++ <div id="DDGSearch">
++  <form id="ddg-search-form" class="wy_form" action="https://duckduckgo.com/" method="get">
++   <input type="text" name="q" placeholder="Search C++ API only…">
++   <input type="hidden" name="sites" value="drake.mit.edu/doxygen_cxx">
++  </form>
++  <form id="ddg-search-form" class="wy_form" action="https://duckduckgo.com/" method="get">
++   <input type="text" name="q" placeholder="Search all of Drake…">
++   <input type="hidden" name="sites" value="drake.mit.edu">
++  </form>
++ </div>
++ <!--BEGIN SEARCHENGINE-->
++ <div id="MSearchBoxContainer">
++  $searchbox
++ </div>
++ <!--END SEARCHENGINE-->
++</div>
+ </div>
+ <!--END TITLEAREA-->
+ <!-- end header part -->
