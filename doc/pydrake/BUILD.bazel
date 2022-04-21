@@ -30,6 +30,8 @@ filegroup(
     srcs = [
         "_static/css/custom.css",
         "conf.py",
+        "footer.html",
+        "layout.html",
         "searchbox.html",
     ],
 )
