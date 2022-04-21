@@ -148,8 +148,8 @@ the main body of the document:
        appropriate edits as follows:
        * The version number
     5. Into the box labeled "Attach binaries by dropping them here or selecting
-       them.", drag and drop the 9 release binary artifacts from above (the 3
-       tarballs, and their 6 checksums)
+       them.", drag and drop the 6 release binary artifacts from above (the 2
+       tarballs, and their 3 checksums).
     6. Choose "Save draft" and take a deep breath.
 14. Once the documentation build finishes, release!
     1. Check that the link to drake.mit.edu docs from the GitHub release draft
@@ -158,8 +158,10 @@ the main body of the document:
     3. Notify `@BetsyMcPhail` via a GitHub comment to manually tag docker images
        and upload the releases to S3. Be sure to provide her with the binary
        date, commit SHA, and release tag in the same ping.
-    4. Announce on Drake Slack, ``#general``.
-    5. Party on, Wayne.
+    4. Notify `@jwnimmer-tri` via a Slack DM to manually refresh the Deepnote
+       tutorials.
+    5. Announce on Drake Slack, ``#general``.
+    6. Party on, Wayne.
 
 ## Post-release follow up
 
@@ -217,6 +219,6 @@ instructions to obtain a username and password.
    1. Run ``docker rmi $(docker image ls --filter=reference='pip-drake:*' -q)``
    1. Run ``docker builder prune -f``
 9. Run ``./build-wheels --test 1.N.0``
-10. Wait a long time for it to finish (around 60 minutes on a beefy workstation). It will take over all of your computer's resources, so don't plan to do much else concurrently.
-11. There should have been exactly four whl files created. Run ``twine upload <...>``, replacing the ``<...>`` placeholder with the path to each of the wheels to be uploaded (e.g., ``drake-0.35.0b1-cp36-cp36m-manylinux_2_27_x86_64``, etc.)
+10. Wait a long time for it to finish (around 30 minutes on a beefy workstation). It will take over all of your computer's resources, so don't plan to do much else concurrently.
+11. There should have been exactly two whl files created. Run ``twine upload <...>``, replacing the ``<...>`` placeholder with the path to each of the wheels to be uploaded (e.g., ``drake-0.35.0b1-cp36-cp36m-manylinux_2_27_x86_64``, etc.)
     1. You will need your PyPI username and password for this. (Do not use drake-robot.)
