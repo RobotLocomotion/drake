@@ -25,6 +25,7 @@ _FRANKA_DESCRIPTION_MESHES = forward_files(
 install_data(
     extra_prod_models = _FRANKA_DESCRIPTION_MESHES + [
         "LICENSE.TXT",
+        "README.md",
     ],
 )
 # === test/ ===
