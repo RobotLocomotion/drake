@@ -151,6 +151,52 @@ class TestGeometryVisualizers(unittest.TestCase):
                       meshcat.StaticHtml())
         meshcat.Flush()
 
+        # PerspectiveCamera
+        camera = mut.Meshcat.PerspectiveCamera(fov=80,
+                                               aspect=1.2,
+                                               near=0.2,
+                                               far=200,
+                                               zoom=1.3)
+        self.assertEqual(camera.fov, 80)
+        self.assertEqual(camera.aspect, 1.2)
+        self.assertEqual(camera.near, 0.2)
+        self.assertEqual(camera.far, 200)
+        self.assertEqual(camera.zoom, 1.3)
+        self.assertEqual(repr(camera), "".join([
+            r"PerspectiveCamera(",
+            r"fov=80.0, "
+            r"aspect=1.2, ",
+            r"near=0.2, ",
+            r"far=200.0, ",
+            r"zoom=1.3)"]))
+        meshcat.SetCamera(camera=camera, path="mypath")
+
+        # OrthographicCamera
+        camera = mut.Meshcat.OrthographicCamera(left=0.1,
+                                                right=1.3,
+                                                top=0.3,
+                                                bottom=1.4,
+                                                near=0.2,
+                                                far=200,
+                                                zoom=1.3)
+        self.assertEqual(camera.left, 0.1)
+        self.assertEqual(camera.right, 1.3)
+        self.assertEqual(camera.top, 0.3)
+        self.assertEqual(camera.bottom, 1.4)
+        self.assertEqual(camera.near, 0.2)
+        self.assertEqual(camera.far, 200)
+        self.assertEqual(camera.zoom, 1.3)
+        self.assertEqual(repr(camera), "".join([
+            r"OrthographicCamera(",
+            r"left=0.1, "
+            r"right=1.3, ",
+            r"top=0.3, "
+            r"bottom=1.4, ",
+            r"near=0.2, ",
+            r"far=200.0, ",
+            r"zoom=1.3)"]))
+        meshcat.SetCamera(camera=camera, path="mypath")
+
     def test_meshcat_animation(self):
         animation = mut.MeshcatAnimation(frames_per_second=64)
         self.assertEqual(animation.frames_per_second(), 64)
