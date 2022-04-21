@@ -5,8 +5,14 @@ namespace drake {
 namespace geometry {
 namespace render_gltf_client {
 
-/** @defgroup render_engine_gltf_client_server_api glTF Render Client-Server API
+/** @defgroup render_engine_gltf_client_server_api (Experimental) glTF Render Client-Server API
     @ingroup render_engines
+
+<h2 id="disclaimer">DISCLAIMER</h2>
+The implementation of the glTF Render Client-Server API is still a work in
+progress.  Currently, the content of this page is primarily for facilitating
+code reviews and is subject to change during upcoming pull requests.
+<hr>
 
 The [glTF][glTF] render server API consists of two components: a client, and a
 server. The client generates and transmits glTF scene files to the server, which
@@ -55,8 +61,8 @@ in particular, if you do not return the code yourself the default response is
 always `200` which indicates success.  When in doubt, have your server respond
 with `200` for a success, `400` for any failure related to bad requests (e.g.,
 missing `min_depth` or `max_depth` for an `image_type="depth"`), and `500` for
-any unhandled errors.  The HTTP response code (**only**) is what is used by the
-client to determine if the interaction was successful.
+any unhandled errors.  The HTTP response code is used by the client to determine
+if the interaction was successful.
 
 [html_form]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/form
 [html_post]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST
@@ -338,7 +344,7 @@ that can be used with minimal change (please see the documentation at the top of
 the file) for your own uses.
 
 [flask]: https://flask.palletsprojects.com/en/2.0.x/
-[test_server]: https://github.com/RobotLocomotion/drake/blob/master/geometry/render/dev/test/gltf_render_server.py
+[test_server]: https://github.com/RobotLocomotion/drake/blob/master/geometry/render/dev/render_gltf_client/test/gltf_render_server.py
 
 <h3 id="prototype-server-installation">Prototype Server Installation</h3>
 <hr>
@@ -359,32 +365,37 @@ python package on your own with however you manage your python installation
 <hr>
 
 For development purposes, you may run
-`bazel run //geometry/render/dev:gltf_render_server` to launch a single threaded
-/ single worker flask development server.  By default this will run the server
-on host `127.0.0.1` and port `8000`, you may specify `--host x.y.z.w` or
-`--port XYZW` to change the host or port.  There is also a `--debug` option
-available to support reloading the server automatically, see the documentation
-in `gltf_render_server.py` for more information on flask debug targets.
+`bazel run //geometry/render/dev/render_gltf_client:gltf_render_server` to
+launch a single threaded / single worker flask development server.  By default
+this will run the server on host `127.0.0.1` and port `8000`, you may specify
+`--host x.y.z.w` or `--port XYZW` to change the host or port.  There is also a
+`--debug` option available to support reloading the server automatically, see
+the documentation in `gltf_render_server.py` for more information on flask debug
+targets.
 
 @code{.console}
 # Run on the default host and port.
-$ bazel run //geometry/render/dev:gltf_render_server
+$ bazel run //geometry/render/dev/render_gltf_client:gltf_render_server
 
 # Run on custom host and port.
-$ bazel run //geometry/render/dev:gltf_render_server -- --host 0.0.0.0 --port 8192
+$ bazel run //geometry/render/dev/render_gltf_client:gltf_render_server -- --host 0.0.0.0 --port 8192
 @endcode
 
-Now that the server is running,
+Now that the server is running, you can launch the client and drake_visualizer.
 
-- In a separate terminal, run `bazel run //tools:drake_visualizer`
-- In a separate terminal, run the test simulation:
-    - To see the scene with the normal VTK rendering:
-      `bazel run //geometry/render/dev:run_simulation_and_render -- --render_engine vtk`
-    - To render over the server:
-      `bazel run //geometry/render/dev:run_simulation_and_render -- --render_engine client`
-    - Note that if you ran your server on an alternate `--port`, you will need
-      to provide this `--port` to the `run_simulation_and_render` executable
-      as well.
+@code{.console}
+# In a separate terminal, launch drake_visualizer.
+$ bazel run //tools:drake_visualizer
+
+# In another terminal, run the test simulation and the client.
+$ bazel run //geometry/render/dev/render_gltf_client:run_simulation_and_render -- --render_engine client
+
+# To render with the normal VTK, set --render_engine to vtk instead.
+$ bazel run //geometry/render/dev/render_gltf_client:run_simulation_and_render -- --render_engine vtk
+@endcode
+
+Note that if you ran your server on an alternate `--port`, you will need to
+provide this `--port` to the `run_simulation_and_render` executable as well.
 
 If everything is running as expected, then you can begin changing the
 implementation of `render_callback` in `gltf_render_server.py` to invoke the
