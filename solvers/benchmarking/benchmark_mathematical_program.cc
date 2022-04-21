@@ -80,6 +80,7 @@ static void BenchmarkSosProgram2(benchmark::State& state) {  // NOLINT
 
 BENCHMARK(BenchmarkSosProgram1);
 BENCHMARK(BenchmarkSosProgram2);
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
