@@ -69,6 +69,7 @@ class ScrewJoint final : public Joint<T> {
               double screw_pitch,
               double damping)
       : Joint<T>(name, frame_on_parent, frame_on_child,
+                 VectorX<double>::Constant(1, damping),
                  VectorX<double>::Constant(
                      1, -std::numeric_limits<double>::infinity()),
                  VectorX<double>::Constant(
@@ -81,8 +82,7 @@ class ScrewJoint final : public Joint<T> {
                      1, -std::numeric_limits<double>::infinity()),
                  VectorX<double>::Constant(
                      1, std::numeric_limits<double>::infinity()))
-      , screw_pitch_{screw_pitch}
-      , damping_{damping} {
+      , screw_pitch_{screw_pitch} {
     DRAKE_THROW_UNLESS(damping >= 0);
   }
 
@@ -100,7 +100,7 @@ class ScrewJoint final : public Joint<T> {
   ///  opposing motion, with ω the angular rate for `this` joint
   ///  (see get_angular_velocity()) and τ the torque on
   /// child body B expressed in frame F as t_B_F = τ⋅Fz_F.
-  double damping() const { return damping_; }
+  double damping() const { return this->damping_vector()[0]; }
 
   /// @name Context-dependent value access
   /// @{
@@ -345,8 +345,6 @@ class ScrewJoint final : public Joint<T> {
 
   // The amount of translation in meters occuring over a one full revolution.
   double screw_pitch_;
-  // This joint's damping constant in N⋅m⋅s/rad for rotation.
-  double damping_;
 };
 
 }  // namespace multibody

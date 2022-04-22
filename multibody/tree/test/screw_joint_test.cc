@@ -104,7 +104,11 @@ TEST_F(ScrewJointTest, GetJointLimits) {
             Vector1d::Constant(kAccelerationLowerLimit));
   EXPECT_EQ(joint_->acceleration_upper_limits(),
             Vector1d::Constant(kAccelerationUpperLimit));
+}
+
+TEST_F(ScrewJointTest, Damping) {
   EXPECT_EQ(joint_->damping(), kDamping);
+  EXPECT_EQ(joint_->damping_vector(), Vector1d(kDamping));
 }
 
 // Context-dependent value access.
