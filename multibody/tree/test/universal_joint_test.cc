@@ -112,7 +112,11 @@ TEST_F(UniversalJointTest, GetJointLimits) {
             Vector2d::Constant(kAccelerationLowerLimit));
   EXPECT_EQ(joint_->acceleration_upper_limits(),
             Vector2d::Constant(kAccelerationUpperLimit));
+}
+
+TEST_F(UniversalJointTest, Damping) {
   EXPECT_EQ(joint_->damping(), kDamping);
+  EXPECT_EQ(joint_->damping_vector(), Vector2d::Constant(kDamping));
 }
 
 // Context-dependent value access.
