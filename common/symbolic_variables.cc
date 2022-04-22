@@ -68,6 +68,16 @@ bool Variables::IsStrictSupersetOf(const Variables& vars) const {
   return IsSupersetOf(vars);
 }
 
+Variables& Variables::operator+=(const Variable& var) {
+  this->insert(var);
+  return *this;
+}
+
+Variables& Variables::operator+=(const Variables& vars) {
+  this->insert(vars);
+  return *this;
+}
+
 bool operator==(const Variables& vars1, const Variables& vars2) {
   return std::equal(vars1.vars_.begin(), vars1.vars_.end(), vars2.vars_.begin(),
                     vars2.vars_.end(), std::equal_to<Variable>{});
@@ -77,18 +87,6 @@ bool operator<(const Variables& vars1, const Variables& vars2) {
   return std::lexicographical_compare(vars1.vars_.begin(), vars1.vars_.end(),
                                       vars2.vars_.begin(), vars2.vars_.end(),
                                       std::less<Variable>{});
-}
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Variables operator+=(Variables& vars1, const Variables& vars2) {
-  vars1.insert(vars2);
-  return vars1;
-}
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Variables operator+=(Variables& vars, const Variable& var) {
-  vars.insert(var);
-  return vars;
 }
 
 Variables operator+(Variables vars1, const Variables& vars2) {
