@@ -107,7 +107,11 @@ TEST_F(PrismaticJointTest, GetJointLimits) {
   EXPECT_EQ(joint1_->velocity_upper_limit(), kVelocityUpperLimit);
   EXPECT_EQ(joint1_->acceleration_lower_limit(), kAccelerationLowerLimit);
   EXPECT_EQ(joint1_->acceleration_upper_limit(), kAccelerationUpperLimit);
+}
+
+TEST_F(PrismaticJointTest, Damping) {
   EXPECT_EQ(joint1_->damping(), kDamping);
+  EXPECT_EQ(joint1_->damping_vector(), Vector1d(kDamping));
 }
 
 // Context-dependent value access.

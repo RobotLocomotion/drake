@@ -115,6 +115,11 @@ TEST_F(UniversalJointTest, GetJointLimits) {
   EXPECT_EQ(joint_->damping(), kDamping);
 }
 
+TEST_F(UniversalJointTest, Damping) {
+  EXPECT_EQ(joint_->damping(), kDamping);
+  EXPECT_EQ(joint_->damping_vector(), Vector2d::Constant(kDamping));
+}
+
 // Context-dependent value access.
 TEST_F(UniversalJointTest, ContextDependentAccess) {
   const Vector2d some_value(M_PI_2, 0.3);

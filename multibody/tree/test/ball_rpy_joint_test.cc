@@ -112,7 +112,11 @@ TEST_F(BallRpyJointTest, GetJointLimits) {
             Vector3d::Constant(kAccelerationLowerLimit));
   EXPECT_EQ(joint_->acceleration_upper_limits(),
             Vector3d::Constant(kAccelerationUpperLimit));
+}
+
+TEST_F(BallRpyJointTest, Damping) {
   EXPECT_EQ(joint_->damping(), kDamping);
+  EXPECT_EQ(joint_->damping_vector(), Vector3d::Constant(kDamping));
 }
 
 // Context-dependent value access.

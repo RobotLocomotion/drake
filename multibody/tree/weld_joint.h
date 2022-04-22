@@ -35,6 +35,7 @@ class WeldJoint final : public Joint<T> {
             const Frame<T>& frame_on_child_C,
             const math::RigidTransform<double>& X_PC)
       : Joint<T>(name, frame_on_parent_P, frame_on_child_C,
+                 VectorX<double>() /* no damping */,
                  VectorX<double>() /* no pos lower limits */,
                  VectorX<double>() /* no pos upper limits */,
                  VectorX<double>() /* no vel lower limits */,

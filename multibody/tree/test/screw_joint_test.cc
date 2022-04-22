@@ -107,6 +107,11 @@ TEST_F(ScrewJointTest, GetJointLimits) {
   EXPECT_EQ(joint_->damping(), kDamping);
 }
 
+TEST_F(ScrewJointTest, Damping) {
+  EXPECT_EQ(joint_->damping(), kDamping);
+  EXPECT_EQ(joint_->damping_vector(), Vector1d(kDamping));
+}
+
 // Context-dependent value access.
 TEST_F(ScrewJointTest, ContextDependentAccess) {
   const double translation1(1.0);

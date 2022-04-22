@@ -88,6 +88,10 @@ TEST_F(WeldJointTest, GetJointLimits) {
   EXPECT_EQ(joint_->acceleration_upper_limits().size(), 0);
 }
 
+TEST_F(WeldJointTest, Damping) {
+  EXPECT_EQ(joint_->damping_vector().size(), 0);
+}
+
 TEST_F(WeldJointTest, JointLocking) {
   // Joint locking on a weld joint does nothing; still, invoking it should not
   // be an error.

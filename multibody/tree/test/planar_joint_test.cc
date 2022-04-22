@@ -114,7 +114,11 @@ TEST_F(PlanarJointTest, GetJointLimits) {
             Vector3d::Constant(kAccelerationLowerLimit));
   EXPECT_EQ(joint_->acceleration_upper_limits(),
             Vector3d::Constant(kAccelerationUpperLimit));
+}
+
+TEST_F(PlanarJointTest, Damping) {
   EXPECT_EQ(joint_->damping(), Vector3d::Constant(kDamping));
+  EXPECT_EQ(joint_->damping_vector(), Vector3d::Constant(kDamping));
 }
 
 // Context-dependent value access.
