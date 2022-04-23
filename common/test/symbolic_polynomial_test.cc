@@ -1149,6 +1149,53 @@ TEST_F(SymbolicPolynomialTest, SetIndeterminates) {
   }
 }
 
+TEST_F(SymbolicPolynomialTest, IsEvenOdd) {
+  symbolic::Polynomial p{0};
+  EXPECT_TRUE(p.IsEven());
+  EXPECT_TRUE(p.IsOdd());
+
+  p = symbolic::Polynomial{1};
+  EXPECT_TRUE(p.IsEven());
+  EXPECT_FALSE(p.IsOdd());
+
+  // p = (a+1)x⁰
+  p = symbolic::Polynomial{{{Monomial(), a_ + 1}}};
+  EXPECT_TRUE(p.IsEven());
+  EXPECT_FALSE(p.IsOdd());
+
+  // p = x
+  p = symbolic::Polynomial{{{Monomial(var_x_), 1}}};
+  EXPECT_FALSE(p.IsEven());
+  EXPECT_TRUE(p.IsOdd());
+
+  // p = x + 1
+  p = symbolic::Polynomial{{{Monomial(), 1}, {Monomial(var_x_), 1}}};
+  EXPECT_FALSE(p.IsEven());
+  EXPECT_FALSE(p.IsOdd());
+
+  // p = (a+2)*x
+  p = symbolic::Polynomial{{{Monomial(), 0}, {Monomial(var_x_), a_ + 2}}};
+  EXPECT_FALSE(p.IsEven());
+  EXPECT_TRUE(p.IsOdd());
+
+  // p = 1 + (a+1)*x*y
+  p = symbolic::Polynomial{
+      {{Monomial(), 1},
+       {Monomial(var_x_), pow(a_, 2) - 1 - (a_ + 1) * (a_ - 1)},
+       {Monomial({{var_x_, 1}, {var_y_, 1}}), a_ + 1}}};
+  EXPECT_TRUE(p.IsEven());
+  EXPECT_FALSE(p.IsOdd());
+
+  // p = a * x  + 2 * x²y
+  p = symbolic::Polynomial{
+      {{Monomial(), pow(a_, 2) - 1 - (a_ + 1) * (a_ - 1)},
+       {Monomial(var_x_), a_},
+       {Monomial{{{var_x_, 2}, {var_y_, 1}}}, 2},
+       {Monomial{{{var_x_, 2}}}, pow(a_ + 1, 2) - a_ * a_ - 2 * a_ - 1}}};
+  EXPECT_FALSE(p.IsEven());
+  EXPECT_TRUE(p.IsOdd());
+}
+
 }  // namespace
 
 }  // namespace symbolic

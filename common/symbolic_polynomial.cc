@@ -772,6 +772,32 @@ Polynomial Polynomial::RemoveTermsWithSmallCoefficients(
   return Polynomial(cleaned_polynomial);
 }
 
+namespace {
+bool IsEvenOrOdd(const Polynomial& p, bool check_even) {
+  for (const auto& [monomial, coeff] : p.monomial_to_coefficient_map()) {
+    // If we check p is even/odd, then we only need to check monomials with
+    // odd/even-degrees have coefficient = 0
+    if (monomial.total_degree() % 2 == static_cast<int>(check_even)) {
+      const symbolic::Expression& coeff_expanded =
+          coeff.is_expanded() ? coeff : coeff.Expand();
+      if (!(is_constant(coeff_expanded) &&
+            get_constant_value(coeff_expanded) == 0)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+}  // namespace
+
+bool Polynomial::IsEven() const {
+  return IsEvenOrOdd(*this, true /* check_even=true */);
+}
+
+bool Polynomial::IsOdd() const {
+  return IsEvenOrOdd(*this, false /* check_even=false*/);
+}
+
 void Polynomial::CheckInvariant() const {
   // TODO(hongkai.dai and soonho.kong): improves the computation time of
   // CheckInvariant(). See github issue
