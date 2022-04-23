@@ -211,6 +211,18 @@ class Polynomial {
   /// coefficients are removed.
   Polynomial RemoveTermsWithSmallCoefficients(double coefficient_tol) const;
 
+  /// Returns true if the polynomial is even, namely p(x) = p(-x). Meaning that
+  /// the coefficient for all odd-degree monomials are 0.
+  /// Returns false otherwise.
+  /// Note that this is different from the p.TotalDegree() being an even number.
+  bool IsEven() const;
+
+  /// Returns true if the polynomial is odd, namely p(x) = -p(-x). Meaning that
+  /// the coefficient for all even-degree monomials are 0.
+  /// Returns false otherwise.
+  /// Note that this is different from the p.TotalDegree() being an odd number.
+  bool IsOdd() const;
+
   Polynomial& operator+=(const Polynomial& p);
   Polynomial& operator+=(const Monomial& m);
   Polynomial& operator+=(double c);
