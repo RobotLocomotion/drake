@@ -34,8 +34,8 @@ QuadrotorPlant<T>::QuadrotorPlant(double m_arg, double L_arg,
                                   double kM_arg)
     : systems::LeafSystem<T>(systems::SystemTypeTag<QuadrotorPlant>{}),
       g_{9.81}, m_(m_arg), L_(L_arg), kF_(kF_arg), kM_(kM_arg), I_(I_arg) {
-  // Four inputs -- one for each propellor.
-  this->DeclareInputPort("propellor_force", systems::kVectorValued, 4);
+  // Four inputs -- one for each propeller.
+  this->DeclareInputPort("propeller_force", systems::kVectorValued, 4);
   // State is x ,y , z, roll, pitch, yaw + velocities.
   auto state_index = this->DeclareContinuousState(12);
   this->DeclareStateOutputPort("state", state_index);
@@ -56,7 +56,8 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T> &context,
     systems::ContinuousState<T> *derivatives) const {
   // Get the input value characterizing each of the 4 rotor's aerodynamics.
-  const Vector4<T> u = this->EvalVectorInput(context, 0)->value();
+  const systems::BasicVector<T>* u_vec = this->EvalVectorInput(context, 0);
+  const Vector4<T> u = u_vec ? u_vec->value() : Vector4<T>::Zero();
 
   // For each rotor, calculate the Bz measure of its aerodynamic force on B.
   // Note: B is the quadrotor body and Bz is parallel to each rotor's spin axis.
