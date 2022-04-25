@@ -208,8 +208,9 @@ class RenderClient {
    set at construction. */
   //@{
 
-  /* Returns a RenderEngineGltfClientParams struct.  Note that `default_label`
-   is not relevant for RenderClient, so it's always set to std::nullopt. */
+  /* Returns a RenderEngineGltfClientParams struct for RenderClient
+   construction.  Note that `default_label` is not relevant for RenderClient
+   class, so it's always set to std::nullopt. */
   RenderEngineGltfClientParams get_params() const {
     return RenderEngineGltfClientParams{std::nullopt, base_url_,
                                         port_,        render_endpoint_,
