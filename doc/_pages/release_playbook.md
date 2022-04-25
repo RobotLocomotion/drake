@@ -158,10 +158,8 @@ the main body of the document:
     3. Notify `@BetsyMcPhail` via a GitHub comment to manually tag docker images
        and upload the releases to S3. Be sure to provide her with the binary
        date, commit SHA, and release tag in the same ping.
-    4. Notify `@jwnimmer-tri` via a Slack DM to manually refresh the Deepnote
-       tutorials.
-    5. Announce on Drake Slack, ``#general``.
-    6. Party on, Wayne.
+    4. Announce on Drake Slack, ``#general``.
+    5. Party on, Wayne.
 
 ## Post-release follow up
 
@@ -195,6 +193,57 @@ the main body of the document:
       2. If not, then create a new release named ``v0.0.foo`` where ``foo`` is
          the 8-digit datestamp associated with the ``commit`` in question (i.e.,
          four digit year, two digit month, two digit day).
+
+## Post-release tutorials updates
+
+Upgrade our Deepnote-hosted tutorials to the latest release.  This requires that
+you have "Edit" permission in the Deepnote project.  If you don't have that yet,
+then ask for help on slack in the ``#releases`` channel.
+
+1. Open the tutorials [Dockerfile](https://deepnote.com/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2FDockerfile):
+   1. Edit the first line to refer to the YYYYMMDD for this release.
+      1. For reference, the typical content is thus:
+         ```
+         FROM robotlocomotion/drake:focal-20220420
+
+         RUN apt-get -q update && apt-get -q install -y --no-install-recommends nginx-light xvfb && apt-get -q clean
+
+         ENV DISPLAY=:1
+         ```
+      2. If the current content differs by more than just the date from the
+         above template, ask for help on slack in the ``#releases`` channel.
+   2. After editing the date, click the "Build" button in the upper right,
+      and wait for the build to succeed.
+      1. If the build fails due to an infrastructure flake, you'll need to
+      tweak the Dockerfile before Deepnote will allow you to re-run the
+      Build.  For example, add `&& true` to the end of a RUN line.
+   3. For reference (no action required), the initialization notebook at
+      [init.ipynb](https://deepnote.com/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Finit.ipynb)
+      has this cell added the bottom, as a Drake-specific cusomizatization:
+      ```
+      %%bash
+      /opt/drake/share/drake/setup/deepnote/install_xvfb
+      ```
+      1. In case the display server is not working later on, that might be a
+         good place to double-check.
+   4. Copy the updated tutorials from the pinned Dockerfile release
+      (in ``/opt/drake/share/drake/tutorials/...``) into the Deepnote project
+      storage (``~/work/...``):
+      1. Open [.for_maintainers.ipynb](https://deepnote.com/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2F.for_maintainers.ipynb).
+      1. Run each cell one by one, checking for errors as you go.
+   5. For *other all* notebooks (excluding the ``.for_maintainers`` notebook)
+      one by one (probably in alphabetical order, for your sanity):
+      1. Open the notebook and click "Run notebook".
+      1. For all markdown cells, quickly skim over the rendered output to check
+         that no markup errors have snuck through (e.g., LaTeX syntax errors).
+      1. For all code cells, examine the output of each cell to check that no
+         exceptions have snuck through (or any other unexpected error text).
+      1. Leave the notebook output intact (do not clear the outputs). We want
+         users to be able to read the outputs on their own, without necessarily
+         running the notebook themselves.
+   6. On the right side, click "Environment" then "Stop Machine", as a
+      courtesy. (It will time out on its own within the hour, but we might as
+      well save a few nanograms of CO2 where we can.)
 
 ## Post-release wheel builds
 
