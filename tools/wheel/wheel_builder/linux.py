@@ -1,12 +1,8 @@
-#!/usr/bin/env python3
+# This file contains Linux-specific logic used to build the PyPI wheels. See
+# //tools/wheel:builder for the user interface.
 
-# This script uses Docker to build the PyPI wheels; run with --help for
-# more details.
-
-import argparse
 import atexit
 import os
-import re
 import subprocess
 import sys
 import tarfile
@@ -14,10 +10,15 @@ import tarfile
 from collections import namedtuple
 from datetime import datetime, timezone
 
-script_dir = os.path.dirname(os.path.realpath(__file__))
+from .common import die, gripe
 
-files_to_remove = []
-images_to_remove = []
+# Location of various scripts and other artifacts used to complete the build.
+# Must be set; normally by common.entry.
+resource_root = None
+
+# Artifacts that need to be cleaned up. DO NOT MODIFY outside of this file.
+_files_to_remove = []
+_images_to_remove = []
 
 tag_base = 'pip-drake'
 
@@ -39,56 +40,52 @@ glibc_versions = {
     'focal': '2_31',
 }
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-def docker(*args, pipe=False):
+def _docker(*args, pipe=False):
     """
     Runs a docker command.
 
-    If pipe is false, blocks until completion and returns a CompletedProcess
-    instance; raises an exception on failure.
+    If `pipe` is False, blocks until completion and returns a
+    CompletedProcess instance; raises an exception on failure.
 
-    If pipe is true, returns the process instance with its stdout captured.
+    If `pipe` is True, returns the process instance with its stdout captured.
     """
     command = ['docker'] + list(args)
     environment = os.environ.copy()
     environment['DOCKER_BUILDKIT'] = '1'
     if pipe:
         return subprocess.Popen(command, stdout=subprocess.PIPE,
-                                cwd=script_dir, env=environment)
+                                cwd=resource_root, env=environment)
     else:
         return subprocess.run(command, check=True,
-                              cwd=script_dir, env=environment)
+                              cwd=resource_root, env=environment)
 
 
-def gripe(message):
-    """
-    Prints a message to stderr.
-    """
-    print(message, file=sys.stderr)
-
-
-def cleanup():
+@atexit.register
+def _cleanup():
     """
     Removes temporary artifacts on exit.
     """
-    for f in files_to_remove:
+    for f in _files_to_remove:
         try:
             os.unlink(f)
         except FileNotFoundError:
             gripe(f'Warning: failed to remove \'{f}\'?')
-    if len(images_to_remove):
-        docker('image', 'rm', *images_to_remove)
+    if len(_images_to_remove):
+        _docker('image', 'rm', *_images_to_remove)
 
 
-def git_root(path):
+def _git_root(path):
+    """
+    Determines the canonical repository root of the working tree which includes
+    `path`.
+    """
     command = ['git', 'rev-parse', '--show-toplevel']
     raw = subprocess.check_output(command, cwd=path)
     return raw.decode(sys.stdout.encoding).rsplit('\n', maxsplit=1)[0]
 
 
-def strip_tar_metadata(info):
+def _strip_tar_metadata(info):
     """
     Removes some metadata (owner, timestamp) from a TarInfo.
     """
@@ -99,7 +96,7 @@ def strip_tar_metadata(info):
     return info
 
 
-def add_to_tar(tar, name, parent_path, root_path, exclude=[]):
+def _add_to_tar(tar, name, parent_path, root_path, exclude=[]):
     """
     Adds files or directories to the specified tar file.
     """
@@ -111,19 +108,19 @@ def add_to_tar(tar, name, parent_path, root_path, exclude=[]):
             if f in exclude:
                 continue
 
-            add_to_tar(tar, f, os.path.join(parent_path, name), root_path)
+            _add_to_tar(tar, f, os.path.join(parent_path, name), root_path)
     else:
         tar.add(full_path, tar_path, recursive=False,
-                filter=strip_tar_metadata)
+                filter=_strip_tar_metadata)
 
 
-def create_source_tar(path):
+def _create_source_tar(path):
     """
     Creates a tarball of the repository working tree.
     """
     out = tarfile.open(path, "w:xz")
 
-    repo_dir = git_root(script_dir)
+    repo_dir = _git_root(resource_root)
 
     print('[-] Creating source archive', end='', flush=True)
     for f in sorted(os.listdir(repo_dir)):
@@ -133,13 +130,13 @@ def create_source_tar(path):
 
         print('.', end='', flush=True)
         exclude = ['wheel'] if f == 'tools' else []
-        add_to_tar(out, f, '', repo_dir, exclude=exclude)
+        _add_to_tar(out, f, '', repo_dir, exclude=exclude)
 
     print(' done')
     out.close()
 
 
-def build_stage(target, args, tag_prefix, stage=None):
+def _build_stage(target, args, tag_prefix, stage=None):
     """
     Runs a Docker build and return the build tag.
     """
@@ -156,12 +153,12 @@ def build_stage(target, args, tag_prefix, stage=None):
 
     # Run the build.
     print('[-] Build', tag, extra + args)
-    docker('build', '--tag', tag, *extra, *args, script_dir)
+    _docker('build', '--tag', tag, *extra, *args, resource_root)
 
     return tag
 
 
-def target_args(target):
+def _target_args(target):
     """
     Returns the docker build arguments for the specified platform target.
     """
@@ -174,34 +171,34 @@ def target_args(target):
     ]
 
 
-def build_image(target, identifier, options):
+def _build_image(target, identifier, options):
     """
     Runs the build for a target and (optionally) extract the wheel.
     """
     args = [
         '--ssh', 'default',
         '--build-arg', f'DRAKE_VERSION={options.version}',
-    ] + target_args(target)
+    ] + _target_args(target)
     if not options.keep_containers:
         args.append('--force-rm')
 
     # Build the image.
     if options.tag_stages:
         # Inspect Dockerfile, find stages, and build them.
-        for line in open(os.path.join(script_dir, 'Dockerfile')):
+        for line in open(os.path.join(resource_root, 'Dockerfile')):
             if line.startswith('FROM'):
                 stage = line.strip().split()[-1]
-                tag = build_stage(target, args, tag_prefix=stage, stage=stage)
+                tag = _build_stage(target, args, tag_prefix=stage, stage=stage)
     else:
-        tag = build_stage(target, args, tag_prefix=identifier)
-        images_to_remove.append(tag)
+        tag = _build_stage(target, args, tag_prefix=identifier)
+        _images_to_remove.append(tag)
 
     # Extract the wheel (if requested).
     if options.extract:
         print('[-] Extracting wheel(s) from', tag)
 
         command = 'tar -cf - /wheel/wheelhouse/*.whl'
-        extractor = docker(
+        extractor = _docker(
             'run', '--rm', tag, 'bash', '-c', command, pipe=True)
         subprocess.check_call(
             ['tar', '--strip-components=2', '-xf', '-'],
@@ -213,65 +210,81 @@ def build_image(target, identifier, options):
                                                 extractor.args, None, None)
 
 
-def test_wheel(target, options):
+def _test_wheel(target, options):
     """
     Runs the test script for the wheel matching the specified target.
     """
     vm = f'cp{target.python_version}'
     glibc = glibc_versions[target.platform_alias]
-    if target.python_version < '38':
-        abi = f'{vm}m'
-    else:
-        abi = f'{vm}'
-    wheel = f'drake-{options.version}-{vm}-{abi}-manylinux_{glibc}_x86_64.whl'
+    wheel = f'drake-{options.version}-{vm}-{vm}-manylinux_{glibc}_x86_64.whl'
 
     platform = target.platform_alias
     container = f'{tag_base}:test-{platform}-py{target.python_version}'
-    test_dir = os.path.join(script_dir, 'test')
+    test_dir = os.path.join(resource_root, 'test')
 
-    docker('build', '-t', container, *target_args(target), test_dir)
-    images_to_remove.append(container)
+    _docker('build', '-t', container, *_target_args(target), test_dir)
+    _images_to_remove.append(container)
 
-    docker('run', '--rm', '-t',
-           '-v' f'{test_dir}:/test',
-           '-v' f'{options.output_dir}:/wheel',
-           container, '/test/test-wheel.sh', f'/wheel/{wheel}')
-
-
-def check_version(version):
-    """Returns True iff the given version string matches PEP 440."""
-    return re.match(
-        r'^([1-9][0-9]*!)?(0|[1-9][0-9]*)'
-        r'(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?'
-        r'(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?'
-        r'([+][a-z0-9]+([-_\.][a-z0-9]+)*)?$',
-        version) is not None
+    _docker('run', '--rm', '-t',
+            '-v' f'{test_dir}:/test',
+            '-v' f'{options.output_dir}:/wheel',
+            container, '/test/test-wheel.sh', f'/wheel/{wheel}')
 
 
-def main(args):
-    atexit.register(cleanup)
+def build(options):
+    """
+    Builds wheel(s) with the provided options.
+    """
 
-    # Set up argument parser.
-    parser = argparse.ArgumentParser(
-        description='Build the Drake PyPI wheel(s).')
-    parser.add_argument(
-        'version',
-        help='PEP 440 version number with which to label the wheels')
-    parser.add_argument(
-        '-o', '--output-dir', metavar='DIR', default=os.path.realpath('.'),
-        help='directory into which to extract wheels (default: .)')
-    parser.add_argument(
-        '-n', '--no-extract', dest='extract', action='store_false',
-        help='build images but do not extract wheels')
+    # Collect set of wheels to be built.
+    targets_to_build = []
+    for t in targets:
+        if t.platform_name in options.platforms:
+            if t.python_version in options.python_versions:
+                targets_to_build.append(t)
+
+    # Check if there is anything to do.
+    if not len(targets_to_build):
+        die('Nothing to do! (Platform and/or Python version selection '
+            'resulted in an empty set of wheels)')
+
+    # Generate a unique identifier for this build, if needed.
+    if options.tag_stages:
+        identifier = None
+    else:
+        salt = os.urandom(8).hex()
+        time = datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
+        identifier = f'{time}-{salt}'
+
+    # Generate the repository source archive.
+    source_tar = os.path.join(resource_root, 'image', 'drake-src.tar.xz')
+    _files_to_remove.append(source_tar)
+    _create_source_tar(source_tar)
+
+    # Build the requested wheels.
+    for t in targets_to_build:
+        _build_image(t, identifier, options)
+
+        if options.test:
+            _test_wheel(t, options)
+
+
+def add_build_arguments(parser):
+    """
+    Adds arguments that control the build.
+    """
     parser.add_argument(
         '-k', '--keep-containers', action='store_true',
         help='do not delete intermediate containers')
     parser.add_argument(
         '-s', '--tag-stages', action='store_true',
         help='permanently tag individual stages')
-    parser.add_argument(
-        '-t', '--test', action='store_true',
-        help='run tests on wheels')
+
+
+def add_selection_arguments(parser):
+    """
+    Adds arguments that control which wheel(s) to build.
+    """
     parser.add_argument(
         '--platform', dest='platforms',
         default=','.join(set([t.platform_name for t in targets])),
@@ -283,54 +296,14 @@ def main(args):
         help='python version(s) to build; separate with \',\''
              ' (default: %(default)s)')
 
-    # Parse arguments.
-    options = parser.parse_args(args)
+
+def fixup_options(options):
+    """
+    Validates options and applies any necessary transformations (e.g. parsing
+    strings into structured data).
+    """
     options.python_versions = set(options.python_versions.split(','))
     options.platforms = set(options.platforms.split(','))
 
     if options.test and not options.extract:
-        gripe('Testing wheels requires wheels to be extracted')
-        sys.exit(1)
-
-    if not check_version(options.version):
-        gripe(f'Version {options.version} does not conform to PEP 440')
-        sys.exit(1)
-
-    # Collect set of wheels to be built.
-    targets_to_build = []
-    for t in targets:
-        if t.platform_name in options.platforms:
-            if t.python_version in options.python_versions:
-                targets_to_build.append(t)
-
-    # Check if there is anything to do.
-    if not len(targets_to_build):
-        gripe('Nothing to do! (Platform and/or Python version selection '
-              'resulted in an empty set of wheels)')
-        sys.exit(1)
-
-    # Generate a unique identifier for this build, if needed.
-    if options.tag_stages:
-        identifier = None
-    else:
-        salt = os.urandom(8).hex()
-        time = datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
-        identifier = f'{time}-{salt}'
-
-    # Generate the repository source archive.
-    source_tar = os.path.join(script_dir, 'image', 'drake-src.tar.xz')
-    files_to_remove.append(source_tar)
-    create_source_tar(source_tar)
-
-    # Build the requested wheels.
-    for t in targets_to_build:
-        build_image(t, identifier, options)
-
-        if options.test:
-            test_wheel(t, options)
-
-
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-if __name__ == '__main__':
-    main(sys.argv[1:])
+        die('Testing wheels requires wheels to be extracted')
