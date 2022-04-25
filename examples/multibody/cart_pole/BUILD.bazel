@@ -42,6 +42,21 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "cart_pole_balancing",
+    srcs = ["cart_pole_balancing.cc"],
+    add_test_rule = 1,
+    data = ["cart_pole.sdf"],
+    deps = [
+        "//common:add_text_logging_gflags",
+        "//common:find_resource",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/primitives:linear_system",
+        "@gflags",
+    ],
+)
+
 drake_cc_googletest(
     name = "cart_pole_test",
     data = [":models"],
