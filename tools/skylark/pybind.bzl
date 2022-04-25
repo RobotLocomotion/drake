@@ -60,10 +60,16 @@ def pybind_py_library(
     # output a *.so, so that the target name is similar to what is provided.
     cc_so_target = cc_so_name + PYTHON_EXTENSION_SUFFIX
 
-    # GCC and Clang don't always agree / succeed when inferring storage
-    # duration (#9600). Workaround it for now.
     if COMPILER_ID.endswith("Clang"):
-        copts = ["-Wno-unused-lambda-capture"] + cc_copts
+        copts = cc_copts + [
+            # GCC and Clang don't always agree / succeed when inferring storage
+            # duration (#9600). Workaround it for now.
+            "-Wno-unused-lambda-capture",
+            # pybind11's operator overloading (e.g., .def(py::self + py::self))
+            # spuriously triggers this warning, so we'll suppress it anytime
+            # we're compiling pybind11 modules.
+            "-Wno-self-assign-overloaded",
+        ]
     else:
         copts = cc_copts
 

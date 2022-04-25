@@ -12,17 +12,6 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/multibody/math/spatial_algebra.h"
 
-#pragma GCC diagnostic push
-// Similar to `symbolic_py.cc`, we must suppress `-Wself-assign-overloaded` to
-/// use operators for Apple's clang>=10. However, different than
-// `symbolic_py.cc`, we must also enable this for clang 9 on Bionic, as is
-// triggered on `py::self -= py::self` for some reason.
-// It is fine to use this at a file-wide scope since in practice we only
-// encounter these warnings in bindings due to pybind11's operators.
-#if (__clang__) && (__clang_major__ >= 9)
-#pragma GCC diagnostic ignored "-Wself-assign-overloaded"
-#endif
-
 namespace drake {
 namespace pydrake {
 
@@ -327,5 +316,3 @@ PYBIND11_MODULE(math, m) {
 
 }  // namespace pydrake
 }  // namespace drake
-
-#pragma GCC diagnostic pop

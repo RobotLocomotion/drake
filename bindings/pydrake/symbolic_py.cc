@@ -16,20 +16,6 @@
 #include "drake/common/symbolic_latex.h"
 #include "drake/common/symbolic_trigonometric_polynomial.h"
 
-#pragma GCC diagnostic push
-// Apple LLVM version 10.0.1 (clang-1001.0.46.3) and Clang version 7.0.0 add
-// `-Wself-assign-overloaded` to `-Wall`, which generates warnings on
-// Pybind11's operator-overloading idiom that is using py::self (example:
-// `def(py::self + py::self)`). Here, we suppress the warning using
-// `#pragma diagnostic`.
-#if defined(__clang__) &&                                          \
-    ((!(__apple_build_version__) && (__clang_major__ >= 7)) ||     \
-        ((__apple_build_version__) && (__clang_major__ >= 10) &&   \
-            !((__clang_major__ == 10) && (__clang_minor__ == 0) && \
-                (__clang_patchlevel__ == 0))))
-#pragma GCC diagnostic ignored "-Wself-assign-overloaded"
-#endif
-
 namespace drake {
 namespace pydrake {
 
@@ -997,5 +983,3 @@ PYBIND11_MODULE(symbolic, m) {
 }
 }  // namespace pydrake
 }  // namespace drake
-
-#pragma GCC diagnostic pop
