@@ -2,8 +2,8 @@ Drake Wheels
 ============
 
 This document briefly explains the process of building Drake wheels, focusing
-primarily on the build-wheels script. The process for publishing wheels is
-described at https://drake.mit.edu/release_playbook.html.
+primarily on the ``//tools/wheel:builder`` Bazel action. The process for
+publishing wheels is described at https://drake.mit.edu/release_playbook.html.
 
 Basic Usage
 -----------
