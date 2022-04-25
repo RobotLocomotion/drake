@@ -39,7 +39,8 @@ class TestAnalysis(unittest.TestCase):
         self.assertEqual(repr(options), "".join([
             "RegionOfAttractionOptions(",
             "lyapunov_candidate=pow(x, 2), ",
-            "state_variables=[Variable('x', Continuous)])"]))
+            "state_variables=[Variable('x', Continuous)], "
+            "use_implicit_dynamics=False)"]))
 
     def test_integrator_constructors(self):
         """Test all constructors for all integrator types."""
