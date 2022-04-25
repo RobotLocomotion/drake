@@ -301,6 +301,7 @@ drake_cc_library(
         ":geometry_ids",
         ":geometry_roles",
         ":internal_frame",
+        ":make_mesh_for_deformable",
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
@@ -690,6 +691,7 @@ drake_cc_googletest(
     name = "internal_geometry_test",
     deps = [
         ":internal_geometry",
+        ":make_mesh_for_deformable",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
