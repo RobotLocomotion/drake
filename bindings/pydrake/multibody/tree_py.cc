@@ -32,13 +32,6 @@
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
 
-#pragma GCC diagnostic push
-// It is fine to use this at a file-wide scope since in practice we only
-// encounter these warnings in bindings due to pybind11's operators.
-#if (__clang__) && (__clang_major__ >= 9)
-#pragma GCC diagnostic ignored "-Wself-assign-overloaded"
-#endif
-
 namespace drake {
 namespace pydrake {
 
@@ -1044,5 +1037,3 @@ PYBIND11_MODULE(tree, m) {
 
 }  // namespace pydrake
 }  // namespace drake
-
-#pragma GCC diagnostic pop
