@@ -1,11 +1,44 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
+
+/* See Build() function. */
+class MeshBuilderForDeformable : public ShapeReifier {
+ public:
+  MeshBuilderForDeformable() = default;
+
+  /* Returns a volume mesh suitable for deformable body simulation that
+   discretizes the shape with the resolution provided at construction.
+   @pre resolution_hint > 0.
+   @throws std::exception if `shape` doesn't support a mesh discretization. */
+  std::unique_ptr<VolumeMesh<double>> Build(const Shape& shape,
+                                            double resolution_hint);
+
+ private:
+  /* Data to be used during reification. It is passed as the `user_data`
+   parameter in the ImplementGeometry API. */
+  struct ReifyData {
+    double resolution_hint{};
+    std::unique_ptr<VolumeMesh<double>> mesh;
+  };
+
+  void ImplementGeometry(const Sphere& sphere, void* user_data) override;
+  void ImplementGeometry(const Cylinder& cylinder, void* user_data) override;
+  void ImplementGeometry(const HalfSpace& half_space, void* user_data) override;
+  void ImplementGeometry(const Box& box, void* user_data) override;
+  void ImplementGeometry(const Capsule& capsule, void* user_data) override;
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) override;
+  void ImplementGeometry(const Mesh& mesh, void* user_data) override;
+  void ImplementGeometry(const Convex& convex, void* user_data) override;
+  void ImplementGeometry(const MeshcatCone& cone, void* user_data) override;
+};
 
 /* Returns a volume mesh suitable for deformable body simulation that
  discretizes the shape with the resolution provided at construction. There is a
