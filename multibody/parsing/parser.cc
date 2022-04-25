@@ -11,6 +11,7 @@
 namespace drake {
 namespace multibody {
 
+using drake::internal::DiagnosticDetail;
 using internal::AddModelFromSdf;
 using internal::AddModelFromUrdf;
 using internal::AddModelsFromSdf;
@@ -26,6 +27,16 @@ Parser::Parser(
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
   }
+
+  auto warnings_maybe_strict =
+      [this](const DiagnosticDetail& detail) {
+        if (is_strict_) {
+          diagnostic_policy_.Error(detail);
+        } else {
+          diagnostic_policy_.WarningDefaultAction(detail);
+        }
+      };
+  diagnostic_policy_.SetActionForWarnings(warnings_maybe_strict);
 }
 
 namespace {
