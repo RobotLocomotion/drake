@@ -321,6 +321,9 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
     ell_prev = ell;
   }
 
+  // If the very last iterate satisfies Armijo's, we use it.
+  if (satisfies_armijo(alpha, ell)) return std::make_pair(alpha, iteration);
+
   // If we are here, the line-search could not find a valid parameter that
   // satisfies Armijo's criterion.
   throw std::runtime_error(
