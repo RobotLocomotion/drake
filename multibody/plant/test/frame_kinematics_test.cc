@@ -312,7 +312,7 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialVelocity) {
 
   // Verify that the calculation of separation speed (1ˢᵗ time-derivative
   // of distance) between Ho (frame H's origin) and L3o (frame L3's origin) can
-  // be calculated by point Ho's translational acceleration relative to L3o,
+  // be calculated by point Ho's translational velocity relative to L3o,
   // independent of the measured-in frame.
   const Vector3<double>& v_W_L3H_W = V_W_L3H_W.translational();
   const Vector3<double>& v_L3_L3H_W = V_L3_L3H_W.translational();
