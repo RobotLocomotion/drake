@@ -159,12 +159,6 @@ class Meshcat {
   void SetObject(std::string_view path, const Shape& shape,
                  const Rgba& rgba = Rgba(.9, .9, .9, 1.));
 
-  /** Sets the realtime that is displayed in the meshcat visualizer strip chart.
-   * @param rate the realtime rate value to be displayed, will be converted to
-   *             a percentage (multiplied by 100)
-   */
-  void SetRealtimeRate(const double& rate);
-
   // TODO(russt): SetObject with texture map.
 
   /** Sets the "object" at a given `path` in the scene tree to be
@@ -352,6 +346,13 @@ class Meshcat {
   /** Deletes the object at the given `path` as well as all of its children.
   See @ref meshcat_path for the detailed semantics of deletion. */
   void Delete(std::string_view path = "");
+
+  /** Sets the realtime rate that is displayed in the meshcat visualizer strip
+ chart.
+ @param rate the realtime rate value to be displayed, will be converted to
+              a percentage (multiplied by 100)
+ */
+  void SetRealtimeRate(double rate);
 
   /** Sets a single named property of the object at the given path. For example,
   @verbatim

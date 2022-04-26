@@ -610,13 +610,10 @@ class Meshcat::Impl {
     return port_;
   }
 
-  void SetRealtimeRate(const double& rate) {
+  void SetRealtimeRate(double rate) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
-    DRAKE_DEMAND(loop_ != nullptr);
-
     internal::RealtimerateData data;
     data.rate = rate;
-
     Defer([this, data = std::move(data)]() {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
       DRAKE_DEMAND(app_ != nullptr);
@@ -2032,7 +2029,7 @@ void Meshcat::Delete(std::string_view path) {
   impl().Delete(path);
 }
 
-void Meshcat::SetRealtimeRate(const double& rate) {
+void Meshcat::SetRealtimeRate(double rate) {
   impl().SetRealtimeRate(rate);
 }
 

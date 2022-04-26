@@ -367,9 +367,12 @@ struct SetTransformData {
   MSGPACK_DEFINE_MAP(type, path, matrix);
 };
 
+// Note that this struct is unique to Drake's integration of meshcat; it is not
+// part of upstream meshcat.js. We handle it directly within meshcat.html,
+// without ever feeding it into meshcat.js.
 struct RealtimerateData {
   std::string type{"realtime_rate"};
-  double rate;
+  double rate{};
   MSGPACK_DEFINE_MAP(type, rate);
 };
 

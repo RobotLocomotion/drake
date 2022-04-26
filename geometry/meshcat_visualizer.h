@@ -215,11 +215,11 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   bool set_transforms_while_recording_{true};
 
   /* Calculate latest realtime rate and send to meshcat */
-  void UpdateRealtimeRate(const double& sim_time) const;
+  void UpdateRealtimeRate(double sim_time) const;
 
-  mutable double prev_sim_time{0};
-  mutable std::chrono::time_point<std::chrono::steady_clock> prev_wall_time{
-      std::chrono::steady_clock::now()};
+  mutable double prev_sim_time_{0};
+  mutable std::optional<std::chrono::time_point<std::chrono::steady_clock>>
+      prev_wall_time_{};
 };
 
 /** A convenient alias for the MeshcatVisualizer class when using the `double`

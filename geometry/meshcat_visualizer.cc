@@ -102,15 +102,17 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
 }
 
 template <typename T>
-void MeshcatVisualizer<T>::UpdateRealtimeRate(const double& sim_time) const {
+void MeshcatVisualizer<T>::UpdateRealtimeRate(double sim_time) const {
   const auto current_wall_time = std::chrono::steady_clock::now();
-  std::chrono::duration<double> delta_wall_dur =
-      current_wall_time - prev_wall_time;
-  if (const auto delta_wall_sec = delta_wall_dur.count()) {
-    meshcat_->SetRealtimeRate((sim_time - prev_sim_time) / delta_wall_sec);
+  if (prev_wall_time_.has_value()) {
+    std::chrono::duration<double> delta_wall_dur =
+        current_wall_time - prev_wall_time_.value();
+    if (const auto delta_wall_sec = delta_wall_dur.count() >= 0) {
+      meshcat_->SetRealtimeRate((sim_time - prev_sim_time_) / delta_wall_sec);
+    }
   }
-  prev_sim_time = sim_time;
-  prev_wall_time = current_wall_time;
+  prev_sim_time_ = sim_time;
+  prev_wall_time_ = current_wall_time;
 }
 
 template <typename T>
