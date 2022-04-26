@@ -12,6 +12,12 @@ namespace geometry {
 namespace render_gltf_client {
 namespace internal {
 
+/* Three type aliases to interact with HttpService. */
+using DataFieldsMap = std::map<std::string, std::string>;
+using FileFieldPayload = std::pair<std::string, std::optional<std::string>>;
+using FileFieldsMap =
+    std::map<std::string, std::pair<std::string, std::optional<std::string>>>;
+
 /* A simple wrapper struct to encapsulate an HTTP server response. */
 struct HttpResponse {
   /* The HTTP response code from the server.  Note that in the special case of
@@ -42,10 +48,10 @@ struct HttpResponse {
   /* Whether or not the HTTP transaction was successful.  This includes
    verifying that the HttpResponse::http_code indicates success, but also
    whether or not the underlying HttpService marked it for failure via
-   a nullability check in HttpResponse::service_error_message.  Note that if a
-   server has not been properly implemented, it may always return `200` even if
-   the response text indicates failure.  This is an error with the server, and
-   there is nothing this framework can do to validate such a scenario.
+   a null check in HttpResponse::service_error_message.  Note that if a server
+   has not been properly implemented, it may always return `200` even if the
+   response text indicates failure.  This is an error with the server, and there
+   is nothing this framework can do to validate such a scenario.
    @note
      A redirection response code (300-399) is currently considered a successful
      transaction.  When and how a server should return a 3xx code is out of the
@@ -166,8 +172,7 @@ class HttpService {
      field name, and values are the (file path, optional mimetype) pair.  For
      example:
      @code{.cpp}
-     std::map<std::string,
-              std::pair<std::string, std::optional<std::string>>> file_fields;
+     FileFieldsMap file_fields;
      // <input type="file" name="scene">, known mimetype
      file_fields["scene"] = {"/path/to/scene_file.gltf", "model/gltf+json"};
      // <input type="file" name="id">, unknown mimetype
@@ -189,10 +194,8 @@ class HttpService {
      determine how to proceed. */
   HttpResponse PostForm(
       const std::string& temp_directory, const std::string& url, int port,
-      const std::map<std::string, std::string>& data_fields,
-      const std::map<std::string,
-                     std::pair<std::string, std::optional<std::string>>>&
-          file_fields,
+      const DataFieldsMap& data_fields,
+      const FileFieldsMap& file_fields,
       bool verbose = false);
 
  protected:
@@ -201,10 +204,8 @@ class HttpService {
    the files in `file_fields`. */
   virtual HttpResponse DoPostForm(
       const std::string& temp_directory, const std::string& url, int port,
-      const std::map<std::string, std::string>& data_fields,
-      const std::map<std::string,
-                     std::pair<std::string, std::optional<std::string>>>&
-          file_fields,
+      const DataFieldsMap& data_fields,
+      const FileFieldsMap& file_fields,
       bool verbose) = 0;
 };
 

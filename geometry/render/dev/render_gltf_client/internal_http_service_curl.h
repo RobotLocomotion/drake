@@ -25,10 +25,8 @@ class HttpServiceCurl : public HttpService {
   /* @see HttpService::PostForm */
   HttpResponse DoPostForm(
       const std::string& temp_directory, const std::string& url, int port,
-      const std::map<std::string, std::string>& data_fields,
-      const std::map<std::string,
-                     std::pair<std::string, std::optional<std::string>>>&
-          file_fields,
+      const DataFieldsMap& data_fields,
+      const FileFieldsMap& file_fields,
       bool verbose = false) override;
 };
 

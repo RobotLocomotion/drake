@@ -18,10 +18,6 @@ namespace {
 
 namespace fs = drake::filesystem;
 
-using DataFieldsMap = std::map<std::string, std::string>;
-using FileFieldPayload = std::pair<std::string, std::optional<std::string>>;
-using FileFieldsMap = std::map<std::string, FileFieldPayload>;
-
 // A concrete implementation of HttpService that does nothing.
 class EmptyService : public HttpService {
  public:

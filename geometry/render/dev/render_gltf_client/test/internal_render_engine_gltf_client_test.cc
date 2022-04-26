@@ -227,11 +227,6 @@ GTEST_TEST(RenderEngineGltfClient, UpdateViewpoint) {
   compare(vtk_label_mat, gltf_label_mat);
 }
 
-// Convenience definitions for interacting with HttpService.
-using DataFieldsMap = std::map<std::string, std::string>;
-using FileFieldsMap =
-    std::map<std::string, std::pair<std::string, std::optional<std::string>>>;
-
 class FakeServer : public HttpService {
  public:
   FakeServer() = default;

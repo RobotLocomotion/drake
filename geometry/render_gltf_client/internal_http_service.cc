@@ -12,10 +12,6 @@ namespace render_gltf_client {
 namespace internal {
 namespace {
 
-using DataFieldsMap = std::map<std::string, std::string>;
-using FileFieldsMap =
-    std::map<std::string, std::pair<std::string, std::optional<std::string>>>;
-
 void ThrowIfFilesMissing(const FileFieldsMap& file_fields) {
   std::vector<std::string> missing_files;
   for (const auto& [field_name, field_data_pair] : file_fields) {

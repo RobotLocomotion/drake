@@ -145,11 +145,6 @@ GTEST_TEST(RenderClient, Destructor) {
 }
 
 // RenderOnServer --------------------------------------------------------------
-// Convenience definitions for interacting with HttpService.
-using DataFieldsMap = std::map<std::string, std::string>;
-using FileFieldsMap =
-    std::map<std::string, std::pair<std::string, std::optional<std::string>>>;
-
 // A simple HttpService that always fails.
 class FailService : public HttpService {
  public:

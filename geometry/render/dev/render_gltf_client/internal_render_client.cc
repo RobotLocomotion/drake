@@ -37,9 +37,6 @@ using drake::systems::sensors::ImageLabel16I;
 using drake::systems::sensors::ImageRgba8U;
 namespace fs = drake::filesystem;
 
-// Convenience definitions for interacting with HttpService.
-using DataFieldsMap = std::map<std::string, std::string>;
-
 /* Adds field_name = field_data to the map, assumes data_map does **not**
  already have the key `field_name`. */
 void AddField(DataFieldsMap* data_map, const std::string& field_name,
