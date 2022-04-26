@@ -28,12 +28,12 @@ while [ "${1:-}" != "" ]; do
     --with-kcov)
       source_distribution_args+=(--with-kcov)
       ;;
-    # Install prerequisites that are only needed to when CC=clang-9, i.e.,
+    # Install prerequisites that are only needed for --config clang, i.e.,
     # opts-in to the ability to compile Drake's C++ code using Clang.
     --with-clang)
       source_distribution_args+=(--with-clang)
       ;;
-    # Do NOT install prerequisites that are only needed to when CC=clang-9,
+    # Do NOT install prerequisites that are only needed for --config clang,
     # i.e., opts-out of the ability to compile Drake's C++ code using Clang.
     --without-clang)
       source_distribution_args+=(--without-clang)

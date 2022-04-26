@@ -30,12 +30,12 @@ while [ "${1:-}" != "" ]; do
     --with-kcov)
       with_kcov=1
       ;;
-    # Install prerequisites that are only needed to when CC=clang-9, i.e.,
+    # Install prerequisites that are only needed for --config clang, i.e.,
     # opts-in to the ability to compile Drake's C++ code using Clang.
     --with-clang)
       with_clang=1
       ;;
-    # Do NOT install prerequisites that are only needed to when CC=clang-9,
+    # Do NOT install prerequisites that are only needed for --config clang,
     # i.e., opts-out of the ability to compile Drake's C++ code using Clang.
     --without-clang)
       with_clang=0
