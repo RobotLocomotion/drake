@@ -1402,6 +1402,8 @@ drake_cc_googletest(
         ":optimization_examples",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
+        "//common:filesystem",
+        "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
     ] + select({
         "//conditions:default": [
