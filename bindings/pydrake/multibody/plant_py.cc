@@ -681,6 +681,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("body_index"), cls_doc.GetBodyFrameIdOrThrow.doc)
         .def("GetBodyIndices", &Class::GetBodyIndices,
             py::arg("model_instance"), cls_doc.GetBodyIndices.doc)
+        .def("GetRigidBodyByName",
+            overload_cast_explicit<const RigidBody<T>&, string_view>(
+                &Class::GetRigidBodyByName),
+            py::arg("name"), py_rvp::reference_internal,
+            cls_doc.GetRigidBodyByName.doc_1args)
+        .def("GetRigidBodyByName",
+            overload_cast_explicit<const RigidBody<T>&, string_view,
+                ModelInstanceIndex>(&Class::GetRigidBodyByName),
+            py::arg("name"), py::arg("model_instance"),
+            py_rvp::reference_internal, cls_doc.GetRigidBodyByName.doc_2args)
         .def(
             "GetJointByName",
             [](const Class* self, string_view name,
