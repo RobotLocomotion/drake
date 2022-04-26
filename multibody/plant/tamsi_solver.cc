@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/common/extract_double.h"
+#include "drake/math/linear_solve.h"
 
 namespace drake {
 namespace multibody {
@@ -616,12 +617,15 @@ TamsiSolverResult TamsiSolver<T>::SolveWithGuess(
   if (nc_ == 0) {
     fixed_size_workspace_.mutable_tau_f().setZero();
     fixed_size_workspace_.mutable_tau().setZero();
-    const auto M = problem_data_aliases_.M();
-    const auto p_star = problem_data_aliases_.p_star();
+    const Eigen::Ref<const MatrixX<T>> M = problem_data_aliases_.M();
+    const Eigen::Ref<const VectorX<T>> p_star = problem_data_aliases_.p_star();
     auto& v = fixed_size_workspace_.mutable_v();
     // With no friction forces Eq. (3) in the documentation reduces to
     // M vˢ⁺¹ = p*.
-    v = M.ldlt().solve(p_star);
+    // Note: We need M.eval() here since LinearSolver needs MatrixBase and M is
+    // an Eigen::Ref.
+    math::LinearSolver<Eigen::LDLT, MatrixX<T>> M_ldlt(M.eval());
+    v = M_ldlt.Solve(p_star);
     // "One iteration" with exactly "zero" vt_error.
     statistics_.Update(0.0);
     return TamsiSolverResult::kSuccess;
