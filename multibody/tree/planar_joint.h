@@ -58,6 +58,7 @@ class PlanarJoint final : public Joint<T> {
   PlanarJoint(const std::string& name, const Frame<T>& frame_on_parent,
               const Frame<T>& frame_on_child, Vector3<double> damping)
       : Joint<T>(name, frame_on_parent, frame_on_child,
+                 std::move(damping),
                  VectorX<double>::Constant(
                      3, -std::numeric_limits<double>::infinity()),
                  VectorX<double>::Constant(
@@ -71,7 +72,6 @@ class PlanarJoint final : public Joint<T> {
                  VectorX<double>::Constant(
                      3, std::numeric_limits<double>::infinity())) {
     DRAKE_THROW_UNLESS((damping.array() >= 0).all());
-    damping_ = damping;
   }
 
   const std::string& type_name() const final {
@@ -88,7 +88,8 @@ class PlanarJoint final : public Joint<T> {
   /// is modeled as `τ = -damping₃⋅ω` i.e. opposing motion, with ω the angular
   /// rate for `this` joint (see get_angular_velocity()) and τ the torque on
   /// child body B expressed in frame F as t_B_F = τ⋅Fz_F.
-  Vector3<double> damping() const { return damping_; }
+  // TODO(amcastro-tri): return reference instead.
+  Vector3<double> damping() const { return this->damping_vector(); }
 
   /// @name Context-dependent value access
   /// @{
@@ -362,10 +363,6 @@ class PlanarJoint final : public Joint<T> {
   template <typename ToScalar>
   std::unique_ptr<Joint<ToScalar>> TemplatedDoCloneToScalar(
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
-
-  // This joint's damping constant in N⋅s/m for translation and N⋅m⋅s for
-  // rotation.
-  Vector3<double> damping_;
 };
 
 }  // namespace multibody
