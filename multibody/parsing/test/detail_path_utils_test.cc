@@ -196,6 +196,34 @@ GTEST_TEST(ResolveUriTest, TestUnsupported) {
               ::testing::MatchesRegex(".*unsupported scheme.*"));
 }
 
+// Verifies that deprecation warnings are produced when accessing deprecated
+// package names.
+GTEST_TEST(ResolveUriTest, DeprecatedPackage) {
+  PackageMap package_map;
+  package_map.Add("foo", ".");
+  package_map.Add("bar", ".");
+  package_map.SetDeprecated("foo", "Stop using foo");
+  package_map.SetDeprecated("bar", "");
+
+  DiagnosticPolicy diagnostic;
+  DiagnosticDetail warning;
+  diagnostic.SetActionForWarnings([&warning](const DiagnosticDetail& detail) {
+    warning = detail;
+  });
+  std::string result = ResolveUri(
+      diagnostic, "package://foo/multibody", package_map, "");
+  EXPECT_EQ(result, "multibody");
+  EXPECT_THAT(warning.message, ::testing::MatchesRegex(
+      ".*package://foo/multibody.*is deprecated.*Stop using foo.*"));
+
+  warning = {};
+  result = ResolveUri(
+      diagnostic, "package://bar/multibody", package_map, "");
+  EXPECT_EQ(result, "multibody");
+  EXPECT_THAT(warning.message, ::testing::MatchesRegex(
+      ".*package://bar/multibody.*is deprecated.*"));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
