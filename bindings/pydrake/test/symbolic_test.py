@@ -1294,6 +1294,11 @@ class TestSymbolicPolynomial(unittest.TestCase):
         q = p.RemoveTermsWithSmallCoefficients(coefficient_tol=1e-6)
         numpy_compare.assert_equal(q.ToExpression(), 3 * x)
 
+    def test_even_odd(self):
+        p = sym.Polynomial()
+        self.assertTrue(p.IsEven())
+        self.assertTrue(p.IsOdd())
+
     def test_comparison(self):
         p = sym.Polynomial()
         numpy_compare.assert_equal(p, p)
