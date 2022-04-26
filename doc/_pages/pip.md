@@ -66,13 +66,6 @@ env/bin/pip install drake
 
 Drake requires certain basic runtime libraries from the host linux distribution.
 
-For Ubuntu 18.04, install these additional libraries:
-
-```bash
-sudo apt-get install --no-install-recommends \
-  libpython3.6 libx11-6 libsm6 libxt6 libglib2.0-0
-```
-
 For Ubuntu 20.04, install these additional libraries:
 
 ```bash
