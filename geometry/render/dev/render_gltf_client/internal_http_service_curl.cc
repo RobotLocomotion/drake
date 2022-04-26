@@ -37,12 +37,12 @@ size_t WriteFileData(void* buffer, size_t size, size_t nmemb, void* userp) {
   return data_size;
 }
 
-using debug_data_t =
+using DebugData =
     std::vector<std::pair<const curl_infotype, const std::string>>;
 /* Used with CURLOPT_VERBOSE in order to add to drake::log(), see also:
  https://curl.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
 
- `userp` is assumed to be debug_data_t defined above, this method simply
+ `userp` is assumed to be DebugData defined above, this method simply
  accumulates the incoming messages from curl, LogCurlDebugData below combines
  and adds them to the drake log.  The following types are skipped, as these
  items should be handled by the write / read callback (binary data should not be
@@ -56,7 +56,7 @@ int DebugCallback(CURL* /* handle */, curl_infotype type, char* data,
                   size_t size, void* userp) {
   if (type != CURLINFO_DATA_IN && type != CURLINFO_DATA_OUT &&
       type != CURLINFO_SSL_DATA_IN && type != CURLINFO_SSL_DATA_OUT) {
-    debug_data_t* debug_data = static_cast<debug_data_t*>(userp);
+    DebugData* debug_data = static_cast<DebugData*>(userp);
     debug_data->emplace_back(type, std::string(data, data + size));
   }
 
@@ -139,7 +139,7 @@ void LogIfTrimmedWhitespaceNonEmpty(curl_infotype type,
  CURLINFO_HEADER_OUT will be combined into one log call, then CURLINFO_TEXT,
  then CURLINFO_HEADER_IN.
  */
-void LogCurlDebugData(const debug_data_t& debug_data) {
+void LogCurlDebugData(const DebugData& debug_data) {
   // NOTE: not very efficient in terms of copies, but messages are small.
   std::string accumulator;
   /* The value must be initialized for compiler warnings, prev_type gets set on
@@ -199,18 +199,11 @@ HttpServiceCurl::HttpServiceCurl() : HttpService() {
 
 HttpServiceCurl::~HttpServiceCurl() {}
 
-HttpResponse HttpServiceCurl::PostForm(
+HttpResponse HttpServiceCurl::DoPostForm(
     const std::string& temp_directory, const std::string& url, int port,
-    const std::string& endpoint,
-    const std::map<std::string, std::string>& data_fields,
-    const std::map<std::string,
-                   std::pair<std::string, std::optional<std::string>>>&
-        file_fields,
+    const DataFieldsMap& data_fields,
+    const FileFieldsMap& file_fields,
     bool verbose) {
-  ThrowIfUrlInvalid(url);
-  ThrowIfEndpointInvalid(endpoint);
-  ThrowIfFilesMissing(file_fields);
-
   // Create and fill out a <form> to POST.
   CURL* curl{nullptr};
   CURLcode result;
@@ -229,7 +222,7 @@ HttpResponse HttpServiceCurl::PostForm(
   };
 
   // Used when verbose, needed in scope for logging after curl_easy_perform.
-  debug_data_t debug_data;
+  DebugData debug_data;
   if (verbose) {
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
     curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &DebugCallback);
@@ -237,8 +230,7 @@ HttpResponse HttpServiceCurl::PostForm(
   }
 
   // Setup the POST url.
-  const std::string post_url = url + "/" + endpoint;
-  curl_easy_setopt(curl, CURLOPT_URL, post_url.c_str());
+  curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
   curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
   if (port > 0) curl_easy_setopt(curl, CURLOPT_PORT, port);
 
@@ -304,7 +296,6 @@ HttpResponse HttpServiceCurl::PostForm(
   HttpResponse ret;
   curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &ret.http_code);
   if (result != CURLE_OK) {
-    ret.service_error = true;
     ret.service_error_message = std::string(curl_easy_strerror(result));
   }
 
