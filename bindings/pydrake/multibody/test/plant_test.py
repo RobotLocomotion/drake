@@ -321,6 +321,12 @@ class TestPlant(unittest.TestCase):
         self.assertIs(
             link1,
             plant.GetBodyByName(name="Link1", model_instance=model_instance))
+        link1 = plant.GetRigidBodyByName(name="Link1")
+        self._test_body_api(T, link1)
+        self.assertIs(
+            link1,
+            plant.GetRigidBodyByName(
+                name="Link1", model_instance=model_instance))
         self.assertEqual(len(plant.GetBodyIndices(model_instance)), 2)
         check_repr(
             link1,
