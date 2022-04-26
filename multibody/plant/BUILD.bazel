@@ -68,6 +68,8 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:extract_double",
+        "//math:gradient",
+        "//math:linear_solve",
     ],
 )
 
@@ -512,11 +514,15 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "multibody_plant_forward_dynamics_test",
-    data = ["//examples/atlas:models"],
+    data = [
+        "//examples/atlas:models",
+        "//examples/multibody/cart_pole:models",
+    ],
     deps = [
         ":kuka_iiwa_model_tests",
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
+        "//systems/primitives:linear_system",
     ],
 )
 
