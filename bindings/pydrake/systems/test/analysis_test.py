@@ -35,6 +35,7 @@ class TestAnalysis(unittest.TestCase):
         options = RegionOfAttractionOptions()
         options.lyapunov_candidate = x*x
         options.state_variables = [x]
+        options.use_implicit_dynamics = False
         V = RegionOfAttraction(system=sys, context=context, options=options)
         self.assertEqual(repr(options), "".join([
             "RegionOfAttractionOptions(",
