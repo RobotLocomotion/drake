@@ -38,11 +38,11 @@ Cheat sheet for operating on the entire project:
 
 ```
 cd /path/to/drake
-bazel build //...                               # Build the entire project.
-bazel test //...                                # Build and test the entire project.
+bazel build //...                 # Build the entire project.
+bazel test //...                  # Build and test the entire project.
 
-CC=clang-9 CXX=clang++-9 bazel build //...      # Build using Clang 9 on Ubuntu.
-CC=clang-9 CXX=clang++-9 bazel test //...       # Build and test using Clang 9 on Ubuntu.
+bazel build --config=clang //...  # Build using Clang on Ubuntu.
+bazel test --config=clang //...   # Build and test using Clang on Ubuntu.
 ```
 
 * The "``//``" means "starting from the root of the project".
@@ -89,7 +89,7 @@ bazel test --config=kcov common:polynomial_test      # Run one test under kcov (
 bazel build -c dbg common:polynomial_test && \
   gdb bazel-bin/common/polynomial_test               # Run one test under gdb.
 
-CC=clang-9 CXX=clang++-9 bazel test -c dbg --config=asan common:polynomial_test  # Run one test under AddressSanitizer.
+bazel test -c dbg --config=clang --config=asan common:polynomial_test  # Run one test under AddressSanitizer.
 
 bazel test --config lint //...                       # Only run style checks; don't build or test anything else.
 ```
