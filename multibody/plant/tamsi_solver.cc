@@ -713,16 +713,19 @@ TamsiSolverResult TamsiSolver<T>::SolveWithGuess(
     // TODO(amcastro-tri): Consider using a matrix-free iterative method to
     // avoid computing M and J. CG and the Krylov family can be matrix-free.
     if (has_two_way_coupling()) {
-      auto& J_lu = fixed_size_workspace_.mutable_J_lu();
-      J_lu.compute(J);  // Update factorization.
-      Delta_v = J_lu.solve(-residual);
+      // LU Factorization of the Newton-Raphson Jacobian J. Only used for
+      // two-way coupled problems with non-symmetric Jacobian.
+      const math::LinearSolver<Eigen::PartialPivLU, MatrixX<T>> J_lu(J);
+      Delta_v = J_lu.Solve(-residual);
     } else {
-      auto& J_ldlt = fixed_size_workspace_.mutable_J_ldlt();
-      J_ldlt.compute(J);  // Update factorization.
-      if (J_ldlt.info() != Eigen::Success) {
+      // LDLT Factorization of the Newton-Raphson Jacobian J. Only used for
+      // one-way coupled problems with symmetric Jacobian.
+      const math::LinearSolver<Eigen::LDLT, MatrixX<T>> J_ldlt(J);
+      Delta_v = J_ldlt.Solve(-residual);
+      const auto& eigen_solver = J_ldlt.eigen_linear_solver();
+      if (eigen_solver.info() != Eigen::Success) {
         return TamsiSolverResult::kLinearSolverFailed;
       }
-      Delta_v = J_ldlt.solve(-residual);
     }
 
     // Since we keep Jt constant we have that:
