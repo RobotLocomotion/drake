@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/default_scalars.h"
+#include "drake/math/linear_solve.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 
@@ -384,11 +385,10 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
   // We compute a factorization of A once so we can re-use it multiple times
   // below.
   const int num_cliques = A.size();  // N.B. Participating cliques.
-  std::vector<Eigen::LDLT<MatrixX<T>>> A_ldlt;
-  A_ldlt.resize(num_cliques);
+  std::vector<math::LinearSolver<Eigen::LDLT, MatrixX<T>>> A_ldlt(num_cliques);
   for (int c = 0; c < num_cliques; ++c) {
-    A_ldlt[c] = A[c].ldlt();
-    DRAKE_DEMAND(A_ldlt[c].isPositive());
+    A_ldlt[c] = math::LinearSolver<Eigen::LDLT, MatrixX<T>>(A[c]);
+    DRAKE_DEMAND(A_ldlt[c].eigen_linear_solver().isPositive());
   }
 
   // Scan constraints in the order specified by the graph.
@@ -414,7 +414,7 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
         const int c =
             cliques_permutation.permuted_index(constraint.first_clique());
         const MatrixX<T>& Jic = constraint.first_clique_jacobian();
-        W[i] += Jic * A_ldlt[c].solve(Jic.transpose());
+        W[i] += Jic * A_ldlt[c].Solve(Jic.transpose());
       }
 
       // Adds clique 1 contribution, if present.
@@ -422,7 +422,7 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
         const int c =
             cliques_permutation.permuted_index(constraint.second_clique());
         const MatrixX<T>& Jic = constraint.second_clique_jacobian();
-        W[i] += Jic * A_ldlt[c].solve(Jic.transpose());
+        W[i] += Jic * A_ldlt[c].Solve(Jic.transpose());
       }
     }
   }

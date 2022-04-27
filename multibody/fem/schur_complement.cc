@@ -17,7 +17,7 @@ SchurComplement<T>::SchurComplement(
   DRAKE_DEMAND(D.cols() == D.rows());
   DRAKE_DEMAND(B_transpose.rows() == q_);
   DRAKE_DEMAND(B_transpose.cols() == p_);
-  /* Special treatment for M = A is needed because Eigen::LLT::solve() throws
+  /* Special treatment for M = A is needed because the linear solver throws
    exception if the matrix under decomposition is empty. */
   if (q_ == 0) {
     neg_Dinv_B_transpose_.resize(0, p_);
