@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
+#include "drake/math/linear_solve.h"
 
 namespace drake {
 namespace multibody {
@@ -375,15 +376,15 @@ void SapSolver<T>::CallDenseSolver(const Context<T>& context,
   // term) is very costly. Therefore below we decided to trade off speed for
   // stability when choosing to use an LDLT decomposition instead of a slightly
   // faster, though less stable, LLT decomposition.
-  const Eigen::LDLT<MatrixX<T>> Hldlt(H);
-  if (Hldlt.info() != Eigen::Success) {
+  const math::LinearSolver<Eigen::LDLT, MatrixX<T>> H_ldlt(H);
+  if (H_ldlt.eigen_linear_solver().info() != Eigen::Success) {
     // TODO(amcastro-tri): Unit test this condition.
     throw std::runtime_error("Dense LDLT factorization of the Hessian failed.");
   }
 
   // Compute search direction.
   const VectorX<T> rhs = -model_->EvalCostGradient(context);
-  *dv = Hldlt.solve(rhs);
+  *dv = H_ldlt.Solve(rhs);
 }
 
 template <typename T>

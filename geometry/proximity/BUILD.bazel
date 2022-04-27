@@ -696,6 +696,7 @@ drake_cc_library(
         "//common:default_scalars",
         "//geometry:geometry_ids",
         "//math:geometric_transform",
+        "//math:linear_solve",
     ],
 )
 

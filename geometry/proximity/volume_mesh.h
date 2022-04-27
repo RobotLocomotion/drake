@@ -13,6 +13,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/mesh_traits.h"
+#include "drake/math/linear_solve.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -244,7 +245,8 @@ class VolumeMesh {
     }
     Vector4<ReturnType> b;
     b << ReturnType(1.0), p_MQ;
-    const Vector4<ReturnType> b_Q = A.partialPivLu().solve(b);
+    const math::LinearSolver<Eigen::PartialPivLU, Matrix4<ReturnType>> A_lu(A);
+    const Vector4<ReturnType> b_Q = A_lu.Solve(b);
     // TODO(DamrongGuoy): Save the inverse of the matrix instead of
     //  calculating it on the fly. We can reduce to 3x3 system too.  See
     //  issue #11653.
