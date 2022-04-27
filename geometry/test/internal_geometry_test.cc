@@ -136,17 +136,17 @@ GTEST_TEST(InternalGeometryTest, RemoveRole) {
 }
 
 GTEST_TEST(InternalGeometryTest, MeshedGeometry) {
-  SourceId source_id;
+  SourceId source_id = SourceId::get_new_id();
   Sphere sphere(1.0);
   constexpr double kRezHint = .5;
-  FrameId frame_id;
-  GeometryId geometry_id;
+  FrameId frame_id = FrameId::get_new_id();
+  GeometryId deformable_geometry_id = GeometryId::get_new_id();
   std::string name = "sphere";
   VolumeMesh<double> mesh = MakeMeshForDeformable(sphere, kRezHint);
 
   // Confirms that a meshed geometry can be constructed.
   InternalGeometry geometry(source_id, make_unique<Sphere>(sphere), frame_id,
-                            geometry_id, name, kRezHint);
+                            deformable_geometry_id, name, kRezHint);
   const VolumeMesh<double>* internal_mesh = geometry.mesh();
   ASSERT_NE(internal_mesh, nullptr);
   EXPECT_TRUE(mesh.Equal(*internal_mesh));
@@ -156,8 +156,9 @@ GTEST_TEST(InternalGeometryTest, MeshedGeometry) {
   // Meshed geometry is always deformable.
   EXPECT_TRUE(geometry.is_deformable());
 
+  GeometryId rigid_geometry_id = GeometryId::get_new_id();
   InternalGeometry rigid_geometry(source_id, make_unique<Sphere>(sphere),
-                                  frame_id, geometry_id, name,
+                                  frame_id, rigid_geometry_id, name,
                                   RigidTransformd());
   EXPECT_EQ(rigid_geometry.mesh(), nullptr);
   // Non-meshed geometry is not deformable.
