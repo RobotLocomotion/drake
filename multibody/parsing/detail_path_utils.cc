@@ -41,7 +41,13 @@ string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
             "URI '{}' refers to unknown package '{}'", uri, uri_package));
         return {};
       }
-      const std::string& package_path = package_map.GetPath(uri_package);
+      std::optional<string> deprecation;
+      const std::string& package_path = package_map.GetPath(
+          uri_package, &deprecation);
+      if (deprecation.has_value()) {
+        diagnostic.Warning(fmt::format(
+            "In URI '{}': {}", uri, *deprecation));
+      }
       result = filesystem::path(package_path) / std::string(uri_path);
     } else {
       diagnostic.Error(fmt::format(

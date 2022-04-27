@@ -41,8 +41,14 @@ PYBIND11_MODULE(parsing, m) {
         .def("size", &Class::size, cls_doc.size.doc)
         .def("GetPackageNames", &Class::GetPackageNames,
             cls_doc.GetPackageNames.doc)
-        .def("GetPath", &Class::GetPath, py::arg("package_name"),
-            cls_doc.GetPath.doc)
+        .def(
+            "GetPath",
+            [](const PackageMap& self, const std::string& package_name) {
+              // Python does not support output arguments, so we cannot bind the
+              // deprecated_message here.
+              return self.GetPath(package_name);
+            },
+            py::arg("package_name"), cls_doc.GetPath.doc)
         .def("AddPackageXml", &Class::AddPackageXml, py::arg("filename"),
             cls_doc.AddPackageXml.doc)
         .def("PopulateFromFolder", &Class::PopulateFromFolder, py::arg("path"),
