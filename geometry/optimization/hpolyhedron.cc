@@ -271,10 +271,9 @@ void HPolyhedron::ImplementGeometry(const Box& box, void* data) {
 
 HPolyhedron HPolyhedron::PontryaginDifference(const HPolyhedron& other) const {
   /**
-   * The Pontryagin set difference of Polytope P = {x | Ax <= b_diff} and Q = {x
-   * | Cx
-   * <= d} can be computed P - Q = {x | Ax <= b_diff - h} where h_i = max a_i^Tx
-   * subject to x \in Q
+   * The Pontryagin set difference of Polytope P = {x | Ax <= b_diff} and
+   * Q = {x | Cx <= d} can be computed P - Q = {x | Ax <= b_diff - h}
+   * where h_i = max a_i^Tx subject to x \in Q
    */
 
   DRAKE_DEMAND(this->ambient_dimension() == other.ambient_dimension());
