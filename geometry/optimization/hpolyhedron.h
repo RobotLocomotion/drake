@@ -103,6 +103,11 @@ class HPolyhedron final : public ConvexSet {
   /** Returns the intersection of `this` and `other`. */
   HPolyhedron Intersection(const HPolyhedron& other) const;
 
+  /** Returns the Pontryagin (Minkowski) Difference of `this` and `other`.
+   * Requires that this and other both be bounded and
+   * have the same ambient dimension*/
+  HPolyhedron PontryaginDifference(const HPolyhedron& other) const;
+
   /** Constructs a polyhedron as an axis-aligned box from the lower and upper
   corners. */
   static HPolyhedron MakeBox(const Eigen::Ref<const Eigen::VectorXd>& lb,

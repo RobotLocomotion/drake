@@ -461,6 +461,51 @@ GTEST_TEST(HPolyhedronTest, IntersectionTest) {
   EXPECT_FALSE(H_C.PointInSet(x_B));
 }
 
+GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTestAxisAligned) {
+  HPolyhedron H_A = HPolyhedron::MakeUnitBox(2);
+  HPolyhedron H_B = HPolyhedron::MakeBox(Vector2d(0, 0),
+                                         Vector2d(1, 1));
+  HPolyhedron H_C = H_A.PontryaginDifference(H_B);
+
+  Matrix<double, 4, 2> A_expected;
+  Vector<double, 4> b_expected;
+  // clang-format off
+  A_expected << Eigen::Matrix2d::Identity(),
+               -Eigen::Matrix2d::Identity();
+  b_expected << 0, 0, 1, 1;
+  EXPECT_TRUE(CompareMatrices(H_C.A(), A_expected, 1e-8));
+  EXPECT_TRUE(CompareMatrices(H_C.b(), b_expected, 1e-8));
+}
+
+GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTest2) {
+  Eigen::MatrixXd A(8, 3);
+  Eigen::VectorXd b = Eigen::VectorXd::Constant(8, 0.5);
+  // clang-format off
+  A <<  1,  1,  1,
+        1,  1, -1,
+        1, -1,  1,
+        1, -1, -1,
+       -1,  1,  1,
+       -1,  1, -1,
+       -1, -1,  1,
+       -1, -1, -1;
+  // clang-format on
+  HPolyhedron H_A = HPolyhedron::MakeUnitBox(3);
+
+  HPolyhedron H_B = HPolyhedron(A, b);
+
+  HPolyhedron H_C = H_A.PontryaginDifference(H_B);
+
+  Matrix<double, 6, 3> A_expected;
+  Eigen::VectorXd b_expected = Eigen::VectorXd::Constant(6, 0.5);
+  // clang-format off
+  A_expected <<  Matrix3d::Identity(),
+                -Matrix3d::Identity();
+
+  EXPECT_TRUE(CompareMatrices(H_C.A(), A_expected, 1e-8));
+  EXPECT_TRUE(CompareMatrices(H_C.b(), b_expected, 1e-8));
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
