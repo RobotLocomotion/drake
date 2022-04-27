@@ -63,7 +63,16 @@ class PackageMap final {
 
   /// Obtains the path associated with package @p package_name. Aborts if no
   /// package named @p package_name exists in this PackageMap.
-  const std::string& GetPath(const std::string& package_name) const;
+  ///
+  /// @param[out] deprecated_message When passed as nullptr (it's default
+  /// value), then in case the @p package_name is deprecated a deprecation
+  /// message will be logged. When passed as non-nullptr the deprecation
+  /// message will be output into this argument and will not be logged;
+  /// if the @p package_name is not deprecated, the message will be set to
+  /// nullopt.
+  const std::string& GetPath(
+      const std::string& package_name,
+      std::optional<std::string>* deprecated_message = nullptr) const;
 
   /// Adds an entry into this PackageMap for the given `package.xml` filename.
   /// Throws if @p filename does not exist or its embedded name already exists
@@ -77,6 +86,7 @@ class PackageMap final {
   /// directory's path is the value.
   /// If a package already known by the PackageMap is found again with a
   /// conflicting path, a warning is logged and the original path is kept.
+  /// If the path does not exist or is unreadable, a warning is logged.
   void PopulateFromFolder(const std::string& path);
 
   /// Obtains one or more paths from environment variable
@@ -92,6 +102,7 @@ class PackageMap final {
   /// conflicting path, a warning is logged and the original path is kept. This
   /// accomodates the expected behavior using ROS_PACKAGE_PATH, where a package
   /// path corresponds to the "highest" overlay in which that package is found.
+  /// If a path does not exist or is unreadable, a warning is logged.
   void PopulateFromEnvironment(const std::string& environment_variable);
 
   /// Crawls up the directory tree from @p model_file to `drake`
@@ -123,9 +134,6 @@ class PackageMap final {
 
   // Recursively crawls through @p path looking for package.xml files. Adds
   // the packages defined by these package.xml files to this PackageMap.
-  // Multiple paths can be searched by separating them using the ':' symbol. In
-  // other words, @p path can be [path 1]:[path 2]:[path 3] to crawl through
-  // three different paths.
   void CrawlForPackages(const std::string& path);
 
   // This method is the same as Add() except if package_name is already present

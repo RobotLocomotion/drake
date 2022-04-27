@@ -32,7 +32,16 @@ void VerifyMatch(const PackageMap& package_map,
   EXPECT_EQ(package_map.size(), static_cast<int>(expected_packages.size()));
   for (const auto& [package_name, package_path] : expected_packages) {
     ASSERT_TRUE(package_map.Contains(package_name));
-    EXPECT_EQ(package_map.GetPath(package_name), package_path);
+    std::optional<string> deprecation;
+    EXPECT_EQ(package_map.GetPath(package_name, &deprecation), package_path);
+
+    const bool should_be_deprecated =
+        (package_name == "package_map_test_package_b") ||
+        (package_name == "package_map_test_package_d");
+    EXPECT_EQ(deprecation.has_value(), should_be_deprecated)
+        << "for " << package_name;
+    EXPECT_EQ(!deprecation.value_or("").empty(), should_be_deprecated)
+        << "for " << package_name;
   }
 
   std::map<std::string, int> package_name_counts;

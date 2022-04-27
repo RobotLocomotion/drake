@@ -65,7 +65,7 @@ void PackageMap::Remove(const string& package_name) {
 void PackageMap::SetDeprecated(const std::string& package_name,
     std::optional<std::string> deprecated_message) {
   DRAKE_DEMAND(Contains(package_name));
-  map_.at(package_name).deprecated_message = deprecated_message;
+  map_.at(package_name).deprecated_message = std::move(deprecated_message);
 }
 
 int PackageMap::size() const {
@@ -88,20 +88,33 @@ std::vector<std::string> PackageMap::GetPackageNames() const {
   return package_names;
 }
 
-const string& PackageMap::GetPath(const string& package_name) const {
+const string& PackageMap::GetPath(
+    const string& package_name,
+    std::optional<std::string>* deprecated_message) const {
   DRAKE_DEMAND(Contains(package_name));
   const auto& package_data = map_.at(package_name);
+
+  // Check if we need to produce a deprecation warning.
+  std::optional<string> warning;
   if (package_data.deprecated_message.has_value()) {
     if (package_data.deprecated_message->empty()) {
-      drake::log()->warn(
-        "PackageMap: Package \"{}\" is deprecated.",
-        package_name);
+      warning = fmt::format(
+          "Package \"{}\" is deprecated.",
+          package_name);
     } else {
-      drake::log()->warn(
-        "PackageMap: Package \"{}\" is deprecated: {}",
-        package_name, *package_data.deprecated_message);
+      warning = fmt::format(
+          "Package \"{}\" is deprecated: {}",
+          package_name, *package_data.deprecated_message);
     }
   }
+
+  // Copy the warning to the output parameter, or else the logger.
+  if (deprecated_message != nullptr) {
+    *deprecated_message = warning;
+  } else if (warning.has_value()) {
+    drake::log()->warn("PackageMap: {}", *warning);
+  }
+
   return package_data.path;
 }
 
