@@ -1106,6 +1106,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "openmp_test",
+    tags = [
+        "cpu:4",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
     name = "polynomial_test",
     deps = [
         ":essential",
