@@ -572,6 +572,27 @@ Polynomial Polynomial::EvaluatePartial(const Variable& var,
   return EvaluatePartial({{{var, c}}});
 }
 
+Eigen::VectorXd Polynomial::EvaluateIndeterminates(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& indeterminates,
+    const Eigen::Ref<const Eigen::MatrixXd>& indeterminates_values) const {
+  Eigen::VectorXd polynomial_values =
+      Eigen::VectorXd::Zero(indeterminates_values.cols());
+  for (const auto& [monomial, coeff] : monomial_to_coefficient_map_) {
+    const symbolic::Expression& coeff_expanded =
+        coeff.is_expanded() ? coeff : coeff.Expand();
+    if (!is_constant(coeff_expanded)) {
+      throw std::runtime_error(
+          fmt::format("Polynomial::EvaluateIndeterminates: the coefficient {} "
+                      "is not a constant",
+                      coeff_expanded.to_string()));
+    }
+    const double coeff_val = get_constant_value(coeff_expanded);
+    polynomial_values +=
+        coeff_val * monomial.Evaluate(indeterminates, indeterminates_values);
+  }
+  return polynomial_values;
+}
+
 Polynomial& Polynomial::operator+=(const Polynomial& p) {
   for (const pair<const Monomial, Expression>& item :
        p.monomial_to_coefficient_map_) {

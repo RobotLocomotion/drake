@@ -1529,6 +1529,12 @@ class TestSymbolicPolynomial(unittest.TestCase):
             p.EvaluatePartial(var=a, c=2),
             sym.Polynomial(2 * x * x + b * x + c, [x]))
 
+    def test_evaluate_indeterminates(self):
+        p = sym.Polynomial(2 * x * x, [x])
+        p_values = p.EvaluateIndeterminates(
+            indeterminates=[x], indeterminates_values=[[1, 2, 3]])
+        self.assertEqual(p_values.shape, ((3,)))
+
 
 class TestExtractVariablesFromExpression(unittest.TestCase):
     def test(self):

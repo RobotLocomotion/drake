@@ -848,6 +848,17 @@ PYBIND11_MODULE(symbolic, m) {
           py::arg("var"), py::arg("c"),
           doc.Polynomial.EvaluatePartial.doc_2args)
       .def(
+          "EvaluateIndeterminates",
+          [](const Polynomial& self,
+              const Eigen::Ref<const VectorX<symbolic::Variable>>&
+                  indeterminates,
+              const Eigen::Ref<const Eigen::MatrixXd>& indeterminates_values) {
+            return self.EvaluateIndeterminates(
+                indeterminates, indeterminates_values);
+          },
+          py::arg("indeterminates"), py::arg("indeterminates_values"),
+          doc.Polynomial.EvaluateIndeterminates.doc)
+      .def(
           "Jacobian",
           [](const Polynomial& p,
               const Eigen::Ref<const VectorX<Variable>>& vars) {

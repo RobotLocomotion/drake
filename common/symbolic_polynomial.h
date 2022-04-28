@@ -198,6 +198,20 @@ class Polynomial {
   /// evaluation.
   Polynomial EvaluatePartial(const Variable& var, double c) const;
 
+  /// Evaluates the polynomial at a batch of indeterminates values.
+  /// @param[in] indeterminates Must include all this->indeterminates()
+  /// @param[in] indeterminates_values Each column of `indeterminates_values`
+  /// store one specific values of `indeterminates`.
+  /// indeterminates_values.rows() == indeterminates.rows().
+  /// @return polynomial_values polynomial_values(j) is obtained by
+  /// substituting indeterminates(i) in this polynomial with
+  /// indeterminates_values(i, j) for all i.
+  /// @note This function only works when all coefficients in this polynomial
+  /// are constant. @throw error otherwise.
+  Eigen::VectorXd EvaluateIndeterminates(
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& indeterminates,
+      const Eigen::Ref<const Eigen::MatrixXd>& indeterminates_values) const;
+
   /// Adds @p coeff * @p m to this polynomial.
   Polynomial& AddProduct(const Expression& coeff, const Monomial& m);
 
