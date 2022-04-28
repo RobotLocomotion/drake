@@ -161,17 +161,6 @@ RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
 // Returns true iff the given report indicates an error, or false for warnings.
 bool IsError(const sdf::Error& report) {
   switch (report.Code()) {
-    case sdf::ErrorCode::ELEMENT_INCORRECT_TYPE: {
-      // TODO(#15018): Change unrecognized elements to become an error ASAP.
-      // There is no error code dedicated solely to such elements, so we'll
-      // need to match the UnrecognizedElementsPolicy message output for its
-      // enforceConfigurablePolicyCondition.
-      const std::string& message = report.Message();
-      if (message.find("not defined in SDF. Copying") != std::string::npos) {
-        return false;
-      }
-      return true;
-    }
     case sdf::ErrorCode::ELEMENT_DEPRECATED:
     case sdf::ErrorCode::VERSION_DEPRECATED:
     case sdf::ErrorCode::NONE: {

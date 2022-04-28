@@ -1167,7 +1167,7 @@ TEST_F(SdfParserTest, TestSdformatParserPolicies) {
   <bad_element/>
 </model>
 )""");
-  EXPECT_THAT(FormatFirstWarning(), testing::MatchesRegex(
+  EXPECT_THAT(FormatFirstError(), testing::MatchesRegex(
       ".*XML Element\\[bad_element\\], child of"
       " element\\[model\\], not defined in SDF.*"));
   ClearDiagnostics();
@@ -1184,7 +1184,7 @@ TEST_F(SdfParserTest, TestSdformatParserPolicies) {
     </axis>
   </joint>
 </model>)""", "1.9");
-  EXPECT_THAT(FormatFirstWarning(), testing::MatchesRegex(
+  EXPECT_THAT(FormatFirstError(), testing::MatchesRegex(
       ".*XML Element\\[initial_position\\], child of element"
       "\\[axis\\], not defined in SDF.*"));
   ClearDiagnostics();
