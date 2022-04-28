@@ -680,13 +680,11 @@ class ThreeBoxes : public ::testing::Test {
 // "IPOPT terminated after exceeding the maximum iteration limit" on mac CI
 // which was using IPOPT 3.13.4.  Upgrading to IPOPT 3.14.2 resolved the
 // problem.
-//
-// Note: Ipopt will be used in some of the build configurations in CI, even
-// though I cannot (yet) request it specifically here.
 TEST_F(ThreeBoxes, IpoptTest) {
   e_on_->AddCost((e_on_->xu() - e_on_->xv()).squaredNorm());
   e_off_->AddCost((e_off_->xu() - e_off_->xv()).squaredNorm());
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
+  solvers::IpoptSolver solver;
+  auto result = g_.SolveShortestPath(*source_, *target_, true, &solver);
   ASSERT_TRUE(result.is_success());
 }
 
@@ -863,6 +861,82 @@ GTEST_TEST(ShortestPathTest, TwoStepLoopConstraint) {
     }
   }
   EXPECT_EQ(non_zero_edges, 6);
+}
+
+// Test that all optimization variables are properly set, even when constrained
+// to be on or off.
+GTEST_TEST(ShortestPathTest, PhiConstraint) {
+  GraphOfConvexSets spp;
+
+  spp.AddVertex(Point(Vector2d(0, 0)));
+  spp.AddVertex(Point(Vector2d(1, -1)));
+  spp.AddVertex(Point(Vector2d(1, 1)));
+  spp.AddVertex(Point(Vector2d(2, 0)));
+
+  auto v = spp.Vertices();
+
+  Edge* edge_01 = spp.AddEdge(*v[0], *v[1]);
+  Edge* edge_02 = spp.AddEdge(*v[0], *v[2]);
+  Edge* edge_13 = spp.AddEdge(*v[1], *v[3]);
+  Edge* edge_23 = spp.AddEdge(*v[2], *v[3]);
+
+  // |xu - xv|₂
+  Matrix<double, 4, 4> A = Matrix<double, 4, 4>::Identity();
+  A.block(0, 2, 2, 2) = -Matrix2d::Identity();
+  A.block(2, 0, 2, 2) = -Matrix2d::Identity();
+  auto cost = std::make_shared<solvers::QuadraticCost>(A, Vector4d::Zero());
+
+  edge_01->AddCost(solvers::Binding(cost, {v[0]->x(), v[1]->x()}));
+  edge_02->AddCost(solvers::Binding(cost, {v[0]->x(), v[2]->x()}));
+  edge_13->AddCost(solvers::Binding(cost, {v[1]->x(), v[3]->x()}));
+  edge_23->AddCost(solvers::Binding(cost, {v[2]->x(), v[3]->x()}));
+
+  // Confirm that variables for edges are set when no on/off constraint is
+  // imposed.
+  {
+    auto result = spp.SolveShortestPath(*v[0], *v[3], true);
+    if (result.get_solver_id() == solvers::IpoptSolver::id()) {
+      return;  // See IpoptTest for details.
+    }
+    EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXu(result),
+                                0.5 * Vector2d(1, -1), 1e-6));
+    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXv(result),
+                                0.5 * Vector2d(2, 0), 1e-6));
+    EXPECT_NEAR(edge_13->GetSolutionCost(result), 0.5 * 1, 1e-6);
+    EXPECT_NEAR(result.GetSolution(edge_13->phi()), 0.5, 1e-6);
+  }
+
+  // Confirm that variables for edges that are turned off are properly set.
+  // This check is necessary now that these variables have been removed from the
+  // optimization problem.
+  edge_13->AddPhiConstraint(false);
+  {
+    auto result = spp.SolveShortestPath(*v[0], *v[3], true);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXu(result),
+                                Vector2d::Zero(), 1e-6));
+    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXv(result),
+                                Vector2d::Zero(), 1e-6));
+    EXPECT_NEAR(edge_13->GetSolutionCost(result), 0, 1e-6);
+    EXPECT_NEAR(result.GetSolution(edge_13->phi()), 0, 1e-6);
+  }
+
+  // Confirm that variables for edges that are turned on are properly set.
+  edge_13->AddPhiConstraint(true);
+  {
+    auto result = spp.SolveShortestPath(*v[0], *v[3], true);
+    if (result.get_solver_id() == solvers::IpoptSolver::id()) {
+      return;  // See IpoptTest for details.
+    }
+    EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXu(result),
+                                Vector2d(1, -1), 1e-6));
+    EXPECT_TRUE(CompareMatrices(edge_13->GetSolutionPhiXv(result),
+                                Vector2d(2, 0), 1e-6));
+    EXPECT_NEAR(edge_13->GetSolutionCost(result), 1, 1e-6);
+    EXPECT_NEAR(result.GetSolution(edge_13->phi()), 1, 1e-6);
+  }
 }
 
 GTEST_TEST(ShortestPathTest, TobiasToyExample) {
