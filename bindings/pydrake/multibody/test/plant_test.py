@@ -66,11 +66,13 @@ from pydrake.multibody.plant import (
     ContactResultsToMeshcat_,
     CoulombFriction_,
     ExternallyAppliedSpatialForce_,
+    MultibodyPlant,
     MultibodyPlant_,
     MultibodyPlantConfig,
     PointPairContactInfo_,
     PropellerInfo,
     Propeller_,
+    Wing,
 )
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.benchmarks.acrobot import (
@@ -104,6 +106,7 @@ from pydrake.math import (
 )
 from pydrake.systems.analysis import Simulator_
 from pydrake.systems.framework import (
+    DiagramBuilder,
     DiagramBuilder_,
     System_,
     LeafSystem_,
@@ -2202,6 +2205,44 @@ class TestPlant(unittest.TestCase):
 
         prop2 = Propeller_[float]([info, info])
         self.assertEqual(prop2.num_propellers(), 2)
+
+    def test_wing(self):
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(MultibodyPlant(0.0))
+        Parser(plant).AddModelFromFile(
+            FindResourceOrThrow("drake/multibody/models/box.urdf"))
+        plant.Finalize()
+
+        body = plant.GetBodyByName("box")
+
+        # Constructor
+        Wing(body_index=body.index(),
+             surface_area=1.0,
+             X_BodyWing=RigidTransform(),
+             fluid_density=1.0)
+
+        # AddToBuilder
+        wing = Wing.AddToBuilder(builder=builder,
+                                 plant=plant,
+                                 body_index=body.index(),
+                                 surface_area=1.0,
+                                 X_BodyWing=RigidTransform(),
+                                 fluid_density=1.0)
+
+        self.assertIsInstance(wing.get_body_poses_input_port(),
+                              InputPort_[float])
+        self.assertIsInstance(wing.get_body_spatial_velocities_input_port(),
+                              InputPort_[float])
+        self.assertIsInstance(wing.get_body_poses_input_port(),
+                              InputPort_[float])
+        self.assertIsInstance(wing.get_wind_velocity_input_port(),
+                              InputPort_[float])
+        self.assertIsInstance(wing.get_fluid_density_input_port(),
+                              InputPort_[float])
+        self.assertIsInstance(wing.get_spatial_force_output_port(),
+                              OutputPort_[float])
+        self.assertIsInstance(wing.get_aerodynamic_center_output_port(),
+                              OutputPort_[float])
 
     def test_hydroelastic_contact_results(self):
         time_steps = [

@@ -34,6 +34,7 @@ drake_cc_package_library(
         ":point_pair_contact_info",
         ":propeller",
         ":tamsi_solver",
+        ":wing",
     ],
 )
 
@@ -326,6 +327,15 @@ drake_cc_library(
     name = "propeller",
     srcs = ["propeller.cc"],
     hdrs = ["propeller.h"],
+    deps = [
+        ":multibody_plant_core",
+    ],
+)
+
+drake_cc_library(
+    name = "wing",
+    srcs = ["wing.cc"],
+    hdrs = ["wing.h"],
     deps = [
         ":multibody_plant_core",
     ],
@@ -802,6 +812,18 @@ drake_cc_googletest(
         ":propeller",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "wing_test",
+    data = ["//multibody:models"],
+    deps = [
+        ":wing",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
         "//systems/framework",
     ],
 )
