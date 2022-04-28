@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 
+#include "drake/common/timer.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_animation.h"
@@ -143,6 +144,12 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
       const systems::OutputPort<T>& query_object_port,
       std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params = {});
 
+#ifndef DRAKE_DOXYGEN_CXX
+  /* (Internal use for unit testing only) Used to inject a mock timer to mock
+   time used in Realtime rate calculation. */
+  void InjectMockTimer(std::unique_ptr<Timer> t);
+#endif
+
  private:
   /* MeshcatVisualizer of different scalar types can all access each other's
    data. */
@@ -219,7 +226,8 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
 
   mutable double prev_sim_time_{0};
   mutable std::optional<std::chrono::time_point<std::chrono::steady_clock>>
-      prev_wall_time_{};
+      prev_wall_time_={};
+  std::unique_ptr<Timer> timer_;
 };
 
 /** A convenient alias for the MeshcatVisualizer class when using the `double`

@@ -534,6 +534,7 @@ drake_cc_library(
         ":rgba",
         ":scene_graph",
         "//common:essential",
+        "//common:time",
         "//math:geometric_transform",
         "//systems/framework:context",
         "//systems/framework:diagram_builder",
