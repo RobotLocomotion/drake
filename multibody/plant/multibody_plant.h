@@ -628,6 +628,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// contain any actuators, or if multiple model instances have actuated dofs.
   const systems::InputPort<T>& get_actuation_input_port() const;
 
+  /// Returns a constant reference to the input port for external actuations for
+  /// all actuated dofs regardless the number of model instances that have
+  /// actuated dofs. The input actuation is assumed to be ordered according to
+  /// model instances. This input port is a vector valued port, which can be set
+  /// with JointActuator::set_actuation_vector().
+  /// @pre Finalize() was already called on `this` plant.
+  /// @throws std::exception if called before Finalize().
+  /// @throws std::exception if individual actuation ports are connected.
+  const systems::InputPort<T>& get_stacked_actuation_input_port() const;
+
   /// Returns a constant reference to the vector-valued input port for applied
   /// generalized forces, and the vector will be added directly into `tau` (see
   /// @ref mbp_equations_of_motion "System dynamics"). This vector is ordered
@@ -4922,6 +4932,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // ModelInstanceIndex. Every model instance has a corresponding port even
   // if that instance has no actuators.
   std::vector<systems::InputPortIndex> instance_actuation_ports_;
+
+  // The actuation port for all actuated dofs.
+  systems::InputPortIndex stacked_actuation_port_;
 
   // If only one model instance has actuated dofs, remember it here.  If
   // multiple instances have actuated dofs, this index will not be valid.
