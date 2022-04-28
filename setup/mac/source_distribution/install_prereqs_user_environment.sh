@@ -20,5 +20,5 @@ arch="$(/usr/bin/arch)"
 mkdir -p "$(dirname "${bazelrc}")"
 cat > "${bazelrc}" <<EOF
 import %workspace%/tools/macos.bazelrc
-import %workspace%/tools/macos-${arch}.bazelrc
+import %workspace%/tools/macos-arch-${arch}.bazelrc
 EOF
