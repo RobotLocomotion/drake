@@ -17,7 +17,8 @@ drake_py_binary_ubuntu_only(
     srcs = ["repack_deb.py"],
     data = [
         "debian/changelog.in",
-        "debian/control",
+        "debian/compat",
+        "debian/control.in",
         "debian/copyright",
     ],
     deps = [
