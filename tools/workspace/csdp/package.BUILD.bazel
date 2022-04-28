@@ -54,6 +54,7 @@ cc_library(
         "includes/csdp/parameters.h",
     ],
     copts = [
+        "-fno-openmp",
         "-Wno-unknown-pragmas",
         "-Wno-unused-variable",
         # CSDP calls exit() for error handling. That doesn't suit our needs for
