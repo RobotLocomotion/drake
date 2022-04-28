@@ -1682,6 +1682,14 @@ class Meshcat::Impl {
         ws->send(message_stream.str());
       }
     }
+
+    // Tell client if the realtime rate plot should be hidden
+    internal::HideRealtimerate rtr_hidden_msg{};
+    rtr_hidden_msg.hide = params_.hide_stats_plot;
+    std::stringstream rtr_msg_stream;
+    msgpack::pack(rtr_msg_stream, rtr_hidden_msg);
+    ws->send(rtr_msg_stream.str());
+
     if (inject_open_fault_.load()) {
       throw std::runtime_error(
           "InjectWebsocketThreadFault during socket open");

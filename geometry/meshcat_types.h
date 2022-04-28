@@ -376,6 +376,16 @@ struct RealtimerateData {
   MSGPACK_DEFINE_MAP(type, rate);
 };
 
+
+// Note that this struct is unique to Drake's integration of meshcat; it is not
+// part of upstream meshcat.js. We handle it directly within meshcat.html,
+// without ever feeding it into meshcat.js.
+struct HideRealtimerate {
+  std::string type{"hide_realtime_rate"};
+  bool hide{false};
+  MSGPACK_DEFINE_MAP(type, hide);
+};
+
 struct DeleteData {
   std::string type{"delete"};
   std::string path;

@@ -18,6 +18,7 @@
     var stats = new Stats();
     var rtrPanel = stats.addPanel( new Stats.Panel( 'rtr%', '#ff8', '#221' ) );
     document.body.appendChild( stats.dom );
+    stats.dom.id = "stats-plot";
     stats.showPanel(stats.dom.children.length - 1)
     var rtr = 0;
     var viewer = new MeshCat.Viewer(document.getElementById("meshcat-pane"));
@@ -40,6 +41,9 @@
       let decoded = msgpack.decode(new Uint8Array(ws_message.data));
       if (decoded.type == "realtime_rate") {
         rtr = decoded.rate;
+      } else if (decoded.type == "hide_realtime_rate") {
+       stats.dom.style.display = decoded.hide ? "none" : "block";
+       console.log("hiding", decoded.hide)
       } else {
         viewer.handle_command(decoded)
       }
@@ -79,6 +83,10 @@
       width: 100vw;
       height: 100vh;
       overflow: hidden;
+    }
+
+    #stats-plot {
+      display: none;
     }
   </style>
   <script id="embedded-json"></script>

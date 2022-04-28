@@ -54,12 +54,11 @@ load("@drake//tools/workspace/liblzma:repository.bzl", "liblzma_repository")
 load("@drake//tools/workspace/libpng:repository.bzl", "libpng_repository")
 load("@drake//tools/workspace/libtiff:repository.bzl", "libtiff_repository")
 load("@drake//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
-load("@drake//tools/workspace/statsjs:repository.bzl", "statsjs_repository")
-load("@drake//tools/workspace/msgpack_lite_js:repository.bzl", "msgpack_lite_js_repository")  # noqa
 load("@drake//tools/workspace/meshcat_python:repository.bzl", "meshcat_python_repository")  # noqa
 load("@drake//tools/workspace/models:repository.bzl", "models_repository")
 load("@drake//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("@drake//tools/workspace/msgpack:repository.bzl", "msgpack_repository")
+load("@drake//tools/workspace/msgpack_lite_js:repository.bzl", "msgpack_lite_js_repository")  # noqa
 load("@drake//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_repository")  # noqa
 load("@drake//tools/workspace/nlopt:repository.bzl", "nlopt_repository")
 load("@drake//tools/workspace/openblas:repository.bzl", "openblas_repository")
@@ -84,6 +83,7 @@ load("@drake//tools/workspace/scs:repository.bzl", "scs_repository")
 load("@drake//tools/workspace/sdformat:repository.bzl", "sdformat_repository")
 load("@drake//tools/workspace/snopt:repository.bzl", "snopt_repository")
 load("@drake//tools/workspace/spdlog:repository.bzl", "spdlog_repository")
+load("@drake//tools/workspace/statsjs:repository.bzl", "statsjs_repository")
 load("@drake//tools/workspace/stduuid:repository.bzl", "stduuid_repository")
 load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository")  # noqa
 load("@drake//tools/workspace/suitesparse:repository.bzl", "suitesparse_repository")  # noqa
