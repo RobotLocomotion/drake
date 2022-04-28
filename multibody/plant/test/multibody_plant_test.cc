@@ -212,6 +212,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       default_model_instance()).size(), 1);
   EXPECT_EQ(plant->get_actuation_input_port(
       pendulum_model_instance).size(), 1);
+  EXPECT_EQ(plant->get_stacked_actuation_input_port().size(), 2);
   EXPECT_EQ(plant->get_state_output_port().size(), 6);
   EXPECT_EQ(plant->get_state_output_port(
       default_model_instance()).size(), 4);
@@ -536,6 +537,7 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
   DRAKE_EXPECT_NO_THROW(plant.get_actuation_input_port());
   DRAKE_EXPECT_NO_THROW(plant.get_actuation_input_port(acrobot_instance));
   DRAKE_EXPECT_NO_THROW(plant.get_actuation_input_port(cylinder_instance));
+  DRAKE_EXPECT_NO_THROW(plant.get_stacked_actuation_input_port());
 
   // Try to compute the derivatives without connecting the acrobot_instance
   // port.
@@ -559,6 +561,13 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
       .FixValue(context.get(), VectorXd(0));
   DRAKE_EXPECT_NO_THROW(
       plant.CalcTimeDerivatives(*context, continuous_state.get()));
+
+  // Verify that connecting both the stacked actuation ports and the individual
+  // model actuation input ports throws.
+  plant.get_stacked_actuation_input_port().FixValue(context.get(), 0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CalcTimeDerivatives(*context, continuous_state.get()),
+      "Actuation.*model instance.*stacked.*both connected.*");
 }
 
 GTEST_TEST(MultibodyPlant, UniformGravityFieldElementTest) {
@@ -3782,6 +3791,56 @@ GTEST_TEST(MultibodyPlant, FixInputPortsFrom) {
   DRAKE_EXPECT_THROWS_MESSAGE(autodiff_plant->FixInputPortsFrom(
                                   plant, plant_context, autodiff_context.get()),
                               ".*FixInputPortTypeCheck.*");
+}
+
+// Tests that the connecting to the stacked actuation port is equivalent to
+// connecting to the individual model instance actuation ports.
+GTEST_TEST(MultibodyPlantTests, ActuationPorts) {
+  const AcrobotParameters parameters;
+  unique_ptr<MultibodyPlant<double>> plant =
+      MakeAcrobotPlant(parameters, false /* Don't make a finalized plant. */);
+  // Add a split pendulum to the plant.
+  const ModelInstanceIndex pendulum_model_instance =
+      Parser(plant.get())
+          .AddModelFromFile(FindResourceOrThrow(
+              "drake/multibody/plant/test/split_pendulum.sdf"));
+  plant->Finalize();
+  ASSERT_EQ(plant->num_actuated_dofs(default_model_instance()), 1);
+  ASSERT_EQ(plant->num_actuated_dofs(pendulum_model_instance), 1);
+  ASSERT_EQ(plant->num_actuated_dofs(), 2);
+
+  // Connect each actuation port separately.
+  auto context1 = plant->CreateDefaultContext();
+  plant->get_actuation_input_port(default_model_instance())
+      .FixValue(context1.get(), 1.0);
+  plant->get_actuation_input_port(pendulum_model_instance)
+      .FixValue(context1.get(), 2.0);
+  const auto& reaction_forces =
+      plant->get_reaction_forces_output_port()
+          .Eval<std::vector<SpatialForce<double>>>(*context1);
+
+  // Connect the stacked actuation port.
+  auto context2 = plant->CreateDefaultContext();
+  plant->get_stacked_actuation_input_port().FixValue(context2.get(),
+                                                     Vector2d(1.0, 2.0));
+  const auto& expected_reaction_forces =
+      plant->get_reaction_forces_output_port()
+          .Eval<std::vector<SpatialForce<double>>>(*context2);
+
+  // Indirectly verify that the actuation are the same by verifying the reaction
+  // forces are the same and are non-zero.
+  EXPECT_EQ(expected_reaction_forces.size(), reaction_forces.size());
+  bool all_reaction_forces_zero = true;
+  double kTolerance = 0.1;
+  for (int i = 0; i < static_cast<int>(reaction_forces.size()); ++i) {
+    EXPECT_TRUE(CompareMatrices(reaction_forces[i].translational(),
+                                expected_reaction_forces[i].translational()));
+    EXPECT_TRUE(CompareMatrices(reaction_forces[i].rotational(),
+                                expected_reaction_forces[i].rotational()));
+    all_reaction_forces_zero &=
+        (reaction_forces[i].rotational().norm() < kTolerance);
+  }
+  EXPECT_FALSE(all_reaction_forces_zero);
 }
 
 }  // namespace

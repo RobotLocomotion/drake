@@ -179,7 +179,8 @@ class LadderTest : public ::testing::Test {
 
     // Fix the actuation.
     const Vector1d tau_actuation = kActuationTorque * Vector1d::Ones();
-    plant_->get_actuation_input_port().FixValue(plant_context, tau_actuation);
+    plant_->get_stacked_actuation_input_port().FixValue(plant_context,
+                                                        tau_actuation);
 
     if (locked_joint) {
         joint_->Lock(plant_context);
