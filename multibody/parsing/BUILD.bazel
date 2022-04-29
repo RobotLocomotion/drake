@@ -465,6 +465,8 @@ drake_cc_googletest(
         "//manipulation/models/iiwa_description:models",
         "//multibody/benchmarks/acrobot:models",
     ],
+    # TODO(BetsyMcPhail) This test hit kcov#339; untag when we have kcov>=39.
+    tags = ["no_kcov"],
     deps = [
         ":detail_urdf_parser",
         ":diagnostic_policy_test_base",
