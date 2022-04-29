@@ -104,8 +104,8 @@ class HPolyhedron final : public ConvexSet {
   HPolyhedron Intersection(const HPolyhedron& other) const;
 
   /** Returns the Pontryagin (Minkowski) Difference of `this` and `other`.
-   * Requires that this and other both be bounded and
-   * have the same ambient dimension*/
+   This is the set A ⊖ B = { a|a+ B ⊆ A }. Requires that `this` and `other` both
+   be bounded and have the same ambient dimension.*/
   HPolyhedron PontryaginDifference(const HPolyhedron& other) const;
 
   /** Constructs a polyhedron as an axis-aligned box from the lower and upper

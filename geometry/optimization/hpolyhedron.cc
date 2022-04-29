@@ -271,8 +271,8 @@ void HPolyhedron::ImplementGeometry(const Box& box, void* data) {
 
 HPolyhedron HPolyhedron::PontryaginDifference(const HPolyhedron& other) const {
   /**
-   * The Pontryagin set difference of Polytope P = {x | Ax <= b_diff} and
-   * Q = {x | Cx <= d} can be computed P - Q = {x | Ax <= b_diff - h}
+   * The Pontryagin set difference of Polytope P = {x | Ax <= b} and
+   * Q = {x | Cx <= d} can be computed P - Q = {x | Ax <= b - h}
    * where h_i = max a_i^Tx subject to x \in Q
    */
 
@@ -282,10 +282,10 @@ HPolyhedron HPolyhedron::PontryaginDifference(const HPolyhedron& other) const {
   const double kInf = std::numeric_limits<double>::infinity();
 
   Eigen::VectorXd b_diff(b_.rows());
-  b_diff << b_;
   MathematicalProgram prog;
   solvers::VectorXDecisionVariable x =
       prog.NewContinuousVariables(ambient_dimension_, "x");
+  // -inf <= Ax <= b
   prog.AddLinearConstraint(other.A(),
                            Eigen::VectorXd::Constant(other.b().rows(), -kInf),
                            other.b(), x);
@@ -311,7 +311,7 @@ HPolyhedron HPolyhedron::PontryaginDifference(const HPolyhedron& other) const {
           "if the problem is ill-conditioned",
           result.get_solver_id().name(), result.get_solution_result()));
     }
-    b_diff(i) = b_diff(i) + result.get_optimal_cost();
+    b_diff(i) = b_(i) + result.get_optimal_cost();
   }
   return {A_, b_diff};
 }

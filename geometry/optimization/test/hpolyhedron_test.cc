@@ -226,7 +226,7 @@ GTEST_TEST(HPolyhedronTest, ChebyshevCenter2) {
   EXPECT_TRUE(H.PointInSet(center));
   // For the rectangle, the center should have distance = 1.0 from the first
   // two half-planes, and ≥ 1.0 for the other two.
-  const VectorXd distance = b - A*center;
+  const VectorXd distance = b - A * center;
   EXPECT_NEAR(distance[0], 1.0, 1e-6);
   EXPECT_NEAR(distance[1], 1.0, 1e-6);
   EXPECT_GE(distance[2], 1.0 - 1e-6);
@@ -463,18 +463,36 @@ GTEST_TEST(HPolyhedronTest, IntersectionTest) {
 
 GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTestAxisAligned) {
   HPolyhedron H_A = HPolyhedron::MakeUnitBox(2);
-  HPolyhedron H_B = HPolyhedron::MakeBox(Vector2d(0, 0),
-                                         Vector2d(1, 1));
+  HPolyhedron H_B = HPolyhedron::MakeBox(Vector2d(0, 0), Vector2d(1, 1));
+  HPolyhedron H_C = H_A.PontryaginDifference(H_B);
+  HPolyhedron H_C_expected =
+      HPolyhedron::MakeBox(Vector2d{-1, -1}, Vector2d{0, 0});
+
+  EXPECT_TRUE(CompareMatrices(H_C.A(), H_C_expected.A(), 1e-8));
+  EXPECT_TRUE(CompareMatrices(H_C.b(), H_C_expected.b(), 1e-8));
+}
+
+GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTestSquareTriangle) {
+  HPolyhedron H_A = HPolyhedron::MakeUnitBox(2);
+
+  Matrix<double, 3, 2> A_B;
+  Vector<double, 3> b_B;
+  // clang-format off
+  A_B << -1, 0,
+          0, -1,
+          1, 1;
+  b_B << 0, 0, 1;
+  // clang-format on
+  // right triangle with vertices [0,0], [1,0], [0,1]
+  HPolyhedron H_B{A_B, b_B};
+
   HPolyhedron H_C = H_A.PontryaginDifference(H_B);
 
-  Matrix<double, 4, 2> A_expected;
-  Vector<double, 4> b_expected;
-  // clang-format off
-  A_expected << Eigen::Matrix2d::Identity(),
-               -Eigen::Matrix2d::Identity();
-  b_expected << 0, 0, 1, 1;
-  EXPECT_TRUE(CompareMatrices(H_C.A(), A_expected, 1e-8));
-  EXPECT_TRUE(CompareMatrices(H_C.b(), b_expected, 1e-8));
+  HPolyhedron H_C_expected =
+      HPolyhedron::MakeBox(Vector2d{-1, -1}, Vector2d{0, 0});
+
+  EXPECT_TRUE(CompareMatrices(H_C.A(), H_C_expected.A(), 1e-8));
+  EXPECT_TRUE(CompareMatrices(H_C.b(), H_C_expected.b(), 1e-8));
 }
 
 GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTest2) {
@@ -492,7 +510,7 @@ GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTest2) {
   // clang-format on
   HPolyhedron H_A = HPolyhedron::MakeUnitBox(3);
 
-  HPolyhedron H_B = HPolyhedron(A, b);
+  HPolyhedron H_B{A, b};
 
   HPolyhedron H_C = H_A.PontryaginDifference(H_B);
 
@@ -502,8 +520,12 @@ GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTest2) {
   A_expected <<  Matrix3d::Identity(),
                 -Matrix3d::Identity();
 
-  EXPECT_TRUE(CompareMatrices(H_C.A(), A_expected, 1e-8));
-  EXPECT_TRUE(CompareMatrices(H_C.b(), b_expected, 1e-8));
+  HPolyhedron H_C_expected =
+      HPolyhedron::MakeBox(Eigen::Vector3d::Constant(-0.5),
+                           Eigen::Vector3d::Constant(0.5));
+
+  EXPECT_TRUE(CompareMatrices(H_C.A(), H_C_expected.A(), 1e-8));
+  EXPECT_TRUE(CompareMatrices(H_C.b(), H_C_expected.b(), 1e-8));
 }
 
 }  // namespace optimization
