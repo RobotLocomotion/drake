@@ -310,10 +310,10 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialVelocity) {
   EXPECT_TRUE(CompareMatrices(V_W_EH_W.translational(), w_cross_p,
                               kTolerance, MatrixCompareType::relative));
 
-  // Verify that the calculation of separation speed (1ˢᵗ time-derivative
-  // of distance) between Ho (frame H's origin) and L3o (frame L3's origin) can
-  // be calculated by point Ho's translational velocity relative to L3o,
-  // independent of the measured-in frame.
+  // Verify that the calculation of separation speed (1ˢᵗ time-derivative of
+  // separation distance) between Ho (frame H's origin) and L3o (frame L3's
+  // origin) can be calculated by point Ho's translational velocity relative
+  // to L3o, independent of the measured-in frame.
   const Vector3<double>& v_W_L3H_W = V_W_L3H_W.translational();
   const Vector3<double>& v_L3_L3H_W = V_L3_L3H_W.translational();
   // Form the unit vector directed from L3o to Ho.
@@ -322,10 +322,11 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialVelocity) {
   const RotationMatrix<double> R_WL3 =
       frame_L3.CalcRotationMatrixInWorld(*context_);
   const Vector3<double> p_L3oHo_W = R_WL3 * p_L3oHo_L3;
-  const Vector3<double> u_L3oHo_W = p_L3oHo_W.normalized();
-  const double elongation1 = v_W_L3H_W.dot(u_L3oHo_W);
-  const double elongation2 = v_L3_L3H_W.dot(u_L3oHo_W);
-  EXPECT_NEAR(elongation1, elongation2, kTolerance);
+  const double separation_distance = p_L3oHo_W.norm();
+  const Vector3<double> u_L3oHo_W = p_L3oHo_W / separation_distance;
+  const double separation_speed1 = v_W_L3H_W.dot(u_L3oHo_W);
+  const double separation_speed2 = v_L3_L3H_W.dot(u_L3oHo_W);
+  EXPECT_NEAR(separation_speed1, separation_speed2, kTolerance);
 }
 
 TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
@@ -492,9 +493,27 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
       A_L3_HH_W.get_coeffs(), Vector6<double>::Zero(),
       kTolerance, MatrixCompareType::relative));
 
+  // To ensure the previous test is not degenerate, ensure frame_H's roational
+  // and translational velocities and accelerations in frame_L3 are non-zero.
+  const SpatialVelocity<double> V_L3H_W =
+      frame_H.CalcSpatialVelocity(*context_, frame_H, frame_W);
+  const SpatialAcceleration<double> A_L3H_W =
+      frame_H.CalcSpatialAcceleration(*context_, frame_H, frame_W);
+  EXPECT_FALSE(CompareMatrices(
+      V_L3H_W.rotational(), Vector3<double>::Zero(),
+      kTolerance, MatrixCompareType::relative));
+  EXPECT_FALSE(CompareMatrices(
+      V_L3H_W.translational(), Vector3<double>::Zero(),
+      kTolerance, MatrixCompareType::relative));
+  EXPECT_FALSE(CompareMatrices(
+      A_L3H_W.rotational(), Vector3<double>::Zero(),
+      kTolerance, MatrixCompareType::relative));
+  EXPECT_FALSE(CompareMatrices(
+      A_L3H_W.translational(), Vector3<double>::Zero(),
+      kTolerance, MatrixCompareType::relative));
 
-  // Verify that relative spatial velocity is the same as absolute spatial if
-  // the "relative-to" frame is the same as the "measured-in" frame.
+  // Verify that relative spatial acceleration is the same as absolute spatial
+  // acceleration if the "relative-to" frame is the "measured-in" frame.
   // First perform this test when the "measured-in" frame is the world frame W.
   // Next, perform this test when the "measured-in" frame is frame_L3.
   const SpatialAcceleration<double> A_W_WH_W =
@@ -508,10 +527,8 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
   const SpatialAcceleration<double> A_L3_L3H_W =
       frame_H.CalcRelativeSpatialAcceleration(*context_, frame_L3, frame_L3,
           frame_W);
-  const SpatialAcceleration<double> A_L3_L3H_W_expected =
-      frame_H.CalcSpatialAcceleration(*context_, frame_L3, frame_W);
   EXPECT_TRUE(CompareMatrices(A_L3_L3H_W.get_coeffs(),
-                              A_L3_L3H_W_expected.get_coeffs(), kTolerance,
+                              A_L3H_W.get_coeffs(), kTolerance,
                               MatrixCompareType::relative));
 
   // Verify the Frame class's function to calculate A_W_L3H_W (frame H's spatial
@@ -567,8 +584,6 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
   // not α_L3H_W, but instead is DtW(ω_L3H)_W (the time-derivative in frame W
   // of frame_H's angular velocity in frame L3, expressed in frame W).
   const Vector3<double>& DtW_w_L3H_W = A_W_L3H_W.rotational();
-  const SpatialAcceleration<double> A_L3H_W =
-      frame_H.CalcSpatialAcceleration(*context_, frame_L3, frame_W);
   const Vector3<double>& alpha_L3H_W = A_L3H_W.rotational();
   EXPECT_FALSE(CompareMatrices(DtW_w_L3H_W, alpha_L3H_W,
       kTolerance, MatrixCompareType::relative));
@@ -586,10 +601,10 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
   // For frame H (which is a fixed offset frame fixed to end-effector E), verify
   // that the rotational part of frame H's spatial acceleration relative to
   // frame E measured in the world frame W is zero and verify the translational
-  // part is equal to α_WE x p_EoH + ω_WE x (ω_WE x p_EoHo). This is proved by:
+  // part is equal to α_WE x p_EoHo + ω_WE x (ω_WE x p_EoHo). This is proved by:
   // a_W_EoHo ≡ a_WHo - a_WEo, but since Eo and Ho are two points fixed to the
-  // same rigid frame a_WHo = a_WEo + α_WE x p_EoH + ω_WE x (ω_WE x p_EoHo),
-  // hence a_W_EoHo ≡ a_WHo - a_WEo = α_WE x p_EoH + ω_WE x (ω_WE x p_EoHo).
+  // same rigid frame a_WHo = a_WEo + α_WE x p_EoHo + ω_WE x (ω_WE x p_EoHo),
+  // hence a_W_EoHo ≡ a_WHo - a_WEo = α_WE x p_EoHo + ω_WE x (ω_WE x p_EoHo).
   const SpatialAcceleration<double> A_W_EH_W =
       frame_H.CalcRelativeSpatialAccelerationInWorld(*context_, frame_E);
   const Vector3<double>& a_W_EoHo_W = A_W_EH_W.translational();
@@ -605,13 +620,14 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
       kTolerance, MatrixCompareType::relative));
 
   // Verify that the calculation of separation acceleration (2ⁿᵈ time-derivative
-  // of distance) between Ho (frame H's origin) and L3o (frame L3's origin) can
-  // be calculated by point Ho's translational acceleration relative to L3o,
-  // independent of the measured-in frame. The calculations below are from:
-  // [pg. 98, Mitiguy, 2017]: "Advanced Dynamics and Motion Simulation,
-  //                           For professional engineers and scientists,"
-  //                           Prodigy Press, Sunnyvale CA, 2017.
-  //                           Available at www.MotionGenesis.com
+  // of separation distance) between Ho (frame H's origin) and L3o (frame L3's
+  // origin) can be calculated by point Ho's translational acceleration relative
+  // to L3o, independent of the measured-in frame. The calculations below are
+  // Section 10.6 Elongation (separation-speed) and elongation-rate from
+  // [Mitiguy, 2017]: "Advanced Dynamics and Motion Simulation,
+  //                   For professional engineers and scientists,"
+  //                   Prodigy Press, Sunnyvale CA, 2017.
+  //                   Available at www.MotionGenesis.com
   // Form the position vector and unit vector from L3o to Ho.
   const Vector3<double> p_L3oHo_L3 =
       frame_H.CalcPose(*context_, frame_L3).translation();
@@ -619,18 +635,17 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
       frame_L3.CalcRotationMatrixInWorld(*context_);
   const Vector3<double> p_L3oHo_W = R_WL3 * p_L3oHo_L3;
   const double distance = p_L3oHo_W.norm();
-  const Vector3<double> u_L3oHo_W = p_L3oHo_W / distance;  // unit vector.
+  const Vector3<double> u_L3oHo_W = p_L3oHo_W / distance;
 
-  // Form the 2ⁿᵈ time-derivative of distance with measured_in frame_W.
+  // Form the 2ⁿᵈ time-derivative of distance with measured-in frame_W.
   const Vector3<double>& a_W_L3H_W = A_W_L3H_W.translational();
-  const Vector3<double> v_W_L3H_W =
-      frame_H.CalcRelativeSpatialVelocityInWorld(*context_, frame_L3)
-          .translational();
+  const Vector3<double> v_W_L3H_W = frame_H.CalcRelativeSpatialVelocityInWorld(
+      *context_, frame_L3).translational();
   const double separation_speed = v_W_L3H_W.dot(u_L3oHo_W);
   const double separation_speed_squared = separation_speed * separation_speed;
   const double v_W_L3H_W_magSquared = v_W_L3H_W.dot(v_W_L3H_W);
-  const double separation_acceleration1 = a_W_L3H_W.dot(u_L3oHo_W) +
-      1.0/distance * (v_W_L3H_W_magSquared - separation_speed_squared);
+  const double separation_acceleration1 = a_W_L3H_W.dot(u_L3oHo_W)
+      + 1.0 / distance * (v_W_L3H_W_magSquared - separation_speed_squared);
 
   // Form the 2ⁿᵈ time-derivative of distance with measured_in frame_L3.
   const Vector3<double>& a_L3_L3H_W = A_L3_L3H_W.translational();

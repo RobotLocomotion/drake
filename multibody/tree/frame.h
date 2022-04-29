@@ -501,10 +501,11 @@ class Frame : public FrameBase<T> {
   /// @param[in] context contains the state of the multibody system.
   /// @param[in] other_frame which is frame B.
   /// @return A_W_BC_W = A_WC_W - A_WB_W, frame C's spatial acceleration
-  /// relative to frame B, measured and expressed in the world frame W. In
-  /// general, A_W_BC = DtW(V_W_BC), the time-derivative in the world frame W of
-  /// frame C's spatial velocity relative to frame B. The rotational part of the
-  /// returned quantity is α_WC_W - α_WB_W = DtW(ω_BC)_W. Note: For 3D analysis,
+  /// relative to frame B, measured and expressed in the world frame W.
+  ///
+  /// In general, A_W_BC = DtW(V_W_BC), the time-derivative in the world frame W
+  /// of frame C's spatial velocity relative to frame B. The rotational part of
+  /// the returned quantity is α_WC_W - α_WB_W = DtW(ω_BC)_W. For 3D analysis,
   /// DtW(ω_BC) ≠ α_BC. The translational part of the returned quantity is
   /// a_W_BoCo_W (Co's translational acceleration relative to Bo, measured and
   /// expressed in world frame W). <pre>
@@ -535,6 +536,7 @@ class Frame : public FrameBase<T> {
   /// @param[in] expressed_in_frame which is frame E.
   /// @return A_M_BC_E = A_MC_E - A_MB_E, frame C's spatial acceleration
   /// relative to frame B, measured in frame M, expressed in frame E.
+  ///
   /// In general, A_M_BC = DtW(V_M_BC), the time-derivative in frame M of
   /// frame C's spatial velocity relative to frame B. The rotational part of the
   /// returned quantity is α_MC_E - α_MB_E = DtM(ω_BC)_E. Note: For 3D analysis,
@@ -549,7 +551,7 @@ class Frame : public FrameBase<T> {
   /// @note The calculation of the 2ⁿᵈ time-derivative of the distance between
   /// Bo and Co can be done with relative translational acceleration, but this
   /// calculation does not depend on the measured-in-frame, hence in this case,
-  /// consider CalcRelativeSpatialAccelerationInWorld().
+  /// consider CalcRelativeSpatialAccelerationInWorld() since it is faster.
   /// @see CalcSpatialAccelerationInWorld(), CalcSpatialAcceleration(), and
   /// CalcRelativeSpatialAccelerationInWorld().
   SpatialAcceleration<T> CalcRelativeSpatialAcceleration(
