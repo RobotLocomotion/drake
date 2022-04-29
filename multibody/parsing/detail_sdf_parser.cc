@@ -605,9 +605,43 @@ void AddJointFromSpecification(
         child_body, X_CJ, damping);
       break;
     }
-    default: {
-      throw std::logic_error(
-          "Joint type not supported for joint '" + joint_spec.Name() + "'.");
+    case sdf::JointType::CONTINUOUS: {
+      // TODO(#14747) Use an unlimited multibody::RevoluteJoint here.
+      diagnostic.Error(fmt::format(
+          "Joint type (continuous) not supported for joint '{}'.",
+          joint_spec.Name()));
+      break;
+    }
+    case sdf::JointType::SCREW: {
+      // TODO(jwnimmer-tri) Use a multibody::ScrewJoint here.
+      diagnostic.Error(fmt::format(
+          "Joint type (screw) not supported for joint '{}'.",
+          joint_spec.Name()));
+      break;
+    }
+    case sdf::JointType::GEARBOX: {
+      // TODO(jwnimmer-tri) Demote this to a warning, possibly adding a
+      // RevoluteJoint as an approximation (stopgap) in that case.
+      diagnostic.Error(fmt::format(
+          "Joint type (gearbox) not supported for joint '{}'.",
+          joint_spec.Name()));
+      break;
+    }
+    case sdf::JointType::REVOLUTE2: {
+      // TODO(jwnimmer-tri) Demote this to a warning, possibly adding a
+      // UniversalJoint as an approximation (stopgap) in that case.
+      diagnostic.Error(fmt::format(
+          "Joint type (revolute2) not supported for joint '{}'.",
+          joint_spec.Name()));
+      break;
+    }
+    case sdf::JointType::INVALID: {
+      // N.B. It's not practical to reach this code via unit test.
+      // In (probably?) all cases, libsdformat will have already detected
+      // this error and so Drake won't even call this function.
+      diagnostic.Error(fmt::format(
+          "Unknown joint type for joint '{}'.", joint_spec.Name()));
+      break;
     }
   }
   joint_types->insert(joint_spec.Type());

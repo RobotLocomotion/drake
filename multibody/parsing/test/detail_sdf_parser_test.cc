@@ -931,6 +931,81 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(planar_joint2.velocity_upper_limits(), inf3));
 }
 
+// Tests the error handling for an unsupported joint type.
+TEST_F(SdfParserTest, ContinuousJointParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="continuous">
+    <parent>world</parent>
+    <child>larry</child>
+  </joint>
+</model>)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*continuous.*not supported.*jerry.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling for an unsupported joint type.
+TEST_F(SdfParserTest, ScrewJointParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="screw">
+    <parent>world</parent>
+    <child>larry</child>
+  </joint>
+</model>)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*screw.*not supported.*jerry.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling for an unsupported joint type.
+TEST_F(SdfParserTest, GearboxJointParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="gearbox">
+    <parent>world</parent>
+    <child>larry</child>
+  </joint>
+</model>)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*gearbox.*not supported.*jerry.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling for an unsupported joint type.
+TEST_F(SdfParserTest, Revolute2JointParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="revolute2">
+    <parent>world</parent>
+    <child>larry</child>
+  </joint>
+</model>)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*revolute2.*not supported.*jerry.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling for a misspelled joint type.
+TEST_F(SdfParserTest, MisspelledJointParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="revoluteQQQ">
+    <parent>world</parent>
+    <child>larry</child>
+  </joint>
+</model>)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*revoluteqqq is invalid.*"));
+  ClearDiagnostics();
+}
+
 // Verifies that the SDF parser parses the joint actuator limit correctly.
 TEST_F(SdfParserTest, JointActuatorParsingTest) {
   const std::string full_name = FindResourceOrThrow(
