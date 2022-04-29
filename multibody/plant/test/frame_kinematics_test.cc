@@ -635,7 +635,7 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
       frame_L3.CalcRotationMatrixInWorld(*context_);
   const Vector3<double> p_L3oHo_W = R_WL3 * p_L3oHo_L3;
   const double distance = p_L3oHo_W.norm();
-  const Vector3<double> u_L3oHo_W = p_L3oHo_W / distance;
+  const Vector3<double> u_L3oHo_W = p_L3oHo_W / distance;  // unit vector.
 
   // Form the 2ⁿᵈ time-derivative of distance with measured-in frame_W.
   const Vector3<double>& a_W_L3H_W = A_W_L3H_W.translational();
@@ -649,9 +649,8 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
 
   // Form the 2ⁿᵈ time-derivative of distance with measured_in frame_L3.
   const Vector3<double>& a_L3_L3H_W = A_L3_L3H_W.translational();
-  const Vector3<double> v_L3_L3H_W = frame_H
-          .CalcRelativeSpatialVelocity(*context_, frame_L3, frame_L3, frame_W)
-          .translational();
+  const Vector3<double> v_L3_L3H_W = frame_H.CalcRelativeSpatialVelocity(
+      *context_, frame_L3, frame_L3, frame_W).translational();
   const double v_L3_L3H_W_magSquared = v_L3_L3H_W.dot(v_L3_L3H_W);
   const double separation_acceleration2 = a_L3_L3H_W.dot(u_L3oHo_W) +
       1.0/distance * (v_L3_L3H_W_magSquared - separation_speed_squared);
