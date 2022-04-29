@@ -498,7 +498,7 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
   const SpatialVelocity<double> V_L3H_W =
       frame_H.CalcSpatialVelocity(*context_, frame_H, frame_W);
   const SpatialAcceleration<double> A_L3H_W =
-      frame_H.CalcSpatialAcceleration(*context_, frame_H, frame_W);
+      frame_H.CalcSpatialAcceleration(*context_, frame_L3, frame_W);
   EXPECT_FALSE(CompareMatrices(
       V_L3H_W.rotational(), Vector3<double>::Zero(),
       kTolerance, MatrixCompareType::relative));
