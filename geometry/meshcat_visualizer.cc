@@ -41,8 +41,6 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
   query_object_input_port_ =
       this->DeclareAbstractInputPort("query_object", Value<QueryObject<T>>())
           .get_index();
-
-  timer_ = std::make_unique<SteadyTimer>();
 }
 
 template <typename T>
@@ -98,25 +96,13 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
     version_ = current_version;
   }
   SetTransforms(context, query_object);
-  UpdateRealtimeRate(ExtractDoubleOrThrow(context.get_time()));
+  std::optional<double> rtr = rtr_calculator_.CalculateRealtimeRate(
+      ExtractDoubleOrThrow(context.get_time()));
+  if (rtr) {
+    meshcat_->SetRealtimeRate(rtr.value());
+  }
 
   return systems::EventStatus::Succeeded();
-}
-
-template <typename T>
-void MeshcatVisualizer<T>::UpdateRealtimeRate(double sim_time) const {
-  const auto current_wall_time = std::chrono::steady_clock::now();
-  if (prev_wall_time_.has_value()) {
-    const double wall_delta{timer_->Tick().count()};
-    const double sim_time_delta{sim_time - prev_sim_time_};
-    // avoid divide by zero and negative RTR
-    if (wall_delta > 0 && sim_time_delta > 0) {
-      meshcat_->SetRealtimeRate(sim_time_delta / wall_delta);
-      timer_->Start();
-    }
-  }
-  prev_sim_time_ = sim_time;
-  prev_wall_time_ = current_wall_time;
 }
 
 template <typename T>
@@ -204,10 +190,6 @@ systems::EventStatus MeshcatVisualizer<T>::OnInitialization(
   return systems::EventStatus::Succeeded();
 }
 
-template <typename T>
-void MeshcatVisualizer<T>::InjectMockTimer(std::unique_ptr<Timer> t) {
-  timer_ = std::move(t);
-}
 
 }  // namespace geometry
 }  // namespace drake

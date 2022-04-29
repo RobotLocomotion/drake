@@ -610,9 +610,10 @@ class Meshcat::Impl {
     return port_;
   }
 
+  // This function is public via the PIMPL.
   void SetRealtimeRate(double rate) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
-    internal::RealtimerateData data;
+    internal::RealtimeRateData data;
     data.rate = rate;
     Defer([this, data = std::move(data)]() {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
@@ -1684,7 +1685,7 @@ class Meshcat::Impl {
     }
 
     // Tell client if the realtime rate plot should be hidden
-    internal::HideRealtimerate rtr_hidden_msg{};
+    internal::HideRealtimeRate rtr_hidden_msg{};
     rtr_hidden_msg.hide = params_.hide_stats_plot;
     std::stringstream rtr_msg_stream;
     msgpack::pack(rtr_msg_stream, rtr_hidden_msg);

@@ -5,13 +5,13 @@
 #include <memory>
 #include <string>
 
-#include "drake/common/timer.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/meshcat_visualizer_params.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/systems/analysis/instantaneous_realtime_rate_calculator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -221,13 +221,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   bool recording_{false};
   bool set_transforms_while_recording_{true};
 
-  /* Calculate latest realtime rate and send to meshcat */
-  void UpdateRealtimeRate(double sim_time) const;
-
-  mutable double prev_sim_time_{0};
-  mutable std::optional<std::chrono::time_point<std::chrono::steady_clock>>
-      prev_wall_time_={};
-  std::unique_ptr<Timer> timer_;
+  mutable systems::InstantaneousRealtimeRateCalculator rtr_calculator_{};
 };
 
 /** A convenient alias for the MeshcatVisualizer class when using the `double`

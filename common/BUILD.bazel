@@ -57,6 +57,7 @@ drake_cc_package_library(
         ":symbolic_latex",
         ":symbolic_trigonometric_polynomial",
         ":temp_directory",
+        ":time",
         ":type_safe_index",
         ":unused",
         ":value",
@@ -606,7 +607,6 @@ drake_cc_library(
         ":essential",
     ],
 )
-# TODO: make a time unit test
 
 drake_cc_library(
     name = "value",
@@ -1471,6 +1471,13 @@ drake_cc_googletest(
     name = "scoped_singleton_test",
     deps = [
         ":scoped_singleton",
+    ],
+)
+
+drake_cc_googletest(
+    name = "time_test",
+    deps = [
+        ":time",
     ],
 )
 
