@@ -66,11 +66,10 @@ class HPolyhedron final : public ConvexSet {
   HPolyhedron Intersection(const HPolyhedron& other,
                            bool check_for_redundancy = false) const;
 
-  /**
-   * Traverses the inequalities of the HPolyhedron in order and removes
-   * inequalities which are redundant. This is not guaranteed to give the
-   * minimal representation of a polytope but is a relatively fast way to reduce
-   * the number of inequalities
+  /** Traverses the inequalities of the HPolyhedron in order and removes
+   inequalities which are redundant. This is not guaranteed to give the
+   minimal representation of a polytope but is a relatively fast way to reduce
+   the number of inequalities
    */
   HPolyhedron ReduceInequalities() const;
 

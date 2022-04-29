@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <unordered_set>
 #include <stdexcept>
 
 #include <Eigen/Eigenvalues>
@@ -345,7 +346,7 @@ HPolyhedron HPolyhedron::ReduceInequalities() const {
     b_new.row(i) = b_.row(ind);
     i++;
   }
-  return HPolyhedron(A_new, b_new);
+  return {A_new, b_new};
 }
 
 bool HPolyhedron::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
