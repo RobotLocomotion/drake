@@ -28,6 +28,7 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+namespace kcov339_avoidance_magic {
 namespace {
 
 using ::testing::MatchesRegex;
@@ -1546,6 +1547,7 @@ TEST_F(UrdfParserTest, UnsupportedMechanicalReductionIgnoredMaybe) {
 }
 
 }  // namespace
+}  // namespace kcov339_avoidance_magic
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
