@@ -953,7 +953,7 @@ TEST_F(SdfParserTest, JointActuatorParsingTest) {
   constexpr double kInf = std::numeric_limits<double>::infinity();
   const auto& no_limit_joint_actuator =
       plant_.GetJointActuatorByName("revolute_joint_no_limit");
-  EXPECT_TRUE(no_limit_joint_actuator.effort_limit() == kInf);
+  EXPECT_EQ(no_limit_joint_actuator.effort_limit(), kInf);
 
   // Test the joint actuator with the effort limit set to 0, which means no
   // actuation.
@@ -982,7 +982,7 @@ TEST_F(SdfParserTest, RevoluteSpringParsingTest) {
   // spring for nonzero stiffness, so only two spring forces
   // should have been added.
   constexpr int kNumSpringForces = 2;
-  DRAKE_DEMAND(plant_.num_force_elements() == kNumSpringForces + 1);
+  EXPECT_EQ(plant_.num_force_elements(), kNumSpringForces + 1);
 
   // In these two tests, we verify that the generalized forces are
   // correct for both springs. The first spring has a nonzero reference
