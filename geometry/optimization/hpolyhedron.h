@@ -52,6 +52,28 @@ class HPolyhedron final : public ConvexSet {
   alternatives). */
   using ConvexSet::IsBounded;
 
+  /** Returns true iff this HPolyhedron is entirely contained in the HPolyhedron
+   other. This is done by checking whether every inequality in @p other is
+   redundant when added to this.
+   */
+  bool ContainedIn(const HPolyhedron& other) const;
+
+  /** Construct the intersection of two HPolyhedron by adding the rows of
+   inequalities from @p other. If @p check_for_redundancy is true
+   then only add the rows of @p other to this HPolyhedron if the inequality
+   is not implied by the inequalities from this HPolyhedron.
+   */
+  HPolyhedron Intersection(const HPolyhedron& other,
+                           bool check_for_redundancy = false) const;
+
+  /**
+   * Traverses the inequalities of the HPolyhedron in order and removes
+   * inequalities which are redundant. This is not guaranteed to give the
+   * minimal representation of a polytope but is a relatively fast way to reduce
+   * the number of inequalities
+   */
+  HPolyhedron ReduceInequalities() const;
+
   /** Solves a semi-definite program to compute the inscribed ellipsoid.
   From Section 8.4.2 in Boyd and Vandenberghe, 2004, we solve
   @verbatim
@@ -100,9 +122,6 @@ class HPolyhedron final : public ConvexSet {
   repeated n times. */
   HPolyhedron CartesianPower(int n) const;
 
-  /** Returns the intersection of `this` and `other`. */
-  HPolyhedron Intersection(const HPolyhedron& other) const;
-
   /** Constructs a polyhedron as an axis-aligned box from the lower and upper
   corners. */
   static HPolyhedron MakeBox(const Eigen::Ref<const Eigen::VectorXd>& lb,
@@ -113,6 +132,10 @@ class HPolyhedron final : public ConvexSet {
   static HPolyhedron MakeUnitBox(int dim);
 
  private:
+  HPolyhedron DoIntersectionNoChecks(const HPolyhedron &other) const;
+
+  HPolyhedron DoIntersectionWithChecks(const HPolyhedron &other) const;
+
   bool DoIsBounded() const final;
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,

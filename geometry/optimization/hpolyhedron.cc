@@ -136,15 +136,12 @@ HPolyhedron HPolyhedron::CartesianPower(int n) const {
   return {A_power, b_power};
 }
 
-HPolyhedron HPolyhedron::Intersection(const HPolyhedron& other) const {
-  DRAKE_DEMAND(ambient_dimension() == other.ambient_dimension());
-  MatrixXd A_intersect =
-      MatrixXd::Zero(A_.rows() + other.A().rows(), A_.cols());
-  A_intersect.topRows(A_.rows()) = A_;
-  A_intersect.bottomRows(other.A().rows()) = other.A();
-  VectorXd b_intersect(b_.size() + other.b().size());
-  b_intersect << b_, other.b();
-  return {A_intersect, b_intersect};
+HPolyhedron HPolyhedron::Intersection(const HPolyhedron& other,
+                                      bool check_for_redundancy) const {
+  if (check_for_redundancy) {
+    return this->DoIntersectionWithChecks(other);
+  }
+  return this->DoIntersectionNoChecks(other);
 }
 
 HPolyhedron HPolyhedron::MakeBox(const Eigen::Ref<const VectorXd>& lb,
@@ -186,6 +183,169 @@ bool HPolyhedron::DoIsBounded() const {
                                    y);
   auto result = solvers::Solve(prog);
   return result.is_success();
+}
+
+bool HPolyhedron::ContainedIn(const HPolyhedron& other) const {
+  DRAKE_DEMAND(other.A().cols() == A_.cols());
+  const double kInf = std::numeric_limits<double>::infinity();
+  solvers::MathematicalProgram prog;
+  solvers::VectorXDecisionVariable x =
+      prog.NewContinuousVariables(A_.cols(), "x");
+  prog.AddLinearConstraint(A_, Eigen::VectorXd::Constant(b_.rows(), -kInf), b_,
+                           x);
+  auto result = solvers::Solve(prog);
+  // `this` defines an empty set and therefore is contained in any `other`
+  // HPolyhedron
+  if (result.get_solution_result() ==
+          solvers::SolutionResult::kInfeasibleConstraints ||
+      result.get_solution_result() ==
+          solvers::SolutionResult::kInfeasibleOrUnbounded) {
+    return true;
+  }
+
+  Binding<solvers::LinearConstraint> redundant_constraint_binding =
+      prog.AddLinearConstraint(other.A().row(0),
+                               Eigen::VectorXd::Constant(1, -kInf),
+                               other.b().row(0), x);
+  Binding<solvers::LinearCost> program_cost_binding =
+      prog.AddLinearCost(-other.A().row(0), 0, x);
+
+  for (int i = 0; i < other.A().rows(); i++) {
+    // this inequality ensures a bounded objective since the left hand side of
+    // the inequality is the same as the cost function on the next line.
+    redundant_constraint_binding.evaluator()->UpdateCoefficients(
+        other.A().row(i), Eigen::VectorXd::Constant(1, -kInf),
+        other.b().row(i) + Eigen::VectorXd::Ones(1));
+    program_cost_binding.evaluator()->UpdateCoefficients(-other.A().row(i), 0);
+    result = solvers::Solve(prog);
+
+    // constraints define an empty set or the current inequality of other is not
+    // redundant. Since we tested whether this polyhedron is empty earlier, the
+    // function would already have exited so this is proof that this inequality
+    // is irredundant and therefore there is no containment
+    bool PolyhedronIsEmpty =
+        result.get_solution_result() ==
+            solvers::SolutionResult::kInfeasibleConstraints ||
+        result.get_solution_result() ==
+            solvers::SolutionResult::kInfeasibleOrUnbounded;
+
+    // if -result.get_optimal_cost() > other.b()(i) then the inequality is not
+    // redundant and so there is no containment added a numeric tolerance of
+    // 1E-8 but this seems somewhat arbitrary
+    if (PolyhedronIsEmpty || -result.get_optimal_cost() > other.b()(i) + 1E-8) {
+      return false;
+    }
+  }
+  return true;
+}
+
+HPolyhedron HPolyhedron::DoIntersectionNoChecks(
+    const HPolyhedron& other) const {
+  DRAKE_DEMAND(ambient_dimension() == other.ambient_dimension());
+  MatrixXd A_intersect =
+      MatrixXd::Zero(A_.rows() + other.A().rows(), A_.cols());
+  A_intersect.topRows(A_.rows()) = A_;
+  A_intersect.bottomRows(other.A().rows()) = other.A();
+  VectorXd b_intersect(b_.size() + other.b().size());
+  b_intersect << b_, other.b();
+  return {A_intersect, b_intersect};
+}
+
+HPolyhedron HPolyhedron::DoIntersectionWithChecks(
+    const HPolyhedron& other) const {
+  DRAKE_DEMAND(other.A().cols() == A_.cols());
+  const double kInf = std::numeric_limits<double>::infinity();
+
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A(
+      A_.rows() + other.A().rows(), A_.cols());
+  VectorXd b(A_.rows() + other.A().rows());
+  A.topRows(A_.rows()) = A_;
+  b.head(A_.rows()) = b_;
+
+  solvers::MathematicalProgram prog;
+  solvers::VectorXDecisionVariable x =
+      prog.NewContinuousVariables(A_.cols(), "x");
+  prog.AddLinearConstraint(A_, Eigen::VectorXd::Constant(b_.rows(), -kInf), b_,
+                           x);
+  Binding<solvers::LinearConstraint> redundant_constraint_binding =
+      prog.AddLinearConstraint(other.A().row(0),
+                               Eigen::VectorXd::Constant(1, -kInf),
+                               other.b().row(0), x);
+  Binding<solvers::LinearCost> program_cost_binding =
+      prog.AddLinearCost(-other.A().row(0), 0, x);
+
+  int num_kept = A_.rows();
+  for (int i = 0; i < other.A().rows(); i++) {
+    redundant_constraint_binding.evaluator()->UpdateCoefficients(
+        other.A().row(i), Eigen::VectorXd::Constant(1, -kInf),
+        other.b().row(i) + Eigen::VectorXd::Ones(1));
+    program_cost_binding.evaluator()->UpdateCoefficients(-other.A().row(i), 0);
+    auto result = solvers::Solve(prog);
+
+    // constraints define an empty set or the current inequality of other is not
+    // redundant
+    bool empty_set_condition =
+        result.get_solution_result() ==
+            solvers::SolutionResult::kInfeasibleConstraints ||
+        result.get_solution_result() ==
+            solvers::SolutionResult::kInfeasibleOrUnbounded;
+    if (empty_set_condition || -result.get_optimal_cost() > other.b()(i)) {
+      A.row(num_kept) = other.A().row(i);
+      b.row(num_kept) = other.b().row(i);
+      num_kept++;
+    }
+  }
+  return {A.topRows(num_kept), b.topRows(num_kept)};
+}
+
+HPolyhedron HPolyhedron::ReduceInequalities() const {
+  const double kInf = std::numeric_limits<double>::infinity();
+  const int num_inequalities = A_.rows();
+  const int num_vars = A_.cols();
+
+  std::unordered_set<int> kept_indices;
+  for (int i = 0; i < num_inequalities; i++) {
+    kept_indices.emplace(i);
+  }
+
+  for (int excluded_index = 0; excluded_index < num_inequalities;
+       excluded_index++) {
+    solvers::MathematicalProgram prog;
+    solvers::VectorXDecisionVariable x =
+        prog.NewContinuousVariables(num_vars, "x");
+    std::unordered_set<int> cur_kept_indices = kept_indices;
+    cur_kept_indices.erase(excluded_index);
+
+    // constraint c^Tx <= d+1
+    prog.AddLinearConstraint(
+        A_.row(excluded_index), Eigen::VectorXd::Constant(1, -kInf),
+        b_.row(excluded_index) + Eigen::VectorXd::Ones(1), x);
+
+    // constraint Ax <= b
+    for (const int i : cur_kept_indices) {
+      prog.AddLinearConstraint(A_.row(i), Eigen::VectorXd::Constant(1, -kInf),
+                               b_.row(i), x);
+    }
+
+    prog.AddLinearCost(-A_.row(excluded_index), 0, x);
+
+    auto result = solvers::Solve(prog);
+
+    // the current inequality is redundant
+    if (-result.get_optimal_cost() <= b_(excluded_index)) {
+      kept_indices.erase(excluded_index);
+    }
+  }
+
+  Eigen::MatrixXd A_new(kept_indices.size(), num_vars);
+  Eigen::VectorXd b_new(kept_indices.size());
+  int i = 0;
+  for (const int ind : kept_indices) {
+    A_new.row(i) = A_.row(ind);
+    b_new.row(i) = b_.row(ind);
+    i++;
+  }
+  return HPolyhedron(A_new, b_new);
 }
 
 bool HPolyhedron::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
