@@ -94,6 +94,25 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(h4, mut.HPolyhedron)
         self.assertEqual(h4.ambient_dimension(), 3)
 
+        h_half_box = mut.HPolyhedron.MakeBox(
+            lb=[-0.5, -0.5, -0.5], ub=[0.5, 0.5, 0.5])
+        self.assertTrue(h_half_box.ContainedIn(h_unit_box))
+        h_half_box2 = h_half_box.Intersection(other=h_unit_box,
+                                              check_redundancy=True)
+        self.assertIsInstance(h_half_box2, mut.HPolyhedron)
+        self.assertEqual(h_half_box2.ambient_dimension(), 3)
+        np.testing.assert_array_almost_equal(
+            h_half_box2.A(), h_half_box.A())
+        np.testing.assert_array_almost_equal(
+            h_half_box2.b(), h_half_box.b())
+
+        # intersection of 1/2*unit_box and unit_box and reducing the redundant
+        # inequalities should result in the 1/2*unit_box
+        htmp = h_half_box.Intersection(other=h_unit_box,
+                                       check_redundancy=False)
+        # check that the ReduceInequality binding works
+        h_half_box3 = htmp.ReduceInequalities()
+
     def test_hyper_ellipsoid(self):
         ellipsoid = mut.Hyperellipsoid(A=self.A, center=self.b)
         self.assertEqual(ellipsoid.ambient_dimension(), 3)
