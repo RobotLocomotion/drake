@@ -302,7 +302,7 @@ both sides of the pair may name the same group. The
 the group it names and the group within which it is nested. A pair containing
 different collision groups excludes collisions between members of those groups
 (see drake::geometry::CollisionFilterDeclaration::ExcludeBetween()). A pair
-naming the same group twice excludes collisions with the group (see
+naming the same group twice excludes collisions within the group (see
 drake::geometry::CollisionFilterDeclaration::ExcludeWithin()).
 
 @see @ref tag_drake_member, @ref tag_drake_ignored_collision_filter_group
