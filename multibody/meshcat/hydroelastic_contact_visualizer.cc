@@ -132,7 +132,7 @@ HydroelasticContactVisualizer::FindOrAdd(const std::string& path) {
   meshcat_->SetProperty(path, "visible", false);
 
   // Add the geometry to meshcat.
-  // Set radisu 1.0 so that it can be scaled later by the force/moment norm in
+  // Set radius 1.0 so that it can be scaled later by the force/moment norm in
   // the path transform.
   const Cylinder cylinder(params_.radius, 1.0);
   const double arrowhead_height = params_.radius * 2.0;

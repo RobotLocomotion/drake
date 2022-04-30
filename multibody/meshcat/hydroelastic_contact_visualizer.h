@@ -18,9 +18,9 @@ namespace internal {
    TODO(joemasterjohn): Add the mesh geometry and pressure values. */
 struct HydroelasticContactVisualizerItem {
   HydroelasticContactVisualizerItem(std::string body_A_, std::string body_B_,
-                                    Eigen::Vector3d centroid_W_,
-                                    Eigen::Vector3d force_C_W_,
-                                    Eigen::Vector3d moment_C_W_)
+                                    const Eigen::Vector3d& centroid_W_,
+                                    const Eigen::Vector3d& force_C_W_,
+                                    const Eigen::Vector3d& moment_C_W_)
       : body_A(std::move(body_A_)),
         body_B(std::move(body_B_)),
         centroid_W(centroid_W_),

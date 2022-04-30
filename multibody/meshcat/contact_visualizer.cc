@@ -167,7 +167,7 @@ template <typename T>
 const GeometryNames& ContactVisualizer<T>::GetGeometryNames(
     const Context<T>& context, const MultibodyPlant<T>* plant) const {
   // TODO(joemasterjohn): Upgrade `geometry_names` to a real cache entry if/when
-  // MultibodyPlant adds the capbility to add/remove geometries after finalize.
+  // MultibodyPlant adds the capability to add/remove geometries after finalize.
   GeometryNames& geometry_names =
       this->get_cache_entry(geometry_names_scratch_)
           .get_mutable_cache_entry_value(context)

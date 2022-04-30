@@ -17,8 +17,8 @@ namespace internal {
 /* Like multibody::PointPairContactInfo, but only the visualization info. */
 struct PointContactVisualizerItem {
   PointContactVisualizerItem(std::string body_A_, std::string body_B_,
-                             Eigen::Vector3d contact_force_,
-                             Eigen::Vector3d contact_point_)
+                             const Eigen::Vector3d& contact_force_,
+                             const Eigen::Vector3d& contact_point_)
       : body_A(std::move(body_A_)),
         body_B(std::move(body_B_)),
         contact_force(contact_force_),

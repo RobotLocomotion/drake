@@ -29,8 +29,10 @@ the location of the contact force with length scaled by the magnitude of the
 contact force. For hydroelastic contact, it draws single-sided arrows at
 the centroid of the contact patch, one for force and one for the moment of the
 contact results. The length of these vectors are scaled by the magnitude of the
-contact force/moment. The most common use of this system is to connect its
-input port to the contact results output port of a MultibodyPlant.
+contact force/moment. The direction of the arrow is essentially arbitrary (based
+on the GeometryIds) but is stable during a simulation. The most common use of
+this system is to connect its input port to the contact results output port of a
+MultibodyPlant.
 
  @system
  name: ContactVisualizer
@@ -124,7 +126,7 @@ class ContactVisualizer final : public systems::LeafSystem<T> {
   systems::EventStatus UpdateMeshcat(const systems::Context<T>&) const;
 
   /* Obtains the geometry_names scratch entry. On the first call, queries
-  @p plant and the attached QueryObject and fills the returned GeometryNames */
+  @p plant and the attached QueryObject and fills the returned GeometryNames. */
   const multibody::internal::GeometryNames& GetGeometryNames(
       const systems::Context<T>&, const MultibodyPlant<T>*) const;
 
