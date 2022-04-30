@@ -285,6 +285,11 @@ GTEST_TEST(TestQuadraticCost, ConvexCost) {
   // matrix psd check.
   cost->UpdateCoefficients(-Q, b, 0.1, true);
   EXPECT_TRUE(cost->is_convex());
+
+  // Call Make2NormSquaredCost.
+  cost = Make2NormSquaredCost((Eigen::Matrix2d() << 1, 2, 3, 4).finished(),
+                              Eigen::Vector2d(2, 3));
+  EXPECT_TRUE(cost->is_convex());
 }
 
 // TODO(eric.cousineau): Move QuadraticErrorCost and L2NormCost tests here from
