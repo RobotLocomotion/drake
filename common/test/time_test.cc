@@ -17,4 +17,4 @@ GTEST_TEST(TimeTest, ConstructorStartsTimer) {
   EXPECT_GT(timer.Tick().count(), 0.0);
   EXPECT_GT(timer.Stop().count(), 0.0);
 }
-}
+}  // namespace drake
