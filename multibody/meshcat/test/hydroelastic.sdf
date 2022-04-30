@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<!-- A simple hydroelastic model with two bodies each with sphere geometry. The first sphere is of type "rigid_hydroelastic" and the second sphere is of type "compliant_hydroelastic". -->
+<sdf xmlns:drake="http://drake.mit.edu" version="1.7">
+  <model name="two_bodies">
+    <link name="body1">
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.016</ixx>
+          <iyy>0.016</iyy>
+          <izz>0.016</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <collision name="body1_collision">
+        <geometry>
+          <sphere>
+            <radius>0.2</radius>
+          </sphere>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:mesh_resolution_hint>0.1</drake:mesh_resolution_hint>
+          <drake:rigid_hydroelastic/>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+    <link name="body2">
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.016</ixx>
+          <iyy>0.016</iyy>
+          <izz>0.016</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <collision name="body2_collision">
+        <geometry>
+          <sphere>
+            <radius>0.2</radius>
+          </sphere>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+          <drake:mesh_resolution_hint>0.2</drake:mesh_resolution_hint>
+          <drake:hydroelastic_modulus>180.0e9</drake:hydroelastic_modulus>
+          <drake:compliant_hydroelastic/>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
