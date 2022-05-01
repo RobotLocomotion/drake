@@ -34,6 +34,9 @@ class pylogging_sink final
     py::object logging = py::module::import("logging");
     py::object logger = logging.attr("getLogger")(name_);
 
+    // Annotate that the logger is alive (fed by spdlog).
+    py::setattr(logger, "_tied_to_spdlog", py::cast(true));
+
     // Match the C++ default level.
     logger.attr("setLevel")(to_py_level(drake::log()->level()));
 
