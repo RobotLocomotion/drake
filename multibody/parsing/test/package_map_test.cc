@@ -224,31 +224,6 @@ GTEST_TEST(PackageMapTest, TestPopulateMapFromFolderExtraTrailingSlashes) {
   VerifyMatchWithTestDataRoot(package_map);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// Tests that PackageMap can be populated by crawling up a directory tree.
-GTEST_TEST(PackageMapTest, DeprecatedTestPopulateUpstreamToDrake) {
-  const string root_path = GetTestDataRoot();
-  const string sdf_file_name = FindResourceOrThrow(
-      "drake/multibody/parsing/test/"
-      "package_map_test_packages/package_map_test_package_a/"
-      "sdf/test_model.sdf");
-
-  PackageMap package_map = PackageMap::MakeEmpty();
-  package_map.PopulateUpstreamToDrake(sdf_file_name);
-
-  map<string, string> expected_packages = {
-    {"package_map_test_package_a", root_path + "package_map_test_package_a"}
-  };
-
-  VerifyMatch(package_map, expected_packages);
-
-  // Call it again to exercise the "don't add things twice" code.
-  package_map.PopulateUpstreamToDrake(sdf_file_name);
-  VerifyMatch(package_map, expected_packages);
-}
-#pragma GCC diagnostic pop
-
 // Tests that PackageMap can be populated from an env var.
 GTEST_TEST(PackageMapTest, TestPopulateFromEnvironment) {
   PackageMap package_map = PackageMap::MakeEmpty();

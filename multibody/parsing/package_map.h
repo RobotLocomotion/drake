@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 
 namespace drake {
 namespace multibody {
@@ -105,17 +104,6 @@ class PackageMap final {
   /// If a path does not exist or is unreadable, a warning is logged.
   void PopulateFromEnvironment(const std::string& environment_variable);
 
-  /// Crawls up the directory tree from @p model_file to `drake`
-  /// searching for `package.xml` files. Adds the packages described by these
-  /// `package.xml` files. If @p model_file is not in `drake`, this
-  /// method returns without doing anything.
-  ///
-  /// @param[in] model_file The model file whose directory is the start of the
-  /// search for `package.xml` files. This file must be an SDF or URDF file.
-  DRAKE_DEPRECATED("2022-05-01",
-      "This function is a no-op; you should remove any calls to it.")
-  void PopulateUpstreamToDrake(const std::string& model_file);
-
   friend std::ostream& operator<<(std::ostream& out,
                                   const PackageMap& package_map);
 
@@ -141,15 +129,6 @@ class PackageMap final {
   // without adding the new path. Returns true otherwise.
   bool AddPackageIfNew(const std::string& package_name,
       const std::string& path);
-
-  // Recursively searches up the directory path searching for package.xml files.
-  // The @p directory must be a child of @p stop_at_directory.  Stops searching
-  // when the search directory is not longer than @p stop_at_directory.
-  // Adds the packages defined by these package.xml files to this PackageMap.
-  // This method is intended to be called by PopulateUpstreamToDrake().
-  void PopulateUpstreamToDrakeHelper(
-      const std::string& directory,
-      const std::string& stop_at_directory);
 
   // The key is the name of a ROS package and the value is a struct containing
   // information about that package.

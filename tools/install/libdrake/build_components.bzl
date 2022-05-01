@@ -48,7 +48,6 @@ LIBDRAKE_COMPONENTS = [
     "//lcm",
     "//manipulation/kinova_jaco",
     "//manipulation/kuka_iiwa",
-    "//manipulation/perception",
     "//manipulation/planner",
     "//manipulation/schunk_wsg",
     "//manipulation/util",
@@ -70,8 +69,6 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/parsing",
     "//multibody/plant",
     "//multibody/plant:contact_results_to_lcm",  # unpackaged
-    "//multibody/plant:contact_results_to_meshcat",  # unpackaged
-    "//multibody/plant:contact_results_to_meshcat_params",  # unpackaged
     "//multibody/topology:multibody_graph",  # unpackaged
     "//multibody/tree",
     "//multibody/triangle_quadrature",

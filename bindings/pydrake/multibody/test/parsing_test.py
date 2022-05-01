@@ -15,7 +15,6 @@ import os
 import unittest
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.multibody.tree import (
     ModelInstanceIndex,
 )
@@ -50,11 +49,6 @@ class TestParsing(unittest.TestCase):
             "drake/multibody/parsing/test/box_package/package.xml"))
         dut2.Remove(package_name="root")
         self.assertEqual(dut2.size(), 0)
-
-        # Simple coverage test for Drake paths.
-        with catch_drake_warnings(expected_count=1):
-            dut.PopulateUpstreamToDrake(model_file=model)
-        self.assertGreater(dut.size(), 1)
 
         # Simple coverage test for folder and environment.
         dut.PopulateFromEnvironment(environment_variable='TEST_TMPDIR')

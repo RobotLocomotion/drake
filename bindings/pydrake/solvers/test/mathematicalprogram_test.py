@@ -1,7 +1,19 @@
 from pydrake.solvers import mathematicalprogram as mp
 
+import copy
+from functools import partial
+import unittest
+import warnings
+
+import numpy as np
+import scipy.sparse
+
+from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common import kDrakeAssertIsArmed
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-import pydrake.solvers.mathematicalprogram._testing as mp_testing
+from pydrake.forwarddiff import jacobian
+from pydrake.math import ge
 from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.snopt import SnoptSolver
 from pydrake.solvers.scs import ScsSolver
@@ -15,22 +27,7 @@ from pydrake.solvers.mathematicalprogram import (
     SolverId,
     SolverInterface
     )
-
-import copy
-from functools import partial
-import unittest
-import warnings
-
-import numpy as np
-import scipy.sparse
-
-import pydrake
-from pydrake.common import kDrakeAssertIsArmed
-from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-from pydrake.forwarddiff import jacobian
-from pydrake.math import ge
+import pydrake.solvers.mathematicalprogram._testing as mp_testing
 import pydrake.symbolic as sym
 
 
@@ -663,32 +660,6 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertIsInstance(poly3, sym.Polynomial)
         self.assertIsInstance(gramian3, np.ndarray)
 
-    def test_nonnegative_polynomial(self):
-        # Only check if the API works.
-        prog = mp.MathematicalProgram()
-        x = prog.NewIndeterminates(3, "x")
-        with catch_drake_warnings(expected_count=1):
-            (poly1, gramian1) = prog.NewNonnegativePolynomial(
-                indeterminates=sym.Variables(x), degree=4,
-                type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos)
-        self.assertIsInstance(poly1, sym.Polynomial)
-        self.assertIsInstance(gramian1, np.ndarray)
-
-        gramian2 = prog.NewSymmetricContinuousVariables(2)
-        with catch_drake_warnings(expected_count=1):
-            poly2 = prog.NewNonnegativePolynomial(
-                gramian=gramian2,
-                monomial_basis=(sym.Monomial(x[0]), sym.Monomial(x[1])),
-                type=mp.MathematicalProgram.NonnegativePolynomial.kDsos)
-        self.assertIsInstance(gramian2, np.ndarray)
-
-        with catch_drake_warnings(expected_count=1):
-            poly3, gramian3 = prog.NewNonnegativePolynomial(
-                monomial_basis=(sym.Monomial(x[0]), sym.Monomial(x[1])),
-                type=mp.MathematicalProgram.NonnegativePolynomial.kSos)
-        self.assertIsInstance(poly3, sym.Polynomial)
-        self.assertIsInstance(gramian3, np.ndarray)
-
     def test_new_even_degree_nonnegative_polynomial(self):
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(3, "x")
@@ -803,22 +774,6 @@ class TestMathematicalProgram(unittest.TestCase):
             prog.AddLinearConstraint(pt.dot(X.dot(pt)) <= 1)
         linear_cost, log_det_t, log_det_Z = \
             prog.AddMaximizeLogDeterminantCost(X=X)
-        self.assertEqual(log_det_t.shape, (2,))
-        self.assertEqual(log_det_Z.shape, (2, 2))
-        result = mp.Solve(prog)
-        self.assertTrue(result.is_success())
-
-    def test_log_determinant_depreated(self):
-        # Find the minimal ellipsoid that covers some given points.
-        prog = mp.MathematicalProgram()
-        X = prog.NewSymmetricContinuousVariables(2)
-        pts = np.array([[1, 1], [1, -1], [-1, 1]])
-        for i in range(3):
-            pt = pts[i, :]
-            prog.AddLinearConstraint(pt.dot(X.dot(pt)) <= 1)
-        with catch_drake_warnings(expected_count=1):
-            linear_cost, log_det_t, log_det_Z = \
-                prog.AddMaximizeLogDeterminantSymmetricMatrixCost(X=X)
         self.assertEqual(log_det_t.shape, (2,))
         self.assertEqual(log_det_Z.shape, (2, 2))
         result = mp.Solve(prog)
