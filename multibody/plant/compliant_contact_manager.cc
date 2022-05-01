@@ -45,6 +45,8 @@ template <typename T>
 AccelerationsDueToExternalForcesCache<T>::AccelerationsDueToExternalForcesCache(
     const MultibodyTreeTopology& topology)
     : forces(topology.num_bodies(), topology.num_velocities()),
+      abic(topology),
+      Zb_Bo_W(topology.num_bodies()),
       aba_forces(topology),
       ac(topology) {}
 
@@ -496,7 +498,7 @@ void CompliantContactManager<T>::
 template <typename T>
 void CompliantContactManager<T>::CalcAccelerationsDueToNonContactForcesCache(
     const systems::Context<T>& context,
-    AccelerationsDueToExternalForcesCache<T>* no_contact_accelerations_cache)
+    AccelerationsDueToExternalForcesCache<T>* forward_dynamics_cache)
     const {
   // To overcame issue #12786, we use this additional cache entry
   // to detect algebraic loops.
@@ -531,13 +533,54 @@ void CompliantContactManager<T>::CalcAccelerationsDueToNonContactForcesCache(
   ScopeExit guard(
       [&evaluation_in_progress]() { evaluation_in_progress = false; });
 
-  this->CalcNonContactForces(context, &no_contact_accelerations_cache->forces);
+  // TODO(amcastro-tri): exclude compliant joint limits since these will be
+  // treated as constraints.
+  this->CalcNonContactForces(context, &forward_dynamics_cache->forces);
+
+  // Our goal is to compute accelerations from the Newton-Euler equations:
+  //   M⋅v̇ = k(x)
+  // where k(x) includes continuous forces of the state x not from constraints
+  // such as force elements, Coriolis terms, actuation through input ports and
+  // joint damping. We use a discrete time stepping scheme with time step dt
+  // and accelerations
+  //   v̇ = (v-v₀)/dt
+  // where v₀ are the previous time step generalized velocities. We split
+  // generalized forces k(x) as:
+  //   k(x) = k₁(x) - D⋅v
+  // where k₁(x) includes all other force contributions except damping and D
+  // is the non-negative diagonal matrix for damping. Using this split, we
+  // evaluate dissipation "implicitly" using the next time step velocities and
+  // every other force in k₁(x) "explicitly" at the previous time step state
+  // x₀. In total, our discrete update for the free motion velocities reads:
+  //   M⋅(v-v₀)/dt = k₁(x₀) - D⋅v
+  // We can rewrite this by adding and subtracting -D⋅v₀ on the right hand
+  // side:
+  //   M⋅(v-v₀)/dt = k₁(x₀) - D⋅(v-v₀) - D⋅v₀
+  // which can be rearranged as:
+  //   (M + dt⋅D)⋅(v-v₀)/dt = k₁(x₀) - D⋅v₀ = k(x₀)
+  // Therefore the generalized accelerations a = (v-v₀)/dt can be computed
+  // using ABA forward dynamics with non-constraint continuous forces
+  // evaluated at x₀ and the addition of the diagonal term dt⋅D. We do this
+  // below in terms of MultibodyTree APIs.
+
+  // We must include reflected rotor inertias along with the new term dt⋅D.
+  const VectorX<T> diagonal_inertia =
+      plant().EvalReflectedInertiaCache(context) +
+      joint_damping_ * plant().time_step();
+
+  // We compute the articulated body inertia including the contribution of the
+  // additional diagonal elements arising from the implicit treatment of joint
+  // damping.
+  this->internal_tree().CalcArticulatedBodyInertiaCache(
+      context, diagonal_inertia, &forward_dynamics_cache->abic);
+  this->internal_tree().CalcArticulatedBodyForceBias(
+      context, forward_dynamics_cache->abic, &forward_dynamics_cache->Zb_Bo_W);
   this->internal_tree().CalcArticulatedBodyForceCache(
-      context, no_contact_accelerations_cache->forces,
-      &no_contact_accelerations_cache->aba_forces);
+      context, forward_dynamics_cache->abic, forward_dynamics_cache->Zb_Bo_W,
+      forward_dynamics_cache->forces, &forward_dynamics_cache->aba_forces);
   this->internal_tree().CalcArticulatedBodyAccelerations(
-      context, no_contact_accelerations_cache->aba_forces,
-      &no_contact_accelerations_cache->ac);
+      context, forward_dynamics_cache->abic, forward_dynamics_cache->aba_forces,
+      &forward_dynamics_cache->ac);
 
   // Mark the end of the computation.
   evaluation_in_progress = false;
@@ -567,13 +610,20 @@ void CompliantContactManager<T>::CalcLinearDynamicsMatrix(
   A->resize(tree_topology().num_trees());
   const int nv = plant().num_velocities();
 
-  // TODO(amcastro-tri): implicitly include force elements such as joint
-  // dissipation and/or stiffness.
   // TODO(amcastro-tri): consider placing the computation of the dense mass
   // matrix in a cache entry to minimize heap allocations or better yet,
   // implement a MultibodyPlant method to compute the per-tree mass matrices.
   MatrixX<T> M(nv, nv);
   plant().CalcMassMatrix(context, &M);
+
+  // The manager solves free motion velocities using a discrete scheme with
+  // implicit joint dissipation. That is, it solves the momentum valance:
+  //   m(v) = (M + dt⋅D)⋅(v-v₀)/dt - k(x₀) = 0
+  // where k(x₀) are all the non-constraint forces such as Coriolis terms and
+  // external actuation, evaluated at the previous state x₀.
+  // The dynamics matrix is defined as:
+  //   A = ∂m/∂v = (M + dt⋅D)
+  M.diagonal() += plant().time_step() * joint_damping_;
 
   for (TreeIndex t(0); t < tree_topology().num_trees(); ++t) {
     const int tree_start = tree_topology().tree_velocities_start(t);
@@ -794,6 +844,18 @@ void CompliantContactManager<T>::DoCalcDiscreteValues(
   VectorX<T> x_next(plant().num_multibody_states());
   x_next << q_next, v_next;
   updates->set_value(this->multibody_state_index(), x_next);
+}
+
+template <typename T>
+void CompliantContactManager<T>::ExtractModelInfo() {
+  // Collect joint damping coefficients into a vector.
+  joint_damping_ = VectorX<T>::Zero(plant().num_velocities());
+  for (JointIndex j(0); j < plant().num_joints(); ++j) {
+    const Joint<T>& joint = plant().get_joint(j);
+    const int velocity_start = joint.velocity_start();
+    const int nv = joint.num_velocities();
+    joint_damping_.segment(velocity_start, nv) = joint.damping_vector();
+  }
 }
 
 }  // namespace internal
