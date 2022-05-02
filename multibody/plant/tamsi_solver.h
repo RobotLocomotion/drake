@@ -916,8 +916,7 @@ class TamsiSolver {
   class FixedSizeWorkspace {
    public:
     // Constructs a workspace with size only dependent on nv.
-    explicit FixedSizeWorkspace(int nv) : J_ldlt_(nv), J_lu_(nv) {
-      J_ldlt_.setZero();
+    explicit FixedSizeWorkspace(int nv) {
       v_.setZero(nv);
       residual_.setZero(nv);
       Delta_v_.setZero(nv);
@@ -931,8 +930,6 @@ class TamsiSolver {
     VectorX<T>& mutable_Delta_v() { return Delta_v_; }
     VectorX<T>& mutable_tau_f() { return tau_f_; }
     VectorX<T>& mutable_tau() { return tau_; }
-    Eigen::LDLT<MatrixX<T>>& mutable_J_ldlt() { return J_ldlt_; }
-    Eigen::PartialPivLU<MatrixX<T>>& mutable_J_lu() { return J_lu_; }
 
    private:
     // Vector of generalized velocities.
@@ -947,12 +944,6 @@ class TamsiSolver {
     VectorX<T> tau_f_;
     // Vector of generalized forces (normal + friction forces).
     VectorX<T> tau_;
-    // LDLT Factorization of the Newton-Raphson Jacobian J. Only used for
-    // one-way coupled problems with symmetric Jacobian.
-    Eigen::LDLT<MatrixX<T>> J_ldlt_;
-    // LU Factorization of the Newton-Raphson Jacobian J. Only used for
-    // two-way coupled problems with non-symmetric Jacobian.
-    Eigen::PartialPivLU<MatrixX<T>> J_lu_;
   };
 
   // The variables in this workspace can change size with each invocation of
