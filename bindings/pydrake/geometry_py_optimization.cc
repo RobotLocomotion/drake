@@ -130,7 +130,7 @@ void DefineGeometryOptimization(py::module m) {
         .def("Intersection", &HPolyhedron::Intersection, py::arg("other"),
             cls_doc.Intersection.doc)
         .def("PontryaginDifference", &HPolyhedron::PontryaginDifference,
-            py::arg("other"), cls_doc.Intersection.doc)
+            py::arg("other"), cls_doc.PontryaginDifference.doc)
         .def_static("MakeBox", &HPolyhedron::MakeBox, py::arg("lb"),
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &HPolyhedron::MakeUnitBox, py::arg("dim"),

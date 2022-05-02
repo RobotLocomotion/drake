@@ -273,7 +273,7 @@ HPolyhedron HPolyhedron::PontryaginDifference(const HPolyhedron& other) const {
   /**
    * The Pontryagin set difference of Polytope P = {x | Ax <= b} and
    * Q = {x | Cx <= d} can be computed P - Q = {x | Ax <= b - h}
-   * where h_i = max a_i^Tx subject to x \in Q
+   * where hᵢ = max aᵢᵀx subject to x ∈ Q
    */
 
   DRAKE_DEMAND(this->ambient_dimension() == other.ambient_dimension());
@@ -299,7 +299,7 @@ HPolyhedron HPolyhedron::PontryaginDifference(const HPolyhedron& other) const {
 
   Binding<solvers::LinearCost> program_cost_binding =
       prog.AddLinearCost(A_.row(0), 0, x);
-  for (int i = 0; i < b_.rows(); i++) {
+  for (int i = 0; i < b_.rows(); ++i) {
     program_cost_binding.evaluator()->UpdateCoefficients(-A_.row(i), 0);
     result = solvers::Solve(prog);
     // since constraint set is bounded and non-empty then the program should

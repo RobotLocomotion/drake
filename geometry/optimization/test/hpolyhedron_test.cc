@@ -462,10 +462,10 @@ GTEST_TEST(HPolyhedronTest, IntersectionTest) {
 }
 
 GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTestAxisAligned) {
-  HPolyhedron H_A = HPolyhedron::MakeUnitBox(2);
-  HPolyhedron H_B = HPolyhedron::MakeBox(Vector2d(0, 0), Vector2d(1, 1));
-  HPolyhedron H_C = H_A.PontryaginDifference(H_B);
-  HPolyhedron H_C_expected =
+  const HPolyhedron H_A = HPolyhedron::MakeUnitBox(2);
+  const HPolyhedron H_B = HPolyhedron::MakeBox(Vector2d(0, 0), Vector2d(1, 1));
+  const HPolyhedron H_C = H_A.PontryaginDifference(H_B);
+  const HPolyhedron H_C_expected =
       HPolyhedron::MakeBox(Vector2d{-1, -1}, Vector2d{0, 0});
 
   EXPECT_TRUE(CompareMatrices(H_C.A(), H_C_expected.A(), 1e-8));
@@ -484,19 +484,22 @@ GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTestSquareTriangle) {
   b_B << 0, 0, 1;
   // clang-format on
   // right triangle with vertices [0,0], [1,0], [0,1]
-  HPolyhedron H_B{A_B, b_B};
+  const HPolyhedron H_B{A_B, b_B};
 
-  HPolyhedron H_C = H_A.PontryaginDifference(H_B);
+  const HPolyhedron H_C = H_A.PontryaginDifference(H_B);
 
-  HPolyhedron H_C_expected =
+  const HPolyhedron H_C_expected =
       HPolyhedron::MakeBox(Vector2d{-1, -1}, Vector2d{0, 0});
 
   EXPECT_TRUE(CompareMatrices(H_C.A(), H_C_expected.A(), 1e-8));
   EXPECT_TRUE(CompareMatrices(H_C.b(), H_C_expected.b(), 1e-8));
 }
 
-GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTest2) {
+GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTestNonAxisAligned) {
   Eigen::MatrixXd A(8, 3);
+
+  // L1 box scaled to have corners at 0.5 instead of 1; it is intentionally not
+  // axis aligned in this test
   Eigen::VectorXd b = Eigen::VectorXd::Constant(8, 0.5);
   // clang-format off
   A <<  1,  1,  1,
@@ -508,19 +511,13 @@ GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTest2) {
        -1, -1,  1,
        -1, -1, -1;
   // clang-format on
-  HPolyhedron H_A = HPolyhedron::MakeUnitBox(3);
+  const HPolyhedron H_A = HPolyhedron::MakeUnitBox(3);
 
-  HPolyhedron H_B{A, b};
+  const HPolyhedron H_B{A, b};
 
-  HPolyhedron H_C = H_A.PontryaginDifference(H_B);
+  const HPolyhedron H_C = H_A.PontryaginDifference(H_B);
 
-  Matrix<double, 6, 3> A_expected;
-  Eigen::VectorXd b_expected = Eigen::VectorXd::Constant(6, 0.5);
-  // clang-format off
-  A_expected <<  Matrix3d::Identity(),
-                -Matrix3d::Identity();
-
-  HPolyhedron H_C_expected =
+  const HPolyhedron H_C_expected =
       HPolyhedron::MakeBox(Eigen::Vector3d::Constant(-0.5),
                            Eigen::Vector3d::Constant(0.5));
 
