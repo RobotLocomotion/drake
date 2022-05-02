@@ -18,9 +18,9 @@ build --action_env=PYTHONNOUSERSITE=1
 build --test_env=PYTHONNOUSERSITE=1
 
 # -- Options for explicitly using Clang.
-common:clang --repo_env=CC=clang-9
-common:clang --repo_env=CXX=clang++-9
-build:clang --action_env=CC=clang-9
-build:clang --action_env=CXX=clang++-9
-build:clang --host_action_env=CC=clang-9
-build:clang --host_action_env=CXX=clang++-9
+common:clang --repo_env=CC=clang-12
+common:clang --repo_env=CXX=clang++-12
+build:clang --action_env=CC=clang-12
+build:clang --action_env=CXX=clang++-12
+build:clang --host_action_env=CC=clang-12
+build:clang --host_action_env=CXX=clang++-12
