@@ -6,6 +6,7 @@
 
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
 namespace drake {
@@ -949,6 +950,33 @@ TEST_F(SymbolicPolynomialTest, PartialEvaluate4) {
                      var_xyz_};
   const Environment env{{{var_a_, 0.0}, {var_b_, 0.0}, {var_c_, 0.0}}};
   EXPECT_THROW(p.EvaluatePartial(env), runtime_error);
+}
+
+TEST_F(SymbolicPolynomialTest, EvaluateIndeterminates) {
+  const Polynomial p(var_x_ * var_x_ + 5 * var_x_ * var_y_);
+  // We intentionally test the case that `indeterminates`  being a strict
+  // superset of p.indeterminates().
+  Vector3<symbolic::Variable> indeterminates(var_x_, var_z_, var_y_);
+  Eigen::Matrix<double, 3, 4> indeterminates_values;
+  // clang-format off
+  indeterminates_values << 1, 2, 3, 4,
+                           -1, -2, -3, -4,
+                           2, 3, 4, 5;
+  // clang-format on
+  Eigen::VectorXd polynomial_values =
+      p.EvaluateIndeterminates(indeterminates, indeterminates_values);
+  ASSERT_EQ(polynomial_values.rows(), indeterminates_values.cols());
+  for (int i = 0; i < indeterminates_values.cols(); ++i) {
+    symbolic::Environment env;
+    env.insert(indeterminates, indeterminates_values.col(i));
+    EXPECT_EQ(polynomial_values(i), p.Evaluate(env));
+  }
+
+  // The exception case, when the polynomial coefficients are not all constant;
+  const Polynomial p_exception(var_x_ * var_x_ * var_a_, var_xyz_);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      p_exception.EvaluateIndeterminates(indeterminates, indeterminates_values),
+      ".* the coefficient .* is not a constant");
 }
 
 TEST_F(SymbolicPolynomialTest, Hash) {
