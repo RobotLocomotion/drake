@@ -29,7 +29,7 @@ namespace {
 constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
 TEST_F(KukaIiwaModelTests, FramesKinematics) {
-  SetArbitraryConfiguration();
+  SetArbitraryConfigurationAndMotion();
 
   // Test for a simple identity case of CalcRelativeTransform().
   const RigidTransformd X_HH =
@@ -148,7 +148,7 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
 }
 
 TEST_F(KukaIiwaModelTests, FrameAngularVelocity) {
-  SetArbitraryConfiguration();
+  SetArbitraryConfigurationAndMotion();
 
   // Verify that fixed-offset Frame_H (which is fixed to end-effector frame_E)
   // has a zero angular velocity in frame E, i.e., ω_EH = 0.
@@ -234,7 +234,7 @@ TEST_F(KukaIiwaModelTests, FrameAngularVelocity) {
 }
 
 TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialVelocity) {
-  SetArbitraryConfiguration();
+  SetArbitraryConfigurationAndMotion();
 
   // Directly verify the calculation of V_W_L3H_W (frame H's spatial velocity
   // relative to frame L3, measured and expressed in the world frame W) is the
@@ -330,7 +330,7 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialVelocity) {
 }
 
 TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
-  SetArbitraryConfiguration();
+  SetArbitraryConfigurationAndMotion();
 
   // Verify a short-cut return from Frame::CalcSpatialAccelerationInWorld()
   // when dealing with a body_frame (as opposed to a generic frame).
@@ -469,7 +469,7 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
 }
 
 TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
-  SetArbitraryConfiguration();
+  SetArbitraryConfigurationAndMotion();
 
   // Verify frame_H's relative spatial acceleration to itself (frame_H),
   // measured in the world frame W is zero.
@@ -493,10 +493,10 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
       A_L3_HH_W.get_coeffs(), Vector6<double>::Zero(),
       kTolerance, MatrixCompareType::relative));
 
-  // To ensure the previous test is not degenerate, ensure frame_H's roational
+  // To ensure the previous test is not degenerate, ensure frame_H's rotational
   // and translational velocities and accelerations in frame_L3 are non-zero.
   const SpatialVelocity<double> V_L3H_W =
-      frame_H.CalcSpatialVelocity(*context_, frame_H, frame_W);
+      frame_H.CalcSpatialVelocity(*context_, frame_L3, frame_W);
   const SpatialAcceleration<double> A_L3H_W =
       frame_H.CalcSpatialAcceleration(*context_, frame_L3, frame_W);
   EXPECT_FALSE(CompareMatrices(
