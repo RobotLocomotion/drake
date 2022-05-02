@@ -14,6 +14,8 @@ namespace yaml {
 namespace test {
 namespace {
 
+using internal::YamlWriteArchive;
+
 // A test fixture with common helpers.
 class YamlWriteArchiveTest : public ::testing::Test {
  public:

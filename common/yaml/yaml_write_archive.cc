@@ -12,6 +12,7 @@
 
 namespace drake {
 namespace yaml {
+namespace internal {
 namespace {
 
 // Boilerplate for std::visit.
@@ -180,5 +181,6 @@ void YamlWriteArchive::EraseMatchingMaps(const YamlWriteArchive& other) {
   DoEraseMatchingMaps(&(this->root_), &(other.root_));
 }
 
+}  // namespace internal
 }  // namespace yaml
 }  // namespace drake
