@@ -1502,60 +1502,6 @@ for every column of ``prog_var_vals``. )""")
       .def("RemoveConstraint", &MathematicalProgram::RemoveConstraint,
           py::arg("constraint"), doc.MathematicalProgram.RemoveConstraint.doc);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  prog_cls
-      .def("NewNonnegativePolynomial",
-          WrapDeprecated(
-              doc.MathematicalProgram.NewNonnegativePolynomial
-                  .doc_deprecated_deprecated_2args_monomial_basis_type,
-              static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
-                  MathematicalProgram::*)(
-                  const Eigen::Ref<const VectorX<symbolic::Monomial>>&,
-                  MathematicalProgram::NonnegativePolynomial)>(
-                  &MathematicalProgram::NewNonnegativePolynomial)),
-          py::arg("monomial_basis"), py::arg("type"),
-          doc.MathematicalProgram.NewNonnegativePolynomial
-              .doc_deprecated_deprecated_2args_monomial_basis_type)
-      .def("NewNonnegativePolynomial",
-          WrapDeprecated(
-              doc.MathematicalProgram.NewNonnegativePolynomial
-                  .doc_deprecated_deprecated_3args_gramian_monomial_basis_type,
-              static_cast<symbolic::Polynomial (MathematicalProgram::*)(
-                  const Eigen::Ref<const MatrixX<symbolic::Variable>>&,
-                  const Eigen::Ref<const VectorX<symbolic::Monomial>>&,
-                  MathematicalProgram::NonnegativePolynomial)>(
-                  &MathematicalProgram::NewNonnegativePolynomial)),
-          py::arg("gramian"), py::arg("monomial_basis"), py::arg("type"),
-          doc.MathematicalProgram.NewNonnegativePolynomial
-              .doc_deprecated_deprecated_3args_gramian_monomial_basis_type)
-      .def("NewNonnegativePolynomial",
-          WrapDeprecated(
-              doc.MathematicalProgram.NewNonnegativePolynomial
-                  .doc_deprecated_deprecated_3args_indeterminates_degree_type,
-              static_cast<
-                  std::pair<symbolic::Polynomial, MatrixXDecisionVariable> (
-                      MathematicalProgram::*)(const symbolic::Variables&,
-                      int degree, MathematicalProgram::NonnegativePolynomial)>(
-                  &MathematicalProgram::NewNonnegativePolynomial)),
-          py::arg("indeterminates"), py::arg("degree"), py::arg("type"),
-          doc.MathematicalProgram.NewNonnegativePolynomial
-              .doc_deprecated_deprecated_3args_indeterminates_degree_type)
-      .def("AddMaximizeLogDeterminantSymmetricMatrixCost",
-          WrapDeprecated(
-              doc.MathematicalProgram
-                  .AddMaximizeLogDeterminantSymmetricMatrixCost.doc_deprecated,
-              static_cast<std::tuple<Binding<LinearCost>,
-                  VectorX<symbolic::Variable>, MatrixX<symbolic::Expression>> (
-                  MathematicalProgram::*)(
-                  const Eigen::Ref<const MatrixX<symbolic::Expression>>& X)>(
-                  &MathematicalProgram::
-                      AddMaximizeLogDeterminantSymmetricMatrixCost)),
-          py::arg("X"),
-          doc.MathematicalProgram.AddMaximizeLogDeterminantSymmetricMatrixCost
-              .doc_deprecated);
-#pragma GCC diagnostic pop
-
   py::enum_<SolutionResult> solution_result_enum(
       m, "SolutionResult", doc.SolutionResult.doc);
   solution_result_enum
@@ -2048,21 +1994,7 @@ void BindFreeFunctions(py::module m) {
               const std::optional<SolverOptions>&>(&solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
-      .def("GetProgramType", &solvers::GetProgramType, doc.GetProgramType.doc)
-      // The following Solve() methods are placed here to be in the
-      // mathematicalprogram module, so as not to provide a conflicting Solve
-      // method in the trajectory optimization module.
-      .def(
-          "Solve",
-          [](const systems::trajectory_optimization::MultipleShooting&
-                  trajopt) {
-            WarnDeprecated(
-                "The trajectory optimization classes no longer derive from "
-                "MathematicalProgram.  Use Solve(trajopt.prog()).",
-                "2022-05-01");
-            return Solve(trajopt.prog());
-          },
-          py::arg("trajopt"), "This method calls Solve(trajopt.prog()).");
+      .def("GetProgramType", &solvers::GetProgramType, doc.GetProgramType.doc);
 }
 
 PYBIND11_MODULE(mathematicalprogram, m) {

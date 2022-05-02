@@ -1,7 +1,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/parsing/package_map.h"
@@ -57,13 +56,6 @@ PYBIND11_MODULE(parsing, m) {
             py::arg("environment_variable"),
             cls_doc.PopulateFromEnvironment.doc)
         .def_static("MakeEmpty", &Class::MakeEmpty, cls_doc.MakeEmpty.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("PopulateUpstreamToDrake",
-        WrapDeprecated(cls_doc.PopulateUpstreamToDrake.doc_deprecated,
-            &Class::PopulateUpstreamToDrake),
-        py::arg("model_file"), cls_doc.PopulateUpstreamToDrake.doc_deprecated);
-#pragma GCC diagnostic pop
   }
 
   // Parser

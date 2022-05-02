@@ -259,8 +259,6 @@ PYBIND11_MODULE(trajectory_optimization, m) {
           py::arg("input_port_index") =
               systems::InputPortSelection::kUseFirstInputIfItExists,
           doc.DirectTranscription.ctor.doc_5args);
-
-  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

@@ -290,27 +290,6 @@ MathematicalProgram::NewSosPolynomial(const symbolic::Variables& indeterminates,
   }
 }
 
-std::pair<symbolic::Polynomial, MatrixXDecisionVariable>
-MathematicalProgram::NewNonnegativePolynomial(
-    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
-    NonnegativePolynomial type) {
-  return NewSosPolynomial(monomial_basis, type);
-}
-
-symbolic::Polynomial MathematicalProgram::NewNonnegativePolynomial(
-    const Eigen::Ref<const MatrixX<symbolic::Variable>>& gramian,
-    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
-    NonnegativePolynomial type) {
-  return NewSosPolynomial(gramian, monomial_basis, type);
-}
-
-pair<symbolic::Polynomial, MatrixXDecisionVariable>
-MathematicalProgram::NewNonnegativePolynomial(const Variables& indeterminates,
-                                              const int degree,
-                                              NonnegativePolynomial type) {
-  return NewSosPolynomial(indeterminates, degree, type);
-}
-
 std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
            MatrixXDecisionVariable>
 MathematicalProgram::NewEvenDegreeNonnegativePolynomial(
@@ -596,13 +575,6 @@ MathematicalProgram::AddMaximizeLogDeterminantCost(
 
   const auto cost = AddLinearCost(-Eigen::VectorXd::Ones(t.rows()), t);
   return std::make_tuple(cost, std::move(t), std::move(Z));
-}
-
-std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
-           MatrixX<symbolic::Expression>>
-MathematicalProgram::AddMaximizeLogDeterminantSymmetricMatrixCost(
-    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
-  return AddMaximizeLogDeterminantCost(X);
 }
 
 Binding<LinearCost> MathematicalProgram::AddMaximizeGeometricMeanCost(

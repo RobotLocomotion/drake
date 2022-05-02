@@ -61,9 +61,6 @@ from pydrake.multibody.plant import (
     ContactModel,
     ContactResults_,
     ContactResultsToLcmSystem,
-    ContactResultsToMeshcatParams,
-    ContactResultsToMeshcat,
-    ContactResultsToMeshcat_,
     CoulombFriction_,
     ExternallyAppliedSpatialForce_,
     MultibodyPlant,
@@ -83,7 +80,6 @@ from pydrake.common.cpp_param import List
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
@@ -2300,39 +2296,6 @@ class TestPlant(unittest.TestCase):
             dut.EvaluateGradE_N_W(index=0)
         dut.Equal(surface=dut)
         copy.copy(dut)
-
-    def test_deprecated_contact_results_to_meshcat_default_scalar(self):
-        """Checks ContactResultsToMeshcat for deprecation."""
-        meshcat = Meshcat()
-        with catch_drake_warnings(expected_count=1):
-            params = ContactResultsToMeshcatParams()
-        self.assertIsNotNone(params)
-        with catch_drake_warnings(expected_count=1):
-            vis = ContactResultsToMeshcat(meshcat=meshcat, params=params)
-        vis.Delete()
-        builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
-        plant.Finalize()
-        with catch_drake_warnings(expected_count=1):
-            ContactResultsToMeshcat.AddToBuilder(
-                builder=builder, plant=plant, meshcat=meshcat, params=params)
-
-    @numpy_compare.check_nonsymbolic_types
-    def test_deprecated_contact_results_to_meshcat_specific_scalar(self, T):
-        """Checks ContactResultsToMeshcat_[T] for deprecation."""
-        meshcat = Meshcat()
-        with catch_drake_warnings(expected_count=1):
-            params = ContactResultsToMeshcatParams()
-        self.assertIsNotNone(params)
-        with catch_drake_warnings(expected_count=1):
-            vis = ContactResultsToMeshcat_[T](meshcat=meshcat, params=params)
-        vis.Delete()
-        builder = DiagramBuilder_[T]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
-        plant.Finalize()
-        with catch_drake_warnings(expected_count=1):
-            ContactResultsToMeshcat_[T].AddToBuilder(
-                builder=builder, plant=plant, meshcat=meshcat, params=params)
 
     def test_free_base_bodies(self):
         plant = MultibodyPlant_[float](time_step=0.01)
