@@ -9,12 +9,12 @@
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/common/yaml/yaml_read_archive.h"
 
-using drake::yaml::SaveYamlString;
-using drake::yaml::YamlReadArchive;
-
 namespace drake {
 namespace yaml {
 namespace {
+
+using drake::yaml::SaveYamlString;
+using drake::yaml::internal::YamlReadArchive;
 
 struct Inner {
   template <typename Archive>

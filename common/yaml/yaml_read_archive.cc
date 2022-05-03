@@ -10,6 +10,7 @@
 
 namespace drake {
 namespace yaml {
+namespace internal {
 namespace {
 
 // The source and destination are both of type Map.  Copy the key-value pairs
@@ -383,5 +384,6 @@ void YamlReadArchive::PrintVisitNameType(std::ostream& s) const {
              debug_visit_name_);
 }
 
+}  // namespace internal
 }  // namespace yaml
 }  // namespace drake
