@@ -34,7 +34,7 @@ namespace {
  and modifying the coefficients of  `new_constraint` binding. This method may
  throw a runtime error if the constraints are ill-conditioned.
  */
-bool IsRedundant(const Eigen::VectorXd& c, double d,
+bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
                  solvers::MathematicalProgram* prog,
                  Binding<solvers::LinearConstraint>* new_constraint,
                  Binding<solvers::LinearCost>* program_cost_binding,
@@ -60,7 +60,9 @@ bool IsRedundant(const Eigen::VectorXd& c, double d,
   new_constraint->evaluator()->UpdateCoefficients(
       c, Eigen::VectorXd::Constant(1, -kInf),
       Eigen::VectorXd::Constant(1, d + 1));
-  program_cost_binding->evaluator()->UpdateCoefficients(-c, 0);
+
+  program_cost_binding->evaluator()->UpdateCoefficients(-c.transpose(), 0);
+
   auto result = solvers::Solve(*prog);
 
   // constraints define an empty set or the current inequality of other is not
@@ -80,8 +82,8 @@ bool IsRedundant(const Eigen::VectorXd& c, double d,
   }
 
   // if -result.get_optimal_cost() > other.b()(i) then the inequality is
-  // irredundant
-  return !(PolyhedronIsEmpty || -result.get_optimal_cost() > d);
+  // irredundant. Without this constant IrredundantBallIntersectionContainedInBothOriginal fails
+  return !(PolyhedronIsEmpty || -result.get_optimal_cost() > d + 1E-9);
 }
 }  // namespace
 
