@@ -11,6 +11,7 @@
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_limit_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/parsing/parser.h"
@@ -34,6 +35,7 @@ using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::MergeNormalAndTangent;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
+using drake::multibody::contact_solvers::internal::SapLimitConstraint;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
 using drake::multibody::contact_solvers::internal::SapSolverResults;
@@ -773,26 +775,20 @@ TEST_F(SpheresStack, CalcFreeMotionVelocitiesWithJointLimits) {
   // Initial velocities.
   const VectorXd v0 = plant_->GetVelocities(*plant_context_);
 
-  // Since sphere 2's frame is located at its COM and since its inertia is
-  // triaxially symmetric, the Coriolis term for sphere 2 is zero. The Coriolis
-  // term is trivially zero for sphere 1, which only can move along the z-axis.
-  // Therefore the momentum equation reduces to: M * (v-v0)/dt = tau_g.
-  // We compute the expected velocities in the absence of joint limits.
-  const double dt = plant_->time_step();
-  const VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*plant_context_);
-  MatrixXd M(nv, nv);
-  plant_->CalcMassMatrix(*plant_context_, &M);
-  const VectorXd v_expected = v0 + dt * M.ldlt().solve(tau_g);
-  // Obtain the slider's velocity at v_expected.
+  // Compute slider1's velocity in the absence of joint limits. This is
+  // equivalent to computing the free motion velocities before constraints are
+  // applied.
+  const VectorXd v_expected = CalcFreeMotionVelocities(*plant_context_);
   const double v_slider_no_limits = v_expected(slider1_->velocity_start());
 
-  // Compute the velocities the system would have next time step in the absence
-  // of constraints.
-  const VectorXd v_star = CalcFreeMotionVelocities(*plant_context_);
-  // Obtain the slider's velocity at v*.
+  // Compute slider1's velocity with constraints applied. This corresponds to
+  // the full discrete update computation.
+  ContactSolverResults<double> contact_results;
+  contact_manager_->CalcContactSolverResults(*plant_context_, &contact_results);
+  const VectorXd v_star = contact_results.v_next;
   const double v_slider_star = v_star(slider1_->velocity_start());
 
-  // While other MultibodyPlant tests verify the correctness of joint limit
+  // While other solver specific tests verify the correctness of joint limit
   // forces, this test is simply limited to verifying the manager applied them.
   // Therefore we only check the force limits have the effect of making the
   // slider velocity larger than if not present.
@@ -1082,7 +1078,10 @@ TEST_F(AlgebraicLoopDetection, VerifyNoFalsePositivesWhenCachingIsDisabled) {
 }
 
 // Fixture to set up a Kuka iiwa arm model with a Schunk wsg gripper and welded
-// to the world at the base link.
+// to the world at the base link. This fixture is used to stress test the
+// implementation of CompliantContactManager with a model of practical relevance
+// to robotics. In particular, we unit test the implementation of damping and
+// joint limits.
 class KukaIiwaArmTests : public ::testing::Test {
  public:
   // Setup model of the Kuka iiwa arm with Schunk gripper and allocate context
@@ -1170,6 +1169,7 @@ class KukaIiwaArmTests : public ::testing::Test {
     }
   }
 
+  // Set arbitrary state, though within joint limits.
   void SetArbitraryState(const MultibodyPlant<double>& plant,
                          Context<double>* context) {
     for (JointIndex joint_index(0); joint_index < plant.num_joints();
@@ -1179,18 +1179,25 @@ class KukaIiwaArmTests : public ::testing::Test {
       if (joint.type_name() == "revolute") {
         const RevoluteJoint<double>& revolute_joint =
             dynamic_cast<const RevoluteJoint<double>&>(joint);
-        // Arbitrary angle and angular rate.
-        revolute_joint.set_angle(context, 0.5 * joint_index);
+        // Arbitrary position within position limits.
+        const double ql = revolute_joint.position_lower_limit();
+        const double qu = revolute_joint.position_upper_limit();
+        const double w = joint_index / kNumJoints;  // Number in (0,1).
+        const double q = w * ql + (1.0 - w) * qu;   // q in (ql, qu)
+        revolute_joint.set_angle(context, q);
+        // Arbitrary velocity.
         revolute_joint.set_angular_rate(context, 0.5 * joint_index);
       } else if (joint.type_name() == "prismatic") {
         const PrismaticJoint<double>& prismatic_joint =
             dynamic_cast<const PrismaticJoint<double>&>(joint);
-        // Arbitrary joint translation and translation rate.
-        prismatic_joint.set_translation(context, 0.5 * joint_index);
+        // Arbitrary position within position limits.
+        const double ql = prismatic_joint.position_lower_limit();
+        const double qu = prismatic_joint.position_upper_limit();
+        const double w = joint_index / kNumJoints;  // Number in (0,1).
+        const double q = w * ql + (1.0 - w) * qu;   // q in (ql, qu)
+        prismatic_joint.set_translation(context, q);
+        // Arbitrary velocity.
         prismatic_joint.set_translation_rate(context, 0.5 * joint_index);
-      } else {
-        if (joint.num_velocities() > 0)  // skip weld joints.
-          throw std::runtime_error("Unexpected joint type.");
       }
     }
   }
@@ -1261,6 +1268,77 @@ TEST_F(KukaIiwaArmTests, CalcFreeMotionVelocities) {
 
   EXPECT_TRUE(CompareMatrices(v_star, v_star_expected, 5.0 * kEps,
                               MatrixCompareType::relative));
+}
+
+TEST_F(KukaIiwaArmTests, LimitConstraints) {
+  const std::vector<DiscreteContactPair<double>>& discrete_pairs =
+      CompliantContactManagerTest::EvalDiscreteContactPairs(*manager_,
+                                                            *context_);
+  const int num_contacts = discrete_pairs.size();
+  // We are assuming there is no contact. Assert this.
+  ASSERT_EQ(num_contacts, 0);
+
+  const ContactProblemCache<double>& problem_cache =
+      CompliantContactManagerTest::EvalContactProblemCache(*manager_,
+                                                           *context_);
+  const SapContactProblem<double>& problem = *problem_cache.sap_problem;
+
+  // This model has no contact. Therefore we only expect contraints due to joint
+  // limits. Moreover, since both lower and upper limits are specified for
+  // each constraint, we expect 2 * kNumJoints constraint equations.
+  EXPECT_EQ(problem.num_constraints(), kNumJoints);
+  EXPECT_EQ(problem.num_constraint_equations(), 2 * kNumJoints);
+
+  // In this model we clearly have single tree, the arm with its gripper.
+  const int tree_expected = 0;
+
+  int num_constraints = 0;  // count number of constraints visited.
+  // The manager adds limit constraints in the order joints are specified.
+  // Therefore we verify the limit constrant for each joint.
+  for (JointIndex joint_index(0); joint_index < plant_.num_joints();
+       ++joint_index) {
+    const Joint<double>& joint = plant_.get_joint(joint_index);
+    if (joint.num_velocities() == 1) {
+      // Get limit constraint for the specific joint.
+      const auto* constraint = dynamic_cast<const SapLimitConstraint<double>*>(
+          &problem.get_constraint(num_constraints++));
+      // In this test we do know all constraints are limit constraints.
+      ASSERT_NE(constraint, nullptr);
+
+      // Limit constraints always apply to a single tree in the multibody
+      // forest.
+      EXPECT_EQ(constraint->num_cliques(), 1);
+
+      // There is a single tree in this model, the arm with gripper.
+      EXPECT_EQ(constraint->first_clique(), tree_expected);
+
+      EXPECT_EQ(constraint->clique_dof(), joint.velocity_start());
+
+      // Both lower and upper limits are specified for each joint in this model.
+      EXPECT_EQ(constraint->num_constraint_equations(), 2);
+      EXPECT_EQ(constraint->first_clique_jacobian().rows(), 2);
+
+      // Each constraints acts on the same tree (the arm+gripper) with a total
+      // of kNumJoint DOFs in that tree.
+      EXPECT_EQ(constraint->first_clique_jacobian().cols(), kNumJoints);
+
+      // Verify the plant's state is consistent with the constraint's state.
+      const double q0 = joint.GetOnePosition(*context_);
+      EXPECT_EQ(constraint->position(), q0);
+
+      const SapLimitConstraint<double>::Parameters& params =
+          constraint->parameters();
+      EXPECT_EQ(params.lower_limit(), joint.position_lower_limits()[0]);
+      EXPECT_EQ(params.upper_limit(), joint.position_upper_limits()[0]);
+      // N.B. Default values implemented in
+      // CompliantContactManager::AddLimitConstraints(), keep these values in
+      // sync.
+      EXPECT_EQ(params.stiffness(), 1.0e12);
+      EXPECT_EQ(params.dissipation_time_scale(), plant_.time_step());
+      EXPECT_EQ(params.beta(), 0.1);
+    }
+  }
+  EXPECT_EQ(num_constraints, kNumJoints);
 }
 
 }  // namespace internal

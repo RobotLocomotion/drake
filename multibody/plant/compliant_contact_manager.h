@@ -264,6 +264,9 @@ class CompliantContactManager final
   void CalcLinearDynamicsMatrix(const systems::Context<T>& context,
                                 std::vector<MatrixX<T>>* A) const;
 
+  void CalcNonContactForcesExcludingJointLimits(
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
+
   // Calc non-contact forces and the accelerations they induce.
   void CalcAccelerationsDueToNonContactForcesCache(
       const systems::Context<T>& context,
@@ -296,6 +299,13 @@ class CompliantContactManager final
   // frame in the world frame for the i-th contact constraint added to
   // `problem`.
   std::vector<math::RotationMatrix<T>> AddContactConstraints(
+      const systems::Context<T>& context,
+      contact_solvers::internal::SapContactProblem<T>* problem) const;
+
+  // Add limit constraints for the configuration stored in `context` into
+  // `problem`.
+  // @pre problem must not be nullptr.
+  void AddLimitConstraints(
       const systems::Context<T>& context,
       contact_solvers::internal::SapContactProblem<T>* problem) const;
 

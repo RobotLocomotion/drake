@@ -121,6 +121,14 @@ void DiscreteUpdateManager<T>::CalcNonContactForces(
 }
 
 template <typename T>
+void DiscreteUpdateManager<T>::CalcForceElementsContribution(
+    const drake::systems::Context<T>& context,
+    MultibodyForces<T>* forces) const {
+  MultibodyPlantDiscreteUpdateManagerAttorney<T>::CalcForceElementsContribution(
+      plant(), context, forces);
+}
+
+template <typename T>
 const std::vector<std::vector<geometry::GeometryId>>&
 DiscreteUpdateManager<T>::collision_geometries() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::collision_geometries(
