@@ -2,9 +2,6 @@
 #include "drake/multibody/inverse_kinematics/test/global_inverse_kinematics_test_util.h"
 #include "drake/solvers/gurobi_solver.h"
 
-using Eigen::Isometry3d;
-using Eigen::Vector3d;
-
 namespace drake {
 namespace multibody {
 namespace {
@@ -157,8 +154,8 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
   region_vertices[5].row(2) = region_vertices[4].row(2);
 
   Eigen::Vector3d ee_pos(-0.7, 0, 0.45);
-  global_ik_.AddWorldPositionConstraint(ee_idx_, Vector3d::Zero(), ee_pos,
-                                        ee_pos);
+  global_ik_.AddWorldPositionConstraint(ee_idx_, Eigen::Vector3d::Zero(),
+                                        ee_pos, ee_pos);
 
   // First run the global IK without collision avoidance.
   solvers::GurobiSolver gurobi_solver;

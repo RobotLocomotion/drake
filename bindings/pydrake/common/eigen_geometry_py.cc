@@ -191,8 +191,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
     py::implicitly_convertible<Matrix4<T>, Class>();
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, kCastDoc);
-    // TODO(eric): Consider deprecating / removing `Value[Isometry3]` pending
-    // resolution of #9865.
     AddValueInstantiation<Isometry3<T>>(m);
   }
 
