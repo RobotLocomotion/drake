@@ -61,7 +61,7 @@ class VolumetricModel : public FemModelImpl<Element> {
      @param damping_model  The DampingModel to be used for all new elements.
      @throw std::exception if Element::Traits::num_nodes != 4. */
     void AddLinearTetrahedralElements(
-        const geometry::VolumeMesh<T>& mesh,
+        const geometry::VolumeMesh<double>& mesh,
         const ConstitutiveModel& constitutive_model, const T& density,
         const DampingModel<T>& damping_model) {
       if constexpr (Traits::num_nodes != 4 || Traits::natural_dimension != 3) {
@@ -101,7 +101,7 @@ class VolumetricModel : public FemModelImpl<Element> {
      positions of the mesh. The i-th, i+1-th, i+2-th entry in the returned
      vector contains the vertex position of the i-th vertex in the mesh's frame.
     */
-    VectorX<T> ExtractMeshPositions(const geometry::VolumeMesh<T>& mesh) {
+    VectorX<T> ExtractMeshPositions(const geometry::VolumeMesh<double>& mesh) {
       const int num_new_vertices = mesh.num_vertices();
       VectorX<T> q(num_new_vertices * kSpatialDimension);
       for (int v = 0; v < num_new_vertices; ++v) {

@@ -46,6 +46,12 @@ bool PhysicalModel<T>::is_cloneable_to_symbolic() const {
 }
 
 template <typename T>
+geometry::SceneGraph<T>& PhysicalModel<T>::mutable_scene_graph(
+    MultibodyPlant<T>* plant) {
+  return MultibodyPlantModelAttorney<T>::mutable_scene_graph(plant);
+}
+
+template <typename T>
 systems::DiscreteStateIndex PhysicalModel<T>::DeclareDiscreteState(
     MultibodyPlant<T>* plant, const VectorX<T>& model_value) {
   return MultibodyPlantModelAttorney<T>::DeclareDiscreteState(plant,
