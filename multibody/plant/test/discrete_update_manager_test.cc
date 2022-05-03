@@ -40,7 +40,7 @@ constexpr double kDt = 0.1;
  dummy data.
  @tparam_nonsymbolic_scalar */
 template <typename T>
-class DummyDiscreteUpdateManager : public DiscreteUpdateManager<T> {
+class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyDiscreteUpdateManager);
 

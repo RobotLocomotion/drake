@@ -161,7 +161,7 @@ INSTANTIATE_TYPED_TEST_SUITE_P(My, MultibodyPlantDefaultScalarsTest,
 // A simple concrete DiscreteUpdateManager that does not support scalar
 // conversion to either AutoDiffXd or Expression.
 template <typename T>
-class DoubleOnlyDiscreteUpdateManager
+class DoubleOnlyDiscreteUpdateManager final
     : public multibody::internal::DiscreteUpdateManager<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoubleOnlyDiscreteUpdateManager);
