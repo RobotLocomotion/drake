@@ -347,8 +347,6 @@ void MultibodyPlantElementsMap::CopyGeometryById(
   const auto* body_src = plant_src_->GetBodyFromFrameId(frame_id_src);
   DRAKE_DEMAND(body_src != nullptr);
   const auto* body_dest = bodies_.at(body_src);
-  // const auto frame_id_dest =
-  //     plant_dest_->GetBodyFrameIdOrThrow(body_dest->index());
   auto geometry_instance_dest =
       inspector_src.CloneGeometryInstance(geometry_id_src);
 
@@ -360,7 +358,8 @@ void MultibodyPlantElementsMap::CopyGeometryById(
 
   std::string prefix_dest;
   if (body_dest->model_instance() != world_model_instance()) {
-    prefix_dest = plant_src_->GetModelInstanceName(body_src->model_instance());
+    prefix_dest =
+        plant_dest_->GetModelInstanceName(body_dest->model_instance());
   }
 
   auto scoped_name_src =
@@ -370,6 +369,12 @@ void MultibodyPlantElementsMap::CopyGeometryById(
   auto scoped_name_dest =
       parsing::PrefixName(prefix_dest, scoped_name_src.name);
   geometry_instance_dest->set_name(scoped_name_dest);
+
+  // TODO(eric.cousineau): How to relax this constraint? How can we
+  // register with SceneGraph only?
+  // See: https://github.com/RobotLocomotion/drake/issues/13445
+  // TODO(eric.cousineau): Try Ale's potential fix here:
+  // https://github.com/RobotLocomotion/drake/pull/13371
   const auto* proximity_properties =
       geometry_instance_dest->proximity_properties();
   geometry::GeometryId geometry_id_dest;
@@ -380,20 +385,10 @@ void MultibodyPlantElementsMap::CopyGeometryById(
         *body_dest, geometry_instance_dest->pose(),
         geometry_instance_dest->shape(), scoped_name_src.name,
         *proximity_properties);
-  } else if (geometry_instance_dest->illustration_properties() != nullptr) {
-    // illustration and perception are currently mutually required roles.
-    // TODO(azeey) This might mean that we lose perception-specific roles.
-    DRAKE_DEMAND(geometry_instance_dest->perception_properties() != nullptr);
-    geometry_id_dest = plant_dest_->RegisterVisualGeometry(
-        *body_dest, geometry_instance_dest->pose(),
-        geometry_instance_dest->shape(), scoped_name_src.name,
-        *geometry_instance_dest->illustration_properties());
   } else {
-    // Currently, RegisterVisualGeometry also assigns the Perception role to a
-    // geometry, thus, the common use case of geometries that have both
-    // Illustration and Preception roles is covered by the `else if` branch
-    // above.
-    // TODO(azeey) Handle geometries with Perception as their only role.
+    // Register as normal.
+    geometry_id_dest = plant_dest_->RegisterGeometry(
+        *body_dest, std::move(geometry_instance_dest));
   }
   geometry_ids_.insert({geometry_id_src, geometry_id_dest});
 }
