@@ -652,8 +652,8 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
   const Vector3<double> v_L3_L3H_W = frame_H.CalcRelativeSpatialVelocity(
       *context_, frame_L3, frame_L3, frame_W).translational();
   const double v_L3_L3H_W_magSquared = v_L3_L3H_W.dot(v_L3_L3H_W);
-  const double separation_acceleration2 = a_L3_L3H_W.dot(u_L3oHo_W) +
-      1.0 / distance * (v_L3_L3H_W_magSquared - separation_speed_squared);
+  const double separation_acceleration2 = a_L3_L3H_W.dot(u_L3oHo_W)
+      + 1.0 / distance * (v_L3_L3H_W_magSquared - separation_speed_squared);
   EXPECT_NEAR(separation_acceleration1, separation_acceleration2, kTolerance);
 }
 
