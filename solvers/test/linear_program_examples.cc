@@ -433,11 +433,11 @@ InfeasibleLinearProgramTest0::InfeasibleLinearProgramTest0()
 
 UnboundedLinearProgramTest0::UnboundedLinearProgramTest0()
     : prog_(std::make_unique<MathematicalProgram>()) {
-  auto x = prog_->NewContinuousVariables<2>("x");
-  prog_->AddLinearCost(-x(0) - x(1));
-  prog_->AddLinearConstraint(2 * x(0) + x(1) >= 4);
-  prog_->AddLinearConstraint(x(0) >= 0);
-  prog_->AddLinearConstraint(x(1) >= 2);
+  x_ = prog_->NewContinuousVariables<2>("x");
+  prog_->AddLinearCost(-x_(0) - x_(1));
+  prog_->AddLinearConstraint(2 * x_(0) + x_(1) >= 4);
+  prog_->AddLinearConstraint(x_(0) >= 0);
+  prog_->AddLinearConstraint(x_(1) >= 2);
 }
 
 UnboundedLinearProgramTest1::UnboundedLinearProgramTest1()
