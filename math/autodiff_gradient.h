@@ -77,6 +77,9 @@ ExtractGradient(const Eigen::MatrixBase<Derived>& auto_diff_matrix,
   Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::SizeAtCompileTime,
                 Eigen::Dynamic>
       gradient(auto_diff_matrix.size(), *num_derivatives);
+  if (gradient.size() == 0) {
+    return gradient;
+  }
   for (int row = 0; row < auto_diff_matrix.rows(); ++row) {
     for (int col = 0; col < auto_diff_matrix.cols(); ++col) {
       auto gradient_row =
