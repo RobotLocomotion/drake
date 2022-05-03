@@ -189,6 +189,7 @@ class UnboundedLinearProgramTest0 : public ::testing::Test {
 
  protected:
   std::unique_ptr<MathematicalProgram> prog_;
+  Vector2<symbolic::Variable> x_;
 };
 
 /**
