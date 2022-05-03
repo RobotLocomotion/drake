@@ -8,7 +8,7 @@ load(
 )
 
 package(
-    default_visibility = ["//multibody/fem:__subpackages__"],
+    default_visibility = ["//visibility:public"],
 )
 
 drake_cc_package_library(
