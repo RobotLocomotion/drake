@@ -394,8 +394,7 @@ class KukaIiwaModelTests : public ::testing::Test {
     q->resize(kNumPositions);
     v->resize(kNumPositions);  // q and v have the same dimension for kuka.
 
-    // A set of values for the joint's angles chosen mainly to avoid in-plane
-    // motions.
+    // These joint angles avoid in-plane motion, but are otherwise arbitrary.
     const double q30 = M_PI / 6, q60 = M_PI / 3;
     const double qA = q60;
     const double qB = q30;

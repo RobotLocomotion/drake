@@ -63,12 +63,14 @@ class KukaIiwaModelTests : public ::testing::Test {
     context_autodiff_ = plant_autodiff_->CreateDefaultContext();
   }
 
-  // If unit_quaternion = false then the quaternion for the free floating base
-  // is not normalized. This configuration is useful to verify the computation
-  // of Jacobians with respect to q̇ (time-derivative of generalized positions),
-  // even if the state stores a non-unit quaternion.
+  // Sets the configuration and motion for this kuka iiwa's context with
+  // non-zero joint angles and angular rates that avoid in-plane motion.
+  // param[in] unit_quaternion true means the quaternion for the kuka iiwa's
+  // free floating base is normalized whereas false means the quaternion is not
+  // normalized. A value of false helps verify the computation of Jacobians with
+  // respect to q̇ (time-derivative of generalized positions), even if the state
+  // stores a non-unit quaternion.
   void SetArbitraryConfigurationAndMotion(bool unit_quaternion = true) {
-    // Get a set of joint angles and angular rates that avoids in-plane motion.
     const VectorX<double> x0_joints = GetArbitraryJointAnglesAndRates();
     SetState(x0_joints);
      if (!unit_quaternion) {
@@ -114,8 +116,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   VectorX<double> GetArbitraryJointAnglesAndRates() {
     VectorX<double> x(2 * kNumJoints);
 
-    // A set of values for the joint's angles chosen mainly to avoid in-plane
-    // motions.
+    // These joint angles avoid in-plane motion, but are otherwise arbitrary.
     const double q30 = M_PI / 6, q60 = M_PI / 3;
     const double qA = q60;
     const double qB = q30;

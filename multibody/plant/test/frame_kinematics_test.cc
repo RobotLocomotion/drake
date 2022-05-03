@@ -501,16 +501,16 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
       frame_H.CalcSpatialAcceleration(*context_, frame_L3, frame_W);
   EXPECT_FALSE(CompareMatrices(
       V_L3H_W.rotational(), Vector3<double>::Zero(),
-      kTolerance, MatrixCompareType::relative));
+      kTolerance, MatrixCompareType::absolute));
   EXPECT_FALSE(CompareMatrices(
       V_L3H_W.translational(), Vector3<double>::Zero(),
-      kTolerance, MatrixCompareType::relative));
+      kTolerance, MatrixCompareType::absolute));
   EXPECT_FALSE(CompareMatrices(
       A_L3H_W.rotational(), Vector3<double>::Zero(),
-      kTolerance, MatrixCompareType::relative));
+      kTolerance, MatrixCompareType::absolute));
   EXPECT_FALSE(CompareMatrices(
       A_L3H_W.translational(), Vector3<double>::Zero(),
-      kTolerance, MatrixCompareType::relative));
+      kTolerance, MatrixCompareType::absolute));
 
   // Verify that relative spatial acceleration is the same as absolute spatial
   // acceleration if the "relative-to" frame is the "measured-in" frame.
@@ -653,7 +653,7 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
       *context_, frame_L3, frame_L3, frame_W).translational();
   const double v_L3_L3H_W_magSquared = v_L3_L3H_W.dot(v_L3_L3H_W);
   const double separation_acceleration2 = a_L3_L3H_W.dot(u_L3oHo_W) +
-      1.0/distance * (v_L3_L3H_W_magSquared - separation_speed_squared);
+      1.0 / distance * (v_L3_L3H_W_magSquared - separation_speed_squared);
   EXPECT_NEAR(separation_acceleration1, separation_acceleration2, kTolerance);
 }
 
