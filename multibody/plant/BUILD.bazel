@@ -336,10 +336,17 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "compliant_contact_manager_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
     deps = [
         ":compliant_contact_manager",
+        ":plant",
+        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
         "//systems/primitives:pass_through",
         "//systems/primitives:zero_order_hold",
     ],

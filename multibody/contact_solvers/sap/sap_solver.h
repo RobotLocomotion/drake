@@ -101,10 +101,16 @@ struct SapSolverParameters {
   int max_iterations{100};            // Maximum number of Newton iterations.
 
   // Line-search parameters.
-  double ls_alpha_max{1.5};   // Maximum line search parameter allowed.
   int ls_max_iterations{40};  // Maximum number of line search iterations.
   double ls_c{1.0e-4};        // Armijo's criterion parameter.
   double ls_rho{0.8};         // Backtracking search parameter.
+
+  // Maximum line search parameter allowed.
+  // Using this value of ls_alpha_max ensures that SAP's line search uses alpha
+  // = 1.0 on the second iteration. This is particularly important to avoid
+  // overrelaxation of Newton's method in regions where the cost is quadratic,
+  // or close to quadratic.
+  double ls_alpha_max{1.0 / ls_rho};
 
   // Tolerance used in impulse soft norms. In Ns.
   double soft_tolerance{1.0e-7};

@@ -81,6 +81,8 @@ struct AccelerationsDueToExternalForcesCache {
   explicit AccelerationsDueToExternalForcesCache(
       const MultibodyTreeTopology& topology);
   MultibodyForces<T> forces;  // The external forces causing accelerations.
+  ArticulatedBodyInertiaCache<T> abic;   // Articulated body inertia cache.
+  std::vector<SpatialForce<T>> Zb_Bo_W;  // Articulated body biases cache.
   multibody::internal::ArticulatedBodyForceCache<T> aba_forces;  // ABA cache.
   multibody::internal::AccelerationKinematicsCache<T> ac;  // Accelerations.
 };
@@ -129,6 +131,8 @@ class CompliantContactManager final
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompliantContactManager)
 
+  using internal::DiscreteUpdateManager<T>::plant;
+
   CompliantContactManager() = default;
 
   ~CompliantContactManager() final;
@@ -149,14 +153,16 @@ class CompliantContactManager final
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
   };
 
-  using internal::DiscreteUpdateManager<T>::plant;
-
   // Provide private access for unit testing only.
   friend class CompliantContactManagerTest;
 
   const MultibodyTreeTopology& tree_topology() const {
     return internal::GetInternalTree(this->plant()).get_topology();
   }
+
+  // Extracts non state dependent model information from MultibodyPlant. See
+  // DiscreteUpdateManager for details.
+  void ExtractModelInfo() final;
 
   // TODO(amcastro-tri): Either implement in future PR or resolve with 16955.
   void DoCalcAccelerationKinematicsCache(
@@ -312,6 +318,9 @@ class CompliantContactManager final
 
   CacheIndexes cache_indexes_;
   contact_solvers::internal::SapSolverParameters sap_parameters_;
+  // Vector of joint damping coefficients, of size plant().num_velocities().
+  // This information is extracted during the call to ExtractModelInfo().
+  VectorX<T> joint_damping_;
 };
 
 }  // namespace internal
