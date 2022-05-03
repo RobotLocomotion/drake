@@ -54,6 +54,31 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "deformable_model",
+    srcs = [
+        "deformable_model.cc",
+    ],
+    hdrs = [
+        "deformable_model.h",
+    ],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":multibody_plant_core",
+        "//common:default_scalars",
+        "//common:essential",
+        "//multibody/fem:corotated_model",
+        "//multibody/fem:deformable_body_config",
+        "//multibody/fem:fem_model",
+        "//multibody/fem:fem_state",
+        "//multibody/fem:linear_constitutive_model",
+        "//multibody/fem:linear_simplex_element",
+        "//multibody/fem:simplex_gaussian_quadrature",
+        "//multibody/fem:volumetric_model",
+    ],
+)
+
+drake_cc_library(
     name = "discrete_contact_pair",
     srcs = [],
     hdrs = ["discrete_contact_pair.h"],
@@ -660,6 +685,15 @@ drake_cc_googletest(
     deps = [
         ":coulomb_friction",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_model_test",
+    deps = [
+        ":deformable_model",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/framework:diagram_builder",
     ],
 )
 

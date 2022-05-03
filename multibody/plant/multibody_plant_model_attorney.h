@@ -24,6 +24,18 @@ class MultibodyPlantModelAttorney {
 
   friend class PhysicalModel<T>;
 
+  /* Returns the SceneGraph with which the given `plant` has been registered.
+   @pre plant != nullptr.
+   @pre Finalize() has not been called on `plant`
+   @pre `plant` has been registered with some SceneGraph. */
+  static geometry::SceneGraph<T>& mutable_scene_graph(
+      MultibodyPlant<T>* plant) {
+    DRAKE_DEMAND(plant != nullptr);
+    auto* scene_graph = plant->scene_graph_;
+    DRAKE_DEMAND(scene_graph != nullptr);
+    return *scene_graph;
+  }
+
   static systems::DiscreteStateIndex DeclareDiscreteState(
       MultibodyPlant<T>* plant, const VectorX<T>& model_value) {
     DRAKE_DEMAND(plant != nullptr);
