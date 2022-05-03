@@ -18,6 +18,7 @@ https://github.com/RobotLocomotion/drake/issues?q=is%3Aopen+is%3Aissue
 +-label%3A%22component%3A+geometry+proximity%22
 +-label%3A%22component%3A+jupyter%22
 +-label%3A%22component%3A+mathematical+program%22
++-label%3A%22component%3A+messaging%22
 +-label%3A%22component%3A+multibody+parsing%22
 +-label%3A%22component%3A+multibody+plant%22
 +-label%3A%22component%3A+planning+and+control%22

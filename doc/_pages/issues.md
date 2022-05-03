@@ -56,8 +56,7 @@ RobotLocomotion/drake-ci
 
 <tr>
 <td><code>distribution</code></td>
-<td>Nightly binaries, monthly releases, docker, installation
-  via apt or brew.</td>
+<td>Nightly binaries, monthly releases, docker, installation.</td>
 <td>jwnimmer-tri</td>
 <td><small>
 tools/install<br>
@@ -138,6 +137,15 @@ systems/lcm
 </tr>
 
 <tr>
+<td><code>multibody parsing</code></td>
+<td>Loading models into MultibodyPlant.</td>
+<td>rpoyner-tri</td>
+<td><small>
+multibody/parsing
+</small></td>
+</tr>
+
+<tr>
 <td><code>multibody plant</code></td>
 <td>MultibodyPlant and supporting code.</td>
 <td>amcastro-tri</td>
@@ -146,15 +154,6 @@ multibody/contact_solvers<br>
 multibody/math<br>
 multibody/plant<br>
 multibody/tree<br>
-</small></td>
-</tr>
-
-<tr>
-<td><code>multibody parsing</code></td>
-<td>Loading models into MultibodyPlant.</td>
-<td>rpoyner-tri</td>
-<td><small>
-multibody/parsing
 </small></td>
 </tr>
 
@@ -169,15 +168,6 @@ multibody/inverse_kinematics<br>
 multibody/optimization<br>
 systems/controllers<br>
 systems/trajectory_optimization
-</small></td>
-</tr>
-
-<tr>
-<td><code>softsim fem</code></td>
-<td>Deformable body simulation using Finite Element Method (FEM).</td>
-<td>xuchenhan-tri</td>
-<td><small>
-multibody/fem
 </small></td>
 </tr>
 
@@ -197,6 +187,15 @@ RobotLocomotion/pybind11
 <td>sherm1</td>
 <td><small>
 systems/analysis
+</small></td>
+</tr>
+
+<tr>
+<td><code>softsim fem</code></td>
+<td>Deformable body simulation using Finite Element Method (FEM).</td>
+<td>xuchenhan-tri</td>
+<td><small>
+multibody/fem
 </small></td>
 </tr>
 
