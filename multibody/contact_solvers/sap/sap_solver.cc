@@ -2,11 +2,13 @@
 
 #include <algorithm>
 #include <limits>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/math/linear_solve.h"
+#include "drake/multibody/contact_solvers/supernodal_solver.h"
 
 namespace drake {
 namespace multibody {
@@ -112,6 +114,9 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
   auto scratch = model_->MakeContext();
   SearchDirectionData search_direction_data(nv, nk);
   stats_ = SolverStats();
+  // The supernodal solver is expensive to instantiate and therefore we only
+  // instantiate when needed.
+  std::unique_ptr<SuperNodalSolver> supernodal_solver;
 
   {
     // We limit the lifetime of this reference, v, to within this scope where we
@@ -133,14 +138,19 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
     stats_.optimality_criterion_reached =
         momentum_residual <=
         parameters_.abs_tolerance + parameters_.rel_tolerance * momentum_scale;
+    stats_.momentum_residual.push_back(momentum_residual);
+    stats_.momentum_scale.push_back(momentum_scale);
     // TODO(amcastro-tri): consider monitoring the duality gap.
     if (stats_.optimality_criterion_reached || stats_.cost_criterion_reached) {
       converged = true;
       break;
     } else {
-      // TODO(amcastro-tri): Instantiate supernodal solver on the first
-      // iteration if it is needed. If the stopping criteria is satisfied at k =
-      // 0 (good guess), then we skip the expensive instantiation of the solver.
+      if (!parameters_.use_dense_algebra && supernodal_solver == nullptr) {
+        // Instantiate supernodal solver on the first iteration when needed. If
+        // the stopping criteria is satisfied at k = 0 (good guess), then we
+        // skip the expensive instantiation of the solver.
+        supernodal_solver = MakeSuperNodalSolver();
+      }
     }
 
     // Exit if the maximum number of iterations is reached, but only after
@@ -150,7 +160,8 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
 
     // This is the most expensive update: it performs the factorization of H to
     // solve for the search direction dv.
-    CalcSearchDirectionData(*context, &search_direction_data);
+    CalcSearchDirectionData(*context, supernodal_solver.get(),
+                            &search_direction_data);
     const VectorX<double>& dv = search_direction_data.dv;
 
     const auto [alpha, ls_iters] = PerformBackTrackingLineSearch(
@@ -301,7 +312,7 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
   T ell_prev = ell;
 
   int iteration = 1;
-  for (; iteration <= max_iterations; ++iteration) {
+  for (; iteration < max_iterations; ++iteration) {
     alpha *= rho;
     ell = CalcCostAlongLine(context, search_direction_data, alpha, scratch);
     // We scan discrete values of alpha from alpha_max to zero and seek for the
@@ -322,6 +333,9 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
     ell_prev = ell;
   }
 
+  // If the very last iterate satisfies Armijo's, we use it.
+  if (satisfies_armijo(alpha, ell)) return std::make_pair(alpha, iteration);
+
   // If we are here, the line-search could not find a valid parameter that
   // satisfies Armijo's criterion.
   throw std::runtime_error(
@@ -334,8 +348,7 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
 }
 
 template <typename T>
-void SapSolver<T>::CallDenseSolver(const Context<T>& context,
-                                   VectorX<T>* dv) const {
+MatrixX<T> SapSolver<T>::CalcDenseHessian(const Context<T>& context) const {
   // Explicitly build dense Hessian.
   // These matrices could be saved in the cache. However this method is only
   // intended as an alternative for debugging and optimizing it might not be
@@ -368,6 +381,27 @@ void SapSolver<T>::CallDenseSolver(const Context<T>& context,
 
   const MatrixX<T> H = Adense + Jdense.transpose() * Gdense * Jdense;
 
+  return H;
+}
+
+template <typename T>
+std::unique_ptr<SuperNodalSolver> SapSolver<T>::MakeSuperNodalSolver() const {
+  if constexpr (std::is_same_v<T, double>) {
+    const BlockSparseMatrix<T>& J = model_->constraints_bundle().J();
+    return std::make_unique<SuperNodalSolver>(J.block_rows(), J.get_blocks(),
+                                              model_->dynamics_matrix());
+  } else {
+    throw std::logic_error(
+        "SapSolver::MakeSuperNodalSolver(): SuperNodalSolver only supports T "
+        "= double.");
+  }
+}
+
+template <typename T>
+void SapSolver<T>::CallDenseSolver(const Context<T>& context,
+                                   VectorX<T>* dv) const {
+  const MatrixX<T> H = CalcDenseHessian(context);
+
   // Factorize Hessian.
   // TODO(amcastro-tri): when T = AutoDiffXd propagate gradients analytically
   // using the chain rule so that here we can use T = double for performance.
@@ -388,11 +422,56 @@ void SapSolver<T>::CallDenseSolver(const Context<T>& context,
 }
 
 template <typename T>
+void SapSolver<T>::UpdateSuperNodalSolver(
+    const Context<T>& context, SuperNodalSolver* supernodal_solver) const {
+  if constexpr (std::is_same_v<T, double>) {
+    const std::vector<MatrixX<double>>& G =
+        model_->EvalConstraintsHessian(context);
+    supernodal_solver->SetWeightMatrix(G);
+  } else {
+    unused(context);
+    unused(supernodal_solver);
+    throw std::logic_error(
+        "SapSolver::UpdateSuperNodalSolver(): SuperNodalSolver only supports T "
+        "= double.");
+  }
+}
+
+template <typename T>
+void SapSolver<T>::CallSuperNodalSolver(const Context<T>& context,
+                                        SuperNodalSolver* supernodal_solver,
+                                        VectorX<T>* dv) const {
+  if constexpr (std::is_same_v<T, double>) {
+    UpdateSuperNodalSolver(context, supernodal_solver);
+    if (!supernodal_solver->Factor()) {
+      throw std::logic_error("SapSolver: Supernodal factorization failed.");
+    }
+    // We solve in place to avoid heap allocating additional memory for the
+    // right hand side.
+    *dv = -model_->EvalCostGradient(context);
+    supernodal_solver->SolveInPlace(dv);
+  } else {
+    unused(context);
+    unused(supernodal_solver);
+    unused(dv);
+    throw std::logic_error(
+        "SapSolver::CallSuperNodalSolver(): SuperNodalSolver only supports T "
+        "= double.");
+  }
+}
+
+template <typename T>
 void SapSolver<T>::CalcSearchDirectionData(
     const systems::Context<T>& context,
+    SuperNodalSolver* supernodal_solver,
     SapSolver<T>::SearchDirectionData* data) const {
+  DRAKE_DEMAND(parameters_.use_dense_algebra || (supernodal_solver != nullptr));
   // Update search direction dv.
-  CallDenseSolver(context, &data->dv);
+  if (!parameters_.use_dense_algebra) {
+    CallSuperNodalSolver(context, supernodal_solver, &data->dv);
+  } else {
+    CallDenseSolver(context, &data->dv);
+  }
 
   // Update Δp, Δvc and d²ellA/dα².
   model_->constraints_bundle().J().Multiply(data->dv, &data->dvc);

@@ -1,11 +1,5 @@
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 
-// TODO(amcastro-tri): While many of tests in this file verify the correctness
-// of the solution, it might not be enough to ensure the entire implementation
-// is correct. E.g. miscalculation of the Hessian could lead to slower
-// convergence. Consider more fine grained unit tests, especially for the
-// Hessian and other gradients.
-
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -17,8 +11,11 @@
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
+#include "drake/multibody/contact_solvers/supernodal_solver.h"
 #include "drake/multibody/contact_solvers/system_dynamics_data.h"
+#include "drake/systems/framework/context.h"
 
+using drake::systems::Context;
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
@@ -30,6 +27,30 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
+
+// Friend struct to grant access to SapSolver's private functions for testing.
+class SapSolverTester {
+ public:
+  static std::unique_ptr<SuperNodalSolver> MakeSuperNodalSolver(
+      const SapSolver<double>& sap) {
+    return sap.MakeSuperNodalSolver();
+  }
+
+  static void UpdateSuperNodalSolver(const SapSolver<double>& sap,
+                                     const Context<double>& context,
+                                     SuperNodalSolver* supernodal_solver) {
+    sap.UpdateSuperNodalSolver(context, supernodal_solver);
+  }
+
+  static const SapModel<double>& model(const SapSolver<double>& sap) {
+    return *sap.model_;
+  }
+
+  static MatrixX<double> CalcDenseHessian(
+      const SapSolver<double>& sap, const systems::Context<double>& context) {
+    return sap.CalcDenseHessian(context);
+  }
+};
 
 constexpr double kEps = std::numeric_limits<double>::epsilon();
 // Suggested value for the dimensionless parameter used in the regularization of
@@ -442,6 +463,14 @@ GTEST_TEST(PizzaSaver, StictionAtTightOptimalityTolerance) {
   params.abs_tolerance = 1.0e-20;
   params.rel_tolerance = 1.0e-20;
   params.ls_max_iterations = 40;
+  // Once SAP's state is in the stiction region, SAP's cost is quadratic and the
+  // Newton's method will converge in the next iteration with line search
+  // parameter alpha = 1. To trigger the "cost criterion", below we set a value
+  // of ls_alpha_max such that the backtracking line search nevers tries
+  // alpha = 1. This is of course an overly adverse condition we force for
+  // testing purposes. In practice, SAP's default parameters are set so that the
+  // backtracking line search does go through alpha=1.
+  params.ls_alpha_max = 1.0 / params.ls_rho + 0.1;
   // Inform the unit test we want to verify this condition.
   const bool cost_criterion_reached = true;
   // Use a reasonable tolerance to verify the accuracy of the solution.
@@ -778,6 +807,57 @@ class SapNewtonIterationTest : public ::testing::Test {
         std::make_unique<LimitConstraint<double>>(1, vl_, vu_, std::move(R)));
   }
 
+  // We verify our supernodal algebra by comparing the Hessian reconstructed
+  // with the supernodal solver against our already tested dense algebra.
+  void VerifySupernodalHessian(const SapSolver<double>& sap,
+                               const VectorXd& v_guess) const {
+    // Verify Hessian obtained with sparse supernodal algebra.
+    std::unique_ptr<SuperNodalSolver> supernodal_solver =
+        SapSolverTester::MakeSuperNodalSolver(sap);
+    const SapModel<double>& model = SapSolverTester::model(sap);
+    const auto context = model.MakeContext();
+    auto v = model.GetMutableVelocities(context.get());
+    model.velocities_permutation().Apply(v_guess, &v);
+    SapSolverTester::UpdateSuperNodalSolver(sap, *context,
+                                            supernodal_solver.get());
+    const MatrixXd H = supernodal_solver->MakeFullMatrix();
+    const MatrixXd H_expected =
+        SapSolverTester::CalcDenseHessian(sap, *context);
+    EXPECT_TRUE(CompareMatrices(H, H_expected, 3.0 * kEps,
+                                MatrixCompareType::relative));
+  }
+
+  // Compute next step velocity using the provide set of `params` and the given
+  // guess `v_guess`.
+  VectorXd SolveWithGuess(const SapSolverParameters& params,
+                          const VectorXd& v_guess) const {
+    SapSolver<double> sap;
+    sap.set_parameters(params);
+    SapSolverResults<double> result;
+    const SapSolverStatus status =
+        sap.SolveWithGuess(*sap_problem_, v_guess, &result);
+    EXPECT_EQ(status, SapSolverStatus::kSuccess);
+    return result.v;
+  }
+
+  // Compare solutions obtained with dense and supernodal algebra.
+  void CompareDenseAgainstSupernodal(const VectorXd& v_guess) const {
+    // Perform computation with supernodal algebra.
+    SapSolverParameters params_supernodal;
+    params_supernodal.use_dense_algebra = false;
+    const VectorXd v_supernodal = SolveWithGuess(params_supernodal, v_guess);
+
+    // Perform computation with dense algebra.
+    SapSolverParameters params_dense;
+    params_dense.use_dense_algebra = true;
+    const VectorXd v_dense = SolveWithGuess(params_dense, v_guess);
+
+    // We expected results computed with dense and supernodal algebra to match
+    // close to machine epsilon for this small problem.
+    EXPECT_TRUE(CompareMatrices(v_supernodal, v_dense, 5.0 * kEps,
+                                MatrixCompareType::relative));
+  }
+
  protected:
   VectorXd vl_;
   VectorXd vu_;
@@ -848,7 +928,7 @@ TEST_F(SapNewtonIterationTest, GuessWithinLimits) {
 
   // The solution exactly equals the initial guess v* within machine epsilon
   // given in this case the problem is linear.
-  EXPECT_TRUE(CompareMatrices(result.v, v_star_, 3.0 * kEps,
+  EXPECT_TRUE(CompareMatrices(result.v, v_star_, 10.0 * kEps,
                               MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(result.j,
                               VectorXd::Zero(sap_problem_->num_velocities()),
@@ -856,6 +936,11 @@ TEST_F(SapNewtonIterationTest, GuessWithinLimits) {
   EXPECT_TRUE(CompareMatrices(
       result.gamma, VectorXd::Zero(sap_problem_->num_constraint_equations()),
       3.0 * kEps, MatrixCompareType::absolute));
+
+  VerifySupernodalHessian(sap, v_guess);
+
+  // Verify solution computed with dense and supernodal algebra match.
+  CompareDenseAgainstSupernodal(v_guess);
 }
 
 // For this problem when the initial guess is outside the constraint's limits
@@ -902,6 +987,12 @@ TEST_F(SapNewtonIterationTest, GuessOutsideLimits) {
   EXPECT_TRUE(CompareMatrices(
       result.gamma, VectorXd::Zero(sap_problem_->num_constraint_equations()),
       3.0 * kEps, MatrixCompareType::absolute));
+
+  // Verify Hessian obtained with sparse supernodal algebra.
+  VerifySupernodalHessian(sap, v_guess);
+
+  // Verify solution computed with dense and supernodal algebra match.
+  CompareDenseAgainstSupernodal(v_guess);
 }
 
 }  // namespace internal
