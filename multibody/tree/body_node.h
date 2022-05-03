@@ -344,7 +344,11 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     //          = H_PB_W * vm
     // where H_PB_W = R_WF * phiT_MB_F * H_FM.
     SpatialVelocity<T>& V_PB_W = get_mutable_V_PB_W(vc);
-    V_PB_W.get_coeffs() = H_PB_W * vm;
+    if (get_num_mobilizer_velocities() > 0) {
+      V_PB_W.get_coeffs() = H_PB_W * vm;
+    } else {
+      V_PB_W.get_coeffs().setZero();
+    }
 
     // =========================================================================
     // Computation of V_WPb in Eq. (1). See summary at the top of this method.
