@@ -68,7 +68,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   // of Jacobians with respect to q̇ (time-derivative of generalized positions),
   // even if the state stores a non-unit quaternion.
   void SetArbitraryConfigurationAndMotion(bool unit_quaternion = true) {
-    // Get an arbitrary set of angles and velocities for each joint.
+    // Get a set of joint angles and angular rates that avoids in-plane motion.
     const VectorX<double> x0_joints = GetArbitraryJointAnglesAndRates();
     SetState(x0_joints);
      if (!unit_quaternion) {
@@ -109,8 +109,8 @@ class KukaIiwaModelTests : public ::testing::Test {
     plant_->SetFreeBodySpatialVelocity(context_.get(), base_body, {w_WB, v_WB});
   }
 
-  // Gets an arm state to an arbitrary configuration and motion in which joint
-  // angles and rates are non-zero.
+  // Get an arm state associated with an arbitrary configuration that avoids
+  // in-plane motion and in which joint angles and rates are non-zero.
   VectorX<double> GetArbitraryJointAnglesAndRates() {
     VectorX<double> x(2 * kNumJoints);
 

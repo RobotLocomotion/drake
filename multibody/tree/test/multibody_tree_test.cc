@@ -386,9 +386,9 @@ class KukaIiwaModelTests : public ::testing::Test {
     context_autodiff_ = system_autodiff_->CreateDefaultContext();
   }
 
-  // Gets an arm state associated with an arbitrary configuration that avoids
-  // in-plane motio and in which joint angles and rates are non-zero.
-  void GetArbitraryNonZeroJointAngleAndRates(
+  // Get an arm state associated with an arbitrary configuration that avoids
+  // in-plane motion and in which joint angles and rates are non-zero.
+  void GetArbitraryNonZeroJointAnglesAndRates(
       VectorX<double>* q, VectorX<double>* v) {
     const int kNumPositions = tree().num_positions();
     q->resize(kNumPositions);
@@ -692,9 +692,9 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityA) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
-  // Get a set of joint's angles and angular rates that avoid in-plane motion.
+  // Get a set of joint angles and angular rates that avoids in-plane motion.
   VectorX<double> q, v;
-  GetArbitraryNonZeroJointAngleAndRates(&q, &v);
+  GetArbitraryNonZeroJointAnglesAndRates(&q, &v);
 
   // Zero generalized positions and velocities.
   int angle_index = 0;
@@ -818,9 +818,9 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
 
-  // Get a set of joint's angles and angular rates that avoid in-plane motion.
+  // Get a set of joint angles and angular rates that avoids in-plane motion.
   VectorX<double> q, v;
-  GetArbitraryNonZeroJointAngleAndRates(&q, &v);
+  GetArbitraryNonZeroJointAnglesAndRates(&q, &v);
 
   // Set the robot's joint angles and rates (generalized positions/velocities).
   tree().GetMutablePositionsAndVelocities(context_.get()) << q, v;
@@ -917,9 +917,9 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
-  // Get a set of joint's angles and angular rates that avoid in-plane motion.
+  // Get a set of joint angles and angular rates that avoids in-plane motion.
   VectorX<double> q, v;
-  GetArbitraryNonZeroJointAngleAndRates(&q, &v);
+  GetArbitraryNonZeroJointAnglesAndRates(&q, &v);
 
   // Since the bias term is a function of q and v only (i.e. it is not a
   // function of vdot), we choose a set of arbitrary values for the generalized
@@ -1044,9 +1044,9 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityC) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
-  // Get a set of joint's angles and angular rates that avoid in-plane motion.
+  // Get a set of joint angles and angular rates that avoids in-plane motion.
   VectorX<double> q0, v0;  // v0 will not be used in this test.
-  GetArbitraryNonZeroJointAngleAndRates(&q0, &v0);
+  GetArbitraryNonZeroJointAnglesAndRates(&q0, &v0);
 
   context_->get_mutable_continuous_state().
       get_mutable_generalized_position().SetFromVector(q0);
@@ -1111,9 +1111,9 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
-  // Get a set of joint's angles and angular rates that avoid in-plane motion..
+  // Get a set of joint angles and angular rates that avoids in-plane motion.
   VectorX<double> q, v;
-  GetArbitraryNonZeroJointAngleAndRates(&q, &v);
+  GetArbitraryNonZeroJointAnglesAndRates(&q, &v);
 
   // Set joint angles and rates.
   int angle_index = 0;
@@ -1162,9 +1162,9 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityA) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
-  // Get a set of joint's angles and angular rates that avoid in-plane motion.
+  // Get a set of joint angles and angular rates that avoids in-plane motion.
   VectorX<double> q, v;
-  GetArbitraryNonZeroJointAngleAndRates(&q, &v);
+  GetArbitraryNonZeroJointAnglesAndRates(&q, &v);
 
   // Set joint angles and rates.
   int angle_index = 0;
@@ -1221,9 +1221,9 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianSpatialVelocity) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
-  // Get a set of joint's angles and angular rates that avoid in-plane motion.
+  // Get a set of joint angles and angular rates that avoids in-plane motion.
   VectorX<double> q, v;
-  GetArbitraryNonZeroJointAngleAndRates(&q, &v);
+  GetArbitraryNonZeroJointAnglesAndRates(&q, &v);
 
   // Since the bias term is a function of q and v only (i.e. it is not a
   // function of vdot), we choose a set of arbitrary values for the generalized
@@ -1385,9 +1385,9 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityC) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
-  // Get a set of joint's angles and angular rates that avoid in-plane motion.
+  // Get a set of joint angles and angular rates that avoids in-plane motion.
   VectorX<double> q, v;
-  GetArbitraryNonZeroJointAngleAndRates(&q, &v);
+  GetArbitraryNonZeroJointAnglesAndRates(&q, &v);
 
   // Set joint angles and rates.
   int angle_index = 0;
