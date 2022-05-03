@@ -2,7 +2,7 @@
 
 #include <limits>
 #include <memory>
-#include <unordered_set>
+#include <set>
 #include <stdexcept>
 
 #include <Eigen/Eigenvalues>
@@ -27,6 +27,63 @@ using solvers::MatrixXDecisionVariable;
 using solvers::VectorXDecisionVariable;
 using symbolic::Expression;
 using symbolic::Variable;
+
+namespace {
+/** Check whether the constraint cᵀ x ≤ d is already implied by the linear
+ constraints in prog. This is done by solving a small linear program
+ and modifying the coefficients of  `new_constraint` binding. This method may
+ throw a runtime error if the constraints are ill-conditioned.
+ */
+bool IsRedundant(const Eigen::VectorXd& c, double d,
+                 solvers::MathematicalProgram* prog,
+                 Binding<solvers::LinearConstraint>* new_constraint,
+                 Binding<solvers::LinearCost>* program_cost_binding,
+                 bool already_checked_feasibility) {
+  // ensure that prog is an LP
+  DRAKE_DEMAND(prog->GetAllConstraints().size() ==
+               prog->GetAllLinearConstraints().size());
+
+  const double kInf = std::numeric_limits<double>::infinity();
+
+  if (!already_checked_feasibility) {
+    auto result = solvers::Solve(*prog);
+    // constraints of prog define an empty set therefore any constraint is
+    // redundant
+    if (result.get_solution_result() ==
+        solvers::SolutionResult::kInfeasibleConstraints) {
+      return true;
+    }
+  }
+
+  // this inequality ensures a bounded objective since the left hand side of
+  // the inequality is the same as the cost function on the next line.
+  new_constraint->evaluator()->UpdateCoefficients(
+      c, Eigen::VectorXd::Constant(1, -kInf),
+      Eigen::VectorXd::Constant(1, d + 1));
+  program_cost_binding->evaluator()->UpdateCoefficients(-c, 0);
+  auto result = solvers::Solve(*prog);
+
+  // constraints define an empty set or the current inequality of other is not
+  // redundant. Since we tested whether this polyhedron is empty earlier, the
+  // function would already have exited so this is proof that this inequality
+  // is irredundant
+  bool PolyhedronIsEmpty = result.get_solution_result() ==
+                           solvers::SolutionResult::kInfeasibleConstraints;
+
+  //
+  if (!PolyhedronIsEmpty && !result.is_success()) {
+    throw std::runtime_error(fmt::format(
+        "Solver {} failed to compute the set difference; it "
+        "terminated with SolutionResult {}). This should only happen"
+        "if the problem is ill-conditioned",
+        result.get_solver_id().name(), result.get_solution_result()));
+  }
+
+  // if -result.get_optimal_cost() > other.b()(i) then the inequality is
+  // irredundant
+  return !(PolyhedronIsEmpty || -result.get_optimal_cost() > d);
+}
+}  // namespace
 
 HPolyhedron::HPolyhedron(const Eigen::Ref<const MatrixXd>& A,
                          const Eigen::Ref<const VectorXd>& b)
@@ -198,9 +255,7 @@ bool HPolyhedron::ContainedIn(const HPolyhedron& other) const {
   // `this` defines an empty set and therefore is contained in any `other`
   // HPolyhedron
   if (result.get_solution_result() ==
-          solvers::SolutionResult::kInfeasibleConstraints ||
-      result.get_solution_result() ==
-          solvers::SolutionResult::kInfeasibleOrUnbounded) {
+      solvers::SolutionResult::kInfeasibleConstraints) {
     return true;
   }
 
@@ -212,28 +267,11 @@ bool HPolyhedron::ContainedIn(const HPolyhedron& other) const {
       prog.AddLinearCost(-other.A().row(0), 0, x);
 
   for (int i = 0; i < other.A().rows(); i++) {
-    // this inequality ensures a bounded objective since the left hand side of
-    // the inequality is the same as the cost function on the next line.
-    redundant_constraint_binding.evaluator()->UpdateCoefficients(
-        other.A().row(i), Eigen::VectorXd::Constant(1, -kInf),
-        other.b().row(i) + Eigen::VectorXd::Ones(1));
-    program_cost_binding.evaluator()->UpdateCoefficients(-other.A().row(i), 0);
-    result = solvers::Solve(prog);
-
-    // constraints define an empty set or the current inequality of other is not
-    // redundant. Since we tested whether this polyhedron is empty earlier, the
-    // function would already have exited so this is proof that this inequality
-    // is irredundant and therefore there is no containment
-    bool PolyhedronIsEmpty =
-        result.get_solution_result() ==
-            solvers::SolutionResult::kInfeasibleConstraints ||
-        result.get_solution_result() ==
-            solvers::SolutionResult::kInfeasibleOrUnbounded;
-
-    // if -result.get_optimal_cost() > other.b()(i) then the inequality is not
-    // redundant and so there is no containment added a numeric tolerance of
-    // 1E-8 but this seems somewhat arbitrary
-    if (PolyhedronIsEmpty || -result.get_optimal_cost() > other.b()(i) + 1E-8) {
+    // if any of the constraints of `other` are irredundant then `other` is !
+    // contained in this
+    if (!IsRedundant(other.A().row(i), other.b()(i), &prog,
+                     &redundant_constraint_binding, &program_cost_binding,
+                     true)) {
       return false;
     }
   }
@@ -255,6 +293,7 @@ HPolyhedron HPolyhedron::DoIntersectionNoChecks(
 HPolyhedron HPolyhedron::DoIntersectionWithChecks(
     const HPolyhedron& other) const {
   DRAKE_DEMAND(other.A().cols() == A_.cols());
+
   const double kInf = std::numeric_limits<double>::infinity();
 
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A(
@@ -268,6 +307,14 @@ HPolyhedron HPolyhedron::DoIntersectionWithChecks(
       prog.NewContinuousVariables(A_.cols(), "x");
   prog.AddLinearConstraint(A_, Eigen::VectorXd::Constant(b_.rows(), -kInf), b_,
                            x);
+  auto result = solvers::Solve(prog);
+  // `this` defines an empty set therefore any additional constraint is
+  // redundant
+  if (result.get_solution_result() ==
+      solvers::SolutionResult::kInfeasibleConstraints) {
+    return {A_, b_};
+  }
+
   Binding<solvers::LinearConstraint> redundant_constraint_binding =
       prog.AddLinearConstraint(other.A().row(0),
                                Eigen::VectorXd::Constant(1, -kInf),
@@ -277,20 +324,9 @@ HPolyhedron HPolyhedron::DoIntersectionWithChecks(
 
   int num_kept = A_.rows();
   for (int i = 0; i < other.A().rows(); i++) {
-    redundant_constraint_binding.evaluator()->UpdateCoefficients(
-        other.A().row(i), Eigen::VectorXd::Constant(1, -kInf),
-        other.b().row(i) + Eigen::VectorXd::Ones(1));
-    program_cost_binding.evaluator()->UpdateCoefficients(-other.A().row(i), 0);
-    auto result = solvers::Solve(prog);
-
-    // constraints define an empty set or the current inequality of other is not
-    // redundant
-    bool empty_set_condition =
-        result.get_solution_result() ==
-            solvers::SolutionResult::kInfeasibleConstraints ||
-        result.get_solution_result() ==
-            solvers::SolutionResult::kInfeasibleOrUnbounded;
-    if (empty_set_condition || -result.get_optimal_cost() > other.b()(i)) {
+    if (!IsRedundant(other.A().row(i), other.b()(i), &prog,
+                     &redundant_constraint_binding, &program_cost_binding,
+                     true)) {
       A.row(num_kept) = other.A().row(i);
       b.row(num_kept) = other.b().row(i);
       num_kept++;
@@ -304,7 +340,7 @@ HPolyhedron HPolyhedron::ReduceInequalities() const {
   const int num_inequalities = A_.rows();
   const int num_vars = A_.cols();
 
-  std::unordered_set<int> kept_indices;
+  std::set<int> kept_indices;
   for (int i = 0; i < num_inequalities; i++) {
     kept_indices.emplace(i);
   }
@@ -314,26 +350,32 @@ HPolyhedron HPolyhedron::ReduceInequalities() const {
     solvers::MathematicalProgram prog;
     solvers::VectorXDecisionVariable x =
         prog.NewContinuousVariables(num_vars, "x");
-    std::unordered_set<int> cur_kept_indices = kept_indices;
+
+    std::set<int> cur_kept_indices = kept_indices;
     cur_kept_indices.erase(excluded_index);
 
-    // constraint c^Tx <= d+1
-    prog.AddLinearConstraint(
-        A_.row(excluded_index), Eigen::VectorXd::Constant(1, -kInf),
-        b_.row(excluded_index) + Eigen::VectorXd::Ones(1), x);
-
-    // constraint Ax <= b
+    // current constraints
     for (const int i : cur_kept_indices) {
       prog.AddLinearConstraint(A_.row(i), Eigen::VectorXd::Constant(1, -kInf),
                                b_.row(i), x);
     }
 
-    prog.AddLinearCost(-A_.row(excluded_index), 0, x);
+    // constraint to check redundant
+    Binding<solvers::LinearConstraint> redundant_constraint_binding =
+        prog.AddLinearConstraint(
+            A_.row(excluded_index), Eigen::VectorXd::Constant(1, -kInf),
+            b_.row(excluded_index) + Eigen::VectorXd::Ones(1), x);
+
+    // construct cost binding for prog
+    Binding<solvers::LinearCost> program_cost_binding =
+        prog.AddLinearCost(-A_.row(excluded_index), 0, x);
 
     auto result = solvers::Solve(prog);
 
     // the current inequality is redundant
-    if (-result.get_optimal_cost() <= b_(excluded_index)) {
+    if (IsRedundant(A_.row(excluded_index), b_(excluded_index), &prog,
+                    &redundant_constraint_binding, &program_cost_binding,
+                    false)) {
       kept_indices.erase(excluded_index);
     }
   }
