@@ -1,5 +1,7 @@
 #include "drake/examples/rimless_wheel/rimless_wheel.h"
 
+#include <limits>
+
 #include "drake/common/default_scalars.h"
 
 namespace drake {
@@ -82,12 +84,13 @@ void RimlessWheel<T>::StepForwardReset(
   const T alpha = calc_alpha(params);
 
   // Stance foot changes to the new support leg.
-  next_state.set_theta(rw_state.theta() - 2.*alpha);
-  // Event isolation guarantees that the penetration was positive (though
-  // small).  The post-impact state needs to be above the ground, so that the
-  // witness function evaluation that occurs immediately after the impact has
-  // a positive value (we have declared the WitnessFunction with
-  // kPositiveThenNonPositive).  The failure mode before this improved
+  next_state.set_theta(rw_state.theta() - 2. * alpha +
+                       std::numeric_limits<T>::epsilon());
+  // Event isolation guarantees that the penetration was non-negative.  We add
+  // epsilon because the post-impact state needs to be above the ground, so
+  // that the witness function evaluation that occurs immediately after the
+  // impact has a positive value (we have declared the WitnessFunction with
+  // kPositiveThenNonPositive). The failure mode before this improved
   // implementation was the robot falling through the ground after an impact.
   DRAKE_DEMAND(next_state.theta() > params.slope() - alpha);
 
@@ -101,11 +104,14 @@ void RimlessWheel<T>::StepForwardReset(
   // only for efficiency, to avoid simulation at the Zeno).
   // Note: I already know that thetadot > 0 since the guard triggered.
   DRAKE_ASSERT(next_state.thetadot() >= 0.);
-  // The threshold value below only impacts early termination.  Setting it
-  // closer to zero will not cause the wheel to miss an event, but will cause
-  // the simulator to perform arbitrarily more event detection calculations.
-  // The threshold is multiplied by sqrt(g/l) to make it dimensionless.
-  if (next_state.thetadot() < 0.01*sqrt(params.gravity()/params.length())) {
+  // The threshold value below impacts early termination.  Setting it closer to
+  // zero will not cause the wheel to miss an event, but will cause the
+  // simulator to perform arbitrarily more event detection calculations. If the
+  // threshold is smaller than Simulator::GetCurrentWitnessTimeIsolation(), it
+  // can result in an infinite loop (a numerical Zeno's paradox). The
+  // threshold is multiplied by sqrt(g/l) to make it dimensionless.
+  const T kThreshold = 0.01 * sqrt(params.gravity() / params.length());
+  if (next_state.thetadot() < kThreshold) {
     bool& double_support = get_mutable_double_support(state);
     double_support = true;
     next_state.set_thetadot(0.0);
@@ -136,12 +142,13 @@ void RimlessWheel<T>::StepBackwardReset(
   const T alpha = calc_alpha(params);
 
   // Stance foot changes to the new support leg.
-  next_state.set_theta(rw_state.theta() + 2.*alpha);
-  // Event isolation guarantees that the penetration was positive (though
-  // small).  The post-impact state needs to be above the ground, so that the
-  // witness function evaluation that occurs immediately after the impact has
-  // a positive value (we have declared the WitnessFunction with
-  // kPositiveThenNonPositive).  The failure mode before this improved
+  next_state.set_theta(rw_state.theta() + 2. * alpha -
+                       std::numeric_limits<T>::epsilon());
+  // Event isolation guarantees that the penetration was non-negative.  We add
+  // epsilon because the post-impact state needs to be above the ground, so
+  // that the witness function evaluation that occurs immediately after the
+  // impact has a positive value (we have declared the WitnessFunction with
+  // kPositiveThenNonPositive). The failure mode before this improved
   // implementation was the robot falling through the ground after an impact.
   DRAKE_DEMAND(next_state.theta() < params.slope() + alpha);
 
@@ -154,11 +161,14 @@ void RimlessWheel<T>::StepBackwardReset(
   // If thetadot is very small, then transition to double support.
   // Note: I already know that thetadot < 0 since the guard triggered.
   DRAKE_ASSERT(next_state.thetadot() <= 0.);
-  // The threshold value below only impacts early termination.  Setting it
-  // closer to zero will not cause the wheel to miss an event, but will cause
-  // the simulator to perform arbitrarily more event detection calculations.
-  // The threshold is multiplied by sqrt(g/l) to make it dimensionless.
-  if (next_state.thetadot() > -0.01*sqrt(params.gravity()/params.length())) {
+  // The threshold value below impacts early termination.  Setting it closer to
+  // zero will not cause the wheel to miss an event, but will cause the
+  // simulator to perform arbitrarily more event detection calculations. If the
+  // threshold is smaller than Simulator::GetCurrentWitnessTimeIsolation(), it
+  // can result in an infinite loop (a numerical Zeno's paradox). The
+  // threshold is multiplied by sqrt(g/l) to make it dimensionless.
+  const T kThreshold = 0.01 * sqrt(params.gravity() / params.length());
+  if (next_state.thetadot() > -kThreshold) {
     bool& double_support = get_mutable_double_support(state);
     double_support = true;
     next_state.set_thetadot(0.0);
