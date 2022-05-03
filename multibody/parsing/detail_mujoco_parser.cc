@@ -84,14 +84,13 @@ class MujocoParser {
     ParseVectorAttribute(node, "pos", &pos);
 
     // Check that only one of the orientation variants are supplied:
-    std::vector<bool> orientation_attrs = {
-        static_cast<bool>(node->Attribute("quat")),
-        static_cast<bool>(node->Attribute("axisangle")),
-        static_cast<bool>(node->Attribute("euler")),
-        static_cast<bool>(node->Attribute("xyaxes")),
-        static_cast<bool>(node->Attribute("zaxis"))};
-    if (std::count(orientation_attrs.begin(), orientation_attrs.end(), true) >
-        1) {
+    const int num_orientation_attrs =
+        (node->Attribute("quat") != nullptr ? 1 : 0)
+        + (node->Attribute("axisangle") != nullptr ? 1 : 0)
+        + (node->Attribute("euler") != nullptr ? 1 : 0)
+        + (node->Attribute("xyaxes") != nullptr ? 1 : 0)
+        + (node->Attribute("zaxis") != nullptr ? 1 : 0);
+    if (num_orientation_attrs > 1) {
       throw std::logic_error(fmt::format(
           "Element {} has more than one orientation attribute specified "
           "(perhaps through defaults). There must be no more than one instance "
