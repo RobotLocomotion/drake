@@ -1387,27 +1387,27 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const std::vector<const Body<T>*>& bodies) const;
 
   /// (Advanced) Registers geometry in a SceneGraph with a given
-  /// geometry::GeometryInstance. The Properties associated with the role of the 
+  /// geometry::GeometryInstance. The Properties associated with the role of the
   /// geometry must be set by the user in the geometry::GeometryInstance.
-  /// 
+  ///
   /// The registration includes:
   /// 1. Register geometry for the corresponding FrameId associated with `body`.
-  /// 2. Update the geometry_id_to_body_index_ map associating the new GeometryId
-  ///    to the BodyIndex of `body`.
-  /// 3. Update collision_geometries_ and num_collision_geometries_ if the 
+  /// 2. Update the geometry_id_to_body_index_ map associating the new
+  ///    GeometryId to the BodyIndex of `body`.
+  /// 3. Update collision_geometries_ and num_collision_geometries_ if the
   ///    geometry_instance has proximity properties
-  /// 3. Update visual_geometries_ and num_visual_geometries_ if the 
+  /// 3. Update visual_geometries_ and num_visual_geometries_ if the
   ///    geometry_instance has illustration properties
   /// This assumes:
   /// 1. Finalize() was not called on `this` plant.
   /// 2. RegisterAsSourceForSceneGraph() was called on `this` plant.
   /// 3. `scene_graph` points to the same SceneGraph instance previously
   ///    passed to RegisterAsSourceForSceneGraph().
-  /// 
+  ///
   /// @param[in] body
   ///   The body for which geometry is being registered.
   /// @param[in] geometry_instance
-  ///   The geometry::GeometryInstance used for visualization or contact 
+  ///   The geometry::GeometryInstance used for visualization or contact
   ///   modeling.
   /// @throws std::exception if called post-finalize.
   /// @throws std::exception if `scene_graph` does not correspond to the same

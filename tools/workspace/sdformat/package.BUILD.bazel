@@ -16,7 +16,6 @@ load(
     "@drake//tools/install:install.bzl",
     "install",
 )
-
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 licenses(["notice"])  # Apache-2.0 AND BSD-3-Clause AND BSL-1.0
@@ -163,7 +162,7 @@ py_binary(
 
 SDFORMAT_ALL_PUBLIC_HDRS = SDFORMAT_MOST_PUBLIC_HDRS + [
     "include/sdf/config.hh",  # from cmake_configure_file above
-    "include/sdf/Export.hh", # from generate_file above
+    "include/sdf/Export.hh",  # from generate_file above
 ]
 
 # Generates the library exported to users. The explicitly listed srcs= matches

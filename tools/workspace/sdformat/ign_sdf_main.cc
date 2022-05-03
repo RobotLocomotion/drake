@@ -28,7 +28,9 @@ DEFINE_string(
 // https://github.com/osrf/sdformat/issues/323
 extern "C" int cmdCheck(const char *_path);
 extern "C" int cmdDescribe(const char *_version);
-extern "C" int cmdPrint(const char *_path);
+extern "C" int cmdPrint(const char* _path, int _inDegrees, int _snapToDegrees,
+                        float _snapTolerance, int _preserveIncludes,
+                        int _outPrecision);
 
 namespace drake {
 namespace {
@@ -46,7 +48,7 @@ int DoMain() {
   } else if (!FLAGS_describe.empty()) {
     return cmdDescribe(FLAGS_describe.c_str());
   } else if (!FLAGS_print.empty()) {
-    return cmdPrint(FLAGS_print.c_str());
+    return cmdPrint(FLAGS_print.c_str(), 0, 0, 0, 0, -1);
   }
   DRAKE_UNREACHABLE();
 }
