@@ -10,7 +10,6 @@
 #include "drake/solvers/solve.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-using Eigen::Isometry3d;
 using Eigen::Vector3d;
 
 using drake::geometry::SceneGraph;
