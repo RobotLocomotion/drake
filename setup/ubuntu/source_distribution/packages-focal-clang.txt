@@ -1,3 +1,2 @@
-clang-9
 clang-12
 libomp-12-dev

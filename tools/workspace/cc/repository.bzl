@@ -115,9 +115,7 @@ def _impl(repository_ctx):
     compiler_version_minor = int(output[2])
 
     # The minimum compiler versions should match those listed in both the root
-    # CMakeLists.txt and doc/developers.rst. We know from experience that
-    # compilation of Drake will certainly fail with versions lower than these,
-    # even if they happen to support the necessary compiler flags.
+    # CMakeLists.txt and doc/_pages/from_source.md.
 
     if compiler_id == "AppleClang":
         if compiler_version_major < 12:
@@ -127,16 +125,16 @@ def _impl(repository_ctx):
             ))
 
     elif compiler_id == "Clang":
-        if compiler_version_major < 9:
-            fail("Clang compiler version {}.{} is less than 9.0".format(
+        if compiler_version_major < 12:
+            fail("Clang compiler version {}.{} is less than 12.0".format(
                 compiler_version_major,
                 compiler_version_minor,
             ))
 
     elif compiler_id == "GNU":
-        if compiler_version_major < 7 or (compiler_version_major == 7 and
-                                          compiler_version_minor < 5):
-            fail("GNU compiler version {}.{} is less than 7.5.".format(
+        if compiler_version_major < 9 or (compiler_version_major == 9 and
+                                          compiler_version_minor < 3):
+            fail("GNU compiler version {}.{} is less than 9.3.".format(
                 compiler_version_major,
                 compiler_version_minor,
             ))

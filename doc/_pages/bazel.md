@@ -28,11 +28,10 @@ target label (and optional configuration options if desired).  We give some
 typical examples below; for more reading about target patterns, see:
 [https://docs.bazel.build/versions/main/user-manual.html#target-patterns](https://docs.bazel.build/versions/main/user-manual.html#target-patterns).
 
-On Ubuntu, the default compiler is the first ``gcc`` compiler in the
-``PATH``, usually GCC 9.3 on Focal. On macOS, the default
-compiler is the Apple LLVM compiler. To use Clang 9 on Ubuntu, set the ``CC``
-and ``CXX`` environment variables before running **bazel build**, **bazel test**
-or any other **bazel** commands.
+On Ubuntu, the default compiler is the first ``gcc`` compiler in the ``PATH``.
+On macOS, the default compiler is the Apple LLVM compiler. To use Clang on
+Ubuntu, add ``--config=clang`` after any **bazel build**, **bazel test** or any
+other **bazel** commands.
 
 Cheat sheet for operating on the entire project:
 

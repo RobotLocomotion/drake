@@ -107,10 +107,10 @@ if(C_COMPILER_NAME STREQUAL ccache OR CXX_COMPILER_NAME STREQUAL ccache)
 endif()
 
 # The minimum compiler versions should match those listed in both
-# doc/developers.rst and tools/workspace/cc/repository.bzl.
+# doc/_pages/from_source.md and tools/workspace/cc/repository.bzl.
 set(MINIMUM_APPLE_CLANG_VERSION 12)
-set(MINIMUM_CLANG_VERSION 9)
-set(MINIMUM_GNU_VERSION 7.5)
+set(MINIMUM_CLANG_VERSION 12)
+set(MINIMUM_GNU_VERSION 9.3)
 
 if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
   if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${MINIMUM_APPLE_CLANG_VERSION})
