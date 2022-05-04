@@ -89,8 +89,8 @@ server with the following field entries:
     <td><b>scene</b></td>
     <td>
       The scene file contents.  Sent as if from
-      `<input type="file" name="scene">`.  By default, glTF scenes will have a
-      mime type of [`model/gltf+json`][gltf_mimetypes].
+      `<input type="file" name="scene">`.  glTF scenes will have a mime type of
+      [`model/gltf+json`][gltf_mimetypes].
     </td>
   </tr>
   <tr>
@@ -324,22 +324,16 @@ required, the user of the server will have no hints as to what is going wrong
 with the client-server communication.  When the file response is provided, this
 information will be included in the exception message produced by the client.
 
-
 <h2 id="developing-your-own-server">Developing your own Server</h2>
 <hr>
 
-A [testing suite][testing_suite], including a sample [flask][flask]
-[server][test_server] and a VTK server backend, is provided as a working example
-that can be used with minimal change for your development.
+To test the basic client-server communication and rendering, Drake provides a
+simple server implementation as a reference. For more information about
+developing your own server or running the prototype, refer to the
+[README][render_gltf_client_test] of the `//geometry/render_gltf_client/test`.
 
-[testing_suite]: https://github.com/RobotLocomotion/drake/blob/master/geometry/render/dev/render_gltf_client/test
-[flask]: https://flask.palletsprojects.com/en/2.0.x/
-[test_server]: https://github.com/RobotLocomotion/drake/blob/master/geometry/render/dev/render_gltf_client/test/gltf_render_server.py
+[render_gltf_client_test]: https://github.com/RobotLocomotion/drake/blob/master/geometry/render_gltf_client/test
 
-For more information about developing a server or running the prototype
-client-server communication, refer to the [README][render_gltf_client_readme].
-
-[render_gltf_client_readme]: https://github.com/RobotLocomotion/drake/blob/master/geometry/render_gltf_client/test/README.md
 */
 
 }  // namespace render_gltf_client
