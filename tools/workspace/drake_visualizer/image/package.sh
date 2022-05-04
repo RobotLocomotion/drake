@@ -39,8 +39,27 @@ cp -r \
 strip \
     /opt/director/bin/drake-visualizer \
     /opt/director/lib/*.so \
+    /opt/director/lib/*.so.1 \
     /opt/director/lib/${python}/site-packages/director/*.so \
     /opt/director/lib/python3.*/site-packages/director/thirdparty/*.so
+
+# Fix the rpath entries so that components can find their corresponding VTK-8
+# counterparts.  This includes ensuring that VTK-8 libraries can find one
+# another ($ORIGIN), as well as python site-packages/{module}/*.so can find
+# the original VTK-8 libraries ($ORIGIN/../../..).
+find /opt/director/lib -type f -name "libvtk*-8.2.so.1" \
+    -mindepth 1 -maxdepth 1 \
+    -printf 'patchelf on %p\n' \
+    -exec patchelf --set-rpath '$ORIGIN' {} \;
+readonly site_packages="/opt/director/lib/${python}/site-packages"
+find "${site_packages}/vtkmodules" -type f -name "*.so" \
+    -mindepth 1 -maxdepth 1 \
+    -printf 'patchelf on %p\n' \
+    -exec patchelf --set-rpath '$ORIGIN/../../..' {} \;
+find "${site_packages}/director" -type f -name "vtk*.so" \
+    -mindepth 1 -maxdepth 1 \
+    -printf 'patchelf on %p\n' \
+    -exec patchelf --set-rpath '$ORIGIN/../../..' {} \;
 
 # Get various version numbers.
 readonly dv_tag=dv-$(cd /director/src; git describe)
@@ -59,7 +78,7 @@ readonly platform=$(lsb_release --codename --short)-$(uname --processor)
 #     -<build_number>.tar.gz
 #
 # The <build_number> was introduced to distinguish VTK-8/VTK-9 director split.
-readonly archive=${dv_tag}-${py_tag}-${qt_tag}-${vtk_tag}-${platform}-4.tar.gz
+readonly archive=${dv_tag}-${py_tag}-${qt_tag}-${vtk_tag}-${platform}-5.tar.gz
 
 cd /opt/director
 

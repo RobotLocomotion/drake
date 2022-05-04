@@ -17,6 +17,7 @@ git clone --depth 1 \
     https://github.com/RobotLocomotion/drake.git /drake
 
 cd /drake
+./setup/ubuntu/install_prereqs.sh -y
 
 bazel run \
     --copt=-fstack-protector-strong \

@@ -38,8 +38,8 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.ubuntu_release == "20.04":
-        archive = "dv-0.1.0-406-g4c3e570a-python-3.8.10-qt-5.12.8-vtk-8.2.0-focal-x86_64-4.tar.gz"  # noqa
-        sha256 = "f149a13bbb3966f4004584e843f03a80075e671d6c7d25edd0acb83f4a0fc694"  # noqa
+        archive = "dv-0.1.0-406-g4c3e570a-python-3.8.10-qt-5.12.8-vtk-8.2.0-focal-x86_64-5.tar.gz"  # noqa
+        sha256 = "201fd8a1e7f4bf8919ee45a843ab4b780e347af140fd456e7fcb923f6707bd12"  # noqa
         python_version = "3.8"
     else:
         repository_ctx.file("defs.bzl", "ENABLED = False")
