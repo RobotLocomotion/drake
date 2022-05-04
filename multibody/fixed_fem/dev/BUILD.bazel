@@ -132,6 +132,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "deformable_body_config_test",
+    deps = [
+        ":deformable_body_config",
+    ],
+)
+
+drake_cc_googletest(
     name = "deformable_contact_test",
     deps = [
         ":deformable_contact",
