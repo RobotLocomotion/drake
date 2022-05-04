@@ -10,6 +10,7 @@
 
 #include "drake/math/matrix_util.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -29,6 +30,32 @@ using symbolic::Expression;
 using symbolic::Variable;
 
 namespace {
+const double kInf = std::numeric_limits<double>::infinity();
+
+// Check if Ax ≤ b defines an empty set
+bool IsEmpty(const Eigen::Ref<const MatrixXd>& A,
+             const Eigen::Ref<const VectorXd>& b) {
+  solvers::MathematicalProgram prog;
+  // turn off Gurobi DualReduction to ensure that infeasible problems always
+  // return solvers::SolutionResult::kInfeasibleConstraints rather than
+  // SolutionResult::kInfeasibleOrUnbounded
+  prog.SetSolverOption(solvers::GurobiSolver::id(), "DualReductions", 0);
+
+  solvers::VectorXDecisionVariable x =
+      prog.NewContinuousVariables(A.cols(), "x");
+  prog.AddLinearConstraint(A, Eigen::VectorXd::Constant(b.rows(), -kInf), b, x);
+  auto result = solvers::Solve(prog);
+  return result.get_solution_result() ==
+         solvers::SolutionResult::kInfeasibleConstraints;
+}
+
+bool IsEmpty(solvers::MathematicalProgram* prog) {
+  prog->SetSolverOption(solvers::GurobiSolver::id(), "DualReductions", 0);
+  auto result = solvers::Solve(*prog);
+  return result.get_solution_result() ==
+         solvers::SolutionResult::kInfeasibleConstraints;
+}
+
 /** Check whether the constraint cᵀ x ≤ d is already implied by the linear
  constraints in prog. This is done by solving a small linear program
  and modifying the coefficients of  `new_constraint` binding. This method may
@@ -42,15 +69,19 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
   // ensure that prog is an LP
   DRAKE_DEMAND(prog->GetAllConstraints().size() ==
                prog->GetAllLinearConstraints().size());
+  DRAKE_DEMAND(prog->GetAllCosts().size() == 1 &&
+               prog->linear_costs()[0] == *program_cost_binding);
 
-  const double kInf = std::numeric_limits<double>::infinity();
+  // turn off Gurobi DualReduction to ensure that infeasible problems always
+  // return solvers::SolutionResult::kInfeasibleConstraints rather than
+  // SolutionResult::kInfeasibleOrUnbounded
+  prog->SetSolverOption(solvers::GurobiSolver::id(), "DualReductions", 0);
 
   if (!already_checked_feasibility) {
     auto result = solvers::Solve(*prog);
     // constraints of prog define an empty set therefore any constraint is
     // redundant
-    if (result.get_solution_result() ==
-        solvers::SolutionResult::kInfeasibleConstraints) {
+    if (IsEmpty(prog)) {
       return true;
     }
   }
@@ -82,9 +113,11 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
   }
 
   // if -result.get_optimal_cost() > other.b()(i) then the inequality is
-  // irredundant. Without this constant IrredundantBallIntersectionContainedInBothOriginal fails
+  // irredundant. Without this constant
+  // IrredundantBallIntersectionContainedInBothOriginal fails
   return !(PolyhedronIsEmpty || -result.get_optimal_cost() > d + 1E-9);
 }
+
 }  // namespace
 
 HPolyhedron::HPolyhedron(const Eigen::Ref<const MatrixXd>& A,
@@ -247,19 +280,18 @@ bool HPolyhedron::DoIsBounded() const {
 
 bool HPolyhedron::ContainedIn(const HPolyhedron& other) const {
   DRAKE_DEMAND(other.A().cols() == A_.cols());
-  const double kInf = std::numeric_limits<double>::infinity();
+  // `this` defines an empty set and therefore is contained in any `other`
+  // HPolyhedron
+  if (IsEmpty(A_, b_)) {
+    return true;
+  }
+
   solvers::MathematicalProgram prog;
   solvers::VectorXDecisionVariable x =
       prog.NewContinuousVariables(A_.cols(), "x");
   prog.AddLinearConstraint(A_, Eigen::VectorXd::Constant(b_.rows(), -kInf), b_,
                            x);
   auto result = solvers::Solve(prog);
-  // `this` defines an empty set and therefore is contained in any `other`
-  // HPolyhedron
-  if (result.get_solution_result() ==
-      solvers::SolutionResult::kInfeasibleConstraints) {
-    return true;
-  }
 
   Binding<solvers::LinearConstraint> redundant_constraint_binding =
       prog.AddLinearConstraint(other.A().row(0),
@@ -296,8 +328,6 @@ HPolyhedron HPolyhedron::DoIntersectionWithChecks(
     const HPolyhedron& other) const {
   DRAKE_DEMAND(other.A().cols() == A_.cols());
 
-  const double kInf = std::numeric_limits<double>::infinity();
-
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A(
       A_.rows() + other.A().rows(), A_.cols());
   VectorXd b(A_.rows() + other.A().rows());
@@ -332,13 +362,15 @@ HPolyhedron HPolyhedron::DoIntersectionWithChecks(
       A.row(num_kept) = other.A().row(i);
       b.row(num_kept) = other.b().row(i);
       num_kept++;
+      if (IsEmpty(A.topRows(num_kept), b.topRows(num_kept))) {
+        return {A.topRows(num_kept), b.topRows(num_kept)};
+      }
     }
   }
   return {A.topRows(num_kept), b.topRows(num_kept)};
 }
 
 HPolyhedron HPolyhedron::ReduceInequalities() const {
-  const double kInf = std::numeric_limits<double>::infinity();
   const int num_inequalities = A_.rows();
   const int num_vars = A_.cols();
 
