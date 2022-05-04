@@ -65,11 +65,10 @@ class KukaIiwaModelTests : public ::testing::Test {
 
   // Sets the configuration and motion for this kuka iiwa's context with
   // non-zero joint angles and angular rates that avoid in-plane motion.
-  // param[in] unit_quaternion true means the quaternion for the kuka iiwa's
-  // free floating base is normalized whereas false means the quaternion is not
-  // normalized. A value of false helps verify the computation of Jacobians with
-  // respect to q̇ (time-derivative of generalized positions), even if the state
-  // stores a non-unit quaternion.
+  // @param[in] unit_quaternion false means the quaternion for the kuka iiwa's
+  // free floating base is set to a non-unit quaternion, which can be helpful to
+  // verify the computation of Jacobians with respect to q̇ (time-derivative of
+  // generalized positions), even if the state stores a non-unit quaternion.
   void SetArbitraryConfigurationAndMotion(bool unit_quaternion = true) {
     const VectorX<double> x0_joints = GetArbitraryJointAnglesAndRates();
     SetState(x0_joints);
