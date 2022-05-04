@@ -212,7 +212,6 @@
           <upper>0</upper>
           <effort>80</effort>
           <stiffness>15000</stiffness>
-          <dissipation>50</dissipation>
         </limit>
       </axis>
     </joint>
@@ -232,7 +231,6 @@
           <upper>0.055</upper>
           <effort>80</effort>
           <stiffness>15000</stiffness>
-          <dissipation>50</dissipation>
         </limit>
       </axis>
     </joint>
