@@ -1,6 +1,7 @@
 #include "drake/geometry/meshcat_visualizer.h"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 

@@ -1,5 +1,7 @@
 #include "drake/systems/analysis/instantaneous_realtime_rate_calculator.h"
 
+#include <utility>
+
 std::optional<double>
 drake::systems::InstantaneousRealtimeRateCalculator::CalculateRealtimeRate(
     double current_sim_time) {

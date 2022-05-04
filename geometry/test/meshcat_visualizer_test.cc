@@ -1,9 +1,6 @@
 #include "drake/geometry/meshcat_visualizer.h"
 
 #include <gtest/gtest.h>
-#include <fstream>
-#include <iostream>
-#include <string>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -86,14 +83,9 @@ TEST_F(MeshcatVisualizerWithIiwaTest, BasicTest) {
   const std::string packed_X_W7 =
       meshcat_->GetPackedTransform("visualizer/iiwa14/iiwa_link_7");
   systems::Simulator<double> simulator(*diagram_);
-  simulator.set_target_realtime_rate(0.9);
-  for (int i = 0; i < 50; i++) {
-    simulator.AdvanceTo(i);
-  }
-  const auto s = meshcat_->StaticHtml();
-  std::ofstream out("/tmp/out.html");
-  out << s;
-  out.close();
+  simulator.AdvanceTo(0.1);
+  EXPECT_NE(meshcat_->GetPackedTransform("visualizer/iiwa14/iiwa_link_7"),
+            packed_X_W7);
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, PublishPeriod) {
