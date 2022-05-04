@@ -306,7 +306,7 @@ class CompliantContactManager final
   // `problem`.
   // @pre problem must not be nullptr.
   void AddLimitConstraints(
-      const systems::Context<T>& context,
+      const systems::Context<T>& context, const VectorX<T>& v_star,
       contact_solvers::internal::SapContactProblem<T>* problem) const;
 
   // This method takes SAP results for a given `problem` and loads forces due to

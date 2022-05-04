@@ -1,5 +1,6 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <string>
@@ -809,11 +810,17 @@ CompliantContactManager<T>::AddContactConstraints(
 
 template <typename T>
 void CompliantContactManager<T>::AddLimitConstraints(
-    const systems::Context<T>& context, SapContactProblem<T>* problem) const {
+    const systems::Context<T>& context, const VectorX<T>& v_star,
+    SapContactProblem<T>* problem) const {
   DRAKE_DEMAND(problem != nullptr);
 
-  // TODO(amcastro-tri): consider exposing this parameter.
+  constexpr double kInf = std::numeric_limits<double>::infinity();
+
+  // TODO(amcastro-tri): consider exposing these parameters.
   constexpr double kBeta = 0.1;
+  constexpr double kLimitWindow = 2.0;
+
+  const double dt = plant().time_step();
 
   // N.B. MultibodyPlant estimates very conservative (soft) stiffness and
   // damping parameters to ensure that the explicit treatment of the compliant
@@ -826,7 +833,7 @@ void CompliantContactManager<T>::AddLimitConstraints(
   // TODO(amcastro-tri): allow users to specify joint limits stiffness and
   // damping.
   const double stiffness = 1.0e12;
-  const double dissipation_time_scale = plant().time_step();
+  const double dissipation_time_scale = dt;
 
   for (JointIndex joint_index(0); joint_index < plant().num_joints();
        ++joint_index) {
@@ -843,19 +850,42 @@ void CompliantContactManager<T>::AddLimitConstraints(
           tree_topology().tree_velocities_start(tree_index);
       const int tree_dof = velocity_start - tree_velocity_start;
 
-      // Create constraint for the current configuration q0.
+      // Current configuration position.
       const T& q0 = joint.GetOnePosition(context);
-      typename SapLimitConstraint<T>::Parameters parameters{
-          lower_limit, upper_limit, stiffness, dissipation_time_scale, kBeta};
+      const T& v0 = joint.GetOneVelocity(context);
 
-      problem->AddConstraint(std::make_unique<SapLimitConstraint<T>>(
-          tree_index, tree_dof, tree_nv, q0, std::move(parameters)));
+      // Estimate a window size around q0. In order to build a smaller
+      // optimization problem, we only add a constraint if the joint
+      // limits are within this window.
+      using std::abs;
+      using std::max;
+      // delta_q estimates how much q changes in a single time step.
+      const T delta_q = dt * max(abs(v0), abs(v_star(velocity_start)));
+      // We use a factor kLimitWindow to look into a larger window. A very large
+      // kLimitWindow means that constraints will always be added even if they
+      // are inactive at the end of the computation. A smaller kLimitWindow will
+      // result in a smaller problem, faster to solve, though constraints could
+      // be missed until the next time step.
+      const T window_lower = q0 - kLimitWindow * delta_q;
+      const T window_upper = q0 + kLimitWindow * delta_q;
+
+      // N.B. window_lower < window_upper by definition.
+      const double ql = lower_limit < window_lower ? -kInf : lower_limit;
+      const double qu = upper_limit > window_upper ? kInf : upper_limit;
+
+      // Constraint is added only when one of ql and qu is finite.
+      if (!std::isinf(ql) || !std::isinf(qu)) {
+        // Create constraint for the current configuration q0.
+        typename SapLimitConstraint<T>::Parameters parameters{
+            ql, qu, stiffness, dissipation_time_scale, kBeta};
+        problem->AddConstraint(std::make_unique<SapLimitConstraint<T>>(
+            tree_index, tree_dof, tree_nv, q0, std::move(parameters)));
+      }
     } else {
       // TODO(amcastro-tri): Thus far in Drake we don't have multi-dof joints
       // with limits, only 1-DOF joints have limits. Therefore here throw an
       // exception to ensure that when we implement a multi-dof joint with
       // limits we don't forget to update this code.
-      constexpr double kInf = std::numeric_limits<double>::infinity();
       const VectorX<double>& lower_limits = joint.position_lower_limits();
       const VectorX<double>& upper_limits = joint.position_upper_limits();
       if ((lower_limits.array() == -kInf).any() ||
@@ -886,7 +916,7 @@ void CompliantContactManager<T>::CalcContactProblemCache(
   // extract contact impulses for reporting contact results.
   // Do not change this order here!
   cache->R_WC = AddContactConstraints(context, &problem);
-  AddLimitConstraints(context, &problem);
+  AddLimitConstraints(context, problem.v_star(), &problem);
 }
 
 template <typename T>

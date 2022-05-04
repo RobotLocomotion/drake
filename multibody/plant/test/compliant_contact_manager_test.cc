@@ -1084,6 +1084,16 @@ TEST_F(AlgebraicLoopDetection, VerifyNoFalsePositivesWhenCachingIsDisabled) {
 // joint limits.
 class KukaIiwaArmTests : public ::testing::Test {
  public:
+  // Enum used to specify how we'd like to initialize the state for limit
+  // constraints unit tests.
+  enum class InitializePositionAt {
+    BelowLowerLimit,                  // q₀ < qₗ
+    ExplicitEstimateBelowLowerLimit,  // q₀ + δt⋅v₀ < qₗ
+    AboveUpperLimit,                  // q₀ > qᵤ
+    ExplicitEstimateAboveUpperLimit,  // q₀ + δt⋅v₀ > qᵤ
+    WellWithinLimits,  // Both q0 and q₀ + δt⋅v₀ are in (qₗ, qᵤ)
+  };
+
   // Setup model of the Kuka iiwa arm with Schunk gripper and allocate context
   // resources. The model includes reflected inertias. Input ports are fixed to
   // arbitrary non-zero values.
@@ -1131,6 +1141,74 @@ class KukaIiwaArmTests : public ::testing::Test {
     }
     A.diagonal() += plant_.time_step() * damping;
     return A;
+  }
+
+  // Initializes `context` to store arbitrary values of state the abide by the
+  // given specification in `limits_specification`. This allow us to test how
+  // the manager adds constraint to the problem at different configurations.
+  void SetArbitraryStateWithLimitsSpecification(
+      const MultibodyPlant<double>& plant,
+      const std::vector<InitializePositionAt>& limits_specification,
+      Context<double>* context) {
+    DRAKE_DEMAND(static_cast<int>(limits_specification.size()) == kNumJoints);
+
+    // Arbitrary positive slop used for positions.
+    const double kPositiveDeltaQ = M_PI / 10.0;
+    const double dt = plant.time_step();
+    VectorXd v0 = VectorXd::LinSpaced(kNumJoints, -12.0, 12.0);
+    VectorXd q0(kNumJoints);
+
+    for (JointIndex joint_index(0); joint_index < plant.num_joints();
+         ++joint_index) {
+      const Joint<double>& joint = plant.get_joint(joint_index);
+
+      if (joint.num_velocities() == 1) {  // skip welds in the model.
+        const int v_index = joint.velocity_start();
+        const InitializePositionAt limit_spec = limits_specification[v_index];
+        const double ql = joint.position_lower_limits()[0];
+        const double qu = joint.position_upper_limits()[0];
+
+        double joint_q0 = 0.;
+        double joint_v0 = 0.;
+        switch (limit_spec) {
+          case InitializePositionAt::BelowLowerLimit: {
+            joint_q0 = ql > 0 ? 0.8 * ql : 1.2 * ql;
+            joint_v0 = joint_index * 2.3;  // Arbitrary.
+            break;
+          }
+          case InitializePositionAt::ExplicitEstimateBelowLowerLimit: {
+            joint_v0 = joint_index * 2.3;  // Arbitrary.
+            // We initialize q0 to ensure q₀ + δt⋅v₀ < qₗ.
+            joint_q0 = ql - dt * joint_v0 - kPositiveDeltaQ;
+            break;
+          }
+          case InitializePositionAt::AboveUpperLimit: {
+            joint_q0 = qu > 0 ? 1.2 * qu : 0.8 * qu;
+            joint_v0 = joint_index * 2.3;  // Arbitrary.
+            break;
+          }
+          case InitializePositionAt::ExplicitEstimateAboveUpperLimit: {
+            joint_v0 = joint_index * 2.3;  // Arbitrary.
+            // We initialize q0 to ensure q₀ + δt⋅v₀ > qᵤ
+            joint_q0 = qu - dt * joint_v0 + kPositiveDeltaQ;
+            break;
+          }
+          case InitializePositionAt::WellWithinLimits: {
+            joint_q0 = 0.5 * (ql + qu);  // q in (ql, qu)
+            joint_v0 = 0.0;
+            break;
+          }
+          default:
+            DRAKE_UNREACHABLE();
+        }
+
+        q0(v_index) = joint_q0;
+        v0(v_index) = joint_v0;
+      }
+    }
+
+    plant.SetPositions(context, q0);
+    plant.SetVelocities(context, v0);
   }
 
  private:
@@ -1271,6 +1349,27 @@ TEST_F(KukaIiwaArmTests, CalcFreeMotionVelocities) {
 }
 
 TEST_F(KukaIiwaArmTests, LimitConstraints) {
+  // Arbitrary selection of how positions and velocities are initialized.
+  std::vector<InitializePositionAt> limits_specification(
+      kNumJoints, InitializePositionAt::WellWithinLimits);
+  limits_specification[0] = InitializePositionAt::BelowLowerLimit;
+  limits_specification[1] = InitializePositionAt::AboveUpperLimit;
+  limits_specification[2] =
+      InitializePositionAt::ExplicitEstimateBelowLowerLimit;
+  limits_specification[3] =
+      InitializePositionAt::ExplicitEstimateAboveUpperLimit;
+  limits_specification[4] = InitializePositionAt::WellWithinLimits;
+  limits_specification[5] = InitializePositionAt::BelowLowerLimit;
+  limits_specification[6] = InitializePositionAt::AboveUpperLimit;
+  limits_specification[7] = InitializePositionAt::WellWithinLimits;
+  limits_specification[8] = InitializePositionAt::WellWithinLimits;
+
+  // Two joints are WellWithinLimits.
+  const int kNumJointsWithLimits = 6;
+  const int kNumConstraintEquations = 6;
+  SetArbitraryStateWithLimitsSpecification(plant_, limits_specification,
+                                           context_.get());
+
   const std::vector<DiscreteContactPair<double>>& discrete_pairs =
       CompliantContactManagerTest::EvalDiscreteContactPairs(*manager_,
                                                             *context_);
@@ -1286,8 +1385,8 @@ TEST_F(KukaIiwaArmTests, LimitConstraints) {
   // This model has no contact. Therefore we only expect contraints due to joint
   // limits. Moreover, since both lower and upper limits are specified for
   // each constraint, we expect 2 * kNumJoints constraint equations.
-  EXPECT_EQ(problem.num_constraints(), kNumJoints);
-  EXPECT_EQ(problem.num_constraint_equations(), 2 * kNumJoints);
+  EXPECT_EQ(problem.num_constraints(), kNumJointsWithLimits);
+  EXPECT_EQ(problem.num_constraint_equations(), kNumConstraintEquations);
 
   // In this model we clearly have single tree, the arm with its gripper.
   const int tree_expected = 0;
@@ -1299,46 +1398,69 @@ TEST_F(KukaIiwaArmTests, LimitConstraints) {
        ++joint_index) {
     const Joint<double>& joint = plant_.get_joint(joint_index);
     if (joint.num_velocities() == 1) {
-      // Get limit constraint for the specific joint.
-      const auto* constraint = dynamic_cast<const SapLimitConstraint<double>*>(
-          &problem.get_constraint(num_constraints++));
-      // In this test we do know all constraints are limit constraints.
-      ASSERT_NE(constraint, nullptr);
+      const int v_index = joint.velocity_start();
+      const InitializePositionAt limit_spec = limits_specification[v_index];
 
-      // Limit constraints always apply to a single tree in the multibody
-      // forest.
-      EXPECT_EQ(constraint->num_cliques(), 1);
+      if (limit_spec != InitializePositionAt::WellWithinLimits) {
+        // Get limit constraint for the specific joint.
+        const auto* constraint =
+            dynamic_cast<const SapLimitConstraint<double>*>(
+                &problem.get_constraint(num_constraints++));
+        // Since the spec is not WellWithinLimits, we expect a constraint added.
+        ASSERT_NE(constraint, nullptr);
 
-      // There is a single tree in this model, the arm with gripper.
-      EXPECT_EQ(constraint->first_clique(), tree_expected);
+        // Limit constraints always apply to a single tree in the multibody
+        // forest.
+        EXPECT_EQ(constraint->num_cliques(), 1);
 
-      EXPECT_EQ(constraint->clique_dof(), joint.velocity_start());
+        // There is a single tree in this model, the arm with gripper.
+        EXPECT_EQ(constraint->first_clique(), tree_expected);
 
-      // Both lower and upper limits are specified for each joint in this model.
-      EXPECT_EQ(constraint->num_constraint_equations(), 2);
-      EXPECT_EQ(constraint->first_clique_jacobian().rows(), 2);
+        EXPECT_EQ(constraint->clique_dof(), v_index);
 
-      // Each constraints acts on the same tree (the arm+gripper) with a total
-      // of kNumJoint DOFs in that tree.
-      EXPECT_EQ(constraint->first_clique_jacobian().cols(), kNumJoints);
+        // Each constraints acts on the same tree (the arm+gripper) with a total
+        // of kNumJoint DOFs in that tree.
+        EXPECT_EQ(constraint->first_clique_jacobian().cols(), kNumJoints);
 
-      // Verify the plant's state is consistent with the constraint's state.
-      const double q0 = joint.GetOnePosition(*context_);
-      EXPECT_EQ(constraint->position(), q0);
+        // Verify the plant's state is consistent with the constraint's state.
+        const double q0 = joint.GetOnePosition(*context_);
+        EXPECT_EQ(constraint->position(), q0);
 
-      const SapLimitConstraint<double>::Parameters& params =
-          constraint->parameters();
-      EXPECT_EQ(params.lower_limit(), joint.position_lower_limits()[0]);
-      EXPECT_EQ(params.upper_limit(), joint.position_upper_limits()[0]);
-      // N.B. Default values implemented in
-      // CompliantContactManager::AddLimitConstraints(), keep these values in
-      // sync.
-      EXPECT_EQ(params.stiffness(), 1.0e12);
-      EXPECT_EQ(params.dissipation_time_scale(), plant_.time_step());
-      EXPECT_EQ(params.beta(), 0.1);
+        // N.B. Default values implemented in
+        // CompliantContactManager::AddLimitConstraints(), keep these values in
+        // sync.
+        const SapLimitConstraint<double>::Parameters& params =
+            constraint->parameters();
+        EXPECT_EQ(params.stiffness(), 1.0e12);
+        EXPECT_EQ(params.dissipation_time_scale(), plant_.time_step());
+        EXPECT_EQ(params.beta(), 0.1);
+
+        const bool lower_limit_expected =
+            limit_spec == InitializePositionAt::BelowLowerLimit ||
+            limit_spec == InitializePositionAt::ExplicitEstimateBelowLowerLimit;
+        const bool upper_limit_expected =
+            limit_spec == InitializePositionAt::AboveUpperLimit ||
+            limit_spec == InitializePositionAt::ExplicitEstimateAboveUpperLimit;
+
+        const int expected_num_equations =
+            lower_limit_expected && upper_limit_expected ? 2 : 1;
+        EXPECT_EQ(constraint->num_constraint_equations(),
+                  expected_num_equations);
+        EXPECT_EQ(constraint->first_clique_jacobian().rows(),
+                  expected_num_equations);
+
+        const double kInf = std::numeric_limits<double>::infinity();
+        const double ql_expected =
+            lower_limit_expected ? joint.position_lower_limits()[0] : -kInf;
+        const double qu_expected =
+            upper_limit_expected ? joint.position_upper_limits()[0] : kInf;
+
+        EXPECT_EQ(params.lower_limit(), ql_expected);
+        EXPECT_EQ(params.upper_limit(), qu_expected);
+      }
     }
   }
-  EXPECT_EQ(num_constraints, kNumJoints);
+  EXPECT_EQ(num_constraints, kNumJointsWithLimits);
 }
 
 }  // namespace internal
