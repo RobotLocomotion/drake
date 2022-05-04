@@ -1,4 +1,3 @@
-#include <chrono>
 #include <memory>
 
 #include <gflags/gflags.h>
@@ -12,8 +11,6 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/multibody/plant/compliant_contact_manager.h"
-#include "drake/systems/analysis/simulator_print_stats.h"
 
 DEFINE_double(simulation_time, 2.0, "Simulation duration in seconds");
 DEFINE_double(penetration_allowance, 1.0E-3, "Allowable penetration (meters).");
@@ -21,7 +18,7 @@ DEFINE_double(stiction_tolerance, 1.0E-3,
               "Allowable drift speed during stiction (m/s).");
 
 DEFINE_double(
-    mbp_discrete_update_period, 5.0E-4,
+    mbp_discrete_update_period, 1.0E-3,
     "The fixed-time step period (in seconds) of discrete updates for the "
     "multibody plant modeled as a discrete system. Strictly positive. "
     "Set to zero for a continuous plant model.");
@@ -34,10 +31,7 @@ namespace {
 using drake::math::RigidTransformd;
 using drake::multibody::MultibodyPlant;
 using Eigen::Translation3d;
-using Eigen::Vector3d;
 using Eigen::VectorXd;
-using drake::multibody::internal::CompliantContactManager;
-using clock = std::chrono::steady_clock;
 
 int do_main() {
   if (FLAGS_mbp_discrete_update_period < 0) {
@@ -70,19 +64,12 @@ int do_main() {
                                   "GroundCollisionGeometry", ground_friction);
 
   plant.Finalize();
-  plant.set_penetration_allowance(FLAGS_penetration_allowance);  
+  plant.set_penetration_allowance(FLAGS_penetration_allowance);
 
   // Set the speed tolerance (m/s) for the underlying Stribeck friction model
   // For two points in contact, this is the maximum allowable drift speed at the
   // edge of the friction cone, an approximation to true stiction.
   plant.set_stiction_tolerance(FLAGS_stiction_tolerance);
-
-  auto owned_contact_manager =
-      std::make_unique<CompliantContactManager<double>>();
-  CompliantContactManager<double>* manager = owned_contact_manager.get();
-  // contact_manager_ = owned_contact_manager.get();
-  plant.SetDiscreteUpdateManager(std::move(owned_contact_manager));  
-  (void)manager;
 
   // Sanity check model size.
   DRAKE_DEMAND(plant.num_velocities() == 36);
@@ -104,8 +91,7 @@ int do_main() {
   // Publish contact results for visualization.
   ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph);
 
-  lcm::DrakeLcm lcm;
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, &lcm);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
   auto diagram = builder.Build();
 
   // Create a context for this system:
@@ -121,30 +107,9 @@ int do_main() {
   const Translation3d X_WP(0.0, 0.0, 0.95);
   plant.SetFreeBodyPoseInWorldFrame(&plant_context, pelvis, X_WP);
 
-#if 0
-  const auto& hokuyo_link = plant.GetBodyByName("hokuyo_link");
-  const Vector3d p_WHokuyo =
-      plant.EvalBodyPoseInWorld(plant_context, hokuyo_link).translation();
-  manager->AddDistanceConstraint(plant.world_body(), p_WHokuyo, hokuyo_link,
-                                 Vector3d::Zero(), 0.0, 1e6, plant.time_step());
-
-  geometry::DrakeVisualizerParams params;
-  params.role = geometry::Role::kProximity;
-  geometry::DrakeVisualizerd::DispatchLoadMessage(scene_graph, &lcm, params);
-
-  diagram->Publish(*diagram_context); // I want to see the model.
-#endif
-
   auto simulator =
       MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
-  clock::time_point sim_start_time = clock::now();        
   simulator->AdvanceTo(FLAGS_simulation_time);
-  clock::time_point sim_end_time = clock::now();
-  const double sim_time =
-      std::chrono::duration<double>(sim_end_time - sim_start_time).count();
-  std::cout << "AdvanceTo() time [sec]: " << sim_time << std::endl;
-
-  systems::PrintSimulatorStatistics(*simulator);
 
   return 0;
 }
