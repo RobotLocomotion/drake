@@ -45,6 +45,9 @@ TEST_F(UnboundedLinearProgramTest0, Test) {
     const int MSK_SOL_STA_DUAL_INFEAS_CER = 6;
     EXPECT_EQ(mosek_solver_details.solution_status,
               MSK_SOL_STA_DUAL_INFEAS_CER);
+    const auto x_sol = result.GetSolution(x_);
+    EXPECT_FALSE(std::isnan(x_sol(0)));
+    EXPECT_FALSE(std::isnan(x_sol(1)));
   }
 }
 
@@ -511,6 +514,65 @@ GTEST_TEST(MosekTest, TestNonconvexQP) {
   MosekSolver solver;
   if (solver.available()) {
     TestNonconvexQP(solver, true);
+  }
+}
+
+template <typename C>
+void CheckDualSolutionNotNan(const MathematicalProgramResult& result,
+                             const Binding<C>& constraint) {
+  const auto dual_sol = result.GetDualSolution(constraint);
+  for (int i = 0; i < dual_sol.rows(); ++i) {
+    EXPECT_FALSE(std::isnan(dual_sol(i)));
+  }
+}
+GTEST_TEST(MosekTest, InfeasibleLinearProgramTest) {
+  // Solve an infeasible LP, make sure the infeasible solution is returned.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto constraint1 = prog.AddLinearConstraint(x(0) + x(1) >= 3);
+  auto constraint2 = prog.AddBoundingBoxConstraint(0, 1, x);
+  prog.AddLinearCost(x(0) + 2 * x(1));
+  MosekSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(prog);
+    ASSERT_FALSE(result.is_success());
+    // Check that the primal solutions are not NAN.
+    for (int i = 0; i < x.rows(); ++i) {
+      EXPECT_FALSE(std::isnan(result.GetSolution(x(i))));
+    }
+    // Check that the dual solutions are not NAN.
+    CheckDualSolutionNotNan(result, constraint1);
+    CheckDualSolutionNotNan(result, constraint2);
+    // Check that the optimal cost is not NAN.
+    EXPECT_FALSE(std::isnan(result.get_optimal_cost()));
+  }
+}
+
+GTEST_TEST(MosekTest, InfeasibleSemidefiniteProgramTest) {
+  // Solve an infeasible SDP, make sure the infeasible solution is returned.
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<3>();
+  auto constraint1 = prog.AddPositiveSemidefiniteConstraint(X);
+  auto constraint2 =
+      prog.AddLinearConstraint(X(0, 0) + X(1, 1) + X(2, 2) <= -1);
+  prog.AddLinearCost(X(1, 2));
+  MosekSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(prog);
+    ASSERT_FALSE(result.is_success());
+    // Check that the primal solutions are not NAN.
+    const auto X_sol = result.GetSolution(X);
+    for (int i = 0; i < X.rows(); ++i) {
+      for (int j = 0; j < X.cols(); ++j) {
+        EXPECT_FALSE(std::isnan(X_sol(i, j)));
+      }
+    }
+    // Check that the dual solutions are not NAN.
+    // TODO(hongkai.dai): get the dual for the positive semidefinite constraint.
+    CheckDualSolutionNotNan(result, constraint2);
+
+    // Check that the optimal cost is not NAN.
+    EXPECT_FALSE(std::isnan(result.get_optimal_cost()));
   }
 }
 }  // namespace test

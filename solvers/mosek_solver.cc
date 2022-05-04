@@ -1981,78 +1981,71 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
 
   MSKsolstae solution_status{MSK_SOL_STA_UNKNOWN};
   if (rescode == MSK_RES_OK) {
-    if (rescode == MSK_RES_OK) {
-      rescode = MSK_getsolsta(task, solution_type, &solution_status);
-    }
-    if (rescode == MSK_RES_OK) {
-      switch (solution_status) {
-        case MSK_SOL_STA_OPTIMAL:
-        case MSK_SOL_STA_INTEGER_OPTIMAL:
-        case MSK_SOL_STA_PRIM_FEAS: {
-          result->set_solution_result(SolutionResult::kSolutionFound);
-          MSKint32t num_mosek_vars;
-          rescode = MSK_getnumvar(task, &num_mosek_vars);
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          Eigen::VectorXd mosek_sol_vector(num_mosek_vars);
-          rescode = MSK_getxx(task, solution_type, mosek_sol_vector.data());
-          MSKint32t num_bar_x;
-          rescode = MSK_getnumbarvar(task, &num_bar_x);
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          std::vector<Eigen::VectorXd> mosek_bar_x_sol(num_bar_x);
-          for (int i = 0; i < num_bar_x; ++i) {
-            MSKint32t bar_xi_dim;
-            rescode = MSK_getdimbarvarj(task, i, &bar_xi_dim);
-            DRAKE_ASSERT(rescode == MSK_RES_OK);
-            mosek_bar_x_sol[i].resize(bar_xi_dim * (bar_xi_dim + 1) / 2);
-            rescode =
-                MSK_getbarxj(task, solution_type, i, mosek_bar_x_sol[i].data());
-          }
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          Eigen::VectorXd sol_vector(num_decision_vars);
-          for (int i = 0; i < num_decision_vars; ++i) {
-            auto it1 =
-                decision_variable_index_to_mosek_nonmatrix_variable.find(i);
-            if (it1 !=
-                decision_variable_index_to_mosek_nonmatrix_variable.end()) {
-              sol_vector(i) = mosek_sol_vector(it1->second);
-            } else {
-              auto it2 =
-                  decision_variable_index_to_mosek_matrix_variable.find(i);
-              sol_vector(i) = mosek_bar_x_sol[it2->second.bar_matrix_index()](
-                  it2->second.IndexInLowerTrianglePart());
-            }
-          }
-          if (rescode == MSK_RES_OK) {
-            result->set_x_val(sol_vector);
-          }
-          MSKrealt optimal_cost;
-          rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          if (rescode == MSK_RES_OK) {
-            result->set_optimal_cost(optimal_cost);
-          }
-          rescode = SetDualSolution(
-              task, solution_type, prog, bb_con_dual_indices,
-              linear_con_dual_indices, lin_eq_con_dual_indices,
-              lorentz_cone_dual_indices, rotated_lorentz_cone_dual_indices,
-              exp_cone_dual_indices, result);
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          break;
-        }
-        case MSK_SOL_STA_DUAL_INFEAS_CER: {
-          result->set_solution_result(SolutionResult::kDualInfeasible);
-          break;
-        }
-        case MSK_SOL_STA_PRIM_INFEAS_CER: {
-          result->set_solution_result(SolutionResult::kInfeasibleConstraints);
-          break;
-        }
-        default: {
-          result->set_solution_result(SolutionResult::kUnknownError);
-          break;
-        }
+    rescode = MSK_getsolsta(task, solution_type, &solution_status);
+  }
+  if (rescode == MSK_RES_OK) {
+    switch (solution_status) {
+      case MSK_SOL_STA_OPTIMAL:
+      case MSK_SOL_STA_INTEGER_OPTIMAL:
+      case MSK_SOL_STA_PRIM_FEAS: {
+        result->set_solution_result(SolutionResult::kSolutionFound);
+        break;
+      }
+      case MSK_SOL_STA_DUAL_INFEAS_CER: {
+        result->set_solution_result(SolutionResult::kDualInfeasible);
+        break;
+      }
+      case MSK_SOL_STA_PRIM_INFEAS_CER: {
+        result->set_solution_result(SolutionResult::kInfeasibleConstraints);
+        break;
+      }
+      default: {
+        result->set_solution_result(SolutionResult::kUnknownError);
+        break;
       }
     }
+    MSKint32t num_mosek_vars;
+    rescode = MSK_getnumvar(task, &num_mosek_vars);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    Eigen::VectorXd mosek_sol_vector(num_mosek_vars);
+    rescode = MSK_getxx(task, solution_type, mosek_sol_vector.data());
+    MSKint32t num_bar_x;
+    rescode = MSK_getnumbarvar(task, &num_bar_x);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    std::vector<Eigen::VectorXd> mosek_bar_x_sol(num_bar_x);
+    for (int i = 0; i < num_bar_x; ++i) {
+      MSKint32t bar_xi_dim;
+      rescode = MSK_getdimbarvarj(task, i, &bar_xi_dim);
+      DRAKE_ASSERT(rescode == MSK_RES_OK);
+      mosek_bar_x_sol[i].resize(bar_xi_dim * (bar_xi_dim + 1) / 2);
+      rescode = MSK_getbarxj(task, solution_type, i, mosek_bar_x_sol[i].data());
+    }
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    Eigen::VectorXd sol_vector(num_decision_vars);
+    for (int i = 0; i < num_decision_vars; ++i) {
+      auto it1 = decision_variable_index_to_mosek_nonmatrix_variable.find(i);
+      if (it1 != decision_variable_index_to_mosek_nonmatrix_variable.end()) {
+        sol_vector(i) = mosek_sol_vector(it1->second);
+      } else {
+        auto it2 = decision_variable_index_to_mosek_matrix_variable.find(i);
+        sol_vector(i) = mosek_bar_x_sol[it2->second.bar_matrix_index()](
+            it2->second.IndexInLowerTrianglePart());
+      }
+    }
+    if (rescode == MSK_RES_OK) {
+      result->set_x_val(sol_vector);
+    }
+    MSKrealt optimal_cost;
+    rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    if (rescode == MSK_RES_OK) {
+      result->set_optimal_cost(optimal_cost);
+    }
+    rescode = SetDualSolution(
+        task, solution_type, prog, bb_con_dual_indices, linear_con_dual_indices,
+        lin_eq_con_dual_indices, lorentz_cone_dual_indices,
+        rotated_lorentz_cone_dual_indices, exp_cone_dual_indices, result);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
   }
 
   MosekSolverDetails& solver_details =
