@@ -761,13 +761,25 @@ MSKrescodee AddConeConstraints(
   return rescode;
 }
 
-MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
-                                               MSKtask_t* task) {
+MSKrescodee AddPositiveSemidefiniteConstraints(
+    const MathematicalProgram& prog, MSKtask_t* task,
+    std::unordered_map<Binding<PositiveSemidefiniteConstraint>, MSKint32t>*
+        psd_barvar_indices) {
   MSKrescodee rescode = MSK_RES_OK;
+  // First get the current number of bar matrix vars before appending the new
+  // ones.
+  MSKint32t numbarvar;
+  rescode = MSK_getnumbarvar(*task, &numbarvar);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
   std::vector<MSKint32t> bar_var_dimension;
   bar_var_dimension.reserve(prog.positive_semidefinite_constraints().size());
+  int psd_count = 0;
   for (const auto& binding : prog.positive_semidefinite_constraints()) {
     bar_var_dimension.push_back(binding.evaluator()->matrix_rows());
+    psd_barvar_indices->emplace(binding, numbarvar + psd_count);
+    psd_count++;
   }
 
   rescode = MSK_appendbarvars(*task, bar_var_dimension.size(),
@@ -1511,6 +1523,44 @@ void SetNonlinearConstraintDualSolution(
   }
 }
 
+MSKrescodee SetPositiveSemidefiniteConstraintDualSolution(
+    const MathematicalProgram& prog,
+    const std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
+                             MSKint32t>& psd_barvar_indices,
+    MSKtask_t task, MSKsoltypee whichsol, MathematicalProgramResult* result) {
+  MSKrescodee rescode = MSK_RES_OK;
+  for (const auto& psd_constraint : prog.positive_semidefinite_constraints()) {
+    // Get the bar index of the Mosek matrix var.
+    const auto it = psd_barvar_indices.find(psd_constraint);
+    if (it == psd_barvar_indices.end()) {
+      throw std::runtime_error(
+          "SetPositiveSemidefiniteConstraintDualSolution: this positive "
+          "semidefinite constraint has not been "
+          "registered in Mosek as a matrix variable. This should not happen, "
+          "please post an issue on Drake: "
+          "https://github.com/RobotLocomotion/drake/issues/new.");
+    }
+    const auto bar_index = it->second;
+    // barsj stores the lower triangular values of the psd matrix (as the dual
+    // solution).
+    std::vector<MSKrealt> barsj(
+        psd_constraint.evaluator()->matrix_rows() *
+        (psd_constraint.evaluator()->matrix_rows() + 1) / 2);
+    rescode = MSK_getbarsj(task, whichsol, bar_index, barsj.data());
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    // Copy barsj to dual_lower. We don't use barsj directly since MSKrealt
+    // might be a different data type from double.
+    Eigen::VectorXd dual_lower(barsj.size());
+    for (int i = 0; i < dual_lower.rows(); ++i) {
+      dual_lower(i) = barsj[i];
+    }
+    result->set_dual_solution(psd_constraint, dual_lower);
+  }
+  return rescode;
+}
+
 MSKrescodee SetDualSolution(
     const MSKtask_t& task, MSKsoltypee which_sol,
     const MathematicalProgram& prog,
@@ -1529,6 +1579,8 @@ MSKrescodee SetDualSolution(
         rotated_lorentz_cone_dual_indices,
     const std::unordered_map<Binding<ExponentialConeConstraint>,
                              ConstraintDualIndices>& exp_cone_dual_indices,
+    const std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
+                             MSKint32t>& psd_barvar_indices,
     MathematicalProgramResult* result) {
   // TODO(hongkai.dai): support other types of constraints, like linear
   // constraint, second order cone constraint, etc.
@@ -1600,6 +1652,11 @@ MSKrescodee SetDualSolution(
           rotated_lorentz_cone_dual_indices, result);
       SetNonlinearConstraintDualSolution(prog.exponential_cone_constraints(),
                                          snx, exp_cone_dual_indices, result);
+    }
+    rescode = SetPositiveSemidefiniteConstraintDualSolution(
+        prog, psd_barvar_indices, task, which_sol, result);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
     }
   }
   return rescode;
@@ -1790,8 +1847,14 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   }
   // Add positive semidefinite constraint. This also adds Mosek matrix
   // variables.
+  // psd_barvar_indices records the index of the bar matrix for this positive
+  // semidefinite constraint. We will use this bar matrix index later, for
+  // example when retrieving the dual solution.
+  std::unordered_map<Binding<PositiveSemidefiniteConstraint>, MSKint32t>
+      psd_barvar_indices;
   if (rescode == MSK_RES_OK) {
-    rescode = AddPositiveSemidefiniteConstraints(prog, &task);
+    rescode =
+        AddPositiveSemidefiniteConstraints(prog, &task, &psd_barvar_indices);
   }
   // Add the constraint that Mosek matrix variable entries corresponding to the
   // same decision variables should all be equal.
@@ -2044,7 +2107,8 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
     rescode = SetDualSolution(
         task, solution_type, prog, bb_con_dual_indices, linear_con_dual_indices,
         lin_eq_con_dual_indices, lorentz_cone_dual_indices,
-        rotated_lorentz_cone_dual_indices, exp_cone_dual_indices, result);
+        rotated_lorentz_cone_dual_indices, exp_cone_dual_indices,
+        psd_barvar_indices, result);
     DRAKE_ASSERT(rescode == MSK_RES_OK);
   }
 
