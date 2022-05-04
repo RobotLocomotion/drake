@@ -21,6 +21,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
+#include "drake/multibody/parsing/test/diagnostic_policy_test_base.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
@@ -37,6 +38,8 @@ namespace multibody {
 namespace internal {
 namespace {
 
+using ::testing::MatchesRegex;
+
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using drake::internal::DiagnosticDetail;
@@ -52,22 +55,9 @@ using systems::Context;
 
 const double kEps = std::numeric_limits<double>::epsilon();
 
-class SdfParserTest : public ::testing::Test {
+class SdfParserTest : public test::DiagnosticPolicyTestBase{
  public:
-  SdfParserTest() {
-    diagnostic_.SetActionForErrors(
-        [this](const DiagnosticDetail& detail) {
-          error_records_.push_back(detail);
-        });
-    diagnostic_.SetActionForWarnings(
-        [this](const DiagnosticDetail& detail) {
-          warning_records_.push_back(detail);
-        });
-  }
-
-  ~SdfParserTest() override {
-    FlushDiagnostics();
-  }
+  SdfParserTest() {}
 
   void AddSceneGraph() {
     plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
@@ -137,31 +127,12 @@ class SdfParserTest : public ::testing::Test {
     return warning_records_[0].FormatWarning();
   }
 
-  // This will trip on unexpected errors or warnings that remain after the
-  // test logic has finished. It also resets the collections so lingering
-  // reports to not pollute additional testing.
-  void FlushDiagnostics() {
-    EXPECT_TRUE(error_records_.empty());
-    EXPECT_TRUE(warning_records_.empty());
-    ClearDiagnostics();
-  }
-
-  // This resets the diagnostic collections so that lingering reports to not
-  // pollute additional testing. All current reports are silently discarded.
-  void ClearDiagnostics() {
-    error_records_.clear();
-    warning_records_.clear();
-  }
-
  protected:
   PackageMap package_map_;
   DiagnosticPolicy diagnostic_;
   MultibodyPlant<double> plant_{0.0};
   SceneGraph<double> scene_graph_;
-  ParsingWorkspace w_{package_map_, diagnostic_, &plant_};
-
-  std::vector<DiagnosticDetail> error_records_;
-  std::vector<DiagnosticDetail> warning_records_;
+  ParsingWorkspace w_{package_map_, diagnostic_policy_, &plant_};
 };
 
 const Frame<double>& GetModelFrameByName(const MultibodyPlant<double>& plant,
@@ -2438,6 +2409,24 @@ TEST_F(SdfParserTest, MergeInclude) {
   EXPECT_TRUE(plant_.HasBodyNamed("tool", robot1_model));
   EXPECT_TRUE(plant_.HasJointNamed("tool_joint", robot1_model));
 }
+
+TEST_F(SdfParserTest, UnsupportedElements) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "unsupported_elements.sdf");
+
+  AddSceneGraph();
+  AddModelsFromSdfFile(full_name);
+
+  EXPECT_THAT(TakeError(), MatchesRegex(".*drake:proximity_properties"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*self_collide"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*cast_shadows"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*transparency"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*lighting"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*script"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*shader"));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
