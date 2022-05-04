@@ -501,6 +501,8 @@ void CompliantContactManager<T>::
 template <typename T>
 void CompliantContactManager<T>::CalcNonContactForcesExcludingJointLimits(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  DRAKE_DEMAND(forces != nullptr);
+  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(plant()));
   // Compute forces applied through force elements. Note that this resets
   // forces to empty so must come first.
   this->CalcForceElementsContribution(context, forces);

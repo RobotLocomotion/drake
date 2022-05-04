@@ -268,7 +268,7 @@ class CompliantContactManager final
   // are not included as continuous compliant forces but rather as constraints
   // in the solver, and therefore must be excluded.
   // Values in `forces` will be overwritten.
-  // @pre forces != nullptr.
+  // @pre forces != nullptr and is consistent with plant().
   void CalcNonContactForcesExcludingJointLimits(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 
@@ -308,7 +308,14 @@ class CompliantContactManager final
       contact_solvers::internal::SapContactProblem<T>* problem) const;
 
   // Add limit constraints for the configuration stored in `context` into
-  // `problem`.
+  // `problem`. Limit constraints are only added when the state q₀ for a
+  // particular joint is "close" to the joint's limits (qₗ,qᵤ). To decide when
+  // the state q₀ is close to the joint's limits, this method estimates a window
+  // (wₗ,wᵤ) for the expected value of the configuration q at the next time
+  // step. Lower constraints are considered whenever qₗ > wₗ and upper
+  // constraints are considered whenever qᵤ < wᵤ. This window (wₗ,wᵤ) is
+  // estimated based on the current velocity v₀ and the free motion velocities
+  // v*, provided with `v_star`.
   // @pre problem must not be nullptr.
   void AddLimitConstraints(
       const systems::Context<T>& context, const VectorX<T>& v_star,

@@ -1146,6 +1146,7 @@ class KukaIiwaArmTests : public ::testing::Test {
   // Initializes `context` to store arbitrary values of state the abide by the
   // given specification in `limits_specification`. This allow us to test how
   // the manager adds constraint to the problem at different configurations.
+  // limits_specification are indexed by joint dofs.
   void SetArbitraryStateWithLimitsSpecification(
       const MultibodyPlant<double>& plant,
       const std::vector<InitializePositionAt>& limits_specification,
@@ -1155,7 +1156,7 @@ class KukaIiwaArmTests : public ::testing::Test {
     // Arbitrary positive slop used for positions.
     const double kPositiveDeltaQ = M_PI / 10.0;
     const double dt = plant.time_step();
-    VectorXd v0 = VectorXd::LinSpaced(kNumJoints, -12.0, 12.0);
+    VectorXd v0(kNumJoints);
     VectorXd q0(kNumJoints);
 
     for (JointIndex joint_index(0); joint_index < plant.num_joints();
@@ -1364,7 +1365,7 @@ TEST_F(KukaIiwaArmTests, LimitConstraints) {
   limits_specification[7] = InitializePositionAt::WellWithinLimits;
   limits_specification[8] = InitializePositionAt::WellWithinLimits;
 
-  // Two joints are WellWithinLimits.
+  // Three joints are WellWithinLimits.
   const int kNumJointsWithLimits = 6;
   const int kNumConstraintEquations = 6;
   SetArbitraryStateWithLimitsSpecification(plant_, limits_specification,
@@ -1382,9 +1383,8 @@ TEST_F(KukaIiwaArmTests, LimitConstraints) {
                                                            *context_);
   const SapContactProblem<double>& problem = *problem_cache.sap_problem;
 
-  // This model has no contact. Therefore we only expect constraints due to
-  // joint limits. Moreover, since both lower and upper limits are specified for
-  // each constraint, we expect 2 * kNumJoints constraint equations.
+  // This model has no contact. We expect the number of constraints and
+  // equations be consistent with limits_specification defined above.
   EXPECT_EQ(problem.num_constraints(), kNumJointsWithLimits);
   EXPECT_EQ(problem.num_constraint_equations(), kNumConstraintEquations);
 
