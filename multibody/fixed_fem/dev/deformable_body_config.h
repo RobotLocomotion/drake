@@ -8,6 +8,7 @@
 namespace drake {
 namespace multibody {
 namespace fem {
+
 /** Types of material models for the deformable body. */
 enum class MaterialModel {
   /** Corotational model. Recommended for modeling large deformations. More
@@ -19,24 +20,24 @@ enum class MaterialModel {
   kLinear,
 };
 
-// TODO(xuchenhan-tri): Add unit tests for this class.
 /** %DeformableBodyConfig stores the physical parameters for a deformable body.
  It contains the following fields with their corresponding valid ranges:
- - Youngs modulus: Measures the stiffness of the material, has unit Pa. Must be
-   positive.
- - Poisson ratio: Measures the Poisson effect (how much the material expands or
-   contracts in directions perpendicular to the direction of loading) of the
-   material, unitless. Must be greater than -1 and less than 0.5.
- - Mass damping coefficient: Controls the strength of mass damping. The damping
-   ratio contributed by mass damping is inversely proportional to the frequency
-   of the motion. Must be non-negative.
- - Stiffness damping coefficient: Controls the strength of stiffness damping.
-   The damping ratio contributed by stiffness damping is proportional to the
-   frequency of the motion. Must be non-negative.
- - Mass density: Has unit kg/m³. Must be positive. Default to 1e3.
+ - Young's modulus: Measures the stiffness of the material, has unit N/m². Must
+   be positive. Default to 1e8.
+ - Poisson's ratio: Measures the Poisson effect (how much the material expands
+   or contracts in directions perpendicular to the direction of loading) of the
+   material, unitless. Must be greater than -1 and less than 0.5. Default to
+   0.49.
+   <!-- TODO(xuchenhan-tri): Add a reference to Rayleigh damping coefficients.
+   -->
+ - Mass damping coefficient: Controls the strength of mass damping, has unit
+   1/s. Must be non-negative. Default to 0. See DampingModel.
+ - Stiffness damping coefficient: Controls the strength of stiffness damping,
+   has unit s. Must be non-negative. Default to 0. See DampingModel.
+ - Mass density: Has unit kg/m³. Must be positive. Default to 1.5e3.
  - Material model: The constitutive model that describes the stress-strain
-   relationship of the body, see MaterialModel. Must not be
-   MaterialModel::Invalid. Default to MaterialModel::kCorotated.
+   relationship of the body, see MaterialModel. Default to
+   MaterialModel::kCorotated.
 
  A default constructed configuration approximately represents a hard rubber
  material (density, elasticity, and poisson's ratio) without any damping.
@@ -47,19 +48,19 @@ template <typename T>
 class DeformableBodyConfig {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableBodyConfig);
+
   DeformableBodyConfig() = default;
 
-  /* Setters. */
   /** @pre youngs_modulus > 0. */
   void set_youngs_modulus(T youngs_modulus) {
     DRAKE_DEMAND(youngs_modulus > 0);
     youngs_modulus_ = std::move(youngs_modulus);
   }
 
-  /** @pre -1 < poisson_ratio < 0.5. */
-  void set_poisson_ratio(T poisson_ratio) {
-    DRAKE_DEMAND(-1 < poisson_ratio && poisson_ratio < 0.5);
-    poisson_ratio_ = std::move(poisson_ratio);
+  /** @pre -1 < poissons_ratio < 0.5. */
+  void set_poissons_ratio(T poissons_ratio) {
+    DRAKE_DEMAND(-1 < poissons_ratio && poissons_ratio < 0.5);
+    poissons_ratio_ = std::move(poissons_ratio);
   }
 
   /** @pre mass_damping_coefficient >= 0. */
@@ -84,26 +85,32 @@ class DeformableBodyConfig {
     material_model_ = material_model;
   }
 
-  /* Getters. */
+  /** Returns the Young's modulus, with unit of N/m². */
   const T& youngs_modulus() const { return youngs_modulus_; }
-  const T& poisson_ratio() const { return poisson_ratio_; }
+  /** Returns the Poisson's ratio, unitless. */
+  const T& poissons_ratio() const { return poissons_ratio_; }
+  /** Returns the mass damping coefficient. See DampingModel. */
   const T& mass_damping_coefficient() const {
     return mass_damping_coefficient_;
   }
+  /** Returns the stiffness damping coefficient. See DampingModel. */
   const T& stiffness_damping_coefficient() const {
     return stiffness_damping_coefficient_;
   }
+  /** Returns the mass density, with unit of kg/m³. */
   const T& mass_density() const { return mass_density_; }
+  /** Returns the constitutive model of the material. */
   MaterialModel material_model() const { return material_model_; }
 
  private:
   T youngs_modulus_{1e8};
-  T poisson_ratio_{0.49};
+  T poissons_ratio_{0.49};
   T mass_damping_coefficient_{0};
   T stiffness_damping_coefficient_{0};
   T mass_density_{1.5e3};
   MaterialModel material_model_{MaterialModel::kCorotated};
 };
+
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake
