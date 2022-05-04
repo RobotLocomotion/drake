@@ -4,10 +4,13 @@
 #include <gflags/gflags.h>
 
 #include "drake/geometry/drake_visualizer.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/benchmarks/inclined_plane/inclined_plane_plant.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
+#include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -42,22 +45,24 @@ DEFINE_double(stiction_tolerance, 1.0E-5,
               "Allowable drift speed during stiction (m/s).");
 DEFINE_double(inclined_plane_angle_degrees, 15.0,
               "Inclined plane angle (degrees), i.e., angle from Wx to Ax.");
-DEFINE_double(inclined_plane_coef_static_friction, 0.3,
+DEFINE_double(inclined_plane_coef_static_friction, 0.7,
               "Inclined plane's coefficient of static friction (no units).");
-DEFINE_double(inclined_plane_coef_kinetic_friction, 0.3,
+DEFINE_double(inclined_plane_coef_kinetic_friction, 0.7,
               "Inclined plane's coefficient of kinetic friction (no units).  "
               "When time_step > 0, this value is ignored.  Only the "
               "coefficient of static friction is used in fixed-time step.");
-DEFINE_double(bodyB_coef_static_friction, 0.3,
+DEFINE_double(bodyB_coef_static_friction, 0.7,
               "Body B's coefficient of static friction (no units).");
-DEFINE_double(bodyB_coef_kinetic_friction, 0.3,
+DEFINE_double(bodyB_coef_kinetic_friction, 0.7,
               "Body B's coefficient of kinetic friction (no units).  "
               "When time_step > 0, this value is ignored.  Only the "
               "coefficient of static friction is used in fixed-time step.");
 DEFINE_bool(is_inclined_plane_half_space, true,
             "Is inclined plane a half-space (true) or box (false).");
-DEFINE_string(bodyB_type, "sphere", "Valid body types are "
+DEFINE_string(bodyB_type, "sphere",
+              "Valid body types are "
               "'sphere', 'block', or 'block_with_4Spheres'");
+DEFINE_int32(num_bodies, 8, "number of free bodies");
 
 using drake::multibody::MultibodyPlant;
 
@@ -68,10 +73,7 @@ int do_main() {
       &builder, std::make_unique<MultibodyPlant<double>>(FLAGS_time_step));
 
   // Set constants that are relevant whether body B is a sphere or block.
-  const double massB = 0.1;       // Body B's mass (kg).
-  const double gravity = 9.8;     // Earth's gravitational acceleration (m/s^2).
-  const double inclined_plane_angle =
-      FLAGS_inclined_plane_angle_degrees / 180 * M_PI;
+  // const double massB = 0.1;       // Body B's mass (kg).
 
   // Information on how coefficients of friction are used in the file README.md
   // (which is in the folder associated with this example).
@@ -81,44 +83,66 @@ int do_main() {
       FLAGS_inclined_plane_coef_static_friction,
       FLAGS_inclined_plane_coef_kinetic_friction);
 
-  if (FLAGS_bodyB_type == "sphere") {
-    const double radiusB = 0.04;      // B's radius when modeled as a sphere.
-    const double LAx = 20 * radiusB;  // Inclined plane length in Ax direction.
-    const double LAy = 10 * radiusB;  // Inclined plane length in Ay direction.
-    const double LAz = radiusB;       // Inclined plane length in Az direction.
-    const Vector3<double> LAxyz(LAx, LAy, LAz);
-    const std::optional<Vector3<double>> inclined_plane_dimensions =
-        FLAGS_is_inclined_plane_half_space ? std::nullopt
-            : std::optional<Vector3<double>>(LAxyz);
-    benchmarks::inclined_plane::AddInclinedPlaneWithSphereToPlant(
-        gravity, inclined_plane_angle, inclined_plane_dimensions,
-        coef_friction_inclined_plane, coef_friction_bodyB,
-        massB, radiusB, &plant);
-  } else if (FLAGS_bodyB_type == "block" ||
-             FLAGS_bodyB_type == "block_with_4Spheres") {
-    // B's contacting surface can be modeled with 4 spheres or a single box.
-    const bool is_bodyB_block_with_4Spheres =
-        (FLAGS_bodyB_type == "block_with_4Spheres");
-    const double LBx = 0.4;      // Block B's length in Bx-direction (meters).
-    const double LBy = 0.2;      // Block B's length in By-direction (meters).
-    const double LBz = 0.04;     // Block B's length in Bz-direction (meters).
-    const double LAx = 8 * LBx;  // Inclined plane A's length in Ax direction.
-    const double LAy = 8 * LBy;  // Inclined plane A's length in Ay direction.
-    const double LAz = 0.04;     // Inclined plane A's length in Az direction.
-    const Vector3<double> block_dimensions(LBx, LBy, LBz);
-    const Vector3<double> LAxyz(LAx, LAy, LAz);
-    const std::optional<Vector3<double>> inclined_plane_dimensions =
-        FLAGS_is_inclined_plane_half_space ? std::nullopt
-            : std::optional<Vector3<double>>(LAxyz);
-    benchmarks::inclined_plane::AddInclinedPlaneWithBlockToPlant(
-        gravity, inclined_plane_angle, inclined_plane_dimensions,
-        coef_friction_inclined_plane, coef_friction_bodyB,
-        massB, block_dimensions,
-        is_bodyB_block_with_4Spheres, &plant);
-  } else {
-    std::cerr << "Invalid body_type '" << FLAGS_bodyB_type
-              << "' (note that types are case sensitive)." << std::endl;
-    return -1;
+  const math::RigidTransform<double> X_WC(Vector3<double>::Zero());
+  const math::RigidTransform<double> X_WA(
+      math::RotationMatrixd::MakeXRotation(-0.2));
+  const Vector4<double> white(0.9, 0.9, 0.9, 1.0);
+  const Vector4<double> blue(1.0, 0.55, 0.0, 1.0);
+
+  geometry::ProximityProperties props;
+  props.AddProperty(geometry::internal::kMaterialGroup,
+                    geometry::internal::kFriction, coef_friction_bodyB);
+  props.AddProperty(geometry::internal::kHydroGroup,
+                    geometry::internal::kElastic, 1e5);
+  props.AddProperty(geometry::internal::kHydroGroup,
+                    geometry::internal::kRezHint, 0.2);
+  props.AddProperty(geometry::internal::kHydroGroup,
+                    geometry::internal::kComplianceType,
+                    geometry::internal::HydroelasticType::kSoft);
+
+  plant.RegisterVisualGeometry(plant.world_body(), X_WA,
+                               geometry::Box(10, 10, 1),
+                               "InclinedPlaneVisualGeometry", white);
+  plant.RegisterCollisionGeometry(plant.world_body(), X_WA,
+                                  geometry::Box(10, 10, 1),
+                                  "InclinedPlaneCollisionGeometry", props);
+
+  // Make the cylinder bodies
+  SpatialInertia<double> body_inertia(
+      0.5, Vector3<double>::Zero(),
+      UnitInertia<double>::TriaxiallySymmetric(0.1));
+  const auto& body = plant.AddRigidBody("cylinder1", body_inertia);
+  plant.RegisterVisualGeometry(body, X_WC, geometry::Cylinder(0.5, 0.2),
+                               "cylinder1_viz", blue);
+  plant.RegisterCollisionGeometry(body, X_WC, geometry::Cylinder(0.5, 0.2),
+                                  "cylinder1_col", props);
+
+  // Make cylinders and joints
+  for (int i = 2; i <= FLAGS_num_bodies; ++i) {
+    const auto& cylinder =
+        plant.AddRigidBody(fmt::format("cylinder{}", i), body_inertia);
+    plant.RegisterVisualGeometry(cylinder, X_WC, geometry::Cylinder(0.5, 0.2),
+                                 fmt::format("cylinder{}_viz", i), blue);
+    plant.RegisterCollisionGeometry(cylinder, X_WC,
+                                    geometry::Cylinder(0.5, 0.2),
+                                    fmt::format("cylinder{}_col", i), props);
+
+    const auto& cylinder_prev =
+        plant.GetBodyByName(fmt::format("cylinder{}", i - 1));
+
+    // plant.AddJoint<QuaternionFloatingJoint>(
+    //    fmt::format("{}_{}", i - 1, i), cylinder_prev, {}, cylinder, {}, 0.0,
+    //     0.0);
+
+    const auto& joint_const = plant.AddJoint<QuaternionFloatingJoint>(
+        fmt::format("{}_{}", i - 1, i), cylinder_prev, {}, cylinder, {}, 0.0,
+        0.0);
+
+    auto& joint = plant.GetMutableJointByName<QuaternionFloatingJoint>(
+        joint_const.name());
+    // joint.set_default_position(Vector3<double>(0, 0, 0.5));
+    joint.SetDefaultPose(
+        math::RigidTransform<double>(Vector3<double>(0, 0, -0.22)));
   }
 
   plant.Finalize();
@@ -131,8 +155,8 @@ int do_main() {
   plant.set_stiction_tolerance(FLAGS_stiction_tolerance);
 
   // Do a reality check that body B is a free-flying rigid body.
-  DRAKE_DEMAND(plant.num_velocities() == 6);
-  DRAKE_DEMAND(plant.num_positions() == 7);
+  //   DRAKE_DEMAND(plant.num_velocities() == 6);
+  //   DRAKE_DEMAND(plant.num_positions() == 7);
 
   // Publish contact results for visualization.
   // TODO(Mitiguy) Ensure contact forces can be displayed when time_step = 0.
@@ -149,29 +173,78 @@ int do_main() {
   systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
-  // In the plant's default context, we assume the state of body B in world W is
-  // such that X_WB is an identity transform and B's spatial velocity is zero.
+  // In the plant's default context, we assume the state of body B in world W
+  // is such that X_WB is an identity transform and B's spatial velocity is
+  // zero.
   plant.SetDefaultContext(&plant_context);
 
   // Overwrite B's default initial position so it is somewhere above the
   // inclined plane provided `0 < inclined_plane_angle < 40`.
-  const drake::multibody::Body<double>& bodyB = plant.GetBodyByName("BodyB");
-  const Vector3<double> p_WoBo_W(-1.0, 0, 1.2);
-  const math::RigidTransform<double> X_WB(p_WoBo_W);
+  const auto& bodyB = plant.GetBodyByName("cylinder1");
+  const math::RigidTransform<double> X_WB(
+      math::RotationMatrix<double>::MakeXRotation(0.5 * M_PI),
+      Vector3<double>(0, -2, 2));
   plant.SetFreeBodyPoseInWorldFrame(&plant_context, bodyB, X_WB);
+
+  for (int i = 2; i <= FLAGS_num_bodies; ++i) {
+    auto& joint = plant.GetJointByName<QuaternionFloatingJoint>(
+        fmt::format("{}_{}", i - 1, i));
+    joint.Lock(&plant_context);
+  }
+
+  bodyB.Lock(&plant_context);
+
+  for (int i = 1; i <= FLAGS_num_bodies; ++i) {
+    std::cout << fmt::format("{}.is_floating = {}    ",
+                             plant.get_body(BodyIndex(i)).name(),
+                             plant.get_body(BodyIndex(i)).is_floating());
+    Vector3<double> p_WC = plant.get_body(BodyIndex(i))
+                               .EvalPoseInWorld(plant_context)
+                               .translation();
+    std::cout << fmt::format("p_WC_{}: {} {} {}\n", i, p_WC[0], p_WC[1],
+                             p_WC[2]);
+  }
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
   systems::IntegratorBase<double>& integrator =
       simulator.get_mutable_integrator();
 
-  // Set the integration accuracy when the plant is integrated with a variable-
-  // step integrator. This value is not used if time_step > 0 (fixed-time step).
+  // Set the integration accuracy when the plant is integrated with a
+  // variable- step integrator. This value is not used if time_step > 0
+  // (fixed-time step).
   integrator.set_target_accuracy(FLAGS_integration_accuracy);
 
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.AdvanceTo(FLAGS_simulation_time);
+
+  int mid = FLAGS_num_bodies / 2;
+  if (mid > 0 && mid + 1 <= FLAGS_num_bodies) {
+    auto& joint = plant.GetJointByName<QuaternionFloatingJoint>(
+        fmt::format("{}_{}", mid, mid + 1));
+    joint.Unlock(&plant_context);
+    simulator.AdvanceTo(2 * FLAGS_simulation_time);
+  }
+
+  for (int i = mid + 1; i < FLAGS_num_bodies; ++i) {
+    auto& joint = plant.GetJointByName<QuaternionFloatingJoint>(
+        fmt::format("{}_{}", i, i + 1));
+    joint.Unlock(&plant_context);
+  }
+
+  simulator.AdvanceTo(6 * FLAGS_simulation_time);
+
+  for (int i = 2; i <= FLAGS_num_bodies / 2; ++i) {
+    auto& joint = plant.GetJointByName<QuaternionFloatingJoint>(
+        fmt::format("{}_{}", mid - i + 1, mid - i + 2));
+    joint.Unlock(&plant_context);
+    simulator.AdvanceTo((6 + i) * FLAGS_simulation_time);
+  }
+
+  bodyB.Unlock(&plant_context);
+
+  simulator.AdvanceTo((6 + FLAGS_num_bodies) * FLAGS_simulation_time);
 
   return 0;
 }
