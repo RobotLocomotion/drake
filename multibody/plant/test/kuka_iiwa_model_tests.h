@@ -63,15 +63,14 @@ class KukaIiwaModelTests : public ::testing::Test {
     context_autodiff_ = plant_autodiff_->CreateDefaultContext();
   }
 
-  // Sets the configuration and motion for this kuka iiwa's context with
-  // non-zero joint angles and angular rates that avoid in-plane motion.
-  // @param[in] unit_quaternion false means the quaternion for the kuka iiwa's
-  // free floating base is set to a non-unit quaternion, which can be helpful to
-  // verify the computation of Jacobians with respect to q̇ (time-derivative of
-  // generalized positions), even if the state stores a non-unit quaternion.
-  void SetArbitraryConfigurationAndMotion(bool unit_quaternion = true) {
-    const VectorX<double> x0_joints = GetArbitraryJointAnglesAndRates();
-    SetState(x0_joints);
+  // If unit_quaternion = false then the quaternion for the free floating base
+  // is not normalized. This configuration is useful to verify the computation
+  // of Jacobians with respect to q̇ (time-derivative of generalized positions),
+  // even if the state stores a non-unit quaternion.
+  void SetArbitraryConfiguration(bool unit_quaternion = true) {
+    // Get an arbitrary set of angles and velocities for each joint.
+    const VectorX<double> x0 = GetArbitraryJointConfiguration();
+    SetState(x0);
      if (!unit_quaternion) {
         VectorX<double> q = plant_->GetPositions(*context_);
         // TODO(amcastro-tri): This assumes the first 4 entries in the
@@ -110,12 +109,13 @@ class KukaIiwaModelTests : public ::testing::Test {
     plant_->SetFreeBodySpatialVelocity(context_.get(), base_body, {w_WB, v_WB});
   }
 
-  // Get an arm state associated with an arbitrary configuration that avoids
-  // in-plane motion and in which joint angles and rates are non-zero.
-  VectorX<double> GetArbitraryJointAnglesAndRates() {
+  // Gets an arm state to an arbitrary configuration in which joint angles and
+  // rates are non-zero.
+  VectorX<double> GetArbitraryJointConfiguration() {
     VectorX<double> x(2 * kNumJoints);
 
-    // These joint angles avoid in-plane motion, but are otherwise arbitrary.
+    // A set of values for the joint's angles chosen mainly to avoid in-plane
+    // motions.
     const double q30 = M_PI / 6, q60 = M_PI / 3;
     const double qA = q60;
     const double qB = q30;
@@ -124,14 +124,16 @@ class KukaIiwaModelTests : public ::testing::Test {
     const double qE = q60;
     const double qF = q30;
     const double qG = q60;
-    // Arbitrary non-zero angular rates in radians/second.
-    const double vA = 0.12345;
-    const double vB = -0.1987;
-    const double vC = 0.54322;
-    const double vD = -0.6732;
-    const double vE = 0.31415;
-    const double vF = -0.7733;
-    const double vG = 0.71828;
+    // Arbitrary non-zero velocities.
+    const double v_positive = 0.1;   // rad/s
+    const double v_negative = -0.1;  // rad/s
+    const double vA = v_positive;
+    const double vB = v_negative;
+    const double vC = v_positive;
+    const double vD = v_negative;
+    const double vE = v_positive;
+    const double vF = v_negative;
+    const double vG = v_positive;
     x << qA, qB, qC, qD, qE, qF, qG, vA, vB, vC, vD, vE, vF, vG;
 
     return x;
