@@ -36,6 +36,7 @@ drake_cc_package_library(
     deps = [
         ":detail_misc",
         ":detail_parsing_workspace",
+        ":detail_sdf_diagnostic",
         ":detail_sdf_geometry",
         ":detail_sdf_parser",
         ":detail_urdf_parser",
@@ -115,6 +116,26 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "detail_sdf_diagnostic",
+    srcs = [
+        "detail_sdf_diagnostic.cc",
+    ],
+    hdrs = [
+        "detail_sdf_diagnostic.h",
+    ],
+    install_hdrs_exclude = [
+        "detail_sdf_diagnostic.h",
+    ],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        "//common:diagnostic_policy",
+        "@sdformat",
+    ],
+)
+
+drake_cc_library(
     name = "detail_sdf_geometry",
     srcs = [
         "detail_sdf_geometry.cc",
@@ -130,6 +151,7 @@ drake_cc_library(
     ],
     deps = [
         ":detail_misc",
+        ":detail_sdf_diagnostic",
         ":package_map",
         "//common:diagnostic_policy",
         "//geometry:geometry_instance",
@@ -157,6 +179,7 @@ drake_cc_library(
     deps = [
         ":detail_misc",
         ":detail_parsing_workspace",
+        ":detail_sdf_diagnostic",
         ":detail_sdf_geometry",
         ":detail_urdf_parser",
         ":scoped_names",
@@ -451,6 +474,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_sdf_parser",
+        ":diagnostic_policy_test_base",
         "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",

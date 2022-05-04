@@ -25,6 +25,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
+#include "drake/multibody/parsing/detail_sdf_diagnostic.h"
 #include "drake/multibody/parsing/detail_sdf_geometry.h"
 #include "drake/multibody/parsing/detail_urdf_parser.h"
 #include "drake/multibody/parsing/scoped_names.h"
@@ -442,6 +443,7 @@ void AddRevoluteSpringFromSpecification(
 // Velocity and acceleration limits are always >= 0.  This method throws an
 // exception if the joint type is not one of revolute or prismatic.
 std::tuple<double, double, double, double> ParseJointLimits(
+    const DiagnosticPolicy& diagnostic,
     const sdf::Joint& joint_spec) {
   DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE ||
       joint_spec.Type() == sdf::JointType::PRISMATIC);
@@ -486,6 +488,16 @@ std::tuple<double, double, double, double> ParseJointLimits(
   double acceleration_limit = std::numeric_limits<double>::infinity();
   if (axis->Element()->HasElement("limit")) {
     const auto limit_element = axis->Element()->GetElement("limit");
+    const std::set<std::string> supported_limit_elements{
+      "drake:acceleration",
+      "effort",
+      "lower",
+      "stiffness",
+      "upper",
+      "velocity"};
+    CheckSupportedElements(diagnostic, limit_element,
+                           supported_limit_elements);
+
     if (limit_element->HasElement("drake:acceleration")) {
       acceleration_limit = limit_element->Get<double>("drake:acceleration");
       if (acceleration_limit < 0) {
@@ -508,6 +520,19 @@ void AddJointFromSpecification(
     const sdf::Joint& joint_spec, ModelInstanceIndex model_instance,
     MultibodyPlant<double>* plant,
     std::set<sdf::JointType>* joint_types) {
+
+  const std::set<std::string> supported_joint_elements{
+    "axis",
+    "child",
+    "drake:rotor_inertia",
+    "drake:gear_ratio",
+    "parent",
+    "pose"};
+  CheckSupportedElements(diagnostic, joint_spec.Element(),
+                         supported_joint_elements);
+
+  // Axis elements should be fully supported, let sdformat validate those.
+
   const Body<double>& parent_body = GetBodyByLinkSpecificationName(
       ResolveJointParentLinkName(diagnostic, joint_spec), model_instance,
       *plant);
@@ -560,7 +585,7 @@ void AddJointFromSpecification(
       const double damping = ParseJointDamping(joint_spec);
       Vector3d axis_J = ExtractJointAxis(diagnostic, model_spec, joint_spec);
       std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
-          ParseJointLimits(joint_spec);
+          ParseJointLimits(diagnostic, joint_spec);
       const auto& joint = plant->AddJoint<PrismaticJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
@@ -576,7 +601,7 @@ void AddJointFromSpecification(
       const double damping = ParseJointDamping(joint_spec);
       Vector3d axis_J = ExtractJointAxis(diagnostic, model_spec, joint_spec);
       std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
-          ParseJointLimits(joint_spec);
+          ParseJointLimits(diagnostic, joint_spec);
       const auto& joint = plant->AddJoint<RevoluteJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
@@ -650,15 +675,27 @@ void AddJointFromSpecification(
 // Helper method to load an SDF file and read the contents into an sdf::Root
 // object.
 [[nodiscard]] sdf::Errors LoadSdf(
+    const DiagnosticPolicy& diagnostic,
     sdf::Root* root,
     const DataSource& data_source,
     const sdf::ParserConfig& parser_config) {
+  sdf::Errors errors;
   if (data_source.IsFilename()) {
     const std::string full_path = data_source.GetAbsolutePath();
-    return root->Load(full_path, parser_config);
+    errors = root->Load(full_path, parser_config);
   } else {
-    return root->LoadSdfString(data_source.contents(), parser_config);
+    errors = root->LoadSdfString(data_source.contents(), parser_config);
   }
+
+  if (errors.empty()) {
+    const std::set<std::string> supported_root_elements{
+      "model",
+      "world"};
+
+    CheckSupportedElements(
+        diagnostic, root->Element(), supported_root_elements);
+  }
+  return errors;
 }
 
 struct LinkInfo {
@@ -678,9 +715,23 @@ std::vector<LinkInfo> AddLinksFromSpecification(
     const std::string& root_dir) {
   std::vector<LinkInfo> link_infos;
 
+  const std::set<std::string> supported_link_elements{
+    "collision",
+    "gravity",
+    "inertial",
+    "kinematic",
+    "pose",
+    "visual"};
+
   // Add all the links
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
     const sdf::Link& link = *model.LinkByIndex(link_index);
+    sdf::ElementPtr link_element = link.Element();
+
+    CheckSupportedElements(
+        diagnostic, link_element, supported_link_elements);
+    CheckSupportedElementValue(diagnostic, link_element, "kinematic", "0");
+    CheckSupportedElementValue(diagnostic, link_element, "gravity", "1");
 
     // Get the link's inertia relative to the Bcm frame.
     // sdf::Link::Inertial() provides a representation for the SpatialInertia
@@ -860,9 +911,17 @@ const Frame<double>& ParseFrame(const sdf::ElementPtr node,
 
 // TODO(eric.cousineau): Update parsing pending resolution of
 // https://github.com/osrf/sdformat/issues/288
-void AddDrakeJointFromSpecification(const sdf::ElementPtr node,
+void AddDrakeJointFromSpecification(const DiagnosticPolicy& diagnostic,
+                                    const sdf::ElementPtr node,
                                     ModelInstanceIndex model_instance,
                                     MultibodyPlant<double>* plant) {
+  const std::set<std::string> supported_joint_elements{
+    "drake:parent",
+    "drake:child",
+    "drake:damping",
+    "pose"};
+  CheckSupportedElements(diagnostic, node, supported_joint_elements);
+
   if (!node->HasAttribute("type")) {
     throw std::runtime_error(
         "<drake:joint>: Unable to find the 'type' attribute.");
@@ -898,9 +957,19 @@ void AddDrakeJointFromSpecification(const sdf::ElementPtr node,
 }
 
 const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
+    const DiagnosticPolicy& diagnostic,
     const sdf::ElementPtr node,
     ModelInstanceIndex model_instance,
     MultibodyPlant<double>* plant) {
+  const std::set<std::string> supported_bushing_elements{
+    "drake:bushing_frameA",
+    "drake:bushing_frameC",
+    "drake:bushing_force_damping",
+    "drake:bushing_force_stiffness",
+    "drake:bushing_torque_damping",
+    "drake:bushing_torque_stiffness"};
+  CheckSupportedElements(diagnostic, node, supported_bushing_elements);
+
   // Functor to read a vector valued child tag with tag name: `element_name`
   // e.g. <element_name>0 0 0</element_name>
   // Throws an error if the tag does not exist.
@@ -998,6 +1067,22 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     MultibodyPlant<double>* plant,
     const PackageMap& package_map,
     const std::string& root_dir) {
+
+  const std::set<std::string> supported_model_elements{
+    "drake:joint",
+    "drake:linear_bushing_rpy",
+    "drake:collision_filter_group",
+    "frame",
+    "include",
+    "joint",
+    "link",
+    "model",
+    "pose",
+    "static"};
+  CheckSupportedElements(
+      diagnostic, model.Element(), supported_model_elements);
+
+
   const ModelInstanceIndex model_instance =
     plant->AddModelInstance(model_name);
   std::vector <ModelInstanceIndex> added_model_instances{model_instance};
@@ -1085,7 +1170,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     for (sdf::ElementPtr joint_node =
              model.Element()->GetElement("drake:joint");
          joint_node; joint_node = joint_node->GetNextElement("drake:joint")) {
-      AddDrakeJointFromSpecification(joint_node, model_instance, plant);
+      AddDrakeJointFromSpecification(
+          diagnostic, joint_node, model_instance, plant);
     }
   }
 
@@ -1095,7 +1181,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
              model.Element()->GetElement("drake:linear_bushing_rpy");
          bushing_node; bushing_node = bushing_node->GetNextElement(
                            "drake:linear_bushing_rpy")) {
-      AddBushingFromSpecification(bushing_node, model_instance, plant);
+      AddBushingFromSpecification(
+          diagnostic, bushing_node, model_instance, plant);
     }
   }
 
@@ -1294,7 +1381,8 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     // another included model that requires a custom parser.
     sdf::Root root;
 
-    sdf::Errors inner_errors = LoadSdf(&root, data_source, parser_config);
+    sdf::Errors inner_errors = LoadSdf(
+        diagnostic, &root, data_source, parser_config);
     if (PropagateErrors(std::move(inner_errors), errors)) {
       return nullptr;
     }
@@ -1437,7 +1525,8 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
 
   sdf::Root root;
 
-  sdf::Errors errors = LoadSdf(&root, data_source, parser_config);
+  sdf::Errors errors = LoadSdf(
+      workspace.diagnostic, &root, data_source, parser_config);
   if (PropagateErrors(errors, workspace.diagnostic)) {
     return std::nullopt;
   }
@@ -1471,7 +1560,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 
   sdf::Root root;
 
-  sdf::Errors errors = LoadSdf(&root, data_source, parser_config);
+  sdf::Errors errors = LoadSdf(
+      workspace.diagnostic, &root, data_source, parser_config);
   if (PropagateErrors(errors, workspace.diagnostic)) {
     return {};
   }
@@ -1510,6 +1600,13 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     DRAKE_DEMAND(world_count == 1);
     DRAKE_DEMAND(root.WorldByIndex(0) != nullptr);
     const sdf::World& world = *root.WorldByIndex(0);
+
+    const std::set<std::string> supported_world_elements{
+      "frame",
+      "include",
+      "model"};
+    CheckSupportedElements(
+        workspace.diagnostic, world.Element(), supported_world_elements);
 
     // TODO(eric.cousineau): Either support or explicitly prevent adding joints
     // via `//world/joint`, per this Bitbucket comment: https://bit.ly/2udQxhp

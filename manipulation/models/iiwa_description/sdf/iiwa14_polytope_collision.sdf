@@ -30,9 +30,6 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <link name="iiwa_link_1">
       <pose>0 0 0.1575 0 0 0</pose>
@@ -59,9 +56,6 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_1" type="revolute">
       <child>iiwa_link_1</child>
@@ -119,9 +113,6 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
         </material>
       </visual>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_2" type="revolute">
       <child>iiwa_link_2</child>
@@ -190,9 +181,6 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <diffuse>0 0 0 1</diffuse>
         </material>
       </visual>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_3" type="revolute">
       <child>iiwa_link_3</child>
@@ -250,9 +238,6 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
         </material>
       </visual>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_4" type="revolute">
       <child>iiwa_link_4</child>
@@ -321,9 +306,6 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <diffuse>0 0 0 1</diffuse>
         </material>
       </visual>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_5" type="revolute">
       <child>iiwa_link_5</child>
@@ -381,9 +363,6 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
         </material>
       </visual>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_6" type="revolute">
       <child>iiwa_link_6</child>
@@ -449,9 +428,6 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_7" type="revolute">
       <child>iiwa_link_7</child>
@@ -474,8 +450,5 @@ Later edited by hand to rename the base link and remove damping from the joints.
       </axis>
     </joint>
     <static>0</static>
-    <plugin name="gazebo_ros_controller" filename="libgazebo_ros_control.so">
-      <robotNamespace>/iiwa</robotNamespace>
-    </plugin>
   </model>
 </sdf>

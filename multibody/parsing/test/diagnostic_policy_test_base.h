@@ -34,8 +34,7 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
   }
 
   ~DiagnosticPolicyTestBase() {
-    EXPECT_TRUE(error_records_.empty()) << DumpErrors();
-    EXPECT_TRUE(warning_records_.empty()) << DumpWarnings();
+    FlushDiagnostics();
   }
 
   /// Remove an error from internal records and return its formatted string.
@@ -49,6 +48,23 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
     EXPECT_FALSE(warning_records_.empty());
     return Take(&warning_records_).FormatWarning();
   }
+
+  // This resets the diagnostic collections so that lingering reports to not
+  // pollute additional testing. All current reports are silently discarded.
+  void ClearDiagnostics() {
+    error_records_.clear();
+    warning_records_.clear();
+  }
+
+  // This will trip on unexpected errors or warnings that remain after the
+  // test logic has finished. It also resets the collections so lingering
+  // reports to not pollute additional testing.
+  void FlushDiagnostics() {
+    EXPECT_TRUE(error_records_.empty()) << DumpErrors();
+    EXPECT_TRUE(warning_records_.empty()) << DumpWarnings();
+    ClearDiagnostics();
+  }
+
 
  protected:
   std::string DumpErrors() {
