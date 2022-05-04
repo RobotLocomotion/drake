@@ -2568,8 +2568,9 @@ class MathematicalProgram {
    * @note It calls `Reparse` to enforce `p1` and `p2` to have this
    * MathematicalProgram's indeterminates.
    */
-  void AddEqualityConstraintBetweenPolynomials(const symbolic::Polynomial& p1,
-                                               const symbolic::Polynomial& p2);
+  std::vector<Binding<LinearEqualityConstraint>>
+  AddEqualityConstraintBetweenPolynomials(const symbolic::Polynomial& p1,
+                                          const symbolic::Polynomial& p2);
 
   /**
    * Adds the exponential cone constraint that

@@ -1431,13 +1431,16 @@ MathematicalProgram::AddSosConstraint(
       type);
 }
 
-void MathematicalProgram::AddEqualityConstraintBetweenPolynomials(
+std::vector<Binding<LinearEqualityConstraint>>
+MathematicalProgram::AddEqualityConstraintBetweenPolynomials(
     const symbolic::Polynomial& p1, const symbolic::Polynomial& p2) {
   symbolic::Polynomial poly_diff = p1 - p2;
   Reparse(&poly_diff);
+  std::vector<Binding<LinearEqualityConstraint>> ret;
   for (const auto& item : poly_diff.monomial_to_coefficient_map()) {
-    AddLinearEqualityConstraint(item.second, 0);
+    ret.push_back(AddLinearEqualityConstraint(item.second, 0));
   }
+  return ret;
 }
 
 double MathematicalProgram::GetInitialGuess(
