@@ -264,6 +264,11 @@ class CompliantContactManager final
   void CalcLinearDynamicsMatrix(const systems::Context<T>& context,
                                 std::vector<MatrixX<T>>* A) const;
 
+  // Computes all continuous forces in the MultibodyPlant model. Joint limits
+  // are not included as continuous compliant forces but rather as constraints
+  // in the solver, and therefore must be excluded.
+  // Values in `forces` will be overwritten.
+  // @pre forces != nullptr.
   void CalcNonContactForcesExcludingJointLimits(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 

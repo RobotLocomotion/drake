@@ -1382,8 +1382,8 @@ TEST_F(KukaIiwaArmTests, LimitConstraints) {
                                                            *context_);
   const SapContactProblem<double>& problem = *problem_cache.sap_problem;
 
-  // This model has no contact. Therefore we only expect contraints due to joint
-  // limits. Moreover, since both lower and upper limits are specified for
+  // This model has no contact. Therefore we only expect constraints due to
+  // joint limits. Moreover, since both lower and upper limits are specified for
   // each constraint, we expect 2 * kNumJoints constraint equations.
   EXPECT_EQ(problem.num_constraints(), kNumJointsWithLimits);
   EXPECT_EQ(problem.num_constraint_equations(), kNumConstraintEquations);

@@ -817,8 +817,12 @@ void CompliantContactManager<T>::AddLimitConstraints(
   constexpr double kInf = std::numeric_limits<double>::infinity();
 
   // TODO(amcastro-tri): consider exposing these parameters.
+  // "Near-rigid" parameter. See [Castro et al., 2021].
   constexpr double kBeta = 0.1;
-  constexpr double kLimitWindow = 2.0;
+  // Parameter used to estimate the size of a window [w_l, w_u] within which we
+  // expect the configuration q for a given joint to be in the next time step.
+  // See notes below for details. Dimensionless.
+  constexpr double kLimitWindowFactor = 2.0;
 
   const double dt = plant().time_step();
 
@@ -860,14 +864,15 @@ void CompliantContactManager<T>::AddLimitConstraints(
       using std::abs;
       using std::max;
       // delta_q estimates how much q changes in a single time step.
+      // We use the maximum of v0 and v* for a conservative estimation.
       const T delta_q = dt * max(abs(v0), abs(v_star(velocity_start)));
-      // We use a factor kLimitWindow to look into a larger window. A very large
-      // kLimitWindow means that constraints will always be added even if they
-      // are inactive at the end of the computation. A smaller kLimitWindow will
-      // result in a smaller problem, faster to solve, though constraints could
-      // be missed until the next time step.
-      const T window_lower = q0 - kLimitWindow * delta_q;
-      const T window_upper = q0 + kLimitWindow * delta_q;
+      // We use a factor kLimitWindowFactor to look into a larger window. A very
+      // large kLimitWindowFactor means that constraints will always be added
+      // even if they are inactive at the end of the computation. A smaller
+      // kLimitWindowFactor will result in a smaller problem, faster to solve,
+      // though constraints could be missed until the next time step.
+      const T window_lower = q0 - kLimitWindowFactor * delta_q;
+      const T window_upper = q0 + kLimitWindowFactor * delta_q;
 
       // N.B. window_lower < window_upper by definition.
       const double ql = lower_limit < window_lower ? -kInf : lower_limit;
@@ -888,13 +893,12 @@ void CompliantContactManager<T>::AddLimitConstraints(
       // limits we don't forget to update this code.
       const VectorX<double>& lower_limits = joint.position_lower_limits();
       const VectorX<double>& upper_limits = joint.position_upper_limits();
-      if ((lower_limits.array() == -kInf).any() ||
-          (upper_limits.array() == kInf).any()) {
+      if ((lower_limits.array() != -kInf).any() ||
+          (upper_limits.array() != kInf).any()) {
         throw std::runtime_error(
             "Limits for joints with more than one degree of freedom are not "
             "supported. You are getting this exception because a new joint "
-            "type "
-            "must have been introduced. "
+            "type must have been introduced. "
             "CompliantContactManager::AddLimitConstraints() must be updated to "
             "support this feature.");
       }
