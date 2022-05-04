@@ -314,6 +314,22 @@ class MathematicalProgramResult final {
    * the dual cone. Here the dual variable DOESN'T have the interpretation of
    * "shadow price", but should satisfy the KKT condition, while the dual
    * variable stays inside the dual cone.
+   * When K is a PSD cone, the returned dual solution is the lower triangle of
+   * the dual PSD matrix. Namely for the primal problem
+   *
+   *    min trace(CX)
+   *    s.t A(X) = b
+   *        X is psd
+   *
+   * the dual is
+   *
+   *    max b'*y
+   *    s.t A'(y) - C = Z
+   *        Z is psd.
+   *
+   * We return the lower triangular part of Z. You can call
+   * drake::math::ToSymmetricMatrixFromLowerTriangularColumns to get the matrix
+   * Z.
    */
   template <typename C>
   Eigen::VectorXd GetDualSolution(const Binding<C>& constraint) const {
