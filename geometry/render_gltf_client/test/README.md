@@ -7,17 +7,13 @@ is provided as a working example that can be used with minimal change for your
 development.
 
 ## Install Dependencies
-The prototype test server dependencies may or may not have been installed
-depending on how you ran drake's `setup/` scripts and which platform you are on.
-`flask` is required to run the test server, and is a "test-only" requirement
-for drake.
 
-The easiest way to install the requirements is to run
-`setup/ubuntu/install_prereqs.sh` (or `setup/mac/install_prereqs.sh`) making
-sure that you do **not** provide the flag `--without-test-only` (which will
-skip installing the testing requirements).  Alternatively, install the `flask`
-python package on your own with however you manage your python installation
-(e.g., `sudo apt-get install python3-flask` or `pip install flask`).
+The test server uses `flask`, so be sure that you've run
+`setup/ubuntu/install_prereqs.sh` (or `setup/mac/install_prereqs.sh`) to install
+it before proceeding.
+
+**Note:** `flask` is a "test-only" requirement, so don't provide
+`--without-test-only` flag when running the `install_prereqs.sh` script.
 
 ## Run the Client-Server Testing Suite
 There are three commands to run to launch the client, the server, and optionally
@@ -65,7 +61,7 @@ In a separate terminal, launch drake_visualizer.
 $ bazel run //tools:drake_visualizer
 ```
 
-## Develop and Deploy your own Server
+## Prototyping your own Server
 If everything is running as expected, then you can begin changing the
 implementation of `render_callback` in `gltf_render_server.py` to invoke the
 renderer you desire.
@@ -115,7 +111,7 @@ if __name__ == "__main__":
     app.run()
 ```
 
-On Ubuntu, to make the `gunicorn` executable available you will want to
-`sudo apt-get install gunicorn` (not `python3-gunicorn`).  If using a virtual
+**Note:** On Ubuntu, to make the `gunicorn` executable available you will want
+to `sudo apt-get install gunicorn` (not `python3-gunicorn`).  If using a virtual
 environment or `pip` directly, `pip install gunicorn` will make the `gunicorn`
 executable available.

@@ -330,7 +330,7 @@ information will be included in the exception message produced by the client.
 To test the basic client-server communication and rendering, Drake provides a
 simple server implementation as a reference. For more information about
 developing your own server or running the prototype, refer to the
-[README][render_gltf_client_test] of the `//geometry/render_gltf_client/test`.
+[README][render_gltf_client_test] under `//geometry/render_gltf_client/test`.
 
 [render_gltf_client_test]: https://github.com/RobotLocomotion/drake/blob/master/geometry/render_gltf_client/test
 
