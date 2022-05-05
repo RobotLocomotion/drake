@@ -479,12 +479,14 @@ class MathematicalProgram {
    * - if type = kSos, we impose the polynomial being SOS.
    * - if type = kSdsos, we impose the polynomial being SDSOS.
    * - if type = kDsos, we impose the polynomial being DSOS.
+   * @param gram_name The name of the gram matrix for print out.
    * @note Q is a symmetric monomial_basis.rows() x monomial_basis.rows()
    * matrix.
    */
   std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
-      NonnegativePolynomial type = NonnegativePolynomial::kSos);
+      NonnegativePolynomial type = NonnegativePolynomial::kSos,
+      const std::string& gram_name = "S");
 
   /**
    * Overloads NewSosPolynomial, except the Gramian matrix Q is an
@@ -508,13 +510,15 @@ class MathematicalProgram {
    * - if type = kSos, we impose the polynomial being SOS.
    * - if type = kSdsos, we impose the polynomial being SDSOS.
    * - if type = kDsos, we impose the polynomial being DSOS.
+   * @param gram_name The name of the gram matrix for print out.
    *
    * @throws std::exception if @p degree is not a positive even integer.
    * @see MonomialBasis.
    */
   std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
       const symbolic::Variables& indeterminates, int degree,
-      NonnegativePolynomial type = NonnegativePolynomial::kSos);
+      NonnegativePolynomial type = NonnegativePolynomial::kSos,
+      const std::string& gram_name = "S");
 
   /**
    * @anchor even_degree_nonnegative_polynomial
@@ -2495,6 +2499,7 @@ class MathematicalProgram {
    * @param type The type of the polynomial. @default is kSos, but the user can
    * also use kSdsos and kDsos. Refer to NonnegativePolynomial for details on
    * different types of sos polynomials.
+   * @param gram_name The name of the gram matrix for print out.
    *
    * @note It calls `Reparse` to enforce `p` to have this MathematicalProgram's
    * indeterminates if necessary.
@@ -2502,7 +2507,8 @@ class MathematicalProgram {
   MatrixXDecisionVariable AddSosConstraint(
       const symbolic::Polynomial& p,
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
-      NonnegativePolynomial type = NonnegativePolynomial::kSos);
+      NonnegativePolynomial type = NonnegativePolynomial::kSos,
+      const std::string& gram_name = "S");
 
   /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
@@ -2514,13 +2520,15 @@ class MathematicalProgram {
    * @param type The type of the polynomial. @default is kSos, but the user can
    * also use kSdsos and kDsos. Refer to NonnegativePolynomial for the details
    * on different type of sos polynomials.
+   * @param gram_name The name of the gram matrix for print out.
    *
    * @note It calls `Reparse` to enforce `p` to have this MathematicalProgram's
    * indeterminates if necessary.
    */
   std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
   AddSosConstraint(const symbolic::Polynomial& p,
-                   NonnegativePolynomial type = NonnegativePolynomial::kSos);
+                   NonnegativePolynomial type = NonnegativePolynomial::kSos,
+                   const std::string& gram_name = "S");
 
   /**
    * Adds constraints that a given symbolic expression @p e is a
@@ -2530,11 +2538,13 @@ class MathematicalProgram {
    * program. It returns the coefficients matrix Q, which is positive
    * semidefinite.
    * @param type Refer to NonnegativePolynomial class documentation.
+   * @param gram_name The name of the gram matrix for print out.
    */
   MatrixXDecisionVariable AddSosConstraint(
       const symbolic::Expression& e,
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
-      NonnegativePolynomial type = NonnegativePolynomial::kSos);
+      NonnegativePolynomial type = NonnegativePolynomial::kSos,
+      const std::string& gram_name = "S");
 
   /**
    * Adds constraints that a given symbolic expression @p e is a sums-of-squares
@@ -2544,10 +2554,12 @@ class MathematicalProgram {
    *  - The coefficients matrix Q, which is positive semidefinite.
    *  - The monomial basis m.
    * @param type Refer to NonnegativePolynomial class documentation.
+   * @param gram_name The name of the gram matrix for print out.
    */
   std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
   AddSosConstraint(const symbolic::Expression& e,
-                   NonnegativePolynomial type = NonnegativePolynomial::kSos);
+                   NonnegativePolynomial type = NonnegativePolynomial::kSos,
+                   const std::string& gram_name = "S");
 
   /**
    * Constraining that two polynomials are the same (i.e., they have the same

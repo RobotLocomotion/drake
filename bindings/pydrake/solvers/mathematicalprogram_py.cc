@@ -726,12 +726,14 @@ void BindMathematicalProgram(py::module m) {
           static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
               MathematicalProgram::*)(
               const Eigen::Ref<const VectorX<Monomial>>&,
-              MathematicalProgram::NonnegativePolynomial)>(
+              MathematicalProgram::NonnegativePolynomial,
+              const std::string& gram_name)>(
               &MathematicalProgram::NewSosPolynomial),
           py::arg("monomial_basis"),
           py::arg("type") = MathematicalProgram::NonnegativePolynomial::kSos,
+          py::arg("gram_name") = "S",
           doc.MathematicalProgram.NewSosPolynomial
-              .doc_2args_monomial_basis_type)
+              .doc_3args_monomial_basis_type_gram_name)
       .def("NewSosPolynomial",
           static_cast<Polynomial (MathematicalProgram::*)(
               const Eigen::Ref<const MatrixX<symbolic::Variable>>&,
@@ -745,12 +747,13 @@ void BindMathematicalProgram(py::module m) {
       .def("NewSosPolynomial",
           static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
               MathematicalProgram::*)(const Variables&, int,
-              MathematicalProgram::NonnegativePolynomial)>(
+              MathematicalProgram::NonnegativePolynomial, const std::string&)>(
               &MathematicalProgram::NewSosPolynomial),
           py::arg("indeterminates"), py::arg("degree"),
           py::arg("type") = MathematicalProgram::NonnegativePolynomial::kSos,
+          py::arg("gram_name") = "S",
           doc.MathematicalProgram.NewSosPolynomial
-              .doc_3args_indeterminates_degree_type)
+              .doc_4args_indeterminates_degree_type_gram_name)
       .def("NewEvenDegreeNonnegativePolynomial",
           &MathematicalProgram::NewEvenDegreeNonnegativePolynomial,
           py::arg("indeterminates"), py::arg("degree"), py::arg("type"),
@@ -1170,37 +1173,45 @@ void BindMathematicalProgram(py::module m) {
       .def("AddSosConstraint",
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&,
-              MathematicalProgram::NonnegativePolynomial)>(
+              MathematicalProgram::NonnegativePolynomial,
+              const std::string& gram_name)>(
               &MathematicalProgram::AddSosConstraint),
           py::arg("p"), py::arg("monomial_basis"),
           py::arg("type") = MathematicalProgram::NonnegativePolynomial::kSos,
+          py::arg("gram_name") = "S",
           doc.MathematicalProgram.AddSosConstraint
-              .doc_3args_p_monomial_basis_type)
+              .doc_4args_p_monomial_basis_type_gram_name)
       .def("AddSosConstraint",
           static_cast<std::pair<MatrixXDecisionVariable,
               VectorX<symbolic::Monomial>> (MathematicalProgram::*)(
-              const Polynomial&, MathematicalProgram::NonnegativePolynomial)>(
+              const Polynomial&, MathematicalProgram::NonnegativePolynomial,
+              const std::string& gram_name)>(
               &MathematicalProgram::AddSosConstraint),
           py::arg("p"),
           py::arg("type") = MathematicalProgram::NonnegativePolynomial::kSos,
-          doc.MathematicalProgram.AddSosConstraint.doc_2args_p_type)
+          py::arg("gram_name") = "S",
+          doc.MathematicalProgram.AddSosConstraint.doc_3args_p_type_gram_name)
       .def("AddSosConstraint",
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Expression&, const Eigen::Ref<const VectorX<Monomial>>&,
-              MathematicalProgram::NonnegativePolynomial)>(
+              MathematicalProgram::NonnegativePolynomial,
+              const std::string& gram_name)>(
               &MathematicalProgram::AddSosConstraint),
           py::arg("e"), py::arg("monomial_basis"),
           py::arg("type") = MathematicalProgram::NonnegativePolynomial::kSos,
+          py::arg("gram_name") = "S",
           doc.MathematicalProgram.AddSosConstraint
-              .doc_3args_e_monomial_basis_type)
+              .doc_4args_e_monomial_basis_type_gram_name)
       .def("AddSosConstraint",
           static_cast<std::pair<MatrixXDecisionVariable,
               VectorX<symbolic::Monomial>> (MathematicalProgram::*)(
-              const Expression&, MathematicalProgram::NonnegativePolynomial)>(
+              const Expression&, MathematicalProgram::NonnegativePolynomial,
+              const std::string& gram_name)>(
               &MathematicalProgram::AddSosConstraint),
           py::arg("e"),
           py::arg("type") = MathematicalProgram::NonnegativePolynomial::kSos,
-          doc.MathematicalProgram.AddSosConstraint.doc_2args_e_type)
+          py::arg("gram_name") = "S",
+          doc.MathematicalProgram.AddSosConstraint.doc_3args_e_type_gram_name)
       .def("AddEqualityConstraintBetweenPolynomials",
           &MathematicalProgram::AddEqualityConstraintBetweenPolynomials,
           py::arg("p1"), py::arg("p2"),
