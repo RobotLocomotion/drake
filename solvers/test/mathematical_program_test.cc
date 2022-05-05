@@ -3398,8 +3398,12 @@ GTEST_TEST(TestMathematicalProgram, AddEqualityConstraintBetweenPolynomials) {
   const symbolic::Polynomial p2((a(2) + 1) * x + 2 * a(3), {x});
 
   EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
-  prog.AddEqualityConstraintBetweenPolynomials(p1, p2);
+  const auto bindings = prog.AddEqualityConstraintBetweenPolynomials(p1, p2);
   EXPECT_EQ(prog.linear_equality_constraints().size(), 2);
+  EXPECT_EQ(bindings.size(), 2u);
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_EQ(bindings[i], prog.linear_equality_constraints()[i]);
+  }
 
   // Test with different value of a, some satisfies the polynomial equality
   // constraints.

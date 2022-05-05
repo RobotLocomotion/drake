@@ -757,8 +757,10 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(1, "x")
         a = prog.NewContinuousVariables(2, "a")
-        prog.AddEqualityConstraintBetweenPolynomials(sym.Polynomial(
-            2 * a[0] * x[0] + a[1] + 2, x), sym.Polynomial(2 * x[0] + 4, x))
+        linear_eq_constraints = prog.AddEqualityConstraintBetweenPolynomials(
+            sym.Polynomial(2 * a[0] * x[0] + a[1] + 2, x),
+            sym.Polynomial(2 * x[0] + 4, x))
+        self.assertEqual(len(linear_eq_constraints), 2)
         result = mp.Solve(prog)
         a_val = result.GetSolution(a)
         self.assertAlmostEqual(a_val[0], 1)
