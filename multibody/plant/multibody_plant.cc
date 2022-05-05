@@ -1882,30 +1882,29 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
   // Assemble the vector from the model instance input ports.
   VectorX<T> actuation_input(num_actuated_dofs());
 
-  const auto& stacked_actuation_port =
-      this->get_input_port(stacked_actuation_port_);
-  if (stacked_actuation_port.HasValue(context)) {
-    // The stacked port and the actuation ports for individual instances should
-    // not be connected at the same time.
-    const ModelInstanceIndex first_non_world_index(1);
+  const auto& actuation_port = this->get_input_port(actuation_port_);
+  const ModelInstanceIndex first_non_world_index(1);
+  if (actuation_port.HasValue(context)) {
+    // The port for all instances and the actuation ports for individual
+    // instances should not be connected at the same time.
     for (ModelInstanceIndex model_instance_index(first_non_world_index);
          model_instance_index < num_model_instances(); ++model_instance_index) {
       const auto& per_instance_actuation_port =
           this->get_input_port(instance_actuation_ports_[model_instance_index]);
       if (per_instance_actuation_port.HasValue(context)) {
-        throw std::logic_error(
-            fmt::format("Actuation input port for model instance {} and the "
-                        "stacked actuation port are both connected. At most "
-                        "one of these ports should be connected.",
-                        GetModelInstanceName(model_instance_index)));
+        throw std::logic_error(fmt::format(
+            "Actuation input port for model instance {} and the "
+            "actuation port for all instances are both connected. At most "
+            "one of these ports should be connected.",
+            GetModelInstanceName(model_instance_index)));
       }
     }
     // TODO(xuchenhan-tri): It'd be nice to avoid the copy here.
-    actuation_input = stacked_actuation_port.Eval(context);
+    actuation_input = actuation_port.Eval(context);
     DRAKE_ASSERT(actuation_input.size() == num_actuated_dofs());
   } else {
     int u_offset = 0;
-    for (ModelInstanceIndex model_instance_index(0);
+    for (ModelInstanceIndex model_instance_index(first_non_world_index);
          model_instance_index < num_model_instances(); ++model_instance_index) {
       // Ignore the port if the model instance has no actuated DoFs.
       const int instance_num_dofs = num_actuated_dofs(model_instance_index);
@@ -2820,11 +2819,9 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                 instance_num_dofs)
             .get_index();
   }
-  stacked_actuation_port_ =
+  actuation_port_ =
       this->DeclareVectorInputPort("actuation", num_actuated_dofs())
           .get_index();
-
-  if (num_actuated_instances == 1) actuated_instance_ = last_actuated_instance;
 
   // Declare the generalized force input port.
   applied_generalized_force_input_port_ =
@@ -3209,15 +3206,6 @@ void MultibodyPlant<T>::CopyGeneralizedContactForcesOut(
 
 template <typename T>
 const systems::InputPort<T>&
-MultibodyPlant<T>::get_actuation_input_port() const {
-  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_THROW_UNLESS(num_actuators() > 0);
-  DRAKE_THROW_UNLESS(actuated_instance_.is_valid());
-  return get_actuation_input_port(actuated_instance_);
-}
-
-template <typename T>
-const systems::InputPort<T>&
 MultibodyPlant<T>::get_applied_generalized_force_input_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return this->get_input_port(applied_generalized_force_input_port_);
@@ -3235,10 +3223,10 @@ MultibodyPlant<T>::get_actuation_input_port(
 }
 
 template <typename T>
-const systems::InputPort<T>&
-MultibodyPlant<T>::get_stacked_actuation_input_port() const {
+const systems::InputPort<T>& MultibodyPlant<T>::get_actuation_input_port()
+    const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return systems::System<T>::get_input_port(stacked_actuation_port_);
+  return systems::System<T>::get_input_port(actuation_port_);
 }
 
 template <typename T>
