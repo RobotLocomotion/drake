@@ -16,6 +16,15 @@ namespace internal {
 /* Forward declaration needed for defining the Traits below. */
 class DummyElement;
 
+struct DummyData {
+  using T = double;
+  static constexpr int num_dofs = 12;
+  double value{0};
+  Vector<T, num_dofs> element_q;
+  Vector<T, num_dofs> element_v;
+  Vector<T, num_dofs> element_a;
+};
+
 /* The traits for the DummyElement. In this case, all of the traits are unique
  values so we can detect that each value is used in the expected context. */
 template <>
@@ -24,14 +33,9 @@ struct FemElementTraits<DummyElement> {
   static constexpr int num_quadrature_points = 1;
   static constexpr int num_natural_dimension = 2;
   static constexpr int num_nodes = 4;
-  static constexpr int num_dofs = 12;
   /* See `DoComputeData` below on how this dummy data is updated. */
-  struct Data {
-    double value{0};
-    Vector<T, num_dofs> element_q;
-    Vector<T, num_dofs> element_v;
-    Vector<T, num_dofs> element_a;
-  };
+  using Data = DummyData;
+  static constexpr int num_dofs = Data::num_dofs;
   using ConstitutiveModel = LinearConstitutiveModel<T, num_quadrature_points>;
 };
 
