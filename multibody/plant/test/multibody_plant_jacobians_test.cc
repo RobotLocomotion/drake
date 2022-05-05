@@ -765,7 +765,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasSpatialAcceleration) {
                                           frame_E, p_EEp, frame_W, frame_W);
 
   // Numerical tolerance used to verify numerical results.
-  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+  const double kTolerance = 16 * std::numeric_limits<double>::epsilon();
 
   // Verify computed bias translational acceleration numerical values and ensure
   // the results are stored in a matrix of size (6 x num_velocities).
@@ -848,7 +848,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasTranslationalAcceleration) {
           *context_, JacobianWrtVariable::kV, frame_E, p_EEi, frame_W, frame_W);
 
   // Numerical tolerance used to verify numerical results.
-  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+  const double kTolerance = 32 * std::numeric_limits<double>::epsilon();
 
   // Verify computed bias translational acceleration numerical values and ensure
   // the results are stored in a matrix of size (3 kNumPoints x num_velocities).
