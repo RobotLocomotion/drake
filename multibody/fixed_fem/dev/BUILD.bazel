@@ -12,16 +12,6 @@ package(
 )
 
 drake_cc_library(
-    name = "deformable_body_config",
-    hdrs = [
-        "deformable_body_config.h",
-    ],
-    deps = [
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "deformable_contact",
     srcs = ["deformable_rigid_mesh_intersection.cc"],
     hdrs = [
@@ -128,13 +118,6 @@ drake_cc_googletest(
         "//geometry/proximity:make_box_mesh",
         "//geometry/proximity:mesh_to_vtk",
         "//geometry/proximity:proximity_utilities",
-    ],
-)
-
-drake_cc_googletest(
-    name = "deformable_body_config_test",
-    deps = [
-        ":deformable_body_config",
     ],
 )
 
