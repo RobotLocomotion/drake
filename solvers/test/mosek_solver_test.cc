@@ -568,7 +568,7 @@ GTEST_TEST(MosekTest, InfeasibleSemidefiniteProgramTest) {
       }
     }
     // Check that the dual solutions are not NAN.
-    // TODO(hongkai.dai): get the dual for the positive semidefinite constraint.
+    CheckDualSolutionNotNan(result, constraint1);
     CheckDualSolutionNotNan(result, constraint2);
 
     // Check that the optimal cost is not NAN.
