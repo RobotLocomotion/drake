@@ -17,6 +17,11 @@ build --action_env=PATH=/usr/bin:/bin
 build --action_env=PYTHONNOUSERSITE=1
 build --test_env=PYTHONNOUSERSITE=1
 
+# Enable OpenMP (when requested via --config omp).
+build:omp --copt=-DEIGEN_DONT_PARALLELIZE
+build:omp --copt=-fopenmp
+build:omp --linkopt=-fopenmp
+
 # -- Options for explicitly using Clang.
 common:clang --repo_env=CC=clang-9
 common:clang --repo_env=CXX=clang++-9
