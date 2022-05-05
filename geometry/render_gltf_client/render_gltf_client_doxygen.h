@@ -12,6 +12,14 @@ namespace render_gltf_client {
 Currently, the content of this page is primarily for facilitating code reviews
 and is subject to change during upcoming pull requests.
 
+Drake offers built-in renderers (RenderEngineVtk, RenderEngineGl), but in some
+cases users may want to use their own custom rendering implementations.  One way
+to accomplish that is to subclass RenderEngine with a custom implementation and
+link that into Drake, but sometimes that leads to linker compatibility problems.
+Thus, we also offer another option: rendering using a remote procedure call
+(RPC). This document specifies the network API for servicing those requests.
+<hr>
+
 The [glTF][glTF] render server API consists of two components: a client, and a
 server. The client generates and transmits glTF scene files to the server, which
 then renders and returns an image file back to the client.  Drake implements the
