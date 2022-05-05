@@ -199,6 +199,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   void CalcNonContactForces(const drake::systems::Context<T>& context,
                             MultibodyForces<T>* forces) const;
 
+  void CalcForceElementsContribution(const drake::systems::Context<T>& context,
+                                     MultibodyForces<T>* forces) const;
+
   // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
   //  geometries.
   const std::vector<std::vector<geometry::GeometryId>>& collision_geometries()

@@ -47,6 +47,7 @@ drake_cc_library(
         "//multibody/contact_solvers:contact_solver_utils",
         "//multibody/contact_solvers/sap:sap_contact_problem",
         "//multibody/contact_solvers/sap:sap_friction_cone_constraint",
+        "//multibody/contact_solvers/sap:sap_limit_constraint",
         "//multibody/contact_solvers/sap:sap_solver",
         "//multibody/triangle_quadrature",
     ],

@@ -121,6 +121,13 @@ class SapLimitConstraint final : public SapConstraint<T> {
 
   const Parameters& parameters() const { return parameters_; }
 
+  /* Returns the degree of freedom, DOF, that this constraint limits. Provided
+   at construction. */
+  int clique_dof() const { return clique_dof_; }
+
+  /* Returns the position provided at construction. */
+  const T& position() const { return q0_; }
+
   /* Implements the projection operation. In this case P(y) = (y)₊, independent
    of the regularization R. Refer to SapConstraint::Project() for details. */
   void Project(const Eigen::Ref<const VectorX<T>>& y,
@@ -154,6 +161,8 @@ class SapLimitConstraint final : public SapConstraint<T> {
                                            const T& ql, const T& qu);
 
   Parameters parameters_;
+  int clique_dof_{-1};  // Initialized to an invalid value.
+  T q0_{};  // position at the configuration from construction.
 };
 
 }  // namespace internal

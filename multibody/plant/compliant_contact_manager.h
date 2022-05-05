@@ -264,6 +264,14 @@ class CompliantContactManager final
   void CalcLinearDynamicsMatrix(const systems::Context<T>& context,
                                 std::vector<MatrixX<T>>* A) const;
 
+  // Computes all continuous forces in the MultibodyPlant model. Joint limits
+  // are not included as continuous compliant forces but rather as constraints
+  // in the solver, and therefore must be excluded.
+  // Values in `forces` will be overwritten.
+  // @pre forces != nullptr and is consistent with plant().
+  void CalcNonContactForcesExcludingJointLimits(
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
+
   // Calc non-contact forces and the accelerations they induce.
   void CalcAccelerationsDueToNonContactForcesCache(
       const systems::Context<T>& context,
@@ -297,6 +305,28 @@ class CompliantContactManager final
   // `problem`.
   std::vector<math::RotationMatrix<T>> AddContactConstraints(
       const systems::Context<T>& context,
+      contact_solvers::internal::SapContactProblem<T>* problem) const;
+
+  // Add limit constraints for the configuration stored in `context` into
+  // `problem`. Limit constraints are only added when the state q₀ for a
+  // particular joint is "close" to the joint's limits (qₗ,qᵤ). To decide when
+  // the state q₀ is close to the joint's limits, this method estimates a window
+  // (wₗ,wᵤ) for the expected value of the configuration q at the next time
+  // step. Lower constraints are considered whenever qₗ > wₗ and upper
+  // constraints are considered whenever qᵤ < wᵤ. This window (wₗ,wᵤ) is
+  // estimated based on the current velocity v₀ and the free motion velocities
+  // v*, provided with `v_star`.
+  // Since the implementation uses the current velocity v₀ to estimate whether
+  // the constraint should be enabled, it is at least as good as a typical
+  // continuous collision detection method. It could mispredict under conditions
+  // of strong acceleration (it is assuming constant velocity across a step).
+  // Still, at typical robotics step sizes and rates it would be surprising to
+  // see that happen, and if it did the limit would come on in the next step.
+  // TODO(amcastro-tri): Consider using the acceleration at t₀ to get a second
+  // order prediction for the configuration at the next time step.
+  // @pre problem must not be nullptr.
+  void AddLimitConstraints(
+      const systems::Context<T>& context, const VectorX<T>& v_star,
       contact_solvers::internal::SapContactProblem<T>* problem) const;
 
   // This method takes SAP results for a given `problem` and loads forces due to

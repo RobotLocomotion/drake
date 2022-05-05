@@ -1,5 +1,6 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <string>
@@ -15,6 +16,7 @@
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_limit_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -30,6 +32,7 @@ using drake::multibody::contact_solvers::internal::ExtractTangent;
 using drake::multibody::contact_solvers::internal::SapConstraint;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
+using drake::multibody::contact_solvers::internal::SapLimitConstraint;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverResults;
 using drake::multibody::contact_solvers::internal::SapSolverStatus;
@@ -496,6 +499,17 @@ void CompliantContactManager<T>::
 }
 
 template <typename T>
+void CompliantContactManager<T>::CalcNonContactForcesExcludingJointLimits(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  DRAKE_DEMAND(forces != nullptr);
+  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(plant()));
+  // Compute forces applied through force elements. Note that this resets
+  // forces to empty so must come first.
+  this->CalcForceElementsContribution(context, forces);
+  this->AddInForcesFromInputPorts(context, forces);
+}
+
+template <typename T>
 void CompliantContactManager<T>::CalcAccelerationsDueToNonContactForcesCache(
     const systems::Context<T>& context,
     AccelerationsDueToExternalForcesCache<T>* forward_dynamics_cache)
@@ -533,9 +547,10 @@ void CompliantContactManager<T>::CalcAccelerationsDueToNonContactForcesCache(
   ScopeExit guard(
       [&evaluation_in_progress]() { evaluation_in_progress = false; });
 
-  // TODO(amcastro-tri): exclude compliant joint limits since these will be
-  // treated as constraints.
-  this->CalcNonContactForces(context, &forward_dynamics_cache->forces);
+  // N.B. Joint limits are modeled as constraints. Therefore here we only add
+  // all other external forces.
+  CalcNonContactForcesExcludingJointLimits(context,
+                                           &forward_dynamics_cache->forces);
 
   // Our goal is to compute accelerations from the Newton-Euler equations:
   //   M⋅v̇ = k(x)
@@ -796,6 +811,104 @@ CompliantContactManager<T>::AddContactConstraints(
 }
 
 template <typename T>
+void CompliantContactManager<T>::AddLimitConstraints(
+    const systems::Context<T>& context, const VectorX<T>& v_star,
+    SapContactProblem<T>* problem) const {
+  DRAKE_DEMAND(problem != nullptr);
+
+  constexpr double kInf = std::numeric_limits<double>::infinity();
+
+  // TODO(amcastro-tri): consider exposing these parameters.
+  // "Near-rigid" parameter. See [Castro et al., 2021].
+  constexpr double kBeta = 0.1;
+  // Parameter used to estimate the size of a window [w_l, w_u] within which we
+  // expect the configuration q for a given joint to be in the next time step.
+  // See notes below for details. Dimensionless.
+  constexpr double kLimitWindowFactor = 2.0;
+
+  const double dt = plant().time_step();
+
+  // N.B. MultibodyPlant estimates very conservative (soft) stiffness and
+  // damping parameters to ensure that the explicit treatment of the compliant
+  // forces used to impose limits does not become unstable. SAP however treats
+  // these forces implicitly and therefore these parameters can be tighten for
+  // stiffer limits. Here we set the stiffness parameter to a very high value so
+  // that SAP works in the "near-rigid" regime as described in the SAP paper,
+  // [Castro et al., 2021]. As shown in the SAP paper, a dissipation time scale
+  // of the order of the time step leads to a critically damped constraint.
+  // TODO(amcastro-tri): allow users to specify joint limits stiffness and
+  // damping.
+  const double stiffness = 1.0e12;
+  const double dissipation_time_scale = dt;
+
+  for (JointIndex joint_index(0); joint_index < plant().num_joints();
+       ++joint_index) {
+    const Joint<T>& joint = plant().get_joint(joint_index);
+    // We only support limits for 1 DOF joints for which we know that q̇ = v.
+    if (joint.num_positions() == 1 && joint.num_velocities() == 1) {
+      const double lower_limit = joint.position_lower_limits()[0];
+      const double upper_limit = joint.position_upper_limits()[0];
+      const int velocity_start = joint.velocity_start();
+      const TreeIndex tree_index =
+          tree_topology().velocity_to_tree_index(velocity_start);
+      const int tree_nv = tree_topology().num_tree_velocities(tree_index);
+      const int tree_velocity_start =
+          tree_topology().tree_velocities_start(tree_index);
+      const int tree_dof = velocity_start - tree_velocity_start;
+
+      // Current configuration position.
+      const T& q0 = joint.GetOnePosition(context);
+      const T& v0 = joint.GetOneVelocity(context);
+
+      // Estimate a window size around q0. In order to build a smaller
+      // optimization problem, we only add a constraint if the joint
+      // limits are within this window.
+      using std::abs;
+      using std::max;
+      // delta_q estimates how much q changes in a single time step.
+      // We use the maximum of v0 and v* for a conservative estimation.
+      const T delta_q = dt * max(abs(v0), abs(v_star(velocity_start)));
+      // We use a factor kLimitWindowFactor to look into a larger window. A very
+      // large kLimitWindowFactor means that constraints will always be added
+      // even if they are inactive at the end of the computation. A smaller
+      // kLimitWindowFactor will result in a smaller problem, faster to solve,
+      // though constraints could be missed until the next time step.
+      const T window_lower = q0 - kLimitWindowFactor * delta_q;
+      const T window_upper = q0 + kLimitWindowFactor * delta_q;
+
+      // N.B. window_lower < window_upper by definition.
+      const double ql = lower_limit < window_lower ? -kInf : lower_limit;
+      const double qu = upper_limit > window_upper ? kInf : upper_limit;
+
+      // Constraint is added only when one of ql and qu is finite.
+      if (!std::isinf(ql) || !std::isinf(qu)) {
+        // Create constraint for the current configuration q0.
+        typename SapLimitConstraint<T>::Parameters parameters{
+            ql, qu, stiffness, dissipation_time_scale, kBeta};
+        problem->AddConstraint(std::make_unique<SapLimitConstraint<T>>(
+            tree_index, tree_dof, tree_nv, q0, std::move(parameters)));
+      }
+    } else {
+      // TODO(amcastro-tri): Thus far in Drake we don't have multi-dof joints
+      // with limits, only 1-DOF joints have limits. Therefore here throw an
+      // exception to ensure that when we implement a multi-dof joint with
+      // limits we don't forget to update this code.
+      const VectorX<double>& lower_limits = joint.position_lower_limits();
+      const VectorX<double>& upper_limits = joint.position_upper_limits();
+      if ((lower_limits.array() != -kInf).any() ||
+          (upper_limits.array() != kInf).any()) {
+        throw std::runtime_error(
+            "Limits for joints with more than one degree of freedom are not "
+            "supported. You are getting this exception because a new joint "
+            "type must have been introduced. "
+            "CompliantContactManager::AddLimitConstraints() must be updated to "
+            "support this feature.");
+      }
+    }
+  }
+}
+
+template <typename T>
 void CompliantContactManager<T>::CalcContactProblemCache(
     const systems::Context<T>& context, ContactProblemCache<T>* cache) const {
   SapContactProblem<T>& problem = *cache->sap_problem;
@@ -809,6 +922,7 @@ void CompliantContactManager<T>::CalcContactProblemCache(
   // extract contact impulses for reporting contact results.
   // Do not change this order here!
   cache->R_WC = AddContactConstraints(context, &problem);
+  AddLimitConstraints(context, problem.v_star(), &problem);
 }
 
 template <typename T>
