@@ -26,7 +26,7 @@ using test::KukaIiwaModelTests;
 namespace {
 
 // Numerical tolerance used to verify numerical results.
-constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+constexpr double kTolerance = 32 * std::numeric_limits<double>::epsilon();
 
 TEST_F(KukaIiwaModelTests, FramesKinematics) {
   SetArbitraryConfigurationAndMotion();
