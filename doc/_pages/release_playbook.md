@@ -200,7 +200,7 @@ Upgrade our Deepnote-hosted tutorials to the latest release.  This requires that
 you have "Edit" permission in the Deepnote project.  If you don't have that yet,
 then ask for help on slack in the ``#releases`` channel.
 
-1. Open the tutorials [Dockerfile](https://deepnote.com/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2FDockerfile):
+1. Open the tutorials [Dockerfile](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2FDockerfile):
    1. Edit the first line to refer to the YYYYMMDD for this release.
       1. For reference, the typical content is thus:
          ```
@@ -218,7 +218,7 @@ then ask for help on slack in the ``#releases`` channel.
       tweak the Dockerfile before Deepnote will allow you to re-run the
       Build.  For example, add `&& true` to the end of a RUN line.
    3. For reference (no action required), the initialization notebook at
-      [init.ipynb](https://deepnote.com/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Finit.ipynb)
+      [init.ipynb](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Finit.ipynb)
       has this cell added the bottom, as a Drake-specific cusomizatization:
       ```
       %%bash
@@ -229,7 +229,7 @@ then ask for help on slack in the ``#releases`` channel.
    4. Copy the updated tutorials from the pinned Dockerfile release
       (in ``/opt/drake/share/drake/tutorials/...``) into the Deepnote project
       storage (``~/work/...``):
-      1. Open [.for_maintainers.ipynb](https://deepnote.com/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2F.for_maintainers.ipynb).
+      1. Open [.for_maintainers.ipynb](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2F.for_maintainers.ipynb).
       1. Run each cell one by one, checking for errors as you go.
    5. For *other all* notebooks (excluding the ``.for_maintainers`` notebook)
       one by one (probably in alphabetical order, for your sanity):
