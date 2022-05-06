@@ -1,9 +1,12 @@
 #pragma once
 
 // TODO(jwnimmer-tri): This file is a lightly-edited version of what comes out
-// of upstream's configure script. Between some combination of hard-coded
-// settings and platform-specific word size sensing, we need to reconstruct
-// and/or generate this file on the fly.
+// of upstream's configure script that has been tweaked to work on all of our
+// supported platforms, and to remove some unwanted bits.
+//
+// This file can be (approximately) recreated using:
+//  ./configure --with-x=0 --with-mpi=0 --with-sowing=0 \
+//              --with-fortran-bindings=0
 
 #define MPI_Comm_create_errhandler(p_err_fun, p_errhandler) \
   MPI_Errhandler_create((p_err_fun), (p_errhandler))
@@ -16,10 +19,7 @@
 #define PETSC_Alignx(a, b)
 #define PETSC_BLASLAPACK_UNDERSCORE 1
 #define PETSC_CLANGUAGE_C 1
-#define PETSC_CXX_INLINE inline
 #define PETSC_CXX_RESTRICT __restrict
-#define PETSC_C_INLINE inline
-#define PETSC_C_RESTRICT __restrict
 #define PETSC_DEPRECATED_ENUM(why) __attribute((deprecated))
 #define PETSC_DEPRECATED_FUNCTION(why) __attribute((deprecated))
 #define PETSC_DEPRECATED_MACRO(why) _Pragma(why)
@@ -38,7 +38,6 @@
 #define PETSC_HAVE_CXX 1
 #define PETSC_HAVE_CXX_COMPLEX 1
 #define PETSC_HAVE_CXX_COMPLEX_FIX 1
-#define PETSC_HAVE_CXX_DIALECT_CXX03 1
 #define PETSC_HAVE_CXX_DIALECT_CXX11 1
 #define PETSC_HAVE_CXX_DIALECT_CXX14 1
 #define PETSC_HAVE_CXX_DIALECT_CXX17 1
@@ -56,12 +55,16 @@
 #define PETSC_HAVE_FENV_H 1
 #define PETSC_HAVE_FLOAT_H 1
 #define PETSC_HAVE_FORK 1
+#define PETSC_HAVE_FSTATAT 1
 #define PETSC_HAVE_GETCWD 1
 #define PETSC_HAVE_GETDOMAINNAME 1
 #define PETSC_HAVE_GETHOSTBYNAME 1
 #define PETSC_HAVE_GETHOSTNAME 1
 #define PETSC_HAVE_GETPAGESIZE 1
 #define PETSC_HAVE_GETRUSAGE 1
+#ifdef __APPLE__
+#define PETSC_HAVE_GETWD 1
+#endif
 #define PETSC_HAVE_IMMINTRIN_H 1
 #define PETSC_HAVE_INTTYPES_H 1
 #define PETSC_HAVE_ISINF 1
@@ -70,46 +73,69 @@
 #define PETSC_HAVE_LGAMMA 1
 #define PETSC_HAVE_LOG2 1
 #define PETSC_HAVE_LSEEK 1
+#ifdef __APPLE__
+#define PETSC_HAVE_MACHINE_ENDIAN_H 1
+#else
+#define PETSC_HAVE_MALLOC_H 1
+#define PETSC_HAVE_MEMALIGN 1
+#endif
 #define PETSC_HAVE_MEMMOVE 1
 #define PETSC_HAVE_MMAP 1
 #define PETSC_HAVE_MPIUNI 1
-#define PETSC_HAVE_MPI_IN_PLACE 1
-#define PETSC_HAVE_MPI_TYPE_DUP 1
-#define PETSC_HAVE_MPI_TYPE_GET_ENVELOPE 1
 #define PETSC_HAVE_NANOSLEEP 1
 #define PETSC_HAVE_NETDB_H 1
 #define PETSC_HAVE_NETINET_IN_H 1
-#define PETSC_HAVE_PACKAGES ":blaslapack:mathlib:mpi:regex:"
+#define PETSC_HAVE_PACKAGES ":blaslapack:mathlib:mpi:pthread:regex:"
 #define PETSC_HAVE_POPEN 1
+#define PETSC_HAVE_PTHREAD 1
+#ifndef __APPLE__
+#define PETSC_HAVE_PTHREAD_BARRIER_T 1
+#endif
 #define PETSC_HAVE_PTHREAD_H 1
 #define PETSC_HAVE_PWD_H 1
 #define PETSC_HAVE_RAND 1
 #define PETSC_HAVE_READLINK 1
 #define PETSC_HAVE_REALPATH 1
+#ifndef __APPLE__
 #define PETSC_HAVE_REAL___FLOAT128 1
+#endif
 #define PETSC_HAVE_REGEX 1
 #define PETSC_HAVE_RTLD_GLOBAL 1
 #define PETSC_HAVE_RTLD_LAZY 1
 #define PETSC_HAVE_RTLD_LOCAL 1
 #define PETSC_HAVE_RTLD_NOW 1
+#ifndef __APPLE__
+#define PETSC_HAVE_SCHED_CPU_SET_T 1
+#endif
 #define PETSC_HAVE_SETJMP_H 1
 #define PETSC_HAVE_SLEEP 1
 #define PETSC_HAVE_SNPRINTF 1
+#define PETSC_HAVE_SOCKET 1
+#define PETSC_HAVE_SO_REUSEADDR 1
 #define PETSC_HAVE_STDINT_H 1
 #define PETSC_HAVE_STRCASECMP 1
 #define PETSC_HAVE_STRINGS_H 1
 #define PETSC_HAVE_STRUCT_SIGACTION 1
+#ifndef __APPLE__
 #define PETSC_HAVE_SYSINFO 1
+#endif
 #define PETSC_HAVE_SYS_PARAM_H 1
+#ifndef __APPLE__
+#define PETSC_HAVE_SYS_PROCFS_H 1
+#endif
 #define PETSC_HAVE_SYS_RESOURCE_H 1
 #define PETSC_HAVE_SYS_SOCKET_H 1
+#ifdef __APPLE__
+#define PETSC_HAVE_SYS_SYSCTL_H 1
+#else
+#define PETSC_HAVE_SYS_SYSINFO_H 1
+#endif
 #define PETSC_HAVE_SYS_TIMES_H 1
 #define PETSC_HAVE_SYS_TIME_H 1
 #define PETSC_HAVE_SYS_TYPES_H 1
 #define PETSC_HAVE_SYS_UTSNAME_H 1
 #define PETSC_HAVE_SYS_WAIT_H 1
 #define PETSC_HAVE_TGAMMA 1
-#define PETSC_HAVE_THREADSAFETY 1
 #define PETSC_HAVE_TIME 1
 #define PETSC_HAVE_TIME_H 1
 #define PETSC_HAVE_UNAME 1
@@ -121,10 +147,18 @@
 #define PETSC_IS_COLORING_MAX USHRT_MAX
 #define PETSC_IS_COLORING_VALUE_TYPE short  // NOLINT
 #define PETSC_IS_COLORING_VALUE_TYPE_F integer2
+#ifdef __APPLE__
+#define PETSC_LEVEL1_DCACHE_LINESIZE 32
+#else
 #define PETSC_LEVEL1_DCACHE_LINESIZE 64
+#endif
 #define PETSC_LIB_DIR "NO_PETSC_LIB_DIR"
+#ifdef __APPLE__
+#define PETSC_MAX_PATH_LEN 1024
+#else
 #define PETSC_MAX_PATH_LEN 4096
-#define PETSC_MEMALIGN 8
+#endif
+#define PETSC_MEMALIGN 16
 #define PETSC_MPICC_SHOW "Unavailable"
 #define PETSC_MPIU_IS_COLORING_VALUE_TYPE MPI_UNSIGNED_SHORT
 #define PETSC_PREFETCH_HINT_NTA _MM_HINT_NTA
@@ -134,6 +168,9 @@
 #define PETSC_PYTHON_EXE "NO_PETSC_PYTHON_EXE"
 #define PETSC_Prefetch(a, b, c) _mm_prefetch((const char*)(a), (c))
 #define PETSC_REPLACE_DIR_SEPARATOR '\\'
+#ifdef __APPLE__
+#define PETSC_RTLD_DEFAULT 1
+#endif
 #define PETSC_SIGNAL_CAST
 #define PETSC_SIZEOF_ENUM 4
 #define PETSC_SIZEOF_INT 4
@@ -145,17 +182,24 @@
 #define PETSC_SLSUFFIX "so"
 #define PETSC_UINTPTR_T uintptr_t
 #define PETSC_UNUSED __attribute((unused))
+#define PETSC_USE_AVX512_KERNELS 1
 #define PETSC_USE_BACKWARD_LOOP 1
 #define PETSC_USE_CTABLE 1
 #define PETSC_USE_INFO 1
 #define PETSC_USE_ISATTY 1
-#define PETSC_USE_MALLOC_COALESCED 1
+#ifndef __APPLE__
 #define PETSC_USE_PROC_FOR_SIZE 1
+#endif
 #define PETSC_USE_REAL_DOUBLE 1
 #define PETSC_USE_SINGLE_LIBRARY 1
 #define PETSC_USE_VISIBILITY_C 1
 #define PETSC_USE_VISIBILITY_CXX 1
 #define PETSC_USING_64BIT_PTR 1
+#ifdef __APPLE__
+#define PETSC_USING_DARWIN 1
+#endif
+#define PETSC_USING_F2003 1
+#define PETSC_USING_F90FREEFORM 1
 #define PETSC_VERSION_BRANCH_GIT "NO_PETSC_VERSION_BRANCH_GIT"
 #define PETSC_VERSION_DATE_GIT "NO_PETSC_VERSION_DATE_GIT"
 #define PETSC_VERSION_GIT "NO_PETSC_VERSION_GIT"
