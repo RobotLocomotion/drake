@@ -207,12 +207,11 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(plant->num_velocities(pendulum_model_instance), 1);
 
   // Check that the input/output ports have the appropriate geometry.
-  EXPECT_THROW(plant->get_actuation_input_port(), std::runtime_error);
   EXPECT_EQ(plant->get_actuation_input_port(
       default_model_instance()).size(), 1);
   EXPECT_EQ(plant->get_actuation_input_port(
       pendulum_model_instance).size(), 1);
-  EXPECT_EQ(plant->get_stacked_actuation_input_port().size(), 2);
+  EXPECT_EQ(plant->get_actuation_input_port().size(), 2);
   EXPECT_EQ(plant->get_state_output_port().size(), 6);
   EXPECT_EQ(plant->get_state_output_port(
       default_model_instance()).size(), 4);
@@ -537,7 +536,6 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
   DRAKE_EXPECT_NO_THROW(plant.get_actuation_input_port());
   DRAKE_EXPECT_NO_THROW(plant.get_actuation_input_port(acrobot_instance));
   DRAKE_EXPECT_NO_THROW(plant.get_actuation_input_port(cylinder_instance));
-  DRAKE_EXPECT_NO_THROW(plant.get_stacked_actuation_input_port());
 
   // Try to compute the derivatives without connecting the acrobot_instance
   // port.
@@ -562,12 +560,12 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
   DRAKE_EXPECT_NO_THROW(
       plant.CalcTimeDerivatives(*context, continuous_state.get()));
 
-  // Verify that connecting both the stacked actuation ports and the individual
-  // model actuation input ports throws.
-  plant.get_stacked_actuation_input_port().FixValue(context.get(), 0.0);
+  // Verify that connecting both the actuation ports for all instances and the
+  // individual model actuation input ports throws.
+  plant.get_actuation_input_port().FixValue(context.get(), 0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.CalcTimeDerivatives(*context, continuous_state.get()),
-      "Actuation.*model instance.*stacked.*both connected.*");
+      "Actuation.*model instance.*for all instances.*both connected.*");
 }
 
 GTEST_TEST(MultibodyPlant, UniformGravityFieldElementTest) {
@@ -3793,8 +3791,8 @@ GTEST_TEST(MultibodyPlant, FixInputPortsFrom) {
                               ".*FixInputPortTypeCheck.*");
 }
 
-// Tests that the connecting to the stacked actuation port is equivalent to
-// connecting to the individual model instance actuation ports.
+// Tests that the connecting to the actuation port for all instances is
+// equivalent to connecting to the individual model instance actuation ports.
 GTEST_TEST(MultibodyPlantTests, ActuationPorts) {
   const AcrobotParameters parameters;
   unique_ptr<MultibodyPlant<double>> plant =
@@ -3819,10 +3817,10 @@ GTEST_TEST(MultibodyPlantTests, ActuationPorts) {
       plant->get_reaction_forces_output_port()
           .Eval<std::vector<SpatialForce<double>>>(*context1);
 
-  // Connect the stacked actuation port.
+  // Connect the actuation port for all instances.
   auto context2 = plant->CreateDefaultContext();
-  plant->get_stacked_actuation_input_port().FixValue(context2.get(),
-                                                     Vector2d(1.0, 2.0));
+  plant->get_actuation_input_port().FixValue(context2.get(),
+                                             Vector2d(1.0, 2.0));
   const auto& expected_reaction_forces =
       plant->get_reaction_forces_output_port()
           .Eval<std::vector<SpatialForce<double>>>(*context2);
