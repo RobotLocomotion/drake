@@ -1,6 +1,6 @@
 --- src/mat/interface/matrix.c
 +++ src/mat/interface/matrix.c
-@@ -5536,7 +5536,7 @@ PetscErrorCode MatNorm(Mat mat,NormType type,PetscReal *nrm)
+@@ -5316,7 +5316,7 @@ PetscErrorCode MatNorm(Mat mat,NormType type,PetscReal *nrm)
       This variable is used to prevent counting of MatAssemblyBegin() that
     are called from within a MatAssemblyEnd().
  */
@@ -9,10 +9,10 @@
  /*@
     MatAssemblyBegin - Begins assembling the matrix.  This routine should
     be called after completing all calls to MatSetValues().
-@@ -5656,7 +5656,7 @@ PetscErrorCode MatAssembled(Mat mat,PetscBool  *assembled)
+@@ -5433,7 +5433,7 @@ PetscErrorCode MatAssembled(Mat mat,PetscBool *assembled)
+ @*/
  PetscErrorCode MatAssemblyEnd(Mat mat,MatAssemblyType type)
  {
-   PetscErrorCode  ierr;
 -  static PetscInt inassm = 0;
 +  static _Thread_local PetscInt inassm = 0;
    PetscBool       flg    = PETSC_FALSE;
