@@ -2539,8 +2539,10 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
         node.GetJacobianFromArray(H_PB_W_cache);
 
     // Aliases to angular and translational components in H_PB_W.
+    // (When zero-sized, we must avoid Eigen UB; see drake#17113.)
     const auto Hw_PB_W = H_PB_W.template topRows<3>();
-    const auto Hv_PB_W = H_PB_W.template bottomRows<3>();
+    const auto Hv_PB_W = H_PB_W.size() > 0 ? H_PB_W.template bottomRows<3>()
+                                           : H_PB_W.template topRows<3>();
 
     const int start_index = is_wrt_qdot ? start_index_in_q : start_index_in_v;
     const int mobilizer_jacobian_ncols =
@@ -2570,7 +2572,7 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
       }
     }
 
-    if (Js_v_WFpi_W) {
+    if (Js_v_WFpi_W && (mobilizer_jacobian_ncols > 0)) {
       // Get memory address in the output block Jacobian translational velocity
       // Js_v_PFpi_W corresponding to the contribution of the mobilities in
       // level ilevel.  This address corresponds to point Fpi's Jacobian
