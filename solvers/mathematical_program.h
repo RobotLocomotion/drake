@@ -2254,12 +2254,15 @@ class MathematicalProgram {
    * @param b The linear coefficient of the quadratic constraint.
    * @param c The constant term of the quadratic constraint.
    * @param vars x in the documentation above.
+   * @param psd_tol If the minimal eigenvalue of Q is smaller than -psd_tol,
+   * then throw an exception. @default = 0.
    */
   Binding<RotatedLorentzConeConstraint>
   AddQuadraticAsRotatedLorentzConeConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& b, double c,
-      const Eigen::Ref<const VectorX<symbolic::Variable>>& vars);
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
+      double psd_tol = 0.);
 
   /**
    * Adds a linear complementarity constraints referencing a subset of
