@@ -1106,11 +1106,13 @@ void BindMathematicalProgram(py::module m) {
           [](MathematicalProgram* self,
               const Eigen::Ref<const Eigen::MatrixXd>& Q,
               const Eigen::Ref<const Eigen::VectorXd>& b, double c,
-              const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+              const Eigen::Ref<const VectorXDecisionVariable>& vars,
+              double psd_tol) {
             return self->AddQuadraticAsRotatedLorentzConeConstraint(
-                Q, b, c, vars);
+                Q, b, c, vars, psd_tol);
           },
           py::arg("Q"), py::arg("b"), py::arg("c"), py::arg("vars"),
+          py::arg("psd_tol") = 0.,
           doc.MathematicalProgram.AddQuadraticAsRotatedLorentzConeConstraint
               .doc)
       .def("AddLinearComplementarityConstraint",
