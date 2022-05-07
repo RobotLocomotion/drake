@@ -79,8 +79,7 @@ std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
   new_prog->linear_equality_constraints_ = linear_equality_constraints_;
   new_prog->bbox_constraints_ = bbox_constraints_;
   new_prog->lorentz_cone_constraint_ = lorentz_cone_constraint_;
-  new_prog->rotated_lorentz_cone_constraint_ =
-      rotated_lorentz_cone_constraint_;
+  new_prog->rotated_lorentz_cone_constraint_ = rotated_lorentz_cone_constraint_;
   new_prog->positive_semidefinite_constraint_ =
       positive_semidefinite_constraint_;
   new_prog->linear_matrix_inequality_constraint_ =
@@ -405,8 +404,8 @@ void MathematicalProgram::AddIndeterminates(
 }
 
 Binding<VisualizationCallback> MathematicalProgram::AddVisualizationCallback(
-    const VisualizationCallback::CallbackFunction &callback,
-    const Eigen::Ref<const VectorXDecisionVariable> &vars) {
+    const VisualizationCallback::CallbackFunction& callback,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   visualization_callbacks_.push_back(
       internal::CreateBinding<VisualizationCallback>(
           make_shared<VisualizationCallback>(vars.size(), callback), vars));
@@ -796,8 +795,8 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
-    const Eigen::Ref<const Eigen::Array<
-        symbolic::Formula, Eigen::Dynamic, Eigen::Dynamic>>& formulas) {
+    const Eigen::Ref<const Eigen::Array<symbolic::Formula, Eigen::Dynamic,
+                                        Eigen::Dynamic>>& formulas) {
   Binding<Constraint> binding = internal::ParseConstraint(formulas);
   Constraint* constraint = binding.evaluator().get();
   if (dynamic_cast<LinearConstraint*>(constraint)) {
@@ -1368,12 +1367,43 @@ MatrixXDecisionVariable DoAddSosConstraint(
   }
   return Q;
 }
+
 // Body of MathematicalProgram::AddSosConstraint(const symbolic::Polynomial&).
 pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> DoAddSosConstraint(
     MathematicalProgram* const prog, const symbolic::Polynomial& p,
     MathematicalProgram::NonnegativePolynomial type) {
-  const VectorX<symbolic::Monomial> m = ConstructMonomialBasis(p);
-  const MatrixXDecisionVariable Q = prog->AddSosConstraint(p, m, type);
+  VectorX<symbolic::Monomial> m = ConstructMonomialBasis(p);
+  // If p(0) = 0, then this polynomial is on the boundary of the nonnegative
+  // polynomial cone. To improve the numerical performance, we remove 1 from the
+  // monomial basis, so that the Gram matrix is in the strict interior of the
+  // psd cone. For a more complete discussion, see the facial reduction paper
+  // "Partial facial reduction: Simplified, equivalent semidefinite programs via
+  // approximations of the positive semidefinite cone" by Frank Permenter and
+  // Pablo Parrilo.
+
+  // Check if p(0) = 0
+  bool p_pass_origin = false;
+  auto it = p.monomial_to_coefficient_map().find(symbolic::Monomial());
+  if (it == p.monomial_to_coefficient_map().end()) {
+    p_pass_origin = true;
+  } else {
+    const auto constant_coeff = it->second.Expand();
+    if (symbolic::is_zero(constant_coeff)) {
+      p_pass_origin = true;
+    }
+  }
+  if (p_pass_origin) {
+    VectorX<symbolic::Monomial> m_without_1(m.rows());
+    int row_count = 0;
+    for (int i = 0; i < m.rows(); ++i) {
+      if (m(i).total_degree() > 0) {
+        m_without_1(row_count++) = m(i);
+      }
+    }
+    m = m_without_1.topRows(row_count);
+  }
+
+  const MatrixXDecisionVariable Q = DoAddSosConstraint(prog, p, m, type);
   return std::make_pair(Q, m);
 }
 
@@ -1470,10 +1500,10 @@ void MathematicalProgram::SetDecisionVariableValueInVector(
     EigenPtr<Eigen::VectorXd> values) const {
   DRAKE_THROW_UNLESS(values != nullptr);
   DRAKE_THROW_UNLESS(values->size() == num_vars());
-  DRAKE_THROW_UNLESS(
-      decision_variables.rows() == decision_variables_new_values.rows());
-  DRAKE_THROW_UNLESS(
-      decision_variables.cols() == decision_variables_new_values.cols());
+  DRAKE_THROW_UNLESS(decision_variables.rows() ==
+                     decision_variables_new_values.rows());
+  DRAKE_THROW_UNLESS(decision_variables.cols() ==
+                     decision_variables_new_values.cols());
   for (int i = 0; i < decision_variables.rows(); ++i) {
     for (int j = 0; j < decision_variables.cols(); ++j) {
       const int index = FindDecisionVariableIndex(decision_variables(i, j));
@@ -1825,7 +1855,6 @@ std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog) {
   }
   return os;
 }
-
 
 }  // namespace solvers
 }  // namespace drake

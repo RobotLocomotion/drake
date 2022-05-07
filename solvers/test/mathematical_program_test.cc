@@ -3660,6 +3660,29 @@ GTEST_TEST(TestMathematicalProgram, AddSosConstraint) {
   EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1u);
 }
 
+GTEST_TEST(TestMathematicalProgram, AddSosConstraintPolynomialPassOrigin) {
+  // Call AddSosConstraint for a polynomial passing through the origin. The
+  // returned monomial basis should not contain the constant term 1.
+  solvers::MathematicalProgram prog;
+  auto x = prog.NewIndeterminates<3>();
+  const symbolic::Polynomial p1(3 * x(0) + 8 * x(1) * x(1) + x(2) * x(2));
+  auto [Q1, m1] = prog.AddSosConstraint(p1);
+  for (int i = 0; i < m1.rows(); ++i) {
+    EXPECT_GT(m1(i).total_degree(), 0);
+  }
+  EXPECT_EQ(Q1.rows(), 2);
+
+  auto a = prog.NewContinuousVariables<1>()(0);
+  // p2(x) = (a² − 1 − (a+1)(a−1)) * 1 + x(0)² = x(0)²
+  const symbolic::Polynomial p2{
+      {{symbolic::Monomial(), pow(a, 2) - 1 - (a + 1) * (a - 1)},
+       {symbolic::Monomial(x(0), 2), 1}}};
+  auto [Q2, m2] = prog.AddSosConstraint(p2);
+  EXPECT_EQ(Q2.rows(), 1);
+  EXPECT_EQ(m2.rows(), 1);
+  EXPECT_EQ(m2(0), symbolic::Monomial(x(0)));
+}
+
 template <typename C>
 void RemoveCostTest(MathematicalProgram* prog,
                     const symbolic::Expression& cost1_expr,
