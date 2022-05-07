@@ -219,7 +219,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.CalcRelativeSpatialVelocity.doc)
         .def("CalcSpatialAccelerationInWorld",
             &Class::CalcSpatialAccelerationInWorld, py::arg("context"),
-            cls_doc.CalcSpatialAccelerationInWorld.doc);
+            cls_doc.CalcSpatialAccelerationInWorld.doc)
+        .def("CalcSpatialAcceleration", &Class::CalcSpatialAcceleration,
+            py::arg("context"), py::arg("measured_in_frame"),
+            py::arg("expressed_in_frame"), cls_doc.CalcSpatialAcceleration.doc)
+        .def("CalcRelativeSpatialAccelerationInWorld",
+            &Class::CalcRelativeSpatialAccelerationInWorld, py::arg("context"),
+            py::arg("other_frame"),
+            cls_doc.CalcRelativeSpatialAccelerationInWorld.doc)
+        .def("CalcRelativeSpatialAcceleration",
+            &Class::CalcRelativeSpatialAcceleration, py::arg("context"),
+            py::arg("other_frame"), py::arg("measured_in_frame"),
+            py::arg("expressed_in_frame"),
+            cls_doc.CalcRelativeSpatialAcceleration.doc);
   }
 
   {

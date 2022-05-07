@@ -1857,6 +1857,20 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(
             dut.CalcSpatialAccelerationInWorld(context=context),
             SpatialAcceleration_[T])
+        self.assertIsInstance(
+            dut.CalcSpatialAcceleration(context=context, measured_in_frame=dut,
+                                        expressed_in_frame=dut),
+            SpatialAcceleration_[T])
+        self.assertIsInstance(
+            dut.CalcRelativeSpatialAccelerationInWorld(context=context,
+                                                       other_frame=dut),
+            SpatialAcceleration_[T])
+        self.assertIsInstance(
+            dut.CalcRelativeSpatialAcceleration(context=context,
+                                                other_frame=dut,
+                                                measured_in_frame=dut,
+                                                expressed_in_frame=dut),
+            SpatialAcceleration_[T])
 
     @numpy_compare.check_all_types
     def test_fixed_offset_frame_api(self, T):
