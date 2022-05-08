@@ -4,6 +4,7 @@
 
 #include "drake/common/extract_double.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/differentiable_norm.h"
 
 namespace drake {
 namespace multibody {
@@ -26,7 +27,7 @@ Vector1<T> EvalQuaternionIntegration(const Eigen::Quaternion<T>& quat1,
   // Now compute sin(|ω|h/2)/|ω|
   // when ω = 0, sin(|ω|h/2)/|ω|=h/2 (By taking the limit as |ω|-> 0)
   // otherwise, we compute sin(|ω|h/2)/|ω| directly.
-  const T angular_vel_norm = internal::DifferentiableNorm(angular_vel);
+  const T angular_vel_norm = math::DifferentiableNorm(angular_vel);
   // The "vector" part of Δz.
   Vector3<T> delta_z_vec;
   if (scalar_predicate<T>::is_bool &&
