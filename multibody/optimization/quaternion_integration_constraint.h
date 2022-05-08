@@ -17,9 +17,9 @@ namespace multibody {
  * ⊗ is the Hamiltonian product between quaternions.
  *
  * It is well-known that for any quaternion z, its element-wise negation -z
- * correspond to the same rotation matrix as z does. One way to undertand this
+ * correspond to the same rotation matrix as z does. One way to understand this
  * is that -z represents the rotation that first rotate the frame by a
- * quaternion z, and then continue to rotate about that axis for 360 degress. We
+ * quaternion z, and then continue to rotate about that axis for 360 degrees. We
  * provide the option @p allow_quaternion_negation flag, that if set to
  * true, then we require that the quaternion z₂ = ±Δz⊗z₁. Otherwise we require
  * z₂ = Δz⊗z₁. Mathematically, the constraint we impose is
@@ -90,27 +90,5 @@ class QuaternionEulerIntegrationConstraint final : public solvers::Constraint {
   bool allow_quaternion_negation_;
 };
 
-namespace internal {
-// The 2-norm function |x| is not differentiable at x=0 (its gradient is x/|x|,
-// which has a division-by-zero problem). On the other hand, x=0 happens very
-// often. Hence we use a "smoothed" gradient as x/(|x| + ε) when x is almost 0.
-template <typename T>
-T DifferentiableNorm(const Vector3<T>& x) {
-  const double kEps = std::numeric_limits<double>::epsilon();
-  if constexpr (std::is_same_v<T, AutoDiffXd>) {
-    const Eigen::Vector3d x_val = math::ExtractValue(x);
-    const double norm_val = x_val.norm();
-    if (norm_val > 100 * kEps) {
-      return x.norm();
-    } else {
-      return AutoDiffXd(norm_val, math::ExtractGradient(x).transpose() * x_val /
-                                      (norm_val + 10 * kEps));
-    }
-  } else {
-    return x.norm();
-  }
-}
-
-}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
