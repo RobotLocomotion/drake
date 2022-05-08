@@ -442,6 +442,7 @@ drake_py_unittest(
         ":framework_py",
         ":primitives_py",
         "//bindings/pydrake:trajectories_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
