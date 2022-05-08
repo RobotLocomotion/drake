@@ -1,5 +1,7 @@
 #include "drake/multibody/plant/wing.h"
 
+#include "drake/math/differentiable_norm.h"
+
 namespace drake {
 namespace multibody {
 
@@ -82,8 +84,8 @@ void Wing<T>::CalcSpatialForce(
   // http://underactuated.csail.mit.edu/trajopt.html#perching and the
   // corresponding references.
   SpatialForce<T> F_Wing_Wing = SpatialForce<T>::Zero();
-  const T longitudinal_velocity_norm =
-      Vector2<T>(v_WindBody_Wing[0], v_WindBody_Wing[2]).norm();
+  const T longitudinal_velocity_norm = math::DifferentiableNorm(
+      Vector2<T>(v_WindBody_Wing[0], v_WindBody_Wing[2]));
   F_Wing_Wing.translational()[2] = -fluid_density * surface_area_ *
                                    v_WindBody_Wing[2] *
                                    longitudinal_velocity_norm;
