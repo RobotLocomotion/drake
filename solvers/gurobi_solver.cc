@@ -206,7 +206,7 @@ GurobiSolver::SolveStatusInfo GetGurobiSolveStatus(void* cbdata, int where) {
   GRBcbget(cbdata, where, GRB_CB_MIPNODE_OBJBND, &(solve_status.best_bound));
   GRBcbget(cbdata, where, GRB_CB_MIPNODE_SOLCNT,
            &(solve_status.feasible_solutions_count));
-  double explored_node_count_double;
+  double explored_node_count_double{};
   GRBcbget(cbdata, where, GRB_CB_MIPNODE_NODCNT, &explored_node_count_double);
   solve_status.explored_node_count = explored_node_count_double;
   return solve_status;
