@@ -31,7 +31,7 @@ namespace systems {
         5179/57600            0   7571/16695    393/640   −92097/339200   187/2100   1/40  <!-- NOLINT(*) -->
  </pre>
  where the second to last row is the 5th-order (propagated) solution and
- the last row gives a 2nd-order accurate solution used for error control.
+ the last row gives a 4th-order accurate solution used for error control.
 
  - [Dormand, 1980] J. Dormand and P. Prince. "A family of embedded
    Runge-Kutta formulae", Journal of Computational and Applied Mathematics,
