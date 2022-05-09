@@ -815,6 +815,8 @@ PYBIND11_MODULE(symbolic, m) {
       .def(-py::self)
       .def(py::self / double())
       .def("EqualTo", &Polynomial::EqualTo, doc.Polynomial.EqualTo.doc)
+      .def("EqualToAfterExpansion", &Polynomial::EqualToAfterExpansion,
+          doc.Polynomial.EqualToAfterExpansion.doc)
       .def(py::self == py::self)
       .def(py::self != py::self)
       .def("__hash__",
