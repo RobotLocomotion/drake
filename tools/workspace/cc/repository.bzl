@@ -125,8 +125,9 @@ def _impl(repository_ctx):
             ))
 
     elif compiler_id == "Clang":
-        if compiler_version_major < 12:
-            fail("Clang compiler version {}.{} is less than 12.0".format(
+        # TODO(jwnimmer-tri) Require Clang 12 minimum as of 2022-09-01.
+        if compiler_version_major < 9:
+            fail("Clang compiler version {}.{} is less than 9.0".format(
                 compiler_version_major,
                 compiler_version_minor,
             ))
