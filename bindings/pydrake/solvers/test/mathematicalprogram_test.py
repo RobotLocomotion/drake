@@ -643,7 +643,8 @@ class TestMathematicalProgram(unittest.TestCase):
         x = prog.NewIndeterminates(3, "x")
         (poly1, gramian1) = prog.NewSosPolynomial(
             indeterminates=sym.Variables(x), degree=4,
-            type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos)
+            type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos,
+            gram_name="M0")
         self.assertIsInstance(poly1, sym.Polynomial)
         self.assertIsInstance(gramian1, np.ndarray)
 
@@ -656,7 +657,8 @@ class TestMathematicalProgram(unittest.TestCase):
 
         poly3, gramian3 = prog.NewSosPolynomial(
             monomial_basis=(sym.Monomial(x[0]), sym.Monomial(x[1])),
-            type=mp.MathematicalProgram.NonnegativePolynomial.kSos)
+            type=mp.MathematicalProgram.NonnegativePolynomial.kSos,
+            gram_name="M2")
         self.assertIsInstance(poly3, sym.Polynomial)
         self.assertIsInstance(gramian3, np.ndarray)
 
@@ -681,10 +683,12 @@ class TestMathematicalProgram(unittest.TestCase):
         Q = prog.AddSosConstraint(
            p=sym.Polynomial(x[0]**2 + 1),
            monomial_basis=[sym.Monomial(x[0])],
-           type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos)
+           type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos,
+           gram_name="Q")
         Q, m = prog.AddSosConstraint(
             p=sym.Polynomial(x[0]**2 + 2),
-            type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos)
+            type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos,
+            gram_name="Q")
 
     def test_sos(self):
         # Find a,b,c,d subject to
@@ -699,16 +703,18 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(prog.indeterminates_index()[x[0].get_id()], 0)
         poly = prog.NewFreePolynomial(sym.Variables(x), 1)
         (poly, binding) = prog.NewSosPolynomial(
-            indeterminates=sym.Variables(x), degree=2)
+            indeterminates=sym.Variables(x), degree=2, gram_name="M0")
         even_poly = prog.NewEvenDegreeFreePolynomial(sym.Variables(x), 2)
         odd_poly = prog.NewOddDegreeFreePolynomial(sym.Variables(x), 3)
         y = prog.NewIndeterminates(1, "y")
         self.assertEqual(prog.indeterminates_index()[y[0].get_id()], 1)
         (poly, binding) = prog.NewSosPolynomial(
-            monomial_basis=(sym.Monomial(x[0]), sym.Monomial(y[0])))
+            monomial_basis=(sym.Monomial(x[0]), sym.Monomial(y[0])),
+            gram_name="M1")
         d = prog.NewContinuousVariables(2, "d")
-        prog.AddSosConstraint(d[0]*x.dot(x))
-        prog.AddSosConstraint(d[1]*x.dot(x), [sym.Monomial(x[0])])
+        prog.AddSosConstraint(d[0]*x.dot(x), gram_name="Q1")
+        prog.AddSosConstraint(
+            d[1]*x.dot(x), [sym.Monomial(x[0])], gram_name="Q2")
         prog.AddLinearEqualityConstraint(d[0] + d[1] == 1)
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())

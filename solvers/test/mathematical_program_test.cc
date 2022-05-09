@@ -3300,9 +3300,10 @@ void CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial type) {
   MathematicalProgram prog;
   auto t = prog.NewIndeterminates<4>();
   const auto m = symbolic::MonomialBasis<4, 2>(symbolic::Variables(t));
-  const auto pair = prog.NewSosPolynomial(m, type);
+  const auto pair = prog.NewSosPolynomial(m, type, "TestGram");
   const symbolic::Polynomial& p = pair.first;
   const MatrixXDecisionVariable& Q = pair.second;
+  EXPECT_NE(Q(0, 0).get_name().find("TestGram"), std::string::npos);
   MatrixX<symbolic::Polynomial> Q_poly(m.rows(), m.rows());
   const symbolic::Monomial monomial_one{};
   for (int i = 0; i < Q_poly.rows(); ++i) {
@@ -3634,8 +3635,10 @@ GTEST_TEST(TestMathematicalProgram, AddSosConstraint) {
   const Vector2<symbolic::Monomial> monomial_basis(symbolic::Monomial{},
                                                    symbolic::Monomial(x, 1));
 
-  const Matrix2<symbolic::Variable> Q_psd =
-      prog.AddSosConstraint(p1, monomial_basis);
+  const Matrix2<symbolic::Variable> Q_psd = prog.AddSosConstraint(
+      p1, monomial_basis, MathematicalProgram::NonnegativePolynomial::kSos,
+      "Q");
+  EXPECT_NE(Q_psd(0, 0).get_name().find("Q"), std::string::npos);
   EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1u);
   EXPECT_EQ(prog.lorentz_cone_constraints().size(), 0u);
   EXPECT_EQ(prog.rotated_lorentz_cone_constraints().size(), 0u);
