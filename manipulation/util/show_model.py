@@ -188,8 +188,8 @@ def main():
     # Construct Plant + SceneGraph.
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, time_step=0.0)
-    # Load the model file.
-    make_parser(plant).AddModelFromFile(filename)
+    # Load the model(s) from specified file.
+    make_parser(plant).AddAllModelsFromFile(filename)
     update_visualization(plant, scene_graph)
     plant.Finalize()
 
