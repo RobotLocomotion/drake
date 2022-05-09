@@ -158,6 +158,7 @@ filegroup(
     name = "test_models",
     srcs = [
         ":test/simple_nested_model.sdf",
+        ":test/simple_world_with_two_models.sdf",
     ],
 )
 

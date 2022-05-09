@@ -15,6 +15,8 @@ class TestShowModel(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.urdf",
             # Nested SDFormat file.
             "drake/manipulation/util/test/simple_nested_model.sdf",
+            # SDFormat world file with multiple models.
+            "drake/manipulation/util/test/simple_world_with_two_models.sdf",
         ]
         bin = manifest.Rlocation("drake/manipulation/util/show_model")
         for model_runpath in model_runpaths:
