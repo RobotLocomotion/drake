@@ -11,6 +11,7 @@
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_limit_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/parsing/parser.h"
@@ -18,6 +19,7 @@
 #include "drake/multibody/tree/joint_actuator.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/space_xyz_mobilizer.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
@@ -34,6 +36,7 @@ using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::MergeNormalAndTangent;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
+using drake::multibody::contact_solvers::internal::SapLimitConstraint;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
 using drake::multibody::contact_solvers::internal::SapSolverResults;
@@ -94,7 +97,7 @@ class CompliantContactManagerTest {
 
   static VectorXd CalcFreeMotionVelocities(
       const CompliantContactManager<double>& manager,
-      const systems::Context<double>& context) {
+      const Context<double>& context) {
     VectorXd v_star(manager.plant().num_velocities());
     manager.CalcFreeMotionVelocities(context, &v_star);
     return v_star;
@@ -102,7 +105,7 @@ class CompliantContactManagerTest {
 
   static std::vector<MatrixXd> CalcLinearDynamicsMatrix(
       const CompliantContactManager<double>& manager,
-      const systems::Context<double>& context) {
+      const Context<double>& context) {
     std::vector<MatrixXd> A;
     manager.CalcLinearDynamicsMatrix(context, &A);
     return A;
@@ -121,9 +124,15 @@ class CompliantContactManagerTest {
 
   static void CalcNonContactForces(
       const CompliantContactManager<double>& manager,
-      const systems::Context<double>& context,
-      MultibodyForces<double>* forces) {
+      const Context<double>& context, MultibodyForces<double>* forces) {
     manager.CalcNonContactForces(context, forces);
+  }
+
+  static void AddLimitConstraints(
+      const CompliantContactManager<double>& manager,
+      const Context<double>& context, const VectorXd& v_star,
+      SapContactProblem<double>* problem) {
+    manager.AddLimitConstraints(context, v_star, problem);
   }
 };
 
@@ -404,15 +413,14 @@ class SpheresStack : public ::testing::Test {
         *contact_manager_, context);
   }
 
-  VectorXd CalcFreeMotionVelocities(
-      const systems::Context<double>& context) const {
+  VectorXd CalcFreeMotionVelocities(const Context<double>& context) const {
     VectorXd v_star(plant_->num_velocities());
     return CompliantContactManagerTest::CalcFreeMotionVelocities(
         *contact_manager_, context);
   }
 
   std::vector<MatrixXd> CalcLinearDynamicsMatrix(
-      const systems::Context<double>& context) const {
+      const Context<double>& context) const {
     return CompliantContactManagerTest::CalcLinearDynamicsMatrix(
         *contact_manager_, context);
   }
@@ -773,26 +781,20 @@ TEST_F(SpheresStack, CalcFreeMotionVelocitiesWithJointLimits) {
   // Initial velocities.
   const VectorXd v0 = plant_->GetVelocities(*plant_context_);
 
-  // Since sphere 2's frame is located at its COM and since its inertia is
-  // triaxially symmetric, the Coriolis term for sphere 2 is zero. The Coriolis
-  // term is trivially zero for sphere 1, which only can move along the z-axis.
-  // Therefore the momentum equation reduces to: M * (v-v0)/dt = tau_g.
-  // We compute the expected velocities in the absence of joint limits.
-  const double dt = plant_->time_step();
-  const VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*plant_context_);
-  MatrixXd M(nv, nv);
-  plant_->CalcMassMatrix(*plant_context_, &M);
-  const VectorXd v_expected = v0 + dt * M.ldlt().solve(tau_g);
-  // Obtain the slider's velocity at v_expected.
+  // Compute slider1's velocity in the absence of joint limits. This is
+  // equivalent to computing the free motion velocities before constraints are
+  // applied.
+  const VectorXd v_expected = CalcFreeMotionVelocities(*plant_context_);
   const double v_slider_no_limits = v_expected(slider1_->velocity_start());
 
-  // Compute the velocities the system would have next time step in the absence
-  // of constraints.
-  const VectorXd v_star = CalcFreeMotionVelocities(*plant_context_);
-  // Obtain the slider's velocity at v*.
+  // Compute slider1's velocity with constraints applied. This corresponds to
+  // the full discrete update computation.
+  ContactSolverResults<double> contact_results;
+  contact_manager_->CalcContactSolverResults(*plant_context_, &contact_results);
+  const VectorXd v_star = contact_results.v_next;
   const double v_slider_star = v_star(slider1_->velocity_start());
 
-  // While other MultibodyPlant tests verify the correctness of joint limit
+  // While other solver specific tests verify the correctness of joint limit
   // forces, this test is simply limited to verifying the manager applied them.
   // Therefore we only check the force limits have the effect of making the
   // slider velocity larger than if not present.
@@ -1082,9 +1084,24 @@ TEST_F(AlgebraicLoopDetection, VerifyNoFalsePositivesWhenCachingIsDisabled) {
 }
 
 // Fixture to set up a Kuka iiwa arm model with a Schunk wsg gripper and welded
-// to the world at the base link.
+// to the world at the base link. This fixture is used to stress test the
+// implementation of CompliantContactManager with a model of practical relevance
+// to robotics. In particular, we unit test the implementation of damping and
+// joint limits.
 class KukaIiwaArmTests : public ::testing::Test {
  public:
+  // Enum used to specify how we'd like to initialize the state for limit
+  // constraints unit tests.
+  enum class InitializePositionAt {
+    BelowLowerLimit,  // q₀ < qₗ
+    // Current position is above limit, though predicted position is below.
+    AboveLowerLimitThoughPredictionBelow,  // q₀+δt⋅v₀ < qₗ < q₀
+    AboveUpperLimit,                       // q₀ > qᵤ
+    // Current position is below limit, though predicted position is above.
+    BelowUpperLimitThoughPredictionAbove,  // q₀ < qᵤ < q₀+δt⋅v₀
+    WellWithinLimits,  // Both q0 and q₀ + δt⋅v₀ are in (qₗ, qᵤ)
+  };
+
   // Setup model of the Kuka iiwa arm with Schunk gripper and allocate context
   // resources. The model includes reflected inertias. Input ports are fixed to
   // arbitrary non-zero values.
@@ -1134,6 +1151,79 @@ class KukaIiwaArmTests : public ::testing::Test {
     return A;
   }
 
+  // Initializes `context` to store arbitrary values of state that abide by the
+  // given specification in `limits_specification`. This allows us to test how
+  // the manager adds constraints to the problem at different configurations.
+  // limits_specification are indexed by joint dofs.
+  // TODO(amcastro-tri): our testing strategy using these specifications can be
+  // further improved as discussed in the review of #17083, tracked in #17137.
+  void SetArbitraryStateWithLimitsSpecification(
+      const MultibodyPlant<double>& plant,
+      const std::vector<InitializePositionAt>& limits_specification,
+      Context<double>* context) {
+    DRAKE_DEMAND(static_cast<int>(limits_specification.size()) == kNumJoints);
+
+    // Arbitrary positive slop used for positions.
+    const double kPositiveDeltaQ = M_PI / 10.0;
+    const double dt = plant.time_step();
+    VectorXd v0(kNumJoints);
+    VectorXd q0(kNumJoints);
+
+    for (JointIndex joint_index(0); joint_index < plant.num_joints();
+         ++joint_index) {
+      const Joint<double>& joint = plant.get_joint(joint_index);
+
+      if (joint.num_velocities() == 1) {  // skip welds in the model.
+        const int v_index = joint.velocity_start();
+        const InitializePositionAt limit_spec = limits_specification[v_index];
+        const double ql = joint.position_lower_limits()[0];
+        const double qu = joint.position_upper_limits()[0];
+
+        double joint_q0 = 0.;
+        double joint_v0 = 0.;
+        switch (limit_spec) {
+          case InitializePositionAt::BelowLowerLimit: {
+            joint_q0 = ql > 0 ? 0.8 * ql : 1.2 * ql;
+            joint_v0 = joint_index * 2.3;  // Arbitrary.
+            break;
+          }
+          case InitializePositionAt::AboveLowerLimitThoughPredictionBelow: {
+            // We initialize a state s.t. q₀+δt⋅v₀ < qₗ < q₀.
+            joint_q0 = ql + kPositiveDeltaQ;
+            const double qp = ql - kPositiveDeltaQ;
+            joint_v0 = (qp - joint_q0) / dt;
+            break;
+          }
+          case InitializePositionAt::AboveUpperLimit: {
+            joint_q0 = qu > 0 ? 1.2 * qu : 0.8 * qu;
+            joint_v0 = joint_index * 2.3;  // Arbitrary.
+            break;
+          }
+          case InitializePositionAt::BelowUpperLimitThoughPredictionAbove: {
+            // We initialize a state s.t. q₀ < qᵤ < q₀+δt⋅v₀.
+            joint_q0 = qu - kPositiveDeltaQ;
+            const double qp = qu + kPositiveDeltaQ;
+            joint_v0 = (qp - joint_q0) / dt;
+            break;
+          }
+          case InitializePositionAt::WellWithinLimits: {
+            joint_q0 = 0.5 * (ql + qu);  // q in (ql, qu)
+            joint_v0 = 0.0;
+            break;
+          }
+          default:
+            DRAKE_UNREACHABLE();
+        }
+
+        q0(v_index) = joint_q0;
+        v0(v_index) = joint_v0;
+      }
+    }
+
+    plant.SetPositions(context, q0);
+    plant.SetVelocities(context, v0);
+  }
+
  private:
   void LoadIiwaWithGripper(MultibodyPlant<double>* plant) {
     DRAKE_DEMAND(plant != nullptr);
@@ -1170,6 +1260,7 @@ class KukaIiwaArmTests : public ::testing::Test {
     }
   }
 
+  // Set arbitrary state, though within joint limits.
   void SetArbitraryState(const MultibodyPlant<double>& plant,
                          Context<double>* context) {
     for (JointIndex joint_index(0); joint_index < plant.num_joints();
@@ -1179,18 +1270,25 @@ class KukaIiwaArmTests : public ::testing::Test {
       if (joint.type_name() == "revolute") {
         const RevoluteJoint<double>& revolute_joint =
             dynamic_cast<const RevoluteJoint<double>&>(joint);
-        // Arbitrary angle and angular rate.
-        revolute_joint.set_angle(context, 0.5 * joint_index);
+        // Arbitrary position within position limits.
+        const double ql = revolute_joint.position_lower_limit();
+        const double qu = revolute_joint.position_upper_limit();
+        const double w = joint_index / kNumJoints;  // Number in (0,1).
+        const double q = w * ql + (1.0 - w) * qu;   // q in (ql, qu)
+        revolute_joint.set_angle(context, q);
+        // Arbitrary velocity.
         revolute_joint.set_angular_rate(context, 0.5 * joint_index);
       } else if (joint.type_name() == "prismatic") {
         const PrismaticJoint<double>& prismatic_joint =
             dynamic_cast<const PrismaticJoint<double>&>(joint);
-        // Arbitrary joint translation and translation rate.
-        prismatic_joint.set_translation(context, 0.5 * joint_index);
+        // Arbitrary position within position limits.
+        const double ql = prismatic_joint.position_lower_limit();
+        const double qu = prismatic_joint.position_upper_limit();
+        const double w = joint_index / kNumJoints;  // Number in (0,1).
+        const double q = w * ql + (1.0 - w) * qu;   // q in (ql, qu)
+        prismatic_joint.set_translation(context, q);
+        // Arbitrary velocity.
         prismatic_joint.set_translation_rate(context, 0.5 * joint_index);
-      } else {
-        if (joint.num_velocities() > 0)  // skip weld joints.
-          throw std::runtime_error("Unexpected joint type.");
       }
     }
   }
@@ -1261,6 +1359,280 @@ TEST_F(KukaIiwaArmTests, CalcFreeMotionVelocities) {
 
   EXPECT_TRUE(CompareMatrices(v_star, v_star_expected, 5.0 * kEps,
                               MatrixCompareType::relative));
+}
+
+TEST_F(KukaIiwaArmTests, LimitConstraints) {
+  // Arbitrary selection of how positions and velocities are initialized.
+  std::vector<InitializePositionAt> limits_specification(
+      kNumJoints, InitializePositionAt::WellWithinLimits);
+  limits_specification[0] = InitializePositionAt::BelowLowerLimit;
+  limits_specification[1] = InitializePositionAt::AboveUpperLimit;
+  limits_specification[2] =
+      InitializePositionAt::AboveLowerLimitThoughPredictionBelow;
+  limits_specification[3] =
+      InitializePositionAt::BelowUpperLimitThoughPredictionAbove;
+  limits_specification[4] = InitializePositionAt::WellWithinLimits;
+  limits_specification[5] = InitializePositionAt::BelowLowerLimit;
+  limits_specification[6] = InitializePositionAt::AboveUpperLimit;
+  limits_specification[7] = InitializePositionAt::WellWithinLimits;
+  limits_specification[8] = InitializePositionAt::WellWithinLimits;
+
+  // Three joints are WellWithinLimits.
+  const int kNumJointsWithLimits = 6;
+  const int kNumConstraintEquations = 6;
+  SetArbitraryStateWithLimitsSpecification(plant_, limits_specification,
+                                           context_.get());
+
+  const std::vector<DiscreteContactPair<double>>& discrete_pairs =
+      CompliantContactManagerTest::EvalDiscreteContactPairs(*manager_,
+                                                            *context_);
+  const int num_contacts = discrete_pairs.size();
+  // We are assuming there is no contact. Assert this.
+  ASSERT_EQ(num_contacts, 0);
+
+  const ContactProblemCache<double>& problem_cache =
+      CompliantContactManagerTest::EvalContactProblemCache(*manager_,
+                                                           *context_);
+  const SapContactProblem<double>& problem = *problem_cache.sap_problem;
+
+  // This model has no contact. We expect the number of constraints and
+  // equations be consistent with limits_specification defined above.
+  EXPECT_EQ(problem.num_constraints(), kNumJointsWithLimits);
+  EXPECT_EQ(problem.num_constraint_equations(), kNumConstraintEquations);
+
+  // In this model we clearly have single tree, the arm with its gripper.
+  const int tree_expected = 0;
+
+  int num_constraints = 0;  // count number of constraints visited.
+  // The manager adds limit constraints in the order joints are specified.
+  // Therefore we verify the limit constrant for each joint.
+  for (JointIndex joint_index(0); joint_index < plant_.num_joints();
+       ++joint_index) {
+    const Joint<double>& joint = plant_.get_joint(joint_index);
+    if (joint.num_velocities() == 1) {
+      const int v_index = joint.velocity_start();
+      const InitializePositionAt limit_spec = limits_specification[v_index];
+
+      if (limit_spec != InitializePositionAt::WellWithinLimits) {
+        // Get limit constraint for the specific joint.
+        const auto* constraint =
+            dynamic_cast<const SapLimitConstraint<double>*>(
+                &problem.get_constraint(num_constraints++));
+        // Since the spec is not WellWithinLimits, we expect a constraint added.
+        ASSERT_NE(constraint, nullptr);
+
+        // Limit constraints always apply to a single tree in the multibody
+        // forest.
+        EXPECT_EQ(constraint->num_cliques(), 1);
+
+        // There is a single tree in this model, the arm with gripper.
+        EXPECT_EQ(constraint->first_clique(), tree_expected);
+
+        EXPECT_EQ(constraint->clique_dof(), v_index);
+
+        // Each constraints acts on the same tree (the arm+gripper) with a total
+        // of kNumJoint DOFs in that tree.
+        EXPECT_EQ(constraint->first_clique_jacobian().cols(), kNumJoints);
+
+        // Verify the plant's state is consistent with the constraint's state.
+        const double q0 = joint.GetOnePosition(*context_);
+        EXPECT_EQ(constraint->position(), q0);
+
+        // N.B. Default values implemented in
+        // CompliantContactManager::AddLimitConstraints(), keep these values in
+        // sync.
+        const SapLimitConstraint<double>::Parameters& params =
+            constraint->parameters();
+        EXPECT_EQ(params.stiffness(), 1.0e12);
+        EXPECT_EQ(params.dissipation_time_scale(), plant_.time_step());
+        EXPECT_EQ(params.beta(), 0.1);
+
+        const bool lower_limit_expected =
+            limit_spec == InitializePositionAt::BelowLowerLimit ||
+            limit_spec ==
+                InitializePositionAt::AboveLowerLimitThoughPredictionBelow;
+        const bool upper_limit_expected =
+            limit_spec == InitializePositionAt::AboveUpperLimit ||
+            limit_spec ==
+                InitializePositionAt::BelowUpperLimitThoughPredictionAbove;
+
+        const int expected_num_equations =
+            lower_limit_expected && upper_limit_expected ? 2 : 1;
+        EXPECT_EQ(constraint->num_constraint_equations(),
+                  expected_num_equations);
+        EXPECT_EQ(constraint->first_clique_jacobian().rows(),
+                  expected_num_equations);
+
+        const double kInf = std::numeric_limits<double>::infinity();
+        const double ql_expected =
+            lower_limit_expected ? joint.position_lower_limits()[0] : -kInf;
+        const double qu_expected =
+            upper_limit_expected ? joint.position_upper_limits()[0] : kInf;
+
+        EXPECT_EQ(params.lower_limit(), ql_expected);
+        EXPECT_EQ(params.upper_limit(), qu_expected);
+      }
+    }
+  }
+  EXPECT_EQ(num_constraints, kNumJointsWithLimits);
+}
+
+// This joint is used to verify the support of multi-DOF joints with/without
+// joint limits. In particular, CompliantContactManager does not support limits
+// for constraints with more than 1 DOF and therefore we expect the manager to
+// throw an exception when building the problem.
+// The implementation for this joint is incomplete. Only the strictly necessary
+// overrides for the unit tests in this file are implemented.
+template <typename T>
+class MultiDofJointWithLimits final : public Joint<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultiDofJointWithLimits)
+
+  // Arbitrary number of DOFs, though larger than one for these tests.
+  static constexpr int kNumDofs = 3;
+
+  // The constructor allows to specify finite joint limits.
+  MultiDofJointWithLimits(const Frame<T>& frame_on_parent,
+                          const Frame<T>& frame_on_child,
+                          double pos_lower_limit, double pos_upper_limit)
+      : Joint<T>("MultiDofJointWithLimits", frame_on_parent, frame_on_child,
+                 VectorX<double>::Zero(kNumDofs),
+                 VectorX<double>::Constant(kNumDofs, pos_lower_limit),
+                 VectorX<double>::Constant(kNumDofs, pos_upper_limit),
+                 VectorX<double>::Constant(
+                     kNumDofs, -std::numeric_limits<double>::infinity()),
+                 VectorX<double>::Constant(
+                     kNumDofs, std::numeric_limits<double>::infinity()),
+                 VectorX<double>::Constant(
+                     kNumDofs, -std::numeric_limits<double>::infinity()),
+                 VectorX<double>::Constant(
+                     kNumDofs, std::numeric_limits<double>::infinity())) {
+    DRAKE_DEMAND(pos_lower_limit <= pos_upper_limit);
+  }
+
+  const std::string& type_name() const override {
+    static const never_destroyed<std::string> name{"MultiDofJointWithLimits"};
+    return name.access();
+  }
+
+ private:
+  // Make MultiDofJointWithLimits templated on every other scalar type a friend
+  // of MultiDofJointWithLimits<T> so that CloneToScalar<ToAnyOtherScalar>() can
+  // access private members of MultiDofJointWithLimits<T>.
+  template <typename>
+  friend class MultiDofJointWithLimits;
+
+  int do_get_num_velocities() const override { return kNumDofs; }
+  int do_get_num_positions() const override { return kNumDofs; }
+  // Dummy implementation, knowing our unit tests below have a single joint of
+  // this type.
+  int do_get_velocity_start() const override { return 0; }
+  int do_get_position_start() const override { return 0; }
+
+  std::unique_ptr<typename Joint<T>::BluePrint> MakeImplementationBlueprint()
+      const override {
+    auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
+    // The only restriction here relevant for these tests is that we provide a
+    // mobilizer with kNumDofs postions and velocities, so that indexes are
+    // consistent during MultibodyPlant::Finalize().
+    auto revolute_mobilizer = std::make_unique<internal::SpaceXYZMobilizer<T>>(
+        this->frame_on_parent(), this->frame_on_child());
+    blue_print->mobilizers_.push_back(std::move(revolute_mobilizer));
+    return blue_print;
+  }
+
+  // We do not need an implementation for the methods below since the unit tests
+  // do not exercise them. We mark them as "unreachable".
+
+  void DoAddInOneForce(const Context<T>&, int, const T&,
+                       MultibodyForces<T>*) const override {
+    DRAKE_UNREACHABLE();
+  }
+  void DoAddInDamping(const Context<T>&, MultibodyForces<T>*) const override {
+    DRAKE_UNREACHABLE();
+  }
+  std::string do_get_position_suffix(int) const override {
+    DRAKE_UNREACHABLE();
+  }
+  std::string do_get_velocity_suffix(int) const override {
+    DRAKE_UNREACHABLE();
+  }
+  void do_set_default_positions(const VectorX<double>&) override {
+    DRAKE_UNREACHABLE();
+  }
+  const T& DoGetOnePosition(const Context<T>&) const override {
+    DRAKE_UNREACHABLE();
+  }
+  const T& DoGetOneVelocity(const Context<T>&) const override {
+    DRAKE_UNREACHABLE();
+  }
+  std::unique_ptr<Joint<double>> DoCloneToScalar(
+      const internal::MultibodyTree<double>& tree_clone) const override {
+    DRAKE_UNREACHABLE();
+  }
+  std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
+      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override {
+    DRAKE_UNREACHABLE();
+  }
+  std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&) const override {
+    DRAKE_UNREACHABLE();
+  }
+};
+
+// Verify that CompliantContactManager throws when the model contains multi-DOF
+// joints with finite limits.
+GTEST_TEST(CompliantContactManager, ThrowForUnsupportedJoints) {
+  MultibodyPlant<double> plant(1.0e-3);
+  const RigidBody<double>& body =
+      plant.AddRigidBody("DummyBody", SpatialInertia<double>());
+  plant.AddJoint(std::make_unique<MultiDofJointWithLimits<double>>(
+      plant.world_frame(), body.body_frame(), -1.0, 2.0));
+  plant.Finalize();
+  auto owned_contact_manager =
+      std::make_unique<CompliantContactManager<double>>();
+  CompliantContactManager<double>* contact_manager =
+      owned_contact_manager.get();
+  plant.SetDiscreteUpdateManager(std::move(owned_contact_manager));
+  auto context = plant.CreateDefaultContext();
+
+  // Dummy v* and problem.
+  const VectorXd v_star = Vector3d::Zero();
+  SapContactProblem<double> problem(plant.time_step());
+
+  // We verify the manager throws for the right reasons.
+  DRAKE_EXPECT_THROWS_MESSAGE(CompliantContactManagerTest::AddLimitConstraints(
+                                  *contact_manager, *context, v_star, &problem),
+                              "Limits for joints with more than one degree of "
+                              "freedom are not supported(.|\n)*");
+}
+
+// Verify that CompliantContactManager allows multi-DOF joints whenever these do
+// not specify finite limits.
+GTEST_TEST(CompliantContactManager,
+           VerifyMultiDofJointsWithoutLimitsAreSupported) {
+  MultibodyPlant<double> plant(1.0e-3);
+  const RigidBody<double>& body =
+      plant.AddRigidBody("DummyBody", SpatialInertia<double>());
+  const double kInf = std::numeric_limits<double>::infinity();
+  plant.AddJoint(std::make_unique<MultiDofJointWithLimits<double>>(
+      plant.world_frame(), body.body_frame(), -kInf, kInf));
+  plant.Finalize();
+  auto owned_contact_manager =
+      std::make_unique<CompliantContactManager<double>>();
+  CompliantContactManager<double>* contact_manager =
+      owned_contact_manager.get();
+  plant.SetDiscreteUpdateManager(std::move(owned_contact_manager));
+  auto context = plant.CreateDefaultContext();
+
+  const VectorXd v_star = Vector3d::Zero();
+  SapContactProblem<double> problem(plant.time_step());
+  EXPECT_NO_THROW(CompliantContactManagerTest::AddLimitConstraints(
+      *contact_manager, *context, v_star, &problem));
+
+  // No limit constraints are added since the only one joint in the model has
+  // no limits.
+  EXPECT_EQ(problem.num_constraints(), 0);
 }
 
 }  // namespace internal
