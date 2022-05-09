@@ -1167,6 +1167,8 @@ class TestPlant(unittest.TestCase):
                 test_force.F_Bq_W = SpatialForce_[T](
                     tau=[0., 0., 0.], f=[0., 0., 1.])
                 spatial_forces_vector.set_value([test_force])
+                numpy_compare.assert_float_equal(test_force.p_BoBq_B,
+                                                 np.zeros(3))
 
             def DoCalcVectorOutput(self, context, generalized_forces):
                 generalized_forces.SetFromVector(np.zeros(self.nv))
