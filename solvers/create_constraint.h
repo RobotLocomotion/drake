@@ -231,7 +231,10 @@ Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
 
 /** For a convex quadratic constraint 0.5xᵀQx + bᵀx + c <= 0, we parse it as a
  * rotated Lorentz cone constraint [-bᵀx-c, 1, Fx] is in the rotated Lorentz
- * cone where FᵀF = Q
+ * cone where FᵀF = 0.5 * Q
+ * @param zero_tol The tolerance to determine if Q is a positive semidefinite
+ * matrix. Check math::DecomposePSDmatrixIntoXtransposeTimesX for a detailed
+ * explanation. zero_tol should be non-negative. @default is 0.
  * @throw exception if this quadratic constraint is not convex (Q is not
  * positive semidefinite)
  *
@@ -241,7 +244,7 @@ Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
 std::shared_ptr<RotatedLorentzConeConstraint>
 ParseQuadraticAsRotatedLorentzConeConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
-    const Eigen::Ref<const Eigen::VectorXd>& b, double c);
+    const Eigen::Ref<const Eigen::VectorXd>& b, double c, double zero_tol = 0.);
 
 // TODO(eric.cousineau): Implement this if variable creation is separated.
 // Format would be (tuple(linear_binding, psd_binding), new_vars)

@@ -962,9 +962,9 @@ Binding<RotatedLorentzConeConstraint>
 MathematicalProgram::AddQuadraticAsRotatedLorentzConeConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& b, double c,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+    const Eigen::Ref<const VectorXDecisionVariable>& vars, double psd_tol) {
   auto constraint =
-      internal::ParseQuadraticAsRotatedLorentzConeConstraint(Q, b, c);
+      internal::ParseQuadraticAsRotatedLorentzConeConstraint(Q, b, c, psd_tol);
   return AddConstraint(constraint, vars);
 }
 

@@ -643,37 +643,10 @@ Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
 std::shared_ptr<RotatedLorentzConeConstraint>
 ParseQuadraticAsRotatedLorentzConeConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
-    const Eigen::Ref<const Eigen::VectorXd>& b, double c) {
-  // [-bᵀx-c, 1, Fx] is in the rotated Lorentz cone, where FᵀF = Q
-  Eigen::MatrixXd F;
-  // First try Cholesky decomposition
-  Eigen::LLT<Eigen::MatrixXd> llt((Q + Q.transpose()) / 4.);
-  if (llt.info() == Eigen::Success) {
-    F = llt.matrixU();
-  } else {
-    Eigen::LDLT<Eigen::MatrixXd> ldlt((Q + Q.transpose()) / 4.);
-    if (ldlt.info() == Eigen::Success) {
-      if (!ldlt.isPositive()) {
-        throw std::runtime_error(
-            "ParseQuadraticAsRotatedLorentzConeConstraint: ldlt.isPositive() "
-            "is false. The matrix Q is not positive semidefinite.");
-      }
-      const Eigen::MatrixXd D_sqrt =
-          ldlt.vectorD().array().sqrt().matrix().asDiagonal();
-      F = D_sqrt * ldlt.matrixL().transpose() * ldlt.transpositionsP();
-      // Only need to keep the top rank(Q) rows of P.
-      int rank_Q = 0;
-      for (int i = 0; i < Q.rows(); ++i) {
-        if (ldlt.vectorD()(i) > 0) {
-          ++rank_Q;
-        }
-      }
-      F.conservativeResize(rank_Q, F.cols());
-    } else {
-      throw std::runtime_error(
-          "ParseQuadraticAsRotatedLorentzConeConstraint: ldlt fails.");
-    }
-  }
+    const Eigen::Ref<const Eigen::VectorXd>& b, double c, double zero_tol) {
+  // [-bᵀx-c, 1, Fx] is in the rotated Lorentz cone, where FᵀF = 0.5 * Q
+  const Eigen::MatrixXd F = math::DecomposePSDmatrixIntoXtransposeTimesX(
+      (Q + Q.transpose()) / 4, zero_tol);
   // A_lorentz * x + b_lorentz = [-bᵀx-c, 1, Fx]
   Eigen::MatrixXd A_lorentz = Eigen::MatrixXd::Zero(2 + F.rows(), F.cols());
   Eigen::VectorXd b_lorentz = Eigen::VectorXd::Zero(2 + F.rows());

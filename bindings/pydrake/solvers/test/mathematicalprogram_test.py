@@ -1278,7 +1278,8 @@ class TestMathematicalProgram(unittest.TestCase):
             Q=np.array([[1, 2.], [2., 10.]]),
             b=np.array([1., 3.]),
             c=0.5,
-            vars=x)
+            vars=x,
+            psd_tol=0.)
         self.assertIsInstance(dut.evaluator(), mp.RotatedLorentzConeConstraint)
 
     def test_add_linear_matrix_inequality_constraint(self):
