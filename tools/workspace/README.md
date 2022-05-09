@@ -99,10 +99,23 @@ https://drake.mit.edu/jenkins.html#scheduling-an-on-demand-build
 
 Once the macOS build passes, assign the pull request for review.
 
-If any of the changes were out of the ordinary (i.e., if they were anything
-more than just editing the version numbers and checksums), please be sure
-that those changes are explained in the pull request overview text, so that
-your reviewer(s) can understand the context and/or reasoning behind them.
+For any non-trivial changes (i.e., changes that go beyond changing version
+numbers, checksums, or trivial fixups to patch files or code spelling), do not
+attempt to fix the problems just because you are accountable for the routine
+upgrade procedure every month. As a rule of thumb, if you need to spend more
+than 5-10 minutes on an upgrade, you should defer the work to a separate issue:
+
+* open an issue about the need for an upgrade of that one specific external;
+
+* assign it to the feature owner associated with that external (to find out who
+  that is, ask for help in the drake developers ``#build`` slack channel); and
+
+* omit it from the monthly upgrade pull request.
+
+The main objective of the monthly upgrade is to ensure that we stay on top of
+problematic changes from upstream. If we discover such problems, we want to
+bring them to the attention of the feature owner; their steering should provide
+the most efficient path to resolve the problem.
 
 # Changing the version of third-party software manually
 
