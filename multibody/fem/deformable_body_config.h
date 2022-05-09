@@ -21,7 +21,12 @@ enum class MaterialModel {
 };
 
 /** %DeformableBodyConfig stores the physical parameters for a deformable body.
- It contains the following fields with their corresponding valid ranges:
+ A default constructed configuration approximately represents a hard rubber
+ material (density, elasticity, and poisson's ratio) without any damping.
+ Damping coefficients are generally difficult to measure and we expect users
+ will typically start with zero damping and tune the values to achieve
+ reasonable dynamics.
+ The config contains the following fields with their corresponding valid ranges:
  - Young's modulus: Measures the stiffness of the material, has unit N/m². Must
    be positive. Default to 1e8.
  - Poisson's ratio: Measures the Poisson effect (how much the material expands
@@ -38,12 +43,7 @@ enum class MaterialModel {
  - Material model: The constitutive model that describes the stress-strain
    relationship of the body, see MaterialModel. Default to
    MaterialModel::kCorotated.
-
- A default constructed configuration approximately represents a hard rubber
- material (density, elasticity, and poisson's ratio) without any damping.
- Damping coefficients are generally difficult to measure and we expect users
- will typically start with zero damping and tune the values to achieve
- reasonable dynamics. */
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 class DeformableBodyConfig {
  public:

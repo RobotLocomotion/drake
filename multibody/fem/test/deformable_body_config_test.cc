@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/deformable_body_config.h"
+#include "drake/multibody/fem/deformable_body_config.h"
 
 #include <gtest/gtest.h>
 
