@@ -112,6 +112,10 @@ TEST_F(PrismaticJointTest, GetJointLimits) {
 TEST_F(PrismaticJointTest, Damping) {
   EXPECT_EQ(joint1_->damping(), kDamping);
   EXPECT_EQ(joint1_->damping_vector(), Vector1d(kDamping));
+  const double new_damping = 2.0 * kDamping;
+  mutable_joint1_->set_default_damping(new_damping);
+  EXPECT_EQ(joint1_->damping(), new_damping);
+  EXPECT_EQ(joint1_->damping_vector(), Vector1d(new_damping));
 }
 
 // Context-dependent value access.
