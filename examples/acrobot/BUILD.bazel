@@ -348,6 +348,7 @@ drake_cc_googletest(
     deps = [
         ":acrobot_plant",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 

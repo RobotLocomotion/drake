@@ -19,7 +19,7 @@ namespace quadrotor {
 /// @system
 /// name: QuadrotorPlant
 /// input_ports:
-/// - propeller_force
+/// - propeller_force (optional)
 /// output_ports:
 /// - state
 /// @endsystem
