@@ -286,6 +286,15 @@ GTEST_TEST(CompassGaitTest, TestFloatBaseOutput) {
       cg.get_floating_base_state_output_port().get_index()));
 }
 
+// Ensure that DoCalcTimeDerivatives succeeds even if the input port is
+// disconnected.
+GTEST_TEST(CompassGaitTest, NoInput) {
+  const CompassGait<double> plant;
+  auto context = plant.CreateDefaultContext();
+
+  DRAKE_EXPECT_NO_THROW(plant.EvalTimeDerivatives(*context));
+}
+
 }  // namespace
 }  // namespace compass_gait
 }  // namespace examples
