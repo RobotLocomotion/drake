@@ -170,6 +170,7 @@ def AddTriad(
     Adds illustration geometry representing the coordinate frame, with the
     x-axis drawn in red, the y-axis in green and the z-axis in blue. The axes
     point in +x, +y and +z directions, respectively.
+    Based on [code permalink](https://github.com/RussTedrake/manipulation/blob/master/manipulation/scenarios.py#L367).
     Args:
     source_id: The source registered with SceneGraph.
     frame_id: A geometry::frame_id registered with scene_graph.
