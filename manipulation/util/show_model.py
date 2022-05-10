@@ -156,10 +156,16 @@ def add_visualizers_argparse_arguments(args_parser):
         dest='triad_opacity', default=1,
         help="Triad opacity for frame visualization.")
 
-def AddTriad(source_id, frame_id,
-    scene_graph, length=.25,
-    radius=0.01, opacity=1.,
-    X_FT=RigidTransform(), name="frame"):
+def AddTriad(
+    source_id,
+    frame_id,
+    scene_graph,
+    length=0.25,
+    radius=0.01,
+    opacity=1.0,
+    X_FT=RigidTransform(),
+    name="frame",
+):
     """
     Adds illustration geometry representing the coordinate frame, with the
     x-axis drawn in red, the y-axis in green and the z-axis in blue. The axes
@@ -175,29 +181,33 @@ def AddTriad(source_id, frame_id,
     name: the added geometry will have names name + " x-axis", etc.
     """
     # x-axis
-    X_TG = RigidTransform(RotationMatrix.MakeYRotation(np.pi / 2),
-                        [length / 2., 0, 0])
-    geom = GeometryInstance(X_FT.multiply(X_TG), Cylinder(radius, length),
-                            name + " x-axis")
+    X_TG = RigidTransform(RotationMatrix.MakeYRotation(np.pi / 2), [length / 2.0, 0, 0])
+    geom = GeometryInstance(
+        X_FT.multiply(X_TG), Cylinder(radius, length), name + " x-axis"
+    )
     geom.set_illustration_properties(
-        MakePhongIllustrationProperties([1, 0, 0, opacity]))
+        MakePhongIllustrationProperties([1, 0, 0, opacity])
+    )
     scene_graph.RegisterGeometry(source_id, frame_id, geom)
 
     # y-axis
-    X_TG = RigidTransform(RotationMatrix.MakeXRotation(np.pi / 2),
-                        [0, length / 2., 0])
-    geom = GeometryInstance(X_FT.multiply(X_TG), Cylinder(radius, length),
-                            name + " y-axis")
+    X_TG = RigidTransform(RotationMatrix.MakeXRotation(np.pi / 2), [0, length / 2.0, 0])
+    geom = GeometryInstance(
+        X_FT.multiply(X_TG), Cylinder(radius, length), name + " y-axis"
+    )
     geom.set_illustration_properties(
-        MakePhongIllustrationProperties([0, 1, 0, opacity]))
+        MakePhongIllustrationProperties([0, 1, 0, opacity])
+    )
     scene_graph.RegisterGeometry(source_id, frame_id, geom)
 
     # z-axis
-    X_TG = RigidTransform([0, 0, length / 2.])
-    geom = GeometryInstance(X_FT.multiply(X_TG), Cylinder(radius, length),
-                            name + " z-axis")
+    X_TG = RigidTransform([0, 0, length / 2.0])
+    geom = GeometryInstance(
+        X_FT.multiply(X_TG), Cylinder(radius, length), name + " z-axis"
+    )
     geom.set_illustration_properties(
-        MakePhongIllustrationProperties([0, 0, 1, opacity]))
+        MakePhongIllustrationProperties([0, 0, 1, opacity])
+    )
     scene_graph.RegisterGeometry(source_id, frame_id, geom)
 
 def parse_visualizers(args_parser, args):
@@ -221,10 +231,10 @@ def parse_visualizers(args_parser, args):
                         source_id, geometry_id, red_illustration)
         
         if args.visualize_frames:
-            # Visualize frames 
+            # Visualize frames
             # Find all the frames and plots them using AddTriad().
-            # The frames are ploted using the parsed length. 
-            # The world frame is plotted thicker than the rest. 
+            # The frames are ploted using the parsed length.
+            # The world frame is plotted thicker than the rest.
             length=args.triad_length
             radius=args.triad_radius
             opacity=args.triad_opacity
