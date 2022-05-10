@@ -44,7 +44,6 @@ LIBDRAKE_COMPONENTS = [
     "//geometry/render",
     "//geometry/render/gl_renderer",
     "//geometry/render/shaders",
-    "//geometry/render_gltf_client",
     "//lcm",
     "//manipulation/kinova_jaco",
     "//manipulation/kuka_iiwa",

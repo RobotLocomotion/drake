@@ -21,7 +21,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
-#include "drake/geometry/render/dev/render_gltf_client/internal_http_service_curl.h"
+#include "drake/geometry/render_gltf_client/internal_http_service_curl.h"
 
 namespace drake {
 namespace geometry {
