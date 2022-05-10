@@ -84,7 +84,7 @@ GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, negativeY) {
   // Y is a negative definite matrix.
   DRAKE_EXPECT_THROWS_MESSAGE(
       DecomposePSDmatrixIntoXtransposeTimesX(-Eigen::Matrix3d::Identity(), 0),
-      "Y is not positive semidefinite. It has an eigenvalue -1.0 that is less"
+      "Y is not positive semidefinite. It has an eigenvalue -1.* that is less"
       " than the tolerance -0.*.");
 }
 
