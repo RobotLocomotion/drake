@@ -22,8 +22,10 @@ CXX_FLAGS = [
 CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=absolute-value",
     "-Werror=inconsistent-missing-override",
+    "-Werror=final-dtor-non-final-class",
     "-Werror=literal-conversion",
     "-Werror=non-virtual-dtor",
+    "-Werror=range-loop-analysis",
     "-Werror=return-stack-address",
     "-Werror=sign-compare",
 ]
@@ -33,11 +35,6 @@ CLANG_FLAGS = CXX_FLAGS + [
 # version (excluding the Apple LLVM compiler, see
 # APPLECLANG_VERSION_SPECIFIC_FLAGS below).
 CLANG_VERSION_SPECIFIC_FLAGS = {
-    10: [
-        # TODO(jamiesnape): Fix these warnings and remove this suppression when
-        # Clang 10 is a supported compiler on Ubuntu.
-        "-Wno-range-loop-analysis",
-    ],
 }
 
 # The APPLECLANG_FLAGS will be enabled for all C++ rules in the project when
@@ -48,7 +45,6 @@ APPLECLANG_FLAGS = CLANG_FLAGS
 # the project when building with an Apple LLVM compiler of the specified major
 # version.
 APPLECLANG_VERSION_SPECIFIC_FLAGS = {
-    12: CLANG_VERSION_SPECIFIC_FLAGS[10],
 }
 
 # The GCC_FLAGS will be enabled for all C++ rules in the project when
