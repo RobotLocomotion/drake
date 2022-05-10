@@ -806,6 +806,10 @@ void MultibodyPlant<T>::Finalize() {
     ExcludeCollisionsWithVisualGeometry();
   }
   FinalizePlantOnly();
+
+  // At the conclusion of Finalize(), warn the user about bodies whose mass or
+  // inertia properties may cause subsequent numerical problems.
+  internal_tree().IssuePostFinalizeMassInertiaWarnings();
 }
 
 template<typename T>

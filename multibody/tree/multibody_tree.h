@@ -2485,6 +2485,10 @@ class MultibodyTree {
   bool IsAllDefaultRotationalInertiaZeroOrNaN(
       const std::set<BodyIndex>& body_indexes) const;
 
+  // At the conclusion of MultibodyPlant::Finalize(), warn the user about bodies
+  // whose mass or inertia properties may cause subsequent numerical problems.
+  void IssuePostFinalizeMassInertiaWarnings() const;
+
  private:
   // Make MultibodyTree templated on every other scalar type a friend of
   // MultibodyTree<T> so that CloneToScalar<ToAnyOtherScalar>() can access
