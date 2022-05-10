@@ -832,6 +832,73 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
   }
 }
 
+// Helper function to add a rigid body to a model.
+const RigidBody<double>& AddRigidBody(MultibodyTree<double>& model,
+                                      const std::string& name,
+                                      const double mass,
+                                      const double link_length) {
+    const Vector3<double> p_BoBcm_B(0.5 * link_length, 0, 0);
+    const UnitInertia<double> link_unit_inertia =
+      UnitInertia<double>::SolidBox(link_length, 0, 0);
+    const SpatialInertia<double> body_spatial_inertia(mass, p_BoBcm_B,
+        link_unit_inertia, /* skip_validity_check = */ true);
+    return model.AddRigidBody(name, body_spatial_inertia);
+}
+
+// Helper function to add a z-axis revolute joint between two bodies.
+void AddRevoluteJointZ(MultibodyTree<double>& model, const std::string& name,
+               const Body<double>& parent, const Body<double>& child) {
+    model.AddJoint<RevoluteJoint>(name, parent, {}, child, {},
+        Vector3<double>::UnitZ());
+}
+
+// Helper function to add a weld joint between two bodies.
+void AddWeldJoint(MultibodyTree<double>& model, const std::string& name,
+               const Body<double>& parent, const Body<double>& child) {
+    model.AddJoint<WeldJoint>(name, parent, std::nullopt, child, std::nullopt,
+                              math::RigidTransformd::Identity());
+}
+
+// Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() issues a
+// warning if one of the composite rigid bodies has zero mass.
+GTEST_TEST(WeldedBodies, IssueWarningAboutBodyWithZeroMass) {
+  // Create a model and add a few rigid bodies.
+  MultibodyTree<double> model;
+  const double mass = 0;    // Mass of link.
+  const double length = 3;  // Length of thin uniform-density link.
+  const RigidBody<double>& body_A = AddRigidBody(model, "bodyA", mass, length);
+  const RigidBody<double>& body_B = AddRigidBody(model, "bodyB", mass, length);
+
+  // Add a revolute joint between the world body and bodyA.
+  AddRevoluteJointZ(model, "WA_revolute_joint", model.world_body(), body_A);
+
+  // Add a weld joint between bodyA and bodyB.
+  AddWeldJoint(model, "AB_weld_joint", body_A, body_B);
+
+  // We are done building the test model.
+  model.Finalize();
+}
+
+// Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() issues a
+// warning if one of the composite rigid bodies has zero inertia.
+GTEST_TEST(WeldedBodies, IssueWarningAboutBodyWithZeroInertia) {
+  // Create a model and add a few rigid bodies.
+  MultibodyTree<double> model;
+  const double mass = 1;    // Mass of link.
+  const double length = 0;  // Length of thin uniform-density link.
+  const RigidBody<double>& body_A = AddRigidBody(model, "bodyA", mass, length);
+  const RigidBody<double>& body_B = AddRigidBody(model, "bodyB", mass, length);
+
+  // Add a revolute joint between the world body and bodyA.
+  AddRevoluteJointZ(model, "WA_revolute_joint", model.world_body(), body_A);
+
+  // Add a weld joint between bodyA and bodyB.
+  AddWeldJoint(model, "AB_weld_joint", body_A, body_B);
+
+  // We are done building the test model.
+  model.Finalize();
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
