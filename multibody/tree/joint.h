@@ -460,6 +460,18 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     return damping_;
   }
 
+  /// Sets the default value of the viscous damping coefficients for this joint.
+  /// Refer to damping_vector() for details.
+  /// @throws std::exception if damping.size() != num_velocities().
+  /// @throws std::exception if any of the damping coefficients is negative.
+  /// @pre the MultibodyPlant must not be finalized.
+  void set_default_damping_vector(const VectorX<double>& damping) {
+    DRAKE_THROW_UNLESS(damping.size() == num_velocities());
+    DRAKE_THROW_UNLESS((damping.array() >= 0).all());
+    DRAKE_DEMAND(!this->get_parent_tree().topology_is_valid());
+    damping_ = damping;
+  }
+
   // Hide the following section from Doxygen.
 #ifndef DRAKE_DOXYGEN_CXX
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
