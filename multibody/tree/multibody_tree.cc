@@ -2869,6 +2869,78 @@ void MultibodyTree<T>::ThrowIfNotFinalized(const char* source_method) const {
   }
 }
 
+template<typename T>
+void MultibodyTree<T>::IssuePostFinalizeMassInertiaWarnings() const {
+  ThrowIfNotFinalized(__func__);
+
+  // Get `this` multibody tree's topology and use one of its functions to build
+  // multiple sets of bodies that are welded to each other. Each set of bodies
+  // consists of a parent body (the first entry in the set) and thereafter
+  // children bodies that are welded to the parent body.
+  const MultibodyTreeTopology& topology = get_topology();
+  std::vector<std::set<BodyIndex>> welded_bodies =
+      topology.CreateListOfWeldedBodies();
+
+  // There should be at least on set of welded_bodies since the first set should
+  // be the world body (if it has children bodies, they are anchored to it).
+  size_t number_of_parent_bodies = welded_bodies.size();
+  DRAKE_ASSERT(number_of_parent_bodies > 0);
+
+  // Investigate mass/inertia properties for all non-world welded bodies.
+  for (size_t parent_body_index = 1;
+       parent_body_index < number_of_parent_bodies; ++parent_body_index) {
+    // Get the next set of welded bodies. The first entry in the set is the
+    // parent body and the remaining entries (if any) are children bodies.
+    const std::set<BodyIndex>& welded_parent_children_bodies =
+        welded_bodies[parent_body_index];
+    double total_mass = CalcTotalDefaultMass(welded_parent_children_bodies);
+    if (total_mass == 0) {
+      throw std::logic_error("It seems as if there are no massive bodies "
+                             "associated with a degree of freedom.");
+    }
+
+    // For each set of welded parent/children bodies, calculate the default
+    // rotational inertia about Bo (the parent body B's origin), expressed in B.
+    RotationalInertia<double> total_inertia =
+        CalcTotalDefaultRotationalInertia(welded_parent_children_bodies);
+    if ( total_inertia.IsZero() ) {
+      throw std::logic_error("It seems as if there is zero rotational inertia "
+                             "associated with a degree of freedom.");
+    }
+  }
+}
+
+template <typename T>
+double MultibodyTree<T>::CalcTotalDefaultMass(
+    const std::set<BodyIndex>& body_indexes) const {
+  double total_mass = 0;
+  for (BodyIndex body_index : body_indexes) {
+    const Body<T>&body_B = get_body(body_index);
+    const double mass_B = body_B.get_default_mass();
+    if (!std::isnan(mass_B)) total_mass += mass_B;
+  }
+  return total_mass;
+}
+
+template <typename T>
+RotationalInertia<double> MultibodyTree<T>::CalcTotalDefaultRotationalInertia(
+      const std::set<BodyIndex>& body_indexes) const {
+  RotationalInertia<double> total_inertia;
+  total_inertia.SetZero();
+  for (BodyIndex body_index : body_indexes) {
+    const Body<T>& body_B = get_body(body_index);
+    const RotationalInertia<double> I_BBo_B =
+        body_B.default_rotational_inertia();
+
+    // Each body B has its own origin point Bo and own unit vectors Bx, By, Bz.
+    // As such, simply adding a body B1's rotational inertia to a body B2's
+    // rotational inertia may have no physical meaning. This calculation is not
+    // rigorous. Its job is help warn when the composite body has no inertia.
+    if (!I_BBo_B.IsNaN()) total_inertia += I_BBo_B;
+  }
+  return total_inertia;
+}
+
 template <typename T>
 void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
     const systems::Context<T>& context,

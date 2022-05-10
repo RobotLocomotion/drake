@@ -5,6 +5,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -2473,6 +2474,10 @@ class MultibodyTree {
     return discrete_state_index_;
   }
 
+  // At the conclusion of MultibodyPlant::Finalize(), warn the user about bodies
+  // whose mass or inertia properties may cause subsequent numerical problems.
+  void IssuePostFinalizeMassInertiaWarnings() const;
+
  private:
   // Make MultibodyTree templated on every other scalar type a friend of
   // MultibodyTree<T> so that CloneToScalar<ToAnyOtherScalar>() can access
@@ -2563,6 +2568,20 @@ class MultibodyTree {
   // This method will throw a std::exception if FinalizeTopology() was not
   // previously called on this tree.
   void FinalizeInternals();
+
+  // Calculates the total default mass of all bodies in a set of BodyIndex.
+  // @param[in] body_indexes A set of BodyIndex.
+  // @retval Total mass of all bodies in body_indexes or 0 if there are none.
+  double CalcTotalDefaultMass(const std::set<BodyIndex>& body_indexes) const;
+
+  // Calculates the total default rotational inertia of all bodies in a set of
+  // BodyIndex about the origin of the first body in the set.
+  // @param[in] body_indexes A set of BodyIndex.
+  // @retval I_SBo_B, the rotational inertia of the set S of all bodies in
+  // body_indexes about Bo (body B's origin, where B is the first body in the
+  // set), expressed in B's body frame.
+  RotationalInertia<double> CalcTotalDefaultRotationalInertia(
+      const std::set<BodyIndex>& body_indexes) const;
 
   // Helper method to add a QuaternionFreeMobilizer to all bodies that do not
   // have a mobilizer. The mobilizer is between each body and the world. To be
