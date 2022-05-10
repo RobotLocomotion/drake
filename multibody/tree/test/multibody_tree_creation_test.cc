@@ -11,7 +11,11 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/prismatic_mobilizer.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -912,10 +916,175 @@ GTEST_TEST(DefaultInertia, VerifyDefaultRotationalInertia) {
   EXPECT_EQ(mass_ABC, mA + mB + mC);
 
   // Verify whether all default rotational inertia in these sets are zero.
-  EXPECT_TRUE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_AA));
-  EXPECT_FALSE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_AB));
-  EXPECT_FALSE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_BC));
-  EXPECT_FALSE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_ABC));
+  EXPECT_FALSE(model.IsTotalDefaultRotationalInertiaNonZero(bodies_AA));
+  EXPECT_TRUE(model.IsTotalDefaultRotationalInertiaNonZero(bodies_AB));
+  EXPECT_TRUE(model.IsTotalDefaultRotationalInertiaNonZero(bodies_BC));
+  EXPECT_TRUE(model.IsTotalDefaultRotationalInertiaNonZero(bodies_ABC));
+}
+
+// Helper function to add a x-axis prismatic joint between two bodies.
+void AddPrismaticJointX(MultibodyTree<double>* model, const std::string& name,
+               const Body<double>& parent, const Body<double>& child) {
+    DRAKE_DEMAND(model != nullptr);
+    model->AddJoint<PrismaticJoint>(name, parent, {}, child, {},
+        Vector3<double>::UnitX());
+}
+
+// Helper function to add a z-axis revolute joint between two bodies.
+void AddRevoluteJointZ(MultibodyTree<double>* model, const std::string& name,
+               const Body<double>& parent, const Body<double>& child) {
+    DRAKE_DEMAND(model != nullptr);
+    model->AddJoint<RevoluteJoint>(name, parent, {}, child, {},
+        Vector3<double>::UnitZ());
+}
+
+// Helper function to add a weld joint between two bodies.
+void AddWeldJoint(MultibodyTree<double>* model, const std::string& name,
+               const Body<double>& parent, const Body<double>& child) {
+    DRAKE_DEMAND(model != nullptr);
+    model->AddJoint<WeldJoint>(name, parent, std::nullopt, child, std::nullopt,
+                              math::RigidTransformd::Identity());
+}
+
+// Verify MultibodyTree::ThrowDefaultMassInertiaError() throws an exception
+// if a sole composite rigid body can translate and has zero mass.
+GTEST_TEST(WeldedBodies, IssueWarningForDistalCompositeBodyWithZeroMass) {
+  // Create a model and add two rigid bodies.
+  MultibodyTree<double> model;
+  const double mass = 0;    // Mass of link.
+  const double length = 3;  // Length of thin uniform-density link.
+  const RigidBody<double>& body_A = AddRigidBody(&model, "bodyA", mass, length);
+  const RigidBody<double>& body_B = AddRigidBody(&model, "bodyB", mass, length);
+
+  // Add a prismatic joint between the world body and bodyA.
+  AddPrismaticJointX(&model, "WA_revolute_joint", model.world_body(), body_A);
+
+  // Add a weld joint between bodyA and bodyB.
+  AddWeldJoint(&model, "AB_weld_joint", body_A, body_B);
+
+  // We are done building the test model.
+  model.Finalize();
+
+  // The next function is usually called from MultibodyPlant::Finalize().
+  const std::string expected_message = "It seems that body bodyA is massless, "
+    "yet it is attached by a joint that has a translational degree of freedom.";
+  DRAKE_EXPECT_THROWS_MESSAGE(model.ThrowDefaultMassInertiaError(),
+      expected_message);
+}
+
+// Verify MultibodyTree::ThrowDefaultMassInertiaError() throws an exception
+// if a sole composite rigid body can rotate but has no inertia.
+GTEST_TEST(WeldedBodies, IssueWarningForDistalCompositeBodyWithZeroInertia) {
+  // Create a model and add two rigid bodies.
+  MultibodyTree<double> model;
+  const double mass = 0;    // Mass of link.
+  const double length = 0;  // Length of thin uniform-density link.
+  const RigidBody<double>& body_A = AddRigidBody(&model, "bodyA", mass, length);
+  const RigidBody<double>& body_B = AddRigidBody(&model, "bodyB", mass, length);
+
+  // Add a revolute joint between the world body and bodyA.
+  AddRevoluteJointZ(&model, "WA_revolute_joint", model.world_body(), body_A);
+
+  // Add a weld joint between bodyA and bodyB.
+  AddWeldJoint(&model, "AB_weld_joint", body_A, body_B);
+
+  // We are done building the test model.
+  model.Finalize();
+
+  // The next function is usually called from MultibodyPlant::Finalize().
+  const std::string expected_message = "It seems that body bodyA has zero or "
+    "NaN rotational inertia, yet it is attached by a joint "
+    "that has a rotational degree of freedom.";
+  DRAKE_EXPECT_THROWS_MESSAGE(model.ThrowDefaultMassInertiaError(),
+      expected_message);
+}
+
+// Verify MultibodyTree::ThrowDefaultMassInertiaError() does not throw an
+// exception if a sole composite rigid body has non-zero mass (due to a weld).
+GTEST_TEST(WeldedBodies, IssueNoWarningCompositeBodyHasMassDueToWeldedBody) {
+  // Create a model and add two rigid bodies.
+  MultibodyTree<double> model;
+  const double length = 3;  // Length of thin uniform-density link.
+  const RigidBody<double>& body_A = AddRigidBody(&model, "bodyA", 0, length);
+  const RigidBody<double>& body_B = AddRigidBody(&model, "bodyB", 1, length);
+
+  // Add a prismatic joint between the world body and bodyA (bodyA has mass 0).
+  AddPrismaticJointX(&model, "WA_revolute_joint", model.world_body(), body_A);
+
+  // Add a weld joint between bodyA and bodyB (bodyB has mass 1).
+  AddWeldJoint(&model, "AB_weld_joint", body_A, body_B);
+
+  // Signal that we are done building the test model.
+  model.Finalize();
+
+  // No exception should be thrown due to default mass/inertia properties.
+  EXPECT_NO_THROW(model.ThrowDefaultMassInertiaError());
+}
+
+// Verify MultibodyTree::ThrowDefaultMassInertiaError() does not throw exception
+// if a sole composite rigid body has non-zero inertia (due to a weld).
+GTEST_TEST(WeldedBodies, IssueNoWarningSinceBodyHasInertiaDueToWeldedBody) {
+  // Create a model and add a few rigid bodies.
+  MultibodyTree<double> model;
+  const double length = 3;  // Length of thin uniform-density link.
+  const RigidBody<double>& body_A = AddRigidBody(&model, "bodyA", 0, length);
+  const RigidBody<double>& body_B = AddRigidBody(&model, "bodyB", 1, length);
+
+  // Add a prismatic joint from the world body to bodyA (bodyA has no inertia).
+  AddPrismaticJointX(&model, "WA_prismatic_joint", model.world_body(), body_A);
+
+  // Add a weld joint between bodyA and bodyB (bodyB has non-zero inertia).
+  AddWeldJoint(&model, "AB_weld_joint", body_A, body_B);
+
+  // Signal that we are done building the test model.
+  model.Finalize();
+
+  // No exception should be thrown due to default mass/inertia properties.
+  EXPECT_NO_THROW(model.ThrowDefaultMassInertiaError());
+}
+
+// Verify MultibodyTree::ThrowDefaultMassInertiaError() does not throw an
+// exception if a zero-mass body is not the most distal body in the tree.
+GTEST_TEST(WeldedBodies, IssueNoWarningSinceZeroMassBodyIsNotDistal) {
+  // Create a model and add two rigid bodies.
+  MultibodyTree<double> model;
+  const double length = 3;  // Length of thin uniform-density link.
+  const RigidBody<double>& body_A = AddRigidBody(&model, "bodyA", 0, length);
+  const RigidBody<double>& body_B = AddRigidBody(&model, "bodyB", 1, length);
+
+  // Add a prismatic joint from the world body to bodyA (bodyA has no inertia).
+  AddPrismaticJointX(&model, "WA_prismatic_joint", model.world_body(), body_A);
+
+  // Add a revolute joint between bodyA and bodyB (bodyB has mass 1).
+  AddRevoluteJointZ(&model, "AB_revolute_joint", body_A, body_B);
+
+  // Signal that we are done building the test model.
+  model.Finalize();
+
+  // No exception should be thrown due to default mass/inertia properties.
+  EXPECT_NO_THROW(model.ThrowDefaultMassInertiaError());
+}
+
+// Verify MultibodyTree::ThrowDefaultMassInertiaError() does not throw an
+// exception if a zero-inertia body is not the most distal body in the tree.
+GTEST_TEST(WeldedBodies, IssueNoWarningSinceZeroInertiaBodyIsNotDistal) {
+  // Create a model and add two rigid bodies.
+  MultibodyTree<double> model;
+  const double length = 3;  // Length of thin uniform-density link.
+  const RigidBody<double>& body_A = AddRigidBody(&model, "bodyA", 0, length);
+  const RigidBody<double>& body_B = AddRigidBody(&model, "bodyB", 1, length);
+
+  // Add a revolute joint from the world body to bodyA (bodyA has no inertia).
+  AddRevoluteJointZ(&model, "WA_revolute_joint", model.world_body(), body_A);
+
+  // Add a revolute joint between bodyA and bodyB (bodyB has non-zero inertia).
+  AddRevoluteJointZ(&model, "AB_revolute_joint", body_A, body_B);
+
+  // Signal that we are done building the test model.
+  model.Finalize();
+
+  // No exception should be thrown due to default mass/inertia properties.
+  EXPECT_NO_THROW(model.ThrowDefaultMassInertiaError());
 }
 
 }  // namespace

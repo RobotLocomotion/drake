@@ -1016,6 +1016,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("MakeFromCentralInertia", &Class::MakeFromCentralInertia,
             py::arg("mass"), py::arg("p_PScm_E"), py::arg("I_SScm_E"),
             cls_doc.MakeFromCentralInertia.doc)
+        .def_static("MakeTestCube", &Class::MakeTestCube, py::arg("mass") = 2,
+            py::arg("length") = 3, cls_doc.MakeTestCube.doc)
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
                  const UnitInertia<T>&, const bool>(),
