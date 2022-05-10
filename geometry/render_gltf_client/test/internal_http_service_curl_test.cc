@@ -1,4 +1,4 @@
-#include "drake/geometry/render/dev/render_gltf_client/internal_http_service_curl.h"
+#include "drake/geometry/render_gltf_client/internal_http_service_curl.h"
 
 #include <fstream>
 
@@ -45,7 +45,7 @@ GTEST_TEST(HttpServiceCurlTest, PostForm) {
   }
 
   {
-    // Case 2: cannot create temporary file that can be written to.
+    // Case 2: cannot create temporary file without write permission.
     const auto orig_perms = fs::status(temp_dir).permissions();
     const auto all_write = fs::perms::owner_write | fs::perms::group_write |
                            fs::perms::others_write;
