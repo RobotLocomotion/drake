@@ -1,0 +1,43 @@
+<robot name="R">
+
+  <link name="world" />
+
+  <joint name="world_to_base" type="fixed">
+    <parent link="world" />
+    <child link="root_link" />
+    <origin rpy="0 0 0" xyz="0 0 0" />
+  </joint>
+
+  <link name="root_link">
+    <inertial>
+      <origin xyz="0.0 0.0 -0.00645398168514013" rpy="0 0 0" />
+      <mass value="0.161335" />
+      <inertia ixx="0.0002535023405530344" ixy="0.0" ixz="0.0" iyy="0.00014151860061501566" iyz="0.0" izz="0.00018331879898268654" />
+    </inertial>
+  </link>
+
+  <link name="link_1">
+    <inertial>
+      <origin xyz="0.48553997281970385 0.0 0.0" rpy="0 0 0" />
+      <mass value="2.0" />
+      <inertia ixx="0.0002563344974446631" ixy="0.0" ixz="0.0" iyy="0.17620690260768204" iyz="0.0" izz="0.17617212013884273" />
+    </inertial>
+  </link>
+
+  <joint name="joint_1" type="revolute">
+    <origin xyz="0.0 0 0.0" rpy="1.5708 0.0 0" />
+    <parent link="root_link" />
+    <child link="link_1" />
+    <axis xyz="0.0 0.0 1.0" />
+    <limit effort="0" velocity="0" lower="0" upper="3.14159" />
+    <joint_properties friction="0.0" />
+  </joint>
+
+  <link name="link_e" />
+
+  <joint name="joint_e" type="fixed">
+    <origin xyz="1 0.0 0" rpy="3.14159 -1.5708 0" />
+    <parent link="link_1" />
+    <child link="link_e" />
+  </joint>
+</robot>

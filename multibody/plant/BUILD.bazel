@@ -832,4 +832,17 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "inverse_dynamics_R",
+    data = [
+        "test/inverse_dynamics_R.urdf",
+    ],
+    deps = [
+        ":plant",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+    ],
+)
+
 add_lint_tests()
