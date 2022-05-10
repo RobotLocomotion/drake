@@ -83,7 +83,6 @@ def main():
         station.Finalize()
 
         geometry_query_port = station.GetOutputPort("geometry_query")
-        scene_graph = builder.AddSystem(SceneGraph())
         meshcat = Meshcat()
         meshcat_vis = MeshcatVisualizerCpp.AddToBuilder(
             builder=builder,

@@ -40,6 +40,13 @@ Example usage (meshcat):
         --find_resource \
         drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
 
+Example usage (pyplot):
+
+    ./bazel-bin/manipulation/util/geometry_inspector \
+        --pyplot \
+        --find_resource \
+        drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
+
 Optional argument examples:
     ./bazel-bin/manipulation/util/geometry_inspector \
         --position 0.1 0.2 \
@@ -63,33 +70,27 @@ import argparse
 
 import numpy as np
 
-from pydrake.geometry import Meshcat, SceneGraph
-from pydrake.multibody.parsing import Parser
-from pydrake.multibody.meshcat import (
-    JointSliders,
-)
+from pydrake.geometry import SceneGraph
+from pydrake.manipulation.simple_ui import JointSliders
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.rendering import MultibodyPositionToGeometryPose
+
+from drake.manipulation.util.show_model import (
+    add_filename_and_parser_argparse_arguments,
+    parse_filename_and_parser,
+    add_visualizers_argparse_arguments,
+    parse_visualizers,
+)
 
 
 def main():
     args_parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    args_parser.add_argument(
-        "filename", type=str, default=None,
-        help="Path to an SDF or URDF file.")
-    args_parser.add_argument(
-        "--find_resource", action="store_true",
-        help="Use FindResourceOrThrow to resolve the filename to a Drake "
-             "resource. Use this if the supporting data files are a generated "
-             "by Bazel (e.g. the OBJs or PNGs are in @models).")
-    args_parser.add_argument(
-        "--package_path", type=str, default=None,
-        help="Full path to the root package for reading in SDF resources.")
-
+    add_filename_and_parser_argparse_arguments(args_parser)
+    add_visualizers_argparse_arguments(args_parser)
     position_group = args_parser.add_mutually_exclusive_group()
     position_group.add_argument(
         "--position", type=float, nargs="+", default=[],
@@ -112,15 +113,11 @@ def main():
     args_parser.add_argument(
         "--test", action='store_true',
         help="Disable opening the slider gui window for testing.")
-    # TODO(russt): Consider supporting the PlanarSceneGraphVisualizer
-    #  options as additional arguments.
-    args_parser.add_argument(
-        "--visualize_collisions", action="store_true",
-        help="Visualize the collision geometry in the visualizer. The "
-        "collision geometries will be shown in red to differentiate "
-        "them from the visual geometries.")
     args = args_parser.parse_args()
-    meshcat = Meshcat()
+    filename, make_parser = parse_filename_and_parser(args_parser, args)
+    update_visualization, connect_visualizers = parse_visualizers(
+        args_parser, args)
+
     builder = DiagramBuilder()
     scene_graph = builder.AddSystem(SceneGraph())
 
@@ -128,26 +125,34 @@ def main():
     # N.B. Do not use AddMultibodyPlantSceneGraph because we want to inject our
     # custom pose-bundle adjustments for the sliders.
     plant = MultibodyPlant(time_step=0.0)
-    parser = Parser(plant)
     plant.RegisterAsSourceForSceneGraph(scene_graph)
 
     # Add the model from the file and finalize the plant.
-    parser.AddModelFromFile(args.filename)
+    make_parser(plant).AddModelFromFile(filename)
+    update_visualization(plant, scene_graph)
     plant.Finalize()
 
     # Add sliders to set positions of the joints.
-    sliders = builder.AddSystem(JointSliders(meshcat=meshcat, plant=plant))
+    sliders = builder.AddSystem(JointSliders(robot=plant))
     to_pose = builder.AddSystem(MultibodyPositionToGeometryPose(plant))
     builder.Connect(sliders.get_output_port(0), to_pose.get_input_port())
     builder.Connect(
         to_pose.get_output_port(),
         scene_graph.get_source_pose_port(plant.get_source_id()))
 
+    connect_visualizers(builder, plant, scene_graph)
+
+    if len(args.position):
+        sliders.set_position(args.position)
+    elif len(args.joint_position):
+        sliders.set_joint_position(args.joint_position)
+
     # Make the diagram and run it.
     diagram = builder.Build()
     simulator = Simulator(diagram)
 
     if args.test:
+        sliders.window.withdraw()
         simulator.AdvanceTo(0.1)
     else:
         simulator.set_target_realtime_rate(1.0)

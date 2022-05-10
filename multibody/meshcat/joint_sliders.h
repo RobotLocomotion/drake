@@ -110,6 +110,7 @@ class JointSliders final : public systems::LeafSystem<T> {
   void Run(
       const systems::Diagram<T>& diagram,
       std::optional<double> timeout = std::nullopt) const;
+  void SetSliderValues(const VectorXd&, const VectorYd&) const;
 
  private:
   void CalcOutput(const systems::Context<T>&, systems::BasicVector<T>*) const;

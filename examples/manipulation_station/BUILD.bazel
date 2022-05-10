@@ -166,6 +166,7 @@ drake_py_library(
 drake_py_library(
     name = "schunk_wsg_buttons",
     srcs = ["schunk_wsg_buttons.py"],
+    visibility = ["//visibility:private"],
     deps = [
         "//bindings/pydrake",
     ],
