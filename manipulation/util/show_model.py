@@ -55,8 +55,10 @@ import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import (
-    Cylinder, DrakeVisualizer,
-    GeometryInstance, MakePhongIllustrationProperties,
+    Cylinder,
+    DrakeVisualizer,
+    GeometryInstance,
+    MakePhongIllustrationProperties,
 )
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.parsing import Parser
@@ -64,7 +66,9 @@ from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.meshcat_visualizer import (
-    ConnectMeshcatVisualizer, MeshcatVisualizer)
+    ConnectMeshcatVisualizer,
+    MeshcatVisualizer,
+)
 from pydrake.systems.planar_scenegraph_visualizer import (
     ConnectPlanarSceneGraphVisualizer,
 )
@@ -138,23 +142,32 @@ def add_visualizers_argparse_arguments(args_parser):
         "collision geometries will be shown in red to differentiate "
         "them from the visual geometries.")
     args_parser.add_argument(
-        "--visualize_frames", action="store_true",
-        help="Visualize the frames as triads for all links.")
+        "--visualize_frames",
+        action="store_true",
+        help="Visualize the frames as triads for all links.",
+    )
     args_parser.add_argument(
-        "--triad_length", 
+        "--triad_length",
         type=float,
-        dest='triad_length', default=0.5,
-        help="Triad length for frame visualization.")
+        dest="triad_length",
+        default=0.5,
+        help="Triad length for frame visualization.",
+    )
     args_parser.add_argument(
-        "--triad_radius", 
+        "--triad_radius",
         type=float,
-        dest='triad_radius', default=0.01,
-        help="Triad radius for frame visualization.")
+        dest="triad_radius",
+        default=0.01,
+        help="Triad radius for frame visualization.",
+    )
     args_parser.add_argument(
-        "--triad_opacity", 
+        "--triad_opacity",
         type=float,
-        dest='triad_opacity', default=1,
-        help="Triad opacity for frame visualization.")
+        dest="triad_opacity",
+        default=1,
+        help="Triad opacity for frame visualization.",
+    )
+
 
 def add_triad(
     source_id,
@@ -239,10 +252,24 @@ def parse_visualizers(args_parser, args):
             # The world frame is plotted thicker than the rest.
             inspector = scene_graph.model_inspector()
             for frame_id in inspector.GetAllFrameIds():
-                if frame_id==scene_graph.world_frame_id():
-                    add_triad(plant.get_source_id(),frame_id,scene_graph,length=args.triad_length, radius=args.triad_radius*3,opacity=args.triad_opacity)    
+                if frame_id == scene_graph.world_frame_id():
+                    add_triad(
+                        plant.get_source_id(),
+                        frame_id,
+                        scene_graph,
+                        length=args.triad_length,
+                        radius=args.triad_radius * 3,
+                        opacity=args.triad_opacity,
+                    )
                 else:
-                    add_triad(plant.get_source_id(),frame_id,scene_graph,length=args.triad_length, radius=args.triad_radius,opacity=args.triad_opacity)  
+                    add_triad(
+                        plant.get_source_id(),
+                        frame_id,
+                        scene_graph,
+                        length=args.triad_length,
+                        radius=args.triad_radius,
+                        opacity=args.triad_opacity,
+                    )
 
     def connect_visualizers(builder, plant, scene_graph):
         # Connect this to drake_visualizer.
