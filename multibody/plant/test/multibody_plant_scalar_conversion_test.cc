@@ -40,7 +40,7 @@ TYPED_TEST_P(MultibodyPlantDefaultScalarsTest, RevoluteJointAndSpring) {
   MultibodyPlant<double> plant(0.0);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const RigidBody<double>& body = plant.AddRigidBody("Body",
-      SpatialInertia<double>::MakeTestCube());
+      SpatialInertia<double>::MakeUnitary());
   const RevoluteJoint<double>& pin = plant.AddJoint<RevoluteJoint>(
       "Pin", plant.world_body(), std::nullopt, body, std::nullopt,
       Vector3<double>::UnitZ());
