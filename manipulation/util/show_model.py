@@ -54,8 +54,11 @@ import os
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import MakePhongIllustrationProperties
-from pydrake.geometry import DrakeVisualizer
+from pydrake.geometry import (
+    Cylinder, DrakeVisualizer,
+    GeometryInstance, MakePhongIllustrationProperties,
+)
+from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator
@@ -65,10 +68,7 @@ from pydrake.systems.meshcat_visualizer import (
 from pydrake.systems.planar_scenegraph_visualizer import (
     ConnectPlanarSceneGraphVisualizer,
 )
-from pydrake.geometry import Cylinder
-from pydrake.math import RigidTransform, RotationMatrix
-from pydrake.geometry import (
-    GeometryInstance, MakePhongIllustrationProperties)
+
 
 def add_filename_and_parser_argparse_arguments(args_parser):
     """
@@ -156,13 +156,14 @@ def add_visualizers_argparse_arguments(args_parser):
         dest='triad_opacity', default=1,
         help="Triad opacity for frame visualization.")
 
-def AddTriad(
+def add_triad(
     source_id,
     frame_id,
     scene_graph,
-    length=0.25,
-    radius=0.01,
-    opacity=1.0,
+    *,
+    length,
+    radius,
+    opacity,
     X_FT=RigidTransform(),
     name="frame",
 ):
@@ -170,7 +171,7 @@ def AddTriad(
     Adds illustration geometry representing the coordinate frame, with the
     x-axis drawn in red, the y-axis in green and the z-axis in blue. The axes
     point in +x, +y and +z directions, respectively.
-    Based on [code permalink](https://github.com/RussTedrake/manipulation/blob/master/manipulation/scenarios.py#L367).
+    Based on [code permalink](https://github.com/RussTedrake/manipulation/blob/5e5981147079e69f03d1b42707b8db0386dc8824/manipulation/scenarios.py#L367-L414).
     Args:
     source_id: The source registered with SceneGraph.
     frame_id: A geometry::frame_id registered with scene_graph.
@@ -233,19 +234,15 @@ def parse_visualizers(args_parser, args):
         
         if args.visualize_frames:
             # Visualize frames
-            # Find all the frames and plots them using AddTriad().
+            # Find all the frames and plots them using add_triad().
             # The frames are ploted using the parsed length.
             # The world frame is plotted thicker than the rest.
-            length=args.triad_length
-            radius=args.triad_radius
-            opacity=args.triad_opacity
             inspector = scene_graph.model_inspector()
-            for i,frame_id in enumerate(inspector.GetAllFrameIds()):
-                #The world frame is the last in the list
-                if i<len(inspector.GetAllFrameIds())-1:
-                    AddTriad(plant.get_source_id(),frame_id,scene_graph,length,radius,opacity)      
+            for frame_id in inspector.GetAllFrameIds():
+                if frame_id==scene_graph.world_frame_id():
+                    add_triad(plant.get_source_id(),frame_id,scene_graph,length=args.triad_length, radius=args.triad_radius*3,opacity=args.triad_opacity)    
                 else:
-                    AddTriad(plant.get_source_id(),frame_id,scene_graph,length, radius*3,opacity)   
+                    add_triad(plant.get_source_id(),frame_id,scene_graph,length=args.triad_length, radius=args.triad_radius,opacity=args.triad_opacity)  
 
     def connect_visualizers(builder, plant, scene_graph):
         # Connect this to drake_visualizer.
