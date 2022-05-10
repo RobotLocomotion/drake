@@ -1049,6 +1049,17 @@ class MultibodyTreeTopology {
     return welded_bodies;
   }
 
+  // Computes the number of generalized velocities in the tree composed of the
+  // nodes outboard of `base`, excluding the generalized velocities of `base`.
+  // Note: This method returns 0 if base is the most distal body in a multibody
+  // tree or if base's children are all welded to it and they are the most
+  // distal bodies in the tree.
+  // @pre Body nodes were already created.
+  int CalcNumberOfOutboardVelocitiesExcludeBase(
+      const BodyNodeTopology& base) const {
+    return CalcNumberOfOutboardVelocities(base) - base.num_mobilizer_velocities;
+  }
+
  private:
   // Returns `true` if there is _any_ mobilizer in the multibody tree
   // connecting the frames with indexes `frame` and `frame2`.
@@ -1131,7 +1142,7 @@ class MultibodyTreeTopology {
   // Computes the number of generalized velocities in the tree composed of the
   // nodes outboard of `base`, including the generalized velocities of `base`.
   // @pre Body nodes were already created.
-  int CalcNumberOfOutboardVelocities(const BodyNodeTopology& base) {
+  int CalcNumberOfOutboardVelocities(const BodyNodeTopology& base) const {
     DRAKE_DEMAND(get_num_body_nodes() != 0);
     int nv = 0;
     TraverseOutboardNodes(base, [&nv](const BodyNodeTopology& node) {
