@@ -45,6 +45,9 @@ namespace compass_gait {
 /// Discrete State: stance toe position.<br/>
 /// Abstract State: left support indicator.<br/>
 ///
+/// Note: If the hip_torque input port is not connected, then the torque is
+/// taken to be zero.
+///
 /// @tparam_default_scalar
 template <typename T>
 class CompassGait final : public systems::LeafSystem<T> {
