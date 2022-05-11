@@ -62,8 +62,9 @@ class InverseDynamicsRTests : public ::testing::Test {
     VectorXd expected_tau = VectorXd(1);
     expected_tau << mass * gravity * length / 2 * std::cos(angle);
 
-    EXPECT_TRUE(
-        CompareMatrices(expected_tau, tau, 0.01, MatrixCompareType::relative));
+    EXPECT_TRUE(CompareMatrices(expected_tau, tau,
+                                std::numeric_limits<double>::epsilon(),
+                                MatrixCompareType::relative));
   }
 };
 
