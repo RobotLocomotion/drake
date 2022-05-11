@@ -25,18 +25,18 @@
   </link>
 
   <joint name="joint_1" type="revolute">
-    <origin xyz="0.0 0 0.0" rpy="1.5708 0.0 0" />
+    <origin xyz="0.0 0 0.0" rpy="1.5707963267948966 0.0 0" />
     <parent link="root_link" />
     <child link="link_1" />
     <axis xyz="0.0 0.0 1.0" />
-    <limit effort="0" velocity="0" lower="0" upper="3.14159" />
+    <limit effort="0" velocity="0" lower="0" upper="3.14159265358979323846" />
     <joint_properties friction="0.0" />
   </joint>
 
   <link name="link_e" />
 
   <joint name="joint_e" type="fixed">
-    <origin xyz="1 0.0 0" rpy="3.14159 -1.5708 0" />
+    <origin xyz="1 0.0 0" rpy="3.14159265358979323846 -1.5707963267948966 0" />
     <parent link="link_1" />
     <child link="link_e" />
   </joint>
