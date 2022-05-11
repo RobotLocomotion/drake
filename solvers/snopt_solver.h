@@ -3,7 +3,6 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/solver_base.h"
 
 namespace drake {
