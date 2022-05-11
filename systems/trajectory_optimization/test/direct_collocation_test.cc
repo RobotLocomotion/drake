@@ -12,7 +12,6 @@
 #include "drake/math/autodiff.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/solvers/ipopt_solver.h"
-#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/primitives/linear_system.h"
 
