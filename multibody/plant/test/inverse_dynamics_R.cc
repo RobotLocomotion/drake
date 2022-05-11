@@ -1,4 +1,5 @@
 #include <cmath>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
@@ -34,12 +35,6 @@ class InverseDynamicsRTests : public ::testing::Test {
     constexpr auto gravity = 9.81;
 
     auto plant_context = plant.CreateDefaultContext();
-    auto multibody_forces = MultibodyForces<double>(plant);
-
-    // add the gravity effect as a generalized force
-    const auto gravity_forces =
-        plant.CalcGravityGeneralizedForces(*plant_context);
-    multibody_forces.mutable_generalized_forces() += gravity_forces;
 
     // set positions
     auto positions = VectorXd(1);
@@ -51,6 +46,13 @@ class InverseDynamicsRTests : public ::testing::Test {
     plant.SetVelocities(plant_context.get(), velocities);
 
     VectorXd known_vdot = VectorXd::Zero(1);
+
+    auto multibody_forces = MultibodyForces<double>(plant);
+
+    // add the gravity effects. It should be after setting the positions.
+    const auto gravity_forces =
+        plant.CalcGravityGeneralizedForces(*plant_context);
+    multibody_forces.mutable_generalized_forces() += gravity_forces;
 
     // calculate the joint torque
     const auto tau =
