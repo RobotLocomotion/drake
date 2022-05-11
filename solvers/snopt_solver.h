@@ -16,9 +16,10 @@ namespace solvers {
  */
 struct SnoptSolverDetails {
   /**
-   * The exit condition of the solver. Please refer to section "EXIT conditions"
+   * The snopt INFO field. Please refer to section 8.6
    * in "User's Guide for SNOPT Version 7: Software for Large-Scale Nonlinear
-   * Programming" by Philip E. Gill to interpret the exit condition.
+   * Programming" (https://web.stanford.edu/group/SOL/guides/sndoc7.pdf) by
+   * Philip E. Gill to interpret the INFO field.
    */
   int info{};
 
