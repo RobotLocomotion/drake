@@ -32,7 +32,7 @@ class InverseDynamicsRTests : public ::testing::Test {
   void test_inverse_dynamics(const double angle) {
     constexpr auto length = 1.0;
     constexpr auto mass = 2.0;
-    constexpr auto gravity = 9.81;
+    const double gravity = plant.gravity_field().gravity_vector().norm();
 
     auto plant_context = plant.CreateDefaultContext();
 
