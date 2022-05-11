@@ -275,9 +275,15 @@ def linux_fix_rpaths(dst_full):
             re_result = re.match(dylib_match, ldd_result[0])
             # Look for the absolute path in the dictionary of libraries using
             # the library name without its possible version number.
-            soname, _, _ = re_result.groups()
+            soname, version, _ = re_result.groups()
             if soname not in libraries_to_fix_rpath:
-                continue
+                # TODO(svenevs): when drake-visualizer support is removed, the
+                # capture of `version` and secondary check for e.g.,
+                # libvtk*.so.1 (libraries_to_fix_rpath includes the .1 for
+                # VTK-8) can be removed.
+                soname = f'{soname}{version}'
+                if soname not in libraries_to_fix_rpath:
+                    continue
             lib_dirname = os.path.dirname(dst_full)
             diff_path = os.path.dirname(
                 os.path.relpath(libraries_to_fix_rpath[soname], lib_dirname)
