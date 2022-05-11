@@ -776,6 +776,17 @@ Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
   return *this;
 }
 
+Polynomial Polynomial::Expand() const {
+  Polynomial::MapType expanded_poly_map;
+  for (const auto& [monomial, coeff] : monomial_to_coefficient_map_) {
+    const symbolic::Expression coeff_expanded = coeff.Expand();
+    if (!symbolic::is_zero(coeff_expanded)) {
+      expanded_poly_map.emplace(monomial, coeff_expanded);
+    }
+  }
+  return symbolic::Polynomial(std::move(expanded_poly_map));
+}
+
 Polynomial Polynomial::RemoveTermsWithSmallCoefficients(
     double coefficient_tol) const {
   DRAKE_DEMAND(coefficient_tol > 0);
