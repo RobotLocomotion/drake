@@ -590,7 +590,7 @@ GTEST_TEST(HPolyhedronTest, ReduceL1LInfBallIntersection) {
   HPolyhedron Linfty_ball = HPolyhedron::MakeBox(lower_limit, upper_limit);
 
   Eigen::MatrixXd A_int(A_L1.rows() + Linfty_ball.A().rows(), 3);
-  Eigen::MatrixXd b_int(A_int.rows(), 3);
+  Eigen::MatrixXd b_int(A_int.rows(), 1);
   A_int.topRows(A_L1.rows()) = A_L1;
   b_int.topRows(b_L1.rows()) = b_L1;
   A_int.bottomRows(Linfty_ball.A().rows()) = Linfty_ball.A();
