@@ -1,7 +1,15 @@
 <?xml version="1.0"?>
 <sdf version="1.8">
   <model name="gripper">
-    <link name="gripper_link"/>
+    <link name="gripper_link">
+      <collision name='gripper_link'>
+        <geometry>
+          <sphere>
+            <radius>0.4</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
     <frame name="grasp_frame" attached_to="gripper_link"/>
   </model>
 </sdf>

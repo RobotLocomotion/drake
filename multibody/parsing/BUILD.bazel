@@ -60,6 +60,7 @@ drake_cc_library(
 drake_cc_library(
     name = "detail_misc",
     srcs = [
+        "detail_collision_filter_group_resolver.cc",
         "detail_common.cc",
         "detail_ignition.cc",
         "detail_path_utils.cc",
@@ -67,6 +68,7 @@ drake_cc_library(
         "detail_tinyxml2_diagnostic.cc",
     ],
     hdrs = [
+        "detail_collision_filter_group_resolver.h",
         "detail_common.h",
         "detail_ignition.h",
         "detail_path_utils.h",
@@ -77,6 +79,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":package_map",
+        ":scoped_names",
         "//common:diagnostic_policy",
         "//common:essential",
         "//common:filesystem",
@@ -499,6 +502,14 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "detail_tinyxml2_diagnostic_test",
+    deps = [
+        ":detail_misc",
+        ":diagnostic_policy_test_base",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_collision_filter_group_resolver_test",
     deps = [
         ":detail_misc",
         ":diagnostic_policy_test_base",

@@ -1,7 +1,15 @@
 <?xml version="1.0"?>
-<sdf version="1.8">
+<sdf xmlns:drake="http://drake.mit.edu" version="1.8">
   <model name="top">
-    <link name="torso"/>
+    <link name="torso">
+      <collision name='torso'>
+        <geometry>
+          <sphere>
+            <radius>0.4</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
 
     <model name="tactile_sensor">
       <pose relative_to="arm::gripper::grasp_frame"/>
@@ -35,5 +43,12 @@
       <uri>package://interface_api_test/table_and_mug.forced_nesting_sdf</uri>
       <name>table_and_mug</name>
     </include>
+    <drake:collision_filter_group name="g1">
+      <drake:member>torso</drake:member>
+      <drake:member>arm::L1</drake:member>
+      <drake:member>extra_arm::L2</drake:member>
+      <drake:member>arm::gripper::gripper_link</drake:member>
+      <drake:ignored_collision_filter_group>g1</drake:ignored_collision_filter_group>
+    </drake:collision_filter_group>
   </model>
 </sdf>
