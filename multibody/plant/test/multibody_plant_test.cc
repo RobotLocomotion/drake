@@ -45,6 +45,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/linear_system.h"
+#include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
 
@@ -3839,6 +3840,41 @@ GTEST_TEST(MultibodyPlantTests, ActuationPorts) {
         (reaction_forces[i].rotational().norm() < kTolerance);
   }
   EXPECT_FALSE(all_reaction_forces_zero);
+}
+
+// Due to issue #12786, we cannot mark the calculation of non-contact forces
+// (and the acceleration it induces) dependent on the MultibodyPlant's inputs,
+// as it should. However, by removing this dependency, we run the risk of an
+// undetected algebraic loop. This tests verifies that if such an algebraic loop
+// exists, a nice throw message is emitted instead of an infinite recursion.
+GTEST_TEST(MultibodyPlantTests, AlgebraicLoopDetection) {
+  systems::DiagramBuilder<double> builder;
+  MultibodyPlant<double>* plant =
+      builder.AddSystem<MultibodyPlant<double>>(1.0e-3);
+  const char kSdfPath[] =
+      "drake/manipulation/models/iiwa_description/sdf/"
+      "iiwa14_no_collision.sdf";
+  Parser parser(plant);
+  auto iiwa_instance =
+      parser.AddModelFromFile(FindResourceOrThrow(kSdfPath), "iiwa");
+  plant->Finalize();
+  auto feedback =
+      builder.AddSystem<systems::PassThrough<double>>(plant->num_velocities());
+  builder.Connect(
+      plant->get_generalized_contact_forces_output_port(iiwa_instance),
+      feedback->get_input_port());
+  builder.Connect(feedback->get_output_port(),
+                  plant->get_applied_generalized_force_input_port());
+  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
+  std::unique_ptr<systems::Context<double>> diagram_context =
+      diagram->CreateDefaultContext();
+  const systems::Context<double>& plant_context =
+      plant->GetMyContextFromRoot(*diagram_context);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant
+          ->get_generalized_contact_forces_output_port(default_model_instance())
+          .Eval(plant_context),
+      "Algebraic loop detected.*");
 }
 
 }  // namespace
