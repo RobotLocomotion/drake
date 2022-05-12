@@ -2883,29 +2883,52 @@ void MultibodyTree<T>::IssuePostFinalizeMassInertiaWarnings() const {
 
   // There should be at least on set of welded_bodies since the first set should
   // be the world body (if it has children bodies, they are anchored to it).
-  size_t number_of_parent_bodies = welded_bodies.size();
-  DRAKE_ASSERT(number_of_parent_bodies > 0);
+  size_t number_of_sets = welded_bodies.size();
+  DRAKE_ASSERT(number_of_sets > 0);
 
   // Investigate mass/inertia properties for all non-world welded bodies.
-  for (size_t parent_body_index = 1;
-       parent_body_index < number_of_parent_bodies; ++parent_body_index) {
+  for (size_t i = 1;  i < number_of_sets;  ++i) {
     // Get the next set of welded bodies. The first entry in the set is the
     // parent body and the remaining entries (if any) are children bodies.
-    const std::set<BodyIndex>& welded_parent_children_bodies =
-        welded_bodies[parent_body_index];
-    double total_mass = CalcTotalDefaultMass(welded_parent_children_bodies);
-    if (total_mass == 0) {
-      throw std::logic_error("It seems as if there are no massive bodies "
-                             "associated with a degree of freedom.");
+    const std::set<BodyIndex>& welded_parent_children_bodies = welded_bodies[i];
+    const BodyIndex parent_body_index = *welded_parent_children_bodies.begin();
+    const MultibodyTreeTopology& multibodyTreeTopology = get_topology();
+    const BodyTopology& parent_body_topology =
+        multibodyTreeTopology.get_body(parent_body_index);
+    const MobilizerIndex& parent_mobilizer_index =
+        parent_body_topology.inboard_mobilizer;
+    const Mobilizer<T>& parent_mobilizer =
+        get_mobilizer(parent_mobilizer_index);
+
+    // Get parent body name (if needed for subsequent warning message).
+    const Body<T>& parent_body = get_body(parent_body_index);
+    const std::string& parent_body_name = parent_body.name();
+    DRAKE_DEMAND(parent_body_index == parent_body.index());
+    DRAKE_DEMAND(parent_body_index != world_index());
+
+    // Issue zero mass warning if the composite rigid body can translate.
+    if ( parent_mobilizer.can_translate() ) {
+      double total_mass = CalcTotalDefaultMass(welded_parent_children_bodies);
+      if (total_mass == 0) {
+         const std::string msg = fmt::format(
+        "It seems that body {} is massless, yet it is attached "
+        "by a joint that has a translational degree of freedom.",
+        parent_body_name);
+        throw std::logic_error(msg);
+      }
     }
 
-    // For each set of welded parent/children bodies, calculate the default
-    // rotational inertia about Bo (the parent body B's origin), expressed in B.
-    RotationalInertia<double> total_inertia =
+    // Issue zero rotational inertia if the composite rigid body can rotate.
+    if  (parent_mobilizer.can_rotate() ) {
+      const RotationalInertia<double> total_inertia =
         CalcTotalDefaultRotationalInertia(welded_parent_children_bodies);
-    if ( total_inertia.IsZero() ) {
-      throw std::logic_error("It seems as if there is zero rotational inertia "
-                             "associated with a degree of freedom.");
+      if (total_inertia.IsZero()) {
+        const std::string msg = fmt::format(
+        "It seems that body {} has no rotational inertia, yet it is attached "
+        "by a joint that has a rotational degree of freedom.",
+        parent_body_name);
+        throw std::logic_error(msg);
+      }
     }
   }
 }
@@ -2915,7 +2938,7 @@ double MultibodyTree<T>::CalcTotalDefaultMass(
     const std::set<BodyIndex>& body_indexes) const {
   double total_mass = 0;
   for (BodyIndex body_index : body_indexes) {
-    const Body<T>&body_B = get_body(body_index);
+    const Body<T>& body_B = get_body(body_index);
     const double mass_B = body_B.get_default_mass();
     if (!std::isnan(mass_B)) total_mass += mass_B;
   }
