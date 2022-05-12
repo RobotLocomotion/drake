@@ -277,10 +277,9 @@ def linux_fix_rpaths(dst_full):
             # the library name without its possible version number.
             soname, version, _ = re_result.groups()
             if soname not in libraries_to_fix_rpath:
-                # TODO(svenevs): when drake-visualizer support is removed, the
-                # capture of `version` and secondary check for e.g.,
-                # libvtk*.so.1 (libraries_to_fix_rpath includes the .1 for
-                # VTK-8) can be removed.
+                # Some third party libraries that are copied rather than
+                # compiled such as mosek are stored as keys in
+                # libraries_to_fix_rpath with the version (e.g., libname.so.1).
                 soname = f'{soname}{version}'
                 if soname not in libraries_to_fix_rpath:
                     continue
