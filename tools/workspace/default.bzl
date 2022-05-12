@@ -216,10 +216,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         libtiff_repository(name = "libtiff")
     if "meshcat" not in excludes:
         meshcat_repository(name = "meshcat", mirrors = mirrors)
-    if "statsjs" not in excludes:
-        statsjs_repository(name = "statsjs", mirrors = mirrors)
-    if "msgpack_lite_js" not in excludes:
-        msgpack_lite_js_repository(name = "msgpack_lite_js", mirrors = mirrors)
     if "meshcat_python" not in excludes:
         meshcat_python_repository(name = "meshcat_python", mirrors = mirrors)
     if "models" not in excludes:
@@ -228,6 +224,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         mosek_repository(name = "mosek")
     if "msgpack" not in excludes:
         msgpack_repository(name = "msgpack")
+    if "msgpack_lite_js" not in excludes:
+        msgpack_lite_js_repository(name = "msgpack_lite_js", mirrors = mirrors)
     if "net_sf_jchart2d" not in excludes:
         net_sf_jchart2d_repository(name = "net_sf_jchart2d", mirrors = mirrors)
     if "nlopt" not in excludes:
@@ -276,6 +274,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         snopt_repository(name = "snopt")
     if "spdlog" not in excludes:
         spdlog_repository(name = "spdlog", mirrors = mirrors)
+    if "statsjs" not in excludes:
+        statsjs_repository(name = "statsjs", mirrors = mirrors)
     if "stduuid" not in excludes:
         stduuid_repository(name = "stduuid", mirrors = mirrors)
     if "styleguide" not in excludes:
