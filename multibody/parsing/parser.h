@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -10,6 +11,10 @@
 
 namespace drake {
 namespace multibody {
+
+namespace internal {
+class CompositeParse;
+}  // namespace internal
 
 /// Parses SDF and URDF input files into a MultibodyPlant and (optionally) a
 /// SceneGraph. For documentation of Drake-specific extensions and limitations,
@@ -41,6 +46,9 @@ class Parser final {
   /// Cause all subsequent Add*Model*() operations to use strict parsing;
   /// warnings will be treated as errors.
   void SetStrictParsing() { is_strict_ = true; }
+
+  /// (Internal). Build and return a new composite parse object.
+  std::unique_ptr<internal::CompositeParse> MakeCompositeParse();
 
   /// Parses the SDF or URDF file named in @p file_name and adds all of its
   /// model(s) to @p plant.
@@ -96,6 +104,23 @@ class Parser final {
       const std::string& model_name = {});
 
  private:
+  friend class internal::CompositeParse;
+
+  std::vector<ModelInstanceIndex> CompositeAddAllModelsFromFile(
+      const std::string& file_name,
+      internal::CompositeParse* composite);
+
+  ModelInstanceIndex CompositeAddModelFromFile(
+      const std::string& file_name,
+      const std::string& model_name,
+      internal::CompositeParse* composite);
+
+  ModelInstanceIndex CompositeAddModelFromString(
+      const std::string& file_contents,
+      const std::string& file_type,
+      const std::string& model_name,
+      internal::CompositeParse* composite);
+
   bool is_strict_{false};
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;

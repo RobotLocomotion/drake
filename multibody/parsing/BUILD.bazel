@@ -70,6 +70,7 @@ drake_cc_library(
     hdrs = [
         "detail_collision_filter_group_resolver.h",
         "detail_common.h",
+        "detail_composite_parse.h",
         "detail_ignition.h",
         "detail_path_utils.h",
         "detail_tinyxml.h",
@@ -230,6 +231,7 @@ drake_cc_library(
         "//multibody/plant",
     ],
     deps = [
+        ":detail_misc",
         ":scoped_names",
         "//common:filesystem",
         "//common:find_resource",
