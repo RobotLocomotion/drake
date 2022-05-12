@@ -6,6 +6,7 @@ implementation. Developers can parameterize it to run against a specific
 concrete checker implementation, e.g., scene_graph_collision_checker_test.
 */
 
+#include <ostream>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -59,6 +60,9 @@ struct CollisionCheckerTestParams {
   // others; the default here provides relatively light stress.
   int thread_stress_iterations{10};
 };
+
+std::ostream& operator<<(std::ostream& out,
+                         const CollisionCheckerTestParams& p);
 
 class CollisionCheckerAbstractTestSuite
     : public testing::TestWithParam<CollisionCheckerTestParams> {
