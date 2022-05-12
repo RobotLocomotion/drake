@@ -184,7 +184,7 @@ def add_triad(
     Adds illustration geometry representing the coordinate frame, with the
     x-axis drawn in red, the y-axis in green and the z-axis in blue. The axes
     point in +x, +y and +z directions, respectively.
-    Based on [code permalink](https://github.com/RussTedrake/manipulation/blob/5e5981147079e69f03d1b42707b8db0386dc8824/manipulation/scenarios.py#L367-L414).
+    Based on [code permalink](https://github.com/RussTedrake/manipulation/blob/5e59811/manipulation/scenarios.py#L367-L414).# noqa
     Args:
     source_id: The source registered with SceneGraph.
     frame_id: A geometry::frame_id registered with scene_graph.
@@ -196,7 +196,10 @@ def add_triad(
     name: the added geometry will have names name + " x-axis", etc.
     """
     # x-axis
-    X_TG = RigidTransform(RotationMatrix.MakeYRotation(np.pi / 2), [length / 2.0, 0, 0])
+    X_TG = RigidTransform(
+        RotationMatrix.MakeYRotation(np.pi / 2), 
+        [length / 2.0, 0, 0],
+    )
     geom = GeometryInstance(
         X_FT.multiply(X_TG), Cylinder(radius, length), name + " x-axis"
     )
@@ -206,7 +209,10 @@ def add_triad(
     scene_graph.RegisterGeometry(source_id, frame_id, geom)
 
     # y-axis
-    X_TG = RigidTransform(RotationMatrix.MakeXRotation(np.pi / 2), [0, length / 2.0, 0])
+    X_TG = RigidTransform(
+        RotationMatrix.MakeXRotation(np.pi / 2), 
+        [0, length / 2.0, 0],
+    )
     geom = GeometryInstance(
         X_FT.multiply(X_TG), Cylinder(radius, length), name + " y-axis"
     )
@@ -224,6 +230,7 @@ def add_triad(
         MakePhongIllustrationProperties([0, 0, 1, opacity])
     )
     scene_graph.RegisterGeometry(source_id, frame_id, geom)
+
 
 def parse_visualizers(args_parser, args):
     """
@@ -244,32 +251,23 @@ def parse_visualizers(args_parser, args):
                 if inspector.GetIllustrationProperties(geometry_id) is None:
                     scene_graph.AssignRole(
                         source_id, geometry_id, red_illustration)
-        
+
         if args.visualize_frames:
             # Visualize frames
-            # Find all the frames and plots them using add_triad().
-            # The frames are ploted using the parsed length.
+            # Find all the frames and plot them using add_triad().
+            # The frames are drawn using the parsed length.
             # The world frame is plotted thicker than the rest.
             inspector = scene_graph.model_inspector()
             for frame_id in inspector.GetAllFrameIds():
-                if frame_id == scene_graph.world_frame_id():
-                    add_triad(
-                        plant.get_source_id(),
-                        frame_id,
-                        scene_graph,
-                        length=args.triad_length,
-                        radius=args.triad_radius * 3,
-                        opacity=args.triad_opacity,
-                    )
-                else:
-                    add_triad(
-                        plant.get_source_id(),
-                        frame_id,
-                        scene_graph,
-                        length=args.triad_length,
-                        radius=args.triad_radius,
-                        opacity=args.triad_opacity,
-                    )
+                radius=args.triad_radius * (3 if frame_id == scene_graph.world_frame_id() else 1)
+                add_triad(
+                    plant.get_source_id(),
+                    frame_id,
+                    scene_graph,
+                    length=args.triad_length,
+                    radius=radius,
+                    opacity=args.triad_opacity,
+                )
 
     def connect_visualizers(builder, plant, scene_graph):
         # Connect this to drake_visualizer.
