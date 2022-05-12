@@ -19,6 +19,7 @@ namespace {
 
 using std::optional;
 using Eigen::Vector3d;
+using drake::geometry::GeometryId;
 using drake::math::RigidTransformd;
 using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::Frame;
@@ -194,6 +195,37 @@ GTEST_TEST(ProcessModelDirectivesTest, InjectFrames) {
       .CalcPoseInWorld(*context)
       .translation()
       .isApprox(Vector3d(2, 4, 6)));
+}
+
+// Test frame injection in ModelDirectives.
+GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
+  ModelDirectives directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) +
+                          "/collision_filter_group.yaml"));
+
+  // Ensure that we have a SceneGraph present so that we test relevant visual
+  // pieces.
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.);
+  ProcessModelDirectives(directives, &plant,
+                         nullptr, make_parser(&plant).get());
+
+  // Make sure the plant is not finalized such that the Finalize() default
+  // filtering has not taken into effect yet. This guarantees that the
+  // collision filtering is applied due to the collision filter group parsing.
+  ASSERT_FALSE(plant.is_finalized());
+
+  const geometry::SceneGraphInspector<double>& inspector =
+      scene_graph.model_inspector();
+  // Get the collision geometry ids.
+  const std::vector<GeometryId> ids = inspector.GetAllGeometryIds();
+  geometry::GeometrySet id_set(ids);
+  auto collision_id_set = inspector.GetGeometryIds(
+      id_set, geometry::Role::kProximity);
+  ASSERT_EQ(collision_id_set.size(), 2);
+  std::vector<GeometryId> collision_ids(collision_id_set.begin(),
+                                        collision_id_set.end());
+  EXPECT_TRUE(inspector.CollisionFiltered(collision_ids[0], collision_ids[1]));
 }
 
 // Make sure we have good error messages.

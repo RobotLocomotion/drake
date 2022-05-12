@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <optional>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -10,6 +11,8 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/schema/transform.h"
 #include "drake/common/yaml/yaml_io.h"
+#include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
+#include "drake/multibody/parsing/detail_composite_parse.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/parsing/scoped_names.h"
 
@@ -24,6 +27,7 @@ using drake::FindResourceOrThrow;
 using drake::math::RigidTransformd;
 using drake::multibody::FixedOffsetFrame;
 using drake::multibody::Frame;
+using drake::multibody::internal::CollisionFilterGroupResolver;
 using drake::multibody::ModelInstanceIndex;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::PackageMap;
@@ -82,6 +86,7 @@ void ProcessModelDirectivesImpl(
   // TODO(eric.cousineau): Somehow assert that our `parser` doesn't have a
   // different plant?
   DRAKE_DEMAND(parser != nullptr);
+  auto composite = parser->MakeCompositeParse();
   auto get_scoped_frame = [&](const std::string& name) -> const Frame<double>& {
     // TODO(eric.cousineau): Simplify logic?
     if (name == "world") {
@@ -99,7 +104,7 @@ void ProcessModelDirectivesImpl(
       const std::string file =
           ResolveModelDirectiveUri(model.file, parser->package_map());
       drake::multibody::ModelInstanceIndex child_model_instance_id =
-          parser->AddModelFromFile(file, name);
+          parser->AddModelFromFile(file, name, composite.get());
       info.model_instance = child_model_instance_id;
       info.model_name = name;
       info.model_path = file;
@@ -139,6 +144,18 @@ void ProcessModelDirectivesImpl(
           get_scoped_frame(directive.add_weld->parent),
           get_scoped_frame(directive.add_weld->child),
           plant, added_models);
+
+    } else if (directive.add_collision_filter_group) {
+      auto& resolver = composite->collision_resolver();
+      auto& group = *directive.add_collision_filter_group;
+      std::set<std::string> member_set(group.members.begin(),
+                                       group.members.end());
+      // TODO(rpoyner-tri) obey parser policy? Improve error location clues?
+      drake::internal::DiagnosticPolicy d;
+      resolver.AddGroup(d, group.name, member_set, {});
+      for (const auto& ignored_group : group.ignored_collision_filter_groups) {
+        resolver.AddPair(d, group.name, ignored_group, {});
+      }
 
     } else {
       // Recurse.

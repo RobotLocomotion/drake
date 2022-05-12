@@ -38,6 +38,10 @@ directives:
 - add_directives:
     file: child.yaml
     model_namespace: right
+- add_collision_filter_group:
+    name: group1
+    members: [new_model::link, right::robot::link]
+    ignored_collision_filter_groups: [group1, right::robot::group]
 )""";
   const auto directives = LoadYamlString<ModelDirectives>(contents);
   EXPECT_TRUE(directives.IsValid());

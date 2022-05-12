@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -10,6 +11,10 @@
 
 namespace drake {
 namespace multibody {
+
+namespace internal {
+class CompositeParse;
+}  // namespace internal
 
 /// Parses SDF and URDF input files into a MultibodyPlant and (optionally) a
 /// SceneGraph. For documentation of Drake-specific extensions and limitations,
@@ -42,6 +47,9 @@ class Parser final {
   /// warnings will be treated as errors.
   void SetStrictParsing() { is_strict_ = true; }
 
+  /// (Internal). Build and return a new composite parse object.
+  std::unique_ptr<internal::CompositeParse> MakeCompositeParse();
+
   /// Parses the SDF or URDF file named in @p file_name and adds all of its
   /// model(s) to @p plant.
   ///
@@ -61,7 +69,8 @@ class Parser final {
   /// including nested models.
   /// @throws std::exception in case of errors.
   std::vector<ModelInstanceIndex> AddAllModelsFromFile(
-      const std::string& file_name);
+      const std::string& file_name,
+      internal::CompositeParse* composite = nullptr);
 
   /// Parses the SDFormat or URDF file named in @p file_name and adds one
   /// top-level model to @p plant. It is an error to call this using an SDFormat
@@ -77,7 +86,8 @@ class Parser final {
   /// nesting in SDFormat.
   ModelInstanceIndex AddModelFromFile(
       const std::string& file_name,
-      const std::string& model_name = {});
+      const std::string& model_name = {},
+      internal::CompositeParse* composite = nullptr);
 
   /// Provides same functionality as AddModelFromFile, but instead parses the
   /// SDFormat or URDF XML data via @p file_contents with type dictated by
@@ -93,9 +103,11 @@ class Parser final {
   ModelInstanceIndex AddModelFromString(
       const std::string& file_contents,
       const std::string& file_type,
-      const std::string& model_name = {});
+      const std::string& model_name = {},
+      internal::CompositeParse* composite = nullptr);
 
  private:
+  friend class internal::CompositeParse;
   bool is_strict_{false};
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;
