@@ -2,6 +2,7 @@
 
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
     "drake_cc_library",
 )
 load(
@@ -11,6 +12,18 @@ load(
 
 # This file contains macros that help abbreviate patterns that frequently
 # appear in the solvers folder.
+
+def _sync_conditions(condition1, condition2):
+    """Asserts that one and only one condition is given. Sets the other
+    condition to "//conditions:default" and returns them in the same order
+    as they were given.
+    """
+    if int(bool(condition1)) + int(bool(condition2)) != 1:
+        fail("Specify exactly one of opt-in or opt-out")
+    return (
+        condition1 or "//conditions:default",
+        condition2 or "//conditions:default",
+    )
 
 def drake_cc_variant_library(
         name,
@@ -52,12 +65,10 @@ def drake_cc_variant_library(
     the compiler will not build them in the current configuration. We want all
     files to be lint-free, even when the commercial solvers are disabled.
     """
-    if int(bool(opt_in_condition)) + int(bool(opt_out_condition)) != 1:
-        fail("Choose exactly one of opt-in or opt-out")
-    if opt_out_condition:
-        opt_in_condition = "//conditions:default"
-    else:
-        opt_out_condition = "//conditions:default"
+    opt_in_condition, opt_out_condition = _sync_conditions(
+        opt_in_condition,
+        opt_out_condition,
+    )
     drake_cc_library(
         name = name,
         srcs = select({
@@ -87,7 +98,7 @@ def drake_cc_optional_library(
         visibility = ["//visibility:private"],
         interface_deps = None,
         deps = None):
-    """Declares a private library  (package-local, not installed) guarded by a
+    """Declares a private library (package-local, not installed) guarded by a
     configuration setting. When the configuration is disabled, the library is
     totally empty (but still a valid library label). This is used for helper
     or utility code that's called by a fully-feataured back-end implementation.
@@ -102,12 +113,10 @@ def drake_cc_optional_library(
     the compiler will not build them in the current configuration. We want all
     files to be lint-free, even when the commercial solvers are disabled.
     """
-    if int(bool(opt_in_condition)) + int(bool(opt_out_condition)) != 1:
-        fail("Choose exactly one of opt-in or opt-out")
-    if opt_out_condition:
-        opt_in_condition = "//conditions:default"
-    else:
-        opt_out_condition = "//conditions:default"
+    opt_in_condition, opt_out_condition = _sync_conditions(
+        opt_in_condition,
+        opt_out_condition,
+    )
     drake_cc_library(
         name = name,
         srcs = select({
@@ -140,4 +149,50 @@ def drake_cc_optional_library(
     cpplint_extra(
         name = name + "_cpplint",
         srcs = hdrs + srcs,
+    )
+
+def drake_cc_optional_googletest(
+        name,
+        *,
+        opt_in_condition = None,
+        opt_out_condition = None,
+        tags = None,
+        deps):
+    """Declares a test that is not even compiled under certain configurations.
+
+    This is intended only for testing of drake_cc_optional_library targets,
+    where the header file(s) are not even present under certain configurations.
+    For testing a drake_cc_variant_library, the header(s) should always be
+    available, so there is no reason we avoid compiling the unit test.
+
+    Exactly one of opt_in_condition or opt_out_condition must be provided, to
+    specify the configuration setting that chooses which cc files to use.
+
+    Open-source solvers are usually ON by default (so, will use opt_out_...).
+    Commercial solvers are usually OFF by default (so, will use opt_in_...).
+
+    This rule enables linting of all of the mentioned source files, even if
+    the compiler will not build them in the current configuration. We want all
+    files to be lint-free, even when the commercial solvers are disabled.
+    """
+    opt_in_condition, opt_out_condition = _sync_conditions(
+        opt_in_condition,
+        opt_out_condition,
+    )
+    srcs = ["test/{}.cc".format(name)]
+    drake_cc_googletest(
+        name = name,
+        srcs = select({
+            opt_in_condition: srcs,
+            opt_out_condition: [],
+        }),
+        tags = tags,
+        deps = select({
+            opt_in_condition: deps,
+            opt_out_condition: [],
+        }),
+    )
+    cpplint_extra(
+        name = name + "_cpplint",
+        srcs = srcs,
     )
