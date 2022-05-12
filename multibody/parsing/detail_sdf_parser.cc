@@ -1063,9 +1063,11 @@ bool AreWelded(
   return false;
 }
 
-void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
+void ParseCollisionFilterGroup(const DiagnosticPolicy& diagnostic,
+                               ModelInstanceIndex model_instance,
                                const sdf::Model& model,
-                               MultibodyPlant<double>* plant) {
+                               MultibodyPlant<double>* plant,
+                               CollisionFilterGroupResolver* resolver) {
   auto next_child_element = [](const ElementNode& data_element,
                                const char* element_name) {
     return std::get<sdf::ElementPtr>(data_element)
@@ -1081,37 +1083,48 @@ void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
     return std::get<sdf::ElementPtr>(data_element)
         ->HasAttribute(std::string(attribute_name));
   };
-  auto get_string_attribute = [](const ElementNode& data_element,
-                                 const char* attribute_name) {
-    if (!std::get<sdf::ElementPtr>(data_element)
-             ->HasAttribute(attribute_name)) {
-      throw std::runtime_error(fmt::format(
-          "{}:{}:{} The tag <{}> is missing the required attribute \"{}\"",
-          __FILE__, __func__, __LINE__,
-          std::get<sdf::ElementPtr>(data_element)->GetName(),
-          attribute_name));
-    }
-    return std::get<sdf::ElementPtr>(data_element)
-        ->Get<std::string>(attribute_name);
-  };
+  auto get_string_attribute =
+      [&diagnostic](const ElementNode& data_element,
+                    const char* attribute_name) -> std::string {
+        auto element = std::get<sdf::ElementPtr>(data_element);
+        if (!element->HasAttribute(attribute_name)) {
+          DiagnosticDetail detail;
+          detail.filename = element->FilePath();
+          detail.line = element->LineNumber();
+          detail.message = fmt::format(
+              "The tag <{}> is missing the required attribute \"{}\"",
+              element->GetName(), attribute_name);
+          diagnostic.Error(detail);
+          return {};
+        }
+        return std::get<sdf::ElementPtr>(data_element)
+            ->Get<std::string>(attribute_name);
+      };
   auto get_bool_attribute = [](const ElementNode& data_element,
                                const char* attribute_name) {
     return std::get<sdf::ElementPtr>(data_element)->Get<bool>(attribute_name);
   };
-  auto read_tag_string = [](const ElementNode& data_element, const char*) {
-    sdf::ParamPtr param = std::get<sdf::ElementPtr>(data_element)->GetValue();
-    if (param == nullptr) {
-      throw std::runtime_error(fmt::format(
-          "{}:{}:{} The tag <{}> is missing a required string value.", __FILE__,
-          __func__, __LINE__,
-          std::get<sdf::ElementPtr>(data_element)->GetName()));
-    }
-    return param->GetAsString();
-  };
-  ParseCollisionFilterGroupCommon(model_instance, model.Element(), plant,
-                                  next_child_element, next_sibling_element,
-                                  has_attribute, get_string_attribute,
-                                  get_bool_attribute, read_tag_string);
+  auto read_tag_string =
+      [&diagnostic](const ElementNode& data_element, const char*)
+      -> std::string {
+        auto element = std::get<sdf::ElementPtr>(data_element);
+        sdf::ParamPtr param = element->GetValue();
+        if (param == nullptr) {
+          DiagnosticDetail detail;
+          detail.filename = element->FilePath();
+          detail.line = element->LineNumber();
+          detail.message = fmt::format(
+              "The tag <{}> is missing a required string value.",
+              element->GetName());
+          diagnostic.Error(detail);
+          return {};
+        }
+        return param->GetAsString();
+      };
+  ParseCollisionFilterGroupCommon(
+      diagnostic, model_instance, model.Element(), plant, resolver,
+      next_child_element, next_sibling_element, has_attribute,
+      get_string_attribute, get_bool_attribute, read_tag_string);
 }
 
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
@@ -1122,6 +1135,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     const std::string& model_name,
     const RigidTransformd& X_WP,
     MultibodyPlant<double>* plant,
+    CollisionFilterGroupResolver* resolver,
     const PackageMap& package_map,
     const std::string& root_dir) {
 
@@ -1162,7 +1176,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
         AddModelsFromSpecification(
             diagnostic, nested_model,
             sdf::JoinName(model_name, nested_model.Name()), X_WM,
-            plant, package_map, root_dir);
+            plant, resolver, package_map, root_dir);
 
     added_model_instances.insert(added_model_instances.end(),
                                  nested_model_instances.begin(),
@@ -1273,7 +1287,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
   // Parses the collision filter groups only if the scene graph is registered.
   if (plant->geometry_source_is_registered()) {
     drake::log()->trace("sdf_parser: Add collision filter groups");
-    ParseCollisionFilterGroup(model_instance, model, plant);
+    ParseCollisionFilterGroup(
+        diagnostic, model_instance, model, plant, resolver);
   }
 
   return added_model_instances;
@@ -1350,7 +1365,8 @@ void AddJointsToInterfaceModel(const MultibodyPlant<double>& plant,
 // This is a forward-declaration of an anonymous helper that's defined later
 // in this file.
 sdf::ParserConfig MakeSdfParserConfig(
-    const PackageMap&, MultibodyPlant<double>*, bool test_sdf_forced_nesting);
+    const PackageMap&, MultibodyPlant<double>*, CollisionFilterGroupResolver*,
+    bool test_sdf_forced_nesting);
 
 sdf::Error MakeSdfError(sdf::ErrorCode code, const DiagnosticDetail& detail) {
   sdf::Error result(code, detail.message);
@@ -1370,10 +1386,11 @@ sdf::Error MakeSdfError(sdf::ErrorCode code, const DiagnosticDetail& detail) {
 // parsers comply with this assumption.
 sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     MultibodyPlant<double>* plant, const PackageMap& package_map,
+    CollisionFilterGroupResolver* resolver,
     const sdf::NestedInclude& include, sdf::Errors* errors,
     bool test_sdf_forced_nesting) {
   const sdf::ParserConfig parser_config = MakeSdfParserConfig(
-      package_map, plant, test_sdf_forced_nesting);
+      package_map, plant, resolver, test_sdf_forced_nesting);
 
   // Do not attempt to parse anything other than URDF or forced nesting files.
   const bool is_urdf = EndsWith(include.ResolvedFileName(), kExtUrdf);
@@ -1408,7 +1425,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   // New instances will have indices starting from cur_num_models
   int cur_num_models = plant->num_model_instances();
   if (is_urdf) {
-    ParsingWorkspace workspace{package_map, diagnostic, plant};
+    ParsingWorkspace workspace{package_map, diagnostic, plant, resolver};
     const std::optional<ModelInstanceIndex> maybe_model =
         AddModelFromUrdf(data_source, include.LocalModelName().value_or(""),
                          include.AbsoluteParentName(), workspace);
@@ -1451,7 +1468,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     main_model_instance = AddModelsFromSpecification(
         diagnostic, model,
         sdf::JoinName(include.AbsoluteParentName(), model_name), {},
-        plant, package_map, data_source.GetRootDir()).front();
+        plant, resolver, package_map, data_source.GetRootDir()).front();
   }
 
   // Now that the model is parsed, we create interface elements to send to
@@ -1531,6 +1548,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 sdf::ParserConfig MakeSdfParserConfig(
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
+    CollisionFilterGroupResolver* resolver,
     bool test_sdf_forced_nesting) {
 
   // The error severity settings here are somewhat subtle. We set all of them
@@ -1560,9 +1578,10 @@ sdf::ParserConfig MakeSdfParserConfig(
     });
 
   parser_config.RegisterCustomModelParser(
-      [&package_map, plant, test_sdf_forced_nesting](
+      [&package_map, plant, resolver, test_sdf_forced_nesting](
           const sdf::NestedInclude& include, sdf::Errors& errors) {
-        return ParseNestedInterfaceModel(plant, package_map, include, &errors,
+        return ParseNestedInterfaceModel(plant, package_map, resolver,
+                                         include, &errors,
                                          test_sdf_forced_nesting);
       });
 
@@ -1578,7 +1597,8 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
   sdf::ParserConfig parser_config = MakeSdfParserConfig(
-      workspace.package_map, workspace.plant, test_sdf_forced_nesting);
+      workspace.package_map, workspace.plant, workspace.collision_resolver,
+      test_sdf_forced_nesting);
 
   sdf::Root root;
 
@@ -1600,6 +1620,7 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
   std::vector<ModelInstanceIndex> added_model_instances =
       AddModelsFromSpecification(
           workspace.diagnostic, model, model_name, {}, workspace.plant,
+          workspace.collision_resolver,
           workspace.package_map, data_source.GetRootDir());
 
   DRAKE_DEMAND(!added_model_instances.empty());
@@ -1613,7 +1634,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
   sdf::ParserConfig parser_config = MakeSdfParserConfig(
-      workspace.package_map, workspace.plant, test_sdf_forced_nesting);
+      workspace.package_map, workspace.plant, workspace.collision_resolver,
+      test_sdf_forced_nesting);
 
   sdf::Root root;
 
@@ -1648,6 +1670,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     std::vector<ModelInstanceIndex> added_model_instances =
         AddModelsFromSpecification(
             workspace.diagnostic, model, model.Name(), {}, workspace.plant,
+            workspace.collision_resolver,
             workspace.package_map, data_source.GetRootDir());
     model_instances.insert(model_instances.end(),
                            added_model_instances.begin(),
@@ -1675,6 +1698,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
       std::vector<ModelInstanceIndex> added_model_instances =
           AddModelsFromSpecification(
               workspace.diagnostic, model, model.Name(), {}, workspace.plant,
+              workspace.collision_resolver,
               workspace.package_map, data_source.GetRootDir());
       model_instances.insert(model_instances.end(),
                              added_model_instances.begin(),
