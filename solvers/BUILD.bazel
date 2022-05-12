@@ -10,6 +10,7 @@ load(
 )
 load(
     ":defs.bzl",
+    "drake_cc_optional_googletest",
     "drake_cc_optional_library",
     "drake_cc_variant_library",
 )
@@ -1230,8 +1231,9 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
+drake_cc_optional_googletest(
     name = "csdp_solver_internal_test",
+    opt_out_condition = "//tools:no_csdp",
     deps = [
         ":csdp_solver_internal",
         ":csdp_test_examples",
@@ -1239,8 +1241,9 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
+drake_cc_optional_googletest(
     name = "csdp_cpp_wrapper_test",
+    opt_out_condition = "//tools:no_csdp",
     tags = [
         # The longjmp handling definitely leaks memory, and we've decided to
         # just live with that. If we see the longjmp handler triggering when
@@ -1357,8 +1360,9 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
+drake_cc_optional_googletest(
     name = "ibex_converter_test",
+    opt_out_condition = "//tools:no_dreal",
     deps = [
         ":ibex_converter",
     ],
