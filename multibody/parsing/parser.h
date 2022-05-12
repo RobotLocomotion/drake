@@ -11,6 +11,10 @@
 namespace drake {
 namespace multibody {
 
+namespace internal {
+class CompositeParse;
+}  // namespace internal
+
 /// Parses SDF and URDF input files into a MultibodyPlant and (optionally) a
 /// SceneGraph. For documentation of Drake-specific extensions and limitations,
 /// see @ref multibody_parsing.
@@ -96,6 +100,23 @@ class Parser final {
       const std::string& model_name = {});
 
  private:
+  friend class internal::CompositeParse;
+
+  std::vector<ModelInstanceIndex> CompositeAddAllModelsFromFile(
+      const std::string& file_name,
+      internal::CompositeParse* composite);
+
+  ModelInstanceIndex CompositeAddModelFromFile(
+      const std::string& file_name,
+      const std::string& model_name,
+      internal::CompositeParse* composite);
+
+  ModelInstanceIndex CompositeAddModelFromString(
+      const std::string& file_contents,
+      const std::string& file_type,
+      const std::string& model_name,
+      internal::CompositeParse* composite);
+
   bool is_strict_{false};
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;

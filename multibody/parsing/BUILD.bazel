@@ -189,10 +189,21 @@ drake_cc_library(
     ],
 )
 
+# The composite parse module and parser depend on one another, but the
+# detail_composite_parse header should remain private.
 drake_cc_library(
     name = "parser",
-    srcs = ["parser.cc"],
-    hdrs = ["parser.h"],
+    srcs = [
+        "detail_composite_parse.cc",
+        "parser.cc",
+    ],
+    hdrs = [
+        "detail_composite_parse.h",
+        "parser.h",
+    ],
+    install_hdrs_exclude = [
+        "detail_composite_parse.h",
+    ],
     visibility = ["//visibility:public"],
     interface_deps = [
         ":package_map",
@@ -230,6 +241,7 @@ drake_cc_library(
         "//multibody/plant",
     ],
     deps = [
+        ":detail_misc",
         ":scoped_names",
         "//common:filesystem",
         "//common:find_resource",
