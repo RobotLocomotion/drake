@@ -61,6 +61,10 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
+  // Overloads that defines whether this mobilizer can rotate and/or translate.
+  bool can_rotate() const final    { return true; }
+  bool can_translate() const final { return false; }
+
   // @retval axis_F The rotation axis as a unit vector expressed in the inboard
   //                frame F.
   const Vector3<double>& revolute_axis() const { return axis_F_; }

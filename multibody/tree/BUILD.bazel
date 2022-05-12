@@ -336,7 +336,7 @@ drake_cc_googletest(
     name = "multibody_tree_creation_test",
     deps = [
         ":tree",
-        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities",
     ],
 )
 
