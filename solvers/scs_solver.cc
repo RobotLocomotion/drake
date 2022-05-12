@@ -1,5 +1,8 @@
 #include "drake/solvers/scs_solver.h"
 
+#include <unordered_map>
+#include <vector>
+
 #include <Eigen/Sparse>
 #include <fmt/format.h>
 
