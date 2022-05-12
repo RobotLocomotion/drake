@@ -341,6 +341,26 @@ void LinearConstraint::UpdateCoefficients(
   set_bounds(new_lb, new_ub);
 }
 
+void LinearConstraint::RemoveTinyCoefficient(double tol) {
+  if (tol < 0) {
+    throw std::invalid_argument(
+        "RemoveTinyCoefficient: tol should be non-negative");
+  }
+  std::vector<Eigen::Triplet<double>> new_A_triplets;
+  const auto& A_sparse = A_.get_as_sparse();
+  new_A_triplets.reserve(A_sparse.nonZeros());
+  for (int i = 0; i < A_sparse.outerSize(); ++i) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A_sparse, i); it; ++it) {
+      if (std::abs(it.value()) > tol) {
+        new_A_triplets.emplace_back(it.row(), it.col(), it.value());
+      }
+    }
+  }
+  Eigen::SparseMatrix<double> new_A(A_sparse.rows(), A_sparse.cols());
+  new_A.setFromTriplets(new_A_triplets.begin(), new_A_triplets.end());
+  UpdateCoefficients(new_A, lower_bound(), upper_bound());
+}
+
 template <typename DerivedX, typename ScalarY>
 void LinearConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                      VectorX<ScalarY>* y) const {

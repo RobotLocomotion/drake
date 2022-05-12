@@ -144,6 +144,31 @@ GTEST_TEST(TestConstraint, testLinearConstraintUpdate) {
   EXPECT_EQ(constraint.num_constraints(), 3);
 }
 
+GTEST_TEST(testConstraint, testRemoveTinyCoefficient) {
+  Eigen::Matrix<double, 2, 3> A;
+  const double tol = 1E-8;
+  // clang-format off
+  A << 0.5 * tol, -0.5 * tol, 0,
+       1.5, -0.1 * tol, 0;
+  // clang-format on
+  Eigen::Vector2d lb(-0.1 * tol, 0);
+  Eigen::Vector2d ub(2, 0.1 * tol);
+  LinearConstraint dut(A, lb, ub);
+  dut.RemoveTinyCoefficient(tol);
+  Eigen::Matrix<double, 2, 3> A_expected;
+  // clang-format off
+  A_expected << 0, 0, 0,
+                1.5, 0, 0;
+  // clang-format on
+  EXPECT_TRUE(CompareMatrices(dut.get_sparse_A().toDense(), A_expected));
+  EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_expected));
+  EXPECT_TRUE(CompareMatrices(dut.lower_bound(), lb));
+  EXPECT_TRUE(CompareMatrices(dut.upper_bound(), ub));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.RemoveTinyCoefficient(-1),
+                              ".*tol should be non-negative");
+}
+
 GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
   // Check if the getters in the QuadraticConstraint are right.
   Eigen::Matrix2d Q;
