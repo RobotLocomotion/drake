@@ -37,7 +37,7 @@ drake_cc_library(
     deps = [
         "//common:find_resource",
         "//geometry:scene_graph",
-        "//geometry/render:render_engine_vtk",
+        "//geometry/render_vtk",
         "//manipulation/schunk_wsg:schunk_wsg_constants",
         "//manipulation/schunk_wsg:schunk_wsg_position_controller",
         "//math:geometric_transform",
