@@ -39,6 +39,15 @@ multibody::parsing::ModelDirectives MakeCollisionCheckerTestScene() {
   return directives;
 }
 
+std::ostream& operator<<(std::ostream& out,
+                         const CollisionCheckerTestParams& p) {
+  out << "checker = " << p.checker;
+  out << ", supports_added_world_obstacles = "
+      << p.supports_added_world_obstacles;
+  out << ", thread_stress_iterations = " << p.thread_stress_iterations;
+  return out;
+}
+
 TEST_P(CollisionCheckerAbstractTestSuite, Clone) {
   auto params = GetParam();
   auto& checker = *params.checker;
