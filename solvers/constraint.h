@@ -626,6 +626,16 @@ class LinearConstraint : public Constraint {
                           const Eigen::Ref<const Eigen::VectorXd>& new_lb,
                           const Eigen::Ref<const Eigen::VectorXd>& new_ub);
 
+  /**
+   * Set A(i, j) to zero if abs(A(i, j)) < tol.
+   * Oftencases the coefficient A is computed numerically with roundoff errors.
+   * Such small roundoff errors can cause numerical issue for certain
+   * optimization solvers. Hence it is recommended to remove the tiny
+   * coefficients to achieve numerical robustness.
+   * @param tol The entries in A with absolute value <= tol will be set to 0.
+   */
+  void RemoveTinyCoefficient(double tol);
+
   using Constraint::set_bounds;
   using Constraint::UpdateLowerBound;
   using Constraint::UpdateUpperBound;
@@ -760,6 +770,13 @@ class BoundingBoxConstraint : public LinearConstraint {
 
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
+
+  // This function (inheried from the base LinearConstraint class) should not be
+  // called by BoundingBoxConstraint, so we hide it as a private function and
+  // throw a runtime error.
+  // TODO(hongkai.dai): BoundingBoxConstraint should derive from Constraint, not
+  // from LinearConstraint.
+  void RemoveTinyCoefficient(double tol);
 };
 
 /**
