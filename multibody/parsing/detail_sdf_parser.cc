@@ -1026,6 +1026,7 @@ ModelInstanceIndex AddModelInstanceIfReusable(
           fmt::format("Attempted to reuse model instance '{}' too many times.",
                       model_name));
     } else {
+      DRAKE_DEMAND(subgraph_merged_model_instances->at(model_instance) > 0);
       --subgraph_merged_model_instances->at(model_instance);
     }
     return model_instance;

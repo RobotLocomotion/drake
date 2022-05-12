@@ -375,21 +375,10 @@ void MultibodyPlantElementsMap::CopyGeometryById(
   // See: https://github.com/RobotLocomotion/drake/issues/13445
   // TODO(eric.cousineau): Try Ale's potential fix here:
   // https://github.com/RobotLocomotion/drake/pull/13371
-  const auto* proximity_properties =
-      geometry_instance_dest->proximity_properties();
   geometry::GeometryId geometry_id_dest;
-  if (proximity_properties != nullptr) {
-    DRAKE_DEMAND(geometry_instance_dest->perception_properties() == nullptr);
-    DRAKE_DEMAND(geometry_instance_dest->illustration_properties() == nullptr);
-    geometry_id_dest = plant_dest_->RegisterCollisionGeometry(
-        *body_dest, geometry_instance_dest->pose(),
-        geometry_instance_dest->shape(), scoped_name_src.name,
-        *proximity_properties);
-  } else {
-    // Register as normal.
-    geometry_id_dest = plant_dest_->RegisterGeometry(
-        *body_dest, std::move(geometry_instance_dest));
-  }
+  // Register as normal.
+  geometry_id_dest = plant_dest_->RegisterGeometry(
+      *body_dest, std::move(geometry_instance_dest));
   geometry_ids_.insert({geometry_id_src, geometry_id_dest});
 }
 

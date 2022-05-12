@@ -109,7 +109,7 @@ struct CastResult {
   }
 
   template <typename F>
-  void EachDo(F cb) {
+  void DoIfCastable(F cb) {
     auto visitor = [&cb](const auto* arg) {
       if (arg != nullptr) {
         cb(arg);
@@ -123,7 +123,7 @@ struct CastResult {
 
 // Helper function that checks if @p obj can be dynamically cast to one of the
 // types in @p C. If so, the returned CastResult object will be truthy and one
-// can call CastResult::EachDo with a callback function that gets invoked for
+// can call CastResult::DoIfCastable with a callback function that gets invoked for
 // every type that casts successfully.
 template <typename... C, typename T>
 CastResult<C...> CastsTo(const T* obj) {
@@ -181,7 +181,7 @@ void CheckElement(const T& a, const T& b, bool check_index = true) {
 void AssertShapeEquals(const geometry::Shape& a, const geometry::Shape& b) {
   EXPECT_EQ(typeid(a), typeid(b));
   if (auto resultBox = CastsTo<const Box*>(&a)) {
-    resultBox.EachDo([&b](const auto* box_a) {
+    resultBox.DoIfCastable([&b](const auto* box_a) {
       const Box* box_b = dynamic_cast<const Box*>(&b);
       ASSERT_NE(box_b, nullptr);
       EXPECT_EQ(box_a->width(), box_b->width());
@@ -310,41 +310,45 @@ void AssertPlantEquals(const MultibodyPlant<double>* plant_a,
     EXPECT_EQ(joint_a.default_positions(), joint_b.default_positions());
     EXPECT_EQ(joint_a.default_positions(), joint_b.default_positions());
 
-    // TODO(azeey) The python prototype has comment "Fix damping for
-    // BallRpyJoint". Does this apply in C++
+    int num_matches{};
     if (auto result =
             CastsTo<const BallRpyJoint<double>*, const PrismaticJoint<double>*,
                     const RevoluteJoint<double>*,
                     const UniversalJoint<double>*>(&joint_a)) {
-      result.EachDo([&](const auto* cast_joint_a) {
+      result.DoIfCastable([&](const auto* cast_joint_a) {
         auto cast_joint_b = dynamic_cast<decltype(cast_joint_a)>(&joint_b);
         ASSERT_NE(cast_joint_b, nullptr);
         EXPECT_EQ(cast_joint_a->damping(), cast_joint_b->damping());
+        ++num_matches;
       });
     }
     if (auto result = CastsTo<const PrismaticJoint<double>*>(&joint_a)) {
-      result.EachDo([&](const auto* cast_joint_a) {
+      result.DoIfCastable([&](const auto* cast_joint_a) {
         auto cast_joint_b = dynamic_cast<decltype(cast_joint_a)>(&joint_b);
         ASSERT_NE(cast_joint_b, nullptr);
         EXPECT_EQ(cast_joint_a->translation_axis(),
                   cast_joint_b->translation_axis());
+        ++num_matches;
       });
     }
     if (auto result = CastsTo<const RevoluteJoint<double>*>(&joint_a)) {
-      result.EachDo([&](const auto* cast_joint_a) {
+      result.DoIfCastable([&](const auto* cast_joint_a) {
         auto cast_joint_b = dynamic_cast<decltype(cast_joint_a)>(&joint_b);
         ASSERT_NE(cast_joint_b, nullptr);
         EXPECT_EQ(cast_joint_a->revolute_axis(), cast_joint_b->revolute_axis());
+        ++num_matches;
       });
     }
     if (auto result = CastsTo<const WeldJoint<double>*>(&joint_a)) {
-      result.EachDo([&](const auto* cast_joint_a) {
+      result.DoIfCastable([&](const auto* cast_joint_a) {
         auto cast_joint_b = dynamic_cast<decltype(cast_joint_a)>(&joint_b);
         ASSERT_NE(cast_joint_b, nullptr);
         EXPECT_EQ(cast_joint_a->X_PC().GetAsMatrix4(),
                   cast_joint_b->X_PC().GetAsMatrix4());
+        ++num_matches;
       });
     }
+    EXPECT_GE(num_matches, 0);
 
     checked_a.joints().insert(&joint_a);
     checked_b.joints().insert(&joint_b);
@@ -523,12 +527,12 @@ class ArbitraryMultibodyStuffBuilder {
     return plant_->AddModelInstance(fmt::format("model_{}", NextIndex()));
   }
 
-  // Returns a random position.
+  // Returns a "random" position.
   Eigen::Vector3d RandomPosition() { return {0.2 * Random(), 0, 0}; }
 
-  // Returns a random pose.
+  // Returns a "random" pose.
   RigidTransformd RandomX() { return RigidTransformd(RandomPosition()); }
-  // Returns a random body, with an incrementing name.
+  // Returns a "random" body, with an incrementing name.
   const RigidBody<double>& RandomBody() {
     SpatialInertia<double> inertia(
         Random(0.2, 1.), RandomPosition(),
@@ -538,14 +542,14 @@ class ArbitraryMultibodyStuffBuilder {
                                 RandomModelInstance(), inertia);
   }
 
-  // Returns a random frame, with an incrementing name.
+  // Returns a "random" frame, with an incrementing name.
   const Frame<double>& RandomFrame(const Frame<double>& parent_frame) {
     return plant_->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
         fmt::format("frame_{}", NextIndex()), parent_frame, RandomX(),
         parent_frame.model_instance()));
   }
 
-  // Returns a random joint, but with an incrementing name. Note that we
+  // Returns a "random" joint, but with an incrementing name. Note that we
   // use a separate index so that we ensure we can loop through all
   // joints.
   const Joint<double>& RandomJoint(const Body<double>& parent,
@@ -581,7 +585,7 @@ class ArbitraryMultibodyStuffBuilder {
     return plant_->AddJoint(std::move(joint));
   }
 
-  // Creates a random joint actuator.
+  // Creates a "random" joint actuator.
   const JointActuator<double>& RandomJointActuator(const Joint<double>& joint) {
     return plant_->AddJointActuator(fmt::format("actuator_{}", NextIndex()),
                                     joint, Random(1, 2));
@@ -1227,7 +1231,7 @@ TEST_F(TestWorkflows, ExplodingIiwaSim) {
   // - Set joint velocities to "spin" it in the air.
   for (const auto& joint : GetJoints(plant)) {
     if (auto result = CastsTo<const RevoluteJoint<double>*>(joint)) {
-      result.EachDo([&, &plant = plant](const auto* cast_joint_a) {
+      result.DoIfCastable([&, &plant = plant](const auto* cast_joint_a) {
         Eigen::VectorXd pos(1);
         Eigen::VectorXd vel(1);
         pos << 0.7;
