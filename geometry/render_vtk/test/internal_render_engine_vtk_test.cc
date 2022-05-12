@@ -1,4 +1,4 @@
-#include "drake/geometry/render/render_engine_vtk.h"
+#include "drake/geometry/render_vtk/internal_render_engine_vtk.h"
 
 #include <cstring>
 #include <limits>
@@ -41,6 +41,7 @@ using std::make_unique;
 using std::unique_ptr;
 using std::unordered_map;
 using std::vector;
+using render_vtk::RenderEngineVtkParams;
 using systems::sensors::CameraInfo;
 using systems::sensors::Color;
 using systems::sensors::ColorD;

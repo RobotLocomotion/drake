@@ -6,7 +6,7 @@
 
 #include "drake/common/filesystem.h"
 #include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
-#include "drake/geometry/render/render_engine_vtk_factory.h"
+#include "drake/geometry/render_vtk/render_engine_vtk_factory.h"
 #include "drake/systems/sensors/image_writer.h"
 
 namespace drake {
@@ -370,8 +370,8 @@ BENCHMARK_REGISTER_F(RenderBenchmark, Renderer##ImageT) \
 template <>
 std::unique_ptr<RenderEngine> MakeEngine<EngineType::Vtk>(
     const Vector3d& bg_rgb) {
-  RenderEngineVtkParams params{{}, {}, bg_rgb};
-  return MakeRenderEngineVtk(params);
+  render_vtk::RenderEngineVtkParams params{{}, {}, bg_rgb};
+  return render_vtk::MakeRenderEngineVtk(params);
 }
 
 MAKE_BENCHMARK(Vtk, Color);
