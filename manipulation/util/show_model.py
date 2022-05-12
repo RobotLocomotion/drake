@@ -197,7 +197,7 @@ def add_triad(
     """
     # x-axis
     X_TG = RigidTransform(
-        RotationMatrix.MakeYRotation(np.pi / 2), 
+        RotationMatrix.MakeYRotation(np.pi / 2),
         [length / 2.0, 0, 0],
     )
     geom = GeometryInstance(
@@ -210,7 +210,7 @@ def add_triad(
 
     # y-axis
     X_TG = RigidTransform(
-        RotationMatrix.MakeXRotation(np.pi / 2), 
+        RotationMatrix.MakeXRotation(np.pi / 2),
         [0, length / 2.0, 0],
     )
     geom = GeometryInstance(
@@ -259,7 +259,9 @@ def parse_visualizers(args_parser, args):
             # The world frame is plotted thicker than the rest.
             inspector = scene_graph.model_inspector()
             for frame_id in inspector.GetAllFrameIds():
-                radius=args.triad_radius * (3 if frame_id == scene_graph.world_frame_id() else 1)
+                radius = args.triad_radius * (
+                    3 if frame_id == scene_graph.world_frame_id() else 1
+                    )
                 add_triad(
                     plant.get_source_id(),
                     frame_id,
