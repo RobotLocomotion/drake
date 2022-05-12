@@ -6,7 +6,7 @@
 #include "drake/examples/scene_graph/bouncing_ball_plant.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/geometry_instance.h"
-#include "drake/geometry/render/render_engine_vtk_factory.h"
+#include "drake/geometry/render_vtk/factory.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/lcm/drake_lcm.h"
@@ -46,8 +46,8 @@ using geometry::PerceptionProperties;
 using geometry::ProximityProperties;
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
-using geometry::render::RenderEngineVtkParams;
 using geometry::render::RenderLabel;
+using geometry::RenderEngineVtkParams;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using lcm::DrakeLcm;
