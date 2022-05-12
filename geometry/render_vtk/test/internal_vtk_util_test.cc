@@ -1,4 +1,4 @@
-#include "drake/geometry/render/vtk_util.h"
+#include "drake/geometry/render_vtk/internal_vtk_util.h"
 
 #include <cmath>
 #include <limits>

@@ -7,7 +7,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/render/dev/render_gltf_client/factory.h"
-#include "drake/geometry/render/render_engine_vtk_factory.h"
+#include "drake/geometry/render_vtk/factory.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/rigid_transform.h"
@@ -282,8 +282,7 @@ int do_main() {
   const std::string render_name("renderer");
   if (FLAGS_render_engine == "vtk") {
     scene_graph->AddRenderer(render_name,
-                             geometry::render::MakeRenderEngineVtk(
-                                 geometry::render::RenderEngineVtkParams()));
+                             geometry::MakeRenderEngineVtk({}));
   } else {  // FLAGS_render_engine == "client"
     scene_graph->AddRenderer(render_name,
                              geometry::MakeRenderEngineGltfClient(
