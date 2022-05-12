@@ -313,6 +313,9 @@ drake_cc_library(
     name = "read_obj",
     srcs = ["read_obj.cc"],
     hdrs = ["read_obj.h"],
+    interface_deps = [
+        "@eigen",
+    ],
     deps = [
         "//common:essential",
         "@fmt",

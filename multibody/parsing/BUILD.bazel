@@ -34,12 +34,6 @@ drake_cc_package_library(
         "//visibility:public",
     ],
     deps = [
-        ":detail_misc",
-        ":detail_parsing_workspace",
-        ":detail_sdf_diagnostic",
-        ":detail_sdf_geometry",
-        ":detail_sdf_parser",
-        ":detail_urdf_parser",
         ":model_directives",
         ":package_map",
         ":parser",
@@ -99,6 +93,7 @@ drake_cc_library(
         "detail_tinyxml.h",
         "detail_tinyxml2_diagnostic.h",
     ],
+    tags = ["exclude_from_package"],
     visibility = [
         "//visibility:private",
     ],
@@ -126,6 +121,7 @@ drake_cc_library(
     install_hdrs_exclude = [
         "detail_sdf_diagnostic.h",
     ],
+    tags = ["exclude_from_package"],
     visibility = [
         "//visibility:private",
     ],
@@ -146,6 +142,7 @@ drake_cc_library(
     install_hdrs_exclude = [
         "detail_sdf_geometry.h",
     ],
+    tags = ["exclude_from_package"],
     visibility = [
         "//visibility:private",
     ],
@@ -173,6 +170,7 @@ drake_cc_library(
     install_hdrs_exclude = [
         "detail_sdf_parser.h",
     ],
+    tags = ["exclude_from_package"],
     visibility = [
         "//visibility:private",
     ],
@@ -202,6 +200,7 @@ drake_cc_library(
         "detail_urdf_geometry.h",
         "detail_urdf_parser.h",
     ],
+    tags = ["exclude_from_package"],
     visibility = [
         "//visibility:private",
     ],
@@ -226,8 +225,6 @@ drake_cc_library(
     install_hdrs_exclude = [
         "detail_mujoco_parser.h",
     ],
-    # TODO(russt): Include this in the parsing package upon completion
-    # of issue #16369.
     tags = ["exclude_from_package"],
     visibility = [
         "//visibility:private",
@@ -246,6 +243,10 @@ drake_cc_library(
     hdrs = [
         "detail_parsing_workspace.h",
     ],
+    install_hdrs_exclude = [
+        "detail_parsing_workspace.h",
+    ],
+    tags = ["exclude_from_package"],
     visibility = [
         "//visibility:private",
     ],
