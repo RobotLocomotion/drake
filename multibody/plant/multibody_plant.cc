@@ -1768,8 +1768,13 @@ void MultibodyPlant<T>::AddAppliedExternalGeneralizedForces(
   const InputPort<T>& applied_generalized_force_input =
       this->get_input_port(applied_generalized_force_input_port_);
   if (applied_generalized_force_input.HasValue(context)) {
-    forces->mutable_generalized_forces() +=
+    const VectorX<T>& applied_generalized_force =
         applied_generalized_force_input.Eval(context);
+    if (applied_generalized_force.hasNaN()) {
+      throw std::runtime_error(
+          "Detected NaN in applied generalized force input port.");
+    }
+    forces->mutable_generalized_forces() += applied_generalized_force;
   }
 }
 
@@ -1788,8 +1793,21 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
   if (!applied_input)
     return;
 
+  // Helper to throw a useful message if the input contains NaN.
+  auto throw_if_contains_nan = [this](const ExternallyAppliedSpatialForce<T>&
+                                          external_spatial_force) {
+    const SpatialForce<T>& spatial_force = external_spatial_force.F_Bq_W;
+    if (external_spatial_force.p_BoBq_B.hasNaN() ||
+        spatial_force.rotational().hasNaN() ||
+        spatial_force.translational().hasNaN()) {
+      throw std::runtime_error(fmt::format(
+          "Spatial force applied on body {} contains NaN.",
+          internal_tree().get_body(external_spatial_force.body_index).name()));
+    }
+  };
   // Loop over all forces.
   for (const auto& force_structure : *applied_input) {
+    throw_if_contains_nan(force_structure);
     const BodyIndex body_index = force_structure.body_index;
     const Body<T>& body = get_body(body_index);
     const auto body_node_index = body.node_index();
@@ -1901,6 +1919,10 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
     }
     // TODO(xuchenhan-tri): It'd be nice to avoid the copy here.
     actuation_input = actuation_port.Eval(context);
+    if (actuation_input.hasNaN()) {
+      throw std::runtime_error(
+          "Detected NaN in the actuation input port for all instances.");
+    }
     DRAKE_ASSERT(actuation_input.size() == num_actuated_dofs());
   } else {
     int u_offset = 0;
@@ -1918,6 +1940,13 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
             GetModelInstanceName(model_instance_index)));
       }
       const auto& u_instance = input_port.Eval(context);
+
+      if (u_instance.hasNaN()) {
+        throw std::runtime_error(
+            fmt::format("Actuation input port for model "
+                        "instance {} contains NaN.",
+                        GetModelInstanceName(model_instance_index)));
+      }
       actuation_input.segment(u_offset, instance_num_dofs) = u_instance;
       u_offset += instance_num_dofs;
     }

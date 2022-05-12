@@ -3877,6 +3877,75 @@ GTEST_TEST(MultibodyPlantTests, AlgebraicLoopDetection) {
       "Algebraic loop detected.*");
 }
 
+// Verifies that a nice error message is thrown if actuation input port contains
+// a NaN value.
+GTEST_TEST(MultibodyPlantTest, ThrowIfActuationPortContainsNaN) {
+  const AcrobotParameters parameters;
+  std::unique_ptr<MultibodyPlant<double>> plant =
+      MakeAcrobotPlant(parameters, true /* Return a finalized plant */);
+  VectorXd nan_vector(plant->num_actuated_dofs());
+  nan_vector.setConstant(std::numeric_limits<double>::quiet_NaN());
+  auto context = plant->CreateDefaultContext();
+  plant->get_actuation_input_port().FixValue(context.get(), nan_vector);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->get_reaction_forces_output_port()
+          .Eval<std::vector<SpatialForce<double>>>(*context),
+      ".*NaN in the actuation input port for all instances.*");
+}
+
+// Verifies that a nice error message is thrown if actuation input port for a
+// certain model instance contains a NaN value.
+GTEST_TEST(MultibodyPlantTest, ThrowIfModelInstanceActuationPortContainsNaN) {
+  const AcrobotParameters parameters;
+  std::unique_ptr<MultibodyPlant<double>> plant =
+      MakeAcrobotPlant(parameters, true /* Return a finalized plant */);
+  VectorXd nan_vector(plant->num_actuated_dofs());
+  nan_vector.setConstant(std::numeric_limits<double>::quiet_NaN());
+  auto context = plant->CreateDefaultContext();
+  plant->get_actuation_input_port(default_model_instance())
+      .FixValue(context.get(), nan_vector);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant->get_reaction_forces_output_port()
+            .Eval<std::vector<SpatialForce<double>>>(*context),
+        "Actuation.*instance.*contains NaN.");
+}
+
+// Verifies that a nice error message is thrown if applied generalized force
+// input port contains a NaN value.
+GTEST_TEST(MultibodyPlantTest, ThrowIfGeneralizedForcePortContainsNaN) {
+  const AcrobotParameters parameters;
+  std::unique_ptr<MultibodyPlant<double>> plant =
+      MakeAcrobotPlant(parameters, true /* Return a finalized plant */);
+  VectorXd nan_vector(plant->num_velocities());
+  nan_vector.setConstant(std::numeric_limits<double>::quiet_NaN());
+  auto context = plant->CreateDefaultContext();
+  plant->get_applied_generalized_force_input_port().FixValue(context.get(),
+                                                             nan_vector);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->get_reaction_forces_output_port()
+          .Eval<std::vector<SpatialForce<double>>>(*context),
+      ".*NaN in applied generalized force.*");
+}
+
+// Verifies that a nice error message is thrown if applied spatial force
+// input port contains a NaN value.
+GTEST_TEST(MultibodyPlantTest, ThrowIfSpatialForcePortContainsNaN) {
+  const AcrobotParameters parameters;
+  std::unique_ptr<MultibodyPlant<double>> plant =
+      MakeAcrobotPlant(parameters, true /* Return a finalized plant */);
+  std::vector<ExternallyAppliedSpatialForce<double>> nan_spatial_force(1);
+  nan_spatial_force[0].F_Bq_W.SetNaN();
+  nan_spatial_force[0].body_index =
+      plant->GetBodyByName(parameters.link1_name()).index();
+  auto context = plant->CreateDefaultContext();
+  plant->get_applied_spatial_force_input_port().FixValue(context.get(),
+                                                             nan_spatial_force);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->get_reaction_forces_output_port()
+          .Eval<std::vector<SpatialForce<double>>>(*context),
+      "Spatial force.*contains NaN.");
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
