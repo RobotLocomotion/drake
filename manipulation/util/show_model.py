@@ -256,7 +256,7 @@ def parse_visualizers(args_parser, args):
             # Visualize frames
             # Find all the frames and plot them using add_triad().
             # The frames are drawn using the parsed length.
-            # The world frame is plotted thicker than the rest.
+            # The world frame is drawn thicker than the rest.
             inspector = scene_graph.model_inspector()
             for frame_id in inspector.GetAllFrameIds():
                 radius = args.triad_radius * (
