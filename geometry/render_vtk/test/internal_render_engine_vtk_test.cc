@@ -1,4 +1,4 @@
-#include "drake/geometry/render/render_engine_vtk.h"
+#include "drake/geometry/render_vtk/internal_render_engine_vtk.h"
 
 #include <cstring>
 #include <limits>
@@ -34,6 +34,7 @@ using Eigen::AngleAxisd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using geometry::RenderEngineVtkParams;
 using geometry::internal::DummyRenderEngine;
 using math::RigidTransformd;
 using math::RotationMatrixd;

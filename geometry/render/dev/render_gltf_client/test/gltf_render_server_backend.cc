@@ -22,7 +22,8 @@
 #include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/image.h"
 // Depth shaders need to use the same callback.
-#include "drake/geometry/render/render_engine_vtk.h"
+#include "drake/geometry/render_vtk/factory.h"
+#include "drake/geometry/render_vtk/internal_render_engine_vtk.h"
 
 VTK_MODULE_INIT(vtkRenderingOpenGL2);
 
