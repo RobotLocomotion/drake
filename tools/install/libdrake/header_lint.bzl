@@ -16,9 +16,7 @@ _ALLOWED_EXTERNALS = [
     "spdlog",
 
     # The entries that follow are defects; we should work to remove them.
-    "ccd",
     "double_conversion",
-    "fcl",
     "glew",
     "glib",
     "glx",
@@ -44,8 +42,6 @@ _ALLOWED_DEFINES = [
     "SPDLOG_SHARED_LIB",
 
     # The entries that follow are defects; we should work to remove them.
-    "CCD_STATIC_DEFINE",
-    "FCL_STATIC_DEFINE",
     "HAVE_CSTDDEF",
     "SDFORMAT_DISABLE_CONSOLE_LOGFILE",
     "SDFORMAT_STATIC_DEFINE",
