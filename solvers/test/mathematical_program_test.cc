@@ -3661,6 +3661,16 @@ GTEST_TEST(TestMathematicalProgram, AddSosConstraint) {
                 prog.rotated_lorentz_cone_constraints().size(),
             0u);
   EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1u);
+
+  // p2 = (a+1)x² + 0 has some coefficient equal to 0. The constructed monomial
+  // should remove that 0-term. Hence the returned monomial basis should only
+  // contain [x].
+  const symbolic::Polynomial p2{
+      {{symbolic::Monomial(), 0}, {symbolic::Monomial(x, 2), a + 1}}};
+  const auto [gram2, monomial_basis2] = prog.AddSosConstraint(p2);
+  EXPECT_EQ(monomial_basis2.rows(), 1);
+  EXPECT_EQ(monomial_basis2(0), symbolic::Monomial(x));
+  EXPECT_EQ(gram2.rows(), 1);
 }
 
 template <typename C>

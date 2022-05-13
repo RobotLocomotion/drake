@@ -1375,9 +1375,10 @@ pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> DoAddSosConstraint(
     MathematicalProgram* const prog, const symbolic::Polynomial& p,
     MathematicalProgram::NonnegativePolynomial type,
     const std::string& gram_name) {
-  const VectorX<symbolic::Monomial> m = ConstructMonomialBasis(p);
+  const symbolic::Polynomial p_expanded = p.Expand();
+  const VectorX<symbolic::Monomial> m = ConstructMonomialBasis(p_expanded);
   const MatrixXDecisionVariable Q =
-      prog->AddSosConstraint(p, m, type, gram_name);
+      prog->AddSosConstraint(p_expanded, m, type, gram_name);
   return std::make_pair(Q, m);
 }
 
