@@ -12,6 +12,7 @@ from pydrake.multibody.parsing import (
 )
 
 import os
+import re
 import unittest
 
 from pydrake.common import FindResourceOrThrow
@@ -98,6 +99,23 @@ class TestParsing(unittest.TestCase):
         result = parser.AddModelFromString(
             file_contents=sdf_contents, file_type="sdf")
         self.assertIsInstance(result, ModelInstanceIndex)
+
+    def test_strict(self):
+        plant = MultibodyPlant(time_step=0.01)
+        parser = Parser(plant=plant)
+        model = """<robot name='robot' version='0.99'>
+            <link name='a'/>
+            </robot>"""
+        parser.AddModelFromString(
+            file_contents=model, file_type='urdf', model_name='lax')
+        parser.SetStrictParsing()
+        with self.assertRaises(RuntimeError) as e:
+            result = parser.AddModelFromString(
+                file_contents=model, file_type='urdf', model_name='strict')
+        pattern = r'.*version.*ignored.*'
+        message = str(e.exception)
+        match = re.match(pattern, message)
+        self.assertTrue(match, f'"{message}" does not match "{pattern}"')
 
     def test_model_directives(self):
         model_dir = os.path.dirname(FindResourceOrThrow(
