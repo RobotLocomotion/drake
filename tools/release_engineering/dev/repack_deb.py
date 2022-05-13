@@ -16,6 +16,7 @@
 import argparse
 import email.utils
 import os
+from pathlib import Path
 import shutil
 import subprocess
 import tarfile
@@ -92,12 +93,29 @@ def _run(args):
         # appropriate, --fixperms results in debian/rules having `dh_fixperms`
         # which will repair the broken permissions.
         '--fixperms',
+        '--verbose',
         args.tgz,
     ]
     env = dict(os.environ)
     env['EMAIL'] = 'drake-users@mit.edu'
     subprocess.check_call(alien, cwd=cwd, env=env)
-    package_dir = f'{cwd}/drake-{debian_version}'
+    # Alien does not produce consistent directory names when extracting the
+    # .tar.gz archive.  The exact pattern is not known or described in the
+    # documentation, it appears to depend on both the name of the archive and
+    # the --version argument.  Some examples:
+    #
+    # - drake-latest-focal.tar.gz => drake-latest-focal-0.0.20220513083006
+    # - drake-20220512-focal.tar.gz => drake-0.0.20220512082823
+    # - foo.tar.gz => foo-0.0.20220513083006
+    #
+    # It appears to keep the original name _until_ it finds numbers e.g.
+    # 20220512.  As such, we list the directories under our alien folder and
+    # assert that its length is one.  Note that regardless of the name of the
+    # folder produced, the final `.deb` file will have the correct name format
+    # drake-dev_{version}-1_amd64.deb.
+    directories = [d for d in Path(cwd).iterdir() if d.is_dir()]
+    assert len(directories) == 1, 'Unable to discover alien output directory.'
+    package_dir = str(directories[0])
 
     # Install into /opt/drake, not /drake.
     os.mkdir(f'{package_dir}/opt')
