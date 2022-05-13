@@ -1063,6 +1063,13 @@ TEST_F(SymbolicPolynomialTest, EqualToAfterExpansion) {
 
   // p1 * p2 is not equal to p2 * p3 after expansion.
   EXPECT_PRED2(test::PolyNotEqualAfterExpansion, p1 * p2, p2 * p3);
+
+  // p4 has some coefficients equal to 0 after expansion, p5 doesn't.
+  const symbolic::Polynomial p4{
+      {{symbolic::Monomial(), pow(a_, 2) - 1 - (a_ + 1) * (a_ - 1)}}};
+  const symbolic::Polynomial p5{};
+  EXPECT_TRUE(p4.EqualToAfterExpansion(p5));
+  EXPECT_TRUE(p5.EqualToAfterExpansion(p4));
 }
 
 // Checks if internal::CompareMonomial implements the lexicographical order.

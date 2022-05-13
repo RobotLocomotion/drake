@@ -260,7 +260,8 @@ class Polynomial {
   bool EqualTo(const Polynomial& p) const;
 
   /// Returns true if this polynomial and @p p are equal, after expanding the
-  /// coefficients.
+  /// coefficients of both polynomials, namely
+  /// p.Expand().EqualTo(this->Expand())
   bool EqualToAfterExpansion(const Polynomial& p) const;
 
   /// Returns true if this polynomial and @p p are almost equal (the difference
