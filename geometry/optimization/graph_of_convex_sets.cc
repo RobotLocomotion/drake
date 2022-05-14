@@ -232,9 +232,9 @@ std::string GraphOfConvexSets::GetGraphvizString(
   for (const auto& [v_id, v] : vertices_) {
     graphviz << "v" << v_id << " [label=\"" << v->name();
     if (result) {
-      graphviz << "\n x = [" << result->GetSolution(v->x()).transpose();
+      graphviz << "\n x = [" << result->GetSolution(v->x()).transpose() << "]";
     }
-    graphviz << "]\"]\n";
+    graphviz << "\"]\n";
   }
   for (const auto& [e_id, e] : edges_) {
     unused(e_id);
