@@ -50,6 +50,13 @@ class RiccatiSystem : public LeafSystem<double> {
         x0_(x0),
         u0_(u0),
         options_(options) {
+    if (input_port_->get_data_type() == PortDataType::kAbstractValued) {
+      throw std::logic_error(
+          "The specified input port is abstract-valued, but "
+          "FiniteHorizonLinearQuadraticRegulator only supports vector-valued "
+          "input ports.  Did you perhaps forget to pass a non-default "
+          "`options.input_port_index`?");
+    }
     DRAKE_DEMAND(input_port_->get_data_type() == PortDataType::kVectorValued);
 
     DRAKE_DEMAND(context_->has_only_continuous_state());

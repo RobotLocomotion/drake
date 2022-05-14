@@ -447,8 +447,7 @@ GTEST_TEST(TestLinearize, LinearizingOnAbstractPortThrows) {
   EmptyStateSystemWithAbstractInput<double> system;
   auto context = system.CreateDefaultContext();
   DRAKE_EXPECT_THROWS_MESSAGE(Linearize(system, *context),
-      "Port requested for differentiation is abstract, and differentiation of "
-      "abstract ports is not supported.");
+      ".*only supports vector-valued.*");
 }
 
 // Test linearizing a system with mixed (vector and abstract) inputs.

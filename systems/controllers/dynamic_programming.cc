@@ -53,6 +53,13 @@ FittedValueIteration(
       system.get_input_port_selection(options.input_port_index);
   DRAKE_DEMAND(input_port != nullptr);
   DRAKE_DEMAND(input_port->size() == input_size);
+  // Verify that the input port is not abstract valued.
+  if (input_port->get_data_type() == PortDataType::kAbstractValued) {
+    throw std::logic_error(
+        "The specified input port is abstract-valued, but FittedValueIteration "
+        "only supports vector-valued input ports.  Did you perhaps forget to "
+        "pass a non-default `options.input_port_index`?");
+  }
 
   DRAKE_DEMAND(timestep > 0.);
 
