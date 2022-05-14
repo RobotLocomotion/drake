@@ -252,7 +252,6 @@ void JointSliders<T>::Run(
   while (meshcat_->GetButtonClicks(kButtonName) < 1) {
     if (timeout.has_value()) {
       const auto elapsed = Duration(Clock::now() - start_time).count();
-      log()->error("elapsed = {}", elapsed);
       if (elapsed >= timeout.value()) {
         break;
       }
