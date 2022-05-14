@@ -127,6 +127,10 @@ Defines an SDF model with various types of joints used for testing the parser.
             <damping>0.1</damping>
           </dynamics>
           <xyz expressed_in="__model__">0 0 1</xyz>
+          <limit>
+            <!-- not actuated -->
+            <effort>0</effort>
+          </limit>
         </axis>
       </joint>
       <link name="link6">
@@ -149,8 +153,19 @@ Defines an SDF model with various types of joints used for testing the parser.
           <dynamics>
             <damping>0.1</damping>
           </dynamics>
+          <limit>
+            <!-- not actuated -->
+            <effort>0</effort>
+          </limit>
           <xyz expressed_in="__model__">0 0 1</xyz>
         </axis>
+        <axis2>
+          <limit>
+            <!-- not actuated -->
+            <effort>0</effort>
+          </limit>
+          <xyz expressed_in="__model__">0 1 0</xyz>
+        </axis2>
       </joint>
       <link name="link7">
         <inertial>

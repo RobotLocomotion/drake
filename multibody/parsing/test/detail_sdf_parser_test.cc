@@ -662,11 +662,10 @@ TEST_F(SdfParserTest, ThrowsWhenJointDampingIsNegative) {
   const std::string sdf_file_path = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/"
       "negative_damping_joint.sdf");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddModelFromSdfFile(sdf_file_path, ""),
-      /* Verify this method is throwing for the right reasons. */
-      "Joint damping is negative for joint '.*'. "
-          "Joint damping must be a non-negative number.");
+  AddModelFromSdfFile(sdf_file_path, "");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*damping is negative.*"));
+  ClearDiagnostics();
 }
 
 TEST_F(SdfParserTest, IncludeTags) {
@@ -900,6 +899,54 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(planar_joint2.position_upper_limits(), inf3));
   EXPECT_TRUE(CompareMatrices(planar_joint2.velocity_lower_limits(), neg_inf3));
   EXPECT_TRUE(CompareMatrices(planar_joint2.velocity_upper_limits(), inf3));
+}
+
+// Tests the error handling for an unsupported joint type (when actuated).
+TEST_F(SdfParserTest, ActuatedUniversalJointParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="universal">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+      <limit>
+        <effort>100</effort>
+      </limit>
+    </axis>
+    <axis2>
+      <xyz>0 1 0</xyz>
+      <limit>
+        <effort>100</effort>
+      </limit>
+    </axis2>
+  </joint>
+</model>)""");
+  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+      ".*effort limits.*universal joint.*not implemented.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling for an unsupported joint type (when actuated).
+TEST_F(SdfParserTest, ActuatedBallJointParsingTest) {
+  ParseTestString(R"""(
+<model name="molly">
+  <link name="larry" />
+  <joint name="jerry" type="ball">
+    <parent>world</parent>
+    <child>larry</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+      <limit>
+        <effort>100</effort>
+      </limit>
+    </axis>
+  </joint>
+</model>)""");
+  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+      ".*effort limits.*ball joint.*not implemented.*"));
+  ClearDiagnostics();
 }
 
 // Tests the error handling for an unsupported joint type.
