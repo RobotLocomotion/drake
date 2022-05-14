@@ -78,8 +78,36 @@ static void BenchmarkSosProgram2(benchmark::State& state) {  // NOLINT
   }
 }
 
+/**
+ * This program is reported in github issue
+ * https://github.com/RobotLocomotion/drake/issues/17160
+ */
+static void BenchmarkSosProgram3(benchmark::State& state) {  // NOLINT
+  for (auto _ : state) {
+    MathematicalProgram prog;
+    const int nz = 3;
+    const int degree = 12;
+
+    const auto z = prog.NewIndeterminates(nz, "z");
+    const auto J = prog.NewFreePolynomial(symbolic::Variables(z), degree);
+    const auto J_expr = J.ToExpression();
+    const auto dJdz = J_expr.Jacobian(z);
+    const Eigen::Vector3d f2(0, 0, 1);
+    const symbolic::Expression u_opt = -0.5 * dJdz.dot(f2);
+
+    const Eigen::Vector3d z0(0, 1, 0);
+    using std::pow;
+    const symbolic::Expression l = (z - z0).dot(z - z0) + pow(u_opt, 2);
+    Vector3<symbolic::Expression> f(z(1) + z(2), -z(0) + z(2),
+                                    (z(0) + u_opt - z(2)));
+    const symbolic::Expression rhs = l + dJdz.dot(f);
+    const symbolic::Polynomial rhs_poly(rhs, symbolic::Variables(z));
+  }
+}
+
 BENCHMARK(BenchmarkSosProgram1);
 BENCHMARK(BenchmarkSosProgram2);
+BENCHMARK(BenchmarkSosProgram3);
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
