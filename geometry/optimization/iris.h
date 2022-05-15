@@ -49,11 +49,11 @@ struct IrisOptions {
   */
   double configuration_space_margin{1e-2};
 
-  /** For IRIS in configuration space, we use IbexSolver to rigorously confirm
-  that regions are collision-free. This step may be computationally
-  demanding, so we allow it to be disabled for a faster algorithm for obtaining
-  regions without the rigorous guarantee. */
-  bool enable_ibex = true;
+  /** For IRIS in configuration space, we can optionally use IbexSolver to
+  rigorously confirm that regions are collision-free. This step may be
+  computationally demanding, so we disable it by default for a faster
+  algorithm for obtaining regions without the rigorous guarantee. */
+  bool enable_ibex = false;
 };
 
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,
