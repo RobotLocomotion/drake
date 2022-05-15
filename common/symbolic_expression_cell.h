@@ -379,6 +379,10 @@ class ExpressionMulFactory {
   ExpressionMulFactory(double constant,
                        std::map<Expression, Expression> base_to_exponent_map);
 
+  /** Constructs ExpressionMulFactory with @p base_to_exponent_map. */
+  explicit ExpressionMulFactory(
+      const std::map<Variable, int>& base_to_exponent_map);
+
   /** Constructs ExpressionMulFactory from @p mul. */
   explicit ExpressionMulFactory(const ExpressionMul& mul);
 

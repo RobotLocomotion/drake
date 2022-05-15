@@ -238,15 +238,7 @@ pair<double, Monomial> Monomial::EvaluatePartial(const Environment& env) const {
 }
 
 Expression Monomial::ToExpression() const {
-  // It builds this base_to_exponent_map and uses ExpressionMulFactory to build
-  // a multiplication expression.
-  map<Expression, Expression> base_to_exponent_map;
-  for (const auto& p : powers_) {
-    const Variable& var{p.first};
-    const int exponent{p.second};
-    base_to_exponent_map.emplace(Expression{var}, exponent);
-  }
-  return ExpressionMulFactory{1.0, base_to_exponent_map}.GetExpression();
+  return ExpressionMulFactory(powers_).GetExpression();
 }
 
 Monomial& Monomial::operator*=(const Monomial& m) {

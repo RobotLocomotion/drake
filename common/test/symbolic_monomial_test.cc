@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/ostream.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -86,10 +87,15 @@ class MonomialTest : public ::testing::Test {
   // and evaluate it to a double value (result1). In another direction
   // (top-to-bottom), we directly evaluate a Monomial to double (result2). The
   // two result1 and result2 should be the same.
-  bool CheckEvaluate(const Monomial& m, const Environment& env) {
-    const double result1{m.ToExpression().Evaluate(env)};
+  //
+  // Also confirms that expression always is declared to be pre-expanded.
+  void CheckEvaluate(const Monomial& m, const Environment& env) {
+    SCOPED_TRACE(fmt::format("m = {}; env = {}", m, env));
+    const Expression e{m.ToExpression()};
+    EXPECT_TRUE(e.is_expanded());
+    const double result1{e.Evaluate(env)};
     const double result2{m.Evaluate(env)};
-    return result1 == result2;
+    EXPECT_EQ(result1, result2);
   }
 
   // Checks if Monomial::EvaluatePartial corresponds to Expression's
@@ -109,13 +115,12 @@ class MonomialTest : public ::testing::Test {
   // direction (top-to-bottom), we call Monomial::EvaluatePartial which returns
   // a pair of double (coefficient part) and Monomial. We obtain e2 by
   // multiplying the two. Then, we check if e1 and e2 are structurally equal.
-  bool CheckEvaluatePartial(const Monomial& m, const Environment& env) {
+  void CheckEvaluatePartial(const Monomial& m, const Environment& env) {
+    SCOPED_TRACE(fmt::format("m = {}; env = {}", m, env));
     const Expression e1{m.ToExpression().EvaluatePartial(env)};
-    const pair<double, Monomial> subst_result{m.EvaluatePartial(env)};
-    const Expression e2{subst_result.first *
-                        subst_result.second.ToExpression()};
-
-    return e1.EqualTo(e2);
+    const auto [coeff, m2] = m.EvaluatePartial(env);
+    const Expression e2{coeff * m2.ToExpression()};
+    EXPECT_PRED2(ExprEqual, e1, e2);
   }
 };
 
@@ -777,7 +782,7 @@ TEST_F(MonomialTest, Evaluate) {
   };
   for (const Monomial& m : monomials_) {
     for (const Environment& env : environments) {
-      EXPECT_TRUE(CheckEvaluate(m, env));
+      CheckEvaluate(m, env);
     }
   }
 }
@@ -851,7 +856,7 @@ TEST_F(MonomialTest, EvaluatePartial) {
   };
   for (const Monomial& m : monomials_) {
     for (const Environment& env : environments) {
-      EXPECT_TRUE(CheckEvaluatePartial(m, env));
+      CheckEvaluatePartial(m, env);
     }
   }
 }

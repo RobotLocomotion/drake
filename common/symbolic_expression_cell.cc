@@ -58,6 +58,16 @@ bool is_non_negative_integer(const double v) {
 
 namespace {
 
+// Returns true iff `e` does not wrap another sub-Expression, i.e., it's not a
+// UnaryExpressionCell, BinaryExpressionCell, etc.
+//
+// Pedantially, ExpressionNaN should return `true` here since it isn't wrapping
+// anything, but given the practical uses of this function it's easier to just
+// return `false` for NaNs.
+bool IsLeafExpression(const Expression& e) {
+  return is_constant(e) || is_variable(e);
+}
+
 // Determines if the summation represented by term_to_coeff_map is
 // polynomial-convertible or not. This function is used in the
 // constructor of ExpressionAdd.
@@ -923,6 +933,14 @@ ExpressionMulFactory::ExpressionMulFactory(
     : is_expanded_{false}, constant_{constant},
       base_to_exponent_map_{std::move(base_to_exponent_map)} {}
 
+ExpressionMulFactory::ExpressionMulFactory(
+    const map<Variable, int>& base_to_exponent_map)
+    : is_expanded_{true}, constant_{1.0} {
+  for (const auto& [base, exponent] : base_to_exponent_map) {
+    base_to_exponent_map_.emplace(base, exponent);
+  }
+}
+
 ExpressionMulFactory::ExpressionMulFactory(const ExpressionMul& mul)
     : ExpressionMulFactory{mul.get_constant(),
                            mul.get_base_to_exponent_map()} {
@@ -1040,10 +1058,7 @@ void ExpressionMulFactory::AddTerm(const Expression& base,
     // leaf expressions (i.e., constants or variables, not any cell type that
     // nests another Expression inside of itself), we can no longer be sure
     // that our ExpressionMul remains in expanded form.
-    const auto is_leaf_expression = [](const Expression& e) {
-      return is_constant(e) || is_variable(e);
-    };
-    if (!(is_leaf_expression(base) && is_leaf_expression(exponent))) {
+    if (!(IsLeafExpression(base) && IsLeafExpression(exponent))) {
       is_expanded_ = false;
     }
   }
@@ -1385,7 +1400,8 @@ double ExpressionSqrt::DoEvaluate(const double v) const {
 
 ExpressionPow::ExpressionPow(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Pow, e1, e2,
-                           determine_polynomial(e1, e2), false} {}
+                           determine_polynomial(e1, e2),
+                           IsLeafExpression(e1) && IsLeafExpression(e2)} {}
 
 void ExpressionPow::check_domain(const double v1, const double v2) {
   if (std::isfinite(v1) && (v1 < 0.0) && std::isfinite(v2) && !is_integer(v2)) {
