@@ -21,7 +21,7 @@ import meshcat
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.deprecation import DrakeDeprecationWarning
 from pydrake.common.value import AbstractValue
 from pydrake.geometry import (
     Box,
@@ -54,6 +54,9 @@ ZMQ_URL = os.environ.get("TEST_ZMQ_URL")
 class TestMeshcat(unittest.TestCase):
     def setUp(self):
         np.random.seed(42)
+
+        # Our entire module is deprecated.
+        warnings.simplefilter("ignore", DrakeDeprecationWarning)
 
     def test_cart_pole(self):
         """Cart-Pole with simple geometry."""
