@@ -85,7 +85,13 @@ class GraphOfConvexSets {
     /** Returns a const reference to the underlying ConvexSet. */
     const ConvexSet& set() const { return *set_; }
 
-    /** Returns the solution of x() in a MathematicalProgramResult. */
+    /** Returns the solution of x() in a MathematicalProgramResult.
+
+    Note: This solution may be NaN in the convex relaxation if the total flow
+    through this vertex at the solution is numerically close to zero. We prefer
+    to return NaN than a value that may not be numerically close to being
+    contained in set()`.
+    */
     Eigen::VectorXd GetSolution(
         const solvers::MathematicalProgramResult& result) const;
 
@@ -361,6 +367,7 @@ class GraphOfConvexSets {
   @throws std::exception if any of the costs or constraints in the graph are
   incompatible with the shortest path formulation or otherwise unsupported.
   All costs must be non-negative (for all values of the continuous variables).
+
   @pydrake_mkdoc_identifier{by_id}
   */
   solvers::MathematicalProgramResult SolveShortestPath(

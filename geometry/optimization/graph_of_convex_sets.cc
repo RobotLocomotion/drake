@@ -646,13 +646,32 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     const Vertex* v = vpair.second.get();
     const bool is_target = (target_id == v->id());
     VectorXd x_v = VectorXd::Zero(v->ambient_dimension());
+    double sum_relaxed_phi = 0;
     if (is_target) {
       for (const auto& e : incoming_edges[v->id()]) {
         x_v += result.GetSolution(e->z_);
+        if (convex_relaxation) {
+          sum_relaxed_phi += result.GetSolution(relaxed_phi.at(e->id()));
+        }
       }
     } else {
       for (const auto& e : outgoing_edges[v->id()]) {
         x_v += result.GetSolution(e->y_);
+        if (convex_relaxation) {
+          sum_relaxed_phi += result.GetSolution(relaxed_phi.at(e->id()));
+        }
+      }
+    }
+    // In the convex relaxation, sum_relaxed_phi may not be one even for
+    // vertices in the shortest path. We undo yₑ = ϕₑ xᵥ here to ensure that
+    // x_v is in v->set(). If ∑ ϕₑ is small enough that numerical errors
+    // prevent the projection back into the Xᵥ, then we prefer to return NaN.
+    if (convex_relaxation) {
+      if (sum_relaxed_phi < 100.0 * std::numeric_limits<double>::epsilon()) {
+        x_v = VectorXd::Constant(v->ambient_dimension(),
+                                 std::numeric_limits<double>::quiet_NaN());
+      } else {
+        x_v /= sum_relaxed_phi;
       }
     }
     for (int i = 0; i < v->ambient_dimension(); ++i) {
