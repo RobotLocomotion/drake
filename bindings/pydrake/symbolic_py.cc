@@ -8,6 +8,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_py_unapply.h"
@@ -733,8 +734,8 @@ PYBIND11_MODULE(symbolic, m) {
   using symbolic::Polynomial;
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
-  py::class_<Polynomial>(m, "Polynomial", doc.Polynomial.doc)
-      .def(py::init<>(), doc.Polynomial.ctor.doc_0args)
+  py::class_<Polynomial> polynomial_cls(m, "Polynomial", doc.Polynomial.doc);
+  polynomial_cls.def(py::init<>(), doc.Polynomial.ctor.doc_0args)
       .def(py::init<Polynomial::MapType>(), py::arg("map"),
           doc.Polynomial.ctor.doc_1args_map)
       .def(py::init<const Monomial&>(), py::arg("m"),
@@ -816,8 +817,6 @@ PYBIND11_MODULE(symbolic, m) {
       .def(-py::self)
       .def(py::self / double())
       .def("EqualTo", &Polynomial::EqualTo, doc.Polynomial.EqualTo.doc)
-      .def("EqualToAfterExpansion", &Polynomial::EqualToAfterExpansion,
-          doc.Polynomial.EqualToAfterExpansion.doc)
       .def(py::self == py::self)
       .def(py::self != py::self)
       .def("__hash__",
@@ -868,6 +867,14 @@ PYBIND11_MODULE(symbolic, m) {
             return p.Jacobian(vars);
           },
           py::arg("vars"), doc.Polynomial.Jacobian.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  polynomial_cls.def("EqualToAfterExpansion",
+      WrapDeprecated(doc.Polynomial.EqualToAfterExpansion.doc_deprecated,
+          &Polynomial::EqualToAfterExpansion),
+      doc.Polynomial.EqualToAfterExpansion.doc_deprecated);
+#pragma GCC diagnostic pop
 
   m.def(
       "Evaluate",
