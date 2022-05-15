@@ -205,7 +205,7 @@ GTEST_TEST(CompassGaitTest, TestCollisionDynamics) {
 
   const double angular_momentum_after =
       CalcAngularMomentum(cg, *next_context, true);
-  EXPECT_NEAR(angular_momentum_before, angular_momentum_after, 5e-15);
+  EXPECT_NEAR(angular_momentum_before, angular_momentum_after, 3e-14);
 
   // Ensure that the toe moved forward.
   EXPECT_GT(cg.get_toe_position(*next_context), cg.get_toe_position(*context));
