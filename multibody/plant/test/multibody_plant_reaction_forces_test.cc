@@ -428,7 +428,7 @@ class SpinningRodTest : public ::testing::Test {
   }
 
   void VerifyJointReactionForces() {
-    const double kTolerance = 20 * std::numeric_limits<double>::epsilon();
+    const double kTolerance = 40 * std::numeric_limits<double>::epsilon();
 
     // Evaluate the spatial acceleration of the rod.
     const auto& A_WB_all =
