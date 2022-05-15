@@ -236,8 +236,8 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
           &collision_filter_, &X_WGs_double, &point_pairs_double);
       EXPECT_FALSE(Callback<double>(&sphere_A_, &shape, &callback_data_double));
       ASSERT_EQ(point_pairs_double.size(), 1u);
-      EXPECT_EQ(ExtractDoubleOrThrow(first_result.depth),
-                point_pairs_double[0].depth);
+      EXPECT_NEAR(ExtractDoubleOrThrow(first_result.depth),
+                  point_pairs_double[0].depth, 2*kEps);
       EXPECT_TRUE(CompareMatrices(math::ExtractValue(first_result.p_WCa),
                                   point_pairs_double[0].p_WCa));
       EXPECT_TRUE(CompareMatrices(math::ExtractValue(first_result.p_WCb),
