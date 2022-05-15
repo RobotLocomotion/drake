@@ -1336,7 +1336,6 @@ class TestSymbolicPolynomial(unittest.TestCase):
             {sym.Monomial(): a ** 2 - 1 - (a-1) * (a+1)})
         p_expand = sym.Polynomial({sym.Monomial(): 0})
         self.assertFalse(p_not_expand.EqualTo(p_expand))
-        self.assertTrue(p_not_expand.EqualToAfterExpansion(p_expand))
 
     def test_repr(self):
         p = sym.Polynomial()
