@@ -1503,13 +1503,20 @@ for every column of ``prog_var_vals``. )""")
       .def("indeterminates_index", &MathematicalProgram::indeterminates_index,
           doc.MathematicalProgram.indeterminates_index.doc)
       .def("decision_variables", &MathematicalProgram::decision_variables,
-          // dtype = object arrays must be copied, and cannot be  referenced.
+          // dtype = object arrays must be copied, and cannot be referenced.
           py_rvp::copy, doc.MathematicalProgram.decision_variables.doc)
       .def("decision_variable", &MathematicalProgram::decision_variable,
           py::arg("i"), doc.MathematicalProgram.decision_variable.doc)
       .def("decision_variable_index",
           &MathematicalProgram::decision_variable_index,
           doc.MathematicalProgram.decision_variable_index.doc)
+      .def("GetVariableScaling", &MathematicalProgram::GetVariableScaling,
+          doc.MathematicalProgram.GetVariableScaling.doc)
+      .def("SetVariableScaling", &MathematicalProgram::SetVariableScaling,
+          py::arg("var"), py::arg("s"),
+          doc.MathematicalProgram.SetVariableScaling.doc)
+      .def("ClearVariableScaling", &MathematicalProgram::ClearVariableScaling,
+          doc.MathematicalProgram.ClearVariableScaling.doc)
       .def("RemoveCost", &MathematicalProgram::RemoveCost, py::arg("cost"),
           doc.MathematicalProgram.RemoveCost.doc)
       .def("RemoveConstraint", &MathematicalProgram::RemoveConstraint,
