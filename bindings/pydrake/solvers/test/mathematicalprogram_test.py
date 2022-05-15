@@ -1378,6 +1378,21 @@ class TestMathematicalProgram(unittest.TestCase):
             solver = mp.MakeFirstAvailableSolver(
                 [gurobi_solver.solver_id(), scs_solver.solver_id()])
 
+    def test_variable_scaling(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, 'x')
+        scaling = prog.GetVariableScaling()
+        self.assertIsInstance(scaling, dict)
+        self.assertEqual(len(scaling), 0)
+        prog.SetVariableScaling(var=x[0], s=2.0)
+        scaling = prog.GetVariableScaling()
+        self.assertEqual(len(scaling), 1)
+        x0_index = prog.decision_variable_index()[x[0].get_id()]
+        self.assertEqual(scaling[x0_index], 2.0)
+        prog.ClearVariableScaling()
+        scaling = prog.GetVariableScaling()
+        self.assertEqual(len(scaling), 0)
+
     def test_remove_cost(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(3)
