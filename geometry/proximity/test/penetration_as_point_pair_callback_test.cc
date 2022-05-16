@@ -222,7 +222,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
 
     if constexpr (std::is_same_v<T, AutoDiffXd>) {
       // Make sure that callback with T=AutoDiffXd and T=double produces the
-      // same result.
+      // same result within numerical noise.    
       const RigidTransform<double> X_WA_double =
           RigidTransform<double>::Identity();
       const RigidTransform<double> X_WB_double(
