@@ -117,7 +117,9 @@
 #define PETSC_HAVE_USLEEP 1
 #define PETSC_HAVE_VA_COPY 1
 #define PETSC_HAVE_VSNPRINTF 1
-#define PETSC_HAVE_XMMINTRIN_H 1
+#ifdef __SSE__
+# define PETSC_HAVE_XMMINTRIN_H 1
+#endif
 #define PETSC_IS_COLORING_MAX USHRT_MAX
 #define PETSC_IS_COLORING_VALUE_TYPE short  // NOLINT
 #define PETSC_IS_COLORING_VALUE_TYPE_F integer2
@@ -127,12 +129,14 @@
 #define PETSC_MEMALIGN 8
 #define PETSC_MPICC_SHOW "Unavailable"
 #define PETSC_MPIU_IS_COLORING_VALUE_TYPE MPI_UNSIGNED_SHORT
-#define PETSC_PREFETCH_HINT_NTA _MM_HINT_NTA
-#define PETSC_PREFETCH_HINT_T0 _MM_HINT_T0
-#define PETSC_PREFETCH_HINT_T1 _MM_HINT_T1
-#define PETSC_PREFETCH_HINT_T2 _MM_HINT_T2
+// For prefetching, we always use the GCC-ism (not XMM) for portability.
+// https://github.com/petsc/petsc/blob/70719257/config/PETSc/Configure.py#L565-L585
+#define PETSC_PREFETCH_HINT_NTA 0
+#define PETSC_PREFETCH_HINT_T0 3
+#define PETSC_PREFETCH_HINT_T1 2
+#define PETSC_PREFETCH_HINT_T2 1
 #define PETSC_PYTHON_EXE "NO_PETSC_PYTHON_EXE"
-#define PETSC_Prefetch(a, b, c) _mm_prefetch((const char*)(a), (c))
+#define PETSC_Prefetch(a, b, c) __builtin_prefetch((a), (b), (c))
 #define PETSC_REPLACE_DIR_SEPARATOR '\\'
 #define PETSC_SIGNAL_CAST
 #define PETSC_SIZEOF_ENUM 4

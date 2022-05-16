@@ -782,6 +782,7 @@ PYBIND11_MODULE(symbolic, m) {
           doc.Polynomial.Integrate.doc_3args)
       .def("AddProduct", &Polynomial::AddProduct, py::arg("coeff"),
           py::arg("m"), doc.Polynomial.AddProduct.doc)
+      .def("Expand", &Polynomial::Expand, doc.Polynomial.Expand.doc)
       .def("RemoveTermsWithSmallCoefficients",
           &Polynomial::RemoveTermsWithSmallCoefficients,
           py::arg("coefficient_tol"),

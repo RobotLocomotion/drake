@@ -76,7 +76,9 @@ PYBIND11_MODULE(parsing, m) {
             py::arg("model_name") = "", cls_doc.AddModelFromFile.doc)
         .def("AddModelFromString", &Class::AddModelFromString,
             py::arg("file_contents"), py::arg("file_type"),
-            py::arg("model_name") = "", cls_doc.AddModelFromString.doc);
+            py::arg("model_name") = "", cls_doc.AddModelFromString.doc)
+        .def("SetStrictParsing", &Class::SetStrictParsing,
+            cls_doc.SetStrictParsing.doc);
   }
 
   // Model Directives

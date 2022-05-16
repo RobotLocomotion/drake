@@ -1,4 +1,4 @@
-#include "drake/geometry/render/render_engine_vtk_base.h"
+#include "drake/geometry/render_vtk/internal_render_engine_vtk_base.h"
 
 #include <ostream>
 #include <utility>

@@ -21,8 +21,8 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/render/render_engine.h"
-#include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/geometry/render/render_label.h"
+#include "drake/geometry/render_vtk/render_engine_vtk_params.h"
 
 #ifndef DRAKE_DOXYGEN_CXX
 // This, and the ModuleInitVtkRenderingOpenGL2, provide the basis for enabling
@@ -109,8 +109,8 @@ class RenderEngineVtk : public RenderEngine,
    When one of the optional parameters is omitted, the constructed value will be
    as documented elsewhere in @ref render_engine_vtk_properties "this class".
   */
-  RenderEngineVtk(
-      const RenderEngineVtkParams& parameters = RenderEngineVtkParams());
+  explicit RenderEngineVtk(const geometry::RenderEngineVtkParams& parameters =
+      geometry::RenderEngineVtkParams());
 
   /** @see RenderEngine::UpdateViewpoint().  */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) override;

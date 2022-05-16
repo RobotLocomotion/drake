@@ -1,4 +1,4 @@
-#include "drake/geometry/render/render_engine_vtk.h"
+#include "drake/geometry/render_vtk/internal_render_engine_vtk.h"
 
 #include <fstream>
 #include <limits>
@@ -20,9 +20,9 @@
 #include <vtkTransformPolyDataFilter.h>
 
 #include "drake/common/text_logging.h"
-#include "drake/geometry/render/render_engine_vtk_base.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
-#include "drake/geometry/render/vtk_util.h"
+#include "drake/geometry/render_vtk/internal_render_engine_vtk_base.h"
+#include "drake/geometry/render_vtk/internal_vtk_util.h"
 #include "drake/systems/sensors/color_palette.h"
 
 namespace drake {
@@ -106,7 +106,8 @@ ShaderCallback::ShaderCallback() :
 
 vtkNew<internal::ShaderCallback> RenderEngineVtk::uniform_setting_callback_;
 
-RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
+RenderEngineVtk::RenderEngineVtk(
+    const geometry::RenderEngineVtkParams& parameters)
     : RenderEngine(parameters.default_label ? *parameters.default_label
                                             : RenderLabel::kUnspecified),
       pipelines_{{make_unique<RenderingPipeline>(),

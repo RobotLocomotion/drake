@@ -214,6 +214,11 @@ class Polynomial {
   /// Adds @p coeff * @p m to this polynomial.
   Polynomial& AddProduct(const Expression& coeff, const Monomial& m);
 
+  /// Expands each coefficient expression and returns the expanded polynomial.
+  /// If any coefficient is equal to 0 after expansion, then remove that term
+  /// from the returned polynomial.
+  Polynomial Expand() const;
+
   /// Removes the terms whose absolute value of the coefficients are smaller
   /// than or equal to @p coefficient_tol
   /// For example, if the polynomial is 2x² + 3xy + 10⁻⁴x - 10⁻⁵,

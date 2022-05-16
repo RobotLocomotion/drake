@@ -265,6 +265,7 @@ drake_cc_binary(
         ":spong_controller",
         ":spong_controller_params",
         "//geometry:drake_visualizer",
+        "//solvers:snopt_solver",
         "//systems/analysis:simulator",
         "@gflags",
     ],
@@ -282,6 +283,7 @@ drake_cc_binary(
         ":acrobot_plant",
         "//common:is_approx_equal_abstol",
         "//geometry:drake_visualizer",
+        "//solvers:snopt_solver",
         "//solvers:solve",
         "//systems/analysis:simulator",
         "//systems/controllers:finite_horizon_linear_quadratic_regulator",
@@ -348,6 +350,7 @@ drake_cc_googletest(
     deps = [
         ":acrobot_plant",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
