@@ -160,8 +160,10 @@ GTEST_TEST(DualIiwaTest, ComInPolyhedronConstraintModelInstance) {
       plant_autodiff.get(), plant_autodiff.get(), model_instances,
       plant_autodiff->world_frame().index(), plant_context_autodiff.get(),
       plant_context_autodiff.get(), A, lb, ub, q);
-  // TODO(hongkai.dai): Add test with non-empty model_instances and constraint
-  // constructed from MBP<double> when #14916 is resolved.
+  TestComInPolyhedronConstraint(plant.get(), plant_autodiff.get(),
+                                model_instances, plant->world_frame().index(),
+                                plant_context.get(),
+                                plant_context_autodiff.get(), A, lb, ub, q);
   // Test model_instances being an empty vector.
   model_instances.clear();
   DRAKE_EXPECT_THROWS_MESSAGE(
