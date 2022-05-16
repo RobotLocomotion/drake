@@ -51,6 +51,8 @@ binary.
 
 import argparse
 import os
+import warnings
+
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
@@ -129,7 +131,8 @@ def add_visualizers_argparse_arguments(args_parser):
     """
     Adds argparse arguments for visualizers.
     """
-    MeshcatVisualizer.add_argparse_argument(args_parser)
+    with warnings.catch_warnings(record=True) as w:
+        MeshcatVisualizer.add_argparse_argument(args_parser)
     args_parser.add_argument(
         "--pyplot", action="store_true",
         help="Opens a pyplot figure for rendering using "
