@@ -102,7 +102,7 @@ class TestGeometryOptimization(unittest.TestCase):
             lb=[-0.5, -0.5, -0.5], ub=[0.5, 0.5, 0.5])
         self.assertTrue(h_half_box.ContainedIn(h_unit_box))
         h_half_box2 = h_half_box.Intersection(other=h_unit_box,
-                                              check_redundancy=True)
+                                              check_for_redundancy=True)
         self.assertIsInstance(h_half_box2, mut.HPolyhedron)
         self.assertEqual(h_half_box2.ambient_dimension(), 3)
         np.testing.assert_array_almost_equal(
@@ -113,7 +113,7 @@ class TestGeometryOptimization(unittest.TestCase):
         # intersection of 1/2*unit_box and unit_box and reducing the redundant
         # inequalities should result in the 1/2*unit_box
         htmp = h_half_box.Intersection(other=h_unit_box,
-                                       check_redundancy=False)
+                                       check_for_redundancy=False)
         # check that the ReduceInequality binding works
         h_half_box3 = htmp.ReduceInequalities()
 
@@ -121,7 +121,7 @@ class TestGeometryOptimization(unittest.TestCase):
             lb=[-0.5, -0.5, -0.5], ub=[0.5, 0.5, 0.5])
         self.assertTrue(h_half_box.ContainedIn(h_unit_box))
         h_half_box2 = h_half_box.Intersection(other=h_unit_box,
-                                              check_redundancy=True)
+                                              check_for_redundancy=True)
         self.assertIsInstance(h_half_box2, mut.HPolyhedron)
         self.assertEqual(h_half_box2.ambient_dimension(), 3)
         np.testing.assert_array_almost_equal(
@@ -132,7 +132,7 @@ class TestGeometryOptimization(unittest.TestCase):
         # intersection of 1/2*unit_box and unit_box and reducing the redundant
         # inequalities should result in the 1/2*unit_box
         htmp = h_half_box.Intersection(other=h_unit_box,
-                                       check_redundancy=False)
+                                       check_for_redundancy=False)
         # check that the ReduceInequality binding works
         h_half_box3 = htmp.ReduceInequalities()
 

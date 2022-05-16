@@ -121,7 +121,7 @@ void DefineGeometryOptimization(py::module m) {
         .def("ContainedIn", &HPolyhedron::ContainedIn, py::arg("other"),
             cls_doc.ContainedIn.doc)
         .def("Intersection", &HPolyhedron::Intersection, py::arg("other"),
-            py::arg("check_for_redundancy") = false)//, cls_doc.Intersection.doc)
+            py::arg("check_for_redundancy") = false, cls_doc.Intersection.doc)
         .def("ReduceInequalities", &HPolyhedron::ReduceInequalities,
             cls_doc.ReduceInequalities.doc)
         .def("MaximumVolumeInscribedEllipsoid",
