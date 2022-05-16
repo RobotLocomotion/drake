@@ -124,12 +124,40 @@ class MultibodyPlantElements {
           << std::endl;
     }
   }
+  std::string GeometryToString(geometry::GeometryId id) const {
+    const geometry::SceneGraphInspector<double>* inspector{nullptr};
+    if (scene_graph() != nullptr) {
+      inspector = &scene_graph()->model_inspector();
+    }
+    std::stringstream out;
+    if (inspector != nullptr) {
+      out << "name: " << inspector->GetName(id) << " ";
+    }
+    out << "id:" << id;
+    return out.str();
+  }
+
+  void PrintGeometries(std::ostream& out) const {
+    for (const auto& id : geometry_ids()) {
+      out << "Geometry: " << GeometryToString(id) << "\n";
+    }
+  }
+
+  void PrintCollisionFilterPairs(std::ostream& out) const {
+    out << "Collision filter pairs" << std::endl;
+    for (const auto& [id_a, id_b] : collision_filter_pairs()) {
+      out << fmt::format("({}, {})\n", GeometryToString(id_a),
+                         GeometryToString(id_b));
+    }
+  }
 
   void PrintAll(std::ostream& out) const {
     PrintModels(out);
     PrintBodies(out);
     PrintFrames(out);
     PrintJoints(out);
+    PrintGeometries(out);
+    PrintCollisionFilterPairs(out);
   }
 
   const MultibodyPlant<double>* plant() const { return plant_; }

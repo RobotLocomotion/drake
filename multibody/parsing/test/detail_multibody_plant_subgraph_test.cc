@@ -382,6 +382,16 @@ void AssertPlantEquals(const MultibodyPlant<double>* plant_a,
                            geometry_b->illustration_properties());
   };
 
+  auto assert_collision_filter_pair_equals =
+      [&](const std::pair<GeometryId, GeometryId>& a,
+          const std::pair<GeometryId, GeometryId>& b) {
+        std::cout << fmt::format("Checking: ({}, {}) == ({}, {})", a.first,
+                                 a.second, b.first, b.second)
+                  << std::endl;
+        assert_geometry_equals(a.first, b.first);
+        assert_geometry_equals(a.second, b.second);
+      };
+
   auto frame_map = [](const SortedSet<const Frame<double>*>& frames) {
     std::map<std::pair<std::string, std::string>,
              std::set<const Frame<double>*>>
@@ -436,6 +446,13 @@ void AssertPlantEquals(const MultibodyPlant<double>* plant_a,
     for (const auto& [geometry_id_a, geometry_id_b] :
          Zip(elem_a.geometry_ids(), elem_b.geometry_ids())) {
       assert_geometry_equals(geometry_id_a, geometry_id_b);
+    }
+
+    for (const auto& [collision_filter_pair_a, collision_filter_pair_b] :
+         Zip(elem_a.collision_filter_pairs(),
+             elem_b.collision_filter_pairs())) {
+      assert_collision_filter_pair_equals(collision_filter_pair_a,
+                                          collision_filter_pair_b);
     }
   }
 }
@@ -506,6 +523,17 @@ class ArbitraryMultibodyStuffBuilder {
       }
       if (plant_->geometry_source_is_registered()) {
         RandomGeometry(*body);
+
+        if ((Maybe() || num_bodies < 3) && prev_body != nullptr &&
+            prev_body != &plant_->world_body()) {
+          geometry::GeometrySet set_a(
+              plant_->GetCollisionGeometriesForBody(*prev_body));
+          geometry::GeometrySet set_b(
+              plant_->GetCollisionGeometriesForBody(*body));
+
+          plant_->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
+              {"a", set_a}, {"b", set_b});
+        }
       }
       prev_body = body;
     }
