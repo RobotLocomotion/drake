@@ -50,13 +50,14 @@ bool IsEmpty(const Eigen::Ref<const MatrixXd>& A,
 }
 
 bool IsEmpty(solvers::MathematicalProgram* prog) {
-  prog->SetSolverOption(solvers::GurobiSolver::id(), "DualReductions", 0);
-  auto result = solvers::Solve(*prog);
+  solvers::SolverOptions solver_options;
+  solver_options.SetOption(solvers::GurobiSolver::id(), "DualReductions", 0);
+  auto result = solvers::Solve(*prog, std::nullopt, solver_options);
   return result.get_solution_result() ==
          solvers::SolutionResult::kInfeasibleConstraints;
 }
 
-/* Check whether the constraint cᵀ x ≤ d is already implied by the linear
+/* Checks whether the constraint cᵀ x ≤ d is already implied by the linear
  constraints in prog. This is done by solving a small linear program
  and modifying the coefficients of  `new_constraint` binding. This method may
  throw a runtime error if the constraints are ill-conditioned.
@@ -66,7 +67,7 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
                  Binding<solvers::LinearConstraint>* new_constraint,
                  Binding<solvers::LinearCost>* program_cost_binding,
                  bool already_checked_feasibility) {
-  // Ensure that prog is an LP
+  // Ensures that prog is an LP
   DRAKE_DEMAND(prog->GetAllConstraints().size() ==
                prog->GetAllLinearConstraints().size());
   DRAKE_DEMAND(prog->GetAllCosts().size() == 1 &&
@@ -279,7 +280,7 @@ bool HPolyhedron::DoIsBounded() const {
 bool HPolyhedron::ContainedIn(const HPolyhedron& other) const {
   DRAKE_DEMAND(other.A().cols() == A_.cols());
   // `this` defines an empty set and therefore is contained in any `other`
-  // HPolyhedron
+  // HPolyhedron.
   if (IsEmpty(A_, b_)) {
     return true;
   }
@@ -404,7 +405,7 @@ HPolyhedron HPolyhedron::ReduceInequalities() const {
 
     auto result = solvers::Solve(prog);
 
-    // the current inequality is redundant
+    // The current inequality is redundant.
     if (IsRedundant(A_.row(excluded_index), b_(excluded_index), &prog,
                     &redundant_constraint_binding, &program_cost_binding,
                     false)) {
