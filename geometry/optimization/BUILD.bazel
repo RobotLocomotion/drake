@@ -48,6 +48,7 @@ drake_cc_library(
         "//solvers:mathematical_program_result",
     ],
     deps = [
+        "//geometry:read_obj",
         "//solvers:choose_best_solver",
         "//solvers:gurobi_solver",
         "//solvers:ipopt_solver",

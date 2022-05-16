@@ -18,15 +18,10 @@ drake_cc_package_library(
         ":bvh",
         ":bvh_updater",
         ":collision_filter",
-        ":collisions_exist_callback",
         ":contact_surface_utility",
         ":deformable_contact_geometries",
         ":deformable_volume_mesh",
-        ":distance_to_point_callback",
-        ":distance_to_shape_callback",
         ":field_intersection",
-        ":find_collision_candidates_callback",
-        ":hydroelastic_callback",
         ":hydroelastic_internal",
         ":make_box_field",
         ":make_box_mesh",
@@ -49,11 +44,9 @@ drake_cc_package_library(
         ":mesh_traits",
         ":meshing_utilities",
         ":obj_to_surface_mesh",
-        ":penetration_as_point_pair_callback",
         ":plane",
         ":polygon_surface_mesh",
         ":posed_half_space",
-        ":proximity_utilities",
         ":sorted_triplet",
         ":tessellation_strategy",
         ":triangle_surface_mesh",
@@ -132,6 +125,14 @@ drake_cc_library(
         # expose externally.
         "collisions_exist_callback.h",
     ],
+    tags = [
+        # This header includes `fcl` directly, which we do not want to
+        # expose externally.
+        "exclude_from_package",
+    ],
+    visibility = [
+        "//geometry:__pkg__",
+    ],
     deps = [
         ":collision_filter",
         ":proximity_utilities",
@@ -189,6 +190,14 @@ drake_cc_library(
         # expose externally.
         "distance_to_point_callback.h",
     ],
+    tags = [
+        # This header includes `fcl` directly, which we do not want to
+        # expose externally.
+        "exclude_from_package",
+    ],
+    visibility = [
+        "//geometry:__pkg__",
+    ],
     deps = [
         ":proximity_utilities",
         "//common:default_scalars",
@@ -208,6 +217,14 @@ drake_cc_library(
         # This header includes `fcl` directly, which we do not want to
         # expose externally.
         "distance_to_shape_callback.h",
+    ],
+    tags = [
+        # This header includes `fcl` directly, which we do not want to
+        # expose externally.
+        "exclude_from_package",
+    ],
+    visibility = [
+        "//geometry:__pkg__",
     ],
     deps = [
         ":collision_filter",
@@ -245,6 +262,14 @@ drake_cc_library(
         # expose externally.
         "find_collision_candidates_callback.h",
     ],
+    tags = [
+        # This header includes `fcl` directly, which we do not want to
+        # expose externally.
+        "exclude_from_package",
+    ],
+    visibility = [
+        "//geometry:__pkg__",
+    ],
     deps = [
         ":collision_filter",
         ":proximity_utilities",
@@ -263,6 +288,14 @@ drake_cc_library(
         # This header includes `fcl` directly, which we do not want to
         # expose externally.
         "hydroelastic_callback.h",
+    ],
+    tags = [
+        # This header includes `fcl` directly, which we do not want to
+        # expose externally.
+        "exclude_from_package",
+    ],
+    visibility = [
+        "//geometry:__pkg__",
     ],
     deps = [
         ":collision_filter",
@@ -303,7 +336,6 @@ drake_cc_library(
         ":make_sphere_field",
         ":make_sphere_mesh",
         ":obj_to_surface_mesh",
-        ":proximity_utilities",
         ":tessellation_strategy",
         ":triangle_surface_mesh",
         ":volume_mesh",
@@ -321,13 +353,15 @@ drake_cc_library(
     name = "make_box_field",
     srcs = ["make_box_field.cc"],
     hdrs = ["make_box_field.h"],
+    interface_deps = [
+        ":mesh_field",
+        "//geometry:shape_specification",
+    ],
     deps = [
         ":distance_to_point_callback",
-        ":mesh_field",
         "//common:default_scalars",
         "//common:essential",
         "//common:unused",
-        "//geometry:shape_specification",
     ],
 )
 
@@ -335,13 +369,15 @@ drake_cc_library(
     name = "make_box_mesh",
     srcs = ["make_box_mesh.cc"],
     hdrs = ["make_box_mesh.h"],
-    deps = [
-        ":proximity_utilities",
+    interface_deps = [
         ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
-        "//common:default_scalars",
         "//geometry:shape_specification",
+    ],
+    deps = [
+        ":proximity_utilities",
+        "//common:default_scalars",
     ],
 )
 
@@ -349,14 +385,16 @@ drake_cc_library(
     name = "make_cylinder_field",
     srcs = ["make_cylinder_field.cc"],
     hdrs = ["make_cylinder_field.h"],
+    interface_deps = [
+        ":mesh_field",
+        "//geometry:shape_specification",
+    ],
     deps = [
         ":distance_to_point_callback",
-        ":mesh_field",
         ":volume_to_surface_mesh",
         "//common:default_scalars",
         "//common:essential",
         "//common:unused",
-        "//geometry:shape_specification",
     ],
 )
 
@@ -383,15 +421,17 @@ drake_cc_library(
     name = "make_cylinder_mesh",
     srcs = ["make_cylinder_mesh.cc"],
     hdrs = ["make_cylinder_mesh.h"],
-    deps = [
-        ":meshing_utilities",
-        ":proximity_utilities",
+    interface_deps = [
         ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
-        "//common:default_scalars",
         "//common:essential",
         "//geometry:shape_specification",
+    ],
+    deps = [
+        ":meshing_utilities",
+        ":proximity_utilities",
+        "//common:default_scalars",
     ],
 )
 
@@ -399,15 +439,17 @@ drake_cc_library(
     name = "make_capsule_mesh",
     srcs = ["make_capsule_mesh.cc"],
     hdrs = ["make_capsule_mesh.h"],
-    deps = [
-        ":meshing_utilities",
-        ":proximity_utilities",
+    interface_deps = [
         ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
-        "//common:default_scalars",
         "//common:essential",
         "//geometry:shape_specification",
+    ],
+    deps = [
+        ":meshing_utilities",
+        ":proximity_utilities",
+        "//common:default_scalars",
     ],
 )
 
@@ -415,13 +457,15 @@ drake_cc_library(
     name = "make_convex_mesh",
     srcs = ["make_convex_mesh.cc"],
     hdrs = ["make_convex_mesh.h"],
+    interface_deps = [
+        ":volume_mesh",
+        "//geometry:shape_specification",
+    ],
     deps = [
         ":obj_to_surface_mesh",
         ":triangle_surface_mesh",
-        ":volume_mesh",
         "//common:default_scalars",
         "//common:essential",
-        "//geometry:shape_specification",
     ],
 )
 
@@ -598,6 +642,14 @@ drake_cc_library(
         # expose externally.
         "penetration_as_point_pair_callback.h",
     ],
+    tags = [
+        # This header includes `fcl` directly, which we do not want to
+        # expose externally.
+        "exclude_from_package",
+    ],
+    visibility = [
+        "//geometry:__pkg__",
+    ],
     deps = [
         ":collision_filter",
         ":distance_to_point_callback",
@@ -635,6 +687,19 @@ drake_cc_library(
         # This header includes `fcl` directly, which we do not want to
         # expose externally.
         "proximity_utilities.h",
+    ],
+    tags = [
+        # This header includes `fcl` directly, which we do not want to
+        # expose externally.
+        "exclude_from_package",
+    ],
+    visibility = [
+        "//geometry:__pkg__",
+        # TODO(jwnimmer-tri) As with **every single file ever** that is named
+        # "utilities", here we have too much completely unrelated code shoved
+        # into one place with no rhyme nor reason, leading to dependency graph
+        # nightmares. Thus, we need a visibility wart here for now.
+        "//multibody/fixed_fem/dev:__pkg__",
     ],
     deps = [
         ":sorted_triplet",
@@ -760,7 +825,9 @@ drake_cc_library(
         "//common/test_utilities:expect_throws_message",
         "//geometry:proximity_engine",
         "//geometry:utilities",
+        "//geometry/proximity:proximity_utilities",
         "//math:geometric_transform",
+        "@fcl",
     ],
 )
 
