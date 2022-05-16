@@ -3,14 +3,12 @@
 #include <vector>
 
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/proximity/deformable_contact_surface.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/fixed_fem/dev/deformable_contact_surface.h"
-#include "drake/multibody/fixed_fem/dev/fem_indexes.h"
 
 namespace drake {
-namespace multibody {
-namespace fem {
-namespace internal {
+namespace geometry {
+
 /* A wrapper around DeformableContactSurface that provides additional
  information about the geometries/bodies involved in the contact and proximity
  properties of the contacts. */
@@ -19,7 +17,7 @@ struct DeformableRigidContactPair {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableRigidContactPair)
   DeformableRigidContactPair(DeformableContactSurface<T> contact_surface_in,
                              geometry::GeometryId rigid_id_in,
-                             DeformableBodyIndex deformable_id_in, const T& k,
+                             int deformable_id_in, const T& k,
                              const T& d, const T& mu)
       : contact_surface(std::move(contact_surface_in)),
         rigid_id(rigid_id_in),
@@ -42,7 +40,7 @@ struct DeformableRigidContactPair {
 
   DeformableContactSurface<T> contact_surface;
   geometry::GeometryId rigid_id;  // The id of the rigid geometry in contact.
-  DeformableBodyIndex deformable_id;  // The id of deformable body in contact.
+  int deformable_id;  // The id of deformable body in contact.
   T stiffness;    // Combined stiffness at the contact point.
   T dissipation;  // Combined dissipation at the contact point.
   T friction;     // Combined friction at the contact point.
@@ -52,7 +50,6 @@ struct DeformableRigidContactPair {
    normal at that contact point. */
   std::vector<math::RotationMatrix<T>> R_CWs;
 };
-}  // namespace internal
-}  // namespace fem
-}  // namespace multibody
+
+}  // namespace geometry
 }  // namespace drake

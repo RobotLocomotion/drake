@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/geometry/proximity/deformable_contact_geometries.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/shape_specification.h"
@@ -71,10 +72,9 @@ template <typename T>
 geometry::VolumeMesh<T> MakeOctahedronVolumeMesh();
 
 /* Generates a ReferenceDeformableGeometry whose underlying mesh is given by
- MakeOctahedronVolumeMesh().
- @tparam_nonsymbolic_scalar */
-template <typename T>
-internal::ReferenceDeformableGeometry<T> MakeOctahedronDeformableGeometry();
+ MakeOctahedronVolumeMesh(). */
+geometry::internal::deformable::ReferenceDeformableGeometry
+MakeOctahedronDeformableGeometry();
 
 /* Refines each boundary tetrahedron into tetrahedra with at least one
  interior vertex by applying "star" refinement from the centroid of the
