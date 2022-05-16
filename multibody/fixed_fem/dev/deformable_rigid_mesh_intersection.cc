@@ -5,14 +5,16 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
+#include "drake/geometry/proximity/deformable_contact_surface.h"
 #include "drake/geometry/proximity/posed_half_space.h"
 #include "drake/geometry/utilities.h"
-#include "drake/multibody/fixed_fem/dev/deformable_contact_surface.h"
 
 namespace drake {
 namespace multibody {
 namespace fem {
 
+using geometry::ContactPolygonData;
+using geometry::DeformableContactSurface;
 using geometry::TriangleSurfaceMesh;
 using geometry::VolumeMesh;
 using geometry::internal::Aabb;

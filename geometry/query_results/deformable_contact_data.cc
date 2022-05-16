@@ -1,18 +1,16 @@
-#include "drake/multibody/fixed_fem/dev/deformable_contact_data.h"
+#include "drake/geometry/query_results/deformable_contact_data.h"
 
 #include <algorithm>
 #include <set>
 #include <utility>
 
 namespace drake {
-namespace multibody {
-namespace fem {
-namespace internal {
+namespace geometry {
 
 template <typename T>
 DeformableContactData<T>::DeformableContactData(
     std::vector<DeformableRigidContactPair<T>> contact_pairs,
-    const ReferenceDeformableGeometry<T>& deformable_geometry)
+    const ReferenceDeformableGeometry& deformable_geometry)
     : contact_pairs_(std::move(contact_pairs)),
       signed_distances_(contact_pairs_.size()),
       permuted_vertex_indexes_(deformable_geometry.mesh().num_vertices(), -1),
@@ -41,7 +39,7 @@ DeformableContactData<T>::DeformableContactData(
             contact_surface.polygon_data(j);
         const Vector4<T>& barycentric_coord = polygon_data.b_centroid;
         const auto& tet_index = polygon_data.tet_index;
-        phi[j] = deformable_geometry.signed_distance().Evaluate(
+        phi[j] = deformable_geometry.signed_distance_field().Evaluate(
             tet_index, barycentric_coord);
       }
     }
@@ -55,7 +53,7 @@ DeformableContactData<T>::DeformableContactData(
 
 template <typename T>
 void DeformableContactData<T>::CalcParticipatingVertices(
-    const geometry::VolumeMesh<T>& deformable_mesh) {
+    const geometry::VolumeMesh<double>& deformable_mesh) {
   constexpr int kNumVerticesInTetrahedron =
       geometry::VolumeMesh<T>::kVertexPerElement;
 
@@ -99,9 +97,8 @@ void DeformableContactData<T>::CalcParticipatingVertices(
   DRAKE_DEMAND(index == static_cast<int>(permuted_to_original_indexes_.size()));
 }
 
-}  // namespace internal
-}  // namespace fem
-}  // namespace multibody
-}  // namespace drake
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fem::internal::DeformableContactData)
+    class DeformableContactData)
+
+}  // namespace geometry
+}  // namespace drake

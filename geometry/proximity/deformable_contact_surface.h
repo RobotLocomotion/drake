@@ -12,8 +12,7 @@
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
-namespace multibody {
-namespace fem {
+namespace geometry {
 
 // TODO(SeanCurtis-TRI) The application of the template parameter T is *not*
 //  well reasoned. Currently, we're assuming that *all* quantities can and
@@ -77,6 +76,5 @@ class DeformableContactSurface {
   std::vector<ContactPolygonData<T>> polygon_data_;
 };
 
-}  // namespace fem
-}  // namespace multibody
+}  // namespace geometry
 }  // namespace drake
