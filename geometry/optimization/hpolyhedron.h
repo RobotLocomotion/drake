@@ -58,18 +58,18 @@ class HPolyhedron final : public ConvexSet {
    */
   bool ContainedIn(const HPolyhedron& other) const;
 
-  /** Construct the intersection of two HPolyhedron by adding the rows of
+  /** Constructs the intersection of two HPolyhedron by adding the rows of
    inequalities from @p other. If @p check_for_redundancy is true
-   then only add the rows of @p other to this HPolyhedron if the inequality
+   then only adds the rows of @p other to this HPolyhedron if the inequality
    is not implied by the inequalities from this HPolyhedron.
    */
   HPolyhedron Intersection(const HPolyhedron& other,
                            bool check_for_redundancy = false) const;
 
   /** Reduce some (not necessarily all) redundant inequalities in the
-   * HPolyhedronh.  This is not guaranteed to give the minimal representation of
-   * the polyhedron but is a relatively fast way to reduce the number of
-   * inequalities
+   HPolyhedron.  This is not guaranteed to give the minimal representation of
+   the polyhedron but is a relatively fast way to reduce the number of
+   inequalities
    */
   HPolyhedron ReduceInequalities() const;
 
