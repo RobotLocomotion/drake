@@ -13,6 +13,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
@@ -259,8 +260,9 @@ class Polynomial {
   /// Returns true if this polynomial and @p p are structurally equal.
   bool EqualTo(const Polynomial& p) const;
 
-  /// Returns true if this polynomial and @p p are equal, after expanding the
-  /// coefficients.
+  DRAKE_DEPRECATED("2022-09-01",
+                   "Use this->Expand().EqualTo(p.Expand()) instead of "
+                   "EqualToAfterExpansion()")
   bool EqualToAfterExpansion(const Polynomial& p) const;
 
   /// Returns true if this polynomial and @p p are almost equal (the difference

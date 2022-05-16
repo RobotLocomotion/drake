@@ -245,6 +245,7 @@ drake_pybind_library(
     cc_deps = [
         ":symbolic_types_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = [
         "symbolic_py.cc",
@@ -627,6 +628,7 @@ drake_py_unittest(
         ":algebra_test_util_py",
         ":symbolic_py",
         "//bindings/pydrake/common:containers_py",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
