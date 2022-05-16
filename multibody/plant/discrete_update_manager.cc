@@ -121,6 +121,13 @@ void DiscreteUpdateManager<T>::CalcNonContactForces(
 }
 
 template <typename T>
+ScopeExit DiscreteUpdateManager<T>::ThrowIfNonContactForceInProgress(
+    const drake::systems::Context<T>& context) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::ThrowIfNonContactForceInProgress(plant(), context);
+}
+
+template <typename T>
 void DiscreteUpdateManager<T>::CalcForceElementsContribution(
     const drake::systems::Context<T>& context,
     MultibodyForces<T>* forces) const {

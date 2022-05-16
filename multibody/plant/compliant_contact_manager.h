@@ -150,7 +150,6 @@ class CompliantContactManager final
     systems::CacheIndex contact_problem;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex non_contact_forces_accelerations;
-    systems::CacheIndex non_contact_forces_evaluation_in_progress;
   };
 
   // Provide private access for unit testing only.
