@@ -13,7 +13,6 @@
 #include "drake/math/autodiff.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/primitives/linear_system.h"
@@ -25,8 +24,9 @@ namespace systems {
 namespace trajectory_optimization {
 namespace {
 
-using symbolic::Variable;
+using solvers::Solve;
 using symbolic::Expression;
+using symbolic::Variable;
 using trajectories::PiecewisePolynomial;
 
 namespace {
@@ -116,9 +116,10 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstraintTest) {
 
   const auto context = system.CreateDefaultContext();
   int kNumSampleTimes = 3;
-  DirectTranscription prog(&system, *context, kNumSampleTimes);
+  DirectTranscription dirtran(&system, *context, kNumSampleTimes);
+  auto& prog = dirtran.prog();
 
-  EXPECT_EQ(prog.fixed_timestep(), kTimeStep);
+  EXPECT_EQ(dirtran.fixed_timestep(), kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
   prog.SetInitialGuessForAllVariables(
@@ -132,10 +133,9 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstraintTest) {
 
   using std::pow;
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
-    EXPECT_EQ(
-        prog.EvalBindingAtInitialGuess(dynamic_constraints[i])[0],
-        prog.GetInitialGuess(prog.state(i + 1)[0]) -
-            pow(prog.GetInitialGuess(prog.state(i)[0]), 3.0));
+    EXPECT_EQ(prog.EvalBindingAtInitialGuess(dynamic_constraints[i])[0],
+              prog.GetInitialGuess(dirtran.state(i + 1)[0]) -
+                  pow(prog.GetInitialGuess(dirtran.state(i)[0]), 3.0));
   }
 }
 
@@ -154,10 +154,11 @@ GTEST_TEST(DirectTranscriptionTest, ContinuousTimeConstraintTest) {
 
   const auto context = system.CreateDefaultContext();
   int kNumSampleTimes = 3;
-  DirectTranscription prog(&system, *context, kNumSampleTimes,
-                           TimeStep{kTimeStep});
+  DirectTranscription dirtran(&system, *context, kNumSampleTimes,
+                              TimeStep{kTimeStep});
+  auto& prog = dirtran.prog();
 
-  EXPECT_EQ(prog.fixed_timestep(), kTimeStep);
+  EXPECT_EQ(dirtran.fixed_timestep(), kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
   prog.SetInitialGuessForAllVariables(
@@ -173,11 +174,11 @@ GTEST_TEST(DirectTranscriptionTest, ContinuousTimeConstraintTest) {
 
   using std::pow;
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
-    double state_i = prog.GetInitialGuess(prog.state(i))[0];
-    EXPECT_NEAR(
-        prog.EvalBindingAtInitialGuess(dynamic_constraints[i])[0],
-        prog.GetInitialGuess(prog.state(i + 1)[0]) - state_i -
-        kTimeStep*sin(state_i), 1e-14);
+    double state_i = prog.GetInitialGuess(dirtran.state(i))[0];
+    EXPECT_NEAR(prog.EvalBindingAtInitialGuess(dynamic_constraints[i])[0],
+                prog.GetInitialGuess(dirtran.state(i + 1)[0]) - state_i -
+                    kTimeStep * sin(state_i),
+                1e-14);
   }
 }
 
@@ -189,9 +190,10 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
 
   const auto context = system->CreateDefaultContext();
   int kNumSampleTimes = 3;
-  DirectTranscription prog(system.get(), *context, kNumSampleTimes);
+  DirectTranscription dirtran(system.get(), *context, kNumSampleTimes);
+  auto& prog = dirtran.prog();
 
-  EXPECT_EQ(prog.fixed_timestep(), kTimeStep);
+  EXPECT_EQ(dirtran.fixed_timestep(), kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
   prog.SetInitialGuessForAllVariables(
@@ -210,9 +212,9 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
         prog.EvalBindingAtInitialGuess(dynamic_constraints[i]) -
         dynamic_constraints[i].evaluator()->lower_bound();
     const Vector1d dynamic_constraint_expected =
-        prog.GetInitialGuess(prog.state(i + 1)) -
-        system->A() * prog.GetInitialGuess(prog.state(i)) -
-        system->B() * prog.GetInitialGuess(prog.input(i)) - system->f0();
+        prog.GetInitialGuess(dirtran.state(i + 1)) -
+        system->A() * prog.GetInitialGuess(dirtran.state(i)) -
+        system->B() * prog.GetInitialGuess(dirtran.input(i)) - system->f0();
 
     // Check that the system's state equation still holds with equality,
     // regardless of the specific encoding MathematicalProgram chooses.
@@ -230,10 +232,11 @@ GTEST_TEST(DirectTranscriptionTest, ContinuousTimeSymbolicConstraintTest) {
   const auto context = system->CreateDefaultContext();
   int kNumSampleTimes = 3;
   const double kTimeStep = 0.1;
-  DirectTranscription prog(system.get(), *context, kNumSampleTimes,
-                           TimeStep{kTimeStep});
+  DirectTranscription dirtran(system.get(), *context, kNumSampleTimes,
+                              TimeStep{kTimeStep});
+  auto& prog = dirtran.prog();
 
-  EXPECT_EQ(prog.fixed_timestep(), kTimeStep);
+  EXPECT_EQ(dirtran.fixed_timestep(), kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
   prog.SetInitialGuessForAllVariables(
@@ -255,16 +258,16 @@ GTEST_TEST(DirectTranscriptionTest, ContinuousTimeSymbolicConstraintTest) {
         prog.EvalBindingAtInitialGuess(dynamic_constraints[i]) -
         dynamic_constraints[i].evaluator()->lower_bound();
     const Vector1d dynamic_constraint_expected =
-        prog.GetInitialGuess(prog.state(i + 1)) -
-        prog.GetInitialGuess(prog.state(i)) -
-        kTimeStep * system->A() * prog.GetInitialGuess(prog.state(i)) -
-        kTimeStep * system->B() * prog.GetInitialGuess(prog.input(i)) -
+        prog.GetInitialGuess(dirtran.state(i + 1)) -
+        prog.GetInitialGuess(dirtran.state(i)) -
+        kTimeStep * system->A() * prog.GetInitialGuess(dirtran.state(i)) -
+        kTimeStep * system->B() * prog.GetInitialGuess(dirtran.input(i)) -
         kTimeStep * system->f0();
 
     // Check that the system's state equation still holds with equality,
     // regardless of the specific encoding MathematicalProgram chooses.
     EXPECT_TRUE(CompareMatrices(dynamic_constraint_val,
-        dynamic_constraint_expected, 1e-14));
+                                dynamic_constraint_expected, 1e-14));
   }
 }
 
@@ -278,8 +281,7 @@ void SolvePendulumTrajectory(bool continuous_time) {
 
   SCOPED_TRACE(fmt::format("continuous_time = {}", continuous_time));
 
-  const char* const urdf_path =
-      "drake/examples/pendulum/Pendulum.urdf";
+  const char* const urdf_path = "drake/examples/pendulum/Pendulum.urdf";
 
   // The time step here is somewhat arbitrary. The value chosen here
   // provides a reasonably fast solve.
@@ -306,9 +308,9 @@ void SolvePendulumTrajectory(bool continuous_time) {
         actuation_port_index);
   } else {
     dirtran = std::make_unique<DirectTranscription>(
-        pendulum.get(), *context, kNumTimeSamples,
-        actuation_port_index);
+        pendulum.get(), *context, kNumTimeSamples, actuation_port_index);
   }
+  auto& prog = dirtran->prog();
 
   // Adds a torque actuation limit.
   const double kTorqueLimit = 3.0;  // N*m.
@@ -325,10 +327,9 @@ void SolvePendulumTrajectory(bool continuous_time) {
   initial_state.SetAtIndex(kThetadot_index, 0.0);
   final_state.SetAtIndex(kTheta_index, M_PI);
   final_state.SetAtIndex(kThetadot_index, 0.0);
-  dirtran->AddLinearConstraint(dirtran->initial_state() ==
-                               initial_state.get_value());
-  dirtran->AddLinearConstraint(dirtran->final_state() ==
-                               final_state.get_value());
+  prog.AddLinearConstraint(dirtran->initial_state() ==
+                           initial_state.get_value());
+  prog.AddLinearConstraint(dirtran->final_state() == final_state.get_value());
 
   const double R = 10;  // Cost on input "effort".
   dirtran->AddRunningCost((R * u) * u);
@@ -336,11 +337,10 @@ void SolvePendulumTrajectory(bool continuous_time) {
   // Create an initial guess for the state trajectory.
   const double timespan_init = 4;
   auto traj_init_x = PiecewisePolynomial<double>::FirstOrderHold(
-      {0, timespan_init},
-      {initial_state.get_value(), final_state.get_value()});
+      {0, timespan_init}, {initial_state.get_value(), final_state.get_value()});
   dirtran->SetInitialTrajectory(PiecewisePolynomial<double>(), traj_init_x);
 
-  const auto result = snopt_solver.Solve(*dirtran, {}, {});
+  const auto result = snopt_solver.Solve(dirtran->prog(), {}, {});
   EXPECT_TRUE(result.is_success());
 }
 
@@ -368,9 +368,10 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeLinearSystemTest) {
 
   const auto context = system.CreateDefaultContext();
   int kNumSampleTimes = 3;
-  DirectTranscription prog(&system, *context, kNumSampleTimes);
+  DirectTranscription dirtran(&system, *context, kNumSampleTimes);
+  auto& prog = dirtran.prog();
 
-  EXPECT_EQ(prog.fixed_timestep(), kTimeStep);
+  EXPECT_EQ(dirtran.fixed_timestep(), kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
   prog.SetInitialGuessForAllVariables(
@@ -387,19 +388,19 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeLinearSystemTest) {
 
   const double kNumericalTolerance = 1e-10;
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
-    EXPECT_TRUE(CompareMatrices(
-        prog.EvalBindingAtInitialGuess(dynamic_constraints[i]),
-        prog.GetInitialGuess(prog.state(i + 1)) -
-            A * prog.GetInitialGuess(prog.state(i)) -
-            B * prog.GetInitialGuess(prog.input(i)),
-        kNumericalTolerance));
+    EXPECT_TRUE(
+        CompareMatrices(prog.EvalBindingAtInitialGuess(dynamic_constraints[i]),
+                        prog.GetInitialGuess(dirtran.state(i + 1)) -
+                            A * prog.GetInitialGuess(dirtran.state(i)) -
+                            B * prog.GetInitialGuess(dirtran.input(i)),
+                        kNumericalTolerance));
   }
 }
 
 // This example tests the TimeVaryingLinearSystem overload of the
 // constructor.
 GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
-  const std::vector<double> times {0., 1.};
+  const std::vector<double> times{0., 1.};
   std::vector<Eigen::MatrixXd> Avec(times.size());
   std::vector<Eigen::MatrixXd> Bvec(times.size());
   std::vector<Eigen::MatrixXd> Cvec(times.size());
@@ -428,9 +429,10 @@ GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
 
   const auto context = system.CreateDefaultContext();
   int kNumSampleTimes = 3;
-  DirectTranscription prog(&system, *context, kNumSampleTimes);
+  DirectTranscription dirtran(&system, *context, kNumSampleTimes);
+  auto& prog = dirtran.prog();
 
-  EXPECT_EQ(prog.fixed_timestep(), kTimeStep);
+  EXPECT_EQ(dirtran.fixed_timestep(), kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
   prog.SetInitialGuessForAllVariables(
@@ -450,9 +452,9 @@ GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
     const double t = system.time_period() * i;
     EXPECT_TRUE(CompareMatrices(
         prog.EvalBindingAtInitialGuess(dynamic_constraints[i]),
-        prog.GetInitialGuess(prog.state(i + 1)) -
-            A.value(t) * prog.GetInitialGuess(prog.state(i)) -
-            B.value(t) * prog.GetInitialGuess(prog.input(i)),
+        prog.GetInitialGuess(dirtran.state(i + 1)) -
+            A.value(t) * prog.GetInitialGuess(dirtran.state(i)) -
+            B.value(t) * prog.GetInitialGuess(dirtran.input(i)),
         kNumericalTolerance));
   }
 }
@@ -464,18 +466,19 @@ GTEST_TEST(DirectTranscriptionTest, AddRunningCostTest) {
   const auto context = system->CreateDefaultContext();
   const int kNumSamples{5};
 
-  DirectTranscription prog(system.get(), *context, kNumSamples);
+  DirectTranscription dirtran(system.get(), *context, kNumSamples);
+  auto& prog = dirtran.prog();
 
   // Check that there are no nonlinear constraints in the program.
   EXPECT_EQ(prog.generic_constraints().size(), 0);
 
   // x[0] = 1.0
-  prog.AddLinearConstraint(prog.initial_state() == Vector1d(1.0));
+  prog.AddLinearConstraint(dirtran.initial_state() == Vector1d(1.0));
 
-  prog.AddRunningCost(prog.state() * prog.state());
-  prog.AddFinalCost(prog.state() * prog.state());
+  dirtran.AddRunningCost(dirtran.state() * dirtran.state());
+  dirtran.AddFinalCost(dirtran.state() * dirtran.state());
 
-  const solvers::MathematicalProgramResult result = Solve(prog);
+  const solvers::MathematicalProgramResult result = Solve(dirtran.prog());
   EXPECT_TRUE(result.is_success());
 
   // Compute the expected cost as c[N] + \sum_{i = 0...N-1} h * c[i]
@@ -483,7 +486,7 @@ GTEST_TEST(DirectTranscriptionTest, AddRunningCostTest) {
   double expected_cost{0.};
   for (int i{0}; i < kNumSamples - 1; i++) {
     expected_cost +=
-        kTimeStep * std::pow(result.GetSolution(prog.state(i))[0], 2.);
+        kTimeStep * std::pow(result.GetSolution(dirtran.state(i))[0], 2.);
   }
 
   EXPECT_NEAR(result.get_optimal_cost(), expected_cost, 1e-6);
@@ -497,7 +500,8 @@ GTEST_TEST(DirectTranscriptionTest, LinearSystemWParamsTest) {
   const double kGain = -1.0;
   context->get_mutable_numeric_parameter(0).SetAtIndex(0, kGain);
   const int kNumSampleTimes = 3;
-  DirectTranscription prog(&system, *context, kNumSampleTimes);
+  DirectTranscription dirtran(&system, *context, kNumSampleTimes);
+  auto& prog = dirtran.prog();
 
   // Sets all decision variables to trivial known values (1,2,3,...).
   prog.SetInitialGuessForAllVariables(
@@ -511,10 +515,9 @@ GTEST_TEST(DirectTranscriptionTest, LinearSystemWParamsTest) {
 
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
     // Checks that x[n+1] = kGain*x[n].
-    EXPECT_EQ(
-        prog.EvalBindingAtInitialGuess(dynamic_constraints[i])[0],
-        prog.GetInitialGuess(prog.state(i + 1)[0]) -
-            kGain * prog.GetInitialGuess(prog.state(i)[0]));
+    EXPECT_EQ(prog.EvalBindingAtInitialGuess(dynamic_constraints[i])[0],
+              prog.GetInitialGuess(dirtran.state(i + 1)[0]) -
+                  kGain * prog.GetInitialGuess(dirtran.state(i)[0]));
   }
 }
 

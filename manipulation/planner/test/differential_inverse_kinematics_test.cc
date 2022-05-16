@@ -85,7 +85,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
   DifferentialInverseKinematicsResult DoDiffIKForRigidTransform(
       const math::RigidTransform<double>& X_WE_desired) {
     return DoDifferentialInverseKinematics(
-        *plant_, *context_, X_WE_desired.GetAsIsometry3(), *frame_E_, *params_);
+        *plant_, *context_, X_WE_desired, *frame_E_, *params_);
   }
 
   DifferentialInverseKinematicsResult DoDiffIKForSpatialVelocity(

@@ -223,7 +223,7 @@ GTEST_TEST(SystemConstraintAdapterTest,
     DRAKE_EXPECT_THROWS_MESSAGE(
         adapter.MaybeCreateGenericConstraintSymbolically(
             system.constraint_index(), *context),
-        std::invalid_argument, failure_message);
+        failure_message);
   };
 
   // With abstract state, no abstract parameters.
@@ -305,7 +305,8 @@ void CheckLinearConstraint(
       solvers::internal::BindingDynamicCast<solvers::LinearConstraint>(
           constraint);
   EXPECT_EQ(linear_constraint.variables(), vars);
-  EXPECT_TRUE(CompareMatrices(linear_constraint.evaluator()->A(), A, tol));
+  EXPECT_TRUE(
+      CompareMatrices(linear_constraint.evaluator()->GetDenseA(), A, tol));
   EXPECT_TRUE(CompareMatrices(linear_constraint.evaluator()->lower_bound(),
                               lower, tol));
   EXPECT_TRUE(CompareMatrices(linear_constraint.evaluator()->upper_bound(),
@@ -321,7 +322,8 @@ void CheckLinearEqualityConstraint(
       solvers::internal::BindingDynamicCast<solvers::LinearEqualityConstraint>(
           constraint);
   EXPECT_EQ(linear_eq_constraint.variables(), vars);
-  EXPECT_TRUE(CompareMatrices(linear_eq_constraint.evaluator()->A(), A, tol));
+  EXPECT_TRUE(
+      CompareMatrices(linear_eq_constraint.evaluator()->GetDenseA(), A, tol));
   EXPECT_TRUE(CompareMatrices(linear_eq_constraint.evaluator()->lower_bound(),
                               rhs, tol));
 }
@@ -374,8 +376,7 @@ GTEST_TEST(SystemConstraintAdapterTest, MaybeCreateConstraintSymbolically1) {
 
   // Now test context.x = [a + b; 1]. Namely it contains both expression
   // and constant.
-  context_symbolic->get_mutable_continuous_state().SetFromVector(
-      Vector2<symbolic::Expression>(a + b, 1));
+  context_symbolic->SetContinuousState(Vector2<symbolic::Expression>(a + b, 1));
   // The newly generated constraint should be
   // -1 <= a + b <= 4
   // 0 <= 2 * a + 2 * b <= 3
@@ -396,8 +397,7 @@ GTEST_TEST(SystemConstraintAdapterTest, MaybeCreateConstraintSymbolically1) {
 
   // Now test a new context with context.x = [a^2, 1]. Hence the constraints
   // are nonlinear
-  context_symbolic->get_mutable_continuous_state().SetFromVector(
-      Vector2<symbolic::Expression>(a * a, 1));
+  context_symbolic->SetContinuousState(Vector2<symbolic::Expression>(a * a, 1));
   constraints = adapter.MaybeCreateConstraintSymbolically(
       system_constraint_index, *context_symbolic);
   EXPECT_FALSE(constraints.has_value());

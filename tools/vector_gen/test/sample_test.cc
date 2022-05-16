@@ -10,7 +10,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/common/yaml/yaml_read_archive.h"
+#include "drake/common/yaml/yaml_io.h"
 
 namespace drake {
 namespace tools {
@@ -132,7 +132,7 @@ GTEST_TEST(SampleTest, Move) {
   // Move construction.  The heap storage of `first` is stolen.
   Sample<double> second(std::move(first));
   EXPECT_EQ(first.size(), 0);
-  DRAKE_EXPECT_THROWS_MESSAGE(first.x(), std::out_of_range, ".*moved-from.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(first.x(), ".*moved-from.*");
   EXPECT_EQ(second.size(), nominal_size);
   EXPECT_EQ(second.x(), 1.0);
   EXPECT_EQ(&second.x(), original_storage);
@@ -143,7 +143,7 @@ GTEST_TEST(SampleTest, Move) {
   DRAKE_DEMAND(third.x() != 1.0);  // Prove that assignment will change this.
   third = std::move(second);
   EXPECT_EQ(second.size(), 0);
-  DRAKE_EXPECT_THROWS_MESSAGE(second.x(), std::out_of_range, ".*moved-from.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(second.x(), ".*moved-from.*");
   EXPECT_EQ(third.size(), nominal_size);
   EXPECT_EQ(third.x(), 1.0);
   EXPECT_EQ(&third.x(), original_storage);
@@ -213,15 +213,12 @@ GTEST_TEST(SampleTest, SymbolicIsValid) {
 // Cover Serialize and its relationship to YAML.
 GTEST_TEST(SampleTest, YamlTest) {
   const std::string yaml_text = R"""(
-values:
-  x: 0
-  two_word: -1
-  absone: 0.25
-  unset: 99e9
+x: 0
+two_word: -1
+absone: 0.25
+unset: 99e9
 )""";
-  const YAML::Node yaml_node = YAML::Load(yaml_text);
-  Sample<double> dut;
-  drake::yaml::YamlReadArchive(yaml_node["values"]).Accept(&dut);
+  const auto dut = drake::yaml::LoadYamlString<Sample<double>>(yaml_text);
   EXPECT_EQ(dut.x(), 0.0);
   EXPECT_EQ(dut.two_word(), -1.0);
   EXPECT_EQ(dut.absone(), 0.25);

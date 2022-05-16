@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mosek_solver.h"
@@ -357,6 +358,33 @@ void LinearProgram3::CheckSolution(
   ExpectSolutionCostAccurate(*prog(), result, cost_tol);
 }
 
+std::ostream& operator<<(std::ostream& os, LinearProblems value) {
+  os << "LinearProblems::";
+  switch (value) {
+    case LinearProblems::kLinearFeasibilityProgram: {
+      os << "kLinearFeasibilityProgram";
+      return os;
+    }
+    case LinearProblems::kLinearProgram0: {
+      os << "kLinearFeasibilityProgram0";
+      return os;
+    }
+    case LinearProblems::kLinearProgram1: {
+      os << "kLinearFeasibilityProgram1";
+      return os;
+    }
+    case LinearProblems::kLinearProgram2: {
+      os << "kLinearFeasibilityProgram2";
+      return os;
+    }
+    case LinearProblems::kLinearProgram3: {
+      os << "kLinearFeasibilityProgram3";
+      return os;
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
+
 LinearProgramTest::LinearProgramTest() {
   auto cost_form = std::get<0>(GetParam());
   auto constraint_form = std::get<1>(GetParam());
@@ -405,11 +433,11 @@ InfeasibleLinearProgramTest0::InfeasibleLinearProgramTest0()
 
 UnboundedLinearProgramTest0::UnboundedLinearProgramTest0()
     : prog_(std::make_unique<MathematicalProgram>()) {
-  auto x = prog_->NewContinuousVariables<2>("x");
-  prog_->AddLinearCost(-x(0) - x(1));
-  prog_->AddLinearConstraint(2 * x(0) + x(1) >= 4);
-  prog_->AddLinearConstraint(x(0) >= 0);
-  prog_->AddLinearConstraint(x(1) >= 2);
+  x_ = prog_->NewContinuousVariables<2>("x");
+  prog_->AddLinearCost(-x_(0) - x_(1));
+  prog_->AddLinearConstraint(2 * x_(0) + x_(1) >= 4);
+  prog_->AddLinearConstraint(x_(0) >= 0);
+  prog_->AddLinearConstraint(x_(1) >= 2);
 }
 
 UnboundedLinearProgramTest1::UnboundedLinearProgramTest1()
@@ -516,6 +544,77 @@ void TestLPDualSolution3(const SolverInterface& solver, double tol) {
     // constraint 3 is not active.
     EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint3),
                                 Vector1d::Zero(), tol));
+  }
+}
+
+void TestLPPoorScaling1(const SolverInterface& solver, bool expect_success,
+                        double tol,
+                        const std::optional<SolverOptions>& options) {
+  MathematicalProgram prog;
+  const auto alpha = prog.NewContinuousVariables<4>();
+  const auto z = prog.NewContinuousVariables<1>()(0);
+  const double eps = 5.5511151231257827e-17;
+  Eigen::Matrix<double, 2, 4> vertices;
+  // clang-format off
+  vertices << eps, 1, eps, 1,
+              eps, 1, 2, 2;
+  // clang-format on
+  const Eigen::Vector2d pt(0.99, 1.99);
+  prog.AddLinearConstraint(-z + vertices.row(0).dot(alpha) <= pt(0));
+  prog.AddLinearConstraint(-z + vertices.row(1).dot(alpha) <= pt(1));
+  prog.AddLinearConstraint(z + vertices.row(0).dot(alpha) >= pt(0));
+  prog.AddLinearConstraint(z + vertices.row(1).dot(alpha) >= pt(1));
+  prog.AddBoundingBoxConstraint(0, 1, alpha);
+  prog.AddLinearCost(z);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, std::nullopt, options, &result);
+    const auto alpha_sol = result.GetSolution(alpha);
+    ASSERT_TRUE(result.is_success());
+    if (expect_success) {
+      EXPECT_TRUE(CompareMatrices(vertices * alpha_sol, pt, tol));
+      EXPECT_NEAR(result.GetSolution(z), 0, tol);
+    } else {
+      EXPECT_GT(result.GetSolution(z), tol);
+    }
+  }
+}
+
+void TestLPPoorScaling2(const SolverInterface& solver, bool expect_success,
+                        double tol,
+                        const std::optional<SolverOptions>& options) {
+  Eigen::Matrix<double, 10, 3> A;
+  A.topRows<3>() = Eigen::Matrix3d::Identity();
+  A.middleRows<3>(3) = -Eigen::Matrix3d::Identity();
+  // clang-format off
+  A.bottomRows<4>() << 9.99400723e-01, -1.75186298e-21,  3.46149414e-02,
+  9.82328785e-01,  1.82238474e-20, -1.87163452e-01,
+  9.68599420e-01, -2.48626556e-01, -1.27003703e-12,
+  9.68599420e-01,  2.48626556e-01, -1.27003703e-12;
+  // clang-format on
+  Eigen::Matrix<double, 10, 1> b;
+  b << 1.0, 0.5, 1.0, -0.0, 0.5, -0.0, 0.46783912, 0.39023174, 0.50647967,
+      0.50647967;
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  auto r = prog.NewContinuousVariables<1>()(0);
+  const double kInf = std::numeric_limits<double>::infinity();
+  for (int i = 0; i < A.rows(); ++i) {
+    prog.AddLinearConstraint(A.row(i).dot(x) + A.row(i).norm() * r <= b(i));
+  }
+  prog.AddBoundingBoxConstraint(0, kInf, r);
+  prog.AddLinearCost(-r);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, std::nullopt, options, &result);
+    ASSERT_TRUE(result.is_success());
+    const Eigen::Vector3d x_expected(0.2282, 0, 0.3323);
+    if (expect_success) {
+      EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, tol));
+    } else {
+      EXPECT_GT((result.GetSolution(x) - x_expected).norm(), tol);
+    }
   }
 }
 }  // namespace test

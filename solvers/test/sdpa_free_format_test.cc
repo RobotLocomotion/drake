@@ -841,11 +841,11 @@ TEST_F(LinearProgramBoundingBox1, RemoveFreeVariableByNullspaceApproach) {
                                              &constraints_csdp);
   struct csdp::blockmatrix X_csdp, Z;
   double* y{nullptr};
-  csdp::initsoln(dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp,
-                 constraints_csdp, &X_csdp, &y, &Z);
+  csdp::cpp_initsoln(dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp,
+                     constraints_csdp, &X_csdp, &y, &Z);
   double pobj{0};
   double dobj{0};
-  const int ret = csdp::easy_sdp(
+  const int ret = csdp::cpp_easy_sdp(
       nullptr,
       dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp, constraints_csdp,
       -dut.constant_min_cost_term() + dut.g().dot(y_hat), &X_csdp, &y, &Z,
@@ -870,8 +870,8 @@ TEST_F(LinearProgramBoundingBox1, RemoveFreeVariableByNullspaceApproach) {
     EXPECT_NEAR(X_csdp.blocks[1].data.vec[i + 1], block_val[i], tol);
   }
 
-  csdp::free_prob(dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp,
-                  constraints_csdp, X_csdp, y, Z);
+  csdp::cpp_free_prob(dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp,
+                      constraints_csdp, X_csdp, y, Z);
 }
 
 TEST_F(CsdpLinearProgram2, RemoveFreeVariableByNullspaceApproach) {

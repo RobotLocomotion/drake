@@ -19,8 +19,6 @@ using geometry::internal::IdentifyBoundaryFaces;
 using geometry::VolumeElement;
 using geometry::VolumeMesh;
 using geometry::VolumeMeshFieldLinear;
-using geometry::VolumeVertex;
-using geometry::VolumeVertexIndex;
 
 namespace {
 
@@ -29,7 +27,7 @@ namespace {
  */
 bool IsBoundaryTetrahedron(
     const VolumeElement& tetrahedron,
-    const std::unordered_set<VolumeVertexIndex>& boundary_vertex_set) {
+    const std::unordered_set<int>& boundary_vertex_set) {
   for (int j = 0; j < 4; ++j) {
     if (boundary_vertex_set.count(tetrahedron.vertex(j)) == 0) {
       // The trahedron has a non-boundary vertex.
@@ -45,17 +43,17 @@ bool IsBoundaryTetrahedron(
  */
 template <typename T>
 void StarRefineTetrahedron(int e, std::vector<VolumeElement>* elements,
-                           std::vector<VolumeVertex<T>>* vertices) {
+                           std::vector<Vector3<T>>* vertices) {
   DRAKE_DEMAND(elements != nullptr);
   DRAKE_DEMAND(vertices != nullptr);
   const int num_elements_before = elements->size();
   DRAKE_DEMAND(e < num_elements_before);
 
   VolumeElement& tetrahedron = (*elements)[e];
-  VolumeVertexIndex v0 = tetrahedron.vertex(0);
-  VolumeVertexIndex v1 = tetrahedron.vertex(1);
-  VolumeVertexIndex v2 = tetrahedron.vertex(2);
-  VolumeVertexIndex v3 = tetrahedron.vertex(3);
+  int v0 = tetrahedron.vertex(0);
+  int v1 = tetrahedron.vertex(1);
+  int v2 = tetrahedron.vertex(2);
+  int v3 = tetrahedron.vertex(3);
 
   const int num_vertices_before = vertices->size();
   DRAKE_DEMAND(v0 < num_vertices_before);
@@ -63,11 +61,11 @@ void StarRefineTetrahedron(int e, std::vector<VolumeElement>* elements,
   DRAKE_DEMAND(v2 < num_vertices_before);
   DRAKE_DEMAND(v3 < num_vertices_before);
 
-  VolumeVertex<T> star{((*vertices)[v0].r_MV() + (*vertices)[v1].r_MV() +
-                        (*vertices)[v2].r_MV() + (*vertices)[v3].r_MV()) /
-                       4.};
+  Vector3<T> star{
+      ((*vertices)[v0] + (*vertices)[v1] + (*vertices)[v2] + (*vertices)[v3]) /
+      4.};
   vertices->push_back(std::move(star));
-  VolumeVertexIndex star_vertex(num_vertices_before);
+  int star_vertex(num_vertices_before);
 
   //
   // You can use this picture to verify the connectivity with your
@@ -94,12 +92,12 @@ void StarRefineTetrahedron(int e, std::vector<VolumeElement>* elements,
 template <typename T>
 VolumeMesh<T> StarRefineBoundaryTetrahedra(
     const VolumeMesh<T>& in) {
-  std::vector<VolumeVertex<T>> out_vertices(in.vertices());
+  std::vector<Vector3<T>> out_vertices(in.vertices());
   std::vector<VolumeElement> out_elements(in.tetrahedra());
 
-  const std::vector<VolumeVertexIndex> boundary_vertices =
+  const std::vector<int> boundary_vertices =
       CollectUniqueVertices(IdentifyBoundaryFaces(out_elements));
-  const std::unordered_set<VolumeVertexIndex> boundary_vertex_set(
+  const std::unordered_set<int> boundary_vertex_set(
       boundary_vertices.begin(), boundary_vertices.end());
 
   const int num_input_tetrahedra = in.num_elements();
@@ -146,14 +144,13 @@ std::vector<VolumeElement> GenerateDiamondCubicElements(
             /
            /
          +I                                                        */
-        VolumeVertexIndex v[8];
+        int v[8];
         int s = 0;
         for (int l = 0; l < 2; ++l) {
           for (int m = 0; m < 2; ++m) {
             for (int n = 0; n < 2; ++n) {
-              v[s++] =
-                  VolumeVertexIndex(geometry::internal::CalcSequentialIndex(
-                      i + l, j + m, k + n, num_vertices));
+              v[s++] = geometry::internal::CalcSequentialIndex(
+                  i + l, j + m, k + n, num_vertices);
             }
           }
         }
@@ -184,9 +181,8 @@ std::vector<VolumeElement> GenerateDiamondCubicElements(
 }
 
 template <typename T>
-internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
-    const Box& box, double resolution_hint,
-    const math::RigidTransform<T>& X_WB) {
+geometry::VolumeMesh<T> MakeDiamondCubicBoxVolumeMesh(const Box& box,
+                                                      double resolution_hint) {
   DRAKE_DEMAND(resolution_hint > 0.);
   /* Number of vertices in x-, y-, and z- directions.  In each direction,
    there is one more vertices than cells. */
@@ -196,12 +192,25 @@ internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
       1 + static_cast<int>(ceil(box.height() / resolution_hint))};
 
   /* Initially generate vertices in box's frame B. */
-  std::vector<VolumeVertex<T>> vertices =
+  std::vector<Vector3<T>> vertices =
       geometry::internal::GenerateVertices<T>(box, num_vertices);
 
+  std::vector<VolumeElement> elements =
+      GenerateDiamondCubicElements(num_vertices);
+
+  return {std::move(elements), std::move(vertices)};
+}
+
+template <typename T>
+internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
+    const Box& box, double resolution_hint,
+    const math::RigidTransform<T>& X_WB) {
+  auto mesh = std::make_unique<VolumeMesh<T>>(
+      MakeDiamondCubicBoxVolumeMesh<T>(box, resolution_hint));
+
   // TODO(xuchenhan-tri): This is an expedient but expensive way to calculate
-  //  the signed distance of the vertices. When moving out of dev/, come up with
-  //  a better solution.
+  //  the signed distance of the vertices. When moving out of dev/, come up
+  //  with a better solution.
   /* Generate the vertex distances to the shape. */
   geometry::SceneGraph<T> scene_graph;
   const auto& source_id = scene_graph.RegisterSource();
@@ -216,24 +225,16 @@ internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
       scene_graph.get_query_output_port()
           .template Eval<geometry::QueryObject<T>>(*context);
   std::vector<T> signed_distances;
-  for (const VolumeVertex<T>& vertex : vertices) {
-    const auto& d = query_object.ComputeSignedDistanceToPoint(vertex.r_MV());
+  for (const Vector3<T>& vertex : mesh->vertices()) {
+    const auto& d = query_object.ComputeSignedDistanceToPoint(vertex);
     DRAKE_DEMAND(d.size() == 1);
     signed_distances.emplace_back(d[0].distance);
   }
 
-  for (VolumeVertex<T>& vertex : vertices) {
-    // Transform to World frame.
-    vertex = VolumeVertex<T>(X_WB * vertex.r_MV());
-  }
+  mesh->TransformVertices(X_WB);
 
-  std::vector<VolumeElement> elements =
-      GenerateDiamondCubicElements(num_vertices);
-  auto mesh =
-      std::make_unique<VolumeMesh<T>>(std::move(elements), std::move(vertices));
   auto mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
-      "Approximated signed distance", std::move(signed_distances), mesh.get(),
-      false);
+      std::move(signed_distances), mesh.get(), false);
   return {std::move(mesh), std::move(mesh_field)};
 }
 
@@ -267,7 +268,7 @@ VolumeMesh<T> MakeOctahedronVolumeMesh() {
       { 0,  0,  1},
       { 0,  0, -1}};
   // clang-format on
-  std::vector<VolumeVertex<T>> vertices;
+  std::vector<Vector3<T>> vertices;
   for (const auto& vertex : vertex_data) {
     vertices.emplace_back(vertex);
   }
@@ -282,8 +283,7 @@ internal::ReferenceDeformableGeometry<T> MakeOctahedronDeformableGeometry() {
   std::vector<T> signed_distances(7, 0.0);
   signed_distances[0] = -1.0 / std::sqrt(3);
   auto mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
-      "Approximated signed distance", std::move(signed_distances), mesh.get(),
-      false);
+      std::move(signed_distances), mesh.get(), false);
   return {std::move(mesh), std::move(mesh_field)};
 }
 

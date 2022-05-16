@@ -10,6 +10,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rotation_matrix.h"
@@ -57,6 +58,74 @@ GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
   Vector3d products_expected = Vector3d::Zero();
   EXPECT_EQ(I.get_moments(), moments_expected);
   EXPECT_EQ(I.get_products(), products_expected);
+}
+
+
+// Test rotational inertia factory method set via a 3x3 matrix.
+GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
+    // Form an arbitrary (but valid) rotational inertia.
+    const double Ixx = 17, Iyy = 13, Izz = 10;
+    const double Ixy = -3, Ixz = -3, Iyz = -6;
+
+    RotationalInertia<double> I =
+        RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+            Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false);
+    EXPECT_TRUE(I.CouldBePhysicallyValid());
+
+    // Ensure an invalid rotational inertia always throws an exception if the
+    // 2nd argument of MakeFromMomentsAndProductsOfInertia is false or missing.
+    EXPECT_THROW(RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+        2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false),
+        std::exception);
+    EXPECT_THROW(RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+        2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz),
+        std::exception);
+
+    // Ensure an invalid rotational inertia does not throw an exception if the
+    // 2nd argument of MakeFromMomentsAndProductsOfInertia is true.
+    EXPECT_NO_THROW(
+        I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+            2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz,
+            /* skip_validity_check = */ true));
+    EXPECT_FALSE(I.CouldBePhysicallyValid());
+
+    // Check for a thrown exception with proper error message when creating an
+    // invalid rotational inertia (a principal moment of inertia is negative).
+    std::string expected_message =
+        "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
+        "\\[ 1  -3  -3\\]\n"
+        "\\[-3  13  -6\\]\n"
+        "\\[-3  -6  10\\]\n"
+        "did not pass the test CouldBePhysicallyValid\\(\\)\\.";
+    expected_message += fmt::format(
+        "\nThe associated principal moments of inertia:"
+        "\n-1.583957883\\d+  7.881702629\\d+  17.702255254\\d+"
+        "\nare invalid since at least one is negative.");
+    // Note: The principal moments of inertia (with more significant digits)
+    // are: -1.583957883490135  7.881702629192435  17.702255254297697.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          1.0, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false),
+          expected_message);
+
+    // Check for a thrown exception with proper error message when creating a
+    // rotational inertia that violates the triangle inequality.
+    expected_message =
+      "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
+        "\\[34  -3  -3\\]\n"
+        "\\[-3  13  -6\\]\n"
+        "\\[-3  -6  10\\]\n"
+        "did not pass the test CouldBePhysicallyValid\\(\\)\\.";
+    expected_message += fmt::format(
+        "\nThe associated principal moments of inertia:"
+        "\n4.70955263953\\d+  17.66953281\\d+  34.6209145475\\d+"
+        "\ndo not satisify the triangle inequality.");
+    // Note: The principal moments of inertia (with more significant digits)
+    // are:  4.709552639531104  17.66953281292159  34.620914547547315.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false),
+          expected_message);
 }
 
 // Test constructor for a principal axes rotational inertia matrix (products
@@ -504,7 +573,6 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
 
   // Use of operator+=() results in: Ib = Ib + Ia.
   Ib += Ia;
-
   EXPECT_EQ(Ib.get_moments(), 3.0 * m);
   EXPECT_EQ(Ib.get_products(), 3.0 * p);
 
@@ -513,11 +581,39 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
   Ia *= scalar;
   EXPECT_EQ(Ia.get_moments(), scalar * m);
   EXPECT_EQ(Ia.get_products(), scalar * p);
+  EXPECT_THROW_IF_ARMED(Ia * (-2.2), std::exception);
 
   // Verify correctness of operator/=().
   Ia /= scalar;
   EXPECT_EQ(Ia.get_moments(), m);
   EXPECT_EQ(Ia.get_products(), p);
+
+  // Verify correctness of MultiplyByScalarSkipValidityCheck() and verify it
+  // does not throw if its argument causes multiplication by negative scalar.
+  RotationalInertia<double> Is = Ia.MultiplyByScalarSkipValidityCheck(scalar);
+  EXPECT_EQ(Is.get_moments(), scalar * m);
+  EXPECT_EQ(Is.get_products(), scalar * p);
+
+  // Verify MultiplyByScalarSkipValidityCheck() does not throw if its argument
+  // causes multiplication by negative scalar (and returns an invalid inertia).
+  EXPECT_NO_THROW(Is = Ia.MultiplyByScalarSkipValidityCheck(-2.2));
+  EXPECT_FALSE(Is.CouldBePhysicallyValid());
+
+  // Verify MultiplyByScalarSkipValidityCheck() does not throw if `this` is an
+  // invalid RotationalInertia regardless of whether its argument is negative.
+  EXPECT_NO_THROW(Is = Is.MultiplyByScalarSkipValidityCheck(-3.3));
+  EXPECT_TRUE(Is.CouldBePhysicallyValid());
+  EXPECT_NO_THROW(Is = Is.MultiplyByScalarSkipValidityCheck(-1.0));
+  EXPECT_FALSE(Is.CouldBePhysicallyValid());
+
+  // Show that once an invalid RotationalInertia is created, it can be used in a
+  // copy constructor or assignment, etc.
+  RotationalInertia<double> IsCopy(Is);
+  EXPECT_FALSE(IsCopy.CouldBePhysicallyValid());
+  IsCopy = 3.0 * Is;
+  EXPECT_FALSE(IsCopy.CouldBePhysicallyValid());
+  IsCopy *= 0.5;
+  EXPECT_FALSE(IsCopy.CouldBePhysicallyValid());
 
   // For symbolic::Expression.
   const Variable a("a");  // A "variable" scalar.
@@ -532,9 +628,9 @@ GTEST_TEST(RotationalInertia, ShiftOperator) {
   RotationalInertia<double> I(1, 2.718, 3.14);
   stream << std::fixed << std::setprecision(4) << I;
   std::string expected_string =
-                  "[1.0000, 0.0000, 0.0000]\n"
-                  "[0.0000, 2.7180, 0.0000]\n"
-                  "[0.0000, 0.0000, 3.1400]\n";
+                  "[1.0000  0.0000  0.0000]\n"
+                  "[0.0000  2.7180  0.0000]\n"
+                  "[0.0000  0.0000  3.1400]\n";
   EXPECT_EQ(expected_string, stream.str());
 }
 

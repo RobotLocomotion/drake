@@ -195,12 +195,12 @@ GTEST_TEST(InputPortTest, FixValueTests) {
       expected_vec);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.basic_vec_port.Eval<std::string>(*context), std::logic_error,
+      dut.basic_vec_port.Eval<std::string>(*context),
       ".*wrong value type.*std::string.*actual type.*BasicVector.*");
 
   // TODO(sherm1) It would be nice to make this work rather than throw.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.basic_vec_port.Eval<Eigen::Vector3d>(*context), std::logic_error,
+      dut.basic_vec_port.Eval<Eigen::Vector3d>(*context),
       ".*wrong value type.*Eigen.*actual type.*BasicVector.*");
 
   // Pass a more complicated Eigen object; should still work.
@@ -212,7 +212,7 @@ GTEST_TEST(InputPortTest, FixValueTests) {
   // Should return a runtime error if the size is wrong.
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut.basic_vec_port.FixValue(&*context, long_vec.segment<2>(1)),
-      std::logic_error, ".*expected.*size=3.*actual.*size=2.*");
+      ".*expected.*size=3.*actual.*size=2.*");
 
   // A BasicVector-derived type should be acceptable to vector ports with
   // either a BasicVector model or the derived-type model (sizes must match).
@@ -237,10 +237,10 @@ GTEST_TEST(InputPortTest, FixValueTests) {
   // This is the right type, wrong size for the vector ports.
   const MyVector2d my_vector2(Eigen::Vector2d{19., 20.});
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.basic_vec_port.FixValue(&*context, my_vector2), std::logic_error,
+      dut.basic_vec_port.FixValue(&*context, my_vector2),
       ".*expected.*size=3.*actual.*size=2.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.derived_vec_port.FixValue(&*context, my_vector2), std::logic_error,
+      dut.derived_vec_port.FixValue(&*context, my_vector2),
       ".*expected.*size=3.*actual.*size=2.*");
 
   // Now try the abstract ports.
@@ -249,7 +249,7 @@ GTEST_TEST(InputPortTest, FixValueTests) {
   EXPECT_EQ(dut.int_port.Eval<int>(*context), 17);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.int_port.FixValue(&*context, 1.25), std::logic_error,
+      dut.int_port.FixValue(&*context, 1.25),
       ".*expected value of type int.*actual type was double.*");
 
   dut.double_port.FixValue(&*context, 1.25);
@@ -258,7 +258,7 @@ GTEST_TEST(InputPortTest, FixValueTests) {
   // Without an explicit template argument, FixValue() won't do numerical
   // conversions.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.double_port.FixValue(&*context, 4), std::logic_error,
+      dut.double_port.FixValue(&*context, 4),
       ".*expected value of type double.*actual type was int.*");
 
   // But an explicit template argument can serve as a workaround.
@@ -288,7 +288,7 @@ GTEST_TEST(InputPortTest, FixValueTests) {
 
   // We should only accept the right kind of abstract value.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.string_port.FixValue(&*context, int_value), std::logic_error,
+      dut.string_port.FixValue(&*context, int_value),
       ".*expected.*type std::string.*actual type was int.*");
 
   auto& fixed_value =

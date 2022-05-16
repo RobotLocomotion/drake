@@ -14,6 +14,14 @@ namespace systems {
 
 /// A discrete OR continuous linear system.
 ///
+/// @system
+/// name: LinearSystem
+/// input_ports:
+/// - u0
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// If time_period>0.0, then the linear system will have the following discrete-
 /// time state update:
 ///   @f[ x[n+1] = A x[n] + B u[n], @f]
@@ -84,6 +92,14 @@ class LinearSystem : public AffineSystem<T> {
 };
 
 /// Base class for a discrete or continuous linear time-varying (LTV) system.
+///
+/// @system
+/// name: TimeVaryingLinearSystem
+/// input_ports:
+/// - u0
+/// output_ports:
+/// - y0
+/// @endsystem
 ///
 /// If `time_period > 0.0`, the system will have the following discrete-time
 /// state update:

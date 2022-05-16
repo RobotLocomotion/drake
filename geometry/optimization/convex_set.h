@@ -24,8 +24,7 @@ namespace optimization {
 @brief Provides an abstraction for reasoning about geometry in optimization
 problems, and using optimization problems to solve geometry problems.
 
-(Experimental).  Note that the features/designs in this class hierarchy are
-considered experimental, and may change without deprecation.
+@experimental
 
 ### Relationship to other components in Drake.
 
@@ -126,6 +125,31 @@ class ConvexSet : public ShapeReifier {
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
       const symbolic::Variable& t) const;
 
+  /** Let S be this convex set.  When S is bounded, this method adds the convex
+  constraints to imply
+  @verbatim
+  A * x + b ∈ (c' * t + d) S,
+  c * t + d ≥ 0,
+  @endverbatim
+  where A is an n-by-m matrix (with n the ambient_dimension), b is a vector of
+  size n, c is a vector of size p, x is a point in ℜᵐ, and t is a point in ℜ^p.
+
+  When S is unbounded, then the behavior is almost identical, except when c' *
+  t+d=0. In this case, the constraints imply c' * t + d ≥ 0, A * x + b ∈ (c' * t
+  + d) S ⊕ rec(S), where rec(S) is the recession cone of S (the asymptotic
+  directions in which S is not bounded) and ⊕ is the Minkowski sum.  For c' * t
+  + d > 0, this is equivalent
+  to A * x + b ∈ (c' * t + d) S, but for c' * t + d = 0, we have only A * x + b
+  ∈ rec(S). */
+  std::vector<solvers::Binding<solvers::Constraint>>
+  AddPointInNonnegativeScalingConstraints(
+      solvers::MathematicalProgram* prog,
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b,
+      const Eigen::Ref<const Eigen::VectorXd>& c, double d,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const;
+
   /** Constructs a Shape and a pose of the set in the world frame for use in
   the SceneGraph geometry ecosystem.
 
@@ -174,6 +198,20 @@ class ConvexSet : public ShapeReifier {
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
       const symbolic::Variable& t) const = 0;
+
+  /** An NVI method that subclasses must overwrite to add the constraints
+  needed to keep the point A * x + b in the non-negative scaling of the set.
+  Note that subclasses do not need to add the constraint c * t + d ≥ 0 as it is
+  already added.
+  */
+  virtual std::vector<solvers::Binding<solvers::Constraint>>
+  DoAddPointInNonnegativeScalingConstraints(
+      solvers::MathematicalProgram* prog,
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b,
+      const Eigen::Ref<const Eigen::VectorXd>& c, double d,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const = 0;
 
   virtual std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
   DoToShapeWithPose() const = 0;

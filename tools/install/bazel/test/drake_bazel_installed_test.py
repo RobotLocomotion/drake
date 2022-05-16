@@ -14,11 +14,11 @@ def main():
     # In scratch, mock up a drake_bazel_installed workspace.
     scratch_dir = install_test_helper.create_temporary_dir("scratch")
 
-    # TODO(jamiesnape): Automatically keep this synchronized with the version
-    # used by @drake (or the nearest stable version).
-    rules_python_commit = "0.3.0"
+    # The commit (version) here should be identical to the commit listed in
+    # drake/tools/workspace/rules_python/repository.bzl.
+    rules_python_commit = "0.8.1"
     rules_python_url = f"https://github.com/bazelbuild/rules_python/archive/{rules_python_commit}.tar.gz"  # noqa
-    rules_python_sha256 = "4feecd37ec6e9941a455a19e7392bed65003eab0aa6ea347ca431bce2640e530"  # noqa
+    rules_python_sha256 = "cdf6b84084aad8f10bf20b46b77cb48d83c319ebe6458a18e9d2cebf57807cdd"  # noqa
 
     with open(join(scratch_dir, "WORKSPACE"), "w") as f:
         f.write(f"""
@@ -34,11 +34,6 @@ http_archive(
     strip_prefix = "rules_python-{rules_python_commit}",
     url = "{rules_python_url}",
 )
-load(
-    "@rules_python//python:repositories.bzl",
-    "py_repositories",
-)
-py_repositories()
 
 new_local_repository(
     name = "drake_binary",
@@ -55,6 +50,16 @@ drake_repository(name = "drake")
     with open(join(scratch_dir, "BUILD.bazel"), "w") as f:
         f.write(f"""
 load("@rules_python//python:defs.bzl", "py_test")
+load("@drake//:.os.bzl", OS_NAME = "NAME")
+
+cc_test(
+    name = "text_logging_test",
+    srcs = ["text_logging_test.cc"],
+    # TODO(jwnimmer-tri) On macOS, we need to pkg-config fmt for this to pass.
+    # For the moment, we'll say that :drake_shared_library is Ubuntu-only.
+    tags = ["manual"] if OS_NAME == "mac os x" else [],
+    deps = ["@drake//:drake_shared_library"],
+)
 
 py_test(
     name = "find_resource_test",
@@ -74,15 +79,24 @@ py_test(
 filegroup(name = "dummy_filegroup")
 """)
 
+    with open(join(scratch_dir, "text_logging_test.cc"), "w") as f:
+        f.write("""
+#include <drake/common/text_logging.h>
+int main(int argc, char** argv) {
+  drake::log()->info("Hello {}", "world");
+  return 0;
+}
+""")
+
     with open(join(scratch_dir, "find_resource_test.py"), "w") as f:
-        f.write(f"""
+        f.write("""
 from pydrake.common import FindResourceOrThrow, set_log_level
 set_log_level("trace")
 FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf")
 """)
 
     with open(join(scratch_dir, "import_all_test.py"), "w") as f:
-        f.write(f"""
+        f.write("""
 import pydrake.all
 """)
 
@@ -102,6 +116,7 @@ import pydrake.all
         command, "//...", "--jobs=1",
         # Enable verbosity.
         "--announce_rc",
+        "--test_output=streamed",
         # Use "release engineering" options for hermeticity.
         "--nokeep_state_after_build",
         # Nerf the coverage reporter to avoid downloading the entire JDK afresh

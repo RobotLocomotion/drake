@@ -114,7 +114,11 @@ TEST_F(PlanarJointTest, GetJointLimits) {
             Vector3d::Constant(kAccelerationLowerLimit));
   EXPECT_EQ(joint_->acceleration_upper_limits(),
             Vector3d::Constant(kAccelerationUpperLimit));
+}
+
+TEST_F(PlanarJointTest, Damping) {
   EXPECT_EQ(joint_->damping(), Vector3d::Constant(kDamping));
+  EXPECT_EQ(joint_->damping_vector(), Vector3d::Constant(kDamping));
 }
 
 // Context-dependent value access.
@@ -194,6 +198,15 @@ TEST_F(PlanarJointTest, Clone) {
   EXPECT_EQ(joint_clone.get_default_rotation(), joint_->get_default_rotation());
   EXPECT_EQ(joint_clone.get_default_translation(),
             joint_->get_default_translation());
+}
+
+TEST_F(PlanarJointTest, NameSuffix) {
+  EXPECT_EQ(joint_->position_suffix(0), "x");
+  EXPECT_EQ(joint_->position_suffix(1), "y");
+  EXPECT_EQ(joint_->position_suffix(2), "qz");
+  EXPECT_EQ(joint_->velocity_suffix(0), "vx");
+  EXPECT_EQ(joint_->velocity_suffix(1), "vy");
+  EXPECT_EQ(joint_->velocity_suffix(2), "wz");
 }
 
 TEST_F(PlanarJointTest, DefaultState) {

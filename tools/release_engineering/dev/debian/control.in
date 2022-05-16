@@ -1,0 +1,13 @@
+Source: drake
+Section: libdevel
+Priority: optional
+Maintainer: Drake Development Team <drake-users@mit.edu>
+
+Package: drake-dev
+Architecture: amd64
+Depends: {depends}
+Description: Model-based design/verification for robotics
+ .
+ Drake is a collection of tools for analyzing the dynamics of robots and
+ building control systems for them in C++ and Python, with a heavy emphasis
+ on optimization-based design/analysis.

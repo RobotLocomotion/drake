@@ -18,7 +18,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>link_0.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/iiwa7/link_0.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -33,9 +33,6 @@
           </box>
         </geometry>
       </collision>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <link name="iiwa_link_1">
       <pose>0 0 0.1575 0 0 0</pose>
@@ -55,7 +52,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>link_1.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/iiwa7/link_1.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -70,9 +67,6 @@
           </box>
         </geometry>
       </collision>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_1" type="revolute">
       <child>iiwa_link_1</child>
@@ -111,7 +105,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>link_2.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/iiwa7/link_2.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -126,9 +120,6 @@
           </box>
         </geometry>
       </collision>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_2" type="revolute">
       <child>iiwa_link_2</child>
@@ -167,7 +158,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>link_3.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/iiwa7/link_3.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -182,9 +173,6 @@
           </box>
         </geometry>
       </collision>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_3" type="revolute">
       <child>iiwa_link_3</child>
@@ -223,7 +211,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>link_4.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/iiwa7/link_4.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -238,9 +226,6 @@
           </box>
         </geometry>
       </collision>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_4" type="revolute">
       <child>iiwa_link_4</child>
@@ -279,7 +264,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>link_5.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/iiwa7/link_5.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -294,9 +279,6 @@
           </box>
         </geometry>
       </collision>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_5" type="revolute">
       <child>iiwa_link_5</child>
@@ -336,7 +318,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>link_6.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/iiwa7/link_6.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -350,9 +332,6 @@
           </box>
         </geometry>
       </collision>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_6" type="revolute">
       <child>iiwa_link_6</child>
@@ -391,7 +370,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>link_7.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/iiwa7/link_7.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -406,9 +385,6 @@
           </box>
         </geometry>
       </collision>
-      <gravity>1</gravity>
-      <velocity_decay/>
-      <self_collide>0</self_collide>
     </link>
     <joint name="iiwa_joint_7" type="revolute">
       <child>iiwa_link_7</child>
@@ -430,8 +406,5 @@
       </axis>
     </joint>
     <static>0</static>
-    <plugin name="gazebo_ros_controller" filename="libgazebo_ros_control.so">
-      <robotNamespace>/iiwa</robotNamespace>
-    </plugin>
   </model>
 </sdf>

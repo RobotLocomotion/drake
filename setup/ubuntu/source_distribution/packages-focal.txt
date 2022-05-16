@@ -1,5 +1,4 @@
-clang-9
-clang-format-9
+clang-format-12
 coinor-libclp-dev
 coinor-libcoinutils-dev
 coinor-libipopt-dev
@@ -9,7 +8,7 @@ gfortran
 git
 libblas-dev
 libbz2-dev
-libclang-9-dev
+libclang-12-dev
 libdouble-conversion-dev
 libexpat1-dev
 libgflags-dev
@@ -18,7 +17,6 @@ libglew-dev
 libglib2.0-dev
 libglx-dev
 libjpeg-turbo8-dev
-libjsoncpp-dev
 liblapack-dev
 liblz4-dev
 liblzma-dev

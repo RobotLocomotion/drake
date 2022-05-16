@@ -6,6 +6,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/differentiable_norm.h"
 #include "drake/multibody/inverse_kinematics/unit_quaternion_constraint.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
@@ -13,28 +14,6 @@
 namespace drake {
 namespace multibody {
 const double kEps = std::numeric_limits<double>::epsilon();
-
-GTEST_TEST(TestDiffferentiableNorm, test_double) {
-  EXPECT_NEAR(internal::DifferentiableNorm(Eigen::Vector3d(1, 0, 0)), 1., kEps);
-}
-
-GTEST_TEST(TestDiffferentiableNorm, test_autodiff) {
-  Eigen::Matrix3Xd x_grad(3, 1);
-  x_grad << 1, 2, 3;
-  Vector3<AutoDiffXd> x = math::InitializeAutoDiff(
-      Eigen::Vector3d(1, 0, 0), x_grad);
-  AutoDiffXd norm = internal::DifferentiableNorm(x);
-  AutoDiffXd norm_expected = x.norm();
-  EXPECT_NEAR(norm.value(), norm_expected.value(), 10 * kEps);
-  EXPECT_TRUE(CompareMatrices(norm.derivatives(), norm_expected.derivatives(),
-                              10 * kEps));
-
-  // Test when x is zero.
-  x = math::InitializeAutoDiff(Eigen::Vector3d::Zero(), x_grad);
-  norm = internal::DifferentiableNorm(x);
-  EXPECT_NEAR(norm.value(), 0., 10 * kEps);
-  EXPECT_TRUE(CompareMatrices(norm.derivatives(), Vector1d::Zero(), 10 * kEps));
-}
 
 // Evaluate the left-hand side of the constraint
 //
@@ -59,7 +38,7 @@ Vector1<T> EvalQuaternionIntegration(
   Vector1<T> ret;
   using std::cos;
   using std::sin;
-  const T angular_vel_norm = internal::DifferentiableNorm<T>(angular_vel);
+  const T angular_vel_norm = math::DifferentiableNorm(angular_vel);
   Matrix4<T> A;
   // clang-format off
   A << 0, -angular_vel(0), -angular_vel(1), -angular_vel(2),

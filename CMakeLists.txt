@@ -34,10 +34,10 @@ set(UNIX_DISTRIBUTION_ID)
 set(UNIX_DISTRIBUTION_CODENAME)
 
 if(APPLE)
-  if(CMAKE_SYSTEM_VERSION VERSION_LESS 19)
+  if(CMAKE_SYSTEM_VERSION VERSION_LESS 20)
     message(FATAL_ERROR
-      "Darwin ${CMAKE_SYSTEM_VERSION} is NOT supported. Please use Darwin "
-      "Darwin 19.x (macOS Catalina) or 20.x (macOS Big Sur)."
+      "Darwin ${CMAKE_SYSTEM_VERSION} is NOT supported. Please use "
+      "Darwin 20.x (macOS Big Sur) or 21.x (macOS Monterey)."
     )
   endif()
 else()
@@ -79,12 +79,12 @@ else()
     )
   endif()
 
-  # The supported releases should match those listed in both doc/developers.rst
-  # and tools/workspace/os.bzl.
-  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(bionic|focal)$")
+  # The supported releases should match those listed in both
+  # doc/_pages/from_source.md and tools/workspace/os.bzl.
+  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(focal)$")
     message(FATAL_ERROR
       "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported. Please use "
-      "Ubuntu 18.04 (Bionic) or 20.04 (Focal)."
+      "Ubuntu 20.04 (Focal)."
     )
   endif()
 endif()
@@ -107,10 +107,11 @@ if(C_COMPILER_NAME STREQUAL ccache OR CXX_COMPILER_NAME STREQUAL ccache)
 endif()
 
 # The minimum compiler versions should match those listed in both
-# doc/developers.rst and tools/workspace/cc/repository.bzl.
+# doc/_pages/from_source.md and tools/workspace/cc/repository.bzl.
+# TODO(jwnimmer-tri) Set MINIMUM_CLANG_VERSION=12 on 2022-09-01.
 set(MINIMUM_APPLE_CLANG_VERSION 12)
 set(MINIMUM_CLANG_VERSION 9)
-set(MINIMUM_GNU_VERSION 7.5)
+set(MINIMUM_GNU_VERSION 9.3)
 
 if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
   if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${MINIMUM_APPLE_CLANG_VERSION})
@@ -178,10 +179,10 @@ set(SUPPORTED_BUILD_TYPES None Debug Release RelWithDebInfo MinSizeRel)
 if(CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_CONFIGURATION_TYPES ${SUPPORTED_BUILD_TYPES})
 else()
+  string(REPLACE ";" " " SUPPORTED_BUILD_TYPES_STRING
+    "${SUPPORTED_BUILD_TYPES}"
+  )
   if(NOT CMAKE_BUILD_TYPE)
-    string(REPLACE ";" " " SUPPORTED_BUILD_TYPES_STRING
-      "${SUPPORTED_BUILD_TYPES}"
-    )
     set(CMAKE_BUILD_TYPE Release CACHE STRING
       "Choose the type of build, options are ${SUPPORTED_BUILD_TYPES_STRING}"
       FORCE
@@ -191,7 +192,12 @@ else()
     )
   endif()
 
-  if(NOT CMAKE_BUILD_TYPE IN_LIST SUPPORTED_BUILD_TYPES)
+  # To allow the build type to be case-insensitive,
+  # use this variable for any string comparisions
+  string(TOLOWER "${CMAKE_BUILD_TYPE}" BUILD_TYPE_LOWER)
+
+  string(TOLOWER "${SUPPORTED_BUILD_TYPES}" SUPPORTED_BUILD_TYPES_LOWER)
+  if(NOT BUILD_TYPE_LOWER IN_LIST SUPPORTED_BUILD_TYPES_LOWER)
     message(WARNING "Configuration ${CMAKE_BUILD_TYPE} is NOT supported")
   endif()
 endif()
@@ -201,11 +207,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
 # The supported Python major/minor versions should match those listed in both
-# doc/developers.rst and tools/workspace/python/repository.bzl.
+# doc/_pages/from_source.md and tools/workspace/python/repository.bzl.
 if(APPLE)
   set(SUPPORTED_PYTHON_VERSION 3.9)
-elseif(UNIX_DISTRIBUTION_CODENAME STREQUAL bionic)
-  set(SUPPORTED_PYTHON_VERSION 3.6)
 else()
   set(SUPPORTED_PYTHON_VERSION 3.8)
 endif()
@@ -291,7 +295,7 @@ else()
     set(MAYBE_BAZEL_COPT_OS "--copt=${FLAG_OS} --host_copt=${FLAG_OS}")
   else()
     set(MAYBE_BAZEL_COPT_OS)
-    if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE STREQUAL MinSizeRel)
+    if(CMAKE_CONFIGURATION_TYPES OR BUILD_TYPE_LOWER STREQUAL minsizerel)
       message(WARNING
         "Compilation with ${CMAKE_CXX_COMPILER_ID} in configuration MinSizeRel "
         "is NOT supported because it does not accept the ${FLAG_OS} flag. Code "
@@ -307,7 +311,7 @@ else()
     set(MAYBE_BAZEL_COPT_G "--copt=${FLAG_G} --host_copt=${FLAG_G}")
   else()
     set(MAYBE_BAZEL_COPT_G)
-    if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
+    if(CMAKE_CONFIGURATION_TYPES OR BUILD_TYPE_LOWER STREQUAL relwithdebinfo)
       message(WARNING
         "Compilation with ${CMAKE_CXX_COMPILER_ID} in configuration "
         "RelWithDebInfo is NOT supported because it does not accept the "
@@ -354,12 +358,97 @@ set(BAZEL_OUTPUT_BASE
   "${BAZEL_OUTPUT_BASE}/_bazel_$ENV{USER}/${PROJECT_BINARY_DIR_MD5}"
 )
 
+function(generate_external_repository_file OUTPUT)
+  set(out_path
+    ${CMAKE_CURRENT_BINARY_DIR}/external/$<CONFIG>/workspace/${OUTPUT})
+  if(ARGN)
+    file(GENERATE OUTPUT ${out_path}
+      INPUT ${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/workspace/${ARGN})
+  else()
+    file(GENERATE OUTPUT ${out_path} CONTENT "")
+  endif()
+endfunction()
+
+function(symlink_external_repository_includes NAME TARGET)
+  if(ARGN)
+    get_target_property(include_dir ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+    foreach(config IN LISTS ARGN)
+      set(workspace ${CMAKE_CURRENT_BINARY_DIR}/external/${config}/workspace)
+      file(MAKE_DIRECTORY ${workspace}/${NAME})
+      file(CREATE_LINK ${include_dir} ${workspace}/${NAME}/include SYMBOLIC)
+    endforeach()
+  else()
+    if(CMAKE_CONFIGURATION_TYPES)
+      symlink_external_repository_includes(${NAME} ${TARGET}
+        ${CMAKE_CONFIGURATION_TYPES})
+    elseif(CMAKE_BUILD_TYPE)
+      symlink_external_repository_includes(${NAME} ${TARGET}
+        ${CMAKE_BUILD_TYPE})
+    endif()
+  endif()
+endfunction()
+
+macro(override_repository NAME)
+  set(repo "${CMAKE_CURRENT_BINARY_DIR}/external/$<CONFIG>/workspace/${NAME}")
+  list(APPEND BAZEL_OVERRIDE_REPOS --override_repository=${NAME}=${repo})
+endmacro()
+
+set(BAZEL_OVERRIDE_REPOS)
+
+option(WITH_USER_EIGEN "Use user-provided Eigen3" OFF)
+
+if(WITH_USER_EIGEN)
+  find_package(Eigen3 CONFIG REQUIRED)
+
+  symlink_external_repository_includes(eigen Eigen3::Eigen)
+  generate_external_repository_file(eigen/WORKSPACE)
+  generate_external_repository_file(
+    eigen/BUILD.bazel
+    eigen/BUILD.bazel.in)
+
+  override_repository(eigen)
+endif()
+
+option(WITH_USER_FMT "Use user-provided fmt" OFF)
+
+if(WITH_USER_FMT)
+  find_package(fmt CONFIG REQUIRED)
+
+  symlink_external_repository_includes(fmt fmt::fmt)
+  generate_external_repository_file(fmt/WORKSPACE)
+  generate_external_repository_file(
+    fmt/BUILD.bazel
+    fmt/BUILD.bazel.in)
+
+  override_repository(fmt)
+endif()
+
+option(WITH_USER_SPDLOG "Use user-provided spdlog" OFF)
+
+if(WITH_USER_SPDLOG)
+  if(NOT WITH_USER_FMT)
+    message(FATAL_ERROR
+      "User-provided spdlog (WITH_USER_SPDLOG) "
+      "requires user-provided fmt (WITH_USER_FMT).")
+  endif()
+
+  find_package(spdlog CONFIG REQUIRED)
+
+  symlink_external_repository_includes(spdlog spdlog::spdlog)
+  generate_external_repository_file(spdlog/WORKSPACE)
+  generate_external_repository_file(
+    spdlog/BUILD.bazel
+    spdlog/BUILD.bazel.in)
+
+  override_repository(spdlog)
+endif()
+
 set(BAZEL_CONFIGS)
 
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
 
 if(WITH_GUROBI)
-  find_package(Gurobi 9.0.2 EXACT MODULE REQUIRED)
+  find_package(Gurobi 9.5.1 EXACT MODULE REQUIRED)
 
   list(APPEND BAZEL_CONFIGS --config=gurobi)
 
@@ -435,15 +524,18 @@ configure_file(cmake/bazel.rc.in bazel.rc @ONLY)
 
 set(BAZEL_STARTUP_ARGS "--bazelrc=${CMAKE_CURRENT_BINARY_DIR}/bazel.rc")
 
-if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE MATCHES "^(Debug|MinSizeRel|Release|RelWithDebInfo)$")
+if(CMAKE_CONFIGURATION_TYPES OR BUILD_TYPE_LOWER MATCHES "^(debug|minsizerel|release|relwithdebinfo)$")
   set(BAZEL_ARGS
     "$<$<CONFIG:Debug>:--config=Debug>$<$<CONFIG:MinSizeRel>:--config=MinSizeRel>$<$<CONFIG:Release>:--config=Release>$<$<CONFIG:RelWithDebInfo>:--config=RelWithDebInfo>"
   )
 else()
   set(BAZEL_ARGS)
 endif()
+if(BAZEL_OVERRIDE_REPOS)
+  list(APPEND BAZEL_ARGS ${BAZEL_OVERRIDE_REPOS})
+endif()
 
-# N.B. If you are testing the CMake API and making changes to `install.py.in`,
+# N.B. If you are testing the CMake API and making changes to `installer.py`,
 # you can change this target to something more lightweight, such as
 # `//tools/install/dummy:install`.
 set(BAZEL_TARGETS //:install)
@@ -473,7 +565,7 @@ endif()
 
 # If CMAKE_BUILD_TYPE is Debug or RelWithDebInfo, do NOT strip symbols during
 # install.
-if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE MATCHES "^(Debug|RelWithDebInfo)$")
+if(CMAKE_CONFIGURATION_TYPES OR BUILD_TYPE_LOWER MATCHES "^(debug|relwithdebinfo)$")
   # SNOPT has restrictions for redistribution given that we are statically
   # linking it in.
   if(WITH_SNOPT OR WITH_ROBOTLOCOMOTION_SNOPT)
@@ -482,6 +574,9 @@ if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE MATCHES "^(Debug|RelWithDebInfo
       "symbols because support for SNOPT is enabled"
     )
   else()
+    list(INSERT BAZEL_ARGS 0
+      "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:--fission=no>"
+    )
     list(INSERT BAZEL_TARGETS_ARGS 0
       "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:--no_strip>"
     )

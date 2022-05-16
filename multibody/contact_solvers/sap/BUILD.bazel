@@ -1,0 +1,242 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_package_library(
+    name = "sap",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":contact_problem_graph",
+        ":partial_permutation",
+        ":sap_constraint",
+        ":sap_constraint_bundle",
+        ":sap_contact_problem",
+        ":sap_friction_cone_constraint",
+        ":sap_limit_constraint",
+        ":sap_model",
+        ":sap_solver",
+        ":sap_solver_results",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_problem_graph",
+    srcs = ["contact_problem_graph.cc"],
+    hdrs = ["contact_problem_graph.h"],
+    deps = [
+        ":partial_permutation",
+        "//common:essential",
+        "//common:sorted_pair",
+    ],
+)
+
+drake_cc_library(
+    name = "partial_permutation",
+    srcs = ["partial_permutation.cc"],
+    hdrs = ["partial_permutation.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_constraint",
+    srcs = ["sap_constraint.cc"],
+    hdrs = ["sap_constraint.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_constraint_bundle",
+    srcs = ["sap_constraint_bundle.cc"],
+    hdrs = ["sap_constraint_bundle.h"],
+    deps = [
+        ":partial_permutation",
+        ":sap_contact_problem",
+        "//common:default_scalars",
+        "//common:essential",
+        "//multibody/contact_solvers:block_sparse_matrix",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_contact_problem",
+    srcs = ["sap_contact_problem.cc"],
+    hdrs = ["sap_contact_problem.h"],
+    deps = [
+        ":contact_problem_graph",
+        ":sap_constraint",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_limit_constraint",
+    srcs = ["sap_limit_constraint.cc"],
+    hdrs = ["sap_limit_constraint.h"],
+    deps = [
+        ":sap_constraint",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_friction_cone_constraint",
+    srcs = ["sap_friction_cone_constraint.cc"],
+    hdrs = ["sap_friction_cone_constraint.h"],
+    deps = [
+        ":sap_constraint",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_model",
+    srcs = ["sap_model.cc"],
+    hdrs = ["sap_model.h"],
+    deps = [
+        ":contact_problem_graph",
+        ":partial_permutation",
+        ":sap_constraint_bundle",
+        ":sap_contact_problem",
+        "//common:default_scalars",
+        "//common:essential",
+        "//math:linear_solve",
+        "//multibody/contact_solvers:block_sparse_matrix",
+        "//systems/framework:context",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_solver",
+    srcs = ["sap_solver.cc"],
+    hdrs = ["sap_solver.h"],
+    deps = [
+        ":sap_model",
+        ":sap_solver_results",
+        "//common:default_scalars",
+        "//common:essential",
+        "//math:linear_solve",
+        "//multibody/contact_solvers:block_sparse_matrix",
+        "//multibody/contact_solvers:point_contact_data",
+        "//multibody/contact_solvers:supernodal_solver",
+        "//multibody/contact_solvers:system_dynamics_data",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_solver_results",
+    srcs = ["sap_solver_results.cc"],
+    hdrs = ["sap_solver_results.h"],
+    deps = ["//common:default_scalars"],
+)
+
+drake_cc_googletest(
+    name = "partial_permutation_test",
+    deps = [
+        ":partial_permutation",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_constraint_test",
+    deps = [
+        ":sap_constraint",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_constraint_bundle_test",
+    deps = [
+        ":partial_permutation",
+        ":sap_constraint_bundle",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/contact_solvers:block_sparse_matrix",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_contact_problem_test",
+    deps = [
+        ":sap_constraint",
+        ":sap_contact_problem",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_limit_constraint_test",
+    deps = [
+        ":sap_limit_constraint",
+        "//common:pointer_cast",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_friction_cone_constraint_test",
+    deps = [
+        ":sap_friction_cone_constraint",
+        "//common:pointer_cast",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
+        "//solvers:constraint",
+        "//solvers:mathematical_program",
+        "//solvers:scs_solver",
+        "//solvers:solve",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_problem_graph_test",
+    deps = [
+        ":contact_problem_graph",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_model_test",
+    deps = [
+        ":sap_constraint",
+        ":sap_contact_problem",
+        ":sap_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_solver_test",
+    deps = [
+        ":sap_friction_cone_constraint",
+        ":sap_solver",
+        ":sap_solver_results",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/contact_solvers:block_sparse_linear_operator",
+        "//multibody/contact_solvers:block_sparse_matrix",
+        "//multibody/contact_solvers:contact_solver_utils",
+    ],
+)
+
+add_lint_tests()

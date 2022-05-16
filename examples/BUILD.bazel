@@ -40,7 +40,8 @@ INSTALLED_MODEL_PACKAGES = [
     "//examples/acrobot",
     "//examples/atlas",
     "//examples/compass_gait",
-    "//examples/kuka_iiwa_arm",
+    "//examples/hydroelastic/spatula_slip_control",
+    "//examples/kuka_iiwa_arm/models",
     "//examples/manipulation_station",
     "//examples/multibody/cart_pole",
     "//examples/pendulum",
@@ -48,7 +49,6 @@ INSTALLED_MODEL_PACKAGES = [
     "//examples/pr2",
     "//examples/quadrotor",
     "//examples/rimless_wheel",
-    "//examples/simple_four_bar",
     "//examples/zmp",
 ]
 
@@ -58,21 +58,12 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-# TODO(jwnimmer-tri): Figure out which examples needs to be installed (see
-# issues #4224 and #1766).
-INSTALLED_EXAMPLES = [
-    "//examples/kuka_iiwa_arm",
-]
-
 install(
     name = "install",
     visibility = ["//visibility:public"],
     deps = [
         package + ":install_data"
         for package in INSTALLED_MODEL_PACKAGES
-    ] + [
-        package + ":install"
-        for package in INSTALLED_EXAMPLES
     ],
 )
 

@@ -14,6 +14,8 @@ namespace yaml {
 namespace test {
 namespace {
 
+using internal::YamlWriteArchive;
+
 // A test fixture with common helpers.
 class YamlWriteArchiveTest : public ::testing::Test {
  public:
@@ -162,6 +164,25 @@ TEST_F(YamlWriteArchiveTest, StdUnorderedMap) {
     echo: 4.0
     fox: 5.0
     gulf: 6.0
+)""");
+}
+
+TEST_F(YamlWriteArchiveTest, StdMapDirectly) {
+  const auto test = [](const std::map<std::string, double>& value,
+                       const std::string& expected) {
+    EXPECT_EQ(Save(value), expected);
+  };
+
+  test({}, R"""(doc:
+)""");
+
+  test({{"foo", 0.0}}, R"""(doc:
+  foo: 0.0
+)""");
+
+  test({{"foo", 0.0}, {"bar", 1.0}}, R"""(doc:
+  bar: 1.0
+  foo: 0.0
 )""");
 }
 

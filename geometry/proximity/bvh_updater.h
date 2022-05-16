@@ -26,7 +26,7 @@ namespace internal {
  maintain those associations for its entire lifetime (see DeformableVolumeMesh
  as an example).
 
- @tparam MeshType SurfaceMesh<T> or VolumeMesh<T> where T is double or
+ @tparam MeshType TriangleSurfaceMesh<T> or VolumeMesh<T> where T is double or
                   AutoDiffXd. */
 template <typename MeshType>
 class BvhUpdater {
@@ -64,31 +64,26 @@ class BvhUpdater {
   }
 
  private:
-  template <typename T>
-  using VertexType = typename MeshType::template VertexType<T>;
-
   // If the mesh type is already double-valued, simply return the mesh vertices.
-  static const std::vector<VertexType<double>>& GetMeshVertices(
-      const std::vector<VertexType<double>>& vertices) {
+  static const std::vector<Vector3<double>>& GetMeshVertices(
+      const std::vector<Vector3<double>>& vertices) {
     return vertices;
   }
 
   // If the mesh type is AutoDiffXd-valued, return double-valued vertices.
-  static const std::vector<VertexType<double>> GetMeshVertices(
-      const std::vector<VertexType<AutoDiffXd>>& vertices) {
-    std::vector<VertexType<double>> vertices_dbl;
+  static std::vector<Vector3<double>> GetMeshVertices(
+      const std::vector<Vector3<AutoDiffXd>>& vertices) {
+    std::vector<Vector3<double>> vertices_dbl;
     vertices_dbl.reserve(vertices.size());
     for (const auto& v : vertices) {
-      vertices_dbl.emplace_back(convert_to_double(v.r_MV()));
+      vertices_dbl.emplace_back(convert_to_double(v));
     }
     return vertices_dbl;
   }
 
   // Helper function to perform a bottom-up refit.
-  void UpdateRecursive(
-      typename Bvh<Aabb, MeshType>::NodeType* node,
-      const std::vector<typename MeshType::template VertexType<double>>&
-          vertices) {
+  void UpdateRecursive(typename Bvh<Aabb, MeshType>::NodeType* node,
+                       const std::vector<Vector3<double>>& vertices) {
     using Vector3d = Eigen::Vector3d;
     /* Intentionally uninitialized. */
     Vector3d lower, upper;
@@ -104,8 +99,7 @@ class BvhUpdater {
       for (int e = 0; e < num_elements; ++e) {
         const auto& element = mesh_.element(node->element_index(e));
         for (int i = 0; i < kElementVertexCount; ++i) {
-          const Vector3d& p_MV =
-              convert_to_double(vertices[element.vertex(i)].r_MV());
+          const Vector3d& p_MV = convert_to_double(vertices[element.vertex(i)]);
           lower = lower.cwiseMin(p_MV);
           upper = upper.cwiseMax(p_MV);
         }

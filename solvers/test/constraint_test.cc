@@ -48,12 +48,65 @@ GTEST_TEST(TestConstraint, BoundSizeCheck) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       LinearConstraint(Eigen::Matrix3d::Identity(), Eigen::Vector2d(1., 2),
                        Eigen::Vector3d(2., 3, 4.)),
-      std::invalid_argument,
       "Constraint  expects lower and upper bounds of size 3, got lower "
       "bound of size 2 and upper bound of size 3.");
 }
 
-GTEST_TEST(testConstraint, testLinearConstraintUpdate) {
+GTEST_TEST(TestConstraint, LinearConstraintSparse) {
+  // Construct LinearConstraint with sparse A matrix.
+  std::vector<Eigen::Triplet<double>> A_triplets;
+  A_triplets.emplace_back(0, 1, 0.5);
+  A_triplets.emplace_back(1, 0, 1.5);
+  Eigen::SparseMatrix<double> A_sparse(2, 3);
+  A_sparse.setFromTriplets(A_triplets.begin(), A_triplets.end());
+  Eigen::Vector2d lb(0, 1);
+  Eigen::Vector2d ub(1, 2);
+  LinearConstraint dut(A_sparse, lb, ub);
+  EXPECT_EQ(dut.num_vars(), 3);
+  EXPECT_EQ(dut.num_constraints(), 2);
+  EXPECT_EQ(dut.get_sparse_A().nonZeros(), A_sparse.nonZeros());
+  EXPECT_TRUE(
+      CompareMatrices(dut.get_sparse_A().toDense(), A_sparse.toDense()));
+  EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_sparse.toDense()));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_TRUE(CompareMatrices(dut.A(), A_sparse.toDense()));
+#pragma GCC diagnostic pop
+  EXPECT_TRUE(CompareMatrices(dut.lower_bound(), lb));
+  EXPECT_TRUE(CompareMatrices(dut.upper_bound(), ub));
+
+  // Call UpdateCoefficients with sparse A;
+  A_triplets.emplace_back(1, 2, 2.5);
+  Eigen::SparseMatrix<double> A_sparse_new(2, 3);
+  A_sparse_new.setFromTriplets(A_triplets.begin(), A_triplets.end());
+  lb << 1, 4;
+  ub << 2, 5;
+  dut.UpdateCoefficients(A_sparse_new, lb, ub);
+  EXPECT_EQ(dut.get_sparse_A().nonZeros(), A_sparse_new.nonZeros());
+  EXPECT_TRUE(
+      CompareMatrices(dut.get_sparse_A().toDense(), A_sparse_new.toDense()));
+  EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_sparse_new.toDense()));
+  EXPECT_TRUE(CompareMatrices(dut.lower_bound(), lb));
+  EXPECT_TRUE(CompareMatrices(dut.upper_bound(), ub));
+}
+
+GTEST_TEST(TestConstraint, LinearEqualityConstraintSparse) {
+  std::vector<Eigen::Triplet<double>> A_triplets;
+  A_triplets.emplace_back(0, 1, 0.5);
+  A_triplets.emplace_back(1, 0, 1.5);
+  Eigen::SparseMatrix<double> A_sparse(2, 3);
+  A_sparse.setFromTriplets(A_triplets.begin(), A_triplets.end());
+  Eigen::Vector2d bound(0, 1);
+  LinearEqualityConstraint dut(A_sparse, bound);
+  EXPECT_EQ(dut.get_sparse_A().nonZeros(), A_sparse.nonZeros());
+  EXPECT_TRUE(
+      CompareMatrices(dut.get_sparse_A().toDense(), A_sparse.toDense()));
+  EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_sparse.toDense()));
+  EXPECT_TRUE(CompareMatrices(dut.lower_bound(), bound));
+  EXPECT_TRUE(CompareMatrices(dut.upper_bound(), bound));
+}
+
+GTEST_TEST(TestConstraint, testLinearConstraintUpdate) {
   // Update the coefficients or the bound of the linear constraint, and check
   // the updated constraint.
   const Eigen::Matrix2d A = Eigen::Matrix2d::Identity();
@@ -61,7 +114,7 @@ GTEST_TEST(testConstraint, testLinearConstraintUpdate) {
   LinearEqualityConstraint constraint(A, b);
   EXPECT_TRUE(CompareMatrices(constraint.lower_bound(), b));
   EXPECT_TRUE(CompareMatrices(constraint.upper_bound(), b));
-  EXPECT_TRUE(CompareMatrices(constraint.A(), A));
+  EXPECT_TRUE(CompareMatrices(constraint.GetDenseA(), A));
   EXPECT_EQ(constraint.num_constraints(), 2);
 
   // Test Eval/CheckSatisfied using Expression.
@@ -86,9 +139,36 @@ GTEST_TEST(testConstraint, testLinearConstraintUpdate) {
   constraint.UpdateCoefficients(A3, b3);
   EXPECT_TRUE(CompareMatrices(constraint.lower_bound(), b3));
   EXPECT_TRUE(CompareMatrices(constraint.upper_bound(), b3));
-  EXPECT_TRUE(CompareMatrices(constraint.A(), A3));
+  EXPECT_TRUE(CompareMatrices(constraint.GetDenseA(), A3));
+  EXPECT_TRUE(CompareMatrices(constraint.get_sparse_A().toDense(), A3));
   EXPECT_EQ(constraint.num_constraints(), 3);
 }
+
+GTEST_TEST(testConstraint, testRemoveTinyCoefficient) {
+  Eigen::Matrix<double, 2, 3> A;
+  const double tol = 1E-8;
+  // clang-format off
+  A << 0.5 * tol, -0.5 * tol, 0,
+       1.5, -0.1 * tol, 0;
+  // clang-format on
+  Eigen::Vector2d lb(-0.1 * tol, 0);
+  Eigen::Vector2d ub(2, 0.1 * tol);
+  LinearConstraint dut(A, lb, ub);
+  dut.RemoveTinyCoefficient(tol);
+  Eigen::Matrix<double, 2, 3> A_expected;
+  // clang-format off
+  A_expected << 0, 0, 0,
+                1.5, 0, 0;
+  // clang-format on
+  EXPECT_TRUE(CompareMatrices(dut.get_sparse_A().toDense(), A_expected));
+  EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_expected));
+  EXPECT_TRUE(CompareMatrices(dut.lower_bound(), lb));
+  EXPECT_TRUE(CompareMatrices(dut.upper_bound(), ub));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.RemoveTinyCoefficient(-1),
+                              ".*tol should be non-negative");
+}
+
 GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
   // Check if the getters in the QuadraticConstraint are right.
   Eigen::Matrix2d Q;
@@ -342,6 +422,36 @@ GTEST_TEST(testConstraint, testLorentzConeConstraintAtZeroZ) {
   EXPECT_TRUE(CompareMatrices(y_gradient, A.row(0)));
 }
 
+GTEST_TEST(testConstraint, LorentzConeConstraintUpdateCoefficients) {
+  Eigen::Matrix<double, 3, 2> A;
+  A << 1, 2, -2, -1, 2, 3;
+  Eigen::Vector3d b(1, 2, 3);
+  LorentzConeConstraint constraint(
+      A, b, LorentzConeConstraint::EvalType::kConvexSmooth);
+  const int num_constraints = constraint.num_constraints();
+  A *= 2;
+  b *= 3;
+  constraint.UpdateCoefficients(A, b);
+  EXPECT_TRUE(CompareMatrices(constraint.A().toDense(), A));
+  EXPECT_TRUE(CompareMatrices(constraint.A_dense(), A));
+  EXPECT_TRUE(CompareMatrices(constraint.b(), b));
+
+  // Now try A with different number of rows. UpdateCoefficients should still
+  // work.
+  Eigen::Matrix<double, 4, 2> new_A;
+  new_A << Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Identity();
+  Eigen::Vector4d new_b = Eigen::Vector4d::Zero();
+  constraint.UpdateCoefficients(new_A, new_b);
+  EXPECT_EQ(constraint.num_vars(), 2);
+  EXPECT_EQ(constraint.num_constraints(), num_constraints);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      constraint.UpdateCoefficients(Eigen::Matrix3d::Identity(),
+                                    Eigen::Vector3d::Zero()),
+      ".*UpdateCoefficients uses new_A with 3 columns to update a constraint "
+      "with 2 variables.");
+}
+
 GTEST_TEST(testConstraint, testRotatedLorentzConeConstraint) {
   // [1;2;1] is in the interior of the rotated lorentz cone.
   TestRotatedLorentzConeEval(Eigen::Matrix3d::Identity(),
@@ -376,6 +486,36 @@ GTEST_TEST(testConstraint, testRotatedLorentzConeConstraint) {
   Eigen::Vector3d A4(1, 3, 2);
   Eigen::Vector3d b4 = Eigen::Vector3d(-1, -2, 1) - A4 * x4;
   TestRotatedLorentzConeEval(A4, b4, x4, false);
+}
+
+GTEST_TEST(testConstraint, RotatedLorentzConeConstraintUpdateCoefficients) {
+  Eigen::Matrix<double, 3, 2> A;
+  A << 1, 2, -2, -1, 2, 3;
+  Eigen::Vector3d b(1, 2, 3);
+  RotatedLorentzConeConstraint constraint(A, b);
+  const int num_constraints = constraint.num_constraints();
+  A *= 2;
+  b *= 3;
+  constraint.UpdateCoefficients(A, b);
+  EXPECT_TRUE(CompareMatrices(constraint.A().toDense(), A));
+  EXPECT_TRUE(CompareMatrices(constraint.A_dense(), A));
+  EXPECT_TRUE(CompareMatrices(constraint.b(), b));
+  EXPECT_EQ(constraint.num_vars(), 2);
+
+  // Now try A with different number of rows. UpdateCoefficients should still
+  // work.
+  Eigen::Matrix<double, 4, 2> new_A;
+  new_A << Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Identity();
+  Eigen::Vector4d new_b = Eigen::Vector4d::Zero();
+  constraint.UpdateCoefficients(new_A, new_b);
+  EXPECT_EQ(constraint.num_vars(), 2);
+  EXPECT_EQ(constraint.num_constraints(), num_constraints);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      constraint.UpdateCoefficients(Eigen::Matrix3d::Identity(),
+                                    Eigen::Vector3d::Zero()),
+      ".*UpdateCoefficients uses new_A with 3 columns to update a constraint "
+      "with 2 variables.");
 }
 
 GTEST_TEST(testConstraint, testPositiveSemidefiniteConstraint) {

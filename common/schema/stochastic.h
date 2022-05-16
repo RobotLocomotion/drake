@@ -27,7 +27,7 @@ systems::System.
 # Stochastic variables
 
 We'll explain uses of schema::Distribution and related types using the matching
-YAML syntax as parsed by yaml::YamlReadArchive.
+YAML syntax as parsed by yaml::LoadYamlFile.
 
 Given this C++ data structure:
 
@@ -107,7 +107,7 @@ For convenience, we also provide the option to specify a vector of independent
 stochastic variables with the same type.
 
 We'll explain uses of schema::DistributionVector and related types using the
-matching YAML syntax as parsed by yaml::YamlReadArchive.
+matching YAML syntax as parsed by yaml::LoadYamlFile.
 
 Given this C++ data structure:
 
@@ -198,8 +198,8 @@ rotations, translations, and transforms using stochastic schemas.
 /// Base class for a single distribution, to be used with YAML archives.
 /// (See class DistributionVector for vector-valued distributions.)
 ///
-/// See @ref serialize_tips for implementation details, especially the
-/// unusually public member fields in our subclasses.
+/// See @ref implementing_serialize "Implementing Serialize" for implementation
+/// details, especially the unusually public member fields of our subclasses.
 class Distribution {
  public:
   virtual ~Distribution();
@@ -346,7 +346,7 @@ double GetDeterministicValue(const DistributionVariant& var);
 /// Base class for a vector of distributions, to be used with YAML archives.
 /// (See class Distribution for scalar-valued distributions.)
 ///
-/// See @ref serialize_tips for implementation details, especially the
+/// See @ref implementing_serialize for implementation details, especially the
 /// unusually public member fields in our subclasses.
 class DistributionVector {
  public:

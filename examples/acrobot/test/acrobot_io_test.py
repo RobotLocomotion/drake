@@ -14,28 +14,25 @@ class TestIo(unittest.TestCase):
         self.example = FindResourceOrThrow(
             "drake/examples/acrobot/test/example_scenario.yaml")
         # When saving, everything comes out as floats (not `int`, etc.).
-        self.expected_save = """example:
-  controller_params: [5.0, 50.0, 5.0, 1000.0]
-  initial_state: [1.2, 0.0, 0.0, 0.0]
-  t_final: 30.0
-  tape_period: 0.05
+        self.expected_save = """\
+controller_params: [5.0, 50.0, 5.0, 1000.0]
+initial_state: [1.2, 0.0, 0.0, 0.0]
+t_final: 30.0
+tape_period: 0.05
 """
 
     def test_load_scenario(self):
-        a = load_scenario(filename=self.example)
-        b = load_scenario(filename=self.example, scenario_name="example")
+        scenario = load_scenario(filename=self.example)
         expected = ", ".join([
             "{'controller_params': [5, 50, 5, '1e3']",
             "'initial_state': [1.2, 0, 0, 0]",
             "'t_final': 30.0",
             "'tape_period': 0.05}"])
-        self.assertEqual(str(a), expected)
-        self.assertEqual(str(b), expected)
-        self.assertEqual(a, b)
+        self.assertEqual(str(scenario), expected)
 
     def test_save_scenario(self):
         scenario = load_scenario(filename=self.example)
-        actual = save_scenario(scenario_name="example", scenario=scenario)
+        actual = save_scenario(scenario=scenario)
         self.assertEqual(actual, self.expected_save)
 
     def test_save_scenario_numpy(self):
@@ -45,7 +42,7 @@ class TestIo(unittest.TestCase):
             "t_final": 30.0,
             "tape_period": 0.05,
         }
-        actual = save_scenario(scenario_name="example", scenario=scenario)
+        actual = save_scenario(scenario=scenario)
         self.assertEqual(actual, self.expected_save)
 
     def test_save_scenario_stochastic(self):
@@ -58,14 +55,14 @@ class TestIo(unittest.TestCase):
             "t_final": 30.0,
             "tape_period": 0.05,
         }
-        actual = save_scenario(scenario_name="example", scenario=scenario)
-        self.assertEqual(actual, """example:
-  controller_params:
-    max: [5.0, 50.0, 5.0, 1000.0]
-    min: [1.0, 10.0, 1.0, 100.0]
-  initial_state: [1.2, 0.0, 0.0, 0.0]
-  t_final: 30.0
-  tape_period: 0.05
+        actual = save_scenario(scenario=scenario)
+        self.assertEqual(actual, """\
+controller_params:
+  max: [5.0, 50.0, 5.0, 1000.0]
+  min: [1.0, 10.0, 1.0, 100.0]
+initial_state: [1.2, 0.0, 0.0, 0.0]
+t_final: 30.0
+tape_period: 0.05
 """)
 
     def test_save_output_and_load_output(self):

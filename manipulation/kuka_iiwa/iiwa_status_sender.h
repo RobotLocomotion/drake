@@ -40,13 +40,16 @@ namespace kuka_iiwa {
 /// input_ports:
 /// - position_commanded
 /// - position_measured
-/// - velocity_estimated (optional)
+/// - velocity_estimated
 /// - torque_commanded
-/// - torque_measured (optional)
-/// - torque_external (optional)
+/// - torque_measured
+/// - torque_external
 /// output_ports:
 /// - lcmt_iiwa_status
 /// @endsystem
+///
+/// The ports `velocity_estimated`, `torque_measured`, and `torque_external`
+/// may be left unconnected, as detailed above.
 ///
 /// @see `lcmt_iiwa_status.lcm` for additional documentation.
 class IiwaStatusSender final : public systems::LeafSystem<double> {

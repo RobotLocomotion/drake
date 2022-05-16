@@ -27,6 +27,7 @@ def pybind_py_library(
         py_srcs = [],
         py_deps = [],
         py_imports = [],
+        py_data = [],
         py_library_rule = py_library,
         **kwargs):
     """Declares a pybind11 Python library with C++ and Python portions.
@@ -47,6 +48,8 @@ def pybind_py_library(
         Python dependencies.
     @param py_imports (optional)
         Additional Python import directories.
+    @param py_data (optional)
+        Python data dependencies.
     @return struct(cc_so_target = ..., py_target = ...)
     """
     py_name = name
@@ -57,10 +60,16 @@ def pybind_py_library(
     # output a *.so, so that the target name is similar to what is provided.
     cc_so_target = cc_so_name + PYTHON_EXTENSION_SUFFIX
 
-    # GCC and Clang don't always agree / succeed when inferring storage
-    # duration (#9600). Workaround it for now.
     if COMPILER_ID.endswith("Clang"):
-        copts = ["-Wno-unused-lambda-capture"] + cc_copts
+        copts = cc_copts + [
+            # GCC and Clang don't always agree / succeed when inferring storage
+            # duration (#9600). Workaround it for now.
+            "-Wno-unused-lambda-capture",
+            # pybind11's operator overloading (e.g., .def(py::self + py::self))
+            # spuriously triggers this warning, so we'll suppress it anytime
+            # we're compiling pybind11 modules.
+            "-Wno-self-assign-overloaded",
+        ]
     else:
         copts = cc_copts
 
@@ -82,7 +91,7 @@ def pybind_py_library(
     # Add Python library.
     py_library_rule(
         name = py_name,
-        data = [cc_so_target],
+        data = [cc_so_target] + py_data,
         srcs = py_srcs,
         deps = py_deps,
         imports = py_imports,
@@ -100,6 +109,30 @@ def pybind_py_library(
 # TODO(eric.cousineau): Rename `drake_pybind_library` to
 # `drake_pybind_py_library`.
 
+def _check_cc_deps(*, cc_deps, testonly):
+    """Fails-fast in case of potential ODR violations."""
+    allowed_prefix = [
+        # The dep uses a fully-qualified path to somewhere within pydrake.
+        "//bindings/pydrake",
+        # The dep is local to pydrake already.
+        ":",
+        # The dep is a header-only library with no dependencies (unless those
+        # dependencies are also header-only).
+        "//common:nice_type_name_override_header",
+    ]
+    if testonly:
+        allowed_prefix.extend([
+            # The utilities are not part of libdrake.so, so do not violate ODR.
+            "//common/test_utilities",
+            # TODO(jwnimmer-tri) This *definitely* violates ODR, but is not
+            # quite easy to remove from the one place it's currently used.
+            "//common:nice_type_name",
+        ])
+    for item in (cc_deps or []):
+        if any([item.startswith(p) for p in allowed_prefix]):
+            continue
+        fail("Not allowed to link {} statically".format(item))
+
 def drake_pybind_library(
         name,
         cc_srcs = [],
@@ -110,6 +143,7 @@ def drake_pybind_library(
         py_srcs = [],
         py_deps = [],
         py_imports = [],
+        py_data = [],
         add_install = True,
         visibility = None,
         testonly = None):
@@ -136,6 +170,7 @@ def drake_pybind_library(
     """
     if package_info == None:
         fail("`package_info` must be supplied.")
+    _check_cc_deps(cc_deps = cc_deps, testonly = testonly)
     if not cc_so_name:
         if name.endswith("_py"):
             cc_so_name = name[:-3]
@@ -155,6 +190,7 @@ def drake_pybind_library(
         py_srcs = py_srcs,
         py_deps = py_deps,
         py_imports = package_info.py_imports + py_imports,
+        py_data = py_data,
         py_library_rule = drake_py_library,
         testonly = testonly,
         visibility = visibility,
@@ -255,6 +291,7 @@ def drake_pybind_cc_googletest(
         tags = []):
     """Defines a C++ test (using `pybind`) which has access to Python
     libraries. """
+    _check_cc_deps(cc_deps = cc_deps, testonly = True)
     cc_name = name + "_cc"
     if not cc_srcs:
         cc_srcs = ["test/{}.cc".format(name)]

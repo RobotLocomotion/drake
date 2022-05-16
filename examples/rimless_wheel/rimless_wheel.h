@@ -29,12 +29,13 @@ namespace rimless_wheel {
 /// @system
 /// name: RimlessWheel
 /// output_ports:
-/// - minimal_state (theta and thetadot only)
+/// - minimal_state
 /// - floating_base_state
 /// @endsystem
 ///
-/// Continuous States: theta, thetadot.
-/// Discrete States: stance toe position, double support indicator.
+/// Continuous States: theta, thetadot (emitted at `minimal_state` port).
+/// Discrete States: stance toe position (emitted at `floating_base_state`
+///   port), double support indicator.
 /// Parameters: mass, length, number of spokes, etc, are all set as Context
 ///   parameters using RimlessWheelParams.
 ///
@@ -53,7 +54,7 @@ class RimlessWheel final : public systems::LeafSystem<T> {
 
   /// Return reference to the output port that publishes only [theta,
   /// thetatdot].
-  const systems::OutputPort<T>& get_minimal_state_output_port() {
+  const systems::OutputPort<T>& get_minimal_state_output_port() const {
     return this->get_output_port(0);
   }
 
@@ -63,7 +64,7 @@ class RimlessWheel final : public systems::LeafSystem<T> {
   /// of the floating base (rotation around global y), and downhill moves toward
   /// positive x.  As always, we use vehicle coordinates (x-y on the ground, z
   /// is up).
-  const systems::OutputPort<T>& get_floating_base_state_output_port() {
+  const systems::OutputPort<T>& get_floating_base_state_output_port() const {
     return this->get_output_port(1);
   }
 

@@ -3,16 +3,18 @@
 This directory contains tools to help with careful performance measurement and
 analysis of Drake programs.
 
-## Benchmarking tools
+Fully worked examples that integrate this tooling are available at:
+- drake/examples/multibody/cassie_benchmark
+- drake/systems/benchmarking
 
-Included here are two tools to help with well-controlled benchmark experiments:
+Some of the history of attempts to drive variance out of benchmark results is
+captured in #13902.
 
- * `record_results.py` -- run benchmark under bazel, record context and results
- * `benchmark_tool.py` -- outside-bazel tool for experiments and data handling
+TODO(jwnimmer-tri): Port //geometry/benchmarking to use this tooling as well.
 
-A fully worked example that integrates these two tools is available at
-`drake/examples/multibody/cassie_benchmark`. Some of the history of attempts to
-drive variance out of benchmark results is captured in #13902.
+TODO(jwnimmer-tri): Port the //examples/acrobot benchmark to use this tooling
+as well, and move it to somewhere less obscure (e.g., with the other multibody
+benchmarks).
 
 TODO(rpoyner-tri): explain how to use compare.py from the googlebenchmark
 package to compare stored results from different experiments.

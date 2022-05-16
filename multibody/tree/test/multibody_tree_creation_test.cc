@@ -216,35 +216,35 @@ GTEST_TEST(MultibodyTree, MultibodyElementChecks) {
 // mobilizer index (assigned by MultibodyTree in the order mobilizers are
 // created).
 // At Finalize(), a body node is created per (body, inboard_mobilizer) pair.
-// Body node indexes are assigned according to a BFT order.
-// Tests below make reference to the indexes in this schematic. The following
-// points are important:
-// - Body nodes are ordered by a BFT sort however,
-// - There is no guarantee on which body node is assigned to which body,
-// - Body nodes at a particular level are not guaranteed to be in any particular
-//   order, only that they belong to the right level is important.
+// Body node indexes, shown in parentheses, are assigned in DFT order. In
+// addition, we know that internal::MultibodyTreeTopology assigns body nodes to
+// each branch in the order mobilizers are added. For instance, in the schematic
+// below, node (1) is created before node (2) because mobilizer m2 was added
+// before m4. Similarly, node (7) is created before (8) because mobilizer m1 was
+// added before m6.
+// Notice that bodies 8 and 9 are anchored to the world. Therefore they do not
+// belong to any tree and the full model has three trees, with bases at body 7,
+// 5 and 4.
 //
-//                        +---+
-//                        | 0 |                        Level 0 (root, world)
-//            +-----------+-+-+-----------+
-//            |             |             |
-//            | m6          | m2          | m4
-//            |             |             |
-//          +-v-+         +-v-+         +-v-+
-//          | 4 |         | 7 |         | 5 |          Level 1
-//       +--+---+--+      +---+         +-+-+
-//       |         |                      |
-//       | m1      | m5                   | m3
-//       |         |                      |
-//     +-v-+     +-v-+                  +-v-+
-//     | 2 |     | 1 |                  | 3 |          Level 2
-//     +---+     +-+-+                  +---+
-//                 |
-//                 | m0
-//                 |
-//               +-v-+
-//               | 6 |                                 Level 3
-//               +---+
+//                 ┌───┐
+//                 │ 0 │(0)                              Level 0 (root, world)
+//                 └─┬─┘
+//                   │
+//     ┌─────────────┼──────────┬────────────────┐
+//     │ m2          │ m4       │ m5             │ m7
+//   ┌─┴─┐         ┌─┴─┐      ┌─┴─┐            ┌─┴─┐
+//   │ 7 │(1)      │ 5 │(2)   │ 9 │(4)         │ 4 │(6)         Level 1
+//   └───┘         └─┬─┘      └─┬─┘            └─┬─┘
+//                   │          │                │
+//                   │          │          ┌─────┴──────┐
+//                   │ m3       │ m8       │ m1         │ m6
+//                 ┌─┴─┐      ┌─┴─┐      ┌─┴─┐        ┌─┴─┐
+//                 │ 3 │(3)   │ 8 │(5)   │ 2 │(7)     │ 1 │(8)  Level 2
+//                 └───┘      └───┘      └───┘        └─┬─┘
+//                                                      │ m0
+//                                                    ┌─┴─┐
+//                                                    │ 6 │(9)  Level 3
+//                                                    └───┘
 //
 class TreeTopologyTests : public ::testing::Test {
  public:
@@ -252,7 +252,7 @@ class TreeTopologyTests : public ::testing::Test {
   void SetUp() override {
     model_ = std::make_unique<MultibodyTree<double>>();
 
-    const int kNumBodies = 8;
+    const int kNumBodies = 10;
     bodies_.push_back(&model_->world_body());
     for (int i =1; i < kNumBodies; ++i)
       AddTestBody();
@@ -263,8 +263,10 @@ class TreeTopologyTests : public ::testing::Test {
     ConnectBodies(*bodies_[0], *bodies_[7]);  // mob. 2
     ConnectBodies(*bodies_[5], *bodies_[3]);  // mob. 3
     ConnectBodies(*bodies_[0], *bodies_[5]);  // mob. 4
-    ConnectBodies(*bodies_[4], *bodies_[1]);  // mob. 5
-    ConnectBodies(*bodies_[0], *bodies_[4], true);  // mob. 6
+    WeldBodies(*bodies_[0], *bodies_[9]);     // mob. 5
+    ConnectBodies(*bodies_[4], *bodies_[1], true);  // mob. 6
+    ConnectBodies(*bodies_[0], *bodies_[4]);  // mob. 7
+    WeldBodies(*bodies_[9], *bodies_[8]);     // mob. 8
   }
 
   const RigidBody<double>* AddTestBody() {
@@ -299,6 +301,14 @@ class TreeTopologyTests : public ::testing::Test {
               Vector3d::UnitZ());
       mobilizers_.push_back(mobilizer);
     }
+  }
+
+  void WeldBodies(const RigidBody<double>& inboard,
+                  const RigidBody<double>& outboard) {
+    const Mobilizer<double>* mobilizer = &model_->AddMobilizer<WeldMobilizer>(
+        inboard.body_frame(), outboard.body_frame(),
+        math::RigidTransformd::Identity());
+    mobilizers_.push_back(mobilizer);
   }
 
   void FinalizeModel() {
@@ -368,10 +378,10 @@ class TreeTopologyTests : public ::testing::Test {
   }
 
   static void VerifyTopology(const MultibodyTreeTopology& topology) {
-    const int kNumBodies = 8;
+    const int kNumBodies = 10;
 
     EXPECT_EQ(topology.num_bodies(), kNumBodies);
-    EXPECT_EQ(topology.num_mobilizers(), 7);
+    EXPECT_EQ(topology.num_mobilizers(), 9);
     EXPECT_EQ(topology.num_force_elements(), 1);
     EXPECT_EQ(topology.get_num_body_nodes(), kNumBodies);
     EXPECT_EQ(topology.tree_height(), 4);
@@ -380,39 +390,85 @@ class TreeTopologyTests : public ::testing::Test {
     // The order of these indexes in each set is not important, but only the
     // fact that they belong to the appropriate set.
     set<BodyIndex> expected_level0 = {BodyIndex(0)};
-    set<BodyIndex> expected_level1 = {BodyIndex(4), BodyIndex(7), BodyIndex(5)};
-    set<BodyIndex> expected_level2 = {BodyIndex(2), BodyIndex(1), BodyIndex(3)};
+    set<BodyIndex> expected_level1 = {BodyIndex(4), BodyIndex(7), BodyIndex(5),
+                                      BodyIndex(9)};
+    set<BodyIndex> expected_level2 = {BodyIndex(2), BodyIndex(1), BodyIndex(3),
+                                      BodyIndex(8)};
     set<BodyIndex> expected_level3 = {BodyIndex(6)};
 
-    set<BodyIndex> level0 = {topology.get_body_node(BodyNodeIndex(0)).body};
-    set<BodyIndex> level1 = {topology.get_body_node(BodyNodeIndex(1)).body,
-                             topology.get_body_node(BodyNodeIndex(2)).body,
-                             topology.get_body_node(BodyNodeIndex(3)).body};
-    set<BodyIndex> level2 = {topology.get_body_node(BodyNodeIndex(4)).body,
-                             topology.get_body_node(BodyNodeIndex(5)).body,
-                             topology.get_body_node(BodyNodeIndex(6)).body};
-    set<BodyIndex> level3 = {topology.get_body_node(BodyNodeIndex(7)).body};
+    std::vector<std::set<BodyIndex>> levels(topology.num_bodies());
+    for (BodyIndex b(0); b < topology.num_bodies(); ++b) {
+      const BodyTopology& body = topology.get_body(b);
+      levels[body.level].insert(b);
+    }
 
     // Comparison of sets. The order of the elements is not important.
-    EXPECT_EQ(level0, expected_level0);
-    EXPECT_EQ(level1, expected_level1);
-    EXPECT_EQ(level2, expected_level2);
-    EXPECT_EQ(level3, expected_level3);
+    EXPECT_EQ(levels[0], expected_level0);
+    EXPECT_EQ(levels[1], expected_level1);
+    EXPECT_EQ(levels[2], expected_level2);
+    EXPECT_EQ(levels[3], expected_level3);
 
     // Verifies the expected number of child nodes.
-    EXPECT_EQ(node_topology_from_body_index(topology, 0).get_num_children(), 3);
+    EXPECT_EQ(node_topology_from_body_index(topology, 0).get_num_children(), 4);
     EXPECT_EQ(node_topology_from_body_index(topology, 4).get_num_children(), 2);
     EXPECT_EQ(node_topology_from_body_index(topology, 7).get_num_children(), 0);
     EXPECT_EQ(node_topology_from_body_index(topology, 5).get_num_children(), 1);
+    EXPECT_EQ(node_topology_from_body_index(topology, 9).get_num_children(), 1);
     EXPECT_EQ(node_topology_from_body_index(topology, 2).get_num_children(), 0);
     EXPECT_EQ(node_topology_from_body_index(topology, 1).get_num_children(), 1);
     EXPECT_EQ(node_topology_from_body_index(topology, 3).get_num_children(), 0);
+    EXPECT_EQ(node_topology_from_body_index(topology, 8).get_num_children(), 0);
     EXPECT_EQ(node_topology_from_body_index(topology, 6).get_num_children(), 0);
 
     // Checks the correctness of each BodyNode associated with a body.
     for (BodyIndex body(0); body < kNumBodies; ++body) {
       TestBodyNode(topology, body);
     }
+
+    // We now verify the precise expected topology. We use our internal
+    // knowledge that branches are created according to the order in which
+    // mobilizers are added. Refer to schematic in the documentation of this
+    // test fixture.
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(0)).body, 0);
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(1)).body, 7);
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(2)).body, 5);
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(3)).body, 3);
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(4)).body, 9);
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(5)).body, 8);
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(6)).body, 4);
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(7)).body, 2);
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(8)).body, 1);
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(9)).body, 6);
+
+    // Verify the expected "forest" of trees.
+    EXPECT_EQ(topology.num_trees(), 3);
+    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(0)), 1);
+    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(1)), 2);
+    EXPECT_EQ(topology.num_tree_velocities(TreeIndex(2)), 4);
+    EXPECT_EQ(topology.tree_velocities_start(TreeIndex(0)), 0);
+    EXPECT_EQ(topology.tree_velocities_start(TreeIndex(1)), 1);
+    EXPECT_EQ(topology.tree_velocities_start(TreeIndex(2)), 3);
+    // The world body does not belong to a tree. Therefore the returned index is
+    // invalid.
+    EXPECT_FALSE(topology.body_to_tree_index(world_index()).is_valid());
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(7)), TreeIndex(0));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(5)), TreeIndex(1));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(3)), TreeIndex(1));
+    EXPECT_FALSE(topology.body_to_tree_index(BodyIndex(9)).is_valid());
+    EXPECT_FALSE(topology.body_to_tree_index(BodyIndex(8)).is_valid());
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(4)), TreeIndex(2));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(2)), TreeIndex(2));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(1)), TreeIndex(2));
+    EXPECT_EQ(topology.body_to_tree_index(BodyIndex(6)), TreeIndex(2));
+
+    EXPECT_EQ(topology.num_velocities(), 7);
+    EXPECT_EQ(topology.velocity_to_tree_index(0), TreeIndex(0));
+    EXPECT_EQ(topology.velocity_to_tree_index(1), TreeIndex(1));
+    EXPECT_EQ(topology.velocity_to_tree_index(2), TreeIndex(1));
+    EXPECT_EQ(topology.velocity_to_tree_index(3), TreeIndex(2));
+    EXPECT_EQ(topology.velocity_to_tree_index(4), TreeIndex(2));
+    EXPECT_EQ(topology.velocity_to_tree_index(5), TreeIndex(2));
+    EXPECT_EQ(topology.velocity_to_tree_index(6), TreeIndex(2));
   }
 
  protected:
@@ -428,8 +484,8 @@ class TreeTopologyTests : public ::testing::Test {
 // This unit tests verifies that the multibody topology is properly compiled.
 TEST_F(TreeTopologyTests, Finalize) {
   model_->Finalize();
-  EXPECT_EQ(model_->num_bodies(), 8);
-  EXPECT_EQ(model_->num_mobilizers(), 7);
+  EXPECT_EQ(model_->num_bodies(), 10);
+  EXPECT_EQ(model_->num_mobilizers(), 9);
 
   const MultibodyTreeTopology& topology = model_->get_topology();
   EXPECT_EQ(topology.get_num_body_nodes(), model_->num_bodies());
@@ -442,8 +498,8 @@ TEST_F(TreeTopologyTests, Finalize) {
 // velocities as well as the start indexes into the state vector.
 TEST_F(TreeTopologyTests, SizesAndIndexing) {
   FinalizeModel();
-  EXPECT_EQ(model_->num_bodies(), 8);
-  EXPECT_EQ(model_->num_mobilizers(), 7);
+  EXPECT_EQ(model_->num_bodies(), 10);
+  EXPECT_EQ(model_->num_mobilizers(), 9);
   EXPECT_EQ(model_->num_joints(), 1);
 
   const MultibodyTreeTopology& topology = model_->get_topology();
@@ -467,24 +523,30 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
     const MobilizerIndex mobilizer_index = node.mobilizer;
 
     const MobilizerTopology& mobilizer_topology =
-        mobilizers_[mobilizer_index]->get_topology();
+        topology.get_mobilizer(mobilizer_index);
 
     EXPECT_EQ(body_index, bodies_[body_index]->index());
     EXPECT_EQ(mobilizer_index, mobilizers_[mobilizer_index]->index());
 
-    // Verify positions index.
-    EXPECT_EQ(positions_index, node.mobilizer_positions_start);
-    EXPECT_EQ(positions_index, mobilizer_topology.positions_start);
+    // Verify positions and velocity indexes.
+    if (mobilizer_topology.num_velocities == 0) {
+      // MultibodyTreeTopology sets start indexes to zero when there are no
+      // mobilities associated to a node.
+      EXPECT_EQ(node.mobilizer_positions_start, 0);
+      EXPECT_EQ(mobilizer_topology.positions_start, 0);
+      EXPECT_EQ(node.mobilizer_velocities_start, 0);
+      EXPECT_EQ(mobilizer_topology.velocities_start, 0);
+    } else {
+      EXPECT_EQ(positions_index, node.mobilizer_positions_start);
+      EXPECT_EQ(positions_index, mobilizer_topology.positions_start);
+      EXPECT_EQ(velocities_index, node.mobilizer_velocities_start);
+      EXPECT_EQ(velocities_index, mobilizer_topology.velocities_start);
 
-    // For this case we know there is one generalized position per mobilizer.
-    positions_index += 1;
-
-    // Verify velocities index.
-    EXPECT_EQ(velocities_index, node.mobilizer_velocities_start);
-    EXPECT_EQ(velocities_index, mobilizer_topology.velocities_start);
-
-    // For this case we know there is one generalized velocities per mobilizer.
-    velocities_index += 1;
+      // Mobilizers 5 and 8 are weld joints, with no velocities. All other
+      // mobilizers introduce one position and one velocity.
+      positions_index += 1;
+      velocities_index += 1;
+    }
   }
   EXPECT_EQ(positions_index, topology.num_positions());
   EXPECT_EQ(velocities_index, topology.num_states());
@@ -495,14 +557,14 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
 // model.
 TEST_F(TreeTopologyTests, Clone) {
   model_->Finalize();
-  EXPECT_EQ(model_->num_bodies(), 8);
-  EXPECT_EQ(model_->num_mobilizers(), 7);
+  EXPECT_EQ(model_->num_bodies(), 10);
+  EXPECT_EQ(model_->num_mobilizers(), 9);
   EXPECT_EQ(model_->num_force_elements(), 1);
   const MultibodyTreeTopology& topology = model_->get_topology();
 
   auto cloned_model = model_->Clone();
-  EXPECT_EQ(cloned_model->num_bodies(), 8);
-  EXPECT_EQ(cloned_model->num_mobilizers(), 7);
+  EXPECT_EQ(cloned_model->num_bodies(), 10);
+  EXPECT_EQ(cloned_model->num_mobilizers(), 9);
   EXPECT_EQ(cloned_model->num_force_elements(), 1);
   const MultibodyTreeTopology& clone_topology = cloned_model->get_topology();
 
@@ -523,12 +585,13 @@ TEST_F(TreeTopologyTests, Clone) {
 // original model.
 TEST_F(TreeTopologyTests, ToAutoDiffXd) {
   model_->Finalize();
-  EXPECT_EQ(model_->num_bodies(), 8);
-  EXPECT_EQ(model_->num_mobilizers(), 7);
+  EXPECT_EQ(model_->num_bodies(), 10);
+  EXPECT_EQ(model_->num_mobilizers(), 9);
   const MultibodyTreeTopology& topology = model_->get_topology();
 
   auto autodiff_model = model_->ToAutoDiffXd();
-  EXPECT_EQ(autodiff_model->num_bodies(), 8);
+  EXPECT_EQ(autodiff_model->num_bodies(), 10);
+  EXPECT_EQ(autodiff_model->num_mobilizers(), 9);
   const MultibodyTreeTopology& autodiff_topology =
       autodiff_model->get_topology();
 
@@ -546,12 +609,13 @@ TEST_F(TreeTopologyTests, ToAutoDiffXd) {
 // original model.
 TEST_F(TreeTopologyTests, ToSymbolic) {
   model_->Finalize();
-  EXPECT_EQ(model_->num_bodies(), 8);
-  EXPECT_EQ(model_->num_mobilizers(), 7);
+  EXPECT_EQ(model_->num_bodies(), 10);
+  EXPECT_EQ(model_->num_mobilizers(), 9);
   const MultibodyTreeTopology& topology = model_->get_topology();
 
   auto symbolic_model = model_->CloneToScalar<symbolic::Expression>();
-  EXPECT_EQ(symbolic_model->num_bodies(), 8);
+  EXPECT_EQ(symbolic_model->num_bodies(), 10);
+  EXPECT_EQ(symbolic_model->num_mobilizers(), 9);
   const MultibodyTreeTopology& symbolic_topology =
       symbolic_model->get_topology();
 

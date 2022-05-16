@@ -22,8 +22,8 @@
 ///   topology can be validated against the stored topology in debug builds.
 
 #include <algorithm>
-#include <queue>
 #include <set>
+#include <stack>
 #include <string>
 #include <utility>
 #include <vector>
@@ -88,7 +88,9 @@ struct BodyTopology {
   BodyIndex parent_body{};
 
   // Within the tree structure of a MultibodyTree, the immediate outboard (or
-  // "child") bodies to this Body.
+  // "child") bodies to this Body. Bodies appear in child_bodies in the order
+  // mobilizers were added to the model, with
+  // MultibodyTreeTopology::add_mobilizer().
   std::vector<BodyIndex> child_bodies;
 
   // Unique index to the frame associated with this body.
@@ -540,6 +542,50 @@ class MultibodyTreeTopology {
     return body_nodes_[index];
   }
 
+  // Returns the number of trees in the "forest" topology of the entire system.
+  // We refer to as "tree" a subgraph in the topology having a tree structure
+  // and whose base node connects to the world. The world does not belong to any
+  // tree. In other words, the number of trees in the topology corresponds to
+  // the number of children of the world body node (also called "base nodes").
+  int num_trees() const {
+    return static_cast<int>(num_tree_velocities_.size());
+  }
+
+  // Returns the number of generalized velocities for the t-th tree.
+  // @pre t.is_valid() is true and t < num_trees().
+  int num_tree_velocities(TreeIndex t) const {
+    DRAKE_ASSERT(t < num_trees());
+    return num_tree_velocities_[t];
+  }
+
+  // For the t-th tree, this method returns the index of the first generalized
+  // velocity in the vector of generalized velocities for the entire model.
+  // Starting at this index, the num_tree_velocities(t) velocities for the t-th
+  // tree are contiguous in the vector of generalized velocities for the full
+  // model. tree_velocities_start(t) always returns a valid index to an entry in
+  // the vector of generalized velocities for the full model, even if the t-th
+  // tree has no generalized velocities. In such case however,
+  // num_tree_velocities(t) will be zero.
+  int tree_velocities_start(TreeIndex t) const {
+    DRAKE_ASSERT(t < num_trees());
+    return tree_velocities_start_[t];
+  }
+
+  // Returns the tree index for the b-th body. The tree index for the world
+  // body, BodyIndex(0), is invalid. Check with TreeIndex::is_valid().
+  // @pre Index b is valid and b < num_bodies().
+  TreeIndex body_to_tree_index(BodyIndex b) const {
+    DRAKE_ASSERT(b < num_bodies());
+    return body_to_tree_index_[b];
+  }
+
+  // Returns the tree index for the v-th velocity.
+  // @pre 0 <= v and v < num_velocities().
+  TreeIndex velocity_to_tree_index(int v) const {
+    DRAKE_ASSERT(0 <= v && v < num_velocities());
+    return velocity_to_tree_index_[v];
+  }
+
   // Creates and adds a new BodyTopology to this MultibodyTreeTopology.
   // The BodyTopology will be assigned a new, unique BodyIndex and FrameIndex
   // values.
@@ -714,7 +760,7 @@ class MultibodyTreeTopology {
   // performs all the required pre-processing to perform computations at a
   // later stage. This preprocessing includes:
   //
-  // - sorting in BFT order for fast recursions through the tree,
+  // - sorting in DFT order for fast recursions through the tree,
   // - computation of state sizes and of pool sizes within cache entries,
   // - computation of index maps to retrieve either state or cache entries for
   //   each multibody element.
@@ -735,17 +781,14 @@ class MultibodyTreeTopology {
           "finalized MultibodyTree.");
     }
 
-    // Compute body levels in the tree. Root is the zero level.
-    // Breadth First Traversal (a.k.a. Level Order Traversal).
-    std::queue<BodyIndex> queue;
-    queue.push(BodyIndex(0));  // Starts at the root.
+    // For each body, assign a body node in a depth first traversal order.
+    std::stack<BodyIndex> stack;
+    stack.push(BodyIndex(0));  // Starts at the root.
     tree_height_ = 1;  // At least one level with the world body at the root.
-    // While at it, create body nodes and index them in this BFT order for
-    // fast tree traversals of MultibodyTree recursive algorithms.
     body_nodes_.reserve(num_bodies());
-    while (!queue.empty()) {
+    while (!stack.empty()) {
       const BodyNodeIndex node(get_num_body_nodes());
-      const BodyIndex current = queue.front();
+      const BodyIndex current = stack.top();
       const BodyIndex parent = bodies_[current].parent_body;
 
       bodies_[current].body_node = node;
@@ -762,7 +805,7 @@ class MultibodyTreeTopology {
       // Keep track of the number of levels, the deepest (i.e. max) level.
       tree_height_ = std::max(tree_height_, level + 1);
 
-      // Since we are doing a BFT, it is valid to ask for the parent node,
+      // Since we are doing a DFT, it is valid to ask for the parent node,
       // unless we are at the root.
       BodyNodeIndex parent_node;
       if (node != 0) {  // If we are not at the root:
@@ -778,11 +821,18 @@ class MultibodyTreeTopology {
           bodies_[current].parent_body       /* This node's parent body */,
           bodies_[current].inboard_mobilizer /* This node's mobilizer */);
 
-      // Pushes children to the back of the queue and pops current.
-      for (BodyIndex child : bodies_[current].child_bodies) {
-        queue.push(child);  // Pushes at the back.
+      // We process bodies in the order they were added to the vector of child
+      // bodies; this vector is filled in the order mobilizers are added to the
+      // model. Therefore, when a given node branches out, we spawn branches in
+      // the order mobilizers that connect this node to its children were added.
+      // Since we are using a stack to store bodies that will be processed next,
+      // we must place bodies in reverse order so that the first child is at the
+      // top of the stack.
+      stack.pop();  // Pops top element.
+      for (auto it = bodies_[current].child_bodies.rbegin();
+           it != bodies_[current].child_bodies.rend(); ++it) {
+        stack.push(*it);
       }
-      queue.pop();  // Pops front element.
     }
 
     // Checks that all bodies were reached. We could have this situation if a
@@ -808,7 +858,7 @@ class MultibodyTreeTopology {
     //
     // TODO(amcastro-tri): count body dofs (i.e. for flexible dofs).
     //
-    // Base-to-Tip loop in BFT order, skipping the world (node = 0).
+    // Base-to-Tip loop in DFT order, skipping the world (node = 0).
 
     // Count number of generalized positions and velocities.
     num_positions_ = 0;
@@ -878,6 +928,8 @@ class MultibodyTreeTopology {
         body.floating_velocities_start = mobilizer.velocities_start;
       }
     }
+
+    ExtractForestInfo();
 
     // We are done with a successful Finalize() and we mark it as so.
     // Do not add any more code after this!
@@ -1047,6 +1099,94 @@ class MultibodyTreeTopology {
     }
   }
 
+  // This traverses the tree of nodes outboard of `base` and applies `operation`
+  // on each of them, starting with `base`. The traversal is performed in depth
+  // first order.
+  // @pre Body nodes were already created and therefore they are indexed in
+  // depth first order.
+  void TraverseOutboardNodes(
+      const BodyNodeTopology& base,
+      std::function<void(const BodyNodeTopology&)> operation) const {
+    DRAKE_DEMAND(get_num_body_nodes() != 0);
+    operation(base);
+    // We are done if the base has no more children.
+    if (base.get_num_children() == 0) return;
+    // Traverse outboard nodes. Since the tree is finalized, we know nodes are
+    // in DFT order.
+    const int base_level = base.level;
+    for (BodyNodeIndex node_index(base.index + 1);
+         /* Reached the last node in the model. */
+         node_index < num_bodies() &&
+         /* Reached next tree in the multibody forest */
+         get_body_node(node_index).level > base_level;
+         ++node_index) {
+      operation(get_body_node(node_index));
+    }
+  }
+
+  // Computes the number of generalized velocities in the tree composed of the
+  // nodes outboard of `base`, including the generalized velocities of `base`.
+  // @pre Body nodes were already created.
+  int CalcNumberOfOutboardVelocities(const BodyNodeTopology& base) {
+    DRAKE_DEMAND(get_num_body_nodes() != 0);
+    int nv = 0;
+    TraverseOutboardNodes(base, [&nv](const BodyNodeTopology& node) {
+      nv += node.num_mobilizer_velocities;
+    });
+    return nv;
+  }
+
+  // Helper method to be used within Finalize() to obtain the topological
+  // information that describes the multibody system as a "forest" of trees.
+  void ExtractForestInfo() {
+    const BodyNodeTopology& root = get_body_node(BodyNodeIndex(0));
+    const int max_num_trees = root.child_nodes.size();
+    num_tree_velocities_.reserve(max_num_trees);
+    body_to_tree_index_.resize(num_bodies());
+    velocity_to_tree_index_.resize(num_velocities());
+
+    for (const BodyNodeIndex& root_child_index : root.child_nodes) {
+      const BodyNodeTopology& root_child = get_body_node(root_child_index);
+      const int nt = CalcNumberOfOutboardVelocities(root_child);
+      if (nt > 0) {
+        const TreeIndex tree_index(num_trees());
+        num_tree_velocities_.push_back(nt);
+        TraverseOutboardNodes(root_child, [&](const BodyNodeTopology& node) {
+          // We recurse all bodies in this tree (with tree_index) to fill in the
+          // maps from body index to tree index and from velocity index to tree
+          // index.
+          body_to_tree_index_[node.body] = tree_index;
+          for (int i = 0; i < node.num_mobilizer_velocities; ++i) {
+            const int v = node.mobilizer_velocities_start_in_v + i;
+            velocity_to_tree_index_[v] = tree_index;
+          }
+        });
+      }
+    }
+
+    // N.B. For trees with no generalized velocities, this code sets
+    // tree_velocities_start_[t] to point to the last dof (plus one) of the last
+    // tree with non-zero velocities. The reason to do so is that we want users
+    // of MultibodyTreeTopology to write code like so:
+    //
+    // const MultibodyTreeTopology& topology = ...
+    // for (TreeIndex t(0); t < topology.num_trees(); ++t) {
+    //   for (int m = 0; m < topology.num_tree_velocities(t); ++m) {
+    //     const int v = topology.tree_velocities_start(t) + m;
+    //     // ...
+    //   }
+    // }
+    //
+    // In the snippet above index v points to an entry in the vector of
+    // generalized velocities for the full model that corresponds to the m-th
+    // mobility for the t-th tree.
+    tree_velocities_start_.resize(num_trees(), 0);
+    for (int t = 1; t < num_trees(); ++t) {
+      tree_velocities_start_[t] =
+          tree_velocities_start_[t - 1] + num_tree_velocities_[t - 1];
+    }
+  }
+
   // is_valid is set to `true` after a successful Finalize().
   bool is_valid_{false};
   // Number of levels (or generations) in the tree topology. After Finalize()
@@ -1067,6 +1207,20 @@ class MultibodyTreeTopology {
   int num_velocities_{0};
   int num_states_{0};
   int num_actuated_dofs_{0};
+
+  // Number of generalized velocities for the t-th tree.
+  std::vector<int> num_tree_velocities_;
+  // Given the generalized velocities vector v for the entire model, the vector
+  // vt = {v(m) s.t. m ∈ [mₛ, mₑ)}, with mₛ = tree_velocities_start_[t] and iₑ =
+  // tree_velocities_start_[t] + num_tree_velocities_[t], are the generalized
+  // velocities for the t-th tree.
+  std::vector<int> tree_velocities_start_;
+  // t = velocity_to_tree_index_[m] is the tree index to which the m-th velocity
+  // belongs.
+  std::vector<TreeIndex> velocity_to_tree_index_;
+  // t = body_to_tree_index_[b] is the tree index to which the b-th body
+  // belongs.
+  std::vector<TreeIndex> body_to_tree_index_;
 };
 
 }  // namespace internal

@@ -8,20 +8,68 @@ load(
 )
 
 package(
-    default_visibility = ["//multibody/fixed_fem:__subpackages__"],
+    default_visibility = ["//multibody/fem:__subpackages__"],
 )
 
 drake_cc_package_library(
     name = "fem",
-    visibility = ["//multibody/fixed_fem:__subpackages__"],
+    visibility = ["//multibody/fem:__subpackages__"],
     deps = [
+        ":acceleration_newmark_scheme",
+        ":calc_lame_parameters",
         ":constitutive_model",
+        ":corotated_model",
+        ":corotated_model_data",
+        ":damping_model",
+        ":deformable_body_config",
         ":deformation_gradient_data",
+        ":dirichlet_boundary_condition",
+        ":discrete_time_integrator",
+        ":fem_element",
+        ":fem_indexes",
+        ":fem_model",
+        ":fem_solver",
+        ":fem_state",
+        ":fem_state_system",
         ":isoparametric_element",
+        ":linear_constitutive_model",
         ":linear_constitutive_model_data",
         ":linear_simplex_element",
+        ":matrix_utilities",
+        ":petsc_symmetric_block_sparse_matrix",
         ":quadrature",
+        ":schur_complement",
         ":simplex_gaussian_quadrature",
+        ":velocity_newmark_scheme",
+        ":volumetric_element",
+        ":volumetric_model",
+    ],
+)
+
+drake_cc_library(
+    name = "acceleration_newmark_scheme",
+    srcs = [
+        "acceleration_newmark_scheme.cc",
+    ],
+    hdrs = [
+        "acceleration_newmark_scheme.h",
+    ],
+    deps = [
+        ":discrete_time_integrator",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "calc_lame_parameters",
+    srcs = [
+        "calc_lame_parameters.cc",
+    ],
+    hdrs = [
+        "calc_lame_parameters.h",
+    ],
+    deps = [
+        "//common:default_scalars",
     ],
 )
 
@@ -33,6 +81,64 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:nice_type_name",
+    ],
+)
+
+drake_cc_library(
+    name = "corotated_model",
+    srcs = [
+        "corotated_model.cc",
+    ],
+    hdrs = [
+        "corotated_model.h",
+    ],
+    deps = [
+        ":calc_lame_parameters",
+        ":constitutive_model",
+        ":corotated_model_data",
+        ":matrix_utilities",
+        "//common:autodiff",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "corotated_model_data",
+    srcs = [
+        "corotated_model_data.cc",
+    ],
+    hdrs = [
+        "corotated_model_data.h",
+    ],
+    deps = [
+        ":deformation_gradient_data",
+        ":matrix_utilities",
+        "//common:autodiff",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "damping_model",
+    srcs = [
+        "damping_model.cc",
+    ],
+    hdrs = [
+        "damping_model.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_body_config",
+    hdrs = [
+        "deformable_body_config.h",
+    ],
+    deps = [
+        "//common:essential",
     ],
 )
 
@@ -51,6 +157,129 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "dirichlet_boundary_condition",
+    srcs = [
+        "dirichlet_boundary_condition.cc",
+    ],
+    hdrs = [
+        "dirichlet_boundary_condition.h",
+    ],
+    deps = [
+        ":fem_state",
+        ":petsc_symmetric_block_sparse_matrix",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "discrete_time_integrator",
+    srcs = [
+        "discrete_time_integrator.cc",
+    ],
+    hdrs = [
+        "discrete_time_integrator.h",
+    ],
+    deps = [
+        ":fem_state",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_indexes",
+    hdrs = [
+        "fem_indexes.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:identifier",
+        "//common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_element",
+    srcs = [
+        "fem_element.cc",
+    ],
+    hdrs = [
+        "fem_element.h",
+    ],
+    deps = [
+        ":constitutive_model",
+        ":damping_model",
+        ":fem_indexes",
+        ":fem_state",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_model",
+    srcs = [
+        "fem_model.cc",
+        "fem_model_impl.cc",
+    ],
+    hdrs = [
+        "fem_model.h",
+        "fem_model_impl.h",
+    ],
+    deps = [
+        ":dirichlet_boundary_condition",
+        ":fem_element",
+        ":fem_state",
+        ":petsc_symmetric_block_sparse_matrix",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_solver",
+    srcs = [
+        "fem_solver.cc",
+    ],
+    hdrs = [
+        "fem_solver.h",
+    ],
+    deps = [
+        ":discrete_time_integrator",
+        ":fem_model",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_state",
+    srcs = [
+        "fem_state.cc",
+    ],
+    hdrs = [
+        "fem_state.h",
+    ],
+    deps = [
+        ":fem_indexes",
+        ":fem_state_system",
+        "//common:essential",
+        "//systems/framework:context",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_state_system",
+    srcs = [
+        "fem_state_system.cc",
+    ],
+    hdrs = [
+        "fem_state_system.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
     name = "isoparametric_element",
     srcs = [
         "isoparametric_element.cc",
@@ -59,6 +288,23 @@ drake_cc_library(
         "isoparametric_element.h",
     ],
     deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_constitutive_model",
+    srcs = [
+        "linear_constitutive_model.cc",
+    ],
+    hdrs = [
+        "linear_constitutive_model.h",
+    ],
+    deps = [
+        ":calc_lame_parameters",
+        ":constitutive_model",
+        ":linear_constitutive_model_data",
+        "//common:autodiff",
         "//common:essential",
     ],
 )
@@ -93,12 +339,56 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "matrix_utilities",
+    srcs = [
+        "matrix_utilities.cc",
+    ],
+    hdrs = [
+        "matrix_utilities.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "petsc_symmetric_block_sparse_matrix",
+    srcs = [
+        "petsc_symmetric_block_sparse_matrix.cc",
+    ],
+    hdrs = [
+        "petsc_symmetric_block_sparse_matrix.h",
+    ],
+    deps = [
+        ":schur_complement",
+        "//common:essential",
+        "//common:unused",
+        "@petsc",
+    ],
+)
+
+drake_cc_library(
     name = "quadrature",
     srcs = [
         "quadrature.cc",
     ],
     hdrs = [
         "quadrature.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "schur_complement",
+    srcs = [
+        "schur_complement.cc",
+    ],
+    hdrs = [
+        "schur_complement.h",
     ],
     deps = [
         "//common:default_scalars",
@@ -119,12 +409,121 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "velocity_newmark_scheme",
+    srcs = [
+        "velocity_newmark_scheme.cc",
+    ],
+    hdrs = [
+        "velocity_newmark_scheme.h",
+    ],
+    deps = [
+        ":discrete_time_integrator",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "volumetric_element",
+    srcs = [
+        "volumetric_element.cc",
+    ],
+    hdrs = [
+        "volumetric_element.h",
+    ],
+    deps = [
+        ":fem_element",
+        ":isoparametric_element",
+        ":quadrature",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "volumetric_model",
+    hdrs = [
+        "volumetric_model.h",
+    ],
+    deps = [
+        ":damping_model",
+        ":fem_model",
+        ":volumetric_element",
+        "//geometry/proximity:volume_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "acceleration_newmark_scheme_test",
+    deps = [
+        ":acceleration_newmark_scheme",
+        ":velocity_newmark_scheme",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "calc_lame_parameters_test",
+    deps = [
+        ":calc_lame_parameters",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
 drake_cc_googletest(
     name = "constitutive_model_test",
     deps = [
         ":constitutive_model",
         "//common/test_utilities:expect_throws_message",
         "//multibody/fem:deformation_gradient_data",
+    ],
+)
+
+drake_cc_library(
+    name = "constitutive_model_test_utilities",
+    testonly = 1,
+    srcs = ["test/constitutive_model_test_utilities.cc"],
+    hdrs = ["test/constitutive_model_test_utilities.h"],
+    deps = [
+        ":constitutive_model",
+        ":corotated_model",
+        ":linear_constitutive_model",
+        ":matrix_utilities",
+        "//common:autodiff",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "corotated_model_test",
+    deps = [
+        ":constitutive_model_test_utilities",
+        ":corotated_model",
+    ],
+)
+
+drake_cc_googletest(
+    name = "corotated_model_data_test",
+    deps = [
+        ":corotated_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "damping_model_test",
+    deps = [
+        ":damping_model",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_body_config_test",
+    deps = [
+        ":deformable_body_config",
     ],
 )
 
@@ -138,12 +537,104 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "dirichlet_boundary_condition_test",
+    deps = [
+        ":dirichlet_boundary_condition",
+        ":fem_state",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "discrete_time_integrator_test",
+    deps = [
+        ":discrete_time_integrator",
+    ],
+)
+
+drake_cc_library(
+    name = "dummy_element",
+    testonly = 1,
+    srcs = ["test/dummy_element.cc"],
+    hdrs = ["test/dummy_element.h"],
+    deps = [
+        ":damping_model",
+        ":fem_element",
+        ":fem_state",
+        ":linear_constitutive_model",
+    ],
+)
+
+drake_cc_library(
+    name = "dummy_model",
+    testonly = 1,
+    srcs = ["test/dummy_model.cc"],
+    hdrs = ["test/dummy_model.h"],
+    deps = [
+        ":dummy_element",
+        ":fem_model",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fem_element_test",
+    deps = [
+        ":dummy_element",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fem_model_test",
+    deps = [
+        ":dummy_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fem_solver_test",
+    deps = [
+        ":acceleration_newmark_scheme",
+        ":dummy_model",
+        ":fem_solver",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fem_state_test",
+    deps = [
+        ":fem_state",
+        ":fem_state_system",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fem_state_system_test",
+    deps = [
+        ":fem_state_system",
+    ],
+)
+
+drake_cc_googletest(
     name = "isoparametric_element_test",
     deps = [
         ":isoparametric_element",
         ":linear_simplex_element",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_constitutive_model_test",
+    deps = [
+        ":constitutive_model_test_utilities",
+        ":linear_constitutive_model",
     ],
 )
 
@@ -164,9 +655,77 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "matrix_utilities_test",
+    deps = [
+        ":matrix_utilities",
+        "//common:essential",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "petsc_symmetric_block_sparse_matrix_test",
+    tags = [
+        # This tests uses multiple CPUs concurrently.
+        "cpu:100",
+    ],
+    deps = [
+        ":petsc_symmetric_block_sparse_matrix",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "schur_complement_test",
+    deps = [
+        ":schur_complement",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "simplex_gaussian_quadrature_test",
     deps = [
         ":simplex_gaussian_quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "volumetric_element_test",
+    deps = [
+        ":corotated_model",
+        ":linear_simplex_element",
+        ":simplex_gaussian_quadrature",
+        ":volumetric_element",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "velocity_newmark_scheme_test",
+    deps = [
+        ":acceleration_newmark_scheme",
+        ":velocity_newmark_scheme",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "volumetric_model_test",
+    deps = [
+        ":acceleration_newmark_scheme",
+        ":linear_constitutive_model",
+        ":volumetric_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:make_box_mesh",
+        "//math:gradient",
+        "//multibody/fem:linear_simplex_element",
+        "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
 

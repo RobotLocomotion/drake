@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "drake/common/autodiff.h"
@@ -265,6 +266,30 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   int velocity_start_in_v() const {
     DRAKE_DEMAND(this->get_parent_tree().topology_is_valid());
     return topology_.velocities_start_in_v;
+  }
+
+  /// Returns a string suffix (e.g. to be appended to the name()) to identify
+  /// the `k`th position in this mobilizer. Mobilizers with more than one
+  // position or that don't want to use the default `q`, must override this
+  // method.
+  virtual std::string position_suffix(int position_index_in_mobilizer) const {
+    // Mobilizers with num_positions > 1 must overload this method.
+    // The method should not be called for mobilizers with num_positions < 1.
+    DRAKE_DEMAND(num_positions() == 1);
+    DRAKE_DEMAND(position_index_in_mobilizer == 0);
+    return "q";
+  }
+
+  /// Returns a string suffix (e.g. to be appended to the name()) to identify
+  /// the `k`th velocity in this mobilizer. Mobilizers with more than one
+  // velocity or that don't want to use the default 'v' must override this
+  // method.
+  virtual std::string velocity_suffix(int velocity_index_in_mobilizer) const {
+    // Mobilizers with num_velocities > 1 must overload this method.
+    // The method should not be called for mobilizers with num_velocities < 1.
+    DRAKE_DEMAND(num_velocities() == 1);
+    DRAKE_DEMAND(velocity_index_in_mobilizer == 0);
+    return "v";
   }
 
   // Returns a constant reference to the inboard frame.

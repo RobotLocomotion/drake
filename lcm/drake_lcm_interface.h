@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/lcm/lcm_messages.h"
@@ -248,14 +250,22 @@ std::shared_ptr<DrakeSubscriptionInterface> Subscribe(
     Message received{};
     const int size_decoded = received.decode(bytes, 0, size);
     if (size_decoded == size) {
-      handler(received);
+      try {
+        handler(received);
+      } catch (const std::exception& e) {
+        // Register the error on the DrakeLcmInterface that owns us.  It will
+        // throw once it's safe (i.e., once C code is no longer on the stack).
+        internal::OnHandleSubscriptionsError(
+            lcm, fmt::format("Error from message handler callback on {}: {}",
+                channel, e.what()));
+      }
     } else if (on_error) {
       on_error();
     } else {
       // Register the error on the DrakeLcmInterface that owns us.  It will
-      // throw once it's safe to do so (once C code is no longer on the stack).
+      // throw once it's safe (i.e., once C code is no longer on the stack).
       internal::OnHandleSubscriptionsError(
-          lcm, "Error decoding message on " + channel);
+          lcm, fmt::format("Error decoding message on {}", channel));
     }
   });
   return result;

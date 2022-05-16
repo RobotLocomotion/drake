@@ -4,6 +4,7 @@
 #include <exception>
 #include <iostream>
 #include <limits>
+#include <string>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -230,10 +231,18 @@ class SpatialInertia {
   /// mass.
   /// @see RotationalInertia::CouldBePhysicallyValid().
   boolean<T> IsPhysicallyValid() const {
-    // The tests in RotationalInertia become a sufficient condition when
-    // performed on a rotational inertia computed about a body's center of mass.
-    const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCenterOfMass(p_PScm_E_);
-    return !IsNaN() && mass_ >= T(0) && G_SScm_E.CouldBePhysicallyValid();
+    // This spatial inertia is not physically valid if the mass is NaN or if the
+    // center of mass or unit inertia matrix have NaN elements.
+    boolean<T> ret_value = !IsNaN() && mass_ >= T(0);
+    if (ret_value) {
+      // Form a rotational inertia about the body's center of mass and then use
+      // the well-documented tests in RotationalInertia to test validity.
+      const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCenterOfMass(p_PScm_E_);
+      const RotationalInertia<T> I_SScm_E =
+          G_SScm_E.MultiplyByScalarSkipValidityCheck(mass_);
+      ret_value = I_SScm_E.CouldBePhysicallyValid();
+    }
+    return ret_value;
   }
 
   /// Copy to a full 6x6 matrix representation.
@@ -491,11 +500,8 @@ class SpatialInertia {
   template <typename T1 = T>
   typename std::enable_if_t<scalar_predicate<T1>::is_bool> CheckInvariants()
       const {
-    if (!IsPhysicallyValid()) {
-      throw std::runtime_error(fmt::format(
-          "The resulting spatial inertia:{} is not physically valid. "
-          "See SpatialInertia::IsPhysicallyValid()", *this));
-    }
+    if (!IsPhysicallyValid())
+      ThrowNotPhysicallyValid();
   }
 
   // SFINAE for non-numeric types. See documentation in the implementation for
@@ -503,6 +509,8 @@ class SpatialInertia {
   template <typename T1 = T>
   typename std::enable_if_t<!scalar_predicate<T1>::is_bool> CheckInvariants()
       const {}
+
+  [[noreturn]] void ThrowNotPhysicallyValid() const;
 
   // Mass of the body or composite body.
   T mass_{nan()};
@@ -512,23 +520,20 @@ class SpatialInertia {
   // Rotational inertia of body or composite body S computed about point P and
   // expressed in a frame E.
   UnitInertia<T> G_SP_E_{};  // Defaults to NaN initialized inertia.
+
+  // Appends text to an existing string with information about a SpatialInertia.
+  // If the position vector p_PBcm from about-point P to Bcm (body B's center of
+  // mass) is non-zero, appends I_BBcm (body B's rotational inertia about Bcm)
+  // to `message`. In all cases, the central principal moments of inertia are
+  // appended to `message`, e.g., to help identify a rotational inertia that
+  // violates the "triangle inequality".
+  void WriteExtraCentralInertiaProperties(std::string* message) const;
 };
 
-/// Insertion operator to write SpatialInertia objects into a `std::ostream`.
-/// Especially useful for debugging.
+/// Writes an instance of SpatialInertia into a std::ostream.
 /// @relates SpatialInertia
 template <typename T>
-std::ostream& operator<<(std::ostream& o,
-                         const SpatialInertia<T>& M) {
-  return o << std::endl
-      << " mass = " << M.get_mass() << std::endl
-      << " com = [" << M.get_com().transpose() << "]ᵀ" << std::endl
-      << " I =" << std::endl
-      // Like M.CalcRotationalInertia(), but without the IsPhysicallyValid
-      // checks, so that we can use operator<< in error messages.
-      << (M.get_mass() * M.get_unit_inertia().CopyToFullMatrix3())
-      << std::endl;
-}
+std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M);
 
 }  // namespace multibody
 }  // namespace drake

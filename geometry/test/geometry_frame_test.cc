@@ -31,7 +31,6 @@ GTEST_TEST(GeometryFrameTest, Constructor) {
   {
     DRAKE_EXPECT_THROWS_MESSAGE(
         GeometryFrame("name", -1),
-        std::logic_error,
         "GeometryFrame requires a non-negative frame group");
   }
 }

@@ -119,6 +119,17 @@ class JointActuator final
       const Eigen::Ref<const VectorX<T>>& u_instance,
       EigenPtr<VectorX<T>> u) const;
 
+  /// Returns the index to the first element for this joint actuator / within
+  /// the vector of actuation inputs for the full multibody / system.
+  /// @throws std::exception if the MultibodyTree model is not finalized.
+  int input_start() const;
+
+  /// Returns the number of inputs associated with this actuator.
+  /// @throws std::exception if the MultibodyTree model is not finalized.
+  int num_inputs() const;
+
+  // TODO(russt): This should be a vector (not a double), and we should have
+  // lower and upper limits (not require them to be symmetric).
   /// Returns the actuator effort limit.
   double effort_limit() const { return effort_limit_; }
 

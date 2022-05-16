@@ -40,7 +40,7 @@ class TestMpcWithDoubleIntegrator : public ::testing::Test {
     std::unique_ptr<Context<double>> system_context =
         system->CreateDefaultContext();
     system->get_input_port().FixValue(system_context.get(), u0);
-    system_context->get_mutable_discrete_state(0).SetFromVector(x0);
+    system_context->SetDiscreteState(0, x0);
 
     dut_.reset(new LinearModelPredictiveController<double>(
         std::move(system), std::move(system_context), Q_, R_, kTimeStep,

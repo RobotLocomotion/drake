@@ -35,6 +35,7 @@ drake_cc_package_library(
         ":image_writer",
         ":lcm_image_array_to_images",
         ":lcm_image_traits",
+        ":optitrack_receiver",
         ":optitrack_sender",
         ":rgbd_sensor",
         ":rotary_encoders",
@@ -152,11 +153,14 @@ drake_cc_library(
     hdrs = [
         "lcm_image_array_to_images.h",
     ],
+    interface_deps = [
+        ":image",
+        "//common:essential",
+        "//systems/framework:leaf_system",
+    ],
     deps = [
         ":lcm_image_traits",
-        "//common:essential",
         "//lcmtypes:image_array",
-        "//systems/framework",
         "@libpng",
         "@vtk//:vtkIOImage",
         "@zlib",
@@ -197,7 +201,6 @@ drake_cc_library(
         "//geometry/render:render_engine",
         "//systems/framework:leaf_system",
         "//systems/primitives:zero_order_hold",
-        "//systems/rendering:pose_vector",
     ],
 )
 
@@ -208,6 +211,17 @@ drake_cc_library(
     deps = [
         "//common:unused",
         "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "optitrack_receiver",
+    srcs = ["optitrack_receiver.cc"],
+    hdrs = ["optitrack_receiver.h"],
+    deps = [
+        "//math:geometric_transform",
+        "//systems/framework:leaf_system",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )
 
@@ -226,12 +240,13 @@ drake_cc_library(
     name = "image_writer",
     srcs = ["image_writer.cc"],
     hdrs = ["image_writer.h"],
-    deps = [
+    interface_deps = [
         ":image",
         "//common:essential",
-        "//common:filesystem",
         "//systems/framework",
-        "@vtk//:vtkCommonDataModel",
+    ],
+    deps = [
+        "//common:filesystem",
         "@vtk//:vtkIOImage",
     ],
 )
@@ -290,22 +305,6 @@ drake_cc_googletest(
     ],
 )
 
-filegroup(
-    name = "test_models",
-    testonly = 1,
-    srcs = [
-        "test/models/background.jpg",
-        "test/models/box.sdf",
-        "test/models/box_with_mesh.sdf",
-        "test/models/meshes/box.obj",
-        "test/models/meshes/box.obj.mtl",
-        "test/models/meshes/box.png",
-        "test/models/meshes/box2.obj",
-        "test/models/nothing.sdf",
-        "test/models/sphere.sdf",
-    ],
-)
-
 drake_cc_googletest(
     name = "image_writer_test",
     tags = vtk_test_tags(),
@@ -352,15 +351,24 @@ drake_cc_googletest(
     deps = [
         ":lcm_image_array_to_images",
         "//common:find_resource",
+        "//lcmtypes:image_array",
+    ],
+)
+
+drake_cc_googletest(
+    name = "optitrack_receiver_test",
+    deps = [
+        ":optitrack_receiver",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )
 
 drake_cc_googletest(
     name = "optitrack_sender_test",
-    srcs = ["test/optitrack_sender_test.cc"],
     deps = [
         ":optitrack_sender",
-        "//systems/framework",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )

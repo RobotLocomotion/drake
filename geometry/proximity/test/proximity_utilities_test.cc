@@ -87,7 +87,7 @@ class VolumeMeshUtilities : public ::testing::Test {
         Vector3<double>::Zero(), Vector3<double>::UnitX(),
         Vector3<double>::UnitY(), Vector3<double>::UnitZ(),
         -Vector3<double>::UnitZ()};
-    std::vector<VolumeVertex<double>> vertices;
+    std::vector<Vector3d> vertices;
     for (int v = 0; v < 5; ++v) vertices.emplace_back(vertex_data[v]);
     volume_mesh = std::make_unique<VolumeMesh<double>>(std::move(elements),
                                                        std::move(vertices));

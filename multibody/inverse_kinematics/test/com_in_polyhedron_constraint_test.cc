@@ -160,17 +160,17 @@ GTEST_TEST(DualIiwaTest, ComInPolyhedronConstraintModelInstance) {
       plant_autodiff.get(), plant_autodiff.get(), model_instances,
       plant_autodiff->world_frame().index(), plant_context_autodiff.get(),
       plant_context_autodiff.get(), A, lb, ub, q);
-  TestComInPolyhedronConstraint(plant.get(), plant_autodiff.get(),
-                                model_instances, plant->world_frame().index(),
-                                plant_context.get(),
-                                plant_context_autodiff.get(), A, lb, ub, q);
+  TestComInPolyhedronConstraint(
+      plant.get(), plant_autodiff.get(), model_instances,
+      plant->world_frame().index(), plant_context.get(),
+      plant_context_autodiff.get(), A, lb, ub, q);
   // Test model_instances being an empty vector.
   model_instances.clear();
   DRAKE_EXPECT_THROWS_MESSAGE(
       ComInPolyhedronConstraint(plant_autodiff.get(), model_instances,
                                 plant_autodiff->world_frame(), A, lb, ub,
                                 plant_context_autodiff.get()),
-      std::invalid_argument, ".* model_instances is an empty vector.");
+      ".* model_instances is an empty vector.");
 }
 }  // namespace
 }  // namespace multibody

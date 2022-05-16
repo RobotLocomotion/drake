@@ -14,14 +14,25 @@ namespace {
 
 template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
-void TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
-                           const Eigen::MatrixBase<DerivedB>& b) {
-  for (const bool use_deprecated : {true, false}) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    const auto x = use_deprecated ? LinearSolve<LinearSolverType>(A, b)
-                                  : SolveLinearSystem<LinearSolverType>(A, b);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+typename std::enable_if<internal::is_autodiff_v<typename DerivedA::Scalar> ||
+                        std::is_same_v<typename DerivedA::Scalar, double>>::type
+TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
+                      const Eigen::MatrixBase<DerivedB>& b) {
+  Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
+                DerivedB::ColsAtCompileTime>
+      x_eigen_d;
+  // To side-step clang optimizer problem, we separate this solve result
+  // x_eigen_d from its eventual use.
+  if constexpr (std::is_same_v<typename DerivedA::Scalar, double> &&
+                std::is_same_v<typename DerivedB::Scalar, double>) {
+    x_eigen_d =
+        LinearSolverType<Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
+                                       DerivedA::ColsAtCompileTime>>(A)
+            .solve(b);
+  }
+  // TODO(jwnimmer-tri) Remove this extra unnecessary level of indentation.
+  {
+    const auto x = SolveLinearSystem<LinearSolverType>(A, b);
     if constexpr (std::is_same_v<typename DerivedA::Scalar, double> &&
                   std::is_same_v<typename DerivedB::Scalar, double>) {
       static_assert(std::is_same_v<typename decltype(x)::Scalar, double>,
@@ -32,7 +43,7 @@ void TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
           "The returned  x should have scalar type as AutoDiffScalar.");
     }
     // Now check Ax = z and A*∂x/∂z + ∂A/∂z * x = ∂b/∂z
-    const auto Ax = A * x;
+    const auto Ax = (A * x).eval();
     Eigen::MatrixXd Ax_val, b_val;
     std::vector<Eigen::MatrixXd> Ax_grad;
     std::vector<Eigen::MatrixXd> b_grad;
@@ -44,9 +55,9 @@ void TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
                 Ax.rows(), 0));
       }
     } else {
-      Ax_val = autoDiffToValueMatrix(Ax);
+      Ax_val = ExtractValue(Ax);
       for (int i = 0; i < Ax.cols(); ++i) {
-        Ax_grad.push_back(autoDiffToGradientMatrix(Ax.col(i)));
+        Ax_grad.push_back(ExtractGradient(Ax.col(i)));
       }
     }
 
@@ -58,9 +69,9 @@ void TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
                 b.rows(), 0));
       }
     } else {
-      b_val = autoDiffToValueMatrix(b);
+      b_val = ExtractValue(b);
       for (int i = 0; i < b.cols(); ++i) {
-        b_grad.push_back(autoDiffToGradientMatrix(b.col(i)));
+        b_grad.push_back(ExtractGradient(b.col(i)));
       }
     }
     const double tol = 2E-12;
@@ -80,6 +91,56 @@ void TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
         EXPECT_TRUE(CompareMatrices(Ax_grad[i], b_grad[i], tol));
       }
     }
+    // Also use LinearSolver class, make sure it gives the same result as
+    // SolveLinearSystem.
+    const LinearSolver<LinearSolverType, DerivedA> solver(A);
+    const auto x_result = solver.Solve(b);
+    static_assert(std::is_same_v<typename decltype(x_result)::Scalar,
+                                 typename decltype(x)::Scalar>);
+    if constexpr (std::is_same_v<typename decltype(x_result)::Scalar, double>) {
+      EXPECT_TRUE(CompareMatrices(x_result, x));
+    } else {
+      EXPECT_TRUE(CompareMatrices(ExtractValue(x_result), ExtractValue(x)));
+      EXPECT_TRUE(
+          CompareMatrices(ExtractGradient(x_result), ExtractGradient(x)));
+    }
+    // When T = AutoDiffScalar or double, check if we get the same result as
+    // calling Eigen's linear solver directly.
+    if constexpr (internal::is_autodiff_v<typename DerivedA::Scalar>) {
+      const LinearSolverType<
+          Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
+                        DerivedA::ColsAtCompileTime>>
+          eigen_linear_solver(A);
+      Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
+                    DerivedB::ColsAtCompileTime>
+          x_eigen;
+      if constexpr (internal::is_autodiff_v<typename DerivedB::Scalar>) {
+        x_eigen = eigen_linear_solver.solve(b);
+      } else {
+        x_eigen = eigen_linear_solver.solve(
+            b.template cast<typename DerivedA::Scalar>());
+      }
+      EXPECT_TRUE(CompareMatrices(ExtractValue(x_eigen), ExtractValue(x)));
+      for (int i = 0; i < b.cols(); ++i) {
+        EXPECT_TRUE(CompareMatrices(ExtractGradient(x_eigen.col(i)),
+                                    ExtractGradient(x.col(i)), tol));
+      }
+    } else if constexpr (std::is_same_v<typename DerivedA::Scalar, double> && // NOLINT
+                         internal::is_autodiff_v<typename DerivedB::Scalar>) {
+      const LinearSolverType<
+          Eigen::Matrix<typename DerivedB::Scalar, DerivedA::RowsAtCompileTime,
+                        DerivedA::ColsAtCompileTime>>
+          eigen_linear_solver(A.template cast<typename DerivedB::Scalar>());
+      const auto x_eigen = eigen_linear_solver.solve(b);
+      EXPECT_TRUE(CompareMatrices(ExtractValue(x_eigen), ExtractValue(x)));
+      for (int i = 0; i < b.cols(); ++i) {
+        EXPECT_TRUE(CompareMatrices(ExtractGradient(x_eigen.col(i)),
+                                    ExtractGradient(x.col(i)), tol));
+      }
+    } else if constexpr (std::is_same_v<typename DerivedA::Scalar, double> &&  // NOLINT
+                         std::is_same_v<typename DerivedB::Scalar, double>) {
+      EXPECT_TRUE(CompareMatrices(x_eigen_d, x));
+    }
   }
 }
 
@@ -90,7 +151,7 @@ class LinearSolveTest : public ::testing::Test {
     b_vec_val_ << 3, 5;
     Eigen::Matrix<double, 2, Eigen::Dynamic> b_grad(2, 3);
     b_grad << 1, 2, 3, 4, 5, 6;
-    b_vec_ad_ = initializeAutoDiffGivenGradientMatrix(b_vec_val_, b_grad);
+    b_vec_ad_ = InitializeAutoDiff(b_vec_val_, b_grad);
     for (int i = 0; i < 2; ++i) {
       for (int j = 0; j < 2; ++j) {
         A_ad_(i, j).value() = A_val_(i, j);
@@ -98,7 +159,7 @@ class LinearSolveTest : public ::testing::Test {
     }
     A_ad_(0, 0).derivatives() = Eigen::Vector3d(1, 2, 3);
     A_ad_(0, 1).derivatives() = Eigen::Vector3d(4, 5, 6);
-    A_ad_(1, 0).derivatives() = Eigen::Vector3d(7, 8, 9);
+    A_ad_(1, 0).derivatives() = Eigen::Vector3d(4, 5, 6);
     A_ad_(1, 1).derivatives() = Eigen::Vector3d(10, 11, 12);
 
     b_mat_val_ << 3, 5, 8, 1, -2, -3;
@@ -162,12 +223,9 @@ template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
 void TestSolveLinearSystemSymbolic(const Eigen::MatrixBase<DerivedA>& A,
                                    const Eigen::MatrixBase<DerivedB>& b) {
-  for (const bool use_deprecated : {true, false}) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    const auto x = use_deprecated ? LinearSolve<LinearSolverType>(A, b)
-                                  : SolveLinearSystem<LinearSolverType>(A, b);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+  // TODO(jwnimmer-tri) Remove this extra unnecessary level of indentation.
+  {
+    const auto x = SolveLinearSystem<LinearSolverType>(A, b);
     static_assert(
         std::is_same_v<typename decltype(x)::Scalar, symbolic::Expression>,
         "The scalar type should be symbolic expression");
@@ -298,6 +356,7 @@ TEST_F(LinearSolveTest, TestAbWithMaybeEmptyGrad) {
   // Test SolveLinearSystem with both A and b containing gradient in
   // some entries, and empty gradient in some other entries.
   A_ad_(1, 0).derivatives() = Eigen::VectorXd(0);
+  A_ad_(0, 1).derivatives() = Eigen::VectorXd(0);
   b_vec_ad_(1).derivatives() = Eigen::VectorXd(0);
   TestSolveLinearSystem<Eigen::LLT>(A_ad_, b_vec_ad_);
   TestSolveLinearSystem<Eigen::LDLT>(A_ad_, b_vec_ad_);
@@ -312,24 +371,12 @@ TEST_F(LinearSolveTest, TestWrongGradientSize) {
       SolveLinearSystem<Eigen::LLT>(A_ad_error, b_vec_ad_),
       ".* has size 2, while another entry has size 3");
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DRAKE_EXPECT_THROWS_MESSAGE(LinearSolve<Eigen::LLT>(A_ad_error, b_vec_ad_),
-                              ".* has size 2, while another entry has size 3");
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-
   // b's gradient has inconsistent size.
   auto b_vec_ad_error = b_vec_ad_;
   b_vec_ad_error(1).derivatives() = Eigen::Vector2d(1, 2);
   DRAKE_EXPECT_THROWS_MESSAGE(
       SolveLinearSystem<Eigen::LLT>(A_ad_, b_vec_ad_error),
       ".* has size 2, while another entry has size 3");
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DRAKE_EXPECT_THROWS_MESSAGE(LinearSolve<Eigen::LLT>(A_ad_, b_vec_ad_error),
-                              ".* has size 2, while another entry has size 3");
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
   // A and b have different number of derivatives.
   auto b_vec_ad_error2 = b_vec_ad_;
@@ -339,14 +386,6 @@ TEST_F(LinearSolveTest, TestWrongGradientSize) {
       SolveLinearSystem<Eigen::LLT>(A_ad_, b_vec_ad_error2),
       ".*A contains derivatives for 3 variables, while b contains derivatives "
       "for 4 variables");
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      LinearSolve<Eigen::LLT>(A_ad_, b_vec_ad_error2),
-      ".*A contains derivatives for 3 variables, while b contains derivatives "
-      "for 4 variables");
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 }
 
 template <template <typename, int...> typename LinearSolverType,

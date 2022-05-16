@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version="1.9">
+  <model name="scoped_names_model">
+    <link name="base">
+      <inertial>
+        <mass>1</mass>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>0.2 0.2 2.2</size>
+          </box>
+        </geometry>
+      </visual>
+    </link>
+    <frame name="frame">
+      <pose relative_to="base">1 2 3  0 0 0</pose>
+    </frame>
+
+    <model name="inner_model">
+      <link name="inner_link"/>
+      <frame name="inner_frame"/>
+    </model>
+  </model>
+</sdf>

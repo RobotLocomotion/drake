@@ -372,6 +372,11 @@ const Expression& get_rhs_expression(const Formula& f) {
   return to_relational(f)->get_rhs_expression();
 }
 
+const Expression& get_unary_expression(const Formula& f) {
+  DRAKE_ASSERT(is_isnan(f));
+  return to_isnan(f)->get_unary_expression();
+}
+
 const set<Formula>& get_operands(const Formula& f) {
   return to_nary(f)->get_operands();
 }

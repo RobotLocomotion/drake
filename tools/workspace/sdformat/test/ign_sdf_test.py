@@ -32,7 +32,7 @@ EXAMPLE_INPUT = """\
 # accepted.
 
 EXPECTED_OUTPUT = """\
-<sdf version='1.8'>
+<sdf version='1.9'>
   <model name='simple_test'>
     <link name='L1'/>
     <joint name='J1' type='revolute'>
@@ -41,13 +41,13 @@ EXPECTED_OUTPUT = """\
       <axis>
         <xyz expressed_in='__model__'>1 0 0</xyz>
         <limit>
-          <lower>-10000000000000000</lower>
-          <upper>10000000000000000</upper>
+          <lower>-1e16</lower>
+          <upper>1e16</upper>
         </limit>
       </axis>
     </joint>
     <link name='L2'>
-      <pose relative_to='L1'>0 0 0 0 -0 0</pose>
+      <pose relative_to='L1'>0 0 0 0 0 0</pose>
     </link>
   </model>
 </sdf>

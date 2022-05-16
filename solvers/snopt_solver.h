@@ -3,7 +3,6 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/solver_base.h"
 
 namespace drake {
@@ -16,9 +15,10 @@ namespace solvers {
  */
 struct SnoptSolverDetails {
   /**
-   * The exit condition of the solver. Please refer to section "EXIT conditions"
+   * The snopt INFO field. Please refer to section 8.6
    * in "User's Guide for SNOPT Version 7: Software for Large-Scale Nonlinear
-   * Programming" by Philip E. Gill to interpret the exit condition.
+   * Programming" (https://web.stanford.edu/group/SOL/guides/sndoc7.pdf) by
+   * Philip E. Gill to interpret the INFO field.
    */
   int info{};
 
@@ -43,7 +43,7 @@ struct SnoptSolverDetails {
  * SolverInterface::available() will return false. You must opt-in to build
  * SNOPT per the documentation at https://drake.mit.edu/bazel.html#snopt.
  *
- * <a href="https://drake.mit.edu/from_binary.html">Drake's
+ * <a href="https://drake.mit.edu/installation.html">Drake's
  * pre-compiled binary releases</a> do incorporate SNOPT, so therefore
  * SolverInterface::available() will return true.
  * Thanks to Philip E. Gill and Elizabeth Wong for their kind support.

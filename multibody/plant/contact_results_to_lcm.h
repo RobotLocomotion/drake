@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -68,7 +69,7 @@ bool operator==(const FullBodyName& n1, const FullBodyName& n2);
  Generally, you shouldn't construct %ContactResultsToLcmSystem instances
  directly. We recommend using one of the overloaded
  @ref contact_result_vis_creation "ConnectContactResultsToDrakeVisualizer()"
- methods to add contact visualization to your diagram.
+ functions to add contact visualization to your diagram.
 
  <h3>How contacts are described in visualization</h3>
 
@@ -88,9 +89,17 @@ bool operator==(const FullBodyName& n1, const FullBodyName& n2);
  results. Instead, %ContactResultsToLcmSystem can use the names associated with
  the id in a geometry::SceneGraph instance. The only method for doing this is
  via the @ref contact_result_vis_creation
- "ConnectContactResultsToDrakeVisualizer()" methods and requires the diagram
+ "ConnectContactResultsToDrakeVisualizer()" functions and requires the diagram
  to be instantiated as double valued. If a diagram with a different scalar
  type is required, it should subsequently be scalar converted.
+
+ @system
+ name: ContactResultsToLcmSystem
+ input_ports:
+ - u0
+ output_ports:
+ - y0
+ @endsystem
 
  @tparam_default_scalar
  @ingroup visualization */
@@ -124,9 +133,8 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
   // functor" constructor.
   friend systems::lcm::LcmPublisherSystem* ConnectWithNameLookup(
       systems::DiagramBuilder<double>*, const MultibodyPlant<double>&,
-      const systems::OutputPort<double>&,
-      const std::function<std::string(geometry::GeometryId)>&,
-      lcm::DrakeLcmInterface*);
+      const systems::OutputPort<double>&, const geometry::SceneGraph<double>&,
+      lcm::DrakeLcmInterface*, std::optional<double>);
 
   // Allow different specializations to access each other's private data for
   // scalar conversion.
@@ -181,29 +189,27 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
 /** @name Visualizing contact results
  @anchor contact_result_vis_creation
 
- These methods extend a Diagram with the required components to publish contact
- results (as reported by MultibodyPlant) to drake_visualizer. We recommend
- using these methods instead of assembling the requisite components by hand.
+ These functions extend a Diagram with the required components to publish
+ contact results (as reported by MultibodyPlant) to a visualizer (either meldis
+ or drake_visualizer). We recommend using these functions instead of assembling
+ the requisite components by hand.
 
- These must be called _during_ Diagram building. Each method makes modifications
- to the diagram being constructed by `builder` including the following changes:
+ These must be called _during_ Diagram building. Each function makes
+ modifications to the diagram being constructed by `builder` including the
+ following changes:
 
  - adds systems multibody::ContactResultsToLcmSystem and LcmPublisherSystem to
    the Diagram and connects the draw message output to the publisher input,
  - connects a ContactResults<double>-valued output port to the
    ContactResultsToLcmSystem system, and
- - sets the publishing rate to 1/60 of a second (simulated time).
+ - sets the publishing rate based on publish_period.
 
- The four variants differ in the following ways:
+ The two overloads differ in the following way:
 
-  - Two overloads take a SceneGraph and two don't. Those that do will ensure
-    that the geometry names communicated in the lcm messages match the names
-    used in SceneGraph. Those that don't default to the naming convention
-    documented in ContactResultsToLcmSystem.
-  - Two overloads take an OutputPort and two don't. This determines what is
-    connected to the ContactResultsToLcmSystem input port. The overloads that
-    specify an OutputPort will attempt to connect that port. Those that don't
-    will connect the given plant's contact results output port.
+  - One overload takes an OutputPort and one doesn't. This determines what is
+    connected to the ContactResultsToLcmSystem input port. The overload that
+    specifies an OutputPort will attempt to connect that port. The one that
+    doesn't will connect the given plant's contact results output port.
 
  The parameters have the following semantics:
 
@@ -213,6 +219,9 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
                                whose contact results are to be visualized.
  @param scene_graph            The SceneGraph that will determine how the
                                geometry names will appear in the lcm message.
+ @param publish_period         An optional period to pass along to the
+                               LcmPublisherSystem constructor; when null, a
+                               reasonable default period will be used.
  @param lcm                    An optional lcm interface through which lcm
                                messages will be dispatched. Will be allocated
                                internally if none is supplied. If one is given,
@@ -225,42 +234,29 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
           need to change the default publishing rate).
 
  @pre `plant` is contained within the supplied `builder`.
- @pre `scene_graph` (if given) is contained with the supplied `builder`.
+ @pre `scene_graph` is contained with the supplied `builder`.
  @pre `contact_results_port` (if given) belongs to a system that is an immediate
       child of `builder`. */
 //@{
 
-/** MultibodyPlant-connecting, default-named geometry overload.
- @ingroup visualization */
-systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
-    systems::DiagramBuilder<double>* builder,
-    const MultibodyPlant<double>& plant,
-    lcm::DrakeLcmInterface* lcm = nullptr);
-
-/** MultibodyPlant-connecting, SceneGraph-named geometry overload.
+/** MultibodyPlant-connecting overload.
  @ingroup visualization */
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& plant,
     const geometry::SceneGraph<double>& scene_graph,
-    lcm::DrakeLcmInterface* lcm = nullptr);
+    lcm::DrakeLcmInterface* lcm = nullptr,
+    std::optional<double> publish_period = std::nullopt);
 
-/** OutputPort-connecting, default-named geometry overload.
- @ingroup visualization */
-systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
-    systems::DiagramBuilder<double>* builder,
-    const MultibodyPlant<double>& plant,
-    const systems::OutputPort<double>& contact_results_port,
-    lcm::DrakeLcmInterface* lcm = nullptr);
-
-/** OutputPort-connecting, SceneGraph-named geometry overload.
+/** OutputPort-connecting overload.
  @ingroup visualization */
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& plant,
     const geometry::SceneGraph<double>& scene_graph,
     const systems::OutputPort<double>& contact_results_port,
-    lcm::DrakeLcmInterface* lcm = nullptr);
+    lcm::DrakeLcmInterface* lcm = nullptr,
+    std::optional<double> publish_period = std::nullopt);
 
 //@}
 

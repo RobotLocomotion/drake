@@ -4,6 +4,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/unused.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 
 namespace {
@@ -39,20 +40,6 @@ CacheEntry& SystemBase::DeclareCacheEntry(
       assign_next_dependency_ticket(), std::move(description),
       std::move(value_producer), std::move(prerequisites_of_calc));
 }
-
-// (This overload is deprecated.)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-CacheEntry& SystemBase::DeclareCacheEntry(
-    std::string description, CacheEntry::AllocCallback alloc_function,
-    CacheEntry::CalcCallback calc_function,
-    std::set<DependencyTicket> prerequisites_of_calc) {
-  return DeclareCacheEntry(
-      std::move(description),
-      ValueProducer(std::move(alloc_function), std::move(calc_function)),
-      std::move(prerequisites_of_calc));
-}
-#pragma GCC diagnostic pop
 
 CacheEntry& SystemBase::DeclareCacheEntryWithKnownTicket(
     DependencyTicket known_ticket, std::string description,
@@ -295,15 +282,26 @@ void SystemBase::ThrowNotCreatedForThisSystemImpl(
   }
 }
 
-[[noreturn]] void SystemBase::ThrowUnsupportedScalarConversion(
-    const SystemBase& from, const std::string& destination_type_name) {
-  std::stringstream ss;
-  ss << "The object named [" << from.get_name() << "] of type "
-     << NiceTypeName::Get(from)
-     << " does not support scalar conversion to type ["
-     << destination_type_name <<"].";
-  throw std::logic_error(ss.str().c_str());
+std::string SystemBase::GetUnsupportedScalarConversionMessage(
+    const std::type_info& source_type,
+    const std::type_info& destination_type) const {
+  unused(source_type);
+  return fmt::format(
+      "System {} of type {} does not support scalar conversion to type {}",
+      GetSystemPathname(), GetSystemType(),
+      NiceTypeName::Get(destination_type));
 }
+
+namespace internal {
+
+std::string DiagramSystemBaseAttorney::GetUnsupportedScalarConversionMessage(
+    const SystemBase& system, const std::type_info& source_type,
+    const std::type_info& destination_type) {
+  return system.GetUnsupportedScalarConversionMessage(
+      source_type, destination_type);
+}
+
+}  // namespace internal
 
 }  // namespace systems
 }  // namespace drake

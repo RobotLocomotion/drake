@@ -1,9 +1,12 @@
 #pragma once
 
+#include <memory>
 #include <random>
 
 #include <Eigen/Core>
 
+#include "drake/common/copyable_unique_ptr.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
@@ -20,17 +23,35 @@ class RandomGenerator {
 
   using result_type = std::mt19937::result_type;
 
+  /// Creates a generator using the `default_seed`.  Actual creation of the
+  /// generator is deferred until first use so this constructor is fast and
+  /// does not allocate any heap memory.
   RandomGenerator() = default;
-  explicit RandomGenerator(result_type value) : generator_(value) {}
 
-  static constexpr result_type min() { return std::mt19937::min(); }
-  static constexpr result_type max() { return std::mt19937::max(); }
-  result_type operator()() { return generator_(); }
+  /// Creates a generator using given `seed`.
+  explicit RandomGenerator(result_type seed)
+      : generator_(CreateEngine(seed)) {}
+
+  static constexpr result_type min() { return Engine::min(); }
+  static constexpr result_type max() { return Engine::max(); }
+
+  /// Generates a pseudo-random value.
+  result_type operator()() {
+    // Use lazy construction here, so that the default constructor can be fast.
+    if (generator_ == nullptr) {
+      generator_ = CreateEngine(default_seed);
+    }
+    return (*generator_)();
+  }
 
   static constexpr result_type default_seed = std::mt19937::default_seed;
 
  private:
-  std::mt19937 generator_{};
+  using Engine = std::mt19937;
+
+  static std::unique_ptr<Engine> CreateEngine(result_type seed);
+
+  copyable_unique_ptr<Engine> generator_;
 };
 
 /// Drake supports explicit reasoning about a few carefully chosen random

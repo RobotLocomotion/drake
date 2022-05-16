@@ -1,0 +1,18 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+install_files(
+    name = "install",
+    dest = "share/doc/conex",
+    files = [
+        "@conex//:LICENSE",
+    ],
+    allowed_externals = [
+        "@conex//:LICENSE",
+    ],
+    visibility = ["//tools/workspace:__pkg__"],
+)
+
+add_lint_tests()

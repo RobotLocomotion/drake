@@ -16,29 +16,30 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/filesystem.h"
 #include "drake/common/text_logging.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {
-
 namespace {
+
+using Eigen::Vector3d;
 
 // TODO(DamrongGuoy): Refactor the tinyobj usage between here and
 //  ProximityEngine.
 
 /*
- Converts vertices of tinyobj to vertices of SurfaceMesh.
+ Converts vertices of tinyobj to vertices of TriangleSurfaceMesh.
  @param tinyobj_vertices
      Vertices from tinyobj represented as `std::vector` of floating-point
      numbers.
  @param scale
      A scale to coordinates.
  @return
-     Vertices for SurfaceMesh.
+     Vertices for TriangleSurfaceMesh.
  @pre
      The size of `tinyobj_vertices` is divisible by three.
  */
-std::vector<SurfaceVertex<double>> TinyObjToSurfaceVertices(
+std::vector<Vector3d> TinyObjToSurfaceVertices(
     const std::vector<tinyobj::real_t>& tinyobj_vertices, const double scale) {
   // Vertices from tinyobj are in a vector of floating-point numbers like this:
   //     tinyobj_vertices = {c₀,c₁,c₂, c₃,c₄,c₅, c₆,c₇,c₈,...}
@@ -48,7 +49,7 @@ std::vector<SurfaceVertex<double>> TinyObjToSurfaceVertices(
   //              = {    v0,         v1,         v2,...}
   const int num_coords = tinyobj_vertices.size();
   DRAKE_DEMAND(num_coords % 3 == 0);
-  std::vector<SurfaceVertex<double>> vertices;
+  std::vector<Vector3d> vertices;
   vertices.reserve(num_coords / 3);
 
   auto iter = tinyobj_vertices.begin();
@@ -62,7 +63,7 @@ std::vector<SurfaceVertex<double>> TinyObjToSurfaceVertices(
 }
 
 /*
- Converts faces of tinyobj::mesh_t to faces of SurfaceMesh.
+ Converts faces of tinyobj::mesh_t to faces of TriangleSurfaceMesh.
  @param[in] mesh
      The mesh from tinyobj.
  @param[out] faces
@@ -72,7 +73,7 @@ std::vector<SurfaceVertex<double>> TinyObjToSurfaceVertices(
      Every face is a triangle.
  */
 void TinyObjToSurfaceFaces(const tinyobj::mesh_t& mesh,
-                           std::vector<SurfaceFace>* faces) {
+                           std::vector<SurfaceTriangle>* faces) {
   //
   // In general, tinyobj::mesh_t::num_face_vertices is a list of number
   // of vertices of each polygonal face like this:
@@ -108,7 +109,7 @@ void TinyObjToSurfaceFaces(const tinyobj::mesh_t& mesh,
   }
 }
 
-SurfaceMesh<double> DoReadObjToSurfaceMesh(
+TriangleSurfaceMesh<double> DoReadObjToSurfaceMesh(
     std::istream* input_stream,
     const double scale,
     const std::optional<std::string>& mtl_basedir,
@@ -145,30 +146,31 @@ SurfaceMesh<double> DoReadObjToSurfaceMesh(
   if (shapes.size() == 0) {
     throw std::runtime_error("The Wavefront obj file has no faces.");
   }
-  std::vector<SurfaceVertex<double>> vertices =
+  std::vector<Vector3d> vertices =
       TinyObjToSurfaceVertices(attrib.vertices, scale);
 
   // tinyobj stores vertices from all objects in attrib.vertices but stores
   // faces from each object separately. We will keep all faces together in
-  // the return SurfaceMesh. First we calculate the total number of faces of
-  // all objects, so we can pre-allocate memory for all faces of SurfaceMesh.
+  // the return TriangleSurfaceMesh. First we calculate the total number of
+  // faces of all objects, so we can pre-allocate memory for all faces of
+  // TriangleSurfaceMesh.
   int total_num_faces =
       std::accumulate(shapes.begin(), shapes.end(), 0,
                       [](int sum, const tinyobj::shape_t& shape) {
                         return sum + shape.mesh.num_face_vertices.size();
                       });
-  std::vector<SurfaceFace> faces;
+  std::vector<SurfaceTriangle> faces;
   faces.reserve(total_num_faces);
   for (const tinyobj::shape_t& shape : shapes) {
     TinyObjToSurfaceFaces(shape.mesh, &faces);
   }
 
-  return SurfaceMesh<double>(std::move(faces), std::move(vertices));
+  return TriangleSurfaceMesh<double>(std::move(faces), std::move(vertices));
 }
 
 }  // namespace
 
-SurfaceMesh<double> ReadObjToSurfaceMesh(
+TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
     const std::string& filename,
     const double scale,
     std::function<void(std::string_view)> on_warning) {
@@ -182,7 +184,7 @@ SurfaceMesh<double> ReadObjToSurfaceMesh(
                                 std::move(on_warning));
 }
 
-SurfaceMesh<double> ReadObjToSurfaceMesh(
+TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
     std::istream* input_stream,
     const double scale,
     std::function<void(std::string_view)> on_warning) {

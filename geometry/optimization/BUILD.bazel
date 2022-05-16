@@ -27,6 +27,7 @@ drake_cc_library(
         "convex_set.cc",
         "hpolyhedron.cc",
         "hyperellipsoid.cc",
+        "intersection.cc",
         "minkowski_sum.cc",
         "point.cc",
         "vpolytope.cc",
@@ -36,14 +37,24 @@ drake_cc_library(
         "convex_set.h",
         "hpolyhedron.h",
         "hyperellipsoid.h",
+        "intersection.h",
         "minkowski_sum.h",
         "point.h",
         "vpolytope.h",
     ],
-    deps = [
+    interface_deps = [
         "//geometry:scene_graph",
         "//solvers:mathematical_program",
+        "//solvers:mathematical_program_result",
+    ],
+    deps = [
+        "//solvers:choose_best_solver",
+        "//solvers:gurobi_solver",
+        "//solvers:ipopt_solver",
+        "//solvers:mosek_solver",
+        "//solvers:scs_solver",
         "//solvers:solve",
+        "@qhull",
     ],
 )
 
@@ -56,6 +67,8 @@ drake_cc_library(
         "//common:symbolic",
         "//solvers:create_cost",
         "//solvers:mathematical_program_result",
+        "//solvers:solve",
+        "//solvers:solver_interface",
     ],
 )
 
@@ -67,6 +80,8 @@ drake_cc_library(
         ":convex_set",
         "//geometry:scene_graph",
         "//multibody/plant",
+        "//solvers:choose_best_solver",
+        "//solvers:ibex_solver",
         "//solvers:ipopt_solver",
         "//solvers:snopt_solver",
     ],
@@ -81,6 +96,7 @@ drake_cc_library(
         ":convex_set",
         "//geometry:scene_graph",
         "//solvers:mathematical_program",
+        "//solvers:solve",
     ],
 )
 
@@ -98,6 +114,7 @@ drake_cc_googletest(
     deps = [
         ":convex_set",
         "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:clp_solver",
     ],
 )
 
@@ -107,6 +124,11 @@ drake_cc_googletest(
         ":graph_of_convex_sets",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//solvers:choose_best_solver",
+        "//solvers:clp_solver",
+        "//solvers:gurobi_solver",
+        "//solvers:ipopt_solver",
+        "//solvers:mosek_solver",
     ],
 )
 
@@ -129,10 +151,34 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "intersection_test",
+    deps = [
+        ":convex_set",
+        ":test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "iris_test",
     deps = [
         ":iris",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iris_in_configuration_space_test",
+    shard_count = 8,
+    # Most of these tests take an exceptionally long time under
+    # instrumentation, resulting in timeouts, and so are excluded.
+    tags = [
+        "no_asan",
+        "no_memcheck",
+    ],
+    deps = [
+        ":iris",
         "//multibody/parsing:parser",
         "//systems/framework:diagram_builder",
     ],
@@ -158,10 +204,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "vpolytope_test",
+    data = ["//geometry:test_obj_files"],
     deps = [
         ":convex_set",
         ":test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

@@ -173,7 +173,7 @@ template <typename MeshType> class ObbMakerTester;
 /* %ObbMaker performs an algorithm to create an oriented bounding box that
  fits a specified set of vertices in a mesh.
 
- @tparam MeshType is either SurfaceMesh<T> or VolumeMesh<T>, where T is
+ @tparam MeshType is either TriangleSurfaceMesh<T> or VolumeMesh<T>, where T is
          double or AutoDiffXd.  */
 template <class MeshType>
 class ObbMaker {
@@ -188,8 +188,7 @@ class ObbMaker {
    @param vertices The vertices to fit.
    @pre `vertices` is not empty, and each of its entry is in the
         range [0, V), where V is mesh_M.num_vertices().  */
-  ObbMaker(const MeshType& mesh_M,
-           const std::set<typename MeshType::VertexIndex>& vertices)
+  ObbMaker(const MeshType& mesh_M, const std::set<int>& vertices)
       : mesh_M_(mesh_M), vertices_(vertices) {
     DRAKE_DEMAND(vertices_.size() > 0);
   }
@@ -237,7 +236,7 @@ class ObbMaker {
   Obb OptimizeObbVolume(const Obb& box) const;
 
   const MeshType& mesh_M_;
-  const std::set<typename MeshType::VertexIndex>& vertices_;
+  const std::set<int>& vertices_;
 
   friend class ObbMakerTester<MeshType>;
 };

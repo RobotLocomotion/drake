@@ -302,6 +302,55 @@ GTEST_TEST(OsqpSolverTest, TestNonconvexQP) {
     TestNonconvexQP(solver, true);
   }
 }
+
+GTEST_TEST(OsqpSolverTest, VariableScaling1) {
+  // Quadractic cost and linear inequality constraints.
+  double s = 100;
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(2 * x(0) / s - 2 * x(1) == 2);
+  prog.AddQuadraticCost((x(0) / s + 1) * (x(0) / s + 1));
+  prog.AddQuadraticCost((x(1) + 1) * (x(1) + 1));
+
+  prog.SetVariableScaling(x(0), s);
+
+  OsqpSolver solver;
+  if (solver.available()) {
+    auto result = solver.Solve(prog);
+
+    EXPECT_TRUE(result.is_success());
+    const double tol = 1E-6;
+    EXPECT_NEAR(result.get_optimal_cost(), 0.5, tol);
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
+                                Eigen::Vector2d((-0.5) * s, -1.5), tol));
+  }
+}
+
+GTEST_TEST(OsqpSolverTest, VariableScaling2) {
+  // Quadratic and linear cost, together with bounding box constraints.
+  double s = 100;
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddBoundingBoxConstraint(
+      0.5 * s, std::numeric_limits<double>::infinity(), x(0));
+  prog.AddQuadraticCost((x(0) / s + 1) * (x(0) / s + 1));
+  prog.AddQuadraticCost(x(1) * x(1));
+  prog.AddLinearCost(2 * x(1) + 1);
+
+  prog.SetVariableScaling(x(0), s);
+
+  OsqpSolver solver;
+  if (solver.available()) {
+    auto result = solver.Solve(prog);
+
+    EXPECT_TRUE(result.is_success());
+    const double tol = 1E-6;
+    EXPECT_NEAR(result.get_optimal_cost(), 2.25, tol);
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
+                                Eigen::Vector2d((0.5) * s, -1), tol));
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

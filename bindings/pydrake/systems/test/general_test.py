@@ -3,6 +3,7 @@
 import pydrake.systems.framework as mut
 
 import copy
+import gc
 from textwrap import dedent
 import warnings
 
@@ -28,6 +29,7 @@ from pydrake.systems.analysis import (
     )
 from pydrake.systems.framework import (
     BasicVector, BasicVector_,
+    ContextBase,
     Context, Context_,
     ContinuousState, ContinuousState_,
     Diagram, Diagram_,
@@ -38,10 +40,12 @@ from pydrake.systems.framework import (
     EventStatus,
     GenerateHtml,
     InputPort, InputPort_,
+    InputPortIndex,
     kUseDefaultName,
     LeafContext, LeafContext_,
     LeafSystem, LeafSystem_,
     OutputPort, OutputPort_,
+    OutputPortIndex,
     Parameters, Parameters_,
     PeriodicEventData,
     PublishEvent, PublishEvent_,
@@ -49,6 +53,7 @@ from pydrake.systems.framework import (
     Subvector, Subvector_,
     Supervector, Supervector_,
     System, System_,
+    SystemVisitor, SystemVisitor_,
     SystemBase,
     SystemOutput, SystemOutput_,
     VectorBase, VectorBase_,
@@ -63,7 +68,6 @@ from pydrake.systems.primitives import (
     Integrator,
     LinearSystem,
     PassThrough, PassThrough_,
-    SignalLogger,
     ZeroOrderHold,
     )
 
@@ -109,6 +113,10 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(system.GetSystemPathname(), "::adder")
         self.assertEqual(system.num_input_ports(), 3)
         self.assertEqual(system.num_output_ports(), 1)
+        self.assertEqual(system.num_continuous_states(), 0)
+        self.assertEqual(system.num_discrete_state_groups(), 0)
+        self.assertEqual(system.num_abstract_states(), 0)
+        self.assertEqual(system.implicit_time_derivatives_residual_size(), 0)
         u1 = system.GetInputPort("u1")
         self.assertEqual(u1.get_name(), "u1")
         self.assertIn("u1", u1.GetFullDescription())
@@ -125,6 +133,20 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(y, system.get_output_port())
         # TODO(eric.cousineau): Consolidate the main API tests for `System`
         # to this test point.
+
+    def test_context_base_api(self):
+        system = Adder(3, 10)
+        context = system.AllocateContext()
+        self.assertIsInstance(context, ContextBase)
+        self.assertEqual(context.num_input_ports(), 3)
+        self.assertEqual(context.num_output_ports(), 1)
+        context.DisableCaching()
+        context.EnableCaching()
+        context.SetAllCacheEntriesOutOfDate()
+        context.FreezeCache()
+        self.assertTrue(context.is_cache_frozen())
+        context.UnfreezeCache()
+        self.assertFalse(context.is_cache_frozen())
 
     def test_context_api(self):
         system = Adder(3, 10)
@@ -189,13 +211,6 @@ class TestGeneral(unittest.TestCase):
         # abstract parameter to actually call this method.
         self.assertTrue(hasattr(context, "get_abstract_parameter"))
         self.assertTrue(hasattr(context, "get_mutable_abstract_parameter"))
-        context.DisableCaching()
-        context.EnableCaching()
-        context.SetAllCacheEntriesOutOfDate()
-        context.FreezeCache()
-        self.assertTrue(context.is_cache_frozen())
-        context.UnfreezeCache()
-        self.assertFalse(context.is_cache_frozen())
         x = np.array([0.1, 0.2])
         context.SetContinuousState(x)
         np.testing.assert_equal(
@@ -335,6 +350,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(discrete_values.get_mutable_vector(index=0).size(), 3)
         x = np.array([1., 3., 4.])
         discrete_values.set_value(x)
+        np.testing.assert_array_equal(discrete_values.value(index=0), x)
         np.testing.assert_array_equal(discrete_values.get_value(), x)
         np.testing.assert_array_equal(discrete_values.get_mutable_value(), x)
         discrete_values[1] = 5.
@@ -350,6 +366,8 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(Simulator_, Simulator, False)
         # `framework_py_semantics.cc`
         self._check_instantiations(Context_, Context)
+        for T in [float, AutoDiffXd, Expression]:
+            self.assertTrue(issubclass(Context_[T], ContextBase), repr(T))
         self._check_instantiations(LeafContext_, LeafContext)
         self._check_instantiations(Event_, Event)
         self._check_instantiations(PublishEvent_, PublishEvent)
@@ -886,7 +904,7 @@ class TestGeneral(unittest.TestCase):
 
     def test_diagram_fan_out(self):
         builder = DiagramBuilder()
-        adder = builder.AddSystem(Adder(6, 1))
+        adder = builder.AddSystem(Adder(7, 1))
         adder.set_name("adder")
         builder.ExportOutput(adder.get_output_port())
         in0_index = builder.ExportInput(adder.get_input_port(0), "in0")
@@ -900,6 +918,8 @@ class TestGeneral(unittest.TestCase):
                              input=adder.get_input_port(4))
         builder.ConnectInput(diagram_port_index=in1_index,
                              input=adder.get_input_port(5))
+        builder.ConnectToSame(exemplar=adder.get_input_port(2),
+                              dest=adder.get_input_port(6))
 
         diagram = builder.Build()
         diagram.set_name("fan_out_diagram")
@@ -912,6 +932,48 @@ class TestGeneral(unittest.TestCase):
         self.assertRegex(graph, "_u1 -> .*:u3")
         self.assertRegex(graph, "_u0 -> .*:u4")
         self.assertRegex(graph, "_u1 -> .*:u5")
+        self.assertRegex(graph, "_u0 -> .*:u6")
+
+    def test_diagram_api(self):
+        def make_diagram():
+            builder = DiagramBuilder()
+            adder1 = builder.AddNamedSystem("adder1", Adder(2, 2))
+            adder2 = builder.AddNamedSystem("adder2", Adder(1, 2))
+            builder.Connect(adder1.get_output_port(), adder2.get_input_port())
+            builder.ExportInput(adder1.get_input_port(0), "in0")
+            builder.ExportInput(adder1.get_input_port(1), "in1")
+            builder.ExportOutput(adder2.get_output_port(), "out")
+            self.assertEqual(len(builder.connection_map()), 1)
+            diagram = builder.Build()
+            return adder1, adder2, diagram
+
+        adder1, adder2, diagram = make_diagram()
+        connections = diagram.connection_map()
+        self.assertIn((adder2, InputPortIndex(0)), connections)
+        self.assertEqual(connections[(adder2, InputPortIndex(0))],
+                         (adder1, OutputPortIndex(0)))
+        del adder1, adder2, diagram  # To test keep-alive logic
+        gc.collect()
+        self.assertEqual(list(connections.keys())[0][0].get_name(), "adder2")
+
+        adder1, adder2, diagram = make_diagram()
+        in0_locators = diagram.GetInputPortLocators(
+            port_index=InputPortIndex(0))
+        in1_locators = diagram.GetInputPortLocators(
+            port_index=InputPortIndex(1))
+        self.assertEqual(in0_locators, [(adder1, InputPortIndex(0))])
+        self.assertEqual(in1_locators, [(adder1, InputPortIndex(1))])
+        del adder1, adder2, diagram  # To test keep-alive logic
+        gc.collect()
+        self.assertEqual(in0_locators[0][0].get_name(), "adder1")
+
+        adder1, adder2, diagram = make_diagram()
+        out_locators = diagram.get_output_port_locator(
+            port_index=OutputPortIndex(0))
+        self.assertEqual(out_locators, (adder2, OutputPortIndex(0)))
+        del adder1, adder2, diagram  # To test keep-alive logic
+        gc.collect()
+        self.assertEqual(out_locators[0].get_name(), "adder2")
 
     def test_add_named_system(self):
         builder = DiagramBuilder()
@@ -922,3 +984,27 @@ class TestGeneral(unittest.TestCase):
 
     def test_module_constants(self):
         self.assertEqual(repr(kUseDefaultName), "kUseDefaultName")
+
+    def test_system_visitor(self):
+        builder = DiagramBuilder()
+        builder.AddNamedSystem("adder1", Adder(2, 2))
+        builder.AddNamedSystem("adder2", Adder(2, 2))
+        system = builder.Build()
+        system.set_name("diagram")
+
+        visited_systems = []
+        visited_diagrams = []
+
+        class MyVisitor(SystemVisitor):
+            def VisitSystem(self, system):
+                visited_systems.append(system.get_name())
+
+            def VisitDiagram(self, diagram):
+                visited_diagrams.append(diagram.get_name())
+                for sys in diagram.GetSystems():
+                    sys.Accept(self)
+
+        visitor = MyVisitor()
+        system.Accept(v=visitor)
+        self.assertEqual(visited_systems, ["adder1", "adder2"])
+        self.assertEqual(visited_diagrams, ["diagram"])

@@ -7,7 +7,13 @@ import os
 from os.path import join
 import sys
 
-from drake.doc.defs import check_call, main, symlink_input, verbose
+from drake.doc.defs import (
+    check_call,
+    main,
+    perl_cleanup_html_output,
+    symlink_input,
+    verbose,
+)
 
 import pydrake.all
 # TODO(eric.cousineau): Make an optional `.all` module.
@@ -26,6 +32,7 @@ from pydrake.common import (
     cpp_param,
     cpp_template,
 )
+import pydrake.tutorials
 
 
 def _get_submodules(name):
@@ -114,7 +121,10 @@ def _build(*, out_dir, temp_dir, modules):
     assert len(os.listdir(out_dir)) == 0
 
     sphinx_build = "/usr/share/sphinx/scripts/python3/sphinx-build"
-    assert os.path.isfile(sphinx_build)
+    if not os.path.isfile(sphinx_build):
+        print("Please re-run 'sudo setup/ubuntu/install_prereqs.sh' with the "
+              "'--with-doc-only' flag")
+        sys.exit(1)
 
     # Create a hermetic copy of our input.  This helps ensure that only files
     # listed in BUILD.bazel will render onto the website.
@@ -163,6 +173,9 @@ def _build(*, out_dir, temp_dir, modules):
         input_dir,
         out_dir,
     ])
+
+    # Tidy up.
+    perl_cleanup_html_output(out_dir=out_dir)
 
     # The filename to suggest as the starting point for preview; in this case,
     # it's an empty filename (i.e., the index page).

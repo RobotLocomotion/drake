@@ -340,10 +340,6 @@ def _install_java_launcher_actions(
             rename,
             warn_foreign = False,
         )
-
-        # Adding double quotes around the generated scripts to avoid
-        # white-space problems when running the generated shell script. This
-        # string is used in a "for-loop" in the script.
         classpath.append(join_paths("$prefix", jar_install.dst))
 
     # Compute destination file name.
@@ -483,13 +479,23 @@ def _install_impl(ctx):
                  "\n  src2 = " + repr(src) +
                  "\n  dst = " + repr(a.dst))
 
+    # Generate installer manifest.
+    actions_file = ctx.actions.declare_file(ctx.attr.name + "_actions")
+    ctx.actions.write(
+        output = actions_file,
+        content = "\n".join(script_actions) + "\n",
+    )
+
     # Generate install script.
-    # TODO(mwoehlke-kitware): Figure out a better way to generate this and run
-    # it via Python than `#!/usr/bin/env python3`?
-    ctx.actions.expand_template(
-        template = ctx.executable.install_script_template,
+    ctx.actions.write(
         output = ctx.outputs.executable,
-        substitutions = {"<<actions>>": "\n    ".join(script_actions)},
+        content = "\n".join([
+            "#!/bin/bash",
+            "tools/install/installer --actions '{}' \"$@\"".format(
+                actions_file.short_path,
+            ),
+        ]),
+        is_executable = True,
     )
 
     script_tests = []
@@ -498,7 +504,7 @@ def _install_impl(ctx):
     for i in installed_tests:
         script_tests.append(i.cmd)
 
-    # Generate test installation script
+    # Generate test installation script.
     if ctx.attr.install_tests_script and not script_tests:
         fail("`install_tests_script` is not empty but no `script_tests` were provided.")  # noqa
     if ctx.attr.install_tests_script:
@@ -509,10 +515,12 @@ def _install_impl(ctx):
         )
 
     # Return actions.
-    files = ctx.runfiles(
-        files = [a.src for a in actions if not hasattr(a, "main_class")] +
-                [i.src for i in installed_tests],
-    )
+    installer_runfiles = ctx.attr._installer[DefaultInfo].default_runfiles
+    action_runfiles = ctx.runfiles(files = (
+        [a.src for a in actions if not hasattr(a, "main_class")] +
+        [i.src for i in installed_tests] +
+        [actions_file]
+    ))
     return [
         InstallInfo(
             install_actions = actions,
@@ -520,7 +528,7 @@ def _install_impl(ctx):
             installed_files = installed_files,
         ),
         InstalledTestInfo(tests = installed_tests),
-        DefaultInfo(runfiles = files),
+        DefaultInfo(runfiles = installer_runfiles.merge(action_runfiles)),
     ]
 
 # TODO(mwoehlke-kitware) default guess_data to PACKAGE when we have better
@@ -560,12 +568,12 @@ _install_rule = rule(
         ),
         "workspace": attr.string(),
         "allowed_externals": attr.label_list(allow_files = True),
-        "install_script_template": attr.label(
-            allow_files = True,
+        "_installer": attr.label(
             executable = True,
-            cfg = "target",
-            default = Label("//tools/install:install.py.in"),
+            cfg = "host",
+            default = Label("//tools/install:installer"),
         ),
+        "install_script": attr.output(),
         "install_tests_script": attr.output(),
     },
     executable = True,

@@ -55,17 +55,21 @@ void AddLinearConstraint(
   const Binding<Constraint> binding_cast =
       internal::BindingDynamicCast<Constraint>(linear_constraint);
   constraint_dual_start_index->emplace(binding_cast, *constraint_count);
-  const std::vector<int> variable_indices =
-      prog.FindDecisionVariableIndices(linear_constraint.variables());
-  for (int i = 0; i < linear_constraint.evaluator()->num_constraints(); ++i) {
-    for (int j = 0; j < linear_constraint.variables().rows(); ++j) {
-      const int var_index = variable_indices[j];
-      if (linear_constraint.evaluator()->A()(i, j) != 0) {
-        constraint_coeffs->emplace_back(
-            i + *constraint_count, var_index,
-            linear_constraint.evaluator()->A()(i, j));
-      }
+  const Eigen::SparseMatrix<double>& A =
+      linear_constraint.evaluator()->get_sparse_A();
+  // First loop by column to set the coefficient since A is a column major
+  // matrix.
+  for (int j = 0; j < A.cols(); ++j) {
+    const int var_index =
+        prog.FindDecisionVariableIndex(linear_constraint.variables()(j));
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A, j); it; ++it) {
+      const int row = it.row();
+      constraint_coeffs->emplace_back(row + *constraint_count, var_index,
+                                      it.value());
     }
+  }
+  // Now loop by rows of the constraints to set the bounds.
+  for (int i = 0; i < linear_constraint.evaluator()->num_constraints(); ++i) {
     (*constraint_lower)[*constraint_count + i] =
         linear_constraint.evaluator()->lower_bound()(i);
     (*constraint_upper)[*constraint_count + i] =
@@ -301,6 +305,17 @@ int ChooseLogLevel(const SolverOptions& options) {
   }
   return 0;
 }
+
+int ChooseScaling(const SolverOptions& options) {
+  const auto& clp_options = options.GetOptionsInt(ClpSolver::id());
+  auto it = clp_options.find("scaling");
+  if (it == clp_options.end()) {
+    // Default scaling is 1.
+    return 1;
+  } else {
+    return it->second;
+  }
+}
 }  // namespace
 
 bool ClpSolver::is_available() { return true; }
@@ -340,6 +355,11 @@ void ClpSolver::DoSolve(const MathematicalProgram& prog,
     SetBoundingBoxConstraintDualIndices(prog, bb_con, xlow, xupp,
                                         &bb_con_dual_variable_indices);
   }
+
+  // As suggested by the CLP author, we should call scaling() to handle tiny (or
+  // huge) number in program data. See https://github.com/coin-or/Clp/issues/217
+  // for the discussion.
+  model.scaling(ChooseScaling(merged_options));
 
   // Solve
   model.primal();

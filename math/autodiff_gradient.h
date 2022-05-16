@@ -11,7 +11,6 @@ gradient matrices. */
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/unused.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/gradient.h"
@@ -78,6 +77,9 @@ ExtractGradient(const Eigen::MatrixBase<Derived>& auto_diff_matrix,
   Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::SizeAtCompileTime,
                 Eigen::Dynamic>
       gradient(auto_diff_matrix.size(), *num_derivatives);
+  if (gradient.size() == 0) {
+    return gradient;
+  }
   for (int row = 0; row < auto_diff_matrix.rows(); ++row) {
     for (int col = 0; col < auto_diff_matrix.cols(); ++col) {
       auto gradient_row =
@@ -90,27 +92,6 @@ ExtractGradient(const Eigen::MatrixBase<Derived>& auto_diff_matrix,
     }
   }
   return gradient;
-}
-
-// TODO(sherm1) DRAKE_DEPRECATED("2022-01-01",
-//    "Used only in deprecated functions.")
-template <typename Derived>
-struct AutoDiffToGradientMatrix {
-  typedef typename Gradient<
-      Eigen::Matrix<typename Derived::Scalar::Scalar,
-                    Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>,
-      Eigen::Dynamic>::type type;
-};
-
-template <typename Derived>
-// TODO(sherm1) DRAKE_DEPRECATED("2022-01-01", "Use ExtractGradient().")
-typename AutoDiffToGradientMatrix<Derived>::type autoDiffToGradientMatrix(
-    const Eigen::MatrixBase<Derived>& autodiff_matrix,
-    int num_derivatives = Eigen::Dynamic) {
-  return ExtractGradient(autodiff_matrix,
-                         num_derivatives == Eigen::Dynamic
-                             ? std::nullopt
-                             : std::optional<int>(num_derivatives));
 }
 
 /** Initializes an AutoDiff matrix given a matrix of values and a gradient
@@ -169,17 +150,6 @@ void InitializeAutoDiff(
   }
 }
 
-template <typename DerivedValue, typename DerivedGradient,
-          typename DerivedAutoDiff>
-// TODO(sherm1) DRAKE_DEPRECATED("2022-01-01", "Use InitializeAutoDiff().")
-void initializeAutoDiffGivenGradientMatrix(
-    const Eigen::MatrixBase<DerivedValue>& value,
-    const Eigen::MatrixBase<DerivedGradient>& gradient,
-    // NOLINTNEXTLINE(runtime/references).
-    Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix) {
-  InitializeAutoDiff(value, gradient, &auto_diff_matrix);
-}
-
 /** Returns an AutoDiff matrix given a matrix of values and a gradient
 matrix.
 
@@ -199,34 +169,6 @@ InitializeAutoDiff(
       auto_diff_matrix(value.rows(), value.cols());
   InitializeAutoDiff(value, gradient, &auto_diff_matrix);
   return auto_diff_matrix;
-}
-
-template <typename DerivedValue, typename DerivedGradient>
-// TODO(sherm1) DRAKE_DEPRECATED("2022-01-01",
-//     "Use InitializeAutoDiff() instead")
-AutoDiffMatrixType<DerivedValue, DerivedGradient::ColsAtCompileTime>
-initializeAutoDiffGivenGradientMatrix(
-    const Eigen::MatrixBase<DerivedValue>& val,
-    const Eigen::MatrixBase<DerivedGradient>& gradient) {
-  return InitializeAutoDiff(val, gradient);
-}
-
-template <typename DerivedGradient, typename DerivedAutoDiff>
-DRAKE_DEPRECATED("2021-12-01",
-    "Apparently unused. File a Drake issue on GitHub if you need this method.")
-void gradientMatrixToAutoDiff(
-    const Eigen::MatrixBase<DerivedGradient>& gradient,
-    // NOLINTNEXTLINE(runtime/references).
-    Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix) {
-  typedef typename Eigen::MatrixBase<DerivedGradient>::Index Index;
-  auto nx = gradient.cols();
-  for (Index row = 0; row < auto_diff_matrix.rows(); ++row) {
-    for (Index col = 0; col < auto_diff_matrix.cols(); ++col) {
-      auto_diff_matrix(row, col).derivatives().resize(nx, 1);
-      auto_diff_matrix(row, col).derivatives() =
-          gradient.row(row + col * auto_diff_matrix.rows()).transpose();
-    }
-  }
 }
 
 /** `B = DiscardZeroGradient(A, precision)` enables casting from a matrix of
@@ -274,35 +216,6 @@ DiscardZeroGradient(const Eigen::MatrixBase<Derived>& matrix,
                    double precision = 0.) {
   unused(precision);
   return matrix;
-}
-
-template <typename _Scalar, int _Dim, int _Mode, int _Options>
-DRAKE_DEPRECATED("2021-12-01",
-    "Apparently unused. File a Drake issue on GitHub"
-    " if you need this specialization.")
-typename std::enable_if_t<
-    !std::is_same_v<_Scalar, double>,
-    Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>>
-DiscardZeroGradient(
-    const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>& auto_diff_transform,
-    const typename Eigen::NumTraits<typename _Scalar::Scalar>::Real& precision =
-        Eigen::NumTraits<typename _Scalar::Scalar>::dummy_precision()) {
-  return Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>(
-      DiscardZeroGradient(auto_diff_transform.matrix(), precision));
-}
-
-template <typename _Scalar, int _Dim, int _Mode, int _Options>
-DRAKE_DEPRECATED("2021-12-01",
-    "Apparently unused. File a Drake issue on GitHub"
-    " if you need this specialization.")
-typename std::enable_if_t<
-    std::is_same_v<_Scalar, double>,
-    const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>&>
-DiscardZeroGradient(
-    const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>& transform,
-    double precision = 0.) {
-  unused(precision);
-  return transform;
 }
 
 /**

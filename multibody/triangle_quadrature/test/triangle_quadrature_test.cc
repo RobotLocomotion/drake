@@ -19,7 +19,7 @@ GTEST_TEST(TriangleQuadrature, GaussianQuadratureRuleThrowsAboveMaxOrder) {
   // TriangleQuadratureRule class (if more quadrature rules are added).
   const int max_order = 5;
   DRAKE_EXPECT_THROWS_MESSAGE(GaussianTriangleQuadratureRule(max_order + 1),
-      std::logic_error, ".*quadrature only supported up to fifth order.*");
+      ".*quadrature only supported up to fifth order.*");
 }
 
 GTEST_TEST(TriangleQuadrature, WeightsSumToUnity) {

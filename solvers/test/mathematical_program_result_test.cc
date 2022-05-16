@@ -35,7 +35,7 @@ TEST_F(MathematicalProgramResultTest, DefaultConstructor) {
   EXPECT_TRUE(std::isnan(result.get_optimal_cost()));
   EXPECT_EQ(result.num_suboptimal_solution(), 0);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      result.get_abstract_solver_details(), std::logic_error,
+      result.get_abstract_solver_details(),
       "The solver_details has not been set yet.");
 }
 
@@ -57,7 +57,6 @@ TEST_F(MathematicalProgramResultTest, Setters) {
   EXPECT_EQ(result.GetSuboptimalSolution(x1_, 0), 2);
   EXPECT_EQ(result.get_suboptimal_objective(0), 0.1);
   DRAKE_EXPECT_THROWS_MESSAGE(result.set_x_val(Eigen::Vector3d::Zero()),
-                              std::invalid_argument,
                               "MathematicalProgramResult::set_x_val, the "
                               "dimension of x_val is 3, expected 2");
   const double cost = 1;
@@ -85,7 +84,7 @@ TEST_F(MathematicalProgramResultTest, GetSolution) {
   // Getting solution for a variable y not in decision_variable_index_.
   symbolic::Variable y("y");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      result.GetSolution(y), std::invalid_argument,
+      result.GetSolution(y),
       "GetVariableValue: y is not captured by the variable_index map.");
 
   // Get a solution of an Expression (with additional Variables).
@@ -128,7 +127,7 @@ TEST_F(MathematicalProgramResultTest, GetSolutionPolynomial) {
   // p3's indeterminates contain x0, expect to throw an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
       result.GetSolution(symbolic::Polynomial(x0_ * t1 + 1, {x0_, t1})),
-      std::invalid_argument, ".*x0 is an indeterminate in the polynomial.*");
+      ".*x0 is an indeterminate in the polynomial.*");
 }
 
 TEST_F(MathematicalProgramResultTest, DualSolution) {
@@ -165,7 +164,7 @@ TEST_F(MathematicalProgramResultTest, DualSolution) {
   Binding<LinearEqualityConstraint> binding4(
       lin_eq_con, Vector2<symbolic::Variable>(x1_, x0_));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      result.GetDualSolution(binding4), std::invalid_argument,
+      result.GetDualSolution(binding4),
       fmt::format("Either this constraint does not belong to the "
                   "mathematical program for which the result is obtained, or "
                   "{} does not currently support getting dual solution yet.",
@@ -233,6 +232,17 @@ GTEST_TEST(TestMathematicalProgramResult, InfeasibleProblem) {
               MathematicalProgram::kGlobalInfeasibleCost);
   }
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// Remove on 2022-07-01
+TEST_F(MathematicalProgramResultTest, InfeasibleOrUnboundedDeprecation) {
+  MathematicalProgramResult result;
+  result.set_solution_result(SolutionResult::kInfeasible_Or_Unbounded);
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleOrUnbounded);
+}
+#pragma GCC diagnostic pop
 
 GTEST_TEST(TestMathematicalProgramResult, GetInfeasibleConstraintNames) {
   if (SnoptSolver::is_available()) {

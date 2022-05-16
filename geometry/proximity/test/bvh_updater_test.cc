@@ -53,26 +53,24 @@ class BvhUpdaterTest : public ::testing::Test {
                  (i.e., vertices 6 and 7).  */
   static MeshType MakeMesh(double dist = 2) {
     using T = typename MeshType::ScalarType;
-    using V = typename MeshType::template VertexType<T>;
-    using VI = typename MeshType::VertexIndex;
     const Vector3<T> offset{dist, 0, 0};
     // clang-format off
-    vector<V> vertices{
-        {V(Vector3<T>{0, -1, 0} + offset),
-         V(Vector3<T>{1, 0, 0} + offset),
-         V(Vector3<T>{0, 0, 1} + offset),
-         V(Vector3<T>{0, -1, 0} - offset),
-         V(Vector3<T>{-1, 0, 0} - offset),
-         V(Vector3<T>{0, 0, 1} - offset),
-         V(offset),
-         V(-offset)}};
+    vector<Vector3<T>> vertices{
+        {Vector3<T>{0, -1, 0} + offset,
+         Vector3<T>{1, 0, 0} + offset,
+         Vector3<T>{0, 0, 1} + offset,
+         Vector3<T>{0, -1, 0} - offset,
+         Vector3<T>{-1, 0, 0} - offset,
+         Vector3<T>{0, 0, 1} - offset,
+         offset,
+         -offset}};
     // clang-format on
-    if constexpr (std::is_same_v<MeshType, SurfaceMesh<T>>) {
+    if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
       /* The winding of the triangles don't matter. */
-      vector<SurfaceFace> triangles;
+      vector<SurfaceTriangle> triangles;
       for (int i = 0; i < MeshTraits<MeshType>::kMaxElementPerBvhLeaf; ++i) {
-        triangles.push_back(SurfaceFace(VI(0), VI(1), VI(2)));
-        triangles.push_back(SurfaceFace(VI(3), VI(4), VI(5)));
+        triangles.emplace_back(0, 1, 2);
+        triangles.emplace_back(3, 4, 5);
       }
       return MeshType(std::move(triangles), std::move(vertices));
     } else {
@@ -80,15 +78,16 @@ class BvhUpdaterTest : public ::testing::Test {
        (the 3D version of "winding"). */
       vector<VolumeElement> tets;
       for (int i = 0; i < MeshTraits<MeshType>::kMaxElementPerBvhLeaf; ++i) {
-        tets.emplace_back(VI(0), VI(1), VI(2), VI(6));
-        tets.emplace_back(VI(3), VI(4), VI(5), VI(7));
+        tets.emplace_back(0, 1, 2, 6);
+        tets.emplace_back(3, 4, 5, 7);
       }
       return MeshType(std::move(tets), std::move(vertices));
     }
   }
 };
 
-using MeshTypes = ::testing::Types<SurfaceMesh<double>, SurfaceMesh<AutoDiffXd>,
+using MeshTypes = ::testing::Types<TriangleSurfaceMesh<double>,
+                                   TriangleSurfaceMesh<AutoDiffXd>,
                                    VolumeMesh<double>, VolumeMesh<AutoDiffXd>>;
 
 TYPED_TEST_SUITE(BvhUpdaterTest, MeshTypes);
@@ -165,9 +164,8 @@ TYPED_TEST(BvhUpdaterTest, Update) {
 
   /* 3 doubles for each of M vertices */
   VectorX<T> p_MVs(3 * mesh.num_vertices());
-  using VIndex = typename MeshType::VertexIndex;
-  for (VIndex i(0); i < mesh.num_vertices(); ++i) {
-    p_MVs.segment(i * 3, 3) << R * mesh.vertex(i).r_MV();
+  for (int i = 0; i < mesh.num_vertices(); ++i) {
+    p_MVs.segment(i * 3, 3) << R * mesh.vertex(i);
   }
   deformer.SetAllPositions(p_MVs);
   updater.Update();

@@ -28,14 +28,15 @@ output ports could be evaluated via other connections.
 name: PortSwitch
 input_ports:
 - port_selector
-- value0 (with assigned port name)
+- (user assigned port name)
 - ...
-- valueN (with assigned port name)
+- (user assigned port name)
 output_ports:
 - value
 @endsystem
 
 @tparam_default_scalar
+@ingroup primitive_systems
 */
 template <typename T>
 class PortSwitch final : public LeafSystem<T> {

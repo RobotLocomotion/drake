@@ -1,9 +1,17 @@
 #include "drake/geometry/optimization/vpolytope.h"
 
+#include <algorithm>
+#include <cmath>
 #include <limits>
 #include <memory>
+#include <numeric>
+
+#include <fmt/format.h>
+#include <libqhullcpp/Qhull.h>
+#include <libqhullcpp/QhullVertexSet.h>
 
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/geometry/read_obj.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -20,6 +28,54 @@ using solvers::Constraint;
 using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
 using symbolic::Variable;
+
+namespace {
+
+/* Given a matrix containing a set of 2D vertices, return a copy
+of the matrix where the vertices are ordered counter-clockwise
+from the negative X axis. */
+Eigen::MatrixXd OrderCounterClockwise(const Eigen::MatrixXd& vertices) {
+  const size_t dim = vertices.rows();
+  const size_t num_vertices = vertices.cols();
+
+  DRAKE_DEMAND(dim == 2);
+
+  std::vector<size_t> indices(num_vertices);
+  std::vector<double> angles(num_vertices);
+
+  double center_x = 0;
+  double center_y = 0;
+
+  std::iota(indices.begin(), indices.end(), 0);
+
+  for (const auto& i : indices) {
+    center_x += vertices.col(i)[0];
+    center_y += vertices.col(i)[1];
+  }
+
+  center_x /= num_vertices;
+  center_y /= num_vertices;
+
+  for (const auto& i : indices) {
+    const double x = vertices.col(i)[0] - center_x;
+    const double y = vertices.col(i)[1] - center_y;
+    angles[i] = std::atan2(y, x);
+  }
+
+  std::sort(indices.begin(), indices.end(), [&angles](size_t a, size_t b){
+      return angles[a] > angles[b];
+    });
+
+  Eigen::MatrixXd sorted_vertices(dim, num_vertices);
+
+  for (size_t i = 0; i < num_vertices; ++i) {
+    sorted_vertices.col(i) = vertices.col(indices[i]);
+  }
+
+  return sorted_vertices;
+}
+
+}  // namespace
 
 VPolytope::VPolytope(const Eigen::Ref<const Eigen::MatrixXd>& vertices)
     : ConvexSet(&ConvexSetCloner<VPolytope>, vertices.rows()),
@@ -38,6 +94,69 @@ VPolytope::VPolytope(const QueryObject<double>& query_object,
   const RigidTransformd& X_WG = query_object.GetPoseInWorld(geometry_id);
   const RigidTransformd X_EG = X_WE.InvertAndCompose(X_WG);
   vertices_ = X_EG * vertices;
+}
+
+VPolytope::VPolytope(const HPolyhedron& hpoly)
+    : ConvexSet(&ConvexSetCloner<VPolytope>, hpoly.ambient_dimension()) {
+  DRAKE_THROW_UNLESS(hpoly.IsBounded());
+
+  Eigen::MatrixXd coeffs(hpoly.A().rows(), hpoly.A().cols() + 1);
+  coeffs.leftCols(hpoly.A().cols()) = hpoly.A();
+  coeffs.col(hpoly.A().cols()) = -hpoly.b();
+
+  Eigen::MatrixXd coeffs_t = coeffs.transpose();
+  std::vector<double> flat_coeffs;
+  flat_coeffs.resize(coeffs_t.size());
+  Eigen::VectorXd::Map(&flat_coeffs[0], coeffs_t.size()) =
+      Eigen::VectorXd::Map(coeffs_t.data(), coeffs_t.size());
+
+  Eigen::VectorXd eigen_center = hpoly.ChebyshevCenter();
+  std::vector<double> center;
+  center.resize(eigen_center.size());
+  Eigen::VectorXd::Map(&center[0], eigen_center.size()) = eigen_center;
+
+  orgQhull::Qhull qhull;
+  qhull.setFeasiblePoint(orgQhull::Coordinates(center));
+  //  By default, Qhull takes in a sequence of vertices and generates a convex
+  //  hull from them. Alternatively it can generate the convex hull from a
+  //  sequence of halfspaces (requested via the "H" argument). In that case the
+  //  inputs are overloaded with the `pointDimension` representing the dimension
+  //  the convex hull exists in plus the offset and the `pointCount`
+  //  representing the number of faces. Slightly more documentation can be found
+  //  here: http://www.qhull.org/html/qhull.htm.
+  qhull.runQhull("", hpoly.A().cols() + 1, hpoly.A().rows(), flat_coeffs.data(),
+                 "H");
+  if (qhull.qhullStatus() != 0) {
+    throw std::runtime_error(
+        fmt::format("Qhull terminated with status {} and  message:\n{}",
+                    qhull.qhullStatus(), qhull.qhullMessage()));
+  }
+
+  // Qhull flips some notation when you use the halfspace intersection:
+  // http://www.qhull.org/html/qh-code.htm#facet-cpp . Each facet from qhull
+  // represents an intersection between halfspaces of the H polyhedron.
+  // However, I could not figure out if each QhullFacet stored the exact
+  // location of the intersection (i.e. the vertex). Instead, this code takes
+  // each intersection of hyperplanes (QhullFacet), pulls out the hyperplanes
+  // that are part of the intersection (facet.vertices()) and solves for the
+  // vertex that lies at the intersection of these hyperplanes.
+  vertices_.resize(hpoly.ambient_dimension(), qhull.facetCount());
+  int ii = 0;
+  for (const auto& facet : qhull.facetList()) {
+    auto incident_hyperplanes = facet.vertices();
+    Eigen::MatrixXd vertex_A(incident_hyperplanes.count(),
+                             hpoly.ambient_dimension());
+    for (int jj = 0; jj < incident_hyperplanes.count(); jj++) {
+      std::vector<double> hyperplane =
+          incident_hyperplanes.at(jj).point().toStdVector();
+      vertex_A.row(jj) = Eigen::Map<Eigen::RowVectorXd, Eigen::Unaligned>(
+          hyperplane.data(), hyperplane.size());
+    }
+    vertices_.col(ii) = vertex_A.partialPivLu().solve(Eigen::VectorXd::Ones(
+                            incident_hyperplanes.count())) +
+                        eigen_center;
+    ii++;
+  }
 }
 
 VPolytope::~VPolytope() = default;
@@ -64,6 +183,55 @@ VPolytope VPolytope::MakeBox(const Eigen::Ref<const VectorXd>& lb,
 
 VPolytope VPolytope::MakeUnitBox(int dim) {
   return MakeBox(VectorXd::Constant(dim, -1.0), VectorXd::Constant(dim, 1.0));
+}
+
+VPolytope VPolytope::GetMinimalRepresentation() const {
+  orgQhull::Qhull qhull;
+  qhull.runQhull("", vertices_.rows(), vertices_.cols(), vertices_.data(), "");
+  if (qhull.qhullStatus() != 0) {
+    throw std::runtime_error(
+        fmt::format("Qhull terminated with status {} and  message:\n{}",
+                    qhull.qhullStatus(), qhull.qhullMessage()));
+  }
+
+  Eigen::MatrixXd minimal_vertices(vertices_.rows(), qhull.vertexCount());
+  size_t j = 0;
+  for (const auto& qhull_vertex : qhull.vertexList()) {
+    size_t i = 0;
+    for (const auto& val : qhull_vertex.point()) {
+      minimal_vertices(i, j) = val;
+      ++i;
+    }
+    ++j;
+  }
+
+  // The qhull C++ interface iterates over the vertices in no specific order.
+  // For the 2D case, reorder the vertices according to the counter-clockwise
+  // convention.
+  if (vertices_.rows() == 2) {
+    minimal_vertices = OrderCounterClockwise(minimal_vertices);
+  }
+
+  return VPolytope(minimal_vertices);
+}
+
+double VPolytope::CalcVolume() const {
+  orgQhull::Qhull qhull;
+  try {
+    qhull.runQhull("", ambient_dimension_, vertices_.cols(), vertices_.data(),
+                   "");
+  } catch (const orgQhull::QhullError& e) {
+    if (e.errorCode() == qh_ERRsingular) {
+      // The convex hull is singular. It has 0 volume.
+      return 0;
+    }
+  }
+  if (qhull.qhullStatus() != 0) {
+    throw std::runtime_error(
+        fmt::format("Qhull terminated with status {} and  message:\n{}",
+                    qhull.qhullStatus(), qhull.qhullMessage()));
+  }
+  return qhull.volume();
 }
 
 bool VPolytope::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -145,6 +313,33 @@ VPolytope::DoAddPointInNonnegativeScalingConstraints(
   return constraints;
 }
 
+std::vector<solvers::Binding<solvers::Constraint>>
+VPolytope::DoAddPointInNonnegativeScalingConstraints(
+    solvers::MathematicalProgram* prog, const Eigen::Ref<const MatrixXd>& A,
+    const Eigen::Ref<const VectorXd>& b, const Eigen::Ref<const VectorXd>& c,
+    double d, const Eigen::Ref<const VectorXDecisionVariable>& x,
+    const Eigen::Ref<const VectorXDecisionVariable>& t) const {
+  std::vector<solvers::Binding<solvers::Constraint>> constraints;
+  const int n = ambient_dimension();
+  const int m = vertices_.cols();
+  VectorXDecisionVariable alpha = prog->NewContinuousVariables(m, "a");
+  // αᵢ ≥ 0.
+  constraints.emplace_back(prog->AddBoundingBoxConstraint(
+      0, std::numeric_limits<double>::infinity(), alpha));
+  // v α = A * x + b.
+  MatrixXd A_combination(n, m + x.size());
+  A_combination.leftCols(m) = vertices_;
+  A_combination.rightCols(x.size()) = -A;
+  constraints.emplace_back(
+      prog->AddLinearEqualityConstraint(A_combination, b, {alpha, x}));
+
+  // ∑ αᵢ = c' * t + d.
+  RowVectorXd a = RowVectorXd::Ones(m + t.size());
+  a.tail(t.size()) = -c.transpose();
+  constraints.emplace_back(prog->AddLinearEqualityConstraint(a, d, {alpha, t}));
+  return constraints;
+}
+
 std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
 VPolytope::DoToShapeWithPose() const {
   throw std::runtime_error(
@@ -157,6 +352,7 @@ void VPolytope::ImplementGeometry(const Box& box, void* data) {
   const double x = box.width() / 2.0;
   const double y = box.depth() / 2.0;
   const double z = box.height() / 2.0;
+  DRAKE_ASSERT(data != nullptr);
   Matrix3Xd* vertices = static_cast<Matrix3Xd*>(data);
   vertices->resize(3, 8);
   // clang-format off
@@ -164,6 +360,36 @@ void VPolytope::ImplementGeometry(const Box& box, void* data) {
                 y,  y, -y, -y, -y, -y,  y,  y,
                -z, -z, -z, -z,  z,  z,  z,  z;
   // clang-format on
+}
+
+void VPolytope::ImplementGeometry(const Convex& convex, void* data) {
+  DRAKE_ASSERT(data != nullptr);
+  const auto [tinyobj_vertices, faces, num_faces] = internal::ReadObjFile(
+      convex.filename(), convex.scale(), false /* triangulate */);
+  unused(faces);
+  unused(num_faces);
+  orgQhull::Qhull qhull;
+  const int dim = 3;
+  std::vector<double> tinyobj_vertices_flat(tinyobj_vertices->size() * dim);
+  for (int i = 0; i < static_cast<int>(tinyobj_vertices->size()); ++i) {
+    for (int j = 0; j < dim; ++j) {
+      tinyobj_vertices_flat[dim * i + j] = (*tinyobj_vertices)[i](j);
+    }
+  }
+  qhull.runQhull("", dim, tinyobj_vertices->size(),
+                 tinyobj_vertices_flat.data(), "");
+  if (qhull.qhullStatus() != 0) {
+    throw std::runtime_error(
+        fmt::format("Qhull terminated with status {} and  message:\n{}",
+                    qhull.qhullStatus(), qhull.qhullMessage()));
+  }
+  Matrix3Xd* vertices = static_cast<Matrix3Xd*>(data);
+  vertices->resize(3, qhull.vertexCount());
+  int vertex_count = 0;
+  for (const auto& qhull_vertex : qhull.vertexList()) {
+    vertices->col(vertex_count++) =
+        Eigen::Map<Eigen::Vector3d>(qhull_vertex.point().toStdVector().data());
+  }
 }
 
 }  // namespace optimization

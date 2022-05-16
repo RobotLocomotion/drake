@@ -156,7 +156,7 @@ class Aabb {
  This serves as the interface to Bvh, allowing the Bvh to fit volumes to
  geometry without knowing the details of the bounding volume types.
 
- @tparam MeshType is either SurfaceMesh<T> or VolumeMesh<T>, where T is
+ @tparam MeshType is either TriangleSurfaceMesh<T> or VolumeMesh<T>, where T is
          double or AutoDiffXd.  */
 template <class MeshType>
 class AabbMaker {
@@ -170,8 +170,7 @@ class AabbMaker {
    @param vertices   The subset of vertices to fit.
    @pre `vertices` is not empty, and each of its entry is in the
         range [0, mesh_M.num_vertices()).  */
-  AabbMaker(const MeshType& mesh_M,
-            const std::set<typename MeshType::VertexIndex>& vertices)
+  AabbMaker(const MeshType& mesh_M, const std::set<int>& vertices)
       : mesh_M_(mesh_M), vertices_(vertices) {
     DRAKE_DEMAND(vertices_.size() > 0);
   }
@@ -182,7 +181,7 @@ class AabbMaker {
 
  private:
   const MeshType& mesh_M_;
-  const std::set<typename MeshType::VertexIndex>& vertices_;
+  const std::set<int>& vertices_;
 };
 
 }  // namespace internal

@@ -2,12 +2,10 @@
 #include <iostream>
 
 #include <gflags/gflags.h>
-#include <yaml-cpp/yaml.h>
 
 #include "drake/common/name_value.h"
 #include "drake/common/schema/stochastic.h"
-#include "drake/common/yaml/yaml_read_archive.h"
-#include "drake/common/yaml/yaml_write_archive.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
 #include "drake/examples/acrobot/spong_controller.h"
 #include "drake/systems/analysis/simulator.h"
@@ -19,6 +17,8 @@ using drake::examples::acrobot::AcrobotPlant;
 using drake::examples::acrobot::AcrobotSpongController;
 using drake::systems::DiagramBuilder;
 using drake::systems::Simulator;
+using drake::yaml::SaveYamlFile;
+using drake::yaml::LoadYamlFile;
 
 namespace drake {
 namespace examples {
@@ -76,19 +76,12 @@ Scenario SampleScenario(const Scenario& input) {
 }
 
 // Simulates an Acrobot + Spong controller from the given initial state and
-// parameters until the given final time.  Returns a YAML string of the state.
-std::string Simulate(const YAML::Node& scenario_node) {
-  Scenario scenario;
-  drake::yaml::YamlReadArchive(scenario_node).Accept(&scenario);
-
+// parameters until the given final time.  Returns the state as output.
+Output Simulate(const Scenario& stochastic_scenario) {
   // Resolve scenario randomness and write out the resolved scenario.
-  scenario = SampleScenario(scenario);
+  const Scenario scenario = SampleScenario(stochastic_scenario);
   if (!FLAGS_dump_scenario.empty()) {
-    std::ofstream out(FLAGS_dump_scenario);
-    DRAKE_THROW_UNLESS(out.good());
-    drake::yaml::YamlWriteArchive writer;
-    writer.Accept(scenario);
-    out << writer.EmitString();
+    SaveYamlFile(FLAGS_dump_scenario, scenario);
   }
 
   DiagramBuilder<double> builder;
@@ -119,22 +112,11 @@ std::string Simulate(const YAML::Node& scenario_node) {
 
   simulator.AdvanceTo(scenario.t_final);
 
+  // Create an output string that looks like this:
+  // x_tape: [[0,1,2,3,4,5],[0,1,2,3,4,5],[0,1,2,3,4,5],[0,1,2,3,4,5]]
   Output output;
   output.x_tape = state_logger->FindLog(context).data();
-  drake::yaml::YamlWriteArchive writer;
-  writer.Accept(output);
-  // The EmitString call below saves a document like so:
-  //
-  // doc:
-  //   x_tape: [[0,1,2,3,4,5],[0,1,2,3,4,5],[0,1,2,3,4,5],[0,1,2,3,4,5]]
-  //
-  // When writing to disk, we need to strip off the "doc:\n  " part in order to
-  // meet the expectations of our caller.
-  // TODO(jeremy.nimmer) Repair the YamlWriteArchive APIs so we don't have to
-  // strip off this prefix.
-  const std::string result = writer.EmitString("doc").substr(7);
-  DRAKE_DEMAND(result.substr(0, 7) == "x_tape:");
-  return result;
+  return output;
 }
 
 int Main() {
@@ -146,24 +128,9 @@ int Main() {
     std::cerr << "An --output file is required.\n";
     return 1;
   }
-  std::ifstream in(FLAGS_scenario);
-  if (!in.good()) {
-    std::cerr << "Could not read from '" << FLAGS_scenario << "'.\n";
-    return 1;
-  }
-  YAML::Node scenario_nodes = YAML::Load(in);
-  if (!(scenario_nodes.IsMap() && scenario_nodes.size() == 1)) {
-    std::cerr << "Scenario file does not have exactly 1 scenario\n";
-    return 1;
-  }
-  const std::string name = scenario_nodes.begin()->first.Scalar();
-  std::ofstream out(FLAGS_output);
-  if (!out.good()) {
-    std::cerr << "Could not write to '" << FLAGS_output << "'.\n";
-    return 1;
-  }
-  const std::string output = Simulate(scenario_nodes[name]);
-  out << output;
+  const Scenario stochastic_scenario = LoadYamlFile<Scenario>(FLAGS_scenario);
+  const Output output = Simulate(stochastic_scenario);
+  SaveYamlFile(FLAGS_output, output);
   return 0;
 }
 

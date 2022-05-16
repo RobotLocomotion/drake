@@ -8,15 +8,6 @@ from pydrake.autodiffutils import (
     InitializeAutoDiffTuple,
 )
 
-# TODO(sherm1) To be deprecated asap.
-from pydrake.autodiffutils import (
-    autoDiffToGradientMatrix,
-    autoDiffToValueMatrix,
-    initializeAutoDiff,
-    initializeAutoDiffGivenGradientMatrix,
-    initializeAutoDiffTuple,
-)
-
 import copy
 import itertools
 import unittest
@@ -268,30 +259,6 @@ class TestAutoDiffXd(unittest.TestCase):
         np.testing.assert_array_equal(ExtractValue(c),
                                       np.array([2, 3]).reshape((2, 1)))
         np.testing.assert_array_equal(ExtractGradient(c),
-                                      np.array(c_grad))
-
-    # TODO(sherm1) To be deprecated asap.
-    def test_deprecated_math_utils(self):
-        a = initializeAutoDiff([1, 2, 3])
-        np.testing.assert_array_equal(autoDiffToValueMatrix(a),
-                                      np.array([[1, 2, 3]]).T)
-        np.testing.assert_array_equal(autoDiffToGradientMatrix(a), np.eye(3))
-
-        a, b = initializeAutoDiffTuple([1], [2, 3])
-        np.testing.assert_array_equal(autoDiffToValueMatrix(a),
-                                      np.array([[1]]))
-        np.testing.assert_array_equal(autoDiffToValueMatrix(b),
-                                      np.array([[2, 3]]).T)
-        np.testing.assert_array_equal(autoDiffToGradientMatrix(a),
-                                      np.eye(1, 3))
-        np.testing.assert_array_equal(autoDiffToGradientMatrix(b),
-                                      np.hstack((np.zeros((2, 1)), np.eye(2))))
-
-        c_grad = [[2, 4, 5], [1, -1, 0]]
-        c = initializeAutoDiffGivenGradientMatrix([2, 3], c_grad)
-        np.testing.assert_array_equal(autoDiffToValueMatrix(c),
-                                      np.array([2, 3]).reshape((2, 1)))
-        np.testing.assert_array_equal(autoDiffToGradientMatrix(c),
                                       np.array(c_grad))
 
     def test_autodiff_equal_to(self):

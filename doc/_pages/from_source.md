@@ -1,6 +1,43 @@
 ---
-title: Source installation (macOS, Ubuntu)
+title: Source Installation
 ---
+
+# Supported Configurations
+
+The following table shows the configurations and platforms that Drake
+officially supports. Supported configurations are tested in continuous
+integration. Any other configurations are provided on a best-effort basis.
+
+<!-- The minimum compiler versions should match those listed in both the root
+     CMakeLists.txt and tools/workspace/cc/repository.bzl. -->
+
+| Operating System ⁽⁴⁾             | Architecture | Python  | Bazel | CMake | C/C++ Compiler ⁽⁵⁾                 | Java                          |
+|----------------------------------|--------------|---------|-------|-------|------------------------------------|-------------------------------|
+| Ubuntu 20.04 LTS (Focal Fossa)   | x86_64 ⁽¹⁾   | 3.8 ⁽³⁾ | 5.1   | 3.16  | GCC 9.3 (default) or Clang 12  | OpenJDK 11                    |
+| macOS Big Sur (11)               | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ | 5.1   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) |
+| macOS Monterey (12)              | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ | 5.1   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) |
+
+⁽¹⁾ Drake Ubuntu builds assume support for Intel's AVX2 and FMA instructions,
+introduced with the Haswell architecture in 2013 with substantial performance
+improvements in the Broadwell architecture in 2014. Drake is compiled with
+`-march=broadwell` to exploit these instructions (that also works for Haswell
+machines). Drake can be used on older machines if necessary by building from
+source with that flag removed.
+
+⁽²⁾ For users running on Apple's newer arm64 hardware, refer to
+[Running under Rosetta 2](/rosetta2.html)
+for instructions on running using x86_64 emulation.
+Building and running directly on arm64 is not yet supported; plans
+for any future arm64 support on macOS and/or Ubuntu are discussed in
+[issue #13514](https://github.com/RobotLocomotion/drake/issues/13514).
+
+⁽³⁾ CPython is the only Python implementation supported.
+
+⁽⁴⁾ Drake features that perform image rendering (e.g., camera simulation)
+require a working display server.  Most personal computers will have this
+already built in, but some cloud or docker environments may not.
+
+⁽⁵⁾ Drake requires a compiler running in C++17 or C++20 mode.
 
 # Getting Drake
 
@@ -43,9 +80,9 @@ setup steps:
 * [macOS](/mac.html)
 * [Ubuntu](/ubuntu.html)
 
-See [supported configurations](/developers.html#supported-configurations)
+See [above](#supported-configurations)
 for the configurations and platforms that Drake officially supports.
-All else being equal, we would recommend developers use Ubuntu Bionic.
+All else being equal, we would recommend developers use Ubuntu Focal.
 
 # Build with Bazel
 
@@ -54,7 +91,44 @@ full details at:
 
 * [Bazel build system](/bazel.html)
 
-# Historical Note
+## Building the Python Bindings
 
-Older releases were built around substantial MATLAB support, and are
-described on [this release notes page](/release_notes/older_releases.html).
+To use the Python bindings from Drake externally, we recommend using CMake.
+As an example:
+
+```bash
+git clone https://github.com/RobotLocomotion/drake.git
+mkdir drake-build
+cd drake-build
+cmake ../drake
+make -j
+```
+
+Please note the additional CMake options which affect the Python bindings:
+
+* ``-DWITH_GUROBI={ON, [OFF]}`` - Build with Gurobi enabled.
+* ``-DWITH_MOSEK={ON, [OFF]}`` - Build with MOSEK™ enabled.
+* ``-DWITH_SNOPT={ON, [OFF]}`` - Build with SNOPT enabled.
+
+``{...}`` means a list of options, and the option surrounded by ``[...]`` is
+the default option. An example of building ``pydrake`` with both Gurobi and
+MOSEK™, without building tests:
+
+```bash
+cmake -DWITH_GUROBI=ON -DWITH_MOSEK=ON ../drake
+```
+
+You will also need to have your ``PYTHONPATH`` configured correctly.
+
+*Ubuntu 20.04 (Focal):*
+
+```bash
+cd drake-build
+export PYTHONPATH=${PWD}/install/lib/python3.8/site-packages:${PYTHONPATH}
+```
+*macOS:*
+
+```bash
+cd drake-build
+export PYTHONPATH=${PWD}/install/lib/python3.9/site-packages:${PYTHONPATH}
+```

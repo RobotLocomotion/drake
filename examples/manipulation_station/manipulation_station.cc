@@ -6,7 +6,7 @@
 #include <utility>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/render/render_engine_vtk_factory.h"
+#include "drake/geometry/render_vtk/factory.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h"
 #include "drake/math/rigid_transform.h"
@@ -33,9 +33,9 @@ namespace manipulation_station {
 
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using geometry::MakeRenderEngineVtk;
+using geometry::RenderEngineVtkParams;
 using geometry::SceneGraph;
-using geometry::render::MakeRenderEngineVtk;
-using geometry::render::RenderEngineVtkParams;
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYaw;
@@ -163,25 +163,30 @@ MakeD415CameraModel(const std::string& renderer_name) {
   // - w: 848, h: 480, fx: 616.285, fy: 615.778, ppx: 405.418, ppy: 232.864
   // DEPTH:
   // - w: 848, h: 480, fx: 645.138, fy: 645.138, ppx: 420.789, ppy: 239.13
+  // However, given that (a) these fixed constants will not always be true and
+  // (b) we do not have a quick RGBD registration algorithm in Drake, we will
+  // simply publish according to the RGB intrinsics and extrinsics.
   const int kHeight = 480;
   const int kWidth = 848;
 
-  // To pose the two sensors relative to the camera body, we'll assume X_BC = I,
-  // and select a representative value for X_CD drawn from calibration to define
-  // X_BD.
+  // From color camera.
+  const systems::sensors::CameraInfo intrinsics{
+      kWidth, kHeight, 616.285, 615.778, 405.418, 232.864};
+
+  const RigidTransformd X_BC;
+  // This is not necessarily true, but we simplify this s.t. we don't have a
+  // lie for generating point clouds.
+  const RigidTransformd X_BD;
+
   geometry::render::ColorRenderCamera color_camera{
       {renderer_name,
-       {kWidth, kHeight, 616.285, 615.778, 405.418, 232.864} /* intrinsics */,
+       intrinsics,
        {0.01, 3.0} /* clipping_range */,
-       {} /* X_BC */},
+       X_BC},
       false};
-  const RigidTransformd X_BD(
-      RotationMatrix<double>(RollPitchYaw<double>(
-          -0.19 * M_PI / 180, -0.016 * M_PI / 180, -0.03 * M_PI / 180)),
-      Vector3d(0.015, -0.00019, -0.0001));
   geometry::render::DepthRenderCamera depth_camera{
       {renderer_name,
-       {kWidth, kHeight, 645.138, 645.138, 420.789, 239.13} /* intrinsics */,
+       intrinsics,
        {0.01, 3.0} /* clipping_range */,
        X_BD},
       {0.1, 2.0} /* depth_range */};
@@ -737,11 +742,6 @@ void ManipulationStation<T>::Finalize(
     }
   }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  builder.ExportOutput(scene_graph_->get_pose_bundle_output_port(),
-                       "pose_bundle");
-#pragma GCC diagnostic pop
   builder.ExportOutput(scene_graph_->get_query_output_port(), "query_object");
 
   builder.ExportOutput(scene_graph_->get_query_output_port(),
@@ -935,6 +935,25 @@ void ManipulationStation<T>::RegisterRgbdSensor(
   info.color_camera = color_camera;
 
   camera_information_[name] = info;
+
+  const std::string urdf_path = FindResourceOrThrow(
+      "drake/manipulation/models/realsense2_description/urdf/d415.urdf");
+  multibody::ModelInstanceIndex model_index = internal::AddAndWeldModelFrom(
+      urdf_path, name, parent_frame, "base_link", X_PC, plant_);
+
+  // Remove the perception properties -- the camera should not be visible to
+  // itself or else it obscures its own view. We only want the illustration
+  // properties so that the camera shows up in the visualizer.
+  const geometry::SourceId source_id = plant_->get_source_id().value();
+  for (const multibody::BodyIndex& body_index :
+           plant_->GetBodyIndices(model_index)) {
+    const multibody::Body<T>& body = plant_->get_body(body_index);
+    for (const geometry::GeometryId& geometry_id :
+             plant_->GetVisualGeometriesForBody(body)) {
+      scene_graph_->RemoveRole(source_id, geometry_id,
+          geometry::Role::kPerception);
+    }
+  }
 }
 
 template <typename T>

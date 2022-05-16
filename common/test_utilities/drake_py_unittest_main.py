@@ -21,10 +21,54 @@ except ImportError:
     has_pydrake = False
 
 
+def _unittest_main(*, module, argv, testRunner):
+    """Just like unittest.main, but obeys TEST_TOTAL_SHARDS.
+    Only a subset of unittest.main's kwargs are supported.
+    """
+    # In case sharding won't be used, delegate to the vanilla unittest.main.
+    has_shard_count = "TEST_TOTAL_SHARDS" in os.environ
+    if has_shard_count and len(argv) > 1:
+        print("warning: Ignoring shard_count due to test arguments")
+        has_shard_count = False
+    if not has_shard_count:
+        # Use `warnings=False` to tell unittest to keep its hands off of our
+        # warnings settings, exploiting a loophole where it checks "if warnings
+        # is None" to check if the user passed a kwarg, but "if warning" to
+        # actually apply the user's kwarg.
+        unittest.main(module=module, argv=argv, warnings=False,
+                      testRunner=testRunner)
+        return
+
+    # Run only some of the tests, per the BUILD.bazel's shard_count.
+    total_shards = int(os.environ["TEST_TOTAL_SHARDS"])
+    shard_index = int(os.environ["TEST_SHARD_INDEX"])
+    suites = unittest.loader.defaultTestLoader.loadTestsFromModule(
+        sys.modules[module])
+    tests = []
+    for suite in suites:
+        tests += list(suite)
+    if total_shards > len(tests):
+        print(f"error: shard_count = {total_shards} exceeds the number of test"
+              f" cases ({len(tests)})")
+        sys.exit(1)
+    shard_tests = tests[shard_index::total_shards]
+    assert len(shard_tests) > 0
+    print(f"info: Shard {shard_index + 1} / {total_shards} has these tests:")
+    for shard_test in shard_tests:
+        print(f"info: - {str(shard_test)}")
+    sys.stdout.flush()
+    shard_suite = unittest.TestSuite(shard_tests)
+    result = testRunner.run(shard_suite)
+    sys.exit(0 if result.wasSuccessful() else 1)
+
+
 def main():
     # Obtain the full path for this test case; it looks a bit like this:
     # .../execroot/.../foo_test.runfiles/.../drake_py_unittest_main.py
-    main_py = sys.argv[0]
+    # Also work around kcov#368 by consuming DRAKE_KCOV_LINK_PATH.
+    # TODO(rpoyner-tri): remove DRAKE_KCOV_LINK_PATH when newer kcov is ready.
+    main_py = os.environ.get('DRAKE_KCOV_LINK_PATH', sys.argv[0])
+    os.environ.pop('DRAKE_KCOV_LINK_PATH', None)
 
     # Parse the test case name out of the runfiles directory name.
     match = re.search("^(.*bin/(.*?/)?(py/)?([^/]*_test).runfiles/)", main_py)
@@ -123,18 +167,16 @@ def main():
             print("\n`unittest` specific arguments")
 
         # Delegate the rest to unittest.
-        #
-        # Use `warnings=False` to tell unittest to keep its hands off of our
-        # warnings settings, exploting a loophole where it checks "if warnings
-        # is None" to check if the user passed a kwarg, but "if warning" to
-        # actually apply the user's kwarg.
-        if "XML_OUTPUT_FILE" in os.environ:
+        # N.B. Do not use the runner when `--trace={user,sys}` is enabled.
+        if "XML_OUTPUT_FILE" in os.environ and args.trace == "none":
             with open(os.environ["XML_OUTPUT_FILE"], "wb") as output:
-                unittest.main(
-                    module=test_name, argv=unittest_argv, warnings=False,
+                _unittest_main(
+                    module=test_name, argv=unittest_argv,
                     testRunner=xmlrunner.XMLTestRunner(output=output))
         else:
-            unittest.main(module=test_name, argv=unittest_argv, warnings=False)
+            _unittest_main(
+                module=test_name, argv=unittest_argv,
+                testRunner=unittest.TextTestRunner)
 
     # Ensure deprecation warnings are always shown at least once.
     warnings.simplefilter(args.deprecation_action, DeprecationWarning)
@@ -197,7 +239,9 @@ if __name__ == '__main__':
     # TODO(eric.cousineau): Move this into `main()` to leverage argparse if we
     # can simplify the custom parsing logic (e.g. not have to import source
     # modules).
-    if "--nostdout_to_stderr" not in sys.argv:
+    # Avoid re-executing if run under kcov; it defeats kcov's instrumentation.
+    if "--nostdout_to_stderr" not in sys.argv \
+       and 'DRAKE_KCOV_COMMAND' not in os.environ:
         reexecute_if_unbuffered()
         # N.B. If execv is called by `reexecute_if_unbuffered`, then `main`
         # will not be called by this current process image; instead, it will be

@@ -96,9 +96,60 @@ a {
 }
 
 @media screen and (max-width: 980px) {
+  h1 {
+    margin-top: 0;
+    font-size: 2rem;
+    font-weight: bold;
+  }
+
   h1.large {
     font-size: 2.488rem;
     line-height: 1.1;
+  }
+
+  h2 {
+   font-size: 1.8rem;
+  }
+
+  h3 {
+   font-size: 1.6rem;
+  }
+
+  h4 {
+   font-size: 1.4rem;
+  }
+
+  h5 {
+   font-size: 1.2rem;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  h1 {
+    margin-top: 0;
+    font-size: 2rem;
+    font-weight: bold;
+  }
+
+  h1.large {
+    font-size: 2rem;
+    line-height: 1.1;
+  }
+
+  h2 {
+    font-size: 1.7rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+  }
+
+  h4 {
+    font-size: 1.3rem;
+  }
+
+  h5 {
+    font-size: 1.1rem;
   }
 }
 
@@ -113,6 +164,7 @@ section {
 }
 
 .contain {
+  max-width: 1440px;
   width: 85%;
   margin: 0 auto;
 }
@@ -153,15 +205,10 @@ section {
 .video-wrap {
   position: relative;
   width: 100%;
-  height: 0;
-  padding-top: 56.25%;
+  aspect-ratio: 16/9;
   margin: 20px 0;
-  max-width: 640px;
-  max-height: 480px;
-  /* Center align */
+  max-width: 760px;
   display: block;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .video-wrap.video-autoplay {
@@ -192,13 +239,17 @@ section {
 
   color: white;
   background-color: var(--primary);
-  padding: 13px 20px 14px;
+  padding: 14px 20px 14px;
   border-radius: 40px;
 
   transition: all 0.3s ease;
   -webkit-transition: all 0.3s ease;
 
   cursor: pointer;
+}
+
+.button.grey {
+  background: #333333;
 }
 
 .button:hover {
@@ -242,6 +293,10 @@ section {
   padding: 40px 0;
 }
 
+.drake-logo {
+  margin: 0 0 20px;
+}
+
 .drake-logo img {
   width: 225px;
 }
@@ -270,9 +325,34 @@ section {
 }
 
 .site-menu li a {
+  position: relative;
   color: white;
 
   text-decoration: none;
+  transition: all 0.225s cubic-bezier(0.2, 0.3, 0, 1);
+  -webkit-transition: all 0.225s cubic-bezier(0.2, 0.3, 0, 1);
+}
+
+.site-menu li:not([class^="github-link"]) a:after {
+  content: "";
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  width: 100%;
+  background: white;
+  height: 1px;
+
+  transform-origin: left;
+  transform: scaleX(0);
+  -webkit-transform: scaleX(0);
+
+  transition: all 0.225s cubic-bezier(0.2, 0.3, 0, 1);
+  -webkit-transition: all 0.225s cubic-bezier(0.2, 0.3, 0, 1);
+}
+
+.site-menu li:not([class^="github-link"]) a:hover:after {
+  transform: scaleX(1);
+  -webkit-transform: scaleX(1);
 }
 
 .sub {
@@ -296,7 +376,8 @@ section {
 
 .sub a {
   display: block;
-  padding: 0;
+  padding: 0 10px 0 0;
+  margin: 0 0 5px;
 
   font-size: 14px;
   font-weight: 500;
@@ -311,7 +392,7 @@ section {
 }
 
 .site-menu .github-link {
-  margin-left: 70px;
+  margin-left: 50px;
 }
 
 .github-link a {
@@ -325,6 +406,15 @@ section {
 }
 
 @media screen and (max-width: 980px) {
+  .site-header-inner {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    padding: 40px 45px;
+    width: 100%;
+    max-width: none;
+  }
+
   .drake-logo {
     position: relative;
     z-index: 2;
@@ -339,18 +429,16 @@ section {
     opacity: 0;
     visibility: hidden;
 
-    position: relative;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100%;
-    min-height: 100vh;
-    overflow-y: scroll;
-    background: #1C1818;
-    overflow-y: scroll;
-
-    transition: all 0.225s ease;
-    -webkit-transition: all 0.225s ease;
+   position: absolute;
+   top: 20px;
+   left: 20px;
+   width: calc(100vw - 40px);
+   height: calc(100vh - 40px);
+   overflow-y: scroll;
+   background: #1C1818;
+   overflow-y: scroll;
+   transition: all 0.225s ease;
+   -webkit-transition: all 0.225s ease;
   }
 
   .site-header.open .site-menu {
@@ -361,19 +449,18 @@ section {
   .site-menu ul {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     list-style: none;
-    min-height: 100vh;
     margin: 0;
-    padding: 0;
+    padding: 80px 25px 25px;
   }
 
   .site-menu li {
     position: relative;
     font-size: 20px;
-    margin: 0 0 10px;
-    text-align: center;
+    margin: 0 0 5px;
+    text-align: left;
     color: white;
     cursor: pointer;
     transition: all 0.225s cubic-bezier(0.2, 0.3, 0, 1);
@@ -392,13 +479,13 @@ section {
   .sub {
     position: relative;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     flex-direction: column;
     width: 100%;
     white-space: nowrap;
     opacity: 1;
     text-align: center;
-    visibility: visible;
+    visibility: unset;
     text-align: left;
     padding-top: 5px;
     margin: 0;
@@ -408,7 +495,7 @@ section {
   }
 
   .site-menu li a {
-    text-align: center;
+    text-align: left;
     color: white;
     text-decoration: none;
   }
@@ -575,15 +662,17 @@ footer.site-footer>div.contain {
 
 .drake-hero {
   position: relative;
-  min-height: 90vh;
+  min-height: 100vh;
+  max-height: 1200px;
 
-  background: black;
+  background: #111111;
   color: white;
 
   display: flex;
   align-items: center;
 
   padding-top: 150px;
+  overflow: hidden;
 }
 
 .drake-hero>div {
@@ -611,6 +700,7 @@ footer.site-footer>div.contain {
 .drake-hero .button {
   position: relative;
   z-index: 2;
+  margin: 0 5px 5px 0;
 }
 
 .hero-image {
@@ -654,8 +744,6 @@ footer.site-footer>div.contain {
 
 img.gallery {
   display: block;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 /* See `pylons.css` for portions derived from pylons. */
@@ -669,7 +757,7 @@ img.gallery {
 .core h2 {
   text-transform: uppercase;
   letter-spacing: 2px;
-  font-size: 20px;
+  font-size: 18px;
   padding-bottom: 8px;
   margin: 0;
   color: #B5B5B5;
@@ -682,25 +770,48 @@ img.gallery {
 
 .core h4 {
   width: 100%;
-  text-align: center;
-  padding: 50px 25px;
-  margin-bottom: 15px;
-
-  line-height: 1.4em;
-
-  font-size: 22px;
+  text-align: left;
+  margin: 50px 0 25px 5px;
+  line-height: 1.2em;
+  font-size: 26px;
   font-weight: bold;
   color: white;
-  background-color: #312C2C;
+}
+
+.core-el-buttons {
+  display: flex;
+  margin: 0 0 20px;
 }
 
 .core a {
-  color: #EB0A1E;
+  display: block;
+  width: 100%;
+  margin: 3px;
+  color: white;
   text-decoration: none;
+  padding: 12px 25px;
+  background-color: #312C2C;
+
+  transition: all 0.3s ease;
+  -webkit-transition: all 0.3s ease;
+}
+
+.core a:hover {
+  background: #EB0A1E;
 }
 
 .core br {
   display: block;
+}
+
+@media screen and (max-width: 900px) {
+  .core h4 {
+    margin: 30px 0 20px 5px;
+  }
+
+  .core-el-buttons {
+    margin: 0;
+  }
 }
 
 /* Home Blocks */
@@ -767,7 +878,7 @@ img.gallery {
 .drake-page article { }
 
 .drake-page-header {
-  padding: 100px 0 25px;
+  padding: 150px 0 25px;
   background: black;
 }
 
@@ -777,7 +888,7 @@ img.gallery {
 
 @media screen and (max-width: 980px) {
   .drake-page-header {
-    padding: 100px 0 35px;
+    padding: 110px 0 15px;
     background: black;
   }
 }
@@ -814,10 +925,202 @@ img.gallery {
   padding: 24px 28px;
 }
 
+.markdown-body i,
+.markdown-body em {
+  font-style: italic;
+}
+
+@media screen and (max-width: 900px) {
+  .markdown-body .highlight pre, .markdown-body pre {
+    font-size: 80%;
+  }
+}
+
 /* Remove padding injected by `.markdown-body p`. */
 .warning p {
   margin: 0px;
 }
 .note p {
   margin: 0px;
+}
+
+
+/* Search */
+
+.site-menu.search-open .site-menu-item-main {
+  opacity: 0;
+  visibility: hidden;
+
+  transition: all 0s cubic-bezier(0.2, 0.3, 0, 1) 0s;
+  -webkit-transition: all 0s cubic-bezier(0.2, 0.3, 0, 1) 0s;
+}
+
+.site-menu .site-menu-item-main {
+  transition: all 0.225s cubic-bezier(0.2, 0.3, 0, 1) 0.3s;
+  -webkit-transition: all 0.225s cubic-bezier(0.2, 0.3, 0, 1) 0.3s;
+}
+
+.site-menu li.search {
+  display: flex;
+  margin: -10px 15px 0 0;
+}
+
+.search-icon {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+
+  transition: all 0.225s cubic-bezier(0.2, 0.3, 0, 1) 0s;
+  -webkit-transition: all 0.225s cubic-bezier(0.2, 0.3, 0, 1) 0s;
+}
+
+.search-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.search-close svg {
+  width: 15px;
+}
+
+.search-icon svg path,
+.search-close svg path {
+  fill: white;
+  transition: all 0.225s cubic-bezier(0.2, 0.3, 0, 1) 0s;
+  -webkit-transition: all 0.225s cubic-bezier(0.2, 0.3, 0, 1) 0s;
+}
+
+.search-icon:hover svg path,
+.search-close:hover svg path {
+  fill: #EB0A1E;
+}
+
+.search-bar form {
+  width: 100%;
+}
+
+.search-bar input {
+  width: 100%;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px 35px 10px 12px;
+  background: transparent;
+  color: white;
+}
+
+.search-bar input:focus,
+.search-bar input:focus-visible {
+  outline: 1px solid #EB0A1E;
+}
+
+.search-bar {
+  width: 0;
+  transform-origin: right;
+  overflow: hidden;
+
+  transition: 0.3s ease;
+  -webkit-transition: 0.3s ease;
+}
+
+.search.open {
+  background: rgba(255,255,255,.15);
+}
+
+.search.open .search-icon {
+  transform: scale(0.8);
+  -webkit-transform: scale(0.8);
+}
+
+.search.open .search-bar {
+  width: 250px;
+}
+
+.search-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 35px;
+  height: 100%;
+  opacity: 0;
+  visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search.open .search-close {
+  opacity: 1;
+  visibility: visible;
+
+  transition: all 0.225s cubic-bezier(0.2, 0.3, 0, 1) 0.225s;
+  -webkit-transition: all 0.225s cubic-bezier(0.2, 0.3, 0, 1) 0.225s;
+}
+
+#results-container {
+  width: 100%;
+  background: #464646;
+  display: none;
+
+  position: absolute;
+  top: 100%;
+  left: 0;
+}
+
+.search.open #results-container {
+  display: block;
+}
+
+#results-container li {
+  display: block;
+  border-bottom: 1px solid #565656;
+  margin: 0;
+}
+
+#results-container li a {
+  display: block;
+  padding: 5px 10px;
+  border-bottom: 1px solid #565656;
+  margin: 0;
+
+  transition: all 0.3s ease;
+  -webkit-transition: all 0.3s ease;
+}
+
+#results-container li a:hover {
+  background: var(--primary);
+}
+
+@media screen and (max-width:980px) {
+  .site-menu li.search {
+    margin: 10px 0 0;
+    width: 100%;
+    background: rgba(255,255,255,.15);
+  }
+
+  .search-icon {
+    pointer-events: none;
+  }
+
+  .search #results-container {
+    display: block;
+  }
+
+  .search-close {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none
+  }
+
+  .search-bar {
+    width: 100% !important;
+  }
+
+  #results-container {
+    padding: 0;
+    z-index: 1;
+  }
+
+  #results-container li a {
+    font-size: 14px;
+  }
 }

@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/math/spatial_algebra.h"
@@ -25,8 +25,7 @@ namespace internal {
  moment between nominally rigid objects. Proc. IEEE/RSJ Intl. Conf. on
  Intelligent Robots and Systems (IROS), 2019.
 
- This class is only compatible with 'double' and 'AutoDiffXd' scalar types since
- it relies on SurfaceMesh functionality limited to the those same scalar types.
+ @tparam_nonsymbolic_scalar
  */
 template <typename T>
 class HydroelasticTractionCalculator {
@@ -43,7 +42,7 @@ class HydroelasticTractionCalculator {
         const geometry::ContactSurface<T>* surface_in) :
             X_WA(X_WA_in), X_WB(X_WB_in), V_WA(V_WA_in), V_WB(V_WB_in),
             surface(*surface_in),
-            p_WC(surface_in->mesh_W().centroid()) {
+            p_WC(surface_in->centroid()) {
       DRAKE_DEMAND(surface_in != nullptr);
     }
 
@@ -142,15 +141,18 @@ class HydroelasticTractionCalculator {
   friend class HydroelasticReportingTests_LinearSlipVelocity_Test;
 
   HydroelasticQuadraturePointData<T> CalcTractionAtPoint(
-      const Data& data, geometry::SurfaceFaceIndex face_index,
-      const typename geometry::SurfaceMesh<T>::template Barycentric<T>&
+      const Data& data, int face_index,
+      const typename geometry::TriangleSurfaceMesh<T>::template Barycentric<T>&
           Q_barycentric,
       double dissipation, double mu_coulomb) const;
 
+  HydroelasticQuadraturePointData<T> CalcTractionAtCentroid(
+      const Data& data, int face_index,
+      double dissipation, double mu_coulomb) const;
+
   HydroelasticQuadraturePointData<T> CalcTractionAtQHelper(
-      const Data& data, geometry::SurfaceFaceIndex face_index, const T& e,
-      const Vector3<T>& nhat_W, double dissipation, double mu_coulomb,
-      const Vector3<T>& p_WQ) const;
+      const Data& data, int face_index, const T& e, const Vector3<T>& nhat_W,
+      double dissipation, double mu_coulomb, const Vector3<T>& p_WQ) const;
 
   multibody::SpatialForce<T> ComputeSpatialTractionAtAcFromTractionAtAq(
       const Data& data, const Vector3<T>& p_WQ,

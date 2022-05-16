@@ -15,8 +15,26 @@ drake_cc_package_library(
     name = "yaml",
     visibility = ["//visibility:public"],
     deps = [
+        ":yaml_io",
+        ":yaml_io_options",
+        ":yaml_node",
         ":yaml_read_archive",
         ":yaml_write_archive",
+    ],
+)
+
+drake_cc_library(
+    name = "yaml_io_options",
+    srcs = ["yaml_io_options.cc"],
+    hdrs = ["yaml_io_options.h"],
+)
+
+drake_cc_library(
+    name = "yaml_node",
+    srcs = ["yaml_node.cc"],
+    hdrs = ["yaml_node.h"],
+    deps = [
+        "//common:essential",
     ],
 )
 
@@ -25,10 +43,13 @@ drake_cc_library(
     srcs = ["yaml_read_archive.cc"],
     hdrs = ["yaml_read_archive.h"],
     deps = [
+        ":yaml_io_options",
+        ":yaml_node",
         "//common:essential",
         "//common:name_value",
         "//common:nice_type_name",
-        "@yaml_cpp",
+        "//common:unused",
+        "@yaml_cpp_internal//:yaml_cpp",
     ],
 )
 
@@ -37,11 +58,23 @@ drake_cc_library(
     srcs = ["yaml_write_archive.cc"],
     hdrs = ["yaml_write_archive.h"],
     deps = [
+        ":yaml_node",
         "//common:essential",
         "//common:name_value",
         "//common:nice_type_name",
-        "//third_party/com_github_jbeder_yaml_cpp:emitfromevents",
-        "@yaml_cpp",
+        "//common:unused",
+        "@yaml_cpp_internal//:yaml_cpp",
+    ],
+)
+
+drake_cc_library(
+    name = "yaml_io",
+    srcs = ["yaml_io.cc"],
+    hdrs = ["yaml_io.h"],
+    deps = [
+        ":yaml_io_options",
+        ":yaml_read_archive",
+        ":yaml_write_archive",
     ],
 )
 
@@ -58,10 +91,52 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "yaml_performance_test",
+    name = "yaml_deprecation_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":yaml_read_archive",
         ":yaml_write_archive",
+    ],
+)
+
+drake_cc_googletest(
+    name = "yaml_doxygen_test",
+    deps = [
+        ":yaml_io",
+        "//common:find_resource",
+        "//common:temp_directory",
+    ],
+)
+
+drake_cc_googletest(
+    name = "yaml_io_test",
+    data = [
+        "test/yaml_io_test_input_1.yaml",
+        "test/yaml_io_test_input_2.yaml",
+    ],
+    deps = [
+        ":example_structs",
+        ":yaml_io",
+        "//common:find_resource",
+        "//common:temp_directory",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "yaml_node_test",
+    deps = [
+        ":yaml_node",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
+    name = "yaml_performance_test",
+    deps = [
+        ":yaml_io",
+        ":yaml_read_archive",
         "//common:autodiff",
         "//common:name_value",
         "//common/test_utilities:limit_malloc",

@@ -29,29 +29,32 @@ class DirectCollocation : public MultipleShooting {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocation)
 
-  /// Constructs the %MathematicalProgram% and adds the collocation constraints.
+  /// Constructs the %MathematicalProgram% and adds the collocation
+  /// constraints.
   ///
   /// @param system A dynamical system to be used in the dynamic constraints.
   /// This system must support System::ToAutoDiffXd. Note that this is aliased
-  /// for the lifetime of this object.
-  /// @param context Required to describe any parameters of the system.  The
-  /// values of the state in this context do not have any effect.  This context
-  /// will also be "cloned" by the optimization; changes to the context after
-  /// calling this method will NOT impact the trajectory optimization.
-  /// @param num_time_samples The number of breakpoints in the trajectory.
-  /// @param minimum_timestep Minimum spacing between sample times.
-  /// @param maximum_timestep Maximum spacing between sample times.
-  /// @param input_port_index A valid input port index for @p system or
-  /// InputPortSelection.  All other inputs on the system will be left
-  /// disconnected (if they are disconnected in @p context) or will be fixed to
-  /// their current values (if they are connected/fixed in @p context).
-  /// @default kUseFirstInputIfItExists.
-  /// @param assume_non_continuous_states_are_fixed Boolean which, if true,
-  /// allows this algorithm to optimize without considering the dynamics of any
+  /// for the lifetime of this object. @param context Required to describe any
+  /// parameters of the system.  The values of the state in this context do not
+  /// have any effect.  This context will also be "cloned" by the optimization;
+  /// changes to the context after calling this method will NOT impact the
+  /// trajectory optimization. @param num_time_samples The number of
+  /// breakpoints in the trajectory. @param minimum_timestep Minimum spacing
+  /// between sample times. @param maximum_timestep Maximum spacing between
+  /// sample times. @param input_port_index A valid input port index for @p
+  /// system or InputPortSelection.  All other inputs on the system will be
+  /// left disconnected (if they are disconnected in @p context) or will be
+  /// fixed to their current values (if they are connected/fixed in @p
+  /// context). @default kUseFirstInputIfItExists. @param
+  /// assume_non_continuous_states_are_fixed Boolean which, if true, allows
+  /// this algorithm to optimize without considering the dynamics of any
   /// non-continuous states. This is helpful for optimizing systems that might
   /// have some additional book-keeping variables in their state. Only use this
   /// if you are sure that the dynamics of the additional state variables
   /// cannot impact the dynamics of the continuous states. @default false.
+  ///
+  /// @throws std::exception if `system` is not supported by this direct
+  /// collocation method.
   DirectCollocation(const System<double>* system,
                     const Context<double>& context, int num_time_samples,
                     double minimum_timestep, double maximum_timestep,
@@ -101,6 +104,8 @@ class DirectCollocationConstraint : public solvers::Constraint {
 
  public:
   /// @see DirectCollocation constructor for a description of the parameters.
+  /// @throws std::exception if `system` is not supported by this direct
+  /// collocation method.
   DirectCollocationConstraint(
       const System<double>& system, const Context<double>& context,
       std::variant<InputPortSelection, InputPortIndex> input_port_index =

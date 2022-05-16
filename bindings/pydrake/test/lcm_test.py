@@ -1,6 +1,6 @@
 import unittest
 
-from pydrake.lcm import DrakeLcm, DrakeLcmInterface, DrakeMockLcm, Subscriber
+from pydrake.lcm import DrakeLcm, DrakeLcmInterface, Subscriber
 
 from drake import lcmt_quaternion
 
@@ -17,6 +17,7 @@ class TestLcm(unittest.TestCase):
     def test_lcm(self):
         dut = DrakeLcm()
         self.assertIsInstance(dut, DrakeLcmInterface)
+        dut.get_lcm_url()
         DrakeLcm(lcm_url="")
         DrakeLcm(lcm_url="", defer_initialization=True)
         # Test virtual function names.
@@ -27,15 +28,6 @@ class TestLcm(unittest.TestCase):
         quat = lcmt_quaternion.decode(raw)
         self.assertTupleEqual((quat.w, quat.x, quat.y, quat.z), self.wxyz)
         self.count += 1
-
-    def test_mock_lcm_roundtrip(self):
-        dut = DrakeMockLcm()
-        self.assertIsInstance(dut, DrakeLcmInterface)
-        dut.Subscribe(channel="TEST_CHANNEL", handler=self._handler)
-        dut.Publish(channel="TEST_CHANNEL", buffer=self.quat.encode())
-        self.assertEqual(self.count, 0)
-        dut.HandleSubscriptions(0)
-        self.assertEqual(self.count, 1)
 
     def test_subscriber(self):
         lcm = DrakeLcm()

@@ -4,7 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -110,7 +110,7 @@ bool IsTetrahedronRespectingMa(const VolumeElement& tetrahedron,
   // medial axis.
   std::vector<int> closest_faces[mesh.kVertexPerElement];
   for (int v = 0; v < mesh.kVertexPerElement; ++v) {
-    const Vector3d r_MV = mesh.vertex(tetrahedron.vertex(v)).r_MV();
+    const Vector3d r_MV = mesh.vertex(tetrahedron.vertex(v));
     const double dist = distance_to_boundary(r_MV);
     for (int f = 0; f < kNumCylinderFaces; ++f) {
       if (distance_to_boundary_face(f, r_MV) - dist <= tolerance) {
@@ -149,10 +149,9 @@ void VerifyCylinderMeshWithMa(const VolumeMesh<double>& mesh,
   // A. The mesh is conforming.
   // A1. The mesh has unique vertices.
   const int num_vertices = mesh.num_vertices();
-  for (VolumeVertexIndex i(0); i < num_vertices; ++i) {
-    for (VolumeVertexIndex j(i + 1); j < num_vertices; ++j) {
-      const bool vertex_is_unique =
-          mesh.vertex(i).r_MV() != mesh.vertex(j).r_MV();
+  for (int i = 0; i < num_vertices; ++i) {
+    for (int j = i + 1; j < num_vertices; ++j) {
+      const bool vertex_is_unique = mesh.vertex(i) != mesh.vertex(j);
       ASSERT_TRUE(vertex_is_unique) << "The mesh has duplicated vertices.";
     }
   }
@@ -172,10 +171,10 @@ void VerifyCylinderMeshWithMa(const VolumeMesh<double>& mesh,
   const double squared_radius = cylinder.radius() * cylinder.radius();
   const double distance_tolerance = DistanceToPointRelativeTolerance(
       std::max(half_length, cylinder.radius()));
-  for (const VolumeVertex<double>& v : mesh.vertices()) {
-    const double x = v.r_MV().x();
-    const double y = v.r_MV().y();
-    const double z = v.r_MV().z();
+  for (const Vector3d& v : mesh.vertices()) {
+    const double x = v.x();
+    const double y = v.y();
+    const double z = v.z();
     bool is_inside_or_on_boundary =
         abs(z) < half_length + distance_tolerance &&
         x * x + y * y < squared_radius + distance_tolerance;
@@ -196,7 +195,7 @@ void VerifyCylinderMeshWithMa(const VolumeMesh<double>& mesh,
   // C. The mesh conforms to the cylinder's medial axis.
   // C1. No tetrahedron has all four vertices on the cylinder's boundary, i.e.,
   //     each tetrahedron has at least one interior vertex.
-  std::vector<VolumeVertexIndex> boundary_vertices =
+  std::vector<int> boundary_vertices =
       CollectUniqueVertices(IdentifyBoundaryFaces(mesh.tetrahedra()));
   for (const VolumeElement& tetrahedron : mesh.tetrahedra()) {
     bool tetrahedron_has_an_interior_vertex = false;
@@ -217,14 +216,14 @@ void VerifyCylinderMeshWithMa(const VolumeMesh<double>& mesh,
   DistanceToCylinderBoundaryFromPointInside distance_to_boundary(cylinder);
   for (const VolumeElement& tetrahedron : mesh.tetrahedra()) {
     const double distance_v0 =
-        distance_to_boundary(mesh.vertex(tetrahedron.vertex(0)).r_MV());
+        distance_to_boundary(mesh.vertex(tetrahedron.vertex(0)));
     bool different_distance_from_v0 = false;
     for (int i = 1; i < mesh.kVertexPerElement && !different_distance_from_v0;
          ++i) {
       different_distance_from_v0 =
           distance_tolerance <
           abs(distance_v0 -
-              distance_to_boundary(mesh.vertex(tetrahedron.vertex(i)).r_MV()));
+              distance_to_boundary(mesh.vertex(tetrahedron.vertex(i))));
     }
     ASSERT_TRUE(different_distance_from_v0)
         << "A tetrahedron has all vertices at the same distances to"
@@ -433,9 +432,9 @@ GTEST_TEST(MakeCylinderSurfaceMesh, GenerateSurface) {
   const double length = 2.0;
   const double resolution_hint = 3.0;
   const Cylinder cylinder(radius, length);
-  SurfaceMesh<double> surface_mesh =
+  TriangleSurfaceMesh<double> surface_mesh =
       MakeCylinderSurfaceMesh<double>(cylinder, resolution_hint);
-  EXPECT_EQ(surface_mesh.num_faces(), 12);
+  EXPECT_EQ(surface_mesh.num_triangles(), 12);
   EXPECT_EQ(surface_mesh.num_vertices(), 8);
 }
 

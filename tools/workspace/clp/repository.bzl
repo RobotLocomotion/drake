@@ -11,14 +11,14 @@ def clp_repository(
             "reciprocal",  # EPL-2.0
         ],
         modname = "clp",
-        pkg_config_paths = [
-            "/usr/local/opt/clp/lib/pkgconfig",
-        ],
+        pkg_config_paths = [],
+        homebrew_subdir = "opt/clp/lib/pkgconfig",
         **kwargs):
     pkg_config_repository(
         name = name,
         licenses = licenses,
         modname = modname,
         pkg_config_paths = pkg_config_paths,
+        homebrew_subdir = homebrew_subdir,
         **kwargs
     )

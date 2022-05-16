@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <map>
 #include <optional>
 #include <ostream>
@@ -12,110 +13,53 @@
 #include <variant>
 #include <vector>
 
-#include "yaml-cpp/yaml.h"
 #include <Eigen/Core>
 #include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/name_value.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/common/unused.h"
+#include "drake/common/yaml/yaml_io_options.h"
+#include "drake/common/yaml/yaml_node.h"
 
 namespace drake {
 namespace yaml {
+namespace internal {
 
-/// Loads data from a YAML file into a C++ structure, using the Serialize /
-/// Archive pattern.
-///
-/// Sample data:
-/// @code{yaml}
-/// doc:
-///   foo: 1.0
-///   bar: [2.0, 3.0]
-/// @endcode
-///
-/// Sample code:
-/// @code{cpp}
-/// struct MyData {
-///   double foo{NAN};
-///   std::vector<double> bar;
-///
-///   template <typename Archive>
-///   void Serialize(Archive* a) {
-///     a->Visit(DRAKE_NVP(foo));
-///     a->Visit(DRAKE_NVP(bar));
-///   }
-/// };
-///
-/// MyData LoadData(const std::string& filename) {
-///   MyData result;
-///   const YAML::Node& root = YAML::LoadFile(filename);
-///   common::YamlReadArchive(root).Accept(&result);
-///   return result;
-/// }
-/// @endcode
-///
-/// Structures can be arbitrarily nested, as long as each `struct` has a
-/// `Serialize` method.  Many common built-in types (int, double, std::string,
-/// std::vector, std::array, std::optional, std::variant, Eigen::Matrix) may
-/// also be used.
-///
-/// YAML's "merge keys" (https://yaml.org/type/merge.html) are supported.
-///
-/// For inspiration and background, see:
-/// https://www.boost.org/doc/libs/release/libs/serialization/doc/tutorial.html
+// A helper class for @ref yaml_serialization "YAML Serialization" that loads
+// data from a YAML file into a C++ structure.
 class YamlReadArchive final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(YamlReadArchive)
 
-  /// Configuration for YamlReadArchive to govern when certain conditions are
-  /// errors or not.  Refer to the member fields for details.
-  struct Options {
-    friend std::ostream& operator<<(std::ostream& os, const Options& x);
+  using Options
+      DRAKE_DEPRECATED("2022-09-01", "Use drake::yaml::LoadYamlOptions instead")
+      = LoadYamlOptions;
 
-    /// Allows yaml Maps to have extra key-value pairs that are not Visited by
-    /// the Serializable being parsed into.  In other words, the Serializable
-    /// types provide an incomplete schema for the YAML data.  This allows for
-    /// parsing only a subset of the YAML data.
-    bool allow_yaml_with_no_cpp{false};
+  YamlReadArchive(internal::Node root, const LoadYamlOptions& options);
 
-    /// Allows Serializables to provide more key-value pairs than are present
-    /// in the YAML data.  In other words, the structs have default values that
-    /// are left intact unless the YAML data provides a value.
-    bool allow_cpp_with_no_yaml{false};
+  static internal::Node LoadFileAsNode(
+      const std::string& filename,
+      const std::optional<std::string>& child_name);
 
-    /// If set to true, when parsing a std::map the Archive will merge the YAML
-    /// data into the destination, instead of replacing the std::map contents
-    /// entirely.  In other words, a visited std::map can have default values
-    /// that are left intact unless the YAML data provides a value *for that
-    /// specific key*.
-    bool retain_map_defaults{false};
-  };
+  static internal::Node LoadStringAsNode(
+      const std::string& data,
+      const std::optional<std::string>& child_name);
 
-  /// Creates an archive that reads from @p root.  See the %YamlReadArchive
-  /// class overview for details.
-  explicit YamlReadArchive(const YAML::Node& root);
-
-  /// Creates an archive that reads from @p root, with @p options that allow
-  /// for less restrictive parsing.  See the %YamlReadArchive class overview
-  /// for details.
-  YamlReadArchive(const YAML::Node& root, const Options& options);
-
-  /// Sets the contents `serializable` based on the YAML file associated with
-  /// this archive.  See the %YamlReadArchive class overview for details.
+  // Sets the contents `serializable` based on the YAML file associated this
+  // archive.
   template <typename Serializable>
   void Accept(Serializable* serializable) {
-    if (!has_root()) {
-      // TODO(jwnimmer-tri) This should probably be a ReportError error.
-      return;
-    }
-    DoAccept(this, serializable, static_cast<int32_t>(0));
+    DRAKE_THROW_UNLESS(serializable != nullptr);
+    this->DoAccept(serializable, static_cast<int32_t>(0));
     CheckAllAccepted();
   }
 
-  /// (Advanced.)  Sets the value pointed to by `nvp.value()` based on the YAML
-  /// file associated with this archive.  Most users should call Accept, not
-  /// Visit.
+  // Sets the value pointed to by `nvp.value()` based on the YAML file
+  // associated with this archive.  Most users should call Accept, not Visit.
   template <typename NameValuePair>
   void Visit(const NameValuePair& nvp) {
     this->Visit(nvp, VisitShouldMemorizeType::kYes);
@@ -127,7 +71,7 @@ class YamlReadArchive final {
 
   // Internal-use constructor during recursion.  This constructor aliases all
   // of its arguments, so all must outlive this object.
-  YamlReadArchive(const YAML::Node* root, const YamlReadArchive* parent)
+  YamlReadArchive(const internal::Node* root, const YamlReadArchive* parent)
       : owned_root_(),
         root_(root),
         mapish_item_key_(nullptr),
@@ -140,9 +84,9 @@ class YamlReadArchive final {
 
   // Internal-use constructor during recursion.  This constructor aliases all
   // of its arguments, so all must outlive this object.  The effect is as-if
-  // we have a root of type NodeType::Map with a single (key, value) entry.
+  // we have a root of type NodeType::Mapping with a single (key, value) entry.
   YamlReadArchive(const char* mapish_item_key,
-                  const YAML::Node* mapish_item_value,
+                  const internal::Node* mapish_item_value,
                   const YamlReadArchive* parent)
       : owned_root_(),
         root_(nullptr),
@@ -178,16 +122,30 @@ class YamlReadArchive final {
   // @name Overloads for the Accept() implementation
 
   // This version applies when Serialize is member method.
-  template <typename Archive, typename Serializable>
-  auto DoAccept(Archive* a, Serializable* serializable, int32_t) ->
-      decltype(serializable->Serialize(a)) {
-    serializable->Serialize(a);
+  template <typename Serializable>
+  auto DoAccept(Serializable* serializable, int32_t) ->
+      decltype(serializable->Serialize(this)) {
+    serializable->Serialize(this);
+  }
+
+  // This version applies when `value` is a std::map from std::string to
+  // Serializable.  The map's values must be serializable, but there is no
+  // Serialize function required for the map itself.
+  template <typename Serializable>
+  void DoAccept(std::map<std::string, Serializable>* value, int32_t) {
+    DRAKE_THROW_UNLESS(root_ != nullptr);
+    DRAKE_THROW_UNLESS(root_->IsMapping());
+    VisitMapDirectly<Serializable>(*root_, value);
+    for (const auto& [name, ignored] : *value) {
+      unused(ignored);
+      visited_names_.insert(name);
+    }
   }
 
   // This version applies when Serialize is an ADL free function.
-  template <typename Archive, typename Serializable>
-  void DoAccept(Archive* a, Serializable* serializable, int64_t) {
-    Serialize(a, serializable);
+  template <typename Serializable>
+  void DoAccept(Serializable* serializable, int64_t) {
+    Serialize(this, serializable);
   }
 
   // --------------------------------------------------------------------------
@@ -272,39 +230,33 @@ class YamlReadArchive final {
 
   template <typename NVP>
   void VisitSerializable(const NVP& nvp) {
-    const auto& sub_node = GetSubNode(nvp.name(), YAML::NodeType::Map);
-    if (!sub_node) { return; }
-    YamlReadArchive sub_archive(&sub_node, this);
+    const internal::Node* sub_node = GetSubNodeMapping(nvp.name());
+    if (sub_node == nullptr) { return; }
+    YamlReadArchive sub_archive(sub_node, this);
     auto&& value = *nvp.value();
     sub_archive.Accept(&value);
   }
 
   template <typename NVP>
   void VisitScalar(const NVP& nvp) {
-    const auto& sub_node = GetSubNode(nvp.name(), YAML::NodeType::Scalar);
-    if (!sub_node) { return; }
-    // TODO(jwnimmer-tri) Add better reporting of type errors here.
-    using T = typename NVP::value_type;
-    *nvp.value() = sub_node.template as<T>();
+    const internal::Node* sub_node = GetSubNodeScalar(nvp.name());
+    if (sub_node == nullptr) { return; }
+    ParseScalar(sub_node->GetScalar(), nvp.value());
   }
 
   template <typename NVP>
   void VisitOptional(const NVP& nvp) {
-    // When visiting an optional, it's fine if the YAML node is either absent
-    // or has an empty value.  In yaml-cpp, presence is denoted by IsDefined(),
-    // and empty is denoted by IsNull().
-    const auto& sub_node = MaybeGetSubNode(nvp.name());
-
-    if (!sub_node.IsDefined()) {
-      // If the YAML has no data, ensure that the CPP has no data unless the
-      // right flag is set
+    // When visiting an optional, we want to match up the null-ness of the YAML
+    // node with the nullopt-ness of the C++ data.  Refer to the unit tests for
+    // Optional for a full explanation.
+    const internal::Node* sub_node = MaybeGetSubNode(nvp.name());
+    if (sub_node == nullptr) {
       if (!options_.allow_cpp_with_no_yaml) {
         *nvp.value() = std::nullopt;
       }
       return;
     }
-
-    if (sub_node.IsNull()) {
+    if (sub_node->GetTag() == internal::Node::kTagNull) {
       *nvp.value() = std::nullopt;
       return;
     }
@@ -319,15 +271,15 @@ class YamlReadArchive final {
 
   template <typename NVP>
   void VisitVariant(const NVP& nvp) {
-    const YAML::Node sub_node = MaybeGetSubNode(nvp.name());
-    if (!sub_node) {
+    const internal::Node* sub_node = MaybeGetSubNode(nvp.name());
+    if (sub_node == nullptr) {
       if (!options_.allow_cpp_with_no_yaml) {
         ReportError("is missing");
       }
       return;
     }
     // Figure out which variant<...> type we have based on the node's tag.
-    const std::string& tag = sub_node.Tag();
+    const std::string& tag = sub_node->GetTag();
     VariantHelper(tag, nvp.name(), nvp.value());
   }
 
@@ -335,6 +287,17 @@ class YamlReadArchive final {
   template <template <typename...> class Variant, typename... Types>
   void VariantHelper(
       const std::string& tag, const char* name, Variant<Types...>* storage) {
+    if (tag == internal::Node::kTagNull) {
+      // Our varaint parsing does not yet support nulls.  When the tag indicates
+      // null, don't try to match it to a variant type; instead, just parse into
+      // the first variant type in order to generate a useful error message.
+      // TODO(jwnimmer-tri) Allow for std::monostate as one of the Types...,
+      // in case the user wants to permit nullable variants.
+      using T = std::variant_alternative_t<0, Variant<Types...>>;
+      T& typed_storage =  storage->template emplace<0>();
+      this->Visit(drake::MakeNameValue(name, &typed_storage));
+      return;
+    }
     VariantHelperImpl<0, Variant<Types...>, Types...>(tag, name, storage);
   }
 
@@ -343,11 +306,12 @@ class YamlReadArchive final {
   template <size_t I, typename Variant, typename T, typename... Remaining>
   void VariantHelperImpl(
       const std::string& tag, const char* name, Variant* storage) {
+    // For the first type declared in the variant<> (I == 0), the tag can be
+    // absent; otherwise, the tag must match one of the variant's types.
     if (((I == 0) && (tag.empty() || (tag == "?"))) ||
         IsTagMatch(drake::NiceTypeName::GetFromStorage<T>(), tag)) {
-      T typed_storage{};
+      T& typed_storage = storage->template emplace<I>();
       this->Visit(drake::MakeNameValue(name, &typed_storage));
-      storage->template emplace<I>(std::move(typed_storage));
       return;
     }
     VariantHelperImpl<I + 1, Variant, Remaining...>(tag, name, storage);
@@ -365,13 +329,13 @@ class YamlReadArchive final {
   bool IsTagMatch(const std::string& name, const std::string& tag) const {
     // Check for the "fail safe schema" YAML types and similar.
     if (name == "std::string") {
-      return tag == "tag:yaml.org,2002:str";
+      return tag == internal::Node::kTagStr;
     }
     if (name == "double") {
-      return tag == "tag:yaml.org,2002:float";
+      return tag == internal::Node::kTagFloat;
     }
     if (name == "int") {
-      return tag == "tag:yaml.org,2002:int";
+      return tag == internal::Node::kTagInt;
     }
 
     // Check for an "application specific" tag such as "!MyClass", which we
@@ -390,16 +354,17 @@ class YamlReadArchive final {
 
   template <typename T>
   void VisitArray(const char* name, size_t size, T* data) {
-    const auto& sub_node = GetSubNode(name, YAML::NodeType::Sequence);
-    if (!sub_node) { return; }
-    if (sub_node.size() != size) {
+    const internal::Node* sub_node = GetSubNodeSequence(name);
+    if (sub_node == nullptr) { return; }
+    const std::vector<internal::Node>& elements = sub_node->GetSequence();
+    if (elements.size() != size) {
       ReportError(fmt::format(
           "has {}-size entry (wanted {}-size)",
-          sub_node.size(), size));
+          elements.size(), size));
     }
     for (size_t i = 0; i < size; ++i) {
       const std::string key = fmt::format("{}[{}]", name, i);
-      const YAML::Node value = sub_node[i];
+      const internal::Node& value = elements[i];
       YamlReadArchive item_archive(key.c_str(), &value, this);
       item_archive.Visit(drake::MakeNameValue(key.c_str(), &data[i]));
     }
@@ -407,9 +372,10 @@ class YamlReadArchive final {
 
   template <typename NVP>
   void VisitVector(const NVP& nvp) {
-    const auto& sub_node = GetSubNode(nvp.name(), YAML::NodeType::Sequence);
-    if (!sub_node) { return; }
-    size_t size = sub_node.size();
+    const internal::Node* sub_node = GetSubNodeSequence(nvp.name());
+    if (sub_node == nullptr) { return; }
+    const std::vector<internal::Node>& elements = sub_node->GetSequence();
+    const size_t size = elements.size();
     auto&& storage = *nvp.value();
     storage.resize(size);
     if (size > 0) {
@@ -421,30 +387,36 @@ class YamlReadArchive final {
       int Options = 0, int MaxRows = Rows, int MaxCols = Cols>
   void VisitMatrix(const char* name,
       Eigen::Matrix<T, Rows, Cols, Options, MaxRows, MaxCols>* matrix) {
-    const auto& sub_node = GetSubNode(name, YAML::NodeType::Sequence);
-    if (!sub_node) { return; }
+    const internal::Node* sub_node = GetSubNodeSequence(name);
+    if (sub_node == nullptr) { return; }
+    const std::vector<internal::Node>& elements = sub_node->GetSequence();
 
     // Measure the YAML Sequence-of-Sequence dimensions.
-    size_t rows = sub_node.size();
-    size_t cols = (rows == 0) ? 0 : sub_node[0].size();
-    for (size_t i = 0; i < rows; ++i) {
-      const YAML::Node one_row = sub_node[i];
-      const size_t one_row_size = one_row.size();
-      if (one_row.Type() != YAML::NodeType::Sequence) {
+    // Take a guess at what rows & cols will be (we might adjust later).
+    size_t pending_rows = elements.size();
+    std::optional<size_t> pending_cols;
+    for (size_t i = 0; i < pending_rows; ++i) {
+      const internal::Node& one_row = elements[i];
+      if (!one_row.IsSequence()) {
         ReportError(fmt::format(
             "is Sequence-of-{} (not Sequence-of-Sequence)",
-            to_string(one_row.Type())));
+            one_row.GetTypeString()));
         return;
       }
-      if (one_row_size != cols) {
+      const size_t one_row_size = one_row.GetSequence().size();
+      if (pending_cols && one_row_size != *pending_cols) {
         ReportError("has inconsistent cols dimensions");
         return;
       }
+      pending_cols = one_row_size;
     }
     // Never return an Nx0 matrix; demote it to 0x0 instead.
-    if (cols == 0) {
-      rows = 0;
+    if (pending_cols.value_or(0) == 0) {
+      pending_rows = 0;
+      pending_cols = 0;
     }
+    const size_t rows = pending_rows;
+    const size_t cols = *pending_cols;
 
     // Check the YAML dimensions vs Eigen dimensions, then resize (if dynamic).
     if (((Rows != Eigen::Dynamic) && (static_cast<int>(rows) != Rows)) ||
@@ -460,7 +432,7 @@ class YamlReadArchive final {
     for (size_t i = 0; i < rows; ++i) {
       for (size_t j = 0; j < cols; ++j) {
         const std::string key = fmt::format("{}[{}][{}]", name, i, j);
-        const YAML::Node value = sub_node[i][j];
+        const internal::Node& value = elements[i].GetSequence()[j];
         YamlReadArchive item_archive(key.c_str(), &value, this);
         item_archive.Visit(drake::MakeNameValue(key.c_str(), &storage(i, j)));
       }
@@ -469,84 +441,112 @@ class YamlReadArchive final {
 
   template <typename Key, typename Value, typename NVP>
   void VisitMap(const NVP& nvp) {
+    // For now, we only allow std::string as the keys of a serialized std::map.
+    // In the future, we could imagine handling any other kind of scalar value
+    // that was convertible to a string (int, double, string_view, etc.) if we
+    // found that useful.  However, to remain compatible with JSON semantics,
+    // we should never allow a YAML Sequence or Mapping to be a used as a key.
     static_assert(std::is_same_v<Key, std::string>,
                   "std::map keys must be strings");
-    const auto& sub_node = GetSubNode(nvp.name(), YAML::NodeType::Map);
-    if (!sub_node) { return; }
+    const internal::Node* sub_node = GetSubNodeMapping(nvp.name());
+    if (sub_node == nullptr) { return; }
     auto& result = *nvp.value();
+    this->VisitMapDirectly<Value>(*sub_node, &result);
+  }
+
+  template <typename Value, typename Map>
+  void VisitMapDirectly(const internal::Node& node, Map* result) {
     if (!options_.retain_map_defaults) {
-      result.clear();
+      result->clear();
     }
-    for (const auto& yaml_key_value : sub_node) {
-      const std::string& key = yaml_key_value.first.Scalar();
-      auto newiter_inserted = result.emplace(key, Value{});
+    for (const auto& [key, value] : node.GetMapping()) {
+      unused(value);
+      auto newiter_inserted = result->emplace(key, Value{});
       auto& newiter = newiter_inserted.first;
       const bool inserted = newiter_inserted.second;
       if (!options_.retain_map_defaults) {
         DRAKE_DEMAND(inserted == true);
       }
       Value& newvalue = newiter->second;
-      YamlReadArchive item_archive(&sub_node, this);
+      YamlReadArchive item_archive(&node, this);
       item_archive.Visit(drake::MakeNameValue(key.c_str(), &newvalue));
     }
   }
 
   // --------------------------------------------------------------------------
+  // @name Scalar parsers
+
+  // These are the only scalar types that Drake supports.
+  // Users cannot add de-string-ification functions for custom scalars.
+  void ParseScalar(const std::string& value, bool* result);
+  void ParseScalar(const std::string& value, float* result);
+  void ParseScalar(const std::string& value, double* result);
+  void ParseScalar(const std::string& value, int32_t* result);
+  void ParseScalar(const std::string& value, uint32_t* result);
+  void ParseScalar(const std::string& value, int64_t* result);
+  void ParseScalar(const std::string& value, uint64_t* result);
+  void ParseScalar(const std::string& value, std::string* result);
+
+  template <typename T>
+  void ParseScalarImpl(const std::string& value, T* result);
+
+  // --------------------------------------------------------------------------
   // @name Helpers, utilities, and member variables.
 
-  // Do we have a root Node?
-  bool has_root() const;
+  // If our root is a Mapping and has child with the given name and type,
+  // return the child.  Otherwise, report an error and return nullptr.
+  //
+  // Currently, errors are always reported via an exception, which means that
+  // the nullptr return is irrelevant in practice.  However, in the future we
+  // imagine logging multiple errors during parsing (not using exceptions).
+  // Therefore, calling code should be written to handle the nullptr case.
+  const internal::Node* GetSubNodeScalar(const char* name) const;
+  const internal::Node* GetSubNodeSequence(const char* name) const;
+  const internal::Node* GetSubNodeMapping(const char* name) const;
 
-  // Move the merge key values (if any) into the given node using the merge key
-  // semantics; see https://yaml.org/type/merge.html for details.  If yaml-cpp
-  // adds native support for merge keys, then we should remove this helper.
-  void RewriteMergeKeys(YAML::Node*) const;
+  // Helper for the prior three functions.
+  const internal::Node* GetSubNodeAny(const char*, internal::NodeType) const;
 
-  // If our root is a Map and has child with the given name and type, return
-  // the child.  Otherwise, report an error and return an undefined node.
-  YAML::Node GetSubNode(const char*, YAML::NodeType::value) const;
-
-  // If our root is a Map and has child with the given name, return the child.
-  // Otherwise, return an undefined node.
-  YAML::Node MaybeGetSubNode(const char*) const;
+  // If our root is a Mapping and has child with the given name, return the
+  // child.  Otherwise, return nullptr.
+  const internal::Node* MaybeGetSubNode(const char*) const;
 
   // To be called after Accept-ing a Serializable to cross-check that all keys
-  // in the YAML root's Map matched a Visit call from the Serializable.  This
-  // relates to the Options.allow_yaml_with_no_cpp setting.
+  // in the YAML root's Mapping matched a Visit call from the Serializable.
+  // This relates to the Options.allow_yaml_with_no_cpp setting.
   void CheckAllAccepted() const;
 
   void ReportError(const std::string&) const;
   void PrintNodeSummary(std::ostream& s) const;
   void PrintVisitNameType(std::ostream& s) const;
-  static const char* to_string(YAML::NodeType::value);
 
-  // These jointly denote the YAML::Node root that our Accept() will read from.
+  // These jointly denote the Node root that our Accept() will read from.
   // For performance reasons, we'll use a few different members all for the
   // same purpose.  Never access these directly from Visit methods -- use
-  // GetSubNode() instead.
+  // GetSubNodeFoo() instead.
   // @{
   // A copy of the root node provided by the user to our public constructor.
   // Our recursive calls to private constructors leave this unset.
-  const YAML::Node owned_root_;
+  const std::optional<internal::Node> owned_root_;
   // Typically set to alias the Node that Accept() will read from.  If set,
   // this will alias owned_root_ when using the public constructor, or else a
   // temporary root when using the private recursion constructor.  Only ever
   // unset during internal recursion when mapish_item_{key,value}_ are being
   // used instead.
-  const YAML::Node* const root_;
-  // During certain cases of internal recursion, instead of creating a Map node
-  // with only a single key-value pair as the root_ pointer, instead we'll pass
-  // the key-value pointers directly.  This avoids the copying associated with
-  // constructing a new Map node.  The root_ vs key_,value_ representations are
-  // mutially exclusive -- when root_ is null, both the key_ and value_ must be
-  // non-null, and when root_ is non-null, both key_,value_ must be null.
+  const internal::Node* const root_;
+  // During certain cases of internal recursion, instead of creating a Mapping
+  // node with only a single key-value pair as the root_ pointer, instead we'll
+  // pass the key-value pointers directly.  This avoids the copying associated
+  // with constructing a new Mapping node.  The two representations are
+  // mutually exclusive -- when root_ is null, both the key_ and value_ must
+  // be non-null, and when root_ is non-null, both key_,value_ must be null.
   const char* const mapish_item_key_;
-  const YAML::Node* const mapish_item_value_;
+  const internal::Node* const mapish_item_value_;
   // @}
 
   // When the C++ structure and YAML structure disagree, these options govern
   // which mismatches are permitted without an error.
-  const Options options_;
+  const LoadYamlOptions options_;
 
   // The set of NameValue::name keys that have been Visited by the current
   // Serializable's Accept method so far.
@@ -558,6 +558,12 @@ class YamlReadArchive final {
   const char* debug_visit_name_{};
   const std::type_info* debug_visit_type_{};
 };
+
+}  // namespace internal
+
+using YamlReadArchive
+    DRAKE_DEPRECATED("2022-09-01", "Use the yaml_io.h functions instead")
+    = internal::YamlReadArchive;
 
 }  // namespace yaml
 }  // namespace drake

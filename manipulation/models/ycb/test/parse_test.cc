@@ -2,14 +2,14 @@
 @file
 Parses and visualizes YCB objects.
 
-An example of showing all objects at a 5s interval:
+An example of showing all objects:
 
-    bazel run //manipulation/models/ycb:parse_test -- --visualize_sec=5
+    bazel run //manipulation/models/ycb:parse_test -- --pause
 
-Showing the first object for 1s:
+Showing the first object:
 
     bazel run //manipulation/models/ycb:parse_test -- \
-        --visualize_sec=1 --gtest_filter='*0'
+        --pause --gtest_filter='*0'
 */
 
 #include <chrono>
@@ -21,22 +21,24 @@ Showing the first object for 1s:
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/drake_visualizer.h"
+#include "drake/common/scope_exit.h"
+#include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-// N.B. We choose to pause because using stdin w/ `bazel run` is painful.
-DEFINE_double(
-    visualize_sec, 0., "Pause and visualize to Drake Visualizer.");
+DEFINE_bool(pause, false, "Show each object until the user clicks.");
 
 namespace drake {
 namespace manipulation {
 namespace {
 
-using geometry::DrakeVisualizerd;
+using geometry::GetTestEnvironmentMeshcat;
+using geometry::Meshcat;
+using geometry::MeshcatVisualizerd;
 using geometry::SceneGraph;
 using multibody::AddMultibodyPlantSceneGraph;
 using multibody::MultibodyPlant;
@@ -47,6 +49,21 @@ using systems::Simulator;
 
 class ParseTest : public testing::TestWithParam<std::string> {};
 
+void WaitForNextButtonClick() {
+  std::shared_ptr<Meshcat> meshcat = GetTestEnvironmentMeshcat();
+  constexpr char kButtonName[] = "Show Next Model";
+  meshcat->AddButton(kButtonName);
+  ScopeExit guard([&meshcat, kButtonName]() {
+    meshcat->DeleteButton(kButtonName);
+  });
+  drake::log()->info(
+      "Pausing until '{}' is clicked in the Meshcat control panel...",
+      kButtonName);
+  while (meshcat->GetButtonClicks(kButtonName) == 0) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+}
+
 TEST_P(ParseTest, Quantities) {
   const std::string object_name = GetParam();
   const std::string filename = FindResourceOrThrow(fmt::format(
@@ -55,9 +72,13 @@ TEST_P(ParseTest, Quantities) {
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   Parser(&plant).AddModelFromFile(filename);
-  DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
+  const auto& visualizer = MeshcatVisualizerd::AddToBuilder(
+      &builder, scene_graph, GetTestEnvironmentMeshcat());
   plant.Finalize();
   auto diagram = builder.Build();
+  ScopeExit guard([&visualizer]() {
+    visualizer.Delete();
+  });
 
   // MultibodyPlant always creates at least two model instances, one for the
   // world and one for a default model instance for unspecified modeling
@@ -67,15 +88,12 @@ TEST_P(ParseTest, Quantities) {
   // Each object has two bodies, the world body and the object body.
   EXPECT_EQ(plant.num_bodies(), 2);
 
-  if (FLAGS_visualize_sec > 0.) {
-    drake::log()->info("Visualize: {}", object_name);
-    Simulator<double>(*diagram).Initialize();
-    auto context = diagram->CreateDefaultContext();
-    diagram->Publish(*context);
-    drake::log()->info("Pausing for {} sec...", FLAGS_visualize_sec);
-    std::this_thread::sleep_for(
-        std::chrono::milliseconds(
-            static_cast<int>(1000 * FLAGS_visualize_sec)));
+  // Display the object; optionally wait for user input.
+  drake::log()->info("Visualize: {}", object_name);
+  auto context = diagram->CreateDefaultContext();
+  diagram->Publish(*context);
+  if (FLAGS_pause) {
+    WaitForNextButtonClick();
   }
 }
 

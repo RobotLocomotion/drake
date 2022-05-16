@@ -24,6 +24,16 @@ namespace drake {
 namespace symbolic {
 
 namespace {
+// Note that `.Expand()` is needed in the following kinds of cases:
+//     e1 := (a + b)²
+//     e2 := - (a² + 2ab + b²)
+// Without expanding the terms, they would not report as EqualTo.
+bool AreEqualAfterExpanding(const Expression& e1, const Expression& e2) {
+  const Expression& e1_expanded = e1.is_expanded() ? e1 : e1.Expand();
+  const Expression& e2_expanded = e2.is_expanded() ? e2 : e2.Expand();
+  return e1_expanded.EqualTo(e2_expanded);
+}
+
 // Helper function to add coeff * m to a map (Monomial → Expression).
 // Used to implement DecomposePolynomialVisitor::VisitAddition and
 // Polynomial::Add.
@@ -36,14 +46,7 @@ void DoAddProduct(const Expression& coeff, const Monomial& m,
   if (it != map->end()) {
     // m ∈ dom(map)
     Expression& existing_coeff = it->second;
-    // Note that `.Expand()` is needed in the following line. For example,
-    // consider the following case:
-    //     c1 := (a + b)²
-    //     c2 := - (a² + 2ab + b²)
-    // Without expanding the terms, we have `is_zero(c1 + c2) = false` while
-    // it's clear that c1 + c2 is a zero polynomial. Using `Expand()` help us
-    // identify those cases.
-    if (is_zero(existing_coeff.Expand() + coeff.Expand())) {
+    if (AreEqualAfterExpanding(-coeff, existing_coeff)) {
       map->erase(it);
     } else {
       existing_coeff += coeff;
@@ -342,7 +345,7 @@ Variables GetIndeterminates(const Polynomial::MapType& m) {
   Variables vars;
   for (const pair<const Monomial, Expression>& p : m) {
     const Monomial& m_i{p.first};
-    vars += m_i.GetVariables();
+    vars.insert(m_i.GetVariables());
   }
   return vars;
 }
@@ -351,15 +354,15 @@ Variables GetDecisionVariables(const Polynomial::MapType& m) {
   Variables vars;
   for (const pair<const Monomial, Expression>& p : m) {
     const Expression& e_i{p.second};
-    vars += e_i.GetVariables();
+    vars.insert(e_i.GetVariables());
   }
   return vars;
 }
 
 }  // namespace
 
-Polynomial::Polynomial(MapType init)
-    : monomial_to_coefficient_map_{move(init)},
+Polynomial::Polynomial(MapType map)
+    : monomial_to_coefficient_map_{move(map)},
       indeterminates_{GetIndeterminates(monomial_to_coefficient_map_)},
       decision_variables_{GetDecisionVariables(monomial_to_coefficient_map_)} {
   DRAKE_ASSERT_VOID(CheckInvariant());
@@ -569,6 +572,27 @@ Polynomial Polynomial::EvaluatePartial(const Variable& var,
   return EvaluatePartial({{{var, c}}});
 }
 
+Eigen::VectorXd Polynomial::EvaluateIndeterminates(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& indeterminates,
+    const Eigen::Ref<const Eigen::MatrixXd>& indeterminates_values) const {
+  Eigen::VectorXd polynomial_values =
+      Eigen::VectorXd::Zero(indeterminates_values.cols());
+  for (const auto& [monomial, coeff] : monomial_to_coefficient_map_) {
+    const symbolic::Expression& coeff_expanded =
+        coeff.is_expanded() ? coeff : coeff.Expand();
+    if (!is_constant(coeff_expanded)) {
+      throw std::runtime_error(
+          fmt::format("Polynomial::EvaluateIndeterminates: the coefficient {} "
+                      "is not a constant",
+                      coeff_expanded.to_string()));
+    }
+    const double coeff_val = get_constant_value(coeff_expanded);
+    polynomial_values +=
+        coeff_val * monomial.Evaluate(indeterminates, indeterminates_values);
+  }
+  return polynomial_values;
+}
+
 Polynomial& Polynomial::operator+=(const Polynomial& p) {
   for (const pair<const Monomial, Expression>& item :
        p.monomial_to_coefficient_map_) {
@@ -676,15 +700,13 @@ Polynomial& Polynomial::operator*=(const Variable& v) {
   }
 }
 
-namespace {
-bool PolynomialEqual(const Polynomial& p1, const Polynomial& p2,
-                     bool do_expansion) {
+bool Polynomial::EqualTo(const Polynomial& p) const {
   // We do not use unordered_map<Monomial, Expression>::operator== as it uses
   // Expression::operator== (which returns a symbolic formula) instead of
   // Expression::EqualTo(which returns a bool), when the coefficient is a
   // symbolic expression.
-  const Polynomial::MapType& map1{p1.monomial_to_coefficient_map()};
-  const Polynomial::MapType& map2{p2.monomial_to_coefficient_map()};
+  const Polynomial::MapType& map1{monomial_to_coefficient_map_};
+  const Polynomial::MapType& map2{p.monomial_to_coefficient_map()};
   if (map1.size() != map2.size()) {
     return false;
   }
@@ -697,32 +719,23 @@ bool PolynomialEqual(const Polynomial& p1, const Polynomial& p2,
       return false;
     }
     const Expression& e2{it->second};
-    if (do_expansion) {
-      if (!e1.Expand().EqualTo(e2.Expand())) {
-        return false;
-      }
-    } else {
-      if (!e1.EqualTo(e2)) {
-        return false;
-      }
+    if (!e1.EqualTo(e2)) {
+      return false;
     }
   }
   return true;
 }
-}  // namespace
-
-bool Polynomial::EqualTo(const Polynomial& p) const {
-  return PolynomialEqual(*this, p, false);
-}
 
 bool Polynomial::EqualToAfterExpansion(const Polynomial& p) const {
-  return PolynomialEqual(*this, p, true);
+  return this->Expand().EqualTo(p.Expand());
 }
 
 bool Polynomial::CoefficientsAlmostEqual(const Polynomial& p,
-                                         double tol) const {
-  return PolynomialEqual((*this - p).RemoveTermsWithSmallCoefficients(tol),
-                         Polynomial(0), true);
+                                         double tolerance) const {
+  return (*this - p)
+      .Expand()
+      .RemoveTermsWithSmallCoefficients(tolerance)
+      .EqualTo(Polynomial());
 }
 
 Formula Polynomial::operator==(const Polynomial& p) const {
@@ -751,6 +764,17 @@ Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
   return *this;
 }
 
+Polynomial Polynomial::Expand() const {
+  Polynomial::MapType expanded_poly_map;
+  for (const auto& [monomial, coeff] : monomial_to_coefficient_map_) {
+    const symbolic::Expression coeff_expanded = coeff.Expand();
+    if (!symbolic::is_zero(coeff_expanded)) {
+      expanded_poly_map.emplace(monomial, coeff_expanded);
+    }
+  }
+  return symbolic::Polynomial(std::move(expanded_poly_map));
+}
+
 Polynomial Polynomial::RemoveTermsWithSmallCoefficients(
     double coefficient_tol) const {
   DRAKE_DEMAND(coefficient_tol > 0);
@@ -766,6 +790,32 @@ Polynomial Polynomial::RemoveTermsWithSmallCoefficients(
     }
   }
   return Polynomial(cleaned_polynomial);
+}
+
+namespace {
+bool IsEvenOrOdd(const Polynomial& p, bool check_even) {
+  for (const auto& [monomial, coeff] : p.monomial_to_coefficient_map()) {
+    // If we check p is even/odd, then we only need to check monomials with
+    // odd/even-degrees have coefficient = 0
+    if (monomial.total_degree() % 2 == static_cast<int>(check_even)) {
+      const symbolic::Expression& coeff_expanded =
+          coeff.is_expanded() ? coeff : coeff.Expand();
+      if (!(is_constant(coeff_expanded) &&
+            get_constant_value(coeff_expanded) == 0)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+}  // namespace
+
+bool Polynomial::IsEven() const {
+  return IsEvenOrOdd(*this, true /* check_even=true */);
+}
+
+bool Polynomial::IsOdd() const {
+  return IsEvenOrOdd(*this, false /* check_even=false*/);
 }
 
 void Polynomial::CheckInvariant() const {

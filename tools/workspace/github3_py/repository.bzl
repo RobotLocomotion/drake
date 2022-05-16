@@ -8,8 +8,8 @@ def github3_py_repository(
     github_archive(
         name = name,
         repository = "sigmavirus24/github3.py",
-        commit = "1.3.0",
-        sha256 = "c6951691c5e1d182c042b49c9fe88dc73f84309c4393f0a8d5684a02464c35a2",  # noqa
+        commit = "3.2.0",
+        sha256 = "42cf8e721437a0bcfb05e767302c3221cdc96f3e9db3d76ce990fd0526af1d99",  # noqa
         build_file = "@drake//tools/workspace/github3_py:package.BUILD.bazel",
         mirrors = mirrors,
     )

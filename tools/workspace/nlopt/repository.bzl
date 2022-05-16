@@ -11,20 +11,15 @@ def _impl(repository_ctx):
     if os_result.is_macos:
         build_flavor = "macos"
         repository_ctx.symlink(
-            "/usr/local/opt/nlopt/include/nlopt.h",
+            "{}/opt/nlopt/include/nlopt.h".format(os_result.homebrew_prefix),
             "include/nlopt.h",
         )
         repository_ctx.symlink(
-            "/usr/local/opt/nlopt/include/nlopt.hpp",
+            "{}/opt/nlopt/include/nlopt.hpp".format(os_result.homebrew_prefix),
             "include/nlopt.hpp",
         )
-    elif os_result.is_ubuntu:
+    elif os_result.is_ubuntu or os_result.is_manylinux:
         build_flavor = "ubuntu-{}".format(os_result.ubuntu_release)
-        repository_ctx.symlink("/usr/include/nlopt.h", "include/nlopt.h")
-        repository_ctx.symlink("/usr/include/nlopt.hpp", "include/nlopt.hpp")
-    elif os_result.is_manylinux:
-        # We expect that "manylinux" is based on Ubuntu 18.04.
-        build_flavor = "ubuntu-18.04"
         repository_ctx.symlink("/usr/include/nlopt.h", "include/nlopt.h")
         repository_ctx.symlink("/usr/include/nlopt.hpp", "include/nlopt.hpp")
     else:

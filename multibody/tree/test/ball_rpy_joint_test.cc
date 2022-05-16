@@ -112,7 +112,11 @@ TEST_F(BallRpyJointTest, GetJointLimits) {
             Vector3d::Constant(kAccelerationLowerLimit));
   EXPECT_EQ(joint_->acceleration_upper_limits(),
             Vector3d::Constant(kAccelerationUpperLimit));
+}
+
+TEST_F(BallRpyJointTest, Damping) {
   EXPECT_EQ(joint_->damping(), kDamping);
+  EXPECT_EQ(joint_->damping_vector(), Vector3d::Constant(kDamping));
 }
 
 // Context-dependent value access.
@@ -203,6 +207,15 @@ TEST_F(BallRpyJointTest, SetVelocityAndAccelerationLimits) {
   EXPECT_THROW(mutable_joint_->set_acceleration_limits(Vector3d::Constant(2),
                                                        Vector3d::Constant(0)),
                std::runtime_error);
+}
+
+TEST_F(BallRpyJointTest, NameSuffix) {
+  EXPECT_EQ(joint_->position_suffix(0), "qx");
+  EXPECT_EQ(joint_->position_suffix(1), "qy");
+  EXPECT_EQ(joint_->position_suffix(2), "qz");
+  EXPECT_EQ(joint_->velocity_suffix(0), "wx");
+  EXPECT_EQ(joint_->velocity_suffix(1), "wy");
+  EXPECT_EQ(joint_->velocity_suffix(2), "wz");
 }
 
 TEST_F(BallRpyJointTest, DefaultAngles) {

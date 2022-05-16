@@ -7,8 +7,10 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <fmt/format.h>
@@ -18,9 +20,11 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
+#include "drake/multibody/parsing/detail_tinyxml2_diagnostic.h"
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/parsing/scoped_names.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/planar_joint.h"
@@ -37,16 +41,108 @@ using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using math::RigidTransformd;
+using tinyxml2::XMLNode;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 namespace {
 
+using JointEffortLimits = std::map<std::string, double>;
+
+// Helper class to share infrastructure among parsing methods.
+class UrdfParser {
+ public:
+  // Note that @p data_source, @p xml_doc, and @p w are aliased for the
+  // lifetime of this object. Their lifetimes must exceed that of the created
+  // object.
+  UrdfParser(
+      const DataSource* data_source,
+      const std::string& model_name,
+      const std::optional<std::string>& parent_model_name,
+      const std::string& root_dir,
+      XMLDocument* xml_doc,
+      const ParsingWorkspace& w)
+      : model_name_(model_name),
+        parent_model_name_(parent_model_name),
+        root_dir_(root_dir),
+        xml_doc_(xml_doc),
+        w_(w),
+        diagnostic_(&w.diagnostic, data_source) {
+    DRAKE_DEMAND(data_source != nullptr);
+    DRAKE_DEMAND(xml_doc != nullptr);
+  }
+
+  // @return a model instance index, if one was created during parsing.
+  // @throw std::exception on parse error.
+  // @note: see AddModelFromUrdf for a full account of diagnostics, error
+  // reporting, and return values.
+  std::optional<ModelInstanceIndex> Parse();
+  void ParseBushing(XMLElement* node);
+  void ParseFrame(XMLElement* node);
+  void ParseTransmission(const JointEffortLimits& joint_effort_limits,
+                         XMLElement* node);
+  void ParseJoint(JointEffortLimits* joint_effort_limits, XMLElement* node);
+  const Body<double>* GetBodyForElement(const std::string& element_name,
+                                        const std::string& link_name);
+  void ParseJointDynamics(XMLElement* node, double* damping);
+  void ParseJointLimits(XMLElement* node, double* lower, double* upper,
+                        double* velocity, double* acceleration, double* effort);
+  void ParseJointKeyParams(XMLElement* node,
+                           std::string* name,
+                           std::string* type,
+                           std::string* parent_link_name,
+                           std::string* child_link_name);
+  void ParseCollisionFilterGroup(XMLElement* node);
+  void ParseBody(XMLElement* node, MaterialMap* materials);
+  SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
+      XMLElement* node);
+
+  // A work-alike for internal::ParseScalarAttribute() that uses the local
+  // diagnostic policy.
+  bool ParseScalarAttribute(
+    const tinyxml2::XMLElement* node,
+    const char* attribute_name, double* val) {
+    return internal::ParseScalarAttribute(
+        node, attribute_name, val,
+        diagnostic_.MakePolicyForNode(node));
+  }
+  void ParseMechanicalReduction(const XMLElement& node);
+
+
+  void Warning(const XMLNode& location, std::string message) const {
+    diagnostic_.Warning(location, std::move(message));
+  }
+
+  void Error(const XMLNode& location, std::string message) const {
+    diagnostic_.Error(location, std::move(message));
+  }
+
+  // Warn about documented URDF elements ignored by Drake.
+  void WarnUnsupportedElement(const XMLElement& node, const std::string& tag) {
+    diagnostic_.WarnUnsupportedElement(node, tag);
+  }
+
+  // Warn about documented URDF attributes ignored by Drake.
+  void WarnUnsupportedAttribute(const XMLElement& node,
+                                const std::string& attribute) {
+    diagnostic_.WarnUnsupportedAttribute(node, attribute);
+  }
+
+ private:
+  const std::string model_name_;
+  const std::optional<std::string> parent_model_name_;
+  const std::string root_dir_;
+  XMLDocument* const xml_doc_;
+  const ParsingWorkspace& w_;
+  TinyXml2Diagnostic diagnostic_;
+
+  ModelInstanceIndex model_instance_{};
+};
+
 const char* kWorldName = "world";
 
-SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
+SpatialInertia<double> UrdfParser::ExtractSpatialInertiaAboutBoExpressedInB(
     XMLElement* node) {
-
   RigidTransformd X_BBi;
 
   XMLElement* origin = node->FirstChildElement("origin");
@@ -98,22 +194,21 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
       body_mass, p_BoBcm_B, I_BBcm_B);
 }
 
-void ParseBody(const multibody::PackageMap& package_map,
-               const std::string& root_dir,
-               ModelInstanceIndex model_instance,
-               XMLElement* node,
-               MaterialMap* materials,
-               MultibodyPlant<double>* plant) {
+void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
+  // TODO(rpoyner-tri): legacy undocumented tag: remove, fix?
   std::string drake_ignore;
   if (ParseStringAttribute(node, "drake_ignore", &drake_ignore) &&
       drake_ignore == std::string("true")) {
     return;
   }
+  // Seen in the ROS urdfdom XSD Schema.
+  // See https://github.com/ros/urdfdom/blob/dbecca0/xsd/urdf.xsd
+  WarnUnsupportedAttribute(*node, "type");
 
   std::string body_name;
   if (!ParseStringAttribute(node, "name", &body_name)) {
-    throw std::runtime_error(
-        "ERROR: link tag is missing name attribute.");
+    Error(*node, "link tag is missing name attribute.");
+    return;
   }
 
   const RigidBody<double>* body_pointer{};
@@ -123,15 +218,12 @@ void ParseBody(const multibody::PackageMap& package_map,
     //  discoverable *somewhere*. But this function is in an anonymous
     //  namespace; where would the documentation go that supports this
     //  implementation?
-    body_pointer = &plant->world_body();
+    body_pointer = &w_.plant->world_body();
     if (node->FirstChildElement("inertial") != nullptr) {
-      // TODO(SeanCurtis-TRI): It would be good to report file name and line
-      //  number in this error.
-      static const logging::Warn log_once(
-          "A URDF file declared the \"world\" link and then attempted to "
-          "assign mass properties (via the <inertial> tag). Only geometries, "
-          "<collision> and <visual>, can be assigned to the world link. The "
-          "<inertial> tag is being ignored.");
+      Warning(*node, "A URDF file declared the \"world\" link and then"
+              " attempted to assign mass properties (via the <inertial> tag)."
+              " Only geometries, <collision> and <visual>, can be assigned to"
+              " the world link. The <inertial> tag is being ignored.");
     }
   } else {
     SpatialInertia<double> M_BBo_B;
@@ -144,81 +236,82 @@ void ParseBody(const multibody::PackageMap& package_map,
     }
 
     // Add a rigid body to model each link.
-    body_pointer = &plant->AddRigidBody(body_name, model_instance, M_BBo_B);
+    body_pointer = &w_.plant->AddRigidBody(body_name, model_instance_, M_BBo_B);
   }
 
-  if (plant->geometry_source_is_registered()) {
+  if (w_.plant->geometry_source_is_registered()) {
     const RigidBody<double>& body = *body_pointer;
+    std::unordered_set<std::string> geometry_names;
 
     for (XMLElement* visual_node = node->FirstChildElement("visual");
          visual_node;
          visual_node = visual_node->NextSiblingElement("visual")) {
-      geometry::GeometryInstance geometry_instance =
-          ParseVisual(body_name, package_map, root_dir, visual_node, materials);
+      std::optional<geometry::GeometryInstance> geometry_instance =
+          ParseVisual(diagnostic_, body_name, w_.package_map, root_dir_,
+                      visual_node, materials, &geometry_names);
+      if (!geometry_instance) { continue; }
       // The parsing should *always* produce an IllustrationProperties
       // instance, even if it is empty.
-      DRAKE_DEMAND(geometry_instance.illustration_properties() != nullptr);
-      plant->RegisterVisualGeometry(
-          body, geometry_instance.pose(), geometry_instance.shape(),
-          geometry_instance.name(),
-          *geometry_instance.illustration_properties());
+      DRAKE_DEMAND(geometry_instance->illustration_properties() != nullptr);
+      w_.plant->RegisterVisualGeometry(
+          body, geometry_instance->pose(), geometry_instance->shape(),
+          geometry_instance->name(),
+          *geometry_instance->illustration_properties());
     }
 
     for (XMLElement* collision_node = node->FirstChildElement("collision");
          collision_node;
          collision_node = collision_node->NextSiblingElement("collision")) {
-      geometry::GeometryInstance geometry_instance =
-          ParseCollision(body_name, package_map, root_dir, collision_node);
-      DRAKE_DEMAND(geometry_instance.proximity_properties() != nullptr);
-      plant->RegisterCollisionGeometry(
-          body, geometry_instance.pose(), geometry_instance.shape(),
-          geometry_instance.name(),
-          std::move(*geometry_instance.mutable_proximity_properties()));
+      std::optional<geometry::GeometryInstance> geometry_instance =
+          ParseCollision(diagnostic_, body_name, w_.package_map, root_dir_,
+                         collision_node, &geometry_names);
+      if (!geometry_instance) { continue; }
+      DRAKE_DEMAND(geometry_instance->proximity_properties() != nullptr);
+      w_.plant->RegisterCollisionGeometry(
+          body, geometry_instance->pose(), geometry_instance->shape(),
+          geometry_instance->name(),
+          std::move(*geometry_instance->mutable_proximity_properties()));
     }
   }
 }
 
-void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
-                               XMLElement* node,
-                               MultibodyPlant<double>* plant) {
+void UrdfParser::ParseCollisionFilterGroup(XMLElement* node) {
   auto next_child_element = [](const ElementNode& data_element,
                                const char* element_name) {
-    return std::get<tinyxml2::XMLElement*>(data_element)
+    return std::get<XMLElement*>(data_element)
         ->FirstChildElement(element_name);
   };
   auto next_sibling_element = [](const ElementNode& data_element,
                                  const char* element_name) {
-    return std::get<tinyxml2::XMLElement*>(data_element)
+    return std::get<XMLElement*>(data_element)
         ->NextSiblingElement(element_name);
   };
   auto has_attribute = [](const ElementNode& data_element,
                           const char* attribute_name) {
     std::string attribute_value;
-    return ParseStringAttribute(std::get<tinyxml2::XMLElement*>(data_element),
+    return ParseStringAttribute(std::get<XMLElement*>(data_element),
                                 attribute_name, &attribute_value);
   };
-  auto get_string_attribute = [](const ElementNode& data_element,
-                                 const char* attribute_name) {
+  auto get_string_attribute = [this](const ElementNode& data_element,
+                                     const char* attribute_name) {
     std::string attribute_value;
-    if (!ParseStringAttribute(std::get<tinyxml2::XMLElement*>(data_element),
-                              attribute_name, &attribute_value)) {
-      throw std::runtime_error(fmt::format(
-          "{}:{}:{} The tag <{}> does not specify the required attribute"
-          " \"{}\" at line {}.", __FILE__, __func__, __LINE__,
-          std::get<tinyxml2::XMLElement*>(data_element)->Value(),
-          attribute_name,
-          std::get<tinyxml2::XMLElement*>(data_element)->GetLineNum()));
+    XMLElement* anode = std::get<XMLElement*>(data_element);
+    if (!ParseStringAttribute(anode, attribute_name, &attribute_value)) {
+      Error(*anode, fmt::format("The tag <{}> does not specify the required"
+                                " attribute \"{}\".", anode->Value(),
+                                attribute_name));
+      // Fall through to return empty string.
     }
     return attribute_value;
   };
   auto get_bool_attribute = [](const ElementNode& data_element,
                                const char* attribute_name) {
     std::string attribute_value;
-    ParseStringAttribute(std::get<tinyxml2::XMLElement*>(data_element),
+    ParseStringAttribute(std::get<XMLElement*>(data_element),
                          attribute_name, &attribute_value);
     return attribute_value == std::string("true") ? true : false;
   };
-  ParseCollisionFilterGroupCommon(model_instance, node, plant,
+  ParseCollisionFilterGroupCommon(model_instance_, node, w_.plant,
                                   next_child_element, next_sibling_element,
                                   has_attribute, get_string_attribute,
                                   get_bool_attribute, get_string_attribute);
@@ -237,46 +330,49 @@ void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
 // parent link should be saved.
 // @param[out] child_link_name A reference to a string where the name of the
 // child link should be saved.
-void ParseJointKeyParams(XMLElement* node,
-                         std::string* name,
-                         std::string* type,
-                         std::string* parent_link_name,
-                         std::string* child_link_name) {
+void UrdfParser::ParseJointKeyParams(XMLElement* node,
+                                     std::string* name,
+                                     std::string* type,
+                                     std::string* parent_link_name,
+                                     std::string* child_link_name) {
   if (!ParseStringAttribute(node, "name", name)) {
-    throw std::runtime_error(
-        "ERROR: joint tag is missing name attribute");
+    Error(*node, "joint tag is missing name attribute");
+    return;
   }
 
   if (!ParseStringAttribute(node, "type", type)) {
-    throw std::runtime_error(
-        "ERROR: joint " + *name + " is missing type attribute");
+    Error(*node, fmt::format("joint '{}' is missing type attribute", *name));
+    return;
   }
 
   // Obtains the name of the joint's parent link.
   XMLElement* parent_node = node->FirstChildElement("parent");
   if (!parent_node) {
-    throw std::runtime_error(
-        "ERROR: joint " + *name + " doesn't have a parent node!");
+    Error(*node, fmt::format("joint '{}' doesn't have a parent node!", *name));
+    return;
   }
   if (!ParseStringAttribute(parent_node, "link", parent_link_name)) {
-    throw std::runtime_error(
-        "ERROR: joint " + *name + "'s parent does not have a link attribute!");
+    Error(*parent_node, fmt::format("joint {}'s parent does not have a link"
+                                    " attribute!", *name));
+    return;
   }
 
   // Obtains the name of the joint's child link.
   XMLElement* child_node = node->FirstChildElement("child");
   if (!child_node) {
-    throw std::runtime_error(
-        "ERROR: joint " + *name + " doesn't have a child node");
+    Error(*node, fmt::format("joint '{}' doesn't have a child node!", *name));
+    return;
   }
   if (!ParseStringAttribute(child_node, "link", child_link_name)) {
-    throw std::runtime_error(
-        "ERROR: joint " + *name + "'s child does not have a link attribute!");
+    Error(*child_node, fmt::format("joint {}'s child does not have a link"
+                                   " attribute!", *name));
+    return;
   }
 }
 
-void ParseJointLimits(XMLElement* node, double* lower, double* upper,
-                      double* velocity, double* acceleration, double* effort) {
+void UrdfParser::ParseJointLimits(
+    XMLElement* node, double* lower, double* upper,
+    double* velocity, double* acceleration, double* effort) {
   *lower = -std::numeric_limits<double>::infinity();
   *upper = std::numeric_limits<double>::infinity();
   *velocity = std::numeric_limits<double>::infinity();
@@ -293,7 +389,7 @@ void ParseJointLimits(XMLElement* node, double* lower, double* upper,
   }
 }
 
-void ParseJointDynamics(XMLElement* node, double* damping) {
+void UrdfParser::ParseJointDynamics(XMLElement* node, double* damping) {
   *damping = 0.0;
   double coulomb_friction = 0.0;
   double coulomb_window = std::numeric_limits<double>::epsilon();
@@ -303,58 +399,63 @@ void ParseJointDynamics(XMLElement* node, double* damping) {
     ParseScalarAttribute(dynamics_node, "damping", damping);
     if (ParseScalarAttribute(dynamics_node, "friction", &coulomb_friction) &&
         coulomb_friction != 0.0) {
-      static const logging::Warn log_once(
-          "At least one of your URDF files has specified a non-zero value for "
-          "the 'friction' attribute of a joint/dynamics tag. MultibodyPlant "
-          "does not currently support non-zero joint friction.");
+      Warning(*dynamics_node, "A joint has specified a non-zero value for the"
+              " 'friction' attribute of a joint/dynamics tag. MultibodyPlant"
+              " does not currently support non-zero joint friction.");
     }
-    if (ParseScalarAttribute(dynamics_node, "coulomb_window",
-                             &coulomb_window) &&
-        coulomb_window != std::numeric_limits<double>::epsilon()) {
-      static const logging::Warn log_once(
-          "At least one of your URDF files has specified a value for  the "
-          "'coulomb_window' attribute of a <joint> tag. Drake no longer makes "
-          "use of that attribute and all instances will be ignored.");
+    if (ParseScalarAttribute(
+            dynamics_node, "coulomb_window", &coulomb_window)) {
+      Warning(*dynamics_node, "A joint has specified a value for the"
+              " 'coulomb_window' attribute of a <joint> tag. Drake no longer"
+              " makes use of that attribute; all instances will be ignored.");
     }
   }
 }
 
-const Body<double>& GetBodyForElement(
+const Body<double>* UrdfParser::GetBodyForElement(
     const std::string& element_name,
-    const std::string& link_name,
-    ModelInstanceIndex model_instance,
-    MultibodyPlant<double>* plant) {
+    const std::string& link_name) {
+  auto plant = w_.plant;
   if (link_name == kWorldName) {
-    return plant->world_body();
+    return &plant->world_body();
   }
 
-  if (!plant->HasBodyNamed(link_name, model_instance)) {
-    throw std::runtime_error(
-        "ERROR: Could not find link named\"" +
-        link_name + "\" with model instance ID " +
-        std::to_string(model_instance) + " for element " + element_name + ".");
+  if (!plant->HasBodyNamed(link_name, model_instance_)) {
+    Error(*xml_doc_, fmt::format("Could not find link named '{}' with model"
+                                 " instance ID {} for element '{}'.", link_name,
+                                 model_instance_, element_name));
+    return nullptr;
   }
-  return plant->GetBodyByName(link_name, model_instance);
+  return &plant->GetBodyByName(link_name, model_instance_);
 }
 
-void ParseJoint(ModelInstanceIndex model_instance,
-                std::map<std::string, double>* joint_effort_limits,
-                XMLElement* node,
-                MultibodyPlant<double>* plant) {
+void UrdfParser::ParseJoint(
+    JointEffortLimits* joint_effort_limits,
+    XMLElement* node) {
+  // TODO(rpoyner-tri): legacy undocumented tag: remove, fix?
   std::string drake_ignore;
   if (ParseStringAttribute(node, "drake_ignore", &drake_ignore) &&
       drake_ignore == std::string("true")) {
     return;
   }
+  WarnUnsupportedElement(*node, "calibration");
+  WarnUnsupportedElement(*node, "mimic");
+  WarnUnsupportedElement(*node, "safety_controller");
 
   // Parses the parent and child link names.
   std::string name, type, parent_name, child_name;
   ParseJointKeyParams(node, &name, &type, &parent_name, &child_name);
+  if (name.empty() || type.empty() ||
+      parent_name.empty() || child_name.empty()) {
+    return;
+  }
 
-  const Body<double>& parent_body = GetBodyForElement(
-      name, parent_name, model_instance, plant);
-  const Body<double>& child_body = GetBodyForElement(
-      name, child_name, model_instance, plant);
+  const Body<double>* parent_body = GetBodyForElement(
+      name, parent_name);
+  if (parent_body == nullptr) { return; }
+  const Body<double>* child_body = GetBodyForElement(
+      name, child_name);
+  if (child_body == nullptr) { return; }
 
   RigidTransformd X_PJ;
   XMLElement* origin = node->FirstChildElement("origin");
@@ -368,8 +469,9 @@ void ParseJoint(ModelInstanceIndex model_instance,
       type.compare("floating") != 0 && type.compare("ball") != 0) {
     ParseVectorAttribute(axis_node, "xyz", &axis);
     if (axis.norm() < 1e-8) {
-      throw std::runtime_error(
-          "ERROR: Joint " + name + "axis is zero.  Don't do that.");
+      Error(*axis_node, fmt::format("Joint '{}' axis is zero.  Don't do that.",
+                                    name));
+      return;
     }
     axis.normalize();
   }
@@ -391,57 +493,59 @@ void ParseJoint(ModelInstanceIndex model_instance,
   // later if/when an actuator is created.
   double effort = std::numeric_limits<double>::infinity();
 
-  auto throw_on_custom_joint = [node, name, type](bool want_custom_joint) {
+  auto throw_on_custom_joint =
+      [node, name, type, this](bool want_custom_joint) {
     const std::string node_name(node->Name());
     const bool is_custom_joint = node_name == "drake:joint";
     if (want_custom_joint && !is_custom_joint) {
-      throw std::runtime_error(
-          "ERROR: Joint " + name + " of type " + type +
-          " is a custom joint type, and should be a <drake:joint>");
+      Error(*node, fmt::format("Joint {} of type {} is a custom joint type, and"
+                               " should be a <drake:joint>", name, type));
+      return;
     } else if (!want_custom_joint && is_custom_joint) {
-      throw std::runtime_error(
-          "ERROR: Joint " + name + " of type " + type +
-          " is a standard joint type, and should be a <joint>");
+      Error(*node, fmt::format("Joint {} of type {} is a standard joint type,"
+                               " and should be a <joint>", name, type));
+      return;
     }
   };
 
+  auto plant = w_.plant;
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
     throw_on_custom_joint(false);
     ParseJointLimits(node, &lower, &upper, &velocity, &acceleration, &effort);
     ParseJointDynamics(node, &damping);
     const JointIndex index = plant->AddJoint<RevoluteJoint>(
-        name, parent_body, X_PJ,
-        child_body, std::nullopt, axis, lower, upper, damping).index();
+        name, *parent_body, X_PJ,
+        *child_body, std::nullopt, axis, lower, upper, damping).index();
     Joint<double>& joint = plant->get_mutable_joint(index);
     joint.set_velocity_limits(Vector1d(-velocity), Vector1d(velocity));
     joint.set_acceleration_limits(
         Vector1d(-acceleration), Vector1d(acceleration));
   } else if (type.compare("fixed") == 0) {
     throw_on_custom_joint(false);
-    plant->AddJoint<WeldJoint>(name, parent_body, X_PJ,
-                               child_body, std::nullopt,
+    plant->AddJoint<WeldJoint>(name, *parent_body, X_PJ,
+                               *child_body, std::nullopt,
                                RigidTransformd::Identity());
   } else if (type.compare("prismatic") == 0) {
     throw_on_custom_joint(false);
     ParseJointLimits(node, &lower, &upper, &velocity, &acceleration, &effort);
     ParseJointDynamics(node, &damping);
     const JointIndex index = plant->AddJoint<PrismaticJoint>(
-        name, parent_body, X_PJ,
-        child_body, std::nullopt, axis, lower, upper, damping).index();
+        name, *parent_body, X_PJ,
+        *child_body, std::nullopt, axis, lower, upper, damping).index();
     Joint<double>& joint = plant->get_mutable_joint(index);
     joint.set_velocity_limits(Vector1d(-velocity), Vector1d(velocity));
     joint.set_acceleration_limits(
         Vector1d(-acceleration), Vector1d(acceleration));
   } else if (type.compare("floating") == 0) {
     throw_on_custom_joint(false);
-    drake::log()->warn("Joint {} specified as type floating which is not "
-                       "supported by MultibodyPlant.  Leaving {} as a "
-                       "free body.", name, child_name);
+    Warning(*node, fmt::format("Joint '{}' specified as type floating which is"
+                               " not supported by MultibodyPlant.  Leaving '{}'"
+                               " as a free body.", name, child_name));
   } else if (type.compare("ball") == 0) {
     throw_on_custom_joint(true);
     ParseJointDynamics(node, &damping);
-    plant->AddJoint<BallRpyJoint>(name, parent_body, X_PJ,
-                                  child_body, std::nullopt, damping);
+    plant->AddJoint<BallRpyJoint>(name, *parent_body, X_PJ,
+                                  *child_body, std::nullopt, damping);
   } else if (type.compare("planar") == 0) {
     throw_on_custom_joint(true);
     Vector3d damping_vec(0, 0, 0);
@@ -449,26 +553,48 @@ void ParseJoint(ModelInstanceIndex model_instance,
     if (dynamics_node) {
       ParseVectorAttribute(dynamics_node, "damping", &damping_vec);
     }
-    plant->AddJoint<PlanarJoint>(name, parent_body, X_PJ,
-                                 child_body, std::nullopt, damping_vec);
+    plant->AddJoint<PlanarJoint>(name, *parent_body, X_PJ,
+                                 *child_body, std::nullopt, damping_vec);
   } else if (type.compare("universal") == 0) {
     throw_on_custom_joint(true);
     ParseJointDynamics(node, &damping);
-    plant->AddJoint<UniversalJoint>(name, parent_body, X_PJ,
-                                    child_body, std::nullopt, damping);
+    plant->AddJoint<UniversalJoint>(name, *parent_body, X_PJ,
+                                    *child_body, std::nullopt, damping);
   } else {
-    throw std::runtime_error(
-        "ERROR: Joint " + name + " has unrecognized type: " + type);
+    Error(*node, fmt::format("Joint '{}' has unrecognized type: '{}'",
+                             name, type));
+    return;
   }
 
   joint_effort_limits->emplace(name, effort);
 }
 
-void ParseTransmission(
-    ModelInstanceIndex model_instance,
-    const std::map<std::string, double>& joint_effort_limits,
-    XMLElement* node,
-    MultibodyPlant<double>* plant) {
+void UrdfParser::ParseMechanicalReduction(const XMLElement& node) {
+  const XMLElement* child = node.FirstChildElement("mechanicalReduction");
+  if (!child) { return; }
+  const char* text = child->GetText();
+  if (!text) { return; }
+  std::vector<double> values = ConvertToDoubles(text);
+  if (values.size() == 1 && values[0] == 1) { return; }
+  Warning(*child, fmt::format(
+              "A '{}' element contains a mechanicalReduction element with a"
+              " value '{}' other than the default of 1. MultibodyPlant does"
+              " not currently support non-default mechanical reductions.",
+              node.Name(), text));
+}
+
+void UrdfParser::ParseTransmission(
+    const JointEffortLimits& joint_effort_limits,
+    XMLElement* node) {
+  WarnUnsupportedElement(*node, "leftActuator");
+  WarnUnsupportedElement(*node, "rightActuator");
+  WarnUnsupportedElement(*node, "flexJoint");
+  WarnUnsupportedElement(*node, "rollJoint");
+  WarnUnsupportedElement(*node, "gap_joint");
+  WarnUnsupportedElement(*node, "passive_joint");
+  WarnUnsupportedElement(*node, "use_simulated_gripper_joint");
+  ParseMechanicalReduction(*node);
+
   // Determines the transmission type.
   std::string type;
   XMLElement* type_node = node->FirstChildElement("type");
@@ -477,9 +603,8 @@ void ParseTransmission(
   } else {
     // Old URDF format, kept for convenience
     if (!ParseStringAttribute(node, "type", &type)) {
-      throw std::runtime_error(
-          std::string(__FILE__) + ": " + __func__ +
-          "ERROR: Transmission element is missing a type.");
+      Error(*node, "Transmission element is missing a type.");
+      return;
     }
   }
 
@@ -487,69 +612,72 @@ void ParseTransmission(
   // print a warning and then abort this method call since only simple
   // transmissions are supported at this time.
   if (type.find("SimpleTransmission") == std::string::npos) {
-    static const logging::Warn log_once(
-        "At least one of your URDF files has <transmission> type that isn't "
-        "'SimpleTransmission'. Drake only supports 'SimpleTransmission'; all "
-        "other transmission types will be ignored.");
+    Warning(*node, "A <transmission> has a type that isn't"
+            " 'SimpleTransmission'. Drake only supports 'SimpleTransmission';"
+            " all other transmission types will be ignored.");
     return;
   }
 
   // Determines the actuator's name.
   XMLElement* actuator_node = node->FirstChildElement("actuator");
   if (!actuator_node) {
-    throw std::runtime_error(
-        "ERROR: Transmission is missing an actuator element.");
+    Error(*node, "Transmission is missing an actuator element.");
+    return;
   }
+  ParseMechanicalReduction(*actuator_node);
+  // `actuator/hardwareInterface` child tags are silently ignored.
 
   std::string actuator_name;
   if (!ParseStringAttribute(actuator_node, "name", &actuator_name)) {
-    throw std::runtime_error(
-        "ERROR: Transmission is missing an actuator name.");
+    Error(*actuator_node, "Transmission is missing an actuator name.");
+    return;
   }
 
   // Determines the name of the joint to which the actuator is attached.
   XMLElement* joint_node = node->FirstChildElement("joint");
   if (!joint_node) {
-    throw std::runtime_error(
-        "ERROR: Transmission is missing a joint element.");
+    Error(*node, "Transmission is missing a joint element.");
+    return;
   }
+  // `joint/hardwareInterface` child tags are silently ignored.
+
 
   std::string joint_name;
   if (!ParseStringAttribute(joint_node, "name", &joint_name)) {
-    throw std::runtime_error(
-        "ERROR: Transmission is missing a joint name.");
+    Error(*joint_node, "Transmission is missing a joint name.");
+    return;
   }
 
-  if (!plant->HasJointNamed(joint_name, model_instance)) {
-    throw std::runtime_error(
-        "ERROR: Transmission specifies joint " + joint_name +
-        " which does not exist.");
+  auto plant = w_.plant;
+  if (!plant->HasJointNamed(joint_name, model_instance_)) {
+    Error(*joint_node, fmt::format("Transmission specifies joint '{}' which"
+                                   " does not exist.", joint_name));
+    return;
   }
   const Joint<double>& joint = plant->GetJointByName(
-      joint_name, model_instance);
+      joint_name, model_instance_);
 
   // Checks if the actuator is attached to a fixed joint. If so, abort this
   // method call.
   if (joint.num_positions() == 0) {
-    drake::log()->warn(
-        "WARNING: Skipping transmission since it's attached to "
-        "a fixed joint \"" + joint_name + "\".");
+    Warning(*joint_node, fmt::format("Skipping transmission since it's attached"
+                                     " to a fixed joint \"{}\".", joint_name));
     return;
   }
 
   const auto effort_iter = joint_effort_limits.find(joint_name);
   DRAKE_DEMAND(effort_iter != joint_effort_limits.end());
   if (effort_iter->second < 0) {
-    throw std::runtime_error(
-        "ERROR: Transmission specifies joint " + joint_name +
-        " which has a negative effort limit.");
+    Error(*joint_node, fmt::format("Transmission specifies joint '{}' which has"
+                                   " a negative effort limit.", joint_name));
+    return;
   }
 
   if (effort_iter->second <= 0) {
-    drake::log()->warn(
-        "WARNING: Skipping transmission since it's attached to "
-        "joint \"" + joint_name + "\" which has a zero "
-        "effort limit {}.", effort_iter->second);
+    Warning(*joint_node, fmt::format("Skipping transmission since it's attached"
+                                     " to joint \"{}\" which has a zero effort"
+                                     " limit {}.", joint_name,
+                                     effort_iter->second));
     return;
   }
 
@@ -562,9 +690,10 @@ void ParseTransmission(
   if (rotor_inertia_node) {
     double rotor_inertia;
     if (!ParseScalarAttribute(rotor_inertia_node, "value", &rotor_inertia)) {
-      throw std::runtime_error(
-          "ERROR: joint actuator " + actuator_name +
-          "'s drake:rotor_inertia does not have a \"value\" attribute!");
+      Error(*rotor_inertia_node,
+            fmt::format("joint actuator {}'s drake:rotor_inertia does not have"
+                        " a \"value\" attribute!", actuator_name));
+      return;
     }
     plant->get_mutable_joint_actuator(actuator.index())
         .set_default_rotor_inertia(rotor_inertia);
@@ -576,116 +705,114 @@ void ParseTransmission(
   if (gear_ratio_node) {
     double gear_ratio;
     if (!ParseScalarAttribute(gear_ratio_node, "value", &gear_ratio)) {
-      throw std::runtime_error(
-          "ERROR: joint actuator " + actuator_name +
-          "'s drake:gear_ratio does not have a \"value\" attribute!");
+      Error(*gear_ratio_node,
+            fmt::format("joint actuator {}'s drake:gear_ratio does not have a"
+                        " \"value\" attribute!", actuator_name));
+      return;
     }
     plant->get_mutable_joint_actuator(actuator.index())
         .set_default_gear_ratio(gear_ratio);
   }
 }
 
-void ParseFrame(ModelInstanceIndex model_instance,
-                XMLElement* node,
-                MultibodyPlant<double>* plant) {
+void UrdfParser::ParseFrame(XMLElement* node) {
   std::string name;
   if (!ParseStringAttribute(node, "name", &name)) {
-    throw std::runtime_error("ERROR parsing frame name.");
+    Error(*node, "parsing frame name.");
+    return;
   }
 
   std::string body_name;
   if (!ParseStringAttribute(node, "link", &body_name)) {
-    throw std::runtime_error(
-        "ERROR: missing link name for frame " + name + ".");
+    Error(*node, fmt::format("missing link name for frame {}.", name));
+    return;
   }
 
-  const Body<double>& body =
-      GetBodyForElement(name, body_name, model_instance, plant);
+  const Body<double>* body = GetBodyForElement(
+      name, body_name);
+  if (body == nullptr) { return; }
 
   RigidTransformd X_BF = OriginAttributesToTransform(node);
-  plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-      name, body.body_frame(), X_BF));
+  w_.plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+      name, body->body_frame(), X_BF));
 }
 
-void ParseBushing(XMLElement* node, MultibodyPlant<double>* plant) {
-  // Functor to read a child element with a vector valued `value` attribute
-  // Throws an error if unable to find the tag or if the value attribute is
-  // improperly formed.
-  auto read_vector = [node](const char* element_name) -> Eigen::Vector3d {
+void UrdfParser::ParseBushing(XMLElement* node) {
+  // Functor to read a child element with a vector valued `value` attribute.
+  // Returns a zero vector if unable to find the tag or if the value attribute
+  // is improperly formed.
+  auto read_vector = [node, this](const char* element_name) -> Eigen::Vector3d {
     const XMLElement* value_node = node->FirstChildElement(element_name);
     if (value_node != nullptr) {
       Eigen::Vector3d value;
       if (ParseVectorAttribute(value_node, "value", &value)) {
         return value;
       } else {
-        throw std::runtime_error(
-            fmt::format("Unable to read the 'value' attribute for the <{}> "
-                        "tag on line {}",
-                        element_name, value_node->GetLineNum()));
+        Error(*node, fmt::format("Unable to read the 'value' attribute for the"
+                                 " <{}> tag", element_name));
+        return Eigen::Vector3d::Zero();
       }
     } else {
-      throw std::runtime_error(
-          fmt::format("Unable to find the <{}> "
-                      "tag on line {}",
-                      element_name, node->GetLineNum()));
+      Error(*node, fmt::format("Unable to find the <{}> tag", element_name));
+      return Eigen::Vector3d::Zero();
     }
   };
 
-  // Functor to read a child element with a string valued `name` attribute.
-  // Throws an error if unable to find the tag of if the name attribute is
-  // improperly formed.
-  auto read_frame = [node,
-                     plant](const char* element_name) -> const Frame<double>& {
+  // Functor to read a child element with a string-valued `name` attribute.
+  // Returns nullptr if unable to find the tag, if the name attribute is
+  // improperly formed, or if it does not refer to a frame already in the
+  // model.
+  auto read_frame = [node, this](const char* element_name)
+                    -> const Frame<double>* {
     XMLElement* value_node = node->FirstChildElement(element_name);
 
     if (value_node != nullptr) {
       std::string frame_name;
+      auto plant = w_.plant;
       if (ParseStringAttribute(value_node, "name", &frame_name)) {
-        if (!plant->HasFrameNamed(frame_name)) {
-          throw std::runtime_error(fmt::format(
-              "Frame: {} specified for <{}> does not exist in the model.",
-              frame_name, element_name));
+        if (!plant->HasFrameNamed(frame_name, model_instance_)) {
+          Error(*value_node, fmt::format("Frame: {} specified for <{}> does not"
+                                         " exist in the model.", frame_name,
+                                         element_name));
+          return {};
         }
-        return plant->GetFrameByName(frame_name);
-
+        return &plant->GetFrameByName(frame_name, model_instance_);
       } else {
-        throw std::runtime_error(
-            fmt::format("Unable to read the 'name' attribute for the <{}> "
-                        "tag on line {}",
-                        element_name, value_node->GetLineNum()));
+        Error(*value_node, fmt::format("Unable to read the 'name' attribute for"
+                                       " the <{}> tag", element_name));
+        return {};
       }
 
     } else {
-      throw std::runtime_error(
-          fmt::format("Unable to find the <{}> tag on line {}", element_name,
-                      node->GetLineNum()));
+      Error(*node, fmt::format("Unable to find the <{}> tag", element_name));
+      return {};
     }
   };
 
-  ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
+  ParseLinearBushingRollPitchYaw(read_vector, read_frame, w_.plant);
 }
 
-ModelInstanceIndex ParseUrdf(
-    const std::string& model_name_in,
-    const std::optional<std::string>& parent_model_name,
-    const multibody::PackageMap& package_map,
-    const std::string& root_dir,
-    XMLDocument* xml_doc,
-    MultibodyPlant<double>* plant) {
-
-  XMLElement* node = xml_doc->FirstChildElement("robot");
+std::optional<ModelInstanceIndex> UrdfParser::Parse() {
+  XMLElement* node = xml_doc_->FirstChildElement("robot");
   if (!node) {
-    throw std::runtime_error("ERROR: URDF does not contain a robot tag.");
+    Error(*xml_doc_, "URDF does not contain a robot tag.");
+    return {};
   }
+  // See https://github.com/ros/urdfdom/blob/dbecca0/urdf_parser/src/model.cpp#L124-L131
+  WarnUnsupportedAttribute(*node, "version");
+  // <gazebo> child tags are silently ignored.
 
-  std::string model_name = model_name_in;
+  std::string model_name = model_name_;
   if (model_name.empty() && !ParseStringAttribute(node, "name", &model_name)) {
-      throw std::runtime_error(
-          "ERROR: Your robot must have a name attribute or a model name "
+    Error(*node, "Your robot must have a name attribute or a model name "
           "must be specified.");
+    return {};
   }
 
-  model_name = parsing::PrefixName(parent_model_name.value_or(""), model_name);
+  model_name = parsing::PrefixName(
+      parent_model_name_.value_or(""), model_name);
+
+  model_instance_ = w_.plant->AddModelInstance(model_name);
 
   // Parses the model's material elements. Throws an exception if there's a
   // material name clash regardless of whether the associated RGBA values are
@@ -694,29 +821,25 @@ ModelInstanceIndex ParseUrdf(
   for (XMLElement* material_node = node->FirstChildElement("material");
        material_node;
        material_node = material_node->NextSiblingElement("material")) {
-    ParseMaterial(material_node, true /* name_required */, package_map,
-                  root_dir, &materials);
+    ParseMaterial(diagnostic_, material_node, true /* name_required */,
+                  w_.package_map, root_dir_, &materials);
   }
-
-  const ModelInstanceIndex model_instance =
-      plant->AddModelInstance(model_name);
 
   // Parses the model's link elements.
   for (XMLElement* link_node = node->FirstChildElement("link");
        link_node;
        link_node = link_node->NextSiblingElement("link")) {
-    ParseBody(package_map, root_dir, model_instance, link_node,
-              &materials, plant);
+    ParseBody(link_node, &materials);
   }
 
   // Parses the collision filter groups only if the scene graph is registered.
-  if (plant->geometry_source_is_registered()) {
-    ParseCollisionFilterGroup(model_instance, node, plant);
+  if (w_.plant->geometry_source_is_registered()) {
+    ParseCollisionFilterGroup(node);
   }
 
   // Joint effort limits are stored with joints, but used when creating the
   // actuator (which is done when parsing the transmission).
-  std::map<std::string, double> joint_effort_limits;
+  JointEffortLimits joint_effort_limits;
 
   // Parses the model's joint elements.  While it may not be strictly required
   // to be true in MultibodyPlant, generally the JointIndex for any given
@@ -728,7 +851,7 @@ ModelInstanceIndex ParseUrdf(
        joint_node = joint_node->NextSiblingElement()) {
     const std::string node_name(joint_node->Name());
     if (node_name == "joint" || node_name == "drake:joint") {
-      ParseJoint(model_instance, &joint_effort_limits, joint_node, plant);
+      ParseJoint(&joint_effort_limits, joint_node);
     }
   }
 
@@ -737,19 +860,18 @@ ModelInstanceIndex ParseUrdf(
        transmission_node;
        transmission_node =
            transmission_node->NextSiblingElement("transmission")) {
-    ParseTransmission(model_instance, joint_effort_limits,
-                      transmission_node, plant);
+    ParseTransmission(joint_effort_limits, transmission_node);
   }
 
   if (node->FirstChildElement("loop_joint")) {
-    throw std::runtime_error(
-        "ERROR: loop joints are not supported in MultibodyPlant");
+    Error(*node, "loop joints are not supported in MultibodyPlant");
+    return model_instance_;
   }
 
   // Parses the model's Drake frame elements.
   for (XMLElement* frame_node = node->FirstChildElement("frame"); frame_node;
        frame_node = frame_node->NextSiblingElement("frame")) {
-    ParseFrame(model_instance, frame_node, plant);
+    ParseFrame(frame_node);
   }
 
   // Parses the model's custom Drake bushing tags.
@@ -757,65 +879,45 @@ ModelInstanceIndex ParseUrdf(
            node->FirstChildElement("drake:linear_bushing_rpy");
        bushing_node; bushing_node = bushing_node->NextSiblingElement(
                          "drake:linear_bushing_rpy")) {
-    ParseBushing(bushing_node, plant);
+    ParseBushing(bushing_node);
   }
 
-  return model_instance;
+  return model_instance_;
 }
 
 }  // namespace
 
-ModelInstanceIndex AddModelFromUrdf(
+std::optional<ModelInstanceIndex> AddModelFromUrdf(
     const DataSource& data_source,
     const std::string& model_name_in,
     const std::optional<std::string>& parent_model_name,
-    const PackageMap& package_map,
-    MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph) {
+    const ParsingWorkspace& workspace) {
+  MultibodyPlant<double>* plant = workspace.plant;
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
-  data_source.DemandExactlyOne();
-
-  // When the data_source is a filename, we'll use its parent directory to be
-  // the root directory to search for files referenced within the URDF file.
-  // If data_source is a string, this will remain unset and relative-path
-  // resources that would otherwise require a root directory will not be found.
-  std::string root_dir;
+  TinyXml2Diagnostic diag(&workspace.diagnostic, &data_source);
 
   // Opens the URDF file and feeds it into the XML parser.
   XMLDocument xml_doc;
-  if (data_source.file_name) {
-    const std::string full_path = GetFullPath(*data_source.file_name);
-    size_t found = full_path.find_last_of("/\\");
-    if (found != std::string::npos) {
-      root_dir = full_path.substr(0, found);
-    } else {
-      // TODO(jwnimmer-tri) This is not unit tested.  In any case, we should be
-      // using drake::filesystem for path manipulation, not string searching.
-      root_dir = ".";
-    }
-    xml_doc.LoadFile(full_path.c_str());
+  if (data_source.IsFilename()) {
+    xml_doc.LoadFile(data_source.filename().c_str());
     if (xml_doc.ErrorID()) {
-      throw std::runtime_error(fmt::format(
-          "Failed to parse XML file {}:\n{}",
-          full_path, xml_doc.ErrorName()));
+      diag.Error(xml_doc, fmt::format("Failed to parse XML file: {}",
+                                      xml_doc.ErrorName()));
+      return std::nullopt;
     }
   } else {
-    DRAKE_DEMAND(data_source.file_contents != nullptr);
-    xml_doc.Parse(data_source.file_contents->c_str());
+    xml_doc.Parse(data_source.contents().c_str());
     if (xml_doc.ErrorID()) {
-      throw std::runtime_error(fmt::format(
-          "Failed to parse XML string: {}",
-          xml_doc.ErrorName()));
+      diag.Error(xml_doc, fmt::format("Failed to parse XML string: {}",
+                                      xml_doc.ErrorName()));
+      return std::nullopt;
     }
   }
 
-  if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
-    plant->RegisterAsSourceForSceneGraph(scene_graph);
-  }
-
-  return ParseUrdf(model_name_in, parent_model_name, package_map, root_dir,
-                   &xml_doc, plant);
+  UrdfParser parser(&data_source, model_name_in, parent_model_name,
+                    data_source.GetRootDir(), &xml_doc, workspace);
+  return parser.Parse();
 }
 
 }  // namespace internal

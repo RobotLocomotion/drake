@@ -344,7 +344,11 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     //          = H_PB_W * vm
     // where H_PB_W = R_WF * phiT_MB_F * H_FM.
     SpatialVelocity<T>& V_PB_W = get_mutable_V_PB_W(vc);
-    V_PB_W.get_coeffs() = H_PB_W * vm;
+    if (get_num_mobilizer_velocities() > 0) {
+      V_PB_W.get_coeffs() = H_PB_W * vm;
+    } else {
+      V_PB_W.get_coeffs().setZero();
+    }
 
     // =========================================================================
     // Computation of V_WPb in Eq. (1). See summary at the top of this method.
@@ -544,10 +548,11 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
           A_WP.ComposeWithMovingFrameAcceleration(p_PB_W, V_WP.rotational(),
                                                   V_PB_W, A_PB_W);
     } else {
-      const SpatialAcceleration<T> A_PB_W =
-          R_WF * A_FM.Shift(p_MB_F);  // Eq. (4), with w_FM = 0.
+      const SpatialAcceleration<T> A_PB_W =   // Eq. (4), with w_FM = 0.
+          R_WF * A_FM.ShiftWithZeroAngularVelocity(p_MB_F);
       // Velocities are zero. No need to compute terms that become zero.
-      get_mutable_A_WB_from_array(&A_WB_array) = A_WP.Shift(p_PB_W) + A_PB_W;
+      get_mutable_A_WB_from_array(&A_WB_array) =
+          A_WP.ShiftWithZeroAngularVelocity(p_PB_W) + A_PB_W;
     }
   }
 
@@ -905,9 +910,8 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   //   The `6 x nm` hinge matrix that relates `V_PB_W` (body B's spatial
   //   velocity in its parent body P, expressed in world W) to this node's `nm`
   //   generalized velocities (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
-  // @param[in] reflected_inertia
-  //   Vector of scalar reflected inertia values for each degree of freedon.
-  //   Used if this body node is the outboard body of a single-dof mobilizer.
+  // @param[in] diagonal_inertias
+  //   Vector of scalar diagonal inertia values for each degree of freedon.
   // @param[out] abic
   //   A pointer to a valid, non nullptr, articulated body cache.
   //
@@ -919,6 +923,8 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   //
   // @throws std::exception when called on the _root_ node or `abic` is
   // nullptr.
+  // @throws if diagonal_inertias.size() does not much the number of generalized
+  // velocities in the model.
   // TODO(amcastro-tri): Consider specialized BodyNodeImpl implementations that
   // exploit the sparsity pattern of H_PB_W even at compile time. Most common
   // cases are:
@@ -930,11 +936,11 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       const PositionKinematicsCache<T>& pc,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       const SpatialInertia<T>& M_B_W,
-      const VectorX<T>& reflected_inertia,
+      const VectorX<T>& diagonal_inertias,
       ArticulatedBodyInertiaCache<T>* abic) const {
     DRAKE_THROW_UNLESS(topology_.body != world_index());
     DRAKE_THROW_UNLESS(abic != nullptr);
-    DRAKE_THROW_UNLESS(reflected_inertia.size() ==
+    DRAKE_THROW_UNLESS(diagonal_inertias.size() ==
                        this->get_parent_tree().num_velocities());
 
     // As a guideline for developers, a summary of the computations performed in
@@ -1049,25 +1055,23 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       MatrixUpTo6<T> D_B(nv, nv);
       D_B.template triangularView<Eigen::Lower>() = U_B_W * H_PB_W;
 
-      // Add the effect of reflected inertia.
-      // See JointActuator::reflected_inertia().
-      // Reminder: reflected_inertia is implemented only for revolute or
-      // prismatic joints (i.e., single degree-of-freedom joints, hence nv = 1).
-      if (nv == 1) {
-        D_B(0, 0) += reflected_inertia(this->velocity_start());
-      }
+      // Include the effect of additional diagonal inertias. See @ref
+      // additional_diagonal_inertias.
+      D_B.diagonal() += diagonal_inertias.segment(this->velocity_start(), nv);
 
       // Compute the LDLT factorization of D_B as ldlt_D_B.
       // TODO(bobbyluig): Test performance against inverse().
-      Eigen::LDLT<MatrixUpTo6<T>>& ldlt_D_B = get_mutable_ldlt_D_B(abic);
-      ldlt_D_B = D_B.template selfadjointView<Eigen::Lower>().ldlt();
+      math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>& ldlt_D_B =
+          get_mutable_ldlt_D_B(abic);
+      ldlt_D_B = math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>(
+          MatrixUpTo6<T>(D_B.template selfadjointView<Eigen::Lower>()));
 
       // Ensure that D_B is not singular.
       // Singularity means that a non-physical hinge mapping matrix was used or
       // that this articulated body inertia has some non-physical quantities
       // (such as zero moment of inertia along an axis which the hinge mapping
       // matrix permits motion).
-      if (ldlt_D_B.info() != Eigen::Success) {
+      if (ldlt_D_B.eigen_linear_solver().info() != Eigen::Success) {
         std::stringstream message;
         message << "Encountered singular articulated body hinge inertia "
                 << "for body node index " << topology_.index << ". "
@@ -1078,7 +1082,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
       // Compute the Kalman gain, g_PB_W, using (6).
       Matrix6xUpTo6<T>& g_PB_W = get_mutable_g_PB_W(abic);
-      g_PB_W = ldlt_D_B.solve(U_B_W).transpose();
+      g_PB_W = ldlt_D_B.Solve(U_B_W).transpose();
 
       // Project P_B_W using (7) to obtain Pplus_PB_W, the articulated body
       // inertia of this body B as felt by body P and expressed in frame W.
@@ -1264,7 +1268,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       // Compute nu_B, the articulated body inertia innovations generalized
       // acceleration.
       const VectorUpTo6<T> nu_B =
-          get_ldlt_D_B(abic).solve(get_e_B(aba_force_cache));
+          get_ldlt_D_B(abic).Solve(get_e_B(aba_force_cache));
 
       // Mutable reference to the generalized acceleration.
       auto vmdot = get_mutable_accelerations(ac);
@@ -1640,13 +1644,13 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
   // Returns a const reference to the LDLT factorization `ldlt_D_B` of the
   // articulated body hinge inertia.
-  const Eigen::LDLT<MatrixUpTo6<T>>& get_ldlt_D_B(
+  const math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>& get_ldlt_D_B(
       const ArticulatedBodyInertiaCache<T>& abic) const {
     return abic.get_ldlt_D_B(topology_.index);
   }
 
   // Mutable version of get_ldlt_D_B().
-  Eigen::LDLT<MatrixUpTo6<T>>& get_mutable_ldlt_D_B(
+  math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>& get_mutable_ldlt_D_B(
       ArticulatedBodyInertiaCache<T>* abic) const {
     return abic->get_mutable_ldlt_D_B(topology_.index);
   }

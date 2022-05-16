@@ -1,16 +1,18 @@
 #pragma once
 
-#include <atomic>
 #include <cstdint>
-#include <functional>
+#include <ostream>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/hash.h"
-#include "drake/common/never_destroyed.h"
 
 namespace drake {
+
+namespace internal {
+int64_t get_new_identifier();
+}  // namespace internal
 
 /**
  A simple identifier class.
@@ -180,14 +182,9 @@ class Identifier {
   /** Generates a new identifier for this id type. This new identifier will be
    different from all previous identifiers created. This method does _not_
    make any guarantees about the values of ids from successive invocations.
-   This method is guaranteed to be thread safe.
-   */
+   This method is guaranteed to be thread safe.  */
   static Identifier get_new_id() {
-    // Note that id 0 is reserved for uninitialized variable which is created
-    // by the default constructor. As a result, we have an invariant that
-    // get_new_id() > 0.
-    static never_destroyed<std::atomic<int64_t>> next_index(1);
-    return Identifier(next_index.access()++);
+    return Identifier(internal::get_new_identifier());
   }
 
   /** Implements the @ref hash_append concept. And invalid id will successfully

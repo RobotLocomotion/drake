@@ -32,8 +32,14 @@ struct IrisOptions {
   int iteration_limit{100};
 
   /** IRIS will terminate if the change in the *volume* of the hyperellipsoid
-  between iterations is less that this threshold. */
+  between iterations is less that this threshold. This termination condition can
+  be disabled by setting to a negative value. */
   double termination_threshold{2e-2};  // from rdeits/iris-distro.
+
+  /** IRIS will terminate if the change in the *volume* of the hyperellipsoid
+  between iterations is less that this percent of the previouse best volume.
+  This termination condition can be disabled by setting to a negative value. */
+  double relative_termination_threshold{1e-3};  // from rdeits/iris-distro.
 
   // TODO(russt): Improve the implementation so that we can clearly document the
   // units for this margin.
@@ -42,6 +48,12 @@ struct IrisOptions {
   number of faces to approximate a curved boundary.
   */
   double configuration_space_margin{1e-2};
+
+  /** For IRIS in configuration space, we can optionally use IbexSolver to
+  rigorously confirm that regions are collision-free. This step may be
+  computationally demanding, so we disable it by default for a faster
+  algorithm for obtaining regions without the rigorous guarantee. */
+  bool enable_ibex = false;
 };
 
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,
@@ -105,21 +117,17 @@ documented in a forth-coming publication.
 
 @param plant describes the kinematics of configuration space.  It must be
 connected to a SceneGraph in a systems::Diagram.
-@param context is a context of the @p plant.
-@param sample is a vector of size plant.num_positions() representing the initial
-IRIS seed configuration.
-@param options provides additional configuration options.
-
-Note: This initial implementation **does not** yet provide a rigorous guarantee
-that the returned region is collision free.  The certification step will be
-contributed in a follow-up PR.
+@param context is a context of the @p plant. The context must have the positions
+of the plant set to the initialIRIS seed configuration.
+@param options provides additional configuration options.  In particular,
+`options.enabled_ibex` may have a significant impact on the runtime of the
+algorithm.
 
 @ingroup geometry_optimization
 */
 HPolyhedron IrisInConfigurationSpace(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
-    const Eigen::Ref<const Eigen::VectorXd>& sample,
     const IrisOptions& options = IrisOptions());
 
 }  // namespace optimization

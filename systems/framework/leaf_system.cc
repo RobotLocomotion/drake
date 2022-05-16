@@ -3,6 +3,8 @@
 #include <cmath>
 #include <limits>
 
+#include "absl/container/inlined_vector.h"
+
 #include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/system_symbolic_inspector.h"
 #include "drake/systems/framework/value_checker.h"
@@ -303,15 +305,6 @@ std::multimap<int, int> LeafSystem<T>::GetDirectFeedthroughs() const {
   return feedthrough;
 }
 
-namespace {
-// The type of our cache entry for temporary storage.  Any function that uses
-// this storage is responsible for resetting any values prior to their use.
-template <typename T>
-struct Scratch {
-  std::vector<const Event<T>*> next_events;
-};
-}  // namespace
-
 template <typename T>
 LeafSystem<T>::LeafSystem() : LeafSystem(SystemScalarConverter{}) {}
 
@@ -324,16 +317,6 @@ LeafSystem<T>::LeafSystem(SystemScalarConverter converter)
       AllocateForcedDiscreteUpdateEventCollection());
   this->set_forced_unrestricted_update_events(
       AllocateForcedUnrestrictedUpdateEventCollection());
-
-  // This cache entry maintains temporary storage. Since this declaration
-  // invokes no invalidation support from the cache system, code that uses
-  // this storage is responsible for ensuring that no stale data is used.
-  scratch_cache_index_ =
-      this->DeclareCacheEntry(
-          "scratch", ValueProducer(
-              Scratch<T>{}, &ValueProducer::NoopCalc),
-          {this->nothing_ticket()}).cache_index();
-
   per_step_events_.set_system_id(this->get_system_id());
   initialization_events_.set_system_id(this->get_system_id());
   model_discrete_state_.set_system_id(this->get_system_id());
@@ -374,14 +357,13 @@ void LeafSystem<T>::DoCalcNextUpdateTime(
     return;
   }
 
-  // Use a cached vector to calculate which events to fire. Clear it to ensure
-  // that no data values leak between invocations.
-  Scratch<T>& scratch =
-      this->get_cache_entry(scratch_cache_index_)
-      .get_mutable_cache_entry_value(context)
-      .template GetMutableValueOrThrow<Scratch<T>>();
-  std::vector<const Event<T>*>& next_events = scratch.next_events;
-  next_events.clear();
+  // Calculate which events to fire. Use an InlinedVector so that small-ish
+  // numbers events can be processed without heap allocations. Our threshold
+  // for "small" is the same amount that would cause an EventCollection to
+  // grow beyond its pre-allocated size.
+  using NextEventsVector = absl::InlinedVector<
+      const Event<T>*, LeafEventCollection<PublishEvent<T>>::kDefaultCapacity>;
+  NextEventsVector next_events;
 
   // Find the minimum next sample time across all declared periodic events,
   // and store the set of declared events that will occur at that time.
@@ -663,21 +645,6 @@ InputPort<T>& LeafSystem<T>::DeclareAbstractInputPort(
                                 kAbstractValued, 0 /* size */);
 }
 
-// (This function is deprecated.)
-template <typename T>
-InputPort<T>& LeafSystem<T>::DeclareVectorInputPort(
-    const BasicVector<T>& model_vector,
-    std::optional<RandomDistribution> random_type) {
-  return DeclareVectorInputPort(kUseDefaultName, model_vector, random_type);
-}
-
-// (This function is deprecated.)
-template <typename T>
-InputPort<T>& LeafSystem<T>::DeclareAbstractInputPort(
-    const AbstractValue& model_value) {
-  return DeclareAbstractInputPort(kUseDefaultName, model_value);
-}
-
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::DeclareVectorOutputPort(
     std::variant<std::string, UseDefaultName> name,
@@ -753,34 +720,6 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareStateOutputPort(
       },
       {this->abstract_state_ticket(state_index)});
 }
-
-// (This function is deprecated.)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <typename T>
-LeafOutputPort<T>& LeafSystem<T>::DeclareVectorOutputPort(
-    const BasicVector<T>& model_vector,
-    typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function,
-    std::set<DependencyTicket> prerequisites_of_calc) {
-  return DeclareVectorOutputPort(kUseDefaultName, model_vector,
-                                 std::move(vector_calc_function),
-                                 std::move(prerequisites_of_calc));
-}
-#pragma GCC diagnostic pop
-
-// (This function is deprecated.)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <typename T>
-LeafOutputPort<T>& LeafSystem<T>::DeclareAbstractOutputPort(
-    typename LeafOutputPort<T>::AllocCallback alloc_function,
-    typename LeafOutputPort<T>::CalcCallback calc_function,
-    std::set<DependencyTicket> prerequisites_of_calc) {
-  return DeclareAbstractOutputPort(kUseDefaultName, std::move(alloc_function),
-                                   std::move(calc_function),
-                                   std::move(prerequisites_of_calc));
-}
-#pragma GCC diagnostic pop
 
 template <typename T>
 std::unique_ptr<WitnessFunction<T>> LeafSystem<T>::MakeWitnessFunction(

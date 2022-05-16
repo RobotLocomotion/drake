@@ -16,6 +16,8 @@ from pydrake.systems.framework import (
     AbstractParameterIndex,
     AbstractStateIndex,
     BasicVector, BasicVector_,
+    CacheEntry,
+    CacheEntryValue,
     CacheIndex,
     Context,
     ContinuousStateIndex,
@@ -23,6 +25,8 @@ from pydrake.systems.framework import (
     Diagram,
     DiagramBuilder,
     DiscreteStateIndex,
+    DiscreteValues,
+    EventStatus,
     InputPortIndex,
     LeafSystem, LeafSystem_,
     NumericParameterIndex,
@@ -32,6 +36,7 @@ from pydrake.systems.framework import (
     System,
     TriggerType,
     UnrestrictedUpdateEvent,
+    ValueProducer,
     VectorSystem,
     WitnessFunctionDirection,
     kUseDefaultName,
@@ -222,6 +227,34 @@ class TestCustom(unittest.TestCase):
                 ]:
             self.assertIsInstance(func(arg), DependencyTicket, func)
 
+    def test_cache_entry(self):
+        """Checks the existence of CacheEntry-related bindings."""
+
+        # Cover DeclareCacheEntry.
+        dummy = LeafSystem()
+        allocate_abstract_int = AbstractValue.Make(0).Clone
+        cache_entry = dummy.DeclareCacheEntry(
+            description="scratch",
+            value_producer=ValueProducer(
+                allocate=allocate_abstract_int,
+                calc=ValueProducer.NoopCalc),
+            prerequisites_of_calc={dummy.nothing_ticket()})
+        self.assertIsInstance(cache_entry, CacheEntry)
+
+        # Cover CacheEntry and get_cache_entry.
+        self.assertIsInstance(cache_entry.prerequisites(), set)
+        cache_index = cache_entry.cache_index()
+        self.assertIsInstance(cache_index, CacheIndex)
+        self.assertIsInstance(cache_entry.ticket(), DependencyTicket)
+        self.assertIs(dummy.get_cache_entry(cache_index), cache_entry)
+
+        # Cover CacheEntryValue.
+        context = dummy.CreateDefaultContext()
+        cache_entry_value = cache_entry.get_mutable_cache_entry_value(context)
+        self.assertIsInstance(cache_entry_value, CacheEntryValue)
+        data = cache_entry_value.GetMutableValueOrThrow()
+        self.assertIsInstance(data, int)
+
     def test_leaf_system_issue13792(self):
         """
         Ensures that users get a better error when forgetting to explicitly
@@ -248,6 +281,18 @@ class TestCustom(unittest.TestCase):
                 self.called_initialize = False
                 self.called_per_step = False
                 self.called_periodic = False
+                self.called_initialize_publish = False
+                self.called_initialize_discrete = False
+                self.called_initialize_unrestricted = False
+                self.called_periodic_publish = False
+                self.called_periodic_discrete = False
+                self.called_periodic_unrestricted = False
+                self.called_per_step_publish = False
+                self.called_per_step_discrete = False
+                self.called_per_step_unrestricted = False
+                self.called_forced_publish = False
+                self.called_forced_discrete = False
+                self.called_forced_unrestricted = False
                 self.called_getwitness = False
                 self.called_witness = False
                 self.called_guard = False
@@ -257,16 +302,46 @@ class TestCustom(unittest.TestCase):
                 self.DeclarePeriodicPublish(1.0)
                 self.DeclarePeriodicPublish(1.0, 0)
                 self.DeclarePeriodicPublish(period_sec=1.0, offset_sec=0.)
-                self.DeclarePeriodicDiscreteUpdate(
-                    period_sec=1.0, offset_sec=0.)
+                self.DeclareInitializationPublishEvent(
+                    publish=self._on_initialize_publish)
+                self.DeclareInitializationDiscreteUpdateEvent(
+                    update=self._on_initialize_discrete)
+                self.DeclareInitializationUnrestrictedUpdateEvent(
+                    update=self._on_initialize_unrestricted)
                 self.DeclareInitializationEvent(
                     event=PublishEvent(
                         trigger_type=TriggerType.kInitialization,
                         callback=self._on_initialize))
+                self.DeclarePeriodicDiscreteUpdate(
+                    period_sec=1.0, offset_sec=0.)
+                self.DeclarePeriodicPublishEvent(
+                    period_sec=1.0,
+                    offset_sec=0,
+                    publish=self._on_periodic_publish)
+                self.DeclarePeriodicDiscreteUpdateEvent(
+                    period_sec=1.0,
+                    offset_sec=0,
+                    update=self._on_periodic_discrete)
+                self.DeclarePeriodicUnrestrictedUpdateEvent(
+                    period_sec=1.0,
+                    offset_sec=0,
+                    update=self._on_periodic_unrestricted)
+                self.DeclarePerStepPublishEvent(
+                    publish=self._on_per_step_publish)
+                self.DeclarePerStepDiscreteUpdateEvent(
+                    update=self._on_per_step_discrete)
+                self.DeclarePerStepUnrestrictedUpdateEvent(
+                    update=self._on_per_step_unrestricted)
                 self.DeclarePerStepEvent(
                     event=PublishEvent(
                         trigger_type=TriggerType.kPerStep,
                         callback=self._on_per_step))
+                self.DeclareForcedPublishEvent(
+                    publish=self._on_forced_publish)
+                self.DeclareForcedDiscreteUpdateEvent(
+                    update=self._on_forced_discrete)
+                self.DeclareForcedUnrestrictedUpdateEvent(
+                    update=self._on_forced_unrestricted)
                 self.DeclarePeriodicEvent(
                     period_sec=1.0,
                     offset_sec=0.0,
@@ -348,6 +423,83 @@ class TestCustom(unittest.TestCase):
                 test.assertFalse(self.called_periodic)
                 self.called_periodic = True
 
+            def _on_initialize_publish(self, context):
+                test.assertIsInstance(context, Context)
+                test.assertFalse(self.called_initialize_publish)
+                self.called_initialize_publish = True
+                return EventStatus.Succeeded()
+
+            def _on_initialize_discrete(self, context, discrete_state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(discrete_state, DiscreteValues)
+                test.assertFalse(self.called_initialize_discrete)
+                self.called_initialize_discrete = True
+                return EventStatus.Succeeded()
+
+            def _on_initialize_unrestricted(self, context, state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(state, State)
+                test.assertFalse(self.called_initialize_unrestricted)
+                self.called_initialize_unrestricted = True
+                return EventStatus.Succeeded()
+
+            def _on_periodic_publish(self, context):
+                test.assertIsInstance(context, Context)
+                test.assertFalse(self.called_periodic_publish)
+                self.called_periodic_publish = True
+                return EventStatus.Succeeded()
+
+            def _on_periodic_discrete(self, context, discrete_state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(discrete_state, DiscreteValues)
+                test.assertFalse(self.called_periodic_discrete)
+                self.called_periodic_discrete = True
+                return EventStatus.Succeeded()
+
+            def _on_periodic_unrestricted(self, context, state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(state, State)
+                test.assertFalse(self.called_periodic_unrestricted)
+                self.called_periodic_unrestricted = True
+                return EventStatus.Succeeded()
+
+            def _on_per_step_publish(self, context):
+                test.assertIsInstance(context, Context)
+                self.called_per_step_publish = True
+                return EventStatus.Succeeded()
+
+            def _on_per_step_discrete(self, context, discrete_state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(discrete_state, DiscreteValues)
+                self.called_per_step_discrete = True
+                return EventStatus.Succeeded()
+
+            def _on_per_step_unrestricted(self, context, state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(state, State)
+                self.called_per_step_unrestricted = True
+                return EventStatus.Succeeded()
+
+            def _on_forced_publish(self, context):
+                test.assertIsInstance(context, Context)
+                test.assertFalse(self.called_forced_publish)
+                self.called_forced_publish = True
+                return EventStatus.Succeeded()
+
+            def _on_forced_discrete(self, context, discrete_state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(discrete_state, DiscreteValues)
+                test.assertFalse(self.called_forced_discrete)
+                self.called_forced_discrete = True
+                return EventStatus.Succeeded()
+
+            def _on_forced_unrestricted(self, context, state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(state, State)
+                test.assertFalse(self.called_forced_unrestricted)
+                self.called_forced_unrestricted = True
+                return EventStatus.Succeeded()
+
             def _witness(self, context):
                 test.assertIsInstance(context, Context)
                 self.called_witness = True
@@ -394,17 +546,42 @@ class TestCustom(unittest.TestCase):
         context = system.CreateDefaultContext()
         system.Publish(context)
         self.assertTrue(system.called_publish)
+        self.assertTrue(system.called_forced_publish)
+
         context_update = context.Clone()
         system.CalcTimeDerivatives(
             context=context,
             derivatives=context_update.get_mutable_continuous_state())
         self.assertTrue(system.called_continuous)
+
+        system.called_continuous = False
+        residual = system.AllocateImplicitTimeDerivativesResidual()
+        system.CalcImplicitTimeDerivativesResidual(
+            context=context,
+            proposed_derivatives=context_update.get_continuous_state(),
+            residual=residual)
+        np.testing.assert_allclose(residual, 0, 1e-14)
+        self.assertTrue(system.called_continuous)
+        np.testing.assert_allclose(
+            system.CalcImplicitTimeDerivativesResidual(
+                context=context,
+                proposed_derivatives=context_update.get_continuous_state()), 0,
+            1e-14)
+
         witnesses = system.GetWitnessFunctions(context)
         self.assertEqual(len(witnesses), 3)
+
         system.CalcDiscreteVariableUpdates(
             context=context,
             discrete_state=context_update.get_mutable_discrete_state())
         self.assertTrue(system.called_discrete)
+        self.assertTrue(system.called_forced_discrete)
+
+        system.CalcUnrestrictedUpdate(
+            context=context,
+            state=context_update.get_mutable_state()
+        )
+        self.assertTrue(system.called_forced_unrestricted)
 
         # Test per-step, periodic, and witness call backs
         system = TrivialSystem()
@@ -414,41 +591,20 @@ class TestCustom(unittest.TestCase):
         simulator.AdvanceTo(0.99)
         self.assertTrue(system.called_per_step)
         self.assertTrue(system.called_periodic)
+        self.assertTrue(system.called_initialize_publish)
+        self.assertTrue(system.called_initialize_discrete)
+        self.assertTrue(system.called_initialize_unrestricted)
+        self.assertTrue(system.called_periodic_publish)
+        self.assertTrue(system.called_periodic_discrete)
+        self.assertTrue(system.called_periodic_unrestricted)
+        self.assertTrue(system.called_per_step_publish)
+        self.assertTrue(system.called_per_step_discrete)
+        self.assertTrue(system.called_per_step_unrestricted)
         self.assertTrue(system.called_getwitness)
         self.assertTrue(system.called_witness)
         self.assertTrue(system.called_guard)
         self.assertTrue(system.called_reset)
         self.assertTrue(system.called_system_reset)
-
-    def test_deprecated_leaf_system_port_declarations(self):
-        """Checks that the bindings without a name= argument still work."""
-        dut = LeafSystem()
-
-        # Input port.
-        with catch_drake_warnings(expected_count=1):
-            input_port = dut.DeclareInputPort(
-                type=PortDataType.kVectorValued, size=1)
-
-        # Vector output port.
-        def _vector_calc(context, output):
-            output.get_mutable_value()[:] = context.get_time()
-        with catch_drake_warnings(expected_count=1):
-            vector_output_port = dut.DeclareVectorOutputPort(
-                BasicVector(1), _vector_calc)
-
-        # Abstract output port.
-        def _tuple_calc(context, output):
-            output.set_value(("time", context.get_time()))
-        with catch_drake_warnings(expected_count=1):
-            abstract_output_port = dut.DeclareAbstractOutputPort(
-                lambda: AbstractValue.Make(("string", 0.0)),
-                _tuple_calc)
-
-        # Check that the return values were sane.
-        context = dut.CreateDefaultContext()
-        input_port.get_index()
-        vector_output_port.Eval(context)
-        abstract_output_port.Eval(context)
 
     def test_state_output_port_declarations(self):
         """Checks that DeclareStateOutputPort is bound."""
@@ -550,6 +706,15 @@ class TestCustom(unittest.TestCase):
             context.get_mutable_abstract_state(0))
         self.assertEqual(
             context.get_abstract_state(0).get_value(), model_value.get_value())
+
+        # Check state API.
+        state = context.get_mutable_state()
+        self.assertTrue(
+            state.get_mutable_discrete_state(index=0) is
+            state.get_mutable_discrete_state().get_vector(index=0))
+        self.assertTrue(
+            state.get_mutable_abstract_state(index=0) is
+            state.get_mutable_abstract_state().get_value(index=0))
 
         # Check abstract state API (also test AbstractValues).
         values = context.get_abstract_state()

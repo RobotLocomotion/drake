@@ -1,0 +1,13 @@
+diff --git lp_lib_wrapper/clp/ibex_LPLibWrapper.h b/lp_lib_wrapper/clp/ibex_LPLibWrapper.h
+index f50933a8..e5f97e30 100644
+--- lp_lib_wrapper/clp/ibex_LPLibWrapper.h
++++ lp_lib_wrapper/clp/ibex_LPLibWrapper.h
+@@ -1,7 +1,7 @@
+ #ifndef _IBEX_LPLIBWRAPPER_H_
+ #define _IBEX_LPLIBWRAPPER_H_
+ 
+-#include "coin/ClpSimplex.hpp"
++#include "ClpSimplex.hpp"
+ 
+ #define IBEX_LPSOLVER_WRAPPER_ATTRIBUTES ClpSimplex *myclp;\
+                                          int * _col1Index

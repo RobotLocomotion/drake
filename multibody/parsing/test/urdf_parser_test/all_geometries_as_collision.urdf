@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot name="test_robot">
+<robot xmlns:drake="http://drake.mit.edu" name="test_robot">
   <!-- This urdf file defines a simple test robot with a single link that
        contains one collision tag for each supported geometry type. We're
        confirming that each geometry declaration produces a corresponding
@@ -28,7 +28,7 @@
     </collision>
     <collision name="Convex">
       <geometry>
-        <mesh filename="../tri_cube.obj">
+        <mesh filename="package://drake/multibody/parsing/test/tri_cube.obj">
           <drake:declare_convex/>
         </mesh>
       </geometry>
@@ -56,7 +56,7 @@
     -->
     <collision name="Mesh">
       <geometry>
-        <mesh filename="../tri_cube.obj"/>
+        <mesh filename="package://drake/multibody/parsing/test/tri_cube.obj"/>
       </geometry>
     </collision>
     <collision name="Sphere">

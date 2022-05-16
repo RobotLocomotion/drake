@@ -25,9 +25,6 @@ class MeshDeformer {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshDeformer);
 
-  /* The type of index used for referencing vertices in `MeshType`. */
-  using VertexIndexType = typename MeshType::VertexIndex;
-
   /* The scalar type the mesh uses to report vertex positions. */
   using T = typename MeshType::ScalarType;
 
@@ -57,8 +54,6 @@ class MeshDeformer {
   void SetAllPositions(const Eigen::Ref<const VectorX<T>>& p_MVs);
 
  private:
-  using VertexType = typename MeshType::template VertexType<T>;
-
   MeshType& mesh_;
 };
 

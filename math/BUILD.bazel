@@ -31,7 +31,6 @@ drake_cc_package_library(
         ":jacobian",
         ":linear_solve",
         ":matrix_util",
-        ":orthonormal_basis",
         ":quadratic_form",
         ":saturate",
         ":vector3_util",
@@ -162,15 +161,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "orthonormal_basis",
-    srcs = ["orthonormal_basis.cc"],
-    hdrs = ["orthonormal_basis.h"],
-    deps = [
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "vector3_util",
     srcs = ["cross_product.cc"],
     hdrs = [
@@ -186,12 +176,14 @@ drake_cc_library(
     name = "gradient",
     srcs = [
         "autodiff_gradient.cc",
+        "differentiable_norm.cc",
         "gradient.cc",
         "normalize_vector.cc",
         "rotation_conversion_gradient.cc",
     ],
     hdrs = [
         "autodiff_gradient.h",
+        "differentiable_norm.h",
         "gradient.h",
         "gradient_util.h",
         "normalize_vector.h",
@@ -374,6 +366,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "differentiable_norm_test",
+    deps = [
+        ":gradient",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "discrete_algebraic_riccati_equation_test",
     deps = [
         ":discrete_algebraic_riccati_equation",
@@ -461,14 +461,6 @@ drake_cc_googletest(
     name = "normalize_vector_test",
     deps = [
         ":gradient",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "orthonormal_basis_test",
-    deps = [
-        ":orthonormal_basis",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )

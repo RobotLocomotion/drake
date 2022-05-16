@@ -13,7 +13,7 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 namespace internal {
-/**
+/*
  * Represents a collection of sequential expression vectors (expression vectors
  * that take on different values for each index in {0, ..., `num_samples` - 1}).
  * Each sequential expression vector is identified by a name and has an
@@ -26,14 +26,14 @@ class SequentialExpressionManager {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SequentialExpressionManager);
 
-  /**
+  /*
    * @pre `num_samples` > 0
    */
   explicit SequentialExpressionManager(int num_samples);
 
   ~SequentialExpressionManager() = default;
 
-  /**
+  /*
    * Registers a sequential expression vector and returns a vector of
    * placeholder variables.
    * @param sequential_expressions [num_expressions x num_samples] matrix of
@@ -52,7 +52,7 @@ class SequentialExpressionManager {
           sequential_expressions,
       const std::string& name);
 
-  /**
+  /*
    * Registers a placeholder variables and the associated sequential expression
    * vector.
    *
@@ -75,7 +75,7 @@ class SequentialExpressionManager {
           sequential_expressions,
       const std::string& name);
 
-  /**
+  /*
    * Returns a symbolic::Substitution for replacing all placeholder variables
    * with their respective `index`-th expression.
    * @pre 0 <= index < num_samples()
@@ -83,7 +83,17 @@ class SequentialExpressionManager {
   symbolic::Substitution ConstructPlaceholderVariableSubstitution(
       int index) const;
 
-  /**
+  /*
+   * Returns a vector with each placeholder symbolic::Variable in `vars`
+   * replaced by the symbolic::Variable corresponding to that placeholder at
+   * `index`. @throws std::exception if the placeholder variable at `index` is
+   * an Expression which does not correspond to a single Variable.
+   */
+  VectorX<symbolic::Variable> GetVariables(
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
+      int index) const;
+
+  /*
    * Returns the `index`-th vector of expressions for `name`.
    * @pre `name` is associated with a registered sequential expression vector.
    * @pre 0 <= index < num_samples()
@@ -91,17 +101,17 @@ class SequentialExpressionManager {
   VectorX<symbolic::Expression> GetSequentialExpressionsByName(
       const std::string& name, int index) const;
 
-  /** Returns all the sequential expression names in this manager.
+  /* Returns all the sequential expression names in this manager.
    */
   std::vector<std::string> GetSequentialExpressionNames() const;
 
-  /**
+  /*
    * Returns the number of samples for the sequential expressions managed by
    * `this`.
    */
   int num_samples() const { return num_samples_; }
 
-  /**
+  /*
    * Returns the number of rows for the sequential expression vector `name`.
    * @pre `name` is associated with a registered sequential expression vector.
    */
@@ -109,9 +119,10 @@ class SequentialExpressionManager {
 
  private:
   int num_samples_{};
-  std::unordered_map<std::string, std::pair<VectorX<symbolic::Variable>,
-                                            MatrixX<symbolic::Expression>>>
-      name_to_placeholders_and_sequential_expressions_;
+  std::unordered_map<std::string, VectorX<symbolic::Variable>>
+      name_to_placeholders_;
+  std::unordered_map<symbolic::Variable, RowVectorX<symbolic::Expression>>
+      placeholders_to_expressions_;
 };
 }  // namespace internal
 }  // namespace trajectory_optimization

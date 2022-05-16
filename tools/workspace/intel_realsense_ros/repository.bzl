@@ -9,10 +9,12 @@ def intel_realsense_ros_repository(
         name = name,
         repository = "IntelRealSense/realsense-ros",
         # N.B. Even though 2.3.x series is not the highest-numbered release, we
-        # are using it here because it aligns with the ROS Melodic version
-        # released for Ubuntu 18.04.
-        commit = "2.3.1",
-        sha256 = "c3ef2b614171d97cc1f5b73220e183679396fb6e6c9e3c29e13495c9280a3e22",  # noqa
+        # are using it here because it aligns with the ROS Noetic version
+        # released for Ubuntu 20.04.  See:
+        # https://index.ros.org/p/realsense2_camera/github-IntelRealSense-realsense-ros/#noetic
+        # https://github.com/IntelRealSense/realsense-ros/releases
+        commit = "2.3.2",
+        sha256 = "18c0f90eeea2b64889388e2e441221931e220d1fea06fe6eff8d70442c456459",  # noqa
         build_file = "@drake//tools/workspace/intel_realsense_ros:package.BUILD.bazel",  # noqa
         patch_cmds = [
             "cp LICENSE realsense2_description/",
@@ -20,6 +22,8 @@ def intel_realsense_ros_repository(
             "sed -i -e 's|$(arg use_mesh)|true|' realsense2_description/urdf/*.xacro",  # noqa
             "sed -i -e 's|$(arg use_nominal_extrinsics)|false|' realsense2_description/urdf/*.xacro",  # noqa
             "sed -i -e 's|$(arg add_plug)|false|' realsense2_description/urdf/*.xacro",  # noqa
+            "sed -i -e 's|package://realsense2_description|package://drake/manipulation/models/realsense2_description|' realsense2_description/urdf/*.xacro",  # noqa
+            "sed -i -e 's|\\.stl|.obj|' realsense2_description/urdf/*.xacro",
         ],
         mirrors = mirrors,
     )

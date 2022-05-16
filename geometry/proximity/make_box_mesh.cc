@@ -18,8 +18,7 @@ using std::unordered_set;
  share the diagonal v0v6 (see ordering below). We allow repeated vertices in
  the virtual cube and will skip tetrahedra with repeated vertices.
 
- We assume the input vertex indices (represented as VolumeVertexIndex) are in
- this ordering:
+ We assume the input vertex indices are in this ordering:
    1. Four vertices v0,v1,v2,v3 of the "bottom" face in counterclockwise
       order when look from "above" the cube.
    2. Four vertices v4,v5,v6,v7 of the "top" face matching v0,v1,v2,v3,
@@ -46,20 +45,16 @@ using std::unordered_set;
    get 2 tetrahedra instead of 6 tetrahedra.
 
  @note   This function is purely topological because it takes only
- VolumeVertexIndex into account without attempting to access coordinates of
- the vertices.
+ indices into account without attempting to access coordinates of the vertices.
  */
-std::vector<VolumeElement> SplitToTetrahedra(
-    VolumeVertexIndex v0, VolumeVertexIndex v1, VolumeVertexIndex v2,
-    VolumeVertexIndex v3, VolumeVertexIndex v4, VolumeVertexIndex v5,
-    VolumeVertexIndex v6, VolumeVertexIndex v7) {
+std::vector<VolumeElement> SplitToTetrahedra(int v0, int v1, int v2, int v3,
+                                             int v4, int v5, int v6, int v7) {
   std::vector<VolumeElement> elements;
   elements.reserve(6);
-  VolumeVertexIndex previous = v1;
-  for (const VolumeVertexIndex& next : {v2, v3, v7, v4, v5, v1}) {
+  int previous = v1;
+  for (int next : {v2, v3, v7, v4, v5, v1}) {
     // Allow distinct vertex indices only.
-    if (unordered_set<VolumeVertexIndex>({previous, next, v0, v6}).size() ==
-        4) {
+    if (unordered_set<int>({previous, next, v0, v6}).size() == 4) {
       elements.emplace_back(previous, next, v0, v6);
     }
     previous = next;
@@ -194,7 +189,7 @@ VolumeMesh<T> MakeBoxVolumeMeshWithMa(const Box& box) {
   // The mesh vertices comprise the eight box vertices and up to four unique
   // MA's vertices inside the box. Later each virtual frustum will comprise
   // eight (possibly with duplication) indices into mesh_vertices.
-  std::vector<VolumeVertex<T>> mesh_vertices;
+  std::vector<Vector3<T>> mesh_vertices;
   mesh_vertices.reserve(12);
 
   // The eight mesh vertices of the box are indexed by the 2x2x2 array `v`,
@@ -212,7 +207,7 @@ VolumeMesh<T> MakeBoxVolumeMeshWithMa(const Box& box) {
   //   |/        |/
   //   v100------v110
   //
-  VolumeVertexIndex v[2][2][2];
+  int v[2][2][2];
   const Vector3d half_box = box.size() / 2.;
   for (const int i : {0, 1}) {
     const double x(i == 0 ? -half_box.x() : half_box.x());
@@ -220,7 +215,7 @@ VolumeMesh<T> MakeBoxVolumeMeshWithMa(const Box& box) {
       const double y(j == 0 ? -half_box.y() : half_box.y());
       for (const int k : {0, 1}) {
         const double z(k == 0 ? -half_box.z() : half_box.z());
-        v[i][j][k] = VolumeVertexIndex(mesh_vertices.size());
+        v[i][j][k] = static_cast<int>(mesh_vertices.size());
         mesh_vertices.emplace_back(x, y, z);
       }
     }
@@ -231,7 +226,7 @@ VolumeMesh<T> MakeBoxVolumeMeshWithMa(const Box& box) {
   // virtual MA's vertices are represented by the 2x2x2 array `m`, where the
   // virtual MA's vertex m[i][j][k] corresponds to the box's vertex
   // v[i][j][k]. Some of the m[i][j][k]'s are duplicated by design.
-  VolumeVertexIndex m[2][2][2];
+  int m[2][2][2];
   const double min_half_box = half_box.minCoeff();
   // Similar to half_box describing the half dimensions of the box,
   // half_central_Ma describes the half dimensions of the central piece of MA.
@@ -269,7 +264,7 @@ VolumeMesh<T> MakeBoxVolumeMeshWithMa(const Box& box) {
                                ? m[i][0][k]
                                : duplicate_in_k
                                      ? m[i][j][0]
-                                     : VolumeVertexIndex(mesh_vertices.size());
+                                     : static_cast<int>(mesh_vertices.size());
         if (!duplicate_in_i && !duplicate_in_j && !duplicate_in_k) {
           mesh_vertices.emplace_back(x, y, z);
         }
@@ -340,7 +335,7 @@ int CalcSequentialIndex(int i, int j, int k, const Vector3<int>& num_vertices) {
 }
 
 template <typename T>
-std::vector<VolumeVertex<T>> GenerateVertices(
+std::vector<Vector3<T>> GenerateVertices(
     const Box& box, const Vector3<int>& num_vertices) {
   const T half_x = box.width() / T(2);
   const T half_y = box.depth() / T(2);
@@ -352,7 +347,7 @@ std::vector<VolumeVertex<T>> GenerateVertices(
   const auto z_coords =
       VectorX<T>::LinSpaced(num_vertices.z(), -half_z, half_z);
 
-  std::vector<VolumeVertex<T>> vertices;
+  std::vector<Vector3<T>> vertices;
   vertices.reserve(num_vertices.x() * num_vertices.y() * num_vertices.z());
   // The order of nested i-loop, j-loop, then k-loop makes the sequence of
   // vertices consistent with CalcSequentialIndex.
@@ -446,8 +441,7 @@ VolumeMesh<T> MakeBoxVolumeMesh(const Box& box, double resolution_hint) {
       1 + static_cast<int>(ceil(box.depth() / resolution_hint)),
       1 + static_cast<int>(ceil(box.height() / resolution_hint))};
 
-  std::vector<VolumeVertex<T>> vertices =
-      GenerateVertices<T>(box, num_vertices);
+  std::vector<Vector3<T>> vertices = GenerateVertices<T>(box, num_vertices);
 
   std::vector<VolumeElement> elements = GenerateElements(num_vertices);
 

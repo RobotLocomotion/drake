@@ -9,6 +9,14 @@ namespace systems {
 
 /// An integrator for a continuous vector input.
 ///
+/// @system
+/// name: Integrator
+/// input_ports:
+/// - u0
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>

@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -31,6 +32,28 @@ namespace solvers {
 namespace test {
 
 const double kInf = std::numeric_limits<double>::infinity();
+
+std::ostream& operator<<(std::ostream& os, CostForm value) {
+  os << "CostForm::";
+  switch (value) {
+    case CostForm::kGeneric: { os << "kGeneric"; return os; }
+    case CostForm::kNonSymbolic: { os << "kNonSymbolic"; return os; }
+    case CostForm::kSymbolic: { os << "kSymbolic"; return os; }
+  }
+  DRAKE_UNREACHABLE();
+}
+
+std::ostream& operator<<(std::ostream& os, ConstraintForm value) {
+  os << "ConstraintForm::";
+  switch (value) {
+    case ConstraintForm::kGeneric: { os << "kGeneric"; return os; }
+    case ConstraintForm::kNonSymbolic: { os << "kNonSymbolic"; return os; }
+    case ConstraintForm::kSymbolic: { os << "kSymbolic"; return os; }
+    case ConstraintForm::kFormula: { os << "kFormula"; return os; }
+  }
+  DRAKE_UNREACHABLE();
+}
+
 
 std::set<CostForm> linear_cost_form() {
   return std::set<CostForm>{CostForm::kNonSymbolic, CostForm::kSymbolic};
@@ -107,7 +130,7 @@ double OptimizationProgram::GetSolverSolutionDefaultCompareTolerance(
     return 1E-10;
   }
   if (solver_id == ScsSolver::id()) {
-    return 3E-5;  // Scs is not very accurate.
+    return 1E-3;  // Scs is not very accurate.
   }
   throw std::runtime_error("Unsupported solver type.");
 }

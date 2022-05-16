@@ -138,6 +138,8 @@ void init_perception(py::module m) {
             py_rvp::reference_internal, cls_doc.depth_image_input_port.doc)
         .def("color_image_input_port", &Class::color_image_input_port,
             py_rvp::reference_internal, cls_doc.color_image_input_port.doc)
+        .def("camera_pose_input_port", &Class::camera_pose_input_port,
+            py_rvp::reference_internal, cls_doc.camera_pose_input_port.doc)
         .def("point_cloud_output_port", &Class::point_cloud_output_port,
             py_rvp::reference_internal, cls_doc.point_cloud_output_port.doc);
   }

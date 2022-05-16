@@ -88,19 +88,19 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
   ASSERT_TRUE(dense_output.is_empty());
   DRAKE_EXPECT_THROWS_MESSAGE(
       dense_output.Evaluate(this->kInitialTime),
-      std::logic_error, this->kEmptyOutputErrorMessage);
+      this->kEmptyOutputErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.EvaluateNth(
       this->kInitialTime, this->kValidElementIndex),
-      std::logic_error, this->kEmptyOutputErrorMessage);
-  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.start_time(), std::logic_error,
+      this->kEmptyOutputErrorMessage);
+  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.start_time(),
                              this->kEmptyOutputErrorMessage);
-  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.end_time(), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.end_time(),
                              this->kEmptyOutputErrorMessage);
-  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.size(), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.size(),
                              this->kEmptyOutputErrorMessage);
-  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Rollback(), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Rollback(),
                              this->kCannotRollbackErrorMessage);
-  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Consolidate(), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Consolidate(),
                              this->kCannotConsolidateErrorMessage);
 
   // Verifies that trying to update the dense output with
@@ -108,7 +108,6 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
   typename HermitianDenseOutput<TypeParam>::IntegrationStep first_step(
       this->kInitialTime, this->kInitialState, this->kInitialStateDerivative);
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Update(first_step),
-                             std::runtime_error,
                              this->kZeroLengthStepErrorMessage);
 
   // Verifies that trying to update the dense output with
@@ -121,26 +120,26 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
   // the dense output remains empty.
   ASSERT_TRUE(dense_output.is_empty());
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Evaluate(this->kMidTime),
-                             std::logic_error, this->kEmptyOutputErrorMessage);
+                             this->kEmptyOutputErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(
       dense_output.EvaluateNth(this->kMidTime, this->kValidElementIndex),
-      std::logic_error, this->kEmptyOutputErrorMessage);
-  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.start_time(), std::logic_error,
+      this->kEmptyOutputErrorMessage);
+  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.start_time(),
                              this->kEmptyOutputErrorMessage);
-  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.end_time(), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.end_time(),
                              this->kEmptyOutputErrorMessage);
-  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.size(), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.size(),
                              this->kEmptyOutputErrorMessage);
 
   // Consolidates all previous updates.
   dense_output.Consolidate();
 
   // Verifies that it is not possible to roll back updates after consolidation.
-  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Rollback(), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Rollback(),
                              this->kCannotRollbackErrorMessage);
 
   // Verifies that it is not possible to consolidate again.
-  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Consolidate(), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Consolidate(),
                              this->kCannotConsolidateErrorMessage);
 
   // Verifies that the dense output is not empty and that it
@@ -156,13 +155,13 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
   // Verifies that invalid evaluation arguments generate errors.
   DRAKE_EXPECT_THROWS_MESSAGE(
       dense_output.EvaluateNth(this->kMidTime, this->kInvalidElementIndex),
-      std::runtime_error, this->kInvalidElementIndexErrorMessage);
+      this->kInvalidElementIndexErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(
       dense_output.EvaluateNth(this->kInvalidTime, this->kValidElementIndex),
-      std::runtime_error, this->kInvalidTimeErrorMessage);
+      this->kInvalidTimeErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(
       dense_output.Evaluate(this->kInvalidTime),
-      std::runtime_error, this->kInvalidTimeErrorMessage);
+      this->kInvalidTimeErrorMessage);
 
   // Verifies that step updates that would disrupt the output continuity
   // fail.
@@ -173,7 +172,7 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
                      this->kFinalStateDerivative);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dense_output.Update(second_step), std::runtime_error,
+      dense_output.Update(second_step),
       this->kTimeMismatchErrorMessage);
 
   typename HermitianDenseOutput<TypeParam>::IntegrationStep third_step(
@@ -181,7 +180,7 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
   third_step.Extend(this->kFinalTime, this->kFinalState,
                      this->kFinalStateDerivative);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dense_output.Update(third_step), std::runtime_error,
+      dense_output.Update(third_step),
       this->kStateMismatchErrorMessage);
 
   typename HermitianDenseOutput<TypeParam>::IntegrationStep fourth_step(
@@ -189,7 +188,7 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
   fourth_step.Extend(this->kFinalTime, this->kFinalState,
                      this->kFinalStateDerivative);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dense_output.Update(fourth_step), std::runtime_error,
+      dense_output.Update(fourth_step),
       this->kStateDerivativeMismatchErrorMessage);
 }
 
@@ -212,37 +211,37 @@ TYPED_TEST(HermitianDenseOutputTest, StepsConsistency) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       step.Extend(this->kInvalidTime, this->kFinalState,
                   this->kFinalStateDerivative),
-      std::runtime_error, this->kStepBackwardsErrorMessage);
+      this->kStepBackwardsErrorMessage);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       step.Extend(this->kFinalTime, this->kFinalStateWithFewerDimensions,
-                  this->kFinalStateDerivative), std::runtime_error,
+                  this->kFinalStateDerivative),
       this->kDimensionMismatchErrorMessage);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       step.Extend(this->kFinalTime, this->kFinalStateWithMoreDimensions,
-                  this->kFinalStateDerivative), std::runtime_error,
+                  this->kFinalStateDerivative),
       this->kDimensionMismatchErrorMessage);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       step.Extend(this->kFinalTime, this->kFinalStateNotAVector,
-                  this->kFinalStateDerivative), std::runtime_error,
+                  this->kFinalStateDerivative),
       this->kNotAVectorErrorMessage);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       step.Extend(this->kFinalTime, this->kFinalState,
                   this->kFinalStateDerivativeWithFewerDimensions),
-      std::runtime_error, this->kDimensionMismatchErrorMessage);
+      this->kDimensionMismatchErrorMessage);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       step.Extend(this->kFinalTime, this->kFinalState,
                   this->kFinalStateDerivativeWithMoreDimensions),
-      std::runtime_error, this->kDimensionMismatchErrorMessage);
+      this->kDimensionMismatchErrorMessage);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       step.Extend(this->kFinalTime, this->kFinalState,
                   this->kFinalStateDerivativeNotAVector),
-      std::runtime_error, this->kNotAVectorErrorMessage);
+      this->kNotAVectorErrorMessage);
 
   // Extends the step with appropriate values.
   step.Extend(this->kFinalTime, this->kFinalState, this->kFinalStateDerivative);

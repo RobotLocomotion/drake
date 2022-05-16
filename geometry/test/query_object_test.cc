@@ -8,6 +8,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/geometry_state.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
 
@@ -151,7 +152,7 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_TRUE(is_default(default_object));
 
 #define EXPECT_DEFAULT_ERROR(expression) \
-  DRAKE_EXPECT_THROWS_MESSAGE(expression, std::runtime_error, \
+  DRAKE_EXPECT_THROWS_MESSAGE(expression, \
       "Attempting to perform query on invalid QueryObject.+");
 
   EXPECT_DEFAULT_ERROR(ThrowIfNotCallable(default_object));
@@ -165,15 +166,13 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
 
   // Penetration queries.
   EXPECT_DEFAULT_ERROR(default_object.ComputePointPairPenetration());
-  EXPECT_DEFAULT_ERROR(default_object.ComputeContactSurfaces());
-  EXPECT_DEFAULT_ERROR(default_object.ComputePolygonalContactSurfaces());
+  const HydroelasticContactRepresentation representation =
+      HydroelasticContactRepresentation::kTriangle;
+  EXPECT_DEFAULT_ERROR(default_object.ComputeContactSurfaces(representation));
   std::vector<ContactSurface<double>> surfaces;
   std::vector<PenetrationAsPointPair<double>> point_pairs;
   EXPECT_DEFAULT_ERROR(default_object.ComputeContactSurfacesWithFallback(
-      &surfaces, &point_pairs));
-  EXPECT_DEFAULT_ERROR(
-      default_object.ComputePolygonalContactSurfacesWithFallback(&surfaces,
-                                                                 &point_pairs));
+      representation, &surfaces, &point_pairs));
 
   // Signed distance queries.
   EXPECT_DEFAULT_ERROR(
@@ -269,6 +268,12 @@ TEST_F(QueryObjectTest, BakedCopyHasFullUpdate) {
 
   // These really are different objects.
   EXPECT_NE(&stale_pose, &baked_pose);
+}
+
+// Ensure that I can construct a QueryObject with the default scalar types.
+GTEST_TEST(QueryObjectScalarTest, ScalarTypes) {
+  EXPECT_NO_THROW(QueryObject<AutoDiffXd>());
+  EXPECT_NO_THROW(QueryObject<symbolic::Expression>());
 }
 
 }  // namespace geometry

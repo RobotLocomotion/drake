@@ -204,7 +204,7 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
   systems::VectorBase<T>& f = derivatives->get_mutable_vector();
 
   // Get the inputs.
-  const auto input = this->EvalEigenVectorInput(context, 0);
+  const VectorX<T>& input = this->get_input_port(0).Eval(context);
 
   // Compute the derivatives using the desired coordinate representation.
   if (coordinate_type_ == kMinimalCoordinates) {

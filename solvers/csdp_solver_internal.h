@@ -3,23 +3,12 @@
 // For external users, please do not include this header file. It only exists so
 // that we can expose the internals to csdp_solver_internal_test.cc
 
-#include <unordered_map>
 #include <vector>
-
-#ifndef DRAKE_DOXYGEN_CXX
-namespace csdp {
-extern "C" {
-// TODO(Jeremy.Nimmer): include this header as <csdp/declarations.h>
-#include <declarations.h>
-}  // extern C
-}  // namespace csdp
-#endif  // DOXYGEN_CXX
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
-#include "drake/common/drake_copyable.h"
-#include "drake/solvers/csdp_solver.h"
+#include "drake/solvers/csdp_cpp_wrapper.h"
 #include "drake/solvers/sdpa_free_format.h"
 
 namespace drake {

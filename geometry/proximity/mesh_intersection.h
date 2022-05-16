@@ -1,15 +1,19 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
+#include "drake/geometry/proximity/polygon_surface_mesh.h"
+#include "drake/geometry/proximity/polygon_surface_mesh_field.h"
 #include "drake/geometry/proximity/posed_half_space.h"
-#include "drake/geometry/proximity/surface_mesh.h"
-#include "drake/geometry/proximity/surface_mesh_field.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh_field.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/query_results/contact_surface.h"
@@ -19,19 +23,93 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+/* Calculates the intersection point between an infinite straight line
+ spanning points A and B and the bounding plane of the half space H.
+ @param p_FA
+     Point A measured and expressed in the common frame F.
+ @param p_FB
+     Point B measured and expressed in the common frame F.
+ @param H_F
+     The half space H measured and expressed in frame F (i.e., points also
+     measured and expressed in frame F can be tested against it).
+ @pre
+     A and B are two different points, and their spanning line is not
+     parallel to the bounding plane of the half space H.
+ */
+template <typename T>
+Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
+                            const PosedHalfSpace<T>& H_F);
+
+/* Intersects a polygon with the half space H. It keeps the part of
+ the polygon contained in the half space (signed distance is <= 0).
+ The half space `H_F` and vertex positions of `input_vertices_F` are both
+ defined in a common frame F.
+ @param[in] input_vertices_F
+     Input polygon is represented as a sequence of positions of its vertices.
+     The input polygon is allowed to have zero area.
+ @param[in] H_F
+     The clipping half space H in frame F.
+ @param[out] output_vertices_F
+     Output polygon is represented as a sequence of positions of its vertices.
+     It could be an empty sequence if the input polygon is entirely outside
+     the half space. It could be the same as the input polygon if the input
+     polygon is entirely inside the half space. The output polygon is
+     guaranteed to be planar (within floating point tolerance) and, if the
+     polygon has area, the normal implied by the winding will be the same
+     as the input polygon.
+ @pre `input_vertices_F` has at least three vertices.
+ @pre the vertices in `input_vertices_F` are all planar.
+ @note
+     1. For an input polygon P that is parallel to the plane of the half
+        space, there are three cases:
+        1.1 If P is completely inside the half space, the output polygon
+            will be the same as P.
+        1.2 If P is completely outside the half space, the output polygon
+            will be empty.
+        1.3 If P is on the plane of the half space, the output polygon will
+            be the same as P.
+     2. For an input polygon P outside the half space with one edge on the
+        plane of the half space, the output polygon will be a zero-area
+        4-gon with two pairs of duplicate vertices.
+     3. For an input polygon P outside the half space with one vertex on the
+        plane of the half space, the output polygon will be a zero-area
+        triangle with three duplicate vertices.
+*/
+template <typename T>
+void ClipPolygonByHalfSpace(const std::vector<Vector3<T>>& input_vertices_F,
+                            const PosedHalfSpace<T>& H_F,
+                            std::vector<Vector3<T>>* output_vertices_F);
+
+/* Removes nearly duplicate vertices from a polygon represented as a cyclical
+ sequence of vertex positions. We consider two positions nearly duplicate when
+ they are within 1e-14 meter ε tolerance. For example, with input
+ `A,B,B+ε,C,A+ε`, the result would be `A,B,C`. The polygon might be reduced
+ to a pair of points (i.e., `A,A+ε,B,B+ε` becomes `A,B`) or a single point
+ (i.e., `A,A+ε,A` becomes `A`).
+ @param[in,out] polygon
+     The input polygon, and the output equivalent polygon with no duplicate
+     vertices.
+ */
+template <typename T>
+void RemoveNearlyDuplicateVertices(std::vector<Vector3<T>>* polygon);
+
 // Forward declaration of Tester class, so we can grant friend access.
-template <typename T> class SurfaceVolumeIntersectorTester;
+template <typename MeshType> class SurfaceVolumeIntersectorTester;
 
 /* %SurfaceVolumeIntersector performs a mesh-intersection algorithm between a
  triangulated surface mesh and a tetrahedral volume mesh with a field
  variable. It also interpolates the field variable onto the resulted
  surface.
 
- @tparam_nonsymbolic_scalar
- */
-template <typename T>
+ @tparam MeshType The type of surface mesh to represent the contact surface.
+   It can be either TriangleSurfaceMesh<T> or PolygonSurfaceMesh<T> for
+   T = double or AutoDiffXd. */
+template <typename MeshType>
 class SurfaceVolumeIntersector {
  public:
+  using T = typename MeshType::ScalarType;
+  using FieldType = MeshFieldLinear<T, MeshType>;
+
   SurfaceVolumeIntersector() {
     // We know that each contact polygon has at most 7 vertices.
     // Each surface triangle is clipped by four half-spaces of the four
@@ -64,10 +142,6 @@ class SurfaceVolumeIntersector {
        A bounding volume hierarchy built on the geometry `surface_N`.
    @param[in] X_MN
        The pose of frame N in frame M.
-   @param[in] representation
-       Specify the preferred representation of each intersecting polygon,
-       which is the intersection of a tetrahedron and a triangle from the two
-       meshes.
    @param[out] surface_MN_M
        The intersecting surface between the volume mesh M and the surface N.
        Vertex positions are measured and expressed in M's frame. If no
@@ -81,92 +155,27 @@ class SurfaceVolumeIntersector {
        triangle in `surface_MN_M`).
    @note
        The output surface mesh may have duplicate vertices.
+   @tparam MeshBuilder An instance of either TriMeshBuilder<T> or
+    PolyMeshBuilder<T> (for T = double or AutoDiffXd).
+    (See the documentation in contact_surface_utility.h for details.)
    */
+  template <typename MeshBuilder>
   void SampleVolumeFieldOnSurface(
       const VolumeMeshFieldLinear<double, double>& volume_field_M,
       const Bvh<Obb, VolumeMesh<double>>& bvh_M,
-      const SurfaceMesh<double>& surface_N,
-      const Bvh<Obb, SurfaceMesh<double>>& bvh_N,
+      const TriangleSurfaceMesh<double>& surface_N,
+      const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_N,
       const math::RigidTransform<T>& X_MN,
-      ContactPolygonRepresentation representation,
-      std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
-      std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
-      std::vector<Vector3<T>>* grad_eM_Ms);
+      MeshBuilder builder);
+
+  bool has_intersection() const { return mesh_M_ != nullptr; }
+  MeshType& mutable_mesh() { return *mesh_M_; }
+  std::unique_ptr<MeshType>&& release_mesh() { return std::move(mesh_M_); }
+  FieldType& mutable_field() { return *field_M_; }
+  std::unique_ptr<FieldType>&& release_field() { return std::move(field_M_); }
+  std::vector<Vector3<T>>& mutable_grad_eM_M() { return grad_eM_Ms_; }
 
  private:
-  /* Calculates the intersection point between an infinite straight line
-   spanning points A and B and the bounding plane of the half space H.
-   @param p_FA
-       Point A measured and expressed in the common frame F.
-   @param p_FB
-       Point B measured and expressed in the common frame F.
-   @param H_F
-       The half space H measured and expressed in frame F (i.e., points also
-       measured and expressed in frame F can be tested against it).
-   @pre
-       One of A and B is outside the half space, and the other is inside or
-       on the boundary of the half space.
-   */
-  static Vector3<T> CalcIntersection(const Vector3<T>& p_FA,
-                                     const Vector3<T>& p_FB,
-                                     const PosedHalfSpace<double>& H_F);
-
-  // TODO(SeanCurtis-TRI): This function duplicates functionality implemented in
-  //  mesh_half_space_intersection.h. Reconcile the two implementations.
-  // TODO(DamrongGuoy): Avoid duplicate vertices mentioned in the note below and
-  //  check whether we can have other as yet undocumented degenerate cases.
-  /* Intersects a polygon with the half space H. It keeps the part of
-   the polygon contained in the half space (signed distance is <= 0).
-   The half space `H_F` and vertex positions of `input_vertices_F` are both
-   defined in a common frame F.
-   @param[in] input_vertices_F
-       Input polygon is represented as a sequence of positions of its vertices.
-       The input polygon is allowed to have zero area.
-   @param[in] H_F
-       The clipping half space H in frame F.
-   @param[out] output_vertices_F
-       Output polygon is represented as a sequence of positions of its vertices.
-       It could be an empty sequence if the input polygon is entirely outside
-       the half space. It could be the same as the input polygon if the input
-       polygon is entirely inside the half space. The output polygon is
-       guaranteed to be planar (within floating point tolerance) and, if the
-       polygon has area, the normal implied by the winding will be the same
-       as the input polygon.
-   @pre `input_vertices_F` has at least three vertices.
-   @pre the vertices in `input_vertices_F` are all planar.
-   @note
-       1. For an input polygon P that is parallel to the plane of the half
-          space, there are three cases:
-          1.1 If P is completely inside the half space, the output polygon
-              will be the same as P.
-          1.2 If P is completely outside the half space, the output polygon
-              will be empty.
-          1.3 If P is on the plane of the half space, the output polygon will
-              be the same as P.
-       2. For an input polygon P outside the half space with one edge on the
-          plane of the half space, the output polygon will be a zero-area
-          4-gon with two pairs of duplicate vertices.
-       3. For an input polygon P outside the half space with one vertex on the
-          plane of the half space, the output polygon will be a zero-area
-          triangle with three duplicate vertices.
-  */
-  static void ClipPolygonByHalfSpace(
-      const std::vector<Vector3<T>>& input_vertices_F,
-      const PosedHalfSpace<double>& H_F,
-      std::vector<Vector3<T>>* output_vertices_F);
-
-  /* Remove duplicate vertices from a polygon represented as a cyclical
-   sequence of vertex positions. In other words, for a sequence `A,B,B,C,A`, the
-   pair of B's is reduced to one B and the first and last A vertices are
-   considered duplicates and the result would be `A,B,C`. The polygon might be
-   reduced to a pair of points (i.e., `A,A,B,B` becomes `A,B`) or a single point
-   (`A,A,A` becomes `A`).
-   @param[in,out] polygon
-       The input polygon, and the output equivalent polygon with no duplicate
-       vertices.
-   */
-  static void RemoveDuplicateVertices(std::vector<Vector3<T>>* polygon);
-
   /* Intersects a triangle with a tetrahedron, returning the portion of the
    triangle with non-zero area contained in the tetrahedron.
    @param element
@@ -212,8 +221,8 @@ class SurfaceVolumeIntersector {
           tetrahedron (non-zero area restriction still applies).
    */
   const std::vector<Vector3<T>>& ClipTriangleByTetrahedron(
-      VolumeElementIndex element, const VolumeMesh<double>& volume_M,
-      SurfaceFaceIndex face, const SurfaceMesh<double>& surface_N,
+      int element, const VolumeMesh<double>& volume_M, int face,
+      const TriangleSurfaceMesh<double>& surface_N,
       const math::RigidTransform<T>& X_MN);
 
   /* Determines whether a triangle of a rigid surface N and a tetrahedron of a
@@ -296,9 +305,8 @@ class SurfaceVolumeIntersector {
    */
   static bool IsFaceNormalAlongPressureGradient(
       const VolumeMeshFieldLinear<double, double>& volume_field_M,
-      const SurfaceMesh<double>& surface_N,
-      const math::RigidTransform<double>& X_MN,
-      const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index);
+      const TriangleSurfaceMesh<double>& surface_N,
+      const math::RigidTransform<double>& X_MN, int tet_index, int tri_index);
 
   // To avoid heap allocation by std::vector in low-level functions, we use
   // these member variables instead of local variables in the functions.
@@ -311,7 +319,22 @@ class SurfaceVolumeIntersector {
   // not introduced.
   std::vector<Vector3<T>> polygon_[2];
 
-  friend class SurfaceVolumeIntersectorTester<T>;
+  // A container for the vertex indices that define an intersection polygon.
+  // By making it a member, we only allocate on the heap *once* for a pair
+  // of meshes (instead of once per intersecting polygon). This exists purely
+  // for performance optimization.
+  std::vector<int> polygon_vertex_indices_;
+
+  // The mesh produced from intersecting the volume mesh with the surface mesh,
+  // measured and expressed in the volume mesh's frame M.
+  std::unique_ptr<MeshType> mesh_M_;
+  // The field defined on mesh_M_ (in the same frame M).
+  std::unique_ptr<FieldType> field_M_;
+  // The spatial gradient of the volume mesh field, sampled once for each face
+  // in mesh_M_.
+  std::vector<Vector3<T>> grad_eM_Ms_;
+
+  friend class SurfaceVolumeIntersectorTester<MeshType>;
 };
 
 /* Computes the contact surface between a soft geometry S and a rigid
@@ -339,8 +362,7 @@ class SurfaceVolumeIntersector {
  @param[in] X_WR
      The pose of the rigid frame R in the world frame W.
  @param[in] representation
-     Specify the preferred representation of each contact polygon between the
-     two geometries.
+     The preferred representation of each contact polygon.
  @return
      The contact surface between M and N. Geometries S and R map to M and N
      with a consistent mapping (as documented in ContactSurface) but without any
@@ -371,10 +393,10 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
     const Bvh<Obb, VolumeMesh<double>>& bvh_S,
     const math::RigidTransform<T>& X_WS,
-    const GeometryId id_R, const SurfaceMesh<double>& mesh_R,
-    const Bvh<Obb, SurfaceMesh<double>>& bvh_R,
+    const GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
+    const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR,
-    ContactPolygonRepresentation representation);
+    HydroelasticContactRepresentation representation);
 
 }  // namespace internal
 }  // namespace geometry

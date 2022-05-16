@@ -20,11 +20,6 @@ def _impl(repo_ctx):
     elif os_result.is_manylinux:
         # Compile from downloaded github sources.
         error = setup_github_repository(repo_ctx).error
-    elif os_result.ubuntu_release == "18.04":
-        # On Ubuntu 18.04, the host-provided spdlog is way too old so we can't
-        # use its bundled fmt, and there is no other fmt package available, so
-        # we'll recompile it from downloaded github sources.
-        error = setup_github_repository(repo_ctx).error
     elif os_result.ubuntu_release == "20.04":
         # On Ubuntu 20.04 we're using the host-provided spdlog which uses a
         # bundled fmt, so we'll have to reuse that same bundle for ourselves.
@@ -64,6 +59,10 @@ install(name = "install")
             # the bundled version we should pin, in cases where we're building
             # from source instead of using the host version.
             default = "6.1.2",
+        ),
+        "commit_pin": attr.int(
+            # Per the comment on "commit", above.
+            default = 1,
         ),
         "sha256": attr.string(
             default = "1cafc80701b746085dddf41bd9193e6d35089e1c6ec1940e037fcb9c98f62365",  # noqa

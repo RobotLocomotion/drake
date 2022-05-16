@@ -20,12 +20,11 @@ auto BindTypeSafeIndex(
   cls  // BR
       .def(py::init<int>(), pydrake_doc.drake.TypeSafeIndex.ctor.doc_0args)
       .def("__int__", &Class::operator int)
+      .def("__index__", &Class::operator int)
       .def(py::self == py::self)
       .def(py::self == int{})
       .def(py::self < py::self)
-      // TODO(eric.cousineau): Use `py::hash()` instead of `py::detail::hash()`
-      // pending merge of: https://github.com/pybind/pybind11/pull/2217
-      .def(py::detail::hash(py::self))
+      .def(py::hash(py::self))
       // TODO(eric.cousineau): Add more operators.
       .def("is_valid", &Class::is_valid,
           pydrake_doc.drake.TypeSafeIndex.is_valid.doc)

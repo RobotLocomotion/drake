@@ -79,7 +79,8 @@ shared_ptr<ExpressionCell> Expression::make_cell(const double d) {
 Expression::Expression(const Variable& var)
     : Expression{make_shared<ExpressionVar>(var)} {}
 
-Expression::Expression(const double d) : Expression{make_cell(d)} {}
+Expression::Expression(const double constant)
+    : Expression{make_cell(constant)} {}
 
 Expression::Expression(std::shared_ptr<ExpressionCell> ptr)
     : ptr_{std::move(ptr)} {
@@ -947,6 +948,7 @@ class IsAffineVisitor {
   // Returns true if `e` is *not* affine in variables_ (if exists) or all
   // variables in `e`.
   [[nodiscard]] bool IsNotAffine(const Expression& e) const {
+    // TODO(#16393) This check is incorrect when variables_ is non-null.
     if (!e.is_polynomial()) {
       return true;
     }

@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from warnings import warn
 
-from pydrake.common.deprecation import _warn_deprecated
 from pydrake.systems.framework import LeafSystem, PublishEvent, TriggerType
-from pydrake.systems.primitives import SignalLogger, VectorLog
+from pydrake.systems.primitives import VectorLog
 from pydrake.trajectories import Trajectory
+from pydrake.systems._resample_interp1d import _resample_interp1d
 
 
 class PyPlotVisualizer(LeafSystem):
@@ -26,15 +26,18 @@ class PyPlotVisualizer(LeafSystem):
     appropriate state.
     """
 
-    def __init__(self, draw_period=1./30, facecolor=[1, 1, 1],
+    def __init__(self, draw_period=None, facecolor=[1, 1, 1],
                  figsize=None, ax=None, show=None):
         LeafSystem.__init__(self)
 
-        self._warned_signal_logger_deprecated = False  # Remove 2021-12-01.
+        # To help avoid small simulation timesteps, we use a default period
+        # that has an exact representation in binary floating point; see
+        # drake#15021 for details.
+        default_draw_period = 1./32
 
         self.set_name('pyplot_visualization')
-        self.timestep = draw_period
-        self.DeclarePeriodicPublish(draw_period, 0.0)
+        self.timestep = draw_period or default_draw_period
+        self.DeclarePeriodicPublish(self.timestep, 0.0)
 
         if ax is None:
             self.fig = plt.figure(facecolor=facecolor, figsize=figsize)
@@ -120,33 +123,20 @@ class PyPlotVisualizer(LeafSystem):
         """
         Args:
             log: A reference to a pydrake.systems.primitives.VectorLog, or a
-                pydrake.systems.primitives.SignalLogger (deprecated for
-                2021-12-01), or a pydrake.trajectories.Trajectory that contains
-                the plant state after running a simulation.
+                pydrake.trajectories.Trajectory that contains the plant state
+                after running a simulation.
             resample: Whether we should do a resampling operation to make the
                 samples more consistent in time. This can be disabled if you
                 know the draw_period passed into the constructor exactly
                 matches the sample timestep of the log.
             Additional kwargs are passed through to FuncAnimation.
         """
-        log_is_signal_logger = isinstance(log, SignalLogger)
-        if log_is_signal_logger and not self._warned_signal_logger_deprecated:
-            _warn_deprecated(
-                "SignalLogger is deprecated. Use VectorLog instead.",
-                date="2021-12-01")
-            self._warned_signal_logger_deprecated = True
-
-        if isinstance(log, VectorLog) or log_is_signal_logger:
+        if isinstance(log, VectorLog):
             t = log.sample_times()
             x = log.data()
 
             if resample:
-                import scipy.interpolate
-
-                t_resample = np.arange(0, t[-1], self.timestep)
-                x = scipy.interpolate.interp1d(t, x, kind='linear', axis=1)(t_resample)  # noqa
-                t = t_resample
-
+                t, x = _resample_interp1d(t, x, self.timestep)
         elif isinstance(log, Trajectory):
             t = np.arange(log.start_time(), log.end_time(), self.timestep)
             x = np.hstack([log.value(time) for time in t])

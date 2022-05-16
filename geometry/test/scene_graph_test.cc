@@ -11,6 +11,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_set.h"
+#include "drake/geometry/geometry_state.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
@@ -31,8 +32,8 @@ namespace geometry {
 
 using internal::DummyRenderEngine;
 using math::RigidTransformd;
+using symbolic::Expression;
 using systems::Context;
-using systems::rendering::PoseBundle;
 using systems::System;
 using std::make_unique;
 using std::unique_ptr;
@@ -72,18 +73,6 @@ class SceneGraphTester {
                                       QueryObject<T>* handle) {
     scene_graph.CalcQueryObject(context, handle);
   }
-
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// 2021-12-01 Delete this helper in completing the pose bundle removal.
-  template <typename T>
-  static void CalcPoseBundle(const SceneGraph<T>& scene_graph,
-                             const systems::Context<T>& context,
-                             PoseBundle<T>* bundle) {
-    return scene_graph.CalcPoseBundle(context, bundle);
-  }
-#pragma GCC diagnostic pop
 
   template <typename T>
   static const GeometryState<T>& GetGeometryState(
@@ -180,7 +169,7 @@ TEST_F(SceneGraphTest, RegisterSourcePostContext) {
   // Not found in allocated context.
   DRAKE_EXPECT_THROWS_MESSAGE(
       query_object().inspector().GetName(new_source),
-      std::logic_error, "Querying source name for an invalid source id.*");
+      "Querying source name for an invalid source id.*");
 }
 
 // Tests ability to report if a source is registered or not.
@@ -198,7 +187,7 @@ TEST_F(SceneGraphTest, SourceIsRegistered) {
 TEST_F(SceneGraphTest, InputPortsForInvalidSource) {
   SourceId fake_source = SourceId::get_new_id();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.get_source_pose_port(fake_source), std::logic_error,
+      scene_graph_.get_source_pose_port(fake_source),
       "Can't acquire pose port for unknown source id: \\d+.");
 }
 
@@ -297,91 +286,81 @@ TEST_F(SceneGraphTest, FullPoseUpdateAnchoredOnly) {
       SceneGraphTester::FullPoseUpdate(scene_graph_, *context_));
 }
 
+template <typename T>
+class TypedSceneGraphTest : public SceneGraphTest {
+ public:
+  TypedSceneGraphTest() = default;
+};
+
+TYPED_TEST_SUITE_P(TypedSceneGraphTest);
+
 // Tests operations on a transmogrified SceneGraph. Whether a context has been
 // allocated or not, subsequent operations should be allowed.
-TEST_F(SceneGraphTest, TransmogrifyWithoutAllocation) {
-  SourceId s_id = scene_graph_.RegisterSource();
+TYPED_TEST_P(TypedSceneGraphTest, TransmogrifyWithoutAllocation) {
+  using U = TypeParam;
+  SourceId s_id = this->scene_graph_.RegisterSource();
   // This should allow additional geometry registration.
-  std::unique_ptr<systems::System<AutoDiffXd>> system_ad =
-      scene_graph_.ToAutoDiffXd();
-  SceneGraph<AutoDiffXd>& scene_graph_ad =
-      *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
+  auto scene_graph_U = System<double>::ToScalarType<U>(this->scene_graph_);
   DRAKE_EXPECT_NO_THROW(
-      scene_graph_ad.RegisterAnchoredGeometry(s_id, make_sphere_instance()));
+      scene_graph_U->RegisterAnchoredGeometry(s_id, make_sphere_instance()));
 
   // After allocation, registration should _still_ be valid.
-  CreateDefaultContext();
-  system_ad = scene_graph_.ToAutoDiffXd();
-  SceneGraph<AutoDiffXd>& scene_graph_ad2 =
-      *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
+  this->CreateDefaultContext();
+  auto scene_graph_U2 = System<double>::ToScalarType<U>(this->scene_graph_);
   DRAKE_EXPECT_NO_THROW(
-      scene_graph_ad2.RegisterAnchoredGeometry(s_id, make_sphere_instance()));
+      scene_graph_U2->RegisterAnchoredGeometry(s_id, make_sphere_instance()));
 }
 
 // Tests that the ports are correctly mapped.
-TEST_F(SceneGraphTest, TransmogrifyPorts) {
-  SourceId s_id = scene_graph_.RegisterSource();
-  CreateDefaultContext();
-  std::unique_ptr<systems::System<AutoDiffXd>> system_ad =
-      scene_graph_.ToAutoDiffXd();
-  SceneGraph<AutoDiffXd>& scene_graph_ad =
-      *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
-  EXPECT_EQ(scene_graph_ad.num_input_ports(),
-            scene_graph_.num_input_ports());
-  EXPECT_EQ(scene_graph_ad.get_source_pose_port(s_id).get_index(),
-            scene_graph_.get_source_pose_port(s_id).get_index());
-  EXPECT_NO_THROW(scene_graph_ad.CreateDefaultContext());
+TYPED_TEST_P(TypedSceneGraphTest, TransmogrifyPorts) {
+  using U = TypeParam;
+  SourceId s_id = this->scene_graph_.RegisterSource();
+  this->CreateDefaultContext();
+  auto scene_graph_U = System<double>::ToScalarType<U>(this->scene_graph_);
+  EXPECT_EQ(scene_graph_U->num_input_ports(),
+            this->scene_graph_.num_input_ports());
+  EXPECT_EQ(scene_graph_U->get_source_pose_port(s_id).get_index(),
+            this->scene_graph_.get_source_pose_port(s_id).get_index());
+  EXPECT_NO_THROW(scene_graph_U->CreateDefaultContext());
 }
 
 // Tests that the work to "set" the context values for the transmogrified system
 // behaves correctly.
-TEST_F(SceneGraphTest, TransmogrifyContext) {
-  SceneGraph<double> sg;
-  SourceId s_id = sg.RegisterSource();
+TYPED_TEST_P(TypedSceneGraphTest, TransmogrifyContext) {
+  using U = TypeParam;
+  SourceId s_id = this->scene_graph_.RegisterSource();
   // Register geometry that should be successfully transmogrified.
-  GeometryId g_id = sg.RegisterAnchoredGeometry(s_id, make_sphere_instance());
-  std::unique_ptr<Context<double>> context = sg.CreateDefaultContext();
+  GeometryId g_id = this->scene_graph_.RegisterAnchoredGeometry(
+      s_id, make_sphere_instance());
+  this->CreateDefaultContext();
+  const Context<double>& context_T = *this->context_;
   // This should transmogrify the internal *model*, so when I allocate the
   // transmogrified context, I should get the "same" values (considering type
   // change).
-  std::unique_ptr<System<AutoDiffXd>> system_ad = sg.ToAutoDiffXd();
-  SceneGraph<AutoDiffXd>& scene_graph_ad =
-      *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
-  std::unique_ptr<Context<AutoDiffXd>> context_ad =
-      scene_graph_ad.CreateDefaultContext();
+  auto scene_graph_U = System<double>::ToScalarType<U>(this->scene_graph_);
+  std::unique_ptr<Context<U>> context_U = scene_graph_U->CreateDefaultContext();
 
   // Extract the GeometryState and query some invariants on it directly.
-  const GeometryState<AutoDiffXd>& geo_state_ad =
-      SceneGraphTester::GetGeometryState(scene_graph_ad, *context_ad);
+  const GeometryState<U>& geo_state_U =
+      SceneGraphTester::GetGeometryState(*scene_graph_U, *context_U);
   // If the anchored geometry were not ported over, this would throw an
   // exception.
-  EXPECT_TRUE(geo_state_ad.BelongsToSource(g_id, s_id));
-  EXPECT_THROW(geo_state_ad.BelongsToSource(GeometryId::get_new_id(), s_id),
+  EXPECT_TRUE(geo_state_U.BelongsToSource(g_id, s_id));
+  EXPECT_THROW(geo_state_U.BelongsToSource(GeometryId::get_new_id(), s_id),
                std::logic_error);
 
   // Quick reality check that this is still valid although unnecessary vis a
   // vis the GeometryState.
-  DRAKE_EXPECT_NO_THROW(context_ad->SetTimeStateAndParametersFrom(*context));
+  DRAKE_EXPECT_NO_THROW(context_U->SetTimeStateAndParametersFrom(context_T));
 }
 
-// TODO(2021-11-01) Remove this test entirely when resolving deprecation.
-// Tests that exercising the collision filtering logic *after* allocation is
-// allowed.
-TEST_F(SceneGraphTest, PostAllocationCollisionFilteringDeprecated) {
-  SourceId source_id = scene_graph_.RegisterSource("filter_after_allocation");
-  FrameId frame_id =
-      scene_graph_.RegisterFrame(source_id, GeometryFrame("dummy"));
-  CreateDefaultContext();
+REGISTER_TYPED_TEST_SUITE_P(TypedSceneGraphTest,
+    TransmogrifyWithoutAllocation,
+    TransmogrifyPorts,
+    TransmogrifyContext);
 
-  GeometrySet geometry_set{frame_id};
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DRAKE_EXPECT_NO_THROW(scene_graph_.ExcludeCollisionsWithin(geometry_set));
-
-  DRAKE_EXPECT_NO_THROW(
-      scene_graph_.ExcludeCollisionsBetween(geometry_set, geometry_set));
-#pragma GCC diagnostic pop
-}
+using NonDoubleScalarTypes = ::testing::Types<AutoDiffXd, Expression>;
+INSTANTIATE_TYPED_TEST_SUITE_P(My, TypedSceneGraphTest, NonDoubleScalarTypes);
 
 // Tests the model inspector. Exercises a token piece of functionality. The
 // inspector is a wrapper on the GeometryState. It is assumed that GeometryState
@@ -558,7 +537,6 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateDisconnected) {
       diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get());
   DRAKE_EXPECT_THROWS_MESSAGE(
       SceneGraphTester::FullPoseUpdate(*scene_graph, sg_context),
-      std::logic_error,
       fmt::format("Source '{}' \\(id: \\d+\\) has registered dynamic frames "
                   "but is not connected .+",
                   GeometrySourceSystem::kRegisteredSourceName));
@@ -579,7 +557,6 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateNoConnections) {
       diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get());
   DRAKE_EXPECT_THROWS_MESSAGE(
       SceneGraphTester::FullPoseUpdate(*scene_graph, sg_context),
-      std::logic_error,
       fmt::format("Source '{}' \\(id: \\d+\\) has registered dynamic frames "
                   "but is not connected .+",
                   GeometrySourceSystem::kRegisteredSourceName));
@@ -596,110 +573,17 @@ GTEST_TEST(SceneGraphAutoDiffTest, InstantiateAutoDiff) {
   SceneGraphTester::GetQueryObjectPortValue(scene_graph, *context, &handle);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// 2021-12-01 Delete this entire test in completing the pose bundle removal.
-// Tests the pose vector output port -- specifically, the pose vector should
-// *never* include the world frame.
-GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
-  // Case: No registered source, frames, or geometry --> empty pose vector.
-  {
-    SceneGraph<double> scene_graph;
-    PoseBundle<double> poses;
-    auto context = scene_graph.CreateDefaultContext();
-    DRAKE_EXPECT_NO_THROW(
-        SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
-    EXPECT_EQ(0, poses.get_num_poses());
-  }
+// Confirms that the SceneGraph can be instantiated on Expression type.
+GTEST_TEST(SceneGraphExpressionTest, InstantiateExpression) {
+  SceneGraph<Expression> scene_graph;
+  scene_graph.RegisterSource("dummy_source");
+  auto context = scene_graph.CreateDefaultContext();
 
-  // Case: Calculating pose bundle with an input pose bundle the wrong size.
-  {
-    SceneGraph<double> scene_graph;
-    PoseBundle<double> poses(1);
-    EXPECT_EQ(poses.get_num_poses(), 1);
-    auto context = scene_graph.CreateDefaultContext();
-    DRAKE_EXPECT_NO_THROW(
-        SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
-    EXPECT_EQ(poses.get_num_poses(), 0);
-  }
-
-  // Case: Registered source but no frames or geometry --> empty pose vector.
-  {
-    SceneGraph<double> scene_graph;
-    scene_graph.RegisterSource("dummy");
-    PoseBundle<double> poses;
-    auto context = scene_graph.CreateDefaultContext();
-    DRAKE_EXPECT_NO_THROW(
-        SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
-    EXPECT_EQ(0, poses.get_num_poses());
-  }
-
-  // Case: Registered source with anchored geometry but no frames or dynamic
-  // geometry --> empty pose vector.
-  {
-    SceneGraph<double> scene_graph;
-    SourceId s_id = scene_graph.RegisterSource("dummy");
-    scene_graph.RegisterGeometry(
-        s_id, scene_graph.world_frame_id(),
-        make_unique<GeometryInstance>(RigidTransformd::Identity(),
-                                      make_unique<Sphere>(1.0), "sphere"));
-    PoseBundle<double> poses;
-    auto context = scene_graph.CreateDefaultContext();
-    DRAKE_EXPECT_NO_THROW(
-        SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
-    EXPECT_EQ(0, poses.get_num_poses());
-  }
-
-  // Case: Registered source with anchored geometry and frame but no dynamic
-  // geometry --> empty pose vector; only frames with dynamic geometry with an
-  // illustration role are included.
-  {
-    SceneGraph<double> scene_graph;
-    SourceId s_id = scene_graph.RegisterSource("dummy");
-    scene_graph.RegisterGeometry(
-        s_id, scene_graph.world_frame_id(),
-        make_unique<GeometryInstance>(RigidTransformd::Identity(),
-                                      make_unique<Sphere>(1.0), "sphere"));
-    FrameId f_id = scene_graph.RegisterFrame(s_id, GeometryFrame("f"));
-    PoseBundle<double> poses;
-    auto context = scene_graph.CreateDefaultContext();
-    const FramePoseVector<double> pose_vector{
-        {f_id, RigidTransformd::Identity()}};
-    scene_graph.get_source_pose_port(s_id).FixValue(context.get(), pose_vector);
-    DRAKE_EXPECT_NO_THROW(
-        SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
-    // The frame has no illustration geometry, so it is not part of the pose
-    // bundle.
-    EXPECT_EQ(0, poses.get_num_poses());
-  }
-
-  // Case: Registered source with anchored geometry and frame with dynamic
-  // geometry --> pose vector with one entry.
-  {
-    SceneGraph<double> scene_graph;
-    SourceId s_id = scene_graph.RegisterSource("dummy");
-    scene_graph.RegisterGeometry(
-        s_id, scene_graph.world_frame_id(),
-        make_unique<GeometryInstance>(RigidTransformd::Identity(),
-                                      make_unique<Sphere>(1.0), "sphere"));
-    FrameId f_id = scene_graph.RegisterFrame(s_id, GeometryFrame("f"));
-    scene_graph.RegisterGeometry(
-        s_id, f_id,
-        make_unique<GeometryInstance>(RigidTransformd::Identity(),
-                                      make_unique<Sphere>(1.0), "sphere"));
-    PoseBundle<double> poses;
-    auto context = scene_graph.CreateDefaultContext();
-    const FramePoseVector<double> pose_vector{
-        {f_id, RigidTransformd::Identity()}};
-    scene_graph.get_source_pose_port(s_id).FixValue(context.get(), pose_vector);
-    DRAKE_EXPECT_NO_THROW(
-        SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
-    // The dynamic geometry has no illustration role, so it doesn't lead the
-    // frame to be included in the bundle.
-    EXPECT_EQ(0, poses.get_num_poses());
-  }
+  QueryObject<Expression> handle =
+      QueryObjectTest::MakeNullQueryObject<Expression>();
+  SceneGraphTester::GetQueryObjectPortValue(scene_graph, *context, &handle);
 }
-#pragma GCC diagnostic pop
+
 
 // Tests that exercise the Context-modifying API
 
@@ -740,71 +624,7 @@ GTEST_TEST(SceneGraphContextModifier, RegisterGeometry) {
   EXPECT_EQ(1, inspector.NumGeometriesForFrame(frame_id));
   DRAKE_EXPECT_THROWS_MESSAGE(
       inspector.GetFrameId(sphere_id_2),
-      std::logic_error,
       "Referenced geometry \\d+ has not been registered.");
-}
-
-// TODO(2021-11-01) Remove this test entirely when resolving deprecation.
-GTEST_TEST(SceneGraphContextModifier, CollisionFiltersDeprecated) {
-  // Initializes the scene graph and context.
-  SceneGraph<double> scene_graph;
-  // Simple scene with three frames, each with a sphere which, by default
-  // collide.
-  SourceId source_id = scene_graph.RegisterSource("source");
-  FrameId f_id1 =
-      scene_graph.RegisterFrame(source_id, GeometryFrame("frame_1"));
-  FrameId f_id2 =
-      scene_graph.RegisterFrame(source_id, GeometryFrame("frame_2"));
-  FrameId f_id3 =
-      scene_graph.RegisterFrame(source_id, GeometryFrame("frame_3"));
-  GeometryId g_id1 =
-      scene_graph.RegisterGeometry(source_id, f_id1, make_sphere_instance());
-  scene_graph.AssignRole(source_id, g_id1, ProximityProperties());
-  GeometryId g_id2 =
-      scene_graph.RegisterGeometry(source_id, f_id2, make_sphere_instance());
-  scene_graph.AssignRole(source_id, g_id2, ProximityProperties());
-  GeometryId g_id3 =
-      scene_graph.RegisterGeometry(source_id, f_id3, make_sphere_instance());
-  scene_graph.AssignRole(source_id, g_id3, ProximityProperties());
-
-  // Confirm that the model reports no filtered pairs.
-  EXPECT_FALSE(scene_graph.model_inspector().CollisionFiltered(g_id1, g_id2));
-  EXPECT_FALSE(scene_graph.model_inspector().CollisionFiltered(g_id1, g_id3));
-  EXPECT_FALSE(scene_graph.model_inspector().CollisionFiltered(g_id2, g_id3));
-
-  auto context = scene_graph.CreateDefaultContext();
-
-  // Confirms the state. NOTE: Because we're not copying the query object or
-  // changing context, this query object and inspector are valid for querying
-  // the modified context.
-  QueryObject<double> query_object;
-  SceneGraphTester::GetQueryObjectPortValue(scene_graph, *context,
-                                            &query_object);
-  const auto& inspector = query_object.inspector();
-
-  // Confirm unfiltered state.
-  EXPECT_FALSE(inspector.CollisionFiltered(g_id1, g_id2));
-  EXPECT_FALSE(inspector.CollisionFiltered(g_id1, g_id3));
-  EXPECT_FALSE(inspector.CollisionFiltered(g_id2, g_id3));
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  scene_graph.ExcludeCollisionsWithin(context.get(),
-                                      GeometrySet({g_id1, g_id2}));
-  EXPECT_TRUE(inspector.CollisionFiltered(g_id1, g_id2));
-  EXPECT_FALSE(inspector.CollisionFiltered(g_id1, g_id3));
-  EXPECT_FALSE(inspector.CollisionFiltered(g_id2, g_id3));
-
-  scene_graph.ExcludeCollisionsBetween(context.get(),
-                                       GeometrySet({g_id1, g_id2}),
-                                       GeometrySet({g_id3}));
-#pragma GCC diagnostic pop
-  EXPECT_TRUE(inspector.CollisionFiltered(g_id1, g_id2));
-  EXPECT_TRUE(inspector.CollisionFiltered(g_id1, g_id3));
-  EXPECT_TRUE(inspector.CollisionFiltered(g_id2, g_id3));
-
-  // TODO(SeanCurtis-TRI): When post-allocation model modification is allowed,
-  // confirm that the model didn't change.
 }
 
 // A limited test -- the majority of this functionality is encoded in and tested

@@ -29,6 +29,7 @@ drake_cc_library(
         ":models",
         "//examples/kuka_iiwa_arm:models",
         "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/realsense2_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//manipulation/models/ycb:models",
     ],
@@ -36,7 +37,7 @@ drake_cc_library(
     deps = [
         "//common:find_resource",
         "//geometry:scene_graph",
-        "//geometry/render:render_engine_vtk",
+        "//geometry/render_vtk",
         "//manipulation/schunk_wsg:schunk_wsg_constants",
         "//manipulation/schunk_wsg:schunk_wsg_position_controller",
         "//math:geometric_transform",
@@ -132,7 +133,7 @@ drake_cc_binary(
 drake_cc_googletest(
     name = "manipulation_station_test",
     # Frequently exceeds short timeout in
-    # linux-bionic-clang-bazel-nightly-coverage
+    # linux-focal-clang-bazel-nightly-coverage
     timeout = "moderate",
     tags = vtk_test_tags(),
     deps = [
@@ -194,7 +195,6 @@ drake_py_binary(
     deps = [
         ":differential_ik",
         "//bindings/pydrake",
-        "@pygame_py",
     ],
 )
 
@@ -212,7 +212,6 @@ drake_py_binary(
     deps = [
         ":differential_ik",
         "//bindings/pydrake",
-        "@pygame_py",
     ],
 )
 

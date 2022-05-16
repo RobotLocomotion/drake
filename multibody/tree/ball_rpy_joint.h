@@ -55,6 +55,7 @@ class BallRpyJoint final : public Joint<T> {
   BallRpyJoint(const std::string& name, const Frame<T>& frame_on_parent,
                const Frame<T>& frame_on_child, double damping = 0)
       : Joint<T>(name, frame_on_parent, frame_on_child,
+                 VectorX<double>::Constant(3, damping),
                  VectorX<double>::Constant(
                      3, -std::numeric_limits<double>::infinity()),
                  VectorX<double>::Constant(
@@ -68,7 +69,6 @@ class BallRpyJoint final : public Joint<T> {
                  VectorX<double>::Constant(
                      3, std::numeric_limits<double>::infinity())) {
     DRAKE_THROW_UNLESS(damping >= 0);
-    damping_ = damping;
   }
 
   const std::string& type_name() const override {
@@ -80,7 +80,10 @@ class BallRpyJoint final : public Joint<T> {
   /// (in N⋅m) is modeled as `τ = -damping⋅ω`, i.e. opposing motion, with ω the
   /// angular velocity of frame M in F (see get_angular_velocity()) and τ the
   /// torque on child body B (to which M is rigidly attached).
-  double damping() const { return damping_; }
+  double damping() const {
+    // N.B. All damping coefficients are set to the same value for this joint.
+    return this->damping_vector()[0];
+  }
 
   /// @name Context-dependent value access
   /// @{
@@ -220,6 +223,14 @@ class BallRpyJoint final : public Joint<T> {
   }
 
   int do_get_num_positions() const override { return 3; }
+
+  std::string do_get_position_suffix(int index) const override {
+    return get_mobilizer()->position_suffix(index);
+  }
+
+  std::string do_get_velocity_suffix(int index) const override {
+    return get_mobilizer()->velocity_suffix(index);
+  }
 
   void do_set_default_positions(
       const VectorX<double>& default_positions) override {

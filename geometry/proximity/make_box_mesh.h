@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
@@ -214,7 +214,8 @@ VolumeMesh<T> MakeBoxVolumeMesh(const Box& box, double resolution_hint);
            AutoDiffXd.
  */
 template <typename T>
-SurfaceMesh<T> MakeBoxSurfaceMesh(const Box& box, double resolution_hint) {
+TriangleSurfaceMesh<T> MakeBoxSurfaceMesh(const Box& box,
+                                          double resolution_hint) {
   DRAKE_DEMAND(resolution_hint > 0.);
   // TODO(SeanCurtis-TRI): Consider putting an upper limit - as with the sphere.
   return ConvertVolumeToSurfaceMesh<T>(
@@ -251,8 +252,8 @@ int CalcSequentialIndex(int i, int j, int k, const Vector3<int>& num_vertices);
      The linear sequence of vertices consistent with CalcSequentialIndex.
  */
 template <typename T>
-std::vector<VolumeVertex<T>> GenerateVertices(
-    const Box& box, const Vector3<int>& num_vertices);
+std::vector<Vector3<T>> GenerateVertices(const Box& box,
+                                         const Vector3<int>& num_vertices);
 
 /*
  Adds six tetrahedra of a given rectangular cell to the list of tetrahedral

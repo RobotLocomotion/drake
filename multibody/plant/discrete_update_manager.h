@@ -6,7 +6,9 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/common/scope_exit.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/query_results/contact_surface.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/plant/contact_jacobians.h"
@@ -185,12 +187,24 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
       const systems::Context<T>& context) const;
 
+  const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
+      const systems::Context<T>& context) const;
+
   std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
       const systems::Context<T>& context,
       const std::vector<internal::DiscreteContactPair<T>>& contact_pairs) const;
 
   void AddInForcesFromInputPorts(const drake::systems::Context<T>& context,
                                  MultibodyForces<T>* forces) const;
+
+  void CalcNonContactForces(const drake::systems::Context<T>& context,
+                            MultibodyForces<T>* forces) const;
+
+  [[nodiscard]] ScopeExit ThrowIfNonContactForceInProgress(
+      const systems::Context<T>& context) const;
+
+  void CalcForceElementsContribution(const drake::systems::Context<T>& context,
+                                     MultibodyForces<T>* forces) const;
 
   // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
   //  geometries.

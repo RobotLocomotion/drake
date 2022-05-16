@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot name="test_robot">
+<robot xmlns:drake="http://drake.mit.edu" name="test_robot">
   <!-- This urdf file defines a simple test robot with multiple links so that
        we can test visuals and collisions are properly added to each link.
        Values in <inertial> are not important for this test model since
@@ -18,7 +18,7 @@
     </visual>
     <visual name="link1_visual2">
       <geometry>
-        <mesh filename="tri_cube.obj"/>
+        <mesh filename="package://drake/multibody/parsing/test/tri_cube.obj"/>
       </geometry>
     </visual>
     <collision name="link1_collision1">
@@ -74,8 +74,8 @@
   </link>
   <!-- For now at least, We care only that Drake's custom tag doesn't break
        parsing the rest of the elements in this file. -->
-  <collision_filter_group name="filter_group1">
-    <member link="link1"/>
-    <member link="link2"/>
-  </collision_filter_group>
+  <drake:collision_filter_group name="filter_group1">
+    <drake:member link="link1"/>
+    <drake:member link="link2"/>
+  </drake:collision_filter_group>
 </robot>

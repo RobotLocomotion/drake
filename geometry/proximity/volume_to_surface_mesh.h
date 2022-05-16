@@ -3,7 +3,7 @@
 #include <array>
 #include <vector>
 
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {
@@ -22,7 +22,7 @@ namespace internal {
           duplicate vertices.
        2. Any given face is shared by one or two tetrahedra only.
  */
-std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
+std::vector<std::array<int, 3>> IdentifyBoundaryFaces(
     const std::vector<VolumeElement>& tetrahedra);
 
 /*
@@ -32,8 +32,8 @@ std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
  @param[in] faces
  @return    vertices used by the faces.
  */
-std::vector<VolumeVertexIndex> CollectUniqueVertices(
-    const std::vector<std::array<VolumeVertexIndex, 3>>& faces);
+std::vector<int> CollectUniqueVertices(
+    const std::vector<std::array<int, 3>>& faces);
 
 }  // namespace internal
 
@@ -50,7 +50,7 @@ std::vector<VolumeVertexIndex> CollectUniqueVertices(
                 boundary triangles of the volume.
  @tparam_nonsymbolic_scalar */
 template <class T>
-SurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume);
+TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume);
 
 }  // namespace geometry
 }  // namespace drake

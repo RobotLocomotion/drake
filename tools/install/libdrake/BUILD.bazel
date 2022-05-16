@@ -18,6 +18,7 @@ load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
+load(":header_lint.bzl", "cc_check_allowed_headers")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
 load(
@@ -28,6 +29,12 @@ load(
 install_cmake_config(
     package = "drake",
     versioned = False,
+)
+
+# Verify that extra include paths are not leaking into our interface deps.
+cc_check_allowed_headers(
+    name = "allowed_headers_lint",
+    deps = LIBDRAKE_COMPONENTS,
 )
 
 # Annotate all of the LIBDRAKE_COMPONENTS as `alwayslink = True`, so that we
@@ -43,6 +50,10 @@ cc_whole_archive_library(
 # contain any references to constituent shared libraries inside the build tree.
 cc_binary(
     name = "libdrake.so",
+    linkopts = select({
+        "//tools/cc_toolchain:linux": ["-Wl,-soname,libdrake.so"],
+        "//conditions:default": [],
+    }),
     linkshared = 1,
     linkstatic = 1,
     deps = [
@@ -110,7 +121,7 @@ cc_library(
     }),
 )
 
-# Depend on a shared library used by dReal iff dReal is enabled.
+# Depend on the shared libraries used by dReal iff dReal is enabled.
 cc_library(
     name = "dreal_deps",
     deps = select({
@@ -171,11 +182,14 @@ cc_library(
         # declared without having to repeat this list here.
         "@vtk//:vtkCommonCore",
         "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkCommonExecutionModel",
         "@vtk//:vtkCommonTransforms",
         "@vtk//:vtkFiltersGeneral",
         "@vtk//:vtkFiltersSources",
+        "@vtk//:vtkIOExport",
         "@vtk//:vtkIOGeometry",
         "@vtk//:vtkIOImage",
+        "@vtk//:vtkIOImport",
         "@vtk//:vtkRenderingCore",
         "@vtk//:vtkRenderingOpenGL2",
     ],
@@ -232,7 +246,6 @@ cc_library(
         "@lcm",
         "@spdlog",
         "@tinyxml2",
-        "@yaml_cpp",
     ],
 )
 

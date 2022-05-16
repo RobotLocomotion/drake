@@ -111,7 +111,7 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
           evaluation_time_ + fixed_timestep_));
       *y = next_state - context->get_continuous_state_vector().CopyToVector();
     } else {
-      context->get_mutable_discrete_state(0).SetFromVector(state);
+      context->SetDiscreteState(0, state);
       integrator_->get_system().CalcDiscreteVariableUpdates(
           *context, discrete_state_.get());
       *y = next_state - discrete_state_->get_vector(0).get_value();
@@ -190,7 +190,7 @@ DirectTranscription::DirectTranscription(
 
   for (int i = 0; i < N() - 1; i++) {
     const double t = system->time_period() * i;
-    AddLinearEqualityConstraint(
+    prog().AddLinearEqualityConstraint(
         state(i+1).cast<symbolic::Expression>() ==
         system->A(t) * state(i).cast<symbolic::Expression>() +
         system->B(t) * input(i).cast<symbolic::Expression>());
@@ -223,7 +223,7 @@ DirectTranscription::DirectTranscription(
 void DirectTranscription::DoAddRunningCost(const symbolic::Expression& g) {
   // Cost = \sum_n g(n,x[n],u[n]) dt
   for (int i = 0; i < N() - 1; i++) {
-    AddCost(SubstitutePlaceholderVariables(g * fixed_timestep(), i));
+    prog().AddCost(SubstitutePlaceholderVariables(g * fixed_timestep(), i));
   }
 }
 
@@ -301,14 +301,14 @@ bool DirectTranscription::AddSymbolicDynamicConstraints(
       next_state =
           symbolic_context->get_continuous_state_vector().CopyToVector();
     }
-    if (i == 0 &&
-        !IsAffine(next_state, symbolic::Variables(decision_variables()))) {
+    if (i == 0 && !IsAffine(next_state,
+            symbolic::Variables(prog().decision_variables()))) {
       // Note: only check on the first iteration, where we can return false
       // before adding any constraints to the program.  For i>0, the
       // AddLinearEqualityConstraint call with throw.
       return false;
     }
-    AddLinearEqualityConstraint(state(i + 1) == next_state);
+    prog().AddLinearEqualityConstraint(state(i + 1) == next_state);
   }
   return true;
 }
@@ -327,8 +327,10 @@ void DirectTranscription::AddAutodiffDynamicConstraints(
     // Verify that the input port is not abstract valued.
     if (input_port_->get_data_type() == PortDataType::kAbstractValued) {
       throw std::logic_error(
-          "Port requested for differentiation is abstract, and differentiation "
-          "of abstract ports is not supported.");
+          "The specified input port is abstract-valued, but "
+          "DirectTranscription only supports vector-valued input ports.  Did "
+          "you perhaps forget to pass a non-default `input_port_index` "
+          "argument?");
     }
 
     // Provide a fixed value for the input port and keep an alias around.
@@ -352,13 +354,13 @@ void DirectTranscription::AddAutodiffDynamicConstraints(
         integrator_.get(), input_port_value_, num_states(), num_inputs(),
         i * fixed_timestep(), TimeStep{fixed_timestep()});
 
-    AddConstraint(constraint, {input(i), state(i), state(i + 1)});
+    prog().AddConstraint(constraint, {input(i), state(i), state(i + 1)});
   }
 }
 
 void DirectTranscription::ConstrainEqualInputAtFinalTwoTimesteps() {
   if (num_inputs() > 0) {
-    AddLinearEqualityConstraint(input(N() - 2) == input(N() - 1));
+    prog().AddLinearEqualityConstraint(input(N() - 2) == input(N() - 1));
   }
 }
 

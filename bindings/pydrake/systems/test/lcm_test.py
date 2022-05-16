@@ -11,12 +11,15 @@ import unittest
 import numpy as np
 
 from drake import lcmt_header, lcmt_quaternion
+import drake as drake_lcmtypes
 
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import BasicVector, DiagramBuilder, LeafSystem
+from pydrake.systems.framework import (
+    BasicVector, DiagramBuilder, LeafSystem, TriggerType,
+)
 from pydrake.systems.primitives import ConstantVectorSource
 
 
@@ -90,6 +93,32 @@ class TestSystemsLcm(unittest.TestCase):
         serializer = mut._Serializer_[lcmt_quaternion]()
         serializer.Clone().CreateDefaultValue()
 
+    def test_all_serializers_exist(self):
+        """Checks that all of Drake's Python LCM messages have a matching C++
+        serializer bound for use by LcmPublisherSystem.
+        """
+        # The drake_lcm_py_library() in drake/lcmtypes/BUILD.bazel generates
+        # a module __init__.py that enumerates all Drake Python LCM messages.
+        # Fetch that module's list of message classes.
+        all_message_classes = [
+            getattr(drake_lcmtypes, name) for name in dir(drake_lcmtypes)
+            if any([name.startswith("lcmt_"),
+                    name.startswith("experimental_lcmt_")])
+        ]
+        self.assertGreater(len(all_message_classes), 1)
+        # Confirm that each message class is partnered with the definition of a
+        # C++ serializer in lcm_py_bind_cpp_serializers.cc.
+        lcm = DrakeLcm()
+        for message_class in all_message_classes:
+            # Check that the Python message class is a valid template value.
+            serializer = mut._Serializer_[message_class]
+            self.assertIsNotNone(serializer)
+            # Confirm that we can actually instantiate a publisher that takes
+            # the matching C++ message on its input port.
+            mut.LcmPublisherSystem.Make(
+                channel="TEST_CHANNEL", lcm_type=message_class, lcm=lcm,
+                use_cpp_serializer=True)
+
     def _process_event(self, dut):
         # Use a Simulator to invoke the update event on `dut`.  (Wouldn't it be
         # nice if the Systems API was simple enough that we could apply events
@@ -154,6 +183,10 @@ class TestSystemsLcm(unittest.TestCase):
         self._fix_and_publish(dut, AbstractValue.Make(model_message))
         lcm.HandleSubscriptions(0)
         self.assert_lcm_equal(subscriber.message, model_message)
+        # Test `publish_triggers` overload.
+        mut.LcmPublisherSystem.Make(
+            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
+            publish_period=0.1, publish_triggers={TriggerType.kPeriodic})
 
     def test_publisher_cpp(self):
         lcm = DrakeLcm()
@@ -211,16 +244,6 @@ class TestSystemsLcm(unittest.TestCase):
             publish_period=0.001)
         self.assertIsInstance(scope, mut.LcmScopeSystem)
         self.assertIsInstance(publisher, mut.LcmPublisherSystem)
-
-    def test_deprecated_connect_lcm_scope(self):
-        builder = DiagramBuilder()
-        source = builder.AddSystem(ConstantVectorSource(np.zeros(4)))
-        with catch_drake_warnings(expected_count=1):
-            mut.ConnectLcmScope(src=source.get_output_port(0),
-                                channel="TEST_CHANNEL",
-                                builder=builder,
-                                lcm=DrakeLcm(),
-                                publish_period=0.001)
 
     def test_lcm_interface_system_diagram(self):
         # First, check the class doc.

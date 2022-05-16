@@ -8,15 +8,14 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
-#include "drake/common/yaml/yaml_read_archive.h"
-#include "drake/common/yaml/yaml_write_archive.h"
+#include "drake/common/yaml/yaml_io.h"
 
 using drake::symbolic::Expression;
 using drake::symbolic::test::ExprEqual;
 using drake::symbolic::Variable;
 using drake::symbolic::Variables;
-using drake::yaml::YamlReadArchive;
-using drake::yaml::YamlWriteArchive;
+using drake::yaml::LoadYamlString;
+using drake::yaml::SaveYamlString;
 
 namespace drake {
 namespace schema {
@@ -68,8 +67,7 @@ void CheckUniformDiscreteSymbolic(
 }
 
 GTEST_TEST(StochasticTest, ScalarTest) {
-  DistributionStruct variants;
-  YamlReadArchive(YAML::Load(all_variants)).Accept(&variants);
+  const auto variants = LoadYamlString<DistributionStruct>(all_variants);
 
   RandomGenerator generator;
 
@@ -149,9 +147,7 @@ GTEST_TEST(StochasticTest, ScalarTest) {
   EXPECT_PRED2(ExprEqual, symbolic_vec(4), 3.2);
 
   // Confirm that writeback works for every possible type.
-  YamlWriteArchive writer;
-  writer.Accept(variants);
-  EXPECT_EQ(writer.EmitString(), R"""(root:
+  EXPECT_EQ(SaveYamlString(variants, "root"), R"""(root:
   vec:
     - !Deterministic
       value: 5.0
@@ -167,8 +163,8 @@ GTEST_TEST(StochasticTest, ScalarTest) {
 )""");
 
   // Try loading a value which looks like an ordinary vector.
-  YamlReadArchive(YAML::Load(floats)).Accept(&variants);
-  vec = Sample(variants.vec, &generator);
+  const auto parsed_floats = LoadYamlString<DistributionStruct>(floats);
+  vec = Sample(parsed_floats.vec, &generator);
   ASSERT_EQ(vec.size(), 3);
   EXPECT_TRUE(CompareMatrices(vec, Eigen::Vector3d(5.0, 6.1, 7.2)));
 }
@@ -208,8 +204,8 @@ uniform_scalar: !Uniform { min: 1, max: 2 }
 )""";
 
 GTEST_TEST(StochasticTest, VectorTest) {
-  DistributionVectorStruct variants;
-  YamlReadArchive(YAML::Load(vector_variants)).Accept(&variants);
+  const auto variants =
+      LoadYamlString<DistributionVectorStruct>(vector_variants);
 
   RandomGenerator generator;
 
@@ -335,9 +331,7 @@ GTEST_TEST(StochasticTest, VectorTest) {
       Vector1d(1.5)));
 
   // Confirm that writeback works for every possible type.
-  YamlWriteArchive writer;
-  writer.Accept(variants);
-  EXPECT_EQ(writer.EmitString(), R"""(root:
+  EXPECT_EQ(SaveYamlString(variants, "root"), R"""(root:
   vector: [1.0, 2.0, 3.0]
   deterministic: !DeterministicVector
     value: [3.0, 4.0, 5.0]
@@ -404,9 +398,8 @@ GTEST_TEST(StochasticTest, IncorrectVectorTest) {
   const char* const input = R"""(
 value: !Deterministic { value: 2.0 }
 )""";
-  FixedSize2 parsed;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      YamlReadArchive(YAML::Load(input)).Accept(&parsed),
+      LoadYamlString<FixedSize2>(input),
       ".*unsupported type tag !Deterministic while selecting a variant<> entry"
       " for std::variant<.*> value.*");
 }

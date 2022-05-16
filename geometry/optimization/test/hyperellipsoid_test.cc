@@ -105,7 +105,7 @@ GTEST_TEST(HyperellipsoidTest, ScaledSphereTest) {
   EXPECT_NEAR(ellipsoid->b(), radius, 1e-16);
   EXPECT_NEAR(ellipsoid->c(), radius, 1e-16);
 
-  EXPECT_TRUE(X_WS.IsIdentityToEpsilon(1e-16));
+  EXPECT_TRUE(X_WS.IsNearlyIdentity(1e-16));
 }
 
 GTEST_TEST(HyperellipsoidTest, ArbitraryEllipsoidTest) {
@@ -237,34 +237,102 @@ GTEST_TEST(HyperellipsoidTest, NonnegativeScalingTest) {
   // The point farthest from the origin on the set boundary on the line x=y=z.
   // x^2 + 4x^2 + 9x^2 = 1 => x = sqrt(1 / 14).
   const Vector3d ub = center + sqrt(1.0 / 14.0) * Vector3d::Ones();
+  const double tol = 0;
 
-  prog.SetInitialGuess(x, .99 * ub);
+  prog.SetInitialGuess(x, 0.99 * ub);
   prog.SetInitialGuess(t, 1.0);
-  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, tol));
 
   prog.SetInitialGuess(x, 1.01 * ub);
   prog.SetInitialGuess(t, 1.0);
-  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, tol));
 
-  prog.SetInitialGuess(x, .99 * ub);
+  prog.SetInitialGuess(x, 0.99 * ub);
   prog.SetInitialGuess(t, -0.01);
-  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, tol));
 
-  prog.SetInitialGuess(x, .49 * ub);
+  prog.SetInitialGuess(x, 0.49 * ub);
   prog.SetInitialGuess(t, 0.5);
-  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, tol));
 
-  prog.SetInitialGuess(x, .51 * ub);
+  prog.SetInitialGuess(x, 0.51 * ub);
   prog.SetInitialGuess(t, 0.5);
-  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, tol));
 
   prog.SetInitialGuess(x, 1.99 * ub);
   prog.SetInitialGuess(t, 2.0);
-  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, tol));
 
   prog.SetInitialGuess(x, 2.01 * ub);
   prog.SetInitialGuess(t, 2.0);
-  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, tol));
+}
+
+bool PointInScaledSet(const solvers::VectorXDecisionVariable& x_vars,
+                      const solvers::VectorXDecisionVariable& t_vars,
+                      const Vector2d& x, const Vector2d& t,
+                      solvers::MathematicalProgram* prog,
+                      const std::vector<Binding<Constraint>>& constraints) {
+  const double tol = 0;
+  prog->SetInitialGuess(x_vars, x);
+  prog->SetInitialGuess(t_vars, t);
+  return prog->CheckSatisfiedAtInitialGuess(constraints, tol);
+}
+
+GTEST_TEST(HyperellipsoidTest, NonnegativeScalingTest2) {
+  const Vector3d center{2, 2, 2};
+  Hyperellipsoid E(Matrix3d(Vector3d{1, 2, 3}.asDiagonal()), center);
+
+  MathematicalProgram prog;
+  Eigen::MatrixXd A(3, 2);
+  // clang-format off
+  A << 1, 0,
+       0, 1,
+       1, 0;
+  // clang-format on
+  Vector3d b = Vector3d::Zero();
+  auto x = prog.NewContinuousVariables(2, "x");
+  Eigen::Vector2d c(1, -1);
+  double d = 0;
+  auto t = prog.NewContinuousVariables(2, "t");
+
+  std::vector<Binding<Constraint>> constraints =
+      E.AddPointInNonnegativeScalingConstraints(&prog, A, b, c, d, x, t);
+
+  EXPECT_EQ(constraints.size(), 2);
+
+  // The point farthest from the origin on the set boundary on the line x=y=z.
+  // x^2 + 4x^2 + 9x^2 = 1 => x = sqrt(1 / 14).
+  const Vector2d ub = center.head(2) + sqrt(1.0 / 14.0) * Vector2d::Ones();
+
+  EXPECT_TRUE(
+      PointInScaledSet(x, t, 0.99 * ub, Vector2d(1.0, 0), &prog, constraints));
+  EXPECT_TRUE(
+      PointInScaledSet(x, t, 0.99 * ub, Vector2d(0, -1.0), &prog, constraints));
+  EXPECT_FALSE(
+      PointInScaledSet(x, t, 1.01 * ub, Vector2d(1.0, 0), &prog, constraints));
+  EXPECT_FALSE(
+      PointInScaledSet(x, t, 1.01 * ub, Vector2d(0, -1.0), &prog, constraints));
+  EXPECT_FALSE(PointInScaledSet(x, t, 0.99 * ub, Vector2d(-0.01, 0), &prog,
+                                constraints));
+  EXPECT_FALSE(PointInScaledSet(x, t, 0.99 * ub, Vector2d(0, -0.01), &prog,
+                                constraints));
+  EXPECT_TRUE(
+      PointInScaledSet(x, t, 0.49 * ub, Vector2d(0.5, 0), &prog, constraints));
+  EXPECT_TRUE(
+      PointInScaledSet(x, t, 0.49 * ub, Vector2d(0, -0.5), &prog, constraints));
+  EXPECT_FALSE(
+      PointInScaledSet(x, t, 0.51 * ub, Vector2d(0.5, 0), &prog, constraints));
+  EXPECT_FALSE(
+      PointInScaledSet(x, t, 0.51 * ub, Vector2d(0, -0.5), &prog, constraints));
+  EXPECT_TRUE(
+      PointInScaledSet(x, t, 1.99 * ub, Vector2d(2.0, 0), &prog, constraints));
+  EXPECT_TRUE(
+      PointInScaledSet(x, t, 1.99 * ub, Vector2d(0, -2.0), &prog, constraints));
+  EXPECT_FALSE(
+      PointInScaledSet(x, t, 2.01 * ub, Vector2d(2.0, 0), &prog, constraints));
+  EXPECT_FALSE(
+      PointInScaledSet(x, t, 2.01 * ub, Vector2d(0, -2.0), &prog, constraints));
 }
 
 GTEST_TEST(HyperellisoidTest, MakeUnitBallTest) {

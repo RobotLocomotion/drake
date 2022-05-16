@@ -18,20 +18,20 @@ using Eigen::Vector3d;
 // make_`shape`_field_test.cc for box, sphere, ellipsoid, etc.
 
 // Checks that the pressure values evaluated at each vertex of the underlying
-// mesh of `pressure_field` are within the range [0, elastic_modulus]. Also
+// mesh of `pressure_field` are within the range [0, hydroelastic_modulus]. Also
 // checks that the pressure values evaluate at boundary vertices are 0.
 void CheckMinMaxBoundaryValue(
     const VolumeMeshFieldLinear<double, double>& pressure_field,
-    double elastic_modulus_in) {
-  const double elastic_modulus = elastic_modulus_in;
+    double hydroelastic_modulus_in) {
+  const double hydroelastic_modulus = hydroelastic_modulus_in;
   // Check that all vertices have their pressure values within the range of
-  // zero to elastic_modulus, and their minimum and maximum values are indeed
-  // zero and elastic_modulus respectively.
+  // zero to hydroelastic_modulus, and their minimum and maximum values are
+  // indeed zero and hydroelastic_modulus respectively.
   double max_pressure = std::numeric_limits<double>::lowest();
   double min_pressure = std::numeric_limits<double>::max();
-  for (VolumeVertexIndex v(0); v < pressure_field.mesh().num_vertices(); ++v) {
+  for (int v = 0; v < pressure_field.mesh().num_vertices(); ++v) {
     const double pressure = pressure_field.EvaluateAtVertex(v);
-    ASSERT_LE(pressure, elastic_modulus);
+    ASSERT_LE(pressure, hydroelastic_modulus);
     ASSERT_GE(pressure, 0.0);
     if (pressure > max_pressure) {
       max_pressure = pressure;
@@ -41,17 +41,17 @@ void CheckMinMaxBoundaryValue(
     }
   }
   EXPECT_EQ(min_pressure, 0.0);
-  EXPECT_EQ(max_pressure, elastic_modulus);
+  EXPECT_EQ(max_pressure, hydroelastic_modulus);
 
   // TODO(joemasterjohn): Rather than searching for boundary vertices, use
   // type traits to access vertices with a particular property using a priori
   // knowledge of the mesh structure. This goes for medial axis vertices also.
 
   // Check that all boundary vertices have zero pressure.
-  std::vector<VolumeVertexIndex> boundary_vertex_indices =
+  std::vector<int> boundary_vertex_indices =
       CollectUniqueVertices(
           IdentifyBoundaryFaces(pressure_field.mesh().tetrahedra()));
-  for (const VolumeVertexIndex& v : boundary_vertex_indices) {
+  for (int v : boundary_vertex_indices) {
     ASSERT_EQ(pressure_field.EvaluateAtVertex(v), 0.0);
   }
 }

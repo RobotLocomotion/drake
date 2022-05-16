@@ -2,7 +2,7 @@
 
 #include <fmt/format.h>
 
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {
@@ -19,15 +19,14 @@ void MeshDeformer<MeshType>::SetAllPositions(
         mesh_.num_vertices(), p_MVs.size()));
   }
   for (int v = 0, i = 0; v < mesh_.num_vertices(); ++v, i += 3) {
-    mesh_.vertices_[v] =
-        VertexType(Vector3<T>(p_MVs[i], p_MVs[i + 1], p_MVs[i + 2]));
+    mesh_.vertices_[v] = Vector3<T>(p_MVs[i], p_MVs[i + 1], p_MVs[i + 2]);
   }
 }
 
 template class MeshDeformer<VolumeMesh<double>>;
 template class MeshDeformer<VolumeMesh<AutoDiffXd>>;
-template class MeshDeformer<SurfaceMesh<double>>;
-template class MeshDeformer<SurfaceMesh<AutoDiffXd>>;
+template class MeshDeformer<TriangleSurfaceMesh<double>>;
+template class MeshDeformer<TriangleSurfaceMesh<AutoDiffXd>>;
 
 }  // namespace internal
 }  // namespace geometry

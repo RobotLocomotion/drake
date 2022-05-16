@@ -27,7 +27,8 @@ PYBIND11_MODULE(parsing, m) {
   {
     using Class = PackageMap;
     constexpr auto& cls_doc = doc.PackageMap;
-    py::class_<Class>(m, "PackageMap", cls_doc.doc)
+    py::class_<Class> cls(m, "PackageMap", cls_doc.doc);
+    cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("Add", &Class::Add, py::arg("package_name"),
             py::arg("package_path"), cls_doc.Add.doc)
@@ -39,8 +40,14 @@ PYBIND11_MODULE(parsing, m) {
         .def("size", &Class::size, cls_doc.size.doc)
         .def("GetPackageNames", &Class::GetPackageNames,
             cls_doc.GetPackageNames.doc)
-        .def("GetPath", &Class::GetPath, py::arg("package_name"),
-            cls_doc.GetPath.doc)
+        .def(
+            "GetPath",
+            [](const PackageMap& self, const std::string& package_name) {
+              // Python does not support output arguments, so we cannot bind the
+              // deprecated_message here.
+              return self.GetPath(package_name);
+            },
+            py::arg("package_name"), cls_doc.GetPath.doc)
         .def("AddPackageXml", &Class::AddPackageXml, py::arg("filename"),
             cls_doc.AddPackageXml.doc)
         .def("PopulateFromFolder", &Class::PopulateFromFolder, py::arg("path"),
@@ -48,8 +55,6 @@ PYBIND11_MODULE(parsing, m) {
         .def("PopulateFromEnvironment", &Class::PopulateFromEnvironment,
             py::arg("environment_variable"),
             cls_doc.PopulateFromEnvironment.doc)
-        .def("PopulateUpstreamToDrake", &Class::PopulateUpstreamToDrake,
-            py::arg("model_file"), cls_doc.PopulateUpstreamToDrake.doc)
         .def_static("MakeEmpty", &Class::MakeEmpty, cls_doc.MakeEmpty.doc);
   }
 
@@ -61,6 +66,8 @@ PYBIND11_MODULE(parsing, m) {
         .def(py::init<MultibodyPlant<double>*, SceneGraph<double>*>(),
             py::arg("plant"), py::arg("scene_graph") = nullptr,
             cls_doc.ctor.doc)
+        .def("plant", &Class::plant, py_rvp::reference_internal,
+            cls_doc.plant.doc)
         .def("package_map", &Class::package_map, py_rvp::reference_internal,
             cls_doc.package_map.doc)
         .def("AddAllModelsFromFile", &Class::AddAllModelsFromFile,
@@ -69,7 +76,9 @@ PYBIND11_MODULE(parsing, m) {
             py::arg("model_name") = "", cls_doc.AddModelFromFile.doc)
         .def("AddModelFromString", &Class::AddModelFromString,
             py::arg("file_contents"), py::arg("file_type"),
-            py::arg("model_name") = "", cls_doc.AddModelFromString.doc);
+            py::arg("model_name") = "", cls_doc.AddModelFromString.doc)
+        .def("SetStrictParsing", &Class::SetStrictParsing,
+            cls_doc.SetStrictParsing.doc);
   }
 
   // Model Directives
@@ -108,10 +117,6 @@ PYBIND11_MODULE(parsing, m) {
         .def_readonly("X_PF", &Class::X_PF, cls_doc.X_PF.doc);
   }
 
-  constexpr char kWeldErrorDisclaimer[] = R"""(
-    Note:
-        pydrake does not currently support `ModelWeldErrorFunction`.
-    )""";
   m.def(
       "ProcessModelDirectives",
       [](const parsing::ModelDirectives& directives,
@@ -122,9 +127,7 @@ PYBIND11_MODULE(parsing, m) {
         return added_models;
       },
       py::arg("directives"), py::arg("plant"), py::arg("parser"),
-      (std::string(doc.parsing.ProcessModelDirectives.doc) +
-          kWeldErrorDisclaimer)
-          .c_str());
+      doc.parsing.ProcessModelDirectives.doc);
 
   m.def("GetScopedFrameByName", &parsing::GetScopedFrameByName,
       py::arg("plant"), py::arg("full_name"),

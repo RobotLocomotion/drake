@@ -2,7 +2,7 @@
 <!--
 Defines a URDF model with various types of joints.
 -->
-<robot xmlns:xacro="http://ros.org/wiki/xacro" name="joint_parsing_test">
+<robot xmlns:drake="http://drake.mit.edu" xmlns:xacro="http://ros.org/wiki/xacro" name="joint_parsing_test">
   <link name="link1">
     <inertial>
       <mass value="1"/>

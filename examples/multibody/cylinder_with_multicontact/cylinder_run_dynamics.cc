@@ -100,7 +100,7 @@ int do_main() {
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
   // Publish contact results for visualization.
-  ConnectContactResultsToDrakeVisualizer(&builder, plant, &lcm);
+  ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph, &lcm);
 
   auto diagram = builder.Build();
 
@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "A demo for a cylinder falling towards the ground using Drake's"
       "MultibodyPlant, with SceneGraph contact handling and visualization. "
-      "Launch drake-visualizer before running this example.");
+      "Launch meldis before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::multibody::cylinder_with_multicontact::do_main();
 }

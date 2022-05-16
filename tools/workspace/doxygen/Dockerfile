@@ -3,7 +3,7 @@
 # during the build. They are neither called during the build nor expected to be
 # called by most developers or users of the project.
 
-ARG UBUNTU_CODENAME=bionic
+ARG UBUNTU_CODENAME=focal
 FROM ubuntu:${UBUNTU_CODENAME}
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update --quiet --quiet \

@@ -2,11 +2,14 @@
 
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/workspace:forward_files.bzl", "forward_files")
+load("//tools/workspace/dm_control:files.bzl", "dm_control_mujoco_files")
 
 filegroup(
     name = "test_models",
@@ -31,10 +34,6 @@ drake_cc_package_library(
         "//visibility:public",
     ],
     deps = [
-        ":detail_misc",
-        ":detail_scene_graph",
-        ":detail_sdf_parser",
-        ":detail_urdf_parser",
         ":model_directives",
         ":package_map",
         ":parser",
@@ -57,8 +56,12 @@ drake_cc_library(
     visibility = [
         "//visibility:public",
     ],
+    interface_deps = [
+        "//common:essential",
+    ],
     deps = [
         "//common",
+        "//common:filesystem",
         "@tinyxml2",
     ],
 )
@@ -74,25 +77,31 @@ drake_cc_library(
         "detail_ignition.cc",
         "detail_path_utils.cc",
         "detail_tinyxml.cc",
+        "detail_tinyxml2_diagnostic.cc",
     ],
     hdrs = [
         "detail_common.h",
         "detail_ignition.h",
         "detail_path_utils.h",
         "detail_tinyxml.h",
+        "detail_tinyxml2_diagnostic.h",
     ],
     install_hdrs_exclude = [
         "detail_common.h",
         "detail_ignition.h",
         "detail_path_utils.h",
         "detail_tinyxml.h",
+        "detail_tinyxml2_diagnostic.h",
     ],
+    tags = ["exclude_from_package"],
     visibility = [
         "//visibility:private",
     ],
     deps = [
         ":package_map",
+        "//common:diagnostic_policy",
         "//common:essential",
+        "//common:filesystem",
         "//geometry:proximity_properties",
         "//math:geometric_transform",
         "//multibody/plant",
@@ -102,24 +111,49 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "detail_scene_graph",
+    name = "detail_sdf_diagnostic",
     srcs = [
-        "detail_scene_graph.cc",
+        "detail_sdf_diagnostic.cc",
     ],
     hdrs = [
-        "detail_scene_graph.h",
+        "detail_sdf_diagnostic.h",
     ],
     install_hdrs_exclude = [
-        "detail_scene_graph.h",
+        "detail_sdf_diagnostic.h",
     ],
+    tags = ["exclude_from_package"],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        "//common:diagnostic_policy",
+        "@sdformat",
+    ],
+)
+
+drake_cc_library(
+    name = "detail_sdf_geometry",
+    srcs = [
+        "detail_sdf_geometry.cc",
+    ],
+    hdrs = [
+        "detail_sdf_geometry.h",
+    ],
+    install_hdrs_exclude = [
+        "detail_sdf_geometry.h",
+    ],
+    tags = ["exclude_from_package"],
     visibility = [
         "//visibility:private",
     ],
     deps = [
         ":detail_misc",
+        ":detail_sdf_diagnostic",
         ":package_map",
+        "//common:diagnostic_policy",
+        "//geometry:geometry_instance",
         "//geometry:geometry_roles",
-        "//geometry:scene_graph",
+        "//geometry:shape_specification",
         "//multibody/plant:coulomb_friction",
         "@sdformat",
     ],
@@ -136,12 +170,15 @@ drake_cc_library(
     install_hdrs_exclude = [
         "detail_sdf_parser.h",
     ],
+    tags = ["exclude_from_package"],
     visibility = [
         "//visibility:private",
     ],
     deps = [
         ":detail_misc",
-        ":detail_scene_graph",
+        ":detail_parsing_workspace",
+        ":detail_sdf_diagnostic",
+        ":detail_sdf_geometry",
         ":detail_urdf_parser",
         ":scoped_names",
         "//multibody/plant",
@@ -163,16 +200,60 @@ drake_cc_library(
         "detail_urdf_geometry.h",
         "detail_urdf_parser.h",
     ],
+    tags = ["exclude_from_package"],
     visibility = [
         "//visibility:private",
     ],
     deps = [
         ":detail_misc",
-        ":package_map",
+        ":detail_parsing_workspace",
+        ":scoped_names",
+        "//common:filesystem",
+        "@fmt",
+        "@tinyxml2",
+    ],
+)
+
+drake_cc_library(
+    name = "detail_mujoco_parser",
+    srcs = [
+        "detail_mujoco_parser.cc",
+    ],
+    hdrs = [
+        "detail_mujoco_parser.h",
+    ],
+    install_hdrs_exclude = [
+        "detail_mujoco_parser.h",
+    ],
+    tags = ["exclude_from_package"],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        ":detail_misc",
         ":scoped_names",
         "//multibody/plant",
         "@fmt",
         "@tinyxml2",
+    ],
+)
+
+drake_cc_library(
+    name = "detail_parsing_workspace",
+    hdrs = [
+        "detail_parsing_workspace.h",
+    ],
+    install_hdrs_exclude = [
+        "detail_parsing_workspace.h",
+    ],
+    tags = ["exclude_from_package"],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        ":package_map",
+        "//common:diagnostic_policy",
+        "//multibody/plant",
     ],
 )
 
@@ -187,7 +268,13 @@ drake_cc_library(
     visibility = [
         "//visibility:public",
     ],
+    interface_deps = [
+        ":package_map",
+        "//common:diagnostic_policy",
+        "//multibody/plant",
+    ],
     deps = [
+        ":detail_parsing_workspace",
         ":detail_sdf_parser",
         ":detail_urdf_parser",
         "//common:filesystem",
@@ -217,14 +304,16 @@ drake_cc_library(
     visibility = [
         "//visibility:public",
     ],
-    deps = [
+    interface_deps = [
         ":model_directives",
         ":parser",
+        "//multibody/plant",
+    ],
+    deps = [
         ":scoped_names",
         "//common:filesystem",
         "//common:find_resource",
-        "//common/yaml:yaml_read_archive",
-        "//multibody/plant",
+        "//common/yaml",
     ],
 )
 
@@ -256,6 +345,21 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "diagnostic_policy_test_base",
+    testonly = 1,
+    hdrs = [
+        "test/diagnostic_policy_test_base.h",
+    ],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        "//common:diagnostic_policy",
+        "@gtest//:without_main",
+    ],
+)
+
 drake_cc_googletest(
     name = "acrobot_parser_test",
     data = [
@@ -278,6 +382,22 @@ drake_cc_googletest(
     deps = [
         ":test_loaders",
         "//common/test_utilities",
+    ],
+)
+
+drake_cc_binary(
+    name = "parser_manual_test",
+    testonly = 1,
+    srcs = ["test/parser_manual_test.cc"],
+    add_test_rule = 1,
+    data = [":test_models"],
+    test_rule_args = [
+        "multibody/parsing/test/urdf_parser_test/joint_parsing_test.urdf",
+    ],
+    deps = [
+        ":parser",
+        "//common:add_text_logging_gflags",
+        "@gflags",
     ],
 )
 
@@ -311,7 +431,23 @@ drake_cc_googletest(
     ],
     deps = [
         ":process_model_directives",
+        ":scoped_names",
+        "//common:filesystem",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "scoped_names_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":parser",
+        ":scoped_names",
+        "//common:filesystem",
+        "//common:find_resource",
+        "//common/test_utilities",
     ],
 )
 
@@ -319,7 +455,7 @@ drake_cc_googletest(
     name = "model_directives_test",
     deps = [
         ":model_directives",
-        "//common/yaml:yaml_read_archive",
+        "//common/yaml",
     ],
 )
 
@@ -339,6 +475,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_sdf_parser",
+        ":diagnostic_policy_test_base",
         "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
@@ -355,6 +492,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_urdf_parser",
+        ":diagnostic_policy_test_base",
         "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
@@ -363,13 +501,32 @@ drake_cc_googletest(
     ],
 )
 
+_DM_CONTROL_MUJOCO_FILES = forward_files(
+    srcs = ["@dm_control//:" + x for x in dm_control_mujoco_files()],
+    dest_prefix = "",
+    strip_prefix = "@dm_control//:",
+    visibility = ["//visibility:private"],
+)
+
 drake_cc_googletest(
-    name = "detail_scene_graph_test",
+    name = "detail_mujoco_parser_test",
+    data = _DM_CONTROL_MUJOCO_FILES,
+    deps = [
+        ":detail_mujoco_parser",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_sdf_geometry_test",
     data = [
         ":test_models",
     ],
     deps = [
-        ":detail_scene_graph",
+        ":detail_sdf_geometry",
+        "//common:filesystem",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
@@ -383,6 +540,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_urdf_parser",
+        ":diagnostic_policy_test_base",
         "//common:find_resource",
         "//common/test_utilities",
     ],
@@ -429,7 +587,16 @@ drake_cc_googletest(
     name = "detail_tinyxml_test",
     deps = [
         ":detail_misc",
+        ":diagnostic_policy_test_base",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_tinyxml2_diagnostic_test",
+    deps = [
+        ":detail_misc",
+        ":diagnostic_policy_test_base",
     ],
 )
 

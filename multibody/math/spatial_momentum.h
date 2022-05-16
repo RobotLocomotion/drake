@@ -18,52 +18,43 @@ namespace multibody {
 // Forward declaration to define dot product with a spatial velocity.
 template <typename T> class SpatialVelocity;
 
-/// This class is used to represent the _spatial momentum_ of a particle, system
-/// of particles or body (whether rigid or soft.)
-/// The linear momentum `l_NS` of a system of particles S in a reference frame
-/// N is defined by: <pre>
-///   l_NS = ∑l_NQi = ∑mᵢv_NQi
-/// </pre>
-/// where `mᵢ` and `v_NQi` are the mass and linear velocity (in frame N) of the
-/// i-th particle in the system, respectively. Their product `l_NQi = mᵢv_NQi`
-/// is the linear momentum of the i-th particle in the N reference frame.
-/// The angular momentum `h_NSp` of a system of particles S in a reference frame
-/// N about an arbitrary point P is defined by: <pre>
-///   h_NSp = ∑ p_PQi x l_NQi
-/// </pre>
-/// where `p_PQi` is the position vector from point P to the i-th particle
-/// position `Qi`.
-/// The definitions above extend to a continuum of particles as: <pre>
-///   h_NSp = ∫p_PQ(r) x v_NQ(r) ρ(r)d³r
-///   l_NS = ∫v_NQ(r) ρ(r)d³r
-/// </pre>
-/// where `ρ(r)` is the density of the body at each material location `r`.
-/// In particular, the continuum version above also applies to rigid bodies.
+/// This class represents a _spatial momentum_ L and has 6 elements with an
+/// angular (rotational) momentum 𝐡 (3-element vector) on top of a translational
+/// (linear) momentum 𝐥 (3-element vector). A spatial momentum L stores the
+/// angular momentum 𝐡 and translational momentum 𝐥 of a system S about a point
+/// P, measured in a frame M, and expressed in a frame E. The system S may be a
+/// particle, a rigid or deformable body, or a set of particles and/or bodies.
+/// This class assumes that both the angular momentum 𝐡 and translational
+/// momentum 𝐥 are expressed in the same _expressed-in_ frame E. This class only
+/// stores 6 elements (namely 𝐡 and 𝐥) and does not store the underlying
+/// system S, about-point P, measured-in frame M, or expressed-in frame E.
+/// The user is responsible for explicitly tracking the underlying system,
+/// about-point, and frames with @ref multibody_quantities "monogram notation".
+/// For example, L_MSP_E denotes a system S's spatial momentum about point P,
+/// measured in frame M, and expressed in frame E. L_MSP_E contains h_MSP_E
+/// (S's angular momentum about point P, measured in M, expressed in E) and
+/// l_MS_E (S's translational momentum measured in M, expressed in E). A body
+/// B's spatial momentum about point Bo (B's origin), measured in frame M,
+/// expressed in frame E has explicit monogram notation L_MBBo_E which can be
+/// abbreviated L_MBo_E. Similarly L_MSScm_E is abbreviated L_MScm_E (Scm is
+/// S's center of mass). Details on spatial vectors and monogram notation are in
+/// sections @ref multibody_spatial_vectors and @ref multibody_quantities.
 ///
-/// Spatial momenta are elements of F⁶ (see [Featherstone 2008]) that combine
-/// both rotational (angular momentum) and translational (linear momentum)
-/// components. Spatial momenta are 6-element quantities that are pairs of
-/// ordinary 3-vectors. Elements 0-2 are the angular momentum component while
-/// elements 3-5 are the linear momentum component. As with any other spatial
-/// vector, both vector components must be expressed in the same frame.
-///
-/// Neither the expressed-in frame nor the about-point are stored with a
-/// %SpatialMomentum object; they must be understood from context. It is the
-/// responsibility of the user to keep track of the about-point and the
-/// expressed-in frame. That is best accomplished through disciplined notation.
-/// In source code we use monogram notation where L designates a spatial
-/// momentum quantity. The spatial momentum of a system S in a frame N about an
-/// arbitrary point P, expressed in a frame E is typeset as @f$[^NL^{S/P}]_E@f$,
-/// which appears in code as `L_NSP_E`. The spatial momentum of a body B in a
-/// frame N about the body origin Bo is explicitly typeset as L_NBBo_E, but we
-/// abbreviate it as L_NBo_E.  Similarly, the spatial momentum of a system S in
-/// a frame N about Scm (the system center of mass), expressed in a frame E is
-/// explicitly typeset as L_NSScm_E, but we abbreviate it as L_NScm_E.
-/// For a more detailed introduction on spatial vectors and the monogram
-/// notation please refer to section @ref multibody_spatial_vectors.
-///
-/// - [Featherstone 2008] Featherstone, R., 2008. Rigid body dynamics
-///                       algorithms. Springer.
+/// The typeset for L_MSP_E is @f$[^ML^{S/P}]_E@f$. For a set S of particles Qᵢ,
+/// L_MSP contains S's angular momentum 𝐡 about-point P, measured in frame M
+/// and S's translational momentum 𝐥 measured in frame M, defined as <pre>
+///   h_MSP = ∑ h_MQᵢP = ∑ p_PQᵢ x l_MQᵢ  where l_MQᵢ = mᵢ v_MQᵢ.
+///   l_MS  = ∑ l_MQᵢ  = ∑ mᵢ v_MQᵢ
+/// </pre>
+/// where mᵢ is the mass of particle Qᵢ, v_MQᵢ is Qᵢ's translational velocity
+/// measured in frame M, l_MQᵢ = mᵢ v_MQQᵢ is Qᵢ's translational momentum
+/// measured in frame M, h_MQᵢP is Qᵢ's angular momentum about point P
+/// measured in frame M, and p_PQᵢ is the position vector from point P to Qᵢ.
+/// These definitions extend to a body (continuum of particles) by using the
+/// density ρ(r) of the body at each material location r as: <pre>
+///   h_MSP = ∫p_PQ(r) x v_MQ(r) ρ(r) d³r
+///   l_MS  = ∫v_MQ(r) ρ(r) d³r
+/// </pre>
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -77,145 +68,128 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialMomentum)
 
-  /// Default constructor. In Release builds the elements of the newly
-  /// constructed spatial momentum are left uninitialized resulting in a zero
-  /// cost operation. However in Debug builds those entries are set to NaN so
-  /// that operations using this uninitialized spatial momentum fail fast,
-  /// allowing fast bug detection.
+  /// Default constructor. In Release builds, all 6 elements of a newly
+  /// constructed spatial momentum are uninitialized (for speed). In Debug
+  /// builds, the 6 elements are set to NaN so that invalid operations on an
+  /// uninitialized spatial momentum fail fast (fast bug detection).
   SpatialMomentum() : Base() {}
 
-  /// SpatialMomentum constructor from an angular momentum h and a linear
-  /// momentum l.
+  /// Constructs a spatial momentum L from an angular momentum 𝐡
+  /// and a translational momentum 𝐥.
   SpatialMomentum(const Eigen::Ref<const Vector3<T>>& h,
                   const Eigen::Ref<const Vector3<T>>& l) : Base(h, l) {}
 
-  /// SpatialMomentum constructor from an Eigen expression that represents a
-  /// six-dimensional vector.
-  /// This constructor will assert the size of L is six (6) at compile-time
-  /// for fixed sized Eigen expressions and at run-time for dynamic sized Eigen
-  /// expressions.
+  /// Constructs a spatial momentum L from an Eigen expression that represents
+  /// a 6-element vector, i.e., a 3-element angular momentum 𝐡 and a
+  /// 3-element translational momentum 𝐥. This constructor will assert the
+  /// size of L is six (6) either at compile-time for fixed sized Eigen
+  /// expressions or at run-time for dynamic sized Eigen expressions.
   template <typename Derived>
   explicit SpatialMomentum(const Eigen::MatrixBase<Derived>& L) : Base(L) {}
 
-  /// In-place shift of a %SpatialMomentum from one "about-point" to another.
-  /// `this` spatial momentum `L_NSp_E` for a system S in a reference frame N
-  /// about a point P, and expressed in frame E, is modified to become the
-  /// equivalent spatial momentum `L_NSq_E` of the same system about another
-  /// point Q.
-  ///
-  /// We are given the vector from point P to point Q, as a position vector
-  /// `p_PQ_E` expressed in the same frame E as the spatial momentum. The
-  /// operation performed, in coordinate-free form, is:
-  /// <pre>
-  ///   h_NSq  = h_NSp -  p_PQ x l_NSp
-  ///   l_NSq = l_NSp,  i.e. the linear momentum about point Q is the
-  ///                   same as the linear momentum about point P.
+  /// In-place shift of a %SpatialMomentum from an about-point P to an
+  /// about-point Q, On entry, `this` is L_MSP_E (system S's spatial momentum
+  /// about point P, measured in a frame M and expressed in a frame E). On
+  /// return `this` is modified to L_MSQ_E (S's spatial momentum about point Q,
+  /// measured in frame M and expressed in frame E).
+  /// @param[in] offset which is the position vector p_PQ_E from point P to
+  /// point Q, with the same expressed-in frame E as `this` spatial momentum.
+  /// @retval L_MSQ_E reference to `this` spatial momentum which has been
+  /// modified to be system S's spatial momentum about point Q, measured in
+  /// frame M and expressed in frame E. The components of L_MSQ_E are: <pre>
+  ///   l_MS_E = l_MS_E         (translational momentum of `this` is unchanged).
+  ///  h_MSQ_E = h_MSP_E + p_QP_E x l_MS_E
+  ///          = h_MSP_E - p_PQ_E x l_MS_E
   /// </pre>
-  /// where h and l represent the angular and linear momentum components
-  /// respectively. Notice that spatial momenta shift in the same way as spatial
-  /// forces (see SpatialForce.)
-  ///
-  /// The operation is linear, which [Jain 2010], (§2.1, page 22) writes using
-  /// the "rigid body transformation operator" as: <pre>
-  ///   L_NSq = Φ(p_QP)L_NSp = Φ(-p_PQ)L_NSp
-  /// </pre>
-  /// where `Φ(p_PQ)` is the linear operator: <pre>
-  ///   Φ(p_PQ) = | I₃ p_PQx |
-  ///             | 0     I₃ |
-  /// </pre>
-  /// where `p_PQx` denotes the cross product, skew-symmetric, matrix such that
-  /// `p_PQx v = p_PQ x v`.
-  /// This same operator shifts spatial forces in analogous way (see
-  /// SpatialForce::Shift()) while the transpose of this operator allow us to
-  /// shift spatial velocities, see SpatialVelocity::Shift().
-  ///
-  /// - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
-  ///               algorithms. Springer Science & Business Media, pp. 123-130.
-  ///
-  /// For computation, all quantities above must be expressed in a common
-  /// frame E; we add an `_E` suffix to each symbol to indicate that.
-  ///
-  /// This operation is performed in-place modifying the original object.
-  ///
-  /// @param[in] p_PQ_E
-  ///   Shift vector from point P to point Q, expressed in frame E.
-  /// @returns A reference to `this` spatial momentum which is now `L_NSq_E`,
-  ///          that is, the spatial momentum about point Q rather than P.
-  ///
-  /// @see Shift() to compute the shifted spatial momentum without modifying
-  ///              this original object.
-  SpatialMomentum<T>& ShiftInPlace(const Vector3<T>& p_PQ_E) {
-    this->rotational() -= p_PQ_E.cross(this->translational());
+  /// Note: Spatial momenta shift similar to spatial force (see SpatialForce)
+  /// and in a related/different way for spatial velocity (see SpatialVelocity).
+  /// @see Shift() to shift spatial momentum without modifying `this`.
+  SpatialMomentum<T>& ShiftInPlace(const Vector3<T>& offset) {
+    this->rotational() -= offset.cross(this->translational());
     return *this;
+    // Note: this operation is linear. [Jain 2010], (§2.1, page 22) uses the
+    // "rigid body transformation operator" to write this as:
+    //  L_MSQ = Φ(-p_PQ) L_MSP
+    //        =  Φ(p_QP) L_MSP    where Φ(p) is the linear operator:
+    //   Φ(p) = | I₃   pₓ |
+    //          | 0₃   I₃ |       I₃ is the 3x3 identity matrix, 0₃ is the 3x3
+    // zero matrix and pₓ denotes the skew-symmetric cross product matrix such
+    // that pₓvec = p x vec (where vec is any vector).
+    // This same Φ operator shifts spatial force in an analogous way (see
+    // SpatialForce::Shift()) whereas Φᵀ (the transpose of this operator)
+    // shifts spatial velocity (see SpatialVelocity::Shift()).
+    //
+    // - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
+    //               algorithms. Springer Science & Business Media, pp. 123-130.
   }
 
-  /// Shift of a %SpatialMomentum from one application point to another.
-  /// This is an alternate signature for shifting a spatial momentum's
-  /// about-point that does not change the original object. See
-  /// ShiftInPlace() for more information.
-  ///
-  /// @param[in] p_PQ_E
-  ///   Shift vector from point P to point Q.
-  /// @retval L_NSq_E
-  ///   The equivalent shifted spatial momentum, now applied at point Q
-  ///   rather than P.
-  ///
-  /// @see ShiftInPlace() to compute the shifted spatial momentum in-place
-  ///                     modifying the original object.
-  SpatialMomentum<T> Shift(const Vector3<T>& p_PQ_E) const {
-    return SpatialMomentum<T>(*this).ShiftInPlace(p_PQ_E);
+  /// Shifts a %SpatialMomentum from an about-point P to an about-point Q.
+  /// @param[in] offset which is the position vector p_PQ_E from point P to
+  /// point Q, expressed in frame E. p_PQ_E must have the same expressed-in
+  /// frame E as `this` spatial momentum, where `this` is L_MSP_E (system S's
+  /// spatial momentum about P, measured in frame M, expressed in frame E).
+  /// @retval L_MSQ_E which is system S's spatial momentum about point Q,
+  /// measured in frame M, expressed in frame E.
+  /// @note Shift() differs from ShiftInPlace() in that Shift() does not modify
+  /// `this` whereas ShiftInPlace() does modify `this`.
+  /// @see ShiftInPlace() for more information and how L_MSQ_E is calculated.
+  SpatialMomentum<T> Shift(const Vector3<T>& offset) const {
+    return SpatialMomentum<T>(*this).ShiftInPlace(offset);
   }
 
-  /// Given `this` spatial momentum `L_NBp_E` of a rigid body B, about point P
-  /// and, expressed in a frame E, this method computes the dot
-  /// product with the spatial velocity `V_NBp_E` of body B frame shifted to
-  /// point P, measured in an inertial (or Newtonian) frame N and expressed in
-  /// the same frame E in which the spatial momentum is expressed.
-  /// This dot-product is twice the kinetic energy `ke_NB` of body B in
-  /// reference frame N. The kinetic energy `ke_NB` is independent of the
-  /// about-point P and so is this dot product. Therefore it is always true
-  /// that: <pre>
-  ///   ke_NB = 1/2 (L_NBp⋅V_NBp) = 1/2 (L_NBcm⋅V_NBcm)
+  /// Calculates twice (2x) a body B's kinetic energy measured in a frame M.
+  /// For any frame (e.g., an @ref multibody_frames_and_bodies "offset frame")
+  /// Bp that is fixed to a rigid body B, calculates the dot-product of
+  /// `this` = L_MBp_E (body B's spatial momentum measured in frame M, about
+  /// Bp's origin, expressed in frame E) with V_MBp_E (frame Bp's spatial
+  /// velocity measured in frame M, expressed in frame E).
+  /// @param[in] velocity which is V_MBp_E, frame Bp's spatial velocity measured
+  /// in frame M, and expressed in the same frame E as `this` = L_MBp_E.
+  /// @returns 2*K_MB, twice (2x) body B's kinetic energy measured in frame M.
+  /// @note In general, kinetic energy calculations are only useful when frame M
+  /// is a world frame (also called a Newtonian or inertial frame). Hence, it
+  /// is unusual to use this method unless frame M is the world frame W.
+  /// @note Although the spatial vectors V_MBp_E and L_MBp_E must have the same
+  /// expressed-in frame E, the resulting scalar K_MB is independent of frame E.
+  /// @note As shown below, K_MB can be calculated from any frame Bp fixed on B,
+  /// including body B's center of mass frame Bcm. This is due to how spatial
+  /// momentum and spatial velocity shift from Bcm to Bp. For more information,
+  /// see SpatialMomentum::Shift() and SpatialVelocity::Shift(). <pre>
+  ///   K_MB = 1/2 (L_MBp · V_MBp) = 1/2 (L_MBcm · V_MBcm)
   /// </pre>
-  /// where `L_NBcm` is the spatial momentum about the center of mass of body B
-  /// and `V_NBcm` is the spatial velocity of frame B shifted to its center of
-  /// mass. The above is true due to how spatial momentum and velocity shift
-  /// when changing point P, see SpatialMomentum::Shift() and
-  /// SpatialVelocity::Shift().
-  inline T dot(const SpatialVelocity<T>& V_NBp_E) const;
+  inline T dot(const SpatialVelocity<T>& velocity) const;
   // The dot() method is implemented in spatial_velocity.h. We need the inline
   // keyword to ensure the method is still inlined even with `extern template`.
 };
 
-/// Computes the resultant spatial momentum as the addition of two spatial
-/// momenta `L1_NSp_E` and `L2_NSp_E` on a same system S, about the same point P
-/// and expressed in the same frame E.
-/// @retval Lc_NSp_E
-///   The combined spatial momentum of system S from combining `L1_NSp_E`
-///   and `L2_NSp_E`, applied about the same point P, and in the same
-///   expressed-in frame E as the operand spatial momenta.
-///
+/// Adds two spatial momenta by simply adding their 6 underlying elements.
+/// @param[in] L1_E spatial momentum expressed in the same frame E as L2_E.
+/// @param[in] L2_E spatial momentum expressed in the same frame E as L1_E.
+/// @note The general utility of this operator+() function seems limited to
+/// situations when L1 and L2 are associated with different systems (S1 and S2),
+/// but have the same about-point P, same measured-in frame M, and same
+/// expressed-in frame E.
 /// @relates SpatialMomentum
 template <typename T>
-inline SpatialMomentum<T> operator+(const SpatialMomentum<T>& L1_NSp_E,
-                                    const SpatialMomentum<T>& L2_NSp_E) {
-  // N.B. We use SpatialVector's implementation, though we provide the overload
-  // for specific documentation purposes.
-  return SpatialMomentum<T>(L1_NSp_E) += L2_NSp_E;
+inline SpatialMomentum<T> operator+(const SpatialMomentum<T>& L1_E,
+                                    const SpatialMomentum<T>& L2_E) {
+  // Although this operator+() function simply calls an associated
+  // SpatialVector operator+=() function, it is needed for documentation.
+  return SpatialMomentum<T>(L1_E) += L2_E;
 }
 
-/// Spatial momentum is additive, see
-/// operator+(const SpatialMomentum<T>&, const SpatialMomentum<T>&). This
-/// operator subtracts L2_NSp_E from the total momentum in L1_NSp_E. The momenta
-/// in both operands as well as the result are for the same system S, about the
-/// same point P and expressed in the same frame E.
+/// Subtracts spatial momenta by simply subtracting their 6 underlying elements.
+/// @param[in] L1_E spatial momentum expressed in the same frame E as L2_E.
+/// @param[in] L2_E spatial momentum expressed in the same frame E as L1_E.
+/// @note The general utility of this operator-() function is questionable and
+/// it should only be used if you are sure it makes sense.
 /// @relates SpatialMomentum
 template <typename T>
-inline SpatialMomentum<T> operator-(const SpatialMomentum<T>& L1_NSp_E,
-                                    const SpatialMomentum<T>& L2_NSp_E) {
-  // N.B. We use SpatialVector's implementation, though we provide the overload
-  // for specific documentation purposes.
-  return SpatialMomentum<T>(L1_NSp_E) -= L2_NSp_E;
+inline SpatialMomentum<T> operator-(const SpatialMomentum<T>& L1_E,
+                                    const SpatialMomentum<T>& L2_E) {
+  // Although this operator-() function simply calls an associated
+  // SpatialVector operator-=() function, it is needed for documentation.
+  return SpatialMomentum<T>(L1_E) -= L2_E;
 }
 
 }  // namespace multibody

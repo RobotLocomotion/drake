@@ -9,7 +9,6 @@
 #include "drake/bindings/pydrake/systems/lcm_py_bind_cpp_serializers.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
-#include "drake/systems/lcm/connect_lcm_scope.h"
 #include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_scope_system.h"
@@ -158,6 +157,14 @@ PYBIND11_MODULE(lcm, m) {
             // Keep alive, ownership: `serializer` keeps `self` alive.
             py::keep_alive<3, 1>(),
             // Keep alive, reference: `self` keeps `lcm` alive.
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc_4args)
+        .def(py::init<const std::string&, std::unique_ptr<SerializerInterface>,
+                 DrakeLcmInterface*, const systems::TriggerTypeSet&, double>(),
+            py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
+            py::arg("publish_triggers"), py::arg("publish_period") = 0.0,
+            // Keep alive, ownership: `serializer` keeps `self` alive.
+            py::keep_alive<3, 1>(),
+            // Keep alive, reference: `self` keeps `lcm` alive.
             py::keep_alive<1, 4>(), cls_doc.ctor.doc_4args);
   }
 
@@ -203,17 +210,6 @@ PYBIND11_MODULE(lcm, m) {
             py::arg("channel"), py::arg("publish_period"),
             cls_doc.AddToBuilder.doc);
   }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("ConnectLcmScope",
-      WrapDeprecated(doc.ConnectLcmScope.doc_deprecated, &ConnectLcmScope),
-      py::arg("src"), py::arg("channel"), py::arg("builder"),
-      py::arg("lcm") = nullptr, py::arg("publish_period") = 0.0,
-      py::keep_alive<0, 2>(),
-      // See #11531 for why `py_rvp::reference` is needed.
-      py_rvp::reference, doc.ConnectLcmScope.doc_deprecated);
-#pragma GCC diagnostic pop
 
   // Bind C++ serializers.
   BindCppSerializers();

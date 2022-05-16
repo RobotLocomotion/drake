@@ -46,9 +46,8 @@ ProximityProperties rigid_properties() {
 // for supported geometries.
 ProximityProperties soft_properties() {
   ProximityProperties props;
-  AddContactMaterial(1e8, {}, {}, &props);
   const double resolution_hint = 0.25;
-  AddSoftHydroelasticProperties(resolution_hint, &props);
+  AddCompliantHydroelasticProperties(resolution_hint, 1e8, &props);
   // Redundantly add slab thickness so it can be used with compliant mesh or
   // compliant half space.
   props.AddProperty(kHydroGroup, kSlabThickness, 0.25);
@@ -76,7 +75,7 @@ class TestScene {
         shape_A_type_(A_shape_type),
         shape_B_type_(B_shape_type),
         data_{&collision_filter_, &X_WGs_, &hydroelastic_geometries_,
-              ContactPolygonRepresentation::kCentroidSubdivision,
+              HydroelasticContactRepresentation::kTriangle,
               &surfaces_} {
     X_WGs_[id_A_] = RigidTransform<T>();
     X_WGs_[id_B_] = RigidTransform<T>();
@@ -267,30 +266,43 @@ class TestScene {
 // looking for positive indicators that the rigorously tested intersection code
 // has been properly connected in the callback.
 //
-// Only one of grad e_N or grad e_M will be defined -- it is the field from the
-// soft mesh.
+// For rigid-compliant contact, only one of grad e_N or grad e_M will be
+// defined -- it is the field from the compliant geometry. For
+// compliant-compliant contact, both grad e_N and grad e_M will be checked --
+// they are from two two compliant geometries.
 ::testing::AssertionResult ValidateDerivatives(
     const ContactSurface<AutoDiffXd>& surface) {
-  const SurfaceVertexIndex v0(0);
-  const SurfaceFaceIndex f0(0);
-  const auto& mesh_W = surface.mesh_W();
-  if (mesh_W.vertex(v0).r_MV().x().derivatives().size() != 3) {
-    return ::testing::AssertionFailure() << "Vertex 0 is missing derivatives";
-  }
+  if (surface.representation() ==
+      HydroelasticContactRepresentation::kTriangle) {
+    const auto& mesh_W = surface.tri_mesh_W();
+    if (mesh_W.vertex(0).x().derivatives().size() != 3) {
+      return ::testing::AssertionFailure() << "Vertex 0 is missing derivatives";
+    }
 
-  if (surface.e_MN().EvaluateAtVertex(v0).derivatives().size() != 3) {
-    return ::testing::AssertionFailure()
-           << "Pressure field at vertex 0 is missing derivatives";
+    if (surface.tri_e_MN().EvaluateAtVertex(0).derivatives().size() != 3) {
+      return ::testing::AssertionFailure()
+             << "Pressure field at vertex 0 is missing derivatives";
+    }
+  } else {
+    const auto& mesh_W = surface.poly_mesh_W();
+    if (mesh_W.vertex(0).x().derivatives().size() != 3) {
+      return ::testing::AssertionFailure() << "Vertex 0 is missing derivatives";
+    }
+
+    if (surface.poly_e_MN().EvaluateAtVertex(0).derivatives().size() != 3) {
+      return ::testing::AssertionFailure()
+             << "Pressure field at vertex 0 is missing derivatives";
+    }
   }
 
   if (surface.HasGradE_M()) {
-    if (surface.EvaluateGradE_M_W(f0).x().derivatives().size() != 3) {
+    if (surface.EvaluateGradE_M_W(0).x().derivatives().size() != 3) {
       return ::testing::AssertionFailure()
              << "Face 0's grad eM is missing derivatives";
     }
   }
   if (surface.HasGradE_N()) {
-    if (surface.EvaluateGradE_N_W(f0).x().derivatives().size() != 3) {
+    if (surface.EvaluateGradE_N_W(0).x().derivatives().size() != 3) {
       return ::testing::AssertionFailure()
              << "Face 0's grad eN is missing derivatives";
     }
@@ -302,8 +314,7 @@ class TestScene {
 TYPED_TEST_SUITE(DispatchRigidSoftCalculationTests, ScalarTypes);
 
 // Test suite for exercising DispatchRigidSoftCalculation with different scalar
-// types. (Currently only double as the hydroelastic infrastructure doesn't
-// support autodiff yet.)
+// types.
 template <typename T>
 class DispatchRigidSoftCalculationTests : public ::testing::Test {};
 
@@ -321,9 +332,10 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidMesh) {
   scene.AddGeometry(HydroelasticType::kSoft, HydroelasticType::kRigid);
 
   for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
+       {HydroelasticContactRepresentation::kTriangle,
+        HydroelasticContactRepresentation::kPolygon}) {
+    SCOPED_TRACE(
+        fmt::format("representation = {}", static_cast<int>(representation)));
     {
       // Case 1: Intersecting spheres.
       scene.PoseGeometry(colliding);
@@ -331,30 +343,32 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidMesh) {
 
       unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
           geometries.soft_geometry(id_A), X_WA, id_A,
-          geometries.rigid_geometry(id_B), X_WB, id_B,
-          representation);
+          geometries.rigid_geometry(id_B), X_WB, id_B, representation);
       EXPECT_NE(surface, nullptr);
       EXPECT_TRUE(ValidateDerivatives(*surface));
       switch (representation) {
-        case ContactPolygonRepresentation::kCentroidSubdivision:
-          EXPECT_EQ(100, surface->mesh_W().num_faces());
+        case HydroelasticContactRepresentation::kTriangle:
+          EXPECT_EQ(100, surface->tri_mesh_W().num_triangles());
           break;
-        case ContactPolygonRepresentation::kSingleTriangle:
-          EXPECT_EQ(28, surface->mesh_W().num_faces());
+        case HydroelasticContactRepresentation::kPolygon:
+          EXPECT_EQ(28, surface->poly_mesh_W().num_elements());
+          break;
       }
     }
+  }
 
-    {
-      // Case 2: Separated spheres.
-      scene.PoseGeometry(!colliding);
-      const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+  {
+    // Case 2: Separated spheres.
+    scene.PoseGeometry(!colliding);
+    const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
-      unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
-          geometries.soft_geometry(id_A), X_WA, id_A,
-          geometries.rigid_geometry(id_B), X_WB, id_B,
-          representation);
-      EXPECT_EQ(surface, nullptr);
-    }
+    // When they are not in contact, mesh representation is irrelevant; so,
+    // we'll simply pick one.
+    unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
+        geometries.soft_geometry(id_A), X_WA, id_A,
+        geometries.rigid_geometry(id_B), X_WB, id_B,
+        HydroelasticContactRepresentation::kTriangle);
+    EXPECT_EQ(surface, nullptr);
   }
 }
 
@@ -372,33 +386,33 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidHalfSpace) {
   scene.AddGeometry(HydroelasticType::kSoft, HydroelasticType::kRigid);
 
   for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
-    {
-      // Case 1: Intersecting geometry.
-      scene.PoseGeometry(colliding);
-      const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+       {HydroelasticContactRepresentation::kTriangle,
+        HydroelasticContactRepresentation::kPolygon}) {
+    SCOPED_TRACE(
+        fmt::format("representation = {}", static_cast<int>(representation)));
+    // Case 1: Intersecting geometry.
+    scene.PoseGeometry(colliding);
+    const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
-      unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
-          geometries.soft_geometry(id_A), X_WA, id_A,
-          geometries.rigid_geometry(id_B), X_WB, id_B,
-          representation);
-      EXPECT_NE(surface, nullptr);
-      EXPECT_TRUE(ValidateDerivatives(*surface));
-    }
+    unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
+        geometries.soft_geometry(id_A), X_WA, id_A,
+        geometries.rigid_geometry(id_B), X_WB, id_B, representation);
+    EXPECT_NE(surface, nullptr);
+    EXPECT_TRUE(ValidateDerivatives(*surface));
+  }
 
-    {
-      // Case 2: Separated geometry.
-      scene.PoseGeometry(!colliding);
-      const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+  {
+    // Case 2: Separated geometry.
+    scene.PoseGeometry(!colliding);
+    const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
-      unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
-          geometries.soft_geometry(id_A), X_WA, id_A,
-          geometries.rigid_geometry(id_B), X_WB, id_B,
-          representation);
-      EXPECT_EQ(surface, nullptr);
-    }
+    // When they are not in contact, mesh representation is irrelevant; so,
+    // we'll simply pick one.
+    unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
+        geometries.soft_geometry(id_A), X_WA, id_A,
+        geometries.rigid_geometry(id_B), X_WB, id_B,
+        HydroelasticContactRepresentation::kTriangle);
+    EXPECT_EQ(surface, nullptr);
   }
 }
 
@@ -415,33 +429,95 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftHalfSpaceRigidMesh) {
   scene.AddGeometry(HydroelasticType::kRigid, HydroelasticType::kSoft);
 
   for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
+       {HydroelasticContactRepresentation::kTriangle,
+        HydroelasticContactRepresentation::kPolygon}) {
+    SCOPED_TRACE(
+        fmt::format("representation = {}", static_cast<int>(representation)));
+    // Case 1: Intersecting geometry.
+    scene.PoseGeometry(colliding);
+    const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+
+    unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
+        geometries.soft_geometry(id_B), X_WB, id_A,
+        geometries.rigid_geometry(id_A), X_WA, id_B, representation);
+    EXPECT_NE(surface, nullptr);
+    EXPECT_TRUE(ValidateDerivatives(*surface));
+  }
+
+  {
+    // Case 2: Separated geometry.
+    scene.PoseGeometry(!colliding);
+    const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+
+    // When they are not in contact, mesh representation is irrelevant; so,
+    // we'll simply pick one.
+    unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
+        geometries.soft_geometry(id_B), X_WB, id_A,
+        geometries.rigid_geometry(id_A), X_WA, id_B,
+        HydroelasticContactRepresentation::kTriangle);
+    EXPECT_EQ(surface, nullptr);
+  }
+}
+
+TYPED_TEST_SUITE(DispatchCompliantCompliantCalculationTests, ScalarTypes);
+
+template <typename T>
+class DispatchCompliantCompliantCalculationTests : public ::testing::Test {};
+
+TYPED_TEST(DispatchCompliantCompliantCalculationTests,
+           CompliantMeshCompliantMesh) {
+  using T = TypeParam;
+
+  const bool colliding{true};
+
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
+  const Geometries& geometries = scene.hydroelastic_geometries();
+  const GeometryId id_A = scene.id_A();
+  const GeometryId id_B = scene.id_B();
+  // Sphere A has a fixed position.
+  const RigidTransform<T>& X_WA = scene.pose_in_world(id_A);
+  scene.AddGeometry(HydroelasticType::kSoft, HydroelasticType::kSoft);
+
+  for (const auto representation :
+       {HydroelasticContactRepresentation::kTriangle,
+        HydroelasticContactRepresentation::kPolygon}) {
+    SCOPED_TRACE(
+        fmt::format("representation = {}", static_cast<int>(representation)));
     {
-      // Case 1: Intersecting geometry.
+      // Case 1: Intersecting spheres.
       scene.PoseGeometry(colliding);
       const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
-      unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
-          geometries.soft_geometry(id_B), X_WB, id_A,
-          geometries.rigid_geometry(id_A), X_WA, id_B,
-          representation);
+      unique_ptr<ContactSurface<T>> surface =
+          DispatchCompliantCompliantCalculation(
+              geometries.soft_geometry(id_A), X_WA, id_A,
+              geometries.soft_geometry(id_B), X_WB, id_B, representation);
       EXPECT_NE(surface, nullptr);
       EXPECT_TRUE(ValidateDerivatives(*surface));
+      switch (representation) {
+        case HydroelasticContactRepresentation::kTriangle:
+          EXPECT_EQ(12, surface->tri_mesh_W().num_triangles());
+          break;
+        case HydroelasticContactRepresentation::kPolygon:
+          EXPECT_EQ(4, surface->poly_mesh_W().num_elements());
+          break;
+      }
     }
+  }
 
-    {
-      // Case 2: Separated geometry.
-      scene.PoseGeometry(!colliding);
-      const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+  {
+    // Case 2: Separated spheres.
+    scene.PoseGeometry(!colliding);
+    const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
-      unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
-          geometries.soft_geometry(id_B), X_WB, id_A,
-          geometries.rigid_geometry(id_A), X_WA, id_B,
-          representation);
-      EXPECT_EQ(surface, nullptr);
-    }
+    // When they are not in contact, mesh representation is irrelevant; so,
+    // we'll simply pick one.
+    unique_ptr<ContactSurface<T>> surface =
+        DispatchCompliantCompliantCalculation(
+            geometries.soft_geometry(id_A), X_WA, id_A,
+            geometries.soft_geometry(id_B), X_WB, id_B,
+            HydroelasticContactRepresentation::kTriangle);
+    EXPECT_EQ(surface, nullptr);
   }
 }
 
@@ -480,7 +556,7 @@ TYPED_TEST(MaybeCalcContactSurfaceTests, UndefinedGeometry) {
   ASSERT_EQ(scene.surfaces().size(), 0u);
 }
 
-// Confirms that matching compliance (rigid) can't be evaluated.
+// Confirms that rigid-rigid contact can't be evaluated.
 TYPED_TEST(MaybeCalcContactSurfaceTests, BothRigid) {
   using T = TypeParam;
 
@@ -489,12 +565,23 @@ TYPED_TEST(MaybeCalcContactSurfaceTests, BothRigid) {
 
   CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
       &scene.shape_A(), &scene.shape_B(), &scene.data());
-  EXPECT_EQ(result, CalcContactSurfaceResult::kSameCompliance);
+  EXPECT_EQ(result, CalcContactSurfaceResult::kRigidRigid);
   EXPECT_EQ(scene.surfaces().size(), 0u);
 }
 
-// Confirms that matching compliance (soft) can't be evaluated.
-TYPED_TEST(MaybeCalcContactSurfaceTests, BothSoft) {
+TYPED_TEST(MaybeCalcContactSurfaceTests, BothCompliantOneHalfSpace) {
+  using T = TypeParam;
+
+  TestScene<T> scene{ShapeType::kSphere, ShapeType::kHalfSpace};
+  scene.ConfigureScene(HydroelasticType::kSoft, HydroelasticType::kSoft);
+
+  CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
+      &scene.shape_A(), &scene.shape_B(), &scene.data());
+  EXPECT_EQ(result, CalcContactSurfaceResult::kCompliantHalfSpaceCompliantMesh);
+  EXPECT_EQ(scene.surfaces().size(), 0u);
+}
+
+TYPED_TEST(MaybeCalcContactSurfaceTests, BothCompliantNonHalfSpace) {
   using T = TypeParam;
 
   TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
@@ -502,24 +589,36 @@ TYPED_TEST(MaybeCalcContactSurfaceTests, BothSoft) {
 
   CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
       &scene.shape_A(), &scene.shape_B(), &scene.data());
-  EXPECT_EQ(result, CalcContactSurfaceResult::kSameCompliance);
-  EXPECT_EQ(scene.surfaces().size(), 0u);
+  EXPECT_EQ(result, CalcContactSurfaceResult::kCalculated);
+  EXPECT_EQ(scene.surfaces().size(), 1u);
 }
 
-// Confirms that colliding two half spaces is detected and reported.
-TYPED_TEST(MaybeCalcContactSurfaceTests, TwoHalfSpaces) {
+TYPED_TEST(MaybeCalcContactSurfaceTests, BothHalfSpace) {
   using T = TypeParam;
 
-  TestScene<T> scene{ShapeType::kHalfSpace, ShapeType::kHalfSpace};
-  // They must have different compliance types in order to get past the same
-  // compliance type condition.
-  scene.ConfigureScene(HydroelasticType::kSoft, HydroelasticType::kRigid,
-                       false /* are_colliding */);
+  for (const HydroelasticType first_type :
+       {HydroelasticType::kRigid, HydroelasticType::kSoft}) {
+    for (const HydroelasticType second_type :
+         {HydroelasticType::kRigid, HydroelasticType::kSoft}) {
+      SCOPED_TRACE(fmt::format("Use first_type = {}, second_type = {}.",
+                               static_cast<int>(first_type),
+                               static_cast<int>(second_type)));
+      TestScene<T> scene{ShapeType::kHalfSpace, ShapeType::kHalfSpace};
+      scene.ConfigureScene(first_type, second_type, false /* are_colliding */);
 
-  CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
-      &scene.shape_A(), &scene.shape_B(), &scene.data());
-  EXPECT_EQ(result, CalcContactSurfaceResult::kHalfSpaceHalfSpace);
-  EXPECT_EQ(scene.surfaces().size(), 0u);
+      CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
+          &scene.shape_A(), &scene.shape_B(), &scene.data());
+
+      if (first_type == HydroelasticType::kRigid &&
+      second_type == HydroelasticType::kRigid) {
+        EXPECT_EQ(result, CalcContactSurfaceResult::kRigidRigid);
+        EXPECT_EQ(scene.surfaces().size(), 0u);
+      } else {
+        EXPECT_EQ(result, CalcContactSurfaceResult::kHalfSpaceHalfSpace);
+        EXPECT_EQ(scene.surfaces().size(), 0u);
+      }
+    }
+  }
 }
 
 // Confirms that a valid pair that are, nevertheless, not colliding does not
@@ -578,8 +677,6 @@ TYPED_TEST_SUITE(StrictHydroelasticCallbackTyped, ScalarTypes);
 //     ultimately percolate outward).
 //   - throw on any return value that isn't wholly successful.
 //   - respect collision filtering.
-// (Currently only double as the hydroelastic infrastructure doesn't support
-// autodiff yet.)
 template <typename T>
 class StrictHydroelasticCallbackTyped : public ::testing::Test {};
 
@@ -599,16 +696,14 @@ TYPED_TEST(StrictHydroelasticCallbackTyped,
   // configuration is representative of that set.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()),
-      std::logic_error,
       "Requested a contact surface between a pair of geometries without "
       "hydroelastic representation .+ rigid .+ undefined .+");
 }
 
-// Confirms that if the intersecting pair has the same compliance (rigid-rigid)
-// or (soft-soft), that an exception is thrown. This test applies *no* collision
-// filters to guarantee that the body of the callback gets exercised in all
-// cases.
-TYPED_TEST(StrictHydroelasticCallbackTyped, ThrowForSameComplianceType) {
+// Confirms that if the intersecting pair is rigid-rigid, an exception is
+// thrown. This test applies *no* collision filters to guarantee that the
+// body of the callback gets exercised in all cases.
+TYPED_TEST(StrictHydroelasticCallbackTyped, ThrowForRigidRigid) {
   using T = TypeParam;
 
   TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere};
@@ -616,11 +711,10 @@ TYPED_TEST(StrictHydroelasticCallbackTyped, ThrowForSameComplianceType) {
 
   // We test only a single "same-compliance" configuration (rigid, rigid)
   // because we rely on the tests on MaybeCalcContactSurface() to have explored
-  // all the ways that the kSameCompliance calculation result is returned. This
+  // all the ways that the calculation result is returned. This
   // configuration is representative of that set.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()),
-      std::logic_error,
       "Requested contact between two rigid objects .+");
 }
 
@@ -636,8 +730,22 @@ TYPED_TEST(StrictHydroelasticCallbackTyped, ThrowForTwoHalfSpaces) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()),
-      std::logic_error,
       "Requested contact between two half spaces .+");
+}
+
+TYPED_TEST(StrictHydroelasticCallbackTyped,
+           ThrowForCompliantHalfSpaceAndNonHalfSpace) {
+  using T = TypeParam;
+
+  TestScene<T> scene{ShapeType::kHalfSpace, ShapeType::kSphere};
+  // They must have different compliance types in order to get past the same
+  // compliance type condition.
+  scene.ConfigureScene(HydroelasticType::kSoft, HydroelasticType::kSoft);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()),
+      "Requested hydroelastic contact between two compliant geometries, one "
+      "of which is a half space .+");
 }
 
 // Confirms that if the pair contains unsupported geometry, as long as they are
@@ -726,7 +834,7 @@ TYPED_TEST(HydroelasticCallbackFallbackTyped, PointPairForSameComplianceType) {
 
   // We test only a single "same-compliance" configuration (rigid, rigid)
   // because we rely on the tests on MaybeCalcContactSurface() to have explored
-  // all the ways that the kSameCompliance calculation result is returned. This
+  // all the ways that the calculation result is returned. This
   // configuration is representative of that set.
   vector<PenetrationAsPointPair<T>> point_pairs;
   CallbackWithFallbackData<T> data{scene.data(), &point_pairs};

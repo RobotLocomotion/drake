@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <world name="SimWorld">
+    <model name="robot1_with_tool">
+      <include merge="true">
+        <uri>model://simple_robot1/</uri>
+      </include>
+
+      <link name="tool"/>
+      <joint name="tool_joint" type="fixed">
+        <parent>moving_link</parent>
+        <child>tool</child>
+      </joint>
+    </model>
+  </world>
+</sdf>

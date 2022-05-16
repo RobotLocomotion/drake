@@ -370,7 +370,7 @@ class RenderEngineGlTest : public ::testing::Test {
       material.AddProperty(
           "phong", "diffuse_map",
           FindResourceOrThrow(
-              "drake/systems/sensors/test/models/meshes/box.png"));
+              "drake/geometry/render/test/meshes/box.png"));
     }
     return material;
   }
@@ -935,7 +935,7 @@ TEST_F(RenderEngineGlTest, MeshTest) {
   Init(X_WR_, true);
 
   auto filename =
-      FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.obj");
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
   Mesh mesh(filename);
   expected_label_ = RenderLabel(3);
   PerceptionProperties material = simple_material();
@@ -959,13 +959,13 @@ TEST_F(RenderEngineGlTest, TextureMeshTest) {
   Init(X_WR_, true);
 
   auto filename =
-      FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.obj");
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
   Mesh mesh(filename);
   expected_label_ = RenderLabel(4);
   PerceptionProperties material = simple_material();
   material.AddProperty(
       "phong", "diffuse_map",
-      FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.png"));
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.png"));
   const GeometryId id = GeometryId::get_new_id();
   renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
                             true /* needs update */);
@@ -999,7 +999,7 @@ TEST_F(RenderEngineGlTest, ImpliedTextureMeshTest) {
   Init(X_WR_, true);
 
   auto filename =
-      FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.obj");
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
   Mesh mesh(filename);
   expected_label_ = RenderLabel(4);
   PerceptionProperties material = simple_material();
@@ -1022,7 +1022,7 @@ TEST_F(RenderEngineGlTest, ConvexTest) {
   Init(X_WR_, true);
 
   auto filename = FindResourceOrThrow(
-      "drake/systems/sensors/test/models/meshes/box.obj");
+      "drake/geometry/render/test/meshes/box.obj");
   Convex convex(filename);
   expected_label_ = RenderLabel(4);
   PerceptionProperties material = simple_material();
@@ -1320,7 +1320,6 @@ TEST_F(RenderEngineGlTest, DefaultProperties) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       renderer_->RegisterVisual(id, box, PerceptionProperties(),
                                 RigidTransformd::Identity(), true),
-      std::logic_error,
       ".* geometry with the 'unspecified' or 'empty' render labels.*");
   PerceptionProperties material;
   material.AddProperty("label", "id", RenderLabel::kDontCare);
@@ -1354,7 +1353,6 @@ TEST_F(RenderEngineGlTest, DefaultProperties_RenderLabel) {
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         populate_default_sphere(&renderer),
-        std::logic_error,
         ".* geometry with the 'unspecified' or 'empty' render labels.*");
   }
 
@@ -1366,7 +1364,6 @@ TEST_F(RenderEngineGlTest, DefaultProperties_RenderLabel) {
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         populate_default_sphere(&renderer),
-        std::logic_error,
         ".* geometry with the 'unspecified' or 'empty' render labels.*");
   }
 
@@ -1390,7 +1387,7 @@ TEST_F(RenderEngineGlTest, DefaultProperties_RenderLabel) {
     for (RenderLabel label :
         {RenderLabel::kEmpty, RenderLabel(1), RenderLabel::kDoNotRender}) {
       DRAKE_EXPECT_THROWS_MESSAGE(
-          RenderEngineGl({.default_label = label}), std::logic_error,
+          RenderEngineGl({.default_label = label}),
           ".* default render label .* either 'kUnspecified' or 'kDontCare'.*");
     }
   }
@@ -1501,7 +1498,7 @@ TEST_F(RenderEngineGlTest, MeshGeometryReuse) {
   RenderEngineGlTester tester(&engine);
 
   auto filename = FindResourceOrThrow(
-      "drake/systems/sensors/test/models/meshes/box.obj");
+      "drake/geometry/render/test/meshes/box.obj");
   const internal::OpenGlGeometry& initial_geometry = tester.GetMesh(filename);
   const internal::OpenGlGeometry& second_geometry = tester.GetMesh(filename);
 

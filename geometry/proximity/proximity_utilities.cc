@@ -51,7 +51,7 @@ std::string GetGeometryName(const fcl::CollisionObjectd& object) {
 }
 
 int CountEdges(const VolumeMesh<double>& mesh) {
-  std::unordered_set<SortedPair<VolumeVertexIndex>> edges;
+  std::unordered_set<SortedPair<int>> edges;
 
   for (auto& t : mesh.tetrahedra()) {
     // 6 edges of a tetrahedron
@@ -66,7 +66,7 @@ int CountEdges(const VolumeMesh<double>& mesh) {
 }
 
 int CountFaces(const VolumeMesh<double>& mesh) {
-  std::set<SortedTriplet<VolumeVertexIndex>> faces;
+  std::set<SortedTriplet<int>> faces;
 
   for (const auto& t : mesh.tetrahedra()) {
     // 4 faces of a tetrahedron, all facing in

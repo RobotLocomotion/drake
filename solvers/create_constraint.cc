@@ -7,6 +7,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/symbolic_decompose.h"
 #include "drake/math/quadratic_form.h"
+#include "drake/solvers/decision_variable.h"
 
 namespace drake {
 namespace solvers {
@@ -44,14 +45,12 @@ Binding<Constraint> ParseConstraint(
     return ParseLinearEqualityConstraint(v, lb);
   }
 
-  // Setup map_var_to_index and var_vec.
-  // such that map_var_to_index[var(i)] = i
+  // Setup map_var_to_index and vars.
+  // such that map_var_to_index[vars(i)] = i
+  VectorXDecisionVariable vars;
   unordered_map<Variable::Id, int> map_var_to_index;
-  VectorXDecisionVariable vars(0);
-  for (int i = 0; i < v.size(); ++i) {
-    symbolic::ExtractAndAppendVariablesFromExpression(v(i), &vars,
-                                                      &map_var_to_index);
-  }
+  std::tie(vars, map_var_to_index) =
+      symbolic::ExtractVariablesFromExpression(v);
 
   // Construct A, new_lb, new_ub. map_var_to_index is used here.
   Eigen::MatrixXd A{Eigen::MatrixXd::Zero(v.size(), vars.size())};
@@ -299,73 +298,74 @@ void FindBound(const Expression& e1, const Expression& e2, Expression* const e,
 }
 }  // namespace
 
-Binding<Constraint> ParseConstraint(const set<Formula>& formulas) {
-  const auto n = formulas.size();
+Binding<Constraint> ParseConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Formula>>& formulas) {
+  const int n = formulas.rows() * formulas.cols();
 
-  // Decomposes a set of formulas into a 1D-vector of expressions, `v`, and two
+  // Decomposes 2D-array of formulas into 1D-vector of expression, `v`, and two
   // 1D-vector of double `lb` and `ub`.
   VectorX<Expression> v{n};
   Eigen::VectorXd lb{n};
   Eigen::VectorXd ub{n};
-  int i{0};  // index variable used in the loop
-  // After the following loop, we call `ParseLinearEqualityConstraint`
-  // if `are_all_formulas_equal` is still true. Otherwise, we call
-  // `ParseLinearConstraint`.  on the value of this Boolean flag.
-  bool are_all_formulas_equal{true};
-  bool is_linear{true};
-  for (const Formula& f : formulas) {
-    if (is_equal_to(f)) {
-      // f := (lhs == rhs)
-      //      (lhs - rhs == 0)
-      v(i) = get_lhs_expression(f) - get_rhs_expression(f);
-      lb(i) = 0.0;
-      ub(i) = 0.0;
-    } else if (is_less_than_or_equal_to(f)) {
-      // f := (lhs <= rhs)
-      const Expression& lhs = get_lhs_expression(f);
-      const Expression& rhs = get_rhs_expression(f);
-      lb(i) = -numeric_limits<double>::infinity();
-      FindBound(lhs, rhs, &v(i), &ub(i));
-      are_all_formulas_equal = false;
-    } else if (is_greater_than_or_equal_to(f)) {
-      // f := (lhs >= rhs)
-      const Expression& lhs = get_lhs_expression(f);
-      const Expression& rhs = get_rhs_expression(f);
-      lb(i) = -numeric_limits<double>::infinity();
-      FindBound(rhs, lhs, &v(i), &ub(i));
-      are_all_formulas_equal = false;
-    } else {
-      ostringstream oss;
-      oss << "ParseConstraint(const set<Formula>& "
-          << "formulas) is called while its argument 'formulas' includes "
-          << "a formula " << f
-          << " which is not a relational formula using one of {==, <=, >=} "
-          << "operators.";
-      throw runtime_error(oss.str());
-    }
-
-    // Check that elements are linear.
-    if (is_linear) {
-      if (!v(i).is_polynomial()) {
-        is_linear = false;
+  int k{0};  // index variable for 1D components.
+  for (int j{0}; j < formulas.cols(); ++j) {
+    for (int i{0}; i < formulas.rows(); ++i) {
+      const symbolic::Formula& f{formulas(i, j)};
+      if (symbolic::is_false(f)) {
+        throw std::runtime_error(
+            fmt::format("ParseConstraint is called with formulas({}, {}) being "
+                        "always false",
+                        i, j));
+      } else if (symbolic::is_true(f)) {
+        continue;
+      } else if (is_equal_to(f)) {
+        // f(i) := (lhs == rhs)
+        //         (lhs - rhs == 0)
+        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
+        lb(k) = 0.0;
+        ub(k) = 0.0;
+      } else if (is_less_than_or_equal_to(f)) {
+        // f(i) := (lhs <= rhs)
+        //         (-∞ <= lhs - rhs <= 0)
+        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
+        lb(k) = -std::numeric_limits<double>::infinity();
+        ub(k) = 0.0;
+      } else if (is_greater_than_or_equal_to(f)) {
+        // f(i) := (lhs >= rhs)
+        //         (∞ >= lhs - rhs >= 0)
+        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
+        lb(k) = 0.0;
+        ub(k) = std::numeric_limits<double>::infinity();
       } else {
-        const Polynomial p{v(i)};
-        if (p.TotalDegree() > 1) {
-          is_linear = false;
-        }
+        std::ostringstream oss;
+        oss << "ParseConstraint is called with an "
+               "array of formulas which includes a formula "
+            << f
+            << " which is not a relational formula using one of {==, <=, >=} "
+               "operators.";
+        throw std::runtime_error(oss.str());
       }
+      ++k;
     }
-    ++i;
   }
-  if (are_all_formulas_equal && is_linear) {
-    return ParseLinearEqualityConstraint(v, lb);
-  } else {
-    return ParseConstraint(v, lb, ub);
+  if (k == 0) {
+    // All formulas are always True, return an empty bounding box constraint.
+    return internal::CreateBinding(std::make_shared<BoundingBoxConstraint>(
+                                       Eigen::VectorXd(0), Eigen::VectorXd(0)),
+                                   VectorXDecisionVariable(0));
   }
+  return ParseConstraint(v.head(k), lb.head(k), ub.head(k));
 }
 
 Binding<Constraint> ParseConstraint(const Formula& f) {
-  if (is_equal_to(f)) {
+  if (symbolic::is_false(f)) {
+    throw std::runtime_error(
+        "ParseConstraint is called with a formula being always false.");
+  } else if (symbolic::is_true(f)) {
+    return internal::CreateBinding(std::make_shared<BoundingBoxConstraint>(
+                                       Eigen::VectorXd(0), Eigen::VectorXd(0)),
+                                   VectorXDecisionVariable(0));
+  } else if (is_equal_to(f)) {
     // e1 == e2
     const Expression& e1{get_lhs_expression(f)};
     const Expression& e2{get_rhs_expression(f)};
@@ -386,9 +386,13 @@ Binding<Constraint> ParseConstraint(const Formula& f) {
     double ub = 0.0;
     FindBound(e1, e2, &e, &ub);
     return ParseConstraint(e, -numeric_limits<double>::infinity(), ub);
-  }
-  if (is_conjunction(f)) {
-    return ParseConstraint(get_operands(f));
+  } else if (is_conjunction(f)) {
+    const std::set<Formula>& operands = get_operands(f);
+    // TODO(jwnimmer-tri) We should use an absl::InlinedVector here.
+    const std::vector<Formula> vec_operands(operands.begin(), operands.end());
+    const Eigen::Map<const VectorX<Formula>> map_operands(
+        vec_operands.data(), vec_operands.size());
+    return ParseConstraint(map_operands);
   }
   ostringstream oss;
   oss << "ParseConstraint is called with a formula " << f
@@ -405,7 +409,13 @@ Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
   VectorX<symbolic::Expression> v{n};
   int i{0};  // index variable used in the loop
   for (const symbolic::Formula& f : formulas) {
-    if (is_equal_to(f)) {
+    if (symbolic::is_false(f)) {
+      throw std::runtime_error(
+          "ParseLinearEqualityConstraint is called with one of formulas being "
+          "always false.");
+    } else if (symbolic::is_true(f)) {
+      continue;
+    } else if (is_equal_to(f)) {
       // f := (lhs == rhs)
       //      (lhs - rhs == 0)
       v(i) = get_lhs_expression(f) - get_rhs_expression(f);
@@ -418,12 +428,30 @@ Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
     }
     ++i;
   }
-  return ParseLinearEqualityConstraint(v, Eigen::VectorXd::Zero(n));
+  if (i == 0) {
+    // All formulas are always true, return an empty linear equality constraint.
+    return internal::CreateBinding(
+        std::make_shared<LinearEqualityConstraint>(
+            Eigen::Matrix<double, 0, 0>(), Eigen::Matrix<double, 0, 1>()),
+        Eigen::Matrix<symbolic::Variable, 0, 1>());
+  }
+  return ParseLinearEqualityConstraint(v.head(i), Eigen::VectorXd::Zero(i));
 }
 
 Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
     const Formula& f) {
-  if (is_equal_to(f)) {
+  if (symbolic::is_false(f)) {
+    throw std::runtime_error(
+        "ParseLinearEqualityConstraint is called with a formula being always "
+        "false.");
+  }
+  if (symbolic::is_true(f)) {
+    // The formula is always true, return an empty linear equality constraint.
+    return internal::CreateBinding(
+        std::make_shared<LinearEqualityConstraint>(
+            Eigen::Matrix<double, 0, 0>(), Eigen::Matrix<double, 0, 1>()),
+        Eigen::Matrix<symbolic::Variable, 0, 1>());
+  } else if (is_equal_to(f)) {
     // e1 == e2
     const Expression& e1{get_lhs_expression(f)};
     const Expression& e2{get_rhs_expression(f)};
@@ -443,12 +471,10 @@ Binding<LinearEqualityConstraint> DoParseLinearEqualityConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& b) {
   DRAKE_DEMAND(v.rows() == b.rows());
-  VectorXDecisionVariable vars(0);
+  VectorX<symbolic::Variable> vars;
   unordered_map<Variable::Id, int> map_var_to_index;
-  for (int i = 0; i < v.rows(); ++i) {
-    symbolic::ExtractAndAppendVariablesFromExpression(v(i), &vars,
-                                                      &map_var_to_index);
-  }
+  std::tie(vars, map_var_to_index) =
+      symbolic::ExtractVariablesFromExpression(v);
   // TODO(hongkai.dai): use sparse matrix.
   Eigen::MatrixXd A = Eigen::MatrixXd::Zero(v.rows(), vars.rows());
   Eigen::VectorXd beq = Eigen::VectorXd::Zero(v.rows());
@@ -612,6 +638,23 @@ Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
   expr(1) = linear_expr2;
   expr.tail(C.rows()) = C * quadratic_vars + d;
   return ParseRotatedLorentzConeConstraint(expr);
+}
+
+std::shared_ptr<RotatedLorentzConeConstraint>
+ParseQuadraticAsRotatedLorentzConeConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& b, double c, double zero_tol) {
+  // [-bᵀx-c, 1, Fx] is in the rotated Lorentz cone, where FᵀF = 0.5 * Q
+  const Eigen::MatrixXd F = math::DecomposePSDmatrixIntoXtransposeTimesX(
+      (Q + Q.transpose()) / 4, zero_tol);
+  // A_lorentz * x + b_lorentz = [-bᵀx-c, 1, Fx]
+  Eigen::MatrixXd A_lorentz = Eigen::MatrixXd::Zero(2 + F.rows(), F.cols());
+  Eigen::VectorXd b_lorentz = Eigen::VectorXd::Zero(2 + F.rows());
+  A_lorentz.row(0) = -b.transpose();
+  b_lorentz(0) = -c;
+  b_lorentz(1) = 1;
+  A_lorentz.bottomRows(F.rows()) = F;
+  return std::make_shared<RotatedLorentzConeConstraint>(A_lorentz, b_lorentz);
 }
 }  // namespace internal
 }  // namespace solvers

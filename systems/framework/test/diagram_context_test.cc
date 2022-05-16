@@ -681,7 +681,11 @@ TEST_F(DiagramContextTest, NextChangeEventNumber) {
   const int64_t first = context_->start_new_change_event();
 
   EXPECT_EQ(context_->start_new_change_event(), first + 1);
-  EXPECT_EQ(context_->start_new_change_event(), first + 2);
+
+  // Verify that this also works on a const Context.
+  EXPECT_EQ(const_cast<const DiagramContext<double>*>(context_.get())
+                ->start_new_change_event(),
+            first + 2);
 
   // Obtain a subcontext and verify we still count up.
   Context<double>& discrete_context =
@@ -782,7 +786,7 @@ TEST_F(DiagramContextTest, CloneAccuracy) {
 TEST_F(DiagramContextTest, SubcontextCloneIsError) {
   const auto& subcontext = context_->GetSubsystemContext(SubsystemIndex{0});
   DRAKE_EXPECT_THROWS_MESSAGE(
-      subcontext.Clone(), std::logic_error,
+      subcontext.Clone(),
       "Context::Clone..: Cannot clone a non-root Context; "
       "this Context was created by 'adder0'.");
 }

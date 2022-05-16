@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <ostream>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -19,6 +20,8 @@ enum class EllipsoidsSeparationProblem {
   kProblem2,
   kProblem3
 };
+
+std::ostream& operator<<(std::ostream& os, EllipsoidsSeparationProblem value);
 
 std::vector<EllipsoidsSeparationProblem> GetEllipsoidsSeparationProblems();
 
@@ -59,6 +62,8 @@ class TestEllipsoidsSeparation
 };
 
 enum class QPasSOCPProblem { kProblem0, kProblem1 };
+
+std::ostream& operator<<(std::ostream& os, QPasSOCPProblem value);
 
 std::vector<QPasSOCPProblem> GetQPasSOCPProblems();
 
@@ -126,6 +131,7 @@ class TestQPasSOCP : public ::testing::TestWithParam<QPasSOCPProblem> {
 /// becomes
 /// an SOCP, with both Lorentz cone and rotated Lorentz cone constraints
 enum class FindSpringEquilibriumProblem { kProblem0 };
+std::ostream& operator<<(std::ostream& os, FindSpringEquilibriumProblem value);
 std::vector<FindSpringEquilibriumProblem> GetFindSpringEquilibriumProblems();
 class TestFindSpringEquilibrium
     : public ::testing::TestWithParam<FindSpringEquilibriumProblem> {
@@ -171,6 +177,7 @@ class MaximizeGeometricMeanTrivialProblem1 {
  private:
   std::unique_ptr<MathematicalProgram> prog_;
   symbolic::Variable x_;
+  std::unique_ptr<Binding<LinearCost>> cost_;
 };
 
 /**
@@ -197,6 +204,7 @@ class MaximizeGeometricMeanTrivialProblem2 {
  private:
   std::unique_ptr<MathematicalProgram> prog_;
   symbolic::Variable x_;
+  std::unique_ptr<Binding<LinearCost>> cost_;
 };
 
 /**
@@ -234,6 +242,7 @@ class SmallestEllipsoidCoveringProblem {
   std::unique_ptr<MathematicalProgram> prog_;
   VectorX<symbolic::Variable> a_;
   Eigen::MatrixXd p_;
+  std::unique_ptr<Binding<LinearCost>> cost_;
 };
 
 class SmallestEllipsoidCoveringProblem1
@@ -260,7 +269,7 @@ void SolveAndCheckSmallestEllipsoidCoveringProblems(
 template <int Dim>
 class MinimalDistanceFromSphereProblem {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MinimalDistanceFromSphereProblem);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinimalDistanceFromSphereProblem);
 
   /** @param with_linear_cost If set to true, we add the quadratic cost as the
    * sum of a quadratic and a linear cost. Otherwise we add it as a single
@@ -317,7 +326,7 @@ class MinimalDistanceFromSphereProblem {
   Eigen::Matrix<symbolic::Variable, Dim, 1> x_;
   Eigen::Matrix<double, Dim, 1> pt_;
   Eigen::Matrix<double, Dim, 1> center_;
-  double radius_;
+  const double radius_;
 };
 
 void TestSocpDualSolution1(const SolverInterface& solver,

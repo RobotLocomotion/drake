@@ -18,11 +18,11 @@ is maintained on the
 
 # Process
 
-The build cop is expected to be on duty during normal business hours Eastern
-Time, approximately 9am to 5pm on weekdays, holidays excepted. Developers are
-encouraged, but not required, to merge pull requests during times when the build
-cop is on duty. Nightly and weekly build failures will be addressed the
-following weekday morning.
+Two build cops are expected to be on duty on weekdays, holidays excepted. At
+least one build cop should be on duty during normal business hours Eastern Time,
+approximately 9am to 5pm. Developers are encouraged, but not required, to merge
+pull requests during times when the build cop is on duty. Nightly and weekly
+build failures will be addressed the following weekday morning.
 
 When a CI build failure occurs, the build cop will be notified by email.
 Notifications are sent to ``drake-alerts+jenkins@tri.global`` and
@@ -41,6 +41,13 @@ commits. If the authors are not responsive within 15 minutes, or are unable to
 fix the failure within 60 minutes, the build cop will merge the pull request to
 revert the commits and verify that the continuous builds triggered by that merge
 pass.
+
+In the case of failures in a ``dev`` directory, the build cop should disable the
+failing test instead of reverting the entire commit. To disable the test, add a
+``tags = []`` attribute to its BUILD rule. If it only fails in certain
+configurations, you can add tags for just those, e.g., "no_asan". If it fails in
+the default configuration or in too many configurations to list one by one, use
+the tag "manual" to disable the test under all configurations.
 
 Use the [DrakeDevelopers Slack channel #buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
 to discuss build issues with your partner build cop and other Drake
@@ -132,6 +139,30 @@ In Jenkins, builds that are in progress (blinking on and off) will show the
 color of the previous build.
 
 Note that CDash pages may take a minute to populate.
+
+In addition, check the [automatically generated documentation repo](https://github.com/RobotLocomotion/RobotLocomotion.github.io/commits/master)
+to confirm that the latest commit has a green circle, not a red x.
+
+## Monitor the Cache Servers
+
+Check once per week that caching is still enabled, by opening one Mac and
+one Ubuntu (non-unprovisioned)
+[Continuous Production](https://drake-jenkins.csail.mit.edu/view/Continuous%20Production/)
+build log and searching for one of two messages:
+
+Message indicating a problem:
+
+``REMOTE_CACHE_KEY =``
+
+Message indicating success:
+
+``REMOTE_CACHE_KEY = 3a677c9194643f253d3eb3fcd6b09ee370f663da30bf1f43fb547edc6851e339``
+
+The exact key hash is not important, it's just important that it's non-empty.
+
+If there is an issue with either cache server, post the details on the
+[#buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
+channel on Slack, ensuring that `@betsymcphail` is mentioned in the message.
 
 ## Respond to Breakage
 
@@ -257,3 +288,8 @@ Details of failures in the [drake-external-examples](https://github.com/RobotLoc
 repository, which may be denoted by red "build failing" icons at the top of the build
 dashboard on Jenkins, should be posted to the [#buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
 channel on Slack, ensuring that `@betsymcphail` is mentioned in the message.
+
+## Documentation Repo Failures
+If the [automatically generated documentation repo](https://github.com/RobotLocomotion/RobotLocomotion.github.io/commits/master)
+fails, post in [DrakeDevelopers Slack channel #buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/),
+and try to locate the offensive Drake commit. Each commit in the documentation repo is associated with a matching Drake commit.

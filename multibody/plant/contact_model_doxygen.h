@@ -241,7 +241,7 @@ Next topic: @ref contact_engineering
    with Regularized Friction. arXiv:1909.05700 [cs.RO].
 
  @note For better numerical stability, the discrete model assumes
- both static and kinetic coefficients of friction to be equal, the kinetic
+ both static and kinetic coefficients of friction to be equal, the static
  coefficient of friction is ignored.
 
  <h3>Continuous MultibodyPlant</h3>
@@ -311,8 +311,8 @@ Next topic: @ref contact_engineering
  Next topic: @ref stribeck_approximation
  */
 
-/** @defgroup stribeck_approximation Continuous Approximation of Coulomb
- Friction
+/**
+ @defgroup stribeck_approximation Continuous Approximation of Coulomb Friction
  @ingroup drake_contacts
 
  Static friction (or stiction) arises due to surface characteristics at the
@@ -417,7 +417,7 @@ Next topic: @ref contact_engineering
  with an explicit integrator, or use of a more-stable implicit integrator.
 
  @note When modeling the multibody system as discrete (refer to the @ref
- time_advancement_strategy "Choice of Time Advancement Strategy" section), we
- regularize Coulomb friction and only use the static coefficient of friction μₛ
- for better numerical stability.
+ time_advancement_strategy "Choice of Time Advancement Strategy" section), the
+ model assumes both static and kinetic coefficients of friction to be equal and
+ the static coefficient of friction is ignored.
 */

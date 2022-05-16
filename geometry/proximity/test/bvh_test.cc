@@ -8,7 +8,7 @@
 #include "drake/geometry/proximity/make_ellipsoid_mesh.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/obb.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -27,8 +27,7 @@ class BvhTester {
   BvhTester() = delete;
 
   template <class BvType, class MeshType>
-  static Vector3d ComputeCentroid(const MeshType& mesh,
-                                  const typename MeshType::ElementIndex i) {
+  static Vector3d ComputeCentroid(const MeshType& mesh, int i) {
     return Bvh<BvType, MeshType>::ComputeCentroid(mesh, i);
   }
 
@@ -56,7 +55,7 @@ class BvhTester {
     for (auto it = start; it != end; ++it) {
       const auto& element = mesh_M.element(it->first);
       for (int i=0; i < MeshType::kVertexPerElement; ++i) {
-        const Vector3d p_MV = mesh_M.vertex(element.vertex(i)).r_MV();
+        const Vector3d p_MV = mesh_M.vertex(element.vertex(i));
         const Vector3d p_BV = X_BM * p_MV;
         if ((p_BV.array() > bv_M.half_width().array()).any()) {
           return false;
@@ -77,40 +76,39 @@ GTEST_TEST(BvNodeTest, TestEqualLeaf) {
   // We can use any Obb for this test.
   Obb bv(RigidTransformd::Identity(), Vector3d::Zero());
 
-  BvNode<Obb, SurfaceMesh<double>> leaf_of_one_element(
-      bv, {1, {SurfaceFaceIndex(0)}});
+  BvNode<Obb, TriangleSurfaceMesh<double>> leaf_of_one_element(bv, {1, {0}});
   // Tests reflexive property: equal to itself.
   EXPECT_TRUE(leaf_of_one_element.EqualLeaf(leaf_of_one_element));
 
   // Unequal number of elements.
-  BvNode<Obb, SurfaceMesh<double>> leaf_of_two_elements(
-      bv, {2, {SurfaceFaceIndex(0), SurfaceFaceIndex(1)}});
+  BvNode<Obb, TriangleSurfaceMesh<double>> leaf_of_two_elements(bv,
+                                                                {2, {0, 1}});
   EXPECT_FALSE(leaf_of_one_element.EqualLeaf(leaf_of_two_elements));
 
   // Second element is different.
-  BvNode<Obb, SurfaceMesh<double>> leaf_with_a_different_element(
-      bv, {2, {SurfaceFaceIndex(0), SurfaceFaceIndex(2)}});
+  BvNode<Obb, TriangleSurfaceMesh<double>> leaf_with_a_different_element(bv,
+                                                                 {2, {0, 2}});
   EXPECT_FALSE(leaf_of_two_elements.EqualLeaf(leaf_with_a_different_element));
 
   // All elements are the same.
-  BvNode<Obb, SurfaceMesh<double>> leaf_with_same_two_elements(
-      bv, {2, {SurfaceFaceIndex(0), SurfaceFaceIndex(1)}});
+  BvNode<Obb, TriangleSurfaceMesh<double>> leaf_with_same_two_elements(
+      bv, {2, {0, 1}});
   EXPECT_TRUE(leaf_of_two_elements.EqualLeaf(leaf_with_same_two_elements));
 
   // Explicitly test that we can compare leaves for meshes with different
   // declared scalar types.
-  BvNode<Obb, SurfaceMesh<AutoDiffXd>> leaf_of_one_ad_element(
-      bv, {1, {SurfaceFaceIndex(0)}});
+  BvNode<Obb, TriangleSurfaceMesh<AutoDiffXd>> leaf_of_one_ad_element(bv,
+                                                                      {1, {0}});
   EXPECT_TRUE(leaf_of_one_element.EqualLeaf(leaf_of_one_ad_element));
 
   // In fact, the EqualLeaf is such that it allows for different Bv types as it
   // is only testing tree *topology*.
-  BvNode<Aabb, SurfaceMesh<double>> aabb_leaf_of_one_element(
-      Aabb(Vector3d::Zero(), Vector3d::Zero()), {1, {SurfaceFaceIndex(0)}});
+  BvNode<Aabb, TriangleSurfaceMesh<double>> aabb_leaf_of_one_element(
+      Aabb(Vector3d::Zero(), Vector3d::Zero()), {1, {0}});
   EXPECT_TRUE(leaf_of_one_element.EqualLeaf(aabb_leaf_of_one_element));
 }
 
-// @tparam BvNodeType is either BvNode<SurfaceMesh<double>> or
+// @tparam BvNodeType is either BvNode<TriangleSurfaceMesh<double>> or
 //                    BvNode<VolumeMesh<double>>.
 template <class BvNodeType>
 int CountAllNodes(const BvNodeType& root) {
@@ -123,7 +121,7 @@ int CountAllNodes(const BvNodeType& root) {
   }
 }
 
-// @tparam BvNodeType is either BvNode<SurfaceMesh<double>> or
+// @tparam BvNodeType is either BvNode<TriangleSurfaceMesh<double>> or
 //                    BvNode<VolumeMesh<double>>.
 template <class BvNodeType>
 int CountLeafNodes(const BvNodeType& root) {
@@ -140,7 +138,7 @@ int CountLeafNodes(const BvNodeType& root) {
 // going away from the root, that starts at the root and ends at a leaf.
 // (https://en.m.wikipedia.org/wiki/Glossary_of_graph_theory_terms#height)
 //
-// @tparam BvNodeType is either BvNode<SurfaceMesh<double>> or
+// @tparam BvNodeType is either BvNode<TriangleSurfaceMesh<double>> or
 //                    BvNode<VolumeMesh<double>>.
 template <class BvNodeType>
 int ComputeHeight(const BvNodeType& root) {
@@ -160,11 +158,11 @@ class BvhTest : public ::testing::Test {
   BvhTest()
       : ::testing::Test(),
         mesh_(MakeSphereSurfaceMesh<double>(Sphere(1.5), 3)),
-        bvh_(Bvh<BvType, SurfaceMesh<double>>(mesh_)) {}
+        bvh_(Bvh<BvType, TriangleSurfaceMesh<double>>(mesh_)) {}
 
  protected:
-  SurfaceMesh<double> mesh_;
-  Bvh<BvType, SurfaceMesh<double>> bvh_;
+  TriangleSurfaceMesh<double> mesh_;
+  Bvh<BvType, TriangleSurfaceMesh<double>> bvh_;
 };
 
 using BvTypes = ::testing::Types<Aabb, Obb>;
@@ -177,25 +175,18 @@ TYPED_TEST_SUITE(BvhTest, BvTypes);
 TYPED_TEST(BvhTest, TestComputeBoundingVolume) {
   using BvType = TypeParam;
   // A mesh of two triangles that are well separated by X-Y plane.
-  const SurfaceMesh<double> mesh(
-      {SurfaceFace(SurfaceVertexIndex(0), SurfaceVertexIndex(1),
-                   SurfaceVertexIndex(2)),
-       SurfaceFace(SurfaceVertexIndex(3), SurfaceVertexIndex(4),
-                   SurfaceVertexIndex(5))},
-      {SurfaceVertex<double>(Vector3d(0, 0, 1)),
-       SurfaceVertex<double>(Vector3d(1, 0, 1)),
-       SurfaceVertex<double>(Vector3d(0, 1, 1)),
-       SurfaceVertex<double>(Vector3d(0, 0, -1)),
-       SurfaceVertex<double>(Vector3d(1, 0, -1)),
-       SurfaceVertex<double>(Vector3d(0, 1, -1))});
+  const TriangleSurfaceMesh<double> mesh(
+      {{0, 1, 2}, {3, 4, 5}},
+      {Vector3d(0, 0, 1), Vector3d(1, 0, 1), Vector3d(0, 1, 1),
+       Vector3d(0, 0, -1), Vector3d(1, 0, -1), Vector3d(0, 1, -1)});
 
-  using FaceCentroidPair = std::pair<SurfaceFaceIndex, Vector3d>;
+  using FaceCentroidPair = std::pair<int, Vector3d>;
   // The positions of centroids are not relevant to this test.
-  std::vector<FaceCentroidPair> upper{{SurfaceFaceIndex(0), Vector3d()}};
-  std::vector<FaceCentroidPair> lower{{SurfaceFaceIndex(1), Vector3d()}};
+  std::vector<FaceCentroidPair> upper{{0, Vector3d()}};
+  std::vector<FaceCentroidPair> lower{{1, Vector3d()}};
 
   const BvType bv =
-      BvhTester::ComputeBoundingVolume<BvType, SurfaceMesh<double>>(
+      BvhTester::ComputeBoundingVolume<BvType, TriangleSurfaceMesh<double>>(
           mesh, upper.begin(), upper.end());
   EXPECT_TRUE(BvhTester::Contain(bv, mesh, upper.begin(), upper.end()));
   EXPECT_FALSE(BvhTester::Contain(bv, mesh, lower.begin(), lower.end()));
@@ -224,11 +215,12 @@ TYPED_TEST(BvhTest, TestBuildBvTree) {
   EXPECT_EQ(tree_height, 2);
 
   const int num_elements = this->mesh_.num_elements();
-  std::set<SurfaceFaceIndex> element_indices;
-  std::function<void(const BvNode<BvType, SurfaceMesh<double>>&, int)>
+  std::set<int> element_indices;
+  std::function<void(const BvNode<BvType, TriangleSurfaceMesh<double>>&, int)>
       check_node;
   check_node = [&check_node, &element_indices, num_elements, tree_height](
-                   const BvNode<BvType, SurfaceMesh<double>>& node, int depth) {
+                   const BvNode<BvType, TriangleSurfaceMesh<double>>& node,
+                   int depth) {
     if (depth < tree_height) {
       EXPECT_FALSE(node.is_leaf());
       const double node_volume = node.bv().CalcVolume();
@@ -259,14 +251,15 @@ TYPED_TEST(BvhTest, TestBuildBvTree) {
 TYPED_TEST(BvhTest, TestCopy) {
   // Copy constructor.
   using BvType = TypeParam;
-  Bvh<BvType, SurfaceMesh<double>> bvh_copy(this->bvh_);
+  Bvh<BvType, TriangleSurfaceMesh<double>> bvh_copy(this->bvh_);
 
   // Confirm that it's a deep copy.
-  std::function<void(const BvNode<BvType, SurfaceMesh<double>>&,
-                     const BvNode<BvType, SurfaceMesh<double>>&)>
+  std::function<void(const BvNode<BvType, TriangleSurfaceMesh<double>>&,
+                     const BvNode<BvType, TriangleSurfaceMesh<double>>&)>
       check_copy;
-  check_copy = [&check_copy](const BvNode<BvType, SurfaceMesh<double>>& orig,
-                             const BvNode<BvType, SurfaceMesh<double>>& copy) {
+  check_copy = [&check_copy](
+                   const BvNode<BvType, TriangleSurfaceMesh<double>>& orig,
+                   const BvNode<BvType, TriangleSurfaceMesh<double>>& copy) {
     EXPECT_NE(&orig, &copy);
     if (orig.is_leaf()) {
       ASSERT_TRUE(copy.is_leaf());
@@ -292,8 +285,8 @@ TYPED_TEST(BvhTest, TestCollide) {
   using BvType = TypeParam;
   auto separate_mesh = MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
   RigidTransformd X_WV{Vector3d{4, 4, 4}};
-  Bvh<BvType, SurfaceMesh<double>> separate(separate_mesh);
-  std::vector<std::pair<SurfaceFaceIndex, SurfaceFaceIndex>> pairs =
+  Bvh<BvType, TriangleSurfaceMesh<double>> separate(separate_mesh);
+  std::vector<std::pair<int, int>> pairs =
       this->bvh_.GetCollisionCandidates(separate, X_WV);
   EXPECT_EQ(pairs.size(), 0);
 
@@ -309,7 +302,7 @@ TYPED_TEST(BvhTest, TestCollide) {
   auto tangent_mesh = MakeSphereSurfaceMesh<double>(Sphere(1.5), 2);
   ASSERT_EQ(tangent_mesh.num_elements(), 32);
   X_WV = RigidTransformd{Vector3d{3, 0, 0}};
-  Bvh<BvType, SurfaceMesh<double>> tangent(tangent_mesh);
+  Bvh<BvType, TriangleSurfaceMesh<double>> tangent(tangent_mesh);
   // Reality check that the tree of `tangent` is a perfect binary tree. A
   // perfect binary tree with height H has number of leaves L satisfying
   // L = 2^H. We expect every leaf to have two triangles which leads to
@@ -341,8 +334,7 @@ TYPED_TEST(BvhTest, TestCollideEarlyExit) {
   int limit{1};
   // This callback should only be run as many times as the specified limit
   // before the early exit kicks in.
-  auto callback = [&count, &limit](SurfaceFaceIndex a,
-                                   SurfaceFaceIndex b) -> BvttCallbackResult {
+  auto callback = [&count, &limit](int a, int b) -> BvttCallbackResult {
     ++count;
     return count < limit ? BvttCallbackResult::Continue
                          : BvttCallbackResult::Terminate;
@@ -403,34 +395,26 @@ TYPED_TEST(BvhTest, TestCollideSurfaceVolume) {
         to exactly *two* invocations of the callback (tet, tri1) and
         (tet, tri2). */
 
-  using SVertex = SurfaceVertex<double>;
-  using STri = SurfaceFace;
-  using SVIndex = SurfaceVertexIndex;
-  std::vector<SVertex> vertices_S{{SVertex(Vector3d(0, 0, 0)),     // P
-                                   SVertex(Vector3d(1, 0, 1)),     // Q
-                                   SVertex(Vector3d(2, 0, 0)),     // R
-                                   SVertex(Vector3d(1, 0, -1))}};  // S
-  std::vector<STri> faces_S{{STri(SVIndex(0), SVIndex(3), SVIndex(1)),
-                             STri(SVIndex(3), SVIndex(2), SVIndex(1))}};
-  const SurfaceMesh<double> mesh_S(std::move(faces_S), std::move(vertices_S));
-  const Bvh<BvType, SurfaceMesh<double>> bvh_S(mesh_S);
+  std::vector<Vector3d> vertices_S{{Vector3d(0, 0, 0),     // P
+                                    Vector3d(1, 0, 1),     // Q
+                                    Vector3d(2, 0, 0),     // R
+                                    Vector3d(1, 0, -1)}};  // S
+  std::vector<SurfaceTriangle> faces_S{{0, 3, 1}, {3, 2, 1}};
+  const TriangleSurfaceMesh<double> mesh_S(std::move(faces_S),
+                                           std::move(vertices_S));
+  const Bvh<BvType, TriangleSurfaceMesh<double>> bvh_S(mesh_S);
   // Confirm the expected topology (one leaf with two tris).
   ASSERT_EQ(CountLeafNodes(bvh_S.root_node()), 1);
 
-  using VVertex = VolumeVertex<double>;
-  using VTet = VolumeElement;
-  using VVindex = VolumeVertexIndex;
-  std::vector<VVertex> vertices_V{
-      {VVertex(Vector3d(1, 0, 1)),     // A
-       VVertex(Vector3d(1, 0, -1)),    // B
-       VVertex(Vector3d(1, 1, 0)),     // C
-       VVertex(Vector3d(0, 0, 0)),     // D
-       VVertex(Vector3d(-1, 0, 1)),    // E
-       VVertex(Vector3d(-1, 0, -1)),   // F
-       VVertex(Vector3d(-1, 1, 0))}};  // G
-  std::vector<VTet> tets_V{
-      {VTet(VVindex(0), VVindex(2), VVindex(1), VVindex(3)),
-       VTet(VVindex(4), VVindex(5), VVindex(6), VVindex(3))}};
+  std::vector<Vector3d> vertices_V{
+      {Vector3d(1, 0, 1),     // A
+       Vector3d(1, 0, -1),    // B
+       Vector3d(1, 1, 0),     // C
+       Vector3d(0, 0, 0),     // D
+       Vector3d(-1, 0, 1),    // E
+       Vector3d(-1, 0, -1),   // F
+       Vector3d(-1, 1, 0)}};  // G
+  std::vector<VolumeElement> tets_V{{0, 2, 1, 3}, {4, 5, 6, 3}};
   const VolumeMesh<double> mesh_V(std::move(tets_V), std::move(vertices_V));
   const Bvh<BvType, VolumeMesh<double>> bvh_V(mesh_V);
   // Confirm the expected topology (two leaves, one per tet).
@@ -442,8 +426,7 @@ TYPED_TEST(BvhTest, TestCollideSurfaceVolume) {
    the candidates and the total number of candidates we get. */
   bool intersecting_included = false;
   int total_count = 0;
-  auto callback = [&intersecting_included, &total_count](VolumeElementIndex v,
-                                                         SurfaceFaceIndex s) {
+  auto callback = [&intersecting_included, &total_count](int v, int s) {
     ++total_count;
     if (v == 0 && s == 0) intersecting_included = true;
     return BvttCallbackResult::Continue;
@@ -472,12 +455,12 @@ TYPED_TEST(BvhTest, TestCollidePrimitive) {
 
     // All collision candidates.
     {
-      std::vector<SurfaceFaceIndex> candidates;
+      std::vector<int> candidates;
       // We pose the plane to pass through a plane of symmetry of the
       // octahedron, so we should get all 8 triangles.
       this->bvh_.Collide(
           plane_P, RigidTransformd::Identity(),
-          [&candidates](SurfaceFaceIndex f) -> BvttCallbackResult {
+          [&candidates](int f) -> BvttCallbackResult {
             candidates.push_back(f);
             return BvttCallbackResult::Continue;
           });
@@ -487,10 +470,10 @@ TYPED_TEST(BvhTest, TestCollidePrimitive) {
 
     // First collision candidate then terminate early.
     {
-      std::vector<SurfaceFaceIndex> candidates;
+      std::vector<int> candidates;
       this->bvh_.Collide(
           plane_P, RigidTransformd::Identity(),
-          [&candidates](SurfaceFaceIndex f) -> BvttCallbackResult {
+          [&candidates](int f) -> BvttCallbackResult {
             candidates.push_back(f);
             return BvttCallbackResult::Terminate;
           });
@@ -500,11 +483,11 @@ TYPED_TEST(BvhTest, TestCollidePrimitive) {
 
     // No collision.
     {
-      std::vector<SurfaceFaceIndex> candidates;
+      std::vector<int> candidates;
       // We pose the plane far from the mesh.
       this->bvh_.Collide(
           plane_P, RigidTransformd(Vector3d(10, 0, 0)),
-          [&candidates](SurfaceFaceIndex f) -> BvttCallbackResult {
+          [&candidates](int f) -> BvttCallbackResult {
             candidates.push_back(f);
             return BvttCallbackResult::Continue;
           });
@@ -520,8 +503,9 @@ TYPED_TEST(BvhTest, TestComputeCentroid) {
   // Set resolution at double so that we get the coarsest mesh of 8 elements.
   auto surface_mesh =
       MakeEllipsoidSurfaceMesh<double>(Ellipsoid(1., 2., 3.), 6);
-  Vector3d centroid = BvhTester::ComputeCentroid<BvType, SurfaceMesh<double>>(
-      surface_mesh, SurfaceFaceIndex(0));
+  Vector3d centroid =
+      BvhTester::ComputeCentroid<BvType, TriangleSurfaceMesh<double>>(
+          surface_mesh, 0);
   // The first face of our octahedron is a triangle with vertices at 1, 2, and
   // 3 along each respective axis, so its centroid should average out to 1/3,
   // 2/3, and 3/3.
@@ -530,7 +514,7 @@ TYPED_TEST(BvhTest, TestComputeCentroid) {
   auto volume_mesh = MakeEllipsoidVolumeMesh<double>(
       Ellipsoid(1., 2., 3.), 6, TessellationStrategy::kSingleInteriorVertex);
   centroid = BvhTester::ComputeCentroid<BvType, VolumeMesh<double>>(
-      volume_mesh, VolumeElementIndex(0));
+      volume_mesh, 0 /* tet_index */);
   // The first face of our octahedron is a tet with vertices at 1, 2, and 3
   // along each respective axis and the origin 0, so its centroid should
   // average out to 1/4, 2/4, and 3/4.
@@ -543,24 +527,15 @@ TYPED_TEST(BvhTest, TestEqual) {
   // bounding volumes are not equal. Each tree has only one node.
   {
     const VolumeMesh<double> smaller_tetrahedron(
-        std::vector<VolumeElement>{
-            VolumeElement(VolumeVertexIndex(0), VolumeVertexIndex(1),
-                          VolumeVertexIndex(2), VolumeVertexIndex(3))},
-        std::vector<VolumeVertex<double>>{
-            VolumeVertex<double>(Vector3d::Zero()),
-            VolumeVertex<double>(Vector3d::UnitX()),
-            VolumeVertex<double>(Vector3d::UnitY()),
-            VolumeVertex<double>(Vector3d::UnitZ())});
+        std::vector<VolumeElement>{VolumeElement(0, 1, 2, 3)},
+        std::vector<Vector3<double>>{Vector3d::Zero(), Vector3d::UnitX(),
+                                     Vector3d::UnitY(), Vector3d::UnitZ()});
     const Bvh<BvType, VolumeMesh<double>> smaller(smaller_tetrahedron);
     const VolumeMesh<double> bigger_tetrahedron(
-        std::vector<VolumeElement>{
-            VolumeElement(VolumeVertexIndex(0), VolumeVertexIndex(1),
-                          VolumeVertexIndex(2), VolumeVertexIndex(3))},
-        std::vector<VolumeVertex<double>>{
-            VolumeVertex<double>(Vector3d::Zero()),
-            VolumeVertex<double>(2. * Vector3d::UnitX()),
-            VolumeVertex<double>(2. * Vector3d::UnitY()),
-            VolumeVertex<double>(2. * Vector3d::UnitZ())});
+        std::vector<VolumeElement>{VolumeElement(0, 1, 2, 3)},
+        std::vector<Vector3<double>>{Vector3d::Zero(), 2. * Vector3d::UnitX(),
+                                     2. * Vector3d::UnitY(),
+                                     2. * Vector3d::UnitZ()});
     const Bvh<BvType, VolumeMesh<double>> bigger(bigger_tetrahedron);
     // Verify that each tree has the same structure. Each has only one node.
     ASSERT_TRUE(smaller.root_node().is_leaf());
@@ -577,22 +552,19 @@ TYPED_TEST(BvhTest, TestEqual) {
   // Tests that two BVHs are not equal due to different tree structures even
   // though every node has the same bounding volume.
   {
-    const std::vector<VolumeVertex<double>> vertices{
-        VolumeVertex<double>(Vector3d::Zero()),
-        VolumeVertex<double>(Vector3d::UnitX()),
-        VolumeVertex<double>(Vector3d::UnitY()),
-        VolumeVertex<double>(Vector3d::UnitZ())};
-    const VolumeElement element(VolumeVertexIndex(0), VolumeVertexIndex(1),
-                                VolumeVertexIndex(2), VolumeVertexIndex(3));
+    const std::vector<Vector3<double>> vertices{
+        Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
+        Vector3d::UnitZ()};
+    const VolumeElement element(0, 1, 2, 3);
     const VolumeMesh<double> one_tetrahedron(
         std::vector<VolumeElement>{element},
-        std::vector<VolumeVertex<double>>(vertices));
+        std::vector<Vector3d>(vertices));
     const Bvh<BvType, VolumeMesh<double>> one_node(one_tetrahedron);
     const VolumeMesh<double> duplicated_tetrahedra(
         // Both elements are the same tetrahedron, so every Bvh node will have
         // the same bounding volume.
         std::vector<VolumeElement>{element, element},
-        std::vector<VolumeVertex<double>>(vertices));
+        std::vector<Vector3d>(vertices));
     const Bvh<BvType, VolumeMesh<double>> three_nodes(duplicated_tetrahedra);
     // Verify that the two trees have different structures.
     ASSERT_TRUE(one_node.root_node().is_leaf());
@@ -612,11 +584,12 @@ TYPED_TEST(BvhTest, TestEqual) {
   // Tests equality of BVH's that require multiple recursive calls in
   // traversing the trees. The mesh has enough triangles for the tree to have
   // enough depth.
-  const SurfaceMesh<double> mesh_ellipsoid =
+  const TriangleSurfaceMesh<double> mesh_ellipsoid =
       MakeEllipsoidSurfaceMesh<double>(Ellipsoid(1., 2., 3.), 6.);
-  ASSERT_EQ(8, mesh_ellipsoid.num_faces());
-  const Bvh<BvType, SurfaceMesh<double>> bvh_ellipsoid(mesh_ellipsoid);
-  const Bvh<BvType, SurfaceMesh<double>> bvh_ellipsoid_too(mesh_ellipsoid);
+  ASSERT_EQ(8, mesh_ellipsoid.num_triangles());
+  const Bvh<BvType, TriangleSurfaceMesh<double>> bvh_ellipsoid(mesh_ellipsoid);
+  const Bvh<BvType, TriangleSurfaceMesh<double>> bvh_ellipsoid_too(
+      mesh_ellipsoid);
   // In order to require multiple recursive calls, both trees must have
   // non-zero height, *and* the root nodes must have "equal" bounding volumes.
   // These tests confirm those preconditions.
@@ -636,12 +609,12 @@ TYPED_TEST(BvhTest, TestEqual) {
 // node is the same as if the mesh were double-valued.
 TYPED_TEST(BvhTest, BvhFromAutodiffmesh) {
   using BvType = TypeParam;
-  SurfaceMesh<AutoDiffXd> mesh_ad =
+  TriangleSurfaceMesh<AutoDiffXd> mesh_ad =
       MakeSphereSurfaceMesh<AutoDiffXd>(Sphere(1.5), 3);
-  Bvh<BvType, SurfaceMesh<AutoDiffXd>> bvh_ad(mesh_ad);
-  SurfaceMesh<double> mesh_d =
+  Bvh<BvType, TriangleSurfaceMesh<AutoDiffXd>> bvh_ad(mesh_ad);
+  TriangleSurfaceMesh<double> mesh_d =
       MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
-  Bvh<BvType, SurfaceMesh<double>> bvh_d(mesh_d);
+  Bvh<BvType, TriangleSurfaceMesh<double>> bvh_d(mesh_d);
   EXPECT_TRUE(bvh_ad.Equal(bvh_d));
 }
 
@@ -654,12 +627,13 @@ TYPED_TEST(BvhTest, BvhFromAutodiffmesh) {
 // As we implement further bounding volume types, this test should be extended
 // to exercise those additional permutations.
 GTEST_TEST(BoundingVolumeHierarchyTest, CollideDifferentBvTypes) {
-  SurfaceMesh<double> mesh = MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
-  Bvh<Aabb, SurfaceMesh<double>> aabb_bvh(mesh);
-  Bvh<Obb, SurfaceMesh<double>> obb_bvh(mesh);
+  TriangleSurfaceMesh<double> mesh =
+      MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
+  Bvh<Aabb, TriangleSurfaceMesh<double>> aabb_bvh(mesh);
+  Bvh<Obb, TriangleSurfaceMesh<double>> obb_bvh(mesh);
 
-  std::vector<std::pair<SurfaceFaceIndex, SurfaceFaceIndex>> results;
-  auto callback = [&results](SurfaceFaceIndex a, SurfaceFaceIndex b) {
+  std::vector<std::pair<int, int>> results;
+  auto callback = [&results](int a, int b) {
     results.emplace_back(a, b);
     return BvttCallbackResult::Continue;
   };
@@ -689,9 +663,10 @@ GTEST_TEST(BoundingVolumeHierarchyTest, CollideDifferentBvTypes) {
 // As we implement further bounding volume types, this test should be extended
 // to exercise those additional permutations.
 GTEST_TEST(BoundingVolumeHierarchyTest, CandidatesDifferentBvTypes) {
-  SurfaceMesh<double> mesh = MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
-  Bvh<Aabb, SurfaceMesh<double>> aabb_bvh(mesh);
-  Bvh<Obb, SurfaceMesh<double>> obb_bvh(mesh);
+  TriangleSurfaceMesh<double> mesh =
+      MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
+  Bvh<Aabb, TriangleSurfaceMesh<double>> aabb_bvh(mesh);
+  Bvh<Obb, TriangleSurfaceMesh<double>> obb_bvh(mesh);
 
   EXPECT_GT(aabb_bvh.GetCollisionCandidates(obb_bvh, RigidTransformd{}).size(),
             0);

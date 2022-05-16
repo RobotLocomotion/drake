@@ -1,5 +1,3 @@
-#include "drake/multibody/fixed_fem/dev/deformable_contact.h"
-
 #include <utility>
 #include <vector>
 
@@ -8,12 +6,14 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/fixed_fem/dev/deformable_contact_data.h"
+#include "drake/multibody/fixed_fem/dev/deformable_contact_surface.h"
 #include "drake/multibody/fixed_fem/dev/deformable_rigid_contact_pair.h"
+#include "drake/multibody/fixed_fem/dev/deformable_rigid_mesh_intersection.h"
 #include "drake/multibody/fixed_fem/dev/mesh_utilities.h"
 
 namespace drake {
@@ -22,12 +22,10 @@ namespace fem {
 namespace {
 
 using Eigen::Vector3d;
-using geometry::SurfaceMesh;
+using geometry::TriangleSurfaceMesh;
 using geometry::VolumeElement;
-using geometry::VolumeElementIndex;
 using geometry::VolumeMesh;
 using geometry::VolumeMeshFieldLinear;
-using geometry::VolumeVertex;
 using geometry::internal::Bvh;
 using geometry::internal::DeformableVolumeMesh;
 using geometry::internal::Obb;
@@ -51,7 +49,7 @@ using std::vector;
            +X
 */
 template <typename T>
-SurfaceMesh<T> MakePyramidSurface() {
+TriangleSurfaceMesh<T> MakePyramidSurface() {
   const int face_data[8][3] = {// The top four faces share the apex vertex v5.
                                {1, 2, 5},
                                {2, 3, 5},
@@ -62,12 +60,12 @@ SurfaceMesh<T> MakePyramidSurface() {
                                {3, 2, 0},
                                {2, 1, 0},
                                {1, 4, 0}};
-  vector<geometry::SurfaceFace> faces;
+  vector<geometry::SurfaceTriangle> faces;
   for (auto& face : face_data) {
     faces.emplace_back(face);
   }
   // clang-format off
-  const Vector3<T> vertex_data[6] = {
+  vector<Vector3<T>> vertices = {
       { 0,  0, 0},
       { 1,  0, 0},
       { 0,  1, 0},
@@ -76,11 +74,7 @@ SurfaceMesh<T> MakePyramidSurface() {
       { 0,  0, 1}
   };
   // clang-format on
-  vector<geometry::SurfaceVertex<T>> vertices;
-  for (auto& vertex : vertex_data) {
-    vertices.emplace_back(vertex);
-  }
-  return SurfaceMesh<T>(std::move(faces), std::move(vertices));
+  return TriangleSurfaceMesh<T>(std::move(faces), std::move(vertices));
 }
 
 /* Returns true if
@@ -108,8 +102,8 @@ DeformableContactSurface<T> MakeDeformableContactSurface(
   const DeformableVolumeMesh<T> volume_D(MakeOctahedronVolumeMesh<T>());
   /* Deformable contact assumes the rigid surface is double-valued, regardless
    of the scalar value for the volume mesh.  */
-  const SurfaceMesh<double> surface_R = MakePyramidSurface<double>();
-  const Bvh<Obb, SurfaceMesh<double>> bvh_R(surface_R);
+  const TriangleSurfaceMesh<double> surface_R = MakePyramidSurface<double>();
+  const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_R(surface_R);
   return ComputeTetMeshTriMeshContact<T>(volume_D, surface_R, bvh_R, X_DR);
 }
 
@@ -185,13 +179,13 @@ void TestComputeTetMeshTriMeshContact() {
   calculated_centroids_D.clear();
   for (int i = 0; i < kNumPolys; ++i) {
     const Vector4<T> b_centroid = contact_data[i].b_centroid;
-    const VolumeElementIndex tet_index = contact_data[i].tet_index;
+    const int tet_index = contact_data[i].tet_index;
     const VolumeElement& tet = volume_D.element(tet_index);
     Vector3<T> centroid_D(0, 0, 0);
     /* Calculate the centroid in cartesian coordinate by interpolating the
      positions of the tet vertices with the barycentric weights. */
     for (int j = 0; j < 4; ++j) {
-      centroid_D += b_centroid(j) * volume_D.vertex(tet.vertex(j)).r_MV();
+      centroid_D += b_centroid(j) * volume_D.vertex(tet.vertex(j));
     }
     calculated_centroids_D.push_back(centroid_D);
   }
@@ -213,17 +207,12 @@ GTEST_TEST(DeformableContactTest, NonTriangleContactPolygon) {
   /* Creates a surface mesh with a single, large-enough, triangle in the
    z-plane. */
   int face[3] = {0, 1, 2};
-  vector<geometry::SurfaceFace> faces;
+  vector<geometry::SurfaceTriangle> faces;
   faces.emplace_back(face);
-  const Vector3<double> tri_vertex_data[3] = {
-      {10, 0, 0}, {-5, 5, 0}, {-5, -5, 0}};
-  vector<geometry::SurfaceVertex<double>> tri_vertices;
-  for (auto& vertex : tri_vertex_data) {
-    tri_vertices.emplace_back(vertex);
-  }
-  const SurfaceMesh<double> surface_R(std::move(faces),
-                                      std::move(tri_vertices));
-  const Bvh<Obb, SurfaceMesh<double>> bvh_R(surface_R);
+  vector<Vector3<double>> tri_vertices = {{10, 0, 0}, {-5, 5, 0}, {-5, -5, 0}};
+  const TriangleSurfaceMesh<double> surface_R(std::move(faces),
+                                              std::move(tri_vertices));
+  const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_R(surface_R);
 
   /* Creates a tetrahedral mesh with a single tet whose intersection with the
    surface mesh is a axis-aligned unit square [-0.5, 0.5]x[-0.5, 0.5]x{0} in the
@@ -236,7 +225,7 @@ GTEST_TEST(DeformableContactTest, NonTriangleContactPolygon) {
   tets.emplace_back(tet);
   const Vector3<double> tet_vertex_data[4] = {
       {1, 0, -1}, {-1, 0, -1}, {0, -1, 1}, {0, 1, 1}};
-  vector<VolumeVertex<double>> tet_vertices;
+  vector<Vector3d> tet_vertices;
   for (const auto& vertex : tet_vertex_data) {
     tet_vertices.emplace_back(vertex);
   }

@@ -16,12 +16,6 @@ RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
   DRAKE_ASSERT(axis_index >= 0 && axis_index <= 2);
   DRAKE_ASSERT_VOID(ThrowIfNotUnitLength(u_A, __func__));
 
-  if constexpr (scalar_predicate<T>::is_bool == false) {
-    throw std::logic_error(
-        "RotationMatrix::MakeFromOneUnitVector() "
-        "cannot be used with a symbolic type.");
-  }
-
   // This method forms a right-handed orthonormal basis with u_A and two
   // internally-constructed unit vectors v_A and w_A.
   // Herein u_A, v_A, w_A are abbreviated u, v, w, respectively.
@@ -157,6 +151,23 @@ void RotationMatrix<T>::ThrowIfNotValid(const Matrix3<T>& R) {
   } else {
     unused(R);
   }
+}
+
+template <typename T>
+Matrix3<T> RotationMatrix<T>::ProjectMatrix3ToOrthonormalMatrix3(
+    const Matrix3<T>& M, T* quality_factor) {
+  const auto svd = M.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
+  if (quality_factor != nullptr) {
+    // Singular values are always non-negative and sorted in decreasing order.
+    const auto singular_values = svd.singularValues();
+    const T s_max = singular_values(0);  // maximum singular value.
+    const T s_min = singular_values(2);  // minimum singular value.
+    const T s_f = (s_max != 0.0 && s_min < 1.0/s_max) ? s_min : s_max;
+    const T det = M.determinant();
+    const double sign_det = (det > 0.0) ? 1 : ((det < 0.0) ? -1 : 0);
+    *quality_factor = s_f * sign_det;
+  }
+  return svd.matrixU() * svd.matrixV().transpose();
 }
 
 double ProjectMatToRotMatWithAxis(const Eigen::Matrix3d& M,

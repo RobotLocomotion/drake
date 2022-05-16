@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/extract_double.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
@@ -29,20 +30,9 @@ using math::RotationMatrix;
 using math::RotationMatrixd;
 using std::make_shared;
 using std::vector;
+using symbolic::Expression;
 
 const double kEps = std::numeric_limits<double>::epsilon();
-
-template <typename Derived>
-Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
-ExtractMatrixValue(const Derived& v) {
-  if constexpr (std::is_same_v<typename Derived::Scalar, double>) {
-    return v;
-  } else if constexpr (std::is_same_v<typename Derived::Scalar, AutoDiffXd>) {
-    return math::ExtractValue(v);
-  } else {
-    static_assert("Unsupported type T");
-  }
-}
 
 // These tests represent the main tests of the actual callback. The callback
 // has limited responsibility:
@@ -80,6 +70,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
         id_cylinder_(GeometryId::get_new_id()),
         id_halfspace_(GeometryId::get_new_id()),
         id_capsule_(GeometryId::get_new_id()) {}
+// TODO(DamrongGuoy): add tests for ellipsoid.
 
  protected:
   void SetUp() override {
@@ -150,10 +141,10 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     ASSERT_EQ(point_pairs.size(), 1u);
     const PenetrationAsPointPair<T> first_result = point_pairs[0];
     point_pairs.clear();
-    const Eigen::Vector3d p_WCa = ExtractMatrixValue(first_result.p_WCa);
-    const Eigen::Vector3d p_WCb = ExtractMatrixValue(first_result.p_WCb);
+    const Eigen::Vector3d p_WCa = ExtractDoubleOrThrow(first_result.p_WCa);
+    const Eigen::Vector3d p_WCb = ExtractDoubleOrThrow(first_result.p_WCb);
     const Eigen::Vector3d nhat_BA_W =
-        ExtractMatrixValue(first_result.nhat_BA_W);
+        ExtractDoubleOrThrow(first_result.nhat_BA_W);
     const double depth = ExtractDoubleOrThrow(first_result.depth);
     EXPECT_NEAR((p_WCa - p_WCb).norm(), depth, kEps);
     EXPECT_TRUE(CompareMatrices(p_WCb - p_WCa, depth * nhat_BA_W, kEps));
@@ -168,12 +159,12 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     ASSERT_NEAR(ExtractDoubleOrThrow(first_result.depth), target_depth, kEps);
     EXPECT_EQ(ExtractDoubleOrThrow(second_result.depth),
               ExtractDoubleOrThrow(first_result.depth));
-    ASSERT_TRUE(CompareMatrices(ExtractMatrixValue(first_result.nhat_BA_W),
-                                ExtractMatrixValue(second_result.nhat_BA_W)));
-    ASSERT_TRUE(CompareMatrices(ExtractMatrixValue(first_result.p_WCa),
-                                ExtractMatrixValue(second_result.p_WCa)));
-    ASSERT_TRUE(CompareMatrices(ExtractMatrixValue(first_result.p_WCb),
-                                ExtractMatrixValue(second_result.p_WCb)));
+    ASSERT_TRUE(CompareMatrices(ExtractDoubleOrThrow(first_result.nhat_BA_W),
+                                ExtractDoubleOrThrow(second_result.nhat_BA_W)));
+    ASSERT_TRUE(CompareMatrices(ExtractDoubleOrThrow(first_result.p_WCa),
+                                ExtractDoubleOrThrow(second_result.p_WCa)));
+    ASSERT_TRUE(CompareMatrices(ExtractDoubleOrThrow(first_result.p_WCb),
+                                ExtractDoubleOrThrow(second_result.p_WCb)));
 
     // Filter the pair (A, B); we'll put the ids in a set and simply return that
     // set for the extract ids function.
@@ -222,16 +213,16 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     const PenetrationAsPointPair<T> second_result = point_pairs[0];
     EXPECT_EQ(ExtractDoubleOrThrow(second_result.depth),
               ExtractDoubleOrThrow(first_result.depth));
-    EXPECT_TRUE(CompareMatrices(ExtractMatrixValue(first_result.p_WCa),
-                                ExtractMatrixValue(second_result.p_WCa)));
-    EXPECT_TRUE(CompareMatrices(ExtractMatrixValue(first_result.p_WCb),
-                                ExtractMatrixValue(second_result.p_WCb)));
-    EXPECT_TRUE(CompareMatrices(ExtractMatrixValue(first_result.nhat_BA_W),
-                                ExtractMatrixValue(second_result.nhat_BA_W)));
+    EXPECT_TRUE(CompareMatrices(ExtractDoubleOrThrow(first_result.p_WCa),
+                                ExtractDoubleOrThrow(second_result.p_WCa)));
+    EXPECT_TRUE(CompareMatrices(ExtractDoubleOrThrow(first_result.p_WCb),
+                                ExtractDoubleOrThrow(second_result.p_WCb)));
+    EXPECT_TRUE(CompareMatrices(ExtractDoubleOrThrow(first_result.nhat_BA_W),
+                                ExtractDoubleOrThrow(second_result.nhat_BA_W)));
 
     if constexpr (std::is_same_v<T, AutoDiffXd>) {
       // Make sure that callback with T=AutoDiffXd and T=double produces the
-      // same result.
+      // same result within numerical noise.
       const RigidTransform<double> X_WA_double =
           RigidTransform<double>::Identity();
       const RigidTransform<double> X_WB_double(
@@ -245,8 +236,8 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
           &collision_filter_, &X_WGs_double, &point_pairs_double);
       EXPECT_FALSE(Callback<double>(&sphere_A_, &shape, &callback_data_double));
       ASSERT_EQ(point_pairs_double.size(), 1u);
-      EXPECT_EQ(ExtractDoubleOrThrow(first_result.depth),
-                point_pairs_double[0].depth);
+      EXPECT_NEAR(ExtractDoubleOrThrow(first_result.depth),
+                  point_pairs_double[0].depth, 2*kEps);
       EXPECT_TRUE(CompareMatrices(math::ExtractValue(first_result.p_WCa),
                                   point_pairs_double[0].p_WCa));
       EXPECT_TRUE(CompareMatrices(math::ExtractValue(first_result.p_WCb),
@@ -301,7 +292,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     }
     const double target_depth =
         halfspace_offset_ +
-        halfspace_normal_.dot(ExtractMatrixValue(R_WB.inverse() * p_WBo)) +
+        halfspace_normal_.dot(ExtractDoubleOrThrow(R_WB.inverse() * p_WBo)) +
         kRadius;
     const RigidTransform<T> X_WB = RigidTransform<T>{R_WB, p_WBo};
     return std::make_pair(X_WB, target_depth);
@@ -334,7 +325,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     vector<PenetrationAsPointPair<T>> point_pairs;
     CallbackData<T> callback_data(&collision_filter_, &X_WGs, &point_pairs);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        Callback<T>(&shape1, &shape2, &callback_data), std::logic_error,
+        Callback<T>(&shape1, &shape2, &callback_data),
         "Penetration queries between shapes .* and .* are not supported for "
         "scalar type .*");
   }
@@ -495,6 +486,26 @@ TEST_F(PenetrationAsPointPairCallbackTest, UnsupportedAutoDiffXd) {
     for (int j = 0; j < static_cast<int>(unsupported_geometries.size()); ++j) {
       if (i != j) {
         UnsupportedGeometry<AutoDiffXd>(
+            unsupported_geometries[i].first, unsupported_geometries[j].first,
+            unsupported_geometries[i].second, unsupported_geometries[j].second);
+      }
+    }
+  }
+}
+
+TEST_F(PenetrationAsPointPairCallbackTest, UnsupportedExpression) {
+  // We don't support penetration queries between any shapes for Expression.
+  std::vector<std::pair<fcl::CollisionObjectd, GeometryId>>
+      unsupported_geometries;
+  unsupported_geometries.emplace_back(sphere_A_, id_A_);
+  unsupported_geometries.emplace_back(box_, id_box_);
+  unsupported_geometries.emplace_back(cylinder_, id_cylinder_);
+  unsupported_geometries.emplace_back(halfspace_, id_halfspace_);
+  unsupported_geometries.emplace_back(capsule_, id_capsule_);
+  for (int i = 0; i < static_cast<int>(unsupported_geometries.size()); ++i) {
+    for (int j = 0; j < static_cast<int>(unsupported_geometries.size()); ++j) {
+      if (i != j) {
+        UnsupportedGeometry<Expression>(
             unsupported_geometries[i].first, unsupported_geometries[j].first,
             unsupported_geometries[i].second, unsupported_geometries[j].second);
       }

@@ -55,7 +55,8 @@ TEST_P(ParseTest, ParsesUrdfAndVisualizes) {
   const int default_num_models = plant.num_model_instances();
 
   // Check to ensure URDF is parsable.
-  EXPECT_NO_THROW(Parser(&plant).AddModelFromFile(filename));
+  Parser parser(&plant);
+  EXPECT_NO_THROW(parser.AddModelFromFile(filename));
 
   // Ensure there was exactly one model instance added for the new model.
   EXPECT_EQ(plant.num_model_instances() - default_num_models, 1);

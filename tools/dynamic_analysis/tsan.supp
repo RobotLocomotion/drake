@@ -29,11 +29,11 @@ called_from_lib:libmosek64.so.9.2
 # data race (libglib-2.0.*) in g_static_rec_mutex_lock
 race:g_static_rec_mutex_lock
 
-# data race (libgurobi90.*) in bio_asn1.c.  Gurobi has not been instrumented
+# data race (libgurobi95.*) in bio_asn1.c.  Gurobi has not been instrumented
 # with TSan.
 called_from_lib:libgurobi.so
-called_from_lib:libgurobi90.dylib
-called_from_lib:libgurobi90.so
+called_from_lib:libgurobi95.dylib
+called_from_lib:libgurobi95.so
 
 # data race in libtbb.so.  libtbb has not been instrumented with TSan.
 called_from_lib:libtbb.so
@@ -48,6 +48,9 @@ called_from_lib:libembree3.so
 # second time inside a global destructor.
 race:__cxa_finalize
 mutex:__cxa_finalize
+
+# Issue #16494.
+race:vtkNew<vtkRenderWindow>::~vtkNew
 
 # In the lcm_memq handler, while correctly holding a mutex it obtains exclusive
 # access to the next message by popping it off of the queue, but then it

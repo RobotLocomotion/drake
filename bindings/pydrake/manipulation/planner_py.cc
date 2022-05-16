@@ -129,7 +129,7 @@ PYBIND11_MODULE(planner, m) {
       "DoDifferentialInverseKinematics",
       [](const multibody::MultibodyPlant<double>& robot,
           const systems::Context<double>& context,
-          const Isometry3<double>& X_WE_desired,
+          const math::RigidTransform<double>& X_WE_desired,
           const multibody::Frame<double>& frame_E,
           const manipulation::planner::DifferentialInverseKinematicsParameters&
               parameters) {

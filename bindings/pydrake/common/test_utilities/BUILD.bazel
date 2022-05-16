@@ -7,6 +7,7 @@ load(
 load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
+    "drake_py_unittest",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
@@ -35,6 +36,20 @@ drake_py_library(
 )
 
 drake_py_library(
+    name = "meta_py",
+    testonly = 1,
+    srcs = ["meta.py"],
+    deps = [":module_py"],
+)
+
+drake_py_unittest(
+    name = "meta_test",
+    deps = [
+        ":meta_py",
+    ],
+)
+
+drake_py_library(
     name = "numpy_compare_py",
     testonly = 1,
     srcs = ["numpy_compare.py"],
@@ -57,6 +72,20 @@ drake_py_library(
     ],
 )
 
+# A minimal of implementation scipy.sparse that's barely functional enough
+# to support unit testing the Drake APIs that return Eigen::Sparse matrices.
+# The pybind11 type caster for Eigen::Sparse maps it to scipy.sparse.
+drake_py_library(
+    name = "scipy_stub_py",
+    testonly = 1,
+    srcs = [
+        "scipy_stub/scipy/__init__.py",
+        "scipy_stub/scipy/sparse/__init__.py",
+    ],
+    # N.B. We do not depend on ":module_py".
+    imports = ["scipy_stub"],
+)
+
 # Package roll-up (for Bazel dependencies).
 drake_py_library(
     name = "test_utilities",
@@ -66,6 +95,9 @@ drake_py_library(
         ":module_py",
         ":numpy_compare_py",
         ":pickle_compare_py",
+        # N.B. Do not add scipy_stub_py here; it inserts scipy as a top-level
+        # module. Developers should only do that with intent, not as a bonus
+        # dependency from a conveience roll-up module.
     ],
 )
 

@@ -98,3 +98,11 @@ Here are some additional comments:
 
 We follow the [Google Shell Style Guide](
 https://google.github.io/styleguide/shell.xml).
+
+# Git Commit Message Style
+
+For commit messages we require:
+
+* An empty line between the first line and any subsequent lines. (For
+  further insight, see
+  [git's commit discussion](https://git-scm.com/docs/git-commit#_discussion).)

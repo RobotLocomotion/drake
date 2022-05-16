@@ -32,9 +32,6 @@
             <radius>0.04</radius>
           </sphere>
         </geometry>
-        <material>
-          <diffuse>0 1 0 1.0</diffuse>
-        </material>
       </collision>
     </link>
   </model>

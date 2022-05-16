@@ -1,7 +1,6 @@
 #include "drake/multibody/inverse_kinematics/test/global_inverse_kinematics_test_util.h"
 #include "drake/solvers/gurobi_solver.h"
 
-using Eigen::Isometry3d;
 using Eigen::Vector3d;
 
 namespace drake {
@@ -92,7 +91,7 @@ TEST_F(KukaTest, ReachableTest) {
     EXPECT_TRUE(result.get_solution_result() ==
                     solvers::SolutionResult::kInfeasibleConstraints ||
                 result.get_solution_result() ==
-                    solvers::SolutionResult::kInfeasible_Or_Unbounded);
+                    solvers::SolutionResult::kInfeasibleOrUnbounded);
   }
 }
 }  // namespace

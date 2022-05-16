@@ -8,7 +8,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_clav.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_clav.obj"/>
       </geometry>
     </visual>
   </link>
@@ -20,7 +20,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/l_foot.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/l_foot.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -136,7 +136,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_larm.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_larm.obj"/>
       </geometry>
     </visual>
   </link>
@@ -148,7 +148,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_hand.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_hand.obj"/>
       </geometry>
     </visual>
   </link>
@@ -160,7 +160,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/l_lglut.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/l_lglut.obj"/>
       </geometry>
     </visual>
   </link>
@@ -172,7 +172,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/l_lleg.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/l_lleg.obj"/>
       </geometry>
     </visual>
   </link>
@@ -184,7 +184,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_scap.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_scap.obj"/>
       </geometry>
     </visual>
   </link>
@@ -196,7 +196,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/l_talus.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/l_talus.obj"/>
       </geometry>
     </visual>
   </link>
@@ -208,7 +208,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_uarm.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_uarm.obj"/>
       </geometry>
     </visual>
   </link>
@@ -220,7 +220,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_farm.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_farm.obj"/>
       </geometry>
     </visual>
   </link>
@@ -232,7 +232,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/l_uglut.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/l_uglut.obj"/>
       </geometry>
     </visual>
   </link>
@@ -244,7 +244,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/l_uleg.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/l_uleg.obj"/>
       </geometry>
     </visual>
     <!-- to cover the logo shield -->
@@ -259,7 +259,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/ltorso.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/ltorso.obj"/>
       </geometry>
     </visual>
   </link>
@@ -271,7 +271,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/mtorso.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/mtorso.obj"/>
       </geometry>
     </visual>
   </link>
@@ -283,7 +283,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/pelvis.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/pelvis.obj"/>
       </geometry>
     </visual>
   </link>
@@ -295,7 +295,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_clav.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_clav.obj"/>
       </geometry>
     </visual>
   </link>
@@ -307,7 +307,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_foot.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_foot.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -423,7 +423,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_larm.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_larm.obj"/>
       </geometry>
     </visual>
   </link>
@@ -435,7 +435,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_hand.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_hand.obj"/>
       </geometry>
     </visual>
   </link>
@@ -447,7 +447,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_lglut.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_lglut.obj"/>
       </geometry>
     </visual>
   </link>
@@ -459,7 +459,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_lleg.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_lleg.obj"/>
       </geometry>
     </visual>
   </link>
@@ -471,7 +471,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_scap.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_scap.obj"/>
       </geometry>
     </visual>
   </link>
@@ -483,7 +483,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_talus.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_talus.obj"/>
       </geometry>
     </visual>
   </link>
@@ -495,7 +495,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_uarm.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_uarm.obj"/>
       </geometry>
     </visual>
   </link>
@@ -507,7 +507,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_farm.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_farm.obj"/>
       </geometry>
     </visual>
   </link>
@@ -519,7 +519,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_uglut.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_uglut.obj"/>
       </geometry>
     </visual>
   </link>
@@ -531,7 +531,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/r_uleg.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/r_uleg.obj"/>
       </geometry>
     </visual>
     <!-- to cover the logo shield -->
@@ -546,7 +546,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/utorso.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/utorso.obj"/>
       </geometry>
     </visual>
   </link>
@@ -883,7 +883,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/head.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/head.obj"/>
       </geometry>
       <material name="">
         <color rgba="0.9098 0.44314 0.031373 1"/>
@@ -990,7 +990,7 @@
     <visual>
       <origin rpy="-0.314 0 0" xyz="0.045 -0.0261018277 -0.08342369"/>
       <geometry>
-        <mesh filename="package://Atlas/urdf/meshes/head_camera.obj"/>
+        <mesh filename="package://drake/examples/atlas/urdf/meshes/head_camera.obj"/>
       </geometry>
       <material name="">
         <color rgba="0.72941 0.35686 0.023529 1"/>

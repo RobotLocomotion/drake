@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version="1.7">
+<sdf xmlns:drake="http://drake.mit.edu" version="1.7">
   <model name="test_robot">
     <!-- This sdf file defines a simple test robot with a single link that
          contains one visual tag for each supported geometry type. We're
@@ -59,7 +59,7 @@
         <geometry>
           <mesh>
             <drake:declare_convex/>
-            <uri>../tri_cube.obj</uri>
+            <uri>package://drake/multibody/parsing/test/tri_cube.obj</uri>
           </mesh>
         </geometry>
       </visual>
@@ -103,7 +103,7 @@
       <visual name="Mesh">
         <geometry>
           <mesh>
-            <uri>../tri_cube.obj</uri>
+            <uri>package://drake/multibody/parsing/test/tri_cube.obj</uri>
           </mesh>
         </geometry>
       </visual>

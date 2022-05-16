@@ -22,6 +22,8 @@
 #include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
+#include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/multiplexer.h"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
@@ -43,6 +45,7 @@ using drake::multibody::Body;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
 using drake::systems::controllers::InverseDynamicsController;
+using drake::systems::Demultiplexer;
 
 namespace drake {
 namespace examples {
@@ -98,8 +101,16 @@ int DoMain() {
           "KINOVA_JACO_COMMAND", lcm));
   auto command_receiver = builder.AddSystem<JacoCommandReceiver>();
   builder.Connect(command_sub->get_output_port(),
-                  command_receiver->get_input_port());
-  builder.Connect(command_receiver->get_output_port(),
+                  command_receiver->get_message_input_port());
+
+  auto mux = builder.AddSystem<systems::Multiplexer>(
+      std::vector<int>({kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers,
+              kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers}));
+  builder.Connect(command_receiver->get_commanded_position_output_port(),
+                  mux->get_input_port(0));
+  builder.Connect(command_receiver->get_commanded_velocity_output_port(),
+                  mux->get_input_port(1));
+  builder.Connect(mux->get_output_port(),
                   jaco_controller->get_input_port_desired_state());
   builder.Connect(jaco_controller->get_output_port_control(),
                   jaco_plant->get_actuation_input_port(jaco_id));
@@ -112,8 +123,17 @@ int DoMain() {
   // torques might want to wait until after #12631 is fixed or it could slow
   // down the simulation significantly.
   auto status_sender = builder.AddSystem<JacoStatusSender>();
+  auto demux = builder.AddSystem<systems::Demultiplexer>(
+      std::vector<int>({kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers,
+              kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers}));
   builder.Connect(jaco_plant->get_state_output_port(jaco_id),
-                  status_sender->get_state_input_port());
+                  demux->get_input_port());
+  builder.Connect(demux->get_output_port(0),
+                  status_sender->get_position_input_port());
+  builder.Connect(demux->get_output_port(0),
+                  command_receiver->get_position_measured_input_port());
+  builder.Connect(demux->get_output_port(1),
+                  status_sender->get_velocity_input_port());
   builder.Connect(status_sender->get_output_port(),
                   status_pub->get_input_port());
 
@@ -133,9 +153,6 @@ int DoMain() {
   initial_position(5) = 4.49;
   initial_position(6) = 5.03;
 
-  command_receiver->set_initial_position(
-      &diagram->GetMutableSubsystemContext(*command_receiver, &root_context),
-      initial_position);
   jaco_plant->SetPositions(
       &diagram->GetMutableSubsystemContext(*jaco_plant, &root_context),
       initial_position);

@@ -15,9 +15,11 @@ package(
 drake_cc_binary(
     name = "jaco_controller",
     srcs = ["jaco_controller.cc"],
+    add_test_rule = 1,
     data = [
         "//manipulation/models/jaco_description:models",
     ],
+    test_rule_args = ["--build_only"],
     deps = [
         "//common:add_text_logging_gflags",
         "//common:find_resource",
@@ -52,6 +54,8 @@ drake_cc_binary(
         "//multibody/plant",
         "//systems/analysis:simulator",
         "//systems/controllers:inverse_dynamics_controller",
+        "//systems/primitives:demultiplexer",
+        "//systems/primitives:multiplexer",
         "@gflags",
     ],
 )

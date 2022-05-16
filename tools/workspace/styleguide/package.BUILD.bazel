@@ -19,6 +19,8 @@ py_binary(
     srcs = ["cpplint/cpplint.py"],
     imports = ["cpplint"],
     main = "cpplint/cpplint.py",
+    python_version = "PY3",
+    srcs_version = "PY3",
     visibility = [],
 )
 
@@ -34,6 +36,8 @@ alias(
 py_binary(
     name = "cpplint_unittest",
     srcs = ["cpplint/cpplint_unittest.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
     data = [
         "cpplint/cpplint_test_header.h",
     ],

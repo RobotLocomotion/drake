@@ -5,7 +5,7 @@ https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html
 
 This script is neither called during the build nor expected to be called by
 most developers or users of the project. It is only supported when run under
-Python 3 on macOS or Ubuntu 18.04 (Bionic Beaver).
+Python 3 on macOS or Ubuntu.
 
 To run:
 

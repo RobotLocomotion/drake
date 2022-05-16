@@ -38,19 +38,20 @@ GTEST_TEST(MakeSphereMesh, InvariantsOfLevelZeroMesh) {
   // There is only one vertex marked `false` in is_boundary -- the vertex at
   // (0, 0, 0).
   int count = 0;
-  VolumeVertexIndex center_index;
-  for (VolumeVertexIndex i(0); i < static_cast<int>(is_boundary.size()); ++i) {
+  int center_index = -1;
+  for (int i = 0; i < static_cast<int>(is_boundary.size()); ++i) {
     if (is_boundary[i] == false) {
       ++count;
       center_index = i;
     }
   }
+  ASSERT_GT(center_index, -1);
   EXPECT_EQ(count, 1);
-  EXPECT_EQ(mesh.vertex(center_index).r_MV(), Vector3d(0, 0, 0));
+  EXPECT_EQ(mesh.vertex(center_index), Vector3d(0, 0, 0));
 
   // Every vertex references the center index _and_ it is the fourth vertex
   // in each tet.
-  for (VolumeElementIndex t(0); t < mesh.num_elements(); ++t) {
+  for (int t = 0; t < mesh.num_elements(); ++t) {
     const VolumeElement& tet = mesh.element(t);
     EXPECT_EQ(tet.vertex(3), center_index);
   }
@@ -61,7 +62,7 @@ GTEST_TEST(MakeSphereMesh, InvariantsOfLevelZeroMesh) {
 double CalcTetrahedronMeshVolume(const VolumeMesh<double>& mesh) {
   double volume = 0.0;
   for (int e = 0; e < mesh.num_elements(); ++e) {
-    volume += mesh.CalcTetrahedronVolume(VolumeElementIndex(e));
+    volume += mesh.CalcTetrahedronVolume(e);
   }
   return volume;
 }
@@ -144,26 +145,25 @@ GTEST_TEST(MakeSphereMesh, SplitOctohedron) {
   // semantics of vertices e-j as defined in the make unit sphere
   // infrastructure.
   const int a(0), b(1), c(2), d(3);
-  const std::vector<VolumeVertex<double>> tet_vertices{
-      VolumeVertex<double>(1, -1, -1), VolumeVertex<double>(1, 1, 1),
-      VolumeVertex<double>(-1, 1, -1), VolumeVertex<double>(-1, -1, 1)};
+  const std::vector<Vector3d> tet_vertices{
+      Vector3d(1, -1, -1), Vector3d(1, 1, 1),
+      Vector3d(-1, 1, -1), Vector3d(-1, -1, 1)};
 
   auto mid_point = [&tet_vertices](int i, int j) -> Vector3d {
-    return (tet_vertices[i].r_MV() + tet_vertices[j].r_MV()) / 2;
+    return (tet_vertices[i] + tet_vertices[j]) / 2;
   };
 
-  using VIndex = VolumeVertexIndex;
   // We don't need the vertices for a, b, c, and d in the test; we just need
   // e-j.
-  const VIndex e(0), f(1), g(2), h(3), i(4), j(5);
-  const std::array<VIndex, 6> octo_vertices{e, f, g, h, i, j};
-  const std::vector<VolumeVertex<double>> unit_p_MVs{
-      VolumeVertex<double>(mid_point(a, b)),  // e = (a + b) / 2
-      VolumeVertex<double>(mid_point(a, c)),  // f = (a + c) / 2
-      VolumeVertex<double>(mid_point(a, d)),  // g = (a + d) / 2
-      VolumeVertex<double>(mid_point(b, c)),  // h = (b + c) / 2
-      VolumeVertex<double>(mid_point(b, d)),  // i = (b + d) / 2
-      VolumeVertex<double>(mid_point(c, d))};  // j = (c + d) / 2
+  const int e(0), f(1), g(2), h(3), i(4), j(5);
+  const std::array<int, 6> octo_vertices{e, f, g, h, i, j};
+  const std::vector<Vector3d> unit_p_MVs{
+      Vector3d(mid_point(a, b)),  // e = (a + b) / 2
+      Vector3d(mid_point(a, c)),  // f = (a + c) / 2
+      Vector3d(mid_point(a, d)),  // g = (a + d) / 2
+      Vector3d(mid_point(b, c)),  // h = (b + c) / 2
+      Vector3d(mid_point(b, d)),  // i = (b + d) / 2
+      Vector3d(mid_point(c, d))};  // j = (c + d) / 2
 
   // Confirm the tetrahedron works as advertised; that the vertices at edge
   // midpoints live where we expect them to.
@@ -176,12 +176,12 @@ GTEST_TEST(MakeSphereMesh, SplitOctohedron) {
   //        e f
   //       /  |
   //     +X
-  ASSERT_TRUE(CompareMatrices(unit_p_MVs[e].r_MV(), Vector3d(1, 0, 0)));
-  ASSERT_TRUE(CompareMatrices(unit_p_MVs[f].r_MV(), Vector3d(0, 0, -1)));
-  ASSERT_TRUE(CompareMatrices(unit_p_MVs[g].r_MV(), Vector3d(0, -1, 0)));
-  ASSERT_TRUE(CompareMatrices(unit_p_MVs[h].r_MV(), Vector3d(0, 1, 0)));
-  ASSERT_TRUE(CompareMatrices(unit_p_MVs[i].r_MV(), Vector3d(0, 0, 1)));
-  ASSERT_TRUE(CompareMatrices(unit_p_MVs[j].r_MV(), Vector3d(-1, 0, 0)));
+  ASSERT_TRUE(CompareMatrices(unit_p_MVs[e], Vector3d(1, 0, 0)));
+  ASSERT_TRUE(CompareMatrices(unit_p_MVs[f], Vector3d(0, 0, -1)));
+  ASSERT_TRUE(CompareMatrices(unit_p_MVs[g], Vector3d(0, -1, 0)));
+  ASSERT_TRUE(CompareMatrices(unit_p_MVs[h], Vector3d(0, 1, 0)));
+  ASSERT_TRUE(CompareMatrices(unit_p_MVs[i], Vector3d(0, 0, 1)));
+  ASSERT_TRUE(CompareMatrices(unit_p_MVs[j], Vector3d(-1, 0, 0)));
 
   // We're going to implicitly scale the tetrahedron so that the octahedron
   // is no longer symmetric; we scale it along the three axes by a factor of
@@ -189,18 +189,17 @@ GTEST_TEST(MakeSphereMesh, SplitOctohedron) {
   // SplitOctohedron() will favor splitting along the shortest axis. In the
   // tests above, it's clear that EJ is aligned with the x-axis, GH with the y,
   // and FI with the z.
-  const std::vector<SortedPair<VIndex>> split_edges{SortedPair<VIndex>{e, j},
-                                                    SortedPair<VIndex>{g, h},
-                                                    SortedPair<VIndex>{f, i}};
+  const std::vector<SortedPair<int>> split_edges{
+      SortedPair<int>{e, j}, SortedPair<int>{g, h}, SortedPair<int>{f, i}};
   for (int axis = 0; axis < 3; ++axis) {
     Vector3d scale_factor{2, 2, 2};
     scale_factor(axis) = 1;
 
-    std::vector<VolumeVertex<double>> p_MVs;
+    std::vector<Vector3d> p_MVs;
     std::transform(
         unit_p_MVs.begin(), unit_p_MVs.end(), std::back_inserter(p_MVs),
-        [&scale_factor](const VolumeVertex<double>& v) {
-          return VolumeVertex<double>(v.r_MV().cwiseProduct(scale_factor));
+        [&scale_factor](const Vector3d& v) {
+          return Vector3d(v.cwiseProduct(scale_factor));
         });
     std::vector<VolumeElement> split_tetrahedra;
 
@@ -213,7 +212,7 @@ GTEST_TEST(MakeSphereMesh, SplitOctohedron) {
     for (const auto& tet : split_tetrahedra) {
       for (int v = 0; v < 3; ++v) {
         for (int u = v + 1; u < 4; ++u) {
-          SortedPair<VIndex> test_edge(tet.vertex(v), tet.vertex(u));
+          SortedPair<int> test_edge(tet.vertex(v), tet.vertex(u));
           for (int ax = 0; ax < 3; ++ax) {
             if (test_edge == split_edges[ax]) ++split_count[ax];
           }
@@ -237,8 +236,7 @@ GTEST_TEST(MakeSphereVolumeMesh, ConfirmEdgeLength) {
     // We arbitrarily pick the z = 0 equator (although x = 0 or y = 0 would work
     // equally well).
     std::vector<Vector3d> equator_vertices;
-    for (const auto& vertex : mesh.vertices()) {
-      const Vector3d& p_MV = vertex.r_MV();
+    for (const auto& p_MV : mesh.vertices()) {
       const double d_squared = p_MV(0) * p_MV(0) + p_MV(1) * p_MV(1);
       if (p_MV(2) == 0.0 && d_squared >= r_squared - 1e-14) {
         equator_vertices.push_back(p_MV);
@@ -305,9 +303,9 @@ GTEST_TEST(MakeSphereVolumeMesh, MassiveEdgeLength) {
 GTEST_TEST(MakeSphereSurfaceMesh, GenerateSurface) {
   const Sphere sphere(1.5);
   const double edge_length = 3 * sphere.radius();
-  SurfaceMesh<double> surface_mesh =
+  TriangleSurfaceMesh<double> surface_mesh =
       MakeSphereSurfaceMesh<double>(sphere, edge_length);
-  EXPECT_EQ(surface_mesh.num_faces(), 8);
+  EXPECT_EQ(surface_mesh.num_triangles(), 8);
   EXPECT_EQ(surface_mesh.num_vertices(), 6);
 }
 
@@ -333,15 +331,15 @@ GTEST_TEST(SparseSphereTest, SurfaceMatchesDenseMesh) {
   for (int level = 1; level < 3; ++level) {
     const VolumeMesh<double> dense_mesh = MakeUnitSphereMesh<double>(
         level, TessellationStrategy::kDenseInteriorVertices);
-    const SurfaceMesh<double> dense_surface =
+    const TriangleSurfaceMesh<double> dense_surface =
         ConvertVolumeToSurfaceMesh<double>(dense_mesh);
     const VolumeMesh<double> sparse_mesh = MakeUnitSphereMesh<double>(
         level, TessellationStrategy::kSingleInteriorVertex);
-    SurfaceMesh<double> sparse_surface =
+    TriangleSurfaceMesh<double> sparse_surface =
         ConvertVolumeToSurfaceMesh<double>(sparse_mesh);
 
-    // We can't use SurfaceMesh::Equal because we're not guaranteed the vertex
-    // or triangle ordering is the same.
+    // We can't use TriangleSurfaceMesh::Equal because we're not guaranteed the
+    // vertex or triangle ordering is the same.
     ASSERT_EQ(dense_surface.num_elements(), sparse_surface.num_elements());
     ASSERT_EQ(dense_surface.num_vertices(), sparse_surface.num_vertices());
 
@@ -356,8 +354,8 @@ GTEST_TEST(SparseSphereTest, SurfaceMatchesDenseMesh) {
 int CountSurfaceVertices(const VolumeMesh<double>& mesh, double radius = 1.0) {
   const double kEps = std::numeric_limits<double>::epsilon() * radius;
   int count = 0;
-  for (VolumeVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-    const double r = mesh.vertex(v).r_MV().norm();
+  for (int v = 0; v < mesh.num_vertices(); ++v) {
+    const double r = mesh.vertex(v).norm();
     // This is a very tight tolerance. That's good. We want to know that the
     // surface vertices are as close to the surface of the sphere as can
     // possibly be represented by doubles. If changes in the algorithm cause

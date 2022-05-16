@@ -44,10 +44,10 @@ LIBDRAKE_COMPONENTS = [
     "//geometry/render",
     "//geometry/render/gl_renderer",
     "//geometry/render/shaders",
+    "//geometry/render_gltf_client",
     "//lcm",
     "//manipulation/kinova_jaco",
     "//manipulation/kuka_iiwa",
-    "//manipulation/perception",
     "//manipulation/planner",
     "//manipulation/schunk_wsg",
     "//manipulation/util",
@@ -60,9 +60,11 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/pendulum",
     "//multibody/constraint",
     "//multibody/contact_solvers",
+    "//multibody/contact_solvers/sap",
     "//multibody/hydroelastics",
     "//multibody/inverse_kinematics",
     "//multibody/math",
+    "//multibody/meshcat",
     "//multibody/optimization",
     "//multibody/parsing",
     "//multibody/plant",
@@ -84,9 +86,4 @@ LIBDRAKE_COMPONENTS = [
     "//systems/rendering",
     "//systems/sensors",
     "//systems/trajectory_optimization",
-    # //common:filesystem (indirectly)
-    # //common:nice_type_name_override_header (indirectly)
-    # //geometry/render/gl_renderer:apple_only_no_render_engine_gl_factory (indirectly)  # noqa
-    # //third_party/com_github_finetjul_bender:vtkCapsuleSource (indirectly)
-    # //third_party/com_github_jbeder_yaml_cpp:emitfromevents (indirectly)
 ]

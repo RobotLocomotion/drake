@@ -1,6 +1,4 @@
-# Configure ${PATH} for actions.
-# N.B. Ensure this is consistent with `execute.bzl`.
-build --action_env=PATH=/usr/local/bin:/usr/bin:/bin
+# Common options for macOS, no matter the arch (x86 or arm).
 
 # Suppress numerous "'_FORTIFY_SOURCE' macro redefined" warnings when using
 # sanitizers.
@@ -10,3 +8,14 @@ build:tsan --copt=-Wno-macro-redefined
 build:tsan_everything --copt=-Wno-macro-redefined
 build:ubsan --copt=-Wno-macro-redefined
 build:ubsan_everything --copt=-Wno-macro-redefined
+
+# https://github.com/bazelbuild/bazel/issues/14294
+build --notrim_test_configuration
+
+# -- Options for explicitly using Clang.
+common:clang --repo_env=CC=clang
+common:clang --repo_env=CXX=clang++
+build:clang --action_env=CC=clang
+build:clang --action_env=CXX=clang++
+build:clang --host_action_env=CC=clang
+build:clang --host_action_env=CXX=clang++

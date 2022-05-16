@@ -24,7 +24,7 @@ namespace internal {
 /**
  * The resulting constraint may be a BoundingBoxConstraint, LinearConstraint,
  * LinearEqualityConstraint, or ExpressionConstraint, depending on the
- * arguments.  Constraints of the form x == 1 (which could be created as a
+ * arguments. Constraints of the form x == 1 (which could be created as a
  * BoundingBoxConstraint or LinearEqualityConstraint) will be
  * constructed as a LinearEqualityConstraint.
  */
@@ -45,7 +45,7 @@ inline Binding<Constraint> ParseConstraint(
 /**
  * Parses the constraint lb <= e <= ub to linear constraint types, including
  * BoundingBoxConstraint, LinearEqualityConstraint, and LinearConstraint. If @p
- * e is not a linear expression, then return a null pointer.
+ * e is not a linear expression, then returns a null pointer.
  * If the constraint lb <= e <= ub can be parsed as a BoundingBoxConstraint,
  * then we return a BoundingBoxConstraint pointer. For example, the constraint
  * 1 <= 2 * x + 3 <= 4 is equivalent to the bounding box constraint -1 <= x <=
@@ -55,70 +55,22 @@ std::unique_ptr<Binding<Constraint>> MaybeParseLinearConstraint(
     const symbolic::Expression& e, double lb, double ub);
 
 /*
- * Assist MathematicalProgram::AddLinearConstraint(...).
+ * Creates a constraint that should satisfy the formula `f`.
+ * @throws exception if `f` is always false (for example 1 >= 2).
+ * @note if `f` is always true, then returns an empty BoundingBoxConstraint
+ * binding.
  */
 Binding<Constraint> ParseConstraint(const symbolic::Formula& f);
 
 /*
- * Assist MathematicalProgram::AddLinearConstraint(...).
+ * Creates a constraint that enforces all `formulas` to be satisfied.
+ * @throws exception if any of `formulas` is always false (for example 1 >= 2).
+ * @note If any entry in `formulas` is always true, then that entry is ignored.
+ * If all entries in `formulas` are true, then returns an empty
+ * BoundingBoxConstraint binding.
  */
 Binding<Constraint> ParseConstraint(
-    const std::set<symbolic::Formula>& formulas);
-
-/*
- * Assist MathematicalProgram::AddLinearConstraint(...).
- */
-template <typename Derived>
-typename std::enable_if_t<
-    is_eigen_scalar_same<Derived, symbolic::Formula>::value,
-    Binding<Constraint>>
-ParseConstraint(const Eigen::ArrayBase<Derived>& formulas) {
-  const auto n = formulas.rows() * formulas.cols();
-
-  // Decomposes 2D-array of formulas into 1D-vector of expression, `v`, and
-  // two 1D-vector of double `lb` and `ub`.
-  constexpr int flat_vector_size{
-      MultiplyEigenSizes<Derived::RowsAtCompileTime,
-                         Derived::ColsAtCompileTime>::value};
-  Eigen::Matrix<symbolic::Expression, flat_vector_size, 1> v{n};
-  Eigen::Matrix<double, flat_vector_size, 1> lb{n};
-  Eigen::Matrix<double, flat_vector_size, 1> ub{n};
-  int k{0};  // index variable for 1D components.
-  for (int j{0}; j < formulas.cols(); ++j) {
-    for (int i{0}; i < formulas.rows(); ++i) {
-      const symbolic::Formula& f{formulas(i, j)};
-      if (is_equal_to(f)) {
-        // f(i) := (lhs == rhs)
-        //         (lhs - rhs == 0)
-        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
-        lb(k) = 0.0;
-        ub(k) = 0.0;
-      } else if (is_less_than_or_equal_to(f)) {
-        // f(i) := (lhs <= rhs)
-        //         (-∞ <= lhs - rhs <= 0)
-        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
-        lb(k) = -std::numeric_limits<double>::infinity();
-        ub(k) = 0.0;
-      } else if (is_greater_than_or_equal_to(f)) {
-        // f(i) := (lhs >= rhs)
-        //         (∞ >= lhs - rhs >= 0)
-        v(k) = get_lhs_expression(f) - get_rhs_expression(f);
-        lb(k) = 0.0;
-        ub(k) = std::numeric_limits<double>::infinity();
-      } else {
-        std::ostringstream oss;
-        oss << "ParseConstraint is called with an "
-               "array of formulas which includes a formula "
-            << f
-            << " which is not a relational formula using one of {==, <=, >=} "
-               "operators.";
-        throw std::runtime_error(oss.str());
-      }
-      k++;
-    }
-  }
-  return ParseConstraint(v, lb, ub);
-}
+    const Eigen::Ref<const MatrixX<symbolic::Formula>>& formulas);
 
 /*
  * Assist functionality for ParseLinearEqualityConstraint(...).
@@ -137,13 +89,21 @@ inline Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
 }
 
 /*
- * Assist MathematicalProgram::AddLinearEqualityConstraint(...).
+ * Creates a constraint to satisfy all entries in `formulas`.
+ * @throws exception if any of `formulas` is always false (for example 1 == 2)
+ * @note If any entry in `formulas` is always true, then that entry is ignored;
+ * if all entries in `formulas` are always true, then returns an empty linear
+ * equality constraint binding.
  */
 Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
     const std::set<symbolic::Formula>& formulas);
 
 /*
- * Assist MathematicalProgram::AddLinearEqualityConstraint(...).
+ *
+ * Creates a linear equality constraint satisfying the formula `f`.
+ * @throws exception if `f` is always false (for example 1 == 2)
+ * @note if `f` is always true, then returns an empty linear equality constraint
+ * binding.
  */
 Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
     const symbolic::Formula& f);
@@ -269,6 +229,23 @@ Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
     const symbolic::Expression& linear_expr2,
     const symbolic::Expression& quadratic_expr, double tol = 0);
 
+/** For a convex quadratic constraint 0.5xᵀQx + bᵀx + c <= 0, we parse it as a
+ * rotated Lorentz cone constraint [-bᵀx-c, 1, Fx] is in the rotated Lorentz
+ * cone where FᵀF = 0.5 * Q
+ * @param zero_tol The tolerance to determine if Q is a positive semidefinite
+ * matrix. Check math::DecomposePSDmatrixIntoXtransposeTimesX for a detailed
+ * explanation. zero_tol should be non-negative. @default is 0.
+ * @throw exception if this quadratic constraint is not convex (Q is not
+ * positive semidefinite)
+ *
+ * You could refer to
+ * https://docs.mosek.com/latest/pythonapi/advanced-toconic.html for derivation.
+ */
+std::shared_ptr<RotatedLorentzConeConstraint>
+ParseQuadraticAsRotatedLorentzConeConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& b, double c, double zero_tol = 0.);
+
 // TODO(eric.cousineau): Implement this if variable creation is separated.
 // Format would be (tuple(linear_binding, psd_binding), new_vars)
 // ParsePositiveSemidefiniteConstraint(
@@ -276,14 +253,6 @@ Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
 //   // ...
 //   return std::make_tuple(linear_binding, psd_binding);
 // }
-
-template <typename Derived>
-typename std::enable_if_t<is_eigen_vector_of<Derived, symbolic::Formula>::value,
-                          Binding<Constraint>>
-ParseConstraint(const Eigen::MatrixBase<Derived>&) {
-  // TODO(eric.cousineau): Implement this.
-  throw std::runtime_error("Not implemented");
-}
 
 }  // namespace internal
 }  // namespace solvers

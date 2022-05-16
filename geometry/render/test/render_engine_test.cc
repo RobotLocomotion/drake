@@ -112,7 +112,6 @@ GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
         engine.RegisterVisual(GeometryId::get_new_id(), sphere,
                               make_properties(label), {},
                               false),
-        std::logic_error,
         "Cannot register a geometry with the 'unspecified' or 'empty' render "
         "labels.*");
   }
@@ -279,7 +278,7 @@ GTEST_TEST(RenderEngine, DefaultRenderLabel) {
   {
     for (auto label :
          {RenderLabel::kDoNotRender, RenderLabel::kEmpty, RenderLabel{10}}) {
-      DRAKE_EXPECT_THROWS_MESSAGE(DummyRenderEngine{label}, std::logic_error,
+      DRAKE_EXPECT_THROWS_MESSAGE(DummyRenderEngine{label},
                                   ".* default render label must be either "
                                   "'kUnspecified' or 'kDontCare'");
     }
@@ -301,15 +300,12 @@ GTEST_TEST(RenderEngine, ValidateIntrinsicsAndImage) {
   // Image is nullptr.
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.RenderColorImage(color_camera, nullptr),
-      std::logic_error,
       "Can't render a color image. The given output image is nullptr");
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.RenderDepthImage(depth_camera, nullptr),
-      std::logic_error,
       "Can't render a depth image. The given output image is nullptr");
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.RenderLabelImage(color_camera, nullptr),
-      std::logic_error,
       "Can't render a label image. The given output image is nullptr");
 
   // Image size doesn't match.
@@ -324,7 +320,7 @@ GTEST_TEST(RenderEngine, ValidateIntrinsicsAndImage) {
                               Image{w - 1, h - 1}};
     for (Image& i : images) {
       DRAKE_EXPECT_THROWS_MESSAGE(
-          render(&i), std::logic_error,
+          render(&i),
           fmt::format(error_message, image_type, i.width(), i.height(),
                       intrinsics.width(), intrinsics.height()));
     }
@@ -374,7 +370,7 @@ GTEST_TEST(RenderEngine, DetectDoCloneFailure) {
 
   NoDoCloneEngine not_cloneable;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      not_cloneable.Clone(), std::logic_error,
+      not_cloneable.Clone(),
       "Error in cloning RenderEngine class of type .+NoDoCloneEngine; the "
       "clone returns type .+CloneableEngine. .+NoDoCloneEngine::DoClone.. was "
       "probably not implemented");
@@ -394,15 +390,15 @@ GTEST_TEST(RenderEngine, UnimplementedRenderErrors) {
 
   ImageRgba8U color{w, h};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.RenderColorImage(color_camera, &color), std::runtime_error,
+      engine.RenderColorImage(color_camera, &color),
       ".*MinimumEngine.* has not implemented DoRenderColorImage.+");
   ImageDepth32F depth{w, h};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.RenderDepthImage(depth_camera, &depth), std::runtime_error,
+      engine.RenderDepthImage(depth_camera, &depth),
       ".*MinimumEngine.* has not implemented DoRenderDepthImage.+");
   ImageLabel16I label{w, h};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.RenderLabelImage(color_camera, &label), std::runtime_error,
+      engine.RenderLabelImage(color_camera, &label),
       ".*MinimumEngine.* has not implemented DoRenderLabelImage.+");
 }
 

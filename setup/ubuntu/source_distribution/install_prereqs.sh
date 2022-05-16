@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Install development prerequisites for source distributions of Drake on
-# Ubuntu 18.04 (Bionic) or 20.04 (Focal).
+# Ubuntu 20.04 (Focal).
 #
 # The development and runtime prerequisites for binary distributions should be
 # installed before running this script.
@@ -9,10 +9,15 @@
 set -euo pipefail
 
 with_doc_only=0
+# TODO(betsymcphail): Remove this deprecated option on or after 2022-08-01
 with_kcov=0
 with_maintainer_only=0
+with_clang=1
 with_test_only=1
 with_update=1
+with_asking=1
+
+# TODO(jwnimmer-tri) Eventually we should default to with_clang=0.
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
@@ -21,12 +26,19 @@ while [ "${1:-}" != "" ]; do
     --with-doc-only)
       with_doc_only=1
       ;;
-    # Install the kcov code coverage analysis tool from the
-    # drake-apt.csail.mit.edu apt repository on Ubuntu 18.04 (Bionic). Ignored
-    # on Ubuntu 20.04 (Focal) where kcov is always installed from the Ubuntu
-    # "universe" apt repository.
+    # TODO(betsymcphail): Remove this deprecated option on or after 2022-08-01
     --with-kcov)
       with_kcov=1
+      ;;
+    # Install prerequisites that are only needed for --config clang, i.e.,
+    # opts-in to the ability to compile Drake's C++ code using Clang.
+    --with-clang)
+      with_clang=1
+      ;;
+    # Do NOT install prerequisites that are only needed for --config clang,
+    # i.e., opts-out of the ability to compile Drake's C++ code using Clang.
+    --without-clang)
+      with_clang=0
       ;;
     # Install prerequisites that are only needed to run select maintainer
     # scripts. Most developers will not need to install these dependencies.
@@ -43,6 +55,10 @@ while [ "${1:-}" != "" ]; do
     --without-update)
       with_update=0
       ;;
+    # Pass -y along to apt-get.
+    -y)
+      with_asking=0
+      ;;
     *)
       echo 'Invalid command line argument' >&2
       exit 3
@@ -55,11 +71,17 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
+if [[ "${with_asking}" -eq 0 ]]; then
+  maybe_yes='-y'
+else
+  maybe_yes=''
+fi
+
 if [[ "${with_update}" -eq 1 && "${binary_distribution_called_update:-0}" -ne 1 ]]; then
   apt-get update || (sleep 30; apt-get update)
 fi
 
-apt-get install --no-install-recommends $(cat <<EOF
+apt-get install ${maybe_yes} --no-install-recommends $(cat <<EOF
 ca-certificates
 wget
 EOF
@@ -67,36 +89,25 @@ EOF
 
 codename=$(lsb_release -sc)
 
-# On Bionic, developers must opt-in to kcov support; it comes in with the
-# non-standard package name kcov-35 via a Drake-specific apt repository. If
-# --without-update is passed to this script, then the gpg public key must
-# already be trusted, the apt repository must already have been added to the
-# list of sources, and apt-get update must have been called.
-if [[ "${codename}" == 'bionic' ]] && [[ "${with_kcov}" -eq 1 ]]; then
-  apt-get install --no-install-recommends gnupg
-  wget -q -O- https://drake-apt.csail.mit.edu/drake.asc \
-    | apt-key --keyring /etc/apt/trusted.gpg.d/drake.gpg add
-  if [[ "${with_update}" -eq 1 ]]; then
-    echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/${codename} ${codename} main" \
-      > /etc/apt/sources.list.d/drake.list
-    apt-get update || (sleep 30; apt-get update)
-  fi
-  apt-get install --no-install-recommends kcov-35
-fi
-
 packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
-apt-get install --no-install-recommends ${packages}
+apt-get install ${maybe_yes} --no-install-recommends ${packages}
+
+
+# TODO(svenevs): Ideally we would have `packages-${codename}-satisfy.txt`,
+# an example workflow is in #16233 but xargs needs work (see #16280).
+apt-get satisfy  ${maybe_yes} --no-install-recommends \
+  'libcurl4-gnutls-dev | libcurl4-dev'
 
 # Ensure that we have available a locale that supports UTF-8 for generating a
 # C++ header containing Python API documentation during the build.
-apt-get install --no-install-recommends locales
+apt-get install ${maybe_yes} --no-install-recommends locales
 locale-gen en_US.UTF-8
 
 if [[ "${codename}" == 'focal' ]]; then
-  # We need a working /usr/bin/python (of any version).  On Bionic it's there
-  # by default, but on Focal we have to ask for it.
+  # We need a working /usr/bin/python (of any version).
+  # On Focal we have to ask for it.
   if [[ ! -e /usr/bin/python ]]; then
-    apt-get install --no-install-recommends python-is-python3
+    apt-get install ${maybe_yes} --no-install-recommends python-is-python3
   else
     echo "/usr/bin/python is already installed"
   fi
@@ -104,19 +115,24 @@ fi
 
 if [[ "${with_doc_only}" -eq 1 ]]; then
   packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-doc-only.txt")
-  apt-get install --no-install-recommends ${packages}
+  apt-get install ${maybe_yes} --no-install-recommends ${packages}
+fi
+
+if [[ "${with_clang}" -eq 1 ]]; then
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-clang.txt")
+  apt-get install ${maybe_yes} --no-install-recommends ${packages}
 fi
 
 if [[ "${with_test_only}" -eq 1 ]]; then
   packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-test-only.txt")
   # Suppress Python 3.8 warnings when installing python3-pandas on Focal.
   PYTHONWARNINGS=ignore::SyntaxWarning \
-    apt-get install --no-install-recommends ${packages}
+    apt-get install ${maybe_yes} --no-install-recommends ${packages}
 fi
 
 if [[ "${with_maintainer_only}" -eq 1 ]]; then
   packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-maintainer-only.txt")
-  apt-get install --no-install-recommends ${packages}
+  apt-get install ${maybe_yes} --no-install-recommends ${packages}
 fi
 
 dpkg_install_from_wget() {
@@ -160,7 +176,7 @@ dpkg_install_from_wget() {
 
 # Install bazel package dependencies (these may duplicate dependencies of
 # drake).
-apt-get install --no-install-recommends $(cat <<EOF
+apt-get install ${maybe_yes} --no-install-recommends $(cat <<EOF
 g++
 unzip
 zlib1g-dev
@@ -168,6 +184,11 @@ EOF
 )
 
 dpkg_install_from_wget \
-  bazel 4.2.1 \
-  https://releases.bazel.build/4.2.1/release/bazel_4.2.1-linux-x86_64.deb \
-  67447658b8313316295cd98323dfda2a27683456a237f7a3226b68c9c6c81b3a
+  bazel 5.1.0 \
+  https://releases.bazel.build/5.1.0/release/bazel_5.1.0-linux-x86_64.deb \
+  3d54055f764cfb61b5416f0a45d2d3df19c30d301d4da81565595cbe2e36a220
+
+# TODO(betsymcphail): Remove this deprecated option on or after 2022-08-01
+if [[ "${with_kcov}" -eq 1 ]]; then
+  echo 'WARNING: The --with-kcov option is deprecated and should no longer be used.' >&2
+fi

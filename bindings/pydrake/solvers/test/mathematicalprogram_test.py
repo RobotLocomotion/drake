@@ -1,5 +1,19 @@
 from pydrake.solvers import mathematicalprogram as mp
-import pydrake.solvers.mathematicalprogram._testing as mp_testing
+
+import copy
+from functools import partial
+import unittest
+import warnings
+
+import numpy as np
+import scipy.sparse
+
+from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common import kDrakeAssertIsArmed
+from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.forwarddiff import jacobian
+from pydrake.math import ge
 from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.snopt import SnoptSolver
 from pydrake.solvers.scs import ScsSolver
@@ -13,21 +27,7 @@ from pydrake.solvers.mathematicalprogram import (
     SolverId,
     SolverInterface
     )
-
-import copy
-from functools import partial
-import unittest
-import warnings
-
-import numpy as np
-
-import pydrake
-from pydrake.common import kDrakeAssertIsArmed
-from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-from pydrake.forwarddiff import jacobian
-from pydrake.math import ge
+import pydrake.solvers.mathematicalprogram._testing as mp_testing
 import pydrake.symbolic as sym
 
 
@@ -60,10 +60,40 @@ class TestCost(unittest.TestCase):
         cost = mp.QuadraticCost(np.array([[1., 2.], [2., 6.]]), b, c)
         self.assertTrue(cost.is_convex())
 
+    def test_l1norm_cost(self):
+        A = np.array([[1., 2.], [-.4, .7]])
+        b = np.array([0.5, -.4])
+        cost = mp.L1NormCost(A=A, b=b)
+        np.testing.assert_allclose(cost.A(), A)
+        np.testing.assert_allclose(cost.b(), b)
+        cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
+        np.testing.assert_allclose(cost.A(), 2*A)
+        np.testing.assert_allclose(cost.b(), 2*b)
+
     def test_l2norm_cost(self):
         A = np.array([[1., 2.], [-.4, .7]])
         b = np.array([0.5, -.4])
         cost = mp.L2NormCost(A=A, b=b)
+        np.testing.assert_allclose(cost.A(), A)
+        np.testing.assert_allclose(cost.b(), b)
+        cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
+        np.testing.assert_allclose(cost.A(), 2*A)
+        np.testing.assert_allclose(cost.b(), 2*b)
+
+    def test_linfnorm_cost(self):
+        A = np.array([[1., 2.], [-.4, .7]])
+        b = np.array([0.5, -.4])
+        cost = mp.LInfNormCost(A=A, b=b)
+        np.testing.assert_allclose(cost.A(), A)
+        np.testing.assert_allclose(cost.b(), b)
+        cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
+        np.testing.assert_allclose(cost.A(), 2*A)
+        np.testing.assert_allclose(cost.b(), 2*b)
+
+    def test_perspective_quadratic_cost(self):
+        A = np.array([[1., 2.], [-.4, .7]])
+        b = np.array([0.5, -.4])
+        cost = mp.PerspectiveQuadraticCost(A=A, b=b)
         np.testing.assert_allclose(cost.A(), A)
         np.testing.assert_allclose(cost.b(), b)
         cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
@@ -186,6 +216,16 @@ class TestMathematicalProgram(unittest.TestCase):
         result.set_x_val(x_val_new)
         np.testing.assert_array_equal(x_val_new, result.get_x_val())
 
+    def test_solution_result_deprecation(self):
+        # Remove after 2022-07-01.
+        result = MathematicalProgramResult()
+        with catch_drake_warnings(expected_count=1):
+            result.set_solution_result(
+                mp.SolutionResult.kInfeasible_Or_Unbounded)
+        self.assertEqual(
+            result.get_solution_result(),
+            mp.SolutionResult.kInfeasibleOrUnbounded)
+
     def test_str(self):
         qp = TestQP()
         s = str(qp.prog)
@@ -296,11 +336,11 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertIsNone(constraint.gradient_sparsity_pattern())
             num_constraints = constraint.num_constraints()
             if num_constraints == 1:
-                self.assertEqual(constraint.A(), 1)
+                self.assertEqual(constraint.GetDenseA(), 1)
                 self.assertEqual(constraint.lower_bound(), 1)
                 self.assertEqual(constraint.upper_bound(), np.inf)
             else:
-                self.assertTrue(np.allclose(constraint.A(), np.eye(2)))
+                self.assertTrue(np.allclose(constraint.GetDenseA(), np.eye(2)))
                 self.assertTrue(np.allclose(constraint.lower_bound(),
                                             [1, -np.inf]))
                 self.assertTrue(np.allclose(constraint.upper_bound(),
@@ -316,7 +356,9 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertEqual(
                 prog.FindDecisionVariableIndex(var=binding.variables()[1]),
                 prog.FindDecisionVariableIndex(var=x[1]))
-            self.assertTrue(np.allclose(constraint.A(), [3, -1]))
+            self.assertTrue(np.allclose(constraint.GetDenseA(), [3, -1]))
+            with catch_drake_warnings(expected_count=1):
+                self.assertTrue(np.allclose(constraint.A(), [3, -1]))
             self.assertTrue(constraint.lower_bound(), -2)
             self.assertTrue(constraint.upper_bound(), np.inf)
 
@@ -330,7 +372,7 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertEqual(
                 prog.FindDecisionVariableIndex(var=binding.variables()[1]),
                 prog.FindDecisionVariableIndex(var=x[1]))
-            self.assertTrue(np.allclose(constraint.A(), [1, 2]))
+            self.assertTrue(np.allclose(constraint.GetDenseA(), [1, 2]))
             self.assertTrue(constraint.lower_bound(), 3)
             self.assertTrue(constraint.upper_bound(), 3)
 
@@ -357,7 +399,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(ce.get_description(), "my favorite constraint")
 
         def check_bounds(c, A, lb, ub):
-            self.assertTrue(np.allclose(c.A(), A))
+            self.assertTrue(np.allclose(c.GetDenseA(), A))
             self.assertTrue(np.allclose(c.lower_bound(), lb))
             self.assertTrue(np.allclose(c.upper_bound(), ub))
 
@@ -504,17 +546,57 @@ class TestMathematicalProgram(unittest.TestCase):
         # Just check spelling.
         y = prog.NewIndeterminates(2, 2, "y")
 
+    def test_linear_constraint(self):
+        A = np.array([[1, 3, 4], [2., 4., 5]])
+        lb = np.array([1, 2.])
+        ub = np.array([3., 4.])
+        # Constructor with dense A.
+        dut = mp.LinearConstraint(A=A, lb=lb, ub=ub)
+        self.assertEqual(dut.num_constraints(), 2)
+        self.assertEqual(dut.num_vars(), 3)
+        np.testing.assert_array_equal(dut.get_sparse_A().todense(), A)
+
+        A_sparse = scipy.sparse.csc_matrix(
+            (np.array([2, 1., 3]), np.array([0, 1, 0]),
+             np.array([0, 2, 2, 3])), shape=(2, 3))
+        dut = mp.LinearConstraint(
+            A=A_sparse, lb=np.array([1., 2.]), ub=np.array([2., 3.]))
+        self.assertEqual(dut.num_constraints(), 2)
+        self.assertEqual(dut.num_vars(), 3)
+        self.assertEqual(dut.get_sparse_A().nnz, 3)
+
+        dut.UpdateCoefficients(
+            new_A=A_sparse, new_lb=np.array([2, 3.]),
+            new_ub=np.array([3., 4.]))
+        np.testing.assert_array_equal(
+            dut.get_sparse_A().todense(), A_sparse.todense())
+
+        dut.UpdateCoefficients(
+            new_A=np.array([[1E-10, 0, 0], [0, 1, 1]]),
+            new_lb=np.array([2, 3]), new_ub=np.array([3, 4]))
+        dut.RemoveTinyCoefficient(tol=1E-5)
+        np.testing.assert_array_equal(
+            dut.GetDenseA(), np.array([[0, 0, 0], [0, 1, 1]]))
+
     def test_linear_equality_constraint(self):
         Aeq = np.array([[2, 3.], [1., 2.], [3, 4]])
         beq = np.array([1., 2., 3.])
         constraint = mp.LinearEqualityConstraint(Aeq=Aeq, beq=beq)
-        np.testing.assert_array_equal(constraint.A(), Aeq)
+        np.testing.assert_array_equal(constraint.GetDenseA(), Aeq)
         np.testing.assert_array_equal(constraint.upper_bound(), beq)
 
         constraint = mp.LinearEqualityConstraint(
             a=np.array([1., 2., 3.]), beq=1)
-        np.testing.assert_array_equal(constraint.A(), np.array([[1., 2., 3.]]))
+        np.testing.assert_array_equal(
+            constraint.GetDenseA(), np.array([[1., 2., 3.]]))
         np.testing.assert_array_equal(constraint.upper_bound(), np.array([1.]))
+
+        A_sparse = scipy.sparse.csc_matrix(
+            (np.array([2, 1., 3]), np.array([0, 1, 0]),
+             np.array([0, 2, 2, 3])), shape=(2, 3))
+        dut = mp.LinearEqualityConstraint(Aeq=A_sparse, beq=np.array([1, 2.]))
+        np.testing.assert_array_equal(
+            dut.get_sparse_A().todense(), A_sparse.todense())
 
     def test_bounding_box_constraint(self):
         constraint = mp.BoundingBoxConstraint(
@@ -562,26 +644,28 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(np.all(eigs >= -tol))
         self.assertTrue(S[0, 1] >= -tol)
 
-    def test_nonnegative_polynomial(self):
+    def test_sos_polynomial(self):
         # Only check if the API works.
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(3, "x")
-        (poly1, gramian1) = prog.NewNonnegativePolynomial(
+        (poly1, gramian1) = prog.NewSosPolynomial(
             indeterminates=sym.Variables(x), degree=4,
-            type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos)
+            type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos,
+            gram_name="M0")
         self.assertIsInstance(poly1, sym.Polynomial)
         self.assertIsInstance(gramian1, np.ndarray)
 
         gramian2 = prog.NewSymmetricContinuousVariables(2)
-        poly2 = prog.NewNonnegativePolynomial(
+        poly2 = prog.NewSosPolynomial(
             gramian=gramian2,
             monomial_basis=(sym.Monomial(x[0]), sym.Monomial(x[1])),
             type=mp.MathematicalProgram.NonnegativePolynomial.kDsos)
         self.assertIsInstance(gramian2, np.ndarray)
 
-        poly3, gramian3 = prog.NewNonnegativePolynomial(
+        poly3, gramian3 = prog.NewSosPolynomial(
             monomial_basis=(sym.Monomial(x[0]), sym.Monomial(x[1])),
-            type=mp.MathematicalProgram.NonnegativePolynomial.kSos)
+            type=mp.MathematicalProgram.NonnegativePolynomial.kSos,
+            gram_name="M2")
         self.assertIsInstance(poly3, sym.Polynomial)
         self.assertIsInstance(gramian3, np.ndarray)
 
@@ -600,6 +684,19 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertIsInstance(gram_odd, np.ndarray)
             self.assertIsInstance(gram_even, np.ndarray)
 
+    def test_add_sos_constraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewIndeterminates(1, "x")
+        Q = prog.AddSosConstraint(
+           p=sym.Polynomial(x[0]**2 + 1),
+           monomial_basis=[sym.Monomial(x[0])],
+           type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos,
+           gram_name="Q")
+        Q, m = prog.AddSosConstraint(
+            p=sym.Polynomial(x[0]**2 + 2),
+            type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos,
+            gram_name="Q")
+
     def test_sos(self):
         # Find a,b,c,d subject to
         # a(0) + a(1)*x,
@@ -613,16 +710,18 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(prog.indeterminates_index()[x[0].get_id()], 0)
         poly = prog.NewFreePolynomial(sym.Variables(x), 1)
         (poly, binding) = prog.NewSosPolynomial(
-            indeterminates=sym.Variables(x), degree=2)
+            indeterminates=sym.Variables(x), degree=2, gram_name="M0")
         even_poly = prog.NewEvenDegreeFreePolynomial(sym.Variables(x), 2)
         odd_poly = prog.NewOddDegreeFreePolynomial(sym.Variables(x), 3)
         y = prog.NewIndeterminates(1, "y")
         self.assertEqual(prog.indeterminates_index()[y[0].get_id()], 1)
         (poly, binding) = prog.NewSosPolynomial(
-            monomial_basis=(sym.Monomial(x[0]), sym.Monomial(y[0])))
+            monomial_basis=(sym.Monomial(x[0]), sym.Monomial(y[0])),
+            gram_name="M1")
         d = prog.NewContinuousVariables(2, "d")
-        prog.AddSosConstraint(d[0]*x.dot(x))
-        prog.AddSosConstraint(d[1]*x.dot(x), [sym.Monomial(x[0])])
+        prog.AddSosConstraint(d[0]*x.dot(x), gram_name="Q1")
+        prog.AddSosConstraint(
+            d[1]*x.dot(x), [sym.Monomial(x[0])], gram_name="Q2")
         prog.AddLinearEqualityConstraint(d[0] + d[1] == 1)
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
@@ -671,8 +770,10 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(1, "x")
         a = prog.NewContinuousVariables(2, "a")
-        prog.AddEqualityConstraintBetweenPolynomials(sym.Polynomial(
-            2 * a[0] * x[0] + a[1] + 2, x), sym.Polynomial(2 * x[0] + 4, x))
+        linear_eq_constraints = prog.AddEqualityConstraintBetweenPolynomials(
+            sym.Polynomial(2 * a[0] * x[0] + a[1] + 2, x),
+            sym.Polynomial(2 * x[0] + 4, x))
+        self.assertEqual(len(linear_eq_constraints), 2)
         result = mp.Solve(prog)
         a_val = result.GetSolution(a)
         self.assertAlmostEqual(a_val[0], 1)
@@ -686,7 +787,10 @@ class TestMathematicalProgram(unittest.TestCase):
         for i in range(3):
             pt = pts[i, :]
             prog.AddLinearConstraint(pt.dot(X.dot(pt)) <= 1)
-        prog.AddMaximizeLogDeterminantSymmetricMatrixCost(X)
+        linear_cost, log_det_t, log_det_Z = \
+            prog.AddMaximizeLogDeterminantCost(X=X)
+        self.assertEqual(log_det_t.shape, (2,))
+        self.assertEqual(log_det_Z.shape, (2, 2))
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
 
@@ -699,9 +803,10 @@ class TestMathematicalProgram(unittest.TestCase):
         for i in range(3):
             pt = pts[i, :]
             prog.AddLinearConstraint(pt.dot(a * pt) <= 1)
-        prog.AddMaximizeGeometricMeanCost(a, 1)
+        cost = prog.AddMaximizeGeometricMeanCost(a, 1)
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
+        self.assertIsInstance(cost, mp.Binding[mp.LinearCost])
 
     def test_max_geometric_mean_trivial(self):
         # Solve the trivial problem.
@@ -981,6 +1086,24 @@ class TestMathematicalProgram(unittest.TestCase):
         result = mp.Solve(prog)
         self.assertAlmostEqual(result.GetSolution(x)[0], 1.)
 
+    def test_add_l2norm_cost(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, 'x')
+        prog.AddL2NormCost(
+            A=np.array([[1, 2.], [3., 4]]), b=np.array([1., 2.]), vars=x)
+        self.assertEqual(len(prog.l2norm_costs()), 1)
+
+    def test_add_l2norm_cost_using_conic_constraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+        s, linear_cost, lorentz_cone_constraint = \
+            prog.AddL2NormCostUsingConicConstraint(
+                A=np.array([[1, 2.], [3., 4]]),
+                b=np.array([1., 2.]), vars=x)
+        self.assertEqual(len(prog.linear_costs()), 1)
+        self.assertEqual(len(prog.lorentz_cone_constraints()), 1)
+        self.assertEqual(prog.num_vars(), 3)
+
     def test_addcost_shared_ptr(self):
         # In particular, confirm that LinearCost ends up in linear_costs, etc.
         # as opposed to everything ending up as a generic_cost.
@@ -1000,13 +1123,12 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertIsInstance(binding.evaluator(), mp.QuadraticCost)
         self.assertEqual(len(prog.quadratic_costs()), 1)
 
-        # Confirm that I can add an L2NormCost. This is the only way to add an
-        # L2NormCost to a MathematicalProgram pending further progress on
-        # #15366.
+        # Confirm that I can add an L2NormCost.
         binding = prog.AddCost(mp.L2NormCost([[1.0]], [0.0]), x)
         self.assertIsInstance(binding, mp.Binding[mp.Cost])
         self.assertIsInstance(binding.evaluator(), mp.L2NormCost)
-        self.assertEqual(len(prog.generic_costs()), 1)
+        self.assertEqual(len(prog.generic_costs()), 0)
+        self.assertEqual(len(prog.l2norm_costs()), 1)
 
     def test_addconstraint_matrix(self):
         prog = mp.MathematicalProgram()
@@ -1102,6 +1224,9 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(
             constraint.eval_type(),
             mp.LorentzConeConstraint.EvalType.kConvexSmooth)
+        constraint.UpdateCoefficients(new_A=2 * A, new_b=3 * b)
+        np.testing.assert_array_equal(constraint.A().todense(), 2 * A)
+        np.testing.assert_array_equal(constraint.b(), 3 * b)
 
     def test_add_lorentz_cone_constraint(self):
         # Call AddLorentzConeConstraint, make sure no error is thrown.
@@ -1131,6 +1256,9 @@ class TestMathematicalProgram(unittest.TestCase):
         constraint = mp.RotatedLorentzConeConstraint(A=A, b=b)
         np.testing.assert_array_equal(constraint.A().todense(), A)
         np.testing.assert_array_equal(constraint.b(), b)
+        constraint.UpdateCoefficients(new_A=2 * A, new_b=3 * b)
+        np.testing.assert_array_equal(constraint.A().todense(), 2 * A)
+        np.testing.assert_array_equal(constraint.b(), 3 * b)
 
     def test_add_rotated_lorentz_cone_constraint(self):
         prog = mp.MathematicalProgram()
@@ -1149,6 +1277,17 @@ class TestMathematicalProgram(unittest.TestCase):
         constraint = prog.AddRotatedLorentzConeConstraint(
             linear_expression1=x[0]+1, linear_expression2=x[0]+x[1],
             quadratic_expression=x[0]*x[0] + 2*x[0] + x[1]*x[1] + 5)
+
+    def test_add_quadratic_as_rotated_lorentz_cone_constraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        dut = prog.AddQuadraticAsRotatedLorentzConeConstraint(
+            Q=np.array([[1, 2.], [2., 10.]]),
+            b=np.array([1., 3.]),
+            c=0.5,
+            vars=x,
+            psd_tol=0.)
+        self.assertIsInstance(dut.evaluator(), mp.RotatedLorentzConeConstraint)
 
     def test_add_linear_matrix_inequality_constraint(self):
         prog = mp.MathematicalProgram()
@@ -1246,6 +1385,21 @@ class TestMathematicalProgram(unittest.TestCase):
             solver = mp.MakeFirstAvailableSolver(
                 [gurobi_solver.solver_id(), scs_solver.solver_id()])
 
+    def test_variable_scaling(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, 'x')
+        scaling = prog.GetVariableScaling()
+        self.assertIsInstance(scaling, dict)
+        self.assertEqual(len(scaling), 0)
+        prog.SetVariableScaling(var=x[0], s=2.0)
+        scaling = prog.GetVariableScaling()
+        self.assertEqual(len(scaling), 1)
+        x0_index = prog.decision_variable_index()[x[0].get_id()]
+        self.assertEqual(scaling[x0_index], 2.0)
+        prog.ClearVariableScaling()
+        scaling = prog.GetVariableScaling()
+        self.assertEqual(len(scaling), 0)
+
     def test_remove_cost(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(3)
@@ -1335,13 +1489,6 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(len(prog.linear_complementarity_constraints()), 0)
 
     def test_binding_instantiations(self):
-        # Explicit spelling
-        with catch_drake_warnings(expected_count=1) as w:
-            self.assertIs(mp.Binding_Cost, mp.Binding[mp.Cost])
-            self.assertIn(
-                "Binding_Cost is deprecated; please use Binding[Cost] instead",
-                str(w[0].message))
-
         # Patterned spelling.
         cls_list = [
             mp.EvaluatorBase,
@@ -1355,18 +1502,16 @@ class TestMathematicalProgram(unittest.TestCase):
             mp.LinearMatrixInequalityConstraint,
             mp.LinearComplementarityConstraint,
             mp.ExponentialConeConstraint,
-            # mp.Cost,  # Checked above.
+            mp.Cost,
             mp.LinearCost,
             mp.QuadraticCost,
+            mp.L1NormCost,
             mp.L2NormCost,
+            mp.LInfNormCost,
             mp.VisualizationCallback,
         ]
         for cls in cls_list:
-            binding_cls = mp.Binding[cls]
-            old_spelling = f"Binding_{cls.__name__}"
-            with catch_drake_warnings(expected_count=1):
-                binding_cls_old_spelling = getattr(mp, old_spelling)
-            self.assertIs(binding_cls, binding_cls_old_spelling)
+            mp.Binding[cls]
 
     def test_get_program_type(self):
         prog = mp.MathematicalProgram()

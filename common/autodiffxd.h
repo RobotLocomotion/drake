@@ -443,28 +443,32 @@ DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(
 
 DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(
     tan, using std::tan; using std::cos;
-    x.derivatives() *= Scalar(1) / numext::abs2(cos(x.value()));
+    auto sq = [](Scalar n) { return n * n; };
+    x.derivatives() *= Scalar(1) / sq(cos(x.value()));
     x.value() = tan(x.value());)
 
 DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(
     asin, using std::sqrt; using std::asin;
-    x.derivatives() *= Scalar(1) / sqrt(1 - numext::abs2(x.value()));
+    auto sq = [](Scalar n) { return n * n; };
+    x.derivatives() *= Scalar(1) / sqrt(1 - sq(x.value()));
     x.value() = asin(x.value());)
 
 DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(
     acos, using std::sqrt; using std::acos;
-    x.derivatives() *= Scalar(-1) / sqrt(1 - numext::abs2(x.value()));
+    auto sq = [](Scalar n) { return n * n; };
+    x.derivatives() *= Scalar(-1) / sqrt(1 - sq(x.value()));
     x.value() = acos(x.value());)
 
 DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(
-    // TODO(rpoyner-tri): implementation seems fishy --see #14051.
     atan, using std::atan;
-    x.derivatives() *= Scalar(1) / (1 + x.value() * x.value());
+    auto sq = [](Scalar n) { return n * n; };
+    x.derivatives() *= Scalar(1) / (1 + sq(x.value()));
     x.value() = atan(x.value());)
 
 DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(
     tanh, using std::cosh; using std::tanh;
-    x.derivatives() *= Scalar(1) / numext::abs2(cosh(x.value()));
+    auto sq = [](Scalar n) { return n * n; };
+    x.derivatives() *= Scalar(1) / sq(cosh(x.value()));
     x.value() = tanh(x.value());)
 
 DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(

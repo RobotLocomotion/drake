@@ -57,6 +57,10 @@ class SparseLinearOperator final : public LinearOperator<T> {
     *y = A_->transpose() * x;
   }
 
+  // Bring LinearOperator's default DoAssembleMatrix() into scope so that
+  // overrides here do not hide the other overloads.
+  using LinearOperator<T>::DoAssembleMatrix;
+
   void DoAssembleMatrix(Eigen::SparseMatrix<T>* A) const final {
     *A = *A_;
   }

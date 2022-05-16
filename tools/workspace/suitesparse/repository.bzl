@@ -12,15 +12,19 @@ def _impl(repo_ctx):
         fail(os_result.error)
     if os_result.is_ubuntu:
         include = "/usr/include/suitesparse"
-        lib = "/usr/lib"
+        libdir = "/usr/lib"
     elif os_result.is_macos:
-        include = "/usr/local/opt/suite-sparse/include"
-        lib = "/usr/local/opt/suite-sparse/lib"
+        include = "{}/opt/suite-sparse/include".format(
+            os_result.homebrew_prefix,
+        )
+        libdir = "{}/opt/suite-sparse/lib".format(
+            os_result.homebrew_prefix,
+        )
     elif os_result.is_manylinux:
         # TODO(jwnimmer-tri) Ideally, we wouldn't be hard-coding paths when
         # using manylinux.
         include = "/opt/drake-dependencies/include"
-        lib = "/opt/drake-dependencies/lib"
+        libdir = "/opt/drake-dependencies/lib"
     else:
         fail("Unknown OS")
 
@@ -35,7 +39,7 @@ def _impl(repo_ctx):
     # Declare the libdir.
     repo_ctx.file(
         "vars.bzl",
-        content = "LIBDIR = \"{}\"\n".format(lib),
+        content = "LIBDIR = \"{}\"\n".format(libdir),
         executable = False,
     )
 

@@ -18,12 +18,11 @@ namespace sensors {
 /// occlusions (short returns), of missed detections (returning the max depth),
 /// and of returning just a (uniform) random measurement.
 ///
-/// Four additional input ports (each of the same dimension as the depth signal)
-/// are provided for the random inputs:  One for determining which of the events
-/// occurred (true + noise, short return, max return, or uniform return), and
-/// one
-/// each for modeling the distribution of short true but noisy returns, short
-/// returns, and uniform returns).
+/// Four additional input ports (each of the same dimension as the depth
+/// signal) are provided for the random inputs: One for determining which of
+/// the events occurred (true + noise, short return, max return, or uniform
+/// return), and one each for modeling the distribution of short true but noisy
+/// returns, short returns, and uniform returns).
 ///
 /// We deviate from the textbook model in one respect: both here and in the
 /// textbook, the distribution over short returns and the distribution over
@@ -41,6 +40,29 @@ namespace sensors {
 /// simpler (to allow AutoDiff and Symbolic) given the modeling framework we
 /// have here that builds the output out of simple (non-truncated) random
 /// variable inputs.
+///
+/// @system
+/// name: BeamModel
+/// input_ports:
+/// - depth
+/// - event
+/// - hit
+/// - short
+/// - uniform
+/// output_ports:
+/// - depth
+/// @endsystem
+///
+/// It is convenient to use `systems::AddRandomInputs()` to supply all the
+/// random input signals:
+/// @code
+///  DiagramBuilder<double> builder;
+///  auto beam_model = builder.AddSystem<BeamModel>(1, 5.0);
+///  builder.ExportInput(beam_model->get_depth_input_port(), "depth");
+///  builder.ExportOutput(beam_model->get_output_port(0), "depth");
+///  AddRandomInputs(0.01, &builder);
+///  auto diagram = builder.Build();
+/// @endcode
 ///
 /// @tparam_nonsymbolic_scalar
 /// @ingroup sensor_systems

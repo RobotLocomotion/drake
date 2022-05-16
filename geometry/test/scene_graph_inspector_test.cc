@@ -8,6 +8,7 @@
 
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/geometry_state.h"
 
 namespace drake {
 namespace geometry {
@@ -46,10 +47,6 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.num_sources();
 
   inspector.num_frames();
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  inspector.all_frame_ids();
-#pragma GCC diagnostic pop
   inspector.num_geometries();
   inspector.GetAllGeometryIds();
   inspector.GetGeometryIds(GeometrySet{});
@@ -73,6 +70,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.BelongsToSource(frame_id, source_id);
   inspector.GetOwningSourceName(frame_id);
   inspector.GetName(frame_id);
+  inspector.GetParentFrame(frame_id);
   inspector.GetFrameGroup(frame_id);
   inspector.NumGeometriesForFrame(frame_id);
   inspector.NumGeometriesForFrameWithRole(frame_id, Role::kUnassigned);

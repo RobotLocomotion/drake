@@ -1,11 +1,13 @@
 #include <fstream>
+#include <ostream>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/polygon_surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/autodiff.h"
@@ -16,17 +18,28 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 
+using drake::geometry::HydroelasticContactRepresentation;
+const HydroelasticContactRepresentation kTriangle =
+    HydroelasticContactRepresentation::kTriangle;
+
+namespace std {
+std::ostream& operator<<(std::ostream& out,
+                         drake::geometry::HydroelasticContactRepresentation r) {
+  out << ((r == kTriangle) ? "Triangles" : "Polygons");
+  return out;
+}
+}  // namespace std
+
 namespace drake {
 
+using Eigen::Vector3d;
 using geometry::ContactSurface;
 using geometry::GeometryId;
 using geometry::MeshFieldLinear;
+using geometry::PolygonSurfaceMesh;
 using geometry::SceneGraph;
-using geometry::SurfaceFaceIndex;
-using geometry::SurfaceFace;
-using geometry::SurfaceMesh;
-using geometry::SurfaceVertex;
-using geometry::SurfaceVertexIndex;
+using geometry::SurfaceTriangle;
+using geometry::TriangleSurfaceMesh;
 using math::RigidTransform;
 using math::RigidTransformd;
 using systems::Context;
@@ -41,16 +54,17 @@ namespace internal {
 // halfspace were a fluid. The entire wetted surface *would* yield
 // an open box with five faces but, for simplicity, we'll only
 // use the bottom face (two triangles).
-std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
-  std::vector<SurfaceVertex<double>> vertices;
-  std::vector<SurfaceFace> faces;
+std::unique_ptr<TriangleSurfaceMesh<double>> CreateTriangleMesh() {
+  std::vector<SurfaceTriangle> faces;
 
   // Create the vertices, all of which are offset vectors defined in the
   // halfspace body frame.
-  vertices.emplace_back(Vector3<double>(0.5, 0.5, -0.5));
-  vertices.emplace_back(Vector3<double>(-0.5, 0.5, -0.5));
-  vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5));
-  vertices.emplace_back(Vector3<double>(0.5, -0.5, -0.5));
+  std::vector<Vector3<double>> vertices = {
+      {0.5, 0.5, -0.5},
+      {-0.5, 0.5, -0.5},
+      {-0.5, -0.5, -0.5},
+      {0.5, -0.5, -0.5},
+  };
 
   // Create the face comprising two triangles. The box penetrates into the
   // z = 0 plane from above. The contact surface should be constructed such that
@@ -67,19 +81,17 @@ std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
   //       /     /|   /
   //   v2 /_____/_|__/ v3
   //           /  |
-  faces.emplace_back(
-      SurfaceVertexIndex(0), SurfaceVertexIndex(2), SurfaceVertexIndex(1));
-  faces.emplace_back(
-      SurfaceVertexIndex(2), SurfaceVertexIndex(0), SurfaceVertexIndex(3));
+  faces.emplace_back(0, 2, 1);
+  faces.emplace_back(2, 0, 3);
 
-  auto mesh = std::make_unique<SurfaceMesh<double>>(
+  auto mesh = std::make_unique<TriangleSurfaceMesh<double>>(
       std::move(faces), std::move(vertices));
 
-  for (SurfaceFaceIndex f(0); f < mesh->num_faces(); ++f) {
+  for (int f = 0; f < mesh->num_triangles(); ++f) {
     // Can't use an ASSERT_TRUE here because it interferes with the return
     // value.
     if (!CompareMatrices(mesh->face_normal(f), -Vector3<double>::UnitZ(),
-        std::numeric_limits<double>::epsilon())) {
+                         std::numeric_limits<double>::epsilon())) {
       throw std::logic_error("Malformed mesh; normals don't point downwards");
     }
   }
@@ -87,10 +99,43 @@ std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
   return mesh;
 }
 
-GeometryId FindGeometry(
-    const MultibodyPlant<double>& plant, const std::string body_name) {
-  const auto& geometries = plant.GetCollisionGeometriesForBody(
-      plant.GetBodyByName(body_name));
+// The same mesh as returned by CreateTriangleMesh() except rather than two
+// triangles, it is a single quad.
+std::unique_ptr<PolygonSurfaceMesh<double>> CreatePolygonMesh() {
+  // Create the vertices, all of which are offset vectors defined in the
+  // halfspace body frame.
+  std::vector<Vector3<double>> vertices = {
+      {0.5, 0.5, -0.5},
+      {-0.5, 0.5, -0.5},
+      {-0.5, -0.5, -0.5},
+      {0.5, -0.5, -0.5},
+  };
+
+  // We define a single square polygon.
+  // The first entry is the number of vertices in the polygon, in this case four
+  // vertices. The next three entries are the indexes of the vertices in vector
+  // "vertices". The normal vector of the quadrilateral is in the -Z direction.
+  std::vector<int> faces = {4, 3, 2, 1, 0};
+
+  auto mesh = std::make_unique<PolygonSurfaceMesh<double>>(std::move(faces),
+                                                           std::move(vertices));
+
+  for (int f = 0; f < mesh->num_faces(); ++f) {
+    // Can't use an ASSERT_TRUE here because it interferes with the return
+    // value.
+    if (!CompareMatrices(mesh->face_normal(f), -Vector3<double>::UnitZ(),
+                         std::numeric_limits<double>::epsilon())) {
+      throw std::logic_error("Malformed mesh; normals don't point downwards");
+    }
+  }
+
+  return mesh;
+}
+
+GeometryId FindGeometry(const MultibodyPlant<double>& plant,
+                        const std::string body_name) {
+  const auto& geometries =
+      plant.GetCollisionGeometriesForBody(plant.GetBodyByName(body_name));
   DRAKE_DEMAND(geometries.size() == 1);
   return geometries[0];
 }
@@ -98,26 +143,42 @@ GeometryId FindGeometry(
 // Creates a contact surface between the two given geometries.
 std::unique_ptr<ContactSurface<double>> CreateContactSurface(
     GeometryId halfspace_id, GeometryId block_id,
-    const math::RigidTransform<double>& X_WH) {
+    const math::RigidTransform<double>& X_WH,
+    geometry::HydroelasticContactRepresentation representation =
+        geometry::HydroelasticContactRepresentation::kTriangle) {
   // Create the surface mesh first (in the halfspace frame); we'll transform
   // it to the world frame *after* we use the vertices in the halfspace frame
   // to determine the hydroelastic pressure.
-  auto mesh = CreateSurfaceMesh();
+  // We create the "e" field values (i.e., "hydroelastic pressure") using
+  // negated "z" values in the half-space frame.
 
-  // Create the "e" field values (i.e., "hydroelastic pressure") using
-  // negated "z" values.
-  std::vector<double> e_MN(mesh->num_vertices());
-  for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
-    e_MN[i] = -mesh->vertex(i).r_MV()[2];
-
-  // Now transform the mesh to the world frame, as ContactSurface specifies.
-  mesh->TransformVertices(X_WH);
-
-  SurfaceMesh<double>* mesh_pointer = mesh.get();
-  return std::make_unique<ContactSurface<double>>(
-      halfspace_id, block_id, std::move(mesh),
-      std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e_MN", std::move(e_MN), mesh_pointer));
+  if (representation ==
+      geometry::HydroelasticContactRepresentation::kTriangle) {
+    auto mesh = CreateTriangleMesh();
+    std::vector<double> e_MN(mesh->num_vertices());
+    for (int i = 0; i < mesh->num_vertices(); ++i)
+      e_MN[i] = -mesh->vertex(i).z();
+    mesh->TransformVertices(X_WH);
+    TriangleSurfaceMesh<double>* mesh_pointer = mesh.get();
+    return std::make_unique<ContactSurface<double>>(
+        halfspace_id, block_id, std::move(mesh),
+        std::make_unique<MeshFieldLinear<double, TriangleSurfaceMesh<double>>>(
+            std::move(e_MN), mesh_pointer));
+  } else {
+    auto mesh = CreatePolygonMesh();
+    std::vector<double> e_MN(mesh->num_vertices());
+    for (int i = 0; i < mesh->num_vertices(); ++i)
+      e_MN[i] = -mesh->vertex(i).z();
+    mesh->TransformVertices(X_WH);
+    PolygonSurfaceMesh<double>* mesh_pointer = mesh.get();
+    return std::make_unique<ContactSurface<double>>(
+        halfspace_id, block_id, std::move(mesh),
+        std::make_unique<MeshFieldLinear<double, PolygonSurfaceMesh<double>>>(
+            std::move(e_MN), mesh_pointer,
+            // In the half space frame, the half space's pressure field is -z
+            // and its gradient is -Hz. We re-express it into the world frame.
+            std::vector<Vector3d>{X_WH.rotation() * -Vector3d::UnitZ()}));
+  }
 }
 
 // This fixture defines a contacting configuration between a box and a
@@ -130,8 +191,10 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
 // an arbitrary set of poses X_WY of frame Y in the world frame W to assess the
 // frame invariance of the computed results, which only depend (modulo the
 // "expressed-in" frame) on the relative pose of the bodies.
-class MultibodyPlantHydroelasticTractionTests :
-public ::testing::TestWithParam<RigidTransform<double>> {
+class MultibodyPlantHydroelasticTractionTests
+    : public ::testing::TestWithParam<
+          std::tuple<RigidTransform<double>,
+                     geometry::HydroelasticContactRepresentation>> {
  public:
   const HydroelasticTractionCalculator<double>& traction_calculator() const {
     return traction_calculator_;
@@ -153,7 +216,15 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   }
 
   const ContactSurface<double>& contact_surface() const {
-      return *contact_surface_;
+    return *contact_surface_;
+  }
+
+  const RigidTransform<double>& GetPose() const {
+    return std::get<0>(GetParam());
+  }
+
+  geometry::HydroelasticContactRepresentation GetRepresentation() const {
+    return std::get<1>(GetParam());
   }
 
   // Returns the default numerical tolerance.
@@ -172,16 +243,21 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     // First compute the traction applied to Body A at point Q, expressed in the
     // world frame.
     HydroelasticQuadraturePointData<double> output =
-        traction_calculator().CalcTractionAtPoint(
-            calculator_data(), SurfaceFaceIndex(0),
-            SurfaceMesh<double>::Barycentric<double>(1.0, 0.0, 0.0),
-            dissipation, mu_coulomb);
+        traction_calculator().CalcTractionAtCentroid(
+            calculator_data(), 0 /* face index */, dissipation, mu_coulomb);
 
     // Compute the expected point of contact in the world frame. The class
     // definition and SetUp() note that the parameter to this test transforms
     // both bodies from their definition in Frame Y to the world frame.
-    const RigidTransform<double>& X_WY = GetParam();
-    const Vector3<double> p_YQ(0.5, 0.5, -0.5);
+    const RigidTransform<double>& X_WY = GetPose();
+    const geometry::HydroelasticContactRepresentation representation =
+        GetRepresentation();
+    // For the first triangle, the centroid is in the second quadrant of the x-y
+    // plane.
+    // When we use the polygons representation, the centroid is at the origin.
+    const Vector3<double> p_YQ = representation == kTriangle
+                                     ? Vector3d(-1. / 6.0, 1. / 6.0, -0.5)
+                                     : Vector3d(0., 0., -0.5);
     const Vector3<double> p_WQ_expected = X_WY * p_YQ;
 
     // Verify the point of contact.
@@ -274,7 +350,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
         &diagram_->GetMutableSubsystemContext(plant, context_.get());
 
     // See class documentation for description of Frames Y, B, and H.
-    const RigidTransform<double>& X_WY = GetParam();
+    const RigidTransform<double>& X_WY = GetPose();
     const auto& X_YH = RigidTransform<double>::Identity();
     const auto& X_YB = RigidTransform<double>::Identity();
     const RigidTransform<double> X_WH = X_WY * X_YH;
@@ -284,7 +360,8 @@ public ::testing::TestWithParam<RigidTransform<double>> {
 
     GeometryId halfspace_id = internal::FindGeometry(plant, "ground");
     GeometryId block_id = internal::FindGeometry(plant, "box");
-    contact_surface_ = CreateContactSurface(halfspace_id, block_id, X_WH);
+    contact_surface_ =
+        CreateContactSurface(halfspace_id, block_id, X_WH, GetRepresentation());
   }
 
   const double tol_{10 * std::numeric_limits<double>::epsilon()};
@@ -312,25 +389,26 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
   // Re-express the spatial tractions in Y's frame for easy interpretability.
   // Note that f and tau here are still tractions, so our notation is being
   // misused a little here.
-  const math::RotationMatrix<double>& R_WY = GetParam().rotation();
+  const math::RotationMatrix<double>& R_WY = GetPose().rotation();
   const Vector3<double> f_Bo_Y = R_WY.transpose() * Ft_Bo_W.translational();
   const Vector3<double> tau_Bo_Y = R_WY.transpose() * Ft_Bo_W.rotational();
 
   // Check the spatial traction at p. We know that geometry M is the halfspace,
   // so we'll check the spatial traction for geometry N instead. Note that the
   // tangential components are zero.
-  EXPECT_NEAR(f_Bo_Y[0], 0.0, tol());
-  EXPECT_NEAR(f_Bo_Y[1], 0.0, tol());
-  EXPECT_NEAR(f_Bo_Y[2], 0.5, tol());
+  const Vector3d f_Bo_Y_expected(0., 0., 0.5);
+  EXPECT_TRUE(CompareMatrices(f_Bo_Y, f_Bo_Y_expected, tol()));
 
   // A moment on the box will be generated due to the normal traction. The
   // origin of the box frame is located at (0,0,0) in the Y frame.
-  // The moment arm at the point will be (.5, .5, -.5), again in the Y frame.
-  // Crossing this vector with the traction at that point (0, 0, 0.5) yields the
-  // following.
-  EXPECT_NEAR(tau_Bo_Y[0], 0.25, tol());
-  EXPECT_NEAR(tau_Bo_Y[1], -0.25, tol());
-  EXPECT_NEAR(tau_Bo_Y[2], 0, tol());
+  // The moment arm at the point will be (-1./6., 1./6., -.5), again in the Y
+  // frame. Crossing this vector with the traction at that point (0, 0, 0.5)
+  // yields the following.
+  const Vector3d p_BoCo_Y = GetRepresentation() == kTriangle
+                                ? Vector3d(-1. / 6., 1. / 6., -.5)
+                                : Vector3d(0., 0., -0.5);
+  const Vector3d tau_Bo_Y_expected = p_BoCo_Y.cross(f_Bo_Y_expected);
+  EXPECT_TRUE(CompareMatrices(tau_Bo_Y, tau_Bo_Y_expected, tol()));
 
   // The translational components of the two wrenches should be equal and
   // opposite.
@@ -346,7 +424,7 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithFriction) {
 
   // Give the box an initial (vertical) velocity along the +x axis in the Y
   // frame.
-  const math::RotationMatrix<double>& R_WY = GetParam().rotation();
+  const math::RotationMatrix<double>& R_WY = GetPose().rotation();
   SetBoxTranslationalVelocity(R_WY * Vector3<double>(1, 0, 0));
 
   // Compute the spatial tractions at the origins of the body frames.
@@ -371,17 +449,23 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithFriction) {
   const double field_value = 0.5;  // in N/m².
   const double regularization_scalar =
       traction_calculator().regularization_scalar();
-  EXPECT_NEAR(f_Bo_Y[0], -mu_coulomb * field_value, regularization_scalar);
-  EXPECT_NEAR(f_Bo_Y[1], 0.0, tol());
-  EXPECT_NEAR(f_Bo_Y[2], field_value, tol());
+  const Vector3d f_Bo_Y_expected(-mu_coulomb * field_value, 0., field_value);
+  EXPECT_NEAR(f_Bo_Y(0), f_Bo_Y_expected(0), regularization_scalar);
+  EXPECT_NEAR(f_Bo_Y(1), f_Bo_Y_expected(1), tol());
+  EXPECT_NEAR(f_Bo_Y(2), f_Bo_Y_expected(2), tol());
 
   // A moment on the box will be generated due to the traction. The
   // origin of the box frame is located at (0,0,0) in the Y frame.
-  // The moment arm at the point will be (.5, .5, -.5). Crossing this vector
-  // with the traction at that point (-.5, 0, 0.5) yields the following.
-  EXPECT_NEAR(tau_Bo_Y[0], 0.25, tol());
-  EXPECT_NEAR(tau_Bo_Y[1], 0.0, regularization_scalar);
-  EXPECT_NEAR(tau_Bo_Y[2], 0.25, regularization_scalar);
+  // The moment arm at the point will be (-1./6., 1./6., -.5), again in the Y
+  // frame. Crossing this vector with the traction at that point (0, 0, 0.5)
+  // yields the following.
+  const Vector3d p_BoCo_Y = GetRepresentation() == kTriangle
+                                ? Vector3d(-1. / 6., 1. / 6., -.5)
+                                : Vector3d(0., 0., -0.5);
+  const Vector3d tau_Bo_Y_expected = p_BoCo_Y.cross(f_Bo_Y_expected);
+  EXPECT_NEAR(tau_Bo_Y(0), tau_Bo_Y_expected(0), tol());
+  EXPECT_NEAR(tau_Bo_Y(1), tau_Bo_Y_expected(1), regularization_scalar);
+  EXPECT_NEAR(tau_Bo_Y(2), tau_Bo_Y_expected(2), regularization_scalar);
 
   // The translational components of the two wrenches should be equal and
   // opposite.
@@ -397,7 +481,7 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
 
   // Give the box an initial (vertical) velocity along the -z axis in the Y
   // frame.
-  const math::RotationMatrix<double>& R_WY = GetParam().rotation();
+  const math::RotationMatrix<double>& R_WY = GetPose().rotation();
   const double separating_velocity = -1.0;
   SetBoxTranslationalVelocity(R_WY *
       Vector3<double>(0, 0, separating_velocity));
@@ -425,18 +509,19 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   // so we'll check the spatial traction for geometry N instead. The coefficient
   // of friction is unity, so the total frictional traction will have the same
   // magnitude as the normal traction.
-  EXPECT_NEAR(f_Bo_Y[0], 0.0, tol());
-  EXPECT_NEAR(f_Bo_Y[1], 0.0, tol());
-  EXPECT_NEAR(f_Bo_Y[2], normal_traction_magnitude, tol());
+  const Vector3d f_Bo_Y_expected(0., 0., normal_traction_magnitude);
+  EXPECT_TRUE(CompareMatrices(f_Bo_Y, f_Bo_Y_expected, tol()));
 
   // A moment on the box will be generated due to the traction. The
   // origin of the box frame is located at (0,0,0) in the world frame.
   // The moment arm at the point will be (.5, .5, -.5). Crossing this vector
   // with the traction at that point (0, 0, normal_traction_magnitude) yields
   // the following.
-  EXPECT_NEAR(tau_Bo_Y[0], 0.5 * normal_traction_magnitude, tol());
-  EXPECT_NEAR(tau_Bo_Y[1], -0.5 * normal_traction_magnitude, tol());
-  EXPECT_NEAR(tau_Bo_Y[2], 0.0, tol());
+  const Vector3d p_BoCo_Y = GetRepresentation() == kTriangle
+                                ? Vector3d(-1. / 6., 1. / 6., -.5)
+                                : Vector3d(0., 0., -0.5);
+  const Vector3d tau_Bo_Y_expected = p_BoCo_Y.cross(f_Bo_Y_expected);
+  EXPECT_TRUE(CompareMatrices(tau_Bo_Y, tau_Bo_Y_expected, tol()));
 
   // The translational components of the two wrenches should be equal and
   // opposite.
@@ -456,7 +541,7 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, VanillaTractionOverPatch) {
       dissipation, mu_coulomb, &F_Ao_W, &F_Bo_W);
 
   // Re-express the spatial forces in Y's frame for easy interpretability.
-  const math::RotationMatrix<double>& R_WY = GetParam().rotation();
+  const math::RotationMatrix<double>& R_WY = GetPose().rotation();
   const Vector3<double> f_Bo_Y = R_WY.transpose() * F_Bo_W.translational();
   const Vector3<double> tau_Bo_Y = R_WY.transpose() * F_Bo_W.rotational();
 
@@ -481,7 +566,7 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, FrictionalTractionOverPatch) {
 
   // Give the box an initial (vertical) velocity along the +x axis in the Y
   // frame.
-  const math::RotationMatrix<double>& R_WY = GetParam().rotation();
+  const math::RotationMatrix<double>& R_WY = GetPose().rotation();
   SetBoxTranslationalVelocity(R_WY * Vector3<double>(1, 0, 0));
 
   // Compute the spatial forces at the origins of the body frames.
@@ -527,7 +612,7 @@ TEST_P(MultibodyPlantHydroelasticTractionTests,
 
   // Give the box an initial (vertical) velocity along the -z axis in the Y
   // frame.
-  const math::RotationMatrix<double>& R_WY = GetParam().rotation();
+  const math::RotationMatrix<double>& R_WY = GetPose().rotation();
   const double separating_velocity = -1.0;
   SetBoxTranslationalVelocity(R_WY *
       Vector3<double>(0, 0, separating_velocity));
@@ -569,9 +654,8 @@ class HydroelasticTractionCalculatorTester {
   static HydroelasticQuadraturePointData<T> CalcTractionAtQHelper(
       const HydroelasticTractionCalculator<T>& calculator,
       const typename HydroelasticTractionCalculator<T>::Data& data,
-      geometry::SurfaceFaceIndex face_index, const T& e,
-      const Vector3<T>& nhat_W, double dissipation, double mu_coulomb,
-      const Vector3<T>& p_WQ) {
+      int face_index, const T& e, const Vector3<T>& nhat_W, double dissipation,
+      double mu_coulomb, const Vector3<T>& p_WQ) {
     return calculator.CalcTractionAtQHelper(data, face_index, e, nhat_W,
                                             dissipation, mu_coulomb, p_WQ);
   }
@@ -659,22 +743,22 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   // report a centroid point (part of Data constructor).
   const Vector3<AutoDiffXd> p_WC =
       (X_WA.translation() + X_WB.translation()) / 2;
-  std::vector<SurfaceVertex<AutoDiffXd>> vertices;
-  vertices.emplace_back(p_WC + Vector3<AutoDiffXd>(0.5, 0.5, 0));
-  vertices.emplace_back(p_WC + Vector3<AutoDiffXd>(-0.5, 0, 0.5));
-  vertices.emplace_back(p_WC + Vector3<AutoDiffXd>(0, -0.5, -0.5));
+  std::vector<Vector3<AutoDiffXd>> vertices = {
+      p_WC + Vector3<AutoDiffXd>(0.5, 0.5, 0),
+      p_WC + Vector3<AutoDiffXd>(-0.5, 0, 0.5),
+      p_WC + Vector3<AutoDiffXd>(0, -0.5, -0.5),
+  };
 
-  std::vector<SurfaceFace> faces({SurfaceFace{
-      SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2)}});
-  auto mesh_W = std::make_unique<geometry::SurfaceMesh<AutoDiffXd>>(
+  std::vector<SurfaceTriangle> faces{{0, 1, 2}};
+  auto mesh_W = std::make_unique<geometry::TriangleSurfaceMesh<AutoDiffXd>>(
       std::move(faces), std::move(vertices));
   // Note: these values are garbage. They merely allow us to instantiate the
   // field so the Data can be instantiated. The *actual* field value passed
   // to CalcTractionAtQHelper is found below.
   std::vector<AutoDiffXd> values{0, 0, 0};
   auto field = std::make_unique<
-      geometry::SurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>(
-      "junk", std::move(values), mesh_W.get(), false);
+      geometry::TriangleSurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>(
+      std::move(values), mesh_W.get(), false);
   // N.B. get_new_id() makes no guarantee on the order.
   // Since the surface normal follows the convention that it points from B into
   // A, we generate a pair of id's such that idA < idB to ensure that
@@ -687,13 +771,13 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
                                                std::move(field));
 
   // Parameters for CalcTractionAtQHelper().
-  const geometry::SurfaceFaceIndex f0(0);
+  const int f0 = 0;
   // N.B. From documentation for CalcTractionAtQHelper(), nhat_W points from B
   // into A. Since the right-hand rule on the triangle above dictates the
   // direction of the normal to be in the +z axis, body A is situated above body
   // B. This is important to understand the sign of the resulting derivative
   // below.
-  const Vector3<AutoDiffXd>& nhat_W = surface.mesh_W().face_normal(f0);
+  const Vector3<AutoDiffXd>& nhat_W = surface.face_normal(f0);
 
   // We *emulate* an elastic foundation of modulus E and depth h.
   const double E = 1.0e5;  // in Pa.
@@ -790,18 +874,18 @@ class HydroelasticReportingTests
     const GeometryId null_id;
 
     // Create the surface mesh first.
-    auto mesh = CreateSurfaceMesh();
+    auto mesh = CreateTriangleMesh();
 
     // Create the e field values (i.e., "hydroelastic pressure").
     std::vector<double> e_MN(mesh->num_vertices());
-    for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
-      e_MN[i] = pressure(mesh->vertex(i).r_MV());
+    for (int i = 0; i < mesh->num_vertices(); ++i)
+      e_MN[i] = pressure(mesh->vertex(i));
 
-    SurfaceMesh<double>* mesh_pointer = mesh.get();
+    TriangleSurfaceMesh<double>* mesh_pointer = mesh.get();
     contact_surface_ = std::make_unique<ContactSurface<double>>(
-      null_id, null_id, std::move(mesh),
-      std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e_MN", std::move(e_MN), mesh_pointer));
+        null_id, null_id, std::move(mesh),
+        std::make_unique<MeshFieldLinear<double, TriangleSurfaceMesh<double>>>(
+            std::move(e_MN), mesh_pointer));
 
     // Set the velocities to correspond to one body fixed and one body
     // free so that we can test the slip velocity. Additionally, we'll
@@ -841,9 +925,14 @@ const RigidTransform<double> poses[] = {
         drake::Vector3<double>(1, 2, 3))
 };
 
-INSTANTIATE_TEST_SUITE_P(PoseInstantiations,
-                        MultibodyPlantHydroelasticTractionTests,
-                        ::testing::ValuesIn(poses));
+const geometry::HydroelasticContactRepresentation representations[] = {
+    geometry::HydroelasticContactRepresentation::kTriangle,
+    geometry::HydroelasticContactRepresentation::kPolygon};
+
+INSTANTIATE_TEST_SUITE_P(
+    TractionTestsInstantiations, MultibodyPlantHydroelasticTractionTests,
+    ::testing::Combine(::testing::ValuesIn(poses),
+                       ::testing::ValuesIn(representations)));
 
 // TODO(edrumwri) Break the tests below out into a separate file.
 
@@ -858,10 +947,10 @@ SpatialForce<double> MakeSpatialForce() {
 std::vector<HydroelasticQuadraturePointData<double>> GetQuadraturePointData() {
   HydroelasticQuadraturePointData<double> data;
   data.p_WQ = Vector3<double>(3.0, 5.0, 7.0);
-  data.face_index = SurfaceFaceIndex(1);
+  data.face_index = 1;
   data.vt_BqAq_W = Vector3<double>(11.0, 13.0, 17.0);
   data.traction_Aq_W = Vector3<double>(19.0, 23.0, 29.0);
-  return { data };
+  return {data};
 }
 
 HydroelasticContactInfo<double> CreateContactInfo(
@@ -929,4 +1018,3 @@ GTEST_TEST(HydroelasticContactInfo, MoveConstruction) {
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
-

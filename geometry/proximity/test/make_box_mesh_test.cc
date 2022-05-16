@@ -51,7 +51,7 @@ bool IsTetrahedronRespectingMa(const VolumeElement& tetrahedron,
     for (const double face_bound : {-half_size[axis], half_size[axis]}) {
       bool closest_to_this_face = true;
       for (int i = 0; i < mesh.kVertexPerElement && closest_to_this_face; ++i) {
-        const Vector3d vertex = mesh.vertex(tetrahedron.vertex(i)).r_MV();
+        const Vector3d vertex = mesh.vertex(tetrahedron.vertex(i));
         const double distance_to_this_face = abs(vertex[axis] - face_bound);
         closest_to_this_face =
             tolerance >= distance_to_this_face - distance_to_boundary(vertex);
@@ -81,10 +81,9 @@ bool VerifyBoxMeshWithMa(const VolumeMesh<double>& mesh, const Box& box) {
   // A. The mesh is conforming.
   // A1. The mesh has unique vertices.
   const int num_vertices = mesh.num_vertices();
-  for (VolumeVertexIndex i(0); i < num_vertices; ++i) {
-    for (VolumeVertexIndex j(i + 1); j < num_vertices; ++j) {
-      const bool vertex_is_unique =
-          mesh.vertex(i).r_MV() != mesh.vertex(j).r_MV();
+  for (int i = 0; i < num_vertices; ++i) {
+    for (int j = i + 1; j < num_vertices; ++j) {
+      const bool vertex_is_unique = mesh.vertex(i) != mesh.vertex(j);
       EXPECT_TRUE(vertex_is_unique) << "The mesh has duplicated vertices.";
       if (!vertex_is_unique) {
         return false;
@@ -110,12 +109,12 @@ bool VerifyBoxMeshWithMa(const VolumeMesh<double>& mesh, const Box& box) {
   for (const double x : {-half_size.x(), half_size.x()}) {
     for (const double y : {-half_size.y(), half_size.y()}) {
       for (const double z : {-half_size.z(), half_size.z()}) {
-        const VolumeVertex<double> corner(x, y, z);
+        const Vector3d corner(x, y, z);
         const bool corner_is_a_mesh_vertex =
             mesh.vertices().end() !=
             find_if(mesh.vertices().begin(), mesh.vertices().end(),
-                    [&corner](const VolumeVertex<double>& v) -> bool {
-                      return v.r_MV() == corner.r_MV();
+                    [&corner](const Vector3d& v) -> bool {
+                      return v == corner;
                     });
         EXPECT_TRUE(corner_is_a_mesh_vertex)
             << "A corner point of the box is missing from the mesh vertices.";
@@ -126,9 +125,9 @@ bool VerifyBoxMeshWithMa(const VolumeMesh<double>& mesh, const Box& box) {
     }
   }
   // B2. No mesh's vertex is outside the box.
-  for (VolumeVertexIndex i(0); i < num_vertices; ++i) {
+  for (int i = 0; i < num_vertices; ++i) {
     const bool vertex_is_inside_or_on_boundary =
-        (mesh.vertex(i).r_MV().array().abs() <= half_size.array()).all();
+        (mesh.vertex(i).array().abs() <= half_size.array()).all();
     EXPECT_TRUE(vertex_is_inside_or_on_boundary)
         << "A mesh vertex is outside the box.";
     if (!vertex_is_inside_or_on_boundary) {
@@ -153,7 +152,7 @@ bool VerifyBoxMeshWithMa(const VolumeMesh<double>& mesh, const Box& box) {
   // C. The mesh conforms to the box's medial axis.
   // C1. No tetrahedron has all four vertices on the box's boundary, i.e.,
   //     each tetrahedron has at least one interior vertex.
-  std::vector<VolumeVertexIndex> boundary_vertices =
+  std::vector<int> boundary_vertices =
       CollectUniqueVertices(IdentifyBoundaryFaces(mesh.tetrahedra()));
   for (const VolumeElement& tetrahedron : mesh.tetrahedra()) {
     bool tetrahedron_has_an_interior_vertex = false;
@@ -184,14 +183,14 @@ bool VerifyBoxMeshWithMa(const VolumeMesh<double>& mesh, const Box& box) {
       DistanceToPointRelativeTolerance(half_size.maxCoeff());
   for (const VolumeElement& tetrahedron : mesh.tetrahedra()) {
     const double distance_v0 =
-        distance_to_boundary(mesh.vertex(tetrahedron.vertex(0)).r_MV());
+        distance_to_boundary(mesh.vertex(tetrahedron.vertex(0)));
     bool different_distance_from_v0 = false;
     for (int i = 1; i < mesh.kVertexPerElement && !different_distance_from_v0;
          ++i) {
       different_distance_from_v0 =
           distance_tolerance <
           abs(distance_v0 -
-              distance_to_boundary(mesh.vertex(tetrahedron.vertex(i)).r_MV()));
+              distance_to_boundary(mesh.vertex(tetrahedron.vertex(i))));
     }
     EXPECT_TRUE(different_distance_from_v0)
         << "A tetrahedron has all vertices at the same distances to"
@@ -358,7 +357,7 @@ GTEST_TEST(MakeBoxVolumeMeshTest, GenerateVertices) {
       for (int k = 0; k < num_vertices.z(); ++k) {
         int sequential_index = CalcSequentialIndex(i, j, k, num_vertices);
         Vector3<double> expect_r_MV = Vector3<double>(i - 1, j - 2, k - 3);
-        Vector3<double> r_MV = vertices[sequential_index].r_MV();
+        Vector3<double> r_MV = vertices[sequential_index];
         EXPECT_TRUE(CompareMatrices(expect_r_MV, r_MV))
                     << "Incorrect vertex position.";
       }
@@ -451,7 +450,7 @@ GTEST_TEST(MakeBoxVolumeMeshTest, GenerateMesh) {
   double volume = 0.0;
   for (int e = 0; e < box_mesh.num_elements(); ++e) {
     double tetrahedron_volume =
-        box_mesh.CalcTetrahedronVolume(VolumeElementIndex(e));
+        box_mesh.CalcTetrahedronVolume(e);
     EXPECT_GT(tetrahedron_volume, 0.0);
     volume += tetrahedron_volume;
   }
@@ -464,7 +463,7 @@ GTEST_TEST(MakeBoxVolumeMeshTest, GenerateMesh) {
 GTEST_TEST(MakeBoxSurfaceMeshTest, GenerateSurface) {
   const Box box(0.2, 0.4, 0.8);
   const double target_edge_length = 0.1;
-  SurfaceMesh<double> surface_mesh =
+  TriangleSurfaceMesh<double> surface_mesh =
       MakeBoxSurfaceMesh<double>(box, target_edge_length);
 
   const int expect_num_vertices = 114;

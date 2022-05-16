@@ -7,6 +7,10 @@ load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
 )
+load(
+    "@drake_visualizer//:defs.bzl",
+    _DRAKE_VISUALIZER_ENABLED = "ENABLED",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 py_library(
@@ -47,6 +51,9 @@ drake_py_binary(
 
 _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "ccd",
+    "com_jidesoft_jide_oss",
+    "common_robotics_utilities",
+    "commons_io",
     "fcl",
     "fmt",
     "ghc_filesystem",
@@ -55,25 +62,31 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "lcm",
     "meshcat",
     "meshcat_python",
+    "net_sf_jchart2d",
+    "org_apache_xmlgraphics_commons",
+    "petsc",
     "pybind11",
+    "qhull",
     "sdformat",
     "spdlog",
     "tinyobjloader",
     "usockets",
     "uwebsockets",
     "vtk",
+    "yaml_cpp_internal",
 ]] + ["//tools/workspace/%s:install" % p for p in [
+    "abseil_cpp_internal",
+    "conex",
     "cds",
     "drake_visualizer",
     "dreal",
-    "net_sf_jchart2d",
     "optitrack_driver",
     "picosat",
 ]] + select({
     "//conditions:default": ["@csdp//:install"],
     "//tools:no_csdp": [],
 }) + select({
-    "//conditions:default": ["//tools/workspace/ibex:install"],
+    "//conditions:default": ["@ibex//:install"],
     "//tools:no_dreal": [],
 }) + select({
     "//tools:with_gurobi": ["@gurobi//:install"],
@@ -98,6 +111,20 @@ install(
     deps = _DRAKE_EXTERNAL_PACKAGE_INSTALLS,
 )
 
-check_licenses(_DRAKE_EXTERNAL_PACKAGE_INSTALLS)
+check_licenses(
+    _DRAKE_EXTERNAL_PACKAGE_INSTALLS,
+    ignore_labels = [
+        # Jar files have their license notices embedded into the jar already;
+        # there is no need for them to install a separate license file.
+        "@com_jidesoft_jide_oss//:install",
+        "@commons_io//:install",
+        "@net_sf_jchart2d//:install",
+        "@org_apache_xmlgraphics_commons//:install",
+    ] + ([
+        # When disabled, this installs only a stub program under Drake's
+        # license; no other LICENSE file is relevant.
+        "//tools/workspace/drake_visualizer:install",
+    ] if not _DRAKE_VISUALIZER_ENABLED else []),
+)
 
 add_lint_tests()

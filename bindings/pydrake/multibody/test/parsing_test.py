@@ -12,6 +12,7 @@ from pydrake.multibody.parsing import (
 )
 
 import os
+import re
 import unittest
 
 from pydrake.common import FindResourceOrThrow
@@ -49,10 +50,6 @@ class TestParsing(unittest.TestCase):
             "drake/multibody/parsing/test/box_package/package.xml"))
         dut2.Remove(package_name="root")
         self.assertEqual(dut2.size(), 0)
-
-        # Simple coverage test for Drake paths.
-        dut.PopulateUpstreamToDrake(model_file=model)
-        self.assertGreater(dut.size(), 1)
 
         # Simple coverage test for folder and environment.
         dut.PopulateFromEnvironment(environment_variable='TEST_TMPDIR')
@@ -98,9 +95,27 @@ class TestParsing(unittest.TestCase):
             sdf_contents = f.read()
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)
+        self.assertEqual(parser.plant(), plant)
         result = parser.AddModelFromString(
             file_contents=sdf_contents, file_type="sdf")
         self.assertIsInstance(result, ModelInstanceIndex)
+
+    def test_strict(self):
+        plant = MultibodyPlant(time_step=0.01)
+        parser = Parser(plant=plant)
+        model = """<robot name='robot' version='0.99'>
+            <link name='a'/>
+            </robot>"""
+        parser.AddModelFromString(
+            file_contents=model, file_type='urdf', model_name='lax')
+        parser.SetStrictParsing()
+        with self.assertRaises(RuntimeError) as e:
+            result = parser.AddModelFromString(
+                file_contents=model, file_type='urdf', model_name='strict')
+        pattern = r'.*version.*ignored.*'
+        message = str(e.exception)
+        match = re.match(pattern, message)
+        self.assertTrue(match, f'"{message}" does not match "{pattern}"')
 
     def test_model_directives(self):
         model_dir = os.path.dirname(FindResourceOrThrow(
@@ -128,7 +143,3 @@ class TestParsing(unittest.TestCase):
         AddFrame.X_PF
         frame = GetScopedFrameByName(plant, "world")
         self.assertIsNotNone(GetScopedFrameName(plant, frame))
-
-    def test_model_directives_doc(self):
-        """Check that the warning note in the docstring was added."""
-        self.assertIn("Note:\n", ProcessModelDirectives.__doc__)

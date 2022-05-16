@@ -7,10 +7,12 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/scs_solver.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
@@ -29,6 +31,33 @@ using ::testing::HasSubstr;
 namespace drake {
 namespace solvers {
 namespace test {
+
+std::ostream& operator<<(std::ostream& os, QuadraticProblems value) {
+  os << "QuadraticProblems::";
+  switch (value) {
+    case QuadraticProblems::kQuadraticProgram0: {
+      os << "kQuadraticProgram0";
+      return os;
+    }
+    case QuadraticProblems::kQuadraticProgram1: {
+      os << "kQuadraticProgram1";
+      return os;
+    }
+    case QuadraticProblems::kQuadraticProgram2: {
+      os << "kQuadraticProgram2";
+      return os;
+    }
+    case QuadraticProblems::kQuadraticProgram3: {
+      os << "kQuadraticProgram3";
+      return os;
+    }
+    case QuadraticProblems::kQuadraticProgram4: {
+      os << "kQuadraticProgram4";
+      return os;
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
 
 QuadraticProgramTest::QuadraticProgramTest() {
   auto cost_form = std::get<0>(GetParam());
@@ -445,6 +474,9 @@ void TestQPonUnitBallExample(const SolverInterface& solver) {
     x_expected << 2.0 / 3.0, 1.0 / 3.0;
 
     prog.SetSolverOption(GurobiSolver::id(), "BarConvTol", 1E-9);
+    // The default accuracy in SCS isn't enough, we set it to 1E-6.
+    prog.SetSolverOption(ScsSolver::id(), "eps_abs", 1E-6);
+    prog.SetSolverOption(ScsSolver::id(), "eps_rel", 1E-6);
     MathematicalProgramResult result;
     ASSERT_NO_THROW(result = RunSolver(prog, solver));
 

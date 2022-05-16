@@ -6,6 +6,7 @@
 #include <fcl/fcl.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collision_filter.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
@@ -229,7 +230,7 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
 
 template <typename T>
 struct ScalarSupport {
-  static bool is_supported(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2) {
+  static bool is_supported(fcl::NODE_TYPE, fcl::NODE_TYPE) {
     return false;
   }
 };
@@ -237,7 +238,7 @@ struct ScalarSupport {
 /* Primitive support for double-valued query.  */
 template <>
 struct ScalarSupport<double> {
-  static bool is_supported(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2);
+  static bool is_supported(fcl::NODE_TYPE, fcl::NODE_TYPE);
 };
 
 /* Primitive support for AutoDiff-valued query.  */

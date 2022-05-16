@@ -5,7 +5,9 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/solvers/constraint.h"
 
 using drake::symbolic::Expression;
 
@@ -336,7 +338,8 @@ TEST_F(MaybeParseLinearConstraintTest, TestLinearEqualityConstraint) {
       EXPECT_EQ(linear_eq_constraint.variables().size(), 0);
     }
     EXPECT_EQ(linear_eq_constraint.evaluator()->num_constraints(), 1);
-    EXPECT_TRUE(CompareMatrices(linear_eq_constraint.evaluator()->A(), a, tol));
+    EXPECT_TRUE(
+        CompareMatrices(linear_eq_constraint.evaluator()->GetDenseA(), a, tol));
     EXPECT_NEAR(linear_eq_constraint.evaluator()->lower_bound()(0), bound, tol);
   };
 
@@ -371,7 +374,8 @@ TEST_F(MaybeParseLinearConstraintTest, TestLinearConstraint) {
       EXPECT_EQ(linear_constraint.variables().size(), 0);
     }
     EXPECT_EQ(linear_constraint.evaluator()->num_constraints(), 1);
-    EXPECT_TRUE(CompareMatrices(linear_constraint.evaluator()->A(), a, tol));
+    EXPECT_TRUE(
+        CompareMatrices(linear_constraint.evaluator()->GetDenseA(), a, tol));
     EXPECT_NEAR(linear_constraint.evaluator()->lower_bound()(0), lb, tol);
     EXPECT_NEAR(linear_constraint.evaluator()->upper_bound()(0), ub, tol);
   };
@@ -402,6 +406,161 @@ TEST_F(MaybeParseLinearConstraintTest, NonlinearConstraint) {
             nullptr);
   EXPECT_EQ(internal::MaybeParseLinearConstraint(sin(x_(0)), 1, 2).get(),
             nullptr);
+}
+
+GTEST_TEST(ParseConstraintTest, FalseFormula) {
+  // ParseConstraint with some formula being false.
+  symbolic::Variable x("x");
+  // ParseConstraint for a vector of symbolic::Formula
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::ParseConstraint(
+          Vector2<symbolic::Formula>(x >= 0, symbolic::Expression(1) >= 2)),
+      "ParseConstraint is called with formulas\\(1, 0\\) being always false");
+
+  // ParseConstraint for a single symbolic::Formula
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::ParseConstraint(symbolic::Expression(1) >= 2),
+      "ParseConstraint is called with a formula being always false.");
+}
+
+GTEST_TEST(ParseLinearEqualityConstraintTest, FalseFormula) {
+  // ParseLinearEqualityConstraint with some formula being false.
+  symbolic::Variable x("x");
+  // ParseLinearEqualityConstraint for a set of symbolic::Formula
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::ParseLinearEqualityConstraint(
+          std::set<symbolic::Formula>({x == 0, symbolic::Expression(1) == 2})),
+      "ParseLinearEqualityConstraint is called with one of formulas being "
+      "always false.");
+
+  // ParseLinearEqualityConstraint for a single symbolic::Formula
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::ParseLinearEqualityConstraint(symbolic::Expression(1) == 2),
+      "ParseLinearEqualityConstraint is called with a formula being always "
+      "false.");
+}
+
+GTEST_TEST(ParseConstraintTest, TrueFormula) {
+  // Call ParseConstraint with a formula being always True.
+  auto binding1 = internal::ParseConstraint(symbolic::Expression(1) >= 0);
+  EXPECT_NE(dynamic_cast<BoundingBoxConstraint*>(binding1.evaluator().get()),
+            nullptr);
+  EXPECT_EQ(binding1.evaluator()->num_constraints(), 0);
+  EXPECT_EQ(binding1.variables().rows(), 0);
+
+  // Call ParseConstraint with a vector of formulas, some of the formulas being
+  // alwyas True.
+  symbolic::Variable x("x");
+  auto binding2 = internal::ParseConstraint(
+      Vector2<symbolic::Formula>(x >= 1, symbolic::Expression(1) >= 0));
+  EXPECT_EQ(binding2.evaluator()->num_constraints(), 1);
+  EXPECT_TRUE(
+      binding2.evaluator()->CheckSatisfied((Vector1d() << 2).finished()));
+  EXPECT_FALSE(
+      binding2.evaluator()->CheckSatisfied((Vector1d() << 0).finished()));
+
+  // Call ParseConstraint with a vector of formulas all being True.
+  auto binding3 = internal::ParseConstraint(Vector2<symbolic::Formula>(
+      symbolic::Expression(1) >= 0, symbolic::Expression(2) >= 1));
+  EXPECT_NE(dynamic_cast<BoundingBoxConstraint*>(binding3.evaluator().get()),
+            nullptr);
+  EXPECT_EQ(binding3.evaluator()->num_constraints(), 0);
+  EXPECT_EQ(binding3.variables().rows(), 0);
+
+  // Call ParseLinearEqualityConstraint with a set of formulas, while some
+  // formulas being always true.
+  auto binding4 = internal::ParseLinearEqualityConstraint(
+      std::set<symbolic::Formula>({2 * x == 1, symbolic::Expression(1) == 1}));
+  EXPECT_EQ(binding4.evaluator()->num_constraints(), 1);
+  EXPECT_TRUE(
+      binding4.evaluator()->CheckSatisfied((Vector1d() << 0.5).finished()));
+  EXPECT_FALSE(
+      binding4.evaluator()->CheckSatisfied((Vector1d() << 1).finished()));
+
+  // Call ParseLinearEqualityConstraint with a set of formulas all being True.
+  auto binding5 =
+      internal::ParseLinearEqualityConstraint(std::set<symbolic::Formula>(
+          {symbolic::Expression(1) == 1, symbolic::Expression(2) == 2}));
+  EXPECT_EQ(binding5.evaluator()->num_constraints(), 0);
+
+  // Call ParseLinearEqualityConstraint with a single formula being always true.
+  auto binding6 =
+      internal::ParseLinearEqualityConstraint(symbolic::Expression(1) == 1);
+  EXPECT_EQ(binding6.evaluator()->num_constraints(), 0);
+  EXPECT_EQ(binding6.variables().rows(), 0);
+}
+
+std::shared_ptr<RotatedLorentzConeConstraint>
+CheckParseQuadraticAsRotatedLorentzConeConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& b, double c,
+    double zero_tol = 0.) {
+  const auto dut =
+      internal::ParseQuadraticAsRotatedLorentzConeConstraint(Q, b, c, zero_tol);
+  // Make sure that dut.A() * x + dub.t() in rotated Lorentz cone is the same
+  // expression as 0.5xᵀQx + bᵀx + c<=0.
+  const Eigen::MatrixXd A_dense = dut->A_dense();
+  EXPECT_TRUE(
+      CompareMatrices(A_dense.row(1), Eigen::RowVectorXd::Zero(Q.rows())));
+  EXPECT_EQ(dut->b()(1), 1);
+  const double tol = 1E-12;
+  // Check the Hessian.
+  EXPECT_TRUE(
+      CompareMatrices(A_dense.bottomRows(A_dense.rows() - 2).transpose() *
+                      A_dense.bottomRows(A_dense.rows() - 2),
+                      0.25 * (Q + Q.transpose()), tol));
+  // Check the linear coefficient.
+  EXPECT_TRUE(
+      CompareMatrices(2 * A_dense.bottomRows(A_dense.rows() - 2).transpose() *
+                      dut->b().tail(dut->b().rows() - 2) -
+                      A_dense.row(0).transpose(),
+                      b, tol));
+  EXPECT_NEAR(dut->b().tail(dut->b().rows() - 2).squaredNorm() - dut->b()(0), c,
+              tol);
+  return dut;
+}
+
+GTEST_TEST(ParseQuadraticAsRotatedLorentzConeConstraint, Test) {
+  CheckParseQuadraticAsRotatedLorentzConeConstraint(
+      (Vector1d() << 1).finished(), Vector1d::Zero(), 1);
+  CheckParseQuadraticAsRotatedLorentzConeConstraint(
+      (Vector1d() << 1).finished(), (Vector1d() << 2).finished(), 1);
+  // Strictly positive Hessian.
+  CheckParseQuadraticAsRotatedLorentzConeConstraint(Eigen::Matrix2d::Identity(),
+                                                    Eigen::Vector2d(1, 3), 2);
+  // Hessian is positive semidefinite but not positive definite. b is in the
+  // range space of F.
+  auto dut = CheckParseQuadraticAsRotatedLorentzConeConstraint(
+      2 * Eigen::Matrix2d::Ones(), Eigen::Vector2d(2, 2), 0.5);
+  EXPECT_EQ(dut->A().rows(), 3);
+
+  // Hessian is positive semidefinite but not positive definite, b is not in the
+  // range space of F.
+  dut = CheckParseQuadraticAsRotatedLorentzConeConstraint(
+      2 * Eigen::Matrix2d::Ones(), Eigen::Vector2d(2, 3), -0.5);
+  EXPECT_EQ(dut->A().rows(), 3);
+
+  // Hessian is almost positive semidefinite with one eigenvalue slightly
+  // negative.
+  Eigen::Matrix2d Q_almost_psd;
+  // clang-format off
+  Q_almost_psd << 1, 1,
+                  1, 1 - 1E-12;
+  // clang-format on
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::ParseQuadraticAsRotatedLorentzConeConstraint(
+          Q_almost_psd, Eigen::Vector2d(2, 3), -0.5),
+      ".* is not positive semidefinite.*");
+  CheckParseQuadraticAsRotatedLorentzConeConstraint(
+      Q_almost_psd, Eigen::Vector2d(2, 3), -0.5, 1E-10);
+}
+
+GTEST_TEST(ParseQuadraticAsRotatedLorentzConeConstraint, TestException) {
+  const Eigen::MatrixXd Q = Eigen::Vector2d(1, -2).asDiagonal();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::ParseQuadraticAsRotatedLorentzConeConstraint(
+          Q, Eigen::Vector2d(1, 3), -2),
+      ".* is not positive semidefinite.*");
 }
 }  // namespace
 }  // namespace solvers

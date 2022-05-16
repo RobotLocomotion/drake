@@ -9,7 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
@@ -243,33 +243,31 @@ Vector3<T> ProjectMidPoint(const Vector3<T>& x, const Vector3<T>& y,
 // adds the vertex to the mesh data structures, and hashes the new
 // vertex in the parents -> child map
 template <typename T>
-VolumeVertexIndex CreateNewVertex(
-    VolumeVertexIndex a, VolumeVertexIndex b,
-    std::vector<VolumeVertex<T>>* split_mesh_vertices_ptr,
-    std::vector<CylinderVertexType>* split_vertex_type_ptr,
-    std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>*
-        vertex_map_ptr,
-    const double radius) {
+int CreateNewVertex(int vertex_a_index, int vertex_b_index,
+                    std::vector<Vector3<T>>* split_mesh_vertices_ptr,
+                    std::vector<CylinderVertexType>* split_vertex_type_ptr,
+                    std::unordered_map<SortedPair<int>, int>* vertex_map_ptr,
+                    const double radius) {
   DRAKE_DEMAND(split_mesh_vertices_ptr != nullptr);
   DRAKE_DEMAND(split_vertex_type_ptr != nullptr);
   DRAKE_DEMAND(vertex_map_ptr != nullptr);
 
-  std::vector<VolumeVertex<T>>& split_mesh_vertices = *split_mesh_vertices_ptr;
+  std::vector<Vector3<T>>& split_mesh_vertices = *split_mesh_vertices_ptr;
   std::vector<CylinderVertexType>& split_vertex_type = *split_vertex_type_ptr;
-  std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>&
-      vertex_map = *vertex_map_ptr;
+  std::unordered_map<SortedPair<int>, int>& vertex_map = *vertex_map_ptr;
 
-  const CylinderVertexType p_vertex_type =
-      std::min(split_vertex_type[a], split_vertex_type[b]);
+  const CylinderVertexType p_vertex_type = std::min(
+      split_vertex_type[vertex_a_index], split_vertex_type[vertex_b_index]);
 
-  const Vector3<T>& A = split_mesh_vertices[a].r_MV();
-  const Vector3<T>& B = split_mesh_vertices[b].r_MV();
+  const Vector3<T>& A = split_mesh_vertices[vertex_a_index];
+  const Vector3<T>& B = split_mesh_vertices[vertex_b_index];
 
   const Vector3<T> p = ProjectMidPoint(A, B, p_vertex_type, radius);
 
-  const SortedPair<VolumeVertexIndex> p_parents = MakeSortedPair(a, b);
+  const SortedPair<int> p_parents =
+      MakeSortedPair(vertex_a_index, vertex_b_index);
 
-  const VolumeVertexIndex new_vertex_index(split_mesh_vertices.size());
+  const int new_vertex_index = static_cast<int>(split_mesh_vertices.size());
   vertex_map[p_parents] = new_vertex_index;
 
   split_mesh_vertices.emplace_back(p);
@@ -294,29 +292,27 @@ VolumeVertexIndex CreateNewVertex(
 template <typename T>
 void RefineCylinderTetrahdron(
     const VolumeElement& tet,
-    std::vector<VolumeVertex<T>>* split_mesh_vertices_ptr,
+    std::vector<Vector3<T>>* split_mesh_vertices_ptr,
     std::vector<VolumeElement>* split_mesh_tetrahedra_ptr,
     std::vector<CylinderVertexType>* split_vertex_type_ptr,
-    std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>*
-        vertex_map_ptr,
+    std::unordered_map<SortedPair<int>, int>* vertex_map_ptr,
     const double radius) {
   DRAKE_DEMAND(split_mesh_vertices_ptr != nullptr);
   DRAKE_DEMAND(split_mesh_tetrahedra_ptr != nullptr);
   DRAKE_DEMAND(split_vertex_type_ptr != nullptr);
   DRAKE_DEMAND(vertex_map_ptr != nullptr);
 
-  std::vector<VolumeVertex<T>>& split_mesh_vertices = *split_mesh_vertices_ptr;
+  std::vector<Vector3<T>>& split_mesh_vertices = *split_mesh_vertices_ptr;
   std::vector<CylinderVertexType>& split_vertex_type = *split_vertex_type_ptr;
   std::vector<VolumeElement>& split_mesh_tetrahedra =
       *split_mesh_tetrahedra_ptr;
-  std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>&
-      vertex_map = *vertex_map_ptr;
+  std::unordered_map<SortedPair<int>, int>& vertex_map = *vertex_map_ptr;
 
   // Index a corresponds to vertex A, index b to vertex B, etc.
-  const VolumeVertexIndex a = tet.vertex(0);
-  const VolumeVertexIndex b = tet.vertex(1);
-  const VolumeVertexIndex c = tet.vertex(2);
-  const VolumeVertexIndex d = tet.vertex(3);
+  const int a = tet.vertex(0);
+  const int b = tet.vertex(1);
+  const int c = tet.vertex(2);
+  const int d = tet.vertex(3);
 
   // 6 new vertices are created, each as the midpoint of every pair of
   // vertices in a tet. For example, vertex e is created as the midpoint of
@@ -329,9 +325,8 @@ void RefineCylinderTetrahdron(
   // (b,a) and returns true when checking for equivalence of the keys.
 
   auto get_child_vertex = [&vertex_map, &split_mesh_vertices,
-                           &split_vertex_type,
-                           &radius](VolumeVertexIndex p, VolumeVertexIndex q) {
-    SortedPair<VolumeVertexIndex> parents{p, q};
+                           &split_vertex_type, &radius](int p, int q) {
+    SortedPair<int> parents{p, q};
     auto iter = vertex_map.find(parents);
     if (iter != vertex_map.end()) return iter->second;
     return CreateNewVertex(parents.first(), parents.second(),
@@ -340,12 +335,12 @@ void RefineCylinderTetrahdron(
   };
 
   // The index of each of the child vertices
-  const VolumeVertexIndex e = get_child_vertex(a, b);
-  const VolumeVertexIndex f = get_child_vertex(a, c);
-  const VolumeVertexIndex g = get_child_vertex(a, d);
-  const VolumeVertexIndex h = get_child_vertex(b, c);
-  const VolumeVertexIndex i = get_child_vertex(b, d);
-  const VolumeVertexIndex j = get_child_vertex(c, d);
+  const int e = get_child_vertex(a, b);
+  const int f = get_child_vertex(a, c);
+  const int g = get_child_vertex(a, d);
+  const int h = get_child_vertex(b, c);
+  const int i = get_child_vertex(b, d);
+  const int j = get_child_vertex(c, d);
 
   // The four tetrahedra at the corners.
   split_mesh_tetrahedra.emplace_back(a, e, f, g);
@@ -383,7 +378,7 @@ std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>> RefineCylinderMesh(
     const std::vector<CylinderVertexType>& vertex_type, const double radius) {
   // Copy the vertex, and boundary information into the vectors for the
   // new subdivided mesh
-  std::vector<VolumeVertex<T>> split_mesh_vertices = mesh.vertices();
+  std::vector<Vector3<T>> split_mesh_vertices = mesh.vertices();
   std::vector<CylinderVertexType> split_vertex_type = vertex_type;
 
   // Original tets are all subdivied, so split_mesh_tetrahedra will only
@@ -392,8 +387,7 @@ std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>> RefineCylinderMesh(
 
   // A map from two parent vertices in the original mesh to the new vertex in
   // the refined mesh.
-  std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>
-      vertex_map(6 * mesh.num_elements());
+  std::unordered_map<SortedPair<int>, int> vertex_map(6 * mesh.num_elements());
 
   for (const auto& t : mesh.tetrahedra()) {
     RefineCylinderTetrahdron<T>(t, &split_mesh_vertices, &split_mesh_tetrahedra,
@@ -413,7 +407,7 @@ template <typename T>
 std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>>
 MakeCylinderMeshLevel0(const double& height, const double& radius) {
   std::vector<VolumeElement> tetrahedra;
-  std::vector<VolumeVertex<T>> vertices;
+  std::vector<Vector3<T>> vertices;
 
   // Initial subdivisions along the length of the cylinder are made based on
   // the aspect ratio so that, for a long cylinder, initial tetrahedra are
@@ -484,8 +478,6 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
   }
   add_slice_vertices(bot_z);
 
-  using V = VolumeVertexIndex;
-
   // Each j-th iteration adds 12 tetrahedra of a rectangular prism of one
   // subdivision.
   // Each i-th iteration add 3 tetrahedra of a triangular prism, four of which
@@ -499,9 +491,9 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
       const int e = 5 * (j + 1) + ((i + 1) % 4);
       const int f = 5 * (j + 1) + 4;
 
-      tetrahedra.emplace_back(V(a), V(c), V(b), V(f));
-      tetrahedra.emplace_back(V(a), V(b), V(e), V(f));
-      tetrahedra.emplace_back(V(a), V(e), V(d), V(f));
+      tetrahedra.emplace_back(a, c, b, f);
+      tetrahedra.emplace_back(a, b, e, f);
+      tetrahedra.emplace_back(a, e, d, f);
     }
   }
 
@@ -685,8 +677,8 @@ VolumeMesh<T> MakeCylinderVolumeMesh(const Cylinder& cylinder,
 // @tparam T
 //    The Eigen-compatible scalar for representing the mesh vertex positions.
 template <typename T>
-SurfaceMesh<T> MakeCylinderSurfaceMesh(const Cylinder& cylinder,
-                                       double resolution_hint) {
+TriangleSurfaceMesh<T> MakeCylinderSurfaceMesh(const Cylinder& cylinder,
+                                               double resolution_hint) {
   DRAKE_DEMAND(resolution_hint > 0.0);
   return ConvertVolumeToSurfaceMesh<T>(
       MakeCylinderVolumeMeshWithMa<T>(cylinder, resolution_hint));

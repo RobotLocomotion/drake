@@ -7,21 +7,7 @@
 #include <Eigen/Core>
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-
-#ifndef __clang__
-// N.B. Without this, GCC 7.4.0 on Ubuntu complains about
-// `AutoDiffScalar(const AutoDiffScalar& other)` having uninitialized values.
-// We have not tested whether GCC 7.5.0 still complains.
-// TODO(eric.cousineau):  #11566 Figure out why?
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif  // __clang__
-
 #include "drake/common/autodiff.h"
-
-#ifndef __clang__
-#pragma GCC diagnostic pop
-#endif  // __clang__
 
 // The macro `PYBIND11_NUMPY_OBJECT_DTYPE` place symbols into the namespace
 // `pybind11::detail`, so we should not place these in `drake::pydrake`.

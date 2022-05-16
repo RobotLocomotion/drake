@@ -72,7 +72,7 @@ GTEST_TEST(DifferentialInverseKinematicsIntegatorTest, BasicTest) {
 
   params.set_timestep(time_step);  // intentionally set this after diff_ik call
   DifferentialInverseKinematicsResult result = DoDifferentialInverseKinematics(
-      *robot, *robot_context, X_WE_desired.GetAsIsometry3(), frame_E, params);
+      *robot, *robot_context, X_WE_desired, frame_E, params);
 
   EXPECT_EQ(result.status, DifferentialInverseKinematicsStatus::kSolutionFound);
   EXPECT_TRUE(CompareMatrices(q + time_step * result.joint_velocities.value(),

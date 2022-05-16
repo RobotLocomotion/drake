@@ -11,9 +11,11 @@
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/geometry/render/render_camera.h"
+#include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/sensors/image.h"
 
 namespace drake {
 namespace geometry {
@@ -104,7 +106,7 @@ class SceneGraph;
      report no more than 1e-14 error across all supportable geometry pairs
      and scalars. At that point, the table will simply disappear.
 
- @tparam_nonsymbolic_scalar
+ @tparam_default_scalar
 */
 template <typename T>
 class QueryObject {
@@ -239,6 +241,18 @@ class QueryObject {
    geometries approximately 20cm in size for `T` = @ref drake::AutoDiffXd
    "AutoDiffXd".
 
+   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
+   | --------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
+   | Box       | throwsᵉ |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Capsule   | throwsᵉ | throwsᵉ  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Convex    | throwsᵉ | throwsᵉ  | throwsᵉ |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Cylinder  | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Ellipsoid | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | HalfSpace | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |   throwsᵉ  |  ░░░░░  |  ░░░░░  |
+   | Mesh      |    ᵇ    |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
+   | Sphere    | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |    throwsᵉ  |    ᵇ    | throwsᵉ |
+   __*Table 3*__: Support for `T` = @ref drake::symbolic::Expression.
+
    - ᵃ Penetration depth between two HalfSpace instances has no meaning; either
        they don't intersect, or they have infinite penetration.
    - ᵇ Meshes are represented by the *convex* hull of the mesh, therefore the
@@ -248,6 +262,8 @@ class QueryObject {
        values reported here are confirmed, observed worst case answers.
    - ᵈ These results are simply not supported for
        `T` = @ref drake::AutoDiffXd "AutoDiffXd" at this time.
+   - ᵉ These results are simply not supported for
+       `T` = @ref drake::symbolic::Expression at this time.
 
    <!-- Note to developers: the tests that support the assertions here are
    located in penetration_as_point_pair_characterize_test.cc. The values in this
@@ -277,72 +293,53 @@ class QueryObject {
      - This table shows which shapes can be declared for use in hydroelastic
        contact, and what compliance can be assigned.
 
-       |   Shape   | Soft  | Rigid |
-       | :-------: | :---: | :---- |
-       | Sphere    |  yes  |  yes  |
-       | Cylinder  |  yes  |  yes  |
-       | Box       |  yes  |  yes  |
-       | Capsule   |  yes  |  yes  |
-       | Ellipsoid |  yes  |  yes  |
-       | HalfSpace |  yes  |  yes  |
-       | Mesh      |  no   |  yes  |
-       | Convex    |  no   |  yes  |
+       |   Shape   | Compliant | Rigid |
+       | :-------: | :-------: | :---: |
+       | Sphere    |    yes    |  yes  |
+       | Cylinder  |    yes    |  yes  |
+       | Box       |    yes    |  yes  |
+       | Capsule   |    yes    |  yes  |
+       | Ellipsoid |    yes    |  yes  |
+       | HalfSpace |    yes    |  yes  |
+       | Mesh      |    no     |  yes  |
+       | Convex    |    yes    |  yes  |
 
-     - We do not currently support contact between two geometries with the
-       *same* compliance; one geometry *must* be soft, and the other *must* be
-       rigid. If geometries with the same compliance collide, an exception will
-       be thrown. More particularly, if such a geometry pair *cannot be culled*
-       an exception will be thrown. No exception is thrown if the pair has been
-       filtered.
-     - The elasticity modulus E (N/m^2) of each geometry is set in
-       ProximityProperties (see AddContactMaterial()).
+     - We do not support contact between two rigid geometries. One geometry
+       *must* be compliant, and the other could be rigid or compliant. If
+       two rigid geometries collide, an exception will be thrown. More
+       particularly, if such a geometry pair *cannot be culled* an exception
+       will be thrown. No exception is thrown if the pair has been filtered.
+     - If you need all combinations of rigid-rigid contact, rigid-compliant
+       contact, and compliant-compliant contact, you might consider
+       ComputeContactSurfacesWithFallback().
+     - The hydroelastic modulus (N/m^2) of each compliant geometry is set in
+       ProximityProperties by AddCompliantHydroelasticProperties().
      - The tessellation of the corresponding meshes is controlled by the
        resolution hint (where appropriate), as defined by
-       AddSoftHydroelasticProperties() and AddRigidHydroelasticProperties().
+       AddCompliantHydroelasticProperties() and
+       AddRigidHydroelasticProperties().
 
    <h3>Scalar support</h3>
 
-   This method provides support for both double and AutoDiffXd. Like with the
-   other proximity queries, derivatives can only be introduced via geometry
-   *poses*. We cannot differentiate w.r.t. geometric properties (e.g., radius,
-   length, etc.)
+   This method provides support for both double and AutoDiffXd, but not
+   Expression. Like with the other proximity queries, derivatives can only be
+   introduced via geometry *poses*. We cannot differentiate w.r.t. geometric
+   properties (e.g., radius, length, etc.)
+
+   @param representation  Controls the mesh representation of the contact
+                          surface. See
+                          @ref contact_surface_discrete_representation
+                          "contact surface representation" for more details.
 
    @returns A vector populated with all detected intersections characterized as
             contact surfaces. The ordering of the results is guaranteed to be
             consistent -- for fixed geometry poses, the results will remain
             the same.  */
-  std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
-
-  /** (Advanced) Reports polygonal contact surfaces between pairs of
-   intersecting geometries for hydroelastic contact model. It performs the
-   same task as ComputeContactSurfaces() with a different representation of
-   the output contact surfaces. The computation is subject to collision
-   filtering.
-
-   Each contact surface from this query consists of contact polygons, each of
-   which is an intersecting polygon between mesh elements of two geometries.
-
-   In the current incarnation, each contact polygon is represented by a
-   triangle with the same centroid, area, pressure value, and pressure
-   gradient as the contact polygon.
-
-   @warning The return type in this implementation is a std::vector of
-   ContactSurface that uses the representative triangles, and, in the future,
-   the return type will change to the true polygonal representation without
-   any deprecation period.
-
-   This query has the same handling of GeometryId's, limitations (supported
-   shapes and compliances), user-defined properties (elastic modulus and
-   tessellation), and scalar support (double and AutoDiffXd) as
-   ComputeContactSurfaces().
-
-   @returns A vector populated with all detected intersections characterized as
-            contact surfaces. The ordering of the results is guaranteed to be
-            consistent -- for fixed geometry poses, the results will remain
-            the same.
-   @throws std::exception for the same reason described in
-   ComputeContactSurfaces()  */
-  std::vector<ContactSurface<T>> ComputePolygonalContactSurfaces() const;
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool,
+                            std::vector<ContactSurface<T>>>
+  ComputeContactSurfaces(
+      HydroelasticContactRepresentation representation) const;
 
   /** Reports pairwise intersections and characterizes each non-empty
    intersection as a ContactSurface _where possible_ and as a
@@ -363,37 +360,25 @@ class QueryObject {
    The scalar support is a combination of the scalar support offered by
    ComputeContactSurfaces() and ComputePointPairPenetration(). This method
    supports double and AutoDiffXd to the extent that those constituent methods
-   do.
+   do, but does not support Expression.
 
+   @param representation    Controls the mesh representation of the contact
+                            surface. See
+                            @ref contact_surface_discrete_representation
+                            "contact surface representation" for more details.
    @param[out] surfaces     The vector that contact surfaces will be added to.
                             The vector will _not_ be cleared.
    @param[out] point_pairs  The vector that fall back point pair data will be
                             added to. The vector will _not_ be cleared.
    @pre Neither `surfaces` nor `point_pairs` is nullptr.
    @throws std::exception for the reasons described in ComputeContactSurfaces()
-                          and ComputePointPairPenetration(). */
-  void ComputeContactSurfacesWithFallback(
-      std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
-
-  /** (Advanced) Reports pairwise intersections and characterizes each
-   non-empty intersection as a polygonal contact surface _where possible_ and
-   as a PenetrationAsPointPair where not. It performs the same task as
-   ComputeContactSurfacesWithFallback() with a different representation of
-   the contact surfaces.
-
-   This method can be thought of as a combination of
-   ComputePolygonalContactSurfaces() and ComputePointPairPenetration().
-
-   @warning In the current incarnation, the output parameter `surfaces` in
-   this implementation uses ContactSurface consisting of one representative
-   triangle for each contact polygon. In the future, it will change to the
-   true polygonal representation without any deprecation period.
-
-   This method has the same ordering of the results, the same scalar support,
-   the same parameters, and the same exception as
-   ComputeContactSurfacesWithFallback().  */
-  void ComputePolygonalContactSurfacesWithFallback(
+                          and ComputePointPairPenetration().
+   @note The `surfaces` and `point_pairs` are output pointers in C++, but are
+   return values in the Python bindings. */
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+  ComputeContactSurfacesWithFallback(
+      HydroelasticContactRepresentation representation,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
 
@@ -518,7 +503,7 @@ class QueryObject {
    | HalfSpace | throwsᵃ |  throwsᵃ | throwsᵃ |  throwsᵃ  |  throwsᵃ   |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
    | Mesh      |    ᶜ    |    ᶜ     |    ᶜ    |     ᶜ     |      ᶜ     |   throwsᵃ  |    ᶜ    |  ░░░░░  |
    | Sphere    |  3e-15  |  6e-15   |   3e-6  |   5e-15   |    4e-5    |    3e-15   |    ᶜ    |  6e-15  |
-   __*Table 3*__: Worst observed error (in m) for 2mm penetration/separation
+   __*Table 4*__: Worst observed error (in m) for 2mm penetration/separation
    between geometries approximately 20cm in size for `T` = `double`.
 
    |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
@@ -531,9 +516,21 @@ class QueryObject {
    | HalfSpace | throwsᵃ |  throwsᵃ | throwsᵃ |  throwsᵃ  |  throwsᵃ   |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
    | Mesh      |    ᶜ    |    ᶜ     |    ᶜ    |     ᶜ     |      ᶜ     |      ᵃ     |    ᶜ    |  ░░░░░  |
    | Sphere    |  2e-15  |  throwsᵇ | throwsᵇ |  throwsᵇ  |  throwsᵇ   |    2e-15   |    ᶜ    |  5e-15  |
-   __*Table 4*__: Worst observed error (in m) for 2mm penetration/separation
+   __*Table 5*__: Worst observed error (in m) for 2mm penetration/separation
    between geometries approximately 20cm in size for `T` =
    @ref drake::AutoDiffXd "AutoDiffXd".
+
+   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
+   | --------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
+   | Box       | throwsᵈ |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Capsule   | throwsᵈ | throwsᵈ  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Convex    | throwsᵈ | throwsᵈ  | throwsᵈ |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Cylinder  | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Ellipsoid | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | HalfSpace | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   throwsᵈ  |  ░░░░░  |  ░░░░░  |
+   | Mesh      |    ᵇ    |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
+   | Sphere    | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |    throwsᵈ  |    ᵇ    | throwsᵈ |
+   __*Table 6*__: Support for `T` = @ref drake::symbolic::Expression.
 
    - ᵃ We don't currently support queries between HalfSpace and any other shape
        (except for Sphere).
@@ -541,6 +538,8 @@ class QueryObject {
        `T` = @ref drake::AutoDiffXd "AutoDiffXd" at this time.
    - ᶜ Meshes are represented by the *convex* hull of the mesh, therefore the
        results for Mesh are the same as for Convex.
+   - ᵈ These results are simply not supported for
+       `T` = @ref drake::symbolic::Expression at this time.
 
    <!-- Note to developers: the tests that support the assertions here are
    located in distance_to_shape_characterize_test.cc. The values in this
@@ -623,11 +622,12 @@ class QueryObject {
    of shape pairs, but a list of shapes. Otherwise, the methodology is the same
    as described, with the point being represented as a zero-radius sphere.
 
-   | Scalar |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
+   |   Scalar   |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
    | :----: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
-   | double |  2e-15  |   4e-15  |    ᵃ    |   3e-15   |    3e-5ᵇ   |    5e-15   |    ᵃ    |  4e-15  |
-   | ADXd   |  1e-15  |   4e-15  |    ᵃ    |     ᵃ     |      ᵃ     |    5e-15   |    ᵃ    |  3e-15  |
-   __*Table 5*__: Worst observed error (in m) for 2mm penetration/separation
+   |   double   |  2e-15  |   4e-15  |    ᵃ    |   3e-15   |    3e-5ᵇ   |    5e-15   |    ᵃ    |  4e-15  |
+   | AutoDiffXd |  1e-15  |   4e-15  |    ᵃ    |     ᵃ     |      ᵃ     |    5e-15   |    ᵃ    |  3e-15  |
+   | Expression |   ᵃ     |    ᵃ     |    ᵃ    |     ᵃ     |      ᵃ     |      ᵃ     |    ᵃ    |    ᵃ    |
+   __*Table 7*__: Worst observed error (in m) for 2mm penetration/separation
    between geometry approximately 20cm in size and a point.
 
    - ᵃ Unsupported geometry/scalar combinations are simply ignored; no results

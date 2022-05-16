@@ -21,6 +21,7 @@ load(
 load(
     "@drake//tools/performance:defs.bzl",
     "drake_cc_googlebench_binary",
+    "drake_py_experiment_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -152,14 +153,12 @@ drake_cc_binary(
         "//common:add_text_logging_gflags",
         "//common:name_value",
         "//common/schema:stochastic",
-        "//common/yaml:yaml_read_archive",
-        "//common/yaml:yaml_write_archive",
+        "//common/yaml",
         "//examples/acrobot:acrobot_plant",
         "//examples/acrobot:spong_controller",
         "//systems/analysis:simulator",
         "//systems/framework:diagram_builder",
         "//systems/primitives:vector_log_sink",
-        "@yaml_cpp",
     ],
 )
 
@@ -266,6 +265,7 @@ drake_cc_binary(
         ":spong_controller",
         ":spong_controller_params",
         "//geometry:drake_visualizer",
+        "//solvers:snopt_solver",
         "//systems/analysis:simulator",
         "@gflags",
     ],
@@ -283,6 +283,7 @@ drake_cc_binary(
         ":acrobot_plant",
         "//common:is_approx_equal_abstol",
         "//geometry:drake_visualizer",
+        "//solvers:snopt_solver",
         "//solvers:solve",
         "//systems/analysis:simulator",
         "//systems/controllers:finite_horizon_linear_quadratic_regulator",
@@ -349,6 +350,7 @@ drake_cc_googletest(
     deps = [
         ":acrobot_plant",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -443,11 +445,9 @@ drake_cc_googlebench_binary(
     ],
 )
 
-sh_test(
-    name = "benchmark_autodiff_test",
-    size = "small",
-    srcs = ["test/benchmark_autodiff_test.sh"],
-    data = [":benchmark_autodiff"],
+drake_py_experiment_binary(
+    name = "autodiff_experiment",
+    googlebench_binary = ":benchmark_autodiff",
 )
 
 install_data()

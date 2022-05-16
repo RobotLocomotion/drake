@@ -178,8 +178,12 @@ drake_cc_library(
     deps = [
         "//common/trajectories",
         "//multibody/plant",
+        "//solvers:choose_best_solver",
+        "//solvers:clp_solver",
         "//solvers:mathematical_program",
-        "//solvers:solve",
+        "//solvers:mathematical_program_result",
+        "//solvers:mosek_solver",
+        "//solvers:solver_interface",
     ],
 )
 
@@ -210,6 +214,7 @@ drake_cc_googletest(
         ":optimization_with_contact_utilities",
         ":static_equilibrium_problem",
         "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:snopt_solver",
         "//solvers:solve",
     ],
 )
@@ -274,15 +279,17 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "toppra_test",
-    size = "medium",
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
+    use_default_main = False,
     deps = [
         ":toppra",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//multibody/tree",
+        "//solvers:gurobi_solver",
+        "//solvers:mosek_solver",
     ],
 )
 

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
@@ -13,6 +14,31 @@ namespace internal {
 
 using std::cos;
 using std::sin;
+
+template <typename T>
+std::string UniversalMobilizer<T>::position_suffix(
+  int position_index_in_mobilizer) const {
+  switch (position_index_in_mobilizer) {
+    case 0:
+      return "qx";
+    case 1:
+      return "qy";
+  }
+  throw std::runtime_error("UniversalMobilizer has only 2 positions.");
+}
+
+template <typename T>
+std::string UniversalMobilizer<T>::velocity_suffix(
+  int velocity_index_in_mobilizer) const {
+  switch (velocity_index_in_mobilizer) {
+    case 0:
+      return "wx";
+    case 1:
+      return "wy";
+  }
+  throw std::runtime_error(
+    "UniversalMobilizer has only 2 velocities.");
+}
 
 template <typename T>
 Vector2<T> UniversalMobilizer<T>::get_angles(

@@ -1,0 +1,724 @@
+The following is the text of the contract that permits Drake to redistribute
+MOSEK™ as part of our pre-compiled release images.
+
+-------------------------------------------------------------------------------
+Software License Agreement
+V1 of 03-02-2022
+
+between
+MOSEK ApS
+Symbion Science Park
+Fruebjergvej 3
+DK-2100 Copenhagen Ø
+Denmark
+Company reg. No. 20,437,537
+(MOSEK)
+
+and
+
+Computer Science and Artificial Intelligence Lab
+77 Massachusetts Ave, MIT 32-380
+Cambridge
+MA 02139
+United States
+(Licensee)
+
+
+INITIAL CLAUSES
+
+1
+Preamble
+
+1.1
+MOSEK has developed some sophisticated mathematical optimization software.
+
+1.2
+MOSEK licenses this optimization software to end users.
+
+1.3
+Licensee has developed various software and licenses it to end users. Licensee’s
+software may benefit from being combined with MOSEK’s mathematical optimization
+software by means of a link, that will require the integration into Licensee’s
+software of certain object code files from MOSEK’s optimization software.
+
+1.4
+When the necessary files is integrated into Licensee’s software, Licensee’s end
+user customers can buy an ordinary end user license for the mathematical
+optimization software from MOSEK and use it to-gether with Licensee’s software
+as Licensee’s software by means of the said files will be able to link directly
+to the optimization software.
+
+1.5
+The object of this agreement is to provide Licensee with the rights that are
+necessary for Licensee’s A) integration of the said object code files into
+Licensee’s software, B) copying of the files together with Licensee’s own
+software and C) distribution to end user customers of the files together with
+Licensee’s own software.
+
+1.6
+The license granted by MOSEK to Licensee under this agreement is free of
+charge. MOSEK shall have no support and maintenance obligations in relation to
+the files.
+
+2
+Definitions
+
+A defined term shall have the defined meaning in the defined form of the term as
+well as in all inflected forms. The meaning of a term defined in capital letters
+does not extend to occurrences of the term written in other ways.
+
+2.1
+Definitions Relating to Time
+
+2.1.1
+All dates are stated in accordance with the Gregorian calendar.
+
+2.1.2
+THE EFFECTIVE DATE means 1st February 2022.
+
+2.1.3
+DAY means a full calendar day of 24 hours starting at 0:00 and ending at 24:00.
+
+2.1.4
+WITHIN x DAYS FROM y means within the end of the Xth DAY calculated from and
+excluding Y - e.g.  WITHIN 5 DAYS FROM Friday 4 June 2010 was within midnight on
+Wednesday 9 June 2010.
+
+2.1.5
+WITHIN x MONTHS FROM y means within the end of A) the corresponding day in the
+Xth month from Y or B) (in lack of a corresponding day in that month) the last
+day in said Xth month - e.g. WITHIN 9 MONTHS FROM 31 May 2010 was within
+midnight on 28 February 2011.
+
+2.1.6
+x DAYS' NOTICE means a notice having effect by the end of the Xth DAY calculated
+from and excluding the DAY, on which the notice was received by the addressee -
+e.g. a 5 DAYS' NOTICE calculated from Friday 4 June 2010 had effect as from
+midnight on Wednesday 9 June 2010.
+
+2.1.7
+x MONTHS' NOTICE means a notice having effect by the end of A) the corresponding
+DAY in the Xth month calculated from and excluding the DAY, on which the notice
+was received by the addressee or B) (in lack of a corresponding day in that
+month) the last DAY in said Xth month - e.g. a 9 MONTHS' NOTICE calculated from
+31 May 2010 had effect as from midnight on 28 February 2011.
+
+2.2
+Definitions Relating to Software and Licenses
+
+2.2.1
+MOSEK'S SOFTWARE means the software specified in appendix A.
+
+2.2.2
+LICENSEE'S SOFTWARE means the software specified in appendix B.
+
+2.2.3
+THE MODIFIED SOFTWARE means LICENSEE'S SOFTWARE in which Licensee has embedded
+MOSEK'S SOFTWARE.
+
+
+2.2.4
+THE TERRITORY means the entire world.
+
+2.2.5
+END USER LICENSE means a nonexclusive software license, according to which an
+end user licensee is entitled to receive and use an object code copy of the
+licensed software.
+
+2.2.6
+DISTRIBUTION LICENSE means a nonexclusive software license, according to which a
+distributor licensee is entitled
+
+a) to grant END USERS LICENSES for the licensed software to his customers,
+
+b) to be provided with the necessary object code copies of the licensed
+   software,
+
+c) to provide his customers with the necessary object code copies of the
+   licensed software and
+
+d) to provide his customers with support to and/or maintenance of the licensed
+   software.
+
+2.2.7
+THE TRADEMARKS means the trademarks displayed in Appendix D.
+
+3
+Interpretation of the Appendices
+
+The appendices are all integrated parts of this agreement. In case of real
+discrepancies between the different appendices and/or the appendices and this
+signed main document, the discrepancies shall be removed by interpretation. The
+order in which the appendices are listed does not reflect a binding priority of
+their relative importance. Likewise, there is no presumption that the appendices
+shall be of less importance than this signed main document.
+
+OPERATIVE CLAUSES
+
+4
+Deliverables
+
+MOSEK shall provide Licensee with the deliverables specified in appendix C on
+the dates specified in appendix C.
+
+5
+Grant of Software Licenses
+
+5.1
+MOSEK grants LICENSEE the following nonexclusive rights in THE TERRITORY:
+
+
+a) The right to embed an object code version of MOSEK'S SOFTWARE in LICENSEE'S
+   SOFTWARE.
+
+b) The right to make object code copies of THE MODIFIED SOFTWARE.
+
+c) The right to use THE MODIFIED SOFTWARE for purposes of developing, testing
+   and marketing THE MODIFIED SOFTWARE.
+
+d) The right to use THE MODIFIED SOFTWARE for other purposes than developing,
+   testing and marketing THE MODIFIED SOFTWARE.
+
+e) The right to grant END USER LICENSES for THE MODIFIED SOFTWARE.
+
+f) The right to grant DISTRIBUTION LICENSES for THE MODIFIED SOFTWARE to
+   Licensee's distrib-utors.
+
+5.2
+Licensee shall acquire only the right to exploit MOSEK'S SOFTWARE in the ways
+specified in this agree-ment and shall not acquire any rights of ownership to
+MOSEK'S SOFTWARE - neither as standalone software nor as software embedded in
+THE MODIFIED SOFTWARE.
+
+5.3
+Licensee shall not by means of this agreement be entitled to grant licenses for
+MOSEK'S SOFTWARE as unmodified standalone software.
+
+5.4
+MOSEK shall not be prohibited from granting licenses for MOSEK'S SOFTWARE -
+including end user li-censes, distributor licenses, OEM licenses (i.e. licenses
+according to which a licensee is entitled to mod-ify the licensed software
+and/or embed the software in the licensee's own software) or similar licenses -
+directly to Licensee's present or future customers. For the avoidance of any
+possible doubt: This does not mean that MOSEK shall be entitled to grant such
+customers or anyone else licenses for MOSEK'S SOFTWARE when embedded in
+LICENSEE'S SOFTWARE - i.e. for THE MODIFIED SOFTWARE.
+
+6
+Grant of Trademark License
+
+6.1
+MOSEK grants Licensee the non-exclusive right free of charge to use THE TRADE
+MARKS for marketing purposes in order to promote THE MODIFIED SOFTWARE in THE
+TERRITORY.
+
+6.2
+THE TRADEMARKS may only be used in order to designate MOSEK'S SOFTWARE, the
+inclusion of MO-SEK'S SOFTWARE in THE MODIFIED SOFTWARE and Licensee's status as
+a MOSEK partner and/or Licen-see. Furthermore, the way Licensee chooses to use
+THE TRADE MARKS may not in any way harm the reputation of MOSEK'S SOFTWARE or
+MOSEK. All use by Licensee of THE TRADEMARKS shall inure to the benefit of
+MOSEK.
+
+6.3
+Licensee acknowledges that THE TRADEMARKS are valid, distinctive and entitled to
+protection and waives the right to challenge such validity and status.
+
+6.4
+Licensee acknowledges MOSEK's ownership of THE TRADEMARKS. Licensee will abstain
+from applying for registration of any of these or confusingly similar
+trademarks. Likewise, Licensee will abstain from obtaining any rights to
+identical or confusingly similar company names, domain names or the like in any
+country or region. Licensee assures that Licensee has not already filed any such
+applications or obtained any such registrations or rights. Should Licensee in
+spite of this clause for some reason be or become the owner of any such
+applications, registrations or rights, Licensee shall at the request of MOSEK
+with-out undue delay transfer the ownership to MOSEK.
+
+6.5
+Trademarks in the form of word marks (as opposed to figurative marks) shall
+always be written with capital letters and must be used with the appropriate
+trademark symbol (“®” or “™”).  When word marks are used, they shall appear with
+the noun they modify (e.g. “the MOSEK™ software”). THE TRADE-MARKS are never to
+be used in inflected forms such as in plural or possessive form. All material
+which has been marked with any of THE TRADEMARKS shall bear a legend stating
+that the trademark in ques-tion is a trademark of MOSEK and is used by Licensee
+under a license from MOSEK. THE TRADEMARKS shall be used as independent and
+separate trademarks and may not be incorporated in other trade-marks. Licensee
+will abstain from using any trademarks which in appearance, meaning,
+pronunciation, or overall commercial impression are confusingly similar to THE
+TRADEMARKS.
+
+6.6
+Licensee shall not be entitled to register the license with the trademark
+authorities in THE TERRITORY.
+
+7
+Responsibility for QA
+
+It is the sole responsibility of Licensee to assure the quality of the embedding
+of MOSEK'S SOFTWARE into LICENSEE'S SOFTWARE. Thus, it rests upon Licensee to
+test the operation of THE MODIFIED SOFT-WARE in accordance with generally
+accepted sound international industry standards and practices. MO-SEK does not
+assume any responsibility for quality problems relating to THE MODIFIED SOFTWARE
+if they could have been detected by such testing.
+
+8
+Requirements with respect to END USER LICENSES
+
+The end user shall acquire only the right to use THE MODIFIED SOFTWARE and shall
+not acquire any rights of ownership.
+
+9
+Requirements with respect to DISTRIBUTION LICENSES
+
+All DISTRIBUTION LICENSES for THE MODIFIED SOFTWARE shall live up to the
+following requirements:
+
+a) Distributor licensees shall acquire only the right to distribute THE MODIFIED
+   SOFTWARE and shall not acquire any rights of ownership.
+
+
+b) END USER LICENSES granted by a distributor licensee shall live up to the
+   requirements in clause 8.
+
+10
+Protection of MOSEK'S SOFTWARE
+
+Copyright and proprietary notices in MOSEK'S SOFTWARE may not be removed or
+changed by Licensee.  They must be reproduced whenever the software is copied
+including when it is embedded in THE MOD-IFIED SOFTWARE.
+
+11
+License Fees
+
+The license is free of charge.
+
+12
+Publicity
+
+MOSEK may in a loyal and respectful way identify Licensee as customer on MOSEK's
+website and in sales presentations and other marketing materials.  When
+identifying Licensee, MOSEK shall be re-stricted to referring to the name and
+logo of Licensee and may not disclose any commercial information about this
+license agreement – except that MOSEK may in marketing material include
+information about the possibility to link directly from LICENSEE’S SOFTWARE to
+MOSEK’s mathematical optimization soft-ware.
+
+13
+Force Majeure
+
+13.1
+It shall be considered to constitute force majeure if due to circumstances
+beyond the control of a party
+
+a) the party is prevented from fulfilling obligations under this agreement or
+
+b) the fulfilment of the party's obligations would require an effort which would
+   be disproportion-ately burdensome and which cannot reasonably be required
+   from the party,
+
+provided that the party could not reasonably have taken the circumstances in
+question into considera-tion when entering into this agreement.
+
+13.2
+Circumstances which a party under normal conditions cannot reasonably take into
+consideration shall include the following:
+
+a) Wars, civil wars, riots and widespread disturbances.
+
+b) Natural disasters and fires.
+
+c) General strikes, general lockouts and other strikes and lockouts affecting
+   most of the industry in question.
+
+d) Introduction of new legislation and amendment of existing legislation.
+
+e) Changes in public authorities' administrative practices.
+
+f) Orders and regulations issued by public authorities.
+
+g) Any such events affecting the party's vendors and subcontractors.
+
+13.3
+In case of force majeure the party's duty to perform the obligations subject to
+the force majeure shall be suspended as long as the force majeure is still in
+force. However, the other party shall be entitled to terminate this agreement to
+the extent the termination clause(s) of this agreement explicitly provide for
+such termination even in cases of force majeure. Furthermore, the obligation to
+pay interest shall not be suspended.
+
+13.4
+If a party wishes to plead that due to force majeure it is excused from
+performing an obligation, the party must
+
+a) without undue delay notify the other party of the force majeure and
+
+b) continue to hold the other party informed about the development.
+
+13.5
+The parties agree that should a force majeure situation occur, they will discuss
+the best way for them mutually to handle the situation.
+
+TERM AND REMEDIES
+
+14
+Ordinary Term
+
+14.1
+The term of this agreement shall be from THE EFFECTIVE DATE till a) the day, on
+which termination by one of the parties takes effect.
+
+14.2
+Each of the parties shall any time be entitled to terminate this agreement at 12
+MONTHS' NOTICE with effect from the end of a CONTRACT YEAR. The earliest date on
+which such a termination can take effect shall, however, be
+
+a) 5 CONTRACT YEARS after THE EFFECTIVE DATE when MOSEK terminates and
+
+b) 5 CONTRACT YEARS after THE EFFECTIVE DATE when Licensee terminates.
+
+15
+Termination due to Violation or Anticipated Violation of a Party's Obligations
+
+15.1
+Should one of the parties substantially violate the party's obligations
+according to this agreement, the other party may by a notice referring to this
+clause request the violating party to remedy the violation WITHIN 30 DAYS FROM
+receipt of the notice. If the violation is not remedied within this deadline,
+the other party may terminate this agreement at 30 DAYS' NOTICE.
+
+15.2
+If it is more likely than not that one of the parties is going to violate
+obligations according to this agree-ment substantially for 30 DAYS or more, the
+other party may by a notice referring to this clause request the party in
+question to provide good and valid security for the party's performance of the
+agreement WITHIN 10 DAYS FROM receipt of the notice. If the party in question
+does not provide the security within this deadline, the other party may
+terminate the agreement at 30 DAYS' NOTICE. The situations where this clause can
+be applied shall include the following:
+
+a) A party is or becomes insolvent.
+
+b) A party goes bankrupt.
+
+c) The assets of a party are assigned in favour of the party's creditors.
+
+d) A receiver is appointed for a party.
+
+e) A party files a voluntary petition for bankruptcy, liquidation or winding up.
+
+f) A statement from a party relating to this agreement makes it unlikely that
+the party will fulfil its obligations.
+
+
+15.3
+None of the parties shall be entitled to terminate this agreement because of the
+other party's substan-tial violation or substantial anticipated violation of an
+obligation, if the violation is due to force majeure, unless
+
+a) the obligation has been violated for more than three months or
+
+b) it beyond reasonable doubt can be foreseen that the force majeure will
+   prevent the violating party from fulfilling the obligation for more than
+   three months,
+
+in which cases the other party shall be entitled to terminate this agreement at
+30 DAYS' NOTICE anyway.
+
+16
+Effects of Expiration and Termination
+
+16.1
+The choice of law and dispute resolution clauses shall survive the expiration
+and termination of this agreement.
+
+16.2
+Expiration and termination shall release the parties from the obligation to
+continue the performance of this agreement as from the date, on which the
+expiration or termination takes effect, and the parties' corresponding rights
+shall lapse.
+
+16.3
+Expiration and termination shall not affect rights and obligations, which
+according to their nature shall survive the expiration or termination.
+
+16.4
+Upon expiration and termination of this agreement all licenses under this
+agreement shall automatically lapse. However, to the extent end user licenses
+granted by Licensee or Licensee's distributor licensees has been granted before
+the expiration/termination, and the end user licenses were granted in
+accord-ance with the requirements in this agreement, such end user licenses
+shall not be affected.
+
+MISCELLANEOUS CLAUSES
+
+17
+Transferability
+
+17.1
+This agreement is personal to the parties and a party's status as party to this
+agreement cannot be transferred to third parties without the other party's prior
+written consent, which shall, however, not be unreasonably withheld.
+
+17.2
+Notwithstanding of the above no consent shall be required in case of:
+
+a) Transfer to an affiliated party.
+
+b) Transfer in connection with:
+
+   1) A merger between the transferring party and a third party.
+
+   2) Sale of the transferring party's entire business.
+
+   3) Sale of a separate part of the transferring party's business, to which
+      this agreement is solely related.
+
+17.3
+In relation to this clause the following shall be considered affiliated to a
+party:
+
+a) A legal or natural person owning at least 51% of the party.
+
+b) A sister enterprise owned at least 51% by a legal or natural person owning
+   51% or more of the party.
+
+c) A subsidiary owned at least 51% by the party.
+
+17.4
+After a transfer under this clause the transferring party shall for a period of
+2 years remain co-respon-sible for the transferee's fulfilment of the
+transferee's obligations under the agreement.
+
+17.5
+If so requested by the non-transferring party, the transferring party and the
+transferee must sign an adequate transfer agreement with the non-transferring
+party in order to effectuate the transfer. The transfer agreement shall be
+subject to the same choice of law and dispute resolution terms as this
+agreement. It shall incorporate the conditions set out in this transferability
+clause. The transferring party shall reimburse the other party's reasonable
+external costs relating to the formation of the trans-fer agreement - if any.
+
+18
+No Authority to Represent
+
+None of the parties shall by means of this agreement have any authority to
+represent the other party and thereby making binding promises or announcements
+on behalf of the other party.
+
+19
+Waiver
+
+If a party in one or more instances
+
+a) does not insist on the performance of clauses in this agreement or
+
+b) abstains from exercising rights according to clauses in this agreement,
+
+it shall not be deemed to constitute a waiver or relinquishment of the future
+performance of such clauses or the future exercise of such rights.
+
+20
+Entire Agreement
+
+This agreement constitutes the complete understanding between the parties
+relating to the subject matter of this agreement. Thus, it supersedes all
+previous written and oral agreements and represen-tations relating to the same
+subject matter.
+
+21
+Amendments
+
+The parties can only amend this agreement by entering into written amendment
+agreements signed by the parties or their duly authorized representatives.
+
+22
+Purchase Orders, Order Confirmations and Similar Documents
+
+Any purchase orders, confirmations of orders and similar documents issued by one
+of the parties and relating to the subject matter of this agreement shall be
+considered to be issued and accepted for in-voicing and payment purposes only
+even if they state the opposite and are accepted by the other party with-out
+reservations. However, to the extent it is clearly anticipated in this agreement
+that such doc-uments shall be issued in order to specify quantities, prices and
+the like, such documents shall be deci-sive with respect to such matters.
+
+23
+Communication Language
+
+All communications between the parties relating to this agreement shall be in
+English unless the parties from time to time agree otherwise. Any communications
+in non-agreed languages may be ignored.
+
+24
+Notices
+
+24.1
+All notices relating to this agreement shall be in writing and in English. They
+shall be sent to the follow-ing addresses:
+
+MOSEK ApS
+Symbion Science Park
+Fruebjergvej 3
+DK-2100 Copenhagen Ø
+Denmark
+Att. The CEO
+
+and
+
+Computer Science and Artificial Intelligence Lab
+77 Massachusetts Ave, MIT 32-380
+Cambridge
+MA 02139
+United States
+Att. Russ Tedrake
+
+24.2
+A notice shall be effective from the DAY, on which it arrives at the right
+ad-dress.
+
+24.3
+A party may any time by a written notice change the address, to which notices to
+the party shall be sent.
+
+25
+Unenforceable Clauses
+
+25.1
+Should any part of this agreement be invalid or otherwise unenforceable -
+e.g. due to mandatory con-tract law, IP law or competition law from
+jurisdictions, where this agreement may have a relevant rela-tion or effect -
+the remaining part of the agreement shall remain effective and the unenforceable
+part shall to the extent necessary - e.g. only in relation to the affected
+jurisdictions - be substituted by en-forceable clauses which to the greatest
+extent possible shall reflect the intention which must be as-sumed to be
+underlying the unenforceable part of the agreement.
+
+25.2
+The overall balance between the parties shall to the extent possible be
+maintained, if necessary by modifying other parts of the agreement.
+
+25.3
+However, if such substitution of the unenforceable parts in question and
+modification of other parts of the agreement will substantially deteriorate one
+of the parties' commercial positions, the party in ques-tion shall be entitled
+to declare that the agreement shall be deemed to have lapsed with the same
+effects as if it had expired. This right to declare the agreement lapsed must be
+exercised without undue delay, after it has become apparent that the party's
+commercial position will be affected in the de-scribed way.
+
+CHOICE OF LAW, DISPUTE RESOLUTION AND SIGNATURES
+
+26
+Choice of Law
+
+This agreement is governed by Danish law.
+
+27
+Dispute Resolution by Court Trial
+
+27.1
+Any dispute, controversy or claim arising under, out of or relating to this
+agreement and any subsequent amendments of this agreement - including a) its
+formation, validity, binding effect, interpretation, per-formance, breach,
+expiration or termination, and b) non-contractual claims and product liability
+claims - shall be settled by the Danish Maritime and Commercial High Court. If
+it cannot handle the case be- cause the subject matter of the dispute is outside
+its field of competence, then the dispute shall be settled by The City Court of
+Copenhagen.
+
+27.2
+This clause shall not restrict the parties' right to have disputes about
+infringement of intellectual prop-erty rights and misappropriation of trade
+secrets settled by other courts, which according to their own rules of
+competence can decide such cases. This clause shall, likewise, not restrict the
+parties' right to request interim measures to be taken by other courts, which
+according to their own rules of compe-tence can take such interim measures.
+
+28
+The Parties' Signatures
+
+By signing this agreement each of the persons signing on behalf of the parties
+assure that he/she (to-gether with any co-signers) is duly authorized to sign on
+behalf of the party, on behalf of which he/she signs, that any further
+formalities of relevance to the binding effect of this agreement in relation to
+said party have been observed and that said party therefore is bound by this
+agreement.
+
+MOSEK ApS
+Date: 4/5/2022
+Signature(s):  ________________________________________________
+Name(s): Erling D. Andersen
+Title(s): CEO
+
+Computer Science and Artificial Intelligence Lab
+Date: 4 April 2022
+Signature(s):  ________________________________________________
+Name(s): Russell Tedrake
+Title(s): Toyota Professor of EECS, Aero/Astro, MechE
+
+-------------------------------------------------------------------------------
+Appendix A
+
+MOSEK’S SOFTWARE
+03-02-2022
+Appendix A to
+License Agreement
+between
+MOSEK ApS
+(MOSEK)
+and
+Computer Science and Artificial Intelligence Lab
+(Licensee)
+
+MOSEK’S SOFTWARE is the few object code files from the following modules of
+MOSEK’s mathematical optimization software called MOSEK:
+
+[] the PTS module - the optimization base system of the optimization software,
+which makes it possible to solve linear optimization problems and problems with
+quadratic objective functions and
+
+[] the PTON nonlinear module - tool extension,
+
+that it is necessary to integrate into LICENSEE’S SOFTWARE in order to enable
+that software to link directly to object code versions of the abovementioned
+modules of MOSEK’s mathematical optimization software. For the avoidance of any
+possible doubt: The definition does not include any other parts of MOSEK’s
+software.
+
+-------------------------------------------------------------------------------
+Appendix B
+
+LICENSEE’S SOFTWARE
+03-02-2022
+Appendix B to
+License Agreement
+between
+MOSEK ApS
+(MOSEK)
+and
+Computer Science and Artificial Intelligence Lab
+(Licensee)
+
+Software developed and distributed by Licensee and/or other companies associated
+with Licensee including ______.
+
+-------------------------------------------------------------------------------
+Appendix C
+
+Deliverables
+03-02-2022
+Appendix C to
+License Agreement
+between
+MOSEK ApS
+(MOSEK)
+and
+Computer Science and Artificial Intelligence Lab
+(Licensee)
+
+Software and Documentation
+
+Licensee can anytime download MOSEK’S SOFTWARE and any relevant documentation
+from the website www.mosek.com.

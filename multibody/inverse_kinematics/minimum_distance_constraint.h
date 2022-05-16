@@ -21,7 +21,7 @@ penalty functions must meet the following criteria:
 using MinimumDistancePenaltyFunction = solvers::MinimumValuePenaltyFunction;
 
 /** A hinge loss function smoothed by exponential function. This loss
-function is differentiable everywhere. The fomulation is described in
+function is differentiable everywhere. The formulation is described in
 section II.C of [2].
 The penalty is
 <pre>
@@ -44,25 +44,27 @@ The penalty is
 </pre>
 [1] "Loss Functions for Preference Levels: Regression with Discrete Ordered
 Labels." by Jason Rennie and Nathan Srebro, Proceedings of IJCAI
-multidisciplinary workshop on Advances in preference handling. */
+multidisciplinary workshop on Advances in Preference Handling. */
 using solvers::QuadraticallySmoothedHingeLoss;
 
 /** Constrain the signed distance between all candidate pairs of geometries
 (according to the logic of SceneGraphInspector::GetCollisionCandidates()) to be
-no smaller than a specified minimum distance.
+no smaller than a specified minimum distance.  This constraint should be bound
+to decision variables corresponding to the configuration vector, q, of the
+associate MultibodyPlant.
 
 The formulation of the constraint is
 
-0 ≤ SmoothMax( φ((dᵢ - d_influence)/(d_influence - dₘᵢₙ)) / φ(-1) ) ≤ 1
+0 ≤ SmoothMax( φ((dᵢ(q) - d_influence)/(d_influence - dₘᵢₙ)) / φ(-1) ) ≤ 1
 
-where dᵢ is the signed distance of the i-th pair, dₘᵢₙ is the minimum allowable
-distance, d_influence is the "influence distance" (the distance below which a
-pair of geometries influences the constraint), φ is a
+where dᵢ(q) is the signed distance of the i-th pair, dₘᵢₙ is the minimum
+allowable distance, d_influence is the "influence distance" (the distance below
+which a pair of geometries influences the constraint), φ is a
 multibody::MinimumDistancePenaltyFunction, and SmoothMax(d) is smooth
 approximation of max(d). We require that dₘᵢₙ < d_influence. The input scaling
-(dᵢ - d_influence)/(d_influence - dₘᵢₙ) ensures that at the boundary of the
-feasible set (when dᵢ == dₘᵢₙ), we evaluate the penalty function at -1, where it
-is required to have a non-zero gradient.
+(dᵢ(q) - d_influence)/(d_influence - dₘᵢₙ) ensures that at the boundary of the
+feasible set (when dᵢ(q) == dₘᵢₙ), we evaluate the penalty function at -1,
+where it is required to have a non-zero gradient.
 
 @ingroup solver_evaluators
 */

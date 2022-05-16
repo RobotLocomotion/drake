@@ -149,18 +149,75 @@ GTEST_TEST(CartesianProductTest, NonnegativeScalingTest) {
   // 1 vector constraint from P1, 1 from P2, and t>=0 3 times.
   EXPECT_EQ(constraints.size(), 5);
 
+  const double tol = 1e-16;
   Vector4d p;
   p << P1.x(), P2.x();
   for (const double scale : {0.5, 1.0, 2.0}) {
     prog.SetInitialGuess(x, scale * p);
     prog.SetInitialGuess(t, scale);
-    EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, 1e-16));
+    EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, tol));
     prog.SetInitialGuess(x, 0.99 * scale * p);
-    EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 1e-16));
+    EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, tol));
   }
   prog.SetInitialGuess(x, p);
   prog.SetInitialGuess(t, -1.0);
-  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 1e-16));
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, tol));
+}
+
+bool PointInScaledSet(const solvers::VectorXDecisionVariable& x_vars,
+                      const solvers::VectorXDecisionVariable& t_var,
+                      const Vector2d& x, const Vector2d& t,
+                      solvers::MathematicalProgram* prog) {
+  auto b1 = prog->AddBoundingBoxConstraint(x, x, x_vars);
+  auto b2 = prog->AddBoundingBoxConstraint(t, t, t_var);
+  auto result = solvers::Solve(*prog);
+  prog->RemoveConstraint(b1);
+  prog->RemoveConstraint(b2);
+  return result.is_success();
+}
+
+GTEST_TEST(CartesianProductTest, NonnegativeScalingTest2) {
+  const Point P1(Vector2d{1.2, 3.4}), P2(Vector2d{2.4, 6.8});
+  const CartesianProduct S(P1, P2);
+
+  solvers::MathematicalProgram prog;
+  Eigen::MatrixXd A(4, 2);
+  // clang-format off
+  A << 1, 0,
+       0, 1,
+       2, 0,
+       0, 2;
+  // clang-format on
+  Eigen::Vector4d b = Eigen::Vector4d::Zero();
+  auto x = prog.NewContinuousVariables(2, "x");
+  Eigen::Vector2d c(1, -1);
+  double d = 0;
+  auto t = prog.NewContinuousVariables(2, "t");
+
+  std::vector<solvers::Binding<solvers::Constraint>> constraints =
+      S.AddPointInNonnegativeScalingConstraints(&prog, A, b, c, d, x, t);
+
+  // 1 vector constraint from P1, 1 from P2, and c'*t+d>=0 3 times.
+  EXPECT_EQ(constraints.size(), 5);
+
+  Eigen::Vector2d x_solution = P1.x();
+  Eigen::Vector3d scale(0.5, 1.0, 2.0);
+  Eigen::MatrixXd t_solutions(2, 9);
+  // clang-format off
+  t_solutions << 0.5,  0,  0.25, 1,  0,  0.5, 2,  0,  1,
+                 0, -0.5, -0.25, 0, -1, -0.5, 0, -2, -1;
+  // clang-format on
+  for (int ii = 0; ii < t_solutions.cols(); ++ii) {
+    EXPECT_TRUE(PointInScaledSet(x, t, scale[ii / 3] * x_solution,
+                                 t_solutions.col(ii), &prog));
+    EXPECT_FALSE(PointInScaledSet(x, t, 0.99 * scale[ii / 3] * x_solution,
+                                  t_solutions.col(ii), &prog));
+  }
+
+  EXPECT_FALSE(
+      PointInScaledSet(x, t, x_solution, Eigen::Vector2d(0, 1), &prog));
+  EXPECT_FALSE(
+      PointInScaledSet(x, t, x_solution, Eigen::Vector2d(-1, 0), &prog));
 }
 
 // Test the case where A and b are set via the constructor.  Note that the

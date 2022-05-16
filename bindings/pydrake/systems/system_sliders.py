@@ -6,8 +6,11 @@ except ImportError:
 import numpy as np
 
 from pydrake.systems.framework import (PublishEvent, VectorSystem)
+from pydrake.common.deprecation import deprecated_callable
 
 
+@deprecated_callable("pydrake.systems.system_sliders.SystemSliders has been"
+                     " deprecated", date="2022-06-01")
 class SystemSliders(VectorSystem):
     """
     Provides a set of tcl/tk-based sliders intended to control the values

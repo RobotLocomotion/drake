@@ -1,18 +1,20 @@
-"""Tests the behavior of targets generated from `install.py.in`."""
+"""Tests the behavior of targets that use `installer.py`."""
 
+from contextlib import redirect_stdout, redirect_stderr
+import io
 import os
 from os.path import isdir, join, relpath
 import unittest
 from subprocess import STDOUT, check_call, check_output
 import sys
 
+import drake.tools.install.installer as installer
+
 # TODO(eric.cousineau): Expand on these tests, especially for nuanced things
 # like Python C extensions.
 
 
 class TestInstallMeta(unittest.TestCase):
-    BINARY = "tools/install/dummy/install"
-
     def get_install_dir(self, case):
         # Do not use `install_test_helper`, as its behavior is more constrained
         # than what is useful for these tests.
@@ -35,10 +37,33 @@ class TestInstallMeta(unittest.TestCase):
                 out.add(join(dirrel, filename))
         return out
 
-    def test_nominal(self):
+    def dummy_install_import(self, *args):
+        """Invoke installation of dummy files by direct import and call to
+        installer.
+        """
+        # Forcibly reset globals.
+        # TODO(rpoyner-tri): get rid of installer globals; see #7331.
+        installer.libraries_to_fix_rpath.clear()
+
+        stream = io.StringIO()
+        with redirect_stdout(stream), redirect_stderr(stream):
+            installer.main(
+                ['--actions', 'tools/install/dummy/install_actions']
+                + list(args))
+        return stream.getvalue()
+
+    def dummy_install_binary(self, *args):
+        """Invoke installation of dummy files by the built ``install``
+        binary.
+        """
+        BINARY = "tools/install/dummy/install"
+        return check_output([BINARY] + list(args),
+                            stderr=STDOUT, encoding="utf8")
+
+    def do_test_nominal(self, test_name, invoker):
         """Test nominal behavior of install."""
-        install_dir = self.get_install_dir("test_nominal")
-        check_call([self.BINARY, install_dir])
+        install_dir = self.get_install_dir(test_name)
+        invoker(install_dir)
         py_dir = self.get_python_site_packages_dir()
         expected_manifest = {
             "share/README.md",
@@ -49,21 +74,32 @@ class TestInstallMeta(unittest.TestCase):
         actual_manifest = self.listdir_recursive(install_dir)
         self.assertSetEqual(actual_manifest, expected_manifest)
 
-    def test_strip_args(self):
+    def do_test_strip_args(self, test_name, invoker):
         """Test behavior of `--no_strip`."""
-        install_dir = self.get_install_dir("test_strip_args")
+        install_dir = self.get_install_dir(test_name)
         # - Without.
         substr_without = "Installing the project stripped..."
-        text_without = check_output(
-            [self.BINARY, install_dir], stderr=STDOUT).decode("utf8")
+        text_without = invoker(install_dir)
         # N.B. `assertIn` error messages are not great for multiline, so just
         # print and use nominal asserts.
         print(text_without)
         self.assertTrue(substr_without in text_without)
         # - With.
         substr_with = "Install the project..."
-        text_with = check_output(
-            [self.BINARY, install_dir, "--no_strip"],
-            stderr=STDOUT).decode("utf8")
+        text_with = invoker(install_dir, '--no_strip')
         print(text_with)
         self.assertTrue(substr_with in text_with)
+
+    def test_nominal_by_import(self):
+        self.do_test_nominal("nominal_by_import", self.dummy_install_import)
+
+    def test_nominal_by_binary(self):
+        self.do_test_nominal("nominal_by_binary", self.dummy_install_binary)
+
+    def test_strip_args_by_import(self):
+        self.do_test_strip_args(
+            "strip_args_by_import", self.dummy_install_import)
+
+    def test_strip_args_by_binary(self):
+        self.do_test_strip_args(
+            "strip_args_by_binary", self.dummy_install_binary)

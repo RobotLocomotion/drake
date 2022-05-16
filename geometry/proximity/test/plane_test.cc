@@ -45,7 +45,7 @@ GTEST_TEST(PlaneTest, Construction) {
     if (kDrakeAssertIsArmed) {
       // With assertions armed, it must be sufficiently unit length.
       DRAKE_EXPECT_THROWS_MESSAGE(
-          Planed(nhat_F * 0.99999, p_FP, true), std::runtime_error,
+          Planed(nhat_F * 0.99999, p_FP, true),
           "Plane constructed with a normal vector that was declared normalized;"
           " the vector is not unit length.*");
       // Within a tolerance it is accepted.
@@ -60,7 +60,7 @@ GTEST_TEST(PlaneTest, Construction) {
   {
     // Case: Normalizing a vector whose magnitude is too small throws.
     DRAKE_EXPECT_THROWS_MESSAGE(
-        Planed(nhat_F * 5e-11, p_FP), std::runtime_error,
+        Planed(nhat_F * 5e-11, p_FP),
         "Cannot instantiate plane from normal n_F = .*; its magnitude is too "
         "small: .*");
   }

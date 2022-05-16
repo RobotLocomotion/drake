@@ -13,7 +13,7 @@
     <visual>
       <origin rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="package://franka_description/meshes/visual/hand.obj"/>
+        <mesh filename="package://drake/manipulation/models/franka_description/meshes/visual/hand.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -50,7 +50,7 @@
     <visual>
       <origin rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="package://franka_description/meshes/visual/finger.obj"/>
+        <mesh filename="package://drake/manipulation/models/franka_description/meshes/visual/finger.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -75,7 +75,7 @@
     <visual>
       <origin rpy="1.57079632679 0 3.14159265359" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://franka_description/meshes/visual/finger.obj"/>
+        <mesh filename="package://drake/manipulation/models/franka_description/meshes/visual/finger.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -104,7 +104,6 @@
     <origin rpy="0 0 0" xyz="0 0 0.0584"/>
     <axis xyz="0 -1 0"/>
     <limit effort="20" lower="0.0" upper="0.04" velocity="0.2"/>
-    <mimic joint="panda_finger_joint1"/>
   </joint>
   <transmission name="panda_finger_tran1">
     <type>transmission_interface/SimpleTransmission</type>

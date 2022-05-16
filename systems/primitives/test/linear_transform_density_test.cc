@@ -260,7 +260,7 @@ GTEST_TEST(LinearTransformDensityTest, NoninvertibleTransform) {
     dut1.FixConstantA(context1.get(), A1);
     dut1.get_input_port_w_in().FixValue(context1.get(),
                                         Eigen::Vector2d(0.5, 0.6));
-    DRAKE_EXPECT_THROWS_MESSAGE(dut1.CalcDensity(*context1), std::runtime_error,
+    DRAKE_EXPECT_THROWS_MESSAGE(dut1.CalcDensity(*context1),
                                 ".* to compute the density.*");
 
     // Test with input_size == output_size but A being non-invertible.
@@ -271,7 +271,7 @@ GTEST_TEST(LinearTransformDensityTest, NoninvertibleTransform) {
     dut2.FixConstantA(context2.get(), A2);
     dut2.get_input_port_w_in().FixValue(context2.get(),
                                         Eigen::Vector2d(0.5, 0.6));
-    DRAKE_EXPECT_THROWS_MESSAGE(dut2.CalcDensity(*context2), std::runtime_error,
+    DRAKE_EXPECT_THROWS_MESSAGE(dut2.CalcDensity(*context2),
                                 ".* to compute the density.*");
   }
 }

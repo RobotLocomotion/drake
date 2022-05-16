@@ -1,6 +1,7 @@
 #include "drake/geometry/meshcat.h"
 
 #include <cstdlib>
+#include <thread>
 
 #include <fmt/format.h>
 #include <gmock/gmock.h>
@@ -18,6 +19,7 @@ namespace {
 
 using Eigen::Vector3d;
 using math::RigidTransformd;
+using math::RotationMatrixd;
 using ::testing::HasSubstr;
 
 // A small wrapper around std::system to ensure correct argument passing.
@@ -25,10 +27,52 @@ int SystemCall(const std::vector<std::string>& argv) {
   std::string command;
   for (const std::string& arg : argv) {
     // Note: Can't use ASSERT_THAT inside this subroutine.
-    EXPECT_THAT(arg, ::testing::Not(::testing::HasSubstr("'")));
-    command = std::move(command) + "'" + arg + "' ";
+    EXPECT_THAT(arg, ::testing::Not(HasSubstr("'")));
+    command += fmt::format("'{}' ", arg);
   }
   return std::system(command.c_str());
+}
+
+// Calls a python helper program to send and receive websocket messages(s)
+// to/from the given Meshcat instance.
+//
+// @param send_json Message to send, as a json string.
+// @param expect_num_messages Expected number of messages to receive.
+// @param expect_json Expected content of the final message, as a json string.
+// @param expect_success Whether to insist that the python helper finished and
+//     the expected_json (if given) was actually received.
+void CheckWebsocketCommand(
+    const Meshcat& meshcat,
+    std::optional<std::string> send_json,
+    std::optional<int> expect_num_messages,
+    std::optional<std::string> expect_json,
+    bool expect_success = true) {
+  std::vector<std::string> argv;
+  argv.push_back(FindResourceOrThrow(
+      "drake/geometry/meshcat_websocket_client"));
+  // Even when this unit test is itself running under valgrind, we don't want to
+  // instrument the helper process. Our valgrind configuration recognizes this
+  // argument and skips instrumentation of the child process.
+  argv.push_back("--disable-drake-valgrind-tracing");
+  argv.push_back(fmt::format("--ws_url={}", meshcat.ws_url()));
+  if (send_json) {
+    DRAKE_DEMAND(!send_json->empty());
+    argv.push_back(fmt::format("--send_message={}", std::move(*send_json)));
+  }
+  if (expect_num_messages) {
+    argv.push_back(fmt::format("--expect_num_messages={}",
+        *expect_num_messages));
+  }
+  if (expect_json) {
+    DRAKE_DEMAND(!expect_json->empty());
+    argv.push_back(fmt::format("--expect_message={}", std::move(*expect_json)));
+  }
+  argv.push_back(fmt::format("--expect_success={}",
+      expect_success ? "1" : "0"));
+  const int exit_code = SystemCall(argv);
+  if (expect_success) {
+    EXPECT_EQ(exit_code, 0);
+  }
 }
 
 GTEST_TEST(MeshcatTest, TestHttp) {
@@ -40,10 +84,13 @@ GTEST_TEST(MeshcatTest, TestHttp) {
                         meshcat.web_url() + "/index.html"}),
             0);
   EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
-                        meshcat.web_url() + "/main.min.js"}),
+                        meshcat.web_url() + "/meshcat.js"}),
             0);
   EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
                         meshcat.web_url() + "/favicon.ico"}),
+            0);
+  EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
+                        meshcat.web_url() + "/no-such-file"}),
             0);
 }
 
@@ -72,6 +119,157 @@ GTEST_TEST(MeshcatTest, Ports) {
   EXPECT_LE(m3.port(), 7099);
 }
 
+// Use a basic web_url_pattern to affect web_url() and ws_url(). The pattern
+// parameter only affects those URLs getters, not the server's bind behavior.
+GTEST_TEST(MeshcatTest, CustomHttp) {
+  const std::string pattern = "http://127.0.0.254:{port}";
+  const Meshcat meshcat({"", std::nullopt, pattern});
+  const std::string port = std::to_string(meshcat.port());
+  EXPECT_EQ(meshcat.web_url(), "http://127.0.0.254:" + port);
+  EXPECT_EQ(meshcat.ws_url(), "ws://127.0.0.254:" + port);
+}
+
+// Check a web_url_pattern that does not use any substitutions.
+GTEST_TEST(MeshcatTest, CustomNoPort) {
+  const std::string pattern = "http://example.ngrok.io";
+  const Meshcat meshcat({"", std::nullopt, pattern});
+  EXPECT_EQ(meshcat.web_url(), "http://example.ngrok.io");
+  EXPECT_EQ(meshcat.ws_url(), "ws://example.ngrok.io");
+}
+
+// Check a web_url_pattern that uses https instead of http.
+GTEST_TEST(MeshcatTest, CustomHttps) {
+  const std::string pattern = "https://localhost:{port}";
+  const Meshcat meshcat({"", std::nullopt, pattern});
+  const std::string port = std::to_string(meshcat.port());
+  EXPECT_EQ(meshcat.web_url(), "https://localhost:" + port);
+  EXPECT_EQ(meshcat.ws_url(), "wss://localhost:" + port);
+}
+
+// Check that binding to the don't-care host "" does not crash.
+// It should display as "localhost".
+GTEST_TEST(MeshcatTest, CustomDefaultInterface) {
+  const Meshcat meshcat({""});
+  const std::string port = std::to_string(meshcat.port());
+  EXPECT_EQ(meshcat.web_url(), "http://localhost:" + port);
+}
+
+// Check that binding to "*" (as mentioned in Params docs) does not crash.
+// It should display as "localhost".
+GTEST_TEST(MeshcatTest, CustomAllInterfaces) {
+  const Meshcat meshcat({"*"});
+  const std::string port = std::to_string(meshcat.port());
+  EXPECT_EQ(meshcat.web_url(), "http://localhost:" + port);
+}
+
+// Check that binding to an IP does not crash.
+GTEST_TEST(MeshcatTest, CustomNumericInterface) {
+  const Meshcat meshcat({"127.0.0.1"});
+  const std::string port = std::to_string(meshcat.port());
+  EXPECT_EQ(meshcat.web_url(), "http://127.0.0.1:" + port);
+}
+
+// Check that binding to a malformed value does crash.
+GTEST_TEST(MeshcatTest, BadCustomInterface) {
+  DRAKE_EXPECT_THROWS_MESSAGE(Meshcat({"----"}), ".*failed to open.*");
+}
+
+GTEST_TEST(MeshcatTest, MalformedCustom) {
+  // Using a non-existent substitution is detected immediately.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Meshcat({"", std::nullopt, "http://localhost:{portnum}"}),
+      ".*argument.*");
+  // Only http or https are allowed.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Meshcat({"", std::nullopt, "file:///tmp"}),
+      ".*web_url_pattern.*http.*");
+}
+
+// Checks that unparseable messages are ignored.
+GTEST_TEST(MeshcatTest, UnparseableMessageIgnored) {
+  auto dut = std::make_unique<Meshcat>();
+
+  // Send an unparseable message; don't expect a reply.
+  const char* const message = "0";
+  const bool expect_success = false;
+  CheckWebsocketCommand(*dut, message, {}, {}, expect_success);
+
+  // Pause to allow the websocket thread to run.
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  // The object can be destroyed with neither errors nor sanitizer leaks.
+  EXPECT_NO_THROW(dut.reset());
+}
+
+// Checks that parseable messages with unknown semantics are ignored.
+GTEST_TEST(MeshcatTest, UnknownEventIgnored) {
+  auto dut = std::make_unique<Meshcat>();
+
+  // Send a syntactically well-formed UserInterfaceEvent to tickle the
+  // stack, but don't expect a reply.
+  const char* const message = R"""({
+    "type": "no_such_type",
+    "name": "no_such_name"
+  })""";
+  const bool expect_success = false;
+  CheckWebsocketCommand(*dut, message, {}, {}, expect_success);
+
+  // Pause to allow the websocket thread to run.
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  // The object can be destroyed with neither errors nor sanitizer leaks.
+  EXPECT_NO_THROW(dut.reset());
+}
+
+class MeshcatFaultTest : public testing::TestWithParam<int> {};
+
+// Checks that a problem with the worker thread eventually ends up as an
+// exception on the main thread.
+TEST_P(MeshcatFaultTest, WorkerThreadFault) {
+  const int fault_number = GetParam();
+
+  auto dut = std::make_unique<Meshcat>();
+
+  // Cause the websocket thread to fail.
+  EXPECT_NO_THROW(dut->InjectWebsocketThreadFault(fault_number));
+
+  // Keep checking an accessor function until the websocket fault is detected
+  // and is converted into an exception on the main thread. Here we should be
+  // able to call *any* function and have it report the fault; we use web_url
+  // out of simplicity, and rely the impl() function in the cc file to prove
+  // that every public function is preceded by a ThrowIfWebsocketThreadExited.
+  auto checker = [&dut]() {
+    for (int i = 0; i < 10; ++i) {
+      // Send a syntactically well-formed UserInterfaceEvent to tickle the
+      // stack, but don't expect a reply.
+      const char* const message = R"""({
+        "type": "no_such_type",
+        "name": "no_such_name"
+      })""";
+      const bool expect_success = false;
+      CheckWebsocketCommand(*dut, message, {}, {}, expect_success);
+
+      // Poll the accessor function.
+      dut->web_url();
+
+      // Pause to allow the websocket thread to run.
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+  };
+  DRAKE_EXPECT_THROWS_MESSAGE(checker(), ".*thread exited.*");
+
+  // The object can be destroyed with neither errors nor sanitizer leaks.
+  EXPECT_NO_THROW(dut.reset());
+}
+
+INSTANTIATE_TEST_SUITE_P(AllFaults, MeshcatFaultTest,
+    testing::Range(0, Meshcat::kMaxFaultNumber + 1));
+
+GTEST_TEST(MeshcatTest, NumActive) {
+  Meshcat meshcat;
+  EXPECT_EQ(meshcat.GetNumActiveConnections(), 0);
+}
+
 // The correctness of this is established with meshcat_manual_test.  Here we
 // simply aim to provide code coverage for CI (e.g., no segfaults).
 GTEST_TEST(MeshcatTest, SetObjectWithShape) {
@@ -93,12 +291,12 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   EXPECT_TRUE(meshcat.GetPackedObject("capsule").empty());
   meshcat.SetObject(
       "mesh", Mesh(FindResourceOrThrow(
-                       "drake/systems/sensors/test/models/meshes/box.obj"),
+                       "drake/geometry/render/test/meshes/box.obj"),
                    .25));
   EXPECT_FALSE(meshcat.GetPackedObject("mesh").empty());
   meshcat.SetObject(
       "convex", Convex(FindResourceOrThrow(
-                           "drake/systems/sensors/test/models/meshes/box.obj"),
+                           "drake/geometry/render/test/meshes/box.obj"),
                        .25));
   EXPECT_FALSE(meshcat.GetPackedObject("convex").empty());
   // Bad filename (no extension).  Should only log a warning.
@@ -107,6 +305,103 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   // Bad filename (file doesn't exist).  Should only log a warning.
   meshcat.SetObject("bad", Mesh("test.obj"));
   EXPECT_TRUE(meshcat.GetPackedObject("bad").empty());
+}
+
+GTEST_TEST(MeshcatTest, SetObjectWithPointCloud) {
+  Meshcat meshcat;
+
+  perception::PointCloud cloud(5);
+  // clang-format off
+  cloud.mutable_xyzs().transpose() <<
+    1, 2, 3,
+    10, 20, 30,
+    100, 200, 300,
+    4, 5, 6,
+    40, 50, 60;
+  // clang-format on
+  meshcat.SetObject("cloud", cloud);
+  EXPECT_FALSE(meshcat.GetPackedObject("cloud").empty());
+
+  perception::PointCloud rgb_cloud(
+      5, perception::pc_flags::kXYZs | perception::pc_flags::kRGBs);
+  rgb_cloud.mutable_xyzs() = cloud.xyzs();
+  // clang-format off
+  rgb_cloud.mutable_rgbs() <<
+    1, 2, 3,
+    10, 20, 30,
+    100, 200, 255,
+    4, 5, 6,
+    40, 50, 60;
+  // clang-format on
+  meshcat.SetObject("rgb_cloud", rgb_cloud);
+  EXPECT_FALSE(meshcat.GetPackedObject("rgb_cloud").empty());
+}
+
+GTEST_TEST(MeshcatTest, SetObjectWithTriangleSurfaceMesh) {
+  Meshcat meshcat;
+
+  const int face_data[2][3] = {{0, 1, 2}, {2, 3, 0}};
+  std::vector<SurfaceTriangle> faces;
+  for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
+  const Eigen::Vector3d vertex_data[4] = {
+      {0, 0, 0}, {0.5, 0, 0}, {0.5, 0.5, 0}, {0, 0.5, 0.5}};
+  std::vector<Eigen::Vector3d> vertices;
+  for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
+  TriangleSurfaceMesh<double> surface_mesh(
+      std::move(faces), std::move(vertices));
+  meshcat.SetObject("triangle_mesh", surface_mesh, Rgba(.9, 0, .9, 1.0));
+  EXPECT_FALSE(meshcat.GetPackedObject("triangle_mesh").empty());
+
+  meshcat.SetObject("triangle_mesh_wireframe", surface_mesh,
+                    Rgba(.9, 0, .9, 1.0), true, 5.0);
+  EXPECT_FALSE(meshcat.GetPackedObject("triangle_mesh_wireframe").empty());
+}
+
+GTEST_TEST(MeshcatTest, SetLine) {
+  Meshcat meshcat;
+
+  Eigen::Matrix3Xd vertices(3, 200);
+  Eigen::RowVectorXd t = Eigen::RowVectorXd::LinSpaced(200, 0, 10 * M_PI);
+  vertices << .25 * t.array().sin(), .25 * t.array().cos(), t / (10 * M_PI);
+  meshcat.SetLine("line", vertices, 3.0, Rgba(0, 0, 1, 1));
+  EXPECT_FALSE(meshcat.GetPackedObject("line").empty());
+
+  Eigen::Matrix3Xd start(3, 4), end(3, 4);
+  // clang-format off
+  start << -.1, -.1,  .1, .1,
+           -.1,  .1, -.1, .1,
+           0, 0, 0, 0;
+  // clang-format on
+  end = start;
+  end.row(2) = Eigen::RowVector4d::Ones();
+  meshcat.SetLineSegments("line_segments", start, end, 5.0, Rgba(0, 1, 0, 1));
+  EXPECT_FALSE(meshcat.GetPackedObject("line_segments").empty());
+
+  // Throws if start.cols() != end.cols().
+  EXPECT_THROW(
+      meshcat.SetLineSegments("bad_segments", Eigen::Matrix3Xd::Identity(3, 4),
+                              Eigen::Matrix3Xd::Identity(3, 3)),
+      std::exception);
+}
+
+GTEST_TEST(MeshcatTest, SetTriangleMesh) {
+  Meshcat meshcat;
+
+  // Populate the vertices/faces transposed, for easier Eigen initialization.
+  Eigen::MatrixXd vertices(4, 3);
+  Eigen::MatrixXi faces(2, 3);
+  // clang-format off
+  vertices << 0, 0, 0,
+              1, 0, 0,
+              1, 0, 1,
+              0, 0, 1;
+  faces << 0, 1, 2,
+           3, 0, 2;
+  // clang-format on
+
+  meshcat.SetTriangleMesh("triangle_mesh", vertices.transpose(),
+                         faces.transpose(), Rgba(1, 0, 0, 1), true, 5.0);
+  EXPECT_FALSE(meshcat.GetPackedObject("triangle_mesh").empty());
 }
 
 GTEST_TEST(MeshcatTest, SetTransform) {
@@ -125,6 +420,29 @@ GTEST_TEST(MeshcatTest, SetTransform) {
   EXPECT_EQ(data.path, "/drake/frame");
   Eigen::Map<Eigen::Matrix4d> matrix(data.matrix);
   EXPECT_TRUE(CompareMatrices(matrix, X_ParentPath.GetAsMatrix4()));
+}
+
+GTEST_TEST(MeshcatTest, SetTransformWithMatrix) {
+  Meshcat meshcat;
+  EXPECT_FALSE(meshcat.HasPath("frame"));
+  EXPECT_TRUE(meshcat.GetPackedTransform("frame").empty());
+  Eigen::Matrix4d matrix;
+  // clang-format off
+  matrix <<  1,  2,  3,  4,
+             5,  6,  7,  8,
+            -1, -2, -3, -4,
+            -5, -6, -7, -8;
+  // clang-format on
+  meshcat.SetTransform("frame", matrix);
+
+  std::string transform = meshcat.GetPackedTransform("frame");
+  msgpack::object_handle oh =
+      msgpack::unpack(transform.data(), transform.size());
+  auto data = oh.get().as<internal::SetTransformData>();
+  EXPECT_EQ(data.type, "set_transform");
+  EXPECT_EQ(data.path, "/drake/frame");
+  Eigen::Map<Eigen::Matrix4d> actual(data.matrix);
+  EXPECT_TRUE(CompareMatrices(matrix, actual));
 }
 
 GTEST_TEST(MeshcatTest, Delete) {
@@ -244,27 +562,57 @@ GTEST_TEST(MeshcatTest, SetPropertyDouble) {
 GTEST_TEST(MeshcatTest, Buttons) {
   Meshcat meshcat;
 
+  // Asking for clicks prior to adding is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      meshcat.GetButtonClicks("button"),
-      "Meshcat does not have any button named button.");
+      meshcat.GetButtonClicks("alice"),
+      "Meshcat does not have any button named alice.");
 
-  meshcat.AddButton("button");
-  EXPECT_EQ(meshcat.GetButtonClicks("button"), 0);
-  meshcat.DeleteButton("button");
+  // A new button starts out unclicked.
+  meshcat.AddButton("alice");
+  EXPECT_EQ(meshcat.GetButtonClicks("alice"), 0);
 
+  // Clicking the button increases the count.
+  CheckWebsocketCommand(meshcat, R"""({
+      "type": "button",
+      "name": "alice"
+    })""", {}, {});
+  EXPECT_EQ(meshcat.GetButtonClicks("alice"), 1);
+
+  // Adding using an existing button name resets its count.
+  meshcat.AddButton("alice");
+  EXPECT_EQ(meshcat.GetButtonClicks("alice"), 0);
+
+  // Clicking the button increases the count again.
+  CheckWebsocketCommand(meshcat, R"""({
+      "type": "button",
+      "name": "alice"
+    })""", {}, {});
+  EXPECT_EQ(meshcat.GetButtonClicks("alice"), 1);
+
+  // Removing the button then asking for clicks is an error.
+  meshcat.DeleteButton("alice");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      meshcat.GetButtonClicks("button"),
-      "Meshcat does not have any button named button.");
+      meshcat.GetButtonClicks("alice"),
+      "Meshcat does not have any button named alice.");
 
-  meshcat.AddButton("button1");
-  meshcat.AddButton("button2");
+  // Removing a non-existent button is an error.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.DeleteButton("alice"),
+      "Meshcat does not have any button named alice.");
+
+  // Adding the button anew starts with a zero count again.
+  meshcat.AddButton("alice");
+  EXPECT_EQ(meshcat.GetButtonClicks("alice"), 0);
+
+  // Buttons are removed when deleting all controls.
+  meshcat.AddButton("bob");
   meshcat.DeleteAddedControls();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      meshcat.GetButtonClicks("button1"),
-      "Meshcat does not have any button named button1.");
+      meshcat.GetButtonClicks("alice"),
+      "Meshcat does not have any button named alice.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      meshcat.GetButtonClicks("button2"),
-      "Meshcat does not have any button named button2.");
+      meshcat.GetButtonClicks("bob"),
+      "Meshcat does not have any button named bob.");
 }
 
 GTEST_TEST(MeshcatTest, Sliders) {
@@ -284,6 +632,9 @@ GTEST_TEST(MeshcatTest, Sliders) {
   EXPECT_NEAR(meshcat.GetSliderValue("slider"), 1.5, 1e-14);
   meshcat.SetSliderValue("slider", 1.245);
   EXPECT_NEAR(meshcat.GetSliderValue("slider"), 1.2, 1e-14);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddSlider("slider", 0.2, 1.5, 0.1, 0.5),
+      "Meshcat already has a slider named slider.");
 
   meshcat.DeleteSlider("slider");
 
@@ -302,20 +653,26 @@ GTEST_TEST(MeshcatTest, Sliders) {
       "Meshcat does not have any slider named slider2.");
 }
 
-void CheckWebsocketCommand(const drake::geometry::Meshcat& meshcat,
-                           int message_num,
-                           const std::string& desired_command_json) {
-  EXPECT_EQ(SystemCall(
-                {FindResourceOrThrow("drake/geometry/meshcat_websocket_client"),
-                 meshcat.ws_url(), std::to_string(message_num),
-                 desired_command_json}),
-            0);
+GTEST_TEST(MeshcatTest, DuplicateMixedControls) {
+  Meshcat meshcat;
+
+  meshcat.AddButton("button");
+  meshcat.AddSlider("slider", 0.2, 1.5, 0.1, 0.5);
+
+  // We cannot use AddButton nor AddSlider to change the type of an existing
+  // control by attempting to re-use its name.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddButton("slider"),
+      "Meshcat already has a slider named slider.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.AddSlider("button", 0.2, 1.5, 0.1, 0.5),
+      "Meshcat already has a button named button.");
 }
 
 GTEST_TEST(MeshcatTest, SetPropertyWebSocket) {
   Meshcat meshcat;
   meshcat.SetProperty("/Background", "visible", false);
-  CheckWebsocketCommand(meshcat, 1, R"""({
+  CheckWebsocketCommand(meshcat, {}, 1, R"""({
       "type": "set_property",
       "path": "/Background",
       "property": "visible",
@@ -324,18 +681,22 @@ GTEST_TEST(MeshcatTest, SetPropertyWebSocket) {
   meshcat.SetProperty("/Grid", "visible", false);
   // Note: The order of the messages is due to "/Background" < "/Grid" in the
   // std::map, not due to the order that SetProperty was called.
-  CheckWebsocketCommand(meshcat, 1, R"""({
+  CheckWebsocketCommand(meshcat, {}, 1, R"""({
       "type": "set_property",
       "path": "/Background",
       "property": "visible",
       "value": false
     })""");
-  CheckWebsocketCommand(meshcat, 2, R"""({
+  CheckWebsocketCommand(meshcat, {}, 2, R"""({
       "type": "set_property",
       "path": "/Grid",
       "property": "visible",
       "value": false
     })""");
+
+  // Confirm that meshcat.Flush() doesn't crash even when we've had multiple
+  // clients connect, received data, and disconnect.
+  meshcat.Flush();
 }
 
 GTEST_TEST(MeshcatTest, SetPerspectiveCamera) {
@@ -344,7 +705,7 @@ GTEST_TEST(MeshcatTest, SetPerspectiveCamera) {
   perspective.fov = 82;
   perspective.aspect = 1.5;
   meshcat.SetCamera(perspective, "/my/camera");
-  CheckWebsocketCommand(meshcat, 1, R"""({
+  CheckWebsocketCommand(meshcat, {}, 1, R"""({
       "type": "set_object",
       "path": "/my/camera",
       "object": {
@@ -365,7 +726,7 @@ GTEST_TEST(MeshcatTest, SetOrthographicCamera) {
   ortho.left = -1.23;
   ortho.bottom = .84;
   meshcat.SetCamera(ortho, "/my/camera");
-  CheckWebsocketCommand(meshcat, 1, R"""({
+  CheckWebsocketCommand(meshcat, {}, 1, R"""({
       "type": "set_object",
       "path": "/my/camera",
       "object": {
@@ -381,6 +742,116 @@ GTEST_TEST(MeshcatTest, SetOrthographicCamera) {
         }
       }
     })""");
+}
+
+GTEST_TEST(MeshcatTest, SetAnimation) {
+  Meshcat meshcat;
+  MeshcatAnimation animation;
+
+  animation.SetTransform(0, "sphere", RigidTransformd(Vector3d{0, 0, 0}));
+  animation.SetTransform(20, "sphere", RigidTransformd(Vector3d{0, 0, 1}));
+  animation.SetTransform(40, "sphere", RigidTransformd(Vector3d{0, 0, 0}));
+
+  animation.SetProperty(0, "cylinder", "visible", true);
+  animation.SetProperty(20, "cylinder", "visible", false);
+  animation.SetProperty(40, "cylinder", "visible", true);
+
+  animation.SetProperty(0, "ellipsoid/<object>", "material.opacity", 0.0);
+  animation.SetProperty(20, "ellipsoid/<object>", "material.opacity", 1.0);
+  animation.SetProperty(40, "ellipsoid/<object>", "material.opacity", 0.0);
+
+  animation.set_loop_mode(MeshcatAnimation::kLoopRepeat);
+  animation.set_repetitions(4);
+  animation.set_autoplay(true);
+  animation.set_clamp_when_finished(true);
+
+  meshcat.SetAnimation(animation);
+
+  // The animations will be in lexographical order by path since we're using a
+  // std::map with the path strings as the (sorted) keys.
+  CheckWebsocketCommand(meshcat, {}, 1, R"""({
+      "type": "set_animation",
+      "animations": [{
+          "path": "/drake/cylinder",
+          "clip": {
+              "fps": 32.0,
+              "name": "default",
+              "tracks": [{
+                  "name": ".visible",
+                  "type": "boolean",
+                  "keys": [{
+                      "time": 0,
+                      "value": true
+                    },{
+                      "time": 20,
+                      "value": false
+                    },{
+                      "time": 40,
+                      "value": true
+                  }]
+              }]
+          }
+      }, {
+          "path": "/drake/ellipsoid/<object>",
+          "clip": {
+              "fps": 32.0,
+              "name": "default",
+              "tracks": [{
+                  "name": ".material.opacity",
+                  "type": "number",
+                  "keys": [{
+                      "time": 0,
+                      "value": 0.0
+                    },{
+                      "time": 20,
+                      "value": 1.0
+                  },{
+                      "time": 40,
+                      "value": 0.0
+                  }]
+              }]
+          }
+      }, {
+          "path": "/drake/sphere",
+          "clip": {
+              "fps": 32.0,
+              "name": "default",
+              "tracks": [{
+                  "name": ".position",
+                  "type": "vector3",
+                  "keys": [{
+                      "time": 0,
+                      "value": [0.0, 0.0, 0.0]
+                    },{
+                      "time": 20,
+                      "value": [0.0, 0.0, 1.0]
+                    },{
+                      "time": 40,
+                      "value": [0.0, 0.0, 0.0]
+                  }]
+              }, {
+                  "name": ".quaternion",
+                  "type": "quaternion",
+                  "keys": [{
+                      "time": 0,
+                      "value": [0.0, 0.0, 0.0, 1.0]
+                    },{
+                      "time": 20,
+                      "value": [0.0, 0.0, 0.0, 1.0]
+                    },{
+                      "time": 40,
+                      "value": [0.0, 0.0, 0.0, 1.0]
+                  }]
+              }]
+          }
+      }],
+      "options": {
+          "play": true,
+          "loopMode": 2201,
+          "repetitions": 4,
+          "clampWhenFinished": true
+      }
+  })""");
 }
 
 GTEST_TEST(MeshcatTest, Set2dRenderMode) {
@@ -414,6 +885,28 @@ GTEST_TEST(MeshcatTest, ResetRenderMode) {
   EXPECT_FALSE(meshcat.GetPackedProperty("/Grid", "visible").empty());
   EXPECT_FALSE(meshcat.GetPackedProperty("/Axes", "visible").empty());
 }
+
+GTEST_TEST(MeshcatTest, StaticHtml) {
+  Meshcat meshcat;
+
+  // Call each command that will be saved (at least) once.
+  meshcat.SetObject("box", Box(.25, .25, .5), Rgba(0, 0, 1, 1));
+  meshcat.SetTransform("box", RigidTransformd(Vector3d{0, 0, 0}));
+  meshcat.SetProperty("/Background", "visible", false);
+
+  MeshcatAnimation animation;
+  animation.SetTransform(0, "box", RigidTransformd());
+  animation.SetTransform(20, "box",
+                         RigidTransformd(RotationMatrixd::MakeZRotation(M_PI)));
+
+  const std::string html = meshcat.StaticHtml();
+  // Confirm that I have some base64 content.
+  EXPECT_THAT(html, HasSubstr("data:application/octet-binary;base64"));
+
+  // Confirm that the meshcat.js link was replaced.
+  EXPECT_THAT(html, ::testing::Not(HasSubstr("meshcat.js")));
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake

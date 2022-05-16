@@ -20,9 +20,11 @@ drake_cc_package_library(
         ":collision_filter",
         ":collisions_exist_callback",
         ":contact_surface_utility",
+        ":deformable_contact_geometries",
         ":deformable_volume_mesh",
         ":distance_to_point_callback",
         ":distance_to_shape_callback",
+        ":field_intersection",
         ":find_collision_candidates_callback",
         ":hydroelastic_callback",
         ":hydroelastic_internal",
@@ -30,6 +32,8 @@ drake_cc_package_library(
         ":make_box_mesh",
         ":make_capsule_field",
         ":make_capsule_mesh",
+        ":make_convex_field",
+        ":make_convex_mesh",
         ":make_cylinder_field",
         ":make_cylinder_mesh",
         ":make_ellipsoid_field",
@@ -47,11 +51,12 @@ drake_cc_package_library(
         ":obj_to_surface_mesh",
         ":penetration_as_point_pair_callback",
         ":plane",
+        ":polygon_surface_mesh",
         ":posed_half_space",
         ":proximity_utilities",
         ":sorted_triplet",
-        ":surface_mesh",
         ":tessellation_strategy",
+        ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
     ],
@@ -71,7 +76,7 @@ drake_cc_library(
     ],
     deps = [
         ":posed_half_space",
-        ":surface_mesh",
+        ":triangle_surface_mesh",
         ":volume_mesh",
         "//common:essential",
         "//geometry:shape_specification",
@@ -87,7 +92,7 @@ drake_cc_library(
     deps = [
         ":bv",
         ":posed_half_space",
-        ":surface_mesh",
+        ":triangle_surface_mesh",
         ":volume_mesh",
         "//common:essential",
         "//geometry:shape_specification",
@@ -140,8 +145,26 @@ drake_cc_library(
     srcs = ["contact_surface_utility.cc"],
     hdrs = ["contact_surface_utility.h"],
     deps = [
-        ":surface_mesh",
+        ":mesh_field",
+        ":polygon_surface_mesh",
+        ":triangle_surface_mesh",
         "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_contact_geometries",
+    srcs = ["deformable_contact_geometries.cc"],
+    hdrs = ["deformable_contact_geometries.h"],
+    deps = [
+        ":deformable_volume_mesh",
+        ":hydroelastic_internal",
+        ":triangle_surface_mesh",
+        "//common:copyable_unique_ptr",
+        "//common:essential",
+        "//geometry:geometry_ids",
+        "//geometry:proximity_properties",
+        "//geometry:shape_specification",
     ],
 )
 
@@ -191,7 +214,25 @@ drake_cc_library(
         ":distance_to_point_callback",
         ":proximity_utilities",
         "//common:default_scalars",
+        "//common:nice_type_name",
         "//geometry/query_results:signed_distance_pair",
+    ],
+)
+
+drake_cc_library(
+    name = "field_intersection",
+    srcs = ["field_intersection.cc"],
+    hdrs = ["field_intersection.h"],
+    deps = [
+        ":bvh",
+        ":contact_surface_utility",
+        ":mesh_field",
+        ":mesh_intersection",
+        ":mesh_plane_intersection",
+        ":plane",
+        ":posed_half_space",
+        "//common:default_scalars",
+        "//geometry/query_results:contact_surface",
     ],
 )
 
@@ -225,13 +266,14 @@ drake_cc_library(
     ],
     deps = [
         ":collision_filter",
+        ":field_intersection",
         ":hydroelastic_internal",
         ":mesh_half_space_intersection",
         ":mesh_intersection",
         ":mesh_plane_intersection",
         ":penetration_as_point_pair_callback",
         ":proximity_utilities",
-        ":surface_mesh",
+        ":triangle_surface_mesh",
         ":volume_mesh",
         "//common:hash",
         "//geometry:proximity_properties",
@@ -252,6 +294,8 @@ drake_cc_library(
         ":make_box_mesh",
         ":make_capsule_field",
         ":make_capsule_mesh",
+        ":make_convex_field",
+        ":make_convex_mesh",
         ":make_cylinder_field",
         ":make_cylinder_mesh",
         ":make_ellipsoid_field",
@@ -260,8 +304,8 @@ drake_cc_library(
         ":make_sphere_mesh",
         ":obj_to_surface_mesh",
         ":proximity_utilities",
-        ":surface_mesh",
         ":tessellation_strategy",
+        ":triangle_surface_mesh",
         ":volume_mesh",
         "//common:copyable_unique_ptr",
         "//common:essential",
@@ -293,7 +337,7 @@ drake_cc_library(
     hdrs = ["make_box_mesh.h"],
     deps = [
         ":proximity_utilities",
-        ":surface_mesh",
+        ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
         "//common:default_scalars",
@@ -328,13 +372,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "make_convex_field",
+    hdrs = ["make_convex_field.h"],
+    deps = [
+        ":mesh_field",
+    ],
+)
+
+drake_cc_library(
     name = "make_cylinder_mesh",
     srcs = ["make_cylinder_mesh.cc"],
     hdrs = ["make_cylinder_mesh.h"],
     deps = [
         ":meshing_utilities",
         ":proximity_utilities",
-        ":surface_mesh",
+        ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
         "//common:default_scalars",
@@ -350,9 +402,23 @@ drake_cc_library(
     deps = [
         ":meshing_utilities",
         ":proximity_utilities",
-        ":surface_mesh",
+        ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
+        "//common:default_scalars",
+        "//common:essential",
+        "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_library(
+    name = "make_convex_mesh",
+    srcs = ["make_convex_mesh.cc"],
+    hdrs = ["make_convex_mesh.h"],
+    deps = [
+        ":obj_to_surface_mesh",
+        ":triangle_surface_mesh",
+        ":volume_mesh",
         "//common:default_scalars",
         "//common:essential",
         "//geometry:shape_specification",
@@ -374,7 +440,7 @@ drake_cc_library(
     hdrs = ["make_ellipsoid_mesh.h"],
     deps = [
         ":make_sphere_mesh",
-        ":surface_mesh",
+        ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
         "//geometry:shape_specification",
@@ -395,8 +461,8 @@ drake_cc_library(
     name = "make_sphere_mesh",
     hdrs = ["make_sphere_mesh.h"],
     deps = [
-        ":surface_mesh",
         ":tessellation_strategy",
+        ":triangle_surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
         "//common:sorted_pair",
@@ -407,18 +473,22 @@ drake_cc_library(
 drake_cc_library(
     name = "mesh_field",
     srcs = [
-        "surface_mesh_field.cc",
+        "polygon_surface_mesh_field.cc",
+        "triangle_surface_mesh_field.cc",
         "volume_mesh_field.cc",
     ],
     hdrs = [
         "mesh_field_linear.h",
-        "surface_mesh_field.h",
+        "polygon_surface_mesh_field.h",
+        "triangle_surface_mesh_field.h",
         "volume_mesh_field.h",
     ],
     deps = [
         ":mesh_traits",
-        ":surface_mesh",
+        ":polygon_surface_mesh",
+        ":triangle_surface_mesh",
         ":volume_mesh",
+        "//common:nice_type_name",
         "//common:reset_on_copy",
         "//common:sorted_pair",
     ],
@@ -434,7 +504,7 @@ drake_cc_library(
         ":bvh",
         ":contact_surface_utility",
         ":posed_half_space",
-        ":surface_mesh",
+        ":triangle_surface_mesh",
         "//common:default_scalars",
         "//common:essential",
         "//geometry:geometry_ids",
@@ -452,7 +522,7 @@ drake_cc_library(
         ":contact_surface_utility",
         ":mesh_field",
         ":posed_half_space",
-        ":surface_mesh",
+        ":triangle_surface_mesh",
         ":volume_mesh",
         "//common:default_scalars",
         "//common:essential",
@@ -483,7 +553,7 @@ drake_cc_library(
     hdrs = ["mesh_to_vtk.h"],
     deps = [
         ":mesh_field",
-        ":surface_mesh",
+        ":triangle_surface_mesh",
         ":volume_mesh",
         "@fmt",
     ],
@@ -508,8 +578,10 @@ drake_cc_library(
     name = "obj_to_surface_mesh",
     srcs = ["obj_to_surface_mesh.cc"],
     hdrs = ["obj_to_surface_mesh.h"],
+    interface_deps = [
+        ":triangle_surface_mesh",
+    ],
     deps = [
-        ":surface_mesh",
         "//common:essential",
         "//common:filesystem",
         "@fmt",
@@ -530,6 +602,7 @@ drake_cc_library(
         ":collision_filter",
         ":distance_to_point_callback",
         "//common:default_scalars",
+        "//common:nice_type_name",
         "//geometry/query_results:penetration_as_point_pair",
         "//geometry/query_results:signed_distance_to_point",
         "@fcl",
@@ -585,12 +658,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "surface_mesh",
-    srcs = ["surface_mesh.cc"],
-    hdrs = ["surface_mesh.h"],
+    name = "triangle_surface_mesh",
+    srcs = ["triangle_surface_mesh.cc"],
+    hdrs = ["triangle_surface_mesh.h"],
     deps = [
         ":mesh_traits",
-        "//common:type_safe_index",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "polygon_surface_mesh",
+    srcs = ["polygon_surface_mesh.cc"],
+    hdrs = ["polygon_surface_mesh.h"],
+    deps = [
+        ":mesh_traits",
         "//math:geometric_transform",
     ],
 )
@@ -612,8 +694,9 @@ drake_cc_library(
     deps = [
         ":mesh_traits",
         "//common:default_scalars",
-        "//common:type_safe_index",
         "//geometry:geometry_ids",
+        "//math:geometric_transform",
+        "//math:linear_solve",
     ],
 )
 
@@ -622,7 +705,7 @@ drake_cc_library(
     srcs = ["mesh_deformer.cc"],
     hdrs = ["mesh_deformer.h"],
     deps = [
-        ":surface_mesh",
+        ":triangle_surface_mesh",
         ":volume_mesh",
     ],
 )
@@ -637,7 +720,7 @@ drake_cc_library(
     ],
     deps = [
         ":sorted_triplet",
-        ":surface_mesh",
+        ":triangle_surface_mesh",
         ":volume_mesh",
         "//common:essential",
     ],
@@ -657,7 +740,7 @@ drake_cc_googletest(
         ":bvh",
         ":make_ellipsoid_mesh",
         ":make_sphere_mesh",
-        ":surface_mesh",
+        ":triangle_surface_mesh",
         ":volume_mesh",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry:shape_specification",
@@ -731,6 +814,18 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "deformable_contact_geometries_test",
+    deps = [
+        ":deformable_contact_geometries",
+        ":make_box_mesh",
+        ":make_sphere_mesh",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:proximity_properties",
+    ],
+)
+
+drake_cc_googletest(
     name = "deformable_volume_mesh_test",
     deps = [
         ":deformable_volume_mesh",
@@ -775,6 +870,24 @@ drake_cc_googletest(
         ":distance_to_shape_callback",
         "//common:temp_directory",
         "//geometry:proximity_engine",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "field_intersection_test",
+    deps = [
+        ":contact_surface_utility",
+        ":field_intersection",
+        ":make_box_field",
+        ":make_box_mesh",
+        ":make_sphere_field",
+        ":make_sphere_mesh",
+        ":triangle_surface_mesh",
+        ":volume_to_surface_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:shape_specification",
         "//math:geometric_transform",
     ],
 )
@@ -898,6 +1011,35 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "make_convex_field_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
+    deps = [
+        ":make_convex_field",
+        ":make_convex_mesh",
+        ":obj_to_surface_mesh",
+        ":proximity_utilities",
+        ":volume_to_surface_mesh",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_convex_mesh_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
+    deps = [
+        ":make_convex_mesh",
+        ":obj_to_surface_mesh",
+        ":proximity_utilities",
+        ":volume_to_surface_mesh",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
     name = "mesh_field_linear_test",
     deps = [
         ":make_box_mesh",
@@ -979,7 +1121,7 @@ drake_cc_googletest(
         ":make_box_mesh",
         ":make_ellipsoid_mesh",
         ":make_sphere_mesh",
-        ":surface_mesh",
+        ":triangle_surface_mesh",
         ":volume_mesh",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry:shape_specification",
@@ -1031,6 +1173,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "polygon_surface_mesh_test",
+    deps = [
+        ":polygon_surface_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "posed_half_space_test",
     deps = [
         ":posed_half_space",
@@ -1053,9 +1204,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "surface_mesh_test",
+    name = "triangle_surface_mesh_test",
     deps = [
-        ":surface_mesh",
+        ":triangle_surface_mesh",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:autodiff",
         "//math:geometric_transform",

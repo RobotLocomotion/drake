@@ -115,7 +115,6 @@ TEST_F(SymbolicGenericPolynomialTest, ConstructFromMapTypeError) {
   // both a decision variable in -2a, and an indeterminate in T₂(a).
   if (kDrakeAssertIsArmed) {
     DRAKE_EXPECT_THROWS_MESSAGE(GenericPolynomial<ChebyshevBasisElement>{map},
-                                std::runtime_error,
                                 ".* does not satisfy the invariant .*\n.*");
   }
 }
@@ -1063,7 +1062,7 @@ TEST_F(SymbolicGenericPolynomialTest, Pow) {
   // Test negative power
   DRAKE_EXPECT_THROWS_MESSAGE(
       pow(GenericPolynomial<MonomialBasisElement>(2 * x_), -1),
-      std::runtime_error, ".*the degree should be non-negative.*");
+      ".*the degree should be non-negative.*");
   // Test power of 0 degree.
   auto result = pow(GenericPolynomial<ChebyshevBasisElement>(2 * x_), 0);
   EXPECT_EQ(result.basis_element_to_coefficient_map().size(), 1);

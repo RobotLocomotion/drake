@@ -4,7 +4,7 @@
 
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
-# Ubuntu only: GUROBI_HOME should be the linux64 directory in the Gurobi 9.0.2
+# Ubuntu only: GUROBI_HOME should be the linux64 directory in the Gurobi 9.5.1
 # release.
 #
 def _gurobi_impl(repo_ctx):
@@ -14,17 +14,17 @@ def _gurobi_impl(repo_ctx):
 
     if os_result.is_macos:
         # Gurobi must be installed into its standard location.
-        gurobi_home = "/Library/gurobi902/mac64"
+        gurobi_home = "/Library/gurobi951/macos_universal2"
         repo_ctx.symlink(gurobi_home, "gurobi-distro")
         build_flavor = "macos"
     else:
         # The default directory for the downloaded gurobi is
-        # /opt/gurobi902/linux64. If the user does not use the default
+        # /opt/gurobi951/linux64. If the user does not use the default
         # directory, the he/she should set GUROBI_HOME environment variable to
         # the gurobi file location.
         gurobi_home = repo_ctx.os.environ.get("GUROBI_HOME", "")
         repo_ctx.symlink(
-            gurobi_home or "/opt/gurobi902/linux64",
+            gurobi_home or "/opt/gurobi951/linux64",
             "gurobi-distro",
         )
         build_flavor = "ubuntu"

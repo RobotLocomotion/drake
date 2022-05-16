@@ -31,6 +31,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:symbolic",
+        "//common:unused",
     ],
 )
 
@@ -44,6 +45,7 @@ drake_cc_library(
         "//common/trajectories:piecewise_polynomial",
         "//solvers:ipopt_solver",
         "//solvers:mathematical_program",
+        "//solvers:solve",
     ],
 )
 
@@ -99,6 +101,7 @@ drake_cc_googletest(
     deps = [
         ":multiple_shooting",
         "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:osqp_solver",
         "//solvers:solve",
     ],
 )
@@ -108,6 +111,7 @@ drake_cc_googletest(
     deps = [
         ":direct_collocation",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//examples/rimless_wheel",
         "//multibody/benchmarks/pendulum",
         "//solvers:solve",
@@ -118,13 +122,14 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "direct_transcription_test",
     data = ["//examples/pendulum:prod_models"],
-    # This test has two long cases; run them in parallel.
-    shard_count = 2,
+    # This test has two duplicated long cases; run them in parallel.
+    shard_count = 4,
     deps = [
         ":direct_transcription",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//multibody/plant",
+        "//solvers:snopt_solver",
         "//solvers:solve",
         "//systems/primitives:symbolic_vector_system",
         "//systems/primitives:trajectory_linear_system",
@@ -135,6 +140,7 @@ drake_cc_googletest(
     name = "sequential_expression_manager_test",
     deps = [
         ":sequential_expression_manager",
+        "//common/test_utilities:expect_throws_message",
         "@fmt",
     ],
 )

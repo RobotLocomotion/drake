@@ -54,7 +54,8 @@ def _make_result(
         error = None,
         ubuntu_release = None,
         macos_release = None,
-        is_manylinux = False):
+        is_manylinux = False,
+        homebrew_prefix = None):
     """Return a fully-populated struct result for determine_os, below."""
     if ubuntu_release != None:
         distribution = "ubuntu"
@@ -68,10 +69,11 @@ def _make_result(
         error = error,
         distribution = distribution,
         is_macos = (macos_release != None),
-        is_ubuntu = (ubuntu_release != None),
+        is_ubuntu = (ubuntu_release != None and not is_manylinux),
         is_manylinux = is_manylinux,
         ubuntu_release = ubuntu_release,
         macos_release = macos_release,
+        homebrew_prefix = homebrew_prefix,
     )
 
 def _determine_linux(repository_ctx):
@@ -82,34 +84,43 @@ def _determine_linux(repository_ctx):
 
     # Allow the user to override the OS selection.
     drake_os = repository_ctx.os.environ.get("DRAKE_OS", "")
+    is_manylinux = False
     if len(drake_os) > 0:
         if drake_os == "manylinux":
-            return _make_result(is_manylinux = True)
-        return _make_result(error = "{}{} DRAKE_OS={}".format(
-            error_prologue,
-            "unknown value for environment variable",
-            drake_os,
-        ))
+            is_manylinux = True
+        else:
+            return _make_result(error = "{}{} DRAKE_OS={}".format(
+                error_prologue,
+                "unknown value for environment variable",
+                drake_os,
+            ))
 
-    # Run sed to determine Linux NAME and VERSION_ID.
-    sed = exec_using_which(repository_ctx, [
-        "sed",
-        "-n",
-        r"/^\(NAME\|VERSION_ID\)=/{s/[^=]*=//;s/\"//g;p}",
-        "/etc/os-release",
-    ])
-    if sed.error != None:
-        return _make_result(error = error_prologue + sed.error)
+    # Get distro name.
+    lsb = exec_using_which(repository_ctx, ["lsb_release", "-si"])
+    if lsb.error != None:
+        return _make_result(error = error_prologue + lsb.error)
+    distro = lsb.stdout.strip()
 
-    # Compute an identifying string, in the form of "$NAME $VERSION_ID".
-    lines = [line.strip() for line in sed.stdout.strip().split("\n")]
-    distro = " ".join([x for x in lines if len(x) > 0])
+    if distro == "Ubuntu":
+        lsb = exec_using_which(repository_ctx, ["lsb_release", "-sr"])
+        if lsb.error != None:
+            return _make_result(error = error_prologue + lsb.error)
+        ubuntu_release = lsb.stdout.strip()
 
-    # Match supported Ubuntu release(s). These should match those listed in
-    # both doc/developers.rst the root CMakeLists.txt.
-    for ubuntu_release in ["18.04", "20.04"]:
-        if distro == "Ubuntu " + ubuntu_release:
-            return _make_result(ubuntu_release = ubuntu_release)
+        # Match supported Ubuntu release(s). These should match those listed in
+        # both doc/_pages/from_source.md and the root CMakeLists.txt.
+        if ubuntu_release in ["20.04"]:
+            return _make_result(
+                ubuntu_release = ubuntu_release,
+                is_manylinux = is_manylinux,
+            )
+
+        # Nothing matched.
+        return _make_result(
+            error = (error_prologue +
+                     "unsupported '%s' release '%s'" %
+                     (distro, ubuntu_release)),
+        )
 
     # Nothing matched.
     return _make_result(
@@ -136,9 +147,19 @@ def _determine_macos(repository_ctx):
     else:
         macos_release = major_minor_versions[0]
 
+    # Check which arch we should be using.
+    arch_result = exec_using_which(repository_ctx, ["/usr/bin/arch"])
+    if arch_result.stdout.strip() == "arm64":
+        homebrew_prefix = "/opt/homebrew"
+    else:
+        homebrew_prefix = "/usr/local"
+
     # Match supported macOS release(s).
-    if macos_release in ["10.15", "11"]:
-        return _make_result(macos_release = macos_release)
+    if macos_release in ["11", "12"]:
+        return _make_result(
+            macos_release = macos_release,
+            homebrew_prefix = homebrew_prefix,
+        )
 
     # Nothing matched.
     return _make_result(
@@ -164,10 +185,12 @@ def determine_os(repository_ctx):
         - distribution: str either "ubuntu" or "macos" or "manylinux" iff no
                         error occurred, else None
         - is_macos: True iff on a supported macOS release, else False
-        - macos_release: str like "10.15" or "11" iff on a supported macOS,
+        - macos_release: str like "11" or "12" iff on a supported macOS,
                          else None
+        - homebrew_prefix: str "/usr/local" or "/opt/homebrew" iff is_macos,
+                           else None.
         - is_ubuntu: True iff on a supported Ubuntu version, else False
-        - ubuntu_release: str like "18.04" iff on a supported ubuntu, else None
+        - ubuntu_release: str like "20.04" iff on a supported ubuntu, else None
         - is_manylinux: True iff this build will be packaged into a Python
                         wheel that confirms to a "manylinux" standard such as
                         manylinux_2_27; see https://github.com/pypa/manylinux.
@@ -192,7 +215,7 @@ def os_specific_alias(repository_ctx, mapping):
             of values are of the form name=actual as in alias(name, actual).
 
     The keys of mapping are searched in the following preferential order:
-    - Exact release, via e.g., "Ubuntu 18.04" or "macOS 10.15"
+    - Exact release, via e.g., "Ubuntu 20.04" or "macOS 11"
     - Any release, via "Ubuntu default" or "macOS default"
     - Anything else, via "default"
     """
@@ -268,10 +291,12 @@ def _os_impl(repo_ctx):
 DISTRIBUTION = {distribution}
 UBUNTU_RELEASE = {ubuntu_release}
 MACOS_RELEASE = {macos_release}
+HOMEBREW_PREFIX = {homebrew_prefix}
     """.format(
         distribution = repr(os_result.distribution),
         ubuntu_release = repr(os_result.ubuntu_release),
         macos_release = repr(os_result.macos_release),
+        homebrew_prefix = repr(os_result.homebrew_prefix),
     )
     repo_ctx.file("os.bzl", constants)
 

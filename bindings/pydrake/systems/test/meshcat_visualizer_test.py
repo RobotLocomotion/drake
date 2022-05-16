@@ -21,7 +21,7 @@ import meshcat
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.deprecation import DrakeDeprecationWarning
 from pydrake.common.value import AbstractValue
 from pydrake.geometry import (
     Box,
@@ -36,12 +36,12 @@ from pydrake.multibody.parsing import Parser
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.meshcat_visualizer import (
+    _DEFAULT_PUBLISH_PERIOD,
     ConnectMeshcatVisualizer,
     MeshcatVisualizer,
     MeshcatContactVisualizer,
     MeshcatPointCloudVisualizer
 )
-from pydrake.common.eigen_geometry import Isometry3
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.plant import CoulombFriction, MultibodyPlant
 from pydrake.multibody.tree import SpatialInertia, UnitInertia
@@ -54,6 +54,9 @@ ZMQ_URL = os.environ.get("TEST_ZMQ_URL")
 class TestMeshcat(unittest.TestCase):
     def setUp(self):
         np.random.seed(42)
+
+        # Our entire module is deprecated.
+        warnings.simplefilter("ignore", DrakeDeprecationWarning)
 
     def test_cart_pole(self):
         """Cart-Pole with simple geometry."""
@@ -326,10 +329,10 @@ class TestMeshcat(unittest.TestCase):
         test the texture override pathway.  You should confirm that you see a
         green box in the visualizer."""
         object_file_path = FindResourceOrThrow(
-            "drake/systems/sensors/test/models/box_with_mesh.sdf")
+            "drake/geometry/render/test/box.sdf")
         # Find the texture path just to ensure it exists and
         # we're testing the code path we want to.
-        FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.png")
+        FindResourceOrThrow("drake/geometry/render/test/meshes/box.png")
 
         builder = DiagramBuilder()
         plant = MultibodyPlant(0.002)
@@ -354,11 +357,10 @@ class TestMeshcat(unittest.TestCase):
     def test_point_cloud_visualization(self):
         """A small point cloud"""
 
-        draw_period = 1 / 30.
-        sim_time = draw_period * 3.
+        sim_time = _DEFAULT_PUBLISH_PERIOD * 3.
 
         def se3_from_xyz(xyz):
-            return Isometry3(np.eye(3), xyz)
+            return RigidTransform(p=xyz)
 
         def show_cloud(pc, pc2=None, use_native=False, **kwargs):
             # kwargs go to ctor.

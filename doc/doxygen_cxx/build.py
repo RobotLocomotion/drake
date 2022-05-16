@@ -6,12 +6,19 @@ For instructions, see https://drake.mit.edu/documentation_instructions.html.
 import argparse
 from fnmatch import fnmatch
 import os
-from os.path import join
+from os.path import join, relpath
+import shutil
 import sys
 
 from bazel_tools.tools.python.runfiles import runfiles
 
-from drake.doc.defs import check_call, main, symlink_input, verbose
+from drake.doc.defs import (
+    check_call,
+    main,
+    perl_cleanup_html_output,
+    symlink_input,
+    verbose,
+)
 
 
 def _symlink_headers(*, drake_workspace, temp_dir, modules):
@@ -57,7 +64,7 @@ def _symlink_headers(*, drake_workspace, temp_dir, modules):
             print(f"error: Unknown module {module}")
             sys.exit(1)
         for dirpath, dirs, files in os.walk(module_workspace):
-            subdir = os.path.relpath(dirpath, drake_workspace)
+            subdir = relpath(dirpath, drake_workspace)
             os.makedirs(join(temp_dir, "drake", subdir))
             for item in files:
                 if any([module.startswith("drake.doc"),
@@ -101,6 +108,30 @@ def _generate_doxyfile(*, manifest, out_dir, temp_dir, dot):
     return output_filename
 
 
+def _generate_doxygen_header(*, doxygen, temp_dir):
+    """Creates Drake's header.html based on a patch to Doxygen's default
+    header template.
+    """
+    # This matches Doxyfile_CXX.
+    header_path = f"{temp_dir}/drake/doc/doxygen_cxx/header.html"
+
+    # Extract the default templates from the Doxygen binary. We only want the
+    # header, but it forces us to create all three in this exact order.
+    scratch_files = [
+        "header.html.orig",
+        "footer.html.orig",
+        "customdoxygen.css.orig",
+    ]
+    check_call([doxygen, "-w", "html"] + scratch_files, cwd=temp_dir)
+    shutil.copy(f"{temp_dir}/header.html.orig", header_path)
+    for orig in scratch_files:
+        os.remove(f"{temp_dir}/{orig}")
+
+    # Apply our patch.
+    patch_file = f"{header_path}.patch"
+    check_call(["/usr/bin/patch", header_path, patch_file])
+
+
 def _is_important_warning(line):
     """Returns true iff the given line of Doxygen output should be promoted to
     a build error.
@@ -116,7 +147,7 @@ def _is_important_warning(line):
         if "(" in line:
             return False
         # TODO(#14107) Remove this if-clause once the issue is resolved.
-        if "multibody_plant" in line and "df_contact_material" in line:
+        if "df_contact_material" in line:
             return False
         # Broken link.
         return True
@@ -197,6 +228,10 @@ def _build(*, out_dir, temp_dir, modules, quick):
     # Prepare our input.
     symlink_input(
         "drake/doc/doxygen_cxx/doxygen_input.txt", temp_dir)
+    _generate_doxygen_header(
+        doxygen=doxygen,
+        temp_dir=temp_dir,
+    )
     _symlink_headers(
         drake_workspace=drake_workspace,
         temp_dir=temp_dir,
@@ -216,6 +251,24 @@ def _build(*, out_dir, temp_dir, modules, quick):
             for line in f.readlines()
         ]
     _postprocess_doxygen_log(lines, check_for_errors)
+
+    # Fix the formatting of deprecation text (see drake#15619 for an example).
+    extra_perl_statements = [
+        # Remove quotes around the removal date.
+        r's#(removed from Drake on or after) "(....-..-..)" *\.#\1 \2.#;',
+        # Remove all quotes within the explanation text, i.e., the initial and
+        # final quotes, as well as internal quotes that might be due to C++
+        # multi-line string literals.
+        # - The quotes must appear after a "_deprecatedNNNNNN" anchor.
+        # - The quotes must appear before a "<br />" end-of-line.
+        # Example lines:
+        # <dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000013">Deprecated:</a></b></dt><dd>"Use RotationMatrix::MakeFromOneVector()." <br />  # noqa
+        # <dd><a class="anchor" id="_deprecated000013"></a>"Use RotationMatrix::MakeFromOneVector()." <br />  # noqa
+        r'while (s#(?<=_deprecated\d{6}")([^"]*)"(.*?<br)#\1\2#) {};',
+    ]
+    perl_cleanup_html_output(
+        out_dir=out_dir,
+        extra_perl_statements=extra_perl_statements)
 
     # The nominal pages to offer for preview.
     return ["", "classes.html", "modules.html"]

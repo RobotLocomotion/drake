@@ -53,6 +53,17 @@ namespace controllers {
 /// desired state (size 2 * U), `S` is used to compute the state error as
 /// `x_err = S * x - x_d`.
 ///
+/// @system
+/// name: PidControlledSystem
+/// input_ports:
+/// - desired_state
+/// - feedforward_control
+/// output_ports:
+/// - (exported output port of plant, with same name)
+/// - ...
+/// - (exported output port of plant, with same name)
+/// @endsystem
+///
 /// @tparam_nonsymbolic_scalar
 /// @ingroup control_systems
 template <typename T>

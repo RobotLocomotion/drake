@@ -239,7 +239,6 @@ GTEST_TEST(ValueToAbstractValue, AbstractPolicyOnVectors) {
   // An Eigen vector object can't be supplied directly.
   DRAKE_EXPECT_THROWS_MESSAGE(
       AbstractPolicy::ToAbstract("MyApi", expected_vec),  // (3)
-      std::logic_error,
       ".*MyApi.*Eigen.*cannot automatically be stored.*Drake abstract "
       "quantity.*");
 
@@ -252,7 +251,6 @@ GTEST_TEST(ValueToAbstractValue, AbstractPolicyOnVectors) {
   const Eigen::Vector4d long_vec(.25, .5, .75, 1.);
   DRAKE_EXPECT_THROWS_MESSAGE(
       AbstractPolicy::ToAbstract("MyApi", long_vec.tail(3)),  // (3)
-      std::logic_error,
       ".*MyApi.*Eigen.*cannot automatically be stored.*Drake abstract "
       "quantity.*");
 
@@ -300,7 +298,7 @@ GTEST_TEST(ValueToVectorValue, GenericObjects) {
   const Value<BasicVector<double>> good_val(Eigen::Vector3d(1., 2., 3.));
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      VectorPolicy::ToAbstract("MyApi", bad_val), std::logic_error,
+      VectorPolicy::ToAbstract("MyApi", bad_val),
       ".*MyApi.*AbstractValue.*type int is not.*vector quantity.*");
 
   const auto good_val_copy = VectorPolicy::ToAbstract("MyApi", good_val);
@@ -309,18 +307,17 @@ GTEST_TEST(ValueToVectorValue, GenericObjects) {
 
   // Non-vector objects should throw via signature (5).
   DRAKE_EXPECT_THROWS_MESSAGE(VectorPolicy::ToAbstract("MyApi", 5),
-                              std::logic_error,
                               ".*MyApi.*type int is not.*vector quantity.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       VectorPolicy::ToAbstract("MyApi", std::string("string")),
-      std::logic_error, ".*MyApi.*type std::string is not.*vector quantity.*");
+      ".*MyApi.*type std::string is not.*vector quantity.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       VectorPolicy::ToAbstract("MyApi", CopyConstructible(1.25)),
-      std::logic_error, ".*MyApi.*CopyConstructible is not.*vector quantity.*");
+      ".*MyApi.*CopyConstructible is not.*vector quantity.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      VectorPolicy::ToAbstract("MyApi", JustCloneable(0.75)), std::logic_error,
+      VectorPolicy::ToAbstract("MyApi", JustCloneable(0.75)),
       ".*MyApi.*JustCloneable is not.*vector quantity.*");
 }
 

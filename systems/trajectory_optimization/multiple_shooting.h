@@ -20,29 +20,41 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 
-/// MultipleShooting is an abstract class for trajectory optimization
-/// that creates decision variables for inputs, states, and (optionally)
-/// sample times along the trajectory, then provides a number of methods
-/// for working with those decision variables.
+/// MultipleShooting is an abstract class for trajectory optimization that
+/// creates decision variables for inputs, states, and (optionally) sample
+/// times along the trajectory, then provides a number of methods for working
+/// with those decision variables.
 ///
-/// Subclasses must implement the abstract methods:
-///  DoAddRunningCost()
-///  ReconstructInputTrajectory()
-///  ReconstructStateTrajectory()
-/// using all of the correct interpolation schemes for the specific
-/// transcription method, and should add the constraints to impose the
-/// %System% dynamics in their constructor.
+/// MultipleShooting classes add decision variables, costs, and constraints to
+/// a MathematicalProgram.  You can retrieve that program using prog(), and add
+/// additional variables, costs, and constraints using the MathematicalProgram
+/// interface directly.
 ///
-/// This class assumes that there are a fixed number (N) time steps/samples, and
-/// that the trajectory is discretized into timesteps h (N-1 of these), state x
-/// (N of these), and control input u (N of these).
+/// Subclasses must implement the abstract methods: DoAddRunningCost()
+/// ReconstructInputTrajectory() ReconstructStateTrajectory() using all of the
+/// correct interpolation schemes for the specific transcription method, and
+/// should add the constraints to impose the %System% dynamics in their
+/// constructor.
+///
+/// This class assumes that there are a fixed number (N) time steps/samples,
+/// and that the trajectory is discretized into timesteps h (N-1 of these),
+/// state x (N of these), and control input u (N of these).
 ///
 /// @ingroup planning
-class MultipleShooting : public solvers::MathematicalProgram {
+class MultipleShooting {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultipleShooting)
 
   virtual ~MultipleShooting() {}
+
+  /// Returns a reference to the MathematicalProgram associated with the
+  /// trajectory optimization problem.
+  solvers::MathematicalProgram& prog() { return prog_; }
+
+  /// Returns a const reference to the MathematicalProgram associated with the
+  /// trajectory optimization problem.
+  /// @exclude_from_pydrake_mkdoc{This overload is not bound.}
+  const solvers::MathematicalProgram& prog() const { return prog_; }
 
   /// Returns the decision variable associated with the timestep, h, at time
   /// index @p index.
@@ -148,31 +160,50 @@ class MultipleShooting : public solvers::MathematicalProgram {
     DoAddRunningCost(g(0, 0));
   }
 
+  /// Adds a constraint to all breakpoints, where any instances in `vars` of
+  /// time(), state(), and/or input() placeholder variables, as well as
+  /// placeholder variables returned by calls to NewSequentialVariable(), are
+  /// substituted with the relevant variables for each time index.
+  /// @return A vector of the bindings added to each knot point.
+  /// @pydrake_mkdoc_identifier{shared_ptr}
+  template <typename C>
+  std::vector<solvers::Binding<C>> AddConstraintToAllKnotPoints(
+      std::shared_ptr<C> constraint,
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& vars) {
+    std::vector<solvers::Binding<C>> bindings;
+    for (int i = 0; i < N_; ++i) {
+      bindings.push_back(prog_.AddConstraint(
+          constraint, sequential_expression_manager_.GetVariables(vars, i)));
+    }
+    return bindings;
+  }
+
   /// Adds a constraint to all breakpoints, where any instances of time(),
   /// state(), and/or input() placeholder variables, as well as placeholder
   /// variables returned by calls to NewSequentialVariable(), are substituted
   /// with the relevant variables for each time index.
-  /// @return A vector of the constraints added to each knot point.
+  /// @return A vector of the bindings added to each knot point.
   std::vector<solvers::Binding<solvers::Constraint>>
   AddConstraintToAllKnotPoints(const symbolic::Formula& f) {
-    std::vector<solvers::Binding<solvers::Constraint>> constraints;
+    std::vector<solvers::Binding<solvers::Constraint>> bindings;
     for (int i = 0; i < N_; i++) {
-      // TODO(russt): update this to AddConstraint once MathematicalProgram
-      // supports AddConstraint for Formulas.
-      // For now, non-linear constraints can be added by users by simply adding
-      // the constraint manually for each
-      // time index in a loop.
-      constraints.push_back(
-          AddConstraint(SubstitutePlaceholderVariables(f, i)));
+      bindings.push_back(
+          prog_.AddConstraint(SubstitutePlaceholderVariables(f, i)));
     }
-    return constraints;
+    return bindings;
   }
+
+  /// Variant of AddConstraintToAllKnotPoints that accepts a vector of
+  /// formulas.
+  /// @pydrake_mkdoc_identifier{formulas}
+  std::vector<solvers::Binding<solvers::Constraint>>
+  AddConstraintToAllKnotPoints(
+      const Eigen::Ref<const VectorX<symbolic::Formula>>& f);
 
   // TODO(russt): Add additional cost/constraint wrappers that assign e.g.
   // non-symbolic costs (like QuadraticCost)
-  // by taking in a list of vars that could contain placeholder vars, or that
-  // assign costs/constraints to a set of
-  // interval indices.
+  // by taking in a list of vars that could contain placeholder vars, or
+  // that assign costs/constraints to a set of interval indices.
 
   /// Adds bounds on all time intervals.
   /// @param lower_bound  A scalar double lower bound.
@@ -207,7 +238,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// the final time index.
   /// @return The final cost added to the problem.
   solvers::Binding<solvers::Cost> AddFinalCost(const symbolic::Expression& e) {
-    return AddCost(SubstitutePlaceholderVariables(e, N_ - 1));
+    return prog_.AddCost(SubstitutePlaceholderVariables(e, N_ - 1));
   }
 
   /// Adds support for passing in a (scalar) matrix Expression, which is a
@@ -456,6 +487,11 @@ class MultipleShooting : public solvers::MathematicalProgram {
   // Helper method that performs the work for SubstitutePlaceHolderVariables
   symbolic::Substitution ConstructPlaceholderVariableSubstitution(
       int interval_index) const;
+
+  // TODO(russt): Add a constructor whichs take a MathematicalProgram&
+  // as an argument.
+  const std::unique_ptr<solvers::MathematicalProgram> owned_prog_;
+  solvers::MathematicalProgram& prog_;
 
   const int num_inputs_{};
   const int num_states_{};

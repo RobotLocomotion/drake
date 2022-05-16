@@ -11,6 +11,7 @@
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solver_interface.h"
 
 namespace drake {
 namespace multibody {
@@ -19,11 +20,12 @@ using solvers::Binding;
 using solvers::BoundingBoxConstraint;
 using solvers::LinearConstraint;
 using solvers::LinearCost;
+using solvers::SolverInterface;
 using trajectories::PiecewisePolynomial;
 using trajectories::Trajectory;
 
 /**
- * Selects how linear constraints are enforced for Toppra's optimization.
+ * Selects how linear constraints are enforced for TOPPRA's optimization.
  * kCollocation - enforces constraints only at each gridpoint.
  * kInterpolation - enforces constrants at each gridpoint and at the following
  * gridpoint using forward integration. Yields higher accuracy at minor
@@ -57,37 +59,44 @@ class Toppra {
   /**
    * Constructs an inverse kinematics problem for a MultibodyPlant.
    * This constructor will create and own a context for @param plant.
-   * @param path The trajectory on which the toppra problem will be solved.
+   * @param path The trajectory on which the TOPPRA problem will be solved.
    * @param plant The robot that will follow the solved trajectory.  Used for
    *              enforcing torque and frame specific constraints.
    * @param gridpoints The points along the path to discretize the problem and
    *                   enforce constraints at.  The first and last gridpoint
    *                   must equal the path start and end time respectively.
    *                   Gridpoints must also be monotonically increasing.
+   * @note Toppra does not currently support plants that contain bodies with
+   * quaternion degrees of freedom. In addition, any plant where q̇ ≠ v will have
+   * undefined behavior.
+   * @note The path velocity, ṡ(t), is limited to be between 0 and 1e8 to ensure
+   * the reachable set calculated in the backward pass is always bounded.
    */
   Toppra(const Trajectory<double>& path, const MultibodyPlant<double>& plant,
          const Eigen::Ref<const Eigen::VectorXd>& gridpoints);
 
   /**
    * Takes a path and generates a sequence of gridpoints selected to control
-   * the interpolation error of the optimization. The distance between
-   * gridpoints must be below `max_seg_length`, there must be at least
-   * `min_points` number of gridpoints and the interpolation error, estimated
-   * with the equation
+   * the interpolation error of the optimization. The gridpoints are selected
+   * such that the distance between them is below `max_seg_length`, there are at
+   * least `min_points` number of gridpoints and the interpolation error,
+   * estimated with the equation
    * <pre>
-   *   err_{est} = 0.5 * \max(|q̈ * Δ_{segment}^2|),
+   *   errₑₛₜ = max(|q̈ Δₛ²|) / 2
    * </pre>
-   * must be less than `max_err`.  Any segments that are too long or have too
-   * much error are split in half.  This results in more points in parts of the
-   * path with higher curvature. All grid points will lie between
-   * path.start_time() and path.end_time().
+   * where Δₛ is the distance between sequential gridpoints, is less than
+   * `max_err`. Gridpoints are selected by adding the midpoint between two
+   * gridpoints whenever the distance between them is too large or the estimated
+   * error is too high. This results in more points in parts of the path with
+   * higher curvature. All grid points will lie between path.start_time() and
+   * path.end_time().
    */
-  static Eigen::VectorXd CalcGridpts(const PiecewisePolynomial<double>& path,
-                                     const CalcGridPointsOptions& options);
+  static Eigen::VectorXd CalcGridPoints(const Trajectory<double>& path,
+                                        const CalcGridPointsOptions& options);
 
   // TODO(mpetersen94): Consider adding optional<Solver> argument.
   /**
-   * Solves the toppra optimization and returns the time optimized path
+   * Solves the TOPPRA optimization and returns the time optimized path
    * parameterization s(t). This can be used with the original path q(s) to
    * generate a time parameterized trajectory.
    * The path parameterization has the same start time as the original path's
@@ -96,8 +105,8 @@ class Toppra {
   std::optional<PiecewisePolynomial<double>> SolvePathParameterization();
 
   /**
-   * Adds a constant velocity limit to all the degrees of freedom in the plant.
-   * The limits must be arranged in the same order as the entries in the path.
+   * Adds a velocity limit to all the degrees of freedom in the plant. The
+   * limits must be arranged in the same order as the entries in the path.
    * @param lower_limit The lower velocity limit for each degree of freedom.
    * @param upper_limit The upper velocity limit for each degree of freedom.
    */
@@ -106,9 +115,8 @@ class Toppra {
       const Eigen::Ref<const Eigen::VectorXd>& upper_limit);
 
   /**
-   * Adds a constant acceleration limit to all the degrees of freedom in the
-   * plant. The limits must be arranged in the same order as the entries in the
-   * path.
+   * Adds an acceleration limit to all the degrees of freedom in the plant. The
+   * limits must be arranged in the same order as the entries in the path.
    * @param lower_limit The lower acceleration limit for each degree of freedom.
    * @param upper_limit The upper acceleration limit for each degree of freedom.
    * @param discretization The discretization scheme to use for this linear
@@ -124,29 +132,109 @@ class Toppra {
       ToppraDiscretization discretization =
           ToppraDiscretization::kInterpolation);
 
- private:
   /**
+   * Adds a torque limit to all the degrees of freedom in the plant. The limits
+   * must be arranged in the same order as the entries in the path. This
+   * constrains the generalized torques applied to the plant and does not reason
+   * about contact forces.
+   * @param lower_limit The lower torque limit for each degree of freedom.
+   * @param upper_limit The upper torque limit for each degree of freedom.
+   * @param discretization The discretization scheme to use for this linear
+   *                       constraint. See ToppraDiscretization for details.
+   * @return A pair containing the linear constraints that will enforce the
+   *         torque limit on the backward pass and forward pass respectively.
+   */
+  std::pair<Binding<LinearConstraint>, Binding<LinearConstraint>>
+  AddJointTorqueLimit(const Eigen::Ref<const Eigen::VectorXd>& lower_limit,
+                      const Eigen::Ref<const Eigen::VectorXd>& upper_limit,
+                      ToppraDiscretization discretization =
+                          ToppraDiscretization::kInterpolation);
+
+  /**
+   * Adds a limit on the elements of the spatial velocity of the given frame,
+   * measured and and expressed in the world frame.  The limits should be given
+   * as [ω_WF, v_WF], where ω_WF is the frame's angular velocity and v_WF is the
+   * frame's translational velocity.
+   * @param constraint_frame The frame to limit the velocity of.
+   * @param lower_limit The lower velocity limit for constraint_frame.
+   * @param upper_limit The upper velocity limit for constraint_frame.
+   * @return The bounding box constraint that will enforce the frame velocity
+   *         limit during the backward pass.
+   */
+  Binding<BoundingBoxConstraint> AddFrameVelocityLimit(
+      const Frame<double>& constraint_frame,
+      const Eigen::Ref<const Vector6d>& lower_limit,
+      const Eigen::Ref<const Vector6d>& upper_limit);
+
+  /**
+   * Adds a limit on the magnitude of the translational velocity of the given
+   * frame, measured and expressed in the world frame.
+   * @param constraint_frame The frame to limit the translational speed of.
+   * @param upper_limit The upper translational speed limit for
+   *                    constraint_frame.
+   * @return The bounding box constraint that will enforce the frame
+   *         translational speed limit during the backward pass.
+   */
+  Binding<BoundingBoxConstraint> AddFrameTranslationalSpeedLimit(
+      const Frame<double>& constraint_frame, const double& upper_limit);
+
+  /**
+   * Adds a limit on the elements of the spatial acceleration of the given
+   * frame, measured and and expressed in the world frame.  The limits should be
+   * given as [α_WF, a_WF], where α_WF is the frame's angular acceleration and
+   * v_WF is the frame's translational acceleration.
+   * @param constraint_frame The frame to limit the acceleration of.
+   * @param lower_limit The lower acceleration limit for constraint_frame.
+   * @param upper_limit The upper acceleration limit for constraint_frame.
+   * @param discretization The discretization scheme to use for this linear
+   *                       constraint. See ToppraDiscretization for details.
+   * @return A pair containing the linear constraints that will enforce the
+   * frame acceleration limit on the backward pass and forward pass
+   * respectively.
+   */
+  std::pair<Binding<LinearConstraint>, Binding<LinearConstraint>>
+  AddFrameAccelerationLimit(
+      const Frame<double>& constraint_frame,
+      const Eigen::Ref<const Vector6d>& lower_limit,
+      const Eigen::Ref<const Vector6d>& upper_limit,
+      ToppraDiscretization discretization =
+          ToppraDiscretization::kInterpolation);
+
+ private:
+  /*
    * Performs the backward pass step of TOPPRA, returning the controllable set,
    * K, at each gridpoint. K(0, i) and K(1, i) contain respectively the lower
    * and upper bound of the path velocity at grid point i.
    * @param s_dot_0 The path velocity at the beginning of the path.
    * @param s_dot_N The path velocity at the end of the path.
+   * @param solver The solver to use for the optimizations at each gridpoint.
    */
-  std::optional<Eigen::Matrix2Xd> ComputeBackwardPass(double s_dot_0,
-                                                      double s_dot_N);
+  std::optional<Eigen::Matrix2Xd> ComputeBackwardPass(
+      double s_dot_0, double s_dot_N, const SolverInterface& solver);
 
-  /**
+  /*
    * Performs the forward pass step of TOPPRA, computing the greediest
    * acceleration at each gridpoint that remains within the controllable set.
    * @param s_dot_0 The path velocity at the beginning of the path.
    * @param K The controllable set that the path velocity must stay within at
    *          each gridpoint. K(0, i) and K(1, i) contain respectively the lower
    *          and upper bound of the path velocity at grid point i.
+   * @param solver The solver to use for the optimizations at each gridpoint.
    */
   std::optional<std::pair<Eigen::VectorXd, Eigen::VectorXd>> ComputeForwardPass(
-      double s_dot_0, const Eigen::Ref<const Eigen::Matrix2Xd>& K);
+      double s_dot_0, const Eigen::Ref<const Eigen::Matrix2Xd>& K,
+      const SolverInterface& solver);
 
-  /**
+  /*
+   * Calculates the interpolation constraint coefficients for the forward
+   * integrated gridpoints based on the constraint coefficients already
+   * calculated for each gridpoint.
+   */
+  void CalcInterpolationConstraint(Eigen::MatrixXd* A,
+                                   Eigen::MatrixXd* lower_bound,
+                                   Eigen::MatrixXd* upper_bound);
+
+  /*
    * Contains the lower and upper bound for the bounding box constraint imposed
    * on x at each gridpoint. The bounding box constraint at the i'th grid point
    * is lb(i) <= x <= ub(i).
@@ -159,7 +247,8 @@ class Toppra {
     Eigen::VectorXd lb;
     Eigen::VectorXd ub;
   };
-  /**
+
+  /*
    * Contains the coefficients, lower bound and upper bound for the linear
    * constraint at each gridpoint. The linear constraint at the i'th grid point
    * is lb.col(i) <= ceoffs.middleCols<2>(2*i) * [x;u] <= ub.col(i).
@@ -186,6 +275,7 @@ class Toppra {
   Binding<LinearConstraint> forward_continuity_con_;
   const Trajectory<double>& path_;
   const MultibodyPlant<double>& plant_;
+  const std::unique_ptr<systems::Context<double>> plant_context_;
   Eigen::VectorXd gridpoints_;
   // x_bounds_ maps a Binding<BoundingBoxConstraint> to its bounds for the
   // backward pass. At the i'th grid point the linear constraint

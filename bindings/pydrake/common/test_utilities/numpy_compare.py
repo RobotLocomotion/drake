@@ -21,7 +21,7 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import (
     Expression, Formula, Monomial, Polynomial, Variable)
-from pydrake.polynomial import Polynomial as RawPolynomial
+from pydrake.polynomial import Polynomial_ as RawPolynomial_
 
 
 class _UnwantedEquality(AssertionError):
@@ -277,7 +277,13 @@ def _register_symbolic():
 
 def _register_polynomial():
     _registry.register_comparator(
-        RawPolynomial, RawPolynomial, _raw_eq, _raw_ne)
+        RawPolynomial_[float], RawPolynomial_[float], _raw_eq, _raw_ne)
+    _registry.register_comparator(
+        RawPolynomial_[AutoDiffXd], RawPolynomial_[AutoDiffXd], _raw_eq,
+        _raw_ne)
+    _registry.register_comparator(
+        RawPolynomial_[Expression], RawPolynomial_[Expression], _raw_eq,
+        _raw_ne)
 
 
 # Globals.

@@ -26,23 +26,22 @@ to install Bazel.
 To build or test Drake, run **bazel build** or **bazel test** with the desired
 target label (and optional configuration options if desired).  We give some
 typical examples below; for more reading about target patterns, see:
-[https://docs.bazel.build/versions/master/user-manual.html#target-patterns](https://docs.bazel.build/versions/master/user-manual.html#target-patterns).
+[https://docs.bazel.build/versions/main/user-manual.html#target-patterns](https://docs.bazel.build/versions/main/user-manual.html#target-patterns).
 
-On Ubuntu, the default compiler is the first ``gcc`` compiler in the
-``PATH``, usually GCC 7.5 on Bionic and GCC 9.3 on Focal. On macOS, the default
-compiler is the Apple LLVM compiler. To use Clang 9 on Ubuntu, set the ``CC``
-and ``CXX`` environment variables before running **bazel build**, **bazel test**
-or any other **bazel** commands.
+On Ubuntu, the default compiler is the first ``gcc`` compiler in the ``PATH``.
+On macOS, the default compiler is the Apple LLVM compiler. To use Clang on
+Ubuntu, add ``--config=clang`` after any **bazel build**, **bazel test** or any
+other **bazel** commands.
 
 Cheat sheet for operating on the entire project:
 
 ```
 cd /path/to/drake
-bazel build //...                               # Build the entire project.
-bazel test //...                                # Build and test the entire project.
+bazel build //...                 # Build the entire project.
+bazel test //...                  # Build and test the entire project.
 
-CC=clang-9 CXX=clang++-9 bazel build //...      # Build using Clang 9 on Ubuntu.
-CC=clang-9 CXX=clang++-9 bazel test //...       # Build and test using Clang 9 on Ubuntu.
+bazel build --config=clang //...  # Build using Clang on Ubuntu.
+bazel test --config=clang //...   # Build and test using Clang on Ubuntu.
 ```
 
 * The "``//``" means "starting from the root of the project".
@@ -85,10 +84,11 @@ bazel test common:polynomial_test                    # Run one test.
 bazel test -c dbg common:polynomial_test             # Run one test in debug mode.
 bazel test --config=memcheck common:polynomial_test  # Run one test under memcheck (valgrind).
 bazel test --config=fastmemcheck common:*            # Run common's tests under memcheck, with minimal recompiling.
-bazel test --config=asan common:polynomial_test      # Run one test under AddressSanitizer.
 bazel test --config=kcov common:polynomial_test      # Run one test under kcov (see instructions below).
 bazel build -c dbg common:polynomial_test && \
   gdb bazel-bin/common/polynomial_test               # Run one test under gdb.
+
+bazel test -c dbg --config=clang --config=asan common:polynomial_test  # Run one test under AddressSanitizer.
 
 bazel test --config lint //...                       # Only run style checks; don't build or test anything else.
 ```
@@ -103,23 +103,32 @@ bazel test --config lint //...                       # Only run style checks; do
 
 ## Running with Flags
 
+### Example programs
+
 In general, to figure out what binary-specific arguments are available, add
-"``-- --help``" to your ``bazel run`` command. If the binary can only run via
-``bazel test``, look at [--test_arg](https://docs.bazel.build/versions/master/user-manual.html#flag--test_arg).
-
-If a C++ unittest uses ``gtest`` (e.g. using ``drake_cc_googletest``),
-you can specify gtest-specific flags. As an example:
+"``-- --help``" to your ``bazel run`` command. An an example,
 
 ```
-bazel run multibody/plant:multibody_plant_test -- --gtest_filter='*SimpleModelCreation*'
+bazel run //examples/acrobot:run_passive -- --help
 ```
 
-If a Python unittest is run via ``drake_py_unittest_main.py`` (e.g. using
-``drake_py_unittest``), you can specify flags such as ``--trace`` or
-``--deprecation_action``. As an example:
+The bare ``--`` separates Bazel arguments from the program's arguments.
+
+## Unit tests
+
+For running tests, you may pass custom arguments to the test program via
+[--test_arg](https://docs.bazel.build/versions/main/user-manual.html#flag--test_arg).
+
+For a C++ unittest that uses ``drake_cc_googletest``, for example:
 
 ```
-bazel run bindings/pydrake:py/symbolic_test -- --trace=user --deprecation_action=error
+bazel test multibody/plant:multibody_plant_test --test_output=streamed --nocache_test_results --test_arg=--gtest_filter='*SimpleModelCreation*'
+```
+
+For a Python unittest that uses ``drake_py_unittest``, for example:
+
+```
+bazel test bindings/pydrake:py/symbolic_test --test_output=streamed --nocache_test_results --test_arg=--trace=user --test_arg=TestSymbolicVariable
 ```
 
 ## Debugging on macOS
@@ -160,27 +169,27 @@ bazel build //tools/lint:buildifier
 
 The Drake Bazel build currently supports the following proprietary solvers:
 
-* Gurobi 9.0.2
-* MOSEK 9.2
+* Gurobi 9.5.1
+* MOSEK™ 9.2
 * SNOPT 7.4
 
-## Gurobi 9.0.2
+## Gurobi 9.5.1
 
 ### Install on Ubuntu
 
 1. Register for an account on [https://www.gurobi.com](https://www.gurobi.com).
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``.
-4. Download ``gurobi9.0.2_linux64.tar.gz``
-5. Unzip it.  We suggest that you use ``/opt/gurobi902`` to simplify working with Drake installations.
-6. If you unzipped into a location other than ``/opt/gurobi902``, then call ``export GUROBI_HOME=GUROBI_UNZIP_PATH/linux64`` to set the path you used, where in ``GUROBI_HOME`` folder you can find ``bin`` folder.
+4. Download ``gurobi9.5.1_linux64.tar.gz``
+5. Unzip it.  We suggest that you use ``/opt/gurobi951`` to simplify working with Drake installations.
+6. If you unzipped into a location other than ``/opt/gurobi951``, then call ``export GUROBI_HOME=GUROBI_UNZIP_PATH/linux64`` to set the path you used, where in ``GUROBI_HOME`` folder you can find ``bin`` folder.
 
 ### Install on macOS
 
 1. Register for an account on [http://www.gurobi.com](http://www.gurobi.com).
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``
-4. Download and install ``gurobi9.0.2_mac64.pkg``.
+4. Download and install ``gurobi9.5.1_mac64.pkg``.
 
 To confirm that your setup was successful, run the tests that require Gurobi:
 
@@ -189,23 +198,23 @@ To confirm that your setup was successful, run the tests that require Gurobi:
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests.  If you will be developing with Gurobi regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
-See [https://docs.bazel.build/versions/master/user-manual.html#bazelrc](https://docs.bazel.build/versions/master/user-manual.html#bazelrc).
+See [https://docs.bazel.build/versions/main/user-manual.html#bazelrc](https://docs.bazel.build/versions/main/user-manual.html#bazelrc).
 
 ## MOSEK
 
-The Drake Bazel build system downloads MOSEK 9.2.33 automatically.  No manual
+The Drake Bazel build system downloads MOSEK™ 9.2.33 automatically. No manual
 installation is required.  Set the location of your license file as follows:
 
   ```export MOSEKLM_LICENSE_FILE=/path/to/mosek.lic```
 
-To confirm that your setup was successful, run the tests that require MOSEK:
+To confirm that your setup was successful, run the tests that require MOSEK™:
 
   ```bazel test --config mosek --test_tag_filters=mosek //...```
 
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
-these tests.  If you will be developing with MOSEK regularly, you may wish
+these tests.  If you will be developing with MOSEK™ regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
-See [https://docs.bazel.build/versions/master/user-manual.html#bazelrc](https://docs.bazel.build/versions/master/user-manual.html#bazelrc).
+See [https://docs.bazel.build/versions/main/user-manual.html#bazelrc](https://docs.bazel.build/versions/main/user-manual.html#bazelrc).
 
 ## SNOPT
 
@@ -234,10 +243,29 @@ To confirm that your setup was successful, run the tests that require SNOPT:
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests.  If you will be developing with SNOPT regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
-See [https://docs.bazel.build/versions/master/user-manual.html#bazelrc](https://docs.bazel.build/versions/master/user-manual.html#bazelrc).
+See [https://docs.bazel.build/versions/main/user-manual.html#bazelrc](https://docs.bazel.build/versions/main/user-manual.html#bazelrc).
 
 SNOPT support has some known problems on certain programs (see drake issue
 [#10422](https://github.com/RobotLocomotion/drake/issues/10422) for a summary).
+
+# Other optional dependencies
+
+## OpenMP
+
+Drake is
+[in the process](https://github.com/RobotLocomotion/drake/issues/14858)
+of adding support for multiprocessing using
+[OpenMP](https://en.wikipedia.org/wiki/OpenMP).
+At the moment, that support is experimental and is not recommended for Drake's
+users.
+
+For Drake Developers who wish to enable OpenMP, use this config switch:
+
+```
+bazel test --config omp //...
+```
+
+This switch is enabled in CI under the "Ubuntu Everything" build flavor.
 
 # Optional Tools
 
@@ -254,10 +282,10 @@ debugging symbols, and produce nicely formatted browse-able coverage reports.
 Drake's ``kcov`` build system integration is only supported on Ubuntu, not
 macOS.
 
-To use kcov on Ubuntu 18.04 (Bionic), you must first run Drake's
-``install_prereqs`` setup script using the ``--with-kcov`` option. On Ubuntu
-20.04 (Focal), the option is ignored. The macOS ``install_prereqs`` setup
-script does not install kcov, and passing a ``--with-kcov`` option is an error.
+In some cases, running kcov builds and regular builds from the same source
+tree will lead to Bazel error messages like "this rule is missing dependency
+declarations".  To resolve that problem, either run the kcov build from a
+fresh checkout, or else run a ``bazel clean``.
 
 To analyze test coverage, run one (or more) tests under ``kcov``:
 
@@ -286,3 +314,11 @@ data would be scattered within the directory tree linked as
 ```
 tools/dynamic_analysis/kcov_tool clean
 ```
+
+### kcov and Python
+
+Coverage reports for Python sources produced by kcov are useful, but can be
+misleading. As of Ubuntu 20.04 and kcov 38, Python reports do not render
+coverage for multi-line statements properly. Statements that use delimiter
+pairs to span more than two lines, or statements that use string token pasting
+across multiple lines may be mistakenly shown as only partially executed.

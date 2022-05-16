@@ -39,6 +39,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:name_value",
+        "//common:nice_type_name",
         "//common:random",
         "//common:symbolic",
         "//common:unused",
@@ -64,8 +65,7 @@ drake_cc_googletest(
     deps = [
         ":rotation",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/yaml:yaml_read_archive",
-        "//common/yaml:yaml_write_archive",
+        "//common/yaml",
     ],
 )
 
@@ -76,8 +76,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
-        "//common/yaml:yaml_read_archive",
-        "//common/yaml:yaml_write_archive",
+        "//common/yaml",
     ],
 )
 
@@ -87,7 +86,7 @@ drake_cc_googletest(
         ":transform",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
-        "//common/yaml:yaml_read_archive",
+        "//common/yaml",
     ],
 )
 

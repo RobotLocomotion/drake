@@ -9,8 +9,8 @@ def stduuid_repository(
     github_archive(
         name = name,
         repository = "mariusbancila/stduuid",
-        commit = "4959d46eb494f8eddd4a37a1c8c6434b41d56ca8",
-        sha256 = "011514f3c4ef831d26fa11ef897c6d0b92a491987f3b15a5b21cd872cf9153b4",  # noqa
+        commit = "c1e1c144af92aab8fd2af9acb5bd1f8f0a6ce4d4",
+        sha256 = "7af03981102d417ad5d175821b3842506314c0eb665c5a7259654ed3ff340def",  # noqa
         build_file = "@drake//tools/workspace/stduuid:package.BUILD.bazel",
         mirrors = mirrors,
     )

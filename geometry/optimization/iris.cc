@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 #include <optional>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -11,8 +12,10 @@
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/minkowski_sum.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/ibex_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/snopt_solver.h"
 
@@ -24,7 +27,13 @@ using Eigen::MatrixXd;
 using Eigen::Ref;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using math::RigidTransform;
+using multibody::Body;
+using multibody::Frame;
+using multibody::JacobianWrtVariable;
+using multibody::MultibodyPlant;
 using symbolic::Expression;
+using systems::Context;
 
 HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
                  const HPolyhedron& domain, const IrisOptions& options) {
@@ -55,6 +64,7 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
   MatrixXd tangent_matrix;
 
   while (true) {
+    DRAKE_ASSERT(best_volume > 0);
     // Find separating hyperplanes
     for (int i = 0; i < N; ++i) {
       const auto touch = E.MinimumUniformScalingToTouch(*obstacles[i]);
@@ -67,14 +77,13 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
     int num_constraints = domain.A().rows();
     tangent_matrix = 2.0 * E.A().transpose() * E.A();
     for (int i = 0; i < N; ++i) {
-      const VectorXd point = closest_points.col(scaling[i].second);
-      // Only add a constraint if this point is still within the set that has
-      // been constructed so far on this iteration.
-      if (((A.topRows(num_constraints) * point).array() <=
-           b.head(num_constraints).array())
-              .all()) {
+      // Only add a constraint if this obstacle still has overlap with the set
+      // that has been constructed so far on this iteration.
+      if (HPolyhedron(A.topRows(num_constraints), b.head(num_constraints))
+              .IntersectsWith(*obstacles[scaling[i].second])) {
         // Add the tangent to the (scaled) ellipsoid at this point as a
         // constraint.
+        const VectorXd point = closest_points.col(scaling[i].second);
         A.row(num_constraints) =
             (tangent_matrix * (point - E.center())).normalized();
         b[num_constraints] = A.row(num_constraints) * point;
@@ -97,7 +106,11 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
 
     E = P.MaximumVolumeInscribedEllipsoid();
     const double volume = E.Volume();
-    if (volume - best_volume <= options.termination_threshold) {
+    const double delta_volume = volume - best_volume;
+    if (delta_volume <= options.termination_threshold) {
+      break;
+    }
+    if (delta_volume / best_volume <= options.relative_termination_threshold) {
       break;
     }
     best_volume = volume;
@@ -193,26 +206,134 @@ ConvexSets MakeIrisObstacles(const QueryObject<double>& query_object,
 
 namespace {
 
+// Takes q, p_AA, and p_BB and enforces that p_WA == p_WB.
+class SamePointConstraint : public solvers::Constraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SamePointConstraint)
+
+  SamePointConstraint(const MultibodyPlant<double>* plant,
+                      const Context<double>& context)
+      : solvers::Constraint(3, plant->num_positions() + 6, Vector3d::Zero(),
+                            Vector3d::Zero()),
+        plant_(plant),
+        context_(plant->CreateDefaultContext()) {
+    DRAKE_DEMAND(plant_ != nullptr);
+    context_->SetTimeStateAndParametersFrom(context);
+  }
+
+  ~SamePointConstraint() override {}
+
+  void set_frameA(const multibody::Frame<double>* frame) { frameA_ = frame; }
+
+  void set_frameB(const multibody::Frame<double>* frame) { frameB_ = frame; }
+
+  void EnableSymbolic() {
+    if (symbolic_plant_ != nullptr) {
+      return;
+    }
+    symbolic_plant_ = systems::System<double>::ToSymbolic(*plant_);
+    symbolic_context_ = symbolic_plant_->CreateDefaultContext();
+    symbolic_context_->SetTimeStateAndParametersFrom(*context_);
+  }
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override {
+    DRAKE_DEMAND(frameA_ != nullptr);
+    DRAKE_DEMAND(frameB_ != nullptr);
+    VectorXd q = x.head(plant_->num_positions());
+    Vector3d p_AA = x.template segment<3>(plant_->num_positions()),
+             p_BB = x.template tail<3>();
+    Vector3d p_WA, p_WB;
+    plant_->SetPositions(context_.get(), q);
+    plant_->CalcPointsPositions(*context_, *frameA_, p_AA,
+                                plant_->world_frame(), &p_WA);
+    plant_->CalcPointsPositions(*context_, *frameB_, p_BB,
+                                plant_->world_frame(), &p_WB);
+    *y = p_WA - p_WB;
+  }
+
+  // p_WA = X_WA(q)*p_AA
+  // dp_WA = Jq_v_WA*dq + X_WA(q)*dp_AA
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override {
+    DRAKE_DEMAND(frameA_ != nullptr);
+    DRAKE_DEMAND(frameB_ != nullptr);
+    VectorX<AutoDiffXd> q = x.head(plant_->num_positions());
+    Vector3<AutoDiffXd> p_AA = x.template segment<3>(plant_->num_positions()),
+                        p_BB = x.template tail<3>();
+    plant_->SetPositions(context_.get(), ExtractDoubleOrThrow(q));
+    const RigidTransform<double>& X_WA =
+        plant_->EvalBodyPoseInWorld(*context_, frameA_->body());
+    const RigidTransform<double>& X_WB =
+        plant_->EvalBodyPoseInWorld(*context_, frameB_->body());
+    Eigen::Matrix3Xd Jq_v_WA(3, plant_->num_positions()),
+        Jq_v_WB(3, plant_->num_positions());
+    plant_->CalcJacobianTranslationalVelocity(
+        *context_, JacobianWrtVariable::kQDot, *frameA_,
+        ExtractDoubleOrThrow(p_AA), plant_->world_frame(),
+        plant_->world_frame(), &Jq_v_WA);
+    plant_->CalcJacobianTranslationalVelocity(
+        *context_, JacobianWrtVariable::kQDot, *frameB_,
+        ExtractDoubleOrThrow(p_BB), plant_->world_frame(),
+        plant_->world_frame(), &Jq_v_WB);
+
+    const Eigen::Vector3d y_val =
+        X_WA * math::ExtractValue(p_AA) - X_WB * math::ExtractValue(p_BB);
+    Eigen::Matrix3Xd dy(3, plant_->num_positions() + 6);
+    dy << Jq_v_WA - Jq_v_WB, X_WA.rotation().matrix(),
+        -X_WB.rotation().matrix();
+    *y = math::InitializeAutoDiff(y_val, dy * math::ExtractGradient(x));
+  }
+
+  void DoEval(const Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override {
+    DRAKE_DEMAND(symbolic_plant_ != nullptr);
+    DRAKE_DEMAND(frameA_ != nullptr);
+    DRAKE_DEMAND(frameB_ != nullptr);
+    const Frame<Expression>& frameA =
+        symbolic_plant_->get_frame(frameA_->index());
+    const Frame<Expression>& frameB =
+        symbolic_plant_->get_frame(frameB_->index());
+    VectorX<Expression> q = x.head(plant_->num_positions());
+    Vector3<Expression> p_AA = x.template segment<3>(plant_->num_positions()),
+                        p_BB = x.template tail<3>();
+    Vector3<Expression> p_WA, p_WB;
+    symbolic_plant_->SetPositions(symbolic_context_.get(), q);
+    symbolic_plant_->CalcPointsPositions(*symbolic_context_, frameA, p_AA,
+                                         symbolic_plant_->world_frame(), &p_WA);
+    symbolic_plant_->CalcPointsPositions(*symbolic_context_, frameB, p_BB,
+                                         symbolic_plant_->world_frame(), &p_WB);
+    *y = p_WA - p_WB;
+  }
+
+  const MultibodyPlant<double>* const plant_;
+  const multibody::Frame<double>* frameA_{nullptr};
+  const multibody::Frame<double>* frameB_{nullptr};
+  std::unique_ptr<Context<double>> context_;
+
+  std::unique_ptr<MultibodyPlant<Expression>> symbolic_plant_{nullptr};
+  std::unique_ptr<Context<Expression>> symbolic_context_{nullptr};
+};
+
 // Solves the optimization
 // min_q (q-d)*CᵀC(q-d)
-// s.t. setA on bodyA and setB on bodyB are in collision in q.
+// s.t. setA in frameA and setB in frameB are in collision in q.
 //      Aq ≤ b.
-// where C, d are the center and matrix from the hyperellipsoid E.
+// where C, d are the matrix and center from the hyperellipsoid E.
 // Returns true iff a collision is found.
 // Sets `closest` to an optimizing solution q*, if a solution is found.
-bool FindClosestCollision(const multibody::MultibodyPlant<Expression>& plant,
-                          const multibody::Body<Expression>& bodyA,
-                          const multibody::Body<Expression>& bodyB,
-                          const ConvexSet& setA, const ConvexSet& setB,
-                          const Hyperellipsoid& E,
-                          const Eigen::Ref<const Eigen::MatrixXd>& A,
-                          const Eigen::Ref<const Eigen::VectorXd>& b,
-                          const solvers::SolverInterface& solver,
-                          systems::Context<Expression>* context,
-                          const Eigen::Ref<const Eigen::VectorXd>& q_guess,
-                          VectorXd* closest) {
+bool FindClosestCollision(
+    std::shared_ptr<SamePointConstraint> same_point_constraint,
+    const multibody::Frame<double>& frameA,
+    const multibody::Frame<double>& frameB, const ConvexSet& setA,
+    const ConvexSet& setB, const Hyperellipsoid& E,
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b,
+    const solvers::SolverInterface& solver,
+    const Eigen::Ref<const Eigen::VectorXd>& q_guess, VectorXd* closest) {
   solvers::MathematicalProgram prog;
-  auto q = prog.NewContinuousVariables(plant.num_positions(), "q");
+  auto q = prog.NewContinuousVariables(A.cols(), "q");
 
   prog.AddLinearConstraint(
       A, VectorXd::Constant(b.size(), -std::numeric_limits<double>::infinity()),
@@ -230,19 +351,33 @@ bool FindClosestCollision(const multibody::MultibodyPlant<Expression>& plant,
   setA.AddPointInSetConstraints(&prog, p_AA);
   setB.AddPointInSetConstraints(&prog, p_BB);
 
-  plant.SetPositions(context, q.cast<Expression>());
-  const math::RigidTransform<Expression>& X_WA =
-      plant.EvalBodyPoseInWorld(*context, bodyA);
-  const math::RigidTransform<Expression>& X_WB =
-      plant.EvalBodyPoseInWorld(*context, bodyB);
-  prog.AddConstraint(X_WA * p_AA.cast<Expression>() ==
-                     X_WB * p_BB.cast<Expression>());
+  same_point_constraint->set_frameA(&frameA);
+  same_point_constraint->set_frameB(&frameB);
+  prog.AddConstraint(same_point_constraint, {q, p_AA, p_BB});
 
   // Help nonlinear optimizers (e.g. SNOPT) avoid trivial local minima at the
   // origin.
   prog.SetInitialGuess(q, q_guess);
   prog.SetInitialGuess(p_AA, Vector3d::Constant(.01));
   prog.SetInitialGuess(p_BB, Vector3d::Constant(.01));
+
+  if (solver.solver_id() == solvers::IbexSolver::id()) {
+    prog.SetSolverOption(solvers::IbexSolver::id(), "rigor", true);
+    // Use kNonconvex instead of the default kConvexSmooth.
+    std::vector<solvers::Binding<solvers::LorentzConeConstraint>> to_replace =
+        prog.lorentz_cone_constraints();
+    for (const auto& binding : to_replace) {
+      const auto c = binding.evaluator();
+      prog.AddConstraint(
+          std::make_shared<solvers::LorentzConeConstraint>(
+              c->A_dense(), c->b(),
+              solvers::LorentzConeConstraint::EvalType::kNonconvex),
+          binding.variables());
+    }
+    for (const auto& binding : to_replace) {
+      prog.RemoveConstraint(binding);
+    }
+  }
 
   solvers::MathematicalProgramResult result;
   solver.Solve(prog, std::nullopt, std::nullopt, &result);
@@ -253,41 +388,67 @@ bool FindClosestCollision(const multibody::MultibodyPlant<Expression>& plant,
   return false;
 }
 
+// Add the tangent to the (scaled) ellipsoid at @p point as a
+// constraint.
+void AddTangentToPolytope(
+    const Hyperellipsoid& E, const Eigen::Ref<const Eigen::VectorXd>& point,
+    const IrisOptions& options,
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>* A,
+    Eigen::VectorXd* b, int* num_constraints) {
+  if (*num_constraints >= A->rows()) {
+    // Increase pre-allocated polytope size.
+    A->conservativeResize(A->rows() * 2, A->cols());
+    b->conservativeResize(b->rows() * 2);
+  }
+
+  A->row(*num_constraints) =
+      (E.A().transpose() * E.A() * (point - E.center())).normalized();
+  (*b)[*num_constraints] =
+      A->row(*num_constraints) * point - options.configuration_space_margin;
+  *num_constraints += 1;
+}
+
+struct GeometryPairWithDistance {
+  GeometryId geomA;
+  GeometryId geomB;
+  double distance;
+
+  GeometryPairWithDistance(GeometryId gA, GeometryId gB, double dist)
+      : geomA(gA), geomB(gB), distance(dist) {}
+
+  bool operator<(const GeometryPairWithDistance& other) const {
+    return distance < other.distance;
+  }
+};
+
 }  // namespace
 
-HPolyhedron IrisInConfigurationSpace(
-    const multibody::MultibodyPlant<double>& plant,
-    const systems::Context<double>& context,
-    const Eigen::Ref<const Eigen::VectorXd>& sample,
-    const IrisOptions& options) {
+HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
+                                     const Context<double>& context,
+                                     const IrisOptions& options) {
+  // Check the inputs.
   plant.ValidateContext(context);
   const int nq = plant.num_positions();
-  DRAKE_DEMAND(sample.size() == nq);
-
+  const Eigen::VectorXd sample = plant.GetPositions(context);
   // Note: We require finite joint limits to define the bounding box for the
   // IRIS algorithm.
   DRAKE_DEMAND(plant.GetPositionLowerLimits().array().isFinite().all());
   DRAKE_DEMAND(plant.GetPositionUpperLimits().array().isFinite().all());
+
+  // Make the polytope and ellipsoid.
   HPolyhedron P = HPolyhedron::MakeBox(plant.GetPositionLowerLimits(),
                                        plant.GetPositionUpperLimits());
   DRAKE_DEMAND(P.A().rows() == 2 * nq);
-
   const double kEpsilonEllipsoid = 1e-2;
   Hyperellipsoid E = Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample);
 
-  std::unique_ptr<multibody::MultibodyPlant<symbolic::Expression>>
-      symbolic_plant = systems::System<double>::ToSymbolic(plant);
-
+  // Make all of the convex sets and supporting quantities.
   auto query_object =
       plant.get_geometry_query_input_port().Eval<QueryObject<double>>(context);
   const SceneGraphInspector<double>& inspector = query_object.inspector();
-
-  // Make all of the convex sets.
-  // TODO(russt): Consider factoring this out so that I don't have to redo the
-  // work for every new region.
   IrisConvexSetMaker maker(query_object, inspector.world_frame_id());
   std::unordered_map<GeometryId, copyable_unique_ptr<ConvexSet>> sets{};
-  std::unordered_map<GeometryId, const multibody::Body<Expression>&> bodies{};
+  std::unordered_map<GeometryId, const multibody::Frame<double>*> frames{};
   const std::unordered_set<GeometryId> geom_ids = inspector.GetGeometryIds(
       GeometrySet(inspector.GetAllGeometryIds()), Role::kProximity);
   copyable_unique_ptr<ConvexSet> temp_set;
@@ -298,16 +459,26 @@ HPolyhedron IrisInConfigurationSpace(
     maker.set_geometry_id(geom_id);
     inspector.GetShape(geom_id).Reify(&maker, &temp_set);
     sets.emplace(geom_id, std::move(temp_set));
-    bodies.emplace(geom_id, *symbolic_plant->GetBodyFromFrameId(frame_id));
+    frames.emplace(geom_id, &plant.GetBodyFromFrameId(frame_id)->body_frame());
   }
 
-  // TODO(russt): As a surrogate for the true objective, we could use convex
-  // optimization to compute the (squared?) distance between each collision pair
-  // from the sample point configuration, then sort the pairs by that distance.
-  // This could improve computation times in Ibex here and produce regions with
-  // less faces.
   auto pairs = inspector.GetCollisionCandidates();
   const int N = static_cast<int>(pairs.size());
+  auto same_point_constraint =
+      std::make_shared<SamePointConstraint>(&plant, context);
+
+  // As a surrogate for the true objective, the pairs are sorted by the distance
+  // between each collision pair from the sample point configuration. This could
+  // improve computation times in Ibex here and produce regions with fewer
+  // faces.
+  std::vector<GeometryPairWithDistance> sorted_pairs;
+  for (const auto& [geomA, geomB] : pairs) {
+    sorted_pairs.emplace_back(
+        geomA, geomB,
+        query_object.ComputeSignedDistancePairClosestPoints(geomA, geomB)
+            .distance);
+  }
+  std::sort(sorted_pairs.begin(), sorted_pairs.end());
 
   // On each iteration, we will build the collision-free polytope represented as
   // {x | A * x <= b}.  Here we pre-allocate matrices with a generous maximum
@@ -320,48 +491,61 @@ HPolyhedron IrisInConfigurationSpace(
 
   double best_volume = E.Volume();
   int iteration = 0;
-  MatrixXd tangent_matrix;
+  VectorXd closest(nq);
 
   auto solver = solvers::MakeFirstAvailableSolver(
       {solvers::SnoptSolver::id(), solvers::IpoptSolver::id()});
-  auto symbolic_context = symbolic_plant->CreateDefaultContext();
-  VectorXd closest(nq);
+  std::unique_ptr<solvers::IbexSolver> ibex;
+  if (options.enable_ibex) {
+    ibex = std::make_unique<solvers::IbexSolver>();
+    DRAKE_DEMAND(ibex->is_available() && ibex->is_enabled());
+    same_point_constraint->EnableSymbolic();
+  }
 
   while (true) {
-    tangent_matrix = 2.0 * E.A().transpose() * E.A();
     int num_constraints = 2 * nq;  // Start with just the joint limits.
+    bool sample_point_requirement = true;
+    DRAKE_ASSERT(best_volume > 0);
     // Find separating hyperplanes
-    for (const auto [geomA, geomB] : pairs) {
-      while (true) {
-        const bool collision = FindClosestCollision(
-            *symbolic_plant, bodies.at(geomA), bodies.at(geomB),
-            *sets.at(geomA), *sets.at(geomB), E, A.topRows(num_constraints),
-            b.head(num_constraints), *solver, symbolic_context.get(), sample,
-            &closest);
-        if (collision) {
-          // Add the tangent to the (scaled) ellipsoid at this point as a
-          // constraint.
-          if (num_constraints >= A.rows()) {
-            // Increase pre-allocated polytope size.
-            A.conservativeResize(A.rows() + N, nq);
-            b.conservativeResize(b.rows() + N);
-          }
 
-          A.row(num_constraints) =
-              (tangent_matrix * (closest - E.center())).normalized();
-          b[num_constraints] = A.row(num_constraints) * closest -
-                               options.configuration_space_margin;
-          num_constraints++;
-        } else {
-          break;
+    // First use a fast nonlinear optimizer to add as many constraint as it
+    // can find.
+    for (const auto& pair : sorted_pairs) {
+      while (sample_point_requirement &&
+             FindClosestCollision(
+                 same_point_constraint, *frames.at(pair.geomA),
+                 *frames.at(pair.geomB), *sets.at(pair.geomA),
+                 *sets.at(pair.geomB), E, A.topRows(num_constraints),
+                 b.head(num_constraints), *solver, sample, &closest)) {
+        AddTangentToPolytope(E, closest, options, &A, &b, &num_constraints);
+        if (options.require_sample_point_is_contained) {
+          sample_point_requirement =
+              A.row(num_constraints - 1) * sample <= b(num_constraints - 1);
         }
       }
     }
 
-    if (options.require_sample_point_is_contained &&
-        ((A.topRows(num_constraints) * sample).array() >=
-         b.head(num_constraints).array())
-            .any()) {
+    if (options.enable_ibex) {
+      // Now loop back through and use Ibex for rigorous certification.
+      // TODO(russt): Consider (re-)implementing a "feasibility only" version of
+      // the IRIS check + nonlinear optimization to improve.
+      for (const auto& pair : sorted_pairs) {
+        while (sample_point_requirement &&
+               FindClosestCollision(
+                   same_point_constraint, *frames.at(pair.geomA),
+                   *frames.at(pair.geomB), *sets.at(pair.geomA),
+                   *sets.at(pair.geomB), E, A.topRows(num_constraints),
+                   b.head(num_constraints), *ibex, sample, &closest)) {
+          AddTangentToPolytope(E, closest, options, &A, &b, &num_constraints);
+          if (options.require_sample_point_is_contained) {
+            sample_point_requirement =
+                A.row(num_constraints - 1) * sample <= b(num_constraints - 1);
+          }
+        }
+      }
+    }
+
+    if (!sample_point_requirement) {
       break;
     }
     P = HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
@@ -373,7 +557,11 @@ HPolyhedron IrisInConfigurationSpace(
 
     E = P.MaximumVolumeInscribedEllipsoid();
     const double volume = E.Volume();
-    if (volume - best_volume <= options.termination_threshold) {
+    const double delta_volume = volume - best_volume;
+    if (delta_volume <= options.termination_threshold) {
+      break;
+    }
+    if (delta_volume / best_volume <= options.relative_termination_threshold) {
       break;
     }
     best_volume = volume;

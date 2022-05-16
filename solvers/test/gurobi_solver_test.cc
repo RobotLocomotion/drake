@@ -39,7 +39,7 @@ TEST_F(InfeasibleLinearProgramTest0, TestGurobiInfeasible) {
     prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 1);
     auto result = solver.Solve(*prog_, {}, {});
     EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kInfeasible_Or_Unbounded);
+              SolutionResult::kInfeasibleOrUnbounded);
     EXPECT_TRUE(std::isnan(result.get_optimal_cost()));
     prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 0);
     result = solver.Solve(*prog_, {}, {});
@@ -60,9 +60,9 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     auto result = solver.Solve(*prog_, {}, solver_options);
     EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kInfeasible_Or_Unbounded);
+              SolutionResult::kInfeasibleOrUnbounded);
     // This code is defined in
-    // https://www.gurobi.com/documentation/9.0/refman/optimization_status_codes.html
+    // https://www.gurobi.com/documentation/9.5/refman/optimization_status_codes.html
     const int GRB_INF_OR_UNBD = 4;
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().optimization_status,
               GRB_INF_OR_UNBD);
@@ -72,7 +72,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
     // This code is defined in
-    // https://www.gurobi.com/documentation/9.0/refman/optimization_status_codes.html
+    // https://www.gurobi.com/documentation/9.5/refman/optimization_status_codes.html
     const int GRB_UNBOUNDED = 5;
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().optimization_status,
               GRB_UNBOUNDED);
@@ -573,7 +573,7 @@ GTEST_TEST(GurobiTest, SOCPDualSolution1) {
     // By default the dual solution for second order cone is not computed.
     MathematicalProgramResult result = solver.Solve(prog);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        result.GetDualSolution(constraint1), std::invalid_argument,
+        result.GetDualSolution(constraint1),
         "You used Gurobi to solve this optimization problem.*");
     SolverOptions options;
     options.SetOption(solver.id(), "QCPDual", 1);
@@ -591,7 +591,7 @@ GTEST_TEST(GurobiTest, SOCPDualSolution1) {
     options.SetOption(solver.id(), "QCPDual", 0);
     result = solver.Solve(prog, std::nullopt, options);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        result.GetDualSolution(bb_con), std::invalid_argument,
+        result.GetDualSolution(bb_con),
         "You used Gurobi to solve this optimization problem.*");
     // Now set QCPDual = 1, we should be able to retrieve the dual solution to
     // the bounding box constraint.

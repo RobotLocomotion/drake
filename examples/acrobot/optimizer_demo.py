@@ -10,7 +10,6 @@ import sys
 import tempfile
 
 import numpy as np
-from scipy.optimize import fmin
 
 from pydrake.common import FindResourceOrThrow
 
@@ -19,6 +18,22 @@ from drake.examples.acrobot.acrobot_io import (
 
 from drake.examples.acrobot.metrics import (
     ensemble_cost, success_rate)
+
+try:
+    from scipy.optimize import fmin
+except ImportError:
+    print("WARNING: scipy not installed, using stubbed non-minimizing "
+          "version of fmin.", file=sys.stderr)
+
+    def fmin(func, x0, func_args=(), full_output=False, *args, **kwargs):
+        """Dummy version of scipy.optimize.fmin.
+        It allows scipy to be an optional dependency."""
+        if full_output:
+            fopt = func(x0, *func_args)
+
+            return x0, fopt, 1, 1, 0
+        else:
+            return x0
 
 
 METRICS = {"ensemble_cost": ensemble_cost,
@@ -36,9 +51,7 @@ def evaluate_metric_once(scenario, metric, seeds):
                                      dir=env_tmpdir) as temp_dir:
         scenario_filename = os.path.join(temp_dir, "scenario.yaml")
         with open(scenario_filename, "w") as scenario_file:
-            scenario_file.write(
-                save_scenario(scenario=scenario,
-                              scenario_name="evaluation_scenario"))
+            scenario_file.write(save_scenario(scenario=scenario))
         tapes = []
         for seed in seeds:
             output_filename = os.path.join(temp_dir, f"output_{seed}.yaml")
@@ -123,8 +136,7 @@ def main():
             num_evaluations=args.num_evaluations)
         output_scenario = input_scenario
         output_scenario["controller_params"] = result
-        output.write(save_scenario(scenario=output_scenario,
-                                   scenario_name="optimized_scenario"))
+        output.write(save_scenario(scenario=output_scenario))
 
 
 if __name__ == "__main__":

@@ -40,6 +40,15 @@ constexpr double kGripperLcmStatusPeriod = 0.010;
 /// This system has two output ports. The first reports the commanded position
 /// and velocity for all joints, and the second reports the commanded joint
 /// torques.
+///
+/// @system
+/// name: GripperCommandDecoder
+/// input_ports:
+/// - lcmt_planar_gripper_command
+/// output_ports:
+/// - state
+/// - torques
+/// @endsystem
 class GripperCommandDecoder : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperCommandDecoder)
@@ -99,6 +108,15 @@ class GripperCommandDecoder : public systems::LeafSystem<double> {
 /// connected to an input port of a systems::lcm::LcmPublisherSystem
 /// that accepts a Value object templated on type
 /// `lcmt_planar_gripper_command`.
+///
+/// @system
+/// name: GripperCommandEncoder
+/// input_ports:
+/// - state
+/// - torque
+/// output_ports:
+/// - lcmt_gripper_command
+/// @endsystem
 class GripperCommandEncoder : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperCommandEncoder)
@@ -137,6 +155,15 @@ class GripperCommandEncoder : public systems::LeafSystem<double> {
 ///
 /// All ports will continue to output their initial state (typically
 /// zero) until a message is received.
+///
+/// @system
+/// name: GripperStatusDecoder
+/// input_ports:
+/// - lcmt_planar_gripper_status
+/// output_ports:
+/// - state
+/// - fingertip_force
+/// @endsystem
 class GripperStatusDecoder : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperStatusDecoder)
@@ -185,6 +212,15 @@ class GripperStatusDecoder : public systems::LeafSystem<double> {
 /// message, the output of this system should be connected to an input port of
 /// a systems::lcm::LcmPublisherSystem that accepts a
 /// Value object templated on type `lcmt_planar_gripper_status`.
+///
+/// @system
+/// name: GripperStatusEncoder
+/// input_ports:
+/// - state
+/// - fingertip_force
+/// output_ports:
+/// - lcmt_gripper_status
+/// @endsystem
 class GripperStatusEncoder : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperStatusEncoder)

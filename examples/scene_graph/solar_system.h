@@ -88,6 +88,14 @@ X_OₑOₗ→├───┘       │  S  │         X_OₘOₚ → ├──�
  The frame of orbit's origin lies at the circle's center and it's z-axis is
  perpendicular to the plane of the circle.
 
+ @system
+ name: SolarSystem
+ output_ports:
+ - y0
+ @endsystem
+
+ Port `y0` emits geometry poses.
+
  @tparam_double_only
 */
 template <typename T>

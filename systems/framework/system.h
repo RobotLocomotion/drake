@@ -18,7 +18,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/pointer_cast.h"
@@ -392,20 +391,6 @@ class System : public SystemBase {
 
     return value;
   }
-
-  // TODO(jwnimmer-tri) Deprecate me.
-  /** Returns the value of the vector-valued input port with the given
-  `port_index` as an %Eigen vector. Causes the value to become up to date
-  first if necessary. See EvalAbstractInput() for more information.
-
-  @pre `port_index` selects an existing input port of this System.
-  @pre the port must have been declared to be vector-valued.
-  @pre the port must be evaluable (connected or fixed).
-
-  @see EvalVectorInput() */
-  Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
-      const Context<T>& context, int port_index) const;
-  //@}
 
   //----------------------------------------------------------------------------
   /** @name               Constraint-related functions */
@@ -1203,9 +1188,10 @@ class System : public SystemBase {
   static std::unique_ptr<S<U>> ToScalarType(const S<T>& from) {
     auto base_result = from.template ToScalarTypeMaybe<U>();
     if (!base_result) {
-      ThrowUnsupportedScalarConversion(from, NiceTypeName::Get<U>());
+      const System<T>& upcast_from = from;
+      throw std::logic_error(upcast_from.GetUnsupportedScalarConversionMessage(
+          typeid(T), typeid(U)));
     }
-
     return dynamic_pointer_cast_or_throw<S<U>>(std::move(base_result));
   }
 
@@ -1249,8 +1235,6 @@ class System : public SystemBase {
 
   // Promote these frequently-used methods so users (and tutorial examples)
   // don't need "this->" everywhere when in templated derived classes.
-  using SystemBase::DeclareCacheEntry;
-
   // All pre-defined ticket methods should be listed here. They are ordered as
   // they appear in SystemBase to make it easy to check that none are missing.
   using SystemBase::nothing_ticket;
@@ -1285,6 +1269,10 @@ class System : public SystemBase {
   // Don't promote output_port_ticket() since it is for internal use only.
 
  protected:
+  // Promote these frequently-used methods so users (and tutorial examples)
+  // don't need "this->" everywhere when in templated derived classes.
+  using SystemBase::DeclareCacheEntry;
+
   /** Derived classes will implement this method to evaluate a witness function
   at the given context. */
   virtual T DoCalcWitnessValue(
@@ -1395,20 +1383,6 @@ class System : public SystemBase {
       std::variant<std::string, UseDefaultName> name, PortDataType type,
       int size, std::optional<RandomDistribution> random_type = std::nullopt);
 
-  //@}
-
-  // =========================================================================
-  /** @name                Deprecated declarations
-  Methods in this section leave out the port name parameter and are the same
-  as invoking the corresponding method with `kUseDefaultName` as the name.
-  We intend to make specifying the name required and will deprecate these
-  soon. Don't use them. */
-  //@{
-
-  DRAKE_DEPRECATED("2021-10-01", "Pass a port name as the first argument.")
-  InputPort<T>& DeclareInputPort(
-      PortDataType type, int size,
-      std::optional<RandomDistribution> random_type = std::nullopt);
   //@}
 
   /** Adds an already-created constraint to the list of constraints for this

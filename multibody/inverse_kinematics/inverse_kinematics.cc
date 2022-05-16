@@ -55,6 +55,18 @@ solvers::Binding<solvers::Constraint> InverseKinematics::AddPositionConstraint(
   return prog_->AddConstraint(constraint, q_);
 }
 
+solvers::Binding<solvers::Constraint> InverseKinematics::AddPositionConstraint(
+    const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+    const Frame<double>& frameAbar,
+    const std::optional<math::RigidTransformd>& X_AbarA,
+    const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
+    const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper) {
+  auto constraint = std::make_shared<PositionConstraint>(
+      &plant_, frameAbar, X_AbarA, p_AQ_lower, p_AQ_upper, frameB, p_BQ,
+      get_mutable_context());
+  return prog_->AddConstraint(constraint, q_);
+}
+
 solvers::Binding<solvers::Constraint>
 InverseKinematics::AddOrientationConstraint(
     const Frame<double>& frameAbar, const math::RotationMatrix<double>& R_AbarA,

@@ -8,6 +8,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
@@ -46,14 +47,16 @@ class HydroelasticEngineTest : public ::testing::Test {
     return id;
   }
 
-  /** Adds a geometry with the given name and assigns soft hydroelastic geometry
-   properties.  */
-  GeometryId AddSoftGeometry(const std::string& name, double elastic_modulus,
-                             double dissipation) {
+  /** Adds a geometry with the given name and assigns compliant hydroelastic
+   geometry properties.  */
+  GeometryId AddCompliantGeometry(const std::string& name,
+                                  double hydroelastic_modulus,
+                                  double dissipation) {
     GeometryId id = AddGeometry(name);
     ProximityProperties props;
-    props.AddProperty("material", "elastic_modulus", elastic_modulus);
-    props.AddProperty("material", "hunt_crossley_dissipation", dissipation);
+    geometry::AddCompliantHydroelasticProperties(/* resolution_hint */ 1.0,
+                                                 hydroelastic_modulus, &props);
+    geometry::AddContactMaterial(dissipation, {}, {}, &props);
     scene_graph_.AssignRole(source_id_, id, props);
     return id;
   }
@@ -65,7 +68,24 @@ class HydroelasticEngineTest : public ::testing::Test {
     // modulus or dissipation default to being rigid. Only the presence of
     // proximity properties are required.
     GeometryId id = AddGeometry(name);
-    scene_graph_.AssignRole(source_id_, id, ProximityProperties());
+    ProximityProperties props;
+    geometry::AddRigidHydroelasticProperties(/* resolution_hint */ 1.0, &props);
+    scene_graph_.AssignRole(source_id_, id, props);
+    return id;
+  }
+
+  /** Adds a geometry with the given name and assigns rigid hydroelastic
+   geometry properties as well as a value for hydroelastic_modulus.  */
+  GeometryId AddRigidGeometryWithElasticModulus(const std::string& name,
+                                                double hydroelastic_modulus) {
+    // NOTE: For geometries defined to be rigid, HydroelasticEngine will ignore
+    // any stored hydroelastic_modulus values and assume infinity.
+    GeometryId id = AddGeometry(name);
+    ProximityProperties props;
+    geometry::AddRigidHydroelasticProperties(/* resolution_hint */ 1.0, &props);
+    props.AddProperty(geometry::internal::kHydroGroup,
+                      geometry::internal::kElastic, hydroelastic_modulus);
+    scene_graph_.AssignRole(source_id_, id, props);
     return id;
   }
 
@@ -78,10 +98,32 @@ class HydroelasticEngineTest : public ::testing::Test {
   SourceId source_id_;
 };
 
+TEST_F(HydroelasticEngineTest, RigidHydroelasticModulusIgnored) {
+  const double E_A = 10.0;  // Pa
+  const double E_B = 10.0;  // Pa
+  const double d_B = 1.0;   // s/m
+
+  GeometryId id_A = AddRigidGeometryWithElasticModulus("RigidBody", E_A);
+  GeometryId id_B = AddCompliantGeometry("SoftBody", E_B, d_B);
+
+  // Create an engine.
+  HydroelasticEngine<double> engine;
+
+  // Verify that the combined hydroelastic_modulus (would both geometries be
+  // compliant) is not the same as B's hydroelastic modulus.
+  double combined_E_if_they_are_both_compliant = (E_A * E_B) / (E_A + E_B);
+  ASSERT_NE(E_B, combined_E_if_they_are_both_compliant);
+
+  // The engine will ignore the rigid geometry A's hydroelastic modulus and
+  // return B's.
+  EXPECT_EQ(engine.CalcCombinedElasticModulus(id_A, id_B, inspector()), E_B);
+  EXPECT_EQ(engine.CalcCombinedElasticModulus(id_B, id_A, inspector()), E_B);
+}
+
 TEST_F(HydroelasticEngineTest, CombineSoftAndRigidMaterialProperties) {
-  const double E_A = 10.0;
-  const double d_A = 1.0;
-  GeometryId id_A = AddSoftGeometry("SoftBody", E_A, d_A);
+  const double E_A = 10.0;  // Pa
+  const double d_A = 1.0;   // s/m
+  GeometryId id_A = AddCompliantGeometry("SoftBody", E_A, d_A);
   GeometryId id_B = AddRigidGeometry("RigidBody");
 
   // Create an engine.
@@ -110,15 +152,15 @@ TEST_F(HydroelasticEngineTest, CombineRigidAndRigidMaterialProperties) {
 }
 
 TEST_F(HydroelasticEngineTest, CombineSoftAndSoftMaterialProperties) {
-  const double E_A = 2.0;
-  const double d_A = 1.0;
-  const double E_B = 8.0;
-  const double d_B = 4.0;
+  const double E_A = 2.0;  // Pa
+  const double d_A = 1.0;  // s/m
+  const double E_B = 8.0;  // Pa
+  const double d_B = 4.0;  // s/m
   // Expected combined properties.
   const double Estar = 1.6;
   const double dstar = 1.6;
-  GeometryId id_A = AddSoftGeometry("SoftBodyA", E_A, d_A);
-  GeometryId id_B = AddSoftGeometry("SoftBodyB", E_B, d_B);
+  GeometryId id_A = AddCompliantGeometry("SoftBodyA", E_A, d_A);
+  GeometryId id_B = AddCompliantGeometry("SoftBodyB", E_B, d_B);
 
   // Create an engine.
   HydroelasticEngine<double> engine;
@@ -146,21 +188,18 @@ TEST_F(HydroelasticEngineTest, MissingProximityPropertiesThrows) {
   // Case: Neither have properties.
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.CalcCombinedElasticModulus(id_A, id_B, inspector()),
-      std::runtime_error,
       "Unable to get the material properties .+ it has no proximity properties "
       "assigned.*");
 
   // Case: First lacking properties.
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.CalcCombinedElasticModulus(id_A, id_C, inspector()),
-      std::runtime_error,
       "Unable to get the material properties .+ it has no proximity properties "
       "assigned.*");
 
   // Case: Second lacking properties.
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.CalcCombinedElasticModulus(id_C, id_B, inspector()),
-      std::runtime_error,
       "Unable to get the material properties .+ it has no proximity properties "
       "assigned.*");
 }

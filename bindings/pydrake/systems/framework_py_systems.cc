@@ -18,6 +18,7 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_html.h"
 #include "drake/systems/framework/system_scalar_converter.h"
+#include "drake/systems/framework/system_visitor.h"
 #include "drake/systems/framework/vector_system.h"
 #include "drake/systems/framework/witness_function.h"
 
@@ -39,10 +40,19 @@ using systems::DiscreteUpdateEvent;
 using systems::DiscreteValues;
 using systems::LeafSystem;
 using systems::PublishEvent;
+using systems::State;
 using systems::System;
+using systems::SystemBase;
 using systems::SystemScalarConverter;
+using systems::SystemVisitor;
+using systems::UnrestrictedUpdateEvent;
 using systems::VectorSystem;
 using systems::WitnessFunction;
+
+class SystemBasePublic : public SystemBase {
+ public:
+  using SystemBase::DeclareCacheEntry;
+};
 
 // Provides a templated 'namespace'.
 template <typename T>
@@ -84,10 +94,14 @@ struct Impl {
     using Base::DeclarePeriodicDiscreteUpdate;
     using Base::DeclarePeriodicEvent;
     using Base::DeclarePeriodicPublish;
+    using Base::DeclarePeriodicUnrestrictedUpdateEvent;
     using Base::DeclarePerStepEvent;
     using Base::DeclareStateOutputPort;
     using Base::DeclareVectorInputPort;
     using Base::DeclareVectorOutputPort;
+    using Base::get_mutable_forced_discrete_update_events;
+    using Base::get_mutable_forced_publish_events;
+    using Base::get_mutable_forced_unrestricted_update_events;
     using Base::MakeWitnessFunction;
 
     // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
@@ -110,6 +124,9 @@ struct Impl {
     using Base::Base;
 
     // Trampoline virtual methods.
+
+    // TODO(sherm): This overload should be deprecated and removed; the
+    // preferred workflow is to register callbacks with Declare*PublishEvent.
     void DoPublish(const Context<T>& context,
         const vector<const PublishEvent<T>*>& events) const override {
       // Yuck! We have to dig in and use internals :(
@@ -132,6 +149,9 @@ struct Impl {
       Base::DoCalcTimeDerivatives(context, derivatives);
     }
 
+    // TODO(sherm): This overload should be deprecated and removed; the
+    // preferred workflow is to register callbacks with
+    // Declare*DiscreteUpdateEvent.
     void DoCalcDiscreteVariableUpdates(const Context<T>& context,
         const std::vector<const DiscreteUpdateEvent<T>*>& events,
         DiscreteValues<T>* discrete_state) const override {
@@ -262,6 +282,18 @@ struct Impl {
     }
   };
 
+  class PySystemVisitor : public py::wrapper<SystemVisitor<T>> {
+   public:
+    // Trampoline virtual methods.
+    void VisitSystem(const System<T>& system) override {
+      PYBIND11_OVERLOAD_PURE(void, SystemVisitor<T>, VisitSystem, system);
+    };
+
+    void VisitDiagram(const Diagram<T>& diagram) override {
+      PYBIND11_OVERLOAD_PURE(void, SystemVisitor<T>, VisitDiagram, diagram);
+    }
+  };
+
   static void DoScalarDependentDefinitions(py::module m) {
     // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
     using namespace drake::systems;
@@ -276,6 +308,10 @@ struct Impl {
         DefineTemplateClassWithDefault<System<T>, SystemBase, PySystem>(
             m, "System", GetPyParam<T>(), doc.System.doc);
     system_cls  // BR
+        .def(
+            "Accept",
+            [](const System<T>* self, PySystemVisitor* v) { self->Accept(v); },
+            py::arg("v"), doc.System.Accept.doc)
         .def("get_input_port",
             overload_cast_explicit<const InputPort<T>&, int>(
                 &System<T>::get_input_port),
@@ -306,25 +342,8 @@ struct Impl {
                 std::optional<RandomDistribution>>(&PySystem::DeclareInputPort),
             py_rvp::reference_internal, py::arg("name"), py::arg("type"),
             py::arg("size"), py::arg("random_type") = std::nullopt,
-            doc.System.DeclareInputPort.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    system_cls  // BR
-        .def("DeclareInputPort",
-            WrapDeprecated(doc.System.DeclareInputPort.doc_deprecated,
-                [](PySystem* self, PortDataType type, int size,
-                    std::optional<RandomDistribution> random_type) {
-                  auto& result =
-                      self->DeclareInputPort(type, size, random_type);
-                  // WrapDeprecated cannot handle references, but a pointer
-                  // works and is equivalent as far as Python cares.
-                  return &result;
-                }),
-            py_rvp::reference_internal, py::arg("type"), py::arg("size"),
-            py::arg("random_type") = std::nullopt,
-            doc.System.DeclareInputPort.doc_deprecated);
-#pragma GCC diagnostic pop
-    system_cls  // - Feedthrough.
+            doc.System.DeclareInputPort.doc)
+        // Feedthrough.
         .def("HasAnyDirectFeedthrough", &System<T>::HasAnyDirectFeedthrough,
             doc.System.HasAnyDirectFeedthrough.doc)
         .def("HasDirectFeedthrough",
@@ -354,6 +373,9 @@ struct Impl {
             overload_cast_explicit<unique_ptr<ContinuousState<T>>>(
                 &System<T>::AllocateTimeDerivatives),
             doc.System.AllocateTimeDerivatives.doc)
+        .def("AllocateImplicitTimeDerivativesResidual",
+            &System<T>::AllocateImplicitTimeDerivativesResidual,
+            doc.System.AllocateImplicitTimeDerivativesResidual.doc)
         .def("AllocateDiscreteVariables",
             overload_cast_explicit<unique_ptr<DiscreteValues<T>>>(
                 &System<T>::AllocateDiscreteVariables),
@@ -388,11 +410,34 @@ struct Impl {
         .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives,
             py::arg("context"), py::arg("derivatives"),
             doc.System.CalcTimeDerivatives.doc)
+        .def("CalcImplicitTimeDerivativesResidual",
+            &System<T>::CalcImplicitTimeDerivativesResidual, py::arg("context"),
+            py::arg("proposed_derivatives"), py::arg("residual"),
+            doc.System.CalcImplicitTimeDerivativesResidual.doc)
+        .def(
+            "CalcImplicitTimeDerivativesResidual",
+            [](const System<T>* self, const Context<T>& context,
+                const ContinuousState<T>& proposed_derivatives) {
+              // Note: This is the only version of the method that works for
+              // dtype object.
+              VectorX<T> residual =
+                  self->AllocateImplicitTimeDerivativesResidual();
+              self->CalcImplicitTimeDerivativesResidual(
+                  context, proposed_derivatives, &residual);
+              return residual;
+            },
+            py::arg("context"), py::arg("proposed_derivatives"),
+            doc.System.CalcImplicitTimeDerivativesResidual.doc)
         .def("CalcDiscreteVariableUpdates",
             overload_cast_explicit<void, const Context<T>&, DiscreteValues<T>*>(
                 &System<T>::CalcDiscreteVariableUpdates),
             py::arg("context"), py::arg("discrete_state"),
             doc.System.CalcDiscreteVariableUpdates.doc_2args)
+        .def("CalcUnrestrictedUpdate",
+            overload_cast_explicit<void, const Context<T>&, State<T>*>(
+                &System<T>::CalcUnrestrictedUpdate),
+            py::arg("context"), py::arg("state"),
+            doc.System.CalcUnrestrictedUpdate.doc_2args)
         .def("GetSubsystemContext",
             overload_cast_explicit<const Context<T>&, const System<T>&,
                 const Context<T>&>(&System<T>::GetSubsystemContext),
@@ -449,7 +494,9 @@ Note: The above is for the C++ documentation. For Python, use
                 .c_str())
         // Cached evaluations.
         .def("EvalTimeDerivatives", &System<T>::EvalTimeDerivatives,
-            py_rvp::reference_internal, doc.System.EvalTimeDerivatives.doc)
+            py_rvp::reference,
+            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::keep_alive<0, 2>(), doc.System.EvalTimeDerivatives.doc)
         .def("EvalPotentialEnergy", &System<T>::EvalPotentialEnergy,
             py::arg("context"), doc.System.EvalPotentialEnergy.doc)
         .def("EvalKineticEnergy", &System<T>::EvalKineticEnergy,
@@ -541,27 +588,7 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
             doc.LeafSystem.DeclareAbstractOutputPort
-                .doc_4args_name_alloc_function_calc_function_prerequisites_of_calc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    leaf_system_cls  // BR
-        .def("DeclareAbstractOutputPort",
-            WrapDeprecated(
-                doc.LeafSystem.DeclareAbstractOutputPort
-                    .doc_deprecated_deprecated_3args_constOutputType_voidMySystemconstContextOutputTypeconst_stdset,
-                WrapCallbacks(
-                    [](PyLeafSystem* self, AllocCallback arg1,
-                        CalcCallback arg2) -> const LeafOutputPort<T>* {
-                      // WrapDeprecated cannot handle references, but a pointer
-                      // works and is equivalent as far as Python cares, thus
-                      // the use of `&` here.
-                      return &self->DeclareAbstractOutputPort(arg1, arg2);
-                    })),
-            py_rvp::reference_internal, py::arg("alloc"), py::arg("calc"),
-            doc.LeafSystem.DeclareAbstractOutputPort
-                .doc_deprecated_deprecated_3args_constOutputType_voidMySystemconstContextOutputTypeconst_stdset);
-#pragma GCC diagnostic pop
-    leaf_system_cls  // BR
+                .doc_4args_name_alloc_function_calc_function_prerequisites_of_calc)
         .def(
             "DeclareVectorInputPort",
             [](PyLeafSystem* self, std::string name,
@@ -610,26 +637,7 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("calc"),
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
-            doc.LeafSystem.DeclareVectorOutputPort.doc_4args_size);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    leaf_system_cls  // BR
-        .def("DeclareVectorOutputPort",
-            WrapDeprecated(
-                doc.LeafSystem.DeclareVectorOutputPort.doc_deprecated,
-                WrapCallbacks(
-                    [](PyLeafSystem* self, const BasicVector<T>& arg1,
-                        CalcVectorCallback arg2) -> const OutputPort<T>* {
-                      // WrapDeprecated cannot handle references, but a
-                      // pointer works and is equivalent as far as Python
-                      // cares, thus the use of `&` here.
-                      return &self->DeclareVectorOutputPort(arg1, arg2);
-                    })),
-            py_rvp::reference_internal,
-            doc.LeafSystem.DeclareVectorOutputPort.doc_deprecated);
-#pragma GCC diagnostic pop
-    leaf_system_cls  // BR
+            doc.LeafSystem.DeclareVectorOutputPort.doc_4args_size)
         .def("DeclareStateOutputPort",
             py::overload_cast<std::variant<std::string, UseDefaultName>,
                 ContinuousStateIndex>(
@@ -646,6 +654,54 @@ Note: The above is for the C++ documentation. For Python, use
                 AbstractStateIndex>(&LeafSystemPublic::DeclareStateOutputPort),
             py::arg("name"), py::arg("state_index"), py_rvp::reference_internal,
             doc.LeafSystem.DeclareStateOutputPort.doc_abstract)
+        // TODO(russt): Implement the std::function variant of
+        // LeafSystem::Declare*Event sugar methods if they are ever needed,
+        // instead of implementing them here.
+        .def("DeclareInitializationPublishEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self,
+                    std::function<EventStatus(const Context<T>&)> publish) {
+                  self->DeclareInitializationEvent(
+                      PublishEvent<T>(TriggerType::kInitialization,
+                          [publish](const System<T>&, const Context<T>& context,
+                              const PublishEvent<T>&) {
+                            // TODO(sherm1) Forward the return status.
+                            publish(context);  // Ignore return status for now.
+                          }));
+                }),
+            py::arg("publish"),
+            doc.LeafSystem.DeclareInitializationPublishEvent.doc)
+        .def("DeclareInitializationDiscreteUpdateEvent",
+            WrapCallbacks([](PyLeafSystem* self,
+                              std::function<EventStatus(
+                                  const Context<T>&, DiscreteValues<T>*)>
+                                  update) {
+              self->DeclareInitializationEvent(DiscreteUpdateEvent<T>(
+                  TriggerType::kInitialization,
+                  [update](const System<T>&, const Context<T>& context,
+                      const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
+                    // TODO(sherm1) Forward the return status.
+                    update(context,
+                        &*xd);  // Ignore return status for now.
+                  }));
+            }),
+            py::arg("update"),
+            doc.LeafSystem.DeclareInitializationDiscreteUpdateEvent.doc)
+        .def("DeclareInitializationUnrestrictedUpdateEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self,
+                    std::function<EventStatus(const Context<T>&, State<T>*)>
+                        update) {
+                  self->DeclareInitializationEvent(UnrestrictedUpdateEvent<T>(
+                      TriggerType::kInitialization,
+                      [update](const System<T>&, const Context<T>& context,
+                          const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+                        // TODO(sherm1) Forward the return status.
+                        update(context, &*x);  // Ignore return status for now.
+                      }));
+                }),
+            py::arg("update"),
+            doc.LeafSystem.DeclareInitializationUnrestrictedUpdateEvent.doc)
         .def(
             "DeclareInitializationEvent",
             [](PyLeafSystem* self, const Event<T>& event) {
@@ -660,6 +716,54 @@ Note: The above is for the C++ documentation. For Python, use
             &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
             py::arg("period_sec"), py::arg("offset_sec") = 0.,
             doc.LeafSystem.DeclarePeriodicDiscreteUpdate.doc)
+        .def("DeclarePeriodicPublishEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self, double period_sec, double offset_sec,
+                    std::function<EventStatus(const Context<T>&)> publish) {
+                  self->DeclarePeriodicEvent(period_sec, offset_sec,
+                      PublishEvent<T>(TriggerType::kPeriodic,
+                          [publish](const System<T>&, const Context<T>& context,
+                              const PublishEvent<T>&) {
+                            // TODO(sherm1) Forward the return status.
+                            publish(context);  // Ignore return status for now.
+                          }));
+                }),
+            py::arg("period_sec"), py::arg("offset_sec"), py::arg("publish"),
+            doc.LeafSystem.DeclarePeriodicPublishEvent.doc)
+        .def("DeclarePeriodicDiscreteUpdateEvent",
+            WrapCallbacks([](PyLeafSystem* self, double period_sec,
+                              double offset_sec,
+                              std::function<EventStatus(
+                                  const Context<T>&, DiscreteValues<T>*)>
+                                  update) {
+              self->DeclarePeriodicEvent(period_sec, offset_sec,
+                  DiscreteUpdateEvent<T>(TriggerType::kPeriodic,
+                      [update](const System<T>&, const Context<T>& context,
+                          const DiscreteUpdateEvent<T>&,
+                          DiscreteValues<T>* xd) {
+                        // TODO(sherm1) Forward the return status.
+                        update(context,
+                            &*xd);  // Ignore return status for now.
+                      }));
+            }),
+            py::arg("period_sec"), py::arg("offset_sec"), py::arg("update"),
+            doc.LeafSystem.DeclarePeriodicDiscreteUpdateEvent.doc)
+        .def("DeclarePeriodicUnrestrictedUpdateEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self, double period_sec, double offset_sec,
+                    std::function<EventStatus(const Context<T>&, State<T>*)>
+                        update) {
+                  self->DeclarePeriodicEvent(period_sec, offset_sec,
+                      UnrestrictedUpdateEvent<T>(TriggerType::kPeriodic,
+                          [update](const System<T>&, const Context<T>& context,
+                              const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+                            // TODO(sherm1) Forward the return status.
+                            update(
+                                context, &*x);  // Ignore return status for now.
+                          }));
+                }),
+            py::arg("period_sec"), py::arg("offset_sec"), py::arg("update"),
+            doc.LeafSystem.DeclarePeriodicUnrestrictedUpdateEvent.doc)
         .def(
             "DeclarePeriodicEvent",
             [](PyLeafSystem* self, double period_sec, double offset_sec,
@@ -668,12 +772,103 @@ Note: The above is for the C++ documentation. For Python, use
             },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("event"),
             doc.LeafSystem.DeclarePeriodicEvent.doc)
+        .def("DeclarePerStepPublishEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self,
+                    std::function<EventStatus(const Context<T>&)> publish) {
+                  self->DeclarePerStepEvent(
+                      PublishEvent<T>(TriggerType::kPerStep,
+                          [publish](const System<T>&, const Context<T>& context,
+                              const PublishEvent<T>&) {
+                            // TODO(sherm1) Forward the return status.
+                            publish(context);  // Ignore return status for now.
+                          }));
+                }),
+            py::arg("publish"), doc.LeafSystem.DeclarePerStepPublishEvent.doc)
+        .def("DeclarePerStepDiscreteUpdateEvent",
+            WrapCallbacks([](PyLeafSystem* self,
+                              std::function<EventStatus(
+                                  const Context<T>&, DiscreteValues<T>*)>
+                                  update) {
+              self->DeclarePerStepEvent(DiscreteUpdateEvent<T>(
+                  TriggerType::kPerStep,
+                  [update](const System<T>&, const Context<T>& context,
+                      const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
+                    // TODO(sherm1) Forward the return status.
+                    update(context,
+                        &*xd);  // Ignore return status for now.
+                  }));
+            }),
+            py::arg("update"),
+            doc.LeafSystem.DeclarePerStepDiscreteUpdateEvent.doc)
+        .def("DeclarePerStepUnrestrictedUpdateEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self,
+                    std::function<EventStatus(const Context<T>&, State<T>*)>
+                        update) {
+                  self->DeclarePerStepEvent(UnrestrictedUpdateEvent<T>(
+                      TriggerType::kPerStep,
+                      [update](const System<T>&, const Context<T>& context,
+                          const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+                        // TODO(sherm1) Forward the return status.
+                        update(context,
+                            &*x);  // Ignore return status for now.
+                      }));
+                }),
+            py::arg("update"),
+            doc.LeafSystem.DeclarePerStepUnrestrictedUpdateEvent.doc)
         .def(
             "DeclarePerStepEvent",
             [](PyLeafSystem* self, const Event<T>& event) {
               self->DeclarePerStepEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclarePerStepEvent.doc)
+        .def("DeclareForcedPublishEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self,
+                    std::function<EventStatus(const Context<T>&)> publish) {
+                  self->get_mutable_forced_publish_events().AddEvent(
+                      PublishEvent<T>(TriggerType::kForced,
+                          [publish](const System<T>&, const Context<T>& context,
+                              const PublishEvent<T>&) {
+                            // TODO(sherm1) Forward the return status.
+                            publish(context);  // Ignore return status for now.
+                          }));
+                }),
+            py::arg("publish"), doc.LeafSystem.DeclareForcedPublishEvent.doc)
+        .def("DeclareForcedDiscreteUpdateEvent",
+            WrapCallbacks([](PyLeafSystem* self,
+                              std::function<EventStatus(
+                                  const Context<T>&, DiscreteValues<T>*)>
+                                  update) {
+              self->get_mutable_forced_discrete_update_events().AddEvent(
+                  DiscreteUpdateEvent<T>(TriggerType::kForced,
+                      [update](const System<T>&, const Context<T>& context,
+                          const DiscreteUpdateEvent<T>&,
+                          DiscreteValues<T>* xd) {
+                        // TODO(sherm1) Forward the return status.
+                        update(context,
+                            &*xd);  // Ignore return status for now.
+                      }));
+            }),
+            py::arg("update"),
+            doc.LeafSystem.DeclareForcedDiscreteUpdateEvent.doc)
+        .def("DeclareForcedUnrestrictedUpdateEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self,
+                    std::function<EventStatus(const Context<T>&, State<T>*)>
+                        update) {
+                  self->get_mutable_forced_unrestricted_update_events()
+                      .AddEvent(UnrestrictedUpdateEvent<T>(TriggerType::kForced,
+                          [update](const System<T>&, const Context<T>& context,
+                              const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+                            // TODO(sherm1) Forward the return status.
+                            update(
+                                context, &*x);  // Ignore return status for now.
+                          }));
+                }),
+            py::arg("update"),
+            doc.LeafSystem.DeclareForcedUnrestrictedUpdateEvent.doc)
         .def("MakeWitnessFunction",
             WrapCallbacks([](PyLeafSystem* self, const std::string& description,
                               const WitnessFunctionDirection& direction_type,
@@ -751,6 +946,75 @@ Note: The above is for the C++ documentation. For Python, use
     DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
         .def(py::init<>(), doc.Diagram.ctor.doc_0args)
+        .def(
+            "connection_map",
+            [](Diagram<T>* self) {
+              // N.B. This code is duplicated with DiagramBuilder's same-named
+              // function. Keep the two copies in sync. The detailed unit test
+              // is written against this copy of this function, not the
+              // DiagramBuilder one.
+              py::dict out;
+              py::object self_py = py::cast(self, py_rvp::reference);
+              for (auto& [input_locator, output_locator] :
+                  self->connection_map()) {
+                py::object input_system_py =
+                    py::cast(input_locator.first, py_rvp::reference);
+                py::object input_port_index_py = py::cast(input_locator.second);
+                // Keep alive, ownership: `input_system_py` keeps `self` alive.
+                py_keep_alive(input_system_py, self_py);
+                py::tuple input_locator_py(2);
+                input_locator_py[0] = input_system_py;
+                input_locator_py[1] = input_port_index_py;
+
+                py::object output_system_py =
+                    py::cast(output_locator.first, py_rvp::reference);
+                py::object output_port_index_py =
+                    py::cast(output_locator.second);
+                // Keep alive, ownership: `output_system_py` keeps `self` alive.
+                py_keep_alive(output_system_py, self_py);
+                py::tuple output_locator_py(2);
+                output_locator_py[0] = output_system_py;
+                output_locator_py[1] = output_port_index_py;
+
+                out[input_locator_py] = output_locator_py;
+              }
+              return out;
+            },
+            doc.Diagram.connection_map.doc)
+        .def(
+            "GetInputPortLocators",
+            [](Diagram<T>* self, InputPortIndex port_index) {
+              py::list out;
+              py::object self_py = py::cast(self, py_rvp::reference);
+              for (auto& locator : self->GetInputPortLocators(port_index)) {
+                py::object system_py =
+                    py::cast(locator.first, py_rvp::reference);
+                py::object port_index_py = py::cast(locator.second);
+                // Keep alive, ownership: `system_py` keeps `self` alive.
+                py_keep_alive(system_py, self_py);
+                py::tuple locator_py(2);
+                locator_py[0] = system_py;
+                locator_py[1] = port_index_py;
+                out.append(locator_py);
+              }
+              return out;
+            },
+            py::arg("port_index"), doc.Diagram.GetInputPortLocators.doc)
+        .def(
+            "get_output_port_locator",
+            [](Diagram<T>* self, OutputPortIndex port_index) {
+              py::object self_py = py::cast(self, py_rvp::reference);
+              const auto& locator = self->get_output_port_locator(port_index);
+              py::object system_py = py::cast(locator.first, py_rvp::reference);
+              py::object port_index_py = py::cast(locator.second);
+              // Keep alive, ownership: `system_py` keeps `self` alive.
+              py_keep_alive(system_py, self_py);
+              py::tuple locator_py(2);
+              locator_py[0] = system_py;
+              locator_py[1] = port_index_py;
+              return locator_py;
+            },
+            py::arg("port_index"), doc.Diagram.get_output_port_locator.doc)
         .def("GetMutableSubsystemState",
             overload_cast_explicit<State<T>&, const System<T>&, Context<T>*>(
                 &Diagram<T>::GetMutableSubsystemState),
@@ -794,6 +1058,14 @@ Note: The above is for the C++ documentation. For Python, use
     // wrapper to convert `Map<Derived>*` arguments.
     // N.B. This could be mitigated by using `EigenPtr` in public interfaces in
     // upstream code.
+
+    DefineTemplateClassWithDefault<SystemVisitor<T>, PySystemVisitor>(
+        m, "SystemVisitor", GetPyParam<T>(), doc.SystemVisitor.doc)
+        .def(py::init())
+        .def("VisitSystem", &SystemVisitor<T>::VisitSystem, py::arg("system"),
+            doc.SystemVisitor.VisitSystem.doc)
+        .def("VisitDiagram", &SystemVisitor<T>::VisitDiagram,
+            py::arg("diagram"), doc.SystemVisitor.VisitDiagram.doc);
   }
 };
 
@@ -824,6 +1096,16 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.num_input_ports.doc)
         .def("num_output_ports", &Class::num_output_ports,
             cls_doc.num_output_ports.doc)
+        // States.
+        .def("num_continuous_states", &Class::num_continuous_states,
+            cls_doc.num_continuous_states.doc)
+        .def("num_discrete_state_groups", &Class::num_discrete_state_groups,
+            cls_doc.num_discrete_state_groups.doc)
+        .def("num_abstract_states", &Class::num_abstract_states,
+            cls_doc.num_abstract_states.doc)
+        .def("implicit_time_derivatives_residual_size",
+            &Class::implicit_time_derivatives_residual_size,
+            cls_doc.implicit_time_derivatives_residual_size.doc)
         // Parameters.
         .def("num_abstract_parameters", &Class::num_abstract_parameters,
             cls_doc.num_abstract_parameters.doc)
@@ -878,7 +1160,22 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("input_port_ticket", &Class::input_port_ticket, py::arg("index"),
             cls_doc.input_port_ticket.doc)
         .def("numeric_parameter_ticket", &Class::numeric_parameter_ticket,
-            py::arg("index"), cls_doc.numeric_parameter_ticket.doc);
+            py::arg("index"), cls_doc.numeric_parameter_ticket.doc)
+        .def("get_cache_entry", &Class::get_cache_entry, py::arg("index"),
+            py_rvp::reference_internal, cls_doc.get_cache_entry.doc)
+        // N.B. Since this method has template overloads, we must specify the
+        // types `overload_cast_explicit`; we must also specify Class.
+        // We do not use `static_cast<>` to avoid accidental type mixing.
+        .def("DeclareCacheEntry",
+            overload_cast_explicit<CacheEntry&, std::string, ValueProducer,
+                std::set<DependencyTicket>>.operator()<Class>(
+                &SystemBasePublic::DeclareCacheEntry),
+            py_rvp::reference_internal, py::arg("description"),
+            py::arg("value_producer"),
+            py::arg("prerequisites_of_calc") =
+                std::set<DependencyTicket>{Class::all_sources_ticket()},
+            doc.SystemBase.DeclareCacheEntry
+                .doc_3args_description_value_producer_prerequisites_of_calc);
   }
 
   {
@@ -897,19 +1194,21 @@ void DoScalarIndependentDefinitions(py::module m) {
       using T = typename Pack::template type_at<0>;
       using U = typename Pack::template type_at<1>;
       AddTemplateMethod(converter, "IsConvertible",
-          &SystemScalarConverter::IsConvertible<T, U>, GetPyParam<T, U>());
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      AddTemplateMethod(converter, "Add",
-          WrapDeprecated(cls_doc.Add.doc_deprecated,
-              WrapCallbacks(&SystemScalarConverter::Add<T, U>)),
-          GetPyParam<T, U>());
-      // N.B. When the deprecation date happens, the C++ member function Add()
-      // should become internal or private, to be used only by pydrake here
-      // via this method with a leading underscore.
+          &SystemScalarConverter::IsConvertible<T, U>, GetPyParam<T, U>(),
+          cls_doc.IsConvertible.doc);
+      using system_scalar_converter_internal::AddPydrakeConverterFunction;
+      using ConverterFunction =
+          std::function<std::unique_ptr<System<T>>(const System<U>&)>;
       AddTemplateMethod(converter, "_Add",
-          WrapCallbacks(&SystemScalarConverter::Add<T, U>), GetPyParam<T, U>());
-#pragma GCC diagnostic pop
+          WrapCallbacks(
+              [](SystemScalarConverter* self, const ConverterFunction& func) {
+                const std::function<System<T>*(const System<U>&)> bare_func =
+                    [func](const System<U>& other) {
+                      return func(other).release();
+                    };
+                AddPydrakeConverterFunction(self, bare_func);
+              }),
+          GetPyParam<T, U>());
     };
     // N.B. When changing the pairs of supported types below, ensure that these
     // reflect the stanzas for the advanced constructor of

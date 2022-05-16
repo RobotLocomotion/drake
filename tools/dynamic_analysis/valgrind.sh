@@ -18,6 +18,11 @@ export GTEST_DEATH_TEST_USE_FORK=1
 # If unset, set to empty string.
 export VALGRIND_OPTS="$VALGRIND_OPTS"
 
+# Note the "--disable-drake-valgrind-tracing" skip-by-arg option below. Any
+# subprocesslaunched by a test with that as a commanad-line argument won't
+# be instrumented by valgrind. This is useful when you want to instrument
+# a C++ unit test but not a helper program that it calls.
+
 valgrind \
     --error-exitcode=1 \
     --gen-suppressions=all \
@@ -26,10 +31,10 @@ valgrind \
     --show-leak-kinds=definite,possible \
     --suppressions="${mydir}/valgrind.supp" \
     --suppressions=/usr/lib/valgrind/debian.supp \
-    --suppressions=/usr/lib/valgrind/python.supp \
+    --suppressions=/usr/lib/valgrind/python3.supp \
     --tool=memcheck \
     --trace-children=yes \
-    --trace-children-skip=/bin/cat,/bin/cp,/bin/ln,/bin/ls,/bin/mkdir,/bin/mv,/bin/sed,/lib/ld-linux.so.\*,/lib64/ld-linux-x86-64.so.\*,/usr/bin/clang,/usr/bin/clang-9,/usr/bin/clang-format-9,/usr/bin/diff,/usr/bin/dot,/usr/bin/fc-list,/usr/bin/file,/usr/bin/find,/usr/bin/gcc,/usr/bin/ldd,/usr/bin/patchelf,/usr/bin/strip,/usr/bin/uname,\*/external/buildifier/buildifier \
-    --trace-children-skip-by-arg=meshcat.servers.zmqserver,uname \
+    --trace-children-skip=/bin/cat,/bin/cp,/bin/ln,/bin/ls,/bin/mkdir,/bin/mv,/bin/sed,/lib/ld-linux.so.\*,/lib64/ld-linux-x86-64.so.\*,/usr/bin/clang,/usr/bin/clang-12,/usr/bin/clang-format-12,/usr/bin/curl,/usr/bin/diff,/usr/bin/dot,/usr/bin/fc-list,/usr/bin/file,/usr/bin/find,/usr/bin/gcc,/usr/bin/ldd,/usr/bin/patchelf,/usr/bin/strip,/usr/bin/uname,\*/external/buildifier/buildifier \
+    --trace-children-skip-by-arg=--disable-drake-valgrind-tracing \
     --track-origins=yes \
     "$@"

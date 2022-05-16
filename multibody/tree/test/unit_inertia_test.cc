@@ -136,6 +136,28 @@ GTEST_TEST(UnitInertia, PointMass) {
   EXPECT_TRUE(uxuxv.isApprox(G * v, kEpsilon));
 }
 
+// Tests the static method to obtain the unit inertia of a solid ellipsoid.
+GTEST_TEST(UnitInertia, SolidEllipsoid) {
+  const double a = 3.0;
+  const double b = 4.0;
+  const double c = 5.0;
+  const UnitInertia<double> G_expected = UnitInertia<double>(8.2, 6.8, 5.0);
+  const UnitInertia<double> G = UnitInertia<double>::SolidEllipsoid(a, b, c);
+  EXPECT_TRUE(
+      CompareMatrices(G_expected.get_moments(), G.get_moments(), 1e-14));
+  EXPECT_TRUE(G_expected.get_products() == G.get_products());
+
+  // The ellipsoid degenerates into a solid sphere when all semi-axes are equal.
+  const UnitInertia<double> G_degenerate_ellipsoid =
+      UnitInertia<double>::SolidEllipsoid(a, a, a);
+  const UnitInertia<double> G_solid_sphere =
+      UnitInertia<double>::SolidSphere(a);
+  EXPECT_TRUE(CompareMatrices(G_degenerate_ellipsoid.get_moments(),
+                              G_solid_sphere.get_moments(), 1e-14));
+  EXPECT_TRUE(G_degenerate_ellipsoid.get_products() ==
+              G_solid_sphere.get_products());
+}
+
 // Tests the static method to obtain the unit inertia of a solid sphere.
 GTEST_TEST(UnitInertia, SolidSphere) {
   const double radius = 3.5;
@@ -239,6 +261,121 @@ GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
   UnitInertia<double> G = UnitInertia<double>::SolidCylinderAboutEnd(r, L);
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), kEpsilon));
+}
+
+// Tests the static method to obtain the unit inertia of a solid capsule
+// computed about its center of mass.
+GTEST_TEST(UnitInertia, SolidCapsule) {
+  const double r = 0.5;
+  const double L = 1.5;
+  const double density = 0.1;
+
+  const double r2 = r * r;
+  const double r3 = r2 * r;
+  const double L2 = L * L;
+
+  const double volume_cylinder = M_PI * r2 * L;
+  const double volume_sphere = M_PI * 4.0 * r3 / 3.0;
+
+  const double mass_cylinder = volume_cylinder * density;
+  const double mass_sphere = volume_sphere * density;
+  const double mass_capsule = mass_sphere + mass_cylinder;
+
+  // The inertia properties of a capsule is calculated three ways.
+  // Calculation 1: Multiply the capsule's mass with its unit inertia.
+  const UnitInertia<double> G_capsule = UnitInertia<double>::SolidCapsule(r, L);
+  RotationalInertia<double> I_capsule = mass_capsule * G_capsule;
+
+  // Calculation 2: Calculate the inertia analytically.
+  // I = Ic + Is, where Ic is the inertia of the cylinder part of the capsule,
+  // and Is is the inertia of the two half spheres.
+  //
+  // Suppose m₁ is the mass of the cylinder part and m₂ is the mass of
+  // the spherical part (sum of the two half-spheres).
+  //
+  // Ic = diag(Ic_xx, Ic_yy, Ic_zz).
+  // Ic_xx = Ic_yy = m₁(L²/12 + r²/4).
+  // Ic_zz = m₁r²/2.
+  //
+  // Is = diag(Is_xx, Is_yy, Is_zz).
+  // Is_xx = Is_yy = m₂(2r²/5 + L²/4 + 3Lr/8), which is calculated by shifting
+  // each half of the sphere twice (first from Ho, the geometrically significant
+  // point at the center of the connection between the half-sphere and the
+  // cylinder to Hcm, the center of mass of the half sphere, then from Hcm to
+  // the capsule's center of mass).
+  // Is_zz = 2m₂r²/5.
+  const double Ixx =
+      mass_cylinder * (L2 / 12.0 + r2 / 4.0) +
+      mass_sphere * (2.0 * r2 / 5.0 + L2 / 4.0 + 3 * L * r / 8.0);
+  const double Iyy = Ixx;
+  const double Izz = mass_cylinder * r2 / 2.0 + mass_sphere * 2.0 * r2 / 5.0;
+  const RotationalInertia<double> I_capsule_expected(Ixx, Iyy, Izz);
+  EXPECT_TRUE(CompareMatrices(I_capsule.get_moments(),
+                              I_capsule_expected.get_moments(), kEpsilon));
+  EXPECT_TRUE(CompareMatrices(I_capsule.get_products(),
+                              I_capsule_expected.get_products(), kEpsilon));
+
+  // Calculation 3: Use built-in shift methods.
+  // The capsule is regarded as a cylinder C of length L and radius r and two
+  // half-spheres (each of radius r). The first half-sphere H is rigidly fixed
+  // to one end of cylinder C so that the intersection between H and C forms
+  // a circle centered at point Ho.  Similarly, the other half-sphere is rigidly
+  // fixed to the other end of cylinder C.
+
+  // Form the inertia for a unit mass solid half sphere H about Ho.
+  const double mh = 0.5 * mass_sphere;  // mh is the mass of half-sphere H.
+  RotationalInertia<double> Ih = mh * UnitInertia<double>::SolidSphere(r);
+
+  // Form the position vector from Ho to Hcm (H's center of mass), expressed in
+  // the capsule frame C.  H is the "lower" half-sphere (negative z direction).
+  const Vector3<double> p_HoHcm_C(0, 0, -3.0 * r / 8.0);
+  // The position vector from Hcm to Ccm (the capsule's center of mass) is
+  const Vector3<double> p_HcmCcm_C(0, 0, 3.0 * r / 8.0 + 0.5 * L);
+  // Shift H's inertia from Hcm to Ccm (the other half-sphere shifts similarly).
+  Ih.ShiftToThenAwayFromCenterOfMassInPlace(mh, p_HoHcm_C, p_HcmCcm_C);
+
+  // Form the cylinder's inertia about its center of mass and verify results.
+  const RotationalInertia<double> I_cylinder =
+      mass_cylinder * UnitInertia<double>::SolidCylinder(r, L);
+  I_capsule = I_cylinder + 2 * Ih;
+  EXPECT_TRUE(CompareMatrices(I_capsule.get_moments(),
+                              I_capsule_expected.get_moments(), kEpsilon));
+  EXPECT_TRUE(CompareMatrices(I_capsule.get_products(),
+                              I_capsule_expected.get_products(), kEpsilon));
+}
+
+// Tests a degenerate capsule (into sphere) has the same unit inertia as a
+// sphere.
+GTEST_TEST(UnitInertia, SolidCapsuleDegenerateIntoSolidSphere) {
+  const double r = 2.5;
+  const double L = 0;
+  const UnitInertia<double> G_expected = UnitInertia<double>::SolidSphere(r);
+  const UnitInertia<double> G = UnitInertia<double>::SolidCapsule(r, L);
+  EXPECT_TRUE(CompareMatrices(G.get_moments(), G_expected.get_moments()));
+  EXPECT_TRUE(CompareMatrices(G.get_products(), G_expected.get_products()));
+}
+
+// Tests a degenerate capsule (into a thin rod) has the same unit inertia as a
+// thin rod.
+GTEST_TEST(UnitInertia, SolidCapsuleDegenerateIntoThinRod) {
+  const double r = 0;
+  const double L = 1.5;
+  const UnitInertia<double> G_expected =
+      UnitInertia<double>::ThinRod(L, Vector3d::UnitZ());
+  const UnitInertia<double> G_degenerate =
+      UnitInertia<double>::SolidCapsule(r, L);
+  EXPECT_TRUE(
+      CompareMatrices(G_degenerate.get_moments(), G_expected.get_moments()));
+  EXPECT_TRUE(
+      CompareMatrices(G_degenerate.get_products(), G_expected.get_products()));
+  // The unit inertia of the capsule should be close to that of a thin rod when
+  // the radius is vanishingly small.
+  const UnitInertia<double> G_close_to_degenerate =
+      UnitInertia<double>::SolidCapsule(kEpsilon, L);
+  EXPECT_TRUE(CompareMatrices(G_close_to_degenerate.get_moments(),
+                              G_expected.get_moments(), kEpsilon));
+  EXPECT_TRUE(CompareMatrices(G_close_to_degenerate.get_products(),
+                              G_expected.get_products()));
 }
 
 // Unit tests for the factory method UnitInertia::AxiallySymmetric().

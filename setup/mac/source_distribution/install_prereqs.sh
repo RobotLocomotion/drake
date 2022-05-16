@@ -46,10 +46,6 @@ if ! command -v brew &>/dev/null; then
 fi
 
 if [[ "${with_update}" -eq 1 && "${binary_distribution_called_update:-0}" -ne 1 ]]; then
-  # TODO(jamiesnape): Remove the below brew tap commands on or after 2021-11-01.
-  brew tap robotlocomotion/director
-  brew tap --repair robotlocomotion/director
-
   brew update || (sleep 30; brew update)
 fi
 

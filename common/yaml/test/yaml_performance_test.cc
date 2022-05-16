@@ -6,15 +6,15 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/name_value.h"
 #include "drake/common/test_utilities/limit_malloc.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/common/yaml/yaml_read_archive.h"
-#include "drake/common/yaml/yaml_write_archive.h"
-
-using drake::yaml::YamlReadArchive;
-using drake::yaml::YamlWriteArchive;
 
 namespace drake {
 namespace yaml {
 namespace {
+
+using drake::yaml::SaveYamlString;
+using drake::yaml::internal::YamlReadArchive;
 
 struct Inner {
   template <typename Archive>
@@ -43,30 +43,7 @@ struct Map {
   std::map<std::string, Outer> items;
 };
 
-// A test fixture with common helpers.
-class YamlPerformanceTest : public ::testing::Test {
- public:
-  template <typename Serializable>
-  static std::string Save(const Serializable& data) {
-    YamlWriteArchive archive;
-    archive.Accept(data);
-    return archive.EmitString("doc");
-  }
-
-  static YAML::Node Load(const std::string& contents) {
-    const YAML::Node loaded = YAML::Load(contents);
-    if (loaded.Type() != YAML::NodeType::Map) {
-      throw std::invalid_argument("Bad contents parse " + contents);
-    }
-    const YAML::Node doc = loaded["doc"];
-    if (doc.Type() != YAML::NodeType::Map) {
-      throw std::invalid_argument("Bad doc parse " + contents);
-    }
-    return doc;
-  }
-};
-
-TEST_F(YamlPerformanceTest, VectorNesting) {
+GTEST_TEST(YamlPerformanceTest, VectorNesting) {
   // Populate a resonably-sized but non-trival set of data -- 50,000 numbers
   // arranged into a map with nested vectors.
   const int kDim = 100;
@@ -82,13 +59,20 @@ TEST_F(YamlPerformanceTest, VectorNesting) {
     }
   }
 
-  // Convert to YAML.
-  const YAML::Node root = Load(Save(data));
+  // Convert the `Map data` into yaml string format.
+  const std::string yaml_data = SaveYamlString(data, "doc");
 
-  // Parse the data back into a C++ structure while checking that resource
+  // Parse the yaml string into a node tree while checking that resource
+  // usage is somewhat bounded.
+  internal::Node yaml_root = internal::Node::MakeNull();
+  {
+    test::LimitMalloc guard({.max_num_allocations = 5'000'000});
+    yaml_root = YamlReadArchive::LoadStringAsNode(yaml_data, "doc");
+  }
+
+  // Transfer the node tree into a C++ structure while checking that resource
   // usage is sane.
   Map new_data;
-  YamlReadArchive archive(root);
   {
     // When the performance of parsing was fixed and this test was added, this
     // Accept operation used about 51,000 allocations and took about 1 second
@@ -101,6 +85,8 @@ TEST_F(YamlPerformanceTest, VectorNesting) {
     // We'll set the hard limit ~20x higher than currently observed to allow
     // some flux as library implementations evolve, etc.
     test::LimitMalloc guard({.max_num_allocations = 1'000'000});
+    const LoadYamlOptions default_options;
+    YamlReadArchive archive(std::move(yaml_root), default_options);
     archive.Accept(&new_data);
   }
 
@@ -149,7 +135,7 @@ struct BigEigen {
   MatrixX<ADS2> value;
 };
 
-TEST_F(YamlPerformanceTest, EigenMatrix) {
+GTEST_TEST(YamlPerformanceTest, EigenMatrix) {
   // Populate a resonably-sized but non-trival set of data, about ~10,000
   // numbers stored at various levels of nesting.
   BigEigen data;
@@ -171,13 +157,20 @@ TEST_F(YamlPerformanceTest, EigenMatrix) {
     }
   }
 
-  // Convert to YAML.
-  const YAML::Node root = Load(Save(data));
+  // Convert the `BigEigen data` into yaml string format.
+  const std::string yaml_data = SaveYamlString(data, "doc");
 
-  // Parse the data back into a C++ structure while checking that resource
+  // Parse the yaml string into a node tree while checking that resource
+  // usage is somewhat bounded.
+  internal::Node yaml_root = internal::Node::MakeNull();
+  {
+    test::LimitMalloc guard({.max_num_allocations = 5'000'000});
+    yaml_root = YamlReadArchive::LoadStringAsNode(yaml_data, "doc");
+  }
+
+  // Transfer the node tree into a C++ structure while checking that resource
   // usage is sane.
   BigEigen new_data;
-  YamlReadArchive archive(root);
   {
     // When the performance of parsing was fixed and this test was added, this
     // Accept operation used about 12,000 allocations and took less than 1
@@ -189,6 +182,8 @@ TEST_F(YamlPerformanceTest, EigenMatrix) {
     // We'll set the hard limit ~20x higher than currently observed to allow
     // some flux as library implementations evolve, etc.
     test::LimitMalloc guard({.max_num_allocations = 250000});
+    const LoadYamlOptions default_options;
+    YamlReadArchive archive(std::move(yaml_root), default_options);
     archive.Accept(&new_data);
   }
 

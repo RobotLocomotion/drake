@@ -74,7 +74,6 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 /// - camera_[NAME]_depth_image
 /// - <b style="color:orange">camera_[NAME]_label_image</b>
 /// - <b style="color:orange">camera_[NAME]_point_cloud</b>
-/// - <b style="color:orange">pose_bundle</b> (deprecated for 2021-12-01)
 /// - <b style="color:orange">query_object</b>
 /// - <b style="color:orange">contact_results</b>
 /// - <b style="color:orange">plant_continuous_state</b>
@@ -438,6 +437,15 @@ class ManipulationStation : public systems::Diagram<T> {
 
   /// Returns a map from camera name to X_WCameraBody for all the static
   /// (rigidly attached to the world body) cameras that have been registered.
+  ///
+  /// <!-- TODO(EricCousineau-TRI) To simplify (and possibly modularize) this
+  /// class, frame kinematics should be handled by MbP frames, since that's
+  /// where they have the most relevance. Change in workflow would be:
+  /// - Add camera frame first to the tree;
+  /// - Add camera directly to frame (perhaps without offset, per #10247);
+  /// - Change this function to return frames, so that we aren't restricted to
+  ///   fixed-scene cameras.
+  /// -->
   std::map<std::string, math::RigidTransform<double>>
   GetStaticCameraPosesInWorld() const;
 

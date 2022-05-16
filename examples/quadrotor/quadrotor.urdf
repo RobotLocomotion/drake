@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!-- Mesh file and approximate numbers are from Abe Bachrach at Skdio.  -->
-<robot xmlns="https://drake.mit.edu" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="quadrotor">
+<robot name="quadrotor">
   <!--
   Axes are standard vehicle coordinates:
     +X - Pointing toward the nose (primary camera).
@@ -18,7 +18,7 @@
     <visual>
       <origin rpy="1.570796 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="skydio_2_1000_poly.obj" scale=".00254"/>
+        <mesh filename="package://drake/examples/quadrotor/skydio_2_1000_poly.obj" scale=".00254"/>
       </geometry>
     </visual>
     <collision>

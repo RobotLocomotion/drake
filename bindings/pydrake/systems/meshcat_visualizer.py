@@ -1,7 +1,8 @@
 """
-Provides utilities for communicating with the browser-based visualization
-package, Meshcat:
-      https://github.com/rdeits/meshcat
+Warning:
+    This module (the pure-Python implementation of MeshCat) is deprecated.
+    Please use pydrake.geometry.MeshcatVisualizerCpp and related instead.
+    The deprecated code will be removed from Drake on or after 2022-09-01.
 """
 import argparse
 import os
@@ -11,8 +12,10 @@ import webbrowser
 
 import numpy as np
 
-from pydrake.common.deprecation import _warn_deprecated
-from pydrake.common.eigen_geometry import Quaternion, Isometry3
+from pydrake.common.deprecation import (
+    _warn_deprecated,
+    deprecated_callable,
+)
 from pydrake.common.value import AbstractValue
 from pydrake.geometry import (
     Box, ConvertVolumeToSurfaceMesh, Convex, Cylinder, Mesh, Sphere,
@@ -44,9 +47,18 @@ import meshcat.geometry as g  # noqa
 import meshcat.transformations as tf  # noqa
 from meshcat.animation import Animation
 
-_DEFAULT_PUBLISH_PERIOD = 1 / 30.
+# To help avoid small simulation timesteps, we use a default period that has an
+# exact representation in binary floating point; see drake#15021 for details.
+_DEFAULT_PUBLISH_PERIOD = 1 / 32.
+
+_DEPRECATION = """
+The module pydrake.systems.meshcat_visualizer (the pure-Python implementation
+of MeshCat) is deprecated. Please use pydrake.geometry.MeshcatVisualizerCpp
+instead.
+""".replace("\n", " ").strip()
 
 
+@deprecated_callable(_DEPRECATION, date="2022-09-01")
 def AddTriad(vis, name, prefix, length=1., radius=0.04, opacity=1.):
     """
     Initializes coordinate axes of a frame T. The x-axis is drawn red,
@@ -91,6 +103,7 @@ class StringToRoleAction(argparse.Action):
         if nargs is not None:
             raise ValueError("nargs not allowed")
         super().__init__(option_strings, dest, **kwargs)
+        _warn_deprecated(_DEPRECATION, date="2022-09-01", stacklevel=5)
 
     def __call__(self, parser, namespace, values, option_string=None):
         assert isinstance(values, str)
@@ -143,6 +156,7 @@ class HydroTriSurface(g.Geometry):
 
     def __init__(self, vertices, normals):
         super(HydroTriSurface, self).__init__()
+        _warn_deprecated(_DEPRECATION, date="2022-09-01")
 
         vertices = np.asarray(vertices, dtype=np.float32)
         normals = np.asarray(normals, dtype=np.float32)
@@ -168,6 +182,11 @@ class HydroTriSurface(g.Geometry):
 
 class MeshcatVisualizer(LeafSystem):
     """
+    Warning:
+        This module (the pure-Python implementation of MeshCat) is deprecated.
+        Please use pydrake.geometry.MeshcatVisualizerCpp and related instead.
+        The deprecated code will be removed from Drake on or after 2022-09-01.
+
     MeshcatVisualizer is a System block that connects to the query output port
     of a SceneGraph and visualizes the scene in Meshcat.
 
@@ -291,6 +310,7 @@ class MeshcatVisualizer(LeafSystem):
             ``meshcat-server``.
         """
         LeafSystem.__init__(self)
+        _warn_deprecated(_DEPRECATION, date="2022-09-01", stacklevel=3)
 
         self.set_name('meshcat_visualizer')
         self.DeclarePeriodicPublish(draw_period, 0.0)
@@ -480,16 +500,16 @@ class MeshcatVisualizer(LeafSystem):
                     surface_mesh = hydro_mesh
                     if isinstance(hydro_mesh, VolumeMesh):
                         surface_mesh = ConvertVolumeToSurfaceMesh(hydro_mesh)
-                    v_count = len(surface_mesh.faces()) * 3
+                    v_count = len(surface_mesh.triangles()) * 3
                     vertices = np.empty((v_count, 3), dtype=float)
                     normals = np.empty((v_count, 3), dtype=float)
 
                     mesh_verts = surface_mesh.vertices()
                     v = 0
-                    for face in surface_mesh.faces():
-                        p_MA = mesh_verts[int(face.vertex(0))].r_MV()
-                        p_MB = mesh_verts[int(face.vertex(1))].r_MV()
-                        p_MC = mesh_verts[int(face.vertex(2))].r_MV()
+                    for face in surface_mesh.triangles():
+                        p_MA = mesh_verts[int(face.vertex(0))]
+                        p_MB = mesh_verts[int(face.vertex(1))]
+                        p_MC = mesh_verts[int(face.vertex(2))]
                         vertices[v, :] = tuple(p_MA)
                         vertices[v + 1, :] = tuple(p_MB)
                         vertices[v + 2, :] = tuple(p_MC)
@@ -641,6 +661,11 @@ class MeshcatVisualizer(LeafSystem):
 
 class MeshcatContactVisualizer(LeafSystem):
     """
+    Warning:
+        This module (the pure-Python implementation of MeshCat) is deprecated.
+        Please use pydrake.geometry.MeshcatVisualizerCpp and related instead.
+        The deprecated code will be removed from Drake on or after 2022-09-01.
+
     MeshcatContactVisualizer is a System block that visualizes contact
     forces. It is connected to the contact results output port of
     SceneGraph's associated MultibodyPlant.
@@ -669,6 +694,7 @@ class MeshcatContactVisualizer(LeafSystem):
                 to visualize the forces.
         """
         LeafSystem.__init__(self)
+        _warn_deprecated(_DEPRECATION, date="2022-09-01")
         assert plant is not None
         self._meshcat_viz = meshcat_viz
         self._force_threshold = force_threshold
@@ -785,6 +811,11 @@ def _get_native_visualizer(viz):
 
 class MeshcatPointCloudVisualizer(LeafSystem):
     """
+    Warning:
+        This module (the pure-Python implementation of MeshCat) is deprecated.
+        Please use pydrake.geometry.MeshcatVisualizerCpp and related instead.
+        The deprecated code will be removed from Drake on or after 2022-09-01.
+
     MeshcatPointCloudVisualizer is a System block that visualizes a
     PointCloud in meshcat. The PointCloud:
 
@@ -825,6 +856,7 @@ class MeshcatPointCloudVisualizer(LeafSystem):
                 not provide RGB values.
         """
         LeafSystem.__init__(self)
+        _warn_deprecated(_DEPRECATION, date="2022-09-01")
 
         self._meshcat_viz = _get_native_visualizer(meshcat_viz)
         self._X_WP = RigidTransform(X_WP)
@@ -870,6 +902,7 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         self._meshcat_viz[self._name].set_transform(self._X_WP.GetAsMatrix4())
 
 
+@deprecated_callable(_DEPRECATION, date="2022-09-01")
 def ConnectMeshcatVisualizer(builder, scene_graph=None, output_port=None,
                              **kwargs):
     """Creates an instance of MeshcatVisualizer, adds it to the diagram, and

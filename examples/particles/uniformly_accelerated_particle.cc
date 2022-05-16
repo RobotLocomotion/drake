@@ -92,7 +92,7 @@ UniformlyAcceleratedParticle::CreateContext(
 ///
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage("A very simple demonstration, "
-                          "make sure drake-visualizer is running!");
+                          "make sure the meldis visualizer is running!");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   // Instantiate example system.
   auto system = std::make_unique<UniformlyAcceleratedParticle>(

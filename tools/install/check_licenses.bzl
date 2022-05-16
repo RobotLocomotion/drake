@@ -4,12 +4,12 @@ load("@drake//tools/install:install.bzl", "InstallInfo")
 
 # List of exact file names of license files
 LICENSE_LITERALS = [
-    "BSD-LICENSE",  # ccd
+    "BSD-LICENSE",  # @ccd
     "COPYING",
-    "Copyright.txt",  # vtk
-    "EULA.pdf",  # gurobi
+    "Copyright.txt",  # @vtk
+    "EULA.pdf",  # @gurobi
     "LICENSE",
-    "mosek-eula.pdf",  # mosek
+    "mosek-eula.pdf",  # @mosek
 ]
 
 # List of file name prefixes of license files
@@ -54,9 +54,14 @@ def _check_licenses_for_label(label):
 
 #------------------------------------------------------------------------------
 def _check_licenses_impl(ctx):
+    # Compose the list of labels, minus the ignore list.
+    to_check = list(ctx.attr.install_labels)
+    for label in ctx.attr.ignore_labels:
+        to_check.remove(label)
+
     # Iterate over labels, collecting ones that are missing licenses.
     labels_missing_licenses = []
-    for label in ctx.attr.install_labels:
+    for label in to_check:
         labels_missing_licenses += _check_licenses_for_label(label)
 
     # Report collected failures.
@@ -67,11 +72,15 @@ def _check_licenses_impl(ctx):
 _check_licenses = rule(
     attrs = {
         "install_labels": attr.label_list(providers = [InstallInfo]),
+        "ignore_labels": attr.label_list(),
     },
     implementation = _check_licenses_impl,
 )
 
-def check_licenses(install_labels, name = "check_licenses"):
+def check_licenses(
+        install_labels,
+        name = "check_licenses",
+        ignore_labels = None):
     """Check that install labels include license files.
 
     Given a list of install labels (e.g. ``//package:install``), check that the
@@ -87,8 +96,11 @@ def check_licenses(install_labels, name = "check_licenses"):
         install_labels (:obj:`list` of :obj:`Label`): List of install labels
             (must be created by :func:`install` or :func:`install_files`) to
             be checked.
+        ignore_labels (:obj:`list` of :obj:`Label`): Optional subset of the
+            ``install_labels`` to skip during checking.
     """
     _check_licenses(
         name = name,
         install_labels = install_labels,
+        ignore_labels = ignore_labels,
     )

@@ -37,27 +37,19 @@ def _impl(repository_ctx):
     if os_result.error != None:
         fail(os_result.error)
 
-    if os_result.is_macos:
-        archive = "dv-0.1.0-406-g4c3e570a-python-3.9.2-qt-5.15.2-vtk-8.2.0-mac-x86_64.tar.gz"  # noqa
-        sha256 = "8a13ffa117167fada851acef8535a42d613b71be2200ea3c7139e9fea05782b8"  # noqa
-        python_version = "3.9"
-    elif os_result.ubuntu_release == "18.04":
-        archive = "dv-0.1.0-406-g4c3e570a-python-3.6.9-qt-5.9.5-vtk-8.2.0-bionic-x86_64-1.tar.gz"  # noqa
-        sha256 = "2c477c2f1186cd151710af9a6f50bd3720034ced3c5ed21d977b0a822ac56237"  # noqa
-        python_version = "3.6"
-    elif os_result.ubuntu_release == "20.04":
-        archive = "dv-0.1.0-406-g4c3e570a-python-3.8.2-qt-5.12.8-vtk-8.2.0-focal-x86_64-1.tar.gz"  # noqa
-        sha256 = "282438d7fabd72dddc8a9f5b3b7481b6b6ea53e4355f79f5bda1dae6e258d6be"  # noqa
+    if os_result.ubuntu_release == "20.04":
+        archive = "dv-0.1.0-406-g4c3e570a-python-3.8.10-qt-5.12.8-vtk-8.2.0-focal-x86_64-5.tar.gz"  # noqa
+        sha256 = "ddf85e332c0b7be8b13e81e6627a94f09a70517b7f82d7a49e50367b20cede87"  # noqa
         python_version = "3.8"
-    elif os_result.is_manylinux:
+    else:
+        repository_ctx.file("defs.bzl", "ENABLED = False")
         repository_ctx.symlink(
             Label("@drake//tools/workspace/drake_visualizer:package-stub.BUILD.bazel"),  # noqa
             "BUILD.bazel",
         )
         return
-    else:
-        fail("Operating system is NOT supported {}".format(os_result))
 
+    repository_ctx.file("defs.bzl", "ENABLED = True")
     urls = [
         x.format(archive = archive)
         for x in repository_ctx.attr.mirrors.get("director")
@@ -75,6 +67,7 @@ def _impl(repository_ctx):
         repository_ctx,
         patches = [
             Label("@drake//tools/workspace/drake_visualizer:use_drake_lcmtypes.patch"),  # noqa
+            Label("@drake//tools/workspace/drake_visualizer:draw_lcm_mesh.patch"),  # noqa
         ],
         patch_args = [
             "--directory=lib/python{}/site-packages/director".format(

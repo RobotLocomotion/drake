@@ -25,7 +25,7 @@
   <link name="j2s7s300_link_base">
     <visual>
       <geometry>
-        <mesh filename="../meshes/base.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/base.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -78,7 +78,7 @@
   <link name="j2s7s300_link_1">
     <visual>
       <geometry>
-        <mesh filename="../meshes/shoulder.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/shoulder.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -86,7 +86,7 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="../meshes/ring_big.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_big.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -155,13 +155,12 @@
     </joint>
     <actuator name="j2s7s300_joint_1_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_2">
     <visual>
       <geometry>
-        <mesh filename="../meshes/arm_half_1.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/arm_half_1.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -169,7 +168,7 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="../meshes/ring_big.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_big.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -253,13 +252,12 @@
     </joint>
     <actuator name="j2s7s300_joint_2_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_3">
     <visual>
       <geometry>
-        <mesh filename="../meshes/arm_half_2.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/arm_half_2.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -267,7 +265,7 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="../meshes/ring_big.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_big.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -357,13 +355,12 @@
     </joint>
     <actuator name="j2s7s300_joint_3_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_4">
     <visual>
       <geometry>
-        <mesh filename="../meshes/forearm.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/forearm.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -371,7 +368,7 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="../meshes/ring_small.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_small.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -467,13 +464,12 @@
     </joint>
     <actuator name="j2s7s300_joint_4_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_5">
     <visual>
       <geometry>
-        <mesh filename="../meshes/wrist_spherical_1.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/wrist_spherical_1.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -481,7 +477,7 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="../meshes/ring_small.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_small.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -523,13 +519,12 @@
     </joint>
     <actuator name="j2s7s300_joint_5_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_6">
     <visual>
       <geometry>
-        <mesh filename="../meshes/wrist_spherical_2.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/wrist_spherical_2.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -537,7 +532,7 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="../meshes/ring_small.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_small.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -579,7 +574,6 @@
     </joint>
     <actuator name="j2s7s300_joint_6_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="j2s7s300_link_7">
@@ -605,7 +599,6 @@
     </joint>
     <actuator name="j2s7s300_joint_7_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
 </robot>

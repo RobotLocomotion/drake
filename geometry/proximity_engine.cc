@@ -11,11 +11,9 @@
 
 #include <fcl/fcl.h>
 #include <fmt/format.h>
-#include <tiny_obj_loader.h>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collisions_exist_callback.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
@@ -25,10 +23,8 @@
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/penetration_as_point_pair_callback.h"
+#include "drake/geometry/read_obj.h"
 #include "drake/geometry/utilities.h"
-
-static_assert(std::is_same_v<tinyobj::real_t, double>,
-              "tinyobjloader must be compiled in double-precision mode");
 
 namespace drake {
 namespace geometry {
@@ -46,147 +42,9 @@ using std::shared_ptr;
 using std::unique_ptr;
 using std::unordered_map;
 using std::vector;
+using symbolic::Expression;
 
 namespace {
-
-  // TODO(SeanCurtis-TRI) Move this tinyobj->fcl code into its own library that
-  //  can be built and tested separately.
-
-  //
-  // Convert vertices from tinyobj format to FCL format.
-  //
-  // Vertices from tinyobj are in a vector of floating-points like this:
-  //     attrib.vertices = {c0,c1,c2, c3,c4,c5, c6,c7,c8,...}
-  //                     = {x, y, z,  x, y, z,  x, y, z,...}
-  // We will convert to a vector of Vector3d for FCL like this:
-  //     vertices = {{c0,c1,c2}, {c3,c4,c5}, {c6,c7,c8},...}
-  //              = {    v0,         v1,         v2,    ...}
-  //
-  // The size of `attrib.vertices` is three times the number of vertices.
-  //
-  std::vector<Vector3d> TinyObjToFclVertices(const tinyobj::attrib_t& attrib,
-                                             const double scale) {
-    int num_coords = attrib.vertices.size();
-    DRAKE_DEMAND(num_coords % 3 == 0);
-    std::vector<Vector3d> vertices;
-    vertices.reserve(num_coords / 3);
-
-    auto iter = attrib.vertices.begin();
-    while (iter != attrib.vertices.end()) {
-      // We increment `iter` three times for x, y, and z coordinates.
-      double x = *(iter++) * scale;
-      double y = *(iter++) * scale;
-      double z = *(iter++) * scale;
-      vertices.emplace_back(x, y, z);
-    }
-
-    return vertices;
-  }
-
-  //
-  // Returns the `mesh`'s faces re-encoded in a format consistent with what
-  // fcl::Convex expects.
-  //
-  // A tinyobj mesh has an integer array storing the number of vertices of
-  // each polygonal face.
-  //     mesh.num_face_vertices = {n0,n1,n2,...}
-  //         face0 has n0 vertices.
-  //         face1 has n1 vertices.
-  //         face2 has n2 vertices.
-  //         ...
-  // A tinyobj mesh has a vector of vertices that belong to the faces.
-  //     mesh.indices = {v0_0, v0_1,..., v0_n0-1,
-  //                     v1_0, v1_1,..., v1_n1-1,
-  //                     v2_0, v2_1,..., v2_n2-1,
-  //                     ...}
-  //         face0 has vertices v0_0, v0_1,...,v0_n0-1.
-  //         face1 has vertices v1_0, v1_1,...,v1_n1-1.
-  //         face2 has vertices v2_0, v2_1,...,v2_n2-1.
-  //         ...
-  // For fcl::Convex, faces are encoded as an array of integers in this format.
-  //     faces = { n0, v0_0,v0_1,...,v0_n0-1,
-  //               n1, v1_0,v1_1,...,v1_n1-1,
-  //               n2, v2_0,v2_1,...,v2_n2-1,
-  //               ...}
-  // where ni is the number of vertices of facei.
-  //
-  // The actual number of faces returned will be equal to:
-  // mesh.num_face_vertices.size() which *cannot* be easily inferred from the
-  // *size* of the returned vector.
-  std::vector<int> TinyObjToFclFaces(const tinyobj::mesh_t& mesh) {
-    std::vector<int> faces;
-    faces.reserve(mesh.indices.size() + mesh.num_face_vertices.size());
-    auto iter = mesh.indices.begin();
-    for (int num : mesh.num_face_vertices) {
-      faces.push_back(num);
-      std::for_each(iter, iter + num, [&faces](const tinyobj::index_t& index) {
-        faces.push_back(index.vertex_index);
-      });
-      iter += num;
-    }
-
-    return faces;
-  }
-
-  // Reads the OBJ file with the given `filename` into a collection of data
-  // suitable for instantiating an fcl::Convex shape. It includes the vertex
-  // positions, face encodings (see TinyObjToFclFaces), and number of faces.
-  std::tuple<std::shared_ptr<std::vector<Vector3d>>,
-             std::shared_ptr<std::vector<int>>, int>
-  ReadObjForConvex(const std::string& filename, double scale,
-                   bool triangulate) {
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string warn;
-    std::string err;
-
-    // Tinyobj doesn't infer the search directory from the directory containing
-    // the obj file. We have to provide that directory; of course, this assumes
-    // that the material library reference is relative to the obj directory.
-    const size_t pos = filename.find_last_of('/');
-    const std::string obj_folder = filename.substr(0, pos + 1);
-    const char* mtl_basedir = obj_folder.c_str();
-
-    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
-                                filename.c_str(), mtl_basedir, triangulate);
-    if (!ret || !err.empty()) {
-      throw std::runtime_error("Error parsing file '" + filename +
-                               "' : " + err);
-    }
-    if (!warn.empty()) {
-      drake::log()->warn("Warning parsing file '{}' : {}", filename, warn);
-    }
-
-    if (shapes.size() == 0) {
-      throw std::runtime_error(
-          fmt::format("The file parsed contains no objects; only OBJs with "
-                      "a single object are supported. The file could be "
-                      "corrupt, empty, or not an OBJ file. File name: '{}'",
-                      filename));
-    } else if (shapes.size() > 1) {
-      throw std::runtime_error(
-          fmt::format("The OBJ file contains multiple objects; only OBJs with "
-                      "a single object are supported: File name: '{}'",
-                      filename));
-    }
-
-    auto vertices = std::make_shared<std::vector<Vector3d>>(
-        TinyObjToFclVertices(attrib, scale));
-
-    // We will have `faces.size()` larger than the number of faces. For each
-    // face_i, the vector `faces` contains both the number and indices of its
-    // vertices:
-    //     faces = { n0, v0_0,v0_1,...,v0_n0-1,
-    //               n1, v1_0,v1_1,...,v1_n1-1,
-    //               n2, v2_0,v2_1,...,v2_n2-1,
-    //               ...}
-    // where n_i is the number of vertices of face_i.
-    //
-    int num_faces = static_cast<int>(shapes[0].mesh.num_face_vertices.size());
-    auto faces = make_shared<vector<int>>(TinyObjToFclFaces(shapes[0].mesh));
-    return {vertices, faces, num_faces};
-  }
 
 // Returns a copy of the given fcl collision geometry; throws an exception for
 // unsupported collision geometry types. This supplements the *missing* cloning
@@ -373,8 +231,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   Impl(Impl&& other) = delete;
   Impl& operator=(Impl&&) = delete;
 
-  std::unique_ptr<ProximityEngine<AutoDiffXd>::Impl> ToAutoDiff() const {
-    auto engine = make_unique<ProximityEngine<AutoDiffXd>::Impl>();
+  template <typename U>
+  std::unique_ptr<typename ProximityEngine<U>::Impl> ToScalarType() const {
+    auto engine = make_unique<typename ProximityEngine<U>::Impl>();
 
     // TODO(SeanCurtis-TRI): When AutoDiff is fully supported in the internal
     // types, modify this map to the appropriate scalar and modify consuming
@@ -541,8 +400,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void ImplementGeometry(const Mesh& mesh, void* user_data) override {
     // Don't bother triangulating; we're going to throw the faces out.
-    const auto [vertices, face_ptr, num_faces] = ReadObjForConvex(
-        mesh.filename(), mesh.scale(), false /* triangulate */);
+    const auto [vertices, face_ptr, num_faces] =
+        ReadObjFile(mesh.filename(), mesh.scale(), false /* triangulate */);
     unused(face_ptr, num_faces);
 
     // Note: the strategy here is to use an *invalid* fcl::Convex shape for the
@@ -558,8 +417,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void ImplementGeometry(const Convex& convex, void* user_data) override {
     // Don't bother triangulating; Convex supports polygons.
-    const auto [vertices, faces, num_faces] = ReadObjForConvex(
-        convex.filename(), convex.scale(), false /* triangulate */);
+    const auto [vertices, faces, num_faces] =
+        ReadObjFile(convex.filename(), convex.scale(), false /* triangulate */);
 
     // Create fcl::Convex.
     auto fcl_convex = make_shared<fcl::Convexd>(vertices, num_faces, faces);
@@ -716,13 +575,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return data.collisions_exist;
   }
 
-  // Helper of ComputeContactSurfaces() and ComputePolygonalContactSurfaces().
-  vector<ContactSurface<T>> ComputeContactSurfacesImpl(
-      const unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
-      ContactPolygonRepresentation representation) const {
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool,
+                            std::vector<ContactSurface<T>>>
+  ComputeContactSurfaces(
+      HydroelasticContactRepresentation representation,
+      const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
     vector<ContactSurface<T>> surfaces;
-    // All these quantities, except `representation`, are aliased in the
-    // callback data.
+    // All these quantities are aliased in the callback data.
     hydroelastic::CallbackData<T> data{&collision_filter_, &X_WGs,
                                        &hydroelastic_geometries_,
                                        representation, &surfaces};
@@ -739,32 +599,17 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return surfaces;
   }
 
-  vector<ContactSurface<T>> ComputeContactSurfaces(
-      const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
-    vector<ContactSurface<T>> surfaces;
-    return ComputeContactSurfacesImpl(
-        X_WGs, ContactPolygonRepresentation::kCentroidSubdivision);
-  }
-
-  vector<ContactSurface<T>> ComputePolygonalContactSurfaces(
-      const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
-    // TODO(14579): Change kSingleTriangle to the future polygon representation.
-    return ComputeContactSurfacesImpl(
-        X_WGs, ContactPolygonRepresentation::kSingleTriangle);
-  }
-
-  // Helper of ComputeContactSurfacesWithFallback() and
-  // ComputePolygonalContactSurfacesWithFallback().
-  void ComputeContactSurfacesWithFallbackImpl(
+  template <typename T1 = T>
+  typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+  ComputeContactSurfacesWithFallback(
+      HydroelasticContactRepresentation representation,
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
-      ContactPolygonRepresentation representation,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
     DRAKE_DEMAND(surfaces != nullptr);
     DRAKE_DEMAND(point_pairs != nullptr);
 
-    // All these quantities, except `representation`, are aliased in the
-    // callback data.
+    // All these quantities are aliased in the callback data.
     hydroelastic::CallbackWithFallbackData<T> data{
         hydroelastic::CallbackData<T>{&collision_filter_, &X_WGs,
                                       &hydroelastic_geometries_, representation,
@@ -781,29 +626,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::sort(surfaces->begin(), surfaces->end(), OrderContactSurface<T>);
 
     std::sort(point_pairs->begin(), point_pairs->end(), OrderPointPair<T>);
-  }
-
-  void ComputeContactSurfacesWithFallback(
-      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
-      std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-    DRAKE_DEMAND(surfaces != nullptr);
-    DRAKE_DEMAND(point_pairs != nullptr);
-    ComputeContactSurfacesWithFallbackImpl(
-        X_WGs, ContactPolygonRepresentation::kCentroidSubdivision, surfaces,
-        point_pairs);
-  }
-
-  void ComputePolygonalContactSurfacesWithFallback(
-      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
-      std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-    DRAKE_DEMAND(surfaces != nullptr);
-    DRAKE_DEMAND(point_pairs != nullptr);
-    // TODO(14579): Change kSingleTriangle to the future polygon representation.
-    ComputeContactSurfacesWithFallbackImpl(
-        X_WGs, ContactPolygonRepresentation::kSingleTriangle, surfaces,
-        point_pairs);
   }
 
   // Testing utilities
@@ -1059,10 +881,10 @@ double ProximityEngine<T>::distance_tolerance() const {
 }
 
 template <typename T>
-std::unique_ptr<ProximityEngine<AutoDiffXd>> ProximityEngine<T>::ToAutoDiffXd()
-    const {
-  return unique_ptr<ProximityEngine<AutoDiffXd>>(
-      new ProximityEngine<AutoDiffXd>(impl_->ToAutoDiff().release()));
+template <typename U>
+std::unique_ptr<ProximityEngine<U>> ProximityEngine<T>::ToScalarType() const {
+  return std::unique_ptr<ProximityEngine<U>>(
+      new ProximityEngine<U>(impl_->template ToScalarType<U>().release()));
 }
 
 template <typename T>
@@ -1116,34 +938,25 @@ ProximityEngine<T>::ComputePointPairPenetration(
 }
 
 template <typename T>
-std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces(
+template <typename T1>
+typename std::enable_if_t<scalar_predicate<T1>::is_bool,
+                          std::vector<ContactSurface<T>>>
+ProximityEngine<T>::ComputeContactSurfaces(
+    HydroelasticContactRepresentation representation,
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
-  return impl_->ComputeContactSurfaces(X_WGs);
+  return impl_->ComputeContactSurfaces(representation, X_WGs);
 }
 
 template <typename T>
-std::vector<ContactSurface<T>>
-ProximityEngine<T>::ComputePolygonalContactSurfaces(
-    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
-  return impl_->ComputePolygonalContactSurfaces(X_WGs);
-}
-
-template <typename T>
-void ProximityEngine<T>::ComputeContactSurfacesWithFallback(
+template <typename T1>
+typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+ProximityEngine<T>::ComputeContactSurfacesWithFallback(
+    HydroelasticContactRepresentation representation,
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
     std::vector<ContactSurface<T>>* surfaces,
     std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-  return impl_->ComputeContactSurfacesWithFallback(X_WGs, surfaces,
-                                                   point_pairs);
-}
-
-template <typename T>
-void ProximityEngine<T>::ComputePolygonalContactSurfacesWithFallback(
-    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
-    std::vector<ContactSurface<T>>* surfaces,
-    std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-  return impl_->ComputePolygonalContactSurfacesWithFallback(X_WGs, surfaces,
-                                                            point_pairs);
+  return impl_->ComputeContactSurfacesWithFallback(representation, X_WGs,
+                                                   surfaces, point_pairs);
 }
 
 template <typename T>
@@ -1176,9 +989,16 @@ bool ProximityEngine<T>::IsFclConvexType(GeometryId id) const {
   return impl_->IsFclConvexType(id);
 }
 
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (&ProximityEngine<T>::template ToScalarType<U>))
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&ProximityEngine<T>::template ComputeContactSurfaces<T>,
+     &ProximityEngine<T>::template ComputeContactSurfacesWithFallback<T>))
+
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::geometry::internal::ProximityEngine)

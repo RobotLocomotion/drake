@@ -1,16 +1,16 @@
 #include "drake/solvers/scs_solver.h"
 
+#include <unordered_map>
+#include <vector>
+
 #include <Eigen/Sparse>
 #include <fmt/format.h>
 
 // clang-format off
-// scs.h should be included before linsys/amatrix.h, since amatrix.h uses types
-// scs_float, scs_int, etc, defined in scs.h
 #include <scs.h>
 #include <cones.h>
 #include <linalg.h>
 #include <util.h>
-#include "linsys/amatrix.h"
 // clang-format on
 
 #include "drake/common/scope_exit.h"
@@ -159,8 +159,8 @@ void ParseLinearConstraint(const MathematicalProgram& prog,
                            std::vector<double>* b, int* A_row_count,
                            ScsCone* cone) {
   // The linear constraint lb ≤ aᵀx ≤ ub is converted to
-  //  aᵀx + s1 = ub,
-  // -aᵀx + s2 = lb
+  // -aᵀx + s1 = lb,
+  //  aᵀx + s2 = ub
   // s1, s2 in the positive cone.
   // The special cases are when ub = ∞ or lb = -∞.
   // When ub = ∞, then we only add the constraint
@@ -172,40 +172,56 @@ void ParseLinearConstraint(const MathematicalProgram& prog,
     const Eigen::VectorXd& ub = linear_constraint.evaluator()->upper_bound();
     const Eigen::VectorXd& lb = linear_constraint.evaluator()->lower_bound();
     const VectorXDecisionVariable& x = linear_constraint.variables();
-    const Eigen::MatrixXd& Ai = linear_constraint.evaluator()->A();
-    for (int i = 0; i < linear_constraint.evaluator()->num_constraints();
-         ++i) {
-      const bool is_ub_finite{!std::isinf(ub(i))};
-      const bool is_lb_finite{!std::isinf(lb(i))};
-      if (is_ub_finite || is_lb_finite) {
-        // If lb != -∞, then the constraint -aᵀx + s = lb will be added to the
-        // matrix A, in the row lower_bound_row_index.
-        const int lower_bound_row_index =
-            *A_row_count + num_linear_constraint_rows;
-        // If ub != ∞, then the constraint aᵀx + s = ub will be added to the
-        // matrix A, in the row upper_bound_row_index.
-        const int upper_bound_row_index =
-            *A_row_count + num_linear_constraint_rows + (is_lb_finite ? 1 : 0);
-        for (int j = 0; j < x.rows(); ++j) {
-          if (Ai(i, j) != 0) {
-            const int xj_index = prog.FindDecisionVariableIndex(x(j));
-            if (is_ub_finite) {
-              A_triplets->emplace_back(upper_bound_row_index, xj_index,
-                                       Ai(i, j));
-            }
-            if (is_lb_finite) {
-              A_triplets->emplace_back(lower_bound_row_index, xj_index,
-                                       -Ai(i, j));
-            }
-          }
-        }
-        if (is_lb_finite) {
+    const Eigen::SparseMatrix<double>& Ai =
+        linear_constraint.evaluator()->get_sparse_A();
+    // We store the starting row index in A_triplets for each row of
+    // linear_constraint. Namely the constraint lb(i) <= A.row(i)*x <= ub(i) is
+    // stored in A_triplets with starting_row_indices[i] (or
+    // starting_row_indices[i]+1 if both lb(i) and ub(i) are finite).
+    std::vector<int> starting_row_indices(
+        linear_constraint.evaluator()->num_constraints());
+    for (int i = 0; i < linear_constraint.evaluator()->num_constraints(); ++i) {
+      const bool needs_ub{!std::isinf(ub(i))};
+      const bool needs_lb{!std::isinf(lb(i))};
+      if (!needs_ub && !needs_lb) {
+        // We use -1 to indicate that we won't add linear constraint when both
+        // bounds are infinity.
+        starting_row_indices[i] = -1;
+      } else {
+        starting_row_indices[i] = *A_row_count + num_linear_constraint_rows;
+        // We first add the constraint for lower bound, and then add the
+        // constraint for upper bound. This is consistent with the loop below
+        // when we modify A_triplets.
+        if (needs_lb) {
           b->push_back(-lb(i));
-          ++num_linear_constraint_rows;
+          num_linear_constraint_rows++;
         }
-        if (is_ub_finite) {
+        if (needs_ub) {
           b->push_back(ub(i));
-          ++num_linear_constraint_rows;
+          num_linear_constraint_rows++;
+        }
+      }
+    }
+    for (int j = 0; j < Ai.cols(); ++j) {
+      const int xj_index = prog.FindDecisionVariableIndex(x(j));
+      for (Eigen::SparseMatrix<double>::InnerIterator it(Ai, j); it; ++it) {
+        const int Ai_row_count = it.row();
+        const bool needs_ub{!std::isinf(ub(Ai_row_count))};
+        const bool needs_lb{!std::isinf(lb(Ai_row_count))};
+        if (!needs_lb && !needs_ub) {
+          continue;
+        }
+        int row_index = starting_row_indices[Ai_row_count];
+        if (needs_lb) {
+          // If lb != -∞, then the constraint -aᵀx + s = lb will be added to
+          // the matrix A, in the row row_index.
+          A_triplets->emplace_back(row_index, xj_index, -it.value());
+          ++row_index;
+        }
+        if (needs_ub) {
+          // If ub != ∞, then the constraint aᵀx + s = ub will be added to the
+          // matrix A, in the row row_index.
+          A_triplets->emplace_back(row_index, xj_index, it.value());
         }
       }
     }
@@ -223,8 +239,8 @@ void ParseLinearEqualityConstraint(
   // A x + s = b. s in zero cone.
   for (const auto& linear_equality_constraint :
        prog.linear_equality_constraints()) {
-    const Eigen::SparseMatrix<double> Ai =
-        linear_equality_constraint.evaluator()->GetSparseMatrix();
+    const Eigen::SparseMatrix<double>& Ai =
+        linear_equality_constraint.evaluator()->get_sparse_A();
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
         math::SparseMatrixToTriplets(Ai);
     A_triplets->reserve(A_triplets->size() + Ai_triplets.size());
@@ -245,7 +261,7 @@ void ParseLinearEqualityConstraint(
     *A_row_count += num_Ai_rows;
     num_linear_equality_constraints_rows += num_Ai_rows;
   }
-  cone->f += num_linear_equality_constraints_rows;
+  cone->z += num_linear_equality_constraints_rows;
 }
 
 void ParseBoundingBoxConstraint(const MathematicalProgram& prog,
@@ -549,34 +565,31 @@ void SetScsProblemData(int A_row_count, int num_vars,
   for (int i = 0; i < num_vars; ++i) {
     scs_problem_data->c[i] = c[i];
   }
-
-  // Set the parameters to default values.
-  // This scs_calloc doesn't need to accompany a ScopeExit since
-  // scs_problem_data->stgs will be cleaned up recursively by freeing up
-  // scs_problem_data in scs_free_data()
-  scs_problem_data->stgs =
-      static_cast<ScsSettings*>(scs_calloc(1, sizeof(ScsSettings)));
-  scs_set_default_settings(scs_problem_data);
 }
 }  // namespace
 
 bool ScsSolver::is_available() { return true; }
 
 namespace {
-// This should be invoked only once on each unique instance of SCS_SETTINGS.
+// This should be invoked only once on each unique instance of ScsSettings.
 // Namely, only call this function for once in DoSolve.
 void SetScsSettings(
     std::unordered_map<std::string, int>* solver_options_int,
     const bool print_to_console,
-    SCS_SETTINGS* scs_settings) {
-  auto it = solver_options_int->find("max_iters");
-  if (it != solver_options_int->end()) {
-    scs_settings->max_iters = it->second;
-    solver_options_int->erase(it);
-  }
-  it = solver_options_int->find("normalize");
+    ScsSettings* scs_settings) {
+  auto it = solver_options_int->find("normalize");
   if (it != solver_options_int->end()) {
     scs_settings->normalize = it->second;
+    solver_options_int->erase(it);
+  }
+  it = solver_options_int->find("adaptive_scale;");
+  if (it != solver_options_int->end()) {
+    scs_settings->adaptive_scale = it->second;
+    solver_options_int->erase(it);
+  }
+  it = solver_options_int->find("max_iters");
+  if (it != solver_options_int->end()) {
+    scs_settings->max_iters = it->second;
     solver_options_int->erase(it);
   }
   it = solver_options_int->find("verbose");
@@ -598,16 +611,21 @@ void SetScsSettings(
     scs_settings->acceleration_lookback = it->second;
     solver_options_int->erase(it);
   }
+  it = solver_options_int->find("acceleration_interval");
+  if (it != solver_options_int->end()) {
+    scs_settings->acceleration_interval = it->second;
+    solver_options_int->erase(it);
+  }
   if (!solver_options_int->empty()) {
     throw std::invalid_argument("Unsupported SCS solver options.");
   }
 }
 
-// This should be invoked only once on each unique instance of SCS_SETTINGS.
+// This should be invoked only once on each unique instance of ScsSettings.
 // Namely, only call this function for once in DoSolve.
 void SetScsSettings(
     std::unordered_map<std::string, double>* solver_options_double,
-    SCS_SETTINGS* scs_settings) {
+    ScsSettings* scs_settings) {
   auto it = solver_options_double->find("scale");
   if (it != solver_options_double->end()) {
     scs_settings->scale = it->second;
@@ -618,9 +636,31 @@ void SetScsSettings(
     scs_settings->rho_x = it->second;
     solver_options_double->erase(it);
   }
-  it = solver_options_double->find("eps");
+  it = solver_options_double->find("eps_abs");
   if (it != solver_options_double->end()) {
-    scs_settings->eps = it->second;
+    scs_settings->eps_abs = it->second;
+    solver_options_double->erase(it);
+  } else {
+    // SCS 3.0 uses 1E-4 as the default value, see
+    // https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_abs). This
+    // tolerance is too loose. We set the default tolerance to 1E-5 for better
+    // accuracy.
+    scs_settings->eps_abs = 1E-5;
+  }
+  it = solver_options_double->find("eps_rel");
+  if (it != solver_options_double->end()) {
+    scs_settings->eps_rel = it->second;
+    solver_options_double->erase(it);
+  } else {
+    // SCS 3.0 uses 1E-4 as the default value, see
+    // https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_rel). This
+    // tolerance is too loose. We set the default tolerance to 1E-5 for better
+    // accuracy.
+    scs_settings->eps_rel = 1E-5;
+  }
+  it = solver_options_double->find("eps_infeas");
+  if (it != solver_options_double->end()) {
+    scs_settings->eps_infeas = it->second;
     solver_options_double->erase(it);
   }
   it = solver_options_double->find("alpha");
@@ -628,9 +668,9 @@ void SetScsSettings(
     scs_settings->alpha = it->second;
     solver_options_double->erase(it);
   }
-  it = solver_options_double->find("cg_rate");
+  it = solver_options_double->find("time_limit_secs");
   if (it != solver_options_double->end()) {
-    scs_settings->cg_rate = it->second;
+    scs_settings->time_limit_secs = it->second;
     solver_options_double->erase(it);
   }
   if (!solver_options_double->empty()) {
@@ -700,10 +740,18 @@ void ScsSolver::DoSolve(
   ScsCone* cone = static_cast<ScsCone*>(scs_calloc(1, sizeof(ScsCone)));
   ScsData* scs_problem_data =
       static_cast<ScsData*>(scs_calloc(1, sizeof(ScsData)));
-  // It will free scs_problem_data, cone, together with their instantiated
-  // members.
-  ScopeExit problem_data_guard(
-      [&scs_problem_data, &cone]() { scs_free_data(scs_problem_data, cone); });
+  ScsSettings* scs_stgs =
+      static_cast<ScsSettings*>(scs_calloc(1, sizeof(ScsSettings)));
+  // This guard will free cone, scs_problem_data, and scs_stgs (together with
+  // their instantiated members) upon return from the DoSolve function.
+  ScopeExit scs_free_guard([&cone, &scs_problem_data, &scs_stgs]() {
+    SCS(free_cone)(cone);
+    SCS(free_data)(scs_problem_data);
+    scs_free(scs_stgs);
+  });
+
+  // Set the parameters to default values.
+  scs_set_default_settings(scs_stgs);
 
   // A_row_count will increment, when we add each constraint.
   int A_row_count = 0;
@@ -763,27 +811,28 @@ void ScsSolver::DoSolve(
   std::unordered_map<std::string, double> input_solver_options_double =
       merged_options.GetOptionsDouble(id());
   SetScsSettings(&input_solver_options_int,
-                 merged_options.get_print_to_console(),
-                 scs_problem_data->stgs);
-  SetScsSettings(&input_solver_options_double, scs_problem_data->stgs);
+                 merged_options.get_print_to_console(), scs_stgs);
+  SetScsSettings(&input_solver_options_double, scs_stgs);
 
   ScsInfo scs_info{0};
 
   ScsSolution* scs_sol =
       static_cast<ScsSolution*>(scs_calloc(1, sizeof(ScsSolution)));
-  ScopeExit sol_guard([&scs_sol]() { scs_free_sol(scs_sol); });
+  ScopeExit sol_guard([&scs_sol]() { SCS(free_sol)(scs_sol); });
 
   ScsSolverDetails& solver_details =
       result->SetSolverDetailsType<ScsSolverDetails>();
-  solver_details.scs_status = scs(scs_problem_data, cone, scs_sol, &scs_info);
+  solver_details.scs_status = scs(
+      scs_problem_data, cone, scs_stgs, scs_sol, &scs_info);
 
   solver_details.iter = scs_info.iter;
   solver_details.primal_objective = scs_info.pobj;
   solver_details.dual_objective = scs_info.dobj;
   solver_details.primal_residue = scs_info.res_pri;
   solver_details.residue_infeasibility = scs_info.res_infeas;
-  solver_details.residue_unbounded = scs_info.res_unbdd;
-  solver_details.relative_duality_gap = scs_info.rel_gap;
+  solver_details.residue_unbounded_a = scs_info.res_unbdd_a;
+  solver_details.residue_unbounded_p = scs_info.res_unbdd_p;
+  solver_details.duality_gap = scs_info.gap;
   solver_details.scs_setup_time = scs_info.setup_time;
   solver_details.scs_solve_time = scs_info.solve_time;
 

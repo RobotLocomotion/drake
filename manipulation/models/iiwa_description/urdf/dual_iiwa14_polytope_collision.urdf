@@ -13,7 +13,7 @@
      polytope model.
 -->
 <!-- ===================================================================== -->
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="dual_iiwa14">
+<robot xmlns:drake="http://drake.mit.edu" xmlns:xacro="http://www.ros.org/wiki/xacro" name="dual_iiwa14">
   <!-- Import Rviz colors -->
   <material name="Black">
     <color rgba="0.0 0.0 0.0 1.0"/>
@@ -60,7 +60,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_0.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_0.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -77,8 +77,7 @@
     <child link="left_iiwa_link_1"/>
     <origin rpy="0 0 0" xyz="0 0 0.1575"/>
     <axis xyz="0 0 1"/>
-    <limit effort="300" lower="-2.96705972839" upper="2.96705972839" velocity="10"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.93215314335" soft_upper_limit="2.93215314335"/>
+    <limit drake:acceleration="8.57" effort="320" lower="-2.96705972839" upper="2.96705972839" velocity="1.4835298641951802"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="left_iiwa_link_1">
@@ -90,7 +89,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_1.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_1.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -101,8 +100,7 @@
     <child link="left_iiwa_link_2"/>
     <origin rpy="1.570796326794897   0 3.141592653589793" xyz="0 0 0.2025"/>
     <axis xyz="0 0 1"/>
-    <limit effort="300" lower="-2.09439510239" upper="2.09439510239" velocity="10"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
+    <limit drake:acceleration="8.57" effort="320" lower="-2.09439510239" upper="2.09439510239" velocity="1.4835298641951802"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="left_iiwa_link_2">
@@ -116,14 +114,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_2_orange.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_2_orange.obj"/>
       </geometry>
       <material name="Orange"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_2_grey.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_2_grey.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -134,8 +132,7 @@
     <child link="left_iiwa_link_3"/>
     <origin rpy="1.570796326794897 0 3.141592653589793" xyz="0 0.2045 0"/>
     <axis xyz="0 0 1"/>
-    <limit effort="300" lower="-2.96705972839" upper="2.96705972839" velocity="10"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
+    <limit drake:acceleration="8.74" effort="176" lower="-2.96705972839" upper="2.96705972839" velocity="1.7453292519943295"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="left_iiwa_link_3">
@@ -149,21 +146,21 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_3.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_3.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/band.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/band.obj"/>
       </geometry>
       <material name="Silver"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/kuka.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/kuka.obj"/>
       </geometry>
       <material name="Black"/>
     </visual>
@@ -174,8 +171,7 @@
     <child link="left_iiwa_link_4"/>
     <origin rpy="1.570796326794897 0 0" xyz="0 0 0.2155"/>
     <axis xyz="0 0 1"/>
-    <limit effort="300" lower="-2.09439510239" upper="2.09439510239" velocity="10"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
+    <limit drake:acceleration="11.36" effort="176" lower="-2.09439510239" upper="2.09439510239" velocity="1.3089969389957472"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="left_iiwa_link_4">
@@ -189,14 +185,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_4_orange.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_4_orange.obj"/>
       </geometry>
       <material name="Orange"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_4_grey.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_4_grey.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -207,8 +203,7 @@
     <child link="left_iiwa_link_5"/>
     <origin rpy="-1.570796326794897 3.141592653589793 0" xyz="0 0.1845 0"/>
     <axis xyz="0 0 1"/>
-    <limit effort="300" lower="-2.96705972839" upper="2.96705972839" velocity="10"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
+    <limit drake:acceleration="12.23" effort="110" lower="-2.96705972839" upper="2.96705972839" velocity="2.2689280275926285"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="left_iiwa_link_5">
@@ -222,21 +217,21 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_5.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_5.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/band.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/band.obj"/>
       </geometry>
       <material name="Silver"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/kuka.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/kuka.obj"/>
       </geometry>
       <material name="Black"/>
     </visual>
@@ -247,8 +242,7 @@
     <child link="left_iiwa_link_6"/>
     <origin rpy="1.570796326794897 0 0" xyz="0 0 0.2155"/>
     <axis xyz="0 0 1"/>
-    <limit effort="300" lower="-2.09439510239" upper="2.09439510239" velocity="10"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
+    <limit drake:acceleration="15.72" effort="40" lower="-2.09439510239" upper="2.09439510239" velocity="2.356194490192345"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="left_iiwa_link_6">
@@ -262,14 +256,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_6_orange.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_6_orange.obj"/>
       </geometry>
       <material name="Orange"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_6_grey.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_6_grey.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -280,8 +274,7 @@
     <child link="left_iiwa_link_7"/>
     <origin rpy="-1.570796326794897 3.141592653589793 0" xyz="0 0.081 0"/>
     <axis xyz="0 0 1"/>
-    <limit effort="300" lower="-3.05432619099" upper="3.05432619099" velocity="10"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-3.01941960595" soft_upper_limit="3.01941960595"/>
+    <limit drake:acceleration="15.72" effort="40" lower="-3.05432619099" upper="3.05432619099" velocity="2.356194490192345"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="left_iiwa_link_7">
@@ -295,14 +288,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_7.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_7.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/collision/link_7_polytope.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/collision/link_7_polytope.obj"/>
       </geometry>
       <material name="Grey"/>
     </collision>
@@ -469,7 +462,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_0.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_0.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -486,8 +479,7 @@
     <child link="right_iiwa_link_1"/>
     <origin rpy="0 0 0" xyz="0 0 0.1575"/>
     <axis xyz="0 0 1"/>
-    <limit effort="300" lower="-2.96705972839" upper="2.96705972839" velocity="10"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.93215314335" soft_upper_limit="2.93215314335"/>
+    <limit drake:acceleration="8.57" effort="320" lower="-2.96705972839" upper="2.96705972839" velocity="1.4835298641951802"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="right_iiwa_link_1">
@@ -499,7 +491,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_1.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_1.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -510,8 +502,7 @@
     <child link="right_iiwa_link_2"/>
     <origin rpy="1.570796326794897   0 3.141592653589793" xyz="0 0 0.2025"/>
     <axis xyz="0 0 1"/>
-    <limit effort="300" lower="-2.09439510239" upper="2.09439510239" velocity="10"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
+    <limit drake:acceleration="8.57" effort="320" lower="-2.09439510239" upper="2.09439510239" velocity="1.4835298641951802"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="right_iiwa_link_2">
@@ -525,14 +516,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_2_orange.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_2_orange.obj"/>
       </geometry>
       <material name="Orange"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_2_grey.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_2_grey.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -543,8 +534,7 @@
     <child link="right_iiwa_link_3"/>
     <origin rpy="1.570796326794897 0 3.141592653589793" xyz="0 0.2045 0"/>
     <axis xyz="0 0 1"/>
-    <limit effort="300" lower="-2.96705972839" upper="2.96705972839" velocity="10"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
+    <limit drake:acceleration="8.74" effort="176" lower="-2.96705972839" upper="2.96705972839" velocity="1.7453292519943295"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="right_iiwa_link_3">
@@ -558,21 +548,21 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_3.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_3.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/band.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/band.obj"/>
       </geometry>
       <material name="Silver"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/kuka.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/kuka.obj"/>
       </geometry>
       <material name="Black"/>
     </visual>
@@ -583,8 +573,7 @@
     <child link="right_iiwa_link_4"/>
     <origin rpy="1.570796326794897 0 0" xyz="0 0 0.2155"/>
     <axis xyz="0 0 1"/>
-    <limit effort="300" lower="-2.09439510239" upper="2.09439510239" velocity="10"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
+    <limit drake:acceleration="11.36" effort="176" lower="-2.09439510239" upper="2.09439510239" velocity="1.3089969389957472"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="right_iiwa_link_4">
@@ -598,14 +587,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_4_orange.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_4_orange.obj"/>
       </geometry>
       <material name="Orange"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_4_grey.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_4_grey.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -616,8 +605,7 @@
     <child link="right_iiwa_link_5"/>
     <origin rpy="-1.570796326794897 3.141592653589793 0" xyz="0 0.1845 0"/>
     <axis xyz="0 0 1"/>
-    <limit effort="300" lower="-2.96705972839" upper="2.96705972839" velocity="10"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
+    <limit drake:acceleration="12.23" effort="110" lower="-2.96705972839" upper="2.96705972839" velocity="2.2689280275926285"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="right_iiwa_link_5">
@@ -631,21 +619,21 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_5.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_5.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/band.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/band.obj"/>
       </geometry>
       <material name="Silver"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/kuka.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/kuka.obj"/>
       </geometry>
       <material name="Black"/>
     </visual>
@@ -656,8 +644,7 @@
     <child link="right_iiwa_link_6"/>
     <origin rpy="1.570796326794897 0 0" xyz="0 0 0.2155"/>
     <axis xyz="0 0 1"/>
-    <limit effort="300" lower="-2.09439510239" upper="2.09439510239" velocity="10"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
+    <limit drake:acceleration="15.72" effort="40" lower="-2.09439510239" upper="2.09439510239" velocity="2.356194490192345"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="right_iiwa_link_6">
@@ -671,14 +658,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_6_orange.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_6_orange.obj"/>
       </geometry>
       <material name="Orange"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_6_grey.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_6_grey.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -689,8 +676,7 @@
     <child link="right_iiwa_link_7"/>
     <origin rpy="-1.570796326794897 3.141592653589793 0" xyz="0 0.081 0"/>
     <axis xyz="0 0 1"/>
-    <limit effort="300" lower="-3.05432619099" upper="3.05432619099" velocity="10"/>
-    <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-3.01941960595" soft_upper_limit="3.01941960595"/>
+    <limit drake:acceleration="15.72" effort="40" lower="-3.05432619099" upper="3.05432619099" velocity="2.356194490192345"/>
     <dynamics damping="0.5"/>
   </joint>
   <link name="right_iiwa_link_7">
@@ -704,14 +690,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_7.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_7.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/collision/link_7_polytope.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/collision/link_7_polytope.obj"/>
       </geometry>
       <material name="Grey"/>
     </collision>

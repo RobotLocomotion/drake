@@ -113,7 +113,11 @@ PYBIND11_MODULE(controllers, m) {
       .def("get_output_port_control",
           &InverseDynamicsController<double>::get_output_port_control,
           py_rvp::reference_internal,
-          doc.InverseDynamicsController.get_output_port_control.doc);
+          doc.InverseDynamicsController.get_output_port_control.doc)
+      .def("get_multibody_plant_for_control",
+          &InverseDynamicsController<double>::get_multibody_plant_for_control,
+          py_rvp::reference_internal,
+          doc.InverseDynamicsController.get_multibody_plant_for_control.doc);
 
   py::class_<PidControlledSystem<double>, Diagram<double>>(
       m, "PidControlledSystem", doc.PidControlledSystem.doc)
@@ -266,14 +270,20 @@ PYBIND11_MODULE(controllers, m) {
       .def_readwrite("input_port_index",
           &FiniteHorizonLinearQuadraticRegulatorOptions::input_port_index,
           doc.FiniteHorizonLinearQuadraticRegulatorOptions.input_port_index.doc)
+      .def_readwrite("use_square_root_method",
+          &FiniteHorizonLinearQuadraticRegulatorOptions::use_square_root_method,
+          doc.FiniteHorizonLinearQuadraticRegulatorOptions
+              .use_square_root_method.doc)
       .def("__repr__",
           [](const FiniteHorizonLinearQuadraticRegulatorOptions& self) {
             return py::str(
                 "FiniteHorizonLinearQuadraticRegulatorOptions("
                 "Qf={}, "
                 "N={}, "
-                "input_port_index={})")
-                .format(self.Qf, self.N, self.input_port_index);
+                "input_port_index={}, "
+                "use_square_root_method={})")
+                .format(self.Qf, self.N, self.input_port_index,
+                    self.use_square_root_method);
           });
 
   DefReadWriteKeepAlive(&fhlqr_options, "x0",

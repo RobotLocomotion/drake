@@ -36,7 +36,7 @@ GTEST_TEST(OpenGlGeometryTest, Construction) {
   EXPECT_EQ(geometry.has_tex_coord, true);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      OpenGlGeometry(1, 2, 3, -1, false), std::logic_error,
+      OpenGlGeometry(1, 2, 3, -1, false),
       "Index buffer size must be non-negative");
 }
 
@@ -59,7 +59,6 @@ GTEST_TEST(OpenGlGeometryTest, ThrowIfUndefined) {
   EXPECT_NO_THROW(valid.throw_if_undefined("test message"));
   DRAKE_EXPECT_THROWS_MESSAGE(
       OpenGlGeometry().throw_if_undefined("default is undefined"),
-      std::logic_error,
       "default is undefined");
 }
 

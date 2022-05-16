@@ -13,6 +13,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
@@ -81,7 +82,7 @@ class Polynomial {
   explicit Polynomial(std::nullptr_t) : Polynomial() {}
 
   /// Constructs a polynomial from a map, Monomial → Expression.
-  explicit Polynomial(MapType init);
+  explicit Polynomial(MapType map);
 
   /// Constructs a polynomial from a monomial @p m. Note that all variables
   /// in `m` are considered as indeterminates.
@@ -198,8 +199,26 @@ class Polynomial {
   /// evaluation.
   Polynomial EvaluatePartial(const Variable& var, double c) const;
 
+  /// Evaluates the polynomial at a batch of indeterminates values.
+  /// @param[in] indeterminates Must include all this->indeterminates()
+  /// @param[in] indeterminates_values Each column of `indeterminates_values`
+  /// stores one specific value of `indeterminates`.
+  /// indeterminates_values.rows() == indeterminates.rows().
+  /// @return polynomial_values polynomial_values(j) is obtained by
+  /// substituting indeterminates(i) in this polynomial with
+  /// indeterminates_values(i, j) for all i.
+  /// @throw error if any coefficient in this polynomial is not a constant.
+  Eigen::VectorXd EvaluateIndeterminates(
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& indeterminates,
+      const Eigen::Ref<const Eigen::MatrixXd>& indeterminates_values) const;
+
   /// Adds @p coeff * @p m to this polynomial.
   Polynomial& AddProduct(const Expression& coeff, const Monomial& m);
+
+  /// Expands each coefficient expression and returns the expanded polynomial.
+  /// If any coefficient is equal to 0 after expansion, then remove that term
+  /// from the returned polynomial.
+  Polynomial Expand() const;
 
   /// Removes the terms whose absolute value of the coefficients are smaller
   /// than or equal to @p coefficient_tol
@@ -210,6 +229,18 @@ class Polynomial {
   /// @retval polynomial_cleaned A polynomial whose terms with small
   /// coefficients are removed.
   Polynomial RemoveTermsWithSmallCoefficients(double coefficient_tol) const;
+
+  /// Returns true if the polynomial is even, namely p(x) = p(-x). Meaning that
+  /// the coefficient for all odd-degree monomials are 0.
+  /// Returns false otherwise.
+  /// Note that this is different from the p.TotalDegree() being an even number.
+  bool IsEven() const;
+
+  /// Returns true if the polynomial is odd, namely p(x) = -p(-x). Meaning that
+  /// the coefficient for all even-degree monomials are 0.
+  /// Returns false otherwise.
+  /// Note that this is different from the p.TotalDegree() being an odd number.
+  bool IsOdd() const;
 
   Polynomial& operator+=(const Polynomial& p);
   Polynomial& operator+=(const Monomial& m);
@@ -229,14 +260,15 @@ class Polynomial {
   /// Returns true if this polynomial and @p p are structurally equal.
   bool EqualTo(const Polynomial& p) const;
 
-  /// Returns true if this polynomial and @p p are equal, after expanding the
-  /// coefficients.
+  DRAKE_DEPRECATED("2022-09-01",
+                   "Use this->Expand().EqualTo(p.Expand()) instead of "
+                   "EqualToAfterExpansion()")
   bool EqualToAfterExpansion(const Polynomial& p) const;
 
-  /// Returns true if this polynomial and @p are almost equal (the difference
-  /// in the corresponding coefficients are all less than @p tol), after
+  /// Returns true if this polynomial and @p p are almost equal (the difference
+  /// in the corresponding coefficients are all less than @p tolerance), after
   /// expanding the coefficients.
-  bool CoefficientsAlmostEqual(const Polynomial& p, double tol) const;
+  bool CoefficientsAlmostEqual(const Polynomial& p, double tolerance) const;
 
   /// Returns a symbolic formula representing the condition where this
   /// polynomial and @p p are the same.

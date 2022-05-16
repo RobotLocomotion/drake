@@ -34,6 +34,7 @@ GTEST_TEST(FileParserTest, BasicTest) {
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
+    EXPECT_EQ(&dut.plant(), &plant);
     EXPECT_EQ(dut.AddAllModelsFromFile(sdf_name).size(), 1);
     dut.AddModelFromFile(sdf_name, "foo");
   }
@@ -93,12 +94,12 @@ GTEST_TEST(FileParserTest, MultiModelErrorsTest) {
     MultibodyPlant<double> plant(0.0);
     DRAKE_EXPECT_THROWS_MESSAGE(
         Parser(&plant).AddAllModelsFromFile(sdf_name),
-        ".*has 2 models and 0 worlds.*");
+        R"([\s\S]*Root object can only contain one model.*)");
   }
 
   // The singular method cannot load a two-model file.
   const char* const expected_error =
-      "(.*must have a single <model> element.*)";
+        R"([\s\S]*Root object can only contain one model.*)";
 
   // Check the singular method without model_name.
   {
@@ -167,10 +168,11 @@ GTEST_TEST(FileParserTest, ExtensionMatchTest) {
   // URDF parser, shown here by it generating a different exception message).
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromFile("acrobot.SDF"),
-      ".*does not exist.*");
+      ".*Unable to read file.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromFile("acrobot.URDF"),
-      ".*does not exist.*");
+      "/.*/acrobot.URDF:0: error: "
+      "Failed to parse XML file: XML_ERROR_FILE_NOT_FOUND");
 }
 
 GTEST_TEST(FileParserTest, BadStringTest) {
@@ -178,50 +180,18 @@ GTEST_TEST(FileParserTest, BadStringTest) {
   MultibodyPlant<double> plant(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromString("bad", "sdf"),
-      ".*\n.*Unable to read SDF string.*");
+      ".*Unable to read SDF string.*");
 
   // Malformed URDF string is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromString("bad", "urdf"),
+      "<literal-string>.urdf:1: error: "
       "Failed to parse XML string: XML_ERROR_PARSING_TEXT");
 
   // Unknown extension is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromString("<bad/>", "weird-ext"),
       ".*file type '\\.weird-ext' is not supported .*");
-}
-
-// If a Drake URDF or SDF file uses package URIs, this confirms that the attempt
-// to add the model also loads its package.xml files by side effect.
-GTEST_TEST(FileParserTest, FindDrakePackageWhenAdding) {
-  using AddFunc = std::function<void(const std::string&, Parser*)>;
-  // Function wrappers to facilitate testing all
-  // {URDF, SDF} X {AddModel, AddAllModels} combinations.
-  AddFunc add_all_models = [](const std::string& file_name, Parser* parser) {
-    parser->AddAllModelsFromFile(file_name);
-  };
-  AddFunc add_model = [](const std::string& file_name, Parser* parser) {
-    parser->AddModelFromFile(file_name);
-  };
-
-  for (const auto& add_func : {add_all_models, add_model}) {
-    for (const auto file_name :
-         {"drake/multibody/parsing/test/box_package/sdfs/box.sdf",
-          "drake/multibody/parsing/test/box_package/urdfs/box.urdf"}) {
-      MultibodyPlant<double> plant(0.0);
-      geometry::SceneGraph<double> scene_graph;
-      Parser parser(&plant, &scene_graph);
-      const int orig_package_size = parser.package_map().size();
-
-      // Because the box.sdf references an obj via a package: URI, this would
-      // throw if the package were not found.
-      EXPECT_NO_THROW(add_func(FindResourceOrThrow(file_name), &parser));
-
-      // Now we explicitly confirm the package map has been modified.
-      EXPECT_EQ(parser.package_map().size(), orig_package_size + 1);
-      EXPECT_TRUE(parser.package_map().Contains("box_model"));
-    }
-  }
 }
 
 // If a non-Drake URDF or SDF file uses package URIs, this confirms that it is
@@ -257,12 +227,34 @@ GTEST_TEST(FileParserTest, PackageMapTest) {
   // Attempt to read in the SDF file without setting the package map first.
   const std::string new_sdf_filename = sdf_path + "/box.sdf";
   DRAKE_EXPECT_THROWS_MESSAGE(parser.AddModelFromFile(new_sdf_filename),
-      std::runtime_error,
-      ".*ERROR: Mesh file name could not be resolved from the provided uri.*");
+      "error.*unknown package.*box_model.*");
 
   // Try again.
   parser.package_map().PopulateFromFolder(temp_dir);
   parser.AddModelFromFile(new_sdf_filename, "dummy" /* model name */);
+}
+
+GTEST_TEST(FileParserTest, StrictParsing) {
+  // If the choice of what causes warnings changes, this test data will need to
+  // be updated. In this incarnation, the /robot/@version attribute provokes a
+  // warning because it is ignored.
+  std::string model_provokes_warning = R"""(
+    <robot name='robot' version='0.99'>
+      <link name='a'/>
+    </robot>)""";
+  std::string warning_pattern = ".*version.*ignored.*";
+
+  MultibodyPlant<double> plant(0.0);
+  geometry::SceneGraph<double> scene_graph;
+  Parser parser(&plant, &scene_graph);
+
+  EXPECT_NO_THROW(
+      parser.AddModelFromString(model_provokes_warning, "urdf", "lax"));
+
+  parser.SetStrictParsing();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      parser.AddModelFromString(model_provokes_warning, "urdf", "strict"),
+      warning_pattern);
 }
 
 }  // namespace

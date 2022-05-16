@@ -8,6 +8,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/math/rotation_matrix.h"
@@ -394,25 +395,30 @@ class RigidTransform {
   }
 
   /// Returns `true` if `this` is exactly the identity %RigidTransform.
-  /// @see IsIdentityToEpsilon().
+  /// @see IsNearlyIdentity().
   boolean<T> IsExactlyIdentity() const {
     const boolean<T> is_position_zero = (translation() == Vector3<T>::Zero());
     return is_position_zero && rotation().IsExactlyIdentity();
   }
 
-  /// Return true if `this` is within tolerance of the identity %RigidTransform.
-  /// @returns `true` if the RotationMatrix portion of `this` satisfies
-  /// RotationMatrix::IsIdentityToInternalTolerance() and if the position vector
-  /// portion of `this` is equal to zero vector within `translation_tolerance`.
+  /// Returns true if `this` is within tolerance of the identity RigidTransform.
   /// @param[in] translation_tolerance a non-negative number.  One way to choose
   /// `translation_tolerance` is to multiply a characteristic length
   /// (e.g., the magnitude of a characteristic position vector) by an epsilon
   /// (e.g., RotationMatrix::get_internal_tolerance_for_orthonormality()).
+  /// @returns `true` if the RotationMatrix portion of `this` satisfies
+  /// RotationMatrix::IsNearlyIdentity() and if the position vector portion of
+  /// `this` is equal to zero vector within `translation_tolerance`.
   /// @see IsExactlyIdentity().
-  boolean<T> IsIdentityToEpsilon(double translation_tolerance) const {
+  boolean<T> IsNearlyIdentity(double translation_tolerance) const {
     const T max_component = translation().template lpNorm<Eigen::Infinity>();
     return max_component <= translation_tolerance &&
-        rotation().IsIdentityToInternalTolerance();
+        rotation().IsNearlyIdentity();
+  }
+
+  DRAKE_DEPRECATED("2022-06-01", "Use RigidTransform::IsNearlyIdentity()")
+  boolean<T> IsIdentityToEpsilon(double translation_tolerance) const {
+    return IsNearlyIdentity(translation_tolerance);
   }
 
   /// Returns X_BA = X_AB⁻¹, the inverse of `this` %RigidTransform.

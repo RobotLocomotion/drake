@@ -32,9 +32,9 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
   const double resolution_hint = 0.5;
   auto mesh = make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
       sphere, resolution_hint, TessellationStrategy::kSingleInteriorVertex));
-  const double elastic_modulus = 1e+7;
+  const double hydroelastic_modulus = 1e+7;
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
-      MakeSpherePressureField(sphere, mesh.get(), elastic_modulus));
+      MakeSpherePressureField(sphere, mesh.get(), hydroelastic_modulus));
 
   const SoftMesh original(std::move(mesh), std::move(pressure));
 
@@ -125,9 +125,9 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
   const double resolution_hint = 0.5;
   auto mesh = make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
       sphere, resolution_hint, TessellationStrategy::kSingleInteriorVertex));
-  const double elastic_modulus = 1e+7;
+  const double hydroelastic_modulus = 1e+7;
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
-      MakeSpherePressureField(sphere, mesh.get(), elastic_modulus));
+      MakeSpherePressureField(sphere, mesh.get(), hydroelastic_modulus));
 
   const SoftGeometry original(SoftMesh(std::move(mesh), std::move(pressure)));
 
@@ -209,7 +209,7 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
 GTEST_TEST(RigidMeshTest, TestCopyMoveAssignConstruct) {
   const Sphere sphere(0.5);
   const double resolution_hint = 0.5;
-  auto mesh = make_unique<SurfaceMesh<double>>(
+  auto mesh = make_unique<TriangleSurfaceMesh<double>>(
       MakeSphereSurfaceMesh<double>(sphere, resolution_hint));
 
   const RigidMesh original(std::move(mesh));
@@ -248,8 +248,8 @@ GTEST_TEST(RigidMeshTest, TestCopyMoveAssignConstruct) {
 
     // Grab raw pointers so we can determine that their ownership changes due to
     // move semantics.
-    const SurfaceMesh<double>* const mesh_ptr = &start.mesh();
-    const Bvh<Obb, SurfaceMesh<double>>* const bvh_ptr = &start.bvh();
+    const TriangleSurfaceMesh<double>* const mesh_ptr = &start.mesh();
+    const Bvh<Obb, TriangleSurfaceMesh<double>>* const bvh_ptr = &start.bvh();
 
     // Test move constructor.
     RigidMesh move_constructed(std::move(start));
@@ -273,8 +273,9 @@ GTEST_TEST(RigidMeshTest, TestCopyMoveAssignConstruct) {
 // (already tested). If RigidGeometry changes its implementation details, this
 // logic would need to be revisited.
 GTEST_TEST(RigidGeometryTest, TestCopyMoveAssignConstruct) {
-  const RigidGeometry original(RigidMesh(make_unique<SurfaceMesh<double>>(
-      MakeSphereSurfaceMesh<double>(Sphere(1.25), 2.0))));
+  const RigidGeometry original(
+      RigidMesh(make_unique<TriangleSurfaceMesh<double>>(
+          MakeSphereSurfaceMesh<double>(Sphere(1.25), 2.0))));
 
   // Test copy-assignment operator.
   {
@@ -312,8 +313,8 @@ GTEST_TEST(RigidGeometryTest, TestCopyMoveAssignConstruct) {
 
     // Grab raw pointers so we can determine that their ownership changes due to
     // move semantics.
-    const SurfaceMesh<double>* const mesh_ptr = &start.mesh();
-    const Bvh<Obb, SurfaceMesh<double>>* const bvh_ptr = &start.bvh();
+    const TriangleSurfaceMesh<double>* const mesh_ptr = &start.mesh();
+    const Bvh<Obb, TriangleSurfaceMesh<double>>* const bvh_ptr = &start.bvh();
 
     // Test move constructor.
     RigidGeometry move_constructed(std::move(start));
@@ -342,8 +343,7 @@ GTEST_TEST(Hydroelastic, GeometriesPopulationAndQuery) {
 
   GeometryId soft_id = GeometryId::get_new_id();
   ProximityProperties soft_properties;
-  AddContactMaterial(1e8, {}, {}, &soft_properties);
-  AddSoftHydroelasticProperties(1.0, &soft_properties);
+  AddCompliantHydroelasticProperties(1.0, 1e8, &soft_properties);
 
   GeometryId bad_id = GeometryId::get_new_id();
   EXPECT_EQ(geometries.hydroelastic_type(rigid_id),
@@ -378,8 +378,7 @@ GTEST_TEST(Hydroelastic, RemoveGeometry) {
   // Add a soft geometry.
   const GeometryId soft_id = GeometryId::get_new_id();
   ProximityProperties soft_properties;
-  AddContactMaterial(1e8, {}, {}, &soft_properties);
-  AddSoftHydroelasticProperties(1.0, &soft_properties);
+  AddCompliantHydroelasticProperties(1.0, 1e8, &soft_properties);
   geometries.MaybeAddGeometry(Sphere(0.5), soft_id, soft_properties);
   ASSERT_EQ(geometries.hydroelastic_type(soft_id), HydroelasticType::kSoft);
 
@@ -442,10 +441,10 @@ TEST_F(HydroelasticRigidGeometryTest, HalfSpace) {
   EXPECT_TRUE(half_space->is_half_space());
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      half_space->mesh(), std::runtime_error,
+      half_space->mesh(),
       "RigidGeometry::mesh.* cannot be invoked .* half space");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      half_space->bvh(), std::runtime_error,
+      half_space->bvh(),
       "RigidGeometry::bvh.* cannot be invoked .* half space");
 }
 
@@ -462,9 +461,9 @@ TEST_F(HydroelasticRigidGeometryTest, Sphere) {
   ASSERT_NE(sphere, std::nullopt);
   ASSERT_FALSE(sphere->is_half_space());
 
-  const SurfaceMesh<double>& mesh = sphere->mesh();
-  for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-    ASSERT_NEAR(mesh.vertex(v).r_MV().norm(), radius, 1e-15);
+  const TriangleSurfaceMesh<double>& mesh = sphere->mesh();
+  for (int v = 0; v < mesh.num_vertices(); ++v) {
+    ASSERT_NEAR(mesh.vertex(v).norm(), radius, 1e-15);
   }
 }
 
@@ -484,13 +483,13 @@ TEST_F(HydroelasticRigidGeometryTest, Box) {
   ASSERT_NE(box, std::nullopt);
   ASSERT_FALSE(box->is_half_space());
 
-  const SurfaceMesh<double>& mesh = box->mesh();
+  const TriangleSurfaceMesh<double>& mesh = box->mesh();
   EXPECT_EQ(mesh.num_vertices(), 8);
   // Because it is a cube centered at the origin, the distance from the origin
   // to each vertex should be sqrt(3) * edge_len / 2.
   const double expected_dist = std::sqrt(3) * edge_len / 2;
-  for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-    ASSERT_NEAR(mesh.vertex(v).r_MV().norm(), expected_dist, 1e-15);
+  for (int v = 0; v < mesh.num_vertices(); ++v) {
+    ASSERT_NEAR(mesh.vertex(v).norm(), expected_dist, 1e-15);
   }
 }
 
@@ -515,11 +514,11 @@ TEST_F(HydroelasticRigidGeometryTest, Cylinder) {
   ASSERT_FALSE(cylinder->is_half_space());
 
   // Smoke test the surface mesh.
-  const SurfaceMesh<double>& mesh = cylinder->mesh();
+  const TriangleSurfaceMesh<double>& mesh = cylinder->mesh();
   EXPECT_EQ(mesh.num_vertices(), 8);
-  EXPECT_EQ(mesh.num_faces(), 12);
-  for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-    const auto [x, y, z] = unpack(mesh.vertex(v).r_MV());
+  EXPECT_EQ(mesh.num_triangles(), 12);
+  for (int v = 0; v < mesh.num_vertices(); ++v) {
+    const auto [x, y, z] = unpack(mesh.vertex(v));
     // Only check that the vertex is within the cylinder. It does not check
     // that the vertex is near the surface of the cylinder.  We rely on the
     // correctness of the mesh generator.
@@ -548,14 +547,13 @@ TEST_F(HydroelasticRigidGeometryTest, Capsule) {
   ASSERT_FALSE(capsule->is_half_space());
 
   // Smoke test the surface mesh.
-  const SurfaceMesh<double>& mesh = capsule->mesh();
+  const TriangleSurfaceMesh<double>& mesh = capsule->mesh();
   EXPECT_EQ(mesh.num_vertices(), 8);
-  EXPECT_EQ(mesh.num_faces(), 12);
+  EXPECT_EQ(mesh.num_triangles(), 12);
 
-  for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
+  for (const Vector3d& p_MV : mesh.vertices()) {
     // Check that the vertex is near the surface of the capsule.
-    ASSERT_NEAR(CalcDistanceToSurface(capsule_shape, mesh.vertex(v).r_MV()),
-                0.0, 1e-15);
+    ASSERT_NEAR(CalcDistanceToSurface(capsule_shape, p_MV), 0.0, 1e-15);
   }
 
   // Create rigid representation, passing a smaller resolution hint to verify
@@ -564,7 +562,7 @@ TEST_F(HydroelasticRigidGeometryTest, Capsule) {
   std::optional<RigidGeometry> capsule_fine =
       MakeRigidRepresentation(capsule_shape, props_fine);
 
-  const SurfaceMesh<double>& mesh_fine = capsule_fine->mesh();
+  const TriangleSurfaceMesh<double>& mesh_fine = capsule_fine->mesh();
   EXPECT_GT(mesh_fine.num_vertices(), mesh.num_vertices());
   EXPECT_GT(mesh_fine.num_elements(), mesh.num_elements());
 }
@@ -590,11 +588,11 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
   ASSERT_FALSE(ellipsoid->is_half_space());
 
   // Smoke test the surface mesh.
-  const SurfaceMesh<double>& mesh = ellipsoid->mesh();
+  const TriangleSurfaceMesh<double>& mesh = ellipsoid->mesh();
   EXPECT_EQ(mesh.num_vertices(), 6);
-  EXPECT_EQ(mesh.num_faces(), 8);
-  for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-    const auto [x, y, z] = unpack(mesh.vertex(v).r_MV());
+  EXPECT_EQ(mesh.num_triangles(), 8);
+  for (int v = 0; v < mesh.num_vertices(); ++v) {
+    const auto [x, y, z] = unpack(mesh.vertex(v));
     ASSERT_NEAR(pow(x / a, 2) + pow(y / b, 2) + pow(z / c, 2), 1.0, 1e-15);
   }
 }
@@ -620,16 +618,16 @@ void TestRigidMeshType() {
     // We only check that the obj file was read by verifying the number of
     // vertices and triangles, which depend on the specific content of
     // the obj file.
-    const SurfaceMesh<double>& surface_mesh = geometry->mesh();
+    const TriangleSurfaceMesh<double>& surface_mesh = geometry->mesh();
     EXPECT_EQ(surface_mesh.num_vertices(), 8);
-    EXPECT_EQ(surface_mesh.num_faces(), 12);
+    EXPECT_EQ(surface_mesh.num_triangles(), 12);
 
     // The scale factor multiplies the measure of every vertex position, so
     // the expected distance of the vertex to the origin should be:
     // scale * sqrt(3) (because the original mesh was the unit sphere).
     const double expected_dist = std::sqrt(3) * scale;
-    for (SurfaceVertexIndex v(0); v < surface_mesh.num_vertices(); ++v) {
-      const double dist = surface_mesh.vertex(v).r_MV().norm();
+    for (int v = 0; v < surface_mesh.num_vertices(); ++v) {
+      const double dist = surface_mesh.vertex(v).norm();
       ASSERT_NEAR(dist, expected_dist, scale * kEps)
           << "for scale: " << scale << " at vertex " << v;
     }
@@ -688,6 +686,12 @@ HalfSpace make_default_shape<HalfSpace>() {
   return HalfSpace();
 }
 
+template <>
+Convex make_default_shape<Convex>() {
+  std::string file = FindResourceOrThrow("drake/geometry/test/octahedron.obj");
+  return Convex(file);
+}
+
 // Boilerplate for testing error conditions relating to properties. Its purpose
 // is to test that the `Make*Representation` (either "Rigid" or "Soft")
 // family of functions correctly validate all required properties. A property
@@ -736,7 +740,7 @@ void TestPropertyErrors(
   // Error case: missing property value.
   {
     DRAKE_EXPECT_THROWS_MESSAGE(
-        maker(shape_spec, props), std::logic_error,
+        maker(shape_spec, props),
         fmt::format("Cannot create {} {}.+'{}'\\) property", compliance,
                     shape_name, property_name));
   }
@@ -747,7 +751,7 @@ void TestPropertyErrors(
     wrong_value.AddProperty(group_name, property_name, "10");
     // This error message comes from GeometryProperties::GetProperty().
     DRAKE_EXPECT_THROWS_MESSAGE(
-        maker(shape_spec, wrong_value), std::logic_error,
+        maker(shape_spec, wrong_value),
         fmt::format(".*The property \\('{}', '{}'\\) exists, but is of a "
                     "different type.+string'",
                     group_name, property_name));
@@ -758,7 +762,7 @@ void TestPropertyErrors(
     ProximityProperties negative_value(props);
     negative_value.AddProperty(group_name, property_name, *bad_value);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        maker(shape_spec, negative_value), std::logic_error,
+        maker(shape_spec, negative_value),
         fmt::format("Cannot create {} {}.+'{}'.+ positive", compliance,
                     shape_name, property_name));
   }
@@ -803,8 +807,7 @@ class HydroelasticSoftGeometryTest : public ::testing::Test {
   /* Creates a simple set of properties for generating soft geometry. */
   ProximityProperties soft_properties(double edge_length = 0.1) const {
     ProximityProperties soft_properties;
-    AddContactMaterial(1e8, {}, {}, &soft_properties);
-    AddSoftHydroelasticProperties(edge_length, &soft_properties);
+    AddCompliantHydroelasticProperties(edge_length, 1e8, &soft_properties);
     return soft_properties;
   }
 };
@@ -819,8 +822,6 @@ TEST_F(HydroelasticSoftGeometryTest, UnsupportedSoftShapes) {
 
   // Note: the file name doesn't have to be valid for this (and the Mesh) test.
   const std::string obj = "drake/geometry/proximity/test/no_such_files.obj";
-  EXPECT_EQ(MakeSoftRepresentation(Convex(obj, 1.0), props), std::nullopt);
-
   EXPECT_EQ(MakeSoftRepresentation(Mesh(obj, 1.0), props), std::nullopt);
 }
 
@@ -829,7 +830,7 @@ TEST_F(HydroelasticSoftGeometryTest, HalfSpace) {
 
   // Case: A half space without (hydroelastic, slab_thickness) throws.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeSoftRepresentation(HalfSpace(), properties), std::logic_error,
+      MakeSoftRepresentation(HalfSpace(), properties),
       "Cannot create soft HalfSpace; missing the .*slab_thickness.* property");
 
   // Case: fully specified half space.
@@ -841,16 +842,16 @@ TEST_F(HydroelasticSoftGeometryTest, HalfSpace) {
   EXPECT_TRUE(half_space->is_half_space());
   EXPECT_EQ(
       half_space->pressure_scale(),
-      properties.GetProperty<double>(kMaterialGroup, kElastic) / thickness);
+      properties.GetProperty<double>(kHydroGroup, kElastic) / thickness);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      half_space->mesh(), std::runtime_error,
+      half_space->mesh(),
       "SoftGeometry::mesh.* cannot be invoked .* half space");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      half_space->pressure_field(), std::runtime_error,
+      half_space->pressure_field(),
       "SoftGeometry::pressure.* cannot be invoked .* half space");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      half_space->bvh(), std::runtime_error,
+      half_space->bvh(),
       "SoftGeometry::bvh.* cannot be invoked .* half space");
 }
 
@@ -878,7 +879,7 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
   // meshes and slab_thickness() does.
   EXPECT_NO_THROW(sphere1->bvh());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      sphere1->pressure_scale(), std::runtime_error,
+      sphere1->pressure_scale(),
       "SoftGeometry::pressure_scale.* cannot be invoked .* soft mesh");
 
   // Confirm that all vertices lie inside the sphere and that at least one lies
@@ -886,8 +887,8 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
   double max_distance = -1.0;
   for (const auto& soft_geometry : {*sphere1, *sphere2}) {
     const VolumeMesh<double>& mesh = soft_geometry.mesh();
-    for (VolumeVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-      const double dist = mesh.vertex(v).r_MV().norm();
+    for (int v = 0; v < mesh.num_vertices(); ++v) {
+      const double dist = mesh.vertex(v).norm();
       max_distance = std::max(max_distance, dist);
       ASSERT_LE(dist, kRadius);
     }
@@ -897,17 +898,17 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
 
   // Confirm pressure field is as specified in the properties.
   const double E =
-      properties1.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
+      properties1.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   // We assume that the sphere's pressure is defined as E * (1 - r/R).
   auto pressure = [E, kRadius](const Vector3d& r_MV) {
     return E * (1.0 - r_MV.norm() / kRadius);
   };
   const double kEps = std::numeric_limits<double>::epsilon();
   const VolumeMesh<double>& mesh = sphere1->mesh();
-  for (VolumeVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-    const VolumeVertex<double>& vertex = mesh.vertex(v);
+  for (int v = 0; v < mesh.num_vertices(); ++v) {
+    const Vector3d& vertex = mesh.vertex(v);
     // Zero on outside, 1 on inside.
-    const double expected_p = pressure(vertex.r_MV());
+    const double expected_p = pressure(vertex);
     EXPECT_NEAR(sphere1->pressure_field().EvaluateAtVertex(v), expected_p,
                 kEps * E);
   }
@@ -979,8 +980,8 @@ TEST_F(HydroelasticSoftGeometryTest, Box) {
   const int expected_num_vertices = 12;
   EXPECT_EQ(box->mesh().num_vertices(), expected_num_vertices);
   const double E =
-      properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
-  for (VolumeVertexIndex v(0); v < box->mesh().num_vertices(); ++v) {
+      properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  for (int v = 0; v < box->mesh().num_vertices(); ++v) {
     const double pressure = box->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
     EXPECT_LE(pressure, E);
@@ -1005,8 +1006,8 @@ TEST_F(HydroelasticSoftGeometryTest, Cylinder) {
   const int expected_num_vertices = 9;
   EXPECT_EQ(cylinder->mesh().num_vertices(), expected_num_vertices);
   const double E =
-      properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
-  for (VolumeVertexIndex v(0); v < cylinder->mesh().num_vertices(); ++v) {
+      properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  for (int v = 0; v < cylinder->mesh().num_vertices(); ++v) {
     const double pressure = cylinder->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
     EXPECT_LE(pressure, E);
@@ -1033,8 +1034,8 @@ TEST_F(HydroelasticSoftGeometryTest, Capsule) {
   // TODO(joemasterjohn): Change all instances of `GetPropertyOrDefault` to
   // `GetProperty` variant.
   const double E =
-      properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
-  for (VolumeVertexIndex v(0); v < capsule->mesh().num_vertices(); ++v) {
+      properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  for (int v = 0; v < capsule->mesh().num_vertices(); ++v) {
     const double pressure = capsule->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
     EXPECT_LE(pressure, E);
@@ -1062,8 +1063,8 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
   const int expected_num_vertices = 7;
   EXPECT_EQ(ellipsoid->mesh().num_vertices(), expected_num_vertices);
   const double E =
-      properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
-  for (VolumeVertexIndex v(0); v < ellipsoid->mesh().num_vertices(); ++v) {
+      properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  for (int v = 0; v < ellipsoid->mesh().num_vertices(); ++v) {
     const double pressure = ellipsoid->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
     EXPECT_LE(pressure, E);
@@ -1118,13 +1119,36 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
   }
 }
 
+// Test construction of a soft convex mesh.
+TEST_F(HydroelasticSoftGeometryTest, Convex) {
+  // Construct off of a known convex mesh.
+  std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  const Convex convex_spec(file);
+
+  ProximityProperties properties = soft_properties(0.16);
+  std::optional<SoftGeometry> convex =
+      MakeSoftRepresentation(convex_spec, properties);
+
+  // Smoke test the mesh and the pressure field. It relies on unit tests for
+  // the generators of the mesh and the pressure field.
+  const int expected_num_vertices = 9;
+  EXPECT_EQ(convex->mesh().num_vertices(), expected_num_vertices);
+  const double E =
+      properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  for (int v = 0; v < convex->mesh().num_vertices(); ++v) {
+    const double pressure = convex->pressure_field().EvaluateAtVertex(v);
+    EXPECT_GE(pressure, 0);
+    EXPECT_LE(pressure, E);
+  }
+}
+
 // Test suite for testing the common failure conditions for generating soft
 // geometry. Specifically, they need to be tessellated into a tet mesh
-// and define a pressure field. This actively excludes Convex and Mesh
-// because soft Convex and soft Mesh are not currently supported for
-// hydroelastic contact. (See the `SoftErrorShapeTypes` declaration below.)
-// It should include every *other* supported soft shape type. For HalfSpace
-// and Box, they are included in the test suite but exempt from
+// and define a pressure field. This actively excludes Mesh because soft Mesh
+// is not currently supported for hydroelastic contact.
+// (See the `SoftErrorShapeTypes` declaration below.)
+// It should include every *other* supported soft shape type. For HalfSpace,
+// Box, and Convex they are included in the test suite but exempt from
 // BadResolutionHint because they do not depend on the resolution hint
 // parameter. Only HalfSpace is tested in BadSlabThickness.
 template <typename ShapeType>
@@ -1136,7 +1160,8 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadResolutionHint) {
   using ShapeType = TypeParam;
   ShapeType shape_spec = make_default_shape<ShapeType>();
   if (ShapeName(shape_spec).name() != "HalfSpace" &&
-      ShapeName(shape_spec).name() != "Box") {
+      ShapeName(shape_spec).name() != "Box" &&
+      ShapeName(shape_spec).name() != "Convex") {
     TestPropertyErrors<ShapeType, double>(
         shape_spec, kHydroGroup, kRezHint, "soft",
         [](const ShapeType& s, const ProximityProperties& p) {
@@ -1156,7 +1181,7 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadElasticModulus) {
   soft_properties.AddProperty(kHydroGroup, kRezHint, 10.0);
   soft_properties.AddProperty(kHydroGroup, kSlabThickness, 1.0);
   TestPropertyErrors<ShapeType, double>(
-      shape_spec, kMaterialGroup, kElastic, "soft",
+      shape_spec, kHydroGroup, kElastic, "soft",
       [](const ShapeType& s, const ProximityProperties& p) {
         MakeSoftRepresentation(s, p);
       },
@@ -1180,7 +1205,8 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadSlabThickness) {
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticSoftGeometryErrorTests,
                             BadResolutionHint, BadElasticModulus,
                             BadSlabThickness);
-typedef ::testing::Types<Sphere, Box, Capsule, Cylinder, Ellipsoid, HalfSpace>
+typedef ::testing::Types<Sphere, Box, Capsule, Cylinder, Ellipsoid, HalfSpace,
+                         Convex>
     SoftErrorShapeTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticSoftGeometryErrorTests,
                                SoftErrorShapeTypes);

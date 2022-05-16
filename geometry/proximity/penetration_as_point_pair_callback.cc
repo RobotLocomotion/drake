@@ -5,6 +5,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
 
@@ -423,7 +424,7 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
   return false;
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &Callback<T>
 ))
 

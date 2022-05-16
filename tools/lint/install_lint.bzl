@@ -21,6 +21,8 @@ def install_lint(
             continue
         if "nolint" in tags:
             continue
+        if "no_install_lint" in tags:
+            continue
 
         rule_name = one_rule["name"]
         rule_label = "{}:{}".format(package_name, rule_name)

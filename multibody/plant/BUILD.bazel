@@ -18,8 +18,8 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":calc_distance_and_time_derivative",
+        ":compliant_contact_manager",
         ":contact_jacobians",
-        ":contact_permutation",
         ":contact_results",
         ":coulomb_friction",
         ":discrete_contact_pair",
@@ -27,10 +27,29 @@ drake_cc_package_library(
         ":hydroelastic_contact_info",
         ":hydroelastic_quadrature_point_data",
         ":hydroelastic_traction",
+        ":internal_geometry_names",
+        ":multibody_plant_config",
+        ":multibody_plant_config_functions",
         ":multibody_plant_core",
         ":point_pair_contact_info",
         ":propeller",
         ":tamsi_solver",
+        ":wing",
+    ],
+)
+
+drake_cc_library(
+    name = "compliant_contact_manager",
+    srcs = ["compliant_contact_manager.cc"],
+    hdrs = ["compliant_contact_manager.h"],
+    deps = [
+        ":multibody_plant_core",
+        "//multibody/contact_solvers:contact_solver_utils",
+        "//multibody/contact_solvers/sap:sap_contact_problem",
+        "//multibody/contact_solvers/sap:sap_friction_cone_constraint",
+        "//multibody/contact_solvers/sap:sap_limit_constraint",
+        "//multibody/contact_solvers/sap:sap_solver",
+        "//multibody/triangle_quadrature",
     ],
 )
 
@@ -51,6 +70,8 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:extract_double",
+        "//math:gradient",
+        "//math:linear_solve",
     ],
 )
 
@@ -87,6 +108,7 @@ drake_cc_library(
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":hydroelastic_traction",
+        ":multibody_plant_config",
         ":tamsi_solver",
         "//common:default_scalars",
         "//common:essential",
@@ -156,7 +178,7 @@ drake_cc_library(
         "hydroelastic_quadrature_point_data.h",
     ],
     deps = [
-        "//geometry/proximity:surface_mesh",
+        "//geometry/proximity:triangle_surface_mesh",
     ],
 )
 
@@ -184,7 +206,7 @@ drake_cc_library(
         "contact_results_to_lcm.h",
     ],
     tags = [
-        # Don't add this library into the ":multibody_plant" package library.
+        # Don't add this library into the ":plant" package library.
         # Use of MBP doesn't imply use of contact visualization so this
         # dependency should be invoked explicitly.
         "exclude_from_package",
@@ -197,6 +219,17 @@ drake_cc_library(
         "//lcmtypes:point_pair_contact_info_for_viz",
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_pubsub_system",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_geometry_names",
+    srcs = ["internal_geometry_names.cc"],
+    hdrs = ["internal_geometry_names.h"],
+    deps = [
+        ":multibody_plant_core",
+        "//common:default_scalars",
+        "//geometry:scene_graph_inspector",
     ],
 )
 
@@ -274,11 +307,49 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "contact_permutation",
-    srcs = ["contact_permutation.cc"],
-    hdrs = ["contact_permutation.h"],
+    name = "wing",
+    srcs = ["wing.cc"],
+    hdrs = ["wing.h"],
     deps = [
-        "//multibody/tree:multibody_tree_topology",
+        ":multibody_plant_core",
+    ],
+)
+
+drake_cc_library(
+    name = "multibody_plant_config",
+    srcs = ["multibody_plant_config.cc"],
+    hdrs = ["multibody_plant_config.h"],
+    deps = [
+        "//common:name_value",
+    ],
+)
+
+drake_cc_library(
+    name = "multibody_plant_config_functions",
+    srcs = ["multibody_plant_config_functions.cc"],
+    hdrs = ["multibody_plant_config_functions.h"],
+    deps = [
+        ":multibody_plant_config",
+        ":multibody_plant_core",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "compliant_contact_manager_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        ":compliant_contact_manager",
+        ":plant",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
+        "//systems/primitives:pass_through",
+        "//systems/primitives:zero_order_hold",
     ],
 )
 
@@ -361,6 +432,7 @@ drake_cc_googletest(
         "//multibody/test_utilities:add_fixed_objects_to_plant",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:linear_system",
+        "//systems/primitives:pass_through",
     ],
 )
 
@@ -434,11 +506,15 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "multibody_plant_forward_dynamics_test",
-    data = ["//examples/atlas:models"],
+    data = [
+        "//examples/atlas:models",
+        "//examples/multibody/cart_pole:models",
+    ],
     deps = [
         ":kuka_iiwa_model_tests",
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
+        "//systems/primitives:linear_system",
     ],
 )
 
@@ -575,7 +651,7 @@ drake_cc_googletest(
     name = "contact_results_to_lcm_test",
     deps = [
         ":contact_results_to_lcm",
-        "//common/test_utilities:eigen_geometry_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -614,6 +690,18 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "internal_geometry_names_test",
+    data = [
+        "//examples/manipulation_station:models",
+        "//multibody:models",
+    ],
+    deps = [
+        ":internal_geometry_names",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
     name = "joint_limits_test",
     timeout = "long",
     data = [
@@ -626,6 +714,13 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "joint_locking_test",
+    deps = [
+        ":plant",
     ],
 )
 
@@ -696,6 +791,18 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "wing_test",
+    data = ["//multibody:models"],
+    deps = [
+        ":wing",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
     name = "discrete_update_manager_test",
     deps = [
         ":dummy_model",
@@ -708,28 +815,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "contact_permutation_test",
-    data = [
-        "//examples/kuka_iiwa_arm/models",
-        "//examples/simple_gripper:simple_gripper_models",
-        "//manipulation/models/allegro_hand_description:models",
-        "//manipulation/models/iiwa_description:models",
-    ],
-    deps = [
-        ":contact_permutation",
-        ":plant",
-        "//common:find_resource",
-        "//multibody/parsing",
-    ],
-)
-
-drake_cc_googletest(
     name = "physical_model_test",
     deps = [
         ":dummy_model",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_config_functions_test",
+    deps = [
+        ":multibody_plant_config_functions",
+        "//common/test_utilities:expect_throws_message",
+        "//common/yaml",
     ],
 )
 

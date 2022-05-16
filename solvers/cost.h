@@ -231,7 +231,58 @@ std::shared_ptr<QuadraticCost> Make2NormSquaredCost(
     const Eigen::Ref<const Eigen::VectorXd>& b);
 
 /**
- * Implements a cost of the form @f[ |Ax + b|₂ @f].
+ * Implements a cost of the form ‖Ax + b‖₁. Note that this cost is
+ * non-differentiable when any element of Ax + b equals zero.
+ *
+ * @ingroup solver_evaluators
+ */
+class L1NormCost : public Cost {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(L1NormCost)
+
+  /**
+   * Construct a cost of the form ‖Ax + b‖₁.
+   * @param A Linear term.
+   * @param b Constant term.
+   */
+  L1NormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
+             const Eigen::Ref<const Eigen::VectorXd>& b);
+
+  ~L1NormCost() override {}
+
+  const Eigen::MatrixXd& A() const { return A_; }
+
+  const Eigen::VectorXd& b() const { return b_; }
+
+  /**
+   * Updates the coefficients of the cost.
+   * Note that the number of variables (columns of A) cannot change.
+   * @param new_A New linear term.
+   * @param new_b New constant term.
+   */
+  void UpdateCoefficients(const Eigen::Ref<const Eigen::MatrixXd>& new_A,
+                          const Eigen::Ref<const Eigen::VectorXd>& new_b);
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override;
+
+  std::ostream& DoDisplay(std::ostream&,
+                          const VectorX<symbolic::Variable>&) const override;
+
+ private:
+  Eigen::MatrixXd A_;
+  Eigen::VectorXd b_;
+};
+
+/**
+ * Implements a cost of the form ‖Ax + b‖₂.
  *
  * @ingroup solver_evaluators
  */
@@ -242,7 +293,7 @@ class L2NormCost : public Cost {
   // TODO(russt): Add an option to select an implementation that smooths the
   // gradient discontinuity at the origin.
   /**
-   * Construct a cost of the form @f[ |Ax + b|₂ @f].
+   * Construct a cost of the form ‖Ax + b‖₂.
    * @param A Linear term.
    * @param b Constant term.
    */
@@ -282,6 +333,113 @@ class L2NormCost : public Cost {
   Eigen::VectorXd b_;
 };
 
+/**
+ * Implements a cost of the form ‖Ax + b‖∞. Note that this cost is
+ * non-differentiable when any two or more elements of Ax + b are equal.
+ *
+ * @ingroup solver_evaluators
+ */
+class LInfNormCost : public Cost {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LInfNormCost)
+
+  /**
+   * Construct a cost of the form ‖Ax + b‖∞.
+   * @param A Linear term.
+   * @param b Constant term.
+   */
+  LInfNormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
+               const Eigen::Ref<const Eigen::VectorXd>& b);
+
+  ~LInfNormCost() override {}
+
+  const Eigen::MatrixXd& A() const { return A_; }
+
+  const Eigen::VectorXd& b() const { return b_; }
+
+  /**
+   * Updates the coefficients of the cost.
+   * Note that the number of variables (columns of A) cannot change.
+   * @param new_A New linear term.
+   * @param new_b New constant term.
+   */
+  void UpdateCoefficients(const Eigen::Ref<const Eigen::MatrixXd>& new_A,
+                          const Eigen::Ref<const Eigen::VectorXd>& new_b);
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override;
+
+  std::ostream& DoDisplay(std::ostream&,
+                          const VectorX<symbolic::Variable>&) const override;
+
+ private:
+  Eigen::MatrixXd A_;
+  Eigen::VectorXd b_;
+};
+
+/**
+ * If z = Ax + b, implements a cost of the form:
+ * (z_1^2 + z_2^2 + ... + z_{n-1}^2) / z_0.
+ * Note that this cost is convex when we additonally constrain z_0 > 0. It is
+ * treated as a generic nonlinear objective by most solvers.
+ *
+ * @ingroup solver_evaluators
+ */
+class PerspectiveQuadraticCost : public Cost {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PerspectiveQuadraticCost)
+
+  /**
+   * Construct a cost of the form (z_1^2 + z_2^2 + ... + z_{n-1}^2) / z_0 where
+   * z = Ax + b.
+   * @param A Linear term.
+   * @param b Constant term.
+   */
+  PerspectiveQuadraticCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                           const Eigen::Ref<const Eigen::VectorXd>& b);
+
+  ~PerspectiveQuadraticCost() override {}
+
+  const Eigen::MatrixXd& A() const { return A_; }
+
+  const Eigen::VectorXd& b() const { return b_; }
+
+  /**
+   * Updates the coefficients of the cost.
+   * Note that the number of variables (columns of A) cannot change.
+   * @param new_A New linear term.
+   * @param new_b New constant term.
+   */
+  void UpdateCoefficients(const Eigen::Ref<const Eigen::MatrixXd>& new_A,
+                          const Eigen::Ref<const Eigen::VectorXd>& new_b);
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override;
+
+  std::ostream& DoDisplay(std::ostream&,
+                          const VectorX<symbolic::Variable>&) const override;
+
+ private:
+  template <typename DerivedX, typename U>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x, VectorX<U>* y) const;
+
+  Eigen::MatrixXd A_;
+  Eigen::VectorXd b_;
+};
 
 /**
  * A cost that may be specified using another (potentially nonlinear)

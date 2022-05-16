@@ -32,17 +32,17 @@ def _impl(repository_ctx):
     # Enumerate the possible binaries.  Note that the buildifier binaries are
     # fully statically linked, so the particular distribution doesn't matter,
     # only the kernel.
-    version = "4.0.1"
+    version = "5.1.0"
     darwin_urls = [
         x.format(version = version, filename = "buildifier-darwin-amd64")
         for x in repository_ctx.attr.mirrors.get("buildifier")
     ]
-    darwin_sha256 = "f4d0ede5af04b32671b9a086ae061df8f621f48ea139b01b3715bfa068219e4a"  # noqa
+    darwin_sha256 = "c9378d9f4293fc38ec54a08fbc74e7a9d28914dae6891334401e59f38f6e65dc"  # noqa
     linux_urls = [
         x.format(version = version, filename = "buildifier-linux-amd64")
         for x in repository_ctx.attr.mirrors.get("buildifier")
     ]
-    linux_sha256 = "069a03fc1fa46135e3f71e075696e09389344710ccee798b2722c50a2d92d55a"  # noqa
+    linux_sha256 = "52bf6b102cb4f88464e197caac06d69793fa2b05f5ad50a7e7bf6fbd656648a3"  # noqa
 
     # Choose which binary to use.
     os_result = determine_os(repository_ctx)

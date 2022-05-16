@@ -16,17 +16,22 @@ exports_files([
     "mac/source_distribution/requirements.txt",
     "mac/source_distribution/requirements-maintainer-only.txt",
     "mac/source_distribution/requirements-test-only.txt",
-    "ubuntu/binary_distribution/packages-bionic.txt",
     "ubuntu/binary_distribution/packages-focal.txt",
-    "ubuntu/source_distribution/packages-bionic.txt",
-    "ubuntu/source_distribution/packages-bionic-doc-only.txt",
-    "ubuntu/source_distribution/packages-bionic-maintainer-only.txt",
-    "ubuntu/source_distribution/packages-bionic-test-only.txt",
     "ubuntu/source_distribution/packages-focal.txt",
+    "ubuntu/source_distribution/packages-focal-clang.txt",
     "ubuntu/source_distribution/packages-focal-doc-only.txt",
     "ubuntu/source_distribution/packages-focal-maintainer-only.txt",
     "ubuntu/source_distribution/packages-focal-test-only.txt",
 ])
+
+filegroup(
+    name = "deepnote",
+    srcs = [
+        "deepnote/install_nginx",
+        "deepnote/nginx-meshcat-proxy.conf",
+    ],
+    visibility = ["//bindings/pydrake:__subpackages__"],
+)
 
 install_files(
     name = "install",
@@ -38,8 +43,11 @@ install_files(
             "mac/binary_distribution/requirements.txt",
         ],
         "//tools/cc_toolchain:linux": [
+            "deepnote/install_nginx",
+            "deepnote/install_xvfb",
+            "deepnote/nginx-meshcat-proxy.conf",
+            "deepnote/xvfb",
             "ubuntu/binary_distribution/install_prereqs.sh",
-            "ubuntu/binary_distribution/packages-bionic.txt",
             "ubuntu/binary_distribution/packages-focal.txt",
         ],
         "//conditions:default": [],

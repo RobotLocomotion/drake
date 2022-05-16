@@ -10,6 +10,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
+#include "drake/common/extract_double.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
@@ -239,6 +240,20 @@ const std::string& GeometryState<T>::GetName(FrameId frame_id) const {
 }
 
 template <typename T>
+FrameId GeometryState<T>::GetParentFrame(FrameId frame_id) const {
+  FindOrThrow(frame_id, frames_, [frame_id]() {
+    return "No frame name available for invalid frame id: " +
+        to_string(frame_id);
+  });
+  const FrameId parent_frame_id = frames_.at(frame_id).parent_frame_id();
+  if (parent_frame_id == frame_id) {
+    // If there's no parent frame then world frame is implicitly the parent
+    return InternalFrame::world_frame_id();
+  }
+  return parent_frame_id;
+}
+
+template <typename T>
 int GeometryState<T>::GetFrameGroup(FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No frame group available for invalid frame id: " +
@@ -391,7 +406,7 @@ const math::RigidTransform<double>& GeometryState<T>::GetPoseInParent(
 }
 
 template <typename T>
-std::variant<std::monostate, const SurfaceMesh<double>*,
+std::variant<std::monostate, const TriangleSurfaceMesh<double>*,
              const VolumeMesh<double>*>
 GeometryState<T>::maybe_get_hydroelastic_mesh(GeometryId geometry_id) const {
   const auto& hydro_geometries = geometry_engine_->hydroelastic_geometries();
@@ -1010,8 +1025,10 @@ void GeometryState<T>::RenderLabelImage(const ColorRenderCamera& camera,
 }
 
 template <typename T>
-std::unique_ptr<GeometryState<AutoDiffXd>> GeometryState<T>::ToAutoDiffXd()
-    const {
+template <typename T1>
+typename std::enable_if_t<!std::is_same_v<T1, symbolic::Expression>,
+                          std::unique_ptr<GeometryState<AutoDiffXd>>>
+GeometryState<T>::ToAutoDiffXd() const {
   return std::unique_ptr<GeometryState<AutoDiffXd>>(
       new GeometryState<AutoDiffXd>(*this));
 }
@@ -1376,11 +1393,14 @@ RigidTransformd GeometryState<T>::GetDoubleWorldPose(FrameId frame_id) const {
   return internal::convert_to_double(X_WF_[frame.index()]);
 }
 
+// Explicit instantiations.
+template std::unique_ptr<GeometryState<AutoDiffXd>>
+    GeometryState<double>::ToAutoDiffXd<double>() const;
+template std::unique_ptr<GeometryState<AutoDiffXd>>
+    GeometryState<AutoDiffXd>::ToAutoDiffXd<AutoDiffXd>() const;
+
 }  // namespace geometry
 }  // namespace drake
 
-// TODO(SeanCurtis-TRI): Currently assumes that "non-symbolic" implies
-// AutoDiffXd. Update things appropriately when more non-symbolic scalars
-// are available.
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::geometry::GeometryState)

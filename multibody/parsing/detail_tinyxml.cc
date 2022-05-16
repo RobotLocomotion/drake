@@ -12,7 +12,6 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-namespace {
 std::vector<double> ConvertToDoubles(const std::string& str) {
   std::istringstream ss(str);
   // Every real number in a URDF file needs to be parsed assuming that the
@@ -29,7 +28,6 @@ std::vector<double> ConvertToDoubles(const std::string& str) {
   }
   return out;
 }
-}  // namespace
 
 bool ParseStringAttribute(const tinyxml2::XMLElement* node,
                           const char* attribute_name, std::string* val) {
@@ -42,52 +40,25 @@ bool ParseStringAttribute(const tinyxml2::XMLElement* node,
   return false;
 }
 
-bool ParseScalarAttribute(const tinyxml2::XMLElement* node,
-                          const char* attribute_name, double* val) {
+bool ParseScalarAttribute(
+    const tinyxml2::XMLElement* node,
+    const char* attribute_name, double* val,
+    std::optional<const drake::internal::DiagnosticPolicy> policy) {
+  if (!policy.has_value()) {
+    policy.emplace();
+  }
   const char* attr = node->Attribute(attribute_name);
   if (attr) {
     std::vector<double> vals = ConvertToDoubles(attr);
     if (vals.size() != 1) {
-      throw std::invalid_argument(
-          std::string("Expected single value for attribute ") + attribute_name +
-          " got " + attr);
+      policy->Error(
+          fmt::format("Expected single value for attribute '{}' got '{}'",
+                      attribute_name, attr));
     }
-    *val = vals[0];
-    return true;
-  }
-  return false;
-}
-
-bool ParseVectorAttribute(const tinyxml2::XMLElement* node,
-                          const char* attribute_name,
-                          Eigen::Vector3d* val) {
-  const char* attr = node->Attribute(attribute_name);
-  if (attr) {
-    std::vector<double> vals = ConvertToDoubles(attr);
-    if (vals.size() != 3) {
-      throw std::invalid_argument(
-          std::string("Expected three values for attribute ") + attribute_name +
-          " got " + attr);
+    if (!vals.empty()) {
+      *val = vals[0];
     }
-    *val = Eigen::Vector3d(vals.data());
-    return true;
-  }
-  return false;
-}
-
-bool ParseVectorAttribute(const tinyxml2::XMLElement* node,
-                          const char* attribute_name,
-                          Eigen::Vector4d* val) {
-  const char* attr = node->Attribute(attribute_name);
-  if (attr) {
-    std::vector<double> vals = ConvertToDoubles(attr);
-    if (vals.size() != 4) {
-      throw std::invalid_argument(
-          std::string("Expected four values for attribute ") + attribute_name +
-          " got " + attr);
-    }
-    *val = Eigen::Vector4d(vals.data());
-    return true;
+    return !vals.empty();
   }
   return false;
 }

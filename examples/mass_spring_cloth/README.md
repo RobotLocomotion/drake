@@ -33,24 +33,23 @@ cd drake
 Prerequisites
 -------------
 
-Ensure that you have the visualizer and the demo itself built:
+Ensure that you have the demo built:
 
 ```
-bazel build //tools:drake_visualize //examples/mass_spring_cloth:run_cloth_spring_model
+bazel build //examples/mass_spring_cloth:run_cloth_spring_model
 ```
 
 
 Mass Spring Cloth Simulation
 ---------------------
-In one terminal, launch the visualizer
-```
-bazel-bin/tools/drake_visualizer
-```
-
-In another terminal, launch the mass spring cloth simulation
+Launch the mass spring cloth simulation
 ```
 bazel-bin/examples/mass_spring_cloth/run_cloth_spring_model
 ```
+
+Navigate web browser to the hosted URL displayed in the console to visualize
+the demo with MeshCat. Note that, unlike many other visualizers, one cannot
+open the MeshCat visualizer until this server is running.
 
 The discrete mode is run by default. Since the discrete solver uses a
 conditionally stable time integration scheme. Using too large a `dt`

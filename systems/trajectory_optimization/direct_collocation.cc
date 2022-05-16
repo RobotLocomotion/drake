@@ -18,6 +18,17 @@ using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
 using trajectories::PiecewisePolynomial;
 
+namespace {
+int CheckAndReturnStates(int states) {
+  if (states <= 0) {
+    throw std::logic_error(
+        "This system doesn't have any continuous states. DirectCollocation "
+        "only makes sense for systems with continuous-time dynamics.");
+  }
+  return states;
+}
+}  // namespace
+
 DirectCollocationConstraint::DirectCollocationConstraint(
     const System<double>& system, const Context<double>& context,
     std::variant<InputPortSelection, InputPortIndex> input_port_index,
@@ -34,7 +45,8 @@ DirectCollocationConstraint::DirectCollocationConstraint(
     int num_states, int num_inputs,
     std::variant<InputPortSelection, InputPortIndex> input_port_index,
     bool assume_non_continuous_states_are_fixed)
-    : Constraint(num_states, 1 + (2 * num_states) + (2 * num_inputs),
+    : Constraint(CheckAndReturnStates(num_states),
+                 1 + (2 * num_states) + (2 * num_inputs),
                  Eigen::VectorXd::Zero(num_states),
                  Eigen::VectorXd::Zero(num_states)),
       system_(System<double>::ToAutoDiffXd(system)),
@@ -59,8 +71,9 @@ DirectCollocationConstraint::DirectCollocationConstraint(
     // Verify that the input port is not abstract valued.
     if (input_port_->get_data_type() == PortDataType::kAbstractValued) {
       throw std::logic_error(
-          "Port requested for differentiation is abstract, and differentiation "
-          "of abstract ports is not supported.");
+          "The specified input port is abstract-valued, and this constraint "
+          "only supports vector-valued input ports.  Did you perhaps forget to "
+          "pass a non-default `input_port_index` argument?");
     }
 
     // Provide a fixed value for the input port and keep an alias around.
@@ -76,7 +89,7 @@ void DirectCollocationConstraint::dynamics(const AutoDiffVecXd& state,
   if (input_port_) {
     input_port_value_->GetMutableVectorData<AutoDiffXd>()->SetFromVector(input);
   }
-  context_->get_mutable_continuous_state().SetFromVector(state);
+  context_->SetContinuousState(state);
   system_->CalcTimeDerivatives(*context_, derivatives_.get());
   *xdot = derivatives_->CopyToVector();
 }
@@ -156,8 +169,8 @@ DirectCollocation::DirectCollocation(
           system->get_input_port_selection(input_port_index)
               ? system->get_input_port_selection(input_port_index)->size()
               : 0,
-          context.num_continuous_states(), num_time_samples,
-          minimum_timestep, maximum_timestep),
+          CheckAndReturnStates(context.num_continuous_states()),
+          num_time_samples, minimum_timestep, maximum_timestep),
       system_(system),
       context_(context.Clone()),
       continuous_state_(system_->AllocateTimeDerivatives()),
@@ -167,6 +180,14 @@ DirectCollocation::DirectCollocation(
   }
 
   if (input_port_) {
+    // Verify that the input port is not abstract valued.
+    if (input_port_->get_data_type() == PortDataType::kAbstractValued) {
+      throw std::logic_error(
+          "The specified input port is abstract-valued, but DirectCollocation "
+          "only supports vector-valued input ports.  Did you perhaps forget to "
+          "pass a non-default `input_port_index` argument?");
+    }
+
     // Allocate the input port and keep an alias around.
     input_port_value_ = &input_port_->FixValue(
         context_.get(),
@@ -184,10 +205,11 @@ DirectCollocation::DirectCollocation(
   // along with the state and input vectors at that breakpoint and the
   // next.
   for (int i = 0; i < N() - 1; i++) {
-    AddConstraint(constraint,
-                  {h_vars().segment<1>(i),
-                   x_vars().segment(i * num_states(), num_states() * 2),
-                   u_vars().segment(i * num_inputs(), num_inputs() * 2)})
+    prog()
+        .AddConstraint(constraint,
+                       {h_vars().segment<1>(i),
+                        x_vars().segment(i * num_states(), num_states() * 2),
+                        u_vars().segment(i * num_inputs(), num_inputs() * 2)})
         .evaluator()
         ->set_description(
             fmt::format("collocation constraint for segment {}", i));
@@ -200,12 +222,13 @@ void DirectCollocation::DoAddRunningCost(const symbolic::Expression& g) {
   // g_0*h_0/2.0 + [sum_{i=1...N-2} g_i*(h_{i-1} + h_i)/2.0] +
   // g_{N-1}*h_{N-2}/2.0.
 
-  AddCost(SubstitutePlaceholderVariables(g * h_vars()(0) / 2, 0));
+  prog().AddCost(SubstitutePlaceholderVariables(g * h_vars()(0) / 2, 0));
   for (int i = 1; i <= N() - 2; i++) {
-    AddCost(SubstitutePlaceholderVariables(
+    prog().AddCost(SubstitutePlaceholderVariables(
         g * (h_vars()(i - 1) + h_vars()(i)) / 2, i));
   }
-  AddCost(SubstitutePlaceholderVariables(g * h_vars()(N() - 2) / 2, N() - 1));
+  prog().AddCost(SubstitutePlaceholderVariables(
+      g * h_vars()(N() - 2) / 2, N() - 1));
 }
 
 PiecewisePolynomial<double> DirectCollocation::ReconstructInputTrajectory(
@@ -236,7 +259,7 @@ PiecewisePolynomial<double> DirectCollocation::ReconstructStateTrajectory(
       input_port_value_->GetMutableVectorData<double>()->SetFromVector(
           result.GetSolution(input(i)));
     }
-    context_->get_mutable_continuous_state().SetFromVector(states[i]);
+    context_->SetContinuousState(states[i]);
     system_->CalcTimeDerivatives(*context_, continuous_state_.get());
     derivatives[i] = continuous_state_->CopyToVector();
   }

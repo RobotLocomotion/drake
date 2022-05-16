@@ -16,6 +16,7 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
@@ -365,6 +366,13 @@ class LeafSystemTest : public ::testing::Test {
     context_.EnableCaching();
   }
 
+  double CalcNextUpdateTime() const {
+    // Unless there are an extrene number of concurrent events, calculating the
+    // next update time should not allocate.
+    test::LimitMalloc guard;
+    return system_.CalcNextUpdateTime(context_, event_info_.get());
+  }
+
   TestSystem<double> system_;
   std::unique_ptr<LeafContext<double>> context_ptr_ = system_.AllocateContext();
   LeafContext<double>& context_ = *context_ptr_;
@@ -453,56 +461,6 @@ TEST_F(LeafSystemTest, DeclareVectorPortsBySizeTest) {
   EXPECT_EQ(output2.size(), 2);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-class AllThingsDeprecated final : public LeafSystem<double> {
- public:
-  AllThingsDeprecated() {
-    // Call each deprecated "Declare...Port" method once.
-    DeclareInputPort(kVectorValued, 2);
-    DeclareVectorInputPort(BasicVector<double>(2));
-    DeclareAbstractInputPort(Value<int>(1));
-    DeclareVectorOutputPort(
-        &AllThingsDeprecated::CalcVectorSubtype);
-    DeclareVectorOutputPort(
-        MyVector2d{},
-        &AllThingsDeprecated::CalcVectorSubtype);
-    DeclareVectorOutputPort(
-        BasicVector<double>(2),
-        [](const Context<double>&, BasicVector<double>*) {});
-    DeclareAbstractOutputPort(
-        &AllThingsDeprecated::CalcInt);
-    DeclareAbstractOutputPort(
-        0,
-        &AllThingsDeprecated::CalcInt);
-    DeclareAbstractOutputPort(
-        &AllThingsDeprecated::MakeInt,
-        &AllThingsDeprecated::CalcInt);
-    DeclareAbstractOutputPort(
-        []() { return AbstractValue::Make<int>(); },
-        [](const Context<double>&, AbstractValue*) {});
-  }
-
-  void CalcVectorSubtype(const Context<double>&, MyVector2d*) const {}
-  int MakeInt() const { return 0; }
-  void CalcInt(const Context<double>&, int*) const {}
-};
-#pragma GCC diagnostic pop
-
-TEST_F(LeafSystemTest, DeprecatedDefaultPortNameTest) {
-  const AllThingsDeprecated dut;
-  EXPECT_EQ(dut.get_input_port(0).get_name(), "u0");
-  EXPECT_EQ(dut.get_input_port(1).get_name(), "u1");
-  EXPECT_EQ(dut.get_input_port(2).get_name(), "u2");
-  EXPECT_EQ(dut.get_output_port(0).get_name(), "y0");
-  EXPECT_EQ(dut.get_output_port(1).get_name(), "y1");
-  EXPECT_EQ(dut.get_output_port(2).get_name(), "y2");
-  EXPECT_EQ(dut.get_output_port(3).get_name(), "y3");
-  EXPECT_EQ(dut.get_output_port(4).get_name(), "y4");
-  EXPECT_EQ(dut.get_output_port(5).get_name(), "y5");
-  EXPECT_EQ(dut.get_output_port(6).get_name(), "y6");
-}
-
 // Tests that witness functions can be declared. Tests that witness functions
 // stop Simulator at desired points (i.e., the raison d'être of a witness
 // function) are done in diagram_test.cc and
@@ -588,7 +546,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
 // Tests that if no update events are configured, none are reported.
 TEST_F(LeafSystemTest, NoUpdateEvents) {
   context_.SetTime(25.0);
-  double time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  double time = CalcNextUpdateTime();
   EXPECT_EQ(std::numeric_limits<double>::infinity(), time);
   EXPECT_TRUE(!leaf_info_->HasEvents());
 }
@@ -624,7 +582,7 @@ TEST_F(LeafSystemTest, MultipleNonUniquePeriods) {
 TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
   context_.SetTime(2.0);
   system_.AddPeriodicUpdate();
-  double time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  double time = CalcNextUpdateTime();
 
   EXPECT_EQ(5.0, time);
   const auto& events = leaf_info_->get_discrete_update_events().get_events();
@@ -640,7 +598,7 @@ TEST_F(LeafSystemTest, EventsAtTheSameTime) {
   // Both actions happen at t = 5.
   system_.AddPeriodicUpdate();
   system_.AddPeriodicUnrestrictedUpdate(3, 5);
-  double time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  double time = CalcNextUpdateTime();
 
   EXPECT_EQ(5.0, time);
   {
@@ -661,7 +619,7 @@ TEST_F(LeafSystemTest, EventsAtTheSameTime) {
 TEST_F(LeafSystemTest, ExactlyAtOffset) {
   context_.SetTime(5.0);
   system_.AddPeriodicUpdate();
-  double time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  double time = CalcNextUpdateTime();
 
   EXPECT_EQ(15.0, time);
   const auto& events = leaf_info_->get_discrete_update_events().get_events();
@@ -674,7 +632,7 @@ TEST_F(LeafSystemTest, ExactlyAtOffset) {
 TEST_F(LeafSystemTest, OffsetIsInThePast) {
   context_.SetTime(23.0);
   system_.AddPeriodicUpdate();
-  double time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  double time = CalcNextUpdateTime();
 
   EXPECT_EQ(25.0, time);
   const auto& events = leaf_info_->get_discrete_update_events().get_events();
@@ -687,7 +645,7 @@ TEST_F(LeafSystemTest, OffsetIsInThePast) {
 TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
   context_.SetTime(25.0);
   system_.AddPeriodicUpdate();
-  double time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  double time = CalcNextUpdateTime();
 
   EXPECT_EQ(35.0, time);
   const auto& events = leaf_info_->get_discrete_update_events().get_events();
@@ -700,15 +658,15 @@ TEST_F(LeafSystemTest, PeriodicUpdateZeroOffset) {
   system_.AddPeriodicUpdate(2.0);
 
   context_.SetTime(0.0);
-  double time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  double time = CalcNextUpdateTime();
   EXPECT_EQ(2.0, time);
 
   context_.SetTime(1.0);
-  time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  time = CalcNextUpdateTime();
   EXPECT_EQ(2.0, time);
 
   context_.SetTime(2.1);
-  time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  time = CalcNextUpdateTime();
   EXPECT_EQ(4.0, time);
 }
 
@@ -720,7 +678,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
 
   // The publish event fires at 12sec.
   context_.SetTime(9.0);
-  double time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  double time = CalcNextUpdateTime();
   EXPECT_EQ(12.0, time);
   {
     const auto& events = leaf_info_->get_publish_events().get_events();
@@ -730,7 +688,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
 
   // The update event fires at 15sec.
   context_.SetTime(14.0);
-  time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  time = CalcNextUpdateTime();
   EXPECT_EQ(15.0, time);
   {
     const auto& events = leaf_info_->get_discrete_update_events().get_events();
@@ -740,7 +698,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
 
   // Both events fire at 60sec.
   context_.SetTime(59.0);
-  time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  time = CalcNextUpdateTime();
   EXPECT_EQ(60.0, time);
   {
     const auto& events = leaf_info_->get_discrete_update_events().get_events();
@@ -760,7 +718,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
 TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroOneFive) {
   context_.SetTime(0.015 * 11);  // Slightly less than 0.165.
   system_.AddPeriodicUpdate(0.015);
-  double time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  double time = CalcNextUpdateTime();
   // 0.015 * 12 = 0.18.
   EXPECT_NEAR(0.18, time, 1e-8);
 }
@@ -771,7 +729,7 @@ TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroOneFive) {
 TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroZeroTwoFive) {
   context_.SetTime(0.0025 * 977);  // Slightly less than 2.4425
   system_.AddPeriodicUpdate(0.0025);
-  double time = system_.CalcNextUpdateTime(context_, event_info_.get());
+  double time = CalcNextUpdateTime();
   EXPECT_NEAR(2.445, time, 1e-8);
 }
 
@@ -952,7 +910,6 @@ TEST_F(LeafSystemTest, ContinuousStateBelongsWithSystem) {
   auto other_context = other_system.AllocateContext();
   DRAKE_EXPECT_THROWS_MESSAGE(
       other_system.CalcTimeDerivatives(*other_context, derivatives.get()),
-      std::logic_error,
       ".*::ContinuousState<double> was not created for.*::TestSystem.*");
 }
 
@@ -1085,7 +1042,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   EXPECT_TRUE(in3_ticket.is_valid() && in4_ticket.is_valid());
   EXPECT_NE(in3_ticket, in4_ticket);  // We don't know the actual values.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.get_input_port_base(InputPortIndex(10)), std::out_of_range,
+      dut.get_input_port_base(InputPortIndex(10)),
       "System.*get_input_port_base().*no input port.*10.*only 5.*");
 
   // Check DependencyTracker setup for input ports.
@@ -1109,7 +1066,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   EXPECT_TRUE(out2_ticket.is_valid() && out3_ticket.is_valid());
   EXPECT_NE(out2_ticket, out3_ticket);  // We don't know the actual values.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.get_output_port_base(OutputPortIndex(7)), std::out_of_range,
+      dut.get_output_port_base(OutputPortIndex(7)),
       "System.*get_output_port_base().*no output port.*7.*only 4.*");
 
   const InputPort<double>& in0 = dut.get_input_port(0);
@@ -1538,17 +1495,7 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
         });
     unused(port);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // Output port 3 is declared with a commonly-used signature taking
-    // methods for both allocator and calculator for an abstract port.
-    port = &DeclareAbstractOutputPort(
-        kUseDefaultName, &DeclaredNonModelOutputSystem::MakeString,
-        &DeclaredNonModelOutputSystem::CalcString);
-    unused(port);
-#pragma GCC diagnostic pop
-
-    // Output port 4 uses a default-constructed bare struct which should be
+    // Output port 3 uses a default-constructed bare struct which should be
     // value-initialized.
     port = &DeclareAbstractOutputPort(
         kUseDefaultName, &DeclaredNonModelOutputSystem::CalcPOD);
@@ -1602,18 +1549,16 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
 
   // Check topology.
   EXPECT_EQ(dut.num_input_ports(), 0);
-  EXPECT_EQ(dut.num_output_ports(), 5);
+  ASSERT_EQ(dut.num_output_ports(), 4);
 
   auto& out0 = dut.get_output_port(0);
   auto& out1 = dut.get_output_port(1);
   auto& out2 = dut.get_output_port(2);
   auto& out3 = dut.get_output_port(3);
-  auto& out4 = dut.get_output_port(4);
   EXPECT_EQ(out0.get_data_type(), kVectorValued);
   EXPECT_EQ(out1.get_data_type(), kAbstractValued);
   EXPECT_EQ(out2.get_data_type(), kAbstractValued);
   EXPECT_EQ(out3.get_data_type(), kAbstractValued);
-  EXPECT_EQ(out4.get_data_type(), kAbstractValued);
 
   // Sanity check output port prerequisites. Leaf ports should not designate
   // a subsystem since they are resolved internally. We don't know the right
@@ -1666,34 +1611,25 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   out2.Calc(*context, output2);
   EXPECT_EQ(*downcast_output2, 321);
 
-  // Check that Value<string>() came out, custom initialized.
-  auto output3 = system_output->GetMutableData(3);
-  ASSERT_NE(output3, nullptr);
-  const std::string* downcast_output3{};
-  DRAKE_EXPECT_NO_THROW(downcast_output3 = &output3->get_value<std::string>());
-  EXPECT_EQ(*downcast_output3, "freshly made");
-  out3.Calc(*context, output3);
-  EXPECT_EQ(*downcast_output3, "calc'ed string");
-
   // Check that Value<SomePOD>{} came out, value initialized. Note that this
   // is not a perfect test since the values *could* come out zero by accident
   // even if the value initializer had not been called. Better than nothing!
-  auto output4 = system_output->GetMutableData(4);
-  ASSERT_NE(output4, nullptr);
-  const SomePOD* downcast_output4{};
-  DRAKE_EXPECT_NO_THROW(downcast_output4 = &output4->get_value<SomePOD>());
-  EXPECT_EQ(downcast_output4->some_int, 0);
-  EXPECT_EQ(downcast_output4->some_double, 0.0);
-  out4.Calc(*context, output4);
-  EXPECT_EQ(downcast_output4->some_int, -10);
-  EXPECT_EQ(downcast_output4->some_double, 3.25);
+  auto output3 = system_output->GetMutableData(3);
+  ASSERT_NE(output3, nullptr);
+  const SomePOD* downcast_output3{};
+  DRAKE_EXPECT_NO_THROW(downcast_output3 = &output3->get_value<SomePOD>());
+  EXPECT_EQ(downcast_output3->some_int, 0);
+  EXPECT_EQ(downcast_output3->some_double, 0.0);
+  out3.Calc(*context, output3);
+  EXPECT_EQ(downcast_output3->some_int, -10);
+  EXPECT_EQ(downcast_output3->some_double, 3.25);
 
   EXPECT_EQ(dut.calc_POD_calls(), 1);
-  const auto& eval_out = out4.Eval<SomePOD>(*context);
+  const auto& eval_out = out3.Eval<SomePOD>(*context);
   EXPECT_EQ(eval_out.some_int, -10);
   EXPECT_EQ(eval_out.some_double, 3.25);
   EXPECT_EQ(dut.calc_POD_calls(), 2);
-  out4.Eval<SomePOD>(*context);
+  out3.Eval<SomePOD>(*context);
   EXPECT_EQ(dut.calc_POD_calls(), 2);  // Should have been cached.
 }
 
@@ -3114,7 +3050,6 @@ GTEST_TEST(ImplicitTimeDerivatives, DefaultImplementation) {
   Vector4d residual4;
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut.CalcImplicitTimeDerivativesResidual(*context, *xdot, &residual4),
-      std::logic_error,
       "System::DoCalcImplicitTimeDerivativesResidual.*"
       "default implementation requires.*residual size.*4.*"
       "matches.*state variables.*3.*must override.*");
@@ -3123,7 +3058,6 @@ GTEST_TEST(ImplicitTimeDerivatives, DefaultImplementation) {
   // we should get stopped by the NVI public method.
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut.CalcImplicitTimeDerivativesResidual(*context, *xdot, &residual3),
-      std::logic_error,
       ".*CalcImplicitTimeDerivativesResidual.*"
       "expected residual.*size 4 but got.*size 3.*\n"
       "Use AllocateImplicitTimeDerivativesResidual.*");
@@ -3155,7 +3089,6 @@ GTEST_TEST(ImplicitTimeDerivatives, OverrideImplementation) {
   Vector3d bad_residual;
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut.CalcImplicitTimeDerivativesResidual(*context, *xdot, &bad_residual),
-      std::logic_error,
       ".*CalcImplicitTimeDerivativesResidual.*"
       "expected residual.*size 1 but got.*size 3.*\n"
       "Use AllocateImplicitTimeDerivativesResidual.*");

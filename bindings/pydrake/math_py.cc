@@ -15,6 +15,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/math/barycentric.h"
 #include "drake/math/bspline_basis.h"
 #include "drake/math/continuous_algebraic_riccati_equation.h"
@@ -22,7 +23,6 @@
 #include "drake/math/discrete_algebraic_riccati_equation.h"
 #include "drake/math/discrete_lyapunov_equation.h"
 #include "drake/math/matrix_util.h"
-#include "drake/math/orthonormal_basis.h"
 #include "drake/math/quadratic_form.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
@@ -103,11 +103,23 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetIdentity", &Class::SetIdentity, cls_doc.SetIdentity.doc)
         .def("IsExactlyIdentity", &Class::IsExactlyIdentity,
             cls_doc.IsExactlyIdentity.doc)
-        .def("IsIdentityToEpsilon", &Class::IsIdentityToEpsilon,
-            py::arg("translation_tolerance"), cls_doc.IsIdentityToEpsilon.doc)
+        .def("IsNearlyIdentity", &Class::IsNearlyIdentity,
+            py::arg("translation_tolerance"), cls_doc.IsNearlyIdentity.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("IsIdentityToEpsilon",
+            WrapDeprecated(cls_doc.IsIdentityToEpsilon.doc_deprecated,
+                &Class::IsIdentityToEpsilon),
+            py::arg("translation_tolerance"),
+            cls_doc.IsIdentityToEpsilon.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls                     // BR
         .def("IsNearlyEqualTo", &Class::IsNearlyEqualTo, py::arg("other"),
             py::arg("tolerance"), cls_doc.IsNearlyEqualTo.doc)
         .def("inverse", &Class::inverse, cls_doc.inverse.doc)
+        .def("InvertAndCompose", &Class::InvertAndCompose, py::arg("other"),
+            cls_doc.InvertAndCompose.doc)
         .def(
             "multiply",
             [](const Class* self, const Class& other) { return *self * other; },
@@ -169,6 +181,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("Identity", &Class::Identity, cls_doc.Identity.doc)
         .def("set", &Class::set, py::arg("R"), cls_doc.set.doc)
         .def("inverse", &Class::inverse, cls_doc.inverse.doc)
+        .def("InvertAndCompose", &Class::InvertAndCompose, py::arg("other"),
+            cls_doc.InvertAndCompose.doc)
         .def("transpose", &Class::transpose, cls_doc.transpose.doc)
         .def("matrix", &Class::matrix, cls_doc.matrix.doc)
         .def("row", &Class::row, py::arg("index"), cls_doc.row.doc)
@@ -191,10 +205,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.IsValid.doc_0args)
         .def("IsExactlyIdentity", &Class::IsExactlyIdentity,
             cls_doc.IsExactlyIdentity.doc)
+        .def("IsNearlyIdentity", &Class::IsNearlyIdentity,
+            py::arg("tolerance") =
+                Class::get_internal_tolerance_for_orthonormality(),
+            cls_doc.IsNearlyIdentity.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
         .def("IsIdentityToInternalTolerance",
-            &Class::IsIdentityToInternalTolerance,
-            cls_doc.IsIdentityToInternalTolerance.doc)
-        // Does not return the quality_factor
+            WrapDeprecated(cls_doc.IsIdentityToInternalTolerance.doc_deprecated,
+                &Class::IsIdentityToInternalTolerance),
+            cls_doc.IsIdentityToInternalTolerance.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    cls                     // BR
+                            // Does not return the quality_factor
         .def_static(
             "ProjectToRotationMatrix",
             [](const Matrix3<T>& M) {
@@ -307,9 +331,24 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::ComputeActiveBasisFunctionIndices),
             py::arg("parameter_value"),
             cls_doc.ComputeActiveBasisFunctionIndices.doc_1args_parameter_value)
+        .def(
+            "EvaluateCurve",
+            [](Class* self, const std::vector<VectorX<T>>& control_points,
+                const T& parameter_value) {
+              return self->EvaluateCurve(control_points, parameter_value);
+            },
+            py::arg("control_points"), py::arg("parameter_value"),
+            cls_doc.EvaluateCurve.doc)
         .def("EvaluateBasisFunctionI", &Class::EvaluateBasisFunctionI,
             py::arg("i"), py::arg("parameter_value"),
-            cls_doc.EvaluateBasisFunctionI.doc);
+            cls_doc.EvaluateBasisFunctionI.doc)
+        .def(py::pickle(
+            [](const Class& self) {
+              return std::make_pair(self.order(), self.knots());
+            },
+            [](std::pair<int, std::vector<T>> args) {
+              return Class(std::get<0>(args), std::get<1>(args));
+            }));
   }
 
   m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
@@ -324,16 +363,6 @@ void DoScalarIndependentDefinitions(py::module m) {
   // TODO(eric.cousineau): Bind remaining classes for all available scalar
   // types.
   using T = double;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("ComputeBasisFromAxis",
-      WrapDeprecated(doc.ComputeBasisFromAxis.doc_deprecated,
-          [](int axis_index, const Vector3<T>& axis) {
-            return ComputeBasisFromAxis(axis_index, axis);
-          }),
-      py::arg("axis_index"), py::arg("axis_W"),
-      doc.ComputeBasisFromAxis.doc_deprecated);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
   py::class_<BarycentricMesh<T>>(m, "BarycentricMesh", doc.BarycentricMesh.doc)
       .def(py::init<BarycentricMesh<T>::MeshGrid>(),
           doc.BarycentricMesh.ctor.doc)
@@ -419,7 +448,16 @@ void DoScalarIndependentDefinitions(py::module m) {
             return IsPositiveDefinite(matrix, tolerance);
           },
           py::arg("matrix"), py::arg("tolerance") = 0.0,
-          doc.IsPositiveDefinite.doc);
+          doc.IsPositiveDefinite.doc)
+      .def(
+          "ToSymmetricMatrixFromLowerTriangularColumns",
+          [](const Eigen::Ref<const Eigen::VectorXd>&
+                  lower_triangular_columns) {
+            return ToSymmetricMatrixFromLowerTriangularColumns(
+                lower_triangular_columns);
+          },
+          py::arg("lower_triangular_columns"),
+          doc.ToSymmetricMatrixFromLowerTriangularColumns.doc_dynamic_size);
 
   // Quadratic Form.
   m  // BR

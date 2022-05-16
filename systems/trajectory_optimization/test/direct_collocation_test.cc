@@ -7,11 +7,11 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/examples/rimless_wheel/rimless_wheel.h"
 #include "drake/math/autodiff.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/solvers/ipopt_solver.h"
-#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/primitives/linear_system.h"
 
@@ -19,6 +19,7 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 
+using solvers::Solve;
 using trajectories::PiecewisePolynomial;
 
 namespace {
@@ -35,30 +36,40 @@ std::unique_ptr<LinearSystem<double>> MakeSimpleLinearSystem() {
   return std::make_unique<LinearSystem<double>>(A, B, C, D);
 }
 
-GTEST_TEST(DirectCollocationTest, TestAddRunningCost) {
+std::unique_ptr<LinearSystem<double>> MakeDoubleIntegrator() {
+  // Implements the double integrator: qddot = u.
+  Eigen::Matrix2d A = Eigen::Matrix2d::Zero();
+  A(0, 1) = 1.0;
+  const Eigen::Vector2d B(0.0, 1.0);
+  const Eigen::MatrixXd C(0, 2), D(0, 1);
+  return std::make_unique<LinearSystem<double>>(A, B, C, D);
+}
+
+GTEST_TEST(DirectCollocation, TestAddRunningCost) {
   const std::unique_ptr<LinearSystem<double>> system = MakeSimpleLinearSystem();
   const std::unique_ptr<Context<double>> context =
       system->CreateDefaultContext();
 
   const int kNumSampleTimes = 4;
   const double kTimeStep = .1;
-  DirectCollocation prog(system.get(), *context, kNumSampleTimes, kTimeStep,
-                         kTimeStep);
+  DirectCollocation dircol(system.get(), *context, kNumSampleTimes, kTimeStep,
+                           kTimeStep);
+  auto& prog = dircol.prog();
 
-  prog.AddRunningCost(
-      prog.state().cast<symbolic::Expression>().dot(prog.state()) +
-      prog.input().cast<symbolic::Expression>().dot(prog.input()));
+  dircol.AddRunningCost(
+      dircol.state().cast<symbolic::Expression>().dot(dircol.state()) +
+      dircol.input().cast<symbolic::Expression>().dot(dircol.input()));
 
   Eigen::Matrix<double, 2, kNumSampleTimes> u;
   Eigen::Matrix<double, 2, kNumSampleTimes> x;
   for (int i = 0; i < kNumSampleTimes - 1; ++i) {
-    prog.SetInitialGuess(prog.timestep(i), Vector1d(kTimeStep));
+    prog.SetInitialGuess(dircol.timestep(i), Vector1d(kTimeStep));
   }
   for (int i = 0; i < kNumSampleTimes; ++i) {
     x.col(i) << 0.2 * i - 1, 0.1 + i;
     u.col(i) << 0.1 * i, 0.2 * i + 0.1;
-    prog.SetInitialGuess(prog.state(i), x.col(i));
-    prog.SetInitialGuess(prog.input(i), u.col(i));
+    prog.SetInitialGuess(dircol.state(i), x.col(i));
+    prog.SetInitialGuess(dircol.input(i), u.col(i));
   }
   double total_cost = 0;
   for (const auto& cost : prog.GetAllCosts()) {
@@ -76,14 +87,15 @@ GTEST_TEST(DirectCollocationTest, TestAddRunningCost) {
 
 // Reconstructs the collocation constraint value (called the "defect") from a
 // completely separate code path (using the PiecewisePolynomial methods).
-GTEST_TEST(DirectCollocationTest, TestCollocationConstraint) {
+GTEST_TEST(DirectCollocation, TestCollocationConstraint) {
   const std::unique_ptr<LinearSystem<double>> system = MakeSimpleLinearSystem();
   const auto context = system->CreateDefaultContext();
 
   const int kNumSampleTimes = 3;
   const double kTimeStep = .1;
-  DirectCollocation prog(system.get(), *context, kNumSampleTimes, kTimeStep,
-                         kTimeStep);
+  DirectCollocation dircol(system.get(), *context, kNumSampleTimes, kTimeStep,
+                           kTimeStep);
+  auto& prog = dircol.prog();
 
   // Constructor should add collocation constraints, and these are the
   // only generic constraints that should be in the program so far.
@@ -107,11 +119,11 @@ GTEST_TEST(DirectCollocationTest, TestCollocationConstraint) {
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
     const auto& binding = collocation_constraints[i];
 
-    prog.SetInitialGuess(prog.timestep(i), Vector1d(kTimeStep));
-    prog.SetInitialGuess(prog.input(i), u0);
-    prog.SetInitialGuess(prog.input(i + 1), u1);
-    prog.SetInitialGuess(prog.state(i), x0);
-    prog.SetInitialGuess(prog.state(i + 1), x1);
+    prog.SetInitialGuess(dircol.timestep(i), Vector1d(kTimeStep));
+    prog.SetInitialGuess(dircol.input(i), u0);
+    prog.SetInitialGuess(dircol.input(i + 1), u1);
+    prog.SetInitialGuess(dircol.state(i), x0);
+    prog.SetInitialGuess(dircol.state(i + 1), x1);
 
     EXPECT_TRUE(
         CompareMatrices(prog.EvalBindingAtInitialGuess(binding), defect, 1e-6));
@@ -121,14 +133,15 @@ GTEST_TEST(DirectCollocationTest, TestCollocationConstraint) {
 // Checks the collocation constraint value against the interpolation used
 // in the reconstructed trajectories.  This confirms that the reconstruction
 // is using the same interpolation algorithms as the actual optimization.
-GTEST_TEST(DirectCollocationTest, TestReconstruction) {
+GTEST_TEST(DirectCollocation, TestReconstruction) {
   const std::unique_ptr<LinearSystem<double>> system = MakeSimpleLinearSystem();
   const auto context = system->CreateDefaultContext();
 
   const int kNumSampleTimes = 3;
   const double kTimeStep = .1;
-  DirectCollocation prog(system.get(), *context, kNumSampleTimes, kTimeStep,
-                         kTimeStep);
+  DirectCollocation dircol(system.get(), *context, kNumSampleTimes, kTimeStep,
+                           kTimeStep);
+  auto& prog = dircol.prog();
 
   // Sets all decision variables to trivial known values (1,2,3,...).
   // Pretends that the solver has solved the optimization problem, and set the
@@ -140,25 +153,25 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
       Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
 
   const PiecewisePolynomial<double> input_spline =
-      prog.ReconstructInputTrajectory(result);
+      dircol.ReconstructInputTrajectory(result);
   const PiecewisePolynomial<double> state_spline =
-      prog.ReconstructStateTrajectory(result);
+      dircol.ReconstructStateTrajectory(result);
   const auto derivative_spline = state_spline.derivative();
 
   double time = 0.0;
   for (int i = 0; i < kNumSampleTimes; i++) {
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(prog.input(i)),
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(dircol.input(i)),
                                 input_spline.value(time), 1e-6));
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(prog.state(i)),
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(dircol.state(i)),
                                 state_spline.value(time), 1e-6));
 
     EXPECT_TRUE(
-        CompareMatrices(system->A() * result.GetSolution(prog.state(i)) +
-                            system->B() * result.GetSolution(prog.input(i)),
+        CompareMatrices(system->A() * result.GetSolution(dircol.state(i)) +
+                            system->B() * result.GetSolution(dircol.input(i)),
                         derivative_spline.value(time), 1e-6));
 
     if (i < (kNumSampleTimes - 1)) {
-      time += result.GetSolution(prog.timestep(i).coeff(0));
+      time += result.GetSolution(dircol.timestep(i).coeff(0));
     }
   }
 
@@ -167,7 +180,7 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
   EXPECT_EQ(collocation_constraints.size(), kNumSampleTimes - 1);
   time = 0.0;
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
-    const double timestep = result.GetSolution(prog.timestep(i).coeff(0));
+    const double timestep = result.GetSolution(dircol.timestep(i).coeff(0));
     const double collocation_time = time + timestep / 2.0;
 
     const auto& binding = collocation_constraints[i];
@@ -181,37 +194,30 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
   }
 }
 
-std::unique_ptr<LinearSystem<double>> MakeDoubleIntegrator() {
-  // Implements the double integrator: qddot = u.
-  Eigen::Matrix2d A = Eigen::Matrix2d::Zero();
-  A(0, 1) = 1.0;
-  const Eigen::Vector2d B(0.0, 1.0);
-  const Eigen::MatrixXd C(0, 2), D(0, 1);
-  return std::make_unique<LinearSystem<double>>(A, B, C, D);
-}
-
 // Tests the double integrator minimum-time problem with the known solution.
-GTEST_TEST(DirectCollocationTest, DoubleIntegratorTest) {
+GTEST_TEST(DirectCollocation, DoubleIntegratorTest) {
   const auto double_integrator = MakeDoubleIntegrator();
   auto context = double_integrator->CreateDefaultContext();
   const int kNumSampleTimes{10};
-  DirectCollocation prog(double_integrator.get(), *context, kNumSampleTimes,
-                         0.05, 2.0);
+  DirectCollocation dircol(double_integrator.get(), *context, kNumSampleTimes,
+                           0.05, 2.0);
+  auto& prog = dircol.prog();
 
-  prog.AddEqualTimeIntervalsConstraints();
+  dircol.AddEqualTimeIntervalsConstraints();
 
   // u \in [-1,1].
-  prog.AddConstraintToAllKnotPoints(Vector1d(-1.0) <= prog.input());
-  prog.AddConstraintToAllKnotPoints(prog.input() <= Vector1d(1.0));
+  dircol.AddConstraintToAllKnotPoints(Vector1d(-1.0) <= dircol.input());
+  dircol.AddConstraintToAllKnotPoints(dircol.input() <= Vector1d(1.0));
 
   // xf = [0,0].
-  prog.AddLinearConstraint(prog.final_state().array() == 0.0);
+  prog.AddLinearConstraint(dircol.final_state().array() == 0.0);
 
   // x0 = [-1,0].
-  prog.AddLinearConstraint(prog.initial_state() == Eigen::Vector2d(-1.0, 0.0));
+  prog.AddLinearConstraint(dircol.initial_state() ==
+                           Eigen::Vector2d(-1.0, 0.0));
 
   // Cost is just total time.
-  prog.AddFinalCost(prog.time().cast<symbolic::Expression>());
+  dircol.AddFinalCost(dircol.time().cast<symbolic::Expression>());
 
   const solvers::MathematicalProgramResult result = Solve(prog);
   EXPECT_TRUE(result.is_success());
@@ -219,34 +225,36 @@ GTEST_TEST(DirectCollocationTest, DoubleIntegratorTest) {
   // Solution should be bang-band (u = +1 then -1).
   int i = 0;
   while (i < kNumSampleTimes / 2.0)
-    EXPECT_NEAR(result.GetSolution(prog.input(i++))(0), 1.0, 1e-5);
+    EXPECT_NEAR(result.GetSolution(dircol.input(i++))(0), 1.0, 1e-5);
   while (i < kNumSampleTimes)
-    EXPECT_NEAR(result.GetSolution(prog.input(i++))(0), -1.0, 1e-5);
+    EXPECT_NEAR(result.GetSolution(dircol.input(i++))(0), -1.0, 1e-5);
 }
 
 // Tests that the double integrator without input limits results in minimal
 // time.
-GTEST_TEST(DirectCollocationTest, MinimumTimeTest) {
+GTEST_TEST(DirectCollocation, MinimumTimeTest) {
   const auto double_integrator = MakeDoubleIntegrator();
   auto context = double_integrator->CreateDefaultContext();
   const int kNumSampleTimes{10};
   const double kMinTimeStep{0.05};
   const double kMaxTimeStep{2.0};
-  DirectCollocation prog(double_integrator.get(), *context, kNumSampleTimes,
-                         kMinTimeStep, kMaxTimeStep);
+  DirectCollocation dircol(double_integrator.get(), *context, kNumSampleTimes,
+                           kMinTimeStep, kMaxTimeStep);
+  auto& prog = dircol.prog();
 
-  prog.AddEqualTimeIntervalsConstraints();
+  dircol.AddEqualTimeIntervalsConstraints();
 
   // Note: No input limits this time.
 
   // xf = [0,0].
-  prog.AddLinearConstraint(prog.final_state().array() == 0.0);
+  prog.AddLinearConstraint(dircol.final_state().array() == 0.0);
 
   // x0 = [-1,0].
-  prog.AddLinearConstraint(prog.initial_state() == Eigen::Vector2d(-1.0, 0.0));
+  prog.AddLinearConstraint(dircol.initial_state() ==
+                           Eigen::Vector2d(-1.0, 0.0));
 
   // Cost is just total time.
-  prog.AddFinalCost(prog.time().cast<symbolic::Expression>());
+  dircol.AddFinalCost(dircol.time().cast<symbolic::Expression>());
 
   const solvers::MathematicalProgramResult result = Solve(prog);
   EXPECT_TRUE(result.is_success());
@@ -254,12 +262,12 @@ GTEST_TEST(DirectCollocationTest, MinimumTimeTest) {
   // Solution should have total time equal to 0.5.
   double total_time = 0;
   for (int i = 0; i < kNumSampleTimes - 1; i++)
-    total_time += result.GetSolution(prog.timestep(i))(0);
+    total_time += result.GetSolution(dircol.timestep(i))(0);
   EXPECT_NEAR(total_time, kMinTimeStep * (kNumSampleTimes - 1), 1e-5);
 }
 
 // A simple example where the plant has no inputs.
-GTEST_TEST(DirectCollocationTest, NoInputs) {
+GTEST_TEST(DirectCollocation, NoInputs) {
   // xdot = -x.
   systems::LinearSystem<double> plant(
       Vector1d(-1.0),                        // A
@@ -270,24 +278,25 @@ GTEST_TEST(DirectCollocationTest, NoInputs) {
   auto context = plant.CreateDefaultContext();
   const int kNumSampleTimes{10};
   const double kFixedTimeStep{0.1};
-  DirectCollocation prog(&plant, *context, kNumSampleTimes, kFixedTimeStep,
-                         kFixedTimeStep);
+  DirectCollocation dircol(&plant, *context, kNumSampleTimes, kFixedTimeStep,
+                           kFixedTimeStep);
+  auto& prog = dircol.prog();
 
   const double x0 = 2.0;
-  prog.AddLinearConstraint(prog.initial_state() == Vector1d(x0));
+  prog.AddLinearConstraint(dircol.initial_state() == Vector1d(x0));
 
   const solvers::MathematicalProgramResult result = Solve(prog);
   EXPECT_TRUE(result.is_success());
 
   const double duration = (kNumSampleTimes - 1) * kFixedTimeStep;
-  EXPECT_NEAR(result.GetSolution(prog.final_state())(0),
+  EXPECT_NEAR(result.GetSolution(dircol.final_state())(0),
               x0 * std::exp(-duration), 1e-6);
 
-  const auto state_trajectory = prog.ReconstructStateTrajectory(result);
+  const auto state_trajectory = dircol.ReconstructStateTrajectory(result);
   EXPECT_EQ(state_trajectory.get_number_of_segments(), kNumSampleTimes - 1);
 }
 
-GTEST_TEST(DirectCollocationTest, AddDirectCollocationConstraint) {
+GTEST_TEST(DirectCollocation, AddDirectCollocationConstraint) {
   const auto double_integrator = MakeDoubleIntegrator();
   auto context = double_integrator->CreateDefaultContext();
   auto constraint = std::make_shared<DirectCollocationConstraint>(
@@ -326,22 +335,38 @@ GTEST_TEST(DirectCollocation, InputPortSelection) {
   const int kNumSamples = 5;
   const double kMinStep = 0.05;
   const double kMaxStep = 0.5;
-  DirectCollocation prog(plant.get(), *context, kNumSamples, kMinStep, kMaxStep,
-                         plant->get_actuation_input_port().get_index());
+  DirectCollocation dircol(plant.get(), *context, kNumSamples, kMinStep,
+                           kMaxStep,
+                           plant->get_actuation_input_port().get_index());
+  auto& prog = dircol.prog();
 
-  prog.AddEqualTimeIntervalsConstraints();
+  dircol.AddEqualTimeIntervalsConstraints();
 
   Eigen::Vector2d initial_state{0.0, 0.1};
   Eigen::Vector2d final_state{0.0, 0.0};
 
-  prog.AddConstraint(prog.initial_state() == initial_state);
-  prog.AddConstraint(prog.final_state() == final_state);
+  prog.AddConstraint(dircol.initial_state() == initial_state);
+  prog.AddConstraint(dircol.final_state() == final_state);
 
-  const auto& u = prog.input();
-  prog.AddRunningCost(10 * u[0] * u[0]);
+  const auto& u = dircol.input();
+  dircol.AddRunningCost(10 * u[0] * u[0]);
 
   const auto result = Solve(prog);
   EXPECT_TRUE(result.is_success());
+}
+
+// Provide a helpful error if the user does *not* provide the
+// InputPortSelection.
+GTEST_TEST(DirectCollocation, InputPortSelectionError) {
+  const auto plant = multibody::benchmarks::pendulum::MakePendulumPlant();
+  auto context = plant->CreateDefaultContext();
+
+  const int kNumSamples = 5;
+  const double kMinStep = 0.05;
+  const double kMaxStep = 0.5;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DirectCollocation(plant.get(), *context, kNumSamples, kMinStep, kMaxStep),
+      ".*non-default `input_port_index`.*");
 }
 
 // The Rimless Wheel example has discrete state for book-keeping only.  The
@@ -357,21 +382,39 @@ GTEST_TEST(DirectCollocation, IgnoreNonContinuousState) {
   const double kMinStep = 0.01;
   const double kMaxStep = 0.1;
   const bool kAssumeNonContinuousStatesAreFixed = true;
-  DirectCollocation prog(&plant, *context, kNumSamples, kMinStep, kMaxStep,
-                         InputPortSelection::kNoInput,
-                         kAssumeNonContinuousStatesAreFixed);
+  DirectCollocation dircol(&plant, *context, kNumSamples, kMinStep, kMaxStep,
+                           InputPortSelection::kNoInput,
+                           kAssumeNonContinuousStatesAreFixed);
+  auto& prog = dircol.prog();
 
   const double slope = 0.08;
   const double alpha = M_PI / 8;  // half the interleg angle (in radians).
-  prog.AddEqualTimeIntervalsConstraints();
-  prog.AddConstraintToAllKnotPoints(prog.state()[0] >= slope - alpha);
-  prog.AddConstraintToAllKnotPoints(prog.state()[0] <= slope + alpha);
+  dircol.AddEqualTimeIntervalsConstraints();
+  dircol.AddConstraintToAllKnotPoints(dircol.state()[0] >= slope - alpha);
+  dircol.AddConstraintToAllKnotPoints(dircol.state()[0] <= slope + alpha);
 
-  prog.AddConstraint(prog.initial_state()[0] == slope - alpha);
-  prog.AddConstraint(prog.final_state()[0] == slope + alpha);
+  prog.AddConstraint(dircol.initial_state()[0] == slope - alpha);
+  prog.AddConstraint(dircol.final_state()[0] == slope + alpha);
 
   const auto result = Solve(prog);
   EXPECT_TRUE(result.is_success());
+}
+
+GTEST_TEST(DirectCollocation, DiscreteTimeSystemThrows) {
+  const Vector1d one{1.0};
+  const double time_period = 0.1;
+  const LinearSystem<double> plant(one, one, one, one, time_period);
+  auto context = plant.CreateDefaultContext();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(DirectCollocationConstraint(plant, *context),
+                              ".*doesn't have any continuous states.*");
+
+  const int kNumSamples = 15;
+  const double kMinStep = 0.01;
+  const double kMaxStep = 0.1;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DirectCollocation(&plant, *context, kNumSamples, kMinStep, kMaxStep),
+      ".*doesn't have any continuous states.*");
 }
 
 }  // anonymous namespace

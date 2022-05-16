@@ -206,7 +206,7 @@ GurobiSolver::SolveStatusInfo GetGurobiSolveStatus(void* cbdata, int where) {
   GRBcbget(cbdata, where, GRB_CB_MIPNODE_OBJBND, &(solve_status.best_bound));
   GRBcbget(cbdata, where, GRB_CB_MIPNODE_SOLCNT,
            &(solve_status.feasible_solutions_count));
-  double explored_node_count_double;
+  double explored_node_count_double{};
   GRBcbget(cbdata, where, GRB_CB_MIPNODE_NODCNT, &explored_node_count_double);
   solve_status.explored_node_count = explored_node_count_double;
   return solve_status;
@@ -322,7 +322,7 @@ __attribute__((unused)) bool HasCorrectNumberOfVariables(
  * A*x == lb, false otherwise.
  * @return error as an integer. The full set of error values are
  * described here :
- * https://www.gurobi.com/documentation/9.0/refman/error_codes.html
+ * https://www.gurobi.com/documentation/9.5/refman/error_codes.html
  *
  * TODO(hongkai.dai): Use a sparse matrix A.
  */
@@ -485,7 +485,7 @@ int AddSecondOrderConeConstraints(
 
     // Gurobi uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
     // cone constraint.
-    // https://www.gurobi.com/documentation/9.0/refman/c_grbaddqconstr.html
+    // https://www.gurobi.com/documentation/9.5/refman/c_grbaddqconstr.html
     // For Lorentz cone constraint,
     // Q = [-1 0 0 ... 0]
     //     [ 0 1 0 ... 0]
@@ -669,7 +669,7 @@ int ProcessLinearConstraints(
     constraint_dual_start_row->emplace(binding, *num_gurobi_linear_constraints);
 
     const int error = AddLinearConstraint(
-        prog, model, constraint->A(), constraint->lower_bound(),
+        prog, model, constraint->GetDenseA(), constraint->lower_bound(),
         constraint->upper_bound(), binding.variables(), true,
         sparseness_threshold, num_gurobi_linear_constraints);
     if (error) {
@@ -683,7 +683,7 @@ int ProcessLinearConstraints(
     constraint_dual_start_row->emplace(binding, *num_gurobi_linear_constraints);
 
     const int error = AddLinearConstraint(
-        prog, model, constraint->A(), constraint->lower_bound(),
+        prog, model, constraint->GetDenseA(), constraint->lower_bound(),
         constraint->upper_bound(), binding.variables(), false,
         sparseness_threshold, num_gurobi_linear_constraints);
     if (error) {
@@ -1171,7 +1171,7 @@ void GurobiSolver::DoSolve(
     if (optimstatus != GRB_OPTIMAL && optimstatus != GRB_SUBOPTIMAL) {
       switch (optimstatus) {
         case GRB_INF_OR_UNBD: {
-          solution_result = SolutionResult::kInfeasible_Or_Unbounded;
+          solution_result = SolutionResult::kInfeasibleOrUnbounded;
           break;
         }
         case GRB_UNBOUNDED: {

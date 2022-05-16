@@ -372,26 +372,24 @@ TEST_F(CacheTest, FreezeUnfreezeWork) {
   // Const methods still fail if entry is out of date (just check one).
   str_val.mark_out_of_date();
   DRAKE_EXPECT_THROWS_MESSAGE(str_val.GetValueOrThrow<std::string>(),
-                              std::logic_error,
                               ".*string thing.*GetValueOrThrow.*out of date.*");
 
   // But, all mutable methods should fail now. "Set" methods should leave the
   // cache entry out of date.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      str_val.SetValueOrThrow<std::string>("three"), std::logic_error,
+      str_val.SetValueOrThrow<std::string>("three"),
       ".*string thing.*SetValueOrThrow.*cache is frozen.*");
   // (Despite the snake_case name, this still checks for frozen cache.)
   DRAKE_EXPECT_THROWS_MESSAGE(str_val.set_value<std::string>("four"),
-                              std::logic_error,
                               ".*string thing.*set_value.*cache is frozen.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      str_val.GetMutableAbstractValueOrThrow(), std::logic_error,
+      str_val.GetMutableAbstractValueOrThrow(),
       ".*string thing.*GetMutableAbstractValueOrThrow.*cache is frozen.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      str_val.GetMutableValueOrThrow<std::string>(), std::logic_error,
+      str_val.GetMutableValueOrThrow<std::string>(),
       ".*string thing.*GetMutableValueOrThrow.*cache is frozen.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      str_val.swap_value(&swapper), std::logic_error,
+      str_val.swap_value(&swapper),
       ".*string thing.*swap_value.*cache is frozen.*");
 }
 

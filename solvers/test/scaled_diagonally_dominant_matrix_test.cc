@@ -97,7 +97,7 @@ void CheckSDDMatrix(const Eigen::Ref<const Eigen::MatrixXd>& X_val,
     EXPECT_TRUE(result.get_solution_result() ==
                     SolutionResult::kInfeasibleConstraints ||
                 result.get_solution_result() ==
-                    SolutionResult::kInfeasible_Or_Unbounded);
+                    SolutionResult::kInfeasibleOrUnbounded);
   }
 }
 
@@ -189,7 +189,7 @@ GTEST_TEST(SdsosTest, SdsosPolynomial) {
       symbolic::Monomial({{x(0), 1}, {x(1), 1}});
 
   symbolic::Polynomial p;
-  std::tie(p, std::ignore) = prog.NewNonnegativePolynomial(
+  std::tie(p, std::ignore) = prog.NewSosPolynomial(
       m, MathematicalProgram::NonnegativePolynomial::kSdsos);
 
   Eigen::Matrix4d dd_X;
@@ -221,22 +221,18 @@ GTEST_TEST(SdsosTest, NotSdsosPolynomial) {
   Vector3<symbolic::Monomial> m;
   m << symbolic::Monomial(), symbolic::Monomial(x(0)), symbolic::Monomial(x(1));
 
-  symbolic::Polynomial p;
-  std::tie(p, std::ignore) = prog.NewNonnegativePolynomial(
-      m, MathematicalProgram::NonnegativePolynomial::kSdsos);
-
   // This polynomial is not sdsos, since at x = (0, -1) the polynomial is
   // negative.
   symbolic::Polynomial non_sdsos_poly(
       1 + x(0) + 4 * x(1) + x(0) * x(0) + x(1) * x(1), symbolic::Variables(x));
-
-  prog.AddLinearEqualityConstraint(p == non_sdsos_poly);
+  const auto Q = prog.AddSosConstraint(
+      non_sdsos_poly, m, MathematicalProgram::NonnegativePolynomial::kSdsos);
 
   const MathematicalProgramResult result = Solve(prog);
   EXPECT_FALSE(result.is_success());
   EXPECT_TRUE(
       result.get_solution_result() == SolutionResult::kInfeasibleConstraints ||
-      result.get_solution_result() == SolutionResult::kInfeasible_Or_Unbounded);
+      result.get_solution_result() == SolutionResult::kInfeasibleOrUnbounded);
 }
 }  // namespace solvers
 }  // namespace drake

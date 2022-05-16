@@ -6,7 +6,22 @@ load("//tools/skylark:py.bzl", "py_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
     "drake_py_unittest",
+)
+
+py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    visibility = [":__subpackages__"],
+    deps = ["//tools:module_py"],
+)
+
+py_library(
+    name = "otool",
+    srcs = ["otool.py"],
+    visibility = [":__subpackages__"],
+    deps = [":module_py"],
 )
 
 py_library(
@@ -15,14 +30,18 @@ py_library(
     srcs = ["install_test_helper.py"],
     data = ["//:install"],
     imports = ["."],
-    visibility = ["//visibility:public"],
 )
 
 exports_files(
     [
-        "install.py.in",
         "install_test.py",
     ],
+)
+
+drake_py_binary(
+    name = "installer",
+    srcs = ["installer.py"],
+    deps = [":otool"],
 )
 
 # Runs `install_test_helper` unit tests.
@@ -33,7 +52,10 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "install_meta_test",
-    data = ["//tools/install/dummy:install"],
+    data = [
+        ":installer",
+        "//tools/install/dummy:install",
+    ],
 )
 
 add_lint_tests()

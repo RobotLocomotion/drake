@@ -7,28 +7,25 @@
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/collision_filter_manager.h"
+#include "drake/geometry/frame_kinematics_vector.h"
+#include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_set.h"
-#include "drake/geometry/geometry_state.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
-
-// Forward declarations to give LCM message publication appropriate access.
-namespace lcm {
-class DrakeLcmInterface;
-}  // namespace lcm
-
 namespace geometry {
 
+#ifndef DRAKE_DOXYGEN_CXX
 class GeometryInstance;
-
+template <typename T>
+class GeometryState;
 template <typename T>
 class QueryObject;
+#endif
 
 /** SceneGraph serves as the nexus for all geometry (and geometry-based
  operations) in a Diagram. Through SceneGraph, other systems that introduce
@@ -41,13 +38,14 @@ class QueryObject;
  @system
  name: SceneGraph
  input_ports:
- - source_pose{0}
- - ...
- - source_pose{N-1}
+ - <em style="color:gray">(source name)</em>_pose
  output_ports:
- - lcm_visualization
  - query
  @endsystem
+
+For each registered "geometry source", there is an input port whose name begins
+with <em style="color:gray">(source name)</em>.
+
 
  Only registered "geometry sources" can introduce geometry into %SceneGraph.
  Geometry sources will typically be other leaf systems, but, in the case of
@@ -100,12 +98,6 @@ class QueryObject;
  SceneGraph::ComputeContact()). This assumes that the querying system has
  access to a const pointer to the connected %SceneGraph instance. Use
  get_query_output_port() to acquire the output port for the query handle.
-
- __lcm visualization port__: An abstract-valued port containing an instance of
- PoseBundle. This is a convenience port designed to feed LCM update messages to
- drake_visualizer for the purpose of visualizing the state of the world's
- geometry. Additional uses of this port are strongly discouraged; instead, use
- an appropriate geometric query to obtain the state of the world's geometry.
 
  @section geom_sys_workflow Working with SceneGraph
 
@@ -276,7 +268,7 @@ class QueryObject;
  //   - Finalizing API for topology changes at discrete events.
  @endcond
 
- @tparam_nonsymbolic_scalar
+ @tparam_default_scalar
  @ingroup systems
  */
 template <typename T>
@@ -292,7 +284,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
   template <typename U>
   explicit SceneGraph(const SceneGraph<U>& other);
 
-  ~SceneGraph() override {}
+  ~SceneGraph() final;
 
   /** @name       Port management
    Access to SceneGraph's input/output ports. This topic includes
@@ -333,15 +325,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
    frames.
    @throws std::exception if the source_id is _not_ recognized.  */
   const systems::InputPort<T>& get_source_pose_port(SourceId id) const;
-
-  /** Returns the output port which produces the PoseBundle for LCM
-   communication to drake visualizer.  */
-  DRAKE_DEPRECATED("2021-12-01",
-                   "PoseBundle is no longer in use. Visualizers typically "
-                   "connect to SceneGraph's QueryObject port.")
-  const systems::OutputPort<T>& get_pose_bundle_output_port() const {
-    return systems::System<T>::get_output_port(bundle_port_index_);
-  }
 
   /** Returns the output port which produces the QueryObject for performing
    geometric queries.  */
@@ -825,7 +808,14 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
    Simply acquiring an instance of CollisionFilterManager will advance the
    @ref scene_graph_versioning "proximity version" for the related geometry
-   data (model or context).  */
+   data (model or context).
+
+   @note %SceneGraph does not track topology or semantic information of models,
+   so decisions about *what* to filter belong in software layers that have the
+   necessary information. For example, some automatic filtering is done in
+   @ref mbp_finalize_stage "MultibodyPlant::Finalize()". Applications may
+   need to add more filtering or adjust filters during simulation.
+  */
   //@{
 
   /** Returns the collision filter manager for this %SceneGraph instance's
@@ -836,112 +826,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
    context must remain alive for at least as long as the returned manager.  */
   CollisionFilterManager collision_filter_manager(
       systems::Context<T>* context) const;
-  //@}
-
-  // TODO(2021-11-01) Remove this entire group when completing deprecation of
-  //  the methods below.
-  /** @name         Collision filtering (Deprecated)
-   @anchor scene_graph_collision_filtering
-   The *legacy* interface for limiting the scope of penetration queries (i.e.,
-   "filtering collisions").
-
-   Please use the @ref scene_graph_collision_filter_manager "new API" instead.
-
-   The scene graph consists of the set of geometry
-   `G = D ⋃ A = {g₀, g₁, ..., gₙ}`, where D is the set of dynamic geometry and
-   A is the set of anchored geometry (by definition `D ⋂ A = ∅`). Collision
-   occurs between pairs of geometries (e.g., (gᵢ, gⱼ)). The set of collision
-   candidate pairs is initially defined as `C = (G × G) - (A × A) - F - I`,
-   where:
-     - `G × G = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ G` is the cartesian product of the set
-       of %SceneGraph geometries.
-     - `A × A` represents all pairs consisting only of anchored geometry;
-       anchored geometry is never tested against other anchored geometry.
-     - `F = (gᵢ, gⱼ)`, such that `frame(gᵢ) == frame(gⱼ)`; the pair where both
-       geometries are rigidly affixed to the same frame. By implication,
-       `gᵢ, gⱼ ∈ D` as only dynamic geometries are affixed to frames.
-     - `I = {(g, g)}, ∀ g ∈ G` is the set of all pairs consisting of a geometry
-        with itself; there is no collision between a geometry and itself.
-
-   Only pairs contained in C will be tested as part of penetration queries.
-   These filter methods essentially create new sets of pairs and then subtract
-   them from the candidate set C. See each method for details.
-
-   Modifications to C _must_ be performed before context allocation.
-
-   @warning All collision filtering is done based on geometry state at the time
-   of the collision filtering calls. More concretely:
-    - For a FrameId in the set, only those geometries attached to the
-      identified frame with the proximity role assigned at the time of the call
-      will be included in the filter. If geometries are subsequently added or
-      assigned the proximity role, they will not be retroactively added to the
-      filter.
-    - If the set includes geometries which have _not_ been assigned a proximity
-      role, those geometries will be ignored. If a proximity role is
-      subsequently assigned, those geometries will _still_ not be part of any
-      collision filters.
-    - In general, adding collisions and assinging proximity roles should
-      happen prior to collision filter configuration.
-   */
-  //@{
-
-  /** Excludes geometry pairs from collision evaluation by updating the
-   candidate pair set `C = C - P`, where `P = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ G` and
-   `G = {g₀, g₁, ..., gₘ}` is the input `set` of geometries.
-
-   This method modifies the underlying model and requires a new Context to be
-   allocated. Modifies the proximity version (see @ref scene_graph_versioning).
-
-   @sa @ref scene_graph_collision_filtering for requirements and how collision
-   filtering works.
-
-   @throws std::exception if the set includes ids that don't exist in the
-                          scene graph.  */
-  DRAKE_DEPRECATED(
-      "2021-11-01",
-      "Please call collision_filter_manager().Apply() "
-      "instead")
-  void ExcludeCollisionsWithin(const GeometrySet& set);
-
-  /** systems::Context-modifying variant of ExcludeCollisionsWithin(). Rather
-   than modifying %SceneGraph's model, it modifies the copy of the model stored
-   in the provided context.  */
-  DRAKE_DEPRECATED(
-      "2021-11-01",
-      "Please call collision_filter_manager(context).Apply() "
-      "instead")
-  void ExcludeCollisionsWithin(systems::Context<T>* context,
-                               const GeometrySet& set) const;
-
-  /** Excludes geometry pairs from collision evaluation by updating the
-   candidate pair set `C = C - P`, where `P = {(a, b)}, ∀ a ∈ A, b ∈ B` and
-   `A = {a₀, a₁, ..., aₘ}` and `B = {b₀, b₁, ..., bₙ}` are the input sets of
-   geometries `setA` and `setB`, respectively. This does _not_ preclude
-   collisions between members of the _same_ set. Modifies the proximity version
-   (see @ref scene_graph_versioning).
-
-   @sa @ref scene_graph_collision_filtering for requirements and how collision
-   filtering works.
-
-   @throws std::exception if the groups include ids that don't exist in the
-                          scene graph.  */
-  DRAKE_DEPRECATED(
-      "2021-11-01",
-      "Please call collision_filter_manager().Apply() "
-      "instead")
-  void ExcludeCollisionsBetween(const GeometrySet& setA,
-                                const GeometrySet& setB);
-
-  /** systems::Context-modifying variant of ExcludeCollisionsBetween(). Rather
-   than modifying %SceneGraph's model, it modifies the copy of the model stored
-   in the provided context.  */
-  DRAKE_DEPRECATED(
-      "2021-11-01",
-      "Please call collision_filter_manager(context).Apply()"
-      " instead")
-  void ExcludeCollisionsBetween(systems::Context<T>* context,
-                                const GeometrySet& setA,
-                                const GeometrySet& setB) const;
   //@}
 
  private:
@@ -968,15 +852,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // perform queries.
   void CalcQueryObject(const systems::Context<T>& context,
                        QueryObject<T>* output) const;
-
-  // Aggregates the input poses into the output PoseBundle, in the same order as
-  // was used in allocation. Aborts if any inputs have a _different_ size than
-  // expected.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  void CalcPoseBundle(const systems::Context<T>& context,
-                      systems::rendering::PoseBundle<T>* output) const;
-#pragma GCC diagnostic pop
 
   // Collects all of the *dynamic* frames that have geometries with the given
   // role.
@@ -1017,15 +892,16 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // that id.
   std::unordered_map<SourceId, SourcePorts> input_source_ids_;
 
-  // The index of the output port with the PoseBundle abstract value.
-  int bundle_port_index_{-1};
-
   // The index of the output port with the QueryObject abstract value.
   int query_port_index_{-1};
 
   // SceneGraph owns its configured model; it gets copied into the context when
-  // the context is set to its "default" state.
-  GeometryState<T> model_;
+  // the context is set to its "default" state. We use unique_ptr in support of
+  // forward-declaring GeometryState<T> to reduce our #include footprint, but
+  // initialize a model_ reference to always point to the owned_model_, as a
+  // convenient shortcut in the code to treat it as if it were a direct member.
+  std::unique_ptr<GeometryState<T>> owned_model_;
+  GeometryState<T>& model_;
 
   SceneGraphInspector<T> model_inspector_;
 
@@ -1038,18 +914,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
 };
 
 }  // namespace geometry
-
-// Define the conversion trait to *only* allow double -> AutoDiffXd conversion.
-// Symbolic is not supported yet, and AutoDiff -> double doesn't "make sense".
-namespace systems {
-namespace scalar_conversion {
-template <>
-struct Traits<geometry::SceneGraph> {
-  template <typename T, typename U>
-  using supported = typename std::bool_constant<
-    std::is_same_v<U, double> && !std::is_same_v<T, symbolic::Expression>>;
-};
-}  // namespace scalar_conversion
-}  // namespace systems
-
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::geometry::SceneGraph)

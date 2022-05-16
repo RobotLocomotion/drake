@@ -28,6 +28,7 @@ drake_cc_package_library(
         ":cond",
         ":copyable_unique_ptr",
         ":default_scalars",
+        ":diagnostic_policy",
         ":double",
         ":drake_bool",
         ":drake_path",
@@ -53,6 +54,8 @@ drake_cc_package_library(
         ":sorted_pair",
         ":symbolic",
         ":symbolic_decompose",
+        ":symbolic_latex",
+        ":symbolic_trigonometric_polynomial",
         ":temp_directory",
         ":type_safe_index",
         ":unused",
@@ -75,7 +78,6 @@ drake_cc_library(
         "drake_copyable.h",
         "drake_deprecated.h",
         "drake_throw.h",
-        "eigen_stl_types.h",
         "eigen_types.h",
         "never_destroyed.h",
         "text_logging.h",
@@ -110,6 +112,7 @@ drake_cc_library(
     deps = [
         ":autodiff",
         ":cond",
+        ":double",
         ":essential",
     ],
 )
@@ -142,11 +145,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "diagnostic_policy",
+    srcs = ["diagnostic_policy.cc"],
+    hdrs = ["diagnostic_policy.h"],
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_library(
     name = "extract_double",
     hdrs = ["extract_double.h"],
     deps = [
         ":essential",
-        ":nice_type_name",
     ],
 )
 
@@ -261,6 +272,32 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "symbolic_latex",
+    srcs = [
+        "symbolic_latex.cc",
+    ],
+    hdrs = [
+        "symbolic_latex.h",
+    ],
+    deps = [
+        ":symbolic",
+    ],
+)
+
+drake_cc_library(
+    name = "symbolic_trigonometric_polynomial",
+    srcs = [
+        "symbolic_trigonometric_polynomial.cc",
+    ],
+    hdrs = [
+        "symbolic_trigonometric_polynomial.h",
+    ],
+    deps = [
+        ":symbolic",
+    ],
+)
+
+drake_cc_library(
     name = "default_scalars",
     hdrs = ["default_scalars.h"],
     deps = [
@@ -274,6 +311,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "identifier",
+    srcs = ["identifier.cc"],
     hdrs = ["identifier.h"],
     deps = [
         ":essential",
@@ -314,6 +352,10 @@ drake_cc_binary(
         "drake_marker.cc",
         "drake_marker.h",
     ],
+    linkopts = select({
+        "//tools/cc_toolchain:linux": ["-Wl,-soname,libdrake_marker.so"],
+        "//conditions:default": [],
+    }),
     linkshared = 1,
     linkstatic = 1,
     visibility = ["//visibility:private"],
@@ -323,6 +365,7 @@ drake_cc_library(
     name = "drake_marker_shared_library",
     srcs = ["libdrake_marker.so"],
     hdrs = ["drake_marker.h"],
+    install_hdrs_exclude = ["drake_marker.h"],
     tags = ["exclude_from_package"],
     visibility = ["//tools/install/libdrake:__pkg__"],
 )
@@ -351,6 +394,7 @@ drake_cc_library(
     name = "find_runfiles",
     srcs = ["find_runfiles.cc"],
     hdrs = ["find_runfiles.h"],
+    interface_deps = [],
     deps = [
         ":essential",
         ":filesystem",
@@ -376,9 +420,11 @@ drake_cc_library(
         "//tools/cc_toolchain:linux": ["-ldl"],
         "//conditions:default": [],
     }),
+    interface_deps = [
+        ":essential",
+    ],
     deps = [
         ":drake_marker_shared_library",
-        ":essential",
         ":filesystem",
         ":find_runfiles",
     ],
@@ -392,8 +438,8 @@ drake_cc_library(
         DRAKE_RESOURCE_SENTINEL,
     ],
     visibility = ["//tools/install/libdrake:__pkg__"],
+    interface_deps = [],
     deps = [
-        ":essential",
         ":filesystem",
         ":find_resource",
     ],
@@ -436,8 +482,10 @@ drake_cc_library(
     hdrs = [
         "nice_type_name.h",
     ],
-    deps = [
+    interface_deps = [
         ":essential",
+    ],
+    deps = [
         ":nice_type_name_override_header",
     ],
 )
@@ -457,10 +505,13 @@ drake_cc_library(
     name = "random",
     srcs = ["random.cc"],
     hdrs = ["random.h"],
-    deps = [
-        ":autodiff",
+    interface_deps = [
+        ":copyable_unique_ptr",
         ":essential",
         ":extract_double",
+    ],
+    deps = [
+        ":autodiff",
     ],
 )
 
@@ -487,8 +538,10 @@ drake_cc_library(
     name = "temp_directory",
     srcs = ["temp_directory.cc"],
     hdrs = ["temp_directory.h"],
-    deps = [
+    interface_deps = [
         ":essential",
+    ],
+    deps = [
         ":filesystem",
     ],
 )
@@ -666,7 +719,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "random_test",
     deps = [
+        ":autodiff",
         ":random",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 
@@ -779,6 +834,13 @@ alias(
 )
 
 drake_cc_googletest(
+    name = "drake_copyable_test",
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_googletest(
     name = "is_cloneable_test",
     deps = [
         ":is_cloneable",
@@ -791,6 +853,14 @@ drake_cc_googletest(
         ":copyable_unique_ptr",
         "//common:unused",
         "//common/test_utilities:is_dynamic_castable",
+    ],
+)
+
+drake_cc_googletest(
+    name = "diagnostic_policy_test",
+    deps = [
+        ":diagnostic_policy",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -815,14 +885,6 @@ drake_cc_googletest(
     name = "dummy_value_test",
     deps = [
         ":dummy_value",
-    ],
-)
-
-drake_cc_googletest(
-    name = "eigen_stl_types_test",
-    copts = ["-Wno-cpp"],
-    deps = [
-        ":essential",
     ],
 )
 
@@ -891,6 +953,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":drake_path",
+        ":filesystem",
         ":find_resource",
         "//common/test_utilities:expect_no_throw",
     ],
@@ -924,6 +987,7 @@ drake_cc_googletest(
         "test/find_resource_test_data.txt",
     ],
     deps = [
+        ":filesystem",
         ":find_runfiles",
         ":temp_directory",
         "//common/test_utilities:expect_throws_message",
@@ -1037,6 +1101,22 @@ drake_cc_googletest(
         ":autodiff",
         ":essential",
         ":nice_type_name",
+        ":nice_type_name_override_header",
+    ],
+)
+
+drake_cc_googletest(
+    name = "openmp_test",
+    # TODO(jwnimmer-tri) Encapsulate unit test concurrency configuration into
+    # Drake's starlark macros, so that we don't have to repeat ourselves here.
+    env = {
+        "OMP_NUM_THREADS": "2",
+    },
+    tags = [
+        "cpu:2",
+    ],
+    deps = [
+        "//common:essential",
     ],
 )
 
@@ -1157,6 +1237,27 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "symbolic_latex_test",
+    deps = [
+        ":essential",
+        ":symbolic",
+        ":symbolic_latex",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_trigonometric_polynomial_test",
+    deps = [
+        ":essential",
+        ":symbolic",
+        ":symbolic_trigonometric_polynomial",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "symbolic_ldlt_test",
     deps = [
         ":essential",
@@ -1209,6 +1310,7 @@ drake_cc_googletest(
     deps = [
         ":symbolic",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
@@ -1410,6 +1512,7 @@ drake_cc_googletest(
         ":value",
         "//common:essential",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities:my_vector",
     ],
 )

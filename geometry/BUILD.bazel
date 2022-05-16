@@ -27,7 +27,6 @@ drake_cc_package_library(
         ":frame_kinematics",
         ":geometry_frame",
         ":geometry_ids",
-        ":geometry_index",
         ":geometry_instance",
         ":geometry_properties",
         ":geometry_roles",
@@ -36,11 +35,15 @@ drake_cc_package_library(
         ":geometry_version",
         ":internal_frame",
         ":internal_geometry",
+        ":make_mesh_for_deformable",
         ":meshcat",
+        ":meshcat_animation",
+        ":meshcat_point_cloud_visualizer",
         ":meshcat_visualizer",
         ":meshcat_visualizer_params",
         ":proximity_engine",
         ":proximity_properties",
+        ":read_obj",
         ":rgba",
         ":scene_graph",
         ":scene_graph_inspector",
@@ -62,6 +65,7 @@ drake_cc_library(
         ":geometry_ids",
         ":geometry_roles",
         ":internal_geometry",
+        ":read_obj",
         ":shape_specification",
         ":utilities",
         "//common",
@@ -71,7 +75,6 @@ drake_cc_library(
         "//math",
         "@fcl",
         "@fmt",
-        "@tinyobjloader",
     ],
 )
 
@@ -142,7 +145,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "geometry_frame",
-    srcs = [],
+    srcs = ["geometry_frame.cc"],
     hdrs = ["geometry_frame.h"],
     deps = [
         ":geometry_ids",
@@ -155,13 +158,6 @@ drake_cc_library(
     srcs = [],
     hdrs = ["geometry_ids.h"],
     deps = ["//common:identifier"],
-)
-
-drake_cc_library(
-    name = "geometry_index",
-    srcs = [],
-    hdrs = ["geometry_index.h"],
-    deps = ["//common:type_safe_index"],
 )
 
 drake_cc_library(
@@ -226,7 +222,6 @@ drake_cc_library(
         ":frame_kinematics",
         ":geometry_frame",
         ":geometry_ids",
-        ":geometry_index",
         ":geometry_instance",
         ":geometry_set",
         ":geometry_version",
@@ -235,6 +230,17 @@ drake_cc_library(
         ":proximity_engine",
         ":utilities",
         "//geometry/render:render_engine",
+    ],
+)
+
+drake_cc_library(
+    name = "make_mesh_for_deformable",
+    srcs = ["make_mesh_for_deformable.cc"],
+    hdrs = ["make_mesh_for_deformable.h"],
+    deps = [
+        ":shape_specification",
+        "//geometry/proximity:make_sphere_mesh",
+        "//geometry/proximity:volume_mesh",
     ],
 )
 
@@ -267,7 +273,6 @@ drake_cc_library(
         "//geometry/query_results:signed_distance_pair",
         "//geometry/query_results:signed_distance_to_point",
         "//systems/framework",
-        "//systems/rendering:pose_bundle",
     ],
 )
 
@@ -296,10 +301,25 @@ drake_cc_library(
         ":geometry_ids",
         ":geometry_roles",
         ":internal_frame",
+        ":make_mesh_for_deformable",
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "read_obj",
+    srcs = ["read_obj.cc"],
+    hdrs = ["read_obj.h"],
+    interface_deps = [
+        "@eigen",
+    ],
+    deps = [
+        "//common:essential",
+        "@fmt",
+        "@tinyobjloader",
     ],
 )
 
@@ -309,6 +329,7 @@ drake_cc_library(
     hdrs = ["shape_specification.h"],
     deps = [
         "//common:essential",
+        "//common:nice_type_name",
         "//math:geometric_transform",
     ],
 )
@@ -375,6 +396,24 @@ install_files(
 )
 
 drake_cc_library(
+    name = "meshcat_animation",
+    srcs = ["meshcat_animation.cc"],
+    hdrs = ["meshcat_animation.h"],
+    deps = [
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshcat_animation_test",
+    deps = [
+        ":meshcat_animation",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_library(
     name = "meshcat",
     srcs = ["meshcat.cc"],
     hdrs = [
@@ -383,13 +422,20 @@ drake_cc_library(
     ],
     data = [":meshcat_resources"],
     install_hdrs_exclude = ["meshcat_types.h"],
-    deps = [
+    interface_deps = [
+        ":meshcat_animation",
         ":rgba",
         ":shape_specification",
         "//common:essential",
-        "//common:find_resource",
-        "//common:unused",
+        "//geometry/proximity:triangle_surface_mesh",
         "//math:geometric_transform",
+        "//perception:point_cloud",
+    ],
+    deps = [
+        "//common:filesystem",
+        "//common:find_resource",
+        "//common:scope_exit",
+        "//common:unused",
         "@common_robotics_utilities",
         "@msgpack",
         "@stduuid",
@@ -402,14 +448,16 @@ drake_cc_binary(
     testonly = True,
     srcs = ["test/meshcat_manual_test.cc"],
     data = [
+        "//examples/kuka_iiwa_arm:models",
+        "//geometry/render:test_models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/ycb:models",
-        "//systems/sensors:test_models",
     ],
     visibility = ["//visibility:private"],
     deps = [
         ":meshcat",
         ":meshcat_visualizer",
+        "//multibody/meshcat:contact_visualizer",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",
@@ -427,15 +475,40 @@ drake_cc_googletest(
     name = "meshcat_test",
     data = [
         ":meshcat_websocket_client",
-        "//systems/sensors:test_models",
+        "//geometry/render:test_models",
     ],
-    # Disable valgrind because it currently fails on the system call to python.
-    # TODO(russt): Make it possible to pass --trace-children=no to valgrind.sh.
-    tags = ["no_memcheck"],
+    tags = [
+        "cpu:2",
+    ],
     deps = [
         ":meshcat",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "@msgpack",
+    ],
+)
+
+drake_cc_library(
+    name = "meshcat_point_cloud_visualizer",
+    srcs = ["meshcat_point_cloud_visualizer.cc"],
+    hdrs = ["meshcat_point_cloud_visualizer.h"],
+    deps = [
+        ":meshcat",
+        ":rgba",
+        ":utilities",
+        "//perception:point_cloud",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshcat_point_cloud_visualizer_test",
+    deps = [
+        ":meshcat_point_cloud_visualizer",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives:constant_value_source",
     ],
 )
 
@@ -487,9 +560,12 @@ filegroup(
     name = "test_obj_files",
     testonly = 1,
     srcs = [
+        "test/convex.obj",
         "test/extruded_u.obj",
         "test/forbidden_two_cubes.obj",
         "test/non_convex_mesh.obj",
+        "test/octahedron.mtl",
+        "test/octahedron.obj",
         "test/quad_cube.mtl",
         "test/quad_cube.obj",
     ],
@@ -516,8 +592,8 @@ drake_cc_googletest(
     name = "drake_visualizer_test",
     deps = [
         ":drake_visualizer",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "//lcm:mock",
         "//systems/analysis:simulator",
     ],
 )
@@ -528,6 +604,7 @@ drake_cc_googletest(
     deps = [
         ":proximity_engine",
         ":shape_specification",
+        "//common:filesystem",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
@@ -597,6 +674,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "make_mesh_for_deformable_test",
+    deps = [
+        ":make_mesh_for_deformable",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "proximity_properties_test",
     deps = [
         ":geometry_roles",
@@ -609,6 +694,7 @@ drake_cc_googletest(
     name = "internal_geometry_test",
     deps = [
         ":internal_geometry",
+        ":make_mesh_for_deformable",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -669,6 +755,16 @@ drake_cc_googletest(
     name = "rgba_test",
     deps = [
         ":rgba",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "read_obj_test",
+    data = [":test_obj_files"],
+    deps = [
+        ":read_obj",
+        "//common:find_resource",
         "//common/test_utilities",
     ],
 )

@@ -8,12 +8,24 @@ def _impl(repository_ctx):
     if os_result.error != None:
         fail(os_result.error)
 
+    noarch_hdrs = ["jerror.h", "jmorecfg.h", "jpegint.h", "jpeglib.h"]
+
     if os_result.is_macos:
-        build_flavor = "macos"
-        repository_ctx.symlink("/usr/local/opt/jpeg/include", "include")
-    elif os_result.is_ubuntu or os_result.is_manylinux:
-        build_flavor = "ubuntu"
-        for hdr in ["jerror.h", "jmorecfg.h", "jpegint.h", "jpeglib.h"]:
+        libdir = "{}/opt/jpeg/lib".format(os_result.homebrew_prefix)
+        repository_ctx.symlink(
+            "{}/opt/jpeg/include".format(os_result.homebrew_prefix),
+            "include",
+        )
+    elif os_result.is_manylinux:
+        libdir = "/opt/drake-dependencies/lib"
+        for hdr in noarch_hdrs + ["jconfig.h"]:
+            repository_ctx.symlink(
+                "/opt/drake-dependencies/include/{}".format(hdr),
+                "include/{}".format(hdr),
+            )
+    elif os_result.is_ubuntu:
+        libdir = "/usr/lib/x86_64-linux-gnu"
+        for hdr in noarch_hdrs:
             repository_ctx.symlink(
                 "/usr/include/{}".format(hdr),
                 "include/{}".format(hdr),
@@ -25,12 +37,16 @@ def _impl(repository_ctx):
     else:
         fail("Operating system is NOT supported {}".format(os_result))
 
+    # Declare the libdir.
+    repository_ctx.file(
+        "vars.bzl",
+        content = "LIBDIR = \"{}\"\n".format(libdir),
+        executable = False,
+    )
+
+    # Add the BUILD file.
     repository_ctx.symlink(
-        Label(
-            "@drake//tools/workspace/libjpeg:package-{}.BUILD.bazel".format(
-                build_flavor,
-            ),
-        ),
+        Label("@drake//tools/workspace/libjpeg:package.BUILD.bazel"),
         "BUILD.bazel",
     )
 

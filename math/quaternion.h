@@ -380,12 +380,9 @@ Eigen::AngleAxis<T> QuaternionToAngleAxisLikeEigen(
   const boolean<T> is_sin_angle_zero = sin_half_angle_abs == T(0.);
   const boolean<T> is_w_negative = quaternion.w() < T(0.);
   const T axis_sign = if_then_else(is_w_negative, T(-1), T(1));
-  for (int i = 0; i < 3; ++i) {
-    result.axis()(i) =
-        if_then_else(is_sin_angle_zero, unit_axis(i),
-                     axis_sign * quaternion.vec()(i) / sin_half_angle_abs);
-  }
-
+  result.axis() = if_then_else(
+      is_sin_angle_zero, unit_axis,
+      (axis_sign * quaternion.vec() / sin_half_angle_abs).eval());
   return result;
 }
 }  // namespace internal

@@ -85,6 +85,17 @@ GTEST_TEST(FiniteHorizonLQRTest, InfiniteHorizonTest) {
   EXPECT_TRUE(CompareMatrices(result.S->value(t0), lqr_result.S, 1e-12));
   EXPECT_TRUE(CompareMatrices(result.K->value(t0), lqr_result.K, 1e-12));
   // Already confirmed above that sx, s0, and k0 stay zero.
+
+  // Test that the Square Root Method also maintains the fixed point.
+  options.use_square_root_method = true;
+  result = FiniteHorizonLinearQuadraticRegulator(sys, *context, t0, t0 + 2.0, Q,
+                                                 R, options);
+  EXPECT_TRUE(CompareMatrices(result.S->value(t0), lqr_result.S, 1e-4));
+  EXPECT_TRUE(CompareMatrices(result.K->value(t0), lqr_result.K, 1e-4));
+  EXPECT_TRUE(CompareMatrices(result.x0->value(t0), Eigen::Vector2d::Zero()));
+  EXPECT_TRUE(CompareMatrices(result.x0->value(tf), Eigen::Vector2d::Zero()));
+  EXPECT_TRUE(CompareMatrices(result.u0->value(t0), Vector1d::Zero()));
+  EXPECT_TRUE(CompareMatrices(result.u0->value(tf), Vector1d::Zero()));
 }
 
 // Verify that we can stabilize a non-zero fixed-point specified via the
@@ -210,8 +221,8 @@ GTEST_TEST(FiniteHorizonLQRTest, DoubleIntegratorWithNonZeroGoal) {
 // fixed point at x0=0, B*u0 = -c.  Normally, we would stabilize as a linear
 // system in relative to x0, u0 using LQR.  Here we will leave the coordinate
 // system alone (x0=0, u0=0), but set B*ud = -c.  The steady-state solution to
-// the finite-horizon LQR problem should lots of the affine terms in order to
-// get back to the offset form of this LQR controller.
+// the finite-horizon LQR problem will contain non-zero affine terms in order
+// to get back to the offset form of this LQR controller.
 GTEST_TEST(FiniteHorizonLQRTest, AffineSystemTest) {
   Eigen::Matrix2d A;
   Eigen::Matrix2d B;
@@ -270,6 +281,16 @@ GTEST_TEST(FiniteHorizonLQRTest, AffineSystemTest) {
   EXPECT_TRUE(
       CompareMatrices(regulator->get_output_port(0).Eval(*regulator_context),
                       udv - lqr_result.K * x, 1e-5));
+
+  // Test that the square root method also works.
+  options.use_square_root_method = true;
+  result = FiniteHorizonLinearQuadraticRegulator(sys, *context, t0, tf, Q, R,
+                                                 options);
+  EXPECT_TRUE(CompareMatrices(result.S->value(t0), lqr_result.S, 1e-4));
+  EXPECT_TRUE(result.sx->value(t0).isZero(1e-5));
+  EXPECT_TRUE(result.s0->value(t0).isZero(1e-5));
+  EXPECT_TRUE(CompareMatrices(result.K->value(t0), lqr_result.K, 1e-4));
+  EXPECT_TRUE(CompareMatrices(result.k0->value(t0), -udv, 1e-4));
 }
 
 // Ensures that we can scalar convert the System version of the regulator.

@@ -19,8 +19,6 @@ using geometry::Box;
 using geometry::VolumeElement;
 using geometry::VolumeMesh;
 using geometry::VolumeMeshFieldLinear;
-using geometry::VolumeVertex;
-using geometry::VolumeVertexIndex;
 using geometry::internal::ComputeEulerCharacteristic;
 using math::RigidTransform;
 using std::abs;
@@ -42,10 +40,9 @@ bool VerifyDiamondCubicBoxMesh(const VolumeMesh<double>& mesh, const Box& box,
   // A. The mesh is conforming.
   // A1. The mesh has unique vertices.
   const int num_vertices = mesh.num_vertices();
-  for (VolumeVertexIndex i(0); i < num_vertices; ++i) {
-    for (VolumeVertexIndex j(i + 1); j < num_vertices; ++j) {
-      const bool vertex_is_unique =
-          mesh.vertex(i).r_MV() != mesh.vertex(j).r_MV();
+  for (int i = 0; i < num_vertices; ++i) {
+    for (int j = i + 1; j < num_vertices; ++j) {
+      const bool vertex_is_unique = mesh.vertex(i) != mesh.vertex(j);
       EXPECT_TRUE(vertex_is_unique) << "The mesh has duplicated vertices.";
       if (!vertex_is_unique) {
         return false;
@@ -71,12 +68,12 @@ bool VerifyDiamondCubicBoxMesh(const VolumeMesh<double>& mesh, const Box& box,
   for (const double x : {-half_size.x(), half_size.x()}) {
     for (const double y : {-half_size.y(), half_size.y()}) {
       for (const double z : {-half_size.z(), half_size.z()}) {
-        const VolumeVertex<double> corner(X_WB * Vector3d(x, y, z));
+        const Vector3d corner(X_WB * Vector3d(x, y, z));
         const bool corner_is_a_mesh_vertex =
             mesh.vertices().end() !=
             find_if(mesh.vertices().begin(), mesh.vertices().end(),
-                    [&corner](const VolumeVertex<double>& v) -> bool {
-                      return v.r_MV() == corner.r_MV();
+                    [&corner](const Vector3d& v) -> bool {
+                      return v == corner;
                     });
         EXPECT_TRUE(corner_is_a_mesh_vertex)
             << "A corner point of the box is missing from the mesh vertices.";
@@ -90,9 +87,9 @@ bool VerifyDiamondCubicBoxMesh(const VolumeMesh<double>& mesh, const Box& box,
   // TODO(xuchenhan-tri): The epsilon here should be tuned to the condition
   // number of the rigid transform.
   const double epsilon = 1e-14;
-  for (VolumeVertexIndex i(0); i < num_vertices; ++i) {
+  for (int i = 0; i < num_vertices; ++i) {
     const bool vertex_is_inside_or_on_boundary =
-        ((X_WB.inverse() * mesh.vertex(i).r_MV()).array().abs() <=
+        ((X_WB.inverse() * mesh.vertex(i)).array().abs() <=
          (1 + epsilon) * half_size.array())
             .all();
     EXPECT_TRUE(vertex_is_inside_or_on_boundary)
@@ -161,9 +158,9 @@ GTEST_TEST(MeshUtilitiesTest, SignedDistanceField) {
   const VolumeMesh<double>& mesh = box_geometry.mesh();
   const VolumeMeshFieldLinear<double, double>& mesh_field =
       box_geometry.signed_distance();
-  for (VolumeVertexIndex i(0); i < mesh.num_vertices(); ++i) {
+  for (int i = 0; i < mesh.num_vertices(); ++i) {
     const double signed_distance = mesh_field.EvaluateAtVertex(i);
-    const Vector3d& r_WV = mesh.vertex(i).r_MV();
+    const Vector3d& r_WV = mesh.vertex(i);
     // clang-format off
     const std::array<double, 6> distance_to_box_faces = {
         half_Lx - r_WV(0), r_WV(0) + half_Lx,
@@ -179,13 +176,10 @@ GTEST_TEST(MeshUtilitiesTest, SignedDistanceField) {
 GTEST_TEST(MeshUtilitiesTest, StarRefineBoundaryTetrahedra) {
   // Refine one tetrahedron into four tetrahedra.
   {
-    using VIx = VolumeVertexIndex;
-    using Vertex = VolumeVertex<double>;
     const VolumeMesh<double> one_element_mesh(
-        std::vector<VolumeElement>{{VIx(0), VIx(1), VIx(2), VIx(3)}},
-        std::vector<Vertex>{Vertex(Vector3d::Zero()), Vertex(Vector3d::UnitX()),
-                            Vertex(Vector3d::UnitY()),
-                            Vertex(Vector3d::UnitZ())});
+        std::vector<VolumeElement>{{0, 1, 2, 3}},
+        std::vector<Vector3d>{Vector3d::Zero(), Vector3d::UnitX(),
+                              Vector3d::UnitY(), Vector3d::UnitZ()});
     ASSERT_EQ(one_element_mesh.num_elements(), 1);
     ASSERT_EQ(one_element_mesh.num_vertices(), 4);
 
@@ -251,7 +245,8 @@ GTEST_TEST(MeshUtilitiesTest, VisuallyVerifyStarRefineBoundaryTetrahedra) {
   {
     const std::string file_name("box_signed_distance.vtk");
     geometry::internal::WriteVolumeMeshFieldLinearToVtk(
-        file_name, box_geometry.signed_distance(),
+        file_name, "Approximated signed distance [meter]",
+        box_geometry.signed_distance(),
         "Signed distance function in " + file_name);
   }
 
@@ -267,7 +262,8 @@ GTEST_TEST(MeshUtilitiesTest, VisuallyVerifyStarRefineBoundaryTetrahedra) {
   {
     const std::string file_name("refined_box_positive_distance.vtk");
     geometry::internal::WriteVolumeMeshFieldLinearToVtk(
-        file_name, refined_box_positive_distance_function,
+        file_name, "Positive distance [meter]",
+        refined_box_positive_distance_function,
         "Positive distance function in " + file_name);
   }
 }

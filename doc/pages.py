@@ -7,7 +7,12 @@ For instructions, see https://drake.mit.edu/documentation_instructions.html.
 import os
 import tempfile
 
-from drake.doc.defs import check_call, main, symlink_input
+from drake.doc.defs import (
+    check_call,
+    main,
+    perl_cleanup_html_output,
+    symlink_input,
+)
 
 
 def _build(*, out_dir, temp_dir):
@@ -17,7 +22,7 @@ def _build(*, out_dir, temp_dir):
     """
     # Create a hermetic copy of our input.  This helps ensure that only files
     # listed in BUILD.bazel will render onto the website.
-    symlink_input("drake/doc/pages_input.txt", temp_dir)
+    symlink_input("drake/doc/pages_input.txt", temp_dir, copy=True)
 
     # Run the documentation generator.
     check_call([
@@ -25,6 +30,9 @@ def _build(*, out_dir, temp_dir):
         "--source", os.path.join(temp_dir, "drake/doc"),
         "--destination", out_dir,
     ])
+
+    # Tidy up.
+    perl_cleanup_html_output(out_dir=out_dir)
 
     # The filename to suggest as the starting point for preview; in this case,
     # it's an empty filename (i.e., the index page).

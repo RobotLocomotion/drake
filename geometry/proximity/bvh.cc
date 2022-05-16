@@ -21,7 +21,7 @@ Bvh<BvType, SourceMeshType>::Bvh(const SourceMeshType& mesh) {
   // for calculating the split point of the volumes.
   const int num_elements = mesh.num_elements();
   std::vector<CentroidPair> element_centroids;
-  for (IndexType i(0); i < num_elements; ++i) {
+  for (int i = 0; i < num_elements; ++i) {
     element_centroids.emplace_back(i, ComputeCentroid(mesh, i));
   }
 
@@ -108,7 +108,7 @@ BvType Bvh<BvType, SourceMeshType>::ComputeBoundingVolume(
     const SourceMeshType& mesh,
     const typename std::vector<CentroidPair>::iterator& start,
     const typename std::vector<CentroidPair>::iterator& end) {
-  std::set<typename SourceMeshType::VertexIndex> vertices;
+  std::set<int> vertices;
   // Check each mesh element in the given range.
   for (auto pair = start; pair < end; ++pair) {
     const auto& element = mesh.element(pair->first);
@@ -123,31 +123,30 @@ BvType Bvh<BvType, SourceMeshType>::ComputeBoundingVolume(
 
 template <class BvType, class SourceMeshType>
 Vector3d Bvh<BvType, SourceMeshType>::ComputeCentroid(
-    const SourceMeshType& mesh, const IndexType i) {
+    const SourceMeshType& mesh, int i) {
   Vector3d centroid{0, 0, 0};
   const auto& element = mesh.element(i);
   // Calculate average from all vertices.
   for (int v = 0; v < kElementVertexCount; ++v) {
-    const Vector3d& vertex =
-        convert_to_double(mesh.vertex(element.vertex(v)).r_MV());
+    const Vector3d& vertex = convert_to_double(mesh.vertex(element.vertex(v)));
     centroid += vertex;
   }
   centroid /= kElementVertexCount;
   return centroid;
 }
 
-template class Bvh<Obb, SurfaceMesh<double>>;
+template class Bvh<Obb, TriangleSurfaceMesh<double>>;
 template class Bvh<Obb, VolumeMesh<double>>;
-template class Bvh<Aabb, SurfaceMesh<double>>;
+template class Bvh<Aabb, TriangleSurfaceMesh<double>>;
 template class Bvh<Aabb, VolumeMesh<double>>;
 
 // TODO(SeanCurtis-tri) These are here to allow creating a BVH for an
 //  AutoDiffXd-valued mesh. Currently, the code doesn't strictly disallow this
 //  although projected uses are only double-valued. If we choose to definitively
 //  close the door on autodiff-valued meshes, we can remove these.
-template class Bvh<Obb, SurfaceMesh<AutoDiffXd>>;
+template class Bvh<Obb, TriangleSurfaceMesh<AutoDiffXd>>;
 template class Bvh<Obb, VolumeMesh<AutoDiffXd>>;
-template class Bvh<Aabb, SurfaceMesh<AutoDiffXd>>;
+template class Bvh<Aabb, TriangleSurfaceMesh<AutoDiffXd>>;
 template class Bvh<Aabb, VolumeMesh<AutoDiffXd>>;
 
 }  // namespace internal

@@ -92,6 +92,8 @@ using std::shared_ptr;
 using std::unordered_map;
 using std::vector;
 
+using symbolic::Expression;
+
 // Tests for manipulating the population of the proximity engine.
 
 // Test simple addition of dynamic geometry.
@@ -110,9 +112,9 @@ GTEST_TEST(ProximityEngineTests, AddDynamicGeometry) {
 // sufficient to confirm that it is being properly invoked. We'll simply attempt
 // to instantiate every shape and assert its classification based on whether
 // it's supported or not (note: this test doesn't depend on the choice of
-// rigid/soft -- for each shape, we pick an arbitrary compliance, preferring
-// one that is supported over one that is not. Otherwise, the compliance choice
-// is immaterial.)
+// rigid/compliant -- for each shape, we pick an arbitrary compliance type,
+// preferring one that is supported over one that is not. Otherwise, the
+// compliance choice is immaterial.)
 GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
   ProximityEngine<double> engine;
   // All of the geometries will have a scale comparable to edge_length, so that
@@ -121,12 +123,11 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
   const double edge_length = 0.5;
   const double E = 1e8;  // Elastic modulus.
   ProximityProperties soft_properties;
-  AddContactMaterial(E, {}, {}, &soft_properties);
-  AddSoftHydroelasticProperties(edge_length, &soft_properties);
+  AddCompliantHydroelasticProperties(edge_length, E, &soft_properties);
   ProximityProperties rigid_properties;
   AddRigidHydroelasticProperties(edge_length, &rigid_properties);
 
-  // Case: soft sphere.
+  // Case: compliant sphere.
   {
     Sphere sphere{edge_length};
     const GeometryId sphere_id = GeometryId::get_new_id();
@@ -216,9 +217,7 @@ std::pair<GeometryId, RigidTransformd> AddShape(ProximityEngine<double>* engine,
   const double edge_length = 0.5;
   ProximityProperties properties;
   if (is_soft) {
-    // If soft, we need an elastic modulus.
-    AddContactMaterial(1e8, {}, {}, &properties);
-    AddSoftHydroelasticProperties(edge_length, &properties);
+    AddCompliantHydroelasticProperties(edge_length, 1e8, &properties);
   } else {
     AddRigidHydroelasticProperties(edge_length, &properties);
   }
@@ -246,6 +245,8 @@ unordered_map<GeometryId, RigidTransformd> PopulateEngine(
   return X_WGs;
 }
 
+// The autodiff support is independent of what the contact surface mesh
+// representation is; so we'll simply use kTriangle.
 GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
   const bool anchored{true};
   const bool soft{true};
@@ -254,14 +255,14 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
       drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
       1.0 /* scale */};
 
-  // Case: Soft sphere and rigid mesh with AutoDiffXd -- confirm the contact
-  // surface has derivatives.
+  // Case: Compliant sphere and rigid mesh with AutoDiffXd -- confirm the
+  // contact surface has derivatives.
   {
     ProximityEngine<double> engine_d;
     const auto X_WGs_d = PopulateEngine(&engine_d, sphere, anchored, soft, mesh,
                                         !anchored, !soft);
 
-    const auto engine_ad = engine_d.ToAutoDiffXd();
+    const auto engine_ad = engine_d.ToScalarType<AutoDiffXd>();
     unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
     bool added_derivatives = false;
     for (const auto& [id, X_WG_d] : X_WGs_d) {
@@ -285,21 +286,15 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
     // callback. So, exercising one is "sufficient". If they ever deviate in
     // execution (i.e., there were to no longer share the same callback), this
     // test would have to be elaborated.
-    engine_ad->ComputeContactSurfacesWithFallback(X_WGs_ad, &surfaces,
-                                                  &point_pairs);
+    engine_ad->ComputeContactSurfacesWithFallback(
+        HydroelasticContactRepresentation::kTriangle, X_WGs_ad, &surfaces,
+        &point_pairs);
     EXPECT_EQ(surfaces.size(), 1);
     EXPECT_EQ(point_pairs.size(), 0);
     // We'll poke *one* quantity of the surface mesh to confirm it has
     // derivatives. We won't consider the *value*, just the existence as proof
     // that it has been wired up to code that has already tested value.
-    EXPECT_EQ(surfaces[0]
-                  .mesh_W()
-                  .vertex(SurfaceVertexIndex(0))
-                  .r_MV()
-                  .x()
-                  .derivatives()
-                  .size(),
-              3);
+    EXPECT_EQ(surfaces[0].tri_mesh_W().vertex(0).x().derivatives().size(), 3);
   }
 
   // Case: Rigid sphere and mesh with AutoDiffXd -- contact would be a point
@@ -308,7 +303,7 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
     ProximityEngine<double> engine_d;
     const auto X_WGs_d =
         PopulateEngine(&engine_d, sphere, false, !soft, sphere, false, !soft);
-    const auto engine_ad = engine_d.ToAutoDiffXd();
+    const auto engine_ad = engine_d.ToScalarType<AutoDiffXd>();
     unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
     for (const auto& [id, X_WG_d] : X_WGs_d) {
       X_WGs_ad[id] = RigidTransform<AutoDiffXd>(X_WG_d.GetAsMatrix34());
@@ -316,8 +311,9 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
 
     std::vector<ContactSurface<AutoDiffXd>> surfaces;
     std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
-    engine_ad->ComputeContactSurfacesWithFallback(X_WGs_ad, &surfaces,
-                                                  &point_pairs);
+    engine_ad->ComputeContactSurfacesWithFallback(
+        HydroelasticContactRepresentation::kTriangle, X_WGs_ad, &surfaces,
+        &point_pairs);
     EXPECT_EQ(surfaces.size(), 0);
     EXPECT_EQ(point_pairs.size(), 1);
   }
@@ -334,6 +330,8 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
 //
 //   - A concave mesh queries penetration and distance like its convex hull.
 //   - A concave mesh queries hydroelastic based on the actual mesh.
+//
+// The test doesn't depend on the mesh representation type.
 GTEST_TEST(ProximityEngineTests, MeshSupportAsConvex) {
   /* This mesh looks like this:
                          +z
@@ -382,7 +380,8 @@ GTEST_TEST(ProximityEngineTests, MeshSupportAsConvex) {
     engine.UpdateWorldPoses(X_WGs);
 
     // Existence of a contact surface depends on the radius of the sphere.
-    const auto contact_surfaces = engine.ComputeContactSurfaces(X_WGs);
+    const auto contact_surfaces = engine.ComputeContactSurfaces(
+        HydroelasticContactRepresentation::kTriangle, X_WGs);
     EXPECT_EQ(contact_surfaces.size(), radius > 0.5 ? 1 : 0);
 
     {
@@ -483,7 +482,7 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
 
   // Case: throws when the id doesn't refer to a valid geometry.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.UpdateRepresentationForNewProperties(sphere, {}), std::logic_error,
+      engine.UpdateRepresentationForNewProperties(sphere, {}),
       "The proximity engine does not contain a geometry with the id \\d+; its "
       "properties cannot be updated");
 
@@ -506,7 +505,7 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
     // Pick a characteristic length sufficiently large that we create the
     // coarsest, cheapest mesh possible.
     EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kUndefined);
-    props.AddProperty(kMaterialGroup, kElastic,
+    props.AddProperty(kHydroGroup, kElastic,
                       std::numeric_limits<double>::infinity());
     AddRigidHydroelasticProperties(3 * radius, &props);
     DRAKE_EXPECT_NO_THROW(
@@ -523,7 +522,7 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
     EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kUndefined);
   }
 
-  // Create a baseline property set that requests a soft hydroelastic
+  // Create a baseline property set that requests a compliant hydroelastic
   // representation, but is not necessarily sufficient to define one.
   ProximityProperties hydro_trigger;
   hydro_trigger.AddProperty(kHydroGroup, kComplianceType,
@@ -537,14 +536,14 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.UpdateRepresentationForNewProperties(sphere,
                                                     bad_props_no_elasticity),
-        std::logic_error, "Cannot create soft Sphere; missing the .+ property");
+        "Cannot create soft Sphere; missing the .+ property");
 
     ProximityProperties bad_props_no_length(hydro_trigger);
-    bad_props_no_length.AddProperty(kMaterialGroup, kElastic, 5e8);
+    bad_props_no_length.AddProperty(kHydroGroup, kElastic, 5e8);
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.UpdateRepresentationForNewProperties(sphere,
                                                     bad_props_no_length),
-        std::logic_error, "Cannot create soft Sphere; missing the .+ property");
+        "Cannot create soft Sphere; missing the .+ property");
   }
 }
 
@@ -620,7 +619,7 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
                   1.0};
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
-        std::runtime_error, ".*only OBJs with a single object.*");
+        ".*only OBJs with a single object.*");
   }
 
   const filesystem::path temp_dir = temp_directory();
@@ -632,7 +631,7 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
     Convex convex{file.string(), 1.0};
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
-        std::runtime_error, "The file parsed contains no objects;.+");
+        "The file parsed contains no objects;.+");
   }
 
   // The file is not an OBJ.
@@ -643,7 +642,7 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
     Convex convex{file.string(), 1.0};
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
-        std::runtime_error, "The file parsed contains no objects;.+");}
+        "The file parsed contains no objects;.+");}
 }
 
 // Tests for copy/move semantics.  ---------------------------------------------
@@ -844,7 +843,6 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
   {
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.ComputeSignedDistancePairClosestPoints(bad_id, id_B, X_WGs),
-        std::runtime_error,
         fmt::format("The geometry given by id {} does not reference .+ used in "
                     "a signed distance query", bad_id));
   }
@@ -853,7 +851,6 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
   {
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.ComputeSignedDistancePairClosestPoints(id_A, bad_id, X_WGs),
-        std::runtime_error,
         fmt::format("The geometry given by id {} does not reference .+ used in "
                     "a signed distance query", bad_id));
   }
@@ -870,7 +867,6 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
         extract_ids, false /* is_invariant */);
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs),
-        std::runtime_error,
         fmt::format("The geometry pair \\({}, {}\\) does not support a signed "
                     "distance query", id_A, id_B));
   }
@@ -1685,6 +1681,21 @@ TEST_P(SignedDistanceToPointTest, SingleQueryPointWithThreshold) {
   EXPECT_EQ(results.size(), 0);
 }
 
+TEST_P(SignedDistanceToPointTest, SingleQueryPointSymbolic) {
+  const auto& data = GetParam();
+  const double large_threshold = data.expected_result.distance + 0.01;
+
+  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
+      engine.ToScalarType<Expression>();
+  auto sym_results = sym_engine->ComputeSignedDistanceToPoint(
+      data.p_WQ.cast<Expression>(),
+      {{data.expected_result.id_G, data.X_WG.cast<Expression>()}},
+      large_threshold);
+  // No geometries are supported yet for Expression. Currently, this call
+  // succeeds, but will always return empty results.
+  EXPECT_EQ(sym_results.size(), 0);
+}
+
 // To debug a specific test, you can use Bazel flag --test_filter and
 // --test_output.  For example, you can use the command:
 // ```
@@ -1893,7 +1904,8 @@ GTEST_TEST(ProximityEngineTests, FindCollisionCandidatesResultOrdering) {
 // Confirms that the ComputeContactSurfaces() computation returns the
 // same results twice in a row. This test is explicitly required because it is
 // known that updating the pose in the FCL tree can lead to erratic ordering.
-// We also test ComputePolygonalContactSurfaces() similarly.
+// This logic doesn't depend on mesh representation, so we test it with a single
+// representation.
 class ProximityEngineHydro : public testing::Test {
  protected:
   void SetUp() override {
@@ -1904,8 +1916,7 @@ class ProximityEngineHydro : public testing::Test {
     poses_ = MakeCollidingRing(r, 4);
 
     ProximityProperties soft_properties;
-    AddContactMaterial(1e8, {}, {}, {}, &soft_properties);
-    AddSoftHydroelasticProperties(r, &soft_properties);
+    AddCompliantHydroelasticProperties(r, 1e8, &soft_properties);
     ProximityProperties rigid_properties;
     AddRigidHydroelasticProperties(r, &rigid_properties);
 
@@ -1932,26 +1943,13 @@ class ProximityEngineHydro : public testing::Test {
 
 TEST_F(ProximityEngineHydro, ComputeContactSurfacesResultOrdering) {
   engine_.UpdateWorldPoses(poses_);
-  const auto results1 = engine_.ComputeContactSurfaces(poses_);
+  const auto results1 = engine_.ComputeContactSurfaces(
+      HydroelasticContactRepresentation::kTriangle, poses_);
   ASSERT_EQ(results1.size(), poses_.size());
 
   engine_.UpdateWorldPoses(poses_);
-  const auto results2 = engine_.ComputeContactSurfaces(poses_);
-  ASSERT_EQ(results2.size(), poses_.size());
-
-  for (size_t i = 0; i < poses_.size(); ++i) {
-    EXPECT_EQ(results1[i].id_M(), results2[i].id_M());
-    EXPECT_EQ(results1[i].id_N(), results2[i].id_N());
-  }
-}
-
-TEST_F(ProximityEngineHydro, ComputePolygonalContactSurfacesResultOrdering) {
-  engine_.UpdateWorldPoses(poses_);
-  const auto results1 = engine_.ComputePolygonalContactSurfaces(poses_);
-  ASSERT_EQ(results1.size(), poses_.size());
-
-  engine_.UpdateWorldPoses(poses_);
-  const auto results2 = engine_.ComputePolygonalContactSurfaces(poses_);
+  const auto results2 = engine_.ComputeContactSurfaces(
+      HydroelasticContactRepresentation::kTriangle, poses_);
   ASSERT_EQ(results2.size(), poses_.size());
 
   for (size_t i = 0; i < poses_.size(); ++i) {
@@ -1963,7 +1961,8 @@ TEST_F(ProximityEngineHydro, ComputePolygonalContactSurfacesResultOrdering) {
 // Confirms that the ComputeContactSurfacesWithFallback() computation returns
 // the same results twice in a row. This test is explicitly required because it
 // is known that updating the pose in the FCL tree can lead to erratic ordering.
-// We also test ComputePolygonalContactSurfacesWithFallback() similarly.
+// This logic is independent of mesh representation, so, we only test for one
+// mesh type.
 class ProximityEngineHydroWithFallback : public testing::Test {
  protected:
   void SetUp() override {
@@ -1975,8 +1974,7 @@ class ProximityEngineHydroWithFallback : public testing::Test {
     poses_ = MakeCollidingRing(r, N_);
 
     ProximityProperties soft_properties;
-    AddContactMaterial(1e8, {}, {}, {}, &soft_properties);
-    AddSoftHydroelasticProperties(r / 2, &soft_properties);
+    AddCompliantHydroelasticProperties(r / 2, 1e8, &soft_properties);
     ProximityProperties rigid_properties;
     AddRigidHydroelasticProperties(r, &rigid_properties);
 
@@ -2008,46 +2006,39 @@ TEST_F(ProximityEngineHydroWithFallback,
   engine_.UpdateWorldPoses(poses_);
   vector<ContactSurface<double>> surfaces1;
   vector<PenetrationAsPointPair<double>> points1;
-  engine_.ComputeContactSurfacesWithFallback(poses_, &surfaces1, &points1);
-  ASSERT_EQ(surfaces1.size(), N_ / 2);
-  ASSERT_EQ(points1.size(), N_ / 2);
+  engine_.ComputeContactSurfacesWithFallback(
+      HydroelasticContactRepresentation::kTriangle, poses_, &surfaces1,
+      &points1);
+  // The arrangement (see MakeCollidingRing()) looks somewhat
+  // like this (R = rigid sphere, C = compliant sphere):
+  //
+  //      R  R
+  //    C      C
+  //    C      C
+  //      R  R
+  //
+  // Only two R-R (rigid-rigid) contacts are point contacts.
+  const size_t num_point_contacts = 2;
+  // The remaining contacts are either R-C (rigid-compliant) or C-C
+  // (compliant-compliant) hydroelastic contact patches.
+  const size_t num_patch_contacts = N_ - 2;
+  ASSERT_EQ(surfaces1.size(), num_patch_contacts);
+  ASSERT_EQ(points1.size(), num_point_contacts);
 
   engine_.UpdateWorldPoses(poses_);
   vector<ContactSurface<double>> surfaces2;
   vector<PenetrationAsPointPair<double>> points2;
-  engine_.ComputeContactSurfacesWithFallback(poses_, &surfaces2, &points2);
-  ASSERT_EQ(surfaces2.size(), N_ / 2);
-  ASSERT_EQ(points2.size(), N_ / 2);
+  engine_.ComputeContactSurfacesWithFallback(
+      HydroelasticContactRepresentation::kTriangle, poses_, &surfaces2,
+      &points2);
+  ASSERT_EQ(surfaces2.size(), num_patch_contacts);
+  ASSERT_EQ(points2.size(), num_point_contacts);
 
-  for (size_t i = 0; i < N_ / 2; ++i) {
+  for (size_t i = 0; i < num_patch_contacts; ++i) {
     EXPECT_EQ(surfaces1[i].id_M(), surfaces2[i].id_M());
     EXPECT_EQ(surfaces1[i].id_N(), surfaces2[i].id_N());
-    EXPECT_EQ(points1[i].id_A, points2[i].id_A);
-    EXPECT_EQ(points1[i].id_B, points2[i].id_B);
   }
-}
-
-TEST_F(ProximityEngineHydroWithFallback,
-       ComputePolygonalContactSurfacesWithFallbackResultOrdering) {
-  engine_.UpdateWorldPoses(poses_);
-  vector<ContactSurface<double>> surfaces1;
-  vector<PenetrationAsPointPair<double>> points1;
-  engine_.ComputePolygonalContactSurfacesWithFallback(poses_, &surfaces1,
-                                                      &points1);
-  ASSERT_EQ(surfaces1.size(), N_ / 2);
-  ASSERT_EQ(points1.size(), N_ / 2);
-
-  engine_.UpdateWorldPoses(poses_);
-  vector<ContactSurface<double>> surfaces2;
-  vector<PenetrationAsPointPair<double>> points2;
-  engine_.ComputePolygonalContactSurfacesWithFallback(poses_, &surfaces2,
-                                                      &points2);
-  ASSERT_EQ(surfaces2.size(), N_ / 2);
-  ASSERT_EQ(points2.size(), N_ / 2);
-
-  for (size_t i = 0; i < N_ / 2; ++i) {
-    EXPECT_EQ(surfaces1[i].id_M(), surfaces2[i].id_M());
-    EXPECT_EQ(surfaces1[i].id_N(), surfaces2[i].id_N());
+  for (size_t i = 0; i < num_point_contacts; ++i) {
     EXPECT_EQ(points1[i].id_A, points2[i].id_A);
     EXPECT_EQ(points1[i].id_B, points2[i].id_B);
   }
@@ -2284,10 +2275,15 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectPenetration(anchored_id, dynamic_id, &copy_engine);
 
-  // Test AutoDiffXd converted engine.
+  // Test scalar-converted engines.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToAutoDiffXd();
+      engine_.ToScalarType<AutoDiffXd>();
   ExpectPenetration(anchored_id, dynamic_id, ad_engine.get());
+  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
+      engine_.ToScalarType<Expression>();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ExpectPenetration(anchored_id, dynamic_id, sym_engine.get()),
+      ".*are not supported for scalar type drake::symbolic::Expression.*");
 }
 
 // Performs the same collision test between two dynamic spheres which belong to
@@ -2315,10 +2311,15 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectPenetration(origin_id, collide_id, &copy_engine);
 
-  // Test AutoDiffXd converted engine.
+  // Test scalar-converted engines.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToAutoDiffXd();
+      engine_.ToScalarType<AutoDiffXd>();
   ExpectPenetration(origin_id, collide_id, ad_engine.get());
+  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
+      engine_.ToScalarType<Expression>();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ExpectPenetration(origin_id, collide_id, sym_engine.get()),
+      ".*are not supported for scalar type drake::symbolic::Expression.*");
 }
 
 // Tests if collisions exist between dynamic and anchored sphere. One case
@@ -2349,10 +2350,13 @@ TEST_F(SimplePenetrationTest, HasCollisionsDynamicAndAnchored) {
   ProximityEngine<double> copy_engine(engine_);
   EXPECT_TRUE(copy_engine.HasCollisions());
 
-  // Test AutoDiffXd converted engine.
+  // Test scalar-converted engines.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToAutoDiffXd();
+      engine_.ToScalarType<AutoDiffXd>();
   EXPECT_TRUE(ad_engine->HasCollisions());
+  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
+      engine_.ToScalarType<Expression>();
+  EXPECT_TRUE(sym_engine->HasCollisions());
 }
 
 // Performs the same collision test between two dynamic spheres which belong to
@@ -2380,10 +2384,13 @@ TEST_F(SimplePenetrationTest, HasCollisionsDynamicAndDynamicSingleSource) {
   ProximityEngine<double> copy_engine(engine_);
   EXPECT_TRUE(copy_engine.HasCollisions());
 
-  // Test AutoDiffXd converted engine.
+  // Test scalar-converted engines.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToAutoDiffXd();
+      engine_.ToScalarType<AutoDiffXd>();
   EXPECT_TRUE(ad_engine->HasCollisions());
+  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
+      engine_.ToScalarType<Expression>();
+  EXPECT_TRUE(sym_engine->HasCollisions());
 }
 
 // Performs the same collision test where the geometries have been filtered.
@@ -2424,10 +2431,13 @@ TEST_F(SimplePenetrationTest, WithCollisionFilters) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectIgnoredPenetration(origin_id, collide_id, &copy_engine);
 
-  // Test AutoDiffXd converted engine.
+  // Test scalar-converted engines.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToAutoDiffXd();
+      engine_.ToScalarType<AutoDiffXd>();
   ExpectIgnoredPenetration(origin_id, collide_id, ad_engine.get());
+  std::unique_ptr<ProximityEngine<Expression>> sym_engine =
+      engine_.ToScalarType<Expression>();
+  ExpectIgnoredPenetration(origin_id, collide_id, sym_engine.get());
 }
 
 // Confirms that non-positive thresholds produce the right value. Creates three
@@ -3324,7 +3334,6 @@ GTEST_TEST(SignedDistancePairError, HalfspaceException) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
-      std::logic_error,
       "Signed distance queries between shapes .* and .* are not supported.*");
 }
 
@@ -4271,9 +4280,35 @@ GTEST_TEST(ProximityEngineTests,
       {id2, RigidTransform<AutoDiffXd>::Identity()}};
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
-      std::logic_error,
       "Signed distance queries between shapes 'Box' and 'Box' are not "
       "supported for scalar type drake::AutoDiffXd");
+}
+
+// Tests that an unsupported geometry causes the engine to throw.
+GTEST_TEST(ProximityEngineTests, ExpressionUnsupported) {
+  ProximityEngine<Expression> engine;
+
+  // Add two geometries that can't be queried.
+  const GeometryId id1 = GeometryId::get_new_id();
+  const GeometryId id2 = GeometryId::get_new_id();
+  engine.AddDynamicGeometry(Box(1, 2, 3), {}, id1);
+  engine.AddDynamicGeometry(Box(2, 4, 6), {}, id2);
+
+  const unordered_map<GeometryId, RigidTransform<Expression>> X_WGs{
+      {id1, RigidTransform<Expression>::Identity()},
+      {id2, RigidTransform<Expression>::Identity()}};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
+      "Signed distance queries between shapes 'Box' and 'Box' are not "
+      "supported for scalar type drake::symbolic::Expression");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.ComputeSignedDistancePairClosestPoints(id1, id2, X_WGs),
+      "Signed distance queries between shapes 'Box' and 'Box' are not "
+      "supported for scalar type drake::symbolic::Expression");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.ComputePointPairPenetration(X_WGs),
+      "Penetration queries between shapes 'Box' and 'Box' are not supported "
+      "for scalar type drake::symbolic::Expression");
 }
 
 }  // namespace

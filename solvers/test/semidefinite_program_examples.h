@@ -100,8 +100,8 @@ void SolveSDPwithOverlappingVariables(const SolverInterface& solver,
  * min x0² + 2*x0 + x2
  * s.t ⎡x0 x1⎤ is psd
  *     ⎣x1 x0⎦
- *     ⎡x0 x1⎤ is psd
- *     ⎣x1 x0⎦
+ *     ⎡x0 x2⎤ is psd
+ *     ⎣x2 x0⎦
  *     x1 == 1
  *
  * The optimal solution will be x = (1, 1, -1).

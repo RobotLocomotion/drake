@@ -13,6 +13,10 @@ using MobilizerIndex = TypeSafeIndex<class MobilizerTag>;
 // Type used to identify tree nodes by index within a multibody tree system.
 using BodyNodeIndex = TypeSafeIndex<class BodyNodeTag>;
 
+// Type used to identify a topological tree within the "forest" of a multibody
+// system.
+using TreeIndex = TypeSafeIndex<class TreeTag>;
+
 }  // namespace internal
 
 // N.B. To simplify checking binding coverage, please ensure these symbols

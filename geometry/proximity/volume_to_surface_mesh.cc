@@ -7,16 +7,14 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/sorted_triplet.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 
-using geometry::internal::SortedTriplet;
-
-std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
+std::vector<std::array<int, 3>> IdentifyBoundaryFaces(
     const std::vector<VolumeElement>& tetrahedra) {
   // We want to identify a triangle ABC from all six permutations of A,B,C
   // (i.e., ABC, ACB, BAC, BCA, CAB, CBA), so we use SortedTriplet(A,B,C)
@@ -39,19 +37,15 @@ std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
   // The canonical order of the entries in the map is also useful in
   // debugging. However, `map` is slower, and we may change to
   // `unordered_map` later if `map` is too slow.
-  std::map<SortedTriplet<VolumeVertexIndex>, std::array<VolumeVertexIndex, 3>>
-      face_map;
+  std::map<SortedTriplet<int>, std::array<int, 3>> face_map;
 
-  auto insert_or_erase = [&face_map](VolumeVertexIndex v0,
-                                     VolumeVertexIndex v1,
-                                     VolumeVertexIndex v2) {
-    SortedTriplet<VolumeVertexIndex> sorted(v0, v1, v2);
+  auto insert_or_erase = [&face_map](int v0, int v1, int v2) {
+    SortedTriplet<int> sorted(v0, v1, v2);
     auto find = face_map.find(sorted);
     if (find != face_map.end()) {
       face_map.erase(find);
     } else {
-      face_map.emplace(sorted,
-                       std::array<VolumeVertexIndex, 3>{v0, v1, v2});
+      face_map.emplace(sorted, std::array<int, 3>{v0, v1, v2});
     }
   };
 
@@ -94,7 +88,7 @@ std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
     }
   }
 
-  std::vector<std::array<VolumeVertexIndex, 3>> boundary;
+  std::vector<std::array<int, 3>> boundary;
   boundary.reserve(face_map.size());
   for (const auto& pair : face_map) {
     boundary.emplace_back(pair.second);
@@ -103,42 +97,45 @@ std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
   return boundary;
 }
 
-std::vector<VolumeVertexIndex> CollectUniqueVertices(
-    const std::vector<std::array<VolumeVertexIndex, 3>>& faces) {
+std::vector<int> CollectUniqueVertices(
+    const std::vector<std::array<int, 3>>& faces) {
   // We use `set` instead of `unordered_set` so that we get the same
   // result on different computers, operating systems, or compilers. It will
   // help with repeatability between different users on different platforms.
   // The canonical order of the vertices is also useful in debugging.
   // However, `set` is slower, and we may change to `unordered_set` later if
   // `set` is too slow.
-  std::set<VolumeVertexIndex> vertex_set;
+  std::set<int> vertex_set;
   for (const auto& face : faces) {
     for (const auto& vertex : face) {
       vertex_set.insert(vertex);
     }
   }
-  return std::vector<VolumeVertexIndex>(vertex_set.begin(), vertex_set.end());
+  return std::vector<int>(vertex_set.begin(), vertex_set.end());
 }
 
 }  // namespace internal
 
 template <class T>
-SurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume) {
-  const std::vector<std::array<VolumeVertexIndex, 3>> boundary_faces =
+TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume) {
+  const std::vector<std::array<int, 3>> boundary_faces =
       internal::IdentifyBoundaryFaces(volume.tetrahedra());
 
-  const std::vector<VolumeVertexIndex> boundary_vertices =
+  const std::vector<int> boundary_vertices =
       internal::CollectUniqueVertices(boundary_faces);
 
-  std::vector<SurfaceVertex<T>> surface_vertices;
+  std::vector<Vector3<T>> surface_vertices;
   surface_vertices.reserve(boundary_vertices.size());
-  std::unordered_map<VolumeVertexIndex, SurfaceVertexIndex> volume_to_surface;
-  for (SurfaceVertexIndex i(0); i < boundary_vertices.size(); ++i) {
-    surface_vertices.emplace_back(volume.vertex(boundary_vertices[i]).r_MV());
+
+  // Map from an index into the volume mesh's vertices to the resulting
+  // surface mesh's vertices.
+  std::unordered_map<int, int> volume_to_surface;
+  for (int i = 0; i < static_cast<int>(boundary_vertices.size()); ++i) {
+    surface_vertices.emplace_back(volume.vertex(boundary_vertices[i]));
     volume_to_surface.emplace(boundary_vertices[i], i);
   }
 
-  std::vector<SurfaceFace> surface_faces;
+  std::vector<SurfaceTriangle> surface_faces;
   surface_faces.reserve(boundary_faces.size());
   for (const auto& face_vertices : boundary_faces) {
     surface_faces.emplace_back(volume_to_surface.at(face_vertices[0]),
@@ -146,7 +143,8 @@ SurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume) {
                                volume_to_surface.at(face_vertices[2]));
   }
 
-  return SurfaceMesh<T>(std::move(surface_faces), std::move(surface_vertices));
+  return TriangleSurfaceMesh<T>(std::move(surface_faces),
+                                std::move(surface_vertices));
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((

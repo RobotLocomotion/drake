@@ -2,7 +2,7 @@
 """
 
 import os
-import sys
+import platform
 
 
 def get_clang_format_path(version=None):
@@ -10,20 +10,19 @@ def get_clang_format_path(version=None):
     Otherwise, pass the desired major version as an int.
     """
     if version is None:
-        version = 9
-    if sys.platform == "darwin":
-        if version == 9:
-            path = "/usr/local/opt/clang-format@9/bin/clang-format-9"
-        elif version < 6:
-            raise RuntimeError(
-                f"Could not find required clang-format {version}")
+        version = 12
+
+    name = f"clang-format-{version}"
+
+    if platform.system() == "Darwin":
+        if platform.machine() == "arm64":
+            homebrew = "/opt/homebrew"
         else:
-            path = f"/usr/local/opt/llvm@{version}/bin/clang-format"
+            homebrew = "/usr/local"
+
+        path = f"{homebrew}/opt/clang-format@{version}/bin/{name}"
     else:
-        if version <= 6:
-            path = f"/usr/bin/clang-format-{version}.0"
-        else:
-            path = f"/usr/bin/clang-format-{version}"
+        path = f"/usr/bin/{name}"
     if os.path.isfile(path):
         return path
     raise RuntimeError("Could not find required clang-format at " + path)

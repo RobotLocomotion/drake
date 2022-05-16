@@ -297,7 +297,7 @@ TEST_F(Rod2DDAETest, Output) {
       dut_->AllocateOutput();
   dut_->CalcOutput(*context_, output.get());
   for (int i = 0; i < xc.size(); ++i)
-    EXPECT_EQ(xc[i], output->get_vector_data(0)->get_value()(i));
+    EXPECT_EQ(xc[i], output->get_vector_data(0)->value()(i));
 }
 
 // Verifies that setting dut to an impacting state actually results in an
@@ -804,7 +804,7 @@ TEST_F(Rod2DDiscretizedTest, RodGoesToRest) {
   simulator.AdvanceTo(t_final);
 
   // Get angular orientation and velocity.
-  const auto xd = simulator.get_context().get_discrete_state(0).get_value();
+  const VectorXd& xd = simulator.get_context().get_discrete_state(0).value();
   const double theta = xd(2);
   const double theta_dot = xd(5);
 
@@ -1141,7 +1141,7 @@ GTEST_TEST(Rod2DCrossValidationTest, Outputs) {
   x_pdae[0] = 0;
   x_pdae[1] = pdae.get_rod_half_length();
   x_pdae[2] = M_PI_2;
-  context_pdae->get_mutable_continuous_state().SetFromVector(x_pdae);
+  context_pdae->SetContinuousState(x_pdae);
   pdae.CalcOutput(*context_pdae, output_pdae.get());
 }
 

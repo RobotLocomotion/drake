@@ -6,6 +6,10 @@ load(
     "@drake//tools/skylark:drake_runfiles_binary.bzl",
     "drake_runfiles_binary",
 )
+load(
+    "@drake_visualizer//:defs.bzl",
+    _DRAKE_VISUALIZER_ENABLED = "ENABLED",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -16,27 +20,38 @@ py_library(
     deps = ["//:module_py"],
 )
 
-# TODO(eric.cousineau): Move this to //tools/workspace:drake_visualizer.
+_VISUALIZER_MAIN = "{}:drake_visualizer_{}.py".format(
+    "//tools/workspace/drake_visualizer",
+    "bazel" if _DRAKE_VISUALIZER_ENABLED else "disabled",
+)
+
 py_binary(
     name = "drake_visualizer_py",
-    srcs = ["//tools/workspace/drake_visualizer:drake_visualizer_bazel.py"],
+    srcs = [_VISUALIZER_MAIN],
     data = [
         "//examples:prod_models",
         "@drake_visualizer",
-    ],
-    main = "//tools/workspace/drake_visualizer:drake_visualizer_bazel.py",
+    ] if _DRAKE_VISUALIZER_ENABLED else [],
+    main = _VISUALIZER_MAIN,
+    python_version = "PY3",
+    srcs_version = "PY3",
     deps = [
         "//lcmtypes:lcmtypes_drake_py",
         "//tools/workspace/drake_visualizer:builtin_scripts_py",
         "//tools/workspace/drake_visualizer:stub_pydrake",
         "@drake_visualizer//:drake_visualizer_python_deps",
         "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
-    ],
+    ] if _DRAKE_VISUALIZER_ENABLED else [],
 )
 
 drake_runfiles_binary(
     name = "drake_visualizer",
     target = ":drake_visualizer_py",
+)
+
+alias(
+    name = "meldis",
+    actual = "//bindings/pydrake/visualization:meldis",
 )
 
 # === config_setting rules ===

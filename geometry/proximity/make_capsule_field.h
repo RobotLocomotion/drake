@@ -36,9 +36,9 @@ namespace internal {
                          remain alive as long as the field. The position
                          vectors of mesh vertices are expressed in the
                          capsule's frame C.
- @param[in] elastic_modulus  Scale extent to pressure.
+ @param[in] hydroelastic_modulus  Scale extent to pressure.
  @return                 The pressure field defined on the tetrahedral mesh.
- @pre                    `elastic_modulus` is strictly positive.
+ @pre                    `hydroelastic_modulus` is strictly positive.
                          `mesh_C` is non-null.
  @tparam T               The scalar type for representing the mesh vertex
                          positions and the pressure value.
@@ -46,25 +46,24 @@ namespace internal {
 template <typename T>
 VolumeMeshFieldLinear<T, T> MakeCapsulePressureField(
     const Capsule& capsule, const VolumeMesh<T>* mesh_C,
-    const T elastic_modulus) {
-  DRAKE_DEMAND(elastic_modulus > T(0));
+    const T hydroelastic_modulus) {
+  DRAKE_DEMAND(hydroelastic_modulus > T(0));
   DRAKE_DEMAND(mesh_C != nullptr);
   // We only partially check the precondition of the mesh (see @pre). The first
   // two vertices should always be the endpoints of the capsule's medial axis.
   // The first with positive z and the second with negative z.
-  DRAKE_DEMAND(mesh_C->vertex(VolumeVertexIndex(0)).r_MV() ==
+  DRAKE_DEMAND(mesh_C->vertex(0) ==
                Eigen::Vector3d(0, 0, capsule.length() / 2));
-  DRAKE_DEMAND(mesh_C->vertex(VolumeVertexIndex(1)).r_MV() ==
+  DRAKE_DEMAND(mesh_C->vertex(1) ==
                Eigen::Vector3d(0, 0, -capsule.length() / 2));
 
   std::vector<T> pressure_values(mesh_C->num_vertices(), 0.0);
 
   // Only the inner vertices lying on the medial axis (vertex 0 and 1) have
   // non-zero pressure values.
-  pressure_values[0] = pressure_values[1] = elastic_modulus;
+  pressure_values[0] = pressure_values[1] = hydroelastic_modulus;
 
-  return VolumeMeshFieldLinear<T, T>("pressure", std::move(pressure_values),
-                                     mesh_C);
+  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_C);
 }
 
 }  // namespace internal

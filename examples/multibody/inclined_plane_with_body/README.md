@@ -20,9 +20,6 @@ finite box (if a finite box, the block can fall off the inclined plane).
 
 ### Building and running this example
 
-First complete the one-time setup instructions, if you have not already done so:
-https://drake.mit.edu/from_source.html#mandatory-platform-specific-instructions
-
 Open a terminal in the `drake` workspace, and type commands as shown below.
 
 Build the example like so:

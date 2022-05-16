@@ -2,7 +2,7 @@
 # vi: set ft=python :
 
 """
-Downloads and unpacks a MOSEK archive and makes its headers and
+Downloads and unpacks a MOSEK™ archive and makes its headers and
 precompiled shared libraries available to be used as a C/C++
 dependency.
 
@@ -108,12 +108,10 @@ def _impl(repository_ctx):
         ]
     else:
         files = [
-            # N.B. We are using and installing MOSEK's copy of libcilkrts.so.5,
-            # even though Ubuntu installs the same shared library by default on
-            # all systems already. For some reason, Mosek fails when used with
-            # Ubuntu's shared library. If Drake users have other third-party
-            # code that assumes use of Ubuntu's libcilkrts, there could be
-            # runtime conflicts; however, this risk seems low.
+            # We unconditionally use the the MOSEK™ copy of libcilkrts. Even
+            # though Ubuntu 20 offers a cilk shared library for legacy support,
+            # Ubuntu 22 has dropped it, and it's simplest for us to just use
+            # the MOSEK™ copy of the library everywhere.
             "bin/libcilkrts.so.5",
             "bin/libmosek64.so.{}.{}".format(
                 mosek_major_version,
@@ -163,6 +161,7 @@ install(
    docs = [
        "mosek-eula.pdf",
        "@drake//tools/workspace/mosek:LICENSE_CilkPlus",
+       "@drake//tools/workspace/mosek:drake_mosek_redistribution.txt",
    ],
    allowed_externals = [
        "@drake//tools/workspace/mosek:LICENSE_CilkPlus",

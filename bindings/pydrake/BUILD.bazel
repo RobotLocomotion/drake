@@ -121,22 +121,34 @@ drake_pybind_library(
     name = "geometry_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:identifier_pybind",
+        "//bindings/pydrake/common:monostate_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",
-        "//lcmtypes:viewer",
     ],
-    cc_srcs = ["geometry_py.cc"],
+    cc_srcs = [
+        "geometry_py.cc",
+        "geometry_py.h",
+        "geometry_py_common.cc",
+        "geometry_py_hydro.cc",
+        "geometry_py_optimization.cc",
+        "geometry_py_render.cc",
+        "geometry_py_scene_graph.cc",
+        "geometry_py_visualizers.cc",
+    ],
     package_info = PACKAGE_INFO,
+    py_data = [
+        "//setup:deepnote",
+    ],
     py_deps = [
         ":math_py",
         ":module_py",
         "//bindings/pydrake/systems:framework_py",
         "//bindings/pydrake/systems:lcm_py",
     ],
+    py_srcs = ["_geometry_extra.py"],
 )
 
 drake_pybind_library(
@@ -205,11 +217,15 @@ drake_pybind_library(
     cc_deps = [
         ":polynomial_types_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
     ],
     cc_srcs = ["polynomial_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake:autodiffutils_py",
+        "//bindings/pydrake:symbolic_py",
+        "//bindings/pydrake/common:value_py",
     ],
 )
 
@@ -229,8 +245,13 @@ drake_pybind_library(
     cc_deps = [
         ":symbolic_types_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
     ],
-    cc_srcs = ["symbolic_py.cc"],
+    cc_srcs = [
+        "symbolic_py.cc",
+        "symbolic_py_unapply.cc",
+        "symbolic_py_unapply.h",
+    ],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
@@ -245,13 +266,27 @@ drake_pybind_library(
     cc_deps = [
         ":polynomial_types_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["trajectories_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:polynomial_py",
+        "//bindings/pydrake:symbolic_py",
+        "//bindings/pydrake/common:value_py",
+    ],
+)
+
+drake_py_library(
+    name = "tutorials_py",
+    srcs = [
+        "tutorials.py",
+    ],
+    deps = [
+        ":module_py",
     ],
 )
 
@@ -282,6 +317,7 @@ add_pybind_coverage_data(
 
 PY_LIBRARIES = [
     ":module_py",
+    ":tutorials_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -355,8 +391,11 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "all_each_import_test",
-    timeout = "moderate",
-    deps = [":all_py"],
+    shard_count = 8,
+    deps = [
+        ":all_py",
+        "//bindings/pydrake/common/test_utilities:meta_py",
+    ],
 )
 
 drake_py_library(
@@ -395,34 +434,6 @@ drake_py_unittest(
         ":math_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "text_logging_test_py",
-    testonly = 1,
-    add_install = False,
-    cc_so_name = "test/text_logging_test",
-    cc_srcs = ["test/text_logging_test_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_srcs = ["test/__init__.py"],
-    visibility = ["//visibility:private"],
-)
-
-drake_py_binary(
-    name = "text_logging_example",
-    testonly = 1,
-    srcs = ["test/text_logging_example.py"],
-    deps = [
-        ":module_py",
-        ":text_logging_test_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "text_logging_test",
-    data = [
-        ":text_logging_example",
     ],
 )
 
@@ -474,17 +485,51 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
-    name = "geometry_test",
-    data = [
-        "//geometry:test_obj_files",
-        "//systems/sensors:test_models",
+    name = "frame_id_test",
+    deps = [
+        ":geometry_py",
     ],
+)
+
+drake_py_unittest(
+    name = "geometry_common_test",
     deps = [
         ":geometry_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "geometry_hydro_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
+    deps = [
+        ":geometry_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "geometry_optimization_test",
+    deps = [
+        ":geometry_py",
+        ":math_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
+        "//bindings/pydrake/common/test_utilities:pickle_compare_py",
+        "//bindings/pydrake/multibody:parsing_py",
+        "//bindings/pydrake/multibody:plant_py",
+        "//bindings/pydrake/solvers:clp_py",
         "//bindings/pydrake/solvers:mathematicalprogram_py",
-        "//bindings/pydrake/systems:analysis_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "geometry_render_test",
+    deps = [
+        ":geometry_py",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/systems:sensors_py",
     ],
 )
@@ -504,6 +549,28 @@ drake_py_unittest(
         ":geometry_py",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/systems:sensors_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "geometry_scene_graph_test",
+    deps = [
+        ":geometry_py",
+        "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/systems:sensors_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "geometry_visualizers_test",
+    deps = [
+        ":geometry_py",
+        ":lcm_py",
+        ":perception_py",
+        "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/multibody:plant_py",
+        "//bindings/pydrake/systems:analysis_py",
+        "//bindings/pydrake/systems:lcm_py",
     ],
 )
 
@@ -561,6 +628,7 @@ drake_py_unittest(
         ":algebra_test_util_py",
         ":symbolic_py",
         "//bindings/pydrake/common:containers_py",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
@@ -572,6 +640,7 @@ drake_py_unittest(
         ":trajectories_py",
         "//bindings/pydrake/common:eigen_geometry_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/common/test_utilities:pickle_compare_py",
     ],
 )
 

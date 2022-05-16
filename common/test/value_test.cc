@@ -11,6 +11,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
@@ -429,16 +430,19 @@ class NiceAnonEnumTemplate {
 
 }  // namespace
 
-#ifdef __APPLE__
-constexpr bool kApple = true;
+// Apple clang prior to version 13 needs a fixup for inline namespaces.
+#if defined(__APPLE__) && defined(__clang__) && __clang_major__ < 13
+constexpr bool kAppleInlineNamespace = true;
 #else
-constexpr bool kApple = false;
+constexpr bool kAppleInlineNamespace = false;
 #endif
+
 #ifdef __clang__
 constexpr bool kClang = true;
 #else
 constexpr bool kClang = false;
 #endif
+
 #if __GNUC__ >= 9
 constexpr bool kGcc9 = true;
 #else
@@ -457,7 +461,7 @@ GTEST_TEST(TypeHashTest, WellKnownValues) {
   CheckHash<AnonEnum>("drake::test::{anonymous}::AnonEnum");
 
   // Templated containers without default template arguments.
-  const std::string stdcc = kApple ? "std::__1" : "std";
+  const std::string stdcc = kAppleInlineNamespace ? "std::__1" : "std";
   CheckHash<std::shared_ptr<double>>(fmt::format(
       "{std}::shared_ptr<double>",
       fmt::arg("std", stdcc)));
@@ -541,6 +545,46 @@ GTEST_TEST(ValueTest, NonTypeTemplateParameter) {
   EXPECT_THROW(foo.get_value<T2>(), std::exception);
   EXPECT_THROW(foo.get_value<int>(), std::exception);
   EXPECT_THROW(foo.SetFrom(bar_value), std::exception);
+}
+
+// When a cast fails, the error message should report the actual types found
+// not to match. The request must match the static type of the Value container,
+// not the dynamic possibly-more-derived type of the contained value. When the
+// static and dynamic types differ, display both. See #15434.
+GTEST_TEST(ValueTest, TypesInBadCastMessage) {
+  using MyVector1d = systems::MyVector<double, 1>;
+
+  {
+    // Make a base-typed value container with a more-derived value inside.
+    auto value =
+        std::make_unique<Value<BasicVector<double>>>(MyVector1d{});
+    AbstractValue& abstract = *value;
+
+    // This request looks like it should work, but doesn't. The error message
+    // should indicate why.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        abstract.get_value<MyVector1d>(),
+        ".*request.*MyVector.*static.*BasicVector.*"
+        "dynamic.*MyVector.*'\\)\\.$");
+
+    // This is the proper request type.
+    DRAKE_EXPECT_NO_THROW(abstract.get_value<BasicVector<double>>());
+  }
+
+  {
+    // Make a value container that doesn't have the possibility of containing
+    // derived types.
+    Value<int> value;
+    AbstractValue& abstract = value;
+
+    // The error message in this case can be simpler. Test note: the regular
+    // expression here specifically rejects parentheses near the end of the
+    // line, to exclude the more elaborate error message matched in the case
+    // above.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        abstract.get_value<double>(),
+        ".*request.*double.*static.*int'\\.$");
+  }
 }
 
 }  // namespace test

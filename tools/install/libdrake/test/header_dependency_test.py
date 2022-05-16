@@ -18,15 +18,14 @@ class HeaderDependencyTest(unittest.TestCase):
         # Drake's first-party headers.
         re_drake = re.compile(r'^drake/.*$')
 
-        # Drake's allowed list of third-party libraries.  Do not add new
-        # entries here without consulting Drake's build system maintainers.
-        #  https://github.com/RobotLocomotion/drake/issues/7451
+        # Drake's allowed list of third-party libraries. Do not add new entries
+        # here without consulting Drake's build system maintainers (see #7451).
+        # Keep this list in sync with ../header_lint.bzl.
         re_thirds = [
             re.compile(r'^(Eigen|unsupported/Eigen)/.*$'),
             re.compile(r'^(fmt|spdlog)/.*$'),
             re.compile(r'^lcm/.*$'),
             re.compile(r'^optitrack/.*$'),
-            re.compile(r'^yaml-cpp/yaml\.h$'),
         ]
 
         # The full list of matchers to measure filename validity.

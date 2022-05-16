@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <vector>
 
 #include <fmt/ostream.h>
 
@@ -129,6 +130,24 @@ ExtractVariablesFromExpression(const Expression& e) {
   return make_pair(vars, map_var_to_index);
 }
 
+std::pair<VectorX<Variable>, std::unordered_map<Variable::Id, int>>
+ExtractVariablesFromExpression(
+    const Eigen::Ref<const VectorX<Expression>>& expressions) {
+  std::vector<Variable> var_vec;
+  std::unordered_map<Variable::Id, int> map_var_to_index{};
+  for (int i = 0; i < expressions.rows(); ++i) {
+    for (const Variable& var : expressions(i).GetVariables()) {
+      if (map_var_to_index.count(var.get_id()) == 0) {
+        map_var_to_index.emplace(var.get_id(), var_vec.size());
+        var_vec.push_back(var);
+      }
+    }
+  }
+  VectorX<Variable> vars =
+      Eigen::Map<VectorX<Variable>>(var_vec.data(), var_vec.size());
+  return make_pair(std::move(vars), std::move(map_var_to_index));
+}
+
 void DecomposeQuadraticPolynomial(
     const symbolic::Polynomial& poly,
     const std::unordered_map<Variable::Id, int>& map_var_to_index,
@@ -190,9 +209,7 @@ void DecomposeAffineExpressions(const Eigen::Ref<const VectorX<Expression>>& v,
                                 VectorX<Variable>* vars) {
   // 0. Setup map_var_to_index and var_vec.
   std::unordered_map<Variable::Id, int> map_var_to_index;
-  for (int i = 0; i < v.size(); ++i) {
-    ExtractAndAppendVariablesFromExpression(v(i), vars, &map_var_to_index);
-  }
+  std::tie(*vars, map_var_to_index) = ExtractVariablesFromExpression(v);
 
   // 1. Construct decompose v as
   // v = A * vars + b

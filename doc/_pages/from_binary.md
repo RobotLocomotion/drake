@@ -1,111 +1,94 @@
 ---
-title: Binary installation (macOS, Ubuntu)
+title: Installation via Direct Download
 ---
 
-# Nightly Releases
+# Binary Packages
 
-Binary packages of Drake for Ubuntu 18.04 (Bionic), Ubuntu 20.04 (Focal) and
-Mac are generated nightly and are tagged ``latest`` or by ``yyyymmdd``. Latest
-releases are available to download at:
+Drake publishes pre-compiled binaries as binary downloads (``*.tar.gz``)
+for all supported operating systems.  Refer to
+[Supported Configurations](/installation.html#supported-configurations)
+for compatibility details.
 
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-bionic.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-bionic.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-focal.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-focal.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz)
+To learn about other installation methods, refer to
+[Installation and Quickstart](/installation.html).
 
-Releases for specific days are available as follows:
-`https://drake-packages.csail.mit.edu/drake/nightly/drake-yyyymmdd-bionic|focal|mac.tar.gz`
-
-For example: [https://drake-packages.csail.mit.edu/drake/nightly/drake-20191026-bionic.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20191026-bionic.tar.gz)
-
-
-Note that Drake no longer supports Ubuntu 16.04 (Xenial), but older packages are available here:
-
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-xenial.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-xenial.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-20191026-xenial.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-20191026-xenial.tar.gz)
-
-Individual packages are archived two years from their date of creation.
-
-Note that for release v0.30.0 and later, Ubuntu binaries require support for
-Intel's AVX2 and FMA instruction sets which were introduced with the Haswell
-architecture in 2013 with substantial performance improvements in the Broadwell
-architecture in 2014. Drake is compiled with `-march=broadwell` to exploit these
-instructions (that also works for Haswell machines). Drake can be used on older
-machines if necessary by building from source with that flag removed.
-
-For the compilers used to produce these releases, see
-[Binary Packages](/developers.html#binary-packages).
+If you experience any problems or questions with Drake, please
+[ask for help on Stack Overflow](/getting_help.html).
 
 Drake binary releases incorporate a pre-compiled version of
 [SNOPT](https://ccom.ucsd.edu/~optimizers/solvers/snopt/) as part of the
 [Mathematical Program toolbox](https://drake.mit.edu/doxygen_cxx/group__solvers.html).
 Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
+Drake's binary releases do not support the Gurobi solver. To use
+Gurobi, you will need to [build Drake from source](/from_source.html).
 
-## Example Usage
+## Stable Releases
 
-An example of how to use the nightly binaries is shown in this
-[example CMake project](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_cmake_installed).
+Binary packages of Drake for Ubuntu 20.04 (Focal) and
+Mac are available to download as attachments from Drake's GitHub
+[releases](https://github.com/RobotLocomotion/drake/releases) page.
 
-## Binary Installation for Python
+The most recent release is
+[v1.2.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.2.0):
 
-To use Python bindings, see [Binary Installation for Python](/python_bindings.html#installation).
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.2.0/drake-20220420-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.2.0/drake-20220420-focal.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.2.0/drake-20220420-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.2.0/drake-20220420-mac.tar.gz)
 
-## Docker Images
+### Use as a C++ library
 
-You may also use binary releases in Docker images. See
-[Using the Drake Docker Images From Docker Hub](/docker.html)
-for more information.
+For an example of using a Drake ``*.tar.gz`` image from a CMake project, refer
+to the
+[drake_cmake_installed](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_cmake_installed)
+example.
 
-## Experimental Packages
+### Use as a Python library
 
-Drake maintainers may build "experimental" packages on demand using Jenkins by
-following [these instructions](/jenkins.html#building-binary-packages-on-demand).
+In most cases, we suggest using our [pip releases](/pip.html), because that
+will be more convenient than manually downloading.  However, if you need both
+C++ and Python API support, then pip will not work.  This section shows
+how to incorporate a manual download into a
+[virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment)
+directory.  In the example below, we will name that directory ``env``, but you
+can choose any name.
 
-## Historical Note
+Download the binary release ``*.tar.gz`` file, using one of the links above.
+In the example below, we'll use ``drake.tar.gz`` to refer to it, but your
+download will have a more version-specific filename.
 
-Older releases were built around substantial MATLAB support, and are
-described on [release notes page](/release_notes/older_releases.html).
+Create and activate the envionment:
 
-# APT Packages for Monthly Tagged Releases
+```bash
+mkdir -p env
+tar -xvzf drake.tar.gz -C env --strip-components=1
+python3 -m virtualenv -p python3 env --system-site-packages
+source env/bin/activate
+```
 
-APT packages are currently available for the Ubuntu 18.04 (Bionic) and
-Ubuntu 20.04 (Focal) operating systems on x86 64-bit architectures.
+Install dependencies within the environment:
 
-## To Install the Packages
+```bash
+env/share/drake/setup/install_prereqs
+````
 
-To add the Drake APT repository to your machine and install the `drake-dev` package,
-please do the following in order:
+(On Ubuntu, the script might ask to be run under ``sudo``.)
 
-1. If you are using a [minimal](https://wiki.ubuntu.com/Minimal) cloud or
-   container image, you may need to install the following packages:
-   ```bash
-   sudo apt-get update
-   sudo apt-get install --no-install-recommends \
-     ca-certificates gnupg lsb-release wget
-   ```
+Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
-2. Download a copy of the Drake GPG signing key and add it to an APT trusted keychain:
-   ```bash
-   wget -qO- https://drake-apt.csail.mit.edu/drake.asc | gpg --dearmor - \
-     | sudo tee /etc/apt/trusted.gpg.d/drake.gpg >/dev/null
-   ```
+## Nightly Releases
 
-3. Add the Drake repository to your APT sources list:
-   ```bash
-   echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/$(lsb_release -cs) $(lsb_release -cs) main" \
-     | sudo tee /etc/apt/sources.list.d/drake.list >/dev/null
-   ```
+Binary packages of Drake for Ubuntu 20.04 (Focal) and
+Mac are generated nightly and are available to download at:
 
-4. Update your local APT package index and install the `drake-dev` package:
-   ```bash
-   sudo apt-get update
-   sudo apt-get install --no-install-recommends drake-dev
-   ```
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-focal.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-focal.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz)
 
-Most content installs to `/opt/drake`, so setting the following environment
-variables may be useful:
-  ```bash
-  export LD_LIBRARY_PATH="/opt/drake/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
-  export PATH="/opt/drake/bin${PATH:+:${PATH}}"
-  export PYTHONPATH="/opt/drake/lib/python$(python3 -c 'import sys; print("{0}.{1}".format(*sys.version_info))')/site-packages${PYTHONPATH:+:${PYTHONPATH}}"
-  ```
+Older packages for specific dates are available by replacing ``latest`` with an
+8-digit date, e.g., ``20200102`` for January 2nd, 2020.
+
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-focal.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-focal.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-mac.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-mac.tar.gz)
+
+Individual packages are archived two years from their date of creation.
+
+The installation instructions are identical to stable releases as shown above.

@@ -77,7 +77,7 @@ class TestInverseKinematics(unittest.TestCase):
         # TODO(eric.cousineau): Replace with state indexing.
         return q[11:14]
 
-    def test_AddPositionConstraint(self):
+    def test_AddPositionConstraint1(self):
         p_BQ = np.array([0.2, 0.3, 0.5])
         p_AQ_lower = np.array([-0.1, -0.2, -0.3])
         p_AQ_upper = np.array([-0.05, -0.12, -0.28])
@@ -98,6 +98,42 @@ class TestInverseKinematics(unittest.TestCase):
         body2_rotmat = Quaternion(body2_quat).rotation()
         p_AQ = body2_rotmat.transpose().dot(
             body1_rotmat.dot(p_BQ) + body1_pos - body2_pos)
+        self.assertTrue(np.greater(
+            p_AQ, p_AQ_lower - 1E-6 * np.ones((3, 1))).all())
+        self.assertTrue(np.less(
+            p_AQ, p_AQ_upper + 1E-6 * np.ones((3, 1))).all())
+
+        result = mp.Solve(self.prog)
+        self.assertTrue(result.is_success())
+        self.assertTrue(np.allclose(result.GetSolution(self.q), q_val))
+        np.testing.assert_array_equal(self.plant.GetPositions(
+            self.ik_two_bodies.context()), q_val)
+        self.assertIs(self.ik_two_bodies.get_mutable_context(),
+                      self.ik_two_bodies.context())
+
+    def test_AddPositionConstraint2(self):
+        p_BQ = np.array([0.2, 0.3, 0.5])
+        p_AQ_lower = np.array([-0.1, -0.2, -0.3])
+        p_AQ_upper = np.array([-0.05, -0.12, -0.28])
+        X_AbarA = RigidTransform([-0.1, -0.2, -0.3])
+
+        self.ik_two_bodies.AddPositionConstraint(
+            frameB=self.body1_frame, p_BQ=p_BQ,
+            frameAbar=self.body2_frame, X_AbarA=X_AbarA,
+            p_AQ_lower=p_AQ_lower, p_AQ_upper=p_AQ_upper)
+        result = mp.Solve(self.prog)
+        self.assertTrue(result.is_success())
+        q_val = result.GetSolution(self.q)
+
+        body1_quat = self._body1_quat(q_val)
+        body1_pos = self._body1_xyz(q_val)
+        body2_quat = self._body2_quat(q_val)
+        body2_pos = self._body2_xyz(q_val)
+        body1_rotmat = Quaternion(body1_quat).rotation()
+        body2_rotmat = Quaternion(body2_quat).rotation()
+        p_AbarQ = body2_rotmat.transpose().dot(
+            body1_rotmat.dot(p_BQ) + body1_pos - body2_pos)
+        p_AQ = X_AbarA.inverse() @ p_AbarQ
         self.assertTrue(np.greater(
             p_AQ, p_AQ_lower - 1E-6 * np.ones((3, 1))).all())
         self.assertTrue(np.less(
@@ -457,6 +493,22 @@ class TestConstraints(unittest.TestCase):
             frameB=variables.body2_frame,
             p_BQ=[0.2, 0.3, 0.5], plant_context=variables.plant_context)
         self.assertIsInstance(constraint, mp.Constraint)
+        constraint.UpdateLowerBound(new_lb=np.array([-2, -3, -0.5]))
+        constraint.UpdateUpperBound(new_ub=np.array([10., 0.5, 2.]))
+        constraint.set_bounds(new_lb=[-1, -2, -2.], new_ub=[1., 2., 3.])
+
+        constraint = ik.PositionConstraint(
+            plant=variables.plant,
+            frameAbar=variables.body1_frame,
+            X_AbarA=RigidTransform([-0.1, -0.2, -0.3]),
+            p_AQ_lower=[-0.1, -0.2, -0.3],
+            p_AQ_upper=[-0.05, -0.12, -0.28],
+            frameB=variables.body2_frame,
+            p_BQ=[0.2, 0.3, 0.5], plant_context=variables.plant_context)
+        self.assertIsInstance(constraint, mp.Constraint)
+        constraint.UpdateLowerBound(new_lb=np.array([-2, -3, -0.5]))
+        constraint.UpdateUpperBound(new_ub=np.array([10., 0.5, 2.]))
+        constraint.set_bounds(new_lb=[-1, -2, -2.], new_ub=[1., 2., 3.])
 
     @check_type_variables
     def test_com_position_constraint(self, variables):

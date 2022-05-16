@@ -2,6 +2,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
+#include "drake/geometry/geometry_state.h"
 #include "drake/geometry/scene_graph.h"
 
 namespace drake {
@@ -104,27 +105,23 @@ bool QueryObject<T>::HasCollisions() const {
 }
 
 template <typename T>
-std::vector<ContactSurface<T>>
-QueryObject<T>::ComputeContactSurfaces() const {
+template <typename T1>
+typename std::enable_if_t<scalar_predicate<T1>::is_bool,
+                          std::vector<ContactSurface<T>>>
+QueryObject<T>::ComputeContactSurfaces(
+    HydroelasticContactRepresentation representation) const {
   ThrowIfNotCallable();
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
-  return state.ComputeContactSurfaces();
+  return state.ComputeContactSurfaces(representation);
 }
 
 template <typename T>
-std::vector<ContactSurface<T>>
-QueryObject<T>::ComputePolygonalContactSurfaces() const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
-  const GeometryState<T>& state = geometry_state();
-  return state.ComputePolygonalContactSurfaces();
-}
-
-template <typename T>
-void QueryObject<T>::ComputeContactSurfacesWithFallback(
+template <typename T1>
+typename std::enable_if_t<scalar_predicate<T1>::is_bool, void>
+QueryObject<T>::ComputeContactSurfacesWithFallback(
+    HydroelasticContactRepresentation representation,
     std::vector<ContactSurface<T>>* surfaces,
     std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
   DRAKE_DEMAND(surfaces != nullptr);
@@ -134,21 +131,8 @@ void QueryObject<T>::ComputeContactSurfacesWithFallback(
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
-  state.ComputeContactSurfacesWithFallback(surfaces, point_pairs);
-}
-
-template <typename T>
-void QueryObject<T>::ComputePolygonalContactSurfacesWithFallback(
-    std::vector<ContactSurface<T>>* surfaces,
-    std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-  DRAKE_DEMAND(surfaces != nullptr);
-  DRAKE_DEMAND(point_pairs != nullptr);
-
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
-  const GeometryState<T>& state = geometry_state();
-  state.ComputePolygonalContactSurfacesWithFallback(surfaces, point_pairs);
+  state.ComputeContactSurfacesWithFallback(representation, surfaces,
+                                           point_pairs);
 }
 
 template <typename T>
@@ -242,8 +226,12 @@ const GeometryState<T>& QueryObject<T>::geometry_state() const {
   }
 }
 
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&QueryObject<T>::template ComputeContactSurfaces<T>,
+     &QueryObject<T>::template ComputeContactSurfacesWithFallback<T>))
+
 }  // namespace geometry
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::geometry::QueryObject)

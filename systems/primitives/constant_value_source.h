@@ -11,6 +11,12 @@ namespace systems {
 
 /// A source block that always outputs a constant value.
 ///
+/// @system
+/// name: ConstantValueSource
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>

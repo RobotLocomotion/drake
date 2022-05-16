@@ -5,13 +5,8 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomDistribution, RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue
 from pydrake.symbolic import Expression, Variable
-from pydrake.systems.analysis import (
-    Simulator,
-    Simulator_,
-)
 from pydrake.systems.framework import (
     BasicVector,
     DiagramBuilder,
@@ -41,15 +36,15 @@ from pydrake.systems.primitives import (
     Linearize,
     LinearSystem, LinearSystem_,
     LinearTransformDensity, LinearTransformDensity_,
-    LogOutput,
     LogVectorOutput,
     MatrixGain,
     Multiplexer, Multiplexer_,
+    MultilayerPerceptron, MultilayerPerceptron_,
     ObservabilityMatrix,
     PassThrough, PassThrough_,
+    PerceptronActivationType,
     RandomSource,
     Saturation, Saturation_,
-    SignalLogger, SignalLogger_,
     Sine, Sine_,
     StateInterpolatorWithDiscreteDerivative,
     StateInterpolatorWithDiscreteDerivative_,
@@ -97,9 +92,9 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(LinearTransformDensity_,
                                    supports_symbolic=False)
         self._check_instantiations(Multiplexer_)
+        self._check_instantiations(MultilayerPerceptron_)
         self._check_instantiations(PassThrough_)
         self._check_instantiations(Saturation_)
-        self._check_instantiations(SignalLogger_)
         self._check_instantiations(Sine_)
         self._check_instantiations(StateInterpolatorWithDiscreteDerivative_)
         self._check_instantiations(SymbolicVectorSystem_)
@@ -110,87 +105,6 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(VectorLogSink_)
         self._check_instantiations(WrapToSystem_)
         self._check_instantiations(ZeroOrderHold_)
-
-    @numpy_compare.check_nonsymbolic_types
-    def test_signal_logger(self, T):
-        # Log the output of a simple diagram containing a constant
-        # source and an integrator.
-        builder = DiagramBuilder_[T]()
-        kValue = T(2.4)
-        source = builder.AddSystem(ConstantVectorSource_[T]([kValue]))
-        kSize = 1
-        integrator = builder.AddSystem(Integrator_[T](kSize))
-        with catch_drake_warnings(expected_count=1):
-            logger_per_step = builder.AddSystem(SignalLogger_[T](kSize))
-        builder.Connect(source.get_output_port(0),
-                        integrator.get_input_port(0))
-        builder.Connect(integrator.get_output_port(0),
-                        logger_per_step.get_input_port(0))
-
-        # Add a redundant logger via the helper method.
-        if T == float:
-            with catch_drake_warnings(expected_count=1):
-                logger_per_step_2 = LogOutput(
-                    integrator.get_output_port(0), builder
-                )
-        else:
-            with catch_drake_warnings(expected_count=1):
-                logger_per_step_2 = LogOutput[T](
-                    integrator.get_output_port(0), builder
-                )
-
-        # Add a periodic logger
-        with catch_drake_warnings(expected_count=1):
-            logger_periodic = builder.AddSystem(SignalLogger_[T](kSize))
-        kPeriod = 0.1
-        logger_periodic.set_publish_period(kPeriod)
-        builder.Connect(integrator.get_output_port(0),
-                        logger_periodic.get_input_port(0))
-
-        diagram = builder.Build()
-        simulator = Simulator_[T](diagram)
-        integrator.set_integral_value(
-            context=integrator.GetMyContextFromRoot(
-                simulator.get_mutable_context()),
-            value=[0]*kSize)
-        kTime = 1.
-        simulator.AdvanceTo(kTime)
-
-        # Verify outputs of the every-step logger
-        t = logger_per_step.sample_times()
-        x = logger_per_step.data()
-
-        self.assertTrue(t.shape[0] > 2)
-        self.assertTrue(t.shape[0] == x.shape[1])
-        numpy_compare.assert_allclose(
-            t[-1]*kValue, x[0, -1], atol=1e-15, rtol=0
-        )
-        numpy_compare.assert_equal(x, logger_per_step_2.data())
-
-        # Verify outputs of the periodic logger
-        t = logger_periodic.sample_times()
-        x = logger_periodic.data()
-        # Should log exactly once every kPeriod, up to and including
-        # kTime.
-        self.assertTrue(t.shape[0] == np.floor(kTime / kPeriod) + 1.)
-
-        logger_per_step.reset()
-
-        # Verify that t and x retain their values after systems are
-        # deleted.
-        t_copy = t.copy()
-        x_copy = x.copy()
-        del builder
-        del integrator
-        del logger_periodic
-        del logger_per_step
-        del logger_per_step_2
-        del diagram
-        del simulator
-        del source
-        gc.collect()
-        self.assertTrue((t == t_copy).all())
-        self.assertTrue((x == x_copy).all())
 
     def test_linear_affine_system(self):
         # Just make sure linear system is spelled correctly.
@@ -582,6 +496,100 @@ class TestGeneral(unittest.TestCase):
                 # Check the type matches MyVector2.
                 value = output.get_vector_data(0)
                 self.assertTrue(isinstance(value, MyVector2))
+
+    def test_multilayer_perceptron(self):
+        mlp = MultilayerPerceptron(
+            layers=[1, 2, 3], activation_type=PerceptronActivationType.kReLU)
+        self.assertEqual(mlp.get_input_port().size(), 1)
+        self.assertEqual(mlp.get_output_port().size(), 3)
+        context = mlp.CreateDefaultContext()
+        params = np.zeros((mlp.num_parameters(), 1))
+        self.assertEqual(mlp.num_parameters(), 13)
+        self.assertEqual(mlp.layers(), [1, 2, 3])
+        self.assertEqual(mlp.activation_type(layer=0),
+                         PerceptronActivationType.kReLU)
+        self.assertEqual(len(mlp.GetParameters(context=context)),
+                         mlp.num_parameters())
+        mlp.SetWeights(context=context, layer=0, W=np.array([[1], [2]]))
+        mlp.SetBiases(context=context, layer=0, b=[3, 4])
+        np.testing.assert_array_equal(
+            mlp.GetWeights(context=context, layer=0), np.array([[1], [2]]))
+        np.testing.assert_array_equal(
+            mlp.GetBiases(context=context, layer=0), np.array([3, 4]))
+        params = np.zeros(mlp.num_parameters())
+        mlp.SetWeights(params=params, layer=0, W=np.array([[1], [2]]))
+        mlp.SetBiases(params=params, layer=0, b=[3, 4])
+        np.testing.assert_array_equal(
+            mlp.GetWeights(params=params, layer=0), np.array([[1], [2]]))
+        np.testing.assert_array_equal(
+            mlp.GetBiases(params=params, layer=0), np.array([3, 4]))
+        mutable_params = mlp.GetMutableParameters(context=context)
+        mutable_params[:] = 3.0
+        np.testing.assert_array_equal(mlp.GetParameters(context),
+                                      np.full(mlp.num_parameters(), 3.0))
+
+        global called_loss
+        called_loss = False
+
+        def silly_loss(Y, dloss_dY):
+            global called_loss
+            called_loss = True
+            # We must be careful to update the dloss in place, rather than bind
+            # a new matrix to the same variable name.
+            dloss_dY[:] = 1
+            # dloss_dY = np.array(...etc...)  # <== wrong
+            return Y.sum()
+
+        dloss_dparams = np.zeros((13,))
+        generator = RandomGenerator(23)
+        mlp.SetRandomContext(context, generator)
+        mlp.Backpropagation(context=context,
+                            X=np.array([1, 3, 4]).reshape((1, 3)),
+                            loss=silly_loss,
+                            dloss_dparams=dloss_dparams)
+        self.assertTrue(called_loss)
+        self.assertTrue(dloss_dparams.any())  # No longer all zero.
+
+        dloss_dparams = np.zeros((13,))
+        mlp.BackpropagationMeanSquaredError(context=context,
+                                            X=np.array([1, 3, 4]).reshape(
+                                                (1, 3)),
+                                            Y_desired=np.eye(3),
+                                            dloss_dparams=dloss_dparams)
+        self.assertTrue(dloss_dparams.any())  # No longer all zero.
+
+        Y = np.asfortranarray(np.eye(3))
+        mlp.BatchOutput(context=context, X=np.array([[0.1, 0.3, 0.4]]), Y=Y)
+        self.assertFalse(np.allclose(Y, np.eye(3)))
+        Y2 = mlp.BatchOutput(context=context, X=np.array([[0.1, 0.3, 0.4]]))
+        np.testing.assert_array_equal(Y, Y2)
+
+        mlp2 = MultilayerPerceptron(layers=[3, 2, 1],
+                                    activation_types=[
+                                        PerceptronActivationType.kReLU,
+                                        PerceptronActivationType.kTanh
+                                    ])
+        self.assertEqual(mlp2.activation_type(0),
+                         PerceptronActivationType.kReLU)
+        self.assertEqual(mlp2.activation_type(1),
+                         PerceptronActivationType.kTanh)
+        Y = np.asfortranarray(np.full((1, 3), 2.4))
+        dYdX = np.asfortranarray(np.full((3, 3), 5.3))
+        context2 = mlp2.CreateDefaultContext()
+        mlp2.BatchOutput(context=context2, X=np.eye(3), Y=Y, dYdX=dYdX)
+        # The default context sets the weights and biases to zero, so the
+        # output (and gradients) should be zero.
+        np.testing.assert_array_almost_equal(Y, np.zeros((1, 3)))
+        np.testing.assert_array_almost_equal(dYdX, np.zeros((3, 3)))
+
+        mlp = MultilayerPerceptron(use_sin_cos_for_input=[True, False],
+                                   remaining_layers=[3, 2],
+                                   activation_types=[
+                                       PerceptronActivationType.kReLU,
+                                       PerceptronActivationType.kTanh
+                                   ])
+        self.assertEqual(mlp.get_input_port().size(), 2)
+        np.testing.assert_array_equal(mlp.layers(), [3, 3, 2])
 
     def test_random_source(self):
         source = RandomSource(distribution=RandomDistribution.kUniform,

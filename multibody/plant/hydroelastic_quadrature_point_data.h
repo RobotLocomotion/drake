@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drake/common/eigen_types.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace drake {
 namespace multibody {
@@ -18,7 +18,7 @@ struct HydroelasticQuadraturePointData {
   Vector3<T> p_WQ;
 
   /// The triangle on the ContactSurface that contains Q.
-  geometry::SurfaceFaceIndex face_index;
+  int face_index{};
 
   /// Denoting Point Aq as the point of Body A coincident with Q and Point Bq as
   /// the point of Body B coincident with Q, calculates vr (the velocity

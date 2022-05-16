@@ -158,6 +158,8 @@ class TestControllers(unittest.TestCase):
         self.assertEqual(estimated_state_port.size(), kStateSize)
         self.assertEqual(desired_state_port.size(), kStateSize)
         self.assertEqual(control_port.size(), kNumVelocities)
+        self.assertIsInstance(controller.get_multibody_plant_for_control(),
+                              MultibodyPlant)
 
         # Current state.
         q = np.array([-0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3])
@@ -306,7 +308,12 @@ class TestControllers(unittest.TestCase):
 
         context = double_integrator.CreateDefaultContext()
         double_integrator.get_input_port(0).FixValue(context, [0])
-        controller = LinearQuadraticRegulator(double_integrator, context, Q, R)
+        controller = LinearQuadraticRegulator(
+            double_integrator,
+            context,
+            Q,
+            R,
+            input_port_index=double_integrator.get_input_port().get_index())
         np.testing.assert_almost_equal(controller.D(), -K_expected)
 
     def test_discrete_time_linear_quadratic_regulator(self):
@@ -330,6 +337,7 @@ class TestControllers(unittest.TestCase):
 
         options = FiniteHorizonLinearQuadraticRegulatorOptions()
         options.Qf = Q
+        options.use_square_root_method = False
         self.assertIsNone(options.N)
         self.assertIsNone(options.x0)
         self.assertIsNone(options.u0)
@@ -343,7 +351,8 @@ class TestControllers(unittest.TestCase):
             r"Qf=\[\[ *1\. *0\.\]\s*\[ *0\. *1\.\]\], "
             r"N=None, ",
             r"input_port_index=",
-            r"InputPortSelection.kUseFirstInputIfItExists\)"]))
+            r"InputPortSelection.kUseFirstInputIfItExists, ",
+            r"use_square_root_method=False\)"]))
 
         context = double_integrator.CreateDefaultContext()
         double_integrator.get_input_port(0).FixValue(context, 0.0)

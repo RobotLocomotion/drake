@@ -251,7 +251,7 @@ int do_main() {
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
   // Publish contact results for visualization.
-  ConnectContactResultsToDrakeVisualizer(&builder, plant, &lcm);
+  ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph, &lcm);
 
   // Sinusoidal force input. We want the gripper to follow a trajectory of the
   // form x(t) = X0 * sin(ω⋅t). By differentiating once, we can compute the
@@ -345,7 +345,7 @@ int main(int argc, char* argv[]) {
       "Demo used to exercise MultibodyPlant's contact modeling in a gripping "
       "scenario. SceneGraph is used for both visualization and contact "
       "handling. "
-      "Launch drake-visualizer before running this example.");
+      "Launch meldis before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::simple_gripper::do_main();
 }

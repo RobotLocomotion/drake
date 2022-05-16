@@ -38,10 +38,6 @@ def InitializeAutoDiffTuple(*args):
     return tuple(autodiff_tuple)
 
 
-# TODO(sherm1) To be deprecated asap.
-initializeAutoDiffTuple = InitializeAutoDiffTuple
-
-
 @np.vectorize
 def autodiff_equal_to(a, b, *, semantic=False):
     """
