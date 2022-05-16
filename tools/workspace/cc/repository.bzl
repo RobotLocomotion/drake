@@ -34,6 +34,32 @@ Argument:
 load("@bazel_tools//tools/cpp:unix_cc_configure.bzl", "find_cc")
 load("@drake//tools/workspace:execute.bzl", "execute_or_fail")
 
+def _check_compiler_version(compiler_id, actual_version, supported_version):
+    """
+    Check if compiler version is supported and report an error if not.
+
+    The actual_version must be a 2-tuple of the (major, minor) version. The
+    supported_version may be a 1-tuple (only major version is checked) or
+    2-tuple (major and minor version both checked).
+    """
+    if actual_version[0] > supported_version[0]:
+        return
+
+    elif actual_version[0] == supported_version[0]:
+        if len(supported_version) == 1:
+            return
+
+        if actual_version[1] >= supported_version[1]:
+            return
+
+    fail("{} compiler version {}.{} is less than {}.{}.".format(
+        compiler_id,
+        actual_version[0],
+        actual_version[1],
+        supported_version[0],
+        supported_version[1] if len(supported_version) > 1 else 0,
+    ))
+
 def _impl(repository_ctx):
     file_content = """# -*- python -*-
 
@@ -96,49 +122,33 @@ def _impl(repository_ctx):
 
     compiler_id = output[0]
 
+    # The minimum compiler versions should match those listed in both the root
+    # CMakeLists.txt and doc/_pages/from_source.md.
+    # TODO(jwnimmer-tri) Set supported_compilers["Clang"]=12 on 2022-09-01.
+
     if repository_ctx.os.name == "mac os x":
-        supported_compilers = ["AppleClang"]
+        supported_compilers = {"AppleClang": (12,)}
     else:
-        supported_compilers = ["Clang", "GNU"]
+        supported_compilers = {"Clang": (9,), "GNU": (9, 3)}
 
     # We do not fail outright here since even though we do not officially
     # support them, Drake may happily compile with new enough versions of
     # compilers that are compatible with GNU flags such as -std=c++17.
 
-    if compiler_id not in supported_compilers:
+    compiler_version_major = int(output[1])
+    compiler_version_minor = int(output[2])
+
+    if compiler_id in supported_compilers:
+        _check_compiler_version(
+            compiler_id,
+            (compiler_version_major, compiler_version_minor),
+            supported_compilers[compiler_id],
+        )
+    else:
         print("WARNING: {} is NOT a supported C/C++ compiler.".format(
             compiler_id,
         ))
         print("WARNING: Compilation of the drake WORKSPACE may fail.")
-
-    compiler_version_major = int(output[1])
-    compiler_version_minor = int(output[2])
-
-    # The minimum compiler versions should match those listed in both the root
-    # CMakeLists.txt and doc/_pages/from_source.md.
-
-    if compiler_id == "AppleClang":
-        if compiler_version_major < 12:
-            fail("AppleClang compiler version {}.{} is less than 12.0.".format(
-                compiler_version_major,
-                compiler_version_minor,
-            ))
-
-    elif compiler_id == "Clang":
-        # TODO(jwnimmer-tri) Require Clang 12 minimum as of 2022-09-01.
-        if compiler_version_major < 9:
-            fail("Clang compiler version {}.{} is less than 9.0".format(
-                compiler_version_major,
-                compiler_version_minor,
-            ))
-
-    elif compiler_id == "GNU":
-        if compiler_version_major < 9 or (compiler_version_major == 9 and
-                                          compiler_version_minor < 3):
-            fail("GNU compiler version {}.{} is less than 9.3.".format(
-                compiler_version_major,
-                compiler_version_minor,
-            ))
 
     file_content = """# -*- python -*-
 
