@@ -94,21 +94,26 @@ template <typename T>
 void RemoveNearlyDuplicateVertices(std::vector<Vector3<T>>* polygon);
 
 // Forward declaration of Tester class, so we can grant friend access.
-template <typename MeshType> class SurfaceVolumeIntersectorTester;
+template <typename MeshBuilder> class SurfaceVolumeIntersectorTester;
 
 /* %SurfaceVolumeIntersector performs a mesh-intersection algorithm between a
  triangulated surface mesh and a tetrahedral volume mesh with a field
  variable. It also interpolates the field variable onto the resulted
  surface.
 
- @tparam MeshType The type of surface mesh to represent the contact surface.
-   It can be either TriangleSurfaceMesh<T> or PolygonSurfaceMesh<T> for
-   T = double or AutoDiffXd. */
-template <typename MeshType>
+ @tparam MeshBuilder  The type of mesh-output builder of the contact
+   surface. It can be TriMeshBuilder<T> or PolyMeshBuilder<T> for T = double
+   or AutoDiffXd.
+
+ @tparam BvType  The type of bounding volumes of tetrahedra in the
+   volume mesh. It can be Obb for hydroelastics or Aabb for deformables.
+ */
+template <typename MeshBuilder, typename BvType>
 class SurfaceVolumeIntersector {
  public:
+  using MeshType = typename MeshBuilder::MeshType;
   using T = typename MeshType::ScalarType;
-  using FieldType = MeshFieldLinear<T, MeshType>;
+  using FieldType = typename MeshBuilder::FieldType;
 
   SurfaceVolumeIntersector() {
     // We know that each contact polygon has at most 7 vertices.
@@ -117,6 +122,8 @@ class SurfaceVolumeIntersector {
     polygon_[0].reserve(7);
     polygon_[1].reserve(7);
   }
+
+  virtual ~SurfaceVolumeIntersector() {}
 
   // TODO(DamrongGuoy): Maintain book keeping to avoid duplicate vertices and
   //  remove the note in the function documentation.
@@ -142,38 +149,55 @@ class SurfaceVolumeIntersector {
        A bounding volume hierarchy built on the geometry `surface_N`.
    @param[in] X_MN
        The pose of frame N in frame M.
-   @param[out] surface_MN_M
-       The intersecting surface between the volume mesh M and the surface N.
-       Vertex positions are measured and expressed in M's frame. If no
-       intersection exists, this will not change.
-   @param[out] e_MN
-       The sampled field values on the intersecting surface (samples to support
-       a linear mesh field -- i.e., one per vertex). If no intersection exists,
-       this will not change.
-   @param[out] grad_eM_Ms
-       The sampled gradient of the soft mesh pressure field (one sample per
-       triangle in `surface_MN_M`).
+   @param[in,out] builder
+       As input, it specifies the type of output mesh that users want.
+       As output, it has information collected during the intersection process.
    @note
-       The output surface mesh may have duplicate vertices.
-   @tparam MeshBuilder An instance of either TriMeshBuilder<T> or
-    PolyMeshBuilder<T> (for T = double or AutoDiffXd).
-    (See the documentation in contact_surface_utility.h for details.)
+       The output surface mesh (see mutable_mesh() and release_mesh()) may
+       have duplicate vertices.
    */
-  template <typename MeshBuilder>
   void SampleVolumeFieldOnSurface(
       const VolumeMeshFieldLinear<double, double>& volume_field_M,
-      const Bvh<Obb, VolumeMesh<double>>& bvh_M,
+      const Bvh<BvType, VolumeMesh<double>>& bvh_M,
       const TriangleSurfaceMesh<double>& surface_N,
       const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_N,
       const math::RigidTransform<T>& X_MN,
-      MeshBuilder builder);
+      MeshBuilder* builder,
+      bool filter_face_normal_along_field_gradient = true);
 
   bool has_intersection() const { return mesh_M_ != nullptr; }
+
+  /* Returns surface_MN_M the intersecting surface between the volume mesh M
+   and the surface N. Vertex positions are measured and expressed in M's frame.
+   @pre has_intersection() is true. */
   MeshType& mutable_mesh() { return *mesh_M_; }
+
+  /* Release the ownership of surface_MN_M described in mutable_mesh(). */
   std::unique_ptr<MeshType>&& release_mesh() { return std::move(mesh_M_); }
+
+  /* Returns e_MN the sampled field values on the intersecting surface
+   (samples to support a linear mesh field -- i.e., one per vertex).
+   @pre has_intersection() is true.  */
   FieldType& mutable_field() { return *field_M_; }
+
+  /* Release the ownership of e_MN described in mutable_field() */
   std::unique_ptr<FieldType>&& release_field() { return std::move(field_M_); }
+
+  /* Returns grad_eM_Ms the sampled gradient of the volumetric mesh field
+   (one sample per polygon in `surface_MN_M`). */
   std::vector<Vector3<T>>& mutable_grad_eM_M() { return grad_eM_Ms_; }
+
+ protected:
+  /* Subclass can override this function to collect more data per contact
+   polygon.  */
+  virtual void CalcContactPolygon(
+      const VolumeMeshFieldLinear<double, double>& volume_field_M,
+      const TriangleSurfaceMesh<double>& surface_N,
+      const math::RigidTransform<T>& X_MN,
+      const math::RigidTransform<double>& X_MN_d,
+      MeshBuilder* builder_M,
+      const bool filter_face_normal_along_field_gradient,
+      const int tet_index, const int tri_index);
 
  private:
   /* Intersects a triangle with a tetrahedron, returning the portion of the
@@ -334,7 +358,7 @@ class SurfaceVolumeIntersector {
   // in mesh_M_.
   std::vector<Vector3<T>> grad_eM_Ms_;
 
-  friend class SurfaceVolumeIntersectorTester<MeshType>;
+  friend class SurfaceVolumeIntersectorTester<MeshBuilder>;
 };
 
 /* Computes the contact surface between a soft geometry S and a rigid
