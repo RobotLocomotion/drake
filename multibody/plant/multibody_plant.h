@@ -4176,6 +4176,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       return false;
     }
   }
+
+  const geometry::SceneGraph<T>* get_scene_graph() const {
+    return scene_graph_;
+  }
   /// @} <!-- Introspection -->
 
   using internal::MultibodyTreeSystem<T>::is_discrete;

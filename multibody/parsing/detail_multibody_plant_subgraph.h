@@ -150,6 +150,8 @@ class MultibodyPlantElements {
     return geometry_ids_;
   }
 
+  std::set<geometry::GeometryId>& geometry_ids() { return geometry_ids_; }
+
   const SortedSet<const Body<double>*>& bodies() const { return bodies_; }
 
   SortedSet<const Body<double>*>& bodies() { return bodies_; }
@@ -170,7 +172,10 @@ class MultibodyPlantElements {
     return joint_actuators_;
   }
 
-  std::set<geometry::GeometryId>& geometry_ids() { return geometry_ids_; }
+  const std::set<std::pair<geometry::GeometryId, geometry::GeometryId>>&
+  collision_filter_pairs() const {
+    return collision_filter_pairs_;
+  }
 
   MultibodyPlantElements operator+=(const MultibodyPlantElements& other) {
     Check(other);
@@ -180,6 +185,7 @@ class MultibodyPlantElements {
     ExclusiveSetUpdate(&joints_, other.joints_);
     ExclusiveSetUpdate(&joint_actuators_, other.joint_actuators_);
     ExclusiveSetUpdate(&geometry_ids_, other.geometry_ids_);
+    ExclusiveSetUpdate(&collision_filter_pairs_, other.collision_filter_pairs_);
     return *this;
   }
 
@@ -189,7 +195,8 @@ class MultibodyPlantElements {
            a.bodies() == b.bodies() && a.frames() == b.frames() &&
            a.joints() == b.joints() &&
            a.joint_actuators() == b.joint_actuators() &&
-           a.geometry_ids() == b.geometry_ids();
+           a.geometry_ids() == b.geometry_ids() &&
+           a.collision_filter_pairs() == b.collision_filter_pairs();
   }
 
   friend bool operator!=(const MultibodyPlantElements& a,
@@ -219,6 +226,8 @@ class MultibodyPlantElements {
   SortedSet<const Joint<double>*> joints_;
   SortedSet<const JointActuator<double>*> joint_actuators_;
   std::set<geometry::GeometryId> geometry_ids_;
+  std::set<std::pair<geometry::GeometryId, geometry::GeometryId>>
+      collision_filter_pairs_;
 };
 
 using FrameNameRemapFunction = std::function<std::string(
@@ -260,6 +269,9 @@ class MultibodyPlantElementsMap {
   void CopyJointActuator(const JointActuator<double>* src);
 
   void CopyGeometryById(const geometry::GeometryId& geometry_id_src);
+
+  void CopyCollisionFilterPair(
+      const std::pair<geometry::GeometryId, geometry::GeometryId>& filter_pair);
 
   // Copies the (physical) state from context_src to context_dest.
   void CopyState(const systems::Context<double>& context_src,

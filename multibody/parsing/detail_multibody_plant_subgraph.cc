@@ -110,6 +110,30 @@ std::vector<geometry::GeometryId> GetGeometries(
   std::sort(geometry_ids.begin(), geometry_ids.end());
   return geometry_ids;
 }
+std::vector<std::pair<geometry::GeometryId, geometry::GeometryId>>
+GetCollisionFilterPairs(const geometry::SceneGraph<double>& scene_graph,
+                        std::vector<geometry::GeometryId> geometry_ids) {
+  std::vector<std::pair<geometry::GeometryId, geometry::GeometryId>>
+      filter_pairs;
+
+  const auto& inspector = scene_graph.model_inspector();
+  // First filter out the geometry_ids that do not have proximity properties.
+  auto noProximityEnd = std::remove_if(
+      geometry_ids.begin(), geometry_ids.end(), [&](auto geom_id) {
+        return inspector.GetProximityProperties(geom_id) == nullptr;
+      });
+
+  for (auto it_a = geometry_ids.begin(); it_a != noProximityEnd; ++it_a) {
+    for (auto it_b = it_a + 1; it_b != noProximityEnd; ++it_b) {
+      // We assume that geometry_ids is sorted, so *it_a < *it_b should always
+      // be true.
+      if (inspector.CollisionFiltered(*it_a, *it_b)) {
+        filter_pairs.emplace_back(*it_a, *it_b);
+      }
+    }
+  }
+  return filter_pairs;
+}
 }  // namespace
 
 std::vector<ModelInstanceIndex> GetModelInstances(
@@ -221,6 +245,10 @@ MultibodyPlantElements MultibodyPlantElements::GetElementsFromBodies(
   if (scene_graph != nullptr) {
     auto geometries = GetGeometries(*plant, *scene_graph, elem.bodies_);
     elem.geometry_ids_.insert(geometries.begin(), geometries.end());
+
+    auto filter_pairs = GetCollisionFilterPairs(*scene_graph, geometries);
+    elem.collision_filter_pairs_.insert(filter_pairs.begin(),
+                                        filter_pairs.end());
   }
   return elem;
 }
@@ -382,6 +410,19 @@ void MultibodyPlantElementsMap::CopyGeometryById(
   geometry_ids_.insert({geometry_id_src, geometry_id_dest});
 }
 
+void MultibodyPlantElementsMap::CopyCollisionFilterPair(
+    const std::pair<geometry::GeometryId, geometry::GeometryId>& filter_pair) {
+  DRAKE_DEMAND(scene_graph_src_ != nullptr);
+
+  auto [id_a, id_b] = filter_pair;
+  auto id_a_dest = geometry_ids_[id_a];
+  auto id_b_dest = geometry_ids_[id_b];
+
+  plant_dest_->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
+      {"a", geometry::GeometrySet(id_a_dest)},
+      {"b", geometry::GeometrySet(id_b_dest)});
+}
+
 void MultibodyPlantElementsMap::CopyState(
     const systems::Context<double>& context_src,
     systems::Context<double>* context_dest) {
@@ -534,6 +575,10 @@ MultibodyPlantElementsMap MultibodyPlantSubgraph::AddTo(
   if (plant_dest->geometry_source_is_registered()) {
     for (const auto& geometry_id_src : elem_src_.geometry_ids()) {
       src_to_dest.CopyGeometryById(geometry_id_src);
+    }
+
+    for (const auto& filter_pair_src : elem_src_.collision_filter_pairs()) {
+      src_to_dest.CopyCollisionFilterPair(filter_pair_src);
     }
   }
 
