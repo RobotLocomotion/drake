@@ -54,6 +54,8 @@ class TriMeshBuilder {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TriMeshBuilder);
 
   using ScalarType = T;
+  using MeshType = TriangleSurfaceMesh<T>;
+  using FieldType = TriangleSurfaceMeshFieldLinear<T, T>;
 
   TriMeshBuilder() = default;
 
@@ -85,7 +87,8 @@ class TriMeshBuilder {
 
    @sa AddVertex(). */
   int AddPolygon(const std::vector<int>& polygon_vertices,
-                 const Vector3<T>& nhat_B, const Vector3<T>& grad_e_MN_B);
+                 const Vector3<T>& nhat_B, const Vector3<T>& grad_e_MN_B,
+                 int tetrahedron_index = 0);
 
   /* Returns the total number of vertices accumulated so far. */
   int num_vertices() const { return static_cast<int>(vertices_B_.size()); }
@@ -95,8 +98,7 @@ class TriMeshBuilder {
 
   /* Create a mesh and field from the mesh data that has been aggregated by
    this builder. */
-  std::pair<std::unique_ptr<TriangleSurfaceMesh<T>>,
-            std::unique_ptr<TriangleSurfaceMeshFieldLinear<T, T>>>
+  std::pair<std::unique_ptr<MeshType>, std::unique_ptr<FieldType>>
   MakeMeshAndField();
 
  private:
@@ -118,6 +120,8 @@ class PolyMeshBuilder {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PolyMeshBuilder);
 
   using ScalarType = T;
+  using MeshType = PolygonSurfaceMesh<T>;
+  using FieldType = PolygonSurfaceMeshFieldLinear<T, T>;
 
   PolyMeshBuilder();
 
@@ -149,7 +153,8 @@ class PolyMeshBuilder {
 
    @sa AddVertex(). */
   int AddPolygon(const std::vector<int>& polygon_vertices,
-                 const Vector3<T>& nhat_B, const Vector3<T>& grad_e_MN_B);
+                 const Vector3<T>& nhat_B, const Vector3<T>& grad_e_MN_B,
+                 int tetrahedron_index = 0);
 
   /* Returns the total number of vertices accumulated so far. */
   int num_vertices() const { return static_cast<int>(vertices_B_.size()); }
@@ -159,8 +164,7 @@ class PolyMeshBuilder {
 
   /* Create a mesh and field from the mesh data that has been aggregated by
    this builder. */
-  std::pair<std::unique_ptr<PolygonSurfaceMesh<T>>,
-            std::unique_ptr<PolygonSurfaceMeshFieldLinear<T, T>>>
+  std::pair<std::unique_ptr<MeshType>, std::unique_ptr<FieldType>>
   MakeMeshAndField();
 
   /* Expose the accumulated, per-face gradients for testing. */

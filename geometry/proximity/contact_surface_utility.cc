@@ -144,7 +144,8 @@ template <typename T>
 int TriMeshBuilder<T>::AddPolygon(
     const std::vector<int>& polygon_vertices,
     const Vector3<T>& nhat_B,
-    const Vector3<T>& grad_e_MN_B) {
+    const Vector3<T>& grad_e_MN_B,
+    int /* tetrahedron_index */) {
   // Vertices and pressure values at vertex positions must already have been
   // explicitly added to use this method.
   DRAKE_ASSERT_VOID(
@@ -195,7 +196,8 @@ template <typename T>
 int PolyMeshBuilder<T>::AddPolygon(
     const std::vector<int>& polygon_vertices,
     const Vector3<T>& /* nhat_B */,
-    const Vector3<T>& grad_e_MN_B) {
+    const Vector3<T>& grad_e_MN_B,
+    int /* tetrahedron_index */) {
   // Vertices and pressure values at vertex positions must already have been
   // explicitly added to use this method.
   DRAKE_ASSERT_VOID(
