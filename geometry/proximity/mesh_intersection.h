@@ -94,21 +94,26 @@ template <typename T>
 void RemoveNearlyDuplicateVertices(std::vector<Vector3<T>>* polygon);
 
 // Forward declaration of Tester class, so we can grant friend access.
-template <typename MeshType> class SurfaceVolumeIntersectorTester;
+template <typename MeshBuilder> class SurfaceVolumeIntersectorTester;
 
 /* %SurfaceVolumeIntersector performs a mesh-intersection algorithm between a
  triangulated surface mesh and a tetrahedral volume mesh with a field
  variable. It also interpolates the field variable onto the resulted
  surface.
 
- @tparam MeshType The type of surface mesh to represent the contact surface.
-   It can be either TriangleSurfaceMesh<T> or PolygonSurfaceMesh<T> for
-   T = double or AutoDiffXd. */
-template <typename MeshType>
+ @tparam MeshBuilder  The type of mesh-output builder to represent the contact
+   surface. It can be TriMeshBuilder<T> or PolyMeshBuilder<T> or
+   DeformableContactBuilder<T> for T = double or AutoDiffXd.
+
+ @tparam BvType  The type of bounding volumes of tetrahedra in the
+   volume mesh. It can be Obb for hydroelastics or Aabb for deformables.
+ */
+template <typename MeshBuilder, typename BvType>
 class SurfaceVolumeIntersector {
  public:
+  using MeshType = typename MeshBuilder::MeshType;
   using T = typename MeshType::ScalarType;
-  using FieldType = MeshFieldLinear<T, MeshType>;
+  using FieldType = typename MeshBuilder::FieldType;
 
   SurfaceVolumeIntersector() {
     // We know that each contact polygon has at most 7 vertices.
@@ -155,18 +160,15 @@ class SurfaceVolumeIntersector {
        triangle in `surface_MN_M`).
    @note
        The output surface mesh may have duplicate vertices.
-   @tparam MeshBuilder An instance of either TriMeshBuilder<T> or
-    PolyMeshBuilder<T> (for T = double or AutoDiffXd).
-    (See the documentation in contact_surface_utility.h for details.)
    */
-  template <typename MeshBuilder>
   void SampleVolumeFieldOnSurface(
       const VolumeMeshFieldLinear<double, double>& volume_field_M,
-      const Bvh<Obb, VolumeMesh<double>>& bvh_M,
+      const Bvh<BvType, VolumeMesh<double>>& bvh_M,
       const TriangleSurfaceMesh<double>& surface_N,
       const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_N,
       const math::RigidTransform<T>& X_MN,
-      MeshBuilder builder);
+      MeshBuilder builder,
+      bool filter_face_normal_along_field_gradient = true);
 
   bool has_intersection() const { return mesh_M_ != nullptr; }
   MeshType& mutable_mesh() { return *mesh_M_; }
@@ -334,7 +336,7 @@ class SurfaceVolumeIntersector {
   // in mesh_M_.
   std::vector<Vector3<T>> grad_eM_Ms_;
 
-  friend class SurfaceVolumeIntersectorTester<MeshType>;
+  friend class SurfaceVolumeIntersectorTester<MeshBuilder>;
 };
 
 /* Computes the contact surface between a soft geometry S and a rigid
