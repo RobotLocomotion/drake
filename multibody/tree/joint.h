@@ -596,8 +596,8 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     const std::vector<internal::Mobilizer<T>*>& mobilizers =
         get_implementation().mobilizers_;
     for (const internal::Mobilizer<T>* mobilizer : mobilizers) {
-      if(  is_check_rotate && mobilizer->can_rotate() ) return true;
-      if( !is_check_rotate && mobilizer->can_translate() ) return true;
+      if (  is_check_rotate && mobilizer->can_rotate() ) return true;
+      if ( !is_check_rotate && mobilizer->can_translate() ) return true;
     }
     return false;
   }
