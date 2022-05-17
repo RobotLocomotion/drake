@@ -1,0 +1,29 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_library(
+    name = "hello_world",
+    srcs = [
+        "main.cpp",
+    ],
+)
+
+drake_cc_binary(
+    name = "run_hello_world",
+    deps = [
+        ":hello_world" 
+    ],
+)
+
+add_lint_tests()
