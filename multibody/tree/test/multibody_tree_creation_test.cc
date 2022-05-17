@@ -842,12 +842,9 @@ const RigidBody<double>& AddRigidBody(MultibodyTree<double>* model,
                                       const double mass,
                                       const double link_length) {
     DRAKE_DEMAND(model != nullptr);
-    const Vector3<double> p_BoBcm_B(0.5 * link_length, 0, 0);
-    const UnitInertia<double> link_unit_inertia =
-      UnitInertia<double>::SolidBox(link_length, 0, 0);
-    const SpatialInertia<double> body_spatial_inertia(mass, p_BoBcm_B,
-        link_unit_inertia, /* skip_validity_check = */ true);
-    return model->AddRigidBody(name, body_spatial_inertia);
+    const SpatialInertia<double> spatial_inertia =
+        SpatialInertia<double>::MakeTestSpatialInertia(mass, link_length);
+    return model->AddRigidBody(name, spatial_inertia);
 }
 
 // Helper function to add a x-axis prismatic joint between two bodies.
@@ -875,9 +872,9 @@ void AddWeldJoint(MultibodyTree<double>* model, const std::string& name,
 }
 
 // Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() issues a
-// warning if one of the composite rigid bodies has zero mass.
+// warning if the sole composite rigid body has zero mass.
 GTEST_TEST(WeldedBodies, IssueWarningAboutBodyWithZeroMass) {
-  // Create a model and add a few rigid bodies.
+  // Create a model and add two rigid bodies.
   MultibodyTree<double> model;
   const double mass = 0;    // Mass of link.
   const double length = 3;  // Length of thin uniform-density link.
@@ -888,7 +885,7 @@ GTEST_TEST(WeldedBodies, IssueWarningAboutBodyWithZeroMass) {
   AddPrismaticJointX(&model, "WA_revolute_joint", model.world_body(), body_A);
 
   // Add a weld joint between bodyA and bodyB.
-  AddPrismaticJointX(&model, "AB_weld_joint", body_A, body_B);
+  AddWeldJoint(&model, "AB_weld_joint", body_A, body_B);
 
   // We are done building the test model.
   model.Finalize();
@@ -901,9 +898,9 @@ GTEST_TEST(WeldedBodies, IssueWarningAboutBodyWithZeroMass) {
 }
 
 // Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() issues a
-// warning if one of the composite rigid bodies has zero inertia.
+// warning if the sole composite rigid body has zero inertia.
 GTEST_TEST(WeldedBodies, IssueWarningAboutBodyWithZeroInertia) {
-  // Create a model and add a few rigid bodies.
+  // Create a model and add two rigid bodies.
   MultibodyTree<double> model;
   const double mass = 1;    // Mass of link.
   const double length = 0;  // Length of thin uniform-density link.
@@ -925,6 +922,50 @@ GTEST_TEST(WeldedBodies, IssueWarningAboutBodyWithZeroInertia) {
     "rotational degree of freedom.";
   DRAKE_EXPECT_THROWS_MESSAGE(model.IssuePostFinalizeMassInertiaWarnings(),
       expected_message);
+}
+
+// Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() does not issue a
+// warning if the sole composite rigid body has non-zero mass (due to a weld).
+GTEST_TEST(WeldedBodies, IssueNoWarningSinceBodyHasMassDueToWeldedBody) {
+  // Create a model and add two rigid bodies.
+  MultibodyTree<double> model;
+  const double length = 3;  // Length of thin uniform-density link.
+  const RigidBody<double>& body_A = AddRigidBody(&model, "bodyA", 0, length);
+  const RigidBody<double>& body_B = AddRigidBody(&model, "bodyB", 1, length);
+
+  // Add a prismatic joint between the world body and bodyA (bodyA has mass 0).
+  AddPrismaticJointX(&model, "WA_revolute_joint", model.world_body(), body_A);
+
+  // Add a weld joint between bodyA and bodyB (bodyB has mass 1).
+  AddWeldJoint(&model, "AB_weld_joint", body_A, body_B);
+
+  // We are done building the test model.
+  model.Finalize();
+
+  // The next function is usually called from MultibodyPlant::Finalize().
+  EXPECT_NO_THROW(model.IssuePostFinalizeMassInertiaWarnings());
+}
+
+// Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() does not issue a
+// warning if the sole composite rigid body has non-zero inertia (due to weld).
+GTEST_TEST(WeldedBodies, IssueNoWarningSinceBodyHasInertiaDueToWeldedBody) {
+  // Create a model and add a few rigid bodies.
+  MultibodyTree<double> model;
+  const double length = 3;  // Length of thin uniform-density link.
+  const RigidBody<double>& body_A = AddRigidBody(&model, "bodyA", 0, length);
+  const RigidBody<double>& body_B = AddRigidBody(&model, "bodyB", 1, length);
+
+  // Add a prismatic joint from the world body to bodyA (bodyA has no inertia).
+  AddPrismaticJointX(&model, "WA_revolute_joint", model.world_body(), body_A);
+
+  // Add a weld joint between bodyA and bodyB (bodyB has non-zero inertia).
+  AddWeldJoint(&model, "AB_weld_joint", body_A, body_B);
+
+  // We are done building the test model.
+  model.Finalize();
+
+  // The next function is usually called from MultibodyPlant::Finalize().
+  EXPECT_NO_THROW(model.IssuePostFinalizeMassInertiaWarnings());
 }
 
 }  // namespace
