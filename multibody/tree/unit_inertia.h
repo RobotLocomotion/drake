@@ -258,7 +258,13 @@ class UnitInertia : public RotationalInertia<T> {
   /// @param[in] Lx The length of the box edge in the principal x-axis.
   /// @param[in] Ly The length of the box edge in the principal y-axis.
   /// @param[in] Lz The length of the box edge in the principal z-axis.
+  /// @throws std::exception if any of Lx, Ly, Lz are negative.
   static UnitInertia<T> SolidBox(const T& Lx, const T& Ly, const T& Lz) {
+    if (Lx < T(0) || Ly < T(0) || Lz < T(0)) {
+      const std::string msg = "A length argument to UnitInertia::SolidBox() "
+                              "is negative.";
+      throw std::logic_error(msg);
+    }
     const T one_twelfth = T(1) / T(12);
     const T Lx2 = Lx * Lx, Ly2 = Ly * Ly, Lz2 = Lz * Lz;
     return UnitInertia(

@@ -745,7 +745,8 @@ void MultibodyPlant<T>::Finalize() {
 
   // At the conclusion of Finalize(), warn the user about bodies whose mass or
   // inertia properties may cause subsequent numerical problems.
-  internal_tree().IssuePostFinalizeMassInertiaWarnings();
+  // TODO(Mitiguy) Uncomment this ASAP.
+  // internal_tree().IssuePostFinalizeMassInertiaWarnings();
 }
 
 template<typename T>

@@ -277,8 +277,11 @@ class ContactResultsToLcmTest : public ::testing::Test {
                      MultibodyPlant<T>* plant, vector<string>* body_names,
                      unordered_map<GeometryId, FullBodyName>* id_to_body,
                      FullBodyName ref_name) {
+    // To avoid unnecessary warnings/errors, create non-zero spatial inertia.
+    const SpatialInertia<double> spatial_inertia = SpatialInertia<double>::
+      MakeTestSpatialInertia(/* mass = */ 5.0, /* length = */ 2.0);
     const auto& body =
-        plant->AddRigidBody(body_name, model_index, SpatialInertia<double>());
+        plant->AddRigidBody(body_name, model_index, spatial_inertia);
     /* The expected format based on knowledge of the ContactResultToLcmSystem's
      implementation. */
     body_names->push_back(fmt::format("{}({})", body_name, model_index));
@@ -849,7 +852,10 @@ class ConnectVisualizerTest : public ::testing::Test {
     plant_ = &system_pair.plant;
     scene_graph_ = &system_pair.scene_graph;
 
-    const auto& body = plant_->AddRigidBody("link", SpatialInertia<double>());
+    // To avoid unnecessary warnings/errors, create non-zero spatial inertia.
+    const SpatialInertia<double> spatial_inertia = SpatialInertia<double>::
+      MakeTestSpatialInertia(/* mass = */ 5.0, /* length = */ 2.0);
+    const auto& body = plant_->AddRigidBody("link", spatial_inertia);
     plant_->RegisterCollisionGeometry(body, {}, Sphere(1.0), kGeoName,
                                       CoulombFriction<double>{});
     plant_->Finalize();

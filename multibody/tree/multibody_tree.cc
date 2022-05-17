@@ -2871,8 +2871,8 @@ void MultibodyTree<T>::IssuePostFinalizeMassInertiaWarnings() const {
   std::vector<std::set<BodyIndex>> welded_bodies =
       topology.CreateListOfWeldedBodies();
 
-  // There should be at least on set of welded_bodies since the first set should
-  // be the world body (if it has children bodies, they are anchored to it).
+  // There should be at least 1 set of welded_bodies since the first set should
+  // be the world body (and if it has children bodies, they are anchored to it).
   size_t number_of_sets = welded_bodies.size();
   DRAKE_ASSERT(number_of_sets > 0);
 
@@ -2890,7 +2890,7 @@ void MultibodyTree<T>::IssuePostFinalizeMassInertiaWarnings() const {
     const Mobilizer<T>& parent_mobilizer =
         get_mobilizer(parent_mobilizer_index);
 
-    // Get parent body name (if needed for subsequent warning message).
+    // Get parent body name (may be needed for subsequent warning message).
     const Body<T>& parent_body = get_body(parent_body_index);
     const std::string& parent_body_name = parent_body.name();
     DRAKE_DEMAND(parent_body_index == parent_body.index());
@@ -2909,7 +2909,7 @@ void MultibodyTree<T>::IssuePostFinalizeMassInertiaWarnings() const {
     }
 
     // Issue zero rotational inertia if the composite rigid body can rotate.
-    if  (parent_mobilizer.can_rotate() ) {
+    if (parent_mobilizer.can_rotate()) {
       const RotationalInertia<double> total_inertia =
         CalcTotalDefaultRotationalInertia(welded_parent_children_bodies);
       if (total_inertia.IsZero()) {

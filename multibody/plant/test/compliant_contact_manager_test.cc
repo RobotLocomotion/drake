@@ -1584,8 +1584,11 @@ class MultiDofJointWithLimits final : public Joint<T> {
 // joints with finite limits.
 GTEST_TEST(CompliantContactManager, ThrowForUnsupportedJoints) {
   MultibodyPlant<double> plant(1.0e-3);
+  // To avoid unnecessary warnings/errors, create non-zero spatial inertia.
+  const SpatialInertia<double> spatial_inertia = SpatialInertia<double>::
+    MakeTestSpatialInertia(/* mass = */ 5.0, /* length = */ 2.0);
   const RigidBody<double>& body =
-      plant.AddRigidBody("DummyBody", SpatialInertia<double>());
+      plant.AddRigidBody("DummyBody", spatial_inertia);
   plant.AddJoint(std::make_unique<MultiDofJointWithLimits<double>>(
       plant.world_frame(), body.body_frame(), -1.0, 2.0));
   plant.Finalize();
@@ -1612,8 +1615,11 @@ GTEST_TEST(CompliantContactManager, ThrowForUnsupportedJoints) {
 GTEST_TEST(CompliantContactManager,
            VerifyMultiDofJointsWithoutLimitsAreSupported) {
   MultibodyPlant<double> plant(1.0e-3);
+  // To avoid unnecessary warnings/errors, create non-zero spatial inertia.
+  const SpatialInertia<double> spatial_inertia = SpatialInertia<double>::
+    MakeTestSpatialInertia(/* mass = */ 5.0, /* length = */ 2.0);
   const RigidBody<double>& body =
-      plant.AddRigidBody("DummyBody", SpatialInertia<double>());
+      plant.AddRigidBody("DummyBody", spatial_inertia);
   const double kInf = std::numeric_limits<double>::infinity();
   plant.AddJoint(std::make_unique<MultiDofJointWithLimits<double>>(
       plant.world_frame(), body.body_frame(), -kInf, kInf));
