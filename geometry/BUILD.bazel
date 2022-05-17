@@ -182,6 +182,7 @@ drake_cc_library(
         ":utilities",
         "//common:copyable_unique_ptr",
         "//common:essential",
+        "//geometry/proximity:volume_mesh",
     ],
 )
 
@@ -316,6 +317,7 @@ drake_cc_library(
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
+        "//geometry/proximity:volume_mesh",
         "//math:geometric_transform",
     ],
 )
@@ -681,6 +683,7 @@ drake_cc_googletest(
     name = "geometry_state_test",
     deps = [
         ":geometry_state",
+        ":make_mesh_for_deformable",
         "//common/test_utilities",
         "//geometry/test_utilities:dummy_render_engine",
     ],

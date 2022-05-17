@@ -22,6 +22,7 @@
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_version.h"
 #include "drake/geometry/internal_frame.h"
+#include "drake/geometry/make_mesh_for_deformable.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/geometry/test_utilities/dummy_render_engine.h"
@@ -1567,6 +1568,52 @@ TEST_F(GeometryStateTest, RegisterAnchoredNullGeometry) {
       geometry_state_.RegisterAnchoredGeometry(SourceId::get_new_id(),
                                                move(instance)),
       "Registering null geometry to frame \\d+, on source \\d+.");
+}
+
+// Tests registering a deformable geometry.
+TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
+  const SourceId s_id = NewSource("new source");
+  const FrameId f_id = geometry_state_.RegisterFrame(s_id, *frame_);
+  const Sphere sphere(1.0);
+  constexpr double kRezHint = 0.5;
+  VolumeMesh<double> mesh = internal::MakeMeshForDeformable(sphere, kRezHint);
+
+  /* Adding a deformable geometry to non-world frame throws. */
+  auto instance1 = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RegisterDeformableGeometry(s_id, f_id, move(instance1),
+                                                 kRezHint),
+      "Registering deformable geometry.*non-world frame.*");
+
+  /* Successful registration of deformable geometry. */
+  auto instance2 = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere");
+  const GeometryId expected_g_id = instance2->id();
+  const auto g_id = geometry_state_.RegisterDeformableGeometry(
+      s_id, InternalFrame::world_frame_id(), move(instance2), kRezHint);
+  EXPECT_EQ(g_id, expected_g_id);
+
+  // Verify the reference mesh of the deformable geometry matches the input.
+  const VolumeMesh<double>* reference_mesh =
+      geometry_state_.GetReferenceMesh(g_id);
+  ASSERT_NE(reference_mesh, nullptr);
+  EXPECT_TRUE(reference_mesh->Equal(mesh));
+
+  // Verify querying pose on deformable geometry throws. (Deformable geometries
+  // are characterized by vertex positions.)
+  EXPECT_THROW(geometry_state_.GetPoseInFrame(g_id), std::exception);
+  EXPECT_THROW(geometry_state_.GetPoseInParent(g_id), std::exception);
+  EXPECT_THROW(geometry_state_.get_pose_in_world(g_id), std::exception);
+
+  // Verify vertex positions can be retrieved.
+  // TODO(xuchenhan-tri): Strengthen this test when we can set vertex positions.
+  const VectorX<double>& q_WG =
+      geometry_state_.get_configurations_in_world(g_id);
+  EXPECT_EQ(q_WG.size(), mesh.num_vertices() * 3);
+
+  // Verify that deformable geometries are dynamic.
+  EXPECT_EQ(geometry_state_.NumDynamicGeometries(), 1);
 }
 
 // Tests the RemoveGeometry() functionality. This action will have several
