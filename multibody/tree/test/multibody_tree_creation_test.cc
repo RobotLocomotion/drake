@@ -842,9 +842,8 @@ const RigidBody<double>& AddRigidBody(MultibodyTree<double>* model,
                                       const double mass,
                                       const double link_length) {
     DRAKE_DEMAND(model != nullptr);
-    const SpatialInertia<double> spatial_inertia =
-        SpatialInertia<double>::MakeTestSpatialInertia(mass, link_length);
-    return model->AddRigidBody(name, spatial_inertia);
+    return model->AddRigidBody(name,
+        SpatialInertia<double>::MakeTestCube(mass, link_length));
 }
 
 // Helper function to add a x-axis prismatic joint between two bodies.

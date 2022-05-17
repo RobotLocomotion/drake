@@ -1038,10 +1038,9 @@ GTEST_TEST(MultibodyPlantTest, SetDefaultFreeBodyPose) {
   // We cannot use Acrobot for testing `SetDefaultFreeBodyPose` since it has no
   // free bodies.
   MultibodyPlant<double> plant(0.0);
-  // To avoid unnecessary warnings/errors, create non-zero spatial inertia.
-  const SpatialInertia<double> spatial_inertia = SpatialInertia<double>::
-      MakeTestSpatialInertia(/* mass = */ 5.0, /* length = */ 2.0);
-  const auto& body = plant.AddRigidBody("body", spatial_inertia);
+  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
+  const auto& body = plant.AddRigidBody("body",
+      SpatialInertia<double>::MakeTestCube());
   EXPECT_TRUE(CompareMatrices(
       plant.GetDefaultFreeBodyPose(body).GetAsMatrix4(),
       RigidTransformd::Identity().GetAsMatrix4()));
@@ -1196,11 +1195,9 @@ class SphereChainScenario {
 
     auto make_sphere = [this](int i) {
       const double radius = 0.5;
-      // To avoid unnecessary warnings/errors, create non-zero spatial inertia.
-      const SpatialInertia<double> spatial_inertia = SpatialInertia<double>::
-        MakeTestSpatialInertia(/* mass = */ 5.0, /* length = */ 2.0 * radius);
+      // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
       const RigidBody<double>& sphere = plant_->AddRigidBody(
-          "Sphere" + to_string(i), spatial_inertia);
+          "Sphere" + to_string(i), SpatialInertia<double>::MakeTestCube());
       GeometryId sphere_id = plant_->RegisterCollisionGeometry(
           sphere, RigidTransformd::Identity(), geometry::Sphere(radius),
           "collision", CoulombFriction<double>());
@@ -1231,11 +1228,9 @@ class SphereChainScenario {
     }
 
     // Body with no registered frame.
-    // To avoid unnecessary warnings/errors, create non-zero spatial inertia.
-    const SpatialInertia<double> spatial_inertia = SpatialInertia<double>::
-      MakeTestSpatialInertia(/* mass = */ 5.0, /* length = */ 2.0);
+    // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
     no_geometry_body_ = &plant_->AddRigidBody("NothingRegistered",
-                                              spatial_inertia);
+        SpatialInertia<double>::MakeTestCube());
   }
 
   void Finalize() {
@@ -1636,11 +1631,9 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       geometry::HalfSpace(), "ground", ground_friction);
 
   // Add two spherical bodies.
-  // To avoid unnecessary warnings/errors, create non-zero spatial inertia.
-  const SpatialInertia<double> spatial_inertia = SpatialInertia<double>::
-    MakeTestSpatialInertia(/* mass = */ 5.0, /* length = */ 2.0);
+  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const RigidBody<double>& sphere1 =
-      plant.AddRigidBody("Sphere1", spatial_inertia);
+      plant.AddRigidBody("Sphere1", SpatialInertia<double>::MakeTestCube());
   CoulombFriction<double> sphere1_friction(0.8, 0.5);
   // estimated parameters for mass=1kg, penetration_tolerance=0.01m
   // and gravity g=9.8 m/s^2.
@@ -1805,11 +1798,9 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   EXPECT_EQ(render_engine.num_registered(), 1);
 
   // Add two spherical bodies.
-  // To avoid unnecessary warnings/errors, create non-zero spatial inertia.
-  const SpatialInertia<double> spatial_inertia = SpatialInertia<double>::
-    MakeTestSpatialInertia(/* mass = */ 5.0, /* length = */ 2.0);
+  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const RigidBody<double>& sphere1 =
-      plant.AddRigidBody("Sphere1", spatial_inertia);
+      plant.AddRigidBody("Sphere1", SpatialInertia<double>::MakeTestCube());
   Vector4<double> sphere1_diffuse{0.9, 0.1, 0.1, 0.5};
   GeometryId sphere1_id = plant.RegisterVisualGeometry(
       sphere1, RigidTransformd::Identity(), geometry::Sphere(radius),
@@ -2047,11 +2038,9 @@ TEST_F(AcrobotPlantTests, EvalStateAndAccelerationOutputPorts) {
 void InitializePlantAndContextForVelocityToQDotMapping(
     MultibodyPlant<double>* plant, std::unique_ptr<Context<double>>* context) {
   // This is used in purely kinematic tests.
-  // To avoid unnecessary warnings/errors, create non-zero spatial inertia.
-  const SpatialInertia<double> spatial_inertia = SpatialInertia<double>::
-    MakeTestSpatialInertia(/* mass = */ 5.0, /* length = */ 2.0);
+  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const RigidBody<double>& body =
-      plant->AddRigidBody("FreeBody", spatial_inertia);
+      plant->AddRigidBody("FreeBody", SpatialInertia<double>::MakeTestCube());
   plant->Finalize();
 
   *context = plant->CreateDefaultContext();
@@ -2296,23 +2285,16 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
 
     // The model simply contains a small and a large box.
-    // To avoid unnecessary warnings/errors, create non-zero spatial inertia.
-    const SpatialInertia<double> large_spatial_inertia =
-      SpatialInertia<double>::MakeTestSpatialInertia(
-          /* mass = */ 5.0, /* length = */ large_box_size_);
+    // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
     const RigidBody<double>& large_box =
-        plant_.AddRigidBody("LargeBox", large_spatial_inertia);
+        plant_.AddRigidBody("LargeBox", SpatialInertia<double>::MakeTestCube());
     large_box_id_ = plant_.RegisterCollisionGeometry(
         large_box, RigidTransformd::Identity(),
         geometry::Box(large_box_size_, large_box_size_, large_box_size_),
         "collision", CoulombFriction<double>());
 
-    // To avoid unnecessary warnings/errors, create non-zero spatial inertia.
-    const SpatialInertia<double> small_spatial_inertia =
-      SpatialInertia<double>::MakeTestSpatialInertia(
-          /* mass = */ 5.0, /* length = */ small_box_size_);
     const RigidBody<double>& small_box =
-        plant_.AddRigidBody("SmallBox", small_spatial_inertia);
+        plant_.AddRigidBody("SmallBox", SpatialInertia<double>::MakeTestCube());
     small_box_id_ = plant_.RegisterCollisionGeometry(
         small_box, RigidTransformd::Identity(),
         geometry::Box(small_box_size_, small_box_size_, small_box_size_),
@@ -3362,10 +3344,9 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
   // Create a model that contains a single body B.
   MultibodyPlant<double> plant(0.0);
 
-  // To avoid unnecessary warnings/errors, create non-zero spatial inertia.
-  const SpatialInertia<double> spatial_inertia = SpatialInertia<double>::
-      MakeTestSpatialInertia(/* mass = */ 5.0, /* length = */ 2.0);
-  const Body<double>& body = plant.AddRigidBody("LoneBody", spatial_inertia);
+  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
+  const Body<double>& body = plant.AddRigidBody("LoneBody",
+      SpatialInertia<double>::MakeTestCube());
   plant.Finalize();
 
   RandomGenerator generator;
