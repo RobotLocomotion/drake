@@ -7,6 +7,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/solve.h"
 #include "drake/tools/performance/fixture_common.h"
 
