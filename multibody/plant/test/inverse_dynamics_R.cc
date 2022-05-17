@@ -50,9 +50,14 @@ class InverseDynamicsRTests : public ::testing::Test {
     auto multibody_forces = MultibodyForces<double>(plant);
 
     // add the gravity effects. It should be after setting the positions.
-    const auto gravity_forces =
+    plant.CalcForceElementsContribution(plant_context, &multibody_forces);
+
+    // verify the calculated generalized gravity forces
+    const auto expected_gravity_forces =
         plant.CalcGravityGeneralizedForces(*plant_context);
-    multibody_forces.mutable_generalized_forces() += gravity_forces;
+    EXPECT_TRUE(CompareMatrices(
+        expected_gravity_forces, multibody_forces.generalized_forces(),
+        std::numeric_limits<double>::epsilon(), MatrixCompareType::relative));
 
     // calculate the joint torque
     const auto tau =
