@@ -1,0 +1,31 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # MIT, ISC
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+_SRCS = glob(["src/lib/**/*.cpp", "src/lib/*.cpp"], exclude = [
+    "src/lib/io/PRT.cpp"])
+_HDRS = glob(["src/lib/**/*.h", "src/lib/*.h"])
+_INCLUDES = glob(["src/lib/*.h"])
+
+cc_library(
+    name = "partio",
+    srcs = _SRCS,
+    hdrs = _HDRS,
+    includes = ["src/lib"],
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)

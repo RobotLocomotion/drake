@@ -1,0 +1,32 @@
+diff --git a/src/lib/io/PRT.cpp b/src/lib/io/PRT.cpp
+index 122016e..85d36b2 100644
+--- src/lib/io/PRT.cpp
++++ src/lib/io/PRT.cpp
+@@ -54,6 +54,7 @@ Modifications from: github user: redpawfx (redpawFX@gmail.com)  and Luma Picture
+ 
+ #include <zlib.h>
+ #endif
++#include <iostream>
+ namespace Partio{
+ 
+ #define OUT_BUFSIZE		(4096)
+diff --git a/src/lib/io/ParticleIO.cpp b/src/lib/io/ParticleIO.cpp
+index ba4698f..4d37262 100644
+--- src/lib/io/ParticleIO.cpp
++++ src/lib/io/ParticleIO.cpp
+@@ -65,7 +65,6 @@ readers()
+         data["mc"]=readMC;
+         data["ptc"]=readPTC;
+         data["pdc"]=readPDC;
+-        data["prt"]=readPRT;
+         data["bin"]=readBIN;
+         data["pts"]=readPTS;
+         data["ptf"]=readPTC;
+@@ -95,7 +94,6 @@ writers()
+         data["ptc"]=writePTC;
+         data["rib"]=writeRIB;
+         data["pdc"]=writePDC;
+-        data["prt"]=writePRT;
+         data["bin"]=writeBIN;
+         data["ptf"]=writePTC;
+         data["itbl"]=writeBGEO;
