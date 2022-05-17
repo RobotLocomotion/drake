@@ -17,6 +17,9 @@ drake_cc_library(
     srcs = [
         "main.cpp",
     ],
+    deps = [
+        "//common:essential",
+    ],
 )
 
 drake_cc_library(
