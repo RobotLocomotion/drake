@@ -62,10 +62,6 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
-  // Overloads that define whether this mobilizer can rotate and/or translate.
-  bool can_rotate() const final    { return true; }
-  bool can_translate() const final { return false; }
-
   // Retrieves from `context` the two angles, (θ₁, θ₂) which describe the state
   // for `this` mobilizer as documented in this class's documentation.
   //

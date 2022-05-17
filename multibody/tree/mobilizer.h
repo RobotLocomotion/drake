@@ -292,10 +292,6 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
     return "v";
   }
 
-  // Pure virtual to define whether this mobilizer can rotate and/or translate.
-  virtual bool can_rotate() const = 0;
-  virtual bool can_translate() const = 0;
-
   // Returns a constant reference to the inboard frame.
   const Frame<T>& inboard_frame() const {
     return inboard_frame_;

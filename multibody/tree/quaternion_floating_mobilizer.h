@@ -55,10 +55,6 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
-  // Overloads that define whether this mobilizer can rotate and/or translate.
-  bool can_rotate() const final    { return true; }
-  bool can_translate() const final { return true; }
-
   // @name Methods to get and set the state for a QuaternionFloatingMobilizer
   // @{
 
