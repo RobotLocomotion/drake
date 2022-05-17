@@ -30,10 +30,10 @@ Mac are available to download as attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v1.2.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.2.0):
+[v1.3.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.3.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.2.0/drake-20220420-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.2.0/drake-20220420-focal.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.2.0/drake-20220420-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.2.0/drake-20220420-mac.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.3.0/drake-20220420-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.3.0/drake-20220420-focal.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.3.0/drake-20220420-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.3.0/drake-20220420-mac.tar.gz)
 
 ### Use as a C++ library
 
