@@ -120,7 +120,6 @@ def main():
 
     diagram = builder.Build()
     simulator = Simulator(diagram)
-    iiwa_velocities_log = iiwa_velocities.FindLog(simulator.get_context())
 
     # This is important to avoid duplicate publishes to the hardware interface:
     simulator.set_publish_every_time_step(False)
@@ -152,6 +151,7 @@ def main():
     # Ensure that our initialization logic was correct, by inspecting our
     # logged joint velocities.
     if args.test:
+        iiwa_velocities_log = iiwa_velocities.FindLog(simulator.get_context())
         for time, qdot in zip(iiwa_velocities_log.sample_times(),
                               iiwa_velocities_log.data().transpose()):
             # TODO(jwnimmer-tri) We should be able to do better than a 40
