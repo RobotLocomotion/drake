@@ -1593,6 +1593,7 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
   const auto g_id = geometry_state_.RegisterDeformableGeometry(
       s_id, InternalFrame::world_frame_id(), move(instance2), kRezHint);
   EXPECT_EQ(g_id, expected_g_id);
+  EXPECT_TRUE(geometry_state_.IsDeformableGeometry(g_id));
 
   // Verify the reference mesh of the deformable geometry matches the input.
   const VolumeMesh<double>* reference_mesh =
@@ -1614,6 +1615,11 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
 
   // Verify that deformable geometries are dynamic.
   EXPECT_EQ(geometry_state_.NumDynamicGeometries(), 1);
+
+  const std::vector<GeometryId> deformable_ids =
+      geometry_state_.GetAllDeformableGeometryIds();
+  ASSERT_EQ(deformable_ids.size(), 1);
+  EXPECT_EQ(deformable_ids[0], g_id);
 }
 
 // Tests the RemoveGeometry() functionality. This action will have several
