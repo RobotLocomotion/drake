@@ -120,7 +120,8 @@ def main():
 
     diagram = builder.Build()
     simulator = Simulator(diagram)
-    iiwa_velocities_log = iiwa_velocities.FindLog(simulator.get_context())
+    if args.test:
+        iiwa_velocities_log = iiwa_velocities.FindLog(simulator.get_context())
 
     # This is important to avoid duplicate publishes to the hardware interface:
     simulator.set_publish_every_time_step(False)
