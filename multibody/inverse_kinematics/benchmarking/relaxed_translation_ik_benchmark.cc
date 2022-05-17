@@ -1,17 +1,12 @@
 // @file
-// Benchmarks for ConstraintRelaxingIk.
+// Benchmark for InverseKinematics.
 //
 // This benchmark is intended to analyze the performance of nonlinear
 // optimization with position constraints.
 
-#include <iostream>
-
 #include "drake/common/find_resource.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/parsing/parser.h"
-#include "drake/solvers/binding.h"
-#include "drake/solvers/constraint.h"
-#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 #include "drake/tools/performance/fixture_common.h"
 
@@ -48,43 +43,36 @@ static void BenchmarkRelaxedIk(benchmark::State& state) {
     const drake::multibody::Frame<double>& ee_frame =
         plant.GetFrameByName(ee_link_name);
 
-    // Get the joint position limits for random generation.
+    // Get the joint position limits for random generation by leveraging the
+    // fact that iiwa has symmetric position limits.
+    const Eigen::VectorXd joint_pos_limits(plant.GetPositionUpperLimits());
 
     // Create an IK object.
     drake::multibody::InverseKinematics relaxed_ik(plant, true);
     drake::solvers::MathematicalProgram* prog = relaxed_ik.get_mutable_prog();
 
     // Define a uniform position relaxation and the position bound variables.
-    Eigen::Vector3d pos_tol = 1e-3 * Eigen::Vector3d::Ones();
-
-    // Define generalized position vectors for the goal, inital guess, and the
-    // solution.
-    Eigen::VectorXd q_goal(7), q0(7), q_sol(7);
-    // Define the end-effector poses corresponding to the goal and the solution.
-    drake::math::RigidTransformd ee_pose_goal, ee_pose_sol;
-    // Define a variable for the mathematical program result.
-    drake::solvers::MathematicalProgramResult result;
+    const Eigen::Vector3d pos_tol = 1e-4 * Eigen::Vector3d::Ones();
 
     // Set a fixed seed for random generation.
     std::srand(1234);
-    // Generate 10 goals randomly.
-    for (int i = 0; i < 10; ++i) {
+    // Generate 10 goals randomly within joint position limits.
+    for (int i = 0; i < 1; ++i) {
       context->get_mutable_continuous_state()
           .get_mutable_generalized_position()
-          .SetFromVector(Eigen::VectorXd::Random(7));
-      std::cout << "\trandom pos: " << plant.GetPositions(*context).transpose()
-                << '\n';
+          .SetFromVector(
+              Eigen::VectorXd::Random(7).cwiseProduct(joint_pos_limits));
       // Evaluate the corresponding end-effector position.
-      ee_pose_goal = plant.EvalBodyPoseInWorld(*context, ee_body);
+      auto ee_pose_goal = plant.EvalBodyPoseInWorld(*context, ee_body);
 
-      // If not the first iteration, remove the position constraint.
+      // If not the first iteration, remove all constraints from the program.
       if (i > 0) {
         auto constraints = prog->GetAllConstraints();
         for (auto constraint : constraints) {
           prog->RemoveConstraint(constraint);
         }
       }
-      // Update the task otherwise.
+      // Create the task in terms of position constraints on the end effector.
       else {
         relaxed_ik.AddPositionConstraint(ee_frame, Eigen::Vector3d::Zero(),
                                          plant.world_frame(),
@@ -94,27 +82,35 @@ static void BenchmarkRelaxedIk(benchmark::State& state) {
 
       // Solve each task using three random initial guesses.
       for (int j = 0; j < 3; ++j) {
-        // Sample a random initial guess.
-        q0 = Eigen::VectorXd::Random(7);
+        // Sample a random initial guess assuming that the random range [-1, 1]
+        // does not violate any of the joint position limits.
+        auto q0 = Eigen::VectorXd::Random(7);
+        // Set the initial guess.
+        prog->SetInitialGuess(relaxed_ik.q(), q0);
 
         // Solve the relaxed IK problem.
-        result = drake::solvers::Solve(*prog);
-        // Get the solution
-        q_sol = result.GetSolution();
+        drake::solvers::MathematicalProgramResult result =
+            drake::solvers::Solve(*prog);
+        // Get the solution.
+        auto q_sol = result.GetSolution();
         // Evaluate the end-effector pose for the solution.
         context->get_mutable_continuous_state()
             .get_mutable_generalized_position()
             .SetFromVector(q_sol);
-        ee_pose_sol = plant.EvalBodyPoseInWorld(*context, ee_body);
+        auto ee_pose_sol = plant.EvalBodyPoseInWorld(*context, ee_body);
 
-        // Print the results.
-        std::cout << (result.is_success() ? "Succeeded" : "Failed") << '\n';
-        std::cout << "\tInitial guess:  " << q0.transpose() << '\n';
-        std::cout << "\tSolution:       " << q_sol.transpose() << '\n';
-        std::cout << "\n\tee pose goal: "
-                  << ee_pose_goal.translation().transpose() << '\n';
-        std::cout << "\n\tee pose sol:  "
-                  << ee_pose_sol.translation().transpose() << '\n';
+        // Confirm that the optimization has succeeded.
+        assert(result.is_success());
+        // Check whether the goal and the solution are close enough.
+        assert((ee_pose_sol.translation().array() <=
+                ee_pose_goal.translation().array() + pos_tol.array())
+                   .all());
+        assert((ee_pose_sol.translation().array() >=
+                ee_pose_goal.translation().array() - pos_tol.array())
+                   .all());
+        // Specify ee_pose_sol as an unused variable as it is only used for
+        // assertions.
+        ((void)(ee_pose_sol));
       }
     }
   }
