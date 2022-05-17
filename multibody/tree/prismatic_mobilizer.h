@@ -58,7 +58,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
-  // Overloads that defines whether this mobilizer can rotate and/or translate.
+  // Overloads that define whether this mobilizer can rotate and/or translate.
   bool can_rotate() const final    { return false; }
   bool can_translate() const final { return true; }
 
