@@ -19,10 +19,35 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "particles_to_bgeo",
+    srcs = [
+        "particles_to_bgeo.cc",
+    ],
+    hdrs = [
+        "particles_to_bgeo.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:find_resource",
+        "@partio",
+    ],
+)
+
 drake_cc_binary(
     name = "run_hello_world",
     deps = [
-        ":hello_world" 
+        ":hello_world",
+    ],
+)
+
+drake_cc_googletest(
+    name = "particles_to_bgeo_test",
+    deps = [
+        ":particles_to_bgeo",
+        "//common:filesystem",
+        "//common:temp_directory",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
