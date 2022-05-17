@@ -323,8 +323,10 @@ Vector3d ExtractJointAxis(
   // Axis specification.
   const sdf::JointAxis* axis = joint_spec.Axis();
   if (axis == nullptr) {
-    throw std::runtime_error(
-        "An axis must be specified for joint '" + joint_spec.Name() + "'");
+    diagnostic.Error(fmt::format(
+        "An axis must be specified for joint '{}'",
+        joint_spec.Name()));
+    return Vector3d(0, 0, 1);
   }
 
   // Joint axis in the joint frame J.
@@ -334,57 +336,102 @@ Vector3d ExtractJointAxis(
 
 // Helper to parse the damping for a given joint specification.
 // Right now we only parse the <damping> tag.
-// An exception is thrown if the provided damping value is negative or if there
-// is no <axis> under <joint>.
-double ParseJointDamping(const sdf::Joint& joint_spec) {
+double ParseJointDamping(
+    const DiagnosticPolicy& diagnostic,
+    const sdf::Joint& joint_spec) {
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
       joint_spec.Type() == sdf::JointType::PRISMATIC ||
       joint_spec.Type() == sdf::JointType::UNIVERSAL ||
       joint_spec.Type() == sdf::JointType::BALL);
 
-  // Axis specification.
+  // If the axis is missing, we'll rely on ExtractJointAxis to tell the user.
+  // For our purposes in this function, it's OK to just bail and return zero.
   const sdf::JointAxis* axis = joint_spec.Axis();
   if (axis == nullptr) {
-    throw std::runtime_error(
-        "An axis must be specified for joint '" + joint_spec.Name() + "'");
+    return 0.0;
   }
   const double damping = axis->Damping();
   if (damping < 0) {
-    throw std::runtime_error(
-        "Joint damping is negative for joint '" + joint_spec.Name() + "'. "
-            "Joint damping must be a non-negative number.");
+    diagnostic.Error(fmt::format(
+        "Joint damping is negative for joint '{}'. "
+        "Joint damping must be a non-negative number.",
+        joint_spec.Name()));
+    return 0.0;
   }
   return damping;
 }
 
+// We interpret a value of exactly zero to specify un-actuated joints. Thus, the
+// user would say <effort>0</effort>. The effort_limit should be non-negative.
+// Negative effort will be treated as infinity as specified by SDFormat.
+double GetEffortLimit(
+    const DiagnosticPolicy& diagnostic,
+    const sdf::Joint& joint_spec, int axis_index) {
+  DRAKE_DEMAND(axis_index == 0 || axis_index == 1);
+  const sdf::JointAxis* axis = joint_spec.Axis(axis_index);
+  if (axis == nullptr) {
+    diagnostic.Warning(fmt::format(
+        "An axis{} must be specified for joint '{}'",
+        axis_index > 0 ? "2" : "",
+        joint_spec.Name()));
+    return 0.0;
+  }
+  return axis->Effort() < 0
+      ? std::numeric_limits<double>::infinity()
+      : axis->Effort();
+}
+
 // Extracts the effort limit from a joint specification and adds an actuator if
-// the value is non-zero. In SDF, effort limits are specified in
+// the value is non-zero. In SDFormat, effort limits are specified in
 // <joint><axis><limit><effort>. In Drake, we understand that joints with an
-// effort limit of zero are not actuated.
-// Only available for "revolute" and "prismatic" joints.
+// effort limit of zero are not actuated. For joint types that do not have an
+// actuator implementation available in Drake, produces a dianostic warning.
 void AddJointActuatorFromSpecification(
-    const sdf::Joint &joint_spec, const Joint<double>& joint,
+    const DiagnosticPolicy& diagnostic,
+    const sdf::Joint& joint_spec, const Joint<double>& joint,
     MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
-  DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE ||
-      joint_spec.Type() == sdf::JointType::PRISMATIC);
+  DRAKE_DEMAND(
+      joint_spec.Type() == sdf::JointType::BALL ||
+      joint_spec.Type() == sdf::JointType::UNIVERSAL ||
+      joint_spec.Type() == sdf::JointType::PRISMATIC ||
+      joint_spec.Type() == sdf::JointType::REVOLUTE);
 
-  // Axis specification.
-  const sdf::JointAxis* axis = joint_spec.Axis();
-  if (axis == nullptr) {
-    throw std::runtime_error(
-        "An axis must be specified for joint '" + joint_spec.Name() + "'");
+  // Ball joints cannot specify an axis (nor actuation) per SDFormat. However,
+  // Drake still permits the first axis in order to specify damping, but it
+  // should not have actuation, nor should there be a second axis.
+  if (joint_spec.Type() == sdf::JointType::BALL) {
+    if (joint_spec.Axis(0) != nullptr) {
+      if (GetEffortLimit(diagnostic, joint_spec, 0) != 0) {
+        diagnostic.Warning(fmt::format(
+            "Actuation (via non-zero effort limits) for ball joint '{}' is"
+            " not implemented yet and will be ignored.",
+            joint_spec.Name()));
+      }
+    }
+    if (joint_spec.Axis(1) != nullptr) {
+      diagnostic.Warning(fmt::format(
+          "An axis2 may not specified for ball joint '{}' and will be ignored",
+          joint_spec.Name()));
+    }
+    return;
   }
 
-  // The effort_limit should always be non-negative. Negative effort will be
-  // treated as infinity as specified by the sdf standard.
-  const double effort_limit = axis->Effort() < 0
-                                  ? std::numeric_limits<double>::infinity()
-                                  : axis->Effort();
+  // Universal joints should have both axes defined per SDFormat, but Drake
+  // does not yet implement a 2-dof actuator for this joint type.
+  if (joint_spec.Type() == sdf::JointType::UNIVERSAL) {
+    if (GetEffortLimit(diagnostic, joint_spec, 0) != 0 ||
+        GetEffortLimit(diagnostic, joint_spec, 1) != 0) {
+      diagnostic.Warning(fmt::format(
+          "Actuation (via non-zero effort limits) for universal joint '{}' is"
+          " not implemented yet and will be ignored.",
+          joint_spec.Name()));
+    }
+    return;
+  }
 
-  // In Drake we interpret a value of exactly zero
-  // as a way to specify un-actuated joints. Thus, the user would say
-  // <effort>0</effort> for un-actuated joints.
+  // Prismatic and revolute joints have a single axis.
+  const double effort_limit = GetEffortLimit(diagnostic, joint_spec, 0);
   if (effort_limit != 0) {
     const JointActuator<double>& actuator =
         plant->AddJointActuator(joint_spec.Name(), joint, effort_limit);
@@ -402,6 +449,11 @@ void AddJointActuatorFromSpecification(
           .set_default_gear_ratio(
               joint_spec.Element()->Get<double>("drake:gear_ratio"));
     }
+  }
+  if (joint_spec.Axis(1) != nullptr) {
+    diagnostic.Warning(fmt::format(
+        "An axis2 may not specified for 1-dof joint '{}' and will be ignored",
+        joint_spec.Name()));
   }
 }
 
@@ -523,6 +575,7 @@ void AddJointFromSpecification(
 
   const std::set<std::string> supported_joint_elements{
     "axis",
+    "axis2",
     "child",
     "drake:rotor_inertia",
     "drake:gear_ratio",
@@ -582,7 +635,7 @@ void AddJointFromSpecification(
       break;
     }
     case sdf::JointType::PRISMATIC: {
-      const double damping = ParseJointDamping(joint_spec);
+      const double damping = ParseJointDamping(diagnostic, joint_spec);
       Vector3d axis_J = ExtractJointAxis(diagnostic, model_spec, joint_spec);
       std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
           ParseJointLimits(diagnostic, joint_spec);
@@ -594,11 +647,11 @@ void AddJointFromSpecification(
           Vector1d(-velocity_limit), Vector1d(velocity_limit));
       plant->get_mutable_joint(joint.index()).set_acceleration_limits(
           Vector1d(-acceleration_limit), Vector1d(acceleration_limit));
-      AddJointActuatorFromSpecification(joint_spec, joint, plant);
+      AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
       break;
     }
     case sdf::JointType::REVOLUTE: {
-      const double damping = ParseJointDamping(joint_spec);
+      const double damping = ParseJointDamping(diagnostic, joint_spec);
       Vector3d axis_J = ExtractJointAxis(diagnostic, model_spec, joint_spec);
       std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
           ParseJointLimits(diagnostic, joint_spec);
@@ -610,24 +663,28 @@ void AddJointFromSpecification(
           Vector1d(-velocity_limit), Vector1d(velocity_limit));
       plant->get_mutable_joint(joint.index()).set_acceleration_limits(
           Vector1d(-acceleration_limit), Vector1d(acceleration_limit));
-      AddJointActuatorFromSpecification(joint_spec, joint, plant);
+      AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
       AddRevoluteSpringFromSpecification(joint_spec, joint, plant);
       break;
     }
     case sdf::JointType::UNIVERSAL: {
-      const double damping = ParseJointDamping(joint_spec);
-      plant->AddJoint<UniversalJoint>(
-        joint_spec.Name(),
-        parent_body, X_PJ,
-        child_body, X_CJ, damping);
+      const double damping = ParseJointDamping(diagnostic, joint_spec);
+      const auto& joint = plant->AddJoint<UniversalJoint>(
+          joint_spec.Name(),
+          parent_body, X_PJ,
+          child_body, X_CJ, damping);
+      // At most, this prints a warning (it does not add an actuator).
+      AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
       break;
     }
     case sdf::JointType::BALL: {
-      const double damping = ParseJointDamping(joint_spec);
-      plant->AddJoint<BallRpyJoint>(
+      const double damping = ParseJointDamping(diagnostic, joint_spec);
+      const auto& joint = plant->AddJoint<BallRpyJoint>(
         joint_spec.Name(),
         parent_body, X_PJ,
         child_body, X_CJ, damping);
+      // At most, this prints a warning (it does not add an actuator).
+      AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
       break;
     }
     case sdf::JointType::CONTINUOUS: {

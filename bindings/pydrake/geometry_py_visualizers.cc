@@ -78,13 +78,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
   {
     using Class = MeshcatPointCloudVisualizer<T>;
     constexpr auto& cls_doc = doc.MeshcatPointCloudVisualizer;
-    auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(m,
-        "MeshcatPointCloudVisualizerCpp", param,
-        (std::string(cls_doc.doc) + R"""(
-Note that we are temporarily re-mapping MeshcatPointCloudVisualizer =>
-MeshcatPointCloudVisualizerCpp to avoid collisions with the python
-MeshcatPointCloudVisualizer.  See #13038.)""")
-            .c_str());
+    auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(
+        m, "MeshcatPointCloudVisualizer", param, cls_doc.doc);
     cls  // BR
         .def(py::init<std::shared_ptr<Meshcat>, std::string, double>(),
             py::arg("meshcat"), py::arg("path"),
@@ -106,13 +101,8 @@ MeshcatPointCloudVisualizer.  See #13038.)""")
   {
     using Class = MeshcatVisualizer<T>;
     constexpr auto& cls_doc = doc.MeshcatVisualizer;
-    auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(m,
-        "MeshcatVisualizerCpp", param,
-        (std::string(cls_doc.doc) + R"""(
-Note that we are temporarily re-mapping MeshcatVisualizer =>
-MeshcatVisualizerCpp to avoid collisions with the python
-MeshcatVisualizer.  See #13038.)""")
-            .c_str());
+    auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(
+        m, "MeshcatVisualizer", param, cls_doc.doc);
     cls  // BR
         .def(py::init<std::shared_ptr<Meshcat>, MeshcatVisualizerParams>(),
             py::arg("meshcat"), py::arg("params") = MeshcatVisualizerParams{},

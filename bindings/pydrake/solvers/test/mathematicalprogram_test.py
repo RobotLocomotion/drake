@@ -571,6 +571,13 @@ class TestMathematicalProgram(unittest.TestCase):
         np.testing.assert_array_equal(
             dut.get_sparse_A().todense(), A_sparse.todense())
 
+        dut.UpdateCoefficients(
+            new_A=np.array([[1E-10, 0, 0], [0, 1, 1]]),
+            new_lb=np.array([2, 3]), new_ub=np.array([3, 4]))
+        dut.RemoveTinyCoefficient(tol=1E-5)
+        np.testing.assert_array_equal(
+            dut.GetDenseA(), np.array([[0, 0, 0], [0, 1, 1]]))
+
     def test_linear_equality_constraint(self):
         Aeq = np.array([[2, 3.], [1., 2.], [3, 4]])
         beq = np.array([1., 2., 3.])

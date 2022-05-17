@@ -21,7 +21,6 @@
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 #include "drake/solvers/solver_type_converter.h"
-#include "drake/systems/trajectory_optimization/multiple_shooting.h"
 
 using Eigen::Dynamic;
 using std::string;
@@ -1684,6 +1683,8 @@ void BindEvaluatorsAndBindings(py::module m) {
           },
           py::arg("new_A"), py::arg("new_lb"), py::arg("new_ub"),
           doc.LinearConstraint.UpdateCoefficients.doc_sparse_A)
+      .def("RemoveTinyCoefficient", &LinearConstraint::RemoveTinyCoefficient,
+          py::arg("tol"), doc.LinearConstraint.RemoveTinyCoefficient.doc)
       .def(
           "UpdateLowerBound",
           [](LinearConstraint& self, const Eigen::VectorXd& new_lb) {

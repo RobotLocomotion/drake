@@ -73,22 +73,6 @@ void CompliantContactManager<T>::DeclareCacheEntries() {
   cache_indexes_.discrete_contact_pairs =
       discrete_contact_pairs_cache_entry.cache_index();
 
-  // Due to issue #12786, we cannot mark
-  // CacheIndexes::non_contact_forces_accelerations dependent on the
-  // MultibodyPlant's inputs, as it should. However if we remove this
-  // dependency, we run the risk of having an undetected algebraic loop. We use
-  // this cache entry to signal when the computation of non-contact forces is in
-  // progress so that we can detect an algebraic loop.
-  const auto& non_contact_forces_evaluation_in_progress =
-      this->DeclareCacheEntry(
-          "Evaluation of non-contact forces and accelerations is in progress.",
-          // N.B. This flag is set to true only when the computation is in
-          // progress. Therefore its default value is `false`.
-          systems::ValueProducer(false, &systems::ValueProducer::NoopCalc),
-          {systems::System<T>::nothing_ticket()});
-  cache_indexes_.non_contact_forces_evaluation_in_progress =
-      non_contact_forces_evaluation_in_progress.cache_index();
-
   // Accelerations due to non-contact forces.
   // We cache non-contact forces, ABA forces and accelerations into a
   // AccelerationsDueToExternalForcesCache.
@@ -514,38 +498,8 @@ void CompliantContactManager<T>::CalcAccelerationsDueToNonContactForcesCache(
     const systems::Context<T>& context,
     AccelerationsDueToExternalForcesCache<T>* forward_dynamics_cache)
     const {
-  // To overcame issue #12786, we use this additional cache entry
-  // to detect algebraic loops.
-  systems::CacheEntryValue& value =
-      plant()
-          .get_cache_entry(
-              cache_indexes_.non_contact_forces_evaluation_in_progress)
-          .get_mutable_cache_entry_value(context);
-  bool& evaluation_in_progress = value.GetMutableValueOrThrow<bool>();
-  if (evaluation_in_progress) {
-    const char* error_message =
-        "Algebraic loop detected. This situation is caused when connecting the "
-        "input of your MultibodyPlant to the output of a feedback system which "
-        "is an algebraic function of a feedthrough output of the plant. Ways "
-        "to remedy this: 1. Revisit the model for your feedback system. "
-        "Consider if its output can be written in terms of other inputs. 2. "
-        "Break the algebraic loop by adding state to the controller, typically "
-        "to 'remember' a previous input. 3. Break the algebraic loop by adding "
-        "a zero-order hold system between the output of the plant and your "
-        "feedback system. This effectively delays the input signal to the "
-        "controller.";
-    throw std::runtime_error(error_message);
-  }
-  // Mark the start of the computation. If within an algebraic
-  // loop, pulling from the plant's input ports during the
-  // computation will trigger the recursive evaluation of this
-  // method and the exception above will be thrown.
-  evaluation_in_progress = true;
-  // If the exception above is triggered, we will leave this method and the
-  // computation will no longer be "in progress". We use a scoped guard so that
-  // we have a chance to mark it as such when we leave this scope.
-  ScopeExit guard(
-      [&evaluation_in_progress]() { evaluation_in_progress = false; });
+  DRAKE_DEMAND(forward_dynamics_cache != nullptr);
+  ScopeExit guard = this->ThrowIfNonContactForceInProgress(context);
 
   // N.B. Joint limits are modeled as constraints. Therefore here we only add
   // all other external forces.
@@ -596,9 +550,6 @@ void CompliantContactManager<T>::CalcAccelerationsDueToNonContactForcesCache(
   this->internal_tree().CalcArticulatedBodyAccelerations(
       context, forward_dynamics_cache->abic, forward_dynamics_cache->aba_forces,
       &forward_dynamics_cache->ac);
-
-  // Mark the end of the computation.
-  evaluation_in_progress = false;
 }
 
 template <typename T>
