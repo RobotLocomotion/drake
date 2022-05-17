@@ -53,24 +53,21 @@ class HPolyhedron final : public ConvexSet {
   using ConvexSet::IsBounded;
 
   /** Returns true iff this HPolyhedron is entirely contained in the HPolyhedron
-   other. This is done by checking whether every inequality in @p other is
-   redundant when added to this.
-   */
-  bool ContainedIn(const HPolyhedron& other) const;
+  other. This is done by checking whether every inequality in @p other is
+  redundant when added to this. */
+  bool Contains(const HPolyhedron& other) const;
 
   /** Constructs the intersection of two HPolyhedron by adding the rows of
-   inequalities from @p other. If @p check_for_redundancy is true
-   then only adds the rows of @p other to this HPolyhedron if the inequality
-   is not implied by the inequalities from this HPolyhedron.
-   */
+  inequalities from @p other. If @p check_for_redundancy is true
+  then only adds the rows of @p other to this HPolyhedron if the inequality
+  is not implied by the inequalities from this HPolyhedron. */
   HPolyhedron Intersection(const HPolyhedron& other,
                            bool check_for_redundancy = false) const;
 
   /** Reduces some (not necessarily all) redundant inequalities in the
-   HPolyhedron.  This is not guaranteed to give the minimal representation of
-   the polyhedron but is a relatively fast way to reduce the number of
-   inequalities
-   */
+  HPolyhedron.  This is not guaranteed to give the minimal representation of
+  the polyhedron but is a relatively fast way to reduce the number of
+  inequalities. */
   HPolyhedron ReduceInequalities() const;
 
   /** Solves a semi-definite program to compute the inscribed ellipsoid.
@@ -122,10 +119,10 @@ class HPolyhedron final : public ConvexSet {
   HPolyhedron CartesianPower(int n) const;
 
   /** Returns the Pontryagin (Minkowski) Difference of `this` and `other`.
-   This is the set A ⊖ B = { a|a+ B ⊆ A }. The result is an HPolyhedron with the
-   same number of inequalities as A. Requires that `this` and `other` both
-   be bounded and have the same ambient dimension. This method may throw a
-   runtime error if `this` or `other` are ill-conditioned.*/
+  This is the set A ⊖ B = { a|a+ B ⊆ A }. The result is an HPolyhedron with the
+  same number of inequalities as A. Requires that `this` and `other` both
+  be bounded and have the same ambient dimension. This method may throw a
+  runtime error if `this` or `other` are ill-conditioned. */
   HPolyhedron PontryaginDifference(const HPolyhedron& other) const;
 
   /** Constructs a polyhedron as an axis-aligned box from the lower and upper

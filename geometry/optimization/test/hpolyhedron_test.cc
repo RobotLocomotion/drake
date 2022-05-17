@@ -449,11 +449,11 @@ GTEST_TEST(HPolyhedronTest, AxisAlignedContainment) {
   HPolyhedron inner =
       HPolyhedron::MakeBox(scale * lower_limit, scale * upper_limit);
 
-  EXPECT_TRUE(inner.ContainedIn(outer));
-  EXPECT_FALSE(outer.ContainedIn(inner));
+  EXPECT_TRUE(inner.Contains(outer));
+  EXPECT_FALSE(outer.Contains(inner));
 }
 
-GTEST_TEST(HPolyhedronTest, L1BallContainedInInfinityBall3D) {
+GTEST_TEST(HPolyhedronTest, L1BallContainsInfinityBall3D) {
   Eigen::MatrixXd A_L1(8, 3);
   Eigen::VectorXd b_L1 = Eigen::VectorXd::Ones(8);
   // clang-format off
@@ -470,8 +470,8 @@ GTEST_TEST(HPolyhedronTest, L1BallContainedInInfinityBall3D) {
 
   HPolyhedron Linfty_ball = HPolyhedron::MakeUnitBox(3);
 
-  EXPECT_TRUE(L1_ball.ContainedIn(Linfty_ball));
-  EXPECT_FALSE(Linfty_ball.ContainedIn(L1_ball));
+  EXPECT_TRUE(L1_ball.Contains(Linfty_ball));
+  EXPECT_FALSE(Linfty_ball.Contains(L1_ball));
 }
 
 GTEST_TEST(HPolyhedronTest, L1BallIrredundantIntersectionInfinityBall3D) {
@@ -541,7 +541,7 @@ GTEST_TEST(HPolyhedronTest, OffsetIrredundantBoxes) {
 }
 
 GTEST_TEST(HPolyhedronTest,
-           IrredundantBallIntersectionContainedInBothOriginal) {
+           IrredundantBallIntersectionContainsBothOriginal) {
   Eigen::MatrixXd A_L1(8, 3);
   Eigen::VectorXd b_L1 = Eigen::VectorXd::Ones(8);
   // clang-format off
@@ -564,10 +564,10 @@ GTEST_TEST(HPolyhedronTest,
   HPolyhedron IrredL1intoLinf = Linfty_ball.Intersection(L1_ball, true);
   HPolyhedron IrredLinfintoL1 = L1_ball.Intersection(Linfty_ball, true);
 
-  EXPECT_TRUE(IrredL1intoLinf.ContainedIn(L1_ball));
-  EXPECT_TRUE(IrredL1intoLinf.ContainedIn(Linfty_ball));
-  EXPECT_TRUE(IrredLinfintoL1.ContainedIn(L1_ball));
-  EXPECT_TRUE(IrredLinfintoL1.ContainedIn(Linfty_ball));
+  EXPECT_TRUE(IrredL1intoLinf.Contains(L1_ball));
+  EXPECT_TRUE(IrredL1intoLinf.Contains(Linfty_ball));
+  EXPECT_TRUE(IrredLinfintoL1.Contains(L1_ball));
+  EXPECT_TRUE(IrredLinfintoL1.Contains(Linfty_ball));
 }
 
 GTEST_TEST(HPolyhedronTest, ReduceL1LInfBallIntersection) {

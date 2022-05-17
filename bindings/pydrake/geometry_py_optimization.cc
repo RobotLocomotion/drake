@@ -118,8 +118,8 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("reference_frame") = std::nullopt, cls_doc.ctor.doc_3args)
         .def("A", &HPolyhedron::A, cls_doc.A.doc)
         .def("b", &HPolyhedron::b, cls_doc.b.doc)
-        .def("ContainedIn", &HPolyhedron::ContainedIn, py::arg("other"),
-            cls_doc.ContainedIn.doc)
+        .def("Contains", &HPolyhedron::Contains, py::arg("other"),
+            cls_doc.Contains.doc)
         .def("Intersection", &HPolyhedron::Intersection, py::arg("other"),
             py::arg("check_for_redundancy") = false, cls_doc.Intersection.doc)
         .def("ReduceInequalities", &HPolyhedron::ReduceInequalities,

@@ -32,30 +32,27 @@ using symbolic::Variable;
 namespace {
 const double kInf = std::numeric_limits<double>::infinity();
 
+bool IsInfeasible(const MathematicalProgram& prog) {
+  // Turn off Gurobi DualReduction to ensure that infeasible problems always
+  // return solvers::SolutionResult::kInfeasibleConstraints rather than
+  // SolutionResult::kInfeasibleOrUnbounded.
+  solvers::SolverOptions solver_options;
+  solver_options.SetOption(solvers::GurobiSolver::id(), "DualReductions", 0);
+  auto result = solvers::Solve(prog, std::nullopt, solver_options);
+  return result.get_solution_result() ==
+         solvers::SolutionResult::kInfeasibleConstraints;
+}
+
 // Checks if Ax ≤ b defines an empty set
 bool IsEmpty(const Eigen::Ref<const MatrixXd>& A,
              const Eigen::Ref<const VectorXd>& b) {
   solvers::MathematicalProgram prog;
-  // Turn off Gurobi DualReduction to ensure that infeasible problems always
-  // return solvers::SolutionResult::kInfeasibleConstraints rather than
-  // SolutionResult::kInfeasibleOrUnbounded.
-  prog.SetSolverOption(solvers::GurobiSolver::id(), "DualReductions", 0);
-
   solvers::VectorXDecisionVariable x =
       prog.NewContinuousVariables(A.cols(), "x");
   prog.AddLinearConstraint(A, VectorXd::Constant(b.rows(), -kInf), b, x);
-  auto result = solvers::Solve(prog);
-  return result.get_solution_result() ==
-         solvers::SolutionResult::kInfeasibleConstraints;
+  return IsInfeasible(prog);
 }
 
-bool IsEmpty(solvers::MathematicalProgram* prog) {
-  solvers::SolverOptions solver_options;
-  solver_options.SetOption(solvers::GurobiSolver::id(), "DualReductions", 0);
-  auto result = solvers::Solve(*prog, std::nullopt, solver_options);
-  return result.get_solution_result() ==
-         solvers::SolutionResult::kInfeasibleConstraints;
-}
 
 /* Checks whether the constraint cᵀ x ≤ d is already implied by the linear
  constraints in prog. This is done by solving a small linear program
@@ -81,7 +78,7 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
   if (!already_checked_feasibility) {
     // Constraints of prog define an empty set therefore any constraint is
     // redundant.
-    if (IsEmpty(prog)) {
+    if (IsInfeasible(*prog)) {
       return true;
     }
   }
@@ -113,7 +110,7 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
 
   // If -result.get_optimal_cost() > other.b()(i) then the inequality is
   // irredundant. Without this constant
-  // IrredundantBallIntersectionContainedInBothOriginal fails.
+  // IrredundantBallIntersectionContainsBothOriginal fails.
   return !(PolyhedronIsEmpty || -result.get_optimal_cost() > d + 1E-9);
 }
 
@@ -277,7 +274,7 @@ bool HPolyhedron::DoIsBounded() const {
   return result.is_success();
 }
 
-bool HPolyhedron::ContainedIn(const HPolyhedron& other) const {
+bool HPolyhedron::Contains(const HPolyhedron& other) const {
   DRAKE_DEMAND(other.A().cols() == A_.cols());
   // `this` defines an empty set and therefore is contained in any `other`
   // HPolyhedron.
@@ -290,7 +287,6 @@ bool HPolyhedron::ContainedIn(const HPolyhedron& other) const {
       prog.NewContinuousVariables(A_.cols(), "x");
   prog.AddLinearConstraint(A_, VectorXd::Constant(b_.rows(), -kInf), b_,
                            x);
-  auto result = solvers::Solve(prog);
 
   Binding<solvers::LinearConstraint> redundant_constraint_binding =
       prog.AddLinearConstraint(other.A().row(0),
@@ -300,8 +296,8 @@ bool HPolyhedron::ContainedIn(const HPolyhedron& other) const {
       prog.AddLinearCost(-other.A().row(0), 0, x);
 
   for (int i = 0; i < other.A().rows(); i++) {
-    // If any of the constraints of `other` are irredundant then `other` is
-    // not contained in this.
+    // If any of the constraints of `other` are irredundant then `this` is
+    // not contained in `other`.
     if (!IsRedundant(other.A().row(i), other.b()(i), &prog,
                      &redundant_constraint_binding, &program_cost_binding,
                      true)) {
@@ -419,7 +415,7 @@ HPolyhedron HPolyhedron::ReduceInequalities() const {
   for (const int ind : kept_indices) {
     A_new.row(i) = A_.row(ind);
     b_new.row(i) = b_.row(ind);
-    i++;
+    ++i;
   }
   return {A_new, b_new};
 }

@@ -100,7 +100,8 @@ class TestGeometryOptimization(unittest.TestCase):
 
         h_half_box = mut.HPolyhedron.MakeBox(
             lb=[-0.5, -0.5, -0.5], ub=[0.5, 0.5, 0.5])
-        self.assertTrue(h_half_box.ContainedIn(h_unit_box))
+        self.assertTrue(h_half_box.Contains
+                        (h_unit_box))
         h_half_box2 = h_half_box.Intersection(other=h_unit_box,
                                               check_for_redundancy=True)
         self.assertIsInstance(h_half_box2, mut.HPolyhedron)
@@ -119,7 +120,7 @@ class TestGeometryOptimization(unittest.TestCase):
 
         h_half_box = mut.HPolyhedron.MakeBox(
             lb=[-0.5, -0.5, -0.5], ub=[0.5, 0.5, 0.5])
-        self.assertTrue(h_half_box.ContainedIn(h_unit_box))
+        self.assertTrue(h_half_box.Contains(h_unit_box))
         h_half_box2 = h_half_box.Intersection(other=h_unit_box,
                                               check_for_redundancy=True)
         self.assertIsInstance(h_half_box2, mut.HPolyhedron)
