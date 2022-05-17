@@ -1670,7 +1670,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
                                  geometry::internal::kHcDissipation,
                                  sphere2_dissipation);
   const RigidBody<double>& sphere2 =
-      plant.AddRigidBody("Sphere2", spatial_inertia);
+      plant.AddRigidBody("Sphere2", SpatialInertia<double>::MakeTestCube());
   GeometryId sphere2_id = plant.RegisterCollisionGeometry(
       sphere2, RigidTransformd::Identity(), geometry::Sphere(radius),
       "collision", std::move(sphere2_properties));
@@ -1807,7 +1807,7 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
       "visual", sphere1_diffuse);
   EXPECT_EQ(render_engine.num_registered(), 2);
   const RigidBody<double>& sphere2 =
-      plant.AddRigidBody("Sphere2", spatial_inertia);
+      plant.AddRigidBody("Sphere2", SpatialInertia<double>::MakeTestCube());
   IllustrationProperties sphere2_props;
   const Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
   sphere2_props.AddProperty("phong", "diffuse", sphere2_diffuse);
