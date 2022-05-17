@@ -59,11 +59,9 @@ class JointLockingTest : public ::testing::TestWithParam<int> {
 
  private:
   void AddFloatingPendulum() {
-    // To avoid unnecessary warnings/errors, create non-zero spatial inertia.
-    const SpatialInertia<double> spatial_inertia = SpatialInertia<double>::
-      MakeTestSpatialInertia(/* mass = */ 5.0, /* length = */ 2.0);
-    plant_->AddRigidBody("body1", spatial_inertia);
-    plant_->AddRigidBody("body2", spatial_inertia);
+    // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
+    plant_->AddRigidBody("body1", SpatialInertia<double>::MakeTestCube());
+    plant_->AddRigidBody("body2", SpatialInertia<double>::MakeTestCube());
 
     std::unique_ptr<RevoluteJoint<double>> body1_body2 =
         std::make_unique<RevoluteJoint<double>>(
@@ -74,11 +72,9 @@ class JointLockingTest : public ::testing::TestWithParam<int> {
   }
 
   void AddDoublePendulum() {
-    // To avoid unnecessary warnings/errors, create non-zero spatial inertia.
-    const SpatialInertia<double> spatial_inertia = SpatialInertia<double>::
-      MakeTestSpatialInertia(/* mass = */ 5.0, /* length = */ 2.0);
-    plant_->AddRigidBody("body3", spatial_inertia);
-    plant_->AddRigidBody("body4", spatial_inertia);
+    // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
+    plant_->AddRigidBody("body3", SpatialInertia<double>::MakeTestCube());
+    plant_->AddRigidBody("body4", SpatialInertia<double>::MakeTestCube());
 
     std::unique_ptr<RevoluteJoint<double>> world_body3 =
         std::make_unique<RevoluteJoint<double>>(

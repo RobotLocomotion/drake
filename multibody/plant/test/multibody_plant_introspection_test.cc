@@ -148,10 +148,9 @@ GTEST_TEST(MultibodyPlantIntrospection, NonUniqueBaseBody) {
   MultibodyPlant<double> plant(0.0);
   // Add two objects to the same (default) model instance and let one of them be
   // free.
-  // To avoid unnecessary warnings/errors, create non-zero spatial inertia.
-  const SpatialInertia<double> spatial_inertia = SpatialInertia<double>::
-      MakeTestSpatialInertia(/* mass = */ 5.0, /* length = */ 2.0);
-  plant.AddRigidBody("free_body", default_model_instance(), spatial_inertia);
+  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
+  plant.AddRigidBody("free_body", default_model_instance(),
+      SpatialInertia<double>::MakeTestCube());
   const Body<double>& fixed_body = plant.AddRigidBody(
       "fixed_body", default_model_instance(), SpatialInertia<double>());
   plant.WeldFrames(plant.world_frame(), fixed_body.body_frame());

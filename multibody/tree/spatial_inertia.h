@@ -120,16 +120,19 @@ class SpatialInertia {
   }
 
   /// (Internal use only) Creates a spatial inertia for a uniform-density cube B
-  /// with a given mass and length.
+  /// about Bo (B's origin point) with a given mass and length.
   /// @param[in] mass The mass of the cube.
-  /// @param[in] length The cube's length (or width or depth).
-  /// @retval M_BBo_B Cube B's spatial inertia about Bo, expressed in terms of
-  /// unit vectors Bx, By, Bz, each which are parallel to sides of the cube.
-  /// The position vector from Bo (B's origin) to Bcm (B's center of mass) is
-  /// p_BoBcm_B = length/2 Bx.
+  /// @param[in] length The length (or width or depth) of the cube.
+  /// @retval M_BBo_B Cube B's spatial inertia about point Bo (B's origin),
+  /// expressed in terms of unit vectors Bx, By, Bz, each of which are parallel
+  /// to sides of the cube. Point Bo is the centroid of the face of the cube
+  /// whose outward normal is -Bx. The position vector from Bo to Bcm (B's
+  /// center of mass) is p_BoBcm_B = length/2 Bx.
   /// @throws std::exception if the spatial inertia is invalid, which happens
-  /// if the mass or length is negative.
-  static SpatialInertia MakeTestSpatialInertia(const T& mass, const T& length) {
+  /// if mass is negative or length is negative.
+  /// @note The default parameters mass = 2 and length = 3 correspond to a mass
+  /// moment of inertia of 3 for any line that pass through Bcm.
+  static SpatialInertia MakeTestCube(T mass = T(2), T length = T(3)) {
     const UnitInertia<T> G_BBcm_B = UnitInertia<T>::SolidCube(length);
     const Vector3<T> p_BoBcm_B(length/2, 0, 0);  // Position from Bo to Bcm.
     const UnitInertia<T> G_BBo_B = G_BBcm_B.ShiftFromCenterOfMass(-p_BoBcm_B);

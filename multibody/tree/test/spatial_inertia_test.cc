@@ -55,12 +55,12 @@ GTEST_TEST(SpatialInertia, DefaultConstructor) {
   ASSERT_TRUE(I.IsNaN());
 }
 
-GTEST_TEST(SpatialInertia, MakeTestSpatialInertia) {
+GTEST_TEST(SpatialInertia, MakeTestCubeSpatialInertia) {
   // Drake allows a spatial inertia to have zero mass and/or zero inertia.
   const double mass_0 = 0.0;
   const double length_0 = 0.0;
   const SpatialInertia<double> M0 =
-      SpatialInertia<double>::MakeTestSpatialInertia(mass_0, length_0);
+      SpatialInertia<double>::MakeTestCube(mass_0, length_0);
   EXPECT_TRUE(M0.IsPhysicallyValid());
   EXPECT_EQ(M0.get_mass(), mass_0);
   EXPECT_EQ(M0.get_com(), Vector3<double>::Zero());
@@ -72,7 +72,7 @@ GTEST_TEST(SpatialInertia, MakeTestSpatialInertia) {
   const double mass_1 = 1.0;
   const double length_2 = 2.0;
   const SpatialInertia<double> M1 =
-      SpatialInertia<double>::MakeTestSpatialInertia(mass_1, length_2);
+      SpatialInertia<double>::MakeTestCube(mass_1, length_2);
   EXPECT_TRUE(M1.IsPhysicallyValid());
   EXPECT_EQ(M1.get_mass(), mass_1);
   EXPECT_TRUE(CompareMatrices(
@@ -85,12 +85,28 @@ GTEST_TEST(SpatialInertia, MakeTestSpatialInertia) {
       M1_unit_moments, Vector3<double>(I1, J1, J1), kEpsilon));
   EXPECT_EQ(M1_unit_products, Vector3<double>::Zero());
 
+  // Test default mass and length parameters for MakeTestCube().
+  const double default_mass = 2;
+  const double default_length = 3;
+  const SpatialInertia<double> M2 = SpatialInertia<double>::MakeTestCube();
+  EXPECT_TRUE(M2.IsPhysicallyValid());
+  EXPECT_EQ(M2.get_mass(), default_mass);
+  EXPECT_TRUE(CompareMatrices(
+      M2.get_com(), Vector3<double>(default_length / 2, 0, 0), kEpsilon));
+  const Vector3<double> M2_unit_moments = M2.get_unit_inertia().get_moments();
+  const Vector3<double> M2_unit_products = M2.get_unit_inertia().get_products();
+  const double I2 = default_length * default_length / 6.0;
+  const double J2 = I2 + (default_length / 2)* (default_length / 2);
+  EXPECT_TRUE(CompareMatrices(
+      M2_unit_moments, Vector3<double>(I2, J2, J2), kEpsilon));
+  EXPECT_EQ(M2_unit_products, Vector3<double>::Zero());
+
   // Ensure an exception is thrown if a mass or length is negative.
-  EXPECT_THROW(SpatialInertia<double>::MakeTestSpatialInertia(
+  EXPECT_THROW(SpatialInertia<double>::MakeTestCube(
       -mass_1, length_2), std::exception);
   const std::string expected_msg = "A length argument to "
                                    "UnitInertia::SolidBox\\(\\) is negative.";
-  DRAKE_EXPECT_THROWS_MESSAGE(SpatialInertia<double>::MakeTestSpatialInertia(
+  DRAKE_EXPECT_THROWS_MESSAGE(SpatialInertia<double>::MakeTestCube(
       mass_1, -length_2), expected_msg);
 }
 
