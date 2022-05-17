@@ -15,8 +15,11 @@ drake_cc_googlebench_binary(
         "//manipulation/models/iiwa_description:models",
     ],
     deps = [
+        "//common:find_resource",
         "//multibody/inverse_kinematics",
         "//multibody/parsing",
+        "//solvers:mathematical_program_result",
+        "//solvers:solve",
         "//tools/performance:fixture_common",
     ],
 )
