@@ -382,13 +382,22 @@ class SceneGraphInspector {
   const PerceptionProperties* GetPerceptionProperties(
       GeometryId geometry_id) const;
 
-  /** Returns a the reference mesh of the geometry with the given `geometry_id`.
+  /** Returns the reference mesh of the geometry with the given `geometry_id`.
    @param geometry_id   The identifier for the queried geometry.
    @return A pointer to the reference mesh of the geometry if the geometry is
            deformable, or `nullptr` if the geometry is rigid.
    @throws std::exception if `geometry_id` does not map to a registered
            geometry.  */
   const VolumeMesh<double>* GetReferenceMesh(GeometryId geometry_id) const;
+
+  /** Returns true if the geometry with the given `geometry_id` is deformable.
+   @param geometry_id   The identifier for the queried geometry.
+   @throws std::exception if `geometry_id` does not map to a registered
+           geometry.  */
+  bool IsDeformableGeometry(GeometryId geometry_id) const;
+
+  /** Returns all geometry ids that correspond to deformable geometries. */
+  std::vector<GeometryId> GetAllDeformableGeometryIds() const;
 
   /** Reports true if the two geometries with given ids `geometry_id1` and
    `geometry_id2`, define a collision pair that has been filtered out.
