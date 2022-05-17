@@ -263,11 +263,11 @@ instructions to obtain a username and password.
 4. Run ``git clone --filter=blob:none https://github.com/RobotLocomotion/drake.git``
 5. Run ``cd drake``
 6. Run ``git checkout v1.N.0``
-7. Run ``cd tools/wheel``
-8. To remove any cached images:
+7. To remove any cached images:
    1. Run ``docker rmi $(docker image ls --filter=reference='pip-drake:*' -q)``
    1. Run ``docker builder prune -f``
-9. Run ``./build-wheels --test 1.N.0``
+8. Run ``./setup/ubuntu/source_distribution/install_prereqs_user_environment.sh``
+9. Run ``bazel run //tools/wheel:builder -- --output-dir=${PWD} --test 1.N.0``
 10. Wait a long time for it to finish (around 30 minutes on a beefy workstation). It will take over all of your computer's resources, so don't plan to do much else concurrently.
 11. There should have been exactly two whl files created. Run ``twine upload <...>``, replacing the ``<...>`` placeholder with the path to each of the wheels to be uploaded (e.g., ``drake-0.35.0b1-cp36-cp36m-manylinux_2_27_x86_64``, etc.)
     1. You will need your PyPI username and password for this. (Do not use drake-robot.)
