@@ -5,6 +5,7 @@ directly tele-operating the joints.
 
 import argparse
 import sys
+import webbrowser
 
 import numpy as np
 
@@ -16,8 +17,7 @@ from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.meshcat_visualizer import \
-    ConnectMeshcatVisualizer, MeshcatVisualizer
+from pydrake.geometry import Meshcat, MeshcatVisualizerCpp
 from pydrake.systems.primitives import FirstOrderLowPassFilter, VectorLogSink
 from pydrake.systems.planar_scenegraph_visualizer import \
     ConnectPlanarSceneGraphVisualizer
@@ -43,7 +43,10 @@ def main():
         '--setup', type=str, default='manipulation_class',
         help="The manipulation station setup to simulate. ",
         choices=['manipulation_class', 'clutter_clearing', 'planar'])
-    MeshcatVisualizer.add_argparse_argument(parser)
+    parser.add_argument(
+        "-w", "--open-window", dest="browser_new",
+        action="store_const", const=1, default=None,
+        help="Open the MeshCat display in a new browser window.")
     args = parser.parse_args()
 
     builder = DiagramBuilder()
@@ -81,15 +84,20 @@ def main():
 
         geometry_query_port = station.GetOutputPort("geometry_query")
         DrakeVisualizer.AddToBuilder(builder, geometry_query_port)
-        if args.meshcat:
-            meshcat = ConnectMeshcatVisualizer(
-                builder, output_port=geometry_query_port,
-                zmq_url=args.meshcat, open_browser=args.open_browser)
-            if args.setup == 'planar':
-                meshcat.set_planar_viewpoint()
+        meshcat = Meshcat()
+        meshcat_visualizer = MeshcatVisualizerCpp.AddToBuilder(
+            builder=builder,
+            query_object_port=geometry_query_port,
+            meshcat=meshcat)
+
         if args.setup == 'planar':
+            meshcat.Set2dRenderMode()
             pyplot_visualizer = ConnectPlanarSceneGraphVisualizer(
                 builder, station.get_scene_graph(), geometry_query_port)
+
+        if args.browser_new is not None:
+            url = meshcat.web_url()
+            webbrowser.open(url=url, new=args.browser_new)
 
     teleop = builder.AddSystem(JointSliders(station.get_controller_plant(),
                                             length=800))
