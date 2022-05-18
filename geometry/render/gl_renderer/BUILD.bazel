@@ -138,13 +138,8 @@ drake_cc_library(
     hdrs = [
         "render_engine_gl_factory.h",
     ],
-    install_hdrs_exclude = [
-        "render_engine_gl_factory.h",
-    ],
-    tags = [
-        # We should only ever _link_ it on macOS.
-        "exclude_from_package",
-    ],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         ":render_engine_gl_params",
         "//geometry/render:render_engine",

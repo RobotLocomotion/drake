@@ -18,6 +18,8 @@ drake_cc_library(
     name = "internal_http_service_curl",
     srcs = ["internal_http_service_curl.cc"],
     hdrs = ["internal_http_service_curl.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         "//common:filesystem",
         "//common:unused",
@@ -37,6 +39,8 @@ drake_cc_library(
         "internal_render_client.h",
         "render_gltf_client_params.h",
     ],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         ":internal_http_service_curl",
         "//common:filesystem",
@@ -58,12 +62,13 @@ drake_cc_library(
         "internal_render_engine_gltf_client.cc",
     ],
     hdrs = [
+        # TODO(jwnimmer-tri) The factory should be its own separate cc_library,
+        # not to be marked with "internal".
         "factory.h",
         "internal_render_engine_gltf_client.h",
     ],
-    # internal_render_engine_gltf_client.h directly pulls in VTK headers; leave
-    # it out of the install.
-    install_hdrs_exclude = ["internal_render_engine_gltf_client.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         ":internal_render_client",
         "//common:filesystem",
