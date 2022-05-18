@@ -36,5 +36,16 @@ std::unique_ptr<SolverInterface> MakeSolver(const SolverId& id);
 std::unique_ptr<SolverInterface> MakeFirstAvailableSolver(
     const std::vector<SolverId>& solver_ids);
 
+/**
+ * Returns the list of available and enabled solvers that definitely accept all
+ * programs of the program type.
+ * @note If a solver only accepts a subset of the program type, then that solver
+ * is not included in the returned results. For example
+ * EqualityConstrainedQPSolver doesn't accept program with inequality linear
+ * constraints, so it doesn't show up in the return of
+ * GetAvailableSolvers(ProgramType::kQP).
+ */
+std::vector<SolverId> GetAvailableSolvers(ProgramType prog_type);
+
 }  // namespace solvers
 }  // namespace drake

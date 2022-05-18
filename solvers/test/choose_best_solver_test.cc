@@ -226,5 +226,9 @@ GTEST_TEST(MakeFirstAvailableSolver, Test) {
   }
 }
 
+GTEST_TEST(GetAvailableSolversTest, LP) {
+  const auto solver_ids = GetAvailableSolvers(ProgramType::kLP);
+}
+
 }  // namespace solvers
 }  // namespace drake
