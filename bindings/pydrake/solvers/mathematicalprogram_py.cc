@@ -2009,6 +2009,8 @@ void BindFreeFunctions(py::module m) {
           "MakeSolver", &solvers::MakeSolver, py::arg("id"), doc.MakeSolver.doc)
       .def("MakeFirstAvailableSolver", &solvers::MakeFirstAvailableSolver,
           py::arg("solver_ids"), doc.MakeFirstAvailableSolver.doc)
+      .def("GetAvailableSolvers", &solvers::GetAvailableSolvers,
+          py::arg("prog_type"), doc.GetAvailableSolvers.doc)
       .def("Solve",
           py::overload_cast<const MathematicalProgram&,
               const std::optional<Eigen::VectorXd>&,
