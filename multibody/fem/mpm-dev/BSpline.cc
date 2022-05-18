@@ -47,7 +47,7 @@ double BSpline::eval1DBasis(double r) {
     if (r_abs >= 1.5) {
         return 0.0;
     } else if (r_abs < 1.5 && r_abs >= 0.5) {
-        return .5*std::pow(1.5-r_abs, 2);
+        return .5*(1.5-r_abs)*(1.5-r_abs);
     } else {
         return 0.75-r_abs*r_abs;
     }
