@@ -111,6 +111,16 @@ class JointSliders final : public systems::LeafSystem<T> {
       const systems::Diagram<T>& diagram,
       std::optional<double> timeout = std::nullopt) const;
 
+  /** Set the slider positions to the values in q.  The list of positions must
+  be the same length as the number of positions ASSOCIATED WITH JOINTS in the
+  MultibodyPlant.  This does not include, e.g., floating-base coordinates, which
+  will be assigned a default value.
+
+  @param q A vector whose length is the same as the number of joint positions
+  (also the number of sliders) for the robot.
+  */
+  void SetPosition(const Eigen::VectorXd& q);
+
  private:
   void CalcOutput(const systems::Context<T>&, systems::BasicVector<T>*) const;
 

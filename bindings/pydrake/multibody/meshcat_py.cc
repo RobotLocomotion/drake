@@ -227,7 +227,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.ctor.doc)
         .def("Delete", &Class::Delete, cls_doc.Delete.doc)
         .def("Run", &Class::Run, py::arg("diagram"),
-            py::arg("timeout") = py::none(), cls_doc.Run.doc);
+            py::arg("timeout") = py::none(), cls_doc.Run.doc)
+        .def("SetPosition", &Class::SetPosition, py::arg("q"),
+            cls_doc.SetPosition.doc);
   }
 }
 }  // namespace

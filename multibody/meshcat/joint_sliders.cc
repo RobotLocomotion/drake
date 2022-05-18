@@ -271,6 +271,23 @@ void JointSliders<T>::Run(
   }
 }
 
+template <typename T>
+void JointSliders<T>::SetPosition(const Eigen::VectorXd& q) {
+  const int nq = plant_->num_positions();
+  if (q.size() != nq) {
+    throw std::logic_error(fmt::format(
+        "Expected q of size {}, but got size {} instead",
+        nq, q.size()));
+  }
+  if (is_registered_) {
+    // TODO(jwnimmer-tri) If SetPosition is in flight concurrently with a
+    // call to Delete, we might race and ask for a deleted slider value.
+    for (const auto& [position_index, slider_name] : position_names_) {
+      meshcat_->SetSliderValue(slider_name, q[position_index]);
+    }
+  }
+}
+
 }  // namespace meshcat
 }  // namespace multibody
 }  // namespace drake
