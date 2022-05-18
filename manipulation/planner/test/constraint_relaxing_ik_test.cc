@@ -79,6 +79,33 @@ GTEST_TEST(ConstraintRelaxingIkTest, SolveIkFromFk) {
     // cos(ang_diff) >= cos(tol) is the actual constraint in the IK.
     EXPECT_TRUE(std::cos(rot_diff) + kEpsilon >= std::cos(wp.rot_tol));
   }
+
+  // Check the keep_going feature.
+  // We'll need several waypoints.
+  waypoints.push_back(waypoints.front());
+  waypoints.push_back(waypoints.front());
+  waypoints.push_back(waypoints.front());
+  int prior_index = -1;
+  std::vector<Eigen::VectorXd> q_sol;
+  auto give_up_early = [&prior_index](int waypoint_index) {
+    // The waypoint index should be monotonic.
+    EXPECT_GE(waypoint_index, prior_index);
+    // The waypoint index should increment one at a time.
+    EXPECT_LE(waypoint_index, prior_index + 1);
+    // Remember the current waypoint.
+    prior_index = waypoint_index;
+    // Stop at the third waypoint.
+    const bool keep_going = (waypoint_index < 2);
+    return keep_going;
+  };
+  // Giving up early should return a planner failure.
+  EXPECT_FALSE(ik_planner.PlanSequentialTrajectory(
+      waypoints, kQcurrent, &q_sol, give_up_early));
+  EXPECT_EQ(prior_index, 2);
+  // Bash on regardless.
+  auto never_stop = [](int) { return true; };
+  EXPECT_TRUE(ik_planner.PlanSequentialTrajectory(
+      waypoints, kQcurrent, &q_sol, never_stop));
 }
 
 }  // namespace planner

@@ -66,12 +66,18 @@ class ConstraintRelaxingIk {
    * @param waypoints A sequence of desired waypoints.
    * @param q_current The initial generalized position.
    * @param[out] q_sol Results.
+   * @param keep_going Optional callback to allow for cancellation.
+   *   When given, this function will be called prior to every IK solve; if it
+   *   returns false, the PlanSequentialTrajectory will stop and return false.
+   *   The function is passed the index of the waypoint currently being solved.
+   *   This can be used to enable timeouts for difficult plans.
    * @return True if solved successfully.
    */
   bool PlanSequentialTrajectory(
       const std::vector<IkCartesianWaypoint>& waypoints,
       const VectorX<double>& q_current,
-      std::vector<Eigen::VectorXd>* q_sol);
+      std::vector<Eigen::VectorXd>* q_sol,
+      const std::function<bool(int)>& keep_going = {});
 
  private:
   bool SolveIk(const IkCartesianWaypoint& waypoint, const VectorX<double>& q0,

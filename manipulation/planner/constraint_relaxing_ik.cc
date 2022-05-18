@@ -39,7 +39,8 @@ ConstraintRelaxingIk::ConstraintRelaxingIk(
 bool ConstraintRelaxingIk::PlanSequentialTrajectory(
     const std::vector<IkCartesianWaypoint>& waypoints,
     const VectorX<double>& q_current,
-    std::vector<Eigen::VectorXd>* q_sol_out) {
+    std::vector<Eigen::VectorXd>* q_sol_out,
+    const std::function<bool(int)>& keep_going) {
   DRAKE_DEMAND(q_sol_out != nullptr);
   int num_steps = static_cast<int>(waypoints.size());
 
@@ -77,6 +78,14 @@ bool ConstraintRelaxingIk::PlanSequentialTrajectory(
     while (true) {
       if (!waypoint.constrain_orientation)
         DRAKE_DEMAND(mode == RelaxMode::kRelaxPosTol);
+
+      // Allow for user-directed early termination.
+      if (keep_going != nullptr) {
+        const int waypoint_index = static_cast<int>(q_sol_out->size()) - 1;
+        if (keep_going(waypoint_index) == false) {
+          return false;
+        }
+      }
 
       std::vector<int> info;
       std::vector<std::string> infeasible_constraints;
