@@ -1,7 +1,13 @@
 #include <iostream>
+#include <string>
 #include <vector>
 
+#include <Partio.h>
+
 #include "drake/common/eigen_types.h"
+#include "drake/common/filesystem.h"
+#include "drake/common/temp_directory.h"
+#include "drake/multibody/fem/mpm-dev/particles_to_bgeo.h"
 
 // TODO(yiminlin.tri): pass in by pointer
 // TODO(yiminlin.tri): inlining
@@ -96,7 +102,7 @@ class GridPoint {
     drake::Vector3<double> velocity_{};               // Velocity
 };
 
-
+// TODO(yiminlin.tri): refactor test files, use gtest
 void test_eigen_functionalities() {
     drake::Vector3<double> tmpvec{1.0, 2.0, 3.0};
     drake::Vector3<double> tmpvec2{4.0, 5.0, 6.0};
@@ -183,6 +189,11 @@ void test_3D_basis() {
     // |   |   |   |   |
     // o - o - o - o - o
 
+    const drake::filesystem::path temp_dir = drake::temp_directory();
+    const auto file = temp_dir / "test.bgeo";
+    std::vector<drake::Vector3<double>> pos_arr, vel_arr;
+    std::vector<double> val_arr;
+
     int i, j, k;
     double xi, yi, zi, u1, u2, u3, m;
     double sumval, h;
@@ -211,7 +222,15 @@ void test_3D_basis() {
         gridpt_arr[idx] = GridPoint(m, xi, yi, zi, u1, u2, u3);
         // TODO(yiminlin.tri): Comment out, reuse later
         // std::cout << gridpt_arr[idx].get_position()(2) << std::endl;
+        pos_arr.emplace_back(xi, yi, zi);
+        vel_arr.emplace_back(0.0, 0.0, 0.0);
+        // TODO(yiminlin.tri): hardcoded idx to output
+        tmpvec3 = {xi, yi, zi};
+        val_arr.emplace_back(gridpt_arr[62].eval_basis_3D(tmpvec3, h));
     }
+
+    drake::multibody::mpm::internal::
+        WriteParticlesToBgeo(file.string(), pos_arr, vel_arr, val_arr);
 
     std::cout << "\n===========================";
     std::cout << "\n==== test 3D basis POU ====";
@@ -231,6 +250,7 @@ void test_3D_basis() {
             sumval += gridpt_arr[idx].eval_basis_3D(tmpvec3, h);
         }
 
+        // TODO(yiminlin.tri): hardcoded tolerance
         if (std::abs(sumval-1.0) > 1e-10) {
             std::cout << " ==== POU 3D ERR ====" << std::endl;
         }
@@ -241,6 +261,7 @@ void test_3D_basis() {
 
 int main() {
     // TODO(yiminlin.tri): just for testing purposes
+    //                     test using gtest
     // test_eigen_functionalities();
     // test_class_particle();
     // test_class_gridpt();
