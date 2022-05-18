@@ -36,5 +36,21 @@ std::unique_ptr<SolverInterface> MakeSolver(const SolverId& id);
 std::unique_ptr<SolverInterface> MakeFirstAvailableSolver(
     const std::vector<SolverId>& solver_ids);
 
+/**
+ *
+ * The order of the returned SolverIds reflects an approximate order of
+ * preference, from most preferred (front) to least preferred (back). Because we
+ * are analyzing only based on the program type rather than a specific program,
+ * it's possible that solvers later in the list would perform better in certain
+ * situations. To obtain the truly best solver, using ChooseBestSolver()
+ * instead.
+ * @note If a solver only accepts a subset of the program type, then that solver
+ * is not included in the returned results. For example
+ * EqualityConstrainedQPSolver doesn't accept programs with inequality linear
+ * constraints, so it doesn't show up in the return of
+ * GetAvailableSolvers(ProgramType::kQP).
+ */
+std::vector<SolverId> GetAvailableSolvers(ProgramType prog_type);
+
 }  // namespace solvers
 }  // namespace drake
