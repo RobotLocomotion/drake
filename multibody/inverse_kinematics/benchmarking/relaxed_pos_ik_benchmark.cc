@@ -11,32 +11,37 @@
 #include "drake/solvers/solve.h"
 #include "drake/tools/performance/fixture_common.h"
 
+namespace drake {
+namespace multibody {
+namespace inverse_kinematics {
+namespace {
+
 class RelaxedPosIkBenchmark : public benchmark::Fixture {
  public:
   RelaxedPosIkBenchmark() {
-    drake::tools::performance::AddMinMaxStatistics(this);
+    tools::performance::AddMinMaxStatistics(this);
 
     // Set a fixed seed for random generation.
     std::srand(1234);
   }
 };
 
-BENCHMARK_F(RelaxedPosIkBenchmark, IiwaRelaxedPosIk)(benchmark::State& state) {
+BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {
   // Formulate an inverse kinematics problem for Kuka iiwa considering only the
   // position component with relaxation. The objective of this benchmark is
   // to run an A/B comparison for different gradient evaluations for the
   // position constraints.
 
   // Find the model file for Kuka iiwa.
-  const std::string iiwa_path = drake::FindResourceOrThrow(
+  const std::string iiwa_path = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/iiwa7/"
       "iiwa7_no_collision.sdf");
   // Create a continuous-time plant.
-  drake::multibody::MultibodyPlant<double> plant(0.0);
+  multibody::MultibodyPlant<double> plant(0.0);
   // Create a parser for the plant.
-  drake::multibody::Parser parser{&plant};
+  multibody::Parser parser{&plant};
   //   Load the model into the parser.
-  const drake::multibody::ModelInstanceIndex model_instance =
+  const multibody::ModelInstanceIndex model_instance =
       parser.AddModelFromFile(iiwa_path);
   // Attach the base of the robot into the world frame.
   plant.WeldFrames(plant.world_frame(),
@@ -44,19 +49,19 @@ BENCHMARK_F(RelaxedPosIkBenchmark, IiwaRelaxedPosIk)(benchmark::State& state) {
   // Finalize the plant.
   plant.Finalize();
   // Create a context.
-  std::unique_ptr<drake::systems::Context<double>> context =
+  std::unique_ptr<systems::Context<double>> context =
       plant.CreateDefaultContext();
 
   // Define the end-effector link.
   const std::string ee_link_name = "iiwa_link_7";
-  const drake::multibody::Body<double>& ee_body =
+  const multibody::Body<double>& ee_body =
       plant.GetBodyByName(ee_link_name);
-  const drake::multibody::Frame<double>& ee_frame =
+  const multibody::Frame<double>& ee_frame =
       plant.GetFrameByName(ee_link_name);
 
   // Create an IK object.
-  drake::multibody::InverseKinematics relaxed_ik(plant, true);
-  drake::solvers::MathematicalProgram* prog = relaxed_ik.get_mutable_prog();
+  multibody::InverseKinematics relaxed_ik(plant, true);
+  solvers::MathematicalProgram* prog = relaxed_ik.get_mutable_prog();
 
   // Define a uniform position relaxation and the position bound variables.
   const Eigen::Vector3d pos_tol = 1e-4 * Eigen::Vector3d::Ones();
@@ -66,7 +71,7 @@ BENCHMARK_F(RelaxedPosIkBenchmark, IiwaRelaxedPosIk)(benchmark::State& state) {
   const Eigen::VectorXd joint_pos_limits(plant.GetPositionUpperLimits());
   // Generate the random goal configurations.
   const int num_rand_goals = 2;
-  std::vector<drake::math::RigidTransformd> ee_pose_goal(num_rand_goals);
+  std::vector<math::RigidTransformd> ee_pose_goal(num_rand_goals);
   for (int i = 0; i < num_rand_goals; ++i) {
     context->get_mutable_continuous_state()
         .get_mutable_generalized_position()
@@ -101,8 +106,8 @@ BENCHMARK_F(RelaxedPosIkBenchmark, IiwaRelaxedPosIk)(benchmark::State& state) {
         prog->SetInitialGuess(relaxed_ik.q(), q0.col(j));
 
         // Solve the relaxed IK problem.
-        drake::solvers::MathematicalProgramResult result =
-            drake::solvers::Solve(*prog);
+        solvers::MathematicalProgramResult result =
+            solvers::Solve(*prog);
         // Get the solution.
         auto q_sol = result.GetSolution();
         // Evaluate the end-effector pose for the solution.
@@ -127,5 +132,10 @@ BENCHMARK_F(RelaxedPosIkBenchmark, IiwaRelaxedPosIk)(benchmark::State& state) {
     }
   }
 }
+
+}  // namespace
+}  // namespace inverse_kinematics
+}  // namespace multibody
+}  // namespace drake
 
 BENCHMARK_MAIN();
