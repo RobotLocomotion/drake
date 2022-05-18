@@ -6,9 +6,11 @@
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
+#include "drake/solvers/get_program_type.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/linear_system_solver.h"
+#include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/nlopt_solver.h"
@@ -107,6 +109,34 @@ TEST_F(ChooseBestSolverTest, EqualityConstrainedQPSolver) {
   CheckBestSolver(EqualityConstrainedQPSolver::id());
 }
 
+void CheckGetAvailableSolvers(const MathematicalProgram& prog) {
+  const ProgramType prog_type = GetProgramType(prog);
+  const std::vector<SolverId> solver_ids = GetAvailableSolvers(prog_type);
+  const std::unordered_set<SolverId> solver_id_set(solver_ids.begin(),
+                                                   solver_ids.end());
+  const auto known_solvers = GetKnownSolvers();
+  for (const auto& solver_id : solver_ids) {
+    EXPECT_GT(known_solvers.count(solver_id), 0);
+    std::unique_ptr<SolverInterface> solver = MakeSolver(solver_id);
+    EXPECT_TRUE(solver->available());
+    EXPECT_TRUE(solver->enabled());
+    EXPECT_TRUE(solver->AreProgramAttributesSatisfied(prog));
+  }
+  // Now find out the available solvers that can solve this program. These
+  // solvers should be in solver_ids.
+  for (const auto& solver_id : known_solvers) {
+    const auto solver = MakeSolver(solver_id);
+    if (solver->available() && solver->enabled() &&
+        solver->AreProgramAttributesSatisfied(prog)) {
+      // CLP can solve some QP, but not all of them. So we don't include CLP in
+      // GetAvailableSolvers(kQP).
+      if (solver_id != ClpSolver::id() || prog_type != ProgramType::kQP) {
+        EXPECT_GT(solver_id_set.count(solver_id), 0);
+      }
+    }
+  }
+}
+
 TEST_F(ChooseBestSolverTest, LPsolver) {
   prog_.AddLinearEqualityConstraint(x_(0) + 3 * x_(1) == 3);
   CheckBestSolver(LinearSystemSolver::id());
@@ -115,6 +145,7 @@ TEST_F(ChooseBestSolverTest, LPsolver) {
   CheckBestSolver({gurobi_solver_.get(), mosek_solver_.get(), clp_solver_.get(),
                    snopt_solver_.get(), ipopt_solver_.get(),
                    nlopt_solver_.get(), csdp_solver_.get(), scs_solver_.get()});
+  CheckGetAvailableSolvers(prog_);
 }
 
 TEST_F(ChooseBestSolverTest, QPsolver) {
@@ -123,6 +154,7 @@ TEST_F(ChooseBestSolverTest, QPsolver) {
   CheckBestSolver({mosek_solver_.get(), gurobi_solver_.get(),
                    osqp_solver_.get(), snopt_solver_.get(), ipopt_solver_.get(),
                    nlopt_solver_.get(), scs_solver_.get()});
+  CheckGetAvailableSolvers(prog_);
 }
 
 TEST_F(ChooseBestSolverTest, LorentzCone) {
@@ -138,12 +170,14 @@ TEST_F(ChooseBestSolverTest, LorentzCone) {
   prog_.AddPolynomialCost(pow(x_(0), 3));
   CheckBestSolver(
       {snopt_solver_.get(), ipopt_solver_.get(), nlopt_solver_.get()});
+  CheckGetAvailableSolvers(prog_);
 }
 
 TEST_F(ChooseBestSolverTest, LinearComplementarityConstraint) {
   prog_.AddLinearComplementarityConstraint(Eigen::Matrix3d::Identity(),
                                            Eigen::Vector3d::Ones(), x_);
   CheckBestSolver({moby_lcp_solver_.get(), snopt_solver_.get()});
+  CheckGetAvailableSolvers(prog_);
 
   prog_.AddLinearCost(x_(0) + 1);
   CheckBestSolver({snopt_solver_.get()});
@@ -153,6 +187,7 @@ TEST_F(ChooseBestSolverTest, PositiveSemidefiniteConstraint) {
   prog_.AddPositiveSemidefiniteConstraint(
       (Matrix2<symbolic::Variable>() << x_(0), x_(1), x_(1), x_(2)).finished());
   CheckBestSolver({mosek_solver_.get(), csdp_solver_.get(), scs_solver_.get()});
+  CheckGetAvailableSolvers(prog_);
 }
 
 TEST_F(ChooseBestSolverTest, BinaryVariable) {
@@ -167,6 +202,7 @@ TEST_F(ChooseBestSolverTest, BinaryVariable) {
         ChooseBestSolver(prog_),
         "There is no available solver for the optimization program, please "
         "manually instantiate MixedIntegerBranchAndBound.*");
+    CheckGetAvailableSolvers(prog_);
   }
 }
 
