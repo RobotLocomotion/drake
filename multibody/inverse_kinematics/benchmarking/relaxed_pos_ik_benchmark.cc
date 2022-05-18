@@ -98,16 +98,15 @@ static void BenchmarkRelaxedIk(benchmark::State& state) {
 
         // Confirm that the optimization has succeeded.
         DRAKE_DEMAND(result.is_success());
-        // Check whether the solution and the goal are matching by providing 1%
-        // extra room due to the constraint satisfaction tolerances of the
-        // solver.
+        // Check constraint satisfaction by providing a margin of 5% w.r.t. the
+        // relaxation to account for the constraint tolerance of the solver.
         DRAKE_DEMAND(
             (ee_pose_sol.translation().array() <=
-             ee_pose_goal.translation().array() + 1.01 * pos_tol.array())
+             ee_pose_goal.translation().array() + 1.05 * pos_tol.array())
                 .all());
         DRAKE_DEMAND(
             (ee_pose_sol.translation().array() >=
-             ee_pose_goal.translation().array() - 1.01 * pos_tol.array())
+             ee_pose_goal.translation().array() - 1.05 * pos_tol.array())
                 .all());
       }
     }
