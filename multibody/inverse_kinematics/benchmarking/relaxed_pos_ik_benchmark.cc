@@ -66,20 +66,16 @@ static void BenchmarkRelaxedIk(benchmark::State& state) {
       // Evaluate the corresponding end-effector position.
       auto ee_pose_goal = plant.EvalBodyPoseInWorld(*context, ee_body);
 
-      // If not the first iteration, remove all constraints from the program.
-      if (i > 0) {
-        auto constraints = prog->GetAllConstraints();
-        for (auto constraint : constraints) {
-          prog->RemoveConstraint(constraint);
-        }
+      // Remove all constraints from the program.
+      auto constraints = prog->GetAllConstraints();
+      for (auto constraint : constraints) {
+        prog->RemoveConstraint(constraint);
       }
       // Create the task in terms of position constraints on the end effector.
-      else {
-        relaxed_ik.AddPositionConstraint(ee_frame, Eigen::Vector3d::Zero(),
-                                         plant.world_frame(),
-                                         ee_pose_goal.translation() - pos_tol,
-                                         ee_pose_goal.translation() + pos_tol);
-      }
+      relaxed_ik.AddPositionConstraint(ee_frame, Eigen::Vector3d::Zero(),
+                                       plant.world_frame(),
+                                       ee_pose_goal.translation() - pos_tol,
+                                       ee_pose_goal.translation() + pos_tol);
 
       // Solve each task using three random initial guesses.
       for (int j = 0; j < 3; ++j) {
