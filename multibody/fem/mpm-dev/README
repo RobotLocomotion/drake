@@ -1,0 +1,3 @@
+bazel build //multibody/fem/mpm-dev:*
+bazel test //multibody/fem/mpm-dev/...
+bazel run //multibody/fem/mpm-dev:run_mpm

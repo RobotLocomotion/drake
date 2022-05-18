@@ -13,9 +13,28 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
-    name = "hello_world",
+    name = "mpm",
     srcs = [
         "main.cpp",
+    ],
+    deps = [
+        ":BSpline",
+        ":particles_to_bgeo",
+        "//common:essential",
+        "@partio",
+    ],
+)
+
+drake_cc_library(
+    name = "BSpline",
+    srcs = [
+        "BSpline.cc",
+    ],
+    hdrs = [
+        "BSpline.h",
+    ],
+    deps = [
+        "//common:essential",
     ],
 )
 
@@ -29,15 +48,17 @@ drake_cc_library(
     ],
     deps = [
         "//common:essential",
+        "//common:filesystem",
         "//common:find_resource",
+        "//common:temp_directory",
         "@partio",
     ],
 )
 
 drake_cc_binary(
-    name = "run_hello_world",
+    name = "run_mpm",
     deps = [
-        ":hello_world",
+        ":mpm",
     ],
 )
 
@@ -47,6 +68,14 @@ drake_cc_googletest(
         ":particles_to_bgeo",
         "//common:filesystem",
         "//common:temp_directory",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "BSpline_test",
+    deps = [
+        ":BSpline",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
