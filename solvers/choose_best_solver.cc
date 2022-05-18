@@ -299,5 +299,77 @@ std::unique_ptr<SolverInterface> MakeFirstAvailableSolver(
                            solver_names + "is available and enabled.");
 }
 
+template <typename SomeSolver>
+void AddSolverIfAvailable(std::vector<SolverId>* solver_ids) {
+  if (SomeSolver::is_available() && SomeSolver::is_enabled()) {
+    solver_ids->push_back(SomeSolver::id());
+  }
+}
+template <typename SomeSolver, typename... SomeSolvers>
+void AddSolversIfAvailable(std::vector<SolverId>* solver_ids) {
+  AddSolverIfAvailable<SomeSolver>(solver_ids);
+  if constexpr (sizeof...(SomeSolvers) > 0) {
+    AddSolversIfAvailable<SomeSolvers...>(solver_ids);
+  }
+}
+
+std::vector<SolverId> GetAvailableSolvers(ProgramType prog_type) {
+  std::vector<SolverId> solver_ids;
+
+  switch (prog_type) {
+    case ProgramType::kLP: {
+      AddSolversIfAvailable<GurobiSolver, MosekSolver, ClpSolver, SnoptSolver,
+                            IpoptSolver, NloptSolver, CsdpSolver, ScsSolver>(
+          &solver_ids);
+      return solver_ids;
+    }
+    case ProgramType::kQP: {
+      AddSolversIfAvailable<MosekSolver, GurobiSolver, OsqpSolver, SnoptSolver,
+                            IpoptSolver, NloptSolver, ScsSolver>(&solver_ids);
+      return solver_ids;
+    }
+    case ProgramType::kSOCP: {
+      AddSolversIfAvailable<MosekSolver, GurobiSolver, CsdpSolver, ScsSolver,
+                            SnoptSolver, IpoptSolver, NloptSolver>(&solver_ids);
+      return solver_ids;
+    }
+    case ProgramType::kSDP: {
+      AddSolversIfAvailable<MosekSolver, CsdpSolver, ScsSolver, SnoptSolver>(
+          &solver_ids);
+      return solver_ids;
+    }
+    case ProgramType::kGP:
+    case ProgramType::kCGP: {
+      AddSolversIfAvailable<MosekSolver, ScsSolver>(&solver_ids);
+      return solver_ids;
+    }
+    case ProgramType::kMILP:
+    case ProgramType::kMIQP:
+    case ProgramType::kMISOCP: {
+      AddSolversIfAvailable<GurobiSolver, MosekSolver>(&solver_ids);
+      return solver_ids;
+    }
+    case ProgramType::kMISDP: {
+      return solver_ids;
+    }
+    case ProgramType::kQuadraticCostConicConstraint: {
+      AddSolversIfAvailable<MosekSolver, GurobiSolver, ScsSolver>(&solver_ids);
+      return solver_ids;
+    }
+    case ProgramType::kNLP: {
+      AddSolversIfAvailable<SnoptSolver, IpoptSolver, NloptSolver>(&solver_ids);
+      return solver_ids;
+    }
+    case ProgramType::kLCP: {
+      AddSolversIfAvailable<MobyLCPSolver<double>, SnoptSolver>(&solver_ids);
+      return solver_ids;
+    }
+    case ProgramType::kUnknown: {
+      return solver_ids;
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
+
 }  // namespace solvers
 }  // namespace drake
