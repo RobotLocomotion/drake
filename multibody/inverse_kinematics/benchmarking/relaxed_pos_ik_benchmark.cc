@@ -101,17 +101,18 @@ static void BenchmarkRelaxedIk(benchmark::State& state) {
         auto ee_pose_sol = plant.EvalBodyPoseInWorld(*context, ee_body);
 
         // Confirm that the optimization has succeeded.
-        assert(result.is_success());
-        // Check whether the goal and the solution are close enough.
-        assert((ee_pose_sol.translation().array() <=
-                ee_pose_goal.translation().array() + pos_tol.array())
-                   .all());
-        assert((ee_pose_sol.translation().array() >=
-                ee_pose_goal.translation().array() - pos_tol.array())
-                   .all());
-        // Specify ee_pose_sol as an unused variable as it is only used for
-        // assertions.
-        ((void)(ee_pose_sol));
+        DRAKE_DEMAND(result.is_success());
+        // Check whether the solution and the goal are matching by providing 1%
+        // extra room due to the constraint satisfaction tolerances of the
+        // solver.
+        DRAKE_DEMAND(
+            (ee_pose_sol.translation().array() <=
+             ee_pose_goal.translation().array() + 1.01 * pos_tol.array())
+                .all());
+        DRAKE_DEMAND(
+            (ee_pose_sol.translation().array() >=
+             ee_pose_goal.translation().array() - 1.01 * pos_tol.array())
+                .all());
       }
     }
   }
