@@ -15,20 +15,20 @@ BSpline::BSpline(const double h, const Vector3<double>& pos) {
 // TODO(yiminlin.tri): For below routines, After determining the implementations
 // of particles and grid points, we can pass these objects as arguments for
 // convinience.
-bool BSpline::inSupport(const Vector3<double>& x) {
+bool BSpline::InSupport(const Vector3<double>& x) {
     return (std::abs(x(0)-position_(0))/h_ < 1.5
          && std::abs(x(1)-position_(1))/h_ < 1.5
          && std::abs(x(2)-position_(2))/h_ < 1.5);
 }
 
-double BSpline::evalBasis(const Vector3<double>& x) {
+double BSpline::EvalBasis(const Vector3<double>& x) {
     // If the basis is not in the support, we simply return 0.0
-    if (!inSupport(x)) {
+    if (!InSupport(x)) {
         return 0.0;
     } else {
-        return eval1DBasis((x(0)-position_(0))/h_)
-              *eval1DBasis((x(1)-position_(1))/h_)
-              *eval1DBasis((x(2)-position_(2))/h_);
+        return Eval1DBasis((x(0)-position_(0))/h_)
+              *Eval1DBasis((x(1)-position_(1))/h_)
+              *Eval1DBasis((x(2)-position_(2))/h_);
     }
 }
 
@@ -42,7 +42,7 @@ Vector3<double> BSpline::get_position() const {
 
 // TODO(yiminlin.tri): Potential speedup in the arithmetic, is std::pow
 // efficient in this case?
-double BSpline::eval1DBasis(double r) {
+double BSpline::Eval1DBasis(double r) {
     double r_abs    = std::abs(r);
     if (r_abs >= 1.5) {
         return 0.0;

@@ -21,7 +21,7 @@ GTEST_TEST(BSplineClassTest, RoundTrip) {
 
     EXPECT_EQ(bs1.get_h(), h);
     EXPECT_TRUE(CompareMatrices(bspos, tmpvec,
-                std::numeric_limits<float>::epsilon()));
+                std::numeric_limits<double>::epsilon()));
 
     tmpvec = Vector3<double>{-1.0, 2.0, -3.0};
     h = 10.0;
@@ -30,14 +30,14 @@ GTEST_TEST(BSplineClassTest, RoundTrip) {
 
     EXPECT_EQ(bs1.get_h(), h);
     EXPECT_TRUE(CompareMatrices(bspos, tmpvec,
-                std::numeric_limits<float>::epsilon()));
+                std::numeric_limits<double>::epsilon()));
 }
 
 GTEST_TEST(BSplineTestBasisSupport, RoundTrip) {
     Vector3<double> center = { 0.5,  1.0, -0.5};
-    // Construct a reference 3D test basis, and test the inSupport
+    // Construct a reference 3D test basis, and test the InSupport
     BSpline bs1 = BSpline();
-    // Construct a 3D test basis on reference element, and test the inSupport
+    // Construct a 3D test basis on reference element, and test the InSupport
     BSpline bs2 = BSpline(0.5, center);
     BSpline bs3 = BSpline(2.0, center);
     Vector3<double> pos1  = { 0.0,  0.0,  0.0};
@@ -53,44 +53,44 @@ GTEST_TEST(BSplineTestBasisSupport, RoundTrip) {
     Vector3<double> pos11 = { 4.0,  4.0, -4.0};
     Vector3<double> pos12 = { 4.0,  0.0, -4.0};
 
-    ASSERT_TRUE(bs1.inSupport(pos1));
-    ASSERT_TRUE(bs1.inSupport(pos2));
-    ASSERT_TRUE(bs1.inSupport(pos3));
-    ASSERT_TRUE(bs1.inSupport(pos4));
-    ASSERT_TRUE(bs1.inSupport(pos5));
-    ASSERT_TRUE(bs1.inSupport(pos6));
-    ASSERT_TRUE(!bs1.inSupport(pos7));
-    ASSERT_TRUE(!bs1.inSupport(pos8));
-    ASSERT_TRUE(!bs1.inSupport(pos9));
-    ASSERT_TRUE(!bs1.inSupport(pos10));
-    ASSERT_TRUE(!bs1.inSupport(pos11));
-    ASSERT_TRUE(!bs1.inSupport(pos12));
+    ASSERT_TRUE(bs1.InSupport(pos1));
+    ASSERT_TRUE(bs1.InSupport(pos2));
+    ASSERT_TRUE(bs1.InSupport(pos3));
+    ASSERT_TRUE(bs1.InSupport(pos4));
+    ASSERT_TRUE(bs1.InSupport(pos5));
+    ASSERT_TRUE(bs1.InSupport(pos6));
+    ASSERT_TRUE(!bs1.InSupport(pos7));
+    ASSERT_TRUE(!bs1.InSupport(pos8));
+    ASSERT_TRUE(!bs1.InSupport(pos9));
+    ASSERT_TRUE(!bs1.InSupport(pos10));
+    ASSERT_TRUE(!bs1.InSupport(pos11));
+    ASSERT_TRUE(!bs1.InSupport(pos12));
 
-    ASSERT_TRUE(!bs2.inSupport(pos1));
-    ASSERT_TRUE(!bs2.inSupport(pos2));
-    ASSERT_TRUE(bs2.inSupport(pos3));
-    ASSERT_TRUE(!bs2.inSupport(pos4));
-    ASSERT_TRUE(!bs2.inSupport(pos5));
-    ASSERT_TRUE(!bs2.inSupport(pos6));
-    ASSERT_TRUE(!bs2.inSupport(pos7));
-    ASSERT_TRUE(!bs2.inSupport(pos8));
-    ASSERT_TRUE(!bs2.inSupport(pos9));
-    ASSERT_TRUE(!bs2.inSupport(pos10));
-    ASSERT_TRUE(!bs2.inSupport(pos11));
-    ASSERT_TRUE(!bs2.inSupport(pos12));
+    ASSERT_TRUE(!bs2.InSupport(pos1));
+    ASSERT_TRUE(!bs2.InSupport(pos2));
+    ASSERT_TRUE(bs2.InSupport(pos3));
+    ASSERT_TRUE(!bs2.InSupport(pos4));
+    ASSERT_TRUE(!bs2.InSupport(pos5));
+    ASSERT_TRUE(!bs2.InSupport(pos6));
+    ASSERT_TRUE(!bs2.InSupport(pos7));
+    ASSERT_TRUE(!bs2.InSupport(pos8));
+    ASSERT_TRUE(!bs2.InSupport(pos9));
+    ASSERT_TRUE(!bs2.InSupport(pos10));
+    ASSERT_TRUE(!bs2.InSupport(pos11));
+    ASSERT_TRUE(!bs2.InSupport(pos12));
 
-    ASSERT_TRUE(bs3.inSupport(pos1));
-    ASSERT_TRUE(bs3.inSupport(pos2));
-    ASSERT_TRUE(bs3.inSupport(pos3));
-    ASSERT_TRUE(bs3.inSupport(pos4));
-    ASSERT_TRUE(bs3.inSupport(pos5));
-    ASSERT_TRUE(bs3.inSupport(pos6));
-    ASSERT_TRUE(bs3.inSupport(pos7));
-    ASSERT_TRUE(!bs3.inSupport(pos8));
-    ASSERT_TRUE(bs3.inSupport(pos9));
-    ASSERT_TRUE(!bs3.inSupport(pos10));
-    ASSERT_TRUE(!bs3.inSupport(pos11));
-    ASSERT_TRUE(!bs3.inSupport(pos12));
+    ASSERT_TRUE(bs3.InSupport(pos1));
+    ASSERT_TRUE(bs3.InSupport(pos2));
+    ASSERT_TRUE(bs3.InSupport(pos3));
+    ASSERT_TRUE(bs3.InSupport(pos4));
+    ASSERT_TRUE(bs3.InSupport(pos5));
+    ASSERT_TRUE(bs3.InSupport(pos6));
+    ASSERT_TRUE(bs3.InSupport(pos7));
+    ASSERT_TRUE(!bs3.InSupport(pos8));
+    ASSERT_TRUE(bs3.InSupport(pos9));
+    ASSERT_TRUE(!bs3.InSupport(pos10));
+    ASSERT_TRUE(!bs3.InSupport(pos11));
+    ASSERT_TRUE(!bs3.InSupport(pos12));
 }
 
 GTEST_TEST(BSplineTestBasisPOU, RoundTrip) {
@@ -153,11 +153,11 @@ GTEST_TEST(BSplineTestBasisPOU, RoundTrip) {
             i = idx % NUM_GRID_PT_1D;
             j = (idx % NUM_GRID_PT_2D) / NUM_GRID_PT_1D;
             k = idx / NUM_GRID_PT_2D;
-            sum_sample += bs_arr[idx].evalBasis(sample_point);
+            sum_sample += bs_arr[idx].EvalBasis(sample_point);
         }
 
         ASSERT_TRUE(std::abs(sum_sample-1.0)
-                    < std::numeric_limits<float>::epsilon());
+                    < std::numeric_limits<double>::epsilon());
     }
     }
     }
@@ -211,11 +211,11 @@ GTEST_TEST(BSplineTestBasisPOU, RoundTrip) {
             i = idx % NUM_GRID_PT_1D;
             j = (idx % NUM_GRID_PT_2D) / NUM_GRID_PT_1D;
             k = idx / NUM_GRID_PT_2D;
-            sum_sample += bs_arr[idx].evalBasis(sample_point);
+            sum_sample += bs_arr[idx].EvalBasis(sample_point);
         }
 
         ASSERT_TRUE(std::abs(sum_sample-1.0)
-                    < std::numeric_limits<float>::epsilon());
+                    < std::numeric_limits<double>::epsilon());
     }
     }
     }
