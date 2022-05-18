@@ -11,7 +11,17 @@
 #include "drake/solvers/solve.h"
 #include "drake/tools/performance/fixture_common.h"
 
-static void BenchmarkRelaxedIk(benchmark::State& state) {
+class RelaxedPosIkBenchmark : public benchmark::Fixture {
+ public:
+  RelaxedPosIkBenchmark() {
+    drake::tools::performance::AddMinMaxStatistics(this);
+
+    // Set a fixed seed for random generation.
+    std::srand(1234);
+  }
+};
+
+BENCHMARK_F(RelaxedPosIkBenchmark, IiwaRelaxedPosIk)(benchmark::State& state) {
   // Formulate an inverse kinematics problem for Kuka iiwa considering only the
   // position component with relaxation. The objective of this benchmark is
   // to run an A/B comparison for different gradient evaluations for the
@@ -50,9 +60,6 @@ static void BenchmarkRelaxedIk(benchmark::State& state) {
 
   // Define a uniform position relaxation and the position bound variables.
   const Eigen::Vector3d pos_tol = 1e-4 * Eigen::Vector3d::Ones();
-
-  // Set a fixed seed for random generation.
-  std::srand(1234);
 
   // Get the joint position limits for random generation by leveraging the
   // fact that iiwa has symmetric position limits.
@@ -120,7 +127,5 @@ static void BenchmarkRelaxedIk(benchmark::State& state) {
     }
   }
 }
-
-BENCHMARK(BenchmarkRelaxedIk);
 
 BENCHMARK_MAIN();
