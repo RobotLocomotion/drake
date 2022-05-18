@@ -45,6 +45,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/linear_system.h"
+#include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
 
@@ -1037,9 +1038,7 @@ GTEST_TEST(MultibodyPlantTest, SetDefaultFreeBodyPose) {
   // We cannot use Acrobot for testing `SetDefaultFreeBodyPose` since it has no
   // free bodies.
   MultibodyPlant<double> plant(0.0);
-  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-  const auto& body = plant.AddRigidBody("body",
-      SpatialInertia<double>::MakeTestCube());
+  const auto& body = plant.AddRigidBody("body", SpatialInertia<double>());
   EXPECT_TRUE(CompareMatrices(
       plant.GetDefaultFreeBodyPose(body).GetAsMatrix4(),
       RigidTransformd::Identity().GetAsMatrix4()));
@@ -1194,9 +1193,8 @@ class SphereChainScenario {
 
     auto make_sphere = [this](int i) {
       const double radius = 0.5;
-      // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
       const RigidBody<double>& sphere = plant_->AddRigidBody(
-          "Sphere" + to_string(i), SpatialInertia<double>::MakeTestCube());
+          "Sphere" + to_string(i), SpatialInertia<double>());
       GeometryId sphere_id = plant_->RegisterCollisionGeometry(
           sphere, RigidTransformd::Identity(), geometry::Sphere(radius),
           "collision", CoulombFriction<double>());
@@ -1227,9 +1225,8 @@ class SphereChainScenario {
     }
 
     // Body with no registered frame.
-    // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
     no_geometry_body_ = &plant_->AddRigidBody("NothingRegistered",
-        SpatialInertia<double>::MakeTestCube());
+                                              SpatialInertia<double>());
   }
 
   void Finalize() {
@@ -1630,9 +1627,8 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       geometry::HalfSpace(), "ground", ground_friction);
 
   // Add two spherical bodies.
-  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const RigidBody<double>& sphere1 =
-      plant.AddRigidBody("Sphere1", SpatialInertia<double>::MakeTestCube());
+      plant.AddRigidBody("Sphere1", SpatialInertia<double>());
   CoulombFriction<double> sphere1_friction(0.8, 0.5);
   // estimated parameters for mass=1kg, penetration_tolerance=0.01m
   // and gravity g=9.8 m/s^2.
@@ -1669,7 +1665,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
                                  geometry::internal::kHcDissipation,
                                  sphere2_dissipation);
   const RigidBody<double>& sphere2 =
-      plant.AddRigidBody("Sphere2", SpatialInertia<double>::MakeTestCube());
+      plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   GeometryId sphere2_id = plant.RegisterCollisionGeometry(
       sphere2, RigidTransformd::Identity(), geometry::Sphere(radius),
       "collision", std::move(sphere2_properties));
@@ -1797,16 +1793,15 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   EXPECT_EQ(render_engine.num_registered(), 1);
 
   // Add two spherical bodies.
-  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const RigidBody<double>& sphere1 =
-      plant.AddRigidBody("Sphere1", SpatialInertia<double>::MakeTestCube());
+      plant.AddRigidBody("Sphere1", SpatialInertia<double>());
   Vector4<double> sphere1_diffuse{0.9, 0.1, 0.1, 0.5};
   GeometryId sphere1_id = plant.RegisterVisualGeometry(
       sphere1, RigidTransformd::Identity(), geometry::Sphere(radius),
       "visual", sphere1_diffuse);
   EXPECT_EQ(render_engine.num_registered(), 2);
   const RigidBody<double>& sphere2 =
-      plant.AddRigidBody("Sphere2", SpatialInertia<double>::MakeTestCube());
+      plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   IllustrationProperties sphere2_props;
   const Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
   sphere2_props.AddProperty("phong", "diffuse", sphere2_diffuse);
@@ -2036,10 +2031,10 @@ TEST_F(AcrobotPlantTests, EvalStateAndAccelerationOutputPorts) {
 // Helper function for the two v-to-qdot and qdot-to-v tests.
 void InitializePlantAndContextForVelocityToQDotMapping(
     MultibodyPlant<double>* plant, std::unique_ptr<Context<double>>* context) {
-  // This is used in purely kinematic tests.
-  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
+  // This is used in purely kinematic tests. Therefore we leave the spatial
+  // inertia initialized to garbage. It should not affect the results.
   const RigidBody<double>& body =
-      plant->AddRigidBody("FreeBody", SpatialInertia<double>::MakeTestCube());
+      plant->AddRigidBody("FreeBody", SpatialInertia<double>());
   plant->Finalize();
 
   *context = plant->CreateDefaultContext();
@@ -2284,16 +2279,15 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
 
     // The model simply contains a small and a large box.
-    // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
     const RigidBody<double>& large_box =
-        plant_.AddRigidBody("LargeBox", SpatialInertia<double>::MakeTestCube());
+        plant_.AddRigidBody("LargeBox", SpatialInertia<double>());
     large_box_id_ = plant_.RegisterCollisionGeometry(
         large_box, RigidTransformd::Identity(),
         geometry::Box(large_box_size_, large_box_size_, large_box_size_),
         "collision", CoulombFriction<double>());
 
     const RigidBody<double>& small_box =
-        plant_.AddRigidBody("SmallBox", SpatialInertia<double>::MakeTestCube());
+        plant_.AddRigidBody("SmallBox", SpatialInertia<double>());
     small_box_id_ = plant_.RegisterCollisionGeometry(
         small_box, RigidTransformd::Identity(),
         geometry::Box(small_box_size_, small_box_size_, small_box_size_),
@@ -3340,12 +3334,10 @@ GTEST_TEST(StateSelection, FloatingBodies) {
 }
 
 GTEST_TEST(SetRandomTest, FloatingBodies) {
-  // Create a model that contains a single body B.
+  // Create a model that contains a single body.
   MultibodyPlant<double> plant(0.0);
-
-  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-  const Body<double>& body = plant.AddRigidBody("LoneBody",
-      SpatialInertia<double>::MakeTestCube());
+  const Body<double>& body =
+      plant.AddRigidBody("LoneBody", SpatialInertia<double>());
   plant.Finalize();
 
   RandomGenerator generator;
@@ -3848,6 +3840,41 @@ GTEST_TEST(MultibodyPlantTests, ActuationPorts) {
         (reaction_forces[i].rotational().norm() < kTolerance);
   }
   EXPECT_FALSE(all_reaction_forces_zero);
+}
+
+// Due to issue #12786, we cannot mark the calculation of non-contact forces
+// (and the acceleration it induces) dependent on the MultibodyPlant's inputs,
+// as it should. However, by removing this dependency, we run the risk of an
+// undetected algebraic loop. This tests verifies that if such an algebraic loop
+// exists, a nice throw message is emitted instead of an infinite recursion.
+GTEST_TEST(MultibodyPlantTests, AlgebraicLoopDetection) {
+  systems::DiagramBuilder<double> builder;
+  MultibodyPlant<double>* plant =
+      builder.AddSystem<MultibodyPlant<double>>(1.0e-3);
+  const char kSdfPath[] =
+      "drake/manipulation/models/iiwa_description/sdf/"
+      "iiwa14_no_collision.sdf";
+  Parser parser(plant);
+  auto iiwa_instance =
+      parser.AddModelFromFile(FindResourceOrThrow(kSdfPath), "iiwa");
+  plant->Finalize();
+  auto feedback =
+      builder.AddSystem<systems::PassThrough<double>>(plant->num_velocities());
+  builder.Connect(
+      plant->get_generalized_contact_forces_output_port(iiwa_instance),
+      feedback->get_input_port());
+  builder.Connect(feedback->get_output_port(),
+                  plant->get_applied_generalized_force_input_port());
+  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
+  std::unique_ptr<systems::Context<double>> diagram_context =
+      diagram->CreateDefaultContext();
+  const systems::Context<double>& plant_context =
+      plant->GetMyContextFromRoot(*diagram_context);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant
+          ->get_generalized_contact_forces_output_port(default_model_instance())
+          .Eval(plant_context),
+      "Algebraic loop detected.*");
 }
 
 }  // namespace

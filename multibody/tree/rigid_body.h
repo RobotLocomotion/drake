@@ -121,7 +121,8 @@ class RigidBody : public Body<T> {
   /// (B's origin), expressed in B (this body's frame). This value is calculated
   /// from the SpatialInertia supplied at construction of this body.
   /// @retval I_BBo_B body B's rotational inertia about Bo, expressed in B.
-  RotationalInertia<double> default_rotational_inertia() const final {
+  RotationalInertia<double> default_rotational_inertia()
+      const {
     return default_spatial_inertia_.CalcRotationalInertia();
   }
 

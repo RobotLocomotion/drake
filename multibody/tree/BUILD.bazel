@@ -336,7 +336,7 @@ drake_cc_googletest(
     name = "multibody_tree_creation_test",
     deps = [
         ":tree",
-        "//common/test_utilities",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 
@@ -365,7 +365,6 @@ drake_cc_googletest(
     name = "spatial_inertia_test",
     deps = [
         ":spatial_inertia",
-        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
