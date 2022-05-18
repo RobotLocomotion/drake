@@ -54,10 +54,8 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {
 
   // Define the end-effector link.
   const std::string ee_link_name = "iiwa_link_7";
-  const multibody::Body<double>& ee_body =
-      plant.GetBodyByName(ee_link_name);
-  const multibody::Frame<double>& ee_frame =
-      plant.GetFrameByName(ee_link_name);
+  const multibody::Body<double>& ee_body = plant.GetBodyByName(ee_link_name);
+  const multibody::Frame<double>& ee_frame = plant.GetFrameByName(ee_link_name);
 
   // Create an IK object.
   multibody::InverseKinematics relaxed_ik(plant, true);
@@ -70,7 +68,7 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {
   // fact that iiwa has symmetric position limits.
   const Eigen::VectorXd joint_pos_limits(plant.GetPositionUpperLimits());
   // Generate the random goal configurations.
-  const int num_rand_goals = 2;
+  const int num_rand_goals = 10;
   std::vector<math::RigidTransformd> ee_pose_goal(num_rand_goals);
   for (int i = 0; i < num_rand_goals; ++i) {
     context->get_mutable_continuous_state()
@@ -83,7 +81,7 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {
 
   // Sample a random initial guess assuming that the random range [-1, 1]
   // does not violate any of the joint position limits.
-  const int num_rand_init_guess = 2;
+  const int num_rand_init_guess = 3;
   const Eigen::MatrixXd q0(Eigen::MatrixXd::Random(7, num_rand_init_guess));
 
   for (auto _ : state) {
@@ -106,8 +104,7 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {
         prog->SetInitialGuess(relaxed_ik.q(), q0.col(j));
 
         // Solve the relaxed IK problem.
-        solvers::MathematicalProgramResult result =
-            solvers::Solve(*prog);
+        solvers::MathematicalProgramResult result = solvers::Solve(*prog);
         // Get the solution.
         auto q_sol = result.GetSolution();
         // Evaluate the end-effector pose for the solution.
