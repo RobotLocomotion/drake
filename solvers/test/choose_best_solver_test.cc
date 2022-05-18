@@ -6,9 +6,11 @@
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
+#include "drake/solvers/get_program_type.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/linear_system_solver.h"
+#include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/nlopt_solver.h"
@@ -18,7 +20,6 @@
 
 namespace drake {
 namespace solvers {
-
 class ChooseBestSolverTest : public ::testing::Test {
  public:
   ChooseBestSolverTest()
@@ -107,6 +108,45 @@ TEST_F(ChooseBestSolverTest, EqualityConstrainedQPSolver) {
   CheckBestSolver(EqualityConstrainedQPSolver::id());
 }
 
+void CheckGetAvailableSolvers(const MathematicalProgram& prog) {
+  const ProgramType prog_type = GetProgramType(prog);
+  const std::vector<SolverId> available_ids = GetAvailableSolvers(prog_type);
+  const auto known_solvers = GetKnownSolvers();
+  for (const auto& available_id : available_ids) {
+    EXPECT_GT(known_solvers.count(available_id), 0);
+    std::unique_ptr<SolverInterface> solver = MakeSolver(available_id);
+    EXPECT_TRUE(solver->available());
+    EXPECT_TRUE(solver->enabled());
+    EXPECT_TRUE(solver->AreProgramAttributesSatisfied(prog));
+  }
+  // Now find out the available solvers that can solve this program. These
+  // solvers should be in available_ids.
+  const std::unordered_set<SolverId> available_id_set(available_ids.begin(),
+                                                      available_ids.end());
+  for (const auto& solver_id : known_solvers) {
+    const auto solver = MakeSolver(solver_id);
+    if (solver->available() && solver->enabled() &&
+        solver->AreProgramAttributesSatisfied(prog)) {
+      // CLP can solve some QP, but not all of them. So we don't include CLP in
+      // GetAvailableSolvers(kQP).
+      if (solver_id == ClpSolver::id() && prog_type == ProgramType::kQP) {
+        continue;
+      } else if ((solver_id == SnoptSolver::id() ||
+                  solver_id == IpoptSolver::id() ||
+                  solver_id == NloptSolver::id()) &&
+                 (prog_type == ProgramType::kQuadraticCostConicConstraint)) {
+        // For quadratic cost with conic constraint programs, the nonlinear
+        // solvers (snopt/ipopt/nlopt) can solve the problem, but we don't
+        // recommend using these solvers, hence they are not included in
+        // GetAvailableSolvers(kQuadraticCostConicConstraint).
+        continue;
+      } else {
+        EXPECT_GT(available_id_set.count(solver_id), 0);
+      }
+    }
+  }
+}
+
 TEST_F(ChooseBestSolverTest, LPsolver) {
   prog_.AddLinearEqualityConstraint(x_(0) + 3 * x_(1) == 3);
   CheckBestSolver(LinearSystemSolver::id());
@@ -115,6 +155,7 @@ TEST_F(ChooseBestSolverTest, LPsolver) {
   CheckBestSolver({gurobi_solver_.get(), mosek_solver_.get(), clp_solver_.get(),
                    snopt_solver_.get(), ipopt_solver_.get(),
                    nlopt_solver_.get(), csdp_solver_.get(), scs_solver_.get()});
+  CheckGetAvailableSolvers(prog_);
 }
 
 TEST_F(ChooseBestSolverTest, QPsolver) {
@@ -123,6 +164,7 @@ TEST_F(ChooseBestSolverTest, QPsolver) {
   CheckBestSolver({mosek_solver_.get(), gurobi_solver_.get(),
                    osqp_solver_.get(), snopt_solver_.get(), ipopt_solver_.get(),
                    nlopt_solver_.get(), scs_solver_.get()});
+  CheckGetAvailableSolvers(prog_);
 }
 
 TEST_F(ChooseBestSolverTest, LorentzCone) {
@@ -138,12 +180,14 @@ TEST_F(ChooseBestSolverTest, LorentzCone) {
   prog_.AddPolynomialCost(pow(x_(0), 3));
   CheckBestSolver(
       {snopt_solver_.get(), ipopt_solver_.get(), nlopt_solver_.get()});
+  CheckGetAvailableSolvers(prog_);
 }
 
 TEST_F(ChooseBestSolverTest, LinearComplementarityConstraint) {
   prog_.AddLinearComplementarityConstraint(Eigen::Matrix3d::Identity(),
                                            Eigen::Vector3d::Ones(), x_);
   CheckBestSolver({moby_lcp_solver_.get(), snopt_solver_.get()});
+  CheckGetAvailableSolvers(prog_);
 
   prog_.AddLinearCost(x_(0) + 1);
   CheckBestSolver({snopt_solver_.get()});
@@ -153,6 +197,27 @@ TEST_F(ChooseBestSolverTest, PositiveSemidefiniteConstraint) {
   prog_.AddPositiveSemidefiniteConstraint(
       (Matrix2<symbolic::Variable>() << x_(0), x_(1), x_(1), x_(2)).finished());
   CheckBestSolver({mosek_solver_.get(), csdp_solver_.get(), scs_solver_.get()});
+  CheckGetAvailableSolvers(prog_);
+}
+
+TEST_F(ChooseBestSolverTest, QuadraticCostConicConstraint) {
+  prog_.AddLorentzConeConstraint(x_.head<3>().cast<symbolic::Expression>());
+  prog_.AddQuadraticCost(x_(0) * x_(0));
+  CheckGetAvailableSolvers(prog_);
+}
+
+TEST_F(ChooseBestSolverTest, Nlp) {
+  prog_.AddConstraint(
+      std::make_shared<ExpressionConstraint>(
+          Vector1<symbolic::Expression>(x_(0) + symbolic::sin(x_(1))),
+          Vector1d(0), Vector1d(2)),
+      x_.head<2>());
+  CheckGetAvailableSolvers(prog_);
+}
+
+TEST_F(ChooseBestSolverTest, ExponentialConeConstraint) {
+  prog_.AddExponentialConeConstraint(x_.head<3>().cast<symbolic::Expression>());
+  CheckGetAvailableSolvers(prog_);
 }
 
 TEST_F(ChooseBestSolverTest, BinaryVariable) {
@@ -167,7 +232,13 @@ TEST_F(ChooseBestSolverTest, BinaryVariable) {
         ChooseBestSolver(prog_),
         "There is no available solver for the optimization program, please "
         "manually instantiate MixedIntegerBranchAndBound.*");
+    CheckGetAvailableSolvers(prog_);
   }
+}
+
+TEST_F(ChooseBestSolverTest, UnknownProgramType) {
+  const auto available_solvers = GetAvailableSolvers(ProgramType::kUnknown);
+  EXPECT_TRUE(available_solvers.empty());
 }
 
 TEST_F(ChooseBestSolverTest, NoAvailableSolver) {
