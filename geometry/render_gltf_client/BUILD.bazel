@@ -8,13 +8,17 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-package(default_visibility = ["//visibility:public"])
+# TODO(jwnimmer-tri) Replace with "//visibility:private" once dev code is gone.
+_VISIBILITY = [
+    "//geometry/render/dev/render_gltf_client:__pkg__",
+]
+
+package(default_visibility = _VISIBILITY)
 
 drake_cc_package_library(
     name = "render_gltf_client",
     visibility = ["//visibility:public"],
     deps = [
-        ":internal_http_service",
     ],
 )
 
@@ -22,6 +26,8 @@ drake_cc_library(
     name = "internal_http_service",
     srcs = ["internal_http_service.cc"],
     hdrs = ["internal_http_service.h"],
+    internal = True,
+    visibility = _VISIBILITY,
     interface_deps = [
         "//common:essential",
     ],
