@@ -26,7 +26,7 @@ namespace mpm {
 //       o - o - o - o - o - o                       -- x
 //  bottom_corner
 //
-// , where num_gridpt_x/y/z = 5, 3, 4 respectively.
+// , where num_gridpt_x/y/z = 6, 3, 4 respectively.
 // Since we assume an uniform grid, the distance between neighboring gird points
 // are all h. The bottom_corner is the grid node with the smallest (x, y, z)
 // values, and the top_corner is the grid node with the largest (x, y, z)
@@ -62,7 +62,7 @@ class Grid {
     void set_force(int i, int j, int k, const Vector3<double>& force);
 
  private:
-    inline int reduce_3D_index(int i, int j, int k);
+    int reduce_3D_index(int i, int j, int k);
 
     int num_gridpt_;
     int num_gridpt_x_;
