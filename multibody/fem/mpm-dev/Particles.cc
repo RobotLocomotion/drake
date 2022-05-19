@@ -12,9 +12,9 @@ Particles::Particles(int num_particles) {
     positions_ = std::vector<Vector3<double>>(num_particles);
     velocities_ = std::vector<Vector3<double>>(num_particles);
     masses_ = std::vector<double>(num_particles);
-    volumes_ = std::vector<double>(num_particles);
+    reference_volumes_ = std::vector<double>(num_particles);
     deformation_gradients_ = std::vector<Matrix3<double>>(num_particles);
-    stresses_ = std::vector<Matrix3<double>>(num_particles);
+    Kirchhoff_stresses_ = std::vector<Matrix3<double>>(num_particles);
 }
 
 int Particles::get_num_particles() {
@@ -33,16 +33,16 @@ const double& Particles::get_mass(int index) const {
     return masses_[index];
 }
 
-const double& Particles::get_volume(int index) const {
-    return volumes_[index];
+const double& Particles::get_reference_volume(int index) const {
+    return reference_volumes_[index];
 }
 
 const Matrix3<double>& Particles::get_deformation_gradient(int index) const {
     return deformation_gradients_[index];
 }
 
-const Matrix3<double>& Particles::get_stress(int index) const {
-    return stresses_[index];
+const Matrix3<double>& Particles::get_Kirchhoff_stress(int index) const {
+    return Kirchhoff_stresses_[index];
 }
 
 void Particles::set_position(int index, const Vector3<double>& position) {
@@ -58,9 +58,9 @@ void Particles::set_mass(int index, double mass) {
     masses_[index] = mass;
 }
 
-void Particles::set_volume(int index, double volume) {
-    DRAKE_DEMAND(volume > 0.0);
-    volumes_[index] = volume;
+void Particles::set_reference_volume(int index, double reference_volume) {
+    DRAKE_DEMAND(reference_volume > 0.0);
+    reference_volumes_[index] = reference_volume;
 }
 
 void Particles::set_deformation_gradient(int index,
@@ -68,21 +68,22 @@ void Particles::set_deformation_gradient(int index,
     deformation_gradients_[index] = deformation_gradient;
 }
 
-void Particles::set_stress(int index, const Matrix3<double>& stress) {
-    stresses_[index] = stress;
+void Particles::set_Kirchhoff_stress(int index,
+                                     const Matrix3<double>& Kirchhoff_stress) {
+    Kirchhoff_stresses_[index] = Kirchhoff_stress;
 }
 
 void Particles::add_particle(const Vector3<double>& position,
                              const Vector3<double>& velocity,
-                             double mass, double volume,
+                             double mass, double reference_volume,
                              const Matrix3<double>& deformation_gradient,
-                             const Matrix3<double>& stress) {
+                             const Matrix3<double>& Kirchhoff_stress) {
     positions_.emplace_back(position);
     velocities_.emplace_back(velocity);
     masses_.emplace_back(mass);
-    volumes_.emplace_back(volume);
+    reference_volumes_.emplace_back(reference_volume);
     deformation_gradients_.emplace_back(deformation_gradient);
-    stresses_.emplace_back(stress);
+    Kirchhoff_stresses_.emplace_back(Kirchhoff_stress);
     num_particles_++;
 }
 
