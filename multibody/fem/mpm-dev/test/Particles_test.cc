@@ -12,98 +12,98 @@ namespace {
 
 constexpr double kEps = 4.0 * std::numeric_limits<double>::epsilon();
 
-GTEST_TEST(ParticlesClassTest, RoundTrip) {
+GTEST_TEST(ParticlesClassTest, TestAddSetGet) {
     Vector3<double> pos1 = {1.0, 2.0, 3.0};
     Vector3<double> vel1 = {-1.0, -2.0, -3.0};
     double mass1 = 5.0;
     double vol1  = 10.0;
-    Matrix3<double> dg1 = pos1.asDiagonal();
+    Matrix3<double> F1 = pos1.asDiagonal();
     Matrix3<double> stress1 = vel1.asDiagonal();
 
     Vector3<double> pos2 = {3.0, -1.0, 6.0};
     Vector3<double> vel2 = {-9.0, 8.0, -2.0};
     double mass2 = 7.0;
     double vol2  = 3.0;
-    Matrix3<double> dg2 = pos2.asDiagonal();
+    Matrix3<double> F2 = pos2.asDiagonal();
     Matrix3<double> stress2 = vel2.asDiagonal();
 
     Particles particles = Particles();
     EXPECT_EQ(particles.get_num_particles(), 0);
-    particles.add_particle(pos1, vel1, mass1, vol1, dg1, stress1);
+    particles.add_particle(pos1, vel1, mass1, vol1, F1, stress1);
     EXPECT_EQ(particles.get_num_particles(), 1);
-    particles.add_particle(pos2, vel2, mass2, vol2, dg2, stress2);
+    particles.add_particle(pos2, vel2, mass2, vol2, F2, stress2);
     EXPECT_EQ(particles.get_num_particles(), 2);
 
-    EXPECT_TRUE(CompareMatrices(particles.get_position_at(0), pos1,
+    EXPECT_TRUE(CompareMatrices(particles.get_position(0), pos1,
                 std::numeric_limits<double>::epsilon()));
-    EXPECT_TRUE(CompareMatrices(particles.get_velocity_at(0), vel1,
+    EXPECT_TRUE(CompareMatrices(particles.get_velocity(0), vel1,
                 std::numeric_limits<double>::epsilon()));
-    EXPECT_EQ(particles.get_mass_at(0), mass1);
-    EXPECT_EQ(particles.get_volume_at(0), vol1);
-    EXPECT_TRUE(CompareMatrices(particles.get_deformation_gradient_at(0), dg1,
+    EXPECT_EQ(particles.get_mass(0), mass1);
+    EXPECT_EQ(particles.get_volume(0), vol1);
+    EXPECT_TRUE(CompareMatrices(particles.get_deformation_gradient(0), F1,
                 std::numeric_limits<double>::epsilon()));
-    EXPECT_TRUE(CompareMatrices(particles.get_stress_at(0), stress1,
+    EXPECT_TRUE(CompareMatrices(particles.get_stress(0), stress1,
                 std::numeric_limits<double>::epsilon()));
 
-    EXPECT_TRUE(CompareMatrices(particles.get_position_at(1), pos2,
+    EXPECT_TRUE(CompareMatrices(particles.get_position(1), pos2,
                 std::numeric_limits<double>::epsilon()));
-    EXPECT_TRUE(CompareMatrices(particles.get_velocity_at(1), vel2,
+    EXPECT_TRUE(CompareMatrices(particles.get_velocity(1), vel2,
                 std::numeric_limits<double>::epsilon()));
-    EXPECT_EQ(particles.get_mass_at(1), mass2);
-    EXPECT_EQ(particles.get_volume_at(1), vol2);
-    EXPECT_TRUE(CompareMatrices(particles.get_deformation_gradient_at(1), dg2,
+    EXPECT_EQ(particles.get_mass(1), mass2);
+    EXPECT_EQ(particles.get_volume(1), vol2);
+    EXPECT_TRUE(CompareMatrices(particles.get_deformation_gradient(1), F2,
                 std::numeric_limits<double>::epsilon()));
-    EXPECT_TRUE(CompareMatrices(particles.get_stress_at(1), stress2,
+    EXPECT_TRUE(CompareMatrices(particles.get_stress(1), stress2,
                 std::numeric_limits<double>::epsilon()));
 
     particles = Particles(2);
     EXPECT_EQ(particles.get_num_particles(), 2);
-    particles.set_position_at(0, pos1);
-    particles.set_velocity_at(0, vel1);
-    particles.set_mass_at(0, mass1);
-    particles.set_volume_at(0, vol1);
-    particles.set_deformation_gradient_at(0, dg1);
-    particles.set_stress_at(0, stress1);
-    particles.set_position_at(1, pos2);
-    particles.set_velocity_at(1, vel2);
-    particles.set_mass_at(1, mass2);
-    particles.set_volume_at(1, vol2);
-    particles.set_deformation_gradient_at(1, dg2);
-    particles.set_stress_at(1, stress2);
+    particles.set_position(0, pos1);
+    particles.set_velocity(0, vel1);
+    particles.set_mass(0, mass1);
+    particles.set_volume(0, vol1);
+    particles.set_deformation_gradient(0, F1);
+    particles.set_stress(0, stress1);
+    particles.set_position(1, pos2);
+    particles.set_velocity(1, vel2);
+    particles.set_mass(1, mass2);
+    particles.set_volume(1, vol2);
+    particles.set_deformation_gradient(1, F2);
+    particles.set_stress(1, stress2);
 
-    EXPECT_TRUE(CompareMatrices(particles.get_position_at(0), pos1,
+    EXPECT_TRUE(CompareMatrices(particles.get_position(0), pos1,
                 std::numeric_limits<double>::epsilon()));
-    EXPECT_TRUE(CompareMatrices(particles.get_velocity_at(0), vel1,
+    EXPECT_TRUE(CompareMatrices(particles.get_velocity(0), vel1,
                 std::numeric_limits<double>::epsilon()));
-    EXPECT_EQ(particles.get_mass_at(0), mass1);
-    EXPECT_EQ(particles.get_volume_at(0), vol1);
-    EXPECT_TRUE(CompareMatrices(particles.get_deformation_gradient_at(0), dg1,
+    EXPECT_EQ(particles.get_mass(0), mass1);
+    EXPECT_EQ(particles.get_volume(0), vol1);
+    EXPECT_TRUE(CompareMatrices(particles.get_deformation_gradient(0), F1,
                 std::numeric_limits<double>::epsilon()));
-    EXPECT_TRUE(CompareMatrices(particles.get_stress_at(0), stress1,
-                std::numeric_limits<double>::epsilon()));
-
-    EXPECT_TRUE(CompareMatrices(particles.get_position_at(1), pos2,
-                std::numeric_limits<double>::epsilon()));
-    EXPECT_TRUE(CompareMatrices(particles.get_velocity_at(1), vel2,
-                std::numeric_limits<double>::epsilon()));
-    EXPECT_EQ(particles.get_mass_at(1), mass2);
-    EXPECT_EQ(particles.get_volume_at(1), vol2);
-    EXPECT_TRUE(CompareMatrices(particles.get_deformation_gradient_at(1), dg2,
-                std::numeric_limits<double>::epsilon()));
-    EXPECT_TRUE(CompareMatrices(particles.get_stress_at(1), stress2,
+    EXPECT_TRUE(CompareMatrices(particles.get_stress(0), stress1,
                 std::numeric_limits<double>::epsilon()));
 
-    particles.add_particle(pos1, vel1, mass1, vol1, dg1, stress1);
+    EXPECT_TRUE(CompareMatrices(particles.get_position(1), pos2,
+                std::numeric_limits<double>::epsilon()));
+    EXPECT_TRUE(CompareMatrices(particles.get_velocity(1), vel2,
+                std::numeric_limits<double>::epsilon()));
+    EXPECT_EQ(particles.get_mass(1), mass2);
+    EXPECT_EQ(particles.get_volume(1), vol2);
+    EXPECT_TRUE(CompareMatrices(particles.get_deformation_gradient(1), F2,
+                std::numeric_limits<double>::epsilon()));
+    EXPECT_TRUE(CompareMatrices(particles.get_stress(1), stress2,
+                std::numeric_limits<double>::epsilon()));
+
+    particles.add_particle(pos1, vel1, mass1, vol1, F1, stress1);
     EXPECT_EQ(particles.get_num_particles(), 3);
-    EXPECT_TRUE(CompareMatrices(particles.get_position_at(2), pos1,
+    EXPECT_TRUE(CompareMatrices(particles.get_position(2), pos1,
                 std::numeric_limits<double>::epsilon()));
-    EXPECT_TRUE(CompareMatrices(particles.get_velocity_at(2), vel1,
+    EXPECT_TRUE(CompareMatrices(particles.get_velocity(2), vel1,
                 std::numeric_limits<double>::epsilon()));
-    EXPECT_EQ(particles.get_mass_at(2), mass1);
-    EXPECT_EQ(particles.get_volume_at(2), vol1);
-    EXPECT_TRUE(CompareMatrices(particles.get_deformation_gradient_at(2), dg1,
+    EXPECT_EQ(particles.get_mass(2), mass1);
+    EXPECT_EQ(particles.get_volume(2), vol1);
+    EXPECT_TRUE(CompareMatrices(particles.get_deformation_gradient(2), F1,
                 std::numeric_limits<double>::epsilon()));
-    EXPECT_TRUE(CompareMatrices(particles.get_stress_at(2), stress1,
+    EXPECT_TRUE(CompareMatrices(particles.get_stress(2), stress1,
                 std::numeric_limits<double>::epsilon()));
 }
 

@@ -21,54 +21,54 @@ int Particles::get_num_particles() {
     return num_particles_;
 }
 
-const Vector3<double>& Particles::get_position_at(int index) const {
+const Vector3<double>& Particles::get_position(int index) const {
     return positions_[index];
 }
 
-const Vector3<double>& Particles::get_velocity_at(int index) const {
+const Vector3<double>& Particles::get_velocity(int index) const {
     return velocities_[index];
 }
 
-const double& Particles::get_mass_at(int index) const {
+const double& Particles::get_mass(int index) const {
     return masses_[index];
 }
 
-const double& Particles::get_volume_at(int index) const {
+const double& Particles::get_volume(int index) const {
     return volumes_[index];
 }
 
-const Matrix3<double>& Particles::get_deformation_gradient_at(int index) const {
+const Matrix3<double>& Particles::get_deformation_gradient(int index) const {
     return deformation_gradients_[index];
 }
 
-const Matrix3<double>& Particles::get_stress_at(int index) const {
+const Matrix3<double>& Particles::get_stress(int index) const {
     return stresses_[index];
 }
 
-void Particles::set_position_at(int index, const Vector3<double>& position) {
+void Particles::set_position(int index, const Vector3<double>& position) {
     positions_[index] = position;
 }
 
-void Particles::set_velocity_at(int index, const Vector3<double>& velocity) {
+void Particles::set_velocity(int index, const Vector3<double>& velocity) {
     velocities_[index] = velocity;
 }
 
-void Particles::set_mass_at(int index, double mass) {
+void Particles::set_mass(int index, double mass) {
     DRAKE_DEMAND(mass > 0.0);
     masses_[index] = mass;
 }
 
-void Particles::set_volume_at(int index, double volume) {
+void Particles::set_volume(int index, double volume) {
     DRAKE_DEMAND(volume > 0.0);
     volumes_[index] = volume;
 }
 
-void Particles::set_deformation_gradient_at(int index,
+void Particles::set_deformation_gradient(int index,
                         const Matrix3<double>& deformation_gradient) {
     deformation_gradients_[index] = deformation_gradient;
 }
 
-void Particles::set_stress_at(int index, const Matrix3<double>& stress) {
+void Particles::set_stress(int index, const Matrix3<double>& stress) {
     stresses_[index] = stress;
 }
 
