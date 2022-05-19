@@ -13,8 +13,8 @@ def _rewrite_one(*, old_filename, new_filename, edit_include):
     alterations:
 
     - The paths in #include statements are replaced per the (old, new) pairs in
-    the include_edit list. Only includes that use quotation marks will be
-    changed. The pairs are literal strings that must be a prefix of the path.
+    the include_edit list. The pairs are literal strings that must be a prefix
+    of the path.
 
     - Wraps an inline namespace "drake_vendor" with hidden symbol visibility
     around the entire file; it is withdrawn prior to any include statement.
@@ -30,6 +30,7 @@ def _rewrite_one(*, old_filename, new_filename, edit_include):
     # Re-spell the project's own include statements.
     for old_inc, new_inc in edit_include:
         text = text.replace(f'#include "{old_inc}', f'#include "{new_inc}')
+        text = text.replace(f'#include <{old_inc}', f'#include <{new_inc}')
 
     # Add an inline namespace around the whole file, but disable it around
     # include statements.

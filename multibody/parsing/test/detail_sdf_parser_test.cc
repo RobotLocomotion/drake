@@ -5,9 +5,9 @@
 #include <sstream>
 #include <stdexcept>
 
+#include <drake_vendor/sdf/parser.hh>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <sdf/parser.hh>
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"

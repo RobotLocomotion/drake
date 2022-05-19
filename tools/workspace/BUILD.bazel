@@ -47,6 +47,7 @@ drake_py_binary(
     name = "vendor_cxx",
     srcs = ["vendor_cxx.py"],
     visibility = [
+        "@sdformat//:__pkg__",
         "@yaml_cpp_internal//:__pkg__",
     ],
     deps = [":module_py"],
