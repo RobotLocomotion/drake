@@ -60,7 +60,6 @@ class Matrix3dWithDerivatives {
   const Eigen::Matrix3d& value() const { return value_; }
 
  private:
-  friend class Matrix3dWithDerivatives;
   friend bool IsNearlyEqualTo(const Matrix3dWithDerivatives& m1,
                               const Matrix3dWithDerivatives& m2,
                               double tolerance);
@@ -466,7 +465,7 @@ class RotationMatrix {
 
   template <typename T1=T>
   std::enable_if_t<std::is_same_v<T1, AutoDiffXd>,
-                 const Eigen::RowVector3<AutoDiffXd>>
+                 const RowVector3<AutoDiffXd>>
   row(int index) const {
     DRAKE_ASSERT(0 <= index && index <= 2);
     // TODO(russt): Make this more efficient!
@@ -500,7 +499,7 @@ class RotationMatrix {
 
   template <typename T1=T>
   std::enable_if_t<std::is_same_v<T1, AutoDiffXd>,
-                 const Eigen::Vector3<AutoDiffXd>>
+                 const Vector3<AutoDiffXd>>
   col(int index) const {
     DRAKE_ASSERT(0 <= index && index <= 2);
     // TODO(russt): Make this more efficient!

@@ -26,7 +26,7 @@ class IiwaPositionConstraintFixture : public benchmark::Fixture {
   using benchmark::Fixture::SetUp;
 
   IiwaPositionConstraintFixture() {
-    Iterations(1000);
+    Iterations(10000);
   }
 
   void SetUp(const ::benchmark::State&) override {
