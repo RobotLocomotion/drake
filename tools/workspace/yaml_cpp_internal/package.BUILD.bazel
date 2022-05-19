@@ -35,17 +35,17 @@ _VENDORED_SRCS = [
 ]
 
 genrule(
-    name = "foo",
+    name = "vendoring",
     srcs = _HDRS + _SRCS,
     outs = _VENDORED_HDRS + _VENDORED_SRCS,
     cmd = " ".join([
-        "$(execpath @drake//tools/workspace/yaml_cpp_internal:vendor_cxx)",
+        "$(execpath @drake//tools/workspace:vendor_cxx)",
         "--edit-include=yaml-cpp/:drake-yaml-cpp/",
     ] + [
         "$(execpath {}):$(execpath {})".format(old, new)
         for old, new in zip(_HDRS, _VENDORED_HDRS) + zip(_SRCS, _VENDORED_SRCS)
     ]),
-    tools = ["@drake//tools/workspace/yaml_cpp_internal:vendor_cxx"],
+    tools = ["@drake//tools/workspace:vendor_cxx"],
 )
 
 cc_library(
