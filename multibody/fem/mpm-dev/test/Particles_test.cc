@@ -92,6 +92,19 @@ GTEST_TEST(ParticlesClassTest, RoundTrip) {
                 std::numeric_limits<double>::epsilon()));
     EXPECT_TRUE(CompareMatrices(particles.get_stress_at(1), stress2,
                 std::numeric_limits<double>::epsilon()));
+
+    particles.add_particle(pos1, vel1, mass1, vol1, dg1, stress1);
+    EXPECT_EQ(particles.get_num_particles(), 3);
+    EXPECT_TRUE(CompareMatrices(particles.get_position_at(2), pos1,
+                std::numeric_limits<double>::epsilon()));
+    EXPECT_TRUE(CompareMatrices(particles.get_velocity_at(2), vel1,
+                std::numeric_limits<double>::epsilon()));
+    EXPECT_EQ(particles.get_mass_at(2), mass1);
+    EXPECT_EQ(particles.get_volume_at(2), vol1);
+    EXPECT_TRUE(CompareMatrices(particles.get_deformation_gradient_at(2), dg1,
+                std::numeric_limits<double>::epsilon()));
+    EXPECT_TRUE(CompareMatrices(particles.get_stress_at(2), stress1,
+                std::numeric_limits<double>::epsilon()));
 }
 
 }  // namespace
