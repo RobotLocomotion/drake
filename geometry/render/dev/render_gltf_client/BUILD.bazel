@@ -15,21 +15,6 @@ load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 package(default_visibility = ["//visibility:private"])
 
 drake_cc_library(
-    name = "internal_http_service_curl",
-    srcs = ["internal_http_service_curl.cc"],
-    hdrs = ["internal_http_service_curl.h"],
-    internal = True,
-    visibility = ["//visibility:private"],
-    deps = [
-        "//common:filesystem",
-        "//common:unused",
-        "//geometry/render_gltf_client:internal_http_service",
-        "@fmt",
-        "@libcurl",
-    ],
-)
-
-drake_cc_library(
     name = "internal_render_client",
     srcs = [
         "internal_render_client.cc",
@@ -42,13 +27,13 @@ drake_cc_library(
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
-        ":internal_http_service_curl",
         "//common:filesystem",
         "//common:nice_type_name",
         "//common:temp_directory",
         "//geometry/render:render_camera",
         "//geometry/render:render_engine",
         "//geometry/render_gltf_client:internal_http_service",
+        "//geometry/render_gltf_client:internal_http_service_curl",
         "//systems/sensors:image",
         "@picosha2",
         "@vtk//:vtkIOImage",
@@ -80,15 +65,6 @@ drake_cc_library(
 )
 
 # === test/ ===
-
-drake_cc_googletest(
-    name = "internal_http_service_curl_test",
-    deps = [
-        ":internal_http_service_curl",
-        "//common:temp_directory",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
 
 drake_cc_library(
     name = "internal_test_png",

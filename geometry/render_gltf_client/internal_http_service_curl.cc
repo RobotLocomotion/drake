@@ -1,11 +1,11 @@
-#include "drake/geometry/render/dev/render_gltf_client/internal_http_service_curl.h"
+#include "drake/geometry/render_gltf_client/internal_http_service_curl.h"
 
 #include <atomic>
 #include <chrono>
 #include <fstream>
 #include <regex>
 #include <thread>
-#include <utility>  // std::pair
+#include <utility>
 #include <vector>
 
 #include <curl/curl.h>
@@ -29,11 +29,13 @@ namespace fs = drake::filesystem;
 // Curl callbacks --------------------------------------------------------------
 
 // Writes callback for libcurl, assumes `userp` points to an std::ofstream.
-// See: https://curl.se/libcurl/c/libcurl-tutorial.html
+// See: https://curl.se/libcurl/c/CURLOPT_WRITEFUNCTION.html
 size_t WriteFileData(void* buffer, size_t size, size_t nmemb, void* userp) {
   const size_t data_size = size * nmemb;
   std::ofstream* f = static_cast<std::ofstream*>(userp);
   f->write(static_cast<char*>(buffer), data_size);
+  // Return 0 to indicate a failed write operation to libcurl.
+  if (!f) return 0;
   return data_size;
 }
 
@@ -84,7 +86,7 @@ std::string CurlInfoTypeAsString(curl_infotype type) {
   return fmt::format("UNKNOWN_CURLINFO_TYPE={}", type);
 }
 
-/* Removes leading / trailing whitespace from message before logging.  Curl
+/* Removes leading / trailing whitespace from `message` before logging.  Curl
  includes newline characters in its entries, which are desirable for the
  accumulated interior message parts but the trailing whitespace in particular
  leads to cluttered logs (drake::log() adds a trailing newline). */
@@ -119,7 +121,7 @@ void LogIfTrimmedWhitespaceNonEmpty(curl_infotype type,
          data="We are completely uploaded and fine\n"
  ...
 
- Unlike after CURLINFO_HEADER_OUT, the CURLINFO_TEXT included after
+ Unlike after CURLINFO_HEADER_OUT, the CURLINFO_TEXT included before
  CURLINFO_HEADER_IN is provided one line at a time.  As a result, the
  drake::log() if added to directly in DebugCallback can become somewhat
  cluttered and inconsistent.  This method combines any sequential messages that
@@ -141,11 +143,11 @@ void LogIfTrimmedWhitespaceNonEmpty(curl_infotype type,
  */
 void LogCurlDebugData(const DebugData& debug_data) {
   // NOTE: not very efficient in terms of copies, but messages are small.
-  std::string accumulator;
+  std::string accumulator{};
   /* The value must be initialized for compiler warnings, prev_type gets set on
    the first iteration. Initialize to intentionally invalid value. */
   curl_infotype prev_type = static_cast<curl_infotype>(-1);
-  auto counter = 0;
+  int counter = 0;
   for (const auto& pair : debug_data) {
     // On the first iteration, initialize the previous type and accumulator.
     if (counter++ == 0) {
@@ -189,9 +191,9 @@ std::string NextTempFile() {
 
 HttpServiceCurl::HttpServiceCurl() : HttpService() {
   /* libcurl should be initialized exactly once per process, this initialization
-   is not threadsafe and must be done before potential threads using curl begin
+   is not thread-safe and must be done before potential threads using curl begin
    (e.g., threaded renderings).  See also: MakeRenderEngineGltfClient
-   documentation in render_engine_gltf_client_factory.h */
+   documentation in factory.h */
   static CURLcode ignored =
       curl_global_init(CURL_GLOBAL_ALL | CURL_GLOBAL_ACK_EINTR);
   unused(ignored);
@@ -264,19 +266,19 @@ HttpResponse HttpServiceCurl::DoPostForm(
   curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);
 
   /* We do not know if the server is going to respond with anything, and if it
-   does if it will be e.g., json or image file response.  Write directly to a
-   file buffer within our temporary directory. */
+   does it will be e.g., json or image file response.  Write directly to a file
+   buffer within our temporary directory. */
   const auto temp_bin_out = fs::path(temp_directory) / NextTempFile();
+  const std::string bin_out_path{temp_bin_out.string()};
   if (fs::exists(temp_bin_out)) {
     cleanup_curl(curl, form, headerlist);
     throw std::runtime_error(fmt::format(
         "HttpServiceCurl: refusing to overwrite temporary file '{}' that "
         "already exists, please cleanup temporary directory '{}'.",
-        temp_bin_out.string(), temp_directory));
+        bin_out_path, temp_directory));
   }
 
   // Open the file for writing, pass it off to curl.
-  const std::string bin_out_path{temp_bin_out.string()};
   std::ofstream bin_out(bin_out_path, std::ios::binary);
   if (!bin_out.good()) {
     cleanup_curl(curl, form, headerlist);
@@ -288,6 +290,11 @@ HttpResponse HttpServiceCurl::DoPostForm(
 
   // Perform the POST and drake::log() prior to any potential exceptions.
   result = curl_easy_perform(curl);
+  if (!bin_out.good()) {
+    cleanup_curl(curl, form, headerlist);
+    throw std::runtime_error(fmt::format(
+        "HttpServiceCurl: unable to wtite temporary file '{}'.", bin_out_path));
+  }
   if (verbose) {
     LogCurlDebugData(debug_data);
   }
@@ -302,7 +309,8 @@ HttpResponse HttpServiceCurl::DoPostForm(
   // Cleanup the curl memory.
   cleanup_curl(curl, form, headerlist);
 
-  // Write callback is complete, close the file. If empty, no response, delete.
+  // Close the file after the write callback is complete. Delete the file if
+  // it's empty.
   bin_out.close();
   const bool server_gave_data_response = fs::file_size(temp_bin_out) > 0;
   if (server_gave_data_response) {

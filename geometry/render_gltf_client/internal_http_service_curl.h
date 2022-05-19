@@ -1,8 +1,6 @@
 #pragma once
 
-#include <cstdint>
 #include <map>
-#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
@@ -22,7 +20,7 @@ class HttpServiceCurl : public HttpService {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HttpServiceCurl);
 
  protected:
-  /* @see HttpService::PostForm */
+  /* @see HttpService::DoPostForm */
   HttpResponse DoPostForm(
       const std::string& temp_directory, const std::string& url, int port,
       const DataFieldsMap& data_fields,
