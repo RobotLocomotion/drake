@@ -19,6 +19,7 @@ drake_cc_library(
     ],
     deps = [
         ":BSpline",
+        ":Particles",
         ":particles_to_bgeo",
         "//common:essential",
         "@partio",
@@ -32,6 +33,19 @@ drake_cc_library(
     ],
     hdrs = [
         "BSpline.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "Particles",
+    srcs = [
+        "Particles.cc",
+    ],
+    hdrs = [
+        "Particles.h",
     ],
     deps = [
         "//common:essential",
@@ -76,6 +90,14 @@ drake_cc_googletest(
     name = "BSpline_test",
     deps = [
         ":BSpline",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "Particles_test",
+    deps = [
+        ":Particles",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
