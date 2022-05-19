@@ -35,7 +35,7 @@ def _impl(repository_ctx):
     os_result = determine_os(repository_ctx)
     if os_result.error != None:
         fail(os_result.error)
-    elif os_result.is_macos:
+    elif os_result.is_macos or os_result.is_macos_wheel:
         prefix = "{}/opt/boost".format(os_result.homebrew_prefix)
     elif os_result.is_ubuntu or os_result.is_manylinux:
         prefix = "/usr"
