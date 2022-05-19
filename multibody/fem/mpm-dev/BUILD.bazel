@@ -19,6 +19,7 @@ drake_cc_library(
     ],
     deps = [
         ":BSpline",
+        ":Grid",
         ":Particles",
         ":particles_to_bgeo",
         "//common:essential",
@@ -46,6 +47,19 @@ drake_cc_library(
     ],
     hdrs = [
         "Particles.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "Grid",
+    srcs = [
+        "Grid.cc",
+    ],
+    hdrs = [
+        "Grid.h",
     ],
     deps = [
         "//common:essential",
@@ -98,6 +112,14 @@ drake_cc_googletest(
     name = "Particles_test",
     deps = [
         ":Particles",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "Grid_test",
+    deps = [
+        ":Grid",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )

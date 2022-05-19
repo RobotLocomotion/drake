@@ -1,9 +1,9 @@
 #pragma once
 
+#include <limits>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fem/mpm-dev/BSpline.h"
 
 namespace drake {
 namespace multibody {
@@ -12,7 +12,7 @@ namespace mpm {
 // A particles class holding vectors of particles' state. The grid can be
 // visually represented as:
 //
-//                 h             top_corner
+//                 h
 //               o - o - o - o - o - o
 //               |   |   |   |   |   |
 //           o - o - o - o - o - o - o
@@ -29,7 +29,6 @@ namespace mpm {
 // , where num_gridpt_x/y/z = 6, 3, 4 respectively.
 // Since we assume an uniform grid, the distance between neighboring gird points
 // are all h. The bottom_corner is the grid node with the smallest (x, y, z)
-// values, and the top_corner is the grid node with the largest (x, y, z)
 // values. We adopt the lexicographical ordering the the grid nodes, where
 // an index (i, j, k) denotes the indices in (x, y, z) directions, ordered by
 // the values incrementally. Users will access the states on grid nodes by
@@ -39,17 +38,13 @@ namespace mpm {
 class Grid {
  public:
     Grid();
-    Grid(int num_gridpt_x, int num_gridpt_y, int num_gridpt_z, double h,
-         const Vector3<double>& bottom_corner,
-         const Vector3<double>& top_corner);
+    Grid(const Vector3<int>& num_gridpt_1D, double h,
+         const Vector3<double>& bottom_corner_pos);
 
     int get_num_gridpt() const;
-    int get_num_gridpt_x() const;
-    int get_num_gridpt_y() const;
-    int get_num_gridpt_z() const;
+    const Vector3<int>& get_num_gridpt_1D() const;
     double get_h() const;
-    const Vector3<double>& get_bottom_corner() const;
-    const Vector3<double>& get_top_corner() const;
+    const Vector3<double>& get_bottom_corner_position() const;
 
     const Vector3<double>& get_position(int i, int j, int k) const;
     const Vector3<double>& get_velocity(int i, int j, int k) const;
@@ -62,22 +57,19 @@ class Grid {
     void set_force(int i, int j, int k, const Vector3<double>& force);
 
  private:
-    int reduce_3D_index(int i, int j, int k);
+    int reduce3DIndex(int i, int j, int k) const;
+    void check_3D_index(int i, int j, int k) const;
 
     int num_gridpt_;
-    int num_gridpt_x_;
-    int num_gridpt_y_;
-    int num_gridpt_z_;
+    Vector3<int> num_gridpt_1D_;
     double h_;
-    Vector3<double> bottom_corner_{};
-    Vector3<double> top_corner_{};
-    std::vector<BSpline> bases_{};
+    Vector3<double> bottom_corner_position_{};
 
     std::vector<Vector3<double>> positions_{};
     std::vector<Vector3<double>> velocities_{};
     std::vector<double> masses_{};
     std::vector<Vector3<double>> forces_{};
-};  // class Particles
+};  // class Grid
 
 }  // namespace mpm
 }  // namespace multibody
