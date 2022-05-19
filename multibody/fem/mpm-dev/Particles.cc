@@ -12,7 +12,7 @@ Particles::Particles(int num_particles): num_particles_(num_particles),
                                          masses_(num_particles),
                                          reference_volumes_(num_particles),
                                          deformation_gradients_(num_particles),
-                                         Kirchhoff_stresses_(num_particles) {
+                                         kirchhoff_stresses_(num_particles) {
     DRAKE_ASSERT(num_particles >= 0);
 }
 
@@ -40,8 +40,8 @@ const Matrix3<double>& Particles::get_deformation_gradient(int index) const {
     return deformation_gradients_[index];
 }
 
-const Matrix3<double>& Particles::get_Kirchhoff_stress(int index) const {
-    return Kirchhoff_stresses_[index];
+const Matrix3<double>& Particles::get_kirchhoff_stress(int index) const {
+    return kirchhoff_stresses_[index];
 }
 
 void Particles::set_position(int index, const Vector3<double>& position) {
@@ -67,22 +67,22 @@ void Particles::set_deformation_gradient(int index,
     deformation_gradients_[index] = deformation_gradient;
 }
 
-void Particles::set_Kirchhoff_stress(int index,
-                                     const Matrix3<double>& Kirchhoff_stress) {
-    Kirchhoff_stresses_[index] = Kirchhoff_stress;
+void Particles::set_kirchhoff_stress(int index,
+                                     const Matrix3<double>& kirchhoff_stress) {
+    kirchhoff_stresses_[index] = kirchhoff_stress;
 }
 
 void Particles::addParticle(const Vector3<double>& position,
                             const Vector3<double>& velocity,
                             double mass, double reference_volume,
                             const Matrix3<double>& deformation_gradient,
-                            const Matrix3<double>& Kirchhoff_stress) {
+                            const Matrix3<double>& kirchhoff_stress) {
     positions_.emplace_back(position);
     velocities_.emplace_back(velocity);
     masses_.emplace_back(mass);
     reference_volumes_.emplace_back(reference_volume);
     deformation_gradients_.emplace_back(deformation_gradient);
-    Kirchhoff_stresses_.emplace_back(Kirchhoff_stress);
+    kirchhoff_stresses_.emplace_back(kirchhoff_stress);
     num_particles_++;
 }
 

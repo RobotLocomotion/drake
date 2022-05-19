@@ -20,7 +20,7 @@ class Particles {
     const double& get_mass(int index) const;
     const double& get_reference_volume(int index) const;
     const Matrix3<double>& get_deformation_gradient(int index) const;
-    const Matrix3<double>& get_Kirchhoff_stress(int index) const;
+    const Matrix3<double>& get_kirchhoff_stress(int index) const;
 
     void set_position(int index, const Vector3<double>& position);
     void set_velocity(int index, const Vector3<double>& velocity);
@@ -28,14 +28,14 @@ class Particles {
     void set_reference_volume(int index, double reference_volume);
     void set_deformation_gradient(int index,
                                  const Matrix3<double>& deformation_gradient);
-    void set_Kirchhoff_stress(int index,
-                              const Matrix3<double>& Kirchhoff_stress);
+    void set_kirchhoff_stress(int index,
+                              const Matrix3<double>& kirchhoff_stress);
 
     void addParticle(const Vector3<double>& position,
                      const Vector3<double>& velocity,
                      double mass, double reference_volume,
                      const Matrix3<double>& deformation_gradient,
-                     const Matrix3<double>& Kirchhoff_stress);
+                     const Matrix3<double>& kirchhoff_stress);
 
  private:
     int num_particles_;
@@ -44,7 +44,7 @@ class Particles {
     std::vector<double> masses_{};
     std::vector<double> reference_volumes_{};
     std::vector<Matrix3<double>> deformation_gradients_{};
-    std::vector<Matrix3<double>> Kirchhoff_stresses_{};
+    std::vector<Matrix3<double>> kirchhoff_stresses_{};
 };  // class Particles
 
 }  // namespace mpm
