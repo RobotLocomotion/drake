@@ -259,19 +259,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// @param[in] Ly The length of the box edge in the principal y-axis.
   /// @param[in] Lz The length of the box edge in the principal z-axis.
   /// @throws std::exception if any of Lx, Ly, Lz are negative.
-  static UnitInertia<T> SolidBox(const T& Lx, const T& Ly, const T& Lz) {
-    if (Lx < T(0) || Ly < T(0) || Lz < T(0)) {
-      const std::string msg = "A length argument to UnitInertia::SolidBox() "
-                              "is negative.";
-      throw std::logic_error(msg);
-    }
-    const T one_twelfth = T(1) / T(12);
-    const T Lx2 = Lx * Lx, Ly2 = Ly * Ly, Lz2 = Lz * Lz;
-    return UnitInertia(
-        one_twelfth * (Ly2 + Lz2),
-        one_twelfth * (Lx2 + Lz2),
-        one_twelfth * (Lx2 + Ly2));
-  }
+  static UnitInertia<T> SolidBox(const T& Lx, const T& Ly, const T& Lz);
 
   /// Computes the unit inertia for a unit-mass solid cube (a box with
   /// equal-sized sides) of uniform density taken about its geometric center.

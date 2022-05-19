@@ -80,7 +80,7 @@ GTEST_TEST(SpatialInertia, MakeTestCubeSpatialInertia) {
   const Vector3<double> M1_unit_moments = M1.get_unit_inertia().get_moments();
   const Vector3<double> M1_unit_products = M1.get_unit_inertia().get_products();
   const double I1 = length_2 * length_2 / 6.0;      // Expected Ixx unit moment.
-  const double J1 = I1 + (length_2 / 2)* (length_2 / 2);   // Expected Iyy, Izz.
+  const double J1 = I1 + (length_2 / 2) * (length_2 / 2);  // Expected Iyy, Izz.
   EXPECT_TRUE(CompareMatrices(
       M1_unit_moments, Vector3<double>(I1, J1, J1), kEpsilon));
   EXPECT_EQ(M1_unit_products, Vector3<double>::Zero());
@@ -96,18 +96,23 @@ GTEST_TEST(SpatialInertia, MakeTestCubeSpatialInertia) {
   const Vector3<double> M2_unit_moments = M2.get_unit_inertia().get_moments();
   const Vector3<double> M2_unit_products = M2.get_unit_inertia().get_products();
   const double I2 = default_length * default_length / 6.0;
-  const double J2 = I2 + (default_length / 2)* (default_length / 2);
+  const double J2 = I2 + (default_length / 2) * (default_length / 2);
   EXPECT_TRUE(CompareMatrices(
       M2_unit_moments, Vector3<double>(I2, J2, J2), kEpsilon));
   EXPECT_EQ(M2_unit_products, Vector3<double>::Zero());
 
-  // Ensure an exception is thrown if a mass or length is negative.
-  EXPECT_THROW(SpatialInertia<double>::MakeTestCube(
-      -mass_1, length_2), std::exception);
-  const std::string expected_msg = "A length argument to "
+  // Ensure an exception is thrown if mass is negative.
+   const std::string expected_mass_msg =
+      "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
+      "mass = -1(\\.0)? is negative.\n";
+  DRAKE_EXPECT_THROWS_MESSAGE(SpatialInertia<double>::MakeTestCube(
+      -mass_1, length_2), expected_mass_msg);
+
+  // Ensure an exception is thrown if length is negative.
+  const std::string expected_length_msg = "A length argument to "
                                    "UnitInertia::SolidBox\\(\\) is negative.";
   DRAKE_EXPECT_THROWS_MESSAGE(SpatialInertia<double>::MakeTestCube(
-      mass_1, -length_2), expected_msg);
+      mass_1, -length_2), expected_length_msg);
 }
 
 // Test the construction from the mass, center of mass, and unit inertia of a
