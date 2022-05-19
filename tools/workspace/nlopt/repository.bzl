@@ -8,7 +8,7 @@ def _impl(repository_ctx):
     if os_result.error != None:
         fail(os_result.error)
 
-    if os_result.is_macos:
+    if os_result.is_macos or os_result.is_macos_wheel:
         build_flavor = "macos"
         repository_ctx.symlink(
             "{}/opt/nlopt/include/nlopt.h".format(os_result.homebrew_prefix),
