@@ -13,9 +13,29 @@
 namespace drake {
 namespace multibody {
 namespace meshcat {
+
+// Proxy class for passthrough access to JointSliders private member data.
+template <typename T>
+class JointSlidersTester {
+ public:
+  explicit JointSlidersTester(const JointSliders<T>& js) : joint_sliders_{js} {}
+
+  const Eigen::VectorXd& GetInitialValue() const {
+    return joint_sliders_.initial_value_;
+  }
+
+  const std::map<int, std::string>& GetPositionNames() const {
+    return joint_sliders_.position_names_;
+  }
+
+ private:
+  const JointSliders<T>& joint_sliders_;
+};
+
 namespace {
 
 using Eigen::Vector2d;
+using Eigen::VectorXd;
 using geometry::Meshcat;
 using geometry::MeshcatVisualizer;
 using geometry::SceneGraph;
@@ -294,6 +314,57 @@ TEST_F(JointSlidersTest, Run) {
   const std::string updated = meshcat_->GetPackedTransform(geometry_path);
   ASSERT_FALSE(updated.empty());
   EXPECT_NE(updated, original);
+}
+
+// Tests the "SetPositions" function.
+TEST_F(JointSlidersTest, SetPositions) {
+  // Add the acrobot visualizer and sliders.
+  AddAcrobot();
+  MeshcatVisualizer<double>::AddToBuilder(&builder_, scene_graph_, meshcat_);
+  auto* dut = builder_.AddSystem<JointSliders<double>>(meshcat_, &plant_);
+  auto diagram = builder_.Build();
+  const JointSlidersTester<double> tester{*dut};
+
+  /* Upon construction, since no initial values were provided, we expect the
+   initial values to be the same as the model's default positions.  For
+   Acrobot, this will be [0, 0]. */
+  const int n_positions = 2;  // Acrobot has 2 positions.
+  const VectorXd& initial_value = tester.GetInitialValue();
+
+  // Initial values are 0.
+  ASSERT_EQ(initial_value.size(), n_positions);
+  EXPECT_EQ(initial_value[0], 0);
+  EXPECT_EQ(initial_value[1], 0);
+
+  // Acrobot has two sliders, both should be 0.
+  const auto& position_names = tester.GetPositionNames();
+  ASSERT_EQ(position_names.size(), n_positions);
+  for (const auto& [position_index, slider_name] : position_names) {
+    EXPECT_EQ(meshcat_->GetSliderValue(slider_name), 0);
+  }
+
+  // Setting the positions with something not of length 2 should raise.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut->SetPositions({}), "Expected q of size 2, but got size 0 instead");
+
+  /* Setting the positions should update both the initial value and sliders.
+   Do not initialize q to something outside of (lower_limit, upper_limit), which
+   defaults to (-10, 10). */
+  VectorXd q{n_positions};
+  q << -4, 7;
+  dut->SetPositions(q);
+
+  // Check that the initial values are as expected.
+  ASSERT_EQ(initial_value.size(), n_positions);
+  EXPECT_EQ(initial_value[0], q[0]);
+  EXPECT_EQ(initial_value[1], q[1]);
+
+  // Check that the slider values were updated.
+  ASSERT_EQ(position_names.size(), n_positions);
+  for (const auto& [position_index, slider_name] : position_names) {
+    const auto expected_val = q[position_index];
+    EXPECT_EQ(meshcat_->GetSliderValue(slider_name), expected_val);
+  }
 }
 
 }  // namespace
