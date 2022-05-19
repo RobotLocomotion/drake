@@ -54,6 +54,13 @@ drake_cc_library(
     ],
 )
 
+# The meshcat JointSliders test uses this model.
+filegroup(
+    name = "model",
+    srcs = ["kuka_iiwa_robot.urdf"],
+    visibility = ["//multibody/meshcat:__pkg__"],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
