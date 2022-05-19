@@ -102,7 +102,7 @@ GTEST_TEST(SpatialInertia, MakeTestCubeSpatialInertia) {
   EXPECT_EQ(M2_unit_products, Vector3<double>::Zero());
 
   // Ensure an exception is thrown if mass is negative.
-   const std::string expected_mass_msg =
+  const std::string expected_mass_msg =
       "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
       "mass = -1(\\.0)? is negative.\n";
   DRAKE_EXPECT_THROWS_MESSAGE(SpatialInertia<double>::MakeTestCube(
