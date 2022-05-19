@@ -28,10 +28,12 @@ GTEST_TEST(ParticlesClassTest, RoundTrip) {
     Matrix3<double> stress2 = vel2.asDiagonal();
 
     Particles particles = Particles();
+    EXPECT_EQ(particles.get_num_particles(), 0);
     particles.add_particle(pos1, vel1, mass1, vol1, dg1, stress1);
+    EXPECT_EQ(particles.get_num_particles(), 1);
     particles.add_particle(pos2, vel2, mass2, vol2, dg2, stress2);
+    EXPECT_EQ(particles.get_num_particles(), 2);
 
-    EXPECT_EQ(particles.get_num_particles(),2);
     EXPECT_TRUE(CompareMatrices(particles.get_position_at(0), pos1,
                 std::numeric_limits<double>::epsilon()));
     EXPECT_TRUE(CompareMatrices(particles.get_velocity_at(0), vel1,
@@ -55,6 +57,7 @@ GTEST_TEST(ParticlesClassTest, RoundTrip) {
                 std::numeric_limits<double>::epsilon()));
 
     particles = Particles(2);
+    EXPECT_EQ(particles.get_num_particles(), 2);
     particles.set_position_at(0, pos1);
     particles.set_velocity_at(0, vel1);
     particles.set_mass_at(0, mass1);
@@ -68,7 +71,6 @@ GTEST_TEST(ParticlesClassTest, RoundTrip) {
     particles.set_deformation_gradient_at(1, dg2);
     particles.set_stress_at(1, stress2);
 
-    /*
     EXPECT_TRUE(CompareMatrices(particles.get_position_at(0), pos1,
                 std::numeric_limits<double>::epsilon()));
     EXPECT_TRUE(CompareMatrices(particles.get_velocity_at(0), vel1,
@@ -90,7 +92,6 @@ GTEST_TEST(ParticlesClassTest, RoundTrip) {
                 std::numeric_limits<double>::epsilon()));
     EXPECT_TRUE(CompareMatrices(particles.get_stress_at(1), stress2,
                 std::numeric_limits<double>::epsilon()));
-    */
 }
 
 }  // namespace

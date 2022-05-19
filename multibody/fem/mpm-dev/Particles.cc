@@ -6,8 +6,16 @@ namespace mpm {
 
 Particles::Particles(): num_particles_(0) {}
 
-Particles::Particles(int num_particles): num_particles_(num_particles),
-                positions_(std::vector<Vector3<double>>(num_particles)) {}
+Particles::Particles(int num_particles) {
+    DRAKE_ASSERT(num_particles > 0);
+    num_particles_ = num_particles;
+    positions_ = std::vector<Vector3<double>>(num_particles);
+    velocities_ = std::vector<Vector3<double>>(num_particles);
+    masses_ = std::vector<double>(num_particles);
+    volumes_ = std::vector<double>(num_particles);
+    deformation_gradients_ = std::vector<Matrix3<double>>(num_particles);
+    stresses_ = std::vector<Matrix3<double>>(num_particles);
+}
 
 int Particles::get_num_particles() {
     return num_particles_;
