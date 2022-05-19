@@ -22,6 +22,7 @@ drake_cc_package_library(
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
+        ":deformable_model",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":hydroelastic_contact_info",
@@ -61,8 +62,6 @@ drake_cc_library(
     hdrs = [
         "deformable_model.h",
     ],
-    internal = True,
-    visibility = ["//visibility:private"],
     deps = [
         ":multibody_plant_core",
         "//common:default_scalars",
