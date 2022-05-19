@@ -10,6 +10,8 @@ namespace mpm {
 namespace internal {
 namespace {
 
+constexpr double kEps = 4.0 * std::numeric_limits<double>::epsilon();
+
 GTEST_TEST(BSplineClassTest, RoundTrip) {
     BSpline bs1;
     Vector3<double> tmpvec = Vector3<double>{1.0, 2.0, 3.0};
@@ -156,8 +158,7 @@ GTEST_TEST(BSplineTestBasisPOU, RoundTrip) {
             sum_sample += bs_arr[idx].EvalBasis(sample_point);
         }
 
-        ASSERT_TRUE(std::abs(sum_sample-1.0)
-                    < std::numeric_limits<double>::epsilon());
+        EXPECT_NEAR(sum_sample, 1.0, kEps);
     }
     }
     }
@@ -214,14 +215,11 @@ GTEST_TEST(BSplineTestBasisPOU, RoundTrip) {
             sum_sample += bs_arr[idx].EvalBasis(sample_point);
         }
 
-        ASSERT_TRUE(std::abs(sum_sample-1.0)
-                    < std::numeric_limits<double>::epsilon());
+        EXPECT_NEAR(sum_sample, 1.0, kEps);
     }
     }
     }
 }
-
-
 
 }  // namespace
 }  // namespace internal
