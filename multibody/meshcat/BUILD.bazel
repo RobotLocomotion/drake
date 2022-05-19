@@ -86,6 +86,7 @@ drake_cc_googletest(
         ":test/universal_joint.sdf",
         "//multibody:models",
         "//multibody/benchmarks/acrobot:models",
+        "//multibody/benchmarks/kuka_iiwa_robot:model",
     ],
     deps = [
         ":joint_sliders",
