@@ -31,7 +31,7 @@ class Particles {
     void set_kirchhoff_stress(int index,
                               const Matrix3<double>& kirchhoff_stress);
 
-    void addParticle(const Vector3<double>& position,
+    void AddParticle(const Vector3<double>& position,
                      const Vector3<double>& velocity,
                      double mass, double reference_volume,
                      const Matrix3<double>& deformation_gradient,

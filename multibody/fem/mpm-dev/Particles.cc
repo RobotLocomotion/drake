@@ -72,7 +72,7 @@ void Particles::set_kirchhoff_stress(int index,
     kirchhoff_stresses_[index] = kirchhoff_stress;
 }
 
-void Particles::addParticle(const Vector3<double>& position,
+void Particles::AddParticle(const Vector3<double>& position,
                             const Vector3<double>& velocity,
                             double mass, double reference_volume,
                             const Matrix3<double>& deformation_gradient,

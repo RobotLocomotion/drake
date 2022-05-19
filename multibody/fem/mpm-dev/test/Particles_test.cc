@@ -29,9 +29,9 @@ GTEST_TEST(ParticlesClassTest, TestAddSetGet) {
 
     Particles particles = Particles();
     EXPECT_EQ(particles.get_num_particles(), 0);
-    particles.addParticle(pos1, vel1, mass1, vol1, F1, stress1);
+    particles.AddParticle(pos1, vel1, mass1, vol1, F1, stress1);
     EXPECT_EQ(particles.get_num_particles(), 1);
-    particles.addParticle(pos2, vel2, mass2, vol2, F2, stress2);
+    particles.AddParticle(pos2, vel2, mass2, vol2, F2, stress2);
     EXPECT_EQ(particles.get_num_particles(), 2);
 
     EXPECT_TRUE(CompareMatrices(particles.get_position(0), pos1,
@@ -93,7 +93,7 @@ GTEST_TEST(ParticlesClassTest, TestAddSetGet) {
     EXPECT_TRUE(CompareMatrices(particles.get_kirchhoff_stress(1), stress2,
                 std::numeric_limits<double>::epsilon()));
 
-    particles.addParticle(pos1, vel1, mass1, vol1, F1, stress1);
+    particles.AddParticle(pos1, vel1, mass1, vol1, F1, stress1);
     EXPECT_EQ(particles.get_num_particles(), 3);
     EXPECT_TRUE(CompareMatrices(particles.get_position(2), pos1,
                 std::numeric_limits<double>::epsilon()));
