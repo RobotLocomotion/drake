@@ -119,6 +119,11 @@ class GeometryStateTester {
     state_->SetFramePoses(source_id, poses);
   }
 
+  void SetGeometryConfiguration(
+      const GeometryConfigurationVector<T>& configuration) {
+    state_->SetGeometryConfiguration(configuration);
+  }
+
   void FinalizePoseUpdate() {
     state_->FinalizePoseUpdate();
   }
@@ -1654,6 +1659,7 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
   // Verify that deformable geometries are dynamic (One deformable and one
   // dynamic non-deformable).
   EXPECT_EQ(geometry_state_.NumDynamicGeometries(), 2);
+  EXPECT_EQ(geometry_state_.NumDeformableGeometries(), 1);
 
   // Verifies that GetAllDeformableGeometryIds() collect all deformable
   // geometry ids and _none_ of the non-deformable geometry ids.
@@ -1661,6 +1667,26 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
       geometry_state_.GetAllDeformableGeometryIds();
   ASSERT_EQ(deformable_ids.size(), 1);
   EXPECT_EQ(deformable_ids[0], g_id);
+}
+
+TEST_F(GeometryStateTest, SetGeometryConfiguration) {
+  const SourceId s_id = NewSource("new source");
+  auto instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(1.0), "sphere");
+  const auto g_id = geometry_state_.RegisterDeformableGeometry(
+      s_id, InternalFrame::world_frame_id(), move(instance),
+      /* resolution_hint */ 0.5);
+  const VectorX<double> default_configuration =
+      geometry_state_.get_configurations_in_world(g_id);
+  VectorX<double> new_configuration(default_configuration.size());
+  new_configuration.setZero();
+  EXPECT_FALSE(CompareMatrices(default_configuration, new_configuration, 0.1));
+
+  GeometryConfigurationVector<double> configurations;
+  configurations.set_value(g_id, new_configuration);
+  gs_tester_.SetGeometryConfiguration(configurations);
+  EXPECT_EQ(new_configuration,
+            geometry_state_.get_configurations_in_world(g_id));
 }
 
 // Tests the RemoveGeometry() functionality. This action will have several

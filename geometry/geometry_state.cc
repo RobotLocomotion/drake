@@ -132,6 +132,7 @@ GeometryState<T>::GeometryState()
   X_PF_.push_back(RigidTransform<T>::Identity());
 
   source_frame_id_map_[self_source_] = {world};
+  source_deformable_geometry_id_map_[self_source_] = {};
   source_frame_name_map_[self_source_] = {"world"};
   source_root_frame_map_[self_source_] = {world};
 }
@@ -153,22 +154,28 @@ int GeometryState<T>::NumGeometriesWithRole(Role role) const {
 
 template <typename T>
 int GeometryState<T>::NumDynamicGeometries() const {
+  return NumDeformableGeometries() + NumDynamicNonDeformableGeometries();
+}
+
+template <typename T>
+int GeometryState<T>::NumDynamicNonDeformableGeometries() const {
   int count = 0;
   for (const auto& pair : frames_) {
     const InternalFrame& frame = pair.second;
-    if (frame.id() == InternalFrame::world_frame_id()) {
-      // No rigid geometry registered with the world frame is dynamic, but all
-      // deformable geometries registered with the world frame are dynamic.
-      const std::unordered_set<GeometryId>& child_geometries =
-          frame.child_geometries();
-      for (auto geometry_id : child_geometries) {
-        if (geometries_.at(geometry_id).is_deformable()) {
-          ++count;
-        }
-      }
-    } else {
+    if (frame.id() != InternalFrame::world_frame_id()) {
       count += frame.num_child_geometries();
     }
+  }
+  return count;
+}
+
+template <typename T>
+int GeometryState<T>::NumDeformableGeometries() const {
+  int count = 0;
+  for (const auto& [source_id, deformable_geometry_ids] :
+       source_deformable_geometry_id_map_) {
+    unused(source_id);
+    count += deformable_geometry_ids.size();
   }
   return count;
 }
@@ -500,12 +507,9 @@ bool GeometryState<T>::IsDeformableGeometry(GeometryId id) const {
 
 template <typename T>
 std::vector<GeometryId> GeometryState<T>::GetAllDeformableGeometryIds() const {
-  const auto& world_geometries =
-      frames_.at(InternalFrame::world_frame_id()).child_geometries();
   std::vector<GeometryId> deformable_geometries;
-  for (const GeometryId& g_id : world_geometries) {
-    const InternalGeometry& geometry = GetValueOrThrow(g_id, geometries_);
-    if (geometry.is_deformable()) {
+  for (const auto& it : source_deformable_geometry_id_map_) {
+    for (const auto& g_id : it.second) {
       deformable_geometries.emplace_back(g_id);
     }
   }
@@ -611,6 +615,7 @@ SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
   }
 
   source_frame_id_map_[source_id];
+  source_deformable_geometry_id_map_[source_id];
   source_frame_name_map_[source_id];
   source_root_frame_map_[source_id];
   source_anchored_geometry_map_[source_id];
@@ -710,6 +715,7 @@ GeometryId GeometryState<T>::RegisterDeformableGeometry(
   }
 
   ValidateRegistrationAndSetTopology(source_id, frame_id, geometry_id);
+  source_deformable_geometry_id_map_[source_id].insert(geometry_id);
 
   InternalGeometry internal_geometry(source_id, geometry->release_shape(),
                                      frame_id, geometry_id, geometry->name(),
@@ -1152,6 +1158,16 @@ void GeometryState<T>::SetFramePoses(
   const RigidTransform<T> world_pose = RigidTransform<T>::Identity();
   for (auto frame_id : source_root_frame_map_[source_id]) {
     UpdatePosesRecursively(frames_[frame_id], world_pose, poses);
+  }
+}
+
+template <typename T>
+void GeometryState<T>::SetGeometryConfiguration(
+    const GeometryConfigurationVector<T>& configurations) {
+  const std::vector<GeometryId> ids = configurations.ids();
+  for (const auto id : ids) {
+    DRAKE_DEMAND(IsDeformableGeometry(id));
+    q_WGs_[id] = configurations.value(id);
   }
 }
 
