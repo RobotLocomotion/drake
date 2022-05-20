@@ -786,6 +786,13 @@ class QueryObject {
     if (scene_graph_) scene_graph_->FullPoseUpdate(*context_);
   }
 
+  // Update all deformable configurations. This method does no work if this is
+  // a "baked" query object (see class docs for discussion).
+  void FullConfigurationUpdate() const {
+    // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
+    if (scene_graph_) scene_graph_->FullConfigurationUpdate(*context_);
+  }
+
   // Reports true if this object is configured so that it can support a query.
   bool is_callable() const {
     const bool live_condition = context_ != nullptr && scene_graph_ != nullptr;
