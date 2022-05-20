@@ -32,8 +32,26 @@ namespace internal {
 // internal processing. If a model instance value is not provided, names are
 // evaluated with respect to the "root" of the plant.
 //
-// TODO(rpoyner-tri): clarify the roles of the world instance (0) and the
-// default model instance (1).
+// @note valid_model_instance The resolver rejects model instance parameters
+// and scoped names that refer to models built prior to the "current parsing
+// operation". The current parsing operation covers the processing of some
+// outermost model definition file, and all of its nested or included
+// models. During that processing, one or more new model instances will be
+// added to represent the models in the input data.
+
+// The collision filter group resolver expects to be constructed before the
+// parsing operation begins, and be called to resolve the filters after the
+// parsing operation ends.  To restrict references to models within the current
+// parse, it remembers the plant's `num_model_instances()` at the time the
+// resolver is constructed, calling it the
+// `minimum_model_instance_index`. Hence, valid model instances must lie with
+// in the range:
+//
+//  valid_model ∈  [minimum_model_instance_index(), num_model_instances())
+//
+// Passing model instance parameters out of that range is a programming
+// error. Parsed names that refer to models out of range will generate
+// error messages.
 //
 class CollisionFilterGroupResolver {
  public:
@@ -44,6 +62,11 @@ class CollisionFilterGroupResolver {
   explicit CollisionFilterGroupResolver(MultibodyPlant<double>* plant);
 
   ~CollisionFilterGroupResolver();
+
+  // @returns the minimum model instance index in force for this resolver.
+  ModelInstanceIndex minimum_model_instance_index() const {
+    return minimum_model_instance_index_;
+  }
 
   // Adds a collision filter group. Locates bodies by name immediately, and
   // emits errors for illegal names, empty groups, or missing bodies.
@@ -57,6 +80,7 @@ class CollisionFilterGroupResolver {
   // @pre group_name is not empty.
   // @pre no member strings of body_names are empty.
   // @pre model_instance has a valid index or else no value.
+  //      @see valid_model_instance note above.
   void AddGroup(
       const drake::internal::DiagnosticPolicy& diagnostic,
       const std::string& group_name,
@@ -77,6 +101,7 @@ class CollisionFilterGroupResolver {
   //
   // @pre neither group_name_a nor group_name_b is empty.
   // @pre model_instance has a valid index or else no value.
+  //      @see valid_model_instance note above.
   void AddPair(
       const drake::internal::DiagnosticPolicy& diagnostic,
       const std::string& group_name_a,
@@ -101,14 +126,14 @@ class CollisionFilterGroupResolver {
       const drake::internal::DiagnosticPolicy& diagnostic,
       const std::string& group_name) const;
 
-  const Body<double>* FindBody(
-      const std::string& name,
-      std::optional<ModelInstanceIndex> model_instance);
+  const Body<double>* FindBody(const std::string& name,
+                               ModelInstanceIndex model_instance);
 
   MultibodyPlant<double>* const plant_;
   std::map<std::string, geometry::GeometrySet> groups_;
   std::set<SortedPair<std::string>> pairs_;
   bool is_resolved_{false};
+  ModelInstanceIndex minimum_model_instance_index_{};
 };
 
 }  // namespace internal
