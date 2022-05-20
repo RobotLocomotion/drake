@@ -22,6 +22,15 @@ def die(message, result=1):
     sys.exit(result)
 
 
+def wheel_name(python_version, wheel_version, wheel_platform):
+    """
+    Determine the complete name of the Drake wheel, given various individual
+    bits such as the Drake version, Python version, and Python wheel platform.
+    """
+    vm = f'cp{python_version}'
+    return f'drake-{wheel_version}-{vm}-{vm}-{wheel_platform}.whl'
+
+
 def _check_version(version):
     """
     Returns True iff the given version string matches PEP 440.
@@ -46,6 +55,12 @@ def do_main(args, platform):
     module_dir = os.path.dirname(os.path.realpath(__file__))
     platform.resource_root = os.path.dirname(module_dir)
 
+    # Work around `bazel run` changing the working directory; this is to allow
+    # the user to pass in relative paths in a sane manner.
+    real_cwd = os.environ.get('BUILD_WORKING_DIRECTORY')
+    if real_cwd is not None:
+        os.chdir(real_cwd)
+
     # Set up argument parser.
     parser = argparse.ArgumentParser(
         prog='build-wheels',
@@ -57,7 +72,7 @@ def do_main(args, platform):
 
     parser.add_argument(
         '-o', '--output-dir', metavar='DIR', default=os.path.realpath('.'),
-        help='directory into which to extract wheels (default: .)')
+        help='directory into which to extract wheels (default: %(default)r)')
     parser.add_argument(
         '-n', '--no-extract', dest='extract', action='store_false',
         help='build images but do not extract wheels')

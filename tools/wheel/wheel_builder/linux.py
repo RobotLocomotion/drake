@@ -10,7 +10,7 @@ import tarfile
 from collections import namedtuple
 from datetime import datetime, timezone
 
-from .common import die, gripe
+from .common import die, gripe, wheel_name
 
 # Location of various scripts and other artifacts used to complete the build.
 # Must be set; normally by common.entry.
@@ -214,9 +214,10 @@ def _test_wheel(target, options):
     """
     Runs the test script for the wheel matching the specified target.
     """
-    vm = f'cp{target.python_version}'
     glibc = glibc_versions[target.platform_alias]
-    wheel = f'drake-{options.version}-{vm}-{vm}-manylinux_{glibc}_x86_64.whl'
+    wheel = wheel_name(python_version=target.python_version,
+                       wheel_version=options.version,
+                       wheel_platform=f'manylinux_{glibc}_x86_64')
 
     platform = target.platform_alias
     container = f'{tag_base}:test-{platform}-py{target.python_version}'
@@ -299,8 +300,8 @@ def add_selection_arguments(parser):
 
 def fixup_options(options):
     """
-    Validates options and applies any necessary transformations (e.g. parsing
-    strings into structured data).
+    Validates options and applies any necessary transformations.
+    (Converts comma-separated strings to sets.)
     """
     options.python_versions = set(options.python_versions.split(','))
     options.platforms = set(options.platforms.split(','))
