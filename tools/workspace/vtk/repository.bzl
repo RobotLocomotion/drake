@@ -157,7 +157,7 @@ licenses([
     file_content += _vtk_cc_library(os_result, "vtkfmt")
 
     # NOTE: see /tools/wheel/image/vtk-args, this is to avoid packaging glew.
-    if os_result.is_manylinux:
+    if os_result.is_manylinux or os_result.is_macos_wheel:
         file_content += _vtk_cc_library(os_result, "vtkglew")
 
     file_content += _vtk_cc_library(os_result, "vtkkissfft")
@@ -657,6 +657,7 @@ licenses([
         ":vtkmetaio",
         ":vtksys",
         "@libjpeg",
+        "@liblzma",
         "@libpng",
         "@libtiff",
         "@zlib",
@@ -837,6 +838,14 @@ licenses([
     ]
     if not os_result.is_macos and not os_result.is_macos_wheel:
         vtk_rendering_ui_hdrs.append("vtkXRenderWindowInteractor.h")
+
+    if os_result.is_macos_wheel:
+        # Normally this would be a private dependency, but no such thing when
+        # VTK is built static.
+        vtk_ui_linkopts = ["-framework Cocoa"]
+    else:
+        vtk_ui_linkopts = []
+
     file_content += _vtk_cc_library(
         os_result,
         "vtkRenderingUI",
@@ -844,6 +853,7 @@ licenses([
         deps = [
             ":vtkRenderingCore",
         ],
+        linkopts = vtk_ui_linkopts,
     )
 
     # Indirect dependency: omit headers.
@@ -874,7 +884,12 @@ licenses([
 
     if os_result.is_manylinux:
         vtk_glew_library = ":vtkglew"
+        # Normally this would be a private dependency, but no such thing when
+        # VTK is built static.
         vtk_opengl_linkopts = ["-lX11", "-lXt", "-lGLX"]
+    elif os_result.is_macos_wheel:
+        vtk_glew_library = ":vtkglew"
+        vtk_opengl_linkopts = []
     else:
         vtk_glew_library = "@glew"
         vtk_opengl_linkopts = []
