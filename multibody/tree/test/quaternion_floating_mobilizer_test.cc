@@ -42,6 +42,11 @@ class QuaternionFloatingMobilizerTest : public MobilizerTester {
   const QuaternionFloatingMobilizer<double>* mobilizer_{nullptr};
 };
 
+TEST_F(QuaternionFloatingMobilizerTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(mobilizer_->can_rotate());
+  EXPECT_TRUE(mobilizer_->can_translate());
+}
+
 // Verifies methods to mutate and access the context.
 TEST_F(QuaternionFloatingMobilizerTest, StateAccess) {
   const Quaterniond quaternion_value(
