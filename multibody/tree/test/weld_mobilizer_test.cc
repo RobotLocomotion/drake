@@ -40,8 +40,8 @@ class WeldMobilizerTest :  public MobilizerTester {
 };
 
 TEST_F(WeldMobilizerTest, CanRotateOrTranslate) {
-  EXPECT_FALSE(mobilizer_->can_rotate());
-  EXPECT_FALSE(mobilizer_->can_translate());
+  EXPECT_FALSE(weld_body_to_world_->can_rotate());
+  EXPECT_FALSE(weld_body_to_world_->can_translate());
 }
 
 TEST_F(WeldMobilizerTest, ZeroSizedState) {

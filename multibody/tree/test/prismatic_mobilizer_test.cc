@@ -41,8 +41,8 @@ class PrismaticMobilizerTest : public MobilizerTester {
 };
 
 TEST_F(PrismaticMobilizerTest, CanRotateOrTranslate) {
-  EXPECT_FALSE(mobilizer_->can_rotate());
-  EXPECT_TRUE(mobilizer_->can_translate());
+  EXPECT_FALSE(slider_->can_rotate());
+  EXPECT_TRUE(slider_->can_translate());
 }
 
 // Verify that PrismaticMobilizer normalizes its axis on construction.

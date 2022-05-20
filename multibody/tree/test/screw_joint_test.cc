@@ -186,6 +186,11 @@ TEST_F(ScrewJointTest, Clone) {
             joint_->get_default_translation());
 }
 
+TEST_F(ScrewJointTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(joint_->can_rotate());
+  EXPECT_TRUE(joint_->can_translate());
+}
+
 TEST_F(ScrewJointTest, NameSuffix) {
   EXPECT_EQ(joint_->position_suffix(0), "q");
   EXPECT_EQ(joint_->velocity_suffix(0), "w");
