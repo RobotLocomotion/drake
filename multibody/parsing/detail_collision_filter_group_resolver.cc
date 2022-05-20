@@ -14,8 +14,11 @@ using parsing::PrefixName;
 using parsing::ScopedName;
 
 CollisionFilterGroupResolver::CollisionFilterGroupResolver(
-    MultibodyPlant<double>* plant) : plant_(plant) {
+    MultibodyPlant<double>* plant)
+    : plant_(plant) {
   DRAKE_DEMAND(plant != nullptr);
+  minimum_model_instance_index_ =
+      ModelInstanceIndex(plant->num_model_instances());
 }
 
 CollisionFilterGroupResolver::~CollisionFilterGroupResolver() {}
@@ -27,6 +30,7 @@ void CollisionFilterGroupResolver::AddGroup(
     std::optional<ModelInstanceIndex> model_instance) {
   if (model_instance) {
     DRAKE_DEMAND(*model_instance < plant_->num_model_instances());
+    DRAKE_DEMAND(*model_instance >= minimum_model_instance_index_);
   }
   DRAKE_DEMAND(!group_name.empty());
   if (!CheckLegalName(diagnostic, group_name, "group name")) { return; }
@@ -48,22 +52,22 @@ void CollisionFilterGroupResolver::AddGroup(
     const std::string qualified = FullyQualify(body_name, model_instance);
     ScopedName scoped_name = ParseScopedName(qualified);
 
-    std::optional<ModelInstanceIndex> body_model;
-    if (!scoped_name.instance_name.empty()) {
-      if (plant_->HasModelInstanceNamed(scoped_name.instance_name)) {
-        body_model = plant_->GetModelInstanceByName(scoped_name.instance_name);
-      } else {
-        diagnostic.Error(fmt::format("body with name '{}' not found",
-                                     qualified));
+    const Body<double>* body{};
+    if (plant_->HasModelInstanceNamed(scoped_name.instance_name)) {
+      ModelInstanceIndex body_model =
+          plant_->GetModelInstanceByName(scoped_name.instance_name);
+      if (body_model < minimum_model_instance_index_) {
+        diagnostic.Error(fmt::format("body name '{}' refers to a model outside"
+                                     " the current parse", qualified));
         continue;
       }
+      body = FindBody(scoped_name.name, body_model);
     }
-
-    const Body<double>* body = FindBody(scoped_name.name, body_model);
     if (!body) {
       diagnostic.Error(fmt::format("body with name '{}' not found", qualified));
       continue;
     }
+
     geometry_set.Add(plant_->GetBodyFrameIdOrThrow(body->index()));
   }
   groups_.insert({FullyQualify(group_name, model_instance), geometry_set});
@@ -78,6 +82,7 @@ void CollisionFilterGroupResolver::AddPair(
   DRAKE_DEMAND(!group_name_b.empty());
   if (model_instance) {
     DRAKE_DEMAND(*model_instance < plant_->num_model_instances());
+    DRAKE_DEMAND(*model_instance >= minimum_model_instance_index_);
   }
   bool a_ok = CheckLegalName(diagnostic, group_name_a, "group name");
   bool b_ok = CheckLegalName(diagnostic, group_name_b, "group name");
@@ -158,10 +163,9 @@ const GeometrySet* CollisionFilterGroupResolver::FindGroup(
 
 const Body<double>* CollisionFilterGroupResolver::FindBody(
     const std::string& name,
-    std::optional<ModelInstanceIndex> model_instance) {
-  ModelInstanceIndex model = model_instance.value_or(default_model_instance());
-  if (plant_->HasBodyNamed(name, model)) {
-    return &plant_->GetBodyByName(name, model);
+    ModelInstanceIndex model_instance) {
+  if (plant_->HasBodyNamed(name, model_instance)) {
+    return &plant_->GetBodyByName(name, model_instance);
   }
   return {};
 }
