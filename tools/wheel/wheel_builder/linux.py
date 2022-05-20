@@ -226,9 +226,9 @@ def _test_wheel(target, options):
     _images_to_remove.append(container)
 
     _docker('run', '--rm', '-t',
-            '-v' f'{test_dir}:/test',
+            '-v' f'{test_dir}:/test/image',
             '-v' f'{options.output_dir}:/wheel',
-            container, '/test/test-wheel.sh', f'/wheel/{wheel}')
+            container, '/test/image/test-wheel.sh', f'/wheel/{wheel}')
 
 
 def build(options):
