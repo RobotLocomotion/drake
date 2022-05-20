@@ -2,10 +2,10 @@
 
 # This shell script tests a Drake wheel. It must be run inside of a container
 # which has been properly provisioned, e.g. by the accompanying test-wheels.sh
-# script (in particular, /opt/python must contain a Python virtual environment
-# which will be used to run the tests). The wheel must be accessible to the
-# container, and the container's path to the wheel should be given as an
-# argument to the script.
+# script (in particular, ${DRAKE_WHEELBUILD_PREFIX}/test/python must contain a
+# Python virtual environment which will be used to run the tests). The wheel
+# must be accessible to the container, and the container's path to the wheel
+# should be given as an argument to the script.
 
 set -eu -o pipefail
 
@@ -14,9 +14,7 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-. /opt/python/bin/activate
-
-pip install --upgrade pip
+. "${DRAKE_WHEELBUILD_PREFIX:-}/test/python/bin/activate"
 
 pip install "$1"
 
