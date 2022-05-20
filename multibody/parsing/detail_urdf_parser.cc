@@ -311,10 +311,11 @@ void UrdfParser::ParseCollisionFilterGroup(XMLElement* node) {
                          attribute_name, &attribute_value);
     return attribute_value == std::string("true") ? true : false;
   };
-  ParseCollisionFilterGroupCommon(model_instance_, node, w_.plant,
-                                  next_child_element, next_sibling_element,
-                                  has_attribute, get_string_attribute,
-                                  get_bool_attribute, get_string_attribute);
+  ParseCollisionFilterGroupCommon(
+      diagnostic_.MakePolicyForNode(node), model_instance_, node, w_.plant,
+      w_.collision_resolver, next_child_element, next_sibling_element,
+      has_attribute, get_string_attribute, get_bool_attribute,
+      get_string_attribute);
 }
 
 // Parses a joint URDF specification to obtain the names of the joint, parent

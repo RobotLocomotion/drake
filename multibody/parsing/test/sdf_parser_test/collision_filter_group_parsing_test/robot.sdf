@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <sdf xmlns:drake="http://drake.mit.edu" version='1.7'>
-  <model name='collision_filter_group_parsing_test'>
+  <model name='robot'>
     <link name='link1'>
       <collision name='link1_sphere'>
         <geometry>
