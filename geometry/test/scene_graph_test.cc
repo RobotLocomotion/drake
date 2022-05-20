@@ -33,11 +33,12 @@ namespace geometry {
 
 using internal::DummyRenderEngine;
 using math::RigidTransformd;
-using symbolic::Expression;
-using systems::Context;
-using systems::System;
 using std::make_unique;
 using std::unique_ptr;
+using symbolic::Expression;
+using systems::Context;
+using systems::OutputPortIndex;
+using systems::System;
 
 // Friend class for working with QueryObjects in a test context.
 class QueryObjectTest {
@@ -66,6 +67,12 @@ class SceneGraphTester {
   static void FullPoseUpdate(const SceneGraph<T>& scene_graph,
                              const Context<T>& context) {
     scene_graph.FullPoseUpdate(context);
+  }
+
+  template <typename T>
+  static void FullConfigurationUpdate(const SceneGraph<T>& scene_graph,
+                                      const Context<T>& context) {
+    scene_graph.FullConfigurationUpdate(context);
   }
 
   template <typename T>
@@ -190,6 +197,9 @@ TEST_F(SceneGraphTest, InputPortsForInvalidSource) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       scene_graph_.get_source_pose_port(fake_source),
       "Can't acquire pose port for unknown source id: \\d+.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      scene_graph_.get_source_configuration_port(fake_source),
+      "Can't acquire configuration port for unknown source id: \\d+.");
 }
 
 // Confirms that attempting to acquire input ports for valid sources for the
@@ -197,9 +207,11 @@ TEST_F(SceneGraphTest, InputPortsForInvalidSource) {
 TEST_F(SceneGraphTest, AcquireInputPortsAfterAllocation) {
   SourceId id = scene_graph_.RegisterSource();
   DRAKE_EXPECT_NO_THROW(scene_graph_.get_source_pose_port(id));
+  DRAKE_EXPECT_NO_THROW(scene_graph_.get_source_configuration_port(id));
   CreateDefaultContext();
-  // Port which *hadn't* been accessed is still accessible.
+  // Ports which *hadn't* been accessed is still accessible.
   DRAKE_EXPECT_NO_THROW(scene_graph_.get_source_pose_port(id));
+  DRAKE_EXPECT_NO_THROW(scene_graph_.get_source_configuration_port(id));
 }
 
 // Tests that topology operations after allocation _are_ allowed. This compares
@@ -277,6 +289,14 @@ TEST_F(SceneGraphTest, FullPoseUpdateEmpty) {
       SceneGraphTester::FullPoseUpdate(scene_graph_, *context_));
 }
 
+// Simple, toy case: there are no deformable geometry sources; evaluate of
+// configuration update should be, essentially a no op.
+TEST_F(SceneGraphTest, FullConfigurationUpdateEmpty) {
+  CreateDefaultContext();
+  DRAKE_EXPECT_NO_THROW(
+      SceneGraphTester::FullConfigurationUpdate(scene_graph_, *context_));
+}
+
 // Test case where there are only anchored geometries -- same as the empty case;
 // no geometry to update.
 TEST_F(SceneGraphTest, FullPoseUpdateAnchoredOnly) {
@@ -295,7 +315,6 @@ TEST_F(SceneGraphTest, RegisterDeformableGeometry) {
       s_id, scene_graph_.world_frame_id(), make_sphere_instance());
   constexpr double kRezHint = 0.5;
   std::unique_ptr<GeometryInstance> geometry_instance = make_sphere_instance();
-  const RigidTransformd X_WG = geometry_instance->pose();
   GeometryId deformable_id = scene_graph_.RegisterDeformableGeometry(
       s_id, scene_graph_.world_frame_id(), std::move(geometry_instance),
       kRezHint);
@@ -308,13 +327,14 @@ TEST_F(SceneGraphTest, RegisterDeformableGeometry) {
 
   CreateDefaultContext();
   const QueryObject<double>& query_object = this->query_object();
-  const VectorX<double>& q_WG =
-      query_object.GetConfigurationsInWorld(deformable_id);
-  VectorX<double> expected_q_WG(3 * mesh_ptr->num_vertices());
-  for (int v = 0; v < mesh_ptr->num_vertices(); ++v) {
-    expected_q_WG.segment<3>(3 * v) = X_WG * mesh_ptr->vertex(v);
-  }
-  EXPECT_EQ(q_WG, expected_q_WG);
+  const VectorX<double> q_WG =
+      VectorX<double>::Zero(mesh_ptr->num_vertices() * 3);
+  std::unordered_map<GeometryId, VectorX<double>> configuration_map;
+  configuration_map[deformable_id] = q_WG;
+  scene_graph_.get_source_configuration_port(s_id).FixValue(context_.get(),
+                                                            configuration_map);
+  EXPECT_EQ(query_object.GetConfigurationsInWorld(deformable_id), q_WG);
+
   DRAKE_EXPECT_THROWS_MESSAGE(
       query_object.GetConfigurationsInWorld(rigid_id),
       "Non-deformable geometries.*Use get_pose_in_world().*.");
@@ -368,6 +388,8 @@ TYPED_TEST_P(TypedSceneGraphTest, TransmogrifyPorts) {
             this->scene_graph_.num_input_ports());
   EXPECT_EQ(scene_graph_U->get_source_pose_port(s_id).get_index(),
             this->scene_graph_.get_source_pose_port(s_id).get_index());
+  EXPECT_EQ(scene_graph_U->get_source_configuration_port(s_id).get_index(),
+            this->scene_graph_.get_source_configuration_port(s_id).get_index());
   EXPECT_NO_THROW(scene_graph_U->CreateDefaultContext());
 }
 
@@ -421,6 +443,13 @@ TEST_F(SceneGraphTest, ModelInspector) {
   FrameId frame_1 = scene_graph_.RegisterFrame(source_id, GeometryFrame{"f1"});
   FrameId frame_2 = scene_graph_.RegisterFrame(source_id, GeometryFrame{"f2"});
 
+  constexpr double kRezHint = 0.5;
+  GeometryId deformable_id = scene_graph_.RegisterDeformableGeometry(
+      source_id, scene_graph_.world_frame_id(),
+      make_unique<GeometryInstance>(RigidTransformd::Identity(),
+                                    make_unique<Sphere>(1.0),
+                                    "deformable_sphere"),
+      kRezHint);
   // Note: all these geometries have the same *name* -- but because they are
   // affixed to different nodes, that should be alright.
   GeometryId anchored_id = scene_graph_.RegisterAnchoredGeometry(
@@ -445,6 +474,10 @@ TEST_F(SceneGraphTest, ModelInspector) {
   EXPECT_EQ(inspector.GetGeometryIdByName(scene_graph_.world_frame_id(),
                                           Role::kUnassigned, "sphere"),
             anchored_id);
+  EXPECT_EQ(
+      inspector.GetGeometryIdByName(scene_graph_.world_frame_id(),
+                                    Role::kUnassigned, "deformable_sphere"),
+      deformable_id);
 }
 
 // SceneGraph provides a thin wrapper on the GeometryState renderer
@@ -501,14 +534,38 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
         scene_graph->RegisterFrame(source_id_, GeometryFrame("frame"));
     frame_ids_.push_back(f_id);
 
-    // Set up output port now that the frame is registered.
-    this->DeclareAbstractOutputPort(
-        systems::kUseDefaultName,
-        &GeometrySourceSystem::CalcFramePoseOutput);
+    constexpr double kRezHint = 0.5;
+    GeometryId deformable_id = scene_graph->RegisterDeformableGeometry(
+        source_id_, scene_graph->world_frame_id(), make_sphere_instance(),
+        kRezHint);
+
+    const SceneGraphInspector<double>& inspector =
+        scene_graph->model_inspector();
+    const VolumeMesh<double>* mesh_ptr =
+        inspector.GetReferenceMesh(deformable_id);
+    DRAKE_DEMAND(mesh_ptr != nullptr);
+    configurations_[deformable_id] =
+        VectorX<double>::Zero(mesh_ptr->num_vertices() * 3);
+
+    // Set up output pose port now that the frame is registered.
+    pose_port_index_ =
+        this->DeclareAbstractOutputPort(
+                "pose", &GeometrySourceSystem::CalcFramePoseOutput)
+            .get_index();
+
+    // Set up output configuration port.
+    configuration_port_index_ =
+        this->DeclareAbstractOutputPort(
+                "configuration", &GeometrySourceSystem::CalcConfigurationOutput)
+            .get_index();
   }
+
   SourceId get_source_id() const { return source_id_; }
   const systems::OutputPort<double>& get_pose_output_port() const {
-    return systems::System<double>::get_output_port(0);
+    return systems::System<double>::get_output_port(pose_port_index_);
+  }
+  const systems::OutputPort<double>& get_configuration_output_port() const {
+    return systems::System<double>::get_output_port(configuration_port_index_);
   }
 
   // Method used to bring frame ids and poses out of sync. Adds a frame that
@@ -541,15 +598,26 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
     }
   }
 
+  // Dummy calc function for configurations.
+  void CalcConfigurationOutput(
+      const Context<double>& context,
+      std::unordered_map<GeometryId, VectorX<double>>* configurations) const {
+    *configurations = configurations_;
+  }
+
   SceneGraph<double>* scene_graph_{nullptr};
   SourceId source_id_;
+  OutputPortIndex pose_port_index_;
+  OutputPortIndex configuration_port_index_;
   std::vector<FrameId> frame_ids_;
   std::vector<FrameId> extra_frame_ids_;
   std::vector<RigidTransformd> extra_poses_;
+  std::unordered_map<GeometryId, VectorX<double>> configurations_;
 };
 
-// Simple test case; system registers frames and provides correct connections.
-GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateConnected) {
+// Simple test case; system registers frames/geometries and provides correct
+// connections.
+GTEST_TEST(SceneGraphConnectionTest, FullPositionUpdateConnected) {
   // Build a fully connected system.
   systems::DiagramBuilder<double> builder;
   auto scene_graph = builder.AddSystem<SceneGraph<double>>();
@@ -559,6 +627,8 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateConnected) {
   SourceId source_id = source_system->get_source_id();
   builder.Connect(source_system->get_pose_output_port(),
                   scene_graph->get_source_pose_port(source_id));
+  builder.Connect(source_system->get_configuration_output_port(),
+                  scene_graph->get_source_configuration_port(source_id));
   auto diagram = builder.Build();
 
   auto diagram_context = diagram->CreateDefaultContext();
@@ -567,11 +637,12 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateConnected) {
       diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get());
   DRAKE_EXPECT_NO_THROW(
       SceneGraphTester::FullPoseUpdate(*scene_graph, sg_context));
+  DRAKE_EXPECT_NO_THROW(
+      SceneGraphTester::FullConfigurationUpdate(*scene_graph, sg_context));
 }
 
-// Adversarial test case: Missing pose port connection.
+// Adversarial test case: Missing port connections.
 GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateDisconnected) {
-  // Build a fully connected system.
   systems::DiagramBuilder<double> builder;
   auto scene_graph = builder.AddSystem<SceneGraph<double>>();
   scene_graph->set_name("scene_graph");
@@ -587,26 +658,12 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateDisconnected) {
       fmt::format("Source '{}' \\(id: \\d+\\) has registered dynamic frames "
                   "but is not connected .+",
                   GeometrySourceSystem::kRegisteredSourceName));
-}
-
-// Adversarial test case: Missing all port connections.
-GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateNoConnections) {
-  // Build a fully connected system.
-  systems::DiagramBuilder<double> builder;
-  auto scene_graph = builder.AddSystem<SceneGraph<double>>();
-  scene_graph->set_name("scene_graph");
-  auto source_system = builder.AddSystem<GeometrySourceSystem>(scene_graph);
-  source_system->set_name("source_system");
-  auto diagram = builder.Build();
-  auto diagram_context = diagram->CreateDefaultContext();
-  diagram->SetDefaultContext(diagram_context.get());
-  const auto& sg_context =
-      diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SceneGraphTester::FullPoseUpdate(*scene_graph, sg_context),
-      fmt::format("Source '{}' \\(id: \\d+\\) has registered dynamic frames "
-                  "but is not connected .+",
-                  GeometrySourceSystem::kRegisteredSourceName));
+      SceneGraphTester::FullConfigurationUpdate(*scene_graph, sg_context),
+      fmt::format(
+          "Source '{}' \\(id: \\d+\\) has registered deformable geometry "
+          "but is not connected .+",
+          GeometrySourceSystem::kRegisteredSourceName));
 }
 
 // Confirms that the SceneGraph can be instantiated on AutoDiff type.

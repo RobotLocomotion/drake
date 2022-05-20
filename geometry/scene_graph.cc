@@ -16,6 +16,7 @@ namespace geometry {
 
 using render::RenderLabel;
 using std::make_unique;
+using std::unordered_map;
 using std::vector;
 using systems::Context;
 using systems::InputPort;
@@ -96,6 +97,11 @@ SceneGraph<T>::SceneGraph()
       "Cache guard for pose updates", &SceneGraph::CalcPoseUpdate,
       {this->all_input_ports_ticket()});
   pose_update_index_ = pose_update_cache_entry.cache_index();
+
+  auto& configuration_update_cache_entry = this->DeclareCacheEntry(
+      "Cache guard for configuration updates",
+      &SceneGraph::CalcConfigurationUpdate, {this->all_input_ports_ticket()});
+  configuration_update_index_ = configuration_update_cache_entry.cache_index();
 }
 
 template <typename T>
@@ -127,6 +133,7 @@ SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
     const auto& new_ports = input_source_ids_[source_id];
     const auto& ref_ports = other.input_source_ids_.at(source_id);
     DRAKE_DEMAND(new_ports.pose_port == ref_ports.pose_port);
+    DRAKE_DEMAND(new_ports.configuration_port == ref_ports.configuration_port);
   }
 }
 
@@ -150,6 +157,14 @@ const InputPort<T>& SceneGraph<T>::get_source_pose_port(
     SourceId id) const {
   ThrowUnlessRegistered(id, "Can't acquire pose port for unknown source id: ");
   return this->get_input_port(input_source_ids_.at(id).pose_port);
+}
+
+template <typename T>
+const InputPort<T>& SceneGraph<T>::get_source_configuration_port(
+    SourceId id) const {
+  ThrowUnlessRegistered(
+      id, "Can't acquire configuration port for unknown source id: ");
+  return this->get_input_port(input_source_ids_.at(id).configuration_port);
 }
 
 template <typename T>
@@ -364,6 +379,11 @@ void SceneGraph<T>::MakeSourcePorts(SourceId source_id) {
       this->DeclareAbstractInputPort(model_.GetName(source_id) + "_pose",
                                      Value<FramePoseVector<T>>())
           .get_index();
+  source_ports.configuration_port =
+      this->DeclareAbstractInputPort(
+              model_.GetName(source_id) + "_configuration",
+              Value<unordered_map<GeometryId, VectorX<T>>>())
+          .get_index();
 }
 
 template <typename T>
@@ -436,6 +456,43 @@ void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context,
 
   mutable_state.FinalizePoseUpdate();
   // TODO(SeanCurtis-TRI): Add velocity as appropriate.
+}
+
+template <typename T>
+void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
+                                            int*) const {
+  const GeometryState<T>& state = geometry_state(context);
+  GeometryState<T>& mutable_state = const_cast<GeometryState<T>&>(state);
+  // Process all sources *except*:
+  //   - the internal source and
+  //   - sources with no deformable geometries.
+  // The internal source will be included in source_deformable_geometry_id_map_
+  // but *not* in input_source_ids_.
+  for (const auto& pair : state.source_deformable_geometry_id_map_) {
+    if (pair.second.size() > 0) {
+      SourceId source_id = pair.first;
+      const auto itr = input_source_ids_.find(source_id);
+      if (itr != input_source_ids_.end()) {
+        const auto& configuration_port =
+            this->get_input_port(itr->second.configuration_port);
+        if (!configuration_port.HasValue(context)) {
+          throw std::logic_error(fmt::format(
+              "Source '{}' (id: {}) has registered deformable geometry "
+              "but is not connected to the appropriate input port.",
+              state.GetName(source_id), source_id));
+        }
+        const auto& configs =
+            configuration_port
+                .template Eval<unordered_map<GeometryId, VectorX<T>>>(context);
+        for (const auto& it : configs) {
+          mutable_state.SetGeometryConfiguration(it.first, it.second);
+        }
+      }
+    }
+  }
+  // TODO(xuchenhan-tri): Similar to the implementation of CalcPoseUpdate, a
+  // FinalizeConfigurationUpdate() is needed to propagate the change to
+  // proximity engine and render engine.
 }
 
 template <typename T>

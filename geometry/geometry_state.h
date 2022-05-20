@@ -48,6 +48,8 @@ class SceneGraph;
 
 /** Collection of unique frame ids.  */
 using FrameIdSet = std::unordered_set<FrameId>;
+/** Collection of unique geometry ids.  */
+using GeometryIdSet = std::unordered_set<GeometryId>;
 
 //@}
 
@@ -128,6 +130,13 @@ class GeometryState {
 
   /** Implementation of SceneGraphInspector::NumDynamicGeometries().  */
   int NumDynamicGeometries() const;
+
+  /** Returns the total number of registered dynamic non-deformable geometries.
+   */
+  int NumDynamicRigidGeometries() const;
+
+  /** Returns the total number of registered deformable geometries.  */
+  int NumDeformableGeometries() const;
 
   /** Implementation of SceneGraphInspector::NumAnchoredGeometries().  */
   int NumAnchoredGeometries() const;
@@ -248,6 +257,12 @@ class GeometryState {
 
   /** Implementation of SceneGraphInspector::GetReferenceMesh().  */
   const VolumeMesh<double>* GetReferenceMesh(GeometryId id) const;
+
+  /** Implementation of SceneGraphInspector::IsDeformableGeometry(). */
+  bool IsDeformableGeometry(GeometryId id) const;
+
+  /** Implementation of SceneGraphInspector::GetAllDeformableGeometryIds(). */
+  std::vector<GeometryId> GetAllDeformableGeometryIds() const;
 
   /** Implementation of SceneGraphInspector::CollisionFiltered().  */
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const;
@@ -570,6 +585,8 @@ class GeometryState {
   explicit GeometryState(const GeometryState<U>& source)
       : self_source_(source.self_source_),
         source_frame_id_map_(source.source_frame_id_map_),
+        source_deformable_geometry_id_map_(
+            source.source_deformable_geometry_id_map_),
         source_root_frame_map_(source.source_root_frame_map_),
         source_names_(source.source_names_),
         source_anchored_geometry_map_(source.source_anchored_geometry_map_),
@@ -639,6 +656,12 @@ class GeometryState {
   // @throws std::exception  If the ids are invalid as defined by
   // ValidateFrameIds().
   void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses);
+
+  // Sets the configuration for the deformble geometry indicated by the given
+  // id.
+  // @pre `id` is a registered deformable geometry id.
+  void SetGeometryConfiguration(GeometryId id,
+                                const VectorX<T>& vertex_positions);
 
   // Confirms that the set of ids provided include _all_ of the frames
   // registered to the set's source id and that no extra frames are included.
@@ -787,6 +810,11 @@ class GeometryState {
   // The registered geometry sources and the frame ids that have been registered
   // on them.
   std::unordered_map<SourceId, FrameIdSet> source_frame_id_map_;
+
+  // The registered geometry sources and the deformable geometry ids that have
+  // been registered on them.
+  std::unordered_map<SourceId, GeometryIdSet>
+      source_deformable_geometry_id_map_;
 
   // The registered geometry sources and the frame ids that have the world frame
   // as the parent frame. For a completely flat hierarchy, this contains the
