@@ -24,6 +24,7 @@ namespace drake {
 namespace geometry {
 
 using internal::convert_to_double;
+using internal::FrameNameSet;
 using internal::HydroelasticType;
 using internal::InternalFrame;
 using internal::InternalGeometry;
@@ -131,6 +132,7 @@ GeometryState<T>::GeometryState()
   X_PF_.push_back(RigidTransform<T>::Identity());
 
   source_frame_id_map_[self_source_] = {world};
+  source_frame_name_map_[self_source_] = {"world"};
   source_root_frame_map_[self_source_] = {world};
 }
 
@@ -589,6 +591,7 @@ SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
   }
 
   source_frame_id_map_[source_id];
+  source_frame_name_map_[source_id];
   source_root_frame_map_[source_id];
   source_anchored_geometry_map_[source_id];
   source_names_[source_id] = final_name;
@@ -622,6 +625,14 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
   } else {
     // The parent is the world frame; register it as a root frame.
     source_root_frame_map_[source_id].insert(frame_id);
+  }
+  FrameNameSet& f_name_set = source_frame_name_map_[source_id];
+  const auto& [iterator, was_inserted] = f_name_set.insert(frame.name());
+  if (!was_inserted) {
+    throw std::logic_error(
+        fmt::format("Registering frame for source '{}'"
+                    " with a duplicate name '{}'",
+                    source_names_[source_id], frame.name()));
   }
 
   DRAKE_ASSERT(X_PF_.size() == frame_index_to_id_map_.size());
