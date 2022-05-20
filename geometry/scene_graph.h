@@ -405,9 +405,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @param frame         The frame to register.
    @returns A unique identifier for the added frame.
    @throws std::exception  if a) the `source_id` does _not_ map to a
-                           registered source, or
+                           registered source,
                            b) `frame` has an id that has already been
-                           registered.  */
+                           registered, or
+                           c) there is already a frame with the
+                           same name registered for the source.  */
   FrameId RegisterFrame(SourceId source_id, const GeometryFrame& frame);
 
   /** Registers a new frame F for this source. This hangs frame F on another
@@ -425,9 +427,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @throws std::exception  if a) the `source_id` does _not_ map to a
                            registered source,
                            b) the `parent_id` does _not_ map to a known
-                           frame or does not belong to the source, or
+                           frame or does not belong to the source,
                            c) `frame` has an id that has already been
-                           registered.  */
+                           registered, or
+                           d) there is already a frame with the
+                           same name registered for the source.  */
   FrameId RegisterFrame(SourceId source_id, FrameId parent_id,
                         const GeometryFrame& frame);
 
