@@ -60,15 +60,19 @@ _IGNORED_REPOSITORIES = [
 
 # For these repositories, we only look at tags, not releases.  For the dict
 # value, use a blank value to match the latest tag or a regex to only select
-# tags that share the match with the tag currently in use.  (This can be used
-# to pin to a given major or major.minor release series.)
+# tags that share the match with the tag currently in use; the parentheses
+# group in the regex denotes the portion of the tag to lock as invariant.
+# (This can be used to pin to a given major or major.minor release series.)
 _OVERLOOK_RELEASE_REPOSITORIES = {
     "github3_py": r"^(\d+.)",
+    "ignition_math": "",
+    "ignition_utils": "",
     "intel_realsense_ros": r"^(\d+\.\d+\.)",
     "petsc": r"^(v)",
     "pycodestyle": "",
-    "ros_xacro": r"^(\d+\.\d+\.)",
     "qhull": r"^(2)",
+    "ros_xacro": r"^(\d+\.\d+\.)",
+    "sdformat": "",
 }
 
 
