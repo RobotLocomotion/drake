@@ -24,6 +24,7 @@ def filter_rpaths(paths, exclusions):
 
     return result
 
+
 def strip_rpaths(path, rpaths):
     """
     Remove RPATHs `rpaths` from binary/library `path`.

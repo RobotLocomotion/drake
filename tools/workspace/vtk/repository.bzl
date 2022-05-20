@@ -884,6 +884,7 @@ licenses([
 
     if os_result.is_manylinux:
         vtk_glew_library = ":vtkglew"
+
         # Normally this would be a private dependency, but no such thing when
         # VTK is built static.
         vtk_opengl_linkopts = ["-lX11", "-lXt", "-lGLX"]
