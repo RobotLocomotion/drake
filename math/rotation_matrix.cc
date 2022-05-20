@@ -16,12 +16,12 @@ Matrix3dWithDerivatives::Matrix3dWithDerivatives(const Matrix3<AutoDiffXd>& M) {
   for (int row = 0; row < 3; ++row) {
     for (int col = 0; col < 3; ++col) {
       value_(row, col) = M(row, col).value();
+      const int actual_size = M(row, col).derivatives().size();
       if (num_derivatives == 0) {
-        num_derivatives = M(row, col).derivatives().size();
+        num_derivatives = actual_size;
       } else {
         // TODO(russt): Should this be debug-only?
-        DRAKE_THROW_UNLESS(num_derivatives ==
-                            M(row, col).derivatives().size());
+        DRAKE_THROW_UNLESS(actual_size == 0 || num_derivatives == actual_size);
       }
     }
   }
@@ -31,7 +31,9 @@ Matrix3dWithDerivatives::Matrix3dWithDerivatives(const Matrix3<AutoDiffXd>& M) {
     bool has_value = false;
     for (int row = 0; row < 3; ++row) {
       for (int col = 0; col < 3; ++col) {
-        double d = M(row, col).derivatives()[deriv];
+        const int actual_size = M(row, col).derivatives().size();
+        const double d =
+            actual_size == 0 ? 0.0 : M(row, col).derivatives()[deriv];
         if (d != 0.0) {
           if (!has_value) {
             derivatives_[deriv] = Eigen::Matrix3d::Zero();
@@ -69,7 +71,7 @@ Matrix3dWithDerivatives Matrix3dWithDerivatives::transpose() const {
   ret.derivatives_.resize(derivatives_.size());
   for (int i=0; i<static_cast<int>(derivatives_.size()); ++i) {
     if (derivatives_[i]) {
-      *ret.derivatives_[i] = derivatives_[i]->transpose();
+      ret.derivatives_[i] = Eigen::Matrix3d(derivatives_[i]->transpose());
     }
   }
   return ret;
@@ -88,7 +90,7 @@ Matrix3dWithDerivatives Matrix3dWithDerivatives::operator*(
     }
   }
   M.derivatives_.resize(num_derivatives);
-  for (int i=0; i<num_derivatives; ++i) {
+  for (int i=0; i < num_derivatives; ++i) {
     if (derivatives_.size() > 0 && derivatives_[i] &&
         other.derivatives_.size() > 0 && other.derivatives_[i]) {
       M.derivatives_[i] = (*derivatives_[i]) * other.value_ +
@@ -102,17 +104,18 @@ Matrix3dWithDerivatives Matrix3dWithDerivatives::operator*(
   return M;
 }
 
-Vector3<AutoDiffXd> Matrix3dWithDerivatives::operator*(const Vector3<AutoDiffXd>& v_B) const {
+Vector3<AutoDiffXd> Matrix3dWithDerivatives::operator*(
+    const Vector3<AutoDiffXd>& v_B) const {
   Vector3<AutoDiffXd> ret(value_ * v_B);
   Eigen::Vector3d v_B_value{v_B[0].value(), v_B[1].value(), v_B[2].value()};
-  for (int row=0; row<3; ++row) {
+  for (int row = 0; row < 3; ++row) {
     if (ret[row].derivatives().size() == 0) {
       ret[row].derivatives() = Eigen::RowVectorXd::Zero(derivatives_.size());
     }
   }
-  for (int i=0; i<static_cast<int>(derivatives_.size()); ++i) {
+  for (int i = 0; i < static_cast<int>(derivatives_.size()); ++i) {
     if (derivatives_[i]) {
-      for (int row=0; row<3; ++row) {
+      for (int row = 0; row < 3; ++row) {
         ret[row].derivatives()[i] += derivatives_[i]->row(row).dot(v_B_value);
       }
     }

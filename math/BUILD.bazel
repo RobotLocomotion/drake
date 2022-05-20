@@ -503,7 +503,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "rotation_matrix_test",
     deps = [
+        ":autodiff",
         ":geometric_transform",
+        ":gradient",
         "//common/test_utilities",
     ],
 )

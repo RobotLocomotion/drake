@@ -6,6 +6,8 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/math/quaternion.h"
 
 namespace drake {
@@ -17,6 +19,37 @@ using Eigen::Vector3d;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
+GTEST_TEST(Matrix3dWithDerivatives, Misc) {
+  using internal::Matrix3dWithDerivatives;
+  Matrix3d m3d;
+  m3d <<  1, 2, 3,
+          4, 5, 6,
+          7, 8, 9;
+  Eigen::Matrix<double, 9, Eigen::Dynamic> grad;
+  grad.resize(9, 2);
+  for (int i=0; i < 9; ++i) {
+    grad.row(i) = Eigen::Vector2d(m3d(i) * 10, m3d(i) * 10 + 1);
+  }
+  Matrix3<AutoDiffXd> m3ad;
+  InitializeAutoDiff(m3d, grad, &m3ad);
+  m3ad(1, 1).derivatives().resize(0);
+  m3ad(2, 2).derivatives().resize(0);
+
+  Matrix3dWithDerivatives m3wd(m3ad);
+
+  EXPECT_TRUE(CompareMatrices(ExtractValue(m3ad),
+                              ExtractValue(m3wd.ToAutoDiffXd()), kEpsilon));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(m3ad),
+                              ExtractGradient(m3wd.ToAutoDiffXd()), kEpsilon));
+
+  Matrix3dWithDerivatives m3wdt = m3wd.transpose();
+  Matrix3<AutoDiffXd> m3adt = m3ad.transpose();
+
+  EXPECT_TRUE(CompareMatrices(ExtractValue(m3adt),
+                              ExtractValue(m3wdt.ToAutoDiffXd()), kEpsilon));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(m3adt),
+                              ExtractGradient(m3wdt.ToAutoDiffXd()), kEpsilon));
+}
 
 // Test default constructor - should be identity matrix.
 GTEST_TEST(RotationMatrix, DefaultRotationMatrixIsIdentity) {
