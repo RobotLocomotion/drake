@@ -32,10 +32,11 @@ class TestGeometrySceneGraph(unittest.TestCase):
         scene_graph = SceneGraph()
         global_source = scene_graph.RegisterSource("anchored")
         global_frame = scene_graph.RegisterFrame(
-            source_id=global_source, frame=mut.GeometryFrame("anchored_frame"))
+            source_id=global_source,
+            frame=mut.GeometryFrame("anchored_frame1"))
         scene_graph.RegisterFrame(
             source_id=global_source, parent_id=global_frame,
-            frame=mut.GeometryFrame("anchored_frame"))
+            frame=mut.GeometryFrame("anchored_frame2"))
         global_geometry = scene_graph.RegisterGeometry(
             source_id=global_source, frame_id=global_frame,
             geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
@@ -194,7 +195,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertEqual(inspector.GetOwningSourceName(frame_id=global_frame),
                          "anchored")
         self.assertEqual(
-            inspector.GetName(frame_id=global_frame), "anchored_frame")
+            inspector.GetName(frame_id=global_frame), "anchored_frame1")
         self.assertEqual(inspector.GetFrameGroup(frame_id=global_frame), 0)
         self.assertEqual(
             inspector.NumGeometriesForFrame(frame_id=global_frame), 2)
