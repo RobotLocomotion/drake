@@ -49,6 +49,8 @@ class SceneGraph;
 
 /** Collection of unique frame ids.  */
 using FrameIdSet = std::unordered_set<FrameId>;
+/** Collection of unique geometry ids.  */
+using GeometryIdSet = std::unordered_set<GeometryId>;
 
 //@}
 
@@ -129,6 +131,14 @@ class GeometryState {
 
   /** Implementation of SceneGraphInspector::NumDynamicGeometries().  */
   int NumDynamicGeometries() const;
+
+  /** Returns the total number of registered dynamic non-deformable geometries.
+   */
+  int NumDynamicNonDeformableGeometries() const;
+
+  /** Returns the total number of registered deformable geometries. All
+   deformable geometries are dynamic and _not_ anchored.  */
+  int NumDeformableGeometries() const;
 
   /** Implementation of SceneGraphInspector::NumAnchoredGeometries().  */
   int NumAnchoredGeometries() const;
@@ -577,6 +587,8 @@ class GeometryState {
   explicit GeometryState(const GeometryState<U>& source)
       : self_source_(source.self_source_),
         source_frame_id_map_(source.source_frame_id_map_),
+        source_deformable_geometry_id_map_(
+            source.source_deformable_geometry_id_map_),
         source_frame_name_map_(source.source_frame_name_map_),
         source_root_frame_map_(source.source_root_frame_map_),
         source_names_(source.source_names_),
@@ -647,6 +659,12 @@ class GeometryState {
   // @throws std::exception  If the ids are invalid as defined by
   // ValidateFrameIds().
   void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses);
+
+  // Sets the kinematic configurations for the deformable geometries associated
+  // with the given source.
+  // @pre source_id is a registered source.
+  void SetGeometryConfiguration(
+      SourceId source_id, const GeometryConfigurationVector<T>& configurations);
 
   // Confirms that the set of ids provided include _all_ of the frames
   // registered to the set's source id and that no extra frames are included.
@@ -796,6 +814,11 @@ class GeometryState {
   // The registered geometry sources and the frame ids that have been registered
   // on them.
   std::unordered_map<SourceId, FrameIdSet> source_frame_id_map_;
+
+  // The registered geometry sources and the deformable geometry ids that have
+  // been registered on them.
+  std::unordered_map<SourceId, GeometryIdSet>
+      source_deformable_geometry_id_map_;
 
   // The registered geometry sources and the frame names that have been
   // registered on them. Only used to reject duplicate names.
