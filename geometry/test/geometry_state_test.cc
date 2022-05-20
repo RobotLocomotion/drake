@@ -1225,6 +1225,16 @@ TEST_F(GeometryStateTest, AddFrameToInvalidSource) {
       "Referenced geometry source \\d+ is not registered.");
 }
 
+// Tests that a duplicate-named frame added to a valid source throws an
+// exception with a meaningful message.
+TEST_F(GeometryStateTest, DuplicateFrameName) {
+  const SourceId s_id = NewSource();
+  geometry_state_.RegisterFrame(s_id, *frame_);
+  DRAKE_ASSERT_THROWS_MESSAGE(
+      geometry_state_.RegisterFrame(s_id, GeometryFrame(frame_->name())),
+      ".*source 'default_source'.*duplicate name 'ref_frame'");
+}
+
 // Tests that a frame added to a valid source appears in the source's frames.
 TEST_F(GeometryStateTest, AddFirstFrameToValidSource) {
   const SourceId s_id = NewSource();

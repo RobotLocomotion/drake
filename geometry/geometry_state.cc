@@ -589,6 +589,7 @@ SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
   }
 
   source_frame_id_map_[source_id];
+  source_frame_name_map_[source_id];
   source_root_frame_map_[source_id];
   source_anchored_geometry_map_[source_id];
   source_names_[source_id] = final_name;
@@ -622,6 +623,14 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
   } else {
     // The parent is the world frame; register it as a root frame.
     source_root_frame_map_[source_id].insert(frame_id);
+  }
+  auto& f_name_set = source_frame_name_map_[source_id];
+  auto pair = f_name_set.insert(frame.name());
+  if (!pair.second) {
+    throw std::logic_error(
+        fmt::format("Registering frame for source '{}'"
+                    " with a duplicate name '{}'",
+                    source_names_[source_id], frame.name()));
   }
 
   DRAKE_ASSERT(X_PF_.size() == frame_index_to_id_map_.size());

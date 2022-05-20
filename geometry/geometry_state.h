@@ -788,6 +788,11 @@ class GeometryState {
   // on them.
   std::unordered_map<SourceId, FrameIdSet> source_frame_id_map_;
 
+  // The registered geometry sources and the frame names that have been
+  // registered on them.
+  std::unordered_map<SourceId,
+                     std::unordered_set<std::string>> source_frame_name_map_;
+
   // The registered geometry sources and the frame ids that have the world frame
   // as the parent frame. For a completely flat hierarchy, this contains the
   // same values as the corresponding entry in source_frame_id_map_.
