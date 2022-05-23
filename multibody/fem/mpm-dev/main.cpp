@@ -9,6 +9,7 @@
 #include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/multibody/fem/mpm-dev/BSpline.h"
+#include "drake/multibody/fem/mpm-dev/Grid.h"
 #include "drake/multibody/fem/mpm-dev/Particles.h"
 #include "drake/multibody/fem/mpm-dev/particles_to_bgeo.h"
 
