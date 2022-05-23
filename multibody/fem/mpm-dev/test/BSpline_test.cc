@@ -12,7 +12,7 @@ namespace {
 
 constexpr double kEps = 4.0 * std::numeric_limits<double>::epsilon();
 
-GTEST_TEST(BSplineClassTest, RoundTrip) {
+GTEST_TEST(BSplineTest, BSplineClassTest) {
     BSpline bs1;
     Vector3<double> tmpvec = Vector3<double>{1.0, 2.0, 3.0};
     Vector3<double> bspos;
@@ -35,7 +35,7 @@ GTEST_TEST(BSplineClassTest, RoundTrip) {
                 std::numeric_limits<double>::epsilon()));
 }
 
-GTEST_TEST(BSplineTestBasisSupport, RoundTrip) {
+GTEST_TEST(BSplineTest, BSplineTestBasisSupport) {
     Vector3<double> center = { 0.5,  1.0, -0.5};
     // Construct a reference 3D test basis, and test the InSupport
     BSpline bs1 = BSpline();
@@ -95,7 +95,7 @@ GTEST_TEST(BSplineTestBasisSupport, RoundTrip) {
     ASSERT_TRUE(!bs3.InSupport(pos12));
 }
 
-GTEST_TEST(BSplineTestBasisPOU, RoundTrip) {
+GTEST_TEST(BSplineTest, BSplineTestBasisPOU) {
     // TODO(yiminlin.tri): It may be helpful to refactor part of this code when
     // Class Particle and Class GridPt are constructed.
     // First, Consider h = 1
@@ -124,7 +124,8 @@ GTEST_TEST(BSplineTestBasisPOU, RoundTrip) {
     const int NUM_GRID_PT_1D = 5;    // number of grid points in each direction
     int i, j, k;
     double xi, yi, zi;
-    double sum_sample, sample_interval;
+    double sum_sample, sum_sample2, sample_interval, sample_val;
+    Vector3<double> sum_gradient_sample, sum_gradient_sample2, sample_gradient;
     double h = 1.0;
     Vector3<double> sample_point;
     std::vector<BSpline> bs_arr(NUM_GRID_PT);
@@ -143,22 +144,38 @@ GTEST_TEST(BSplineTestBasisPOU, RoundTrip) {
 
     // Iterate through all sampled points over [-1, 1]^3. Then all basis
     // evaluated at sampled points shall be 1.0 by the partition of unity
-    // property of B-spline basis
-    sample_interval = 0.2;
+    // property of B-spline basis. The gradient of the sum of bases should
+    // then be 0.
+    sample_interval = 0.3;
     for (zi = -1.5; zi <= 1.5; zi += sample_interval) {
     for (yi = -1.5; yi <= 1.5; yi += sample_interval) {
     for (xi = -1.5; xi <= 1.5; xi += sample_interval) {
         // Iterate through all Bsplines, and accumulate values
-        sum_sample = 0.0;
+        sum_sample  = 0.0;
+        sum_sample2 = 0.0;
+        sum_gradient_sample  = {0.0, 0.0, 0.0};
+        sum_gradient_sample2 = {0.0, 0.0, 0.0};
         sample_point = {xi, yi, zi};
         for (int idx = 0; idx < NUM_GRID_PT; ++idx) {
             i = idx % NUM_GRID_PT_1D;
             j = (idx % NUM_GRID_PT_2D) / NUM_GRID_PT_1D;
             k = idx / NUM_GRID_PT_2D;
             sum_sample += bs_arr[idx].EvalBasis(sample_point);
+            sum_gradient_sample += bs_arr[idx].EvalGradientBasis(sample_point);
+            std::tie(sample_val, sample_gradient) =
+                bs_arr[idx].EvalBasisAndGradient(sample_point);
+            sum_sample2 += sample_val;
+            sum_gradient_sample2 += sample_gradient;
         }
 
         EXPECT_NEAR(sum_sample, 1.0, kEps);
+        EXPECT_TRUE(CompareMatrices(sum_gradient_sample,
+                                    Vector3<double>{0.0, 0.0, 0.0},
+                                    kEps));
+        EXPECT_NEAR(sum_sample2, 1.0, kEps);
+        EXPECT_TRUE(CompareMatrices(sum_gradient_sample2,
+                                    Vector3<double>{0.0, 0.0, 0.0},
+                                    kEps));
     }
     }
     }
@@ -200,22 +217,38 @@ GTEST_TEST(BSplineTestBasisPOU, RoundTrip) {
 
     // Iterate through all sampled points over [0.25, 1.75]^3. Then all basis
     // evaluated at sampled points shall be 1.0 by the partition of unity
-    // property of B-spline basis
+    // property of B-spline basis. The gradient of the sum of bases should
+    // then be 0.
     sample_interval = 0.3;
     for (zi = 0.25; zi <= 1.75; zi += sample_interval) {
     for (yi = 0.25; yi <= 1.75; yi += sample_interval) {
     for (xi = 0.25; xi <= 1.75; xi += sample_interval) {
         // Iterate through all Bsplines, and accumulate values
-        sum_sample = 0.0;
+        sum_sample  = 0.0;
+        sum_sample2 = 0.0;
+        sum_gradient_sample  = {0.0, 0.0, 0.0};
+        sum_gradient_sample2 = {0.0, 0.0, 0.0};
         sample_point = {xi, yi, zi};
         for (int idx = 0; idx < NUM_GRID_PT; ++idx) {
             i = idx % NUM_GRID_PT_1D;
             j = (idx % NUM_GRID_PT_2D) / NUM_GRID_PT_1D;
             k = idx / NUM_GRID_PT_2D;
             sum_sample += bs_arr[idx].EvalBasis(sample_point);
+            sum_gradient_sample += bs_arr[idx].EvalGradientBasis(sample_point);
+            std::tie(sample_val, sample_gradient) =
+                bs_arr[idx].EvalBasisAndGradient(sample_point);
+            sum_sample2 += sample_val;
+            sum_gradient_sample2 += sample_gradient;
         }
 
         EXPECT_NEAR(sum_sample, 1.0, kEps);
+        EXPECT_TRUE(CompareMatrices(sum_gradient_sample,
+                                    Vector3<double>{0.0, 0.0, 0.0},
+                                    kEps));
+        EXPECT_NEAR(sum_sample2, 1.0, kEps);
+        EXPECT_TRUE(CompareMatrices(sum_gradient_sample2,
+                                    Vector3<double>{0.0, 0.0, 0.0},
+                                    kEps));
     }
     }
     }
