@@ -67,9 +67,9 @@ sdf::ParserConfig MakeStrictConfig() {
 
 sdf::SDFPtr ReadString(const std::string& input) {
   sdf::SDFPtr result(new sdf::SDF());
-  sdf::init(result);
-
   sdf::ParserConfig config = MakeStrictConfig();
+  sdf::init(result, config);
+
   sdf::Errors errors;
   const bool success = sdf::readString(input, config, result, errors);
   if (!success) {
@@ -429,6 +429,22 @@ TEST_F(SceneGraphParserDetail, MakeHeightmapFromSdfGeometry) {
       "<heightmap>"
       "  <uri>/path/to/some/heightmap.png</uri>"
       "</heightmap>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_EQ(shape, nullptr);
+}
+
+// Verify that MakeShapeFromSdfGeometry does nothing with a polyline.
+TEST_F(SceneGraphParserDetail, MakePolylineFromSdfGeometry) {
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<polyline>"
+      "  <polyline>"
+      "    <point>0 0</point>"
+      "    <point>0 1</point>"
+      "    <point>1 1</point>"
+      "    <point>1 0</point>"
+      "    <height>1</height>"
+      "  </polyline>"
+      "</polyline>");
   unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   EXPECT_EQ(shape, nullptr);
 }
