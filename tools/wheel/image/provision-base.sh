@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Internal script to install common (non-Python) build dependencies.
+# Docker (Linux) only.
+
 set -eu -o pipefail
 
 readonly BAZEL_VERSION=5.1.0

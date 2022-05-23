@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Internal script to install Python and required Python packages.
+# Docker (Linux) only.
+
 set -eu -o pipefail
 
 readonly PYTHON=python${1:-3}
