@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/common/default_scalars.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/scalar_convertible_component.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -124,6 +125,12 @@ class PhysicalModel : public ScalarConvertibleComponent<T> {
           "()' before system resources have been declared are not allowed.");
     }
   }
+
+  /* Returns the SceneGraph with which the given `plant` has been registered.
+   @pre plant != nullptr.
+   @pre Finalize() has not been called on `plant`.
+   @pre `plant` has been registered with some SceneGraph. */
+  geometry::SceneGraph<T>& mutable_scene_graph(MultibodyPlant<T>* plant);
 
   /* Protected LeafSystem methods exposed through MultibodyPlant. */
   static systems::DiscreteStateIndex DeclareDiscreteState(
