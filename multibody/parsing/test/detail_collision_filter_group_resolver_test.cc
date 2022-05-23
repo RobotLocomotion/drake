@@ -110,6 +110,25 @@ TEST_F(CollisionFilterGroupResolverTest, MissingBodyGlobal) {
   EXPECT_THAT(TakeError(), MatchesRegex(".*'zzz::abody'.*not found"));
 }
 
+TEST_F(CollisionFilterGroupResolverTest, OutOfParseBodyGlobal) {
+  // The world body and bodies in the default model are always outside of any
+  // parse operation.
+  AddBody("stuff", {});
+  resolver_.AddGroup(diagnostic_policy_, "a", {
+      "DefaultModelInstance::stuff",
+      "WorldModelInstance::WorldBody",
+      "stuff",
+    },
+    {});
+  EXPECT_THAT(TakeError(), MatchesRegex(".*'DefaultModelInstance::stuff'"
+                                        ".*outside the current parse"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*'WorldModelInstance::WorldBody'"
+                                        ".*outside the current parse"));
+  // Ensure that unqualified bodies names at global scope aren't looked up in
+  // the default model inadvertently.
+  EXPECT_THAT(TakeError(), MatchesRegex(".*'stuff'.*not found"));
+}
+
 TEST_F(CollisionFilterGroupResolverTest, MissingBodyScoped) {
   ModelInstanceIndex r1 = plant_.AddModelInstance("r1");
   plant_.AddModelInstance("r1::sub");
@@ -121,12 +140,15 @@ TEST_F(CollisionFilterGroupResolverTest, MissingBodyScoped) {
   EXPECT_THAT(TakeError(), MatchesRegex(".*'r1::zzz::abody'.*not found"));
 }
 
-TEST_F(CollisionFilterGroupResolverTest, BodyGlobal) {
-  // Ensure body names can be resolved in the absence of any model scopes.
-  GeometryId b1 = AddBody("body1", {});
-  GeometryId b2 = AddBody("body2", {});
-  resolver_.AddGroup(diagnostic_policy_, "a", {"body1", "body2"}, {});
-  resolver_.AddPair(diagnostic_policy_, "a", "a", {});
+TEST_F(CollisionFilterGroupResolverTest, GroupGlobal) {
+  // Ensure names can be resolved for groups defined at global scope.
+  ModelInstanceIndex r1 = plant_.AddModelInstance("r1");
+  ModelInstanceIndex r2 = plant_.AddModelInstance("r2");
+  GeometryId b1 = AddBody("body1", r1);
+  GeometryId b2 = AddBody("body2", r2);
+  resolver_.AddGroup(diagnostic_policy_, "a", {"r1::body1"}, {});
+  resolver_.AddGroup(diagnostic_policy_, "b", {"r2::body2"}, {});
+  resolver_.AddPair(diagnostic_policy_, "a", "b", {});
   resolver_.Resolve(diagnostic_policy_);
   EXPECT_TRUE(inspector_.CollisionFiltered(b1, b2));
 }
