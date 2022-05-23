@@ -19,10 +19,12 @@ drake_cc_library(
     ],
     deps = [
         ":BSpline",
+        ":CorotatedModel",
         ":Grid",
         ":Particles",
         ":particles_to_bgeo",
         "//common:essential",
+        "//math:geometric_transform",
         "@partio",
     ],
 )
@@ -37,6 +39,20 @@ drake_cc_library(
     ],
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "CorotatedModel",
+    srcs = [
+        "CorotatedModel.cc",
+    ],
+    hdrs = [
+        "CorotatedModel.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//multibody/fem:matrix_utilities",
     ],
 )
 
@@ -121,6 +137,16 @@ drake_cc_googletest(
     deps = [
         ":Grid",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "CorotatedModel_test",
+    deps = [
+        ":CorotatedModel",
+        "//common:essential",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
     ],
 )
 
