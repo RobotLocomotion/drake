@@ -177,6 +177,7 @@ drake_cc_library(
     name = "gradient",
     srcs = [
         "autodiff_gradient.cc",
+        "differentiable_matrix.cc",
         "differentiable_norm.cc",
         "gradient.cc",
         "normalize_vector.cc",
@@ -184,6 +185,7 @@ drake_cc_library(
     ],
     hdrs = [
         "autodiff_gradient.h",
+        "differentiable_matrix.h",
         "differentiable_norm.h",
         "gradient.h",
         "gradient_util.h",
@@ -362,6 +364,14 @@ drake_cc_googletest(
     name = "convert_time_derivative_test",
     deps = [
         ":vector3_util",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "differentiable_matrix_test",
+    deps = [
+        ":gradient",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
