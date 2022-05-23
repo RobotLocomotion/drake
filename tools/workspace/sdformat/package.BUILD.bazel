@@ -16,24 +16,62 @@ load(
     "@drake//tools/install:install.bzl",
     "install",
 )
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 licenses(["notice"])  # Apache-2.0 AND BSD-3-Clause AND BSL-1.0
 
 package(default_visibility = ["//visibility:public"])
 
-# Generates sdf_config.h based on the version numbers in CMake code.
+PROJECT_MAJOR = 12
+
+PROJECT_MINOR = 5
+
+PROJECT_PATCH = 0
+
+# Generates config.h based on the version numbers in CMake code.
 cmake_configure_file(
     name = "config",
-    src = "cmake/sdf_config.h.in",
-    out = "include/sdf/sdf_config.h",
+    src = "include/sdf/config.hh.in",
+    out = "include/sdf/config.hh",
     cmakelists = ["CMakeLists.txt"],
     defines = [
         "PROJECT_NAME=SDFormat",
         "SDF_VERSION_NAME=",
-        "SDF_PKG_VERSION=",
+        "PROJECT_VERSION_MAJOR=%d" % (PROJECT_MAJOR),
+        "PROJECT_VERSION_MINOR=%d" % (PROJECT_MINOR),
+        "PROJECT_VERSION_PATCH=%d" % (PROJECT_PATCH),
+        "PROJECT_VERSION=%d.%d" % (PROJECT_MAJOR, PROJECT_MINOR),
+        "PROJECT_VERSION_FULL=%d.%d.%d" % (PROJECT_MAJOR, PROJECT_MINOR, PROJECT_PATCH),  # noqa
+        "PROJECT_VERSION_NAME=",
+        "SDF_PKG_VERSION=%d.%d" % (PROJECT_MAJOR, PROJECT_MINOR),
+        "SDF_MAJOR_VERSION=%d" % (PROJECT_MAJOR),
         "CMAKE_INSTALL_FULL_DATAROOTDIR=does/not/exist",
     ],
     visibility = ["//visibility:private"],
+)
+
+generate_file(
+    name = "include/sdf/Export.hh",
+    content = """
+#pragma once
+
+// IGN_DEPRECATED is defined by all ignition libraries, but the version below
+// is a simplified version.  When mixing the regular ignition libraries and
+// the drake compiled ignition libraries, the compiler throws a warning about
+// the macro being multiply defined.  We undefine it before redefining it here
+// to work around that issue.  Note that the IGNITION_SDFORMAT_VISIBLE macro
+// shouldn't be defined multiple times, but we undefine it just in case.
+
+#ifdef IGNITION_SDFORMAT_VISIBLE
+#undef IGNITION_SDFORMAT_VISIBLE
+#endif
+#define IGNITION_SDFORMAT_VISIBLE __attribute__ ((visibility("default")))
+
+#ifdef IGN_DEPRECATED
+#undef IGN_DEPRECATED
+#endif
+#define IGN_DEPRECATED(version) __attribute__ ((__deprecated__))
+    """,
 )
 
 # Public headers are indicated in sdformat's `include/sdf/CMakeLists.txt`.
@@ -77,12 +115,15 @@ SDFORMAT_MOST_PUBLIC_HDRS = [
     "include/sdf/Model.hh",
     "include/sdf/NavSat.hh",
     "include/sdf/Noise.hh",
+    "include/sdf/OutputConfig.hh",
     "include/sdf/Param.hh",
     "include/sdf/ParserConfig.hh",
     "include/sdf/ParticleEmitter.hh",
     "include/sdf/Pbr.hh",
     "include/sdf/Physics.hh",
     "include/sdf/Plane.hh",
+    "include/sdf/Plugin.hh",
+    "include/sdf/Polyline.hh",
     "include/sdf/PrintConfig.hh",
     "include/sdf/Root.hh",
     "include/sdf/SDFImpl.hh",
@@ -96,6 +137,8 @@ SDFORMAT_MOST_PUBLIC_HDRS = [
     "include/sdf/Visual.hh",
     "include/sdf/World.hh",
     "include/sdf/parser.hh",
+    "include/sdf/sdf.hh",
+    "include/sdf/sdf_config.h",
     "include/sdf/system_util.hh",
 ]
 
@@ -119,7 +162,8 @@ py_binary(
 )
 
 SDFORMAT_ALL_PUBLIC_HDRS = SDFORMAT_MOST_PUBLIC_HDRS + [
-    "include/sdf/sdf_config.h",  # from cmake_configure_file above
+    "include/sdf/config.hh",  # from cmake_configure_file above
+    "include/sdf/Export.hh",  # from generate_file above
 ]
 
 # Generates the library exported to users. The explicitly listed srcs= matches
@@ -173,6 +217,7 @@ cc_library(
         "src/Model.cc",
         "src/NavSat.cc",
         "src/Noise.cc",
+        "src/OutputConfig.cc",
         "src/Param.cc",
         "src/ParamPassing.cc",
         "src/ParamPassing.hh",
@@ -181,6 +226,8 @@ cc_library(
         "src/Pbr.cc",
         "src/Physics.cc",
         "src/Plane.cc",
+        "src/Plugin.cc",
+        "src/Polyline.cc",
         "src/PrintConfig.cc",
         "src/Root.cc",
         "src/SDF.cc",

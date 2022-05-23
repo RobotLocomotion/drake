@@ -67,9 +67,9 @@ sdf::ParserConfig MakeStrictConfig() {
 
 sdf::SDFPtr ReadString(const std::string& input) {
   sdf::SDFPtr result(new sdf::SDF());
-  sdf::init(result);
-
   sdf::ParserConfig config = MakeStrictConfig();
+  sdf::init(result, config);
+
   sdf::Errors errors;
   const bool success = sdf::readString(input, config, result, errors);
   if (!success) {
