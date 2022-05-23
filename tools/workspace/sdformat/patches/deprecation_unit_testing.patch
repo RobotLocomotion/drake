@@ -5,14 +5,14 @@ rely on any _actually_ deprecated elements, because they will disappear in
 a future upstream release. Therefore, we inject a Drake-specific element
 definition that will always be available.
 
---- src/parser.cc.orig	2021-09-30 15:33:35.000000000 -0700
-+++ src/parser.cc	2022-03-17 12:29:01.296905847 -0700
-@@ -359,7 +359,12 @@
+--- src/parser.cc.orig	2022-04-07 11:39:06.881088965 -0500
++++ src/parser.cc	2022-04-07 11:38:32.744818095 -0500
+@@ -379,7 +379,12 @@
    std::string xmldata = SDF::EmbeddedSpec("root.sdf", false);
    auto xmlDoc = makeSdfDoc();
    xmlDoc.Parse(xmldata.c_str());
--  return initDoc(&xmlDoc, _sdf);
-+  bool result = initDoc(&xmlDoc, _sdf);
+-  return initDoc(&xmlDoc, _config, _sdf);
++  bool result = initDoc(&xmlDoc, _config, _sdf);
 +  ElementPtr drake_testing_element(new Element);
 +  drake_testing_element->SetName("_drake_deprecation_unit_test_element");
 +  drake_testing_element->SetRequired("-1" /* deprecated */);
