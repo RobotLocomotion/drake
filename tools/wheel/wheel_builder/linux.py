@@ -136,14 +136,21 @@ def _create_source_tar(path):
     out.close()
 
 
+def _tagname(target, tag_prefix):
+    """
+    Generates a Docker tag name for a target and tag prefix.
+    """
+    platform = target.platform_alias
+    return f'{tag_base}:{tag_prefix}-{platform}-py{target.python_version}'
+
+
 def _build_stage(target, args, tag_prefix, stage=None):
     """
     Runs a Docker build and return the build tag.
     """
 
     # Generate canonical tag from target.
-    platform = target.platform_alias
-    tag = f'{tag_base}:{tag_prefix}-{platform}-py{target.python_version}'
+    tag = _tagname(target, tag_prefix)
 
     # Generate extra arguments to specify what stage to build.
     if stage is not None:
@@ -210,7 +217,7 @@ def _build_image(target, identifier, options):
                                                 extractor.args, None, None)
 
 
-def _test_wheel(target, options):
+def _test_wheel(target, identifier, options):
     """
     Runs the test script for the wheel matching the specified target.
     """
@@ -218,12 +225,15 @@ def _test_wheel(target, options):
     glibc = glibc_versions[target.platform_alias]
     wheel = f'drake-{options.version}-{vm}-{vm}-manylinux_{glibc}_x86_64.whl'
 
-    platform = target.platform_alias
-    container = f'{tag_base}:test-{platform}-py{target.python_version}'
+    if options.tag_stages:
+        container = _tagname(target, 'test')
+    else:
+        container = _tagname(target, f'test-{identifier}')
     test_dir = os.path.join(resource_root, 'test')
 
     _docker('build', '-t', container, *_target_args(target), test_dir)
-    _images_to_remove.append(container)
+    if not options.tag_stages:
+        _images_to_remove.append(container)
 
     _docker('run', '--rm', '-t',
             '-v' f'{test_dir}:/test',
@@ -266,7 +276,7 @@ def build(options):
         _build_image(t, identifier, options)
 
         if options.test:
-            _test_wheel(t, options)
+            _test_wheel(t, identifier, options)
 
 
 def add_build_arguments(parser):
