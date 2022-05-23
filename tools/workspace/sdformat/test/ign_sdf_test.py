@@ -41,8 +41,8 @@ EXPECTED_OUTPUT = """\
       <axis>
         <xyz expressed_in='__model__'>1 0 0</xyz>
         <limit>
-          <lower>-1e16</lower>
-          <upper>1e16</upper>
+          <lower>-10000000000000000</lower>
+          <upper>10000000000000000</upper>
         </limit>
       </axis>
     </joint>
