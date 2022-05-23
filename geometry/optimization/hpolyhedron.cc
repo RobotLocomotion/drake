@@ -43,7 +43,7 @@ bool IsInfeasible(const MathematicalProgram& prog) {
          solvers::SolutionResult::kInfeasibleConstraints;
 }
 
-// Checks if Ax ≤ b defines an empty set
+// Checks if Ax ≤ b defines an empty set.
 bool IsEmpty(const Eigen::Ref<const MatrixXd>& A,
              const Eigen::Ref<const VectorXd>& b) {
   solvers::MathematicalProgram prog;
@@ -356,7 +356,7 @@ HPolyhedron HPolyhedron::DoIntersectionWithChecks(
                      true)) {
       A.row(num_kept) = other.A().row(i);
       b.row(num_kept) = other.b().row(i);
-      num_kept++;
+      ++num_kept;
       if (IsEmpty(A.topRows(num_kept), b.topRows(num_kept))) {
         return {A.topRows(num_kept), b.topRows(num_kept)};
       }
@@ -375,7 +375,7 @@ HPolyhedron HPolyhedron::ReduceInequalities() const {
   }
 
   for (int excluded_index = 0; excluded_index < num_inequalities;
-       excluded_index++) {
+       ++excluded_index) {
     solvers::MathematicalProgram prog;
     solvers::VectorXDecisionVariable x =
         prog.NewContinuousVariables(num_vars, "x");
