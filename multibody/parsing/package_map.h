@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <initializer_list>
 #include <map>
 #include <optional>
@@ -17,6 +18,15 @@ namespace multibody {
 class PackageMap final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PackageMap)
+
+  /// List of filenames which, when present in a directory, will cause
+  /// PopulateFromFolder and PopulateFromEnvironment to ignore all other
+  /// content in that directory and any subdirectories.
+  static constexpr std::array<std::string_view, 3> IgnoreMarkers = {
+    "AMENT_IGNORE",
+    "CATKIN_IGNORE",
+    "COLCON_IGNORE",
+  };
 
   /// A constructor that initializes a default map containing only the top-
   /// level `drake` manifest.
@@ -86,7 +96,7 @@ class PackageMap final {
   /// If a package already known by the PackageMap is found again with a
   /// conflicting path, a warning is logged and the original path is kept.
   /// If the path does not exist or is unreadable, a warning is logged.
-  void PopulateFromFolder(const std::string& path);
+  void PopulateFromFolder(const std::string& path, bool exhaustive = false);
 
   /// Obtains one or more paths from environment variable
   /// @p environment_variable. Crawls downward through the directory tree(s)
@@ -102,7 +112,8 @@ class PackageMap final {
   /// accomodates the expected behavior using ROS_PACKAGE_PATH, where a package
   /// path corresponds to the "highest" overlay in which that package is found.
   /// If a path does not exist or is unreadable, a warning is logged.
-  void PopulateFromEnvironment(const std::string& environment_variable);
+  void PopulateFromEnvironment(const std::string& environment_variable,
+      bool exhaustive = false);
 
   friend std::ostream& operator<<(std::ostream& out,
                                   const PackageMap& package_map);
@@ -122,7 +133,8 @@ class PackageMap final {
 
   // Recursively crawls through @p path looking for package.xml files. Adds
   // the packages defined by these package.xml files to this PackageMap.
-  void CrawlForPackages(const std::string& path);
+  void CrawlForPackages(const std::string& path, bool exhaustive,
+      std::optional<std::string> deprecated_message = std::nullopt);
 
   // This method is the same as Add() except if package_name is already present
   // with a different path, then this method prints a warning and returns false

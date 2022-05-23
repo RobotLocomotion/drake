@@ -36,8 +36,10 @@ void VerifyMatch(const PackageMap& package_map,
     EXPECT_EQ(package_map.GetPath(package_name, &deprecation), package_path);
 
     const bool should_be_deprecated =
+        (package_name == "package_map_test_package_aa") ||
         (package_name == "package_map_test_package_b") ||
-        (package_name == "package_map_test_package_d");
+        (package_name == "package_map_test_package_d") ||
+        (package_name == "package_map_test_package_e");
     EXPECT_EQ(deprecation.has_value(), should_be_deprecated)
         << "for " << package_name;
     EXPECT_EQ(!deprecation.value_or("").empty(), should_be_deprecated)
@@ -66,12 +68,16 @@ void VerifyMatchWithTestDataRoot(const PackageMap& package_map) {
   map<string, string> expected_packages = {
     {"package_map_test_package_a", root_path +
         "package_map_test_package_a/"},
+    {"package_map_test_package_aa", root_path +
+        "package_map_test_package_a/package_map_test_package_aa/"},
     {"package_map_test_package_b", root_path +
         "package_map_test_package_b/"},
     {"package_map_test_package_c", root_path +
         "package_map_test_package_set/package_map_test_package_c/"},
     {"package_map_test_package_d", root_path +
         "package_map_test_package_set/package_map_test_package_d/"},
+    {"package_map_test_package_e", root_path +
+        "package_map_test_package_e/"},
   };
   VerifyMatch(package_map, expected_packages);
 }
@@ -282,12 +288,24 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
 GTEST_TEST(PackageMapTest, TestDeprecation) {
   const
   std::map<std::string, std::optional<std::string>> expected_deprecations = {
+    {"package_map_test_package_aa", "Manifest population by recursively "
+        "crawling directories which have already been identified as "
+        "containing a package is deprecated, and will be disabled by default "
+        "on or around 2022-07-01. This manifest was discovered under such "
+        "circumstances. To continue discovering the manifest, you should "
+        "explicitly add it to the package map."},
     {
       "package_map_test_package_b",
       "package_map_test_package_b is deprecated, and will be removed on or "
           "around 2038-01-19. Please use the 'drake' package instead."
     },
     {"package_map_test_package_d", ""},
+    {"package_map_test_package_e", "Manifest population by recursively "
+        "crawling directories which are explicitly marked to be ignored is "
+        "deprecated, and will be disabled by default on or around 2022-07-01. "
+        "This manifest was discovered under such circumstances. To continue "
+        "discovering the manifest, you should explicitly add it to the "
+        "package map."},
   };
   const string root_path = GetTestDataRoot();
   PackageMap package_map;

@@ -118,12 +118,13 @@ const string& PackageMap::GetPath(
   return package_data.path;
 }
 
-void PackageMap::PopulateFromFolder(const string& path) {
+void PackageMap::PopulateFromFolder(const string& path, bool exhaustive) {
   DRAKE_DEMAND(!path.empty());
-  CrawlForPackages(path);
+  CrawlForPackages(path, exhaustive);
 }
 
-void PackageMap::PopulateFromEnvironment(const string& environment_variable) {
+void PackageMap::PopulateFromEnvironment(
+    const string& environment_variable, bool exhaustive) {
   DRAKE_DEMAND(!environment_variable.empty());
   const char* const value = std::getenv(environment_variable.c_str());
   if (value == nullptr) {
@@ -133,7 +134,7 @@ void PackageMap::PopulateFromEnvironment(const string& environment_variable) {
   string path;
   while (std::getline(iss, path, ':')) {
     if (!path.empty()) {
-      CrawlForPackages(path);
+      CrawlForPackages(path, exhaustive);
     }
   }
 }
@@ -241,11 +242,41 @@ PackageMap::PackageMap(std::initializer_list<std::string> manifest_paths) {
   }
 }
 
-void PackageMap::CrawlForPackages(const string& path) {
+void PackageMap::CrawlForPackages(const string& path, bool exhaustive,
+    std::optional<std::string> deprecated_message) {
   DRAKE_DEMAND(!path.empty());
+  filesystem::path dir = filesystem::path(path).lexically_normal();
+  if (!exhaustive && !deprecated_message.has_value() && std::any_of(
+      PackageMap::IgnoreMarkers.begin(), PackageMap::IgnoreMarkers.end(),
+      [dir](std::string_view name){return filesystem::exists(dir / name);})) {
+    deprecated_message =
+        "Manifest population by recursively crawling directories which are "
+        "explicitly marked to be ignored is deprecated, and will be disabled "
+        "by default on or around 2022-07-01. This manifest was discovered "
+        "under such circumstances. To continue discovering the manifest, you "
+        "should explicitly add it to the package map.";
+  }
+  filesystem::path manifest = dir / "package.xml";
+  if (filesystem::exists(manifest)) {
+    const auto [package_name, package_deprecated_message] =
+        ParsePackageManifest(manifest.string());
+    const string package_path = dir.string();
+    if (AddPackageIfNew(package_name, package_path + "/")) {
+      if (deprecated_message.has_value())
+        SetDeprecated(package_name, deprecated_message);
+      else
+        SetDeprecated(package_name, package_deprecated_message);
+    }
+    if (!exhaustive && !deprecated_message.has_value())
+      deprecated_message =
+          "Manifest population by recursively crawling directories which have "
+          "already been identified as containing a package is deprecated, and "
+          "will be disabled by default on or around 2022-07-01. This manifest "
+          "was discovered under such circumstances. To continue discovering "
+          "the manifest, you should explicitly add it to the package map.";
+  }
   std::error_code ec;
-  filesystem::directory_iterator iter(
-      filesystem::path(path).lexically_normal(), ec);
+  filesystem::directory_iterator iter(dir, ec);
   if (ec) {
     log()->warn("Unable to open directory: {}", path);
     return;
@@ -257,13 +288,7 @@ void PackageMap::CrawlForPackages(const string& path) {
       if (filename.at(0) == '.') {
         continue;
       }
-      CrawlForPackages(entry.path().string());
-    } else if (entry.path().filename().string() == "package.xml") {
-      const auto [package_name, deprecated_message] = ParsePackageManifest(
-          entry.path().string());
-      const string package_path = entry.path().parent_path().string();
-      if (AddPackageIfNew(package_name, package_path + "/"))
-        SetDeprecated(package_name, deprecated_message);
+      CrawlForPackages(entry.path().string(), exhaustive, deprecated_message);
     }
   }
 }
