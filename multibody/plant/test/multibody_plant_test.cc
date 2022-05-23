@@ -2482,8 +2482,10 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
       // contains the versors of C's basis, expressed in the world frame.
       // In particular, the first two columns corresponds to the versors tangent
       // to the contact plane.
-      const Vector3<T> that1_W = R_WC_set[icontact].matrix().col(0).cast<T>();
-      const Vector3<T> that2_W = R_WC_set[icontact].matrix().col(1).cast<T>();
+      const Vector3<T> that1_W =
+          R_WC_set[icontact].matrix().col(0).template cast<T>();
+      const Vector3<T> that2_W =
+          R_WC_set[icontact].matrix().col(1).template cast<T>();
 
       // Compute the relative velocity of B in A and obtain its components
       // in the contact frame C. The tangential velocities correspond to the

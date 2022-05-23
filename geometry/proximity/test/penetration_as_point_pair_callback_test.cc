@@ -407,18 +407,18 @@ TEST_F(PenetrationAsPointPairCallbackTest, TestGradient) {
   // / ∂p_WBo
   EXPECT_TRUE(
       CompareMatrices(math::ExtractGradient(result.nhat_BA_W),
-                      -dp_WBo_normalized_dp_WBo, kEps));
+                      -dp_WBo_normalized_dp_WBo, 2*kEps));
   // p_WCa = radius * p_WBo / |p_WBo|.
   const Eigen::Matrix3d dp_WCa_dp_WBo = dp_WBo_normalized_dp_WBo * kRadius;
   EXPECT_TRUE(
       CompareMatrices(math::ExtractGradient(result.p_WCa),
-                      dp_WCa_dp_WBo, kEps));
+                      dp_WCa_dp_WBo, 2*kEps));
   // p_WCb = p_WBo - radius * p_WBo / |p_WBo|.
   const Eigen::Matrix3d dp_WCb_dp_WBo =
       Eigen::Matrix3d::Identity() - dp_WBo_normalized_dp_WBo * kRadius;
   EXPECT_TRUE(
       CompareMatrices(math::ExtractGradient(result.p_WCb),
-                      dp_WCb_dp_WBo, kEps));
+                      dp_WCb_dp_WBo, 2*kEps));
 }
 
 TEST_F(PenetrationAsPointPairCallbackTest, SphereBoxDouble) {

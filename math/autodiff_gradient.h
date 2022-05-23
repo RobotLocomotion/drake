@@ -42,7 +42,8 @@ entries. (Each entry contains a value and derivatives.)
 @throws std::exception if the input matrix has elements with inconsistent,
     non-zero numbers of derivatives.
 @throws std::exception if `num_derivatives` is specified but the input matrix
-    has a different, non-zero number of derivatives.*/
+    has a different, non-zero number of derivatives.
+@pydrake_mkdoc_identifier{autodiff} */
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::SizeAtCompileTime,
               Eigen::Dynamic>

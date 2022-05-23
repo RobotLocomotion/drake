@@ -40,7 +40,8 @@ DiscardZeroGradient() is similar but requires that the discarded gradient was
 zero. drake::ExtractDoubleOrThrow() has many specializations, including one for
 `Matrix<AutoDiffScalar>` that behaves identically to ExtractValue().
 
-@see DiscardGradient(), drake::ExtractDoubleOrThrow() */
+@see DiscardGradient(), drake::ExtractDoubleOrThrow()
+@pydrake_mkdoc_identifier{autodiff} */
 template <typename Derived>
 MatrixLikewise<typename Derived::Scalar::Scalar, Derived>
 ExtractValue(const Eigen::MatrixBase<Derived>& auto_diff_matrix) {
@@ -125,8 +126,14 @@ void InitializeAutoDiff(const Eigen::MatrixBase<Derived>& value,
   using ADScalar = typename DerivedAutoDiff::Scalar;
   auto_diff_matrix->resize(value.rows(), value.cols());
   int deriv_num = deriv_num_start.value_or(0);
-  for (int i = 0; i < value.size(); ++i) {
-    (*auto_diff_matrix)(i) = ADScalar(value(i), *num_derivatives, deriv_num++);
+  if (*num_derivatives > 0) {
+    for (int i = 0; i < value.size(); ++i) {
+      (*auto_diff_matrix)(i) =
+          ADScalar(value(i), *num_derivatives, deriv_num++);
+    }
+  } else {
+    for (int i = 0; i < value.size(); ++i)
+      (*auto_diff_matrix)(i) = ADScalar(value(i));
   }
 }
 

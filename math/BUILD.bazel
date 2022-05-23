@@ -143,12 +143,12 @@ drake_cc_library(
     ],
     deps = [
         ":fast_pose_composition_functions",
+        ":gradient",
         "//common:default_scalars",
         "//common:drake_bool",
         "//common:essential",
         "//common:is_approx_equal_abstol",
         "//common:unused",
-        "//math:gradient",
     ],
 )
 
@@ -178,6 +178,7 @@ drake_cc_library(
     name = "gradient",
     srcs = [
         "autodiff_gradient.cc",
+        "diff_matrix.cc",
         "differentiable_norm.cc",
         "gradient.cc",
         "normalize_vector.cc",
@@ -185,6 +186,7 @@ drake_cc_library(
     ],
     hdrs = [
         "autodiff_gradient.h",
+        "diff_matrix.h",
         "differentiable_norm.h",
         "gradient.h",
         "gradient_util.h",
@@ -195,6 +197,7 @@ drake_cc_library(
         ":autodiff",
         ":vector3_util",
         "//common:essential",
+        "//common/symbolic:expression",
     ],
 )
 
@@ -377,6 +380,14 @@ drake_cc_googletest(
     name = "convert_time_derivative_test",
     deps = [
         ":vector3_util",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "diff_matrix_test",
+    deps = [
+        ":gradient",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
