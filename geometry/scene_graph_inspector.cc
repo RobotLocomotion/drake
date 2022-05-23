@@ -72,6 +72,13 @@ SceneGraphInspector<T>::GetCollisionCandidates() const {
 }
 
 template <typename T>
+std::set<std::pair<GeometryId, GeometryId>>
+SceneGraphInspector<T>::GetCollisionFilteredPairs() const {
+  DRAKE_DEMAND(state_ != nullptr);
+  return state_->GetCollisionFilteredPairs();
+}
+
+template <typename T>
 const GeometryVersion& SceneGraphInspector<T>::geometry_version() const {
   return state_->geometry_version();
 }

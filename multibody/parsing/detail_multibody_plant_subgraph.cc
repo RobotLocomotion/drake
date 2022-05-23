@@ -110,30 +110,6 @@ std::vector<geometry::GeometryId> GetGeometries(
   std::sort(geometry_ids.begin(), geometry_ids.end());
   return geometry_ids;
 }
-std::vector<std::pair<geometry::GeometryId, geometry::GeometryId>>
-GetCollisionFilterPairs(const geometry::SceneGraph<double>& scene_graph,
-                        std::vector<geometry::GeometryId> geometry_ids) {
-  std::vector<std::pair<geometry::GeometryId, geometry::GeometryId>>
-      filter_pairs;
-
-  const auto& inspector = scene_graph.model_inspector();
-  // First filter out the geometry_ids that do not have proximity properties.
-  auto noProximityEnd = std::remove_if(
-      geometry_ids.begin(), geometry_ids.end(), [&](auto geom_id) {
-        return inspector.GetProximityProperties(geom_id) == nullptr;
-      });
-
-  for (auto it_a = geometry_ids.begin(); it_a != noProximityEnd; ++it_a) {
-    for (auto it_b = it_a + 1; it_b != noProximityEnd; ++it_b) {
-      // We assume that geometry_ids is sorted, so *it_a < *it_b should always
-      // be true.
-      if (inspector.CollisionFiltered(*it_a, *it_b)) {
-        filter_pairs.emplace_back(*it_a, *it_b);
-      }
-    }
-  }
-  return filter_pairs;
-}
 }  // namespace
 
 std::vector<ModelInstanceIndex> GetModelInstances(
@@ -246,9 +222,8 @@ MultibodyPlantElements MultibodyPlantElements::GetElementsFromBodies(
     auto geometries = GetGeometries(*plant, *scene_graph, elem.bodies_);
     elem.geometry_ids_.insert(geometries.begin(), geometries.end());
 
-    auto filter_pairs = GetCollisionFilterPairs(*scene_graph, geometries);
-    elem.collision_filter_pairs_.insert(filter_pairs.begin(),
-                                        filter_pairs.end());
+    elem.collision_filter_pairs_ =
+        scene_graph->model_inspector().GetCollisionFilteredPairs();
   }
   return elem;
 }

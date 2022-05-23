@@ -149,6 +149,8 @@ class SceneGraphInspector {
    QueryObject::ComputePointPairPenetration().  */
   std::set<std::pair<GeometryId, GeometryId>> GetCollisionCandidates() const;
 
+  std::set<std::pair<GeometryId, GeometryId>> GetCollisionFilteredPairs() const;
+
   /** Returns the geometry version that can be used to detect changes
    to the geometry data associated with geometry roles. The reference returned
    should not be persisted. If it needs to be persisted, it should be copied. */

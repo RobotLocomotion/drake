@@ -135,6 +135,9 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetCollisionCandidates().  */
   std::set<std::pair<GeometryId, GeometryId>> GetCollisionCandidates() const;
 
+  /** Implementation of SceneGraphInspector::GetCollisionFilteredPairs().  */
+  std::set<std::pair<GeometryId, GeometryId>> GetCollisionFilteredPairs() const;
+
   /** Implementation of SceneGraphInspector::GetGeometryVersion().  */
   const GeometryVersion& geometry_version() const {
       return geometry_version_;
