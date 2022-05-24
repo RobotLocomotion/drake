@@ -16,24 +16,42 @@ load(
     "@drake//tools/install:install.bzl",
     "install",
 )
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 licenses(["notice"])  # Apache-2.0 AND BSD-3-Clause AND BSL-1.0
 
 package(default_visibility = ["//visibility:public"])
 
-# Generates sdf_config.h based on the version numbers in CMake code.
+# Generates config.h based on the version numbers in CMake code.
 cmake_configure_file(
     name = "config",
-    src = "cmake/sdf_config.h.in",
-    out = "include/sdf/sdf_config.h",
+    src = "include/sdf/config.hh.in",
+    out = "include/sdf/config.hh",
     cmakelists = ["CMakeLists.txt"],
     defines = [
         "PROJECT_NAME=SDFormat",
         "SDF_VERSION_NAME=",
-        "SDF_PKG_VERSION=",
+        "PROJECT_VERSION_MAJOR=0",
+        "PROJECT_VERSION_MINOR=0",
+        "PROJECT_VERSION_PATCH=0",
+        "PROJECT_VERSION=0.0",
+        "PROJECT_VERSION_FULL=0.0.0",
+        "PROJECT_VERSION_NAME=",
+        "SDF_PKG_VERSION=0.0",
+        "SDF_MAJOR_VERSION=0",
         "CMAKE_INSTALL_FULL_DATAROOTDIR=does/not/exist",
     ],
     visibility = ["//visibility:private"],
+)
+
+generate_file(
+    name = "include/sdf/Export.hh",
+    content = """
+#pragma once
+// Simplified version of visibility and deprecation macros.
+#define IGNITION_SDFORMAT_VISIBLE __attribute__ ((visibility("default")))
+#define IGN_DEPRECATED(version) __attribute__ ((__deprecated__))
+    """,
 )
 
 # Public headers are indicated in sdformat's `include/sdf/CMakeLists.txt`.
@@ -77,12 +95,15 @@ SDFORMAT_MOST_PUBLIC_HDRS = [
     "include/sdf/Model.hh",
     "include/sdf/NavSat.hh",
     "include/sdf/Noise.hh",
+    "include/sdf/OutputConfig.hh",
     "include/sdf/Param.hh",
     "include/sdf/ParserConfig.hh",
     "include/sdf/ParticleEmitter.hh",
     "include/sdf/Pbr.hh",
     "include/sdf/Physics.hh",
     "include/sdf/Plane.hh",
+    "include/sdf/Plugin.hh",
+    "include/sdf/Polyline.hh",
     "include/sdf/PrintConfig.hh",
     "include/sdf/Root.hh",
     "include/sdf/SDFImpl.hh",
@@ -119,7 +140,9 @@ py_binary(
 )
 
 SDFORMAT_ALL_PUBLIC_HDRS = SDFORMAT_MOST_PUBLIC_HDRS + [
-    "include/sdf/sdf_config.h",  # from cmake_configure_file above
+    "include/sdf/config.hh",  # from cmake_configure_file above
+    "include/sdf/sdf_config.h",  # alias to config.hh
+    "include/sdf/Export.hh",  # from generate_file above
 ]
 
 # Generates the library exported to users. The explicitly listed srcs= matches
@@ -173,6 +196,7 @@ cc_library(
         "src/Model.cc",
         "src/NavSat.cc",
         "src/Noise.cc",
+        "src/OutputConfig.cc",
         "src/Param.cc",
         "src/ParamPassing.cc",
         "src/ParamPassing.hh",
@@ -181,6 +205,8 @@ cc_library(
         "src/Pbr.cc",
         "src/Physics.cc",
         "src/Plane.cc",
+        "src/Plugin.cc",
+        "src/Polyline.cc",
         "src/PrintConfig.cc",
         "src/Root.cc",
         "src/SDF.cc",

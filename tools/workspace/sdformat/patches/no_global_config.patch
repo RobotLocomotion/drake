@@ -3,9 +3,9 @@ Change the global singleton into a bomb.
 Use the default config when parsing the built-in root.sdf, and
 in the ign_sdf command-line tool.
 
---- src/ParserConfig.cc.orig	2021-09-30 15:33:35.000000000 -0700
-+++ src/ParserConfig.cc	2022-03-14 22:49:17.262811731 -0700
-@@ -57,8 +57,7 @@
+--- src/ParserConfig.cc
++++ src/ParserConfig.cc
+@@ -65,8 +65,7 @@
  /////////////////////////////////////////////////
  ParserConfig &ParserConfig::GlobalConfig()
  {
@@ -15,21 +15,20 @@ in the ign_sdf command-line tool.
  }
  
  /////////////////////////////////////////////////
-
---- src/parser.cc.orig	2021-09-30 15:33:35.000000000 -0700
-+++ src/parser.cc	2022-03-14 23:16:20.973451521 -0700
-@@ -597,7 +597,7 @@
+--- src/Root.cc
++++ src/Root.cc
+@@ -179,7 +179,7 @@
+ {
+   Errors errors;
+   SDFPtr sdfParsed(new SDF());
+-  init(sdfParsed);
++  init(sdfParsed, sdf::ParserConfig{});
  
-     ElementPtr element(new Element);
- 
--    initFile(filename, element);
-+    initFile(filename, ParserConfig{}, element);
- 
-     // override description for include elements
-     tinyxml2::XMLElement *description = child->FirstChildElement("description");
---- src/ign.cc.orig	2021-09-30 15:33:35.000000000 -0700
-+++ src/ign.cc	2022-03-15 00:13:58.609410856 -0700
-@@ -36,7 +36,7 @@
+   // Read an SDF string, and store the result in sdfParsed.
+   if (!readString(_sdf, _config, sdfParsed, errors))
+--- src/ign.cc
++++ src/ign.cc
+@@ -43,7 +43,7 @@
    int result = 0;
  
    sdf::Root root;
@@ -38,7 +37,14 @@ in the ign_sdf command-line tool.
    if (!errors.empty())
    {
      for (auto &error : errors)
-@@ -85,8 +85,12 @@
+@@ -86,14 +86,18 @@
+ 
+   sdf::SDFPtr sdf(new sdf::SDF());
+ 
+-  if (!sdf::init(sdf))
++  if (!sdf::init(sdf, sdf::ParserConfig{}))
+   {
+     std::cerr << "Error: SDF schema initialization failed.\n";
      return -1;
    }
  
@@ -52,7 +58,23 @@ in the ign_sdf command-line tool.
      std::cerr << "Error: SDF parsing the xml failed.\n";
      return -1;
    }
-@@ -147,8 +152,13 @@
+@@ -126,7 +130,7 @@
+   {
+     sdf->Version(_version);
+   }
+-  if (!sdf::init(sdf))
++  if (!sdf::init(sdf, sdf::ParserConfig{}))
+   {
+     std::cerr << "Error: SDF schema initialization failed.\n";
+     return -1;
+@@ -149,14 +153,19 @@
+ 
+   sdf::SDFPtr sdf(new sdf::SDF());
+ 
+-  if (!sdf::init(sdf))
++  if (!sdf::init(sdf, sdf::ParserConfig{}))
+   {
+     std::cerr << "Error: SDF schema initialization failed.\n";
      return -1;
    }
  
@@ -67,7 +89,7 @@ in the ign_sdf command-line tool.
      std::cerr << "Error: SDF parsing the xml failed.\n";
      return -1;
    }
-@@ -170,7 +180,7 @@
+@@ -218,7 +227,7 @@
    }
  
    sdf::Root root;

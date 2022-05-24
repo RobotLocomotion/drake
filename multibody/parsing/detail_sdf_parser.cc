@@ -787,8 +787,8 @@ std::vector<LinkInfo> AddLinksFromSpecification(
 
     CheckSupportedElements(
         diagnostic, link_element, supported_link_elements);
-    CheckSupportedElementValue(diagnostic, link_element, "kinematic", "0");
-    CheckSupportedElementValue(diagnostic, link_element, "gravity", "1");
+    CheckSupportedElementValue(diagnostic, link_element, "kinematic", "false");
+    CheckSupportedElementValue(diagnostic, link_element, "gravity", "true");
 
     // Get the link's inertia relative to the Bcm frame.
     // sdf::Link::Inertial() provides a representation for the SpatialInertia
