@@ -647,9 +647,18 @@ const InputPort<T>& System<T>::GetInputPort(
       return get_input_port(i);
     }
   }
-  throw std::logic_error("System " + GetSystemName() +
-                         " does not have an input port named " +
-                         port_name);
+  std::string error = ("System " + GetSystemName()
+                       + " does not have an input port named " + port_name);
+  if (num_input_ports() == 0) {
+    error += " (it has no input ports)";
+  } else {
+    error += " (valid port names: ";
+    for (InputPortIndex i{0}; i < num_input_ports(); i++) {
+      error += " " + get_input_port_base(i).get_name();
+    }
+    error += ")";
+  }
+  throw std::logic_error(error);
 }
 
 template <typename T>
@@ -689,9 +698,18 @@ const OutputPort<T>& System<T>::GetOutputPort(
       return get_output_port(i);
     }
   }
-  throw std::logic_error("System " + GetSystemName() +
-                         " does not have an output port named " +
-                         port_name);
+  std::string error = ("System " + GetSystemName()
+                       + " does not have an output port named " + port_name);
+  if (num_input_ports() == 0) {
+    error += " (it has no output ports)";
+  } else {
+    error += " (valid port names: ";
+    for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
+      error += " " + get_output_port_base(i).get_name();
+    }
+    error += ")";
+  }
+  throw std::logic_error(error);
 }
 
 template <typename T>

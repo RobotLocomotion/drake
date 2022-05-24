@@ -457,6 +457,14 @@ TEST_F(SystemTest, PortNameTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       system_.GetOutputPort("not_my_output"),
       ".*does not have an output port named.*");
+
+  // Error messages should mention valid ports.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system_.GetInputPort("not_my_input"),
+      ".*my_input.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system_.GetOutputPort("not_my_output"),
+      ".*y0.*");
 }
 
 TEST_F(SystemTest, PortSelectionTest) {
