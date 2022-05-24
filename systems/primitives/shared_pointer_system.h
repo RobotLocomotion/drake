@@ -9,11 +9,9 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 
-// TODO(jwnimmer-tri) This was created as workaround for drake#14011, but is
-// useful even beyond that specific circumstance. We plan to promote this to
-// Drake (and in doing so, fix it to use the correct filename).
+namespace drake {
+namespace systems {
 
-namespace anzu {
 /** %SharedPointerSystem holds a single `shared_ptr` that will be released at
 System deletion time (i.e., the end of a Diagram lifespan). It has no input,
 output, state, nor parameters. This is useful for storing objects that will be
@@ -26,7 +24,7 @@ object is not scalar-converted, so should not depend on T.
 
 @tparam_default_scalar */
 template <typename T>
-class SharedPointerSystem final : public drake::systems::LeafSystem<T> {
+class SharedPointerSystem final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SharedPointerSystem)
 
@@ -61,7 +59,7 @@ class SharedPointerSystem final : public drake::systems::LeafSystem<T> {
   @pre builder is non-null */
   template <typename Held>
   static Held* AddToBuilder(
-      drake::systems::DiagramBuilder<T>* builder,
+      DiagramBuilder<T>* builder,
       std::shared_ptr<Held> value_to_hold) {
     DRAKE_THROW_UNLESS(builder != nullptr);
     auto holder = std::make_unique<SharedPointerSystem<T>>(
@@ -79,7 +77,7 @@ class SharedPointerSystem final : public drake::systems::LeafSystem<T> {
   @pre builder is non-null */
   template <typename Held>
   static Held* AddToBuilder(
-      drake::systems::DiagramBuilder<T>* builder,
+      DiagramBuilder<T>* builder,
       std::unique_ptr<Held> value_to_hold) {
     return SharedPointerSystem::AddToBuilder(
         builder, std::shared_ptr<Held>(std::move(value_to_hold)));
@@ -104,7 +102,9 @@ class SharedPointerSystem final : public drake::systems::LeafSystem<T> {
   const std::shared_ptr<void> held_;
   const std::type_index held_type_;
 };
-}  // namespace anzu
+
+}  // namespace systems
+}  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::anzu::SharedPointerSystem)
+    class ::drake::systems::SharedPointerSystem)
