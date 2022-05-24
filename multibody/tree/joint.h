@@ -223,27 +223,15 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
 
   /// Returns true if this joint's mobilizers allow relative rotation of the
   /// two frames associated with this joint.
-  /// @see can_translate().
-  bool can_rotate() const {
-    const std::vector<internal::Mobilizer<T>*>& mobilizers =
-        get_implementation().mobilizers_;
-    for (const internal::Mobilizer<T>* mobilizer : mobilizers) {
-      if ( mobilizer->can_rotate() ) return true;
-    }
-    return false;
-  }
+  /// @pre the MultibodyPlant must be finalized.
+  /// @see can_translate()
+  bool can_rotate() const;
 
   /// Returns true if this joint's mobilizers allow relative translation of the
   /// two frames associated with this joint.
-  /// @see can_rotate().
-  bool can_translate() const {
-    const std::vector<internal::Mobilizer<T>*>& mobilizers =
-        get_implementation().mobilizers_;
-    for (const internal::Mobilizer<T>* mobilizer : mobilizers) {
-      if ( mobilizer->can_translate() ) return true;
-    }
-    return false;
-  }
+  /// @pre the MultibodyPlant must be finalized.
+  /// @see can_rotate()
+  bool can_translate() const;
 
   /// Returns a string suffix (e.g. to be appended to the name()) to identify
   /// the `k`th position in this joint.  @p position_index_in_joint must be

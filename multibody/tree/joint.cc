@@ -1,0 +1,32 @@
+#include "drake/multibody/tree/joint.h"
+
+namespace drake {
+namespace multibody {
+
+template <typename T>
+bool Joint<T>::can_rotate() const {
+  ThrowIfNotFinalized(__func__);
+  const std::vector<internal::Mobilizer<T>*>& mobilizers =
+      get_implementation().mobilizers_;
+  for (const internal::Mobilizer<T>* mobilizer : mobilizers) {
+    if (mobilizer->can_rotate()) return true;
+  }
+  return false;
+}
+
+template <typename T>
+bool Joint<T>::can_translate() const {
+  ThrowIfNotFinalized(__func__);
+  const std::vector<internal::Mobilizer<T>*>& mobilizers =
+      get_implementation().mobilizers_;
+  for (const internal::Mobilizer<T>* mobilizer : mobilizers) {
+    if (mobilizer->can_translate()) return true;
+  }
+  return false;
+}
+
+}  // namespace multibody
+}  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::BodyFrame)
