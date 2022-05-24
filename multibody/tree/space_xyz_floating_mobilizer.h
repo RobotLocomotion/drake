@@ -77,7 +77,6 @@ class SpaceXYZFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
 
   bool has_quaternion_dofs() const override { return false; }
 
-  // Overloads that define whether this mobilizer can rotate and/or translate.
   bool can_rotate() const final    { return true; }
   bool can_translate() const final { return true; }
 

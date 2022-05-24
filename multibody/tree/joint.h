@@ -223,13 +223,27 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
 
   /// Returns true if this joint's mobilizers allow relative rotation of the
   /// two frames associated with this joint.
-  /// @see can_translate() and can_rotate_or_translate().
-  bool can_rotate() const { return can_rotate_or_translate(true); }
+  /// @see can_translate().
+  bool can_rotate() const {
+    const std::vector<internal::Mobilizer<T>*>& mobilizers =
+        get_implementation().mobilizers_;
+    for (const internal::Mobilizer<T>* mobilizer : mobilizers) {
+      if ( mobilizer->can_rotate() ) return true;
+    }
+    return false;
+  }
 
   /// Returns true if this joint's mobilizers allow relative translation of the
   /// two frames associated with this joint.
-  /// @see can_rotate() and can_rotate_or_translate().
-  bool can_translate() const { return can_rotate_or_translate(false); }
+  /// @see can_rotate().
+  bool can_translate() const {
+    const std::vector<internal::Mobilizer<T>*>& mobilizers =
+        get_implementation().mobilizers_;
+    for (const internal::Mobilizer<T>* mobilizer : mobilizers) {
+      if ( mobilizer->can_translate() ) return true;
+    }
+    return false;
+  }
 
   /// Returns a string suffix (e.g. to be appended to the name()) to identify
   /// the `k`th position in this joint.  @p position_index_in_joint must be
@@ -596,21 +610,6 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   /// details.  The suffix should contain only alphanumeric characters (e.g.
   /// 'wx' not '_wx' or '.wx').
   virtual std::string do_get_velocity_suffix(int index) const = 0;
-
-  /// Determine whether this joint has mobilizers that rotate and/or translate.
-  /// @param[in] is_check_rotate is true if checking whether this joint's
-  /// mobilizers allow relative rotation of the two frames associated with this
-  /// joint, otherwise false checks whether the mobilizers allow translation.
-  /// @see can_rotate() and can_translate().
-  bool can_rotate_or_translate(bool is_check_rotate) const {
-    const std::vector<internal::Mobilizer<T>*>& mobilizers =
-        get_implementation().mobilizers_;
-    for (const internal::Mobilizer<T>* mobilizer : mobilizers) {
-      if (  is_check_rotate && mobilizer->can_rotate() ) return true;
-      if ( !is_check_rotate && mobilizer->can_translate() ) return true;
-    }
-    return false;
-  }
 
   /// Implementation of the NVI set_default_positions(), see
   /// set_default_positions() for details. It is the responsibility of the
