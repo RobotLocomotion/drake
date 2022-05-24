@@ -5,7 +5,6 @@ namespace multibody {
 
 template <typename T>
 bool Joint<T>::can_rotate() const {
-  ThrowIfNotFinalized(__func__);
   const std::vector<internal::Mobilizer<T>*>& mobilizers =
       get_implementation().mobilizers_;
   for (const internal::Mobilizer<T>* mobilizer : mobilizers) {
@@ -16,7 +15,6 @@ bool Joint<T>::can_rotate() const {
 
 template <typename T>
 bool Joint<T>::can_translate() const {
-  ThrowIfNotFinalized(__func__);
   const std::vector<internal::Mobilizer<T>*>& mobilizers =
       get_implementation().mobilizers_;
   for (const internal::Mobilizer<T>* mobilizer : mobilizers) {
