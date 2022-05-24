@@ -192,6 +192,11 @@ TEST_F(PrismaticJointTest, Clone) {
             joint1_->get_default_translation());
 }
 
+TEST_F(PrismaticJointTest, CanRotateOrTranslate) {
+  EXPECT_FALSE(joint1_->can_rotate());
+  EXPECT_TRUE(joint1_->can_translate());
+}
+
 TEST_F(PrismaticJointTest, NameSuffix) {
   EXPECT_EQ(joint1_->position_suffix(0), "x");
   EXPECT_EQ(joint1_->velocity_suffix(0), "v");

@@ -200,6 +200,11 @@ TEST_F(PlanarJointTest, Clone) {
             joint_->get_default_translation());
 }
 
+TEST_F(PlanarJointTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(joint_->can_rotate());
+  EXPECT_TRUE(joint_->can_translate());
+}
+
 TEST_F(PlanarJointTest, NameSuffix) {
   EXPECT_EQ(joint_->position_suffix(0), "x");
   EXPECT_EQ(joint_->position_suffix(1), "y");

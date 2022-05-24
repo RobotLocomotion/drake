@@ -42,6 +42,11 @@ class ScrewMobilizerTest : public MobilizerTester {
   const ScrewMobilizer<double>* mobilizer_{nullptr};
 };
 
+TEST_F(ScrewMobilizerTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(mobilizer_->can_rotate());
+  EXPECT_TRUE(mobilizer_->can_translate());
+}
+
 TEST_F(ScrewMobilizerTest, ScrewPitchAccess) {
   EXPECT_EQ(mobilizer_->screw_pitch(), kScrewPitch);
 }

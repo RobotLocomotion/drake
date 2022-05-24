@@ -77,6 +77,9 @@ class SpaceXYZFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
 
   bool has_quaternion_dofs() const override { return false; }
 
+  bool can_rotate() const final    { return true; }
+  bool can_translate() const final { return true; }
+
   // Returns the generalized postions for this mobilizer stored in `context`.
   // Generalized positions q for this mobilizer are packed in exactly the
   // following order: `q = [θ₁, θ₂, θ₃, px_FM, py_FM, pz_FM]` that is, rpy
