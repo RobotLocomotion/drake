@@ -264,9 +264,19 @@ const auto& GetElementByName(
   // If the name is non-existent, then say so, whether or not a specific model
   // instance was requested.
   if (lower == upper) {
+    std::vector<std::string_view> all_keys;
+    all_keys.reserve(name_to_index.size());
+    for (auto it = name_to_index.begin(),
+             end = name_to_index.end();
+         it != end;
+         it = name_to_index.equal_range(it->first).second) {
+      all_keys.push_back(it->first.view());
+    }
+    std::sort(all_keys.begin(), all_keys.end());
     throw std::logic_error(fmt::format(
-        "Get{}ByName(): There is no {} named '{}' anywhere in the model.",
-        element_classname, element_classname, name));
+        "Get{}ByName(): There is no {} named '{}' anywhere in the model "
+        "(valid names are: {})",
+        element_classname, element_classname, name, fmt::join(all_keys, ", ")));
   }
 
   // Filter for the requested model_instance, if one was provided.
