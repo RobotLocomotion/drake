@@ -291,7 +291,7 @@ GTEST_TEST(PackageMapTest, TestDeprecation) {
     {"package_map_test_package_aa", "Manifest population by recursively "
         "crawling directories which have already been identified as "
         "containing a package is deprecated, and will be disabled by default "
-        "on or around 2022-07-01. This manifest was discovered under such "
+        "on or around 2022-09-01. This manifest was discovered under such "
         "circumstances. To continue discovering the manifest, you should "
         "explicitly add it to the package map."},
     {
@@ -302,7 +302,7 @@ GTEST_TEST(PackageMapTest, TestDeprecation) {
     {"package_map_test_package_d", ""},
     {"package_map_test_package_e", "Manifest population by recursively "
         "crawling directories which are explicitly marked to be ignored is "
-        "deprecated, and will be disabled by default on or around 2022-07-01. "
+        "deprecated, and will be disabled by default on or around 2022-09-01. "
         "This manifest was discovered under such circumstances. To continue "
         "discovering the manifest, you should explicitly add it to the "
         "package map."},

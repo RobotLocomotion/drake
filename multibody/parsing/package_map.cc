@@ -27,6 +27,15 @@ using std::string;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
+// List of filenames which, when present in a directory, will cause
+// PopulateFromFolder and PopulateFromEnvironment to ignore all other
+// content in that directory and any subdirectories.
+static constexpr std::array<std::string_view, 3> IgnoreMarkers = {
+  "AMENT_IGNORE",
+  "CATKIN_IGNORE",
+  "COLCON_IGNORE",
+};
+
 PackageMap::PackageMap()
     : PackageMap{FindResourceOrThrow("drake/package.xml")} {}
 
@@ -66,6 +75,10 @@ void PackageMap::SetDeprecated(const std::string& package_name,
     std::optional<std::string> deprecated_message) {
   DRAKE_DEMAND(Contains(package_name));
   map_.at(package_name).deprecated_message = std::move(deprecated_message);
+}
+
+void PackageMap::SetIsExhaustive(bool is_exhaustive) {
+  is_exhaustive_ = is_exhaustive;
 }
 
 int PackageMap::size() const {
@@ -118,13 +131,12 @@ const string& PackageMap::GetPath(
   return package_data.path;
 }
 
-void PackageMap::PopulateFromFolder(const string& path, bool exhaustive) {
+void PackageMap::PopulateFromFolder(const string& path) {
   DRAKE_DEMAND(!path.empty());
-  CrawlForPackages(path, exhaustive);
+  CrawlForPackages(path);
 }
 
-void PackageMap::PopulateFromEnvironment(
-    const string& environment_variable, bool exhaustive) {
+void PackageMap::PopulateFromEnvironment(const string& environment_variable) {
   DRAKE_DEMAND(!environment_variable.empty());
   const char* const value = std::getenv(environment_variable.c_str());
   if (value == nullptr) {
@@ -134,7 +146,7 @@ void PackageMap::PopulateFromEnvironment(
   string path;
   while (std::getline(iss, path, ':')) {
     if (!path.empty()) {
-      CrawlForPackages(path, exhaustive);
+      CrawlForPackages(path);
     }
   }
 }
@@ -236,23 +248,24 @@ bool PackageMap::AddPackageIfNew(const string& package_name,
   return true;
 }
 
-PackageMap::PackageMap(std::initializer_list<std::string> manifest_paths) {
+PackageMap::PackageMap(std::initializer_list<std::string> manifest_paths)
+    : is_exhaustive_(false) {
   for (const auto& manifest_path : manifest_paths) {
     AddPackageXml(manifest_path);
   }
 }
 
-void PackageMap::CrawlForPackages(const string& path, bool exhaustive,
+void PackageMap::CrawlForPackages(const string& path,
     std::optional<std::string> deprecated_message) {
   DRAKE_DEMAND(!path.empty());
   filesystem::path dir = filesystem::path(path).lexically_normal();
-  if (!exhaustive && !deprecated_message.has_value() && std::any_of(
-      PackageMap::IgnoreMarkers.begin(), PackageMap::IgnoreMarkers.end(),
+  if (!is_exhaustive_ && !deprecated_message.has_value() && std::any_of(
+      IgnoreMarkers.begin(), IgnoreMarkers.end(),
       [dir](std::string_view name){return filesystem::exists(dir / name);})) {
     deprecated_message =
         "Manifest population by recursively crawling directories which are "
         "explicitly marked to be ignored is deprecated, and will be disabled "
-        "by default on or around 2022-07-01. This manifest was discovered "
+        "by default on or around 2022-09-01. This manifest was discovered "
         "under such circumstances. To continue discovering the manifest, you "
         "should explicitly add it to the package map.";
   }
@@ -267,11 +280,11 @@ void PackageMap::CrawlForPackages(const string& path, bool exhaustive,
       else
         SetDeprecated(package_name, package_deprecated_message);
     }
-    if (!exhaustive && !deprecated_message.has_value())
+    if (!is_exhaustive_ && !deprecated_message.has_value())
       deprecated_message =
           "Manifest population by recursively crawling directories which have "
           "already been identified as containing a package is deprecated, and "
-          "will be disabled by default on or around 2022-07-01. This manifest "
+          "will be disabled by default on or around 2022-09-01. This manifest "
           "was discovered under such circumstances. To continue discovering "
           "the manifest, you should explicitly add it to the package map.";
   }
@@ -288,7 +301,7 @@ void PackageMap::CrawlForPackages(const string& path, bool exhaustive,
       if (filename.at(0) == '.') {
         continue;
       }
-      CrawlForPackages(entry.path().string(), exhaustive, deprecated_message);
+      CrawlForPackages(entry.path().string(), deprecated_message);
     }
   }
 }

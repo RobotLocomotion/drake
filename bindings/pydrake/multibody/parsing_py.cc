@@ -51,10 +51,12 @@ PYBIND11_MODULE(parsing, m) {
         .def("AddPackageXml", &Class::AddPackageXml, py::arg("filename"),
             cls_doc.AddPackageXml.doc)
         .def("PopulateFromFolder", &Class::PopulateFromFolder, py::arg("path"),
-            py::arg("exhaustive") = false, cls_doc.PopulateFromFolder.doc)
+            cls_doc.PopulateFromFolder.doc)
         .def("PopulateFromEnvironment", &Class::PopulateFromEnvironment,
-            py::arg("environment_variable"), py::arg("exhaustive") = false,
+            py::arg("environment_variable"),
             cls_doc.PopulateFromEnvironment.doc)
+        .def("SetIsExhaustive", &Class::SetIsExhaustive,
+            py::arg("is_exhaustive"), cls_doc.SetIsExhaustive.doc)
         .def_static("MakeEmpty", &Class::MakeEmpty, cls_doc.MakeEmpty.doc);
   }
 
