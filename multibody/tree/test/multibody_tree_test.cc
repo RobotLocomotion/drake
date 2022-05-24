@@ -131,6 +131,9 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       model.GetBodyByName(kInvalidName),
       ".*There is no Body named.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
+      model.GetBodyByName(kInvalidName),
+      ".*iiwa_link_1.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetBodyByName(kLinkNames[0], world_model_instance()),
       ".*There is no Body.*but one does exist in other model instances.*");
 
@@ -150,6 +153,9 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetRigidBodyByName(kInvalidName),
       ".*There is no Body named.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model.GetRigidBodyByName(kInvalidName),
+      ".*iiwa_link_1.*");
 
   // Get frames by name.
   for (const std::string& frame_name : kFrameNames) {
@@ -162,6 +168,9 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetFrameByName(kInvalidName),
       ".*There is no Frame named.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model.GetFrameByName(kInvalidName),
+      ".*iiwa_link_1.*");
 
   // Get joints by name.
   for (const std::string& joint_name : kJointNames) {
@@ -172,6 +181,9 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetJointByName(kInvalidName),
       ".*There is no Joint named.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model.GetJointByName(kInvalidName),
+      ".*iiwa_joint_1.*");
 
   // Templatized version to obtain a particular known type of joint.
   for (const std::string& joint_name : kJointNames) {
@@ -183,6 +195,9 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.template GetJointByName<RevoluteJoint>(kInvalidName),
       ".*There is no Joint named.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model.template GetJointByName<RevoluteJoint>(kInvalidName),
+      ".*iiwa_joint_1.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.template GetJointByName<PrismaticJoint>(kJointNames[0]),
       ".*not of type.*PrismaticJoint.*but.*RevoluteJoint.*");
@@ -197,6 +212,9 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetJointActuatorByName(kInvalidName),
       ".*There is no JointActuator named.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model.GetJointActuatorByName(kInvalidName),
+      ".*iiwa_actuator_1.*");
 
   // Test we can retrieve joints from the actuators.
   int names_index = 0;
