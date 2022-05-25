@@ -2870,6 +2870,36 @@ void MultibodyTree<T>::ThrowIfNotFinalized(const char* source_method) const {
 }
 
 template <typename T>
+double MultibodyTree<T>::CalcTotalDefaultMass(
+    const std::set<BodyIndex>& body_indexes) const {
+  double total_mass = 0;
+  for (BodyIndex body_index : body_indexes) {
+    const Body<T>& body_B = get_body(body_index);
+    const double mass_B = body_B.get_default_mass();
+    if (!std::isnan(mass_B)) total_mass += mass_B;
+  }
+  return total_mass;
+}
+
+template <typename T>
+RotationalInertia<double> MultibodyTree<T>::CalcTotalDefaultRotationalInertia(
+    const std::set<BodyIndex>& body_indexes) const {
+  RotationalInertia<double> total_inertia;
+  total_inertia.SetZero();
+  for (BodyIndex body_index : body_indexes) {
+    const Body<T>& body_B = get_body(body_index);
+    const RotationalInertia<double> I_BBo_B =
+        body_B.default_rotational_inertia();
+
+    // Each body B has its own origin point Bo and own unit vectors Bx, By, Bz.
+    // As such, simply adding a body B1's rotational inertia to a body B2's
+    // rotational inertia may have no physical meaning.
+    if (!I_BBo_B.IsNaN()) total_inertia += I_BBo_B;
+  }
+  return total_inertia;
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
     const systems::Context<T>& context,
     ArticulatedBodyInertiaCache<T>* abic) const {

@@ -832,6 +832,68 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
   }
 }
 
+// Helper function to add a rigid body to a model.
+const RigidBody<double>& AddRigidBody(MultibodyTree<double>* model,
+                                      const std::string& name,
+                                      const double mass,
+                                      const double link_length = 1.0) {
+    DRAKE_DEMAND(model != nullptr);
+    return model->AddRigidBody(name,
+        SpatialInertia<double>::MakeTestCube(mass, link_length));
+}
+
+// Verify Body::default_rotational_inertia() and related MultibodyTree methods.
+GTEST_TEST(WeldedBodies, VerifyDefaultRotationalInertia) {
+  // Create a model and add three rigid bodies.
+  MultibodyTree<double> model;
+  const double mA = 0, mB = 1, mC = 3;  // Mass of link A, B, and C.
+  const double length = 3;         // Length of each thin uniform-density link.
+  const RigidBody<double>& body_A = AddRigidBody(&model, "bodyA", mA, length);
+  const RigidBody<double>& body_B = AddRigidBody(&model, "bodyB", mB, length);
+  const RigidBody<double>& body_C = AddRigidBody(&model, "bodyC", mC, length);
+
+  // Verify the default mass for each of the bodies.
+  EXPECT_EQ(body_A.get_default_mass(), mA);
+  EXPECT_EQ(body_B.get_default_mass(), mB);
+  EXPECT_EQ(body_C.get_default_mass(), mC);
+
+  // Verify the default rotational inertia for each of the bodies.
+  // To help with testing, create a RotationalInertia for a unit mass cube.
+  const UnitInertia<double> G_SSo_S =
+      SpatialInertia<double>::MakeTestCube(1.0, length).get_unit_inertia();
+  const RotationalInertia<double> I_A = body_A.default_rotational_inertia();
+  const RotationalInertia<double> I_B = body_B.default_rotational_inertia();
+  const RotationalInertia<double> I_C = body_C.default_rotational_inertia();
+  EXPECT_EQ(I_A.CopyToFullMatrix3(), (mA * G_SSo_S).CopyToFullMatrix3());
+  EXPECT_EQ(I_B.CopyToFullMatrix3(), (mB * G_SSo_S).CopyToFullMatrix3());
+  EXPECT_EQ(I_C.CopyToFullMatrix3(), (mC * G_SSo_S).CopyToFullMatrix3());
+
+  // Create various sets of body indexes.
+  std::set<BodyIndex> bodies_AB, bodies_BC, bodies_ABC;
+  bodies_AB.insert({body_A.index(), body_B.index()});
+  bodies_BC.insert({body_B.index(), body_C.index()});
+  bodies_ABC.insert({body_A.index(), body_B.index(), body_C.index()});
+
+  // Verify the sum of the default masses in these sets of body indexes.
+  const double mass_AB = model.CalcTotalDefaultMass(bodies_AB);
+  const double mass_BC = model.CalcTotalDefaultMass(bodies_BC);
+  const double mass_ABC = model.CalcTotalDefaultMass(bodies_ABC);
+  EXPECT_EQ(mass_AB, mA + mB);
+  EXPECT_EQ(mass_BC, mB + mC);
+  EXPECT_EQ(mass_ABC, mA + mB + mC);
+
+  // Verify the simple sum of the default rotational inertia in these sets.
+  const RotationalInertia<double> I_AB =
+      model.CalcTotalDefaultRotationalInertia(bodies_AB);
+  const RotationalInertia<double> I_BC =
+      model.CalcTotalDefaultRotationalInertia(bodies_BC);
+  const RotationalInertia<double> I_ABC =
+      model.CalcTotalDefaultRotationalInertia(bodies_ABC);
+  EXPECT_EQ(I_AB.CopyToFullMatrix3(), (I_A + I_B).CopyToFullMatrix3());
+  EXPECT_EQ(I_BC.CopyToFullMatrix3(), (I_B + I_C).CopyToFullMatrix3());
+  EXPECT_EQ(I_ABC.CopyToFullMatrix3(), (I_A + I_B + I_C).CopyToFullMatrix3());
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
