@@ -55,8 +55,7 @@ PYBIND11_MODULE(parsing, m) {
         .def("PopulateFromEnvironment", &Class::PopulateFromEnvironment,
             py::arg("environment_variable"),
             cls_doc.PopulateFromEnvironment.doc)
-        .def("SetIsExhaustive", &Class::SetIsExhaustive,
-            py::arg("is_exhaustive"), cls_doc.SetIsExhaustive.doc)
+        .def("PopulateFromRosPackagePath", &Class::PopulateFromRosPackagePath)
         .def_static("MakeEmpty", &Class::MakeEmpty, cls_doc.MakeEmpty.doc);
   }
 

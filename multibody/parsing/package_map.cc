@@ -28,9 +28,9 @@ using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 // List of filenames which, when present in a directory, will cause
-// PopulateFromFolder and PopulateFromEnvironment to ignore all other
-// content in that directory and any subdirectories.
-static constexpr std::array<std::string_view, 3> IgnoreMarkers = {
+// PopulateFromRosPackagePath to ignore all other content in that directory
+// and any subdirectories.
+static const std::vector<std::string_view> IgnoreMarkers = {
   "AMENT_IGNORE",
   "CATKIN_IGNORE",
   "COLCON_IGNORE",
@@ -75,10 +75,6 @@ void PackageMap::SetDeprecated(const std::string& package_name,
     std::optional<std::string> deprecated_message) {
   DRAKE_DEMAND(Contains(package_name));
   map_.at(package_name).deprecated_message = std::move(deprecated_message);
-}
-
-void PackageMap::SetIsExhaustive(bool is_exhaustive) {
-  is_exhaustive_ = is_exhaustive;
 }
 
 int PackageMap::size() const {
@@ -147,6 +143,20 @@ void PackageMap::PopulateFromEnvironment(const string& environment_variable) {
   while (std::getline(iss, path, ':')) {
     if (!path.empty()) {
       CrawlForPackages(path);
+    }
+  }
+}
+
+void PackageMap::PopulateFromRosPackagePath() {
+  const char* const value = std::getenv("ROS_PACKAGE_PATH");
+  if (value == nullptr) {
+    return;
+  }
+  std::istringstream iss{string(value)};
+  string path;
+  while (std::getline(iss, path, ':')) {
+    if (!path.empty()) {
+      CrawlForPackages(path, true, IgnoreMarkers);
     }
   }
 }
@@ -248,45 +258,29 @@ bool PackageMap::AddPackageIfNew(const string& package_name,
   return true;
 }
 
-PackageMap::PackageMap(std::initializer_list<std::string> manifest_paths)
-    : is_exhaustive_(false) {
+PackageMap::PackageMap(std::initializer_list<std::string> manifest_paths) {
   for (const auto& manifest_path : manifest_paths) {
     AddPackageXml(manifest_path);
   }
 }
 
-void PackageMap::CrawlForPackages(const string& path,
-    std::optional<std::string> deprecated_message) {
+void PackageMap::CrawlForPackages(const string& path, bool stop_at_package,
+    const std::vector<std::string_view>& stop_markers) {
   DRAKE_DEMAND(!path.empty());
   filesystem::path dir = filesystem::path(path).lexically_normal();
-  if (!is_exhaustive_ && !deprecated_message.has_value() && std::any_of(
-      IgnoreMarkers.begin(), IgnoreMarkers.end(),
+  if (std::any_of(stop_markers.begin(), stop_markers.end(),
       [dir](std::string_view name){return filesystem::exists(dir / name);})) {
-    deprecated_message =
-        "Manifest population by recursively crawling directories which are "
-        "explicitly marked to be ignored is deprecated, and will be disabled "
-        "by default on or around 2022-09-01. This manifest was discovered "
-        "under such circumstances. To continue discovering the manifest, you "
-        "should explicitly add it to the package map.";
+    return;
   }
   filesystem::path manifest = dir / "package.xml";
   if (filesystem::exists(manifest)) {
-    const auto [package_name, package_deprecated_message] =
+    const auto [package_name, deprecated_message] =
         ParsePackageManifest(manifest.string());
     const string package_path = dir.string();
-    if (AddPackageIfNew(package_name, package_path + "/")) {
-      if (deprecated_message.has_value())
-        SetDeprecated(package_name, deprecated_message);
-      else
-        SetDeprecated(package_name, package_deprecated_message);
-    }
-    if (!is_exhaustive_ && !deprecated_message.has_value())
-      deprecated_message =
-          "Manifest population by recursively crawling directories which have "
-          "already been identified as containing a package is deprecated, and "
-          "will be disabled by default on or around 2022-09-01. This manifest "
-          "was discovered under such circumstances. To continue discovering "
-          "the manifest, you should explicitly add it to the package map.";
+    if (AddPackageIfNew(package_name, package_path + "/"))
+      SetDeprecated(package_name, deprecated_message);
+    if (stop_at_package)
+      return;
   }
   std::error_code ec;
   filesystem::directory_iterator iter(dir, ec);
@@ -301,7 +295,7 @@ void PackageMap::CrawlForPackages(const string& path,
       if (filename.at(0) == '.') {
         continue;
       }
-      CrawlForPackages(entry.path().string(), deprecated_message);
+      CrawlForPackages(entry.path().string(), stop_at_package, stop_markers);
     }
   }
 }

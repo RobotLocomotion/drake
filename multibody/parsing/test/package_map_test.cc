@@ -36,10 +36,8 @@ void VerifyMatch(const PackageMap& package_map,
     EXPECT_EQ(package_map.GetPath(package_name, &deprecation), package_path);
 
     const bool should_be_deprecated =
-        (package_name == "package_map_test_package_aa") ||
         (package_name == "package_map_test_package_b") ||
-        (package_name == "package_map_test_package_d") ||
-        (package_name == "package_map_test_package_e");
+        (package_name == "package_map_test_package_d");
     EXPECT_EQ(deprecation.has_value(), should_be_deprecated)
         << "for " << package_name;
     EXPECT_EQ(!deprecation.value_or("").empty(), should_be_deprecated)
@@ -253,6 +251,41 @@ GTEST_TEST(PackageMapTest, TestPopulateFromEnvironment) {
   VerifyMatchWithTestDataRoot(package_map);
 }
 
+// Tests that PackageMap can be populated from the
+// ROS_PACKAGE_PATH env var.
+GTEST_TEST(PackageMapTest, TestPopulateFromRosPackagePath) {
+  PackageMap package_map = PackageMap::MakeEmpty();
+
+  // Test a null environment.
+  package_map.PopulateFromRosPackagePath();
+  EXPECT_EQ(package_map.size(), 0);
+
+  // Test an empty environment.
+  ::setenv("ROS_PACKAGE_PATH", "", 1);
+  package_map.PopulateFromRosPackagePath();
+  EXPECT_EQ(package_map.size(), 0);
+
+  // Test three environment entries, concatenated:
+  // - one bad path
+  // - one good path
+  // - one empty path
+  const std::string root_path = GetTestDataRoot();
+  const std::string value = "/does/not/exist:" + root_path + ":";
+  ::setenv("ROS_PACKAGE_PATH", value.c_str(), 1);
+  package_map.PopulateFromRosPackagePath();
+  map<string, string> expected_packages = {
+    {"package_map_test_package_a", root_path +
+        "package_map_test_package_a/"},
+    {"package_map_test_package_b", root_path +
+        "package_map_test_package_b/"},
+    {"package_map_test_package_c", root_path +
+        "package_map_test_package_set/package_map_test_package_c/"},
+    {"package_map_test_package_d", root_path +
+        "package_map_test_package_set/package_map_test_package_d/"},
+  };
+  VerifyMatch(package_map, expected_packages);
+}
+
 // Tests that PackageMap's streaming to-string operator works.
 GTEST_TEST(PackageMapTest, TestStreamingToString) {
   filesystem::create_directory("package_foo");
@@ -288,24 +321,12 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
 GTEST_TEST(PackageMapTest, TestDeprecation) {
   const
   std::map<std::string, std::optional<std::string>> expected_deprecations = {
-    {"package_map_test_package_aa", "Manifest population by recursively "
-        "crawling directories which have already been identified as "
-        "containing a package is deprecated, and will be disabled by default "
-        "on or around 2022-09-01. This manifest was discovered under such "
-        "circumstances. To continue discovering the manifest, you should "
-        "explicitly add it to the package map."},
     {
       "package_map_test_package_b",
       "package_map_test_package_b is deprecated, and will be removed on or "
           "around 2038-01-19. Please use the 'drake' package instead."
     },
     {"package_map_test_package_d", ""},
-    {"package_map_test_package_e", "Manifest population by recursively "
-        "crawling directories which are explicitly marked to be ignored is "
-        "deprecated, and will be disabled by default on or around 2022-09-01. "
-        "This manifest was discovered under such circumstances. To continue "
-        "discovering the manifest, you should explicitly add it to the "
-        "package map."},
   };
   const string root_path = GetTestDataRoot();
   PackageMap package_map;

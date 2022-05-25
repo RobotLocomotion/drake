@@ -1,6 +1,5 @@
 #pragma once
 
-#include <array>
 #include <initializer_list>
 #include <map>
 #include <optional>
@@ -47,12 +46,6 @@ class PackageMap final {
   /// if no package named @p package_name exists in this PackageMap.
   void SetDeprecated(const std::string& package_name,
       std::optional<std::string> deprecated_message);
-
-  /// Sets the recursive directory crawl behavior used in PopulateFromFolder
-  /// and PopulateFromEnvironment to descend into identified packages and also
-  /// ignore explicit marker files. By default, directory traversal is not
-  /// exhuastive.
-  void SetIsExhaustive(bool is_exhaustive);
 
   /// Returns the number of entries in this PackageMap.
   int size() const;
@@ -111,6 +104,16 @@ class PackageMap final {
   /// If a path does not exist or is unreadable, a warning is logged.
   void PopulateFromEnvironment(const std::string& environment_variable);
 
+  /// Obtains one or more paths from the ROS_PACKAGE_PATH environment variable.
+  /// Semantics are similar to PopulateFromEnvironment, except that ROS-style
+  /// crawl termination semantics are enabled, which means that subdirectories
+  /// of already-identified packages are not searched, and neither are
+  /// directories which contain any of the following marker files:
+  /// - AMENT_IGNORE
+  /// - CATKIN_IGNORE
+  /// - COLCON_IGNORE
+  void PopulateFromRosPackagePath();
+
   friend std::ostream& operator<<(std::ostream& out,
                                   const PackageMap& package_map);
 
@@ -130,18 +133,14 @@ class PackageMap final {
   // Recursively crawls through @p path looking for package.xml files. Adds
   // the packages defined by these package.xml files to this PackageMap.
   void CrawlForPackages(const std::string& path,
-      std::optional<std::string> deprecated_message = std::nullopt);
+      bool stop_at_package = false,
+      const std::vector<std::string_view>& stop_markers = {});
 
   // This method is the same as Add() except if package_name is already present
   // with a different path, then this method prints a warning and returns false
   // without adding the new path. Returns true otherwise.
   bool AddPackageIfNew(const std::string& package_name,
       const std::string& path);
-
-  // Enables exhaustive recursive directory crawl behavior which will walk
-  // subdirectories of already identified packages as well as directories which
-  // have been specifically marked to be ignored.
-  bool is_exhaustive_;
 
   // The key is the name of a ROS package and the value is a struct containing
   // information about that package.
