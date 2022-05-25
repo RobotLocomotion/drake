@@ -193,6 +193,10 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(result.is_success())
         self.assertEqual(result.get_solver_id().name(), solver_id.name())
 
+        linear_solvers = mp.GetAvailableSolvers(
+            prog_type=mp.ProgramType.kLP)
+        self.assertGreater(len(linear_solvers), 0)
+
     def test_module_level_solve_function_and_result_accessors(self):
         qp = TestQP()
         x_expected = np.array([1, 1])
