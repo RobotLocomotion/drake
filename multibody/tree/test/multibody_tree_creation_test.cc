@@ -868,6 +868,11 @@ GTEST_TEST(WeldedBodies, VerifyDefaultRotationalInertia) {
   EXPECT_EQ(I_B.CopyToFullMatrix3(), (mB * G_SSo_S).CopyToFullMatrix3());
   EXPECT_EQ(I_C.CopyToFullMatrix3(), (mC * G_SSo_S).CopyToFullMatrix3());
 
+  // Verify RotationalInertia::IsZero()
+  EXPECT_TRUE(I_A.IsZero());
+  EXPECT_FALSE(I_B.IsZero());
+  EXPECT_FALSE(I_C.IsZero());
+
   // Create various sets of body indexes.
   std::set<BodyIndex> bodies_AB, bodies_BC, bodies_ABC;
   bodies_AB.insert({body_A.index(), body_B.index()});
