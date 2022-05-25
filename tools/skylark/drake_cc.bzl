@@ -24,7 +24,6 @@ CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=inconsistent-missing-override",
     "-Werror=final-dtor-non-final-class",
     "-Werror=literal-conversion",
-    "-Werror=macro-redefined",
     "-Werror=non-virtual-dtor",
     "-Werror=range-loop-analysis",
     "-Werror=return-stack-address",
