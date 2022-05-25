@@ -1,6 +1,8 @@
 """
-Runs the manipulation_station example with a simple tcl/tk joint slider ui for
-directly tele-operating the joints.
+Runs the manipulation_station example with a meshcat joint slider ui for
+directly tele-operating the joints.  To have the meshcat server automatically
+open in your browser, supply the --open-window flag; the joint sliders will be
+accessible by clicking on "Open Controls" in the top right corner.
 """
 
 import argparse
@@ -9,11 +11,13 @@ import webbrowser
 
 import numpy as np
 
+from drake.examples.manipulation_station.schunk_wsg_buttons import \
+    SchunkWsgButtons
 from pydrake.examples.manipulation_station import (
-    ManipulationStation, ManipulationStationHardwareInterface,
-    CreateClutterClearingYcbObjectList)
+    CreateClutterClearingYcbObjectList, ManipulationStation,
+    ManipulationStationHardwareInterface)
 from pydrake.geometry import DrakeVisualizer
-from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
+from pydrake.multibody.meshcat import JointSliders
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
@@ -51,6 +55,13 @@ def main():
 
     builder = DiagramBuilder()
 
+    # NOTE: the meshcat instance is always created in order to create the
+    # teleop controls (joint sliders and open/close gripper button).  When
+    # args.hardware is True, the meshcat server will *not* display robot
+    # geometry, but it will contain the joint sliders and open/close gripper
+    # button in the "Open Controls" tab in the top-right of the viewing server.
+    meshcat = Meshcat()
+
     if args.hardware:
         # TODO(russt): Replace this hard-coded camera serial number with a
         # config file.
@@ -84,7 +95,6 @@ def main():
 
         geometry_query_port = station.GetOutputPort("geometry_query")
         DrakeVisualizer.AddToBuilder(builder, geometry_query_port)
-        meshcat = Meshcat()
         meshcat_visualizer = MeshcatVisualizerCpp.AddToBuilder(
             builder=builder,
             query_object_port=geometry_query_port,
@@ -95,14 +105,12 @@ def main():
             pyplot_visualizer = ConnectPlanarSceneGraphVisualizer(
                 builder, station.get_scene_graph(), geometry_query_port)
 
-        if args.browser_new is not None:
-            url = meshcat.web_url()
-            webbrowser.open(url=url, new=args.browser_new)
+    if args.browser_new is not None:
+        url = meshcat.web_url()
+        webbrowser.open(url=url, new=args.browser_new)
 
-    teleop = builder.AddSystem(JointSliders(station.get_controller_plant(),
-                                            length=800))
-    if args.test:
-        teleop.window.withdraw()  # Don't display the window when testing.
+    teleop = builder.AddSystem(JointSliders(
+        meshcat=meshcat, plant=station.get_controller_plant()))
 
     num_iiwa_joints = station.num_iiwa_joints()
     filter = builder.AddSystem(FirstOrderLowPassFilter(
@@ -111,7 +119,7 @@ def main():
     builder.Connect(filter.get_output_port(0),
                     station.GetInputPort("iiwa_position"))
 
-    wsg_buttons = builder.AddSystem(SchunkWsgButtons(teleop.window))
+    wsg_buttons = builder.AddSystem(SchunkWsgButtons(meshcat=meshcat))
     builder.Connect(wsg_buttons.GetOutputPort("position"),
                     station.GetInputPort("wsg_position"))
     builder.Connect(wsg_buttons.GetOutputPort("force_limit"),
@@ -149,7 +157,7 @@ def main():
     # Eval the output port once to read the initial positions of the IIWA.
     q0 = station.GetOutputPort("iiwa_position_measured").Eval(
         station_context)
-    teleop.set_position(q0)
+    teleop.SetPositions(q0)
     filter.set_initial_output_value(diagram.GetMutableSubsystemContext(
         filter, simulator.get_mutable_context()), q0)
 
