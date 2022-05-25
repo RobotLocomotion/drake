@@ -218,9 +218,9 @@ TEST_F(SceneGraphTest, TopologyAfterAllocation) {
   CreateDefaultContext();
 
   FrameId parent_frame_id =
-      scene_graph_.RegisterFrame(id, GeometryFrame("frame"));
+      scene_graph_.RegisterFrame(id, GeometryFrame("parent"));
   FrameId child_frame_id =
-      scene_graph_.RegisterFrame(id, parent_frame_id, GeometryFrame("frame"));
+      scene_graph_.RegisterFrame(id, parent_frame_id, GeometryFrame("child"));
   GeometryId parent_geometry_id = scene_graph_.RegisterGeometry(
       id, parent_frame_id, make_sphere_instance());
   GeometryId child_geometry_id = scene_graph_.RegisterGeometry(
