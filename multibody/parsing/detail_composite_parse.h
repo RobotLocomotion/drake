@@ -28,6 +28,13 @@ class CompositeParse {
   CollisionFilterGroupResolver& collision_resolver() { return resolver_; }
   // TODO(rpoyner-tri): add some way to get more expressive diagnostics.
 
+  ModelInstanceIndex AddModelFromFile(
+    const std::string& file_name,
+    const std::string& model_name) {
+    return parser_.CompositeAddModelFromFile(file_name, model_name, this);
+  }
+  // TODO(rpoyner-tri): add model parsing methods as needed.
+
  private:
   Parser& parser_;
   CollisionFilterGroupResolver resolver_;

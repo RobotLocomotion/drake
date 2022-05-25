@@ -122,7 +122,8 @@ struct AddFrame {
   drake::schema::Transform X_PF;
 };
 
-/// Directive to add a collision filter group.
+/// Directive to add a collision filter group.  This directive is analogous to
+/// @ref tag_drake_collision_filter_group in XML model formats.
 struct AddCollisionFilterGroup {
   bool IsValid() const {
     if (name.empty()) {
@@ -147,11 +148,14 @@ struct AddCollisionFilterGroup {
   /// Name of group to be added. Must not be a scoped name.
   std::string name;
   /// Names of members of the group. May be scoped and refer to bodies of
-  /// already added models.
+  /// already added models. This data is analogous to a sequence of
+  /// @ref tag_drake_member in XML model formats.
   std::vector<std::string> members;
   /// Names of groups against which to ignore collisions. If another group is
   /// named, collisions between this group and that group will be ignored. If
-  /// this group is named, collisions within this group will be ignored.
+  /// this group is named, collisions within this group will be ignored. This
+  /// data is analogous to a sequence of
+  /// @ref tag_drake_ignored_collision_filter_group in XML model formats.
   std::vector<std::string> ignored_collision_filter_groups;
 };
 

@@ -69,8 +69,7 @@ class Parser final {
   /// including nested models.
   /// @throws std::exception in case of errors.
   std::vector<ModelInstanceIndex> AddAllModelsFromFile(
-      const std::string& file_name,
-      internal::CompositeParse* composite = nullptr);
+      const std::string& file_name);
 
   /// Parses the SDFormat or URDF file named in @p file_name and adds one
   /// top-level model to @p plant. It is an error to call this using an SDFormat
@@ -86,8 +85,7 @@ class Parser final {
   /// nesting in SDFormat.
   ModelInstanceIndex AddModelFromFile(
       const std::string& file_name,
-      const std::string& model_name = {},
-      internal::CompositeParse* composite = nullptr);
+      const std::string& model_name = {});
 
   /// Provides same functionality as AddModelFromFile, but instead parses the
   /// SDFormat or URDF XML data via @p file_contents with type dictated by
@@ -103,11 +101,26 @@ class Parser final {
   ModelInstanceIndex AddModelFromString(
       const std::string& file_contents,
       const std::string& file_type,
-      const std::string& model_name = {},
-      internal::CompositeParse* composite = nullptr);
+      const std::string& model_name = {});
 
  private:
   friend class internal::CompositeParse;
+
+  std::vector<ModelInstanceIndex> CompositeAddAllModelsFromFile(
+      const std::string& file_name,
+      internal::CompositeParse* composite);
+
+  ModelInstanceIndex CompositeAddModelFromFile(
+      const std::string& file_name,
+      const std::string& model_name,
+      internal::CompositeParse* composite);
+
+  ModelInstanceIndex CompositeAddModelFromString(
+      const std::string& file_contents,
+      const std::string& file_type,
+      const std::string& model_name,
+      internal::CompositeParse* composite);
+
   bool is_strict_{false};
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;

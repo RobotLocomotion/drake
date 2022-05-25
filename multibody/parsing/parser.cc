@@ -65,6 +65,11 @@ FileType DetermineFileType(const std::string& file_name) {
 }  // namespace
 
 std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
+    const std::string& file_name) {
+  return CompositeAddAllModelsFromFile(file_name, {});
+}
+
+std::vector<ModelInstanceIndex> Parser::CompositeAddAllModelsFromFile(
     const std::string& file_name,
     internal::CompositeParse* composite) {
   DataSource data_source(DataSource::kFilename, &file_name);
@@ -92,6 +97,12 @@ std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
 
 ModelInstanceIndex Parser::AddModelFromFile(
     const std::string& file_name,
+    const std::string& model_name) {
+  return CompositeAddModelFromFile(file_name, model_name, {});
+}
+
+ModelInstanceIndex Parser::CompositeAddModelFromFile(
+    const std::string& file_name,
     const std::string& model_name,
     internal::CompositeParse* composite) {
   DataSource data_source(DataSource::kFilename, &file_name);
@@ -115,6 +126,13 @@ ModelInstanceIndex Parser::AddModelFromFile(
 }
 
 ModelInstanceIndex Parser::AddModelFromString(
+    const std::string& file_contents,
+    const std::string& file_type,
+    const std::string& model_name) {
+  return CompositeAddModelFromString(file_contents, file_type, model_name, {});
+}
+
+ModelInstanceIndex Parser::CompositeAddModelFromString(
     const std::string& file_contents,
     const std::string& file_type,
     const std::string& model_name,

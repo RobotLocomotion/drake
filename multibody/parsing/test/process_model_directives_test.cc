@@ -40,6 +40,35 @@ std::unique_ptr<Parser> make_parser(MultibodyPlant<double>* plant) {
   return parser;
 }
 
+using CollisionPair = SortedPair<std::string>;
+void VerifyCollisionFilters(
+    const geometry::SceneGraph<double>& scene_graph,
+    const std::set<CollisionPair>& expected_filters) {
+  const auto& inspector = scene_graph.model_inspector();
+  // Get the collision geometry ids.
+  const std::vector<GeometryId> all_ids = inspector.GetAllGeometryIds();
+  geometry::GeometrySet id_set(all_ids);
+  auto collision_id_set = inspector.GetGeometryIds(
+      id_set, geometry::Role::kProximity);
+  std::vector<GeometryId> ids(collision_id_set.begin(),
+                              collision_id_set.end());
+  const int num_links = ids.size();
+  for (int m = 0; m < num_links; ++m) {
+    const std::string& m_name = inspector.GetName(ids[m]);
+    for (int n = m + 1; n < num_links; ++n) {
+      const std::string& n_name = inspector.GetName(ids[n]);
+      CollisionPair names{m_name, n_name};
+      SCOPED_TRACE(fmt::format("{} vs {}", names.first(), names.second()));
+      auto contains =
+          [&expected_filters](const CollisionPair& key) {
+            return expected_filters.count(key) > 0;
+          };
+      EXPECT_EQ(inspector.CollisionFiltered(ids[m], ids[n]),
+                contains(names));
+    }
+  }
+}
+
 // Simple smoke test of the most basic model directives.
 GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTest) {
   ModelDirectives station_directives = LoadModelDirectives(
@@ -197,7 +226,7 @@ GTEST_TEST(ProcessModelDirectivesTest, InjectFrames) {
       .isApprox(Vector3d(2, 4, 6)));
 }
 
-// Test frame injection in ModelDirectives.
+// Test collision filter groups in ModelDirectives.
 GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
   ModelDirectives directives = LoadModelDirectives(
       FindResourceOrThrow(std::string(kTestDir) +
@@ -215,17 +244,18 @@ GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
   // collision filtering is applied due to the collision filter group parsing.
   ASSERT_FALSE(plant.is_finalized());
 
-  const geometry::SceneGraphInspector<double>& inspector =
-      scene_graph.model_inspector();
-  // Get the collision geometry ids.
-  const std::vector<GeometryId> ids = inspector.GetAllGeometryIds();
-  geometry::GeometrySet id_set(ids);
-  auto collision_id_set = inspector.GetGeometryIds(
-      id_set, geometry::Role::kProximity);
-  ASSERT_EQ(collision_id_set.size(), 2);
-  std::vector<GeometryId> collision_ids(collision_id_set.begin(),
-                                        collision_id_set.end());
-  EXPECT_TRUE(inspector.CollisionFiltered(collision_ids[0], collision_ids[1]));
+  std::set<CollisionPair> expected_filters = {
+    // From group 'across_models'.
+    {"model1::collision",             "model2::collision"},
+    // From group 'nested_members'.
+    {"model1::collision",             "nested::sub_model2::collision"},
+    // From group 'nested_group'.
+    {"model3::collision",             "nested::sub_model1::collision"},
+    {"model3::collision",             "nested::sub_model2::collision"},
+    // From group 'across_sub_models'.
+    {"nested::sub_model1::collision", "nested::sub_model2::collision"},
+  };
+  VerifyCollisionFilters(scene_graph, expected_filters);
 }
 
 // Make sure we have good error messages.

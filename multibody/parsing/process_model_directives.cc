@@ -79,6 +79,7 @@ void AddWeld(
 void ProcessModelDirectivesImpl(
     const ModelDirectives& directives, MultibodyPlant<double>* plant,
     std::vector<ModelInstanceInfo>* added_models, Parser* parser,
+    multibody::internal::CompositeParse* composite,
     const std::string& model_namespace) {
   drake::log()->debug("ProcessModelDirectives(MultibodyPlant)");
   DRAKE_DEMAND(plant != nullptr);
@@ -86,7 +87,6 @@ void ProcessModelDirectivesImpl(
   // TODO(eric.cousineau): Somehow assert that our `parser` doesn't have a
   // different plant?
   DRAKE_DEMAND(parser != nullptr);
-  auto composite = parser->MakeCompositeParse();
   auto get_scoped_frame = [&](const std::string& name) -> const Frame<double>& {
     // TODO(eric.cousineau): Simplify logic?
     if (name == "world") {
@@ -104,7 +104,7 @@ void ProcessModelDirectivesImpl(
       const std::string file =
           ResolveModelDirectiveUri(model.file, parser->package_map());
       drake::multibody::ModelInstanceIndex child_model_instance_id =
-          parser->AddModelFromFile(file, name, composite.get());
+          composite->AddModelFromFile(file, name);
       info.model_instance = child_model_instance_id;
       info.model_name = name;
       info.model_path = file;
@@ -146,15 +146,23 @@ void ProcessModelDirectivesImpl(
           plant, added_models);
 
     } else if (directive.add_collision_filter_group) {
+      // Find the model instance index that corresponds to model_namespace,
+      std::optional<ModelInstanceIndex> model_instance;
+      if (!model_namespace.empty()) {
+        DRAKE_DEMAND(plant->HasModelInstanceNamed(model_namespace));
+        model_instance = plant->GetModelInstanceByName(model_namespace);
+      }
+
       auto& resolver = composite->collision_resolver();
       auto& group = *directive.add_collision_filter_group;
+      drake::log()->debug("  add_collision_filter_group: {}", group.name);
       std::set<std::string> member_set(group.members.begin(),
                                        group.members.end());
       // TODO(rpoyner-tri) obey parser policy? Improve error location clues?
       drake::internal::DiagnosticPolicy d;
-      resolver.AddGroup(d, group.name, member_set, {});
+      resolver.AddGroup(d, group.name, member_set, model_instance);
       for (const auto& ignored_group : group.ignored_collision_filter_groups) {
-        resolver.AddPair(d, group.name, ignored_group, {});
+        resolver.AddPair(d, group.name, ignored_group, model_instance);
       }
 
     } else {
@@ -174,8 +182,8 @@ void ProcessModelDirectivesImpl(
       auto sub_directives =
           LoadModelDirectives(
               ResolveModelDirectiveUri(sub.file, parser->package_map()));
-      ProcessModelDirectivesImpl(
-          sub_directives, plant, added_models, parser, new_model_namespace);
+      ProcessModelDirectivesImpl(sub_directives, plant, added_models, parser,
+                                 composite, new_model_namespace);
     }
   }
 }
@@ -221,11 +229,12 @@ void ProcessModelDirectives(
     std::vector<ModelInstanceInfo>* added_models,
     drake::multibody::Parser* parser) {
   auto tmp_parser = ConstructIfNullAndReassign<Parser>(&parser, plant);
+  auto composite = parser->MakeCompositeParse();
   auto tmp_added_model =
       ConstructIfNullAndReassign<std::vector<ModelInstanceInfo>>(&added_models);
   const std::string model_namespace = "";
-  ProcessModelDirectivesImpl(
-      directives, plant, added_models, parser, model_namespace);
+  ProcessModelDirectivesImpl(directives, plant, added_models, parser,
+                             composite.get(), model_namespace);
 }
 
 ModelDirectives LoadModelDirectives(const std::string& filename) {
