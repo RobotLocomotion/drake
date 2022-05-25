@@ -27,32 +27,30 @@
 
 namespace drake {
 namespace yaml {
+namespace internal {
 
-/// (Advanced) A helper class for @ref yaml_serialization "YAML Serialization"
-/// that loads data from a YAML file into a C++ structure.
+// A helper class for @ref yaml_serialization "YAML Serialization" that loads
+// data from a YAML file into a C++ structure.
 class YamlReadArchive final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(YamlReadArchive)
 
-  /// (To be marked deprecated as of 2022-05-01)
-  /// Compatibility alias; do not use.
-  using Options = LoadYamlOptions;
+  using Options
+      DRAKE_DEPRECATED("2022-09-01", "Use drake::yaml::LoadYamlOptions instead")
+      = LoadYamlOptions;
 
-  /// (Internal use only.)
   YamlReadArchive(internal::Node root, const LoadYamlOptions& options);
 
-  /// (Internal use only.)
   static internal::Node LoadFileAsNode(
       const std::string& filename,
       const std::optional<std::string>& child_name);
 
-  /// (Internal use only.)
   static internal::Node LoadStringAsNode(
       const std::string& data,
       const std::optional<std::string>& child_name);
 
-  /// (Advanced) Sets the contents `serializable` based on the YAML file
-  /// associated this archive.
+  // Sets the contents `serializable` based on the YAML file associated this
+  // archive.
   template <typename Serializable>
   void Accept(Serializable* serializable) {
     DRAKE_THROW_UNLESS(serializable != nullptr);
@@ -60,9 +58,8 @@ class YamlReadArchive final {
     CheckAllAccepted();
   }
 
-  /// (Advanced) Sets the value pointed to by `nvp.value()` based on the YAML
-  /// file associated with this archive.  Most users should call Accept, not
-  /// Visit.
+  // Sets the value pointed to by `nvp.value()` based on the YAML file
+  // associated with this archive.  Most users should call Accept, not Visit.
   template <typename NameValuePair>
   void Visit(const NameValuePair& nvp) {
     this->Visit(nvp, VisitShouldMemorizeType::kYes);
@@ -561,6 +558,12 @@ class YamlReadArchive final {
   const char* debug_visit_name_{};
   const std::type_info* debug_visit_type_{};
 };
+
+}  // namespace internal
+
+using YamlReadArchive
+    DRAKE_DEPRECATED("2022-09-01", "Use the yaml_io.h functions instead")
+    = internal::YamlReadArchive;
 
 }  // namespace yaml
 }  // namespace drake

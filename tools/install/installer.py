@@ -275,9 +275,14 @@ def linux_fix_rpaths(dst_full):
             re_result = re.match(dylib_match, ldd_result[0])
             # Look for the absolute path in the dictionary of libraries using
             # the library name without its possible version number.
-            soname, _, _ = re_result.groups()
+            soname, version, _ = re_result.groups()
             if soname not in libraries_to_fix_rpath:
-                continue
+                # Some third party libraries that are copied rather than
+                # compiled such as mosek are stored as keys in
+                # libraries_to_fix_rpath with the version (e.g., libname.so.1).
+                soname = f'{soname}{version}'
+                if soname not in libraries_to_fix_rpath:
+                    continue
             lib_dirname = os.path.dirname(dst_full)
             diff_path = os.path.dirname(
                 os.path.relpath(libraries_to_fix_rpath[soname], lib_dirname)

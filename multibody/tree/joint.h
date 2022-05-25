@@ -221,6 +221,18 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     return do_get_num_positions();
   }
 
+  /// Returns true if this joint's mobilizers allow relative rotation of the
+  /// two frames associated with this joint.
+  /// @pre the MultibodyPlant must be finalized.
+  /// @see can_translate()
+  bool can_rotate() const;
+
+  /// Returns true if this joint's mobilizers allow relative translation of the
+  /// two frames associated with this joint.
+  /// @pre the MultibodyPlant must be finalized.
+  /// @see can_rotate()
+  bool can_translate() const;
+
   /// Returns a string suffix (e.g. to be appended to the name()) to identify
   /// the `k`th position in this joint.  @p position_index_in_joint must be
   /// in [0, num_positions()).
@@ -458,6 +470,18 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   /// N⋅m⋅s. Refer to each joint's documentation for further details.
   const VectorX<double>& damping_vector() const {
     return damping_;
+  }
+
+  /// Sets the default value of the viscous damping coefficients for this joint.
+  /// Refer to damping_vector() for details.
+  /// @throws std::exception if damping.size() != num_velocities().
+  /// @throws std::exception if any of the damping coefficients is negative.
+  /// @pre the MultibodyPlant must not be finalized.
+  void set_default_damping_vector(const VectorX<double>& damping) {
+    DRAKE_THROW_UNLESS(damping.size() == num_velocities());
+    DRAKE_THROW_UNLESS((damping.array() >= 0).all());
+    DRAKE_DEMAND(!this->get_parent_tree().topology_is_valid());
+    damping_ = damping;
   }
 
   // Hide the following section from Doxygen.

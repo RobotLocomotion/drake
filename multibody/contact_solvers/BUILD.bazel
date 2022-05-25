@@ -151,8 +151,10 @@ drake_cc_library(
     name = "supernodal_solver",
     srcs = ["supernodal_solver.cc"],
     hdrs = ["supernodal_solver.h"],
-    deps = [
+    interface_deps = [
         "//common:essential",
+    ],
+    deps = [
         "@conex//conex:supernodal_solver",
     ],
 )

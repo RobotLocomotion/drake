@@ -11,6 +11,11 @@
 namespace drake {
 namespace multibody {
 namespace parsing {
+namespace internal {
+// Expose the delimeter string for reference, especially in tests.
+constexpr char kScopedNameDelim[] = "::";
+}  // namespace internal
+
 
 /// Finds an optionally model-scoped frame, using the naming rules of
 /// `ParseScopedName`.

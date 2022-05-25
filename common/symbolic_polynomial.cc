@@ -700,15 +700,13 @@ Polynomial& Polynomial::operator*=(const Variable& v) {
   }
 }
 
-namespace {
-bool PolynomialEqual(const Polynomial& p1, const Polynomial& p2,
-                     bool do_expansion) {
+bool Polynomial::EqualTo(const Polynomial& p) const {
   // We do not use unordered_map<Monomial, Expression>::operator== as it uses
   // Expression::operator== (which returns a symbolic formula) instead of
   // Expression::EqualTo(which returns a bool), when the coefficient is a
   // symbolic expression.
-  const Polynomial::MapType& map1{p1.monomial_to_coefficient_map()};
-  const Polynomial::MapType& map2{p2.monomial_to_coefficient_map()};
+  const Polynomial::MapType& map1{monomial_to_coefficient_map_};
+  const Polynomial::MapType& map2{p.monomial_to_coefficient_map()};
   if (map1.size() != map2.size()) {
     return false;
   }
@@ -721,33 +719,23 @@ bool PolynomialEqual(const Polynomial& p1, const Polynomial& p2,
       return false;
     }
     const Expression& e2{it->second};
-    if (do_expansion) {
-      if (!e1.Expand().EqualTo(e2.Expand())) {
-        return false;
-      }
-    } else {
-      if (!e1.EqualTo(e2)) {
-        return false;
-      }
+    if (!e1.EqualTo(e2)) {
+      return false;
     }
   }
   return true;
 }
-}  // namespace
-
-bool Polynomial::EqualTo(const Polynomial& p) const {
-  return PolynomialEqual(*this, p, false);
-}
 
 bool Polynomial::EqualToAfterExpansion(const Polynomial& p) const {
-  return PolynomialEqual(*this, p, true);
+  return this->Expand().EqualTo(p.Expand());
 }
 
 bool Polynomial::CoefficientsAlmostEqual(const Polynomial& p,
                                          double tolerance) const {
-  return PolynomialEqual(
-      (*this - p).RemoveTermsWithSmallCoefficients(tolerance),
-      Polynomial(0), true);
+  return (*this - p)
+      .Expand()
+      .RemoveTermsWithSmallCoefficients(tolerance)
+      .EqualTo(Polynomial());
 }
 
 Formula Polynomial::operator==(const Polynomial& p) const {
@@ -774,6 +762,17 @@ Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
   decision_variables_ += coeff.GetVariables();
   DRAKE_ASSERT_VOID(CheckInvariant());
   return *this;
+}
+
+Polynomial Polynomial::Expand() const {
+  Polynomial::MapType expanded_poly_map;
+  for (const auto& [monomial, coeff] : monomial_to_coefficient_map_) {
+    const symbolic::Expression coeff_expanded = coeff.Expand();
+    if (!symbolic::is_zero(coeff_expanded)) {
+      expanded_poly_map.emplace(monomial, coeff_expanded);
+    }
+  }
+  return symbolic::Polynomial(std::move(expanded_poly_map));
 }
 
 Polynomial Polynomial::RemoveTermsWithSmallCoefficients(

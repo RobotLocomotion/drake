@@ -10,7 +10,7 @@ available via `pip` for running locally.
 To host the tutorials online, we use Deepnote.  You may view a tutorial
 without creating an account:
 
-[![Deepnote](https://deepnote.com/buttons/launch-in-deepnote-white-small.svg)](https://deepnote.com/project/Tutorials-K0_FCa7yQX2kDWBx3-2RmQ/%2Findex.ipynb)
+[![Deepnote](https://deepnote.com/buttons/launch-in-deepnote-white-small.svg)](https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/%2Findex.ipynb)
 
 To run a tutorial interactively or to experiment with editing the code, click
 the "Duplicate" button in the upper right while viewing. You'll be prompted to

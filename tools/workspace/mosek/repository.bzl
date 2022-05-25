@@ -28,15 +28,15 @@ def _impl(repository_ctx):
     # When these values are updated, tools/dynamic_analysis/tsan.supp may also
     # need updating.
     mosek_major_version = 9
-    mosek_minor_version = 2
-    mosek_patch_version = 33
+    mosek_minor_version = 3
+    mosek_patch_version = 20
 
     if repository_ctx.os.name == "mac os x":
         mosek_platform = "osx64x86"
-        sha256 = "72e3b46f1df67376f4a854db65841773fb4558bf8625395607bd1fa9ecf44879"  # noqa
+        sha256 = "e804225fdc48933d753645e6e4afe415aabbabb32233dd376d0dd6bf985756ef"  # noqa
     elif repository_ctx.os.name == "linux":
         mosek_platform = "linux64x86"
-        sha256 = "e223389b9517fc636b75bb3cee817847df4bc9ca987ba279f40a9fbe5fa276d6"  # noqa
+        sha256 = "2fa2e1f742a31d7a7249ae083748f377dc68e378eb5ba18279647a433dc2e595"  # noqa
     else:
         fail(
             "Operating system is NOT supported",
@@ -70,7 +70,7 @@ def _impl(repository_ctx):
         install_name_tool = which(repository_ctx, "install_name_tool")
 
         # Note that libmosek64.dylib is (erroneously) a copy of
-        # libmosek64.9.2.dylib instead of a symlink. Otherwise, the list of
+        # libmosek64.9.3.dylib instead of a symlink. Otherwise, the list of
         # files should include the following in place of bin/libmosek64.dylib:
         #
         # "bin/libmosek64.{}.{}.dylib".format(mosek_major_version,

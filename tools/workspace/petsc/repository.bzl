@@ -13,8 +13,13 @@ def petsc_repository(
         build_file = "@drake//tools/workspace/petsc:package.BUILD.bazel",
         mirrors = mirrors,
         patches = [
+            # Cherry-picked from upstream (to be removed once we upgrade).
+            "@drake//tools/workspace/petsc:patches/baij.patch",
+            # Cherry-picked from upstream (to be removed once we upgrade).
+            "@drake//tools/workspace/petsc:patches/mal.patch",
             # Patch to fix dangerous global state in PETSc.
             "@drake//tools/workspace/petsc:patches/destroy.patch",
+            "@drake//tools/workspace/petsc:patches/dlregispetsc.patch",
             "@drake//tools/workspace/petsc:patches/inherit.patch",
             "@drake//tools/workspace/petsc:patches/matrix.patch",
             "@drake//tools/workspace/petsc:patches/mpi.patch",

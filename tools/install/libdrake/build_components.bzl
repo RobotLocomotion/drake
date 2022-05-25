@@ -42,9 +42,10 @@ LIBDRAKE_COMPONENTS = [
     "//geometry/proximity",
     "//geometry/query_results",
     "//geometry/render",
-    "//geometry/render_gltf_client",
     "//geometry/render/gl_renderer",
     "//geometry/render/shaders",
+    "//geometry/render_gltf_client",
+    "//geometry/render_vtk",
     "//lcm",
     "//manipulation/kinova_jaco",
     "//manipulation/kuka_iiwa",
@@ -61,6 +62,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/constraint",
     "//multibody/contact_solvers",
     "//multibody/contact_solvers/sap",
+    "//multibody/fem",
     "//multibody/hydroelastics",
     "//multibody/inverse_kinematics",
     "//multibody/math",
@@ -86,7 +88,4 @@ LIBDRAKE_COMPONENTS = [
     "//systems/rendering",
     "//systems/sensors",
     "//systems/trajectory_optimization",
-    # //common:filesystem (indirectly)
-    # //common:nice_type_name_override_header (indirectly)
-    # //geometry/render/gl_renderer:apple_only_no_render_engine_gl_factory (indirectly)  # noqa
 ]

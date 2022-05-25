@@ -115,12 +115,12 @@ template <typename BasisElement>
 
 [[nodiscard]] inline bool PolyEqualAfterExpansion(const Polynomial& p1,
                                                     const Polynomial& p2) {
-  return p1.EqualToAfterExpansion(p2);
+  return p1.Expand().EqualTo(p2.Expand());
 }
 
 [[nodiscard]] inline bool PolyNotEqualAfterExpansion(const Polynomial& p1,
                                                        const Polynomial& p2) {
-  return !p1.EqualToAfterExpansion(p2);
+  return !p1.Expand().EqualTo(p2.Expand());
 }
 
 [[nodiscard]] inline bool RationalFunctionEqual(const RationalFunction& f1,

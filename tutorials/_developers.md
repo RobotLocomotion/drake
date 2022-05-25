@@ -18,11 +18,9 @@ your fork and branch, e.g.,
 
 # Deploying changes
 
-(This section is a work-in-progress.)
-
-Once your PR has landed, use this [maintainers
-notebook](https://deepnote.com/project/Tutorials-K0_FCa7yQX2kDWBx3-2RmQ/%2F.for_maintainers.ipynb)
-to update Deepnote. Drake developers should request "Edit" access through the
-Deepnote interface if they do not have it. Note: If your updates depend on
-changes to Drake outside of the tutorials directory, then you will have to
-wait for the updated nightly binaries to update Deepnote.
+The tutorials on the Drake website are refreshed to latest master as part of
+our [stable release process](/release_playbook.html]. In general we do not
+upgrade them between those monthly releases, but in case of emergency feel
+free to manually edit them online at deepnote.com. Any manual changes will
+be overwritten during the next stable release, so be sure that the fixes
+get merged to Drake master as well.

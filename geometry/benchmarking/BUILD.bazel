@@ -35,6 +35,7 @@ drake_cc_binary(
         "//common:filesystem",
         "//geometry/render",
         "//geometry/render/gl_renderer",
+        "//geometry/render_vtk",
         "//systems/sensors:image_writer",
         "@fmt",
         "@gflags",

@@ -3300,9 +3300,10 @@ void CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial type) {
   MathematicalProgram prog;
   auto t = prog.NewIndeterminates<4>();
   const auto m = symbolic::MonomialBasis<4, 2>(symbolic::Variables(t));
-  const auto pair = prog.NewSosPolynomial(m, type);
+  const auto pair = prog.NewSosPolynomial(m, type, "TestGram");
   const symbolic::Polynomial& p = pair.first;
   const MatrixXDecisionVariable& Q = pair.second;
+  EXPECT_NE(Q(0, 0).get_name().find("TestGram"), std::string::npos);
   MatrixX<symbolic::Polynomial> Q_poly(m.rows(), m.rows());
   const symbolic::Monomial monomial_one{};
   for (int i = 0; i < Q_poly.rows(); ++i) {
@@ -3398,8 +3399,12 @@ GTEST_TEST(TestMathematicalProgram, AddEqualityConstraintBetweenPolynomials) {
   const symbolic::Polynomial p2((a(2) + 1) * x + 2 * a(3), {x});
 
   EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
-  prog.AddEqualityConstraintBetweenPolynomials(p1, p2);
+  const auto bindings = prog.AddEqualityConstraintBetweenPolynomials(p1, p2);
   EXPECT_EQ(prog.linear_equality_constraints().size(), 2);
+  EXPECT_EQ(bindings.size(), 2u);
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_EQ(bindings[i], prog.linear_equality_constraints()[i]);
+  }
 
   // Test with different value of a, some satisfies the polynomial equality
   // constraints.
@@ -3630,8 +3635,10 @@ GTEST_TEST(TestMathematicalProgram, AddSosConstraint) {
   const Vector2<symbolic::Monomial> monomial_basis(symbolic::Monomial{},
                                                    symbolic::Monomial(x, 1));
 
-  const Matrix2<symbolic::Variable> Q_psd =
-      prog.AddSosConstraint(p1, monomial_basis);
+  const Matrix2<symbolic::Variable> Q_psd = prog.AddSosConstraint(
+      p1, monomial_basis, MathematicalProgram::NonnegativePolynomial::kSos,
+      "Q");
+  EXPECT_NE(Q_psd(0, 0).get_name().find("Q"), std::string::npos);
   EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1u);
   EXPECT_EQ(prog.lorentz_cone_constraints().size(), 0u);
   EXPECT_EQ(prog.rotated_lorentz_cone_constraints().size(), 0u);
@@ -3654,6 +3661,16 @@ GTEST_TEST(TestMathematicalProgram, AddSosConstraint) {
                 prog.rotated_lorentz_cone_constraints().size(),
             0u);
   EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1u);
+
+  // p2 = (a+1)x² + 0 has some coefficient equal to 0. The constructed monomial
+  // should remove that 0-term. Hence the returned monomial basis should only
+  // contain [x].
+  const symbolic::Polynomial p2{
+      {{symbolic::Monomial(), 0}, {symbolic::Monomial(x, 2), a + 1}}};
+  const auto [gram2, monomial_basis2] = prog.AddSosConstraint(p2);
+  EXPECT_EQ(monomial_basis2.rows(), 1);
+  EXPECT_EQ(monomial_basis2(0), symbolic::Monomial(x));
+  EXPECT_EQ(gram2.rows(), 1);
 }
 
 template <typename C>

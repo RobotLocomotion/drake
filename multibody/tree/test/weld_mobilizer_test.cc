@@ -39,6 +39,11 @@ class WeldMobilizerTest :  public MobilizerTester {
   math::RigidTransformd X_WB_;
 };
 
+TEST_F(WeldMobilizerTest, CanRotateOrTranslate) {
+  EXPECT_FALSE(weld_body_to_world_->can_rotate());
+  EXPECT_FALSE(weld_body_to_world_->can_translate());
+}
+
 TEST_F(WeldMobilizerTest, ZeroSizedState) {
   EXPECT_EQ(tree().num_positions(), 0);
   EXPECT_EQ(tree().num_velocities(), 0);

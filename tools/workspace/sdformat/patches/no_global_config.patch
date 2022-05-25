@@ -3,11 +3,9 @@ Change the global singleton into a bomb.
 Use the default config when parsing the built-in root.sdf, and
 in the ign_sdf command-line tool.
 
-diff --git src/ParserConfig.cc src/ParserConfig.cc
-index f0253eef..0db1110a 100644
 --- src/ParserConfig.cc
 +++ src/ParserConfig.cc
-@@ -57,8 +57,7 @@ ParserConfig::ParserConfig()
+@@ -65,8 +65,7 @@
  /////////////////////////////////////////////////
  ParserConfig &ParserConfig::GlobalConfig()
  {
@@ -17,11 +15,20 @@ index f0253eef..0db1110a 100644
  }
  
  /////////////////////////////////////////////////
-diff --git src/ign.cc src/ign.cc
-index e046d6fc..fe3ce959 100644
+--- src/Root.cc
++++ src/Root.cc
+@@ -179,7 +179,7 @@
+ {
+   Errors errors;
+   SDFPtr sdfParsed(new SDF());
+-  init(sdfParsed);
++  init(sdfParsed, sdf::ParserConfig{});
+ 
+   // Read an SDF string, and store the result in sdfParsed.
+   if (!readString(_sdf, _config, sdfParsed, errors))
 --- src/ign.cc
 +++ src/ign.cc
-@@ -36,7 +36,7 @@ extern "C" SDFORMAT_VISIBLE int cmdCheck(const char *_path)
+@@ -43,7 +43,7 @@
    int result = 0;
  
    sdf::Root root;
@@ -30,7 +37,14 @@ index e046d6fc..fe3ce959 100644
    if (!errors.empty())
    {
      for (auto &error : errors)
-@@ -85,8 +85,12 @@ extern "C" SDFORMAT_VISIBLE int cmdCheck(const char *_path)
+@@ -86,14 +86,18 @@
+ 
+   sdf::SDFPtr sdf(new sdf::SDF());
+ 
+-  if (!sdf::init(sdf))
++  if (!sdf::init(sdf, sdf::ParserConfig{}))
+   {
+     std::cerr << "Error: SDF schema initialization failed.\n";
      return -1;
    }
  
@@ -44,7 +58,23 @@ index e046d6fc..fe3ce959 100644
      std::cerr << "Error: SDF parsing the xml failed.\n";
      return -1;
    }
-@@ -147,8 +151,13 @@ extern "C" SDFORMAT_VISIBLE int cmdPrint(const char *_path)
+@@ -126,7 +130,7 @@
+   {
+     sdf->Version(_version);
+   }
+-  if (!sdf::init(sdf))
++  if (!sdf::init(sdf, sdf::ParserConfig{}))
+   {
+     std::cerr << "Error: SDF schema initialization failed.\n";
+     return -1;
+@@ -149,14 +153,19 @@
+ 
+   sdf::SDFPtr sdf(new sdf::SDF());
+ 
+-  if (!sdf::init(sdf))
++  if (!sdf::init(sdf, sdf::ParserConfig{}))
+   {
+     std::cerr << "Error: SDF schema initialization failed.\n";
      return -1;
    }
  
@@ -59,7 +89,7 @@ index e046d6fc..fe3ce959 100644
      std::cerr << "Error: SDF parsing the xml failed.\n";
      return -1;
    }
-@@ -170,7 +179,7 @@ extern "C" SDFORMAT_VISIBLE int cmdGraph(
+@@ -218,7 +227,7 @@
    }
  
    sdf::Root root;
@@ -68,17 +98,3 @@ index e046d6fc..fe3ce959 100644
    if (!errors.empty())
    {
      std::cerr << errors << std::endl;
-diff --git src/parser.cc src/parser.cc
-index 5f29f93d..11c07f9a 100644
---- src/parser.cc
-+++ src/parser.cc
-@@ -597,7 +597,7 @@ bool initXml(tinyxml2::XMLElement *_xml, ElementPtr _sdf)
- 
-     ElementPtr element(new Element);
- 
--    initFile(filename, element);
-+    initFile(filename, ParserConfig{}, element);
- 
-     // override description for include elements
-     tinyxml2::XMLElement *description = child->FirstChildElement("description");
-

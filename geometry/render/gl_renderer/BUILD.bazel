@@ -138,10 +138,8 @@ drake_cc_library(
     hdrs = [
         "render_engine_gl_factory.h",
     ],
-    tags = [
-        # We should only every _link_ it on macOS.
-        "exclude_from_package",
-    ],
+    internal = True,
+    visibility = ["//visibility:private"],
     deps = [
         ":render_engine_gl_params",
         "//geometry/render:render_engine",
@@ -183,9 +181,11 @@ drake_cc_library_ubuntu_only(
     name = "shape_meshes",
     srcs = ["shape_meshes.cc"],
     hdrs = ["shape_meshes.h"],
+    interface_deps = [
+        "//geometry/render/gl_renderer:opengl_context",
+    ],
     deps = [
         "//common:essential",
-        "//geometry/render/gl_renderer:opengl_context",
         "@tinyobjloader",
     ],
 )

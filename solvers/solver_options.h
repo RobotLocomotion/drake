@@ -42,7 +42,7 @@ namespace solvers {
  * version used in Drake.
  *
  * "MOSEK™" -- Parameter name and values as specified in Mosek Reference
- * https://docs.mosek.com/9.2/capi/parameters.html
+ * https://docs.mosek.com/9.3/capi/parameters.html
  *
  * "OSQP" -- Parameter name and values as specified in OSQP Reference
  * https://osqp.org/docs/interfaces/solver_settings.html#solver-settings

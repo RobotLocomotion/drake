@@ -5,8 +5,8 @@ rely on any _actually_ deprecated elements, because they will disappear in
 a future upstream release. Therefore, we inject a Drake-specific element
 definition that will always be available.
 
---- src/parser.cc.orig	2022-04-07 11:39:06.881088965 -0500
-+++ src/parser.cc	2022-04-07 11:38:32.744818095 -0500
+--- src/parser.cc.orig
++++ src/parser.cc
 @@ -379,7 +379,12 @@
    std::string xmldata = SDF::EmbeddedSpec("root.sdf", false);
    auto xmlDoc = makeSdfDoc();

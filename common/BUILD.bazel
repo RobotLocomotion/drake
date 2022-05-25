@@ -372,18 +372,13 @@ drake_cc_library(
 
 # The drake::filesystem support is intended ONLY for use within Drake's *.cc
 # files -- it is not a public dependency of Drake.  As such, we compile it with
-# hidden visibility, exclude its header file from the install, and exclude it
-# from the //common:common package_library shortcut.
+# hidden visibility and mark it internal.
 drake_cc_library(
     name = "filesystem",
     srcs = ["filesystem.cc"],
     hdrs = ["filesystem.h"],
     copts = ["-fvisibility=hidden"],
-    install_hdrs_exclude = ["filesystem.h"],
-    tags = [
-        "exclude_from_libdrake",
-        "exclude_from_package",
-    ],
+    internal = True,
     visibility = ["//:__subpackages__"],
     deps = [
         "@ghc_filesystem",
@@ -1102,6 +1097,21 @@ drake_cc_googletest(
         ":essential",
         ":nice_type_name",
         ":nice_type_name_override_header",
+    ],
+)
+
+drake_cc_googletest(
+    name = "openmp_test",
+    # TODO(jwnimmer-tri) Encapsulate unit test concurrency configuration into
+    # Drake's starlark macros, so that we don't have to repeat ourselves here.
+    env = {
+        "OMP_NUM_THREADS": "2",
+    },
+    tags = [
+        "cpu:2",
+    ],
+    deps = [
+        "//common:essential",
     ],
 )
 

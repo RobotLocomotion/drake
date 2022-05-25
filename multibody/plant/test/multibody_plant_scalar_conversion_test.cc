@@ -38,9 +38,9 @@ TYPED_TEST_P(MultibodyPlantDefaultScalarsTest, RevoluteJointAndSpring) {
   using U = TypeParam;
 
   MultibodyPlant<double> plant(0.0);
-  // For this test inertia values are irrelevant.
-  const RigidBody<double>& body =
-      plant.AddRigidBody("Body", SpatialInertia<double>());
+  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
+  const RigidBody<double>& body = plant.AddRigidBody("Body",
+      SpatialInertia<double>::MakeTestCube());
   const RevoluteJoint<double>& pin = plant.AddJoint<RevoluteJoint>(
       "Pin", plant.world_body(), std::nullopt, body, std::nullopt,
       Vector3<double>::UnitZ());
@@ -161,7 +161,7 @@ INSTANTIATE_TYPED_TEST_SUITE_P(My, MultibodyPlantDefaultScalarsTest,
 // A simple concrete DiscreteUpdateManager that does not support scalar
 // conversion to either AutoDiffXd or Expression.
 template <typename T>
-class DoubleOnlyDiscreteUpdateManager
+class DoubleOnlyDiscreteUpdateManager final
     : public multibody::internal::DiscreteUpdateManager<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoubleOnlyDiscreteUpdateManager);

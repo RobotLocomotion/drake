@@ -448,7 +448,16 @@ void DoScalarIndependentDefinitions(py::module m) {
             return IsPositiveDefinite(matrix, tolerance);
           },
           py::arg("matrix"), py::arg("tolerance") = 0.0,
-          doc.IsPositiveDefinite.doc);
+          doc.IsPositiveDefinite.doc)
+      .def(
+          "ToSymmetricMatrixFromLowerTriangularColumns",
+          [](const Eigen::Ref<const Eigen::VectorXd>&
+                  lower_triangular_columns) {
+            return ToSymmetricMatrixFromLowerTriangularColumns(
+                lower_triangular_columns);
+          },
+          py::arg("lower_triangular_columns"),
+          doc.ToSymmetricMatrixFromLowerTriangularColumns.doc_dynamic_size);
 
   // Quadratic Form.
   m  // BR

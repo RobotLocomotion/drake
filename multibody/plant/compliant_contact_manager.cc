@@ -1,5 +1,6 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <string>
@@ -15,6 +16,7 @@
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_limit_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -30,6 +32,7 @@ using drake::multibody::contact_solvers::internal::ExtractTangent;
 using drake::multibody::contact_solvers::internal::SapConstraint;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
+using drake::multibody::contact_solvers::internal::SapLimitConstraint;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverResults;
 using drake::multibody::contact_solvers::internal::SapSolverStatus;
@@ -45,6 +48,8 @@ template <typename T>
 AccelerationsDueToExternalForcesCache<T>::AccelerationsDueToExternalForcesCache(
     const MultibodyTreeTopology& topology)
     : forces(topology.num_bodies(), topology.num_velocities()),
+      abic(topology),
+      Zb_Bo_W(topology.num_bodies()),
       aba_forces(topology),
       ac(topology) {}
 
@@ -67,22 +72,6 @@ void CompliantContactManager<T>::DeclareCacheEntries() {
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.discrete_contact_pairs =
       discrete_contact_pairs_cache_entry.cache_index();
-
-  // Due to issue #12786, we cannot mark
-  // CacheIndexes::non_contact_forces_accelerations dependent on the
-  // MultibodyPlant's inputs, as it should. However if we remove this
-  // dependency, we run the risk of having an undetected algebraic loop. We use
-  // this cache entry to signal when the computation of non-contact forces is in
-  // progress so that we can detect an algebraic loop.
-  const auto& non_contact_forces_evaluation_in_progress =
-      this->DeclareCacheEntry(
-          "Evaluation of non-contact forces and accelerations is in progress.",
-          // N.B. This flag is set to true only when the computation is in
-          // progress. Therefore its default value is `false`.
-          systems::ValueProducer(false, &systems::ValueProducer::NoopCalc),
-          {systems::System<T>::nothing_ticket()});
-  cache_indexes_.non_contact_forces_evaluation_in_progress =
-      non_contact_forces_evaluation_in_progress.cache_index();
 
   // Accelerations due to non-contact forces.
   // We cache non-contact forces, ABA forces and accelerations into a
@@ -494,53 +483,73 @@ void CompliantContactManager<T>::
 }
 
 template <typename T>
+void CompliantContactManager<T>::CalcNonContactForcesExcludingJointLimits(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  DRAKE_DEMAND(forces != nullptr);
+  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(plant()));
+  // Compute forces applied through force elements. Note that this resets
+  // forces to empty so must come first.
+  this->CalcForceElementsContribution(context, forces);
+  this->AddInForcesFromInputPorts(context, forces);
+}
+
+template <typename T>
 void CompliantContactManager<T>::CalcAccelerationsDueToNonContactForcesCache(
     const systems::Context<T>& context,
-    AccelerationsDueToExternalForcesCache<T>* no_contact_accelerations_cache)
+    AccelerationsDueToExternalForcesCache<T>* forward_dynamics_cache)
     const {
-  // To overcame issue #12786, we use this additional cache entry
-  // to detect algebraic loops.
-  systems::CacheEntryValue& value =
-      plant()
-          .get_cache_entry(
-              cache_indexes_.non_contact_forces_evaluation_in_progress)
-          .get_mutable_cache_entry_value(context);
-  bool& evaluation_in_progress = value.GetMutableValueOrThrow<bool>();
-  if (evaluation_in_progress) {
-    const char* error_message =
-        "Algebraic loop detected. This situation is caused when connecting the "
-        "input of your MultibodyPlant to the output of a feedback system which "
-        "is an algebraic function of a feedthrough output of the plant. Ways "
-        "to remedy this: 1. Revisit the model for your feedback system. "
-        "Consider if its output can be written in terms of other inputs. 2. "
-        "Break the algebraic loop by adding state to the controller, typically "
-        "to 'remember' a previous input. 3. Break the algebraic loop by adding "
-        "a zero-order hold system between the output of the plant and your "
-        "feedback system. This effectively delays the input signal to the "
-        "controller.";
-    throw std::runtime_error(error_message);
-  }
-  // Mark the start of the computation. If within an algebraic
-  // loop, pulling from the plant's input ports during the
-  // computation will trigger the recursive evaluation of this
-  // method and the exception above will be thrown.
-  evaluation_in_progress = true;
-  // If the exception above is triggered, we will leave this method and the
-  // computation will no longer be "in progress". We use a scoped guard so that
-  // we have a chance to mark it as such when we leave this scope.
-  ScopeExit guard(
-      [&evaluation_in_progress]() { evaluation_in_progress = false; });
+  DRAKE_DEMAND(forward_dynamics_cache != nullptr);
+  ScopeExit guard = this->ThrowIfNonContactForceInProgress(context);
 
-  this->CalcNonContactForces(context, &no_contact_accelerations_cache->forces);
+  // N.B. Joint limits are modeled as constraints. Therefore here we only add
+  // all other external forces.
+  CalcNonContactForcesExcludingJointLimits(context,
+                                           &forward_dynamics_cache->forces);
+
+  // Our goal is to compute accelerations from the Newton-Euler equations:
+  //   M⋅v̇ = k(x)
+  // where k(x) includes continuous forces of the state x not from constraints
+  // such as force elements, Coriolis terms, actuation through input ports and
+  // joint damping. We use a discrete time stepping scheme with time step dt
+  // and accelerations
+  //   v̇ = (v-v₀)/dt
+  // where v₀ are the previous time step generalized velocities. We split
+  // generalized forces k(x) as:
+  //   k(x) = k₁(x) - D⋅v
+  // where k₁(x) includes all other force contributions except damping and D
+  // is the non-negative diagonal matrix for damping. Using this split, we
+  // evaluate dissipation "implicitly" using the next time step velocities and
+  // every other force in k₁(x) "explicitly" at the previous time step state
+  // x₀. In total, our discrete update for the free motion velocities reads:
+  //   M⋅(v-v₀)/dt = k₁(x₀) - D⋅v
+  // We can rewrite this by adding and subtracting -D⋅v₀ on the right hand
+  // side:
+  //   M⋅(v-v₀)/dt = k₁(x₀) - D⋅(v-v₀) - D⋅v₀
+  // which can be rearranged as:
+  //   (M + dt⋅D)⋅(v-v₀)/dt = k₁(x₀) - D⋅v₀ = k(x₀)
+  // Therefore the generalized accelerations a = (v-v₀)/dt can be computed
+  // using ABA forward dynamics with non-constraint continuous forces
+  // evaluated at x₀ and the addition of the diagonal term dt⋅D. We do this
+  // below in terms of MultibodyTree APIs.
+
+  // We must include reflected rotor inertias along with the new term dt⋅D.
+  const VectorX<T> diagonal_inertia =
+      plant().EvalReflectedInertiaCache(context) +
+      joint_damping_ * plant().time_step();
+
+  // We compute the articulated body inertia including the contribution of the
+  // additional diagonal elements arising from the implicit treatment of joint
+  // damping.
+  this->internal_tree().CalcArticulatedBodyInertiaCache(
+      context, diagonal_inertia, &forward_dynamics_cache->abic);
+  this->internal_tree().CalcArticulatedBodyForceBias(
+      context, forward_dynamics_cache->abic, &forward_dynamics_cache->Zb_Bo_W);
   this->internal_tree().CalcArticulatedBodyForceCache(
-      context, no_contact_accelerations_cache->forces,
-      &no_contact_accelerations_cache->aba_forces);
+      context, forward_dynamics_cache->abic, forward_dynamics_cache->Zb_Bo_W,
+      forward_dynamics_cache->forces, &forward_dynamics_cache->aba_forces);
   this->internal_tree().CalcArticulatedBodyAccelerations(
-      context, no_contact_accelerations_cache->aba_forces,
-      &no_contact_accelerations_cache->ac);
-
-  // Mark the end of the computation.
-  evaluation_in_progress = false;
+      context, forward_dynamics_cache->abic, forward_dynamics_cache->aba_forces,
+      &forward_dynamics_cache->ac);
 }
 
 template <typename T>
@@ -567,13 +576,20 @@ void CompliantContactManager<T>::CalcLinearDynamicsMatrix(
   A->resize(tree_topology().num_trees());
   const int nv = plant().num_velocities();
 
-  // TODO(amcastro-tri): implicitly include force elements such as joint
-  // dissipation and/or stiffness.
   // TODO(amcastro-tri): consider placing the computation of the dense mass
   // matrix in a cache entry to minimize heap allocations or better yet,
   // implement a MultibodyPlant method to compute the per-tree mass matrices.
   MatrixX<T> M(nv, nv);
   plant().CalcMassMatrix(context, &M);
+
+  // The manager solves free motion velocities using a discrete scheme with
+  // implicit joint dissipation. That is, it solves the momentum valance:
+  //   m(v) = (M + dt⋅D)⋅(v-v₀)/dt - k(x₀) = 0
+  // where k(x₀) are all the non-constraint forces such as Coriolis terms and
+  // external actuation, evaluated at the previous state x₀.
+  // The dynamics matrix is defined as:
+  //   A = ∂m/∂v = (M + dt⋅D)
+  M.diagonal() += plant().time_step() * joint_damping_;
 
   for (TreeIndex t(0); t < tree_topology().num_trees(); ++t) {
     const int tree_start = tree_topology().tree_velocities_start(t);
@@ -746,6 +762,104 @@ CompliantContactManager<T>::AddContactConstraints(
 }
 
 template <typename T>
+void CompliantContactManager<T>::AddLimitConstraints(
+    const systems::Context<T>& context, const VectorX<T>& v_star,
+    SapContactProblem<T>* problem) const {
+  DRAKE_DEMAND(problem != nullptr);
+
+  constexpr double kInf = std::numeric_limits<double>::infinity();
+
+  // TODO(amcastro-tri): consider exposing these parameters.
+  // "Near-rigid" parameter. See [Castro et al., 2021].
+  constexpr double kBeta = 0.1;
+  // Parameter used to estimate the size of a window [w_l, w_u] within which we
+  // expect the configuration q for a given joint to be in the next time step.
+  // See notes below for details. Dimensionless.
+  constexpr double kLimitWindowFactor = 2.0;
+
+  const double dt = plant().time_step();
+
+  // N.B. MultibodyPlant estimates very conservative (soft) stiffness and
+  // damping parameters to ensure that the explicit treatment of the compliant
+  // forces used to impose limits does not become unstable. SAP however treats
+  // these forces implicitly and therefore these parameters can be tighten for
+  // stiffer limits. Here we set the stiffness parameter to a very high value so
+  // that SAP works in the "near-rigid" regime as described in the SAP paper,
+  // [Castro et al., 2021]. As shown in the SAP paper, a dissipation time scale
+  // of the order of the time step leads to a critically damped constraint.
+  // TODO(amcastro-tri): allow users to specify joint limits stiffness and
+  // damping.
+  const double stiffness = 1.0e12;
+  const double dissipation_time_scale = dt;
+
+  for (JointIndex joint_index(0); joint_index < plant().num_joints();
+       ++joint_index) {
+    const Joint<T>& joint = plant().get_joint(joint_index);
+    // We only support limits for 1 DOF joints for which we know that q̇ = v.
+    if (joint.num_positions() == 1 && joint.num_velocities() == 1) {
+      const double lower_limit = joint.position_lower_limits()[0];
+      const double upper_limit = joint.position_upper_limits()[0];
+      const int velocity_start = joint.velocity_start();
+      const TreeIndex tree_index =
+          tree_topology().velocity_to_tree_index(velocity_start);
+      const int tree_nv = tree_topology().num_tree_velocities(tree_index);
+      const int tree_velocity_start =
+          tree_topology().tree_velocities_start(tree_index);
+      const int tree_dof = velocity_start - tree_velocity_start;
+
+      // Current configuration position.
+      const T& q0 = joint.GetOnePosition(context);
+      const T& v0 = joint.GetOneVelocity(context);
+
+      // Estimate a window size around q0. In order to build a smaller
+      // optimization problem, we only add a constraint if the joint
+      // limits are within this window.
+      using std::abs;
+      using std::max;
+      // delta_q estimates how much q changes in a single time step.
+      // We use the maximum of v0 and v* for a conservative estimation.
+      const T delta_q = dt * max(abs(v0), abs(v_star(velocity_start)));
+      // We use a factor kLimitWindowFactor to look into a larger window. A very
+      // large kLimitWindowFactor means that constraints will always be added
+      // even if they are inactive at the end of the computation. A smaller
+      // kLimitWindowFactor will result in a smaller problem, faster to solve,
+      // though constraints could be missed until the next time step.
+      const T window_lower = q0 - kLimitWindowFactor * delta_q;
+      const T window_upper = q0 + kLimitWindowFactor * delta_q;
+
+      // N.B. window_lower < window_upper by definition.
+      const double ql = lower_limit < window_lower ? -kInf : lower_limit;
+      const double qu = upper_limit > window_upper ? kInf : upper_limit;
+
+      // Constraint is added only when one of ql and qu is finite.
+      if (!std::isinf(ql) || !std::isinf(qu)) {
+        // Create constraint for the current configuration q0.
+        typename SapLimitConstraint<T>::Parameters parameters{
+            ql, qu, stiffness, dissipation_time_scale, kBeta};
+        problem->AddConstraint(std::make_unique<SapLimitConstraint<T>>(
+            tree_index, tree_dof, tree_nv, q0, std::move(parameters)));
+      }
+    } else {
+      // TODO(amcastro-tri): Thus far in Drake we don't have multi-dof joints
+      // with limits, only 1-DOF joints have limits. Therefore here throw an
+      // exception to ensure that when we implement a multi-dof joint with
+      // limits we don't forget to update this code.
+      const VectorX<double>& lower_limits = joint.position_lower_limits();
+      const VectorX<double>& upper_limits = joint.position_upper_limits();
+      if ((lower_limits.array() != -kInf).any() ||
+          (upper_limits.array() != kInf).any()) {
+        throw std::runtime_error(
+            "Limits for joints with more than one degree of freedom are not "
+            "supported. You are getting this exception because a new joint "
+            "type must have been introduced. "
+            "CompliantContactManager::AddLimitConstraints() must be updated to "
+            "support this feature.");
+      }
+    }
+  }
+}
+
+template <typename T>
 void CompliantContactManager<T>::CalcContactProblemCache(
     const systems::Context<T>& context, ContactProblemCache<T>* cache) const {
   SapContactProblem<T>& problem = *cache->sap_problem;
@@ -759,6 +873,7 @@ void CompliantContactManager<T>::CalcContactProblemCache(
   // extract contact impulses for reporting contact results.
   // Do not change this order here!
   cache->R_WC = AddContactConstraints(context, &problem);
+  AddLimitConstraints(context, problem.v_star(), &problem);
 }
 
 template <typename T>
@@ -794,6 +909,18 @@ void CompliantContactManager<T>::DoCalcDiscreteValues(
   VectorX<T> x_next(plant().num_multibody_states());
   x_next << q_next, v_next;
   updates->set_value(this->multibody_state_index(), x_next);
+}
+
+template <typename T>
+void CompliantContactManager<T>::ExtractModelInfo() {
+  // Collect joint damping coefficients into a vector.
+  joint_damping_ = VectorX<T>::Zero(plant().num_velocities());
+  for (JointIndex j(0); j < plant().num_joints(); ++j) {
+    const Joint<T>& joint = plant().get_joint(j);
+    const int velocity_start = joint.velocity_start();
+    const int nv = joint.num_velocities();
+    joint_damping_.segment(velocity_start, nv) = joint.damping_vector();
+  }
 }
 
 }  // namespace internal

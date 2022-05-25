@@ -29,10 +29,10 @@ namespace drake {
 namespace solvers {
 namespace {
 // Mosek treats psd matrix variables in a special manner.
-// Check https://docs.mosek.com/9.2/capi/tutorial-sdo-shared.html for more
+// Check https://docs.mosek.com/9.3/capi/tutorial-sdo-shared.html for more
 // details. To summarize, Mosek stores a positive semidefinite (psd) matrix
 // variable as a "bar var" (as called in Mosek's API, for example
-// https://docs.mosek.com/9.2/capi/tutorial-sdo-shared.html). Inside Mosek, it
+// https://docs.mosek.com/9.3/capi/tutorial-sdo-shared.html). Inside Mosek, it
 // accesses each of the psd matrix variable with a unique ID. Moreover, the
 // Mosek user cannot access the entries of the psd matrix variable individually;
 // instead, the user can only access the matrix X̅ as a whole. To impose
@@ -92,7 +92,7 @@ class MatrixVariableEntry {
 
 // Mosek stores dual variable in different categories, called slc, suc, slx, sux
 // and snx. Refer to
-// https://docs.mosek.com/9.2/capi/alphabetic-functionalities.html#mosek.task.getsolution
+// https://docs.mosek.com/9.3/capi/alphabetic-functionalities.html#mosek.task.getsolution
 // for more information.
 enum class DualVarType {
   kLinearConstraint,  ///< Corresponds to Mosek's slc and suc.
@@ -112,8 +112,8 @@ using ConstraintDualIndices = std::vector<ConstraintDualIndex>;
 
 // This function is used to print information for each iteration to the console,
 // it will show PRSTATUS, PFEAS, DFEAS, etc. For more information, check out
-// https://docs.mosek.com/9.2/capi/solver-io.html. This printstr is copied
-// directly from https://docs.mosek.com/9.2/capi/solver-io.html#stream-logging.
+// https://docs.mosek.com/9.3/capi/solver-io.html. This printstr is copied
+// directly from https://docs.mosek.com/9.3/capi/solver-io.html#stream-logging.
 void MSKAPI printstr(void*, const char str[]) { printf("%s", str); }
 
 enum class LinearConstraintBoundType {
@@ -761,13 +761,25 @@ MSKrescodee AddConeConstraints(
   return rescode;
 }
 
-MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
-                                               MSKtask_t* task) {
+MSKrescodee AddPositiveSemidefiniteConstraints(
+    const MathematicalProgram& prog, MSKtask_t* task,
+    std::unordered_map<Binding<PositiveSemidefiniteConstraint>, MSKint32t>*
+        psd_barvar_indices) {
   MSKrescodee rescode = MSK_RES_OK;
+  // First get the current number of bar matrix vars before appending the new
+  // ones.
+  MSKint32t numbarvar;
+  rescode = MSK_getnumbarvar(*task, &numbarvar);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
   std::vector<MSKint32t> bar_var_dimension;
   bar_var_dimension.reserve(prog.positive_semidefinite_constraints().size());
+  int psd_count = 0;
   for (const auto& binding : prog.positive_semidefinite_constraints()) {
     bar_var_dimension.push_back(binding.evaluator()->matrix_rows());
+    psd_barvar_indices->emplace(binding, numbarvar + psd_count);
+    psd_count++;
   }
 
   rescode = MSK_appendbarvars(*task, bar_var_dimension.size(),
@@ -1402,13 +1414,13 @@ MSKrescodee AddEqualityConstraintBetweenMatrixVariablesForSameDecisionVariable(
 }
 
 // @param slx Mosek dual variables for variable lower bound. See
-// https://docs.mosek.com/9.2/capi/alphabetic-functionalities.html#mosek.task.getslx
+// https://docs.mosek.com/9.3/capi/alphabetic-functionalities.html#mosek.task.getslx
 // @param sux Mosek dual variables for variable upper bound. See
-// https://docs.mosek.com/9.2/capi/alphabetic-functionalities.html#mosek.task.getsux
+// https://docs.mosek.com/9.3/capi/alphabetic-functionalities.html#mosek.task.getsux
 // @param slc Mosek dual variables for linear constraint lower bound. See
-// https://docs.mosek.com/9.2/capi/alphabetic-functionalities.html#mosek.task.getslc
+// https://docs.mosek.com/9.3/capi/alphabetic-functionalities.html#mosek.task.getslc
 // @param suc Mosek dual variables for linear constraint upper bound. See
-// https://docs.mosek.com/9.2/capi/alphabetic-functionalities.html#mosek.task.getsuc
+// https://docs.mosek.com/9.3/capi/alphabetic-functionalities.html#mosek.task.getsuc
 void SetBoundingBoxDualSolution(
     const std::vector<Binding<BoundingBoxConstraint>>& constraints,
     const std::vector<MSKrealt>& slx, const std::vector<MSKrealt>& sux,
@@ -1511,6 +1523,44 @@ void SetNonlinearConstraintDualSolution(
   }
 }
 
+MSKrescodee SetPositiveSemidefiniteConstraintDualSolution(
+    const MathematicalProgram& prog,
+    const std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
+                             MSKint32t>& psd_barvar_indices,
+    MSKtask_t task, MSKsoltypee whichsol, MathematicalProgramResult* result) {
+  MSKrescodee rescode = MSK_RES_OK;
+  for (const auto& psd_constraint : prog.positive_semidefinite_constraints()) {
+    // Get the bar index of the Mosek matrix var.
+    const auto it = psd_barvar_indices.find(psd_constraint);
+    if (it == psd_barvar_indices.end()) {
+      throw std::runtime_error(
+          "SetPositiveSemidefiniteConstraintDualSolution: this positive "
+          "semidefinite constraint has not been "
+          "registered in Mosek as a matrix variable. This should not happen, "
+          "please post an issue on Drake: "
+          "https://github.com/RobotLocomotion/drake/issues/new.");
+    }
+    const auto bar_index = it->second;
+    // barsj stores the lower triangular values of the psd matrix (as the dual
+    // solution).
+    std::vector<MSKrealt> barsj(
+        psd_constraint.evaluator()->matrix_rows() *
+        (psd_constraint.evaluator()->matrix_rows() + 1) / 2);
+    rescode = MSK_getbarsj(task, whichsol, bar_index, barsj.data());
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    // Copy barsj to dual_lower. We don't use barsj directly since MSKrealt
+    // might be a different data type from double.
+    Eigen::VectorXd dual_lower(barsj.size());
+    for (int i = 0; i < dual_lower.rows(); ++i) {
+      dual_lower(i) = barsj[i];
+    }
+    result->set_dual_solution(psd_constraint, dual_lower);
+  }
+  return rescode;
+}
+
 MSKrescodee SetDualSolution(
     const MSKtask_t& task, MSKsoltypee which_sol,
     const MathematicalProgram& prog,
@@ -1529,6 +1579,8 @@ MSKrescodee SetDualSolution(
         rotated_lorentz_cone_dual_indices,
     const std::unordered_map<Binding<ExponentialConeConstraint>,
                              ConstraintDualIndices>& exp_cone_dual_indices,
+    const std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
+                             MSKint32t>& psd_barvar_indices,
     MathematicalProgramResult* result) {
   // TODO(hongkai.dai): support other types of constraints, like linear
   // constraint, second order cone constraint, etc.
@@ -1536,7 +1588,7 @@ MSKrescodee SetDualSolution(
   if (which_sol != MSK_SOL_ITG) {
     // Mosek cannot return dual solution if the solution type is MSK_SOL_ITG
     // (which stands for mixed integer optimizer), see
-    // https://docs.mosek.com/9.2/capi/accessing-solution.html#available-solutions
+    // https://docs.mosek.com/9.3/capi/accessing-solution.html#available-solutions
     int num_mosek_vars{0};
     rescode = MSK_getnumvar(task, &num_mosek_vars);
     if (rescode != MSK_RES_OK) {
@@ -1544,7 +1596,7 @@ MSKrescodee SetDualSolution(
     }
     // Mosek dual variables for variable lower bounds (slx) and upper bounds
     // (sux). Refer to
-    // https://docs.mosek.com/9.2/capi/alphabetic-functionalities.html#mosek.task.getsolution
+    // https://docs.mosek.com/9.3/capi/alphabetic-functionalities.html#mosek.task.getsolution
     // for more explanation.
     std::vector<MSKrealt> slx(num_mosek_vars);
     std::vector<MSKrealt> sux(num_mosek_vars);
@@ -1563,7 +1615,7 @@ MSKrescodee SetDualSolution(
     }
     // Mosek dual variables for linear constraints lower bounds (slc) and upper
     // bounds (suc). Refer to
-    // https://docs.mosek.com/9.2/capi/alphabetic-functionalities.html#mosek.task.getsolution
+    // https://docs.mosek.com/9.3/capi/alphabetic-functionalities.html#mosek.task.getsolution
     // for more explanation.
     std::vector<MSKrealt> slc(num_linear_constraints);
     std::vector<MSKrealt> suc(num_linear_constraints);
@@ -1600,6 +1652,11 @@ MSKrescodee SetDualSolution(
           rotated_lorentz_cone_dual_indices, result);
       SetNonlinearConstraintDualSolution(prog.exponential_cone_constraints(),
                                          snx, exp_cone_dual_indices, result);
+    }
+    rescode = SetPositiveSemidefiniteConstraintDualSolution(
+        prog, psd_barvar_indices, task, which_sol, result);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
     }
   }
   return rescode;
@@ -1677,7 +1734,7 @@ class MosekSolver::License {
 std::shared_ptr<MosekSolver::License> MosekSolver::AcquireLicense() {
   // According to
   // https://docs.mosek.com/8.1/cxxfusion/solving-parallel.html sharing
-  // an env used between threads is safe (not mentioned in 9.2 documentation),
+  // an env used between threads is safe (not mentioned in 9.3 documentation),
   // but nothing mentions thread-safety when allocating the environment. We can
   // safeguard against this ambiguity by using GetScopedSingleton for basic
   // thread-safety when acquiring / releasing the license.
@@ -1747,7 +1804,7 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
 
   // Create the optimization task.
   // task is initialized as a null pointer, same as in Mosek's documentation
-  // https://docs.mosek.com/9.2/capi/design.html#hello-world-in-mosek
+  // https://docs.mosek.com/9.3/capi/design.html#hello-world-in-mosek
   MSKtask_t task = nullptr;
   rescode = MSK_maketask(env, 0, num_nonmatrix_vars_in_prog, &task);
   ScopeExit guard([&task]() { MSK_deletetask(&task); });
@@ -1790,8 +1847,14 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   }
   // Add positive semidefinite constraint. This also adds Mosek matrix
   // variables.
+  // psd_barvar_indices records the index of the bar matrix for this positive
+  // semidefinite constraint. We will use this bar matrix index later, for
+  // example when retrieving the dual solution.
+  std::unordered_map<Binding<PositiveSemidefiniteConstraint>, MSKint32t>
+      psd_barvar_indices;
   if (rescode == MSK_RES_OK) {
-    rescode = AddPositiveSemidefiniteConstraints(prog, &task);
+    rescode =
+        AddPositiveSemidefiniteConstraints(prog, &task, &psd_barvar_indices);
   }
   // Add the constraint that Mosek matrix variable entries corresponding to the
   // same decision variables should all be equal.
@@ -1893,7 +1956,7 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   // log file.
   const bool print_to_console = merged_options.get_print_to_console();
   const std::string print_file_name = merged_options.get_print_file_name();
-  // Refer to https://docs.mosek.com/9.2/capi/solver-io.html#stream-logging
+  // Refer to https://docs.mosek.com/9.3/capi/solver-io.html#stream-logging
   // for Mosek stream logging.
   // First we check if the user wants to print to both the console and the file.
   // If true, throw an error BEFORE we create the log file through
@@ -1981,78 +2044,72 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
 
   MSKsolstae solution_status{MSK_SOL_STA_UNKNOWN};
   if (rescode == MSK_RES_OK) {
-    if (rescode == MSK_RES_OK) {
-      rescode = MSK_getsolsta(task, solution_type, &solution_status);
-    }
-    if (rescode == MSK_RES_OK) {
-      switch (solution_status) {
-        case MSK_SOL_STA_OPTIMAL:
-        case MSK_SOL_STA_INTEGER_OPTIMAL:
-        case MSK_SOL_STA_PRIM_FEAS: {
-          result->set_solution_result(SolutionResult::kSolutionFound);
-          MSKint32t num_mosek_vars;
-          rescode = MSK_getnumvar(task, &num_mosek_vars);
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          Eigen::VectorXd mosek_sol_vector(num_mosek_vars);
-          rescode = MSK_getxx(task, solution_type, mosek_sol_vector.data());
-          MSKint32t num_bar_x;
-          rescode = MSK_getnumbarvar(task, &num_bar_x);
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          std::vector<Eigen::VectorXd> mosek_bar_x_sol(num_bar_x);
-          for (int i = 0; i < num_bar_x; ++i) {
-            MSKint32t bar_xi_dim;
-            rescode = MSK_getdimbarvarj(task, i, &bar_xi_dim);
-            DRAKE_ASSERT(rescode == MSK_RES_OK);
-            mosek_bar_x_sol[i].resize(bar_xi_dim * (bar_xi_dim + 1) / 2);
-            rescode =
-                MSK_getbarxj(task, solution_type, i, mosek_bar_x_sol[i].data());
-          }
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          Eigen::VectorXd sol_vector(num_decision_vars);
-          for (int i = 0; i < num_decision_vars; ++i) {
-            auto it1 =
-                decision_variable_index_to_mosek_nonmatrix_variable.find(i);
-            if (it1 !=
-                decision_variable_index_to_mosek_nonmatrix_variable.end()) {
-              sol_vector(i) = mosek_sol_vector(it1->second);
-            } else {
-              auto it2 =
-                  decision_variable_index_to_mosek_matrix_variable.find(i);
-              sol_vector(i) = mosek_bar_x_sol[it2->second.bar_matrix_index()](
-                  it2->second.IndexInLowerTrianglePart());
-            }
-          }
-          if (rescode == MSK_RES_OK) {
-            result->set_x_val(sol_vector);
-          }
-          MSKrealt optimal_cost;
-          rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          if (rescode == MSK_RES_OK) {
-            result->set_optimal_cost(optimal_cost);
-          }
-          rescode = SetDualSolution(
-              task, solution_type, prog, bb_con_dual_indices,
-              linear_con_dual_indices, lin_eq_con_dual_indices,
-              lorentz_cone_dual_indices, rotated_lorentz_cone_dual_indices,
-              exp_cone_dual_indices, result);
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          break;
-        }
-        case MSK_SOL_STA_DUAL_INFEAS_CER: {
-          result->set_solution_result(SolutionResult::kDualInfeasible);
-          break;
-        }
-        case MSK_SOL_STA_PRIM_INFEAS_CER: {
-          result->set_solution_result(SolutionResult::kInfeasibleConstraints);
-          break;
-        }
-        default: {
-          result->set_solution_result(SolutionResult::kUnknownError);
-          break;
-        }
+    rescode = MSK_getsolsta(task, solution_type, &solution_status);
+  }
+  if (rescode == MSK_RES_OK) {
+    switch (solution_status) {
+      case MSK_SOL_STA_OPTIMAL:
+      case MSK_SOL_STA_INTEGER_OPTIMAL:
+      case MSK_SOL_STA_PRIM_FEAS: {
+        result->set_solution_result(SolutionResult::kSolutionFound);
+        break;
+      }
+      case MSK_SOL_STA_DUAL_INFEAS_CER: {
+        result->set_solution_result(SolutionResult::kDualInfeasible);
+        break;
+      }
+      case MSK_SOL_STA_PRIM_INFEAS_CER: {
+        result->set_solution_result(SolutionResult::kInfeasibleConstraints);
+        break;
+      }
+      default: {
+        result->set_solution_result(SolutionResult::kUnknownError);
+        break;
       }
     }
+    MSKint32t num_mosek_vars;
+    rescode = MSK_getnumvar(task, &num_mosek_vars);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    Eigen::VectorXd mosek_sol_vector(num_mosek_vars);
+    rescode = MSK_getxx(task, solution_type, mosek_sol_vector.data());
+    MSKint32t num_bar_x;
+    rescode = MSK_getnumbarvar(task, &num_bar_x);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    std::vector<Eigen::VectorXd> mosek_bar_x_sol(num_bar_x);
+    for (int i = 0; i < num_bar_x; ++i) {
+      MSKint32t bar_xi_dim;
+      rescode = MSK_getdimbarvarj(task, i, &bar_xi_dim);
+      DRAKE_ASSERT(rescode == MSK_RES_OK);
+      mosek_bar_x_sol[i].resize(bar_xi_dim * (bar_xi_dim + 1) / 2);
+      rescode = MSK_getbarxj(task, solution_type, i, mosek_bar_x_sol[i].data());
+    }
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    Eigen::VectorXd sol_vector(num_decision_vars);
+    for (int i = 0; i < num_decision_vars; ++i) {
+      auto it1 = decision_variable_index_to_mosek_nonmatrix_variable.find(i);
+      if (it1 != decision_variable_index_to_mosek_nonmatrix_variable.end()) {
+        sol_vector(i) = mosek_sol_vector(it1->second);
+      } else {
+        auto it2 = decision_variable_index_to_mosek_matrix_variable.find(i);
+        sol_vector(i) = mosek_bar_x_sol[it2->second.bar_matrix_index()](
+            it2->second.IndexInLowerTrianglePart());
+      }
+    }
+    if (rescode == MSK_RES_OK) {
+      result->set_x_val(sol_vector);
+    }
+    MSKrealt optimal_cost;
+    rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    if (rescode == MSK_RES_OK) {
+      result->set_optimal_cost(optimal_cost);
+    }
+    rescode = SetDualSolution(
+        task, solution_type, prog, bb_con_dual_indices, linear_con_dual_indices,
+        lin_eq_con_dual_indices, lorentz_cone_dual_indices,
+        rotated_lorentz_cone_dual_indices, exp_cone_dual_indices,
+        psd_barvar_indices, result);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
   }
 
   MosekSolverDetails& solver_details =

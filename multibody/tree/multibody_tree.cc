@@ -264,9 +264,19 @@ const auto& GetElementByName(
   // If the name is non-existent, then say so, whether or not a specific model
   // instance was requested.
   if (lower == upper) {
+    std::vector<std::string_view> all_keys;
+    all_keys.reserve(name_to_index.size());
+    for (auto it = name_to_index.begin(),
+             end = name_to_index.end();
+         it != end;
+         it = name_to_index.equal_range(it->first).second) {
+      all_keys.push_back(it->first.view());
+    }
+    std::sort(all_keys.begin(), all_keys.end());
     throw std::logic_error(fmt::format(
-        "Get{}ByName(): There is no {} named '{}' anywhere in the model.",
-        element_classname, element_classname, name));
+        "Get{}ByName(): There is no {} named '{}' anywhere in the model "
+        "(valid names are: {})",
+        element_classname, element_classname, name, fmt::join(all_keys, ", ")));
   }
 
   // Filter for the requested model_instance, if one was provided.
@@ -2532,6 +2542,14 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
     const int mobilizer_num_positions =
         node_topology.num_mobilizer_positions;
 
+    const int start_index = is_wrt_qdot ? start_index_in_q : start_index_in_v;
+    const int mobilizer_jacobian_ncols =
+        is_wrt_qdot ? mobilizer_num_positions : mobilizer_num_velocities;
+
+    // No contribution to the Jacobian from this mobilizer. We skip it.
+    // N.B. This avoids working with zero sized Eigen blocks; see drake#17113.
+    if (mobilizer_jacobian_ncols == 0) continue;
+
     // "Hinge matrix" H for across-node Jacobian.
     // Herein P designates the inboard (parent) body frame P.
     // B designates the current outboard body in this outward sweep.
@@ -2541,10 +2559,6 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
     // Aliases to angular and translational components in H_PB_W.
     const auto Hw_PB_W = H_PB_W.template topRows<3>();
     const auto Hv_PB_W = H_PB_W.template bottomRows<3>();
-
-    const int start_index = is_wrt_qdot ? start_index_in_q : start_index_in_v;
-    const int mobilizer_jacobian_ncols =
-        is_wrt_qdot ? mobilizer_num_positions : mobilizer_num_velocities;
 
     // Mapping defined by v = N⁺(q)⋅q̇.
     if (is_wrt_qdot) {

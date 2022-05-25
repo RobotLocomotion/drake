@@ -9,7 +9,6 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression, Variable
-from pydrake.common.eigen_geometry import Isometry3
 from pydrake.lcm import DrakeLcm
 from pydrake.math import RigidTransform
 from pydrake.multibody.tree import (
@@ -1168,6 +1167,8 @@ class TestPlant(unittest.TestCase):
                 test_force.F_Bq_W = SpatialForce_[T](
                     tau=[0., 0., 0.], f=[0., 0., 1.])
                 spatial_forces_vector.set_value([test_force])
+                numpy_compare.assert_float_equal(test_force.p_BoBq_B,
+                                                 np.zeros(3))
 
             def DoCalcVectorOutput(self, context, generalized_forces):
                 generalized_forces.SetFromVector(np.zeros(self.nv))
@@ -1857,6 +1858,20 @@ class TestPlant(unittest.TestCase):
             SpatialVelocity_[T])
         self.assertIsInstance(
             dut.CalcSpatialAccelerationInWorld(context=context),
+            SpatialAcceleration_[T])
+        self.assertIsInstance(
+            dut.CalcSpatialAcceleration(context=context, measured_in_frame=dut,
+                                        expressed_in_frame=dut),
+            SpatialAcceleration_[T])
+        self.assertIsInstance(
+            dut.CalcRelativeSpatialAccelerationInWorld(context=context,
+                                                       other_frame=dut),
+            SpatialAcceleration_[T])
+        self.assertIsInstance(
+            dut.CalcRelativeSpatialAcceleration(context=context,
+                                                other_frame=dut,
+                                                measured_in_frame=dut,
+                                                expressed_in_frame=dut),
             SpatialAcceleration_[T])
 
     @numpy_compare.check_all_types

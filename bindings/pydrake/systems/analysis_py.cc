@@ -300,7 +300,8 @@ PYBIND11_MODULE(analysis, m) {
             doc.RegionOfAttractionOptions.lyapunov_candidate.doc)
         .def_readwrite("state_variables",
             &RegionOfAttractionOptions::state_variables,
-            doc.RegionOfAttractionOptions.state_variables.doc)
+            // dtype = object arrays must be copied, and cannot be referenced.
+            py_rvp::copy, doc.RegionOfAttractionOptions.state_variables.doc)
         .def_readwrite("use_implicit_dynamics",
             &RegionOfAttractionOptions::use_implicit_dynamics,
             doc.RegionOfAttractionOptions.use_implicit_dynamics.doc)

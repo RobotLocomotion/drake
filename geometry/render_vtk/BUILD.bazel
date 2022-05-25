@@ -1,0 +1,138 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
+
+package(default_visibility = ["//visibility:private"])
+
+drake_cc_package_library(
+    name = "render_vtk",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":factory",
+        ":render_engine_vtk_params",
+    ],
+)
+
+drake_cc_library(
+    name = "render_engine_vtk_params",
+    srcs = ["render_engine_vtk_params.cc"],
+    hdrs = ["render_engine_vtk_params.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common:essential",
+        "//geometry/render:render_label",
+    ],
+)
+
+drake_cc_library(
+    name = "factory",
+    srcs = ["factory.cc"],
+    hdrs = ["factory.h"],
+    visibility = ["//visibility:public"],
+    interface_deps = [
+        "//geometry/render:render_engine",
+        ":render_engine_vtk_params",
+    ],
+    deps = [
+        ":internal_render_engine_vtk",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_render_engine_vtk",
+    srcs = ["internal_render_engine_vtk.cc"],
+    hdrs = ["internal_render_engine_vtk.h"],
+    internal = True,
+    visibility = [
+        "//geometry/render_client_gltf:__pkg__",
+        # TODO(jwnimmer-tri) Remove this once the dev package is gone.
+        "//geometry/render/dev/render_gltf_client:__pkg__",
+        # TODO(jwnimmer-tri) Remove this after deprecation 2022-09-01.
+        "//geometry/render:__pkg__",
+    ],
+    deps = [
+        ":internal_render_engine_vtk_base",
+        ":internal_vtk_util",
+        "//common",
+        "//geometry/render:render_engine",
+        "//geometry/render/shaders:depth_shaders",
+        "//geometry/render_vtk:render_engine_vtk_params",
+        "//systems/sensors:color_palette",
+        "@eigen",
+        "@vtk//:vtkIOGeometry",
+        "@vtk//:vtkIOImage",
+        "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOpenGL2",
+    ],
+)
+
+# TODO(jwnimmer-tri) Remove this after deprecation 2022-09-01.
+exports_files(["internal_render_engine_vtk.h"])
+
+drake_cc_library(
+    name = "internal_render_engine_vtk_base",
+    srcs = ["internal_render_engine_vtk_base.cc"],
+    hdrs = ["internal_render_engine_vtk_base.h"],
+    internal = True,
+    visibility = [
+        # TODO(jwnimmer-tri) Switch to private after deprecation 2022-09-01.
+        "//geometry/render:__pkg__",
+    ],
+    deps = [
+        "//common:scope_exit",
+        "//geometry:geometry_roles",
+        "//geometry:shape_specification",
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkFiltersSources",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_vtk_util",
+    srcs = ["internal_vtk_util.cc"],
+    hdrs = ["internal_vtk_util.h"],
+    internal = True,
+    visibility = [
+        # TODO(jwnimmer-tri) Switch to private after deprecation 2022-09-01.
+        "//geometry/render:__pkg__",
+    ],
+    deps = [
+        "//common:essential",
+        "//math:geometric_transform",
+        "@eigen",
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkCommonTransforms",
+        "@vtk//:vtkFiltersSources",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_render_engine_vtk_test",
+    data = [
+        "//geometry/render:test_models",
+    ],
+    tags = vtk_test_tags(),
+    deps = [
+        ":internal_render_engine_vtk",
+        "//common:find_resource",
+        "//common/test_utilities",
+        "//geometry/test_utilities:dummy_render_engine",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_vtk_util_test",
+    deps = [
+        ":internal_vtk_util",
+    ],
+)
+
+add_lint_tests()

@@ -30,6 +30,16 @@ class PrismaticJointTest : public ::testing::Test {
   // Creates a simple model consisting of a single body with a prismatic joint
   // with the sole purpose of testing the PrismaticJoint user facing API.
   void SetUp() override {
+    std::unique_ptr<internal::MultibodyTree<double>> model = MakeModel();
+
+    // We are done adding modeling elements. Transfer tree to system and get
+    // a Context.
+    system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
+        std::move(model), true/* is_discrete */);
+    context_ = system_->CreateDefaultContext();
+  }
+
+  std::unique_ptr<internal::MultibodyTree<double>> MakeModel() {
     // Spatial inertia for adding body. The actual value is not important for
     // these tests and therefore we do not initialize it.
     const SpatialInertia<double> M_B;  // Default construction is ok for this.
@@ -53,11 +63,7 @@ class PrismaticJointTest : public ::testing::Test {
         Vector1<double>::Constant(kAccelerationLowerLimit),
         Vector1<double>::Constant(kAccelerationUpperLimit));
 
-    // We are done adding modeling elements. Transfer tree to system and get
-    // a Context.
-    system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
-        std::move(model), true/* is_discrete */);
-    context_ = system_->CreateDefaultContext();
+    return model;
   }
 
   const internal::MultibodyTree<double>& tree() const {
@@ -110,8 +116,14 @@ TEST_F(PrismaticJointTest, GetJointLimits) {
 }
 
 TEST_F(PrismaticJointTest, Damping) {
-  EXPECT_EQ(joint1_->damping(), kDamping);
-  EXPECT_EQ(joint1_->damping_vector(), Vector1d(kDamping));
+  std::unique_ptr<internal::MultibodyTree<double>> model = MakeModel();
+  auto& joint = model->GetMutableJointByName<PrismaticJoint>("Joint1");
+  EXPECT_EQ(joint.damping(), kDamping);
+  EXPECT_EQ(joint.damping_vector(), Vector1d(kDamping));
+  const double new_damping = 2.0 * kDamping;
+  joint.set_default_damping(new_damping);
+  EXPECT_EQ(joint.damping(), new_damping);
+  EXPECT_EQ(joint.damping_vector(), Vector1d(new_damping));
 }
 
 // Context-dependent value access.
@@ -178,6 +190,11 @@ TEST_F(PrismaticJointTest, Clone) {
   EXPECT_EQ(joint1_clone.damping(), joint1_->damping());
   EXPECT_EQ(joint1_clone.get_default_translation(),
             joint1_->get_default_translation());
+}
+
+TEST_F(PrismaticJointTest, CanRotateOrTranslate) {
+  EXPECT_FALSE(joint1_->can_rotate());
+  EXPECT_TRUE(joint1_->can_translate());
 }
 
 TEST_F(PrismaticJointTest, NameSuffix) {

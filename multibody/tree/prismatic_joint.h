@@ -104,6 +104,15 @@ class PrismaticJoint final : public Joint<T> {
   /// Returns `this` joint's damping constant in N⋅s/m.
   double damping() const { return this->damping_vector()[0]; }
 
+  /// Sets the default value of viscous damping for this joint, in N⋅s/m.
+  /// @throws std::exception if damping is negative.
+  /// @pre the MultibodyPlant must not be finalized.
+  void set_default_damping(double damping) {
+    DRAKE_THROW_UNLESS(damping >= 0);
+    DRAKE_DEMAND(!this->get_parent_tree().topology_is_valid());
+    this->set_default_damping_vector(Vector1d(damping));
+  }
+
   /// Returns the position lower limit for `this` joint in meters.
   double position_lower_limit() const {
     return this->position_lower_limits()[0];

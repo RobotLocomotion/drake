@@ -228,6 +228,11 @@ TEST_F(UniversalJointTest, SetVelocityAndAccelerationLimits) {
                               "upper_limits.array\\(\\)\\).all\\(\\)' failed.");
 }
 
+TEST_F(UniversalJointTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(joint_->can_rotate());
+  EXPECT_FALSE(joint_->can_translate());
+}
+
 TEST_F(UniversalJointTest, NameSuffix) {
   EXPECT_EQ(joint_->position_suffix(0), "qx");
   EXPECT_EQ(joint_->position_suffix(1), "qy");

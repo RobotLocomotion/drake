@@ -50,6 +50,9 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
+  bool can_rotate() const final    { return true; }
+  bool can_translate() const final { return true; }
+
   /* Retrieves from `context` the two translations (x, y) which describe the
    position for `this` mobilizer as documented in this class's documentation.
 

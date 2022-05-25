@@ -1063,6 +1063,10 @@ TEST_F(SymbolicPolynomialTest, EqualToAfterExpansion) {
 
   // p1 * p2 is not equal to p2 * p3 after expansion.
   EXPECT_PRED2(test::PolyNotEqualAfterExpansion, p1 * p2, p2 * p3);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_TRUE((p2 * p3 * p1).EqualToAfterExpansion(p1 * p2 * p3));
+#pragma GCC diagnostic pop
 }
 
 // Checks if internal::CompareMonomial implements the lexicographical order.
@@ -1222,6 +1226,28 @@ TEST_F(SymbolicPolynomialTest, IsEvenOdd) {
        {Monomial{{{var_x_, 2}}}, pow(a_ + 1, 2) - a_ * a_ - 2 * a_ - 1}}};
   EXPECT_FALSE(p.IsEven());
   EXPECT_TRUE(p.IsOdd());
+}
+
+TEST_F(SymbolicPolynomialTest, Expand) {
+  // p1 is already expanded.
+  const symbolic::Polynomial p1{
+      {{symbolic::Monomial(), a_}, {symbolic::Monomial(var_x_, 2), a_ + 1}}};
+  const auto p1_expanded = p1.Expand();
+  EXPECT_EQ(p1, p1_expanded);
+
+  // p2 needs expansion.
+  using std::pow;
+  const symbolic::Polynomial p2{
+      {{symbolic::Monomial(), (a_ + 2) * (b_ + 3)},
+       {symbolic::Monomial(var_x_, 2), pow(a_ + 1, 2)}}};
+  const symbolic::Polynomial p2_expanded = p2.Expand();
+  EXPECT_EQ(p2_expanded, symbolic::Polynomial(p2.ToExpression().Expand(),
+                                              symbolic::Variables({var_x_})));
+
+  // p3 is 0 after expansion.
+  const symbolic::Polynomial p3{
+      {{symbolic::Monomial(), (a_ + 1) * (a_ - 1) - pow(a_, 2) + 1}}};
+  EXPECT_TRUE(p3.Expand().monomial_to_coefficient_map().empty());
 }
 
 }  // namespace

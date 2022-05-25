@@ -496,6 +496,79 @@ class Frame : public FrameBase<T> {
     return R_WE.inverse() * A_MF_W;  // returns A_MF_E.
   }
 
+  /// Calculates `this` frame C's spatial acceleration relative to another
+  /// frame B, measured and expressed in the world frame W.
+  /// @param[in] context contains the state of the multibody system.
+  /// @param[in] other_frame which is frame B.
+  /// @return A_W_BC_W = A_WC_W - A_WB_W, frame C's spatial acceleration
+  /// relative to frame B, measured and expressed in the world frame W.
+  ///
+  /// In general, A_W_BC = DtW(V_W_BC), the time-derivative in the world frame W
+  /// of frame C's spatial velocity relative to frame B. The rotational part of
+  /// the returned quantity is α_WC_W - α_WB_W = DtW(ω_BC)_W. For 3D analysis,
+  /// DtW(ω_BC) ≠ α_BC. The translational part of the returned quantity is
+  /// a_W_BoCo_W (Co's translational acceleration relative to Bo, measured and
+  /// expressed in world frame W). <pre>
+  ///  α_WC_W - α_WB_W = DtW(ω_WC)_W - DtW(ω_WB)_W = DtW(ω_BC)_W
+  ///  a_W_BoCo_W = a_WCo_W - a_WBo_W = DtW(v_WCo) - DtW(v_WBo) = Dt²W(p_BoCo)_W
+  /// </pre>
+  /// where Dt²W(p_BoCo)_W is the 2ⁿᵈ time-derivative in frame W of p_BoCo (the
+  /// position vector from Bo to Co), and this result is expressed in frame W.
+  /// @note The method CalcSpatialAccelerationInWorld() is more efficient and
+  /// coherent if any of `this`, other_frame, or the world frame W are the same.
+  /// @see CalcSpatialAccelerationInWorld(), CalcRelativeSpatialAcceleration().
+  SpatialAcceleration<T> CalcRelativeSpatialAccelerationInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& other_frame) const {
+    const Frame<T>& frame_B = other_frame;
+    const SpatialAcceleration<T> A_WB_W =
+        frame_B.CalcSpatialAccelerationInWorld(context);
+    const SpatialAcceleration<T> A_WC_W =
+        CalcSpatialAccelerationInWorld(context);
+    return A_WC_W - A_WB_W;
+  }
+
+  /// Calculates `this` frame C's spatial acceleration relative to another
+  /// frame B, measured in a frame M, expressed in a frame E.
+  /// @param[in] context contains the state of the multibody system.
+  /// @param[in] other_frame which is frame B.
+  /// @param[in] measured_in_frame which is frame M.
+  /// @param[in] expressed_in_frame which is frame E.
+  /// @return A_M_BC_E = A_MC_E - A_MB_E, frame C's spatial acceleration
+  /// relative to frame B, measured in frame M, expressed in frame E.
+  ///
+  /// In general, A_M_BC = DtW(V_M_BC), the time-derivative in frame M of
+  /// frame C's spatial velocity relative to frame B. The rotational part of the
+  /// returned quantity is α_MC_E - α_MB_E = DtM(ω_BC)_E. Note: For 3D analysis,
+  /// DtM(ω_BC) ≠ α_BC. The translational part of the returned quantity is
+  /// a_M_BoCo_E (Co's translational acceleration relative to Bo, measured in
+  /// frame M, expressed in frame E). <pre>
+  ///  α_MC_E - α_MB_E = DtM(ω_MC)_E - DtM(ω_MB)_E = DtM(ω_BC)_E
+  ///  a_M_BoCo_E = a_MCo_E - a_MBo_E = DtM(v_MCo) - DtM(v_MBo) = Dt²M(p_BoCo)_E
+  /// </pre>
+  /// where Dt²M(p_BoCo)_E is the 2ⁿᵈ time-derivative in frame M of p_BoCo (the
+  /// position vector from Bo to Co), and this result is expressed in frame E.
+  /// @note The calculation of the 2ⁿᵈ time-derivative of the distance between
+  /// Bo and Co can be done with relative translational acceleration, but this
+  /// calculation does not depend on the measured-in-frame, hence in this case,
+  /// consider CalcRelativeSpatialAccelerationInWorld() since it is faster.
+  /// @see CalcSpatialAccelerationInWorld(), CalcSpatialAcceleration(), and
+  /// CalcRelativeSpatialAccelerationInWorld().
+  SpatialAcceleration<T> CalcRelativeSpatialAcceleration(
+      const systems::Context<T>& context,
+      const Frame<T>& other_frame,
+      const Frame<T>& measured_in_frame,
+      const Frame<T>& expressed_in_frame) const {
+    const Frame<T>& frame_B = other_frame;
+    const Frame<T>& frame_M = measured_in_frame;
+    const Frame<T>& frame_E = expressed_in_frame;
+    const SpatialAcceleration<T> A_MB_E =
+        frame_B.CalcSpatialAcceleration(context, frame_M, frame_E);
+    const SpatialAcceleration<T> A_MC_E =
+        CalcSpatialAcceleration(context, frame_M, frame_E);
+    return A_MC_E - A_MB_E;
+  }
+
   /// (Advanced) NVI to DoCloneToScalar() templated on the scalar type of the
   /// new clone to be created. This method is mostly intended to be called by
   /// MultibodyTree::CloneToScalar(). Most users should not call this clone

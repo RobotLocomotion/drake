@@ -160,6 +160,49 @@ GTEST_TEST(WingTest, ScalarConversion) {
   diagram->ToSymbolic();
 }
 
+// Test fix for
+// https://stackoverflow.com/a/72160960/7829525
+GTEST_TEST(WingTest, DerivativesAtZeroVelocity) {
+  const double kSurfaceArea = 4.15;
+  systems::DiagramBuilder<double> builder;
+
+  auto* plant = builder.AddSystem<MultibodyPlant<double>>(0);
+  Parser(plant).AddModelFromFile(
+      FindResourceOrThrow("drake/multibody/models/box.urdf"));
+  plant->Finalize();
+  plant->set_name("plant");
+
+  const Body<double>& body = plant->GetBodyByName("box");
+  Wing<double>::AddToBuilder(&builder, plant, body.index(), kSurfaceArea,
+                             math::RigidTransform<double>::Identity());
+
+  auto diagram = builder.Build();
+  auto diagram_ad = systems::System<double>::ToAutoDiffXd(*diagram);
+  auto context_ad = diagram_ad->CreateDefaultContext();
+
+  const MultibodyPlant<AutoDiffXd>* plant_ad =
+      dynamic_cast<const MultibodyPlant<AutoDiffXd>*>(
+          &diagram_ad->GetSubsystemByName("plant"));
+  EXPECT_TRUE(plant_ad != nullptr);
+  systems::Context<AutoDiffXd>& plant_context_ad =
+      plant_ad->GetMyMutableContextFromRoot(context_ad.get());
+  const Body<AutoDiffXd>& body_ad = plant_ad->GetBodyByName("box");
+  const SpatialVelocity<AutoDiffXd> V_WB(
+      math::InitializeAutoDiff(Vector6d::Zero()));
+  plant_ad->SetFreeBodySpatialVelocity(&plant_context_ad, body_ad, V_WB);
+
+  const Vector6<AutoDiffXd> vdot_gravity_only =
+      plant_ad->CalcGravityGeneralizedForces(plant_context_ad);
+  const Vector6<AutoDiffXd> vdot =
+      plant_ad->EvalTimeDerivatives(plant_context_ad)
+          .get_generalized_velocity()
+          .CopyToVector();
+  EXPECT_TRUE(CompareMatrices(vdot,
+                              vdot_gravity_only, 1e-14));
+  // This next line would fail before the fix:
+  EXPECT_FALSE(math::ExtractGradient(vdot).hasNaN());
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

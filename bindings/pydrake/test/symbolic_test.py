@@ -13,6 +13,7 @@ from pydrake.test.algebra_test_util import ScalarAlgebra, VectorizedAlgebra
 from pydrake.common.containers import EqualToDict
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 # TODO(eric.cousineau): Replace usages of `sym` math functions with the
 # overloads from `pydrake.math`.
@@ -1284,6 +1285,19 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p.AddProduct(coeff=sym.Expression(3), m=m)  # p += 3 * x
         numpy_compare.assert_equal(p.ToExpression(), 6 * x)
 
+    def test_expand(self):
+        a = sym.Variable("a")
+        x = sym.Variable("x")
+
+        p = sym.Polynomial({
+            sym.Monomial(): a ** 2 - 1 - (a+1) * (a-1),
+            sym.Monomial(x): a + 2})
+        p_expand = p.Expand()
+        self.assertEqual(len(p_expand.monomial_to_coefficient_map()), 1)
+        self.assertTrue(
+            p_expand.monomial_to_coefficient_map()[
+                sym.Monomial(x)].EqualTo(a+2))
+
     def test_remove_terms_with_small_coefficients(self):
         e = 3 * x + 1e-12 * y
         p = sym.Polynomial(e, [x, y])
@@ -1317,6 +1331,15 @@ class TestSymbolicPolynomial(unittest.TestCase):
         self.assertFalse(
             p.CoefficientsAlmostEqual(
                 p=(p + sym.Polynomial(2e-6 * x)), tolerance=1e-6))
+
+        a = sym.Variable("a")
+        p_not_expand = sym.Polynomial(
+            {sym.Monomial(): a ** 2 - 1 - (a-1) * (a+1)})
+        p_expand = sym.Polynomial({sym.Monomial(): 0})
+        # TODO(2022-09-01) Remove with completion of deprecation.
+        with catch_drake_warnings(expected_count=1):
+            self.assertTrue(p_not_expand.EqualToAfterExpansion(p_expand))
+        self.assertFalse(p_not_expand.EqualTo(p_expand))
 
     def test_repr(self):
         p = sym.Polynomial()

@@ -8,12 +8,12 @@ load(
 )
 
 package(
-    default_visibility = ["//multibody/fem:__subpackages__"],
+    default_visibility = ["//visibility:public"],
 )
 
 drake_cc_package_library(
     name = "fem",
-    visibility = ["//multibody/fem:__subpackages__"],
+    visibility = ["//visibility:public"],
     deps = [
         ":acceleration_newmark_scheme",
         ":calc_lame_parameters",
@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":corotated_model",
         ":corotated_model_data",
         ":damping_model",
+        ":deformable_body_config",
         ":deformation_gradient_data",
         ":dirichlet_boundary_condition",
         ":discrete_time_integrator",
@@ -127,6 +128,16 @@ drake_cc_library(
     ],
     deps = [
         "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_body_config",
+    hdrs = [
+        "deformable_body_config.h",
+    ],
+    deps = [
         "//common:essential",
     ],
 )
@@ -349,9 +360,11 @@ drake_cc_library(
     hdrs = [
         "petsc_symmetric_block_sparse_matrix.h",
     ],
-    deps = [
+    interface_deps = [
         ":schur_complement",
         "//common:essential",
+    ],
+    deps = [
         "//common:unused",
         "@petsc",
     ],
@@ -506,6 +519,13 @@ drake_cc_googletest(
     deps = [
         ":damping_model",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_body_config_test",
+    deps = [
+        ":deformable_body_config",
     ],
 )
 

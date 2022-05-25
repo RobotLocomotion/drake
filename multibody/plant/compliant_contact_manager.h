@@ -81,6 +81,8 @@ struct AccelerationsDueToExternalForcesCache {
   explicit AccelerationsDueToExternalForcesCache(
       const MultibodyTreeTopology& topology);
   MultibodyForces<T> forces;  // The external forces causing accelerations.
+  ArticulatedBodyInertiaCache<T> abic;   // Articulated body inertia cache.
+  std::vector<SpatialForce<T>> Zb_Bo_W;  // Articulated body biases cache.
   multibody::internal::ArticulatedBodyForceCache<T> aba_forces;  // ABA cache.
   multibody::internal::AccelerationKinematicsCache<T> ac;  // Accelerations.
 };
@@ -129,6 +131,8 @@ class CompliantContactManager final
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompliantContactManager)
 
+  using internal::DiscreteUpdateManager<T>::plant;
+
   CompliantContactManager() = default;
 
   ~CompliantContactManager() final;
@@ -146,10 +150,7 @@ class CompliantContactManager final
     systems::CacheIndex contact_problem;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex non_contact_forces_accelerations;
-    systems::CacheIndex non_contact_forces_evaluation_in_progress;
   };
-
-  using internal::DiscreteUpdateManager<T>::plant;
 
   // Provide private access for unit testing only.
   friend class CompliantContactManagerTest;
@@ -157,6 +158,10 @@ class CompliantContactManager final
   const MultibodyTreeTopology& tree_topology() const {
     return internal::GetInternalTree(this->plant()).get_topology();
   }
+
+  // Extracts non state dependent model information from MultibodyPlant. See
+  // DiscreteUpdateManager for details.
+  void ExtractModelInfo() final;
 
   // TODO(amcastro-tri): Either implement in future PR or resolve with 16955.
   void DoCalcAccelerationKinematicsCache(
@@ -258,6 +263,14 @@ class CompliantContactManager final
   void CalcLinearDynamicsMatrix(const systems::Context<T>& context,
                                 std::vector<MatrixX<T>>* A) const;
 
+  // Computes all continuous forces in the MultibodyPlant model. Joint limits
+  // are not included as continuous compliant forces but rather as constraints
+  // in the solver, and therefore must be excluded.
+  // Values in `forces` will be overwritten.
+  // @pre forces != nullptr and is consistent with plant().
+  void CalcNonContactForcesExcludingJointLimits(
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
+
   // Calc non-contact forces and the accelerations they induce.
   void CalcAccelerationsDueToNonContactForcesCache(
       const systems::Context<T>& context,
@@ -293,6 +306,28 @@ class CompliantContactManager final
       const systems::Context<T>& context,
       contact_solvers::internal::SapContactProblem<T>* problem) const;
 
+  // Add limit constraints for the configuration stored in `context` into
+  // `problem`. Limit constraints are only added when the state q₀ for a
+  // particular joint is "close" to the joint's limits (qₗ,qᵤ). To decide when
+  // the state q₀ is close to the joint's limits, this method estimates a window
+  // (wₗ,wᵤ) for the expected value of the configuration q at the next time
+  // step. Lower constraints are considered whenever qₗ > wₗ and upper
+  // constraints are considered whenever qᵤ < wᵤ. This window (wₗ,wᵤ) is
+  // estimated based on the current velocity v₀ and the free motion velocities
+  // v*, provided with `v_star`.
+  // Since the implementation uses the current velocity v₀ to estimate whether
+  // the constraint should be enabled, it is at least as good as a typical
+  // continuous collision detection method. It could mispredict under conditions
+  // of strong acceleration (it is assuming constant velocity across a step).
+  // Still, at typical robotics step sizes and rates it would be surprising to
+  // see that happen, and if it did the limit would come on in the next step.
+  // TODO(amcastro-tri): Consider using the acceleration at t₀ to get a second
+  // order prediction for the configuration at the next time step.
+  // @pre problem must not be nullptr.
+  void AddLimitConstraints(
+      const systems::Context<T>& context, const VectorX<T>& v_star,
+      contact_solvers::internal::SapContactProblem<T>* problem) const;
+
   // This method takes SAP results for a given `problem` and loads forces due to
   // contact only into `contact_results`. `contact_results` is properly resized
   // on output.
@@ -312,6 +347,9 @@ class CompliantContactManager final
 
   CacheIndexes cache_indexes_;
   contact_solvers::internal::SapSolverParameters sap_parameters_;
+  // Vector of joint damping coefficients, of size plant().num_velocities().
+  // This information is extracted during the call to ExtractModelInfo().
+  VectorX<T> joint_damping_;
 };
 
 }  // namespace internal

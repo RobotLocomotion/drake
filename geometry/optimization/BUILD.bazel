@@ -42,9 +42,18 @@ drake_cc_library(
         "point.h",
         "vpolytope.h",
     ],
-    deps = [
+    interface_deps = [
         "//geometry:scene_graph",
         "//solvers:mathematical_program",
+        "//solvers:mathematical_program_result",
+    ],
+    deps = [
+        "//geometry:read_obj",
+        "//solvers:choose_best_solver",
+        "//solvers:gurobi_solver",
+        "//solvers:ipopt_solver",
+        "//solvers:mosek_solver",
+        "//solvers:scs_solver",
         "//solvers:solve",
         "@qhull",
     ],
@@ -59,6 +68,8 @@ drake_cc_library(
         "//common:symbolic",
         "//solvers:create_cost",
         "//solvers:mathematical_program_result",
+        "//solvers:solve",
+        "//solvers:solver_interface",
     ],
 )
 
@@ -70,6 +81,7 @@ drake_cc_library(
         ":convex_set",
         "//geometry:scene_graph",
         "//multibody/plant",
+        "//solvers:choose_best_solver",
         "//solvers:ibex_solver",
         "//solvers:ipopt_solver",
         "//solvers:snopt_solver",
@@ -85,6 +97,7 @@ drake_cc_library(
         ":convex_set",
         "//geometry:scene_graph",
         "//solvers:mathematical_program",
+        "//solvers:solve",
     ],
 )
 
@@ -102,6 +115,7 @@ drake_cc_googletest(
     deps = [
         ":convex_set",
         "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:clp_solver",
     ],
 )
 
@@ -111,6 +125,11 @@ drake_cc_googletest(
         ":graph_of_convex_sets",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//solvers:choose_best_solver",
+        "//solvers:clp_solver",
+        "//solvers:gurobi_solver",
+        "//solvers:ipopt_solver",
+        "//solvers:mosek_solver",
     ],
 )
 

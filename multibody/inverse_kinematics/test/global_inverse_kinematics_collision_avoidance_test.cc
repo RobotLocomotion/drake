@@ -2,7 +2,6 @@
 #include "drake/multibody/inverse_kinematics/test/global_inverse_kinematics_test_util.h"
 #include "drake/solvers/gurobi_solver.h"
 
-using Eigen::Isometry3d;
 using Eigen::Vector3d;
 
 namespace drake {

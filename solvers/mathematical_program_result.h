@@ -304,16 +304,33 @@ class MathematicalProgramResult final {
    *    solution to the (rotated) Lorentz cone constraint doesn't have the
    *    "shadow price" interpretation, but should lie in the dual cone, and
    *    satisfy the KKT condition. For more information, refer to
-   *    https://docs.mosek.com/9.2/capi/prob-def-conic.html#duality-for-conic-optimization
+   *    https://docs.mosek.com/9.3/capi/prob-def-conic.html#duality-for-conic-optimization
    *    as an explanation.
    *
    * The interpretation for the dual variable to conic constraint x ∈ K can be
    * different. Here K is a convex cone, including exponential cone, power
-   * cone, PSD cone, etc. When the problem is solved by a convex solver (like
+   * cone, psd cone, etc. When the problem is solved by a convex solver (like
    * SCS, MOSEK™, CSDP, etc), often it has a dual variable z ∈ K*, where K* is
    * the dual cone. Here the dual variable DOESN'T have the interpretation of
    * "shadow price", but should satisfy the KKT condition, while the dual
    * variable stays inside the dual cone.
+   *
+   * When K is a psd cone, the returned dual solution is the lower triangle of
+   * the dual symmetric psd matrix. Namely for the primal problem
+   *
+   *    min trace(C*X)
+   *    s.t A(X) = b
+   *        X is psd
+   *
+   * the dual is
+   *
+   *    max b'*y
+   *    s.t A'(y) - C = Z
+   *        Z is psd.
+   *
+   * We return the lower triangular part of Z. You can call
+   * drake::math::ToSymmetricMatrixFromLowerTriangularColumns to get the matrix
+   * Z.
    */
   template <typename C>
   Eigen::VectorXd GetDualSolution(const Binding<C>& constraint) const {

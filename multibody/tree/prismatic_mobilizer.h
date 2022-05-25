@@ -58,6 +58,9 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
+  bool can_rotate() const final    { return false; }
+  bool can_translate() const final { return true; }
+
   // @retval axis_F The translation axis as a unit vector expressed in the
   // inboard frame F.
   const Vector3<double>& translation_axis() const { return axis_F_; }

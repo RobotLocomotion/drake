@@ -39,6 +39,7 @@ cc_library(
     ],
     copts = [
         "-fvisibility=hidden",
+        "-fno-openmp",
         "-w",
         "-Werror=incompatible-pointer-types",
     ],

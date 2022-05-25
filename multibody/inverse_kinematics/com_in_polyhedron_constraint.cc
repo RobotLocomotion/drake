@@ -31,11 +31,9 @@ ComInPolyhedronConstraint::ComInPolyhedronConstraint(
     throw std::invalid_argument(
         "ComInPolyhedronConstraint: plant_context is nullptr.");
   this->set_description("com in polyhedron constraint");
-  // TODO(hongkai.dai): remove this error when #14916 is resolved.
-  if (model_instances_.has_value()) {
+  if (model_instances_.has_value() && model_instances_.value().empty()) {
     throw std::invalid_argument(
-        "ComInPolyhedronConstraint: model_instances has to be std::nullopt "
-        "until issue 14916 is resolved.");
+        "ComInPolyhedronConstraint: model_instances is an empty vector.");
   }
 }
 
@@ -73,13 +71,16 @@ void EvalConstraintGradient(
     const Frame<double>& expressed_frame, const Eigen::Vector3d& p_EC,
     const Eigen::MatrixX3d& A, const Eigen::Ref<const AutoDiffVecXd>& x,
     AutoDiffVecXd* y) {
-  // TODO(hongkai.dai): compute the CoM Jacobian with model_instances when
-  // #14916 is resolved.
-  unused(model_instances);
   Eigen::Matrix3Xd Jq_V_EC(3, plant.num_positions());
-  plant.CalcJacobianCenterOfMassTranslationalVelocity(
-      context, JacobianWrtVariable::kQDot, expressed_frame, expressed_frame,
-      &Jq_V_EC);
+  if (model_instances.has_value()) {
+    plant.CalcJacobianCenterOfMassTranslationalVelocity(
+        context, model_instances.value(), JacobianWrtVariable::kQDot,
+        expressed_frame, expressed_frame, &Jq_V_EC);
+  } else {
+    plant.CalcJacobianCenterOfMassTranslationalVelocity(
+        context, JacobianWrtVariable::kQDot, expressed_frame, expressed_frame,
+        &Jq_V_EC);
+  }
   const Eigen::VectorXd y_val = A * p_EC;
   Eigen::MatrixXd dy_dx(A.rows(), plant.num_positions());
   dy_dx << A * Jq_V_EC;

@@ -21,6 +21,19 @@
   "NamePriority": {
     "drake_cc_library.interface_deps": 3,
 
+    "drake_cc_optional_library.opt_in_condition": -96,
+    "drake_cc_optional_library.opt_out_condition": -96,
+
+    "drake_cc_variant_library.opt_in_condition": -96,
+    "drake_cc_variant_library.opt_out_condition": -96,
+
+    "drake_cc_variant_library.srcs_always": -92,
+    "drake_cc_variant_library.srcs_enabled": -91,
+    "drake_cc_variant_library.srcs_disabled": -90,
+    "drake_cc_variant_library.interface_deps": 3,
+    "drake_cc_variant_library.deps_always": 4,
+    "drake_cc_variant_library.deps_enabled": 4,
+
     "git_repository.remote": 300,
     "git_repository.commit": 310,
 

@@ -442,6 +442,12 @@ class TestMath(unittest.TestCase):
         self.assertFalse(mut.IsPositiveDefinite(matrix=A, tolerance=0))
         self.assertTrue(mut.IsPositiveDefinite(A.dot(A.T)))
 
+        lower_triangular = np.array([1, 2, 3, 4, 5, 6.])
+        symmetric_mat = mut.ToSymmetricMatrixFromLowerTriangularColumns(
+            lower_triangular_columns=lower_triangular)
+        np.testing.assert_array_equal(
+            symmetric_mat, np.array([[1, 2, 3], [2, 4, 5], [3, 5, 6]]))
+
     def test_quadratic_form(self):
         Q = np.diag([1., 2., 3.])
         X = mut.DecomposePSDmatrixIntoXtransposeTimesX(Q, 1e-8)

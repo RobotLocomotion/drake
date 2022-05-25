@@ -31,6 +31,16 @@ class RevoluteJointTest : public ::testing::Test {
   // Creates a DoublePendulumModel class with an underlying MultibodyTree model
   // of a double pendulum.
   void SetUp() override {
+    std::unique_ptr<internal::MultibodyTree<double>> model = MakeModel();
+
+    // We are done adding modeling elements. Transfer tree to system and get
+    // a Context.
+    system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
+        std::move(model));
+    context_ = system_->CreateDefaultContext();
+  }
+
+  std::unique_ptr<internal::MultibodyTree<double>> MakeModel() {
     // Spatial inertia for adding bodies. The actual value is not important for
     // these tests and therefore we do not initialize it.
     const SpatialInertia<double> M_B;  // Default construction is ok for this.
@@ -55,11 +65,7 @@ class RevoluteJointTest : public ::testing::Test {
         Vector1<double>::Constant(kAccelerationLowerLimit),
         Vector1<double>::Constant(kAccelerationUpperLimit));
 
-    // We are done adding modeling elements. Transfer tree to system and get
-    // a Context.
-    system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
-        std::move(model));
-    context_ = system_->CreateDefaultContext();
+    return model;
   }
 
   const internal::MultibodyTree<double>& tree() const {
@@ -112,8 +118,14 @@ TEST_F(RevoluteJointTest, GetJointLimits) {
 }
 
 TEST_F(RevoluteJointTest, Damping) {
-  EXPECT_EQ(joint1_->damping(), kDamping);
-  EXPECT_EQ(joint1_->damping_vector(), Vector1d(kDamping));
+  std::unique_ptr<internal::MultibodyTree<double>> model = MakeModel();
+  auto& joint = model->GetMutableJointByName<RevoluteJoint>("Joint1");
+  EXPECT_EQ(joint.damping(), kDamping);
+  EXPECT_EQ(joint.damping_vector(), Vector1d(kDamping));
+  const double new_damping = 2.0 * kDamping;
+  joint.set_default_damping(new_damping);
+  EXPECT_EQ(joint.damping(), new_damping);
+  EXPECT_EQ(joint.damping_vector(), Vector1d(new_damping));
 }
 
 // Context-dependent value access.
@@ -214,6 +226,11 @@ TEST_F(RevoluteJointTest, SetVelocityAndAccelerationLimits) {
   EXPECT_THROW(mutable_joint1_->set_acceleration_limits(Vector1<double>(2),
                                                         Vector1<double>(0)),
                std::runtime_error);
+}
+
+TEST_F(RevoluteJointTest, CanRotateOrTranslate) {
+  EXPECT_TRUE(joint1_->can_rotate());
+  EXPECT_FALSE(joint1_->can_translate());
 }
 
 TEST_F(RevoluteJointTest, NameSuffix) {

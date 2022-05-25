@@ -85,7 +85,8 @@ TEST_F(KukaIiwaModelTests, FixtureInvariants) {
 // This unit test verifies the calculation of a set of points' translational
 // Jacobian with respect to q̇ when the context stores a non-unit quaternion.
 TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityNonUnitQuaternion) {
-  SetArbitraryConfiguration(false /* non-unit quaternion for floating base */);
+  SetArbitraryConfigurationAndMotion(
+      /* unit_quaternion_for_floating_base = */ false);
 
   // A set of points Ei fixed in the end effector frame E.
   const int kNumPoints = 2;  // The set stores 2 points.
@@ -143,8 +144,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
   //    produces nearly identical results to the translational portion of the
   //    aforementioned spatial velocity Jacobian.
   // 5. TODO(Mitiguy) Add tests for JacobianWrtVariable::kV
-
-  SetArbitraryConfiguration();
+  SetArbitraryConfigurationAndMotion();
 
   // Form a position vector from Eo (E's origin) to point Ep, expressed in E.
   Vector3<double> p_EoEp_E{0.1, -0.05, 0.02};
@@ -241,8 +241,8 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
   const int num_positions = plant_->num_positions();
   MatrixX<double> Jq_v_WEi_W(3 * kNumPoints, num_positions);
 
-  // Set arbitrary joint angles.
-  SetArbitraryConfiguration();
+  // Set state to arbitrary non-planar joint angles and rates.
+  SetArbitraryConfigurationAndMotion();
 
   // Calculate the 6xn matrix Jq_v_WEi_W that stores each of the two points Ei's
   // translational velocity Jacobian in world W, with respect to q̇.
@@ -705,8 +705,8 @@ TEST_F(SatelliteTrackerTest, CalcBiasAccelerations) {
 // derivative of the Jacobian with respect to "speeds" 𝑠, and 𝑠 is either
 // q̇ (time-derivatives of generalized positions) or v (generalized velocities).
 TEST_F(KukaIiwaModelTests, CalcBiasSpatialAcceleration) {
-  // Set state to arbitrary non-planar values for the joint's angles and rates.
-  SetArbitraryConfiguration();
+  // Set state to arbitrary non-planar joint angles and rates.
+  SetArbitraryConfigurationAndMotion();
   const VectorX<double> q = plant_->GetPositions(*context_);
   const VectorX<double> v = plant_->GetVelocities(*context_);
   const int num_positions = plant_->num_positions();
@@ -765,7 +765,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasSpatialAcceleration) {
                                           frame_E, p_EEp, frame_W, frame_W);
 
   // Numerical tolerance used to verify numerical results.
-  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+  const double kTolerance = 16 * std::numeric_limits<double>::epsilon();
 
   // Verify computed bias translational acceleration numerical values and ensure
   // the results are stored in a matrix of size (6 x num_velocities).
@@ -778,8 +778,8 @@ TEST_F(KukaIiwaModelTests, CalcBiasSpatialAcceleration) {
 // time derivative of the Jacobian with respect to "speeds" 𝑠, and 𝑠 is either
 // q̇ (time-derivatives of generalized positions) or v (generalized velocities).
 TEST_F(KukaIiwaModelTests, CalcBiasTranslationalAcceleration) {
-  // Set state to arbitrary non-planar values for the joint's angles and rates.
-  SetArbitraryConfiguration();
+  // Set state to arbitrary non-planar joint angles and rates.
+  SetArbitraryConfigurationAndMotion();
 
   const int num_velocities = plant_->num_velocities();
 
@@ -848,7 +848,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasTranslationalAcceleration) {
           *context_, JacobianWrtVariable::kV, frame_E, p_EEi, frame_W, frame_W);
 
   // Numerical tolerance used to verify numerical results.
-  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+  const double kTolerance = 32 * std::numeric_limits<double>::epsilon();
 
   // Verify computed bias translational acceleration numerical values and ensure
   // the results are stored in a matrix of size (3 kNumPoints x num_velocities).

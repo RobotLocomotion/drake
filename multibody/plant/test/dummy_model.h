@@ -22,7 +22,7 @@ using systems::OutputPortIndex;
  port that reports the same state.
  @tparam_nonsymbolic_scalar */
 template <typename T>
-class DummyModel : public PhysicalModel<T> {
+class DummyModel final : public PhysicalModel<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyModel);
 

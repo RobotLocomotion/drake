@@ -153,6 +153,23 @@ void RotationMatrix<T>::ThrowIfNotValid(const Matrix3<T>& R) {
   }
 }
 
+template <typename T>
+Matrix3<T> RotationMatrix<T>::ProjectMatrix3ToOrthonormalMatrix3(
+    const Matrix3<T>& M, T* quality_factor) {
+  const auto svd = M.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
+  if (quality_factor != nullptr) {
+    // Singular values are always non-negative and sorted in decreasing order.
+    const auto singular_values = svd.singularValues();
+    const T s_max = singular_values(0);  // maximum singular value.
+    const T s_min = singular_values(2);  // minimum singular value.
+    const T s_f = (s_max != 0.0 && s_min < 1.0/s_max) ? s_min : s_max;
+    const T det = M.determinant();
+    const double sign_det = (det > 0.0) ? 1 : ((det < 0.0) ? -1 : 0);
+    *quality_factor = s_f * sign_det;
+  }
+  return svd.matrixU() * svd.matrixV().transpose();
+}
+
 double ProjectMatToRotMatWithAxis(const Eigen::Matrix3d& M,
                                   const Eigen::Vector3d& axis,
                                   const double angle_lb,
