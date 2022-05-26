@@ -61,11 +61,11 @@ class Grid {
     void set_mass(int i, int j, int k, double mass);
     void set_force(int i, int j, int k, const Vector3<double>& force);
 
- private:
     // Reduce an 3D (i, j, k) index in the index space to a corresponding
     // linear lexiographical ordered index
     int Reduce3DIndex(int i, int j, int k) const;
 
+ private:
     // DEBUG mode: check the passed in (i, j, k) lies within the index range of
     // this Grid
     void check_3D_index(int i, int j, int k) const;

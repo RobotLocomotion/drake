@@ -21,6 +21,7 @@ drake_cc_library(
         ":BSpline",
         ":CorotatedModel",
         ":Grid",
+        ":MPMTransfer",
         ":Particles",
         ":particles_to_bgeo",
         "//common:essential",
@@ -78,6 +79,22 @@ drake_cc_library(
         "Grid.h",
     ],
     deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "MPMTransfer",
+    srcs = [
+        "MPMTransfer.cc",
+    ],
+    hdrs = [
+        "MPMTransfer.h",
+    ],
+    deps = [
+        ":BSpline",
+        ":Grid",
+        ":Particles",
         "//common:essential",
     ],
 )
@@ -147,6 +164,18 @@ drake_cc_googletest(
         "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "MPMTransfer_test",
+    deps = [
+        ":BSpline",
+        ":Grid",
+        ":MPMTransfer",
+        ":Particles",
+        "//common:essential",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
