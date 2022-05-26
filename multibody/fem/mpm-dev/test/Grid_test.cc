@@ -96,6 +96,59 @@ GTEST_TEST(GridClassTest, TestSetGet) {
                                 Vector3<double>(0.0, 2.0, 0.0), kEps));
 }
 
+GTEST_TEST(GridClassTest, TestExpand1DIndex) {
+    int count;
+    Vector3<int> num_gridpt_1D = {6, 3, 4};
+    double h = 1.0;
+    Vector3<int> bottom_corner  = {0, 0, 0};
+    Grid grid = Grid(num_gridpt_1D, h, bottom_corner);
+
+    // Check expand 1D index
+    count = 0;
+    for (int k = 0; k < 4; ++k) {
+    for (int j = 0; j < 3; ++j) {
+    for (int i = 0; i < 6; ++i) {
+        EXPECT_TRUE(CompareMatrices(grid.Expand1DIndex(count++),
+                                    Vector3<int>(i, j, k), kEps));
+    }
+    }
+    }
+
+    // Test on a new grid
+    num_gridpt_1D = {3, 3, 3};
+    h = 0.5;
+    bottom_corner  = {-2, 2, -2};
+    grid = Grid(num_gridpt_1D, h, bottom_corner);
+
+    // Check expand 1D index
+    count = 0;
+    for (int k = bottom_corner(2); k < bottom_corner(2)+num_gridpt_1D(2); ++k) {
+    for (int j = bottom_corner(1); j < bottom_corner(1)+num_gridpt_1D(1); ++j) {
+    for (int i = bottom_corner(0); i < bottom_corner(0)+num_gridpt_1D(0); ++i) {
+        EXPECT_TRUE(CompareMatrices(grid.Expand1DIndex(count++),
+                                    Vector3<int>(i, j, k), kEps));
+    }
+    }
+    }
+}
+
+GTEST_TEST(GridClassTest, TestGetIndices) {
+    int count;
+    Vector3<int> num_gridpt_1D = {6, 3, 4};
+    double h = 1.0;
+    Vector3<int> bottom_corner  = {0, 0, 0};
+    Grid grid = Grid(num_gridpt_1D, h, bottom_corner);
+
+    // Check expand 1D index
+    count = 0;
+    for (const auto& [index_flat, index_3d] : grid.get_indices()) {
+        EXPECT_EQ(count++, index_flat);
+        EXPECT_TRUE(CompareMatrices(index_3d,
+                                    grid.Expand1DIndex(index_flat), kEps));
+    }
+}
+
+
 }  // namespace
 }  // namespace internal
 }  // namespace mpm

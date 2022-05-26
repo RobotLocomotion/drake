@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <utility>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
@@ -55,6 +56,7 @@ class Grid {
     const Vector3<double>& get_velocity(int i, int j, int k) const;
     double get_mass(int i, int j, int k) const;
     const Vector3<double>& get_force(int i, int j, int k) const;
+    const std::vector<std::pair<int, Vector3<int>>>& get_indices() const;
 
     void set_position(int i, int j, int k, const Vector3<double>& position);
     void set_velocity(int i, int j, int k, const Vector3<double>& velocity);
@@ -65,17 +67,22 @@ class Grid {
     // linear lexiographical ordered index
     int Reduce3DIndex(int i, int j, int k) const;
 
- private:
-    // DEBUG mode: check the passed in (i, j, k) lies within the index range of
-    // this Grid
-    void check_3D_index(int i, int j, int k) const;
+    // Expand a linearly lexiographical ordered index to a 3D index (i, j, k)
+    // in the index space
+    Vector3<int> Expand1DIndex(int idx) const;
 
+    // Check the passed in (i, j, k) lies within the index range of this Grid
+    bool in_index_range(int i, int j, int k) const;
+
+ private:
     int num_gridpt_;
     Vector3<int> num_gridpt_1D_;              // Number of grid points on the
                                               // grid along x, y, z directions
     double h_;
     Vector3<int> bottom_corner_{};
 
+    // The vector of 1D and 3D indices of grid points, ordered lexiographically
+    std::vector<std::pair<int, Vector3<int>>> indices_{};
     std::vector<Vector3<double>> positions_{};
     std::vector<Vector3<double>> velocities_{};
     std::vector<double> masses_{};

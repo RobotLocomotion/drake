@@ -222,6 +222,75 @@ class MPMTransferTest : public ::testing::Test {
             }
         }
     }
+
+    void checkPreallocation() {
+        // Construct a grid of 5x5x5 on [-2,2]^3, and place 27 particles
+        // on the centering 3x3x3 grid points.
+        //                 -2  -1  0   1   2
+        //                 o - o - o - o - o
+        //                 |   |   |   |   |
+        //             o - o - o - o - o - o
+        //             |   |   |   |   |   |
+        //         o - o - o - o - o - o - o
+        //         |   |   |   |   |   |   |
+        //     o - o - o - o - o - o - o - o
+        //     |   |   |   |   |   |   |   |
+        // o - o - o - o - o - o - o - o - o
+        // |   |   |   |   |   |   |   |   |
+        // o - o - o - o - o - o - o - o - o
+        // |   |   |   |   |   |   |   |
+        // o - o - o - o - o - o - o - o
+        // |   |   |   |   |   |   |
+        // o - o - o - o - o - o - o
+        // |   |   |   |   |
+        // o - o - o - o - o
+        int pc;
+        double sum_val;
+        Vector3<double> xp, sum_gradient;
+        std::vector<std::array<double, 27>> bases_val_particles;
+        std::vector<std::array<Vector3<double>, 27>> bases_grad_particles;
+        int h = 1.0;
+        Vector3<int> num_gridpt_1D = { 5,  5,  5};
+        Vector3<int> bottom_corner = {-2, -2, -2};
+        Grid grid = Grid(num_gridpt_1D, h, bottom_corner);
+        int num_particles = 27;
+        Particles particles = Particles(num_particles);
+        MPMTransfer mpm_transfer = MPMTransfer();
+
+        // Set particles' positions to be on grid points
+        pc = num_particles;
+        for (int k = bottom_corner(2)+1;
+                 k < bottom_corner(2)+num_gridpt_1D(2)-1; ++k) {
+        for (int j = bottom_corner(1)+1;
+                 j < bottom_corner(1)+num_gridpt_1D(1)-1; ++j) {
+        for (int i = bottom_corner(0)+1;
+                 i < bottom_corner(0)+num_gridpt_1D(0)-1; ++i) {
+            particles.set_position(--pc, grid.get_position(i, j, k));
+        }
+        }
+        }
+
+        // Sort the particles and set up the batches and preallocate basis
+        // evaluations
+        mpm_transfer.SetUpTransfer(grid, &particles);
+
+        // The particles are sorted, and for all particles, all bases that cover
+        // the particle shall have evaluations sum to 1, and gradients sum to
+        // 0, by the partition of unity property.
+        for (int p = 0; p < num_particles; ++p) {
+            EXPECT_EQ(mpm_transfer.bases_val_particles_[p][13], 0.75*0.75*0.75);
+            xp = particles.get_position(p);
+            sum_val = 0.0;
+            sum_gradient = {0.0, 0.0, 0.0};
+            for (int i = 0; i < 27; ++i) {
+                sum_val += mpm_transfer.bases_val_particles_[p][i];
+                sum_gradient += mpm_transfer.bases_grad_particles_[p][i];
+            }
+            EXPECT_EQ(sum_val, 1.0);
+            EXPECT_TRUE(CompareMatrices(sum_gradient,
+                                        Vector3<double>::Zero(), kEps));
+        }
+    }
 };
 
 namespace {
@@ -229,6 +298,10 @@ namespace {
 TEST_F(MPMTransferTest, SortParticlesTest) {
     CheckSort1();
     CheckSort2();
+}
+
+TEST_F(MPMTransferTest, SetUpTest) {
+    checkPreallocation();
 }
 
 }  // namespace
