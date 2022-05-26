@@ -51,7 +51,9 @@ binary.
 
 import argparse
 import os
+import time
 import warnings
+import webbrowser
 
 import numpy as np
 
@@ -154,6 +156,9 @@ def add_visualizers_argparse_arguments(args_parser):
     """
     Adds argparse arguments for visualizers.
     """
+    args_parser.add_argument(
+        "--meshcat", action="store_true",
+        help="Enable the MeshCat display.")
     args_parser.add_argument(
         "-w", "--open-window", dest="browser_new",
         action="store_const", const=1, default=None,
@@ -308,15 +313,16 @@ def parse_visualizers(args_parser, args):
         DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph)
 
         # Connect to Meshcat.
-        meshcat = Meshcat()
-        meshcat_vis_params = MeshcatVisualizerParams()
-        meshcat_vis_params.role = args.meshcat_role
-        MeshcatVisualizerCpp.AddToBuilder(
-            builder=builder, scene_graph=scene_graph, meshcat=meshcat,
-            params=meshcat_vis_params)
-        if args.browser_new is not None:
-            url = meshcat.web_url()
-            webbrowser.open(url=url, new=args.browser_new)
+        if args.meshcat:
+            meshcat = Meshcat()
+            meshcat_vis_params = MeshcatVisualizerParams()
+            meshcat_vis_params.role = args.meshcat_role
+            MeshcatVisualizerCpp.AddToBuilder(
+                builder=builder, scene_graph=scene_graph, meshcat=meshcat,
+                params=meshcat_vis_params)
+            if args.browser_new is not None:
+                url = meshcat.web_url()
+                webbrowser.open(url=url, new=args.browser_new)
 
         # Connect to PyPlot.
         if args.pyplot:
@@ -353,6 +359,14 @@ def main():
     Simulator(diagram).Initialize()
     # Publish draw messages with current state.
     diagram.Publish(context)
+
+    # Wait for the user to cancel us.
+    if args.meshcat:
+        print("Use Ctrl-C to quit")
+        try:
+            time.sleep(1e3)
+        except KeyboardInterrupt:
+            pass
 
 
 if __name__ == '__main__':
