@@ -843,7 +843,7 @@ const RigidBody<double>& AddRigidBody(MultibodyTree<double>* model,
 }
 
 // Verify Body::default_rotational_inertia() and related MultibodyTree methods.
-GTEST_TEST(WeldedBodies, VerifyDefaultRotationalInertia) {
+GTEST_TEST(DefaultInertia, VerifyDefaultRotationalInertia) {
   // Create a model and add three rigid bodies.
   MultibodyTree<double> model;
   const double mA = 0, mB = 1, mC = 3;  // Mass of link A, B, and C.
@@ -868,35 +868,33 @@ GTEST_TEST(WeldedBodies, VerifyDefaultRotationalInertia) {
   EXPECT_EQ(I_B.CopyToFullMatrix3(), (mB * G_SSo_S).CopyToFullMatrix3());
   EXPECT_EQ(I_C.CopyToFullMatrix3(), (mC * G_SSo_S).CopyToFullMatrix3());
 
-  // Verify RotationalInertia::IsZero()
+  // Verify function RotationalInertia::IsZero().
   EXPECT_TRUE(I_A.IsZero());
   EXPECT_FALSE(I_B.IsZero());
   EXPECT_FALSE(I_C.IsZero());
 
   // Create various sets of body indexes.
-  std::set<BodyIndex> bodies_AB, bodies_BC, bodies_ABC;
+  std::set<BodyIndex> bodies_AA, bodies_AB, bodies_BC, bodies_ABC;
+  bodies_AA.insert({body_A.index(), body_A.index()});
   bodies_AB.insert({body_A.index(), body_B.index()});
   bodies_BC.insert({body_B.index(), body_C.index()});
   bodies_ABC.insert({body_A.index(), body_B.index(), body_C.index()});
 
   // Verify the sum of the default masses in these sets of body indexes.
+  const double mass_AA = model.CalcTotalDefaultMass(bodies_AA);
   const double mass_AB = model.CalcTotalDefaultMass(bodies_AB);
   const double mass_BC = model.CalcTotalDefaultMass(bodies_BC);
   const double mass_ABC = model.CalcTotalDefaultMass(bodies_ABC);
+  EXPECT_EQ(mass_AA, mA);
   EXPECT_EQ(mass_AB, mA + mB);
   EXPECT_EQ(mass_BC, mB + mC);
   EXPECT_EQ(mass_ABC, mA + mB + mC);
 
-  // Verify the simple sum of the default rotational inertia in these sets.
-  const RotationalInertia<double> I_AB =
-      model.CalcTotalDefaultRotationalInertia(bodies_AB);
-  const RotationalInertia<double> I_BC =
-      model.CalcTotalDefaultRotationalInertia(bodies_BC);
-  const RotationalInertia<double> I_ABC =
-      model.CalcTotalDefaultRotationalInertia(bodies_ABC);
-  EXPECT_EQ(I_AB.CopyToFullMatrix3(), (I_A + I_B).CopyToFullMatrix3());
-  EXPECT_EQ(I_BC.CopyToFullMatrix3(), (I_B + I_C).CopyToFullMatrix3());
-  EXPECT_EQ(I_ABC.CopyToFullMatrix3(), (I_A + I_B + I_C).CopyToFullMatrix3());
+  // Verify whether all default rotational inertia in these sets are zero.
+  EXPECT_TRUE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_AA));
+  EXPECT_FALSE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_AB));
+  EXPECT_FALSE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_BC));
+  EXPECT_FALSE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_ABC));
 }
 
 }  // namespace

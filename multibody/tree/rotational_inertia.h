@@ -488,7 +488,7 @@ class RotationalInertia {
         isnan(I_SP_E_(2, 0)) || isnan(I_SP_E_(2, 1)) || isnan(I_SP_E_(2, 2));
   }
 
-  /// Returns `true` if all moments of inertia and products of inertia are zero.
+  /// Returns `true` if all moments and products of inertia are exactly zero.
   boolean<T> IsZero() const {
     // Only check the lower-triangular part of this symmetric matrix for zero.
     // The three upper off-diagonal products of inertia should be/remain NaN.

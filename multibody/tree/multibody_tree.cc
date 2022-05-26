@@ -2882,21 +2882,15 @@ double MultibodyTree<T>::CalcTotalDefaultMass(
 }
 
 template <typename T>
-RotationalInertia<double> MultibodyTree<T>::CalcTotalDefaultRotationalInertia(
+bool MultibodyTree<T>::IsAllDefaultRotationalInertiaZeroOrNaN(
     const std::set<BodyIndex>& body_indexes) const {
-  RotationalInertia<double> total_inertia;
-  total_inertia.SetZero();
   for (BodyIndex body_index : body_indexes) {
     const Body<T>& body_B = get_body(body_index);
     const RotationalInertia<double> I_BBo_B =
         body_B.default_rotational_inertia();
-
-    // Each body B has its own origin point Bo and own unit vectors Bx, By, Bz.
-    // As such, simply adding a body B1's rotational inertia to a body B2's
-    // rotational inertia may have no physical meaning.
-    if (!I_BBo_B.IsNaN()) total_inertia += I_BBo_B;
+    if (!I_BBo_B.IsNaN() && !I_BBo_B.IsZero()) return false;
   }
-  return total_inertia;
+  return true;
 }
 
 template <typename T>
