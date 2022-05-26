@@ -61,16 +61,16 @@ from pydrake.geometry import (
     DrakeVisualizer,
     GeometryInstance,
     MakePhongIllustrationProperties,
+    Meshcat,
+    MeshcatVisualizerCpp,
+    MeshcatVisualizerParams,
+    Role,
 )
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
-from pydrake.systems.meshcat_visualizer import (
-    ConnectMeshcatVisualizer,
-    MeshcatVisualizer,
-)
 from pydrake.systems.planar_scenegraph_visualizer import (
     ConnectPlanarSceneGraphVisualizer,
 )
@@ -127,12 +127,41 @@ def parse_filename_and_parser(args_parser, args):
     return filename, make_parser
 
 
+class _StringToRoleAction(argparse.Action):
+    """
+    Action that converts the string 'proximity' or 'illustration' to the
+    corresponding Role enumeration value.
+    """
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        if nargs is not None:
+            raise ValueError("nargs not allowed")
+        super().__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        assert isinstance(values, str)
+
+        if values == 'proximity':
+            mapped_value = Role.kProximity
+        elif values == 'illustration':
+            mapped_value = Role.kIllustration
+        else:
+            raise ValueError(f"Role parameter got invalid value {s}")
+
+        setattr(namespace, self.dest, mapped_value)
+
+
 def add_visualizers_argparse_arguments(args_parser):
     """
     Adds argparse arguments for visualizers.
     """
-    with warnings.catch_warnings(record=True) as w:
-        MeshcatVisualizer.add_argparse_argument(args_parser)
+    args_parser.add_argument(
+        "-w", "--open-window", dest="browser_new",
+        action="store_const", const=1, default=None,
+        help="Open the MeshCat display in a new browser window.")
+    args_parser.add_argument(
+        "--meshcat_role", action=_StringToRoleAction,
+        default=Role.kIllustration, choices=['illustration', 'proximity'],
+        help="Defines the role of the geometry to visualize")
     args_parser.add_argument(
         "--pyplot", action="store_true",
         help="Opens a pyplot figure for rendering using "
@@ -279,11 +308,15 @@ def parse_visualizers(args_parser, args):
         DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph)
 
         # Connect to Meshcat.
-        if args.meshcat is not None:
-            meshcat_viz = ConnectMeshcatVisualizer(
-                builder, scene_graph, zmq_url=args.meshcat,
-                role=args.meshcat_role,
-                prefer_hydro=args.meshcat_hydroelastic)
+        meshcat = Meshcat()
+        meshcat_vis_params = MeshcatVisualizerParams()
+        meshcat_vis_params.role = args.meshcat_role
+        MeshcatVisualizerCpp.AddToBuilder(
+            builder=builder, scene_graph=scene_graph, meshcat=meshcat,
+            params=meshcat_vis_params)
+        if args.browser_new is not None:
+            url = meshcat.web_url()
+            webbrowser.open(url=url, new=args.browser_new)
 
         # Connect to PyPlot.
         if args.pyplot:
