@@ -4,7 +4,7 @@
 
 #include "optitrack/optitrack_frame_t.hpp"
 
-#include "drake/geometry/frame_kinematics_vector.h"
+#include "drake/geometry/kinematics_vector.h"
 
 namespace drake {
 namespace systems {

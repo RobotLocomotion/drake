@@ -59,11 +59,11 @@ drake_cc_library(
         "rod2d_geometry.h",
     ],
     deps = [
-        "//geometry:frame_kinematics",
         "//geometry:geometry_frame",
         "//geometry:geometry_ids",
         "//geometry:geometry_instance",
         "//geometry:geometry_roles",
+        "//geometry:kinematics_vector",
         "//geometry:rgba",
         "//geometry:scene_graph",
         "//math:geometric_transform",

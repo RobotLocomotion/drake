@@ -3,7 +3,7 @@
 #include "optitrack/optitrack_frame_t.hpp"
 #include <gtest/gtest.h>
 
-#include "drake/geometry/frame_kinematics_vector.h"
+#include "drake/geometry/kinematics_vector.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/systems/framework/context.h"
 
