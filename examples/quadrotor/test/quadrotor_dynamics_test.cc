@@ -66,7 +66,7 @@ class GenericQuadrotor: public Diagram<double> {
     builder.BuildInto(this);
   }
 
-  // @param[in] context a mutable Context to be set from the state vector x.
+  // @param[in,out] context a mutable Context to be set from the state vector x.
   // @param[in] x 12-element state vector [x, y, z, r, p, y, ẋ, ẏ, ż, ṙ, ṗ, ẏ].
   void SetState(Context<double>* context, const VectorXd& x) const {
     DRAKE_DEMAND(x.size() == 12);
@@ -119,7 +119,7 @@ class MultibodyQuadrotor: public Diagram<double> {
     builder.BuildInto(this);
   }
 
-  // @param[in] context a mutable Context to be set from the state vector x.
+  // @param[in,out] context a mutable Context to be set from the state vector x.
   // @param[in] x 12-element state vector [x, y, z, r, p, y, ẋ, ẏ, ż, ṙ, ṗ, ẏ].
   void SetState(Context<double>* context, const VectorXd& x) const {
     const Vector3d xyz = x.segment(0, 3);
