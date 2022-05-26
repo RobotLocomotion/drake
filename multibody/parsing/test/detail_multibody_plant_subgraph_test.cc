@@ -207,11 +207,6 @@ void AssertValueEquals(const drake::AbstractValue& value_a,
     // TODO(azeey) The python prototype compares the values of a and b, but we
     // can't do that in C++ without knowing the concrete types represented by
     // the abstract values.
-    //
-    // EXPECT_EQ(value_a, value_b);
-    // if (value_a == value_b){
-    //   std::cout << "Equal" << std::endl;
-    // }
   }
 }
 
@@ -390,9 +385,6 @@ void AssertPlantEquals(const MultibodyPlant<double>* plant_a,
   auto assert_collision_filter_pair_equals =
       [&](const std::pair<GeometryId, GeometryId>& a,
           const std::pair<GeometryId, GeometryId>& b) {
-        // std::cout << fmt::format("Checking: ({}, {}) == ({}, {})", a.first,
-        //                          a.second, b.first, b.second)
-        //           << std::endl;
         assert_geometry_equals(a.first, b.first);
         assert_geometry_equals(a.second, b.second);
       };
