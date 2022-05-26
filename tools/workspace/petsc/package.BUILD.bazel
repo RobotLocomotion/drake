@@ -70,6 +70,7 @@ _SRCS = glob([
     "src/dm/impls/da/hypre/**",
     "src/dm/impls/da/usfft/**",
     "src/dm/impls/forest/p4est/**",
+    "src/dm/impls/plex/adaptors/**",
     "src/dm/impls/plex/generators/**",
     "src/ksp/ksp/impls/gmres/agmres/**",
     "src/ksp/ksp/interface/saws/**",
@@ -100,6 +101,7 @@ _SRCS = glob([
     "src/mat/impls/sbaij/seq/cholmod/**",
     "src/mat/impls/scalapack/**",
     "src/mat/order/amd/**",
+    "src/mat/order/metisnd/**",
     "src/mat/partition/impls/chaco/**",
     "src/mat/partition/impls/party/**",
     "src/mat/partition/impls/pmetis/**",
@@ -119,6 +121,7 @@ _SRCS = glob([
     "src/sys/classes/viewer/impls/socket/**",
     "src/sys/logging/utils/**",
     "src/ts/**",
+    "src/vec/is/sf/impls/basic/neighbor/**",
     "src/vec/is/sf/impls/window/**",
     "src/vec/vec/impls/seq/seqcuda/**",
 ])
