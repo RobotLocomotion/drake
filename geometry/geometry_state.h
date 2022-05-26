@@ -656,7 +656,7 @@ class GeometryState {
   template <typename ValueType>
   void ValidateFrameIds(
       SourceId source_id,
-      const FrameKinematicsVector<ValueType>& values) const;
+      const KinematicsVector<FrameId, ValueType>& values) const;
 
   // Helper for RegisterGeometry() and RegisterDeformableGeometry() that
   // validates the the source and frame ids (that they are registered) and

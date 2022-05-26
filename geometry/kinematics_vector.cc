@@ -3,7 +3,6 @@
 #include <stdexcept>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/symbolic.h"
@@ -11,30 +10,23 @@
 namespace drake {
 namespace geometry {
 
-namespace {
-template <typename T>
-void InitializeKinematicsValue(math::RigidTransform<T>* value) {
-  value->SetIdentity();
-}
-}  // namespace
-
-template <typename KinematicsValue>
-FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector() {
+template <typename Id, typename KinematicsValue>
+KinematicsVector<Id, KinematicsValue>::KinematicsVector() {
   DRAKE_ASSERT_VOID(CheckInvariants());
 }
 
-template <typename KinematicsValue>
-FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
-    std::initializer_list<std::pair<const FrameId, KinematicsValue>> init) {
+template <typename Id, typename KinematicsValue>
+KinematicsVector<Id, KinematicsValue>::KinematicsVector(
+    std::initializer_list<std::pair<const Id, KinematicsValue>> init) {
   values_.insert(init.begin(), init.end());
   size_ = init.size();
   DRAKE_ASSERT_VOID(CheckInvariants());
 }
 
-template <typename KinematicsValue>
-FrameKinematicsVector<KinematicsValue>&
-FrameKinematicsVector<KinematicsValue>::operator=(
-    std::initializer_list<std::pair<const FrameId, KinematicsValue>> init) {
+template <typename Id, typename KinematicsValue>
+KinematicsVector<Id, KinematicsValue>&
+KinematicsVector<Id, KinematicsValue>::operator=(
+    std::initializer_list<std::pair<const Id, KinematicsValue>> init) {
   // N.B. We can't use unordered_map::insert in our operator= implementation
   // because it does not overwrite pre-existing keys.  (Our clear() doesn't
   // remove the keys, it only nulls the values.)
@@ -46,25 +38,30 @@ FrameKinematicsVector<KinematicsValue>::operator=(
   return *this;
 }
 
-template <typename KinematicsValue>
-void FrameKinematicsVector<KinematicsValue>::clear() {
+template <typename Id, typename KinematicsValue>
+KinematicsVector<Id, KinematicsValue>::~KinematicsVector() = default;
+
+template <typename Id, typename KinematicsValue>
+void KinematicsVector<Id, KinematicsValue>::clear() {
   for (auto& item : values_) {
     item.second = std::nullopt;
   }
   size_ = 0;
 }
 
-template <typename KinematicsValue>
-void FrameKinematicsVector<KinematicsValue>::set_value(
-    FrameId id, const KinematicsValue& value) {
+template <typename Id, typename KinematicsValue>
+void KinematicsVector<Id, KinematicsValue>::set_value(
+    Id id, const KinematicsValue& value) {
   auto& map_value = values_[id];
-  if (!map_value.has_value()) { ++size_; }
+  if (!map_value.has_value()) {
+    ++size_;
+  }
   map_value = value;
 }
 
-template <typename KinematicsValue>
-const KinematicsValue& FrameKinematicsVector<KinematicsValue>::value(
-    FrameId id) const {
+template <typename Id, typename KinematicsValue>
+const KinematicsValue& KinematicsVector<Id, KinematicsValue>::value(
+    Id id) const {
   using std::to_string;
   auto iter = values_.find(id);
   if (iter != values_.end()) {
@@ -73,19 +70,36 @@ const KinematicsValue& FrameKinematicsVector<KinematicsValue>::value(
       return *map_value;
     }
   }
-  throw std::runtime_error("No such FrameId " + to_string(id) + ".");
+  // We use a chain of "if constexpr/else" to throw a readable error message.
+  // NiceTypeName doesn't work because the user-facing names are template
+  // aliases, not actual classes.
+  if constexpr (std::is_same_v<Id, FrameId>) {
+    throw std::runtime_error(
+        fmt::format("No such FrameId: {}.", to_string(id)));
+  } else if constexpr (std::is_same_v<Id, GeometryId>) {
+    throw std::runtime_error(
+        fmt::format("No such GeometryId: {}.", to_string(id)));
+  }
+  static_assert(
+      std::is_same_v<Id, FrameId> || std::is_same_v<Id, GeometryId>,
+      "Throw a helpful error message when a new type of Id is added.");
+  DRAKE_UNREACHABLE();
 }
 
-template <typename KinematicsValue>
-bool FrameKinematicsVector<KinematicsValue>::has_id(FrameId id) const {
+template <typename Id, typename KinematicsValue>
+bool KinematicsVector<Id, KinematicsValue>::has_id(Id id) const {
   auto iter = values_.find(id);
   return (iter != values_.end()) && iter->second.has_value();
 }
 
-template <typename KinematicsValue>
-std::vector<FrameId>
-FrameKinematicsVector<KinematicsValue>::frame_ids() const {
-  std::vector<FrameId> result;
+template <typename Id, typename KinematicsValue>
+std::vector<Id> KinematicsVector<Id, KinematicsValue>::frame_ids() const {
+  return ids();
+}
+
+template <typename Id, typename KinematicsValue>
+std::vector<Id> KinematicsVector<Id, KinematicsValue>::ids() const {
+  std::vector<Id> result;
   result.reserve(size_);
   for (const auto& item : values_) {
     if (item.second.has_value()) {
@@ -96,8 +110,8 @@ FrameKinematicsVector<KinematicsValue>::frame_ids() const {
   return result;
 }
 
-template <typename KinematicsValue>
-void FrameKinematicsVector<KinematicsValue>::CheckInvariants() const {
+template <typename Id, typename KinematicsValue>
+void KinematicsVector<Id, KinematicsValue>::CheckInvariants() const {
   int num_nonnull = 0;
   for (const auto& item : values_) {
     if (item.second.has_value()) {
@@ -108,10 +122,14 @@ void FrameKinematicsVector<KinematicsValue>::CheckInvariants() const {
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class FrameKinematicsVector<math::RigidTransform<double>>;
-template class FrameKinematicsVector<math::RigidTransform<AutoDiffXd>>;
-template class FrameKinematicsVector<
-    math::RigidTransform<symbolic::Expression>>;
+using math::RigidTransform;
+using symbolic::Expression;
+template class KinematicsVector<FrameId, RigidTransform<double>>;
+template class KinematicsVector<FrameId, RigidTransform<AutoDiffXd>>;
+template class KinematicsVector<FrameId, RigidTransform<Expression>>;
+template class KinematicsVector<GeometryId, VectorX<double>>;
+template class KinematicsVector<GeometryId, VectorX<AutoDiffXd>>;
+template class KinematicsVector<GeometryId, VectorX<Expression>>;
 
 }  // namespace geometry
 }  // namespace drake

@@ -16,10 +16,13 @@
 namespace drake {
 namespace geometry {
 
-/** A %FrameKinematicsVector is used to report kinematics data for registered
- frames (identified by unique FrameId values) to SceneGraph.
- It serves as the basis of FramePoseVector, FrameVelocityVector, and
- FrameAccelerationVector.
+/** A %KinematicsVector is a container class used to report kinematics data for
+ registered frames and geometries (keyed by unique FrameId/GeometryId values)
+ to SceneGraph where the set of keys (FrameId/GeometryId) is usually constant
+ and the values (kinematics data) are varying. It is an internal class and one
+ should never interact with it directly. The template aliases FramePoseVector
+ and GeometryConfigurationVector that instantiate %KinematicsVector should be
+ used instead.
 
  <!--
    TODO(SeanCurtis-TRI): The FrameVelocityVector and FrameAccelerationVector
@@ -51,9 +54,9 @@ namespace geometry {
  };
  ```
 
- If a System only ever emits a single frame (or small-constant-number of
- frames), then there's a shorter alternative way to write a Calc method, using
- an initializer_list:
+ If a System only ever emits a single frame/geometry (or small-constant-number
+ of frames/geometries), then there's a shorter alternative way to write a Calc
+ method, using an initializer_list:
  ```
    void CalcFramePoseOutput(const Context<T>& context,
                             geometry::FramePoseVector<T>* poses) const {
@@ -68,52 +71,52 @@ namespace geometry {
  what value it started with.  The easy ways to do this are to call either
  `poses->clear()` or the assignment operator `*poses = ...`.
 
- @tparam KinematicsValue  The underlying data type of for the order of
-                          kinematics data (e.g., pose, velocity, or
-                          acceleration).
+ @tparam Id               The key used to locate the kinematics data. Can be
+                          FrameId or GeometryId.
+ @tparam KinematicsValue  The underlying data type of the kinematics data (e.g.,
+                          pose, configuration, or velocity).
 
- One should never interact with the %FrameKinematicsVector class directly.
- Instead, the FramePoseVector, FrameVelocityVector, and FrameAccelerationVector
- classes are aliases of the %FrameKinematicsVector instantiated on specific
- data types (RigidTransform, SpatialVector, and SpatialAcceleration,
- respectively). Each of these data types are templated on Eigen scalars. All
- supported combinations of data type and scalar type are already available to
- link against in the containing library. No other values for KinematicsValue are
- supported.
+ The FramePoseVector and GeometryConfigurationVector classes are aliases of the
+ %KinematicsVector instantiated on specific data types (RigidTransform and
+ VectorX respectively). Each of these data types are templated on Eigen scalars.
+ All supported combinations of data type and scalar type are already available
+ to link against in the containing library. No other values for KinematicsValue
+ are supported.
 
  Currently, the following data types with the following scalar types are
  supported:
 
-  Alias           | Instantiation                                 | Scalar types
- -----------------|-----------------------------------------------|-------------
-  FramePoseVector | FrameKinematicsVector<RigidTransform<Scalar>> | double
-  FramePoseVector | FrameKinematicsVector<RigidTransform<Scalar>> | AutoDiffXd
-  FramePoseVector | FrameKinematicsVector<RigidTransform<Scalar>> | Expression
-  */
-template <class KinematicsValue>
-class FrameKinematicsVector {
+  Alias                               | Instantiation                                    | Scalar types
+ -------------------------------------|--------------------------------------------------|-------------
+  FramePoseVector<Scalar>             | KinematicsVector<FrameId,RigidTransform<Scalar>> | double/AutoDiffXd/Expression
+  GeometryConfigurationVector<Scalar> | KinematicsVector<GeometryId, VectorX<Scalar>>    | double/AutoDiffXd/Expression
+ */
+template <class Id, class KinematicsValue>
+class KinematicsVector {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameKinematicsVector)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(KinematicsVector)
 
-  /** Initializes the vector using an invalid SourceId with no frames .*/
-  FrameKinematicsVector();
+  /** Initializes the vector using an invalid SourceId with no data .*/
+  KinematicsVector();
 
-  /** Initializes the vector using an invalid SourceId and the given frames and
-  kinematics values. */
-  FrameKinematicsVector(
-      std::initializer_list<std::pair<const FrameId, KinematicsValue>> init);
+  /** Initializes the vector using an invalid SourceId and the given the keys
+  and the corresponding kinematics values. */
+  KinematicsVector(
+      std::initializer_list<std::pair<const Id, KinematicsValue>> init);
 
-  /** Resets the vector to the given frames and kinematics values .*/
-  FrameKinematicsVector& operator=(
-      std::initializer_list<std::pair<const FrameId, KinematicsValue>> init);
+  ~KinematicsVector();
+
+  /** Resets the vector to the given keys and kinematics values .*/
+  KinematicsVector& operator=(
+      std::initializer_list<std::pair<const Id, KinematicsValue>> init);
 
   /** Clears all values, resetting the size to zero. */
   void clear();
 
-  /** Sets the kinematics `value` for the frame indicated by the given `id`. */
-  void set_value(FrameId id, const KinematicsValue& value);
+  /** Sets the kinematics `value` for the given `id`. */
+  void set_value(Id id, const KinematicsValue& value);
 
-  /** Returns number of frame_ids(). */
+  /** Returns number of ids(). */
   int size() const {
     DRAKE_ASSERT_VOID(CheckInvariants());
     return size_;
@@ -121,35 +124,49 @@ class FrameKinematicsVector {
 
   /** Returns the value associated with the given `id`.
    @throws std::exception if `id` is not in the specified set of ids.  */
-  const KinematicsValue& value(FrameId id) const;
+  const KinematicsValue& value(Id id) const;
 
   /** Reports true if the given id is a member of this data. */
-  bool has_id(FrameId id) const;
+  bool has_id(Id id) const;
 
-  /** Provides a range object for all of the frame ids in the vector.
+  /** Provides a range object for all of the existing ids in the vector.
    This is intended to be used as:
    @code
-   for (FrameId id : this_vector.frame_ids()) {
+   for (Id id : this_vector.frame_ids()) {
     ...
     // Obtain the KinematicsValue of an id by `this_vector.value(id)`
     ...
    }
    @endcode
    */
-  std::vector<FrameId> frame_ids() const;
+  DRAKE_DEPRECATED("2022-10-01", "Use ids() instead.")
+  std::vector<Id> frame_ids() const;
+
+  /** Provides a range object for all of the existing ids in the vector.
+   This is intended to be used as:
+   @code
+   for (Id id : this_vector.ids()) {
+    ...
+    // Obtain the KinematicsValue of an id by `this_vector.value(id)`
+    ...
+   }
+   @endcode
+   */
+  std::vector<Id> ids() const;
 
  private:
   void CheckInvariants() const;
 
-  // Mapping from frame id to its current pose.  If the map's optional value is
-  // nullopt, we treat it as if the map key were absent instead.  We do this in
-  // order to avoid reallocating map nodes as we repeatedly clear() and then
-  // re-set_value() the same IDs over and over again.
+  // Mapping from id to its corresponding kinematics value.  If the map's
+  // optional value is nullopt, we treat it as if the map key were absent
+  // instead.  We do this in order to avoid reallocating map nodes as we
+  // repeatedly clear() and then re-set_value() the same IDs over and over
+  // again.
   // TODO(jwnimmer-tri) A better way to avoid map node allocations would be to
   // replace this unordered_map with a flat_hash_map (where the entire storage
   // is a single heap slab); in that case, the complicated implementation in
   // the cc file would become simplified.
-  std::unordered_map<FrameId, std::optional<KinematicsValue>> values_;
+  std::unordered_map<Id, std::optional<KinematicsValue>> values_;
 
   // The count of non-nullopt items in values_.  We could recompute this from
   // values_, but we store it separately so that size() is still constant-time.
@@ -162,7 +179,15 @@ class FrameKinematicsVector {
  @tparam_default_scalar
  */
 template <typename T>
-using FramePoseVector = FrameKinematicsVector<math::RigidTransform<T>>;
+using FramePoseVector = KinematicsVector<FrameId, math::RigidTransform<T>>;
+
+/** Class for communicating _configuration_ information to SceneGraph for
+ registered deformable geometries.
+
+ @tparam_default_scalar
+ */
+template <typename T>
+using GeometryConfigurationVector = KinematicsVector<GeometryId, VectorX<T>>;
 
 }  // namespace geometry
 }  // namespace drake
