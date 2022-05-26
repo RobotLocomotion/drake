@@ -1,9 +1,7 @@
-#include "common/unique_ptr_system.h"
+#include "drake/systems/primitives/shared_pointer_system.h"
 
-namespace anzu {
-
-using drake::systems::LeafSystem;
-using drake::systems::SystemTypeTag;
+namespace drake {
+namespace systems {
 
 template <typename T>
 SharedPointerSystem<T>::SharedPointerSystem(
@@ -20,7 +18,8 @@ SharedPointerSystem<T>::SharedPointerSystem(const SharedPointerSystem<U>& other)
 template <typename T>
 SharedPointerSystem<T>::~SharedPointerSystem() = default;
 
-}  // namespace anzu
+}  // namespace systems
+}  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::anzu::SharedPointerSystem)
+    class ::drake::systems::SharedPointerSystem)
