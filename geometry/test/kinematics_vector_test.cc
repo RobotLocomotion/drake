@@ -1,4 +1,4 @@
-#include "drake/geometry/frame_kinematics_vector.h"
+#include "drake/geometry/kinematics_vector.h"
 
 #include <algorithm>
 #include <vector>
@@ -114,20 +114,25 @@ GTEST_TEST(FrameKinematicsVector, WorkingWithValues) {
 
   // Ask for the pose of an id that does not belong to the set.
   DRAKE_EXPECT_THROWS_MESSAGE(poses.value(FrameId::get_new_id()),
-                              "No such FrameId \\d+.");
+                              "No such FrameId.*\\d.*");
+  // Tests the GeometryConfigurationVector counterpart throws a similar but
+  // distinct message.
+  GeometryConfigurationVector<double> configurations;
+  DRAKE_EXPECT_THROWS_MESSAGE(configurations.value(GeometryId::get_new_id()),
+                              "No such GeometryId.*\\d.*");
 }
 
 GTEST_TEST(FrameKinematicsVector, SetWithoutAllocations) {
   const int kPoseCount = 3;
   const std::vector<FrameId> ids{
-    FrameId::get_new_id(),
-    FrameId::get_new_id(),
-    FrameId::get_new_id(),
+      FrameId::get_new_id(),
+      FrameId::get_new_id(),
+      FrameId::get_new_id(),
   };
   const std::vector<RigidTransform<double>> poses{
-    RigidTransformd::Identity(),
-    RigidTransformd::Identity(),
-    RigidTransformd::Identity(),
+      RigidTransformd::Identity(),
+      RigidTransformd::Identity(),
+      RigidTransformd::Identity(),
   };
 
   // For the initial setting, we'd expect to see allocations.
@@ -146,14 +151,14 @@ GTEST_TEST(FrameKinematicsVector, SetWithoutAllocations) {
   }
 }
 
-GTEST_TEST(FrameKinematicsVector, AutoDiffInstantiation) {
+GTEST_TEST(FrameKinematicsVector, FramePoseVectorAutoDiffInstantiation) {
   FramePoseVector<AutoDiffXd> poses;
   poses.set_value(FrameId::get_new_id(),
                   RigidTransform<AutoDiffXd>::Identity());
   EXPECT_EQ(poses.size(), 1);
 }
 
-GTEST_TEST(FrameKinematicsVector, SymbolicInstantiation) {
+GTEST_TEST(FrameKinematicsVector, FramePoseVectorSymbolicInstantiation) {
   using symbolic::Expression;
   using symbolic::Variable;
 
@@ -170,13 +175,34 @@ GTEST_TEST(FrameKinematicsVector, SymbolicInstantiation) {
   const Expression y_{var_y_};
   const Expression z_{var_z_};
 
-  const RigidTransform<Expression> pose = RigidTransform<Expression>
-      (Translation3<Expression>(x_, y_, z_));
+  const RigidTransform<Expression> pose =
+      RigidTransform<Expression>(Translation3<Expression>(x_, y_, z_));
   poses.set_value(ids[1], pose);
 
   EXPECT_TRUE(x_.EqualTo(poses.value(ids[1]).translation()[0]));
   EXPECT_TRUE(y_.EqualTo(poses.value(ids[1]).translation()[1]));
   EXPECT_TRUE(z_.EqualTo(poses.value(ids[1]).translation()[2]));
+}
+
+GTEST_TEST(FrameKinematicsVector, GeometryConfigurationVector) {
+  GeometryConfigurationVector<double> configurations_double;
+  configurations_double.set_value(GeometryId::get_new_id(),
+                                  VectorX<double>::Zero(7));
+  EXPECT_EQ(configurations_double.size(), 1);
+
+  GeometryConfigurationVector<AutoDiffXd> configurations_autodiff;
+  configurations_autodiff.set_value(GeometryId::get_new_id(),
+                                    VectorX<AutoDiffXd>::Zero(7));
+  EXPECT_EQ(configurations_autodiff.size(), 1);
+
+  using symbolic::Expression;
+  using symbolic::Variable;
+  GeometryConfigurationVector<Expression> configurations_expression;
+  const Variable var_x{"x"};
+  const Expression x{var_x};
+  configurations_expression.set_value(GeometryId::get_new_id(),
+                                      VectorX<Expression>::Constant(7, x));
+  EXPECT_EQ(configurations_expression.size(), 1);
 }
 
 GTEST_TEST(FrameKinematicsVector, FrameIdRange) {
@@ -188,11 +214,19 @@ GTEST_TEST(FrameKinematicsVector, FrameIdRange) {
   }
 
   std::set<FrameId> actual_ids;
-  for (FrameId id : poses.frame_ids()) actual_ids.insert(id);
-
+  for (FrameId id : poses.ids()) actual_ids.insert(id);
   EXPECT_EQ(ids.size(), actual_ids.size());
   for (FrameId id : ids) EXPECT_EQ(actual_ids.count(id), 1);
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+GTEST_TEST(FrameKinematicsVector, DeprecatedFrameIds) {
+  FramePoseVector<double> poses;
+  poses.set_value(FrameId::get_new_id(), RigidTransformd::Identity());
+  EXPECT_EQ(poses.frame_ids(), poses.ids());
+}
+#pragma GCC diagnostic pop
 
 }  // namespace test
 }  // namespace geometry
