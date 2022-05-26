@@ -121,6 +121,7 @@ _SRCS = glob([
     "src/sys/classes/viewer/impls/socket/**",
     "src/sys/logging/utils/**",
     "src/ts/**",
+    "src/vec/is/sf/impls/basic/neighbor/**",
     "src/vec/is/sf/impls/window/**",
     "src/vec/vec/impls/seq/seqcuda/**",
 ])
