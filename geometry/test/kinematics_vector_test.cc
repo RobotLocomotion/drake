@@ -214,7 +214,7 @@ GTEST_TEST(KinematicsVector, FrameIdRange) {
   }
 
   std::set<FrameId> actual_ids;
-  for (FrameId id : poses.ids()) actual_ids.insert(id);
+  for (FrameId id : poses.GetAllIds()) actual_ids.insert(id);
   EXPECT_EQ(ids.size(), actual_ids.size());
   for (FrameId id : ids) EXPECT_EQ(actual_ids.count(id), 1);
 }
@@ -224,7 +224,7 @@ GTEST_TEST(KinematicsVector, FrameIdRange) {
 GTEST_TEST(KinematicsVector, DeprecatedFrameIds) {
   FramePoseVector<double> poses;
   poses.set_value(FrameId::get_new_id(), RigidTransformd::Identity());
-  EXPECT_EQ(poses.frame_ids(), poses.ids());
+  EXPECT_EQ(poses.frame_ids(), poses.GetAllIds());
 }
 #pragma GCC diagnostic pop
 
