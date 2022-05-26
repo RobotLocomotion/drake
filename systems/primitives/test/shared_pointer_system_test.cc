@@ -50,7 +50,7 @@ GTEST_TEST(SharedPointerSystemTest, ScalarConversion) {
       std::make_unique<std::string>("held"));
   auto dut2 = System<double>::ToSymbolic(*dut1);
   ASSERT_NE(dut2, nullptr);
-  dut1.release();
+  dut1.reset();
   std::string* gotten = dut2->get<std::string>();
   ASSERT_NE(gotten, nullptr);
   EXPECT_EQ(*gotten, "held");
