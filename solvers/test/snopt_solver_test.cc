@@ -602,6 +602,44 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
     prob.CheckSolution(result, 4E-6);
   }
 }
+
+class ThrowCost final : public Cost {
+ public:
+  ThrowCost() : Cost(1, "ThrowCost") {}
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const final {
+    EvalGeneric();
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const final {
+    EvalGeneric();
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const final {
+    EvalGeneric();
+  }
+
+  void EvalGeneric() const {
+    throw std::runtime_error("ThrowCost::EvalGeneric");
+  }
+};
+
+GTEST_TEST(SnoptTest, TestCostExceptionHandling) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<1>();
+  prog.AddCost(std::make_shared<ThrowCost>(), x);
+  SnoptSolver solver;
+  if (solver.available()) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        solver.Solve(prog),
+        "Exception.*SNOPT.*ThrowCost.*");
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
