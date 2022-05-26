@@ -17,9 +17,9 @@ namespace test {
 /// continue, testing statements that examine the results would be likely to
 /// fail with confusing messages, so best to avoid them entirely.)
 MathematicalProgramResult RunSolver(
-    const MathematicalProgram& prog,
-    const SolverInterface& solver,
-    const std::optional<Eigen::VectorXd>& initial_guess = {});
+    const MathematicalProgram& prog, const SolverInterface& solver,
+    const std::optional<Eigen::VectorXd>& initial_guess = {},
+    const std::optional<SolverOptions>& solver_options = {});
 
 /// Determine if two bindings are the same. Two bindings are the same if
 ///

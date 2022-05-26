@@ -156,6 +156,7 @@ drake_pybind_library(
     name = "csdp_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:value_pybind",
     ],
     cc_srcs = ["csdp_py.cc"],

@@ -35,7 +35,12 @@ class TestCsdpSolver(unittest.TestCase):
         self.assertEqual(solver.solver_id().name(), "CSDP")
         self.assertEqual(solver.SolverName(), "CSDP")
         self.assertEqual(solver.solver_type(), mp.SolverType.kCsdp)
-        result = solver.Solve(prog, None, None)
+        solver_options = mp.SolverOptions()
+        solver_options.SetOption(
+            solver.id(),
+            "drake::RemoveFreeVariableMethod",
+            sdpa_free_format.RemoveFreeVariableMethod.kNullspace)
+        result = solver.Solve(prog, None, solver_options)
         self.assertTrue(result.is_success())
         self.assertTrue(np.allclose(result.GetSolution(x1), x1_expected))
         self.assertEqual(result.get_solver_details().return_code, 0)
@@ -53,9 +58,12 @@ class TestCsdpSolver(unittest.TestCase):
             result.get_solver_details().Z_val.todense(), z_expected, atol=1e-8)
 
         # Test removing free variables with a non-default method.
-        solver = CsdpSolver(
-            method=sdpa_free_format.RemoveFreeVariableMethod.kLorentzConeSlack)
-        result = solver.Solve(prog, None, None)
+        solver = CsdpSolver()
+        solver_options = mp.SolverOptions()
+        solver_options.SetOption(
+            solver.id(), "drake::RemoveFreeVariableMethod",
+            sdpa_free_format.RemoveFreeVariableMethod.kLorentzConeSlack)
+        result = solver.Solve(prog, None, solver_options)
         self.assertTrue(result.is_success())
 
     def unavailable(self):

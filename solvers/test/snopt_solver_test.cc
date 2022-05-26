@@ -565,7 +565,7 @@ GTEST_TEST(SnoptSolverTest, TestNonconvexQP) {
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   SnoptSolver snopt_solver;
   if (snopt_solver.available()) {
-    SolveAndCheckSolution(snopt_solver, 1.E-8);
+    SolveAndCheckSolution(snopt_solver, {}, 1.E-8);
   }
 }
 
@@ -586,7 +586,7 @@ INSTANTIATE_TEST_SUITE_P(SnoptTest, TestQPasSOCP,
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   SnoptSolver snopt_solver;
   if (snopt_solver.available()) {
-    SolveAndCheckSolution(snopt_solver, 2E-3);
+    SolveAndCheckSolution(snopt_solver, {}, 2E-3);
   }
 }
 
