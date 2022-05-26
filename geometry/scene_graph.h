@@ -7,9 +7,9 @@
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/collision_filter_manager.h"
-#include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_set.h"
+#include "drake/geometry/kinematics_vector.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph_inspector.h"

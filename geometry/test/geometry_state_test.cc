@@ -124,8 +124,9 @@ class GeometryStateTester {
   }
 
   template <typename ValueType>
-  void ValidateFrameIds(SourceId source_id,
-                        const FrameKinematicsVector<ValueType>& data) const {
+  void ValidateFrameIds(
+      SourceId source_id,
+      const KinematicsVector<FrameId, ValueType>& data) const {
     state_->ValidateFrameIds(source_id, data);
   }
 
@@ -1346,7 +1347,10 @@ TEST_F(GeometryStateTest, AddFrameWithDuplicateId) {
 TEST_F(GeometryStateTest, FrameIdRange) {
   SetUpSingleSourceTree();
   unordered_set<FrameId> all_frames(frames_.begin(), frames_.end());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   for (FrameId id : geometry_state_.get_frame_ids()) {
+#pragma GCC diagnostic pop
     // This should remove exactly one element. The world frame is *not* stored
     // in frames_.
     if (id != InternalFrame::world_frame_id()) {

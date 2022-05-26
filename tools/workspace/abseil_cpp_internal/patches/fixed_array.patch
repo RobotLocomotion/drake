@@ -1,0 +1,18 @@
+Remove redundant declarations to satisfy compilers.
+
+--- absl/container/fixed_array.h
++++ absl/container/fixed_array.h
+@@ -489,13 +489,6 @@ class FixedArray {
+   Storage storage_;
+ };
+ 
+-template <typename T, size_t N, typename A>
+-constexpr size_t FixedArray<T, N, A>::kInlineBytesDefault;
+-
+-template <typename T, size_t N, typename A>
+-constexpr typename FixedArray<T, N, A>::size_type
+-    FixedArray<T, N, A>::inline_elements;
+-
+ template <typename T, size_t N, typename A>
+ void FixedArray<T, N, A>::NonEmptyInlinedStorage::AnnotateConstruct(
+     typename FixedArray<T, N, A>::size_type n) {
