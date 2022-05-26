@@ -20,11 +20,17 @@ PYBIND11_MODULE(csdp, m) {
   py::module::import("pydrake.solvers.mathematicalprogram");
   py::module::import("pydrake.solvers.sdpa_free_format");
 
-  py::class_<CsdpSolver, SolverInterface>(m, "CsdpSolver", doc.CsdpSolver.doc)
-      .def(py::init<RemoveFreeVariableMethod>(),
-          py::arg("method") = RemoveFreeVariableMethod::kNullspace,
-          doc.CsdpSolver.ctor.doc)
+  py::class_<CsdpSolver, SolverInterface> csdp_cls(
+      m, "CsdpSolver", doc.CsdpSolver.doc);
+  csdp_cls.def(py::init<>(), doc.CsdpSolver.ctor.doc)
       .def_static("id", &CsdpSolver::id, doc.CsdpSolver.id.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  csdp_cls.def(py::init<RemoveFreeVariableMethod>(),
+      py::arg("method") = RemoveFreeVariableMethod::kLorentzConeSlack,
+      doc.CsdpSolver.ctor.doc_deprecated);
+#pragma GCC diagnostic pop
 
   py::class_<CsdpSolverDetails>(
       m, "CsdpSolverDetails", doc.CsdpSolverDetails.doc)
