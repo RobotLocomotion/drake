@@ -167,6 +167,8 @@ class MultibodyPlantElements {
 
   void ResetSceneGraph() {
     scene_graph_ = nullptr;
+    geometry_ids_.clear();
+    collision_filter_pairs_.clear();
   }
 
   const std::set<ModelInstanceIndex>& model_instances() const {

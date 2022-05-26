@@ -11,11 +11,6 @@
         <box size="0.1 0.1 0.1"/>
       </geometry>
     </visual>
-    <collision>
-      <geometry>
-        <sphere radius="0.2"/>
-      </geometry>
-    </collision>
   </link>
   <joint name="J1" type="revolute">
     <origin xyz="1 2 3" rpy="0.1 0.2 0.3"/>

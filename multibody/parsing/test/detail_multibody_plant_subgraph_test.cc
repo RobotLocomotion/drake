@@ -123,13 +123,13 @@ struct CastResult {
 
 // Helper function that checks if @p obj can be dynamically cast to one of the
 // types in @p C. If so, the returned CastResult object will be truthy and one
-// can call CastResult::DoIfCastable with a callback function that gets invoked for
-// every type that casts successfully.
+// can call CastResult::DoIfCastable with a callback function that gets invoked
+// for every type that casts successfully.
 template <typename... C, typename T>
 CastResult<C...> CastsTo(const T* obj) {
   return CastResult<C...>(obj);
 }
-
+// TODO(azeey) Replace with std::ranges when the feature is available.
 template <typename T, typename S> struct Zip {
   Zip(T &a, S &b) : a_(a), b_(b) {}
 
@@ -207,6 +207,11 @@ void AssertValueEquals(const drake::AbstractValue& value_a,
     // TODO(azeey) The python prototype compares the values of a and b, but we
     // can't do that in C++ without knowing the concrete types represented by
     // the abstract values.
+    //
+    // EXPECT_EQ(value_a, value_b);
+    // if (value_a == value_b){
+    //   std::cout << "Equal" << std::endl;
+    // }
   }
 }
 
@@ -385,9 +390,9 @@ void AssertPlantEquals(const MultibodyPlant<double>* plant_a,
   auto assert_collision_filter_pair_equals =
       [&](const std::pair<GeometryId, GeometryId>& a,
           const std::pair<GeometryId, GeometryId>& b) {
-        std::cout << fmt::format("Checking: ({}, {}) == ({}, {})", a.first,
-                                 a.second, b.first, b.second)
-                  << std::endl;
+        // std::cout << fmt::format("Checking: ({}, {}) == ({}, {})", a.first,
+        //                          a.second, b.first, b.second)
+        //           << std::endl;
         assert_geometry_equals(a.first, b.first);
         assert_geometry_equals(a.second, b.second);
       };
@@ -837,8 +842,8 @@ TEST_F(APITest, MultibodyPlantElements) {
   // Test usage without SceneGraph.
   MultibodyPlantElements elem_copy_no_scene_graph(elem);
   elem_copy_no_scene_graph.ResetSceneGraph();
-  elem_copy_no_scene_graph.geometry_ids().clear();
-  EXPECT_EQ(MultibodyPlantElements::FromPlant(plant), elem_copy_no_scene_graph);
+  const auto from_plant = MultibodyPlantElements::FromPlant(plant);
+  EXPECT_EQ(from_plant, elem_copy_no_scene_graph);
 
   EXPECT_ANY_THROW(elem += elem_copy);
 

@@ -2175,13 +2175,21 @@ TEST_F(SdfParserTest, InterfaceAPI) {
   // default filters.
   {
     const auto& inspector = scene_graph_.model_inspector();
-    static constexpr int kNumLinks = 7;
+    static constexpr int kNumGeometries = 9;
+    static constexpr int kNumProximityGeometries = 7;
     // Verify the number we expect and that they are all in proximity role.
-    ASSERT_EQ(kNumLinks, inspector.num_geometries());
-    ASSERT_EQ(kNumLinks,
+    ASSERT_EQ(kNumGeometries , inspector.num_geometries());
+    ASSERT_EQ(kNumProximityGeometries,
               inspector.NumGeometriesWithRole(geometry::Role::kProximity));
     std::vector<GeometryId> ids = inspector.GetAllGeometryIds();
-    ASSERT_EQ(ids.size(), kNumLinks);
+    ASSERT_EQ(ids.size(), kNumGeometries);
+
+    auto proxEnd =
+        std::remove_if(ids.begin(), ids.end(), [&inspector](auto id) {
+          return inspector.GetProximityProperties(id) == nullptr;
+        });
+    ids.erase(proxEnd, ids.end());
+    ASSERT_EQ(ids.size(), kNumProximityGeometries);
 
     // Make sure the plant is not finalized such that the Finalize() default
     // filtering has not taken into effect yet. This guarantees that the
@@ -2222,8 +2230,11 @@ TEST_F(SdfParserTest, InterfaceAPI) {
     EXPECT_TRUE(FrameHasShape(frame_id, geometry::Role::kPerception,
                               scene_graph_, geometry::Box{0.1, 0.1, 0.1},
                               "top::arm"));
-    EXPECT_TRUE(FrameHasShape(frame_id, geometry::Role::kProximity,
-                              scene_graph_, geometry::Sphere{0.2}, "top::arm"));
+    const auto& inspector = scene_graph_.model_inspector();
+    EXPECT_NO_THROW(inspector.GetGeometryIdByName(
+        frame_id, geometry::Role::kPerception, "top::arm::Box"));
+    EXPECT_NO_THROW(inspector.GetGeometryIdByName(
+        frame_id, geometry::Role::kProximity, "top::arm::L1"));
   }
 
   {
@@ -2651,9 +2662,6 @@ void TestMergeIncludeWithInterfaceAPI(const MultibodyPlant<double>& plant,
         plant.GetBodyByName("L1", arm_urdf_model_instance).index());
     EXPECT_TRUE(FrameHasShape(frame_id, geometry::Role::kPerception,
                               scene_graph, geometry::Box{0.1, 0.1, 0.1},
-                              sdf::JoinName(model_prefix, "arm_urdf")));
-    EXPECT_TRUE(FrameHasShape(frame_id, geometry::Role::kProximity, scene_graph,
-                              geometry::Sphere{0.2},
                               sdf::JoinName(model_prefix, "arm_urdf")));
   }
   {

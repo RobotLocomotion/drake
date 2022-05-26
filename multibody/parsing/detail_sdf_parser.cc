@@ -1223,8 +1223,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     std::vector<ModelInstanceIndex> nested_model_instances =
         AddModelsFromSpecification(
             diagnostic, nested_model,
-            sdf::JoinName(model_name, nested_model.Name()), X_WM,
-            plant, resolver, package_map, root_dir, subgraph_merged_model_instances);
+            sdf::JoinName(model_name, nested_model.Name()), X_WM, plant,
+            resolver, package_map, root_dir, subgraph_merged_model_instances);
 
     added_model_instances.insert(added_model_instances.end(),
                                  nested_model_instances.begin(),
@@ -1519,7 +1519,8 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     main_model_instance = AddModelsFromSpecification(
         diagnostic, model,
         sdf::JoinName(include.AbsoluteParentName(), model_name), {},
-        plant, resolver, package_map, data_source.GetRootDir(), nullptr).front();
+        plant, resolver, package_map, data_source.GetRootDir(), nullptr)
+        .front();
   }
 
   // Now that the model is parsed, we create interface elements to send to
@@ -1652,8 +1653,9 @@ sdf::ParserConfig MakeSdfParserConfig(
             std::make_unique<geometry::SceneGraph<double>>();
         subgraph_info.plant->RegisterAsSourceForSceneGraph(
             subgraph_info.scene_graph.get());
-        return ParseNestedInterfaceModel(&subgraph_info, package_map, resolver, include,
-                                         &errors, test_sdf_forced_nesting);
+        return ParseNestedInterfaceModel(&subgraph_info, package_map, resolver,
+                                         include, &errors,
+                                         test_sdf_forced_nesting);
       });
 
   return parser_config;

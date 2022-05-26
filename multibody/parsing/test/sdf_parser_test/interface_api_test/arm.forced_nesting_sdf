@@ -16,13 +16,6 @@
           </box>
         </geometry>
       </visual>
-      <collision name="Sphere">
-        <geometry>
-          <sphere>
-            <radius>0.2</radius>
-          </sphere>
-        </geometry>
-      </collision>
     </link>
     <joint name="J1" type="revolute">
       <pose relative_to="L1">0 0 1 0 0 0</pose>
