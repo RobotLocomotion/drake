@@ -323,6 +323,9 @@ def parse_visualizers(args_parser, args):
             if args.browser_new is not None:
                 url = meshcat.web_url()
                 webbrowser.open(url=url, new=args.browser_new)
+        else:
+            if args.browser_new is not None:
+                args_parser.error("-w / --open-window require --meshcat")
 
         # Connect to PyPlot.
         if args.pyplot:
