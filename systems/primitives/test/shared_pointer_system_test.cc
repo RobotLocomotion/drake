@@ -1,16 +1,13 @@
-#include "common/unique_ptr_system.h"
+#include "drake/systems/primitives/shared_pointer_system.h"
 
 #include <string>
 #include <string_view>
 
 #include <gtest/gtest.h>
 
-namespace anzu {
-namespace common {
+namespace drake {
+namespace systems {
 namespace {
-
-using drake::systems::DiagramBuilder;
-using drake::systems::System;
 
 GTEST_TEST(SharedPointerSystemTest, CtorFromUnique) {
   auto held = std::make_unique<std::string>("held");
@@ -66,6 +63,15 @@ GTEST_TEST(SharedPointerSystemTest, BadCast) {
   EXPECT_THROW(dut->get<std::string_view>(), std::bad_cast);
 }
 
+// Ensure that nulls don't crash anything.
+GTEST_TEST(SharedPointerSystemTest, Null) {
+  auto builder = std::make_unique<DiagramBuilder<double>>();
+  std::string* nothing = SharedPointerSystem<double>::AddToBuilder(
+      builder.get(), std::shared_ptr<std::string>{});
+  EXPECT_EQ(nothing, nullptr);
+  auto diagram = builder->Build();
+}
+
 }  // namespace
-}  // namespace common
-}  // namespace anzu
+}  // namespace systems
+}  // namespace drake
