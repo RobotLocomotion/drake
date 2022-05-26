@@ -157,12 +157,15 @@ drake_cc_library(
     hdrs = [
         "kinematics_vector.h",
     ],
-    deps = [
+    interface_deps = [
         ":geometry_ids",
         "//common:autodiff",
         "//common:essential",
         "//common:symbolic",
         "//math:geometric_transform",
+    ],
+    deps = [
+        "@abseil_cpp_internal//absl/container:flat_hash_map",
     ],
 )
 
