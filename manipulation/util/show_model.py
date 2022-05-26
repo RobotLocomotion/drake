@@ -8,8 +8,7 @@ To build all necessary targets and see available command-line options:
 
     cd drake
     bazel build \
-        //tools:drake_visualizer @meshcat_python//:meshcat-server \
-        //manipulation/util:show_model
+        //tools:drake_visualizer //manipulation/util:show_model
 
     ./bazel-bin/manipulation/util/show_model --help
 
@@ -17,11 +16,10 @@ Example usage:
 
     # Terminal 1
     ./bazel-bin/tools/drake_visualizer
-    # Terminal 2
-    ./bazel-bin/external/meshcat_python/meshcat-server
-    # Terminal 3 (wait for visualizers to start)
+    # Terminal 2 (wait for visualizers to start)
     ./bazel-bin/manipulation/util/show_model \
-        --meshcat default \
+        --meshcat \
+        --open-window \
         --find_resource \
         drake/manipulation/models/iiwa_description/iiwa7/iiwa7_no_collision.sdf
 
@@ -29,7 +27,8 @@ If your model has all of its data available in your source tree, then you can
 remove the need for `--find_resource`:
 
     ./bazel-bin/manipulation/util/show_model \
-        --meshcat default \
+        --meshcat \
+        --open-window \
         ${PWD}/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
 
 If the model uses package path (e.g. "package://package_name/model_sdf.obj") to
