@@ -373,10 +373,11 @@ def main():
     # Wait for the user to cancel us.
     if args.meshcat:
         print("Use Ctrl-C to quit")
-        try:
-            time.sleep(1e3)
-        except KeyboardInterrupt:
-            pass
+        while True:
+            try:
+                time.sleep(1e3)
+            except KeyboardInterrupt:
+                break
 
 
 if __name__ == '__main__':
