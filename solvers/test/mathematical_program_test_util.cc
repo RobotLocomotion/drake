@@ -6,16 +6,16 @@ namespace drake {
 namespace solvers {
 namespace test {
 MathematicalProgramResult RunSolver(
-    const MathematicalProgram& prog,
-    const SolverInterface& solver,
-    const std::optional<Eigen::VectorXd>& initial_guess) {
+    const MathematicalProgram& prog, const SolverInterface& solver,
+    const std::optional<Eigen::VectorXd>& initial_guess,
+    const std::optional<SolverOptions>& solver_options) {
   if (!solver.available()) {
     throw std::runtime_error(
         "Solver " + solver.solver_id().name() + " is not available");
   }
 
   MathematicalProgramResult result{};
-  solver.Solve(prog, initial_guess, {}, &result);
+  solver.Solve(prog, initial_guess, solver_options, &result);
   EXPECT_TRUE(result.is_success());
   if (!result.is_success()) {
     throw std::runtime_error(

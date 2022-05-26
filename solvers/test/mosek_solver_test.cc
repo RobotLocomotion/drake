@@ -133,7 +133,7 @@ GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   MosekSolver solver;
   // Mosek 9 returns a solution that is accurate up to 1.2E-5 for this specific
   // problem. Might need to change the tolerance when we upgrade Mosek.
-  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, 1.2E-5);
+  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, 1.2E-5);
 }
 
 GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
@@ -146,21 +146,21 @@ GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
 GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
-    FindCommonLyapunov(mosek_solver, 1E-8);
+    FindCommonLyapunov(mosek_solver, {}, 1E-8);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
-    FindOuterEllipsoid(mosek_solver, 1E-6);
+    FindOuterEllipsoid(mosek_solver, {}, 1E-6);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
-    SolveEigenvalueProblem(mosek_solver, 1E-7);
+    SolveEigenvalueProblem(mosek_solver, {}, 1E-7);
   }
 }
 
