@@ -147,7 +147,7 @@ class _StringToRoleAction(argparse.Action):
         elif values == 'illustration':
             mapped_value = Role.kIllustration
         else:
-            raise ValueError(f"Role parameter got invalid value {s}")
+            raise ValueError(f"Role parameter got invalid value {values}")
 
         setattr(namespace, self.dest, mapped_value)
 
