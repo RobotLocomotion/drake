@@ -6,10 +6,10 @@
 #include <vector>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/kinematics_vector.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/discrete_values.h"
 
