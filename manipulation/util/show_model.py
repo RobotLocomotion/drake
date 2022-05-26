@@ -273,6 +273,9 @@ def parse_visualizers(args_parser, args):
     """
     Parses argparse arguments for visualizers, returning update_visualization,
     and connect_visualizers.
+
+    When ``args.meshcat`` is ``True``, ``connect_visualizers`` will return the
+    underlying ``Meshcat`` instance.  Otherwise, it returns ``None``.
     """
     def update_visualization(plant, scene_graph):
         if args.visualize_collisions:
@@ -312,7 +315,9 @@ def parse_visualizers(args_parser, args):
         # Connect this to drake_visualizer.
         DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph)
 
-        # Connect to Meshcat.
+        # Connect to Meshcat.  If the consuming application needs to connect,
+        # e.g., JointSliders, the meshcat instance is required.
+        meshcat = None
         if args.meshcat:
             meshcat = Meshcat()
             meshcat_vis_params = MeshcatVisualizerParams()
@@ -330,6 +335,8 @@ def parse_visualizers(args_parser, args):
         # Connect to PyPlot.
         if args.pyplot:
             pyplot = ConnectPlanarSceneGraphVisualizer(builder, scene_graph)
+
+        return meshcat
 
     return update_visualization, connect_visualizers
 
