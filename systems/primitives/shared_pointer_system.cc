@@ -1,0 +1,26 @@
+#include "common/unique_ptr_system.h"
+
+namespace anzu {
+
+using drake::systems::LeafSystem;
+using drake::systems::SystemTypeTag;
+
+template <typename T>
+SharedPointerSystem<T>::SharedPointerSystem(
+    std::shared_ptr<void> held, std::type_index held_type)
+    : LeafSystem<T>(SystemTypeTag<SharedPointerSystem>{}),
+      held_(std::move(held)),
+      held_type_(held_type) {}
+
+template <typename T>
+template <typename U>
+SharedPointerSystem<T>::SharedPointerSystem(const SharedPointerSystem<U>& other)
+    : SharedPointerSystem<T>(other.held_, other.held_type_) {}
+
+template <typename T>
+SharedPointerSystem<T>::~SharedPointerSystem() = default;
+
+}  // namespace anzu
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::anzu::SharedPointerSystem)
