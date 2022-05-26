@@ -1,4 +1,4 @@
-#include "drake/geometry/frame_kinematics_vector.h"
+#include "drake/geometry/kinematics_vector.h"
 
 #include <algorithm>
 #include <vector>
@@ -114,7 +114,7 @@ GTEST_TEST(FrameKinematicsVector, WorkingWithValues) {
 
   // Ask for the pose of an id that does not belong to the set.
   DRAKE_EXPECT_THROWS_MESSAGE(poses.value(FrameId::get_new_id()),
-                              "No such FrameId \\d+.");
+                              "No such Id \\d+.");
 }
 
 GTEST_TEST(FrameKinematicsVector, SetWithoutAllocations) {
@@ -146,14 +146,15 @@ GTEST_TEST(FrameKinematicsVector, SetWithoutAllocations) {
   }
 }
 
-GTEST_TEST(FrameKinematicsVector, AutoDiffInstantiation) {
+GTEST_TEST(FrameKinematicsVector, FramePoseVectorAutoDiffInstantiation) {
   FramePoseVector<AutoDiffXd> poses;
   poses.set_value(FrameId::get_new_id(),
                   RigidTransform<AutoDiffXd>::Identity());
   EXPECT_EQ(poses.size(), 1);
 }
 
-GTEST_TEST(FrameKinematicsVector, SymbolicInstantiation) {
+
+GTEST_TEST(FrameKinematicsVector, FramePoseVectorSymbolicInstantiation) {
   using symbolic::Expression;
   using symbolic::Variable;
 
@@ -179,6 +180,18 @@ GTEST_TEST(FrameKinematicsVector, SymbolicInstantiation) {
   EXPECT_TRUE(z_.EqualTo(poses.value(ids[1]).translation()[2]));
 }
 
+GTEST_TEST(FrameKinematicsVector, GeometryConfigurationVector) {
+  GeometryConfigurationVector<double> configurations_double;
+  configurations_double.set_value(GeometryId::get_new_id(),
+                           VectorX<double>::Zero(7));
+  EXPECT_EQ(configurations_double.size(), 1);
+
+  GeometryConfigurationVector<AutoDiffXd> configurations_autodiff;
+  configurations_autodiff.set_value(GeometryId::get_new_id(),
+                           VectorX<AutoDiffXd>::Zero(7));
+  EXPECT_EQ(configurations_autodiff.size(), 1);
+}
+
 GTEST_TEST(FrameKinematicsVector, FrameIdRange) {
   FramePoseVector<double> poses;
   std::vector<FrameId> ids;
@@ -188,7 +201,10 @@ GTEST_TEST(FrameKinematicsVector, FrameIdRange) {
   }
 
   std::set<FrameId> actual_ids;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   for (FrameId id : poses.frame_ids()) actual_ids.insert(id);
+#pragma GCC diagnostic pop
 
   EXPECT_EQ(ids.size(), actual_ids.size());
   for (FrameId id : ids) EXPECT_EQ(actual_ids.count(id), 1);
