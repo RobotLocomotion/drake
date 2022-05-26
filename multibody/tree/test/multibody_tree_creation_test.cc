@@ -868,7 +868,7 @@ GTEST_TEST(DefaultInertia, VerifyDefaultRotationalInertia) {
   EXPECT_EQ(I_B.CopyToFullMatrix3(), (mB * G_SSo_S).CopyToFullMatrix3());
   EXPECT_EQ(I_C.CopyToFullMatrix3(), (mC * G_SSo_S).CopyToFullMatrix3());
 
-  // Verify function RotationalInertia::IsZero().
+  // Check if the default rotational inertia for each of rigid body is zero.
   EXPECT_TRUE(I_A.IsZero());
   EXPECT_FALSE(I_B.IsZero());
   EXPECT_FALSE(I_C.IsZero());
