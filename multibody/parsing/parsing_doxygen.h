@@ -530,8 +530,8 @@ This element adds a drake::multibody::LinearBushingRollPitchYaw to the model.
 
 @subsection tag_drake_member drake:member
 
-- SDFormat path: `//model/drake:collission_filter_group/drake:member`
-- URDF path: `/robot/drake:collission_filter_group/drake:member/@link`
+- SDFormat path: `//model/drake:collision_filter_group/drake:member`
+- URDF path: `/robot/drake:collision_filter_group/drake:member/@link`
 - Syntax: String.
 
 @subsubsection tag_drake_member_semantics Semantics
