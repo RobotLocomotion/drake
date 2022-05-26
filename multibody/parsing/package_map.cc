@@ -27,15 +27,6 @@ using std::string;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
-// List of filenames which, when present in a directory, will cause
-// PopulateFromRosPackagePath to ignore all other content in that directory
-// and any subdirectories.
-static const std::vector<std::string_view> IgnoreMarkers = {
-  "AMENT_IGNORE",
-  "CATKIN_IGNORE",
-  "COLCON_IGNORE",
-};
-
 PackageMap::PackageMap()
     : PackageMap{FindResourceOrThrow("drake/package.xml")} {}
 
@@ -148,15 +139,21 @@ void PackageMap::PopulateFromEnvironment(const string& environment_variable) {
 }
 
 void PackageMap::PopulateFromRosPackagePath() {
+  const std::vector<std::string_view> stop_markers = {
+    "AMENT_IGNORE",
+    "CATKIN_IGNORE",
+    "COLCON_IGNORE",
+  };
+
   const char* const value = std::getenv("ROS_PACKAGE_PATH");
   if (value == nullptr) {
     return;
   }
-  std::istringstream iss{string(value)};
+  std::istringstream input{string(value)};
   string path;
-  while (std::getline(iss, path, ':')) {
+  while (std::getline(input, path, ':')) {
     if (!path.empty()) {
-      CrawlForPackages(path, true, IgnoreMarkers);
+      CrawlForPackages(path, true, stop_markers);
     }
   }
 }
