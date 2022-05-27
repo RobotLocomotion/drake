@@ -6,6 +6,7 @@ load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
+    "drake_py_test",
 )
 load(
     "@drake_visualizer//:defs.bzl",
@@ -49,6 +50,16 @@ drake_py_binary(
     visibility = [
         "@yaml_cpp_internal//:__pkg__",
     ],
+    deps = [":module_py"],
+)
+
+drake_py_test(
+    name = "vendor_cxx_test",
+    srcs = [
+        "vendor_cxx.py",
+        "vendor_cxx_test.py",
+    ],
+    allow_import_unittest = True,
     deps = [":module_py"],
 )
 
