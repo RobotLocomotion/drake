@@ -14,6 +14,13 @@ me='The Drake source distribution prerequisite setup script'
 
 trap at_exit EXIT
 
+# Check for existence of `SUDO_USER` so that this may be used in Docker
+# environments.
+if [[ -n "${SUDO_USER:+D}" && $(id -u ${SUDO_USER}) -eq 0 ]]; then
+  echo 'This script must NOT be run through sudo as root' >&2
+  exit 1
+fi
+
 binary_distribution_args=()
 source_distribution_args=()
 
