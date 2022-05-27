@@ -18,7 +18,7 @@ drake_cc_googlebench_binary(
         "//common:find_resource",
         "//multibody/inverse_kinematics",
         "//multibody/parsing",
-        "//solvers:mathematical_program_result",
+        "//solvers:snopt_solver",
         "//solvers:solve",
         "//tools/performance:fixture_common",
     ],
