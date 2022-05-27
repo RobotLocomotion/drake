@@ -1835,10 +1835,10 @@ class TestUnapplyFormula(unittest.TestCase):
 
 
 class TestToLatex(unittest.TestCase):
-    def basic_test(self):
+    def test_basics(self):
         x = sym.Variable("x")
         y = sym.Variable("y")
-        b = sym.Variable("b", sym.Variable.Type.Boolean)
+        b = sym.Variable("b", sym.Variable.Type.BOOLEAN)
 
         # Expressions
         self.assertEqual(sym.ToLatex(x), "x")
@@ -1858,32 +1858,32 @@ class TestToLatex(unittest.TestCase):
         self.assertEqual(sym.ToLatex(pow(x, 3)), "x^{3}")
         self.assertEqual(sym.ToLatex(pow(x, 3.1)), "x^{3.100}")
         self.assertEqual(sym.ToLatex(x / y), R"\frac{x}{y}")
-        self.assertEqual(sym.ToLatex(abs(x)), "|x|")
-        self.assertEqual(sym.ToLatex(log(x)), R"\log{x}")
-        self.assertEqual(sym.ToLatex(exp(x)), "e^{x}")
-        self.assertEqual(sym.ToLatex(sqrt(x)), R"\sqrt{x}")
-        self.assertEqual(sym.ToLatex(sin(x)), R"\sin{x}")
-        self.assertEqual(sym.ToLatex(cos(x)), R"\cos{x}")
-        self.assertEqual(sym.ToLatex(tan(x)), R"\tan{x}")
-        self.assertEqual(sym.ToLatex(asin(x)), R"\asin{x}")
-        self.assertEqual(sym.ToLatex(acos(x)), R"\acos{x}")
-        self.assertEqual(sym.ToLatex(atan(x)), R"\atan{x}")
-        self.assertEqual(sym.ToLatex(atan2(y, x)), R"\atan{\frac{y}{x}}")
-        self.assertEqual(sym.ToLatex(sinh(x)), R"\sinh{x}")
-        self.assertEqual(sym.ToLatex(cosh(x)), R"\cosh{x}")
-        self.assertEqual(sym.ToLatex(tanh(x)), R"\tanh{x}")
-        self.assertEqual(sym.ToLatex(min(x, y)), R"\min\{x, y\}")
-        self.assertEqual(sym.ToLatex(max(x, y)), R"\max\{x, y\}")
-        self.assertEqual(sym.ToLatex(ceil(x)), R"\lceil x \rceil")
-        self.assertEqual(sym.ToLatex(floor(x)), R"\lfloor x \rfloor")
+        self.assertEqual(sym.ToLatex(sym.abs(x)), "|x|")
+        self.assertEqual(sym.ToLatex(sym.log(x)), R"\log{x}")
+        self.assertEqual(sym.ToLatex(sym.exp(x)), "e^{x}")
+        self.assertEqual(sym.ToLatex(sym.sqrt(x)), R"\sqrt{x}")
+        self.assertEqual(sym.ToLatex(sym.sin(x)), R"\sin{x}")
+        self.assertEqual(sym.ToLatex(sym.cos(x)), R"\cos{x}")
+        self.assertEqual(sym.ToLatex(sym.tan(x)), R"\tan{x}")
+        self.assertEqual(sym.ToLatex(sym.asin(x)), R"\asin{x}")
+        self.assertEqual(sym.ToLatex(sym.acos(x)), R"\acos{x}")
+        self.assertEqual(sym.ToLatex(sym.atan(x)), R"\atan{x}")
+        self.assertEqual(sym.ToLatex(sym.atan2(y, x)), R"\atan{\frac{y}{x}}")
+        self.assertEqual(sym.ToLatex(sym.sinh(x)), R"\sinh{x}")
+        self.assertEqual(sym.ToLatex(sym.cosh(x)), R"\cosh{x}")
+        self.assertEqual(sym.ToLatex(sym.tanh(x)), R"\tanh{x}")
+        self.assertEqual(sym.ToLatex(sym.min(x, y)), R"\min\{x, y\}")
+        self.assertEqual(sym.ToLatex(sym.max(x, y)), R"\max\{x, y\}")
+        self.assertEqual(sym.ToLatex(sym.ceil(x)), R"\lceil x \rceil")
+        self.assertEqual(sym.ToLatex(sym.floor(x)), R"\lfloor x \rfloor")
         self.assertEqual(
-            sym.ToLatex(if_then_else(x > y, 2 * x, 3)),
+            sym.ToLatex(sym.if_then_else(x > y, 2 * x, 3)),
             R"\begin{cases} 2 x & \text{if } x > y, \\"
             R" 3 & \text{otherwise}.\end{cases}")
 
         # Formulas
-        self.assertEqual(sym.ToLatex(False), R"\text{false}")
-        self.assertEqual(sym.ToLatex(True), R"\text{true}")
+        self.assertEqual(sym.ToLatex(sym.Formula.False_()), R"\text{false}")
+        self.assertEqual(sym.ToLatex(sym.Formula.True_()), R"\text{true}")
         self.assertEqual(sym.ToLatex(sym.Formula(b)), R"b")
         self.assertEqual(sym.ToLatex(x == y), R"x = y")
         self.assertEqual(sym.ToLatex(2.5 * x == y, 2), R"2.50 x = y")
@@ -1892,19 +1892,22 @@ class TestToLatex(unittest.TestCase):
         self.assertEqual(sym.ToLatex(2 * x >= y), R"2 x \ge y")
         self.assertEqual(sym.ToLatex(2 * x < y), R"2 x < y")
         self.assertEqual(sym.ToLatex(2 * x <= y), R"2 x \le y")
-        self.assertEqual(sym.ToLatex(x == y and x * y > x),
+        self.assertEqual(sym.ToLatex(sym.logical_and(x == y, x * y > x)),
                          R"x = y \land x y > x")
-        self.assertEqual(sym.ToLatex(not (x == y and x * y > x)),
-                         R"x \neq y \lor x y \le x")
-        self.assertEqual(sym.ToLatex(x == y or x * y < x),
+        self.assertEqual(
+            sym.ToLatex(sym.logical_not(sym.logical_and(x == y, x * y > x))),
+            R"x \neq y \lor x y \le x")
+        self.assertEqual(sym.ToLatex(sym.logical_or(x == y, x * y < x)),
                          R"x = y \lor x y < x")
-        self.assertEqual(sym.ToLatex(not (x == y or x * y < x)),
-                         R"x \neq y \land x y \ge x")
-        self.assertEqual(sym.ToLatex(not(x == y)), R"x \neq y")
-        self.assertEqual(sym.ToLatex(forall({x, y}, x > y)),
+        self.assertEqual(
+            sym.ToLatex(sym.logical_not(sym.logical_or(x == y, x * y < x))),
+            R"x \neq y \land x y \ge x")
+        self.assertEqual(sym.ToLatex(sym.logical_not(x == y)), R"x \neq y")
+        self.assertEqual(sym.ToLatex(sym.forall(sym.Variables([x, y]), x > y)),
                          R"\forall x, y: (x > y)")
-        self.assertEqual(sym.ToLatex(isnan(x)), R"\text{isnan}(x)")
-        self.assertEqual(sym.ToLatex(not isnan(x)), R"\neg \text{isnan}(x)")
+        self.assertEqual(sym.ToLatex(sym.isnan(x)), R"\text{isnan}(x)")
+        self.assertEqual(sym.ToLatex(sym.logical_not(sym.isnan(x))),
+                         R"\neg \text{isnan}(x)")
 
         # Matrix<double>
         M = np.array([[1.2, 3], [4.56, 7]])
@@ -1919,7 +1922,7 @@ class TestToLatex(unittest.TestCase):
 
         # Formula with a PSD Matrix.
         self.assertEqual(
-            sym.ToLatex(positive_semidefinite(Me), 1),
+            sym.ToLatex(sym.positive_semidefinite(Me), 1),
             R"\begin{bmatrix} x & 2.3 y \\ 2.3 y & (x + y) \end{bmatrix}"
             R" \succeq 0")
 
