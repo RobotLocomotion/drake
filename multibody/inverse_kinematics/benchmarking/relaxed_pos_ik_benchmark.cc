@@ -8,6 +8,7 @@
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 #include "drake/tools/performance/fixture_common.h"
 
@@ -103,28 +104,19 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {
         // Set the initial guess.
         prog->SetInitialGuess(relaxed_ik.q(), q0.col(j));
 
-        // Solve the relaxed IK problem.
-        solvers::MathematicalProgramResult result = solvers::Solve(*prog);
-        // Get the solution.
-        auto q_sol = result.GetSolution();
-        // Evaluate the end-effector pose for the solution.
-        context->get_mutable_continuous_state()
-            .get_mutable_generalized_position()
-            .SetFromVector(q_sol);
-        auto ee_pose_sol = plant.EvalBodyPoseInWorld(*context, ee_body);
+        // Solve the problem.
+        auto result = solvers::Solve(*prog);
 
         // Confirm that the optimization has succeeded.
-        DRAKE_DEMAND(result.is_success());
-        // Check constraint satisfaction by providing a margin of 20% w.r.t. the
-        // relaxation to account for the constraint tolerance of the solver.
+        // This is enabled only for SNOPT b/c IPOPT exceeds the maximum number
+        // of iterations in a few cases but still meets the task constraints.
+        if (result.get_solver_id() == solvers::SnoptSolver::id())
+          DRAKE_DEMAND(result.is_success());
+
+        // Check whether the task constraint is met by providing extra margin to
+        // account for solver tolerances.
         DRAKE_DEMAND(
-            (ee_pose_sol.translation().array() <=
-             ee_pose_goal[i].translation().array() + 1.2 * pos_tol.array())
-                .all());
-        DRAKE_DEMAND(
-            (ee_pose_sol.translation().array() >=
-             ee_pose_goal[i].translation().array() - 1.2 * pos_tol.array())
-                .all());
+            pos_constraint->CheckSatisfied(result.GetSolution(), 1e-5));
       }
     }
   }
