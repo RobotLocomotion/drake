@@ -63,6 +63,19 @@ class Grid {
     void set_mass(int i, int j, int k, double mass);
     void set_force(int i, int j, int k, const Vector3<double>& force);
 
+    // Accumulate the state at (i, j, k) with the given value
+    void AccumulateVelocity(int i, int j, int k,
+                                            const Vector3<double>& velocity);
+    void AccumulateMass(int i, int j, int k, double mass);
+    void AccumulateForce(int i, int j, int k, const Vector3<double>& force);
+
+    // Rescale the velocities_ vector by the mass_, used in P2G where we
+    // temporarily store momentum mv into velocities
+    void RescaleVelocities();
+
+    // Set masses, velocities and forces to be 0
+    void ClearStates();
+
     // Reduce an 3D (i, j, k) index in the index space to a corresponding
     // linear lexiographical ordered index
     int Reduce3DIndex(int i, int j, int k) const;

@@ -92,6 +92,34 @@ void Grid::set_force(int i, int j, int k, const Vector3<double>& force) {
     forces_[Reduce3DIndex(i, j, k)] = force;
 }
 
+void Grid::AccumulateVelocity(int i, int j, int k,
+                                        const Vector3<double>& velocity) {
+    DRAKE_ASSERT(in_index_range(i, j, k));
+    velocities_[Reduce3DIndex(i, j, k)] += velocity;
+}
+
+void Grid::AccumulateMass(int i, int j, int k, double mass) {
+    DRAKE_ASSERT(in_index_range(i, j, k));
+    masses_[Reduce3DIndex(i, j, k)] += mass;
+}
+
+void Grid::AccumulateForce(int i, int j, int k, const Vector3<double>& force) {
+    DRAKE_ASSERT(in_index_range(i, j, k));
+    forces_[Reduce3DIndex(i, j, k)] += force;
+}
+
+void Grid::RescaleVelocities() {
+    for (int i = 0; i < num_gridpt_; ++i) {
+        velocities_[i] = velocities_[i] / masses_[i];
+    }
+}
+
+void Grid::ClearStates() {
+    std::fill(masses_.begin(), masses_.end(), 0.0);
+    std::fill(velocities_.begin(), velocities_.end(), Vector3<double>::Zero());
+    std::fill(forces_.begin(), forces_.end(), Vector3<double>::Zero());
+}
+
 int Grid::Reduce3DIndex(int i, int j, int k) const {
     DRAKE_ASSERT(in_index_range(i, j, k));
     return (k-bottom_corner_(2))*(num_gridpt_1D_(0)*num_gridpt_1D_(1))
