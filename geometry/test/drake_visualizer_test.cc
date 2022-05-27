@@ -273,7 +273,7 @@ class DrakeVisualizerTest : public ::testing::Test {
       const DrakeVisualizerParams default_params;
       const DrakeVisualizerParams& vis_params = Tester::get_params(visualizer);
       EXPECT_EQ(vis_params.publish_period, default_params.publish_period);
-      EXPECT_EQ(vis_params.role, default_params.role);
+      EXPECT_EQ(vis_params.roles, default_params.roles);
       EXPECT_EQ(vis_params.default_color, default_params.default_color);
     }
 
@@ -293,13 +293,13 @@ class DrakeVisualizerTest : public ::testing::Test {
       /* Case: Parameters given, confirm custom parameters get passed along.  */
       DiagramBuilder<T> builder;
       const auto& scene_graph = *builder.template AddSystem<SceneGraph<T>>();
-      const DrakeVisualizerParams params{1 / 13.0, Role::kPerception,
+      const DrakeVisualizerParams params{1 / 13.0, {Role::kPerception},
                                          Rgba{0.1, 0.2, 0.3, 0.4}};
       const auto& visualizer =
           add_to_builder(&builder, port_source(scene_graph), &lcm_, params);
       const DrakeVisualizerParams& vis_params = Tester::get_params(visualizer);
       EXPECT_EQ(vis_params.publish_period, params.publish_period);
-      EXPECT_EQ(vis_params.role, params.role);
+      EXPECT_EQ(vis_params.roles, params.roles);
       EXPECT_EQ(vis_params.default_color, params.default_color);
     }
   }
@@ -439,7 +439,7 @@ TYPED_TEST(DrakeVisualizerTest, ConfigureDefaultDiffuse) {
   for (const auto& expected_rgba :
        {Rgba{0.75, 0.25, 0.125, 1.0}, Rgba{0.5, 0.75, 0.875, 0.5}}) {
     this->ConfigureDiagram({.publish_period = this->kPublishPeriod,
-                            .role = Role::kProximity,
+                            .roles = {Role::kProximity},
                             .default_color = expected_rgba});
     const FrameId f_id = this->scene_graph_->RegisterFrame(
         this->source_id_, GeometryFrame("frame", 0));
@@ -470,7 +470,7 @@ TYPED_TEST(DrakeVisualizerTest, ConfigureDefaultDiffuse) {
 TYPED_TEST(DrakeVisualizerTest, AnchoredAndDynamicGeometry) {
   using T = TypeParam;
   this->ConfigureDiagram(
-      {.publish_period = this->kPublishPeriod, .role = Role::kProximity});
+      {.publish_period = this->kPublishPeriod, .roles = {Role::kProximity}});
   const FrameId f_id = this->scene_graph_->RegisterFrame(
       this->source_id_, GeometryFrame("frame", 0));
   const GeometryId g0_id = this->scene_graph_->RegisterGeometry(
@@ -531,7 +531,7 @@ TYPED_TEST(DrakeVisualizerTest, TargetRole) {
       {Role::kProximity, source_name + "::proximity"}};
   for (const auto& [role, name] : expected) {
     this->ConfigureDiagram(
-        {.publish_period = this->kPublishPeriod, .role = role});
+        {.publish_period = this->kPublishPeriod, .roles = {role}});
     this->PopulateScene();
     Simulator<T> simulator(*(this->diagram_));
     simulator.AdvanceTo(0.0);
@@ -552,7 +552,7 @@ TYPED_TEST(DrakeVisualizerTest, TargetRole) {
 /* Confirms that a force publish is sufficient.  */
 TYPED_TEST(DrakeVisualizerTest, ForcePublish) {
   this->ConfigureDiagram(
-      {.publish_period = this->kPublishPeriod, .role = Role::kIllustration});
+      {.publish_period = this->kPublishPeriod, .roles = {Role::kIllustration}});
   this->PopulateScene();
   auto context = this->diagram_->CreateDefaultContext();
   const auto& vis_context = this->visualizer_->GetMyContextFromRoot(*context);
@@ -569,7 +569,7 @@ TYPED_TEST(DrakeVisualizerTest, ForcePublish) {
 TYPED_TEST(DrakeVisualizerTest, GeometryWithIllustrationFallback) {
   using T = TypeParam;
   this->ConfigureDiagram(
-      {.publish_period = this->kPublishPeriod, .role = Role::kProximity});
+      {.publish_period = this->kPublishPeriod, .roles = {Role::kProximity}});
   const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
       this->source_id_,
       make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
@@ -600,7 +600,7 @@ TYPED_TEST(DrakeVisualizerTest, AllRolesCanDefineDiffuse) {
   using T = TypeParam;
   for (const Role role : {Role::kProximity, Role::kPerception}) {
     this->ConfigureDiagram(
-        {.publish_period = this->kPublishPeriod, .role = role});
+        {.publish_period = this->kPublishPeriod, .roles = {role}});
     const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
         this->source_id_,
         make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
@@ -635,22 +635,24 @@ TYPED_TEST(DrakeVisualizerTest, AllRolesCanDefineDiffuse) {
 TYPED_TEST(DrakeVisualizerTest, BadParameters) {
   using T = TypeParam;
   // Zero publish period.
-  EXPECT_THROW(DrakeVisualizer<T>(&(this->lcm_),
-                                  DrakeVisualizerParams{0, Role::kIllustration,
-                                                        Rgba{1, 1, 1, 1}}),
+  EXPECT_THROW(DrakeVisualizer<T>(
+                   &(this->lcm_),
+                   DrakeVisualizerParams{0, {Role::kIllustration},
+                         Rgba{1, 1, 1, 1}}),
                std::exception);
 
   // Negative publish period.
   EXPECT_THROW(
       DrakeVisualizer<T>(
           &(this->lcm_),
-          DrakeVisualizerParams{-0.1, Role::kIllustration, Rgba{1, 1, 1, 1}}),
+          DrakeVisualizerParams{-0.1, {Role::kIllustration}, Rgba{1, 1, 1, 1}}),
       std::exception);
 
   // Unassigned role.
-  EXPECT_THROW(DrakeVisualizer<T>(&(this->lcm_),
-                                  DrakeVisualizerParams{0.1, Role::kUnassigned,
-                                                        Rgba{1, 1, 1, 1}}),
+  EXPECT_THROW(DrakeVisualizer<T>(
+                   &(this->lcm_),
+                   DrakeVisualizerParams{0.1, {},
+                         Rgba{1, 1, 1, 1}}),
                std::exception);
 }
 
@@ -663,7 +665,7 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
   for (const Role role :
        {Role::kProximity, Role::kPerception, Role::kIllustration}) {
     this->ConfigureDiagram(
-        {.publish_period = this->kPublishPeriod, .role = role});
+        {.publish_period = this->kPublishPeriod, .roles = {role}});
     const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
         this->source_id_,
         make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
@@ -746,7 +748,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
    meshes -- we haven't defined any other color to the geometry. So, we'll pick
    an arbitrary value that *isn't* the default value. */
   params.default_color = Rgba{0.25, 0.5, 0.75, 0.5};
-  params.role = Role::kProximity;
+  params.roles = {Role::kProximity};
   params.show_hydroelastic = true;
   this->ConfigureDiagram(params);
 
@@ -958,7 +960,7 @@ TYPED_TEST(DrakeVisualizerTest, DispatchLoadMessageFromModel) {
   {
     // Case: role = proximity --> one frame labeled with "proximity".
     DrakeVisualizerParams params;
-    params.role = Role::kProximity;
+    params.roles = {Role::kProximity};
     DrakeVisualizer<T>::DispatchLoadMessage(*(this->scene_graph_),
                                             &(this->lcm_), params);
     MessageResults results = this->ProcessMessages();
