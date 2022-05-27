@@ -1928,7 +1928,7 @@ class TestToLatex(unittest.TestCase):
 
 
 class TestSinCosSubstitution(unittest.TestCase):
-    def basic_test(self):
+    def test_basics(self):
         x = sym.Variable("x")
         y = sym.Variable("y")
         sx = sym.Variable("sx")
@@ -1937,8 +1937,47 @@ class TestSinCosSubstitution(unittest.TestCase):
         cy = sym.Variable("cy")
         subs = {x: sym.SinCos(s=sx, c=cx), y: sym.SinCos(s=sy, c=cy)}
 
-        self.assert_equal(sym.Substitute(e=np.sin(x + y), subs=subs),
-                          sx * cy + cx * sy)
+        self.assertTrue(
+            sym.Substitute(e=np.sin(x + y),
+                           subs=subs).EqualTo(sx * cy + cx * sy))
         m = np.array([np.sin(x), np.cos(y), 1, np.sin(2*x)])
-        me = np.array([sx, cy, 1, 2*sx*cx])
-        np.testing.assert_equal(sym.Substitute(m=m, subs=subs), me)
+        me = np.array([
+            sym.Expression(sx),
+            sym.Expression(cy),
+            sym.Expression(1), 2 * sx * cx
+        ])
+        msubs = sym.Substitute(m=m, subs=subs)
+        self.assertEqual(msubs.shape, (4, 1))
+        for i in range(4):
+            self.assertTrue(msubs[i, 0].EqualTo(me[i]))
+
+    def test_halfangle(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        sx = sym.Variable("sx")
+        sy = sym.Variable("sy")
+        cx = sym.Variable("cx")
+        cy = sym.Variable("cy")
+        subs = {
+            x:
+            sym.SinCos(s=sx,
+                       c=cx,
+                       type=sym.SinCosSubstitutionType.kHalfAnglePreferSin),
+            y:
+            sym.SinCos(s=sy,
+                       c=cy,
+                       type=sym.SinCosSubstitutionType.kHalfAnglePreferCos)
+        }
+
+        self.assertTrue(
+            sym.Substitute(e=np.sin(x), subs=subs).EqualTo(2 * sx * cx))
+        self.assertTrue(
+            sym.Substitute(e=np.cos(x), subs=subs).EqualTo(1 - 2 * sx * sx))
+        self.assertTrue(
+            sym.Substitute(e=np.cos(y), subs=subs).EqualTo(2 * cy * cy - 1))
+        m = np.array([np.sin(0.5*x), np.cos(0.5*y), 1, np.cos(x)])
+        me = np.array([sx, cy, 1, 1 - 2 * sx**2])
+        msubs = sym.Substitute(m=m, subs=subs)
+        self.assertEqual(msubs.shape, (4, 1))
+        for i in range(4):
+            self.assertTrue(msubs[i, 0].EqualTo(me[i]))
