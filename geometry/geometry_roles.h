@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <set>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
@@ -184,12 +185,16 @@ class IllustrationProperties final : public GeometryProperties {
 
 /** General enumeration for indicating geometry role.  */
 enum class Role {
+  // XXX TODO the following statement is a lie.
   // Bitmask-able values so they can be OR'd together.
   kUnassigned = 0x0,
   kProximity = 0x1,
   kIllustration = 0x2,
   kPerception = 0x4
 };
+
+/** The maximumum number of simultaneous non-vacuous roles. */
+constexpr int kMaxRoles = 3;
 
 // NOTE: Currently this only includes new and replace; but someday it could also
 // include other operations: merge, subtract, etc.
@@ -212,6 +217,8 @@ std::string to_string(const Role& role);
 std::ostream& operator<<(std::ostream& out, const Role& role);
 
 //@}
+
+using Roles = std::set<Role>;
 
 /** @name  Convenience functions
 

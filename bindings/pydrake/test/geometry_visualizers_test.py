@@ -25,13 +25,13 @@ class TestGeometryVisualizers(unittest.TestCase):
         lcm = DrakeLcm()
         role = mut.Role.kIllustration
         params = mut.DrakeVisualizerParams(
-            publish_period=0.1, role=mut.Role.kIllustration,
+            publish_period=0.1, roles={mut.Role.kIllustration},
             default_color=mut.Rgba(0.1, 0.2, 0.3, 0.4),
             show_hydroelastic=False)
         self.assertEqual(repr(params), "".join([
             "DrakeVisualizerParams("
             "publish_period=0.1, "
-            "role=Role.kIllustration, "
+            "roles={<Role.kIllustration: 2>}, "
             "default_color=Rgba(r=0.1, g=0.2, b=0.3, a=0.4), "
             "show_hydroelastic=False)"]))
 
@@ -229,7 +229,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         meshcat = mut.Meshcat()
         params = mut.MeshcatVisualizerParams()
         params.publish_period = 0.123
-        params.role = mut.Role.kIllustration
+        params.roles = {mut.Role.kIllustration}
         params.default_color = mut.Rgba(0.5, 0.5, 0.5)
         params.prefix = "py_visualizer"
         params.delete_on_initialization_event = False

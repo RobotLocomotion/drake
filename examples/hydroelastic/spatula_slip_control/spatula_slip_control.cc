@@ -25,10 +25,6 @@ DEFINE_double(amplitude, 5,
 DEFINE_double(duty_cycle, 0.5, "Duty cycle of the control signal.");
 DEFINE_double(period, 3, "Period of the control signal. [s].");
 
-// DrakeVisualizer Settings.
-DEFINE_bool(visualize_collision, false,
-            "Visualize collision instead of visual geometries.");
-
 // MultibodyPlant settings.
 DEFINE_double(stiction_tolerance, 1e-4, "Default stiction tolerance. [m/s].");
 DEFINE_double(mbp_discrete_update_period, 4.0e-2,
@@ -184,8 +180,7 @@ int DoMain() {
   // Create a visualizer for the system and ensure contact results are
   // visualized.
   geometry::DrakeVisualizerParams params;
-  params.role = FLAGS_visualize_collision ? geometry::Role::kProximity
-                                          : geometry::Role::kIllustration;
+  params.roles = {geometry::Role::kProximity, geometry::Role::kIllustration};
   geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph,
                                            /* lcm */ nullptr, params);
   multibody::ConnectContactResultsToDrakeVisualizer(&builder, plant,

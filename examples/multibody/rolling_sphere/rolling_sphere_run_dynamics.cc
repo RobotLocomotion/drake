@@ -185,7 +185,7 @@ int do_main() {
   if (FLAGS_visualize) {
     geometry::DrakeVisualizerParams params;
     if (FLAGS_vis_hydro) {
-      params.role = geometry::Role::kProximity;
+      params.roles = {geometry::Role::kProximity};
       params.show_hydroelastic = true;
     }
     geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, nullptr,

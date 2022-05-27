@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -28,7 +29,7 @@ namespace internal {
  read from for a pose message.  */
 struct DynamicFrameData {
   FrameId frame_id;
-  int num_geometry{};
+  std::map<Role, int> geometry_counts{};
   std::string name;
 };
 
@@ -222,6 +223,7 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
    loaded.  */
   static void SendDrawMessage(
       const QueryObject<T>& query_object,
+      const DrakeVisualizerParams& params,
       const std::vector<internal::DynamicFrameData>& dynamic_frames,
       double time, lcm::DrakeLcmInterface* lcm);
 

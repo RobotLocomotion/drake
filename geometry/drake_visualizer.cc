@@ -327,7 +327,8 @@ DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
         "DrakeVisualizer requires a positive publish period; {} was given",
         params_.publish_period));
   }
-  if (params_.role == Role::kUnassigned) {
+  if (params_.roles.empty() || params_.roles.count(Role::kUnassigned) > 0) {
+    // XXX TODO fix message.
     throw std::runtime_error(
         "DrakeVisualizer cannot be used for geometries with the "
         "Role::kUnassigned value. Please choose proximity, perception, or "
@@ -361,7 +362,14 @@ EventStatus DrakeVisualizer<T>::SendGeometryMessage(
   bool send_load_message = false;
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (!version_.IsSameAs(current_version, params_.role)) {
+    bool version_mismatch = false;
+    for (const auto& role : params_.roles) {
+      if (!version_.IsSameAs(current_version, role)) {
+        version_mismatch = true;
+        break;
+      }
+    }
+    if (version_mismatch) {
       send_load_message = true;
       version_ = current_version;
     }
@@ -372,7 +380,7 @@ EventStatus DrakeVisualizer<T>::SendGeometryMessage(
                     ExtractDoubleOrThrow(context.get_time()), lcm_);
   }
 
-  SendDrawMessage(query_object, EvalDynamicFrameData(context),
+  SendDrawMessage(query_object, params_, EvalDynamicFrameData(context),
                   ExtractDoubleOrThrow(context.get_time()), lcm_);
 
   return EventStatus::Succeeded();
@@ -385,26 +393,33 @@ void DrakeVisualizer<T>::SendLoadMessage(
     const std::vector<internal::DynamicFrameData>& dynamic_frames, double time,
     lcm::DrakeLcmInterface* lcm) {
   lcmt_viewer_load_robot message{};
+  int num_roles = params.roles.size();
 
   // Add the world frame if it has geometries with the specified role.
-  const int anchored_count = inspector.NumGeometriesForFrameWithRole(
-      inspector.world_frame_id(), params.role);
+  std::map<Role, int> anchored_counts;
+  int anchored_links{};
+  for (const auto& role : params.roles) {
+    int count = inspector.NumGeometriesForFrameWithRole(
+        inspector.world_frame_id(), role);
+    anchored_counts[role] = count;
+    anchored_links += (count > 0);
+  }
   const int frame_count =
-      static_cast<int>(dynamic_frames.size()) + (anchored_count > 0 ? 1 : 0);
+      static_cast<int>(dynamic_frames.size()) + (anchored_links > 0 ? 1 : 0);
 
-  message.num_links = frame_count;
-  message.link.resize(frame_count);
+  // XXX Overestimate links here.
+  message.num_links = frame_count * num_roles;
+  message.link.resize(frame_count * num_roles);
 
   // Helper utility to create lcm geometry description from geometry id.
-  auto make_geometry = [&params, &inspector](GeometryId g_id) {
-    const GeometryProperties* props =
-        inspector.GetProperties(g_id, params.role);
+  auto make_geometry = [&params, &inspector](GeometryId g_id, Role role) {
+    const GeometryProperties* props = inspector.GetProperties(g_id, role);
     // We assume that the g_id was obtained by asking for geometries with the
     // indicated role. So, by definition, the properties should be non-null.
     DRAKE_ASSERT(props != nullptr);
     const Shape& shape = inspector.GetShape(g_id);
     Rgba default_color = params.default_color;
-    if (params.role != Role::kIllustration) {
+    if (role != Role::kIllustration) {
       const GeometryProperties* illus_props =
           inspector.GetIllustrationProperties(g_id);
       if (illus_props) {
@@ -414,7 +429,7 @@ void DrakeVisualizer<T>::SendLoadMessage(
     }
     const Rgba& color =
         props->GetPropertyOrDefault("phong", "diffuse", default_color);
-    if (params.role == Role::kProximity && params.show_hydroelastic) {
+    if (role == Role::kProximity && params.show_hydroelastic) {
       auto hydro_mesh = inspector.maybe_get_hydroelastic_mesh(g_id);
       if (!std::holds_alternative<std::monostate>(hydro_mesh)) {
         // This Shape *definitely* has a mesh associated with it. Replace the
@@ -427,33 +442,54 @@ void DrakeVisualizer<T>::SendLoadMessage(
   };
 
   int link_index = 0;
+  auto make_link =
+      [&inspector, &message, &link_index, &params, &num_roles, &make_geometry](
+          FrameId frame_id,
+          const std::map<Role, int>& geometry_counts,
+          std::string name) {
+        int role_index = -1;
+        for (const auto& role : params.roles) {
+          ++role_index;
+          int geometry_count = geometry_counts.at(role);
+          if (geometry_count == 0) { continue; }
+
+          auto& link = message.link[link_index];
+          if (num_roles > 1) {
+            link.name = fmt::format("{}@{}", to_string(role), name);
+            link.robot_num = role_index;
+          } else {
+            link.name = name;
+            if (frame_id == inspector.world_frame_id()) {
+              link.robot_num = 0;
+            } else {
+              link.robot_num = inspector.GetFrameGroup(frame_id);
+            }
+          }
+
+          link.num_geom = geometry_count;
+          link.geom.resize(geometry_count);
+          int geom_index = -1;  // We'll pre-increment before using.
+          for (const GeometryId& g_id :
+                   inspector.GetGeometries(frame_id, role)) {
+            link.geom[++geom_index] = make_geometry(g_id, role);
+          }
+          ++link_index;
+        }
+      };
+
   // Load anchored geometry into the world frame.
-  if (anchored_count) {
-    message.link[0].name = "world";
-    message.link[0].robot_num = 0;
-    message.link[0].num_geom = anchored_count;
-    message.link[0].geom.resize(anchored_count);
-    int geom_index = -1;  // We'll pre-increment before using.
-    for (const GeometryId& g_id :
-         inspector.GetGeometries(inspector.world_frame_id(), params.role)) {
-      message.link[0].geom[++geom_index] = make_geometry(g_id);
-    }
-    link_index = 1;
+  if (anchored_links) {
+    make_link(inspector.world_frame_id(), anchored_counts, "world");
   }
 
   // Load dynamic geometry into their own frames.
-  for (const auto& [frame_id, geometry_count, name] : dynamic_frames) {
-    message.link[link_index].name = name;
-    message.link[link_index].robot_num = inspector.GetFrameGroup(frame_id);
-    message.link[link_index].num_geom = geometry_count;
-    message.link[link_index].geom.resize(geometry_count);
-    int geom_index = -1;  // We'll pre-increment before using.
-    for (const GeometryId& g_id :
-         inspector.GetGeometries(frame_id, params.role)) {
-      message.link[link_index].geom[++geom_index] = make_geometry(g_id);
-    }
-    ++link_index;
+  for (const auto& [frame_id, geometry_counts, name] : dynamic_frames) {
+    make_link(frame_id, geometry_counts, name);
   }
+
+  // XXX Repair link array size here.
+  message.num_links = link_index;
+  message.link.resize(link_index);
 
   lcm::Publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", message, time);
 }
@@ -461,39 +497,67 @@ void DrakeVisualizer<T>::SendLoadMessage(
 template <typename T>
 void DrakeVisualizer<T>::SendDrawMessage(
     const QueryObject<T>& query_object,
+    const DrakeVisualizerParams& params,
     const vector<internal::DynamicFrameData>& dynamic_frames, double time,
     lcm::DrakeLcmInterface* lcm) {
   lcmt_viewer_draw message{};
+  int num_roles = params.roles.size();
 
   const int frame_count = static_cast<int>(dynamic_frames.size());
 
   message.timestamp = static_cast<int64_t>(time * 1000.0);
-  message.num_links = frame_count;
-  message.link_name.resize(frame_count);
-  message.robot_num.resize(frame_count);
-  message.position.resize(frame_count);
-  message.quaternion.resize(frame_count);
+  // XXX Overestimate storage here.
+  message.num_links = frame_count * num_roles;
+  message.link_name.resize(frame_count * num_roles);
+  message.robot_num.resize(frame_count * num_roles);
+  message.position.resize(frame_count * num_roles);
+  message.quaternion.resize(frame_count * num_roles);
 
   const SceneGraphInspector<T>& inspector = query_object.inspector();
-  for (int i = 0; i < frame_count; ++i) {
-    const FrameId frame_id = dynamic_frames[i].frame_id;
-    message.robot_num[i] = inspector.GetFrameGroup(frame_id);
-    message.link_name[i] = dynamic_frames[i].name;
-
+  int link_index = 0;
+  for (const auto& [frame_id, geometry_counts, name] : dynamic_frames) {
+    int role_index = -1;
     const math::RigidTransformd& X_WF =
-        internal::convert_to_double(query_object.GetPoseInWorld(frame_id));
-    message.position[i].resize(3);
-    message.position[i][0] = X_WF.translation()[0];
-    message.position[i][1] = X_WF.translation()[1];
-    message.position[i][2] = X_WF.translation()[2];
-
+          internal::convert_to_double(query_object.GetPoseInWorld(frame_id));
     const Eigen::Quaternion<double> q = X_WF.rotation().ToQuaternion();
-    message.quaternion[i].resize(4);
-    message.quaternion[i][0] = q.w();
-    message.quaternion[i][1] = q.x();
-    message.quaternion[i][2] = q.y();
-    message.quaternion[i][3] = q.z();
+    for (const auto& role : params.roles) {
+      ++role_index;
+      int geometry_count = geometry_counts.at(role);
+      if (geometry_count == 0) { continue; }
+
+      int i = link_index;
+      if (num_roles > 1) {
+        message.link_name[i] = fmt::format("{}@{}", to_string(role), name);
+        message.robot_num[i] = role_index;
+      } else {
+        message.link_name[i] = name;
+        if (frame_id == inspector.world_frame_id()) {
+          message.robot_num[i] = 0;
+        } else {
+          message.robot_num[i] = inspector.GetFrameGroup(frame_id);
+        }
+      }
+
+      message.position[i].resize(3);
+      message.position[i][0] = X_WF.translation()[0];
+      message.position[i][1] = X_WF.translation()[1];
+      message.position[i][2] = X_WF.translation()[2];
+
+      message.quaternion[i].resize(4);
+      message.quaternion[i][0] = q.w();
+      message.quaternion[i][1] = q.x();
+      message.quaternion[i][2] = q.y();
+      message.quaternion[i][3] = q.z();
+      ++link_index;
+    }
   }
+
+  // XXX Repair storage sizes here.
+  message.num_links = link_index;
+  message.link_name.resize(link_index);
+  message.robot_num.resize(link_index);
+  message.position.resize(link_index);
+  message.quaternion.resize(link_index);
 
   lcm::Publish(lcm, "DRAKE_VIEWER_DRAW", message, time);
 }
@@ -536,13 +600,18 @@ void DrakeVisualizer<T>::PopulateDynamicFrameData(
   vector<internal::DynamicFrameData>& dynamic_frames = *frame_data;
   dynamic_frames.clear();
 
+  // XXX expand for multiple roles
   for (const FrameId& frame_id : inspector.GetAllFrameIds()) {
     // We'll handle the world frame special.
     if (frame_id == inspector.world_frame_id()) continue;
-    const int count =
-        inspector.NumGeometriesForFrameWithRole(frame_id, params.role);
-    if (count > 0) {
-      dynamic_frames.push_back({frame_id, count,
+    std::map<Role, int> counts;
+    int sum{};
+    for (const auto& role : params.roles) {
+      counts[role] = inspector.NumGeometriesForFrameWithRole(frame_id, role);
+      sum += counts[role];
+    }
+    if (sum > 0) {
+      dynamic_frames.push_back({frame_id, counts,
                                 inspector.GetOwningSourceName(frame_id) +
                                     "::" + inspector.GetName(frame_id)});
     }

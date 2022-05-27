@@ -161,7 +161,8 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def(ParamInit<Class>())
         .def_readwrite("publish_period", &DrakeVisualizerParams::publish_period,
             cls_doc.publish_period.doc)
-        .def_readwrite("role", &DrakeVisualizerParams::role, cls_doc.role.doc)
+        .def_readwrite(
+            "roles", &DrakeVisualizerParams::roles, cls_doc.roles.doc)
         .def_readwrite("default_color", &DrakeVisualizerParams::default_color,
             cls_doc.default_color.doc)
         .def_readwrite("show_hydroelastic",
@@ -171,10 +172,10 @@ void DoScalarIndependentDefinitions(py::module m) {
           return py::str(
               "DrakeVisualizerParams("
               "publish_period={}, "
-              "role={}, "
+              "roles={}, "
               "default_color={}, "
               "show_hydroelastic={})")
-              .format(self.publish_period, self.role, self.default_color,
+              .format(self.publish_period, self.roles, self.default_color,
                   self.show_hydroelastic);
         });
   }

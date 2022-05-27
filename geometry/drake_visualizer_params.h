@@ -15,7 +15,7 @@ struct DrakeVisualizerParams {
   double publish_period{1 / 64.0};
 
   /** The role of the geometries to be sent to the visualizer.  */
-  Role role{Role::kIllustration};
+  Roles roles{Role::kIllustration};
 
   /** The color to apply to any geometry that hasn't defined one.  */
   Rgba default_color{0.9, 0.9, 0.9, 1.0};
