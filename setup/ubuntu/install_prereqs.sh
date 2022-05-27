@@ -5,6 +5,17 @@
 
 set -euo pipefail
 
+# Check for existence of `SUDO_USER` so that this may be used in Docker
+# environments.
+if [[ -n "${SUDO_USER:+D}" && $(id -u ${SUDO_USER}) -eq 0 ]]; then
+  cat <<eof >&2
+It appears that this script is running under sudo, but it was the root user
+who ran sudo. That use is not supported; when already running as root, do not
+use sudo when calling this script.
+eof
+  exit 1
+fi
+
 at_exit () {
     echo "${me} has experienced an error on line ${LINENO}" \
         "while running the command ${BASH_COMMAND}"
