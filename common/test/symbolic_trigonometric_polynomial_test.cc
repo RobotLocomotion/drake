@@ -137,6 +137,18 @@ GTEST_TEST(SymbolicLatex, BasicTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(Substitute(cos(if_then_else(x > y, x, y)), subs),
                               ".*'status == kNotSinCos' failed.*");
 
+  // Half-angle formulas.
+  EXPECT_PRED2(ExprEqual, Substitute(sin(x), subs, true), 2 * sx * cx);
+  EXPECT_PRED2(ExprEqual, Substitute(cos(x), subs, true), 1- 2 * sx * sx);
+  EXPECT_PRED2(ExprEqual, Substitute(sin(0.5*x), subs, true), sx);
+  EXPECT_PRED2(ExprEqual, Substitute(cos(0.5*x), subs, true), cx);
+  EXPECT_PRED2(ExprEqual, Substitute(sin(-0.5*x), subs, true), -sx);
+  EXPECT_PRED2(ExprEqual, Substitute(cos(-0.5*x), subs, true), cx);
+  DRAKE_EXPECT_THROWS_MESSAGE(Substitute(sin(0.5*x), subs, false),
+                              ".*only support sin.* where c is an integer.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(Substitute(cos(0.5*x), subs, false),
+                              ".*only support cos.* where c is an integer.*");
+
   // Matrix<Expression>
   Eigen::Matrix<Expression, 2, 2> m;
   m << x, sin(x), sin(y), sin(x + y);
@@ -145,6 +157,14 @@ GTEST_TEST(SymbolicLatex, BasicTest) {
   EXPECT_PRED2(ExprEqual, m2(0, 1), sx);
   EXPECT_PRED2(ExprEqual, m2(1, 0), sy);
   EXPECT_PRED2(ExprEqual, m2(1, 1), sx * cy + sy * cx);
+  // Matrix half-angle
+  const Eigen::Matrix<Expression, 2, 2> m3 = Substitute(m, subs, true);
+  EXPECT_PRED2(ExprEqual, m3(0, 0), x);
+  EXPECT_PRED2(ExprEqual, m3(0, 1), 2 * sx * cx);
+  EXPECT_PRED2(ExprEqual, m3(1, 0), 2 * sy * cy);
+  EXPECT_PRED2(
+      ExprEqual, m3(1, 1),
+      (2 * sx * cx) * (1 - 2 * sy * sy) + (2 * sy * cy) * (1 - 2 * sx * sx));
 }
 
 }  // namespace

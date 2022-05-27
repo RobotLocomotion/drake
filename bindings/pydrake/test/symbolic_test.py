@@ -1939,3 +1939,12 @@ class TestSinCosSubstitution(unittest.TestCase):
         m = np.array([np.sin(x), np.cos(y), 1, np.sin(2*x)])
         me = np.array([sx, cy, 1, 2*sx*cx])
         np.testing.assert_equal(sym.Substitute(m=m, subs=subs), me)
+
+        # Half-angle formulas.
+        self.assert_equal(
+            sym.Substitute(e=np.sin(x), subs=subs, half_angle=True),
+            2 * sx * cx)
+        m = np.array([np.sin(0.5*x), np.cos(0.5*y), 1, np.cos(x)])
+        me = np.array([sx, cy, 1, 1 - 2 * sx**2])
+        np.testing.assert_equal(
+            sym.Substitute(m=m, subs=subs, half_angle=True), me)
