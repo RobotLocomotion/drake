@@ -521,17 +521,18 @@ PYBIND11_MODULE(symbolic, m) {
 
   m.def(
       "Substitute",
-      [](const Expression& e, const SinCosSubstitution& subs) {
-        return Substitute(e, subs);
+      [](const Expression& e, const SinCosSubstitution& subs, bool half_angle) {
+        return Substitute(e, subs, half_angle);
       },
-      py::arg("e"), py::arg("subs"), doc.Substitute.doc_sincos);
+      py::arg("e"), py::arg("subs"), py::arg("half_angle") = false,
+      doc.Substitute.doc_sincos);
 
   m.def(
       "Substitute",
-      [](const MatrixX<Expression>& M, const SinCosSubstitution& subs) {
-        return Substitute(M, subs);
-      },
-      py::arg("m"), py::arg("subs"), doc.Substitute.doc_sincos_matrix);
+      [](const MatrixX<Expression>& M, const SinCosSubstitution& subs,
+          bool half_angle) { return Substitute(M, subs, half_angle); },
+      py::arg("m"), py::arg("subs"), py::arg("half_angle") = false,
+      doc.Substitute.doc_sincos_matrix);
 
   {
     constexpr auto& cls_doc = doc.FormulaKind;

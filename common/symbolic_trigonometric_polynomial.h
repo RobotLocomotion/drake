@@ -38,13 +38,21 @@ using SinCosSubstitution = std::unordered_map<Variable, SinCos>;
  @endverbatim
  will result in the expression `x * (sx*cy + cx*sy)`.
 
+ @param half_angle If true, then the same workflow replaces instances of
+ sin(q/2) and cos(q/2) in `e` will be replaced with `s`, and `c`.
+ @default false.
+ 
+ The half-angle representation is more natural in many analysis computations
+ for robots, for instance:
+ https://underactuated.csail.mit.edu/lyapunov.html#trig_quadratic
+
  @throws std::exception if a trigonometric function is not a trigonometric
  polynomial in `q` or if the `e` requires a trigonometric expansion that not
  supported yet.
  @pydrake_mkdoc_identifier{sincos}
 */
-Expression Substitute(const Expression& e,
-                      const SinCosSubstitution& subs);
+Expression Substitute(const Expression& e, const SinCosSubstitution& subs,
+                      bool half_angle = false);
 
 /** Matrix version of sin/cos substitution.
  @pydrake_mkdoc_identifier{sincos_matrix} */
@@ -52,14 +60,15 @@ template <typename Derived>
 Eigen::Matrix<Expression, Derived::RowsAtCompileTime,
               Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
               Derived::MaxColsAtCompileTime>
-Substitute(const Eigen::MatrixBase<Derived>& m,
-           const SinCosSubstitution& subs) {
+Substitute(const Eigen::MatrixBase<Derived>& m, const SinCosSubstitution& subs,
+           bool half_angle = false) {
   static_assert(std::is_same_v<typename Derived::Scalar, Expression>,
                 "Substitute only accepts a matrix of symbolic::Expression.");
   // Note that the return type is written out explicitly to help gcc 5 (on
   // ubuntu).
-  return m.unaryExpr(
-      [&subs](const Expression& e) { return Substitute(e, subs); });
+  return m.unaryExpr([&subs, half_angle](const Expression& e) {
+    return Substitute(e, subs, half_angle);
+  });
 }
 
 }  // namespace symbolic
