@@ -41,7 +41,7 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {
   multibody::MultibodyPlant<double> plant(0.0);
   // Create a parser for the plant.
   multibody::Parser parser{&plant};
-  //   Load the model into the parser.
+  // Load the model into the parser.
   const multibody::ModelInstanceIndex model_instance =
       parser.AddModelFromFile(iiwa_path);
   // Attach the base of the robot into the world frame.
@@ -53,22 +53,22 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {
   std::unique_ptr<systems::Context<double>> context =
       plant.CreateDefaultContext();
 
-  // Define the end-effector link.
+  // Define the end-effector link and get the corresponding body and frame.
   const std::string ee_link_name = "iiwa_link_7";
   const multibody::Body<double>& ee_body = plant.GetBodyByName(ee_link_name);
   const multibody::Frame<double>& ee_frame = plant.GetFrameByName(ee_link_name);
 
-  // Create an IK object.
+  // Create an IK object and get its mathetical program.
   multibody::InverseKinematics relaxed_ik(plant, true);
   solvers::MathematicalProgram* prog = relaxed_ik.get_mutable_prog();
 
-  // Define a uniform position relaxation and the position bound variables.
+  // Define a uniform position relaxation.
   const Eigen::Vector3d pos_tol = 1e-4 * Eigen::Vector3d::Ones();
 
   // Get the joint position limits for random generation by leveraging the
   // fact that iiwa has symmetric position limits.
   const Eigen::VectorXd joint_pos_limits(plant.GetPositionUpperLimits());
-  // Generate the random goal configurations.
+  // Generate random goal configurations.
   const int num_rand_goals = 10;
   std::vector<math::RigidTransformd> ee_pose_goal(num_rand_goals);
   for (int i = 0; i < num_rand_goals; ++i) {
@@ -77,11 +77,11 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {
         .get_mutable_generalized_position()
         .SetFromVector(
             Eigen::VectorXd::Random(7).cwiseProduct(0.9 * joint_pos_limits));
-    // Evaluate the corresponding end-effector position.
+    // Evaluate the corresponding end-effector pose.
     ee_pose_goal[i] = plant.EvalBodyPoseInWorld(*context, ee_body);
   }
 
-  // Sample a random initial guess assuming that the range [-1, 1] rad
+  // Sample random initial guesses assuming that the range [-1, 1] rad
   // does not violate any of the joint position limits.
   const int num_rand_init_guess = 3;
   const Eigen::MatrixXd q0(Eigen::MatrixXd::Random(7, num_rand_init_guess));
@@ -93,13 +93,12 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {
   prog->AddConstraint(pos_constraint, relaxed_ik.q());
 
   for (auto _ : state) {
-    // Generate 10 goals randomly within joint position limits.
+    // Solve the problem for each goal and initial guess.
     for (int i = 0; i < num_rand_goals; ++i) {
       // Update the task constraint.
       pos_constraint->set_bounds(ee_pose_goal[i].translation() - pos_tol,
                                  ee_pose_goal[i].translation() + pos_tol);
 
-      // Solve each task using three random initial guesses.
       for (int j = 0; j < num_rand_init_guess; ++j) {
         // Set the initial guess.
         prog->SetInitialGuess(relaxed_ik.q(), q0.col(j));
@@ -108,8 +107,8 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {
         auto result = solvers::Solve(*prog);
 
         // Confirm that the optimization has succeeded.
-        // This is enabled only for SNOPT b/c IPOPT exceeds the maximum number
-        // of iterations in a few cases but still meets the task constraints.
+        // This is done only for SNOPT b/c IPOPT exceeds the maximum number of
+        // iterations in a few cases while still meeting the task constraints.
         if (result.get_solver_id() == solvers::SnoptSolver::id())
           DRAKE_DEMAND(result.is_success());
 
