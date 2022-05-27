@@ -3,6 +3,7 @@
 #include <map>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 #define DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
@@ -25,9 +26,9 @@ class SinCosVisitor {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SinCosVisitor)
 
-  explicit SinCosVisitor(SinCosSubstitution s) : subs_{std::move(s)} {};
+  explicit SinCosVisitor(SinCosSubstitution s, bool half_angle = false)
+      : subs_{std::move(s)}, half_angle_{half_angle} {};
 
-  // Generates latex expression for the expression @p e.
   [[nodiscard]] Expression Substitute(
       const Expression& e,
       std::optional<bool> needs_substitution = std::nullopt) const {
@@ -54,9 +55,10 @@ class SinCosVisitor {
     if (iter == subs_.end()) {
       return e;
     } else if (status == kInsideSin) {
-      return iter->second.s;
+      return half_angle_ ? 2 * iter->second.s * iter->second.c : iter->second.s;
     } else if (status == kInsideCos) {
-      return iter->second.c;
+      return half_angle_ ? 1 - 2 * iter->second.s * iter->second.s
+                         : iter->second.c;
     }
     return e;
   }
@@ -112,16 +114,35 @@ class SinCosVisitor {
     const std::map<Expression, Expression>& base_to_exponent_map{
         get_base_to_exponent_map_in_multiplication(e)};
     if (status == kInsideSin) {
-      double c_int;
+      std::string msg = fmt::format(
+          "Got sin({}), but we only support sin(c*x) where c is an integer (c "
+          "= +/- 0.5 is also supported if performing a half-angle "
+          "substitution), and x is a variable to be substituted.",
+          e.to_string());
       if (base_to_exponent_map.size() != 1 ||
-          base_to_exponent_map.begin()->second != 1.0 ||
-          modf(c, &c_int) != 0.0) {
-        throw std::runtime_error(
-            fmt::format("Got sin({}), but we only support sin(c*x) where c is "
-                        "an integer, and x is a variable to be substituted.",
-                        e.to_string()));
+          base_to_exponent_map.begin()->second != 1.0) {
+        throw std::runtime_error(msg);
       }
       Expression x = base_to_exponent_map.begin()->first;
+      if (!is_variable(x)) {
+        throw std::runtime_error(msg);
+      }
+      if (half_angle_) {
+        // Handle special case of sin(±0.5*x).
+        auto iter = subs_.find(get_variable(x));
+        if (iter == subs_.end()) {
+          throw std::runtime_error(msg);
+        } else if (c == 0.5) {
+          return iter->second.s;
+        } else if (c == -0.5) {
+          return -iter->second.s;
+        }
+        // TODO(russt): Handle the cases where c is an odd multiple of 0.5.
+      }
+      double c_int;
+      if (modf(c, &c_int) != 0.0) {
+        throw std::runtime_error(msg);
+      }
       if (c_int == 0.0) {
         return 0.0;  // Don't expect to get here, though.
       } else if (c_int == 1.0) {
@@ -138,16 +159,33 @@ class SinCosVisitor {
       }
       throw std::runtime_error("Got unexpected 0 < c_int < 1");
     } else if (status == kInsideCos) {
-      double c_int;
+      std::string msg = fmt::format(
+          "Got cos({}), but we only support cos(c*x) where c is an integer (c "
+          "= +/- 0.5 is also supported if performing a half-angle "
+          "substitution), and x is a variable to be substituted.",
+          e.to_string());
       if (base_to_exponent_map.size() != 1 ||
-          base_to_exponent_map.begin()->second != 1.0 ||
-          modf(c, &c_int) != 0.0) {
-        throw std::runtime_error(
-            fmt::format("Got cos({}), but we only support cos(c*x) where c is "
-                        "an integer, and x is a variable to be substituted.",
-                        e.to_string()));
+          base_to_exponent_map.begin()->second != 1.0) {
+        throw std::runtime_error(msg);
       }
       Expression x = base_to_exponent_map.begin()->first;
+      if (!is_variable(x)) {
+        throw std::runtime_error(msg);
+      }
+      if (half_angle_) {
+        // Handle special case of cos(±0.5*x).
+        auto iter = subs_.find(get_variable(x));
+        if (iter == subs_.end()) {
+          throw std::runtime_error(msg);
+        } else if (c == 0.5 || c == -0.5) {
+          return iter->second.c;
+        }
+        // TODO(russt): Handle the cases where c is an odd multiple of 0.5.
+      }
+      double c_int;
+      if (modf(c, &c_int) != 0.0) {
+        throw std::runtime_error(msg);
+      }
       if (c_int == 0.0) {
         return 1.0;  // Don't expect to get here, though.
       } else if (c_int == 1.0) {
@@ -341,13 +379,14 @@ class SinCosVisitor {
 
  private:
   SinCosSubstitution subs_;
+  bool half_angle_;
 };
 
 }  // namespace
 
-Expression Substitute(const Expression& e,
-                      const SinCosSubstitution& subs) {
-  return SinCosVisitor(subs).Substitute(e);
+Expression Substitute(const Expression& e, const SinCosSubstitution& subs,
+                      bool half_angle) {
+  return SinCosVisitor(subs, half_angle).Substitute(e);
 }
 
 }  // namespace symbolic
