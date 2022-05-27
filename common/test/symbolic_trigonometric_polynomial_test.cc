@@ -137,6 +137,12 @@ GTEST_TEST(SymbolicLatex, BasicTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(Substitute(cos(if_then_else(x > y, x, y)), subs),
                               ".*'status == kNotSinCos' failed.*");
 
+  // Limited half-angle support.
+  DRAKE_EXPECT_THROWS_MESSAGE(Substitute(sin(0.5*x), subs),
+                              ".*only support sin.* where c is an integer.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(Substitute(cos(0.5*x), subs),
+                              ".*only support cos.* where c is an integer.*");
+
   // Matrix<Expression>
   Eigen::Matrix<Expression, 2, 2> m;
   m << x, sin(x), sin(y), sin(x + y);
@@ -145,6 +151,39 @@ GTEST_TEST(SymbolicLatex, BasicTest) {
   EXPECT_PRED2(ExprEqual, m2(0, 1), sx);
   EXPECT_PRED2(ExprEqual, m2(1, 0), sy);
   EXPECT_PRED2(ExprEqual, m2(1, 1), sx * cy + sy * cx);
+}
+
+GTEST_TEST(SymbolicLatex, HalfAngleTest) {
+  Variable x{"x"}, y{"y"}, z{"z"};
+  Variable sx{"sx"}, sy{"sy"}, cx{"cx"}, cy{"cy"};
+  SinCosSubstitution subs;
+  subs.emplace(x, SinCos(sx, cx, SinCosSubstitutionType::kHalfAnglePreferSin));
+  subs.emplace(y, SinCos(sy, cy, SinCosSubstitutionType::kHalfAnglePreferCos));
+
+  EXPECT_PRED2(ExprEqual, Substitute(sin(x), subs), 2 * sx * cx);
+  EXPECT_PRED2(ExprEqual, Substitute(sin(1 * x), subs), 2 * sx * cx);
+  EXPECT_PRED2(ExprEqual, Substitute(sin(2 * x), subs),
+               4 * sx * cx * (1 - 2 * sx * sx));
+  EXPECT_PRED2(ExprEqual, Substitute(cos(x), subs), 1- 2 * sx * sx);
+  EXPECT_PRED2(ExprEqual, Substitute(sin(y), subs), 2 * sy * cy);
+  EXPECT_PRED2(ExprEqual, Substitute(cos(y), subs), 2 * cy * cy - 1);
+  EXPECT_PRED2(ExprEqual, Substitute(sin(0.5*x), subs), sx);
+  EXPECT_PRED2(ExprEqual, Substitute(cos(0.5*x), subs), cx);
+  EXPECT_PRED2(ExprEqual, Substitute(sin(-0.5*x), subs), -sx);
+  EXPECT_PRED2(ExprEqual, Substitute(cos(-0.5*x), subs), cx);
+  // Note: We don't support division yet, but calling Expand makes this work:
+  EXPECT_PRED2(ExprEqual, Substitute(sin(x / 2.0).Expand(), subs), sx);
+
+  // Matrix half-angle.
+  Eigen::Matrix<Expression, 2, 2> m;
+  m << x, sin(x), sin(y), sin(x + y);
+  const Eigen::Matrix<Expression, 2, 2> m2 = Substitute(m, subs);
+  EXPECT_PRED2(ExprEqual, m2(0, 0), x);
+  EXPECT_PRED2(ExprEqual, m2(0, 1), 2 * sx * cx);
+  EXPECT_PRED2(ExprEqual, m2(1, 0), 2 * sy * cy);
+  EXPECT_PRED2(
+      ExprEqual, m2(1, 1),
+      (2 * sx * cx) * (2 * cy * cy - 1) + (2 * sy * cy) * (1 - 2 * sx * sx));
 }
 
 }  // namespace

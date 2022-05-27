@@ -513,11 +513,25 @@ PYBIND11_MODULE(symbolic, m) {
           const Expression& e) { return Substitute(M, var, e); },
       py::arg("m"), py::arg("var"), py::arg("e"), doc.Substitute.doc_3args);
 
+  {
+    using Enum = SinCosSubstitutionType;
+    constexpr auto& enum_doc = doc.SinCosSubstitutionType;
+    py::enum_<Enum> enum_py(m, "SinCosSubstitutionType", enum_doc.doc);
+    enum_py  // BR
+        .value("kAngle", Enum::kAngle, enum_doc.kAngle.doc)
+        .value("kHalfAnglePreferSin", Enum::kHalfAnglePreferSin,
+            enum_doc.kHalfAnglePreferSin.doc)
+        .value("kHalfAnglePreferCos", Enum::kHalfAnglePreferCos,
+            enum_doc.kHalfAnglePreferCos.doc);
+  }
+
   py::class_<SinCos>(m, "SinCos", doc.SinCos.doc)
-      .def(py::init<const Variable&, const Variable&>(), py::arg("s"),
-          py::arg("c"), doc.SinCos.ctor.doc)
+      .def(py::init<Variable, Variable, SinCosSubstitutionType>(), py::arg("s"),
+          py::arg("c"), py::arg("type") = SinCosSubstitutionType::kAngle,
+          doc.SinCos.ctor.doc)
       .def_readwrite("s", &SinCos::s, doc.SinCos.s.doc)
-      .def_readwrite("c", &SinCos::c, doc.SinCos.c.doc);
+      .def_readwrite("c", &SinCos::c, doc.SinCos.c.doc)
+      .def_readwrite("type", &SinCos::type, doc.SinCos.type.doc);
 
   m.def(
       "Substitute",
