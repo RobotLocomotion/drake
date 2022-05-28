@@ -975,7 +975,7 @@ drake_cc_variant_library(
     ],
     deps_enabled = [
         "//math:autodiff",
-        "@nlopt",
+        "@nlopt_internal//:nlopt",
     ],
 )
 

@@ -1,0 +1,188 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+package(default_visibility = ["//visibility:private"])
+
+# Chooses the nlopt preprocessor substitutions that we want to use from Bazel.
+cmake_configure_file(
+    name = "config",
+    src = "nlopt_config.h.in",
+    out = "nlopt_config.h",
+    cmakelists = ["CMakeLists.txt"],
+    defines = [
+        # Yes, we are going to build the C++ bindings.
+        "NLOPT_CXX=1",
+        # C11 standard spelling.
+        "THREADLOCAL=_Thread_local",
+        # Say "yes" to some useful things.
+        "HAVE_COPYSIGN=1",
+        "HAVE_FPCLASSIFY=1",
+        "HAVE_ISINF=1",
+        "HAVE_ISNAN=1",
+        "HAVE_LIBM=1",
+        "HAVE_QSORT_R=1",
+        "HAVE_STDINT_H=1",
+        "HAVE_UINT32_T=1",
+        # These end up being unused; empty-string is a fail-fast value.
+        "SIZEOF_UNSIGNED_INT=",
+        "SIZEOF_UNSIGNED_LONG=",
+    ],
+)
+
+# Creates api/nlopt.hpp based on api/nlopt.h.
+genrule(
+    name = "nlopt_hpp_genrule",
+    srcs = [
+        "src/api/nlopt-in.hpp",
+        "src/api/nlopt.h",
+        "cmake/generate-cpp.cmake",
+    ],
+    outs = ["src/api/nlopt.hpp"],
+    cmd = " ".join([
+        "cmake",
+        "-DAPI_SOURCE_DIR=$$(dirname $(execpath :src/api/nlopt.h))",
+        "-P $(execpath :cmake/generate-cpp.cmake)",
+        "&&",
+        "mv nlopt.hpp $(execpath :src/api/nlopt.hpp)",
+    ]),
+)
+
+# TODO(jwnimmer-tri) Compile this using vendor_cxx.
+cc_library(
+    name = "nlopt",
+    srcs = [
+        # This comes from a genrule above.
+        ":nlopt_config.h",
+        # This list exactly matches CMakeLists.txt NLOPT_SOURCES, except that
+        # we have removed all of the "src/algs/luksan/**" sources (LGPL).
+        "src/algs/direct/DIRect.c",
+        "src/algs/direct/direct_wrap.c",
+        "src/algs/direct/DIRserial.c",
+        "src/algs/direct/DIRsubrout.c",
+        "src/algs/direct/direct-internal.h",
+        "src/algs/direct/direct.h",
+        "src/algs/cdirect/cdirect.c",
+        "src/algs/cdirect/hybrid.c",
+        "src/algs/cdirect/cdirect.h",
+        "src/algs/praxis/praxis.c",
+        "src/algs/praxis/praxis.h",
+        "src/algs/crs/crs.c",
+        "src/algs/crs/crs.h",
+        "src/algs/mlsl/mlsl.c",
+        "src/algs/mlsl/mlsl.h",
+        "src/algs/mma/mma.c",
+        "src/algs/mma/mma.h",
+        "src/algs/mma/ccsa_quadratic.c",
+        "src/algs/cobyla/cobyla.c",
+        "src/algs/cobyla/cobyla.h",
+        "src/algs/newuoa/newuoa.c",
+        "src/algs/newuoa/newuoa.h",
+        "src/algs/neldermead/nldrmd.c",
+        "src/algs/neldermead/neldermead.h",
+        "src/algs/neldermead/sbplx.c",
+        "src/algs/auglag/auglag.c",
+        "src/algs/auglag/auglag.h",
+        "src/algs/bobyqa/bobyqa.c",
+        "src/algs/bobyqa/bobyqa.h",
+        "src/algs/isres/isres.c",
+        "src/algs/isres/isres.h",
+        "src/algs/slsqp/slsqp.c",
+        "src/algs/slsqp/slsqp.h",
+        "src/algs/esch/esch.c",
+        "src/algs/esch/esch.h",
+        "src/api/general.c",
+        "src/api/options.c",
+        "src/api/optimize.c",
+        "src/api/deprecated.c",
+        "src/api/nlopt-internal.h",
+        "src/api/nlopt.h",
+        "src/api/f77api.c",
+        "src/api/f77funcs.h",
+        "src/api/f77funcs_.h",
+        "src/util/mt19937ar.c",
+        "src/util/sobolseq.c",
+        "src/util/soboldata.h",
+        "src/util/timer.c",
+        "src/util/stop.c",
+        "src/util/nlopt-util.h",
+        "src/util/redblack.c",
+        "src/util/redblack.h",
+        "src/util/qsort_r.c",
+        "src/util/rescale.c",
+        # This list exactly matches CMakeLists.txt extras for NLOPT_CXX.
+        "src/algs/stogo/global.cc",
+        "src/algs/stogo/linalg.cc",
+        "src/algs/stogo/local.cc",
+        "src/algs/stogo/stogo.cc",
+        "src/algs/stogo/tools.cc",
+        "src/algs/stogo/global.h",
+        "src/algs/stogo/linalg.h",
+        "src/algs/stogo/local.h",
+        "src/algs/stogo/stogo_config.h",
+        "src/algs/stogo/stogo.h",
+        "src/algs/stogo/tools.h",
+        # This list exactly matches CMakeLists.txt extras for NLOPT_CXX11.
+        "src/algs/ags/data_types.hpp",
+        "src/algs/ags/evolvent.hpp",
+        "src/algs/ags/evolvent.cc",
+        "src/algs/ags/solver.hpp",
+        "src/algs/ags/solver.cc",
+        "src/algs/ags/local_optimizer.hpp",
+        "src/algs/ags/local_optimizer.cc",
+        "src/algs/ags/ags.h",
+        "src/algs/ags/ags.cc",
+    ],
+    hdrs = [
+        "src/api/nlopt.h",
+        ":src/api/nlopt.hpp",
+    ],
+    copts = ["-w"],
+    includes = [
+        "src",
+        # This list exactly matches CMakeLists.txt include_directories, except
+        # that we have removed "src/algs/luksan" (LGPL).
+        "src/algs/stogo",
+        "src/algs/ags",
+        "src/util",
+        "src/algs/direct",
+        "src/algs/cdirect",
+        "src/algs/praxis",
+        "src/algs/crs",
+        "src/algs/mlsl",
+        "src/algs/mma",
+        "src/algs/cobyla",
+        "src/algs/newuoa",
+        "src/algs/neldermead",
+        "src/algs/auglag",
+        "src/algs/bobyqa",
+        "src/algs/isres",
+        "src/algs/slsqp",
+        "src/algs/esch",
+        "src/api",
+    ],
+    linkstatic = True,
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    targets = [":nlopt"],
+    docs = [
+        "src/AUTHORS",
+        "src/NEWS",
+    ] + glob([
+        "src/**/COPYING",
+        "src/**/COPYRIGHT",
+    ], exclude = [
+        "**/luksan/**",
+    ]),
+    visibility = ["//visibility:public"],
+)

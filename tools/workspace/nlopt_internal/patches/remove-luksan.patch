@@ -1,0 +1,35 @@
+TBD
+
+--- src/api/optimize.c.orig	2021-12-03 10:38:01.000000000 -0800
++++ src/api/optimize.c	2022-05-28 11:32:14.253582679 -0700
+@@ -40,7 +40,9 @@
+ 
+ #include "cdirect.h"
+ 
++#if 0
+ #include "luksan.h"
++#endif
+ 
+ #include "crs.h"
+ 
+@@ -573,18 +575,18 @@
+             return praxis_(nlopt_get_param(opt, "t0_tol", 0.0), DBL_EPSILON, step, ni, x, f_bound, opt, &stop, minf);
+         }
+ 
++#if 0
+     case NLOPT_LD_LBFGS:
+         return luksan_plis(ni, f, f_data, lb, ub, x, minf, &stop, opt->vector_storage);
+-
+     case NLOPT_LD_VAR1:
+     case NLOPT_LD_VAR2:
+         return luksan_plip(ni, f, f_data, lb, ub, x, minf, &stop, opt->vector_storage, algorithm == NLOPT_LD_VAR1 ? 1 : 2);
+-
+     case NLOPT_LD_TNEWTON:
+     case NLOPT_LD_TNEWTON_RESTART:
+     case NLOPT_LD_TNEWTON_PRECOND:
+     case NLOPT_LD_TNEWTON_PRECOND_RESTART:
+         return luksan_pnet(ni, f, f_data, lb, ub, x, minf, &stop, opt->vector_storage, 1 + (algorithm - NLOPT_LD_TNEWTON) % 2, 1 + (algorithm - NLOPT_LD_TNEWTON) / 2);
++#endif
+ 
+     case NLOPT_GN_CRS2_LM:
+         if (!finite_domain(n, lb, ub))

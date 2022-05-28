@@ -32,8 +32,6 @@ zip
 libgl1-mesa-dev
 libglib2.0-dev
 libjchart2d-java
-libnlopt-dev
-libnlopt-cxx-dev
 libxt-dev
 # Build dependencies (OpenCL).
 opencl-headers

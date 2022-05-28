@@ -14,4 +14,7 @@ def dreal_repository(
         patches = [
             "@drake//tools/workspace/dreal:ibex_2.8.6.patch",
         ],
+        repo_mapping = {
+            "@nlopt": "@nlopt_internal",
+        },
     )
