@@ -6,7 +6,6 @@
 load(
     "@drake//tools/install:install.bzl",
     "install",
-    "install_files",
 )
 
 licenses(["notice"])  # MIT
@@ -92,27 +91,12 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-CMAKE_PACKAGE = "spdlog"
-
-install_files(
-    name = "install_cmake_config",
-    dest = "lib/cmake/{}".format(CMAKE_PACKAGE),
-    files = [
-        "@drake//tools/workspace/spdlog:{}-config.cmake".format(CMAKE_PACKAGE),  # noqa
-        "@drake//tools/workspace/spdlog:{}-config-version.cmake".format(CMAKE_PACKAGE),  # noqa
-    ],
-    strip_prefix = ["**/"],
-    allowed_externals = ["@drake//:.bazelproject"],
-    visibility = ["//visibility:private"],
-)
-
 install(
     name = "install",
     targets = [":libdrake_spdlog.so"],
-    hdr_dest = "include/" + CMAKE_PACKAGE,
+    hdr_dest = "include/spdlog",
     hdr_strip_prefix = ["include"],
     hdrs = _HDRS,
     docs = ["LICENSE"],
-    deps = [":install_cmake_config"],
     visibility = ["//visibility:public"],
 )
