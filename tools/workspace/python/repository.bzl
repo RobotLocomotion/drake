@@ -64,12 +64,9 @@ def repository_python_info(repository_ctx):
     os_result = determine_os(repository_ctx)
     if os_result.error != None:
         fail(os_result.error)
-    if os_result.is_macos:
-        os_key = os_result.distribution
-    elif os_result.is_ubuntu:
-        os_key = os_result.distribution + ":" + os_result.ubuntu_release
-    else:
-        os_key = "manylinux"
+    os_key = os_result.target
+    if os_result.is_ubuntu:
+        os_key += ":" + os_result.ubuntu_release
     versions_supported = _VERSION_SUPPORT_MATRIX[os_key]
 
     if os_result.is_macos:

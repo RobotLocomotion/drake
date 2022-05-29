@@ -22,7 +22,7 @@ def _impl(repo_ctx):
     build_content = """\
 package(default_visibility = ["//visibility:public"])
 """
-    if os_result.distribution in repo_ctx.attr.local_distributions:
+    if os_result.target in repo_ctx.attr.local_os_targets:
         is_local = True
         filename = basename(repo_ctx.attr.local_jar)
         repo_ctx.symlink(
@@ -66,7 +66,7 @@ install(
 _internal_drake_java_import = repository_rule(
     attrs = {
         "licenses": attr.string_list(mandatory = True),
-        "local_distributions": attr.string_list(mandatory = True),
+        "local_os_targets": attr.string_list(mandatory = True),
         "local_jar": attr.string(mandatory = True),
     },
     implementation = _impl,
@@ -76,13 +76,13 @@ def drake_java_import(
         name,
         *,
         licenses,
-        local_distributions,
+        local_os_targets,
         local_jar,
         maven_jar,
         maven_jar_sha256,
         mirrors):
     """A repository rule to bring in a Java dependency, either from the host's
-    OS distribution, or else Maven. The list of local_distributions indicates
+    OS distribution, or else Maven. The list of local_os_targets indicates
     which distributions provide this jar; for those, the local_jar is the full
     path to the jar. Otherwise, the maven_jar will be used.
     """
@@ -98,6 +98,6 @@ def drake_java_import(
     _internal_drake_java_import(
         name = name,
         licenses = licenses,
-        local_distributions = local_distributions,
+        local_os_targets = local_os_targets,
         local_jar = local_jar,
     )
