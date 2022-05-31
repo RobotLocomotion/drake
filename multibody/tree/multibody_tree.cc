@@ -2900,11 +2900,13 @@ void MultibodyTree<T>::IssuePostFinalizeMassInertiaWarnings() const {
     const Mobilizer<T>& parent_mobilizer =
         get_mobilizer(parent_mobilizer_index);
 
-    // Get parent body name (may be needed for subsequent warning message).
+    // Check previous assumptions.
     const Body<T>& parent_body = get_body(parent_body_index);
-    const std::string& parent_body_name = parent_body.name();
     DRAKE_DEMAND(parent_body_index == parent_body.index());
     DRAKE_DEMAND(parent_body_index != world_index());
+
+    // Get parent body name (for subsequent warning message).
+    const std::string& parent_body_name = parent_body.name();
 
     // Issue zero mass warning if the composite rigid body can translate.
     if ( parent_mobilizer.can_translate() ) {
@@ -2920,9 +2922,9 @@ void MultibodyTree<T>::IssuePostFinalizeMassInertiaWarnings() const {
 
     // Issue zero rotational inertia if the composite rigid body can rotate.
     if (parent_mobilizer.can_rotate()) {
-      const RotationalInertia<double> total_inertia =
-        CalcTotalDefaultRotationalInertia(welded_parent_children_bodies);
-      if (total_inertia.IsZero()) {
+      const bool is_rotational_inertia_nonzero =
+        IsTotalDefaultRotationalInertiaNonZero(welded_parent_children_bodies);
+      if (!is_rotational_inertia_nonzero) {
         const std::string msg = fmt::format(
         "It seems that body {} has no rotational inertia, yet it is attached "
         "by a joint that has a rotational degree of freedom.",
@@ -2946,22 +2948,15 @@ double MultibodyTree<T>::CalcTotalDefaultMass(
 }
 
 template <typename T>
-RotationalInertia<double> MultibodyTree<T>::CalcTotalDefaultRotationalInertia(
+bool MultibodyTree<T>::IsTotalDefaultRotationalInertiaNonZero(
       const std::set<BodyIndex>& body_indexes) const {
-  RotationalInertia<double> total_inertia;
-  total_inertia.SetZero();
   for (BodyIndex body_index : body_indexes) {
     const Body<T>& body_B = get_body(body_index);
     const RotationalInertia<double> I_BBo_B =
         body_B.default_rotational_inertia();
-
-    // Each body B has its own origin point Bo and own unit vectors Bx, By, Bz.
-    // As such, simply adding a body B1's rotational inertia to a body B2's
-    // rotational inertia may have no physical meaning. This calculation is not
-    // rigorous. Its job is help warn when the composite body has no inertia.
-    if (!I_BBo_B.IsNaN()) total_inertia += I_BBo_B;
+    if (!I_BBo_B.IsNaN() && !I_BBo_B.IsZero()) return true;
   }
-  return total_inertia;
+  return false;  // Total default rotational inertia is NaN or zero.
 }
 
 template <typename T>
