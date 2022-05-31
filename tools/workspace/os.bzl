@@ -4,15 +4,15 @@
 """A collection of OS-related utilities intended for use in repository rules,
 i.e., rules used by WORKSPACE files, not BUILD files.
 
-To opt-in to the "manylinux" build variant, set the environment variable
-`DRAKE_OS=manylinux` before running the build.  The most precise way to do
-this is to add a `user.bazelrc` file to the root of the Drake source tree
-with the following content:
+To opt-in to the "manylinux" or "macos_wheel" build variants, set the
+environment variable (e.g.) `DRAKE_OS=manylinux` before running the build.  The
+most precise way to do this is to add a `user.bazelrc` file to the root of the
+Drake source tree with the following content:
 
   common --repo_env=DRAKE_OS=manylinux
 
 Alternatively, you may pass `--repo_env=DRAKE_OS=manylinux` on the bazel
-command line.
+command line. (Replace "manylinux" with "macos_wheel" as appropriate.)
 """
 
 load("@drake//tools/workspace:execute.bzl", "which")
@@ -140,6 +140,19 @@ def _determine_macos(repository_ctx):
     # Shared error message text across different failure cases.
     error_prologue = "could not determine macOS version: "
 
+    # Allow the user to override the OS selection.
+    drake_os = repository_ctx.os.environ.get("DRAKE_OS", "")
+    is_macos_wheel = False
+    if len(drake_os) > 0:
+        if drake_os == "macos_wheel":
+            is_macos_wheel = True
+        else:
+            return _make_result(error = "{}{} DRAKE_OS={}".format(
+                error_prologue,
+                "unknown value for environment variable",
+                drake_os,
+            ))
+
     # Run sw_vers to determine macOS version.
     sw_vers = exec_using_which(repository_ctx, [
         "sw_vers",
@@ -166,6 +179,7 @@ def _determine_macos(repository_ctx):
         return _make_result(
             macos_release = macos_release,
             homebrew_prefix = homebrew_prefix,
+            is_wheel = is_macos_wheel,
         )
 
     # Nothing matched.
@@ -188,7 +202,8 @@ def determine_os(repository_ctx):
     libstdc++, etc.). In this case, the value of is_ubuntu will be False, but
     ubuntu_release will still be provided.
 
-    TODO(jwnimmer-tri) The is_macos_wheel option isn't detected / active yet.
+    The "macos_wheel" target indicates this build will be packaged into a
+    Python wheel.
 
     In case of an error, the "error" attribute of the struct will be set, and
     all of the other fields will be None or False.
@@ -211,8 +226,8 @@ def determine_os(repository_ctx):
         - macos_release: str like "11" or "12" (set any time the build platform
             is macOS, even for builds targeting "macos_wheel")
         - homebrew_prefix: str "/usr/local" or "/opt/homebrew" (set any time
-             the build platform is macOS, even for builds targeting
-             "macos_wheel")
+            the build platform is macOS, even for builds targeting
+            "macos_wheel")
     """
 
     os_name = repository_ctx.os.name
