@@ -45,6 +45,7 @@ from pydrake.systems.primitives import (
     PerceptronActivationType,
     RandomSource,
     Saturation, Saturation_,
+    SharedPointerSystem, SharedPointerSystem_,
     Sine, Sine_,
     StateInterpolatorWithDiscreteDerivative,
     StateInterpolatorWithDiscreteDerivative_,
@@ -95,6 +96,7 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(MultilayerPerceptron_)
         self._check_instantiations(PassThrough_)
         self._check_instantiations(Saturation_)
+        self._check_instantiations(SharedPointerSystem_)
         self._check_instantiations(Sine_)
         self._check_instantiations(StateInterpolatorWithDiscreteDerivative_)
         self._check_instantiations(SymbolicVectorSystem_)
@@ -623,6 +625,26 @@ class TestGeneral(unittest.TestCase):
         ZeroOrderHold(
             period_sec=0.1,
             abstract_model_value=AbstractValue.Make("Hello world"))
+
+    def test_shared_pointer_system_ctor(self):
+        dut = SharedPointerSystem(value_to_hold=[1, 2, 3])
+        readback = dut.get()
+        self.assertListEqual(readback, [1, 2, 3])
+        del dut
+        self.assertListEqual(readback, [1, 2, 3])
+
+    def test_shared_pointer_system_builder(self):
+        builder = DiagramBuilder()
+        self.assertListEqual(
+            SharedPointerSystem.AddToBuilder(
+                builder=builder, value_to_hold=[1, 2, 3]),
+            [1, 2, 3])
+        diagram = builder.Build()
+        del builder
+        readback = diagram.GetSystems()[0].get()
+        self.assertListEqual(readback, [1, 2, 3])
+        del diagram
+        self.assertListEqual(readback, [1, 2, 3])
 
     def test_sine(self):
         # Test scalar output.
