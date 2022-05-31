@@ -50,6 +50,7 @@ load("@drake//tools/workspace:os.bzl", "determine_os")
 _VERSION_SUPPORT_MATRIX = {
     "ubuntu:20.04": ["3.8"],
     "macos": ["3.9"],
+    "macos_wheel": ["3.9"],
     "manylinux": ["3.8", "3.9"],
 }
 
@@ -69,7 +70,7 @@ def repository_python_info(repository_ctx):
         os_key += ":" + os_result.ubuntu_release
     versions_supported = _VERSION_SUPPORT_MATRIX[os_key]
 
-    if os_result.is_macos:
+    if os_result.is_macos or os_result.is_macos_wheel:
         # This value must match the interpreter_path in
         # @drake//tools/py_toolchain:macos_py3_runtime
         python = repository_ctx.attr.macos_interpreter_path

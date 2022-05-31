@@ -52,18 +52,25 @@ def setup_pkg_config_repository(repository_ctx):
         [],
     ))
 
-    # Find the desired homebrew search path, if any.
-    homebrew_prefix = determine_os(repository_ctx).homebrew_prefix
-    homebrew_subdir = getattr(
-        repository_ctx.attr,
-        "homebrew_subdir",
-        "",
-    )
-    if homebrew_prefix and homebrew_subdir:
-        pkg_config_paths.insert(0, "{}/{}".format(
-            homebrew_prefix,
-            homebrew_subdir,
-        ))
+    os_result = determine_os(repository_ctx)
+
+    if os_result.is_macos or os_result.is_macos_wheel:
+        # Find the desired homebrew search path, if any.
+        homebrew_prefix = os_result.homebrew_prefix
+        homebrew_subdir = getattr(
+            repository_ctx.attr,
+            "homebrew_subdir",
+            "",
+        )
+        if homebrew_prefix and homebrew_subdir:
+            pkg_config_paths.insert(0, "{}/{}".format(
+                homebrew_prefix,
+                homebrew_subdir,
+            ))
+
+    if os_result.is_manylinux or os_result.is_macos_wheel:
+        pkg_config_paths.insert(0, "/opt/drake-dependencies/share/pkgconfig")
+        pkg_config_paths.insert(0, "/opt/drake-dependencies/lib/pkgconfig")
 
     # Check if we can find the required *.pc file of any version.
     result = _run_pkg_config(repository_ctx, args, pkg_config_paths)

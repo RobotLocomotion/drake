@@ -11,7 +11,4 @@ cmake -G Ninja \
 
 ninja
 
-ln -s /opt/drake-dependencies/lib/pkgconfig /usr/local/lib
-ln -s /opt/drake-dependencies/share/pkgconfig /usr/local/share
-
 ln -s /opt/drake-dependencies/bin/patchelf /usr/local/bin/patchelf

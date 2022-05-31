@@ -17,7 +17,7 @@ def _impl(repo_ctx):
     if os_result.is_macos:
         # On macOS, we use fmt from homebrew via pkg-config.
         error = setup_pkg_config_repository(repo_ctx).error
-    elif os_result.is_manylinux:
+    elif os_result.is_manylinux or os_result.is_macos_wheel:
         # Compile from downloaded github sources.
         error = setup_github_repository(repo_ctx).error
     elif os_result.ubuntu_release == "20.04":

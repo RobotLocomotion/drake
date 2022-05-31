@@ -80,7 +80,7 @@ def _vtk_cc_library(
     elif os_result.is_ubuntu:
         if not header_only:
             srcs = ["lib/lib{}-{}.so.1".format(name, VTK_MAJOR_MINOR_VERSION)]
-    elif os_result.is_manylinux:
+    elif os_result.is_manylinux or os_result.is_macos_wheel:
         if not header_only:
             # TODO(jwnimmer-tri) Ideally, we wouldn't be hard-coding paths when
             # using manylinux.
@@ -136,7 +136,7 @@ def _impl(repository_ctx):
             sha256 = sha256,
             type = "tar.gz",
         )
-    elif os_result.is_manylinux:
+    elif os_result.is_manylinux or os_result.is_macos_wheel:
         repository_ctx.symlink("/opt/vtk/include", "include")
     else:
         fail("Operating system is NOT supported {}".format(os_result))
@@ -157,7 +157,7 @@ licenses([
     file_content += _vtk_cc_library(os_result, "vtkfmt")
 
     # NOTE: see /tools/wheel/image/vtk-args, this is to avoid packaging glew.
-    if os_result.is_manylinux:
+    if os_result.is_manylinux or os_result.is_macos_wheel:
         file_content += _vtk_cc_library(os_result, "vtkglew")
 
     file_content += _vtk_cc_library(os_result, "vtkkissfft")
@@ -835,8 +835,16 @@ licenses([
         "vtkGenericRenderWindowInteractor.h",
         "vtkRenderingUIModule.h",
     ]
-    if not os_result.is_macos:
+    if not os_result.is_macos and not os_result.is_macos_wheel:
         vtk_rendering_ui_hdrs.append("vtkXRenderWindowInteractor.h")
+
+    if os_result.is_macos_wheel:
+        # Normally this would be a private dependency, but no such thing when
+        # VTK is built static.
+        vtk_ui_linkopts = ["-framework Cocoa"]
+    else:
+        vtk_ui_linkopts = []
+
     file_content += _vtk_cc_library(
         os_result,
         "vtkRenderingUI",
@@ -844,6 +852,7 @@ licenses([
         deps = [
             ":vtkRenderingCore",
         ],
+        linkopts = vtk_ui_linkopts,
     )
 
     # Indirect dependency: omit headers.
@@ -869,12 +878,18 @@ licenses([
         "vtkShader.h",
         "vtkShaderProgram.h",
     ]
-    if not os_result.is_macos:
+    if not os_result.is_macos and not os_result.is_macos_wheel:
         vtk_rendering_opengl2_hdrs.append("vtkXOpenGLRenderWindow.h")
 
     if os_result.is_manylinux:
         vtk_glew_library = ":vtkglew"
+
+        # Normally these would be private dependencies, but no such thing when
+        # VTK is built static.
         vtk_opengl_linkopts = ["-lX11", "-lXt", "-lGLX"]
+    elif os_result.is_macos_wheel:
+        vtk_glew_library = ":vtkglew"
+        vtk_opengl_linkopts = []
     else:
         vtk_glew_library = "@glew"
         vtk_opengl_linkopts = []
