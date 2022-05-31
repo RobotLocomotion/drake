@@ -318,13 +318,6 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
 )
 
-drake_py_library(
-    name = "system_sliders_py",
-    srcs = ["system_sliders.py"],
-    imports = PACKAGE_INFO.py_imports,
-    deps = [":module_py"],
-)
-
 PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
     ":controllers_py",
@@ -346,7 +339,6 @@ PY_LIBRARIES = [
     ":perception_py",
     ":planar_scenegraph_visualizer_py",
     ":pyplot_visualizer_py",
-    ":system_sliders_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -614,15 +606,6 @@ drake_py_unittest(
         ":sensors_py",
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake/common/test_utilities",
-    ],
-)
-
-drake_py_unittest(
-    name = "system_sliders_test",
-    deps = [
-        ":primitives_py",
-        ":system_sliders_py",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
 
