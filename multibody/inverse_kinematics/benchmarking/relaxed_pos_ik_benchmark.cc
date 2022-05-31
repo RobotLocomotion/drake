@@ -27,7 +27,7 @@ class RelaxedPosIkBenchmark : public benchmark::Fixture {
   }
 };
 
-BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {
+BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {  // NOLINT
   // Solve an inverse kinematics problem for Kuka iiwa considering only the
   // translation component with relaxation. The objective of this benchmark is
   // to run an A/B comparison for different gradient evaluations for
