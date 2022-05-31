@@ -145,8 +145,8 @@ drake_generate_include_header(
 )
 
 check_lists_consistency(
-    file_list = private_headers + public_headers_no_gen,
-    glob = ["include/**/*.hh"],
+    files = private_headers + public_headers_no_gen,
+    glob_include = ["include/**/*.hh"],
 )
 
 public_headers = public_headers_no_gen + [
