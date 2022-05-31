@@ -8,7 +8,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/math/rotation_matrix.h"
@@ -414,11 +413,6 @@ class RigidTransform {
     const T max_component = translation().template lpNorm<Eigen::Infinity>();
     return max_component <= translation_tolerance &&
         rotation().IsNearlyIdentity();
-  }
-
-  DRAKE_DEPRECATED("2022-06-01", "Use RigidTransform::IsNearlyIdentity()")
-  boolean<T> IsIdentityToEpsilon(double translation_tolerance) const {
-    return IsNearlyIdentity(translation_tolerance);
   }
 
   /// Returns X_BA = X_AB⁻¹, the inverse of `this` %RigidTransform.

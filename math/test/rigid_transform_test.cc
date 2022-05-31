@@ -381,10 +381,6 @@ GTEST_TEST(RigidTransform, IsIdentity) {
   RigidTransform<double> X1;
   EXPECT_TRUE(X1.IsExactlyIdentity());
   EXPECT_TRUE(X1.IsNearlyIdentity(0.0));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_TRUE(X1.IsIdentityToEpsilon(0.0));
-#pragma GCC diagnostic pop
   EXPECT_TRUE(X1.rotation().IsExactlyIdentity());
   EXPECT_TRUE((X1.translation().array() == 0).all());
 
@@ -399,11 +395,6 @@ GTEST_TEST(RigidTransform, IsIdentity) {
   EXPECT_FALSE(X2.IsExactlyIdentity());
   EXPECT_FALSE(X2.IsNearlyIdentity(3.99));
   EXPECT_TRUE(X2.IsNearlyIdentity(4.01));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_FALSE(X2.IsIdentityToEpsilon(3.99));
-  EXPECT_TRUE(X2.IsIdentityToEpsilon(4.01));
-#pragma GCC diagnostic pop
 
   // Change position vector to zero vector.
   const Vector3d zero_vector(0, 0, 0);
@@ -552,11 +543,6 @@ GTEST_TEST(RigidTransform, SymbolicRigidTransformSimpleTests) {
   // Test IsNearlyIdentity() nominally works with Expression.
   test_Bool = X.IsNearlyIdentity(kEpsilon);
   EXPECT_TRUE(test_Bool);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  test_Bool = X.IsIdentityToEpsilon(kEpsilon);
-  EXPECT_TRUE(test_Bool);
-#pragma GCC diagnostic pop
 
   // Test IsExactlyEqualTo() nominally works for Expression.
   const RigidTransform<Expression>& X_built_in_identity =
@@ -579,11 +565,6 @@ GTEST_TEST(RigidTransform, SymbolicRigidTransformSimpleTests) {
   // Test IsNearlyIdentity() works with Expression.
   test_Bool = X.IsNearlyIdentity(kEpsilon);
   EXPECT_FALSE(test_Bool);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  test_Bool = X.IsIdentityToEpsilon(kEpsilon);
-  EXPECT_FALSE(test_Bool);
-#pragma GCC diagnostic pop
 
   // Test IsExactlyEqualTo() works for Expression.
   test_Bool = X.IsExactlyEqualTo(X_built_in_identity);
@@ -612,11 +593,6 @@ GTEST_TEST(RigidTransform, SymbolicRigidTransformThrowsExceptions) {
 
   test_Bool = X_symbolic.IsNearlyIdentity(kEpsilon);
   EXPECT_THROW(test_Bool.Evaluate(), std::exception);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  test_Bool = X_symbolic.IsIdentityToEpsilon(kEpsilon);
-  EXPECT_THROW(test_Bool.Evaluate(), std::exception);
-#pragma GCC diagnostic pop
 
   const RigidTransform<Expression>& X_identity =
       RigidTransform<Expression>::Identity();

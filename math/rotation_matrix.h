@@ -12,7 +12,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
@@ -569,11 +568,6 @@ class RotationMatrix {
   boolean<T> IsNearlyIdentity(
       double tolerance = get_internal_tolerance_for_orthonormality()) const {
     return IsNearlyEqualTo(matrix(), Matrix3<T>::Identity(), tolerance);
-  }
-
-  DRAKE_DEPRECATED("2022-06-01", "Use RotationMatrix::IsNearlyIdentity()")
-  boolean<T> IsIdentityToInternalTolerance() const {
-    return IsNearlyIdentity();
   }
 
   /// Compares each element of `this` to the corresponding element of `other`

@@ -56,23 +56,8 @@ whenever `DRAKE_ENABLE_ASSERTS` is defined, which Debug builds do by default.
 
 #else  // DRAKE_DOXYGEN_CXX
 
-namespace drake {
-namespace internal {
-template <bool>
-constexpr void DrakeExpectThrowsWasUsedWithThreeArgs() {}
-template<>
-[[deprecated("DRAKE DEPRECATED: The middle argument (exception type) of "
-"DRAKE_EXPECT_THROWS_MESSAGE is deprecated, as well as for all of the other "
-"similar macros (DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED, "
-"DRAKE_ASSERT_THROWS_MESSAGE, DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED). "
-"Remove the middle argument from the call site. "
-"The deprecated code will be removed from Drake on or after 2022-06-01.")]]
-constexpr void DrakeExpectThrowsWasUsedWithThreeArgs<true>() {}
-}  // namespace internal
-}  // namespace drake
-
 #define DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-    expression, exception, deprecated, regexp, must_throw, fatal_failure) \
+    expression, exception, regexp, must_throw, fatal_failure) \
 do { \
 try { \
   expression; \
@@ -103,66 +88,26 @@ try { \
     GTEST_NONFATAL_FAILURE_(message.c_str()); \
   } \
 } \
-::drake::internal::DrakeExpectThrowsWasUsedWithThreeArgs<deprecated>(); \
 } while (0)
 
-#define DRAKE_EXPECT_THROWS_MESSAGE_3(expression, exception, regexp) \
+#define DRAKE_EXPECT_THROWS_MESSAGE(expression, regexp) \
   DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-      expression, exception, true /*deprecated*/, regexp, \
+      expression, std::exception, regexp, \
       true /*must_throw*/, false /*non-fatal*/)
 
-#define DRAKE_ASSERT_THROWS_MESSAGE_3(expression, exception, regexp) \
+#define DRAKE_ASSERT_THROWS_MESSAGE(expression, regexp) \
   DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-      expression, exception, true /*deprecated*/, regexp, \
+      expression, std::exception, regexp, \
       true /*must_throw*/, true /*fatal*/)
 
-#define DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED_3(expression, exception, regexp) \
+#define DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(expression, regexp) \
   DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-      expression, exception, true /*deprecated*/, regexp, \
+      expression, std::exception, regexp, \
       ::drake::kDrakeAssertIsArmed /*must_throw*/, false /*non-fatal*/)
 
-#define DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED_3(expression, exception, regexp) \
+#define DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(expression, regexp) \
   DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-      expression, exception, true /*deprecated*/, regexp, \
+      expression, std::exception, regexp, \
       ::drake::kDrakeAssertIsArmed /*must_throw*/, true /*fatal*/)
-
-#define DRAKE_EXPECT_THROWS_MESSAGE_2(expression, regexp) \
-  DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-      expression, std::exception, false /*deprecated*/, regexp, \
-      true /*must_throw*/, false /*non-fatal*/)
-
-#define DRAKE_ASSERT_THROWS_MESSAGE_2(expression, regexp) \
-  DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-      expression, std::exception, false /*deprecated*/, regexp, \
-      true /*must_throw*/, true /*fatal*/)
-
-#define DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED_2(expression, regexp) \
-  DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-      expression, std::exception, false /*deprecated*/, regexp, \
-      ::drake::kDrakeAssertIsArmed /*must_throw*/, false /*non-fatal*/)
-
-#define DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED_2(expression, regexp) \
-  DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
-      expression, std::exception, false /*deprecated*/, regexp, \
-      ::drake::kDrakeAssertIsArmed /*must_throw*/, true /*fatal*/)
-
-// Now overload the macro based on 2 vs 3 arguments.
-#define DRAKE_OVERLOAD_THROWS_MESSAGE_MACRO_ARITY(_1, _2, _3, NAME, ...) NAME
-#define DRAKE_EXPECT_THROWS_MESSAGE(...) \
-  DRAKE_OVERLOAD_THROWS_MESSAGE_MACRO_ARITY(__VA_ARGS__, \
-    DRAKE_EXPECT_THROWS_MESSAGE_3, \
-    DRAKE_EXPECT_THROWS_MESSAGE_2)(__VA_ARGS__)
-#define DRAKE_ASSERT_THROWS_MESSAGE(...) \
-  DRAKE_OVERLOAD_THROWS_MESSAGE_MACRO_ARITY(__VA_ARGS__, \
-    DRAKE_ASSERT_THROWS_MESSAGE_3, \
-    DRAKE_ASSERT_THROWS_MESSAGE_2)(__VA_ARGS__)
-#define DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(...) \
-  DRAKE_OVERLOAD_THROWS_MESSAGE_MACRO_ARITY(__VA_ARGS__, \
-    DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED_3, \
-    DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED_2)(__VA_ARGS__)
-#define DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(...) \
-  DRAKE_OVERLOAD_THROWS_MESSAGE_MACRO_ARITY(__VA_ARGS__, \
-    DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED_3, \
-    DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED_2)(__VA_ARGS__)
 
 #endif  // DRAKE_DOXYGEN_CXX

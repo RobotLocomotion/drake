@@ -84,10 +84,6 @@ GTEST_TEST(RotationMatrix, IsIdentity) {
   RotationMatrix<double> R;  // Default constructor is identity matrix.
   EXPECT_TRUE(R.IsExactlyIdentity());
   EXPECT_TRUE(R.IsNearlyIdentity(0.0));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_TRUE(R.IsIdentityToInternalTolerance());
-#pragma GCC diagnostic pop
 
   // Test non-identity matrix.
   const double theta = 256 * kEpsilon;
