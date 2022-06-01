@@ -6,4 +6,5 @@ node-uglify
 python3-docutils
 python3-sphinx
 python3-sphinx-rtd-theme
+python3-tk
 ruby
