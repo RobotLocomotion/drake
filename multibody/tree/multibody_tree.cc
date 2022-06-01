@@ -2922,7 +2922,7 @@ void MultibodyTree<T>::IssuePostFinalizeMassInertiaWarnings() const {
 
     // Issue zero rotational inertia if the composite rigid body can rotate.
     if (parent_mobilizer.can_rotate() &&
-        IsAllDefaultRotationalInertiaZeroOrNaN(welded_parent_children_bodies) {
+        IsAllDefaultRotationalInertiaZeroOrNaN(welded_parent_children_bodies)) {
         const std::string msg = fmt::format(
             "It seems that body {} has no rotational inertia, yet it is "
             "attached "
