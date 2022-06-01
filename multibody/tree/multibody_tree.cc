@@ -2921,42 +2921,16 @@ void MultibodyTree<T>::IssuePostFinalizeMassInertiaWarnings() const {
     }
 
     // Issue zero rotational inertia if the composite rigid body can rotate.
-    if (parent_mobilizer.can_rotate()) {
-      const bool is_rotational_inertia_nonzero =
-        IsTotalDefaultRotationalInertiaNonZero(welded_parent_children_bodies);
-      if (!is_rotational_inertia_nonzero) {
+    if (parent_mobilizer.can_rotate() &&
+        IsAllDefaultRotationalInertiaZeroOrNaN(welded_parent_children_bodies) {
         const std::string msg = fmt::format(
-        "It seems that body {} has no rotational inertia, yet it is attached "
-        "by a joint that has a rotational degree of freedom.",
-        parent_body_name);
+            "It seems that body {} has no rotational inertia, yet it is "
+            "attached "
+            "by a joint that has a rotational degree of freedom.",
+            parent_body_name);
         throw std::logic_error(msg);
-      }
     }
   }
-}
-
-template <typename T>
-double MultibodyTree<T>::CalcTotalDefaultMass(
-    const std::set<BodyIndex>& body_indexes) const {
-  double total_mass = 0;
-  for (BodyIndex body_index : body_indexes) {
-    const Body<T>& body_B = get_body(body_index);
-    const double mass_B = body_B.get_default_mass();
-    if (!std::isnan(mass_B)) total_mass += mass_B;
-  }
-  return total_mass;
-}
-
-template <typename T>
-bool MultibodyTree<T>::IsTotalDefaultRotationalInertiaNonZero(
-      const std::set<BodyIndex>& body_indexes) const {
-  for (BodyIndex body_index : body_indexes) {
-    const Body<T>& body_B = get_body(body_index);
-    const RotationalInertia<double> I_BBo_B =
-        body_B.default_rotational_inertia();
-    if (!I_BBo_B.IsNaN() && !I_BBo_B.IsZero()) return true;
-  }
-  return false;  // Total default rotational inertia is NaN or zero.
 }
 
 template <typename T>
@@ -2980,7 +2954,7 @@ bool MultibodyTree<T>::IsAllDefaultRotationalInertiaZeroOrNaN(
         body_B.default_rotational_inertia();
     if (!I_BBo_B.IsNaN() && !I_BBo_B.IsZero()) return false;
   }
-  return true;
+  return true;  // All default rotational inertia are NaN or zero.
 }
 
 template <typename T>
