@@ -138,7 +138,7 @@ class KinematicsVector {
    }
    @endcode
    */
-  DRAKE_DEPRECATED("2022-09-01", "Use ids() instead.")
+  DRAKE_DEPRECATED("2022-10-01", "Use ids() instead.")
   std::vector<Id> frame_ids() const;
 
   /** Provides a range object for all of the existing ids in the vector.

@@ -151,10 +151,7 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, FullStateInput) {
           *state_context);
 
   EXPECT_EQ(position_output.size(), state_output.size());
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  for (const auto& id : position_output.frame_ids()) {
-#pragma GCC diagnostic pop
+  for (const auto& id : position_output.ids()) {
     EXPECT_TRUE(
         position_output.value(id).IsExactlyEqualTo(state_output.value(id)));
   }
