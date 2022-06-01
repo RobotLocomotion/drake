@@ -22,6 +22,12 @@ exports_files([
     "ubuntu/source_distribution/packages-focal-doc-only.txt",
     "ubuntu/source_distribution/packages-focal-maintainer-only.txt",
     "ubuntu/source_distribution/packages-focal-test-only.txt",
+    "ubuntu/binary_distribution/packages-jammy.txt",
+    "ubuntu/source_distribution/packages-jammy.txt",
+    "ubuntu/source_distribution/packages-jammy-clang.txt",
+    "ubuntu/source_distribution/packages-jammy-doc-only.txt",
+    "ubuntu/source_distribution/packages-jammy-maintainer-only.txt",
+    "ubuntu/source_distribution/packages-jammy-test-only.txt",
 ])
 
 filegroup(
@@ -49,6 +55,7 @@ install_files(
             "deepnote/xvfb",
             "ubuntu/binary_distribution/install_prereqs.sh",
             "ubuntu/binary_distribution/packages-focal.txt",
+            "ubuntu/binary_distribution/packages-jammy.txt",
         ],
         "//conditions:default": [],
     }),
