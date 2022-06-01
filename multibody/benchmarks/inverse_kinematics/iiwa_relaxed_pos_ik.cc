@@ -72,7 +72,8 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {  // NOLINT
   const int num_rand_goals = 10;
   std::vector<math::RigidTransformd> ee_pose_goal(num_rand_goals);
   for (int i = 0; i < num_rand_goals; ++i) {
-    // Set a random joint pose within 90% of the limits.
+    // Set a random joint pose within 90% of the limits. The range is limited
+    // b/c the solvers tend to fail when the goal is close to a boundary.
     context->get_mutable_continuous_state()
         .get_mutable_generalized_position()
         .SetFromVector(
