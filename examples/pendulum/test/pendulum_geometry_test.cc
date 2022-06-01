@@ -23,10 +23,7 @@ using math::RigidTransformd;
 math::RigidTransformd ExtractSinglePose(
     const geometry::FramePoseVector<double>& pose_vector) {
   DRAKE_THROW_UNLESS(pose_vector.size() == 1);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  for (const auto& id : pose_vector.frame_ids()) {
-#pragma GCC diagnostic pop
+  for (const auto& id : pose_vector.ids()) {
     return pose_vector.value(id);
   }
   DRAKE_UNREACHABLE();

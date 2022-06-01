@@ -4,6 +4,7 @@
  pydrake.geometry module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/monostate_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
@@ -323,9 +324,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("ids", &FramePoseVector<T>::ids, doc.KinematicsVector.ids.doc);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("frame_ids", &FramePoseVector<T>::frame_ids,
-        "frame_ids() is deprecated, and will be removed on or around"
-        " 2022-09-01. Please instead use ids().");
+    constexpr char doc_frame_ids[] = 
+        "frame_ids() is deprecated, and will be removed on"
+        " or around 2022-10-01. Please instead use ids().";
+    cls.def("frame_ids",
+            WrapDeprecated(doc_frame_ids, &FramePoseVector<T>::frame_ids));
 #pragma GCC diagnostic pop
     AddValueInstantiation<FramePoseVector<T>>(m);
   }
