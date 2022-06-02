@@ -49,6 +49,7 @@ load("@drake//tools/workspace:os.bzl", "determine_os")
 # matrix which should match tools/wheel/build-wheels list of targets=().
 _VERSION_SUPPORT_MATRIX = {
     "ubuntu:20.04": ["3.8"],
+    "ubuntu:22.04": ["3.10"],
     "macos": ["3.9"],
     "macos_wheel": ["3.9"],
     "manylinux": ["3.8", "3.9"],
