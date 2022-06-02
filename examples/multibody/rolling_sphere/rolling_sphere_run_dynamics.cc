@@ -184,10 +184,12 @@ int do_main() {
 
   if (FLAGS_visualize) {
     geometry::DrakeVisualizerParams params;
+    geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, nullptr,
+                                             params);
     if (FLAGS_vis_hydro) {
-      params.role = geometry::Role::kProximity;
       params.show_hydroelastic = true;
     }
+    params.role = geometry::Role::kProximity;
     geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, nullptr,
                                              params);
     ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph);

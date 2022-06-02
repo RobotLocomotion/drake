@@ -8,7 +8,8 @@ import numpy as np
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList, SchunkCollisionModel)
-from pydrake.geometry import DrakeVisualizer, Meshcat, MeshcatVisualizer
+from pydrake.geometry import (
+    DrakeVisualizer, DrakeVisualizerParams, Meshcat, MeshcatVisualizer, Role)
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
@@ -324,6 +325,9 @@ def main():
         query_port = station.GetOutputPort("query_object")
 
         DrakeVisualizer.AddToBuilder(builder, query_port)
+        params = DrakeVisualizerParams()
+        params.role = Role.kProximity
+        DrakeVisualizer.AddToBuilder(builder, query_port, params=params)
         if args.meshcat:
             meshcat = Meshcat()
             meshcat_visualizer = MeshcatVisualizer.AddToBuilder(
