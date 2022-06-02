@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>
@@ -15,8 +16,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/render/dev/render_gltf_client/test/internal_test_png.h"
-#include "drake/geometry/render/dev/render_gltf_client/test/internal_test_tiff.h"
+#include "drake/geometry/render/dev/render_gltf_client/test/internal_sample_image_data.h"
 #include "drake/geometry/render_gltf_client/internal_http_service.h"
 
 namespace drake {
@@ -59,6 +59,20 @@ class RenderClientTester {
 };
 
 namespace {
+
+// Constexpr dimensions for the actual testing images.
+constexpr int kTestImageWidth = 3;
+constexpr int kTestImageHeight = 2;
+
+// The paths for the testing images used across different unit tests.
+const auto kTestRgbImagePath = FindResourceOrThrow(
+    "drake/geometry/render/dev/render_gltf_client/test/test_rgb_8U.png");
+const auto kTestRgbaImagePath = FindResourceOrThrow(
+    "drake/geometry/render/dev/render_gltf_client/test/test_rgba_8U.png");
+const auto kTestDepthImagePath = FindResourceOrThrow(
+    "drake/geometry/render/dev/render_gltf_client/test/test_depth_32F.tiff");
+const auto kTestLabelImagePath = FindResourceOrThrow(
+    "drake/geometry/render/dev/render_gltf_client/test/test_label_16I.png");
 
 // Constructor / destructor ----------------------------------------------------
 GTEST_TEST(RenderClient, Constructor) {
@@ -165,7 +179,7 @@ class FailService : public HttpService {
 /* Verifies the contract fullfilled by RenderClient::RenderOnServer, checking
  that all fields are exactly as expected (and where min_depth / max_depth are
  concerned, they are included / excluded as expected).  The code checks in
- PostForm are more or less a duplication of RenderClient::RenderOnServer,
+ DoPostForm are more or less a duplication of RenderClient::RenderOnServer,
  meaning any changes to the code populating the <form> will break this test case
  (intentionally).
 
@@ -189,7 +203,8 @@ class FieldCheckService : public HttpService {
         mime_type_{mime_type},
         depth_range_{depth_range} {}
 
-  // Checks all of the <form> fields.  Always respond with failure (http 500).
+  // Checks all of the <form> fields and always responds with a failure HTTP
+  // response code (500).
   HttpResponse DoPostForm(const std::string& /* temp_directory */,
                           const std::string& base_url, int /* port */,
                           const DataFieldsMap& data_fields,
@@ -280,14 +295,14 @@ class FieldCheckService : public HttpService {
   const std::optional<DepthRange> depth_range_;
 };
 
-using PostFormCallback_t = typename std::function<HttpResponse(
+using PostFormCallback = typename std::function<HttpResponse(
     const std::string&, const DataFieldsMap&, const FileFieldsMap&)>;
 
-/* A proxy HttpService that can be cunstructed with an std::function to modify
+/* A proxy HttpService that can be constructed with an std::function to modify
  the behavior of PostForm. */
 class ProxyService : public HttpService {
  public:
-  explicit ProxyService(const PostFormCallback_t& callback)
+  explicit ProxyService(const PostFormCallback& callback)
       : HttpService(), post_form_callback_{callback} {}
 
   HttpResponse DoPostForm(const std::string& /* temp_directory */,
@@ -298,7 +313,7 @@ class ProxyService : public HttpService {
     return post_form_callback_(base_url, data_fields, file_fields);
   }
 
-  PostFormCallback_t post_form_callback_;
+  PostFormCallback post_form_callback_;
 };
 
 /* These tests are only for the various error conditions that can come up in
@@ -436,7 +451,7 @@ GTEST_TEST(RenderClient, RenderOnServer) {
 
   // Trampoline helper to set the client HttpService.
   const auto response_path = (temp_dir_path / "response.file").string();
-  auto set_proxy = [&](const PostFormCallback_t& callback) {
+  auto set_proxy = [&](const PostFormCallback& callback) {
     // Delete the response file if it exists to start clean on each test.
     try {
       fs::remove(response_path);
@@ -597,9 +612,7 @@ GTEST_TEST(RenderClient, RenderOnServer) {
     // Copy a "valid" PNG file and check that it is renamed.
     set_proxy(
         [&](const std::string&, const DataFieldsMap&, const FileFieldsMap&) {
-          auto box_png =
-              FindResourceOrThrow("drake/geometry/render/test/meshes/box.png");
-          fs::copy_file(box_png, response_path);
+          fs::copy_file(kTestRgbaImagePath, response_path);
           HttpResponse ret;
           ret.http_code = 200;
           ret.data_path = response_path;
@@ -617,7 +630,7 @@ GTEST_TEST(RenderClient, RenderOnServer) {
      that it is renamed. */
     set_proxy(
         [&](const std::string&, const DataFieldsMap&, const FileFieldsMap&) {
-          TestTiffGray32 gray_32{response_path, 16, 4};
+          fs::copy_file(kTestDepthImagePath, response_path);
           HttpResponse ret;
           ret.http_code = 200;
           ret.data_path = response_path;
@@ -626,7 +639,8 @@ GTEST_TEST(RenderClient, RenderOnServer) {
     const auto expected_path =
         fs::path(fake_scene_path).replace_extension(".tiff").string();
     const auto response_tiff = client.RenderOnServer(
-        color_camera.core(), RenderImageType::kColorRgba8U, fake_scene_path);
+        depth_camera.core(), RenderImageType::kDepthDepth32F, fake_scene_path,
+        "test/mime_type", depth_camera.depth_range());
     EXPECT_EQ(response_tiff, expected_path);
   }
 
@@ -813,23 +827,12 @@ GTEST_TEST(RenderClient, LoadColorImage) {
   const bool no_cleanup = false;
   const RenderClient client{Params{std::nullopt, base_url, port,
                                    render_endpoint, verbose, no_cleanup}};
-  const fs::path temp_dir = fs::path(client.temp_directory());
 
-  // NOTE: keep the images small to reduce test overhead.
-  constexpr int width = 222;
-  constexpr int height = 111;
-  ImageRgba8U drake_image{width, height};
-  auto zero_drake_image = [&drake_image]() {
-    for (int j = 0; j < height; ++j) {
-      for (int i = 0; i < width; ++i) {
-        drake_image.at(i, j)[0] = 0;  // r
-        drake_image.at(i, j)[1] = 0;  // g
-        drake_image.at(i, j)[2] = 0;  // b
-        drake_image.at(i, j)[3] = 0;  // a
-      }
-    }
-  };
-
+  /* Create a Drake Image buffer with the same dimension as the testing images,
+   i.e., test_{rgb, rgba}_8U.png, to exercise the image loading code.
+   LoadColorImage() will attempt to load the PNG file to the buffer and throw
+   exceptions if the dimension, channel number, or data type is incorrect. */
+  ImageRgba8U drake_image(kTestImageWidth, kTestImageHeight, 0);
   {
     // Failure case 1: not a valid PNG file.
     const auto expected_message = "RenderClient: cannot load '{}' as PNG.";
@@ -837,6 +840,7 @@ GTEST_TEST(RenderClient, LoadColorImage) {
     DRAKE_EXPECT_THROWS_MESSAGE(client.LoadColorImage(unlikely, &drake_image),
                                 fmt::format(expected_message, unlikely));
 
+    const fs::path temp_dir = fs::path(client.temp_directory());
     const std::string fake_png_path = temp_dir / "fake.png";
     std::ofstream fake_png{fake_png_path};
     fake_png << "not a valid png file.\n";
@@ -848,71 +852,48 @@ GTEST_TEST(RenderClient, LoadColorImage) {
   }
 
   {
-    /* Failure case 2: wrong image dimensions on file.  drake_image should not
-     be accessed especially when the file dimensions are bigger. */
+    /* Failure case 2: different image dimensions between the loaded image and
+     the Drake Image buffer.  `test_drake_image` should not be accessed. */
     const std::vector<std::pair<int, int>> width_height{
-        {width, height / 2}, {width + 12, height}, {width * 2, height * 2}};
+        {1, 1},
+        {kTestImageWidth + 12, kTestImageHeight},
+        {kTestImageWidth * 2, kTestImageHeight * 2}};
     for (const auto& [w, h] : width_height) {
-      const std::string path = temp_dir / fmt::format("rgb_{}_{}.png", w, h);
-      TestPngRgb8 rgb{path, w, h};
+      ImageRgba8U test_drake_image(w, h, 0);
       DRAKE_EXPECT_THROWS_MESSAGE(
-          client.LoadColorImage(path, &drake_image),
+          client.LoadColorImage(kTestRgbaImagePath, &test_drake_image),
           fmt::format("RenderClient: expected to import "
                       "\\(width={},height={}\\) from the "
                       "file '{}', but got \\(width={},height={}\\).",
-                      width, height, path, w, h));
-      fs::remove(path);
+                      w, h, kTestRgbaImagePath, kTestImageWidth,
+                      kTestImageHeight));
     }
   }
 
   {
-    // Failure case 3: number of channels not equal to 3 or 4.
-    const std::string path = temp_dir / "gray.png";
-    TestPngGray16 gray{path, width, height};
+    /* Failure case 3: number of channels not equal to 3 or 4. Test this by
+     loading a single-channel label png instead. */
     DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadColorImage(path, &drake_image),
+        client.LoadColorImage(kTestLabelImagePath, &drake_image),
         fmt::format(
             "RenderClient: loaded PNG image from '{}' has 1 channel\\(s\\), "
             "but either 3 \\(RGB\\) or 4 \\(RGBA\\) are required for color "
             "images.",
-            path));
-    fs::remove(path);
-  }
-
-  {
-    // Failure case 4: right number of channels, but 16 bit color.
-    const std::string path = temp_dir / "rgb_16_bit.png";
-    TestPngRgb16 rgb_16{path, width, height};
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadColorImage(path, &drake_image),
-        fmt::format(
-            "RenderClient: loaded PNG image from '{}' has a channel size in "
-            "bytes of 2, but only RGB and RGBA uchar \\(channel size=1\\) "
-            "images are supported.",
-            path));
-    fs::remove(path);
+            kTestLabelImagePath));
   }
 
   {
     // Loading a three channel (RGB) png file should work as expected.
-    zero_drake_image();
-    const auto rgb_png_path = temp_dir / "rgb.png";
-    TestPngRgb8 rgb{rgb_png_path, width, height};
-    DRAKE_EXPECT_NO_THROW(client.LoadColorImage(rgb_png_path, &drake_image));
-    TestPngRgb8::CornerCheckColor(drake_image);
-    TestPngRgb8::FullImageCheckColor(drake_image);
-    fs::remove(rgb_png_path);
+    DRAKE_EXPECT_NO_THROW(
+        client.LoadColorImage(kTestRgbImagePath, &drake_image));
+    EXPECT_EQ(drake_image, CreateTestColorImage(true));
   }
 
   {
     // Loading a four channel (RGBA) png file should work as expected.
-    zero_drake_image();
-    const auto rgba_png_path = temp_dir / "rgba.png";
-    TestPngRgba8 rgba{rgba_png_path, width, height};
-    DRAKE_EXPECT_NO_THROW(client.LoadColorImage(rgba_png_path, &drake_image));
-    TestPngRgba8::CornerCheckColor(drake_image);
-    TestPngRgba8::FullImageCheckColor(drake_image);
-    fs::remove(rgba_png_path);
+    DRAKE_EXPECT_NO_THROW(
+        client.LoadColorImage(kTestRgbaImagePath, &drake_image));
+    EXPECT_EQ(drake_image, CreateTestColorImage(false));
   }
 }
 
@@ -924,20 +905,12 @@ GTEST_TEST(RenderClient, LoadDepthImage) {
   const bool no_cleanup = false;
   const RenderClient client{Params{std::nullopt, base_url, port,
                                    render_endpoint, verbose, no_cleanup}};
-  const fs::path temp_dir = fs::path(client.temp_directory());
 
-  // NOTE: keep the images small to reduce test overhead.
-  constexpr int width = 222;
-  constexpr int height = 111;
-  ImageDepth32F drake_image{width, height};
-  auto zero_drake_image = [&drake_image]() {
-    for (int j = 0; j < height; ++j) {
-      for (int i = 0; i < width; ++i) {
-        drake_image.at(i, j)[0] = 0;
-      }
-    }
-  };
-
+  /* Create a Drake Image buffer with the same dimension as the testing image,
+   i.e., test_depth_32F.tiff, to exercise the image loading code.
+   LoadDepthImage() will attempt to load the TIFF file to the buffer and throw
+   exceptions if the dimension, channel number, or data type is incorrect. */
+  ImageDepth32F drake_image(kTestImageWidth, kTestImageHeight, 0);
   {
     // Failure case 1: not a valid TIFF file.
     const auto expected_message = "RenderClient: cannot load '{}' as TIFF.";
@@ -945,6 +918,7 @@ GTEST_TEST(RenderClient, LoadDepthImage) {
     DRAKE_EXPECT_THROWS_MESSAGE(client.LoadDepthImage(unlikely, &drake_image),
                                 fmt::format(expected_message, unlikely));
 
+    const fs::path temp_dir = fs::path(client.temp_directory());
     const std::string fake_tiff_path = temp_dir / "fake.tiff";
     std::ofstream fake_tiff{fake_tiff_path};
     fake_tiff << "not a valid tiff file.\n";
@@ -956,60 +930,29 @@ GTEST_TEST(RenderClient, LoadDepthImage) {
   }
 
   {
-    /* Failure case 2: wrong image dimensions on file.  drake_image should not
-     be accessed especially when the file dimensions are bigger. */
+    /* Failure case 2: different image dimensions between the loaded image and
+     the drake image buffer.  `test_drake_image` should not be accessed. */
     const std::vector<std::pair<int, int>> width_height{
-        {width, height / 2}, {width + 12, height}, {width * 2, height * 2}};
+        {1, 1},
+        {kTestImageWidth + 12, kTestImageHeight},
+        {kTestImageWidth * 2, kTestImageHeight * 2}};
     for (const auto& [w, h] : width_height) {
-      const std::string path =
-          temp_dir / fmt::format("gray_16_{}_{}.tiff", w, h);
-      TestTiffGray16 gray{path, w, h};
+      ImageDepth32F test_drake_image(w, h, 0);
       DRAKE_EXPECT_THROWS_MESSAGE(
-          client.LoadDepthImage(path, &drake_image),
+          client.LoadDepthImage(kTestDepthImagePath, &test_drake_image),
           fmt::format("RenderClient: expected to import "
                       "\\(width={},height={}\\) from the "
                       "file '{}', but got \\(width={},height={}\\).",
-                      width, height, path, w, h));
-      fs::remove(path);
+                      w, h, kTestDepthImagePath, kTestImageWidth,
+                      kTestImageHeight));
     }
   }
 
   {
-    // Failure case 3: number of channels not equal to 1.
-    const std::string path = temp_dir / "rgb.tiff";
-    TestTiffRgb32 rgb{path, width, height};
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadDepthImage(path, &drake_image),
-        fmt::format(
-            "RenderClient: loaded TIFF image from '{}' has 3 channels, but "
-            "only 1 is allowed for depth images.",
-            path));
-    fs::remove(path);
-  }
-
-  {
-    // Failure case 4: right number of channels, but wrong bit depth.
-    const std::string path = temp_dir / "gray_8.tiff";
-    TestTiffGray8 gray_8{path, width, height};
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadDepthImage(path, &drake_image),
-        fmt::format(
-            "RenderClient: loaded TIFF image from '{}' did not have floating "
-            "point data, but float TIFF is required for depth images.",
-            path));
-    fs::remove(path);
-  }
-
-  {
     // Loading a single channel 32 bit tiff file should work as expected.
-    zero_drake_image();
-    const auto gray_32_tiff_path = temp_dir / "gray_32.tiff";
-    TestTiffGray32 gray_32{gray_32_tiff_path, width, height};
     DRAKE_EXPECT_NO_THROW(
-        client.LoadDepthImage(gray_32_tiff_path, &drake_image));
-    TestTiffGray32::CornerCheck(drake_image);
-    TestTiffGray32::FullImageCheck(drake_image);
-    fs::remove(gray_32_tiff_path);
+        client.LoadDepthImage(kTestDepthImagePath, &drake_image));
+    EXPECT_EQ(drake_image, CreateTestDepthImage());
   }
 }
 
@@ -1021,20 +964,12 @@ GTEST_TEST(RenderClient, LoadLabelImage) {
   const bool no_cleanup = true;
   const RenderClient client{Params{std::nullopt, base_url, port,
                                    render_endpoint, verbose, no_cleanup}};
-  const fs::path temp_dir = fs::path(client.temp_directory());
 
-  // NOTE: keep the images small to reduce test overhead.
-  constexpr int width = 222;
-  constexpr int height = 111;
-  ImageLabel16I drake_image{width, height};
-  auto zero_drake_image = [&drake_image]() {
-    for (int j = 0; j < height; ++j) {
-      for (int i = 0; i < width; ++i) {
-        drake_image.at(i, j)[0] = 0;
-      }
-    }
-  };
-
+  /* Create a Drake Image buffer with the same dimension as the testing image,
+   i.e., test_label_16U.png, to exercise the image loading code.
+   LoadLabelImage() will attempt to load the PNG file to the buffer and throw
+   exceptions if the dimension, channel number, or data type is incorrect. */
+  ImageLabel16I drake_image(kTestImageWidth, kTestImageHeight, 0);
   {
     // Failure case 1: not a valid PNG file.
     const auto expected_message = "RenderClient: cannot load '{}' as PNG.";
@@ -1042,6 +977,7 @@ GTEST_TEST(RenderClient, LoadLabelImage) {
     DRAKE_EXPECT_THROWS_MESSAGE(client.LoadLabelImage(unlikely, &drake_image),
                                 fmt::format(expected_message, unlikely));
 
+    const fs::path temp_dir = fs::path(client.temp_directory());
     const std::string fake_png_path = temp_dir / "fake.png";
     std::ofstream fake_png{fake_png_path};
     fake_png << "not a valid png file.\n";
@@ -1053,57 +989,40 @@ GTEST_TEST(RenderClient, LoadLabelImage) {
   }
 
   {
-    /* Failure case 2: wrong image dimensions on file.  drake_image should not
-     be accessed especially when the file dimensions are bigger. */
+    /* Failure case 2: different image dimensions between the loaded image and
+     the drake image buffer.  `test_drake_image` should not be accessed. */
     const std::vector<std::pair<int, int>> width_height{
-        {width, height / 2}, {width + 12, height}, {width * 2, height * 2}};
+        {1, 1},
+        {kTestImageWidth + 12, kTestImageHeight},
+        {kTestImageWidth * 2, kTestImageHeight * 2}};
     for (const auto& [w, h] : width_height) {
-      const std::string path = temp_dir / fmt::format("label_{}_{}.png", w, h);
-      TestPngGray16 rgb{path, w, h};
+      ImageLabel16I test_drake_image(w, h, 0);
       DRAKE_EXPECT_THROWS_MESSAGE(
-          client.LoadLabelImage(path, &drake_image),
+          client.LoadLabelImage(kTestLabelImagePath, &test_drake_image),
           fmt::format("RenderClient: expected to import "
                       "\\(width={},height={}\\) from the "
                       "file '{}', but got \\(width={},height={}\\).",
-                      width, height, path, w, h));
-      fs::remove(path);
+                      w, h, kTestLabelImagePath, kTestImageWidth,
+                      kTestImageHeight));
     }
   }
 
   {
-    // Failure case 3: number of channels not equal to 1.
-    const std::string path = temp_dir / "rgb.png";
-    TestPngRgb8 rgb{path, width, height};
+    /* Failure case 3: number of channels not equal to 1. Test this by loading
+     an RGB image instead. */
     DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadLabelImage(path, &drake_image),
+        client.LoadLabelImage(kTestRgbImagePath, &drake_image),
         fmt::format(
             "RenderClient: loaded PNG image from '{}' has 3 channels, but only "
             "1 is allowed for label images.",
-            path));
-    fs::remove(path);
-  }
-
-  {
-    // Failure case 4: right number of channels, but 16 bit color.
-    const std::string path = temp_dir / "gray_8_bit.png";
-    TestPngGray8 gray_8{path, width, height};
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        client.LoadLabelImage(path, &drake_image),
-        fmt::format(
-            "RenderClient: loaded PNG image from '{}' did not have ushort "
-            "data, but single channel ushort PNG is required for label images.",
-            path));
-    fs::remove(path);
+            kTestRgbImagePath));
   }
 
   {
     // Loading a 16 bit label image file should work as expected.
-    zero_drake_image();
-    const auto label_path = temp_dir / "label.png";
-    TestPngGray16 label_image{label_path, width, height};
-    DRAKE_EXPECT_NO_THROW(client.LoadLabelImage(label_path, &drake_image));
-    TestPngGray16::CornerCheckGray(drake_image);
-    TestPngGray16::FullImageCheckGray(drake_image);
+    DRAKE_EXPECT_NO_THROW(
+        client.LoadLabelImage(kTestLabelImagePath, &drake_image));
+    EXPECT_EQ(drake_image, CreateTestLabelImage());
   }
 }
 

@@ -402,6 +402,9 @@ void RenderClient::LoadColorImage(const std::string& path,
   }
 
   // Make sure we have a standard PNG image with uint8_t data per channel.
+  /* no cover: To keep the number of sample images minimal, there is not a color
+   image with a different data type to test this error path. */
+  // LCOV_EXCL_START
   if (image_data->GetScalarType() != VTK_UNSIGNED_CHAR) {
     throw std::runtime_error(fmt::format(
         "RenderClient: loaded PNG image from '{}' has a channel size in bytes "
@@ -409,6 +412,7 @@ void RenderClient::LoadColorImage(const std::string& path,
         "supported.",
         path, image_data->GetScalarSize()));
   }
+  // LCOV_EXCL_STOP
 
   /* Copy the image to the drake buffer.  VTK's image coordinate corners (how
    the data is stored in memory are transposed.  The separate loops is a slight
@@ -484,12 +488,16 @@ void RenderClient::LoadDepthImage(const std::string& path,
 
   /* Make sure we can copy directly using VTK before doing so.  Even if a 16 bit
    TIFF image was sent, VTK will load it as 32 bit float data. */
+  /* no cover: To keep the number of sample images minimal, there is not a depth
+   image with a different data type to test this error path. */
+  // LCOV_EXCL_START
   if (image_data->GetScalarType() != VTK_TYPE_FLOAT32) {
     throw std::runtime_error(fmt::format(
         "RenderClient: loaded TIFF image from '{}' did not have floating point "
         "data, but float TIFF is required for depth images.",
         path));
   }
+  // LCOV_EXCL_STOP
 
   image_exporter->Export(depth_image_out->at(0, 0));
 }
@@ -525,12 +533,16 @@ void RenderClient::LoadLabelImage(const std::string& path,
         path, channels));
   }
 
+  /* no cover: To keep the number of sample images minimal, there is not a label
+   image with a different data type to test this error path. */
+  // LCOV_EXCL_START
   if (image_data->GetScalarType() != VTK_TYPE_UINT16) {
     throw std::runtime_error(fmt::format(
         "RenderClient: loaded PNG image from '{}' did not have ushort data, "
         "but single channel ushort PNG is required for label images.",
         path));
   }
+  // LCOV_EXCL_STOP
 
   /* NOTE: Officially label image is signed integers, the vtkImageExport::Export
    will reinterpret this as unsigned internally, since the loaded PNG image is
