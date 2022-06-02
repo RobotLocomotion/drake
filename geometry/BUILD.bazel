@@ -137,6 +137,24 @@ drake_cc_library(
     ],
 )
 
+# Remove on 2022-10-01.
+drake_cc_library(
+    name = "frame_kinematics_vector",
+    srcs = [
+        "frame_kinematics_vector.cc",
+    ],
+    hdrs = [
+        "frame_kinematics_vector.h",
+    ],
+    tags = [
+        # Don't add this deprecated library into the ":geometry" package library.
+        "exclude_from_package",
+    ],
+    deps = [
+        ":kinematics_vector",
+    ],
+)
+
 drake_cc_library(
     name = "kinematics_vector",
     srcs = [
