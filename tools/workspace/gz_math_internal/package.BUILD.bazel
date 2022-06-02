@@ -159,7 +159,7 @@ public_headers = public_headers_no_gen + [
 # explicitly listed sources plus private headers.  The explicitly listed
 # hdrs= matches upstream's public headers.
 cc_library(
-    name = "ignition_math",
+    name = "gz_math",
     srcs = [
         "src/Angle.cc",
         "src/AxisAlignedBox.cc",
