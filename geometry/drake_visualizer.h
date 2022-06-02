@@ -51,6 +51,9 @@ struct DeformableMeshData {
   int volume_vertex_count{};
 };
 
+/* Change the name of the LCM channel, based on the geometry role. */
+std::string ModifyLcmChannelForRole(const std::string& channel, Role role);
+
 }  // namespace internal
 
 /** A system that publishes LCM messages compatible with the `drake_visualizer`
@@ -71,6 +74,8 @@ struct DeformableMeshData {
  lcm channel named "DRAKE_VIEWER_DRAW",
    - a message that sets the world space vertex positions of the deformable
     geometries on the lcm channel named "DRAKE_VIEWER_DEFORMABLE"
+
+     XXX document role-modified channels.
 
  The system uses the versioning mechanism provided by SceneGraph to detect
  changes to the geometry so that a change in SceneGraph's data will propagate
@@ -244,6 +249,7 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
    definition of the poses of all non-deformable geometries. */
   static void SendDrawNonDeformableMessage(
       const QueryObject<T>& query_object,
+      const DrakeVisualizerParams& params,
       const std::vector<internal::DynamicFrameData>& dynamic_frames,
       double time, lcm::DrakeLcmInterface* lcm);
 
