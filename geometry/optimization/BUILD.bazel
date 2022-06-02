@@ -55,7 +55,7 @@ drake_cc_library(
         "//solvers:mosek_solver",
         "//solvers:scs_solver",
         "//solvers:solve",
-        "@qhull",
+        "@qhull_internal//:qhull",
     ],
 )
 
