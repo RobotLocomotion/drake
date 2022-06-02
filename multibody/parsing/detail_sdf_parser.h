@@ -32,18 +32,13 @@ namespace internal {
 //   empty, the "name" attribute from the model tag will be used.
 // @param workspace
 //   The ParsingWorkspace.
-// @param test_sdf_forced_nesting
-//   If true, a custom parser for SDFormat files (but using a different file
-//   extension) will be registered when using libsdformat's Interface API. This
-//   should only be used for testing.
 // @returns The model instance index for the newly added model; this might be
 //   null if there were parsing errors reported through the workspace.diagnostic
 //   policy.
 std::optional<ModelInstanceIndex> AddModelFromSdf(
     const DataSource& data_source,
     const std::string& model_name,
-    const ParsingWorkspace& workspace,
-    bool test_sdf_forced_nesting = false);
+    const ParsingWorkspace& workspace);
 
 // Parses all `<model>` elements from the SDF file specified by `file_name`
 // and adds them to `plant`. The SDF file can contain multiple `<model>`
@@ -61,17 +56,12 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
 //   The SDF data to be parsed.
 // @param workspace
 //   The ParsingWorkspace.
-// @param test_sdf_forced_nesting
-//   If true, a custom parser for SDFormat files (but using a different file
-//   extension) will be registered when using libsdformat's Interface API. This
-//   should only be used for testing.
 // @returns The set of model instance indices for the newly added models. This
 //   might be fewer models than were declared in the file if there were parsing
 //   errors reported through the workspace.diagnostic policy.
 std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const DataSource& data_source,
-    const ParsingWorkspace& workspace,
-    bool test_sdf_forced_nesting = false);
+    const ParsingWorkspace& workspace);
 
 }  // namespace internal
 }  // namespace multibody
