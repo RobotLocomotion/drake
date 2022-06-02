@@ -194,7 +194,7 @@ struct CapsuleGeometryData : public GeometryData {
   double radius{};
   double height{};
   double radialSegments{50};
-  double capSegments{20}
+  double capSegments{20};
 
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
   void msgpack_pack(msgpack::packer<std::stringstream>& o) const override {

@@ -41,7 +41,8 @@ int do_main() {
   meshcat->SetObject("box", Box(.25, .25, .5), Rgba(0, 0, 1, 1));
   meshcat->SetTransform("box", RigidTransformd(Vector3d{-1, 0, 0}));
 
-  meshcat->SetObject("capsule", Capsule(.25, .5), Rgba(0, 1, 1, 1)));meshcat->SetTransform("capsule", RigidTransformd(Vector3d{0, 0, 0}));
+  meshcat->SetObject("capsule", Capsule(.25, .5), Rgba(0, 1, 1, 1));
+  meshcat->SetTransform("capsule", RigidTransformd(Vector3d{0, 0, 0}));
 
   // Note that height (in z) is the first argument.
   meshcat->SetObject("cone", MeshcatCone(.5, .25, .5), Rgba(1, 0, 0, 1));
