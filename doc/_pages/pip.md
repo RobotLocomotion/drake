@@ -27,12 +27,8 @@ Gurobi, you will need to [build Drake from source](/from_source.html).
 ## Stable Releases
 
 <div class="warning" markdown="1">
-Drake's pip wheels are only published for CPython 3.6 through CPython 3.9
+Drake's pip wheels are only published for CPython 3.8 through CPython 3.9
 running on Linux.  In the future, we intend to publish macOS wheel builds.
-</div>
-
-<div class="warning" markdown="1">
-Support for CPython 3.6 and CPython 3.7 will end on 2022-04-01.
 </div>
 
 <div class="warning" markdown="1">
