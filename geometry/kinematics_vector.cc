@@ -1,5 +1,7 @@
 #include "drake/geometry/kinematics_vector.h"
 
+#include <memory>
+
 #include "absl/container/flat_hash_map.h"
 
 #include "drake/common/autodiff.h"
@@ -10,7 +12,8 @@ namespace drake {
 namespace geometry {
 
 template <class Id, class KinematicsValue>
-class KinematicsVector<Id, KinematicsValue>::Impl {
+class __attribute__((visibility("hidden")))
+KinematicsVector<Id, KinematicsValue>::Impl {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Impl);
 
@@ -51,13 +54,27 @@ class KinematicsVector<Id, KinematicsValue>::Impl {
 };
 
 template <typename Id, typename KinematicsValue>
+typename KinematicsVector<Id, KinematicsValue>::Impl&
+KinematicsVector<Id, KinematicsValue>::impl() {
+  DRAKE_ASSERT(pimpl_ != nullptr);
+  return *static_cast<Impl*>(pimpl_);
+}
+
+template <typename Id, typename KinematicsValue>
+const typename KinematicsVector<Id, KinematicsValue>::Impl&
+KinematicsVector<Id, KinematicsValue>::impl() const {
+  DRAKE_ASSERT(pimpl_ != nullptr);
+  return *static_cast<Impl*>(pimpl_);
+}
+
+template <typename Id, typename KinematicsValue>
 KinematicsVector<Id, KinematicsValue>::KinematicsVector()
-    : pimpl_(std::make_unique<Impl>()) {}
+    : pimpl_(new Impl) {}
 
 template <typename Id, typename KinematicsValue>
 KinematicsVector<Id, KinematicsValue>::KinematicsVector(
     std::initializer_list<std::pair<const Id, KinematicsValue>> init)
-    : pimpl_(std::make_unique<Impl>()) {
+    : KinematicsVector() {
   for (const auto& item : init) {
     set_value(item.first, item.second);
   }
@@ -77,22 +94,24 @@ KinematicsVector<Id, KinematicsValue>::operator=(
 template <typename Id, typename KinematicsValue>
 KinematicsVector<Id, KinematicsValue>::KinematicsVector(
     const KinematicsVector<Id, KinematicsValue>& other)
-    : pimpl_(std::make_unique<Impl>()) {
+    : KinematicsVector() {
   *this = other;
 }
 
 template <typename Id, typename KinematicsValue>
 KinematicsVector<Id, KinematicsValue>::KinematicsVector(
     KinematicsVector<Id, KinematicsValue>&& other)
-    : pimpl_(std::make_unique<Impl>()) {
-  *this = other;
+    : KinematicsVector() {
+  *this = std::move(other);
 }
 
 template <typename Id, typename KinematicsValue>
 KinematicsVector<Id, KinematicsValue>&
 KinematicsVector<Id, KinematicsValue>::operator=(
     const KinematicsVector<Id, KinematicsValue>& other) {
-  this->pimpl_ = std::make_unique<Impl>(*other.pimpl_);
+  auto copy = std::make_unique<Impl>(other.impl());
+  delete &impl();
+  pimpl_ = copy.release();
   return *this;
 }
 
@@ -100,38 +119,40 @@ template <typename Id, typename KinematicsValue>
 KinematicsVector<Id, KinematicsValue>&
 KinematicsVector<Id, KinematicsValue>::operator=(
     KinematicsVector<Id, KinematicsValue>&& other) {
-  this->pimpl_.swap(other.pimpl_);
+  std::swap(pimpl_, other.pimpl_);
   return *this;
 }
 
 template <typename Id, typename KinematicsValue>
-KinematicsVector<Id, KinematicsValue>::~KinematicsVector() {}
+KinematicsVector<Id, KinematicsValue>::~KinematicsVector() {
+  delete &impl();
+}
 
 template <typename Id, typename KinematicsValue>
 void KinematicsVector<Id, KinematicsValue>::clear() {
-  pimpl_->clear();
+  impl().clear();
 }
 
 template <typename Id, typename KinematicsValue>
 void KinematicsVector<Id, KinematicsValue>::set_value(
     Id id, const KinematicsValue& value) {
-  pimpl_->set_value(id, value);
+  impl().set_value(id, value);
 }
 
 template <typename Id, typename KinematicsValue>
 int KinematicsVector<Id, KinematicsValue>::size() const {
-  return pimpl_->size();
+  return impl().size();
 }
 
 template <typename Id, typename KinematicsValue>
 const KinematicsValue& KinematicsVector<Id, KinematicsValue>::value(
     Id id) const {
-  return pimpl_->value(id);
+  return impl().value(id);
 }
 
 template <typename Id, typename KinematicsValue>
 bool KinematicsVector<Id, KinematicsValue>::has_id(Id id) const {
-  return pimpl_->has_id(id);
+  return impl().has_id(id);
 }
 
 template <typename Id, typename KinematicsValue>
@@ -141,7 +162,7 @@ std::vector<Id> KinematicsVector<Id, KinematicsValue>::frame_ids() const {
 
 template <typename Id, typename KinematicsValue>
 std::vector<Id> KinematicsVector<Id, KinematicsValue>::ids() const {
-  return pimpl_->ids();
+  return impl().ids();
 }
 
 // Explicitly instantiates on the most common scalar types.

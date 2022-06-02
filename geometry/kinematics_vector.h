@@ -1,7 +1,6 @@
 #pragma once
 
 #include <initializer_list>
-#include <memory>
 #include <utility>
 #include <vector>
 
@@ -84,10 +83,11 @@ namespace geometry {
  Currently, the following data types with the following scalar types are
  supported:
 
-  Alias                       | Instantiation                                    | Scalar types
+  Alias                       | Instantiation | Scalar types
  -----------------------------|--------------------------------------------------|-------------
-  FramePoseVector             | KinematicsVector<FrameId,RigidTransform<Scalar>> | double/AutoDiffXd/Expression
-  GeometryConfigurationVector | KinematicsVector<GeometryId, VectorX<Scalar>>    | double/AutoDiffXd/Expression
+  FramePoseVector             | KinematicsVector<FrameId,RigidTransform<Scalar>>
+ | double/AutoDiffXd/Expression GeometryConfigurationVector |
+ KinematicsVector<GeometryId, VectorX<Scalar>>    | double/AutoDiffXd/Expression
  */
 template <class Id, class KinematicsValue>
 class KinematicsVector {
@@ -155,7 +155,12 @@ class KinematicsVector {
 
  private:
   class Impl;
-  std::unique_ptr<Impl> pimpl_;
+  Impl& impl();
+  const Impl& impl() const;
+  // We use a raw pointer so that the Impl class can have
+  // __attribute__((visibility("hidden"))), required by the hidden
+  // `absl::flat_hash_map` used under the hood.
+  void* pimpl_{};
 };
 
 /** Class for communicating _pose_ information to SceneGraph for registered
