@@ -134,7 +134,7 @@ genrule(
 
 py_binary(
     name = "embed_sdf",
-    srcs = ["@drake//tools/workspace/sdformat:embed_sdf.py"],
+    srcs = ["@drake//tools/workspace/sdformat_internal:embed_sdf.py"],
     python_version = "PY3",
     srcs_version = "PY3",
 )
@@ -241,8 +241,8 @@ cc_library(
     includes = ["include"],
     linkstatic = 1,
     deps = [
-        "@ignition_math",
-        "@ignition_utils",
+        "@gz_math_internal//:gz_math",
+        "@gz_utils_internal//:gz_utils",
         "@tinyxml2",
         # N.B. It's very unusual to add a dependency from a third-party library
         # onto Drake, but in this case it's the simplest way to be able to send

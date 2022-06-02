@@ -87,7 +87,7 @@ public_headers = public_headers_no_gen + [
 ]
 
 cc_library(
-    name = "ignition_utils",
+    name = "gz_utils",
     srcs = private_headers,
     hdrs = public_headers,
     includes = ["include"],
