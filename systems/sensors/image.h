@@ -83,8 +83,7 @@ class Image {
   /// All the channel values in all the pixels are initialized with zero.
   /// @param width Size of width for image which should be greater than zero
   /// @param height Size of height for image which should be greater than zero
-  Image(int width, int height)
-      : Image(width, height, 0) {}
+  Image(int width, int height) : Image(width, height, 0) {}
 
   /// Image size and initial value constructor.  Specifies a
   /// width, height and an initial value for all the channels in all the pixels.
@@ -92,7 +91,8 @@ class Image {
   /// @param height Size of height for image which should be greater than zero.
   /// @param initial_value A value set to all the channels in all the pixels
   Image(int width, int height, T initial_value)
-      : width_(width), height_(height),
+      : width_(width),
+        height_(height),
         data_(width * height * kNumChannels, initial_value) {
     DRAKE_ASSERT(width > 0);
     DRAKE_ASSERT(height > 0);
@@ -147,6 +147,13 @@ class Image {
     DRAKE_ASSERT(x >= 0 && x < width_);
     DRAKE_ASSERT(y >= 0 && y < height_);
     return data_.data() + (x + y * width_) * kNumChannels;
+  }
+
+  /// Compares whether two images are exactly the same.
+  bool operator==(const Image& other) const {
+    return width_ == other.width_ &&
+           height_ == other.height_ &&
+           data_ == other.data_;
   }
 
  private:
