@@ -57,7 +57,7 @@ EXPECTED_OUTPUT = """\
 class TestIgnSdf(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
-        self.bin = "tools/workspace/sdformat/ign_sdf"
+        self.bin = "tools/workspace/sdformat_internal/ign_sdf"
         self.input_file = os.path.join(
             os.environ["TEST_TMPDIR"], "example.sdf"
         )

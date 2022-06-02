@@ -6,7 +6,7 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 exports_files(
     ["embed_sdf.py"],
-    visibility = ["@sdformat//:__pkg__"],
+    visibility = ["@sdformat_internal//:__pkg__"],
 )
 
 drake_cc_binary(
@@ -15,7 +15,7 @@ drake_cc_binary(
     deps = [
         "//common:essential",
         "@gflags",
-        "@sdformat//:ign_sdf_cmdline",
+        "@sdformat_internal//:ign_sdf_cmdline",
     ],
 )
 
