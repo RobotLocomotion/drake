@@ -32,6 +32,9 @@ struct DynamicFrameData {
   std::string name;
 };
 
+/* Change the name of the LCM channel, based on the geometry role. */
+std::string ModifyLcmChannelForRole(const std::string& channel, Role role);
+
 }  // namespace internal
 
 /** A system that publishes LCM messages compatible with the `drake_visualizer`
@@ -50,6 +53,8 @@ struct DynamicFrameData {
      "DRAKE_VIEWER_DRAW",
    - a message that updates the poses of those geometries on the lcm channel
      named "DRAKE_VIEWER_LOAD_ROBOT"
+
+     XXX document role-modified channels.
 
  The system uses the versioning mechanism provided by SceneGraph to detect
  changes to the geometry so that a change in SceneGraph's data will propagate
@@ -222,6 +227,7 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
    loaded.  */
   static void SendDrawMessage(
       const QueryObject<T>& query_object,
+      const DrakeVisualizerParams& params,
       const std::vector<internal::DynamicFrameData>& dynamic_frames,
       double time, lcm::DrakeLcmInterface* lcm);
 
