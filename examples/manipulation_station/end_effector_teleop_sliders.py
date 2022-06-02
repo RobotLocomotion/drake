@@ -17,7 +17,8 @@ import numpy as np
 from pydrake.examples import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList, SchunkCollisionModel)
-from pydrake.geometry import DrakeVisualizer, Meshcat, MeshcatVisualizer
+from pydrake.geometry import (
+    DrakeVisualizer, DrakeVisualizerParams, Meshcat, MeshcatVisualizer, Role)
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
@@ -242,6 +243,10 @@ def main():
 
         # Connect and publish to drake visualizer.
         DrakeVisualizer.AddToBuilder(builder, geometry_query_port)
+        params = DrakeVisualizerParams()
+        params.role = Role.kProximity
+        DrakeVisualizer.AddToBuilder(builder, geometry_query_port,
+                                     params=params)
         image_to_lcm_image_array = builder.AddSystem(
             ImageToLcmImageArrayT())
         image_to_lcm_image_array.set_name("converter")

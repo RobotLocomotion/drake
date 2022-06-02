@@ -140,6 +140,9 @@ int do_main() {
   strandbeest.set_stiction_tolerance(FLAGS_stiction_tolerance);
 
   geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
+  geometry::DrakeVisualizerParams params;
+  params.role = geometry::Role::kProximity;
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, {}, params);
   ConnectContactResultsToDrakeVisualizer(&builder, strandbeest, scene_graph);
 
   // Create a DesiredVelocityMotor where the proportional term is directly

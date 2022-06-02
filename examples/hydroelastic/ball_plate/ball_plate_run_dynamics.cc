@@ -100,6 +100,9 @@ int do_main() {
   DRAKE_DEMAND(plant.num_positions() == 14);
 
   geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
+  geometry::DrakeVisualizerParams params;
+  params.role = geometry::Role::kProximity;
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, {}, params);
   ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph,
                                          /* lcm */ nullptr);
 

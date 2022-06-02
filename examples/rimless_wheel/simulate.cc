@@ -36,6 +36,10 @@ int DoMain() {
       &builder, rimless_wheel->get_floating_base_state_output_port(),
       scene_graph);
   geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph);
+  geometry::DrakeVisualizerParams viz_params;
+  viz_params.role = geometry::Role::kProximity;
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph, {},
+                                           viz_params);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);

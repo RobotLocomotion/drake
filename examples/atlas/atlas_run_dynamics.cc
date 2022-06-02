@@ -100,6 +100,9 @@ int do_main() {
   ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph);
 
   geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
+  geometry::DrakeVisualizerParams params;
+  params.role = geometry::Role::kProximity;
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, {}, params);
   auto diagram = builder.Build();
 
   // Create a context for this system:

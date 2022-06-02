@@ -29,15 +29,17 @@ std::string to_string(Finger finger) {
 
 template <typename T>
 void AddDrakeVisualizer(systems::DiagramBuilder<T>*,
-                        const geometry::SceneGraph<T>&) {
+                        const geometry::SceneGraph<T>&,
+                        geometry::DrakeVisualizerParams params = {}) {
   // Disabling visualization for non-double scalar type T.
 }
 
 template <>
 void AddDrakeVisualizer<double>(
     systems::DiagramBuilder<double>* builder,
-    const geometry::SceneGraph<double>& scene_graph) {
-  geometry::DrakeVisualizerd::AddToBuilder(builder, scene_graph);
+    const geometry::SceneGraph<double>& scene_graph,
+    geometry::DrakeVisualizerParams params) {
+  geometry::DrakeVisualizerd::AddToBuilder(builder, scene_graph, {}, params);
 }
 
 template <typename T>
@@ -71,6 +73,9 @@ std::unique_ptr<systems::Diagram<T>> ConstructDiagram(
   (*plant)->Finalize();
 
   AddDrakeVisualizer<T>(&builder, **scene_graph);
+  geometry::DrakeVisualizerParams params;
+  params.role = geometry::Role::kProximity;
+  AddDrakeVisualizer<T>(&builder, **scene_graph, params);
   return builder.Build();
 }
 

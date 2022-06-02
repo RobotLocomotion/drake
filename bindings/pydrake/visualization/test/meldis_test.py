@@ -35,7 +35,7 @@ class TestMeldis(unittest.TestCase):
         lcm = dut._lcm
 
         # The path is created by the constructor.
-        self.assertEqual(meshcat.HasPath("/DRAKE_VIEWER"), True)
+        self.assertEqual(meshcat.HasPath("/Visual Geometry"), True)
 
         # Enqueue the load + draw messages.
         sdf_file = FindResourceOrThrow(
@@ -52,7 +52,7 @@ class TestMeldis(unittest.TestCase):
         diagram.Publish(context)
 
         # The geometry isn't registered until the load is processed.
-        link_path = "/DRAKE_VIEWER/2/plant/acrobot/Link2/0"
+        link_path = "/Visual Geometry/2/plant/acrobot/Link2/0"
         self.assertEqual(meshcat.HasPath(link_path), False)
 
         # Process the load + draw; make sure the geometry exists now.

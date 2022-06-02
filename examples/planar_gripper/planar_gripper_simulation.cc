@@ -350,6 +350,9 @@ int DoMain() {
   }
 
   geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, lcm);
+  geometry::DrakeVisualizerParams params;
+  params.role = geometry::Role::kProximity;
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, lcm, params);
 
   // Publish contact results for visualization.
   if (FLAGS_visualize_contacts) {
