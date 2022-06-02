@@ -938,7 +938,7 @@ class RotationMatrix {
   // usually pre-computed as `2 / quaternion.squaredNorm()`.  If `quaternion`
   // has already been normalized [`quaternion.norm() = 1`] or there is a reason
   // (unlikely) that the calling method determines that normalization is
-  // unwanted, the calling method should just past `two_over_norm_squared = 2`.
+  // unwanted, the calling method should just pass `two_over_norm_squared = 2`.
   // @internal The cost of Eigen's quaternion.toRotationMatrix() is 12 adds and
   // 12 multiplies.  This method also costs 12 adds and 12 multiplies, but
   // has a provision for an efficient algorithm for always calculating an
