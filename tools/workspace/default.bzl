@@ -61,6 +61,7 @@ load("@drake//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("@drake//tools/workspace/msgpack:repository.bzl", "msgpack_repository")
 load("@drake//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_repository")  # noqa
 load("@drake//tools/workspace/nlopt:repository.bzl", "nlopt_repository")
+load("@drake//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
 load("@drake//tools/workspace/openblas:repository.bzl", "openblas_repository")
 load("@drake//tools/workspace/opencl:repository.bzl", "opencl_repository")
 load("@drake//tools/workspace/opengl:repository.bzl", "opengl_repository")
@@ -238,7 +239,11 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "net_sf_jchart2d" not in excludes:
         net_sf_jchart2d_repository(name = "net_sf_jchart2d", mirrors = mirrors)
     if "nlopt" not in excludes:
+        # The @nlopt external is being removed from Drake on 2020-09-01.
+        # TODO(jwnimmer-tri) When removing @nlopt, also update install_prereqs.
         nlopt_repository(name = "nlopt")
+    if "nlopt_internal" not in excludes:
+        nlopt_internal_repository(name = "nlopt_internal", mirrors = mirrors)
     if "openblas" not in excludes:
         openblas_repository(name = "openblas")
     if "opencl" not in excludes:

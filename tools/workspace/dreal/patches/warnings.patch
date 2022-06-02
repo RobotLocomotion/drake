@@ -1,0 +1,12 @@
+TBD
+
+--- tools/dreal.bzl
++++ tools/dreal.bzl
+@@ -25,6 +25,7 @@
+     "-Woverloaded-virtual",
+     "-Wpedantic",
+     "-Wshadow",
++    "-Wno-attributes",
+ ]
+ 
+ # The CLANG_FLAGS will be enabled for all C++ rules in the project when

@@ -31,8 +31,6 @@ zip
 # Build dependencies (general).
 libgl1-mesa-dev
 libglib2.0-dev
-libnlopt-dev
-libnlopt-cxx-dev
 libxt-dev
 # Build dependencies (OpenCL).
 opencl-headers
