@@ -7,7 +7,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsing/parser.h"
-#include "drake/multibody/plant/contact_results_to_lcm.h"
+#include "drake/multibody/plant/drake_visualizer_config_functions.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_gflags.h"
@@ -97,9 +97,7 @@ int do_main() {
   DRAKE_DEMAND(pelvis.floating_velocities_start() == plant.num_positions());
 
   // Publish contact results for visualization.
-  ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph);
-
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
+  ApplyDrakeVisualizerConfig(&builder, plant, scene_graph);
   auto diagram = builder.Build();
 
   // Create a context for this system:

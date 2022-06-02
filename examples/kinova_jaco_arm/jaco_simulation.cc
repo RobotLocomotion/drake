@@ -94,7 +94,7 @@ int DoMain() {
 
   systems::lcm::LcmInterfaceSystem* lcm =
       builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph, lcm);
+  geometry::DrakeVisualizerd::AddToBuilderForRoles(&builder, *scene_graph, lcm);
 
   auto command_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_jaco_command>(

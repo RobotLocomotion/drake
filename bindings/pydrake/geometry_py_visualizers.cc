@@ -1,6 +1,8 @@
 /* @file This contains the bindings for the various visualizer System types
  found in drake::geometry. They can be found in the pydrake.geometry module. */
 
+#include "pybind11/stl_bind.h"
+
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
@@ -10,6 +12,15 @@
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/meshcat_point_cloud_visualizer.h"
 #include "drake/geometry/meshcat_visualizer.h"
+
+// Declare some binding help for return value of
+// DrakeVisualizer::AddToBuilderForRoles.
+PYBIND11_MAKE_OPAQUE(
+    std::vector<const drake::geometry::DrakeVisualizer<double>*>);
+PYBIND11_MAKE_OPAQUE(
+    std::vector<const drake::geometry::DrakeVisualizer<drake::AutoDiffXd>*>);
+PYBIND11_MAKE_OPAQUE(std::vector<
+    const drake::geometry::DrakeVisualizer<drake::symbolic::Expression>*>);
 
 namespace drake {
 namespace pydrake {
@@ -68,10 +79,37 @@ void DoScalarDependentDefinitions(py::module m, T) {
             // Keep alive, reference: `builder` keeps `lcm` alive.
             py::keep_alive<1, 3>(), py_rvp::reference,
             cls_doc.AddToBuilder.doc_4args_builder_query_object_port_lcm_params)
+        .def_static("AddToBuilderForRoles",
+            py::overload_cast<systems::DiagramBuilder<T>*, const SceneGraph<T>&,
+                lcm::DrakeLcmInterface*, DrakeVisualizerMultiRoleParams>(
+                &DrakeVisualizer<T>::AddToBuilderForRoles),
+            py::arg("builder"), py::arg("scene_graph"),
+            py::arg("lcm") = nullptr,
+            py::arg("params") = DrakeVisualizerMultiRoleParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // Keep alive, reference: `builder` keeps `lcm` alive.
+            py::keep_alive<1, 3>(), cls_doc.AddToBuilderForRoles.doc)
+        .def_static("AddToBuilderForRoles",
+            py::overload_cast<systems::DiagramBuilder<T>*,
+                const systems::OutputPort<T>&, lcm::DrakeLcmInterface*,
+                DrakeVisualizerMultiRoleParams>(
+                &DrakeVisualizer<T>::AddToBuilderForRoles),
+            py::arg("builder"), py::arg("query_object_port"),
+            py::arg("lcm") = nullptr,
+            py::arg("params") = DrakeVisualizerMultiRoleParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // Keep alive, reference: `builder` keeps `lcm` alive.
+            py::keep_alive<1, 3>(), cls_doc.AddToBuilderForRoles.doc)
         .def_static("DispatchLoadMessage",
             &DrakeVisualizer<T>::DispatchLoadMessage, py::arg("scene_graph"),
             py::arg("lcm"), py::arg("params") = DrakeVisualizerParams{},
             cls_doc.DispatchLoadMessage.doc);
+
+    // Allow AddToBuilderForRoles return value to be usable with keep_alive().
+    py::bind_vector<std::vector<const DrakeVisualizer<T>*>>(
+        m, std::string("VectorDrakeVisualizer") + typeid(T).name());
   }
 
   // MeshcatPointCloudVisualizer
@@ -176,6 +214,54 @@ void DoScalarIndependentDefinitions(py::module m) {
               "show_hydroelastic={})")
               .format(self.publish_period, self.role, self.default_color,
                   self.show_hydroelastic);
+        });
+  }
+
+  // DrakeVisualizerRoleParams
+  {
+    using Class = DrakeVisualizerRoleParams;
+    constexpr auto& cls_doc = doc.DrakeVisualizerRoleParams;
+    py::class_<Class>(
+        m, "DrakeVisualizerRoleParams", py::dynamic_attr(), cls_doc.doc)
+        .def(ParamInit<Class>())
+        .def_readwrite(
+            "role", &DrakeVisualizerRoleParams::role, cls_doc.role.doc)
+        .def_readwrite("default_color",
+            &DrakeVisualizerRoleParams::default_color,
+            cls_doc.default_color.doc)
+        .def("__repr__", [](const Class& self) {
+          return py::str(
+              "DrakeVisualizerMultiRoleParams("
+              "role={}, "
+              "default_color={})")
+              .format(self.role, self.default_color);
+        });
+    py::bind_vector<std::vector<DrakeVisualizerRoleParams>>(
+        m, "VectorDrakeVisualizerRoleParams");
+  }
+
+  // DrakeVisualizerMultiRoleParams
+  {
+    using Class = DrakeVisualizerMultiRoleParams;
+    constexpr auto& cls_doc = doc.DrakeVisualizerMultiRoleParams;
+    py::class_<Class>(
+        m, "DrakeVisualizerMultiRoleParams", py::dynamic_attr(), cls_doc.doc)
+        .def(ParamInit<Class>())
+        .def_readwrite("publish_period",
+            &DrakeVisualizerMultiRoleParams::publish_period,
+            cls_doc.publish_period.doc)
+        .def_readwrite(
+            "roles", &DrakeVisualizerMultiRoleParams::roles, cls_doc.roles.doc)
+        .def_readwrite("show_hydroelastic",
+            &DrakeVisualizerMultiRoleParams::show_hydroelastic,
+            cls_doc.show_hydroelastic.doc)
+        .def("__repr__", [](const Class& self) {
+          return py::str(
+              "DrakeVisualizerMultiRoleParams("
+              "publish_period={}, "
+              "roles={}, "
+              "show_hydroelastic={})")
+              .format(self.publish_period, self.roles, self.show_hydroelastic);
         });
   }
 

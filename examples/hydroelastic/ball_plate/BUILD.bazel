@@ -44,7 +44,7 @@ drake_cc_binary(
         ":make_ball_plate_plant",
         "//common:add_text_logging_gflags",
         "//geometry:drake_visualizer",
-        "//multibody/plant:contact_results_to_lcm",
+        "//multibody/plant:drake_visualizer_config_functions",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_gflags",
         "//systems/analysis:simulator_print_stats",

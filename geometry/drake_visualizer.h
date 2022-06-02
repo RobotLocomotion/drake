@@ -51,6 +51,11 @@ struct DeformableMeshData {
   int volume_vertex_count{};
 };
 
+/* Maybe add a suffix to the provided LCM channel name, based on the geometry
+ role. Channel name results for the kIllustration role will be unchanged. The
+ passed role cannot be kUnassigned. */
+std::string MakeLcmChannelNameForRole(const std::string& channel, Role role);
+
 }  // namespace internal
 
 /** A system that publishes LCM messages compatible with the `drake_visualizer`
@@ -66,11 +71,19 @@ struct DeformableMeshData {
  The %DrakeVisualizer system broadcasts three kinds of LCM messages:
 
    - a message that defines the non-deformable geometries in the world on the
- lcm channel named "DRAKE_VIEWER_LOAD_ROBOT"
+     lcm channel named "DRAKE_VIEWER_LOAD_ROBOT"
    - a message that updates the poses of those non-deformable geometries on the
- lcm channel named "DRAKE_VIEWER_DRAW",
+     lcm channel named "DRAKE_VIEWER_DRAW",
    - a message that sets the world space vertex positions of the deformable
-    geometries on the lcm channel named "DRAKE_VIEWER_DEFORMABLE"
+     geometries on the lcm channel named "DRAKE_VIEWER_DEFORMABLE"
+
+   The above channel names are modified according to the role specified in
+   DrakeVisualizerParams. This allows simultaneous availability of geometry
+   from multiple roles, by using multiple DrakeVisualizer instances.
+
+   - kIllustration: channel names are unchanged from above.
+   - kProximity: channel names gain a "_PROXIMITY" suffix.
+   - kPerception: channel names gain a "_PERCEPTION" suffix.
 
  The system uses the versioning mechanism provided by SceneGraph to detect
  changes to the geometry so that a change in SceneGraph's data will propagate
@@ -167,6 +180,9 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
     return this->get_input_port(query_object_input_port_);
   }
 
+  /** Returns the params data passed to the constructor. */
+  const DrakeVisualizerParams& params() { return this->params_; }
+
   /** @name Utility functions for instantiating and connecting a visualizer
 
    These methods provide a convenient mechanism for adding a DrakeVisualizer
@@ -197,6 +213,19 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
       const systems::OutputPort<T>& query_object_port,
       lcm::DrakeLcmInterface* lcm = nullptr, DrakeVisualizerParams params = {});
   //@}
+
+  /** Executes AddToBuilder() for multiple geometry roles. */
+  static std::vector<const DrakeVisualizer<T>*> AddToBuilderForRoles(
+      systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
+      lcm::DrakeLcmInterface* lcm = nullptr,
+      DrakeVisualizerMultiRoleParams params = {});
+
+  /** Executes AddToBuilder() for multiple geometry roles. */
+  static std::vector<const DrakeVisualizer<T>*> AddToBuilderForRoles(
+      systems::DiagramBuilder<T>* builder,
+      const systems::OutputPort<T>& query_object_port,
+      lcm::DrakeLcmInterface* lcm = nullptr,
+      DrakeVisualizerMultiRoleParams params = {});
 
   // TODO(#7820) When we can easily bind lcmt_* messages, then replace
   //  the DispatchLoadMessage API with something like:
@@ -244,6 +273,7 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
    definition of the poses of all non-deformable geometries. */
   static void SendDrawNonDeformableMessage(
       const QueryObject<T>& query_object,
+      const DrakeVisualizerParams& params,
       const std::vector<internal::DynamicFrameData>& dynamic_frames,
       double time, lcm::DrakeLcmInterface* lcm);
 

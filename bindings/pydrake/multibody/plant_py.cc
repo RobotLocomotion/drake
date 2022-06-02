@@ -17,6 +17,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
+#include "drake/multibody/plant/drake_visualizer_config_functions.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
@@ -1235,6 +1236,33 @@ PYBIND11_MODULE(plant, m) {
       // Keep alive, transitive: `lcm` keeps `builder` alive.
       py::keep_alive<4, 1>(),
       doc.ConnectContactResultsToDrakeVisualizer.doc_5args);
+
+  {
+    using Class = DrakeVisualizerConfig;
+    constexpr auto& cls_doc = doc.DrakeVisualizerConfig;
+    py::class_<Class> cls(m, "DrakeVisualizerConfig", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>())
+        .def(ParamInit<Class>())
+        .def_readwrite("geometry_config", &Class::geometry_config,
+            cls_doc.geometry_config.doc)
+        .def_readwrite("show_contact_results", &Class::show_contact_results,
+            cls_doc.show_contact_results.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  m.def(
+      "ApplyDrakeVisualizerConfig",
+      [](drake::systems::DiagramBuilder<double>* builder,
+          const drake::multibody::MultibodyPlant<double>& plant,
+          const drake::geometry::SceneGraph<double>& scene_graph,
+          lcm::DrakeLcmInterface* lcm, const DrakeVisualizerConfig& config) {
+        return drake::multibody::ApplyDrakeVisualizerConfig(
+            builder, plant, scene_graph, lcm, config);
+      },
+      py::arg("builder"), py::arg("plant"), py::arg("scene_graph"),
+      py::arg("lcm") = nullptr, py::arg("config") = DrakeVisualizerConfig{},
+      doc.ApplyDrakeVisualizerConfig.doc);
 
   {
     using Class = PropellerInfo;

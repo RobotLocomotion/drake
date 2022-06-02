@@ -59,7 +59,7 @@
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
-#include "drake/multibody/plant/contact_results_to_lcm.h"
+#include "drake/multibody/plant/drake_visualizer_config_functions.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -76,7 +76,6 @@ namespace planar_gripper {
 namespace {
 
 using geometry::SceneGraph;
-using multibody::ConnectContactResultsToDrakeVisualizer;
 using multibody::JointActuatorIndex;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
@@ -349,12 +348,10 @@ int DoMain() {
                     plant.get_actuation_input_port());
   }
 
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, lcm);
-
-  // Publish contact results for visualization.
-  if (FLAGS_visualize_contacts) {
-    ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph, lcm);
-  }
+  multibody::DrakeVisualizerConfig config;
+  config.show_contact_results = FLAGS_visualize_contacts;
+  multibody::ApplyDrakeVisualizerConfig(
+      &builder, plant, scene_graph, lcm, config);
 
   // Publish planar gripper status via LCM.
   auto status_pub = builder.AddSystem(

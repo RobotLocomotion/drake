@@ -72,12 +72,20 @@ _logger = logging.getLogger("drake")
 class _ViewerApplet:
     """Displays lcmt_viewer_load_robot and lcmt_viewer_draw into MeshCat."""
 
-    def __init__(self, *, meshcat):
+    def __init__(self, *, meshcat, path=None, alpha_slider_name=None,
+                 alpha_slider_value=1.0):
         self._meshcat = meshcat
-        self._path = "/DRAKE_VIEWER"
+        self._path = path or "/DRAKE_VIEWER"
+        self._alpha_slider_name = alpha_slider_name or self._path[1:12] + ". α"
+        self._alpha_slider_value = alpha_slider_value
+        self._geom_paths = []
+        self._geom_colors = []
 
         # Initialize ourself with an empty load message.
         self.on_viewer_load(message=lcmt_viewer_load_robot())
+
+        self._meshcat.AddSlider(self._alpha_slider_name, 0.0, 1.0, 0.02,
+                                alpha_slider_value)
 
     def on_viewer_load(self, message):
         """Handler for lcmt_viewer_load."""
@@ -91,6 +99,8 @@ class _ViewerApplet:
         self._waiting_for_first_draw_message = True
 
         # Add the links and their geometries.
+        self._geom_paths = []
+        self._geom_colors = []
         for link in message.link:
             robot_num = link.robot_num
             link_name = link.name.replace("::", "/")
@@ -100,8 +110,11 @@ class _ViewerApplet:
                 shape, rgba, pose = self._convert_geom(geom)
                 if shape is None:
                     continue
+                self._geom_paths.append(geom_path)
+                self._geom_colors.append(rgba)
                 self._meshcat.SetObject(path=geom_path, shape=shape, rgba=rgba)
                 self._meshcat.SetTransform(path=geom_path, X_ParentPath=pose)
+        assert len(self._geom_paths) == len(self._geom_colors)
 
     def on_viewer_draw(self, message):
         """Handler for lcmt_viewer_draw."""
@@ -114,6 +127,25 @@ class _ViewerApplet:
         if self._waiting_for_first_draw_message:
             self._waiting_for_first_draw_message = False
             self._set_visible(True)
+            self.on_poll(force=True)
+
+    def on_poll(self, force=False):
+        got = self._meshcat.GetSliderValue(self._alpha_slider_name)
+
+        value_changed = (got != self._alpha_slider_value)
+        visible = (got != 0)
+        visibility_changed = ((got == 0) != (self._alpha_slider_value == 0))
+        self._alpha_slider_value = got
+
+        if force or visibility_changed:
+            self._set_visible(self._alpha_slider_value != 0)
+        if visible and (force or value_changed or visibility_changed):
+            for k in range(len(self._geom_paths)):
+                path = self._geom_paths[k]
+                color = self._geom_colors[k]
+                new_rgba = [color.r(), color.g(), color.b(),
+                            got * color.a()]
+                self._meshcat.SetProperty(path, "color", new_rgba)
 
     def _set_visible(self, value):
         self._meshcat.SetProperty(self._path, property="visible", value=value)
@@ -233,6 +265,8 @@ class Meldis:
         self._message_handlers = {}
         self._message_pending_data = {}
 
+        self._poll_handlers = []
+
         self._lcm = DrakeLcm()
         lcm_url = self._lcm.get_lcm_url()
         _logger.info(f"Meldis is listening for LCM messages at {lcm_url}")
@@ -242,13 +276,28 @@ class Meldis:
                                show_stats_plot=False)
         self.meshcat = Meshcat(params=params)
 
-        viewer = _ViewerApplet(meshcat=self.meshcat)
+        illustration_viewer = _ViewerApplet(meshcat=self.meshcat,
+                                            path="/Visual Geometry",
+                                            alpha_slider_name="Visual α")
         self._subscribe(channel="DRAKE_VIEWER_LOAD_ROBOT",
                         message_type=lcmt_viewer_load_robot,
-                        handler=viewer.on_viewer_load)
+                        handler=illustration_viewer.on_viewer_load)
         self._subscribe(channel="DRAKE_VIEWER_DRAW",
                         message_type=lcmt_viewer_draw,
-                        handler=viewer.on_viewer_draw)
+                        handler=illustration_viewer.on_viewer_draw)
+        self._poll(handler=illustration_viewer.on_poll)
+
+        proximity_viewer = _ViewerApplet(meshcat=self.meshcat,
+                                         path="/Collision Geometry",
+                                         alpha_slider_name="Collision α",
+                                         alpha_slider_value=0.5)
+        self._subscribe(channel="DRAKE_VIEWER_LOAD_ROBOT_PROXIMITY",
+                        message_type=lcmt_viewer_load_robot,
+                        handler=proximity_viewer.on_viewer_load)
+        self._subscribe(channel="DRAKE_VIEWER_DRAW_PROXIMITY",
+                        message_type=lcmt_viewer_draw,
+                        handler=proximity_viewer.on_viewer_draw)
+        self._poll(handler=proximity_viewer.on_poll)
 
         contact = _ContactApplet(meshcat=self.meshcat)
         self._subscribe(channel="CONTACT_RESULTS",
@@ -283,6 +332,13 @@ class Meldis:
             self._message_pending_data[channel] = data
         self._lcm.Subscribe(channel=channel, handler=_on_message)
 
+    def _poll(self, handler):
+        self._poll_handlers.append(handler)
+
+    def _invoke_poll(self):
+        for function in self._poll_handlers:
+            function()
+
     def _invoke_subscriptions(self):
         """Posts any unhandled messages to their handlers and clears the
         collection of unhandled messages.
@@ -305,6 +361,7 @@ class Meldis:
             if not self._should_update():
                 continue
             self._invoke_subscriptions()
+            self._invoke_poll()
             self.meshcat.Flush()
             self._check_for_shutdown(idle_timeout=idle_timeout)
 

@@ -426,7 +426,7 @@ int do_main() {
   DrakeLcm lcm;
 
   // Visualize geometry.
-  DrakeVisualizerd::AddToBuilder(&builder, scene_graph, &lcm);
+  DrakeVisualizerd::AddToBuilderForRoles(&builder, scene_graph, &lcm);
 
   // Visualize contacts.
   auto& contact_to_lcm =

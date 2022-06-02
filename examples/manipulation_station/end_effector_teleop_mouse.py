@@ -323,7 +323,7 @@ def main():
         station.Finalize()
         query_port = station.GetOutputPort("query_object")
 
-        DrakeVisualizer.AddToBuilder(builder, query_port)
+        DrakeVisualizer.AddToBuilderForRoles(builder, query_port)
         if args.meshcat:
             meshcat = Meshcat()
             meshcat_visualizer = MeshcatVisualizer.AddToBuilder(

@@ -27,7 +27,7 @@ drake_cc_binary(
         "//multibody/inverse_kinematics",
         "//multibody/parsing",
         "//multibody/plant",
-        "//multibody/plant:contact_results_to_lcm",
+        "//multibody/plant:drake_visualizer_config_functions",
         "//multibody/tree",
         "//solvers",
         "//systems/analysis:simulator",

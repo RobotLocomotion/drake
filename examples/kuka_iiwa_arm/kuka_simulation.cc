@@ -74,7 +74,7 @@ int DoMain() {
 
   // Creates and adds LCM publisher for visualization.
   auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, lcm);
+  geometry::DrakeVisualizerd::AddToBuilderForRoles(&builder, scene_graph, lcm);
 
   // Since we welded the model to the world above, the only remaining joints
   // should be those in the arm.

@@ -72,6 +72,28 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "drake_visualizer_config_functions",
+    srcs = ["drake_visualizer_config_functions.cc"],
+    hdrs = [
+        "drake_visualizer_config.h",
+        "drake_visualizer_config_functions.h",
+    ],
+    tags = [
+        # Don't add this library into the ":plant" package library.
+        # Use of MBP doesn't imply use of contact visualization so this
+        # dependency should be invoked explicitly.
+        "exclude_from_package",
+    ],
+    deps = [
+        ":contact_results_to_lcm",
+        ":multibody_plant_core",
+        "//geometry:drake_visualizer",
+        "//geometry:scene_graph",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_library(
     name = "tamsi_solver",
     srcs = ["tamsi_solver.cc"],
     hdrs = ["tamsi_solver.h"],

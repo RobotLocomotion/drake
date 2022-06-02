@@ -241,7 +241,7 @@ def main():
             meshcat.Set2dRenderMode()
 
         # Connect and publish to drake visualizer.
-        DrakeVisualizer.AddToBuilder(builder, geometry_query_port)
+        DrakeVisualizer.AddToBuilderForRoles(builder, geometry_query_port)
         image_to_lcm_image_array = builder.AddSystem(
             ImageToLcmImageArrayT())
         image_to_lcm_image_array.set_name("converter")

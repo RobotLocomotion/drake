@@ -12,7 +12,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/random_rotation.h"
 #include "drake/multibody/math/spatial_algebra.h"
-#include "drake/multibody/plant/contact_results_to_lcm.h"
+#include "drake/multibody/plant/drake_visualizer_config_functions.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
@@ -183,14 +183,12 @@ int do_main() {
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
   if (FLAGS_visualize) {
-    geometry::DrakeVisualizerParams params;
+    drake::multibody::DrakeVisualizerConfig config;
     if (FLAGS_vis_hydro) {
-      params.role = geometry::Role::kProximity;
-      params.show_hydroelastic = true;
+      config.geometry_config.show_hydroelastic = true;
     }
-    geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, nullptr,
-                                             params);
-    ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph);
+    drake::multibody::ApplyDrakeVisualizerConfig(
+        &builder, plant, scene_graph, {}, config);
   }
   auto diagram = builder.Build();
 

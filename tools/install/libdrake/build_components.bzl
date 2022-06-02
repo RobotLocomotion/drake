@@ -72,6 +72,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/parsing",
     "//multibody/plant",
     "//multibody/plant:contact_results_to_lcm",  # unpackaged
+    "//multibody/plant:drake_visualizer_config_functions",  # unpackaged
     "//multibody/topology:multibody_graph",  # unpackaged
     "//multibody/tree",
     "//multibody/triangle_quadrature",

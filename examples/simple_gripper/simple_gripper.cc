@@ -8,12 +8,11 @@
 #include "drake/common/find_resource.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/contact_results.h"
-#include "drake/multibody/plant/contact_results_to_lcm.h"
+#include "drake/multibody/plant/drake_visualizer_config_functions.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/systems/analysis/simulator.h"
@@ -30,11 +29,9 @@ namespace {
 using Eigen::Vector3d;
 using geometry::SceneGraph;
 using geometry::Sphere;
-using lcm::DrakeLcm;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using multibody::Body;
-using multibody::ConnectContactResultsToDrakeVisualizer;
 using multibody::CoulombFriction;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
@@ -244,14 +241,12 @@ int do_main() {
   builder.Connect(scene_graph.get_query_output_port(),
                   plant.get_geometry_query_input_port());
 
-  DrakeLcm lcm;
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, &lcm);
   builder.Connect(
       plant.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
   // Publish contact results for visualization.
-  ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph, &lcm);
+  multibody::ApplyDrakeVisualizerConfig(&builder, plant, scene_graph);
 
   // Sinusoidal force input. We want the gripper to follow a trajectory of the
   // form x(t) = X0 * sin(ω⋅t). By differentiating once, we can compute the

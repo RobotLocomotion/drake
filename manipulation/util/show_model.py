@@ -60,6 +60,7 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import (
     Cylinder,
     DrakeVisualizer,
+    DrakeVisualizerParams,
     GeometryInstance,
     MakePhongIllustrationProperties,
     Meshcat,
@@ -312,7 +313,7 @@ def parse_visualizers(args_parser, args):
 
     def connect_visualizers(builder, plant, scene_graph):
         # Connect this to drake_visualizer.
-        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph)
+        DrakeVisualizer.AddToBuilderForRoles(builder, scene_graph)
 
         # Connect to Meshcat.  If the consuming application needs to connect,
         # e.g., JointSliders, the meshcat instance is required.

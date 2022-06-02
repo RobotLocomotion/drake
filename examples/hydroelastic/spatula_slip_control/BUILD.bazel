@@ -38,7 +38,7 @@ drake_cc_binary(
     deps = [
         "//geometry:drake_visualizer",
         "//multibody/parsing",
-        "//multibody/plant:contact_results_to_lcm",
+        "//multibody/plant:drake_visualizer_config_functions",
         "//multibody/plant:multibody_plant_config_functions",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_config_functions",

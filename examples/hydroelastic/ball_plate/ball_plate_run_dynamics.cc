@@ -6,7 +6,7 @@
 #include "drake/examples/hydroelastic/ball_plate/make_ball_plate_plant.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/plant/contact_results_to_lcm.h"
+#include "drake/multibody/plant/drake_visualizer_config_functions.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/systems/analysis/simulator.h"
@@ -99,9 +99,7 @@ int do_main() {
   DRAKE_DEMAND(plant.num_velocities() == 12);
   DRAKE_DEMAND(plant.num_positions() == 14);
 
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
-  ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph,
-                                         /* lcm */ nullptr);
+  multibody::ApplyDrakeVisualizerConfig(&builder, plant, scene_graph);
 
   auto diagram = builder.Build();
   auto simulator = MakeSimulatorFromGflags(*diagram);

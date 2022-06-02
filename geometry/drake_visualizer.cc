@@ -27,6 +27,7 @@ namespace drake {
 namespace geometry {
 
 using Eigen::Quaterniond;
+using internal::MakeLcmChannelNameForRole;
 using internal::SortedTriplet;
 using math::RigidTransformd;
 using std::array;
@@ -465,6 +466,27 @@ class ShapeToLcm : public ShapeReifier {
 
 }  // namespace
 
+namespace internal {
+std::string MakeLcmChannelNameForRole(const std::string& channel, Role role) {
+  DRAKE_DEMAND(role != Role::kUnassigned);
+
+  // These channel name transformations must be kept in sync with message
+  // consumers (meldis, drake_visualizer) in order for visualization of all
+  // roles to work.
+  switch (role) {
+    case Role::kIllustration:
+      return channel;
+    case Role::kProximity:
+      return channel + "_PROXIMITY";
+    case Role::kPerception:
+      return channel + "_PERCEPTION";
+    case Role::kUnassigned:
+      DRAKE_UNREACHABLE();
+  }
+  DRAKE_UNREACHABLE();
+}
+}  // namespace internal
+
 template <typename T>
 DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
                                     DrakeVisualizerParams params)
@@ -504,6 +526,36 @@ const DrakeVisualizer<T>& DrakeVisualizer<T>::AddToBuilder(
       *builder->template AddSystem<DrakeVisualizer<T>>(lcm, std::move(params));
   builder->Connect(query_object_port, visualizer.query_object_input_port());
   return visualizer;
+}
+
+template <typename T>
+std::vector<const DrakeVisualizer<T>*> DrakeVisualizer<T>::AddToBuilderForRoles(
+    systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
+    lcm::DrakeLcmInterface* lcm, DrakeVisualizerMultiRoleParams params) {
+  return AddToBuilderForRoles(builder, scene_graph.get_query_output_port(),
+                              lcm, std::move(params));
+}
+
+template <typename T>
+std::vector<const DrakeVisualizer<T>*> DrakeVisualizer<T>::AddToBuilderForRoles(
+    systems::DiagramBuilder<T>* builder,
+    const systems::OutputPort<T>& query_object_port,
+    lcm::DrakeLcmInterface* lcm, DrakeVisualizerMultiRoleParams params) {
+  DRAKE_DEMAND(!params.roles.empty());
+  std::vector<const DrakeVisualizer<T>*> result;
+  std::set<Role> realized_roles;
+  DrakeVisualizerParams p;
+  p.publish_period = params.publish_period;
+  p.show_hydroelastic = params.show_hydroelastic;
+  for (const auto& role_data : params.roles) {
+    DRAKE_DEMAND(role_data.role != Role::kUnassigned);
+    if (realized_roles.count(role_data.role) > 0) { continue; }
+    realized_roles.insert(role_data.role);
+    p.role = role_data.role;
+    p.default_color = role_data.default_color;
+    result.push_back(&AddToBuilder(builder, query_object_port, lcm, p));
+  }
+  return result;
 }
 
 template <typename T>
@@ -584,7 +636,8 @@ EventStatus DrakeVisualizer<T>::SendGeometryMessage(
     RefreshDeformableMeshData(context);
   }
 
-  SendDrawNonDeformableMessage(query_object, EvalDynamicFrameData(context),
+  SendDrawNonDeformableMessage(query_object, params_,
+                               EvalDynamicFrameData(context),
                                ExtractDoubleOrThrow(context.get_time()), lcm_);
   SendDeformableGeometriesMessage(
       query_object, params_, EvalDeformableMeshData(context),
@@ -674,12 +727,15 @@ void DrakeVisualizer<T>::SendLoadNonDeformableMessage(
     ++link_index;
   }
 
-  lcm::Publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", message, time);
+  std::string channel = MakeLcmChannelNameForRole("DRAKE_VIEWER_LOAD_ROBOT",
+                                                  params.role);
+  lcm::Publish(lcm, channel, message, time);
 }
 
 template <typename T>
 void DrakeVisualizer<T>::SendDrawNonDeformableMessage(
     const QueryObject<T>& query_object,
+    const DrakeVisualizerParams& params,
     const vector<internal::DynamicFrameData>& dynamic_frames, double time,
     lcm::DrakeLcmInterface* lcm) {
   lcmt_viewer_draw message{};
@@ -714,7 +770,9 @@ void DrakeVisualizer<T>::SendDrawNonDeformableMessage(
     message.quaternion[i][3] = q.z();
   }
 
-  lcm::Publish(lcm, "DRAKE_VIEWER_DRAW", message, time);
+  std::string channel = MakeLcmChannelNameForRole("DRAKE_VIEWER_DRAW",
+                                                  params.role);
+  lcm::Publish(lcm, channel, message, time);
 }
 
 template <typename T>
@@ -744,7 +802,9 @@ void DrakeVisualizer<T>::SendDeformableGeometriesMessage(
     message.geom[i] =
         MakeDeformableSurfaceMesh(vertex_positions, data, params.default_color);
   }
-  lcm::Publish(lcm, "DRAKE_VIEWER_DEFORMABLE", message, time);
+  std::string channel = MakeLcmChannelNameForRole("DRAKE_VIEWER_DEFORMABLE",
+                                                  params.role);
+  lcm::Publish(lcm, channel, message, time);
 }
 
 template <typename T>

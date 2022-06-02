@@ -120,7 +120,7 @@ drake_cc_binary(
         "//geometry:drake_visualizer",
         "//multibody/parsing",
         "//multibody/plant",
-        "//multibody/plant:contact_results_to_lcm",
+        "//multibody/plant:drake_visualizer_config_functions",
         "//systems/analysis:simulator",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework:diagram",
