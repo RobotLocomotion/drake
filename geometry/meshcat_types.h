@@ -190,6 +190,25 @@ struct SphereGeometryData : public GeometryData {
   }
 };
 
+struct CapsuleGeometryData : public GeometryData {
+  double radius{};
+  double length{};
+  double radialSegments{50};
+  double capSegments{20};
+
+  // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
+  void msgpack_pack(msgpack::packer<std::stringstream>& o) const override {
+    o.pack_map(6);
+    o.pack("type");
+    o.pack("CapsuleGeometry");
+    PACK_MAP_VAR(o, uuid);
+    PACK_MAP_VAR(o, radius);
+    PACK_MAP_VAR(o, length);
+    PACK_MAP_VAR(o, radialSegments);
+    PACK_MAP_VAR(o, capSegments);
+  }
+};
+
 struct CylinderGeometryData : public GeometryData {
   double radiusBottom{};
   double radiusTop{};

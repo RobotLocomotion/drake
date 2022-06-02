@@ -31,16 +31,19 @@ int do_main() {
   auto meshcat = std::make_shared<Meshcat>();
 
   meshcat->SetObject("sphere", Sphere(.25), Rgba(1.0, 0, 0, 1));
-  meshcat->SetTransform("sphere", RigidTransformd(Vector3d{-3, 0, 0}));
+  meshcat->SetTransform("sphere", RigidTransformd(Vector3d{-4, 0, 0}));
 
   meshcat->SetObject("cylinder", Cylinder(.25, .5), Rgba(0.0, 1.0, 0, 1));
-  meshcat->SetTransform("cylinder", RigidTransformd(Vector3d{-2, 0, 0}));
+  meshcat->SetTransform("cylinder", RigidTransformd(Vector3d{-3, 0, 0}));
 
   meshcat->SetObject("ellipsoid", Ellipsoid(.25, .25, .5), Rgba(1., 0, 1, .5));
-  meshcat->SetTransform("ellipsoid", RigidTransformd(Vector3d{-1, 0, 0}));
+  meshcat->SetTransform("ellipsoid", RigidTransformd(Vector3d{-2, 0, 0}));
 
   meshcat->SetObject("box", Box(.25, .25, .5), Rgba(0, 0, 1, 1));
-  meshcat->SetTransform("box", RigidTransformd(Vector3d{0, 0, 0}));
+  meshcat->SetTransform("box", RigidTransformd(Vector3d{-1, 0, 0}));
+
+  meshcat->SetObject("capsule", Capsule(.25, .5), Rgba(0, 1, 1, 1));
+  meshcat->SetTransform("capsule", RigidTransformd(Vector3d{0, 0, 0}));
 
   // Note that height (in z) is the first argument.
   meshcat->SetObject("cone", MeshcatCone(.5, .25, .5), Rgba(1, 0, 0, 1));
@@ -149,6 +152,7 @@ Open up your browser to the URL above.
   - a green cylinder (with the long axis in z)
   - a pink semi-transparent ellipsoid (long axis in z)
   - a blue box (long axis in z)
+  - a teal capsule (long axis in z)
   - a red cone (expanding in +z, twice as wide in y than in x)
   - a bright green cube (the green comes from a texture map)
   - a yellow mustard bottle w/ label
