@@ -153,9 +153,9 @@ class RenderClient {
      The already allocated drake image buffer to load `path` into.
 
    @throws std::runtime_error
-     If the specified `path` cannot be loaded as an RGB or RGBA PNG file, or the
-     image denoted by `path` does not have the same width and height of the
-     specified `color_image_out`.*/
+     If the specified `path` cannot be loaded as an unsigned char RGB or RGBA
+     PNG file, or the image denoted by `path` does not have the same width and
+     height of the specified `color_image_out`.*/
   void LoadColorImage(
       const std::string& path,
       drake::systems::sensors::ImageRgba8U* color_image_out) const;
@@ -176,9 +176,9 @@ class RenderClient {
    @param depth_image_out
      The already allocated drake image buffer to load `path` into.
    @throws std::runtime_error
-     If the specified `path` cannot be loaded as a single channel TIFF or PNG,
-     image, or the image denoted by `path` does not have the same width and
-     height of the specified `depth_image_out`. */
+     If the specified `path` cannot be loaded as a single channel 16-bit or
+     32-bit TIFF image, or the image denoted by `path` does not have the same
+     width and height of the specified `depth_image_out`. */
   void LoadDepthImage(
       const std::string& path,
       drake::systems::sensors::ImageDepth32F* depth_image_out) const;
