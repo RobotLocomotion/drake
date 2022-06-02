@@ -30,6 +30,10 @@ def _rewrite_one_text(*, text, edit_include):
     for old_inc, new_inc in edit_include:
         text = text.replace(f'#include "{old_inc}', f'#include "{new_inc}')
 
+    # If the file is a mixed C/C++ header, then we need to leave it alone.
+    if '\nextern "C" {\n' in text:
+        return text
+
     # Add an inline namespace around the whole file, but disable it around
     # include statements.
     open_inline = ' '.join([
