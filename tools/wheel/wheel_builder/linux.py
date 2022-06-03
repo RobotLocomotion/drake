@@ -204,11 +204,11 @@ def _build_image(target, identifier, options):
     if options.extract:
         print('[-] Extracting wheel(s) from', tag)
 
-        command = 'tar -cf - /wheel/wheelhouse/*.whl'
+        command = 'tar -cf - /opt/drake-wheel-build/wheel/wheelhouse/*.whl'
         extractor = _docker(
             'run', '--rm', tag, 'bash', '-c', command, pipe=True)
         subprocess.check_call(
-            ['tar', '--strip-components=2', '-xf', '-'],
+            ['tar', '--strip-components=4', '-xvf', '-'],
             stdin=extractor.stdout, cwd=options.output_dir)
 
         extractor_result = extractor.wait()

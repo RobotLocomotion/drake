@@ -1,14 +1,16 @@
-# patchelf
-set(patchelf_version 0.12)
-set(patchelf_url "https://github.com/NixOS/patchelf/archive/${patchelf_version}/patchelf-${patchelf_version}.tar.gz")
-set(patchelf_md5 "b9d1161e52e2f342598deabf7d85ed24")
-list(APPEND ALL_PROJECTS patchelf)
+if(NOT APPLE)
+    # patchelf
+    set(patchelf_version 0.12)
+    set(patchelf_url "https://github.com/NixOS/patchelf/archive/${patchelf_version}/patchelf-${patchelf_version}.tar.gz")
+    set(patchelf_md5 "b9d1161e52e2f342598deabf7d85ed24")
+    list(APPEND ALL_PROJECTS patchelf)
 
-# libxcrypt
-set(libxcrypt_version 4.4.25)
-set(libxcrypt_url "https://github.com/besser82/libxcrypt/archive/v${libxcrypt_version}/libxcrypt-${libxcrypt_version}.tar.gz")
-set(libxcrypt_md5 "4828b1530f5bf35af0b45b35acc4db1d")
-list(APPEND ALL_PROJECTS libxcrypt)
+    # libxcrypt
+    set(libxcrypt_version 4.4.25)
+    set(libxcrypt_url "https://github.com/besser82/libxcrypt/archive/v${libxcrypt_version}/libxcrypt-${libxcrypt_version}.tar.gz")
+    set(libxcrypt_md5 "4828b1530f5bf35af0b45b35acc4db1d")
+    list(APPEND ALL_PROJECTS libxcrypt)
+endif()
 
 # zlib
 set(zlib_version 1.2.11)

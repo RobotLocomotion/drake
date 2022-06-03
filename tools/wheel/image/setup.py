@@ -18,6 +18,17 @@ python_required = [
     'scipy',
 ]
 
+if os.uname()[0].lower() == 'linux':
+    # This is intended to help force a binary, rather than platform-agnostic,
+    # wheel, but only works on Ubuntu; clang is not happy about being asked to
+    # make a library with no sources.
+    ext_modules = [
+        setuptools.Extension(name='drake',
+                             sources=[]),
+    ]
+else:
+    ext_modules = []
+
 
 # Distribution which always forces a binary package with platform name.
 class BinaryDistribution(Distribution):
@@ -66,7 +77,7 @@ design/analysis.'''.strip(),
       distclass=BinaryDistribution,
       # TODO Check this: do we need to add third-party licenses?
       license='BSD 3-Clause License',
-      platforms=['linux_x86_64'],
+      platforms=['linux_x86_64', 'macosx_x86_64'],
       packages=find_packages(),
       # Add in any packaged data.
       include_package_data=True,
@@ -80,8 +91,6 @@ design/analysis.'''.strip(),
       },
       python_requires='>=3.8',
       install_requires=python_required,
-      ext_modules=[
-           setuptools.Extension(name='drake',
-                                sources=[])],
+      ext_modules=ext_modules,
       zip_safe=False
       )
