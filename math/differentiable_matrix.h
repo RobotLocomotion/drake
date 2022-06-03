@@ -48,35 +48,130 @@ struct DifferentiableMatrixMultiply {
   using MatrixResultType = Eigen::Matrix<double,
     Lrows, Rcols, 0, MatrixLhs::MaxRowsAtCompileTime,
     MatrixRhs::MaxColsAtCompileTime>;
+
+  using AutoDiffMatrixResultType = Eigen::Matrix<AutoDiffXd,
+    Lrows, Rcols, 0, MatrixLhs::MaxRowsAtCompileTime,
+    MatrixRhs::MaxColsAtCompileTime>;
 };
 
-template <typename MatrixT, bool with_derivatives>
-class DifferentiableMatrix { };
+/** An Eigen matrix and its derivatives, specialized for `Matrix<AutoDiffXd>`.
+For other scalar types, behaves like the Eigen matrix. */
+template <typename MatrixT, typename T = typename MatrixT::Scalar>
+class DifferentiableMatrix : public MatrixT {
+  static_assert(std::is_same_v<typename MatrixT::Scalar, T>);
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DifferentiableMatrix);
+  using MatrixT::MatrixT;
 
-template <typename MatrixT>
-class DifferentiableMatrix<MatrixT, false> : public MatrixT {
+  using MatrixType = MatrixT;
+
+  using MatrixTransposeType = Eigen::Matrix<
+    T, MatrixT::ColsAtCompileTime, MatrixT::RowsAtCompileTime,
+    0, MatrixT::MaxColsAtCompileTime, MatrixT::MaxRowsAtCompileTime>;
+
+  /** This the type produced by the transpose() method. */
+  using TransposeType = DifferentiableMatrix<MatrixTransposeType>;
+
+  static constexpr bool is_eigen_matrix() { return true; }
+
+  /** Returns the matrix value, excluding derivatives if any. */
+  const MatrixType& value() const { return *this; }
+
+  TransposeType transpose() const {
+    return TransposeType(value().transpose());
+  }
+
+  /** Returns a mutable reference to the Eigen matrix. Note that this method is
+  not available for the AutoDiffXd specialization. */
+  MatrixType& mutable_value() { return *this; }
+
+  /** This is the return type for a method that returns the Eigen matrix
+  equivalent of this DifferentiableMatrix. For this T≠AutoDiffXd case, we can
+  just return a reference. */
+  using EigenEquivalentType = const MatrixT&;
+  using EigenRowType = decltype(static_cast<const MatrixT*>(nullptr)->row(0));
+  using EigenColType = decltype(static_cast<const MatrixT*>(nullptr)->col(0));
+
+  EigenEquivalentType GetEigenEquivalent() const { return value(); }
+
+  EigenRowType GetEigenRow(int i) const { return value().row(i); }
+  EigenColType GetEigenCol(int j) const { return value().col(j); }
 };
 
-/** MatrixType must have double scalars. */
+/** MatrixType must have AutoDiffXd scalars. */
 template <typename MatrixT>
-class DifferentiableMatrix<MatrixT, true> {
-  static_assert(std::is_same_v<typename MatrixT::Scalar, double>);
+class DifferentiableMatrix<MatrixT, AutoDiffXd> {
+  static_assert(std::is_same_v<typename MatrixT::Scalar, AutoDiffXd>);
 
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DifferentiableMatrix);
 
-  using MatrixType = MatrixT;
+  static constexpr bool is_eigen_matrix() { return false; }
 
-  explicit DifferentiableMatrix(const MatrixType& value) : value_(value) {}
+  /** A matrix exactly like MatrixT but with the AutoDiffXd scalars replaced
+  by doubles. */
+  using MatrixType = Eigen::Matrix<
+      double, MatrixT::RowsAtCompileTime, MatrixT::ColsAtCompileTime,
+      0, MatrixT::MaxRowsAtCompileTime, MatrixT::MaxColsAtCompileTime>;
 
-  using AutoDiffMatrixType = Eigen::Matrix<
-      AutoDiffXd, MatrixType::RowsAtCompileTime, MatrixType::ColsAtCompileTime,
-      0, MatrixType::MaxRowsAtCompileTime, MatrixType::MaxColsAtCompileTime>;
+  using MatrixTransposeType = Eigen::Matrix<
+      double, MatrixT::ColsAtCompileTime, MatrixT::RowsAtCompileTime,
+      0, MatrixT::MaxColsAtCompileTime, MatrixT::MaxRowsAtCompileTime>;
 
-  /** Constructs a DifferentiableMatrix from a given `Matrix<AutoDiffXd>`. */
+  using AutoDiffMatrixType = MatrixT;
+
+  using AutoDiffRowType = Eigen::Matrix<
+      AutoDiffXd, 1, MatrixT::ColsAtCompileTime,
+      Eigen::RowMajor, 1, MatrixT::MaxColsAtCompileTime>;
+
+  using AutoDiffColType = Eigen::Matrix<
+      AutoDiffXd, MatrixT::RowsAtCompileTime, 1,
+      0, MatrixT::MaxRowsAtCompileTime, 1>;
+
+  using AutoDiffMatrixTransposeType = Eigen::Matrix<
+      AutoDiffXd, MatrixT::ColsAtCompileTime, MatrixT::RowsAtCompileTime,
+      0, MatrixT::MaxColsAtCompileTime, MatrixT::MaxRowsAtCompileTime>;
+
+  /** Constructs with an uninitialized matrix and no derivatives. */
+  DifferentiableMatrix() {}
+
+  /** Constructs a DifferentiableMatrix from a given `Matrix<AutoDiffXd>`.
+  Note that this requires an exact type match to the template parameter
+  MatrixT. */
   explicit DifferentiableMatrix(const AutoDiffMatrixType& ad);
 
+  /** Sets this %DifferentiableMatrix from a given `Matrix<AutoDiffXd>`.
+  Note that this requires an exact type match to the template parameter
+  MatrixT. */
+  DifferentiableMatrix& operator=(const AutoDiffMatrixType& ad);
+
+  /** Returns the stored value with scalars of type double. */
   const MatrixType& value() const { return value_; }
+
+  /** This is the return type for a method that returns the Eigen matrix
+  equivalent of this DifferentiableMatrix. For this T=AutoDiffXd case, we must
+  perform an expensive operation. */
+  using EigenEquivalentType = AutoDiffMatrixType;
+  using EigenRowType = AutoDiffRowType;
+  using EigenColType = AutoDiffColType;
+
+  /** Generate a Matrix<AutoDiffXd> equivalent to this DifferentialMatrix.
+  This is expensive for this specialization and should be avoided. */
+  EigenEquivalentType GetEigenEquivalent() const {
+    return ToAutoDiffXd();
+  }
+
+  EigenRowType GetEigenRow(int i) const {
+    // TODO(sherm1) Create just the row.
+    EigenEquivalentType whole_matrix = GetEigenEquivalent();
+    return whole_matrix.row(i);
+  }
+
+  EigenColType GetEigenCol(int j) const {
+    // TODO(sherm1) Create just the column.
+    EigenEquivalentType whole_matrix = GetEigenEquivalent();
+    return whole_matrix.col(j);
+  }
 
   /** Returns the nᵗʰ non-zero derivative. The corresponding variable is
   xᵥ, where v = non_zero(n). That is, we're returning dₙ = ∂M/∂xᵥ, where M
@@ -96,17 +191,14 @@ class DifferentiableMatrix<MatrixT, true> {
   int num_non_zeros() const { return static_cast<int>(non_zeros_.size()); }
   int num_variables() const { return num_variables_; }
 
-  using MatrixTransposeType = Eigen::Matrix<
-      double, MatrixType::ColsAtCompileTime, MatrixType::RowsAtCompileTime,
-      0, MatrixType::MaxColsAtCompileTime, MatrixType::MaxRowsAtCompileTime>;
 
   /** This the type produced by the transpose() method. */
-  using TransposeType = DifferentiableMatrix<MatrixTransposeType, true>;
+  using TransposeType = DifferentiableMatrix<AutoDiffMatrixTransposeType>;
 
   template <typename RhsMatrixType>
   using MultiplyResultType = DifferentiableMatrix<
       typename DifferentiableMatrixMultiply<
-      MatrixType, RhsMatrixType>::MatrixResultType, true>;
+      MatrixType, RhsMatrixType>::AutoDiffMatrixResultType>;
 
 
   using GradientMatrixType = Eigen::Matrix<
@@ -129,11 +221,11 @@ class DifferentiableMatrix<MatrixT, true> {
   contains the product and its derivatives. The inputs must be conformable. */
   template <typename RhsMatrixType>
   MultiplyResultType<RhsMatrixType> operator*(
-      const DifferentiableMatrix<RhsMatrixType, true>& rhs) const;
+      const DifferentiableMatrix<RhsMatrixType, AutoDiffXd>& rhs) const;
 
  private:
   friend TransposeType;
-  template <typename OtherMatrixType, bool>
+  template <typename OtherMatrixType, typename>
   friend class DifferentiableMatrix;
 
   DifferentiableMatrix(int num_variables, const std::vector<int>& non_zeros)
@@ -163,10 +255,10 @@ class DifferentiableMatrix<MatrixT, true> {
 };
 
 /** Returns a reference to the value contained in the given
-DifferentiableMatrix. */
-template <typename MatrixType>
-const MatrixType& ExtractValue(
-    const DifferentiableMatrix<MatrixType, true>& matrix) {
+DifferentiableMatrix. This works for any scalar type. */
+template <typename MatrixT>
+const typename DifferentiableMatrix<MatrixT>::MatrixType&
+ExtractValue(const DifferentiableMatrix<MatrixT>& matrix) {
   return matrix.value();
 }
 
@@ -175,17 +267,17 @@ equivalent to the derivatives stored in this DifferentiableMatrix. This is an
 expensive conversion operation; you can access the derivatives directly via
 the `derivative()` method of DifferentiableMatrix.
 @see DifferentiableMatrix::derivative() */
-template <typename MatrixType>
-typename DifferentiableMatrix<MatrixType, true>::GradientMatrixType
-ExtractGradient(const DifferentiableMatrix<MatrixType, true>& matrix) {
+template <typename MatrixT>
+typename DifferentiableMatrix<MatrixT, AutoDiffXd>::GradientMatrixType
+ExtractGradient(const DifferentiableMatrix<MatrixT, AutoDiffXd>& matrix) {
   return matrix.ExtractGradient();
 }
 
 /** Outputs a representation of a DifferentiableMatrix in human-readable form.
 */
-template <typename MatrixType>
+template <typename MatrixT>
 std::ostream& operator<<(std::ostream& o,
-    const DifferentiableMatrix<MatrixType, true>& matrix) {
+    const DifferentiableMatrix<MatrixT, AutoDiffXd>& matrix) {
   o << "x=\n" << matrix.value() << "\n";
   int nz_nxt = 0;
   for (int i=0; i < matrix.num_variables(); ++i) {
@@ -201,8 +293,8 @@ std::ostream& operator<<(std::ostream& o,
 // Definitions of DifferentiableMatrix class methods must be in the header
 // since the class is arbitrarily templatized.
 
-template <typename MatrixType>
-DifferentiableMatrix<MatrixType, true>::DifferentiableMatrix(
+template <typename MatrixT>
+DifferentiableMatrix<MatrixT, AutoDiffXd>::DifferentiableMatrix(
     const AutoDiffMatrixType& ad) {
   const int nr = ad.rows();
   const int nc = ad.cols();
@@ -263,7 +355,15 @@ DifferentiableMatrix<MatrixType, true>::DifferentiableMatrix(
 }
 
 template <typename MatrixT>
-auto DifferentiableMatrix<MatrixT, true>::ExtractGradient() const
+DifferentiableMatrix<MatrixT, AutoDiffXd>&
+DifferentiableMatrix<MatrixT, AutoDiffXd>::operator=(
+    const AutoDiffMatrixType& ad) {
+  // Invoke move assignment.
+  return *this = DifferentiableMatrix<MatrixT, AutoDiffXd>(ad);
+}
+
+template <typename MatrixT>
+auto DifferentiableMatrix<MatrixT, AutoDiffXd>::ExtractGradient() const
     -> GradientMatrixType {
   const int sz = value_.size();
   GradientMatrixType gradient = GradientMatrixType::Zero(sz, num_variables_);
@@ -278,7 +378,7 @@ auto DifferentiableMatrix<MatrixT, true>::ExtractGradient() const
 }
 
 template <typename MatrixT>
-auto DifferentiableMatrix<MatrixT, true>::ToAutoDiffXd() const
+auto DifferentiableMatrix<MatrixT, AutoDiffXd>::ToAutoDiffXd() const
     -> AutoDiffMatrixType {
   const int nr = value_.rows();
   const int nc = value_.cols();
@@ -298,7 +398,7 @@ auto DifferentiableMatrix<MatrixT, true>::ToAutoDiffXd() const
 }
 
 template <typename MatrixT>
-auto DifferentiableMatrix<MatrixT, true>::transpose() const -> TransposeType {
+auto DifferentiableMatrix<MatrixT, AutoDiffXd>::transpose() const -> TransposeType {
   TransposeType matrix_transpose(num_variables(), non_zeros_);
   matrix_transpose.SetValue(value_.transpose());
   for (int n = 0; n < num_non_zeros(); ++n)
@@ -308,8 +408,8 @@ auto DifferentiableMatrix<MatrixT, true>::transpose() const -> TransposeType {
 
 template <typename MatrixT>
 template <typename RhsMatrixType>
-auto DifferentiableMatrix<MatrixT, true>::operator*(
-    const DifferentiableMatrix<RhsMatrixType, true>& rhs) const
+auto DifferentiableMatrix<MatrixT, AutoDiffXd>::operator*(
+    const DifferentiableMatrix<RhsMatrixType, AutoDiffXd>& rhs) const
     -> MultiplyResultType<RhsMatrixType> {
   DRAKE_DEMAND(num_variables() == rhs.num_variables());
 

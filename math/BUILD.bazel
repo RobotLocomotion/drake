@@ -141,6 +141,7 @@ drake_cc_library(
         "rotation_matrix.h",
     ],
     deps = [
+        ":gradient",
         ":fast_pose_composition_functions",
         "//common:default_scalars",
         "//common:drake_bool",

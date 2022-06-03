@@ -25,6 +25,7 @@ GTEST_TEST(DifferentiableMatrix, Misc) {
   // using Matrix34d = Eigen::Matrix<double, 3, 4>;
   // Matrix34d m34d;
   using Matrix34d = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>;
+  using Matrix34ad = Eigen::Matrix<AutoDiffXd, Eigen::Dynamic, Eigen::Dynamic>;
   Matrix34d m34d(3, 4);
   m34d <<  1,  2,  3,  4,
            5,  6,  7,  8,
@@ -35,19 +36,19 @@ GTEST_TEST(DifferentiableMatrix, Misc) {
     grad.row(i) = Eigen::Vector2d(m34d(i) * 10, m34d(i) * 10 + 1);
   }
   // Eigen::Matrix<AutoDiffXd, 3, 4> m34ad;
-  Eigen::Matrix<AutoDiffXd, Eigen::Dynamic, Eigen::Dynamic> m34ad;
+  Matrix34ad m34ad;
   InitializeAutoDiff(m34d, grad, &m34ad);
   m34ad(1, 1).derivatives().resize(0);
   m34ad(2, 2).derivatives().resize(0);
 
-  DifferentiableMatrix<Matrix34d, true> m34wd(m34ad);
+  DifferentiableMatrix<Matrix34ad> m34wd(m34ad);
 
   EXPECT_TRUE(CompareMatrices(ExtractValue(m34ad),
                               ExtractValue(m34wd.ToAutoDiffXd()), kEpsilon));
   EXPECT_TRUE(CompareMatrices(ExtractGradient(m34ad),
                               ExtractGradient(m34wd.ToAutoDiffXd()), kEpsilon));
 
-  DifferentiableMatrix<Matrix34d, true>::TransposeType m34wdt =
+  DifferentiableMatrix<Matrix34ad>::TransposeType m34wdt =
       m34wd.transpose();
   auto m34adt = m34ad.transpose();
 
@@ -74,14 +75,17 @@ GTEST_TEST(DifferentiableMatrix, ConformabilityTest) {
   EXPECT_FALSE(Mult3434d::need_runtime_shape_test);
   EXPECT_FALSE(Mult3434d::ShapesAreConforming(Matrix34d(), Matrix34d()));
 
-  const bool good_result_type = std::is_same_v<Mult3443d::MatrixResultType,
-              Eigen::Matrix<double, 3, Eigen::Dynamic, 0, 3, 20>>;
+  const bool good_result_type =
+      std::is_same_v<Mult3443d::MatrixResultType,
+                     Eigen::Matrix<double, 3, Eigen::Dynamic, 0, 3, 20>>;
   EXPECT_TRUE(good_result_type);
 }
 
 GTEST_TEST(DifferentiableMatrix, Multiply) {
   using Matrix34d = Eigen::Matrix<double, 3, 4>;
   using Matrix43d = Eigen::Matrix<double, 4, 3>;
+  using Matrix34ad = Eigen::Matrix<AutoDiffXd, 3, 4>;
+  using Matrix43ad = Eigen::Matrix<AutoDiffXd, 4, 3>;
 
   Matrix34d m34d;
   m34d <<  1,  2,  3,  4,
@@ -99,13 +103,13 @@ GTEST_TEST(DifferentiableMatrix, Multiply) {
                                     0, m43d(i) * 10 + 2);
   }
 
-  Eigen::Matrix<AutoDiffXd, 3, 4> m34ad;
-  Eigen::Matrix<AutoDiffXd, 4, 3> m43ad;
+  Matrix34ad m34ad;
+  Matrix43ad m43ad;
   InitializeAutoDiff(m34d, grad34, &m34ad);
   InitializeAutoDiff(m43d, grad43, &m43ad);
 
-  DifferentiableMatrix<Matrix34d, true> dm34(m34ad);
-  DifferentiableMatrix<Matrix43d, true> dm43(m43ad);
+  DifferentiableMatrix<Matrix34ad> dm34(m34ad);
+  DifferentiableMatrix<Matrix43ad> dm43(m43ad);
 
   auto product = dm34 * dm43;
   const bool type_is_right =

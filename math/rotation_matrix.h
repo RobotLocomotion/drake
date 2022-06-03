@@ -15,6 +15,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/math/differentiable_matrix.h"
 #include "drake/math/fast_pose_composition_functions.h"
 #include "drake/math/roll_pitch_yaw.h"
 
@@ -54,6 +55,9 @@ struct DoNotInitializeMemberFields {};
 /// @tparam_default_scalar
 template <typename T>
 class RotationMatrix {
+  // The type of the data member that hold the value and possibly derivatives
+  // of this RotationMatrix.
+  using MatrixType = DifferentiableMatrix<Matrix3<T>>;
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationMatrix)
 
@@ -366,19 +370,32 @@ class RotationMatrix {
   /// @note For a valid rotation matrix `R_BA = R_AB⁻¹ = R_ABᵀ`.
   // @internal This method's name was chosen to mimic Eigen's inverse().
   RotationMatrix<T> inverse() const {
-    return RotationMatrix<T>(R_AB_.transpose());
+    return RotationMatrix<T>(R_AB_.transpose(), true);
   }
 
   /// Returns `R_BA = R_AB⁻¹`, the transpose of this %RotationMatrix.
   /// @note For a valid rotation matrix `R_BA = R_AB⁻¹ = R_ABᵀ`.
   // @internal This method's name was chosen to mimic Eigen's transpose().
   RotationMatrix<T> transpose() const {
-    return RotationMatrix<T>(R_AB_.transpose());
+    return RotationMatrix<T>(R_AB_.transpose(), true);
   }
 
-  /// Returns the Matrix3 underlying a %RotationMatrix.
+  /// Returns the Eigen `Matrix3<T>` representing this %RotationMatrix.
+  /// Returns a reference at zero cost unless T=AutoDiffXd in which case this
+  /// is expensive and should be avoided in favor of matrix_ref().
   /// @see col(), row()
-  const Matrix3<T>& matrix() const { return R_AB_; }
+  typename MatrixType::EigenEquivalentType matrix() const {
+    return R_AB_.GetEigenEquivalent();
+  }
+
+  /// (Advanced) Returns a reference to the underlying DifferentiableMatrix
+  /// holding the value and possibly derivatives of this %RotationMatrix.
+  /// Use this rather than the possibly-expensive matrix() method for any
+  /// operatoins that are supported directly by DifferentiableMatrix.
+  /// For types T ≠ AutoDiffXd this is identical to matrix().
+  const MatrixType& matrix_ref() const {
+    return R_AB_;
+  }
 
   /// Returns `this` rotation matrix's iᵗʰ row (i = 0, 1, 2).
   /// For `this` rotation matrix R_AB (which relates right-handed
@@ -393,13 +410,13 @@ class RotationMatrix {
   /// the same quantity returned by Eigen's row() operator.
   /// The returned quantity can be assigned in various ways, e.g., as
   /// `const auto& Az_B = row(2);` or `RowVector3<T> Az_B = row(2);`
-  const Eigen::Block<const Matrix3<T>, 1, 3, false> row(int index) const {
+  typename MatrixType::EigenRowType row(int index) const {
     // The returned value from this method mimics Eigen's row() method which was
     // found in  Eigen/src/plugins/BlockMethods.h.  The Eigen Matrix3 R_AB_ that
     // underlies this class is a column major matrix.  To return a row,
     // InnerPanel = false is passed as the last template parameter above.
     DRAKE_ASSERT(0 <= index && index <= 2);
-    return R_AB_.row(index);
+    return R_AB_.GetEigenRow(index);
   }
 
   /// Returns `this` rotation matrix's iᵗʰ column (i = 0, 1, 2).
@@ -415,13 +432,13 @@ class RotationMatrix {
   /// the same quantity returned by Eigen's col() operator.
   /// The returned quantity can be assigned in various ways, e.g., as
   /// `const auto& Bz_A = col(2);` or `Vector3<T> Bz_A = col(2);`
-  const Eigen::Block<const Matrix3<T>, 3, 1, true> col(int index) const {
+  typename MatrixType::EigenColType col(int index) const {
     // The returned value from this method mimics Eigen's col() method which was
     // found in  Eigen/src/plugins/BlockMethods.h.  The Eigen Matrix3 R_AB_ that
     // underlies this class is a column major matrix.  To return a column,
     // InnerPanel = true is passed as the last template parameter above.
     DRAKE_ASSERT(0 <= index && index <= 2);
-    return R_AB_.col(index);
+    return R_AB_.GetEigenCol(index);
   }
 
   /// In-place multiply of `this` rotation matrix `R_AB` by `other` rotation
@@ -654,7 +671,7 @@ class RotationMatrix {
   /// chooses to return a canonical quaternion, i.e., with q(0) >= 0.
   /// @note There is a constructor in the RollPitchYaw class that converts
   /// a rotation matrix to roll-pitch-yaw angles.
-  Eigen::Quaternion<T> ToQuaternion() const { return ToQuaternion(R_AB_); }
+  Eigen::Quaternion<T> ToQuaternion() const { return ToQuaternion(matrix()); }
 
   /// Returns a unit quaternion q associated with the 3x3 matrix M.  Since the
   /// quaternion `q` and `-q` represent the same %RotationMatrix, this method
@@ -686,7 +703,7 @@ class RotationMatrix {
   /// Utility method to return the Vector4 associated with ToQuaternion().
   /// @see ToQuaternion().
   Vector4<T> ToQuaternionAsVector4() const {
-    return ToQuaternionAsVector4(R_AB_);
+    return ToQuaternionAsVector4(R_AB_.GetEigenEquivalent());
   }
 
   /// Utility method to return the Vector4 associated with ToQuaternion(M).
@@ -726,12 +743,18 @@ class RotationMatrix {
       128 * std::numeric_limits<double>::epsilon() };
 
 
-  // Constructs a %RotationMatrix from a Matrix3.  No check is performed to test
+  // Constructs a %RotationMatrix from a Matrix3. No check is performed to test
   // whether or not the parameter R is a valid rotation matrix.
   // @param[in] R an allegedly valid rotation matrix.
   // @note The second parameter is just a dummy to distinguish this constructor
   // from one of the public constructors.
   RotationMatrix(const Matrix3<T>& R, bool) : R_AB_(R) {}
+
+  // Constructs a %RotationMatrix from a DifferentialMatrix rvalue. No check is
+  // performed to test whether or not the parameter R is a valid rotation
+  // matrix. This is always very fast.
+  // @note The second parameter is just a dummy to avoid ambiguities.
+  RotationMatrix(MatrixType&& R, bool) : R_AB_(R) {}
 
   // Sets `this` %RotationMatrix from a Matrix3.  No check is performed to
   // test whether or not the parameter R is a valid rotation matrix.
@@ -751,10 +774,20 @@ class RotationMatrix {
   void SetFromOrthonormalColumns(const Vector3<T>& Bx,
                                  const Vector3<T>& By,
                                  const Vector3<T>& Bz) {
-    R_AB_.col(0) = Bx;
-    R_AB_.col(1) = By;
-    R_AB_.col(2) = Bz;
-    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+    auto set_from_columns = [&](Matrix3<T>* matrix) {
+      matrix->col(0) = Bx; matrix->col(1) = By; matrix->col(2) = Bz;
+    };
+
+    if constexpr (MatrixType::is_eigen_matrix()) {
+      // Work directly in the existing storage.
+      set_from_columns(&R_AB_.mutable_value());
+      DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+    } else {
+      Matrix3<T> R_AB;
+      set_from_columns(&R_AB);
+      DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB));
+      R_AB_ = R_AB;  // Expensive conversion.
+    }
   }
 
   // Sets `this` %RotationMatrix `R_AB` from right-handed orthogonal unit
@@ -767,10 +800,20 @@ class RotationMatrix {
   void SetFromOrthonormalRows(const Vector3<T>& Ax,
                               const Vector3<T>& Ay,
                               const Vector3<T>& Az) {
-    R_AB_.row(0) = Ax;
-    R_AB_.row(1) = Ay;
-    R_AB_.row(2) = Az;
-    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+    auto set_from_rows = [&](Matrix3<T>* matrix) {
+      matrix->row(0) = Ax; matrix->row(1) = Ay; matrix->row(2) = Az;
+    };
+
+    if constexpr (MatrixType::is_eigen_matrix()) {
+      // Work directly in the existing storage.
+      set_from_rows(&R_AB_.mutable_value());
+      DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+    } else {
+      Matrix3<T> R_AB;
+      set_from_rows(&R_AB);
+      DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB));
+      R_AB_ = R_AB;  // Expensive conversion.
+    }
   }
 
   // Computes the infinity norm of R - `other` (i.e., the maximum absolute
@@ -975,7 +1018,7 @@ class RotationMatrix {
   // For speed, `R_AB_` is uninitialized (public constructors set its value).
   // The elements are stored in column-major order, per Eigen's default,
   // see https://eigen.tuxfamily.org/dox/group__TopicStorageOrders.html.
-  Matrix3<T> R_AB_;
+  MatrixType R_AB_;
 };
 
 // To enable low-level optimizations we insist that RotationMatrix<double> is
