@@ -27,7 +27,7 @@ _xacro_rule = rule(
             allow_files = True,
         ),
         "_tool": attr.label(
-            default = "@ros_xacro//:xacro",
+            default = "@ros_xacro_internal//:xacro",
             cfg = "host",
             executable = True,
         ),

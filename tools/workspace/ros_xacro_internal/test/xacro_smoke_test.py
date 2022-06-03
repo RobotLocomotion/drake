@@ -17,5 +17,5 @@ class XacroSmokeTest(unittest.TestCase):
     def test_samples(self):
         """Check use of xacro_filegroup and the expected result.
         """
-        self._diff_file("tools/workspace/ros_xacro/test/sample1.xml")
-        self._diff_file("tools/workspace/ros_xacro/test/sample2.xml")
+        self._diff_file("tools/workspace/ros_xacro_internal/test/sample1.xml")
+        self._diff_file("tools/workspace/ros_xacro_internal/test/sample2.xml")

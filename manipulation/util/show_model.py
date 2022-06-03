@@ -88,7 +88,7 @@ def add_filename_and_parser_argparse_arguments(args_parser):
         "--find_resource", action="store_true",
         help="Use FindResourceOrThrow to resolve the filename to a Drake "
              "resource. Use this if the supporting data files are a generated "
-             "by Bazel (e.g. the OBJs or PNGs are in @models).")
+             "by Bazel (e.g. the OBJs or PNGs are in @models_internal).")
     args_parser.add_argument(
         "--package_path", type=str, default=None,
         help="Full path to the root package for reading in SDF resources.")

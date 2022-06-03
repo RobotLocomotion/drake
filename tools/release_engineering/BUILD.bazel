@@ -17,7 +17,7 @@ drake_py_binary_ubuntu_only(
     name = "relnotes",
     srcs = ["relnotes.py"],
     deps = [
-        "@github3_py",
+        "@github3_py_internal//:github3_py",
     ],
 )
 
