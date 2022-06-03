@@ -119,6 +119,60 @@ void TestLQRAffineSystemAgainstKnownSolution(
   EXPECT_EQ(lqr->time_period(), sys.time_period());
 }
 
+// Test if the LQR solution satisfies the HJB equality
+// minᵤ xᵀQx + uᵀRu + 2xᵀNu + 2xᵀS(Ax+Bu) = 0
+void TestLQRwHJB(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::MatrixXd>& B,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R,
+    const Eigen::Ref<const Eigen::MatrixXd>& N = Eigen::MatrixXd(0, 0),
+    const Eigen::Ref<const Eigen::MatrixXd>& F = Eigen::MatrixXd(0, 0)) {
+  const auto lqr_result = LinearQuadraticRegulator(A, B, Q, R, N, F);
+  const int nx = A.rows();
+  const int nu = B.cols();
+  // We first try to remove the constraint F*x=0 by considering a new slack
+  // variable y, where y is in the null-space of F, namely y = Pᵀx. We then
+  // define the dynamics and cost using this new variable y.
+  // minᵤ yᵀQy*y + uᵀRy*u + 2xᵀNy*u + 2xᵀSy(Ay*x+By*u) = 0
+  Eigen::MatrixXd Ay = A;
+  Eigen::MatrixXd By = B;
+  Eigen::MatrixXd Qy = Q;
+  Eigen::MatrixXd Ry = R;
+  Eigen::MatrixXd Ny = N.rows() == 0 ? Eigen::MatrixXd::Zero(nx, nu) : N;
+  Eigen::MatrixXd P = Eigen::MatrixXd::Identity(nx, nx);
+  if (F.rows() != 0) {
+    // First find P
+    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr_F(F.transpose());
+    ASSERT_EQ(qr_F.info(), Eigen::Success);
+    const Eigen::MatrixXd F_Q = qr_F.matrixQ();
+    P = F_Q.rightCols(nx - qr_F.rank()).transpose();
+    Ay = P * A * P.transpose();
+    By = P * B;
+    Qy = P * Q * P.transpose();
+    Ry = R;
+    Ny = P * Ny;
+  }
+  const Eigen::MatrixXd Pt = P.transpose();
+  const int ny = Pt.cols();
+  // The minimization over u on the quadratic function occurs where the gradient
+  // w.r.t u is 0. Ru = −(ByᵀSy + Nyᵀ)y
+  // Since u = -Kx, we have Ru = -R*K*x = -R*K*Pᵀy
+  // Hence R*K*Pᵀ= ByᵀSy + Nyᵀ. where Sy = P*Sx*Pᵀ
+  const Eigen::MatrixXd Sy = P * lqr_result.S * Pt;
+  const double tol = 1E-9;
+  EXPECT_TRUE(CompareMatrices(Ry * lqr_result.K * Pt,
+                              By.transpose() * Sy + Ny.transpose(), tol));
+  // Now make sure that by plugging in u = -Kx = -KPᵀy, the left hand side of
+  // HJB is zero.
+  const Eigen::MatrixXd Ky = lqr_result.K * Pt;
+  EXPECT_TRUE(CompareMatrices(Qy + Ky.transpose() * Ry * Ky - Ny * Ky -
+                                  Ky.transpose() * Ny.transpose() + Sy * Ay +
+                                  Ay.transpose() * Sy - Sy * By * Ky -
+                                  Ky.transpose() * By.transpose() * Sy,
+                              Eigen::MatrixXd::Zero(ny, ny), tol));
+}
+
 GTEST_TEST(TestLQR, DoubleIntegrator) {
   // Double integrator dynamics: qddot = u, where q is the position coordinate.
   Eigen::Matrix2d A;
@@ -164,6 +218,47 @@ GTEST_TEST(TestLQR, DoubleIntegrator) {
 
   // Test AffineSystem version of the LQR
   TestLQRAffineSystemAgainstKnownSolution(tol, sys, K, Q, R, N);
+
+  TestLQRwHJB(A, B, Q, R, N);
+}
+
+GTEST_TEST(TestLQR, ConstrainedLinearSystem) {
+  // Test the LQR for a constrained system
+  // ẋ = Ax+Bu
+  // Fx = 0
+  Eigen::Matrix3d A;
+  // clang-format off
+  A << 1, 0, 2,
+       0, 1, 3,
+       0, 2, -1;
+  // clang-format on
+  Eigen::Matrix<double, 3, 2> B;
+  // clang-format off
+  B << 1, 3,
+       0, 2,
+       1, -1;
+  // clang-format on
+  const Eigen::RowVector3d F(1, 2, -3);
+  Eigen::Matrix3d Q;
+  // clang-format off
+  Q << 4, 0, 2,
+       0, 9, 3,
+       2, 3, 8;
+  // clang-format on
+  Eigen::Matrix2d R;
+  // clang-format off
+  R << 1, 3,
+       3, 10;
+  // clang-format on
+  Eigen::Matrix<double, 3, 2> N;
+  // clang-format on
+  N << 1, 0.5, 0.5, -1, 0, 1;
+  // clang-format off
+
+  TestLQRwHJB(A, B, Q, R);
+  TestLQRwHJB(A, B, Q, R, N);
+  TestLQRwHJB(A, B, Q, R, Eigen::MatrixXd(0, 0), F);
+  TestLQRwHJB(A, B, Q, R, N, F);
 }
 
 GTEST_TEST(TestLQR, DiscreteDoubleIntegrator) {

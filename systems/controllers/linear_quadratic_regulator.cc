@@ -1,5 +1,9 @@
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 
+#include <optional>
+
+#include <Eigen/QR>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/math/continuous_algebraic_riccati_equation.h"
@@ -10,12 +14,32 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
+namespace {
+// Compute the kernel of a matrix F, returns P such that the rows of P are the
+// basis for the null-space of F, namely PPᵀ = I and PFᵀ = 0
+Eigen::MatrixXd ComputeKernel(const Eigen::Ref<const Eigen::MatrixXd>& F) {
+  // Compute the null-space based on QR decomposition. If Fᵀ*S = [Q1 Q2][R; 0]
+  // = Q1*R, then take P=Q2ᵀ, where S is the permutation matrix.
+  Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr_F(F.transpose());
+  if (qr_F.info() != Eigen::Success) {
+    throw std::runtime_error(
+        "LinearQuadraticRegulator(): QR decomposition on F.transpose() "
+        "fails");
+  }
+  const Eigen::MatrixXd F_Q = qr_F.matrixQ();
+  const int n = F.cols();
+  const Eigen::MatrixXd P = F_Q.rightCols(n - qr_F.rank()).transpose();
+  return P;
+}
+}  // namespace
+
 LinearQuadraticRegulatorResult LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::MatrixXd>& B,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,
-    const Eigen::Ref<const Eigen::MatrixXd>& N) {
+    const Eigen::Ref<const Eigen::MatrixXd>& N,
+    const Eigen::Ref<const Eigen::MatrixXd>& F) {
   Eigen::Index n = A.rows(), m = B.cols();
   DRAKE_DEMAND(n > 0 && m > 0);
   DRAKE_DEMAND(B.rows() == n && A.cols() == n);
@@ -25,6 +49,10 @@ LinearQuadraticRegulatorResult LinearQuadraticRegulator(
   if (N.rows() != 0) {
     DRAKE_DEMAND(N.rows() == n && N.cols() == m);
   }
+  // F is default to Matrix<double, 0, 0>.
+  if (F.rows() != 0) {
+    DRAKE_DEMAND(F.cols() == n);
+  }
   DRAKE_DEMAND(is_approx_equal_abstol(R, R.transpose(), 1e-10));
 
   LinearQuadraticRegulatorResult ret;
@@ -32,15 +60,54 @@ LinearQuadraticRegulatorResult LinearQuadraticRegulator(
   Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
   if (R_cholesky.info() != Eigen::Success)
     throw std::runtime_error("R must be positive definite");
+  // The rows of P are the orthonormal basis for the null-space of F, namely PPᵀ
+  // = I and PFᵀ = 0
+  std::optional<Eigen::MatrixXd> P = std::nullopt;
+  if (F.rows() != 0) {
+    // P is the kernel of F.
+    // We introduce projected state y, such that y = Px.
+    // We form a new dynamical system
+    // ẏ = PAPᵀy + PBu
+    // If the original cost is
+    // ∫ xᵀQx + uᵀRu
+    // The cost in terms of y and u is
+    // ∫ yᵀPQPᵀy + uᵀRu
+    P = ComputeKernel(F);
+  }
 
   if (N.rows() != 0) {
+    // This is equivalent to the LQR problem of the following modified system
+    // min ∫xᵀQ₁x + u̅ᵀRu̅
+    // ẋ = A₁x + Bu̅
+    // where u̅ = u + R⁻¹Nᵀx and Q₁=Q−NR⁻¹Nᵀ, A₁=A−BR⁻¹Nᵀ
     Eigen::MatrixXd Q1 = Q - N * R_cholesky.solve(N.transpose());
     Eigen::MatrixXd A1 = A - B * R_cholesky.solve(N.transpose());
 
-    ret.S = math::ContinuousAlgebraicRiccatiEquation(A1, B, Q1, R_cholesky);
-    ret.K = R_cholesky.solve(B.transpose() * ret.S + N.transpose());
+    if (F.rows() == 0) {
+      ret.S = math::ContinuousAlgebraicRiccatiEquation(A1, B, Q1, R_cholesky);
+      ret.K = R_cholesky.solve(B.transpose() * ret.S + N.transpose());
+    } else {
+      const Eigen::MatrixXd Sy = math::ContinuousAlgebraicRiccatiEquation(
+          (*P) * A1 * P->transpose(), (*P) * B, (*P) * Q1 * P->transpose(),
+          R_cholesky);
+      ret.S = P->transpose() * Sy * (*P);
+      // We know N_y = P*N
+      // u = -R⁻¹(B_yᵀS_y + N_yᵀ)y
+      //   = -R⁻¹(BᵀPᵀ * PSPᵀ + NᵀPᵀ)*Px
+      //   = -R⁻¹(BᵀS+NᵀPᵀP)
+      ret.K = R_cholesky.solve(B.transpose() * ret.S +
+                               N.transpose() * P->transpose() * (*P));
+    }
   } else {
-    ret.S = math::ContinuousAlgebraicRiccatiEquation(A, B, Q, R_cholesky);
+    if (F.rows() == 0) {
+      ret.S = math::ContinuousAlgebraicRiccatiEquation(A, B, Q, R_cholesky);
+    } else {
+      ret.S = P->transpose() *
+              math::ContinuousAlgebraicRiccatiEquation(
+                  (*P) * A * P->transpose(), (*P) * B,
+                  (*P) * Q * P->transpose(), R_cholesky) *
+              (*P);
+    }
     ret.K = R_cholesky.solve(B.transpose() * ret.S);
   }
   return ret;

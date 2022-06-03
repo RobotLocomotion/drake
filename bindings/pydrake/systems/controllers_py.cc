@@ -217,13 +217,15 @@ PYBIND11_MODULE(controllers, m) {
           const Eigen::Ref<const Eigen::MatrixXd>& B,
           const Eigen::Ref<const Eigen::MatrixXd>& Q,
           const Eigen::Ref<const Eigen::MatrixXd>& R,
-          const Eigen::Ref<const Eigen::MatrixXd>& N) {
-        auto result = LinearQuadraticRegulator(A, B, Q, R, N);
+          const Eigen::Ref<const Eigen::MatrixXd>& N,
+          const Eigen::Ref<const Eigen::MatrixXd>& F) {
+        auto result = LinearQuadraticRegulator(A, B, Q, R, N, F);
         return std::make_pair(result.K, result.S);
       },
       py::arg("A"), py::arg("B"), py::arg("Q"), py::arg("R"),
       py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
-      doc.LinearQuadraticRegulator.doc_5args);
+      py::arg("F") = Eigen::Matrix<double, 0, 0>::Zero(),
+      doc.LinearQuadraticRegulator.doc_AB);
 
   m.def(
       "DiscreteTimeLinearQuadraticRegulator",
@@ -244,7 +246,7 @@ PYBIND11_MODULE(controllers, m) {
           const Eigen::Ref<const Eigen::MatrixXd>&>(&LinearQuadraticRegulator),
       py::arg("system"), py::arg("Q"), py::arg("R"),
       py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
-      doc.LinearQuadraticRegulator.doc_4args);
+      doc.LinearQuadraticRegulator.doc_system);
 
   m.def("LinearQuadraticRegulator",
       py::overload_cast<const systems::System<double>&,
@@ -255,7 +257,8 @@ PYBIND11_MODULE(controllers, m) {
           &LinearQuadraticRegulator),
       py::arg("system"), py::arg("context"), py::arg("Q"), py::arg("R"),
       py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
-      py::arg("input_port_index") = 0, doc.LinearQuadraticRegulator.doc_6args);
+      py::arg("input_port_index") = 0,
+      doc.LinearQuadraticRegulator.doc_linearize_at_context);
 
   py::class_<FiniteHorizonLinearQuadraticRegulatorOptions> fhlqr_options(m,
       "FiniteHorizonLinearQuadraticRegulatorOptions",
