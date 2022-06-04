@@ -82,9 +82,9 @@ struct MessageResults {
   int num_draw{};
   // Zeroed out unless num_draw > 0.
   lcmt_viewer_draw draw_message{};
-  int num_deformable_draw{};
-  // Zeroed out unless num_deformable_draw > 0.
-  lcmt_viewer_link_data deformable_draw_message{};
+  int num_deformable{};
+  // Zeroed out unless num_deformable > 0.
+  lcmt_viewer_link_data deformable_message{};
 };
 
 /* Serves as a source of pose values for SceneGraph input ports. */
@@ -193,29 +193,32 @@ class DrakeVisualizerTest : public ::testing::Test {
     lcmt_viewer_draw draw_message = draw_subscriber_.message();
     const int num_load = load_subscriber_.count();
     lcmt_viewer_load_robot load_message = load_subscriber_.message();
-    const int num_deformable_draw = deformable_draw_subscriber_.count();
-    lcmt_viewer_link_data deformable_draw_message =
-        deformable_draw_subscriber_.message();
+    const int num_deformable = deformable_subscriber_.count();
+    lcmt_viewer_link_data deformable_message =
+        deformable_subscriber_.message();
     draw_subscriber_.clear();
     load_subscriber_.clear();
-    deformable_draw_subscriber_.clear();
+    deformable_subscriber_.clear();
     return {num_load,     load_message,        num_draw,
-            draw_message, num_deformable_draw, deformable_draw_message};
+            draw_message, num_deformable, deformable_message};
   }
 
   /* Handles all subscribers and confirms the number of load and draw messages
-   are as expected. Clears the subscribers after looking. */
+   are as expected. Clears the subscribers after looking. We assume in related
+   tests that the messages for drawing non-rigid geometries and for deformable
+   geometries are dispatched in lock step (even if the message is functionally
+   empty), and thus the numbers of the respective messages are the same. */
   ::testing::AssertionResult ExpectedMessageCount(int num_load, int num_draw) {
     MessageResults results = ProcessMessages();
     if (results.num_draw != num_draw || results.num_load != num_load ||
-        results.num_deformable_draw != num_draw) {
+        results.num_deformable != num_draw) {
       return ::testing::AssertionFailure()
              << "Expected " << num_load << " load messages, " << num_draw
              << " draw messages, and " << num_draw
-             << " deformable draw messages"
+             << " deformable messages"
              << "\nFound   " << results.num_load << " load messages, "
              << results.num_draw << " draw messages, and "
-             << results.num_deformable_draw << " deformable draw messages.";
+             << results.num_deformable << " deformable messages.";
     }
     return ::testing::AssertionSuccess();
   }
@@ -332,7 +335,7 @@ class DrakeVisualizerTest : public ::testing::Test {
   /* The subscribers for draw and load messages.  */
   lcm::Subscriber<lcmt_viewer_draw> draw_subscriber_{&lcm_, kDrawChannel};
   lcm::Subscriber<lcmt_viewer_load_robot> load_subscriber_{&lcm_, kLoadChannel};
-  lcm::Subscriber<lcmt_viewer_link_data> deformable_draw_subscriber_{
+  lcm::Subscriber<lcmt_viewer_link_data> deformable_subscriber_{
       &lcm_, kDeformableDrawChannel};
 
   /* Raw pointer into the diagram's scene graph.  */
@@ -388,8 +391,8 @@ TYPED_TEST(DrakeVisualizerTest, EmptyScene) {
   EXPECT_EQ(results.draw_message.num_links, 0);
   EXPECT_EQ(results.draw_message.timestamp, 0);
 
-  ASSERT_EQ(results.num_deformable_draw, 1);
-  EXPECT_EQ(results.deformable_draw_message.num_geom, 0);
+  ASSERT_EQ(results.num_deformable, 1);
+  EXPECT_EQ(results.deformable_message.num_geom, 0);
 }
 
 /* DrakeVisualizer can accept an lcm interface from the user or instantiate its
@@ -535,9 +538,9 @@ TYPED_TEST(DrakeVisualizerTest, AnchoredAndDynamicGeometry) {
   ASSERT_EQ(results.draw_message.link_name[0],
             string(this->kSourceName) + "::frame");
 
-  // Confirm draw deformable message; no deformable geometry registered.
+  // Confirm deformable messages; no deformable geometry registered.
   ASSERT_EQ(results.num_draw, 1);
-  ASSERT_EQ(results.deformable_draw_message.num_geom, 0);
+  ASSERT_EQ(results.deformable_message.num_geom, 0);
 }
 
 /* Confirms that the role parameter leads to the correct geometry being
@@ -569,8 +572,8 @@ TYPED_TEST(DrakeVisualizerTest, TargetRole) {
     ASSERT_EQ(results.draw_message.num_links, 1);
     EXPECT_EQ(results.draw_message.link_name[0], name);
 
-    ASSERT_EQ(results.num_deformable_draw, 1);
-    ASSERT_EQ(results.deformable_draw_message.num_geom, 0);
+    ASSERT_EQ(results.num_deformable, 1);
+    ASSERT_EQ(results.deformable_message.num_geom, 0);
   }
 }
 
@@ -587,7 +590,7 @@ TYPED_TEST(DrakeVisualizerTest, ForcePublish) {
   MessageResults results = this->ProcessMessages();
   ASSERT_EQ(results.num_load, 1);
   ASSERT_EQ(results.num_draw, 1);
-  ASSERT_EQ(results.num_deformable_draw, 1);
+  ASSERT_EQ(results.num_deformable, 1);
 }
 
 /* When targeting a non-illustration role, if that same geometry *has* an
@@ -705,7 +708,7 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
     MessageResults results = this->ProcessMessages();
     ASSERT_EQ(results.num_load, 1);
     ASSERT_EQ(results.num_draw, 1);
-    ASSERT_EQ(results.num_deformable_draw, 1);
+    ASSERT_EQ(results.num_deformable, 1);
 
     t += this->kPublishPeriod;
     simulator.AdvanceTo(t);
@@ -713,7 +716,7 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
     results = this->ProcessMessages();
     ASSERT_EQ(results.num_load, 0);
     ASSERT_EQ(results.num_draw, 1);
-    ASSERT_EQ(results.num_deformable_draw, 1);
+    ASSERT_EQ(results.num_deformable, 1);
 
     // Confirm that modifying a role has the expected outcome. If the modified
     // role matches the visualized `role`, we expect a load message. Otherwise
@@ -738,7 +741,7 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
           << "For visualized role '" << role << "' and modified role '" << role
           << "'\n";
       EXPECT_EQ(results.num_draw, 1);
-      EXPECT_EQ(results.num_deformable_draw, 1);
+      EXPECT_EQ(results.num_deformable, 1);
     }
   }
 }
@@ -780,19 +783,21 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeDeformableGeometry) {
   ASSERT_EQ(results.num_load, 1);
   // No rigid geometries are added.
   ASSERT_EQ(results.load_message.num_links, 0);
-  ASSERT_EQ(results.num_deformable_draw, 1);
-  ASSERT_EQ(results.deformable_draw_message.num_geom, 1);
-  EXPECT_EQ(results.deformable_draw_message.name, "deformable_geometries");
-  EXPECT_EQ(results.deformable_draw_message.robot_num, 0);
+  ASSERT_EQ(results.num_deformable, 1);
+  ASSERT_EQ(results.deformable_message.num_geom, 1);
+  EXPECT_EQ(results.deformable_message.name, "deformable_geometries");
+  EXPECT_EQ(results.deformable_message.robot_num, 0);
 
   auto is_visualizer_color = [expected = params.default_color](
                                  const lcmt_viewer_geometry_data& message) {
     const auto& color = message.color;
     const Rgba test_rgba(color[0], color[1], color[2], color[3]);
-    return expected.AlmostEqual(test_rgba, 1e-15);
+    // Note: Without the second tolerance parameter, this tests for exact
+    // equality.
+    return expected.AlmostEqual(test_rgba);
   };
 
-  const auto& geo_message = results.deformable_draw_message.geom[0];
+  const auto& geo_message = results.deformable_message.geom[0];
   EXPECT_EQ(geo_message.type, geo_message.MESH);
   EXPECT_EQ(geo_message.string_data, "sphere");
   EXPECT_EQ(geo_message.num_float_data, geo_message.float_data.size());
@@ -891,7 +896,9 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
                                  const lcmt_viewer_geometry_data& message) {
     const auto& color = message.color;
     const Rgba test_rgba(color[0], color[1], color[2], color[3]);
-    return expected.AlmostEqual(test_rgba, 1e-15);
+    // Note: Without the second tolerance parameter, this tests for exact
+    // equality.
+    return expected.AlmostEqual(test_rgba);
   };
 
   auto pose_matches = [](const RigidTransformd& X_PG_expected,
@@ -1041,7 +1048,7 @@ TYPED_TEST(DrakeVisualizerTest, DispatchLoadMessageFromModel) {
               string(this->kSourceName) + "::illustration");
     ASSERT_EQ(results.load_message.link[0].num_geom, 1);
     ASSERT_EQ(results.num_draw, 0);
-    ASSERT_EQ(results.num_deformable_draw, 0);
+    ASSERT_EQ(results.num_deformable, 0);
   }
   {
     // Case: role = proximity --> one frame labeled with "proximity".
@@ -1056,7 +1063,7 @@ TYPED_TEST(DrakeVisualizerTest, DispatchLoadMessageFromModel) {
               string(this->kSourceName) + "::proximity");
     ASSERT_EQ(results.load_message.link[0].num_geom, 1);
     ASSERT_EQ(results.num_draw, 0);
-    ASSERT_EQ(results.num_deformable_draw, 0);
+    ASSERT_EQ(results.num_deformable, 0);
   }
 }
 
