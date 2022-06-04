@@ -154,7 +154,8 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
  The geometry data message is marked as a MESH, but rather than having a
  path to a parseable file stored in it, the actual mesh data is stored.
  The string data is used to store the name of the geometry and the pose of the
- geometry is used and is set to identity.
+ geometry is set to identity because the vertex positions are expressed in the
+ world frame.
 
  When the Mesh shape specification supports in-memory mesh definitions, this
  can be rolled into ShapeToLcm and it will more fully share that class's code
@@ -162,8 +163,7 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
 template <typename T>
 lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
     const VectorX<T>& volume_vertex_positions,
-    const internal::DeformableGeometryData& deformable_data,
-    const Rgba& in_color) {
+    const internal::DeformableMeshData& deformable_data, const Rgba& in_color) {
   lcmt_viewer_geometry_data geometry_data;
   // The pose is unused and set to identity.
   geometry_data.quaternion[0] = 1;
@@ -195,7 +195,7 @@ lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
   const int header_floats = 2;
   geometry_data.num_float_data = header_floats + 3 * num_tris + 3 * num_verts;
   geometry_data.float_data.resize(geometry_data.num_float_data);
-  auto& float_data = geometry_data.float_data;
+  std::vector<float>& float_data = geometry_data.float_data;
 
   float_data[0] = num_verts;
   float_data[1] = num_tris;
@@ -208,7 +208,7 @@ lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
   int t_index = t_start_index - 1;
 
   for (int f = 0; f < num_tris; ++f) {
-    const auto& face = deformable_data.surface_triangles[f];
+    const Vector3<int>& face = deformable_data.surface_triangles[f];
     for (int fv = 0; fv < 3; ++fv) {
       float_data[++t_index] = face[fv];
     }
@@ -235,20 +235,21 @@ lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
   1. Build a surface mesh from each volume mesh.
   2. Create a mapping from surface vertex to volume vertex for each mesh.
   3. Record the expected number of vertices referenced by each tet mesh.
- Store the results in DeformableGeometryData.
+ Store the results in DeformableMeshData.
  @pre g_id corresponds to a deformable geometry. */
 template <typename T>
-internal::DeformableGeometryData MakeDeformableGeometryData(
+internal::DeformableMeshData MakeDeformableMeshData(
     GeometryId g_id, const SceneGraphInspector<T>& inspector) {
-  /* For each tet mesh, extract all the border faces. Those are the triangles
-   that are only referenced by a single face. So, for every tet, we examine
-   its four faces and determine if any other tet shares it. Any face that is
-   only referenced once is a border face. Each face has a unique key: a
-   SortedTriplet (so the ordering of the vertices won't matter). The first
-   time we see a face, we add it to a map. The second time we see the face, we
-   remove it. When we're done, the keys in the map will be those faces only
-   referenced once. The values in the map represent the triangle, with the
-   vertices ordered so that they point *out* of the tetrahedron. Therefore,
+  /* For each tet mesh, extract all the border triangles. Those are the
+   triangles that are only referenced by a single tet. So, for every tet, we
+   examine its four constituent triangle and determine if any other tet
+   shares it. Any triangle that is only referenced once is a border triangle.
+   Each triangle has a unique key: a SortedTriplet (so the ordering of the
+   triangle vertex indices won't matter). The first time we see a triangle, we
+   add it to a map. The second time we see the triangle, we remove it. When
+   we're done, the keys in the map will be those triangles referenced only once.
+   The values in the map represent the triangle, with the vertex indices
+   ordered so that they point *out* of the tetrahedron. Therefore,
    they will also point outside of the mesh. A typical tetrahedral element
    looks like:
 
@@ -261,27 +262,26 @@ internal::DeformableGeometryData MakeDeformableGeometryData(
     p1 *
 
    The index order for a particular tetrahedron has the order [p0, p1, p2,
-   p3]. These local indices enumerate each of the tet faces with
+   p3]. These local indices enumerate each of the tet triangles with
    outward-pointing normals with respect to the right-hand rule.  */
-  const VolumeMesh<double>* mesh = inspector.GetReferenceMesh(g_id);
-  DRAKE_DEMAND(mesh != nullptr);
   const array<array<int, 3>, 4> local_indices{
       {{{1, 0, 2}}, {{3, 0, 1}}, {{3, 1, 2}}, {{2, 0, 3}}}};
 
-  /* While visiting all of the referenced vertices, identify the largest
-   index.  */
-  int largest_index = -1;
-  std::map<SortedTriplet<int>, array<int, 3>> border_faces;
+  const VolumeMesh<double>* mesh = inspector.GetReferenceMesh(g_id);
+  DRAKE_DEMAND(mesh != nullptr);
+
+  std::map<SortedTriplet<int>, array<int, 3>> border_triangles;
   for (const VolumeElement& tet : mesh->tetrahedra()) {
-    for (const array<int, 3>& tet_face : local_indices) {
-      const array<int, 3> face{tet.vertex(tet_face[0]), tet.vertex(tet_face[1]),
-                               tet.vertex(tet_face[2])};
-      largest_index = std::max({largest_index, face[0], face[1], face[2]});
-      const SortedTriplet face_key(face[0], face[1], face[2]);
-      if (auto itr = border_faces.find(face_key); itr != border_faces.end()) {
-        border_faces.erase(itr);
+    for (const array<int, 3>& tet_triangle : local_indices) {
+      const array<int, 3> tri{tet.vertex(tet_triangle[0]),
+                              tet.vertex(tet_triangle[1]),
+                              tet.vertex(tet_triangle[2])};
+      const SortedTriplet triangle_key(tri[0], tri[1], tri[2]);
+      if (auto itr = border_triangles.find(triangle_key);
+          itr != border_triangles.end()) {
+        border_triangles.erase(itr);
       } else {
-        border_faces[face_key] = face;
+        border_triangles[triangle_key] = tri;
       }
     }
   }
@@ -293,7 +293,7 @@ internal::DeformableGeometryData MakeDeformableGeometryData(
   //  largest index that lies on the surface. Then, when we create our meshes,
   //  if we intentionally construct them so that the surface vertices come
   //  first, we will process a very compact representation.
-  const int volume_vertex_count = largest_index + 1;
+  const int volume_vertex_count = mesh->num_vertices();
 
   /* Using a set because the vertices will be nicely ordered. Ideally, we'll
    be extracting a subset of the vertex positions from the input port. We
@@ -301,9 +301,9 @@ internal::DeformableGeometryData MakeDeformableGeometryData(
    So, we'll map triangle vertex indices to volume vertex indices in a
    strictly monotonically increasing relationship.  */
   set<int> unique_vertices;
-  for (const auto& [face_key, face] : border_faces) {
-    unused(face_key);
-    for (int j = 0; j < 3; ++j) unique_vertices.insert(face[j]);
+  for (const auto& [triangle_key, triangle] : border_triangles) {
+    unused(triangle_key);
+    for (int j = 0; j < 3; ++j) unique_vertices.insert(triangle[j]);
   }
 
   /* This is the *second* documented responsibility of this function: populate
@@ -314,7 +314,7 @@ internal::DeformableGeometryData MakeDeformableGeometryData(
                                     unique_vertices.begin(),
                                     unique_vertices.end());
 
-  /* The border faces all include indices into the volume vertices. To turn
+  /* The border triangles all include indices into the volume vertices. To turn
    them into surface triangles, they need to include indices into the surface
    vertices. Create the volume index --> surface map to facilitate the
    transformation.  */
@@ -329,9 +329,9 @@ internal::DeformableGeometryData MakeDeformableGeometryData(
    surface triangle mesh for each volume mesh. Each triangle consists of three
    indices into the set of *surface* vertex positions.  */
   vector<Vector3<int>> surface_triangles;
-  surface_triangles.reserve(border_faces.size());
-  for (auto& [face_key, face] : border_faces) {
-    unused(face_key);
+  surface_triangles.reserve(border_triangles.size());
+  for (auto& [triangle_key, face] : border_triangles) {
+    unused(triangle_key);
     surface_triangles.emplace_back(volume_to_surface[face[0]],
                                    volume_to_surface[face[1]],
                                    volume_to_surface[face[2]]);
@@ -512,8 +512,8 @@ void DrakeVisualizer<T>::DispatchLoadMessage(const SceneGraph<T>& scene_graph,
   vector<internal::DynamicFrameData> dynamic_frames;
   PopulateDynamicFrameData(scene_graph.model_inspector(), params,
                            &dynamic_frames);
-  SendLoadMessage(scene_graph.model_inspector(), params, dynamic_frames, 0,
-                  lcm);
+  SendLoadNonDeformableMessage(scene_graph.model_inspector(), params,
+                               dynamic_frames, 0, lcm);
 }
 
 template <typename T>
@@ -554,7 +554,7 @@ DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
           .cache_index();
   deformable_data_cache_index_ =
       this->DeclareCacheEntry("deformable_data",
-                              &DrakeVisualizer<T>::CalcDeformableGeometryData,
+                              &DrakeVisualizer<T>::CalcDeformableMeshData,
                               {this->nothing_ticket()})
           .cache_index();
 }
@@ -576,23 +576,23 @@ EventStatus DrakeVisualizer<T>::SendGeometryMessage(
     }
   }
   if (send_load_message) {
-    SendLoadMessage(query_object.inspector(), params_,
-                    RefreshDynamicFrameData(context),
-                    ExtractDoubleOrThrow(context.get_time()), lcm_);
-    RefreshDeformableGeometryData(context);
+    SendLoadNonDeformableMessage(
+        query_object.inspector(), params_, RefreshDynamicFrameData(context),
+        ExtractDoubleOrThrow(context.get_time()), lcm_);
+    RefreshDeformableMeshData(context);
   }
 
-  SendDrawMessage(query_object, EvalDynamicFrameData(context),
-                  ExtractDoubleOrThrow(context.get_time()), lcm_);
-  SendDrawDeformableMessage(query_object, params_,
-                            EvalDeformableGeometryData(context),
-                            ExtractDoubleOrThrow(context.get_time()), lcm_);
+  SendDrawNonDeformableMessage(query_object, EvalDynamicFrameData(context),
+                               ExtractDoubleOrThrow(context.get_time()), lcm_);
+  SendDeformableGeometriesMessage(
+      query_object, params_, EvalDeformableMeshData(context),
+      ExtractDoubleOrThrow(context.get_time()), lcm_);
 
   return EventStatus::Succeeded();
 }
 
 template <typename T>
-void DrakeVisualizer<T>::SendLoadMessage(
+void DrakeVisualizer<T>::SendLoadNonDeformableMessage(
     const SceneGraphInspector<T>& inspector,
     const DrakeVisualizerParams& params,
     const std::vector<internal::DynamicFrameData>& dynamic_frames, double time,
@@ -649,7 +649,8 @@ void DrakeVisualizer<T>::SendLoadMessage(
     int geom_index = -1;  // We'll pre-increment before using.
     for (const GeometryId& g_id :
          inspector.GetGeometries(inspector.world_frame_id(), params.role)) {
-      // Deformable geometries are handled via SendDrawDeformableMessage().
+      // Deformable geometries are handled via
+      // SendDeformableGeometriesMessage().
       if (!inspector.IsDeformableGeometry(g_id)) {
         message.link[0].geom[++geom_index] = make_geometry(g_id);
       }
@@ -675,7 +676,7 @@ void DrakeVisualizer<T>::SendLoadMessage(
 }
 
 template <typename T>
-void DrakeVisualizer<T>::SendDrawMessage(
+void DrakeVisualizer<T>::SendDrawNonDeformableMessage(
     const QueryObject<T>& query_object,
     const vector<internal::DynamicFrameData>& dynamic_frames, double time,
     lcm::DrakeLcmInterface* lcm) {
@@ -715,10 +716,10 @@ void DrakeVisualizer<T>::SendDrawMessage(
 }
 
 template <typename T>
-void DrakeVisualizer<T>::SendDrawDeformableMessage(
+void DrakeVisualizer<T>::SendDeformableGeometriesMessage(
     const QueryObject<T>& query_object, const DrakeVisualizerParams& params,
-    const vector<internal::DeformableGeometryData>& deformable_data,
-    double time, lcm::DrakeLcmInterface* lcm) {
+    const vector<internal::DeformableMeshData>& deformable_data, double time,
+    lcm::DrakeLcmInterface* lcm) {
   lcmt_viewer_link_data message{};
   message.name = "deformable_geometries";
   message.robot_num = 0;  // robot_num = 0 corresponds to world frame.
@@ -796,45 +797,37 @@ void DrakeVisualizer<T>::PopulateDynamicFrameData(
 }
 
 template <typename T>
-void DrakeVisualizer<T>::CalcDeformableGeometryData(
+void DrakeVisualizer<T>::CalcDeformableMeshData(
     const Context<T>& context,
-    vector<internal::DeformableGeometryData>* deformable_data) const {
+    vector<internal::DeformableMeshData>* deformable_data) const {
   DRAKE_DEMAND(deformable_data != nullptr);
   deformable_data->clear();
   const auto& query_object =
       query_object_input_port().template Eval<QueryObject<T>>(context);
-  PopulateDeformableGeometryData(query_object.inspector(), deformable_data);
-}
-
-template <typename T>
-void DrakeVisualizer<T>::PopulateDeformableGeometryData(
-    const SceneGraphInspector<T>& inspector,
-    vector<internal::DeformableGeometryData>* deformable_data) {
+  const auto& inspector = query_object.inspector();
   const std::vector<GeometryId> deformable_geometries =
       inspector.GetAllDeformableGeometryIds();
   for (const auto g_id : deformable_geometries) {
-    deformable_data->emplace_back(MakeDeformableGeometryData(g_id, inspector));
+    deformable_data->emplace_back(MakeDeformableMeshData(g_id, inspector));
   }
 }
 
 template <typename T>
-const vector<internal::DeformableGeometryData>&
-DrakeVisualizer<T>::RefreshDeformableGeometryData(
-    const Context<T>& context) const {
+const vector<internal::DeformableMeshData>&
+DrakeVisualizer<T>::RefreshDeformableMeshData(const Context<T>& context) const {
   // We'll need to make sure our knowledge of deformable data can get updated.
   this->get_cache_entry(deformable_data_cache_index_)
       .get_mutable_cache_entry_value(context)
       .mark_out_of_date();
 
-  return EvalDeformableGeometryData(context);
+  return EvalDeformableMeshData(context);
 }
 
 template <typename T>
-const vector<internal::DeformableGeometryData>&
-DrakeVisualizer<T>::EvalDeformableGeometryData(
-    const Context<T>& context) const {
+const vector<internal::DeformableMeshData>&
+DrakeVisualizer<T>::EvalDeformableMeshData(const Context<T>& context) const {
   return this->get_cache_entry(deformable_data_cache_index_)
-      .template Eval<vector<internal::DeformableGeometryData>>(context);
+      .template Eval<vector<internal::DeformableMeshData>>(context);
 }
 
 }  // namespace geometry

@@ -35,15 +35,17 @@ struct DynamicFrameData {
 
 /* Helper data structure to hold the topology information necessary to visualize
  the surface of a volume mesh. */
-struct DeformableGeometryData {
+struct DeformableMeshData {
   GeometryId geometry_id;
-  /* The names of the meshes. Included in all lcm messages.  */
+  /* The name of the deformable mesh. Included in all lcm messages.  */
   std::string name;
   /* An *implicit* map from *surface* vertex indices to volume vertex indices.
    The iᵗʰ surface vertex corresponds to the volume vertex with index
    `surface_to_volume_vertices_[i]`.  */
   std::vector<int> surface_to_volume_vertices;
-  /* Surface mesh representing the topology of the volume mesh's surfaces. */
+  /* Surface triangle mesh representing the topology of the volume mesh's
+   surfaces. Each triangle is encoded with three index values that are keys for
+   surface_to_volume_vertices. */
   std::vector<Vector3<int>> surface_triangles;
   /* The total number of vertices implied by the tetrahedra definitions.  */
   int volume_vertex_count{};
@@ -229,27 +231,27 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
   systems::EventStatus SendGeometryMessage(
       const systems::Context<T>& context) const;
 
-  /* Dispatches a "load geometry" message; replacing the non-deformable
-   geometries in the whole scene with the non-deformable geometries in the
-   current scene.  */
-  static void SendLoadMessage(
+  /* Dispatches a "load geometry" message (see lcmt_viewer_load_robot) -- the
+   declaration of all non-deformable geometries in arbitrary poses and their
+   visualizable properties. */
+  static void SendLoadNonDeformableMessage(
       const SceneGraphInspector<T>& inspector,
       const DrakeVisualizerParams& params,
       const std::vector<internal::DynamicFrameData>& dynamic_frames,
       double time, lcm::DrakeLcmInterface* lcm);
 
-  /* Dispatches a "draw" message for non-deformable geometries that are known to
-   have been loaded.  */
-  static void SendDrawMessage(
+  /* Dispatches a "draw geometry" message (see lcmt_viewer_draw) -- the
+   definition of the poses of all non-deformable geometries. */
+  static void SendDrawNonDeformableMessage(
       const QueryObject<T>& query_object,
       const std::vector<internal::DynamicFrameData>& dynamic_frames,
       double time, lcm::DrakeLcmInterface* lcm);
 
-  /* Dispatches a "draw" message for deformable geometries that are known to
-   have been loaded.  */
-  static void SendDrawDeformableMessage(
+  /* Dispatches a "deformable geometries" message that defines the topology and
+   configuration of all deformable geometries at a given time. */
+  static void SendDeformableGeometriesMessage(
       const QueryObject<T>& query_object, const DrakeVisualizerParams& params,
-      const std::vector<internal::DeformableGeometryData>& deformable_data,
+      const std::vector<internal::DeformableMeshData>& deformable_data,
       double time, lcm::DrakeLcmInterface* lcm);
 
   /* Identifies all of the frames with dynamic data and stores them (with
@@ -273,24 +275,22 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
       const DrakeVisualizerParams& params,
       std::vector<internal::DynamicFrameData>* frame_data);
 
-  /* Identifies all of the deformable geometries to be visualized and add the
-  required visualization data to the given vector `deformable_data`.  */
-  void CalcDeformableGeometryData(
+  /* Identifies all of the deformable geometries to be visualized and adds the
+   required visualization data to the `deformable_data`.
+   @note Entries in `deformable_data` are cleared before this function
+         populates it with new data.
+   @note The entries in `deformable_data` doesn't guarantee any ordering on
+         output. */
+  void CalcDeformableMeshData(
       const systems::Context<T>& context,
-      std::vector<internal::DeformableGeometryData>* deformable_data) const;
+      std::vector<internal::DeformableMeshData>* deformable_data) const;
 
   /* Recalculates and returns the cached deformable geometry data.  */
-  const std::vector<internal::DeformableGeometryData>&
-  RefreshDeformableGeometryData(const systems::Context<T>& context) const;
+  const std::vector<internal::DeformableMeshData>& RefreshDeformableMeshData(
+      const systems::Context<T>& context) const;
 
-  const std::vector<internal::DeformableGeometryData>&
-  EvalDeformableGeometryData(const systems::Context<T>& context) const;
-
-  /* Generic utility for populating the deformable geometry data. Available to
-   the ad hoc publishing methods as well as the cache-entry instance method.  */
-  static void PopulateDeformableGeometryData(
-      const SceneGraphInspector<T>& inspector,
-      std::vector<internal::DeformableGeometryData>* deformable_data);
+  const std::vector<internal::DeformableMeshData>& EvalDeformableMeshData(
+      const systems::Context<T>& context) const;
 
   /* DrakeVisualizer stores a "model" of what it thinks is registered in the
    drake_visualizer application. Because drake_visualizer is not part of the

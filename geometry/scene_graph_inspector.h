@@ -394,7 +394,7 @@ class SceneGraphInspector {
    @param geometry_id   The identifier for the queried geometry.
    @throws std::exception if `geometry_id` does not map to a registered
            geometry.  */
-  bool IsDeformableGeometry(GeometryId id) const;
+  bool IsDeformableGeometry(GeometryId geometry_id) const;
 
   /** Returns all geometry ids that correspond to deformable geometries. */
   std::vector<GeometryId> GetAllDeformableGeometryIds() const;

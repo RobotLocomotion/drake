@@ -492,12 +492,8 @@ const VolumeMesh<double>* GeometryState<T>::GetReferenceMesh(
 
 template <typename T>
 bool GeometryState<T>::IsDeformableGeometry(GeometryId id) const {
-  const InternalGeometry* geometry = GetGeometry(id);
-  if (geometry == nullptr) {
-    throw std::logic_error(
-        fmt::format("Geometry {} has not been registered", id));
-  }
-  return geometry->is_deformable();
+  const InternalGeometry& geometry = GetValueOrThrow(id, geometries_);
+  return geometry.is_deformable();
 }
 
 template <typename T>
@@ -506,9 +502,8 @@ std::vector<GeometryId> GeometryState<T>::GetAllDeformableGeometryIds() const {
       frames_.at(InternalFrame::world_frame_id()).child_geometries();
   std::vector<GeometryId> deformable_geometries;
   for (const GeometryId& g_id : world_geometries) {
-    const InternalGeometry* geometry = GetGeometry(g_id);
-    DRAKE_DEMAND(geometry != nullptr);
-    if (geometry->is_deformable()) {
+    const InternalGeometry& geometry = GetValueOrThrow(g_id, geometries_);
+    if (geometry.is_deformable()) {
       deformable_geometries.emplace_back(g_id);
     }
   }
