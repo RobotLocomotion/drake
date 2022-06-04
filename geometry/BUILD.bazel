@@ -140,9 +140,6 @@ drake_cc_library(
 # Remove on 2022-10-01.
 drake_cc_library(
     name = "frame_kinematics_vector",
-    srcs = [
-        "frame_kinematics_vector.cc",
-    ],
     hdrs = [
         "frame_kinematics_vector.h",
     ],
@@ -164,15 +161,12 @@ drake_cc_library(
     hdrs = [
         "kinematics_vector.h",
     ],
-    interface_deps = [
+    deps = [
         ":geometry_ids",
         "//common:autodiff",
         "//common:essential",
         "//common:symbolic",
         "//math:geometric_transform",
-    ],
-    deps = [
-        "@abseil_cpp_internal//absl/container:flat_hash_map",
     ],
 )
 

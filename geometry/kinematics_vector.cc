@@ -2,8 +2,6 @@
 
 #include <memory>
 
-#include "absl/container/flat_hash_map.h"
-
 #include "drake/common/autodiff.h"
 #include "drake/common/symbolic.h"
 #include "drake/math/rigid_transform.h"
@@ -12,7 +10,6 @@ namespace drake {
 namespace geometry {
 
 template <class Id, class KinematicsValue>
-class __attribute__((visibility("hidden")))
 KinematicsVector<Id, KinematicsValue>::Impl {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Impl);

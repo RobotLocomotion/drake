@@ -2,13 +2,4 @@
 
 #include "drake/geometry/kinematics_vector.h"
 
-namespace drake {
-namespace geometry {
-
-template <typename T>
-using FramePoseVector DRAKE_DEPRECATED(
-    "2022-10-01", "Include drake/geometry/kinematics_vector.h instead") =
-    KinematicsVector<FrameId, math::RigidTransform<T>>;
-
-}  // namespace geometry
-}  // namespace drake
+#warning DRAKE DEPRECATED: The header path "drake/geometry/frame_kinematics_vector.h" is deprecated and will be removed on or around 2022-10-01. Include "drake/geometry/kinematics_vector.h" instead.
