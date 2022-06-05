@@ -109,10 +109,10 @@ class Polynomial {
   Polynomial(const Expression& e, Variables indeterminates);
 
   /// Returns the indeterminates of this polynomial.
-  const Variables& indeterminates() const;
+  [[nodiscard]] const Variables& indeterminates() const;
 
   /// Returns the decision variables of this polynomial.
-  const Variables& decision_variables() const;
+  [[nodiscard]] const Variables& decision_variables() const;
 
   /// Sets the indeterminates to `new_indeterminates`.
   ///
@@ -133,28 +133,28 @@ class Polynomial {
   void SetIndeterminates(const Variables& new_indeterminates);
 
   /// Returns the highest degree of this polynomial in a variable @p v.
-  int Degree(const Variable& v) const;
+  [[nodiscard]] int Degree(const Variable& v) const;
 
   /// Returns the total degree of this polynomial.
-  int TotalDegree() const;
+  [[nodiscard]] int TotalDegree() const;
 
   /// Returns the mapping from a Monomial to its corresponding coefficient of
   /// this polynomial.
-  const MapType& monomial_to_coefficient_map() const;
+  [[nodiscard]] const MapType& monomial_to_coefficient_map() const;
 
   /// Returns an equivalent symbolic expression of this polynomial.
-  Expression ToExpression() const;
+  [[nodiscard]] Expression ToExpression() const;
 
   /** Differentiates this polynomial with respect to the variable @p x. Note
    * that a variable @p x can be either a decision variable or an indeterminate.
    */
-  Polynomial Differentiate(const Variable& x) const;
+  [[nodiscard]] Polynomial Differentiate(const Variable& x) const;
 
   /// Computes the Jacobian matrix J of the polynomial with respect to
   /// @p vars. J(0,i) contains ∂f/∂vars(i).
   template <typename Derived>
-  Eigen::Matrix<Polynomial, 1, Derived::RowsAtCompileTime> Jacobian(
-      const Eigen::MatrixBase<Derived>& vars) const {
+  [[nodiscard]] Eigen::Matrix<Polynomial, 1, Derived::RowsAtCompileTime>
+  Jacobian(const Eigen::MatrixBase<Derived>& vars) const {
     static_assert(std::is_same_v<typename Derived::Scalar, Variable> &&
                       (Derived::ColsAtCompileTime == 1),
                   "The argument of Polynomial::Jacobian should be a vector of "
@@ -173,31 +173,32 @@ class Polynomial {
    * the list of indeterminates.
    * @throws std::exception if @p x is a decision variable.
    */
-  Polynomial Integrate(const Variable& x) const;
+  [[nodiscard]] Polynomial Integrate(const Variable& x) const;
 
   /** Computes the definite integrate of this polynomial with respect to the
    * indeterminate @p x over the domain [a, b].  Integration with respect to
    * decision variables is not supported yet.
    * @throws std::exception if @p x is a decision variable.
    */
-  Polynomial Integrate(const Variable& x, double a, double b) const;
+  [[nodiscard]] Polynomial Integrate(const Variable& x, double a,
+                                     double b) const;
 
   /// Evaluates this polynomial under a given environment @p env.
   ///
   /// @throws std::exception if there is a variable in this polynomial whose
   /// assignment is not provided by @p env.
-  double Evaluate(const Environment& env) const;
+  [[nodiscard]] double Evaluate(const Environment& env) const;
 
   /// Partially evaluates this polynomial using an environment @p env.
   ///
   /// @throws std::exception if NaN is detected during evaluation.
-  Polynomial EvaluatePartial(const Environment& env) const;
+  [[nodiscard]] Polynomial EvaluatePartial(const Environment& env) const;
 
   /// Partially evaluates this polynomial by substituting @p var with @p c.
   ///
   /// @throws std::exception if NaN is detected at any point during
   /// evaluation.
-  Polynomial EvaluatePartial(const Variable& var, double c) const;
+  [[nodiscard]] Polynomial EvaluatePartial(const Variable& var, double c) const;
 
   /// Evaluates the polynomial at a batch of indeterminates values.
   /// @param[in] indeterminates Must include all this->indeterminates()
@@ -208,7 +209,7 @@ class Polynomial {
   /// substituting indeterminates(i) in this polynomial with
   /// indeterminates_values(i, j) for all i.
   /// @throw error if any coefficient in this polynomial is not a constant.
-  Eigen::VectorXd EvaluateIndeterminates(
+  [[nodiscard]] Eigen::VectorXd EvaluateIndeterminates(
       const Eigen::Ref<const VectorX<symbolic::Variable>>& indeterminates,
       const Eigen::Ref<const Eigen::MatrixXd>& indeterminates_values) const;
 
@@ -218,7 +219,7 @@ class Polynomial {
   /// Expands each coefficient expression and returns the expanded polynomial.
   /// If any coefficient is equal to 0 after expansion, then remove that term
   /// from the returned polynomial.
-  Polynomial Expand() const;
+  [[nodiscard]] Polynomial Expand() const;
 
   /// Removes the terms whose absolute value of the coefficients are smaller
   /// than or equal to @p coefficient_tol
@@ -228,19 +229,20 @@ class Polynomial {
   /// @param coefficient_tol A positive scalar.
   /// @retval polynomial_cleaned A polynomial whose terms with small
   /// coefficients are removed.
-  Polynomial RemoveTermsWithSmallCoefficients(double coefficient_tol) const;
+  [[nodiscard]] Polynomial RemoveTermsWithSmallCoefficients(
+      double coefficient_tol) const;
 
   /// Returns true if the polynomial is even, namely p(x) = p(-x). Meaning that
   /// the coefficient for all odd-degree monomials are 0.
   /// Returns false otherwise.
   /// Note that this is different from the p.TotalDegree() being an even number.
-  bool IsEven() const;
+  [[nodiscard]] bool IsEven() const;
 
   /// Returns true if the polynomial is odd, namely p(x) = -p(-x). Meaning that
   /// the coefficient for all even-degree monomials are 0.
   /// Returns false otherwise.
   /// Note that this is different from the p.TotalDegree() being an odd number.
-  bool IsOdd() const;
+  [[nodiscard]] bool IsOdd() const;
 
   Polynomial& operator+=(const Polynomial& p);
   Polynomial& operator+=(const Monomial& m);
@@ -258,7 +260,7 @@ class Polynomial {
   Polynomial& operator*=(const Variable& v);
 
   /// Returns true if this polynomial and @p p are structurally equal.
-  bool EqualTo(const Polynomial& p) const;
+  [[nodiscard]] bool EqualTo(const Polynomial& p) const;
 
   DRAKE_DEPRECATED("2022-09-01",
                    "Use this->Expand().EqualTo(p.Expand()) instead of "
@@ -268,15 +270,16 @@ class Polynomial {
   /// Returns true if this polynomial and @p p are almost equal (the difference
   /// in the corresponding coefficients are all less than @p tolerance), after
   /// expanding the coefficients.
-  bool CoefficientsAlmostEqual(const Polynomial& p, double tolerance) const;
+  [[nodiscard]] bool CoefficientsAlmostEqual(const Polynomial& p,
+                                             double tolerance) const;
 
   /// Returns a symbolic formula representing the condition where this
   /// polynomial and @p p are the same.
-  Formula operator==(const Polynomial& p) const;
+  [[nodiscard]] Formula operator==(const Polynomial& p) const;
 
   /// Returns a symbolic formula representing the condition where this
   /// polynomial and @p p are not the same.
-  Formula operator!=(const Polynomial& p) const;
+  [[nodiscard]] Formula operator!=(const Polynomial& p) const;
 
   /// Implements the @ref hash_append concept.
   template <class HashAlgorithm>
@@ -301,47 +304,47 @@ class Polynomial {
 };
 
 /// Unary minus operation for polynomial.
-Polynomial operator-(const Polynomial& p);
+[[nodiscard]] Polynomial operator-(const Polynomial& p);
 
-Polynomial operator+(Polynomial p1, const Polynomial& p2);
-Polynomial operator+(Polynomial p, const Monomial& m);
-Polynomial operator+(Polynomial p, double c);
-Polynomial operator+(const Monomial& m, Polynomial p);
-Polynomial operator+(const Monomial& m1, const Monomial& m2);
-Polynomial operator+(const Monomial& m, double c);
-Polynomial operator+(double c, Polynomial p);
-Polynomial operator+(double c, const Monomial& m);
-Polynomial operator+(Polynomial p, const Variable& v);
-Polynomial operator+(const Variable& v, Polynomial p);
+[[nodiscard]] Polynomial operator+(Polynomial p1, const Polynomial& p2);
+[[nodiscard]] Polynomial operator+(Polynomial p, const Monomial& m);
+[[nodiscard]] Polynomial operator+(Polynomial p, double c);
+[[nodiscard]] Polynomial operator+(const Monomial& m, Polynomial p);
+[[nodiscard]] Polynomial operator+(const Monomial& m1, const Monomial& m2);
+[[nodiscard]] Polynomial operator+(const Monomial& m, double c);
+[[nodiscard]] Polynomial operator+(double c, Polynomial p);
+[[nodiscard]] Polynomial operator+(double c, const Monomial& m);
+[[nodiscard]] Polynomial operator+(Polynomial p, const Variable& v);
+[[nodiscard]] Polynomial operator+(const Variable& v, Polynomial p);
 
-Polynomial operator-(Polynomial p1, const Polynomial& p2);
-Polynomial operator-(Polynomial p, const Monomial& m);
-Polynomial operator-(Polynomial p, double c);
-Polynomial operator-(const Monomial& m, Polynomial p);
-Polynomial operator-(const Monomial& m1, const Monomial& m2);
-Polynomial operator-(const Monomial& m, double c);
-Polynomial operator-(double c, Polynomial p);
-Polynomial operator-(double c, const Monomial& m);
-Polynomial operator-(Polynomial p, const Variable& v);
-Polynomial operator-(const Variable& v, const Polynomial& p);
+[[nodiscard]] Polynomial operator-(Polynomial p1, const Polynomial& p2);
+[[nodiscard]] Polynomial operator-(Polynomial p, const Monomial& m);
+[[nodiscard]] Polynomial operator-(Polynomial p, double c);
+[[nodiscard]] Polynomial operator-(const Monomial& m, Polynomial p);
+[[nodiscard]] Polynomial operator-(const Monomial& m1, const Monomial& m2);
+[[nodiscard]] Polynomial operator-(const Monomial& m, double c);
+[[nodiscard]] Polynomial operator-(double c, Polynomial p);
+[[nodiscard]] Polynomial operator-(double c, const Monomial& m);
+[[nodiscard]] Polynomial operator-(Polynomial p, const Variable& v);
+[[nodiscard]] Polynomial operator-(const Variable& v, const Polynomial& p);
 
-Polynomial operator*(Polynomial p1, const Polynomial& p2);
-Polynomial operator*(Polynomial p, const Monomial& m);
-Polynomial operator*(Polynomial p, double c);
-Polynomial operator*(const Monomial& m, Polynomial p);
+[[nodiscard]] Polynomial operator*(Polynomial p1, const Polynomial& p2);
+[[nodiscard]] Polynomial operator*(Polynomial p, const Monomial& m);
+[[nodiscard]] Polynomial operator*(Polynomial p, double c);
+[[nodiscard]] Polynomial operator*(const Monomial& m, Polynomial p);
 // Note that `Monomial * Monomial -> Monomial` is provided in
 // symbolic_monomial.h file.
-Polynomial operator*(const Monomial& m, double c);
-Polynomial operator*(double c, Polynomial p);
-Polynomial operator*(double c, const Monomial& m);
-Polynomial operator*(Polynomial p, const Variable& v);
-Polynomial operator*(const Variable& v, Polynomial p);
+[[nodiscard]] Polynomial operator*(const Monomial& m, double c);
+[[nodiscard]] Polynomial operator*(double c, Polynomial p);
+[[nodiscard]] Polynomial operator*(double c, const Monomial& m);
+[[nodiscard]] Polynomial operator*(Polynomial p, const Variable& v);
+[[nodiscard]] Polynomial operator*(const Variable& v, Polynomial p);
 
 /// Returns `p / v`.
-Polynomial operator/(Polynomial p, double v);
+[[nodiscard]] Polynomial operator/(Polynomial p, double v);
 
 /// Returns polynomial @p rasied to @p n.
-Polynomial pow(const Polynomial& p, int n);
+[[nodiscard]] Polynomial pow(const Polynomial& p, int n);
 
 std::ostream& operator<<(std::ostream& os, const Polynomial& p);
 
@@ -511,7 +514,7 @@ namespace symbolic {
 /// @throws std::exception if NaN is detected during evaluation.
 /// @pydrake_mkdoc_identifier{polynomial}
 template <typename Derived>
-std::enable_if_t<
+[[nodiscard]] std::enable_if_t<
     std::is_same_v<typename Derived::Scalar, Polynomial>,
     Eigen::Matrix<double, Derived::RowsAtCompileTime,
                   Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
@@ -525,8 +528,9 @@ Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
 ///
 /// @pre {@p vars is non-empty}.
 /// @pydrake_mkdoc_identifier{polynomial}
-MatrixX<Polynomial> Jacobian(const Eigen::Ref<const VectorX<Polynomial>>& f,
-                             const Eigen::Ref<const VectorX<Variable>>& vars);
+[[nodiscard]] MatrixX<Polynomial> Jacobian(
+    const Eigen::Ref<const VectorX<Polynomial>>& f,
+    const Eigen::Ref<const VectorX<Variable>>& vars);
 
 }  // namespace symbolic
 }  // namespace drake
