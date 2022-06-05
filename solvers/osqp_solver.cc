@@ -28,9 +28,16 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
     const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
 
     // Add quadratic_cost.Q to the Hessian P.
-    const std::vector<Eigen::Triplet<double>> Qi_triplets =
-        math::SparseMatrixToTriplets(quadratic_cost.evaluator()->Q());
-    P_triplets.reserve(P_triplets.size() + Qi_triplets.size());
+    std::vector<Eigen::Triplet<double>> Qi_triplets;
+    const Eigen::MatrixXd& Q = quadratic_cost.evaluator()->Q();
+    for (int col = 0; col < Q.cols(); ++col) {
+      for (int row = 0; row < Q.rows(); ++row) {
+        const double value = Q(row, col);
+        if (value != 0.0) {
+          Qi_triplets.emplace_back(row, col, value);
+        }
+      }
+    }
     for (int i = 0; i < static_cast<int>(Qi_triplets.size()); ++i) {
       // Unpack the field of the triplet (for clarity below).
       const int row = x_indices[Qi_triplets[i].row()];
