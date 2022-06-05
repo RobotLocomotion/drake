@@ -1301,6 +1301,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_polynomial_test",
+    #copts= [
+    #    # Allow some of the returned argument to be unused.
+    #    "-Wno-unused-result",
+    #],
     deps = [
         ":symbolic",
         "//common/test_utilities:expect_no_throw",

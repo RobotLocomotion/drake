@@ -8,6 +8,7 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace symbolic {
@@ -908,7 +909,7 @@ TEST_F(SymbolicPolynomialTest, Evaluate) {
       {var_x_, -7.0},
       {var_z_, -2.0},
   }};
-  EXPECT_THROW(p.Evaluate(partial_env), runtime_error);
+  EXPECT_THROW(unused(p.Evaluate(partial_env)), runtime_error);
 }
 
 TEST_F(SymbolicPolynomialTest, PartialEvaluate1) {
