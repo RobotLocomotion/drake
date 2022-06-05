@@ -24,6 +24,11 @@ using systems::Context;
 class IiwaPositionConstraintFixture : public benchmark::Fixture {
  public:
   using benchmark::Fixture::SetUp;
+
+  IiwaPositionConstraintFixture() {
+    Iterations(10000);
+  }
+
   void SetUp(const ::benchmark::State&) override {
     tools::performance::AddMinMaxStatistics(this);
 

@@ -124,10 +124,36 @@ GTEST_TEST(DifferentiableMatrix, Multiply) {
   for (int i=0; i < product.num_non_zeros(); ++i)
     EXPECT_EQ(product.non_zero(i), expected_nz[i]);
 
-  auto ad_result = m34ad * m43ad;
-  EXPECT_TRUE(CompareMatrices(ExtractValue(product), ExtractValue(ad_result)));
+  auto ad_product = (m34ad * m43ad).eval();
+  EXPECT_TRUE(CompareMatrices(ExtractValue(product), ExtractValue(ad_product)));
   EXPECT_TRUE(
-      CompareMatrices(ExtractGradient(product), ExtractGradient(ad_result)));
+      CompareMatrices(ExtractGradient(product), ExtractGradient(ad_product)));
+
+  auto mixed_product = dm34 * m43ad;
+  const bool mixed_type_is_right =
+      std::is_same_v<decltype(mixed_product), decltype(ad_product)>;
+  EXPECT_TRUE(mixed_type_is_right);
+  EXPECT_TRUE(
+      CompareMatrices(ExtractValue(mixed_product), ExtractValue(ad_product)));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(mixed_product),
+                              ExtractGradient(ad_product)));
+
+  // Now try multiplying by a matrix that has no derivatives. That should
+  // still be considered compatible and should produce a result whose shape
+  // and number of non-zero derivatives inherits from the non-zero operand.
+
+  Matrix43ad m43adz = InitializeAutoDiff(m43d, 0);  // No derivatives.
+  DifferentiableMatrix<Matrix43ad> dm43z(m43adz);
+  auto z_product = dm34 * dm43z;
+  auto adz_product = m34ad * m43adz;
+  EXPECT_EQ(z_product.num_variables(), dm34.num_variables());
+  EXPECT_EQ(z_product.num_non_zeros(), dm34.num_non_zeros());
+  for (int i = 0; i < z_product.num_non_zeros(); ++i)
+    EXPECT_EQ(z_product.non_zero(i), dm34.non_zero(i));
+  EXPECT_TRUE(
+      CompareMatrices(ExtractValue(z_product), ExtractValue(adz_product)));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(z_product),
+                              ExtractGradient(adz_product)));
 }
 
 }  // namespace

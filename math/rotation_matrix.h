@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <utility>
 
 #include <Eigen/Dense>
 
@@ -58,6 +59,7 @@ class RotationMatrix {
   // The type of the data member that hold the value and possibly derivatives
   // of this RotationMatrix.
   using MatrixType = DifferentiableMatrix<Matrix3<T>>;
+
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationMatrix)
 
@@ -382,7 +384,7 @@ class RotationMatrix {
 
   /// Returns the Eigen `Matrix3<T>` representing this %RotationMatrix.
   /// Returns a reference at zero cost unless T=AutoDiffXd in which case this
-  /// is expensive and should be avoided in favor of matrix_ref().
+  /// is expensive and should be avoided in favor of diff_matrix().
   /// @see col(), row()
   typename MatrixType::EigenEquivalentType matrix() const {
     return R_AB_.GetEigenEquivalent();
@@ -391,9 +393,9 @@ class RotationMatrix {
   /// (Advanced) Returns a reference to the underlying DifferentiableMatrix
   /// holding the value and possibly derivatives of this %RotationMatrix.
   /// Use this rather than the possibly-expensive matrix() method for any
-  /// operatoins that are supported directly by DifferentiableMatrix.
+  /// operations that are supported directly by DifferentiableMatrix.
   /// For types T ≠ AutoDiffXd this is identical to matrix().
-  const MatrixType& matrix_ref() const {
+  const MatrixType& diff_matrix() const {
     return R_AB_;
   }
 
@@ -411,10 +413,6 @@ class RotationMatrix {
   /// The returned quantity can be assigned in various ways, e.g., as
   /// `const auto& Az_B = row(2);` or `RowVector3<T> Az_B = row(2);`
   typename MatrixType::EigenRowType row(int index) const {
-    // The returned value from this method mimics Eigen's row() method which was
-    // found in  Eigen/src/plugins/BlockMethods.h.  The Eigen Matrix3 R_AB_ that
-    // underlies this class is a column major matrix.  To return a row,
-    // InnerPanel = false is passed as the last template parameter above.
     DRAKE_ASSERT(0 <= index && index <= 2);
     return R_AB_.GetEigenRow(index);
   }
@@ -433,10 +431,6 @@ class RotationMatrix {
   /// The returned quantity can be assigned in various ways, e.g., as
   /// `const auto& Bz_A = col(2);` or `Vector3<T> Bz_A = col(2);`
   typename MatrixType::EigenColType col(int index) const {
-    // The returned value from this method mimics Eigen's col() method which was
-    // found in  Eigen/src/plugins/BlockMethods.h.  The Eigen Matrix3 R_AB_ that
-    // underlies this class is a column major matrix.  To return a column,
-    // InnerPanel = true is passed as the last template parameter above.
     DRAKE_ASSERT(0 <= index && index <= 2);
     return R_AB_.GetEigenCol(index);
   }
@@ -451,7 +445,8 @@ class RotationMatrix {
     if constexpr (std::is_same_v<T, double>) {
       internal::ComposeRR(*this, other, this);
     } else {
-      SetUnchecked(matrix() * other.matrix());
+      // TODO(sherm1) Should be a *= in place.
+      SetUnchecked(MatrixType(diff_matrix() * other.diff_matrix()));
     }
     return *this;
   }
@@ -467,7 +462,7 @@ class RotationMatrix {
     if constexpr (std::is_same_v<T, double>) {
       internal::ComposeRR(*this, other, &R_AC);
     } else {
-      R_AC.R_AB_ = matrix() * other.matrix();
+      R_AC.R_AB_ = MatrixType(diff_matrix() * other.diff_matrix());
     }
     return R_AC;
   }
@@ -500,7 +495,7 @@ class RotationMatrix {
   /// @param[in] v_B 3x1 vector that post-multiplies `this`.
   /// @returns 3x1 vector `v_A = R_AB * v_B`.
   Vector3<T> operator*(const Vector3<T>& v_B) const {
-    return Vector3<T>(matrix() * v_B);
+    return Vector3<T>(diff_matrix() * v_B);
   }
 
   /// Multiplies `this` %RotationMatrix `R_AB` by the n vectors `v1`, ... `vn`,
@@ -525,7 +520,10 @@ class RotationMatrix {
           "Error: Inner dimension for matrix multiplication is not 3.");
     }
     // Express vectors in terms of frame A as v_A = R_AB * v_B.
-    return matrix() * v_B;
+    if constexpr (MatrixType::is_eigen_matrix())
+      return diff_matrix() * v_B;  // Allow Eigen expression type.
+    else
+      return diff_matrix() * v_B.eval();  // Require an AutoDiff Matrix.
   }
 
   /// Returns how close the matrix R is to being a 3x3 orthonormal matrix by
@@ -595,7 +593,8 @@ class RotationMatrix {
   /// @see IsExactlyEqualTo().
   boolean<T> IsNearlyEqualTo(const RotationMatrix<T>& other,
                              double tolerance) const {
-    return IsNearlyEqualTo(matrix(), other.matrix(), tolerance);
+    return IsNearlyEqualTo(diff_matrix().value(), other.diff_matrix().value(),
+                           tolerance);
   }
 
   /// Compares each element of `this` to the corresponding element of `other`
@@ -605,7 +604,7 @@ class RotationMatrix {
   /// corresponding element in `other`.
   /// @see IsNearlyEqualTo().
   boolean<T> IsExactlyEqualTo(const RotationMatrix<T>& other) const {
-    return matrix() == other.matrix();
+    return diff_matrix().value() == other.diff_matrix().value();
   }
 
   /// Computes the infinity norm of `this` - `other` (i.e., the maximum absolute
@@ -754,12 +753,21 @@ class RotationMatrix {
   // performed to test whether or not the parameter R is a valid rotation
   // matrix. This is always very fast.
   // @note The second parameter is just a dummy to avoid ambiguities.
-  RotationMatrix(MatrixType&& R, bool) : R_AB_(R) {}
+  RotationMatrix(MatrixType&& R, bool) : R_AB_(std::move(R)) {}
 
-  // Sets `this` %RotationMatrix from a Matrix3.  No check is performed to
-  // test whether or not the parameter R is a valid rotation matrix.
+  // Sets `this` %RotationMatrix from a Matrix3. No check is performed to
+  // test whether or not the parameter R is a valid rotation matrix. This is
+  // expensive for T=AutoDiffXd; avoid that using the other signature.
   // @param[in] R an allegedly valid rotation matrix.
-  void SetUnchecked(const Matrix3<T>& R) { R_AB_ = R; }
+  void SetUnchecked(const Matrix3<T>& R) {
+    SetUnchecked(MatrixType(R));
+  }
+
+  // Fast method taking the underling differentiable matrix. No check is
+  // performed to test whether or not the parameter R is a valid rotation
+  // matrix.
+  // @param[in] R an allegedly valid rotation matrix.
+  void SetUnchecked(MatrixType&& R) { R_AB_ = std::move(R); }
 
   // Sets `this` %RotationMatrix `R_AB` from right-handed orthogonal unit
   // vectors `Bx`, `By`, `Bz` so that the columns of `this` are `[Bx, By, Bz]`.

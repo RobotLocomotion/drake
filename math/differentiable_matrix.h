@@ -5,6 +5,7 @@ A matrix and its derivatives. */
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -55,10 +56,18 @@ struct DifferentiableMatrixMultiply {
 };
 
 /** An Eigen matrix and its derivatives, specialized for `Matrix<AutoDiffXd>`.
-For other scalar types, behaves like the Eigen matrix. */
+For other scalar types T (double or Expression),
+`%DifferentiableMatrix<Matrix<T>>` is-a `Matrix<T>` (via CRTP) with
+construction and functionality passed through. A few additional methods and
+declarations are added to facilitate performant calling code that can use
+`%DifferentiableMatrix<Matrix<T>>` without having to special case based on T.
+
+See the @ref differentiable_matrix_specialization "specialization" for details
+on the useful features of this class. */
 template <typename MatrixT, typename T = typename MatrixT::Scalar>
 class DifferentiableMatrix : public MatrixT {
   static_assert(std::is_same_v<typename MatrixT::Scalar, T>);
+
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DifferentiableMatrix);
   using MatrixT::MatrixT;
@@ -98,7 +107,34 @@ class DifferentiableMatrix : public MatrixT {
   EigenColType GetEigenCol(int j) const { return value().col(j); }
 };
 
-/** MatrixType must have AutoDiffXd scalars. */
+/** @anchor differentiable_matrix_specialization
+
+Specialization of DifferentiableMatrix for `Matrix<AutoDiffXd>`.
+
+Let M be the Matrix value, and let `x ≜ {xᵥ : v ∈ [0,nᵥ)}` be the nᵥ variables
+with respect to which we are taking partial derivatives.
+
+As an example, assume M is 2x3, nᵥ is 5, and the partials with respect to
+x₁ and x₂ are zero. Then in this specialization we store M and the non-zero
+partials like this:
+
+    num_variables=5        non_zeros=[0, 3, 4]
+
+    +----------+    +----------+ +----------+ +----------+
+    |          |    |          | |          | |          |
+    |          |    |          | |          | |          |
+    +----------+    +----------+ +----------+ +----------+
+         M             ∂M/∂x₀       ∂M/∂x₃       ∂M/∂x₄
+
+The derivatives are identical in structure to the value and they are stored
+in consecutive memory locations (in an std::vector).
+
+We can perform computations involving this object and any other
+%DifferentiableMatrix or `Matrix<AutoDiffXd>` that has the same nᵥ. As a
+special case an operand for which nᵥ=0 (with no non-zero derivatives) is
+compatible with any operand regardless of that operand's nᵥ. A constant vector,
+for example, is best represented with nᵥ=0.
+*/
 template <typename MatrixT>
 class DifferentiableMatrix<MatrixT, AutoDiffXd> {
   static_assert(std::is_same_v<typename MatrixT::Scalar, AutoDiffXd>);
@@ -120,10 +156,12 @@ class DifferentiableMatrix<MatrixT, AutoDiffXd> {
 
   using AutoDiffMatrixType = MatrixT;
 
+  /** What a row of the input matrix looks like. */
   using AutoDiffRowType = Eigen::Matrix<
       AutoDiffXd, 1, MatrixT::ColsAtCompileTime,
       Eigen::RowMajor, 1, MatrixT::MaxColsAtCompileTime>;
 
+  /** What a column of the input matrix looks like. */
   using AutoDiffColType = Eigen::Matrix<
       AutoDiffXd, MatrixT::RowsAtCompileTime, 1,
       0, MatrixT::MaxRowsAtCompileTime, 1>;
@@ -135,7 +173,7 @@ class DifferentiableMatrix<MatrixT, AutoDiffXd> {
   /** Constructs with an uninitialized matrix and no derivatives. */
   DifferentiableMatrix() {}
 
-  /** Constructs a DifferentiableMatrix from a given `Matrix<AutoDiffXd>`.
+  /** Constructs a %DifferentiableMatrix from a given `Matrix<AutoDiffXd>`.
   Note that this requires an exact type match to the template parameter
   MatrixT. */
   explicit DifferentiableMatrix(const AutoDiffMatrixType& ad);
@@ -149,24 +187,28 @@ class DifferentiableMatrix<MatrixT, AutoDiffXd> {
   const MatrixType& value() const { return value_; }
 
   /** This is the return type for a method that returns the Eigen matrix
-  equivalent of this DifferentiableMatrix. For this T=AutoDiffXd case, we must
-  perform an expensive operation. */
+  equivalent of this %DifferentiableMatrix. For this T=AutoDiffXd case, we must
+  perform an expensive conversion operation. */
   using EigenEquivalentType = AutoDiffMatrixType;
   using EigenRowType = AutoDiffRowType;
   using EigenColType = AutoDiffColType;
 
-  /** Generate a Matrix<AutoDiffXd> equivalent to this DifferentialMatrix.
+  /** Generates a Matrix<AutoDiffXd> equivalent to this %DifferentialMatrix.
   This is expensive for this specialization and should be avoided. */
   EigenEquivalentType GetEigenEquivalent() const {
     return ToAutoDiffXd();
   }
 
+  /** Generates a RowVector<AutoDiffXd> equivalent to a row of this
+  %DifferentiableMatrix. */
   EigenRowType GetEigenRow(int i) const {
     // TODO(sherm1) Create just the row.
     EigenEquivalentType whole_matrix = GetEigenEquivalent();
     return whole_matrix.row(i);
   }
 
+  /** Generates a (column) Vector<AutoDiffXd> equivalent to a column of this
+  %DifferentiableMatrix. */
   EigenColType GetEigenCol(int j) const {
     // TODO(sherm1) Create just the column.
     EigenEquivalentType whole_matrix = GetEigenEquivalent();
@@ -176,9 +218,9 @@ class DifferentiableMatrix<MatrixT, AutoDiffXd> {
   /** Returns the nᵗʰ non-zero derivative. The corresponding variable is
   xᵥ, where v = non_zero(n). That is, we're returning dₙ = ∂M/∂xᵥ, where M
   is the matrix result returned by value(). */
-  const MatrixType& derivative(int n) const {
-    DRAKE_ASSERT(0 <= n && n < static_cast<int>(derivatives_.size()));
-    return derivatives_[n];
+  const MatrixType& non_zero_derivative(int n) const {
+    DRAKE_ASSERT(0 <= n && n < static_cast<int>(non_zero_derivatives_.size()));
+    return non_zero_derivatives_[n];
   }
 
   /** Returns the variable number v for the nᵗʰ non-zero derivative. That is,
@@ -188,18 +230,32 @@ class DifferentiableMatrix<MatrixT, AutoDiffXd> {
     return non_zeros_[n];
   }
 
+  /** Returns the number of partial derivatives whose values are stored
+  explicitly, rather than being implicitly considered zero. */
   int num_non_zeros() const { return static_cast<int>(non_zeros_.size()); }
+
+  /** Returns the total number of variables with respect to which we are taking
+  derivatives, including those explicitly stored and implicitly zero. If the
+  number of variables is returned zero, that means we don't know how may
+  variables there are but regardless of that, all the derivatives are known to
+  be zero. That representation is best for a known-constant matrix. */
   int num_variables() const { return num_variables_; }
 
-
-  /** This the type produced by the transpose() method. */
+  /** The type produced by the transpose() method. */
   using TransposeType = DifferentiableMatrix<AutoDiffMatrixTransposeType>;
 
+  /** The %DifferentiableMatrix result from multiplying `this`
+  matrix times some other %DifferentiableMatrix. */
   template <typename RhsMatrixType>
-  using MultiplyResultType = DifferentiableMatrix<
-      typename DifferentiableMatrixMultiply<
-      MatrixType, RhsMatrixType>::AutoDiffMatrixResultType>;
+  using MultiplyResultType =
+      DifferentiableMatrix<typename DifferentiableMatrixMultiply<
+          MatrixType, RhsMatrixType>::AutoDiffMatrixResultType>;
 
+  /** This is the Eigen `Matrix<AutoDiffXd>` result from multiplying `this`
+  matrix times an Eigen `Matrix<AutoDiffXd>`. */
+  template <typename RhsMatrixType>
+  using EigenMultiplyResultType = typename DifferentiableMatrixMultiply<
+      MatrixType, RhsMatrixType>::AutoDiffMatrixResultType;
 
   using GradientMatrixType = Eigen::Matrix<
       double, MatrixType::SizeAtCompileTime, Eigen::Dynamic>;
@@ -208,20 +264,29 @@ class DifferentiableMatrix<MatrixT, AutoDiffXd> {
   element e, with column(v)=∂e/∂xᵥ. */
   GradientMatrixType ExtractGradient() const;
 
-
   /** Returns a `Matrix<AutoDiffXd>` object numerically equivalent to this
   DifferentiableMatrix object. */
   AutoDiffMatrixType ToAutoDiffXd() const;
 
-  /** Returns a DifferentiableMatrix whose value and derivatives are the
+  /** Returns a %DifferentiableMatrix whose value and derivatives are the
   transpose of this object. */
   TransposeType transpose() const;
 
-  /** Multiplies two DifferentiableMatrix objects and returns a new one that
-  contains the product and its derivatives. The inputs must be conformable. */
+  /** Multiplies two %DifferentiableMatrix objects and returns a new one that
+  contains the product and its derivatives. The arguments must be
+  conformable. */
   template <typename RhsMatrixType>
   MultiplyResultType<RhsMatrixType> operator*(
       const DifferentiableMatrix<RhsMatrixType, AutoDiffXd>& rhs) const;
+
+  /** Multiplies this %DifferentiableMatrix by an Eigen `Matrix<AutoDiffXd>`
+  and returns an Eigen `Matrix<AutoDiffXd>` result that contains the product
+  and its derivatives. The arguments must be conformable. */
+  template <int rows, int cols, int options, int max_rows, int max_cols>
+  EigenMultiplyResultType<Eigen::Matrix<AutoDiffXd, rows, cols, Eigen::ColMajor,
+                                        max_rows, max_cols>>
+  operator*(const Eigen::Matrix<AutoDiffXd, rows, cols, options, max_rows,
+                                max_cols>& rhs) const;
 
  private:
   friend TransposeType;
@@ -235,7 +300,7 @@ class DifferentiableMatrix<MatrixT, AutoDiffXd> {
       : num_variables_(num_variables), non_zeros_(std::move(non_zeros)) {
     DRAKE_DEMAND(num_variables >= 0);
     DRAKE_DEMAND(num_non_zeros() <= num_variables);
-    derivatives_.resize(non_zeros_.size());
+    non_zero_derivatives_.resize(non_zeros_.size());
   }
 
   void SetValue(MatrixType&& source) {
@@ -244,18 +309,18 @@ class DifferentiableMatrix<MatrixT, AutoDiffXd> {
 
   void SetNonzeroDerivative(int n, MatrixType&& source) {
     DRAKE_DEMAND(0 <= n && n < static_cast<int>(non_zeros_.size()));
-    derivatives_[n] = std::move(source);
+    non_zero_derivatives_[n] = std::move(source);
   }
 
   MatrixType value_;
   int num_variables_{0};
   // These two vectors are the same size.
   std::vector<int> non_zeros_;  // Strictly increasing order.
-  std::vector<MatrixType> derivatives_;
+  std::vector<MatrixType> non_zero_derivatives_;
 };
 
 /** Returns a reference to the value contained in the given
-DifferentiableMatrix. This works for any scalar type. */
+DifferentiableMatrix. This works for any scalar type and is always fast. */
 template <typename MatrixT>
 const typename DifferentiableMatrix<MatrixT>::MatrixType&
 ExtractValue(const DifferentiableMatrix<MatrixT>& matrix) {
@@ -263,10 +328,10 @@ ExtractValue(const DifferentiableMatrix<MatrixT>& matrix) {
 }
 
 /** Returns a gradient matrix in AutoDiff-compatible format that is numerically
-equivalent to the derivatives stored in this DifferentiableMatrix. This is an
-expensive conversion operation; you can access the derivatives directly via
-the `derivative()` method of DifferentiableMatrix.
-@see DifferentiableMatrix::derivative() */
+equivalent to the derivatives stored in the given DifferentiableMatrix. This is
+an expensive conversion operation; you can access the derivatives directly via
+the `non_zero_derivative()` method of DifferentiableMatrix.
+@see DifferentiableMatrix::non_zero_derivative() */
 template <typename MatrixT>
 typename DifferentiableMatrix<MatrixT, AutoDiffXd>::GradientMatrixType
 ExtractGradient(const DifferentiableMatrix<MatrixT, AutoDiffXd>& matrix) {
@@ -285,10 +350,37 @@ std::ostream& operator<<(std::ostream& o,
     if (i != matrix.non_zero(nz_nxt))
       o << " ZERO\n";
     else
-      o << "\n" << matrix.derivative(nz_nxt++) << "\n";
+      o << "\n" << matrix.non_zero_derivative(nz_nxt++) << "\n";
   }
   return o;
 }
+
+// Some helper functions for the implementations below.
+namespace internal {
+
+// Determines how many variables are handled by a given AutoDiffXd Matrix.
+// Derivative vectors in ad_matrix are either zero length or all the same
+// length nv=number of variables. So we only need to find the first
+// derivative vector that has a non-zero length. Zero-length derivatives
+// are rare, so we have a good shot at just looking at one entry here.
+// Note that we are not checking here for a badly-formed AutoDiffXd Matrix
+// in which non-zero derivative vectors aren't all the same length.
+template <int rows, int cols, int options, int max_rows, int max_cols>
+int FindNumAutoDiffXdVariables(
+    const Eigen::Matrix<AutoDiffXd, rows, cols, options, max_rows, max_cols>&
+        ad_matrix) {
+  const int size = ad_matrix.size();
+
+  int num_variables = 0;
+  for (int i = 0; i < size; ++i) {
+    const AutoDiffXd& entry = ad_matrix(i);
+    // This is an assignment, not an equality test!
+    if ((num_variables = entry.derivatives().size()) > 0) break;
+  }
+  return num_variables;
+}
+
+}  // namespace internal
 
 // Definitions of DifferentiableMatrix class methods must be in the header
 // since the class is arbitrarily templatized.
@@ -300,15 +392,7 @@ DifferentiableMatrix<MatrixT, AutoDiffXd>::DifferentiableMatrix(
   const int nc = ad.cols();
   const int sz = nr * nc;
 
-  // Derivative vectors in ad are either zero length or all the same
-  // length nv=number of variables. So we only need to find the first
-  // derivative vector that has a non-zero length. Zero-length derivatives
-  // are rare, so we have a good shot at just looking at one entry here.
-  for (int i = 0; i < sz; ++i) {
-    const AutoDiffXd& entry = ad(i);
-    // This is an assignment, not an equality test!
-    if ((num_variables_ = entry.derivatives().size()) > 0) break;
-  }
+  num_variables_ = internal::FindNumAutoDiffXdVariables(ad);
 
   // Next let's find the non-zeros. We'll put a "1" in any spot corresponding
   // to a non-zero derivative. We can stop early if the number of non-zeros
@@ -338,19 +422,20 @@ DifferentiableMatrix<MatrixT, AutoDiffXd>::DifferentiableMatrix(
 
   // Finally, fill in the data for the value and derivatives.
   value_.resize(nr, nc);  // Will do nothing for fixed-size matrix.
-  derivatives_.resize(num_non_zeros);  // heap allocation
-  for (int n = 0; n < num_non_zeros; ++n) derivatives_[n].resize(nr, nc);
+  non_zero_derivatives_.resize(num_non_zeros);  // heap allocation
+  for (int n = 0; n < num_non_zeros; ++n)
+    non_zero_derivatives_[n].resize(nr, nc);
   for (int i = 0; i < sz; ++i) {
     const AutoDiffXd& entry = ad(i);
     const Eigen::VectorXd& derivs = entry.derivatives();
     value_(i) = entry.value();
     if (derivs.size() == 0) {
-      for (int n = 0; n < num_non_zeros; ++n) derivatives_[n](i) = 0.0;
+      for (int n = 0; n < num_non_zeros; ++n) non_zero_derivatives_[n](i) = 0.0;
       continue;
     }
     DRAKE_ASSERT(static_cast<int>(derivs.size()) == num_variables_);
     for (int n = 0; n < num_non_zeros; ++n)
-      derivatives_[n](i) = derivs(non_zeros_[n]);
+      non_zero_derivatives_[n](i) = derivs(non_zeros_[n]);
   }
 }
 
@@ -358,7 +443,7 @@ template <typename MatrixT>
 DifferentiableMatrix<MatrixT, AutoDiffXd>&
 DifferentiableMatrix<MatrixT, AutoDiffXd>::operator=(
     const AutoDiffMatrixType& ad) {
-  // Invoke move assignment.
+  // Invoke move assignment after expensive conversion.
   return *this = DifferentiableMatrix<MatrixT, AutoDiffXd>(ad);
 }
 
@@ -370,7 +455,7 @@ auto DifferentiableMatrix<MatrixT, AutoDiffXd>::ExtractGradient() const
 
   for (int n = 0; n < num_non_zeros(); ++n) {
     const int v = non_zero(n);
-    const MatrixType& deriv = derivative(n);
+    const MatrixType& deriv = non_zero_derivative(n);
     for (int i = 0; i < sz; ++i) gradient(i, v) = deriv(i);
   }
 
@@ -390,7 +475,7 @@ auto DifferentiableMatrix<MatrixT, AutoDiffXd>::ToAutoDiffXd() const
   }
 
   for (int n = 0; n < static_cast<int>(non_zeros_.size()); ++n) {
-    const MatrixType& deriv = derivatives_[n];
+    const MatrixType& deriv = non_zero_derivatives_[n];
     for (int i = 0; i < sz; ++i) ad(i).derivatives()(non_zeros_[n]) = deriv(i);
   }
 
@@ -398,11 +483,13 @@ auto DifferentiableMatrix<MatrixT, AutoDiffXd>::ToAutoDiffXd() const
 }
 
 template <typename MatrixT>
-auto DifferentiableMatrix<MatrixT, AutoDiffXd>::transpose() const -> TransposeType {
+auto DifferentiableMatrix<MatrixT, AutoDiffXd>::transpose() const
+    -> TransposeType {
   TransposeType matrix_transpose(num_variables(), non_zeros_);
   matrix_transpose.SetValue(value_.transpose());
   for (int n = 0; n < num_non_zeros(); ++n)
-    matrix_transpose.SetNonzeroDerivative(n, derivative(n).transpose());
+    matrix_transpose.SetNonzeroDerivative(n,
+                                          non_zero_derivative(n).transpose());
   return matrix_transpose;
 }
 
@@ -411,7 +498,19 @@ template <typename RhsMatrixType>
 auto DifferentiableMatrix<MatrixT, AutoDiffXd>::operator*(
     const DifferentiableMatrix<RhsMatrixType, AutoDiffXd>& rhs) const
     -> MultiplyResultType<RhsMatrixType> {
-  DRAKE_DEMAND(num_variables() == rhs.num_variables());
+  // The number of variables in both operands must match or be zero.
+  const int result_num_variables = [&]() {
+    if (num_variables() == 0) {
+      DRAKE_ASSERT(num_non_zeros() == 0);
+      return rhs.num_variables();
+    }
+    if (rhs.num_variables() == 0) {
+      DRAKE_ASSERT(rhs.num_non_zeros() == 0);
+      return num_variables();
+    }
+    DRAKE_DEMAND(num_variables() == rhs.num_variables());
+    return num_variables();
+  }();
 
   const bool shapes_are_conforming = DifferentiableMatrixMultiply<
       MatrixType, RhsMatrixType>::ShapesAreConforming(value(), rhs.value());
@@ -426,7 +525,7 @@ auto DifferentiableMatrix<MatrixT, AutoDiffXd>::operator*(
   std::set_union(non_zeros_.begin(), non_zeros_.end(), rhs.non_zeros_.begin(),
                  rhs.non_zeros_.end(), std::back_inserter(merged_non_zeros));
 
-  MultiplyResultType<RhsMatrixType> result(num_variables_,
+  MultiplyResultType<RhsMatrixType> result(result_num_variables,
                                            std::move(merged_non_zeros));
   result.value_ = value() * rhs.value();
 
@@ -439,21 +538,126 @@ auto DifferentiableMatrix<MatrixT, AutoDiffXd>::operator*(
     const int nzi = non_zero(i);
     const int nzj = rhs.non_zero(j);
     if (nzi == nzj) {
-      result.derivatives_[k] =
-          value() * rhs.derivative(j++) + derivative(i++) * rhs.value();
+      result.non_zero_derivatives_[k] = value() * rhs.non_zero_derivative(j++) +
+                                        non_zero_derivative(i++) * rhs.value();
     } else if (nzi < nzj) {
-      result.derivatives_[k] = derivative(i++) * rhs.value();
-    } else {  // nzi > nzj
-      result.derivatives_[k] = value() * rhs.derivatives_[j++];
+      result.non_zero_derivatives_[k] = non_zero_derivative(i++) * rhs.value();
+    } else {  // nzj < nzi
+      result.non_zero_derivatives_[k] =
+          value() * rhs.non_zero_derivatives_[j++];
     }
   }
-  // Only one of these two loops will execute.
+  // At most one of these two loops will execute.
   for (; i < num_non_zeros(); ++i, ++k)
-    result.derivatives_[k] = derivative(i) * rhs.value();
+    result.non_zero_derivatives_[k] = non_zero_derivative(i) * rhs.value();
   for (; j < rhs.num_non_zeros(); ++j, ++k)
-    result.derivatives_[k] = value() * rhs.derivative(j);
+    result.non_zero_derivatives_[k] = value() * rhs.non_zero_derivative(j);
 
   DRAKE_DEMAND(k == result.num_non_zeros());
+  return result;
+}
+
+// This is equivalent to
+//   result = this->ToAutoDiffXd() * rhs
+// but works directly with the DifferentiableMatrix and AutoDiff matrices to
+// avoid the expensive conversions.
+template <typename MatrixT>
+template <int rows, int cols, int options, int max_rows, int max_cols>
+auto DifferentiableMatrix<MatrixT, AutoDiffXd>::operator*(
+    const Eigen::Matrix<AutoDiffXd, rows, cols, options, max_rows, max_cols>&
+        rhs) const
+    -> EigenMultiplyResultType<Eigen::Matrix<
+        AutoDiffXd, rows, cols, Eigen::ColMajor, max_rows, max_cols>> {
+  // The result of m×p ⋅ p×n is m×n. Initially each AutoDiffXd element has an
+  // empty derivatives array.
+  Eigen::Matrix<AutoDiffXd, MatrixT::RowsAtCompileTime, cols, Eigen::ColMajor,
+                MatrixT::MaxRowsAtCompileTime, max_cols>
+      result;
+
+  // Either or both matrices may be dynamically sized so we might need to
+  // dynamically size the result as well. This does nothing if both rows and
+  // columns are fixed sizes.
+  result.resize(value().rows(), rhs.cols());
+
+  // The result will have the same number of variables as both inputs do. We'll
+  // get that number as cheaply as possible here and defer checking for
+  // compatibility until we're already touching the entries. (Zero is compatible
+  // with anything -- we just assume all-zero derivatives as needed.)
+  int assumed_num_variables = num_variables();
+  if (assumed_num_variables == 0) {
+    assumed_num_variables = internal::FindNumAutoDiffXdVariables(rhs);
+  }
+
+  // ∂a⋅b       ∂ b     ∂ a
+  // ---- = a ⋅ ---  +  --- ⋅ b
+  //  ∂xᵥ       ∂xᵥ     ∂xᵥ
+
+  // Strategy here will be to work on each result element once. Element i,j
+  // looks like:
+  //   Rij | ∂Rij/∂x₀ ∂Rij/∂x₁ ⋅⋅⋅ ∂Rij/∂xₙᵥ₋₁
+  // Where
+  //   Rij = a[i] ⋅ b(j)     where [] picks a row and () picks a column
+  //   ∂Rij/∂xᵥ = a[i] ⋅ ∂b(j)/∂xᵥ + ∂a[i]/∂xᵥ ⋅ b(j)
+
+  const auto& a = value();  // The DifferentiableMatrix value as Matrix<double>.
+  const auto& b = rhs;      // The Matrix<AutoDiffXd>.
+
+  // Compute the result in column storage order (row changes fastest).
+  for (int j=0; j < result.cols(); ++j) {
+    for (int i=0; i < result.rows(); ++i) {
+      // The Eigen indexing operators applied to Maps return copies (see Eigen
+      // issue #2076 on GitLab). Use coeffRef() to make sure we get a real
+      // reference. (A Block is a Map)
+      const auto ai = a.row(i);  // Eigen::Block, be careful!
+      const auto bj = b.col(j);
+
+      // This is the element we're going to compute now.
+      AutoDiffXd& rij = result(i, j);
+
+      rij.value() = 0;  // Accumulate element value.
+      for (int k=0; k < a.cols(); ++k) {  // rij = ai ⋅ bj
+        const double& aik = ai.coeffRef(k);
+        const double& bjk = bj.coeffRef(k).value();
+        rij.value() += aik * bjk;
+      }
+
+      if (assumed_num_variables == 0)
+        continue;  // We need only do the value; no derivatives.
+
+      // drij hasn't necessarily been allocated yet.
+      Eigen::VectorXd& drij = rij.derivatives();  // ∂rij/∂x
+      // TODO(sherm1) Defer this allocation.
+      drij = Eigen::VectorXd::Zero(assumed_num_variables);
+
+      // a[i] ⋅ ∂b(j)/∂xᵥ
+      for (int k=0; k < a.cols(); ++k) {
+        const double& aik = ai.coeffRef(k);
+        const AutoDiffXd& bjk = bj.coeffRef(k);
+        const Eigen::VectorXd& dbjk = bjk.derivatives();
+        if (dbjk.size() > 0) {
+          DRAKE_DEMAND(dbjk.size() == assumed_num_variables);
+          for (int v = 0; v < assumed_num_variables; ++v) {
+            drij[v] += aik * dbjk[v];
+          }
+        }
+      }
+
+      // ∂a[i]/∂xᵥ ⋅ b(j)
+      for (int n=0; n < num_non_zeros(); ++n) {
+        const int v = non_zero(n);
+        const auto& dadv = non_zero_derivative(n);
+        DRAKE_ASSERT(dadv.rows() == a.rows() && dadv.cols() == a.cols());
+        const auto dadv_ri = dadv.row(i);  // Eigen::Block
+        double& drijv = drij[v];
+        for (int k=0; k < a.cols(); ++k) {
+          const double& dadv_rik = dadv_ri.coeffRef(k);
+          const double& bjk = bj.coeffRef(k).value();
+          drijv += dadv_rik * bjk;
+        }
+      }
+    }
+  }
+
   return result;
 }
 
