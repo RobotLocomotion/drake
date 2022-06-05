@@ -871,9 +871,9 @@ PYBIND11_MODULE(symbolic, m) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   polynomial_cls.def("EqualToAfterExpansion",
-      WrapDeprecated(doc.Polynomial.EqualToAfterExpansion.doc_deprecated,
+      WrapDeprecated(doc.Polynomial.EqualToAfterExpansion.doc,
           &Polynomial::EqualToAfterExpansion),
-      doc.Polynomial.EqualToAfterExpansion.doc_deprecated);
+      doc.Polynomial.EqualToAfterExpansion.doc);
 #pragma GCC diagnostic pop
 
   m.def(
