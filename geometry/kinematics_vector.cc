@@ -1,4 +1,4 @@
-#include "drake/geometry/frame_kinematics_vector.h"
+#include "drake/geometry/kinematics_vector.h"
 
 #include <stdexcept>
 
@@ -7,7 +7,6 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/symbolic.h"
-#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
