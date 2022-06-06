@@ -22,8 +22,10 @@ void PauseForInput() {
 }
 
 int main() {
-  const bool defer_initialization = true;
-  DrakeLcm dut(FLAGS_lcm_url, defer_initialization);
+  DrakeLcmParams params;
+  params.lcm_url = FLAGS_lcm_url;
+  params.defer_initialization = true;
+  DrakeLcm dut(params);
   Subscriber<lcmt_drake_signal> subscriber(&dut, "CHANNEL_NAME");
 
   log()->info("recv_parts_test_stub: construction is complete");
