@@ -202,7 +202,7 @@ GTEST_TEST(ArticulatedBodyInertia, Symbolic) {
   DRAKE_EXPECT_NO_THROW(ArticulatedBodyInertia<symbolic::Expression> Ds(
       -Matrix6<symbolic::Expression>::Identity()));
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      ArticulatedBodyInertia<double> Ds(-Matrix6<double>::Identity()),
+      ArticulatedBodyInertia<double>(-Matrix6<double>::Identity()),
       "The resulting articulated body inertia is not physically "
       "valid.[\\s\\S]*");
 }

@@ -52,14 +52,14 @@ TYPED_TEST_SUITE(ScalarViewDenseOutputTest, ExtensionTypes);
 TYPED_TEST(ScalarViewDenseOutputTest, ExtensionConsistency) {
   // Verifies that passing a null base dense output results in an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ScalarViewDenseOutput<TypeParam> dense_output(
+      ScalarViewDenseOutput<TypeParam>(
           std::unique_ptr<HermitianDenseOutput<TypeParam>>(),
           this->kValidElementIndex),
       ".*dense output.*is null.*");
 
   // Verifies that views to invalid elements result in an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ScalarViewDenseOutput<TypeParam> dense_output(
+      ScalarViewDenseOutput<TypeParam>(
           this->CreateDummyDenseOutput(), this->kInvalidElementIndex),
       ".*out of.*dense output.*range.*");
 
