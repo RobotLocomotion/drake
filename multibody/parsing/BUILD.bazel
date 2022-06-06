@@ -86,7 +86,7 @@ drake_cc_library(
         "//geometry:proximity_properties",
         "//math:geometric_transform",
         "//multibody/plant",
-        "@sdformat",
+        "@sdformat_internal//:sdformat",
         "@tinyxml2",
     ],
 )
@@ -99,7 +99,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         "//common:diagnostic_policy",
-        "@sdformat",
+        "@sdformat_internal//:sdformat",
     ],
 )
 
@@ -118,7 +118,7 @@ drake_cc_library(
         "//geometry:geometry_roles",
         "//geometry:shape_specification",
         "//multibody/plant:coulomb_friction",
-        "@sdformat",
+        "@sdformat_internal//:sdformat",
     ],
 )
 
@@ -136,7 +136,7 @@ drake_cc_library(
         ":detail_urdf_parser",
         ":scoped_names",
         "//multibody/plant",
-        "@sdformat",
+        "@sdformat_internal//:sdformat",
     ],
 )
 

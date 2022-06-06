@@ -4,6 +4,10 @@ load(
     "@drake//tools/install:install.bzl",
     "install",
 )
+load(
+    "@drake//tools/workspace:vendor_cxx.bzl",
+    "cc_library_vendored",
+)
 
 licenses(["notice"])  # Qhull
 
@@ -53,15 +57,35 @@ _SRCS_CPP = [
 ]
 
 cc_library(
-    name = "qhull",
-    hdrs = _HDRS_C + _HDRS_CPP,
+    name = "qhull_r",
+    hdrs = _HDRS_C,
     copts = [
         "-fvisibility=hidden",
     ],
     includes = ["src"],
-    srcs = _SRCS_C + _SRCS_CPP,
+    srcs = _SRCS_C,
+    linkstatic = 1,
+)
+
+cc_library_vendored(
+    name = "qhull",
+    hdrs = _HDRS_CPP,
+    hdrs_vendored = [
+        x.replace("src/libqhullcpp/", "drake_src/drake_vendor/libqhullcpp/")
+        for x in _HDRS_CPP
+    ],
+    includes = ["drake_src"],
+    edit_include = {
+        "libqhullcpp/": "drake_vendor/libqhullcpp/",
+    },
+    srcs = _SRCS_CPP,
+    srcs_vendored = [
+        x.replace("src/", "drake_src/drake_vendor/")
+        for x in _SRCS_CPP
+    ],
     linkstatic = 1,
     visibility = ["//visibility:public"],
+    deps = [":qhull_r"],
 )
 
 # Install the license file.

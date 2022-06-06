@@ -1,0 +1,32 @@
+build --fission=dbg
+build --features=per_object_debug_info
+
+build:_drd --extra_toolchains=//tools/py_toolchain:linux_dbg_toolchain
+build:_helgrind --extra_toolchains=//tools/py_toolchain:linux_dbg_toolchain
+
+# TODO(jamiesnape): Builds with configuration "memcheck" should also use
+# //tools/py_toolchain:linux_dbg_toolchain.
+
+# Configure ${PATH} for actions.
+# N.B. Ensure this is consistent with `execute.bzl`.
+build --action_env=PATH=/usr/bin:/bin
+
+# Disable python imports from ~/.local (pip -U) during build and test.
+# https://github.com/bazelbuild/bazel/issues/4939
+# https://github.com/RobotLocomotion/drake/issues/8475
+build --action_env=PYTHONNOUSERSITE=1
+build --test_env=PYTHONNOUSERSITE=1
+
+# Enable OpenMP (when requested via --config=omp or --config=everything).
+build:omp --copt=-DEIGEN_DONT_PARALLELIZE
+build:omp --copt=-fopenmp
+build:omp --linkopt=-fopenmp
+build:everything --config=omp
+
+# -- Options for explicitly using Clang.
+common:clang --repo_env=CC=clang-12
+common:clang --repo_env=CXX=clang++-12
+build:clang --action_env=CC=clang-12
+build:clang --action_env=CXX=clang++-12
+build:clang --host_action_env=CC=clang-12
+build:clang --host_action_env=CXX=clang++-12

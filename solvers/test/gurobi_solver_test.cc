@@ -231,7 +231,7 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   GurobiSolver gurobi_solver;
   if (gurobi_solver.available()) {
-    SolveAndCheckSolution(gurobi_solver, 1.1E-8);
+    SolveAndCheckSolution(gurobi_solver, {}, 1.1E-8);
   }
 }
 
@@ -251,7 +251,7 @@ INSTANTIATE_TEST_SUITE_P(GurobiTest, TestQPasSOCP,
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   GurobiSolver gurobi_solver;
   if (gurobi_solver.available()) {
-    SolveAndCheckSolution(gurobi_solver, 2E-2);
+    SolveAndCheckSolution(gurobi_solver, {}, 2E-2);
   }
 }
 
@@ -282,7 +282,7 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
 
 GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   GurobiSolver solver;
-  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, 1E-6);
+  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, 1E-6);
 }
 
 GTEST_TEST(GurobiTest, MultipleThreadsSharingEnvironment) {

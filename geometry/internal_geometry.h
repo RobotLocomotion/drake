@@ -263,12 +263,6 @@ class InternalGeometry {
     return nullptr;
   }
 
-  /* Returns a pointer to the geometry's reference mesh if the geometry is
-   deformable, or nullptr otherwise.  */
-  const VolumeMesh<double>* reference_mesh() const {
-    return reference_mesh_.get();
-  }
-
   /* Removes the proximity role assigned to this geometry -- if there was
    no proximity role previously, this has no effect.  */
   void RemoveProximityRole() {
@@ -288,6 +282,12 @@ class InternalGeometry {
   }
 
   //@}
+
+  /* Returns a pointer to the geometry's reference mesh if the geometry is
+   deformable, or nullptr otherwise.  */
+  const VolumeMesh<double>* reference_mesh() const {
+    return reference_mesh_.get();
+  }
 
  private:
   // The specification for this instance's shape.

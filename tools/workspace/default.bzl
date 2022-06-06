@@ -1,5 +1,6 @@
 # -*- python -*-
 
+load("@drake//tools/workspace:deprecation.bzl", "add_deprecation")
 load("@drake//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
 load("@drake//tools/workspace:os.bzl", "os_repository")
 load("@drake//tools/workspace/abseil_cpp_internal:repository.bzl", "abseil_cpp_internal_repository")  # noqa
@@ -36,9 +37,9 @@ load("@drake//tools/workspace/glx:repository.bzl", "glx_repository")
 load("@drake//tools/workspace/googlebenchmark:repository.bzl", "googlebenchmark_repository")  # noqa
 load("@drake//tools/workspace/gtest:repository.bzl", "gtest_repository")
 load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
+load("@drake//tools/workspace/gz_math_internal:repository.bzl", "gz_math_internal_repository")  # noqa
+load("@drake//tools/workspace/gz_utils_internal:repository.bzl", "gz_utils_internal_repository")  # noqa
 load("@drake//tools/workspace/ibex:repository.bzl", "ibex_repository")
-load("@drake//tools/workspace/ignition_math:repository.bzl", "ignition_math_repository")  # noqa
-load("@drake//tools/workspace/ignition_utils:repository.bzl", "ignition_utils_repository")  # noqa
 load("@drake//tools/workspace/intel_realsense_ros:repository.bzl", "intel_realsense_ros_repository")  # noqa
 load("@drake//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
 load("@drake//tools/workspace/json:repository.bzl", "json_repository")
@@ -74,12 +75,12 @@ load("@drake//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_reposito
 load("@drake//tools/workspace/pygame_py:repository.bzl", "pygame_py_repository")  # noqa
 load("@drake//tools/workspace/python:repository.bzl", "python_repository")
 load("@drake//tools/workspace/qdldl:repository.bzl", "qdldl_repository")
-load("@drake//tools/workspace/qhull:repository.bzl", "qhull_repository")
+load("@drake//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_repository")  # noqa
 load("@drake//tools/workspace/ros_xacro:repository.bzl", "ros_xacro_repository")  # noqa
 load("@drake//tools/workspace/rules_pkg:repository.bzl", "rules_pkg_repository")  # noqa
 load("@drake//tools/workspace/rules_python:repository.bzl", "rules_python_repository")  # noqa
 load("@drake//tools/workspace/scs:repository.bzl", "scs_repository")
-load("@drake//tools/workspace/sdformat:repository.bzl", "sdformat_repository")
+load("@drake//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_repository")  # noqa
 load("@drake//tools/workspace/snopt:repository.bzl", "snopt_repository")
 load("@drake//tools/workspace/spdlog:repository.bzl", "spdlog_repository")
 load("@drake//tools/workspace/stduuid:repository.bzl", "stduuid_repository")
@@ -178,12 +179,24 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         gtest_repository(name = "gtest", mirrors = mirrors)
     if "gurobi" not in excludes:
         gurobi_repository(name = "gurobi")
+    if "gz_math_internal" not in excludes:
+        gz_math_internal_repository(name = "gz_math_internal", mirrors = mirrors)  # noqa
+    if "gz_utils_internal" not in excludes:
+        gz_utils_internal_repository(name = "gz_utils_internal", mirrors = mirrors)  # noqa
     if "ibex" not in excludes:
         ibex_repository(name = "ibex", mirrors = mirrors)
     if "ignition_math" not in excludes:
-        ignition_math_repository(name = "ignition_math", mirrors = mirrors)
+        add_deprecation(
+            name = "ignition_math",
+            date = "2022-10-01",
+            cc_aliases = {"ignition_math": "@gz_math_internal//:gz_math"},
+        )
     if "ignition_utils" not in excludes:
-        ignition_utils_repository(name = "ignition_utils", mirrors = mirrors)
+        add_deprecation(
+            name = "ignition_utils",
+            date = "2022-10-01",
+            cc_aliases = {"ignition_utils": "@gz_utils_internal//:gz_utils"},
+        )
     if "intel_realsense_ros" not in excludes:
         intel_realsense_ros_repository(name = "intel_realsense_ros", mirrors = mirrors)  # noqa
     if "ipopt" not in excludes:
@@ -255,7 +268,13 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "qdldl" not in excludes:
         qdldl_repository(name = "qdldl", mirrors = mirrors)
     if "qhull" not in excludes:
-        qhull_repository(name = "qhull", mirrors = mirrors)
+        add_deprecation(
+            name = "qhull",
+            date = "2022-10-01",
+            cc_aliases = {"qhull": "@qhull_internal//:qhull"},
+        )
+    if "qhull_internal" not in excludes:
+        qhull_internal_repository(name = "qhull_internal", mirrors = mirrors)
     if "ros_xacro" not in excludes:
         ros_xacro_repository(name = "ros_xacro", mirrors = mirrors)
     if "rules_pkg" not in excludes:
@@ -265,7 +284,13 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "scs" not in excludes:
         scs_repository(name = "scs", mirrors = mirrors)
     if "sdformat" not in excludes:
-        sdformat_repository(name = "sdformat", mirrors = mirrors)
+        add_deprecation(
+            name = "sdformat",
+            date = "2022-10-01",
+            cc_aliases = {"sdformat": "@sdformat_internal//:sdformat"},
+        )
+    if "sdformat_internal" not in excludes:
+        sdformat_internal_repository(name = "sdformat_internal", mirrors = mirrors)  # noqa
     if "snopt" not in excludes:
         snopt_repository(name = "snopt")
     if "spdlog" not in excludes:

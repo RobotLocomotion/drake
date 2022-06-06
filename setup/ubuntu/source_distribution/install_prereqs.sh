@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Install development prerequisites for source distributions of Drake on
-# Ubuntu 20.04 (Focal).
+# Ubuntu 20.04 (Focal) or 22.04 (Jammy).
 #
 # The development and runtime prerequisites for binary distributions should be
 # installed before running this script.
@@ -103,14 +103,11 @@ apt-get satisfy  ${maybe_yes} --no-install-recommends \
 apt-get install ${maybe_yes} --no-install-recommends locales
 locale-gen en_US.UTF-8
 
-if [[ "${codename}" == 'focal' ]]; then
-  # We need a working /usr/bin/python (of any version).
-  # On Focal we have to ask for it.
-  if [[ ! -e /usr/bin/python ]]; then
-    apt-get install ${maybe_yes} --no-install-recommends python-is-python3
-  else
-    echo "/usr/bin/python is already installed"
-  fi
+# We need a working /usr/bin/python (of any version).
+if [[ ! -e /usr/bin/python ]]; then
+  apt-get install ${maybe_yes} --no-install-recommends python-is-python3
+else
+  echo "/usr/bin/python is already installed"
 fi
 
 if [[ "${with_doc_only}" -eq 1 ]]; then

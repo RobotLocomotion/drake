@@ -58,6 +58,7 @@ cc_library(
     hdrs = glob({}),
     includes = ["."],
     visibility = ["//visibility:public"],
+    deprecation = "DRAKE DEPRECATED: The @boost external is deprecated and will be removed from Drake on or after 2022-10-01.",  # noqa
 )
     """.format(HDRS_PATTERNS)
 
