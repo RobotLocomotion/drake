@@ -310,8 +310,8 @@ class TestGeometrySceneGraph(unittest.TestCase):
 
         # Register with context
         geometry = mut.GeometryInstance(X_PG=RigidTransform_[float](),
-                                          shape=mut.Sphere(1.),
-                                          name="sphere1")
+                                        shape=mut.Sphere(1.),
+                                        name="sphere1")
         global_geometry = scene_graph.RegisterGeometry(
             context=context, source_id=global_source, frame_id=global_frame,
             geometry=geometry)
@@ -320,8 +320,8 @@ class TestGeometrySceneGraph(unittest.TestCase):
 
         # Now register the geometry in scene_graph with a new geometry
         new_geometry = mut.GeometryInstance(X_PG=RigidTransform_[float](),
-                                          shape=mut.Sphere(1.),
-                                          name="sphere1")
+                                            shape=mut.Sphere(1.),
+                                            name="sphere1")
         scene_graph.RegisterGeometry(
             source_id=global_source, frame_id=global_frame,
             geometry=new_geometry)
