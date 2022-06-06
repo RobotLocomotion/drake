@@ -1,4 +1,4 @@
-#include "drake/geometry/frame_kinematics_vector.h"
+#include "drake/geometry/kinematics_vector.h"
 
 #include <algorithm>
 #include <vector>

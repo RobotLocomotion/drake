@@ -124,8 +124,9 @@ class GeometryStateTester {
   }
 
   template <typename ValueType>
-  void ValidateFrameIds(SourceId source_id,
-                        const FrameKinematicsVector<ValueType>& data) const {
+  void ValidateFrameIds(
+      SourceId source_id,
+      const KinematicsVector<FrameId, ValueType>& data) const {
     state_->ValidateFrameIds(source_id, data);
   }
 
