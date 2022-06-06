@@ -493,6 +493,26 @@ const VolumeMesh<double>* GeometryState<T>::GetReferenceMesh(
 }
 
 template <typename T>
+bool GeometryState<T>::IsDeformableGeometry(GeometryId id) const {
+  const InternalGeometry& geometry = GetValueOrThrow(id, geometries_);
+  return geometry.is_deformable();
+}
+
+template <typename T>
+std::vector<GeometryId> GeometryState<T>::GetAllDeformableGeometryIds() const {
+  const auto& world_geometries =
+      frames_.at(InternalFrame::world_frame_id()).child_geometries();
+  std::vector<GeometryId> deformable_geometries;
+  for (const GeometryId& g_id : world_geometries) {
+    const InternalGeometry& geometry = GetValueOrThrow(g_id, geometries_);
+    if (geometry.is_deformable()) {
+      deformable_geometries.emplace_back(g_id);
+    }
+  }
+  return deformable_geometries;
+}
+
+template <typename T>
 bool GeometryState<T>::CollisionFiltered(GeometryId id1, GeometryId id2) const {
   std::string base_message =
       "Can't report collision filter status between geometries " +

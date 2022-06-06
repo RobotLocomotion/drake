@@ -1623,6 +1623,14 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
   const auto g_id = geometry_state_.RegisterDeformableGeometry(
       s_id, InternalFrame::world_frame_id(), move(instance2), kRezHint);
   EXPECT_EQ(g_id, expected_g_id);
+  EXPECT_TRUE(geometry_state_.IsDeformableGeometry(g_id));
+
+  /* Registers a non-deformable geometry. */
+  auto instance3 = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere");
+  const GeometryId non_deformable_g_id =
+      geometry_state_.RegisterGeometry(s_id, f_id, move(instance3));
+  EXPECT_FALSE(geometry_state_.IsDeformableGeometry(non_deformable_g_id));
 
   // Verify the reference mesh of the deformable geometry matches the input.
   const VolumeMesh<double>* reference_mesh =
@@ -1642,8 +1650,16 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
       geometry_state_.get_configurations_in_world(g_id);
   EXPECT_EQ(q_WG.size(), mesh.num_vertices() * 3);
 
-  // Verify that deformable geometries are dynamic.
-  EXPECT_EQ(geometry_state_.NumDynamicGeometries(), 1);
+  // Verify that deformable geometries are dynamic (One deformable and one
+  // dynamic non-deformable).
+  EXPECT_EQ(geometry_state_.NumDynamicGeometries(), 2);
+
+  // Verifies that GetAllDeformableGeometryIds() collect all deformable
+  // geometry ids and _none_ of the non-deformable geometry ids.
+  const std::vector<GeometryId> deformable_ids =
+      geometry_state_.GetAllDeformableGeometryIds();
+  ASSERT_EQ(deformable_ids.size(), 1);
+  EXPECT_EQ(deformable_ids[0], g_id);
 }
 
 // Tests the RemoveGeometry() functionality. This action will have several

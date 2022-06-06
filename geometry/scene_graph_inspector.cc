@@ -262,6 +262,17 @@ const VolumeMesh<double>* SceneGraphInspector<T>::GetReferenceMesh(
 }
 
 template <typename T>
+bool SceneGraphInspector<T>::IsDeformableGeometry(GeometryId id) const {
+  return state_->IsDeformableGeometry(id);
+}
+
+template <typename T>
+std::vector<GeometryId> SceneGraphInspector<T>::GetAllDeformableGeometryIds()
+    const {
+  return state_->GetAllDeformableGeometryIds();
+}
+
+template <typename T>
 bool SceneGraphInspector<T>::CollisionFiltered(GeometryId geometry_id1,
                                                GeometryId geometry_id2) const {
   DRAKE_DEMAND(state_ != nullptr);

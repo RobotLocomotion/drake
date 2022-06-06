@@ -250,6 +250,12 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetReferenceMesh().  */
   const VolumeMesh<double>* GetReferenceMesh(GeometryId id) const;
 
+  /** Implementation of SceneGraphInspector::IsDeformableGeometry(). */
+  bool IsDeformableGeometry(GeometryId id) const;
+
+  /** Implementation of SceneGraphInspector::GetAllDeformableGeometryIds(). */
+  std::vector<GeometryId> GetAllDeformableGeometryIds() const;
+
   /** Implementation of SceneGraphInspector::CollisionFiltered().  */
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const;
 
