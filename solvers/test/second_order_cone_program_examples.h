@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <vector>
 
@@ -48,8 +49,10 @@ class TestEllipsoidsSeparation
  public:
   TestEllipsoidsSeparation();
 
-  void SolveAndCheckSolution(const SolverInterface& solver,
-                             double tol = 1E-8);
+  void SolveAndCheckSolution(
+      const SolverInterface& solver,
+      const std::optional<SolverOptions>& solver_options = std::nullopt,
+      double tol = 1E-8);
 
  private:
   Eigen::VectorXd x1_;
@@ -138,8 +141,10 @@ class TestFindSpringEquilibrium
  public:
   TestFindSpringEquilibrium();
 
-  void SolveAndCheckSolution(const SolverInterface& solver,
-                             double tol = 2E-3);
+  void SolveAndCheckSolution(
+      const SolverInterface& solver,
+      const std::optional<SolverOptions>& solver_options = std::nullopt,
+      double tol = 2E-3);
 
  private:
   Eigen::VectorXd weight_;
@@ -258,7 +263,8 @@ class SmallestEllipsoidCoveringProblem1
 };
 
 void SolveAndCheckSmallestEllipsoidCoveringProblems(
-    const SolverInterface& solver, double tol);
+    const SolverInterface& solver,
+    const std::optional<SolverOptions>& solver_options, double tol);
 
 /**
  * Computes the minimal distance to a point from a sphere.

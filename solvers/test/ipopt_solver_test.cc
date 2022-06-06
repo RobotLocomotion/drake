@@ -283,7 +283,7 @@ GTEST_TEST(IpoptSolverTest, PrintToFile) {
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   IpoptSolver ipopt_solver;
   if (ipopt_solver.available()) {
-    SolveAndCheckSolution(ipopt_solver, 1.E-8);
+    SolveAndCheckSolution(ipopt_solver, {}, 1.E-8);
   }
 }
 
@@ -306,7 +306,7 @@ INSTANTIATE_TEST_SUITE_P(IpoptSolverTest, TestQPasSOCP,
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   IpoptSolver ipopt_solver;
   if (ipopt_solver.available()) {
-    SolveAndCheckSolution(ipopt_solver, 2E-3);
+    SolveAndCheckSolution(ipopt_solver, {}, 2E-3);
   }
 }
 
@@ -334,7 +334,7 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
 
 GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   IpoptSolver solver;
-  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, 1E-6);
+  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, {}, 1E-6);
 }
 
 GTEST_TEST(TestLP, PoorScaling) {
