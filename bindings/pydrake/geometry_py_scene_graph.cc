@@ -206,6 +206,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::RegisterAnchoredGeometry),
             py::arg("source_id"), py::arg("geometry"),
             cls_doc.RegisterAnchoredGeometry.doc)
+        .def("RemoveGeometry",
+            py::overload_cast<SourceId, GeometryId>(&Class::RemoveGeometry),
+            py::arg("source_id"), py::arg("geometry_id"),
+            cls_doc.RemoveGeometry.doc_2args)
+        .def("RemoveGeometry",
+            overload_cast_explicit<void, systems::Context<T>*, SourceId,
+                GeometryId>(&Class::RemoveGeometry),
+            py::arg("context"), py::arg("source_id"), py::arg("geometry_id"),
+            cls_doc.RemoveGeometry.doc_3args)
         .def("collision_filter_manager",
             overload_cast_explicit<CollisionFilterManager, Context<T>*>(
                 &Class::collision_filter_manager),
