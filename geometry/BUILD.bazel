@@ -24,6 +24,7 @@ drake_cc_package_library(
         ":collision_filter_manager",
         ":drake_visualizer",
         ":drake_visualizer_params",
+        ":frame_kinematics_vector",
         ":geometry_frame",
         ":geometry_ids",
         ":geometry_instance",
@@ -134,6 +135,17 @@ drake_cc_library(
     deps = [
         ":geometry_roles",
         ":rgba",
+    ],
+)
+
+# Remove on 2022-10-01.
+drake_cc_library(
+    name = "frame_kinematics_vector",
+    hdrs = [
+        "frame_kinematics_vector.h",
+    ],
+    deps = [
+        ":kinematics_vector",
     ],
 )
 
