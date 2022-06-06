@@ -33,6 +33,18 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {  // NOLINT
   // to run an A/B comparison for different gradient evaluations for
   // position constraints when solving a nonlinear program.
 
+  // Define constants.
+  // A uniform relaxation for end-effector position.
+  const Eigen::Vector3d kPosTol = 1e-4 * Eigen::Vector3d::Ones();
+  // The number of random goals.
+  const int kNumRandGoals = 10;
+  // The number of random initial guesses for each goal.
+  const int kNumRandInitGuess = 3;
+  // The percentage of joint range to be used for goal pose generation.
+  const double kLimitedJointRange = 0.9;
+  // The tolerance for constraint satisfaction check.
+  const double kConstraintTol = 1e-5;
+
   // Find the model file for Kuka iiwa.
   const std::string iiwa_path = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/iiwa7/"
@@ -62,45 +74,42 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {  // NOLINT
   multibody::InverseKinematics relaxed_ik(plant, true);
   solvers::MathematicalProgram* prog = relaxed_ik.get_mutable_prog();
 
-  // Define a uniform position relaxation.
-  const Eigen::Vector3d pos_tol = 1e-4 * Eigen::Vector3d::Ones();
-
   // Get the joint position limits for random generation by leveraging the
   // fact that iiwa has symmetric position limits.
   const Eigen::VectorXd joint_pos_limits(plant.GetPositionUpperLimits());
   // Generate random goal configurations.
-  const int num_rand_goals = 10;
-  std::vector<math::RigidTransformd> ee_pose_goal(num_rand_goals);
-  for (int i = 0; i < num_rand_goals; ++i) {
-    // Set a random joint pose within 90% of the limits. The range is limited
-    // b/c the solvers tend to fail when the goal is close to a boundary.
+  std::vector<math::RigidTransformd> ee_pose_goal(kNumRandGoals);
+  for (int i = 0; i < kNumRandGoals; ++i) {
+    // Sample a random joint pose within a limited range since the solvers tend
+    // to fail when the goal is close to a boundary.
     context->get_mutable_continuous_state()
         .get_mutable_generalized_position()
         .SetFromVector(
-            Eigen::VectorXd::Random(7).cwiseProduct(0.9 * joint_pos_limits));
+            Eigen::VectorXd::Random(plant.num_positions())
+                .cwiseProduct(kLimitedJointRange * joint_pos_limits));
     // Evaluate the corresponding end-effector pose.
     ee_pose_goal[i] = plant.EvalBodyPoseInWorld(*context, ee_body);
   }
 
   // Sample random initial guesses assuming that the range [-1, 1] rad
   // does not violate any of the joint position limits.
-  const int num_rand_init_guess = 3;
-  const Eigen::MatrixXd q0(Eigen::MatrixXd::Random(7, num_rand_init_guess));
+  const Eigen::MatrixXd q0(
+      Eigen::MatrixXd::Random(plant.num_positions(), kNumRandInitGuess));
 
   // Create the task in terms of position constraints on the end effector.
   auto pos_constraint = std::make_shared<PositionConstraint>(
-      &plant, plant.world_frame(), -pos_tol, pos_tol, ee_frame,
+      &plant, plant.world_frame(), -kPosTol, kPosTol, ee_frame,
       Eigen::Vector3d::Zero(), context.get());
   prog->AddConstraint(pos_constraint, relaxed_ik.q());
 
   for (auto _ : state) {
     // Solve the problem for each goal and initial guess.
-    for (int i = 0; i < num_rand_goals; ++i) {
+    for (int i = 0; i < kNumRandGoals; ++i) {
       // Update the task constraint.
-      pos_constraint->set_bounds(ee_pose_goal[i].translation() - pos_tol,
-                                 ee_pose_goal[i].translation() + pos_tol);
+      pos_constraint->set_bounds(ee_pose_goal[i].translation() - kPosTol,
+                                 ee_pose_goal[i].translation() + kPosTol);
 
-      for (int j = 0; j < num_rand_init_guess; ++j) {
+      for (int j = 0; j < kNumRandInitGuess; ++j) {
         // Set the initial guess.
         prog->SetInitialGuess(relaxed_ik.q(), q0.col(j));
 
@@ -115,8 +124,8 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {  // NOLINT
 
         // Check whether the task constraint is met by providing extra margin to
         // account for solver tolerances.
-        DRAKE_DEMAND(
-            pos_constraint->CheckSatisfied(result.GetSolution(), 1e-5));
+        DRAKE_DEMAND(pos_constraint->CheckSatisfied(result.GetSolution(),
+                                                    kConstraintTol));
       }
     }
   }
