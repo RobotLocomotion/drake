@@ -497,7 +497,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   /** systems::Context-modifying variant of RegisterGeometry(). Rather than
    modifying %SceneGraph's model, it modifies the copy of the model stored in
-   the provided context.  */
+   the provided context.
+   @pydrake_mkdoc_identifier{4args_context_source_id_geometry_id_geometry}
+     */
   GeometryId RegisterGeometry(systems::Context<T>* context, SourceId source_id,
                               GeometryId geometry_id,
                               std::unique_ptr<GeometryInstance> geometry) const;
