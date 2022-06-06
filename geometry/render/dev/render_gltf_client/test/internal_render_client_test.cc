@@ -541,7 +541,7 @@ GTEST_TEST(RenderClient, RenderOnServer) {
         });
     DRAKE_EXPECT_THROWS_MESSAGE(
         client.RenderOnServer(color_camera.core(),
-                              RenderImageType::kColorRgba8U, fake_scene_path);
+                              RenderImageType::kColorRgba8U, fake_scene_path)
         ,
         fmt::format(
             "ERROR with POST /{} response from server, base_url={}:{}, HTTP "

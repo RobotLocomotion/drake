@@ -60,7 +60,7 @@ whenever `DRAKE_ENABLE_ASSERTS` is defined, which Debug builds do by default.
     expression, regexp, must_throw, fatal_failure) \
 do { \
 try { \
-  expression; \
+  static_cast<void>(expression); \
   if (must_throw) { \
     std::string message = "\tExpected: " #expression " throws an exception.\n" \
                           " Actual: it throws nothing"; \
