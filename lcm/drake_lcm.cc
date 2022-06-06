@@ -61,6 +61,7 @@ class DrakeLcm::Impl {
   std::string lcm_url_;
   bool deferred_initialization_{};
   ::lcm::LCM lcm_;
+  std::string channel_name_suffix_;
   std::vector<std::weak_ptr<DrakeSubscription>> subscriptions_;
   std::string handle_subscriptions_error_message_;
 };
@@ -88,10 +89,19 @@ std::string DrakeLcm::get_lcm_url() const {
   return &impl_->lcm_;
 }
 
+void DrakeLcm::set_channel_name_suffix(const std::string& suffix) {
+  impl_->channel_name_suffix_ = suffix;
+}
+
 void DrakeLcm::Publish(const std::string& channel, const void* data,
                        int data_size, std::optional<double>) {
   DRAKE_THROW_UNLESS(!channel.empty());
-  impl_->lcm_.publish(channel, data, data_size);
+  if (impl_->channel_name_suffix_.empty()) {
+    impl_->lcm_.publish(channel, data, data_size);
+  } else {
+    const std::string actual_channel = channel + impl_->channel_name_suffix_;
+    impl_->lcm_.publish(actual_channel, data, data_size);
+  }
 }
 
 namespace {
@@ -254,8 +264,9 @@ std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::Subscribe(
   impl_->CleanUpOldSubscriptions();
 
   // Add the new subscriber.
+  const std::string actual_channel = channel + impl_->channel_name_suffix_;
   auto result = DrakeSubscription::CreateSingleChannel(
-      &(impl_->lcm_), channel, std::move(handler));
+      &(impl_->lcm_), actual_channel, std::move(handler));
   if (!impl_->deferred_initialization_) {
     result->AttachIfNeeded();
   }

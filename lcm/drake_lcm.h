@@ -56,6 +56,12 @@ class DrakeLcm : public DrakeLcmInterface {
    */
   ::lcm::LCM* get_lcm_instance();
 
+  /**
+   * Adds a custom LCM channel name suffix for this DrakeLcm instance.
+   * All future calls to Publish or Subscribe will append the given `suffix`
+   * to the `channel` name requested for publish or subscribe.
+   */
+  void set_channel_name_suffix(const std::string& suffix);
 
   void Publish(const std::string&, const void*, int,
                std::optional<double>) override;
