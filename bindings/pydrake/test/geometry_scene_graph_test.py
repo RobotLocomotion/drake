@@ -296,6 +296,38 @@ class TestGeometrySceneGraph(unittest.TestCase):
                 1)
 
     @numpy_compare.check_all_types
+    def test_scene_graph_remove_geometry(self, T):
+        SceneGraph = mut.SceneGraph_[T]
+        InputPort = InputPort_[T]
+        OutputPort = OutputPort_[T]
+
+        scene_graph = SceneGraph()
+        global_source = scene_graph.RegisterSource("anchored")
+        global_frame = scene_graph.RegisterFrame(
+            source_id=global_source,
+            frame=mut.GeometryFrame("anchored_frame1"))
+        scene_graph.RegisterFrame(
+            source_id=global_source, parent_id=global_frame,
+            frame=mut.GeometryFrame("anchored_frame2"))
+        global_geometry = scene_graph.RegisterGeometry(
+            source_id=global_source, frame_id=global_frame,
+            geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
+                                          shape=mut.Sphere(1.),
+                                          name="sphere1"))
+        context = scene_graph.CreateDefaultContext()
+        inspector = scene_graph.model_inspector()
+        # Call the version that only removes the geometry in the context.
+        scene_graph.RemoveGeometry(
+            context=context,
+            source_id=global_source,
+            geometry_id=global_geometry)
+        self.assertEqual(inspector.num_geometries(), 1)
+        # Now remove the geometry in scene_graph
+        scene_graph.RemoveGeometry(
+            source_id=global_source, geometry_id=global_geometry)
+        self.assertEqual(inspector.num_geometries(), 0)
+
+    @numpy_compare.check_all_types
     def test_frame_pose_vector_api(self, T):
         FramePoseVector = mut.FramePoseVector_[T]
         RigidTransform = RigidTransform_[T]
