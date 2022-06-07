@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-# This script builds a wheel on macOS. It requires an already-provisioned host.
+# This script builds a wheel on macOS. It can be run directly, but using the
+# //tools/wheel:builder Bazel action adds functionality. Running this script
+# directly also requires an already-provisioned host.
 #
 # Beware that this requires write permission to /opt and will nuke various
 # things therein. (Shouldn't affect ARM Homebrew, though.)
