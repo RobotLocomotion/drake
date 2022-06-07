@@ -24,9 +24,23 @@ fi
 pip install "$1"
 
 python << EOF
+import numpy
 import pydrake.all
+
+# Basic sanity checks.
 print(pydrake.getDrakePath())
 print(pydrake.all.PackageMap().GetPath("drake"))
+
+# Check for presence of optional solvers.
 assert pydrake.all.MosekSolver().available(), "Missing MOSEK"
 assert pydrake.all.SnoptSolver().available(), "Missing SNOPT"
+
+# Check that IPOPT is working.
+p = pydrake.solvers.mathematicalprogram.MathematicalProgram()
+x = p.NewContinuousVariables(2, "x")
+p.AddLinearConstraint(x[0] >= 1)
+p.AddLinearConstraint(x[1] >= 1)
+p.AddQuadraticCost(numpy.eye(2), numpy.zeros(2), x)
+s = pydrake.all.IpoptSolver()
+assert s.Solve(p, None, None).is_success(), "IPOPT is not usable"
 EOF
