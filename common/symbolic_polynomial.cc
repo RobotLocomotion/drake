@@ -623,7 +623,7 @@ void Polynomial::EvaluateWithAffineCoefficients(
     a_coeff.setZero();
     b_coeff = 0;
     const symbolic::Expression monomial_coeff_expand = monomial_coeff.Expand();
-    DecomposeAffineExpression(monomial_coeff_expand, map_var_to_index, a_coeff,
+    DecomposeAffineExpression(monomial_coeff_expand, map_var_to_index, &a_coeff,
                               &b_coeff);
     const Eigen::VectorXd monomial_vals =
         monomial.Evaluate(indeterminates, indeterminates_values);

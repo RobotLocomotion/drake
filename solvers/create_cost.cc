@@ -50,7 +50,7 @@ Binding<LinearCost> DoParseLinearCost(
     const unordered_map<Variable::Id, int>& map_var_to_index) {
   Eigen::RowVectorXd c(vars_vec.size());
   double constant_term{};
-  symbolic::DecomposeAffineExpression(e, map_var_to_index, c, &constant_term);
+  symbolic::DecomposeAffineExpression(e, map_var_to_index, &c, &constant_term);
   return CreateBinding(make_shared<LinearCost>(c.transpose(), constant_term),
                        vars_vec);
 }
