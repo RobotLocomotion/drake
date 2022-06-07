@@ -206,6 +206,8 @@ drake_cc_library(
         "symbolic_chebyshev_polynomial.h",
         "symbolic_codegen.cc",
         "symbolic_codegen.h",
+        "symbolic_decompose.cc",
+        "symbolic_decompose.h",
         "symbolic_environment.cc",
         "symbolic_environment.h",
         "symbolic_expression.cc",
@@ -260,12 +262,6 @@ drake_cc_library(
 
 drake_cc_library(
     name = "symbolic_decompose",
-    srcs = [
-        "symbolic_decompose.cc",
-    ],
-    hdrs = [
-        "symbolic_decompose.h",
-    ],
     deps = [
         ":symbolic",
     ],
@@ -1303,6 +1299,7 @@ drake_cc_googletest(
     name = "symbolic_polynomial_test",
     deps = [
         ":symbolic",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
