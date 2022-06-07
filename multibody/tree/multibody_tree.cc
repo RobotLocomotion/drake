@@ -2883,16 +2883,17 @@ void MultibodyTree<T>::IssuePostFinalizeMassInertiaWarnings() const {
 
   // There should be at least 1 set of welded_bodies since the first set should
   // be the world body (and if it has children bodies, they are anchored to it).
-  size_t number_of_sets = welded_bodies.size();
+  const size_t number_of_sets = welded_bodies.size();
   DRAKE_ASSERT(number_of_sets > 0);
 
   // Investigate mass/inertia properties for all non-world welded bodies.
+  // In the for-loop below, start with i = 1 to skip over the world body.
+  const MultibodyTreeTopology& multibodyTreeTopology = get_topology();
   for (size_t i = 1;  i < number_of_sets;  ++i) {
     // Get the next set of welded bodies. The first entry in the set is the
     // parent body and the remaining entries (if any) are children bodies.
     const std::set<BodyIndex>& welded_parent_children_bodies = welded_bodies[i];
     const BodyIndex parent_body_index = *welded_parent_children_bodies.begin();
-    const MultibodyTreeTopology& multibodyTreeTopology = get_topology();
     const BodyTopology& parent_body_topology =
         multibodyTreeTopology.get_body(parent_body_index);
     const MobilizerIndex& parent_mobilizer_index =
@@ -2905,30 +2906,42 @@ void MultibodyTree<T>::IssuePostFinalizeMassInertiaWarnings() const {
     DRAKE_DEMAND(parent_body_index == parent_body.index());
     DRAKE_DEMAND(parent_body_index != world_index());
 
-    // Get parent body name (for subsequent warning message).
-    const std::string& parent_body_name = parent_body.name();
-
-    // Issue zero mass warning if the composite rigid body can translate.
-    if ( parent_mobilizer.can_translate() ) {
-      double total_mass = CalcTotalDefaultMass(welded_parent_children_bodies);
-      if (total_mass == 0) {
+    // Determine whether this set of welded bodies is the most distal leaf in
+    // a multibody tree.
+    const BodyNodeIndex parent_body_node_index =
+        multibodyTreeTopology.get_body(parent_body_index).body_node;
+    const BodyNodeTopology& parent_body_node_topology =
+        multibodyTreeTopology.get_body_node(parent_body_node_index);
+    const bool is_composite_body_distal_leaf_in_tree =
+        multibodyTreeTopology.CalcNumberOfOutboardVelocitiesExcludeBase(
+            parent_body_node_topology) == 0;
+    if (is_composite_body_distal_leaf_in_tree) {
+      // Determine if this distal-leaf composite body can translate relative to
+      // its inboard object but has no mass.
+      const bool has_no_mass =
+          CalcTotalDefaultMass(welded_parent_children_bodies) == 0;
+      if (parent_mobilizer.can_translate() && has_no_mass) {
          const std::string msg = fmt::format(
         "It seems that body {} is massless, yet it is attached "
         "by a joint that has a translational degree of freedom.",
-        parent_body_name);
+        parent_body.name());
         throw std::logic_error(msg);
       }
-    }
 
-    // Issue zero rotational inertia if the composite rigid body can rotate.
-    if (parent_mobilizer.can_rotate() &&
-        IsAllDefaultRotationalInertiaZeroOrNaN(welded_parent_children_bodies)) {
+      // Issue error if distal composite body can rotate and has no inertia.
+      // TODO(Mitiguy) For now, the algorithm below issues a message only if
+      //  there is no rotational inertia and no mass that could be shfted to
+      //  create non-zero moment of inertia about a joint axes. Instead, form
+      //  rotational inertia about mobilizer axes and check if it is zero.
+      const bool can_rotate_but_no_inertia = parent_mobilizer.can_rotate() &&
+        IsAllDefaultRotationalInertiaZeroOrNaN(welded_parent_children_bodies);
+      if (can_rotate_but_no_inertia && has_no_mass) {
         const std::string msg = fmt::format(
             "It seems that body {} has no rotational inertia, yet it is "
-            "attached "
-            "by a joint that has a rotational degree of freedom.",
-            parent_body_name);
+            "attached by a joint that has a rotational degree of freedom.",
+            parent_body.name());
         throw std::logic_error(msg);
+      }
     }
   }
 }
