@@ -201,6 +201,22 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 std::unique_ptr<GeometryInstance>>(&Class::RegisterGeometry),
             py::arg("source_id"), py::arg("geometry_id"), py::arg("geometry"),
             cls_doc.RegisterGeometry.doc_3args_source_id_geometry_id_geometry)
+        .def("RegisterGeometry",
+            overload_cast_explicit<GeometryId, systems::Context<T>*, SourceId,
+                FrameId, std::unique_ptr<GeometryInstance>>(
+                &Class::RegisterGeometry),
+            py::arg("context"), py::arg("source_id"), py::arg("frame_id"),
+            py::arg("geometry"),
+            cls_doc.RegisterGeometry
+                .doc_4args_context_source_id_frame_id_geometry)
+        .def("RegisterGeometry",
+            overload_cast_explicit<GeometryId, systems::Context<T>*, SourceId,
+                GeometryId, std::unique_ptr<GeometryInstance>>(
+                &Class::RegisterGeometry),
+            py::arg("context"), py::arg("source_id"), py::arg("geometry_id"),
+            py::arg("geometry"),
+            cls_doc.RegisterGeometry
+                .doc_4args_context_source_id_geometry_id_geometry)
         .def("RegisterAnchoredGeometry",
             py::overload_cast<SourceId, std::unique_ptr<GeometryInstance>>(
                 &Class::RegisterAnchoredGeometry),

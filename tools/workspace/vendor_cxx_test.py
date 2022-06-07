@@ -26,26 +26,109 @@ class TestVendorCxx(unittest.TestCase):
         expected_new_text = '\n'.join(expected_new_lines) + '\n'
         self.assertMultiLineEqual(expected_new_text, new_text)
 
-    def test_simple(self):
+    def test_comments(self):
         self._check([
-            '#include "somelib/somefile.h"',
-            '#include "unrelated/thing.h"',
+            ' // file comment',
+            ' /* block comment',
+            '    continues */',
+            'int foo();  // eol comment',
+            'int bar();  /* eol comment */',
+            ' /* intro comment */ class Baz;',
+            ' /* single line c style */',
+            '#include <something.h>',
+            ' /* intro comment that spans multiple lines',
+            '    but continues with code after */ class Quux;',
+        ], [
+            ' // file comment',
+            ' /* block comment',
+            '    continues */',
+            self._open,
+            'int foo();  // eol comment',
+            'int bar();  /* eol comment */',
+            ' /* intro comment */ class Baz;',
+            self._close,
+            ' /* single line c style */',
+            '#include <something.h>',
+            self._open,
+            ' /* intro comment that spans multiple lines',
+            '    but continues with code after */ class Quux;',
+            self._close,
+        ])
+
+    def test_preprocessor(self):
+        self._check([
+            '#define FOO \\',
+            '   foo',          # This line looks like code, but it isn't.
             'int foo();',
         ], [
-            # Adjacent pairs of open/close are useless; ideally, we teach
-            # vendor_cxx to skip these.
-            self._open, self._close,  # TODO(jwnimmer-tri) Useless filler.
-
-            # All include statements must NOT be within an open-namespace.
-            '#include "drake_vendor/somelib/somefile.h"',
-
-            self._open, self._close,  # TODO(jwnimmer-tri) Useless filler.
-            '#include "unrelated/thing.h"',
-
-            # All code MUST be within an open-namespace.
+            '#define FOO \\',
+            '   foo',
             self._open,
             'int foo();',
             self._close,
+        ])
+
+    def test_include_guard(self):
+        self._check([
+            '#ifndef FOO_HH',
+            '#define FOO_HH',
+            '#include <something.h>',
+            'int foo();',
+            '#endif FOO_HH',
+        ], [
+            '#ifndef FOO_HH',
+            '#define FOO_HH',
+            '#include <something.h>',
+            self._open,
+            'int foo();',
+            self._close,
+            '#endif FOO_HH',
+        ])
+
+    def test_pragma_once(self):
+        self._check([
+            '#pragma once',
+            '#include <something.h>',
+            'int foo();',
+        ], [
+            '#pragma once',
+            '#include <something.h>',
+            self._open,
+            'int foo();',
+            self._close,
+        ])
+
+    def test_edit_include(self):
+        self._check([
+            '#include "somelib/somefile.h"',
+            '#include <somelib/otherfile.h>',
+            '#include <unrelated/thing.h>',
+            'int foo();',
+        ], [
+            '#include "drake_vendor/somelib/somefile.h"',
+            '#include <drake_vendor/somelib/otherfile.h>',
+            '#include <unrelated/thing.h>',
+            self._open,
+            'int foo();',
+            self._close,
+        ])
+
+    def test_extern_c(self):
+        self._check([
+            '#include "somelib/somefile.h"',
+            '#include <unrelated/thing.h>',
+            'extern "C" {',
+            'int foo();',
+            '}  // extern C',
+        ], [
+            # The include paths are still changed.
+            '#include "drake_vendor/somelib/somefile.h"',
+            '#include <unrelated/thing.h>',
+
+            # No namespaces are added.
+            'extern "C" {',
+            'int foo();',
+            '}  // extern C',
         ])
 
 

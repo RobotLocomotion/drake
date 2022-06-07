@@ -25,10 +25,7 @@ def github_archive(
             labels when referring to this archive from BUILD files.
         repository: required GitHub repository name in the form
             organization/project.
-        commit: required commit is the git hash to download. (When the git
-            project is also a git submodule in CMake, this should be kept in
-            sync with the git submodule commit used there.) This can also be a
-            tag.
+        commit: required commit is the tag name or git commit sha to download.
         commit_pin: optional boolean, set to True iff the archive should remain
             at the same version indefinitely, eschewing automated upgrades to
             newer versions.
@@ -212,7 +209,11 @@ def github_download_and_extract(
             version indefinitely, eschewing automated upgrades to newer
             versions.
     """
-    urls = _urls(repository, commit, mirrors)
+    urls = _urls(
+        repository = repository,
+        commit = commit,
+        mirrors = mirrors,
+    )
 
     repository_ctx.download_and_extract(
         urls,
@@ -272,7 +273,49 @@ def _strip_prefix(repository, commit, extra_strip_prefix):
         result += "/" + extra_strip_prefix
     return result
 
-def _urls(repository, commit, mirrors):
+def _is_commit_sha(commit):
+    """Returns true iff the commit is a hexadecimal string of length 40."""
+    return len(commit) == 40 and all([
+        ch.isdigit() or (ch >= "a" and ch <= "f")
+        for ch in commit.elems()
+    ])
+
+def _format_url(*, pattern, repository, commit):
+    """Given a URL pattern for github.com or a Drake-specific mirror,
+    substitutes in the given repository and commit (tag or git sha).
+
+    The URL pattern accepts the following substitutions:
+
+    The {repository} is always substituted with `repository`.
+    The {commit} is always substituted with `commit`.
+    If `commit` refers to a git tag, then {tag_name} will be substituted.
+    If `commit` refers to a git branch, then {branch_name} will be substituted.
+    If `commit` refers to a git sha, then {commit_sha} will be substituted.
+
+    Patterns that contain a substitution which does not apply to the given
+    `commit` (e.g., {commit_sha} when `commit` is a tag) will return None.
+    The pattern must contain exactly one of {commit}, {tag_name},
+    {branch_name}, or {commit_sha}.
+    """
+    is_commit_sha = _is_commit_sha(commit)
+    is_tag = not is_commit_sha
+    substitutions = {
+        "repository": repository,
+        "commit": commit,
+        "tag_name": commit if is_tag else None,
+        "commit_sha": commit if is_commit_sha else None,
+    }
+    for name, value in substitutions.items():
+        if value == None:
+            needle = "{" + name + "}"
+            if needle in pattern:
+                # If the pattern uses a substitution that we do not have,
+                # report that to our caller as "None"; don't return a URL
+                # string with a literal "None" in it!
+                return None
+    return pattern.format(**substitutions)
+
+def _urls(*, repository, commit, mirrors):
     """Compute the urls from which an archive of the provided GitHub
     repository and commit may be downloaded.
 
@@ -282,10 +325,16 @@ def _urls(repository, commit, mirrors):
         mirrors: dictionary of mirrors, see mirrors.bzl in this directory for
             an example.
     """
-    return [
-        x.format(
+    result_with_nulls = [
+        _format_url(
+            pattern = x,
             repository = repository,
             commit = commit,
         )
         for x in mirrors.get("github")
+    ]
+    return [
+        url
+        for url in result_with_nulls
+        if url != None
     ]
