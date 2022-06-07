@@ -247,6 +247,7 @@ drake_pybind_library(
         ":symbolic_types_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:eigen_pybind",
     ],
     cc_srcs = [
         "symbolic_py.cc",
