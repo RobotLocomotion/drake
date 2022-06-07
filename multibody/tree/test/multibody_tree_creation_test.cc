@@ -901,7 +901,6 @@ GTEST_TEST(DefaultInertia, VerifyDefaultRotationalInertia) {
   EXPECT_FALSE(model.IsAllDefaultRotationalInertiaZeroOrNaN(bodies_ABC));
 }
 
-
 // Helper function to add a x-axis prismatic joint between two bodies.
 void AddPrismaticJointX(MultibodyTree<double>* model, const std::string& name,
                const Body<double>& parent, const Body<double>& child) {
@@ -926,9 +925,9 @@ void AddWeldJoint(MultibodyTree<double>* model, const std::string& name,
                               math::RigidTransformd::Identity());
 }
 
-// Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() issues a
-// warning if the sole composite rigid body has zero mass.
-GTEST_TEST(WeldedBodies, IssueWarningAboutBodyWithZeroMass) {
+// Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() throws an
+// exception if a sole composite rigid body can translate and has zero mass.
+GTEST_TEST(WeldedBodies, IssueWarningAboutCompositeBodyWithZeroMass) {
   // Create a model and add two rigid bodies.
   MultibodyTree<double> model;
   const double mass = 0;    // Mass of link.
@@ -952,12 +951,12 @@ GTEST_TEST(WeldedBodies, IssueWarningAboutBodyWithZeroMass) {
       expected_message);
 }
 
-// Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() issues a
-// warning if the sole composite rigid body has zero inertia.
-GTEST_TEST(WeldedBodies, IssueWarningAboutBodyWithZeroInertia) {
+// Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() throws an
+// exception if a sole composite rigid body can rotate but has no inertia.
+GTEST_TEST(WeldedBodies, IssueWarningAboutCompositeBodyWithZeroInertia) {
   // Create a model and add two rigid bodies.
   MultibodyTree<double> model;
-  const double mass = 1;    // Mass of link.
+  const double mass = 0;    // Mass of link.
   const double length = 0;  // Length of thin uniform-density link.
   const RigidBody<double>& body_A = AddRigidBody(&model, "bodyA", mass, length);
   const RigidBody<double>& body_B = AddRigidBody(&model, "bodyB", mass, length);
@@ -979,9 +978,9 @@ GTEST_TEST(WeldedBodies, IssueWarningAboutBodyWithZeroInertia) {
       expected_message);
 }
 
-// Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() does not issue a
-// warning if the sole composite rigid body has non-zero mass (due to a weld).
-GTEST_TEST(WeldedBodies, IssueNoWarningSinceBodyHasMassDueToWeldedBody) {
+// Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() does not throw
+// an exception if a sole composite rigid body has non-zero mass (due to weld).
+GTEST_TEST(WeldedBodies, IssueNoWarningCompositeBodyHasMassDueToWeldedBody) {
   // Create a model and add two rigid bodies.
   MultibodyTree<double> model;
   const double length = 3;  // Length of thin uniform-density link.
@@ -1001,8 +1000,8 @@ GTEST_TEST(WeldedBodies, IssueNoWarningSinceBodyHasMassDueToWeldedBody) {
   EXPECT_NO_THROW(model.IssuePostFinalizeMassInertiaWarnings());
 }
 
-// Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() does not issue a
-// warning if the sole composite rigid body has non-zero inertia (due to weld).
+// Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() does not throw
+// exception if a sole composite rigid body has non-zero inertia (due to weld).
 GTEST_TEST(WeldedBodies, IssueNoWarningSinceBodyHasInertiaDueToWeldedBody) {
   // Create a model and add a few rigid bodies.
   MultibodyTree<double> model;
@@ -1011,10 +1010,54 @@ GTEST_TEST(WeldedBodies, IssueNoWarningSinceBodyHasInertiaDueToWeldedBody) {
   const RigidBody<double>& body_B = AddRigidBody(&model, "bodyB", 1, length);
 
   // Add a prismatic joint from the world body to bodyA (bodyA has no inertia).
-  AddPrismaticJointX(&model, "WA_revolute_joint", model.world_body(), body_A);
+  AddPrismaticJointX(&model, "WA_prismatic_joint", model.world_body(), body_A);
 
   // Add a weld joint between bodyA and bodyB (bodyB has non-zero inertia).
   AddWeldJoint(&model, "AB_weld_joint", body_A, body_B);
+
+  // We are done building the test model.
+  model.Finalize();
+
+  // The next function is usually called from MultibodyPlant::Finalize().
+  EXPECT_NO_THROW(model.IssuePostFinalizeMassInertiaWarnings());
+}
+
+// Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() does not throw
+// exception if a zero-mass body is not the most distal body in the tree.
+GTEST_TEST(WeldedBodies, IssueNoWarningSinceZeroMassBodyIsNotDistal) {
+  // Create a model and add two rigid bodies.
+  MultibodyTree<double> model;
+  const double length = 3;  // Length of thin uniform-density link.
+  const RigidBody<double>& body_A = AddRigidBody(&model, "bodyA", 0, length);
+  const RigidBody<double>& body_B = AddRigidBody(&model, "bodyB", 1, length);
+
+  // Add a prismatic joint from the world body to bodyA (bodyA has no inertia).
+  AddPrismaticJointX(&model, "WA_prismatic_joint", model.world_body(), body_A);
+
+  // Add a revolute joint between bodyA and bodyB (bodyB has mass 1).
+  AddRevoluteJointZ(&model, "AB_revolute_joint", body_A, body_B);
+
+  // We are done building the test model.
+  model.Finalize();
+
+  // The next function is usually called from MultibodyPlant::Finalize().
+  EXPECT_NO_THROW(model.IssuePostFinalizeMassInertiaWarnings());
+}
+
+// Verify MultibodyTree::IssuePostFinalizeMassInertiaWarnings() does not throw
+// exception if a zero-inertia body is not the most distal body in the tree.
+GTEST_TEST(WeldedBodies, IssueNoWarningSinceZeroInertiaBodyIsNotDistal) {
+  // Create a model and add two rigid bodies.
+  MultibodyTree<double> model;
+  const double length = 3;  // Length of thin uniform-density link.
+  const RigidBody<double>& body_A = AddRigidBody(&model, "bodyA", 0, length);
+  const RigidBody<double>& body_B = AddRigidBody(&model, "bodyB", 1, length);
+
+  // Add a revolute joint from the world body to bodyA (bodyA has no inertia).
+  AddRevoluteJointZ(&model, "WA_revolute_joint", model.world_body(), body_A);
+
+  // Add a revolute joint between bodyA and bodyB (bodyB has non-zero inertia).
+  AddRevoluteJointZ(&model, "AB_revolute_joint", body_A, body_B);
 
   // We are done building the test model.
   model.Finalize();
