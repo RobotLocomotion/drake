@@ -28,7 +28,10 @@ chrpath()
             patchelf --remove-rpath "$lib"
             patchelf --set-rpath "\$ORIGIN/$rpath" "$lib"
         else
-            strip_rpath --exclude="$HOMEBREW" "$lib"
+            strip_rpath \
+                --exclude="$HOMEBREW" \
+                --exclude=/opt/drake-dependencies/lib \
+                "$lib"
             install_name_tool -add_rpath "@loader_path/$rpath" "$lib"
         fi
     done
