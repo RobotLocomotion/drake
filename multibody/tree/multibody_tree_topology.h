@@ -1047,6 +1047,9 @@ class MultibodyTreeTopology {
 
   // Computes the number of generalized velocities in the tree composed of the
   // nodes outboard of `base`, excluding the generalized velocities of `base`.
+  // Note: This method returns 0 if base is the most distal body in a multibody
+  // tree or if base's children are all welded to it and they are the most
+  // distal bodies in the tree.
   // @pre Body nodes were already created.
   int CalcNumberOfOutboardVelocitiesExcludeBase(
       const BodyNodeTopology& base) const {
