@@ -1,0 +1,31 @@
+Cherry-pick of https://github.com/gazebosim/sdformat/pull/1043
+
+We can remove this file once we upgrade to a sufficiently new sdformat
+release that already incorporates this patch.
+
+--- include/sdf/Link.hh
++++ include/sdf/Link.hh
+@@ -19,6 +19,7 @@
+ 
+ #include <memory>
+ #include <string>
++#include <ignition/math/Inertial.hh>
+ #include <ignition/math/Pose3.hh>
+ #include <ignition/utils/ImplPtr.hh>
+ #include "sdf/Element.hh"
+--- include/sdf/Param.hh
++++ include/sdf/Param.hh
+@@ -33,7 +33,12 @@
+ #include <variant>
+ #include <vector>
+ 
+-#include <ignition/math.hh>
++#include <ignition/math/Angle.hh>
++#include <ignition/math/Color.hh>
++#include <ignition/math/Pose3.hh>
++#include <ignition/math/Quaternion.hh>
++#include <ignition/math/Vector2.hh>
++#include <ignition/math/Vector3.hh>
+ 
+ #include "sdf/Console.hh"
+ #include "sdf/PrintConfig.hh"
