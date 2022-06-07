@@ -115,6 +115,14 @@ set(clp_md5 "f7c25af22d2f03398cbbdf38c8b4f6fd")
 set(clp_dlname "clp-${clp_version}.tar.gz")
 list(APPEND ALL_PROJECTS clp)
 
+if(APPLE)
+    set(mumps_version 5.4.0)  # Current version in Homebrew.
+    set(mumps_url "http://mumps.enseeiht.fr/MUMPS_${mumps_version}.tar.gz")
+    set(mumps_md5 "808178997dc571c748e9cf0cabf9a26e")
+    set(mumps_dlname "mumps-${mumps_version}.tar.gz")
+    list(APPEND ALL_PROJECTS mumps)
+endif()
+
 # ipopt
 set(ipopt_version 3.11.9)
 set(ipopt_url "https://github.com/coin-or/Ipopt/archive/refs/tags/releases/${ipopt_version}.tar.gz")
