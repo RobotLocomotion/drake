@@ -126,7 +126,6 @@ cc_library(
     name = "dreal_deps",
     deps = select({
         "//conditions:default": [
-            "@nlopt",
             "@ibex",
         ],
         "//tools:no_dreal": [],
@@ -159,17 +158,6 @@ cc_library(
     deps = select({
         "//tools:with_mosek": ["@mosek"],
         "//conditions:default": [],
-    }),
-)
-
-# Depend on NLOPT's shared library iff NLOPT is enabled.
-cc_library(
-    name = "nlopt_deps",
-    deps = select({
-        "//conditions:default": [
-            "@nlopt",
-        ],
-        "//tools:no_nlopt": [],
     }),
 )
 
@@ -239,7 +227,6 @@ cc_library(
         ":gurobi_deps",
         ":ipopt_deps",
         ":mosek_deps",
-        ":nlopt_deps",
         ":vtk_deps",
         ":x11_deps",
         "//common:drake_marker_shared_library",

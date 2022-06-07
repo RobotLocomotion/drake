@@ -1,0 +1,45 @@
+[ags]
+When changing the namespace of C++ code that's called from C, we need to
+keep the function names that are called from C unchanged.
+
+[stogo]
+When weaving the inline namespace into this file, we need to ensure that
+it doesn't cross an `#if 0` block.
+
+--- src/algs/ags/ags.cc
++++ src/algs/ags/ags.cc
+@@ -16,6 +16,7 @@
+ int ags_refine_loc = 0;
+ int ags_verbose = 0;
+ 
++extern "C"
+ int ags_minimize(unsigned n, nlopt_func func, void *data, unsigned m, nlopt_constraint *fc,
+                  double *x, double *minf, const double *l, const double *u, nlopt_stopping *stop)
+ {
+--- src/algs/stogo/stogo.cc
++++ src/algs/stogo/stogo.cc
+@@ -26,7 +26,8 @@
+   }
+ };
+ 
++extern "C"
+ int stogo_minimize(int n,
+ 		   objective_func fgrad, void *data,
+ 		   double *x, double *minf,
+ 		   const double *l, const double *u,
+--- src/algs/stogo/local.cc
++++ src/algs/stogo/local.cc
+@@ -11,11 +11,12 @@
+ #include "local.h"
+ #include "tools.h"
+ 
++typedef struct {} force_the_drake_inline_namespace_to_appear_here;
++
+ ////////////////////////////////////////////////////////////////////////
+ // SGJ, 2007: allow local to use local optimizers in NLopt, to compare
+ // to the BFGS code below
+ #if 0
+-#include "nlopt.h"
+ 
+ typedef struct {
+   Global *glob;
