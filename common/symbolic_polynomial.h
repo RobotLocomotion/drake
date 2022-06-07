@@ -213,6 +213,32 @@ class Polynomial {
       const Eigen::Ref<const VectorX<symbolic::Variable>>& indeterminates,
       const Eigen::Ref<const Eigen::MatrixXd>& indeterminates_values) const;
 
+  /// For a polynomial whose coefficients are affine expressions of decision
+  /// variables, we evaluate this polynomial on a batch of indeterminates
+  /// values, and return the matrix representation of the evaluated affine
+  /// expressions. For example if p(x) = (a+1)x² + b*x where a, b are decision
+  /// variables, if we evaluate this polynomial on x = 1 and x = 2, then p(x) =
+  /// a+b+1 and 4a+2b+4 respectively. We return the evaluation result as A *
+  /// decision_variables + b, where A.row(i) * decision_variables + b(i) is the
+  /// evaluation of the polynomial on indeterminates_values.col(i).
+  /// @param[in] indeterminates Must include all this->indeterminates()
+  /// @param[in] indeterminates_values Each column of `indeterminates_values`
+  /// stores one specific value of `indeterminates`.
+  /// indeterminates_values.rows() == indeterminates.rows().
+  /// @param[out] A The coefficient of the evaluation results.
+  /// @param[out] decision_variables The decision variables in the evaluation
+  /// results.
+  /// @param[out] b The constant terms in the evaluation results.
+  /// @throw exception if the coefficients of this polynomial is not an affine
+  /// expression of its decision variables. For example, the polynomial
+  /// (2+sin(a)) * x² + 1 (where a is a decision variable and x is
+  /// indeterminate) doesn't have affine expression as its coefficient 2+sin(a).
+  void EvaluateWAffineCoefficients(
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& indeterminates,
+      const Eigen::Ref<const Eigen::MatrixXd>& indeterminates_values,
+      Eigen::MatrixXd* A, VectorX<symbolic::Variable>* decision_variables,
+      Eigen::VectorXd* b) const;
+
   /// Adds @p coeff * @p m to this polynomial.
   Polynomial& AddProduct(const Expression& coeff, const Monomial& m);
 
