@@ -86,39 +86,39 @@ GTEST_TEST(InitialValueProblemTest, ConstructionPreconditionsValidation) {
     return -x * t;
   };
 
-  DRAKE_EXPECT_THROWS_MESSAGE({
+  DRAKE_EXPECT_THROWS_MESSAGE([&]() {
       const InitialValueProblem<double>::
           OdeContext no_values;
       const InitialValueProblem<double> ivp(
           dummy_ode_function, no_values);
-    }, "No default.*");
+    }(), "No default.*");
 
-  DRAKE_EXPECT_THROWS_MESSAGE({
+  DRAKE_EXPECT_THROWS_MESSAGE([&]() {
       InitialValueProblem<double>::
           OdeContext values_without_t0;
       values_without_t0.k = VectorX<double>();
       values_without_t0.x0 = VectorX<double>::Zero(2).eval();
       const InitialValueProblem<double> ivp(
           dummy_ode_function, values_without_t0);
-    }, "No default initial time.*");
+    }(), "No default initial time.*");
 
-  DRAKE_EXPECT_THROWS_MESSAGE({
+  DRAKE_EXPECT_THROWS_MESSAGE([&]() {
       InitialValueProblem<double>::
           OdeContext values_without_x0;
       values_without_x0.t0 = 0.0;
       values_without_x0.k = VectorX<double>();
       const InitialValueProblem<double> ivp(
           dummy_ode_function, values_without_x0);
-    }, "No default initial state.*");
+    }(), "No default initial state.*");
 
-  DRAKE_EXPECT_THROWS_MESSAGE({
+  DRAKE_EXPECT_THROWS_MESSAGE([&]() {
       InitialValueProblem<double>::
           OdeContext values_without_k;
       values_without_k.t0 = 0.0;
       values_without_k.x0 = VectorX<double>();
       const InitialValueProblem<double> ivp(
           dummy_ode_function, values_without_k);
-    }, "No default parameters.*");
+    }(), "No default parameters.*");
 }
 
 // Validates preconditions when solving any given IVP.
