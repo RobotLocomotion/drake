@@ -152,6 +152,10 @@ def _rewrite_one_text(*, text, edit_include):
         text = text.replace(f'#include "{old_inc}', f'#include "{new_inc}')
         text = text.replace(f'#include <{old_inc}', f'#include <{new_inc}')
 
+    # If the file is a mixed C/C++ header, then we need to leave it alone.
+    if '\nextern "C" {\n' in text:
+        return text
+
     # We'll add an inline namespace around the C++ code in this file.
     # Designate each line of the file for whether it should be wrapped.
     lines = text.split('\n')

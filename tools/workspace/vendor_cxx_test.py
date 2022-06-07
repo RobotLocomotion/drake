@@ -113,6 +113,24 @@ class TestVendorCxx(unittest.TestCase):
             self._close,
         ])
 
+    def test_extern_c(self):
+        self._check([
+            '#include "somelib/somefile.h"',
+            '#include <unrelated/thing.h>',
+            'extern "C" {',
+            'int foo();',
+            '}  // extern C',
+        ], [
+            # The include paths are still changed.
+            '#include "drake_vendor/somelib/somefile.h"',
+            '#include <unrelated/thing.h>',
+
+            # No namespaces are added.
+            'extern "C" {',
+            'int foo();',
+            '}  // extern C',
+        ])
+
 
 assert __name__ == '__main__'
 unittest.main()
