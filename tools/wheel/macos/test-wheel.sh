@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-# This script tests a wheel on macOS.
+# This script tests a wheel on macOS. It can be run directly, but is normally
+# run using the //tools/wheel:builder Bazel action.
 
 set -eu -o pipefail
 
