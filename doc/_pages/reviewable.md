@@ -104,10 +104,14 @@ To aid the human editor in making that determination, you must add the tag
 code whose date has passed.  Removing deprecated code is not considered to be a
 breaking change, so do not add ``release notes: breaking change``.
 
-**release notes: yes**
+**release notes: feature**<br/>
+&nbsp;and<br/>
+**release notes: fix**
 
-For commits that do not meet any of the above criteria, you must add the tag
-``release notes: yes`` to indicate that you've considered the question.
+For commits that are not marked ``release notes: none``, you must add either
+``release notes: feature`` or ``release notes: fix`` to indicate whether the
+change is primarily a new feature or a fix of something that already exists.
+This is *in addition* to any deprecation or breaking-change labels.
 
 # Joint Feature and Platform review
 
