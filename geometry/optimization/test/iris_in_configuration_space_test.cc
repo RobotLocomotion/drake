@@ -38,6 +38,11 @@ GTEST_TEST(IrisInConfigurationSpaceTest, JointLimits) {
     <collision>
       <geometry><box size="1 1 1"/></geometry>
     </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
   </link>
   <joint name="movable" type="prismatic">
     <axis xyz="1 0 0"/>
@@ -85,6 +90,11 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismatic) {
     <collision name="center">
       <geometry><box size="1 1 1"/></geometry>
     </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
   </link>
   <joint name="movable" type="prismatic">
     <axis xyz="1 0 0"/>
@@ -134,6 +144,11 @@ GTEST_TEST(IrisInConfigurationSpaceTest, SpheresPrismatic) {
     <collision name="center">
       <geometry><sphere radius=".5"/></geometry>
     </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
   </link>
   <joint name="movable" type="prismatic">
     <axis xyz="1 0 0"/>
@@ -188,6 +203,11 @@ GTEST_TEST(IrisInConfigurationSpaceTest, SinglePendulum) {
       <origin rpy="0 0 0" xyz="0 0 -{l}"/>
       <geometry><sphere radius="{r}"/></geometry>
     </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
   </link>
   <joint name="pendulum" type="revolute">
     <axis xyz="0 1 0"/>
@@ -254,6 +274,11 @@ GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulum) {
       <origin rpy="0 0 0" xyz="0 0 -{l2}"/>
       <geometry><sphere radius="{r}"/></geometry>
     </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
   </link>
   <joint name="joint2" type="revolute">
     <origin rpy="0 0 0" xyz="0 0 -{l1}"/>
@@ -323,6 +348,11 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
     <collision name="block">
       <geometry><box size="{w} 1 {h}"/></geometry>
     </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
   </link>
   <joint name="joint2" type="revolute">
     <axis xyz="0 1 0"/>
@@ -393,6 +423,11 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
       <origin rpy="0 0 0" xyz="0 0 {l}"/>
       <geometry><sphere radius="{r}"/></geometry>
     </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
   </link>
   <joint name="pendulum" type="revolute">
     <axis xyz="0 1 0"/>
