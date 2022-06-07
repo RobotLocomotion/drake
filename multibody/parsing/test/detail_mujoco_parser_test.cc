@@ -547,24 +547,30 @@ GTEST_TEST(MujocoParser, Joint) {
   <worldbody>
     <body name="freejoint" pos="1 2 3" euler="30 45 60">
       <freejoint name="freejoint"/>
+      <inertial mass="1" diaginertia="1 1 1"/>
     </body>
     <body name="free" pos="1 2 3" euler="30 45 60">
       <joint type="free" name="free"/>
+      <inertial mass="1" diaginertia="1 1 1"/>
     </body>
     <body name="ball" pos="1 2 3" euler="30 45 60">
       <joint type="ball" name="ball" damping="0.1" pos=".1 .2 .3"/>
+      <inertial mass="1" diaginertia="1 1 1"/>
     </body>
     <body name="slide" pos="1 2 3" euler="30 45 60">
       <joint type="slide" name="slide" damping="0.2" pos=".1 .2 .3"
              axis="1 0 0" limited="true" range="-2 1.5"/>
+      <inertial mass="1" diaginertia="1 1 1"/>
     </body>
     <body name="hinge" pos="1 2 3" euler="30 45 60">
       <joint type="hinge" name="hinge" damping="0.3" pos=".1 .2 .3"
              axis="0 1 0" limited="true" range="-30 60"/>
+      <inertial mass="1" diaginertia="1 1 1"/>
     </body>
     <body name="default" pos="1 2 3" euler="30 45 60">
       <!-- without the limited=true tag -->
       <joint name="default" damping="0.4" range="-20 15"/>
+      <inertial mass="1" diaginertia="1 1 1"/>
     </body>
     <body name="weld" pos="1 2 3" euler="30 45 60"/>
     <body name="two_hinges" pos="1 2 3" euler="30 45 60">
@@ -572,10 +578,12 @@ GTEST_TEST(MujocoParser, Joint) {
              axis="1 0 0"/>
       <joint type="hinge" name="hinge2" damping="0.6" pos=".1 .2 .3"
              axis="0 1 0"/>
+      <inertial mass="1" diaginertia="1 1 1"/>
     </body>
     <body name="default_joint">
       <!-- provides code coverage for defaults logic. -->
       <joint/>
+      <inertial mass="1" diaginertia="1 1 1"/>
     </body>
   </worldbody>
 </mujoco>
@@ -723,15 +731,19 @@ GTEST_TEST(MujocoParser, Motor) {
   <worldbody>
     <body>
       <joint type="hinge" name="hinge0" axis="0 1 0"/>
+      <inertial mass="1" diaginertia="1 1 1"/>
     </body>
     <body>
       <joint type="hinge" name="hinge1" axis="0 1 0"/>
+      <inertial mass="1" diaginertia="1 1 1"/>
     </body>
     <body>
       <joint type="hinge" name="hinge2" axis="0 1 0"/>
+      <inertial mass="1" diaginertia="1 1 1"/>
     </body>
     <body>
       <joint type="hinge" name="hinge3" axis="0 1 0"/>
+      <inertial mass="1" diaginertia="1 1 1"/>
     </body>
   </worldbody>
   <actuator>
