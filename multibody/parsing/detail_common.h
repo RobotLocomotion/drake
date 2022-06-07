@@ -6,7 +6,7 @@
 #include <string>
 #include <variant>
 
-#include <sdf/Element.hh>
+#include <drake_vendor/sdf/Element.hh>
 #include <tinyxml2.h>
 
 #include "drake/common/diagnostic_policy.h"

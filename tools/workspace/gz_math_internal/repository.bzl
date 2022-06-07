@@ -5,8 +5,6 @@ load("//tools/workspace:github.bzl", "github_archive")
 def gz_math_internal_repository(
         name,
         mirrors = None):
-    # When updating this commit, also remember to adjust the PROJECT_*
-    # constants in ./package.BUILD.bazel to match the new version number.
     github_archive(
         name = name,
         repository = "gazebosim/gz-math",
