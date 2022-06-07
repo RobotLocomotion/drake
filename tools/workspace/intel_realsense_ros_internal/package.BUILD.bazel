@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("@drake//tools/workspace/ros_xacro:defs.bzl", "xacro_file")
+load("@drake//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_file")
 
 licenses(["notice"])  # Apache-2.0
 

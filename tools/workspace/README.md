@@ -26,6 +26,10 @@ Drake is using:
   https://docs.bazel.build/versions/master/be/workspace.html
   https://docs.bazel.build/versions/master/skylark/repository_rules.html
 
+Per the [Stability Guidelines](https://drake.mit.edu/stable.html), externals
+named as "internal" or otherwise documented to be "internal use only" are
+not subject to any deprecation guarantees.
+
 # Semi-automated monthly upgrades
 
 Drake maintainers will use the ``bazel-bin/tools/workspace/new_release`` tool
@@ -221,6 +225,13 @@ difficult to support on multiple platforms.
 
 TODO(jwnimmer-tri) Add documentation here about how to validate that the new
 software's license is acceptable to use within Drake.
+
+When adding a new external, decide whether it will be covered by our
+[Stability Guidelines](https://drake.mit.edu/stable.html). Broadly speaking,
+dependencies that come from the host operating system can be covered as
+stable, but dependencies that we compile from source code should be internal.
+If the new dependency should be in internal, name it like "foo_internal" (not
+just "foo") throughout all of the below.
 
 Referring to some new third-party software as "foo", the steps to incorporate
 it into Drake are roughly:

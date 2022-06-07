@@ -17,6 +17,6 @@ py_library(
         "src",
     ],
     deps = [
-        "@uritemplate_py",
+        "@uritemplate_py_internal//:uritemplate_py",
     ],
 )
