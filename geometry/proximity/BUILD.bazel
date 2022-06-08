@@ -20,9 +20,7 @@ drake_cc_package_library(
         ":collision_filter",
         ":contact_surface_utility",
         ":deformable_contact_geometries",
-        ":deformable_contact_surface",
         ":deformable_mesh_intersection",
-        ":deformable_rigid_contact_pair",
         ":deformable_volume_mesh",
         ":field_intersection",
         ":hydroelastic_internal",
@@ -164,17 +162,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "deformable_contact_surface",
-    srcs = [],
-    hdrs = [
-        "deformable_contact_surface.h",
-    ],
-    deps = [
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "deformable_mesh_intersection",
     srcs = ["deformable_mesh_intersection.cc"],
     hdrs = ["deformable_mesh_intersection.h"],
@@ -184,17 +171,7 @@ drake_cc_library(
         ":deformable_volume_mesh",
         ":mesh_intersection",
         ":triangle_surface_mesh",
-        "//geometry/query_results:contact_surface",
-        "//math:geometric_transform",
-    ],
-)
-
-drake_cc_library(
-    name = "deformable_rigid_contact_pair",
-    hdrs = ["deformable_rigid_contact_pair.h"],
-    deps = [
-        ":deformable_contact_surface",
-        "//geometry:geometry_ids",
+        "//geometry/query_results:deformable_rigid_contact",
         "//math:geometric_transform",
     ],
 )
@@ -872,14 +849,6 @@ drake_cc_googletest(
         ":deformable_mesh_intersection",
         ":make_box_mesh",
         ":make_sphere_mesh",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "deformable_rigid_contact_pair_test",
-    deps = [
-        ":deformable_rigid_contact_pair",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
