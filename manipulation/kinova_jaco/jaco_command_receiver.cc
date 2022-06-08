@@ -90,17 +90,6 @@ void JacoCommandReceiver::LatchInitialPosition(
   LatchInitialPosition(*context, &context->get_mutable_discrete_state());
 }
 
-void JacoCommandReceiver::set_initial_position(
-    Context<double>* context, const Eigen::Ref<const VectorXd>& q) const {
-  DRAKE_THROW_UNLESS(q.size() == num_joints_ + num_fingers_);
-
-  DiscreteValues<double>* values = &context->get_mutable_discrete_state();
-  const auto& bool_index = latched_position_measured_is_set_;
-  const auto& value_index = latched_position_measured_;
-  values->get_mutable_value(bool_index)[0] = 1.0;
-  values->get_mutable_vector(value_index).SetFromVector(q);
-}
-
 // TODO(jwnimmer-tri) This is quite a cumbersome syntax to use for declaring a
 // "now" event.  We should try to consolidate it with other similar uses within
 // the source tree.  Relates to #11403 somewhat.

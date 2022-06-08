@@ -13,13 +13,13 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/collision_filter_manager.h"
-#include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_version.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/internal_geometry.h"
+#include "drake/geometry/kinematics_vector.h"
 #include "drake/geometry/proximity_engine.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render/render_engine.h"
@@ -32,6 +32,7 @@ namespace geometry {
 namespace internal {
 
 class GeometryVisualizationImpl;
+using FrameNameSet = std::unordered_set<std::string>;
 
 }  // namespace internal
 #endif
@@ -251,6 +252,12 @@ class GeometryState {
 
   /** Implementation of SceneGraphInspector::GetReferenceMesh().  */
   const VolumeMesh<double>* GetReferenceMesh(GeometryId id) const;
+
+  /** Implementation of SceneGraphInspector::IsDeformableGeometry(). */
+  bool IsDeformableGeometry(GeometryId id) const;
+
+  /** Implementation of SceneGraphInspector::GetAllDeformableGeometryIds(). */
+  std::vector<GeometryId> GetAllDeformableGeometryIds() const;
 
   /** Implementation of SceneGraphInspector::CollisionFiltered().  */
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const;
@@ -573,6 +580,7 @@ class GeometryState {
   explicit GeometryState(const GeometryState<U>& source)
       : self_source_(source.self_source_),
         source_frame_id_map_(source.source_frame_id_map_),
+        source_frame_name_map_(source.source_frame_name_map_),
         source_root_frame_map_(source.source_root_frame_map_),
         source_names_(source.source_names_),
         source_anchored_geometry_map_(source.source_anchored_geometry_map_),
@@ -649,8 +657,9 @@ class GeometryState {
   // @pre source_id is a registered source.
   // @throws std::exception if the set is inconsistent with known topology.
   template <typename ValueType>
-  void ValidateFrameIds(SourceId source_id,
-                        const FrameKinematicsVector<ValueType>& values) const;
+  void ValidateFrameIds(
+      SourceId source_id,
+      const KinematicsVector<FrameId, ValueType>& values) const;
 
   // Helper for RegisterGeometry() and RegisterDeformableGeometry() that
   // validates the the source and frame ids (that they are registered) and
@@ -790,6 +799,10 @@ class GeometryState {
   // The registered geometry sources and the frame ids that have been registered
   // on them.
   std::unordered_map<SourceId, FrameIdSet> source_frame_id_map_;
+
+  // The registered geometry sources and the frame names that have been
+  // registered on them. Only used to reject duplicate names.
+  std::unordered_map<SourceId, internal::FrameNameSet> source_frame_name_map_;
 
   // The registered geometry sources and the frame ids that have the world frame
   // as the parent frame. For a completely flat hierarchy, this contains the

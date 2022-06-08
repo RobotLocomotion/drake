@@ -24,6 +24,7 @@ namespace drake {
 namespace geometry {
 
 using internal::convert_to_double;
+using internal::FrameNameSet;
 using internal::HydroelasticType;
 using internal::InternalFrame;
 using internal::InternalGeometry;
@@ -131,6 +132,7 @@ GeometryState<T>::GeometryState()
   X_PF_.push_back(RigidTransform<T>::Identity());
 
   source_frame_id_map_[self_source_] = {world};
+  source_frame_name_map_[self_source_] = {"world"};
   source_root_frame_map_[self_source_] = {world};
 }
 
@@ -514,6 +516,26 @@ const VolumeMesh<double>* GeometryState<T>::GetReferenceMesh(
 }
 
 template <typename T>
+bool GeometryState<T>::IsDeformableGeometry(GeometryId id) const {
+  const InternalGeometry& geometry = GetValueOrThrow(id, geometries_);
+  return geometry.is_deformable();
+}
+
+template <typename T>
+std::vector<GeometryId> GeometryState<T>::GetAllDeformableGeometryIds() const {
+  const auto& world_geometries =
+      frames_.at(InternalFrame::world_frame_id()).child_geometries();
+  std::vector<GeometryId> deformable_geometries;
+  for (const GeometryId& g_id : world_geometries) {
+    const InternalGeometry& geometry = GetValueOrThrow(g_id, geometries_);
+    if (geometry.is_deformable()) {
+      deformable_geometries.emplace_back(g_id);
+    }
+  }
+  return deformable_geometries;
+}
+
+template <typename T>
 bool GeometryState<T>::CollisionFiltered(GeometryId id1, GeometryId id2) const {
   std::string base_message =
       "Can't report collision filter status between geometries " +
@@ -612,6 +634,7 @@ SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
   }
 
   source_frame_id_map_[source_id];
+  source_frame_name_map_[source_id];
   source_root_frame_map_[source_id];
   source_anchored_geometry_map_[source_id];
   source_names_[source_id] = final_name;
@@ -645,6 +668,14 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
   } else {
     // The parent is the world frame; register it as a root frame.
     source_root_frame_map_[source_id].insert(frame_id);
+  }
+  FrameNameSet& f_name_set = source_frame_name_map_[source_id];
+  const auto& [iterator, was_inserted] = f_name_set.insert(frame.name());
+  if (!was_inserted) {
+    throw std::logic_error(
+        fmt::format("Registering frame for source '{}'"
+                    " with a duplicate name '{}'",
+                    source_names_[source_id], frame.name()));
   }
 
   DRAKE_ASSERT(X_PF_.size() == frame_index_to_id_map_.size());
@@ -1151,7 +1182,7 @@ template <typename T>
 template <typename ValueType>
 void GeometryState<T>::ValidateFrameIds(
     const SourceId source_id,
-    const FrameKinematicsVector<ValueType>& kinematics_data) const {
+    const KinematicsVector<FrameId, ValueType>& kinematics_data) const {
   auto& frames = FramesForSource(source_id);
   const int ref_frame_count = static_cast<int>(frames.size());
   if (ref_frame_count != kinematics_data.size()) {

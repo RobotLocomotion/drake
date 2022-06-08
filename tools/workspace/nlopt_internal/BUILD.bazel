@@ -1,0 +1,45 @@
+# -*- python -*-
+
+load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+exports_files(
+    ["patches/gen_enums.patch"],
+    visibility = ["@nlopt_internal//:__pkg__"],
+)
+
+# Creates api/nlopt.hpp using NLopt upstream's codegen so that we can
+# cross-check it versus our Drake-local patch file.
+genrule(
+    name = "cmake_genrule",
+    srcs = [
+        "@nlopt_internal//:cmake/generate-cpp.cmake",
+        "@nlopt_internal//:src/api/nlopt-in.hpp",
+        "@nlopt_internal//:src/api/nlopt.h",
+    ],
+    outs = ["test/nlopt-upstream.hpp"],
+    cmd = " ".join([
+        "cmake",
+        "-DAPI_SOURCE_DIR=$$(dirname $(execpath @nlopt_internal//:src/api/nlopt.h))",  # noqa
+        "-P $(execpath @nlopt_internal//:cmake/generate-cpp.cmake)",
+        "&&",
+        "mv nlopt.hpp $@",
+    ]),
+    tags = [
+        "manual",
+        "nolint",
+    ],
+)
+
+drake_py_unittest(
+    name = "enum_test",
+    data = [
+        ":test/nlopt-upstream.hpp",
+        "@nlopt_internal//:genrule/nlopt.hpp",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+add_lint_tests()

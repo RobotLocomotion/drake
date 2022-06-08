@@ -1,0 +1,5 @@
+alien
+diffstat
+fakeroot
+patchutils
+python3-boto3

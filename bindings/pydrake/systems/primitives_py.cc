@@ -26,6 +26,7 @@
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/random_source.h"
 #include "drake/systems/primitives/saturation.h"
+#include "drake/systems/primitives/shared_pointer_system.h"
 #include "drake/systems/primitives/sine.h"
 #include "drake/systems/primitives/symbolic_vector_system.h"
 #include "drake/systems/primitives/trajectory_affine_system.h"
@@ -389,6 +390,35 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("state"), py::arg("position"),
             doc.StateInterpolatorWithDiscreteDerivative.set_initial_position
                 .doc_2args_state_position);
+
+    DefineTemplateClassWithDefault<SharedPointerSystem<T>, LeafSystem<T>>(
+        m, "SharedPointerSystem", GetPyParam<T>(), doc.SharedPointerSystem.doc)
+        .def(py::init([](py::object value_to_hold) {
+          auto wrapped = std::make_unique<py::object>(std::move(value_to_hold));
+          return std::make_unique<SharedPointerSystem<T>>(std::move(wrapped));
+        }),
+            py::arg("value_to_hold"), doc.SharedPointerSystem.ctor.doc)
+        .def_static(
+            "AddToBuilder",
+            [](DiagramBuilder<T>* builder, py::object value_to_hold) {
+              auto wrapped =
+                  std::make_unique<py::object>(std::move(value_to_hold));
+              return SharedPointerSystem<T>::AddToBuilder(
+                  builder, std::move(wrapped));
+            },
+            py::arg("builder"), py::arg("value_to_hold"),
+            doc.SharedPointerSystem.AddToBuilder.doc)
+        .def(
+            "get",
+            [](const SharedPointerSystem<T>& self) {
+              py::object result = py::none();
+              py::object* held = self.template get<py::object>();
+              if (held != nullptr) {
+                result = std::move(*held);
+              }
+              return result;
+            },
+            doc.SharedPointerSystem.get.doc);
 
     DefineTemplateClassWithDefault<SymbolicVectorSystem<T>, LeafSystem<T>>(m,
         "SymbolicVectorSystem", GetPyParam<T>(), doc.SymbolicVectorSystem.doc)

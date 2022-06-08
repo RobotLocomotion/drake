@@ -33,6 +33,7 @@ namespace geometry {
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using internal::DummyRenderEngine;
+using internal::FrameNameSet;
 using internal::InternalFrame;
 using internal::InternalGeometry;
 using internal::ProximityEngine;
@@ -74,6 +75,11 @@ class GeometryStateTester {
 
   const unordered_map<SourceId, FrameIdSet>& get_source_frame_id_map() const {
     return state_->source_frame_id_map_;
+  }
+
+  const unordered_map<SourceId, FrameNameSet>& get_source_frame_name_map()
+      const {
+    return state_->source_frame_name_map_;
   }
 
   const unordered_map<SourceId, FrameIdSet>& get_source_root_frame_map() const {
@@ -118,8 +124,9 @@ class GeometryStateTester {
   }
 
   template <typename ValueType>
-  void ValidateFrameIds(SourceId source_id,
-                        const FrameKinematicsVector<ValueType>& data) const {
+  void ValidateFrameIds(
+      SourceId source_id,
+      const KinematicsVector<FrameId, ValueType>& data) const {
     state_->ValidateFrameIds(source_id, data);
   }
 
@@ -722,6 +729,9 @@ TEST_F(GeometryStateTest, Constructor) {
   // GeometryState always has a world frame.
   EXPECT_EQ(geometry_state_.get_num_frames(), 1);
   EXPECT_EQ(geometry_state_.get_num_geometries(), 0);
+  EXPECT_EQ(gs_tester_.get_source_frame_name_map().find(
+                gs_tester_.get_self_source_id())->second,
+            internal::FrameNameSet{"world"});
 }
 
 // Confirms that the registered shapes are correctly returned upon
@@ -856,6 +866,8 @@ void ExpectSuccessfulTransmogrification(
   EXPECT_EQ(T_tester.get_source_name_map(), d_tester.get_source_name_map());
   EXPECT_EQ(T_tester.get_source_frame_id_map(),
             d_tester.get_source_frame_id_map());
+  EXPECT_EQ(T_tester.get_source_frame_name_map(),
+            d_tester.get_source_frame_name_map());
   EXPECT_EQ(T_tester.get_source_root_frame_map(),
             d_tester.get_source_root_frame_map());
   EXPECT_EQ(T_tester.get_source_anchored_geometry_map(),
@@ -1223,6 +1235,25 @@ TEST_F(GeometryStateTest, AddFrameToInvalidSource) {
   DRAKE_ASSERT_THROWS_MESSAGE(
       geometry_state_.RegisterFrame(s_id, *frame_),
       "Referenced geometry source \\d+ is not registered.");
+}
+
+// Tests that a duplicate-named frame added to a valid source throws an
+// exception with a meaningful message.
+TEST_F(GeometryStateTest, DuplicateFrameName) {
+  const SourceId s_id = NewSource();
+  geometry_state_.RegisterFrame(s_id, *frame_);
+  DRAKE_ASSERT_THROWS_MESSAGE(
+      geometry_state_.RegisterFrame(s_id, GeometryFrame(frame_->name())),
+      ".*source 'default_source'.*duplicate name 'ref_frame'");
+}
+
+// Tests that adding another frame named "world" to the self source throws an
+// exception.
+TEST_F(GeometryStateTest, ManyWorldsRefuted) {
+  DRAKE_ASSERT_THROWS_MESSAGE(
+      geometry_state_.RegisterFrame(gs_tester_.get_self_source_id(),
+                                    GeometryFrame("world")),
+      ".*source 'SceneGraphInternal'.*duplicate name 'world'");
 }
 
 // Tests that a frame added to a valid source appears in the source's frames.
@@ -1593,6 +1624,14 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
   const auto g_id = geometry_state_.RegisterDeformableGeometry(
       s_id, InternalFrame::world_frame_id(), move(instance2), kRezHint);
   EXPECT_EQ(g_id, expected_g_id);
+  EXPECT_TRUE(geometry_state_.IsDeformableGeometry(g_id));
+
+  /* Registers a non-deformable geometry. */
+  auto instance3 = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere");
+  const GeometryId non_deformable_g_id =
+      geometry_state_.RegisterGeometry(s_id, f_id, move(instance3));
+  EXPECT_FALSE(geometry_state_.IsDeformableGeometry(non_deformable_g_id));
 
   // Verify the reference mesh of the deformable geometry matches the input.
   const VolumeMesh<double>* reference_mesh =
@@ -1612,8 +1651,16 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
       geometry_state_.get_configurations_in_world(g_id);
   EXPECT_EQ(q_WG.size(), mesh.num_vertices() * 3);
 
-  // Verify that deformable geometries are dynamic.
-  EXPECT_EQ(geometry_state_.NumDynamicGeometries(), 1);
+  // Verify that deformable geometries are dynamic (One deformable and one
+  // dynamic non-deformable).
+  EXPECT_EQ(geometry_state_.NumDynamicGeometries(), 2);
+
+  // Verifies that GetAllDeformableGeometryIds() collect all deformable
+  // geometry ids and _none_ of the non-deformable geometry ids.
+  const std::vector<GeometryId> deformable_ids =
+      geometry_state_.GetAllDeformableGeometryIds();
+  ASSERT_EQ(deformable_ids.size(), 1);
+  EXPECT_EQ(deformable_ids[0], g_id);
 }
 
 // Tests the RemoveGeometry() functionality. This action will have several

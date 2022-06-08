@@ -8,20 +8,20 @@
  
  #if defined(PETSC_CLANG_STATIC_ANALYZER)
  #define PetscDisableStaticAnalyzerForExpressionUnderstandingThatThisIsDangerousAndBugprone(expr)
-@@ -886,9 +887,9 @@ PETSC_EXTERN PetscMPIInt Petsc_ShmComm_keyval;
+@@ -852,9 +853,9 @@ struct PetscCommStash {
    PetscCommDuplicate(), PetscCommDestroy(), PetscCommGetNewTag(), PetscObjectGetName()
  */
  typedef struct {
--  PetscMPIInt tag;              /* next free tag value */
--  PetscInt    refcount;         /* number of references, communicator can be freed when this reaches 0 */
--  PetscInt    namecount;        /* used to generate the next name, as in Vec_0, Mat_1, ... */
-+  atomic_int atomic_tag;        /* next free tag value */
-+  atomic_int atomic_refcount;   /* number of references, communicator can be freed when this reaches 0 */
-+  atomic_int atomic_namecount;  /* used to generate the next name, as in Vec_0, Mat_1, ... */
-   PetscMPIInt *iflags;          /* length of comm size, shared by all calls to PetscCommBuildTwoSided_Allreduce/RedScatter on this comm */
+-  PetscMPIInt           tag;              /* next free tag value */
+-  PetscInt              refcount;         /* number of references, communicator can be freed when this reaches 0 */
+-  PetscInt              namecount;        /* used to generate the next name, as in Vec_0, Mat_1, ... */
++  atomic_int            atomic_tag;       /* next free tag value */
++  atomic_int            atomic_refcount;  /* number of references, communicator can be freed when this reaches 0 */
++  atomic_int            atomic_namecount; /* used to generate the next name, as in Vec_0, Mat_1, ... */
+   PetscMPIInt           *iflags;          /* length of comm size, shared by all calls to PetscCommBuildTwoSided_Allreduce/RedScatter on this comm */
+   struct PetscCommStash *comms;           /* communicators available for PETSc to pass off to other packages */
  } PetscCommCounter;
- 
-@@ -972,7 +973,7 @@ PETSC_STATIC_INLINE PetscErrorCode PetscSpinlockDestroy(PetscSpinlock *omp_lock)
+@@ -939,7 +940,7 @@ static inline PetscErrorCode PetscSpinlockDestroy(PetscSpinlock *omp_lock)
    return 0;
  }
  #else

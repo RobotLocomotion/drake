@@ -14,14 +14,15 @@ namespace math {
  * See https://eigen.tuxfamily.org/dox/group__TutorialSparse.html for more
  * information on the triplet
  */
-template <typename Derived>
-std::vector<Eigen::Triplet<typename Derived::Scalar>> SparseMatrixToTriplets(
-    const Derived& matrix) {
-  using Scalar = typename Derived::Scalar;
+template <typename Scalar, int Options, typename StorageIndex>
+std::vector<Eigen::Triplet<Scalar>> SparseMatrixToTriplets(
+    const Eigen::SparseMatrix<Scalar, Options, StorageIndex>& matrix) {
+  using InnerIterator = typename Eigen::SparseMatrix<
+      Scalar, Options, StorageIndex>::InnerIterator;
   std::vector<Eigen::Triplet<Scalar>> triplets;
   triplets.reserve(matrix.nonZeros());
   for (int i = 0; i < matrix.outerSize(); i++) {
-    for (typename Derived::InnerIterator it(matrix, i); it; ++it) {
+    for (InnerIterator it(matrix, i); it; ++it) {
       triplets.push_back(
           Eigen::Triplet<Scalar>(it.row(), it.col(), it.value()));
     }

@@ -9,7 +9,10 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/workspace:forward_files.bzl", "forward_files")
-load("//tools/workspace/dm_control:files.bzl", "dm_control_mujoco_files")
+load(
+    "//tools/workspace/dm_control_internal:files.bzl",
+    "dm_control_mujoco_files",
+)
 
 filegroup(
     name = "test_models",
@@ -18,7 +21,6 @@ filegroup(
         "test/**/*.config",
         "test/**/*.obj",
         "test/**/*.sdf",
-        "test/**/*.forced_nesting_sdf",
         "test/**/*.urdf",
         "test/**/*.xml",
         "test/**/*.png",
@@ -87,7 +89,7 @@ drake_cc_library(
         "//geometry:proximity_properties",
         "//math:geometric_transform",
         "//multibody/plant",
-        "@sdformat",
+        "@sdformat_internal//:sdformat",
         "@tinyxml2",
     ],
 )
@@ -100,7 +102,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         "//common:diagnostic_policy",
-        "@sdformat",
+        "@sdformat_internal//:sdformat",
     ],
 )
 
@@ -119,7 +121,7 @@ drake_cc_library(
         "//geometry:geometry_roles",
         "//geometry:shape_specification",
         "//multibody/plant:coulomb_friction",
-        "@sdformat",
+        "@sdformat_internal//:sdformat",
     ],
 )
 
@@ -159,7 +161,7 @@ drake_cc_library(
         ":detail_urdf_parser",
         ":scoped_names",
         "//multibody/plant",
-        "@sdformat",
+        "@sdformat_internal//:sdformat",
     ],
 )
 
@@ -212,10 +214,21 @@ drake_cc_library(
     ],
 )
 
+# The composite parse module and parser depend on one another, but the
+# detail_composite_parse header should remain private.
 drake_cc_library(
     name = "parser",
-    srcs = ["parser.cc"],
-    hdrs = ["parser.h"],
+    srcs = [
+        "detail_composite_parse.cc",
+        "parser.cc",
+    ],
+    hdrs = [
+        "detail_composite_parse.h",
+        "parser.h",
+    ],
+    install_hdrs_exclude = [
+        "detail_composite_parse.h",
+    ],
     visibility = ["//visibility:public"],
     interface_deps = [
         ":package_map",
@@ -253,6 +266,7 @@ drake_cc_library(
         "//multibody/plant",
     ],
     deps = [
+        ":detail_misc",
         ":scoped_names",
         "//common:filesystem",
         "//common:find_resource",
@@ -433,9 +447,9 @@ drake_cc_googletest(
 )
 
 _DM_CONTROL_MUJOCO_FILES = forward_files(
-    srcs = ["@dm_control//:" + x for x in dm_control_mujoco_files()],
+    srcs = ["@dm_control_internal//:" + x for x in dm_control_mujoco_files()],
     dest_prefix = "",
-    strip_prefix = "@dm_control//:",
+    strip_prefix = "@dm_control_internal//:",
     visibility = ["//visibility:private"],
 )
 

@@ -1,0 +1,96 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+load(
+    "@drake//tools/workspace:vendor_cxx.bzl",
+    "cc_library_vendored",
+)
+
+licenses(["notice"])  # Qhull
+
+package(default_visibility = ["//visibility:private"])
+
+_HDRS_C = glob([
+    "src/libqhull_r/*.h",
+])
+
+_HDRS_CPP = glob([
+    "src/libqhullcpp/*.h",
+])
+
+_SRCS_C = [
+    "src/libqhull_r/geom2_r.c",
+    "src/libqhull_r/geom_r.c",
+    "src/libqhull_r/global_r.c",
+    "src/libqhull_r/io_r.c",
+    "src/libqhull_r/libqhull_r.c",
+    "src/libqhull_r/mem_r.c",
+    "src/libqhull_r/merge_r.c",
+    "src/libqhull_r/poly2_r.c",
+    "src/libqhull_r/poly_r.c",
+    "src/libqhull_r/qset_r.c",
+    "src/libqhull_r/random_r.c",
+    "src/libqhull_r/stat_r.c",
+    "src/libqhull_r/user_r.c",
+    "src/libqhull_r/usermem_r.c",
+]
+
+_SRCS_CPP = [
+    "src/libqhullcpp/Qhull.cpp",
+    "src/libqhullcpp/QhullFacet.cpp",
+    "src/libqhullcpp/QhullFacetList.cpp",
+    "src/libqhullcpp/QhullFacetSet.cpp",
+    "src/libqhullcpp/QhullHyperplane.cpp",
+    "src/libqhullcpp/QhullPoint.cpp",
+    "src/libqhullcpp/QhullPointSet.cpp",
+    "src/libqhullcpp/QhullQh.cpp",
+    "src/libqhullcpp/QhullRidge.cpp",
+    "src/libqhullcpp/QhullSet.cpp",
+    "src/libqhullcpp/QhullUser.cpp",
+    "src/libqhullcpp/QhullVertex.cpp",
+    "src/libqhullcpp/QhullVertexSet.cpp",
+    "src/libqhullcpp/RoadError.cpp",
+    "src/libqhullcpp/RoadLogEvent.cpp",
+]
+
+cc_library(
+    name = "qhull_r",
+    hdrs = _HDRS_C,
+    copts = [
+        "-fvisibility=hidden",
+    ],
+    includes = ["src"],
+    srcs = _SRCS_C,
+    linkstatic = 1,
+)
+
+cc_library_vendored(
+    name = "qhull",
+    hdrs = _HDRS_CPP,
+    hdrs_vendored = [
+        x.replace("src/libqhullcpp/", "drake_src/drake_vendor/libqhullcpp/")
+        for x in _HDRS_CPP
+    ],
+    includes = ["drake_src"],
+    edit_include = {
+        "libqhullcpp/": "drake_vendor/libqhullcpp/",
+    },
+    srcs = _SRCS_CPP,
+    srcs_vendored = [
+        x.replace("src/", "drake_src/drake_vendor/")
+        for x in _SRCS_CPP
+    ],
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [":qhull_r"],
+)
+
+# Install the license file.
+install(
+    name = "install",
+    docs = ["COPYING.txt"],
+    visibility = ["//visibility:public"],
+)

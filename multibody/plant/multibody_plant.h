@@ -1376,14 +1376,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @note There is a *very* specific order of operations:
   ///
   /// 1. Bodies and geometries must be added to the %MultibodyPlant.
-  /// 2. The %MultibodyPlant must be finalized (via Finalize()).
-  /// 3. Create GeometrySet instances from bodies (via this method).
-  /// 4. Invoke SceneGraph::ExcludeCollisions*() to filter collisions.
-  /// 5. Allocate context.
+  /// 2. Create GeometrySet instances from bodies (via this method).
+  /// 3. Invoke SceneGraph::ExcludeCollisions*() to filter collisions.
+  /// 4. Allocate context.
   ///
   /// Changing the order will cause exceptions to be thrown.
   ///
-  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `this` %MultibodyPlant was not
+  /// registered with a SceneGraph.
   geometry::GeometrySet CollectRegisteredGeometries(
       const std::vector<const Body<T>*>& bodies) const;
 

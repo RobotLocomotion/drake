@@ -1181,7 +1181,6 @@ struct scalar_cmp_op<drake::symbolic::Expression, drake::symbolic::Expression,
                      cmp_EQ>
     : binary_op_base<drake::symbolic::Expression, drake::symbolic::Expression> {
   typedef drake::symbolic::Formula result_type;
-  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
   operator()(const drake::symbolic::Expression& a,
              const drake::symbolic::Expression& b) const {
@@ -1195,7 +1194,6 @@ struct scalar_cmp_op<drake::symbolic::Expression, drake::symbolic::Expression,
                      cmp_LT>
     : binary_op_base<drake::symbolic::Expression, drake::symbolic::Expression> {
   typedef drake::symbolic::Formula result_type;
-  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
   operator()(const drake::symbolic::Expression& a,
              const drake::symbolic::Expression& b) const {
@@ -1209,7 +1207,6 @@ struct scalar_cmp_op<drake::symbolic::Expression, drake::symbolic::Expression,
                      cmp_LE>
     : binary_op_base<drake::symbolic::Expression, drake::symbolic::Expression> {
   typedef drake::symbolic::Formula result_type;
-  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
   operator()(const drake::symbolic::Expression& a,
              const drake::symbolic::Expression& b) const {
@@ -1223,7 +1220,6 @@ struct scalar_cmp_op<drake::symbolic::Expression, drake::symbolic::Expression,
                      cmp_GT>
     : binary_op_base<drake::symbolic::Expression, drake::symbolic::Expression> {
   typedef drake::symbolic::Formula result_type;
-  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
   operator()(const drake::symbolic::Expression& a,
              const drake::symbolic::Expression& b) const {
@@ -1237,7 +1233,6 @@ struct scalar_cmp_op<drake::symbolic::Expression, drake::symbolic::Expression,
                      cmp_GE>
     : binary_op_base<drake::symbolic::Expression, drake::symbolic::Expression> {
   typedef drake::symbolic::Formula result_type;
-  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
   operator()(const drake::symbolic::Expression& a,
              const drake::symbolic::Expression& b) const {
@@ -1251,7 +1246,6 @@ struct scalar_cmp_op<drake::symbolic::Expression, drake::symbolic::Expression,
                      cmp_NEQ>
     : binary_op_base<drake::symbolic::Expression, drake::symbolic::Expression> {
   typedef drake::symbolic::Formula result_type;
-  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
   operator()(const drake::symbolic::Expression& a,
              const drake::symbolic::Expression& b) const {
@@ -1265,7 +1259,6 @@ struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
                      cmp_EQ>
     : binary_op_base<drake::symbolic::Variable, drake::symbolic::Variable> {
   typedef drake::symbolic::Formula result_type;
-  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
   operator()(const drake::symbolic::Variable& a,
              const drake::symbolic::Variable& b) const {
@@ -1279,7 +1272,6 @@ struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
                      cmp_LT>
     : binary_op_base<drake::symbolic::Variable, drake::symbolic::Variable> {
   typedef drake::symbolic::Formula result_type;
-  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
   operator()(const drake::symbolic::Variable& a,
              const drake::symbolic::Variable& b) const {
@@ -1293,7 +1285,6 @@ struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
                      cmp_LE>
     : binary_op_base<drake::symbolic::Variable, drake::symbolic::Variable> {
   typedef drake::symbolic::Formula result_type;
-  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
   operator()(const drake::symbolic::Variable& a,
              const drake::symbolic::Variable& b) const {
@@ -1307,7 +1298,6 @@ struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
                      cmp_GT>
     : binary_op_base<drake::symbolic::Variable, drake::symbolic::Variable> {
   typedef drake::symbolic::Formula result_type;
-  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
   operator()(const drake::symbolic::Variable& a,
              const drake::symbolic::Variable& b) const {
@@ -1321,7 +1311,6 @@ struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
                      cmp_GE>
     : binary_op_base<drake::symbolic::Variable, drake::symbolic::Variable> {
   typedef drake::symbolic::Formula result_type;
-  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
   operator()(const drake::symbolic::Variable& a,
              const drake::symbolic::Variable& b) const {
@@ -1335,7 +1324,6 @@ struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
                      cmp_NEQ>
     : binary_op_base<drake::symbolic::Variable, drake::symbolic::Variable> {
   typedef drake::symbolic::Formula result_type;
-  EIGEN_EMPTY_STRUCT_CTOR(scalar_cmp_op)
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type
   operator()(const drake::symbolic::Variable& a,
              const drake::symbolic::Variable& b) const {

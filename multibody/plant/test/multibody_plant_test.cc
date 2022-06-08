@@ -1414,20 +1414,18 @@ GTEST_TEST(MultibodyPlantTest, FilterWeldedSubgraphs) {
 // Tests the error conditions for CollectRegisteredGeometries.
 GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometriesErrors) {
   MultibodyPlant<double> plant(0.0);
+  const RigidBody<double>& body = plant.AddRigidBody("body",
+      SpatialInertia<double>::MakeTestCube());
 
-  // A throw-away rigid body I can use to satisfy the function interface; it
-  // will never be used because the function will fail in a pre-requisite test.
-  RigidBody<double> body{SpatialInertia<double>()};
-  // The case where the plant has *not* been finalized.
+  // It's an error to call this without a SceneGraph.
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.CollectRegisteredGeometries({&body}),
-      "Failure .* in CollectRegisteredGeometries.* failed.");
+      ".*geometry_source_is_registered.*failed.*");
 
-  // The case where the plant has *not* been registered as a source.
-  plant.Finalize();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.CollectRegisteredGeometries({&body}),
-      "Failure .* in CollectRegisteredGeometries.* failed.");
+  // With a scene graph, it passes.
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  EXPECT_NO_THROW(plant.CollectRegisteredGeometries({&body}));
 }
 
 // Tests the ability to accumulate the geometries associated with a set of

@@ -7,9 +7,9 @@
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/collision_filter_manager.h"
-#include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_set.h"
+#include "drake/geometry/kinematics_vector.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph_inspector.h"
@@ -86,8 +86,8 @@ class QueryObject;
  FramePoseVector. For each registered frame, this "pose vector" maps the
  registered FrameId to a pose value. All registered frames must be accounted
  for and only frames registered by a source can be included in its output port.
- See the details in FrameKinematicsVector for details on how to provide values
- for this port.
+ See the details in KinematicsVector for details on how to provide values for
+ this port.
 
  @section geom_sys_outputs Outputs
 
@@ -405,9 +405,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @param frame         The frame to register.
    @returns A unique identifier for the added frame.
    @throws std::exception  if a) the `source_id` does _not_ map to a
-                           registered source, or
+                           registered source,
                            b) `frame` has an id that has already been
-                           registered.  */
+                           registered, or
+                           c) there is already a frame with the
+                           same name registered for the source.  */
   FrameId RegisterFrame(SourceId source_id, const GeometryFrame& frame);
 
   /** Registers a new frame F for this source. This hangs frame F on another
@@ -425,9 +427,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @throws std::exception  if a) the `source_id` does _not_ map to a
                            registered source,
                            b) the `parent_id` does _not_ map to a known
-                           frame or does not belong to the source, or
+                           frame or does not belong to the source,
                            c) `frame` has an id that has already been
-                           registered.  */
+                           registered, or
+                           d) there is already a frame with the
+                           same name registered for the source.  */
   FrameId RegisterFrame(SourceId source_id, FrameId parent_id,
                         const GeometryFrame& frame);
 
@@ -493,7 +497,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   /** systems::Context-modifying variant of RegisterGeometry(). Rather than
    modifying %SceneGraph's model, it modifies the copy of the model stored in
-   the provided context.  */
+   the provided context.
+   @pydrake_mkdoc_identifier{4args_context_source_id_geometry_id_geometry}
+     */
   GeometryId RegisterGeometry(systems::Context<T>* context, SourceId source_id,
                               GeometryId geometry_id,
                               std::unique_ptr<GeometryInstance> geometry) const;

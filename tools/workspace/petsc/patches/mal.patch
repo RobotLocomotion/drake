@@ -1,11 +1,9 @@
-diff --git a/src/sys/memory/mal.c b/src/sys/memory/mal.c
-index 87678c5f2f..eabd9b2b97 100644
 --- src/sys/memory/mal.c
 +++ src/sys/memory/mal.c
-@@ -414,9 +414,15 @@ PetscErrorCode PetscMallocA(int n,PetscBool clear,int lineno,const char *functio
+@@ -399,9 +399,15 @@ PetscErrorCode PetscMallocA(int n,PetscBool clear,int lineno,const char *functio
    if (petscmalloccoalesce) {
      char *p;
-     ierr = (*PetscTrMalloc)(sumbytes,clear,lineno,function,filename,(void**)&p);CHKERRQ(ierr);
+     PetscCall((*PetscTrMalloc)(sumbytes,clear,lineno,function,filename,(void**)&p));
 -    for (i=0; i<n; i++) {
 -      *ptr[i] = bytes[i] ? p : NULL;
 -      p = (char*)PetscAddrAlign(p + bytes[i]);

@@ -48,6 +48,13 @@ class ReferenceDeformableGeometry : public ShapeReifier {
   ReferenceDeformableGeometry& operator=(ReferenceDeformableGeometry&&) =
       default;
 
+  /* Returns the volume mesh representation of the deformable geometry at
+   reference configuration. */
+  const VolumeMesh<double>& mesh() const {
+    DRAKE_DEMAND(mesh_ != nullptr);
+    return *mesh_;
+  }
+
   /* Returns the approximate signed distance field (sdf) to the surface of the
    deformable geometry in the reference configuration. More specifically, the
    sdf value at each vertex is exact (to the accuracy of the distance query

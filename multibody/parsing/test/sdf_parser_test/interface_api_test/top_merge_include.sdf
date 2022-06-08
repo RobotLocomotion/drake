@@ -19,7 +19,7 @@
       <pose relative_to="torso"/>
       <include merge="true">
         <pose>1 0 0 0 0 0</pose>
-        <uri>package://interface_api_test/arm_merge_include.forced_nesting_sdf</uri>
+        <uri>package://interface_api_test/arm_merge_include.sdf</uri>
       </include>
     </model>
 
@@ -42,7 +42,7 @@
       <pose relative_to="torso"/>
       <include merge="true">
         <pose>1 0 0 0 0 0</pose>
-        <uri>package://interface_api_test/arm_merge_include.forced_nesting_sdf</uri>
+        <uri>package://interface_api_test/arm_merge_include.sdf</uri>
         <name>test_arm_sdf_name</name>
       </include>
     </model>

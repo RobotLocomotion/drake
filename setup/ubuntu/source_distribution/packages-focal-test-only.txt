@@ -16,7 +16,6 @@ python3-psutil
 python3-requests
 python3-scipy-dbg
 python3-six
-python3-tk-dbg
 python3-uritemplate
 python3-websockets
 python3-yaml-dbg

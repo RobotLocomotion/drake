@@ -1357,10 +1357,6 @@ RigidTransformd GetDefaultFramePose(
 // http://sdformat.org/tutorials?tut=composition_proposal
 constexpr char kExtUrdf[] = ".urdf";
 
-// To test re-parsing an SDFormat document, but in complete isolation. Tests
-// out separate model formats.
-constexpr char kExtForcedNesting[] = ".forced_nesting_sdf";
-
 void AddBodiesToInterfaceModel(const MultibodyPlant<double>& plant,
                                ModelInstanceIndex model_instance,
                                const sdf::InterfaceModelPtr& interface_model) {
@@ -1414,7 +1410,7 @@ void AddJointsToInterfaceModel(const MultibodyPlant<double>& plant,
 // in this file.
 sdf::ParserConfig MakeSdfParserConfig(
     const PackageMap&, std::vector<MultibodyPlantSubgraphInfo>* subgraph_infos,
-    CollisionFilterGroupResolver*, bool test_sdf_forced_nesting);
+    CollisionFilterGroupResolver*);
 
 sdf::Error MakeSdfError(sdf::ErrorCode code, const DiagnosticDetail& detail) {
   sdf::Error result(code, detail.message);
@@ -1435,20 +1431,16 @@ sdf::Error MakeSdfError(sdf::ErrorCode code, const DiagnosticDetail& detail) {
 sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     MultibodyPlantSubgraphInfo *subgraph_info, const PackageMap& package_map,
     CollisionFilterGroupResolver* resolver,
-    const sdf::NestedInclude& include, sdf::Errors* errors,
-    bool test_sdf_forced_nesting) {
+    const sdf::NestedInclude& include, sdf::Errors* errors) {
 
   std::vector<MultibodyPlantSubgraphInfo> nested_subgraph_infos;
   const sdf::ParserConfig parser_config = MakeSdfParserConfig(
-      package_map, &nested_subgraph_infos, resolver, test_sdf_forced_nesting);
+      package_map, &nested_subgraph_infos, resolver);
 
   auto plant = subgraph_info->plant.get();
-  // Do not attempt to parse anything other than URDF or forced nesting files.
+  // Do not attempt to parse anything other than URDF files.
   const bool is_urdf = EndsWith(include.ResolvedFileName(), kExtUrdf);
-  const bool is_forced_nesting =
-      test_sdf_forced_nesting &&
-      EndsWith(include.ResolvedFileName(), kExtForcedNesting);
-  if (!is_urdf && !is_forced_nesting) {
+  if (!is_urdf) {
     return nullptr;
   }
 
@@ -1501,26 +1493,8 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
         "__model__", canonical_link_frame, RigidTransformd::Identity(),
         main_model_instance));
   } else {
-    DRAKE_DEMAND(is_forced_nesting);
-    // Since this is just for testing, we'll assume that there wouldn't be
-    // another included model that requires a custom parser.
-    sdf::Root root;
-
-    sdf::Errors inner_errors = LoadSdf(
-        diagnostic, &root, data_source, parser_config);
-    if (PropagateErrors(std::move(inner_errors), errors)) {
-      return nullptr;
-    }
-    DRAKE_DEMAND(nullptr != root.Model());
-    const sdf::Model &model = *root.Model();
-
-    const std::string model_name =
-        include.LocalModelName().value_or(model.Name());
-    main_model_instance = AddModelsFromSpecification(
-        diagnostic, model,
-        sdf::JoinName(include.AbsoluteParentName(), model_name), {},
-        plant, resolver, package_map, data_source.GetRootDir(), nullptr)
-        .front();
+    // TODO(jwnimmer-tri) Eventually we'll add our MuJoCo parser here.
+    DRAKE_UNREACHABLE();
   }
 
   // Now that the model is parsed, we create interface elements to send to
@@ -1613,8 +1587,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 sdf::ParserConfig MakeSdfParserConfig(
     const PackageMap& package_map,
     std::vector<MultibodyPlantSubgraphInfo> *subgraph_infos,
-    CollisionFilterGroupResolver* resolver,
-    bool test_sdf_forced_nesting) {
+    CollisionFilterGroupResolver* resolver) {
 
   // The error severity settings here are somewhat subtle. We set all of them
   // to ERR so that reports will append into an sdf::Errors collection instead
@@ -1643,7 +1616,7 @@ sdf::ParserConfig MakeSdfParserConfig(
     });
 
   parser_config.RegisterCustomModelParser(
-      [subgraph_infos, &package_map, resolver, test_sdf_forced_nesting](
+      [subgraph_infos, &package_map, resolver](
           const sdf::NestedInclude& include, sdf::Errors& errors) {
         auto& subgraph_info = subgraph_infos->emplace_back();
         const double kArbitraryDt = 0.1;
@@ -1654,8 +1627,7 @@ sdf::ParserConfig MakeSdfParserConfig(
         subgraph_info.plant->RegisterAsSourceForSceneGraph(
             subgraph_info.scene_graph.get());
         return ParseNestedInterfaceModel(&subgraph_info, package_map, resolver,
-                                         include, &errors,
-                                         test_sdf_forced_nesting);
+                                         include, &errors);
       });
 
   return parser_config;
@@ -1730,14 +1702,12 @@ std::map<ModelInstanceIndex, int> AddMultibodyPlantSubgraphsToPlant(
 std::optional<ModelInstanceIndex> AddModelFromSdf(
     const DataSource& data_source,
     const std::string& model_name_in,
-    const ParsingWorkspace& workspace,
-    bool test_sdf_forced_nesting) {
+    const ParsingWorkspace& workspace) {
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
   std::vector<MultibodyPlantSubgraphInfo> subgraph_infos;
   sdf::ParserConfig parser_config = MakeSdfParserConfig(
-      workspace.package_map, &subgraph_infos, workspace.collision_resolver,
-      test_sdf_forced_nesting);
+      workspace.package_map, &subgraph_infos, workspace.collision_resolver);
 
   sdf::Root root;
 
@@ -1776,14 +1746,12 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
 
 std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const DataSource& data_source,
-    const ParsingWorkspace& workspace,
-    bool test_sdf_forced_nesting) {
+    const ParsingWorkspace& workspace) {
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
   std::vector<MultibodyPlantSubgraphInfo> subgraph_infos;
   sdf::ParserConfig parser_config = MakeSdfParserConfig(
-      workspace.package_map, &subgraph_infos, workspace.collision_resolver,
-      test_sdf_forced_nesting);
+      workspace.package_map, &subgraph_infos, workspace.collision_resolver);
 
   sdf::Root root;
 

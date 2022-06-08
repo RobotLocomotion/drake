@@ -11,7 +11,6 @@
 #include "drake/common/sorted_pair.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/common/unused.h"
 
 namespace drake {
 namespace {
@@ -227,7 +226,7 @@ TEST_F(IdentifierTests, InvalidGetValueCall) {
   if (kDrakeAssertIsDisarmed) { return; }
   AId invalid;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      unused(invalid.get_value()),
+      invalid.get_value(),
       ".*is_valid.*failed.*");
 }
 
@@ -235,14 +234,14 @@ TEST_F(IdentifierTests, InvalidGetValueCall) {
 TEST_F(IdentifierTests, InvalidEqualityCompare) {
   if (kDrakeAssertIsDisarmed) { return; }
   AId invalid;
-  DRAKE_EXPECT_THROWS_MESSAGE(unused(invalid == a1_), ".*is_valid.*failed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(invalid == a1_, ".*is_valid.*failed.*");
 }
 
 // Comparison of invalid ids is an error.
 TEST_F(IdentifierTests, InvalidInequalityCompare) {
   if (kDrakeAssertIsDisarmed) { return; }
   AId invalid;
-  DRAKE_EXPECT_THROWS_MESSAGE(unused(invalid != a1_), ".*is_valid.*failed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(invalid != a1_, ".*is_valid.*failed.*");
 }
 
 // Comparison of invalid ids is an error.
@@ -251,7 +250,7 @@ TEST_F(IdentifierTests, BadInvalidOrSameComparison) {
     return;
   }
   AId invalid;
-  DRAKE_EXPECT_THROWS_MESSAGE(unused(a1_.is_same_as_valid_id(invalid)),
+  DRAKE_EXPECT_THROWS_MESSAGE(a1_.is_same_as_valid_id(invalid),
                               ".*is_valid.*failed.*");
 }
 
@@ -270,7 +269,7 @@ TEST_F(IdentifierTests, InvalidStream) {
   if (kDrakeAssertIsDisarmed) { return; }
   AId invalid;
   std::stringstream ss;
-  DRAKE_EXPECT_THROWS_MESSAGE(unused(ss << invalid), ".*is_valid.*failed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(ss << invalid, ".*is_valid.*failed.*");
 }
 
 }  // namespace

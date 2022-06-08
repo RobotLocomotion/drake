@@ -459,12 +459,12 @@ class SdpaFreeFormat {
  *
  */
 enum class RemoveFreeVariableMethod {
-  kTwoSlackVariables,  ///< Approach 1, replace a free variable s as
-                       ///< s = y⁺ - y⁻, y⁺ ≥ 0, y⁻ ≥ 0.
-  kNullspace,  ///< Approach 2, reformulate the dual problem by considering
-               ///< the nullspace of the linear constraint in the dual.
-  kLorentzConeSlack,  ///< Approach 3, add a slack variable t with the lorentz
-                      ///< cone constraint t ≥ sqrt(sᵀs).
+  kTwoSlackVariables = 1,  ///< Approach 1, replace a free variable s as
+                           ///< s = y⁺ - y⁻, y⁺ ≥ 0, y⁻ ≥ 0.
+  kNullspace = 2,  ///< Approach 2, reformulate the dual problem by considering
+                   ///< the nullspace of the linear constraint in the dual.
+  kLorentzConeSlack = 3,  ///< Approach 3, add a slack variable t with the
+                          ///< lorentz cone constraint t ≥ sqrt(sᵀs).
 };
 
 /**

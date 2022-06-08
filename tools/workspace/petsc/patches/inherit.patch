@@ -14,10 +14,10 @@
  {
 -  static PetscInt idcnt = 1;
 +  static atomic_int atomic_idcnt = 1;
-   PetscErrorCode  ierr;
  #if defined(PETSC_USE_LOG)
    PetscObject     *newPetscObjects;
-@@ -48,7 +49,7 @@ PetscErrorCode  PetscHeaderCreate_Private(PetscObject h,PetscClassId classid,con
+   PetscInt         newPetscObjectsMaxCounts,i;
+@@ -47,7 +48,7 @@ PetscErrorCode  PetscHeaderCreate_Private(PetscObject h,PetscClassId classid,con
  #if defined(PETSC_HAVE_SAWS)
    h->amsmem                = PETSC_FALSE;
  #endif

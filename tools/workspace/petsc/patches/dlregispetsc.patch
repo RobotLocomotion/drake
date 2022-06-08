@@ -9,10 +9,10 @@
  
  /*
 @@ -108,7 +107,6 @@ PETSC_EXTERN PetscErrorCode PetscDLLibraryRegister_petscsys(void)
-   ierr = PetscDLLibraryRegister_petscdm();CHKERRQ(ierr);
-   ierr = PetscDLLibraryRegister_petscksp();CHKERRQ(ierr);
-   ierr = PetscDLLibraryRegister_petscsnes();CHKERRQ(ierr);
--  ierr = PetscDLLibraryRegister_petscts();CHKERRQ(ierr);
+   PetscCall(PetscDLLibraryRegister_petscdm());
+   PetscCall(PetscDLLibraryRegister_petscksp());
+   PetscCall(PetscDLLibraryRegister_petscsnes());
+-  PetscCall(PetscDLLibraryRegister_petscts());
  #endif
    PetscFunctionReturn(0);
  }
