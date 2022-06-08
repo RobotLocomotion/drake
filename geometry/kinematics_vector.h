@@ -1,6 +1,7 @@
 #pragma once
 
 #include <initializer_list>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -118,7 +119,7 @@ class KinematicsVector {
   /** Sets the kinematics `value` for the given `id`. */
   void set_value(Id id, const KinematicsValue& value);
 
-  /** Returns number of frame_ids(). */
+  /** Returns number of ids(). */
   int size() const;
 
   /** Returns the value associated with the given `id`.
@@ -157,10 +158,12 @@ class KinematicsVector {
   class Impl;
   Impl& impl();
   const Impl& impl() const;
-  // We use a raw pointer so that the Impl class can have
-  // __attribute__((visibility("hidden"))), required by the hidden
-  // `absl::flat_hash_map` used under the hood.
-  void* pimpl_{};
+  // This field is really a shared_ptr<Impl> but we must store it as <void>
+  // so that the Impl class can have __attribute__((visibility("hidden"))),
+  // required by the hidden `absl::flat_hash_map` used under the hood. Note
+  // that we never actually share an Impl object (the use_count is always 1),
+  // rather we use shared_ptr for its type-erased destructor feature.
+  std::shared_ptr<void> pimpl_;
 };
 
 /** Class for communicating _pose_ information to SceneGraph for registered
