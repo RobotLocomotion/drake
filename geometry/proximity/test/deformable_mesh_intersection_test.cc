@@ -58,28 +58,20 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
       });
   ASSERT_TRUE(bvhs_collide);
 
-  // Initialize these two variables as non-empty sequences of nonsense
-  // values expected to be become empty later.
-  std::vector<int> tetrahedron_index_of_polygons{2022, 6, 9};
-  std::vector<VolumeMesh<double>::Barycentric<double>> barycentric_centroids{
-      {0.1, 1.2, 2.3, 3.4}};
-  std::unique_ptr<ContactSurface<double>> contact_surface_W =
-      ComputeContactSurfaceFromDeformableVolumeRigidSurface(
-          deformable_id, deformable_W,
-          rigid_id, rigid_mesh_R, rigid_bvh_R, X_WR,
-          &tetrahedron_index_of_polygons,
-          &barycentric_centroids);
+  std::unique_ptr<DeformableRigidContactSurface<double>>
+      deformable_rigid_contact_surface =
+          ComputeContactSurfaceFromDeformableVolumeRigidSurface(
+              deformable_id, deformable_W, rigid_id, rigid_mesh_R, rigid_bvh_R,
+              X_WR);
 
-  EXPECT_EQ(contact_surface_W, nullptr);
-  // Confirm that they become empty.
-  EXPECT_EQ(tetrahedron_index_of_polygons.size(), 0);
-  EXPECT_EQ(barycentric_centroids.size(), 0);
+  EXPECT_EQ(deformable_rigid_contact_surface, nullptr);
 }
 
 // Note that the deformable rigid contact surface computation largely utilizes
-// previously tested code in mesh_intersection.cc. The only thing it adds is the
-// detection and addition of tet indices and centroid coordinates. We only test
-// the newly added operations here in this test.
+// previously tested code in mesh_intersection.cc. The only things it adds is
+// the detection and addition of penetration distances, tet indices, and
+// centroid barycentric coordinates. We only test the newly added operations
+// here in this test.
 GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   const GeometryId deformable_id = GeometryId::get_new_id();
   const Sphere unit_sphere(1.0);
@@ -104,51 +96,36 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   // xy-plane).
   const math::RigidTransform<double> X_WR(Vector3<double>{0, 0, 0.5});
 
-  std::vector<int> tetrahedron_index_of_polygons;
-  std::vector<VolumeMesh<double>::Barycentric<double>> barycentric_centroids;
-  std::unique_ptr<ContactSurface<double>> contact_surface_W =
+  std::unique_ptr<DeformableRigidContactSurface<double>> contact_surface =
       ComputeContactSurfaceFromDeformableVolumeRigidSurface(
-          deformable_id, deformable_W,
-          rigid_id, rigid_mesh_R, rigid_bvh_R, X_WR,
-          &tetrahedron_index_of_polygons,
-          &barycentric_centroids);
+          deformable_id, deformable_W, rigid_id, rigid_mesh_R, rigid_bvh_R,
+          X_WR);
+  ASSERT_NE(contact_surface, nullptr);
+  constexpr int kExpectedNumContactPoints = 1;
+  EXPECT_EQ(contact_surface->num_contact_points(), kExpectedNumContactPoints);
+  const auto data = contact_surface->release_data();
 
-  const int kExpectedNumPolygons = 1;
-  ASSERT_EQ(tetrahedron_index_of_polygons.size(), kExpectedNumPolygons);
-  ASSERT_EQ(barycentric_centroids.size(), kExpectedNumPolygons);
-
-  const std::vector<int> kExpectedTetrahedronIndexOfPolygons{0};
-  EXPECT_EQ(tetrahedron_index_of_polygons, kExpectedTetrahedronIndexOfPolygons);
-
-  // Since the triangle is quite large, its intersection with the
-  // tetrahedron is an isosceles right triangle with two edges of length 0.5.
-  // Its three vertices are at (0, 0, 0.5), (0.5, 0, 0.5), (0, 0.5, 0.5), not
-  // necessarily in this order. Its centroid is at (1/6, 1/6, 1/2).
-  const Vector3<double> kExpectedCentroid_W(1.0 / 6, 1.0 / 6, 1.0 / 2);
-  const VolumeMesh<double>::Barycentric<double> expected_barycentric =
-      single_tetrahedron_mesh_W.CalcBarycentric(kExpectedCentroid_W, 0);
-
-  const double kEps = 1e-14;
-  EXPECT_TRUE(
-      CompareMatrices(barycentric_centroids[0], expected_barycentric, kEps));
-
-  ASSERT_NE(contact_surface_W, nullptr);
-  EXPECT_EQ(contact_surface_W->num_faces(), kExpectedNumPolygons);
-  // Area of the isosceles right triangle with two edges of length 0.5 is
-  // 0.5 * 0.5 / 2 = 0.125.
-  EXPECT_NEAR(contact_surface_W->area(0), 0.125, kEps);
-  EXPECT_EQ(contact_surface_W->face_normal(0), Vector3<double>::UnitZ());
-  EXPECT_TRUE(CompareMatrices(contact_surface_W->centroid(0),
-                              kExpectedCentroid_W, kEps));
-
-  const double signed_distance_at_centroid_of_polygon0 =
-      contact_surface_W->poly_e_MN().EvaluateCartesian(
-          0, contact_surface_W->centroid(0));
   // The approximated signed distance function on the tetrahedron is
   // s(x,y,z) = x + y + z - 1.  Therefore, the centroid (1/6, 1/6, 1/2) has
   // the signed distance = 1/6 + 1/6 + 1/2 - 1 = -1/6
-  EXPECT_NEAR(signed_distance_at_centroid_of_polygon0,
-              -1.0 / 6, kEps);
+  const std::vector<double>& penetration_distances = std::get<1>(data);
+  ASSERT_EQ(penetration_distances.size(), kExpectedNumContactPoints);
+  const double signed_distance_at_contact_point = penetration_distances[0];
+  constexpr double kEps = 1e-14;
+  EXPECT_NEAR(signed_distance_at_contact_point, -1.0 / 6, kEps);
+
+  const std::vector<int>& tet_indexes = std::get<2>(data);
+  ASSERT_EQ(tet_indexes.size(), kExpectedNumContactPoints);
+  EXPECT_EQ(tet_indexes[0], 0);
+
+  // The centroid is (1/6, 1/6, 1/2), and the vertex positions are (0, 0, 0),
+  // (1, 0, 0), (0, 1, 0), (0, 0, 1). The the barycentric weights is (1/6, 1/6,
+  // 1/6, 1/2).
+  const std::vector<Vector4<double>>& barycentric_centroids = std::get<3>(data);
+  ASSERT_EQ(barycentric_centroids.size(), kExpectedNumContactPoints);
+  EXPECT_TRUE(CompareMatrices(
+      barycentric_centroids[0],
+      Vector4<double>(1.0 / 6, 1.0 / 6, 1.0 / 6, 1.0 / 2), kEps));
 }
 
 }  // namespace

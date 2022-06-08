@@ -10,6 +10,8 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+// TODO(xuchenhan-tri): Move this class to math namespace.
+
 // Given a set S with n elements, this class represents the permutation of S
 // into a new set S' containing m (m ≤ n) non-repeated elements of S.
 // That is, given S = {s₁, s₂, ⋯ ,sᵢ, ⋯, sₙ}, this class represents the
