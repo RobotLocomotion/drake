@@ -73,8 +73,9 @@ drake_cc_library(
     srcs = ["deformable_contact_data.cc"],
     hdrs = ["deformable_contact_data.h"],
     deps = [
-        "//geometry/proximity:deformable_contact_geometries",
-        "//geometry/proximity:deformable_rigid_contact_pair",
+        "//geometry/proximity:deformable_rigid_contact_surface",
+        "//geometry/proximity:make_box_mesh",
+        "//multibody/contact_solvers/sap:partial_permutation",
     ],
 )
 
