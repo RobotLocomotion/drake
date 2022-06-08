@@ -35,6 +35,7 @@ drake_cc_package_library(
         ":geometry_version",
         ":internal_frame",
         ":internal_geometry",
+        ":kinematics_vector",
         ":make_mesh_for_deformable",
         ":meshcat",
         ":meshcat_animation",
@@ -137,20 +138,31 @@ drake_cc_library(
     ],
 )
 
+# Remove on 2022-10-01.
 drake_cc_library(
     name = "frame_kinematics",
-    srcs = [
-        "frame_kinematics_vector.cc",
-    ],
     hdrs = [
         "frame_kinematics_vector.h",
     ],
     deps = [
+        ":kinematics_vector",
+    ],
+)
+
+drake_cc_library(
+    name = "kinematics_vector",
+    srcs = [
+        "kinematics_vector.cc",
+    ],
+    hdrs = [
+        "kinematics_vector.h",
+    ],
+    deps = [
         ":geometry_ids",
-        ":utilities",
         "//common:autodiff",
         "//common:essential",
         "//common:symbolic",
+        "//math:geometric_transform",
     ],
 )
 
@@ -231,7 +243,6 @@ drake_cc_library(
     hdrs = ["geometry_state.h"],
     deps = [
         ":collision_filter_manager",
-        ":frame_kinematics",
         ":geometry_frame",
         ":geometry_ids",
         ":geometry_instance",
@@ -239,9 +250,12 @@ drake_cc_library(
         ":geometry_version",
         ":internal_frame",
         ":internal_geometry",
+        ":kinematics_vector",
         ":proximity_engine",
         ":utilities",
         "//geometry/render:render_engine",
+        # Add an unused dependency to help smooth out the deprecation.
+        ":frame_kinematics",
     ],
 )
 
@@ -628,9 +642,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "frame_kinematics_vector_test",
+    name = "kinematics_vector_test",
     deps = [
-        ":frame_kinematics",
+        ":kinematics_vector",
         "//common/test_utilities",
         "//common/test_utilities:limit_malloc",
         "//math:geometric_transform",

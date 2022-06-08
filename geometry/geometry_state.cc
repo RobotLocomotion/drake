@@ -1159,7 +1159,7 @@ template <typename T>
 template <typename ValueType>
 void GeometryState<T>::ValidateFrameIds(
     const SourceId source_id,
-    const FrameKinematicsVector<ValueType>& kinematics_data) const {
+    const KinematicsVector<FrameId, ValueType>& kinematics_data) const {
   auto& frames = FramesForSource(source_id);
   const int ref_frame_count = static_cast<int>(frames.size());
   if (ref_frame_count != kinematics_data.size()) {
