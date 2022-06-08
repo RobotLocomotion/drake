@@ -74,7 +74,7 @@ drake_cc_library(
     hdrs = ["deformable_contact_data.h"],
     deps = [
         "//geometry/proximity:deformable_contact_geometries",
-        "//geometry/proximity:deformable_rigid_contact_pair",
+        "//geometry/proximity:deformable_rigid_contact_surface",
     ],
 )
 

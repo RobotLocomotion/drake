@@ -10,14 +10,16 @@ namespace internal {
 
 template <typename T>
 DeformableContactData<T>::DeformableContactData(
-    std::vector<DeformableRigidContactPair<T>> contact_pairs,
-    const ReferenceDeformableGeometry& deformable_geometry)
-    : contact_pairs_(std::move(contact_pairs)),
-      signed_distances_(contact_pairs_.size()),
-      permuted_vertex_indexes_(deformable_geometry.mesh().num_vertices(), -1),
-      permuted_to_original_indexes_(deformable_geometry.mesh().num_vertices()) {
+    std::vector<DeformableRigidContactSurface<T>> contact_surfaces,
+    const VolumeMesh<double>& deformable_geometry_connectivity)
+    : contact_surfaces_(std::move(contact_surfaces)),
+      signed_distances_(contact_surfaces_.size()),
+      permuted_vertex_indexes_(deformable_geometry_connectivity.num_vertices(),
+                               -1),
+      permuted_to_original_indexes_(
+          deformable_geometry_connectivity.num_vertices()) {
   num_contact_points_ = 0;
-  if (contact_pairs_.empty()) {
+  if (contact_surfaces_.empty()) {
     std::iota(std::begin(permuted_vertex_indexes_),
               std::end(permuted_vertex_indexes_), 0);
     std::iota(std::begin(permuted_to_original_indexes_),
@@ -25,49 +27,46 @@ DeformableContactData<T>::DeformableContactData(
     return;
   }
 
-  /* All contact pairs should involve the same deformable body. */
-  deformable_body_index_ = contact_pairs_[0].deformable_id;
-  for (const auto& contact_pair : contact_pairs_) {
-    DRAKE_DEMAND(deformable_body_index_ == contact_pair.deformable_id);
+  /* All contact surfaces should involve the same deformable body. */
+  deformable_id_ = contact_surfaces_[0].deformable_id();
+  for (const auto& contact_surface : contact_surfaces_) {
+    DRAKE_DEMAND(deformable_id_ == contact_surface.deformable_id());
   }
 
-  CalcParticipatingVertices(deformable_geometry.mesh());
-  for (const auto& contact_pair : contact_pairs_) {
-    num_contact_points_ += contact_pair.num_contact_points();
+  CalcParticipatingVertices(deformable_geometry_connectivity);
+  for (const auto& contact_surface : contact_surfaces_) {
+    num_contact_points_ += contact_surface.num_contact_points();
   }
 
   /* Build signed_distances_. */
-  for (int i = 0; i < static_cast<int>(contact_pairs_.size()); ++i) {
-    const DeformableContactSurface<T>& contact_surface =
-        contact_pairs_[i].contact_surface;
+  for (int i = 0; i < static_cast<int>(contact_surfaces_.size()); ++i) {
     std::vector<T>& phi = signed_distances_[i];
-    phi.resize(contact_surface.num_polygons(), 0);
-    for (int j = 0; j < contact_surface.num_polygons(); ++j) {
-      const ContactPolygonData<T>& polygon_data =
-          contact_surface.polygon_data(j);
-      const Vector4<T>& barycentric_coord = polygon_data.b_centroid;
-      const auto& tet_index = polygon_data.tet_index;
-      phi[j] = deformable_geometry.signed_distance_field().Evaluate(
-          tet_index, barycentric_coord);
+    const DeformableRigidContactSurface<T>& contact_surface =
+        contact_surfaces_[i];
+    phi.resize(contact_surface.num_contact_points(), 0);
+    for (int j = 0; j < contact_surface.num_contact_points(); ++j) {
+      phi[j] = contact_surface.EvaluatePenetrationDistance(j);
     }
   }
 }
 
 template <typename T>
 void DeformableContactData<T>::CalcParticipatingVertices(
-    const geometry::VolumeMesh<double>& deformable_mesh) {
+    const geometry::VolumeMesh<double>& deformable_geometry_connectivity) {
   constexpr int kNumVerticesInTetrahedron =
       geometry::VolumeMesh<T>::kVertexPerElement;
 
   /* Build the permutation for vertices in contact first. */
   num_vertices_in_contact_ = 0;
-  for (int i = 0; i < num_contact_pairs(); ++i) {
-    const DeformableContactSurface<T>& contact_surface =
-        contact_pairs_[i].contact_surface;
-    for (int j = 0; j < contact_surface.num_polygons(); ++j) {
-      const int tet_in_contact = contact_surface.polygon_data(j).tet_index;
+  for (int i = 0; i < num_contact_surfaces(); ++i) {
+    for (const int tet_in_contact :
+         contact_surfaces_[i].tetrahedron_indices()) {
+      DRAKE_DEMAND(0 <= tet_in_contact &&
+                   tet_in_contact <
+                       deformable_geometry_connectivity.num_elements());
       for (int k = 0; k < kNumVerticesInTetrahedron; ++k) {
-        const int v = deformable_mesh.element(tet_in_contact).vertex(k);
+        const int v =
+            deformable_geometry_connectivity.element(tet_in_contact).vertex(k);
         if (permuted_vertex_indexes_[v] == -1) {
           permuted_vertex_indexes_[v] = num_vertices_in_contact_;
           permuted_to_original_indexes_[num_vertices_in_contact_] = v;
@@ -170,8 +169,7 @@ void DeformableContactData<T>::CalcParticipatingVertices(
   DRAKE_DEMAND(index == static_cast<int>(permuted_to_original_indexes_.size()));
 }
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class DeformableContactData)
+template class DeformableContactData<double>;
 
 }  // namespace internal
 }  // namespace geometry
