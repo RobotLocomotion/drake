@@ -122,6 +122,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:identifier_pybind",
         "//bindings/pydrake/common:monostate_pybind",
         "//bindings/pydrake/common:type_pack",

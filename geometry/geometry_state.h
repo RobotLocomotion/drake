@@ -13,13 +13,13 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/collision_filter_manager.h"
-#include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_version.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/internal_geometry.h"
+#include "drake/geometry/kinematics_vector.h"
 #include "drake/geometry/proximity_engine.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render/render_engine.h"
@@ -654,8 +654,9 @@ class GeometryState {
   // @pre source_id is a registered source.
   // @throws std::exception if the set is inconsistent with known topology.
   template <typename ValueType>
-  void ValidateFrameIds(SourceId source_id,
-                        const FrameKinematicsVector<ValueType>& values) const;
+  void ValidateFrameIds(
+      SourceId source_id,
+      const KinematicsVector<FrameId, ValueType>& values) const;
 
   // Helper for RegisterGeometry() and RegisterDeformableGeometry() that
   // validates the the source and frame ids (that they are registered) and

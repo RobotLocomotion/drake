@@ -367,8 +367,11 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertEqual(obj.size(), 1)
         self.assertIsInstance(obj.value(id=frame_id), RigidTransform)
         self.assertTrue(obj.has_id(id=frame_id))
-        self.assertIsInstance(obj.frame_ids(), list)
-        self.assertIsInstance(obj.frame_ids()[0], mut.FrameId)
+        with catch_drake_warnings(expected_count=2):
+            self.assertIsInstance(obj.frame_ids(), list)
+            self.assertIsInstance(obj.frame_ids()[0], mut.FrameId)
+        self.assertIsInstance(obj.ids(), list)
+        self.assertIsInstance(obj.ids()[0], mut.FrameId)
         obj.clear()
         self.assertEqual(obj.size(), 0)
 
