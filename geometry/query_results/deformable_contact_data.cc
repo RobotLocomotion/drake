@@ -38,17 +38,13 @@ DeformableContactData<T>::DeformableContactData(
 
   /* Build signed_distances_. */
   for (int i = 0; i < static_cast<int>(contact_pairs_.size()); ++i) {
-    const DeformableContactSurface<T>& contact_surface =
+    const ContactSurface<T>& contact_surface =
         contact_pairs_[i].contact_surface;
     std::vector<T>& phi = signed_distances_[i];
-    phi.resize(contact_surface.num_polygons(), 0);
-    for (int j = 0; j < contact_surface.num_polygons(); ++j) {
-      const ContactPolygonData<T>& polygon_data =
-          contact_surface.polygon_data(j);
-      const Vector4<T>& barycentric_coord = polygon_data.b_centroid;
-      const auto& tet_index = polygon_data.tet_index;
-      phi[j] = deformable_geometry.signed_distance_field().Evaluate(
-          tet_index, barycentric_coord);
+    phi.resize(contact_surface.num_faces(), 0);
+    for (int j = 0; j < contact_surface.num_faces(); ++j) {
+      phi[j] = contact_surface.poly_e_MN().template EvaluateCartesian(
+          j, contact_surface.centroid(j));
     }
   }
 }
@@ -62,10 +58,9 @@ void DeformableContactData<T>::CalcParticipatingVertices(
   /* Build the permutation for vertices in contact first. */
   num_vertices_in_contact_ = 0;
   for (int i = 0; i < num_contact_pairs(); ++i) {
-    const DeformableContactSurface<T>& contact_surface =
-        contact_pairs_[i].contact_surface;
-    for (int j = 0; j < contact_surface.num_polygons(); ++j) {
-      const int tet_in_contact = contact_surface.polygon_data(j).tet_index;
+    for (const int tet_in_contact : contact_pairs_[i].tetrahedron_indices) {
+      DRAKE_DEMAND(0 <= tet_in_contact &&
+                   tet_in_contact < deformable_mesh.num_elements());
       for (int k = 0; k < kNumVerticesInTetrahedron; ++k) {
         const int v = deformable_mesh.element(tet_in_contact).vertex(k);
         if (permuted_vertex_indexes_[v] == -1) {

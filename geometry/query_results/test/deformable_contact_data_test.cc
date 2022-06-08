@@ -17,14 +17,37 @@ namespace {
 // For simplicity, we will use only one contact polygon with a mesh of only
 // a few tetrahedra.
 GTEST_TEST(DeformableContactDataTest, TestConstructorPermutedVertex) {
+  auto contact_mesh_W = std::make_unique<PolygonSurfaceMesh<double>>(
+      std::vector<int>{3, 0, 1, 2},  // One polygon of three vertices
+      std::vector<Vector3<double>>{
+          Vector3<double>::UnitX(),
+          Vector3<double>::UnitY(),
+          Vector3<double>::UnitZ(),
+      });
+  // Save the memory address of the contact mesh before the unique_ptr
+  // contact_mesh_W is reset by std::move below.
+  PolygonSurfaceMesh<double>* contact_mesh_pointer = contact_mesh_W.get();
+  // TODO(DamrongGuoy): Take care of discrepancy between ids (GeometryIds and
+  //  int) in ContactSurface and in DeformableRigidContactPair.
+
   // For simplicity, we set up one contact pair that contains one contact
   // polygon in tetrahedron 1 (index starts at 0) of `test_mesh_S` that we
   // will define later. The other values are not relevant for this test. The
   // unit normal is  not relevant to this test, but it must have unit length
   // in order to set up DeformableRigidContactPair, which is used by
   // DeformableContactData.
-  const std::vector<ContactPolygonData<double>> polygon_data{
-    {.unit_normal = Vector3<double>::UnitZ(), .tet_index = 1}};
+  const int kDeformableId = 3;
+  DeformableRigidContactPair<double> contact_pair0(
+      ContactSurface<double>(
+          GeometryId::get_new_id(), GeometryId::get_new_id(),
+          std::move(contact_mesh_W),
+          std::make_unique<PolygonSurfaceMeshFieldLinear<double, double>>(
+              std::vector<double>{-0.1, -0.1, -0.1}, contact_mesh_pointer,
+              // Constant field values means the gradient is zero.
+              std::vector<Vector3<double>>{Vector3<double>::Zero()})),
+      std::vector<int>{1},
+      // Use arbitrary values for simplicity.
+      GeometryId::get_new_id(), kDeformableId, 0.1, 0.2, 0.3);
 
   // We use a unit sphere as the shape specification for the reference
   // deformable geometry that we will create. Frame S is the intrinsic frame
@@ -88,13 +111,10 @@ GTEST_TEST(DeformableContactDataTest, TestConstructorPermutedVertex) {
   const std::vector<int> kExpectedPermutedVertexIndexes{0, 4, 1, 2, 5, 3};
   const std::vector<int> kExpectedPermutedToOriginalIndexes {0, 2, 3, 5, 1, 4};
 
-  const int kDeformableId = 3;
+
 
   DeformableContactData<double> dut(
-      {DeformableRigidContactPair<double>(
-          DeformableContactSurface<double>(polygon_data),
-          // Use arbitrary values for simplicity.
-          GeometryId::get_new_id(), kDeformableId, 0.1, 0.2, 0.3)},
+      {contact_pair0},
       ReferenceDeformableGeometry(sphere_S, test_mesh_S));
 
   EXPECT_EQ(dut.deformable_body_index(), kDeformableId);
@@ -118,58 +138,74 @@ GTEST_TEST(DeformableContactDataTest, TestConstructorSignedDistance) {
                        Vector3<double>::UnitY(), Vector3<double>::UnitZ()});
   const ReferenceDeformableGeometry reference(unit_sphere_S, mesh_S);
 
-  // We imagine the centroids of two contact polygons correspond to these
-  // locations in the reference tetrahedron expressed in frame S.
-  // Any points with x > 0, y > 0, z > 0, and x + y + z < 1 would work.
-  const Vector3<double> centroid0_S(0.25, 0.25, 0.25);
-  const Vector3<double> centroid1_S(0.05, 0.10, 0.25);
   const int kTetrahedronIndex = 0;
-  // Barycentric coordinates of the above two centroids in the reference
-  // tetrahedron.
-  const Vector4<double> barycentric0 =
-      mesh_S.CalcBarycentric(centroid0_S, kTetrahedronIndex);
-  const Vector4<double> barycentric1 =
-      mesh_S.CalcBarycentric(centroid1_S, kTetrahedronIndex);
+  // This tetrahedron 0 with vertices (0,0,0), (1,0,0), (0,1,0), (0,0,1)
+  // is the same as {(x,y,z) : x >= 0, y >= 0, z >= 0, and x + y + z <= 1 }.
+  // Within this tetrahedron, the approximated signed distance is
+  //   approximated_sdf(x,y,z) = x + y + z - 1
+  // and its gradient is (1,1,1).
+  Vector3<double> kGradientApproximatedSdf(1, 1, 1);
 
-  // Only the barycentric coordinates of the polygon's centroid and the
-  // tetrahedron index are relevant to this test. The unit normal is not
-  // relevant to this test, but it must have unit length in order to set up
-  // DeformableRigidContactPair later.
-  const std::vector<ContactPolygonData<double>> polygon_data0{
-      {.unit_normal = Vector3<double>::UnitZ(),
-       .b_centroid = barycentric0,
-       .tet_index = kTetrahedronIndex}};
-  const std::vector<ContactPolygonData<double>> polygon_data1{
-      {.unit_normal = Vector3<double>::UnitZ(),
-       .b_centroid = barycentric1,
-       .tet_index = kTetrahedronIndex}};
+  // Each of these two contact meshes has one polygon inside the only
+  // tetrahedron of the volume mesh above. Any points with x > 0, y > 0,
+  // z > 0, and x + y + z < 1 would be inside the tetrahedron
+  auto contact_mesh0_W = std::make_unique<PolygonSurfaceMesh<double>>(
+      std::vector<int>{3, 0, 1, 2},  // One polygon of three vertices
+      std::vector<Vector3<double>>{
+          Vector3<double>(0.75, 0, 0),
+          Vector3<double>(0, 0.75, 0),
+          Vector3<double>(0, 0, 0.75)
+      });
+  auto contact_mesh1_W = std::make_unique<PolygonSurfaceMesh<double>>(
+      std::vector<int>{3, 0, 1, 2},  // One polygon of three vertices
+      std::vector<Vector3<double>>{
+          Vector3<double>(0.15, 0, 0),
+          Vector3<double>(0, 0.30, 0),
+          Vector3<double>(0, 0, 0.75)
+      });
+  // Save the memory address of the first contact mesh before the unique_ptr
+  // contact_mesh0_W is reset by std::move.
+  PolygonSurfaceMesh<double>* contact_mesh0_pointer = contact_mesh0_W.get();
+  ContactSurface<double> contact_surface0(
+      GeometryId::get_new_id(), GeometryId::get_new_id(),
+      std::move(contact_mesh0_W),
+      std::make_unique<PolygonSurfaceMeshFieldLinear<double, double>>(
+          // approximated_sdf(x,y,z) = x + y + z - 1
+          std::vector<double>{-0.25, -0.25, -0.25}, contact_mesh0_pointer,
+          std::vector<Vector3<double>>{kGradientApproximatedSdf}));
+  // Save the memory address of the second contact mesh before the unique_ptr
+  // contact_mesh1_W is reset by std::move.
+  PolygonSurfaceMesh<double>* contact_mesh1_pointer = contact_mesh1_W.get();
+  ContactSurface<double> contact_surface1(
+      GeometryId::get_new_id(), GeometryId::get_new_id(),
+      std::move(contact_mesh1_W),
+      std::make_unique<PolygonSurfaceMeshFieldLinear<double, double>>(
+          // approximated_sdf(x,y,z) = x + y + z - 1
+          std::vector<double>{-0.85, -0.7, -0.25}, contact_mesh1_pointer,
+          std::vector<Vector3<double>>{kGradientApproximatedSdf}));
 
   const int kDeformableId = 3;
+  DeformableRigidContactPair<double> contact_pair0(
+      contact_surface0, std::vector<int>{kTetrahedronIndex},
+      // Use arbitrary values for simplicity.
+      GeometryId::get_new_id(), kDeformableId, 0.1, 0.2, 0.3);
+
+  DeformableRigidContactPair<double> contact_pair1(
+      contact_surface1, std::vector<int>{kTetrahedronIndex},
+      // Use arbitrary values for simplicity.
+      GeometryId::get_new_id(), kDeformableId, 0.1, 0.2, 0.3);
+
   DeformableContactData<double> dut(
-      {DeformableRigidContactPair<double>(
-           DeformableContactSurface<double>(polygon_data0),
-           // kDeformableId must be the same for every contact pair.
-           // Other values are arbitrary.
-           GeometryId::get_new_id(), kDeformableId, 0.1, 0.2, 0.3),
-       DeformableRigidContactPair<double>(
-           DeformableContactSurface<double>(polygon_data1),
-           // kDeformableId must be the same for every contact pair.
-           // Other values are arbitrary.
-           GeometryId::get_new_id(), kDeformableId, 0.4, 0.5, 0.6)},
+      std::vector<DeformableRigidContactPair<double>>{contact_pair0,
+                                                      contact_pair1},
       reference);
 
   ASSERT_EQ(dut.num_contact_pairs(), 2);
   ASSERT_EQ(dut.signed_distances(0).size(), 1);
   ASSERT_EQ(dut.signed_distances(1).size(), 1);
-  const double expected_signed_distances0 =
-      reference.signed_distance_field().Evaluate(kTetrahedronIndex,
-                                                 barycentric0);
-  const double expected_signed_distances1 =
-      reference.signed_distance_field().Evaluate(kTetrahedronIndex,
-                                                 barycentric1);
   const double kEps = 4 * std::numeric_limits<double>::epsilon();
-  EXPECT_NEAR(dut.signed_distances(0)[0], expected_signed_distances0, kEps);
-  EXPECT_NEAR(dut.signed_distances(1)[0], expected_signed_distances1, kEps);
+  EXPECT_NEAR(dut.signed_distances(0)[0], -0.25, kEps);
+  EXPECT_NEAR(dut.signed_distances(1)[0], -0.6, kEps);
 }
 
 // Test the constructor of DeformableContactData in the special case of empty

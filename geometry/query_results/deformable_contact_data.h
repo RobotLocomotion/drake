@@ -9,8 +9,9 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-// TODO(DamrongGuoy) We may not need ReferenceDeformableGeometry if we use
-//  the mesh and the signed distance field instead.
+// TODO(DamrongGuoy) Remove dependency on ReferenceDeformableGeometry and
+//  use only the mesh connectivity (which is the same for both a reference
+//  mesh and its deformable mesh).
 using ReferenceDeformableGeometry = deformable::ReferenceDeformableGeometry;
 
 /* DeformableContactData stores all the contact query information related to a
@@ -28,7 +29,9 @@ class DeformableContactData {
    deformable-rigid contact pairs involving the deformable body and the
    deformable geometry at reference configuration.
 
-   @pre All contact pairs involve the same deformable body. */
+   @pre All contact pairs involve the same deformable body.
+   @pre All tetrahedron indices in each contact pair are valid indices in the
+        mesh of the deformable_geometry.  */
   DeformableContactData(
       std::vector<DeformableRigidContactPair<T>> contact_pairs,
       const ReferenceDeformableGeometry& deformable_geometry);
