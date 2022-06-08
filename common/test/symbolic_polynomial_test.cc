@@ -8,6 +8,7 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace symbolic {
@@ -699,8 +700,8 @@ TEST_F(SymbolicPolynomialTest, Integrate) {
   EXPECT_TRUE(p.Integrate(var_z_).indeterminates().include(var_z_));
   EXPECT_PRED2(PolyEqual, p.Integrate(var_z_, -1, 1), def_int_p_dz);
 
-  EXPECT_THROW(p.Integrate(var_a_), std::exception);
-  EXPECT_THROW(p.Integrate(var_a_, -1, 1), std::exception);
+  EXPECT_THROW(unused(p.Integrate(var_a_)), std::exception);
+  EXPECT_THROW(unused(p.Integrate(var_a_, -1, 1)), std::exception);
 }
 
 TEST_F(SymbolicPolynomialTest, ConstructNonPolynomialCoefficients) {
@@ -908,7 +909,7 @@ TEST_F(SymbolicPolynomialTest, Evaluate) {
       {var_x_, -7.0},
       {var_z_, -2.0},
   }};
-  EXPECT_THROW(p.Evaluate(partial_env), runtime_error);
+  EXPECT_THROW(unused(p.Evaluate(partial_env)), runtime_error);
 }
 
 TEST_F(SymbolicPolynomialTest, PartialEvaluate1) {
@@ -949,7 +950,7 @@ TEST_F(SymbolicPolynomialTest, PartialEvaluate4) {
   const Polynomial p{((a_ + c_) / (b_ + c_)) * x_ * x_ + b_ * x_ + c_,
                      var_xyz_};
   const Environment env{{{var_a_, 0.0}, {var_b_, 0.0}, {var_c_, 0.0}}};
-  EXPECT_THROW(p.EvaluatePartial(env), runtime_error);
+  EXPECT_THROW(unused(p.EvaluatePartial(env)), runtime_error);
 }
 
 TEST_F(SymbolicPolynomialTest, EvaluateIndeterminates) {
