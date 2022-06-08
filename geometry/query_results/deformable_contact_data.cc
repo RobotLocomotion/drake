@@ -7,171 +7,104 @@
 namespace drake {
 namespace geometry {
 namespace internal {
+namespace {
+
+using multibody::contact_solvers::internal::PartialPermutation;
+
+/* Computes the partial permutation that maps the vertex indexes of
+ `mesh` to the permuted vertex indexes as described by
+ `DeformableContactData::vertex_permutation()` as well as the number of
+ vertices participating in contact.
+ @param[in] participating_tetrahedra
+   A vector of indexes of tetrahedra of `deformable_geometry` whose vertices
+   participate in the permutation.
+ @param[in] mesh
+   The topology of the mesh. */
+std::pair<PartialPermutation, int> CalcVertexPermutation(
+    const std::vector<int>& participating_tetrahedra,
+    const VolumeMesh<double>& mesh) {
+  constexpr int kNumVerticesInTetrahedron =
+      VolumeMesh<double>::kVertexPerElement;
+
+  std::vector<int> permuted_vertex_indexes(mesh.num_vertices(), -1);
+  /* Maintain a set of indexes whose corresponding vertices participate in
+   contact. */
+  std::set<int> sorted_vertex_indexes;
+  for (const int tet_in_contact : participating_tetrahedra) {
+    DRAKE_DEMAND(0 <= tet_in_contact && tet_in_contact < mesh.num_elements());
+    for (int k = 0; k < kNumVerticesInTetrahedron; ++k) {
+      sorted_vertex_indexes.emplace(mesh.element(tet_in_contact).vertex(k));
+    }
+  }
+
+  /* Build the partial permutation. */
+  int permuted_vertex_index = -1;  // We'll pre-increment before using.
+  for (int v : sorted_vertex_indexes) {
+    permuted_vertex_indexes[v] = ++permuted_vertex_index;
+  }
+  PartialPermutation permutation(permuted_vertex_indexes);
+
+  /* Extend the partial permutation to a full permutation. */
+  for (int i = 0; i < permutation.domain_size(); ++i) {
+    /* The call to permutation.push() only conditionally adds i. */
+    permutation.push(i);
+  }
+  return {permutation, sorted_vertex_indexes.size()};
+}
+
+}  // namespace
 
 template <typename T>
 DeformableContactData<T>::DeformableContactData(
-    std::vector<DeformableRigidContactPair<T>> contact_pairs,
-    const ReferenceDeformableGeometry& deformable_geometry)
-    : contact_pairs_(std::move(contact_pairs)),
-      signed_distances_(contact_pairs_.size()),
-      permuted_vertex_indexes_(deformable_geometry.mesh().num_vertices(), -1),
-      permuted_to_original_indexes_(deformable_geometry.mesh().num_vertices()) {
-  num_contact_points_ = 0;
-  if (contact_pairs_.empty()) {
-    std::iota(std::begin(permuted_vertex_indexes_),
-              std::end(permuted_vertex_indexes_), 0);
-    std::iota(std::begin(permuted_to_original_indexes_),
-              std::end(permuted_to_original_indexes_), 0);
+    std::vector<DeformableRigidContactSurface<T>>&& contact_surfaces,
+    const VolumeMesh<double>& deformable_geometry) {
+  // TODO(xuchenhan-tri): Consider using a factory function to handle early
+  // exit.
+  if (contact_surfaces.empty()) {
     return;
   }
 
-  /* All contact pairs should involve the same deformable body. */
-  deformable_body_index_ = contact_pairs_[0].deformable_id;
-  for (const auto& contact_pair : contact_pairs_) {
-    DRAKE_DEMAND(deformable_body_index_ == contact_pair.deformable_id);
+  deformable_id_ = contact_surfaces[0].deformable_id();
+  num_contact_points_ = 0;
+  for (const auto& c : contact_surfaces) {
+    /* All contact surfaces should involve the same deformable body. */
+    DRAKE_DEMAND(deformable_id_ == c.deformable_id());
+    num_contact_points_ += c.num_contact_points();
   }
 
-  CalcParticipatingVertices(deformable_geometry.mesh());
-  for (const auto& contact_pair : contact_pairs_) {
-    num_contact_points_ += contact_pair.num_contact_points();
+  /* Build per contact surface and per contact point quantities. */
+  std::vector<int> participating_tetrahedra;
+  participating_tetrahedra.reserve(num_contact_points_);
+  signed_distances_.reserve(num_contact_points_);
+  barycentric_coordinates_.reserve(num_contact_points_);
+  rigid_ids_.reserve(contact_surfaces.size());
+  for (auto& c : contact_surfaces) {
+    rigid_ids_.emplace_back(c.rigid_id());
+    const auto [contact_surface_mesh_W, penetration_distances,
+                tetrahedron_indices, barycentric_centroids, R_CWs] =
+        c.release_data();
+    contact_surface_mesh_W_.emplace_back(std::move(contact_surface_mesh_W));
+    signed_distances_.insert(signed_distances_.end(),
+                             make_move_iterator(penetration_distances.begin()),
+                             make_move_iterator(penetration_distances.end()));
+    participating_tetrahedra.insert(
+        participating_tetrahedra.end(),
+        make_move_iterator(tetrahedron_indices.begin()),
+        make_move_iterator(tetrahedron_indices.end()));
+    barycentric_coordinates_.insert(
+        barycentric_coordinates_.end(),
+        make_move_iterator(barycentric_centroids.begin()),
+        make_move_iterator(barycentric_centroids.end()));
+    R_CWs_.insert(R_CWs_.end(), make_move_iterator(R_CWs.begin()),
+                  make_move_iterator(R_CWs.end()));
   }
 
-  /* Build signed_distances_. */
-  for (int i = 0; i < static_cast<int>(contact_pairs_.size()); ++i) {
-    const DeformableContactSurface<T>& contact_surface =
-        contact_pairs_[i].contact_surface;
-    std::vector<T>& phi = signed_distances_[i];
-    phi.resize(contact_surface.num_polygons(), 0);
-    for (int j = 0; j < contact_surface.num_polygons(); ++j) {
-      const ContactPolygonData<T>& polygon_data =
-          contact_surface.polygon_data(j);
-      const Vector4<T>& barycentric_coord = polygon_data.b_centroid;
-      const auto& tet_index = polygon_data.tet_index;
-      phi[j] = deformable_geometry.signed_distance_field().Evaluate(
-          tet_index, barycentric_coord);
-    }
-  }
+  std::tie(vertex_permutation_, num_vertices_in_contact_) =
+      CalcVertexPermutation(std::move(participating_tetrahedra),
+                            deformable_geometry);
 }
 
-template <typename T>
-void DeformableContactData<T>::CalcParticipatingVertices(
-    const geometry::VolumeMesh<double>& deformable_mesh) {
-  constexpr int kNumVerticesInTetrahedron =
-      geometry::VolumeMesh<T>::kVertexPerElement;
-
-  /* Build the permutation for vertices in contact first. */
-  num_vertices_in_contact_ = 0;
-  for (int i = 0; i < num_contact_pairs(); ++i) {
-    const DeformableContactSurface<T>& contact_surface =
-        contact_pairs_[i].contact_surface;
-    for (int j = 0; j < contact_surface.num_polygons(); ++j) {
-      const int tet_in_contact = contact_surface.polygon_data(j).tet_index;
-      for (int k = 0; k < kNumVerticesInTetrahedron; ++k) {
-        const int v = deformable_mesh.element(tet_in_contact).vertex(k);
-        if (permuted_vertex_indexes_[v] == -1) {
-          permuted_vertex_indexes_[v] = num_vertices_in_contact_;
-          permuted_to_original_indexes_[num_vertices_in_contact_] = v;
-          ++num_vertices_in_contact_;
-        }
-      }
-    }
-  }
-
-  /* Sort the participating vertices in the inverse permutation for stability.
-
-   Before the sorting below, for the example in the documentation of
-   permuted_vertex_indexes(), possibly we have the content of
-   permuted_to_original_indexes_ like this:
-
-   |   index i   |   permuted_to_original_indexes_[i]   |   Participating   |
-   |             |                                      |   in contact      |
-   | :---------: | :----------------------------------: | :---------------: |
-   |      0      |                   5                  |       yes         |
-   |      1      |                   1                  |       yes         |
-   |      2      |                   2                  |       yes         |
-
-   The entries {5,1,2} could be in any order depending on how each mesh
-   element lists its vertices. For example, it could be {5,1,2}, {1,2,5}, or
-   {2,5,1}, etc.
-
-   We sort the entries in permuted_to_original_indexes_, so that it does not
-   depend on the order of vertices listed in each tetrahedron. For the above
-   example, the sorted entries would be:
-
-   |   index i   |   permuted_to_original_indexes_[i]   |   Participating   |
-   |             |                                      |   in contact      |
-   | :---------: | :----------------------------------: | :---------------: |
-   |      0      |                   1                  |       yes         |
-   |      1      |                   2                  |       yes         |
-   |      2      |                   5                  |       yes         |
-   */
-  std::sort(permuted_to_original_indexes_.begin(),
-            permuted_to_original_indexes_.begin() + num_vertices_in_contact_);
-
-  /* Fix the original permutation.
-
-   We reset the value of permuted_vertex_indexes_ from the sorted
-   permuted_to_original_indexes_. For the above example, the
-   permuted_vertex_indexes_ would become:
-
-   |   index i   |   permuted_vertex_indexes_   |   Participating   |
-   |             |                              |   in contact      |
-   | :---------: | :--------------------------: | :---------------: |
-   |      0      |             -1               |       no          |
-   |<==   1   ==>|<==           0            ==>|<==    yes      ==>|
-   |<==   2   ==>|<==           1            ==>|<==    yes      ==>|
-   |      3      |             -1               |       no          |
-   |      4      |             -1               |       no          |
-   |<==   5   ==>|<==           2            ==>|<==    yes      ==>|
-   */
-  for (int i = 0; i < num_vertices_in_contact_; ++i) {
-    permuted_vertex_indexes_[permuted_to_original_indexes_[i]] = i;
-  }
-
-  /* Add the remaining vertices to the permutations.
-
-   For the remaining entries in permuted_vertex_indexes_ with the
-   default value -1, we assign the new values by counting incrementally. For
-   the above example, it would become:
-
-   |   index i   |   permuted_vertex_indexes_   |   Participating   |
-   |             |                              |   in contact      |
-   | :---------: | :--------------------------: | :---------------: |
-   |<==   0   ==>|<==           3            ==>|<==    no       ==>|
-   |      1      |              0               |       yes         |
-   |      2      |              1               |       yes         |
-   |<==   3   ==>|<==           4            ==>|<==    no       ==>|
-   |<==   4   ==>|<==           5            ==>|<==    no       ==>|
-   |      5      |              2               |       yes         |
-
-   As we update permuted_vertex_indexes_, we also update
-   permuted_to_original_indexes_ accordingly. For the above example, it would
-   become:
-
-   |   index i   |   permuted_to_original_indexes_[i]   |   Participating   |
-   |             |                                      |   in contact      |
-   | :---------: | :----------------------------------: | :---------------: |
-   |      0      |                   1                  |       yes         |
-   |      1      |                   2                  |       yes         |
-   |      2      |                   5                  |       yes         |
-   |<==   3   ==>|<==                0               ==>|<==    no       ==>|
-   |<==   4   ==>|<==                3               ==>|<==    no       ==>|
-   |<==   5   ==>|<==                4               ==>|<==    no       ==>|
-   */
-  int index = num_vertices_in_contact_;
-  for (int i = 0; i < static_cast<int>(permuted_vertex_indexes_.size()); ++i) {
-    if (permuted_vertex_indexes_[i] == -1) {
-      permuted_vertex_indexes_[i] = index;
-      permuted_to_original_indexes_[index] = i;
-      ++index;
-    }
-  }
-
-  DRAKE_DEMAND(index == static_cast<int>(permuted_to_original_indexes_.size()));
-}
-
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class DeformableContactData)
+template class DeformableContactData<double>;
 
 }  // namespace internal
 }  // namespace geometry
