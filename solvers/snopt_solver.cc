@@ -247,6 +247,13 @@ class SnoptUserFunInfo {
     return nonlinear_cost_gradient_indices_;
   }
 
+  // If and only if the userfun experiences an exception, the exception message
+  // will be stashed here. All callers of snOptA or similar must check this to
+  // find out if there were any errors.
+  std::optional<std::string>& userfun_error_message() {
+    return userfun_error_message_;
+  }
+
   int* iu() const {
     return const_cast<int*>(this_pointer_as_int_array_.data());
   }
@@ -255,11 +262,11 @@ class SnoptUserFunInfo {
   }
 
   // Converts the `int iu[]` data back into a reference to this class.
-  static const SnoptUserFunInfo& GetFrom(const int* iu, int leniu) {
+  static SnoptUserFunInfo& GetFrom(const int* iu, int leniu) {
     DRAKE_ASSERT(iu != nullptr);
     DRAKE_ASSERT(leniu == kIntCount);
 
-    const SnoptUserFunInfo* result = nullptr;
+    SnoptUserFunInfo* result = nullptr;
     std::copy(reinterpret_cast<const char*>(iu),
               reinterpret_cast<const char*>(iu) + sizeof(result),
               reinterpret_cast<char*>(&result));
@@ -290,6 +297,8 @@ class SnoptUserFunInfo {
   const std::array<int, kIntCount> this_pointer_as_int_array_;
   const MathematicalProgram& prog_;
   std::set<int> nonlinear_cost_gradient_indices_;
+
+  std::optional<std::string> userfun_error_message_;
 };
 
 // Storage that we pass in and out of SNOPT APIs.
@@ -534,20 +543,18 @@ void EvaluateAllNonlinearCosts(
   }
 }
 
-void snopt_userfun(int* Status, int* n, double x[], int* needF, int* neF,
-                   double F[], int* needG, int* neG, double G[], char* cu,
-                   int* lencu, int iu[], int* leniu, double ru[], int* lenru) {
-  const SnoptUserFunInfo& info = SnoptUserFunInfo::GetFrom(iu, *leniu);
+void EvaluateCostsConstraints(
+    const SnoptUserFunInfo& info, int n, double x[], double F[], double G[]) {
   const MathematicalProgram& current_problem = info.mathematical_program();
   const auto & scale_map = current_problem.GetVariableScaling();
 
-  Eigen::VectorXd xvec(*n);
-  for (int i = 0; i < *n; i++) {
+  Eigen::VectorXd xvec(n);
+  for (int i = 0; i < n; i++) {
     xvec(i) = x[i];
   }
 
   F[0] = 0.0;
-  memset(G, 0, (*n) * sizeof(double));
+  memset(G, 0, n * sizeof(double));
 
   size_t grad_index = 0;
 
@@ -578,6 +585,26 @@ void snopt_userfun(int* Status, int* n, double x[], int* needF, int* neF,
   EvaluateNonlinearConstraints(
       current_problem, current_problem.linear_complementarity_constraints(), F,
       G, &constraint_index, &grad_index, xvec);
+}
+
+// This function is what SNOPT calls to compute the values and derivatives.
+// Because SNOPT calls this using the C ABI we cannot throw any exceptions,
+// otherwise macOS will immediately abort. Therefore, we need to catch all
+// exceptions and manually shepherd them back to our C++ code that called
+// into SNOPT.
+void snopt_userfun(int* Status, int* n, double x[], int* needF, int* neF,
+                   double F[], int* needG, int* neG, double G[], char* cu,
+                   int* lencu, int iu[], int* leniu, double ru[], int* lenru) {
+  SnoptUserFunInfo& info = SnoptUserFunInfo::GetFrom(iu, *leniu);
+  try {
+    EvaluateCostsConstraints(info, *n, x, F, G);
+  } catch (const std::exception& e) {
+    info.userfun_error_message() = fmt::format(
+        "Exception while evaluating SNOPT costs and constraints: '{}'",
+        e.what());
+    // The SNOPT manual says "Set Status < -1 if you want snOptA to stop."
+    *Status = -2;
+  }
 }
 
 /*
@@ -1274,6 +1301,9 @@ void SolveWithGivenOptions(
                 storage.iw(), storage.leniw(),
                 storage.rw(), storage.lenrw());
   // clang-format on
+  if (user_info.userfun_error_message().has_value()) {
+    throw std::runtime_error(*user_info.userfun_error_message());
+  }
 
   Eigen::VectorXd x_val = Eigen::Map<Eigen::VectorXd>(x.data(), nx);
   // Scale solution back
