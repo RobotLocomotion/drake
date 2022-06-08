@@ -9,10 +9,6 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-// TODO(DamrongGuoy) We may not need ReferenceDeformableGeometry if we use
-//  the mesh and the signed distance field instead.
-using ReferenceDeformableGeometry = deformable::ReferenceDeformableGeometry;
-
 /* DeformableContactData stores all the contact query information related to a
  particular deformable body. In addition, it stores information about the
  indexes of vertices participating in contact for this deformable body. See
@@ -25,13 +21,13 @@ class DeformableContactData {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableContactData)
   /* Constructs the DeformableContactData for a deformable body given all
-   deformable-rigid contact pairs involving the deformable body and the
-   deformable geometry at reference configuration.
+   deformable-rigid contact surfaces involving the deformable body and the
+   connectivity of the deformable geometry.
 
-   @pre All contact pairs involve the same deformable body. */
+   @pre All contact surfaces involve the same deformable body. */
   DeformableContactData(
-      std::vector<DeformableRigidContactPair<T>> contact_pairs,
-      const ReferenceDeformableGeometry& deformable_geometry);
+      std::vector<DeformableRigidContactSurface<T>> contact_surfaces,
+      const VolumeMesh<double>& deformable_geometry_connectivity);
 
   /* A 2D analogue of a deformable mesh D in contact with a rigid body R. The
    deformable mesh has 6 vertices with indexes v0-v5. Vertices v1, v2, and v5
@@ -111,8 +107,8 @@ class DeformableContactData {
   }
 
   /* Returns a vector of *approximations* of signed distances at all contact
-   points in the i-th contact pair. The approximate signed distance values have
-   the following properties:
+   points in the i-th contact surface. The approximate signed distance values
+   have the following properties:
 
    1. Contact points on the surface of the deformable body will report with zero
    distances.
@@ -120,11 +116,11 @@ class DeformableContactData {
 
    These properties are subject to the correctness of the
    ReferenceDeformableGeometry's signed distance field and the definition of the
-   contact points in the DeformableRigidContactPair.
+   contact points in the DeformableRigidContactSurface.
 
-   @pre 0 <= i < num_contact_pairs(). */
+   @pre 0 <= i < num_contact_surfaces(). */
   const std::vector<T>& signed_distances(int i) const {
-    DRAKE_DEMAND(0 <= i && i < num_contact_pairs());
+    DRAKE_DEMAND(0 <= i && i < num_contact_surfaces());
     return signed_distances_[i];
   }
 
@@ -138,32 +134,31 @@ class DeformableContactData {
    the total number of contact points is 2. */
   int num_contact_points() const { return num_contact_points_; }
 
-  /* Returns the number of deformable rigid contact pairs that involve this
-   deformable body. */
-  int num_contact_pairs() const { return contact_pairs_.size(); }
+  /* Returns the number of contact surfaces between this deformable geometry and
+   all rigid (non-deformable) geometries. */
+  int num_contact_surfaces() const { return contact_surfaces_.size(); }
 
-  /* Returns all deformable-rigid contact pairs that involve this deformable
+  /* Returns all deformable-rigid contact surfaces that involve this deformable
    body with no particular order. */
-  const std::vector<DeformableRigidContactPair<T>>& contact_pairs() const {
-    return contact_pairs_;
+  const std::vector<DeformableRigidContactSurface<T>>& contact_surfaces()
+      const {
+    return contact_surfaces_;
   }
 
-  /* Returns the index of the deformable body in contact. For an empty contact
-   data, returns an invalid index. */
-  int deformable_body_index() const {
-    return deformable_body_index_;
-  }
+  /* Returns the GeometryId of the deformable body in contact. For an empty
+   contact data, returns an invalid id. */
+  GeometryId deformable_id() const { return deformable_id_; }
 
  private:
   /* Populates the data member `permuted_vertex_indexes_`. Only called by the
-   constructor when there exists at least one contact pair. */
+   constructor when there exists at least one contact surface. */
   void CalcParticipatingVertices(
       const geometry::VolumeMesh<double>& deformable_mesh);
 
-  /* All contact pairs involving the deformable body of interest. */
-  std::vector<DeformableRigidContactPair<T>> contact_pairs_{};
+  /* All contact surfaces involving the deformable body of interest. */
+  std::vector<DeformableRigidContactSurface<T>> contact_surfaces_{};
   /* signed_distances_[i][j] gives an *approximate* signed distance for the j-th
-   contact point in the i-th contact pair. */
+   contact point in the i-th contact surface. */
   std::vector<std::vector<T>> signed_distances_{};
   /* Maps vertex indexes to "permuted vertex indexes". See the getter method for
    more info. */
@@ -171,7 +166,7 @@ class DeformableContactData {
   std::vector<int> permuted_to_original_indexes_{};
   int num_contact_points_{0};
   int num_vertices_in_contact_{0};
-  int deformable_body_index_;
+  GeometryId deformable_id_;
 };
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(

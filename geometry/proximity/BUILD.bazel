@@ -181,6 +181,7 @@ drake_cc_library(
     deps = [
         ":bvh",
         ":deformable_contact_geometries",
+        ":deformable_rigid_contact_pair",
         ":deformable_volume_mesh",
         ":mesh_intersection",
         ":triangle_surface_mesh",
@@ -193,8 +194,8 @@ drake_cc_library(
     name = "deformable_rigid_contact_pair",
     hdrs = ["deformable_rigid_contact_pair.h"],
     deps = [
-        ":deformable_contact_surface",
         "//geometry:geometry_ids",
+        "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
     ],
 )

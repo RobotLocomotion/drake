@@ -3,58 +3,97 @@
 #include <vector>
 
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/deformable_contact_surface.h"
+#include "drake/geometry/query_results/contact_surface.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 
-// TODO(DamrongGuoy): Change from `struct` to `class`, so we can maintain the
-//  invariants that R_CWs correspond to surface normals and prevent someone
-//  from changing `contact_surface` without updating `R_CWs`.
-
-/* A wrapper around DeformableContactSurface that provides additional
- information about the geometries/bodies involved in the contact and proximity
- properties of the contacts. */
+// Forward declaration of Tester class, so we can grant friend access.
 template <typename T>
-struct DeformableRigidContactPair {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableRigidContactPair)
-  DeformableRigidContactPair(DeformableContactSurface<T> contact_surface_in,
-                             geometry::GeometryId rigid_id_in,
-                             int deformable_id_in, const T& k,
-                             const T& d, const T& mu)
-      : contact_surface(std::move(contact_surface_in)),
-        rigid_id(rigid_id_in),
-        deformable_id(deformable_id_in),
-        stiffness(k),
-        dissipation(d),
-        friction(mu),
-        R_CWs(contact_surface.num_polygons()) {
-    for (int ic = 0; ic < contact_surface.num_polygons(); ++ic) {
-      const Vector3<T>& nhat_W = contact_surface.polygon_data(ic).unit_normal;
+class DeformableRigidContactSurfaceTester;
+
+/* A wrapper around ContactSurface that provides additional information for
+ contact between a deformable geometry and a rigid (non-deformable) geometry.
+ @tparam double_only */
+template <typename T>
+class DeformableRigidContactSurface {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableRigidContactSurface)
+  /* Creates a contact surface between the deformable geometry with
+   `deofrmable_id` and the rigid (non-deformable) geoemtry with `rigid_id`.
+   @param[in] contact_surface
+      The contact surface expressed in World frame.
+   @param[out] tetrahedron_indices
+      Each contact polygon in `contact_surface` is completely contained within
+      one tetrahedron of the deformable mesh. For the i-th contact polygon in
+      the contact surface, tetrahedron_indices[i] contains the index of the
+      containing tetrahedron.
+   @param[out] barycentric_centroids
+      Barycentric coordinates of centroids of contact polygons with respect to
+      their containing tetrahedra with the same index semantics as
+      `tetrahedron_indices`. */
+  DeformableRigidContactSurface(ContactSurface<T> contact_surface,
+                                std::vector<int> tetrahedron_indices,
+                                std::vector<Vector4<T>> barycentric_centroids,
+                                geometry::GeometryId rigid_id,
+                                geometry::GeometryId deformable_id)
+      : contact_surface_(std::move(contact_surface)),
+        tetrahedron_indices_(std::move(tetrahedron_indices)),
+        barycentric_centroids_(std::move(barycentric_centroids)),
+        rigid_id_(rigid_id),
+        deformable_id_(deformable_id),
+        R_CWs_(contact_surface_.num_faces()) {
+    for (int ic = 0; ic < contact_surface_.num_faces(); ++ic) {
+      const Vector3<T>& nhat_W = contact_surface_.face_normal(ic);
       constexpr int axis = 2;
       auto R_WC = math::RotationMatrix<T>::MakeFromOneUnitVector(nhat_W, axis);
-      R_CWs[ic] = R_WC.transpose();
+      R_CWs_[ic] = R_WC.transpose();
     }
+  }
+
+  GeometryId rigid_id() const { return rigid_id_; }
+
+  GeometryId deformable_id() const { return deformable_id_; }
+
+  /* Each contact polygon in this contact surface is completely contained
+   within one tetrahedron of the deformable mesh. For the i-th contact polygon
+   in the contact surface, tetrahedron_indices()[i] contains the index of the
+   containing tetrahedron. */
+  const std::vector<int>& tetrahedron_indices() const {
+    return tetrahedron_indices_;
   }
 
   /* Returns the number of contact points between the rigid and deformable body.
    We have one contact point at the centroid of each contact polygon in the
    contact surface. */
-  int num_contact_points() const { return contact_surface.num_polygons(); }
+  int num_contact_points() const { return contact_surface_.num_faces(); }
 
-  DeformableContactSurface<T> contact_surface;
-  geometry::GeometryId rigid_id;  // The id of the rigid geometry in contact.
-  int deformable_id;  // The id of deformable body in contact.
-  T stiffness;    // Combined stiffness at the contact point.
-  T dissipation;  // Combined dissipation at the contact point.
-  T friction;     // Combined friction at the contact point.
-  /* The rotation matrix mapping world frame quantities into contact frames at
-   each contact point. The i-th contact point has its own contact frame Cᵢ,
-   where R_CᵢW = R_CWs[i]. The basis vector Cᵢz is along the contact surface's
-   normal at that contact point. */
-  std::vector<math::RotationMatrix<T>> R_CWs;
+  /* Returns the approximated penetration distance at the e-th contact point.
+   @throws exception if e >= num_contact_points() or e < 0. */
+  T EvaluatePenetrationDistance(int e) const {
+    DRAKE_THROW_UNLESS(0 <= e && e < num_contact_points());
+    return contact_surface_.poly_e_MN().template EvaluateCartesian(
+        e, contact_surface_.centroid(e));
+  }
+
+  /* Returns the rotation matrices mapping world frame quantities into contact
+   frames at each contact point. The i-th contact point has its own contact
+   frame Cᵢ, where R_CᵢW = R_CWs[i]. The basis vector Cᵢz is along the contact
+   surface's normal at that contact point. */
+  const std::vector<math::RotationMatrix<T>>& R_CWs() const { return R_CWs_; }
+
+ private:
+  friend class DeformableRigidContactSurfaceTester<T>;
+
+  ContactSurface<T> contact_surface_;
+  std::vector<int> tetrahedron_indices_;
+  std::vector<Vector4<T>> barycentric_centroids_;
+
+  geometry::GeometryId rigid_id_;  // The id of the rigid geometry in contact.
+  geometry::GeometryId deformable_id_;  // The id of deformable body in contact.
+  std::vector<math::RotationMatrix<T>> R_CWs_;  // See R_CWs().
 };
 
 }  // namespace internal
