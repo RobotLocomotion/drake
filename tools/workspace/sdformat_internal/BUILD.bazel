@@ -15,7 +15,7 @@ drake_cc_binary(
     deps = [
         "//common:essential",
         "@gflags",
-        "@sdformat_internal//:ign_sdf_cmdline",
+        "@sdformat_internal//:ign_cmdline",
     ],
 )
 
