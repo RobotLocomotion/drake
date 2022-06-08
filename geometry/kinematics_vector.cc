@@ -1,7 +1,5 @@
 #include "drake/geometry/kinematics_vector.h"
 
-#include <memory>
-
 #include "absl/container/flat_hash_map.h"
 
 #include "drake/common/autodiff.h"
@@ -70,18 +68,19 @@ template <typename Id, typename KinematicsValue>
 typename KinematicsVector<Id, KinematicsValue>::Impl&
 KinematicsVector<Id, KinematicsValue>::impl() {
   DRAKE_ASSERT(pimpl_ != nullptr);
-  return *static_cast<Impl*>(pimpl_);
+  return *static_cast<Impl*>(pimpl_.get());
 }
 
 template <typename Id, typename KinematicsValue>
 const typename KinematicsVector<Id, KinematicsValue>::Impl&
 KinematicsVector<Id, KinematicsValue>::impl() const {
   DRAKE_ASSERT(pimpl_ != nullptr);
-  return *static_cast<Impl*>(pimpl_);
+  return *static_cast<Impl*>(pimpl_.get());
 }
 
 template <typename Id, typename KinematicsValue>
-KinematicsVector<Id, KinematicsValue>::KinematicsVector() : pimpl_(new Impl) {}
+KinematicsVector<Id, KinematicsValue>::KinematicsVector()
+    : pimpl_(std::make_shared<Impl>()) {}
 
 template <typename Id, typename KinematicsValue>
 KinematicsVector<Id, KinematicsValue>::KinematicsVector(
@@ -121,9 +120,7 @@ template <typename Id, typename KinematicsValue>
 KinematicsVector<Id, KinematicsValue>&
 KinematicsVector<Id, KinematicsValue>::operator=(
     const KinematicsVector<Id, KinematicsValue>& other) {
-  auto copy = std::make_unique<Impl>(other.impl());
-  delete &impl();
-  pimpl_ = copy.release();
+  pimpl_ = std::make_shared<Impl>(other.impl());
   return *this;
 }
 
@@ -136,9 +133,7 @@ KinematicsVector<Id, KinematicsValue>::operator=(
 }
 
 template <typename Id, typename KinematicsValue>
-KinematicsVector<Id, KinematicsValue>::~KinematicsVector() {
-  delete &impl();
-}
+KinematicsVector<Id, KinematicsValue>::~KinematicsVector() = default;
 
 template <typename Id, typename KinematicsValue>
 void KinematicsVector<Id, KinematicsValue>::clear() {

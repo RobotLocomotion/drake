@@ -13,6 +13,7 @@ def abseil_cpp_internal_repository(
             "@drake//tools/workspace/abseil_cpp_internal:patches/fix-constexpr-storage-deprecation.patch",  # noqa
             "@drake//tools/workspace/abseil_cpp_internal:patches/hidden_visibility.patch",  # noqa
             "@drake//tools/workspace/abseil_cpp_internal:patches/inline_namespace.patch",  # noqa
+            "@drake//tools/workspace/abseil_cpp_internal:patches/linkopts.patch",  # noqa
         ],
         patch_cmds = [
             # Force linkstatic = 1 everywhere. First, remove the few existing
