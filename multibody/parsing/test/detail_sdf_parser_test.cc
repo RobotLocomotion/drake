@@ -67,37 +67,33 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
 
   ModelInstanceIndex AddModelFromSdfFile(
       const std::string& file_name,
-      const std::string& model_name,
-      bool test_sdf_forced_nesting = false) {
+      const std::string& model_name) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
     std::optional<ModelInstanceIndex> result = AddModelFromSdf(
-        data_source, model_name, w, test_sdf_forced_nesting);
+        data_source, model_name, w);
     EXPECT_TRUE(result.has_value());
     resolver.Resolve(diagnostic_policy_);
     return result.value_or(ModelInstanceIndex{});
   }
 
   std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
-      const std::string& file_name,
-      bool test_sdf_forced_nesting = false) {
+      const std::string& file_name) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
-    auto result = AddModelsFromSdf(
-        data_source, w, test_sdf_forced_nesting);
+    auto result = AddModelsFromSdf(data_source, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
   }
 
   std::vector<ModelInstanceIndex> AddModelsFromSdfString(
-      const std::string& file_contents,
-      bool test_sdf_forced_nesting = false) {
+      const std::string& file_contents) {
     const DataSource data_source{DataSource::kContents, &file_contents};
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_, &resolver};
-    auto result = AddModelsFromSdf(data_source, w, test_sdf_forced_nesting);
+    auto result = AddModelsFromSdf(data_source, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
   }
@@ -2170,13 +2166,13 @@ TEST_F(SdfParserTest, InterfaceAPI) {
       "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
       "package.xml"));
 
-  DRAKE_ASSERT_NO_THROW(AddModelFromSdfFile(sdf_file_path, "", true));
+  DRAKE_ASSERT_NO_THROW(AddModelFromSdfFile(sdf_file_path, ""));
 
   // Test collision filtering across models. Done before Finalize() to exclude
   // default filters.
   {
     const auto& inspector = scene_graph_.model_inspector();
-    static constexpr int kNumLinks = 7;
+    static constexpr int kNumLinks = 4;
     // Verify the number we expect and that they are all in proximity role.
     ASSERT_EQ(kNumLinks, inspector.num_geometries());
     ASSERT_EQ(kNumLinks,
@@ -2191,12 +2187,9 @@ TEST_F(SdfParserTest, InterfaceAPI) {
 
     // Verify filtering among all links.
     std::set<CollisionPair> expected_filters = {
-      {"top::arm::L1", "top::arm::gripper::gripper_link"},
-      {"top::arm::L1", "top::extra_arm::L2"},
+      {"top::arm::L1", "top::gripper::gripper_link"},
       {"top::arm::L1", "top::torso"},
-      {"top::arm::gripper::gripper_link", "top::extra_arm::L2"},
-      {"top::arm::gripper::gripper_link", "top::torso"},
-      {"top::extra_arm::L2", "top::torso"},
+      {"top::gripper::gripper_link", "top::torso"},
     };
     VerifyCollisionFilters(ids, expected_filters);
   }
@@ -2220,69 +2213,13 @@ TEST_F(SdfParserTest, InterfaceAPI) {
                                 X_WL1.GetAsMatrix4(), kEps));
   }
 
-  {
-    // Frame E represents the model frame of model top::extra_arm
-    const RigidTransformd X_WE_expected(RollPitchYawd(0.0, 0.0, 0.0),
-                                        Vector3d(1, 2, 0));
-    const auto extra_arm_model_instance =
-        plant_.GetModelInstanceByName("top::extra_arm");
-    const auto& extra_arm_model_frame =
-        plant_.GetFrameByName("__model__", extra_arm_model_instance);
-    const RigidTransformd X_WE =
-        extra_arm_model_frame.CalcPoseInWorld(*context);
-    EXPECT_TRUE(CompareMatrices(X_WE_expected.GetAsMatrix4(),
-                                X_WE.GetAsMatrix4(), kEps));
-
-    const RigidTransformd X_WL2_expected(RollPitchYawd(0.1, 0.2, 0.3),
-                                        Vector3d(2, 4, 3));
-    const auto& arm_L2 = plant_.GetFrameByName("L2", extra_arm_model_instance);
-    const RigidTransformd X_WL2 = arm_L2.CalcPoseInWorld(*context);
-    EXPECT_TRUE(CompareMatrices(X_WL2_expected.GetAsMatrix4(),
-                                X_WL2.GetAsMatrix4(), kEps));
-  }
-  {
-    // Frame F represents the model frame of model top::arm::flange
-    const RigidTransformd X_WF_expected(RollPitchYawd(0.0, 0.0, 0.0),
-                                        Vector3d(1, 2, 1));
-    const auto flange_model_instance =
-        plant_.GetModelInstanceByName("top::arm::flange");
-    const auto& flange_model_frame =
-        plant_.GetFrameByName("__model__", flange_model_instance);
-    const RigidTransformd X_WF =
-        flange_model_frame.CalcPoseInWorld(*context);
-    EXPECT_TRUE(CompareMatrices(X_WF_expected.GetAsMatrix4(),
-                                X_WF.GetAsMatrix4(), kEps));
-
-    // Frame M represents the frame of model top::arm::flange::gripper_mount
-    const RigidTransformd X_WM_expected(RollPitchYawd(0.1, 0.2, 0.3),
-                                        Vector3d(1, 2, 3));
-    const auto& gripper_mount_frame =
-        plant_.GetFrameByName("gripper_mount", flange_model_instance);
-    const RigidTransformd X_WM = gripper_mount_frame .CalcPoseInWorld(*context);
-    EXPECT_TRUE(CompareMatrices(X_WM_expected.GetAsMatrix4(),
-                                X_WM.GetAsMatrix4(), kEps));
-
-    // Frame G represents the frame of model top::arm::flange::gripper
-    const RigidTransformd X_WG_expected(RollPitchYawd(0.1, 0.2, 0.3),
-                                        Vector3d(1, 2, 3));
-    const auto gripper_model_instance =
-        plant_.GetModelInstanceByName("top::arm::gripper");
-    const auto& gripper_model_frame =
-        plant_.GetFrameByName("__model__", gripper_model_instance);
-    const RigidTransformd X_WG = gripper_model_frame.CalcPoseInWorld(*context);
-    // TODO(azeey) There is a precision loss that occurs in libsdformat when
-    // resolving poses. Use just kEps when the following ign-math issue is
-    // resolved: https://github.com/ignitionrobotics/ign-math/issues/212.
-    EXPECT_TRUE(CompareMatrices(X_WG_expected.GetAsMatrix4(),
-                                X_WG.GetAsMatrix4(), 10 * kEps));
-  }
   // Test placement_frame using a table and a mug flipped upside down
   {
     // Frame T represents the frame top::table_and_mug::mug::top
     const RigidTransformd X_WT_expected(RollPitchYawd(M_PI_2, 0.0, 0.0),
                                         Vector3d(3, 0, 0.5));
     const auto mug_model_instance =
-        plant_.GetModelInstanceByName("top::table_and_mug::mug");
+        plant_.GetModelInstanceByName("top::mug");
     const auto& mug_top_frame =
         plant_.GetFrameByName("top", mug_model_instance);
     const RigidTransformd X_WT =
@@ -2307,26 +2244,6 @@ TEST_F(SdfParserTest, ErrorsFromIncludedUrdf) {
 
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
       ".*bad.urdf.*XML_ERROR.*"));
-  ClearDiagnostics();
-}
-
-// Verifies that parser diagnostics from SDFormat files included by SDFormat
-// files make it through the entire call stack.
-TEST_F(SdfParserTest, ErrorsFromIncludedNestingSdf) {
-  const std::string file_contents = R"""(
-<sdf version='1.8'>
-  <model name="top">
-    <link name="torso"/>
-    <include>
-      <pose relative_to="torso">1 0 0 0 0 0</pose>
-      <uri>package://drake/multibody/parsing/test/sdf_parser_test/bad.forced_nesting_sdf</uri>
-      <name>arm</name>
-    </include>
-  </model>
-</sdf>)""";
-  AddModelsFromSdfString(file_contents, true);
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
-      ".*Unable to read.*bad.forced_nesting.*"));
   ClearDiagnostics();
 }
 
