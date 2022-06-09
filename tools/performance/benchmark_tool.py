@@ -89,6 +89,10 @@ class CpuSpeedSettings:
         """Set the CPU governor to the given name string."""
         sudo('cpupower', 'frequency-set', '--governor', governor, quiet=True)
 
+    def have_intel_pstate_driver(self):
+        """Returns True if the intel_pstate driver is running."""
+        return os.path.exists(self.NO_TURBO_CONTROL_FILE)
+
     def get_no_turbo(self):
         """Return the current no-turbo state as string, either '1' or '0'."""
         with open(self.NO_TURBO_CONTROL_FILE, 'r', encoding='utf-8') as fo:
@@ -117,6 +121,13 @@ class CpuSpeedSettings:
 
 
 def do_benchmark(args):
+    if not CpuSpeedSettings().have_intel_pstate_driver():
+        raise RuntimeError("""
+The intel_pstate Linux kernel driver is not running. Without it, there is no
+way to prevent Turbo Boost cpu frequency scaling, and experiment results will
+be invalid.
+""")
+
     command_prologue = []
     if is_default_ubuntu():
         kernel_name = subprocess.check_output(
