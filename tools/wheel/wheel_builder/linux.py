@@ -3,6 +3,7 @@
 
 import atexit
 import os
+import pathlib
 import subprocess
 import sys
 import tarfile
@@ -10,11 +11,8 @@ import tarfile
 from collections import namedtuple
 from datetime import datetime, timezone
 
-from .common import die, gripe
-
-# Location of various scripts and other artifacts used to complete the build.
-# Must be set; normally by common.entry.
-resource_root = None
+from .common import die, gripe, wheel_name
+from .common import resource_root, wheelhouse
 
 # Artifacts that need to be cleaned up. DO NOT MODIFY outside of this file.
 _files_to_remove = []
@@ -39,6 +37,14 @@ targets = (
 glibc_versions = {
     'focal': '2_31',
 }
+
+
+def _path_depth(path):
+    """
+    Return the number of components (i.e. the "depth") of `path`.
+    """
+    offset = 1 if os.path.isabs(path) else 0  # Strip leading '/'.
+    return len(pathlib.Path(path).parts[offset:])
 
 
 def _docker(*args, pipe=False):
@@ -204,11 +210,14 @@ def _build_image(target, identifier, options):
     if options.extract:
         print('[-] Extracting wheel(s) from', tag)
 
-        command = 'tar -cf - /opt/drake-wheel-build/wheel/wheelhouse/*.whl'
+        wheelhouse_parts = _path_depth(wheelhouse)
+        wheel_glob = os.path.join(wheelhouse, '*.whl')
+
+        command = f'tar -cf - {wheel_glob}'
         extractor = _docker(
             'run', '--rm', tag, 'bash', '-c', command, pipe=True)
         subprocess.check_call(
-            ['tar', '--strip-components=4', '-xvf', '-'],
+            ['tar', f'--strip-components={wheelhouse_parts}', '-xvf', '-'],
             stdin=extractor.stdout, cwd=options.output_dir)
 
         extractor_result = extractor.wait()
@@ -221,9 +230,10 @@ def _test_wheel(target, identifier, options):
     """
     Runs the test script for the wheel matching the specified target.
     """
-    vm = f'cp{target.python_version}'
     glibc = glibc_versions[target.platform_alias]
-    wheel = f'drake-{options.version}-{vm}-{vm}-manylinux_{glibc}_x86_64.whl'
+    wheel = wheel_name(python_version=target.python_version,
+                       wheel_version=options.version,
+                       wheel_platform=f'manylinux_{glibc}_x86_64')
 
     if options.tag_stages:
         container = _tagname(target, 'test')
@@ -235,10 +245,11 @@ def _test_wheel(target, identifier, options):
     if not options.tag_stages:
         _images_to_remove.append(container)
 
+    test_script = '/test/test-wheel.sh'
     _docker('run', '--rm', '-t',
             '-v' f'{test_dir}:/test',
-            '-v' f'{options.output_dir}:/wheel',
-            container, '/test/test-wheel.sh', f'/wheel/{wheel}')
+            '-v' f'{options.output_dir}:{wheelhouse}',
+            container, test_script, os.path.join(wheelhouse, wheel))
 
 
 def build(options):
@@ -309,8 +320,8 @@ def add_selection_arguments(parser):
 
 def fixup_options(options):
     """
-    Validates options and applies any necessary transformations (e.g. parsing
-    strings into structured data).
+    Validates options and applies any necessary transformations.
+    (Converts comma-separated strings to sets.)
     """
     options.python_versions = set(options.python_versions.split(','))
     options.platforms = set(options.platforms.split(','))
