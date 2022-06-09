@@ -56,6 +56,12 @@ done < "$resource_root/image/known_hosts"
 
 chmod 600 ~/.ssh/known_hosts
 
+# gfortran hard-codes the path to the SDK with which it was built, which may
+# not match the SDK actually on the machine. This can result in the error
+# "ld: library not found for -lm", and can be fixed/overridden by setting
+# SDKROOT to the appropriate path.
+export SDKROOT="$(xcrun --show-sdk-path)"
+
 # -----------------------------------------------------------------------------
 # Build Drake's dependencies.
 # -----------------------------------------------------------------------------
