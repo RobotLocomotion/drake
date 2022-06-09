@@ -1586,7 +1586,7 @@ GTEST_TEST(CompliantContactManager, ThrowForUnsupportedJoints) {
   MultibodyPlant<double> plant(1.0e-3);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const RigidBody<double>& body =
-      plant.AddRigidBody("DummyBody", SpatialInertia<double>::MakeTestCube());
+      plant.AddRigidBody("DummyBody", SpatialInertia<double>::MakeSolidBox());
   plant.AddJoint(std::make_unique<MultiDofJointWithLimits<double>>(
       plant.world_frame(), body.body_frame(), -1.0, 2.0));
   plant.Finalize();
@@ -1615,7 +1615,7 @@ GTEST_TEST(CompliantContactManager,
   MultibodyPlant<double> plant(1.0e-3);
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   const RigidBody<double>& body =
-      plant.AddRigidBody("DummyBody", SpatialInertia<double>::MakeTestCube());
+      plant.AddRigidBody("DummyBody", SpatialInertia<double>::MakeSolidBox());
   const double kInf = std::numeric_limits<double>::infinity();
   plant.AddJoint(std::make_unique<MultiDofJointWithLimits<double>>(
       plant.world_frame(), body.body_frame(), -kInf, kInf));
