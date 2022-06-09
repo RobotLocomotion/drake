@@ -6,7 +6,7 @@ drake-latest-focal.tar.gz must be re-packaged on a focal machine.
 
 Command line arguments should specify absolute paths, e.g.,
 
-    bazel run //tools/release_engineering/dev/repack_deb -- \
+    bazel run //tools/release_engineering:repack_deb -- \
         --tgz "$PWD/drake-latest-focal.tar.gz" \
         --output-dir "$PWD/drake_deb"
 
@@ -30,7 +30,7 @@ from bazel_tools.tools.python.runfiles import runfiles
 
 def _rlocation(relative_path):
     manifest = runfiles.Create()
-    resource_path = f'drake/tools/release_engineering/dev/{relative_path}'
+    resource_path = f'drake/tools/release_engineering/{relative_path}'
     resolved_path = manifest.Rlocation(resource_path)
     assert resolved_path, f'Missing {resource_path}'
     return os.path.realpath(resolved_path)
