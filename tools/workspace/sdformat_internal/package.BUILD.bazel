@@ -173,6 +173,7 @@ _SRCS = [
     "src/Cylinder.cc",
     "src/Element.cc",
     "src/Ellipsoid.cc",
+    "src/EmbeddedSdf.cc",  # N.B. Generated file.
     "src/EmbeddedSdf.hh",
     "src/Error.cc",
     "src/Exception.cc",
@@ -235,7 +236,6 @@ _SRCS = [
     "src/XmlUtils.hh",
     "src/parser.cc",
     "src/parser_private.hh",
-    ":src/EmbeddedSdf.cc",
 ]
 
 # Generates the library exported to users.
