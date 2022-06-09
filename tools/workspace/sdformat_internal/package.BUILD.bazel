@@ -13,14 +13,22 @@ load(
     "drake_generate_include_header",
 )
 load(
+    "@drake//tools/workspace:check_lists_consistency.bzl",
+    "check_lists_consistency",
+)
+load(
     "@drake//tools/install:install.bzl",
     "install",
+)
+load(
+    "@drake//tools/workspace:vendor_cxx.bzl",
+    "cc_library_vendored",
 )
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 licenses(["notice"])  # Apache-2.0 AND BSD-3-Clause AND BSL-1.0
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
 # Generates config.h based on the version numbers in CMake code.
 cmake_configure_file(
@@ -55,7 +63,7 @@ generate_file(
 )
 
 # Public headers are indicated in sdformat's `include/sdf/CMakeLists.txt`.
-SDFORMAT_MOST_PUBLIC_HDRS = [
+_MOST_HDRS = [
     "include/sdf/Actor.hh",
     "include/sdf/AirPressure.hh",
     "include/sdf/Altimeter.hh",
@@ -139,107 +147,120 @@ py_binary(
     srcs_version = "PY3",
 )
 
-SDFORMAT_ALL_PUBLIC_HDRS = SDFORMAT_MOST_PUBLIC_HDRS + [
+_HDRS = _MOST_HDRS + [
     "include/sdf/config.hh",  # from cmake_configure_file above
     "include/sdf/sdf_config.h",  # alias to config.hh
     "include/sdf/Export.hh",  # from generate_file above
 ]
 
-# Generates the library exported to users. The explicitly listed srcs= matches
-# upstream's explicitly listed sources (sdformat/src/CMakeLists.txt), with two
-# exceptions: ign.hh and ign.cc are not incorporated in this library, but are
-# incorporated into the `ign_sdf_cmdline` library defined below; and the
-# parser_urdf.hh and parser_urdf.cc are excluded because we don't use them.
-cc_library(
+# This list of sources matches upstream's explicitly listed sources
+# (sdformat/src/CMakeLists.txt), with two exceptions: ign.hh and ign.cc are not
+# incorporated in this library, but are incorporated into the `ign_sdf_cmdline`
+# library defined below; and the parser_urdf.hh and parser_urdf.cc are excluded
+# because we don't use them.
+_SRCS = [
+    "src/Actor.cc",
+    "src/AirPressure.cc",
+    "src/Altimeter.cc",
+    "src/Atmosphere.cc",
+    "src/Box.cc",
+    "src/Camera.cc",
+    "src/Capsule.cc",
+    "src/Collision.cc",
+    "src/Console.cc",
+    "src/Converter.cc",
+    "src/Converter.hh",
+    "src/Cylinder.cc",
+    "src/Element.cc",
+    "src/Ellipsoid.cc",
+    "src/EmbeddedSdf.cc",  # N.B. Generated file.
+    "src/EmbeddedSdf.hh",
+    "src/Error.cc",
+    "src/Exception.cc",
+    "src/Filesystem.cc",
+    "src/ForceTorque.cc",
+    "src/Frame.cc",
+    "src/FrameSemantics.cc",
+    "src/FrameSemantics.hh",
+    "src/Geometry.cc",
+    "src/Gui.cc",
+    "src/Heightmap.cc",
+    "src/Imu.cc",
+    "src/InterfaceElements.cc",
+    "src/InterfaceFrame.cc",
+    "src/InterfaceJoint.cc",
+    "src/InterfaceLink.cc",
+    "src/InterfaceModel.cc",
+    "src/InterfaceModelPoseGraph.cc",
+    "src/Joint.cc",
+    "src/JointAxis.cc",
+    "src/Lidar.cc",
+    "src/Light.cc",
+    "src/Link.cc",
+    "src/Magnetometer.cc",
+    "src/Material.cc",
+    "src/Mesh.cc",
+    "src/Model.cc",
+    "src/NavSat.cc",
+    "src/Noise.cc",
+    "src/OutputConfig.cc",
+    "src/Param.cc",
+    "src/ParamPassing.cc",
+    "src/ParamPassing.hh",
+    "src/ParserConfig.cc",
+    "src/ParticleEmitter.cc",
+    "src/Pbr.cc",
+    "src/Physics.cc",
+    "src/Plane.cc",
+    "src/Plugin.cc",
+    "src/Polyline.cc",
+    "src/PrintConfig.cc",
+    "src/Root.cc",
+    "src/SDF.cc",
+    "src/SDFExtension.cc",
+    "src/SDFExtension.hh",
+    "src/SDFImplPrivate.hh",
+    "src/Scene.cc",
+    "src/ScopedGraph.hh",
+    "src/SemanticPose.cc",
+    "src/Sensor.cc",
+    "src/Sky.cc",
+    "src/Sphere.cc",
+    "src/Surface.cc",
+    "src/Types.cc",
+    "src/Utils.cc",
+    "src/Utils.hh",
+    "src/Visual.cc",
+    "src/World.cc",
+    "src/XmlUtils.cc",
+    "src/XmlUtils.hh",
+    "src/parser.cc",
+    "src/parser_private.hh",
+]
+
+# Generates the library exported to users.
+cc_library_vendored(
     name = "sdformat",
-    srcs = [
-        "src/Actor.cc",
-        "src/AirPressure.cc",
-        "src/Altimeter.cc",
-        "src/Atmosphere.cc",
-        "src/Box.cc",
-        "src/Camera.cc",
-        "src/Capsule.cc",
-        "src/Collision.cc",
-        "src/Console.cc",
-        "src/Converter.cc",
-        "src/Converter.hh",
-        "src/Cylinder.cc",
-        "src/Element.cc",
-        "src/Ellipsoid.cc",
-        "src/EmbeddedSdf.hh",
-        "src/Error.cc",
-        "src/Exception.cc",
-        "src/Filesystem.cc",
-        "src/ForceTorque.cc",
-        "src/Frame.cc",
-        "src/FrameSemantics.cc",
-        "src/FrameSemantics.hh",
-        "src/Geometry.cc",
-        "src/Gui.cc",
-        "src/Heightmap.cc",
-        "src/Imu.cc",
-        "src/InterfaceElements.cc",
-        "src/InterfaceFrame.cc",
-        "src/InterfaceJoint.cc",
-        "src/InterfaceLink.cc",
-        "src/InterfaceModel.cc",
-        "src/InterfaceModelPoseGraph.cc",
-        "src/Joint.cc",
-        "src/JointAxis.cc",
-        "src/Lidar.cc",
-        "src/Light.cc",
-        "src/Link.cc",
-        "src/Magnetometer.cc",
-        "src/Material.cc",
-        "src/Mesh.cc",
-        "src/Model.cc",
-        "src/NavSat.cc",
-        "src/Noise.cc",
-        "src/OutputConfig.cc",
-        "src/Param.cc",
-        "src/ParamPassing.cc",
-        "src/ParamPassing.hh",
-        "src/ParserConfig.cc",
-        "src/ParticleEmitter.cc",
-        "src/Pbr.cc",
-        "src/Physics.cc",
-        "src/Plane.cc",
-        "src/Plugin.cc",
-        "src/Polyline.cc",
-        "src/PrintConfig.cc",
-        "src/Root.cc",
-        "src/SDF.cc",
-        "src/SDFExtension.cc",
-        "src/SDFExtension.hh",
-        "src/SDFImplPrivate.hh",
-        "src/Scene.cc",
-        "src/ScopedGraph.hh",
-        "src/SemanticPose.cc",
-        "src/Sensor.cc",
-        "src/Sky.cc",
-        "src/Sphere.cc",
-        "src/Surface.cc",
-        "src/Types.cc",
-        "src/Utils.cc",
-        "src/Utils.hh",
-        "src/Visual.cc",
-        "src/World.cc",
-        "src/XmlUtils.cc",
-        "src/XmlUtils.hh",
-        "src/parser.cc",
-        "src/parser_private.hh",
-        ":src/EmbeddedSdf.cc",
+    srcs = _SRCS,
+    srcs_vendored = [
+        x.replace("src/", "drake_src/src/")
+        for x in _SRCS
     ],
-    hdrs = SDFORMAT_ALL_PUBLIC_HDRS,
-    # TODO(jamiesnape): Enable visibility after resolving warnings such as
-    # "Direct access in function means the weak symbol cannot be overridden at
-    # runtime. This was likely caused by different translation units being
-    # compiled with different visibility settings."
+    hdrs = _HDRS,
+    hdrs_vendored = [
+        x.replace("include/sdf/", "drake_src/drake_vendor/sdf/")
+        for x in _HDRS
+    ],
+    edit_include = {
+        "sdf/": "drake_vendor/sdf/",
+        "ignition/math/": "drake_vendor/ignition/math/",
+        "ignition/utils/": "drake_vendor/ignition/utils/",
+    },
+    includes = ["drake_src"],
     copts = ["-w"],
     defines = ["SDFORMAT_STATIC_DEFINE", "SDFORMAT_DISABLE_CONSOLE_LOGFILE"],
-    includes = ["include"],
     linkstatic = 1,
+    visibility = ["//visibility:public"],
     deps = [
         "@gz_math_internal//:gz_math",
         "@gz_utils_internal//:gz_utils",
@@ -251,21 +272,50 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "ign_sdf_cmdline",
-    srcs = [
-        "src/ign.cc",
-        "src/ign.hh",
+_IGN_CMDLINE_SRCS = [
+    "src/ign.cc",
+    "src/ign.hh",
+]
+
+cc_library_vendored(
+    name = "ign_cmdline",
+    srcs = _IGN_CMDLINE_SRCS,
+    srcs_vendored = [
+        x.replace("src/", "drake_src/src/")
+        for x in _IGN_CMDLINE_SRCS
     ],
+    edit_include = {
+        "sdf/": "drake_vendor/sdf/",
+        "ignition/math/": "drake_vendor/ignition/math/",
+    },
     copts = ["-w"],
     linkstatic = 1,
+    visibility = ["@drake//tools/workspace/sdformat_internal:__pkg__"],
     deps = [
         ":sdformat",
     ],
 )
 
+check_lists_consistency(
+    files = _MOST_HDRS + _SRCS + _IGN_CMDLINE_SRCS,
+    glob_include = [
+        "include/**/*.hh",
+        "src/**/*.hh",
+        "src/**/*.cc",
+    ],
+    glob_exclude = [
+        # We ignore this backwards-compatibility stub file.
+        "include/sdf/sdf.hh",
+        # Drake doesn't use sdformat's URDF parser; we have our own.
+        "src/parser_urdf.*",
+        # These are test code, not library code.
+        "**/*TEST*",
+    ],
+)
+
 install(
     name = "install",
+    visibility = ["//visibility:public"],
     docs = [
         "COPYING",
         "LICENSE",

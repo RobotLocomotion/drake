@@ -1,17 +1,18 @@
-# This script re-packs Drake's *.tar.gz release binaries into *.deb file(s).
-#
-# It currently under development and is not yet used in production.
-# Known deficiencies:
-#
-# (*) Missing dependencies. We need to scrape the list of required packages
-# from within the tgz (e.g., drake/share/drake/setup/packages-focal.txt)
-# and mix that into our debian/control file. Possibly we'd want to split it
-# into Depends vs Recommends vs Suggests:
-# https://www.debian.org/doc/debian-policy/ch-relationships.html
-#
-# (*) Lots of shlibdebs spam during build. We should at least nerf the stuff
-# from drake-visualizer, for starters. Possibly we shouldn't be calling
-# shlibdeps at all, assuming that packages-focal.txt is authoritative.
+r"""Re-package a Drake .tar.gz archive into a Debian archive.
+
+This script assumes that the Ubuntu distribution the .tar.gz archive was built
+for is the same as what is running the script.  For example, a
+drake-latest-focal.tar.gz must be re-packaged on a focal machine.
+
+Command line arguments should specify absolute paths, e.g.,
+
+    bazel run //tools/release_engineering/dev/repack_deb -- \
+        --tgz "$PWD/drake-latest-focal.tar.gz" \
+        --output-dir "$PWD/drake_deb"
+
+will repackage the file drake-latest-focal.tar.gz in the current directory,
+and copy the final re-packaged debian archive to the directory $PWD/drake_deb.
+"""
 
 import argparse
 import email.utils
@@ -139,13 +140,17 @@ def _run(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Re-package Drake into Debian files.')
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         '--tgz', type=str, required=True,
         help='the foo.tar.gz filename to be re-packaged')
+    # By default, place the final .deb in the working directory the user
+    # ran the bazel command from in their terminal.
+    output_default = os.path.realpath(os.environ['BUILD_WORKING_DIRECTORY'])
     parser.add_argument(
-        '--output-dir', metavar='DIR', default=os.path.realpath('.'),
-        help='directory to place *.deb output (default: .)')
+        '--output-dir', metavar='DIR', default=output_default,
+        help=f'directory to place *.deb output (default: {output_default})')
     parser.add_argument(
         '--version', type=str, required=False, default=None,
         help=(
@@ -154,6 +159,18 @@ def main():
             'drake/share/doc/drake/VERSION.TXT will be used'))
     args = parser.parse_args()
     args.tgz = os.path.realpath(args.tgz)
+    args.output_dir = os.path.realpath(args.output_dir)
+
+    # Fail early if we cannot find the input / output locations rather than
+    # failing on trying to open the file or move it at the end.
+    if not os.path.isfile(args.tgz):
+        parser.error(
+            f'{args.tgz} is not a file, please use absolute paths for command '
+            'line arguments.')
+    if not os.path.isdir(args.output_dir):
+        parser.error(
+            f'{args.output_dir} is not a directory, please use absolute paths '
+            'for command line arguments.')
 
     with tempfile.TemporaryDirectory(prefix='drake-repack-') as tempdir:
         args.tempdir = tempdir

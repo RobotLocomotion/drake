@@ -199,16 +199,17 @@ TEST_F(DoorHingeTest, CloneTest) {
   config.motion_threshold = 0.125;
 
   BuildDoorHinge(config);
-  MultibodyPlant<AutoDiffXd> plant_ad(plant());
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
+      systems::System<double>::ToAutoDiffXd(plant());
 
-  EXPECT_EQ(plant_ad.num_positions(), 1);
-  EXPECT_EQ(plant_ad.num_velocities(), 1);
-  EXPECT_EQ(plant_ad.num_actuated_dofs(), 0);
+  EXPECT_EQ(plant_ad->num_positions(), 1);
+  EXPECT_EQ(plant_ad->num_velocities(), 1);
+  EXPECT_EQ(plant_ad->num_actuated_dofs(), 0);
 
   // Should include gravity and the door hinge.
-  EXPECT_EQ(plant_ad.num_force_elements(), 2);
+  EXPECT_EQ(plant_ad->num_force_elements(), 2);
   const DoorHinge<AutoDiffXd>& door_hinge_ad =
-      plant_ad.GetForceElement<DoorHinge>(ForceElementIndex(1));
+      plant_ad->GetForceElement<DoorHinge>(ForceElementIndex(1));
 
   EXPECT_EQ(door_hinge_ad.config().spring_zero_angle_rad,
             config.spring_zero_angle_rad);
