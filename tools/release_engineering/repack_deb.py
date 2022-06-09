@@ -6,7 +6,7 @@ drake-latest-focal.tar.gz must be re-packaged on a focal machine.
 
 Command line arguments should specify absolute paths, e.g.,
 
-    bazel run //tools/release_engineering/dev/repack_deb -- \
+    bazel run //tools/release_engineering:repack_deb -- \
         --tgz "$PWD/drake-latest-focal.tar.gz" \
         --output-dir "$PWD/drake_deb"
 
@@ -30,7 +30,7 @@ from bazel_tools.tools.python.runfiles import runfiles
 
 def _rlocation(relative_path):
     manifest = runfiles.Create()
-    resource_path = f'drake/tools/release_engineering/dev/{relative_path}'
+    resource_path = f'drake/tools/release_engineering/{relative_path}'
     resolved_path = manifest.Rlocation(resource_path)
     assert resolved_path, f'Missing {resource_path}'
     return os.path.realpath(resolved_path)
@@ -47,6 +47,9 @@ def _run(args):
 
     # Discern the version badging to use, get the dependencies for drake.
     codename = lsb_release.get_os_release()['CODENAME']
+    assert codename in args.tgz, \
+        ("Debian re-packaging must be performed on the same distribution, but "
+         f"'{codename}' was not found in '{args.tgz}'.")
     with tarfile.open(args.tgz) as archive:
         version = archive.getmember('drake/share/doc/drake/VERSION.TXT')
         version_txt = archive.extractfile(version).read().decode('utf-8')
@@ -154,7 +157,7 @@ def main():
     parser.add_argument(
         '--version', type=str, required=False, default=None,
         help=(
-            'version number to package (e.g., "1.3.0"), if not specified the '
+            'version number to package (e.g., "1.3.0"); if not specified the '
             'date timestamp YYYYMMDD found in the foo.tar.gz file '
             'drake/share/doc/drake/VERSION.TXT will be used'))
     args = parser.parse_args()
