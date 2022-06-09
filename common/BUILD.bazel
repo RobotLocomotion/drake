@@ -1094,6 +1094,7 @@ drake_cc_googletest(
     deps = [
         ":autodiff",
         ":essential",
+        ":identifier",
         ":nice_type_name",
         ":nice_type_name_override_header",
     ],
