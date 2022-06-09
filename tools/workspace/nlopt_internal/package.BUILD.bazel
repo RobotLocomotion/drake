@@ -301,7 +301,7 @@ genrule(
     cmd = " ".join([
         "cp $(execpath src/api/nlopt-in.hpp) $@",
         "&&",
-        "patch $@ $(execpath @drake//tools/workspace/nlopt_internal:patches/gen_enums.patch)",  # noqa
+        "patch --quiet $@ $(execpath @drake//tools/workspace/nlopt_internal:patches/gen_enums.patch)",  # noqa
     ]),
     visibility = ["@drake//tools/workspace/nlopt_internal:__pkg__"],
 )
