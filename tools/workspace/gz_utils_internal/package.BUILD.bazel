@@ -5,10 +5,6 @@ load(
     "cmake_configure_file",
 )
 load(
-    "@drake//tools/workspace:generate_include_header.bzl",
-    "drake_generate_include_header",
-)
-load(
     "@drake//tools/workspace:check_lists_consistency.bzl",
     "check_lists_consistency",
 )
@@ -16,17 +12,15 @@ load(
     "@drake//tools/install:install.bzl",
     "install",
 )
+load(
+    "@drake//tools/workspace:vendor_cxx.bzl",
+    "cc_library_vendored",
+)
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 licenses(["notice"])  # Apache-2.0
 
 package(default_visibility = ["//visibility:private"])
-
-PROJECT_MAJOR = 1
-
-PROJECT_MINOR = 0
-
-PROJECT_PATCH = 0
 
 cmake_configure_file(
     name = "config",
@@ -35,11 +29,11 @@ cmake_configure_file(
     cmakelists = ["CMakeLists.txt"],
     defines = [
         "IGN_DESIGNATION=utils",
-        "PROJECT_VERSION_MAJOR=%d" % (PROJECT_MAJOR),
-        "PROJECT_VERSION_MINOR=%d" % (PROJECT_MINOR),
-        "PROJECT_VERSION_PATCH=%d" % (PROJECT_PATCH),
-        "PROJECT_VERSION=%d.%d" % (PROJECT_MAJOR, PROJECT_MINOR),
-        "PROJECT_VERSION_FULL=%d.%d.%d" % (PROJECT_MAJOR, PROJECT_MINOR, PROJECT_PATCH),  # noqa
+        "PROJECT_VERSION_MAJOR=0",
+        "PROJECT_VERSION_MINOR=0",
+        "PROJECT_VERSION_PATCH=0",
+        "PROJECT_VERSION=0.0",
+        "PROJECT_VERSION_FULL=0.0.0",
         "PROJECT_NAME_NO_VERSION=ignition-utils",
     ],
 )
@@ -49,12 +43,12 @@ generate_file(
     content = """
 #pragma once
 // Simplified version of visibility and deprecation macros.
-#define IGNITION_UTILS_VISIBLE __attribute__ ((visibility("default")))
+#define IGNITION_UTILS_VISIBLE
 #define IGN_DEPRECATED(version) __attribute__ ((__deprecated__))
     """,
 )
 
-public_headers_no_gen = [
+_MOST_PUBLIC_HDRS = [
     "include/ignition/utils/ImplPtr.hh",
     "include/ignition/utils/SuppressWarning.hh",
     "include/ignition/utils/detail/DefaultOps.hh",
@@ -62,35 +56,27 @@ public_headers_no_gen = [
     "include/ignition/utils/detail/SuppressWarning.hh",
 ]
 
-private_headers = [
-    # Nothing here yet.
-]
-
-drake_generate_include_header(
-    name = "utilshh_genrule",
-    out = "include/ignition/utils.hh",
-    hdrs = public_headers_no_gen + [
-        "include/ignition/utils/config.hh",
-        "include/ignition/utils/Export.hh",
-    ],
-)
-
 check_lists_consistency(
-    files = private_headers + public_headers_no_gen,
+    files = _MOST_PUBLIC_HDRS,
     glob_include = ["include/**/*.hh"],
 )
 
-public_headers = public_headers_no_gen + [
+_HDRS = _MOST_PUBLIC_HDRS + [
     "include/ignition/utils/config.hh",
     "include/ignition/utils/Export.hh",
-    "include/ignition/utils.hh",
 ]
 
-cc_library(
+cc_library_vendored(
     name = "gz_utils",
-    srcs = private_headers,
-    hdrs = public_headers,
-    includes = ["include"],
+    hdrs = _HDRS,
+    hdrs_vendored = [
+        x.replace("include/ignition/", "drake_src/drake_vendor/ignition/")
+        for x in _HDRS
+    ],
+    edit_include = {
+        "ignition/": "drake_vendor/ignition/",
+    },
+    includes = ["drake_src"],
     visibility = ["//visibility:public"],
 )
 

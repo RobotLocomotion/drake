@@ -21,7 +21,6 @@ filegroup(
         "test/**/*.config",
         "test/**/*.obj",
         "test/**/*.sdf",
-        "test/**/*.forced_nesting_sdf",
         "test/**/*.urdf",
         "test/**/*.xml",
         "test/**/*.png",

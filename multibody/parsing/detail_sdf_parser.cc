@@ -10,15 +10,15 @@
 #include <variant>
 #include <vector>
 
-#include <sdf/Error.hh>
-#include <sdf/Frame.hh>
-#include <sdf/Joint.hh>
-#include <sdf/JointAxis.hh>
-#include <sdf/Link.hh>
-#include <sdf/Model.hh>
-#include <sdf/ParserConfig.hh>
-#include <sdf/Root.hh>
-#include <sdf/World.hh>
+#include <drake_vendor/sdf/Error.hh>
+#include <drake_vendor/sdf/Frame.hh>
+#include <drake_vendor/sdf/Joint.hh>
+#include <drake_vendor/sdf/JointAxis.hh>
+#include <drake_vendor/sdf/Link.hh>
+#include <drake_vendor/sdf/Model.hh>
+#include <drake_vendor/sdf/ParserConfig.hh>
+#include <drake_vendor/sdf/Root.hh>
+#include <drake_vendor/sdf/World.hh>
 
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/rigid_transform.h"
@@ -1309,10 +1309,6 @@ RigidTransformd GetDefaultFramePose(
 // http://sdformat.org/tutorials?tut=composition_proposal
 constexpr char kExtUrdf[] = ".urdf";
 
-// To test re-parsing an SDFormat document, but in complete isolation. Tests
-// out separate model formats.
-constexpr char kExtForcedNesting[] = ".forced_nesting_sdf";
-
 void AddBodiesToInterfaceModel(const MultibodyPlant<double>& plant,
                                ModelInstanceIndex model_instance,
                                const sdf::InterfaceModelPtr& interface_model) {
@@ -1365,8 +1361,7 @@ void AddJointsToInterfaceModel(const MultibodyPlant<double>& plant,
 // This is a forward-declaration of an anonymous helper that's defined later
 // in this file.
 sdf::ParserConfig MakeSdfParserConfig(
-    const PackageMap&, MultibodyPlant<double>*, CollisionFilterGroupResolver*,
-    bool test_sdf_forced_nesting);
+    const PackageMap&, MultibodyPlant<double>*, CollisionFilterGroupResolver*);
 
 sdf::Error MakeSdfError(sdf::ErrorCode code, const DiagnosticDetail& detail) {
   sdf::Error result(code, detail.message);
@@ -1387,17 +1382,13 @@ sdf::Error MakeSdfError(sdf::ErrorCode code, const DiagnosticDetail& detail) {
 sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     MultibodyPlant<double>* plant, const PackageMap& package_map,
     CollisionFilterGroupResolver* resolver,
-    const sdf::NestedInclude& include, sdf::Errors* errors,
-    bool test_sdf_forced_nesting) {
+    const sdf::NestedInclude& include, sdf::Errors* errors) {
   const sdf::ParserConfig parser_config = MakeSdfParserConfig(
-      package_map, plant, resolver, test_sdf_forced_nesting);
+      package_map, plant, resolver);
 
-  // Do not attempt to parse anything other than URDF or forced nesting files.
+  // Do not attempt to parse anything other than URDF files.
   const bool is_urdf = EndsWith(include.ResolvedFileName(), kExtUrdf);
-  const bool is_forced_nesting =
-      test_sdf_forced_nesting &&
-      EndsWith(include.ResolvedFileName(), kExtForcedNesting);
-  if (!is_urdf && !is_forced_nesting) {
+  if (!is_urdf) {
     return nullptr;
   }
 
@@ -1450,25 +1441,8 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
         "__model__", canonical_link_frame, RigidTransformd::Identity(),
         main_model_instance));
   } else {
-    DRAKE_DEMAND(is_forced_nesting);
-    // Since this is just for testing, we'll assume that there wouldn't be
-    // another included model that requires a custom parser.
-    sdf::Root root;
-
-    sdf::Errors inner_errors = LoadSdf(
-        diagnostic, &root, data_source, parser_config);
-    if (PropagateErrors(std::move(inner_errors), errors)) {
-      return nullptr;
-    }
-    DRAKE_DEMAND(nullptr != root.Model());
-    const sdf::Model &model = *root.Model();
-
-    const std::string model_name =
-        include.LocalModelName().value_or(model.Name());
-    main_model_instance = AddModelsFromSpecification(
-        diagnostic, model,
-        sdf::JoinName(include.AbsoluteParentName(), model_name), {},
-        plant, resolver, package_map, data_source.GetRootDir()).front();
+    // TODO(jwnimmer-tri) Eventually we'll add our MuJoCo parser here.
+    DRAKE_UNREACHABLE();
   }
 
   // Now that the model is parsed, we create interface elements to send to
@@ -1548,8 +1522,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 sdf::ParserConfig MakeSdfParserConfig(
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    CollisionFilterGroupResolver* resolver,
-    bool test_sdf_forced_nesting) {
+    CollisionFilterGroupResolver* resolver) {
 
   // The error severity settings here are somewhat subtle. We set all of them
   // to ERR so that reports will append into an sdf::Errors collection instead
@@ -1578,11 +1551,10 @@ sdf::ParserConfig MakeSdfParserConfig(
     });
 
   parser_config.RegisterCustomModelParser(
-      [&package_map, plant, resolver, test_sdf_forced_nesting](
+      [&package_map, plant, resolver](
           const sdf::NestedInclude& include, sdf::Errors& errors) {
         return ParseNestedInterfaceModel(plant, package_map, resolver,
-                                         include, &errors,
-                                         test_sdf_forced_nesting);
+                                         include, &errors);
       });
 
   return parser_config;
@@ -1592,13 +1564,11 @@ sdf::ParserConfig MakeSdfParserConfig(
 std::optional<ModelInstanceIndex> AddModelFromSdf(
     const DataSource& data_source,
     const std::string& model_name_in,
-    const ParsingWorkspace& workspace,
-    bool test_sdf_forced_nesting) {
+    const ParsingWorkspace& workspace) {
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
   sdf::ParserConfig parser_config = MakeSdfParserConfig(
-      workspace.package_map, workspace.plant, workspace.collision_resolver,
-      test_sdf_forced_nesting);
+      workspace.package_map, workspace.plant, workspace.collision_resolver);
 
   sdf::Root root;
 
@@ -1629,13 +1599,11 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
 
 std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const DataSource& data_source,
-    const ParsingWorkspace& workspace,
-    bool test_sdf_forced_nesting) {
+    const ParsingWorkspace& workspace) {
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
   sdf::ParserConfig parser_config = MakeSdfParserConfig(
-      workspace.package_map, workspace.plant, workspace.collision_resolver,
-      test_sdf_forced_nesting);
+      workspace.package_map, workspace.plant, workspace.collision_resolver);
 
   sdf::Root root;
 
