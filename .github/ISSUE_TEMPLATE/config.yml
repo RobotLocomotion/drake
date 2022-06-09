@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions, Requests for Help, Build or Installation Problems, Troubleshooting
+    url: https://stackoverflow.com/questions/ask?tags=drake
+    about: Please ask and answer these kinds of questions using StackOverflow; do not post questions in the Drake issues database.
