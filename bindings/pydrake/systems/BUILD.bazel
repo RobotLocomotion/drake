@@ -257,8 +257,7 @@ drake_py_library(
         "//bindings/pydrake:lcm_py",
         "//bindings/pydrake:math_py",
         "//bindings/pydrake/common:eigen_geometry_py",
-        "@meshcat_python//:meshcat",
-        "@meshcat_python//:meshcat-server",
+        "@meshcat_python//:meshcat_sans_deprecation_warning",
     ],
 )
 
