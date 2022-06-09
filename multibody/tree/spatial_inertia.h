@@ -119,20 +119,27 @@ class SpatialInertia {
     return SpatialInertia(mass, p_PScm_E, G_SP_E);
   }
 
-  /// (Internal use only) Creates a spatial inertia for a uniform-density cube B
-  /// about Bo (B's origin point) with a given mass and length.
+  /// Creates a spatial inertia for a uniform-density solid box B about Bo (B's
+  /// origin point) from a given mass and dimensions (lengths) Lx, Ly, Lz.
+  /// If one of these lengths is zero, the spatial inertia corresponds to a thin
+  /// rectangular sheet. If Ly = Lz = 0, the spatial inertia corresponds to a
+  /// thin rod. If Lx = Ly = Lz = 0, the spatial inertia is that of a particle.
   /// @param[in] mass The mass of the cube.
+  /// @param[in] Lx The length of the box edge parallel to unit vector Bx.
+  /// @param[in] Ly The length of the box edge parallel to unit vector By.
+  /// @param[in] Lz The length of the box edge parallel to unit vector Bz.
   /// @param[in] length The length (or width or depth) of the cube.
   /// @retval M_BBo_B Cube B's spatial inertia about point Bo (B's origin),
   /// expressed in terms of unit vectors Bx, By, Bz, each of which are parallel
-  /// to sides of the cube. Point Bo is the centroid of the face of the cube
-  /// whose outward normal is -Bx. The position vector from Bo to Bcm (B's
-  /// center of mass) is p_BoBcm_B = length/2 Bx.
+  /// to sides (edges) of the box. Point Bo is the centroid of the face of the
+  /// box whose outward normal is -Bx. The position vector from Bo to Bcm (B's
+  /// center of mass) is p_BoBcm_B = Lx/2 Bx.
   /// @throws std::exception if the spatial inertia is invalid, which happens
-  /// if mass is negative or length is negative.
-  /// @note The default parameters mass = 2 and length = 3 correspond to a mass
-  /// moment of inertia of 3 for any line that pass through Bcm.
-  static SpatialInertia<T> MakeTestCube(T mass = T(2), T length = T(3));
+  /// if mass is negative or any of Lx or Ly or Lz is negative.
+  /// @note The default parameters mass = 2 and Lx = Ly = Lz = 3 correspond to a
+  /// mass moment of inertia of 3 for any line that pass through Bcm.
+  static SpatialInertia<T>::MakeSolidBox(T mass = T(2), T Lx = T(3),
+      T Ly = T(3), T Lz = T(3));
 
   /// Default SpatialInertia constructor initializes mass, center of mass and
   /// rotational inertia to invalid NaN's for a quick detection of
