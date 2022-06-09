@@ -838,8 +838,9 @@ const RigidBody<double>& AddRigidBody(MultibodyTree<double>* model,
                                       const double mass,
                                       const double link_length = 1.0) {
     DRAKE_DEMAND(model != nullptr);
+    const double Lx = link_length, Ly = link_length, Lz = link_length;
     return model->AddRigidBody(name,
-        SpatialInertia<double>::MakeTestCube(mass, link_length));
+        SpatialInertia<double>::MakeSolidBox(mass, Lx, Ly, Lz));
 }
 
 // Verify Body::default_rotational_inertia() and related MultibodyTree methods.
@@ -859,8 +860,9 @@ GTEST_TEST(DefaultInertia, VerifyDefaultRotationalInertia) {
 
   // Verify the default rotational inertia for each of the bodies.
   // To help with testing, create a RotationalInertia for a unit mass cube.
+  const double Lx = length, Ly = length, Lz = length;
   const UnitInertia<double> G_SSo_S =
-      SpatialInertia<double>::MakeTestCube(1.0, length).get_unit_inertia();
+      SpatialInertia<double>::MakeSolidBox(1.0, Lx, Ly, Lz).get_unit_inertia();
   const RotationalInertia<double> I_A = body_A.default_rotational_inertia();
   const RotationalInertia<double> I_B = body_B.default_rotational_inertia();
   const RotationalInertia<double> I_C = body_C.default_rotational_inertia();
