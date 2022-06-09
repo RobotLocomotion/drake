@@ -55,6 +55,12 @@ TEST_F(CsdpDocExample, Solve) {
     Z_expected(6, 6) = 1.0;
     EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(solver_details.Z_val),
                                 Z_expected, tol));
+    // Now add an empty constraint to the program and solve it again, there
+    // should be no error.
+    prog_->AddLinearEqualityConstraint(Eigen::RowVector2d(0, 0), 0, y_);
+    solver.Solve(*prog_, {}, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_NEAR(result.get_optimal_cost(), -2.75, tol);
   }
 }
 
