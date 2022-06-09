@@ -37,4 +37,19 @@ drake_py_binary_ubuntu_only(
     srcs = ["download_release_candidate.py"],
 )
 
+# Convert drake .tar.gz archives into .deb archives.
+drake_py_binary_ubuntu_only(
+    name = "repack_deb",
+    srcs = ["repack_deb.py"],
+    data = [
+        "debian/changelog.in",
+        "debian/compat",
+        "debian/control.in",
+        "debian/copyright",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
 add_lint_tests()

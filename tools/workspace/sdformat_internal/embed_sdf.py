@@ -5,7 +5,7 @@ import sys
 assert __name__ == '__main__'
 
 print("""
-#include "src/EmbeddedSdf.hh"
+#include "EmbeddedSdf.hh"
 namespace sdf { inline namespace SDF_VERSION_NAMESPACE {
 const std::map<std::string, std::string>& GetEmbeddedSdf() {
   static const std::map<std::string, std::string> result{

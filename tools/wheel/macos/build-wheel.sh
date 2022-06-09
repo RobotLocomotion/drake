@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-# This script builds a wheel on macOS. It requires an already-provisioned host.
+# This script builds a wheel on macOS. It can be run directly, but using the
+# //tools/wheel:builder Bazel action adds functionality. Running this script
+# directly also requires an already-provisioned host.
 #
 # Beware that this requires write permission to /opt and will nuke various
 # things therein. (Shouldn't affect ARM Homebrew, though.)
@@ -33,16 +35,7 @@ fi
 # -----------------------------------------------------------------------------
 
 rm -rf "/opt/drake-wheel-build/wheel"
-
-if [ -d /opt/drake ]; then
-    # We need to ensure there are no remnants of a prior build, but CI creates
-    # a wheel output directory in /opt/drake that we don't have permission to
-    # remove. Thus, we have to get a little creative...
-    find /opt/drake \
-        \! -path /opt/drake/wheelhouse \
-        \! -path /opt/drake \
-        -delete
-fi
+rm -rf "/opt/drake"
 
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
@@ -55,6 +48,12 @@ while read host proto fingerprint; do
 done < "$resource_root/image/known_hosts"
 
 chmod 600 ~/.ssh/known_hosts
+
+# gfortran hard-codes the path to the SDK with which it was built, which may
+# not match the SDK actually on the machine. This can result in the error
+# "ld: library not found for -lm", and can be fixed/overridden by setting
+# SDKROOT to the appropriate path.
+export SDKROOT="$(xcrun --show-sdk-path)"
 
 # -----------------------------------------------------------------------------
 # Build Drake's dependencies.

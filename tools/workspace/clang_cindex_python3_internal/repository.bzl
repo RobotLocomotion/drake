@@ -8,8 +8,8 @@ def clang_cindex_python3_internal_repository(
     github_archive(
         name = name,
         repository = "wjakob/clang-cindex-python3",
-        commit = "9dcf4f16757c9b6446910e4de51ed27ee962b81b",
-        sha256 = "65c26ec7fe09c54479ce5f375ccd5dd11e4e8bb11e47681c254be0d9bcd79164",  # noqa
+        commit = "b0b92c9395f3927af6a96ac8915e700259d2f55b",
+        sha256 = "a09d12a4303dffe9f53e62149d829e651d79e6848a712fab1d77bed382efc37b",  # noqa
         build_file = "@drake//tools/workspace/clang_cindex_python3_internal:package.BUILD.bazel",  # noqa
         mirrors = mirrors,
         patch_cmds = ["mkdir clang && mv *.py clang"],
