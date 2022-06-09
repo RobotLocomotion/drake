@@ -400,7 +400,7 @@ void AssertPlantEquals(const MultibodyPlant<double>* plant_a,
     return out;
   };
 
-  for (const auto& [a, b] :
+  for (const auto [a, b] :
        Zip(elem_a.model_instances(), elem_b.model_instances())) {
     ASSERT_NE(&a, &b);
     ASSERT_EQ(a, b);
@@ -408,7 +408,7 @@ void AssertPlantEquals(const MultibodyPlant<double>* plant_a,
     checked_b.model_instances().insert(b);
   }
 
-  for (const auto& [a, b] : Zip(elem_a.bodies(), elem_b.bodies())) {
+  for (const auto [a, b] : Zip(elem_a.bodies(), elem_b.bodies())) {
     if (a == &plant_a->world_body() || b == &plant_b->world_body()) {
       EXPECT_EQ(a, &plant_a->world_body());
       EXPECT_EQ(b, &plant_b->world_body());
@@ -425,27 +425,27 @@ void AssertPlantEquals(const MultibodyPlant<double>* plant_a,
 
   for (const auto& [key, frames_a] : frame_map_a) {
     auto frames_b = frame_map_b[key];
-    for (const auto& [frame_a, frame_b] : Zip(frames_a, frames_b)) {
+    for (const auto [frame_a, frame_b] : Zip(frames_a, frames_b)) {
       assert_frame_equals(*frame_a, *frame_b);
     }
   }
 
-  for (const auto& [joint_a, joint_b] : Zip(elem_a.joints(), elem_b.joints())) {
+  for (const auto [joint_a, joint_b] : Zip(elem_a.joints(), elem_b.joints())) {
     assert_joint_equals(*joint_a, *joint_b);
   }
-  for (const auto& [joint_actuator_a, joint_actuator_b] :
+  for (const auto [joint_actuator_a, joint_actuator_b] :
        Zip(elem_a.joint_actuators(), elem_b.joint_actuators())) {
     EXPECT_EQ(joint_actuator_a->effort_limit(),
               joint_actuator_b->effort_limit());
   }
 
   if (scene_graph_b != nullptr) {
-    for (const auto& [geometry_id_a, geometry_id_b] :
+    for (const auto [geometry_id_a, geometry_id_b] :
          Zip(elem_a.geometry_ids(), elem_b.geometry_ids())) {
       assert_geometry_equals(geometry_id_a, geometry_id_b);
     }
 
-    for (const auto& [collision_filter_pair_a, collision_filter_pair_b] :
+    for (const auto [collision_filter_pair_a, collision_filter_pair_b] :
          Zip(elem_a.collision_filter_pairs(),
              elem_b.collision_filter_pairs())) {
       assert_collision_filter_pair_equals(collision_filter_pair_a,
