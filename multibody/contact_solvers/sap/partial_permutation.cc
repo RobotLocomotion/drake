@@ -1,5 +1,6 @@
 #include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 
+#include <algorithm>
 #include <utility>
 
 #include "fmt/format.h"

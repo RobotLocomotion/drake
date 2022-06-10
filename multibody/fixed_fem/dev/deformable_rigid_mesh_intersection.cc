@@ -66,7 +66,7 @@ class Intersector {
     vector<ContactPolygonData<T>> out_poly_data;
 
     const math::RigidTransformd& X_DR_d = convert_to_double(X_DR);
-    for (const auto [tet_index, tri_index] :
+    for (const auto& [tet_index, tri_index] :
          tet_mesh_D.bvh().GetCollisionCandidates(bvh_R, X_DR_d)) {
       const vector<IntersectionVertex<T>>& poly_vertices_D =
           ClipTriangleByTetrahedron(tet_index, tet_mesh_D.mesh(), tri_index,
