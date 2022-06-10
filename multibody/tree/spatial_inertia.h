@@ -138,7 +138,7 @@ class SpatialInertia {
   /// if mass is negative or any of Lx or Ly or Lz is negative.
   /// @note The default parameters mass = 2 and Lx = Ly = Lz = 3 correspond to a
   /// mass moment of inertia of 3 for any line that pass through Bcm.
-  static SpatialInertia<T>::MakeSolidBox(T mass = T(2), T Lx = T(3),
+  static SpatialInertia<T> MakeSolidBox(T mass = T(2), T Lx = T(3),
       T Ly = T(3), T Lz = T(3));
 
   /// Default SpatialInertia constructor initializes mass, center of mass and
