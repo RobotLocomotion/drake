@@ -15,7 +15,7 @@ namespace {
 // Tests that the hand-derived dynamics (from the textbook) match the dynamics
 // generated from the urdf and sdf files via the MultibodyPlant class.
 GTEST_TEST(MultibodyDynamicsTest, AllTests) {
-  for (const std::string& ext : {"urdf", "sdf"}) {
+  for (const std::string ext : {"urdf", "sdf"}) {
     const double kTimeStep = 0.0;
     multibody::MultibodyPlant<double> mbp(kTimeStep);
     multibody::Parser(&mbp).AddModelFromFile(
