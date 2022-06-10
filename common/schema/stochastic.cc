@@ -1,6 +1,7 @@
 #include "drake/common/schema/stochastic.h"
 
 #include <stdexcept>
+#include <tuple>
 #include <utility>
 
 #include <fmt/format.h>
@@ -450,17 +451,18 @@ DRAKE_INSTANTIATE_ALL_SIZES(class UniformVector)
 #undef DRAKE_INSTANTIATE_ALL_SIZES
 
 #define DRAKE_INSTANTIATE_ALL_SIZES(Func) \
-  template Func(const DistributionVectorVariantX&); \
-  template Func(const DistributionVectorVariant<1>&); \
-  template Func(const DistributionVectorVariant<2>&); \
-  template Func(const DistributionVectorVariant<3>&); \
-  template Func(const DistributionVectorVariant<4>&); \
-  template Func(const DistributionVectorVariant<5>&); \
-  template Func(const DistributionVectorVariant<6>&);
+auto dummy ## Func __attribute__((used)) = std::make_tuple( \
+  &schema::Func<Eigen::Dynamic>, \
+  &schema::Func<1>, \
+  &schema::Func<2>, \
+  &schema::Func<3>, \
+  &schema::Func<4>, \
+  &schema::Func<5>, \
+  &schema::Func<6>);
 
-DRAKE_INSTANTIATE_ALL_SIZES(unique_ptr<DistributionVector> ToDistributionVector)
-DRAKE_INSTANTIATE_ALL_SIZES(bool IsDeterministic)
-DRAKE_INSTANTIATE_ALL_SIZES(Eigen::VectorXd GetDeterministicValue)
+DRAKE_INSTANTIATE_ALL_SIZES(ToDistributionVector)
+DRAKE_INSTANTIATE_ALL_SIZES(IsDeterministic)
+DRAKE_INSTANTIATE_ALL_SIZES(GetDeterministicValue)
 
 #undef DRAKE_INSTANTIATE_ALL_SIZES
 
