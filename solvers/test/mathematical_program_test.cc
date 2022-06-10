@@ -496,7 +496,7 @@ GTEST_TEST(TestAddDecisionVariables, TestMatrixInput) {
   for (int i = 0; i < 2; ++i) {
     for (int j = 0; j < 3; ++j) {
       // Make sure that the variable has been registered in prog.
-      EXPECT_NO_THROW(prog.FindDecisionVariableIndex(vars(i, j)));
+      EXPECT_NO_THROW(unused(prog.FindDecisionVariableIndex(vars(i, j))));
     }
   }
 }
@@ -621,7 +621,7 @@ GTEST_TEST(TestAddIndeterminates, MatrixInput) {
   EXPECT_EQ(prog.num_vars(), 0);
   for (int i = 0; i < 2; ++i) {
     for (int j = 0; j < 3; ++j) {
-      EXPECT_NO_THROW(prog.FindIndeterminateIndex(vars(i, j)));
+      EXPECT_NO_THROW(unused(prog.FindIndeterminateIndex(vars(i, j))));
     }
   }
 }
@@ -3179,7 +3179,7 @@ GTEST_TEST(TestMathematicalProgram, TestSetAndGetInitialGuess) {
   // Now set initial guess for a variable not registered.
   symbolic::Variable y("y");
   EXPECT_THROW(prog.SetInitialGuess(y, 1), std::runtime_error);
-  EXPECT_THROW(prog.GetInitialGuess(y), std::runtime_error);
+  EXPECT_THROW(unused(prog.GetInitialGuess(y)), std::runtime_error);
 
   // Try the same things with an extrinsic guess.
   VectorXd guess = VectorXd::Constant(3, kNaN);
