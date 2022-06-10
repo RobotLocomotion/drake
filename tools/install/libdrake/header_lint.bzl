@@ -19,7 +19,6 @@ _ALLOWED_EXTERNALS = [
     "double_conversion",
     "glew",
     "glib",
-    "glx",
     "libjpeg",
     "liblz4",
     "liblzma",
