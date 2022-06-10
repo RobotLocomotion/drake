@@ -350,7 +350,7 @@ void TestScalarType() {
   EXPECT_EQ(ExtractDoubleOrThrow(hdo.end_time()),
             ExtractDoubleOrThrow(breaks(2)));
 
-  for (const T& time : {0.1, 0.4, 1.6}) {
+  for (const T& time : {T(0.1), T(0.4), T(1.6)}) {
     EXPECT_NEAR(ExtractDoubleOrThrow(hdo.Evaluate(time)(0)),
                 ExtractDoubleOrThrow(foh.value(time)(0)), 1e-14);
   }

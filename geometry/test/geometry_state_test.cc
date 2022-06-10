@@ -2519,7 +2519,7 @@ TEST_F(GeometryStateTest, GeometryNameValidation) {
   // Case: Whitespace that SDF nevertheless considers not whitespace.
   // Update this when the following sdformat issue is resolved:
   // https://bitbucket.org/osrf/sdformat/issues/194/string-trimming-only-considers-space-and
-  for (const string& s : {"\n", " \n\t", " \f", "\v", "\r", "\ntest"}) {
+  for (const char* const s : {"\n", " \n\t", " \f", "\v", "\r", "\ntest"}) {
     EXPECT_TRUE(geometry_state_.IsValidGeometryName(frames_[0],
                                                     Role::kProximity, s));
   }
