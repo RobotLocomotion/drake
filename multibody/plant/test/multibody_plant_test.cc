@@ -1415,7 +1415,7 @@ GTEST_TEST(MultibodyPlantTest, FilterWeldedSubgraphs) {
 GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometriesErrors) {
   MultibodyPlant<double> plant(0.0);
   const RigidBody<double>& body = plant.AddRigidBody("body",
-      SpatialInertia<double>::MakeTestCube());
+      SpatialInertia<double>::MakeSolidBox());
 
   // It's an error to call this without a SceneGraph.
   DRAKE_EXPECT_THROWS_MESSAGE(
