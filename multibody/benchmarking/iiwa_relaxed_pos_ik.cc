@@ -35,15 +35,13 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {  // NOLINT
 
   // Define constants.
   // A uniform relaxation for end-effector position.
-  const Eigen::Vector3d kPosTol = 1e-4 * Eigen::Vector3d::Ones();
+  const Eigen::Vector3d kPosTol = 1e-3 * Eigen::Vector3d::Ones();
   // The number of random goals.
   const int kNumRandGoals = 10;
   // The number of random initial guesses for each goal.
-  const int kNumRandInitGuess = 3;
-  // The percentage of joint range to be used for goal pose generation.
-  const double kLimitedJointRange = 0.9;
+  const int kNumRandInitGuess = 2;
   // The tolerance for constraint satisfaction check.
-  const double kConstraintTol = 1e-5;
+  const double kConstraintTol = 1e-4;
 
   // Find the model file for Kuka iiwa.
   const std::string iiwa_path = FindResourceOrThrow(
@@ -74,24 +72,19 @@ BENCHMARK_F(RelaxedPosIkBenchmark, Iiwa)(benchmark::State& state) {  // NOLINT
   multibody::InverseKinematics relaxed_ik(plant, true);
   solvers::MathematicalProgram* prog = relaxed_ik.get_mutable_prog();
 
-  // Get the joint position limits for random generation by leveraging the
-  // fact that iiwa has symmetric position limits.
-  const Eigen::VectorXd joint_pos_limits(plant.GetPositionUpperLimits());
   // Generate random goal configurations.
   std::vector<math::RigidTransformd> ee_pose_goal(kNumRandGoals);
   for (int i = 0; i < kNumRandGoals; ++i) {
-    // Sample a random joint pose within a limited range since the solvers tend
-    // to fail when the goal is close to a boundary.
+    // Sample a random joint pose assuming that the random range [-1, 1] rad
+    // does not violate any of the joint position limits.
     context->get_mutable_continuous_state()
         .get_mutable_generalized_position()
-        .SetFromVector(
-            Eigen::VectorXd::Random(plant.num_positions())
-                .cwiseProduct(kLimitedJointRange * joint_pos_limits));
+        .SetFromVector(Eigen::VectorXd::Random(plant.num_positions()));
     // Evaluate the corresponding end-effector pose.
     ee_pose_goal[i] = plant.EvalBodyPoseInWorld(*context, ee_body);
   }
 
-  // Sample random initial guesses assuming that the range [-1, 1] rad
+  // Sample random initial guesses assuming that the random range [-1, 1] rad
   // does not violate any of the joint position limits.
   const Eigen::MatrixXd q0(
       Eigen::MatrixXd::Random(plant.num_positions(), kNumRandInitGuess));
