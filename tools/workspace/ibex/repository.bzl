@@ -19,5 +19,6 @@ def ibex_repository(
         patches = [
             # pkgconfig provides the clp/coin directory as an include, not clp/
             "@drake//tools/workspace/ibex:clp_include_path.patch",
+            "@drake//tools/workspace/ibex:include_limits.patch",
         ],
     )
