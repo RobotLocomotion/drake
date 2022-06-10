@@ -69,6 +69,19 @@ GTEST_TEST(SpatialInertia, MakeSolidBoxSpatialInertia) {
   EXPECT_EQ(M0_unit_moments, Vector3<double>::Zero());
   EXPECT_EQ(M0_unit_products, Vector3<double>::Zero());
 
+  // Test a particle spatial inertia (non-zero mass, lengths = zero).
+  const double mass_9 = 9;
+  const SpatialInertia<double> MP =
+      SpatialInertia<double>::MakeSolidBox(mass_9, Lx0, Ly0, Lz0);
+  EXPECT_TRUE(MP.IsPhysicallyValid());
+  EXPECT_EQ(MP.get_mass(), mass_9);
+  EXPECT_EQ(MP.get_com(), Vector3<double>::Zero());
+  const Vector3<double> MP_unit_moments = MP.get_unit_inertia().get_moments();
+  const Vector3<double> MP_unit_products = MP.get_unit_inertia().get_products();
+  EXPECT_EQ(MP_unit_moments, Vector3<double>::Zero());
+  EXPECT_EQ(MP_unit_products, Vector3<double>::Zero());
+
+  // Test arbitrary parameter values for MakeSolidBox().
   const double mass = 3;
   const double Lx = 4, Ly = 5, Lz = 6;
   const SpatialInertia<double> M1 =

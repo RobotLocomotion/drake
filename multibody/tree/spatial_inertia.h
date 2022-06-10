@@ -124,16 +124,15 @@ class SpatialInertia {
   /// If one of these lengths is zero, the spatial inertia corresponds to a thin
   /// rectangular sheet. If Ly = Lz = 0, the spatial inertia corresponds to a
   /// thin rod. If Lx = Ly = Lz = 0, the spatial inertia is that of a particle.
-  /// @param[in] mass The mass of the cube.
+  /// @param[in] mass The mass of the solid box.
   /// @param[in] Lx The length of the box edge parallel to unit vector Bx.
   /// @param[in] Ly The length of the box edge parallel to unit vector By.
   /// @param[in] Lz The length of the box edge parallel to unit vector Bz.
-  /// @param[in] length The length (or width or depth) of the cube.
-  /// @retval M_BBo_B Cube B's spatial inertia about point Bo (B's origin),
+  /// @retval M_BBo_B Box B's spatial inertia about point Bo (B's origin),
   /// expressed in terms of unit vectors Bx, By, Bz, each of which are parallel
   /// to sides (edges) of the box. Point Bo is the centroid of the face of the
-  /// box whose outward normal is -Bx. The position vector from Bo to Bcm (B's
-  /// center of mass) is p_BoBcm_B = Lx/2 Bx.
+  /// box whose outward normal is -Bx. Hence, the position vector from Bo to Bcm
+  /// (B's center of mass) is p_BoBcm_B = Lx/2 Bx.
   /// @throws std::exception if the spatial inertia is invalid, which happens
   /// if mass is negative or any of Lx or Ly or Lz is negative.
   /// @note The default parameters mass = 2 and Lx = Ly = Lz = 3 correspond to a
