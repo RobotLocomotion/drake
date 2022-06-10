@@ -449,20 +449,23 @@ DRAKE_INSTANTIATE_ALL_SIZES(class UniformVector)
 
 #undef DRAKE_INSTANTIATE_ALL_SIZES
 
-#define DRAKE_INSTANTIATE_ALL_SIZES(Func) \
-  template Func(const DistributionVectorVariantX&); \
-  template Func(const DistributionVectorVariant<1>&); \
-  template Func(const DistributionVectorVariant<2>&); \
-  template Func(const DistributionVectorVariant<3>&); \
-  template Func(const DistributionVectorVariant<4>&); \
-  template Func(const DistributionVectorVariant<5>&); \
-  template Func(const DistributionVectorVariant<6>&);
+#define DRAKE_DEFINE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(Func) \
+  template Func<Eigen::Dynamic>(const DistributionVectorVariantX&); \
+  template Func<1>(const DistributionVectorVariant<1>&); \
+  template Func<2>(const DistributionVectorVariant<2>&); \
+  template Func<3>(const DistributionVectorVariant<3>&); \
+  template Func<4>(const DistributionVectorVariant<4>&); \
+  template Func<5>(const DistributionVectorVariant<5>&); \
+  template Func<6>(const DistributionVectorVariant<6>&);
 
-DRAKE_INSTANTIATE_ALL_SIZES(unique_ptr<DistributionVector> ToDistributionVector)
-DRAKE_INSTANTIATE_ALL_SIZES(bool IsDeterministic)
-DRAKE_INSTANTIATE_ALL_SIZES(Eigen::VectorXd GetDeterministicValue)
+DRAKE_DEFINE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(
+    unique_ptr<DistributionVector> ToDistributionVector)
+DRAKE_DEFINE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(
+    bool IsDeterministic)
+DRAKE_DEFINE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(
+    Eigen::VectorXd GetDeterministicValue)
 
-#undef DRAKE_INSTANTIATE_ALL_SIZES
+#undef DRAKE_DEFINE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES
 
 }  // namespace schema
 }  // namespace drake
