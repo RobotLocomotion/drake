@@ -16,17 +16,7 @@ _ALLOWED_EXTERNALS = [
     "spdlog",
 
     # The entries that follow are defects; we should work to remove them.
-    "double_conversion",
-    "glew",
     "glib",
-    "libjpeg",
-    "liblz4",
-    "liblzma",
-    "libpng",
-    "libtiff",
-    "opengl",
-    "vtk",
-    "zlib",
 ]
 
 # Drake's allowed list of public preprocessor definitions. The only things
@@ -39,13 +29,6 @@ _ALLOWED_DEFINES = [
     "SPDLOG_COMPILED_LIB",
     "SPDLOG_FMT_EXTERNAL",
     "SPDLOG_SHARED_LIB",
-
-    # The entries that follow are defects; we should work to remove them.
-    "HAVE_CSTDDEF",
-    "SDFORMAT_DISABLE_CONSOLE_LOGFILE",
-    "SDFORMAT_STATIC_DEFINE",
-    "USE_LAPACK=1",
-    "_DARWIN_C_SOURCE",
 ]
 
 def _cc_check_allowed_headers_impl(ctx):
