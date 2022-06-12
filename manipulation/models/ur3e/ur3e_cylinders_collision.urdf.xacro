@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro"
+       name="ur3e" >
+
+  <!--
+  Per https://github.com/ros-industrial/universal_robot/blob/melodic-devel/ur_description/package.xml
+  the ur_description package from which these files are derived is BSD licensed.
+-->
+
+  <!-- ur3e -->
+  <xacro:include filename="ur3e.urdf.xacro" />
+
+  <!-- arm -->
+  <!-- Do not limit all collision shapes to be spheres -->
+  <!-- We limit joint limits to [-pi, pi] rather than the full range [-2pi, 2pi]
+       since the larger limits cause problems with planning. -->
+  <xacro:ur3e_robot prefix="ur_" joint_limited="true"
+  sphere_only_collision_shapes="false" />
+</robot>
