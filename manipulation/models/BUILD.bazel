@@ -12,6 +12,8 @@ install(
         "//manipulation/models/iiwa_description:install_data",
         "//manipulation/models/jaco_description:install_data",
         "//manipulation/models/realsense2_description:install_data",
+        "//manipulation/models/tri_homecart:install_data",
+        "//manipulation/models/ur3e:install_data",
         "//manipulation/models/wsg_50_description:install_data",
         "//manipulation/models/ycb:install_data",
     ],
