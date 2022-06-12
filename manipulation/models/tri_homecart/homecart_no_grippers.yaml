@@ -1,0 +1,119 @@
+directives:
+- add_frame:
+    name: homecart_on_world
+    X_PF:
+      base_frame: world
+      translation: [0, 0, 0]
+      rotation: !Rpy { deg: [0, 0, 0] }
+
+# Homecart
+- add_model:
+    name: homecart_bimanual
+    file: package://drake/manipulation/models/tri_homecart/homecart_bimanual.urdf
+- add_weld:
+    parent: homecart_on_world
+    child: homecart_bimanual::homecart_base_link
+
+# Homecart Collision Walls
+- add_frame:
+    name: homecart_collision_walls_on_world
+    X_PF:
+      base_frame: world
+      translation: [0.25, 0, 0]
+      rotation: !Rpy { deg: [0, 0, -90] }
+- add_model:
+    name: homecart_collision_walls
+    file: package://drake/manipulation/models/tri_homecart/homecart_collision_walls.sdf
+- add_weld:
+    parent: homecart_collision_walls_on_world
+    child: homecart_collision_walls
+
+# Left Robot
+- add_frame:
+    name: ur3_left_origin
+    X_PF:
+      base_frame: homecart_bimanual::left_arm_base_link
+      translation: [0, 0, 0]
+      rotation: !Rpy { deg: [0, 0, 270] }
+- add_model:
+    name: ur3_left
+    file: package://drake/manipulation/models/ur3e/ur3e_cylinders_collision.urdf
+- add_weld:
+    parent: ur3_left_origin
+    child: ur3_left::ur_base_link
+
+# Right Robot
+- add_frame:
+    name: ur3_right_origin
+    X_PF:
+      base_frame: homecart_bimanual::right_arm_base_link
+      translation: [0, 0, 0]
+      rotation: !Rpy { deg: [0, 0, 270] }
+- add_model:
+    name: ur3_right
+    file: package://drake/manipulation/models/ur3e/ur3e_cylinders_collision.urdf
+- add_weld:
+    parent: ur3_right_origin
+    child: ur3_right::ur_base_link
+
+# Cutting Board
+- add_frame:
+    name: homecart_cutting_board_origin
+    X_PF:
+      base_frame: homecart_bimanual::homecart_baseplate_link
+      translation: [0, 0, 0.0254]
+      rotation: !Rpy { deg: [0, 0, 0] }
+- add_model:
+    name: homecart_cutting_board
+    file: package://drake/manipulation/models/tri_homecart/homecart_cutting_board.sdf
+- add_weld:
+    parent: homecart_cutting_board_origin
+    child: homecart_cutting_board::homecart_cutting_board_link
+
+# Central cutting board frame
+- add_frame:
+    name: cutting_board_center
+    X_PF:
+      base_frame: homecart_cutting_board::homecart_cutting_board_link
+      translation: [0, 0, 0]
+      rotation: !Rpy { deg: [0, 0, 0] }
+
+# Scene camera frames
+- add_frame:
+    name: left_scene_camera
+    X_PF:
+      base_frame: homecart_on_world
+      translation: [0.5, 0.4, 0.97]
+      rotation: !Rpy { deg: [-145, 0, 180] }
+- add_frame:
+    name: right_scene_camera
+    X_PF:
+      base_frame: homecart_on_world
+      translation: [0.5, -0.4, 0.97]
+      rotation: !Rpy { deg: [-145, 0, 0] }
+- add_frame:
+    name: center_scene_camera
+    X_PF:
+      base_frame: homecart_on_world
+      translation: [-0.02, 0.0, 0.97]
+      rotation: !Rpy { deg: [-145, 0, -90] }
+
+# Helpful frames for areas of good manipulability
+- add_frame:
+    name: assembly_area
+    X_PF:
+      base_frame: homecart_on_world
+      translation: [0.35, 0.0, 0.0254]
+      rotation: !Rpy { deg: [0, 0, 0] }
+- add_frame:
+    name: left_pick_area
+    X_PF:
+      base_frame: homecart_on_world
+      translation: [0.35, 0.27, 0.0254]
+      rotation: !Rpy { deg: [0, 0, 0] }
+- add_frame:
+    name: right_pick_area
+    X_PF:
+      base_frame: homecart_on_world
+      translation: [0.35, -0.27, 0.0254]
+      rotation: !Rpy { deg: [0, 0, 0] }

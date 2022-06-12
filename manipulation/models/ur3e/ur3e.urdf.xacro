@@ -1,0 +1,688 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" xmlns:drake="https://drake.mit.edu">
+
+<!--
+  Author: Felix Messmer
+
+  Per https://github.com/ros-industrial/universal_robot/blob/melodic-devel/ur_description/package.xml
+  the ur_description package from which these files are derived is BSD licensed.
+-->
+
+<!--
+  TODO(calderpg-tri, sammy-tri, ggould-tri) The acceleration limits in this
+  file are wrong. Try to find the right value.
+-->
+
+  <xacro:include filename="ur.transmission.xacro" />
+
+   <xacro:macro name="cylinder_inertial" params="radius length mass *origin">
+    <inertial>
+      <mass value="${mass}" />
+      <xacro:insert_block name="origin" />
+      <inertia ixx="${0.0833333 * mass * (3 * radius * radius + length * length)}" ixy="0.0" ixz="0.0"
+        iyy="${0.0833333 * mass * (3 * radius * radius + length * length)}" iyz="0.0"
+        izz="${0.5 * mass * radius * radius}" />
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="ur3e_robot" params="prefix joint_limited
+    shoulder_pan_lower_limit:=${-pi}    shoulder_pan_upper_limit:=${pi}
+    shoulder_lift_lower_limit:=${-pi}    shoulder_lift_upper_limit:=${pi}
+    elbow_joint_lower_limit:=${-pi}    elbow_joint_upper_limit:=${pi}
+    wrist_1_lower_limit:=${-pi}    wrist_1_upper_limit:=${pi}
+    wrist_2_lower_limit:=${-pi}    wrist_2_upper_limit:=${pi}
+    wrist_3_lower_limit:=${-pi}    wrist_3_upper_limit:=${pi}
+    transmission_hw_interface:=hardware_interface/PositionJointInterface
+    safety_limits:=false safety_pos_margin:=0.15
+    safety_k_position:=20
+    sphere_only_collision_shapes:=False">
+
+    <!-- Inertia parameters -->
+    <xacro:property name="base_mass" value="2.0" />  <!-- This mass might be incorrect -->
+    <xacro:property name="shoulder_mass" value="2.0" />
+    <xacro:property name="upper_arm_mass" value="3.42" />
+    <xacro:property name="forearm_mass" value="1.26" />
+    <xacro:property name="wrist_1_mass" value="0.8" />
+    <xacro:property name="wrist_2_mass" value="0.8" />
+    <xacro:property name="wrist_3_mass" value="0.35" />
+
+    <!-- These parameters are borrowed from the urcontrol.conf file
+        but are not verified for the correct permutation.
+        The permutation was guessed by looking at the ur5e parameters.
+        Serious use of these parameters needs further inspection. -->
+    <xacro:property name="shoulder_cog" value="0.0 -0.02 0.0" />
+    <xacro:property name="upper_arm_cog" value="0.13 0.0 0.1157" />
+    <xacro:property name="forearm_cog" value="0.05 0.0 0.0238" />
+    <xacro:property name="wrist_1_cog" value="0.0 0.0 0.01" />
+    <xacro:property name="wrist_2_cog" value="0.0 0.0 0.01" />
+    <xacro:property name="wrist_3_cog" value="0.0 0.0 -0.02" />
+
+    <!-- Kinematic model -->
+    <!-- Properties from urcontrol.conf -->
+    <xacro:property name="d1" value="0.152" />
+    <xacro:property name="a2" value="-0.244" />
+    <xacro:property name="a3" value="-0.213" />
+    <xacro:property name="d4" value="0.104" />
+    <xacro:property name="d5" value="0.085" />
+    <xacro:property name="d6" value="0.092" />
+
+    <!-- Arbitrary offsets for shoulder/elbow joints -->
+    <xacro:property name="shoulder_offset" value="0.120" />  <!-- measured from model -->
+    <xacro:property name="elbow_offset" value="-0.093" /> <!-- measured from model -->
+
+    <!-- link lengths used in model -->
+    <xacro:property name="shoulder_height" value="${d1}" />
+    <xacro:property name="upper_arm_length" value="${-a2}" />
+    <xacro:property name="forearm_length" value="${-a3}" />
+    <xacro:property name="wrist_1_length" value="${d4}" />
+    <xacro:property name="wrist_2_length" value="${d5}" />
+    <xacro:property name="wrist_3_length" value="${d6}" />
+
+    <link name="${prefix}base_link" >
+      <visual>
+        <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+        <geometry>
+          <mesh filename="base.obj"/>
+        </geometry>
+        <material name="LightGrey">
+          <color rgba="0.7 0.7 0.7 1.0"/>
+        </material>
+      </visual>
+      <xacro:if value="${sphere_only_collision_shapes}">
+        <!-- Base joint -->
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+          <geometry>
+            <sphere radius="0.065"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 0.02"/>
+          <geometry>
+            <sphere radius="0.065"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 0.07"/>
+          <geometry>
+            <sphere radius="0.055"/>
+          </geometry>
+        </collision>
+        <!-- Cable connector -->
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 -0.08 0.02"/>
+          <geometry>
+            <sphere radius="0.03"/>
+          </geometry>
+        </collision>
+      </xacro:if>
+      <xacro:unless value="${sphere_only_collision_shapes}">
+        <!-- Base joint -->
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 0.012"/>
+          <geometry>
+            <sphere radius="0.07"/>
+          </geometry>
+        </collision>
+        <!-- Cable connector -->
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 -0.08 0.02"/>
+          <geometry>
+            <sphere radius="0.03"/>
+          </geometry>
+        </collision>
+      </xacro:unless>
+      <xacro:cylinder_inertial radius="0.075" length="0.038" mass="${base_mass}">
+        <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
+      </xacro:cylinder_inertial>
+    </link>
+
+    <joint name="${prefix}shoulder_pan_joint" type="revolute">
+      <parent link="${prefix}base_link" />
+      <child link = "${prefix}shoulder_link" />
+      <origin xyz="0.0 0.0 ${shoulder_height}" rpy="0.0 0.0 0.0" />
+      <axis xyz="0 0 1" />
+      <xacro:unless value="${joint_limited}">
+        <limit lower="${-2.0 * pi}" upper="${2.0 * pi}" effort="330.0" velocity="3.14" drake:acceleration="2.5"/>
+        <xacro:if value="${safety_limits}">
+          <safety_controller soft_lower_limit="${-2.0 * pi + safety_pos_margin}" soft_upper_limit="${2.0 * pi - safety_pos_margin}" k_position="${safety_k_position}" k_velocity="0.0"/>
+        </xacro:if>
+      </xacro:unless>
+      <xacro:if value="${joint_limited}">
+        <limit lower="${shoulder_pan_lower_limit}" upper="${shoulder_pan_upper_limit}" effort="330.0" velocity="3.14" drake:acceleration="2.5"/>
+        <xacro:if value="${safety_limits}">
+          <safety_controller soft_lower_limit="${shoulder_pan_lower_limit + safety_pos_margin}" soft_upper_limit="${shoulder_pan_upper_limit - safety_pos_margin}" k_position="${safety_k_position}" k_velocity="0.0"/>
+        </xacro:if>
+      </xacro:if>
+      <dynamics damping="0.0" friction="0.0"/>
+    </joint>
+
+    <link name="${prefix}shoulder_link">
+      <visual>
+        <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+        <geometry>
+          <mesh filename="shoulder.obj"/>
+        </geometry>
+        <material name="LightGrey">
+          <color rgba="0.7 0.7 0.7 1.0"/>
+        </material>
+      </visual>
+      <xacro:if value="${sphere_only_collision_shapes}">
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.01 0.00"/>
+          <geometry>
+            <sphere radius="0.07"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.06 0.00"/>
+          <geometry>
+            <sphere radius="0.0525"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.11 0.00"/>
+          <geometry>
+            <sphere radius="0.0525"/>
+          </geometry>
+        </collision>
+      </xacro:if>
+      <xacro:unless value="${sphere_only_collision_shapes}">
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 -0.02"/>
+          <geometry>
+            <cylinder radius="0.05" length="0.16"/>
+          </geometry>
+        </collision>
+      </xacro:unless>
+      <xacro:cylinder_inertial radius="0.075" length="0.178" mass="${shoulder_mass}">
+        <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
+      </xacro:cylinder_inertial>
+    </link>
+
+    <joint name="${prefix}shoulder_lift_joint" type="revolute">
+      <parent link="${prefix}shoulder_link" />
+      <child link = "${prefix}upper_arm_link" />
+      <origin xyz="0.0 ${shoulder_offset} 0.0" rpy="0.0 ${pi / 2.0} 0.0" />
+      <axis xyz="0 1 0" />
+      <xacro:unless value="${joint_limited}">
+        <limit lower="${-2.0 * pi}" upper="${2.0 * pi}" effort="330.0" velocity="3.14" drake:acceleration="2.5"/>
+        <xacro:if value="${safety_limits}">
+          <safety_controller soft_lower_limit="${-2.0 * pi + safety_pos_margin}" soft_upper_limit="${2.0 * pi - safety_pos_margin}" k_position="${safety_k_position}" k_velocity="0.0"/>
+        </xacro:if>
+      </xacro:unless>
+      <xacro:if value="${joint_limited}">
+        <limit lower="${shoulder_lift_lower_limit}" upper="${shoulder_lift_upper_limit}" effort="330.0" velocity="3.14" drake:acceleration="2.5"/>
+        <xacro:if value="${safety_limits}">
+          <safety_controller soft_lower_limit="${shoulder_lift_lower_limit + safety_pos_margin}" soft_upper_limit="${shoulder_lift_upper_limit - safety_pos_margin}" k_position="${safety_k_position}" k_velocity="0.0"/>
+        </xacro:if>
+      </xacro:if>
+      <dynamics damping="0.0" friction="0.0"/>
+    </joint>
+
+    <link name="${prefix}upper_arm_link">
+      <visual>
+        <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+        <geometry>
+          <mesh filename="upperarm.obj"/>
+        </geometry>
+        <material name="LightGrey">
+          <color rgba="0.7 0.7 0.7 1.0"/>
+        </material>
+      </visual>
+      <xacro:if value="${sphere_only_collision_shapes}">
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.02 0.01"/>
+          <geometry>
+            <sphere radius="0.06"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.00 0.05"/>
+          <geometry>
+            <sphere radius="0.05"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.00 0.09"/>
+          <geometry>
+            <sphere radius="0.04"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.00 0.12"/>
+          <geometry>
+            <sphere radius="0.04"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.00 0.15"/>
+          <geometry>
+            <sphere radius="0.04"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.00 0.18"/>
+          <geometry>
+            <sphere radius="0.04"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.00 0.21"/>
+          <geometry>
+            <sphere radius="0.045"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.02 ${upper_arm_length - 0.005}"/>
+          <geometry>
+            <sphere radius="0.05"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 -0.02 ${upper_arm_length - 0.005}"/>
+          <geometry>
+            <sphere radius="0.05"/>
+          </geometry>
+        </collision>
+      </xacro:if>
+      <xacro:unless value="${sphere_only_collision_shapes}">
+        <collision>
+          <origin rpy="${pi/2.0} 0 0" xyz="0.0 -0.02 0.0"/>
+          <geometry>
+            <cylinder radius="0.05" length="0.16"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 0.045"/>
+          <geometry>
+            <cylinder radius="0.05" length="0.051"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 ${upper_arm_length/2.0 + 0.005}"/>
+          <geometry>
+            <cylinder radius="0.04" length="0.21"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="${pi/2.0} 0 0" xyz="0.0 0.005 ${upper_arm_length - 0.001}"/>
+          <geometry>
+            <cylinder radius="0.041" length="0.11"/>
+          </geometry>
+        </collision>
+      </xacro:unless>
+      <xacro:cylinder_inertial radius="0.075" length="${-a2}" mass="${upper_arm_mass}">
+        <origin xyz="0.0 0.0 ${-a2/2.0}" rpy="0 0 0" />
+      </xacro:cylinder_inertial>
+    </link>
+
+    <joint name="${prefix}elbow_joint" type="revolute">
+      <parent link="${prefix}upper_arm_link" />
+      <child link = "${prefix}forearm_link" />
+      <origin xyz="0.0 ${elbow_offset} ${upper_arm_length}" rpy="0.0 0.0 0.0" />
+      <axis xyz="0 1 0" />
+      <xacro:unless value="${joint_limited}">
+        <limit lower="${-pi}" upper="${pi}" effort="150.0" velocity="3.14" drake:acceleration="2.5"/>
+        <xacro:if value="${safety_limits}">
+          <safety_controller soft_lower_limit="${-2.0 * pi + safety_pos_margin}" soft_upper_limit="${2.0 * pi - safety_pos_margin}" k_position="${safety_k_position}" k_velocity="0.0"/>
+        </xacro:if>
+      </xacro:unless>
+      <xacro:if value="${joint_limited}">
+        <limit lower="${elbow_joint_lower_limit}" upper="${elbow_joint_upper_limit}" effort="150.0" velocity="3.14" drake:acceleration="2.5"/>
+        <xacro:if value="${safety_limits}">
+          <safety_controller soft_lower_limit="${elbow_joint_lower_limit + safety_pos_margin}" soft_upper_limit="${elbow_joint_upper_limit - safety_pos_margin}" k_position="${safety_k_position}" k_velocity="0.0"/>
+        </xacro:if>
+      </xacro:if>
+      <dynamics damping="0.0" friction="0.0"/>
+    </joint>
+
+    <link name="${prefix}forearm_link">
+      <visual>
+        <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+        <geometry>
+          <mesh filename="forearm.obj"/>
+        </geometry>
+        <material name="LightGrey">
+          <color rgba="0.7 0.7 0.7 1.0"/>
+        </material>
+      </visual>
+      <xacro:if value="${sphere_only_collision_shapes}">
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.03 0.00"/>
+          <geometry>
+            <sphere radius="0.04"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 0.02"/>
+          <geometry>
+            <sphere radius="0.04"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 0.05"/>
+          <geometry>
+            <sphere radius="0.035"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 0.075"/>
+          <geometry>
+            <sphere radius="0.03"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 0.095"/>
+          <geometry>
+            <sphere radius="0.03"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 0.115"/>
+          <geometry>
+            <sphere radius="0.03"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 0.135"/>
+          <geometry>
+            <sphere radius="0.03"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 0.155"/>
+          <geometry>
+            <sphere radius="0.03"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 0.18"/>
+          <geometry>
+            <sphere radius="0.035"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 -0.02 0.2125"/>
+          <geometry>
+            <sphere radius="0.0375"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.00 0.2125"/>
+          <geometry>
+            <sphere radius="0.0375"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.02 0.2125"/>
+          <geometry>
+            <sphere radius="0.0375"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.03 0.2125"/>
+          <geometry>
+            <sphere radius="0.0375"/>
+          </geometry>
+        </collision>
+      </xacro:if>
+      <xacro:unless value="${sphere_only_collision_shapes}">
+        <collision>
+          <origin rpy="${pi/2.0} 0 0" xyz="0.0 0.02 0.005"/>
+          <geometry>
+            <sphere radius="0.05"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 ${forearm_length/2.0 + 0.005}"/>
+          <geometry>
+            <cylinder radius="0.034" length="0.185"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="${pi/2.0} 0 0" xyz="0.0 0.022 ${forearm_length}"/>
+          <geometry>
+            <cylinder radius="0.034" length="0.14"/>
+          </geometry>
+        </collision>
+      </xacro:unless>
+      <xacro:cylinder_inertial radius="0.075" length="${-a3}" mass="${forearm_mass}">
+        <origin xyz="0.0 0.0 ${-a3/2.0}" rpy="0 0 0" />
+      </xacro:cylinder_inertial>
+    </link>
+
+    <joint name="${prefix}wrist_1_joint" type="revolute">
+      <parent link="${prefix}forearm_link" />
+      <child link = "${prefix}wrist_1_link" />
+      <origin xyz="0.0 0.0 ${forearm_length}" rpy="0.0 ${pi / 2.0} 0.0" />
+      <axis xyz="0 1 0" />
+      <xacro:unless value="${joint_limited}">
+        <limit lower="${-2.0 * pi}" upper="${2.0 * pi}" effort="54.0" velocity="6.28" drake:acceleration="2.5"/>
+        <xacro:if value="${safety_limits}">
+          <safety_controller soft_lower_limit="${-2.0 * pi + safety_pos_margin}" soft_upper_limit="${2.0 * pi - safety_pos_margin}" k_position="${safety_k_position}" k_velocity="0.0"/>
+        </xacro:if>
+      </xacro:unless>
+      <xacro:if value="${joint_limited}">
+        <limit lower="${wrist_1_lower_limit}" upper="${wrist_1_upper_limit}" effort="54.0" velocity="6.28" drake:acceleration="2.5"/>
+        <xacro:if value="${safety_limits}">
+          <safety_controller soft_lower_limit="${wrist_1_lower_limit + safety_pos_margin}" soft_upper_limit="${wrist_1_upper_limit - safety_pos_margin}" k_position="${safety_k_position}" k_velocity="0.0"/>
+        </xacro:if>
+      </xacro:if>
+      <dynamics damping="0.0" friction="0.0"/>
+    </joint>
+
+    <link name="${prefix}wrist_1_link">
+      <visual>
+        <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+        <geometry>
+          <mesh filename="wrist1.obj"/>
+        </geometry>
+        <material name="LightGrey">
+          <color rgba="0.7 0.7 0.7 1.0"/>
+        </material>
+      </visual>
+      <xacro:if value="${sphere_only_collision_shapes}">
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.05 0.0"/>
+          <geometry>
+            <sphere radius="0.0375"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.075 0.0"/>
+          <geometry>
+            <sphere radius="0.0375"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.1 0.0"/>
+          <geometry>
+            <sphere radius="0.0375"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.1 -0.025"/>
+          <geometry>
+            <sphere radius="0.0375"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.105 0.0275"/>
+          <geometry>
+            <sphere radius="0.0375"/>
+          </geometry>
+        </collision>
+      </xacro:if>
+      <xacro:unless value="${sphere_only_collision_shapes}">
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.105 0.012"/>
+          <geometry>
+            <cylinder radius="0.034" length="0.12"/>
+          </geometry>
+        </collision>
+      </xacro:unless>
+      <xacro:cylinder_inertial radius="0.075" length="0.12" mass="${wrist_1_mass}">
+        <origin xyz="0.0 ${wrist_1_length} 0.0" rpy="0 0 0" />
+      </xacro:cylinder_inertial>
+    </link>
+
+    <joint name="${prefix}wrist_2_joint" type="revolute">
+      <parent link="${prefix}wrist_1_link" />
+      <child link = "${prefix}wrist_2_link" />
+      <origin xyz="0.0 ${wrist_1_length} 0.0" rpy="0.0 0.0 0.0" />
+      <axis xyz="0 0 1" />
+      <xacro:unless value="${joint_limited}">
+        <limit lower="${-2.0 * pi}" upper="${2.0 * pi}" effort="54.0" velocity="6.28" drake:acceleration="2.5"/>
+        <xacro:if value="${safety_limits}">
+          <safety_controller soft_lower_limit="${-2.0 * pi + safety_pos_margin}" soft_upper_limit="${2.0 * pi - safety_pos_margin}" k_position="${safety_k_position}" k_velocity="0.0"/>
+        </xacro:if>
+      </xacro:unless>
+      <xacro:if value="${joint_limited}">
+        <limit lower="${wrist_2_lower_limit}" upper="${wrist_2_upper_limit}" effort="54.0" velocity="6.28" drake:acceleration="2.5"/>
+        <xacro:if value="${safety_limits}">
+          <safety_controller soft_lower_limit="${wrist_2_lower_limit + safety_pos_margin}" soft_upper_limit="${wrist_2_upper_limit - safety_pos_margin}" k_position="${safety_k_position}" k_velocity="0.0"/>
+        </xacro:if>
+      </xacro:if>
+      <dynamics damping="0.0" friction="0.0"/>
+    </joint>
+
+    <link name="${prefix}wrist_2_link">
+      <origin rpy="${pi / 2} 0 0" xyz="0.0 0.0 0.0"/>
+      <visual>
+        <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+        <geometry>
+          <mesh filename="wrist2.obj"/>
+        </geometry>
+        <material name="LightGrey">
+          <color rgba="0.7 0.7 0.7 1.0"/>
+        </material>
+      </visual>
+      <xacro:if value="${sphere_only_collision_shapes}">
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 0.07"/>
+          <geometry>
+            <sphere radius="0.04"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 -0.02 0.085"/>
+          <geometry>
+            <sphere radius="0.0375"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.0 0.085"/>
+          <geometry>
+            <sphere radius="0.0375"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.02 0.085"/>
+          <geometry>
+            <sphere radius="0.0375"/>
+          </geometry>
+        </collision>
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.04 0.085"/>
+          <geometry>
+            <sphere radius="0.0375"/>
+          </geometry>
+        </collision>
+      </xacro:if>
+      <xacro:unless value="${sphere_only_collision_shapes}">
+        <collision>
+          <origin rpy="${pi/2} 0 0" xyz="0.0 -0.001 0.086"/>
+          <geometry>
+            <cylinder radius="0.034" length="0.092"/>
+          </geometry>
+        </collision>
+      </xacro:unless>
+      <xacro:cylinder_inertial radius="0.075" length="0.12" mass="${wrist_2_mass}">
+        <origin xyz="0.0 0.0 ${wrist_2_length}" rpy="0 0 0" />
+      </xacro:cylinder_inertial>
+    </link>
+
+    <joint name="${prefix}wrist_3_joint" type="revolute">
+      <parent link="${prefix}wrist_2_link" />
+      <child link = "${prefix}wrist_3_link" />
+      <origin xyz="0.0 0.0 ${wrist_2_length}" rpy="0.0 0.0 0.0" />
+      <axis xyz="0 1 0" />
+      <xacro:unless value="${joint_limited}">
+        <limit lower="${-2.0 * pi}" upper="${2.0 * pi}" effort="54.0" velocity="6.28" drake:acceleration="2.5"/>
+        <xacro:if value="${safety_limits}">
+          <safety_controller soft_lower_limit="${-2.0 * pi + safety_pos_margin}" soft_upper_limit="${2.0 * pi - safety_pos_margin}" k_position="${safety_k_position}" k_velocity="0.0"/>
+        </xacro:if>
+      </xacro:unless>
+      <xacro:if value="${joint_limited}">
+        <limit lower="${wrist_3_lower_limit}" upper="${wrist_3_upper_limit}" effort="54.0" velocity="6.28" drake:acceleration="2.5"/>
+        <xacro:if value="${safety_limits}">
+          <safety_controller soft_lower_limit="${wrist_3_lower_limit + safety_pos_margin}" soft_upper_limit="${wrist_3_upper_limit - safety_pos_margin}" k_position="${safety_k_position}" k_velocity="0.0"/>
+        </xacro:if>
+      </xacro:if>
+      <dynamics damping="0.0" friction="0.0"/>
+    </joint>
+
+    <link name="${prefix}wrist_3_link">
+      <visual>
+        <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+        <geometry>
+          <mesh filename="wrist3.obj"/>
+        </geometry>
+        <material name="LightGrey">
+          <color rgba="0.7 0.7 0.7 1.0"/>
+        </material>
+      </visual>
+      <xacro:if value="${sphere_only_collision_shapes}">
+        <collision>
+          <origin rpy="0 0 0" xyz="0.0 0.07 0.0"/>
+          <geometry>
+            <sphere radius="0.02"/>
+          </geometry>
+        </collision>
+      </xacro:if>
+      <xacro:unless value="${sphere_only_collision_shapes}">
+        <collision>
+          <origin rpy="${pi/2} 0 0" xyz="0.0 0.07 0.0"/>
+          <geometry>
+            <cylinder radius="0.034" length="0.05"/>
+          </geometry>
+        </collision>
+      </xacro:unless>
+      <xacro:cylinder_inertial radius="0.032" length="0.042" mass="${wrist_3_mass}">
+        <origin xyz="0.0 ${wrist_3_length - 0.021} 0.0" rpy="${pi/2} 0 0" />
+      </xacro:cylinder_inertial>
+    </link>
+
+    <joint name="${prefix}ee_fixed_joint" type="fixed">
+      <parent link="${prefix}wrist_3_link" />
+      <child link = "${prefix}ee_link" />
+      <origin xyz="0.0 ${wrist_3_length} 0.0" rpy="0.0 0.0 ${pi/2.0}" />
+    </joint>
+
+    <link name="${prefix}ee_link"/>
+
+    <xacro:ur_arm_transmission prefix="${prefix}" />
+
+    <!-- ROS base_link to UR 'Base' Coordinates transform -->
+    <link name="${prefix}base"/>
+    <joint name="${prefix}base_link-base_fixed_joint" type="fixed">
+      <!-- NOTE: this rotation is only needed as long as base_link itself is
+                 not corrected wrt the real robot (ie: rotated over 180
+                 degrees)
+      -->
+      <origin xyz="0 0 0" rpy="0 0 ${-pi}"/>
+      <parent link="${prefix}base_link"/>
+      <child link="${prefix}base"/>
+    </joint>
+
+    <!-- Frame coincident with all-zeros TCP on UR controller -->
+    <link name="${prefix}tool0"/>
+    <joint name="${prefix}wrist_3_link-tool0_fixed_joint" type="fixed">
+      <origin xyz="0 ${wrist_3_length} 0" rpy="${pi/-2.0} 0 0"/>
+      <parent link="${prefix}wrist_3_link"/>
+      <child link="${prefix}tool0"/>
+    </joint>
+
+  </xacro:macro>
+</robot>

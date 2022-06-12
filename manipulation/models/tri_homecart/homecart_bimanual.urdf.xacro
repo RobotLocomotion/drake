@@ -1,0 +1,422 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="homecart_bimanual">
+  <!-- homecart's origin is homecart_base_link. This link is placed at the
+       center of the table along the table's long axis, offset along the
+       table's short axis between both robot arms on surface of the metal
+       base plate -->
+  <!-- The Left UR3e robot's ur_base_link is joined to left_arm_base_link -->
+  <!-- The Right UR3e robot's ur_base_link is joined to
+       right_arm_base_link -->
+  <!-- homecart_base_link ==>
+         left_arm_mount_cantilever_link ==>
+            left_arm_mount_stack_link ==>
+              left_arm_base_link ==>
+                ur3_left::ur_base_link (for UR3e arm model, with model
+                                        prefix "ur3_left")
+         right_arm_mount_cantilever_link ==>
+            right_arm_mount_stack_link ==>
+              right_arm_base_link ==>
+                ur3_right::ur_base_link (for UR3e arm model, with model
+                                         prefix "ur3_right")
+      The homecart_origin to "homecart_base_link" frames are zero translation
+      and identity rotation transforms to easily connect the models.
+      +z up, +x along the short axis of the table, +y along the long table axis
+      Positive origin axes eminate "forward" for X and "left" for Y, with
+      respect to the robot arm origins.
+  -->
+  <link name="homecart_base_link">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </link>
+  <xacro:property name="arm_mount_cantilever_length" value="0.254"/>
+  <xacro:property name="arm_mount_cantilever_height" value="0.015"/>
+  <xacro:property name="arm_mount_stack_plate_side" value="0.1275"/>
+  <xacro:property name="arm_mount_stack_plate_height" value="0.02"/>
+  <!-- Macro to build mounting cantelever, plates, and frames for robot arms.
+       Arguments include "side": prefix for arm
+                         "num_plate": the number of plates to stack
+                         "arm_mount_origin": full transform for origin with
+                                             respect to homecart_base_link -->
+  <xacro:macro name="arm_mount_xacro"
+               params="side num_plates *arm_mount_origin">
+    <!-- Private, recursive macro to stack visual plate meshes.
+         Arguments include "num_plate": the number of plates to stack -->
+    <xacro:macro name="arm_mount_visual_plates_xacro"
+                params="num_plates">
+      <visual>
+        <origin xyz="0 0 ${(num_plates-1)*arm_mount_stack_plate_height}"
+                rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://drake/manipulation/models/tri_homecart/homecart_arm_mount_stack.obj"/>
+        </geometry>
+      </visual>
+      <xacro:if value="${num_plates>1}">
+        <xacro:arm_mount_visual_plates_xacro num_plates="${num_plates-1}"/>
+      </xacro:if>
+    </xacro:macro>
+    <link name="${side}arm_mount_cantilever_link">
+      <visual>
+        <origin xyz="0 0 0.0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://drake/manipulation/models/tri_homecart/homecart_arm_mount_cantilever.obj"/>
+        </geometry>
+      </visual>
+      <collision>
+        <origin xyz="${arm_mount_cantilever_length/4}
+                     0
+                     ${arm_mount_cantilever_height/2.0}"
+                rpy="0 0 0"/>
+        <geometry>
+          <box size="${arm_mount_cantilever_length}
+                     ${arm_mount_stack_plate_side}
+                     ${arm_mount_cantilever_height}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <!-- TODO(imcmahon) add valid mass and inertial properties here -->
+        <mass value="1.0"/>
+        <inertia ixx="100" ixy="0" ixz="0" iyy="100" iyz="0" izz="100"/>
+      </inertial>
+    </link>
+    <joint name="${side}arm_mount_cantilever_joint" type="fixed">
+      <xacro:insert_block name="arm_mount_origin"/>
+      <parent link="homecart_base_link"/>
+      <child link="${side}arm_mount_cantilever_link"/>
+    </joint>
+    <link name="${side}arm_mount_stack_link">
+      <xacro:arm_mount_visual_plates_xacro num_plates="${num_plates}"/>
+        <collision>
+        <origin xyz="0 0 ${(num_plates*arm_mount_stack_plate_height)/2.0}"
+                rpy="0 0 0"/>
+        <geometry>
+          <box size="${arm_mount_stack_plate_side}
+                     ${arm_mount_stack_plate_side}
+                     ${num_plates*arm_mount_stack_plate_height}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <!-- TODO(imcmahon) add valid mass and inertial properties here -->
+        <mass value="1.0"/>
+        <inertia ixx="100" ixy="0" ixz="0" iyy="100" iyz="0" izz="100"/>
+      </inertial>
+    </link>
+    <joint name="${side}arm_mount_stack_joint" type="fixed">
+      <origin xyz="0 0 ${arm_mount_cantilever_height}" rpy="0 0 0"/>
+      <parent link="${side}arm_mount_cantilever_link"/>
+      <child link="${side}arm_mount_stack_link"/>
+    </joint>
+    <link name="${side}arm_base_link">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </link>
+    <joint name="${side}arm_base_joint" type="fixed">
+      <origin xyz="0 0 ${num_plates*0.02}" rpy="0 0 0"/>
+      <parent link="${side}arm_mount_stack_link"/>
+      <child link="${side}arm_base_link"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:property name="arm_mount_pin_delta" value="0.02"/>
+  <!-- Valid pin locations (center outward): 0, 1, 2, 3, 4, 5 -->
+  <xacro:property name="arm_mount_pin_location" value="5"/>
+  <!-- Valid stack values: [0, 10] -->
+  <xacro:property name="num_plates" value="10"/>
+  <xacro:property name="homecart_base_link_center_x_offset" value="0.2775"/>
+  <xacro:property name="homecart_base_link_arm_y_offset" value="0.1"/>
+  <xacro:arm_mount_xacro side="left_" num_plates="${num_plates}">
+      <origin xyz="0
+                   ${homecart_base_link_arm_y_offset+
+                     (arm_mount_pin_location*arm_mount_pin_delta)}
+                   0"
+              rpy="0 0 0"/>
+  </xacro:arm_mount_xacro>
+  <xacro:arm_mount_xacro side="right_" num_plates="${num_plates}">
+      <origin xyz="0
+                   ${-homecart_base_link_arm_y_offset-
+                     (arm_mount_pin_location*arm_mount_pin_delta)}
+                   0"
+              rpy="0 0 0"/>
+  </xacro:arm_mount_xacro>
+  <xacro:property name="homecart_baseplate_width" value="0.6816"/>
+  <xacro:property name="homecart_baseplate_length" value="0.9864"/>
+  <xacro:property name="homecart_baseplate_height" value="0.0065"/>
+  <joint name="homecart_base_link" type="fixed">
+    <origin xyz="${homecart_base_link_center_x_offset} 0 0" rpy="0 0 0"/>
+    <parent link="homecart_base_link"/>
+    <child link="homecart_baseplate_link"/>
+  </joint>
+  <link name="homecart_baseplate_link">
+    <visual>
+      <origin xyz="0 0 0.0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://drake/manipulation/models/tri_homecart/homecart_baseplate.obj"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${-homecart_baseplate_height/2.0}"
+              rpy="0 0 0"/>
+      <geometry>
+        <box size="${homecart_baseplate_width}
+                   ${homecart_baseplate_length}
+                   ${homecart_baseplate_height}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <!-- TODO(imcmahon) add valid mass and inertial properties here -->
+      <mass value="1.0"/>
+      <inertia ixx="100" ixy="0" ixz="0" iyy="100" iyz="0" izz="100"/>
+    </inertial>
+  </link>
+  <xacro:property name="homecart_cart_length" value="0.93"/>
+  <xacro:property name="homecart_cart_width" value="0.62"/>
+  <xacro:property name="homecart_cart_height" value="1.0275"/>
+  <link name="homecart_cart_link">
+    <visual>
+      <origin xyz="0 0 0.0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://drake/manipulation/models/tri_homecart/homecart_basecart.obj"/>
+      </geometry>
+    </visual>
+    <collision>
+      <!-- The collision shape geometry is specified with respect to its
+           geometric center, from the visual origin -->
+      <origin xyz="0 0 ${-homecart_cart_height/2.0}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${homecart_cart_width}
+                   ${homecart_cart_length}
+                   ${homecart_cart_height}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <!-- TODO(imcmahon) add valid mass and inertial properties here -->
+      <mass value="1.0"/>
+      <inertia ixx="100" ixy="0" ixz="0" iyy="100" iyz="0" izz="100"/>
+    </inertial>
+  </link>
+  <joint name="homecart_cart_joint" type="fixed">
+    <origin xyz="0 0 ${-homecart_baseplate_height}" rpy="0 0 0"/>
+    <parent link="homecart_baseplate_link"/>
+    <child link="homecart_cart_link"/>
+  </joint>
+  <!-- Add the upper structure board centered on the top leftmost
+       corner (from the robot's perspective) nearest to the
+       homecart_base_link side of the model. The origin is oriented
+       with +X along the long edge of the homecart, and +Y along the
+       short edge for ease of camera placement on this structure.-->
+  <xacro:property name="upper_structure_height" value="0.937"/>
+  <xacro:property name="upper_structure_length" value="0.9864"/>
+  <xacro:property name="upper_structure_width" value="0.6816"/>
+  <xacro:property name="upper_structure_beam_side" value="0.023"/>
+  <xacro:property name="upper_structure_angle_bracket_radius" value="0.054"/>
+  <xacro:property name="base_plate_thickness" value="0.0065"/>
+  <!-- This block contains the upper aluminum beam structures, along with
+        their angle connectors. There is a single link (and mesh) to
+        to encapsulate the struture, but several basic geometry collision
+        shapes for individual beams and connectors. -->
+  <xacro:property name="upper_structure_lower_z_origin"
+    value="${-upper_structure_height+
+             upper_structure_beam_side-
+             base_plate_thickness}"/>
+  <link name="homecart_upper_structure_link">
+    <inertial>
+      <!-- TODO(imcmahon) add valid mass and inertial properties here -->
+      <mass value="1.0"/>
+      <inertia ixx="100" ixy="0" ixz="0" iyy="100" iyz="0" izz="100"/>
+    </inertial>
+    <visual>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://drake/manipulation/models/tri_homecart/homecart_bimanual_upper_structure.obj"/>
+      </geometry>
+    </visual>
+
+    <!-- upper angle collision spheres -->
+    <collision>
+      <origin xyz="${upper_structure_beam_side/2.0}
+                   ${upper_structure_beam_side/2.0}
+                   ${-upper_structure_beam_side/2.0}"
+              rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="${upper_structure_angle_bracket_radius}"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="${upper_structure_length-upper_structure_beam_side/2.0}
+                   ${upper_structure_beam_side/2.0}
+                   ${-upper_structure_beam_side/2.0}"
+              rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="${upper_structure_angle_bracket_radius}"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="${upper_structure_length-upper_structure_beam_side/2.0}
+                   ${upper_structure_width-upper_structure_beam_side/2.0}
+                   ${-upper_structure_beam_side/2.0}"
+              rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="${upper_structure_angle_bracket_radius}"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="${upper_structure_beam_side/2.0}
+                   ${upper_structure_width-upper_structure_beam_side/2.0}
+                   ${-upper_structure_beam_side/2.0}"
+              rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="${upper_structure_angle_bracket_radius}"/>
+      </geometry>
+    </collision>
+    <!-- lower angle collision spheres -->
+    <collision>
+      <origin xyz="${upper_structure_length-upper_structure_beam_side/2.0}
+                   ${upper_structure_width-upper_structure_beam_side/2.0}
+                   ${upper_structure_lower_z_origin}"
+              rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="${upper_structure_angle_bracket_radius}"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="${upper_structure_length-upper_structure_beam_side/2.0}
+                   ${upper_structure_beam_side/2.0}
+                   ${upper_structure_lower_z_origin}"
+              rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="${upper_structure_angle_bracket_radius}"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="${upper_structure_beam_side/2.0}
+                   ${upper_structure_width-upper_structure_beam_side/2.0}
+                   ${upper_structure_lower_z_origin}"
+              rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="${upper_structure_angle_bracket_radius}"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="${upper_structure_beam_side/2.0}
+                   ${upper_structure_beam_side/2.0}
+                   ${upper_structure_lower_z_origin}"
+              rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="${upper_structure_angle_bracket_radius}"/>
+      </geometry>
+    </collision>
+    <!-- Macro for building horizontal, square collision bars.
+         Arguments include "z_origin": the mounting point along the
+                                       parent frame's Z axis -->
+    <xacro:macro name="upper_structure_horizontal_collision_bars"
+                 params="z_origin">
+      <collision>
+        <origin xyz="${upper_structure_length/2.0}
+                     ${upper_structure_beam_side/2.0}
+                     ${z_origin}"
+                rpy="0 0 0"/>
+        <geometry>
+          <box size="${upper_structure_length}
+                     ${upper_structure_beam_side}
+                     ${upper_structure_beam_side}"/>
+        </geometry>
+      </collision>
+      <collision>
+        <origin xyz="${upper_structure_beam_side/2.0}
+                     ${upper_structure_width/2.0}
+                     ${z_origin}"
+                rpy="0 0 0"/>
+        <geometry>
+          <box size="${upper_structure_beam_side}
+                     ${upper_structure_width}
+                     ${upper_structure_beam_side}"/>
+        </geometry>
+      </collision>
+      <collision>
+        <origin xyz="${upper_structure_length/2.0}
+                     ${upper_structure_width-upper_structure_beam_side/2.0}
+                     ${z_origin}"
+                rpy="0 0 0"/>
+        <geometry>
+          <box size="${upper_structure_length}
+                     ${upper_structure_beam_side}
+                     ${upper_structure_beam_side}"/>
+        </geometry>
+      </collision>
+      <collision>
+        <origin xyz="${upper_structure_length-upper_structure_beam_side/2.0}
+                     ${upper_structure_width/2.0}
+                     ${z_origin}"
+                rpy="0 0 0"/>
+        <geometry>
+          <box size="${upper_structure_beam_side}
+                     ${upper_structure_width}
+                     ${upper_structure_beam_side}"/>
+        </geometry>
+      </collision>
+    </xacro:macro>
+    <!-- Upper horizontal aluminum beam collision boxes -->
+    <xacro:upper_structure_horizontal_collision_bars
+      z_origin="${-upper_structure_beam_side/2.0}" />
+    <!-- Lower horizontal aluminum beam collision boxes -->
+    <xacro:upper_structure_horizontal_collision_bars
+      z_origin="${upper_structure_lower_z_origin}" />
+    <!-- Vertical aluminum beam collision boxes -->
+    <collision>
+      <origin xyz="${upper_structure_beam_side/2.0}
+                   ${upper_structure_width-upper_structure_beam_side/2.0}
+                   ${-upper_structure_height/2.0}"
+              rpy="0 0 0"/>
+      <geometry>
+        <box size="${upper_structure_beam_side}
+                   ${upper_structure_beam_side}
+                   ${upper_structure_height}"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="${upper_structure_beam_side/2.0}
+                   ${upper_structure_beam_side/2.0}
+                   ${-upper_structure_height/2.0}"
+              rpy="0 0 0"/>
+      <geometry>
+        <box size="${upper_structure_beam_side}
+                   ${upper_structure_beam_side}
+                   ${upper_structure_height}"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="${upper_structure_length-upper_structure_beam_side/2.0}
+                   ${upper_structure_beam_side/2.0}
+                   ${-upper_structure_height/2.0}"
+              rpy="0 0 0"/>
+      <geometry>
+        <box size="${upper_structure_beam_side}
+                   ${upper_structure_beam_side}
+                   ${upper_structure_height}"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="${upper_structure_length-upper_structure_beam_side/2.0}
+                   ${upper_structure_width-upper_structure_beam_side/2.0}
+                   ${-upper_structure_height/2.0}"
+              rpy="0 0 0"/>
+      <geometry>
+        <box size="${upper_structure_beam_side}
+                   ${upper_structure_beam_side}
+                   ${upper_structure_height}"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="homecart_upper_structure_joint" type="fixed">
+    <!-- Translation from homecart_base_link between robot arms to
+          the top rear corner of the upper structure. This location
+          on the upper structure simplifies collision shape calculation,
+          and transforms adding cameras to this level. -->
+    <origin xyz="${homecart_base_link_center_x_offset-
+                   upper_structure_width/2.0}
+                 ${upper_structure_length/2.0}
+                 ${upper_structure_height-
+                   upper_structure_beam_side-
+                   base_plate_thickness}"
+            rpy="0 0 ${3*pi/2.0}"/>
+    <parent link="homecart_base_link"/>
+    <child link="homecart_upper_structure_link"/>
+  </joint>
+</robot>
