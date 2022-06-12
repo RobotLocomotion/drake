@@ -1,0 +1,41 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_file")
+load("@drake//tools/workspace:forward_files.bzl", "forward_files")
+load("//tools/workspace/models_internal:files.bzl", "ur3e_mesh_files")
+
+# This package is public so that other packages can refer to
+# individual files in model from their bazel rules.
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+# === test/ ===
+
+xacro_file(
+    name = "ur3e_robot.urdf",
+    src = "ur3e_robot.urdf.xacro",
+    data = [
+        "ur.transmission.xacro",
+        "ur3e.urdf.xacro",
+    ],
+)
+
+_UR3E_MESHES = forward_files(
+    srcs = ["@models_internal//:" + x for x in ur3e_mesh_files()],
+    dest_prefix = "",
+    strip_prefix = "@models_internal//:ur3e/",
+    visibility = ["//visibility:private"],
+)
+
+install_data(
+    extra_prod_models = ["ur3e_robot.urdf"] + _UR3E_MESHES,
+)
+
+add_lint_tests()

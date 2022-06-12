@@ -7,9 +7,9 @@ def models_internal_repository(
         mirrors = None):
     github_archive(
         name = name,
-        repository = "RobotLocomotion/models",
-        commit = "fbc442f5bb609ecd8c32d8ab6e033b998a929692",
-        sha256 = "104662b08af4e2681cefa309de5c47c25a6b82531a1cda5f8e554c7b8c296831",  # noqa
+        repository = "RussTedrake/models",
+        commit = "a48aa6422741ef819cda9843e8896d02a35986e8",
+        sha256 = "ef7ebcd30ba9e751ac7b1fa26c0a799e533b98e8fd3b9fd5aa422bcc8c945c57",  # noqa
         build_file = "@drake//tools/workspace/models_internal:package.BUILD.bazel",  # noqa
         mirrors = mirrors,
     )
