@@ -1,8 +1,7 @@
 #pragma once
 
 #include <initializer_list>
-#include <optional>
-#include <unordered_map>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -94,8 +93,6 @@ namespace geometry {
 template <class Id, class KinematicsValue>
 class KinematicsVector {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(KinematicsVector)
-
   /** Initializes the vector using an invalid SourceId with no data .*/
   KinematicsVector();
 
@@ -103,6 +100,15 @@ class KinematicsVector {
   and the corresponding kinematics values. */
   KinematicsVector(
       std::initializer_list<std::pair<const Id, KinematicsValue>> init);
+
+  // NOLINTNEXTLINE(whitespace/line_length) so that doxygen renders nicely.
+  /** @name Implements CopyConstructible, CopyAssignable, MoveConstructible, MoveAssignable  */
+  //@{
+  KinematicsVector(const KinematicsVector&);
+  KinematicsVector(KinematicsVector&&);
+  KinematicsVector& operator=(const KinematicsVector&);
+  KinematicsVector& operator=(KinematicsVector&&);
+  //@}
 
   ~KinematicsVector();
 
@@ -116,11 +122,8 @@ class KinematicsVector {
   /** Sets the kinematics `value` for the given `id`. */
   void set_value(Id id, const KinematicsValue& value);
 
-  /** Returns number of ids(). */
-  int size() const {
-    DRAKE_ASSERT_VOID(CheckInvariants());
-    return size_;
-  }
+  /** Returns number of GetAllIds(). */
+  int size() const;
 
   /** Returns the value associated with the given `id`.
    @throws std::exception if `id` is not in the specified set of ids.  */
@@ -132,45 +135,38 @@ class KinematicsVector {
   /** Provides a range object for all of the existing ids in the vector.
    This is intended to be used as:
    @code
-   for (Id id : this_vector.frame_ids()) {
+   for (const Id& id : this_vector.frame_ids()) {
     ...
     // Obtain the KinematicsValue of an id by `this_vector.value(id)`
     ...
    }
    @endcode
    */
-  DRAKE_DEPRECATED("2022-10-01", "Use ids() instead.")
+  DRAKE_DEPRECATED("2022-10-01", "Use GetAllIds() instead.")
   std::vector<Id> frame_ids() const;
 
   /** Provides a range object for all of the existing ids in the vector.
    This is intended to be used as:
    @code
-   for (Id id : this_vector.ids()) {
+   for (const Id& id : GetAllIds()) {
     ...
     // Obtain the KinematicsValue of an id by `this_vector.value(id)`
     ...
    }
    @endcode
    */
-  std::vector<Id> ids() const;
+  std::vector<Id> GetAllIds() const;
 
  private:
-  void CheckInvariants() const;
-
-  // Mapping from id to its corresponding kinematics value.  If the map's
-  // optional value is nullopt, we treat it as if the map key were absent
-  // instead.  We do this in order to avoid reallocating map nodes as we
-  // repeatedly clear() and then re-set_value() the same IDs over and over
-  // again.
-  // TODO(jwnimmer-tri) A better way to avoid map node allocations would be to
-  // replace this unordered_map with a flat_hash_map (where the entire storage
-  // is a single heap slab); in that case, the complicated implementation in
-  // the cc file would become simplified.
-  std::unordered_map<Id, std::optional<KinematicsValue>> values_;
-
-  // The count of non-nullopt items in values_.  We could recompute this from
-  // values_, but we store it separately so that size() is still constant-time.
-  int size_{0};
+  class Impl;
+  Impl& impl();
+  const Impl& impl() const;
+  // This field is really a shared_ptr<Impl> but we must store it as <void>
+  // so that the Impl class can have __attribute__((visibility("hidden"))),
+  // required by the hidden `absl::flat_hash_map` used under the hood. Note
+  // that we never actually share an Impl object (the use_count is always 1),
+  // rather we use shared_ptr for its type-erased destructor feature.
+  std::shared_ptr<void> pimpl_;
 };
 
 /** Class for communicating _pose_ information to SceneGraph for registered
