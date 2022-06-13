@@ -1558,6 +1558,23 @@ class TestSymbolicPolynomial(unittest.TestCase):
             indeterminates=[x], indeterminates_values=[[1, 2, 3]])
         self.assertEqual(p_values.shape, ((3,)))
 
+    def test_evaluate_w_affine_coefficients(self):
+        p = sym.Polynomial(a * x * x + b * x, [x])
+        indeterminates_values = np.array([[1., 2., 3.]])
+        (A_coeff, decision_variables,
+         b_coeff) = p.EvaluateWithAffineCoefficients(
+             indeterminates=[x],
+             indeterminates_values=indeterminates_values)
+        self.assertEqual(A_coeff.shape, (3, 2))
+        self.assertEqual(b_coeff.shape, (3,))
+        self.assertEqual(decision_variables.shape, (2,))
+        for i in range(indeterminates_values.shape[1]):
+            self.assertTrue(
+                p.ToExpression().EvaluatePartial(
+                    {x: indeterminates_values[0, i]}).Expand().EqualTo(
+                    (A_coeff[i].dot(decision_variables) + b_coeff[i]).Expand())
+            )
+
 
 class TestExtractVariablesFromExpression(unittest.TestCase):
     def test(self):

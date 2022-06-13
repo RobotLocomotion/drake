@@ -9,6 +9,7 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_py_unapply.h"
@@ -874,6 +875,21 @@ PYBIND11_MODULE(symbolic, m) {
           },
           py::arg("indeterminates"), py::arg("indeterminates_values"),
           doc.Polynomial.EvaluateIndeterminates.doc)
+      .def(
+          "EvaluateWithAffineCoefficients",
+          [](const symbolic::Polynomial& self,
+              const Eigen::Ref<const VectorX<symbolic::Variable>>&
+                  indeterminates,
+              const Eigen::Ref<const Eigen::MatrixXd>& indeterminates_values) {
+            Eigen::MatrixXd A;
+            VectorX<symbolic::Variable> decision_variables;
+            Eigen::VectorXd b;
+            self.EvaluateWithAffineCoefficients(indeterminates,
+                indeterminates_values, &A, &decision_variables, &b);
+            return std::make_tuple(A, decision_variables, b);
+          },
+          py::arg("indeterminates"), py::arg("indeterminates_values"),
+          doc.Polynomial.EvaluateWithAffineCoefficients.doc)
       .def(
           "Jacobian",
           [](const Polynomial& p,

@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
@@ -954,6 +955,7 @@ TEST_F(SymbolicPolynomialTest, PartialEvaluate4) {
 }
 
 TEST_F(SymbolicPolynomialTest, EvaluateIndeterminates) {
+  // Test EvaluateIndeterminates where polynomial.decision_variables() is empty.
   const Polynomial p(var_x_ * var_x_ + 5 * var_x_ * var_y_);
   // We intentionally test the case that `indeterminates`  being a strict
   // superset of p.indeterminates().
@@ -978,6 +980,66 @@ TEST_F(SymbolicPolynomialTest, EvaluateIndeterminates) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       p_exception.EvaluateIndeterminates(indeterminates, indeterminates_values),
       ".* the coefficient .* is not a constant");
+}
+
+TEST_F(SymbolicPolynomialTest, EvaluateWithAffineCoefficients) {
+  const Vector2<symbolic::Variable> indeterminates(var_x_, var_y_);
+  Eigen::Matrix<double, 2, 3> indeterminates_values;
+  // clang-format off
+  indeterminates_values << 1, 2, 3,
+                           4, 5, 6;
+  // clang-format on
+  Eigen::MatrixXd A;
+  VectorX<symbolic::Variable> decision_variables;
+  Eigen::VectorXd b;
+  {
+    const Polynomial p((a_ + 1) * var_x_ * var_x_ + b_ * var_x_ * var_y_ + c_,
+                       var_xy_);
+    p.EvaluateWithAffineCoefficients(indeterminates, indeterminates_values, &A,
+                                     &decision_variables, &b);
+    EXPECT_EQ(A.rows(), indeterminates_values.cols());
+    EXPECT_EQ(b.rows(), indeterminates_values.cols());
+    EXPECT_EQ(decision_variables.rows(), 3);
+    for (int i = 0; i < indeterminates.cols(); ++i) {
+      symbolic::Environment env;
+      env.insert(indeterminates, indeterminates_values.col(i));
+      EXPECT_PRED2(ExprEqual, (p.ToExpression().EvaluatePartial(env)).Expand(),
+                   (A.row(i).dot(decision_variables) + b(i)).Expand());
+    }
+  }
+
+  // Test special case. When the coefficients of p(x) are all constants.
+  {
+    const symbolic::Polynomial p(var_x_ * var_x_ + 2 * var_y_);
+    p.EvaluateWithAffineCoefficients(indeterminates, indeterminates_values, &A,
+                                     &decision_variables, &b);
+    EXPECT_EQ(A.cols(), 0);
+    EXPECT_EQ(decision_variables.rows(), 0);
+    for (int i = 0; i < indeterminates_values.cols(); ++i) {
+      symbolic::Environment env;
+      env.insert(indeterminates, indeterminates_values.col(i));
+      EXPECT_EQ(b(i), p.Evaluate(env));
+    }
+  }
+
+  // Test exception, when p(x)'s coefficient is not a polynomial expression of
+  // decision variables.
+  {
+    const symbolic::Polynomial p(1 + sin(var_a_) * var_x_ + var_y_, var_xy_);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        p.EvaluateWithAffineCoefficients(indeterminates, indeterminates_values,
+                                         &A, &decision_variables, &b),
+        ".*is not a polynomial.\n");
+  }
+  // Test exception, when p(x)'s coefficient is not an affine expression of
+  // decision variables.
+  {
+    const symbolic::Polynomial p(1 + (a_ * a_) * var_x_ + var_y_, var_xy_);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        p.EvaluateWithAffineCoefficients(indeterminates, indeterminates_values,
+                                         &A, &decision_variables, &b),
+        ".* is non-linear.*");
+  }
 }
 
 TEST_F(SymbolicPolynomialTest, Hash) {
