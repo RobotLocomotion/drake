@@ -30,7 +30,7 @@ void WriteVtkUnstructuredGrid(std::ofstream& out, const Mesh& mesh) {
   const int num_points = mesh.num_vertices();
   out << "DATASET UNSTRUCTURED_GRID\n";
   out << "POINTS " << num_points << " double\n";
-  for (const Vector3<double> p_MV : mesh.vertices()) {
+  for (const Vector3<double>& p_MV : mesh.vertices()) {
     out << fmt::format("{:12.8f} {:12.8f} {:12.8f}\n", p_MV.x(), p_MV.y(),
                        p_MV.z());
   }
