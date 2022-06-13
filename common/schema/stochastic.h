@@ -500,5 +500,23 @@ template <int Size>
 Eigen::VectorXd GetDeterministicValue(
     const DistributionVectorVariant<Size>& vec);
 
+#define DRAKE_DECLARE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(Func) \
+  extern template Func(const DistributionVectorVariantX&); \
+  extern template Func(const DistributionVectorVariant<1>&); \
+  extern template Func(const DistributionVectorVariant<2>&); \
+  extern template Func(const DistributionVectorVariant<3>&); \
+  extern template Func(const DistributionVectorVariant<4>&); \
+  extern template Func(const DistributionVectorVariant<5>&); \
+  extern template Func(const DistributionVectorVariant<6>&);
+
+DRAKE_DECLARE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(
+    std::unique_ptr<DistributionVector> ToDistributionVector)
+DRAKE_DECLARE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(
+    bool IsDeterministic)
+DRAKE_DECLARE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES(
+    Eigen::VectorXd GetDeterministicValue)
+
+#undef DRAKE_DECLARE_TEMPLATE_INSTANTIATIONS_ON_ALL_SIZES
+
 }  // namespace schema
 }  // namespace drake
