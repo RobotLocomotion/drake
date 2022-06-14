@@ -1023,7 +1023,7 @@ PYBIND11_MODULE(symbolic, m) {
             Eigen::RowVectorXd coeffs(map_var_to_index.size());
             double constant_term;
             symbolic::DecomposeAffineExpression(
-                e, map_var_to_index, coeffs, &constant_term);
+                e, map_var_to_index, &coeffs, &constant_term);
             return std::make_pair(coeffs, constant_term);
           },
           py::arg("e"), py::arg("map_var_to_index"),
